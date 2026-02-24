@@ -16,10 +16,19 @@ ln -s ~/claude-workflows/workflows ~/.claude/workflows
 
 ## Contents
 
-- `CLAUDE.md` — Global instructions loaded for every project. References the workflows below.
+### Agent workflows (instructions for Claude Code)
+- `CLAUDE.md` — Global instructions loaded for every project. References the workflows below, plus guidance on context packing, session hygiene, and shared thoughts.
+- `workflows/research-plan-implement.md` — The default dev loop: research codebase → write plan → human annotates → implement
 - `workflows/divergent-design.md` — Structured brainstorming: diverge → diagnose → match → tradeoff → decide
+- `workflows/task-decomposition.md` — Breaking large tasks into independent sub-investigations with optional sub-agent dispatch
 - `workflows/pr-prep.md` — Checklist for packaging work into reviewable async PRs
 - `workflows/spike.md` — Timeboxed exploration of unknowns
+
+### Human guides (reference for the developer, not agent instructions)
+- `guides/parallel-sessions.md` — How to orchestrate multiple concurrent Claude Code sessions across git worktrees
+
+### Templates
+- `templates/gitattributes-snippet.txt` — `.gitattributes` rule to collapse `docs/working/` in GitHub PR diffs
 
 ## Adding workflows
 
