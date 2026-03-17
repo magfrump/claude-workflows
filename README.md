@@ -26,14 +26,18 @@ ln -s ~/claude-workflows/workflows ~/.claude/workflows
 
 ### Human guides (reference for the developer, not agent instructions)
 - `guides/parallel-sessions.md` — How to orchestrate multiple concurrent Claude Code sessions across git worktrees
+- `guides/branch-strategy.md` — Branch off main, throwaway integration branches, post-merge rebase procedures
 
 ### Templates
 - `templates/gitattributes-snippet.txt` — `.gitattributes` rule to collapse `docs/working/` in GitHub PR diffs
 
 ## Adding workflows
 
-1. Create a new `.md` file in `workflows/`
-2. Add a reference in `CLAUDE.md` so the agent knows it exists
+1. Create a new `.md` file in the appropriate directory:
+   - `workflows/` for agent-facing instructions
+   - `guides/` for human-facing reference
+   - `templates/` for reusable config snippets
+2. If it's an agent workflow, add a reference in `CLAUDE.md` so the agent knows it exists
 3. Commit and push
 
 ## Sharing with collaborators
