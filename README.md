@@ -79,6 +79,10 @@ These are alternatives to the AGENTS.md approach. Use whichever fits your setup 
 2. Add a reference in the entry point files (`CLAUDE.md`, `AGENTS.md`, `GEMINI.md`) so agents know it exists
 3. Commit and push
 
+## Skills
+
+The `.claude/skills/` directory contains Claude Code slash-command skills for draft review and fact-checking, sourced from [tomwalczak/claude-cowork-fact-checking-skills](https://github.com/tomwalczak/claude-cowork-fact-checking-skills).
+
 ## Sharing with collaborators
 
 Collaborators clone this repo and run the symlink setup for their tool of choice. The workflow files are identical across all entry points — only the wiring differs.
