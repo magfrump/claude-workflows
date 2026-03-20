@@ -96,8 +96,7 @@ For each fact-check agent, you MUST:
 1. Read the full contents of `.skills/skills/fact-check/SKILL.md`
 2. Paste those contents directly into the Task tool prompt (sub-agents cannot read your files)
 3. Include the full draft text in the prompt
-4. Instruct the agent to save its report as a Markdown file to the output directory
-   (e.g., `[output-dir]/fact-check-report.md`)
+4. Instruct the agent to save its report as `docs/reviews/fact-check-report.md`
 5. Launch via the Task tool with `subagent_type: "general-purpose"`
 
 **CHECKPOINT:** Wait for ALL fact-check agent(s) to return results. Count the results. Do you
@@ -122,9 +121,9 @@ For each critic agent instance, you MUST:
 2. Paste those contents directly into the Task tool prompt
 3. Include the full draft text
 4. Include the fact-check results (consensus summary if ensemble, or the single agent's findings)
-5. Instruct the agent to save its critique as a Markdown file to the output directory
-   (e.g., `[output-dir]/[critic-name]-critique.md`). The agent decides what goes in the file
-   based on its own skill instructions — do not prescribe the format.
+5. Instruct the agent to save its critique as `docs/reviews/[critic-name]-critique.md`.
+   The agent decides what goes in the file based on its own skill instructions — do not
+   prescribe the format.
 6. Launch via the Task tool with `subagent_type: "general-purpose"`
 
 **Launch ALL critic agents simultaneously** in a single message with multiple Task tool calls.
@@ -181,7 +180,7 @@ what to preserve.
 
 ## Deliverable 2: Verification Rubric Document
 
-Save this as `verification-rubric.md` in the output directory. This is a structured, scannable
+Save this as `docs/reviews/verification-rubric.md`. This is a structured, scannable
 document the author uses to track revisions.
 
 **Use this exact format:**
@@ -272,14 +271,19 @@ carry an author note. 🟢 items are optional.
 
 ## Output Locations
 
-Save supporting files to the output directory:
+Save all review artifacts to `docs/reviews/` in the project root. This is the standard artifact
+home for writing-review outputs, parallel to `docs/working/` for RPI artifacts and
+`docs/decisions/` for design decisions.
 
 ```
-[output-dir]/
+docs/reviews/
 ├── verification-rubric.md
 ├── fact-check-report.md
 ├── [critic-name]-critique.md    (one per critic used)
 ```
+
+If `docs/reviews/` doesn't exist, create it. If prior review artifacts exist there from an
+earlier run, overwrite them — the rubric is designed for re-runs with updated status tracking.
 
 At the end of your chat synthesis, link to all documents.
 

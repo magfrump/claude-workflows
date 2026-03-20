@@ -109,6 +109,15 @@ At the end, include a summary section:
 one-line explanation of what needs fixing or sourcing. This is the actionable checklist.]
 ```
 
+## Output Location
+
+When run standalone (not via the draft-review orchestrator), save your report as
+`docs/reviews/fact-check-report.md` in the project root. Create `docs/reviews/` if it
+doesn't exist.
+
+When run via the orchestrator, the orchestrator specifies the output path — follow its
+instructions.
+
 ## Tone
 
 Neutral and precise. You are not trying to help or hurt the draft. You are trying to establish

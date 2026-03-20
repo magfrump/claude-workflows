@@ -218,6 +218,15 @@ If relevant, note what market behavior implies about the draft's thesis (move #6
 Which sub-claims are strong, which are weak, and what's the single most important thing the
 author should address? End constructively. The goal is to make the draft better.
 
+## Output Location
+
+When run standalone (not via the draft-review orchestrator), save your critique as
+`docs/reviews/cowen-critique.md` in the project root. Create `docs/reviews/` if it
+doesn't exist.
+
+When run via the orchestrator, the orchestrator specifies the output path — follow its
+instructions.
+
 ## Tone
 
 Curious, not combative. The spirit is "let's see what's actually going on here" rather than

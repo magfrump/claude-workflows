@@ -235,6 +235,15 @@ would produce new value vs. inflate existing costs?
 Which parts of the proposal are sound, which are wish-fulfillment, and what's the single
 most important revision? End constructively — the goal is a better proposal, not a takedown.
 
+## Output Location
+
+When run standalone (not via the draft-review orchestrator), save your critique as
+`docs/reviews/yglesias-critique.md` in the project root. Create `docs/reviews/` if it
+doesn't exist.
+
+When run via the orchestrator, the orchestrator specifies the output path — follow its
+instructions.
+
 ## Tone
 
 Impatient with hand-waving but never condescending. The spirit is "you care about the right

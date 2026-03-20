@@ -34,6 +34,16 @@ If you aren't confident about any of these, say so and read the relevant code be
 - **Fresh session for implementation.** If you've spent a session on research and planning, start a new session for the actual coding. Load the plan artifact; don't rely on conversational context from the planning session.
 - **Context budget awareness.** Effectiveness degrades after ~10-20 minutes of autonomous work as context fills up. For longer tasks, break into steps with checkpoints rather than running continuously.
 
+## Review Artifacts
+
+Projects may optionally have a `docs/reviews/` directory for writing-review outputs:
+
+- Fact-check reports from the `fact-check` skill
+- Critic critiques from `cowen-critique`, `yglesias-critique`, and any future critic skills
+- Verification rubrics from the `draft-review` orchestrator
+
+These are versioned alongside the content they review. A later `draft-review` run can reference earlier fact-check findings, and re-runs overwrite prior artifacts with updated status. This parallels `docs/working/` (RPI artifacts) and `docs/decisions/` (design decisions).
+
 ## Shared Thoughts
 
 Projects may optionally have a `docs/thoughts/` directory for working notes that persist across sessions:
