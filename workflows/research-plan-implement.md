@@ -49,6 +49,13 @@ The research must be thorough. Read the actual implementations, not just signatu
 
 If a previous loop's research doc covers overlapping territory, update it rather than creating a new file — but clearly mark what's new or changed.
 
+**Design decisions during research**: If research reveals a genuine design choice — multiple viable approaches, an architectural fork, a library selection — invoke the **Divergent Design workflow** (`divergent-design.md`) as a sub-procedure before proceeding to the plan step. DD's output (a documented decision in `docs/decisions/`) becomes an input to the plan. DD's 70% confidence threshold governs whether the *design decision* can be resolved autonomously; RPI's implementation gate (step 4) still applies independently. In other words: DD may resolve the "what approach" question without user input, but the user still reviews the plan before implementation begins.
+
+Signals that you've hit a design decision:
+- Research surfaces 3+ viable approaches with non-obvious tradeoffs
+- The "right" approach depends on constraints you can't fully evaluate (team preferences, future roadmap, performance targets)
+- You're tempted to pick an approach and justify it rather than comparing alternatives
+
 **Human checkpoint**: The user should review the research doc — this is the cheapest place to fix misunderstandings. However, this checkpoint should not block progress. Claude should proceed to the plan step immediately after producing the research doc. If the user provides corrections to the research later, the plan may need to be revised or scrapped, and that's acceptable — a plan built on wrong research is cheap to discard, but idle time waiting for review is expensive.
 
 The gate on **implementation** is firm: do not implement until the plan has been reviewed and approved. The gate on **planning** is soft: plan speculatively, expect revision.
@@ -63,6 +70,7 @@ Produce a plan doc in `docs/working/`. Include:
   - Specific enough that someone could do it without re-reading the research
   - Small enough to be one commit
   - Ordered by dependency (what must exist before what)
+- **Size estimate**: For each step (or for the plan as a whole if steps are small), include a rough size estimate — e.g., "~50 lines in a new file", "~20 lines added to existing handler", "minor wiring change." These don't need to be precise; the goal is to flag when a step is unexpectedly large and to catch cases where a single file would grow beyond a reasonable size. If a step would push a file past **500 lines**, note that explicitly and consider splitting the file as part of the plan.
 - **Testing strategy**: How to verify the implementation works. Specific test cases, not "add tests."
 - **Risks**: What could go wrong, what's uncertain, what you'd want a reviewer to scrutinize.
 
@@ -87,6 +95,8 @@ Claude revises the plan doc based on feedback. This cycle repeats until the user
 Implement the plan one step at a time. Commit after each step with a message referencing the plan: `feat: add user model (per plan-inline-edit-api step 1)`.
 
 If a step turns out to be wrong or incomplete during implementation, **stop and update the plan doc first** rather than improvising. The plan is the shared source of truth — silent deviations undermine the review process.
+
+**File size discipline**: Keep individual files under **500 lines**. If an implementation step would push a file past this threshold, split it before continuing. This applies to both new files and modifications to existing ones — if an existing file is already near the limit, factor out a coherent subset before adding to it. The 500-line limit is a guideline, not a hard rule; a 520-line file with cohesive logic is fine, but a 700-line file signals that something should have been split earlier.
 
 **Context management**: If the session context is getting heavy (many prior loops, large amount of code read), consider starting a fresh session and loading the plan doc. The plan should contain everything needed to implement without the prior conversational context. But this is a judgment call, not a hard rule — if context is still fresh and the task is flowing, continue in the same session.
 

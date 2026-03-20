@@ -48,8 +48,17 @@ Time spent: [X minutes]
 - [Surprises or gotchas]
 
 ## Recommendation
-[Proceed with this approach / Try alternative X / Need more investigation because Y]
+[Proceed to RPI / Try alternative X / Need more investigation because Y]
+
+## RPI seed (include if recommending "proceed")
+- **Scope for RPI**: [One-sentence scope statement, ready to use as the RPI loop's scope]
+- **Known invariants**: [Constraints or requirements discovered during the spike]
+- **Relevant files/APIs**: [What the RPI research phase should read first]
+- **Gotchas to carry forward**: [Non-obvious things that would bite someone who didn't do the spike]
+- **What the spike did NOT answer**: [Gaps the RPI research phase still needs to fill]
 ```
+
+The "RPI seed" section is the handoff point. When a spike recommends proceeding, the RPI research phase should start by loading the spike record — the seed section provides initial direction so research doesn't repeat work the spike already did. Anything the spike learned about what exists, what connects to what, and what's fragile belongs here, not just in "key findings."
 
 Save this to `docs/spikes/` in the project if the findings are relevant long-term, or just report to the user if ephemeral.
 
@@ -60,4 +69,4 @@ git checkout main
 git branch -D spike/description-date  # unless findings are worth preserving
 ```
 
-Spike branches should not be merged. If the spike validates an approach, start a fresh feature branch and implement properly.
+Spike branches should not be merged. If the spike validates an approach, start a fresh feature branch and implement properly using the research-plan-implement workflow. The spike record (especially the RPI seed section) serves as input to the RPI research phase — not a substitute for it.

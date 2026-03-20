@@ -1,5 +1,7 @@
 # Task Decomposition Workflow
 
+*This workflow follows the [orchestrated review pattern](../patterns/orchestrated-review.md).*
+
 ## When to use
 - A feature or task has multiple independent parts that benefit from separate research
 - You need to understand several subsystems before planning a change that touches all of them
@@ -48,7 +50,9 @@ Sub-agents should NOT:
 
 ### 4. Synthesize into a unified research doc
 
-Collect sub-agent outputs into a single research doc (or a coherent set of docs in `docs/working/`). Resolve any contradictions or gaps. This synthesized research is what feeds into the plan step of the research-plan-implement workflow.
+Collect sub-agent outputs into a single research doc following the RPI naming convention: `docs/working/research-{topic}.md`. The synthesized doc must include all RPI-required sections (Scope, What exists, Invariants, Prior art, Gotchas) — sub-agent findings should be reorganized into these sections rather than preserved as separate per-area summaries. Resolve any contradictions or gaps. This synthesized research is what feeds into the plan step of the research-plan-implement workflow.
+
+The main (orchestrating) agent is responsible for writing the final research doc, not the sub-agents. Sub-agents produce raw findings; the main agent structures them into the RPI format.
 
 ### 5. Plan and implement sequentially
 

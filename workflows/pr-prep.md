@@ -1,5 +1,7 @@
 # PR Preparation Workflow
 
+*The self-review and cleanup steps follow the [orchestrated review pattern](../patterns/orchestrated-review.md), with commits/files as the units of review.*
+
 ## When to use
 Before opening any pull request, especially when the reviewer is in a different timezone or unfamiliar with the libraries used.
 

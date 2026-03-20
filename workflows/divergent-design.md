@@ -1,10 +1,13 @@
 # Divergent Design Workflow
 
+*The diverge → diagnose → match → decide structure follows the [orchestrated review pattern](../patterns/orchestrated-review.md), with candidate approaches as the units of parallel evaluation.*
+
 ## When to use
 - Architectural decisions (how to structure a feature, which pattern to use)
 - Library or tool selection
 - Major feature design where multiple approaches exist
 - Any decision where premature convergence is a risk
+- **As a sub-procedure within RPI**: When the research phase of `research-plan-implement.md` reveals a design decision, DD is invoked inline. The decision output feeds back into RPI's research doc and informs the plan. See RPI step 2 for trigger signals.
 
 ## Process
 
