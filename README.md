@@ -63,6 +63,7 @@ These are alternatives to the AGENTS.md approach. Use whichever fits your setup 
 - `workflows/spike.md` — Timeboxed exploration of unknowns
 - `workflows/branch-strategy.md` — Branch management for high-throughput feature development
 - `workflows/dev-branch.md` — Integration branch workflow for testing features together
+- `workflows/user-testing-workflow.md` — Planning, running, and interpreting usability tests (HCI-grounded, small-team adapted)
 
 ### Human guides (reference for the developer, not agent instructions)
 - `guides/parallel-sessions.md` — How to orchestrate multiple concurrent agent sessions across git worktrees
