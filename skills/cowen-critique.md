@@ -13,6 +13,12 @@ description: >
   this is the skill to use. NOTE: This skill is typically invoked by the draft-review orchestrator,
   which provides a pre-built fact-check report. If a fact-check report is provided, use it as your
   factual foundation and do not redo basic fact verification.
+requires:
+  - name: fact-check
+    description: >
+      A fact-check report covering the draft's checkable claims. Typically produced by the
+      fact-check skill. Without this input, factual claims in the draft are not independently
+      verified — the critique proceeds on argument structure only.
 ---
 
 # Cowen-Style Draft Critique
@@ -41,8 +47,16 @@ Instead:
 - **Focus your energy on the cognitive moves below**, which are what this skill uniquely provides.
   The fact-checker establishes what's true. You establish what it means.
 
-If no fact-check report is provided, do your own factual spot-check as described in the
-"Factual Spot-Check" section below, but keep it brief — it's a reference, not the main event.
+If no fact-check report is provided, **emit the following warning at the top of your output
+before the critique begins:**
+
+> ⚠️ **No fact-check report provided.** This critique does not include independent factual
+> verification. Checkable claims in the draft have not been assessed. For full verification,
+> run the `fact-check` skill first or use the `draft-review` orchestrator.
+
+Then proceed with the critique focusing on argument structure. Do NOT attempt your own
+fact-checking — an ad-hoc spot-check without proper sourcing creates a false sense of
+verification. Leave factual assessment to the dedicated fact-check skill.
 
 ## The Cognitive Moves
 
@@ -176,8 +190,9 @@ actually resting on assumption rather than evidence.
 ### Factual Foundation
 If a fact-check report was provided, briefly summarize the key findings that matter for your
 critique — especially claims rated "inaccurate," "disputed," or "unverified." Note how these
-affect the argument's structure. If no fact-check report was provided, do a brief spot-check
-of the most important checkable claims.
+affect the argument's structure. If no fact-check report was provided, note that factual claims
+were not independently verified and identify which claims in the draft would most benefit from
+fact-checking.
 
 ### The Boring Explanation
 Present the most mundane alternative account (move #1). How much of the draft's observations

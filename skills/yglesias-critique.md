@@ -14,6 +14,12 @@ description: >
   invoked by the draft-review orchestrator, which provides a pre-built fact-check report. If a
   fact-check report is provided, use it as your factual foundation and do not redo basic fact
   verification.
+requires:
+  - name: fact-check
+    description: >
+      A fact-check report covering the draft's checkable claims. Typically produced by the
+      fact-check skill. Without this input, factual claims in the draft are not independently
+      verified — the critique proceeds on argument structure only.
 ---
 
 # Yglesias-Style Draft Critique
@@ -42,8 +48,16 @@ Instead:
 - **Focus your energy on the cognitive moves below**, which are what this skill uniquely provides.
   The fact-checker establishes what's true. You establish whether the policy works.
 
-If no fact-check report is provided, do your own factual spot-check as described in the
-"Factual Spot-Check" section below, but keep it brief.
+If no fact-check report is provided, **emit the following warning at the top of your output
+before the critique begins:**
+
+> ⚠️ **No fact-check report provided.** This critique does not include independent factual
+> verification. Checkable claims in the draft have not been assessed. For full verification,
+> run the `fact-check` skill first or use the `draft-review` orchestrator.
+
+Then proceed with the critique focusing on policy analysis and argument structure. Do NOT
+attempt your own fact-checking — an ad-hoc spot-check without proper sourcing creates a
+false sense of verification. Leave factual assessment to the dedicated fact-check skill.
 
 ## The Cognitive Moves
 
@@ -199,7 +213,8 @@ the intended beneficiaries vs. gets absorbed by intermediaries, cost disease, or
 ### Factual Foundation
 If a fact-check report was provided, briefly summarize the key findings that matter for your
 critique — especially claims that affect the viability of the proposed mechanism. If no
-fact-check report was provided, do a brief spot-check of the most important checkable claims.
+fact-check report was provided, note that factual claims were not independently verified and
+identify which claims in the draft would most benefit from fact-checking.
 
 ### The Scale Test
 What happens when 10 million people do this, or every state implements it, or it runs for
