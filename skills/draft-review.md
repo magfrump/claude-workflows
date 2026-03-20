@@ -106,6 +106,27 @@ If running ensemble: briefly synthesize the fact-check consensus before proceedi
 do agents agree on, which do they disagree on). This consensus summary is what you'll pass to
 the critic agents.
 
+#### Fact-Check Gate (optional)
+
+After receiving fact-check results, check whether any claims were rated **Inaccurate** at
+**high confidence** (or, in ensemble mode, rated Inaccurate by consensus). If so:
+
+1. **Pause before launching critics.** Present the fact-check findings to the user — specifically
+   the inaccurate claims, what the evidence shows, and the confidence level.
+2. **Ask the user how to proceed.** Offer three options:
+   - **Continue** — proceed to Stage 2 as-is (the critics will see the current draft and the
+     fact-check findings)
+   - **Revise first** — the user wants to fix the draft before spending compute on critics
+   - **Skip critics** — the user only needed the fact-check and will revise without critic input
+
+This gate mirrors the plan-approval pattern from RPI: expensive downstream work should not run
+if the upstream findings might change the input. Running critics on a draft with known factual
+errors produces critique of text that will change, which wastes effort and can mislead.
+
+If the user passed `--no-gate` or explicitly said to run without stopping, skip this gate and
+proceed directly to Stage 2. If no claims were rated Inaccurate at high confidence, also skip
+and proceed directly.
+
 ### Stage 2: Critic Agents
 
 Now — and ONLY now — spawn critic sub-agents using the Task tool.

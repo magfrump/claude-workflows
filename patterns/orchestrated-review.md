@@ -47,8 +47,11 @@ A decision point that determines whether to proceed, revise, or escalate.
 - **In task decomposition**: Feeds into RPI's plan gate (human reviews before implementation)
 - **In PR prep**: Human reviewer decides whether to merge
 - **In divergent design**: 70% confidence threshold — proceed autonomously or consult user
+- **In draft review**: Optional mid-pipeline gate — if fact-check finds high-confidence inaccuracies, pause before running critics so the user can revise
 
 **Extension point**: Gate semantics vary significantly. Some gates are human checkpoints, some are confidence thresholds, some are automated checks. The gate type should be chosen based on the cost of proceeding incorrectly.
+
+**Positioning note**: Gates don't have to come at the end. When a pipeline has multiple stages with increasing cost, an early gate between stages can prevent wasted work. The key question is: "If the upstream result changes the input to downstream stages, should we pause?" If yes, insert a conditional gate.
 
 ## Using this pattern in new workflows
 
