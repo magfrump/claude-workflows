@@ -61,9 +61,11 @@ These are alternatives to the AGENTS.md approach. Use whichever fits your setup 
 - `workflows/task-decomposition.md` — Breaking large tasks into independent sub-investigations with optional parallel dispatch
 - `workflows/pr-prep.md` — Checklist for packaging work into reviewable async PRs
 - `workflows/spike.md` — Timeboxed exploration of unknowns
-- `workflows/branch-strategy.md` — Branch management for high-throughput feature development
-- `workflows/dev-branch.md` — Integration branch workflow for testing features together
+- `workflows/branch-strategy.md` — Branch management and dev integration branch workflow for high-throughput feature development
 - `workflows/user-testing-workflow.md` — Planning, running, and interpreting usability tests (HCI-grounded, small-team adapted)
+
+### Patterns (shared structural patterns across workflows)
+- `patterns/orchestrated-review.md` — The decompose → parallel dispatch → synthesize → gate pattern, instantiated by task decomposition, divergent design, and PR prep
 
 ### Human guides (reference for the developer, not agent instructions)
 - `guides/parallel-sessions.md` — How to orchestrate multiple concurrent agent sessions across git worktrees
@@ -76,6 +78,7 @@ These are alternatives to the AGENTS.md approach. Use whichever fits your setup 
 1. Create a new `.md` file in the appropriate directory:
    - `workflows/` for agent-facing instructions
    - `guides/` for human-facing reference
+   - `patterns/` for shared structural patterns that multiple workflows instantiate
    - `templates/` for reusable config snippets
 2. Add a reference in the entry point files (`CLAUDE.md`, `AGENTS.md`, `GEMINI.md`) so agents know it exists
 3. Commit and push

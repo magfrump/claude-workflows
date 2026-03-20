@@ -11,8 +11,7 @@ When facing non-trivial tasks, check `workflows/` for applicable process docs be
 - **@./workflows/task-decomposition.md** — Breaking large tasks into independent sub-investigations. Use when a task touches multiple subsystems.
 - **@./workflows/pr-prep.md** — Packaging work for async review across timezones. Use before opening any PR.
 - **@./workflows/spike.md** — Quick timeboxed exploration of a library, approach, or proof-of-concept. Use when the question is "can this work?" not "build this."
-- **@./workflows/branch-strategy.md** — Branch management for high-throughput feature development with async review.
-- **@./workflows/dev-branch.md** — Integration branch workflow for testing multiple features together before merging to main.
+- **@./workflows/branch-strategy.md** — Branch management and dev integration branch workflow for high-throughput feature development with async review.
 - **@./workflows/user-testing-workflow.md** — Planning, running, and interpreting usability tests. Use when you need to design a user test, write moderator scripts, or analyze usability findings.
 
 When a workflow applies, follow it rather than jumping straight to implementation. Default: research-plan-implement for features, divergent-design for decisions, spike for unknowns.
