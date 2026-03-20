@@ -34,6 +34,8 @@ Check for:
 - Files that were changed but shouldn't have been (accidental reformatting, unrelated changes)
 - Import ordering / style consistency with the rest of the project
 
+For deeper self-review, invoke the code-review critic skills (`security-reviewer`, `performance-reviewer`, `api-consistency-reviewer`) on your branch diff. These are optional but recommended for changes that touch security-sensitive code, hot paths, or public APIs.
+
 ### 3. Verify CI passes locally
 
 Run whatever checks the project has: lint, build, tests. Fix anything broken. Do not leave this for the reviewer to discover.
