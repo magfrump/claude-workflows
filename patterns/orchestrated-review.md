@@ -61,6 +61,10 @@ When creating a workflow that involves breaking work into parts, processing them
 2. Define each phase explicitly — what are the units, how are they dispatched, what's the synthesis format, what's the gate
 3. Diverge from the pattern where the domain requires it — approximate fit is expected. Document why if the divergence is non-obvious
 
+## Existing instantiations
+
+- **Codebase onboarding** (`workflows/codebase-onboarding.md`): Decompose into subsystems, dispatch sub-agents per subsystem to explore in parallel, synthesize into orientation document, gate on team validation
+
 ## Potential future instantiations
 
 - **Code review pipeline**: Decompose into review concerns (security, performance, API consistency), dispatch domain-specific reviewer sub-agents, synthesize into a unified review, gate on severity

@@ -12,10 +12,11 @@ When facing non-trivial tasks, check `~/.claude/workflows/` for applicable proce
 - **pr-prep.md** — Packaging work for async review across timezones. Use before opening any PR.
 - **spike.md** — Quick timeboxed exploration of a library, approach, or proof-of-concept. Use when the question is "can this work?" not "build this."
 - **user-testing-workflow.md** — Planning, running, and interpreting usability tests. Use when you need to design a user test, write moderator scripts, or analyze usability findings.
+- **codebase-onboarding.md** — Structured orientation for unfamiliar codebases. Use when starting a new project or returning after a long absence — before any task-specific work.
 
 For human orchestration of multiple concurrent Claude Code sessions, see `guides/parallel-sessions.md` (not agent instructions — a reference for the developer).
 
-When a workflow applies, follow it rather than jumping straight to implementation. Default: research-plan-implement for features, divergent-design for decisions, spike for unknowns.
+When a workflow applies, follow it rather than jumping straight to implementation. Default: research-plan-implement for features, divergent-design for decisions, spike for unknowns, codebase-onboarding for new projects.
 
 ## Context Packing
 

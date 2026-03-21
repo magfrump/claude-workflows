@@ -113,3 +113,21 @@ If a step turns out to be wrong or incomplete during implementation, **stop and 
 - **Changes where you already understand the code**: Skip research, go straight to plan. Or update an existing research doc rather than writing from scratch.
 - **Urgent hotfixes**: Abbreviate to a mental plan, but write a retroactive decision doc if the fix was non-obvious.
 - **Continuation of a previous session's work**: If research and plan docs already exist and are still accurate, pick up from where implementation left off. Verify the docs are still current before proceeding.
+
+## Variant: Refactoring
+
+When the task is a refactoring (restructuring code without changing behavior), RPI applies with these modifications:
+
+### Research phase additions
+- **Characterize current behavior**: Document what the code does today — inputs, outputs, side effects, error cases. This becomes the specification that the refactoring must preserve.
+- **Identify callers and dependents**: Map everything that depends on the code being refactored. These are the blast radius of a mistake.
+- **Check existing test coverage**: If the code has tests, they become your safety net. If it doesn't, writing characterization tests is step 1 of the plan, not an afterthought.
+
+### Plan phase additions
+- **Incremental steps are mandatory**: Each step must leave the codebase in a working state. No step should break behavior, even temporarily. If a refactoring can't be done incrementally, that's a risk worth flagging.
+- **Characterization tests first**: If existing coverage is insufficient, the plan's first steps should add tests that lock in current behavior before any structural changes begin.
+- **Mechanical vs. judgmental changes**: Separate steps that are mechanical (renames, moves, extract-function) from steps that involve judgment (changing abstractions, restructuring interfaces). Mechanical steps are low risk; judgmental steps need more scrutiny.
+
+### Implementation phase additions
+- **Run tests after every step**: Not just at the end. Each commit should pass the full test suite. If tests break, the step was wrong — fix the step, don't fix the tests to match the new code (unless the test was testing implementation details, not behavior).
+- **Use language-level refactoring tools when available**: IDE rename, extract method, and move operations are safer than manual edits. Note in the commit when a tool was used.
