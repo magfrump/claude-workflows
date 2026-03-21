@@ -93,3 +93,11 @@ Queuing 2-3 PRs before end-of-day means your coworker has a full day of review w
 git worktree remove ../project-task-1
 git worktree remove ../project-task-2
 ```
+
+## Quick reference
+ 
+| Action | Command |
+|---|---|
+| Create a worktree | `git worktree add ~/wt-name -b branch-name main` |
+| List worktrees | `git worktree list` |
+| Remove a worktree after merge | `git worktree remove ~/wt-name` |

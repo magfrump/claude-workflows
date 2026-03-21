@@ -55,6 +55,29 @@ Projects may optionally have a `docs/thoughts/` directory for working notes that
 
 Unlike decision records (which are final), these are living documents. Update them when you learn something new about the codebase. Read them at the start of a session if they exist — they're context from your past selves.
 
+## Operating Modes
+
+The user sets the current mode by typing `/active` or `/away`.
+
+### /active (default)
+
+I'm at my desk. Pause before commits. Flag uncertainty. Wait for approval on plan steps before implementing.
+
+### /away
+
+I'm not at my desk. Commit and push after each completed step without asking. Open draft PRs without asking. Only stop for: failing tests, merge conflicts, ambiguous requirements where guessing wrong would waste significant work, or anything irreversible. Log all autonomous decisions in commit message bodies with a `Confidence` tag (high/medium/low) and a note about any choices not specified in the plan.
+
+When the user returns to `/active`, summarize: what was committed, what decisions were made, and anything flagged for review.
+
+### Autonomous Commit Format
+
+When committing autonomously (in `/away` mode), include a confidence line in the commit message body:
+
+    Confidence: high|medium|low
+    Notes: [any uncertainty or decisions made without human input]
+
+This creates a reviewable log of autonomous decisions.
+
 ## General Principles
 
 - Commit after each logical unit of work with conventional commit messages (feat:, fix:, refactor:, test:, docs:, spike:)
