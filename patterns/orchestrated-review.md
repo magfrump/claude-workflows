@@ -46,7 +46,7 @@ A decision point that determines whether to proceed, revise, or escalate.
 
 - **In task decomposition**: Feeds into RPI's plan gate (human reviews before implementation)
 - **In PR prep**: Human reviewer decides whether to merge
-- **In divergent design**: 70% confidence threshold — proceed autonomously or consult user
+- **In divergent design**: 80% confidence threshold — proceed autonomously or consult user
 - **In draft review**: Optional mid-pipeline gate — if fact-check finds high-confidence inaccuracies, pause before running critics so the user can revise
 
 **Extension point**: Gate semantics vary significantly. Some gates are human checkpoints, some are confidence thresholds, some are automated checks. The gate type should be chosen based on the cost of proceeding incorrectly.
@@ -61,11 +61,9 @@ When creating a workflow that involves breaking work into parts, processing them
 2. Define each phase explicitly — what are the units, how are they dispatched, what's the synthesis format, what's the gate
 3. Diverge from the pattern where the domain requires it — approximate fit is expected. Document why if the divergence is non-obvious
 
-## Existing instantiations
+## Existing and potential instantiations
 
 - **Codebase onboarding** (`workflows/codebase-onboarding.md`): Decompose into subsystems, dispatch sub-agents per subsystem to explore in parallel, synthesize into orientation document, gate on team validation
 
-## Potential future instantiations
-
-- **Code review pipeline**: Decompose into review concerns (security, performance, API consistency), dispatch domain-specific reviewer sub-agents, synthesize into a unified review, gate on severity
-- **Test planning**: Decompose into test categories (unit, integration, edge cases), generate test cases per category, synthesize into a test plan, gate on coverage
+- **Code review pipeline** (partially built): Standalone critic skills exist (`security-reviewer`, `performance-reviewer`, `api-consistency-reviewer`) with `code-fact-check` as a shared foundation. The orchestrator that dispatches them in parallel and synthesizes a unified review is not yet built. See `docs/decisions/002-critic-style-code-review.md`.
+- **Test planning** (potential): Decompose into test categories (unit, integration, edge cases), generate test cases per category, synthesize into a test plan, gate on coverage

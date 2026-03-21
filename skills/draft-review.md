@@ -51,13 +51,13 @@ the user should understand the pipeline and what agents are available.
 
 ### Step 1: Discover available agents
 
-List all folders in `.skills/skills/`. Two folders have fixed roles:
-- `draft-review` — that's you, the orchestrator. Skip it.
-- `fact-check` — the fact-checker. You'll always use this.
+List all `skills/*.md` files in the project root. Two skills have fixed roles:
+- `draft-review.md` — that's you, the orchestrator. Skip it.
+- `fact-check.md` — the fact-checker. You'll always use this.
 
-Every other folder is a potential critic agent. Read each one's SKILL.md file — the folder
-name and the YAML frontmatter `description` field will tell you what it does and what kind of
-draft it's suited for. If you're unsure from the name alone, read the file.
+Every other skill file is a potential critic agent. Read each one — the filename and the YAML
+frontmatter `description` field will tell you what it does and what kind of draft it's suited
+for. If you're unsure from the name alone, read the file.
 
 ### Step 2: Select critic agents
 
@@ -93,7 +93,7 @@ Spawn fact-check sub-agent(s) using the Task tool.
 that many independent instances in parallel instead.
 
 For each fact-check agent, you MUST:
-1. Read the full contents of `.skills/skills/fact-check/SKILL.md`
+1. Read the full contents of `skills/fact-check.md`
 2. Paste those contents directly into the Task tool prompt (sub-agents cannot read your files)
 3. Include the full draft text in the prompt
 4. Instruct the agent to save its report as `docs/reviews/fact-check-report.md`
@@ -138,7 +138,7 @@ tool.** This is non-negotiable.
 **Ensemble mode:** spawn N instances of each selected critic, where N matches the user's request.
 
 For each critic agent instance, you MUST:
-1. Read the full contents of that critic's SKILL.md file
+1. Read the full contents of that critic's skill file (e.g., `skills/cowen-critique.md`)
 2. Paste those contents directly into the Task tool prompt
 3. Include the full draft text
 4. Include the fact-check results (consensus summary if ensemble, or the single agent's findings)

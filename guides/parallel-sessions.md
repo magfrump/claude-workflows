@@ -95,7 +95,7 @@ git worktree remove ../project-task-2
 ```
 
 ## Quick reference
- 
+
 | Action | Command |
 |---|---|
 | Create a worktree | `git worktree add ~/wt-name -b branch-name main` |
