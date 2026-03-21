@@ -220,6 +220,20 @@ Q3: Will the user be able to overcome this on subsequent attempts?
 - **Frequency**: n/N participants who encountered it
 - **Persistence**: one-time vs. recurring across tasks
 
+### Step 3.5: Stress-Test Findings
+
+Before prioritizing, pressure-test each severity-rated finding with three questions adapted from structured critique methods ([Cowen-critique](../skills/cowen-critique.md) moves 1 & 3, [Yglesias-critique](../skills/yglesias-critique.md) move 7). These catch inflated severities and infeasible recommendations early.
+
+For each finding rated **Minor or above**, ask:
+
+1. **Is there a boring explanation?** Could this be user unfamiliarity, a test artifact (e.g., thinking aloud slowed them down), or a problem that disappears after first use? If a mundane explanation accounts for most of the observed difficulty, downgrade the severity — the interesting part is only what's left over after the boring explanation is exhausted.
+
+2. **Who implements the fix, and with what?** Before recommending a redesign, name the team, the timeline, and the skills required. "Redesign the navigation" means something different to a team with two weeks and one frontend developer than to a team with a quarter and a design system. If no plausible team can execute the fix as stated, reframe it as something they can.
+
+3. **What does the team's actual behavior suggest?** If this issue has been known or reported before, why hasn't it been fixed? The answer (competing priorities, technical debt, disagreement about severity) is diagnostic — it tells you whether the recommendation needs to address organizational friction, not just the UI.
+
+Findings that survive all three questions at their current severity are high-confidence. Findings that get downgraded or reframed are still valuable — you've just calibrated them more honestly.
+
 ### Step 4: Prioritization Matrix
 
 Plot each issue on:
