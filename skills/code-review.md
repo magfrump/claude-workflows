@@ -67,29 +67,31 @@ Accept user overrides:
 Do not paste the full diff into agent prompts. Instead, pass the scope specification so each
 agent runs its own `git diff` — this avoids context budget issues with large diffs.
 
-### Step 2: Discover available critics
+### Step 2: Known critic roles
 
-List all `skills/*.md` files. Classify them:
+The orchestrator uses a fixed taxonomy of skills. Do not scan `skills/*.md` at runtime — use
+the lists below. (If a listed file doesn't exist, skip it and note the gap in your plan
+summary. If the user references a skill not listed here, they can include it via `--include`.)
 
-**Orchestrators (skip):**
+**Orchestrators (skip — not reviewers):**
 - `code-review.md` — that's you
 - `draft-review.md` — prose review orchestrator
 - `matrix-analysis.md` — comparison orchestrator
 
-**Fact-checkers (fixed role):**
-- `code-fact-check.md` — always runs in Stage 1
+**Fact-checker (fixed — always runs in Stage 1):**
+- `code-fact-check.md`
 
-**Core critics (always run):**
+**Core critics (always run in Stage 2):**
 - `security-reviewer.md`
 - `performance-reviewer.md`
 - `api-consistency-reviewer.md`
 
-**Contextual critics (auto-selected based on diff characteristics):**
+**Contextual critics (auto-selected in Step 3, advisory only):**
 - `test-strategy.md`
 - `tech-debt-triage.md`
 - `dependency-upgrade.md`
 
-**Prose critics (skip — not applicable to code):**
+**Not applicable to code review (skip):**
 - `fact-check.md`, `cowen-critique.md`, `yglesias-critique.md`
 
 ### Step 3: Auto-select contextual critics
@@ -297,10 +299,16 @@ inform but never block merge.
 
 ### Escalation Rule
 
-If 2+ critics independently flag the same issue (same code region, overlapping concern),
-escalate that finding one tier:
+If 2+ **core critics or fact-check** independently flag the same issue (same code region,
+overlapping concern), escalate that finding one tier:
 - 🟢 → 🟡
 - 🟡 → 🔴
+
+Contextual critics (test-strategy, tech-debt-triage, dependency-upgrade) do **not** count
+toward escalation. Their findings remain in 🟢 Consider regardless of overlap with other
+critics. If a contextual critic flags the same issue as a core critic, note the agreement
+in the finding's description for visibility, but do not escalate — contextual critics are
+advisory and must not gain blocking power through the escalation mechanism.
 
 This rewards convergence — independent agreement across domains is the strongest signal
 that an issue is real and important. When escalating, place the finding in its new
