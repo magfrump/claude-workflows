@@ -25,7 +25,7 @@ The CC/YC prose critic pattern (structured cognitive moves producing markdown cr
 
 Build three independent critic skills following CC/YC conventions — security-reviewer, performance-reviewer, API-consistency-reviewer. Each declares `code-fact-check` as a soft dependency via `requires:`. Each produces markdown output to `docs/reviews/`. Each has 7-9 domain-specific cognitive moves targeting things static analysis and linting cannot catch.
 
-The code-review orchestrator is deferred to a follow-up. It will mirror draft-review's 3-stage pipeline (code-fact-check → code critics → synthesis + rubric). Building critics first validates the cognitive moves in practice before adding orchestration complexity.
+The code-review orchestrator (`skills/code-review.md`) was built as a follow-up, mirroring draft-review's 3-stage pipeline (code-fact-check → code critics → synthesis + rubric). It adds auto-selection of contextual critics (test-strategy, tech-debt-triage, dependency-upgrade) based on diff characteristics, a unified severity mapping across all critic types, and cross-critic escalation (findings raised by 2+ critics independently get escalated one tier).
 
 ## Rationale
 
@@ -37,4 +37,4 @@ The code-review orchestrator is deferred to a follow-up. It will mirror draft-re
 ## Consequences
 
 - **Easier**: Adding more code-critic types later (accessibility, testing-coverage, error-handling). Building the orchestrator when ready. Cross-referencing from PR-prep.
-- **Harder**: Users must invoke critics individually until the orchestrator exists. No convergence signal across critic types yet.
+- **Harder**: Users must invoke critics individually for single-concern reviews (which remains useful for scoping to one concern at a time).

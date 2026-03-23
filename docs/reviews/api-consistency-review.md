@@ -1,240 +1,295 @@
 # API Consistency Review
 
-**Repository:** claude-workflows-cleanup
-**Scope:** fd66df8~1..HEAD (10 commits)
-**Checked:** 2026-03-20
-
-> **No code fact-check report provided.** API documentation claims have not been
-> independently verified against implementation. For full verification, run the
-> `code-fact-check` skill first or use the code-review orchestrator.
+**Scope:** `skills/code-review.md` (new orchestrator) checked against `skills/draft-review.md` and `skills/matrix-analysis.md` (established orchestrators)
+**Reviewed:** 2026-03-23
+**Fact-check input:** Stage 1 report (17 verified, 3 mostly accurate, 0 incorrect, 1 unverifiable)
 
 ---
 
 ## Baseline Conventions
 
-The existing codebase (pre-diff) established the following conventions for skill files:
+Observed by reading `skills/draft-review.md` (the first orchestrator) and `skills/matrix-analysis.md` (the second orchestrator):
 
-1. **Frontmatter**: YAML block with `name` (string) and `description` (multiline `>` scalar). Some skills have `requires` blocks.
-2. **Section order**: Varies by skill type, but prose-critic skills (cowen-critique, yglesias-critique) follow: frontmatter, H1 title, intro paragraph, "Using the Fact-Check Report" section, "The Cognitive Moves" section (numbered subsections), "How to Structure the Critique" section, "Output Location", "Tone", (end). Fact-check follows a similar but distinct pattern.
-3. **Naming**: Skill filenames use kebab-case. Skill `name` fields match filenames without `.md`.
-4. **Output locations**: All skills save to `docs/reviews/` with a skill-specific filename. The convention is `docs/reviews/{skill-name}-{artifact-type}.md` (e.g., `cowen-critique.md`, `fact-check-report.md`).
-5. **Orchestrator patterns**: `draft-review` uses `Task` tool for sub-agents. It references `.skills/skills/` as the discovery path for critic agents.
-6. **Cross-references**: Workflows reference skills by filename (e.g., `cowen-critique.md`), sometimes with relative links (e.g., `../skills/cowen-critique.md`).
-7. **Decision documents**: Numbered `NNN-title.md` in `docs/decisions/`.
+### Frontmatter
+
+| Convention | draft-review | matrix-analysis |
+|---|---|---|
+| Fields | `name`, `description` | `name`, `description` |
+| `description` format | Multiline `>` scalar | Multiline `>` scalar |
+| `requires` block | Not present | Not present |
+| Description content | What it does, pipeline stages, trigger phrases | What it does, pipeline stages, trigger phrases |
+
+Neither existing orchestrator has a `requires` block. The `requires` convention exists only on critic/fact-check skills.
+
+### Document Structure
+
+Both orchestrators follow this section order:
+
+1. H1 title: `# [Name] Orchestrator`
+2. Intro paragraph (role statement + deliverables summary)
+3. `---` separator
+4. `## Mandatory Execution Rules` (with preamble: "These rules are absolute...")
+5. `---` separator
+6. Pre-pipeline setup section (discovery, planning, user communication)
+7. `---` separator
+8. `## The Pipeline` (draft-review) / Stages under `## Stage N:` (matrix-analysis)
+9. `---` separator
+10. `## Deliverable 1:` (chat synthesis)
+11. `---` separator
+12. `## Deliverable 2:` (structured document)
+13. `---` separator
+14. `## Output Location(s)`
+15. `---` separator
+16. `## Important Reminders` (bulleted list)
+
+### Dispatch Tool
+
+- draft-review: "Task tool"
+- matrix-analysis: "Agent tool"
+
+The orchestrated-review pattern (`patterns/orchestrated-review.md`) explicitly notes this variance and says to use "sub-agent" as the consistent term regardless of underlying tool.
+
+### Terminology
+
+- draft-review: "sub-agents" (hyphenated throughout)
+- matrix-analysis: "sub-agents" in most places, "subagent" in `subagent_type` parameter references
+
+### Pipeline Naming
+
+- draft-review: `Stage 1: Fact-Check`, `Stage 2: Critic Agents`, `Stage 3: Synthesize and Produce Outputs`
+- matrix-analysis: `Stage 1: Setup`, `Stage 2: Evaluation`, `Stage 3: Synthesize and Produce Outputs`
+
+Stage 3 naming is identical across both. Stage 1/2 names are domain-specific.
+
+### CHECKPOINT Pattern
+
+Both use an identical pattern after each stage:
+
+> **CHECKPOINT:** Wait for ALL [agents] to return results. Count the results. Do you have the expected number? If yes, proceed. If not, STOP and tell the user...
+
+### Deliverable Naming
+
+- draft-review: `## Deliverable 1: Freeform Chat Synthesis` / `## Deliverable 2: Verification Rubric Document`
+- matrix-analysis: `## Deliverable 1: Freeform Chat Synthesis` / `## Deliverable 2: Matrix Document`
+
+### Output Location Section
+
+- draft-review: `## Output Locations` (plural)
+- matrix-analysis: `## Output Location` (singular)
+
+Both include: save path, create-directory instruction, overwrite-on-rerun instruction, link-at-end instruction.
+
+### Important Reminders
+
+Both end with `## Important Reminders` containing a bulleted list of bold-lead items. Common items across both:
+- Sub-agents cannot read filesystem
+- All agents of same stage run in parallel
+- Don't fill gaps yourself / be honest
+- Designed for re-runs
 
 ---
 
 ## Findings
 
-#### 1. Severity label inconsistency across the three code-review critics
+### 1. Pre-pipeline section heading deviates from both baselines
 
 **Severity:** Inconsistent
-**Location:** `skills/security-reviewer.md:204`, `skills/performance-reviewer.md:202`, `skills/api-consistency-reviewer.md:227`
-**Move:** Establish baseline conventions (Move 1), Check naming against the grain (Move 2)
-**Confidence:** High
+**Location:** `skills/code-review.md:51`
 
-The three new code-review critics use different field names for their primary severity/impact label in the finding template. Security-reviewer uses `**Severity:**` with levels Critical/High/Medium/Low/Informational. Performance-reviewer uses `**Impact:**` with levels Critical/High/Medium/Low/Informational. API-consistency-reviewer uses `**Severity:**` with levels Breaking/Inconsistent/Minor/Informational. This means a future code-review orchestrator cannot parse findings uniformly -- it would need to handle two different field names and three different severity scales. The prose-critic skills (cowen-critique, yglesias-critique) do not use a per-finding severity field, so there is no precedent to follow, but the three new skills should be consistent with each other since they are designed to be composed in the same pipeline.
+Draft-review uses `## Before You Begin: Communicate the Plan`. Matrix-analysis uses `## Stage 1: Setup` (folding setup into the pipeline stages). Code-review uses `## Before You Begin` (without the subtitle). This is a minor structural divergence -- the colon-subtitle convention from draft-review is dropped, and the section is not folded into the pipeline as matrix-analysis does. The result is a hybrid that doesn't match either baseline.
 
-**Recommendation:** Standardize on a single field name (either `Severity` or `Impact`) across all three code-review critics. Align the severity scales or establish a documented mapping. The security-reviewer's five-tier Critical/High/Medium/Low/Informational scale is the most standard and could serve as the baseline, with domain-specific guidance on what each level means in each context.
+**Recommendation:** Use `## Before You Begin: Determine Scope and Select Critics` to match draft-review's colon-subtitle convention, or fold the setup into Stage 1 as matrix-analysis does. Either is fine; the current heading splits the difference.
 
 ---
 
-#### 2. Summary table column name inconsistency between performance-reviewer and siblings
-
-**Severity:** Inconsistent
-**Location:** `skills/performance-reviewer.md:229`, `skills/security-reviewer.md:230`, `skills/api-consistency-reviewer.md:252`
-**Move:** Check naming against the grain (Move 2), Look for the asymmetry (Move 7)
-**Confidence:** High
-
-The summary table in performance-reviewer uses `Impact` as the column header, while security-reviewer and api-consistency-reviewer use `Severity`. This is a downstream consequence of finding #1 but affects a different output artifact (the summary table vs. the per-finding metadata). A consumer or orchestrator attempting to merge these tables would encounter inconsistent column names.
-
-**Recommendation:** Align column names once the field name from finding #1 is resolved.
-
----
-
-#### 3. Context-framing section inconsistency across code-review critics
-
-**Severity:** Minor
-**Location:** `skills/security-reviewer.md:193-195`, `skills/performance-reviewer.md:191-193`, `skills/api-consistency-reviewer.md:211-213`
-**Move:** Establish baseline conventions (Move 1)
-**Confidence:** High
-
-Each code-review critic has a different name for its "context-framing" section that appears before Findings. Security-reviewer calls it "Trust Boundary Map." Performance-reviewer calls it "Data Flow and Hot Paths." API-consistency-reviewer calls it "Baseline Conventions." These are domain-appropriate names, but a code-review orchestrator synthesizing the three outputs would need to know that each uses a different section name for the analogous structural role. This is arguably appropriate specialization rather than a bug, but it diverges from the prose-critic pattern where the structural sections (e.g., "The Argument, Decomposed" in cowen-critique, "The Goal vs. the Mechanism" in yglesias-critique) are explicitly different per critic by design.
-
-**Recommendation:** This is likely fine as-is. If a code-review orchestrator is built later, it should parse by section position (first H3 before "Findings") rather than by name. Document this convention if it causes integration friction.
-
----
-
-#### 4. draft-review references `.skills/skills/` path that does not exist in this repo
-
-**Severity:** Inconsistent
-**Location:** `skills/draft-review.md:54`, `skills/draft-review.md:96-97`
-**Move:** Trace the consumer contract (Move 3)
-**Confidence:** High
-
-The draft-review orchestrator instructs agents to "List all folders in `.skills/skills/`" and to "Read the full contents of `.skills/skills/fact-check/SKILL.md`". This path convention (`.skills/skills/{name}/SKILL.md`) does not match the actual repository structure, where skills are flat files at `skills/{name}.md`. This appears to be a reference to a different project's file layout (possibly the Claude Code internal `.skills` directory structure). An agent following these instructions in this repository would fail to discover any skills.
-
-**Recommendation:** Update draft-review to reference `skills/` directory and `skills/{name}.md` file pattern, or document that draft-review's discovery instructions assume a specific deployment context where skills are installed differently.
-
----
-
-#### 5. Inconsistent `requires` block format between code-review critics and prose critics
-
-**Severity:** Inconsistent
-**Location:** `skills/code-fact-check.md:11-12`, `skills/security-reviewer.md:14-20`, `skills/cowen-critique.md:17-22`
-**Move:** Establish baseline conventions (Move 1), Verify error consistency (Move 4)
-**Confidence:** High
-
-The `requires` blocks use two different formats. The code-review critics (security-reviewer, performance-reviewer, api-consistency-reviewer) and the prose critics (cowen-critique, yglesias-critique) use a structured format with `name` and `description` fields:
-
-```yaml
-requires:
-  - name: code-fact-check
-    description: >
-      A code fact-check report...
-```
-
-But code-fact-check uses a plain string format:
-
-```yaml
-requires:
-  - A codebase with comments, docstrings, or documentation to verify
-```
-
-The structured format with `name` and `description` enables programmatic dependency resolution (an orchestrator can match the `name` field to a skill). The plain string format is human-readable but not machine-parseable for dependency wiring. This inconsistency means any tooling that reads `requires` blocks would need to handle both formats.
-
-**Recommendation:** Standardize on the structured `name`/`description` format. For code-fact-check, the `requires` is a precondition (not a skill dependency), so either reformat it as a structured entry or introduce a distinct field (e.g., `preconditions`) to separate "needs another skill's output" from "needs this to exist."
-
----
-
-#### 6. `fact-check` and `code-fact-check` have no `requires` field referencing each other but are assumed to be independent
+### 2. Intro paragraph adds a cross-reference line not present in baselines
 
 **Severity:** Informational
-**Location:** `skills/fact-check.md` (no `requires` block), `skills/code-fact-check.md:11-12`
-**Move:** Trace the consumer contract (Move 3)
-**Confidence:** Medium
+**Location:** `skills/code-review.md:21`
 
-The `fact-check` skill has no `requires` block at all, while `code-fact-check` has a plain-text requires entry. The prose critics require `fact-check` by name, and the code-review critics require `code-fact-check` by name. This is consistent in practice -- the two fact-check variants serve different pipelines (prose review vs. code review). However, the absence of any frontmatter `requires` on `fact-check.md` is a minor structural gap since every other skill that has dependencies declares them.
+Code-review includes: `This workflow follows the [orchestrated review pattern](../patterns/orchestrated-review.md).` Neither draft-review nor matrix-analysis includes this line. The orchestrated-review pattern doc itself says new workflows "should" add this cross-reference, so code-review is following the pattern doc's guidance. However, the existing orchestrators have not been updated to include it, creating an inconsistency in the other direction.
 
-**Recommendation:** Add a `requires` block to `fact-check.md` documenting its precondition (a draft/document to fact-check, and web search capability), consistent with the pattern established by other skills.
+**Recommendation:** This is a good addition. For full consistency, add the same cross-reference line to draft-review and matrix-analysis.
 
 ---
 
-#### 7. Output filename convention divergence: `code-fact-check-report.md` vs `fact-check-report.md`
-
-**Severity:** Minor
-**Location:** `skills/code-fact-check.md:179`, `skills/fact-check.md:114-115`
-**Move:** Check naming against the grain (Move 2)
-**Confidence:** High
-
-The output filenames follow slightly different patterns: `fact-check-report.md` (fact-check skill), `code-fact-check-report.md` (code-fact-check skill), `security-review.md` (security-reviewer), `performance-review.md` (performance-reviewer), `api-consistency-review.md` (api-consistency-reviewer), `cowen-critique.md` (cowen-critique), `yglesias-critique.md` (yglesias-critique), `verification-rubric.md` (draft-review), `matrix-analysis.md` (matrix-analysis). The pattern is: fact-check variants append `-report`, code-review critics use `-review`, prose critics use `-critique`, orchestrators use their own names. This is actually fairly consistent once the implicit convention is understood, but it is not documented anywhere.
-
-**Recommendation:** Document the output naming convention explicitly, either in CLAUDE.md's "Review Artifacts" section or in a shared conventions file. The implicit pattern (skill-type determines suffix: `-report` for verification, `-review` for code critique, `-critique` for prose critique) is reasonable but should be stated.
-
----
-
-#### 8. matrix-analysis uses `Agent` tool while draft-review uses `Task` tool
+### 3. Dispatch tool: code-review uses "Agent tool", matching matrix-analysis but not draft-review
 
 **Severity:** Inconsistent
-**Location:** `skills/matrix-analysis.md:29`, `skills/draft-review.md:28`
-**Move:** Establish baseline conventions (Move 1)
-**Confidence:** High
+**Location:** `skills/code-review.md:31`
 
-The two orchestrator skills reference different sub-agent dispatch mechanisms. Draft-review instructs "You MUST use the Task tool to spawn sub-agents" while matrix-analysis instructs "You MUST use the Agent tool to spawn subagents." The orchestrated-review pattern document (`patterns/orchestrated-review.md:31`) notes "Use 'sub-agent' consistently for the parallel execution mechanism, regardless of whether the underlying implementation uses the Task tool, Agent tool, or manual sequential processing." However, the actual skills diverge on which tool to reference. An agent implementing these skills needs to know which tool is available in its environment; the inconsistency may cause confusion or failures if only one tool is available.
+Code-review uses "Agent tool" throughout, matching matrix-analysis. Draft-review uses "Task tool." The fact-check findings (Claim 22) noted this: code-review uses "Agent tool" while draft-review uses "Task tool." The orchestrated-review pattern accommodates this variance but the decision doc (002) does not note the difference.
 
-**Recommendation:** Either standardize on one tool name across orchestrators, or add a note to each orchestrator that the tool name may vary by environment and the agent should use whichever parallel dispatch mechanism is available. The orchestrated-review pattern document already acknowledges this variance but the skills themselves do not.
+This is a known inconsistency across the orchestrator family, not introduced by code-review specifically. Code-review made a consistent choice (matching the newer orchestrator, matrix-analysis) rather than the older one.
+
+**Recommendation:** Document the tool name variance in the decision doc or in the orchestrated-review pattern's existing terminology note. No change needed in code-review itself -- it made the more current choice.
 
 ---
 
-#### 9. Decision document title format inconsistency
+### 4. Mandatory Execution Rules: identical structure, minor wording differences
 
 **Severity:** Minor
-**Location:** `docs/decisions/001-code-fact-checking.md:1`, `docs/decisions/002-critic-style-code-review.md:1`, `docs/decisions/003-critic-moves-in-divergent-design.md:1`
-**Move:** Check naming against the grain (Move 2)
-**Confidence:** High
+**Location:** `skills/code-review.md:28-48`
 
-The three decision documents use slightly different H1 title formats. Decision 001 uses "Decision 001: Code Fact-Checking Skill Design." Decision 002 uses "002: Critic-Style Code Review" (no "Decision" prefix). Decision 003 uses "003: Critic Cognitive Moves as DD Evaluation Lenses" (no "Decision" prefix). This is a minor inconsistency in the document headers.
+The five rules follow the exact same structure as both baselines. Rule 1 uses "Agent tool" (see finding #3). Rules 2-5 are functionally identical to both baselines with appropriate domain substitutions (e.g., "code fact-check" instead of "fact-check", "code review rubric" instead of "verification rubric"). The preamble ("These rules are absolute. Do not deviate from them under any circumstances.") is identical.
 
-**Recommendation:** Standardize on one format. Either all include the "Decision" prefix or none do. The format with the prefix ("Decision NNN: Title") is more self-documenting when the file is viewed outside its directory context.
+This section is well-aligned.
 
 ---
 
-#### 10. Decision document section structure inconsistency
-
-**Severity:** Minor
-**Location:** `docs/decisions/001-code-fact-checking.md`, `docs/decisions/002-critic-style-code-review.md`, `docs/decisions/003-critic-moves-in-divergent-design.md`
-**Move:** Establish baseline conventions (Move 1)
-**Confidence:** High
-
-The three decision documents follow the same general structure (Context, Options, Decision, Rationale, Consequences) but with variations. Decision 001 has an additional "Key design decisions for implementation" section at the end. Decision 001 uses "Options considered" while 002 uses "Options Considered" (different capitalization). Decision 003 has a "Moves adapted vs. omitted" subsection under Rationale. The Consequences sections use different formats: 001 uses `**Makes easier:**` / `**Makes harder:**` while 002 uses `**Easier:**` / `**Harder:**`.
-
-**Recommendation:** Establish a decision document template with the canonical section names and formatting. Minor variations in subsections are fine (domain-specific sections like "Key design decisions for implementation" add value), but the shared sections should use consistent naming and formatting.
-
----
-
-#### 11. `sub-agent` vs `subagent` terminology inconsistency
-
-**Severity:** Minor
-**Location:** `skills/matrix-analysis.md` (uses "subagent" throughout), `skills/draft-review.md` (uses "sub-agent" throughout), `patterns/orchestrated-review.md:31` (uses "sub-agent")
-**Move:** Check naming against the grain (Move 2)
-**Confidence:** High
-
-The orchestrated-review pattern document uses "sub-agent" (hyphenated) and explicitly states to "Use 'sub-agent' consistently." Draft-review follows this convention. However, matrix-analysis uses "subagent" (unhyphenated) throughout. Task-decomposition also uses "sub-agent" (hyphenated), consistent with the pattern document.
-
-**Recommendation:** Standardize on "sub-agent" (hyphenated) per the orchestrated-review pattern's stated convention. Update matrix-analysis.md to use the hyphenated form.
-
----
-
-#### 12. CLAUDE.md "Review Artifacts" section references skills by bare names without paths
+### 5. Pipeline stage naming is consistent with the domain-specific convention
 
 **Severity:** Informational
-**Location:** `CLAUDE.md:39-41`
-**Move:** Trace the consumer contract (Move 3)
-**Confidence:** Medium
+**Location:** `skills/code-review.md:129-184`
 
-The "Review Artifacts" section in CLAUDE.md references skills by display name (e.g., "the `fact-check` skill", "the `draft-review` orchestrator") without paths or links. This is consistent with how CLAUDE.md references workflows (by name in the "Cross-project Workflows" section), but those workflow references include the filename in bold (e.g., "**research-plan-implement.md**"). The review artifacts section does not include filenames, making it slightly harder for an agent to locate the referenced skills.
+Code-review uses: `Stage 1: Code Fact-Check`, `Stage 2: Critic Agents`, `Stage 3: Synthesize and Produce Outputs`. Stage 2 and 3 names exactly match draft-review. Stage 1 is domain-specific ("Code Fact-Check" vs "Fact-Check"), following the established convention.
 
-**Recommendation:** Add filenames or relative paths for the referenced skills, consistent with how workflows are referenced in the same file.
+No issues.
+
+---
+
+### 6. Fact-Check Gate section matches draft-review convention
+
+**Severity:** Informational
+**Location:** `skills/code-review.md:146-158`
+
+Code-review includes a Fact-Check Gate with the same three-option structure as draft-review (Continue / Fix first / Skip critics). Terminology adapts appropriately ("Fix first" instead of "Revise first" since code changes are fixes, not revisions). The `--no-gate` flag is preserved. This is well-aligned.
+
+---
+
+### 7. Deliverable 1 heading drops "Freeform" qualifier
+
+**Severity:** Minor
+**Location:** `skills/code-review.md:190`
+
+Draft-review: `## Deliverable 1: Freeform Chat Synthesis`. Matrix-analysis: `## Deliverable 1: Freeform Chat Synthesis`. Code-review: `## Deliverable 1: Chat Synthesis`. The word "Freeform" is dropped. This is a small heading inconsistency.
+
+**Recommendation:** Add "Freeform" back: `## Deliverable 1: Freeform Chat Synthesis`.
+
+---
+
+### 8. Deliverable 2 naming follows the established pattern
+
+**Severity:** Informational
+**Location:** `skills/code-review.md:223`
+
+Code-review: `## Deliverable 2: Code Review Rubric`. This follows the pattern of `## Deliverable 2: [Domain-Specific Name]` (draft-review: "Verification Rubric Document", matrix-analysis: "Matrix Document"). Consistent.
+
+---
+
+### 9. Rubric format adds columns not present in draft-review's rubric
+
+**Severity:** Informational
+**Location:** `skills/code-review.md:237-281`
+
+Code-review's rubric adds `Domain` and `Location` columns to the red tier table, and `Domain` and `Source` columns to the amber tier table. Draft-review's rubric has simpler tables. These additions are appropriate for code review (where file:line locations and domain attribution matter) and don't violate any convention -- they extend the format for the domain. The tier names, emoji usage, status line format, and pass/fail criteria are all identical to draft-review.
+
+---
+
+### 10. Output Location section uses plural form
+
+**Severity:** Minor
+**Location:** `skills/code-review.md:317`
+
+Code-review uses `## Output Locations` (plural), matching draft-review. Matrix-analysis uses `## Output Location` (singular). Code-review made the right choice -- it has multiple output files (rubric + individual critic reviews), so plural is appropriate and matches the established convention from draft-review.
+
+---
+
+### 11. Important Reminders section is present and well-structured
+
+**Severity:** Informational
+**Location:** `skills/code-review.md:339-352`
+
+Code-review includes `## Important Reminders` with 8 bold-lead bullet items. Draft-review has 5 items; matrix-analysis has 6 items. Code-review preserves all common items from both baselines and adds domain-specific ones:
+- "Pass scope, not diffs" (new, specific to code review's approach)
+- "Contextual critics are advisory" (new, specific to auto-selection feature)
+- "Fact-check report size management" (new, context budget optimization)
+
+The style (bold lead phrase, explanatory sentence) is identical to both baselines.
+
+---
+
+### 12. Unified Severity Mapping is a new convention not in either baseline
+
+**Severity:** Informational
+**Location:** `skills/code-review.md:286-296`
+
+Code-review introduces a `### Unified Severity Mapping` section with a table mapping individual critic severity levels to rubric tiers, plus an `### Escalation Rule` section. Neither baseline has this -- draft-review's tier assignment is based on fact-check verdicts and critic convergence, not on mapping from critic-specific severity scales. This is a necessary addition for code review (where critics have their own severity levels that must be normalized) and is well-designed. It establishes a new convention that future orchestrators with heterogeneous critics should follow.
+
+---
+
+### 13. Rubric status line wording: "PASSES REVIEW" vs "PASSES VERIFICATION"
+
+**Severity:** Minor
+**Location:** `skills/code-review.md:313`
+
+Draft-review uses `PASSES VERIFICATION`. Code-review uses `PASSES REVIEW`. The intermediate states also differ: draft-review's red state says "DOES NOT PASS" while code-review also says "DOES NOT PASS" (consistent). The green state terminology differs appropriately by domain. This is a reasonable domain adaptation, not an inconsistency.
+
+---
+
+### 14. "sub-agent" terminology is consistent
+
+**Severity:** Informational
+**Location:** Throughout `skills/code-review.md`
+
+Code-review uses "sub-agent" (hyphenated) consistently, matching draft-review and the orchestrated-review pattern doc's stated convention. This resolves the inconsistency noted in matrix-analysis (which uses "subagent" unhyphenated in places).
 
 ---
 
 ## What Looks Good
 
-1. **Structural consistency across the three code-review critics.** Security-reviewer, performance-reviewer, and api-consistency-reviewer follow a highly consistent section order: frontmatter, H1 title, intro paragraph, Scoping section, "Using the Code Fact-Check Report" section (with identical structure and warning format), "The Cognitive Moves" section, "How to Structure the Critique" section, Output Location, Tone, Important. This is clearly a deliberate pattern and well-executed.
+1. **Mandatory Execution Rules are structurally identical.** Same preamble, same five-rule structure, same numbered format. Domain terms are substituted appropriately. A reader familiar with draft-review will immediately recognize the structure.
 
-2. **Fact-check dependency pattern.** All six critic-style skills (three prose, three code) correctly declare their respective fact-check skill as a soft dependency via `requires`, with well-written descriptions explaining what happens without the dependency. The warning messages are structurally identical across all six skills.
+2. **Pipeline stages follow the established 3-stage pattern.** Stage names are domain-appropriate. CHECKPOINT markers use the same format. Stage 3 naming is identical across all three orchestrators.
 
-3. **Cognitive moves pattern.** The 7-9 numbered cognitive moves per critic skill are consistently structured: numbered H3 headings, 1-3 paragraphs of explanation, concrete examples. The move count (9 for security, 9 for performance, 9 for API consistency) matches the prose critic precedent (9 for cowen, 9 for yglesias).
+3. **Fact-Check Gate preserves the convention.** Three options, `--no-gate` override, same conditional logic. Wording adapts naturally for code context.
 
-4. **Output location instructions.** All skills include both standalone and orchestrator-invoked output path instructions, using the same two-paragraph pattern. This enables composition without breaking standalone use.
+4. **Rubric format preserves core conventions.** Emoji tiers, status line format, pass/fail criteria, and the "designed for re-runs" philosophy are all consistent with draft-review.
 
-5. **Cross-references from workflows.** The new cross-references added to workflows (divergent-design, pr-prep, user-testing, spike, task-decomposition) use consistent relative link syntax and are placed in contextually appropriate locations.
+5. **Important Reminders section is present and follows the style.** Bold-lead items, explanatory sentences, covers the common ground from both baselines.
 
-6. **Orchestrated review pattern extraction.** The `patterns/orchestrated-review.md` document correctly identifies the shared structure across workflows and provides useful extension points. The cross-references from task-decomposition, pr-prep, and divergent-design back to this pattern are consistent.
+6. **Output location conventions are followed exactly.** Save to `docs/reviews/`, create directory if needed, overwrite on re-run, link at end of synthesis. File tree diagram included (matching draft-review convention).
 
-7. **Decision documents capture the right information.** Despite minor formatting inconsistencies, all three decision documents include the essential content: context, multiple options considered (with good breadth), a clear decision, rationale, and consequences analysis.
+7. **Orchestrated-review pattern cross-reference.** Code-review is the only orchestrator that includes the cross-reference the pattern doc recommends. This is a good practice that should be back-ported to the other two.
+
+8. **The "pass scope, not diffs" approach is well-documented.** This is a meaningful deviation from draft-review (which passes full content) that is clearly explained and motivated by context budget concerns. The convention is stated both in the pipeline section and in Important Reminders.
 
 ---
 
 ## Summary Table
 
-| # | Finding | Severity | Location | Confidence |
-|---|---------|----------|----------|------------|
-| 1 | Severity/Impact field name inconsistency across code-review critics | Inconsistent | `skills/performance-reviewer.md:202` | High |
-| 2 | Summary table column name inconsistency | Inconsistent | `skills/performance-reviewer.md:229` | High |
-| 3 | Context-framing section name varies across code-review critics | Minor | `skills/security-reviewer.md:193` | High |
-| 4 | draft-review references `.skills/skills/` path that does not exist | Inconsistent | `skills/draft-review.md:54` | High |
-| 5 | `requires` block uses two different formats | Inconsistent | `skills/code-fact-check.md:11` | High |
-| 6 | `fact-check` skill has no `requires` block | Informational | `skills/fact-check.md` | Medium |
-| 7 | Output filename convention undocumented | Minor | Multiple files | High |
-| 8 | Orchestrators reference different dispatch tools (Task vs Agent) | Inconsistent | `skills/matrix-analysis.md:29` | High |
-| 9 | Decision document title format varies | Minor | `docs/decisions/` | High |
-| 10 | Decision document section naming/formatting varies | Minor | `docs/decisions/` | High |
-| 11 | `sub-agent` vs `subagent` terminology | Minor | `skills/matrix-analysis.md` | High |
-| 12 | CLAUDE.md references skills without paths | Informational | `CLAUDE.md:39-41` | Medium |
+| # | Finding | Severity | Convention Status |
+|---|---------|----------|-------------------|
+| 1 | Pre-pipeline section heading is hybrid of two baselines | Inconsistent | Neither matches |
+| 2 | Cross-reference to orchestrated-review pattern (new) | Informational | Good addition, back-port to baselines |
+| 3 | Uses "Agent tool" (matches matrix-analysis, not draft-review) | Inconsistent | Known cross-orchestrator issue |
+| 4 | Mandatory Execution Rules structure identical | -- | Consistent |
+| 5 | Pipeline stage naming follows domain-specific convention | Informational | Consistent |
+| 6 | Fact-Check Gate matches draft-review | Informational | Consistent |
+| 7 | Deliverable 1 heading drops "Freeform" | Minor | Draft-review and matrix-analysis both include it |
+| 8 | Deliverable 2 heading follows pattern | Informational | Consistent |
+| 9 | Rubric adds Domain/Location columns | Informational | Appropriate extension |
+| 10 | Output Location section uses plural (matches draft-review) | Minor | Consistent with draft-review |
+| 11 | Important Reminders present and well-structured | Informational | Consistent |
+| 12 | Unified Severity Mapping is new convention | Informational | Good addition for heterogeneous critics |
+| 13 | "PASSES REVIEW" vs "PASSES VERIFICATION" | Minor | Appropriate domain adaptation |
+| 14 | "sub-agent" terminology consistent | Informational | Matches convention |
 
 ---
 
 ## Overall Assessment
 
-The changes across these 10 commits are structurally well-designed. The three new code-review critics (security-reviewer, performance-reviewer, api-consistency-reviewer) follow a remarkably consistent internal pattern -- section order, cognitive move structure, fact-check integration, and output instructions are clearly templated from each other. The main consistency issues are at the seams: the field name divergence between `Severity` and `Impact` (finding #1), the different severity scales, and the `.skills/skills/` path reference in draft-review (finding #4) are the most impactful because they would cause real integration problems when a code-review orchestrator is built. The terminology inconsistency (finding #11) and `requires` format inconsistency (finding #5) are friction points for any tooling that tries to parse skill metadata programmatically. The decision document inconsistencies (findings #9-10) are cosmetic but worth addressing while the format is young and only three documents exist. None of these issues indicate the author missed existing conventions -- rather, these are cases where conventions are being established for the first time (code-review critics, decision documents) and minor drift occurred across multiple commits. All issues are fixable in place.
+`skills/code-review.md` is a well-constructed orchestrator that closely follows the conventions established by `draft-review.md` and `matrix-analysis.md`. The structural bones are correct: frontmatter format, Mandatory Execution Rules, 3-stage pipeline, CHECKPOINT markers, two-deliverable structure, Output Locations section, and Important Reminders are all present and in the right order with the right formatting.
+
+**Actionable items (2):**
+
+1. **Deliverable 1 heading** (Minor): Add "Freeform" back to match both baselines: `## Deliverable 1: Freeform Chat Synthesis`.
+2. **Pre-pipeline section heading** (Inconsistent): Choose either draft-review's `## Before You Begin: [Subtitle]` convention or matrix-analysis's fold-into-Stage-1 approach rather than the current hybrid.
+
+**Non-actionable observations:**
+
+- The "Agent tool" vs "Task tool" variance (finding #3) is an existing cross-orchestrator inconsistency, not introduced by code-review. Code-review matches the newer orchestrator (matrix-analysis).
+- The orchestrated-review pattern cross-reference (finding #2) is a good practice that code-review adopts and the other orchestrators should back-port.
+- The Unified Severity Mapping (finding #12) and Escalation Rule are well-designed new conventions appropriate for heterogeneous critic pipelines.
+
+The new file introduces no breaking convention violations. The two actionable items are minor/inconsistent-level fixes. The new conventions it establishes (severity mapping, escalation rule, scope-passing instead of diff-passing) are well-motivated and clearly documented.
