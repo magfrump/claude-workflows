@@ -65,5 +65,5 @@ When creating a workflow that involves breaking work into parts, processing them
 
 - **Codebase onboarding** (`workflows/codebase-onboarding.md`): Decompose into subsystems, dispatch sub-agents per subsystem to explore in parallel, synthesize into orientation document, gate on team validation
 
-- **Code review pipeline** (partially built): Standalone critic skills exist (`security-reviewer`, `performance-reviewer`, `api-consistency-reviewer`) with `code-fact-check` as a shared foundation. The orchestrator that dispatches them in parallel and synthesizes a unified review is not yet built. See `docs/decisions/002-critic-style-code-review.md`.
+- **Code review pipeline** (`skills/code-review.md`): Decomposes into code-fact-check + domain critics (`security-reviewer`, `performance-reviewer`, `api-consistency-reviewer`) with optional contextual critics (`test-strategy`, `tech-debt-triage`, `dependency-upgrade`) auto-selected based on diff characteristics. Dispatches all critics in parallel after fact-check gate, synthesizes into chat summary + code review rubric with unified severity mapping and cross-critic escalation. See `docs/decisions/002-critic-style-code-review.md`.
 - **Test planning** (potential): Decompose into test categories (unit, integration, edge cases), generate test cases per category, synthesize into a test plan, gate on coverage
