@@ -199,7 +199,7 @@ For each finding, use this structure:
 ```
 #### [Finding title]
 
-**Impact:** [Critical / High / Medium / Low / Informational]
+**Severity:** [Critical / High / Medium / Low / Informational]
 **Location:** `path/to/file.ext:42-58`
 **Move:** [Which cognitive move surfaced this]
 **Confidence:** [High / Medium / Low]
@@ -211,14 +211,14 @@ scaling factor.]
 **Recommendation:** [1-3 sentences: what to do about it.]
 ```
 
-Impact guidelines:
+Severity guidelines:
 - **Critical**: Unbounded resource consumption, O(n²) or worse in hot path, DoS-enabling
 - **High**: N+1 queries, large unnecessary allocations per request, missing pagination
 - **Medium**: Suboptimal algorithm choice, unnecessary serialization, overfetching
 - **Low**: Minor constant-factor inefficiency, cold-path allocation, premature but harmless
 - **Informational**: Optimization opportunities, good patterns worth noting, "verify this"
 
-Order findings by impact (critical first), then by confidence.
+Order findings by severity (critical first), then by confidence.
 
 ### What Looks Good
 Note performance patterns in the diff that are correctly implemented — proper pagination,
@@ -226,9 +226,9 @@ efficient queries, appropriate caching. Confirms which parts don't need rework.
 
 ### Summary Table
 
-| # | Finding | Impact | Location | Confidence |
-|---|---------|--------|----------|------------|
-| 1 | ...     | High   | `f:42`   | High       |
+| # | Finding | Severity | Location | Confidence |
+|---|---------|----------|----------|------------|
+| 1 | ...     | High     | `f:42`   | High       |
 
 ### Overall Assessment
 One paragraph: what's the performance posture of this change? Are the issues fixable in place

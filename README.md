@@ -8,9 +8,10 @@ Reusable workflow definitions for AI coding agents. Works with Claude Code, Anti
 
 ```bash
 git clone <repo-url> ~/claude-workflows
-mkdir -p ~/.claude
+mkdir -p ~/.claude ~/.claude/hooks
 ln -s ~/claude-workflows/CLAUDE.md ~/.claude/CLAUDE.md
 ln -s ~/claude-workflows/workflows ~/.claude/workflows
+ln -s ~/claude-workflows/hooks/log-usage.sh ~/.claude/hooks/log-usage.sh
 ```
 
 ### Antigravity / Gemini CLI
@@ -69,6 +70,12 @@ These are alternatives to the AGENTS.md approach. Use whichever fits your setup 
 
 ### Human guides (reference for the developer, not agent instructions)
 - `guides/parallel-sessions.md` — How to orchestrate multiple concurrent agent sessions across git worktrees
+
+### Hooks (Claude Code PreToolUse hooks)
+- `hooks/log-usage.sh` — Logs skill invocations and workflow file reads to `~/.claude/logs/usage.jsonl` for usage analytics
+
+### Tests
+- `test/hooks/log-usage.bats` — Bats test suite for the usage-logging hook
 
 ### Templates
 - `templates/gitattributes-snippet.txt` — `.gitattributes` rule to collapse `docs/working/` in GitHub PR diffs

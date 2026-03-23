@@ -66,7 +66,11 @@ I'm at my desk. Pause before commits. Flag uncertainty. Wait for approval on pla
 
 ### /away
 
-I'm not at my desk. Commit and push after each completed step without asking. Open draft PRs without asking. Only stop for: failing tests, merge conflicts, ambiguous requirements where guessing wrong would waste significant work, or anything irreversible. Log all autonomous decisions in commit message bodies with a `Confidence` tag (high/medium/low) and a note about any choices not specified in the plan.
+I'm not at my desk. Commit and push after each completed step without asking. Open draft PRs without asking.
+
+**Never do these autonomously:** force-push, `git reset --hard`, delete branches, drop database tables, or any other destructive/irreversible operation. These always require explicit user approval regardless of mode.
+
+**Stop for:** failing tests, merge conflicts, ambiguous requirements where guessing wrong would waste significant work, or anything irreversible not covered above. Log all autonomous decisions in commit message bodies with a `Confidence` tag (high/medium/low) and a note about any choices not specified in the plan.
 
 When the user returns to `/active`, summarize: what was committed, what decisions were made, and anything flagged for review.
 

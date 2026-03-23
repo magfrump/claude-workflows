@@ -49,7 +49,7 @@ The research must be thorough. Read the actual implementations, not just signatu
 
 If a previous loop's research doc covers overlapping territory, update it rather than creating a new file — but clearly mark what's new or changed.
 
-**Design decisions during research**: If research reveals a genuine design choice — multiple viable approaches, an architectural fork, a library selection — invoke the **Divergent Design workflow** (`divergent-design.md`) as a sub-procedure before proceeding to the plan step. DD's output (a documented decision in `docs/decisions/`) becomes an input to the plan. DD's 70% confidence threshold governs whether the *design decision* can be resolved autonomously; RPI's implementation gate (step 4) still applies independently. In other words: DD may resolve the "what approach" question without user input, but the user still reviews the plan before implementation begins.
+**Design decisions during research**: If research reveals a genuine design choice — multiple viable approaches, an architectural fork, a library selection — invoke the **Divergent Design workflow** (`divergent-design.md`) as a sub-procedure before proceeding to the plan step. DD's output (a documented decision in `docs/decisions/`) becomes an input to the plan. DD's 80% confidence threshold governs whether the *design decision* can be resolved autonomously; RPI's implementation gate (step 4) still applies independently. In other words: DD may resolve the "what approach" question without user input, but the user still reviews the plan before implementation begins.
 
 Signals that you've hit a design decision:
 - Research surfaces 3+ viable approaches with non-obvious tradeoffs
