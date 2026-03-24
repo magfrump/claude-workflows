@@ -43,13 +43,19 @@ load_generic_report() {
   fi
 }
 
-# Count findings in reviewer-style reports (#### N. Title).
-# Also extracts FINDINGS_BODY (first finding heading to EOF) so that
-# assert_field_per_finding counts fields only within finding sections,
-# not in report-level metadata that may share the same field names.
+# Count findings in reviewer-style reports (### N. or #### N. Title).
+# Extracts FINDINGS_BODY scoped from the first finding heading to the next
+# ## section (e.g., What Looks Good, Summary Table), mirroring how CLAIMS_BODY
+# is scoped in load_report. Falls back to first-finding-to-EOF if no trailing
+# ## heading follows the findings.
 count_findings() {
   FINDING_COUNT=$(echo "$REPORT_CONTENT" | grep -cE '^#{3,4} [0-9]+\.' || true)
-  FINDINGS_BODY=$(echo "$REPORT_CONTENT" | sed -nE '/^#{3,4} [0-9]+\./,$p')
+  # Extract from first finding to the next ## heading that isn't a finding
+  FINDINGS_BODY=$(echo "$REPORT_CONTENT" | sed -nE '/^#{3,4} [0-9]+\./,/^## [^#]/p' | sed '$d')
+  if [ -z "$FINDINGS_BODY" ]; then
+    # Fallback: findings run to end of file (no trailing ## heading).
+    FINDINGS_BODY=$(echo "$REPORT_CONTENT" | sed -nE '/^#{3,4} [0-9]+\./,$p')
+  fi
 }
 
 # Assert that every finding has a given field.
@@ -86,11 +92,21 @@ assert_field_per_claim() {
 
 # Assert every value of a field matches an allowed-values regex.
 # Uses grep -v to find violations (no -oP dependency).
+# Searches FINDINGS_BODY or CLAIMS_BODY when available, falling back to
+# REPORT_CONTENT, so field matches stay scoped consistently with the
+# per-finding/per-claim counters.
 # Args: $1 = field name, $2 = case-insensitive regex of allowed values
 assert_field_values() {
   local field="$1" allowed="$2"
-  local values bad
-  values=$(echo "$REPORT_CONTENT" | sed -n "s/^\\*\\*${field}:\\*\\* //p")
+  local body values bad
+  if [ -n "${FINDINGS_BODY:-}" ]; then
+    body="$FINDINGS_BODY"
+  elif [ -n "${CLAIMS_BODY:-}" ]; then
+    body="$CLAIMS_BODY"
+  else
+    body="$REPORT_CONTENT"
+  fi
+  values=$(echo "$body" | sed -n "s/^\\*\\*${field}:\\*\\* //p")
   [ -n "$values" ] || skip "no ${field} values found"
   bad=$(echo "$values" | grep -viE "^(${allowed})$" || true)
   [ -z "$bad" ]

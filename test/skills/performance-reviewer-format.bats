@@ -41,12 +41,12 @@ setup() {
   [ "$FINDING_COUNT" -gt 0 ]
 }
 
-@test "each finding has an Impact line" {
-  assert_field_per_finding "Impact"
+@test "each finding has a Severity line" {
+  assert_field_per_finding "Severity"
 }
 
-@test "impact values use only the allowed values" {
-  assert_field_values "Impact" "Critical|High|Medium|Low|Informational"
+@test "severity values use only the allowed values" {
+  assert_field_values "Severity" "Critical|High|Medium|Low|Informational"
 }
 
 @test "each finding has a Location line" {
