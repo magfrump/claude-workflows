@@ -1,7 +1,7 @@
 # Decision 005: Validation Step for Self-Improvement Loop
 
 **Date:** 2026-03-23
-**Status:** Accepted (phase 1 implemented)
+**Status:** Accepted (phases 1 and 3 implemented)
 
 ## Context
 
@@ -26,7 +26,7 @@ Tiered pipeline (option 4), implemented in phases:
 
 - **Phase 1**: Structural checks only. Catches the most damaging failures (scope creep, huge diffs, broken syntax) with deterministic bash logic. Ship and run the loop.
 - **Phase 2**: Add Claude judge gate. Single `claude -p` per surviving branch with a focused prompt including the diff and key rubric dimensions.
-- **Phase 3**: Add self-eval dispatch for skill/workflow changes specifically. Only worth adding after the loop demonstrates that skill quality is a real failure mode.
+- **Phase 3**: Add self-eval dispatch for skill/workflow changes specifically. Implemented as Gate 1g: runs `claude -p` with the self-eval skill on each changed skill/workflow file. Rejects if 2+ automated dimensions score Weak. Single Weak scores are logged but allowed through (test coverage is universally Weak across the repo, so a threshold of 1 would reject everything).
 
 Each phase is independently useful and the gates are modular — any can be replaced or removed without affecting the others.
 

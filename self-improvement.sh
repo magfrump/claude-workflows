@@ -113,7 +113,7 @@ docs/working/summary-${TASK_ID}.md"
     # Tiered validation pipeline (see docs/decisions/005-validation-step-self-improvement.md)
     #   Phase 1: Structural checks (deterministic, fast)
     #   Phase 2: Claude judge with rubric (TODO)
-    #   Phase 3: Self-eval for skill changes (TODO)
+    #   Phase 3: Self-eval for skill changes (implemented)
 
     MAX_DIFF_LINES=500
     APPROVED_TASKS=""
@@ -200,6 +200,36 @@ docs/working/summary-${TASK_ID}.md"
                     fi
                 fi
             done
+        fi
+
+        # --- Gate 1g: Self-eval on changed skills/workflows ---
+        if [ -z "$REJECT_REASON" ]; then
+            CHANGED_SKILLS=$(echo "$CHANGED_FILES" | grep -E '^(skills|workflows)/.+\.md$' || true)
+            if [ -n "$CHANGED_SKILLS" ]; then
+                for SKILL_FILE in $CHANGED_SKILLS; do
+                    if [ ! -f "$WT_DIR/$SKILL_FILE" ]; then
+                        continue  # file was deleted, not added/modified
+                    fi
+                    echo "    Running self-eval on: $SKILL_FILE"
+                    EVAL_OUTPUT=$(cd "$WT_DIR" && claude -p "Use the self-eval skill defined in skills/self-eval.md to evaluate $SKILL_FILE.
+
+After writing the report, output exactly one line in this format:
+SELF_EVAL_RESULT: <number of Weak scores>
+
+Count only the automated assessment scores (Testability investment, Trigger clarity, Overlap and redundancy, Test coverage, Pipeline readiness). Do not count human-review dimensions." 2>&1) || true
+
+                    WEAK_COUNT=$(echo "$EVAL_OUTPUT" | grep -oP 'SELF_EVAL_RESULT: \K\d+' || echo "")
+                    if [ -z "$WEAK_COUNT" ]; then
+                        echo "    Warning: self-eval did not produce a parseable result for $SKILL_FILE"
+                        echo "[$TASK_ID] WARNING: self-eval unparseable for $SKILL_FILE" >> "$WORKING_DIR/validation-round-$ROUND.log"
+                    elif [ "$WEAK_COUNT" -ge 2 ]; then
+                        REJECT_REASON="self-eval: $SKILL_FILE has $WEAK_COUNT Weak automated scores"
+                        break
+                    else
+                        echo "    self-eval OK: $SKILL_FILE ($WEAK_COUNT Weak scores)"
+                    fi
+                done
+            fi
         fi
 
         # --- Verdict ---
