@@ -8,6 +8,9 @@ MAX_ROUNDS=5
 WORKING_DIR="$REPO_DIR/docs/working"
 ROUND_HISTORY="$WORKING_DIR/round-history.json"
 
+# Check required dependencies
+command -v jq &>/dev/null || { echo "Error: jq is required but not found"; exit 1; }
+
 mkdir -p "$WORKING_DIR"
 touch "$WORKING_DIR/completed-tasks.md"
 
@@ -17,6 +20,15 @@ if [ ! -f "$ROUND_HISTORY" ]; then
 fi
 
 # --- JSON logging helpers ---
+
+# Clean up temp files on early exit
+ROUND_LOG_FILE=""
+cleanup() {
+    if [ -n "$ROUND_LOG_FILE" ] && [ -f "$ROUND_LOG_FILE" ]; then
+        rm -f "$ROUND_LOG_FILE"
+    fi
+}
+trap cleanup EXIT ERR
 
 # Initialize a round log object as a temp file; sets ROUND_LOG_FILE
 init_round_log() {
@@ -92,7 +104,9 @@ docs/working/feature-ideas-round-$ROUND.md"
 
     # Count ideas from the ideas file (lines starting with a numbered list pattern)
     IDEA_COUNT=$(grep -cE '^\s*[0-9]+\.' "$IDEAS_FILE" 2>/dev/null || echo 0)
-    update_round_log '.ideas' "{\"generated\": true, \"count\": $IDEA_COUNT, \"file\": \"feature-ideas-round-$ROUND.md\"}"
+    IDEAS_JSON=$(jq -n --argjson count "$IDEA_COUNT" --arg file "feature-ideas-round-$ROUND.md" \
+        '{generated: true, count: $count, file: $file}')
+    update_round_log '.ideas' "$IDEAS_JSON"
 
     # -------------------------------------------------------
     # Step 2: Filter into independent tasks
@@ -131,7 +145,9 @@ other tasks in this round."
 
     TASK_COUNT=$(jq 'length' "$TASKS_FILE")
     TASK_IDS_JSON=$(jq '[.[].id]' "$TASKS_FILE")
-    update_round_log '.tasks' "{\"count\": $TASK_COUNT, \"ids\": $TASK_IDS_JSON}"
+    TASKS_JSON=$(jq -n --argjson count "$TASK_COUNT" --argjson ids "$TASK_IDS_JSON" \
+        '{count: $count, ids: $ids}')
+    update_round_log '.tasks' "$TASKS_JSON"
 
     # -------------------------------------------------------
     # Step 3: Implement in parallel worktrees
@@ -191,9 +207,6 @@ docs/working/summary-${TASK_ID}.md"
         REJECT_REASON=""
 
         echo "  Checking: $TASK_ID"
-
-        # Initialize validation record for this task
-        record_gate "$TASK_ID" "commits" "pending"
 
         # --- Gate 1a: Did the branch get any commits? ---
         COMMIT_COUNT=$(git rev-list --count "main..$BRANCH" 2>/dev/null || echo 0)
@@ -383,12 +396,18 @@ Count only the automated assessment scores (Testability investment, Trigger clar
         MERGE_STATUS="clean"
         git merge "$BRANCH" --no-edit || {
             echo "  Conflict in $BRANCH, attempting auto-resolve..."
-            MERGE_STATUS="conflict_resolved"
             # Hand conflicts to Claude for resolution
             claude -p "There are merge conflicts in the current repo.
 Run git status to see conflicted files.
 Resolve each conflict by preserving the intent of both sides.
 Then git add the resolved files and git commit to complete the merge."
+            # Verify the merge actually completed
+            if git diff --check &>/dev/null && ! git diff --name-only --diff-filter=U | grep -q .; then
+                MERGE_STATUS="conflict_resolved"
+            else
+                MERGE_STATUS="conflict_unresolved"
+                echo "  WARNING: Merge conflicts remain unresolved for $BRANCH"
+            fi
         }
 
         # Record merge outcome
@@ -425,7 +444,10 @@ Then git add the resolved files and git commit to complete the merge."
     LAUNCHED_COUNT=0
     for _ in $LAUNCHED_TASKS; do LAUNCHED_COUNT=$((LAUNCHED_COUNT + 1)); done
     update_round_log '.outcome' '"completed"'
-    update_round_log '.summary' "{\"launched\": $LAUNCHED_COUNT, \"approved\": $APPROVED_COUNT, \"rejected\": $((LAUNCHED_COUNT - APPROVED_COUNT))}"
+    SUMMARY_JSON=$(jq -n --argjson launched "$LAUNCHED_COUNT" --argjson approved "$APPROVED_COUNT" \
+        --argjson rejected "$((LAUNCHED_COUNT - APPROVED_COUNT))" \
+        '{launched: $launched, approved: $approved, rejected: $rejected}')
+    update_round_log '.summary' "$SUMMARY_JSON"
     finalize_round_log "$ROUND"
 
     echo "Round $ROUND complete. Report: $WORKING_DIR/round-${ROUND}-report.json"
