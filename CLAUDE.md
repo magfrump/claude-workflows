@@ -9,7 +9,7 @@ When facing non-trivial tasks, check `~/.claude/workflows/` for applicable proce
 - **research-plan-implement.md** — The default development loop. Research the codebase → write a plan → get human review → implement in a fresh session. Use for any non-trivial feature or bug fix.
 - **divergent-design.md** — Structured brainstorming for architectural, library, or design decisions. Use when the first idea is probably not the best idea.
 - **task-decomposition.md** — Breaking large tasks into independent sub-investigations, optionally using sub-agents for parallel research. Use when a task touches multiple subsystems.
-- **pr-prep.md** — Packaging work for async review across timezones. Use before opening any PR.
+- **pr-prep.md** — Packaging work for async review across timezones. Includes a required review-fix loop (code review + self-eval → fix → retest → re-review until clean). Use before opening any PR.
 - **spike.md** — Quick timeboxed exploration of a library, approach, or proof-of-concept. Use when the question is "can this work?" not "build this."
 - **user-testing-workflow.md** — Planning, running, and interpreting usability tests. Use when you need to design a user test, write moderator scripts, or analyze usability findings.
 - **codebase-onboarding.md** — Structured orientation for unfamiliar codebases. Use when starting a new project or returning after a long absence — before any task-specific work.
