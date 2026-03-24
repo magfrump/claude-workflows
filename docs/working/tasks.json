@@ -7,7 +7,8 @@
     ],
     "independent": true,
     "hypothesis": "Handoff docs will reduce context-rebuilding time in follow-up sessions, measurable by fewer codebase exploration steps in subsequent RPI rounds",
-    "hypothesis_window": 3
+    "hypothesis_window": 3,
+    "retroactive": true
   },
   {
     "id": "retro-appendix",
@@ -17,7 +18,8 @@
     ],
     "independent": true,
     "hypothesis": "Retrospective questions will surface at least 1 actionable process improvement within 3 rounds of use",
-    "hypothesis_window": 3
+    "hypothesis_window": 3,
+    "retroactive": true
   },
   {
     "id": "decision-log",
@@ -28,7 +30,8 @@
     ],
     "independent": true,
     "hypothesis": "The lightweight log will capture at least 3 decisions that would otherwise go unrecorded in the next 3 rounds",
-    "hypothesis_window": 3
+    "hypothesis_window": 3,
+    "retroactive": true
   },
   {
     "id": "self-eval-skill",
@@ -39,7 +42,8 @@
     ],
     "independent": true,
     "hypothesis": "Self-eval gate will reject at least 1 low-quality skill/workflow change within 3 rounds, preventing a regression from being merged",
-    "hypothesis_window": 3
+    "hypothesis_window": 3,
+    "retroactive": true
   },
   {
     "id": "doc-freshness",
@@ -50,6 +54,7 @@
     ],
     "independent": true,
     "hypothesis": "Freshness tracking will flag at least 1 stale doc that would otherwise mislead a session within 3 rounds",
-    "hypothesis_window": 3
+    "hypothesis_window": 3,
+    "retroactive": true
   }
 ]

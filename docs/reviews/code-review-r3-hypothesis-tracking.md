@@ -2,7 +2,7 @@
 
 **Branch:** feat/r3-hypothesis-tracking
 **Reviewed:** 2026-03-23
-**Status:** CONDITIONAL PASS
+**Status:** PASS (after review-fix loop)
 
 ## Summary
 
@@ -14,17 +14,17 @@ This branch adds a hypothesis tracking system to the self-improvement loop: each
 
 | # | Finding | Location |
 |---|---|---|
-| R1 | **Variable injection in jq filters.** `$TASK_ID` is interpolated via shell expansion into jq filter strings (`.id==\"$TASK_ID\"`). If a task ID ever contained double quotes or backslashes, this would produce a jq syntax error or unexpected behavior. Use `jq --arg tid "$TASK_ID" '.[] | select(.id==$tid) | ...'` instead. | self-improvement.sh:54-55 |
-| R2 | **Pipe characters in hypothesis text break markdown table.** The hypothesis text is inserted directly into a markdown table row on line 75. If a hypothesis contains `|` (which is plausible in natural language, e.g., "this or that"), the table formatting breaks. Escape or replace `|` with `\|` before appending. Similarly, the evidence field from the Claude evaluation could contain pipes. | self-improvement.sh:75 |
-| R3 | **`2>&1` on the `claude -p` call mixes stderr into evaluation output.** If `claude` emits warnings or errors to stderr, they get merged into `$EVAL_RESULT`, which the `grep -oP` on line 70 then searches. This could cause false matches or bury the actual verdict. Capture stderr separately (e.g., `2>/dev/null` or `2>>"$log_file"`). | self-improvement.sh:68 |
+| R1 | **FIXED.** Variable injection in jq filters. Now uses `jq --arg tid "$TASK_ID"` for safe variable passing. | self-improvement.sh:56-57 |
+| R2 | **FIXED.** Pipe characters in hypothesis/evidence text. Now escapes `|` to `\|` before appending to the markdown table. | self-improvement.sh:79-81 |
+| R3 | **FIXED.** stderr on `claude -p` call. Changed `2>&1` to `2>/dev/null`. | self-improvement.sh:70 |
 
 ### Must Address
 
 | # | Finding | Location | Author note |
 |---|---|---|---|
-| A1 | **`grep -oP` is not portable.** The `-P` (PCRE) flag is a GNU grep extension. If this script ever runs on macOS or a minimal container, it will fail. Consider using `sed` or `grep -oE` with an adjusted pattern. The pattern `HYPOTHESIS_VERDICT: \K.*` can be rewritten as `sed -n 's/.*HYPOTHESIS_VERDICT: //p'`. | self-improvement.sh:70 | -- |
-| A2 | **Retrofitted hypotheses in tasks.json are not real predictions.** The diff adds `hypothesis` and `hypothesis_window` to all five existing tasks that were created before this feature existed. These hypotheses were never actual predictions -- they were written after the fact. This undermines the integrity of the hypothesis log if these tasks later get evaluated. Either mark them with a flag like `"retroactive": true` so the evaluator knows, or remove them and only apply hypothesis tracking to newly created tasks. | docs/working/tasks.json | -- |
-| A3 | **No guard against `ELIGIBLE` being empty or containing unexpected whitespace.** The `for TASK_ID in $ELIGIBLE` loop relies on word-splitting. If `jq` outputs empty strings or lines with spaces, this silently misbehaves. Consider using `mapfile` or a `while read` loop for safer iteration. | self-improvement.sh:43 | -- |
+| A1 | **FIXED.** Replaced `grep -oP` with portable `sed -n 's/.*HYPOTHESIS_VERDICT: //p'`. Also replaced `xargs` trimming with `sed` (addresses C5). | self-improvement.sh:72-77 | -- |
+| A2 | **FIXED.** Added `"retroactive": true` flag to all five pre-existing tasks. Updated the jq filter to skip retroactive hypotheses during evaluation. | docs/working/tasks.json, self-improvement.sh:40 | -- |
+| A3 | **FIXED.** Replaced `for TASK_ID in $ELIGIBLE` with `while IFS= read -r TASK_ID` loop with empty-line guard. | self-improvement.sh:44-45 | -- |
 
 ### Consider
 

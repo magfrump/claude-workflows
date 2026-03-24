@@ -34,13 +34,15 @@ HEADER
         PRIOR_TASKS="$WORKING_DIR/tasks-round-$PRIOR_ROUND.json"
         [ -f "$PRIOR_TASKS" ] || continue
 
-        # Get tasks that have a hypothesis and whose window has elapsed
+        # Get tasks that have a hypothesis, are not retroactive, and whose window has elapsed
         ELIGIBLE=$(jq -r --argjson current "$ROUND" --argjson prior "$PRIOR_ROUND" \
             '[.[] | select(.hypothesis != null and .hypothesis != "") |
+              select(.retroactive != true) |
               select(($current - $prior) >= (.hypothesis_window // 3))] | .[]? | .id' \
             "$PRIOR_TASKS" 2>/dev/null) || true
 
-        for TASK_ID in $ELIGIBLE; do
+        while IFS= read -r TASK_ID; do
+            [ -z "$TASK_ID" ] && continue
             # Skip if already recorded in the log
             if grep -qF "| $TASK_ID |" "$HYPOTHESIS_LOG" 2>/dev/null; then
                 continue
@@ -51,8 +53,8 @@ HEADER
                 continue
             fi
 
-            HYPOTHESIS=$(jq -r ".[] | select(.id==\"$TASK_ID\") | .hypothesis" "$PRIOR_TASKS")
-            WINDOW=$(jq -r ".[] | select(.id==\"$TASK_ID\") | .hypothesis_window // 3" "$PRIOR_TASKS")
+            HYPOTHESIS=$(jq -r --arg tid "$TASK_ID" '.[] | select(.id==$tid) | .hypothesis' "$PRIOR_TASKS")
+            WINDOW=$(jq -r --arg tid "$TASK_ID" '.[] | select(.id==$tid) | .hypothesis_window // 3' "$PRIOR_TASKS")
 
             echo "  Evaluating hypothesis for: $TASK_ID"
             EVAL_RESULT=$(claude -p "Evaluate this hypothesis from round $PRIOR_ROUND (now round $ROUND):
@@ -65,16 +67,23 @@ Review the repo state, git log, completed-tasks.md, and validation logs to
 determine whether the hypothesis was CONFIRMED, REFUTED, or INCONCLUSIVE.
 
 Output exactly one line in this format:
-HYPOTHESIS_VERDICT: <CONFIRMED|REFUTED|INCONCLUSIVE> | <one-sentence evidence summary>" 2>&1) || true
+HYPOTHESIS_VERDICT: <CONFIRMED|REFUTED|INCONCLUSIVE> | <one-sentence evidence summary>" 2>/dev/null) || true
 
-            VERDICT_LINE=$(echo "$EVAL_RESULT" | grep -oP 'HYPOTHESIS_VERDICT: \K.*' || echo "INCONCLUSIVE | evaluation failed to parse")
-            OUTCOME=$(echo "$VERDICT_LINE" | cut -d'|' -f1 | xargs)
-            EVIDENCE=$(echo "$VERDICT_LINE" | cut -d'|' -f2- | xargs)
+            VERDICT_LINE=$(echo "$EVAL_RESULT" | sed -n 's/.*HYPOTHESIS_VERDICT: //p' | head -1)
+            if [ -z "$VERDICT_LINE" ]; then
+                VERDICT_LINE="INCONCLUSIVE | evaluation failed to parse"
+            fi
+            OUTCOME=$(echo "$VERDICT_LINE" | cut -d'|' -f1 | sed 's/^[[:space:]]*//;s/[[:space:]]*$//')
+            EVIDENCE=$(echo "$VERDICT_LINE" | cut -d'|' -f2- | sed 's/^[[:space:]]*//;s/[[:space:]]*$//')
+
+            # Escape pipe characters to prevent breaking the markdown table
+            HYPOTHESIS_ESCAPED="${HYPOTHESIS//|/\\|}"
+            EVIDENCE_ESCAPED="${EVIDENCE//|/\\|}"
 
             # Append to hypothesis log
-            echo "| $PRIOR_ROUND | $TASK_ID | $HYPOTHESIS | $WINDOW | $ROUND | $OUTCOME | $EVIDENCE |" >> "$HYPOTHESIS_LOG"
+            echo "| $PRIOR_ROUND | $TASK_ID | $HYPOTHESIS_ESCAPED | $WINDOW | $ROUND | $OUTCOME | $EVIDENCE_ESCAPED |" >> "$HYPOTHESIS_LOG"
             echo "    $TASK_ID: $OUTCOME"
-        done
+        done <<< "$ELIGIBLE"
     done
 
     # -------------------------------------------------------
