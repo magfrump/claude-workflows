@@ -36,6 +36,8 @@ Before discarding the spike branch, create a brief record:
 ```markdown
 # Spike: [question]
 Date: [date]
+Last verified: [date]
+Relevant paths: [repo-relative paths this spike investigated]
 Branch: spike/[name] (can be deleted)
 Time spent: [X minutes]
 
