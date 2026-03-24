@@ -11,7 +11,7 @@
 
 ## When to pivot
 
-- **← From RPI**: When RPI research surfaces a design fork, invoke DD inline. Carry the research doc's invariants and constraints into DD's diagnosis step (step 2) — they're already half the work.
+- **← From RPI** (see RPI step 2 for triggers): Carry the research doc's invariants and constraints into DD's diagnosis step (step 2) — they're already half the work.
 - **→ RPI**: After DD produces a decision, return to RPI's plan step with the decision doc as input. Reference it from the plan; don't duplicate the rationale.
 - **→ Spike**: If DD candidates require feasibility validation, run a timeboxed spike on the uncertain option before finalizing the decision. The spike's findings update DD's tradeoff matrix.
 
