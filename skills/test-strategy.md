@@ -10,6 +10,8 @@ description: >
   the user is unsure whether unit, integration, or end-to-end tests are appropriate.
 ---
 
+> On bad output, see guides/skill-recovery.md
+
 # Test Strategy
 
 You are producing a concrete testing plan for a specific piece of code. The goal is not to

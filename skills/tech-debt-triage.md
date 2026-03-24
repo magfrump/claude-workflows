@@ -10,6 +10,8 @@ description: >
   a single item or compare multiple debt items using the matrix-analysis pattern.
 ---
 
+> On bad output, see guides/skill-recovery.md
+
 # Tech Debt Triage
 
 You are evaluating tech debt to help the user decide whether and when to address it. The goal

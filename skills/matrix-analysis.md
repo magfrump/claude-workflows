@@ -12,6 +12,8 @@ description: >
   libraries, vendors, architectures, approaches, tools, or any other set of comparable options.
 ---
 
+> On bad output, see guides/skill-recovery.md
+
 # Matrix Analysis Orchestrator
 
 You are an orchestrator. You coordinate a structured evaluation of multiple items across

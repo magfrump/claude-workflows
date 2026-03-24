@@ -10,6 +10,8 @@ description: >
   or compare alternatives (e.g., "should we upgrade or switch to a different library").
 ---
 
+> On bad output, see guides/skill-recovery.md
+
 # Dependency Upgrade Evaluation
 
 You are evaluating whether and how to upgrade a dependency. The goal is to surface the risks,

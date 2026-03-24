@@ -20,6 +20,8 @@ requires:
       performance characteristics are not independently verified.
 ---
 
+> On bad output, see guides/skill-recovery.md
+
 # Performance Code Review
 
 You are reviewing code changes for performance problems. The point is not to find issues a
