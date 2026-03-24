@@ -1,0 +1,45 @@
+[
+  {
+    "id": "handoff-doc",
+    "description": "Add cross-session handoff doc format to RPI workflow (merged #8/#2). Define lightweight handoff format (timestamp, accomplishments, unfinished work, open questions, file paths) as an optional step between 'verify and loop' and session end.",
+    "files_touched": [
+      "workflows/research-plan-implement.md"
+    ],
+    "independent": true
+  },
+  {
+    "id": "retro-appendix",
+    "description": "Add retrospective appendix to pr-prep workflow (#9). Append 3-4 structured reflection questions (plan accuracy, skipped steps, time vs. estimate, what to change) to the end of pr-prep.md.",
+    "files_touched": [
+      "workflows/pr-prep.md"
+    ],
+    "independent": true
+  },
+  {
+    "id": "decision-log",
+    "description": "Create lightweight decision log (#15). Add docs/decisions/log.md with table format and clear scope boundary (one-line decisions that don't warrant a full DD record). Add a cross-reference from the DD workflow.",
+    "files_touched": [
+      "docs/decisions/log.md",
+      "workflows/divergent-design.md"
+    ],
+    "independent": true
+  },
+  {
+    "id": "self-eval-skill",
+    "description": "Build self-evaluation skill (#3). Write a skill that reads docs/evaluation-rubric.md at runtime and applies automatable dimensions (testability, trigger clarity, overlap, coverage) to a target skill/workflow, flagging human-judgment dimensions for manual review. Validate by running on 2-3 existing skills.",
+    "files_touched": [
+      "skills/self-evaluation.md",
+      "docs/reviews/"
+    ],
+    "independent": true
+  },
+  {
+    "id": "doc-freshness",
+    "description": "Add research doc freshness tracking (#14). Define a 'last verified' field for research and onboarding doc templates, and document a staleness heuristic (git log --since on relevant file paths). Requires spike-level design of the heuristic before implementation.",
+    "files_touched": [
+      "workflows/research-plan-implement.md",
+      "workflows/codebase-onboarding.md"
+    ],
+    "independent": true
+  }
+]
