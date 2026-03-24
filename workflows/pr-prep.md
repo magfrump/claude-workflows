@@ -20,25 +20,35 @@ Squash WIP commits into logical chunks. Each commit in the final history should 
 3. `feat: add UI for X` (builds on 1-2)
 4. `test: add tests for X` (or interleaved with the above)
 
-### 2. Self-review
-
-Run through the diff as if you were the reviewer:
-
-```bash
-git diff origin/main...HEAD
-```
-
-Check for:
-- Dead code, debugging artifacts, console.logs
-- TODOs that should be resolved before merge
-- Files that were changed but shouldn't have been (accidental reformatting, unrelated changes)
-- Import ordering / style consistency with the rest of the project
-
-For deeper self-review, invoke the code-review critic skills (`security-reviewer`, `performance-reviewer`, `api-consistency-reviewer`) on your branch diff. These are optional but recommended for changes that touch security-sensitive code, hot paths, or public APIs.
-
-### 3. Verify CI passes locally
+### 2. Verify CI passes locally
 
 Run whatever checks the project has: lint, build, tests. Fix anything broken. Do not leave this for the reviewer to discover.
+
+### 3. Review-fix loop
+
+Run review skills and iterate until clean. This is required, not optional.
+
+**a. Generate reviews.** Run in parallel:
+- **Code review** (`/code-review`) — multi-critic structural review of the diff vs main
+- **Self-eval** (`/self-eval <target>`) — rubric assessment of any new or modified skills/workflows
+
+**b. Triage and fix.** Read each review artifact. Work through findings in tier order:
+
+| Tier | Meaning | Action |
+|------|---------|--------|
+| Must Fix | Correctness bugs, false passes, wrong behavior | Fix before proceeding |
+| Must Address | Fragility, inconsistency, misleading tests | Fix or explicitly acknowledge |
+| Consider | Style, duplication, future-proofing | Fix if cheap, otherwise note for later |
+
+For each finding: confirm it's real by reading the code, then fix. Commit in coherent batches referencing finding IDs (e.g., `fix: Address code review findings A2-A5`).
+
+**c. Run tests.** After fixing findings, re-run the test suite. Fixes often surface latent bugs — a tightened assertion may expose a helper bug, a scoping fix may reveal a silent false pass. Fix test breakage as separate commits.
+
+**d. Re-review.** Run the same review skills again. Compare against prior findings: are they resolved? Did fixes introduce new ones? Did reviewers surface issues previously masked?
+
+**e. Exit or repeat.** Exit when no Must Fix items remain and Must Address items are resolved or explicitly acknowledged. Repeat if new findings appear. Each loop should be strictly smaller than the last — if findings aren't converging after 3-4 loops, the problem is architectural (use divergent-design or RPI, not more review loops).
+
+See `workflows/review-fix-loop.md` for extended discussion of loop dynamics and anti-patterns.
 
 ### 4. Write the PR description
 
