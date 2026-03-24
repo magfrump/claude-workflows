@@ -217,9 +217,9 @@ If there is no Diagnose section, output an empty array: []" 2>/dev/null | sed 's
 
     PROBLEM_COUNT=$(echo "$PROBLEMS_JSON" | jq 'length')
 
-    # Check convergence against prior rounds if we have history and problems
-    # jq expression: collect all arrays from history, concatenate them (add),
-    # fall back to empty array if history is empty (// []), then emit each string.
+    # Check convergence against prior rounds if we have history and problems.
+    # problem-history.json only contains problems that were addressed by approved
+    # tasks, so all prior problems are valid convergence baselines.
     PRIOR_PROBLEMS=$(jq -r '[.[]] | add // [] | .[]' "$HISTORY_FILE" 2>/dev/null | sort -u) || true
     if [ "$PROBLEM_COUNT" -gt 0 ] && [ -n "$PRIOR_PROBLEMS" ]; then
         echo "  Comparing $PROBLEM_COUNT problems against prior rounds..."
@@ -255,11 +255,8 @@ CONVERGENCE_EOF
         fi
     fi
 
-    # Store this round's problems in history
-    jq --argjson problems "$PROBLEMS_JSON" \
-       --arg round "$ROUND" \
-       '. + {($round): $problems}' "$HISTORY_FILE" > "${HISTORY_FILE}.tmp" \
-       && mv "${HISTORY_FILE}.tmp" "$HISTORY_FILE"
+    # Problem history is updated after validation (step 4b) so that only
+    # problems addressed by approved tasks are recorded.
 
     # -------------------------------------------------------
     # Step 2: Filter into independent tasks
@@ -543,6 +540,54 @@ Count only the automated assessment scores (Testability investment, Trigger clar
         continue
     fi
     echo "Approved tasks: $APPROVED_TASKS"
+
+    # -------------------------------------------------------
+    # Step 4b: Update problem history with solved problems only
+    # -------------------------------------------------------
+    # Use Claude to identify which diagnosed problems were addressed by the
+    # approved tasks. Only those go into problem-history.json — unsolved
+    # problems should recur in future rounds without triggering convergence.
+    # Note: PROBLEMS_JSON and PROBLEM_COUNT were set in step 1b (problem extraction).
+    echo "Updating problem history (solved problems only)..."
+    TASK_DESCS=$(jq -r '.[] | "\(.id): \(.description)"' "$TASKS_FILE" 2>/dev/null) || true
+    _SOLVED_PROMPT="You are given a list of diagnosed problems and a list of approved task IDs.
+
+DIAGNOSED PROBLEMS (from this round's divergent design):
+${PROBLEMS_JSON}
+
+APPROVED TASK IDS:
+${APPROVED_TASKS}
+
+TASK DESCRIPTIONS (from docs/working/tasks-round-${ROUND}.json):
+${TASK_DESCS}
+
+FEATURE IDEAS FILE: docs/working/feature-ideas-round-${ROUND}.md
+
+"
+    read -r -d '' _SOLVED_BODY <<'SOLVED_EOF' || true
+Determine which of the diagnosed problems are addressed by at least one approved task.
+A problem is 'addressed' if an approved task was designed to solve it (check the match/prune table or tradeoff matrix in the feature ideas file if needed).
+
+Output ONLY a JSON array of the problem strings that were addressed. Include only problems from the DIAGNOSED PROBLEMS list above, using their exact text. If no problems were addressed, output: []
+SOLVED_EOF
+    _SOLVED_PROMPT+="$_SOLVED_BODY"
+    SOLVED_PROBLEMS_JSON=$(claude -p "$_SOLVED_PROMPT" 2>/dev/null | sed 's/^[[:space:]]*//' | grep -E '^\[' | head -1) || true
+
+    # Validate JSON; fall back to empty array
+    if ! echo "$SOLVED_PROBLEMS_JSON" | jq empty 2>/dev/null; then
+        echo "  Warning: could not determine solved problems, storing none"
+        SOLVED_PROBLEMS_JSON="[]"
+    fi
+
+    SOLVED_COUNT=$(echo "$SOLVED_PROBLEMS_JSON" | jq 'length')
+    echo "  $SOLVED_COUNT of $PROBLEM_COUNT problems addressed by approved tasks"
+
+    if [ "$SOLVED_COUNT" -gt 0 ]; then
+        jq --argjson problems "$SOLVED_PROBLEMS_JSON" \
+           --arg round "$ROUND" \
+           '. + {($round): $problems}' "$HISTORY_FILE" > "${HISTORY_FILE}.tmp" \
+           && mv "${HISTORY_FILE}.tmp" "$HISTORY_FILE"
+    fi
 
     # -------------------------------------------------------
     # Step 5: Merge approved features
