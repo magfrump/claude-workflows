@@ -1,0 +1,1 @@
+Added hypothesis field to task JSON schema, updated self-improvement.sh to generate and validate hypotheses after their window elapses, and created docs/working/hypothesis-log.md to record confirmed/refuted/inconclusive outcomes.
