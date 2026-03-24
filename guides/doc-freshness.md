@@ -98,17 +98,6 @@ If the reviewed content has been deleted or substantially replaced (e.g., a skil
 
 If the staleness check returns empty (no changes to tracked paths), the review is fresh. No action needed — update `Last verified` if you've confirmed this.
 
-### Frontmatter format for reviews
+### Relevant paths for reviews
 
-Review artifacts use YAML frontmatter with the standard freshness fields:
-
-```yaml
----
-Last verified: 2026-03-23
-Relevant paths:
-  - skills/draft-review.md
-  - skills/fact-check.md
----
-```
-
-The `Relevant paths` should list the files the review analyzed — these are the files whose changes would invalidate the review's findings.
+The `Relevant paths` in a review's YAML frontmatter (see format in [Freshness fields](#freshness-fields)) should list the files the review analyzed -- these are the files whose changes would invalidate the review's findings. Do not include files that merely appeared in the same diff but were not the subject of the review's analysis.
