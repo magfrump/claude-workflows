@@ -10,6 +10,11 @@
 
 This is a **pre-task** workflow. It produces an orientation document that subsequent RPI sessions can reference. Unlike RPI's research phase (which investigates code relevant to a specific task), onboarding maps the terrain broadly so you know where to look when tasks arrive.
 
+## When to pivot
+
+- **→ RPI**: The natural next step. Once onboarding is complete, pivot to RPI for your first task. The onboarding doc's architecture map, key flows, and conventions replace the broad exploration part of RPI research — scope research to your specific task instead.
+- **→ DD**: If the architecture map reveals structural conflicts with planned work, invoke DD to resolve the design question before starting RPI.
+
 ## Working documents
 
 This workflow produces:
@@ -118,9 +123,9 @@ If no reviewer is available, treat the Known Unknowns section as a list of thing
 
 ## Relationship to other workflows
 
-- **Feeds into RPI**: The orientation doc is a starting point for RPI research phases. Instead of exploring from scratch, you already know which subsystems are relevant.
 - **Feeds into task decomposition**: The architecture map helps identify which subsystems a large task touches, enabling better decomposition.
-- **Can trigger divergent design**: If the architecture map reveals that the codebase is structured in a way that conflicts with your planned work, that's a design decision worth running through DD.
+
+See also "When to pivot" above for RPI and DD handoff guidance.
 
 ## When to re-run
 

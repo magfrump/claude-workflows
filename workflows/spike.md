@@ -6,6 +6,12 @@
 - Answering "is this feasible?" or "how hard would this be?"
 - Exploring an unfamiliar API or language feature
 
+## When to pivot
+
+- **→ RPI**: The most common pivot. When the spike answers "yes, this works," its RPI seed section (see step 4) is the handoff — load it as initial input to RPI research rather than starting from scratch.
+- **← From RPI**: When RPI research hits a "is this even feasible?" question that can't be answered by reading code, pause RPI and spike it. Carry the research doc's invariants as constraints for the spike.
+- **← From DD**: When a DD candidate needs feasibility validation, spike the uncertain option. The spike's findings feed back into DD's tradeoff matrix.
+
 ## Process
 
 ### 1. Define the question
