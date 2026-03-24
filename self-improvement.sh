@@ -6,14 +6,75 @@ REPO_DIR=~/claude-workflows
 WORKTREE_BASE=~/wt
 MAX_ROUNDS=5
 WORKING_DIR="$REPO_DIR/docs/working"
+ROUND_HISTORY="$WORKING_DIR/round-history.json"
+
+# Check required dependencies
+command -v jq &>/dev/null || { echo "Error: jq is required but not found"; exit 1; }
 
 mkdir -p "$WORKING_DIR"
 touch "$WORKING_DIR/completed-tasks.md"
+
+# Initialize round-history.json if it doesn't exist
+if [ ! -f "$ROUND_HISTORY" ]; then
+    echo '[]' > "$ROUND_HISTORY"
+fi
+
+# --- JSON logging helpers ---
+
+# Clean up temp files on early exit
+ROUND_LOG_FILE=""
+cleanup() {
+    if [ -n "$ROUND_LOG_FILE" ] && [ -f "$ROUND_LOG_FILE" ]; then
+        rm -f "$ROUND_LOG_FILE"
+    fi
+}
+trap cleanup EXIT ERR
+
+# Initialize a round log object as a temp file; sets ROUND_LOG_FILE
+init_round_log() {
+    local round=$1
+    ROUND_LOG_FILE=$(mktemp)
+    jq -n --argjson round "$round" --arg ts "$(date -u +%Y-%m-%dT%H:%M:%SZ)" \
+        '{round: $round, timestamp: $ts, ideas: {}, tasks: {}, validation: {}, merges: {}, outcome: "incomplete"}' \
+        > "$ROUND_LOG_FILE"
+}
+
+# Update a top-level field in the round log
+update_round_log() {
+    local path=$1 value=$2
+    local tmp
+    tmp=$(mktemp)
+    jq --argjson v "$value" "$path = \$v" "$ROUND_LOG_FILE" > "$tmp" && mv "$tmp" "$ROUND_LOG_FILE"
+}
+
+# Record a gate result for a task
+record_gate() {
+    local task_id=$1 gate=$2 status=$3
+    local tmp
+    tmp=$(mktemp)
+    jq --arg tid "$task_id" --arg g "$gate" --arg s "$status" \
+        '.validation[$tid][$g] = $s' "$ROUND_LOG_FILE" > "$tmp" && mv "$tmp" "$ROUND_LOG_FILE"
+}
+
+# Write per-round report and append to round-history.json
+finalize_round_log() {
+    local round=$1
+    # Write per-round report
+    cp "$ROUND_LOG_FILE" "$WORKING_DIR/round-${round}-report.json"
+
+    # Append to round-history.json
+    local tmp
+    tmp=$(mktemp)
+    jq --slurpfile entry "$ROUND_LOG_FILE" '. += $entry' "$ROUND_HISTORY" > "$tmp" && mv "$tmp" "$ROUND_HISTORY"
+
+    rm -f "$ROUND_LOG_FILE"
+}
 
 cd "$REPO_DIR"
 
 for ROUND in $(seq 1 $MAX_ROUNDS); do
     echo "=== Round $ROUND ==="
+    init_round_log "$ROUND"
 
     # -------------------------------------------------------
     # Step 1: Generate ideas
@@ -35,8 +96,17 @@ docs/working/feature-ideas-round-$ROUND.md"
     IDEAS_FILE="$WORKING_DIR/feature-ideas-round-$ROUND.md"
     if [ ! -f "$IDEAS_FILE" ] || head -1 "$IDEAS_FILE" | grep -qi "DONE"; then
         echo "No more good ideas. Stopping after $((ROUND - 1)) rounds."
+        update_round_log '.ideas' '{"generated": false, "count": 0}'
+        update_round_log '.outcome' '"exhausted"'
+        finalize_round_log "$ROUND"
         break
     fi
+
+    # Count ideas from the ideas file (lines starting with a numbered list pattern)
+    IDEA_COUNT=$(grep -cE '^\s*[0-9]+\.' "$IDEAS_FILE" 2>/dev/null || echo 0)
+    IDEAS_JSON=$(jq -n --argjson count "$IDEA_COUNT" --arg file "feature-ideas-round-$ROUND.md" \
+        '{generated: true, count: $count, file: $file}')
+    update_round_log '.ideas' "$IDEAS_JSON"
 
     # -------------------------------------------------------
     # Step 2: Filter into independent tasks
@@ -58,14 +128,26 @@ other tasks in this round."
     TASKS_FILE="$WORKING_DIR/tasks-round-$ROUND.json"
     if [ ! -f "$TASKS_FILE" ]; then
         echo "No tasks file generated. Skipping round."
+        update_round_log '.tasks' '{"count": 0, "ids": []}'
+        update_round_log '.outcome' '"no_tasks"'
+        finalize_round_log "$ROUND"
         continue
     fi
 
     TASK_IDS=$(jq -r '.[].id' "$TASKS_FILE")
     if [ -z "$TASK_IDS" ]; then
         echo "No independent tasks found. Skipping round."
+        update_round_log '.tasks' '{"count": 0, "ids": []}'
+        update_round_log '.outcome' '"no_tasks"'
+        finalize_round_log "$ROUND"
         continue
     fi
+
+    TASK_COUNT=$(jq 'length' "$TASKS_FILE")
+    TASK_IDS_JSON=$(jq '[.[].id]' "$TASKS_FILE")
+    TASKS_JSON=$(jq -n --argjson count "$TASK_COUNT" --argjson ids "$TASK_IDS_JSON" \
+        '{count: $count, ids: $ids}')
+    update_round_log '.tasks' "$TASKS_JSON"
 
     # -------------------------------------------------------
     # Step 3: Implement in parallel worktrees
@@ -130,6 +212,9 @@ docs/working/summary-${TASK_ID}.md"
         COMMIT_COUNT=$(git rev-list --count "main..$BRANCH" 2>/dev/null || echo 0)
         if [ "$COMMIT_COUNT" -eq 0 ]; then
             REJECT_REASON="no commits on branch"
+            record_gate "$TASK_ID" "commits" "fail"
+        else
+            record_gate "$TASK_ID" "commits" "pass"
         fi
 
         # Collect diff metadata once for use across gates 1b-1f
@@ -146,6 +231,9 @@ docs/working/summary-${TASK_ID}.md"
             TOTAL_CHANGED=$(( INS + DEL ))
             if [ "$TOTAL_CHANGED" -gt "$MAX_DIFF_LINES" ]; then
                 REJECT_REASON="diff too large (${TOTAL_CHANGED} lines, max ${MAX_DIFF_LINES})"
+                record_gate "$TASK_ID" "diff_size" "fail"
+            else
+                record_gate "$TASK_ID" "diff_size" "pass"
             fi
         fi
 
@@ -165,6 +253,9 @@ docs/working/summary-${TASK_ID}.md"
             done
             if [ -n "$SCOPE_VIOLATIONS" ]; then
                 REJECT_REASON="files outside declared scope:\n${SCOPE_VIOLATIONS}"
+                record_gate "$TASK_ID" "file_scope" "fail"
+            else
+                record_gate "$TASK_ID" "file_scope" "pass"
             fi
         fi
 
@@ -174,38 +265,67 @@ docs/working/summary-${TASK_ID}.md"
                 case "$FILE" in
                     self-improvement.sh|docs/evaluation-rubric.md|CLAUDE.md)
                         REJECT_REASON="deleted critical file: $FILE"
+                        record_gate "$TASK_ID" "critical_files" "fail"
                         break
                         ;;
                 esac
             done
+            if [ -z "$REJECT_REASON" ]; then
+                record_gate "$TASK_ID" "critical_files" "pass"
+            fi
         fi
 
         # --- Gate 1e: Run tests if available ---
-        if [ -z "$REJECT_REASON" ] && [ -d "$WT_DIR/test" ]; then
-            if command -v bats &>/dev/null; then
-                if ! (cd "$WT_DIR" && bats test/ 2>&1); then
-                    REJECT_REASON="bats tests failed"
+        if [ -z "$REJECT_REASON" ]; then
+            if [ -d "$WT_DIR/test" ]; then
+                if command -v bats &>/dev/null; then
+                    if ! (cd "$WT_DIR" && bats test/ 2>&1); then
+                        REJECT_REASON="bats tests failed"
+                        record_gate "$TASK_ID" "tests" "fail"
+                    else
+                        record_gate "$TASK_ID" "tests" "pass"
+                    fi
+                else
+                    record_gate "$TASK_ID" "tests" "skip"
                 fi
+            else
+                record_gate "$TASK_ID" "tests" "skip"
             fi
         fi
 
         # --- Gate 1f: Shellcheck on changed .sh files ---
-        if [ -z "$REJECT_REASON" ] && command -v shellcheck &>/dev/null; then
-            CHANGED_SH=$(echo "$CHANGED_FILES" | grep '\.sh$' || true)
-            for SH_FILE in $CHANGED_SH; do
-                if [ -f "$WT_DIR/$SH_FILE" ]; then
-                    if ! shellcheck "$WT_DIR/$SH_FILE" 2>&1; then
-                        REJECT_REASON="shellcheck failed: $SH_FILE"
-                        break
+        if [ -z "$REJECT_REASON" ]; then
+            if command -v shellcheck &>/dev/null; then
+                CHANGED_SH=$(echo "$CHANGED_FILES" | grep '\.sh$' || true)
+                if [ -n "$CHANGED_SH" ]; then
+                    SHELLCHECK_PASSED=true
+                    for SH_FILE in $CHANGED_SH; do
+                        if [ -f "$WT_DIR/$SH_FILE" ]; then
+                            if ! shellcheck "$WT_DIR/$SH_FILE" 2>&1; then
+                                REJECT_REASON="shellcheck failed: $SH_FILE"
+                                SHELLCHECK_PASSED=false
+                                break
+                            fi
+                        fi
+                    done
+                    if $SHELLCHECK_PASSED; then
+                        record_gate "$TASK_ID" "shellcheck" "pass"
+                    else
+                        record_gate "$TASK_ID" "shellcheck" "fail"
                     fi
+                else
+                    record_gate "$TASK_ID" "shellcheck" "skip"
                 fi
-            done
+            else
+                record_gate "$TASK_ID" "shellcheck" "skip"
+            fi
         fi
 
         # --- Gate 1g: Self-eval on changed skills/workflows ---
         if [ -z "$REJECT_REASON" ]; then
             CHANGED_SKILLS=$(echo "$CHANGED_FILES" | grep -E '^(skills|workflows)/.+\.md$' || true)
             if [ -n "$CHANGED_SKILLS" ]; then
+                SELF_EVAL_PASSED=true
                 for SKILL_FILE in $CHANGED_SKILLS; do
                     if [ ! -f "$WT_DIR/$SKILL_FILE" ]; then
                         continue  # file was deleted, not added/modified
@@ -224,11 +344,19 @@ Count only the automated assessment scores (Testability investment, Trigger clar
                         echo "[$TASK_ID] WARNING: self-eval unparseable for $SKILL_FILE" >> "$WORKING_DIR/validation-round-$ROUND.log"
                     elif [ "$WEAK_COUNT" -ge 2 ]; then
                         REJECT_REASON="self-eval: $SKILL_FILE has $WEAK_COUNT Weak automated scores"
+                        SELF_EVAL_PASSED=false
                         break
                     else
                         echo "    self-eval OK: $SKILL_FILE ($WEAK_COUNT Weak scores)"
                     fi
                 done
+                if $SELF_EVAL_PASSED; then
+                    record_gate "$TASK_ID" "self_eval" "pass"
+                else
+                    record_gate "$TASK_ID" "self_eval" "fail"
+                fi
+            else
+                record_gate "$TASK_ID" "self_eval" "skip"
             fi
         fi
 
@@ -236,18 +364,22 @@ Count only the automated assessment scores (Testability investment, Trigger clar
         if [ -n "$REJECT_REASON" ]; then
             echo "    REJECTED: $REJECT_REASON"
             echo "[$TASK_ID] REJECTED: $REJECT_REASON" >> "$WORKING_DIR/validation-round-$ROUND.log"
+            record_gate "$TASK_ID" "verdict" "rejected"
             # Clean up rejected worktree and branch
             git worktree remove "$WT_DIR" 2>/dev/null || true
             git branch -D "$BRANCH" 2>/dev/null || true
         else
             echo "    APPROVED"
             echo "[$TASK_ID] APPROVED" >> "$WORKING_DIR/validation-round-$ROUND.log"
+            record_gate "$TASK_ID" "verdict" "approved"
             APPROVED_TASKS="${APPROVED_TASKS:+$APPROVED_TASKS }$TASK_ID"
         fi
     done
 
     if [ -z "$APPROVED_TASKS" ]; then
         echo "No tasks passed validation. Skipping merge."
+        update_round_log '.outcome' '"all_rejected"'
+        finalize_round_log "$ROUND"
         continue
     fi
     echo "Approved tasks: $APPROVED_TASKS"
@@ -261,6 +393,7 @@ Count only the automated assessment scores (Testability investment, Trigger clar
         WT_DIR="$WORKTREE_BASE-$TASK_ID"
 
         echo "  Merging: $BRANCH"
+        MERGE_STATUS="clean"
         git merge "$BRANCH" --no-edit || {
             echo "  Conflict in $BRANCH, attempting auto-resolve..."
             # Hand conflicts to Claude for resolution
@@ -268,7 +401,20 @@ Count only the automated assessment scores (Testability investment, Trigger clar
 Run git status to see conflicted files.
 Resolve each conflict by preserving the intent of both sides.
 Then git add the resolved files and git commit to complete the merge."
+            # Verify the merge actually completed
+            # Check for unresolved conflicts (unmerged files)
+            if ! git diff --name-only --diff-filter=U | grep -q .; then
+                MERGE_STATUS="conflict_resolved"
+            else
+                MERGE_STATUS="conflict_unresolved"
+                echo "  WARNING: Merge conflicts remain unresolved for $BRANCH"
+            fi
         }
+
+        # Record merge outcome
+        MERGE_TMP=$(mktemp)
+        jq --arg tid "$TASK_ID" --arg s "$MERGE_STATUS" \
+            '.merges[$tid] = $s' "$ROUND_LOG_FILE" > "$MERGE_TMP" && mv "$MERGE_TMP" "$ROUND_LOG_FILE"
 
         # Clean up worktree
         git worktree remove "$WT_DIR" 2>/dev/null || true
@@ -293,9 +439,22 @@ Then git add the resolved files and git commit to complete the merge."
         done
     } >> "$WORKING_DIR/completed-tasks.md"
 
-    echo "Round $ROUND complete."
+    # Finalize round log
+    APPROVED_COUNT=0
+    for _ in $APPROVED_TASKS; do APPROVED_COUNT=$((APPROVED_COUNT + 1)); done
+    LAUNCHED_COUNT=0
+    for _ in $LAUNCHED_TASKS; do LAUNCHED_COUNT=$((LAUNCHED_COUNT + 1)); done
+    update_round_log '.outcome' '"completed"'
+    SUMMARY_JSON=$(jq -n --argjson launched "$LAUNCHED_COUNT" --argjson approved "$APPROVED_COUNT" \
+        --argjson rejected "$((LAUNCHED_COUNT - APPROVED_COUNT))" \
+        '{launched: $launched, approved: $approved, rejected: $rejected}')
+    update_round_log '.summary' "$SUMMARY_JSON"
+    finalize_round_log "$ROUND"
+
+    echo "Round $ROUND complete. Report: $WORKING_DIR/round-${ROUND}-report.json"
     echo ""
 done
 
 echo "=== All rounds complete ==="
 echo "Completed tasks log: $WORKING_DIR/completed-tasks.md"
+echo "Round history: $ROUND_HISTORY"
