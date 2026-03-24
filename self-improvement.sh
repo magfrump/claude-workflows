@@ -402,7 +402,8 @@ Run git status to see conflicted files.
 Resolve each conflict by preserving the intent of both sides.
 Then git add the resolved files and git commit to complete the merge."
             # Verify the merge actually completed
-            if git diff --check &>/dev/null && ! git diff --name-only --diff-filter=U | grep -q .; then
+            # Check for unresolved conflicts (unmerged files)
+            if ! git diff --name-only --diff-filter=U | grep -q .; then
                 MERGE_STATUS="conflict_resolved"
             else
                 MERGE_STATUS="conflict_unresolved"
