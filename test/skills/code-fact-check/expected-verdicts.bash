@@ -82,3 +82,22 @@ KEY_CHECK["tc-c5.2-intended-vs-actual.js"]="verdict_match;;cites_pattern:2|3|off
 EXPECTED_VERDICT["tc-c6.1-multi-claim.js"]="Any"
 CLAIM_ACCURACY["tc-c6.1-multi-claim.js"]="mixed"  # Multiple claims with varied verdicts
 KEY_CHECK["tc-c6.1-multi-claim.js"]="min_claims:5;;format_check"
+
+# --- Category 8: Edge Cases / Negative Test Fixtures ---
+# Tests whether the skill gracefully handles degenerate inputs rather than producing confused analysis.
+
+EXPECTED_VERDICT["tc-c8.1-empty.js"]="skip"
+CLAIM_ACCURACY["tc-c8.1-empty.js"]="not_applicable"  # Empty file — nothing to check
+KEY_CHECK["tc-c8.1-empty.js"]="max_claims:0"
+
+EXPECTED_VERDICT["tc-c8.2-no-comments.js"]="skip"
+CLAIM_ACCURACY["tc-c8.2-no-comments.js"]="not_applicable"  # Code with no comments or docstrings
+KEY_CHECK["tc-c8.2-no-comments.js"]="max_claims:0"
+
+EXPECTED_VERDICT["tc-c8.3-binary-content.js"]="skip"
+CLAIM_ACCURACY["tc-c8.3-binary-content.js"]="not_applicable"  # Binary/garbled content, not code
+KEY_CHECK["tc-c8.3-binary-content.js"]="max_claims:0"
+
+EXPECTED_VERDICT["tc-c8.4-extremely-short.js"]="skip"
+CLAIM_ACCURACY["tc-c8.4-extremely-short.js"]="not_applicable"  # Single assignment, no claims
+KEY_CHECK["tc-c8.4-extremely-short.js"]="max_claims:0"

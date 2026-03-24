@@ -1,0 +1,1 @@
+Healthcare costs are rising.

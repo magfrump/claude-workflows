@@ -91,3 +91,21 @@ setup() {
 @test "tc-c6.1: multi-claim — has at least 5 claims and passes format check" {
   eval_fixture "$SKILL" "tc-c6.1-multi-claim.js"
 }
+
+# --- Category 8: Edge Cases / Negative Test Fixtures ---
+
+@test "tc-c8.1: empty file — gracefully declines with zero claims" {
+  eval_fixture "$SKILL" "tc-c8.1-empty.js"
+}
+
+@test "tc-c8.2: no comments — zero claims from uncommented code" {
+  eval_fixture "$SKILL" "tc-c8.2-no-comments.js"
+}
+
+@test "tc-c8.3: binary content — gracefully declines non-code input" {
+  eval_fixture "$SKILL" "tc-c8.3-binary-content.js"
+}
+
+@test "tc-c8.4: extremely short — no claims in single assignment" {
+  eval_fixture "$SKILL" "tc-c8.4-extremely-short.js"
+}

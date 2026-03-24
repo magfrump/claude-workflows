@@ -116,3 +116,22 @@ KEY_CHECK["tc-6.1-accurate-weak-argument.md"]="no_critique"
 EXPECTED_VERDICT["tc-6.3-obvious-but-wrong.md"]="Inaccurate"
 CLAIM_ACCURACY["tc-6.3-obvious-but-wrong.md"]="inaccurate"  # "Great Wall visible from space" is a well-known myth
 KEY_CHECK["tc-6.3-obvious-but-wrong.md"]="verdict_match;;min_claims:1"
+
+# --- Category 7: Edge Cases / Negative Test Fixtures ---
+# Tests whether the skill gracefully handles degenerate inputs rather than producing confused analysis.
+
+EXPECTED_VERDICT["tc-7.1-empty.md"]="skip"
+CLAIM_ACCURACY["tc-7.1-empty.md"]="not_applicable"  # Empty file — nothing to check
+KEY_CHECK["tc-7.1-empty.md"]="max_claims:0"
+
+EXPECTED_VERDICT["tc-7.2-no-claims.md"]="skip"
+CLAIM_ACCURACY["tc-7.2-no-claims.md"]="not_applicable"  # Meeting notes with no factual claims
+KEY_CHECK["tc-7.2-no-claims.md"]="max_claims:0"
+
+EXPECTED_VERDICT["tc-7.3-binary-content.md"]="skip"
+CLAIM_ACCURACY["tc-7.3-binary-content.md"]="not_applicable"  # Binary/garbled content, not prose
+KEY_CHECK["tc-7.3-binary-content.md"]="max_claims:0"
+
+EXPECTED_VERDICT["tc-7.4-extremely-short.md"]="skip"
+CLAIM_ACCURACY["tc-7.4-extremely-short.md"]="not_applicable"  # Vague one-liner with no specific checkable claim
+KEY_CHECK["tc-7.4-extremely-short.md"]="max_claims:0"
