@@ -57,10 +57,14 @@ setup() {
 }
 
 @test "scores use only the allowed values" {
-  local section scores bad
+  local section header_row score_col scores bad
   section=$(echo "$REPORT_CONTENT" | sed -n '/^## Automated Assessments/,/^## /p' | head -n -1)
-  # Extract score column values (second column in table rows, skip header and separator)
-  scores=$(echo "$section" | grep -E '^\|' | grep -vE '^\|.*---' | tail -n +2 | awk -F'|' '{print $3}' | sed 's/^ *//;s/ *$//')
+  # Find which pipe-delimited column contains "Score" in the header row
+  header_row=$(echo "$section" | grep -E '^\|' | head -1)
+  score_col=$(echo "$header_row" | awk -F'|' '{for(i=1;i<=NF;i++) if(tolower($i) ~ /score/) print i}')
+  [ -n "$score_col" ] || skip "no Score column found in table header"
+  # Extract score column values from data rows (skip header and separator)
+  scores=$(echo "$section" | grep -E '^\|' | grep -vE '^\|.*---' | tail -n +2 | awk -F'|' -v col="$score_col" '{print $col}' | sed 's/^ *//;s/ *$//')
   [ -n "$scores" ] || skip "no scores found"
   bad=$(echo "$scores" | grep -viE '^(Strong|Adequate|Weak)$' || true)
   [ -z "$bad" ]

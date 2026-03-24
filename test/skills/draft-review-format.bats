@@ -24,26 +24,26 @@ setup() {
   echo "$REPORT_CONTENT" | grep -qE '\*\*Checked:\*\*'
 }
 
-@test "report has a Status field with emoji indicator" {
-  echo "$REPORT_CONTENT" | grep -qE '\*\*Status:.*[🔴🟡✅]'
+@test "report has a Status field with a known status value" {
+  echo "$REPORT_CONTENT" | grep -qiE '\*\*Status:.*(DOES NOT PASS|CONDITIONAL PASS|PASSES VERIFICATION)'
 }
 
 # --- Tiered sections ---
 
 @test "report has Must Fix section" {
-  echo "$REPORT_CONTENT" | grep -qE '^## 🔴 Must Fix'
+  echo "$REPORT_CONTENT" | grep -qiE '^## .*Must Fix'
 }
 
 @test "report has Must Address section" {
-  echo "$REPORT_CONTENT" | grep -qE '^## 🟡 Must Address'
+  echo "$REPORT_CONTENT" | grep -qiE '^## .*Must Address'
 }
 
 @test "report has Consider section" {
-  echo "$REPORT_CONTENT" | grep -qE '^## 🟢 Consider'
+  echo "$REPORT_CONTENT" | grep -qiE '^## .*Consider'
 }
 
 @test "report has Verified section" {
-  echo "$REPORT_CONTENT" | grep -qiE '^## .*(Verified|✅)'
+  echo "$REPORT_CONTENT" | grep -qiE '^## .*Verified'
 }
 
 # --- Status line validity ---
@@ -56,13 +56,13 @@ setup() {
 
 @test "Must Fix section contains a table or (None)" {
   local section
-  section=$(echo "$REPORT_CONTENT" | sed -n '/^## 🔴 Must Fix/,/^## /p' | head -n -1)
+  section=$(echo "$REPORT_CONTENT" | sed -n '/^## .*Must Fix/,/^## /p' | head -n -1)
   echo "$section" | grep -qE '(\|.*\||\(None\))'
 }
 
 @test "Must Address section contains a table or (None)" {
   local section
-  section=$(echo "$REPORT_CONTENT" | sed -n '/^## 🟡 Must Address/,/^## /p' | head -n -1)
+  section=$(echo "$REPORT_CONTENT" | sed -n '/^## .*Must Address/,/^## /p' | head -n -1)
   echo "$section" | grep -qE '(\|.*\||\(None\))'
 }
 

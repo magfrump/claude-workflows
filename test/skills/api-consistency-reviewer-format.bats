@@ -63,10 +63,10 @@ setup() {
 }
 
 @test "findings have Recommendation lines" {
-  # Recommendations may appear as **Recommendation:** or inline in the finding text
+  # Recommendations may appear as **Recommendation:** fields or ### Recommendation headings
   local rec_count
-  rec_count=$(echo "$REPORT_CONTENT" | grep -ciE '^\*\*Recommendation:\*\*' || true)
-  [ "$rec_count" -gt 0 ] || echo "$REPORT_CONTENT" | grep -qiE 'Recommend'
+  rec_count=$(echo "$REPORT_CONTENT" | grep -ciE '^\*\*Recommendation:\*\*|^### Recommendation' || true)
+  [ "$rec_count" -gt 0 ]
 }
 
 # --- Ending sections ---

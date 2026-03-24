@@ -1,5 +1,11 @@
 # Shared helpers for skill output BATS tests.
 # Load with: load helpers  (from the same directory)
+#
+# Most tests require a generated report to exist. Without one, tests skip
+# gracefully. To run a specific test suite, generate the report first via
+# the corresponding skill, then point REPORT_PATH at it:
+#   REPORT_PATH=path/to/report.md bats test/skills/<skill>-format.bats
+# To generate all reports, see test/skills/generate-reports.bash.
 
 # Call in setup() to load a claim-based report and precompute common values.
 # Args: $1 = default report path
