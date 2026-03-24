@@ -57,17 +57,21 @@ HEADER
             WINDOW=$(jq -r --arg tid "$TASK_ID" '.[] | select(.id==$tid) | .hypothesis_window // 3' "$PRIOR_TASKS")
 
             echo "  Evaluating hypothesis for: $TASK_ID"
-            EVAL_RESULT=$(claude -p "Evaluate this hypothesis from round $PRIOR_ROUND (now round $ROUND):
+            # Build the prompt with printf to avoid shell expansion of untrusted
+            # hypothesis text (which could contain $(...) or backticks).
+            EVAL_PROMPT=$(printf 'Evaluate this hypothesis from round %s (now round %s):
 
-Task: $TASK_ID
-Hypothesis: $HYPOTHESIS
-Window: $WINDOW rounds
+Task: %s
+Hypothesis: %s
+Window: %s rounds
 
 Review the repo state, git log, completed-tasks.md, and validation logs to
 determine whether the hypothesis was CONFIRMED, REFUTED, or INCONCLUSIVE.
 
 Output exactly one line in this format:
-HYPOTHESIS_VERDICT: <CONFIRMED|REFUTED|INCONCLUSIVE> | <one-sentence evidence summary>" 2>/dev/null) || true
+HYPOTHESIS_VERDICT: <CONFIRMED|REFUTED|INCONCLUSIVE> | <one-sentence evidence summary>' \
+                "$PRIOR_ROUND" "$ROUND" "$TASK_ID" "$HYPOTHESIS" "$WINDOW")
+            EVAL_RESULT=$(claude -p "$EVAL_PROMPT" 2>/dev/null) || true
 
             VERDICT_LINE=$(echo "$EVAL_RESULT" | sed -n 's/.*HYPOTHESIS_VERDICT: //p' | head -1)
             if [ -z "$VERDICT_LINE" ]; then
