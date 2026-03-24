@@ -10,11 +10,11 @@ This branch adds YAML frontmatter with `Last verified` and `Relevant paths` fiel
 
 ## Factual Issues
 
-1. **`fact-check-report.md` references a nonexistent path.** The frontmatter lists `test/fixtures/` but this directory does not exist in the repository. The actual test fixture directories are `test/skills/fact-check/fixtures/` and `test/skills/code-fact-check/fixtures/`. This path will silently produce no staleness signal because `git log -- test/fixtures/` will always return empty.
+1. ~~**`fact-check-report.md` references a nonexistent path.**~~ **Resolved in 00c1645.** Path corrected to `test/skills/fact-check/fixtures/` and `test/skills/code-fact-check/fixtures/`.
 
-2. **`performance-review.md` includes paths it does not analyze.** The review covers a specific 10-commit diff focused on code review infrastructure, but the frontmatter lists `CLAUDE.md` and `workflows/user-testing-workflow.md` as relevant paths. These were likely files touched in that diff, not files whose changes would invalidate the review's findings. Relevant paths should track what the review *analyzed*, not what happened to be in the commit range.
+2. ~~**`performance-review.md` includes paths it does not analyze.**~~ **Resolved in 00c1645.** Removed `CLAUDE.md` and `workflows/user-testing-workflow.md`.
 
-3. **`security-review.md` has the same over-inclusion issue.** It lists `CLAUDE.md` and several skills that were in the reviewed diff but are not the subject of security-relevant findings.
+3. ~~**`security-review.md` has the same over-inclusion issue.**~~ **Resolved in 00c1645.** Removed `CLAUDE.md`.
 
 ## Structural Critique
 
