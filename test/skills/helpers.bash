@@ -8,7 +8,7 @@ load_report() {
   if [ ! -f "$REPORT" ]; then
     skip "No report found at $REPORT — generate one first"
   fi
-  REPORT_CONTENT=$(cat "$REPORT" | tr -d '\r')
+  REPORT_CONTENT=$(tr -d '\r' < "$REPORT")
   CLAIM_COUNT=$(echo "$REPORT_CONTENT" | grep -cE '^## Claim [0-9]+' || true)
   if [ "$CLAIM_COUNT" -eq 0 ]; then
     skip "Report has no claims"
@@ -31,7 +31,7 @@ load_generic_report() {
   if [ ! -f "$REPORT" ]; then
     skip "No report found at $REPORT — generate one first"
   fi
-  REPORT_CONTENT=$(cat "$REPORT" | tr -d '\r')
+  REPORT_CONTENT=$(tr -d '\r' < "$REPORT")
   if [ -z "$REPORT_CONTENT" ]; then
     skip "Report is empty"
   fi
