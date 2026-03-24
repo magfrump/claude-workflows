@@ -17,6 +17,8 @@ This workflow produces markdown artifacts in `docs/working/` within the project:
 
 These files are **committed to the repo** but treated as disposable. They exist to support the current task and to give collaborators visibility into Claude's understanding. They are freely overwritten or replaced as work progresses. If something in a working doc has lasting value, move it to `docs/thoughts/` (living knowledge) or `docs/decisions/` (finalized decisions).
 
+**Freshness tracking**: Because RPI working docs are disposable per-task artifacts, they do not need `Last verified` or `Relevant paths` fields. If a research doc is promoted to `docs/thoughts/` for long-term reference, add those fields at promotion time. See `guides/doc-freshness.md` for the freshness tracking heuristic.
+
 To keep working docs out of PR diffs by default, add this to the project's `.gitattributes`:
 
 ```

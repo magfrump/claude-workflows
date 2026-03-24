@@ -56,6 +56,8 @@ Projects may optionally have a `docs/thoughts/` directory for working notes that
 
 Unlike decision records (which are final), these are living documents. Update them when you learn something new about the codebase. Read them at the start of a session if they exist — they're context from your past selves.
 
+Long-lived documents (onboarding docs, spike records, shared thoughts) support **freshness tracking** via `Last verified` and `Relevant paths` fields. Before relying on these documents, check whether tracked paths have changed using `git log --since`. See `guides/doc-freshness.md` for the full heuristic.
+
 ## Operating Modes
 
 The user sets the current mode by typing `/active` or `/away`.
