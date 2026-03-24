@@ -39,6 +39,8 @@ Projects may optionally have a `docs/thoughts/` directory for working notes that
 
 These are living documents. Update them when you learn something new about the codebase. Read them at the start of a session if they exist.
 
+Long-lived documents (onboarding docs, spike records, shared thoughts) support **freshness tracking** via `Last verified` and `Relevant paths` fields. Before relying on these documents, check whether tracked paths have changed using `git log --since`. See `guides/doc-freshness.md` for the full heuristic.
+
 ## General Principles
 
 - Commit after each logical unit of work with conventional commit messages (feat:, fix:, refactor:, test:, docs:, spike:)
