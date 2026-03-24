@@ -1,0 +1,1 @@
+Added BATS structural output schema tests for all 14 skills (12 new + 2 existing), validating required sections, field formats, and verdict/severity scales without asserting content, with extended shared helpers for cross-skill test patterns.
