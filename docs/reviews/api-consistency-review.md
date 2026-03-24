@@ -1,3 +1,12 @@
+---
+Last verified: 2026-03-23
+Relevant paths:
+  - skills/code-review.md
+  - skills/draft-review.md
+  - skills/matrix-analysis.md
+  - patterns/orchestrated-review.md
+---
+
 # API Consistency Review
 
 **Scope:** Branch `feat/r1-skill-output-schema-validation` vs `main` (15 files, 1027 lines added)

@@ -1,3 +1,9 @@
+---
+Last verified: 2026-03-23
+Relevant paths:
+  - workflows/research-plan-implement.md
+---
+
 # Self-Evaluation: research-plan-implement
 
 **Target:** `workflows/research-plan-implement.md` | **Type:** Workflow | **Evaluated:** 2026-03-23

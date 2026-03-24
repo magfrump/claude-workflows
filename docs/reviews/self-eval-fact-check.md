@@ -1,3 +1,10 @@
+---
+Last verified: 2026-03-23
+Relevant paths:
+  - skills/fact-check.md
+  - skills/draft-review.md
+---
+
 # Self-Evaluation: fact-check
 
 **Target:** `skills/fact-check.md` | **Type:** Skill | **Evaluated:** 2026-03-23

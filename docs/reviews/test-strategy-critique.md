@@ -1,3 +1,11 @@
+---
+Last verified: 2026-03-23
+Relevant paths:
+  - skills/fact-check.md
+  - skills/code-fact-check.md
+  - test/
+---
+
 # Test Strategy Critique: fact-check and code-fact-check Skills
 
 **Reviewed:** 2026-03-23

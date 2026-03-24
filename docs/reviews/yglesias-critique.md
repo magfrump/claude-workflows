@@ -1,3 +1,10 @@
+---
+Last verified: 2026-03-23
+Relevant paths:
+  - skills/code-review.md
+  - docs/decisions/002-critic-style-code-review.md
+---
+
 # Yglesias-Style Critique: Code Review Orchestrator
 
 ## The Goal vs. the Mechanism

@@ -1,3 +1,11 @@
+---
+Last verified: 2026-03-23
+Relevant paths:
+  - skills/fact-check.md
+  - skills/code-fact-check.md
+  - test/
+---
+
 # Cowen-Style Critique: Fact-Check Skills Test Strategy
 
 ## The Argument, Decomposed

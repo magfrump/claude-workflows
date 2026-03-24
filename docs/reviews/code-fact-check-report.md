@@ -1,3 +1,11 @@
+---
+Last verified: 2026-03-23
+Relevant paths:
+  - skills/code-review.md
+  - patterns/orchestrated-review.md
+  - docs/decisions/002-critic-style-code-review.md
+---
+
 # Code Fact-Check Report
 
 **Repository:** claude-workflows

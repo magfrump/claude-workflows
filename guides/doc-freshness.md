@@ -6,15 +6,32 @@ Long-lived documents — onboarding guides, spike records, shared thoughts — c
 
 ## Freshness fields
 
-Documents that benefit from freshness tracking include two fields in their header:
+Documents that benefit from freshness tracking include two fields in their header. There are two supported formats:
+
+**Inline bold fields** — used in onboarding docs, spike records, and shared thoughts:
 
 ```markdown
 **Last verified:** 2026-03-23
 **Relevant paths:** src/, lib/auth.ts, configs/
 ```
 
+**YAML frontmatter** — used in review artifacts (`docs/reviews/`):
+
+```yaml
+---
+Last verified: 2026-03-23
+Relevant paths:
+  - skills/draft-review.md
+  - skills/fact-check.md
+---
+```
+
+Both formats carry the same two fields:
+
 - **Last verified** — the date someone (human or agent) last confirmed the document's accuracy against the current codebase.
 - **Relevant paths** — repo-relative file paths or directory globs. Changes to these paths are the primary staleness signal.
+
+Use YAML frontmatter for review artifacts (it is parseable by tooling and clearly separated from document content). Use inline bold fields for other document types.
 
 ## Staleness check
 
@@ -40,7 +57,7 @@ git log --oneline --since="2026-03-23" -- workflows/ skills/
 | Onboarding docs | Yes | Long-lived, broad scope, high staleness risk |
 | Spike records | Yes | Referenced later; API/library behavior may change |
 | Shared thoughts | Yes | Living docs that accumulate assumptions |
-| Review artifacts | Already tracked | Use existing `Checked:` date field |
+| Review artifacts | Yes | Long-lived; stale reviews mislead future sessions |
 | Decision records | No | Superseded by new decisions, not verified |
 | RPI working docs | No | Disposable per-task; overwritten, not maintained |
 
@@ -64,3 +81,23 @@ Do **not** update the date just because you read the document — only when you'
 When a document's scope changes (e.g., it now covers a new subsystem), update the relevant paths list. When files are renamed or moved, update the paths to match.
 
 Paths should be specific enough to produce useful signals but not so narrow that changes slip through. A directory path like `src/auth/` is usually better than listing individual files, unless the document is specifically about one file.
+
+## Review artifact lifecycle
+
+Review artifacts in `docs/reviews/` use the same `Last verified` and `Relevant paths` YAML frontmatter fields as other tracked documents. Because reviews analyze specific code, their freshness is tied to the files they reviewed.
+
+### When to re-run a review
+
+Run the staleness check against the review's `Relevant paths`. If tracked paths have changed since `Last verified`, the review may contain findings that no longer apply or may be missing findings about new code. Re-run the skill or orchestrator that produced the review.
+
+### When to archive a review
+
+If the reviewed content has been deleted or substantially replaced (e.g., a skill was removed from the repo), the review is obsolete. Move it out of `docs/reviews/` or delete it. A review of code that no longer exists actively misleads future sessions.
+
+### When to leave a review alone
+
+If the staleness check returns empty (no changes to tracked paths), the review is fresh. No action needed — update `Last verified` if you've confirmed this.
+
+### Relevant paths for reviews
+
+The `Relevant paths` in a review's YAML frontmatter (see format in [Freshness fields](#freshness-fields)) should list the files the review analyzed -- these are the files whose changes would invalidate the review's findings. Do not include files that merely appeared in the same diff but were not the subject of the review's analysis.

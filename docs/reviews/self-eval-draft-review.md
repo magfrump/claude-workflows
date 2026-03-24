@@ -1,3 +1,12 @@
+---
+Last verified: 2026-03-23
+Relevant paths:
+  - skills/draft-review.md
+  - skills/fact-check.md
+  - skills/cowen-critique.md
+  - skills/yglesias-critique.md
+---
+
 # Self-Evaluation: draft-review
 
 **Target:** `skills/draft-review.md` | **Type:** Skill (orchestrator) | **Evaluated:** 2026-03-23

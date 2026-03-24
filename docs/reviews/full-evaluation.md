@@ -1,3 +1,29 @@
+---
+Last verified: 2026-03-23
+Relevant paths:
+  - skills/fact-check.md
+  - skills/cowen-critique.md
+  - skills/yglesias-critique.md
+  - skills/draft-review.md
+  - skills/code-fact-check.md
+  - skills/security-reviewer.md
+  - skills/performance-reviewer.md
+  - skills/api-consistency-reviewer.md
+  - skills/matrix-analysis.md
+  - skills/test-strategy.md
+  - skills/tech-debt-triage.md
+  - skills/dependency-upgrade.md
+  - workflows/research-plan-implement.md
+  - workflows/divergent-design.md
+  - workflows/task-decomposition.md
+  - workflows/spike.md
+  - workflows/pr-prep.md
+  - workflows/user-testing-workflow.md
+  - workflows/codebase-onboarding.md
+  - workflows/branch-strategy.md
+  - docs/evaluation-rubric.md
+---
+
 # Full Evaluation of Skills and Workflows
 
 **Date:** 2026-03-23

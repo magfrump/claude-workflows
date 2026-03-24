@@ -1,3 +1,10 @@
+---
+Last verified: 2026-03-23
+Relevant paths:
+  - skills/self-eval.md
+  - docs/evaluation-rubric.md
+---
+
 # Self-Evaluation: self-eval
 
 **Target:** `skills/self-eval.md` | **Type:** Skill | **Evaluated:** 2026-03-24
