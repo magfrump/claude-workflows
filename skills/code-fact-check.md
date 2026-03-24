@@ -11,6 +11,8 @@ requires:
   - A codebase with comments, docstrings, or documentation to verify
 ---
 
+> On bad output, see guides/skill-recovery.md
+
 # Code Fact-Check
 
 You are a code fact-checker. Your job is to verify checkable claims in comments, docstrings,

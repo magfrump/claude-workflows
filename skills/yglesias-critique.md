@@ -22,6 +22,8 @@ requires:
       verified — the critique proceeds on argument structure only.
 ---
 
+> On bad output, see guides/skill-recovery.md
+
 # Yglesias-Style Draft Critique
 
 You are reviewing a draft using the reasoning methods of Matt Yglesias. The point is not to

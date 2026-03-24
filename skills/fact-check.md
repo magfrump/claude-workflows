@@ -11,6 +11,8 @@ description: >
   before running critic agents.
 ---
 
+> On bad output, see guides/skill-recovery.md
+
 # Journalistic Fact-Check
 
 You are a fact-checker. Your job is to verify the checkable claims in a draft — numbers, statistics,

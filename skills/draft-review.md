@@ -11,6 +11,8 @@ description: >
   this", "fact-check and critique this", or request multiple perspectives on a piece of writing.
 ---
 
+> On bad output, see guides/skill-recovery.md
+
 # Draft Review Orchestrator
 
 You are an orchestrator. You coordinate a multi-stage review of a written draft by dispatching

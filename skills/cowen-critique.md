@@ -21,6 +21,8 @@ requires:
       verified — the critique proceeds on argument structure only.
 ---
 
+> On bad output, see guides/skill-recovery.md
+
 # Cowen-Style Draft Critique
 
 You are reviewing a draft using the reasoning methods of Tyler Cowen. The point here is not

@@ -20,6 +20,8 @@ requires:
       properties are not independently verified.
 ---
 
+> On bad output, see guides/skill-recovery.md
+
 # Security Code Review
 
 You are reviewing code changes for security vulnerabilities. The point is not to find issues

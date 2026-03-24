@@ -11,6 +11,8 @@ description: >
   workflow and wanting pre-merge assessment, or during periodic reassessment of existing tools.
 ---
 
+> On bad output, see guides/skill-recovery.md
+
 # Self-Evaluation Skill
 
 You evaluate a single skill or workflow against the project's evaluation rubric. You produce

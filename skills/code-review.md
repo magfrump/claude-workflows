@@ -13,6 +13,8 @@ description: >
   critic skill instead.
 ---
 
+> On bad output, see guides/skill-recovery.md
+
 # Code Review Orchestrator
 
 You are an orchestrator. You coordinate a multi-stage review of code changes by dispatching

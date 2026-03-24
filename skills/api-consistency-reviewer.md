@@ -23,6 +23,8 @@ requires:
       claims about API behavior are not independently verified.
 ---
 
+> On bad output, see guides/skill-recovery.md
+
 # API Consistency Code Review
 
 You are reviewing code changes for API design consistency. The point is not to evaluate
