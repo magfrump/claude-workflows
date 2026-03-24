@@ -8,6 +8,13 @@
 
 This is the most common workflow. When in doubt, use this one.
 
+## When to pivot
+
+- **→ Spike**: If research reveals a feasibility question you can't answer by reading code, pivot to a spike. Your research doc's invariants and relevant files become context for defining the spike question.
+- **→ Divergent Design**: If research surfaces 3+ viable approaches (see step 2 for signals), invoke DD as a sub-procedure. Carry your research doc's constraints into DD's diagnosis step; DD's decision feeds back into your plan.
+- **← From Spike**: When a spike recommends "proceed," load its RPI seed section as a head start on research — don't re-derive what the spike already learned.
+- **← From Onboarding**: The onboarding doc's architecture map and key flows replace the "explore from scratch" part of research. Start research scoped to your specific task, not the whole codebase.
+
 ## Working documents
 
 This workflow produces markdown artifacts in `docs/working/` within the project:
