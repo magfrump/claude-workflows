@@ -5,7 +5,9 @@
     "files_touched": [
       "workflows/research-plan-implement.md"
     ],
-    "independent": true
+    "independent": true,
+    "hypothesis": "Handoff docs will reduce context-rebuilding time in follow-up sessions, measurable by fewer codebase exploration steps in subsequent RPI rounds",
+    "hypothesis_window": 3
   },
   {
     "id": "retro-appendix",
@@ -13,7 +15,9 @@
     "files_touched": [
       "workflows/pr-prep.md"
     ],
-    "independent": true
+    "independent": true,
+    "hypothesis": "Retrospective questions will surface at least 1 actionable process improvement within 3 rounds of use",
+    "hypothesis_window": 3
   },
   {
     "id": "decision-log",
@@ -22,7 +26,9 @@
       "docs/decisions/log.md",
       "workflows/divergent-design.md"
     ],
-    "independent": true
+    "independent": true,
+    "hypothesis": "The lightweight log will capture at least 3 decisions that would otherwise go unrecorded in the next 3 rounds",
+    "hypothesis_window": 3
   },
   {
     "id": "self-eval-skill",
@@ -31,7 +37,9 @@
       "skills/self-evaluation.md",
       "docs/reviews/"
     ],
-    "independent": true
+    "independent": true,
+    "hypothesis": "Self-eval gate will reject at least 1 low-quality skill/workflow change within 3 rounds, preventing a regression from being merged",
+    "hypothesis_window": 3
   },
   {
     "id": "doc-freshness",
@@ -40,6 +48,8 @@
       "workflows/research-plan-implement.md",
       "workflows/codebase-onboarding.md"
     ],
-    "independent": true
+    "independent": true,
+    "hypothesis": "Freshness tracking will flag at least 1 stale doc that would otherwise mislead a session within 3 rounds",
+    "hypothesis_window": 3
   }
 ]

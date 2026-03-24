@@ -16,6 +16,68 @@ for ROUND in $(seq 1 $MAX_ROUNDS); do
     echo "=== Round $ROUND ==="
 
     # -------------------------------------------------------
+    # Step 0: Check hypothesis windows from prior rounds
+    # -------------------------------------------------------
+    HYPOTHESIS_LOG="$WORKING_DIR/hypothesis-log.md"
+    if [ ! -f "$HYPOTHESIS_LOG" ]; then
+        cat > "$HYPOTHESIS_LOG" <<'HEADER'
+# Hypothesis Log
+
+Tracks falsifiable predictions made at task creation time and their outcomes.
+
+| Round | Task ID | Hypothesis | Window | Checked at Round | Outcome | Evidence |
+|-------|---------|------------|--------|------------------|---------|----------|
+HEADER
+    fi
+
+    for PRIOR_ROUND in $(seq 1 $((ROUND - 1))); do
+        PRIOR_TASKS="$WORKING_DIR/tasks-round-$PRIOR_ROUND.json"
+        [ -f "$PRIOR_TASKS" ] || continue
+
+        # Get tasks that have a hypothesis and whose window has elapsed
+        ELIGIBLE=$(jq -r --argjson current "$ROUND" --argjson prior "$PRIOR_ROUND" \
+            '[.[] | select(.hypothesis != null and .hypothesis != "") |
+              select(($current - $prior) >= (.hypothesis_window // 3))] | .[]? | .id' \
+            "$PRIOR_TASKS" 2>/dev/null) || true
+
+        for TASK_ID in $ELIGIBLE; do
+            # Skip if already recorded in the log
+            if grep -qF "| $TASK_ID |" "$HYPOTHESIS_LOG" 2>/dev/null; then
+                continue
+            fi
+
+            # Check if the task was actually completed (approved and merged)
+            if ! grep -qF "**$TASK_ID**" "$WORKING_DIR/completed-tasks.md" 2>/dev/null; then
+                continue
+            fi
+
+            HYPOTHESIS=$(jq -r ".[] | select(.id==\"$TASK_ID\") | .hypothesis" "$PRIOR_TASKS")
+            WINDOW=$(jq -r ".[] | select(.id==\"$TASK_ID\") | .hypothesis_window // 3" "$PRIOR_TASKS")
+
+            echo "  Evaluating hypothesis for: $TASK_ID"
+            EVAL_RESULT=$(claude -p "Evaluate this hypothesis from round $PRIOR_ROUND (now round $ROUND):
+
+Task: $TASK_ID
+Hypothesis: $HYPOTHESIS
+Window: $WINDOW rounds
+
+Review the repo state, git log, completed-tasks.md, and validation logs to
+determine whether the hypothesis was CONFIRMED, REFUTED, or INCONCLUSIVE.
+
+Output exactly one line in this format:
+HYPOTHESIS_VERDICT: <CONFIRMED|REFUTED|INCONCLUSIVE> | <one-sentence evidence summary>" 2>&1) || true
+
+            VERDICT_LINE=$(echo "$EVAL_RESULT" | grep -oP 'HYPOTHESIS_VERDICT: \K.*' || echo "INCONCLUSIVE | evaluation failed to parse")
+            OUTCOME=$(echo "$VERDICT_LINE" | cut -d'|' -f1 | xargs)
+            EVIDENCE=$(echo "$VERDICT_LINE" | cut -d'|' -f2- | xargs)
+
+            # Append to hypothesis log
+            echo "| $PRIOR_ROUND | $TASK_ID | $HYPOTHESIS | $WINDOW | $ROUND | $OUTCOME | $EVIDENCE |" >> "$HYPOTHESIS_LOG"
+            echo "    $TASK_ID: $OUTCOME"
+        done
+    done
+
+    # -------------------------------------------------------
     # Step 1: Generate ideas
     # -------------------------------------------------------
     echo "Generating ideas (round $ROUND)..."
@@ -50,7 +112,14 @@ of autonomous work).
 
 Output a JSON array to docs/working/tasks-round-$ROUND.json with fields:
 {\"id\": \"short-kebab-case\", \"description\": \"one paragraph task description\",
-\"files_touched\": [\"list of files\"], \"independent\": true/false}
+\"files_touched\": [\"list of files\"], \"independent\": true/false,
+\"hypothesis\": \"a falsifiable prediction about the impact of this task\",
+\"hypothesis_window\": 3}
+
+The hypothesis field must state a concrete, falsifiable prediction about what
+this change will achieve (e.g. 'Adding schema validation will catch at least
+1 regression in the next 3 rounds'). The hypothesis_window is the number of
+rounds after which the hypothesis should be evaluated (default 3).
 
 Only include tasks where independent is true. Discard tasks that depend on
 other tasks in this round."
