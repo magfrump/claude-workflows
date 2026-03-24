@@ -11,7 +11,7 @@ ROUND_HISTORY="$WORKING_DIR/round-history.json"
 # Check required dependencies
 command -v jq &>/dev/null || { echo "Error: jq is required but not found"; exit 1; }
 
-CONVERGENCE_THRESHOLD=70  # percent overlap to trigger convergence
+CONVERGENCE_THRESHOLD=${CONVERGENCE_THRESHOLD:-70}  # percent overlap to trigger convergence
 HISTORY_FILE="$REPO_DIR/docs/working/problem-history.json"
 
 mkdir -p "$WORKING_DIR"
@@ -132,7 +132,7 @@ Extract each diagnosed problem into a short one-line summary (just the core issu
 Output ONLY a JSON array of strings, nothing else. Example:
 [\"Session continuity is fragile\", \"No feedback loop from usage\"]
 
-If there is no Diagnose section, output an empty array: []" 2>&1 | grep -E '^\[' | head -1) || true
+If there is no Diagnose section, output an empty array: []" 2>/dev/null | sed 's/^[[:space:]]*//' | grep -E '^\[' | head -1) || true
 
     # Validate we got a JSON array; default to empty if extraction failed
     if ! echo "$PROBLEMS_JSON" | jq empty 2>/dev/null; then
@@ -143,12 +143,16 @@ If there is no Diagnose section, output an empty array: []" 2>&1 | grep -E '^\['
     PROBLEM_COUNT=$(echo "$PROBLEMS_JSON" | jq 'length')
 
     # Check convergence against prior rounds if we have history and problems
+    # jq expression: collect all arrays from history, concatenate them (add),
+    # fall back to empty array if history is empty (// []), then emit each string.
     PRIOR_PROBLEMS=$(jq -r '[.[]] | add // [] | .[]' "$HISTORY_FILE" 2>/dev/null | sort -u) || true
     if [ "$PROBLEM_COUNT" -gt 0 ] && [ -n "$PRIOR_PROBLEMS" ]; then
         echo "  Comparing $PROBLEM_COUNT problems against prior rounds..."
 
         # Use Claude to assess semantic overlap between current and prior problems
-        OVERLAP_RESULT=$(claude -p "You are comparing two sets of problem descriptions to detect convergence.
+        # R2 fix: use heredoc to safely pass PRIOR_PROBLEMS (may contain special chars)
+        OVERLAP_PROMPT=$(cat <<CONVERGENCE_EOF
+You are comparing two sets of problem descriptions to detect convergence.
 
 CURRENT ROUND PROBLEMS:
 $PROBLEMS_JSON
@@ -158,11 +162,14 @@ $PRIOR_PROBLEMS
 
 For each current problem, determine if it is semantically equivalent to (or a minor restatement of) any prior problem. Two problems overlap if they describe the same underlying issue, even if worded differently.
 
-Output ONLY a single integer: the percentage of current problems that overlap with prior problems (0-100). Nothing else." 2>&1 | grep -oP '^\d+$' | head -1) || true
+Output ONLY a single integer: the percentage of current problems that overlap with prior problems (0-100). Nothing else.
+CONVERGENCE_EOF
+        )
+        OVERLAP_RESULT=$(claude -p "$OVERLAP_PROMPT" 2>/dev/null | grep -oP '\d+' | head -1) || true
 
         if [ -n "$OVERLAP_RESULT" ] && [ "$OVERLAP_RESULT" -ge "$CONVERGENCE_THRESHOLD" ]; then
             echo "Convergence detected: ${OVERLAP_RESULT}% of problems overlap with prior rounds (threshold: ${CONVERGENCE_THRESHOLD}%)."
-            echo "Stopping after $((ROUND - 1)) productive rounds."
+            echo "Stopping before round $ROUND implementation ($((ROUND - 1)) rounds completed)."
             echo "[round-$ROUND] CONVERGED: ${OVERLAP_RESULT}% problem overlap" >> "$WORKING_DIR/validation-round-$ROUND.log"
             break
         elif [ -n "$OVERLAP_RESULT" ]; then
