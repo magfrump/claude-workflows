@@ -13,6 +13,14 @@ load_report() {
   if [ "$CLAIM_COUNT" -eq 0 ]; then
     skip "Report has no claims"
   fi
+  # Extract only the claims sections (from first claim to the summary/attention
+  # section) so field-counting helpers aren't thrown off by metadata fields that
+  # share the same name (e.g. **Confidence:** in a report header).
+  CLAIMS_BODY=$(echo "$REPORT_CONTENT" | sed -n '/^## Claim [0-9]/,/^## [^C]/p' | sed '$d')
+  if [ -z "$CLAIMS_BODY" ]; then
+    # Fallback: claims run to end of file (no trailing non-Claim ## heading).
+    CLAIMS_BODY=$(echo "$REPORT_CONTENT" | sed -n '/^## Claim [0-9]/,$p')
+  fi
   ATTENTION_SECTION=$(echo "$REPORT_CONTENT" | sed -n '/^## Claims Requiring/,$p')
 }
 
@@ -30,15 +38,21 @@ load_generic_report() {
 }
 
 # Count findings in reviewer-style reports (#### N. Title).
+# Also extracts FINDINGS_BODY (first finding heading to EOF) so that
+# assert_field_per_finding counts fields only within finding sections,
+# not in report-level metadata that may share the same field names.
 count_findings() {
   FINDING_COUNT=$(echo "$REPORT_CONTENT" | grep -cE '^#{3,4} [0-9]+\.' || true)
+  FINDINGS_BODY=$(echo "$REPORT_CONTENT" | sed -n '/^#{3,4} [0-9]\+\./,$p')
 }
 
 # Assert that every finding has a given field.
+# Counts only within FINDINGS_BODY (set by count_findings) to avoid
+# false matches from report-level metadata sharing the same field name.
 assert_field_per_finding() {
   local field="$1"
   local field_count
-  field_count=$(echo "$REPORT_CONTENT" | grep -cE "^\\*\\*${field}:\\*\\*" || true)
+  field_count=$(echo "$FINDINGS_BODY" | grep -cE "^\\*\\*${field}:\\*\\*" || true)
   [ "$FINDING_COUNT" -eq "$field_count" ]
 }
 
@@ -55,10 +69,12 @@ assert_heading_exists() {
 }
 
 # Assert that every claim section has a given field (e.g., "Verdict", "Confidence").
+# Counts only within CLAIMS_BODY (set by load_report) to avoid
+# false matches from report-level metadata sharing the same field name.
 assert_field_per_claim() {
   local field="$1"
   local field_count
-  field_count=$(echo "$REPORT_CONTENT" | grep -cE "^\\*\\*${field}:\\*\\*" || true)
+  field_count=$(echo "$CLAIMS_BODY" | grep -cE "^\\*\\*${field}:\\*\\*" || true)
   [ "$CLAIM_COUNT" -eq "$field_count" ]
 }
 
