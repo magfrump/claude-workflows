@@ -1,3 +1,11 @@
+---
+Last verified: 2026-03-23
+Relevant paths:
+  - skills/
+  - workflows/
+  - docs/evaluation-rubric.md
+---
+
 # Full Evaluation of Skills and Workflows
 
 **Date:** 2026-03-23

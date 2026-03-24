@@ -1,3 +1,14 @@
+---
+Last verified: 2026-03-24
+Relevant paths:
+  - test/skills/helpers.bash
+  - test/skills/self-eval-format.bats
+  - test/skills/code-review-format.bats
+  - test/skills/draft-review-format.bats
+  - test/skills/performance-reviewer-format.bats
+  - test/skills/api-consistency-reviewer-format.bats
+---
+
 # Performance Code Review
 
 **Scope:** Branch `feat/r1-skill-output-schema-validation` vs `main` (15 files, 1027 lines added)

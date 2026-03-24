@@ -40,7 +40,7 @@ git log --oneline --since="2026-03-23" -- workflows/ skills/
 | Onboarding docs | Yes | Long-lived, broad scope, high staleness risk |
 | Spike records | Yes | Referenced later; API/library behavior may change |
 | Shared thoughts | Yes | Living docs that accumulate assumptions |
-| Review artifacts | Already tracked | Use existing `Checked:` date field |
+| Review artifacts | Yes | Long-lived; stale reviews mislead future sessions |
 | Decision records | No | Superseded by new decisions, not verified |
 | RPI working docs | No | Disposable per-task; overwritten, not maintained |
 
@@ -64,3 +64,34 @@ Do **not** update the date just because you read the document — only when you'
 When a document's scope changes (e.g., it now covers a new subsystem), update the relevant paths list. When files are renamed or moved, update the paths to match.
 
 Paths should be specific enough to produce useful signals but not so narrow that changes slip through. A directory path like `src/auth/` is usually better than listing individual files, unless the document is specifically about one file.
+
+## Review artifact lifecycle
+
+Review artifacts in `docs/reviews/` use the same `Last verified` and `Relevant paths` YAML frontmatter fields as other tracked documents. Because reviews analyze specific code, their freshness is tied to the files they reviewed.
+
+### When to re-run a review
+
+Run the staleness check against the review's `Relevant paths`. If tracked paths have changed since `Last verified`, the review may contain findings that no longer apply or may be missing findings about new code. Re-run the skill or orchestrator that produced the review.
+
+### When to archive a review
+
+If the reviewed content has been deleted or substantially replaced (e.g., a skill was removed from the repo), the review is obsolete. Move it out of `docs/reviews/` or delete it. A review of code that no longer exists actively misleads future sessions.
+
+### When to leave a review alone
+
+If the staleness check returns empty (no changes to tracked paths), the review is fresh. No action needed — update `Last verified` if you've confirmed this.
+
+### Frontmatter format for reviews
+
+Review artifacts use YAML frontmatter with the standard freshness fields:
+
+```yaml
+---
+Last verified: 2026-03-23
+Relevant paths:
+  - skills/draft-review.md
+  - skills/fact-check.md
+---
+```
+
+The `Relevant paths` should list the files the review analyzed — these are the files whose changes would invalidate the review's findings.

@@ -1,3 +1,11 @@
+---
+Last verified: 2026-03-23
+Relevant paths:
+  - skills/fact-check.md
+  - skills/code-fact-check.md
+  - test/
+---
+
 # Draft Verification Rubric
 
 **Draft:** Test Strategy & Evaluation Infrastructure for Fact-Check Skills (branch `chore/cleanup-20260320`) | **Checked:** 2026-03-23 | **Status: 🟡 CONDITIONAL PASS** — 0 red items, 3 yellow items remain open

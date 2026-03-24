@@ -1,3 +1,9 @@
+---
+Last verified: 2026-03-23
+Relevant paths:
+  - test/fixtures/
+---
+
 # Fact-Check Report: Test Fixtures for fact-check Skills
 
 **Checked:** 2026-03-23

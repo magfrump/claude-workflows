@@ -1,3 +1,11 @@
+---
+Last verified: 2026-03-23
+Relevant paths:
+  - skills/code-review.md
+  - patterns/orchestrated-review.md
+  - docs/decisions/002-critic-style-code-review.md
+---
+
 # Code Review Rubric
 
 **Scope:** `feat/r1-workflow-pivot-guidance` vs `main` — 4 workflow files + 1 summary doc | **Reviewed:** 2026-03-24 | **Status: 🟡 CONDITIONAL PASS** — 2 amber item(s) awaiting resolution or justification
