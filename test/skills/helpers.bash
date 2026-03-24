@@ -49,7 +49,7 @@ load_generic_report() {
 # not in report-level metadata that may share the same field names.
 count_findings() {
   FINDING_COUNT=$(echo "$REPORT_CONTENT" | grep -cE '^#{3,4} [0-9]+\.' || true)
-  FINDINGS_BODY=$(echo "$REPORT_CONTENT" | sed -n '/^#{3,4} [0-9]\+\./,$p')
+  FINDINGS_BODY=$(echo "$REPORT_CONTENT" | sed -nE '/^#{3,4} [0-9]+\./,$p')
 }
 
 # Assert that every finding has a given field.
