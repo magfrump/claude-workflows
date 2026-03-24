@@ -120,7 +120,7 @@ docs/working/feature-ideas-round-$ROUND.md"
     # Step 1b: Convergence detection
     # -------------------------------------------------------
     # Extract diagnosed problems from the DD output and compare against
-    # prior rounds. If >70% of problems were already addressed, stop.
+    # prior rounds. If >= CONVERGENCE_THRESHOLD% of problems overlap, stop.
     echo "Checking for convergence (round $ROUND)..."
 
     # Extract problem summaries as a JSON array of short descriptions
@@ -151,20 +151,23 @@ If there is no Diagnose section, output an empty array: []" 2>/dev/null | sed 's
 
         # Use Claude to assess semantic overlap between current and prior problems
         # R2 fix: use heredoc to safely pass PRIOR_PROBLEMS (may contain special chars)
-        OVERLAP_PROMPT=$(cat <<CONVERGENCE_EOF
-You are comparing two sets of problem descriptions to detect convergence.
+        # Variable parts are assigned first, then a quoted heredoc provides the
+        # static instruction text — preventing accidental shell expansion.
+        OVERLAP_PROMPT="You are comparing two sets of problem descriptions to detect convergence.
 
 CURRENT ROUND PROBLEMS:
-$PROBLEMS_JSON
+${PROBLEMS_JSON}
 
 ALL PRIOR ROUND PROBLEMS:
-$PRIOR_PROBLEMS
+${PRIOR_PROBLEMS}
 
+"
+        read -r -d '' _CONVERGENCE_BODY <<'CONVERGENCE_EOF' || true
 For each current problem, determine if it is semantically equivalent to (or a minor restatement of) any prior problem. Two problems overlap if they describe the same underlying issue, even if worded differently.
 
 Output ONLY a single integer: the percentage of current problems that overlap with prior problems (0-100). Nothing else.
 CONVERGENCE_EOF
-        )
+        OVERLAP_PROMPT+="$_CONVERGENCE_BODY"
         OVERLAP_RESULT=$(claude -p "$OVERLAP_PROMPT" 2>/dev/null | grep -oP '\d+' | head -1) || true
 
         if [ -n "$OVERLAP_RESULT" ] && [ "$OVERLAP_RESULT" -ge "$CONVERGENCE_THRESHOLD" ]; then
