@@ -87,6 +87,8 @@ Compile steps 1-5 into `docs/working/onboarding-{project}.md` with these section
 # Codebase Orientation: {project name}
 
 **Date:** {date}
+**Last verified:** {date}
+**Relevant paths:** {repo-relative paths this document covers — e.g., src/, lib/, configs/}
 **Scope:** {what was covered — "full repo" or "backend only" etc.}
 
 ## Entry Points
@@ -125,3 +127,14 @@ If no reviewer is available, treat the Known Unknowns section as a list of thing
 - When you return to a project after a long absence and suspect significant structural changes
 - When a major refactoring or migration has landed
 - When the orientation doc's Known Unknowns section is mostly resolved and you want a fresh scan for new unknowns
+- When the **freshness check** shows changes to tracked paths (see below)
+
+### Freshness check
+
+Before relying on an existing onboarding doc, check whether the codebase has changed since it was last verified:
+
+```bash
+git log --oneline --since="<Last verified date>" -- <Relevant paths>
+```
+
+If commits appear, read them to decide whether they invalidate the document. If they do, re-run the onboarding workflow. If not, update `Last verified` to today's date. See `guides/doc-freshness.md` for the full heuristic.

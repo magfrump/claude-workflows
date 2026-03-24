@@ -76,3 +76,12 @@ If the PR exceeds ~500 lines changed, consider whether it can be split. Look for
 - A minimal first PR that adds the feature behind a flag, with polish in a follow-up
 
 If it genuinely can't be split, note this in the PR description and suggest a review order for the files.
+
+## Appendix: Post-PR Reflection
+
+After the PR is opened, take 2 minutes to close the loop on the workflow that produced it. These questions are worth answering in `docs/thoughts/` or a commit message — they compound over time.
+
+1. **Plan accuracy** — How closely did the implementation follow the plan? What deviated, and was the deviation an improvement or a sign the plan missed something?
+2. **Skipped steps** — Were any workflow steps skipped or abbreviated? Was that the right call in hindsight, or did it cost time downstream?
+3. **Time vs. estimate** — How did actual effort compare to the size estimates in the plan doc? If they diverged significantly, what caused the gap?
+4. **What to change** — Knowing what you know now, what would you do differently — in the plan, the process, or the code?
