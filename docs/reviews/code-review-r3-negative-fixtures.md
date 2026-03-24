@@ -2,7 +2,7 @@
 
 **Branch:** feat/r3-negative-test-fixtures
 **Reviewed:** 2026-03-23
-**Status:** CONDITIONAL PASS
+**Status:** PASS (after fixes)
 
 ## Summary
 
@@ -18,8 +18,8 @@ _None._
 
 | # | Finding | Location | Author note |
 |---|---|---|---|
-| A1 | `load_eval_report` skips on empty report files (`! -s` check, line 28). For tc-7.1-empty.md / tc-c8.1-empty.js, if the LLM returns an empty response, the report file will be 0 bytes, causing the test to `skip` rather than actually asserting `max_claims:0`. The test appears green but the assertion was never executed. Negative tests that silently skip defeat their purpose. Consider either: (a) making `eval_fixture` handle the `max_claims:0` check before the empty-file skip, or (b) treating a 0-byte report as having 0 claims and letting the assertions run. | `test/skills/eval-helpers.bash:26-29` | -- |
-| A2 | `tc-7.4-extremely-short.md` contains "Healthcare costs are rising." -- this is arguably a checkable factual claim with an empirical direction. A well-behaved fact-checker could reasonably extract and verify it (e.g., citing CMS data on year-over-year spending). Expecting zero claims here is debatable. Consider replacing with something truly non-checkable like "Things are complicated." or "It depends on the situation." -- or change the expected behavior to allow 0-1 claims rather than strictly 0. | `test/skills/fact-check/fixtures/tc-7.4-extremely-short.md` | -- |
+| A1 | `load_eval_report` skips on empty report files (`! -s` check, line 28). For tc-7.1-empty.md / tc-c8.1-empty.js, if the LLM returns an empty response, the report file will be 0 bytes, causing the test to `skip` rather than actually asserting `max_claims:0`. The test appears green but the assertion was never executed. Negative tests that silently skip defeat their purpose. Consider either: (a) making `eval_fixture` handle the `max_claims:0` check before the empty-file skip, or (b) treating a 0-byte report as having 0 claims and letting the assertions run. | `test/skills/eval-helpers.bash:26-29` | **FIXED**: Empty reports now set CLAIM_COUNT=0 and return, letting assertions run instead of skipping. |
+| A2 | `tc-7.4-extremely-short.md` contains "Healthcare costs are rising." -- this is arguably a checkable factual claim with an empirical direction. A well-behaved fact-checker could reasonably extract and verify it (e.g., citing CMS data on year-over-year spending). Expecting zero claims here is debatable. Consider replacing with something truly non-checkable like "Things are complicated." or "It depends on the situation." -- or change the expected behavior to allow 0-1 claims rather than strictly 0. | `test/skills/fact-check/fixtures/tc-7.4-extremely-short.md` | **FIXED**: Replaced with "It depends on the situation." -- a truly non-checkable vague statement. |
 
 ### Consider (if any)
 

@@ -70,4 +70,4 @@ Tests that the skill gracefully handles degenerate inputs — producing a "nothi
 | 7.1 | `tc-7.1-empty.md` | Empty file; skill reports zero claims checked |
 | 7.2 | `tc-7.2-no-claims.md` | Meeting notes with no factual claims; skill reports zero claims checked |
 | 7.3 | `tc-7.3-binary-content.md` | Binary/garbled content; skill declines gracefully with zero claims |
-| 7.4 | `tc-7.4-extremely-short.md` | Vague one-liner ("Healthcare costs are rising.") with no specific checkable claim; zero claims |
+| 7.4 | `tc-7.4-extremely-short.md` | Vague one-liner ("It depends on the situation.") with no specific checkable claim; zero claims |

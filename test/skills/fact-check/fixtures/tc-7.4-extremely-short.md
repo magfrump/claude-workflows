@@ -1,1 +1,1 @@
-Healthcare costs are rising.
+It depends on the situation.
