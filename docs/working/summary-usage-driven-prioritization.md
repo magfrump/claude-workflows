@@ -1,0 +1,1 @@
+Added `scripts/skill-usage-report.sh` — reads `~/.claude/logs/usage.jsonl` and outputs a ranked table of skill/workflow invocation frequency, recency, and never-invoked items, cross-referenced against the `skills/` and `workflows/` directories.
