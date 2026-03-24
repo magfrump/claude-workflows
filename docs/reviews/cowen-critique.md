@@ -1,119 +1,125 @@
-# Cowen-Style Critique: Code Review Orchestrator
-
-**Draft:** `skills/code-review.md` + supporting documents | **Reviewed:** 2026-03-23
-
----
+# Cowen-Style Critique: Fact-Check Skills Test Strategy
 
 ## The Argument, Decomposed
 
-The code-review orchestrator bundles at least five distinct claims:
+The draft's implicit thesis -- "prompt-based skills can be meaningfully tested through structured evaluation scenarios" -- breaks into these sub-claims:
 
-1. **Pipeline transferability:** A 3-stage pipeline (fact-check, parallel critics, synthesis) that works for prose also works for code review, with adaptations.
-2. **Auto-selection adds value:** Contextual critics (test-strategy, tech-debt-triage, dependency-upgrade) triggered by diff heuristics are better than always-on or manual selection.
-3. **Unified severity mapping:** Different critic domains can be meaningfully reduced to a common red/amber/green scale.
-4. **Cross-critic escalation:** Independent convergence (2+ critics flagging the same issue) is a reliable signal of importance and warrants automatic tier promotion.
-5. **Orchestrator-as-coordinator:** The orchestrator should dispatch but never analyze — strict separation of concerns between coordination and analysis.
+1. **Format compliance is mechanically testable.** BATS tests can verify that LLM-generated reports conform to a structural specification (headers, verdict scales, sequential numbering, required fields).
 
-These are independent claims. Some could be true while others fail. The draft presents them as a single coherent system, which makes it harder to see where individual joints might crack.
+2. **Behavioral correctness can be evaluated via fixtures with known answers.** If you feed a fixture containing a deliberately wrong claim (e.g., "returns null" when code returns undefined), you can check whether the skill catches it.
+
+3. **The fixture set covers the relevant claim space.** The categories (claim types, verdict distribution, non-checkable content, ambiguity, guardrails) represent the dimensions that matter for skill quality.
+
+4. **Cross-skill consistency is a meaningful property to test.** The two skills should use their respective verdict scales and apply similar thresholds.
+
+5. **Human evaluation is an acceptable tier for behavioral tests.** The eval-criteria documents are designed for a human (or a second LLM) to judge, not for CI automation.
+
+6. **The test inputs themselves are well-calibrated.** The fixtures contain claims whose ground truth is known and stable enough to serve as reference answers.
 
 ---
 
 ## What Survives the Inversion
 
-**Inversion of claim 1:** "A pipeline designed for prose review is actually a poor fit for code review."
+**Inversion: "Prompt-based skills cannot be meaningfully tested through structured evaluation."**
 
-There is something to this. Prose review's fact-check stage verifies claims against external reality (statistics, policies, historical events). Code fact-checking verifies internal consistency — do comments match behavior, do docstrings reflect actual signatures. These are structurally different operations. Prose fact-checking answers "is this true about the world?" while code fact-checking answers "is this true about itself?" The self-referential nature of code fact-checking means it is simultaneously more tractable (the ground truth is right there in the diff) and less valuable (the kinds of errors it catches are things a careful reader would notice anyway). The pipeline shape transfers, but the value distribution across stages may shift significantly.
+Sub-claim 1 (format compliance) survives inversion easily. The BATS tests are straightforward regex checks against a structured document. If the skill produces a report, these tests tell you whether it followed the template. This is the least interesting part of the suite and also the most robust. It is essentially testing string formatting, which is one of the things LLMs are already quite good at.
 
-**Inversion of claim 4:** "Cross-critic convergence is noise, not signal."
+Sub-claim 2 (behavioral correctness via fixtures) is shakier under inversion. The concern: an LLM-based skill might produce the "right" verdict for wrong reasons (e.g., pattern-matching the fixture's framing rather than actually searching), or produce different verdicts on different runs. The fixtures bake in the assumption that there is a deterministic "correct" answer, but the fact-check report itself shows this is not always true -- Claim 9 (France homeschooling) could defensibly be rated either "Mostly accurate" or "Inaccurate." So the evaluation criteria need to tolerate a range, which they do in some cases (TC-1.1 says "Any verdict" with process checks) but not others (TC-2.4 firmly expects "Inaccurate"). The suite is inconsistent about how much verdict ambiguity it allows.
 
-If two critics flag the same code region, it might mean the code is genuinely problematic — or it might mean the code is simply unfamiliar/complex in a way that triggers multiple heuristics simultaneously. Complexity is not the same as incorrectness. A novel algorithmic approach might get flagged by both the security reviewer ("unusual pattern, could be exploitable") and the performance reviewer ("non-standard approach, could be slow") simply because neither has seen it before. Automatic escalation rewards conservatism — which may be appropriate for code review, but the draft doesn't acknowledge the tradeoff.
+Sub-claim 3 (coverage of the claim space) partially crumbles. The categories are reasonable but conspicuously omit some real-world scenarios: drafts in languages other than English, claims that require multi-step reasoning chains, claims embedded in complex document structures (tables, footnotes, nested lists), and -- most importantly -- claims where the "right" answer changes over time. All the fixtures feel like undergraduate exam questions: self-contained, with clear answers. Real fact-checking is messier.
 
-What survives: the pipeline shape is reasonable, and convergence is *some* signal. But the draft treats both as stronger than the inversion suggests they are.
+Sub-claim 5 (human evaluation is acceptable) survives but raises the question: if a human must evaluate whether the skill identified the right claims and reached the right verdicts, how is this different from just... running the skill and reading the output? The eval criteria add structure, but the actual evaluation loop is still "a person reads the report and judges it." The marginal contribution of the test infrastructure over "just try it" needs to be stated more clearly.
 
 ---
 
 ## Factual Foundation
 
-The fact-check report found the draft factually solid — 13 of 18 claims accurate, 3 mostly accurate, 0 inaccurate. Two findings worth integrating into the critique:
+The fact-check report found 2 inaccurate claims, 4 mostly accurate, 1 disputed, 3 unverified, and 4 accurate across the 14 claims checked in the fixtures.
 
-- **"7-9 domain-specific cognitive moves"** — all three critics have exactly 9. The imprecision is minor but interesting because the range framing ("7-9") implies more variation than exists, which subtly overstates the degree to which each critic was independently designed rather than following a template.
+Key findings that matter for this critique:
 
-- **Agent tool vs. Task tool divergence** — code-review uses the Agent tool while draft-review uses the Task tool. The fact-check correctly flags this as a genuine divergence between the two orchestrators. The draft's central thesis is that the pipeline pattern transfers; an implementation divergence in how sub-agents are dispatched is worth noting because it means someone maintaining both systems needs to track two different dispatch mechanisms for what is presented as "the same pattern."
+- **The $4.3 trillion healthcare figure (Claim 1) is wrong** -- actual 2023 spending was $4.9 trillion. The test strategy does not specify an expected verdict for TC-1.1, which means it is testing process (did the skill cite CMS data?) rather than outcome. This is fine, but it means a skill could produce "Accurate" on a wrong number and still pass the test. The eval criteria should note the claim is intentionally inaccurate.
 
-- **Dynamic discovery vs. static classification** — "List all skills/*.md files" implies runtime discovery, but the classification (which skills are orchestrators, which are core critics, which are contextual) is hardcoded. This is a tension the draft doesn't acknowledge. If someone adds a new skill file, the orchestrator won't discover it as the instructions suggest — they'd need to edit the orchestrator itself.
+- **Oregon SB 458 (Claim 2) is completely misdescribed** -- it is a middle-housing bill, not a tenant appreciation law. Same issue: TC-1.2 checks process, not verdict. But unlike TC-1.1, this is not a matter of being slightly off -- the bill does something entirely different from what the fixture claims. A skill that merely confirms "yes, SB 458 exists" without catching the mismatch would pass the test as written.
+
+- **The France homeschooling claim (Claim 9)** sits in an ambiguity zone where the test expects "Inaccurate" but "Mostly accurate" is also defensible. This is exactly the kind of case where a verdict-based evaluation will produce false negatives.
+
+- **The Florida waitlist figure (Claim 14, 40,000 families)** is unverified and possibly wrong, but it appears in TC-3.3 as one of the claims the skill should identify as checkable. If the skill correctly identifies it as checkable and then correctly reports it as "Unverified," great -- but the eval criteria list it alongside claims with known answers without flagging that this one is different.
 
 ---
 
 ## The Boring Explanation
 
-Before evaluating the orchestrator's design choices, ask: is there a simpler explanation for why a multi-critic code review pipeline might be useful?
+The most mundane account of what is happening here: someone is building a test suite for two LLM-based tools and doing it the way software engineers always do -- write some fixtures, check some outputs, organize into categories. The categories mirror the skills' own documentation (claim types, verdict scales, edge cases). The fixtures are hand-crafted to exercise each category.
 
-The boring explanation: **people don't read diffs carefully, and having multiple prompts forces multiple passes over the same code.** The value may not be in the specialized cognitive moves, the severity mapping, or the escalation rules. It may simply be that making three separate passes with three different "look for X" instructions catches more than one pass with "look for everything." This is the code review equivalent of reading a draft once for structure and once for grammar — the second pass finds things the first missed not because of domain expertise but because of attention refresh.
+This boring explanation accounts for nearly everything in the draft. The test strategy is a competent engineering document. It is not advancing a novel theory of LLM evaluation. It is applying the standard "golden test" pattern from conventional software testing to a domain where the outputs are non-deterministic. The interesting question it does not address is: does the standard pattern actually work here?
 
-If the boring explanation accounts for most of the value, several design choices become over-engineered: the auto-selection heuristics, the unified severity mapping, the escalation rules. A simpler system — "run these three prompts in parallel, concatenate the results" — might capture 80% of the benefit at 20% of the specification complexity. The draft is 352 lines. That is a lot of process for what might be "read the diff three times with different instructions."
+Most of the value in this suite probably comes from three things: (a) catching regressions in output format after prompt changes, (b) providing a structured way to onboard someone new to what the skills should do, and (c) creating a library of "should we be worried about this?" edge cases. The first is real but narrow. The second is about documentation, not testing. The third is the most genuinely valuable -- the fixture set is a catalog of the hard cases.
 
 ---
 
 ## Revealed vs. Stated
 
-The draft states that contextual critics are "advisory" and "never block merge" — they always go to the green Consider tier. But the system also includes an escalation rule where 2+ critics agreeing promotes a finding one tier. If a contextual critic and a core critic independently flag the same issue, does the contextual critic's finding participate in escalation? The draft says contextual findings "go to Consider tier regardless of their internal severity," but doesn't explicitly say they're excluded from escalation. If they can participate in escalation, the stated "advisory" status is weaker than presented — a contextual critic could effectively block merge by converging with a core critic to push a finding from amber to red.
+**Stated preference:** The test strategy treats all six categories as equally important, devoting comparable space to each.
 
-The decision document reveals something about preferences too: it says "standalone critics let users scope to one concern at a time" as a benefit, but the orchestrator's design encourages running everything at once. The revealed preference of building the orchestrator suggests that scoped single-concern reviews — despite being called out as valuable — are expected to be the minority use case. The system's center of gravity is the full pipeline.
+**Revealed preference:** The only tests that actually run in CI are the format compliance tests (Category 5). Everything else is labeled for "human or automated evaluation" -- meaning, in practice, it runs when someone remembers to run it. The architecture reveals that the authors trust format compliance enough to automate it, but do not trust behavioral evaluation enough to automate it. This is an honest assessment of the state of the art, but the test strategy document does not acknowledge this asymmetry. It presents a uniform facade over what is actually a two-tier system with very different reliability characteristics.
+
+**Stated preference:** The skills should use web search for every claim (TC-6.2: "Evidence of web search for EVERY claim").
+
+**Revealed preference:** There is no test that verifies web search was actually used. The BATS tests check output format; the eval criteria check verdicts and explanations. Whether the skill actually searched the web or relied on training data is not observable from the output alone. This is a guardrail that cannot be tested with the testing infrastructure provided. The stated requirement is aspirational rather than enforced.
+
+**Stated preference:** The test suite covers "the relevant claim space" (claim types, verdicts, edge cases).
+
+**Revealed preference:** Every single fact-check fixture is about US domestic policy, and every code fixture is in JavaScript (with two Python files for concurrency). The claim space the authors actually care about is English-language US policy drafts and JS/Node.js codebases. That is fine -- scope limitations are normal -- but the test strategy frames itself as comprehensive without noting these boundaries.
 
 ---
 
 ## The Analogy
 
-The closest structural analogy is **a compiler pipeline with lint passes.** A compiler runs lexing, parsing, type-checking, and optimization as separate stages. Each pass sees the same code but applies different rules. Some passes are mandatory (type-checking), others are optional (optimization levels). Cross-pass findings get escalated (a type error in an optimization-eligible path blocks compilation).
+The closest cross-domain parallel is **standardized patient encounters in medical education**. Medical schools use actors who present with scripted symptoms to evaluate whether students reach the right diagnosis. The students know they are being tested; the scenarios are designed to hit specific learning objectives; and the evaluation combines structured checklists (did they check blood pressure? did they ask about family history?) with holistic judgment (was the clinical reasoning sound?).
 
-This analogy is illuminating because compiler pipelines learned two lessons the code-review orchestrator hasn't yet internalized:
+This test suite is doing the same thing. The fixtures are standardized patients. The BATS tests are the procedural checklist (did the student wash their hands?). The eval criteria are the clinical reasoning rubric.
 
-1. **Pass ordering matters more than parallelism.** Compilers run passes in a specific order because later passes depend on earlier pass output (type information enables optimization analysis). The code-review pipeline runs critics in parallel — meaning no critic benefits from another critic's findings. This is a deliberate choice (avoiding cross-contamination), but it means the system cannot do the equivalent of "the security reviewer notices a performance pattern that changes the security assessment." The architecture forbids inter-critic learning within a single run.
+The analogy is instructive because medical education has learned two things about standardized patients that apply here: (1) performance on scripted scenarios does not reliably predict performance on real patients, because real patients do not organize their symptoms into neat categories; and (2) the checklist items (procedural compliance) are weakly correlated with the holistic judgment (clinical reasoning quality). The best diagnosticians sometimes skip steps. The most thorough step-followers sometimes miss the diagnosis.
 
-2. **Incremental re-runs dominate full passes.** Mature compiler pipelines are incremental — they re-analyze only what changed. The code-review pipeline is full-pass: every re-run dispatches all critics again from scratch. The rubric is "designed for re-runs," but the pipeline itself doesn't support incremental review (e.g., "only re-run security-reviewer because the fix only addressed a security finding"). This will become a friction point if the system is used iteratively.
+Translated: a fact-check skill that produces perfectly formatted reports and catches the "Great Wall from space" myth may still fail on a real draft where claims are embedded in complex arguments, use ambiguous language, and require chaining multiple pieces of evidence together. The test suite can tell you the skill graduated from medical school. It cannot tell you the skill is a good doctor.
 
 ---
 
 ## Contingent Assumptions
 
-Several things the draft treats as natural that are actually choices:
+1. **The verdict scales are natural joints.** The five verdicts for fact-check and five for code-fact-check are presented as if they carve reality at its joints. But "Mostly accurate" vs. "Inaccurate" is a judgment call that depends on context (how much does the error matter to the argument?). The France homeschooling case demonstrates this directly. These categories are design choices, not discovered truths.
 
-1. **Fact-checking precedes critique.** This sequence is inherited from prose review where it makes clear sense (don't critique arguments built on false claims). For code, the case is weaker. A code fact-check verifies comment-behavior alignment. A security reviewer analyzing control flow doesn't particularly need to know whether a comment is stale first. The sequencing adds latency (fact-check must complete before critics start) for uncertain benefit in the code domain.
+2. **Single-claim fixtures are representative.** Most fixtures contain exactly one claim type in isolation. Real drafts mix claim types in complex ways. A fixture that tests "can the skill handle a causal claim?" tells you less than you might think, because in practice the skill must distinguish causal claims from opinions and comparisons all in the same paragraph. TC-3.3 (mixed) and TC-5.1 (multi-claim) are the only fixtures that test this, and they are in the minority.
 
-2. **Three tiers is the right number.** Red/amber/green is a familiar traffic-light metaphor, but the mapping is doing significant compression. Security maps Critical and High to red. Performance maps only Critical to red. This asymmetry — noted by the fact-check report — means the tiers don't represent equivalent severity across domains. A "red" finding from security could be less severe than a "red" finding from performance, or vice versa, depending on where the boundary was drawn. The unified mapping creates an illusion of commensurability.
+3. **The skills run as isolated passes.** The test strategy assumes each skill runs once on a static input and produces a complete report. But the skill prompts mention orchestration (draft-review), where the fact-check report feeds into downstream critic agents. The test suite does not test the orchestrated case at all beyond verifying the output path. The interaction effects -- does the fact-check report's framing influence the critic's judgment? -- are untested.
 
-3. **The orchestrator should never analyze.** Rule 1 is emphatic: "If you find yourself writing analytical observations about the code, STOP." This is a strong architectural constraint. It prevents the orchestrator from noticing cross-cutting patterns during synthesis that no individual critic would see because each had limited scope. The orchestrator sees all outputs — it's the one entity with full context — but is forbidden from using that context analytically. The constraint makes the system more predictable but potentially less insightful.
+4. **Fixture claims have stable ground truth.** The Austin rents claim (15% drop) is a moving target -- the correct figure depends on the time period, source, and methodology. The test suite treats it as having a known answer, but the answer changes. This is a general problem with testing fact-checkers on empirical claims: the facts change, and the test suite becomes stale in exactly the way it is designed to catch.
 
-4. **Diff-based scoping is sufficient.** The system reviews what changed. But many code review concerns are about what *didn't* change — missing error handling that should have been added, test coverage that should have been updated, migration scripts that should accompany a schema change. The auto-selection heuristics for contextual critics partially address this (test-strategy triggers when tests are *missing*), but the core critics only see the diff, not the delta between what changed and what should have changed.
+5. **English, US policy, JavaScript.** The entire fixture set assumes these specific contexts. A fact-check skill deployed on a draft about EU energy policy or a code-fact-check run on a Rust codebase would exercise entirely different capabilities. The test suite's coverage claims are contingent on this narrow scope.
 
 ---
 
 ## What the Market Says
 
-If a multi-critic AI code review pipeline with automatic severity mapping and cross-critic escalation were clearly superior to existing approaches, you would expect to see market signals:
+There is no literal market here, but the revealed behavior of the AI-tools ecosystem is informative. Most LLM-based coding tools do not ship with evaluation suites of this kind. They rely on user feedback, A/B testing, and benchmark datasets. The fact that this project is building bespoke evaluation infrastructure suggests one of two things: either the authors have already experienced the failure mode where skill quality degrades silently after prompt changes (in which case this is battle-tested wisdom), or they are over-engineering for a problem they have not yet encountered (in which case this is premature optimization of the testing layer).
 
-- **Code review tools would be converging on this architecture.** They aren't, as far as I can tell. Most AI code review tools (GitHub Copilot review, CodeRabbit, etc.) use a single-pass approach with different focus areas configurable but not independently dispatched. The multi-agent parallel-critic approach is architecturally unusual.
-
-- **The absence of this pattern in commercial tools is informative.** It could mean the market hasn't discovered this approach yet (possible but unlikely given the amount of investment in AI code review). More likely, it means the overhead of coordinating multiple agents, managing their context budgets, and synthesizing their outputs isn't worth the marginal improvement over a single well-prompted pass — at least not at current model capabilities.
-
-- **Context budget is the binding constraint.** The draft explicitly manages context budget (pass scope not diffs, trim fact-check reports over 200 lines). This suggests the system is operating near the limits of what current models can handle. If the main cost of the multi-critic approach is context pressure, and context windows are expanding rapidly, the architecture may be solving a problem that's about to become much less severe — at which point a single-pass approach with a longer prompt might be simpler and equally effective.
-
-That said, this is a personal workflow toolkit, not a commercial product. The "market" here is one developer's productivity. The relevant question is whether the developer finds the multi-pass output more useful than a single-pass review, and that's an empirical question the architecture at least enables testing.
+The "market" for LLM evaluation frameworks has settled on a few patterns: reference-based evaluation (compare to gold answers), model-based evaluation (use a second LLM to judge), and human evaluation with structured rubrics. This test suite uses all three but automates only the weakest signal (format compliance). The market is telling you that automating behavioral evaluation of LLM outputs is hard. The test suite implicitly agrees by punting behavioral evaluation to humans.
 
 ---
 
 ## Overall Assessment
 
-The code-review orchestrator is a well-specified, factually solid piece of workflow engineering. It successfully adapts the prose review pipeline to code, and the additions (auto-selection, severity mapping, escalation) are thoughtful.
+**Strong sub-claims:**
+- Format compliance testing via BATS is solid and should catch regressions. (Sub-claim 1)
+- Cross-skill verdict scale isolation is a good idea and well-implemented in the BATS tests. (Sub-claim 4)
+- The fixture catalog itself is valuable as a reference for what the skills should handle. (Sub-claims 2, 3)
 
-The main concerns, roughly ordered by importance:
+**Weak sub-claims:**
+- The behavioral evaluation criteria are structured checklists for manual review, which is barely distinguishable from "just run the skill and read the output." The marginal value over ad-hoc testing is unclear. (Sub-claim 5)
+- The fixture set has significant blind spots (non-English content, complex multi-claim documents, orchestrated runs, time-sensitive claims) that the test strategy does not acknowledge. (Sub-claims 3, 6)
+- Several fixtures contain claims whose ground truth is itself uncertain or contested, creating evaluation criteria that may produce false negatives. (Sub-claim 6)
 
-1. **The boring explanation may account for most of the value.** Multiple passes over the same diff with different instructions is likely the core mechanism. The elaborate severity mapping and escalation rules add specification complexity that may not proportionally improve outcomes. I'd want to see evidence — even anecdotal — that the escalation rule actually fires in practice and changes decisions.
+**The single most important thing to address:** The test strategy needs to be honest about the two-tier nature of its testing. The automated tier (BATS format tests) is reliable but tests something easy. The manual tier (eval criteria) tests something hard but is not automated and may not run consistently. Right now the document presents both tiers as part of a unified strategy, which obscures the fact that almost all the interesting tests require a human in the loop. If the goal is to catch regressions, the eval criteria need a path toward automation (e.g., using a second LLM as evaluator with structured rubrics). If the goal is to document expected behavior, the eval criteria should be framed as a specification, not a test suite.
 
-2. **The pipeline shape inherits assumptions from prose review that may not transfer cleanly.** Fact-check-before-critics sequencing adds latency for unclear benefit in the code domain. The parallel-critics-with-no-cross-talk design prevents inter-critic learning. These are defensible choices but they're treated as inherited truths rather than design decisions.
-
-3. **The auto-selection claims dynamic discovery but implements static classification.** This is a maintainability concern more than a correctness concern, but it means the system's actual behavior diverges from the mental model its instructions create.
-
-4. **The "advisory" status of contextual critics may be weaker than presented** if they participate in cross-critic escalation. The draft should clarify this edge case.
-
-**Confidence:** Medium-high on the structural observations, medium on the market analysis (personal toolkits have different economics than commercial products), low on predicting whether the escalation rule adds value (that's an empirical question I can't answer from the specification alone).
+Additionally, the factual errors in the fixtures (healthcare spending at $4.3T instead of $4.9T, Oregon SB 458 described completely wrong) are features if they are intentional test inputs but bugs if they are meant to represent accurate drafts. The test strategy is ambiguous about this in several cases. Each fixture should state whether the claims it contains are intentionally accurate, intentionally inaccurate, or unknown -- otherwise an evaluator cannot tell whether the skill's verdict is correct.
