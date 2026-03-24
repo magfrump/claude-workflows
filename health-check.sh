@@ -10,6 +10,7 @@
 #   4. All test fixtures have corresponding expected-verdicts entries
 #   5. BATS tests pass (when report outputs exist)
 #   6. shellcheck passes on all .sh/.bash files
+#   7. Workflow/skill complexity metrics (lines, sections, xrefs, artifacts)
 set -euo pipefail
 
 REPO_ROOT="$(cd "$(dirname "$0")" && pwd)"
@@ -290,6 +291,75 @@ check_shellcheck() {
     done
 }
 
+# ── 7. Workflow & skill complexity metrics ─────────────────────────────────
+
+measure_file_complexity() {
+    local file="$1"
+    local lines sections xrefs artifacts
+    lines="$(wc -l < "$file")"
+    sections="$(grep -c '^###' "$file" 2>/dev/null || echo 0)"
+    xrefs="$(grep -oE '(workflows|skills)/[a-z][-a-z0-9]*\.md' "$file" 2>/dev/null | sort -u | wc -l)"
+    artifacts="$(grep -ciE '(required|must).*(artifact|produce|output|generate|write)|(artifact|output).*(required|must)' "$file" 2>/dev/null || echo 0)"
+    echo "$lines $sections $xrefs $artifacts"
+}
+
+# Soft thresholds — exceeding these emits a warning, not a failure
+LINES_THRESHOLD=200
+SECTIONS_THRESHOLD=15
+
+check_complexity() {
+    section "Workflow & skill complexity"
+
+    local json_out="$REPO_ROOT/docs/working/complexity-baseline.json"
+    local warned=0
+
+    # Start JSON
+    printf '{\n  "generated": "%s",\n  "thresholds": { "lines": %d, "sections": %d },\n  "files": {\n' \
+        "$(date -u +%Y-%m-%dT%H:%M:%SZ)" "$LINES_THRESHOLD" "$SECTIONS_THRESHOLD" \
+        > "$json_out"
+
+    local first=true
+    for dir in workflows skills; do
+        for file in "$REPO_ROOT/$dir"/*.md; do
+            [[ -f "$file" ]] || continue
+            local relpath="$dir/$(basename "$file")"
+            read -r lines sections xrefs artifacts <<< "$(measure_file_complexity "$file")"
+
+            # JSON entry
+            if $first; then first=false; else printf ',\n' >> "$json_out"; fi
+            printf '    "%s": { "lines": %d, "sections": %d, "cross_refs": %d, "required_artifacts": %d }' \
+                "$relpath" "$lines" "$sections" "$xrefs" "$artifacts" \
+                >> "$json_out"
+
+            # Threshold checks
+            local flags=""
+            if [[ "$lines" -gt "$LINES_THRESHOLD" ]]; then
+                flags+="lines=$lines(>${LINES_THRESHOLD}) "
+            fi
+            if [[ "$sections" -gt "$SECTIONS_THRESHOLD" ]]; then
+                flags+="sections=$sections(>${SECTIONS_THRESHOLD}) "
+            fi
+
+            if [[ -n "$flags" ]]; then
+                warn "$relpath exceeds soft threshold: $flags"
+                warned=$((warned + 1))
+            else
+                pass "$relpath  lines=$lines sections=$sections xrefs=$xrefs artifacts=$artifacts"
+            fi
+        done
+    done
+
+    # Close JSON
+    printf '\n  }\n}\n' >> "$json_out"
+
+    if [[ $warned -eq 0 ]]; then
+        pass "No files exceed complexity thresholds"
+    else
+        warn "$warned file(s) exceed soft complexity thresholds (see warnings above)"
+    fi
+    pass "Baseline written to docs/working/complexity-baseline.json"
+}
+
 # ── Run all checks ─────────────────────────────────────────────────────────
 
 main() {
@@ -302,6 +372,7 @@ main() {
     check_fixture_verdicts
     check_bats
     check_shellcheck
+    check_complexity
 
     echo
     if [[ $FAIL -eq 0 ]]; then

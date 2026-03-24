@@ -1,0 +1,1 @@
+Added check_complexity to health-check.sh that measures per-workflow/skill lines, sections, cross-refs, and artifact counts, flags files exceeding soft thresholds (>200 lines, >15 sections), and writes docs/working/complexity-baseline.json so growth is visible across rounds.
