@@ -61,7 +61,7 @@ other tasks in this round."
         continue
     fi
 
-    TASK_IDS=$(cat "$TASKS_FILE" | jq -r '.[].id')
+    TASK_IDS=$(jq -r '.[].id' "$TASKS_FILE")
     if [ -z "$TASK_IDS" ]; then
         echo "No independent tasks found. Skipping round."
         continue
@@ -74,7 +74,7 @@ other tasks in this round."
     PIDS=()
     LAUNCHED_TASKS=""
     for TASK_ID in $TASK_IDS; do
-        DESC=$(cat "$TASKS_FILE" | jq -r ".[] | select(.id==\"$TASK_ID\") | .description")
+        DESC=$(jq -r ".[] | select(.id==\"$TASK_ID\") | .description" "$TASKS_FILE")
         WT_DIR="$WORKTREE_BASE-$TASK_ID"
 
         git worktree add "$WT_DIR" -b "feat/r${ROUND}-${TASK_ID}" main 2>/dev/null || {
