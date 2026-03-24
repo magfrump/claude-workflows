@@ -88,4 +88,4 @@ This creates a reviewable log of autonomous decisions.
 - Commit after each logical unit of work with conventional commit messages (feat:, fix:, refactor:, test:, docs:, spike:)
 - When using an unfamiliar library or language feature, add a comment explaining "why" — the human reviewers may not know the library either
 - Prefer explicit over clever. Code is read more than written, and the readers may not share your context.
-- When you encounter a decision worth documenting, create or update `docs/decisions/NNN-title.md` in the project
+- When you encounter a decision worth documenting, create or update `docs/decisions/NNN-title.md` in the project. For smaller decisions that don't warrant a full record (single clear answer, no meaningful tradeoffs), add a row to `docs/decisions/log.md` instead.
