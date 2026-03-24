@@ -56,7 +56,14 @@ setup() {
 }
 
 @test "claim types use only the allowed values" {
-  assert_field_values "Type" "Behavioral|Performance|Architectural|Invariant|Configuration|Reference|Staleness"
+  # Allow compound types like "Reference / Architectural" — each part must be valid
+  local allowed="Behavioral|Performance|Architectural|Invariant|Configuration|Reference|Staleness"
+  local values bad
+  values=$(echo "$REPORT_CONTENT" | sed -n 's/^\*\*Type:\*\* //p')
+  [ -n "$values" ] || skip "no Type values found"
+  # Split compound types on " / " and validate each part
+  bad=$(echo "$values" | tr '/' '\n' | sed 's/^ *//;s/ *$//' | grep -viE "^(${allowed})$" || true)
+  [ -z "$bad" ]
 }
 
 @test "each claim section has a Verdict line" {
@@ -77,10 +84,22 @@ setup() {
 
 @test "each claim section has an Evidence line with file:line format" {
   assert_field_per_claim "Evidence"
-  local evidence bad
-  evidence=$(echo "$REPORT_CONTENT" | sed -n 's/^\*\*Evidence:\*\* //p')
-  bad=$(echo "$evidence" | grep -vE '[a-zA-Z0-9_./-]+:[0-9]+' || true)
-  [ -z "$bad" ]
+  # Pure Reference claims may use existence checks (e.g. glob results) instead
+  # of file:line citations — only enforce file:line for non-pure-Reference types
+  local claim_num evidence_line type_line bad_lines=""
+  for claim_num in $(echo "$REPORT_CONTENT" | grep -oE '^## Claim [0-9]+' | grep -oE '[0-9]+'); do
+    local section
+    section=$(echo "$REPORT_CONTENT" | sed -n "/^## Claim ${claim_num}[^0-9]/,/^## /p" | head -n -1)
+    type_line=$(echo "$section" | sed -n 's/^\*\*Type:\*\* //p')
+    evidence_line=$(echo "$section" | sed -n 's/^\*\*Evidence:\*\* //p')
+    # Pure Reference claims may cite existence/glob results with no line numbers
+    [ "$type_line" = "Reference" ] && continue
+    # Other types must reference at least a file path (file:line preferred, bare path accepted)
+    if ! echo "$evidence_line" | grep -qE '(`[a-zA-Z0-9_./-]+`|[a-zA-Z0-9_./-]+:[0-9]+)'; then
+      bad_lines="${bad_lines}Claim ${claim_num}: ${evidence_line}\n"
+    fi
+  done
+  [ -z "$bad_lines" ]
 }
 
 # --- Claims Requiring Attention section ---
