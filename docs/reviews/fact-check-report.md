@@ -1,7 +1,8 @@
 ---
 Last verified: 2026-03-23
 Relevant paths:
-  - test/fixtures/
+  - test/skills/fact-check/fixtures/
+  - test/skills/code-fact-check/fixtures/
 ---
 
 # Fact-Check Report: Test Fixtures for fact-check Skills

@@ -6,15 +6,32 @@ Long-lived documents — onboarding guides, spike records, shared thoughts — c
 
 ## Freshness fields
 
-Documents that benefit from freshness tracking include two fields in their header:
+Documents that benefit from freshness tracking include two fields in their header. There are two supported formats:
+
+**Inline bold fields** — used in onboarding docs, spike records, and shared thoughts:
 
 ```markdown
 **Last verified:** 2026-03-23
 **Relevant paths:** src/, lib/auth.ts, configs/
 ```
 
+**YAML frontmatter** — used in review artifacts (`docs/reviews/`):
+
+```yaml
+---
+Last verified: 2026-03-23
+Relevant paths:
+  - skills/draft-review.md
+  - skills/fact-check.md
+---
+```
+
+Both formats carry the same two fields:
+
 - **Last verified** — the date someone (human or agent) last confirmed the document's accuracy against the current codebase.
 - **Relevant paths** — repo-relative file paths or directory globs. Changes to these paths are the primary staleness signal.
+
+Use YAML frontmatter for review artifacts (it is parseable by tooling and clearly separated from document content). Use inline bold fields for other document types.
 
 ## Staleness check
 
