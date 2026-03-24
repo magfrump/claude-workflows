@@ -98,7 +98,7 @@ If a step turns out to be wrong or incomplete during implementation, **stop and 
 
 **File size discipline**: Keep individual files under **500 lines**. If an implementation step would push a file past this threshold, split it before continuing. This applies to both new files and modifications to existing ones — if an existing file is already near the limit, factor out a coherent subset before adding to it. The 500-line limit is a guideline, not a hard rule; a 520-line file with cohesive logic is fine, but a 700-line file signals that something should have been split earlier.
 
-**Context management**: If the session context is getting heavy (many prior loops, large amount of code read), consider starting a fresh session and loading the plan doc. The plan should contain everything needed to implement without the prior conversational context. But this is a judgment call, not a hard rule — if context is still fresh and the task is flowing, continue in the same session.
+**Context management**: If the session context is getting heavy (many prior loops, large amount of code read), consider starting a fresh session and loading the plan doc. The plan should contain everything needed to implement without the prior conversational context. But this is a judgment call, not a hard rule — if context is still fresh and the task is flowing, continue in the same session. When ending a session to start fresh, write a handoff doc first (see step 6, "Session handoff") so the next session knows exactly where to resume.
 
 ### 6. Verify and loop
 
@@ -107,12 +107,43 @@ If a step turns out to be wrong or incomplete during implementation, **stop and 
 - If there's another loop to do in this session, return to step 1 with a new scope
 - If this was the final loop, proceed to the pr-prep workflow if opening a PR
 
+#### Session handoff (optional)
+
+When ending a session mid-task — because context is getting heavy, you're switching to a different task, or the workday is ending — write a handoff doc so the next session can pick up without re-deriving state from scratch.
+
+Save it to `docs/working/handoff-{topic}.md`, overwriting any previous handoff for the same topic. Use this template:
+
+```markdown
+# Handoff: {topic}
+Date: {YYYY-MM-DD}
+Branch: {current branch}
+
+## Accomplished this session
+- [What was completed — reference commit hashes or plan steps]
+
+## Unfinished work
+- [What remains — be specific about which plan step you're on and what's left in it]
+
+## Open questions
+- [Decisions deferred, ambiguities encountered, things that need human input]
+
+## Key file paths
+- [Files the next session should read first to rebuild context]
+
+## Next steps
+- [Concrete first action for the next session — not "continue implementing" but "implement step 4 of plan-X, starting with the handler in src/api/"]
+```
+
+The next session should load the handoff doc, the plan doc, and (if needed) the research doc. The handoff tells you *where you are*; the plan tells you *where you're going*; the research tells you *why*.
+
+A handoff doc is not necessary when a session ends at a clean boundary — all plan steps complete, PR opened, or no work in progress. It's for the in-between case where conversational context would otherwise be lost.
+
 ## When to skip or abbreviate
 
 - **Trivial changes** (typo fixes, config tweaks, single-line bug fixes): Skip entirely, just make the change.
 - **Changes where you already understand the code**: Skip research, go straight to plan. Or update an existing research doc rather than writing from scratch.
 - **Urgent hotfixes**: Abbreviate to a mental plan, but write a retroactive decision doc if the fix was non-obvious.
-- **Continuation of a previous session's work**: If research and plan docs already exist and are still accurate, pick up from where implementation left off. Verify the docs are still current before proceeding.
+- **Continuation of a previous session's work**: If research and plan docs already exist and are still accurate, pick up from where implementation left off. If a handoff doc exists (`docs/working/handoff-{topic}.md`), load it first — it captures where the previous session stopped and what to do next. Verify the docs are still current before proceeding.
 
 ## Variant: Refactoring
 
