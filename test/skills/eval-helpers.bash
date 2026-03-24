@@ -26,7 +26,12 @@ load_eval_report() {
     skip "No report for ${fixture} — run generate-reports.bash first"
   fi
   if [ ! -s "$REPORT_PATH" ]; then
-    skip "Empty report for ${fixture}"
+    # Empty report = 0 claims. Don't skip — let assertions run so that
+    # negative test fixtures (e.g., empty-file inputs) actually verify
+    # the max_claims:0 expectation instead of silently passing via skip.
+    REPORT_CONTENT=""
+    CLAIM_COUNT=0
+    return 0
   fi
 
   REPORT_CONTENT="$(cat "$REPORT_PATH")"

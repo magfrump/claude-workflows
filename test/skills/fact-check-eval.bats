@@ -108,3 +108,21 @@ setup() {
 @test "tc-6.3: obvious but wrong — catches Great Wall myth" {
   eval_fixture "$SKILL" "tc-6.3-obvious-but-wrong.md"
 }
+
+# --- Category 7: Edge Cases / Negative Test Fixtures ---
+
+@test "tc-7.1: empty file — gracefully declines with zero claims" {
+  eval_fixture "$SKILL" "tc-7.1-empty.md"
+}
+
+@test "tc-7.2: no checkable claims — zero claims from meeting notes" {
+  eval_fixture "$SKILL" "tc-7.2-no-claims.md"
+}
+
+@test "tc-7.3: binary content — gracefully declines non-prose input" {
+  eval_fixture "$SKILL" "tc-7.3-binary-content.md"
+}
+
+@test "tc-7.4: extremely short — no specific claim to check" {
+  eval_fixture "$SKILL" "tc-7.4-extremely-short.md"
+}

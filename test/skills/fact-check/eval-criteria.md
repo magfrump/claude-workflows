@@ -60,3 +60,14 @@ Verdict codes: **A** = Accurate, **MA** = Mostly accurate, **D** = Disputed,
 | 6.1 | `tc-6.1-accurate-weak-argument.md` | All fact verdicts are A (or close); skill does NOT comment on argument quality or logical gaps |
 | 6.2 | (any fixture with claims) | Evidence of web search for EVERY claim — not just training data |
 | 6.3 | `tc-6.3-obvious-but-wrong.md` | Catches the "Great Wall visible from space" myth; does not skip it for being "obvious" |
+
+## Category 7: Edge Cases / Negative Test Fixtures
+
+Tests that the skill gracefully handles degenerate inputs — producing a "nothing to check" response rather than confused analysis.
+
+| TC | Fixture | Expected Behavior |
+|----|---------|-------------------|
+| 7.1 | `tc-7.1-empty.md` | Empty file; skill reports zero claims checked |
+| 7.2 | `tc-7.2-no-claims.md` | Meeting notes with no factual claims; skill reports zero claims checked |
+| 7.3 | `tc-7.3-binary-content.md` | Binary/garbled content; skill declines gracefully with zero claims |
+| 7.4 | `tc-7.4-extremely-short.md` | Vague one-liner ("It depends on the situation.") with no specific checkable claim; zero claims |

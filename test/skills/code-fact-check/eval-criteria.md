@@ -71,3 +71,14 @@ These tests require running the skill in different contexts, not against fixture
 | C7.1 | Every claim references `file:line` for both the claim location and the evidence |
 | C7.2 | Verdict based on actual implementation, not function name or signature alone |
 | C7.3 | Claims near recent changes are checked first or flagged as higher staleness priority |
+
+## Category 8: Edge Cases / Negative Test Fixtures
+
+Tests that the skill gracefully handles degenerate inputs — producing a "nothing to check" response rather than confused analysis.
+
+| TC | Fixture | Expected Behavior |
+|----|---------|-------------------|
+| C8.1 | `tc-c8.1-empty.js` | Empty file; skill reports zero claims checked |
+| C8.2 | `tc-c8.2-no-comments.js` | Code with no comments or docstrings; skill reports zero claims checked |
+| C8.3 | `tc-c8.3-binary-content.js` | Binary/garbled content; skill declines gracefully with zero claims |
+| C8.4 | `tc-c8.4-extremely-short.js` | Single assignment (`const x = 42;`) with no claims; zero claims |
