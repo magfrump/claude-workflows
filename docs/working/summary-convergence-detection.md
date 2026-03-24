@@ -1,0 +1,1 @@
+Added convergence detection to self-improvement.sh: after divergent design generates ideas, problems are extracted and compared against prior rounds in round-history.json; if >70% overlap semantically with previously-addressed problems, the loop terminates early.
