@@ -49,7 +49,8 @@ add_event() {
   output=$(bash "$SCRIPT")
 
   echo "$output" | grep -q "fact-check"
-  echo "$output" | grep -q "3"
+  # Verify count appears on the fact-check row, not just anywhere (e.g., in a date)
+  echo "$output" | grep "fact-check" | grep -qE '\b3\b'
   echo "$output" | grep -q "2026-03-23"
 }
 

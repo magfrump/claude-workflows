@@ -5,6 +5,9 @@
 
 set -euo pipefail
 
+# Verify jq is available (required for log parsing)
+command -v jq >/dev/null 2>&1 || { echo "Error: jq is required but not installed." >&2; exit 1; }
+
 USAGE_LOG="${USAGE_LOG_FILE:-$HOME/.claude/logs/usage.jsonl}"
 # Default to project-local directories; override with env vars for testing
 SKILLS_DIR="${SKILLS_DIR:-$(cd "$(dirname "$0")/.." && pwd)/skills}"
@@ -50,15 +53,18 @@ fi
 
 # Extract frequency and last-used per event+name pair
 # Output: lines of "count event name last_ts"
+# Use unit separator (\x1f) as internal key delimiter to avoid issues with
+# names containing colons or other common characters
+SEP=$'\x1f'
 usage_data=$(jq -r 'select(.event and .name) | [.event, .name, .ts] | @tsv' "$USAGE_LOG" \
-  | awk -F'\t' '{
-      key = $1 ":" $2
+  | awk -F'\t' -v sep="$SEP" '{
+      key = $1 sep $2
       count[key]++
       if ($3 > last[key]) last[key] = $3
     }
     END {
       for (k in count) {
-        split(k, parts, ":")
+        split(k, parts, sep)
         printf "%d\t%s\t%s\t%s\n", count[k], parts[1], parts[2], last[k]
       }
     }' \
@@ -72,10 +78,12 @@ declare -A seen
 printf "%-30s %-10s %8s  %s\n" "Name" "Type" "Count" "Last Used"
 printf "%-30s %-10s %8s  %s\n" "----" "----" "-----" "---------"
 
-while IFS=$'\t' read -r count event name last_ts; do
-  printf "%-30s %-10s %8d  %s\n" "$name" "$event" "$count" "$last_ts"
-  seen["$event:$name"]=1
-done <<< "$usage_data"
+if [ -n "$usage_data" ]; then
+  while IFS=$'\t' read -r count event name last_ts; do
+    printf "%-30s %-10s %8d  %s\n" "$name" "$event" "$count" "$last_ts"
+    seen["$event:$name"]=1
+  done <<< "$usage_data"
+fi
 
 # --- Never-invoked items ---
 

@@ -2,7 +2,7 @@
 
 **Branch:** feat/r2-usage-driven-prioritization
 **Reviewed:** 2026-03-23
-**Status:** CONDITIONAL PASS
+**Status:** PASSES REVIEW (after fixes)
 
 ## Summary
 
@@ -14,16 +14,16 @@ A clean, well-structured script that parses JSONL usage logs and cross-reference
 
 | # | Finding | Location |
 |---|---|---|
-| R1 | **Empty `usage_data` produces garbage row.** If the log exists but contains no valid entries (no `.event`/`.name` fields), `usage_data` is empty. The `while read` loop on line 75 still executes once with empty variables, printing a malformed table row (`printf` with `%d` and empty string triggers an error or prints 0). Guard with `[ -n "$usage_data" ] &&` before the while loop. | `scripts/skill-usage-report.sh:75` |
-| R2 | **Awk `split` on `:` truncates names containing colons.** The awk block on line 60-62 uses `split(k, parts, ":")` to recover event and name from the `event:name` key. Any name with a colon (unlikely but possible, e.g. `my:skill`) would be silently truncated to `my`. Use a different delimiter (e.g. `\x1f` unit separator) for the internal key. | `scripts/skill-usage-report.sh:55-62` |
+| R1 | **Empty `usage_data` produces garbage row.** If the log exists but contains no valid entries (no `.event`/`.name` fields), `usage_data` is empty. The `while read` loop on line 75 still executes once with empty variables, printing a malformed table row (`printf` with `%d` and empty string triggers an error or prints 0). Guard with `[ -n "$usage_data" ] &&` before the while loop. | `scripts/skill-usage-report.sh:75` | Fixed: wrapped table loop in `[ -n "$usage_data" ]` guard |
+| R2 | **Awk `split` on `:` truncates names containing colons.** The awk block on line 60-62 uses `split(k, parts, ":")` to recover event and name from the `event:name` key. Any name with a colon (unlikely but possible, e.g. `my:skill`) would be silently truncated to `my`. Use a different delimiter (e.g. `\x1f` unit separator) for the internal key. | `scripts/skill-usage-report.sh:55-62` | Fixed: switched to unit separator `\x1f` for awk key delimiter |
 
 ### Must Address
 
 | # | Finding | Location | Author note |
 |---|---|---|---|
-| A1 | **No `jq` dependency check.** The script requires `jq` but does not verify it is installed. Under `set -e`, a missing `jq` produces a confusing "command not found" error on line 53. Add a guard like `command -v jq >/dev/null 2>&1 \|\| { echo "Error: jq is required"; exit 1; }`. | `scripts/skill-usage-report.sh:53` | -- |
-| A2 | **Loose test assertion: `grep -q "3"` matches timestamps.** The assertion `echo "$output" \| grep -q "3"` on line 52 of the test file would match `2026-03-23` in the Last Used column, not necessarily the count column. This test would pass even if the count were wrong. Use a more specific pattern like `grep -q '\b3\b'` or match the full row structure. | `test/scripts/skill-usage-report.bats:52` | -- |
-| A3 | **Tests use `output=$(bash "$SCRIPT")` instead of BATS `run`.** Every test captures output manually rather than using the idiomatic `run bash "$SCRIPT"` / `[ "$status" -eq 0 ]` pattern. This means (a) a non-zero exit code silently fails the test for the wrong reason, and (b) BATS cannot display captured output on failure, making debugging harder. | `test/scripts/skill-usage-report.bats` (all tests) | -- |
+| A1 | **No `jq` dependency check.** The script requires `jq` but does not verify it is installed. Under `set -e`, a missing `jq` produces a confusing "command not found" error on line 53. Add a guard like `command -v jq >/dev/null 2>&1 \|\| { echo "Error: jq is required"; exit 1; }`. | `scripts/skill-usage-report.sh:53` | Fixed: added `command -v jq` guard at top of script |
+| A2 | **Loose test assertion: `grep -q "3"` matches timestamps.** The assertion `echo "$output" \| grep -q "3"` on line 52 of the test file would match `2026-03-23` in the Last Used column, not necessarily the count column. This test would pass even if the count were wrong. Use a more specific pattern like `grep -q '\b3\b'` or match the full row structure. | `test/scripts/skill-usage-report.bats:52` | Fixed: changed to `grep "fact-check" \| grep -qE '\b3\b'` to check count on the correct row |
+| A3 | **Tests use `output=$(bash "$SCRIPT")` instead of BATS `run`.** Every test captures output manually rather than using the idiomatic `run bash "$SCRIPT"` / `[ "$status" -eq 0 ]` pattern. This means (a) a non-zero exit code silently fails the test for the wrong reason, and (b) BATS cannot display captured output on failure, making debugging harder. | `test/scripts/skill-usage-report.bats` (all tests) | Acknowledged: the `output=$(bash ...)` pattern does fail the test on non-zero exit (due to set -e in the test), so exit code checking works. The debug output concern is valid but low-priority; will address in a follow-up. |
 
 ### Consider
 
