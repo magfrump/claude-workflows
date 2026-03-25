@@ -1,0 +1,1 @@
+Added test/validate-task-json.bats with 6 test cases (valid task, missing id, empty files_touched, glob pattern, non-existent parent dir, non-boolean independent) following the convergence-detection.bats sourcing pattern.
