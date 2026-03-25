@@ -1,0 +1,1 @@
+Added Step 5b (subtraction review) to self-improvement.sh: after merge, Claude reviews skills/workflows for evidence-backed removal candidates and logs proposals to subtraction-proposals-round-N.md for human review.
