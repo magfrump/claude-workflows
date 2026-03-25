@@ -145,6 +145,33 @@ check_convergence_threshold() {
     fi
 }
 
+# --- Hypothesis window eligibility check ---
+# Pure function: reads tasks JSON from stdin and outputs IDs of tasks whose
+# hypothesis evaluation window has elapsed.
+# Args: $1 = current_round (integer), $2 = prior_round (integer)
+# Stdin: JSON array of task objects (each may have .hypothesis, .hypothesis_window, .retroactive)
+# Stdout: one task ID per line for eligible tasks (empty if none)
+# Returns 1 for missing/invalid arguments or malformed JSON.
+get_eligible_hypotheses() {
+    local current_round="${1:-}"
+    local prior_round="${2:-}"
+
+    # Validate both inputs are non-empty positive integers
+    if [[ -z "$current_round" || -z "$prior_round" ]]; then
+        return 1
+    fi
+    if ! [[ "$current_round" =~ ^[0-9]+$ && "$prior_round" =~ ^[0-9]+$ ]]; then
+        return 1
+    fi
+
+    # Read JSON from stdin; jq will fail on malformed input
+    jq -r --argjson current "$current_round" --argjson prior "$prior_round" \
+        '[.[] | select(.hypothesis != null and .hypothesis != "") |
+          select(.retroactive != true) |
+          select(($current - $prior) >= (.hypothesis_window // 3))] | .[]? | .id' \
+        2>/dev/null || return 1
+}
+
 # --- Main execution guard ---
 # Allows sourcing this file for its functions (e.g., in tests) without
 # running the top-level loop.
