@@ -1,0 +1,1 @@
+Extracted overlap-threshold comparison from self-improvement.sh into lib/convergence.sh (check_convergence_threshold) and added test/convergence-detection.bats with 11 BATS test cases covering 0%, exact-threshold, 100%, empty, and non-numeric inputs.

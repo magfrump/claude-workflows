@@ -14,6 +14,10 @@ command -v jq &>/dev/null || { echo "Error: jq is required but not found"; exit 
 CONVERGENCE_THRESHOLD=${CONVERGENCE_THRESHOLD:-70}  # percent overlap to trigger convergence
 HISTORY_FILE="$REPO_DIR/docs/working/problem-history.json"
 
+# Source shared convergence detection logic (unit-tested in test/convergence-detection.bats)
+SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+source "$SCRIPT_DIR/lib/convergence.sh"
+
 mkdir -p "$WORKING_DIR"
 touch "$WORKING_DIR/completed-tasks.md"
 
@@ -408,7 +412,7 @@ CONVERGENCE_EOF
         OVERLAP_PROMPT+="$_CONVERGENCE_BODY"
         OVERLAP_RESULT=$(claude -p "$OVERLAP_PROMPT" 2>/dev/null | grep -oP '\d+' | head -1) || true
 
-        if [ -n "$OVERLAP_RESULT" ] && [ "$OVERLAP_RESULT" -ge "$CONVERGENCE_THRESHOLD" ]; then
+        if check_convergence_threshold "$OVERLAP_RESULT" "$CONVERGENCE_THRESHOLD"; then
             echo "Convergence detected: ${OVERLAP_RESULT}% of problems overlap with prior rounds (threshold: ${CONVERGENCE_THRESHOLD}%)."
             echo "Stopping before round $ROUND implementation ($((ROUND - 1)) rounds completed)."
             echo "[round-$ROUND] CONVERGED: ${OVERLAP_RESULT}% problem overlap" >> "$WORKING_DIR/validation-round-$ROUND.log"
