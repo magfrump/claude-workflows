@@ -1,31 +1,6 @@
 #!/bin/bash
 set -euo pipefail
 
-# Configuration
-REPO_DIR=~/claude-workflows
-WORKTREE_BASE=~/wt
-MAX_ROUNDS=5
-WORKING_DIR="$REPO_DIR/docs/working"
-ROUND_HISTORY="$WORKING_DIR/round-history.json"
-
-# Check required dependencies
-command -v jq &>/dev/null || { echo "Error: jq is required but not found"; exit 1; }
-
-CONVERGENCE_THRESHOLD=${CONVERGENCE_THRESHOLD:-70}  # percent overlap to trigger convergence
-HISTORY_FILE="$REPO_DIR/docs/working/problem-history.json"
-
-mkdir -p "$WORKING_DIR"
-touch "$WORKING_DIR/completed-tasks.md"
-
-# Initialize round-history.json if it doesn't exist
-if [ ! -f "$ROUND_HISTORY" ]; then
-    echo '[]' > "$ROUND_HISTORY"
-fi
-
-if [ ! -f "$HISTORY_FILE" ]; then
-    echo '{}' > "$HISTORY_FILE"
-fi
-
 # --- JSON logging helpers ---
 
 # Clean up temp files on early exit
@@ -146,6 +121,59 @@ validate_task_json() {
     echo "$valid_tasks"
 }
 
+# --- Convergence threshold check ---
+# Pure function: compares an overlap percentage against a threshold.
+# Args: $1 = overlap percentage (integer 0-100), $2 = threshold (integer 0-100)
+# Returns: 0 if overlap >= threshold (at-or-above), 1 if below.
+# Returns 1 (below) for empty or non-integer input.
+check_convergence_threshold() {
+    local overlap="${1:-}"
+    local threshold="${2:-}"
+
+    # Validate both inputs are non-empty integers
+    if [[ -z "$overlap" || -z "$threshold" ]]; then
+        return 1
+    fi
+    if ! [[ "$overlap" =~ ^[0-9]+$ && "$threshold" =~ ^[0-9]+$ ]]; then
+        return 1
+    fi
+
+    if [ "$overlap" -ge "$threshold" ]; then
+        return 0
+    else
+        return 1
+    fi
+}
+
+# --- Main execution guard ---
+# Allows sourcing this file for its functions (e.g., in tests) without
+# running the top-level loop.
+if [[ "${BASH_SOURCE[0]}" == "${0}" ]]; then
+
+# Configuration
+REPO_DIR=~/claude-workflows
+WORKTREE_BASE=~/wt
+MAX_ROUNDS=5
+WORKING_DIR="$REPO_DIR/docs/working"
+ROUND_HISTORY="$WORKING_DIR/round-history.json"
+
+# Check required dependencies
+command -v jq &>/dev/null || { echo "Error: jq is required but not found"; exit 1; }
+
+CONVERGENCE_THRESHOLD=${CONVERGENCE_THRESHOLD:-70}  # percent overlap to trigger convergence
+HISTORY_FILE="$REPO_DIR/docs/working/problem-history.json"
+
+mkdir -p "$WORKING_DIR"
+touch "$WORKING_DIR/completed-tasks.md"
+
+# Initialize round-history.json if it doesn't exist
+if [ ! -f "$ROUND_HISTORY" ]; then
+    echo '[]' > "$ROUND_HISTORY"
+fi
+
+if [ ! -f "$HISTORY_FILE" ]; then
+    echo '{}' > "$HISTORY_FILE"
+fi
 
 cd "$REPO_DIR"
 
@@ -945,3 +973,5 @@ done
 echo "=== All rounds complete ==="
 echo "Completed tasks log: $WORKING_DIR/completed-tasks.md"
 echo "Round history: $ROUND_HISTORY"
+
+fi  # end main-execution guard
