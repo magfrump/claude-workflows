@@ -168,13 +168,12 @@ HYPOTHESIS_VERDICT: <CONFIRMED|REFUTED|INCONCLUSIVE> | <one-sentence evidence su
         PREV_TASKS_FILE="$WORKING_DIR/tasks-round-$PREV.json"
         PREV_IDEAS_FILE="$WORKING_DIR/feature-ideas-round-$PREV.md"
 
-        # Approved tasks (already in completed-tasks.md, but summarize here too)
+        # Categorize prior-round tasks by validation verdict
         APPROVED_LIST=""
         REJECTED_LIST=""
         if [ -f "$PREV_TASKS_FILE" ]; then
             while IFS= read -r TID; do
                 [ -z "$TID" ] && continue
-                # Check round history for this task's validation verdict
                 VERDICT=$(jq -r --arg r "$PREV" --arg tid "$TID" \
                     '.[] | select(.round == ($r | tonumber)) | .validation[$tid].verdict // "unknown"' \
                     "$ROUND_HISTORY" 2>/dev/null) || VERDICT="unknown"
@@ -182,42 +181,79 @@ HYPOTHESIS_VERDICT: <CONFIRMED|REFUTED|INCONCLUSIVE> | <one-sentence evidence su
                 TDESC=$(jq -r --arg tid "$TID" '.[] | select(.id==$tid) | .description' "$PREV_TASKS_FILE" 2>/dev/null) || TDESC=""
 
                 if [ "$VERDICT" = "approved" ]; then
-                    APPROVED_LIST="${APPROVED_LIST}\n  - ${TID}: ${TDESC}"
-                else
-                    # Find which gate failed
+                    APPROVED_LIST="${APPROVED_LIST}
+  - ${TID}: ${TDESC}"
+                elif [ "$VERDICT" = "rejected" ]; then
                     FAIL_GATE=$(jq -r --arg r "$PREV" --arg tid "$TID" \
-                        '.[] | select(.round == ($r | tonumber)) | .validation[$tid] | to_entries[] | select(.value == "fail") | .key' \
-                        "$ROUND_HISTORY" 2>/dev/null | head -1) || FAIL_GATE="unknown"
-                    REJECTED_LIST="${REJECTED_LIST}\n  - ${TID} (failed: ${FAIL_GATE}): ${TDESC}"
+                        '[.[] | select(.round == ($r | tonumber)) | .validation[$tid] | to_entries[] | select(.value == "fail") | .key] | join(", ")' \
+                        "$ROUND_HISTORY" 2>/dev/null) || FAIL_GATE="unknown"
+                    REJECTED_LIST="${REJECTED_LIST}
+  - ${TID} (failed: ${FAIL_GATE}): ${TDESC}"
                 fi
+                # Skip tasks with "unknown" verdict — they were never validated
             done < <(jq -r '.[].id' "$PREV_TASKS_FILE" 2>/dev/null)
         fi
 
-        # Unattempted survivors: ideas that survived the match/prune in the prior
-        # round's DD output but were not turned into tasks
+        # Unattempted survivors: extract deterministically from the DD output.
+        # The Survivors section uses "- **#N Name** — description" format.
+        # Compare against task IDs by converting survivor names to kebab-case.
         UNATTEMPTED=""
         if [ -f "$PREV_IDEAS_FILE" ] && [ -f "$PREV_TASKS_FILE" ]; then
-            UNATTEMPTED=$(claude -p "Read $PREV_IDEAS_FILE and $PREV_TASKS_FILE.
+            TASK_IDS_LIST=$(jq -r '.[].id' "$PREV_TASKS_FILE" 2>/dev/null) || TASK_IDS_LIST=""
 
-From the feature ideas file, find the Survivors section (ideas that passed match/prune).
-From the tasks file, find which ideas were actually turned into tasks (by matching idea names to task IDs/descriptions).
+            # Extract lines between "### Survivors" and the next "###" heading
+            SURVIVOR_LINES=$(sed -n '/^### Survivors$/,/^### /{/^### Survivors$/d;/^### /d;p}' "$PREV_IDEAS_FILE" \
+                | grep -E '^\- \*\*#[0-9]' || true)
 
-List any survivors that were NOT turned into tasks — these are unattempted ideas.
-Output one idea per line, just the idea name and a brief description. If all survivors became tasks, output NONE." 2>/dev/null) || UNATTEMPTED=""
+            while IFS= read -r LINE; do
+                [ -z "$LINE" ] && continue
+                # Extract the name part: "- **#N Name** — desc" → "Name"
+                SURVIVOR_NAME=$(echo "$LINE" | sed 's/^- \*\*#[0-9]* //' | sed 's/\*\*.*//')
+                # Convert to kebab-case for matching against task IDs
+                SURVIVOR_KEBAB=$(echo "$SURVIVOR_NAME" | tr '[:upper:]' '[:lower:]' | sed 's/[[:space:]]/-/g' | sed 's/[^a-z0-9-]//g')
+
+                # Check if any task ID contains this kebab name (or vice versa)
+                MATCHED=false
+                while IFS= read -r EXISTING_TID; do
+                    [ -z "$EXISTING_TID" ] && continue
+                    if [[ "$EXISTING_TID" == *"$SURVIVOR_KEBAB"* ]] || [[ "$SURVIVOR_KEBAB" == *"$EXISTING_TID"* ]]; then
+                        MATCHED=true
+                        break
+                    fi
+                done <<< "$TASK_IDS_LIST"
+
+                if [ "$MATCHED" = false ]; then
+                    UNATTEMPTED="${UNATTEMPTED}
+  - ${LINE#- }"
+                fi
+            done <<< "$SURVIVOR_LINES"
         fi
 
-        # Assemble context block
-        if [ -n "$APPROVED_LIST" ] || [ -n "$REJECTED_LIST" ] || [ -n "$UNATTEMPTED" ]; then
+        # Assemble context block — only include sections that have content
+        PRIOR_CONTEXT=""
+        CONTEXT_SECTIONS=""
+        if [ -n "$APPROVED_LIST" ]; then
+            CONTEXT_SECTIONS="${CONTEXT_SECTIONS}
+APPROVED (already implemented, do not re-propose):${APPROVED_LIST}
+"
+        fi
+        if [ -n "$REJECTED_LIST" ]; then
+            CONTEXT_SECTIONS="${CONTEXT_SECTIONS}
+REJECTED (failed validation — consider re-proposing with improvements):${REJECTED_LIST}
+"
+        fi
+        if [ -n "$UNATTEMPTED" ]; then
+            CONTEXT_SECTIONS="${CONTEXT_SECTIONS}
+UNATTEMPTED SURVIVORS (validated but never implemented — strong candidates):${UNATTEMPTED}
+"
+        fi
+        if [ -n "$CONTEXT_SECTIONS" ]; then
             PRIOR_CONTEXT="
 ## Prior round ($PREV) results — use this to guide your ideas
 
-APPROVED (already implemented, do not re-propose):$(echo -e "$APPROVED_LIST")
-
-REJECTED (failed validation — consider re-proposing with improvements):$(echo -e "$REJECTED_LIST")
-
-UNATTEMPTED SURVIVORS (validated but never implemented — strong candidates):
-$UNATTEMPTED
-
+Note: This covers only the most recent round. See docs/working/completed-tasks.md
+for the complete history of all approved work across all rounds.
+${CONTEXT_SECTIONS}
 Focus on: (1) re-attempting rejected ideas with fixes for their failure reasons,
 (2) proposing unattempted survivors, or (3) identifying genuinely new problems.
 Re-attempts and unattempted survivors count as valid ideas — do not dismiss them
