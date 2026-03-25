@@ -1,1 +1,0 @@
-Added explicit file-scope constraint to the Step 3 implementation prompt so the implementing agent knows which files it may touch (from files_touched) and must stop-and-document rather than create unlisted files.

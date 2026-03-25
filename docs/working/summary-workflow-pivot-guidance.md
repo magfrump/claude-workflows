@@ -1,1 +1,0 @@
-Added "When to pivot" subsections to RPI, DD, spike, and codebase-onboarding workflows documenting the 4 most common pivot paths (DD↔RPI, spike→RPI, RPI→spike, onboarding→RPI) with guidance on carrying forward artifacts rather than discarding work.

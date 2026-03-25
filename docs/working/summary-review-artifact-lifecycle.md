@@ -1,1 +1,0 @@
-Added `Last verified` and `Relevant paths` YAML frontmatter to all 15 review artifacts in `docs/reviews/`, and updated `guides/doc-freshness.md` with lifecycle rules (re-run, archive, leave alone) so stale reviews are detectable via the existing git-log staleness heuristic.

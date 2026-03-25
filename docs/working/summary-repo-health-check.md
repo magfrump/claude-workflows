@@ -1,1 +1,0 @@
-Created `health-check.sh`: a self-discovering repo integrity validator that globs for skills, workflows, fixtures, and shell files to check YAML frontmatter, cross-references, MD file consistency, fixture↔verdict coverage, BATS tests, and shellcheck — no hardcoded file lists.

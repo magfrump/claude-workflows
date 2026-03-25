@@ -1,1 +1,0 @@
-Added structured JSON logging to self-improvement.sh that records per-gate pass/fail status, idea counts, task counts, and merge outcomes per round, writing per-round reports and appending to docs/working/round-history.json for trend analysis.

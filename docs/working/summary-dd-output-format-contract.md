@@ -1,1 +1,0 @@
-Added inline comments documenting the DD output format contract at all three parsing points in self-improvement.sh: Survivors section extraction, Diagnose section problem-list extraction, and convergence detection data flow.

@@ -1,1 +1,0 @@
-Extracted `get_eligible_hypotheses()` pure function from Step 0 inline logic and added 16 bats tests covering within-window exclusion, past-window eligibility, custom windows, retroactive filtering, null/empty/missing hypotheses, and malformed input handling.

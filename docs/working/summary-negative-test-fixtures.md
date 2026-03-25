@@ -1,1 +1,0 @@
-Added 8 edge-case test fixtures (4 per skill: empty file, no checkable claims/comments, binary content, extremely short) with BATS tests and expected-verdicts entries that verify fact-check and code-fact-check skills produce zero claims on degenerate inputs rather than confused analysis.

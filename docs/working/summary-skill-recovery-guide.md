@@ -1,1 +1,0 @@
-Created guides/skill-recovery.md with 3-tier recovery patterns (retry narrower, use alternative skill, skip and note) and added a cross-reference line to all 14 skill files, completing the detect-recover pipeline alongside schema validation and self-eval.

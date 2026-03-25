@@ -1,1 +1,0 @@
-Added semantic dimension tests for cowen-critique and yglesias-critique: shared keyword helper (test/skills/critic-dimensions.bash) plus per-critic dimensions.bats that verify existing fixture outputs contain the distinguishing analytical keywords for each persona.
