@@ -211,6 +211,7 @@ HYPOTHESIS_VERDICT: <CONFIRMED|REFUTED|INCONCLUSIVE> | <one-sentence evidence su
                 SURVIVOR_NAME=$(echo "$LINE" | sed 's/^- \*\*#[0-9]* //' | sed 's/\*\*.*//')
                 # Convert to kebab-case for matching against task IDs
                 SURVIVOR_KEBAB=$(echo "$SURVIVOR_NAME" | tr '[:upper:]' '[:lower:]' | sed 's/[[:space:]]/-/g' | sed 's/[^a-z0-9-]//g')
+                [ -z "$SURVIVOR_KEBAB" ] && continue
 
                 # Check if any task ID contains this kebab name (or vice versa)
                 MATCHED=false

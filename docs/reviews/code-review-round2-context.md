@@ -91,3 +91,51 @@ The diff shows a trailing whitespace removal on the final line of the prompt (li
 The change is well-structured and addresses a real problem (premature convergence due to lack of prior-round context). The jq queries are correct against the actual data structure. Shell quoting is safe -- no double-expansion risks.
 
 The two most impactful issues to address are: (1) the `claude -p` call for unattempted-survivor detection could be replaced with deterministic text processing for better reliability and lower cost, and (2) the single-prior-round limitation should at minimum be documented in the prompt so the LLM knows the context is incomplete. The "unknown verdict treated as rejection" issue (finding #3) is a correctness bug that should be fixed before merging.
+
+---
+
+## Loop 2 Re-review
+
+**Reviewed commit:** latest fix commit (deterministic extraction, conditional sections, literal newlines)
+**Date:** 2026-03-24
+
+### Prior findings status
+
+All six prior findings were addressed:
+
+1. **claude -p replaced with deterministic extraction** -- FIXED. Lines 197-229 now use `sed` to extract the Survivors section, `grep` to filter survivor lines, and kebab-case conversion + substring matching to compare against task IDs. No LLM call involved.
+
+2. **Single-round limitation documented in prompt** -- FIXED. Lines 254-255 now include an explicit note: "This covers only the most recent round. See docs/working/completed-tasks.md for the complete history of all approved work across all rounds."
+
+3. **Unknown verdict now skipped** -- FIXED. Line 186 changed from bare `else` to `elif [ "$VERDICT" = "rejected" ]`, with an explicit comment at line 193 explaining that unknown-verdict tasks are skipped.
+
+4. **echo -e replaced with literal newlines** -- FIXED. Lines 184-191 build lists using actual newlines in the string (heredoc-style concatenation), eliminating `echo -e` entirely.
+
+5. **Empty sections conditionally included** -- FIXED. Lines 234-249 now check each of `APPROVED_LIST`, `REJECTED_LIST`, and `UNATTEMPTED` independently, only appending the corresponding section header + content to `CONTEXT_SECTIONS` when non-empty.
+
+6. **NONE stripping no longer relevant** -- N/A. The deterministic extraction starts with `UNATTEMPTED=""` and only appends when unmatched survivors are found. No "NONE" sentinel is ever produced.
+
+### New issues introduced by the fixes
+
+**Minor:**
+
+**M1. Bidirectional substring matching can false-match on short names.** Line 219 checks `[[ "$EXISTING_TID" == *"$SURVIVOR_KEBAB"* ]] || [[ "$SURVIVOR_KEBAB" == *"$EXISTING_TID"* ]]`. If a survivor name produces a very short kebab string (e.g., a survivor named "Exit" -> kebab "exit"), it would match any task ID containing that substring (e.g., `workflow-exit-criteria`). With current data all survivor names are 2+ words and produce sufficiently specific kebab strings, so this is not a practical concern today. It could become one if future DD rounds produce terse survivor names.
+
+**M2. Empty SURVIVOR_KEBAB matches everything.** If a survivor line is malformed (e.g., `- **#1 ** — desc` where the name is empty), `SURVIVOR_KEBAB` would be empty, and `[[ "$EXISTING_TID" == *""* ]]` is always true. The survivor would be incorrectly classified as matched (already a task) and excluded from the unattempted list. This is a silent data-loss edge case, though unlikely given the DD output format. A guard like `[ -z "$SURVIVOR_KEBAB" ] && continue` would make this explicit.
+
+**Nit:**
+
+**N1. Leading newline in list variables.** `APPROVED_LIST`, `REJECTED_LIST`, and `UNATTEMPTED` each start with a leading newline because the first concatenation appends to an empty string. For example, `APPROVED_LIST` ends up as `\n  - task-id: desc` rather than `  - task-id: desc`. This produces a blank line before the first item in each section. Functionally harmless but slightly untidy in the assembled prompt.
+
+### Sed extraction robustness
+
+The `sed -n '/^### Survivors$/,/^### /{...}'` pattern is correct for the current file structure. Verified against `feature-ideas-round-1.md`:
+- `### Survivors` appears at line 96 as an exact heading match.
+- `### Fixing weaknesses` follows at line 105, properly terminating the range.
+- The `grep -E '^\- \*\*#[0-9]'` filter correctly picks up only the bullet-point survivor entries, ignoring blank lines or commentary within the section.
+- If Survivors were the last `###` heading (no terminating heading), sed would read to EOF, but the grep filter would still only match survivor-format lines. So this is safe.
+- The `|| true` on grep prevents set -e failures when no survivors match.
+
+### Verdict
+
+All prior findings addressed. Two minor new issues found (M1 and M2), neither blocking. The deterministic extraction is a clear improvement over the `claude -p` approach -- it is faster, cheaper, and deterministic. The kebab-case matching works correctly for the actual data and is robust against most realistic inputs.
