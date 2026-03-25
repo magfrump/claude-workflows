@@ -39,9 +39,11 @@ Projects may optionally have a `docs/thoughts/` directory for working notes that
 
 These are living documents. Update them when you learn something new about the codebase. Read them at the start of a session if they exist.
 
+Long-lived documents (onboarding docs, spike records, shared thoughts) support **freshness tracking** via `Last verified` and `Relevant paths` fields. Before relying on these documents, check whether tracked paths have changed using `git log --since`. See `guides/doc-freshness.md` for the full heuristic.
+
 ## General Principles
 
 - Commit after each logical unit of work with conventional commit messages (feat:, fix:, refactor:, test:, docs:, spike:)
 - When using an unfamiliar library or language feature, add a comment explaining "why"
 - Prefer explicit over clever. Code is read more than written, and the readers may not share your context.
-- When you encounter a decision worth documenting, create or update `docs/decisions/NNN-title.md` in the project
+- When you encounter a decision worth documenting, create or update `docs/decisions/NNN-title.md` in the project. For smaller decisions that don't warrant a full record (single clear answer, no meaningful tradeoffs), add a row to `docs/decisions/log.md` instead.
