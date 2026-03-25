@@ -77,6 +77,41 @@ finalize_round_log() {
     rm -f "$ROUND_LOG_FILE"
 }
 
+# Print a one-line round summary to stdout and append to validation log
+print_round_summary() {
+    local round=$1
+    local report="$WORKING_DIR/round-${round}-report.json"
+
+    if [ ! -f "$report" ]; then
+        echo "Round $round: (no report available)"
+        return
+    fi
+
+    local launched approved rejected
+    launched=$(jq -r '.summary.launched // 0' "$report")
+    approved=$(jq -r '.summary.approved // 0' "$report")
+    rejected=$(jq -r '.summary.rejected // 0' "$report")
+
+    # Extract failure modes: gate names that have "fail" for rejected tasks
+    local failure_modes
+    failure_modes=$(jq -r '
+        [.validation | to_entries[]
+         | select(.value.verdict == "rejected")
+         | .value | to_entries[]
+         | select(.value == "fail" and .key != "verdict")
+         | .key] | unique | sort | join(", ")' "$report")
+
+    local summary_line
+    if [ -n "$failure_modes" ]; then
+        summary_line="Round $round: $launched launched, $approved approved, $rejected rejected (failure modes: $failure_modes)"
+    else
+        summary_line="Round $round: $launched launched, $approved approved, $rejected rejected"
+    fi
+
+    echo "$summary_line"
+    echo "$summary_line" >> "$WORKING_DIR/validation-round-$round.log"
+}
+
 # --- Task JSON schema validation ---
 # Validates each task in a tasks JSON file against the expected schema.
 # Outputs a filtered JSON array (valid tasks only) to stdout.
@@ -817,8 +852,15 @@ Count only the automated assessment scores (Testability investment, Trigger clar
 
     if [ -z "$APPROVED_TASKS" ]; then
         echo "No tasks passed validation. Skipping merge."
+        # Compute summary before finalizing so print_round_summary can read it
+        local ALL_REJ_LAUNCHED=0
+        for _ in $LAUNCHED_TASKS; do ALL_REJ_LAUNCHED=$((ALL_REJ_LAUNCHED + 1)); done
+        ALL_REJ_SUMMARY=$(jq -n --argjson launched "$ALL_REJ_LAUNCHED" \
+            '{launched: $launched, approved: 0, rejected: $launched}')
+        update_round_log '.summary' "$ALL_REJ_SUMMARY"
         update_round_log '.outcome' '"all_rejected"'
         finalize_round_log "$ROUND"
+        print_round_summary "$ROUND"
         continue
     fi
     echo "Approved tasks: $APPROVED_TASKS"
@@ -937,6 +979,7 @@ Then git add the resolved files and git commit to complete the merge."
         '{launched: $launched, approved: $approved, rejected: $rejected}')
     update_round_log '.summary' "$SUMMARY_JSON"
     finalize_round_log "$ROUND"
+    print_round_summary "$ROUND"
 
     echo "Round $ROUND complete. Report: $WORKING_DIR/round-${ROUND}-report.json"
     echo ""
