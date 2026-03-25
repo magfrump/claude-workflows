@@ -1,0 +1,1 @@
+Added test/round-log-functions.bats with 22 passing tests covering all 5 JSON state management functions (init_round_log, update_round_log, record_gate, finalize_round_log, cleanup) using temporary files and the same sourcing pattern as convergence-detection.bats.

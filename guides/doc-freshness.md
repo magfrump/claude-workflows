@@ -26,6 +26,15 @@ Relevant paths:
 ---
 ```
 
+### Template conventions
+
+The workflow templates embed these fields directly in their output templates:
+
+- **Onboarding docs**: `workflows/codebase-onboarding.md` step 6 — includes both fields and a "Freshness check" subsection under "When to re-run"
+- **Spike records**: `workflows/spike.md` step 4 — includes both fields in the spike record template, with a freshness note under "When to reference a spike"
+
+When adding freshness tracking to a new document type, follow the same pattern: add the fields to the workflow's output template and add a brief freshness check note near the "when to re-run / when to reference" guidance.
+
 Both formats carry the same two fields:
 
 - **Last verified** — the date someone (human or agent) last confirmed the document's accuracy against the current codebase.

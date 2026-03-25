@@ -1,0 +1,1 @@
+Created guides/subtraction-checklist.md: a manual review checklist for identifying removal candidates after each self-improvement round, referencing hypothesis-log.md, health-check complexity warnings, and skill-usage-report.sh output.

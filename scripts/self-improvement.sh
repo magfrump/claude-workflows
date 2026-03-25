@@ -1,31 +1,6 @@
 #!/bin/bash
 set -euo pipefail
 
-# Configuration
-REPO_DIR=~/claude-workflows
-WORKTREE_BASE=~/wt
-MAX_ROUNDS=5
-WORKING_DIR="$REPO_DIR/docs/working"
-ROUND_HISTORY="$WORKING_DIR/round-history.json"
-
-# Check required dependencies
-command -v jq &>/dev/null || { echo "Error: jq is required but not found"; exit 1; }
-
-CONVERGENCE_THRESHOLD=${CONVERGENCE_THRESHOLD:-70}  # percent overlap to trigger convergence
-HISTORY_FILE="$REPO_DIR/docs/working/problem-history.json"
-
-mkdir -p "$WORKING_DIR"
-touch "$WORKING_DIR/completed-tasks.md"
-
-# Initialize round-history.json if it doesn't exist
-if [ ! -f "$ROUND_HISTORY" ]; then
-    echo '[]' > "$ROUND_HISTORY"
-fi
-
-if [ ! -f "$HISTORY_FILE" ]; then
-    echo '{}' > "$HISTORY_FILE"
-fi
-
 # --- JSON logging helpers ---
 
 # Clean up temp files on early exit
@@ -77,6 +52,184 @@ finalize_round_log() {
     rm -f "$ROUND_LOG_FILE"
 }
 
+# --- Task JSON schema validation ---
+# Validates each task in a tasks JSON file against the expected schema.
+# Outputs a filtered JSON array (valid tasks only) to stdout.
+# Prints rejection reasons to stderr.
+# Args: $1 = path to tasks JSON file
+validate_task_json() {
+    local tasks_file=$1
+    local valid_tasks="[]"
+    local task_count
+    task_count=$(jq 'length' "$tasks_file")
+
+    for i in $(seq 0 $((task_count - 1))); do
+        local task
+        task=$(jq ".[$i]" "$tasks_file")
+        local tid
+        tid=$(echo "$task" | jq -r '.id // empty')
+
+        # Check required fields and types
+        local schema_err=""
+        schema_err=$(echo "$task" | jq -r '
+            def check:
+                if (.id | type) != "string" or (.id | length) == 0 then "id must be a non-empty string"
+                elif (.description | type) != "string" or (.description | length) == 0 then "description must be a non-empty string"
+                elif (.files_touched | type) != "array" or (.files_touched | length) == 0 then "files_touched must be a non-empty array"
+                elif (.independent | type) != "boolean" then "independent must be a boolean"
+                else empty
+                end;
+            check
+        ')
+
+        if [ -n "$schema_err" ]; then
+            echo "  SCHEMA REJECT [${tid:-task-$i}]: $schema_err" >&2
+            continue
+        fi
+
+        # Check files_touched entries for glob patterns and valid parent directories
+        local ft_errors=""
+        local ft_count
+        ft_count=$(echo "$task" | jq '.files_touched | length')
+        for j in $(seq 0 $((ft_count - 1))); do
+            local fpath
+            fpath=$(echo "$task" | jq -r ".files_touched[$j]")
+
+            # Reject glob patterns (*, ?, [)
+            if echo "$fpath" | grep -qE '[*?[]'; then
+                ft_errors="${ft_errors}glob pattern in files_touched: $fpath; "
+                continue
+            fi
+
+            # Check parent directory exists in the repo
+            local parent_dir
+            parent_dir=$(dirname "$fpath")
+            if [ "$parent_dir" != "." ] && [ ! -d "$parent_dir" ]; then
+                ft_errors="${ft_errors}parent directory does not exist: $parent_dir (for $fpath); "
+            fi
+        done
+
+        if [ -n "$ft_errors" ]; then
+            echo "  SCHEMA REJECT [$tid]: $ft_errors" >&2
+            continue
+        fi
+
+        # Task passed validation — add to valid list
+        valid_tasks=$(echo "$valid_tasks" | jq --argjson t "$task" '. += [$t]')
+    done
+
+    echo "$valid_tasks"
+}
+
+# --- Round summary printer ---
+# Reads the current ROUND_LOG_FILE to print a one-line human-readable summary.
+# Args: $1 = round number, $2 = validation log path
+# Output format: Round N: X launched, Y approved, Z rejected (failure modes: ...)
+print_round_summary() {
+    local round=$1
+    local validation_log=$2
+
+    local launched approved rejected failure_modes summary_line
+    launched=$(jq '[.validation | to_entries[] | select(.value.verdict != null)] | length' "$ROUND_LOG_FILE")
+    approved=$(jq '[.validation | to_entries[] | select(.value.verdict == "approved")] | length' "$ROUND_LOG_FILE")
+    rejected=$(jq '[.validation | to_entries[] | select(.value.verdict == "rejected")] | length' "$ROUND_LOG_FILE")
+
+    # Extract failure modes: for each rejected task, find gates that failed
+    failure_modes=$(jq -r '
+        [.validation | to_entries[] | select(.value.verdict == "rejected") |
+         .value | to_entries[] | select(.value == "fail" and .key != "verdict") | .key
+        ] | unique | join(", ")' "$ROUND_LOG_FILE")
+
+    if [ -z "$failure_modes" ]; then
+        summary_line="Round ${round}: ${launched} launched, ${approved} approved, ${rejected} rejected"
+    else
+        summary_line="Round ${round}: ${launched} launched, ${approved} approved, ${rejected} rejected (failure modes: ${failure_modes})"
+    fi
+
+    echo "$summary_line"
+    echo "$summary_line" >> "$validation_log"
+}
+
+# --- Convergence threshold check ---
+# Pure function: compares an overlap percentage against a threshold.
+# Args: $1 = overlap percentage (integer 0-100), $2 = threshold (integer 0-100)
+# Returns: 0 if overlap >= threshold (at-or-above), 1 if below.
+# Returns 1 (below) for empty or non-integer input.
+check_convergence_threshold() {
+    local overlap="${1:-}"
+    local threshold="${2:-}"
+
+    # Validate both inputs are non-empty integers
+    if [[ -z "$overlap" || -z "$threshold" ]]; then
+        return 1
+    fi
+    if ! [[ "$overlap" =~ ^[0-9]+$ && "$threshold" =~ ^[0-9]+$ ]]; then
+        return 1
+    fi
+
+    if [ "$overlap" -ge "$threshold" ]; then
+        return 0
+    else
+        return 1
+    fi
+}
+
+# --- Hypothesis window eligibility check ---
+# Pure function: reads tasks JSON from stdin and outputs IDs of tasks whose
+# hypothesis evaluation window has elapsed.
+# Args: $1 = current_round (integer), $2 = prior_round (integer)
+# Stdin: JSON array of task objects (each may have .hypothesis, .hypothesis_window, .retroactive)
+# Stdout: one task ID per line for eligible tasks (empty if none)
+# Returns 1 for missing/invalid arguments or malformed JSON.
+get_eligible_hypotheses() {
+    local current_round="${1:-}"
+    local prior_round="${2:-}"
+
+    # Validate both inputs are non-empty positive integers
+    if [[ -z "$current_round" || -z "$prior_round" ]]; then
+        return 1
+    fi
+    if ! [[ "$current_round" =~ ^[0-9]+$ && "$prior_round" =~ ^[0-9]+$ ]]; then
+        return 1
+    fi
+
+    # Read JSON from stdin; jq will fail on malformed input
+    jq -r --argjson current "$current_round" --argjson prior "$prior_round" \
+        '[.[] | select(.hypothesis != null and .hypothesis != "") |
+          select(.retroactive != true) |
+          select(($current - $prior) >= (.hypothesis_window // 3))] | .[]? | .id' \
+        2>/dev/null || return 1
+}
+
+# --- Main execution guard ---
+# Allows sourcing this file for its functions (e.g., in tests) without
+# running the top-level loop.
+if [[ "${BASH_SOURCE[0]}" == "${0}" ]]; then
+
+# Configuration
+REPO_DIR=~/claude-workflows
+WORKTREE_BASE=~/wt
+MAX_ROUNDS=5
+WORKING_DIR="$REPO_DIR/docs/working"
+ROUND_HISTORY="$WORKING_DIR/round-history.json"
+
+# Check required dependencies
+command -v jq &>/dev/null || { echo "Error: jq is required but not found"; exit 1; }
+
+CONVERGENCE_THRESHOLD=${CONVERGENCE_THRESHOLD:-70}  # percent overlap to trigger convergence
+HISTORY_FILE="$REPO_DIR/docs/working/problem-history.json"
+
+mkdir -p "$WORKING_DIR"
+touch "$WORKING_DIR/completed-tasks.md"
+
+# Initialize round-history.json if it doesn't exist
+if [ ! -f "$ROUND_HISTORY" ]; then
+    echo '[]' > "$ROUND_HISTORY"
+fi
+
+if [ ! -f "$HISTORY_FILE" ]; then
+    echo '{}' > "$HISTORY_FILE"
+fi
 
 cd "$REPO_DIR"
 
@@ -194,9 +347,27 @@ HYPOTHESIS_VERDICT: <CONFIRMED|REFUTED|INCONCLUSIVE> | <one-sentence evidence su
             done < <(jq -r '.[].id' "$PREV_TASKS_FILE" 2>/dev/null)
         fi
 
-        # Unattempted survivors: extract deterministically from the DD output.
-        # The Survivors section uses "- **#N Name** — description" format.
-        # Compare against task IDs by converting survivor names to kebab-case.
+        # --- DD Output Format Contract: Survivors Section ---
+        # Parses the "### Survivors" heading from the DD output file
+        # (docs/working/feature-ideas-round-N.md).
+        #
+        # Expected DD output structure (from divergent-design.md step 4):
+        #   ### Survivors
+        #   - **#1 Some Idea Name** — one-line description
+        #   - **#2 Another Idea** — one-line description
+        #   ### <next heading>
+        #
+        # Extraction logic:
+        #   1. sed grabs lines between "### Survivors" and the next "### " heading
+        #   2. grep filters to lines matching: ^- \*\*#[0-9]
+        #   3. For each line, the name is extracted by stripping the "- **#N " prefix
+        #      and the "**..." suffix, then converted to kebab-case for fuzzy matching
+        #      against existing task IDs.
+        #
+        # If the DD output changes the Survivors heading level, numbering format
+        # (e.g., "#1" prefix), or bullet style, this extraction will silently
+        # return no results — causing all survivors to be treated as unattempted.
+        # ---
         UNATTEMPTED=""
         if [ -f "$PREV_IDEAS_FILE" ] && [ -f "$PREV_TASKS_FILE" ]; then
             TASK_IDS_LIST=$(jq -r '.[].id' "$PREV_TASKS_FILE" 2>/dev/null) || TASK_IDS_LIST=""
@@ -303,7 +474,33 @@ docs/working/feature-ideas-round-$ROUND.md"
     # prior rounds. If >= CONVERGENCE_THRESHOLD% of problems overlap, stop.
     echo "Checking for convergence (round $ROUND)..."
 
-    # Extract problem summaries as a JSON array of short descriptions
+    # --- DD Output Format Contract: Diagnose Section ---
+    # Asks Claude to extract diagnosed problems from the DD output file.
+    #
+    # Expected DD output structure (from divergent-design.md step 2):
+    #   ## 2. Diagnose
+    #   <prose listing concrete problems, requirements, and constraints>
+    #
+    # The prompt instructs Claude to find a heading like "## 2. Diagnose"
+    # (or similar) and extract each problem as a one-line summary, returning
+    # a JSON array of strings. Example:
+    #   ["Session continuity is fragile", "No feedback loop from usage"]
+    #
+    # Post-processing:
+    #   - Leading whitespace is stripped (sed)
+    #   - Only the first line matching a JSON array (^\[) is kept
+    #   - Result is validated with jq; falls back to [] on parse failure
+    #
+    # The extracted PROBLEMS_JSON is used in two places:
+    #   1. Convergence detection (immediately below) — compared against
+    #      problem-history.json to detect repeated problem sets
+    #   2. Problem history update (step 4b) — approved tasks' problems are
+    #      recorded so future rounds can detect convergence
+    #
+    # If the DD output omits the Diagnose section or changes its heading
+    # format, Claude may return [], skipping convergence detection for
+    # that round.
+    # ---
     PROBLEMS_JSON=$(claude -p "Read docs/working/feature-ideas-round-$ROUND.md.
 
 Find the Diagnose section (usually '## 2. Diagnose' or similar).
@@ -322,9 +519,23 @@ If there is no Diagnose section, output an empty array: []" 2>/dev/null | sed 's
 
     PROBLEM_COUNT=$(echo "$PROBLEMS_JSON" | jq 'length')
 
-    # Check convergence against prior rounds if we have history and problems.
-    # problem-history.json only contains problems that were addressed by approved
-    # tasks, so all prior problems are valid convergence baselines.
+    # --- DD Output Format Contract: Convergence Detection ---
+    # Uses the PROBLEMS_JSON extracted above (a JSON array of problem strings)
+    # to detect whether this round's diagnosed problems overlap with prior
+    # rounds' problems beyond a threshold (CONVERGENCE_THRESHOLD, default 70%).
+    #
+    # Data flow:
+    #   1. PROBLEMS_JSON (current round) — extracted from DD's Diagnose section
+    #   2. PRIOR_PROBLEMS — flattened from problem-history.json, which stores
+    #      per-round arrays keyed by round number: {"1": [...], "2": [...]}
+    #      Only problems addressed by approved tasks are in the history.
+    #   3. Claude compares current vs prior problems for semantic overlap,
+    #      returning a single integer (0-100) representing overlap percentage
+    #   4. If overlap >= CONVERGENCE_THRESHOLD, the loop breaks (no more rounds)
+    #
+    # This means convergence is only triggered by re-diagnosing problems that
+    # were already solved, not by recurring unsolved problems.
+    # ---
     PRIOR_PROBLEMS=$(jq -r '[.[]] | add // [] | .[]' "$HISTORY_FILE" 2>/dev/null | sort -u) || true
     if [ "$PROBLEM_COUNT" -gt 0 ] && [ -n "$PRIOR_PROBLEMS" ]; then
         echo "  Comparing $PROBLEM_COUNT problems against prior rounds..."
@@ -412,6 +623,48 @@ other tasks in this round."
     update_round_log '.tasks' "$TASKS_JSON"
 
     # -------------------------------------------------------
+    # Step 2b: Validate task JSON schema
+    # -------------------------------------------------------
+    echo "Validating task JSON schema..."
+    VALID_TASKS_JSON=$(validate_task_json "$TASKS_FILE")
+    VALID_COUNT=$(echo "$VALID_TASKS_JSON" | jq 'length')
+    REJECTED_SCHEMA_COUNT=$((TASK_COUNT - VALID_COUNT))
+
+    if [ "$REJECTED_SCHEMA_COUNT" -gt 0 ]; then
+        echo "  Schema validation: $REJECTED_SCHEMA_COUNT of $TASK_COUNT tasks rejected"
+        echo "[round-$ROUND] SCHEMA: $REJECTED_SCHEMA_COUNT rejected, $VALID_COUNT valid" >> "$WORKING_DIR/validation-round-$ROUND.log"
+
+        # Record schema gate results
+        for TASK_ID in $TASK_IDS; do
+            if echo "$VALID_TASKS_JSON" | jq -e ".[] | select(.id == \"$TASK_ID\")" >/dev/null 2>&1; then
+                record_gate "$TASK_ID" "schema" "pass"
+            else
+                record_gate "$TASK_ID" "schema" "fail"
+            fi
+        done
+
+        # Overwrite tasks file with valid tasks only
+        echo "$VALID_TASKS_JSON" > "$TASKS_FILE"
+
+        # Rebuild task variables
+        TASK_IDS=$(jq -r '.[].id' "$TASKS_FILE")
+        TASK_COUNT=$(jq 'length' "$TASKS_FILE")
+        TASK_IDS_JSON=$(jq '[.[].id]' "$TASKS_FILE")
+
+        if [ "$VALID_COUNT" -eq 0 ]; then
+            echo "No tasks passed schema validation. Skipping round."
+            update_round_log '.outcome' '"all_schema_rejected"'
+            finalize_round_log "$ROUND"
+            continue
+        fi
+    else
+        echo "  All $TASK_COUNT tasks passed schema validation"
+        for TASK_ID in $TASK_IDS; do
+            record_gate "$TASK_ID" "schema" "pass"
+        done
+    fi
+
+    # -------------------------------------------------------
     # Step 3: Implement in parallel worktrees
     # -------------------------------------------------------
     echo "Launching parallel implementation..."
@@ -419,6 +672,7 @@ other tasks in this round."
     LAUNCHED_TASKS=""
     for TASK_ID in $TASK_IDS; do
         DESC=$(jq -r ".[] | select(.id==\"$TASK_ID\") | .description" "$TASKS_FILE")
+        FILES_TOUCHED=$(jq -r ".[] | select(.id==\"$TASK_ID\") | .files_touched[]" "$TASKS_FILE" | paste -sd', ')
         WT_DIR="$WORKTREE_BASE-$TASK_ID"
 
         git worktree add "$WT_DIR" -b "feat/r${ROUND}-${TASK_ID}" main 2>/dev/null || {
@@ -433,6 +687,13 @@ other tasks in this round."
             claude -p "You are in /away mode. Commit and push when done.
 
 Task: $DESC
+
+FILE SCOPE CONSTRAINT — READ THIS BEFORE STARTING:
+You may ONLY create or modify the following files: $FILES_TOUCHED
+Files under docs/working/ are also allowed (e.g., research docs, plan docs, summaries).
+You MUST NOT create or modify any other files. If during implementation you
+discover a need to touch an unlisted file, STOP and document the reason in
+docs/working/scope-exception-${TASK_ID}.md instead of making the change.
 
 Follow the research-plan-implement workflow in ~/.claude/workflows/.
 Proceed through research and plan without waiting for human review.
@@ -525,7 +786,7 @@ docs/working/summary-${TASK_ID}.md"
         if [ -z "$REJECT_REASON" ]; then
             for FILE in $DELETED_FILES; do
                 case "$FILE" in
-                    self-improvement.sh|docs/evaluation-rubric.md|CLAUDE.md)
+                    scripts/self-improvement.sh|docs/evaluation-rubric.md|CLAUDE.md)
                         REJECT_REASON="deleted critical file: $FILE"
                         record_gate "$TASK_ID" "critical_files" "fail"
                         break
@@ -731,6 +992,9 @@ Then git add the resolved files and git commit to complete the merge."
         git branch -d "$BRANCH" 2>/dev/null || true
     done
 
+    # Print human-readable round summary after merges
+    print_round_summary "$ROUND" "$WORKING_DIR/validation-round-$ROUND.log"
+
     # -------------------------------------------------------
     # Step 6: Update completed tasks log
     # -------------------------------------------------------
@@ -768,3 +1032,5 @@ done
 echo "=== All rounds complete ==="
 echo "Completed tasks log: $WORKING_DIR/completed-tasks.md"
 echo "Round history: $ROUND_HISTORY"
+
+fi  # end main-execution guard

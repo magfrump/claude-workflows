@@ -1,0 +1,1 @@
+Added `validate_task_json` function to self-improvement.sh (Step 2b) that uses jq to reject tasks with missing/invalid id, description, files_touched, or independent fields, and rejects files_touched entries containing glob patterns or referencing non-existent parent directories.
