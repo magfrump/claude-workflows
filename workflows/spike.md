@@ -14,7 +14,7 @@
 
 ## Process
 
-### 1. Define the question
+### 1. Define the question (essential)
 
 State the specific question the spike answers in one sentence. Examples:
 - "Can pdf-parse extract table structure from our sample PDFs?"
@@ -23,11 +23,11 @@ State the specific question the spike answers in one sentence. Examples:
 
 If you can't state the question clearly, the spike isn't ready to start.
 
-### 2. Set a timebox
+### 2. Set a timebox (recommended)
 
 Spikes have a hard time limit. Default: **30 minutes of active work** (which may be 5-15 tool calls for an AI agent). If the question isn't answered by then, the answer is "this is harder than expected" — which is itself a useful answer.
 
-### 3. Work in a throwaway space
+### 3. Work in a throwaway space (essential)
 
 ```bash
 git checkout -b spike/description-date
@@ -35,7 +35,7 @@ git checkout -b spike/description-date
 
 Spike code does NOT need to be clean, tested, or documented. It needs to answer the question. Cut every corner. Hardcode values. Skip error handling. Copy-paste from docs.
 
-### 4. Record the findings
+### 4. Record the findings (recommended)
 
 Before discarding the spike branch, create a brief record:
 
@@ -70,7 +70,7 @@ The "RPI seed" section is the handoff point. When a spike recommends proceeding,
 
 Save this to `docs/spikes/` in the project if the findings are relevant long-term, or just report to the user if ephemeral.
 
-### 5. Clean up
+### 5. Clean up (advanced)
 
 ```bash
 git checkout main
