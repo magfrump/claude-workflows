@@ -1,0 +1,1 @@
+Added keyword-based dimension manifests and BATS tests for cowen-critique (9 dimensions) and yglesias-critique (8 dimensions) that validate existing fixture outputs maintain distinctive analytical perspectives using grep pattern matching, not LLM evaluation.
