@@ -1,0 +1,1 @@
+Created `guides/validation-gates.md` documenting all 7 validation gates (1a–1g) in the self-improvement pipeline with rationale, failure patterns, fixes, and worked examples from Round 1 (file_scope and shellcheck).
