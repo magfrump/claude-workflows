@@ -1,5 +1,8 @@
 # Test Strategy: fact-check and code-fact-check Skills
 
+**Last verified:** 2026-03-24
+**Relevant paths:** skills/fact-check.md, skills/code-fact-check.md
+
 These are evaluation scenarios for the two fact-checking skills. Since both are
 prompt-based skills (not executable code), test cases are inputs paired with
 expected behavior criteria.

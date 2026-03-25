@@ -33,6 +33,15 @@ Both formats carry the same two fields:
 
 Use YAML frontmatter for review artifacts (it is parseable by tooling and clearly separated from document content). Use inline bold fields for other document types.
 
+### Template conventions
+
+The workflow templates include freshness fields in their output templates:
+
+- **Codebase onboarding** (`~/.claude/workflows/codebase-onboarding.md`): The orientation document template includes `**Last verified:**` and `**Relevant paths:**` fields in its header, and a "Freshness check" subsection under "When to re-run."
+- **Spike** (`~/.claude/workflows/spike.md`): The spike record template includes `Last verified:` and `Relevant paths:` fields.
+
+Documents produced by these workflows inherit freshness tracking automatically. When creating other long-lived documents (shared thoughts, cumulative logs), add the inline bold fields manually.
+
 ## Staleness check
 
 Run this command to see if tracked paths have changed since the document was last verified:

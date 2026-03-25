@@ -1,5 +1,8 @@
 # Failure Incident Journal
 
+**Last verified:** 2026-03-24
+**Relevant paths:** guides/skill-recovery.md, skills/
+
 Tracks real-world skill and workflow failures observed during actual use. Unlike test fixtures and self-eval (which operate on synthetic inputs), this journal captures failures from production runs with real content.
 
 **Value is cumulative.** After ~10 entries, patterns should emerge — repeated failure modes, skills that struggle with specific input shapes, workflows that break under certain conditions. Use those patterns to inform targeted fixture creation or skill prompt updates.

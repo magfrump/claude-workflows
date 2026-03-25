@@ -1,0 +1,1 @@
+Added template convention cross-references to doc-freshness guide and backfilled Last verified / Relevant paths fields on four existing long-lived documents (staleness-heuristic spike, incident journal, hypothesis log, test strategy).
