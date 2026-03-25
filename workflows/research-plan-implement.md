@@ -38,6 +38,8 @@ The `{topic}` naming is flexible — use whatever makes the file findable during
 
 ## Process
 
+> **Tiers:** (essential) = every time · (recommended) = most tasks · (advanced) = complex or high-stakes work
+
 ### 1. Scope (essential) — define what this loop covers
 
 Before researching, state the scope of this iteration in one sentence: what specific question, feature, or fix is this loop addressing? 

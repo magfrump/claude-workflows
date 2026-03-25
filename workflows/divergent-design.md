@@ -17,7 +17,9 @@
 
 ## Process
 
-### 1. Diverge — generate many possibilities
+> **Tiers:** (essential) = every time · (recommended) = most tasks · (advanced) = complex or high-stakes work
+
+### 1. Diverge — generate many possibilities (essential)
 
 Generate 8-15 candidate approaches. Quantity matters more than quality at this stage. Requirements:
 - Include at least 2-3 approaches that feel wrong, naive, or unconventional
@@ -26,7 +28,7 @@ Generate 8-15 candidate approaches. Quantity matters more than quality at this s
 - One sentence each, no evaluation yet
 - Number them for reference
 
-### 2. Diagnose — specify the actual problems and constraints
+### 2. Diagnose — specify the actual problems and constraints (essential)
 
 List every concrete problem, requirement, and constraint the solution must address. Be specific:
 - ✓ "The reviewer in IST timezone needs to understand intent in <5 minutes from the PR description alone"
@@ -34,7 +36,7 @@ List every concrete problem, requirement, and constraint the solution must addre
 
 Include non-obvious constraints: timezone gaps, skill gaps in the team, maintenance burden, deployment complexity, interaction with existing code, performance requirements. Also note which constraints are hard (must satisfy) vs soft (prefer to satisfy).
 
-### 3. Match and prune
+### 3. Match and prune (recommended)
 
 Create a rough compatibility matrix:
 
@@ -50,7 +52,7 @@ Key:
 
 For approaches that score well overall but have one fixable weakness, briefly sketch how to fix it (1-2 sentences). Discard anything with ⚠ on a hard constraint or mostly ✗ across the board.
 
-### 4. Tradeoff matrix and decision
+### 4. Tradeoff matrix and decision (recommended)
 
 For the top 3-5 survivors, create a detailed comparison:
 
@@ -79,7 +81,7 @@ If one approach clearly dominates (>80% confidence): document the decision and p
 
 If the tradeoff is genuinely unclear: **stop and consult the user.** Present the matrix, state your tentative recommendation with reasoning, and identify what information would resolve the ambiguity.
 
-### 5. Document
+### 5. Document (essential)
 
 Create or update `docs/decisions/NNN-title.md` with:
 - Context: what prompted the decision

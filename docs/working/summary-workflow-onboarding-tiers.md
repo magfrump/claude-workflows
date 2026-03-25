@@ -1,0 +1,1 @@
+Added (essential)/(recommended)/(advanced) tier annotations to ### headings in research-plan-implement, divergent-design, spike, and pr-prep workflows, plus a one-line legend in each, to improve approachability without adding new files or infrastructure.

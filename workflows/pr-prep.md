@@ -7,7 +7,9 @@ Before opening any pull request, especially when the reviewer is in a different 
 
 ## Process
 
-### 1. Clean up commit history
+> **Tiers:** (essential) = every time · (recommended) = most tasks · (advanced) = complex or high-stakes work
+
+### 1. Clean up commit history (recommended)
 
 ```bash
 git rebase -i origin/main
@@ -20,11 +22,11 @@ Squash WIP commits into logical chunks. Each commit in the final history should 
 3. `feat: add UI for X` (builds on 1-2)
 4. `test: add tests for X` (or interleaved with the above)
 
-### 2. Verify CI passes locally
+### 2. Verify CI passes locally (essential)
 
 Run whatever checks the project has: lint, build, tests. Fix anything broken. Do not leave this for the reviewer to discover.
 
-### 3. Review-fix loop
+### 3. Review-fix loop (advanced)
 
 Run review skills and iterate until clean. This is required, not optional.
 
@@ -50,7 +52,7 @@ For each finding: confirm it's real by reading the code, then fix. Commit in coh
 
 See `workflows/review-fix-loop.md` for extended discussion of loop dynamics and anti-patterns.
 
-### 4. Write the PR description
+### 4. Write the PR description (essential)
 
 Structure:
 
@@ -74,11 +76,11 @@ Structure:
 [Link to any docs/decisions/ files created, or briefly note non-obvious choices]
 ```
 
-### 5. Annotate the diff
+### 5. Annotate the diff (advanced)
 
 If the PR includes code in languages or libraries the reviewer may not know well, add **PR comments on your own PR** explaining non-obvious sections. This is cheaper than back-and-forth across timezones.
 
-### 6. Size check
+### 6. Size check (recommended)
 
 If the PR exceeds ~500 lines changed, consider whether it can be split. Look for:
 - A preparatory refactor that can land independently

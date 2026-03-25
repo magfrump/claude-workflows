@@ -14,6 +14,8 @@
 
 ## Process
 
+> **Tiers:** (essential) = every time · (recommended) = most tasks · (advanced) = complex or high-stakes work
+
 ### 1. Define the question (essential)
 
 State the specific question the spike answers in one sentence. Examples:
@@ -70,7 +72,7 @@ The "RPI seed" section is the handoff point. When a spike recommends proceeding,
 
 Save this to `docs/spikes/` in the project if the findings are relevant long-term, or just report to the user if ephemeral.
 
-### 5. Clean up (advanced)
+### 5. Clean up (recommended)
 
 ```bash
 git checkout main
