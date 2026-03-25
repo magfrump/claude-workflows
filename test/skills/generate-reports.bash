@@ -63,6 +63,7 @@ generate_one() {
     # without having access to eval criteria or expected verdicts.
     local temp_dir
     temp_dir=$(mktemp -d)
+    # shellcheck disable=SC2064  # Intentional: expand $temp_dir now at trap-set time
     trap "rm -rf '$temp_dir'" RETURN
 
     cp "$fixture_path" "$temp_dir/"

@@ -6,6 +6,7 @@
 # the semantic dimensions that distinguish each critic persona.
 
 # Cowen-style critique: economist reasoning, stress-testing arguments
+# shellcheck disable=SC2034  # Used by test files that source this helper
 COWEN_DIMENSION_KEYWORDS=(
   "inversion"       # What Survives the Inversion
   "boring"          # The Boring Explanation
@@ -17,6 +18,7 @@ COWEN_DIMENSION_KEYWORDS=(
 )
 
 # Yglesias-style critique: policy mechanism, institutional analysis
+# shellcheck disable=SC2034  # Used by test files that source this helper
 YGLESIAS_DIMENSION_KEYWORDS=(
   "mechanism"       # The Goal vs. the Mechanism
   "lever"           # The Boring Lever

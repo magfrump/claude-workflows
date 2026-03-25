@@ -115,7 +115,7 @@ add_event() {
 # --- Edge cases ---
 
 @test "handles empty log file" {
-  > "$TEST_LOG"
+  true > "$TEST_LOG"
 
   output=$(bash "$SCRIPT")
 

@@ -95,6 +95,7 @@ setup() {
     # Pure Reference claims may cite existence/glob results with no line numbers
     [ "$type_line" = "Reference" ] && continue
     # Other types must reference at least a file path (file:line preferred, bare path accepted)
+    # shellcheck disable=SC2016  # Backticks are literal grep pattern, not command substitution
     if ! echo "$evidence_line" | grep -qE '(`[a-zA-Z0-9_./-]+`|[a-zA-Z0-9_./-]+:[0-9]+)'; then
       bad_lines="${bad_lines}Claim ${claim_num}: ${evidence_line}\n"
     fi

@@ -27,6 +27,7 @@ load_report() {
     # Fallback: claims run to end of file (no trailing non-Claim ## heading).
     CLAIMS_BODY=$(echo "$REPORT_CONTENT" | sed -n '/^## Claim [0-9]/,$p')
   fi
+  # shellcheck disable=SC2034  # Used by test files that source this helper
   ATTENTION_SECTION=$(echo "$REPORT_CONTENT" | sed -n '/^## Claims Requiring/,$p')
 }
 

@@ -1,4 +1,5 @@
 #!/usr/bin/env bash
+# shellcheck disable=SC2034  # Arrays are used by test files that source this file
 # Machine-parseable expected verdicts for code-fact-check evaluation fixtures.
 # Used by code-fact-check-eval.bats to validate skill output.
 #

@@ -12,6 +12,7 @@ load_expected_verdicts() {
     return 1
   fi
   # Source in current scope — declare -A in the file creates the arrays here
+  # shellcheck disable=SC1090  # Path is dynamic but always expected-verdicts.bash
   source "$verdicts_file"
 }
 
@@ -48,7 +49,9 @@ eval_fixture() {
   load_eval_report "$skill" "$fixture"
 
   # Look up expected values — quoting keys to avoid arithmetic interpretation
+  # shellcheck disable=SC2153  # EXPECTED_VERDICT and KEY_CHECK are sourced from expected-verdicts.bash
   local expected_verdict="${EXPECTED_VERDICT["$fixture"]}"
+  # shellcheck disable=SC2153
   local key_check="${KEY_CHECK["$fixture"]}"
 
   if [ -z "$key_check" ]; then

@@ -145,14 +145,14 @@ read_input() {
 # --- Error resilience ---
 
 @test "hook exits 0 on malformed JSON input" {
-  echo "not json at all" | bash "$HOOK"
-  [ $? -eq 0 ]
+  run bash "$HOOK" <<< "not json at all"
+  [ "$status" -eq 0 ]
   [ ! -s "$TEST_LOG" ]
 }
 
 @test "hook exits 0 on empty input" {
-  echo "" | bash "$HOOK"
-  [ $? -eq 0 ]
+  run bash "$HOOK" <<< ""
+  [ "$status" -eq 0 ]
   [ ! -s "$TEST_LOG" ]
 }
 
