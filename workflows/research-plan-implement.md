@@ -69,6 +69,11 @@ Signals that you've hit a design decision:
 
 The gate on **implementation** is firm: do not implement until the plan has been reviewed and approved. The gate on **planning** is soft: plan speculatively, expect revision.
 
+#### Completion signals
+- You can state the invariants that must be preserved without looking them up again.
+- You've read implementations of the functions you'll change, not just signatures.
+- You've identified prior art in the codebase — or confirmed there is none.
+
 ### 3. Plan (essential) — specify the implementation steps
 
 Produce a plan doc in `docs/working/`. Include:
@@ -101,6 +106,11 @@ Produce a plan doc in `docs/working/`. Include:
   For simple features, this section can be brief (a few test cases in prose). For complex features, the table format helps ensure coverage. The human designs the test constraints; the LLM translates them into runnable test code.
 
 - **Risks**: What could go wrong, what's uncertain, what you'd want a reviewer to scrutinize.
+
+#### Completion signals
+- Each step is specific enough that someone could implement it without re-reading the research.
+- You can explain why you chose this approach over the alternatives you considered.
+- The testing strategy names concrete test cases, not just "add tests."
 
 ### 4. Annotate (recommended) — human reviews and approves before implementation
 
@@ -138,12 +148,21 @@ If a step turns out to be wrong or incomplete during implementation, **stop and 
 
 **Context management**: If the session context is getting heavy (many prior loops, large amount of code read), consider starting a fresh session and loading the plan doc. The plan should contain everything needed to implement without the prior conversational context. But this is a judgment call, not a hard rule — if context is still fresh and the task is flowing, continue in the same session. When ending a session to start fresh, write a handoff doc first (see step 6, "Session handoff") so the next session knows exactly where to resume.
 
+#### Completion signals
+- Every plan step has a corresponding commit that passes project checks.
+- Any deviation from the plan is reflected in an updated plan doc, not just in code.
+
 ### 6. Verify and loop (recommended)
 
 - Run all project checks (lint, build, tests)
 - Update `docs/thoughts/` if the implementation revealed new understanding worth preserving
 - If there's another loop to do in this session, return to step 1 with a new scope
 - If this was the final loop, proceed to the pr-prep workflow if opening a PR
+
+#### Completion signals
+- All project checks (lint, build, tests) pass on the current branch.
+- If the implementation revealed non-obvious knowledge, it's captured in `docs/thoughts/`.
+- You can identify the next action: another RPI loop, PR prep, or done.
 
 #### Session handoff (optional)
 

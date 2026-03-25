@@ -19,6 +19,10 @@
 
 ### 1. Diverge — generate many possibilities
 
+#### Completion signals
+- You have 8+ candidates, including at least one naive, one do-nothing, and one unconstrained-ideal option.
+- You haven't evaluated any candidate yet — if you're already ranking, you converged too early.
+
 Generate 8-15 candidate approaches. Quantity matters more than quality at this stage. Requirements:
 - Include at least 2-3 approaches that feel wrong, naive, or unconventional
 - Include at least 1 "do nothing" or "minimal change" option
@@ -28,6 +32,11 @@ Generate 8-15 candidate approaches. Quantity matters more than quality at this s
 
 ### 2. Diagnose — specify the actual problems and constraints
 
+#### Completion signals
+- Every constraint is specific and testable — you could check a candidate against it with a yes/no answer.
+- You've distinguished hard constraints (must satisfy) from soft ones (prefer to satisfy).
+- You've included at least one non-obvious constraint (maintenance burden, team skills, deployment).
+
 List every concrete problem, requirement, and constraint the solution must address. Be specific:
 - ✓ "The reviewer in IST timezone needs to understand intent in <5 minutes from the PR description alone"
 - ✗ "Code should be readable"
@@ -35,6 +44,11 @@ List every concrete problem, requirement, and constraint the solution must addre
 Include non-obvious constraints: timezone gaps, skill gaps in the team, maintenance burden, deployment complexity, interaction with existing code, performance requirements. Also note which constraints are hard (must satisfy) vs soft (prefer to satisfy).
 
 ### 3. Match and prune
+
+#### Completion signals
+- The matrix has no blank cells — every candidate is evaluated against every constraint.
+- All survivors address every hard constraint (no ⚠ or ✗ on hard constraints).
+- You're left with 3-5 survivors, not 1 (that's premature convergence) or 8+ (that's insufficient pruning).
 
 Create a rough compatibility matrix:
 
@@ -51,6 +65,11 @@ Key:
 For approaches that score well overall but have one fixable weakness, briefly sketch how to fix it (1-2 sentences). Discard anything with ⚠ on a hard constraint or mostly ✗ across the board.
 
 ### 4. Tradeoff matrix and decision
+
+#### Completion signals
+- You've stress-tested with at least 2 moves and updated the matrix if they revealed new information.
+- You can state your confidence level: >80% means proceed; below that means consult the user.
+- The leading approach's key downside is explicitly named, not hand-waved.
 
 For the top 3-5 survivors, create a detailed comparison:
 
@@ -80,6 +99,10 @@ If one approach clearly dominates (>80% confidence): document the decision and p
 If the tradeoff is genuinely unclear: **stop and consult the user.** Present the matrix, state your tentative recommendation with reasoning, and identify what information would resolve the ambiguity.
 
 ### 5. Document
+
+#### Completion signals
+- The decision doc captures rationale and consequences — a future reader can understand *why*, not just *what*.
+- Rejected alternatives are listed briefly so the decision isn't relitigated.
 
 Create or update `docs/decisions/NNN-title.md` with:
 - Context: what prompted the decision

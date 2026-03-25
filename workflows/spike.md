@@ -16,6 +16,10 @@
 
 ### 1. Define the question (essential)
 
+#### Completion signals
+- The question is a single sentence that someone else could evaluate as answered or not.
+- You can explain what "yes" and "no" answers would each mean for the next step.
+
 State the specific question the spike answers in one sentence. Examples:
 - "Can pdf-parse extract table structure from our sample PDFs?"
 - "How does Lean 4's tactic framework handle custom syntax?"
@@ -29,6 +33,10 @@ Spikes have a hard time limit. Default: **30 minutes of active work** (which may
 
 ### 3. Work in a throwaway space (essential)
 
+#### Completion signals
+- You can answer the spike question with evidence (working code, error output, measured latency).
+- Or the timebox expired — "this is harder than expected" is a valid answer.
+
 ```bash
 git checkout -b spike/description-date
 ```
@@ -36,6 +44,11 @@ git checkout -b spike/description-date
 Spike code does NOT need to be clean, tested, or documented. It needs to answer the question. Cut every corner. Hardcode values. Skip error handling. Copy-paste from docs.
 
 ### 4. Record the findings (recommended)
+
+#### Completion signals
+- The answer is stated in 1-3 sentences — a reader doesn't need to study the spike code.
+- The recommendation is clear: proceed to RPI, try an alternative, or investigate further.
+- If recommending "proceed," the RPI seed section is filled out.
 
 Before discarding the spike branch, create a brief record:
 

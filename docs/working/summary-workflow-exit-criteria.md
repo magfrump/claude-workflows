@@ -1,0 +1,1 @@
+Added 'Completion signals' subsections to every major phase of RPI (4 phases), divergent-design (5 phases), spike (3 phases), and pr-prep (4 phases) — 16 subsections total, each with 2-3 concrete heuristic signals for when a phase is done enough to proceed.

@@ -9,6 +9,10 @@ Before opening any pull request, especially when the reviewer is in a different 
 
 ### 1. Clean up commit history
 
+#### Completion signals
+- Every commit represents one coherent, independently reviewable change — no WIP or fixup commits remain.
+- The commit sequence tells a logical story when read top-to-bottom.
+
 ```bash
 git rebase -i origin/main
 ```
@@ -25,6 +29,11 @@ Squash WIP commits into logical chunks. Each commit in the final history should 
 Run whatever checks the project has: lint, build, tests. Fix anything broken. Do not leave this for the reviewer to discover.
 
 ### 3. Review-fix loop
+
+#### Completion signals
+- No Must Fix items remain; all Must Address items are resolved or explicitly acknowledged.
+- The latest review round surfaced fewer findings than the previous one (converging, not diverging).
+- You've re-run the test suite after fixes — no regressions introduced.
 
 Run review skills and iterate until clean. This is required, not optional.
 
@@ -51,6 +60,10 @@ For each finding: confirm it's real by reading the code, then fix. Commit in coh
 See `workflows/review-fix-loop.md` for extended discussion of loop dynamics and anti-patterns.
 
 ### 4. Write the PR description
+
+#### Completion signals
+- All five sections (what/how/test/uncertainty/decisions) are filled in — no empty placeholders.
+- A reviewer in a different timezone could understand intent and test the change without asking questions.
 
 Structure:
 
@@ -79,6 +92,10 @@ Structure:
 If the PR includes code in languages or libraries the reviewer may not know well, add **PR comments on your own PR** explaining non-obvious sections. This is cheaper than back-and-forth across timezones.
 
 ### 6. Size check
+
+#### Completion signals
+- The PR is under ~500 lines, or you've confirmed it can't be meaningfully split and noted a review order.
+- No preparatory refactors are bundled that could land independently.
 
 If the PR exceeds ~500 lines changed, consider whether it can be split. Look for:
 - A preparatory refactor that can land independently
