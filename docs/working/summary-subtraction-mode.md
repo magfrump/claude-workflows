@@ -1,0 +1,1 @@
+Added guides/subtraction-review.md — a manual subtraction checklist for reviewing skills/workflows for removal after each self-improvement round, using evidence from completed-tasks.md, hypothesis-log.md, and health-check output (documentation-only fallback since shellcheck could not be verified in CI).
