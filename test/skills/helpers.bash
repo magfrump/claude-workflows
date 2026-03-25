@@ -112,6 +112,17 @@ assert_field_values() {
   [ -z "$bad" ]
 }
 
+# Assert the report contains at least one match for a keyword pattern.
+# Used by dimension-checking tests to verify analytical perspectives.
+# Args: $1 = dimension name (for error messages), $2 = grep -iE pattern
+assert_dimension_present() {
+  local dimension="$1" pattern="$2"
+  if ! echo "$REPORT_CONTENT" | grep -qiE "$pattern"; then
+    echo "Dimension '$dimension' not found — expected pattern: $pattern"
+    return 1
+  fi
+}
+
 # Assert claim numbers are sequential (1, 2, 3, ...).
 assert_claims_sequential() {
   local numbers prev=0 n
