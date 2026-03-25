@@ -194,9 +194,27 @@ HYPOTHESIS_VERDICT: <CONFIRMED|REFUTED|INCONCLUSIVE> | <one-sentence evidence su
             done < <(jq -r '.[].id' "$PREV_TASKS_FILE" 2>/dev/null)
         fi
 
-        # Unattempted survivors: extract deterministically from the DD output.
-        # The Survivors section uses "- **#N Name** — description" format.
-        # Compare against task IDs by converting survivor names to kebab-case.
+        # --- DD Output Format Contract: Survivors Section ---
+        # Parses the "### Survivors" heading from the DD output file
+        # (docs/working/feature-ideas-round-N.md).
+        #
+        # Expected DD output structure (from divergent-design.md step 4):
+        #   ### Survivors
+        #   - **#1 Some Idea Name** — one-line description
+        #   - **#2 Another Idea** — one-line description
+        #   ### <next heading>
+        #
+        # Extraction logic:
+        #   1. sed grabs lines between "### Survivors" and the next "### " heading
+        #   2. grep filters to lines matching: ^- \*\*#[0-9]
+        #   3. For each line, the name is extracted by stripping the "- **#N " prefix
+        #      and the "**..." suffix, then converted to kebab-case for fuzzy matching
+        #      against existing task IDs.
+        #
+        # If the DD output changes the Survivors heading level, numbering format
+        # (e.g., "#1" prefix), or bullet style, this extraction will silently
+        # return no results — causing all survivors to be treated as unattempted.
+        # ---
         UNATTEMPTED=""
         if [ -f "$PREV_IDEAS_FILE" ] && [ -f "$PREV_TASKS_FILE" ]; then
             TASK_IDS_LIST=$(jq -r '.[].id' "$PREV_TASKS_FILE" 2>/dev/null) || TASK_IDS_LIST=""
@@ -303,7 +321,33 @@ docs/working/feature-ideas-round-$ROUND.md"
     # prior rounds. If >= CONVERGENCE_THRESHOLD% of problems overlap, stop.
     echo "Checking for convergence (round $ROUND)..."
 
-    # Extract problem summaries as a JSON array of short descriptions
+    # --- DD Output Format Contract: Diagnose Section ---
+    # Asks Claude to extract diagnosed problems from the DD output file.
+    #
+    # Expected DD output structure (from divergent-design.md step 2):
+    #   ## 2. Diagnose
+    #   <prose listing concrete problems, requirements, and constraints>
+    #
+    # The prompt instructs Claude to find a heading like "## 2. Diagnose"
+    # (or similar) and extract each problem as a one-line summary, returning
+    # a JSON array of strings. Example:
+    #   ["Session continuity is fragile", "No feedback loop from usage"]
+    #
+    # Post-processing:
+    #   - Leading whitespace is stripped (sed)
+    #   - Only the first line matching a JSON array (^\[) is kept
+    #   - Result is validated with jq; falls back to [] on parse failure
+    #
+    # The extracted PROBLEMS_JSON is used in two places:
+    #   1. Convergence detection (immediately below) — compared against
+    #      problem-history.json to detect repeated problem sets
+    #   2. Problem history update (step 4b) — approved tasks' problems are
+    #      recorded so future rounds can detect convergence
+    #
+    # If the DD output omits the Diagnose section or changes its heading
+    # format, Claude may return [], skipping convergence detection for
+    # that round.
+    # ---
     PROBLEMS_JSON=$(claude -p "Read docs/working/feature-ideas-round-$ROUND.md.
 
 Find the Diagnose section (usually '## 2. Diagnose' or similar).
@@ -322,9 +366,23 @@ If there is no Diagnose section, output an empty array: []" 2>/dev/null | sed 's
 
     PROBLEM_COUNT=$(echo "$PROBLEMS_JSON" | jq 'length')
 
-    # Check convergence against prior rounds if we have history and problems.
-    # problem-history.json only contains problems that were addressed by approved
-    # tasks, so all prior problems are valid convergence baselines.
+    # --- DD Output Format Contract: Convergence Detection ---
+    # Uses the PROBLEMS_JSON extracted above (a JSON array of problem strings)
+    # to detect whether this round's diagnosed problems overlap with prior
+    # rounds' problems beyond a threshold (CONVERGENCE_THRESHOLD, default 70%).
+    #
+    # Data flow:
+    #   1. PROBLEMS_JSON (current round) — extracted from DD's Diagnose section
+    #   2. PRIOR_PROBLEMS — flattened from problem-history.json, which stores
+    #      per-round arrays keyed by round number: {"1": [...], "2": [...]}
+    #      Only problems addressed by approved tasks are in the history.
+    #   3. Claude compares current vs prior problems for semantic overlap,
+    #      returning a single integer (0-100) representing overlap percentage
+    #   4. If overlap >= CONVERGENCE_THRESHOLD, the loop breaks (no more rounds)
+    #
+    # This means convergence is only triggered by re-diagnosing problems that
+    # were already solved, not by recurring unsolved problems.
+    # ---
     PRIOR_PROBLEMS=$(jq -r '[.[]] | add // [] | .[]' "$HISTORY_FILE" 2>/dev/null | sort -u) || true
     if [ "$PROBLEM_COUNT" -gt 0 ] && [ -n "$PRIOR_PROBLEMS" ]; then
         echo "  Comparing $PROBLEM_COUNT problems against prior rounds..."
