@@ -1,0 +1,1 @@
+Added print_round_summary function to self-improvement.sh that prints a one-line human-readable summary (launched/approved/rejected counts with failure modes) to stdout and appends it to the validation log after Step 5 (merge), reading from the existing round log JSON.
