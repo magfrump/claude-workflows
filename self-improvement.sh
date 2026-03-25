@@ -160,6 +160,72 @@ HYPOTHESIS_VERDICT: <CONFIRMED|REFUTED|INCONCLUSIVE> | <one-sentence evidence su
     done
 
     # -------------------------------------------------------
+    # Step 0b: Build prior-round context for idea generation
+    # -------------------------------------------------------
+    PRIOR_CONTEXT=""
+    if [ "$ROUND" -gt 1 ]; then
+        PREV=$((ROUND - 1))
+        PREV_TASKS_FILE="$WORKING_DIR/tasks-round-$PREV.json"
+        PREV_IDEAS_FILE="$WORKING_DIR/feature-ideas-round-$PREV.md"
+
+        # Approved tasks (already in completed-tasks.md, but summarize here too)
+        APPROVED_LIST=""
+        REJECTED_LIST=""
+        if [ -f "$PREV_TASKS_FILE" ]; then
+            while IFS= read -r TID; do
+                [ -z "$TID" ] && continue
+                # Check round history for this task's validation verdict
+                VERDICT=$(jq -r --arg r "$PREV" --arg tid "$TID" \
+                    '.[] | select(.round == ($r | tonumber)) | .validation[$tid].verdict // "unknown"' \
+                    "$ROUND_HISTORY" 2>/dev/null) || VERDICT="unknown"
+
+                TDESC=$(jq -r --arg tid "$TID" '.[] | select(.id==$tid) | .description' "$PREV_TASKS_FILE" 2>/dev/null) || TDESC=""
+
+                if [ "$VERDICT" = "approved" ]; then
+                    APPROVED_LIST="${APPROVED_LIST}\n  - ${TID}: ${TDESC}"
+                else
+                    # Find which gate failed
+                    FAIL_GATE=$(jq -r --arg r "$PREV" --arg tid "$TID" \
+                        '.[] | select(.round == ($r | tonumber)) | .validation[$tid] | to_entries[] | select(.value == "fail") | .key' \
+                        "$ROUND_HISTORY" 2>/dev/null | head -1) || FAIL_GATE="unknown"
+                    REJECTED_LIST="${REJECTED_LIST}\n  - ${TID} (failed: ${FAIL_GATE}): ${TDESC}"
+                fi
+            done < <(jq -r '.[].id' "$PREV_TASKS_FILE" 2>/dev/null)
+        fi
+
+        # Unattempted survivors: ideas that survived the match/prune in the prior
+        # round's DD output but were not turned into tasks
+        UNATTEMPTED=""
+        if [ -f "$PREV_IDEAS_FILE" ] && [ -f "$PREV_TASKS_FILE" ]; then
+            UNATTEMPTED=$(claude -p "Read $PREV_IDEAS_FILE and $PREV_TASKS_FILE.
+
+From the feature ideas file, find the Survivors section (ideas that passed match/prune).
+From the tasks file, find which ideas were actually turned into tasks (by matching idea names to task IDs/descriptions).
+
+List any survivors that were NOT turned into tasks — these are unattempted ideas.
+Output one idea per line, just the idea name and a brief description. If all survivors became tasks, output NONE." 2>/dev/null) || UNATTEMPTED=""
+        fi
+
+        # Assemble context block
+        if [ -n "$APPROVED_LIST" ] || [ -n "$REJECTED_LIST" ] || [ -n "$UNATTEMPTED" ]; then
+            PRIOR_CONTEXT="
+## Prior round ($PREV) results — use this to guide your ideas
+
+APPROVED (already implemented, do not re-propose):$(echo -e "$APPROVED_LIST")
+
+REJECTED (failed validation — consider re-proposing with improvements):$(echo -e "$REJECTED_LIST")
+
+UNATTEMPTED SURVIVORS (validated but never implemented — strong candidates):
+$UNATTEMPTED
+
+Focus on: (1) re-attempting rejected ideas with fixes for their failure reasons,
+(2) proposing unattempted survivors, or (3) identifying genuinely new problems.
+Re-attempts and unattempted survivors count as valid ideas — do not dismiss them
+as 'already proposed'. Only ideas listed as APPROVED are off-limits."
+        fi
+    fi
+
+    # -------------------------------------------------------
     # Step 1: Generate ideas
     # -------------------------------------------------------
     echo "Generating ideas (round $ROUND)..."
@@ -167,13 +233,15 @@ HYPOTHESIS_VERDICT: <CONFIRMED|REFUTED|INCONCLUSIVE> | <one-sentence evidence su
 
 Generate feature improvement ideas for the workflows in this repo.
 Review docs/working/completed-tasks.md for what has already been done.
+${PRIOR_CONTEXT}
 
 If you cannot generate at least 3 genuinely new and valuable ideas that
 are not already completed or in progress, write only the word DONE on the
-first line of your output and stop.
+first line of your output and stop. Note: re-attempts of rejected ideas
+and previously unattempted survivors count as genuinely new ideas.
 
 Otherwise, write the full divergent design output to
-docs/working/feature-ideas-round-$ROUND.md" 
+docs/working/feature-ideas-round-$ROUND.md"
 
     # Check for termination
     IDEAS_FILE="$WORKING_DIR/feature-ideas-round-$ROUND.md"
