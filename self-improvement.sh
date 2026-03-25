@@ -121,6 +121,35 @@ validate_task_json() {
     echo "$valid_tasks"
 }
 
+# --- Round summary printer ---
+# Reads the current ROUND_LOG_FILE to print a one-line human-readable summary.
+# Args: $1 = round number, $2 = validation log path
+# Output format: Round N: X launched, Y approved, Z rejected (failure modes: ...)
+print_round_summary() {
+    local round=$1
+    local validation_log=$2
+
+    local launched approved rejected failure_modes summary_line
+    launched=$(jq '[.validation | to_entries[] | select(.value.verdict != null)] | length' "$ROUND_LOG_FILE")
+    approved=$(jq '[.validation | to_entries[] | select(.value.verdict == "approved")] | length' "$ROUND_LOG_FILE")
+    rejected=$(jq '[.validation | to_entries[] | select(.value.verdict == "rejected")] | length' "$ROUND_LOG_FILE")
+
+    # Extract failure modes: for each rejected task, find gates that failed
+    failure_modes=$(jq -r '
+        [.validation | to_entries[] | select(.value.verdict == "rejected") |
+         .value | to_entries[] | select(.value == "fail" and .key != "verdict") | .key
+        ] | unique | join(", ")' "$ROUND_LOG_FILE")
+
+    if [ -z "$failure_modes" ]; then
+        summary_line="Round ${round}: ${launched} launched, ${approved} approved, ${rejected} rejected"
+    else
+        summary_line="Round ${round}: ${launched} launched, ${approved} approved, ${rejected} rejected (failure modes: ${failure_modes})"
+    fi
+
+    echo "$summary_line"
+    echo "$summary_line" >> "$validation_log"
+}
+
 # --- Convergence threshold check ---
 # Pure function: compares an overlap percentage against a threshold.
 # Args: $1 = overlap percentage (integer 0-100), $2 = threshold (integer 0-100)
@@ -935,6 +964,9 @@ Then git add the resolved files and git commit to complete the merge."
         git worktree remove "$WT_DIR" 2>/dev/null || true
         git branch -d "$BRANCH" 2>/dev/null || true
     done
+
+    # Print human-readable round summary after merges
+    print_round_summary "$ROUND" "$WORKING_DIR/validation-round-$ROUND.log"
 
     # -------------------------------------------------------
     # Step 6: Update completed tasks log
