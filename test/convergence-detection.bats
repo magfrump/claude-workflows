@@ -7,7 +7,7 @@ setup() {
   # Source self-improvement.sh for its functions without running the main loop.
   # The main-execution guard (if [[ BASH_SOURCE == $0 ]]) prevents the
   # top-level loop from executing when sourced.
-  source "$BATS_TEST_DIRNAME/../self-improvement.sh"
+  source "$BATS_TEST_DIRNAME/../scripts/self-improvement.sh"
 }
 
 # --- (a) 0% overlap returns below threshold ---

@@ -786,7 +786,7 @@ docs/working/summary-${TASK_ID}.md"
         if [ -z "$REJECT_REASON" ]; then
             for FILE in $DELETED_FILES; do
                 case "$FILE" in
-                    self-improvement.sh|docs/evaluation-rubric.md|CLAUDE.md)
+                    scripts/self-improvement.sh|docs/evaluation-rubric.md|CLAUDE.md)
                         REJECT_REASON="deleted critical file: $FILE"
                         record_gate "$TASK_ID" "critical_files" "fail"
                         break

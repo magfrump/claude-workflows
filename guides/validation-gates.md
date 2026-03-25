@@ -4,7 +4,7 @@ The self-improvement loop validates every implementation branch before merging t
 
 This guide documents all 7 gates in execution order. Gates run sequentially — the first failure rejects the branch and skips remaining gates.
 
-**Source:** `self-improvement.sh` lines 456–639
+**Source:** `scripts/self-improvement.sh` lines 456–639
 **Design rationale:** `docs/decisions/005-validation-step-self-improvement.md`
 
 ---
@@ -102,7 +102,7 @@ REJECTED: files outside declared scope:
 
 ## Gate 1d: Critical file protection
 
-**What it checks:** None of these files were deleted: `self-improvement.sh`, `docs/evaluation-rubric.md`, `CLAUDE.md`.
+**What it checks:** None of these files were deleted: `scripts/self-improvement.sh`, `docs/evaluation-rubric.md`, `CLAUDE.md`.
 
 **Rationale:** These are bootstrap files. Deleting them breaks the loop itself or removes the quality criteria it depends on. Modifications are allowed — only deletion triggers rejection.
 
@@ -141,7 +141,7 @@ REJECTED: files outside declared scope:
 
 **What it checks:** All `.sh` files in the branch diff pass `shellcheck` static analysis.
 
-**Rationale:** Prevents unquoted variables, syntax errors, and common bash anti-patterns. Shell scripts in this repo (especially `self-improvement.sh` and `health-check.sh`) are critical infrastructure — a shellcheck error in a merged script can break the entire loop.
+**Rationale:** Prevents unquoted variables, syntax errors, and common bash anti-patterns. Shell scripts in this repo (especially `scripts/self-improvement.sh` and `scripts/health-check.sh`) are critical infrastructure — a shellcheck error in a merged script can break the entire loop.
 
 **Fail message:** `shellcheck failed: <filename>`
 
@@ -158,7 +158,7 @@ REJECTED: files outside declared scope:
 
 ### Worked example: Shellcheck failures in Round 1
 
-The `self-improvement.sh` script itself was the target of shellcheck validation during the R1 observability implementation (`feat/r1-self-improvement-observability`). The code review (`docs/reviews/code-review-r1-observability.md`) identified:
+The `scripts/self-improvement.sh` script itself was the target of shellcheck validation during the R1 observability implementation (`feat/r1-self-improvement-observability`). The code review (`docs/reviews/code-review-r1-observability.md`) identified:
 
 - **JSON via string interpolation** — building JSON with `echo "{\"key\": \"$val\"}"` instead of `jq`. Shellcheck flags unescaped quotes and word splitting. **Fix:** switched to `jq -n --arg` / `--argjson` for all JSON construction.
 - **Unquoted variables in conditionals** — `if [ $COUNT -eq 0 ]` fails if `$COUNT` is empty. **Fix:** quote: `if [ "$COUNT" -eq 0 ]`.
@@ -226,4 +226,4 @@ Before running the self-improvement loop, verify:
 - [ ] Task scope is narrow enough to stay under 500 lines changed
 - [ ] If the task modifies `.sh` files, they pass `shellcheck` locally
 - [ ] If the task modifies skills/workflows, they have clear triggers and don't overlap with existing ones
-- [ ] Critical files (`self-improvement.sh`, `docs/evaluation-rubric.md`, `CLAUDE.md`) are not being deleted
+- [ ] Critical files (`scripts/self-improvement.sh`, `docs/evaluation-rubric.md`, `CLAUDE.md`) are not being deleted

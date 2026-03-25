@@ -27,7 +27,7 @@ Look at the "Outcome" column for entries marked refuted. For each, identify whic
 
 **Judgment call:** A refuted hypothesis does not mean automatic removal. The feature may have value beyond its original justification. But it does mean the original rationale no longer holds, and the artifact needs a new justification or should be proposed for removal.
 
-### 2. Health-check complexity warnings (`health-check.sh`, check 7)
+### 2. Health-check complexity warnings (`scripts/health-check.sh`, check 7)
 
 The repo health check flags workflows that exceed soft budgets:
 
@@ -37,7 +37,7 @@ The repo health check flags workflows that exceed soft budgets:
 **How to check:**
 
 ```bash
-bash health-check.sh 2>&1 | grep -A2 'Workflow complexity'
+bash scripts/health-check.sh 2>&1 | grep -A2 'Workflow complexity'
 ```
 
 Any workflow that triggers a WARN is a candidate for either:
@@ -135,7 +135,7 @@ Subtraction proposals require human approval before any file is deleted or modif
 ```
 After merge:
   1. grep hypothesis-log.md for refuted hypotheses
-  2. run health-check.sh, note complexity warnings
+  2. run scripts/health-check.sh, note complexity warnings
   3. run skill-usage-report.sh, note never-invoked items
   4. cross-reference: multiple signals = stronger candidate
   5. write proposals to docs/working/subtraction-proposals-round-N.md
