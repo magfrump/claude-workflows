@@ -1,0 +1,1 @@
+Added keyword-based semantic dimension manifests for cowen-critique (10 dimensions) and yglesias-critique (10 dimensions), plus a shared BATS test file that checks existing fixture outputs for dimension coverage using grep/keyword presence with a configurable minimum threshold.
