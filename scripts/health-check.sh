@@ -11,6 +11,7 @@
 #   5. BATS tests pass (when report outputs exist)
 #   6. shellcheck passes on all .sh/.bash files
 #   7. Workflow complexity stays within soft budgets
+#   8. Hook scripts in hooks/ are executable
 set -euo pipefail
 
 REPO_ROOT="$(cd "$(dirname "$0")/.." && pwd)"
@@ -344,6 +345,32 @@ check_workflow_complexity() {
     fi
 }
 
+# ── 8. Hook scripts are executable ─────────────────────────────────────────
+
+check_hook_permissions() {
+    section "Hook script permissions"
+
+    local count=0
+    for hook in "$REPO_ROOT"/hooks/*.sh; do
+        [[ -f "$hook" ]] || continue
+        count=$((count + 1))
+        local name
+        name="$(basename "$hook")"
+
+        if [[ -x "$hook" ]]; then
+            pass "$name is executable"
+        else
+            fail "$name is not executable (chmod +x to fix)"
+        fi
+    done
+
+    if [[ $count -eq 0 ]]; then
+        warn "No hook scripts found in hooks/"
+    else
+        pass "$count hook(s) checked"
+    fi
+}
+
 # ── Run all checks ─────────────────────────────────────────────────────────
 
 main() {
@@ -357,6 +384,7 @@ main() {
     check_bats
     check_shellcheck
     check_workflow_complexity
+    check_hook_permissions
 
     echo
     if [[ $FAIL -eq 0 ]]; then
