@@ -77,6 +77,75 @@ finalize_round_log() {
     rm -f "$ROUND_LOG_FILE"
 }
 
+# --- Task JSON schema validation ---
+# Validates each task in a tasks JSON file against the expected schema.
+# Outputs a filtered JSON array (valid tasks only) to stdout.
+# Prints rejection reasons to stderr.
+# Args: $1 = path to tasks JSON file
+validate_task_json() {
+    local tasks_file=$1
+    local valid_tasks="[]"
+    local task_count
+    task_count=$(jq 'length' "$tasks_file")
+
+    for i in $(seq 0 $((task_count - 1))); do
+        local task
+        task=$(jq ".[$i]" "$tasks_file")
+        local tid
+        tid=$(echo "$task" | jq -r '.id // empty')
+
+        # Check required fields and types
+        local schema_err=""
+        schema_err=$(echo "$task" | jq -r '
+            def check:
+                if (.id | type) != "string" or (.id | length) == 0 then "id must be a non-empty string"
+                elif (.description | type) != "string" or (.description | length) == 0 then "description must be a non-empty string"
+                elif (.files_touched | type) != "array" or (.files_touched | length) == 0 then "files_touched must be a non-empty array"
+                elif (.independent | type) != "boolean" then "independent must be a boolean"
+                else empty
+                end;
+            check
+        ')
+
+        if [ -n "$schema_err" ]; then
+            echo "  SCHEMA REJECT [${tid:-task-$i}]: $schema_err" >&2
+            continue
+        fi
+
+        # Check files_touched entries for glob patterns and valid parent directories
+        local ft_errors=""
+        local ft_count
+        ft_count=$(echo "$task" | jq '.files_touched | length')
+        for j in $(seq 0 $((ft_count - 1))); do
+            local fpath
+            fpath=$(echo "$task" | jq -r ".files_touched[$j]")
+
+            # Reject glob patterns (*, ?, [)
+            if echo "$fpath" | grep -qE '[*?[]'; then
+                ft_errors="${ft_errors}glob pattern in files_touched: $fpath; "
+                continue
+            fi
+
+            # Check parent directory exists in the repo
+            local parent_dir
+            parent_dir=$(dirname "$fpath")
+            if [ "$parent_dir" != "." ] && [ ! -d "$parent_dir" ]; then
+                ft_errors="${ft_errors}parent directory does not exist: $parent_dir (for $fpath); "
+            fi
+        done
+
+        if [ -n "$ft_errors" ]; then
+            echo "  SCHEMA REJECT [$tid]: $ft_errors" >&2
+            continue
+        fi
+
+        # Task passed validation — add to valid list
+        valid_tasks=$(echo "$valid_tasks" | jq --argjson t "$task" '. += [$t]')
+    done
+
+    echo "$valid_tasks"
+}
+
 
 cd "$REPO_DIR"
 
@@ -468,6 +537,48 @@ other tasks in this round."
     TASKS_JSON=$(jq -n --argjson count "$TASK_COUNT" --argjson ids "$TASK_IDS_JSON" \
         '{count: $count, ids: $ids}')
     update_round_log '.tasks' "$TASKS_JSON"
+
+    # -------------------------------------------------------
+    # Step 2b: Validate task JSON schema
+    # -------------------------------------------------------
+    echo "Validating task JSON schema..."
+    VALID_TASKS_JSON=$(validate_task_json "$TASKS_FILE")
+    VALID_COUNT=$(echo "$VALID_TASKS_JSON" | jq 'length')
+    REJECTED_SCHEMA_COUNT=$((TASK_COUNT - VALID_COUNT))
+
+    if [ "$REJECTED_SCHEMA_COUNT" -gt 0 ]; then
+        echo "  Schema validation: $REJECTED_SCHEMA_COUNT of $TASK_COUNT tasks rejected"
+        echo "[round-$ROUND] SCHEMA: $REJECTED_SCHEMA_COUNT rejected, $VALID_COUNT valid" >> "$WORKING_DIR/validation-round-$ROUND.log"
+
+        # Record schema gate results
+        for TASK_ID in $TASK_IDS; do
+            if echo "$VALID_TASKS_JSON" | jq -e ".[] | select(.id == \"$TASK_ID\")" >/dev/null 2>&1; then
+                record_gate "$TASK_ID" "schema" "pass"
+            else
+                record_gate "$TASK_ID" "schema" "fail"
+            fi
+        done
+
+        # Overwrite tasks file with valid tasks only
+        echo "$VALID_TASKS_JSON" > "$TASKS_FILE"
+
+        # Rebuild task variables
+        TASK_IDS=$(jq -r '.[].id' "$TASKS_FILE")
+        TASK_COUNT=$(jq 'length' "$TASKS_FILE")
+        TASK_IDS_JSON=$(jq '[.[].id]' "$TASKS_FILE")
+
+        if [ "$VALID_COUNT" -eq 0 ]; then
+            echo "No tasks passed schema validation. Skipping round."
+            update_round_log '.outcome' '"all_schema_rejected"'
+            finalize_round_log "$ROUND"
+            continue
+        fi
+    else
+        echo "  All $TASK_COUNT tasks passed schema validation"
+        for TASK_ID in $TASK_IDS; do
+            record_gate "$TASK_ID" "schema" "pass"
+        done
+    fi
 
     # -------------------------------------------------------
     # Step 3: Implement in parallel worktrees
