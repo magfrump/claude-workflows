@@ -78,3 +78,13 @@ git branch -D spike/description-date  # unless findings are worth preserving
 ```
 
 Spike branches should not be merged. If the spike validates an approach, start a fresh feature branch and implement properly using the research-plan-implement workflow. The spike record (especially the RPI seed section) serves as input to the RPI research phase — not a substitute for it.
+
+## When to reference a spike
+
+Before citing a spike record's findings (e.g., loading an RPI seed), check whether its conclusions are still valid:
+
+```bash
+git log --oneline --since="<Last verified date>" -- <Relevant paths>
+```
+
+If commits appear, read them to decide whether they invalidate the spike's findings. If they do, re-run the spike or note the discrepancy. If not, update `Last verified` to today's date. See `guides/doc-freshness.md` for the full heuristic.

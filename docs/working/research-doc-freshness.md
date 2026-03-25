@@ -1,66 +1,27 @@
-# Research: Document Freshness Tracking
+# Research: Document Freshness — Round 2
 
 ## Scope
 
-Add a "last verified" field and staleness heuristic to research and onboarding doc templates, so that documents signal when they may be outdated.
+Refine freshness tracking across the three declared files: add cross-references from `guides/doc-freshness.md` to the workflow templates, and add a freshness check section to the spike workflow (parity with onboarding).
 
 ## What exists
 
-### Document templates with freshness concerns
+### Current state of the three files
 
-1. **Onboarding docs** (`workflows/codebase-onboarding.md`):
-   - Template includes `**Date:** {date}` and `**Scope:** {what was covered}` fields
-   - "When to re-run" section lists triggers (long absence, major refactoring, resolved unknowns) but no automated staleness signal
-   - Explicitly says "If it grows stale, re-run the workflow rather than patching incrementally"
+1. **`guides/doc-freshness.md`** — The canonical freshness guide. Documents field formats, staleness check command, which docs to track, and when to check/update. Does NOT reference the workflow templates as the canonical source for field placement. The "Which documents to track" table lists doc types but doesn't link to their templates.
 
-2. **RPI research docs** (`workflows/research-plan-implement.md`):
-   - Working docs in `docs/working/research-{topic}.md`
-   - Treated as disposable per-task artifacts — freshness is less of a concern since they're overwritten
-   - No date or verification field in the template
+2. **`workflows/codebase-onboarding.md`** — Template (step 6) includes `**Last verified:**` and `**Relevant paths:**` fields. Has a "Freshness check" subsection (lines 137-145) under "When to re-run" explaining the git log heuristic with a code example. Well-integrated.
 
-3. **Spike records** (`workflows/spike.md`):
-   - Template includes `Date: [date]`
-   - Saved to `docs/spikes/` — these are reference material that can go stale
+3. **`workflows/spike.md`** — Template (step 4) includes `Last verified:` and `Relevant paths:` fields in the spike record markdown block. Has NO freshness check section — unlike onboarding, there's no guidance on when/how to check a spike record's freshness before relying on it.
 
-4. **Review artifacts** (`docs/reviews/`):
-   - Include `**Checked:** {date}` fields
-   - Explicitly designed to be re-run, overwriting prior versions
+### Gap analysis
 
-5. **Decision records** (`docs/decisions/`):
-   - Numbered, final — staleness handled by superseding with a new decision
-   - Not candidates for freshness tracking
-
-6. **Shared thoughts** (`docs/thoughts/`):
-   - Living documents updated as understanding deepens
-   - No date field — staleness risk is real but currently untracked
-
-### Existing freshness signals
-
-- `code-fact-check` skill targets stale comments as a claim type ("Staleness signals")
-- Evaluation rubric has periodic re-evaluation concept but no automated trigger
-- Review artifacts have dated headers for manual recency checks
-- CLAUDE.md notes context budget awareness but not doc staleness
-
-### Git-based staleness detection
-
-The task specifically mentions `git log --since` on relevant file paths. This is a sound approach because:
-- Workflow/skill files are committed to the repo
-- Changes to the files a doc describes are the primary staleness signal
-- `git log --since` can check if source files have changed since a doc was last verified
+- **doc-freshness.md** needs a "Template conventions" note so readers know where the fields are defined
+- **spike.md** needs a brief freshness note so agents know to check spike records before citing them (onboarding has this; spike does not)
+- **codebase-onboarding.md** is already complete — no changes needed
 
 ## Invariants
 
-- Existing document templates must remain backward-compatible (adding fields, not restructuring)
-- The staleness heuristic should be advisory, not blocking — documents don't stop working when stale
-- Must work for AI agents executing workflows, not just human readers
-
-## Prior art
-
-- Review artifacts already use `**Checked:** {date}` — the freshness field should be consistent with this pattern
-- The evaluation rubric's "periodic re-evaluation" concept is analogous but for skills, not docs
-
-## Gotchas
-
-- `docs/working/` files are disposable per-task — freshness tracking adds overhead to inherently ephemeral documents. Only onboarding docs (which live longer) and spike records benefit meaningfully.
-- Git log checks require knowing which file paths a document covers — this mapping isn't always explicit in current templates
-- The heuristic needs to work across different doc types with different staleness thresholds
+- Only touch the three declared files
+- Don't restructure existing content — additive changes only
+- Keep consistency with existing patterns (inline bold for non-review docs, code block for commands)
