@@ -68,5 +68,6 @@ If Tiers 1 and 2 don't produce usable output, skip the skill and document what h
 1. In the output document (review rubric, synthesis, etc.), add a section noting which skill was skipped and why.
 2. If an orchestrator dispatched the skill, it already handles this — rule 5 of the mandatory execution rules says to "note this honestly in the synthesis."
 3. Log the failure for later investigation. If the project uses `docs/working/hypothesis-log.md`, add an entry: what skill failed, what input triggered it, and what the output looked like.
+4. **Log the failure in the incident journal.** Add a row to `docs/working/incident-journal.md` with: date, skill/workflow name, input description, failure mode, recovery attempted, root cause (if known), and follow-up action taken. The incident journal is the only mechanism for learning from real-world failures — test fixtures and self-eval operate on synthetic inputs. After ~10 entries, patterns should emerge that inform targeted fixture creation or skill prompt updates.
 
 **The output is still usable.** A review missing one critic is better than no review. A code review without a fact-check pass still catches design issues. Note the gap and move on.
