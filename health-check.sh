@@ -10,6 +10,7 @@
 #   4. All test fixtures have corresponding expected-verdicts entries
 #   5. BATS tests pass (when report outputs exist)
 #   6. shellcheck passes on all .sh/.bash files
+#   7. Workflow complexity stays within soft budgets
 set -euo pipefail
 
 REPO_ROOT="$(cd "$(dirname "$0")" && pwd)"
@@ -290,6 +291,59 @@ check_shellcheck() {
     done
 }
 
+# ── 7. Workflow complexity budgets ─────────────────────────────────────────
+
+check_workflow_complexity() {
+    section "Workflow complexity"
+
+    local max_lines=200
+    local max_sections=15
+    local count=0
+
+    for wf in "$REPO_ROOT"/workflows/*.md; do
+        [[ -f "$wf" ]] || continue
+        count=$((count + 1))
+        local name
+        name="$(basename "$wf")"
+
+        # Line count via wc
+        local lines
+        lines="$(wc -l < "$wf")"
+        lines=$((lines + 0))  # trim whitespace to integer
+
+        # Section count: ### headers
+        local sections
+        sections="$(awk '/^###[[:space:]]/ { n++ } END { print n+0 }' "$wf")"
+
+        # Cross-reference count: bold markdown references to .md files
+        local crossrefs
+        crossrefs="$(grep -coE '\*\*[a-zA-Z][-a-zA-Z0-9]*\.md\*\*' "$wf" || true)"
+        crossrefs=$((crossrefs + 0))
+
+        local flagged=false
+        if [[ $lines -gt $max_lines ]]; then
+            warn "$name: $lines lines (threshold: $max_lines)"
+            flagged=true
+        fi
+        if [[ $sections -gt $max_sections ]]; then
+            warn "$name: $sections sections (threshold: $max_sections)"
+            flagged=true
+        fi
+
+        if ! $flagged; then
+            pass "$name: ${lines}L / ${sections}S / ${crossrefs}xref"
+        else
+            warn "$name: ${lines}L / ${sections}S / ${crossrefs}xref"
+        fi
+    done
+
+    if [[ $count -eq 0 ]]; then
+        warn "No workflow files found in workflows/"
+    else
+        pass "$count workflow(s) checked"
+    fi
+}
+
 # ── Run all checks ─────────────────────────────────────────────────────────
 
 main() {
@@ -302,6 +356,7 @@ main() {
     check_fixture_verdicts
     check_bats
     check_shellcheck
+    check_workflow_complexity
 
     echo
     if [[ $FAIL -eq 0 ]]; then
