@@ -477,6 +477,7 @@ other tasks in this round."
     LAUNCHED_TASKS=""
     for TASK_ID in $TASK_IDS; do
         DESC=$(jq -r ".[] | select(.id==\"$TASK_ID\") | .description" "$TASKS_FILE")
+        FILES_TOUCHED=$(jq -r ".[] | select(.id==\"$TASK_ID\") | .files_touched[]" "$TASKS_FILE" | paste -sd', ')
         WT_DIR="$WORKTREE_BASE-$TASK_ID"
 
         git worktree add "$WT_DIR" -b "feat/r${ROUND}-${TASK_ID}" main 2>/dev/null || {
@@ -491,6 +492,13 @@ other tasks in this round."
             claude -p "You are in /away mode. Commit and push when done.
 
 Task: $DESC
+
+FILE SCOPE CONSTRAINT — READ THIS BEFORE STARTING:
+You may ONLY create or modify the following files: $FILES_TOUCHED
+Files under docs/working/ are also allowed (e.g., research docs, plan docs, summaries).
+You MUST NOT create or modify any other files. If during implementation you
+discover a need to touch an unlisted file, STOP and document the reason in
+docs/working/scope-exception-${TASK_ID}.md instead of making the change.
 
 Follow the research-plan-implement workflow in ~/.claude/workflows/.
 Proceed through research and plan without waiting for human review.
