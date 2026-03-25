@@ -732,6 +732,69 @@ Then git add the resolved files and git commit to complete the merge."
     done
 
     # -------------------------------------------------------
+    # Step 5b: Subtraction review — propose skills/workflows for removal
+    # -------------------------------------------------------
+    echo "Running subtraction review..."
+    SUBTRACTION_FILE="$WORKING_DIR/subtraction-proposals-round-${ROUND}.md"
+
+    # Gather evidence from three sources
+    COMPLETED_TASKS_CONTENT=""
+    if [ -f "$WORKING_DIR/completed-tasks.md" ]; then
+        COMPLETED_TASKS_CONTENT=$(cat "$WORKING_DIR/completed-tasks.md")
+    fi
+
+    HYPOTHESIS_LOG_CONTENT=""
+    if [ -f "$WORKING_DIR/hypothesis-log.md" ]; then
+        HYPOTHESIS_LOG_CONTENT=$(cat "$WORKING_DIR/hypothesis-log.md")
+    fi
+
+    HEALTH_CHECK_OUTPUT=""
+    if [ -f "$REPO_DIR/health-check.sh" ]; then
+        HEALTH_CHECK_OUTPUT=$(bash "$REPO_DIR/health-check.sh" 2>&1 || true)
+    fi
+
+    # Build the subtraction prompt: static body via single-quoted heredoc
+    _SUBTRACTION_BODY=""
+    read -r -d '' _SUBTRACTION_BODY <<'SUBTRACTION_EOF' || true
+You are reviewing skills and workflows for potential removal from this repository.
+
+## Your task
+
+1. List every file in `skills/` and `workflows/`.
+2. For each, check whether evidence supports removal. A removal candidate must have **at least one** of:
+   - **Low usage / no impact**: The skill or workflow has never appeared in completed-tasks.md as something that was improved, used, or referenced across multiple rounds. It may have been added but never validated.
+   - **Refuted hypothesis**: hypothesis-log.md contains a REFUTED entry whose hypothesis was the justification for this skill/workflow existing.
+   - **Health-check failure**: The health-check output shows persistent errors related to this skill/workflow (missing cross-references, broken YAML frontmatter, failed tests).
+   - **Complexity budget violation**: The skill/workflow substantially overlaps with another (per evaluation-rubric.md dimension 1 — counterfactual gap), adding complexity without proportional value.
+3. For each removal candidate, write:
+   - **File**: path to the skill or workflow
+   - **Evidence**: quote or cite the specific line/entry from completed-tasks.md, hypothesis-log.md, or health-check output that supports removal
+   - **Rationale**: one-sentence explanation of why removal is warranted
+4. If no candidates are found, write "No removal candidates identified this round" and briefly explain why (e.g., all skills are referenced, no refuted hypotheses, health-check clean).
+
+## Rules
+- Do NOT delete, modify, or rename any files. This is a review only.
+- Every proposal MUST cite specific evidence. "Seems unused" is not sufficient.
+- Read `docs/evaluation-rubric.md` for the counterfactual-gap framework before assessing overlap.
+- Output format: Markdown with a heading per candidate, or a single "no candidates" section.
+SUBTRACTION_EOF
+
+    # Assemble dynamic evidence + static instructions via printf
+    SUBTRACTION_PROMPT=$(printf '## Evidence: completed-tasks.md\n\n%s\n\n## Evidence: hypothesis-log.md\n\n%s\n\n## Evidence: health-check output\n\n```\n%s\n```\n\n%s' \
+        "$COMPLETED_TASKS_CONTENT" \
+        "$HYPOTHESIS_LOG_CONTENT" \
+        "$HEALTH_CHECK_OUTPUT" \
+        "$_SUBTRACTION_BODY")
+
+    claude -p "$SUBTRACTION_PROMPT" > "$SUBTRACTION_FILE" 2>/dev/null || true
+
+    if [ -f "$SUBTRACTION_FILE" ] && [ -s "$SUBTRACTION_FILE" ]; then
+        echo "  Subtraction proposals written to: $SUBTRACTION_FILE"
+    else
+        echo "  No subtraction proposals generated (Claude returned empty output)."
+    fi
+
+    # -------------------------------------------------------
     # Step 6: Update completed tasks log
     # -------------------------------------------------------
     echo "Updating completed tasks log..."

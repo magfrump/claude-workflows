@@ -1,0 +1,1 @@
+Added Step 5b (subtraction review) to self-improvement.sh that invokes Claude to propose skill/workflow removals backed by evidence from completed-tasks.md, hypothesis-log.md, and health-check output, logging proposals to docs/working/subtraction-proposals-round-N.md for human review without automatic deletions.
