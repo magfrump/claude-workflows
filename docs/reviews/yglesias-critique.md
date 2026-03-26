@@ -1,94 +1,107 @@
+# Yglesias-Style Critique: RPI Workflow + Foregrounding Tests
+
+**Reviewed:** 2026-03-26
+**Documents:** `workflows/research-plan-implement.md`, `docs/decisions/006-foregrounding-tests.md`
+
 ---
-Last verified: 2026-03-23
-Relevant paths:
-  - skills/code-review.md
-  - docs/decisions/002-critic-style-code-review.md
----
 
-# Yglesias-Style Critique: Code Review Orchestrator
+## 1. The Goal vs. the Mechanism
 
-## The Goal vs. the Mechanism
+The goal is exactly right: when a human collaborates with an LLM on code, the biggest risk is the LLM building the wrong thing. Tests are a natural place to catch that because they express intent in a checkable form. You want humans to design behavioral constraints and LLMs to translate them into code. No disagreement there.
 
-The goal is right: multi-perspective code review that catches what single-pass review misses. Security problems, performance regressions, API inconsistencies — these are real failure modes, and catching them before merge is genuinely valuable.
+The mechanism, though, front-loads a significant amount of specification work into the planning phase. The human is now asked to fill out a table with test cases, test levels, diagnostic expectations, and expected behavior — before any code exists. This is the test-driven development pitch repackaged as a workflow artifact, and it has the same adoption problem TDD has always had: most people don't do it, even when they agree it's a good idea. The decision record acknowledges this ("the guidance exists but is a throwaway line that gets skipped in practice"), but the fix is to make the throwaway line into a structured table. That is not obviously more skip-proof; it is just more to skip.
 
-But the mechanism has a structural problem: it optimizes for *thoroughness of analysis* when the bottleneck in most code review is *author response to findings*. A rubric with 15 findings across 5 severity tiers doesn't get acted on faster than a rubric with 5 findings in 2 tiers. In fact, it gets acted on slower, because the author has to triage the triage.
+The mechanism also introduces a second human review checkpoint (test code review before implementation). The workflow already has a firm gate at plan review and a soft gate at research review. Adding a third checkpoint means the human is being asked to review *three times* before any feature code is written. That is a lot of gates for a process whose core value proposition is accelerating development.
 
-The cross-critic escalation rule (2+ critics flag the same issue → escalate one tier) is the mechanism's best feature — it surfaces signal through convergence. But the rest of the pipeline generates a lot of noise to feed into that convergence detector. Three core critics plus up to three contextual critics plus a fact-checker means 4-7 agents producing findings that the orchestrator must then cross-reference semantically. The convergence detection is described as "semantic — same file region plus overlapping concern — not mechanical keyword matching," which means the orchestrator has to do sophisticated NLP on the outputs of its own sub-agents. That's where the real analytical difficulty lives, and it's handwaved.
+There is a structural mismatch worth naming: the human writes prose test cases, the LLM translates them into test code, and then the human reviews the test code. The review step requires the human to operate in the LLM's medium (code) rather than their own (prose). The workflow does include a mitigating instruction — "include a bulleted summary of what each test verifies alongside the test code" — which helps, but the underlying dynamic remains: the translation step where misunderstandings happen is still there. It has moved from "translate requirements into implementation" to "translate requirements into tests, then translate tests into implementation." This is progress! Moving the ambiguity earlier in the pipeline is genuinely cheaper to fix. But calling tests "the most precise form of behavioral specification" overstates what is happening when the specification is a prose table that still requires translation.
 
-## The Boring Lever
+## 2. The Boring Lever
 
-The boring lever nobody's pulling: **most code review value comes from a single experienced reviewer reading the diff with full context**. The fancy multi-agent pipeline is solving for breadth of perspective, but the actual failure mode in code review is usually *not reading carefully enough*, not *not having enough frameworks*.
+The boring lever: **just make the LLM write tests first during implementation, without requiring the human to pre-specify them in a structured table format.**
 
-A simpler version: run the fact-checker (which catches concrete, verifiable issues like stale comments, wrong function signatures, dead code references) and then run *one* critic — whichever is most relevant to the change. Security changes get a security reviewer. Performance-sensitive paths get a performance reviewer. The auto-selection logic for contextual critics already demonstrates that the orchestrator knows which concerns are relevant. Use that same logic to pick the *primary* critic, not to pile on additional ones.
+The LLM already has the plan. It already knows what the code should do. Having it write tests first — and having those tests be a separate, reviewable commit — gets you 80% of the "catch mismatches early" benefit without requiring the human to learn a test taxonomy or fill out a diagnostic-expectations column during planning.
 
-The 80/20 version is probably: code-fact-check + the single most relevant critic + a good diff summary. That gives you verifiable facts plus one structured analytical lens plus enough context to act on findings.
+The human can review the test commit and say "that's not what I meant" before implementation proceeds. That is the same feedback loop the workflow is trying to create, just without the planning-phase ceremony.
 
-## Follow the Money (Follow the Complexity/Effort)
+The diagnostic expectations guidance (lines 97-99 of the RPI workflow) is actually the most important part of this proposal, and it gets the least structural emphasis. It is a bullet point under the test specification table, not a first-class concern. If you could only do one thing from this entire proposal, "make test failures informative enough that the human can diagnose without re-running or reading all implementation code" would deliver more value than the test case table.
 
-Let's trace what actually happens when this pipeline runs:
+## 3. Follow the Money (or Effort)
 
-1. **Scope determination** — cheap. Git diff, done.
-2. **Discover and classify critics** — the orchestrator reads all skill files, classifies them into orchestrators/fact-checkers/core/contextual/prose. This is hardcoded taxonomy work dressed up as discovery. The list of what's an orchestrator, what's core, what's contextual — it's all specified inline. "Discovery" means "read the files and apply the classification I already know." This is fine, but calling it discovery creates a maintenance trap: if someone adds a new skill, the classification logic lives in the orchestrator's prose, not in the skill's metadata.
-3. **Auto-select contextual critics** — reasonable. Checking whether test files changed, whether dependency manifests changed, whether the diff is large. Concrete heuristics.
-4. **Stage 1: Fact-check** — one agent, reasonable cost.
-5. **Fact-check gate** — good design. Prevents wasting downstream compute on a diff with known factual problems.
-6. **Stage 2: Critics** — 3-6 agents in parallel. Each agent reads the full skill file, runs its own git diff, reads the fact-check results. This is where the compute cost multiplies. Each agent is doing redundant work (reading the same diff) and producing findings that overlap (security and performance critics both notice the same N+1 query, but frame it differently).
-7. **Stage 3: Synthesis** — the orchestrator reads all outputs, detects convergence, maps severities, produces two deliverables. This is the hardest step and gets the least specification. The unified severity mapping table is precise, but the actual cognitive work of "semantic convergence detection" is described in one sentence.
+Trace where human attention actually flows in the revised workflow:
 
-The effort distribution is inverted: the cheapest steps (scope, discovery) get the most specification. The hardest step (synthesis with convergence detection) gets the least.
+1. **Research**: LLM reads code, writes a doc. Low human effort.
+2. **Plan + test specification** (expanded): The human now has to think about test cases, pick test levels, and write diagnostic expectations. This is real cognitive work. The question is whether it is the *right* cognitive work at this stage.
+3. **Plan approval**: Human reviews. Medium effort.
+4. **Test code review** (new): Human reviews LLM-generated test code. Medium effort — or a rubber stamp if the human cannot read test code fluently.
+5. **Implementation**: LLM implements. Low human effort.
+6. **Implementation review**: Human reviews. Medium effort.
 
-## Factual Foundation
+The total attention budget increased by one checkpoint (test review) and one planning section (structured test specification). Whether the test-review checkpoint actually catches mismatches depends on the human's ability to read test code. The proposal is highest-value for humans who are intermediate: they know enough to read test code and spot mismatches, but not enough to write tests from scratch. That is a real population, but the workflow does not name it.
 
-The fact-check found 18 claims, 13 accurate, 3 mostly accurate, 0 inaccurate, 2 unverified. The draft is factually solid. The "7-9 domain-specific cognitive moves" claim is technically imprecise (all three critics have exactly 9), but this is minor. The Agent tool vs. Task tool divergence between code-review and draft-review is a real consistency issue worth addressing but not a factual error — it's a design choice that creates maintenance surface area.
+The effort distribution also shifts noticeably toward the human during planning. The whole point of human-LLM collaboration is that the human provides judgment while the LLM provides labor. Asking the human to fill out a structured table with four columns is nudging toward more labor. The judgment version is: "here are the scenarios I care about, in plain language." The labor version is: "here is a table with columns for test level and diagnostic expectation." The workflow defaults to the labor version.
 
-## The Scale Test
+## 4. Factual Foundation
 
-What happens when this pipeline reviews a 50-file, 2000-line diff? Three things break:
+Key findings from the fact-check report:
 
-1. **Context budget**: The skill says "pass scope, not diffs" so each agent runs its own git diff. Good — but each agent still has to *read* that diff plus its skill instructions plus the fact-check results. A 2000-line diff in a 200K context window doesn't leave much room for analysis. The pipeline doesn't have a "diff is too large, decompose further" escape valve.
+- The `linguist-generated` gitattributes trick works as described (Claim 1: Accurate). Practical and well-sourced.
+- The "full taxonomy" characterization of the test-strategy skill slightly overstates what the skill provides (Claim 4: Mostly accurate). The skill covers multiple test types but does not present them as an organized classification system. This matters because the workflow references it as a comprehensive external resource — it is not quite that.
+- "Over a dozen approaches were generated via divergent design" is unverifiable (Claim 7: Unverified). No artifact preserves the full list. The wording was already softened from "13 approaches," but even "over a dozen" relies on conversational context that no longer exists. This is the kind of precision theater that makes readers trust documents less, not more.
+- "The human designs behavioral constraints in prose, the LLM translates them into executable test code" describes a designed process, not a verified outcome (Claim 10: Mostly accurate). Nobody has checked whether this translation works reliably in practice.
+- The "combine 1 + 4 + 5, plus diagnostic guidance" framing now correctly accounts for all four implementation elements (Claim 9: Accurate, previously flagged discrepancy resolved).
 
-2. **Finding volume**: 6 critics each producing 5-10 findings means 30-60 items to cross-reference for convergence. The synthesis step becomes a classification nightmare. The rubric format (tables with columns) doesn't scale past ~20 rows before it becomes unreadable.
+## 5. The Scale Test
 
-3. **Contextual critic trigger cascade**: A 50-file diff will trigger all three contextual critics (tech-debt-triage triggers at 10+ files, test-strategy triggers because *some* source files won't have matching test changes, dependency-upgrade triggers if any manifest file is touched). So you always run the maximum number of agents on big diffs — exactly when each agent has the hardest job and the synthesis is most complex.
+What happens when many different humans use this across many projects?
 
-The irony: the pipeline is most likely to run at full capacity on the diffs that least benefit from it. Large diffs need decomposition into reviewable chunks, not more parallel reviewers reading the same overwhelming diff.
+**Sophisticated developers** will find the table redundant. They already think about test cases during planning. They will abbreviate to "a few test cases in prose" (as explicitly permitted) and treat the test-review checkpoint as a quick sanity check.
 
-## The Org Chart
+**Less experienced developers** will struggle with the test level taxonomy. Four bullet points defining unit, integration, characterization, and property tests are not enough for someone without an existing mental model. They will default to "unit" for everything or ask the LLM to pick, defeating the purpose of human-designed test specifications.
 
-The institution executing this is Claude Code with sub-agents. The track record of LLM sub-agents is: good at structured analysis with clear prompts, bad at nuanced judgment calls, inconsistent at cross-referencing.
+**The messy middle** — developers who know their domain but are not testing experts — is where this delivers the most value. But at scale, the structured table becomes a compliance burden. Early adopters fill it out thoughtfully. Later adopters treat it like a form. "Diagnostic expectation: show the error" appears in every row. The "simple features can be brief" escape hatch becomes the universal default, because at scale everything is a "simple feature" when the alternative is filling out a table.
 
-The orchestrator is asking sub-agents to do things they're good at (apply a checklist of cognitive moves to a code diff) and then asking the orchestrator to do things that are harder (semantic convergence detection across multiple outputs). This is the right division of labor in principle, but the orchestrator's synthesis instructions are underdetermined. "Convergence detection is semantic — same file region plus overlapping concern — not mechanical keyword matching" is a capability assertion, not an instruction.
+The two new review stages (test specification during planning, test code review during implementation) will get rubber-stamped as fatigue sets in. The more review stages you add, the less attention each one gets.
 
-The sub-agents save their reports to `docs/reviews/`. The orchestrator reads those reports. But wait — do the sub-agents actually save files, or do they return results through the Agent tool? The pipeline says both: "Instruct the agent to save its report as `docs/reviews/code-fact-check-report.md`" and also "Wait for the fact-check agent to return results." If the orchestrator is reading the results from the Agent tool's return value, the saved files are an artifact for the human, not a pipeline dependency. This is fine but should be explicit.
+## 6. The Org Chart
 
-## Political Survival (Adoption Viability)
+The workflow is designed for a single human working with a single LLM session. But the broader workflow system includes parallel-sessions guides and branch-strategy workflows for concurrent feature development. If someone is running three parallel feature branches with three LLM sessions, they are now doing test specification and test code review for three concurrent workstreams. That is where the per-feature overhead compounds.
 
-Does this create defenders or opponents? The pipeline creates a visible artifact (the rubric) that authors can reference, which is good for adoption. But it also creates friction: running 4-7 agents takes time and produces findings the author must respond to. If the findings are mostly noise, the pipeline gets skipped. If the findings are mostly real, the pipeline gets valued.
+The handoff point between human and LLM is the test specification table, and it is the weakest link. The human writes prose; the LLM writes code; the human reviews code. The prose summary instruction helps bridge this, but the fundamental medium mismatch remains. A stronger design would make the prose-to-prose review the primary path and code review the spot-check.
 
-The key adoption risk: **the rubric's severity mapping is rigid, and contextual critics are permanently advisory**. If test-strategy consistently catches real bugs that the core critics miss, there's no mechanism to promote it to core status. The classification is hardcoded in the orchestrator's prose. Over time, the static taxonomy will diverge from actual value delivered.
+The decision record does not address who maintains the test taxonomy guidance over time. Since it is inline in the RPI workflow (not a separate doc), updating it means modifying the core workflow document. For a workflow that is already approaching process-manual complexity, this matters.
 
-The `--include`, `--exclude`, and `--only` flags are a good escape valve. Users who find the pipeline too noisy can scope it down. But the default should be lean (fewer critics, run more on request) rather than comprehensive (all critics, skip some on request). Default-comprehensive pipelines accumulate cruft; default-lean pipelines get extended when they prove useful.
+## 7. Political Survival
 
-## The Cost Disease Check
+**What will stick:** The test-first gate — write tests before implementation, commit them separately, human can review. This is a genuinely good practice with a clear benefit. Developers who have been burned by intent mismatches will adopt it.
 
-This is the complexity inflation risk: the orchestrator pattern is already being instantiated twice (draft-review, code-review), and each instantiation adds domain-specific features (auto-selection, unified severity mapping, cross-critic escalation). The next instantiation will add its own features. Each feature increases the maintenance surface of the pattern document and the divergence between instantiations.
+**What will not stick:** The four-column test specification table as a planning default. The test level taxonomy for non-expert users. The diagnostic expectations column for anyone who has not experienced the pain of uninformative test failures.
 
-The Agent tool vs. Task tool split is exhibit A. Draft-review uses Task tool, code-review uses Agent tool. This isn't explained in the pattern document, so the next person instantiating the pattern has to guess which to use. Small divergences like this accumulate into a pattern that's a guideline in name only.
+**The popular version:** Keep the test-first gate. Drop the structured table as the default format. Let the human write test cases however they want — prose bullet points are fine. Move the test level taxonomy and diagnostic expectations to optional guidance rather than table columns. Add one line of implementation instruction: "When writing test code, include descriptive failure messages with expected-vs-actual values." That is a code-generation instruction, not a planning artifact.
 
-The unified severity mapping table is exhibit B. It maps each critic's severity levels to rubric tiers, but the mapping is asymmetric — Performance's "High" maps to amber while Security's "High" maps to red. This is an intentional design choice (security issues are more urgent), but it means the mapping table must be updated for every new critic type, and the rationale for each mapping lives only in the table itself.
+This gets the core benefit (tests as a specification checkpoint between human and LLM) without the planning overhead that kills adoption.
 
-## Overall Assessment
+## 8. The Cost Disease Check
 
-The code-review orchestrator is a well-structured, thoughtfully designed pipeline that solves a real problem (multi-perspective code review) using a proven pattern (the draft-review orchestrator). The fact-check gate, cross-critic escalation, and contextual critic auto-selection are genuinely good ideas.
+The RPI workflow started as a simple research-plan-implement loop. It now includes: pivot guidance, working document conventions, freshness tracking, design decision integration via DD, plan annotation conventions, file size discipline, context management guidance, session handoff docs, abbreviation rules, a refactoring variant, and now a structured test specification table, inline taxonomy, a review gate, and diagnostic guidance.
 
-But the pipeline is over-built for its most common use case and under-specified for its hardest step. Most code reviews would benefit more from one good critic than three mediocre ones running in parallel. The synthesis step — where convergence detection actually happens — needs more specification, not less. And the default-comprehensive posture (3 core critics always, plus contextual critics triggered by heuristics) will push users toward `--only` overrides rather than trusting the defaults.
+Each addition is individually justified. But the cumulative effect is a workflow document approaching the complexity of a process manual. At some point, the workflow document itself needs the "file size discipline" treatment it prescribes for code — splitting into a core loop and supplementary guides. The test specification table and taxonomy, for example, could be a reference appendix rather than inline content, reducing the cognitive weight of the main flow while preserving access for those who need it.
 
-Three concrete suggestions:
+The trajectory concern is real: if each iteration adds another gate or structured section, you are on the escalator. The check against this is whether each addition reduces total time-to-working-code. The test-first gate probably does (catching specification mismatches early is genuinely cheaper). The structured test specification table probably does not — it adds planning time without a proportional reduction in downstream cost, because the LLM can infer most of what the table asks for from the plan's approach and steps sections.
 
-1. **Default to the single most relevant critic**, selected by the same heuristics that currently select contextual critics. Let `--full` or `--all-critics` activate the multi-critic pipeline. This makes the common case fast and the comprehensive case opt-in.
+## 9. Overall Assessment
 
-2. **Specify the convergence detection step**. What does "same file region" mean — same file? Same function? Same 10-line range? What does "overlapping concern" mean — same category? Same root cause? This is the step that determines whether the escalation rule fires, and it's described in one sentence.
+This is a good idea with a somewhat overengineered implementation. The core insight — make tests a first-class part of the workflow so the human specifies behavior before the LLM implements it — is sound and addresses a real failure mode in human-LLM collaboration.
 
-3. **Add a decomposition escape valve for large diffs**. When the diff exceeds a threshold (say, 1000 lines or 20 files), suggest decomposing into per-directory or per-subsystem reviews rather than running all critics on the full diff. The per-commit decomposition option (option 11 in the decision doc) was considered and not chosen, but some form of decomposition for large inputs would prevent the pipeline from degrading exactly when it's most needed.
+**Sound parts:**
+- Test-first during implementation is a genuinely good default. The separate test commit is the strongest idea here.
+- The insight that test failures are the human's primary debugging interface is correct and underappreciated.
+- Inline test-level guidance is better than pointing to an external reference doc.
+- The prose summary alongside test code bridges the medium gap between human and LLM.
 
-The draft is solid infrastructure. The question is whether anyone will use the full pipeline when `--only security-reviewer` is right there.
+**Wish-fulfillment parts:**
+- The structured test specification table assumes humans will do upfront specification work they historically do not do, even when they agree it is valuable.
+- Three human review checkpoints before feature code exists assumes sustained reviewer attention that erodes at scale.
+- "Diagnostic expectations" as a planning-phase column assumes the human knows enough about failure modes to specify diagnostics before the code exists.
+
+**Most important revision:**
+Separate the *implementation instruction* ("write tests first, commit them separately, include good failure messages") from the *planning artifact* ("fill out this table with four columns"). The former is high-value and low-cost. The latter is the part that will be abandoned, and when it is, people will feel like they are "not doing the workflow right" and stop doing any of it. Make the high-value part the unambiguous default and the structured planning table an optional practice for complex features, rather than the other way around.

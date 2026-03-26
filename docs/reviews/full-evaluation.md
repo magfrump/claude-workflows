@@ -208,11 +208,11 @@ Relevant paths:
 |---|---|---|
 | Counterfactual gap | Adequate | A good developer asking "what tests should I write" would get reasonable advice from generic prompting. The skill adds: risk profiling, existing coverage survey, explicit "what NOT to test" section, and specific test case descriptions. The gap is in consistency and completeness, not in capability. |
 | User-specific fit | Adequate | Relevant for any development work. Frequency depends on how often the user writes new code vs. reviews/evaluates. |
-| Condition for value | Met | Standalone viable. Can plug into RPI as the testing strategy section. |
+| Condition for value | Met | Standalone viable. Can plug into RPI as the test specification section. |
 | Failure gracefulness | Adequate | Recommendations cite specific files and test cases, making them verifiable. Risk: recommending tests for low-risk code while missing high-risk gaps. The risk profiling step mitigates this. |
 | Testability investment | Medium | Can construct a codebase and verify the skill identifies the right test types and priorities. Whether the specific test cases are good requires human judgment. |
 | Test coverage | Weak | No tests written or example outputs produced. |
-| Pipeline readiness | Standalone viable | Fits into RPI's testing strategy section. No formal pipeline dependency. |
+| Pipeline readiness | Standalone viable | Fits into RPI's test specification section. No formal pipeline dependency. |
 | Overlap | Adequate | Built-in verification-coordinator does some of this (test planning). The test-strategy skill goes deeper on risk profiling and prioritization. Overlap is real but the skill adds meaningful depth. |
 | Trigger clarity | Strong | "What tests should I write?" is clear and common. |
 

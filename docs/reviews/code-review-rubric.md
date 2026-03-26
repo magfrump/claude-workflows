@@ -1,50 +1,60 @@
----
-Last verified: 2026-03-23
-Relevant paths:
-  - skills/code-review.md
-  - patterns/orchestrated-review.md
-  - docs/decisions/002-critic-style-code-review.md
----
-
 # Code Review Rubric
 
-**Scope:** `feat/r1-workflow-pivot-guidance` vs `main` — 4 workflow files + 1 summary doc | **Reviewed:** 2026-03-24 | **Status: 🟡 CONDITIONAL PASS** — 2 amber item(s) awaiting resolution or justification
+**Scope:** feat/foreground-tests vs main | **Reviewed:** 2026-03-26 | **Status: ✅ PASSES REVIEW**
 
 ---
 
 ## 🔴 Must Fix
 
-(None)
+Issues that must be resolved before merge. Draft cannot pass review with any red items unresolved.
+
+| # | Finding | Domain | Location | Status |
+|---|---|---|---|---|
+| — | No red items | — | — | — |
 
 ---
 
 ## 🟡 Must Address
 
+Issues that must be fixed or acknowledged by the author with justification for why they stand. Each must carry a resolution or author note.
+
 | # | Finding | Domain | Source | Status | Author note |
 |---|---|---|---|---|---|
-| A1 | Redundancy between codebase-onboarding's new "When to pivot" section (lines 13-16) and existing "Relationship to other workflows" section (lines 124-128). Both describe onboarding→RPI and onboarding→DD pivots in slightly different language, creating a maintenance burden and potential for drift. Consolidate or differentiate. | Consistency | Manual review | 🟡 Open | — |
-| A2 | DD "When to pivot" says "← From RPI: When RPI research surfaces a design fork, invoke DD inline." RPI step 2 already covers this inline invocation in detail. The pivot section adds artifact-carrying guidance ("Carry the research doc's invariants and constraints into DD's diagnosis step") which is valuable, but the trigger description duplicates step 2. Consider phrasing to avoid restating the trigger and focus purely on the artifact handoff. | Consistency | Manual review | 🟡 Open | — |
+| A1 | `skills/test-strategy.md` frontmatter still says "testing strategy" while RPI section renamed to "test specification" | Consistency | Fact-check + API Consistency (escalated from 🟢) | ✅ Fixed | Changed "testing strategy" → "test specification" in frontmatter |
+| A2 | Stale line-number references in security-review.md, cowen-critique.md, yglesias-critique.md (off by 2-4 lines after C2/C3 fixes) | Accuracy | Fact-check + API Consistency (escalated from 🟢) | ✅ Fixed | Review artifacts regenerated with correct line numbers |
 
 ---
 
 ## 🟢 Consider
 
+Advisory findings from contextual critics, single-critic suggestions, and improvement opportunities. Not required to pass review.
+
 | # | Finding | Source |
 |---|---|---|
-| C1 | The pivot paths are asymmetric across workflows: no onboarding→spike, no DD→onboarding. The summary doc says "4 most common pivot paths" which partially addresses this — consider making the intentional scoping more explicit in the summary. | Manual review |
-| C2 | Spike "When to pivot" references "its RPI seed section (see step 4)" — while the cross-reference is correct, could also reference the template field name ("## RPI seed") for quicker scanning. Minor. | Manual review |
+| C1 | Add cross-reference consistency BATS test to catch stale terminology between files | Test Strategy |
+| C2 | Prior branch review artifacts were overwritten — unresolved findings (Impact/Severity bug, FINDINGS_BODY scoping) only in git history | Tech Debt |
+| C3 | Review artifact freshness metadata stripped — clarify whether reviews need freshness tracking | Tech Debt |
+| C4 | RPI at 202 lines, approaching density ceiling — monitor for ~300 lines | Performance + Tech Debt |
+| C5 | Decision log gap (entries 2-5 have records but no log entries) — cosmetic | API Consistency |
+| C6 | Soft gate terminology: "Test-first gate" heading implies hard enforcement but mechanism is soft | Security |
+| C7 | Diagnostic output PII caveat exists but downstream projects may not read it | Security |
 
 ---
 
 ## ✅ Confirmed Good
 
+Patterns, implementations, or claims confirmed correct by fact-check and/or critics.
+
 | Item | Verdict | Source |
 |---|---|---|
-| Cross-references to step numbers are accurate (RPI step 2 = Research with DD signals, spike step 4 = Record findings with RPI seed) | ✅ Confirmed | Manual verification |
-| DD step 2 = "Diagnose" matches the pivot guidance reference to "DD's diagnosis step" | ✅ Confirmed | Manual verification |
-| Arrow notation (→ for outbound, ← for inbound) is used consistently across all 4 files | ✅ Confirmed | Manual verification |
-| Artifact-carrying guidance (what to bring forward when pivoting) is present in every pivot path | ✅ Confirmed | Manual verification |
-| Placement of "When to pivot" is consistent: after "When to use", before first process section | ✅ Confirmed | Manual verification |
+| Hard gate at step 4 (plan approval) preserved and unweakened | ✅ Confirmed | Security + Fact-check |
+| Checkpoint naming follows established "essential/recommended/optional" pattern | ✅ Confirmed | API Consistency |
+| Cross-references to test-strategy skill, divergent-design, doc-freshness all resolve | ✅ Confirmed | Fact-check |
+| Inline taxonomy levels are subset of test-strategy skill's full taxonomy | ✅ Confirmed | Fact-check |
+| Non-blocking test review checkpoint avoids pipeline stalls | ✅ Confirmed | Performance |
+| PII/secrets caveat added for diagnostic output | ✅ Confirmed | Security + Fact-check |
+| `linguist-generated` gitattribute behavior accurately described | ✅ Confirmed | Fact-check |
+| DD 80% confidence threshold correctly referenced | ✅ Confirmed | Fact-check |
 
 ---
 
