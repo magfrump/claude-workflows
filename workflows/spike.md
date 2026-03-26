@@ -6,6 +6,8 @@
 - Answering "is this feasible?" or "how hard would this be?"
 - Exploring an unfamiliar API or language feature
 
+For phase-level completion checks, see [`guides/completion-signals.md`](../guides/completion-signals.md).
+
 ## When to pivot
 
 - **→ RPI**: The most common pivot. When the spike answers "yes, this works," its RPI seed section (see step 4) is the handoff — load it as initial input to RPI research rather than starting from scratch.

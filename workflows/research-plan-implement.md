@@ -6,7 +6,7 @@
 - Any task where Claude needs to understand existing code before changing it
 - Default workflow for non-trivial development work
 
-This is the most common workflow. When in doubt, use this one.
+This is the most common workflow. When in doubt, use this one. For phase-level completion checks, see [`guides/completion-signals.md`](../guides/completion-signals.md).
 
 ## When to pivot
 

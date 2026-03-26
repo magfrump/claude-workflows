@@ -3,7 +3,7 @@
 *The self-review and cleanup steps follow the [orchestrated review pattern](../patterns/orchestrated-review.md), with commits/files as the units of review.*
 
 ## When to use
-Before opening any pull request, especially when the reviewer is in a different timezone or unfamiliar with the libraries used.
+Before opening any pull request, especially when the reviewer is in a different timezone or unfamiliar with the libraries used. For phase-level completion checks, see [`guides/completion-signals.md`](../guides/completion-signals.md).
 
 ## Process
 

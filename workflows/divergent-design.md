@@ -9,6 +9,8 @@
 - Any decision where premature convergence is a risk
 - **As a sub-procedure within RPI**: When the research phase of `research-plan-implement.md` reveals a design decision, DD is invoked inline. The decision output feeds back into RPI's research doc and informs the plan. See RPI step 2 for trigger signals.
 
+For phase-level completion checks, see [`guides/completion-signals.md`](../guides/completion-signals.md).
+
 ## When to pivot
 
 - **← From RPI** (see RPI step 2 for triggers): Carry the research doc's invariants and constraints into DD's diagnosis step (step 2) — they're already half the work.

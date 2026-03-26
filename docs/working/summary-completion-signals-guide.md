@@ -1,0 +1,1 @@
+Created `guides/completion-signals.md` with 2-3 yes/no self-check questions per major phase for RPI, DD, spike, and pr-prep workflows, and added cross-reference lines to each workflow's "When to use" section.
