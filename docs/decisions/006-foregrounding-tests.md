@@ -1,18 +1,21 @@
 # 006: Foregrounding Tests as a Human-LLM Interface
 
+**Date:** 2026-03-26
+**Status:** Accepted
+
 ## Context
 
 Tests in the current workflow system are treated as a verification step — something that happens during or after implementation. The RPI workflow mentions "testing strategy" as a one-line plan section and "characterization tests first" in the refactoring variant, but neither gives tests a primary role in the human-LLM collaboration loop.
 
-The core insight motivating this decision: **tests are the most precise, executable form of requirements.** A human who designs test cases has expressed intent in a way that's unambiguous and machine-checkable. This makes tests a natural interface between human specification and LLM implementation — the human designs the behavioral contract, the LLM writes code to satisfy it.
+The core insight motivating this decision: **tests are among the most precise forms of behavioral specification in human-LLM collaboration.** A human who designs test cases has expressed intent in a way that is structured and machine-checkable — the human designs behavioral constraints in prose, the LLM translates them into executable test code. The translation carries ambiguity risk, but catching mismatches at the test-review stage is cheaper than catching them after implementation.
 
 Additionally, when implementation goes wrong, well-designed tests with rich diagnostic output are the human's primary window into what happened. The quality of test failure output directly determines whether the human can diagnose a problem without re-running or reading all the code.
 
-The central use case is code development in other repos, not testing workflow prompts in this repo.
+The motivating use case is code development in other repos, though the implementation applies to all RPI usage.
 
 ## Options Considered
 
-**13 approaches were generated via divergent design** (the full list was explored in conversation; 6 survivors are summarized here). The diverge/diagnose/match analysis evaluated them against constraints including: human-designability (tests must be specifiable without deep framework knowledge), cross-language applicability, LLM-implementability, diagnostic quality, and integration with existing workflows. Key candidates that survived pruning:
+**Over a dozen approaches were generated via divergent design** (the full list was explored in conversation; 6 survivors are summarized here). The diverge/diagnose/match analysis evaluated them against constraints including: human-designability (tests must be specifiable without deep framework knowledge), cross-language applicability, LLM-implementability, diagnostic quality, and integration with existing workflows. Key candidates that survived pruning:
 
 1. **Test-first plan step** — Restructure RPI's testing section from a one-liner to a structured block where the human specifies test cases, test levels, and diagnostic expectations during planning
 2. **Standalone test-design workflow** — A separate workflow doc for test specification. Rejected: too much ceremony, creates a parallel process that competes with RPI
@@ -23,7 +26,7 @@ The central use case is code development in other repos, not testing workflow pr
 
 ## Decision
 
-**Combine approaches 1 + 4 + 5**: restructure RPI's testing section into a first-class planning artifact, add inline taxonomy guidance, and insert a test review gate before implementation review.
+**Combine approaches 1 + 4 + 5, plus diagnostic guidance**: restructure RPI's testing section into a first-class planning artifact, add inline taxonomy guidance, insert a test review gate before implementation review, and add guidance on making test failures informative.
 
 Concretely:
 

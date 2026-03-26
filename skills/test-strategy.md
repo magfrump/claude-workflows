@@ -150,7 +150,7 @@ note it briefly. This feeds into future test strategy sessions.
 When run standalone, present the testing plan in chat. If the user requests a persisted
 artifact, save to `docs/working/test-strategy-{topic}.md`.
 
-When used as part of RPI, the testing strategy section of the plan doc should follow this
+When used as part of RPI, the test specification section of the plan doc should follow this
 skill's structure rather than generic "add tests" bullets.
 
 ## Important

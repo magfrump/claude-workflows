@@ -80,7 +80,7 @@ Produce a plan doc in `docs/working/`. Include:
   - Small enough to be one commit
   - Ordered by dependency (what must exist before what)
 - **Size estimate**: For each step (or for the plan as a whole if steps are small), include a rough size estimate — e.g., "~50 lines in a new file", "~20 lines added to existing handler", "minor wiring change." These don't need to be precise; the goal is to flag when a step is unexpectedly large and to catch cases where a single file would grow beyond a reasonable size. If a step would push a file past **500 lines**, note that explicitly and consider splitting the file as part of the plan.
-- **Test specification**: Tests are a design artifact, not a verification afterthought. The human specifies behavior through test cases during planning — this is the most precise, executable form of requirements. Structure this section as a table or list with one entry per test case:
+- **Test specification**: Tests are a design artifact, not a verification afterthought. Structure this section as a table or list with one entry per test case:
 
   | Test case | Expected behavior | Level | Diagnostic expectation |
   |-----------|------------------|-------|----------------------|
@@ -92,7 +92,11 @@ Produce a plan doc in `docs/working/`. Include:
   - **Characterization**: Locks in existing behavior before refactoring. Use when you need a safety net for code you're about to change (see also: Refactoring variant below).
   - **Property**: Invariants that should hold across many inputs (e.g., "output is always sorted", "round-trip encode/decode is identity"). Use when example-based tests would miss edge cases.
 
-  **Diagnostic expectations** matter because test failures are the human's primary window into what went wrong. For each test, specify what information should be visible on failure — not just pass/fail, but: expected vs. actual values, relevant state at the point of failure, and enough context to diagnose without re-running or reading all the implementation code. Examples: "show the full diff between expected and actual output", "log the request payload that triggered the error", "print the state of the queue before and after the operation."
+  Other levels (e.g., end-to-end, snapshot, contract) are valid; the `test-strategy` skill has a full taxonomy.
+
+  **Diagnostic expectations**: For each test, specify what information should be visible on failure — not just pass/fail, but: expected vs. actual values, relevant state at the point of failure, and enough context to diagnose without re-running or reading implementation code. Examples: "show the full diff between expected and actual output", "log the request payload that triggered the error", "print the state of the queue before and after the operation."
+
+  Avoid logging secrets, credentials, or PII in diagnostic output — use placeholder values in test fixtures for sensitive data.
 
   For simple features, this section can be brief (a few test cases in prose). For complex features, the table format helps ensure coverage. The human designs the test constraints; the LLM translates them into runnable test code.
 
@@ -120,7 +124,7 @@ Claude revises the plan doc based on feedback. This cycle repeats until the user
 
 Before implementing feature code, write the tests specified in the plan's test specification section. Commit the tests separately: `test: add tests for X (per plan-Y step N)`. These tests should fail — they encode the behavior that doesn't exist yet.
 
-**Human checkpoint**: The user reviews the test code before implementation begins. This confirms the tests match their intent — catching specification mismatches is cheapest here, before implementation work is invested. Like the research checkpoint, this should not block progress indefinitely; if the user doesn't respond promptly, proceed with implementation but flag that tests haven't been reviewed.
+**Human checkpoint**: The user reviews the test code before implementation begins. This confirms the tests match their intent — catching specification mismatches is cheapest here, before implementation work is invested. Include a bulleted summary of what each test verifies alongside the test code, so the human can review intent in prose before spot-checking code. Like the research checkpoint, this should not block progress indefinitely; if the user doesn't respond promptly, proceed with implementation but flag that tests haven't been reviewed.
 
 If test review reveals mismatches with the human's intent, revise the tests (and update the plan's test specification) before proceeding.
 
