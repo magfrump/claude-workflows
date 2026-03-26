@@ -12,7 +12,7 @@ The central use case is code development in other repos, not testing workflow pr
 
 ## Options Considered
 
-**13 approaches were generated via divergent design.** The full diverge/diagnose/match analysis evaluated them against constraints including: human-designability (tests must be specifiable without deep framework knowledge), cross-language applicability, LLM-implementability, diagnostic quality, and integration with existing workflows. Key candidates that survived pruning:
+**13 approaches were generated via divergent design** (the full list was explored in conversation; 6 survivors are summarized here). The diverge/diagnose/match analysis evaluated them against constraints including: human-designability (tests must be specifiable without deep framework knowledge), cross-language applicability, LLM-implementability, diagnostic quality, and integration with existing workflows. Key candidates that survived pruning:
 
 1. **Test-first plan step** — Restructure RPI's testing section from a one-liner to a structured block where the human specifies test cases, test levels, and diagnostic expectations during planning
 2. **Standalone test-design workflow** — A separate workflow doc for test specification. Rejected: too much ceremony, creates a parallel process that competes with RPI
@@ -27,7 +27,7 @@ The central use case is code development in other repos, not testing workflow pr
 
 Concretely:
 
-1. **Restructure RPI plan step 3** — The "testing strategy" section becomes a structured block where the human specifies:
+1. **Restructure the RPI Plan phase (step 3)** — The "testing strategy" section becomes a structured block where the human specifies:
    - Test cases with expected behavior (what the code should do, in plain language)
    - Test level for each case (unit / integration / characterization / property)
    - Diagnostic expectations (what should be visible when a test fails — expected-vs-actual values, state snapshots, error messages)
