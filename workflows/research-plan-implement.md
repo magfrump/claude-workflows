@@ -80,7 +80,22 @@ Produce a plan doc in `docs/working/`. Include:
   - Small enough to be one commit
   - Ordered by dependency (what must exist before what)
 - **Size estimate**: For each step (or for the plan as a whole if steps are small), include a rough size estimate — e.g., "~50 lines in a new file", "~20 lines added to existing handler", "minor wiring change." These don't need to be precise; the goal is to flag when a step is unexpectedly large and to catch cases where a single file would grow beyond a reasonable size. If a step would push a file past **500 lines**, note that explicitly and consider splitting the file as part of the plan.
-- **Testing strategy**: How to verify the implementation works. Specific test cases, not "add tests."
+- **Test specification**: Tests are a design artifact, not a verification afterthought. The human specifies behavior through test cases during planning — this is the most precise, executable form of requirements. Structure this section as a table or list with one entry per test case:
+
+  | Test case | Expected behavior | Level | Diagnostic expectation |
+  |-----------|------------------|-------|----------------------|
+  | *What scenario* | *What should happen* | *unit / integration / characterization / property* | *What the failure output should show* |
+
+  **Choosing a test level:**
+  - **Unit**: Isolated function/method behavior. Use when the logic is self-contained and has no significant dependencies.
+  - **Integration**: Interactions between components, databases, APIs, or external services. Use when the behavior depends on how parts connect.
+  - **Characterization**: Locks in existing behavior before refactoring. Use when you need a safety net for code you're about to change (see also: Refactoring variant below).
+  - **Property**: Invariants that should hold across many inputs (e.g., "output is always sorted", "round-trip encode/decode is identity"). Use when example-based tests would miss edge cases.
+
+  **Diagnostic expectations** matter because test failures are the human's primary window into what went wrong. For each test, specify what information should be visible on failure — not just pass/fail, but: expected vs. actual values, relevant state at the point of failure, and enough context to diagnose without re-running or reading all the implementation code. Examples: "show the full diff between expected and actual output", "log the request payload that triggered the error", "print the state of the queue before and after the operation."
+
+  For simple features, this section can be brief (a few test cases in prose). For complex features, the table format helps ensure coverage. The human designs the test constraints; the LLM translates them into runnable test code.
+
 - **Risks**: What could go wrong, what's uncertain, what you'd want a reviewer to scrutinize.
 
 ### 4. Annotate (recommended) — human reviews and approves before implementation
@@ -99,7 +114,17 @@ Common annotations:
 
 Claude revises the plan doc based on feedback. This cycle repeats until the user is satisfied. Two rounds is typical; more than three suggests the research phase missed something — consider going back to step 2.
 
-### 5. Implement (essential) — follow the plan
+### 5. Implement (essential) — tests first, then code
+
+#### Test-first gate
+
+Before implementing feature code, write the tests specified in the plan's test specification section. Commit the tests separately: `test: add tests for X (per plan-Y step N)`. These tests should fail — they encode the behavior that doesn't exist yet.
+
+**Human checkpoint**: The user reviews the test code before implementation begins. This confirms the tests match their intent — catching specification mismatches is cheapest here, before implementation work is invested. Like the research checkpoint, this should not block progress indefinitely; if the user doesn't respond promptly, proceed with implementation but flag that tests haven't been reviewed.
+
+If test review reveals mismatches with the human's intent, revise the tests (and update the plan's test specification) before proceeding.
+
+#### Implementation
 
 Implement the plan one step at a time. Commit after each step with a message referencing the plan: `feat: add user model (per plan-inline-edit-api step 1)`.
 
