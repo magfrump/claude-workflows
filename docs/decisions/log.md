@@ -7,3 +7,4 @@ Lightweight record for decisions that don't warrant a full decision record (`NNN
 | # | Date | Decision | Context / Why | Full Record |
 |---|------|----------|---------------|-------------|
 | 1 | 2026-03-23 | Create lightweight decision log | Small decisions were undocumented; full DD records are too heavy for one-line choices | — |
+| 6 | 2026-03-26 | Foreground tests as human-LLM interface in RPI | Tests are the most precise form of requirements; restructure RPI to make test design a planning activity | [006](006-foregrounding-tests.md) |
