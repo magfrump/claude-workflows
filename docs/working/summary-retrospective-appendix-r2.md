@@ -1,0 +1,1 @@
+Added forward reference from step 3e exit criteria to Post-PR Reflection appendix, rewrote reflection questions to reference concrete workflow artifacts (plan doc, review findings, self-eval scores), and sharpened step 3a/3d/6 descriptions.
