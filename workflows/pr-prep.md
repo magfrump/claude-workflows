@@ -87,6 +87,11 @@ If the PR exceeds ~500 lines changed, consider whether it can be split. Look for
 
 If it genuinely can't be split, note this in the PR description and suggest a review order for the files.
 
-## Appendix: Post-PR Reflection
+## Retrospective
 
-See [`guides/post-pr-retrospective.md`](../guides/post-pr-retrospective.md) for reflection questions, timing guidance, and links to referenced artifacts.
+After the PR is opened, take 2 minutes to close the loop on the workflow that produced it. Answer these in `docs/thoughts/` or a commit message — they compound over time.
+
+1. **Plan vs. reality** — How closely did the implementation follow the plan? Where did it deviate, and was the deviation an improvement or a sign the plan missed something?
+2. **Skipped steps** — Were any workflow steps skipped or abbreviated? Why, and was that the right call in hindsight?
+3. **Surprises** — What was unexpected — in the codebase, the tooling, the requirements, or the review feedback? What would have helped you anticipate it?
+4. **Next time** — Knowing what you know now, what would you do differently in the plan, the process, or the code?
