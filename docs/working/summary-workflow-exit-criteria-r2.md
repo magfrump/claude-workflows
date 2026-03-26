@@ -1,0 +1,1 @@
+Added `#### Completion signals` subsections (2-3 yes/no self-check questions each) to Research and Plan phases of research-plan-implement.md, and to Diagnose and Decision phases of divergent-design.md — 9 lines added to RPI, 8 to DD.

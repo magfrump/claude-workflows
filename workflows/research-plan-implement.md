@@ -65,6 +65,11 @@ Signals that you've hit a design decision:
 - The "right" approach depends on constraints you can't fully evaluate (team preferences, future roadmap, performance targets)
 - You're tempted to pick an approach and justify it rather than comparing alternatives
 
+#### Completion signals
+- Can you name every invariant the implementation must preserve? (If not, read more code.)
+- Does the research doc cover prior art — has the codebase solved a similar problem before?
+- Could someone write a plan from your research doc alone, without re-reading the code?
+
 **Human checkpoint**: The user should review the research doc — this is the cheapest place to fix misunderstandings. However, this checkpoint should not block progress. Claude should proceed to the plan step immediately after producing the research doc. If the user provides corrections to the research later, the plan may need to be revised or scrapped, and that's acceptable — a plan built on wrong research is cheap to discard, but idle time waiting for review is expensive.
 
 The gate on **implementation** is firm: do not implement until the plan has been reviewed and approved. The gate on **planning** is soft: plan speculatively, expect revision.
@@ -101,6 +106,10 @@ Produce a plan doc in `docs/working/`. Include:
   For simple features, this section can be brief (a few test cases in prose). For complex features, the table format helps ensure coverage. The human designs the test constraints; the LLM translates them into runnable test code.
 
 - **Risks**: What could go wrong, what's uncertain, what you'd want a reviewer to scrutinize.
+
+#### Completion signals
+- Is every step specific enough to implement without re-reading the research?
+- Does the test specification cover at least one failure mode, not just the happy path?
 
 ### 4. Annotate (recommended) — human reviews and approves before implementation
 

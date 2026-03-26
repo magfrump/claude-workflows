@@ -34,6 +34,10 @@ List every concrete problem, requirement, and constraint the solution must addre
 
 Include non-obvious constraints: timezone gaps, skill gaps in the team, maintenance burden, deployment complexity, interaction with existing code, performance requirements. Also note which constraints are hard (must satisfy) vs soft (prefer to satisfy).
 
+#### Completion signals
+- Are constraints labeled as hard vs. soft?
+- Did you include at least one non-obvious constraint (team skills, deployment, maintenance)?
+
 ### 3. Match and prune
 
 Create a rough compatibility matrix:
@@ -78,6 +82,10 @@ Apply 2-4 of the most relevant moves to each surviving approach. Update the trad
 If one approach clearly dominates (>80% confidence): document the decision and proceed.
 
 If the tradeoff is genuinely unclear: **stop and consult the user.** Present the matrix, state your tentative recommendation with reasoning, and identify what information would resolve the ambiguity.
+
+#### Completion signals
+- Did you apply at least 2 stress-test moves to the leading approach?
+- Could a new team member understand the decision rationale from the doc alone?
 
 ### 5. Document
 
