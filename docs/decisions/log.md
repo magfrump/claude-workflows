@@ -10,9 +10,13 @@ This log captures **small, self-contained decisions** — each fully expressed i
 | **Options evaluated** | 1–2 (obvious winner) | 3+ (required deliberation) |
 | **Rationale fits in** | A sentence or two | Multiple paragraphs or sections |
 | **Consequences** | Straightforward and local | Non-obvious, cross-cutting, or worth revisiting |
-| **Process** | Direct decision | Benefits from divergent-design or structured review |
+| **Process** | Direct decision | Benefits from [divergent-design](../../workflows/divergent-design.md) or structured review |
 
-**Rule of thumb:** if you can state the decision, context, and rationale in one table row below, it belongs here. If you find yourself wanting subsections, options lists, or "consequences" — promote it to a full record.
+**Rule of thumb:** if you can state the decision, context, and rationale in one table row below, it belongs here. If you find yourself wanting subsections, options lists, or "consequences" — promote it to a full record. When in doubt, start with a log entry — you can always promote it later if the rationale turns out to be more nuanced than you thought.
+
+## Cross-referencing
+
+Log entries that later get a full record should link to it in the **Full Record** column (see entry #6 below for an example). Full decision records do not need to back-link here.
 
 | # | Date | Decision | Context / Why | Full Record |
 |---|------|----------|---------------|-------------|
