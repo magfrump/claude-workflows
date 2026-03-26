@@ -30,7 +30,7 @@ Run review skills and iterate until clean. This is required, not optional.
 
 **a. Generate reviews.** Run in parallel:
 - **Code review** (`/code-review`) — multi-critic structural review of the diff vs main
-- **Self-eval** (`/self-eval <target>`) — rubric assessment of any new or modified skills/workflows
+- **Self-eval** (`/self-eval <target>`) — rubric assessment of each new or modified skill/workflow file in the diff (run once per target file)
 
 **b. Triage and fix.** Read each review artifact. Work through findings in tier order:
 
@@ -44,9 +44,11 @@ For each finding: confirm it's real by reading the code, then fix. Commit in coh
 
 **c. Run tests.** After fixing findings, re-run the test suite. Fixes often surface latent bugs — a tightened assertion may expose a helper bug, a scoping fix may reveal a silent false pass. Fix test breakage as separate commits.
 
-**d. Re-review.** Run the same review skills again. Compare against prior findings: are they resolved? Did fixes introduce new ones? Did reviewers surface issues previously masked?
+**d. Re-review.** Run the same review skills again. Diff the new review artifacts against the prior round: confirm prior findings are resolved, check whether fixes introduced new issues, and look for findings that were previously masked by higher-tier problems.
 
 **e. Exit or repeat.** Exit when no Must Fix items remain and Must Address items are resolved or explicitly acknowledged. Repeat if new findings appear. Each loop should be strictly smaller than the last — if findings aren't converging after 3-4 loops, the problem is architectural (use divergent-design or RPI, not more review loops).
+
+On exit, note any surprising findings or patterns that emerged during the loop — these feed the [Post-PR Reflection](#appendix-post-pr-reflection) and help calibrate future plans.
 
 See `workflows/review-fix-loop.md` for extended discussion of loop dynamics and anti-patterns.
 
@@ -89,4 +91,11 @@ If it genuinely can't be split, note this in the PR description and suggest a re
 
 ## Appendix: Post-PR Reflection
 
-See [`guides/post-pr-retrospective.md`](../guides/post-pr-retrospective.md) for reflection questions, timing guidance, and links to referenced artifacts.
+After the PR is open, complete the reflection below — it takes 2 minutes and pays forward into the next task's plan.
+
+After the PR is opened, take 2 minutes to close the loop on the workflow that produced it. Answer these questions in `docs/thoughts/` or a commit message — they compound over time and calibrate future planning.
+
+1. **Plan accuracy** — Open `docs/working/plan-*.md` for this task. How closely did the implementation follow it? Where you deviated, was the deviation an improvement or a sign the research doc missed something?
+2. **Review-loop lessons** — Look at the review artifacts from step 3 (code-review findings, self-eval scores). Were any Must Fix items surprising? Did the loop converge quickly, or did it reveal structural issues that should have been caught during planning?
+3. **Estimate calibration** — Compare actual effort against the size estimates in the plan doc. If they diverged significantly, identify the cause (scope creep, unexpected dependency, wrong assumptions in research).
+4. **What to change next time** — Considering the plan doc, the review findings in `docs/reviews/`, and the self-eval results: what would you do differently in the plan, the process, or the code?
