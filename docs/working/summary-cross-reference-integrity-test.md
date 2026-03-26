@@ -1,0 +1,1 @@
+Added `test/cross-reference-integrity.bats` with two BATS tests that scan all markdown files in workflows/, skills/, guides/, and patterns/ for explicit markdown links and bare path references, asserting each resolves to an existing file; also documented one pre-existing broken reference (`skills/self-evaluation.md` in `guides/validation-gates.md`) as a scope exception.
