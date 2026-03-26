@@ -1,132 +1,121 @@
----
-Last verified: 2026-03-23
-Relevant paths:
-  - skills/code-review.md
-  - patterns/orchestrated-review.md
-  - docs/decisions/002-critic-style-code-review.md
----
-
 # Code Fact-Check Report
 
 **Repository:** claude-workflows
-**Scope:** Branch `feat/r1-skill-output-schema-validation` vs `main`
-**Checked:** 2026-03-24
+**Scope:** Branch diff relative to main (`git diff main...HEAD`)
+**Checked:** 2026-03-26
 **Total claims checked:** 8
-**Summary:** 5 verified, 1 mostly accurate, 0 stale, 1 incorrect, 1 unverifiable
+**Summary:** 6 verified, 1 mostly accurate, 0 stale, 0 incorrect, 1 unverifiable
 
 ---
 
-## Claim 1: "Shared helpers for skill output BATS tests"
+## Claim 1: "The RPI workflow mentions 'testing strategy' as a one-line plan section"
 
-**Location:** `test/skills/helpers.bash:1`
+**Location:** `docs/decisions/006-foregrounding-tests.md:5`
 **Type:** Architectural
 **Verdict:** Verified
 **Confidence:** High
 
-The file provides shared helper functions (`load_report`, `load_generic_report`, `count_findings`, `assert_field_per_finding`, `assert_section_exists`, `assert_heading_exists`, `assert_field_per_claim`, `assert_field_values`, `assert_claims_sequential`) used across all 14 skill format test files. Every test file loads this via `load helpers`.
+The main branch version of `workflows/research-plan-implement.md` at line 83 contains: `- **Testing strategy**: How to verify the implementation works. Specific test cases, not "add tests."` — this is indeed a single bullet point (one line) within the plan section. The characterization of it as a "one-line plan section" is accurate.
 
-**Evidence:** `test/skills/helpers.bash:1-107`, all `*-format.bats` files
+**Evidence:** `workflows/research-plan-implement.md:83` (main branch)
 
 ---
 
-## Claim 2: "Counts only within FINDINGS_BODY (set by count_findings) to avoid false matches from report-level metadata sharing the same field name"
+## Claim 2: "'characterization tests first' in the refactoring variant"
 
-**Location:** `test/skills/helpers.bash:56-57`
-**Type:** Behavioral
+**Location:** `docs/decisions/006-foregrounding-tests.md:5`
+**Type:** Architectural
+**Verdict:** Verified
+**Confidence:** High
+
+The main branch RPI file contains `- **Characterization tests first**: If existing coverage is insufficient, the plan's first steps should add tests that lock in current behavior before any structural changes begin.` in the Refactoring variant section. The claim accurately describes this content.
+
+**Evidence:** `workflows/research-plan-implement.md:168` (main branch)
+
+---
+
+## Claim 3: "neither gives tests a primary role in the human-LLM collaboration loop"
+
+**Location:** `docs/decisions/006-foregrounding-tests.md:5`
+**Type:** Architectural
+**Verdict:** Verified
+**Confidence:** High
+
+In the main branch RPI, testing appears only as a verification concern (one line in the plan section, characterization tests as a safety net in the refactoring variant, and "run tests after every step" in implementation). None of these position tests as a design artifact, a specification mechanism, or a human-LLM interface. The claim is accurate.
+
+**Evidence:** `workflows/research-plan-implement.md:83,164,168,172` (main branch)
+
+---
+
+## Claim 4: "13 approaches were generated via divergent design"
+
+**Location:** `docs/decisions/006-foregrounding-tests.md:15`
+**Type:** Reference
+**Verdict:** Unverifiable
+**Confidence:** Low
+
+The decision record claims 13 approaches were generated, but only 6 are listed (including "do nothing"). The remaining approaches from the divergent design process are not included in the document and cannot be verified from the codebase alone. There is no accompanying divergent design working document in `docs/working/` to cross-reference.
+
+**Evidence:** `docs/decisions/006-foregrounding-tests.md:15-22` (only 6 options listed)
+
+---
+
+## Claim 5: "Restructure RPI plan step 3"
+
+**Location:** `docs/decisions/006-foregrounding-tests.md:30`
+**Type:** Architectural
 **Verdict:** Mostly accurate
 **Confidence:** High
 
-`assert_field_per_finding` does search within `FINDINGS_BODY` rather than `REPORT_CONTENT`, which is the claimed scoping behavior. However, `FINDINGS_BODY` is extracted via `sed -nE '/^#{3,4} [0-9]+\./,$p'` which captures from the first finding heading to **end of file**, not to the end of the Findings section. This means the Summary Table and Overall Assessment sections (which appear after findings) are included in `FINDINGS_BODY`. If those trailing sections contain `**Severity:**` or similar field names, they would be counted. The scoping is directionally correct (excludes report header/preamble) but not as tight as the comment implies.
+The decision record says "Restructure RPI plan step 3." The testing strategy content is indeed in step 3 ("Plan") of the RPI workflow, but the testing section is not itself "step 3" — it is a bullet point within step 3. The numbering "step 3" refers to the Plan phase overall. This is directionally correct but slightly imprecise — a reader could interpret "plan step 3" as meaning the third sub-step within the plan section rather than the third step of the RPI process.
 
-**Evidence:** `test/skills/helpers.bash:50-63`
-
----
-
-## Claim 3: "Counts only within CLAIMS_BODY (set by load_report) to avoid false matches from report-level metadata sharing the same field name"
-
-**Location:** `test/skills/helpers.bash:78-79`
-**Type:** Behavioral
-**Verdict:** Verified
-**Confidence:** High
-
-`CLAIMS_BODY` is extracted with a tighter scope: `sed -n '/^## Claim [0-9]/,/^## [^C]/p' | sed '$d'` which captures from the first Claim heading to the first non-Claim `##` heading. The fallback captures from the first Claim to EOF. The `assert_field_per_claim` function then operates on `CLAIMS_BODY` instead of `REPORT_CONTENT`. This correctly scopes field counting to the claims section.
-
-**Evidence:** `test/skills/helpers.bash:22-29, 80-85`
+**Evidence:** `workflows/research-plan-implement.md:72-99` (step 3 is the "Plan" phase; testing is one of several bullet points within it)
 
 ---
 
-## Claim 4: "Impact" field in performance-reviewer tests
+## Claim 6: Decision log entry "#6" with date "2026-03-26"
 
-**Location:** `test/skills/performance-reviewer-format.bats:44-49`
-**Type:** Behavioral
-**Verdict:** Incorrect
-**Confidence:** High
-
-The test file checks for `**Impact:**` as a per-finding field and validates its values against `Critical|High|Medium|Low|Informational`. However, the performance-reviewer skill definition (`skills/performance-reviewer.md:202`) specifies the field name as `**Severity:**`, not `**Impact:**`. The test will fail on any report that follows the skill's documented output format, or it will skip if no `Impact` fields are found (via `assert_field_values`'s skip behavior).
-
-**Evidence:** `skills/performance-reviewer.md:202`, `test/skills/performance-reviewer-format.bats:44-49`
-
----
-
-## Claim 5: "report contains numbered items in at least one section" (test-strategy)
-
-**Location:** `test/skills/test-strategy-format.bats:45-46`
-**Type:** Behavioral
-**Verdict:** Unverifiable
-**Confidence:** Medium
-
-The test checks for `^\*\*[0-9]+\.` which matches lines starting with `**N.` (bold numbered items). The test-strategy skill definition uses patterns like `1. **High value**:` (numbered list with bold description), not `**1. Description**` (bold number prefix). Whether the actual LLM output uses the `**N.` format depends on the model's interpretation of the skill prompt. No existing test-strategy report was found to verify against.
-
-**Evidence:** `skills/test-strategy.md:98-102`, `test/skills/test-strategy-format.bats:45-46`
-
----
-
-## Claim 6: "No example report exists yet" (dependency-upgrade, tech-debt-triage)
-
-**Location:** `test/skills/dependency-upgrade-format.bats:4`, `test/skills/tech-debt-triage-format.bats:4`
-**Type:** Configuration
-**Verdict:** Verified
-**Confidence:** High
-
-Both files correctly note that no example reports exist. The `load_generic_report` skip logic will cause all tests in these files to skip with an informative message when no report is present at the default path.
-
-**Evidence:** `test/skills/dependency-upgrade-format.bats:12`, `test/skills/tech-debt-triage-format.bats:11`
-
----
-
-## Claim 7: "To generate all reports, see test/skills/generate-reports.bash"
-
-**Location:** `test/skills/helpers.bash:8`
+**Location:** `docs/decisions/log.md:10`
 **Type:** Reference
 **Verdict:** Verified
 **Confidence:** High
 
-The file `test/skills/generate-reports.bash` exists in the working tree (visible in git status as a modified file).
+The log entry number is 6, and the full decision record file is `006-foregrounding-tests.md`, which exists and matches. The date 2026-03-26 matches the current date. The link `[006](006-foregrounding-tests.md)` is a valid relative link. Note: the decision log jumps from #1 to #6 — entries 2-5 are not in the log but do exist as full records in `docs/decisions/`. This is consistent with the log's own documentation ("Lightweight record for decisions that don't warrant a full decision record") — decisions 2-5 have full records and thus appropriately do not appear in the lightweight log.
 
-**Evidence:** `test/skills/helpers.bash:8`, git status output
+**Evidence:** `docs/decisions/log.md:10`, `docs/decisions/006-foregrounding-tests.md` (file exists)
 
 ---
 
-## Claim 8: "Extract only the claims sections (from first claim to the summary/attention section)"
+## Claim 7: "Tests are a design artifact, not a verification afterthought"
 
-**Location:** `test/skills/helpers.bash:22-29`
+**Location:** `workflows/research-plan-implement.md:83` (new version)
 **Type:** Behavioral
 **Verdict:** Verified
 **Confidence:** High
 
-The `sed` command `/^## Claim [0-9]/,/^## [^C]/p` captures from the first `## Claim N` heading to the first `## ` heading that does not start with `C` (i.e., `## Claims Requiring Attention`). The `sed '$d'` removes the terminal non-Claim heading. The fallback handles the case where claims run to EOF. This correctly scopes the extraction.
+The restructured RPI workflow does implement this claim: the test specification section in step 3 asks the human to specify test cases during planning with structured fields (test case, expected behavior, level, diagnostic expectation), and step 5 adds a "test-first gate" where tests are written before feature code. This matches the claim that tests are treated as a design artifact.
 
-**Evidence:** `test/skills/helpers.bash:25-29`
+**Evidence:** `workflows/research-plan-implement.md:83-97` (test specification in plan), `workflows/research-plan-implement.md:117-127` (test-first gate in implementation)
+
+---
+
+## Claim 8: "Like the research checkpoint, this should not block progress indefinitely"
+
+**Location:** `workflows/research-plan-implement.md:123`
+**Type:** Architectural
+**Verdict:** Verified
+**Confidence:** High
+
+The RPI workflow's research checkpoint at line 68 states: "this checkpoint should not block progress. Claude should proceed to the plan step immediately after producing the research doc." The new test review checkpoint uses the same pattern: "if the user doesn't respond promptly, proceed with implementation but flag that tests haven't been reviewed." The analogy is accurate.
+
+**Evidence:** `workflows/research-plan-implement.md:68` (research checkpoint), `workflows/research-plan-implement.md:123` (test review checkpoint)
 
 ---
 
 ## Claims Requiring Attention
 
-### Incorrect
-- **Claim 4** (`test/skills/performance-reviewer-format.bats:44-49`): Test checks for `**Impact:**` but the skill definition specifies `**Severity:**`. Tests will fail or skip on conformant reports.
-
 ### Mostly Accurate
-- **Claim 2** (`test/skills/helpers.bash:56-57`): `FINDINGS_BODY` scoping excludes header but includes Summary Table and Overall Assessment sections after findings. Not as tight as documented.
+- **Claim 5** (`docs/decisions/006-foregrounding-tests.md:30`): "Restructure RPI plan step 3" — "step 3" refers to the Plan phase of RPI, not a sub-step within it. Minor imprecision in reference.
 
 ### Unverifiable
-- **Claim 5** (`test/skills/test-strategy-format.bats:45-46`): Bold-number pattern `**N.` may not match actual LLM output format. No existing report to verify against.
+- **Claim 4** (`docs/decisions/006-foregrounding-tests.md:15`): "13 approaches were generated via divergent design" — only 6 are listed; no working document found to verify the full count.
