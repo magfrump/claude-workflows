@@ -1,0 +1,1 @@
+Added `test/workflow-required-sections.bats`: a BATS test that dynamically discovers all workflow .md files and validates each contains a `## When to use` section and at least one process section (`## Process`, `## Phase N`, or `## Step N`).
