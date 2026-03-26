@@ -20,7 +20,20 @@ Most skill failures come from overloaded input — too many files, too long a dr
 
 ## Tier 2: Use an alternative skill
 
-Some skills overlap in purpose or can substitute for each other in a degraded mode. Use this table to find alternatives.
+Some skills overlap in purpose or can substitute for each other in a degraded mode.
+
+### Quick-reference: common substitutions
+
+If you know which skill failed, start here before scanning the full pipeline tables below.
+
+| Failing skill | Substitute | How to invoke |
+|---|---|---|
+| security-reviewer | code-review (security dispatch) | Run `code-review` and set its dispatch list to `security-reviewer` only. The orchestrator re-runs the same critic prompt in a fresh context. |
+| fact-check | code-fact-check | Different pipeline (prose vs. code) but identical cognitive moves. If your input is prose, `code-fact-check` still verifies factual claims — it just skips code-specific heuristics. |
+| cowen-critique | yglesias-critique | Same pipeline role, different analytical lens. Both accept draft + optional fact-check report. |
+| performance-reviewer | code-review (performance dispatch) | Run `code-review` and set its dispatch list to `performance-reviewer` only. Same pattern as the security-reviewer substitution above. |
+
+If none of the above match your failing skill, consult the full pipeline tables below.
 
 ### Prose pipeline
 
