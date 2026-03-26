@@ -1,82 +1,112 @@
 # Performance Review
 
-**Scope:** Branch feat/foreground-tests vs main
+**Scope:** Branch feat/foreground-tests vs main (15 files, +807 / -593 lines)
 **Reviewed:** 2026-03-26
+**Fact-check input:** Code fact-check report (28 claims checked; 19 verified, 4 mostly accurate, 1 stale, 4 unverifiable)
 
 ## Data Flow and Hot Paths
 
-All changes in this branch are to markdown files: one workflow document (`workflows/research-plan-implement.md`), one decision record, one decision log entry, and six review artifacts. There is no executable code. The "hot path" analogy maps to LLM token consumption: every time an agent loads the RPI workflow as instructions, the full document is tokenized and consumes context window budget. The RPI workflow is loaded at the start of most development sessions (it is the default workflow per CLAUDE.md), making it the highest-frequency document in the repo.
+This branch modifies only markdown files. There is no executable code. The performance-relevant "hot paths" are:
+
+1. **RPI workflow loading** (`workflows/research-plan-implement.md`): This is the default workflow loaded at the start of most development sessions per CLAUDE.md. Every token in this file is consumed on every RPI invocation. Growth here has a direct multiplicative effect: (number of sessions) x (tokens added). The file grew from 173 to 202 lines (+29 lines, +16.8%). The fact-check report (Claim 28) notes the existing performance review's "+14%" figure was calculated against an intermediate version; the actual growth is 16.8%.
+
+2. **Plan documents produced by RPI**: The new test specification section causes plan documents to be larger. Plan docs are loaded by the implementation session, potentially re-loaded on context rebuild, and referenced during each implementation step. A plan with N test cases adds roughly 2N lines (table header + one row per test).
+
+3. **Review artifacts** (`docs/reviews/*.md`): These are consumed once per review cycle, not on hot paths. The large line-count delta (+807/-593) is dominated by review artifact rewrites, which are one-time costs with no recurring performance impact.
+
+4. **Skills file** (`skills/test-strategy.md`): A 2-word change ("testing strategy" -> "test specification"). No size impact.
 
 ## Findings
 
-### 1. RPI document growth: 173 to 198 lines (+14%)
+### 1. RPI document growth trajectory
 
 **Severity:** Low
-**Location:** `workflows/research-plan-implement.md:83-127`
-**Move:** #2 (Ask "what's the size of N?") and #9 (Check asymptotic behavior)
+**Location:** `workflows/research-plan-implement.md` (entire file, 173 -> 202 lines)
+**Move:** #2 (Ask "what's the size of N?") and #1 (Count the hidden multiplications)
 **Confidence:** High
 
-The test specification section replaces a single line (`- **Testing strategy**: ...`) with 15 lines of structured guidance (table template, test level taxonomy, diagnostic expectations explanation). The test-first gate adds 10 lines to the implementation step. Total growth: 25 net lines, from 173 to 198.
+The RPI file grew by 29 lines (16.8%). At 202 lines of markdown, this is roughly 2,000-2,500 tokens -- under 1% of a 200K context window. The absolute cost per session is trivial.
 
-**Current impact:** Negligible. At 198 lines of markdown, the full RPI document is roughly 2,000-2,500 tokens -- well under 1% of a typical context window (200K+). The absolute cost of this growth is trivially small.
+The relevant concern is the growth trend, not the current size. RPI has accumulated: refactoring variant, DD integration, session handoff, freshness tracking, size estimates, pivot guidance, and now test foregrounding. Each addition was individually small. The self-eval on this branch already asks "has the workflow grown too heavy?" -- which is the right question.
 
-**Trend concern:** This is the more relevant question. The RPI document has accumulated features across multiple commits: refactoring variant, DD integration, session handoff docs, freshness tracking guidance, size estimates, pivot guidance, and now test foregrounding. Each addition was individually justified and individually small. The self-eval (in this same branch) explicitly asks "Has the workflow grown too heavy?" -- which is the right question to be asking. The current size is fine; the growth *trajectory* is worth monitoring.
+The new content breaks into two categories with different extraction potential:
+- **Prescriptive process** (test-first gate, checkpoint pattern): ~10 lines. This must remain inline because it changes agent behavior during implementation.
+- **Reference material** (test level taxonomy, diagnostic expectations guidance, PII caveat): ~15 lines. This could be extracted to a referenced sub-document without changing agent behavior, since it is consulted during planning, not continuously during implementation.
 
-**Recommendation:** No action needed now. If RPI crosses ~250 lines in future changes, consider extracting the test level taxonomy and diagnostic expectations guidance into a referenced sub-document (e.g., `guides/test-specification.md`). These sections are reference material that agents could load on demand rather than consuming on every RPI invocation.
+**Recommendation:** No action needed at current size. If RPI crosses ~250 lines, extract the reference material (test level taxonomy + diagnostic expectations) into `guides/test-specification.md` and replace with a cross-reference. The test-strategy skill cross-reference at line 95 already establishes this pattern.
 
-### 2. Process overhead: additional human checkpoint in implementation
+### 2. Additional human checkpoint adds wall-clock latency
 
 **Severity:** Low
-**Location:** `workflows/research-plan-implement.md:119-125`
-**Move:** #3 (Find work moved to the wrong place)
+**Location:** `workflows/research-plan-implement.md:123-129`
+**Move:** #3 (Find work that moved to the wrong place)
 **Confidence:** Medium
 
-The test-first gate introduces a new human checkpoint between plan approval and implementation. In the worst case, this adds a full round-trip of latency (human reviews tests, provides feedback, agent revises, human re-reviews). The workflow mitigates this with "should not block progress indefinitely; if the user doesn't respond promptly, proceed with implementation but flag that tests haven't been reviewed."
+The test-first gate introduces a human review round-trip between plan approval and implementation. Worst case: human reviews tests, gives feedback, agent revises, human re-reviews. This could add 10-30 minutes for complex features.
 
-This is not a token/compute cost -- it is a wall-clock cost on the development loop. For async workflows (the `/away` mode described in CLAUDE.md), the non-blocking fallback means the agent can continue without waiting. For synchronous sessions, the checkpoint adds ~5-15 minutes of review time for complex features, which is proportional to the value of catching specification mismatches before implementation.
+The non-blocking fallback ("if the user doesn't respond promptly, proceed with implementation but flag that tests haven't been reviewed") prevents this from becoming a hard bottleneck. In `/away` mode, the agent will proceed autonomously. In `/active` mode, the checkpoint is proportional -- reviewing 5-10 test stubs is faster than reviewing the eventual implementation, and catching specification mismatches here saves rework later.
 
-**Recommendation:** No action needed. The non-blocking fallback is the correct design. The self-eval already flags the question of whether this checkpoint is actually followed in practice.
+**Recommendation:** No action needed. The non-blocking design is correct. The fact-check report (Claim 9) confirmed the fallback language mirrors the research checkpoint at line 68, which has established the pattern.
 
-### 3. Plan document size increase for downstream consumers
+### 3. Plan document size scales with test case count
 
 **Severity:** Informational
-**Location:** `workflows/research-plan-implement.md:83-97`
-**Move:** #1 (Count hidden multiplications)
+**Location:** `workflows/research-plan-implement.md:83-101`
+**Move:** #1 (Count the hidden multiplications)
 **Confidence:** Medium
 
-The structured test specification (table with 4 columns per test case) will make plan documents larger. A feature with 8 test cases would add roughly 15-20 lines to the plan doc. Plan docs are loaded by the implementation session and potentially re-read when context is rebuilt. However, plan docs are already variable-size (a 10-step plan with size estimates and risks is already substantial), and the test specification replaces what would have been a vague one-liner with structured content that the agent actually needs during implementation.
+A feature with N test cases adds roughly (N+2) lines to the plan document (table header, separator, N rows). For a typical feature (3-8 test cases), this adds 5-10 lines. Plan documents are loaded by the implementation session and may be re-read during context rebuilds.
 
-The "for simple features, this section can be brief" escape hatch is the key mitigation -- it prevents the table format from being applied to trivial tasks.
+The "for simple features, this section can be brief" escape hatch at line 101 is the key scaling control. Without it, every plan would pay the table overhead regardless of complexity. With it, simple features use prose (2-3 lines) while complex features use the table format. This is the correct adaptive scaling behavior.
 
-**Recommendation:** No action needed. The structured format replaces unstructured content that the agent would have needed to infer anyway. Net information cost is near zero; the structure just makes it explicit.
+The fact-check report (Claim 13) confirmed the test specification section adds approximately 15 lines to the *RPI template itself*, not to each plan document. Each plan document's growth depends on the number of test cases specified.
 
-### 4. Review artifact churn: 6 review files rewritten
+**Recommendation:** No action needed. The escape hatch provides appropriate scaling.
+
+### 4. Diagnostic output guidance: theoretical verbosity risk
 
 **Severity:** Informational
-**Location:** `docs/reviews/*.md` (6 files)
-**Move:** #6 (Identify serialization tax)
+**Location:** `workflows/research-plan-implement.md:97-99`
+**Move:** #4 (Trace the memory lifecycle -- adapted to output volume)
+**Confidence:** Low
+
+The diagnostic expectations guidance encourages "expected vs. actual values, relevant state at the point of failure, and enough context to diagnose without re-running." For data-heavy test scenarios (large JSON payloads, database state dumps), this could produce verbose test output that consumes CI logs or terminal buffer.
+
+This is speculative -- the guidance is reasonable for typical development. The PII caveat at line 99 provides a natural brake on one class of overly-verbose output (sensitive data). The guidance does not say "dump everything"; it says "enough context to diagnose," which is appropriately bounded.
+
+**Recommendation:** No action needed. If a specific project encounters test output volume problems, that project can constrain the guidance locally.
+
+### 5. Review artifact full rewrites: one-time cost, no recurring impact
+
+**Severity:** Informational
+**Location:** `docs/reviews/*.md` (11 files rewritten)
+**Move:** #6 (Identify the serialization tax)
 **Confidence:** High
 
-Six review artifacts were rewritten to reflect the current branch's changes (replacing content from the previous branch `feat/r1-skill-output-schema-validation`). Each rewrite stripped the `Last verified` / `Relevant paths` frontmatter. This is a one-time cost per review cycle, not a recurring performance concern. However, the loss of freshness tracking metadata means these review documents cannot be efficiently checked for staleness using the doc-freshness heuristic described in CLAUDE.md.
+The branch rewrites 11 review artifacts, accounting for the majority of the +807/-593 line delta. This is a one-time cost per review cycle. Review artifacts are not on any hot path -- they are generated once, read by humans during review, and overwritten on the next branch.
 
-**Recommendation:** Consider whether review artifacts should retain freshness metadata. If reviews are always regenerated per-branch (current pattern), the metadata is unnecessary. If reviews are meant to persist and be checked for staleness, the metadata should be restored. This is a process design question, not a performance issue.
+The freshness metadata (`Last verified`, `Relevant paths`) was stripped from all review files. The fact-check report (Claim 15, Claim 27) notes some line-number references in review artifacts are now stale relative to the current file. This is a correctness issue (covered by the fact-check), not a performance issue.
+
+**Recommendation:** No action needed for performance. The API consistency review's Finding 8 already addresses the freshness metadata question as a process design choice.
 
 ## What Looks Good
 
-- The non-blocking fallback on the test review checkpoint prevents the new gate from becoming a bottleneck in async workflows. This is the same pattern used by the research checkpoint, which has been validated by prior usage.
-- The "for simple features, this section can be brief" escape hatch in the test specification section prevents the structured format from imposing overhead on trivial tasks. This scales appropriately: simple features get brief specs, complex features get the table.
-- The test level taxonomy is inline rather than in a separate referenced document. At current size (~8 lines), this is the right call -- a separate document would add a file-load operation for minimal content savings. This tradeoff should be revisited if the taxonomy grows.
-- The test specification replaces ambiguous one-line guidance with structured fields that the agent can act on directly during implementation. This reduces the "interpretation tax" -- the agent spending tokens reasoning about what "testing strategy" means for this specific feature.
+- **Non-blocking checkpoint design**: The test-first gate mirrors the research checkpoint's non-blocking pattern, preventing a new process step from becoming a latency bottleneck. The fallback behavior is explicit and unambiguous.
+- **Adaptive complexity scaling**: The "for simple features, this section can be brief" escape hatch prevents the structured test specification from imposing overhead on trivial tasks. This is the single most important performance-aware design choice in the branch.
+- **Inline taxonomy at appropriate size**: The test level taxonomy (~8 lines) is inline rather than in a separate file. At this size, inlining avoids a file-load operation that would cost more than the tokens saved. The cross-reference to the test-strategy skill (line 95) provides the escape hatch to a richer taxonomy without bloating the inline content.
+- **Minimal change to the skill file**: The test-strategy.md change is a 2-word rename, adding zero tokens to the skill's load cost.
+- **Structured specification reduces interpretation cost**: The test specification table replaces a vague one-liner with structured fields. While this adds ~15 lines to the RPI template, it likely *reduces* total token consumption during implementation by eliminating the agent's need to reason about what "testing strategy" means for each feature.
 
 ## Summary Table
 
 | # | Finding | Severity | Location | Confidence |
 |---|---------|----------|----------|------------|
-| 1 | RPI document growth trajectory | Low | `workflows/research-plan-implement.md` (173 -> 198 lines) | High |
-| 2 | Additional human checkpoint in implementation | Low | `workflows/research-plan-implement.md:119-125` | Medium |
-| 3 | Plan document size increase | Informational | `workflows/research-plan-implement.md:83-97` | Medium |
-| 4 | Review artifact churn / lost freshness metadata | Informational | `docs/reviews/*.md` | High |
+| 1 | RPI document growth trajectory (173 -> 202, +16.8%) | Low | `workflows/research-plan-implement.md` | High |
+| 2 | Additional human checkpoint wall-clock latency | Low | `workflows/research-plan-implement.md:123-129` | Medium |
+| 3 | Plan document size scales with test case count | Informational | `workflows/research-plan-implement.md:83-101` | Medium |
+| 4 | Diagnostic guidance theoretical verbosity risk | Informational | `workflows/research-plan-implement.md:97-99` | Low |
+| 5 | Review artifact full rewrites (one-time cost) | Informational | `docs/reviews/*.md` | High |
 
 ## Overall Assessment
 
-This branch has no meaningful performance concerns at current scale. The RPI document grows by 14% (25 lines), which adds roughly 200-300 tokens to every session that loads it -- negligible against modern context windows. The new human checkpoint is correctly designed as non-blocking with an explicit fallback. The structured test specification increases plan document size proportionally to feature complexity, which is the right scaling behavior. The only finding worth tracking is the growth trajectory: RPI has accumulated six feature additions across its history, and if this pace continues, a future refactoring to extract reference material into sub-documents would be warranted. No changes needed for merge.
+This branch has no meaningful performance concerns at current scale. All changes are to markdown documentation with no executable code. The primary cost vector -- RPI document token consumption -- increased by 16.8% (29 lines), adding roughly 200-300 tokens per session against context windows of 200K+. The new test-first checkpoint is correctly designed as non-blocking with an explicit fallback, preventing it from becoming a process bottleneck. The structured test specification likely provides a net token reduction during implementation by replacing ambiguous guidance with actionable structure, even though it increases the template size. The only item worth monitoring is the RPI growth trajectory: the file has accumulated multiple feature additions and would benefit from extracting reference material into sub-documents if it approaches ~250 lines in future changes. No changes are needed for this branch to merge.

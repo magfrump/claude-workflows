@@ -6,7 +6,7 @@ description: >
   architecture to produce a concrete testing plan — not generic advice, but specific test cases
   mapped to specific files. Use this skill when the user asks "what tests should I write",
   "how should I test this", "what's missing from our test coverage", or when an RPI plan needs
-  a testing strategy. Also trigger when a feature is implemented but has no tests, or when
+  a test specification. Also trigger when a feature is implemented but has no tests, or when
   the user is unsure whether unit, integration, or end-to-end tests are appropriate.
 ---
 

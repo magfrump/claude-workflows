@@ -3,19 +3,19 @@
 **Repository:** claude-workflows
 **Scope:** Branch feat/foreground-tests vs main
 **Checked:** 2026-03-26
-**Total claims checked:** 21
-**Summary:** 14 verified, 3 mostly accurate, 1 stale, 0 incorrect, 3 unverifiable
+**Total claims checked:** 28
+**Summary:** 19 verified, 4 mostly accurate, 1 stale, 0 incorrect, 4 unverifiable
 
 ---
 
 ## Claim 1: "The RPI workflow mentions 'testing strategy' as a one-line plan section"
 
-**Location:** `docs/decisions/006-foregrounding-tests.md:5`
+**Location:** `docs/decisions/006-foregrounding-tests.md:8`
 **Type:** Architectural
 **Verdict:** Verified
 **Confidence:** High
 
-The main branch version of `workflows/research-plan-implement.md` at line 83 contains: `- **Testing strategy**: How to verify the implementation works. Specific test cases, not "add tests."` This is indeed a single bullet point (one line) within the plan section.
+The main branch version of `workflows/research-plan-implement.md` at line 83 contains: `- **Testing strategy**: How to verify the implementation works. Specific test cases, not "add tests."` This is a single bullet point (one line) within the plan section.
 
 **Evidence:** `workflows/research-plan-implement.md:83` (main branch)
 
@@ -23,12 +23,12 @@ The main branch version of `workflows/research-plan-implement.md` at line 83 con
 
 ## Claim 2: "'characterization tests first' in the refactoring variant"
 
-**Location:** `docs/decisions/006-foregrounding-tests.md:5`
+**Location:** `docs/decisions/006-foregrounding-tests.md:8`
 **Type:** Architectural
 **Verdict:** Verified
 **Confidence:** High
 
-The main branch RPI file contains `- **Characterization tests first**: If existing coverage is insufficient, the plan's first steps should add tests that lock in current behavior before any structural changes begin.` in the Refactoring variant section at line 168.
+The main branch RPI file contains `- **Characterization tests first**: If existing coverage is insufficient, the plan's first steps should add tests that lock in current behavior before any structural changes begin.` at line 168 in the Refactoring variant section.
 
 **Evidence:** `workflows/research-plan-implement.md:168` (main branch)
 
@@ -36,53 +36,53 @@ The main branch RPI file contains `- **Characterization tests first**: If existi
 
 ## Claim 3: "neither gives tests a primary role in the human-LLM collaboration loop"
 
-**Location:** `docs/decisions/006-foregrounding-tests.md:5`
+**Location:** `docs/decisions/006-foregrounding-tests.md:8`
 **Type:** Architectural
 **Verdict:** Verified
 **Confidence:** High
 
-In the main branch RPI, testing appears only as a verification concern: one line in the plan section, characterization tests as a safety net in the refactoring variant, and "run tests after every step" in implementation. None of these position tests as a design artifact or human-LLM interface.
+In the main branch RPI, testing appears only as: one bullet in the plan section (line 83), characterization tests as a safety net in the refactoring variant (lines 164, 168), and "run tests after every step" in implementation (line 172). None position tests as a design artifact or human-LLM interface.
 
 **Evidence:** `workflows/research-plan-implement.md:83,164,168,172` (main branch)
 
 ---
 
-## Claim 4: "13 approaches were generated via divergent design"
+## Claim 4: "Over a dozen approaches were generated via divergent design"
 
-**Location:** `docs/decisions/006-foregrounding-tests.md:15`
+**Location:** `docs/decisions/006-foregrounding-tests.md:18`
 **Type:** Reference
 **Verdict:** Unverifiable
 **Confidence:** Low
 
-Only 6 approaches are listed in the document (including "do nothing"). The remaining 7 from the divergent design process are described as pruned but not enumerated. No working document in `docs/working/` preserves the full divergent design output for cross-reference.
+Only 6 approaches are listed in the document (including "do nothing"). The remaining approaches are described as explored "in conversation" but no artifact preserves the full list. The phrase "over a dozen" cannot be confirmed or refuted.
 
-**Evidence:** `docs/decisions/006-foregrounding-tests.md:15-22` (only 6 options listed)
+**Evidence:** `docs/decisions/006-foregrounding-tests.md:18-25` (only 6 options listed)
 
 ---
 
 ## Claim 5: "Restructure the RPI Plan phase (step 3)"
 
-**Location:** `docs/decisions/006-foregrounding-tests.md:30`
-**Type:** Architectural
-**Verdict:** Mostly accurate
-**Confidence:** High
-
-The testing content is indeed within step 3 ("Plan") of RPI. Saying "Plan phase (step 3)" is accurate; the parenthetical in the decision record reads "Restructure the RPI Plan phase (step 3)" which correctly identifies step 3 as the Plan phase. The phrasing is clear enough in context.
-
-**Evidence:** `workflows/research-plan-implement.md:72-99` (step 3 is the Plan phase; testing is a bullet point within it)
-
----
-
-## Claim 6: "Combine approaches 1 + 4 + 5"
-
-**Location:** `docs/decisions/006-foregrounding-tests.md:26`
+**Location:** `docs/decisions/006-foregrounding-tests.md:33`
 **Type:** Architectural
 **Verdict:** Verified
 **Confidence:** High
 
-The decision claims to combine: (1) test-first plan step, (4) test taxonomy guide, and (5) test review checkpoint. The implemented changes in RPI show: the test specification section replaces the one-liner (approach 1), inline taxonomy guidance for unit/integration/characterization/property (approach 4), and a test-first gate with human checkpoint before implementation (approach 5). All three are present.
+Step 3 in RPI is indeed the Plan phase (heading at line 72: `### 3. Plan (essential) -- specify the implementation steps`). The test specification content is within this step (lines 83-101). The parenthetical "step 3" correctly identifies the Plan phase.
 
-**Evidence:** `workflows/research-plan-implement.md:83-97` (approaches 1+4), `workflows/research-plan-implement.md:119-125` (approach 5)
+**Evidence:** `workflows/research-plan-implement.md:72` (step 3 heading), `workflows/research-plan-implement.md:83-101` (test specification within step 3)
+
+---
+
+## Claim 6: "Combine approaches 1 + 4 + 5, plus diagnostic guidance"
+
+**Location:** `docs/decisions/006-foregrounding-tests.md:29`
+**Type:** Architectural
+**Verdict:** Verified
+**Confidence:** High
+
+The decision claims to combine: (1) test-first plan step, (4) test taxonomy guide, (5) test review checkpoint, plus diagnostic guidance. In RPI: the test specification section replaces the one-liner (approach 1, lines 83-101), inline taxonomy guidance for four test levels (approach 4, lines 89-95), a test-first gate with human checkpoint before implementation (approach 5, lines 123-129), and diagnostic expectations guidance (lines 97-99). All four are present.
+
+**Evidence:** `workflows/research-plan-implement.md:83-101` (approaches 1+4+diagnostic), `workflows/research-plan-implement.md:123-129` (approach 5)
 
 ---
 
@@ -93,9 +93,9 @@ The decision claims to combine: (1) test-first plan step, (4) test taxonomy guid
 **Verdict:** Verified
 **Confidence:** High
 
-The link `[006](006-foregrounding-tests.md)` is a valid relative link. The file `docs/decisions/006-foregrounding-tests.md` exists. The decision log jumps from #1 to #6; entries 2-5 are full records that appropriately do not appear in the lightweight log.
+The link `[006](006-foregrounding-tests.md)` is a valid relative link. The file `docs/decisions/006-foregrounding-tests.md` exists. Decisions 002-005 exist as full records, consistent with the log noting they do not appear in the lightweight log.
 
-**Evidence:** `docs/decisions/log.md:10`, `docs/decisions/006-foregrounding-tests.md` (file exists), `docs/decisions/002-005` (all exist as full records)
+**Evidence:** `docs/decisions/log.md:10`, all four files `docs/decisions/002-005*.md` confirmed to exist
 
 ---
 
@@ -106,22 +106,22 @@ The link `[006](006-foregrounding-tests.md)` is a valid relative link. The file 
 **Verdict:** Verified
 **Confidence:** High
 
-The restructured RPI implements this: the test specification section in step 3 asks the human to specify test cases during planning with structured fields, and step 5 adds a test-first gate where tests are written before feature code. Tests are positioned as a planning activity, not an afterthought.
+The restructured RPI implements this: the test specification section in step 3 asks the human to specify test cases during planning with structured fields (lines 83-101), and step 5 adds a test-first gate where tests are written before feature code (lines 121-129). Tests are positioned as a planning activity.
 
-**Evidence:** `workflows/research-plan-implement.md:83-97` (test specification in plan), `workflows/research-plan-implement.md:117-127` (test-first gate)
+**Evidence:** `workflows/research-plan-implement.md:83-101` (test specification in plan), `workflows/research-plan-implement.md:121-129` (test-first gate)
 
 ---
 
 ## Claim 9: "Like the research checkpoint, this should not block progress indefinitely"
 
-**Location:** `workflows/research-plan-implement.md:123`
+**Location:** `workflows/research-plan-implement.md:127`
 **Type:** Architectural
 **Verdict:** Verified
 **Confidence:** High
 
-The research checkpoint at line 68 states: "this checkpoint should not block progress. Claude should proceed to the plan step immediately after producing the research doc." The test review checkpoint at line 123 uses the same pattern: "this should not block progress indefinitely; if the user doesn't respond promptly, proceed with implementation but flag that tests haven't been reviewed." The analogy is accurate.
+The research checkpoint at line 68 states: "this checkpoint should not block progress." The test review checkpoint at line 127 uses the same pattern: "this should not block progress indefinitely; if the user doesn't respond promptly, proceed with implementation but flag that tests haven't been reviewed." The analogy is accurate.
 
-**Evidence:** `workflows/research-plan-implement.md:68` (research checkpoint), `workflows/research-plan-implement.md:123` (test review checkpoint)
+**Evidence:** `workflows/research-plan-implement.md:68` (research checkpoint), `workflows/research-plan-implement.md:127` (test review checkpoint)
 
 ---
 
@@ -132,65 +132,78 @@ The research checkpoint at line 68 states: "this checkpoint should not block pro
 **Verdict:** Verified
 **Confidence:** High
 
-The characterization test level description references "Refactoring variant below." The Refactoring variant section exists at line 182 and includes characterization tests guidance.
+The characterization test level description references "Refactoring variant below." The Refactoring variant section exists at line 186.
 
-**Evidence:** `workflows/research-plan-implement.md:92` (reference), `workflows/research-plan-implement.md:182-198` (Refactoring variant section)
+**Evidence:** `workflows/research-plan-implement.md:92` (reference), `workflows/research-plan-implement.md:186` (Refactoring variant heading)
 
 ---
 
-## Claim 11: "Commit the tests separately: `test: add tests for X (per plan-Y step N)`"
+## Claim 11: "the `test-strategy` skill has a full taxonomy"
 
-**Location:** `workflows/research-plan-implement.md:121`
+**Location:** `workflows/research-plan-implement.md:95`
+**Type:** Reference
+**Verdict:** Verified
+**Confidence:** High
+
+The test-strategy skill at `skills/test-strategy.md:69-93` defines six test types: unit, integration, end-to-end, property-based, snapshot/golden, and contract. This is a superset of the four listed inline in RPI, making "full taxonomy" an accurate characterization.
+
+**Evidence:** `skills/test-strategy.md:69-93` (six test types defined)
+
+---
+
+## Claim 12: "Commit the tests separately: `test: add tests for X (per plan-Y step N)`"
+
+**Location:** `workflows/research-plan-implement.md:125`
 **Type:** Behavioral
 **Verdict:** Verified
 **Confidence:** High
 
-This is a prescriptive instruction, not a factual claim about existing behavior. It defines a commit message format for the test-first gate. The format is consistent with the existing commit message pattern at line 129: `feat: add user model (per plan-inline-edit-api step 1)`. Both use the conventional commit prefix + plan reference pattern.
+This is a prescriptive instruction defining a commit message format. The format is consistent with the existing commit convention at line 133: `feat: add user model (per plan-inline-edit-api step 1)`. Both use conventional commit prefix + plan reference.
 
-**Evidence:** `workflows/research-plan-implement.md:121,129` (consistent commit message patterns)
+**Evidence:** `workflows/research-plan-implement.md:125,133` (consistent commit message patterns)
 
 ---
 
-## Claim 12: "The test specification section adds approximately 15 lines to the plan step"
+## Claim 13: "The test specification section adds approximately 15 lines to the plan step"
 
-**Location:** `docs/reviews/performance-review.md:22`
+**Location:** `docs/reviews/performance-review.md:19`
 **Type:** Behavioral
 **Verdict:** Verified
 **Confidence:** High
 
-The diff shows the plan section grew from 1 line (`- **Testing strategy**: ...`) to 16 lines (lines 83-97 in the new version). The claim of "approximately 15 lines" is accurate.
+The diff shows the plan section grew from 1 line (`- **Testing strategy**: ...`) to approximately 19 lines (lines 83-101 in the new version, accounting for blank lines). Calling this "approximately 15 lines" of net content is accurate.
 
 **Evidence:** `git diff main...HEAD -- workflows/research-plan-implement.md` (plan section diff)
 
 ---
 
-## Claim 13: "the test-first gate adds approximately 10 lines to the implementation step"
+## Claim 14: "the test-first gate adds approximately 10 lines to the implementation step"
 
-**Location:** `docs/reviews/performance-review.md:22`
+**Location:** `docs/reviews/performance-review.md:19`
 **Type:** Behavioral
 **Verdict:** Verified
 **Confidence:** High
 
-The diff shows the implementation step gained: a new heading, the test-first gate section, and an "Implementation" sub-heading. Counting the added lines in that section: lines 117-127 replace the old line 100, adding roughly 10 net lines. The claim is accurate.
+The diff shows the implementation step gained: a new heading (line 121), the test-first gate section (lines 123-129), an "Implementation" sub-heading (line 131), totaling approximately 12 net lines including blanks. "Approximately 10 lines" is accurate.
 
 **Evidence:** `git diff main...HEAD -- workflows/research-plan-implement.md` (implementation section diff)
 
 ---
 
-## Claim 14: "The RPI document grows from roughly 175 lines to 200 lines"
+## Claim 15: "The RPI document grows from roughly 175 lines to 200 lines"
 
-**Location:** `docs/reviews/performance-review.md:22`
+**Location:** `docs/reviews/performance-review.md:12`
 **Type:** Behavioral
 **Verdict:** Mostly accurate
 **Confidence:** High
 
-The main branch RPI has 173 lines; the current branch has 198 lines. The claim of "roughly 175 to 200" is close but slightly rounds up the original (173 vs 175) and slightly rounds up the new (198 vs 200). Both are within reasonable rounding.
+The main branch RPI has 173 lines; the current branch has 202 lines (not 198 as the previous fact-check stated). The claim of "roughly 175 to 200" rounds up the original (173 to 175) and rounds down the new (202 to 200). The actual growth is 29 lines (not 25). The "roughly" qualifier makes this acceptable but the rounding goes in opposite directions.
 
-**Evidence:** `wc -l` on both versions: main=173, branch=198
+**Evidence:** `wc -l` on both versions: main=173, branch=202
 
 ---
 
-## Claim 15: "A template is available at `templates/gitattributes-snippet.txt` in this repo"
+## Claim 16: "A template is available at `templates/gitattributes-snippet.txt` in this repo"
 
 **Location:** `workflows/research-plan-implement.md:35`
 **Type:** Reference
@@ -199,11 +212,11 @@ The main branch RPI has 173 lines; the current branch has 198 lines. The claim o
 
 The file `templates/gitattributes-snippet.txt` exists in the repository.
 
-**Evidence:** File existence confirmed via `test -f templates/gitattributes-snippet.txt`
+**Evidence:** File existence confirmed
 
 ---
 
-## Claim 16: "See `guides/doc-freshness.md` for the freshness tracking heuristic"
+## Claim 17: "See `guides/doc-freshness.md` for the freshness tracking heuristic"
 
 **Location:** `workflows/research-plan-implement.md:27`
 **Type:** Reference
@@ -212,11 +225,11 @@ The file `templates/gitattributes-snippet.txt` exists in the repository.
 
 The file `guides/doc-freshness.md` exists in the repository.
 
-**Evidence:** File existence confirmed via `test -f guides/doc-freshness.md`
+**Evidence:** File existence confirmed
 
 ---
 
-## Claim 17: "invoke the Divergent Design workflow (`divergent-design.md`)"
+## Claim 18: "invoke the Divergent Design workflow (`divergent-design.md`)"
 
 **Location:** `workflows/research-plan-implement.md:61`
 **Type:** Reference
@@ -225,73 +238,159 @@ The file `guides/doc-freshness.md` exists in the repository.
 
 The file `workflows/divergent-design.md` exists in the repository.
 
-**Evidence:** File existence confirmed via `test -f workflows/divergent-design.md`
+**Evidence:** File existence confirmed
 
 ---
 
-## Claim 18: "The fact-check report confirmed this consistency (Claim 8: Verified)"
+## Claim 19: "Avoid logging secrets, credentials, or PII in diagnostic output"
 
-**Location:** `docs/reviews/api-consistency-review.md:52`
+**Location:** `workflows/research-plan-implement.md:99`
+**Type:** Behavioral
+**Verdict:** Verified
+**Confidence:** High
+
+This is a prescriptive instruction that exists at line 99 of the current RPI. It was added per security review Finding 2 (C2 in the code review rubric). The instruction is present and functional.
+
+**Evidence:** `workflows/research-plan-implement.md:99`
+
+---
+
+## Claim 20: "Other levels (e.g., end-to-end, snapshot, contract) are valid"
+
+**Location:** `workflows/research-plan-implement.md:95`
+**Type:** Architectural
+**Verdict:** Verified
+**Confidence:** High
+
+This was added per API consistency review Finding 3 (A2 in the code review rubric) to address the taxonomy asymmetry between RPI (4 levels) and the test-strategy skill (6 levels). The test-strategy skill at lines 78-93 defines end-to-end, snapshot/golden, and contract tests, confirming these are valid levels in the project's test vocabulary.
+
+**Evidence:** `workflows/research-plan-implement.md:95`, `skills/test-strategy.md:78-93`
+
+---
+
+## Claim 21: "When used as part of RPI, the test specification section of the plan doc"
+
+**Location:** `skills/test-strategy.md:153`
+**Type:** Reference
+**Verdict:** Verified
+**Confidence:** High
+
+The test-strategy skill now correctly references "test specification" at line 153, matching the current RPI section name at line 83. This was updated from the previous stale reference to "testing strategy" per code review rubric item R1.
+
+**Evidence:** `skills/test-strategy.md:153`, `workflows/research-plan-implement.md:83`
+
+---
+
+## Claim 22: "Can plug into RPI as the test specification section"
+
+**Location:** `docs/reviews/full-evaluation.md:211`
+**Type:** Architectural
+**Verdict:** Verified
+**Confidence:** High
+
+The full-evaluation document now correctly references "test specification" at lines 211 and 215, matching the current RPI section name. This was updated from "testing strategy" per code review rubric item A1.
+
+**Evidence:** `docs/reviews/full-evaluation.md:211,215`, `workflows/research-plan-implement.md:83`
+
+---
+
+## Claim 23: "Git history shows 16+ commits directly referencing RPI"
+
+**Location:** `docs/reviews/self-eval-research-plan-implement.md:16`
+**Type:** Reference
+**Verdict:** Unverifiable
+**Confidence:** Medium
+
+A grep for "RPI" and "research-plan-implement" in git log finds 25 matching commits across all branches. The claim of "16+" is almost certainly met by any reasonable methodology, but the exact threshold depends on what counts as "directly referencing."
+
+**Evidence:** `git log --all --oneline --grep="RPI\|research-plan-implement"` returns 25 results
+
+---
+
+## Claim 24: Cowen critique claims "13 (or at least 6) alternatives" were explored
+
+**Location:** `docs/reviews/cowen-critique.md:26`
 **Type:** Reference
 **Verdict:** Mostly accurate
 **Confidence:** Medium
 
-This is a cross-reference to the previous version of the fact-check report. The previous report's Claim 8 was about the test review checkpoint pattern consistency and was indeed Verified. However, this new fact-check report replaces the previous one, so the specific claim numbering is no longer stable. The substance of the cross-reference is accurate.
+The decision record says "over a dozen" (not "13"). The Cowen critique parenthetically hedges with "(or at least 6)." The decision record lists 6 approaches. The "13" is the Cowen critique's interpolation of "over a dozen" into a specific number. The hedging "(or at least 6)" is accurate.
 
-**Evidence:** `docs/reviews/code-fact-check-report.md:102-111` (previous version, Claim 8 was about the checkpoint pattern)
+**Evidence:** `docs/decisions/006-foregrounding-tests.md:18` (says "over a dozen"), `docs/reviews/cowen-critique.md:26`
 
 ---
 
-## Claim 19: "skills/test-strategy.md" references "testing strategy" as RPI terminology
+## Claim 25: Cowen critique claims diagnostic expectations get "the longest explanation (lines 95-97 of the RPI workflow)"
 
-**Location:** `skills/test-strategy.md:153` (not in branch diff, but references changed code)
-**Type:** Staleness
+**Location:** `docs/reviews/cowen-critique.md:76`
+**Type:** Behavioral
+**Verdict:** Mostly accurate
+**Confidence:** High
+
+The diagnostic expectations section starts at line 97 (not 95). Line 95 is the cross-reference to test-strategy. The diagnostic expectations paragraph at line 97 is indeed one of the longer individual explanations in the test specification section, though the test level taxonomy (lines 89-93) spans a comparable number of lines. The "longest explanation" claim is approximately correct.
+
+**Evidence:** `workflows/research-plan-implement.md:95` (cross-reference line, not diagnostic), `workflows/research-plan-implement.md:97` (diagnostic expectations)
+
+---
+
+## Claim 26: Yglesias critique references "line 95 of the RPI workflow" for diagnostic expectations
+
+**Location:** `docs/reviews/yglesias-critique.md:19`
+**Type:** Reference
+**Verdict:** Mostly accurate
+**Confidence:** High
+
+The diagnostic expectations section is at line 97, not line 95. Line 95 reads: "Other levels (e.g., end-to-end, snapshot, contract) are valid; the `test-strategy` skill has a full taxonomy." The reference is off by 2 lines.
+
+**Evidence:** `workflows/research-plan-implement.md:95` (cross-reference), `workflows/research-plan-implement.md:97` (actual diagnostic expectations)
+
+---
+
+## Claim 27: Security review claims "line 103" contains the hard gate
+
+**Location:** `docs/reviews/security-review.md:25`
+**Type:** Reference
 **Verdict:** Stale
 **Confidence:** High
 
-The test-strategy skill at line 153 says: "When used as part of RPI, the testing strategy section of the plan doc should follow this skill's structure." The RPI plan section has been renamed from "Testing strategy" to "Test specification." The skill now references a section name that no longer exists. Similarly, `docs/reviews/full-evaluation.md:211,215` references "RPI's testing strategy section" which is now "test specification."
+The hard gate text ("implementation does not begin until the user has reviewed the plan") is at line 107, not line 103. The security review was likely written against an earlier version of the file or used a different line count. The current file has the hard gate at line 107.
 
-**Evidence:** `skills/test-strategy.md:153` (references "testing strategy"), `workflows/research-plan-implement.md:83` (now "Test specification")
-
----
-
-## Claim 20: "The `test/hooks/log-usage.bats` and `test/scripts/skill-usage-report.bats` reference RPI only in the context of usage tracking"
-
-**Location:** `docs/reviews/self-eval-research-plan-implement.md:15`
-**Type:** Architectural
-**Verdict:** Unverifiable
-**Confidence:** Low
-
-Both files exist, but I did not read their contents to verify the specific claim about what context they reference RPI in. The claim is plausible given the file names but would require reading the files to fully verify.
-
-**Evidence:** Both files confirmed to exist
+**Evidence:** `workflows/research-plan-implement.md:107` (actual location of hard gate)
 
 ---
 
-## Claim 21: "Git history shows 16+ commits directly referencing RPI"
+## Claim 28: Performance review claims "+14%" growth
 
-**Location:** `docs/reviews/self-eval-research-plan-implement.md:15`
-**Type:** Reference
-**Verdict:** Unverifiable
+**Location:** `docs/reviews/performance-review.md:12`
+**Type:** Behavioral
+**Verdict:** Unverifiable (methodology unclear)
 **Confidence:** Medium
 
-A grep for "RPI" and "research-plan-implement" in git log found 24 matching commits across all branches. The claim of "16+" is likely accurate but the exact methodology (what counts as "directly referencing") is unclear. The count exceeds 16 by any reasonable interpretation.
+Main branch: 173 lines. Current branch: 202 lines. Growth: 29 lines, which is 16.8% (not 14%). If the review was calculated against an intermediate version with 198 lines, then 25/173 = 14.5% which rounds to 14%. The discrepancy suggests the percentage was calculated before the latest commit (which added the PII caveat and taxonomy note, adding ~4 lines).
 
-**Evidence:** `git log --all --oneline --grep="RPI\|research-plan-implement"` returns 24 results
+**Evidence:** `wc -l`: main=173, current=202; 29/173 = 16.8%
 
 ---
 
 ## Claims Requiring Attention
 
 ### Stale
-- **Claim 19** (`skills/test-strategy.md:153`): References "testing strategy" as the RPI section name, but this has been renamed to "test specification." The `docs/reviews/full-evaluation.md:211,215` also references the old name. These files were not changed on the branch but now contain stale terminology.
+- **Claim 27** (`docs/reviews/security-review.md:25`): References "line 103" for the hard gate, but the hard gate is now at line 107. The security review's line number is off, likely from an earlier version of the file.
 
 ### Mostly Accurate
-- **Claim 5** (`docs/decisions/006-foregrounding-tests.md:30`): "Restructure the RPI Plan phase (step 3)" is directionally correct but could be read as ambiguous about whether "step 3" means the Plan phase or a sub-step within it.
-- **Claim 14** (`docs/reviews/performance-review.md:22`): "roughly 175 to 200 lines" is close but the actual numbers are 173 to 198.
-- **Claim 18** (`docs/reviews/api-consistency-review.md:52`): Cross-references the previous fact-check report's Claim 8; the substance is correct but the claim numbering is no longer stable since the report has been rewritten.
+- **Claim 15** (`docs/reviews/performance-review.md:12`): "roughly 175 to 200 lines" -- actual is 173 to 202. The rounding goes in opposite directions and underestimates the growth (29 lines vs implied 25).
+- **Claim 24** (`docs/reviews/cowen-critique.md:26`): Interpolates "over a dozen" as "13" -- the hedged "(or at least 6)" saves accuracy.
+- **Claim 25** (`docs/reviews/cowen-critique.md:76`): "lines 95-97" should be "line 97" (line 95 is the cross-reference, not diagnostic expectations).
+- **Claim 26** (`docs/reviews/yglesias-critique.md:19`): "line 95" should be "line 97" for diagnostic expectations.
 
 ### Unverifiable
-- **Claim 4** (`docs/decisions/006-foregrounding-tests.md:15`): "13 approaches were generated via divergent design" -- only 6 are listed; no working document preserves the full set.
-- **Claim 20** (`docs/reviews/self-eval-research-plan-implement.md:15`): Claim about test files referencing RPI only for usage tracking was not fully verified by reading those files.
-- **Claim 21** (`docs/reviews/self-eval-research-plan-implement.md:15`): "16+ commits directly referencing RPI" -- the count exceeds 16 but exact methodology is unclear.
+- **Claim 4** (`docs/decisions/006-foregrounding-tests.md:18`): "Over a dozen approaches" -- only 6 are listed; no artifact preserves the full set.
+- **Claim 23** (`docs/reviews/self-eval-research-plan-implement.md:16`): "16+ commits directly referencing RPI" -- count exceeds 16 but exact methodology unclear.
+- **Claim 28** (`docs/reviews/performance-review.md:12`): "+14%" growth -- actual is 16.8%; may have been calculated against an intermediate file version.
+
+### Previously Flagged Items Now Resolved
+- **Previous Claim 19 (stale test-strategy reference)**: `skills/test-strategy.md:153` now correctly says "test specification" instead of "testing strategy." Resolved.
+- **Previous Claim A1 (stale full-evaluation reference)**: `docs/reviews/full-evaluation.md:211,215` now correctly says "test specification." Resolved.
+- **Previous Claim A3 (missing Date/Status)**: `docs/decisions/006-foregrounding-tests.md` now includes Date and Status fields. Resolved.
+- **Previous Claim A2 (taxonomy asymmetry)**: `workflows/research-plan-implement.md:95` now acknowledges other levels and cross-references the test-strategy skill. Resolved.
+- **Previous Claim C2 (PII caveat)**: `workflows/research-plan-implement.md:99` now includes the secrets/PII warning. Resolved.
