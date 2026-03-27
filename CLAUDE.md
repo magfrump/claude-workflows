@@ -13,6 +13,7 @@ When facing non-trivial tasks, check `~/.claude/workflows/` for applicable proce
 - **spike.md** — Quick timeboxed exploration of a library, approach, or proof-of-concept. Use when the question is "can this work?" not "build this."
 - **branch-strategy.md** — Branch management and dev integration branch workflow for high-throughput feature development with async review.
 - **user-testing-workflow.md** — Planning, running, and interpreting usability tests. Use when you need to design a user test, write moderator scripts, or analyze usability findings.
+- **bug-diagnosis.md** — Lightweight hypothesis-test debugging loop: reproduce → isolate → hypothesize → test → fix → verify. Use for bugs in known areas of code where rapid iteration beats upfront research.
 - **codebase-onboarding.md** — Structured orientation for unfamiliar codebases. Use when starting a new project or returning after a long absence — before any task-specific work.
 
 For human orchestration of multiple concurrent Claude Code sessions, see `guides/parallel-sessions.md` (not agent instructions — a reference for the developer).
