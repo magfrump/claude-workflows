@@ -77,6 +77,35 @@ teardown() {
   [[ "$output" == *"move  plan-foo.md"* ]]
 }
 
+@test "exits cleanly with no archive when only permanent files exist" {
+  # Edge case: a self-improvement round produces no working docs (e.g., all
+  # tasks rejected). Only permanent files remain — nothing to archive.
+  TEST_DIR="$(mktemp -d)"
+  mkdir -p "$TEST_DIR/docs/working"
+
+  # Only permanent files — no archivable content
+  echo "hypothesis log" > "$TEST_DIR/docs/working/hypothesis-log.md"
+  echo "tasks" > "$TEST_DIR/docs/working/tasks.json"
+
+  cd "$TEST_DIR"
+  run bash "$SCRIPT" "empty-round"
+  [ "$status" -eq 0 ]
+
+  # Permanent files must still be in place
+  [ -f docs/working/hypothesis-log.md ]
+  [ -f docs/working/tasks.json ]
+
+  # No files should have been archived (archive dir may exist but must be empty)
+  if [ -d docs/working/archive ]; then
+    [ -z "$(ls -A docs/working/archive)" ]
+  fi
+
+  # Output should report 0 files archived
+  [[ "$output" == *"Archived 0 files"* ]]
+
+  rm -rf "$TEST_DIR"
+}
+
 @test "custom prefix is correctly applied to archived filenames" {
   cd "$TEST_DIR"
   run bash "$SCRIPT" "v3-release"
