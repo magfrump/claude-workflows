@@ -86,3 +86,5 @@ Create or update `docs/decisions/NNN-title.md` with:
 - Options considered (brief — the full analysis doesn't need to be preserved)
 - Decision and rationale
 - Consequences: what this makes easier, what this makes harder
+
+**Sub-threshold decisions**: Not every decision surfaced during DD warrants a full record. If the diverge phase quickly converges to a single obvious answer — no real tradeoffs, low reversal cost — add a row to [`docs/decisions/log.md`](../docs/decisions/log.md) instead and move on. The log's "when to use" criteria describe the boundary. Reserve full `NNN-title.md` records for decisions with genuine tradeoffs or lasting consequences.
