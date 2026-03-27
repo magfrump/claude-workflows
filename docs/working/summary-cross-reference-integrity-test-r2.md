@@ -1,0 +1,1 @@
+Added `test/cross-reference-integrity.bats` — a single bats test that extracts explicit markdown links from .md files in workflows/, skills/, guides/, and patterns/, filters to links targeting content directories, resolves paths relative to source, and asserts the target file exists. Simplified from R1 by removing bare-path matching and complex regex.

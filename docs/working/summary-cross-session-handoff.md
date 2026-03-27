@@ -1,0 +1,1 @@
+No changes needed — the session handoff section already exists in workflows/research-plan-implement.md (lines 148-177, added in commit 04fd46d), with the template, optional framing, and cross-references from implementation context management (line 139) and session continuation (line 184).

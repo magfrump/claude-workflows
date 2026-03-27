@@ -1,8 +1,18 @@
 # Decision Log
 
-Lightweight record for decisions that don't warrant a full decision record (`NNN-title.md`). Use this for one-line decisions where the context and rationale fit in a sentence or two.
+This log captures **small, self-contained decisions** — each fully expressed in a single table row. Full decision records (`NNN-title.md`) are separate documents for decisions that need structured analysis, multiple options, and tradeoff discussion.
 
-**When to use a full record instead:** If the decision involved evaluating 3+ options, has non-obvious consequences, or would benefit from the divergent-design process, create a `docs/decisions/NNN-title.md` file instead.
+## When to use log vs. full record
+
+| | Log entry (this file) | Full record (`NNN-title.md`) |
+|---|---|---|
+| **Scope** | Single clear answer, minimal tradeoffs | Multiple viable options with meaningful tradeoffs |
+| **Options evaluated** | 1–2 (obvious winner) | 3+ (required deliberation) |
+| **Rationale fits in** | A sentence or two | Multiple paragraphs or sections |
+| **Consequences** | Straightforward and local | Non-obvious, cross-cutting, or worth revisiting |
+| **Process** | Direct decision | Benefits from divergent-design or structured review |
+
+**Rule of thumb:** if you can state the decision, context, and rationale in one table row below, it belongs here. If you find yourself wanting subsections, options lists, or "consequences" — promote it to a full record.
 
 | # | Date | Decision | Context / Why | Full Record |
 |---|------|----------|---------------|-------------|

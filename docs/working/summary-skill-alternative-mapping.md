@@ -1,0 +1,1 @@
+Added a quick-reference alternatives table to guides/skill-recovery.md Tier 2, mapping security-reviewer, fact-check, cowen-critique, and performance-reviewer to their substitutes so users don't need to scan all pipeline tables.

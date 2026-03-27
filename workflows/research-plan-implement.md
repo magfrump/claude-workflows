@@ -14,6 +14,8 @@ This is the most common workflow. When in doubt, use this one.
 - **→ Divergent Design**: If research surfaces 3+ viable approaches (see step 2 for signals), invoke DD as a sub-procedure. Carry your research doc's constraints into DD's diagnosis step; DD's decision feeds back into your plan.
 - **← From Spike**: When a spike recommends "proceed," load its RPI seed section as a head start on research — don't re-derive what the spike already learned.
 - **← From Onboarding**: The onboarding doc's architecture map and key flows replace the "explore from scratch" part of research. Start research scoped to your specific task, not the whole codebase.
+- **→ Bug Diagnosis**: For bugs in code you already understand, the **Bug Diagnosis workflow** (`bug-diagnosis.md`) is faster — it skips the plan approval gate and iterates rapidly between hypothesis and test. Use RPI for bugs in unfamiliar code where you need to build a mental model first; use bug-diagnosis when you can already point to the likely area. If RPI research reveals the root cause, you can skip to bug-diagnosis's Fix and Verify steps rather than writing a full plan.
+- **← From Bug Diagnosis**: If debugging stalls after 3+ failed hypotheses, pivot here. The failed hypotheses become input to RPI research — they document what the bug *isn't*, narrowing the search space.
 
 ## Working documents
 
