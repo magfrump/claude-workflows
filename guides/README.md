@@ -8,6 +8,8 @@ Reference documents for specific processes and conventions. Unlike workflows (st
 
 - **[post-pr-retrospective.md](post-pr-retrospective.md)** — 2–5 minute reflection after opening a PR, receiving review feedback, or merging. Use at any PR checkpoint to capture plan accuracy, skipped steps, and process improvements.
 
+- **[pr-prep-quick-ref.md](pr-prep-quick-ref.md)** — Actionable checklist for the PR prep review-fix loop: generate reviews, triage by tier, fix, re-review, exit when clean. Quick-reference companion to `workflows/pr-prep.md`.
+
 - **[self-eval-baseline.md](self-eval-baseline.md)** — How to run the self-eval skill on existing skills/workflows to produce baseline quality reports. Use when prioritizing improvement work or measuring progress after changes.
 
 - **[skill-recovery.md](skill-recovery.md)** — Three-tier escalation for recovering from skill failures: retry with narrower scope, substitute an alternative skill, or skip and document. Use when a skill produces poor, empty, or off-target output.
