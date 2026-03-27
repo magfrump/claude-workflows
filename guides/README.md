@@ -2,6 +2,8 @@
 
 Reference documents for specific processes and conventions. Unlike workflows (step-by-step procedures) or skills (agent-invocable prompts), guides are consulted when you need to understand how something works or what to do in a particular situation.
 
+- **[completion-signals.md](completion-signals.md)** — Quick-reference yes/no checks for each workflow phase. Use to confirm a phase is actually done before moving on.
+
 - **[doc-freshness.md](doc-freshness.md)** — Lightweight heuristic for detecting stale documents using `git log` against tracked paths. Use when loading a long-lived document (onboarding doc, spike record, shared thought, review artifact) as session context.
 
 - **[parallel-sessions.md](parallel-sessions.md)** — How to run 2–3 concurrent Claude Code sessions in separate git worktrees for maximum throughput. Use when you have independent tasks to parallelize, especially before end-of-day async handoffs. *(Human-facing guide, not agent instructions.)*
