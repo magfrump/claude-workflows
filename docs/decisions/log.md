@@ -21,4 +21,8 @@ Log entries that later get a full record should link to it in the **Full Record*
 | # | Date | Decision | Context / Why | Full Record |
 |---|------|----------|---------------|-------------|
 | 1 | 2026-03-23 | Create lightweight decision log | Small decisions were undocumented; full DD records are too heavy for one-line choices | — |
-| 6 | 2026-03-26 | Foreground tests as human-LLM interface in RPI | Tests are the most precise form of requirements; restructure RPI to make test design a planning activity | [006](006-foregrounding-tests.md) |
+| 2 | 2026-03-23 | Critic-style code review via standalone critics then orchestrator | CC/YC prose critic pattern proven effective; apply domain-specific cognitive moves to code diffs | [002](002-critic-style-code-review.md) |
+| 3 | 2026-03-20 | Add critic cognitive moves as DD stress-test lenses | DD tradeoff matrix misses failure modes that structured critique catches; two-pass evaluation | [003](003-critic-moves-in-divergent-design.md) |
+| 4 | 2026-03-20 | Build 5 complementary skills and workflows from DD gap analysis | Onboarding workflow, test-strategy, tech-debt-triage, dependency-upgrade skills, RPI refactoring variant | [004](004-complementary-skills-and-workflows.md) |
+| 5 | 2026-03-23 | Tiered validation pipeline for self-improvement loop | Auto-approving all branches risks poisoning subsequent rounds; need unattended validation | [005](005-validation-step-self-improvement.md) |
+| 6 | 2026-03-26 | Foreground tests as human-LLM interface in RPI | Tests are among the most precise forms of behavioral specification; restructure RPI to make test design a planning activity | [006](006-foregrounding-tests.md) |
