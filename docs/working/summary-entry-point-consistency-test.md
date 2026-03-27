@@ -1,0 +1,1 @@
+Added BATS test (`test/entry-point-consistency.bats`) that extracts bold `.md` filenames from CLAUDE.md, AGENTS.md, and GEMINI.md, normalizes to bare basenames, and asserts all three reference the same set — currently detects `bug-diagnosis.md` present in CLAUDE.md but missing from AGENTS.md and GEMINI.md.
