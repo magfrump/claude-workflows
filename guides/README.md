@@ -15,3 +15,5 @@ Reference documents for specific processes and conventions. Unlike workflows (st
 - **[subtraction-checklist.md](subtraction-checklist.md)** — Manual review process for identifying removal candidates using hypothesis logs, complexity warnings, and usage reports. Use after merging an implementation branch in the self-improvement loop.
 
 - **[validation-gates.md](validation-gates.md)** — Reference for all 7 validation gates (commit count, diff size, file scope, critical file protection, BATS tests, shellcheck, self-eval) that run before merging to main. Use when debugging a branch rejection or preparing a task for the self-improvement loop.
+
+- **[workflow-selection.md](workflow-selection.md)** — Prescriptive decision tree for choosing the right workflow. Walk through yes/no questions to get a specific workflow recommendation. Use when you're about to start a task and aren't sure which workflow applies.
