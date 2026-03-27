@@ -1,0 +1,1 @@
+Created `guides/completion-signals.md`: standalone yes/no checklist with 2-3 self-check questions per major phase for RPI (4 phases, 11 checks), DD (4 phases, 10 checks), Spike (3 phases, 7 checks), and PR-Prep (3 phases, 8 checks) — no cross-references to workflow files.
