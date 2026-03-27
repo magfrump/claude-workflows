@@ -1,1 +1,0 @@
-Added test/function-inventory.bats: a BATS regression test that sources scripts/self-improvement.sh and asserts all 8 expected exported functions exist via type-check, guarding against accidental removal or rename.

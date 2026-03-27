@@ -1,1 +1,0 @@
-Created test/scripts/health-check.bats with 11 BATS tests that run scripts/health-check.sh against the live repo and assert exit 0 plus all 8 section headers in output; no fixtures, no recursion risk (health-check only globs test/skills/ and test/hooks/).

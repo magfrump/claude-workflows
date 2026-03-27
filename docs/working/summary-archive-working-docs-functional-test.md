@@ -1,1 +1,0 @@
-Added 4 functional BATS tests for archive-working-docs.sh covering: archivable file movement with prefix, permanent file preservation, dry-run mode (no actual moves), and custom prefix application — all using isolated temp directory fixtures.

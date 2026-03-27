@@ -1,1 +1,0 @@
-Added scope boundary sentence and 'When to use log vs. full record' comparison table to docs/decisions/log.md, clarifying when a log entry suffices vs. when to create a full NNN-title.md decision record.
