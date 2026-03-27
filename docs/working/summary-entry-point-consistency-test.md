@@ -1,0 +1,1 @@
+Added BATS test that extracts workflow filenames from CLAUDE.md, AGENTS.md, and GEMINI.md workflow sections and asserts all three match; test correctly detects that bug-diagnosis.md is missing from AGENTS.md and GEMINI.md (see scope-exception doc for fix).
