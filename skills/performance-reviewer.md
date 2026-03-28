@@ -11,6 +11,7 @@ description: >
   batch operations, or request handling paths. NOTE: This skill can be invoked standalone or by
   a code-review orchestrator. If a code-fact-check report is provided, use it as your foundation
   for understanding what the code actually does and do not re-verify documented behavior.
+when: Code touches queries, loops, caching, or request-handling paths
 requires:
   - name: code-fact-check
     description: >

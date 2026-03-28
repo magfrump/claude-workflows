@@ -9,6 +9,7 @@ description: >
   whenever the user wants a thorough review of a draft that combines fact-checking with
   substantive critique. Also trigger when users say "review this draft", "give me feedback on
   this", "fact-check and critique this", or request multiple perspectives on a piece of writing.
+when: User wants a thorough multi-perspective review of a written draft
 ---
 
 > On bad output, see guides/skill-recovery.md

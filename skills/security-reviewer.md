@@ -11,6 +11,7 @@ description: >
   or serialization. NOTE: This skill can be invoked standalone or by a code-review orchestrator.
   If a code-fact-check report is provided, use it as your foundation for understanding what the
   code actually does and do not re-verify documented behavior.
+when: Code touches auth, input handling, crypto, or trust boundaries
 requires:
   - name: code-fact-check
     description: >

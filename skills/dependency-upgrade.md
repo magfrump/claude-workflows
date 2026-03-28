@@ -8,6 +8,7 @@ description: >
   Renovate opens a PR that needs human judgment. Also trigger when a dependency is known to
   have a security vulnerability or is approaching end-of-life. Can evaluate a single upgrade
   or compare alternatives (e.g., "should we upgrade or switch to a different library").
+when: User asks whether to upgrade a dependency or reviews a dep bump
 ---
 
 > On bad output, see guides/skill-recovery.md

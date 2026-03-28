@@ -9,6 +9,7 @@ description: >
   Use this skill when the user asks to "evaluate this skill", "assess this workflow", "run the rubric
   on X", "self-eval", or "how does X score on the rubric". Also trigger when adding a new skill or
   workflow and wanting pre-merge assessment, or during periodic reassessment of existing tools.
+when: User asks to evaluate or score a skill or workflow against the rubric
 ---
 
 > On bad output, see guides/skill-recovery.md

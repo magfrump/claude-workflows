@@ -80,12 +80,8 @@ teardown() {
 @test "exits cleanly with no archive when only permanent files exist" {
   # Edge case: a self-improvement round produces no working docs (e.g., all
   # tasks rejected). Only permanent files remain — nothing to archive.
-  TEST_DIR="$(mktemp -d)"
-  mkdir -p "$TEST_DIR/docs/working"
-
-  # Only permanent files — no archivable content
-  echo "hypothesis log" > "$TEST_DIR/docs/working/hypothesis-log.md"
-  echo "tasks" > "$TEST_DIR/docs/working/tasks.json"
+  # Remove archivable files created by setup(), leaving only permanent files.
+  rm -f "$TEST_DIR/docs/working/plan-foo.md" "$TEST_DIR/docs/working/summary-bar.md"
 
   cd "$TEST_DIR"
   run bash "$SCRIPT" "empty-round"
@@ -102,8 +98,6 @@ teardown() {
 
   # Output should report 0 files archived
   [[ "$output" == *"Archived 0 files"* ]]
-
-  rm -rf "$TEST_DIR"
 }
 
 @test "custom prefix is correctly applied to archived filenames" {
