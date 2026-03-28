@@ -14,6 +14,7 @@ description: >
   invoked by the draft-review orchestrator, which provides a pre-built fact-check report. If a
   fact-check report is provided, use it as your factual foundation and do not redo basic fact
   verification.
+when: User wants a policy-focused pragmatic critique of a draft
 requires:
   - name: fact-check
     description: >

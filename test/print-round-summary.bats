@@ -7,7 +7,7 @@ setup() {
   source "$BATS_TEST_DIRNAME/../scripts/self-improvement.sh"
 
   TEST_TMPDIR=$(mktemp -d)
-  WORKING_DIR="$TEST_TMPDIR"
+  export WORKING_DIR="$TEST_TMPDIR"
   ROUND_HISTORY="$TEST_TMPDIR/round-history.json"
   echo '[]' > "$ROUND_HISTORY"
 

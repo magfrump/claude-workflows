@@ -7,6 +7,7 @@ description: >
   and report findings with calibrated confidence. Produces a structured Markdown report. Use this
   skill when the user asks to "verify the comments", "check the docs against the code", "audit
   documentation accuracy", or when upstream orchestration requests a code verification pass.
+when: User asks to verify comments, docs, or docstrings against code
 requires:
   - A codebase with comments, docstrings, or documentation to verify
 ---

@@ -8,6 +8,7 @@ description: >
   deciding whether to address accumulated debt. Also trigger when code review surfaces
   something that works but is fragile, overly complex, or blocking future work. Can evaluate
   a single item or compare multiple debt items using the matrix-analysis pattern.
+when: User asks whether tech debt is worth fixing or how to prioritize it
 ---
 
 > On bad output, see guides/skill-recovery.md

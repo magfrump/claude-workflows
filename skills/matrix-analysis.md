@@ -10,6 +10,7 @@ description: >
   is best", "pros and cons matrix", "decision matrix", "trade-off analysis", or "score these
   against criteria". Works with any combination of items and criteria: design alternatives,
   libraries, vendors, architectures, approaches, tools, or any other set of comparable options.
+when: User wants to compare or rank options across multiple criteria
 ---
 
 > On bad output, see guides/skill-recovery.md

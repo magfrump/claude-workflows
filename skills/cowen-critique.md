@@ -13,6 +13,7 @@ description: >
   this is the skill to use. NOTE: This skill is typically invoked by the draft-review orchestrator,
   which provides a pre-built fact-check report. If a fact-check report is provided, use it as your
   factual foundation and do not redo basic fact verification.
+when: User wants a substantive intellectual critique of a written draft
 requires:
   - name: fact-check
     description: >

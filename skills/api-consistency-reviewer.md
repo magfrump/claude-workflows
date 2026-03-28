@@ -14,6 +14,7 @@ description: >
   NOTE: This skill can be invoked standalone or by a code-review orchestrator. If a
   code-fact-check report is provided, use it as your foundation for understanding what the
   code actually does and do not re-verify documented behavior.
+when: Code adds or modifies APIs, endpoints, or public interfaces
 requires:
   - name: code-fact-check
     description: >

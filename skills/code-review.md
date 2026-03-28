@@ -11,6 +11,7 @@ description: >
   when the user wants to combine security, performance, and API consistency review into a single
   pass. For reviewing a single concern (just security, just performance), use the standalone
   critic skill instead.
+when: User requests a full code review or PR review
 ---
 
 > On bad output, see guides/skill-recovery.md

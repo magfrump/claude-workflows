@@ -1,0 +1,1 @@
+Created scripts/print-round-summary.sh as a standalone entry point that reads docs/working/round-history.json and prints per-round tables of task ID, verdict, and first-failing gate; added 8 BATS tests in test/scripts/print-round-summary.bats covering headers, approved/rejected tasks, multiple rounds, empty history, missing file, and mixed verdicts.

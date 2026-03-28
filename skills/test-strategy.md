@@ -8,6 +8,7 @@ description: >
   "how should I test this", "what's missing from our test coverage", or when an RPI plan needs
   a test specification. Also trigger when a feature is implemented but has no tests, or when
   the user is unsure whether unit, integration, or end-to-end tests are appropriate.
+when: User asks what tests to write or needs a testing plan for code
 ---
 
 > On bad output, see guides/skill-recovery.md

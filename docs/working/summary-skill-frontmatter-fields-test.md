@@ -1,0 +1,1 @@
+Added BATS test (test/skills/frontmatter-fields.bats) that iterates over all skills/*.md files and asserts each contains required YAML frontmatter fields: name, description, and at least one of trigger or when.

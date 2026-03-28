@@ -9,6 +9,7 @@ description: >
   the numbers", "check the claims", "source-check", or "make sure the facts are right" in a draft.
   Also trigger when upstream orchestration (e.g., the draft-review skill) requests a fact-check pass
   before running critic agents.
+when: User asks to fact-check or verify claims in a draft
 ---
 
 > On bad output, see guides/skill-recovery.md
