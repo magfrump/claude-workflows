@@ -121,6 +121,62 @@ validate_task_json() {
     echo "$valid_tasks"
 }
 
+# --- Task description linter ---
+# Advisory warnings for common task description failure patterns.
+# Non-blocking: prints warnings to stderr and always returns 0.
+# Args: $1 = path to tasks JSON file
+lint_task_descriptions() {
+    local tasks_file=$1
+    local task_count
+    task_count=$(jq 'length' "$tasks_file")
+
+    for i in $(seq 0 $((task_count - 1))); do
+        local tid desc
+        tid=$(jq -r ".[$i].id" "$tasks_file")
+        desc=$(jq -r ".[$i].description" "$tasks_file")
+        local ft_count
+        ft_count=$(jq ".[$i].files_touched | length" "$tasks_file")
+
+        local has_sh=false
+        local has_workflow_md=false
+
+        for j in $(seq 0 $((ft_count - 1))); do
+            local fpath parent_dir
+            fpath=$(jq -r ".[$i].files_touched[$j]" "$tasks_file")
+            parent_dir=$(dirname "$fpath")
+
+            # (a) Parent directory doesn't exist
+            if [ "$parent_dir" != "." ] && [ ! -d "$parent_dir" ]; then
+                echo "  LINT WARNING [$tid]: parent directory does not exist: $parent_dir (for $fpath)" >&2
+            fi
+
+            # Track file types for cross-checks
+            case "$fpath" in
+                *.sh) has_sh=true ;;
+            esac
+            case "$fpath" in
+                workflows/*.md) has_workflow_md=true ;;
+            esac
+        done
+
+        # (b) .sh files but description doesn't mention shellcheck
+        if $has_sh; then
+            if ! echo "$desc" | grep -qi 'shellcheck'; then
+                echo "  LINT WARNING [$tid]: touches .sh files but description does not mention 'shellcheck'" >&2
+            fi
+        fi
+
+        # (c) workflow .md files but description doesn't mention BATS or section
+        if $has_workflow_md; then
+            if ! echo "$desc" | grep -qiE 'BATS|section'; then
+                echo "  LINT WARNING [$tid]: touches workflow .md files but description does not mention 'BATS' or 'section'" >&2
+            fi
+        fi
+    done
+
+    return 0
+}
+
 # --- Round summary printer ---
 # Reads the current ROUND_LOG_FILE to print a one-line human-readable summary.
 # Args: $1 = round number, $2 = validation log path
@@ -663,6 +719,12 @@ other tasks in this round."
             record_gate "$TASK_ID" "schema" "pass"
         done
     fi
+
+    # -------------------------------------------------------
+    # Step 2c: Lint task descriptions (advisory, non-blocking)
+    # -------------------------------------------------------
+    echo "Linting task descriptions..."
+    lint_task_descriptions "$TASKS_FILE"
 
     # -------------------------------------------------------
     # Step 3: Implement in parallel worktrees
