@@ -1,4 +1,5 @@
 #!/usr/bin/env bats
+# @category fast
 # Unit tests for validate_task_json() from self-improvement.sh
 #
 # Usage: bats test/validate-task-json.bats

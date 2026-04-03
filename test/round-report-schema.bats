@@ -1,4 +1,5 @@
 #!/usr/bin/env bats
+# @category fast
 # Guard the round-history.json data contract.
 # Downstream consumers (e.g. self-improvement.sh convergence detection)
 # rely on each entry having: round, timestamp, validation, outcome.

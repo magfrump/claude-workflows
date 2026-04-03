@@ -1,4 +1,5 @@
 #!/usr/bin/env bats
+# @category fast
 # Validates bidirectional consistency of '## When to pivot' sections across
 # workflows. If workflow A mentions pivoting to/from B and B has a pivot
 # section, then B should mention A. Asymmetries are flagged as warnings

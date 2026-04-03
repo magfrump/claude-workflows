@@ -1,4 +1,5 @@
 #!/usr/bin/env bats
+# @category slow
 # Smoke tests for utility scripts that previously had zero dedicated coverage.
 # Catches broken scripts after refactoring.
 

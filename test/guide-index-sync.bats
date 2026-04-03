@@ -1,4 +1,5 @@
 #!/usr/bin/env bats
+# @category fast
 # Validates that every guide in guides/ is listed in guides/README.md.
 # Prevents drift when new guides are added without updating the index.
 #

@@ -1,4 +1,5 @@
 #!/usr/bin/env bats
+# @category slow
 # Functional tests for scripts/archive-working-docs.sh
 #
 # Covers: archiving, permanent-file preservation, dry-run, custom prefix.

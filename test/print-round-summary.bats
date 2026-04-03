@@ -1,4 +1,5 @@
 #!/usr/bin/env bats
+# @category fast
 
 # Tests for print_round_summary() from scripts/self-improvement.sh
 # Verifies correct count extraction, failure mode formatting, and file append.

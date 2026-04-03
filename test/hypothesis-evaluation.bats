@@ -1,4 +1,5 @@
 #!/usr/bin/env bats
+# @category fast
 # Unit tests for get_eligible_hypotheses from self-improvement.sh
 #
 # Tests the hypothesis window tracking logic (Step 0):

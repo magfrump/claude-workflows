@@ -1,4 +1,5 @@
 #!/usr/bin/env bats
+# @category slow
 # Integration test for scripts/health-check.sh
 #
 # Runs the health-check script ONCE per file (not per test) and asserts

@@ -1,4 +1,5 @@
 #!/usr/bin/env bats
+# @category slow
 # Tests for scripts/print-round-summary.sh
 #
 # Validates that the standalone script reads round-history.json and prints
