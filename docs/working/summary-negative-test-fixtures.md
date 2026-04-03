@@ -1,0 +1,1 @@
+Added BATS edge-case test suites for fact-check (20 tests across tc-7.1–7.4) and code-fact-check (24 tests across tc-c8.1–8.4) that verify structural properties of graceful handling: zero claims, no hallucinated sections, no verdict fields, recognizable "nothing to check" output, no critique language, and no cross-skill verdict leakage.
