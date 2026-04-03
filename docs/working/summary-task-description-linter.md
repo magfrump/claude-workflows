@@ -1,0 +1,1 @@
+Added lint_task_descriptions() to scripts/self-improvement.sh that prints advisory stderr warnings for missing parent dirs, .sh files without shellcheck mention, and workflow .md files without BATS/section mention; called after validate_task_json() in main loop; BATS tests in test/scripts/self-improvement-smoke.bats cover all three warning cases plus clean pass.
