@@ -281,11 +281,7 @@ HEADER
         [ -f "$PRIOR_TASKS" ] || continue
 
         # Get tasks that have a hypothesis, are not retroactive, and whose window has elapsed
-        ELIGIBLE=$(jq -r --argjson current "$ROUND" --argjson prior "$PRIOR_ROUND" \
-            '[.[] | select(.hypothesis != null and .hypothesis != "") |
-              select(.retroactive != true) |
-              select(($current - $prior) >= (.hypothesis_window // 3))] | .[]? | .id' \
-            "$PRIOR_TASKS" 2>/dev/null) || true
+        ELIGIBLE=$(get_eligible_hypotheses "$ROUND" "$PRIOR_ROUND" < "$PRIOR_TASKS") || true
 
         while IFS= read -r TASK_ID; do
             [ -z "$TASK_ID" ] && continue

@@ -7,18 +7,18 @@
 # Never block tool execution, even on unexpected errors
 trap 'exit 0' ERR
 
-LOG_FILE="${USAGE_LOG_FILE:-$HOME/.claude/logs/usage.jsonl}"
-mkdir -p "$(dirname "$LOG_FILE")"
-
 # Read stdin once, reuse for multiple extractions
 INPUT=$(cat)
 
-# Single jq call to extract common fields — one per line
-PARSED=$(echo "$INPUT" | jq -r '[.tool_name, .tool_input.skill, .tool_input.args, .tool_input.file_path] | map(. // "") | .[]')
-TOOL_NAME=$(sed -n '1p' <<< "$PARSED")
-SKILL_NAME=$(sed -n '2p' <<< "$PARSED")
-SKILL_ARGS=$(sed -n '3p' <<< "$PARSED")
-FILE_PATH=$(sed -n '4p' <<< "$PARSED")
+# Extract tool_name first for early exit — most tools are not logged
+TOOL_NAME=$(echo "$INPUT" | jq -r '.tool_name // ""')
+case "$TOOL_NAME" in
+  Skill|Read|Agent) ;;  # These are logged — continue
+  *) exit 0 ;;          # Everything else — skip all work
+esac
+
+LOG_FILE="${USAGE_LOG_FILE:-$HOME/.claude/logs/usage.jsonl}"
+[[ -d "${LOG_FILE%/*}" ]] || mkdir -p "${LOG_FILE%/*}"
 
 TS=$(date -u +"%Y-%m-%dT%H:%M:%SZ")
 # Use git toplevel basename so worktrees resolve to the same project name
@@ -42,11 +42,14 @@ log_event() {
 
 case "$TOOL_NAME" in
   Skill)
+    SKILL_NAME=$(echo "$INPUT" | jq -r '.tool_input.skill // ""')
     if [ -n "$SKILL_NAME" ]; then
+      SKILL_ARGS=$(echo "$INPUT" | jq -r '.tool_input.args // ""')
       log_event "skill" "$SKILL_NAME" "$SKILL_ARGS"
     fi
     ;;
   Read)
+    FILE_PATH=$(echo "$INPUT" | jq -r '.tool_input.file_path // ""')
     if [[ "$FILE_PATH" == */workflows/*.md ]]; then
       WORKFLOW_NAME="${FILE_PATH##*/}"
       WORKFLOW_NAME="${WORKFLOW_NAME%.md}"
