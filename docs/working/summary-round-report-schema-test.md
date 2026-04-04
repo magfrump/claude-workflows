@@ -1,1 +1,0 @@
-Added test/round-report-schema.bats: BATS test that validates each entry in docs/working/round-history.json has required fields (round, timestamp, validation, outcome) with correct types, skipping gracefully when the file is absent.

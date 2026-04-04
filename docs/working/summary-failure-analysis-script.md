@@ -1,1 +1,0 @@
-Created scripts/failure-analysis.sh that reads round-history.json and outputs gate rejection frequency, task-type failure counts (by id prefix), and re-attempt success rate comparison — with BATS tests covering all sections and edge cases.

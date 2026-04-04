@@ -1,1 +1,0 @@
-Created `workflows/bug-diagnosis.md` with a reproduce → isolate → hypothesize → test → fix → verify debugging loop, including guidance on characterization tests, git bisect, minimal reproduction, and pivot paths to/from RPI; added cross-references in RPI's "When to pivot" section and CLAUDE.md workflow lists.

@@ -1,1 +1,0 @@
-Added BATS test that scans the 5 workflows with pivot sections for bidirectional consistency, flagging asymmetric references (e.g., bug-diagnosis→spike, onboarding→DD) as warnings rather than failures.
