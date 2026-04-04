@@ -1,107 +1,107 @@
-# Yglesias-Style Critique: RPI Workflow + Foregrounding Tests
+# Yglesias-Style Critique: UI Visual Review Skill
 
-**Reviewed:** 2026-03-26
-**Documents:** `workflows/research-plan-implement.md`, `docs/decisions/006-foregrounding-tests.md`
+**Reviewed:** 2026-04-03
+**Document:** `ui-visual-review` skill definition (draft)
 
 ---
 
 ## 1. The Goal vs. the Mechanism
 
-The goal is exactly right: when a human collaborates with an LLM on code, the biggest risk is the LLM building the wrong thing. Tests are a natural place to catch that because they express intent in a checkable form. You want humans to design behavioral constraints and LLMs to translate them into code. No disagreement there.
+The goal is correct: AI agents reviewing UI code should catch real usability problems — elements that overflow, controls that vanish, layouts that collapse at different viewport sizes. That is a genuine failure mode in AI-assisted front-end development, and having a structured skill for it is sensible.
 
-The mechanism, though, front-loads a significant amount of specification work into the planning phase. The human is now asked to fill out a table with test cases, test levels, diagnostic expectations, and expected behavior — before any code exists. This is the test-driven development pitch repackaged as a workflow artifact, and it has the same adoption problem TDD has always had: most people don't do it, even when they agree it's a good idea. The decision record acknowledges this ("the guidance exists but is a throwaway line that gets skipped in practice"), but the fix is to make the throwaway line into a structured table. That is not obviously more skip-proof; it is just more to skip.
+The mechanism, though, is fighting a war on two fronts and losing both.
 
-The mechanism also introduces a second human review checkpoint (test code review before implementation). The workflow already has a firm gate at plan review and a soft gate at research review. Adding a third checkpoint means the human is being asked to review *three times* before any feature code is written. That is a lot of gates for a process whose core value proposition is accelerating development.
+**Front one: cross-resolution robustness.** The checklist (unbounded content, wrong flex usage, absolute positioning, scroll containers) is genuinely useful. These are real bugs that a code-review agent can catch by reading CSS and HTML. This is the boring, high-value core of the skill.
 
-There is a structural mismatch worth naming: the human writes prose test cases, the LLM translates them into test code, and then the human reviews the test code. The review step requires the human to operate in the LLM's medium (code) rather than their own (prose). The workflow does include a mitigating instruction — "include a bulleted summary of what each test verifies alongside the test code" — which helps, but the underlying dynamic remains: the translation step where misunderstandings happen is still there. It has moved from "translate requirements into implementation" to "translate requirements into tests, then translate tests into implementation." This is progress! Moving the ambiguity earlier in the pipeline is genuinely cheaper to fix. But calling tests "the most precise form of behavioral specification" overstates what is happening when the specification is a prose table that still requires translation.
+**Front two: an aesthetic philosophy.** The skill declares that Windows 98-era visible affordances should be preferred over modern minimalist design. This is not a review heuristic; it is an opinion about what good UI looks like. And it is an opinion that conflicts with what virtually every design system the skill itself cites (Apple HIG, Material Design) actually recommends. The skill tells the agent to validate recommendations against tech company guidelines, and then tells it to override those guidelines when they conflict with a preference for always-visible scroll bars and buttons that "look like buttons." The agent is being told to consult the authorities and then ignore them.
+
+The two fronts are not complementary. The cross-resolution robustness work is objective: does this layout break at 320px? The aesthetic philosophy is subjective: should this scroll bar be visible? Bundling them together means the objective findings will be discounted because they arrive packaged with stylistic opinions the team may not share. The skill's credibility on "your flex container collapses at mobile widths" is undermined by "also, your scroll bars should look like Windows 98."
 
 ## 2. The Boring Lever
 
-The boring lever: **just make the LLM write tests first during implementation, without requiring the human to pre-specify them in a structured table format.**
+The boring lever nobody is pulling: **just run the checklist against the code without the web searches or the aesthetic philosophy.**
 
-The LLM already has the plan. It already knows what the code should do. Having it write tests first — and having those tests be a separate, reviewable commit — gets you 80% of the "catch mismatches early" benefit without requiring the human to learn a test taxonomy or fill out a diagnostic-expectations column during planning.
+The seven-item issue checklist in Step 2 is the highest-value part of this skill by a wide margin. Unbounded content without scroll caps, controls trapped inside scroll containers, wrong flex/shrink usage — these are mechanical bugs that can be detected by reading the code. They do not require web searches. They do not require consulting Apple HIG. They require pattern-matching against known CSS failure modes.
 
-The human can review the test commit and say "that's not what I meant" before implementation proceeds. That is the same feedback loop the workflow is trying to create, just without the planning-phase ceremony.
-
-The diagnostic expectations guidance (lines 97-99 of the RPI workflow) is actually the most important part of this proposal, and it gets the least structural emphasis. It is a bullet point under the test specification table, not a first-class concern. If you could only do one thing from this entire proposal, "make test failures informative enough that the human can diagnose without re-running or reading all implementation code" would deliver more value than the test case table.
+An agent that reads the code, runs through that checklist, and reports findings with severity ratings and fix suggestions would be fast, reliable, and useful. That is the 80% version. The other 20% — mandatory web searches for every issue type, cross-referencing tech company guidelines, viewport simulation against three specific resolutions — is ceremony that slows the agent down without proportionally improving output quality.
 
 ## 3. Follow the Money (or Effort)
 
-Trace where human attention actually flows in the revised workflow:
+Trace where the agent's time and token budget actually goes under this skill:
 
-1. **Research**: LLM reads code, writes a doc. Low human effort.
-2. **Plan + test specification** (expanded): The human now has to think about test cases, pick test levels, and write diagnostic expectations. This is real cognitive work. The question is whether it is the *right* cognitive work at this stage.
-3. **Plan approval**: Human reviews. Medium effort.
-4. **Test code review** (new): Human reviews LLM-generated test code. Medium effort — or a rubber stamp if the human cannot read test code fluently.
-5. **Implementation**: LLM implements. Low human effort.
-6. **Implementation review**: Human reviews. Medium effort.
+1. **Check for project-local UI guidelines:** Fast, useful. Read one file.
+2. **Read the code against the issue checklist:** This is the core work. Medium effort, high value.
+3. **Web search for current best practices for each issue type:** This is where the budget explodes. "Each issue type" means potentially seven separate web searches. Each search returns results that need to be read and synthesized. For well-understood CSS patterns (flex shrink behavior, overflow handling), this is looking up things the agent already knows from training data. For "current best practices," the search results will be a mix of MDN documentation (accurate, stable) and blog posts (variable quality, possibly outdated). The agent is spending significant effort to arrive at recommendations it could have made directly.
+4. **Check tech company UI guidelines:** Another round of searches. Material Design and Apple HIG are extensive documents. Searching them for guidance on, say, scroll container behavior will return general design philosophy, not specific CSS fixes. The translation from "Material Design says use persistent scroll indicators for long lists" to "add `overflow-y: auto` with a max-height" is work the agent has to do anyway.
+5. **Test against three viewport scenarios:** The skill says "test" but the agent is reviewing code, not running a browser. What this actually means is "reason about what happens at these widths," which is useful but does not require a specific resolution checklist — it requires understanding the CSS.
+6. **Produce a structured report with before/after code:** High value. This is the deliverable.
 
-The total attention budget increased by one checkpoint (test review) and one planning section (structured test specification). Whether the test-review checkpoint actually catches mismatches depends on the human's ability to read test code. The proposal is highest-value for humans who are intermediate: they know enough to read test code and spot mismatches, but not enough to write tests from scratch. That is a real population, but the workflow does not name it.
-
-The effort distribution also shifts noticeably toward the human during planning. The whole point of human-LLM collaboration is that the human provides judgment while the LLM provides labor. Asking the human to fill out a structured table with four columns is nudging toward more labor. The judgment version is: "here are the scenarios I care about, in plain language." The labor version is: "here is a table with columns for test level and diagnostic expectation." The workflow defaults to the labor version.
+Steps 3 and 4 consume most of the effort budget and contribute the least to the output. The agent will spend more time searching and reading than it spends analyzing the actual code. That is backwards.
 
 ## 4. Factual Foundation
 
 Key findings from the fact-check report:
 
-- The `linguist-generated` gitattributes trick works as described (Claim 1: Accurate). Practical and well-sourced.
-- The "full taxonomy" characterization of the test-strategy skill slightly overstates what the skill provides (Claim 4: Mostly accurate). The skill covers multiple test types but does not present them as an organized classification system. This matters because the workflow references it as a comprehensive external resource — it is not quite that.
-- "Over a dozen approaches were generated via divergent design" is unverifiable (Claim 7: Unverified). No artifact preserves the full list. The wording was already softened from "13 approaches," but even "over a dozen" relies on conversational context that no longer exists. This is the kind of precision theater that makes readers trust documents less, not more.
-- "The human designs behavioral constraints in prose, the LLM translates them into executable test code" describes a designed process, not a verified outcome (Claim 10: Mostly accurate). Nobody has checked whether this translation works reliably in practice.
-- The "combine 1 + 4 + 5, plus diagnostic guidance" framing now correctly accounts for all four implementation elements (Claim 9: Accurate, previously flagged discrepancy resolved).
+- The Windows 98 characterization claims hover and active states; Win98 actually had active states but not hover states. Minor, but it undermines the skill's positioning of Win98 as the gold standard of "explicit affordances" — even Win98 did not get everything right.
+- **1024x768 as "minimum supported"** is not defensible. This resolution has approximately 0% desktop market share. Including it as a mandatory verification target means the agent is spending effort on a viewport that essentially no users will encounter. If the goal is catching real-world layout bugs, the minimum should be a resolution people actually use.
+- **1440x900 as "typical laptop"** has roughly 4% market share. The actual typical laptop resolution is 1920x1080 or, for older hardware, 1366x768. The viewport checklist is wrong about what "typical" means, which means the agent's verification work is calibrated to viewports that do not match the actual user population.
+- Core technical claims about CSS behavior, named guidelines, and MDN references are all accurate. The skill knows its CSS.
+
+The viewport errors matter because the skill makes viewport verification mandatory. If the verification targets are wrong, the mandatory work is wasted.
 
 ## 5. The Scale Test
 
-What happens when many different humans use this across many projects?
+What happens when this skill is used across many projects by many teams?
 
-**Sophisticated developers** will find the table redundant. They already think about test cases during planning. They will abbreviate to "a few test cases in prose" (as explicitly permitted) and treat the test-review checkpoint as a quick sanity check.
+**Teams with a design system** will immediately hit friction. The skill says "prefer classic desktop UI principles" but the team's design system says "use our component library, which follows Material Design." The skill has a rule to check for project-local UI guidelines and treat them as primary authority, which is good — but then the entire Windows 98 philosophy section becomes dead letter for any team that has a design system. That is most professional teams. The philosophy section is load-bearing in the skill's identity but irrelevant in practice for its target users.
 
-**Less experienced developers** will struggle with the test level taxonomy. Four bullet points defining unit, integration, characterization, and property tests are not enough for someone without an existing mental model. They will default to "unit" for everything or ask the LLM to pick, defeating the purpose of human-designed test specifications.
+**Teams without a design system** are the ones who might benefit from opinionated defaults. But these teams are also the ones most likely to be building internal tools or prototypes where "make it work at all viewport sizes" matters more than "make scroll bars always visible." The aesthetic philosophy is solving a problem these teams do not have.
 
-**The messy middle** — developers who know their domain but are not testing experts — is where this delivers the most value. But at scale, the structured table becomes a compliance burden. Early adopters fill it out thoughtfully. Later adopters treat it like a form. "Diagnostic expectation: show the error" appears in every row. The "simple features can be brief" escape hatch becomes the universal default, because at scale everything is a "simple feature" when the alternative is filling out a table.
-
-The two new review stages (test specification during planning, test code review during implementation) will get rubber-stamped as fatigue sets in. The more review stages you add, the less attention each one gets.
+**At scale across a codebase:** the mandatory web searches become redundant fast. The best practices for "unbounded content without scroll caps" do not change between files. The agent will search for the same guidance repeatedly, burning tokens on the same MDN articles every time. There is no caching or "search once, apply many times" mechanism.
 
 ## 6. The Org Chart
 
-The workflow is designed for a single human working with a single LLM session. But the broader workflow system includes parallel-sessions guides and branch-strategy workflows for concurrent feature development. If someone is running three parallel feature branches with three LLM sessions, they are now doing test specification and test code review for three concurrent workstreams. That is where the per-feature overhead compounds.
+This skill is executed by an AI agent, not a human. That matters for three reasons:
 
-The handoff point between human and LLM is the test specification table, and it is the weakest link. The human writes prose; the LLM writes code; the human reviews code. The prose summary instruction helps bridge this, but the fundamental medium mismatch remains. A stronger design would make the prose-to-prose review the primary path and code review the spot-check.
+1. **The agent cannot actually test viewports.** It can reason about CSS behavior at different widths, but "test recommendations against three viewport scenarios" implies running code in a browser, which the agent cannot do. The instruction is aspirational, not operational. The agent will either skip it or fake it by narrating what it thinks would happen.
 
-The decision record does not address who maintains the test taxonomy guidance over time. Since it is inline in the RPI workflow (not a separate doc), updating it means modifying the core workflow document. For a workflow that is already approaching process-manual complexity, this matters.
+2. **Web search quality is unpredictable.** The skill makes web search mandatory, but the agent has no way to evaluate whether a search returned useful results. It will dutifully cite whatever it finds, even if the top result is a 2019 blog post recommending techniques that have since been superseded. The mandatory search rule means the agent cannot use its training knowledge directly even when that knowledge is more reliable than search results.
 
-## 7. Political Survival
+3. **The agent has no visual perception of the running app.** It is reviewing code, not screenshots. The skill is written as though the reviewer can see the UI, but the reviewer is reading CSS classes and HTML structure. This is fine for the mechanical checklist items but problematic for the aesthetic judgments. "Buttons look like buttons" is a visual assessment that cannot be made from code alone — especially with utility-class frameworks like Tailwind where the visual output is not obvious from the markup.
 
-**What will stick:** The test-first gate — write tests before implementation, commit them separately, human can review. This is a genuinely good practice with a clear benefit. Developers who have been burned by intent mismatches will adopt it.
+## 7. Political Survival (Adoption and Resistance)
 
-**What will not stick:** The four-column test specification table as a planning default. The test level taxonomy for non-expert users. The diagnostic expectations column for anyone who has not experienced the pain of uninformative test failures.
+**What will be adopted:** The issue checklist. Developers will appreciate an agent that catches flex container bugs and overflow problems. This is the kind of tedious, detail-oriented review work that humans skip and agents are good at.
 
-**The popular version:** Keep the test-first gate. Drop the structured table as the default format. Let the human write test cases however they want — prose bullet points are fine. Move the test level taxonomy and diagnostic expectations to optional guidance rather than table columns. Add one line of implementation instruction: "When writing test code, include descriptive failure messages with expected-vs-actual values." That is a code-generation instruction, not a planning artifact.
+**What will be resisted:** The aesthetic philosophy. The first time the agent tells a team using a modern design system to make their scroll bars always visible, someone will disable or fork the skill. The Windows 98 framing is memorable but polarizing — it will be read as the agent having opinions about design rather than catching bugs, and developers do not want their code review tool to have design opinions.
 
-This gets the core benefit (tests as a specification checkpoint between human and LLM) without the planning overhead that kills adoption.
+**What will be ignored:** The mandatory web searches. Teams that care about speed will either remove the requirement or accept that the agent takes longer without questioning whether the searches improve output quality. The searches will become invisible overhead rather than a valued part of the process.
 
 ## 8. The Cost Disease Check
 
-The RPI workflow started as a simple research-plan-implement loop. It now includes: pivot guidance, working document conventions, freshness tracking, design decision integration via DD, plan annotation conventions, file size discipline, context management guidance, session handoff docs, abbreviation rules, a refactoring variant, and now a structured test specification table, inline taxonomy, a review gate, and diagnostic guidance.
+The skill has eight mandatory rules, a seven-item checklist, a three-resolution viewport verification, an eight-item "classic UI principles" reference, and requirements for web search, tech company guideline consultation, and structured reporting with before/after code. For a single-purpose skill (review CSS for layout bugs), this is a lot of process.
 
-Each addition is individually justified. But the cumulative effect is a workflow document approaching the complexity of a process manual. At some point, the workflow document itself needs the "file size discipline" treatment it prescribes for code — splitting into a core loop and supplementary guides. The test specification table and taxonomy, for example, could be a reference appendix rather than inline content, reducing the cognitive weight of the main flow while preserving access for those who need it.
+Each mandatory web search has a fixed cost in time and tokens. That cost does not decrease as the agent gets better at CSS review — it is a floor, not a ceiling. As the agent's training data improves and its ability to reason about CSS gets stronger, the mandatory search requirement becomes pure overhead: the agent already knows the answer but is forced to look it up anyway. The skill has no mechanism to skip searches when the agent is confident, because confidence assessment is not part of the process.
 
-The trajectory concern is real: if each iteration adds another gate or structured section, you are on the escalator. The check against this is whether each addition reduces total time-to-working-code. The test-first gate probably does (catching specification mismatches early is genuinely cheaper). The structured test specification table probably does not — it adds planning time without a proportional reduction in downstream cost, because the LLM can infer most of what the table asks for from the plan's approach and steps sections.
+The trajectory is familiar: a tool that starts as "catch layout bugs" accumulates philosophy, research requirements, and verification checklists until the overhead dominates the core function. The skill is already there on its first draft.
 
 ## 9. Overall Assessment
 
-This is a good idea with a somewhat overengineered implementation. The core insight — make tests a first-class part of the workflow so the human specifies behavior before the LLM implements it — is sound and addresses a real failure mode in human-LLM collaboration.
+This is a useful tool buried inside an overengineered process. The issue checklist is genuinely good. The structured report format is helpful. The instinct to catch layout bugs through code review is sound and addresses a real gap.
 
 **Sound parts:**
-- Test-first during implementation is a genuinely good default. The separate test commit is the strongest idea here.
-- The insight that test failures are the human's primary debugging interface is correct and underappreciated.
-- Inline test-level guidance is better than pointing to an external reference doc.
-- The prose summary alongside test code bridges the medium gap between human and LLM.
+- The seven-item issue checklist is well-prioritized and covers real CSS failure modes.
+- Checking for project-local UI guidelines first is the right default.
+- Structured reporting with severity levels and before/after code is exactly what developers want from a review tool.
+- The prohibition on recommending solutions that hide content is a reasonable heuristic (even if "always-visible scroll bars" takes it too far).
 
 **Wish-fulfillment parts:**
-- The structured test specification table assumes humans will do upfront specification work they historically do not do, even when they agree it is valuable.
-- Three human review checkpoints before feature code exists assumes sustained reviewer attention that erodes at scale.
-- "Diagnostic expectations" as a planning-phase column assumes the human knows enough about failure modes to specify diagnostics before the code exists.
+- The Windows 98 aesthetic philosophy assumes the agent's design opinions will be welcomed. They will not.
+- Mandatory web searches for every issue type assume search results are more reliable than training data. They frequently are not.
+- Viewport testing assumes the agent can run code in a browser. It cannot.
+- The specific viewport resolutions in the checklist are factually wrong about what users actually use.
 
 **Most important revision:**
-Separate the *implementation instruction* ("write tests first, commit them separately, include good failure messages") from the *planning artifact* ("fill out this table with four columns"). The former is high-value and low-cost. The latter is the part that will be abandoned, and when it is, people will feel like they are "not doing the workflow right" and stop doing any of it. Make the high-value part the unambiguous default and the structured planning table an optional practice for complex features, rather than the other way around.
+Strip the skill down to its core: read code, run the checklist, report findings with fixes. Make the aesthetic philosophy optional guidance rather than a governing principle. Replace mandatory web searches with a "search when uncertain" heuristic. Update the viewport checklist to reflect actual market share data (320-480px mobile, 768-1024px tablet, 1920x1080 desktop). The result would be a faster, more credible tool that teams actually keep enabled.
+
+The skill's own instinct is right: an ugly scroll bar that works is better than a hidden one users never find. But an agent that quickly catches real bugs is better than one that slowly delivers bug reports wrapped in design philosophy nobody asked for.

@@ -1,97 +1,108 @@
-# Fact-Check Report: Church-Turing Antithesis Draft
+# Fact-Check Report: UI Visual Review Skill
 
-**Draft author:** Not specified
-**Checked:** 2026-03-27
-**Total claims checked:** 7
-**Summary:** 0 accurate, 3 mostly accurate, 0 disputed, 2 inaccurate, 2 unverified
-
----
-
-## Claim 1: "The Church-Turing Thesis is a foundational theorem in computer science"
-
-**Verdict:** Inaccurate
-**Confidence:** High
-
-The Church-Turing Thesis is explicitly *not* a theorem. It is a thesis (sometimes called a conjecture or hypothesis) — a claim about the nature of computation that has never been formally proved or disproved. The Stanford Encyclopedia of Philosophy, Wikipedia, and Wolfram MathWorld all consistently describe it as a thesis or conjecture, not a theorem. It cannot be proved mathematically because it relates an informal notion (effective calculability) to a formal one (Turing computability). The draft calls it a "theorem" twice (in the first paragraph and again in the second), which is a substantive error since the distinction between a provable theorem and an unproven thesis is fundamental to the claim's status in computer science.
-
-**Sources:** [Church-Turing thesis — Wikipedia](https://en.wikipedia.org/wiki/Church%E2%80%93Turing_thesis); [Stanford Encyclopedia of Philosophy — The Church-Turing Thesis](https://plato.stanford.edu/entries/church-turing/); [Wolfram MathWorld — Church-Turing Thesis](https://mathworld.wolfram.com/Church-TuringThesis.html)
+**Draft:** skills/ui-visual-review.md (proposed)
+**Date:** 2026-04-03
+**Total claims checked:** 9
+**Summary:** 4 accurate, 2 mostly accurate, 2 disputed, 0 inaccurate, 0 unverified
 
 ---
 
-## Claim 2: "[The Church-Turing Thesis] says, effectively, any computer can simulate any other computer"
+## Claims Checked
+
+### Claim 1: Windows 98 scroll bars were always visible when content overflows
+> "Scroll bars are always visible when content overflows."
 
 **Verdict:** Mostly accurate
 **Confidence:** High
-
-The Church-Turing Thesis itself says that any effectively computable function is computable by a Turing machine. The consequence that "any computer can simulate any other computer" (i.e., that all sufficiently powerful models of computation are equivalent in what they can compute) follows from the thesis, and is a widely accepted informal summary. However, the thesis is specifically about *computability* (what can be computed), not about *efficiency* (how fast). The draft's phrasing is a reasonable informal gloss but elides this important distinction, which matters because the draft then immediately pivots to efficiency claims.
-
-**Sources:** [Church-Turing thesis — Wikipedia](https://en.wikipedia.org/wiki/Church%E2%80%93Turing_thesis); [Stanford Encyclopedia of Philosophy — The Church-Turing Thesis](https://plato.stanford.edu/entries/church-turing/)
+**Evidence:** In Windows 98, scroll bars appeared automatically when window content exceeded the visible area — "at the right side or the bottom of a window when all of the information in that window cannot be seen at the same time." The behavior was technically "auto" (appear when needed) rather than "always visible regardless," but scroll bars were never hidden when content did overflow. The key contrast with modern UIs (where scroll bars may be hidden even when content overflows, as on macOS) is valid and is the real point being made.
+**Source:** [GCFGlobal Windows 98 Tutorial](https://edu.gcfglobal.org/en/windows98/moving-and-sizing-windows/1/), [98.css design system](https://jdan.github.io/98.css/)
 
 ---
 
-## Claim 3: "the theorem states that the overhead cost in computing steps of simulating a different computational substrate is at worst polynomial in the length of computation"
-
-**Verdict:** Inaccurate
-**Confidence:** High
-
-The Church-Turing Thesis itself makes no claims about efficiency or overhead. The claim described here corresponds to a different and distinct conjecture: the *Extended Church-Turing Thesis* (also called the *Strong Church-Turing Thesis* or the *feasibility thesis*), or relatedly the *Invariance Thesis* of Slot and van Emde Boas. The Extended Church-Turing Thesis states that a probabilistic Turing machine can efficiently simulate any realistic model of computation, where "efficiently" means with at most polynomial overhead. The Invariance Thesis more specifically states that reasonable machines can simulate each other within polynomially bounded overhead in time and constant-factor overhead in space. These are separate conjectures from the original Church-Turing Thesis, and both remain unproven. Additionally, the Extended Church-Turing Thesis faces credible challenges from quantum computation.
-
-**Sources:** [Church-Turing thesis — Wikipedia](https://en.wikipedia.org/wiki/Church%E2%80%93Turing_thesis); [Computational Complexity Blog — The Efficient Church-Turing Thesis](https://blog.computationalcomplexity.org/2006/12/efficient-church-turing-thesis.html); [Slot and van Emde Boas, STOC 1984](https://dl.acm.org/doi/10.1145/800057.808705)
-
----
-
-## Claim 4: "the potentially immense cost of O(t squared) slowdowns on LLM training runs from simulating RAM via classical Turing machine"
+### Claim 2: Windows 98 buttons had borders, backgrounds, and hover/active states
+> "Buttons look like buttons. They have borders, backgrounds, and hover/active states."
 
 **Verdict:** Mostly accurate
+**Confidence:** High
+**Evidence:** Windows 98 buttons had strong visible affordances — 3D beveled borders and distinct backgrounds that made them look "pushable." The active (pressed) state was prominent. However, hover states were not a standard feature of Windows 98 buttons; hover highlighting became more prominent in Windows XP and later. The claim about borders and backgrounds is accurate; including "hover states" as a Windows 98-era characteristic is slightly anachronistic.
+**Source:** [98.css design system](https://jdan.github.io/98.css/), [Microsoft Windows Interface Guidelines (PDF)](https://ics.uci.edu/~kobsa/courses/ICS104/course-notes/Microsoft_WindowsGuidelines.pdf)
+
+---
+
+### Claim 3: Apple Human Interface Guidelines cover layout and sizing principles
+> "Apple Human Interface Guidelines (for layout and sizing principles)"
+
+**Verdict:** Accurate
+**Confidence:** High
+**Evidence:** Apple's Human Interface Guidelines have dedicated sections on layout, including guidance on safe areas, adaptive layouts using size classes, minimum touch targets (44pt), and responsive text sizing.
+**Source:** [Apple HIG - Layout](https://developer.apple.com/design/human-interface-guidelines/layout)
+
+---
+
+### Claim 4: Google Material Design covers responsive breakpoints and touch targets
+> "Google Material Design (for responsive breakpoints and touch targets)"
+
+**Verdict:** Accurate
+**Confidence:** High
+**Evidence:** Material Design defines responsive breakpoints at 480, 600, 840, 960, 1280, 1440, and 1600dp, and specifies minimum touch target sizing (48dp in Material Design 2/3).
+**Source:** [Material Design Responsive UI](https://m1.material.io/layout/responsive-ui.html), [Material Design 3 Layout](https://m3.material.io/foundations/layout/understanding-layout/overview)
+
+---
+
+### Claim 5: MDN Web Docs covers CSS property behavior and browser compatibility
+> "MDN Web Docs (for CSS property behavior and browser compatibility)"
+
+**Verdict:** Accurate
+**Confidence:** High
+**Evidence:** MDN provides detailed documentation for every CSS property including syntax, behavior, examples, and browser compatibility tables sourced from the browser-compat-data project (over 15,000 features tracked).
+**Source:** [MDN Browser Compatibility Data](https://developer.mozilla.org/en-US/docs/MDN/Writing_guidelines/Page_structures/Compatibility_tables)
+
+---
+
+### Claim 6: Viewport categories — small mobile 320px-480px, tablet 768px-1024px, large desktop 1440px+
+> "Small mobile (320px-480px wide) / Tablet/small laptop (768px-1024px wide) / Large desktop (1440px+ wide)"
+
+**Verdict:** Accurate
+**Confidence:** High
+**Evidence:** These ranges align with industry-standard responsive breakpoints. Common mobile breakpoints are 320px-480px, tablet breakpoints are 768px-1024px, and large desktop starts at 1280px-1440px. Bootstrap uses similar ranges (sm: 576px, md: 768px, lg: 992px, xl: 1200px). The draft's ranges are reasonable and consistent with widely used frameworks.
+**Source:** [BrowserStack Responsive Design Breakpoints](https://www.browserstack.com/guide/responsive-design-breakpoints), [Bootstrap Breakpoints](https://getbootstrap.com/docs/5.0/layout/breakpoints/)
+
+---
+
+### Claim 7: 1024x768 as "minimum supported" resolution
+> "1024x768 (minimum supported): all action buttons visible without scrolling"
+
+**Verdict:** Disputed
 **Confidence:** Medium
-
-The O(t squared) figure for simulating RAM on a Turing machine is in the right ballpark. Cook and Reckhow (1973) showed that a T(n) time-bounded RAM can be simulated by a Turing machine in O(T(n) squared) time under the logarithmic cost model. More recent work (ECCC TR26-006) provides evidence of a nearly quadratic lower bound (n squared / polylog(n)) relative to a random oracle for simulating RAM on multitape Turing machines. So the O(t squared) figure is a reasonable statement of the overhead, though the exact bound depends on the cost model used. The characterization of this as "potentially immense" for LLM training is a judgment rather than a checkable fact.
-
-**Sources:** [Cook and Reckhow, "Time Bounded Random Access Machines" (1973)](https://www.cs.toronto.edu/~sacook/homepage/rams.pdf); [ECCC TR26-006](https://eccc.weizmann.ac.il/report/2026/006/)
+**Evidence:** 1024x768 was historically a common minimum design target but is no longer standard for desktop web design. As of 2025, the most common desktop resolution is 1920x1080 (24%), followed by 1536x864 (11%) and 1366x768 (10%). 1024x768 does not appear in the top desktop resolutions. It remains relevant for tablets in landscape mode, but calling it "minimum supported" without qualification is outdated. Whether this is appropriate depends on the specific project's audience — for internal tools or kiosk applications it may be reasonable — but the draft presents it as a general guideline.
+**Source:** [StatCounter Screen Resolution Stats](https://gs.statcounter.com/screen-resolution-stats/desktop/worldwide), [BrowserStack Common Screen Resolutions 2026](https://www.browserstack.com/guide/common-screen-resolutions)
 
 ---
 
-## Claim 5: "in our modern memory-space-limited regime, the simulation overhead is at most logarithmic — that is, one substrate simulating a process that takes space S can do so using space bounded by O(S * log(S))"
+### Claim 8: 1440x900 as "typical laptop" resolution
+> "1440x900 (typical laptop): layout fills space without excessive whitespace"
 
-**Verdict:** Unverified
-**Confidence:** Low
-
-The Invariance Thesis of Slot and van Emde Boas claims that reasonable machines can simulate each other with *constant-factor* overhead in space, which would be O(S), not O(S * log(S)). If the draft's O(S * log(S)) bound is correct, it would be a weaker (easier to achieve) bound than the Invariance Thesis claims. Some simulation results do involve logarithmic factors — for instance, simulating RAM with a Turing machine using balanced binary trees for address lookup introduces logarithmic factors. However, I could not find a specific well-known result that states the space overhead is exactly O(S * log(S)) as a standard bound. The claim may be referencing a specific simulation technique, but without a citation it is difficult to verify the precise bound stated.
-
-**Sources:** [Slot and van Emde Boas, "On tape versus core" (1984)](https://dl.acm.org/doi/10.1145/800057.808705); [Forster, Kunze, Roth — "The Weak Call-by-Value lambda-Calculus is Reasonable for Both Time and Space"](https://www.ps.uni-saarland.de/Publications/documents/ForsterKunzeRoth_2019_wcbv-Reasonable.pdf)
-
----
-
-## Claim 6: "Creating theoretical lower bounds on the computational complexity of an algorithm is harder than proving upper bounds"
-
-**Verdict:** Mostly accurate
-**Confidence:** High
-
-This is a widely recognized observation in computational complexity theory. Upper bounds require demonstrating that one algorithm solves a problem efficiently (an existential claim), while lower bounds require proving that *no* algorithm can do better (a universal claim). The logical structure — proving "for all algorithms, there exists a hard instance" versus "there exists an algorithm that works for all instances" — makes lower bounds fundamentally harder. The Simons Institute describes the difficulty of "mathematically reasoning about all resource-bounded algorithms" as the core challenge. Formal barrier results (relativization, natural proofs, algebrization) demonstrate that standard proof techniques are provably insufficient for establishing strong lower bounds. The statement is accurate as a general observation about the field, though phrased as absolute ("harder") rather than as a tendency.
-
-**Sources:** [Simons Institute — Lower Bounds in Computational Complexity](https://simons.berkeley.edu/news/inside-lower-bounds-computational-complexity); [Yale CS — Lower Bounds](https://www.cs.yale.edu/homes/aspnes/pinewiki/LowerBounds.html); [Jeff Erickson — Lower Bounds lecture notes](https://jeffe.cs.illinois.edu/teaching/algorithms/notes/12-lowerbounds.pdf)
-
----
-
-## Claim 7: "[The Church-Turing Thesis] is perhaps the most interesting justification behind the unreasonable effectiveness of mathematics"
-
-**Verdict:** Unverified
+**Verdict:** Disputed
 **Confidence:** Medium
+**Evidence:** As of March 2025, 1440x900 accounts for only ~4% of desktop screen resolutions worldwide. The most common laptop resolutions are 1920x1080, 1536x864, and 1366x768. Calling 1440x900 "typical laptop" is misleading — it is a legacy resolution associated with older MacBook Airs and mid-range monitors. A more typical laptop resolution today would be 1366x768 or 1920x1080.
+**Source:** [StatCounter Screen Resolution Stats](https://gs.statcounter.com/screen-resolution-stats/desktop/worldwide), [BrowserStack Common Screen Resolutions 2026](https://www.browserstack.com/guide/common-screen-resolutions)
 
-"The unreasonable effectiveness of mathematics" is a real and well-known phrase, originating from Eugene Wigner's 1960 paper "The Unreasonable Effectiveness of Mathematics in the Natural Sciences." However, Wigner's argument is about why mathematics describes physical reality so well — it is not about computation or the Church-Turing Thesis. The claim that the Church-Turing Thesis is a "justification" for the unreasonable effectiveness of mathematics is an original interpretive claim by the author. While one could construct an argument linking computational universality to the broad applicability of mathematical reasoning, this is not a standard or widely cited connection in the literature. The claim is not so much wrong as it is a novel assertion that cannot be verified against existing sources.
+---
 
-**Sources:** [Eugene Wigner, "The Unreasonable Effectiveness of Mathematics in the Natural Sciences" (1960)](https://en.wikipedia.org/wiki/The_Unreasonable_Effectiveness_of_Mathematics_in_the_Natural_Sciences)
+### Claim 9: CSS vendor prefix requirement
+> "You MUST NOT introduce CSS that requires vendor prefixes without noting which browsers need them."
+
+**Verdict:** Accurate (as a practice recommendation)
+**Confidence:** High
+**Evidence:** While most CSS properties no longer need vendor prefixes, some (e.g., `-webkit-appearance`, `-webkit-text-stroke`) still require them. A 2026 CSS audit found the median website still has 140 vendor-prefixed properties, many unnecessary. Documenting which browsers need prefixes is sound practice, aligned with the recommendation to use tools like Autoprefixer rather than hand-authoring prefixes.
+**Source:** [Vendor Prefixes in 2026 - Max Glenister](https://blog.omgmog.net/post/why-vendor-prefixes-are-still-in-your-css/), [MDN Vendor Prefix Glossary](https://developer.mozilla.org/en-US/docs/Glossary/Vendor_Prefix)
 
 ---
 
 ## Claims Requiring Author Attention
 
-1. **Claim 1 (Inaccurate):** The Church-Turing Thesis is not a theorem. It is an unproven thesis/conjecture. The draft should use "thesis" or "conjecture" throughout, not "theorem."
+1. **Claim 2 (Mostly accurate):** Windows 98 buttons did not have prominent hover states. Consider changing "hover/active states" to just "active states" or "press states" to be historically accurate for the Windows 98 era.
 
-2. **Claim 3 (Inaccurate):** The polynomial overhead claim is not part of the Church-Turing Thesis. It belongs to the *Extended* Church-Turing Thesis or the Invariance Thesis — distinct and separately named conjectures. The draft conflates these.
+2. **Claim 7 (Disputed):** 1024x768 is no longer a standard "minimum supported" resolution for general web design. Consider updating to 1280x720 or 1366x768 as the minimum, or qualifying the 1024x768 target as applicable to specific use cases (tablets, legacy hardware).
 
-3. **Claim 4 (Mostly accurate):** The O(t squared) figure is reasonable but depends on the cost model. Consider specifying the logarithmic cost model for precision.
-
-4. **Claim 5 (Unverified):** The O(S * log(S)) space bound is not a standard result that could be verified. The Invariance Thesis actually claims constant-factor space overhead (stronger than what the draft states). The author should provide a citation for this specific bound.
-
-5. **Claim 7 (Unverified):** The link between the Church-Turing Thesis and "the unreasonable effectiveness of mathematics" appears to be the author's original interpretation, not a standard connection in the literature. Consider flagging this as a personal view or providing supporting references.
+3. **Claim 8 (Disputed):** 1440x900 is not a "typical laptop" resolution by current statistics. Consider updating to 1366x768 (budget laptops) or 1920x1080 (standard laptops), or relabeling this breakpoint.
