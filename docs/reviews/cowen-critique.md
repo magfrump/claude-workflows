@@ -1,138 +1,128 @@
-# Cowen-Style Critique: RPI Workflow and Foregrounding Tests
+# Cowen-Style Critique: The Church-Turing Antithesis
 
-**Reviewed:** 2026-03-26
-**Documents:** `workflows/research-plan-implement.md`, `docs/decisions/006-foregrounding-tests.md`
+**Reviewed:** 2026-03-27
+**Document:** Draft essay on "Church-Turing Antithesis" — substrate-specific lower bounds on computational complexity
 
 ---
 
 ## 1. The Argument, Decomposed
 
-The combined thesis breaks into these sub-claims:
+The draft bundles several distinct claims together, moving from established computer science through speculative conjecture to philosophical reflection. Pulling them apart:
 
-1. **LLMs produce better code when given structured plans.** The RPI workflow assumes that Research -> Plan -> Implement, with human checkpoints, yields better outcomes than letting the LLM code directly.
+1. **The Church-Turing Thesis guarantees that any computer can simulate any other computer.** (Background claim, stated as the starting point.)
 
-2. **Tests are a specification language, not just a verification tool.** Decision 006 argues that tests are "among the most precise forms of behavioral specification in human-LLM collaboration."
+2. **The overhead of cross-substrate simulation is bounded polynomially in time and logarithmically in space.** (Attributed to the Church-Turing Thesis itself.)
 
-3. **Humans should design tests; LLMs should implement them.** The division of labor is: human writes behavioral constraints in prose, LLM translates to executable code.
+3. **Despite bounded overhead, some computations are more naturally expressed in one substrate than another.** (The Conway's Game of Life example.)
 
-4. **Catching mismatches at the test-review stage is cheaper than catching them after implementation.** The classic "shift left" argument, applied to human-LLM collaboration.
+4. **Some algorithm/substrate pairs may be "native" — meaning no other substrate can execute the algorithm without paying the full simulation overhead on top of the native complexity.**
 
-5. **Diagnostic quality of test failures matters more in LLM workflows than in traditional development.** Because the human may not be able to (or want to) read all the implementation code.
+5. **The existence of such pairs would constitute a "Church-Turing Antithesis" — a lower bound showing that some problems are essentially only solvable within one computational frame.**
 
-6. **Inline taxonomy guidance is better than a separate reference doc.** Keeping test-level guidance in the workflow rather than in a standalone document.
+6. **Formalizing this conjecture requires imposing complexity constraints on the substrate itself to rule out trivial counterexamples.** (The Shakespeare keyboard.)
 
-7. **The existing one-line testing guidance was insufficient.** The "do nothing" option was rejected because the guidance "gets skipped in practice."
+7. **This idea has philosophical resonance: "we can understand one another, but it will take effort."**
 
-These are seven distinct claims. The draft treats them as a single package, but they have very different evidentiary bases and very different risk profiles.
+These are very different kinds of claims. Claims 1-2 are (intended as) established facts. Claim 3 is an observation. Claims 4-6 are the speculative core. Claim 7 is a metaphorical interpretation. The draft moves fluidly between them, which makes the essay pleasant to read but makes it harder to evaluate what exactly is being proposed.
 
 ---
 
 ## 2. What Survives the Inversion
 
-**Inverting sub-claim 1: "LLMs produce worse code with structured plans."** This doesn't survive well. There's broad consensus that structured prompting improves LLM output. The interesting inversion is weaker: "The overhead of the planning ceremony exceeds the quality improvement for most tasks." This has some force. The workflow's own "when to skip" section implicitly concedes this by carving out trivial changes, urgent hotfixes, and cases where you already understand the code. The question is whether the boundary is drawn in the right place.
+**Inverting claim 4-5: "There are no native algorithm/substrate pairs — every algorithm can be expressed just as efficiently on any reasonable substrate."** This is, roughly, what the Extended Church-Turing Thesis already claims (for polynomial overhead). And the draft actually acknowledges this: the conjecture the author wants to state is precisely a denial of something like the Extended CT Thesis, but at a finer grain. The inversion is essentially the status quo view in theoretical computer science. The draft is aware it is pushing against the default, which is good.
 
-**Inverting sub-claim 2: "Tests are not a good specification language for human-LLM collaboration."** This partially survives. Tests specify *what* but not *why*. A human writing "the function should return an empty list when the input is null" has expressed a behavior, but hasn't expressed the design rationale. An LLM implementing to pass that test might produce code that handles the null case but misunderstands the broader design intent. Tests are precise but narrow -- they specify points in the behavior space, not the shape of it.
+**Inverting claim 3: "The naturalness of expressing a computation in a given substrate is an illusion — it reflects human cognitive limitations, not computational ones."** This partially survives and is genuinely interesting. The Game of Life example feels compelling because *humans* find cellular automaton patterns easier to perceive in a grid. But a Turing machine does not care about visual legibility. The draft conflates description-length complexity (how concise the program is) with computational complexity (how many steps it takes), and the inversion helps expose this. A computation that is "incomprehensible expressed via classical Turing machine" might still be equally *efficient* — just ugly. The draft needs to more carefully separate aesthetics of expression from computational cost.
 
-**Inverting sub-claim 3: "LLMs should design tests; humans should review them."** This is arguably closer to how most human-LLM collaboration actually works today. The human describes the feature, the LLM writes both tests and implementation, the human reviews everything. The RPI workflow's proposed inversion -- human designs, LLM implements -- is the more unusual claim. More on this under "Revealed vs. Stated."
-
-**Inverting sub-claim 5: "Diagnostic quality matters less in LLM workflows."** This doesn't survive at all. If anything, the argument understates the case. When a human developer's tests fail, they can set breakpoints, add logging, inspect state interactively. When an LLM's implementation fails tests, the human's primary interface is the test output. Diagnostic quality is arguably *more* important here than in traditional development. This is the strongest sub-claim in the whole argument.
+**Inverting claim 7: "We cannot understand one another, even with effort."** Or alternatively: "Understanding one another is free — it requires no effort." Neither extreme survives, but the inversion reveals that the philosophical gloss is not really supported by the technical content. The technical conjecture is about worst-case simulation bounds. The philosophical claim is about mutual comprehension. These are connected only by metaphor, and the metaphor does a lot of unsupported weight-bearing.
 
 ---
 
 ## 3. Factual Foundation
 
-The fact-check report (10 claims checked) provides three findings most relevant to this critique:
+The fact-check report surfaces several findings that matter structurally:
 
-**The "over a dozen approaches" claim is unverifiable (Claim 7).** No artifact preserves the full list from the DD session. This matters because the decision record uses the quantity to signal thoroughness of the design process. If the actual number was 6 or 8, the claim still works -- divergent design was used, multiple alternatives were considered. The specific quantity carries more weight than the argument needs, and it cannot be verified. This is a minor credibility risk, and it is somewhat ironic for a workflow system that emphasizes artifact preservation.
+**The Church-Turing Thesis is not a theorem (Claim 1: Inaccurate, High confidence).** The draft calls it a "theorem" twice. This matters beyond pedantry: the entire essay is about pushing against the boundaries of what the CT Thesis claims, so getting its epistemic status wrong (proven theorem vs. unproven thesis) undermines the author's credibility on the very topic they are writing about.
 
-**"The human designs behavioral constraints in prose, the LLM translates them into executable test code" is mostly accurate but unverified as practice (Claim 10).** This accurately describes the *designed process* but whether the translation works reliably is a separate question requiring usage data. The entire foregrounding-tests decision rests on this division of labor working in practice, and there's no usage data yet.
+**The polynomial overhead claim belongs to the Extended CT Thesis, not the original (Claim 3: Inaccurate, High confidence).** This is the most structurally damaging finding. The draft's argument depends on there being a known bound (polynomial overhead) that the author then wants to show is sometimes tight. But the bound itself is a separate, unproven conjecture — not a consequence of the Church-Turing Thesis. The author is proposing a conjecture (the Antithesis) that is in tension with another conjecture (the Extended CT Thesis), while attributing the second conjecture to a different, more established claim. This muddies the logical structure considerably.
 
-**"The test-strategy skill has a full taxonomy" slightly overstates (Claim 4).** The skill covers multiple test types with guidance on when to use each, but does not present them as a formal taxonomy. Minor, but it's the kind of casual inflation that can compound across a document.
+**The O(S * log(S)) space bound is unverified (Claim 5: Unverified, Low confidence).** If this bound is wrong, a key motivating observation — that space overhead is small enough to be practical — loses its support.
+
+**The link to "unreasonable effectiveness of mathematics" is the author's original interpretation (Claim 7: Unverified).** This is fine for an essay, but the draft presents it without flagging it as a novel connection rather than an established one.
 
 ---
 
 ## 4. The Boring Explanation
 
-The most mundane account: someone using an LLM for coding discovered that test quality matters a lot when you cannot watch the LLM work, got frustrated by vague test guidance in the existing workflow, and added more structured test guidance.
+The most mundane account of what is happening here: a technically literate person noticed that different programming paradigms make different problems easy, tried to formalize this intuition using complexity theory, discovered that formalization is hard, and wrote up the attempt as a speculative essay.
 
-This boring explanation accounts for roughly 90% of the decision. The "tests as human-LLM interface" framing is doing rhetorical work to make a straightforward improvement sound like a conceptual breakthrough. The actual change is: (a) the plan template now has a table for test cases instead of a one-liner, (b) there is inline guidance on test levels, (c) there is a checkpoint for reviewing tests before implementation, and (d) there is guidance on making test failures informative.
+This boring explanation covers almost everything in the draft. The core observation — that cellular automata are better at simulating cellular automata than Turing machines are — is not surprising. It is the kind of thing any programmer who has worked in multiple paradigms has noticed. The interesting question is whether "better at" can be made precise in a way that yields a meaningful conjecture.
 
-All four of these are good ideas. None of them required the "tests are a specification mechanism" framing to justify. A simpler framing -- "the testing section was too vague, so we made it more structured" -- explains the same changes with less theoretical overhead.
+The draft is honest about this: "I've left a lot of open questions even in the problem of constructing a conjecture." This honesty is good, but it also means the essay's intellectual contribution is essentially: "here is an intuition I find interesting, and here is why formalizing it is hard." The boring explanation says: yes, exactly, and the difficulty of formalization is itself evidence that the intuition may not carve nature at its joints.
 
-The interesting question the boring explanation raises: will the structured test table actually get filled out in practice, or will it suffer the same fate as the one-liner it replaced? The one-liner was skipped because it was too vague. The table might be skipped because it is too much ceremony. The decision record acknowledges this ("simple features can use minimal test specs") but does not define what "minimal" means or when to invoke the escape hatch.
+What the boring explanation does *not* account for: the Shakespeare keyboard example is genuinely clever as an illustration of why naive formalizations fail. The move from "some substrates are better for some problems" to "but how do you rule out substrates that cheat by encoding the answer?" is a real insight about the difficulty of complexity lower bounds. This is the part of the draft that adds value beyond the obvious.
 
 ---
 
 ## 5. Revealed vs. Stated
 
-**Stated preference:** "The human designs behavioral constraints in prose, the LLM translates them into executable test code." This frames tests as primarily a *specification* tool.
+**Stated preference:** The author claims not to "take the idea too seriously."
 
-**Revealed preference:** The diagnostic expectations column -- what should be visible when a test fails -- reveals that the authors care most about tests as a *debugging* tool. If you genuinely believed tests were primarily specifications, the diagnostic column would be secondary to the expected-behavior column. But the diagnostic column gets the longest explanation and the most specific guidance. The real pain point is not "the LLM did not know what I wanted" but "the LLM did something wrong and I could not figure out what from the test output." This is a debugging problem, not a specification problem.
+**Revealed preference:** The author wrote an essay about it, coined a term for it ("Church-Turing Antithesis"), and posted it for others to read. People who do not take ideas seriously do not name them. The naming act reveals that the author believes this is a real research direction, not just a passing thought. This is fine — the idea is interesting enough to name — but the false modesty slightly undercuts the essay. Own the speculation.
 
-**Stated preference:** The test review gate is positioned as a "human checkpoint" analogous to the plan review gate.
+**Stated preference:** The draft frames this as a question in theoretical computer science — about computational complexity bounds.
 
-**Revealed preference:** The test review gate has an explicit escape hatch: "if the user doesn't respond promptly, proceed with implementation but flag that tests haven't been reviewed." The plan review gate has no such escape: "implementation does not begin until the user has reviewed the plan." The test gate is softer than the plan gate. This reveals that the authors consider the plan more important than the test specification -- which is in tension with the claim that tests are the primary interface. If tests were truly the specification mechanism, the test gate should be at least as firm as the plan gate.
-
-**Stated preference:** Working documents are "disposable" and "freely overwritten."
-
-**Revealed preference:** The workflow specifies a file naming convention, a directory structure, a `.gitattributes` configuration, freshness tracking rules, and a promotion path to `docs/thoughts/`. That's a lot of infrastructure for something disposable. The documents are treated as disposable in theory but managed as artifacts in practice. This isn't necessarily wrong -- ephemeral artifacts can still benefit from structure -- but the language understates the actual investment.
+**Revealed preference:** The essay closes with a philosophical observation about mutual understanding, which is the part the author clearly cares about most. The technical apparatus is in service of the philosophical point, not the other way around. The revealed preference is that this is a philosophy essay wearing a computer science costume. Again, this is fine, but acknowledging it would improve the essay's self-awareness.
 
 ---
 
 ## 6. The Analogy
 
-**Architectural blueprints vs. building codes.**
+**Musical instruments and compositions.**
 
-The decision record frames tests as blueprints -- the detailed specification that the builder follows. But most test cases are actually closer to building codes -- they specify constraints (the load-bearing wall must support X, the exit must be Y width) without specifying the design. A test that says "this function returns a sorted list" constrains the implementation without specifying it.
+Some musical pieces are "native" to their instrument in a way that structurally parallels the draft's conjecture. Paganini's Caprices exploit the specific physical properties of the violin — the tuning of open strings, the reach of the left hand, the resonances of the body. You can transcribe them for piano, and the result is playable, but the transcription is not merely less elegant — it is *computationally harder* for the pianist in a specific sense. Passages that fall naturally under the violinist's fingers require awkward jumps on the keyboard. The "simulation overhead" is real and measurable in practice time.
 
-This distinction matters because blueprints and building codes have different failure modes. A blueprint that is wrong produces a building nobody wanted. A building code that is wrong either constrains too tightly (no building can pass) or too loosely (dangerous buildings pass). The workflow assumes tests work like blueprints -- the human designs the specification, the LLM implements it. But most tests work like building codes -- the human designs constraints, and the LLM has wide latitude in how to satisfy them.
+But here is what the analogy reveals: the difficulty of transcription tells you more about the *relationship between instruments* than about the *piece itself*. The Paganini Caprices are not "essentially violin music" in some deep sense — they are music that exploits violin affordances. The "nativeness" is a property of the (piece, instrument) pair, not of the piece alone. Similarly, the draft's conjecture is really about the structure of the simulation relationship between substrates, not about the algorithm in isolation.
 
-The building code analogy suggests a different risk than the one the decision record anticipates. The decision worries about intent mismatch (the LLM builds the wrong thing). The building code frame worries about constraint adequacy (the tests pass but the implementation is still wrong, because the constraints did not cover the important dimensions). This is the classic problem of high test coverage with low specification power -- all tests green, product still broken.
-
-A secondary analogy worth noting: **contract-first API design.** Teams sometimes write the API contract (OpenAPI spec, protobuf definitions) before implementing the service. The contract serves as both specification and test harness. Decision 006 is essentially proposing contract-first development for human-LLM collaboration, where the "contract" is the test specification. The contract-first analogy illuminates the key risk: contracts written before the implementation is understood tend to be revised heavily during implementation.
+The analogy also illuminates the Shakespeare keyboard problem. A player piano with a roll pre-loaded with a Paganini Caprice can "perform" it trivially — but we would not say the player piano is good at Paganini. The draft's instinct to rule out such cases is correct, and the musical analogy suggests the right framing: we want substrates that are *general-purpose instruments*, not player pianos. The complexity constraint on the substrate is analogous to requiring that the instrument be capable of playing a wide repertoire, not just one piece.
 
 ---
 
 ## 7. Contingent Assumptions
 
-1. **The human has enough technical knowledge to design test cases.** The workflow assumes the human can specify "what should happen" for each scenario, choose appropriate test levels, and describe diagnostic expectations. This works for a senior developer collaborating with an LLM. It may not work for a product manager using an LLM to build a feature, or a junior developer who doesn't yet have mental models for test design. The workflow doesn't discuss who the human is.
+1. **Computation is the right frame for the philosophical point.** The closing metaphor — "we can understand one another, but it will take effort" — does not actually require computational complexity theory. It could be motivated by translation theory, or by the philosophy of language (Quine's indeterminacy of translation), or by simple everyday experience. The computational framing is specific to a moment when computation is the dominant metaphor for cognition. If that metaphor fades, the philosophical observation survives but the essay's scaffolding does not.
 
-2. **The four test levels (unit, integration, characterization, property) are the right taxonomy.** This is a standard taxonomy, but it omits several categories that matter in practice: end-to-end tests, performance tests, contract tests, snapshot tests. The workflow acknowledges this ("Other levels are valid; the test-strategy skill has a full taxonomy") but the inline guidance shapes default choices.
+2. **Worst-case complexity is the right measure.** The draft implicitly frames "difficulty" in terms of worst-case asymptotic complexity. But in practice, average-case performance, constant factors, and hardware parallelism often matter more. A substrate that is asymptotically worse but practically faster (because of massive parallelism, say) complicates the conjecture in ways the draft does not address.
 
-3. **Test-first is always feasible.** Some tests cannot be written before the code they test exists -- particularly tests that depend on generated types, database schemas, or API response shapes that emerge during implementation. The refactoring variant handles this well (characterization tests first is natural), but the general case assumes a level of specification completeness that green-field features often lack.
+3. **"Substrate" is well-defined.** The draft uses "substrate" loosely — sometimes meaning a model of computation (Turing machine, RAM, cellular automaton), sometimes meaning something more physical. The conjecture's meaningfulness depends on having a crisp definition of what counts as a substrate, and the draft acknowledges this is unresolved.
 
-4. **A human reviewing test code can assess specification quality.** The test review gate assumes the human can read test code and judge whether it captures their intent. This requires fluency in the test framework. For many human-LLM collaboration scenarios, the human is not a proficient reader of the test framework -- that is part of why they are using an LLM.
-
-5. **Sessions are relatively short and context-limited.** The handoff doc mechanism, context budget awareness, and "fresh session for implementation" advice all assume meaningful context limits. This is true today but is a rapidly moving target. A workflow designed for 2026 context windows may be over-engineering session management.
-
-6. **Markdown artifacts are the right medium.** The entire system communicates via committed markdown files. This works well for async collaboration and version control, but some kinds of understanding resist documentation. This is a specific choice that is treated as natural.
+4. **Classical computation.** The fact-check report notes that quantum computation poses challenges to the Extended Church-Turing Thesis. If quantum computers can efficiently solve problems that classical computers cannot (the standard conjecture in complexity theory), then the whole landscape of "simulation overhead between substrates" changes dramatically. The draft does not mention quantum computation at all.
 
 ---
 
 ## 8. What the Market Says
 
-The "market" here is the revealed behavior of human-LLM coding workflows in practice. Several signals:
+If substrate-specific computational advantages were real and significant, we would expect to see it in the market for computing hardware and programming languages.
 
-**Test-driven development has been advocated for decades but never achieved majority adoption among human developers.** The reasons are well-studied: test-first requires knowing the interface before designing it, which is often circular; writing tests for exploratory code feels wasteful; the discipline breaks down under time pressure. If TDD struggles with human-only development, the claim that it works *better* in human-LLM collaboration needs an argument for why the LLM context changes the calculus. The decision record makes this argument implicitly (the LLM is better at translating test specs into code than at inferring intent from prose), but does not engage with TDD's long history of adoption challenges.
+**Hardware:** We do, in fact, see substrate-specific hardware — GPUs for matrix operations, TPUs for tensor operations, FPGAs for custom logic, ASICs for specific algorithms (Bitcoin mining). This is evidence *for* the draft's intuition. The market has decided that general-purpose CPUs are not always the best substrate, and pays real money for specialized ones.
 
-**The most successful LLM coding tools do not foreground tests as a specification mechanism.** They use natural language as the primary interface. This does not mean the test-specification approach is wrong -- the market could be under-exploring it -- but it does mean this workflow is making a contrarian bet. Contrarian bets should be explicit about what they think the market is missing.
+But the market signal is more nuanced than the draft's conjecture suggests. Specialized hardware wins on *constant factors and parallelism*, not on asymptotic complexity class. A GPU does not change the Big-O complexity of matrix multiplication — it changes the wall-clock time by exploiting parallelism. The draft's conjecture is about complexity classes, but the market is optimizing for constants. This is a meaningful gap.
 
-**Where test-first has gained traction, it is in domains with formal specifications** -- protocol conformance, mathematical properties, data serialization round-trips. These are exactly the domains where the "test as specification" metaphor works best. For vaguer, more judgment-laden tasks ("build a settings page", "add error handling"), tests-as-specification is weaker because the interesting requirements are the ones hardest to express as test cases.
+**Programming languages:** Domain-specific languages (SQL for queries, R for statistics, Verilog for hardware description) similarly suggest that "substrate" matters for expressiveness. But again, the advantage is in description length and programmer productivity, not in computational complexity. SQL queries compile down to the same operations a general-purpose language would execute.
 
-The market signal is: test-first works well in a narrow band (formal, well-specified domains) and struggles everywhere else. The workflow applies it universally. This may be right -- the structured template may help humans specify things they would otherwise leave vague -- but it is a bet against the base rate.
+The market signal is: substrate matters a lot for *practical efficiency* (constants, parallelism, expressiveness) but there is little evidence it matters for *asymptotic complexity* — which is what the draft's conjecture is actually about. The draft may be formalizing an intuition that is real but operates at a different level of abstraction than the formalization targets.
 
 ---
 
 ## 9. Overall Assessment
 
-**The change is good; the framing oversells it.** The four concrete improvements (structured test section, inline taxonomy, test review gate, diagnostic guidance) are all individually defensible and collectively make the RPI workflow better. The weakest link is the structured test table, which may face the same adoption problem as the one-liner it replaced -- not because it is too vague, but because it demands too much ceremony for simple tasks.
+**The essay's strongest contribution** is the Shakespeare keyboard example and the surrounding discussion of why naive formalizations of "native computation" fail. This is a genuinely useful illustration of a real difficulty in complexity theory — the problem of ruling out trivial encodings when defining complexity measures. Even readers who do not follow the conjecture will benefit from this example. I am fairly confident (high) in this assessment.
 
-**The strongest contribution** is the diagnostic expectations guidance. This is genuinely novel in the context of workflow documentation and addresses a real pain point (opaque test failures in LLM-generated code). If I had to keep one element and cut the rest, I would keep this.
+**The essay's weakest contribution** is the opening paragraph, which contains two factual errors (calling the thesis a theorem, attributing the polynomial overhead claim to the wrong conjecture) and an unsupported connection to "unreasonable effectiveness of mathematics." The opening is doing the most work to establish the author's authority on the topic, and it is where the authority is most undermined by imprecision. This is the highest-priority fix. High confidence.
 
-**The weakest contribution** is the theoretical framing of tests as "the most precise, executable form of requirements." This is true in the limit but misleading in practice. Most test cases are constraints, not specifications. The framing sets up an expectation that designing test cases is equivalent to specifying behavior, which it is not.
+**The speculative core (claims 4-6)** is interesting but under-developed. The author is honest about this. The question "are there algorithm/substrate pairs where simulation overhead is inherently unavoidable?" is a real question that touches on deep issues in complexity theory. But the essay does not engage with existing work on this topic — there is a literature on simulation overhead, on the relationships between computational models, on Kolmogorov complexity and description length. Even a brief gesture toward this literature would strengthen the essay's positioning. Moderate confidence — I am not certain the literature contains direct precedents, but it seems likely.
 
-**The single most important thing to address:** The gap between the stated division of labor (human designs tests, LLM implements) and the likely actual division of labor (LLM proposes tests, human reviews). The workflow should either provide guidance for the "LLM proposes, human reviews" path -- which is what will happen most of the time -- or make a stronger case for why the human-designs path is worth the extra effort. Right now it quietly assumes the human-designs path without defending it against the more common alternative. The revealed-preference analysis (the soft test gate, the emphasis on diagnostic output over specification output) suggests the authors already suspect the human-reviews path is more realistic.
+**The philosophical coda** is the part the author most wants to share, and it is the part least supported by the technical content. The connection between "simulation overhead is unavoidable" and "understanding requires effort" is evocative but not argued. The essay would be stronger if it either developed this connection more carefully or presented it more explicitly as a personal reflection rather than a conclusion. Moderate confidence.
 
-**Fact-check items to address:** The unverifiable "over a dozen approaches" claim should either be backed by a preserved artifact or accepted as imprecise. The "full taxonomy" characterization of the test-strategy skill slightly overpromises.
+**The single most important thing to address:** Fix the factual errors in the opening two paragraphs. The thesis/theorem distinction and the misattribution to the Church-Turing Thesis (rather than the Extended CT Thesis or Invariance Thesis) are the kind of errors that cause knowledgeable readers to stop trusting the author, which is fatal for a speculative essay that asks readers to follow the author into unfamiliar territory.
 
-**Confidence in this assessment:** Moderate-high. The decomposition and inversion moves are straightforward; the market analysis draws on well-documented patterns (TDD adoption rates, LLM tool design trends). The main uncertainty is whether the structured test table will see better adoption than the one-liner -- this is an empirical question that cannot be resolved by argument alone.
+**What the draft is more right about than it realizes:** The intuition that some computations are "native" to their substrate is well-supported by the market for specialized hardware and by practical experience with domain-specific languages. The draft treats this as a vague intuition in need of formalization, but it could instead point to the empirical evidence and argue that the formalization challenge is worth pursuing *because* the phenomenon is real and economically significant. The essay undersells its own motivating observation.
