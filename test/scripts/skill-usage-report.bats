@@ -34,9 +34,9 @@ teardown() {
 # --- Helpers ---
 
 add_event() {
-  local event="$1" name="$2" ts="${3:-2026-03-23T10:00:00Z}"
-  printf '{"ts":"%s","event":"%s","name":"%s","project":"test","branch":"main"}\n' \
-    "$ts" "$event" "$name" >> "$TEST_LOG"
+  local event="$1" name="$2" ts="${3:-2026-03-23T10:00:00Z}" project="${4:-test}"
+  printf '{"ts":"%s","event":"%s","name":"%s","project":"%s","branch":"main"}\n' \
+    "$ts" "$event" "$name" "$project" >> "$TEST_LOG"
 }
 
 # --- Basic output ---
@@ -159,4 +159,55 @@ add_event() {
 
   echo "$output" | grep "fact-check" | grep -q "skill"
   echo "$output" | grep "spike" | grep -q "workflow"
+}
+
+# --- Cross-project aggregation ---
+
+@test "shows events from all projects by default" {
+  add_event "skill" "fact-check" "2026-03-23T10:00:00Z" "project-a"
+  add_event "skill" "code-review" "2026-03-23T10:00:00Z" "project-b"
+
+  output=$(bash "$SCRIPT")
+
+  echo "$output" | grep -q "fact-check"
+  echo "$output" | grep -q "code-review"
+}
+
+@test "project filter restricts to named project" {
+  add_event "skill" "fact-check" "2026-03-23T10:00:00Z" "project-a"
+  add_event "skill" "draft-review" "2026-03-23T10:00:00Z" "project-b"
+
+  output=$(bash "$SCRIPT" --project=project-a)
+
+  # fact-check should appear in the usage table with a count
+  echo "$output" | grep "fact-check" | grep -qE '\b1\b'
+  # draft-review was only in project-b, so it should only appear in "Never invoked"
+  # and not in the usage table with a count
+  ! echo "$output" | grep "draft-review" | grep -qE '\b[0-9]+\b.*20[0-9][0-9]-'
+}
+
+@test "projects column shows which projects used a skill" {
+  add_event "skill" "fact-check" "2026-03-20T10:00:00Z" "project-a"
+  add_event "skill" "fact-check" "2026-03-21T10:00:00Z" "project-b"
+
+  output=$(bash "$SCRIPT")
+
+  echo "$output" | grep "fact-check" | grep -q "project-a"
+  echo "$output" | grep "fact-check" | grep -q "project-b"
+}
+
+@test "table header includes Projects column" {
+  add_event "skill" "fact-check"
+
+  output=$(bash "$SCRIPT")
+
+  echo "$output" | grep -q "Projects"
+}
+
+@test "project filter shows filter header" {
+  add_event "skill" "fact-check" "2026-03-23T10:00:00Z" "my-project"
+
+  output=$(bash "$SCRIPT" --project=my-project)
+
+  echo "$output" | grep -q "Project: my-project"
 }

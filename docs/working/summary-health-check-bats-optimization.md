@@ -1,1 +1,0 @@
-Restructured test/scripts/health-check.bats to run health-check.sh once via setup_file (with lazy-init fallback for older BATS) and assert against cached output, reducing wall time from ~60s to ~10s without losing assertion coverage.

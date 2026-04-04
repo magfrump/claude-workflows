@@ -1,147 +1,97 @@
-# Fact-Check Report: RPI Workflow and Foregrounding Tests Decision
+# Fact-Check Report: Church-Turing Antithesis Draft
 
-**Checked:** 2026-03-26
-**Total claims checked:** 10
-**Summary:** 7 accurate, 2 mostly accurate, 0 disputed, 0 inaccurate, 1 unverified
+**Draft author:** Not specified
+**Checked:** 2026-03-27
+**Total claims checked:** 7
+**Summary:** 0 accurate, 3 mostly accurate, 0 disputed, 2 inaccurate, 2 unverified
 
 ---
 
-## Claim 1: "docs/working/** linguist-generated ... This collapses them in GitHub's diff view -- reviewers can still expand them"
+## Claim 1: "The Church-Turing Thesis is a foundational theorem in computer science"
 
-**Source:** RPI workflow, lines 32-35
-**Verdict:** Accurate
+**Verdict:** Inaccurate
 **Confidence:** High
 
-GitHub's documentation and multiple third-party sources confirm that the `linguist-generated` attribute in `.gitattributes` causes files to be collapsed by default in GitHub's diff view (pull requests, commits, compare views). Reviewers can expand collapsed files to view them. The exact `.gitattributes` syntax shown (`docs/working/** linguist-generated`) is valid.
+The Church-Turing Thesis is explicitly *not* a theorem. It is a thesis (sometimes called a conjecture or hypothesis) — a claim about the nature of computation that has never been formally proved or disproved. The Stanford Encyclopedia of Philosophy, Wikipedia, and Wolfram MathWorld all consistently describe it as a thesis or conjecture, not a theorem. It cannot be proved mathematically because it relates an informal notion (effective calculability) to a formal one (Turing computability). The draft calls it a "theorem" twice (in the first paragraph and again in the second), which is a substantive error since the distinction between a provable theorem and an unproven thesis is fundamental to the claim's status in computer science.
 
-**Sources:** [GitHub Docs -- Customizing how changed files appear on GitHub](https://docs.github.com/en/repositories/working-with-files/managing-files/customizing-how-changed-files-appear-on-github), [Thoughtbot -- Automatically Collapse Generated Files in GitHub Diffs](https://thoughtbot.com/blog/github-diff-supression)
+**Sources:** [Church-Turing thesis — Wikipedia](https://en.wikipedia.org/wiki/Church%E2%80%93Turing_thesis); [Stanford Encyclopedia of Philosophy — The Church-Turing Thesis](https://plato.stanford.edu/entries/church-turing/); [Wolfram MathWorld — Church-Turing Thesis](https://mathworld.wolfram.com/Church-TuringThesis.html)
 
 ---
 
-## Claim 2: "A template is available at templates/gitattributes-snippet.txt in this repo."
+## Claim 2: "[The Church-Turing Thesis] says, effectively, any computer can simulate any other computer"
 
-**Source:** RPI workflow, line 35
-**Verdict:** Accurate
+**Verdict:** Mostly accurate
 **Confidence:** High
 
-The file exists at `templates/gitattributes-snippet.txt` and contains the exact `docs/working/** linguist-generated` directive described in the workflow.
+The Church-Turing Thesis itself says that any effectively computable function is computable by a Turing machine. The consequence that "any computer can simulate any other computer" (i.e., that all sufficiently powerful models of computation are equivalent in what they can compute) follows from the thesis, and is a widely accepted informal summary. However, the thesis is specifically about *computability* (what can be computed), not about *efficiency* (how fast). The draft's phrasing is a reasonable informal gloss but elides this important distinction, which matters because the draft then immediately pivots to efficiency claims.
 
-**Sources:** Project file `templates/gitattributes-snippet.txt`
+**Sources:** [Church-Turing thesis — Wikipedia](https://en.wikipedia.org/wiki/Church%E2%80%93Turing_thesis); [Stanford Encyclopedia of Philosophy — The Church-Turing Thesis](https://plato.stanford.edu/entries/church-turing/)
 
 ---
 
-## Claim 3: "DD's 80% confidence threshold governs whether the design decision can be resolved autonomously"
+## Claim 3: "the theorem states that the overhead cost in computing steps of simulating a different computational substrate is at worst polynomial in the length of computation"
 
-**Source:** RPI workflow, line 61
-**Verdict:** Accurate
+**Verdict:** Inaccurate
 **Confidence:** High
 
-The divergent design workflow (`workflows/divergent-design.md`, line 78) states: "If one approach clearly dominates (>80% confidence): document the decision and proceed." This matches the RPI's characterization of an 80% confidence threshold for autonomous resolution.
+The Church-Turing Thesis itself makes no claims about efficiency or overhead. The claim described here corresponds to a different and distinct conjecture: the *Extended Church-Turing Thesis* (also called the *Strong Church-Turing Thesis* or the *feasibility thesis*), or relatedly the *Invariance Thesis* of Slot and van Emde Boas. The Extended Church-Turing Thesis states that a probabilistic Turing machine can efficiently simulate any realistic model of computation, where "efficiently" means with at most polynomial overhead. The Invariance Thesis more specifically states that reasonable machines can simulate each other within polynomially bounded overhead in time and constant-factor overhead in space. These are separate conjectures from the original Church-Turing Thesis, and both remain unproven. Additionally, the Extended Church-Turing Thesis faces credible challenges from quantum computation.
 
-**Sources:** Project file `workflows/divergent-design.md`, line 78
+**Sources:** [Church-Turing thesis — Wikipedia](https://en.wikipedia.org/wiki/Church%E2%80%93Turing_thesis); [Computational Complexity Blog — The Efficient Church-Turing Thesis](https://blog.computationalcomplexity.org/2006/12/efficient-church-turing-thesis.html); [Slot and van Emde Boas, STOC 1984](https://dl.acm.org/doi/10.1145/800057.808705)
 
 ---
 
-## Claim 4: "the test-strategy skill has a full taxonomy"
+## Claim 4: "the potentially immense cost of O(t squared) slowdowns on LLM training runs from simulating RAM via classical Turing machine"
 
-**Source:** RPI workflow, line 95
 **Verdict:** Mostly accurate
 **Confidence:** Medium
 
-The `test-strategy` skill (`skills/test-strategy.md`) references multiple test types -- unit, integration, e2e, property, snapshot, and contract -- and includes guidance on when to use each. However, it does not use the word "taxonomy" and presents these types inline rather than as an organized classification system. Calling it a "full taxonomy" is a reasonable characterization but slightly overstates the formality of what the skill provides.
+The O(t squared) figure for simulating RAM on a Turing machine is in the right ballpark. Cook and Reckhow (1973) showed that a T(n) time-bounded RAM can be simulated by a Turing machine in O(T(n) squared) time under the logarithmic cost model. More recent work (ECCC TR26-006) provides evidence of a nearly quadratic lower bound (n squared / polylog(n)) relative to a random oracle for simulating RAM on multitape Turing machines. So the O(t squared) figure is a reasonable statement of the overhead, though the exact bound depends on the cost model used. The characterization of this as "potentially immense" for LLM training is a judgment rather than a checkable fact.
 
-**Sources:** Project file `skills/test-strategy.md`
-
----
-
-## Claim 5: "The RPI workflow mentions 'testing strategy' as a one-line plan section"
-
-**Source:** Decision 006, line 8
-**Verdict:** Accurate
-**Confidence:** High
-
-The pre-foregrounding version of the RPI workflow (verified via `git show bfe83f3:workflows/research-plan-implement.md`) contained a single bullet point: `- **Testing strategy**: How to verify the implementation works. Specific test cases, not "add tests."` This is accurately described as a "one-line plan section."
-
-**Sources:** Git history, commit `bfe83f3`
+**Sources:** [Cook and Reckhow, "Time Bounded Random Access Machines" (1973)](https://www.cs.toronto.edu/~sacook/homepage/rams.pdf); [ECCC TR26-006](https://eccc.weizmann.ac.il/report/2026/006/)
 
 ---
 
-## Claim 6: "[The RPI mentions] 'characterization tests first' in the refactoring variant"
+## Claim 5: "in our modern memory-space-limited regime, the simulation overhead is at most logarithmic — that is, one substrate simulating a process that takes space S can do so using space bounded by O(S * log(S))"
 
-**Source:** Decision 006, line 8
-**Verdict:** Accurate
-**Confidence:** High
-
-The RPI workflow's Refactoring variant (line 197) includes: "Characterization tests first: If existing coverage is insufficient, the plan's first steps should add tests that lock in current behavior before any structural changes begin." This text exists in both the pre- and post-foregrounding versions of the file.
-
-**Sources:** Project file `workflows/research-plan-implement.md`, line 197; git history confirms pre-existing at commit `bfe83f3`
-
----
-
-## Claim 7: "Over a dozen approaches were generated via divergent design"
-
-**Source:** Decision 006, line 18
 **Verdict:** Unverified
 **Confidence:** Low
 
-The decision record states that over a dozen approaches were generated in conversation and that 6 survivors are summarized. No working document or divergent design artifact in `docs/working/` preserves the full list. The claim is plausible given how DD works (it encourages generating many candidates before pruning), but the specific quantity cannot be verified from available evidence. Note: this was previously reported as "13 approaches" in an earlier fact-check; the wording has since been softened to "over a dozen."
+The Invariance Thesis of Slot and van Emde Boas claims that reasonable machines can simulate each other with *constant-factor* overhead in space, which would be O(S), not O(S * log(S)). If the draft's O(S * log(S)) bound is correct, it would be a weaker (easier to achieve) bound than the Invariance Thesis claims. Some simulation results do involve logarithmic factors — for instance, simulating RAM with a Turing machine using balanced binary trees for address lookup introduces logarithmic factors. However, I could not find a specific well-known result that states the space overhead is exactly O(S * log(S)) as a standard bound. The claim may be referencing a specific simulation technique, but without a citation it is difficult to verify the precise bound stated.
 
-**Sources:** None available; the conversational context where DD was conducted is not preserved
-
----
-
-## Claim 8: "6 survivors are summarized here"
-
-**Source:** Decision 006, line 18
-**Verdict:** Accurate
-**Confidence:** High
-
-The Options Considered section lists exactly 6 numbered items: (1) Test-first plan step, (2) Standalone test-design workflow, (3) Conversational test negotiation, (4) Test taxonomy guide, (5) Test review checkpoint, (6) Do nothing. Count confirmed.
-
-**Sources:** Project file `docs/decisions/006-foregrounding-tests.md`, lines 20-25
+**Sources:** [Slot and van Emde Boas, "On tape versus core" (1984)](https://dl.acm.org/doi/10.1145/800057.808705); [Forster, Kunze, Roth — "The Weak Call-by-Value lambda-Calculus is Reasonable for Both Time and Space"](https://www.ps.uni-saarland.de/Publications/documents/ForsterKunzeRoth_2019_wcbv-Reasonable.pdf)
 
 ---
 
-## Claim 9: "Combine approaches 1 + 4 + 5, plus diagnostic guidance"
+## Claim 6: "Creating theoretical lower bounds on the computational complexity of an algorithm is harder than proving upper bounds"
 
-**Source:** Decision 006, line 29
-**Verdict:** Accurate
-**Confidence:** High
-
-The decision says it combines approaches 1, 4, and 5, plus diagnostic guidance as a fourth element. Checking the implementation in the updated RPI workflow:
-
-- **Approach 1 (Test-first plan step):** Implemented. The testing bullet in step 3 was restructured from a one-liner into a structured block with a table format, test levels, and diagnostic expectations.
-- **Approach 4 (Test taxonomy guide):** Implemented as inline guidance. Lines 89-93 provide brief descriptions of when to use unit, integration, characterization, and property test levels.
-- **Approach 5 (Test review checkpoint):** Implemented. Step 5 now has a "Test-first gate" sub-section with a human checkpoint for reviewing test code before implementation.
-- **Diagnostic guidance:** Implemented. Lines 97-99 cover diagnostic expectations and security considerations for test output.
-
-Note: a previous fact-check flagged a mismatch between "combine 1 + 4 + 5" and the 4-element concrete list. The decision statement now explicitly says "plus diagnostic guidance," resolving that discrepancy.
-
-**Sources:** `docs/decisions/006-foregrounding-tests.md` lines 28-42; `workflows/research-plan-implement.md` lines 83-99, 121-129
-
----
-
-## Claim 10: "the human designs behavioral constraints in prose, the LLM translates them into executable test code"
-
-**Source:** Decision 006, line 10
 **Verdict:** Mostly accurate
+**Confidence:** High
+
+This is a widely recognized observation in computational complexity theory. Upper bounds require demonstrating that one algorithm solves a problem efficiently (an existential claim), while lower bounds require proving that *no* algorithm can do better (a universal claim). The logical structure — proving "for all algorithms, there exists a hard instance" versus "there exists an algorithm that works for all instances" — makes lower bounds fundamentally harder. The Simons Institute describes the difficulty of "mathematically reasoning about all resource-bounded algorithms" as the core challenge. Formal barrier results (relativization, natural proofs, algebrization) demonstrate that standard proof techniques are provably insufficient for establishing strong lower bounds. The statement is accurate as a general observation about the field, though phrased as absolute ("harder") rather than as a tendency.
+
+**Sources:** [Simons Institute — Lower Bounds in Computational Complexity](https://simons.berkeley.edu/news/inside-lower-bounds-computational-complexity); [Yale CS — Lower Bounds](https://www.cs.yale.edu/homes/aspnes/pinewiki/LowerBounds.html); [Jeff Erickson — Lower Bounds lecture notes](https://jeffe.cs.illinois.edu/teaching/algorithms/notes/12-lowerbounds.pdf)
+
+---
+
+## Claim 7: "[The Church-Turing Thesis] is perhaps the most interesting justification behind the unreasonable effectiveness of mathematics"
+
+**Verdict:** Unverified
 **Confidence:** Medium
 
-This accurately describes the intended workflow design: the RPI plan phase (step 3) asks humans to specify test cases with expected behavior in prose, and step 5 has the LLM write test code from those specifications. However, this is a description of a designed process rather than a verified empirical outcome. Whether the translation works reliably in practice is a separate question that would require usage data to verify.
+"The unreasonable effectiveness of mathematics" is a real and well-known phrase, originating from Eugene Wigner's 1960 paper "The Unreasonable Effectiveness of Mathematics in the Natural Sciences." However, Wigner's argument is about why mathematics describes physical reality so well — it is not about computation or the Church-Turing Thesis. The claim that the Church-Turing Thesis is a "justification" for the unreasonable effectiveness of mathematics is an original interpretive claim by the author. While one could construct an argument linking computational universality to the broad applicability of mathematical reasoning, this is not a standard or widely cited connection in the literature. The claim is not so much wrong as it is a novel assertion that cannot be verified against existing sources.
 
-**Sources:** Project file `workflows/research-plan-implement.md`, steps 3 and 5
+**Sources:** [Eugene Wigner, "The Unreasonable Effectiveness of Mathematics in the Natural Sciences" (1960)](https://en.wikipedia.org/wiki/The_Unreasonable_Effectiveness_of_Mathematics_in_the_Natural_Sciences)
 
 ---
 
 ## Claims Requiring Author Attention
 
-### Unverified
-- **Claim 7** ("Over a dozen approaches were generated via divergent design"): The quantity cannot be verified from the codebase. The wording has already been softened from a previous version that said "13 approaches." Consider either preserving the DD working document that lists all candidates, or accepting that this claim relies on conversational context that is no longer available.
+1. **Claim 1 (Inaccurate):** The Church-Turing Thesis is not a theorem. It is an unproven thesis/conjecture. The draft should use "thesis" or "conjecture" throughout, not "theorem."
 
-### Mostly Accurate
-- **Claim 4** ("the test-strategy skill has a full taxonomy"): The skill covers multiple test types with guidance on when to use each, but does not present them as a formal taxonomy. Consider whether "a full taxonomy" overpromises what the skill actually organizes.
+2. **Claim 3 (Inaccurate):** The polynomial overhead claim is not part of the Church-Turing Thesis. It belongs to the *Extended* Church-Turing Thesis or the Invariance Thesis — distinct and separately named conjectures. The draft conflates these.
 
-### Previously Flagged Issues Now Resolved
-- The "13 approaches" wording was softened to "over a dozen" (Claim 7).
-- The "combine 1 + 4 + 5" framing now explicitly includes "plus diagnostic guidance" (Claim 9).
-- The "central use case" language was changed to "motivating use case" (no longer a checkable factual claim).
+3. **Claim 4 (Mostly accurate):** The O(t squared) figure is reasonable but depends on the cost model. Consider specifying the logarithmic cost model for precision.
+
+4. **Claim 5 (Unverified):** The O(S * log(S)) space bound is not a standard result that could be verified. The Invariance Thesis actually claims constant-factor space overhead (stronger than what the draft states). The author should provide a citation for this specific bound.
+
+5. **Claim 7 (Unverified):** The link between the Church-Turing Thesis and "the unreasonable effectiveness of mathematics" appears to be the author's original interpretation, not a standard connection in the literature. Consider flagging this as a personal view or providing supporting references.
