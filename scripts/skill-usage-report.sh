@@ -63,18 +63,13 @@ if [ ! -f "$USAGE_LOG" ] || [ ! -s "$USAGE_LOG" ]; then
   exit 0
 fi
 
-# Build jq filter: optionally restrict to a single project
-JQ_FILTER='select(.event and .name)'
-if [ -n "$PROJECT_FILTER" ]; then
-  JQ_FILTER="select(.event and .name and .project == \"$PROJECT_FILTER\")"
-fi
-
 # Extract frequency and last-used per event+name pair, with project list
 # Output: lines of "count event name last_ts projects"
 # Use unit separator (\x1f) as internal key delimiter to avoid issues with
 # names containing colons or other common characters
 SEP=$'\x1f'
-usage_data=$(jq -r "$JQ_FILTER | [.event, .name, .ts, .project] | @tsv" "$USAGE_LOG" \
+usage_data=$(jq -r --arg pf "$PROJECT_FILTER" \
+  'select(.event and .name and (if $pf != "" then .project == $pf else true end)) | [.event, .name, .ts, .project] | @tsv' "$USAGE_LOG" \
   | awk -F'\t' -v sep="$SEP" '{
       key = $1 sep $2
       count[key]++

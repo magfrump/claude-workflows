@@ -28,26 +28,16 @@ BRANCH=$(git branch --show-current 2>/dev/null || echo "unknown")
 log_event() {
   # Usage: log_event <event> <name> [args]
   local event="$1" name="$2" args="${3:-}"
-  if [ -n "$args" ]; then
-    jq -n -c \
-      --arg ts "$TS" \
-      --arg event "$event" \
-      --arg name "$name" \
-      --arg args "$args" \
-      --arg project "$PROJECT" \
-      --arg branch "$BRANCH" \
-      '{ts:$ts,event:$event,name:$name,args:$args,project:$project,branch:$branch}' \
-      >> "$LOG_FILE"
-  else
-    jq -n -c \
-      --arg ts "$TS" \
-      --arg event "$event" \
-      --arg name "$name" \
-      --arg project "$PROJECT" \
-      --arg branch "$BRANCH" \
-      '{ts:$ts,event:$event,name:$name,project:$project,branch:$branch}' \
-      >> "$LOG_FILE"
-  fi
+  jq -n -c \
+    --arg ts "$TS" \
+    --arg event "$event" \
+    --arg name "$name" \
+    --arg args "$args" \
+    --arg project "$PROJECT" \
+    --arg branch "$BRANCH" \
+    'if $args == "" then {ts:$ts,event:$event,name:$name,project:$project,branch:$branch}
+     else {ts:$ts,event:$event,name:$name,args:$args,project:$project,branch:$branch} end' \
+    >> "$LOG_FILE"
 }
 
 case "$TOOL_NAME" in

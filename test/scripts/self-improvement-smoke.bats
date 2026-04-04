@@ -1,4 +1,8 @@
 #!/usr/bin/env bats
+# shellcheck disable=SC2030,SC2031
+# SC2030/SC2031: BATS runs each @test in a subshell; ROUND_LOG_FILE is
+# intentionally set and consumed within the same test block.
+#
 # Smoke test for scripts/self-improvement.sh main execution flow.
 #
 # Exercises the sequence of exported functions that the main loop wires
@@ -230,9 +234,6 @@ teardown() {
   local tasks_file="$TEST_TMPDIR/tasks-round-1.json"
 
   # At round 4, window=3 tasks from round 1 should be eligible (4-1 >= 3)
-  run bash -c "cat '$tasks_file' | source '$REPO_ROOT/scripts/self-improvement.sh' && get_eligible_hypotheses 4 1 < '$tasks_file'"
-
-  # Source properly and pipe
   local eligible
   eligible=$(get_eligible_hypotheses 4 1 < "$tasks_file")
 
