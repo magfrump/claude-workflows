@@ -1,7 +1,7 @@
 # Performance Review
 
 **Scope:** Branch feat/foreground-tests vs main (15 files, +807 / -593 lines)
-**Reviewed:** 2026-03-26
+**Date:** 2026-03-26
 **Fact-check input:** Code fact-check report (28 claims checked; 19 verified, 4 mostly accurate, 1 stale, 4 unverifiable)
 
 ## Data Flow and Hot Paths

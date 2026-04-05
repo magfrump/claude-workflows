@@ -8,6 +8,7 @@ REPO_ROOT="$(cd "$(dirname "$BATS_TEST_FILENAME")/../.." && pwd)"
 
 @test "archive-working-docs.sh exits non-zero with error when docs/working is missing" {
   # Run from a temp directory where docs/working does not exist
+  cd "$BATS_TEST_TMPDIR"
   run bash "$REPO_ROOT/scripts/archive-working-docs.sh"
   [ "$status" -ne 0 ]
   [[ "$output" == *"docs/working not found"* ]]
