@@ -1,130 +1,139 @@
 # Cowen-Style Critique: UI Visual Review Skill
 
-**Reviewed:** 2026-04-03
-**Document:** Skill definition for `ui-visual-review` — an AI agent instruction set for reviewing web app UI code for layout and visual issues
+**Reviewed:** 2026-04-04
+**Document:** Skill definition for `ui-visual-review` — an AI agent instruction set for reviewing UI code for visual/layout issues
+**Fact-check report:** 10 claims checked; 6 accurate, 2 mostly accurate, 1 inaccurate, 1 unverified
 
 ---
 
-## 1. The Argument, Decomposed
+## The Argument, Decomposed
 
-The skill document bundles several distinct claims:
+The skill bundles several distinct sub-claims:
 
-1. **UI review should be grounded in research.** The agent must web-search for current best practices and check authoritative guidelines (Apple HIG, Material Design, MDN) before recommending fixes. (Procedural claim.)
+1. **Mechanical bug-finding (layout breakage at different viewport sizes) is the core value of this skill.** The checklist in Step 2 is the main tool. (Value-priority claim.)
 
-2. **Classic desktop UI principles (visible affordances, always-visible scroll bars, buttons that look like buttons) are the right default philosophy for web app UIs in 2026.** (Aesthetic/design claim.)
+2. **Affordance review is a secondary, conditional job** grounded in WCAG 2.2, NNGroup research, and European accessibility law. (Scope claim.)
 
-3. **When classic affordances conflict with modern minimalist design, classic should win.** "An ugly scroll bar that works is better than a hidden one that users never find." (Priority claim.)
+3. **When minimalist aesthetics conflict with discoverability, prefer discoverability** — especially in tool-like web applications. (Priority claim.)
 
-4. **There is a canonical checklist of visual issues ordered by frequency** — unbounded content, trapped controls, wrong flex usage, etc. (Empirical claim about what goes wrong most often.)
+4. **There is a canonical checklist of 7 visual issues ordered by frequency** — unbounded content, trapped controls, wrong flex usage, absolute positioning, excessive spacing, visibility/affordance, responsive concerns. (Empirical claim about what goes wrong most often.)
 
-5. **Three viewport breakpoints (1024x768, 1440x900, 1920x1080) constitute adequate testing coverage.** (Sufficiency claim.)
+5. **Three viewport width ranges (320-480px, 768-1024px, 1920px+) constitute adequate review coverage.** (Sufficiency claim.)
 
 6. **Project-local guidelines are the primary authority**, overriding the skill's own defaults. (Governance claim.)
 
-Claims 1 and 6 are sensible procedural hygiene. Claim 4 is a useful heuristic even if the ordering is debatable. The interesting tension lives in claims 2, 3, and 5.
+7. **The agent can reason about viewport behavior by reading CSS, without running a browser.** (Capability claim.)
+
+Claims 1 and 6 are the load-bearing structural decisions. Claim 4 is a practical heuristic. The interesting questions live in claims 2-3, 5, and 7.
 
 ---
 
-## 2. What Survives the Inversion
+## What Survives the Inversion
 
-**Inverting claim 3: "When classic affordances conflict with modern minimalist design, modern should win."** This is essentially the position that Apple, Google, and most major design systems have taken for the past decade. The minimalist camp argues that visible affordances create visual noise, that users have learned touch/swipe/hover conventions, and that clean interfaces improve comprehension by reducing clutter. This inversion is not a straw man — it is the dominant professional consensus.
+**Inverting claim 3: "When discoverability conflicts with minimalist aesthetics, prefer minimalism."** This is, in practice, the position that Apple, Google, and most major design systems have taken for over a decade. The minimalist camp argues that visible affordances create visual noise, that users have internalized touch/swipe/hover conventions, and that clean interfaces improve comprehension by reducing clutter. This is not a straw man — it is the dominant professional consensus in consumer design.
 
-What survives from the original? The skill is specifically targeting *web apps*, not marketing sites or content pages. Web apps are tool-like: users perform repeated tasks, often under time pressure, and discoverability failures are more costly than in casual browsing. The case for visible affordances is genuinely stronger for web apps than for the broader web. The skill's instinct here is defensible — but it is a narrower claim than the skill makes. The skill states its preference as a universal principle rather than a context-dependent one.
+What survives from the original? The skill now explicitly scopes this preference to "tool-like web applications where task completion matters more than first impressions." This is a genuinely defensible narrowing. Enterprise and productivity software is where discoverability failures are most expensive. The skill's instinct is sound within its stated scope.
 
-**Inverting claim 2: "Windows 98 UI principles are the wrong frame for 2026 web development."** This partially survives. The Windows 98 reference is doing double duty: it is both a concrete set of design principles (visible borders, explicit affordances) and a rhetorical signal (nostalgia as authority). The concrete principles are defensible. The rhetorical framing is counterproductive — a developer receiving this review will pattern-match "Windows 98" to "outdated" and discount the advice. The same principles reframed as "WCAG accessibility requirements" or "Nielsen Norman Group recommendations" would be harder to dismiss and would carry more professional authority.
+**Inverting claim 1: "Affordance review is the core value; mechanical bug-finding is secondary."** This inversion does not survive well. Affordance judgments are inherently subjective and context-dependent, while "does this container overflow at 360px?" is a near-binary question. An AI agent will be more reliably useful at the mechanical work. The skill correctly identifies where its comparative advantage lies.
 
----
-
-## 3. Factual Foundation
-
-The fact-check report surfaces findings that matter for the skill's credibility as an instruction set:
-
-**The viewport checklist is empirically wrong.** 1024x768 has approximately 0% desktop market share, making it a poor choice for "minimum supported." 1440x900 sits at roughly 4% market share — not "typical laptop" by any current measure. The actual common resolutions are 1920x1080 (desktop) and 1366x768 or 1920x1080 (laptop). An agent following these instructions will test against viewports that almost nobody uses while potentially missing the ones that matter.
-
-**The Windows 98 hover-state claim is slightly inaccurate.** The skill's Classic UI Principles Reference lists "hover/active states" for buttons, but Windows 98 had active states without hover states. This is a small point, but it is ironic: the skill is invoking Windows 98 as an authority while getting the details of Windows 98 wrong. An agent that web-searches this will find conflicting information and may lose confidence in its own instructions.
-
-**Core CSS and design-system references are accurate.** The technical recommendations about flex behavior, overflow handling, and named guidelines are all solid.
+**Inverting claim 7: "You cannot meaningfully reason about viewport behavior without running a browser."** This partially survives. Static CSS analysis catches many layout issues — wrong flex properties, missing overflow constraints, absolute positioning bugs. But it cannot catch issues arising from dynamic content, JS-driven layout changes, font rendering differences, or subtle interaction between CSS properties that behave differently across browser engines. The skill acknowledges this ("Note: you are reviewing code, not running a browser") but could be more explicit about the class of bugs this approach will miss.
 
 ---
 
-## 4. The Boring Explanation
+## Factual Foundation
 
-The most mundane account of why this skill exists: someone built a web app, encountered real layout bugs (content overflowing, controls hidden behind scroll containers, things breaking at certain viewport sizes), and codified their debugging checklist into an AI agent instruction set. The Windows 98 framing is post-hoc rationalization of a practical preference — they wanted visible scroll bars because they had been bitten by hidden ones, and "Windows 98 philosophy" is a memorable way to express "make things visible."
+The fact-check report surfaces issues that affect the skill's credibility as an instruction set:
 
-This boring explanation accounts for nearly everything in the document. The issue checklist in Step 2 reads like a real developer's bug log, ordered by how often they personally encountered each problem. The viewport checklist reflects the resolutions of monitors they have actually used, not a statistical sample. The "classic vs. modern" framing is a story told after the fact to give a debugging checklist the dignity of a design philosophy.
+**The WCAG 2.4.11 reference is wrong.** The skill cites "2.4.11" for focus appearance, but WCAG 2.4.11 is actually "Focus Not Obscured (Minimum)." The correct criterion for focus appearance is 2.4.13, which is Level AAA. An agent that web-searches 2.4.11 expecting focus appearance guidance will find different content than expected. This matters because the skill positions itself as grounded in standards — getting the standard numbers wrong undermines the authority claim.
 
-What the boring explanation does not account for: the governance structure (project-local guidelines as primary authority, mandatory web search) is more sophisticated than a personal checklist. Someone thought carefully about how an AI agent should handle conflicting advice, and the answer — defer to project context, then research, then defaults — is well-designed.
+**The touch target recommendation conflates two criteria.** The "44x44px recommended" figure comes from WCAG 2.5.5 (Level AAA), not from 2.5.8. The skill cites 2.5.8 correctly for the 24x24px minimum but attributes the 44px recommendation to the same source. This is a minor mixing, but in a document whose authority rests on precise standards citations, precision matters.
 
----
+**The NNGroup scroll-bar quote is unverified.** "Show scrollbars when content is scrollable" could not be confirmed as a direct quotation. This is low-stakes — NNGroup has published extensively on scroll affordances — but a fabricated quote is worse than a paraphrased finding.
 
-## 5. Revealed vs. Stated
-
-**Stated preference:** "Your guiding philosophy combines two traditions" — classic desktop and modern responsive design. Equal billing.
-
-**Revealed preference:** The conflict-resolution rule ("prefer the classic approach") plus the eight-item Classic UI Principles Reference, with no corresponding Modern Design Principles Reference, reveals that this is not a synthesis of two traditions. It is the classic tradition with modern techniques (flexbox, media queries) as implementation tools. The stated frame is "both/and." The revealed frame is "one, using the other's tools."
-
-**Stated preference:** The skill claims to prioritize discoverability.
-
-**Revealed preference:** The viewport checklist does not include any mobile-first breakpoint below 320px, and the "three viewport scenarios" are all desktop-to-tablet range. A skill that truly prioritized discoverability would spend more time on the viewports where discoverability is hardest — small touch screens where affordances are most likely to be hidden or off-screen. The revealed preference is for desktop-like environments where the Windows 98 philosophy is most natural.
-
-**Stated preference:** "MUST check for project-local UI guidelines document first, treating it as primary authority."
-
-**Revealed preference:** This is the single most important rule in the document, and it is tucked into a numbered list of six mandatory rules, visually equal to "MUST NOT introduce CSS requiring vendor prefixes without noting browser needs." The de-emphasis suggests the author views it as procedural boilerplate rather than the load-bearing design decision it actually is.
+**Core technical content is solid.** The flex behavior recommendations, overflow handling patterns, docked footer pattern, and general CSS guidance are all accurate and practical.
 
 ---
 
-## 6. The Analogy
+## The Boring Explanation
 
-**Building codes and architectural aesthetics.**
+The most mundane account of why this skill exists: someone built web apps, encountered real layout bugs repeatedly (content overflowing modals, submit buttons scrolling away, things breaking on small screens), and codified their debugging checklist into an AI agent instruction set. The WCAG and NNGroup citations are post-hoc grounding of a practical preference — they wanted visible scroll bars because they had been bitten by hidden ones, and accessibility standards are a legitimate way to justify that preference.
 
-Building codes specify minimum stair-tread depth, maximum riser height, required handrail dimensions, minimum door widths. These requirements are not stylistically neutral — they push architecture toward certain forms and away from others. An architect can still design a beautiful staircase within code, but the code is not trying to be beautiful. It is trying to prevent people from falling.
+This boring explanation accounts for nearly everything in the document. The Step 2 checklist reads like a real developer's bug log, ordered by how often they personally encountered each problem. The code examples (modal with capped height, docked footer pattern) are clearly patterns extracted from actual fixes.
 
-The UI visual review skill is essentially proposing a building code for web app interfaces. Visible scroll bars are handrails. Button borders are stair treads. The philosophy is: safety and usability are not optional, and the constraints they impose on aesthetics are a cost worth paying.
-
-What this analogy reveals: building codes are written by committees that study injury data, not by individual architects nostalgic for older buildings. The skill would be stronger if it grounded its requirements in accessibility research and usability data rather than in the aesthetic preference of a particular era. "Windows 98 had visible scroll bars" is the equivalent of "old buildings had wide stairs." The real argument is: "people fall when stairs are too narrow." The skill is making the right argument from the wrong evidence.
-
-The analogy also reveals a limitation: building codes are *minima*, not *ideals*. Nobody aspires to build exactly to code. The skill's framing — "prefer the classic approach" — risks turning a minimum into a ceiling. The best web app UIs satisfy the building code (everything is discoverable) while also being well-designed. The skill does not leave room for that aspiration.
+What the boring explanation does not fully account for: the governance structure (project-local guidelines as primary authority, conditional web search, deference to existing codebase patterns) is more sophisticated than a personal checklist. Someone thought carefully about how an AI agent should handle conflicting advice. The answer — defer to project context, then standards, then heuristic defaults — is well-designed and suggests experience with AI agent design, not just CSS debugging.
 
 ---
 
-## 7. Contingent Assumptions
+## Revealed vs. Stated
 
-1. **The relevant user is a desktop user with a mouse.** The Classic UI Principles Reference (scroll bars, resize handles, hover states, menus with visible arrows) describes a mouse-driven interface. Touch interfaces, voice interfaces, and screen readers have different affordance requirements. The skill assumes the dominant interaction mode of the 1990s without noting that it is now one of several.
+**Stated preference:** Mechanical bug-finding is primary; affordance review is secondary.
 
-2. **Developers are the audience for the review output.** The skill produces severity-grouped fixes with before/after code. This assumes the recipient is a developer who can implement CSS changes, not a designer or product manager who might need a different framing. Reasonable assumption for a code-review tool, but worth noting.
+**Revealed preference:** The Affordance Principles Reference section is 8 items long with detailed rationale and citations. The mechanical checklist has 7 items. The affordance section occupies comparable document real estate and is positioned as a standalone reference at the end — the natural place for a reader to look for "what does this skill care about?" The document says mechanical is primary but gives roughly equal weight to both.
 
-3. **Web search will return good results for CSS best practices.** This is mostly true today, but web search quality for technical topics is not guaranteed to remain stable. More importantly, an AI agent's web search may surface outdated advice (CSS tricks from 2018, pre-flexbox workarounds) alongside current best practices. The skill does not instruct the agent how to evaluate the freshness or authority of search results.
+**Stated preference:** The skill applies to "any framework with visual elements: React/JSX/TSX, Unity/C#, Vue, Svelte, native mobile, etc."
 
-4. **The issue checklist's frequency ordering is stable.** The ordering (unbounded content first, responsive concerns last) reflects a particular kind of web app — likely one with complex data-display panels, not a media-heavy or animation-heavy app. The frequency ordering is contingent on the app category.
+**Revealed preference:** Every code example is Tailwind/React JSX. The checklist items reference CSS-specific concepts (flex-1, min-h-0, overflow-auto, viewport meta tags, media queries). The Step 3 research sources are all web-focused (MDN, Can I Use). A Unity/C# developer receiving this review would find the principles relevant but the specifics inapplicable. The skill is a web app review tool with aspirational cross-platform claims.
 
-5. **"Visible affordance" and "discoverability" are the same thing.** The skill conflates these. A visible scroll bar is a visible affordance. But discoverability also includes things like onboarding flows, tooltips, progressive disclosure, and consistent placement — none of which the skill addresses. The skill cares about one kind of discoverability (can you see the control?) while ignoring others (do you know what the control does?).
+**Stated preference:** "Search the web when uncertain — not for every issue."
 
----
-
-## 8. What the Market Says
-
-If visible-affordance-first design were clearly superior for web apps, we would expect the market to reflect this. What do we actually see?
-
-**The major design systems disagree with the skill.** Material Design, Apple HIG, and Microsoft's Fluent Design all moved toward minimalist affordances over the past decade. These are not marginal players — they are the platforms that most web apps target. If visible scroll bars and bordered buttons were strictly better, the platforms with the most user research data would not have moved away from them.
-
-**But enterprise software partially agrees.** Salesforce Lightning, SAP Fiori, and other enterprise design systems retain more visible affordances than consumer-facing systems. Enterprise users perform repetitive, high-stakes tasks where discoverability failures are expensive. This aligns with the skill's implicit context (web apps as tools) but suggests the skill should explicitly scope itself to enterprise-style applications rather than claiming universal applicability.
-
-**Accessibility regulations are moving toward the skill's position.** WCAG 2.2 introduced requirements for visible focus indicators and minimum target sizes that push toward more visible affordances. The European Accessibility Act (2025) creates legal requirements for discoverable UI elements. The regulatory market is partially vindicating the skill's instincts — but through accessibility law, not through Windows 98 nostalgia.
-
-**The most interesting market signal:** the recent trend of "neobrutalist" and "anti-design" web aesthetics, which deliberately use visible borders, high-contrast colors, and obvious affordances. This movement treats visible affordances as a *stylistic choice*, not a usability requirement. The skill could be more interesting if it acknowledged that its preferred aesthetic is having a cultural moment for reasons unrelated to usability.
+**Revealed preference:** Step 3 and Step 5 both elaborate on when and how to search, and search guidance appears in the Mandatory Execution Rules as well. The skill mentions web search four separate times. For something described as conditional, it gets a lot of instruction space. The revealed concern is that the agent will either search too much (wasting time) or too little (missing important context), and the skill is trying to thread that needle. Reasonable, but the repeated emphasis suggests the author has seen agents get this wrong.
 
 ---
 
-## 9. Overall Assessment
+## The Analogy
 
-**Strongest sub-claim:** The governance structure (claim 6) — project-local guidelines as primary authority, with web search as a check against stale defaults — is well-designed and shows real thought about how an AI agent should handle conflicting sources of truth. High confidence.
+**Building inspection checklists and property appraisals.**
 
-**Second strongest:** The issue checklist (claim 4) is a genuinely useful debugging heuristic. Even if the frequency ordering is debatable, the items themselves cover real, common problems. The checklist alone justifies the skill's existence. High confidence.
+A property inspector works from a standard checklist: foundation, roof, plumbing, electrical, HVAC, structural integrity. The checklist is ordered by severity (foundation problems before cosmetic issues). The inspector does not design the house — they find defects against known standards. They produce a report grouped by severity. They note when something is "within acceptable parameters but suboptimal." They defer to local building codes as primary authority.
 
-**Weakest sub-claim:** The viewport checklist (claim 5) contains empirically incorrect resolutions and omits the most common ones. This is the easiest thing to fix and the most likely to produce wrong results if left as-is. An agent testing at 1440x900 and 1024x768 is testing for ghosts while potentially missing bugs at 1366x768. High confidence this needs fixing.
+This is exactly what the UI visual review skill is. It is a building inspection protocol for web app interfaces. The Step 2 checklist is the inspection checklist. The severity grouping (Critical/Major/Minor) is the inspection report format. The deference to project-local guidelines is deference to local building codes.
 
-**Most interesting tension:** The classic-over-modern priority (claim 3) is defensible for enterprise web apps but overstated as a universal principle. The skill would be stronger if it scoped this preference explicitly ("for tool-like web applications where task completion matters more than first impressions") rather than presenting it as always correct. Moderate confidence — this is a judgment call about how prescriptive a skill document should be.
+What this analogy reveals: building inspectors are useful precisely because they are mechanical and consistent, not because they have taste. The skill is strongest when it stays in inspector mode (does this container overflow? is this button trapped in a scroll region?) and weakest when it drifts into architect mode (should this design prefer visible affordances?). The skill seems to understand this — the primary/secondary distinction maps exactly onto inspector/architect — but the document's structure gives the architect role more prominence than a secondary concern warrants.
 
-**The single most important thing to address:** Reframe the authority basis. The Windows 98 reference is memorable but counterproductive. The same principles, grounded in WCAG accessibility requirements and enterprise UX research, would be harder to dismiss and more persuasive to the developers receiving the reviews. The skill is making a reasonable argument from an unnecessarily weak rhetorical position. The building code is good; the justification needs to cite injury data, not architectural nostalgia.
+The analogy also reveals a gap: building inspectors have a known false-negative rate. They miss things that require invasive testing (opening walls, running water for extended periods). The skill's equivalent is layout bugs that only manifest with dynamic content, JS interactions, or browser-specific rendering. The skill should be honest about this limitation in its report template — something like "Issues that static code review cannot catch" as a standing section.
 
-**What the skill is more right about than it realizes:** The instinct to make everything visible and discoverable is increasingly supported by accessibility regulation, and enterprise design systems never fully abandoned it. The skill is swimming with a current it does not seem aware of. Citing WCAG 2.2 and the European Accessibility Act would transform the skill's philosophy from "retro preference" to "regulatory compliance" — a much stronger position that happens to arrive at the same design recommendations.
+---
+
+## Contingent Assumptions
+
+1. **CSS/layout code is readable in isolation.** The skill assumes an agent can determine layout behavior by reading CSS and markup. This works for static layouts but fails when layout depends on JavaScript state, server-rendered conditional classes, or CSS-in-JS that generates class names at build time. The skill does not address how to handle layout that is computed rather than declared.
+
+2. **The issue frequency ordering is stable across app types.** "Unbounded content without scroll caps" is listed as "most common." This is plausible for data-heavy dashboard-style apps but may not hold for content sites, e-commerce, or animation-heavy interfaces. The ordering is contingent on app category.
+
+3. **Three viewport ranges are sufficient.** The ranges (320-480, 768-1024, 1920+) leave a notable gap at 1024-1920px, which includes the extremely common 1366x768 laptop resolution. The skill instructs the agent to "reason about" these three ranges, but the most common desktop viewport (1920x1080) sits right at the boundary of the third range, and the very common laptop range (1280-1440px) falls between ranges two and three.
+
+4. **The agent's CSS knowledge is "sufficient" for well-understood patterns.** The skill explicitly says "for well-understood CSS patterns... your training data is sufficient." This is a bet on the agent's training data remaining current as CSS evolves. Container queries, `dvh` units, and `scrollbar-gutter` are mentioned as things to search for — but the boundary between "well-understood" and "search-worthy" will shift over time, and the skill provides no mechanism for updating that boundary.
+
+5. **The report format serves the consumer.** The skill produces a structured Markdown report with severity grouping and code fixes. This assumes the consumer is a developer who will implement fixes directly. If the consumer is a design team, product manager, or accessibility auditor, the format may not match their needs. Reasonable for a code-review tool, but the universality of the report format is assumed rather than argued.
+
+---
+
+## What the Market Says
+
+If mechanical CSS review were clearly high-value, we would expect to see it reflected in tooling markets. What do we see?
+
+**Linting tools partially validate the approach.** Stylelint, ESLint with JSX-a11y, and similar tools catch a subset of what this skill targets — but they operate on syntactic rules, not layout reasoning. The gap between "this CSS property is misused" and "this layout breaks at 480px" is exactly where this skill sits. The existence of the gap suggests the skill is targeting a real unmet need.
+
+**Design system adoption suggests the market prefers prevention over detection.** Tailwind, Chakra, Material UI, and similar component libraries are the market's answer to layout bugs — constrained primitives that make it harder to write broken layouts in the first place. The skill operates downstream of this: reviewing code that uses these systems but still manages to break. This is a real use case (you can absolutely write broken layouts in Tailwind), but the market's energy is flowing toward prevention rather than review.
+
+**Accessibility auditing tools are a growing market.** axe-core, Lighthouse accessibility audits, and paid services like Deque validate the appetite for automated accessibility review. This skill's affordance review component aligns with market demand — but those tools actually run in a browser, which gives them access to computed styles and real DOM. The skill's code-only approach is faster but less reliable. The market signal is: people will pay for accessibility review, but they expect runtime validation, not static analysis.
+
+**The most telling signal:** no major IDE or CI/CD pipeline includes automated viewport-aware layout review as a standard feature. If this were easy or obviously valuable, someone would have built it. Either the problem is harder than it looks (likely — layout reasoning requires understanding context that static analysis struggles with), or the demand is lower than assumed (less likely — layout bugs are common and expensive to fix post-deployment).
+
+---
+
+## Overall Assessment
+
+**Strongest element:** The Step 2 checklist (claim 4). This is a genuinely useful debugging heuristic grounded in real bugs. The code examples are practical and correct. The docked footer pattern, the viewport-capped modal, the flex sizing guidance — these are patterns a developer can apply immediately. The checklist alone justifies the skill's existence. High confidence.
+
+**Second strongest:** The governance structure (claim 6) — project-local guidelines as primary authority, with conditional web search and standards-based defaults as fallbacks. This shows real thought about how an AI agent should navigate conflicting sources of truth. High confidence this is well-designed.
+
+**Most improved from prior version:** The skill has dropped the Windows 98 framing and now grounds its affordance preferences in WCAG 2.2 and NNGroup research. This is a significant improvement. The authority basis is now standards and research rather than aesthetic nostalgia. The scoping to "tool-like web applications where task completion matters more than first impressions" is an honest and defensible narrowing.
+
+**Needs attention:** The WCAG citation errors (2.4.11 vs. 2.4.13, conflating 2.5.5 and 2.5.8 for the 44px recommendation) should be corrected. A skill that derives authority from standards citations needs to get the citations right. The unverified NNGroup quote should be paraphrased rather than presented as a direct quotation. These are easy fixes that would meaningfully improve credibility. High confidence.
+
+**Interesting tension:** The cross-platform claim ("any framework with visual elements") vs. the web-only specifics. The principles are genuinely universal — overflow handling, control placement, and affordance matter everywhere. But the implementation guidance is CSS/Tailwind-specific. The skill could either narrow its claim ("web UI code") or add framework-specific guidance for its other claimed targets. Moderate confidence this matters — in practice, 90%+ of uses will likely be web code.
+
+**What the skill is more right about than it realizes:** The emphasis on mechanical bug-finding as primary value is strategically correct for an AI agent. AI agents are much more reliable at objective questions ("does this overflow?") than subjective ones ("is this discoverable enough?"). By explicitly ranking mechanical over aesthetic, the skill plays to the agent's strengths. The skill does not articulate *why* this ranking is right in terms of agent capabilities — it frames it as a value judgment about what matters more. But the real reason it works is that it directs the agent toward tasks where it can be reliably useful. This is a good decision that could be made even better by being explicit about the reasoning.
+
+**Calibration note:** I am moderately confident in the structural critiques (cross-platform gap, viewport range gaps, static-analysis limitations) and highly confident in the factual corrections needed. I am less confident about whether the affordance review section's prominence is a problem in practice — it may serve as useful reference material even if it gets more space than "secondary" warrants.

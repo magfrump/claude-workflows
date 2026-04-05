@@ -29,9 +29,11 @@ requires:
 
 You review UI code for visual and layout problems — elements that disappear, overflow,
 overlap, or become unusable at different screen sizes. You produce concrete fixes grounded in
-accessibility standards and usability research. This applies to any framework with visual
-elements: React/JSX/TSX, Unity/C#, Vue, Svelte, native mobile, etc. The core principles
-(overflow handling, control placement, flex sizing, affordance) are universal.
+accessibility standards and usability research. The core principles (overflow handling, control
+placement, sizing, affordance) apply across frameworks — React/JSX/TSX, Unity/C#, Vue, Svelte,
+native mobile, etc. — though most examples below use web/Tailwind conventions. For non-web
+frameworks, adapt the patterns to the equivalent layout system (e.g., Unity's RectTransform
+and LayoutGroup, SwiftUI's GeometryReader).
 
 Your primary job is **mechanical bug-finding**: catching CSS and layout patterns that break at
 different viewport sizes. This is objective work — does this layout break? — and it is the
@@ -40,11 +42,13 @@ core value of this skill. The checklist in Step 2 is your main tool.
 Your secondary job, when relevant, is **affordance review**: checking that interactive elements
 are discoverable and distinguishable. This work is grounded in:
 
-- **WCAG 2.2** — visible focus indicators (2.4.7, 2.4.11), minimum target sizes (2.5.8),
+- **WCAG 2.2** — visible focus indicators (2.4.7), focus not obscured (2.4.11),
+  focus appearance (2.4.13, Level AAA), minimum target sizes (2.5.8),
   content reflow (1.4.10)
 - **NNGroup research** — flat UI elements with weak signifiers require more user effort;
   interactive elements must be visually distinguishable from static content
-- **European Accessibility Act (2025)** — legal requirements for discoverable UI elements
+- **European Accessibility Act (2025)** — EU law requiring digital accessibility via
+  EN 301 549 / WCAG 2.1 AA, covering perceivable, operable, and understandable interfaces
 
 The guiding principle: **users should never have to guess** whether they can scroll, click,
 or interact with an element. When minimalist aesthetics conflict with discoverability, prefer
@@ -97,6 +101,27 @@ If the user points to a specific problem (e.g., "the sidebar disappears on small
 focus there first, then scan for related issues in the same component tree.
 
 If this is a general audit, read all relevant layout and styling files.
+
+---
+
+## Review Modes
+
+This skill operates in two modes. The mode determines which checklist items to run.
+
+**Mechanical review (default)** — Runs checklist items 1-5 only. These are objective layout
+bug checks with clear right/wrong answers. This is the default when triggered by the
+code-review orchestrator or when reviewing a specific diff. No web search unless genuinely
+uncertain about a CSS property. Fast and low-noise.
+
+**Full audit** — Runs all checklist items (1-7), including affordance review and responsive/
+cross-browser checks. Use this mode when the user explicitly asks for a "UI audit", "review
+the UI", "check accessibility", or "audit the CSS". Also use when the user reports a
+discoverability or affordance problem specifically.
+
+The mode split exists because items 1-5 are mechanical pattern-matching where AI agents are
+reliably accurate, while items 6-7 involve subjective judgment that can generate false
+positives in projects using modern component libraries. Bundling both by default risks noise
+that causes developers to disable the tool entirely.
 
 ---
 
@@ -154,21 +179,24 @@ Ask for each element: "Should this size to its content or fill available space?"
 - An `absolute`-positioned element attaches to its nearest `relative` ancestor
 - When multiple sections exist side-by-side, verify the element is inside the correct section
 - Common bug: floating bar in outer div overlaps all sections instead of just its target
+- Unity equivalent: a RectTransform anchored to the wrong parent Canvas or Panel, causing
+  elements to scale or position relative to the full screen instead of their intended container
 
 ### 5. Excessive vertical spacing
 - Padding and gaps that waste vertical space, pushing controls below the fold on small viewports
 - Prefer compact defaults: `p-4` over `p-6`, `gap-3` over `gap-4`, `rows={3}` over `rows={8}`
 - Test: at `1366x768` viewport, are action buttons visible without scrolling?
 
-### 6. Visibility and affordance
+### 6. Visibility and affordance *(full audit mode only)*
 - Interactive elements that look like static text (missing cursor, border, or background)
 - Controls that disappear after completion (`{status !== "done" && <button>}`) — should
   update label instead (`status === "done" ? "Re-run" : "Run"`)
 - Scroll indicators that only appear on hover (not discoverable on touch devices)
 - Form inputs without visible borders (indistinguishable from labels)
 - Disabled states that are invisible or insufficiently dimmed
-- Missing focus indicators for keyboard navigation (WCAG 2.4.7, 2.4.11)
-- Touch targets smaller than minimum sizes (WCAG 2.5.8: 24x24px minimum, 44x44px recommended)
+- Missing focus indicators for keyboard navigation (WCAG 2.4.7; 2.4.13 Level AAA)
+- Touch targets smaller than minimum sizes (WCAG 2.5.8: 24x24px minimum Level AA;
+  WCAG 2.5.5: 44x44px Level AAA)
 
 Note: discoverability is not only about making elements visible. Also consider:
 - **Progressive disclosure** — showing controls in context when relevant, rather than
@@ -178,7 +206,7 @@ Note: discoverability is not only about making elements visible. Also consider:
 - **Redesigning to avoid overflow** — the best scroll bar is one you don't need. Before
   adding scroll indicators, ask whether the layout can be restructured to fit the content
 
-### 7. Responsive and cross-browser concerns
+### 7. Responsive and cross-browser concerns *(full audit mode only)*
 - Fixed dimensions (`width: 500px`) that won't adapt to viewport changes
 - Missing viewport meta tag
 - Media queries that leave gaps between breakpoints
@@ -295,11 +323,12 @@ guidelines are silent and modern design-system guidance is ambiguous:
 1. **Scroll indicators are visible** when content exceeds its container. The user should never
    have to guess whether more content exists. Use `overflow-y: auto` with visible scroll bars;
    consider `scrollbar-gutter: stable` to prevent layout shift when scroll bars appear/disappear.
-   (NNGroup: "Show scrollbars when content is scrollable.")
+   (NNGroup recommends visible scroll affordances when content is scrollable.)
 
 2. **Interactive elements are visually distinct.** Buttons have borders, backgrounds, and
    active/pressed states that make them obviously clickable. (NNGroup: flat UI elements with
-   weak signifiers require more user effort. WCAG 2.5.8: minimum target size 24x24px.)
+   weak signifiers require more user effort. WCAG 2.5.8: minimum target size 24x24px
+   Level AA; WCAG 2.5.5: 44x44px Level AAA.)
 
 3. **Form inputs have visible borders.** A borderless text field is indistinguishable from a
    label. (WCAG 1.4.11: non-text contrast — UI components must have 3:1 contrast against
@@ -314,7 +343,8 @@ guidelines are silent and modern design-system guidance is ambiguous:
    screen during a load. (WCAG 4.1.3: status messages must be programmatically determinable.)
 
 7. **Focus indicators are obvious.** Keyboard users must always know which element is focused.
-   (WCAG 2.4.7: focus visible. WCAG 2.4.11: focus appearance — minimum area and contrast.)
+   (WCAG 2.4.7: focus visible. WCAG 2.4.13: focus appearance — minimum area and contrast,
+   Level AAA.)
 
 8. **Prefer redesigning layout over adding scroll.** If content can be restructured to fit
    without scrolling, that is better than a visible scroll bar. Scroll bars are a fallback,
@@ -322,3 +352,21 @@ guidelines are silent and modern design-system guidance is ambiguous:
 
 When searching for guidance, include terms like "WCAG", "UI affordance", "visible feedback",
 "discoverability" alongside the specific CSS or layout question.
+
+---
+
+## Suppressing Known Findings
+
+When a project intentionally deviates from the checklist (e.g., borderless inputs as a design
+choice, auto-hiding scrollbars per design system), findings will recur on every diff. To
+prevent noise:
+
+1. **Project-local guidelines** — the primary suppression mechanism. If
+   `docs/UI_LAYOUT_GUIDELINES.md` (or equivalent) documents an intentional pattern, the skill
+   respects it and does not flag it.
+2. **Inline suppression comments** — if a component intentionally uses a pattern the checklist
+   would flag, an inline comment like `// ui-review: intentional overflow-hidden` signals that
+   this was a deliberate choice. Do not flag code with such comments.
+3. **Report deduplication** — if a prior review report exists in `docs/reviews/` and a finding
+   matches one already acknowledged by the author (status updated to "acknowledged" or
+   "won't fix"), do not re-report it.

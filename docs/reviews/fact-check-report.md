@@ -1,108 +1,156 @@
 # Fact-Check Report: UI Visual Review Skill
 
-**Draft:** skills/ui-visual-review.md (proposed)
-**Date:** 2026-04-03
-**Total claims checked:** 9
-**Summary:** 4 accurate, 2 mostly accurate, 2 disputed, 0 inaccurate, 0 unverified
+**Draft author:** (skill document, no named author)
+**Checked:** 2026-04-04
+**Total claims checked:** 10
+**Summary:** 6 accurate, 2 mostly accurate, 0 disputed, 1 inaccurate, 1 unverified
 
 ---
 
-## Claims Checked
+## Claim 1: "visible focus indicators (2.4.7, 2.4.11)"
 
-### Claim 1: Windows 98 scroll bars were always visible when content overflows
-> "Scroll bars are always visible when content overflows."
+The draft states that WCAG 2.2 criteria 2.4.7 and 2.4.11 concern "visible focus indicators."
+
+**Verdict:** Inaccurate
+**Confidence:** High
+
+WCAG 2.4.7 (Focus Visible, Level AA) does concern visible focus indicators -- it requires that keyboard focus indicators are visible. However, WCAG 2.4.11 in the final WCAG 2.2 specification is "Focus Not Obscured (Minimum)" (Level AA), which requires that focused elements are not entirely hidden by author-created content. It is not about focus indicator appearance. The criterion the draft appears to mean is **2.4.13 (Focus Appearance)**, which was originally numbered 2.4.11 in earlier drafts but was renumbered to 2.4.13 and downgraded to Level AAA in the final WCAG 2.2 recommendation. The draft references 2.4.11 in three separate places as if it concerns focus appearance, which reflects the outdated draft numbering.
+
+**Sources:**
+- [W3C Understanding SC 2.4.7: Focus Visible](https://www.w3.org/WAI/WCAG22/Understanding/focus-visible.html)
+- [W3C Understanding SC 2.4.11: Focus Not Obscured (Minimum)](https://www.w3.org/WAI/WCAG22/Understanding/focus-not-obscured-minimum.html)
+- [W3C Understanding SC 2.4.13: Focus Appearance](https://www.w3.org/WAI/WCAG22/Understanding/focus-appearance.html)
+
+---
+
+## Claim 2: "minimum target sizes (2.5.8)"
+
+The draft references WCAG 2.5.8 for minimum target sizes.
+
+**Verdict:** Accurate
+**Confidence:** High
+
+WCAG 2.5.8 is "Target Size (Minimum)" (Level AA), introduced in WCAG 2.2. It requires interactive targets to be at least 24x24 CSS pixels, with exceptions for spacing, inline targets, and user-agent-controlled elements. The criterion number and its subject matter are correctly identified.
+
+**Sources:**
+- [W3C Understanding SC 2.5.8: Target Size (Minimum)](https://www.w3.org/WAI/WCAG22/Understanding/target-size-minimum.html)
+
+---
+
+## Claim 3: "content reflow (1.4.10)"
+
+The draft references WCAG 1.4.10 for content reflow.
+
+**Verdict:** Accurate
+**Confidence:** High
+
+WCAG 1.4.10 is "Reflow" (Level AA). It requires content to be presented without loss of information or functionality and without scrolling in two dimensions, at widths equivalent to 320 CSS pixels (for vertical scrolling content). The criterion number and description are correct.
+
+**Sources:**
+- [W3C Understanding SC 1.4.10: Reflow](https://www.w3.org/WAI/WCAG21/Understanding/reflow.html)
+
+---
+
+## Claim 4: "WCAG 2.5.8: 24x24px minimum, 44x44px recommended"
+
+The draft states the minimum target size is 24x24px per WCAG 2.5.8, with 44x44px recommended.
 
 **Verdict:** Mostly accurate
 **Confidence:** High
-**Evidence:** In Windows 98, scroll bars appeared automatically when window content exceeded the visible area — "at the right side or the bottom of a window when all of the information in that window cannot be seen at the same time." The behavior was technically "auto" (appear when needed) rather than "always visible regardless," but scroll bars were never hidden when content did overflow. The key contrast with modern UIs (where scroll bars may be hidden even when content overflows, as on macOS) is valid and is the real point being made.
-**Source:** [GCFGlobal Windows 98 Tutorial](https://edu.gcfglobal.org/en/windows98/moving-and-sizing-windows/1/), [98.css design system](https://jdan.github.io/98.css/)
+
+WCAG 2.5.8 (Target Size Minimum, Level AA) does require 24x24 CSS pixels minimum. However, the "44x44px recommended" framing is imprecise. The 44x44 figure comes from WCAG 2.5.5 (Target Size Enhanced, Level AAA), which is a separate success criterion at a higher conformance level -- not a "recommendation" within 2.5.8 itself. The 44x44 figure also appears in Apple's Human Interface Guidelines (as 44x44 points). Google Material Design recommends 48x48dp. The draft's phrasing could mislead readers into thinking 44x44 is a recommendation within 2.5.8.
+
+**Sources:**
+- [W3C Understanding SC 2.5.8: Target Size (Minimum)](https://www.w3.org/WAI/WCAG22/Understanding/target-size-minimum.html)
+- [W3C Understanding SC 2.5.5: Target Size (Enhanced)](https://www.w3.org/WAI/WCAG22/Understanding/target-size-enhanced.html)
 
 ---
 
-### Claim 2: Windows 98 buttons had borders, backgrounds, and hover/active states
-> "Buttons look like buttons. They have borders, backgrounds, and hover/active states."
+## Claim 5: "WCAG 1.4.11: non-text contrast -- UI components must have 3:1 contrast against adjacent colors"
+
+**Verdict:** Accurate
+**Confidence:** High
+
+WCAG 1.4.11 (Non-text Contrast, Level AA) requires a contrast ratio of at least 3:1 against adjacent colors for visual information required to identify user interface components and states. The draft's description is correct.
+
+**Sources:**
+- [W3C Understanding SC 1.4.11: Non-text Contrast](https://www.w3.org/WAI/WCAG21/Understanding/non-text-contrast.html)
+
+---
+
+## Claim 6: "WCAG 4.1.3: status messages must be programmatically determinable"
+
+**Verdict:** Accurate
+**Confidence:** High
+
+WCAG 4.1.3 (Status Messages, Level AA) requires that status messages can be programmatically determined through role or properties such that they can be presented to the user by assistive technologies without receiving focus. The draft's description is accurate.
+
+**Sources:**
+- [W3C Understanding SC 4.1.3: Status Messages](https://www.w3.org/WAI/WCAG22/Understanding/status-messages.html)
+
+---
+
+## Claim 7: "European Accessibility Act (2025) -- legal requirements for discoverable UI elements"
 
 **Verdict:** Mostly accurate
-**Confidence:** High
-**Evidence:** Windows 98 buttons had strong visible affordances — 3D beveled borders and distinct backgrounds that made them look "pushable." The active (pressed) state was prominent. However, hover states were not a standard feature of Windows 98 buttons; hover highlighting became more prominent in Windows XP and later. The claim about borders and backgrounds is accurate; including "hover states" as a Windows 98-era characteristic is slightly anachronistic.
-**Source:** [98.css design system](https://jdan.github.io/98.css/), [Microsoft Windows Interface Guidelines (PDF)](https://ics.uci.edu/~kobsa/courses/ICS104/course-notes/Microsoft_WindowsGuidelines.pdf)
-
----
-
-### Claim 3: Apple Human Interface Guidelines cover layout and sizing principles
-> "Apple Human Interface Guidelines (for layout and sizing principles)"
-
-**Verdict:** Accurate
-**Confidence:** High
-**Evidence:** Apple's Human Interface Guidelines have dedicated sections on layout, including guidance on safe areas, adaptive layouts using size classes, minimum touch targets (44pt), and responsive text sizing.
-**Source:** [Apple HIG - Layout](https://developer.apple.com/design/human-interface-guidelines/layout)
-
----
-
-### Claim 4: Google Material Design covers responsive breakpoints and touch targets
-> "Google Material Design (for responsive breakpoints and touch targets)"
-
-**Verdict:** Accurate
-**Confidence:** High
-**Evidence:** Material Design defines responsive breakpoints at 480, 600, 840, 960, 1280, 1440, and 1600dp, and specifies minimum touch target sizing (48dp in Material Design 2/3).
-**Source:** [Material Design Responsive UI](https://m1.material.io/layout/responsive-ui.html), [Material Design 3 Layout](https://m3.material.io/foundations/layout/understanding-layout/overview)
-
----
-
-### Claim 5: MDN Web Docs covers CSS property behavior and browser compatibility
-> "MDN Web Docs (for CSS property behavior and browser compatibility)"
-
-**Verdict:** Accurate
-**Confidence:** High
-**Evidence:** MDN provides detailed documentation for every CSS property including syntax, behavior, examples, and browser compatibility tables sourced from the browser-compat-data project (over 15,000 features tracked).
-**Source:** [MDN Browser Compatibility Data](https://developer.mozilla.org/en-US/docs/MDN/Writing_guidelines/Page_structures/Compatibility_tables)
-
----
-
-### Claim 6: Viewport categories — small mobile 320px-480px, tablet 768px-1024px, large desktop 1440px+
-> "Small mobile (320px-480px wide) / Tablet/small laptop (768px-1024px wide) / Large desktop (1440px+ wide)"
-
-**Verdict:** Accurate
-**Confidence:** High
-**Evidence:** These ranges align with industry-standard responsive breakpoints. Common mobile breakpoints are 320px-480px, tablet breakpoints are 768px-1024px, and large desktop starts at 1280px-1440px. Bootstrap uses similar ranges (sm: 576px, md: 768px, lg: 992px, xl: 1200px). The draft's ranges are reasonable and consistent with widely used frameworks.
-**Source:** [BrowserStack Responsive Design Breakpoints](https://www.browserstack.com/guide/responsive-design-breakpoints), [Bootstrap Breakpoints](https://getbootstrap.com/docs/5.0/layout/breakpoints/)
-
----
-
-### Claim 7: 1024x768 as "minimum supported" resolution
-> "1024x768 (minimum supported): all action buttons visible without scrolling"
-
-**Verdict:** Disputed
 **Confidence:** Medium
-**Evidence:** 1024x768 was historically a common minimum design target but is no longer standard for desktop web design. As of 2025, the most common desktop resolution is 1920x1080 (24%), followed by 1536x864 (11%) and 1366x768 (10%). 1024x768 does not appear in the top desktop resolutions. It remains relevant for tablets in landscape mode, but calling it "minimum supported" without qualification is outdated. Whether this is appropriate depends on the specific project's audience — for internal tools or kiosk applications it may be reasonable — but the draft presents it as a general guideline.
-**Source:** [StatCounter Screen Resolution Stats](https://gs.statcounter.com/screen-resolution-stats/desktop/worldwide), [BrowserStack Common Screen Resolutions 2026](https://www.browserstack.com/guide/common-screen-resolutions)
+
+The European Accessibility Act did come into effect on 28 June 2025, so the "(2025)" date reference is correct. It does impose legal requirements for digital accessibility. However, the draft's specific characterization of "legal requirements for discoverable UI elements" is a simplification. The EAA references EN 301 549, which incorporates WCAG 2.1 Level AA. The EAA's requirements are broad (perceivable, operable, understandable, robust) rather than specifically targeting "discoverable UI elements" as a named requirement. The claim is directionally correct but imprecise.
+
+**Sources:**
+- [AccessibleEU: EAA comes into effect June 2025](https://accessible-eu-centre.ec.europa.eu/content-corner/news/eaa-comes-effect-june-2025-are-you-ready-2025-01-31_en)
+- [Level Access: European Accessibility Act Compliance Guide](https://www.levelaccess.com/compliance-overview/european-accessibility-act-eaa/)
 
 ---
 
-### Claim 8: 1440x900 as "typical laptop" resolution
-> "1440x900 (typical laptop): layout fills space without excessive whitespace"
+## Claim 8: "NNGroup: flat UI elements with weak signifiers require more user effort"
 
-**Verdict:** Disputed
-**Confidence:** Medium
-**Evidence:** As of March 2025, 1440x900 accounts for only ~4% of desktop screen resolutions worldwide. The most common laptop resolutions are 1920x1080, 1536x864, and 1366x768. Calling 1440x900 "typical laptop" is misleading — it is a legacy resolution associated with older MacBook Airs and mid-range monitors. A more typical laptop resolution today would be 1366x768 or 1920x1080.
-**Source:** [StatCounter Screen Resolution Stats](https://gs.statcounter.com/screen-resolution-stats/desktop/worldwide), [BrowserStack Common Screen Resolutions 2026](https://www.browserstack.com/guide/common-screen-resolutions)
-
----
-
-### Claim 9: CSS vendor prefix requirement
-> "You MUST NOT introduce CSS that requires vendor prefixes without noting which browsers need them."
-
-**Verdict:** Accurate (as a practice recommendation)
+**Verdict:** Accurate
 **Confidence:** High
-**Evidence:** While most CSS properties no longer need vendor prefixes, some (e.g., `-webkit-appearance`, `-webkit-text-stroke`) still require them. A 2026 CSS audit found the median website still has 140 vendor-prefixed properties, many unnecessary. Documenting which browsers need prefixes is sound practice, aligned with the recommendation to use tools like Autoprefixer rather than hand-authoring prefixes.
-**Source:** [Vendor Prefixes in 2026 - Max Glenister](https://blog.omgmog.net/post/why-vendor-prefixes-are-still-in-your-css/), [MDN Vendor Prefix Glossary](https://developer.mozilla.org/en-US/docs/Glossary/Vendor_Prefix)
+
+NNGroup published eyetracking research showing that UIs with weak clickability signifiers required 22% more time and 25% more fixations compared to strong-signifier versions. The draft's attribution is accurate and correctly summarizes the finding.
+
+**Sources:**
+- [NNGroup: Flat UI Elements Attract Less Attention and Cause Uncertainty](https://www.nngroup.com/articles/flat-ui-less-attention-cause-uncertainty/)
+- [NNGroup: Long-Term Exposure to Flat Design](https://www.nngroup.com/articles/flat-design-long-exposure/)
+
+---
+
+## Claim 9: "NNGroup: 'Show scrollbars when content is scrollable.'"
+
+The draft attributes this quoted recommendation to NNGroup.
+
+**Verdict:** Unverified
+**Confidence:** Low
+
+NNGroup does recommend visible scrollbars and has published on the topic of scroll discoverability, but I could not find the exact quoted sentence "Show scrollbars when content is scrollable" in NNGroup's published articles. The sentiment aligns with NNGroup's general recommendations, but the specific quote could not be verified as a direct NNGroup quotation. It may be a paraphrase presented as a quote.
+
+**Sources:**
+- [NNGroup scrollbar and scrolling topic page](https://www.nngroup.com/topic/flat-design/) (general topic area; exact quote not located)
+
+---
+
+## Claim 10: "WCAG 2.4.7: focus visible. WCAG 2.4.11: focus appearance -- minimum area and contrast."
+
+In the Affordance Principles Reference section, the draft describes 2.4.11 as concerning "focus appearance -- minimum area and contrast."
+
+**Verdict:** Inaccurate
+**Confidence:** High
+
+This is a repeat of the error identified in Claim 1. WCAG 2.4.11 is "Focus Not Obscured (Minimum)" -- it concerns whether focused elements are hidden behind other content, not focus indicator appearance, area, or contrast. The criterion about minimum focus indicator area and contrast is 2.4.13 (Focus Appearance, Level AAA). This is the same numbering error appearing in a different section of the draft.
+
+**Sources:**
+- [W3C Understanding SC 2.4.11: Focus Not Obscured (Minimum)](https://www.w3.org/WAI/WCAG22/Understanding/focus-not-obscured-minimum.html)
+- [W3C Understanding SC 2.4.13: Focus Appearance](https://www.w3.org/WAI/WCAG22/Understanding/focus-appearance.html)
 
 ---
 
 ## Claims Requiring Author Attention
 
-1. **Claim 2 (Mostly accurate):** Windows 98 buttons did not have prominent hover states. Consider changing "hover/active states" to just "active states" or "press states" to be historically accurate for the Windows 98 era.
+1. **Claim 1 & 10 (Inaccurate):** All references to "2.4.11" as "Focus Appearance" should be changed to "2.4.13". WCAG 2.4.11 is "Focus Not Obscured (Minimum)" in the final WCAG 2.2 spec. This error appears in the introduction, the visibility/affordance checklist (Step 2, item 6), and the Affordance Principles Reference (item 7). Also note that 2.4.13 is Level AAA, not AA -- this affects what level of conformance the skill is recommending.
 
-2. **Claim 7 (Disputed):** 1024x768 is no longer a standard "minimum supported" resolution for general web design. Consider updating to 1280x720 or 1366x768 as the minimum, or qualifying the 1024x768 target as applicable to specific use cases (tablets, legacy hardware).
+2. **Claim 4 (Mostly Accurate):** The "44x44px recommended" should clarify that this comes from WCAG 2.5.5 (Level AAA) or from platform guidelines (Apple HIG), not from 2.5.8 itself.
 
-3. **Claim 8 (Disputed):** 1440x900 is not a "typical laptop" resolution by current statistics. Consider updating to 1366x768 (budget laptops) or 1920x1080 (standard laptops), or relabeling this breakpoint.
+3. **Claim 7 (Mostly Accurate):** The EAA description as "legal requirements for discoverable UI elements" is a simplification. Consider rephrasing to reference the EAA's broader accessibility requirements via EN 301 549 / WCAG 2.1 AA.
+
+4. **Claim 9 (Unverified):** The quoted NNGroup recommendation "Show scrollbars when content is scrollable" could not be verified as a direct quote. Consider removing the quotation marks or finding the exact source.
