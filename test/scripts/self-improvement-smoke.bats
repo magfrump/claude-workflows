@@ -330,3 +330,76 @@ MIXED
   [ -f "$TEST_TMPDIR/round-1-report.json" ]
   [ -f "$TEST_TMPDIR/round-2-report.json" ]
 }
+
+# ---------------------------------------------------------------
+# Lint task descriptions tests
+# ---------------------------------------------------------------
+
+@test "lint warns when files_touched parent directory does not exist" {
+  cat > "$TEST_TMPDIR/tasks.json" <<'EOF'
+[
+  {
+    "id": "task-bad-dir",
+    "description": "Add a new feature with shellcheck compliance",
+    "files_touched": ["nonexistent-dir-xyz/foo.sh"],
+    "independent": true
+  }
+]
+EOF
+  run lint_task_descriptions "$TEST_TMPDIR/tasks.json"
+  [ "$status" -eq 0 ]
+  [[ "$output" == *"LINT WARNING"* ]]
+  [[ "$output" == *"parent directory does not exist"* ]]
+  [[ "$output" == *"nonexistent-dir-xyz"* ]]
+}
+
+@test "lint warns when .sh files touched but description lacks shellcheck" {
+  cat > "$TEST_TMPDIR/tasks.json" <<'EOF'
+[
+  {
+    "id": "task-no-shellcheck",
+    "description": "Refactor the build pipeline",
+    "files_touched": ["scripts/build.sh"],
+    "independent": true
+  }
+]
+EOF
+  run lint_task_descriptions "$TEST_TMPDIR/tasks.json"
+  [ "$status" -eq 0 ]
+  [[ "$output" == *"LINT WARNING"* ]]
+  [[ "$output" == *"shellcheck"* ]]
+}
+
+@test "lint warns when workflow .md files touched but description lacks BATS or section" {
+  mkdir -p "$TEST_TMPDIR/workflows"
+  cat > "$TEST_TMPDIR/tasks.json" <<'EOF'
+[
+  {
+    "id": "task-no-bats",
+    "description": "Update the research workflow",
+    "files_touched": ["workflows/research.md"],
+    "independent": true
+  }
+]
+EOF
+  run bash -c "cd '$TEST_TMPDIR' && source '$REPO_ROOT/scripts/self-improvement.sh' && lint_task_descriptions '$TEST_TMPDIR/tasks.json'"
+  [ "$status" -eq 0 ]
+  [[ "$output" == *"LINT WARNING"* ]]
+  [[ "$output" == *"workflow .md"* ]]
+}
+
+@test "lint produces no warnings for a well-formed task" {
+  cat > "$TEST_TMPDIR/tasks.json" <<'EOF'
+[
+  {
+    "id": "task-clean",
+    "description": "Update build script and run shellcheck, update BATS section",
+    "files_touched": ["scripts/self-improvement.sh", "workflows/dev.md"],
+    "independent": true
+  }
+]
+EOF
+  run bash -c "cd '$REPO_ROOT' && source '$REPO_ROOT/scripts/self-improvement.sh' && lint_task_descriptions '$TEST_TMPDIR/tasks.json'"
+  [ "$status" -eq 0 ]
+  [[ "$output" != *"LINT WARNING"* ]]
+}
