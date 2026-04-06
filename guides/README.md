@@ -20,4 +20,6 @@ Reference documents for specific processes and conventions. Unlike workflows (st
 
 - **[validation-gates.md](validation-gates.md)** — Reference for all 7 validation gates (commit count, diff size, file scope, critical file protection, BATS tests, shellcheck, self-eval) that run before merging to main. Use when debugging a branch rejection or preparing a task for the self-improvement loop.
 
+- **[skill-trigger-guide.md](skill-trigger-guide.md)** — Maps common task types (code review, security audit, writing review, tech debt assessment, etc.) to the appropriate skill(s). Use when unsure which skill to invoke, or to understand how skills overlap and differ from workflows.
+
 - **[workflow-selection.md](workflow-selection.md)** — Prescriptive decision tree for choosing the right workflow given a task type. Use when unsure whether to reach for bug-diagnosis vs research-plan-implement, spike vs divergent-design, or any other workflow.
