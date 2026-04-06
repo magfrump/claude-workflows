@@ -27,7 +27,7 @@ These supplement the guidance in pr-prep Step 3 (which covers verifying findings
 
 This loop complements Research → Plan → Implement. RPI produces an implementation with a human-reviewed plan; the review-fix loop adds automated code review and iterates on findings. Together they cover the full path from "understand the problem" to "PR ready for human review."
 
-The loop is embedded in pr-prep as a required step. It should not be run as a standalone workflow — use pr-prep, which sequences it alongside commit cleanup, CI verification, PR description writing, and size checks.
+The loop is embedded in pr-prep as a required step (Phase 1, step 3). It should not be run as a standalone workflow — use pr-prep, which sequences it within a two-phase process: content (gate checks → draft PR → review-fix loop) then packaging (commit cleanup → CI/annotation → description).
 
 ## Artifacts
 
