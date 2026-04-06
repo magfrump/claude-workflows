@@ -26,6 +26,10 @@ If it genuinely can't be split, note this in the PR description (step 6) and sug
 
 **b. Dependent PR check.** If this branch builds on other unmerged PRs, verify they've been merged or that this PR's base is set correctly. If dependencies haven't landed, decide whether to wait, rebase onto a dev integration branch, or open as a stacked PR with a clear note. Skip this check for standalone branches.
 
+**Completion criteria:**
+- [ ] PR is under 500 lines changed, OR PR description includes size justification and suggested file review order
+- [ ] No unmerged dependency PRs block this branch, OR base is set correctly for stacking
+
 #### 2. Open draft PR
 
 Push the branch and open a draft PR. This serves two purposes:
@@ -62,6 +66,12 @@ For each finding: confirm it's real by reading the code, then fix. Commit in coh
 
 See `workflows/review-fix-loop.md` for extended discussion of loop dynamics and anti-patterns.
 
+**Completion criteria:**
+- [ ] Review artifacts exist in `docs/reviews/` for each review skill run
+- [ ] No Must Fix findings remain open
+- [ ] All Must Address findings are resolved or explicitly acknowledged in the PR description
+- [ ] Final review loop introduced no new Must Fix or Must Address findings
+
 ### Phase 2: Packaging
 
 #### 4. Clean up commit history
@@ -77,6 +87,11 @@ Squash WIP commits into logical chunks. Each commit in the final history should 
 3. `feat: add UI for X` (builds on 1-2)
 4. `test: add tests for X` (or interleaved with the above)
 
+**Completion criteria:**
+- [ ] No WIP, fixup, or squash commits remain in the branch
+- [ ] Each commit message follows conventional format (`feat:`, `fix:`, `refactor:`, etc.)
+- [ ] Each commit represents one coherent, independently reviewable change
+
 #### 5. Verify and annotate (parallelizable)
 
 These two steps have no dependency on each other and can run concurrently.
@@ -84,6 +99,12 @@ These two steps have no dependency on each other and can run concurrently.
 **a. Verify CI passes.** Run whatever checks the project has: lint, build, tests. This runs on the rebased, reviewed code — the final form the reviewer will see. Fix anything broken. If you opened a draft PR in step 2, push the rebased branch to trigger CI remotely.
 
 **b. Annotate the diff.** If the PR includes code in languages or libraries the reviewer may not know well, add **PR comments on your own PR** explaining non-obvious sections. This is cheaper than back-and-forth across timezones.
+
+**Completion criteria:**
+- [ ] All project checks pass (lint, build, tests)
+- [ ] No new warnings introduced (for projects that treat warnings as errors)
+- [ ] If PR uses unfamiliar libraries or patterns, at least one explanatory PR comment exists
+- [ ] If no unfamiliar code, annotation step is explicitly skipped (not forgotten)
 
 #### 6. Write the PR description
 
@@ -111,6 +132,10 @@ Structure:
 
 For UI changes, capture before/after screenshots or a short recording and include them in the description. The reviewer may not be able to run the UI locally — visual evidence eliminates a round-trip.
 
+**Completion criteria:**
+- [ ] All five sections are present (What this does, How it works, How to test, Areas of uncertainty, Decisions made)
+- [ ] Each section contains at least one substantive sentence (not a placeholder)
+
 ## Retrospective
 
 After the PR is opened, take 2 minutes to close the loop on the workflow that produced it. Answer these in `docs/thoughts/` or a commit message — they compound over time.
@@ -119,3 +144,7 @@ After the PR is opened, take 2 minutes to close the loop on the workflow that pr
 2. **Skipped steps** — Were any workflow steps skipped or abbreviated? Why, and was that the right call in hindsight?
 3. **Surprises** — What was unexpected — in the codebase, the tooling, the requirements, or the review feedback? What would have helped you anticipate it?
 4. **Next time** — Knowing what you know now, what would you do differently in the plan, the process, or the code?
+
+**Completion criteria:**
+- [ ] At least one of the four questions answered with more than one sentence
+- [ ] Answer stored in `docs/thoughts/` or a commit message (not lost)
