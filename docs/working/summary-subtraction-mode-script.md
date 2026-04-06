@@ -1,0 +1,1 @@
+Created scripts/flag-removal-candidates.sh: parses hypothesis-log.md for REFUTED/INCONCLUSIVE-EXPIRED entries and optionally cross-references skill-usage-report.sh data to produce a markdown report of removal candidates with evidence and recommended actions.
