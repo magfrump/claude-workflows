@@ -16,6 +16,8 @@ Reference documents for specific processes and conventions. Unlike workflows (st
 
 - **[skill-recovery.md](skill-recovery.md)** — Three-tier escalation for recovering from skill failures: retry with narrower scope, substitute an alternative skill, or skip and document. Use when a skill produces poor, empty, or off-target output.
 
+- **[user-testing-moderator-script.md](user-testing-moderator-script.md)** — Reusable moderator script template for usability test sessions: introduction, warm-up, task facilitation, post-test debrief, and wrap-up. Extracted from the user-testing workflow.
+
 - **[subtraction-checklist.md](subtraction-checklist.md)** — Manual review process for identifying removal candidates using hypothesis logs, complexity warnings, and usage reports. Use after merging an implementation branch in the self-improvement loop.
 
 - **[validation-gates.md](validation-gates.md)** — Reference for all 7 validation gates (commit count, diff size, file scope, critical file protection, BATS tests, shellcheck, self-eval) that run before merging to main. Use when debugging a branch rejection or preparing a task for the self-improvement loop.
