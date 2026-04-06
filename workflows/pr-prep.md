@@ -7,39 +7,46 @@ Before opening any pull request, especially when the reviewer is in a different 
 
 ## Process
 
-### 1. Clean up commit history
+The process has two phases: **content** (is the code right?) and **packaging** (is the PR presentable?). Complete Phase 1 before starting Phase 2 — packaging work gets thrown away if content issues force a split or architectural rethink.
 
-```bash
-git rebase -i origin/main
-```
+See [decision 007](../docs/decisions/007-two-phase-pr-prep.md) for why this ordering was chosen.
 
-Squash WIP commits into logical chunks. Each commit in the final history should represent one coherent change that could be reviewed independently. Good commit sequence for a feature:
+### Phase 1: Content
 
-1. `feat: add data model for X` (reviewable alone)
-2. `feat: add API endpoint for X` (builds on 1, reviewable with context)
-3. `feat: add UI for X` (builds on 1-2)
-4. `test: add tests for X` (or interleaved with the above)
+#### 1. Gate checks
 
-**Completion criteria:**
-- [ ] No WIP, fixup, or squash commits remain in the branch
-- [ ] Each commit message follows conventional format (`feat:`, `fix:`, `refactor:`, etc.)
-- [ ] Each commit represents one coherent, independently reviewable change
+Run these concurrently — both are fast, and either failing changes the plan:
 
-### 2. Verify CI passes locally
+**a. Size check.** If the PR exceeds ~500 lines changed, consider whether it can be split before doing any other prep work. Look for:
+- A preparatory refactor that can land independently
+- Infrastructure/model changes separate from UI changes
+- A minimal first PR that adds the feature behind a flag, with polish in a follow-up
 
-Run whatever checks the project has: lint, build, tests. Fix anything broken. Do not leave this for the reviewer to discover.
+If it genuinely can't be split, note this in the PR description (step 6) and suggest a review order for the files.
+
+**b. Dependent PR check.** If this branch builds on other unmerged PRs, verify they've been merged or that this PR's base is set correctly. If dependencies haven't landed, decide whether to wait, rebase onto a dev integration branch, or open as a stacked PR with a clear note. Skip this check for standalone branches.
 
 **Completion criteria:**
-- [ ] All project checks pass (lint, build, tests)
-- [ ] No new warnings introduced (for projects that treat warnings as errors)
+- [ ] PR is under 500 lines changed, OR PR description includes size justification and suggested file review order
+- [ ] No unmerged dependency PRs block this branch, OR base is set correctly for stacking
 
-### 3. Review-fix loop
+#### 2. Open draft PR
+
+Push the branch and open a draft PR. This serves two purposes:
+- CI starts running in parallel with your review-fix work (saves waiting at step 5a)
+- Reviewers in other timezones get async visibility into in-progress work
+
+Skip if the project doesn't use CI or if you're the sole contributor and prefer to push later.
+
+#### 3. Review-fix loop
 
 Run review skills and iterate until clean. This is required, not optional.
 
-**a. Generate reviews.** Run in parallel:
+**a. Generate reviews.** Run skills in parallel; perform manual checks while waiting for results:
 - **Code review** (`/code-review`) — multi-critic structural review of the diff vs main
 - **Self-eval** (`/self-eval <target>`) — rubric assessment of any new or modified skills/workflows
+- **Documentation check** (manual) — if the PR changes public APIs, config options, or user-facing behavior, verify corresponding docs are updated (README, inline docs, decision records). Skip for internal refactors with no external surface.
+- **Dependency audit** (manual) — if the PR introduces or upgrades dependencies, check license compatibility, package size, and maintenance status. Flag unmaintained or unfamiliar packages. Skip if no dependency changes.
 
 **b. Triage and fix.** Read each review artifact. Work through findings in tier order:
 
@@ -65,7 +72,41 @@ See `workflows/review-fix-loop.md` for extended discussion of loop dynamics and 
 - [ ] All Must Address findings are resolved or explicitly acknowledged in the PR description
 - [ ] Final review loop introduced no new Must Fix or Must Address findings
 
-### 4. Write the PR description
+### Phase 2: Packaging
+
+#### 4. Clean up commit history
+
+```bash
+git rebase -i origin/main
+```
+
+Squash WIP commits into logical chunks. Each commit in the final history should represent one coherent change that could be reviewed independently. Good commit sequence for a feature:
+
+1. `feat: add data model for X` (reviewable alone)
+2. `feat: add API endpoint for X` (builds on 1, reviewable with context)
+3. `feat: add UI for X` (builds on 1-2)
+4. `test: add tests for X` (or interleaved with the above)
+
+**Completion criteria:**
+- [ ] No WIP, fixup, or squash commits remain in the branch
+- [ ] Each commit message follows conventional format (`feat:`, `fix:`, `refactor:`, etc.)
+- [ ] Each commit represents one coherent, independently reviewable change
+
+#### 5. Verify and annotate (parallelizable)
+
+These two steps have no dependency on each other and can run concurrently.
+
+**a. Verify CI passes.** Run whatever checks the project has: lint, build, tests. This runs on the rebased, reviewed code — the final form the reviewer will see. Fix anything broken. If you opened a draft PR in step 2, push the rebased branch to trigger CI remotely.
+
+**b. Annotate the diff.** If the PR includes code in languages or libraries the reviewer may not know well, add **PR comments on your own PR** explaining non-obvious sections. This is cheaper than back-and-forth across timezones.
+
+**Completion criteria:**
+- [ ] All project checks pass (lint, build, tests)
+- [ ] No new warnings introduced (for projects that treat warnings as errors)
+- [ ] If PR uses unfamiliar libraries or patterns, at least one explanatory PR comment exists
+- [ ] If no unfamiliar code, annotation step is explicitly skipped (not forgotten)
+
+#### 6. Write the PR description
 
 Structure:
 
@@ -89,29 +130,11 @@ Structure:
 [Link to any docs/decisions/ files created, or briefly note non-obvious choices]
 ```
 
+For UI changes, capture before/after screenshots or a short recording and include them in the description. The reviewer may not be able to run the UI locally — visual evidence eliminates a round-trip.
+
 **Completion criteria:**
 - [ ] All five sections are present (What this does, How it works, How to test, Areas of uncertainty, Decisions made)
 - [ ] Each section contains at least one substantive sentence (not a placeholder)
-
-### 5. Annotate the diff
-
-If the PR includes code in languages or libraries the reviewer may not know well, add **PR comments on your own PR** explaining non-obvious sections. This is cheaper than back-and-forth across timezones.
-
-**Completion criteria:**
-- [ ] If PR uses unfamiliar libraries or patterns, at least one explanatory PR comment exists
-- [ ] If no unfamiliar code, this step is explicitly skipped (not forgotten)
-
-### 6. Size check
-
-If the PR exceeds ~500 lines changed, consider whether it can be split. Look for:
-- A preparatory refactor that can land independently
-- Infrastructure/model changes separate from UI changes
-- A minimal first PR that adds the feature behind a flag, with polish in a follow-up
-
-If it genuinely can't be split, note this in the PR description and suggest a review order for the files.
-
-**Completion criteria:**
-- [ ] PR is under 500 lines changed, OR PR description includes size justification and suggested file review order
 
 ## Retrospective
 
