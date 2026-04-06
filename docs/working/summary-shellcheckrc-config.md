@@ -1,0 +1,1 @@
+Created .shellcheckrc at repo root disabling SC1091 (can't follow sourced file) with documentation explaining the worktree false-positive context, addressing the dominant R2 shellcheck gate failure mode.
