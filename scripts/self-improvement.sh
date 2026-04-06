@@ -971,6 +971,36 @@ docs/working/summary-${TASK_ID}.md"
                         continue  # file was deleted, not added/modified
                     fi
                     echo "    Running self-eval on: $SKILL_FILE"
+
+                    # --- Baseline comparison: evaluate HEAD version first ---
+                    BASELINE_WEAK=0
+                    if git show "main:$SKILL_FILE" >/dev/null 2>&1; then
+                        BASELINE_TMP=$(mktemp -d)
+                        # Recreate directory structure so self-eval can find the file
+                        mkdir -p "$BASELINE_TMP/$(dirname "$SKILL_FILE")"
+                        git show "main:$SKILL_FILE" > "$BASELINE_TMP/$SKILL_FILE"
+                        # Copy self-eval skill into temp dir so claude can find it
+                        if [ -d "$WT_DIR/skills" ]; then
+                            cp -r "$WT_DIR/skills" "$BASELINE_TMP/skills" 2>/dev/null || true
+                        fi
+                        echo "    Running baseline self-eval on main version of: $SKILL_FILE"
+                        BASELINE_OUTPUT=$(cd "$BASELINE_TMP" && claude -p "Use the self-eval skill defined in skills/self-eval.md to evaluate $SKILL_FILE.
+
+After writing the report, output exactly one line in this format:
+SELF_EVAL_RESULT: <number of Weak scores>
+
+Count only the automated assessment scores (Testability investment, Trigger clarity, Overlap and redundancy, Test coverage, Pipeline readiness). Do not count human-review dimensions." 2>&1) || true
+                        BASELINE_WEAK=$(echo "$BASELINE_OUTPUT" | grep -oP 'SELF_EVAL_RESULT: \K\d+' || echo "0")
+                        if [ -z "$BASELINE_WEAK" ]; then
+                            BASELINE_WEAK=0
+                        fi
+                        rm -rf "$BASELINE_TMP"
+                        echo "    Baseline: $BASELINE_WEAK Weak scores on main"
+                    else
+                        echo "    New file (no baseline on main)"
+                    fi
+
+                    # --- Evaluate branch version ---
                     EVAL_OUTPUT=$(cd "$WT_DIR" && claude -p "Use the self-eval skill defined in skills/self-eval.md to evaluate $SKILL_FILE.
 
 After writing the report, output exactly one line in this format:
@@ -982,12 +1012,12 @@ Count only the automated assessment scores (Testability investment, Trigger clar
                     if [ -z "$WEAK_COUNT" ]; then
                         echo "    Warning: self-eval did not produce a parseable result for $SKILL_FILE"
                         echo "[$TASK_ID] WARNING: self-eval unparseable for $SKILL_FILE" >> "$WORKING_DIR/validation-round-$ROUND.log"
-                    elif [ "$WEAK_COUNT" -ge 2 ]; then
-                        REJECT_REASON="self-eval: $SKILL_FILE has $WEAK_COUNT Weak automated scores"
+                    elif [ "$WEAK_COUNT" -ge 2 ] && [ "$WEAK_COUNT" -gt "$BASELINE_WEAK" ]; then
+                        REJECT_REASON="self-eval: $SKILL_FILE has $WEAK_COUNT Weak automated scores (baseline: $BASELINE_WEAK)"
                         SELF_EVAL_PASSED=false
                         break
                     else
-                        echo "    self-eval OK: $SKILL_FILE ($WEAK_COUNT Weak scores)"
+                        echo "    self-eval OK: $SKILL_FILE ($WEAK_COUNT Weak, baseline: $BASELINE_WEAK)"
                     fi
                 done
                 if $SELF_EVAL_PASSED; then
