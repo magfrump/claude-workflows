@@ -1,0 +1,1 @@
+Added gather_hypothesis_evidence() and propose_hypothesis_outcomes() to scripts/self-improvement.sh that parse hypothesis-log.md for elapsed-window INCONCLUSIVE hypotheses, gather mechanical evidence (git log, file existence, grep, round-history outcomes) without LLM calls, and write per-round proposal files for human review.
