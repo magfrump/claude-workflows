@@ -1,0 +1,1 @@
+Extracted hypothesis evaluation logic from self-improvement.sh (Step 0, ~65 lines) into scripts/hypothesis-eval.sh as a standalone sourceable function `evaluate_hypothesis_windows()`, reducing shellcheck surface area in the critical orchestrator while preserving identical behavior.
