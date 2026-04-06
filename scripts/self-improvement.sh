@@ -102,10 +102,16 @@ validate_task_json() {
             fi
 
             # Check parent directory exists in the repo
-            local parent_dir
+            local parent_dir grandparent_dir
             parent_dir=$(dirname "$fpath")
+            grandparent_dir=$(dirname "$parent_dir")
             if [ "$parent_dir" != "." ] && [ ! -d "$parent_dir" ]; then
-                ft_errors="${ft_errors}parent directory does not exist: $parent_dir (for $fpath); "
+                if [ "$grandparent_dir" = "." ] || [ -d "$grandparent_dir" ]; then
+                    # Single-level missing dir: warn but allow (unblocks .gitkeep creation)
+                    echo "  LINT WARNING [$tid]: parent directory does not exist: $parent_dir (for $fpath)" >&2
+                else
+                    ft_errors="${ft_errors}parent directory does not exist: $parent_dir (for $fpath); "
+                fi
             fi
         done
 
