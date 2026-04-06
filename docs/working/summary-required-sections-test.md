@@ -1,1 +1,0 @@
-Added BATS test validating that 6 convention-following workflows (RPI, DD, spike, pr-prep, codebase-onboarding, task-decomposition) contain '## When to use' and numbered '### N.' process step headers, with comments explaining why review-fix-loop, branch-strategy, and user-testing-workflow are excluded.

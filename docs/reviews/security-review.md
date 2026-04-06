@@ -1,7 +1,7 @@
 # Security Review
 
 **Scope:** Branch feat/foreground-tests vs main (15 files, ~800 lines added)
-**Reviewed:** 2026-03-26
+**Date:** 2026-03-26
 **Reviewer:** Security code review (design-level analysis)
 **Fact-check report:** Referenced `docs/reviews/code-fact-check-report.md` (28 claims checked; 19 verified, 4 mostly accurate, 1 stale)
 
@@ -49,7 +49,7 @@ However, this risk is mitigated by the hard gate at step 4: the human has alread
 
 ### 2. Diagnostic expectations guidance could lead to sensitive data in test output
 
-**Severity:** Low (mitigated)
+**Severity:** Low
 **Location:** `workflows/research-plan-implement.md:97-99`
 **Move:** #6 -- Follow the secrets
 **Confidence:** High

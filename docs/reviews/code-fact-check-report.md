@@ -173,7 +173,7 @@ This is a prescriptive instruction defining a commit message format. The format 
 
 The diff shows the plan section grew from 1 line (`- **Testing strategy**: ...`) to approximately 19 lines (lines 83-101 in the new version, accounting for blank lines). Calling this "approximately 15 lines" of net content is accurate.
 
-**Evidence:** `git diff main...HEAD -- workflows/research-plan-implement.md` (plan section diff)
+**Evidence:** `workflows/research-plan-implement.md:83-101` — plan section diff shows growth from 1 line to ~19 lines
 
 ---
 
@@ -186,7 +186,7 @@ The diff shows the plan section grew from 1 line (`- **Testing strategy**: ...`)
 
 The diff shows the implementation step gained: a new heading (line 121), the test-first gate section (lines 123-129), an "Implementation" sub-heading (line 131), totaling approximately 12 net lines including blanks. "Approximately 10 lines" is accurate.
 
-**Evidence:** `git diff main...HEAD -- workflows/research-plan-implement.md` (implementation section diff)
+**Evidence:** `workflows/research-plan-implement.md:121-131` — implementation step diff shows ~12 net lines added
 
 ---
 
@@ -199,7 +199,7 @@ The diff shows the implementation step gained: a new heading (line 121), the tes
 
 The main branch RPI has 173 lines; the current branch has 202 lines (not 198 as the previous fact-check stated). The claim of "roughly 175 to 200" rounds up the original (173 to 175) and rounds down the new (202 to 200). The actual growth is 29 lines (not 25). The "roughly" qualifier makes this acceptable but the rounding goes in opposite directions.
 
-**Evidence:** `wc -l` on both versions: main=173, branch=202
+**Evidence:** `workflows/research-plan-implement.md:1-202` — `wc -l` on both versions: main=173, branch=202
 
 ---
 
@@ -363,12 +363,12 @@ The hard gate text ("implementation does not begin until the user has reviewed t
 
 **Location:** `docs/reviews/performance-review.md:12`
 **Type:** Behavioral
-**Verdict:** Unverifiable (methodology unclear)
+**Verdict:** Unverifiable
 **Confidence:** Medium
 
 Main branch: 173 lines. Current branch: 202 lines. Growth: 29 lines, which is 16.8% (not 14%). If the review was calculated against an intermediate version with 198 lines, then 25/173 = 14.5% which rounds to 14%. The discrepancy suggests the percentage was calculated before the latest commit (which added the PII caveat and taxonomy note, adding ~4 lines).
 
-**Evidence:** `wc -l`: main=173, current=202; 29/173 = 16.8%
+**Evidence:** `docs/reviews/performance-review.md:12` — `wc -l`: main=173, current=202; 29/173 = 16.8%
 
 ---
 

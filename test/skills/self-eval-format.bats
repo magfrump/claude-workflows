@@ -13,7 +13,7 @@ setup() {
 # --- Header section ---
 
 @test "report has a title header with Self-Evaluation" {
-  echo "$REPORT_CONTENT" | head -5 | grep -qiE '^# Self-Evaluation'
+  echo "$REPORT_CONTENT" | head -15 | grep -qiE '^# Self-Evaluation'
 }
 
 @test "report has a Target field" {

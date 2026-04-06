@@ -36,6 +36,13 @@ read_input() {
   printf '{"tool_name":"Read","tool_input":{"file_path":"%s"}}' "$1"
 }
 
+agent_input() {
+  # Build Agent tool JSON with a prompt containing skill frontmatter
+  local prompt="$1"
+  # Use jq to safely encode the prompt string (handles newlines, quotes)
+  jq -n -c --arg prompt "$prompt" '{"tool_name":"Agent","tool_input":{"prompt":$prompt,"description":"run critique","subagent_type":"general-purpose"}}'
+}
+
 # --- Skill logging ---
 
 @test "skill invocation is logged with all fields" {
@@ -52,12 +59,12 @@ read_input() {
   [ -n "$(echo "$line" | jq -r '.branch')" ]
 }
 
-@test "skill with no args logs empty args string" {
+@test "skill with no args omits args field" {
   skill_input "fact-check" | bash "$HOOK"
 
   line=$(head -1 "$TEST_LOG")
   [ "$(echo "$line" | jq -r '.name')" = "fact-check" ]
-  [ "$(echo "$line" | jq -r '.args')" = "" ]
+  [ "$(echo "$line" | jq 'has("args")')" = "false" ]
 }
 
 @test "skill with empty name does not log" {
@@ -91,6 +98,38 @@ read_input() {
 @test "project-local workflow files are also logged" {
   read_input "/home/user/my-project/workflows/spike.md" | bash "$HOOK"
   [ "$(head -1 "$TEST_LOG" | jq -r '.name')" = "spike" ]
+}
+
+# --- Agent skill dispatch logging ---
+
+@test "agent with skill frontmatter in prompt is logged" {
+  prompt="$(printf '%s\n' '---' 'name: cowen-critique' 'description: critique' '---' '' 'Review this draft...')"
+  agent_input "$prompt" | bash "$HOOK"
+
+  [ -s "$TEST_LOG" ]
+  line=$(head -1 "$TEST_LOG")
+
+  [ "$(echo "$line" | jq -r '.event')" = "skill" ]
+  [ "$(echo "$line" | jq -r '.name')" = "cowen-critique" ]
+}
+
+@test "agent with no frontmatter does not log" {
+  agent_input "Just do some research on this topic" | bash "$HOOK"
+  [ ! -s "$TEST_LOG" ]
+}
+
+@test "agent with frontmatter but no name field does not log" {
+  prompt="$(printf '%s\n' '---' 'description: something' '---' '' 'content')"
+  agent_input "$prompt" | bash "$HOOK"
+  [ ! -s "$TEST_LOG" ]
+}
+
+@test "agent extracts first frontmatter name only" {
+  prompt="$(printf '%s\n' '---' 'name: fact-check' 'description: checker' '---' '' 'Draft text with ---' 'name: not-this' '---')"
+  agent_input "$prompt" | bash "$HOOK"
+
+  [ -s "$TEST_LOG" ]
+  [ "$(head -1 "$TEST_LOG" | jq -r '.name')" = "fact-check" ]
 }
 
 # --- Non-matching reads are ignored ---

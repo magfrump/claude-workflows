@@ -2,6 +2,10 @@
 
 **Scope:** feat/r1-retrospective-appendix vs main | **Reviewed:** 2026-03-27 | **Status: 🟡 CONDITIONAL PASS** — 0 red items, 1 amber item
 
+## 🔴 Must Fix
+
+(None)
+
 ## 🟡 Must Address
 
 | # | Finding | Domain | Source | Status | Author note |

@@ -93,6 +93,7 @@ summary. If the user references a skill not listed here, they can include it via
 - `test-strategy.md`
 - `tech-debt-triage.md`
 - `dependency-upgrade.md`
+- `ui-visual-review.md`
 
 **Not applicable to code review (skip):**
 - `fact-check.md`, `cowen-critique.md`, `yglesias-critique.md`
@@ -111,6 +112,12 @@ Run a quick analysis of the diff to determine which contextual critics to includ
 
 - **`tech-debt-triage`** — triggered when the diff is large. Check: does the diff span more
   than 10 files or more than 500 added/removed lines? (Use `git diff --stat` to check.)
+
+- **`ui-visual-review`** — triggered when the diff touches UI rendering code. Check: does
+  the diff contain changes to files with visual elements — JSX/TSX with className or style
+  props, CSS/SCSS files, HTML templates, C#/Unity UI components (Canvas, RectTransform,
+  ScrollRect, UI namespace), Vue/Svelte templates, or any file with Tailwind utility classes?
+  The trigger is the presence of visual/layout code, not file extension alone.
 
 ### Step 4: User overrides
 
@@ -296,9 +303,9 @@ Use this table to map individual critic severity levels to rubric tiers:
 | 🟡 Must Address | Medium | High, Medium | Inconsistent | Incorrect (medium confidence), Stale, Mostly Accurate |
 | 🟢 Consider | Low, Informational | Low, Informational | Minor, Informational | Unverifiable |
 
-**Contextual critics are advisory:** Findings from `test-strategy`, `tech-debt-triage`, and
-`dependency-upgrade` go to 🟢 Consider tier regardless of their internal severity. They
-inform but never block merge.
+**Contextual critics are advisory:** Findings from `test-strategy`, `tech-debt-triage`,
+`dependency-upgrade`, and `ui-visual-review` go to 🟢 Consider tier regardless of their
+internal severity. They inform but never block merge.
 
 ### Escalation Rule
 
@@ -341,6 +348,7 @@ docs/reviews/
 ├── test-strategy-review.md        (if triggered)
 ├── tech-debt-triage-review.md     (if triggered)
 ├── dependency-upgrade-review.md   (if triggered)
+├── ui-visual-review.md            (if triggered)
 ```
 
 At the end of your chat synthesis, link to all documents.

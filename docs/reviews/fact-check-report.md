@@ -1,147 +1,156 @@
-# Fact-Check Report: RPI Workflow and Foregrounding Tests Decision
+# Fact-Check Report: UI Visual Review Skill
 
-**Checked:** 2026-03-26
+**Draft author:** (skill document, no named author)
+**Checked:** 2026-04-04
 **Total claims checked:** 10
-**Summary:** 7 accurate, 2 mostly accurate, 0 disputed, 0 inaccurate, 1 unverified
+**Summary:** 6 accurate, 2 mostly accurate, 0 disputed, 1 inaccurate, 1 unverified
 
 ---
 
-## Claim 1: "docs/working/** linguist-generated ... This collapses them in GitHub's diff view -- reviewers can still expand them"
+## Claim 1: "visible focus indicators (2.4.7, 2.4.11)"
 
-**Source:** RPI workflow, lines 32-35
+The draft states that WCAG 2.2 criteria 2.4.7 and 2.4.11 concern "visible focus indicators."
+
+**Verdict:** Inaccurate
+**Confidence:** High
+
+WCAG 2.4.7 (Focus Visible, Level AA) does concern visible focus indicators -- it requires that keyboard focus indicators are visible. However, WCAG 2.4.11 in the final WCAG 2.2 specification is "Focus Not Obscured (Minimum)" (Level AA), which requires that focused elements are not entirely hidden by author-created content. It is not about focus indicator appearance. The criterion the draft appears to mean is **2.4.13 (Focus Appearance)**, which was originally numbered 2.4.11 in earlier drafts but was renumbered to 2.4.13 and downgraded to Level AAA in the final WCAG 2.2 recommendation. The draft references 2.4.11 in three separate places as if it concerns focus appearance, which reflects the outdated draft numbering.
+
+**Sources:**
+- [W3C Understanding SC 2.4.7: Focus Visible](https://www.w3.org/WAI/WCAG22/Understanding/focus-visible.html)
+- [W3C Understanding SC 2.4.11: Focus Not Obscured (Minimum)](https://www.w3.org/WAI/WCAG22/Understanding/focus-not-obscured-minimum.html)
+- [W3C Understanding SC 2.4.13: Focus Appearance](https://www.w3.org/WAI/WCAG22/Understanding/focus-appearance.html)
+
+---
+
+## Claim 2: "minimum target sizes (2.5.8)"
+
+The draft references WCAG 2.5.8 for minimum target sizes.
+
 **Verdict:** Accurate
 **Confidence:** High
 
-GitHub's documentation and multiple third-party sources confirm that the `linguist-generated` attribute in `.gitattributes` causes files to be collapsed by default in GitHub's diff view (pull requests, commits, compare views). Reviewers can expand collapsed files to view them. The exact `.gitattributes` syntax shown (`docs/working/** linguist-generated`) is valid.
+WCAG 2.5.8 is "Target Size (Minimum)" (Level AA), introduced in WCAG 2.2. It requires interactive targets to be at least 24x24 CSS pixels, with exceptions for spacing, inline targets, and user-agent-controlled elements. The criterion number and its subject matter are correctly identified.
 
-**Sources:** [GitHub Docs -- Customizing how changed files appear on GitHub](https://docs.github.com/en/repositories/working-with-files/managing-files/customizing-how-changed-files-appear-on-github), [Thoughtbot -- Automatically Collapse Generated Files in GitHub Diffs](https://thoughtbot.com/blog/github-diff-supression)
+**Sources:**
+- [W3C Understanding SC 2.5.8: Target Size (Minimum)](https://www.w3.org/WAI/WCAG22/Understanding/target-size-minimum.html)
 
 ---
 
-## Claim 2: "A template is available at templates/gitattributes-snippet.txt in this repo."
+## Claim 3: "content reflow (1.4.10)"
 
-**Source:** RPI workflow, line 35
+The draft references WCAG 1.4.10 for content reflow.
+
 **Verdict:** Accurate
 **Confidence:** High
 
-The file exists at `templates/gitattributes-snippet.txt` and contains the exact `docs/working/** linguist-generated` directive described in the workflow.
+WCAG 1.4.10 is "Reflow" (Level AA). It requires content to be presented without loss of information or functionality and without scrolling in two dimensions, at widths equivalent to 320 CSS pixels (for vertical scrolling content). The criterion number and description are correct.
 
-**Sources:** Project file `templates/gitattributes-snippet.txt`
+**Sources:**
+- [W3C Understanding SC 1.4.10: Reflow](https://www.w3.org/WAI/WCAG21/Understanding/reflow.html)
 
 ---
 
-## Claim 3: "DD's 80% confidence threshold governs whether the design decision can be resolved autonomously"
+## Claim 4: "WCAG 2.5.8: 24x24px minimum, 44x44px recommended"
 
-**Source:** RPI workflow, line 61
+The draft states the minimum target size is 24x24px per WCAG 2.5.8, with 44x44px recommended.
+
+**Verdict:** Mostly accurate
+**Confidence:** High
+
+WCAG 2.5.8 (Target Size Minimum, Level AA) does require 24x24 CSS pixels minimum. However, the "44x44px recommended" framing is imprecise. The 44x44 figure comes from WCAG 2.5.5 (Target Size Enhanced, Level AAA), which is a separate success criterion at a higher conformance level -- not a "recommendation" within 2.5.8 itself. The 44x44 figure also appears in Apple's Human Interface Guidelines (as 44x44 points). Google Material Design recommends 48x48dp. The draft's phrasing could mislead readers into thinking 44x44 is a recommendation within 2.5.8.
+
+**Sources:**
+- [W3C Understanding SC 2.5.8: Target Size (Minimum)](https://www.w3.org/WAI/WCAG22/Understanding/target-size-minimum.html)
+- [W3C Understanding SC 2.5.5: Target Size (Enhanced)](https://www.w3.org/WAI/WCAG22/Understanding/target-size-enhanced.html)
+
+---
+
+## Claim 5: "WCAG 1.4.11: non-text contrast -- UI components must have 3:1 contrast against adjacent colors"
+
 **Verdict:** Accurate
 **Confidence:** High
 
-The divergent design workflow (`workflows/divergent-design.md`, line 78) states: "If one approach clearly dominates (>80% confidence): document the decision and proceed." This matches the RPI's characterization of an 80% confidence threshold for autonomous resolution.
+WCAG 1.4.11 (Non-text Contrast, Level AA) requires a contrast ratio of at least 3:1 against adjacent colors for visual information required to identify user interface components and states. The draft's description is correct.
 
-**Sources:** Project file `workflows/divergent-design.md`, line 78
+**Sources:**
+- [W3C Understanding SC 1.4.11: Non-text Contrast](https://www.w3.org/WAI/WCAG21/Understanding/non-text-contrast.html)
 
 ---
 
-## Claim 4: "the test-strategy skill has a full taxonomy"
+## Claim 6: "WCAG 4.1.3: status messages must be programmatically determinable"
 
-**Source:** RPI workflow, line 95
+**Verdict:** Accurate
+**Confidence:** High
+
+WCAG 4.1.3 (Status Messages, Level AA) requires that status messages can be programmatically determined through role or properties such that they can be presented to the user by assistive technologies without receiving focus. The draft's description is accurate.
+
+**Sources:**
+- [W3C Understanding SC 4.1.3: Status Messages](https://www.w3.org/WAI/WCAG22/Understanding/status-messages.html)
+
+---
+
+## Claim 7: "European Accessibility Act (2025) -- legal requirements for discoverable UI elements"
+
 **Verdict:** Mostly accurate
 **Confidence:** Medium
 
-The `test-strategy` skill (`skills/test-strategy.md`) references multiple test types -- unit, integration, e2e, property, snapshot, and contract -- and includes guidance on when to use each. However, it does not use the word "taxonomy" and presents these types inline rather than as an organized classification system. Calling it a "full taxonomy" is a reasonable characterization but slightly overstates the formality of what the skill provides.
+The European Accessibility Act did come into effect on 28 June 2025, so the "(2025)" date reference is correct. It does impose legal requirements for digital accessibility. However, the draft's specific characterization of "legal requirements for discoverable UI elements" is a simplification. The EAA references EN 301 549, which incorporates WCAG 2.1 Level AA. The EAA's requirements are broad (perceivable, operable, understandable, robust) rather than specifically targeting "discoverable UI elements" as a named requirement. The claim is directionally correct but imprecise.
 
-**Sources:** Project file `skills/test-strategy.md`
+**Sources:**
+- [AccessibleEU: EAA comes into effect June 2025](https://accessible-eu-centre.ec.europa.eu/content-corner/news/eaa-comes-effect-june-2025-are-you-ready-2025-01-31_en)
+- [Level Access: European Accessibility Act Compliance Guide](https://www.levelaccess.com/compliance-overview/european-accessibility-act-eaa/)
 
 ---
 
-## Claim 5: "The RPI workflow mentions 'testing strategy' as a one-line plan section"
+## Claim 8: "NNGroup: flat UI elements with weak signifiers require more user effort"
 
-**Source:** Decision 006, line 8
 **Verdict:** Accurate
 **Confidence:** High
 
-The pre-foregrounding version of the RPI workflow (verified via `git show bfe83f3:workflows/research-plan-implement.md`) contained a single bullet point: `- **Testing strategy**: How to verify the implementation works. Specific test cases, not "add tests."` This is accurately described as a "one-line plan section."
+NNGroup published eyetracking research showing that UIs with weak clickability signifiers required 22% more time and 25% more fixations compared to strong-signifier versions. The draft's attribution is accurate and correctly summarizes the finding.
 
-**Sources:** Git history, commit `bfe83f3`
-
----
-
-## Claim 6: "[The RPI mentions] 'characterization tests first' in the refactoring variant"
-
-**Source:** Decision 006, line 8
-**Verdict:** Accurate
-**Confidence:** High
-
-The RPI workflow's Refactoring variant (line 197) includes: "Characterization tests first: If existing coverage is insufficient, the plan's first steps should add tests that lock in current behavior before any structural changes begin." This text exists in both the pre- and post-foregrounding versions of the file.
-
-**Sources:** Project file `workflows/research-plan-implement.md`, line 197; git history confirms pre-existing at commit `bfe83f3`
+**Sources:**
+- [NNGroup: Flat UI Elements Attract Less Attention and Cause Uncertainty](https://www.nngroup.com/articles/flat-ui-less-attention-cause-uncertainty/)
+- [NNGroup: Long-Term Exposure to Flat Design](https://www.nngroup.com/articles/flat-design-long-exposure/)
 
 ---
 
-## Claim 7: "Over a dozen approaches were generated via divergent design"
+## Claim 9: "NNGroup: 'Show scrollbars when content is scrollable.'"
 
-**Source:** Decision 006, line 18
+The draft attributes this quoted recommendation to NNGroup.
+
 **Verdict:** Unverified
 **Confidence:** Low
 
-The decision record states that over a dozen approaches were generated in conversation and that 6 survivors are summarized. No working document or divergent design artifact in `docs/working/` preserves the full list. The claim is plausible given how DD works (it encourages generating many candidates before pruning), but the specific quantity cannot be verified from available evidence. Note: this was previously reported as "13 approaches" in an earlier fact-check; the wording has since been softened to "over a dozen."
+NNGroup does recommend visible scrollbars and has published on the topic of scroll discoverability, but I could not find the exact quoted sentence "Show scrollbars when content is scrollable" in NNGroup's published articles. The sentiment aligns with NNGroup's general recommendations, but the specific quote could not be verified as a direct NNGroup quotation. It may be a paraphrase presented as a quote.
 
-**Sources:** None available; the conversational context where DD was conducted is not preserved
+**Sources:**
+- [NNGroup scrollbar and scrolling topic page](https://www.nngroup.com/topic/flat-design/) (general topic area; exact quote not located)
 
 ---
 
-## Claim 8: "6 survivors are summarized here"
+## Claim 10: "WCAG 2.4.7: focus visible. WCAG 2.4.11: focus appearance -- minimum area and contrast."
 
-**Source:** Decision 006, line 18
-**Verdict:** Accurate
+In the Affordance Principles Reference section, the draft describes 2.4.11 as concerning "focus appearance -- minimum area and contrast."
+
+**Verdict:** Inaccurate
 **Confidence:** High
 
-The Options Considered section lists exactly 6 numbered items: (1) Test-first plan step, (2) Standalone test-design workflow, (3) Conversational test negotiation, (4) Test taxonomy guide, (5) Test review checkpoint, (6) Do nothing. Count confirmed.
+This is a repeat of the error identified in Claim 1. WCAG 2.4.11 is "Focus Not Obscured (Minimum)" -- it concerns whether focused elements are hidden behind other content, not focus indicator appearance, area, or contrast. The criterion about minimum focus indicator area and contrast is 2.4.13 (Focus Appearance, Level AAA). This is the same numbering error appearing in a different section of the draft.
 
-**Sources:** Project file `docs/decisions/006-foregrounding-tests.md`, lines 20-25
-
----
-
-## Claim 9: "Combine approaches 1 + 4 + 5, plus diagnostic guidance"
-
-**Source:** Decision 006, line 29
-**Verdict:** Accurate
-**Confidence:** High
-
-The decision says it combines approaches 1, 4, and 5, plus diagnostic guidance as a fourth element. Checking the implementation in the updated RPI workflow:
-
-- **Approach 1 (Test-first plan step):** Implemented. The testing bullet in step 3 was restructured from a one-liner into a structured block with a table format, test levels, and diagnostic expectations.
-- **Approach 4 (Test taxonomy guide):** Implemented as inline guidance. Lines 89-93 provide brief descriptions of when to use unit, integration, characterization, and property test levels.
-- **Approach 5 (Test review checkpoint):** Implemented. Step 5 now has a "Test-first gate" sub-section with a human checkpoint for reviewing test code before implementation.
-- **Diagnostic guidance:** Implemented. Lines 97-99 cover diagnostic expectations and security considerations for test output.
-
-Note: a previous fact-check flagged a mismatch between "combine 1 + 4 + 5" and the 4-element concrete list. The decision statement now explicitly says "plus diagnostic guidance," resolving that discrepancy.
-
-**Sources:** `docs/decisions/006-foregrounding-tests.md` lines 28-42; `workflows/research-plan-implement.md` lines 83-99, 121-129
-
----
-
-## Claim 10: "the human designs behavioral constraints in prose, the LLM translates them into executable test code"
-
-**Source:** Decision 006, line 10
-**Verdict:** Mostly accurate
-**Confidence:** Medium
-
-This accurately describes the intended workflow design: the RPI plan phase (step 3) asks humans to specify test cases with expected behavior in prose, and step 5 has the LLM write test code from those specifications. However, this is a description of a designed process rather than a verified empirical outcome. Whether the translation works reliably in practice is a separate question that would require usage data to verify.
-
-**Sources:** Project file `workflows/research-plan-implement.md`, steps 3 and 5
+**Sources:**
+- [W3C Understanding SC 2.4.11: Focus Not Obscured (Minimum)](https://www.w3.org/WAI/WCAG22/Understanding/focus-not-obscured-minimum.html)
+- [W3C Understanding SC 2.4.13: Focus Appearance](https://www.w3.org/WAI/WCAG22/Understanding/focus-appearance.html)
 
 ---
 
 ## Claims Requiring Author Attention
 
-### Unverified
-- **Claim 7** ("Over a dozen approaches were generated via divergent design"): The quantity cannot be verified from the codebase. The wording has already been softened from a previous version that said "13 approaches." Consider either preserving the DD working document that lists all candidates, or accepting that this claim relies on conversational context that is no longer available.
+1. **Claim 1 & 10 (Inaccurate):** All references to "2.4.11" as "Focus Appearance" should be changed to "2.4.13". WCAG 2.4.11 is "Focus Not Obscured (Minimum)" in the final WCAG 2.2 spec. This error appears in the introduction, the visibility/affordance checklist (Step 2, item 6), and the Affordance Principles Reference (item 7). Also note that 2.4.13 is Level AAA, not AA -- this affects what level of conformance the skill is recommending.
 
-### Mostly Accurate
-- **Claim 4** ("the test-strategy skill has a full taxonomy"): The skill covers multiple test types with guidance on when to use each, but does not present them as a formal taxonomy. Consider whether "a full taxonomy" overpromises what the skill actually organizes.
+2. **Claim 4 (Mostly Accurate):** The "44x44px recommended" should clarify that this comes from WCAG 2.5.5 (Level AAA) or from platform guidelines (Apple HIG), not from 2.5.8 itself.
 
-### Previously Flagged Issues Now Resolved
-- The "13 approaches" wording was softened to "over a dozen" (Claim 7).
-- The "combine 1 + 4 + 5" framing now explicitly includes "plus diagnostic guidance" (Claim 9).
-- The "central use case" language was changed to "motivating use case" (no longer a checkable factual claim).
+3. **Claim 7 (Mostly Accurate):** The EAA description as "legal requirements for discoverable UI elements" is a simplification. Consider rephrasing to reference the EAA's broader accessibility requirements via EN 301 549 / WCAG 2.1 AA.
+
+4. **Claim 9 (Unverified):** The quoted NNGroup recommendation "Show scrollbars when content is scrollable" could not be verified as a direct quote. Consider removing the quotation marks or finding the exact source.

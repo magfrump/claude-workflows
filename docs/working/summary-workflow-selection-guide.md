@@ -1,1 +1,0 @@
-Created guides/workflow-selection.md with a prescriptive decision tree, three disambiguation tables (bug-diagnosis vs RPI, spike vs divergent-design, task-decomposition vs RPI), and a full workflow reference; added entry to guides/README.md.

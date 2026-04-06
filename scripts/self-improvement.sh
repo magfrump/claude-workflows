@@ -262,6 +262,30 @@ get_eligible_hypotheses() {
 # running the top-level loop.
 if [[ "${BASH_SOURCE[0]}" == "${0}" ]]; then
 
+# Parse arguments
+SEED_FILE=""
+while [ $# -gt 0 ]; do
+    case "$1" in
+        --seed-file)
+            if [ -z "${2:-}" ]; then
+                echo "Error: --seed-file requires a file path argument" >&2
+                exit 1
+            fi
+            SEED_FILE="$2"
+            shift 2
+            ;;
+        *)
+            echo "Unknown argument: $1" >&2
+            exit 1
+            ;;
+    esac
+done
+
+if [ -n "$SEED_FILE" ] && [ ! -f "$SEED_FILE" ]; then
+    echo "Error: seed file not found: $SEED_FILE" >&2
+    exit 1
+fi
+
 # Configuration
 REPO_DIR=~/claude-workflows
 WORKTREE_BASE=~/wt
@@ -313,11 +337,7 @@ HEADER
         [ -f "$PRIOR_TASKS" ] || continue
 
         # Get tasks that have a hypothesis, are not retroactive, and whose window has elapsed
-        ELIGIBLE=$(jq -r --argjson current "$ROUND" --argjson prior "$PRIOR_ROUND" \
-            '[.[] | select(.hypothesis != null and .hypothesis != "") |
-              select(.retroactive != true) |
-              select(($current - $prior) >= (.hypothesis_window // 3))] | .[]? | .id' \
-            "$PRIOR_TASKS" 2>/dev/null) || true
+        ELIGIBLE=$(get_eligible_hypotheses "$ROUND" "$PRIOR_ROUND" < "$PRIOR_TASKS") || true
 
         while IFS= read -r TASK_ID; do
             [ -z "$TASK_ID" ] && continue
@@ -492,12 +512,28 @@ as 'already proposed'. Only ideas listed as APPROVED are off-limits."
     # -------------------------------------------------------
     # Step 1: Generate ideas
     # -------------------------------------------------------
+
+    # Build seed context (only for round 1)
+    SEED_CONTEXT=""
+    if [ "$ROUND" -eq 1 ] && [ -n "$SEED_FILE" ]; then
+        SEED_CONTENT=$(cat "$SEED_FILE")
+        SEED_CONTEXT="
+## Seed ideas — use these as starting points
+
+The following ideas have been provided as seeds. Include them in your
+brainstorm (they count toward your idea total) and expand on them, but
+also generate additional ideas beyond these seeds.
+
+${SEED_CONTENT}
+"
+    fi
+
     echo "Generating ideas (round $ROUND)..."
     claude -p "Follow the divergent-design workflow in ~/.claude/workflows/divergent-design.md.
 
 Generate feature improvement ideas for the workflows in this repo.
 Review docs/working/completed-tasks.md for what has already been done.
-${PRIOR_CONTEXT}
+${PRIOR_CONTEXT}${SEED_CONTEXT}
 
 If you cannot generate at least 3 genuinely new and valuable ideas that
 are not already completed or in progress, write only the word DONE on the
