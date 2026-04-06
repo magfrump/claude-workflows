@@ -12,6 +12,8 @@ Reference documents for specific processes and conventions. Unlike workflows (st
 
 - **[pr-prep-quick-ref.md](pr-prep-quick-ref.md)** — Actionable checklist for the PR prep review-fix loop: generate reviews, triage by tier, fix, re-review, exit when clean. Quick-reference companion to `workflows/pr-prep.md`.
 
+- **[pr-review-doc-inclusion.md](pr-review-doc-inclusion.md)** — How and when to commit review artifacts (`docs/reviews/`) to the PR branch before marking ready. Ensures async reviewers see quality evidence alongside the code.
+
 - **[self-eval-baseline.md](self-eval-baseline.md)** — How to run the self-eval skill on existing skills/workflows to produce baseline quality reports. Use when prioritizing improvement work or measuring progress after changes.
 
 - **[skill-recovery.md](skill-recovery.md)** — Three-tier escalation for recovering from skill failures: retry with narrower scope, substitute an alternative skill, or skip and document. Use when a skill produces poor, empty, or off-target output.

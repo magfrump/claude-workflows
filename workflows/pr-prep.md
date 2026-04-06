@@ -71,6 +71,7 @@ See `workflows/review-fix-loop.md` for extended discussion of loop dynamics and 
 - [ ] No Must Fix findings remain open
 - [ ] All Must Address findings are resolved or explicitly acknowledged in the PR description
 - [ ] Final review loop introduced no new Must Fix or Must Address findings
+- [ ] Review artifacts committed to the branch (see [PR Review Doc Inclusion guide](../guides/pr-review-doc-inclusion.md))
 
 ### Phase 2: Packaging
 
