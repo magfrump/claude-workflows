@@ -1,0 +1,1 @@
+Added `record_gate_detail()` function to self-improvement.sh and wired it into schema, diff_size, self_eval, and verdict gates to capture structured failure details (error messages, thresholds, weak dimensions) in round report JSON without changing control flow.
