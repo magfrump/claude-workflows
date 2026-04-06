@@ -38,6 +38,17 @@ record_gate() {
         '.validation[$tid][$g] = $s' "$ROUND_LOG_FILE" > "$tmp" && mv "$tmp" "$ROUND_LOG_FILE"
 }
 
+# Record structured failure details for a gate
+# Args: $1 = task_id, $2 = gate name, $3 = JSON object with detail fields
+record_gate_detail() {
+    local task_id=$1 gate=$2 detail_json=$3
+    local detail_key="${gate}_detail"
+    local tmp
+    tmp=$(mktemp)
+    jq --arg tid "$task_id" --arg dk "$detail_key" --argjson detail "$detail_json" \
+        '.validation[$tid][$dk] = $detail' "$ROUND_LOG_FILE" > "$tmp" && mv "$tmp" "$ROUND_LOG_FILE"
+}
+
 # Write per-round report and append to round-history.json
 finalize_round_log() {
     local round=$1
@@ -729,7 +740,8 @@ other tasks in this round."
     # Step 2b: Validate task JSON schema
     # -------------------------------------------------------
     echo "Validating task JSON schema..."
-    VALID_TASKS_JSON=$(validate_task_json "$TASKS_FILE")
+    SCHEMA_STDERR=$(mktemp)
+    VALID_TASKS_JSON=$(validate_task_json "$TASKS_FILE" 2>"$SCHEMA_STDERR")
     VALID_COUNT=$(echo "$VALID_TASKS_JSON" | jq 'length')
     REJECTED_SCHEMA_COUNT=$((TASK_COUNT - VALID_COUNT))
 
@@ -737,14 +749,18 @@ other tasks in this round."
         echo "  Schema validation: $REJECTED_SCHEMA_COUNT of $TASK_COUNT tasks rejected"
         echo "[round-$ROUND] SCHEMA: $REJECTED_SCHEMA_COUNT rejected, $VALID_COUNT valid" >> "$WORKING_DIR/validation-round-$ROUND.log"
 
-        # Record schema gate results
+        # Record schema gate results with failure details
         for TASK_ID in $TASK_IDS; do
             if echo "$VALID_TASKS_JSON" | jq -e ".[] | select(.id == \"$TASK_ID\")" >/dev/null 2>&1; then
                 record_gate "$TASK_ID" "schema" "pass"
             else
                 record_gate "$TASK_ID" "schema" "fail"
+                # Extract the specific schema error from captured stderr
+                SCHEMA_ERR=$(grep -F "[$TASK_ID]" "$SCHEMA_STDERR" | sed 's/.*SCHEMA REJECT \[[^]]*\]: //' || echo "unknown schema error")
+                record_gate_detail "$TASK_ID" "schema" "$(jq -n --arg err "$SCHEMA_ERR" '{error: $err}')"
             fi
         done
+        rm -f "$SCHEMA_STDERR"
 
         # Overwrite tasks file with valid tasks only
         echo "$VALID_TASKS_JSON" > "$TASKS_FILE"
@@ -761,6 +777,7 @@ other tasks in this round."
             continue
         fi
     else
+        rm -f "$SCHEMA_STDERR"
         echo "  All $TASK_COUNT tasks passed schema validation"
         for TASK_ID in $TASK_IDS; do
             record_gate "$TASK_ID" "schema" "pass"
@@ -878,6 +895,9 @@ docs/working/summary-${TASK_ID}.md"
             if [ "$TOTAL_CHANGED" -gt "$MAX_DIFF_LINES" ]; then
                 REJECT_REASON="diff too large (${TOTAL_CHANGED} lines, max ${MAX_DIFF_LINES})"
                 record_gate "$TASK_ID" "diff_size" "fail"
+                record_gate_detail "$TASK_ID" "diff_size" "$(jq -n \
+                    --argjson total "$TOTAL_CHANGED" --argjson max "$MAX_DIFF_LINES" \
+                    '{total_changed: $total, max_allowed: $max}')"
             else
                 record_gate "$TASK_ID" "diff_size" "pass"
             fi
@@ -1020,6 +1040,14 @@ Count only the automated assessment scores (Testability investment, Trigger clar
                         echo "[$TASK_ID] WARNING: self-eval unparseable for $SKILL_FILE" >> "$WORKING_DIR/validation-round-$ROUND.log"
                     elif [ "$WEAK_COUNT" -ge 2 ] && [ "$WEAK_COUNT" -gt "$BASELINE_WEAK" ]; then
                         REJECT_REASON="self-eval: $SKILL_FILE has $WEAK_COUNT Weak automated scores (baseline: $BASELINE_WEAK)"
+                        # Parse which dimensions scored Weak from the eval table output
+                        WEAK_DIMS=$(echo "$EVAL_OUTPUT" | grep -iP '^\|.*\|\s*Weak\s*\|' | sed 's/^|\s*//' | cut -d'|' -f1 | sed 's/^[[:space:]]*//;s/[[:space:]]*$//' | paste -sd',' || echo "")
+                        SELF_EVAL_DETAIL=$(jq -n \
+                            --arg file "$SKILL_FILE" \
+                            --argjson weak_count "$WEAK_COUNT" \
+                            --arg weak_dimensions "$WEAK_DIMS" \
+                            --argjson baseline_weak "$BASELINE_WEAK" \
+                            '{file: $file, weak_count: $weak_count, baseline_weak: $baseline_weak, weak_dimensions: ($weak_dimensions | split(",") | map(select(length > 0)))}')
                         SELF_EVAL_PASSED=false
                         break
                     else
@@ -1030,6 +1058,9 @@ Count only the automated assessment scores (Testability investment, Trigger clar
                     record_gate "$TASK_ID" "self_eval" "pass"
                 else
                     record_gate "$TASK_ID" "self_eval" "fail"
+                    if [ -n "${SELF_EVAL_DETAIL:-}" ]; then
+                        record_gate_detail "$TASK_ID" "self_eval" "$SELF_EVAL_DETAIL"
+                    fi
                 fi
             else
                 record_gate "$TASK_ID" "self_eval" "skip"
@@ -1041,6 +1072,7 @@ Count only the automated assessment scores (Testability investment, Trigger clar
             echo "    REJECTED: $REJECT_REASON"
             echo "[$TASK_ID] REJECTED: $REJECT_REASON" >> "$WORKING_DIR/validation-round-$ROUND.log"
             record_gate "$TASK_ID" "verdict" "rejected"
+            record_gate_detail "$TASK_ID" "verdict" "$(jq -n --arg reason "$REJECT_REASON" '{reject_reason: $reason}')"
             # Clean up rejected worktree and branch
             git worktree remove "$WT_DIR" 2>/dev/null || true
             git branch -D "$BRANCH" 2>/dev/null || true
