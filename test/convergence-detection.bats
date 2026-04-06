@@ -1,4 +1,5 @@
 #!/usr/bin/env bats
+# @category fast
 # Unit tests for check_convergence_threshold from self-improvement.sh
 #
 # Usage: bats test/convergence-detection.bats

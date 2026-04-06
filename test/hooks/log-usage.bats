@@ -1,4 +1,5 @@
 #!/usr/bin/env bats
+# @category slow
 # Tests for the PreToolUse usage-logging hook (~/.claude/hooks/log-usage.sh)
 #
 # Central use cases:

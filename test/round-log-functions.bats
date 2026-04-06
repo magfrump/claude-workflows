@@ -1,4 +1,5 @@
 #!/usr/bin/env bats
+# @category slow
 # Unit tests for JSON state management functions from self-improvement.sh:
 #   init_round_log, update_round_log, record_gate, finalize_round_log, cleanup
 #

@@ -1,4 +1,5 @@
 #!/usr/bin/env bats
+# @category fast
 # Regression guard: asserts all 8 exported functions from self-improvement.sh
 # exist and are callable. Catches accidental removal or rename.
 #

@@ -1,4 +1,5 @@
 #!/usr/bin/env bats
+# @category slow
 # Tests for scripts/skill-usage-report.sh
 #
 # Central use cases:

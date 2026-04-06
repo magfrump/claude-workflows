@@ -1,4 +1,5 @@
 #!/usr/bin/env bats
+# @category fast
 # Validates that convention-following workflows contain required sections:
 # - '## When to use' — explains when to reach for this workflow
 # - Numbered process step headers (### N. ...) under '## Process'

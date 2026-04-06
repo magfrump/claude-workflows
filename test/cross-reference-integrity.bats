@@ -1,4 +1,5 @@
 #!/usr/bin/env bats
+# @category fast
 # Validates that markdown cross-references between content directories
 # (workflows/, skills/, guides/, patterns/) point to files that exist.
 #

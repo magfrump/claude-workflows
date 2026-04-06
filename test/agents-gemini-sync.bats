@@ -1,4 +1,5 @@
 #!/usr/bin/env bats
+# @category fast
 # Validates that AGENTS.md and GEMINI.md stay in sync.
 # Strips the first 3 lines (tool-specific headers) from each file and
 # removes the '@./workflows/' prefix from AGENTS.md, then diffs.
