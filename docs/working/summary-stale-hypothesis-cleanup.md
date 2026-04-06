@@ -1,0 +1,1 @@
+Added status_date column to hypothesis log and resolved cross-session-handoff and negative-test-fixtures as INCONCLUSIVE-EXPIRED (round 1, window 3, checked at round 4, evaluation windows long passed).
