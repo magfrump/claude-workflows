@@ -680,12 +680,17 @@ Output a JSON array to docs/working/tasks-round-$ROUND.json with fields:
 {\"id\": \"short-kebab-case\", \"description\": \"one paragraph task description\",
 \"files_touched\": [\"list of files\"], \"independent\": true/false,
 \"hypothesis\": \"a falsifiable prediction about the impact of this task\",
-\"hypothesis_window\": 3}
+\"hypothesis_window\": 3, \"retroactive\": false}
 
 The hypothesis field must state a concrete, falsifiable prediction about what
 this change will achieve (e.g. 'Adding schema validation will catch at least
 1 regression in the next 3 rounds'). The hypothesis_window is the number of
 rounds after which the hypothesis should be evaluated (default 3).
+
+IMPORTANT: The hypothesis is defined NOW, at task creation time, so it can
+guide implementation decisions (instrumentation, design choices, metrics).
+Set \"retroactive\": false for all new tasks (this is the default). Only use
+\"retroactive\": true if backfilling a hypothesis onto an already-implemented task.
 
 Only include tasks where independent is true. Discard tasks that depend on
 other tasks in this round."
@@ -779,13 +784,27 @@ other tasks in this round."
         }
 
         LAUNCHED_TASKS="${LAUNCHED_TASKS:+$LAUNCHED_TASKS }$TASK_ID"
+        HYPOTHESIS=$(jq -r ".[] | select(.id==\"$TASK_ID\") | .hypothesis // empty" "$TASKS_FILE")
         echo "  Started: $TASK_ID"
         (
             cd "$WT_DIR"
+            # Build hypothesis block for the prompt (only if hypothesis exists)
+            HYPOTHESIS_BLOCK=""
+            if [ -n "$HYPOTHESIS" ]; then
+                HYPOTHESIS_BLOCK="
+HYPOTHESIS — READ THIS BEFORE DESIGNING YOUR SOLUTION:
+This task was created with the following falsifiable prediction:
+  ${HYPOTHESIS}
+Your implementation should be designed so that this hypothesis can be
+evaluated later. Consider what instrumentation, output, or structure
+would make it possible to confirm or refute this prediction.
+
+"
+            fi
             claude -p "You are in /away mode. Commit and push when done.
 
 Task: $DESC
-
+${HYPOTHESIS_BLOCK}
 FILE SCOPE CONSTRAINT — READ THIS BEFORE STARTING:
 You may ONLY create or modify the following files: $FILES_TOUCHED
 Files under docs/working/ are also allowed (e.g., research docs, plan docs, summaries).

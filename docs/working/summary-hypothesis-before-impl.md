@@ -1,0 +1,1 @@
+Modified self-improvement.sh so hypotheses are defined at task creation time (with retroactive: false default) and passed to the worktree agent's implementation prompt, enabling hypothesis-driven instrumentation and design decisions.
