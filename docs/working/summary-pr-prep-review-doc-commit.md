@@ -1,0 +1,1 @@
+Added step 4 "Commit review artifacts" to pr-prep Phase 2, ensuring docs/reviews/ files are committed to the PR branch before history cleanup, with idempotent git commands and a .gitattributes recommendation.
