@@ -257,6 +257,203 @@ get_eligible_hypotheses() {
         2>/dev/null || return 1
 }
 
+# --- Hypothesis evidence gathering (no LLM) ---
+# Parses hypothesis-log.md for hypotheses whose evaluation window has elapsed
+# and whose outcome is still pending (empty or INCONCLUSIVE). Gathers mechanical
+# evidence (git log, file existence, grep) and writes proposals for human review.
+#
+# Args: $1 = current_round (integer), $2 = hypothesis_log path, $3 = working_dir
+# Stdout: proposal text (one block per hypothesis)
+# Returns 0 on success, 1 on invalid args. Empty output if no hypotheses qualify.
+gather_hypothesis_evidence() {
+    local current_round="${1:-}"
+    local hypothesis_log="${2:-}"
+    local working_dir="${3:-}"
+
+    # Validate inputs
+    if [[ -z "$current_round" || -z "$hypothesis_log" || -z "$working_dir" ]]; then
+        return 1
+    fi
+    if ! [[ "$current_round" =~ ^[0-9]+$ ]]; then
+        return 1
+    fi
+    if [ ! -f "$hypothesis_log" ]; then
+        return 0  # no log file, nothing to evaluate
+    fi
+
+    local proposals=""
+    local found_any=false
+
+    # Parse the markdown table: skip header rows (lines 1-4 typically), then
+    # read pipe-delimited fields. We look for rows where Outcome (field 7) is
+    # empty or "INCONCLUSIVE" (not CONFIRMED, REFUTED, or INCONCLUSIVE-EXPIRED).
+    while IFS='|' read -r _ round_str task_id hypothesis window_str checked_str outcome_str _ _; do
+        # Trim whitespace from fields
+        round_str=$(echo "$round_str" | sed 's/^[[:space:]]*//;s/[[:space:]]*$//')
+        task_id=$(echo "$task_id" | sed 's/^[[:space:]]*//;s/[[:space:]]*$//')
+        hypothesis=$(echo "$hypothesis" | sed 's/^[[:space:]]*//;s/[[:space:]]*$//')
+        window_str=$(echo "$window_str" | sed 's/^[[:space:]]*//;s/[[:space:]]*$//')
+        outcome_str=$(echo "$outcome_str" | sed 's/^[[:space:]]*//;s/[[:space:]]*$//')
+
+        # Skip non-data rows (headers, separators, empty)
+        [[ -z "$round_str" ]] && continue
+        [[ "$round_str" == "Round" ]] && continue
+        [[ "$round_str" =~ ^-+$ ]] && continue
+        ! [[ "$round_str" =~ ^[0-9]+$ ]] && continue
+
+        # Only consider empty or INCONCLUSIVE outcomes
+        if [[ -n "$outcome_str" && "$outcome_str" != "INCONCLUSIVE" ]]; then
+            continue
+        fi
+
+        local created_round=$round_str
+        local window=${window_str:-3}
+        ! [[ "$window" =~ ^[0-9]+$ ]] && window=3
+
+        # Check if evaluation window has elapsed
+        if [ "$current_round" -lt $((created_round + window)) ]; then
+            continue
+        fi
+
+        found_any=true
+
+        # --- Gather mechanical evidence ---
+        local evidence_lines=""
+
+        # 1. Check tasks JSON for files_touched
+        local tasks_file="$working_dir/tasks-round-${created_round}.json"
+        local files_touched=""
+        if [ -f "$tasks_file" ]; then
+            files_touched=$(jq -r --arg tid "$task_id" \
+                '.[] | select(.id==$tid) | .files_touched[]' "$tasks_file" 2>/dev/null) || true
+        fi
+
+        # 2. File existence checks
+        if [ -n "$files_touched" ]; then
+            local existing_files=""
+            local missing_files=""
+            while IFS= read -r fpath; do
+                [ -z "$fpath" ] && continue
+                if [ -e "$fpath" ]; then
+                    existing_files="${existing_files}    ${fpath} (EXISTS)\n"
+                else
+                    missing_files="${missing_files}    ${fpath} (MISSING)\n"
+                fi
+            done <<< "$files_touched"
+            if [ -n "$existing_files" ] || [ -n "$missing_files" ]; then
+                evidence_lines="${evidence_lines}  File status:\n${existing_files}${missing_files}"
+            fi
+        fi
+
+        # 3. Git log for changes to files_touched since the hypothesis was created
+        if [ -n "$files_touched" ]; then
+            local file_args=""
+            while IFS= read -r fpath; do
+                [ -z "$fpath" ] && continue
+                file_args="${file_args} ${fpath}"
+            done <<< "$files_touched"
+            # shellcheck disable=SC2086
+            local git_changes
+            git_changes=$(git log --oneline --since="6 months ago" -- $file_args 2>/dev/null | head -10) || true
+            if [ -n "$git_changes" ]; then
+                evidence_lines="${evidence_lines}  Recent git commits touching declared files:\n"
+                while IFS= read -r line; do
+                    evidence_lines="${evidence_lines}    ${line}\n"
+                done <<< "$git_changes"
+            else
+                evidence_lines="${evidence_lines}  No recent git commits touching declared files.\n"
+            fi
+        fi
+
+        # 4. Grep for key terms from hypothesis in completed-tasks.md and validation logs
+        # Extract significant words (>5 chars) from hypothesis for pattern matching
+        local search_terms
+        search_terms=$(echo "$hypothesis" | tr '[:upper:]' '[:lower:]' | \
+            grep -oE '[a-z]{6,}' | sort -u | head -5) || true
+        if [ -n "$search_terms" ]; then
+            local grep_hits=""
+            while IFS= read -r term; do
+                [ -z "$term" ] && continue
+                local hits
+                hits=$(grep -ril "$term" "$working_dir"/validation-round-*.log \
+                    "$working_dir/completed-tasks.md" 2>/dev/null | head -3) || true
+                if [ -n "$hits" ]; then
+                    while IFS= read -r hit_file; do
+                        local match_line
+                        match_line=$(grep -i "$term" "$hit_file" 2>/dev/null | head -1) || true
+                        if [ -n "$match_line" ]; then
+                            grep_hits="${grep_hits}    [${hit_file##*/}] ${match_line}\n"
+                        fi
+                    done <<< "$hits"
+                fi
+            done <<< "$search_terms"
+            if [ -n "$grep_hits" ]; then
+                evidence_lines="${evidence_lines}  Pattern matches in logs:\n${grep_hits}"
+            fi
+        fi
+
+        # 5. Check round-history.json for validation outcomes in subsequent rounds
+        local round_history="$working_dir/round-history.json"
+        if [ -f "$round_history" ]; then
+            local subsequent_outcomes
+            subsequent_outcomes=$(jq -r --argjson start "$created_round" \
+                '[.[] | select(.round > $start) |
+                 {round: .round, approved: ([.validation | to_entries[] | select(.value.verdict == "approved")] | length),
+                  rejected: ([.validation | to_entries[] | select(.value.verdict == "rejected")] | length)}] |
+                 .[] | "    Round \(.round): \(.approved) approved, \(.rejected) rejected"' \
+                "$round_history" 2>/dev/null) || true
+            if [ -n "$subsequent_outcomes" ]; then
+                evidence_lines="${evidence_lines}  Subsequent round outcomes:\n${subsequent_outcomes}\n"
+            fi
+        fi
+
+        # Build proposal block
+        proposals="${proposals}---\n"
+        proposals="${proposals}Task: ${task_id} (Round ${created_round}, Window ${window})\n"
+        proposals="${proposals}Hypothesis: ${hypothesis}\n"
+        proposals="${proposals}Evidence gathered:\n${evidence_lines}\n"
+        proposals="${proposals}Proposed outcome: [CONFIRMED | REFUTED | INCONCLUSIVE-EXPIRED]\n"
+        proposals="${proposals}Reasoning: [TO BE FILLED BY HUMAN REVIEWER]\n\n"
+
+    done < "$hypothesis_log"
+
+    if $found_any; then
+        echo -e "$proposals"
+    fi
+}
+
+# Wrapper: runs gather_hypothesis_evidence and writes proposals file if any found.
+# Args: $1 = current_round, $2 = hypothesis_log, $3 = working_dir
+# Side effect: writes $working_dir/hypothesis-proposals-round-N.md if proposals exist.
+# Stdout: status message
+propose_hypothesis_outcomes() {
+    local current_round="${1:-}"
+    local hypothesis_log="${2:-}"
+    local working_dir="${3:-}"
+
+    local proposals
+    proposals=$(gather_hypothesis_evidence "$current_round" "$hypothesis_log" "$working_dir") || return 0
+
+    if [ -z "$proposals" ]; then
+        echo "  No hypotheses ready for evaluation this round."
+        return 0
+    fi
+
+    local proposals_file="$working_dir/hypothesis-proposals-round-${current_round}.md"
+    {
+        echo "# Hypothesis Evaluation Proposals — Round ${current_round}"
+        echo ""
+        echo "The following hypotheses have elapsed their evaluation window and need human review."
+        echo "For each, review the gathered evidence and fill in the proposed outcome and reasoning."
+        echo "Then update docs/working/hypothesis-log.md with the final verdict."
+        echo ""
+        echo "$proposals"
+    } > "$proposals_file"
+
+    echo "  Wrote hypothesis evaluation proposals to: ${proposals_file##*/}"
+    echo "  $(echo "$proposals" | grep -c '^---$') hypothesis(es) ready for review."
+}
+
 # --- Main execution guard ---
 # Allows sourcing this file for its functions (e.g., in tests) without
 # running the top-level loop.
@@ -332,6 +529,10 @@ Tracks falsifiable predictions made at task creation time and their outcomes.
 HEADER
     fi
 
+    # Step 0a: Gather mechanical evidence for elapsed hypotheses (no LLM)
+    propose_hypothesis_outcomes "$ROUND" "$HYPOTHESIS_LOG" "$WORKING_DIR"
+
+    # Step 0b: LLM-based evaluation for newly eligible hypotheses from task JSONs
     for PRIOR_ROUND in $(seq 1 $((ROUND - 1))); do
         PRIOR_TASKS="$WORKING_DIR/tasks-round-$PRIOR_ROUND.json"
         [ -f "$PRIOR_TASKS" ] || continue
