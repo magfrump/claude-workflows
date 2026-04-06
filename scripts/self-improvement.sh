@@ -808,6 +808,39 @@ other tasks in this round."
 
         LAUNCHED_TASKS="${LAUNCHED_TASKS:+$LAUNCHED_TASKS }$TASK_ID"
         HYPOTHESIS=$(jq -r ".[] | select(.id==\"$TASK_ID\") | .hypothesis // empty" "$TASKS_FILE")
+
+        # Check prior round reports for failed attempts of the same task ID
+        PRIOR_FAILURE_BLOCK=""
+        for PRIOR_REPORT in "$WORKING_DIR"/round-*-report.json; do
+            [ -f "$PRIOR_REPORT" ] || continue
+            # Skip the current round's report (it doesn't exist yet, but guard anyway)
+            PRIOR_FAILURE_REASON=$(jq -r --arg tid "$TASK_ID" '
+                .validation[$tid] // empty |
+                select(.verdict == "rejected") |
+                # Prefer verdict_detail.reject_reason, fall back to gate-level details
+                (.verdict_detail.reject_reason // "") as $reason |
+                # Collect structured detail from any failed gate
+                ([to_entries[] | select(.key | endswith("_detail")) | .value |
+                  to_entries[] | "\(.key): \(.value)"] | join("; ")) as $details |
+                if $reason != "" then
+                    if $details != "" then "\($reason) [details: \($details)]"
+                    else $reason end
+                elif $details != "" then $details
+                else "unknown failure reason" end
+            ' "$PRIOR_REPORT" 2>/dev/null) || continue
+            if [ -n "$PRIOR_FAILURE_REASON" ]; then
+                PRIOR_ROUND_NUM=$(jq -r '.round' "$PRIOR_REPORT" 2>/dev/null) || PRIOR_ROUND_NUM="?"
+                PRIOR_FAILURE_BLOCK="
+PRIOR ATTEMPT FAILED — READ THIS BEFORE STARTING:
+This task was attempted in round ${PRIOR_ROUND_NUM} and rejected.
+Prior attempt failed because: ${PRIOR_FAILURE_REASON}
+Address this specifically in your implementation to avoid the same failure.
+
+"
+                # Use the most recent failure (last file in glob order)
+            fi
+        done
+
         echo "  Started: $TASK_ID"
         (
             cd "$WT_DIR"
@@ -827,7 +860,7 @@ would make it possible to confirm or refute this prediction.
             claude -p "You are in /away mode. Commit and push when done.
 
 Task: $DESC
-${HYPOTHESIS_BLOCK}
+${HYPOTHESIS_BLOCK}${PRIOR_FAILURE_BLOCK}
 FILE SCOPE CONSTRAINT — READ THIS BEFORE STARTING:
 You may ONLY create or modify the following files: $FILES_TOUCHED
 Files under docs/working/ are also allowed (e.g., research docs, plan docs, summaries).
