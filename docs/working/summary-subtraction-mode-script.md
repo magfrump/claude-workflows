@@ -1,0 +1,1 @@
+Created scripts/flag-removal-candidates.sh: parses hypothesis-log.md for REFUTED/INCONCLUSIVE-EXPIRED entries and optionally integrates skill-usage-report.sh output to flag workflows, skills, and guides as removal candidates with cited evidence.
