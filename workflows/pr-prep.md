@@ -22,7 +22,7 @@ Run these concurrently — both are fast, and either failing changes the plan:
 - Infrastructure/model changes separate from UI changes
 - A minimal first PR that adds the feature behind a flag, with polish in a follow-up
 
-If it genuinely can't be split, note this in the PR description (step 6) and suggest a review order for the files.
+If it genuinely can't be split, note this in the PR description (step 7) and suggest a review order for the files.
 
 **b. Dependent PR check.** If this branch builds on other unmerged PRs, verify they've been merged or that this PR's base is set correctly. If dependencies haven't landed, decide whether to wait, rebase onto a dev integration branch, or open as a stacked PR with a clear note. Skip this check for standalone branches.
 
@@ -33,7 +33,7 @@ If it genuinely can't be split, note this in the PR description (step 6) and sug
 #### 2. Open draft PR
 
 Push the branch and open a draft PR. This serves two purposes:
-- CI starts running in parallel with your review-fix work (saves waiting at step 5a)
+- CI starts running in parallel with your review-fix work (saves waiting at step 6a)
 - Reviewers in other timezones get async visibility into in-progress work
 
 Skip if the project doesn't use CI or if you're the sole contributor and prefer to push later.
@@ -74,7 +74,28 @@ See `workflows/review-fix-loop.md` for extended discussion of loop dynamics and 
 
 ### Phase 2: Packaging
 
-#### 4. Clean up commit history
+#### 4. Commit review artifacts
+
+Ensure that review artifacts generated during the review-fix loop (step 3) are committed to the PR branch. These documents provide reviewers with context about what was reviewed, what was found, and how findings were addressed — saving back-and-forth across timezones.
+
+```bash
+git add docs/reviews/
+git diff --cached --quiet docs/reviews/ || git commit -m "docs: add review artifacts from pr-prep review-fix loop"
+```
+
+If all review artifacts are already committed (e.g., you committed them during the review-fix loop), this step is a no-op.
+
+To keep review docs visible but collapsed in GitHub's diff view, add this to the project's `.gitattributes` (alongside the `docs/working/**` entry):
+
+```
+docs/reviews/** linguist-generated
+```
+
+**Completion criteria:**
+- [ ] All files in `docs/reviews/` relevant to this PR are committed to the branch
+- [ ] No uncommitted review artifacts remain in the working tree
+
+#### 5. Clean up commit history
 
 ```bash
 git rebase -i origin/main
@@ -92,7 +113,7 @@ Squash WIP commits into logical chunks. Each commit in the final history should 
 - [ ] Each commit message follows conventional format (`feat:`, `fix:`, `refactor:`, etc.)
 - [ ] Each commit represents one coherent, independently reviewable change
 
-#### 5. Verify and annotate (parallelizable)
+#### 6. Verify and annotate (parallelizable)
 
 These two steps have no dependency on each other and can run concurrently.
 
@@ -106,7 +127,7 @@ These two steps have no dependency on each other and can run concurrently.
 - [ ] If PR uses unfamiliar libraries or patterns, at least one explanatory PR comment exists
 - [ ] If no unfamiliar code, annotation step is explicitly skipped (not forgotten)
 
-#### 6. Write the PR description
+#### 7. Write the PR description
 
 Structure:
 
