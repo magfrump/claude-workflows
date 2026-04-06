@@ -156,6 +156,7 @@ lint_task_descriptions() {
 
         local has_sh=false
         local has_workflow_md=false
+        local creates_new_sh=false
 
         for j in $(seq 0 $((ft_count - 1))); do
             local fpath parent_dir
@@ -169,7 +170,12 @@ lint_task_descriptions() {
 
             # Track file types for cross-checks
             case "$fpath" in
-                *.sh) has_sh=true ;;
+                *.sh)
+                    has_sh=true
+                    if [ ! -f "$fpath" ]; then
+                        creates_new_sh=true
+                    fi
+                    ;;
             esac
             case "$fpath" in
                 workflows/*.md) has_workflow_md=true ;;
@@ -183,7 +189,14 @@ lint_task_descriptions() {
             fi
         fi
 
-        # (c) workflow .md files but description doesn't mention BATS or section
+        # (c) creates new .sh file but description doesn't mention shell safety practices
+        if $creates_new_sh; then
+            if ! echo "$desc" | grep -qiE 'set -euo pipefail|shellcheck'; then
+                echo "  LINT WARNING [$tid]: creates new .sh file but description does not mention 'set -euo pipefail' or 'shellcheck'" >&2
+            fi
+        fi
+
+        # (d) workflow .md files but description doesn't mention BATS or section
         if $has_workflow_md; then
             if ! echo "$desc" | grep -qiE 'BATS|section'; then
                 echo "  LINT WARNING [$tid]: touches workflow .md files but description does not mention 'BATS' or 'section'" >&2
