@@ -1,0 +1,1 @@
+Created guides/pr-review-doc-inclusion.md documenting the practice of committing review artifacts to PR branches, added a completion-criteria cross-reference in workflows/pr-prep.md Phase 1 step 3, and listed the new guide in guides/README.md.
