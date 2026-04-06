@@ -57,9 +57,10 @@ setup() {
       continue
     fi
 
-    # Look for at least one header like '### 1.' or '### 2.' etc.
-    if ! grep -q '^### [0-9]\+\.' "$path"; then
-      failures+="  $wf: missing numbered process step headers (### N. ...)\n"
+    # Look for at least one header like '### 1.' or '#### 1.' etc.
+    # Some workflows (e.g., pr-prep) nest steps under phase headings using ####.
+    if ! grep -q '^###\+ [0-9]\+\.' "$path"; then
+      failures+="  $wf: missing numbered process step headers (### N. or #### N. ...)\n"
     fi
   done
 
@@ -77,7 +78,7 @@ setup() {
     [ ! -f "$path" ] && continue
 
     local count
-    count=$(grep -c '^### [0-9]\+\.' "$path" || true)
+    count=$(grep -c '^###\+ [0-9]\+\.' "$path" || true)
 
     if [ "$count" -lt 3 ]; then
       failures+="  $wf: only $count process step(s), expected >= 3\n"

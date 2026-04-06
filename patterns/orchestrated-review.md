@@ -23,7 +23,7 @@ Break the input into independent units that can be evaluated separately.
 Process units concurrently using sub-agents, each with a focused prompt and bounded scope.
 
 - **In task decomposition**: Dispatch sub-agents per independent area, each reading specific files and answering specific questions
-- **In PR prep**: Self-review checks (dead code, style, accidental changes) — currently sequential but structurally parallelizable
+- **In PR prep**: Review-fix loop dispatches `/code-review`, `/self-eval`, documentation check, and dependency audit in parallel
 - **In divergent design**: Evaluate candidates against constraints (the match-and-prune matrix)
 
 **Extension point**: Whether dispatch is literally parallel (sub-agents) or sequential-but-independent depends on the domain and tooling. The key property is that units don't depend on each other's results.
