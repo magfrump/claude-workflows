@@ -1,5 +1,17 @@
 # Research → Plan → Implement Workflow
 
+## Quick Version
+
+1. **Scope** — State what this loop covers in one sentence
+2. **Research** — Read implementations (not just signatures); produce `docs/working/research-{topic}.md` covering what exists, invariants, prior art, gotchas
+3. **Plan** — Produce `docs/working/plan-{topic}.md` with numbered steps, size estimates, test spec, and risks
+4. **Annotate** — Human reviews and approves the plan *(hard gate — do not implement until approved)*
+5. **Implement** — Write failing tests first, then implement one step per commit referencing the plan
+6. **Verify** — Run lint/build/tests; update `docs/thoughts/` if needed; loop or move to pr-prep
+
+**Key outputs:** Research doc, plan doc, test-first commits, implementation commits
+**When to skip:** Trivial changes skip entirely; familiar code skips research; urgent hotfixes abbreviate to mental plan.
+
 ## When to use
 - Any feature implementation that touches more than one file
 - Bug fixes where the root cause isn't immediately obvious

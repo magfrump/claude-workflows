@@ -4,6 +4,19 @@ A reusable guide for planning, running, and interpreting usability tests. Ground
 
 ---
 
+## Quick Version
+
+1. **Scope** — Define what you're testing, 2-4 research questions, and what decision this informs
+2. **Design** — Write 3-5 goal-based tasks (not UI instructions); prepare moderator script and logistics
+3. **Run** — 3-5 participants per round; record, use a note-taker, never answer UI questions
+4. **Analyze** — Cluster observations → rate severity (Critical/Major/Minor/Cosmetic) → stress-test findings → prioritize by impact × frequency
+5. **Report** — Executive summary, SUS score, top findings with evidence, positive findings, next steps
+
+**Key outputs:** Observation notes per session, affinity clusters, severity-rated findings report, SUS score
+**Litmus test:** If you can't name a decision this test will change, you're not ready to test.
+
+---
+
 ## Phase 0: Scoping (Before Anything Else)
 
 **Fill in these blanks before proceeding. Everything downstream depends on them.**
