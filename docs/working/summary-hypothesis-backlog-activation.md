@@ -1,0 +1,1 @@
+Created .evidence-config pointing to the claude-workflows repo itself, ran the evidence pipeline manually (script execution was blocked), updated hypothesis-backlog.md with self-referential evidence for all 7 hypotheses, and added the task hypothesis (REFUTED: self-referential scan validates pipeline but cannot move external-adoption hypotheses) to hypothesis-log.md.

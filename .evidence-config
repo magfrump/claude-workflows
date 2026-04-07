@@ -1,0 +1,6 @@
+# Evidence Collection Configuration
+# Self-referential scan: point at this repo to validate the end-to-end pipeline.
+# The claude-workflows repo itself uses its own workflows (RPI, divergent-design, etc.)
+# so scanning it should produce real signal for several hypotheses.
+
+/home/magfrump/wt-hypothesis-backlog-activation
