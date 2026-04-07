@@ -1,0 +1,1 @@
+Extracted validate_task_json, lint_task_descriptions, and get_eligible_hypotheses into scripts/lib/si-functions.sh, reducing self-improvement.sh from 1267 to 1101 lines (13% reduction, 351-line total diff).
