@@ -854,6 +854,40 @@ Address this specifically in your implementation to avoid the same failure.
             fi
         done
 
+        # --- Pre-implementation: collect baseline self-eval scores for skill files ---
+        BASELINE_SCORES_BLOCK=""
+        BASELINE_LINES=""
+        for BFILE in $(jq -r ".[] | select(.id==\"$TASK_ID\") | .files_touched[]" "$TASKS_FILE"); do
+            case "$BFILE" in
+                skills/*) ;;  # only evaluate skill files
+                *) continue ;;
+            esac
+            if [ ! -f "$BFILE" ]; then
+                continue  # new file, no baseline to measure
+            fi
+            echo "  Collecting baseline self-eval for: $BFILE"
+            BEVAL=$(claude -p "Use the self-eval skill defined in skills/self-eval.md to evaluate $BFILE.
+
+After writing the report, output exactly one line in this format:
+SELF_EVAL_RESULT: <number of Weak scores>
+Then on the next line output:
+WEAK_DIMS: <comma-separated list of dimension names that scored Weak>
+
+Count only the automated assessment scores (Testability investment, Trigger clarity, Overlap and redundancy, Test coverage, Pipeline readiness). Do not count human-review dimensions." 2>&1) || true
+            BWEAK=$(echo "$BEVAL" | grep -oP 'SELF_EVAL_RESULT: \K\d+' || echo "?")
+            BDIMS=$(echo "$BEVAL" | grep -oP 'WEAK_DIMS: \K.*' || echo "none identified")
+            BASELINE_LINES="${BASELINE_LINES}  ${BFILE}: ${BWEAK} Weak scores (dimensions: ${BDIMS})
+"
+        done
+        if [ -n "$BASELINE_LINES" ]; then
+            BASELINE_SCORES_BLOCK="
+BASELINE SCORES — DO NOT REGRESS THESE:
+The following skill files have been evaluated before your changes.
+Your implementation must not increase the number of Weak scores.
+${BASELINE_LINES}
+"
+        fi
+
         echo "  Started: $TASK_ID"
         (
             cd "$WT_DIR"
@@ -873,7 +907,7 @@ would make it possible to confirm or refute this prediction.
             claude -p "You are in /away mode. Commit and push when done.
 
 Task: $DESC
-${HYPOTHESIS_BLOCK}${PRIOR_FAILURE_BLOCK}
+${HYPOTHESIS_BLOCK}${PRIOR_FAILURE_BLOCK}${BASELINE_SCORES_BLOCK}
 FILE SCOPE CONSTRAINT — READ THIS BEFORE STARTING:
 You may ONLY create or modify the following files: $FILES_TOUCHED
 Files under docs/working/ are also allowed (e.g., research docs, plan docs, summaries).
