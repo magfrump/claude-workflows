@@ -98,13 +98,29 @@ validate_task_json() {
             continue
         fi
 
-        # Check files_touched entries for glob patterns and valid parent directories
+        # Check files_touched entries for non-repo paths, glob patterns, and valid parent directories
         local ft_errors=""
         local ft_count
         ft_count=$(echo "$task" | jq '.files_touched | length')
         for j in $(seq 0 $((ft_count - 1))); do
             local fpath
             fpath=$(echo "$task" | jq -r ".files_touched[$j]")
+
+            # Reject absolute paths (/) and home-relative paths (~)
+            # These indicate the task is targeting files outside the repo working directory,
+            # which was the root cause of 50% task loss in round 1.
+            if [[ "$fpath" == /* || "$fpath" == ~* ]]; then
+                ft_errors="${ft_errors}non-repo-relative path in files_touched: $fpath (must be relative to repo root, e.g. 'workflows/' not '~/.claude/workflows/'); "
+                echo "  PATH_VALIDATOR_REJECT [$tid]: $fpath" >&2
+                continue
+            fi
+
+            # Reject directory traversal (..) which could escape the repo
+            if echo "$fpath" | grep -qE '(^|/)\.\.(/|$)'; then
+                ft_errors="${ft_errors}directory traversal in files_touched: $fpath (paths must not contain '..'); "
+                echo "  PATH_VALIDATOR_REJECT [$tid]: $fpath" >&2
+                continue
+            fi
 
             # Reject glob patterns (*, ?, [)
             if echo "$fpath" | grep -qE '[*?[]'; then

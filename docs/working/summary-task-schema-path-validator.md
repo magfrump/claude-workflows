@@ -1,0 +1,1 @@
+Added pre-flight path validation to validate_task_json() in self-improvement.sh that rejects files_touched entries with absolute paths (/), home-relative paths (~), or directory traversals (..), preventing the class of bug where tasks target ~/.claude/workflows/ instead of repo-relative workflows/ paths; rejections are logged as PATH_VALIDATOR_REJECT for hypothesis tracking.
