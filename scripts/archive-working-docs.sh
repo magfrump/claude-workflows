@@ -37,6 +37,7 @@ fi
 # Files that persist across runs — never archive these
 PERMANENT=(
   hypothesis-log.md
+  hypothesis-backlog.md
   incident-journal.md
   tasks.json
   feature-ideas.md
