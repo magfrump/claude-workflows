@@ -1,0 +1,1 @@
+Extracted the moderator script template (~66 lines) from workflows/user-testing-workflow.md into guides/user-testing-moderator-script.md, replaced with a cross-reference link, and added the new guide to guides/README.md. Total diff: ~166 lines.
