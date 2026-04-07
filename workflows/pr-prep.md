@@ -38,6 +38,11 @@ Push the branch and open a draft PR. This serves two purposes:
 
 Skip if the project doesn't use CI or if you're the sole contributor and prefer to push later.
 
+**Done when...**
+- [ ] Branch is pushed to remote
+- [ ] Draft PR is open on the correct base branch
+- [ ] CI is running (or this step was explicitly skipped with a documented reason)
+
 #### 3. Review-fix loop
 
 Run review skills and iterate until clean. This is required, not optional.

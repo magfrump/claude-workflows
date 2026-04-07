@@ -26,6 +26,13 @@ Generate 8-15 candidate approaches. Quantity matters more than quality at this s
 - One sentence each, no evaluation yet
 - Number them for reference
 
+**Done when...**
+- [ ] At least 8 candidate approaches are listed
+- [ ] At least 2-3 approaches feel wrong, naive, or unconventional
+- [ ] A "do nothing" or "minimal change" option is included
+- [ ] An "ideal if effort were free" option is included
+- [ ] No evaluation or ranking has been applied yet — only generation
+
 ### 2. Diagnose — specify the actual problems and constraints
 
 List every concrete problem, requirement, and constraint the solution must address. Be specific:
@@ -33,6 +40,12 @@ List every concrete problem, requirement, and constraint the solution must addre
 - ✗ "Code should be readable"
 
 Include non-obvious constraints: timezone gaps, skill gaps in the team, maintenance burden, deployment complexity, interaction with existing code, performance requirements. Also note which constraints are hard (must satisfy) vs soft (prefer to satisfy).
+
+**Done when...**
+- [ ] Every concrete problem and constraint is stated with enough specificity to test an approach against it
+- [ ] Each constraint is labeled as hard (must satisfy) or soft (prefer to satisfy)
+- [ ] Non-obvious constraints (team skills, deployment, maintenance) have been explicitly considered
+- [ ] No constraint uses vague language like "readable" or "good" without a measurable qualifier
 
 ### 3. Match and prune
 
@@ -49,6 +62,12 @@ Key:
 - ⚠ actively makes worse
 
 For approaches that score well overall but have one fixable weakness, briefly sketch how to fix it (1-2 sentences). Discard anything with ⚠ on a hard constraint or mostly ✗ across the board.
+
+**Done when...**
+- [ ] A compatibility matrix exists with every approach scored against every constraint
+- [ ] All approaches with ⚠ on a hard constraint or mostly ✗ are discarded
+- [ ] Fixable weaknesses in surviving approaches have a 1-2 sentence sketch of the fix
+- [ ] 3-5 approaches survive for detailed comparison
 
 ### 4. Tradeoff matrix and decision
 
@@ -79,6 +98,12 @@ If one approach clearly dominates (>80% confidence): document the decision and p
 
 If the tradeoff is genuinely unclear: **stop and consult the user.** Present the matrix, state your tentative recommendation with reasoning, and identify what information would resolve the ambiguity.
 
+**Done when...**
+- [ ] At least 2-4 stress-test moves were applied to each surviving approach
+- [ ] Tradeoff matrix is updated with any findings from the stress test
+- [ ] Either one approach dominates at >80% confidence, or the user has been consulted
+- [ ] The chosen approach is stated explicitly with a one-sentence rationale
+
 ### 5. Document
 
 Create or update `docs/decisions/NNN-title.md` with:
@@ -88,3 +113,8 @@ Create or update `docs/decisions/NNN-title.md` with:
 - Consequences: what this makes easier, what this makes harder
 
 **Sub-threshold decisions**: Not every decision surfaced during DD warrants a full record. If the diverge phase quickly converges to a single obvious answer — no real tradeoffs, low reversal cost — add a row to [`docs/decisions/log.md`](../docs/decisions/log.md) instead and move on. The log's "when to use" criteria describe the boundary. Reserve full `NNN-title.md` records for decisions with genuine tradeoffs or lasting consequences.
+
+**Done when...**
+- [ ] Decision record exists in `docs/decisions/NNN-title.md` (or a row in `log.md` for sub-threshold decisions)
+- [ ] Record includes Context, Options considered, Decision and rationale, and Consequences
+- [ ] The decision is referenced from the calling workflow's artifacts (e.g., the RPI plan doc)

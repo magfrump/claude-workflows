@@ -46,6 +46,11 @@ Before researching, state the scope of this iteration in one sentence: what spec
 
 In a multi-loop session, each loop gets its own scope. A loop can build on the previous one's artifacts, but the scope should be clear enough that the research and plan docs can be evaluated independently.
 
+**Done when...**
+- [ ] Scope is stated in one sentence that a teammate could read without additional context
+- [ ] The scope clearly identifies the specific question, feature, or fix this loop addresses
+- [ ] If this is a multi-loop session, the scope is distinct from previous loops
+
 ### 2. Research (essential) — understand before proposing
 
 Read the relevant parts of the codebase and produce a research doc in `docs/working/`. This document should include:
@@ -70,6 +75,12 @@ Signals that you've hit a design decision:
 **Human checkpoint**: The user should review the research doc — this is the cheapest place to fix misunderstandings. However, this checkpoint should not block progress. Claude should proceed to the plan step immediately after producing the research doc. If the user provides corrections to the research later, the plan may need to be revised or scrapped, and that's acceptable — a plan built on wrong research is cheap to discard, but idle time waiting for review is expensive.
 
 The gate on **implementation** is firm: do not implement until the plan has been reviewed and approved. The gate on **planning** is soft: plan speculatively, expect revision.
+
+**Done when...**
+- [ ] Research doc exists in `docs/working/` with all required sections (Scope, What exists, Invariants, Prior art, Gotchas)
+- [ ] Actual implementations were read, not just signatures or file names
+- [ ] Every invariant listed can be verified by pointing to specific code that depends on it
+- [ ] If 3+ viable approaches surfaced, a Divergent Design sub-procedure was invoked (or a note explains why it wasn't needed)
 
 ### 3. Plan (essential) — specify the implementation steps
 
@@ -104,6 +115,13 @@ Produce a plan doc in `docs/working/`. Include:
 
 - **Risks**: What could go wrong, what's uncertain, what you'd want a reviewer to scrutinize.
 
+**Done when...**
+- [ ] Plan doc exists in `docs/working/` with all required sections (Scope, Approach, Steps, Size estimate, Test specification, Risks)
+- [ ] Each step is specific enough that someone could implement it without re-reading the research doc
+- [ ] Each step is small enough to be one commit
+- [ ] Test specification includes at least one test case per behavioral requirement
+- [ ] No single step would push a file past 500 lines without an explicit note
+
 ### 4. Annotate (recommended) — human reviews and approves before implementation
 
 This is the hard gate. Research and planning can proceed speculatively, but **implementation does not begin until the user has reviewed the plan** (and any pending research feedback has been incorporated).
@@ -119,6 +137,12 @@ Common annotations:
 - Scope changes: "Drop steps 6-8, that's a separate task"
 
 Claude revises the plan doc based on feedback. This cycle repeats until the user is satisfied. Two rounds is typical; more than three suggests the research phase missed something — consider going back to step 2.
+
+**Done when...**
+- [ ] User has explicitly approved the plan (not just the research)
+- [ ] All user corrections have been incorporated into the plan doc (not just acknowledged conversationally)
+- [ ] If research feedback invalidated the plan, the plan was rewritten from scratch rather than patched
+- [ ] Plan doc reflects the final agreed approach — no unresolved "TBD" or "discuss" markers remain
 
 ### 5. Implement (essential) — tests first, then code
 
@@ -140,12 +164,25 @@ If a step turns out to be wrong or incomplete during implementation, **stop and 
 
 **Context management**: If the session context is getting heavy (many prior loops, large amount of code read), consider starting a fresh session and loading the plan doc. The plan should contain everything needed to implement without the prior conversational context. But this is a judgment call, not a hard rule — if context is still fresh and the task is flowing, continue in the same session. When ending a session to start fresh, write a handoff doc first (see step 6, "Session handoff") so the next session knows exactly where to resume.
 
+**Done when...**
+- [ ] All plan steps are implemented with one commit per step
+- [ ] Tests from the test specification pass
+- [ ] Each commit message references the plan (e.g., "per plan-X step N")
+- [ ] Any deviations from the plan were written back to the plan doc before implementation continued
+- [ ] No file exceeds 500 lines without an explicit justification
+
 ### 6. Verify and loop (recommended)
 
 - Run all project checks (lint, build, tests)
 - Update `docs/thoughts/` if the implementation revealed new understanding worth preserving
 - If there's another loop to do in this session, return to step 1 with a new scope
 - If this was the final loop, proceed to the pr-prep workflow if opening a PR
+
+**Done when...**
+- [ ] All project checks pass (lint, build, tests)
+- [ ] `docs/thoughts/` updated if implementation revealed new understanding worth preserving
+- [ ] If another loop follows, new scope is defined; if final loop, PR prep is ready to begin
+- [ ] If ending mid-task, a handoff doc exists in `docs/working/handoff-{topic}.md`
 
 #### Session handoff (optional)
 

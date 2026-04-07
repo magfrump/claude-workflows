@@ -36,6 +36,11 @@ Read the project's README, CLAUDE.md, AGENTS.md, or equivalent. Note what they e
 
 Produce a bullet list of entry points with file paths. This is your map's starting nodes.
 
+**Done when...**
+- [ ] README/CLAUDE.md/AGENTS.md (or equivalent) has been read and gaps noted
+- [ ] A bullet list of entry points exists with file paths for each
+- [ ] Entry points cover all system types present (application, library, infrastructure)
+
 ### 2. Map the architecture — identify subsystems
 
 From the entry points, trace outward to identify the major subsystems. A "subsystem" is a cohesive cluster of code with a recognizable responsibility: the API layer, the data access layer, the auth system, the job queue, the CLI, etc.
@@ -50,6 +55,11 @@ Don't read every file. Read entry points and public interfaces to understand bou
 
 If the codebase is large enough to warrant it (>20 files in multiple directories), use sub-agents to explore subsystems in parallel — one agent per subsystem, each producing the notes above for its area.
 
+**Done when...**
+- [ ] Every major subsystem is identified with its directory/files, responsibility, key abstractions, and dependencies
+- [ ] At least one representative implementation per subsystem has been read (not just interfaces)
+- [ ] Dependencies between subsystems are documented (what calls what)
+
 ### 3. Trace key flows — follow data through the system
 
 Pick 2-3 representative operations (e.g., "user signs up", "report is generated", "webhook is processed") and trace them end-to-end through the codebase. This reveals:
@@ -60,6 +70,11 @@ Pick 2-3 representative operations (e.g., "user signs up", "report is generated"
 - Where data transforms happen
 
 For each flow, produce a numbered sequence of steps: "1. Request hits `routes/auth.ts:handleSignup` → 2. Validates input via `lib/validation.ts:validateUser` → 3. ..." Include file paths and function names.
+
+**Done when...**
+- [ ] 2-3 representative flows are traced end-to-end with file paths and function names at each step
+- [ ] Flows reveal how subsystems actually connect (not just how the directory structure implies)
+- [ ] Each flow covers the complete path from entry point to final effect (no gaps marked "somehow")
 
 ### 4. Identify conventions — learn the local dialect
 
@@ -73,6 +88,11 @@ Every codebase has conventions that aren't in any style guide. Identify:
 
 Note any conventions that are inconsistent (the codebase uses two different approaches for the same thing) — these are important for knowing which pattern to follow when adding new code.
 
+**Done when...**
+- [ ] All five convention categories are addressed (naming, error handling, testing, configuration, patterns/idioms)
+- [ ] Inconsistencies between competing conventions are explicitly noted
+- [ ] Each convention includes a concrete example from the codebase (file path and pattern)
+
 ### 5. Catalog the unknowns — document what you don't understand
 
 After steps 1-4, explicitly list:
@@ -83,6 +103,11 @@ After steps 1-4, explicitly list:
 - **External dependencies you don't understand** (third-party services, internal APIs, shared databases)
 
 This is the most important section for future work. It tells you where your understanding has gaps so you don't unknowingly build on wrong assumptions.
+
+**Done when...**
+- [ ] At least one item exists in each category (modules not read, connections not traced, surprising decisions, unclear dependencies)
+- [ ] Each unknown includes a reason why it's unknown (not just "didn't look at it")
+- [ ] No unknown is actually answerable from work already done in steps 1-4
 
 ### 6. Produce the orientation document
 
@@ -115,11 +140,21 @@ Compile steps 1-5 into `docs/working/onboarding-{project}.md` with these section
 {for common task types, where to look first — e.g., "to add a new API endpoint, start with routes/ and follow the pattern in routes/users.ts"}
 ```
 
+**Done when...**
+- [ ] `docs/working/onboarding-{project}.md` exists with all required sections (Entry Points, Architecture Map, Key Flows, Conventions, Known Unknowns, Suggested Starting Points)
+- [ ] `Last verified` and `Relevant paths` fields are populated in the frontmatter
+- [ ] Document is committed to the repo
+
 ### 7. Gate — validate with the team
 
 If possible, have someone familiar with the codebase review the orientation doc. They can correct misunderstandings cheaply here — a wrong mental model carried into implementation is expensive to fix later.
 
 If no reviewer is available, treat the Known Unknowns section as a list of things to verify during your first RPI research phase.
+
+**Done when...**
+- [ ] A codebase-familiar reviewer has approved the orientation doc, OR Known Unknowns are flagged for verification during the first RPI research phase
+- [ ] Any reviewer corrections have been incorporated into the document
+- [ ] The onboarding doc is ready to serve as input for RPI research phases
 
 ## Relationship to other workflows
 
