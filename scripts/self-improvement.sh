@@ -1213,6 +1213,15 @@ Then git add the resolved files and git commit to complete the merge."
             fi
         }
 
+        # Post-merge verification: detect merges that silently dropped all task changes
+        if [ "$MERGE_STATUS" != "conflict_unresolved" ]; then
+            DIFFSTAT=$(git diff --stat HEAD~1)
+            if [ -z "$DIFFSTAT" ]; then
+                echo "  WARNING: Merge of $BRANCH produced empty diffstat — task changes may have been lost"
+                MERGE_STATUS="merge_empty"
+            fi
+        fi
+
         # Record merge outcome
         MERGE_TMP=$(mktemp)
         jq --arg tid "$TASK_ID" --arg s "$MERGE_STATUS" \

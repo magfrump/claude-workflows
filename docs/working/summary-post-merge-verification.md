@@ -1,0 +1,1 @@
+Added post-merge diffstat verification to the merge loop in scripts/self-improvement.sh: after each successful merge, checks that `git diff --stat HEAD~1` is non-empty and logs WARNING + sets status to 'merge_empty' if task changes were silently dropped.
