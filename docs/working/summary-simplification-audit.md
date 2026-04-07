@@ -1,0 +1,1 @@
+Reduced 3 longest workflows by 29% (user-testing, 345→245), 28% (RPI, 241→173), and 39% (onboarding, 180→110) by cutting verbose examples, consolidating redundant severity scales, compressing templates, and trimming explanatory prose — all Done-when checklists preserved intact.
