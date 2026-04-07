@@ -1,0 +1,13 @@
+# Evidence Collection Configuration
+# List one project directory path per line (absolute paths).
+# Lines starting with # are comments. Empty lines are ignored.
+#
+# These are the local project directories that will be scanned for
+# workflow and skill usage signals. Add any project where you use
+# Claude Code with workflows from this repo.
+#
+# Examples:
+# /home/user/my-web-app
+# /home/user/data-pipeline
+# /mnt/c/Users/user/projects/game-engine
+

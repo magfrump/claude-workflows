@@ -16,7 +16,11 @@ Reference documents for specific processes and conventions. Unlike workflows (st
 
 - **[skill-recovery.md](skill-recovery.md)** — Three-tier escalation for recovering from skill failures: retry with narrower scope, substitute an alternative skill, or skip and document. Use when a skill produces poor, empty, or off-target output.
 
+- **[pr-review-doc-inclusion.md](pr-review-doc-inclusion.md)** — How and when to commit review artifacts (`docs/reviews/`) to the PR branch before marking ready. Ensures async reviewers see quality evidence alongside the code.
+
 - **[user-testing-moderator-script.md](user-testing-moderator-script.md)** — Reusable moderator script template for usability test sessions: introduction, warm-up, task facilitation, post-test debrief, and wrap-up. Extracted from the user-testing workflow.
+
+- **[skill-trigger-guide.md](skill-trigger-guide.md)** — Maps common task types (code review, security audit, writing review, tech debt assessment, etc.) to the appropriate skill(s). Use when unsure which skill to invoke, or to understand how skills overlap and differ from workflows.
 
 - **[subtraction-checklist.md](subtraction-checklist.md)** — Manual review process for identifying removal candidates using hypothesis logs, complexity warnings, and usage reports. Use after merging an implementation branch in the self-improvement loop.
 
