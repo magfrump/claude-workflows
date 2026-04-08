@@ -6,6 +6,7 @@
 #   validate_task_json   — Schema-validate a tasks JSON file
 #   check_convergence_threshold — Compare overlap % against a threshold
 #   print_hypothesis_summary — Print hypothesis status dashboard to stdout
+#   evaluate_hypotheses  — Evaluate all eligible hypotheses from prior rounds
 #   get_eligible_hypotheses — Find tasks whose hypothesis window has elapsed
 #   auto_expire_hypotheses — Mark overdue TRACKING hypotheses as INCONCLUSIVE-EXPIRED
 
@@ -241,6 +242,114 @@ print_hypothesis_summary() {
         done
     fi
     echo ""
+}
+
+# --- Hypothesis evaluation loop ---
+# Evaluates hypotheses from prior rounds whose windows have elapsed.
+# Initializes hypothesis-log.md if missing, iterates over prior round task
+# files, calls Claude to judge each eligible hypothesis, and appends verdicts.
+#
+# Args: $1 = current_round (integer — the "as of" round for evaluation)
+#       $2 = working_dir (path to docs/working, where tasks-round-N.json and
+#            hypothesis-log.md live)
+# Env:  EVALUATE_HYPOTHESES_DRY_RUN=1 — skip Claude call, record INCONCLUSIVE
+# Stdout: progress messages
+# Returns 0 on success, 1 on missing arguments.
+evaluate_hypotheses() {
+    local current_round="${1:-}"
+    local working_dir="${2:-}"
+
+    if [[ -z "$current_round" || -z "$working_dir" ]]; then
+        echo "Usage: evaluate_hypotheses <current_round> <working_dir>" >&2
+        return 1
+    fi
+    if ! [[ "$current_round" =~ ^[0-9]+$ ]]; then
+        echo "Error: current_round must be a positive integer" >&2
+        return 1
+    fi
+
+    local hypothesis_log="$working_dir/hypothesis-log.md"
+    if [ ! -f "$hypothesis_log" ]; then
+        cat > "$hypothesis_log" <<'HEADER'
+# Hypothesis Log
+
+Tracks falsifiable predictions made at task creation time and their outcomes.
+
+| Round | Task ID | Hypothesis | Window | Checked at Round | Outcome | Evidence |
+|-------|---------|------------|--------|------------------|---------|----------|
+HEADER
+    fi
+
+    local evaluated=0
+    for prior_round in $(seq 1 $((current_round - 1))); do
+        local prior_tasks="$working_dir/tasks-round-$prior_round.json"
+        [ -f "$prior_tasks" ] || continue
+
+        local eligible
+        eligible=$(get_eligible_hypotheses "$current_round" "$prior_round" < "$prior_tasks") || true
+
+        while IFS= read -r task_id; do
+            [ -z "$task_id" ] && continue
+            # Skip if already recorded in the log
+            if grep -qF "| $task_id |" "$hypothesis_log" 2>/dev/null; then
+                continue
+            fi
+
+            # Check if the task was actually completed (approved and merged)
+            if ! grep -qF "**$task_id**" "$working_dir/completed-tasks.md" 2>/dev/null; then
+                continue
+            fi
+
+            local hypothesis window
+            hypothesis=$(jq -r --arg tid "$task_id" '.[] | select(.id==$tid) | .hypothesis' "$prior_tasks")
+            window=$(jq -r --arg tid "$task_id" '.[] | select(.id==$tid) | .hypothesis_window // 3' "$prior_tasks")
+
+            echo "  Evaluating hypothesis for: $task_id"
+
+            local outcome evidence
+            if [[ "${EVALUATE_HYPOTHESES_DRY_RUN:-}" == "1" ]]; then
+                outcome="INCONCLUSIVE"
+                evidence="dry-run mode — no Claude evaluation performed"
+            else
+                # Build the prompt with printf to avoid shell expansion of untrusted
+                # hypothesis text (which could contain $(...) or backticks).
+                local eval_prompt
+                eval_prompt=$(printf 'Evaluate this hypothesis from round %s (now round %s):
+
+Task: %s
+Hypothesis: %s
+Window: %s rounds
+
+Review the repo state, git log, completed-tasks.md, and validation logs to
+determine whether the hypothesis was CONFIRMED, REFUTED, or INCONCLUSIVE.
+
+Output exactly one line in this format:
+HYPOTHESIS_VERDICT: <CONFIRMED|REFUTED|INCONCLUSIVE> | <one-sentence evidence summary>' \
+                    "$prior_round" "$current_round" "$task_id" "$hypothesis" "$window")
+                local eval_result
+                eval_result=$(claude -p "$eval_prompt" 2>/dev/null) || true
+
+                local verdict_line
+                verdict_line=$(echo "$eval_result" | sed -n 's/.*HYPOTHESIS_VERDICT: //p' | head -1)
+                if [ -z "$verdict_line" ]; then
+                    verdict_line="INCONCLUSIVE | evaluation failed to parse"
+                fi
+                outcome=$(echo "$verdict_line" | cut -d'|' -f1 | sed 's/^[[:space:]]*//;s/[[:space:]]*$//')
+                evidence=$(echo "$verdict_line" | cut -d'|' -f2- | sed 's/^[[:space:]]*//;s/[[:space:]]*$//')
+            fi
+
+            # Escape pipe characters to prevent breaking the markdown table
+            local hypothesis_escaped="${hypothesis//|/\\|}"
+            local evidence_escaped="${evidence//|/\\|}"
+
+            # Append to hypothesis log
+            echo "| $prior_round | $task_id | $hypothesis_escaped | $window | $current_round | $outcome | $evidence_escaped |" >> "$hypothesis_log"
+            echo "    $task_id: $outcome"
+            evaluated=$((evaluated + 1))
+        done <<< "$eligible"
+    done
+
+    echo "  Hypotheses evaluated: $evaluated"
 }
 
 # --- Hypothesis window eligibility check ---
