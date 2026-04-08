@@ -849,8 +849,12 @@ Follow the research-plan-implement workflow in ~/.claude/workflows/.
 Proceed through research and plan without waiting for human review.
 Implement the plan, commit with descriptive messages, and push.
 
-When finished, write a one-line summary of what you did to
-docs/working/summary-${TASK_ID}.md"
+REQUIRED — SUMMARY FILE (do this BEFORE your final commit):
+Write a one-sentence description of what you built to:
+  docs/working/summary-${TASK_ID}.md
+This file is read by the automation to log completed work. If it is
+missing, the task will show '(no summary generated)' in the report.
+Create it early and update it as you go — do NOT skip this step."
         ) &
         PIDS+=($!)
     done
@@ -1181,6 +1185,15 @@ Then git add the resolved files and git commit to complete the merge."
         MERGE_TMP=$(mktemp)
         jq --arg tid "$TASK_ID" --arg s "$MERGE_STATUS" \
             '.merges[$tid] = $s' "$ROUND_LOG_FILE" > "$MERGE_TMP" && mv "$MERGE_TMP" "$ROUND_LOG_FILE"
+
+        # Generate fallback summary from branch commits if summary file is missing
+        SUMMARY_FILE="$WORKING_DIR/summary-${TASK_ID}.md"
+        if [ ! -f "$SUMMARY_FILE" ]; then
+            FALLBACK_SUMMARY=$(git log main.."$BRANCH" --pretty=format:"%s" 2>/dev/null | head -5 | paste -sd "; " -)
+            if [ -n "$FALLBACK_SUMMARY" ]; then
+                echo "(from commits) $FALLBACK_SUMMARY" > "$SUMMARY_FILE"
+            fi
+        fi
 
         # Clean up worktree
         git worktree remove "$WT_DIR" 2>/dev/null || true
