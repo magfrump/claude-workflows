@@ -1,0 +1,1 @@
+Extracted hypothesis evaluation logic into `evaluate_hypotheses()` in si-functions.sh and created `scripts/evaluate-hypotheses.sh` as a standalone entry point with auto-round-detection, dry-run mode, and invocation logging for hypothesis tracking.
