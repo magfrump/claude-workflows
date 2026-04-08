@@ -504,6 +504,18 @@ ${CONFIRMED_SEEDS}
     fi
 
     # -------------------------------------------------------
+    # Step 0d: Gather gate pass/fail rates for DD context
+    # -------------------------------------------------------
+    GATE_STATS_CONTEXT=""
+    echo "Gathering gate stats context..."
+    GATE_STATS_CONTEXT=$(get_gate_stats_context "$ROUND_HISTORY") || true
+    if [ -n "$GATE_STATS_CONTEXT" ]; then
+        echo "  Gate stats context gathered"
+    else
+        echo "  No gate stats available (no round history data yet)"
+    fi
+
+    # -------------------------------------------------------
     # Step 1: Generate ideas
     # -------------------------------------------------------
 
@@ -527,7 +539,7 @@ ${SEED_CONTENT}
 
 Generate feature improvement ideas for the workflows in this repo.
 Review docs/working/completed-tasks.md for what has already been done.
-${PRIOR_CONTEXT}${SEED_CONTEXT}${SCREENING_CONTEXT}
+${PRIOR_CONTEXT}${SEED_CONTEXT}${SCREENING_CONTEXT}${GATE_STATS_CONTEXT}
 
 If you cannot generate at least 3 genuinely new and valuable ideas that
 are not already completed or in progress, write only the word DONE on the

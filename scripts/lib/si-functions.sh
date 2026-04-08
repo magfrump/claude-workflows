@@ -10,6 +10,7 @@
 #   get_eligible_hypotheses — Find tasks whose hypothesis window has elapsed
 #   auto_expire_hypotheses — Mark overdue TRACKING hypotheses as INCONCLUSIVE-EXPIRED
 #   get_hypothesis_quality_guide — Return prompt text steering hypothesis quality
+#   get_gate_stats_context — Wrap gate stats in DD prompt context block
 #   print_gate_stats     — Print per-gate pass/fail/skip rates from round history
 #
 # Guard against direct execution
@@ -543,6 +544,38 @@ For each hypothesis, verify:
 
 If any answer is NO, rewrite the hypothesis to target a system-internal behavior.
 GUIDE
+}
+
+# --- Gate stats context for DD prompt injection ---
+# Captures print_gate_stats output and wraps it in informational context text
+# suitable for injection into the divergent-design idea generation prompt.
+# The framing is deliberately informational ("these gates reject most"),
+# not prescriptive — the DD prompt handles tradeoffs.
+#
+# Args: $1 = round_history path (optional — passed through to print_gate_stats)
+# Stdout: prompt context block (empty string if no gate data available)
+# Returns 0 always.
+get_gate_stats_context() {
+    local stats_output
+    stats_output=$(print_gate_stats "$@" 2>/dev/null) || true
+
+    if [ -z "$stats_output" ]; then
+        return 0
+    fi
+
+    cat <<EOF
+
+## Gate pass/fail rates — informational context for idea generation
+
+The following table shows historical pass/fail rates for each validation
+gate across all prior rounds. Gates with low pass rates reject the most
+tasks. This data is provided for context only — use it to inform your
+diagnosis and idea generation, but do not treat low pass rates as
+prescriptive targets. The divergent design process should weigh all
+tradeoffs, not just gate failure reduction.
+
+${stats_output}
+EOF
 }
 
 # --- Gate stats dashboard ---

@@ -1,0 +1,1 @@
+Inject gate pass/fail rates from print_gate_stats into the divergent-design idea generation prompt as informational context, so DD rounds can reference which gates reject most tasks when diagnosing problems and generating ideas.
