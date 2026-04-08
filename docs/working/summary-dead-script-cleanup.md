@@ -1,0 +1,1 @@
+Removed 829 lines of dead code (collect-evidence.sh, search-external-ideas.sh) whose hypotheses were REFUTED/INCONCLUSIVE; updated hypothesis-log.md and scope-exception-gitignore-working-docs.md; git history preserved as backup.

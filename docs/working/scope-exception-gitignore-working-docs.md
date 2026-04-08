@@ -8,7 +8,7 @@ to write into subdirectories (rounds/, reports/, scratch/) instead:
 - **scripts/self-improvement.sh** — writes `summary-*.md`, `plan-*.md`,
   `research-*.md`, `feature-ideas-round-*.md`, `tasks-round-*.json`,
   `round-*-report.json`, `round-history.json`, `problem-history.json`
-- **scripts/search-external-ideas.sh** — writes `external-ideas-candidates.md`
+- ~~**scripts/search-external-ideas.sh**~~ — removed in round 5 (dead code cleanup)
 - **scripts/archive-working-docs.sh** — iterates `docs/working/*` to archive
 
 These scripts were NOT modified (outside file scope constraint). The .gitignore
