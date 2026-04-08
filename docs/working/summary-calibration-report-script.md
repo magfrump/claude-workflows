@@ -1,0 +1,1 @@
+Created scripts/hypothesis-calibration.sh: parses hypothesis-log.md markdown table, computes overall hit rate, per-round accuracy, and prospective vs retroactive cohort split; written shellcheck-clean from line 1 to avoid the round-1 gate failure.
