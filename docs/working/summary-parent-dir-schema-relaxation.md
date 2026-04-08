@@ -1,1 +1,0 @@
-Downgraded parent-dir validation in validate_tasks() from hard rejection to lint warning for single-level nonexistent directories (grandparent exists or is '.'), while keeping hard rejection for deeply nested missing paths.

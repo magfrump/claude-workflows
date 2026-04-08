@@ -1,1 +1,0 @@
-Added prior-failure context injection to the worktree agent's implementation prompt in self-improvement.sh: when a task ID matches a rejected task in prior round-report JSON files, the structured failure reason is extracted and injected as a "Prior attempt failed because: [reason]" block so the agent can address it specifically.

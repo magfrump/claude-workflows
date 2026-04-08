@@ -1,1 +1,0 @@
-Added `--markdown` flag to `scripts/skill-usage-report.sh` that outputs a structured markdown summary with per-skill invocation counts, unused skills/workflows, date range, and workflow completion rate heuristics (reads/branch).

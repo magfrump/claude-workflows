@@ -1,1 +1,0 @@
-Created guides/skill-trigger-guide.md mapping 15 skills to common task types with overlap analysis, skills-vs-workflows distinction, and embedded health-check validation; updated guides/README.md with the new entry.

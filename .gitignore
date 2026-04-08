@@ -5,5 +5,14 @@ test/skills/code-fact-check/output/
 # Process artifacts from self-improvement rounds (kept locally for reference)
 docs/working/archive/
 
+# Generated per-round and per-task working docs (reduce git status noise)
+docs/working/*.json
+docs/working/*.log
+docs/working/summary-*.md
+docs/working/plan-*.md
+docs/working/research-*.md
+docs/working/feature-ideas-round-*.md
+docs/working/external-ideas-candidates.md
+
 # Personal notes
 ideas.txt

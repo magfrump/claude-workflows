@@ -1,1 +1,0 @@
-Audited 5 external skill repos (1,600+ skills total), identified 3 gap-filling candidates: architecture-reviewer, debugging-diagnosis skill, and what-if/counterfactual analysis — none overlap with current 15 skills.

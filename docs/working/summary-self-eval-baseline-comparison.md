@@ -1,1 +1,0 @@
-Added baseline comparison to the self_eval gate: before evaluating the branch version of a changed skill/workflow file, the gate now runs self-eval on the main version to establish a baseline Weak score count, and only rejects if the branch introduces more Weak scores than the baseline — unblocking modifications to files with pre-existing Weak scores.

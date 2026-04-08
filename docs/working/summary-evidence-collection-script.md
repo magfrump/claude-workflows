@@ -1,1 +1,0 @@
-Created scripts/collect-evidence.sh: scans configurable project directories (from .evidence-config) for workflow/skill adoption signals and outputs a structured JSON report mapping H-01 through H-07 to evidence found, with per-hypothesis assessments and raw project data.

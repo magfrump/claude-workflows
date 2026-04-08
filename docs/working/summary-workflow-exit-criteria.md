@@ -1,1 +1,0 @@
-Added "Done when..." checklists (3-5 verifiable conditions each) to every phase of research-plan-implement.md (6 phases), divergent-design.md (5 phases), codebase-onboarding.md (7 phases), and the one phase of pr-prep.md that lacked explicit exit criteria.
