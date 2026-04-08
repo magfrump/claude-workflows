@@ -1,0 +1,1 @@
+Added `print_gate_stats` function to `scripts/lib/si-functions.sh` that aggregates per-gate pass/fail/skip rates from `round-history.json` and prints a summary table, integrated into `scripts/print-round-summary.sh` with a `SKIP_GATE_STATS` toggle.

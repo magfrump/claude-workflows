@@ -10,7 +10,8 @@
 #   get_eligible_hypotheses — Find tasks whose hypothesis window has elapsed
 #   auto_expire_hypotheses — Mark overdue TRACKING hypotheses as INCONCLUSIVE-EXPIRED
 #   get_hypothesis_quality_guide — Return prompt text steering hypothesis quality
-
+#   print_gate_stats     — Print per-gate pass/fail/skip rates from round history
+#
 # Guard against direct execution
 if [[ "${BASH_SOURCE[0]}" == "${0}" ]]; then
     echo "Error: this file should be sourced, not executed directly" >&2
@@ -542,4 +543,70 @@ For each hypothesis, verify:
 
 If any answer is NO, rewrite the hypothesis to target a system-internal behavior.
 GUIDE
+}
+
+# --- Gate stats dashboard ---
+# Reads round-history.json (or a provided path) and prints per-gate pass/fail/skip
+# rates aggregated across all rounds.
+# Args: $1 = round_history path (optional — defaults to docs/working/round-history.json)
+# Stdout: formatted gate stats table
+# Returns 1 if the file is missing, empty, or not valid JSON.
+print_gate_stats() {
+    local repo_root
+    repo_root="$(cd "$(dirname "${BASH_SOURCE[0]}")/../.." && pwd)"
+    local history_file="${1:-$repo_root/docs/working/round-history.json}"
+
+    if [ ! -f "$history_file" ]; then
+        echo "No round history found at $history_file" >&2
+        return 1
+    fi
+
+    # Validate JSON and extract gate stats in one jq call.
+    # For each validation entry, iterate over keys that are not "verdict",
+    # and count pass/fail/skip per gate name.
+    local stats
+    stats=$(jq -r '
+        if type != "array" then error("not an array") else . end |
+        [ .[] | .validation // {} | to_entries[] | .value | to_entries[] |
+          select(.key != "verdict") ] |
+        if length == 0 then error("no gate data") else . end |
+        group_by(.key) |
+        map({
+            gate: .[0].key,
+            pass: ([.[] | select(.value == "pass")] | length),
+            fail: ([.[] | select(.value == "fail")] | length),
+            skip: ([.[] | select(.value == "skip")] | length),
+            total: length
+        }) |
+        sort_by(.gate) |
+        .[] |
+        "\(.gate)\t\(.pass)\t\(.fail)\t\(.skip)\t\(.total)"
+    ' "$history_file" 2>/dev/null)
+
+    if [ -z "$stats" ]; then
+        echo "No gate evaluation data found." >&2
+        return 1
+    fi
+
+    echo ""
+    echo "=== Gate Stats (all rounds) ==="
+    echo ""
+    printf "%-25s %s\n" "GATE" "PASS RATE"
+    printf "%-25s %s\n" "-------------------------" "-------------------"
+
+    while IFS=$'\t' read -r gate pass fail skip total; do
+        if [ "$total" -gt 0 ]; then
+            local pct=$(( (pass * 100) / total ))
+            local detail="${pass}/${total} pass (${pct}%)"
+            if [ "$fail" -gt 0 ]; then
+                detail="${detail}, ${fail} fail"
+            fi
+            if [ "$skip" -gt 0 ]; then
+                detail="${detail}, ${skip} skip"
+            fi
+            printf "%-25s %s\n" "$gate" "$detail"
+        fi
+    done <<< "$stats"
+
+    echo ""
 }
