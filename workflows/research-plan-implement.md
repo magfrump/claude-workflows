@@ -63,6 +63,13 @@ Read the relevant parts of the codebase and produce a research doc in `docs/work
 
 The research must be thorough. Read the actual implementations, not just signatures. If the research is wrong, everything downstream will be wrong.
 
+**Confidence-provenance tags**: When stating facts in the research doc, tag claims with their evidential basis so reviewers can quickly assess reliability:
+- **[observed]** — directly verified by reading code, running tests, or checking output. These are the load-bearing facts.
+- **[inferred]** — logically derived from observed evidence but not directly confirmed. Example: "function X is called only from Y [inferred from grep — no dynamic dispatch observed]."
+- **[assumed]** — believed true but not yet verified. Example: "the API rate limit is 100 req/s [assumed from docs — not tested]."
+
+You don't need to tag every sentence — use tags on claims that downstream decisions depend on, especially invariants and gotchas. The tags are most valuable when they surface [assumed] claims that could invalidate the plan if wrong. A research doc with no [assumed] tags is either very thorough or hasn't been honest about its uncertainty.
+
 If a previous loop's research doc covers overlapping territory, update it rather than creating a new file — but clearly mark what's new or changed.
 
 **Design decisions during research**: If research reveals a genuine design choice — multiple viable approaches, an architectural fork, a library selection — invoke the **Divergent Design workflow** (`divergent-design.md`) as a sub-procedure before proceeding to the plan step. DD's output (a documented decision in `docs/decisions/`) becomes an input to the plan. DD's 80% confidence threshold governs whether the *design decision* can be resolved autonomously; RPI's implementation gate (step 4) still applies independently. In other words: DD may resolve the "what approach" question without user input, but the user still reviews the plan before implementation begins.

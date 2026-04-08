@@ -8,6 +8,7 @@
 - Major feature design where multiple approaches exist
 - Any decision where premature convergence is a risk
 - **As a sub-procedure within RPI**: When the research phase of `research-plan-implement.md` reveals a design decision, DD is invoked inline. The decision output feeds back into RPI's research doc and informs the plan. See RPI step 2 for trigger signals.
+- **Hypothesis generation** (epistemic variant): When the question is "what's true?" rather than "what should we build?" — e.g., explaining a bug, interpreting ambiguous behavior, or evaluating competing theories. See the Epistemic Reasoning variant below.
 
 ## When to pivot
 
@@ -118,3 +119,75 @@ Create or update `docs/decisions/NNN-title.md` with:
 - [ ] Decision record exists in `docs/decisions/NNN-title.md` (or a row in `log.md` for sub-threshold decisions)
 - [ ] Record includes Context, Options considered, Decision and rationale, and Consequences
 - [ ] The decision is referenced from the calling workflow's artifacts (e.g., the RPI plan doc)
+
+## Variant: Epistemic Reasoning (Hypothesis Generation)
+
+When the goal is to explain an observation rather than choose an implementation, DD can be used for structured hypothesis generation. Candidates become competing explanations, diagnosis identifies distinguishing evidence, and the output is a ranked hypothesis list rather than a decision record.
+
+Use this variant when:
+- A bug, behavior, or outcome has multiple plausible explanations
+- You need to distinguish between competing theories about *why* something is happening
+- The question is "what's true?" rather than "what should we build?"
+- Research has surfaced ambiguity that can't be resolved by reading more code — you need to reason about evidence
+
+### Step modifications
+
+#### 1. Diverge — generate competing explanations
+
+Generate 8-15 candidate explanations for the observed phenomenon. The same quantity-over-quality principle applies:
+- Include at least 2-3 explanations that seem unlikely or surprising
+- Include at least 1 "null hypothesis" (the observation is noise, expected behavior, or measurement error)
+- Include at least 1 explanation that would imply a deeper systemic issue
+- One sentence each, no evaluation yet
+
+#### 2. Diagnose — identify distinguishing evidence
+
+Instead of listing constraints, list **observations and evidence** that distinguish between hypotheses:
+- What specific, observable predictions does each hypothesis make?
+- What evidence would confirm or refute each explanation?
+- Which pieces of evidence are already available vs. require new investigation?
+
+Label each piece of evidence with a confidence-provenance tag (see RPI's research phase for the convention):
+- **[observed]** — directly verified (you saw it in logs, code, output)
+- **[inferred]** — logically derived from observed evidence
+- **[assumed]** — believed true but not yet verified
+
+#### 3. Match and prune — evidence matrix
+
+Create an evidence compatibility matrix:
+
+| # | Hypothesis | Evidence 1 | Evidence 2 | ... |
+|---|-----------|------------|------------|-----|
+| 1 | ...       | ✓ consistent | ✗ contradicted | ... |
+
+Key:
+- ✓ consistent with this evidence
+- ~ not clearly distinguished by this evidence
+- ✗ contradicted by this evidence
+- ? — evidence not yet gathered
+
+Discard hypotheses contradicted by [observed] evidence. Flag hypotheses that depend heavily on [assumed] evidence — these are the ones where gathering more information has the highest value.
+
+#### 4. Rank and identify evidence gaps
+
+Instead of a tradeoff matrix and decision, produce a **ranked hypothesis list**:
+
+| Rank | Hypothesis | Confidence | Key supporting evidence | Critical evidence gap |
+|------|-----------|------------|------------------------|----------------------|
+| 1 | ... | high/medium/low | ... | ... |
+
+**Confidence** reflects how well the hypothesis explains all [observed] evidence without relying on [assumed] claims.
+
+**Critical evidence gap** identifies the single most valuable piece of information that would confirm or refute this hypothesis. This drives the next investigation step.
+
+#### 5. Document — hypothesis record
+
+Instead of a decision record, produce a hypothesis record. This can live in the calling workflow's research doc (if DD was invoked as a sub-procedure) or as a standalone working doc.
+
+The record should include:
+- The observation being explained
+- The ranked hypothesis list with evidence gaps
+- Recommended next investigation steps (ordered by information value — what would most efficiently distinguish between the top hypotheses?)
+- Which hypotheses were eliminated and why
+
+**Evaluating epistemic DD usage**: A DD exercise counts as "epistemic mode" when its output is a ranked hypothesis list with evidence gaps rather than a decision record selecting an implementation approach.
