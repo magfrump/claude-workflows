@@ -1,0 +1,1 @@
+Split workflows/user-testing-workflow.md (345 lines) into a 199-line core process file and a 164-line reference appendix (user-testing-appendix.md), moving moderator script, observation template, SUS questionnaire, moderator traps, and remote/async guidance to the appendix with cross-reference links.
