@@ -1,0 +1,1 @@
+Created skills/arithmetic-eval.md: a ~35-line skill that validates math expressions via regex allowlist and evaluates with python3 -c, with tagged output for hypothesis traceability and sympy extension path.
