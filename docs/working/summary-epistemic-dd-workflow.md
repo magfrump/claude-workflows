@@ -1,0 +1,1 @@
+Created workflows/epistemic-divergent-design.md: a 98-line workflow adapting divergent-design for hypothesis-space expansion, with steps to frame a question, generate 10+ competing explanations, identify distinguishing evidence, rank by cost-to-test, and output a hypothesis shortlist artifact.
