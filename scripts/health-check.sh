@@ -38,6 +38,7 @@ section() { echo; bold "── $* ──"; }
 check_skill_frontmatter() {
     section "Skill YAML frontmatter"
     local count=0
+    local drift_count=0
     for skill in "$REPO_ROOT"/skills/*.md; do
         [[ -f "$skill" ]] || continue
         count=$((count + 1))
@@ -50,22 +51,87 @@ check_skill_frontmatter() {
 
         if [[ -z "$yaml" ]]; then
             fail "$basename: no YAML frontmatter found"
+            drift_count=$((drift_count + 1))
             continue
         fi
 
-        # Check required fields
+        local file_ok=true
+
+        # Check required fields: name, description, when
         if ! echo "$yaml" | grep -qE '^name:'; then
             fail "$basename: missing 'name' field"
-        elif ! echo "$yaml" | grep -qE '^description:'; then
+            file_ok=false
+        fi
+        if ! echo "$yaml" | grep -qE '^description:'; then
             fail "$basename: missing 'description' field"
-        else
+            file_ok=false
+        fi
+        if ! echo "$yaml" | grep -qE '^when:'; then
+            fail "$basename: missing 'when' field"
+            file_ok=false
+        fi
+
+        # Check description is non-empty and multi-word.
+        # Collect the description value: inline text after "description:" plus
+        # any continuation lines (indented or folded with >).
+        local desc_text
+        desc_text="$(echo "$yaml" | sed -n '/^description:/,/^[a-z]/{/^description:/{ s/^description:[[:space:]>]*//; p; d; }; /^[a-z]/d; p; }' | tr '\n' ' ' | sed 's/^[[:space:]]*//;s/[[:space:]]*$//')"
+        if [[ -z "$desc_text" ]]; then
+            fail "$basename: 'description' is empty"
+            file_ok=false
+        elif [[ $(echo "$desc_text" | wc -w) -lt 2 ]]; then
+            fail "$basename: 'description' should be multi-word (got: '$desc_text')"
+            file_ok=false
+        fi
+
+        # Check for unknown top-level keys.
+        # Top-level keys are non-indented lines matching "key:" pattern.
+        local allowed_keys="name description when requires"
+        local unknown_keys
+        unknown_keys="$(echo "$yaml" | grep -oE '^[a-zA-Z_-]+:' | sed 's/://' | while read -r key; do
+            local found=false
+            for allowed in $allowed_keys; do
+                if [[ "$key" == "$allowed" ]]; then
+                    found=true
+                    break
+                fi
+            done
+            if ! $found; then
+                echo "$key"
+            fi
+        done)"
+        if [[ -n "$unknown_keys" ]]; then
+            fail "$basename: unknown top-level key(s): $unknown_keys"
+            file_ok=false
+        fi
+
+        # Check requires entries have name and description sub-fields.
+        if echo "$yaml" | grep -qE '^requires:'; then
+            # Each requires entry should be a "- name: ..." followed by "  description: ..."
+            # Detect bare string entries (lines starting with "  - " that are NOT "  - name:")
+            local bare_entries
+            bare_entries="$(echo "$yaml" | sed -n '/^requires:/,/^[a-z]/{/^requires:/d; /^[a-z]/d; p;}' \
+                | grep -E '^[[:space:]]*-[[:space:]]' \
+                | grep -vE '^[[:space:]]*-[[:space:]]+name:' || true)"
+            if [[ -n "$bare_entries" ]]; then
+                fail "$basename: 'requires' entries must be objects with 'name' and 'description' sub-fields"
+                file_ok=false
+            fi
+        fi
+
+        if $file_ok; then
             pass "$basename"
+        else
+            drift_count=$((drift_count + 1))
         fi
     done
     if [[ $count -eq 0 ]]; then
         fail "No skill files found in skills/"
     else
         pass "$count skill(s) checked"
+        if [[ $drift_count -gt 0 ]]; then
+            warn "$drift_count file(s) with frontmatter issues (structural drift detected)"
+        fi
     fi
 }
 
