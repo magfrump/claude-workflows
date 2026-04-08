@@ -5,7 +5,7 @@
 # exhausted or problem convergence is detected.
 #
 # Usage:
-#   scripts/self-improvement.sh [--seed-file FILE]
+#   scripts/self-improvement.sh [--seed-file FILE] [--dry-run]
 #
 # Options:
 #   --seed-file FILE   Provide a file of seed ideas for the first round's
@@ -13,6 +13,10 @@
 #                      injected into the idea-generation prompt as starting
 #                      points (they count toward the idea total). Only used
 #                      in round 1; subsequent rounds build on prior results.
+#   --dry-run          Run steps 0-2c (hypothesis eval, idea generation, task
+#                      selection, schema validation, task linting) then exit
+#                      with a summary. No worktrees, implementation, or
+#                      validation occurs.
 #
 # Environment variables:
 #   CONVERGENCE_THRESHOLD  Percent overlap (0-100) of diagnosed problems
@@ -210,6 +214,7 @@ if [[ "${BASH_SOURCE[0]}" == "${0}" ]]; then
 
 # Parse arguments
 SEED_FILE=""
+DRY_RUN=false
 while [ $# -gt 0 ]; do
     case "$1" in
         --seed-file)
@@ -219,6 +224,10 @@ while [ $# -gt 0 ]; do
             fi
             SEED_FILE="$2"
             shift 2
+            ;;
+        --dry-run)
+            DRY_RUN=true
+            shift
             ;;
         *)
             echo "Unknown argument: $1" >&2
@@ -766,6 +775,25 @@ other tasks in this round."
     # -------------------------------------------------------
     echo "Linting task descriptions..."
     lint_task_descriptions "$TASKS_FILE"
+
+    # -------------------------------------------------------
+    # Dry-run exit point: print summary and stop before implementation
+    # -------------------------------------------------------
+    if $DRY_RUN; then
+        echo ""
+        echo "=== DRY-RUN SUMMARY (round $ROUND) ==="
+        echo "Tasks file: $TASKS_FILE"
+        echo "Tasks selected: $(echo "$TASK_IDS" | wc -w | tr -d ' ')"
+        for TASK_ID in $TASK_IDS; do
+            DESC=$(jq -r ".[] | select(.id==\"$TASK_ID\") | .description" "$TASKS_FILE")
+            HYPO=$(jq -r ".[] | select(.id==\"$TASK_ID\") | .hypothesis // \"(none)\"" "$TASKS_FILE")
+            echo "  - $TASK_ID: $DESC"
+            echo "    hypothesis: $HYPO"
+        done
+        echo ""
+        echo "Dry-run complete. Exiting before worktree creation."
+        exit 0
+    fi
 
     # -------------------------------------------------------
     # Step 3: Implement in parallel worktrees

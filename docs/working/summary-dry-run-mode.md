@@ -1,0 +1,1 @@
+Added --dry-run flag to self-improvement.sh that runs steps 0-2c (hypothesis eval, idea generation, task selection, schema validation, task linting) then prints a task summary and exits before worktree creation.
