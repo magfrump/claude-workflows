@@ -19,6 +19,18 @@
 
 ### 1. Diverge — generate many possibilities
 
+#### Prune stale ideas first
+
+Before generating new candidates, review the [ideas backlog](../docs/working/ideas-backlog.md).
+**Archive** any idea where ALL of the following are true:
+- Status is **active**
+- `Last Evaluated Round` is more than **3 rounds** behind the current round
+- The idea has **never** been selected for implementation
+
+Move stale ideas to **archived** status and note the reason (e.g., "archived: stale after 3 rounds without selection"). Then scan remaining **active** ideas for any that are relevant to the current decision — these are candidates alongside newly generated ones.
+
+#### Generate candidates
+
 Generate 8-15 candidate approaches. Quantity matters more than quality at this stage. Requirements:
 - Include at least 2-3 approaches that feel wrong, naive, or unconventional
 - Include at least 1 "do nothing" or "minimal change" option
@@ -27,6 +39,7 @@ Generate 8-15 candidate approaches. Quantity matters more than quality at this s
 - Number them for reference
 
 **Done when...**
+- [ ] Stale ideas (>3 rounds old, never selected, still active) have been archived in the ideas backlog
 - [ ] At least 8 candidate approaches are listed
 - [ ] At least 2-3 approaches feel wrong, naive, or unconventional
 - [ ] A "do nothing" or "minimal change" option is included
