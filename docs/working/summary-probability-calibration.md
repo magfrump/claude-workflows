@@ -1,0 +1,1 @@
+Added predicted_odds column to hypothesis-log.md with retroactive odds ratios for 7 resolved hypotheses, switched format guidance from percentages to odds ratios, and added a calibration summary section with baseline Brier score (0.2276, N=5) to enable future comparison with prospectively-assigned predictions.

@@ -2,13 +2,45 @@
 
 Tracks falsifiable predictions made at task creation time and their outcomes.
 
-| Round | Task ID | Hypothesis | Window | Checked at Round | Outcome | Status Date | Evidence |
-|-------|---------|------------|--------|------------------|---------|-------------|----------|
-| 1 | research-doc-freshness | After adding freshness fields to templates, at least 1 document produced by these workflows in the next 3 rounds will include Last verified and Relevant paths fields, enabling a staleness check that would not have been possible before. | 3 | 4 | CONFIRMED | | Round 3 self-eval baseline reports (self-eval-fact-check.md, self-eval-code-review.md, self-eval-cowen-critique.md) include Last verified and Relevant paths fields, enabling staleness checks that were not possible before the template changes. |
-| 1 | complexity-budget-enforcement | The complexity check will flag at least 1 workflow as exceeding the 200-line or 15-section threshold on its first run, making growth visible to the self-improvement loop. | 3 | 5 | CONFIRMED | | user-testing-workflow.md (345 lines, 16 sections) exceeds both the 200-line and 15-section thresholds and has done so since the complexity check was first added in round 1, flagging it on every run. |
-| 2 | validation-gate-docs | Tasks implemented in the next 3 rounds will have a lower gate-failure rate than Round 1's 67% (2 of 3 rejected). Specifically, 0 tasks will fail on file_scope or shellcheck gates. | 3 | 5 | REFUTED | | Gate-failure rate dropped to 33% (3/9) vs Round 1's 67%, but the specific claim of zero file_scope/shellcheck failures is refuted — 3 tasks failed file_scope gates across Rounds 3–4 (subtraction-mode, critic-test-harness, convergence-detection-unit-test). |
-| 1 | cross-session-handoff | Structured handoff docs will be produced in at least 1 session within 3 rounds and will reduce onboarding time when resuming that work | 3 | 4 | INCONCLUSIVE-EXPIRED | 2026-04-06 | Handoff template was added to RPI workflow in round 1 and approved, but no actual handoff documents were produced or consumed in any subsequent session, so the "reduce onboarding time" claim cannot be evaluated. Window expired; no further evidence expected. |
-| 1 | health-check-bats-optimization | The BATS optimization will reduce health-check test execution time by at least 50% as measured by comparing before/after run times | 1 | 2 | CONFIRMED | | Commit cd35d73 restructured health-check BATS to run the script once via setup_file instead of 11 times, with reported reduction from ~60s to ~10s (~83%), well exceeding the 50% threshold, and the task was approved in validation. |
-| 1 | negative-test-fixtures | At least 1 of the 8 existing edge-case fixtures will reveal a missing or incorrect handling pattern in the skill prompt templates when tested with structural assertions | 3 | 4 | INCONCLUSIVE-EXPIRED | 2026-04-06 | Edge-case test suites were written but no eval reports were generated for the edge-case fixtures, so the tests skip rather than asserting against actual output — neither confirming nor refuting whether prompt templates mishandle degenerate inputs. Window expired; no further evidence expected. |
-| 2 | strict-complexity-budget | With --strict enabled in the self-improvement loop, at least 1 implementation that would have passed with warn-only will be caught and rejected within the next 3 rounds | 3 | 5 | REFUTED | | The --strict health-check gate (Gate 1g) was added in commit 57d3d71 but was removed before rounds 3–4 validation ran; no task in any round was rejected by the strict complexity check, and no validation log references a health-check --strict failure. |
-| 3 | task-description-linter | Advisory lint warnings will prevent at least 1 gate failure in the next 3 rounds by surfacing missing shellcheck/BATS mentions or nonexistent parent directories before implementation begins, resulting in a lower file_scope or shellcheck gate-failure rate compared to rounds 1–3. | 3 | 6 | | | |
+## Format Guidance
+
+**Predicted odds** use odds-ratio notation (e.g., `3:1` means "3 times more likely to happen than not"). This replaces percentage-based confidence. All new hypotheses must include an explicit odds ratio at creation time.
+
+Odds-to-probability reference: 1:1 = 50%, 2:1 = 67%, 3:1 = 75%, 4:1 = 80%, 5:1 = 83%, 9:1 = 90%.
+
+Hypotheses marked with `(retroactive)` in the Predicted Odds column had odds assigned after resolution, based on the original confidence language. These form the **baseline cohort** for calibration comparison. Hypotheses created with explicit odds ratios at creation time form the **prospective cohort** (round 2+).
+
+| Round | Task ID | Hypothesis | Predicted Odds | Window | Checked at Round | Outcome | Status Date | Evidence |
+|-------|---------|------------|----------------|--------|------------------|---------|-------------|----------|
+| 1 | research-doc-freshness | After adding freshness fields to templates, at least 1 document produced by these workflows in the next 3 rounds will include Last verified and Relevant paths fields, enabling a staleness check that would not have been possible before. | 3:1 (retroactive) | 3 | 4 | CONFIRMED | | Round 3 self-eval baseline reports (self-eval-fact-check.md, self-eval-code-review.md, self-eval-cowen-critique.md) include Last verified and Relevant paths fields, enabling staleness checks that were not possible before the template changes. |
+| 1 | complexity-budget-enforcement | The complexity check will flag at least 1 workflow as exceeding the 200-line or 15-section threshold on its first run, making growth visible to the self-improvement loop. | 5:1 (retroactive) | 3 | 5 | CONFIRMED | | user-testing-workflow.md (345 lines, 16 sections) exceeds both the 200-line and 15-section thresholds and has done so since the complexity check was first added in round 1, flagging it on every run. |
+| 2 | validation-gate-docs | Tasks implemented in the next 3 rounds will have a lower gate-failure rate than Round 1's 67% (2 of 3 rejected). Specifically, 0 tasks will fail on file_scope or shellcheck gates. | 2:1 (retroactive) | 3 | 5 | REFUTED | | Gate-failure rate dropped to 33% (3/9) vs Round 1's 67%, but the specific claim of zero file_scope/shellcheck failures is refuted — 3 tasks failed file_scope gates across Rounds 3–4 (subtraction-mode, critic-test-harness, convergence-detection-unit-test). |
+| 1 | cross-session-handoff | Structured handoff docs will be produced in at least 1 session within 3 rounds and will reduce onboarding time when resuming that work | 2:1 (retroactive) | 3 | 4 | INCONCLUSIVE-EXPIRED | 2026-04-06 | Handoff template was added to RPI workflow in round 1 and approved, but no actual handoff documents were produced or consumed in any subsequent session, so the "reduce onboarding time" claim cannot be evaluated. Window expired; no further evidence expected. |
+| 1 | health-check-bats-optimization | The BATS optimization will reduce health-check test execution time by at least 50% as measured by comparing before/after run times | 4:1 (retroactive) | 1 | 2 | CONFIRMED | | Commit cd35d73 restructured health-check BATS to run the script once via setup_file instead of 11 times, with reported reduction from ~60s to ~10s (~83%), well exceeding the 50% threshold, and the task was approved in validation. |
+| 1 | negative-test-fixtures | At least 1 of the 8 existing edge-case fixtures will reveal a missing or incorrect handling pattern in the skill prompt templates when tested with structural assertions | 3:1 (retroactive) | 3 | 4 | INCONCLUSIVE-EXPIRED | 2026-04-06 | Edge-case test suites were written but no eval reports were generated for the edge-case fixtures, so the tests skip rather than asserting against actual output — neither confirming nor refuting whether prompt templates mishandle degenerate inputs. Window expired; no further evidence expected. |
+| 2 | strict-complexity-budget | With --strict enabled in the self-improvement loop, at least 1 implementation that would have passed with warn-only will be caught and rejected within the next 3 rounds | 3:1 (retroactive) | 3 | 5 | REFUTED | | The --strict health-check gate (Gate 1g) was added in commit 57d3d71 but was removed before rounds 3–4 validation ran; no task in any round was rejected by the strict complexity check, and no validation log references a health-check --strict failure. |
+| 3 | task-description-linter | Advisory lint warnings will prevent at least 1 gate failure in the next 3 rounds by surfacing missing shellcheck/BATS mentions or nonexistent parent directories before implementation begins, resulting in a lower file_scope or shellcheck gate-failure rate compared to rounds 1–3. | | 3 | 6 | | | |
+
+## Calibration Summary
+
+### Baseline Cohort (retroactively assigned odds)
+
+Includes only resolved hypotheses with definitive outcomes (CONFIRMED or REFUTED). INCONCLUSIVE-EXPIRED hypotheses are excluded from Brier score calculation since their true outcome is unknown.
+
+| Task ID | Predicted Odds | Implied Probability | Outcome | Outcome Value | Squared Error |
+|---------|----------------|---------------------|---------|---------------|---------------|
+| research-doc-freshness | 3:1 | 0.75 | CONFIRMED | 1 | 0.0625 |
+| complexity-budget-enforcement | 5:1 | 0.833 | CONFIRMED | 1 | 0.0279 |
+| validation-gate-docs | 2:1 | 0.667 | REFUTED | 0 | 0.4449 |
+| health-check-bats-optimization | 4:1 | 0.80 | CONFIRMED | 1 | 0.0400 |
+| strict-complexity-budget | 3:1 | 0.75 | REFUTED | 0 | 0.5625 |
+
+**Baseline Brier Score: 0.2276** (N=5, sum of squared errors = 1.1378)
+
+_Brier score ranges from 0 (perfect) to 1 (worst). A score of 0.25 corresponds to always predicting 50%. Lower is better._
+
+### Prospective Cohort (odds assigned at creation time)
+
+_No hypotheses yet. Future hypotheses created with explicit odds ratios will be tracked here for comparison against the baseline Brier score of 0.2276._
+
+**Calibration hypothesis:** The prospective cohort Brier score should be at least 0.05 better (lower) than the baseline score of 0.2276, i.e., ≤ 0.1776, indicating that making predictions explicit at creation time improves calibration.
