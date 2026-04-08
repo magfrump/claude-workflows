@@ -7,6 +7,7 @@
 #   check_convergence_threshold — Compare overlap % against a threshold
 #   print_hypothesis_summary — Print hypothesis status dashboard to stdout
 #   get_eligible_hypotheses — Find tasks whose hypothesis window has elapsed
+#   auto_expire_hypotheses — Mark overdue TRACKING hypotheses as INCONCLUSIVE-EXPIRED
 
 # Guard against direct execution
 if [[ "${BASH_SOURCE[0]}" == "${0}" ]]; then
@@ -267,4 +268,98 @@ get_eligible_hypotheses() {
           select(.retroactive != true) |
           select(($current - $prior) >= (.hypothesis_window // 3))] | .[]? | .id' \
         2>/dev/null || return 1
+}
+
+# --- Auto-expire overdue hypotheses ---
+# Scans hypothesis-log.md for TRACKING entries (empty Outcome) where
+# (current_round - hypothesis_round) >= window. Marks them INCONCLUSIVE-EXPIRED
+# with a timestamp and auto-expiry note.
+# Args: $1 = current_round (integer)
+#       $2 = hypothesis_log path (optional — defaults to docs/working/hypothesis-log.md)
+# Stdout: summary of expired entries (count before/after for instrumentation)
+# Returns 1 if log is missing or current_round is invalid.
+auto_expire_hypotheses() {
+    local current_round="${1:-}"
+    local repo_root
+    repo_root="$(cd "$(dirname "${BASH_SOURCE[0]}")/../.." && pwd)"
+    local log_file="${2:-$repo_root/docs/working/hypothesis-log.md}"
+    local today
+    today="$(date +%Y-%m-%d)"
+
+    # Validate current_round
+    if [[ -z "$current_round" || ! "$current_round" =~ ^[0-9]+$ ]]; then
+        echo "auto_expire_hypotheses: current_round must be a positive integer" >&2
+        return 1
+    fi
+
+    if [ ! -f "$log_file" ]; then
+        echo "auto_expire_hypotheses: no hypothesis log found at $log_file" >&2
+        return 1
+    fi
+
+    local tracking_before=0
+    local expired_count=0
+    local tmp_file
+    tmp_file="$(mktemp)"
+
+    # Process the log file line by line, rewriting in place
+    while IFS= read -r line; do
+        # Pass through non-table lines and header/separator rows unchanged
+        if [[ "$line" != \|* ]] || echo "$line" | grep -qE '^\|\s*(Round|----)'; then
+            echo "$line" >> "$tmp_file"
+            continue
+        fi
+
+        # Extract fields by splitting on |
+        # Table columns: | Round | Task ID | Hypothesis | Window | Checked at Round | Outcome | Status Date | Evidence |
+        # awk fields:     $1(empty) $2       $3          $4       $5                  $6        $7            $8         $9(empty or evidence)
+        local round task_id window outcome
+        round=$(echo "$line" | awk -F'|' '{gsub(/^[ \t]+|[ \t]+$/, "", $2); print $2}')
+        task_id=$(echo "$line" | awk -F'|' '{gsub(/^[ \t]+|[ \t]+$/, "", $3); print $3}')
+        window=$(echo "$line" | awk -F'|' '{gsub(/^[ \t]+|[ \t]+$/, "", $5); print $5}')
+        outcome=$(echo "$line" | awk -F'|' '{gsub(/^[ \t]+|[ \t]+$/, "", $7); print $7}')
+
+        # Default window to 3 if empty or non-numeric
+        if [[ -z "$window" || ! "$window" =~ ^[0-9]+$ ]]; then
+            window=3
+        fi
+
+        # Check if this is a TRACKING entry (empty outcome)
+        if [[ -z "$outcome" ]]; then
+            tracking_before=$((tracking_before + 1))
+
+            # Check if overdue: (current_round - round) >= window
+            if [[ "$round" =~ ^[0-9]+$ ]] && [ $((current_round - round)) -ge "$window" ]; then
+                # Replace Outcome, Status Date, and Evidence fields using awk
+                # This preserves all other fields (including hypothesis text) exactly
+                local new_line
+                new_line=$(echo "$line" | awk -F'|' -v OFS='|' \
+                    -v date="$today" \
+                    '{$7=" INCONCLUSIVE-EXPIRED "; $8=" "date" "; $9=" auto-expired: evidence never gathered "; print}')
+                echo "$new_line" >> "$tmp_file"
+                expired_count=$((expired_count + 1))
+                echo "  AUTO-EXPIRED: $task_id (round $round, window $window, overdue by $((current_round - round - window)) rounds)"
+                continue
+            fi
+        fi
+
+        # Pass through unchanged
+        echo "$line" >> "$tmp_file"
+    done < "$log_file"
+
+    # Replace original file if any changes were made
+    if [ "$expired_count" -gt 0 ]; then
+        mv "$tmp_file" "$log_file"
+    else
+        rm -f "$tmp_file"
+    fi
+
+    # Instrumentation output for hypothesis tracking
+    local tracking_after=$((tracking_before - expired_count))
+    echo ""
+    echo "=== Hypothesis Auto-Expiry ==="
+    echo "  TRACKING before: $tracking_before"
+    echo "  Expired this run: $expired_count"
+    echo "  TRACKING after:  $tracking_after"
+    echo ""
 }
