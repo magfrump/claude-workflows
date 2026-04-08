@@ -2,7 +2,9 @@
 
 **Purpose:** Resolve hypotheses H-01 through H-07 via direct user testimony, after two automated approaches (usage.jsonl analysis, git-log scanning) failed due to insufficient instrumentation.
 
-**Time estimate:** 10 minutes
+**Quick start:** Run `scripts/run-hypothesis-survey.sh` for an interactive terminal version that collects answers and saves results automatically.
+
+**Time estimate:** 2 minutes (interactive script) or 10 minutes (manual editing)
 **Instructions:** Answer each question briefly. One sentence or a short list is fine. "I don't know" and "N/A" are valid answers. If a question asks for project names, use whatever shorthand you prefer.
 
 **Meta-hypothesis:** Running this questionnaire will move at least 3 of 7 TRACKING hypotheses to CONFIRMED or REFUTED within 1 round.

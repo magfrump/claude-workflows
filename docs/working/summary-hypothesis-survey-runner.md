@@ -1,0 +1,1 @@
+Created `scripts/run-hypothesis-survey.sh` — an interactive terminal script that presents all 12 survey questions from the hypothesis-resolution questionnaire, collects free-text/choice/table answers, and writes timestamped results to `docs/working/survey-results/`; updated the questionnaire with a quick-start pointer to the script.
