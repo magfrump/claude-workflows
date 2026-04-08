@@ -299,6 +299,7 @@ HEADER
 
             HYPOTHESIS=$(jq -r --arg tid "$TASK_ID" '.[] | select(.id==$tid) | .hypothesis' "$PRIOR_TASKS")
             WINDOW=$(jq -r --arg tid "$TASK_ID" '.[] | select(.id==$tid) | .hypothesis_window // 3' "$PRIOR_TASKS")
+            ODDS_RATIO=$(jq -r --arg tid "$TASK_ID" '.[] | select(.id==$tid) | .odds_ratio // "—"' "$PRIOR_TASKS")
 
             echo "  Evaluating hypothesis for: $TASK_ID"
             # Build the prompt with printf to avoid shell expansion of untrusted
@@ -329,7 +330,7 @@ HYPOTHESIS_VERDICT: <CONFIRMED|REFUTED|INCONCLUSIVE> | <one-sentence evidence su
             EVIDENCE_ESCAPED="${EVIDENCE//|/\\|}"
 
             # Append to hypothesis log
-            echo "| $PRIOR_ROUND | $TASK_ID | $HYPOTHESIS_ESCAPED | $WINDOW | $ROUND | $OUTCOME | $EVIDENCE_ESCAPED |" >> "$HYPOTHESIS_LOG"
+            echo "| $PRIOR_ROUND | $TASK_ID | $HYPOTHESIS_ESCAPED | $ODDS_RATIO | $WINDOW | $ROUND | $OUTCOME | | $EVIDENCE_ESCAPED |" >> "$HYPOTHESIS_LOG"
             echo "    $TASK_ID: $OUTCOME"
         done <<< "$ELIGIBLE"
     done
@@ -674,12 +675,22 @@ Output a JSON array to docs/working/tasks-round-$ROUND.json with fields:
 {\"id\": \"short-kebab-case\", \"description\": \"one paragraph task description\",
 \"files_touched\": [\"list of files\"], \"independent\": true/false,
 \"hypothesis\": \"a falsifiable prediction about the impact of this task\",
+\"odds_ratio\": \"N:1 for|against\",
 \"hypothesis_window\": 3, \"retroactive\": false}
 
 The hypothesis field must state a concrete, falsifiable prediction about what
 this change will achieve (e.g. 'Adding schema validation will catch at least
 1 regression in the next 3 rounds'). The hypothesis_window is the number of
 rounds after which the hypothesis should be evaluated (default 3).
+
+The odds_ratio field is MANDATORY for every task. It records your predicted
+probability that the hypothesis will be CONFIRMED, expressed as odds.
+Format: 'N:1 for' (you believe confirmation is N times more likely than
+refutation) or 'N:1 against' (you believe refutation is N times more likely).
+Examples: '3:1 for' means ~75% confident it will be confirmed.
+'2:1 against' means ~33% confident it will be confirmed.
+Use integer ratios only (e.g. 2:1, 3:1, 5:1, 10:1). This data enables
+future calibration analysis — be honest, not optimistic.
 
 IMPORTANT: The hypothesis is defined NOW, at task creation time, so it can
 guide implementation decisions (instrumentation, design choices, metrics).

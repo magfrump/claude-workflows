@@ -1,0 +1,1 @@
+Added mandatory `odds_ratio` field (format: `N:1 for|against`) to the task-generation prompt in `self-improvement.sh` and added an Odds column to `hypothesis-log.md`, so every future hypothesis records a predicted probability at creation time for calibration analysis.
