@@ -1,0 +1,1 @@
+Created docs/working/ideas-backlog.md: a markdown table with 15 seed entries (4 open, 1 in-progress, 1 done, 9 rejected) replacing embedded prompt ideas, with a 30-day staleness rule for lifecycle pruning.
