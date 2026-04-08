@@ -1,0 +1,1 @@
+Created 4 slim workflow companions (rpi, user-testing, codebase-onboarding, pr-prep) in workflows/slim/ — each under 50 lines with 5-7 step checklists, links to full versions, and Last synced dates — to provide low-complexity entry points addressing H-06.
