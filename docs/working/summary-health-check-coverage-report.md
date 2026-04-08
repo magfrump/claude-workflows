@@ -1,0 +1,1 @@
+Added check #9 to health-check.sh: compares skills/*.md against test/skills/*/fixtures/ and emits soft warnings for the 14 of 19 skills currently lacking test fixtures, confirming the hypothesis that at least 3 would be identified.
