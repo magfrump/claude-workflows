@@ -1,0 +1,1 @@
+Added 3 concrete example hypotheses (regression, performance degradation, intermittent failure) to the hypothesize step of bug-diagnosis.md, each showing hypothesis statement, confirming evidence, and refuting evidence.
