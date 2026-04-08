@@ -3,6 +3,9 @@
 # simplification based on evidence from the hypothesis log and optionally
 # the skill-usage-report.
 #
+# Usage:
+#   scripts/flag-removal-candidates.sh [OPTIONS]
+#
 # Evidence sources (per guides/subtraction-checklist.md):
 #   1. Hypothesis log — REFUTED and INCONCLUSIVE-EXPIRED entries
 #   2. Skill usage report — never-invoked items (optional, via --with-usage)

@@ -3,6 +3,9 @@
 # implementation. Gathers evidence from external projects (usage logs, git
 # history, review artifacts) to evaluate hypotheses without building anything.
 #
+# Usage:
+#   scripts/hypothesis-screen.sh [SUBCOMMAND] [OPTIONS]
+#
 # Subcommands:
 #   check            Gather evidence for all TRACKING hypotheses (default)
 #   add "text" "src" Add a new hypothesis to the backlog

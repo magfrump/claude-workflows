@@ -1,6 +1,11 @@
 #!/usr/bin/env bash
 # Summarize failure patterns from round-history.json for use in DD preambles.
 #
+# Usage:
+#   scripts/failure-analysis.sh
+#
+# No arguments or options.
+#
 # Reads docs/working/round-history.json and outputs:
 #   1. Which validation gates reject most often
 #   2. Which task types (by id prefix) fail most

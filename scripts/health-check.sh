@@ -3,6 +3,11 @@
 # Validates repo integrity by globbing for skills, workflows, fixtures, and
 # shell scripts rather than hardcoding file lists.
 #
+# Usage:
+#   scripts/health-check.sh
+#
+# No arguments or options. Exits 0 if all checks pass, non-zero otherwise.
+#
 # Checks:
 #   1. Skill YAML frontmatter parses correctly (name + description present)
 #   2. Workflow cross-references in CLAUDE.md/AGENTS.md/GEMINI.md resolve

@@ -3,6 +3,9 @@
 # recency, and which skills/workflows have never been invoked.
 # Output: ranked table to stdout.
 #
+# Usage:
+#   scripts/skill-usage-report.sh [OPTIONS]
+#
 # Options:
 #   --project=NAME   Filter to a single project (default: all projects)
 #   --markdown        Output as markdown summary report

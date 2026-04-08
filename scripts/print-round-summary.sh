@@ -1,7 +1,10 @@
 #!/usr/bin/env bash
 # Print a human-readable table of task verdicts from round-history.json.
 #
-# No arguments, no options. Reads docs/working/round-history.json and prints
+# Usage:
+#   scripts/print-round-summary.sh
+#
+# No arguments or options. Reads docs/working/round-history.json and prints
 # a per-round table of task ID, verdict, and first-failing gate to stdout.
 #
 # Environment variable override (for testing):

@@ -1,4 +1,41 @@
 #!/bin/bash
+# Automated self-improvement loop for the claude-workflows repo.
+# Runs multiple rounds of: generate ideas → select tasks → implement in
+# worktrees → validate → merge approved changes. Stops when ideas are
+# exhausted or problem convergence is detected.
+#
+# Usage:
+#   scripts/self-improvement.sh [--seed-file FILE]
+#
+# Options:
+#   --seed-file FILE   Provide a file of seed ideas for the first round's
+#                      divergent-design brainstorm. The file contents are
+#                      injected into the idea-generation prompt as starting
+#                      points (they count toward the idea total). Only used
+#                      in round 1; subsequent rounds build on prior results.
+#
+# Environment variables:
+#   CONVERGENCE_THRESHOLD  Percent overlap (0-100) of diagnosed problems
+#                          with prior rounds that triggers early stop
+#                          (default: 70)
+#
+# Configuration (hardcoded near top of main block):
+#   MAX_ROUNDS=5           Maximum number of improvement rounds
+#   WORKTREE_BASE=~/wt     Prefix for git worktree directories
+#
+# Prerequisites:
+#   - jq
+#   - claude CLI
+#   - git worktree support
+#
+# Outputs:
+#   docs/working/feature-ideas-round-N.md   DD output per round
+#   docs/working/tasks-round-N.json         Selected tasks per round
+#   docs/working/round-N-report.json        Structured log per round
+#   docs/working/round-history.json         Cumulative round history
+#   docs/working/completed-tasks.md         Running list of approved work
+#   docs/working/hypothesis-log.md          Hypothesis tracking table
+
 set -euo pipefail
 
 # --- JSON logging helpers ---
@@ -540,6 +577,54 @@ as 'already proposed'. Only ideas listed as APPROVED are off-limits."
     fi
 
     # -------------------------------------------------------
+    # Step 0c: Gather hypothesis screening context
+    # -------------------------------------------------------
+    SCREENING_CONTEXT=""
+    SCREENING_SCRIPT="$REPO_DIR/scripts/hypothesis-screen.sh"
+    if [ -x "$SCREENING_SCRIPT" ]; then
+        echo "Gathering hypothesis screening context..."
+
+        # Get the full report for context injection
+        SCREENING_REPORT=$("$SCREENING_SCRIPT" report --markdown 2>/dev/null) || true
+
+        # Extract CONFIRMED hypothesis texts as seed candidates
+        CONFIRMED_SEEDS=""
+        if [ -n "$SCREENING_REPORT" ]; then
+            # Parse CONFIRMED section: lines matching "- **H-NN**: text"
+            CONFIRMED_SEEDS=$(echo "$SCREENING_REPORT" \
+                | sed -n '/^## CONFIRMED$/,/^## /{/^- \*\*/p}' \
+                | sed 's/^- \*\*H-[0-9]*\*\*: //' || true)
+        fi
+
+        if [ -n "$SCREENING_REPORT" ]; then
+            SCREENING_CONTEXT="
+## Hypothesis screening report — external evidence about what's valuable
+
+The following report summarizes hypotheses about workflow improvements,
+evaluated against external project usage, git history, and review artifacts.
+Use this to prioritize ideas that have external evidence of demand and
+avoid ideas where evidence suggests low value.
+
+${SCREENING_REPORT}
+"
+            # Append CONFIRMED hypotheses as seed candidates
+            if [ -n "$CONFIRMED_SEEDS" ]; then
+                SCREENING_CONTEXT="${SCREENING_CONTEXT}
+### Confirmed hypotheses — strong candidates for implementation
+
+These hypotheses have external evidence supporting them. Consider turning
+them into concrete improvement tasks:
+
+${CONFIRMED_SEEDS}
+"
+            fi
+            echo "  Screening context gathered (report + $(echo "$CONFIRMED_SEEDS" | grep -c . || echo 0) confirmed seeds)"
+        else
+            echo "  No screening data available"
+        fi
+    fi
+
+    # -------------------------------------------------------
     # Step 1: Generate ideas
     # -------------------------------------------------------
 
@@ -563,7 +648,7 @@ ${SEED_CONTENT}
 
 Generate feature improvement ideas for the workflows in this repo.
 Review docs/working/completed-tasks.md for what has already been done.
-${PRIOR_CONTEXT}${SEED_CONTEXT}
+${PRIOR_CONTEXT}${SEED_CONTEXT}${SCREENING_CONTEXT}
 
 If you cannot generate at least 3 genuinely new and valuable ideas that
 are not already completed or in progress, write only the word DONE on the
