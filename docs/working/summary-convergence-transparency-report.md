@@ -1,0 +1,1 @@
+Added a transparency report (Step 1c) after the convergence gate in self-improvement.sh that categorizes each diagnosed problem as recurring or new, displays the numeric overlap score, and logs details to the validation file — enabling hypothesis evaluation of whether visible convergence reasoning leads to earlier loop termination or problem reframing.

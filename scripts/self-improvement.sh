@@ -657,6 +657,93 @@ CONVERGENCE_EOF
         fi
     fi
 
+    # -------------------------------------------------------
+    # Step 1c: Convergence transparency report
+    # -------------------------------------------------------
+    # Output-only: makes convergence reasoning visible without changing
+    # the gate decision. Lists recurring vs new problems and the score.
+    # Hypothesis: visible convergence details enable early termination or
+    # problem reframing that wouldn't happen with the opaque gate.
+    if [ "$PROBLEM_COUNT" -gt 0 ]; then
+        echo ""
+        echo "=== Convergence Transparency Report (Round $ROUND) ==="
+
+        if [ -n "$PRIOR_PROBLEMS" ]; then
+            # Ask Claude to categorize each current problem
+            REPORT_PROMPT="You are classifying problems for a convergence transparency report.
+
+CURRENT ROUND PROBLEMS:
+${PROBLEMS_JSON}
+
+ALL PRIOR ROUND PROBLEMS (one per line):
+${PRIOR_PROBLEMS}
+
+For each current problem, decide if it is RECURRING (semantically equivalent to a prior problem) or NEW (not seen before).
+
+Output ONLY valid JSON in this exact format, nothing else:
+{\"recurring\": [\"problem text\", ...], \"new\": [\"problem text\", ...]}
+
+Every current problem must appear in exactly one list."
+
+            REPORT_JSON=$(claude -p "$REPORT_PROMPT" 2>/dev/null | sed 's/^[[:space:]]*//' | grep -E '^\{' | head -1) || true
+
+            if echo "$REPORT_JSON" | jq empty 2>/dev/null; then
+                RECURRING_COUNT=$(echo "$REPORT_JSON" | jq '.recurring | length')
+                NEW_COUNT=$(echo "$REPORT_JSON" | jq '.new | length')
+
+                echo "  Score: ${OVERLAP_RESULT:-N/A}% overlap (threshold: ${CONVERGENCE_THRESHOLD}%)"
+                echo "  Problems: $PROBLEM_COUNT total | $RECURRING_COUNT recurring | $NEW_COUNT new"
+                echo ""
+
+                if [ "$RECURRING_COUNT" -gt 0 ]; then
+                    echo "  RECURRING (seen in prior rounds):"
+                    echo "$REPORT_JSON" | jq -r '.recurring[]' | while IFS= read -r prob; do
+                        echo "    - $prob"
+                    done
+                fi
+
+                if [ "$NEW_COUNT" -gt 0 ]; then
+                    echo "  NEW (not seen before):"
+                    echo "$REPORT_JSON" | jq -r '.new[]' | while IFS= read -r prob; do
+                        echo "    - $prob"
+                    done
+                fi
+
+                # Log to validation file for hypothesis tracking
+                {
+                    echo "[round-$ROUND] CONVERGENCE-REPORT: score=${OVERLAP_RESULT:-N/A}% recurring=$RECURRING_COUNT new=$NEW_COUNT"
+                    echo "$REPORT_JSON" | jq -r '.recurring[]' | while IFS= read -r prob; do
+                        echo "  recurring: $prob"
+                    done
+                    echo "$REPORT_JSON" | jq -r '.new[]' | while IFS= read -r prob; do
+                        echo "  new: $prob"
+                    done
+                } >> "$WORKING_DIR/validation-round-$ROUND.log"
+            else
+                echo "  Score: ${OVERLAP_RESULT:-N/A}% overlap (threshold: ${CONVERGENCE_THRESHOLD}%)"
+                echo "  (Could not categorize problems — raw list below)"
+                echo "$PROBLEMS_JSON" | jq -r '.[]' | while IFS= read -r prob; do
+                    echo "    - $prob"
+                done
+            fi
+        else
+            # No prior problems to compare against — all problems are new
+            echo "  Score: N/A (no prior problems to compare)"
+            echo "  Problems: $PROBLEM_COUNT total | 0 recurring | $PROBLEM_COUNT new"
+            echo ""
+            echo "  ALL NEW (first round with problems):"
+            echo "$PROBLEMS_JSON" | jq -r '.[]' | while IFS= read -r prob; do
+                echo "    - $prob"
+            done
+
+            echo "[round-$ROUND] CONVERGENCE-REPORT: score=N/A recurring=0 new=$PROBLEM_COUNT" \
+                >> "$WORKING_DIR/validation-round-$ROUND.log"
+        fi
+
+        echo "=== End Convergence Report ==="
+        echo ""
+    fi
+
     # Problem history is updated after validation (step 4b) so that only
     # problems addressed by approved tasks are recorded.
 
