@@ -5,6 +5,7 @@
 # Functions:
 #   validate_task_json   — Schema-validate a tasks JSON file
 #   check_convergence_threshold — Compare overlap % against a threshold
+#   print_hypothesis_summary — Print hypothesis status dashboard to stdout
 #   get_eligible_hypotheses — Find tasks whose hypothesis window has elapsed
 
 # Guard against direct execution
@@ -110,6 +111,135 @@ check_convergence_threshold() {
     else
         return 1
     fi
+}
+
+# --- Hypothesis summary dashboard ---
+# Reads docs/working/hypothesis-log.md, parses hypothesis entries, counts by
+# status, identifies hypotheses approaching their evaluation window, and prints
+# a formatted summary table to stdout.
+# Args: $1 = current_round (integer, optional — derived from log if omitted)
+#       $2 = hypothesis_log path (optional — defaults to docs/working/hypothesis-log.md)
+# Stdout: formatted summary table
+# Returns 1 if the hypothesis log is missing or has no entries.
+print_hypothesis_summary() {
+    local current_round="${1:-}"
+    local repo_root
+    repo_root="$(cd "$(dirname "${BASH_SOURCE[0]}")/../.." && pwd)"
+    local log_file="${2:-$repo_root/docs/working/hypothesis-log.md}"
+
+    if [ ! -f "$log_file" ]; then
+        echo "No hypothesis log found at $log_file" >&2
+        return 1
+    fi
+
+    # Parse markdown table rows (skip header and separator lines)
+    # Fields: Round | Task ID | Hypothesis | Window | Checked at Round | Outcome | Status Date | Evidence
+    local entries=()
+    local line_num=0
+    while IFS= read -r line; do
+        line_num=$((line_num + 1))
+        # Skip non-table lines and header/separator rows
+        [[ "$line" != \|* ]] && continue
+        # Skip header row (contains "Round") and separator row (contains "---")
+        echo "$line" | grep -qE '^\|\s*(Round|----)' && continue
+
+        entries+=("$line")
+    done < "$log_file"
+
+    if [ ${#entries[@]} -eq 0 ]; then
+        echo "No hypothesis entries found." >&2
+        return 1
+    fi
+
+    # Count by status
+    local confirmed=0 refuted=0 inconclusive=0 tracking=0
+    local -a tracking_entries=()
+
+    for entry in "${entries[@]}"; do
+        # Extract fields by splitting on |
+        local round task_id window outcome
+        round=$(echo "$entry" | awk -F'|' '{gsub(/^[ \t]+|[ \t]+$/, "", $2); print $2}')
+        task_id=$(echo "$entry" | awk -F'|' '{gsub(/^[ \t]+|[ \t]+$/, "", $3); print $3}')
+        window=$(echo "$entry" | awk -F'|' '{gsub(/^[ \t]+|[ \t]+$/, "", $5); print $5}')
+        outcome=$(echo "$entry" | awk -F'|' '{gsub(/^[ \t]+|[ \t]+$/, "", $7); print $7}')
+
+        # Default window to 3 if empty
+        if [[ -z "$window" || ! "$window" =~ ^[0-9]+$ ]]; then
+            window=3
+        fi
+
+        case "$outcome" in
+            CONFIRMED) confirmed=$((confirmed + 1)) ;;
+            REFUTED) refuted=$((refuted + 1)) ;;
+            INCONCLUSIVE-EXPIRED) inconclusive=$((inconclusive + 1)) ;;
+            *)
+                tracking=$((tracking + 1))
+                tracking_entries+=("$round|$task_id|$window")
+                ;;
+        esac
+    done
+
+    local total=$((confirmed + refuted + inconclusive + tracking))
+
+    # Determine current round if not provided: use max round from log
+    if [[ -z "$current_round" || ! "$current_round" =~ ^[0-9]+$ ]]; then
+        current_round=0
+        for entry in "${entries[@]}"; do
+            local r
+            r=$(echo "$entry" | awk -F'|' '{gsub(/^[ \t]+|[ \t]+$/, "", $2); print $2}')
+            if [[ "$r" =~ ^[0-9]+$ ]] && [ "$r" -gt "$current_round" ]; then
+                current_round=$r
+            fi
+        done
+    fi
+
+    # Print summary
+    echo ""
+    echo "=== Hypothesis Dashboard ==="
+    echo ""
+    printf "%-24s %s\n" "STATUS" "COUNT"
+    printf "%-24s %s\n" "------------------------" "-----"
+    printf "%-24s %d\n" "CONFIRMED" "$confirmed"
+    printf "%-24s %d\n" "REFUTED" "$refuted"
+    printf "%-24s %d\n" "INCONCLUSIVE-EXPIRED" "$inconclusive"
+    printf "%-24s %d\n" "TRACKING" "$tracking"
+    printf "%-24s %s\n" "------------------------" "-----"
+    printf "%-24s %d\n" "TOTAL" "$total"
+
+    # Identify hypotheses approaching or past their evaluation window
+    if [ ${#tracking_entries[@]} -gt 0 ]; then
+        echo ""
+        echo "Active hypotheses:"
+        printf "  %-30s %-8s %-8s %s\n" "TASK ID" "ROUND" "WINDOW" "EVAL STATUS"
+        printf "  %-30s %-8s %-8s %s\n" "------------------------------" "--------" "--------" "-----------"
+        for te in "${tracking_entries[@]}"; do
+            local r tid w eval_round remaining eval_status
+            r=$(echo "$te" | cut -d'|' -f1)
+            tid=$(echo "$te" | cut -d'|' -f2)
+            w=$(echo "$te" | cut -d'|' -f3)
+
+            if [[ "$r" =~ ^[0-9]+$ ]]; then
+                eval_round=$((r + w))
+                remaining=$((eval_round - current_round))
+            else
+                eval_round="?"
+                remaining="?"
+            fi
+
+            if [[ "$remaining" == "?" ]]; then
+                eval_status="unknown"
+            elif [ "$remaining" -le 0 ]; then
+                eval_status="OVERDUE (due round $eval_round)"
+            elif [ "$remaining" -eq 1 ]; then
+                eval_status="DUE NEXT ROUND ($eval_round)"
+            else
+                eval_status="due round $eval_round ($remaining rounds)"
+            fi
+
+            printf "  %-30s %-8s %-8s %s\n" "$tid" "$r" "$w" "$eval_status"
+        done
+    fi
+    echo ""
 }
 
 # --- Hypothesis window eligibility check ---

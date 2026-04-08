@@ -1,0 +1,1 @@
+Added print_hypothesis_summary to si-functions.sh that parses hypothesis-log.md, counts by status, flags approaching/overdue evaluations, and integrated it as an optional dashboard in print-round-summary.sh (suppressible via SKIP_HYPOTHESIS_DASHBOARD=1).

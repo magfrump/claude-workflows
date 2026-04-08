@@ -6,9 +6,12 @@
 #
 # No arguments or options. Reads docs/working/round-history.json and prints
 # a per-round table of task ID, verdict, and first-failing gate to stdout.
+# Also prints a hypothesis dashboard summary if docs/working/hypothesis-log.md exists.
 #
 # Environment variable override (for testing):
-#   ROUND_HISTORY — path to the JSON file (default: docs/working/round-history.json)
+#   ROUND_HISTORY  — path to the JSON file (default: docs/working/round-history.json)
+#   HYPOTHESIS_LOG — path to hypothesis log (default: docs/working/hypothesis-log.md)
+#   SKIP_HYPOTHESIS_DASHBOARD — set to 1 to suppress the hypothesis dashboard
 
 set -euo pipefail
 
@@ -54,3 +57,15 @@ jq -r '
   ),
   ""
 ' "$ROUND_HISTORY"
+
+# --- Optional hypothesis dashboard ---
+if [ "${SKIP_HYPOTHESIS_DASHBOARD:-0}" != "1" ]; then
+  # Source si-functions.sh for print_hypothesis_summary
+  # shellcheck source=lib/si-functions.sh
+  source "$SCRIPT_DIR/lib/si-functions.sh"
+
+  # Derive current round from round-history.json
+  current_round=$(jq 'map(.round) | max // 0' "$ROUND_HISTORY" 2>/dev/null || echo "")
+
+  print_hypothesis_summary "$current_round" "${HYPOTHESIS_LOG:-}" || true
+fi
