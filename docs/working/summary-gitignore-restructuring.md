@@ -1,0 +1,1 @@
+Created rounds/, reports/, scratch/ subdirectories in docs/working/; moved generated JSON/log output paths in self-improvement.sh to these subdirs; updated .gitignore to ignore *.json and *.log in subdirs while tracking curated markdown; documented scope exceptions for 5 other scripts needing path updates.

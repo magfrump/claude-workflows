@@ -29,12 +29,14 @@
 #   - git worktree support
 #
 # Outputs:
-#   docs/working/feature-ideas-round-N.md   DD output per round
-#   docs/working/tasks-round-N.json         Selected tasks per round
-#   docs/working/round-N-report.json        Structured log per round
-#   docs/working/round-history.json         Cumulative round history
-#   docs/working/completed-tasks.md         Running list of approved work
-#   docs/working/hypothesis-log.md          Hypothesis tracking table
+#   docs/working/rounds/feature-ideas-round-N.md   DD output per round
+#   docs/working/rounds/tasks-round-N.json         Selected tasks per round
+#   docs/working/rounds/round-N-report.json        Structured log per round
+#   docs/working/rounds/validation-round-N.log     Validation log per round
+#   docs/working/reports/round-history.json         Cumulative round history
+#   docs/working/reports/problem-history.json       Convergence tracking
+#   docs/working/completed-tasks.md                 Running list of approved work
+#   docs/working/hypothesis-log.md                  Hypothesis tracking table
 
 set -euo pipefail
 
@@ -90,7 +92,7 @@ record_gate_detail() {
 finalize_round_log() {
     local round=$1
     # Write per-round report
-    cp "$ROUND_LOG_FILE" "$WORKING_DIR/round-${round}-report.json"
+    cp "$ROUND_LOG_FILE" "$ROUNDS_DIR/round-${round}-report.json"
 
     # Append to round-history.json
     local tmp
@@ -358,15 +360,17 @@ REPO_DIR=~/claude-workflows
 WORKTREE_BASE=~/wt
 MAX_ROUNDS=5
 WORKING_DIR="$REPO_DIR/docs/working"
-ROUND_HISTORY="$WORKING_DIR/round-history.json"
+ROUNDS_DIR="$WORKING_DIR/rounds"
+REPORTS_DIR="$WORKING_DIR/reports"
+ROUND_HISTORY="$REPORTS_DIR/round-history.json"
 
 # Check required dependencies
 command -v jq &>/dev/null || { echo "Error: jq is required but not found"; exit 1; }
 
 CONVERGENCE_THRESHOLD=${CONVERGENCE_THRESHOLD:-70}  # percent overlap to trigger convergence
-HISTORY_FILE="$REPO_DIR/docs/working/problem-history.json"
+HISTORY_FILE="$REPORTS_DIR/problem-history.json"
 
-mkdir -p "$WORKING_DIR"
+mkdir -p "$WORKING_DIR" "$ROUNDS_DIR" "$REPORTS_DIR"
 touch "$WORKING_DIR/completed-tasks.md"
 
 # Initialize round-history.json if it doesn't exist
@@ -400,7 +404,7 @@ HEADER
     fi
 
     for PRIOR_ROUND in $(seq 1 $((ROUND - 1))); do
-        PRIOR_TASKS="$WORKING_DIR/tasks-round-$PRIOR_ROUND.json"
+        PRIOR_TASKS="$ROUNDS_DIR/tasks-round-$PRIOR_ROUND.json"
         [ -f "$PRIOR_TASKS" ] || continue
 
         # Get tasks that have a hypothesis, are not retroactive, and whose window has elapsed
@@ -461,8 +465,8 @@ HYPOTHESIS_VERDICT: <CONFIRMED|REFUTED|INCONCLUSIVE> | <one-sentence evidence su
     PRIOR_CONTEXT=""
     if [ "$ROUND" -gt 1 ]; then
         PREV=$((ROUND - 1))
-        PREV_TASKS_FILE="$WORKING_DIR/tasks-round-$PREV.json"
-        PREV_IDEAS_FILE="$WORKING_DIR/feature-ideas-round-$PREV.md"
+        PREV_TASKS_FILE="$ROUNDS_DIR/tasks-round-$PREV.json"
+        PREV_IDEAS_FILE="$ROUNDS_DIR/feature-ideas-round-$PREV.md"
 
         # Categorize prior-round tasks by validation verdict
         APPROVED_LIST=""
@@ -492,7 +496,7 @@ HYPOTHESIS_VERDICT: <CONFIRMED|REFUTED|INCONCLUSIVE> | <one-sentence evidence su
 
         # --- DD Output Format Contract: Survivors Section ---
         # Parses the "### Survivors" heading from the DD output file
-        # (docs/working/feature-ideas-round-N.md).
+        # (docs/working/rounds/feature-ideas-round-N.md).
         #
         # Expected DD output structure (from divergent-design.md step 4):
         #   ### Survivors
@@ -656,10 +660,10 @@ first line of your output and stop. Note: re-attempts of rejected ideas
 and previously unattempted survivors count as genuinely new ideas.
 
 Otherwise, write the full divergent design output to
-docs/working/feature-ideas-round-$ROUND.md"
+docs/working/rounds/feature-ideas-round-$ROUND.md"
 
     # Check for termination
-    IDEAS_FILE="$WORKING_DIR/feature-ideas-round-$ROUND.md"
+    IDEAS_FILE="$ROUNDS_DIR/feature-ideas-round-$ROUND.md"
     if [ ! -f "$IDEAS_FILE" ] || head -1 "$IDEAS_FILE" | grep -qi "DONE"; then
         echo "No more good ideas. Stopping after $((ROUND - 1)) rounds."
         update_round_log '.ideas' '{"generated": false, "count": 0}'
@@ -670,7 +674,7 @@ docs/working/feature-ideas-round-$ROUND.md"
 
     # Count ideas from the ideas file (lines starting with a numbered list pattern)
     IDEA_COUNT=$(grep -cE '^\s*[0-9]+\.' "$IDEAS_FILE" 2>/dev/null || echo 0)
-    IDEAS_JSON=$(jq -n --argjson count "$IDEA_COUNT" --arg file "feature-ideas-round-$ROUND.md" \
+    IDEAS_JSON=$(jq -n --argjson count "$IDEA_COUNT" --arg file "rounds/feature-ideas-round-$ROUND.md" \
         '{generated: true, count: $count, file: $file}')
     update_round_log '.ideas' "$IDEAS_JSON"
 
@@ -708,7 +712,7 @@ docs/working/feature-ideas-round-$ROUND.md"
     # format, Claude may return [], skipping convergence detection for
     # that round.
     # ---
-    PROBLEMS_JSON=$(claude -p "Read docs/working/feature-ideas-round-$ROUND.md.
+    PROBLEMS_JSON=$(claude -p "Read docs/working/rounds/feature-ideas-round-$ROUND.md.
 
 Find the Diagnose section (usually '## 2. Diagnose' or similar).
 Extract each diagnosed problem into a short one-line summary (just the core issue, no elaboration).
@@ -771,7 +775,7 @@ CONVERGENCE_EOF
         if [ -n "$OVERLAP_RESULT" ] && [ "$OVERLAP_RESULT" -ge "$CONVERGENCE_THRESHOLD" ]; then
             echo "Convergence detected: ${OVERLAP_RESULT}% of problems overlap with prior rounds (threshold: ${CONVERGENCE_THRESHOLD}%)."
             echo "Stopping before round $ROUND implementation ($((ROUND - 1)) rounds completed)."
-            echo "[round-$ROUND] CONVERGED: ${OVERLAP_RESULT}% problem overlap" >> "$WORKING_DIR/validation-round-$ROUND.log"
+            echo "[round-$ROUND] CONVERGED: ${OVERLAP_RESULT}% problem overlap" >> "$ROUNDS_DIR/validation-round-$ROUND.log"
             break
         elif [ -n "$OVERLAP_RESULT" ]; then
             echo "  Overlap: ${OVERLAP_RESULT}% (threshold: ${CONVERGENCE_THRESHOLD}%), continuing."
@@ -785,13 +789,13 @@ CONVERGENCE_EOF
     # Step 2: Filter into independent tasks
     # -------------------------------------------------------
     echo "Filtering ideas into tasks..."
-    claude -p "Read docs/working/feature-ideas-round-$ROUND.md.
+    claude -p "Read docs/working/rounds/feature-ideas-round-$ROUND.md.
 
 For each surviving idea from the tradeoff matrix, assess whether it can be
 implemented independently in a single Claude Code session (~10-15 minutes
 of autonomous work).
 
-Output a JSON array to docs/working/tasks-round-$ROUND.json with fields:
+Output a JSON array to docs/working/rounds/tasks-round-$ROUND.json with fields:
 {\"id\": \"short-kebab-case\", \"description\": \"one paragraph task description\",
 \"files_touched\": [\"list of files\"], \"independent\": true/false,
 \"hypothesis\": \"a falsifiable prediction about the impact of this task\",
@@ -810,7 +814,7 @@ Set \"retroactive\": false for all new tasks (this is the default). Only use
 Only include tasks where independent is true. Discard tasks that depend on
 other tasks in this round."
 
-    TASKS_FILE="$WORKING_DIR/tasks-round-$ROUND.json"
+    TASKS_FILE="$ROUNDS_DIR/tasks-round-$ROUND.json"
     if [ ! -f "$TASKS_FILE" ]; then
         echo "No tasks file generated. Skipping round."
         update_round_log '.tasks' '{"count": 0, "ids": []}'
@@ -845,7 +849,7 @@ other tasks in this round."
 
     if [ "$REJECTED_SCHEMA_COUNT" -gt 0 ]; then
         echo "  Schema validation: $REJECTED_SCHEMA_COUNT of $TASK_COUNT tasks rejected"
-        echo "[round-$ROUND] SCHEMA: $REJECTED_SCHEMA_COUNT rejected, $VALID_COUNT valid" >> "$WORKING_DIR/validation-round-$ROUND.log"
+        echo "[round-$ROUND] SCHEMA: $REJECTED_SCHEMA_COUNT rejected, $VALID_COUNT valid" >> "$ROUNDS_DIR/validation-round-$ROUND.log"
 
         # Record schema gate results with failure details
         for TASK_ID in $TASK_IDS; do
@@ -909,7 +913,7 @@ other tasks in this round."
 
         # Check prior round reports for failed attempts of the same task ID
         PRIOR_FAILURE_BLOCK=""
-        for PRIOR_REPORT in "$WORKING_DIR"/round-*-report.json; do
+        for PRIOR_REPORT in "$ROUNDS_DIR"/round-*-report.json; do
             [ -f "$PRIOR_REPORT" ] || continue
             # Skip the current round's report (it doesn't exist yet, but guard anyway)
             PRIOR_FAILURE_REASON=$(jq -r --arg tid "$TASK_ID" '
@@ -1168,7 +1172,7 @@ Count only the automated assessment scores (Testability investment, Trigger clar
                     WEAK_COUNT=$(echo "$EVAL_OUTPUT" | grep -oP 'SELF_EVAL_RESULT: \K\d+' || echo "")
                     if [ -z "$WEAK_COUNT" ]; then
                         echo "    Warning: self-eval did not produce a parseable result for $SKILL_FILE"
-                        echo "[$TASK_ID] WARNING: self-eval unparseable for $SKILL_FILE" >> "$WORKING_DIR/validation-round-$ROUND.log"
+                        echo "[$TASK_ID] WARNING: self-eval unparseable for $SKILL_FILE" >> "$ROUNDS_DIR/validation-round-$ROUND.log"
                     elif [ "$WEAK_COUNT" -ge 2 ] && [ "$WEAK_COUNT" -gt "$BASELINE_WEAK" ]; then
                         REJECT_REASON="self-eval: $SKILL_FILE has $WEAK_COUNT Weak automated scores (baseline: $BASELINE_WEAK)"
                         # Parse which dimensions scored Weak from the eval table output
@@ -1201,7 +1205,7 @@ Count only the automated assessment scores (Testability investment, Trigger clar
         # --- Verdict ---
         if [ -n "$REJECT_REASON" ]; then
             echo "    REJECTED: $REJECT_REASON"
-            echo "[$TASK_ID] REJECTED: $REJECT_REASON" >> "$WORKING_DIR/validation-round-$ROUND.log"
+            echo "[$TASK_ID] REJECTED: $REJECT_REASON" >> "$ROUNDS_DIR/validation-round-$ROUND.log"
             record_gate "$TASK_ID" "verdict" "rejected"
             record_gate_detail "$TASK_ID" "verdict" "$(jq -n --arg reason "$REJECT_REASON" '{reject_reason: $reason}')"
             # Clean up rejected worktree and branch
@@ -1209,7 +1213,7 @@ Count only the automated assessment scores (Testability investment, Trigger clar
             git branch -D "$BRANCH" 2>/dev/null || true
         else
             echo "    APPROVED"
-            echo "[$TASK_ID] APPROVED" >> "$WORKING_DIR/validation-round-$ROUND.log"
+            echo "[$TASK_ID] APPROVED" >> "$ROUNDS_DIR/validation-round-$ROUND.log"
             record_gate "$TASK_ID" "verdict" "approved"
             APPROVED_TASKS="${APPROVED_TASKS:+$APPROVED_TASKS }$TASK_ID"
         fi
@@ -1240,10 +1244,10 @@ ${PROBLEMS_JSON}
 APPROVED TASK IDS:
 ${APPROVED_TASKS}
 
-TASK DESCRIPTIONS (from docs/working/tasks-round-${ROUND}.json):
+TASK DESCRIPTIONS (from docs/working/rounds/tasks-round-${ROUND}.json):
 ${TASK_DESCS}
 
-FEATURE IDEAS FILE: docs/working/feature-ideas-round-${ROUND}.md
+FEATURE IDEAS FILE: docs/working/rounds/feature-ideas-round-${ROUND}.md
 
 "
     read -r -d '' _SOLVED_BODY <<'SOLVED_EOF' || true
@@ -1309,7 +1313,7 @@ Then git add the resolved files and git commit to complete the merge."
     done
 
     # Print human-readable round summary after merges
-    print_round_summary "$ROUND" "$WORKING_DIR/validation-round-$ROUND.log"
+    print_round_summary "$ROUND" "$ROUNDS_DIR/validation-round-$ROUND.log"
 
     # -------------------------------------------------------
     # Step 6: Update completed tasks log
@@ -1341,7 +1345,7 @@ Then git add the resolved files and git commit to complete the merge."
     update_round_log '.summary' "$SUMMARY_JSON"
     finalize_round_log "$ROUND"
 
-    echo "Round $ROUND complete. Report: $WORKING_DIR/round-${ROUND}-report.json"
+    echo "Round $ROUND complete. Report: $ROUNDS_DIR/round-${ROUND}-report.json"
     echo ""
 done
 

@@ -5,5 +5,17 @@ test/skills/code-fact-check/output/
 # Process artifacts from self-improvement rounds (kept locally for reference)
 docs/working/archive/
 
+# Round-specific generated files (JSON task lists, report logs)
+docs/working/rounds/*.json
+docs/working/rounds/*.log
+
+# Cumulative report JSON (round-history, problem-history)
+docs/working/reports/*.json
+docs/working/reports/*.log
+
+# Scratch/ad-hoc files (not curated)
+docs/working/scratch/*.json
+docs/working/scratch/*.log
+
 # Personal notes
 ideas.txt
