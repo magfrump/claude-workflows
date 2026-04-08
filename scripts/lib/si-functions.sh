@@ -9,6 +9,7 @@
 #   evaluate_hypotheses  — Evaluate all eligible hypotheses from prior rounds
 #   get_eligible_hypotheses — Find tasks whose hypothesis window has elapsed
 #   auto_expire_hypotheses — Mark overdue TRACKING hypotheses as INCONCLUSIVE-EXPIRED
+#   get_hypothesis_quality_guide — Return prompt text steering hypothesis quality
 
 # Guard against direct execution
 if [[ "${BASH_SOURCE[0]}" == "${0}" ]]; then
@@ -471,4 +472,74 @@ auto_expire_hypotheses() {
     echo "  Expired this run: $expired_count"
     echo "  TRACKING after:  $tracking_after"
     echo ""
+}
+
+# --- Hypothesis quality guide ---
+# Returns prompt text that steers hypothesis generation toward system-internal
+# behaviors (gate pass rates, code metrics, script outputs) and away from
+# external-actor behaviors (users running tools, workflows being consulted).
+#
+# Designed to be injected into the task-creation prompt context in
+# self-improvement.sh, immediately after the hypothesis field instructions.
+#
+# Args: none
+# Stdout: multi-line prompt text for hypothesis quality guidance
+# Returns 0 always.
+get_hypothesis_quality_guide() {
+    cat <<'GUIDE'
+
+## Hypothesis quality checklist
+
+Historical data shows that **system-internal hypotheses confirm at ~70%** while
+**external-actor hypotheses confirm at ~15%**. Use the checklist below to write
+hypotheses that are measurable, controllable, and likely to yield clear verdicts.
+
+### What makes a GOOD hypothesis (target these)
+
+A good hypothesis predicts something about **system-internal behavior** — outputs,
+metrics, and artifacts that the self-improvement loop itself produces or controls.
+
+- **Gate pass rates**: "Adding schema validation will reduce gate failures from
+  X to Y in the next 3 rounds."
+- **Code/script metrics**: "Extracting this function will reduce the line count
+  of self-improvement.sh by at least 30 lines."
+- **Generated artifacts**: "The new linter will flag at least 1 issue per round
+  in generated task files."
+- **Log/output changes**: "After this change, round-report.json will include
+  field X, enabling downstream analysis Y."
+- **Test outcomes**: "The new test will catch regressions in function X — at
+  least 1 failure prevented in 3 rounds."
+
+Pattern: the hypothesis references something the loop **writes, counts, or checks**
+and the verdict can be determined by reading repo state, git log, or validation
+output.
+
+### What makes a BAD hypothesis (avoid these)
+
+A bad hypothesis predicts something about **external actors** — human users,
+other projects, or workflows being consulted outside the loop.
+
+- "Users will find this workflow easier to follow."
+- "This change will be adopted by external projects."
+- "Developers will consult this guide when making decisions."
+- "The new skill will be invoked more frequently."
+- "This documentation will reduce onboarding time."
+
+Pattern: the hypothesis requires observing **someone else's behavior** to confirm,
+which the loop cannot measure.
+
+### Self-check before finalizing
+
+For each hypothesis, verify:
+1. **Observable in-repo?** Can the outcome be determined from files, git log,
+   or script output in this repository — without asking anyone?
+2. **Falsifiable in-window?** Will there be enough rounds/data within the
+   hypothesis_window to see a clear CONFIRMED or REFUTED signal?
+3. **Specific threshold?** Does it state a number, count, or concrete condition
+   — not just "improvement" or "better"?
+4. **Controlled by the loop?** Does the predicted outcome depend on code this
+   loop writes and runs, not on external adoption or human behavior?
+
+If any answer is NO, rewrite the hypothesis to target a system-internal behavior.
+GUIDE
 }

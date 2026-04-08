@@ -1,0 +1,1 @@
+Added `get_hypothesis_quality_guide()` to `scripts/lib/si-functions.sh` — a prompt-injection function that outputs a hypothesis quality checklist steering toward system-internal behaviors (~70% confirm rate) and away from external-actor behaviors (~15% confirm rate), with concrete good/bad examples and a 4-point self-check.
