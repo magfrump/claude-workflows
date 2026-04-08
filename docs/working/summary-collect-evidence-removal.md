@@ -1,0 +1,1 @@
+Removed scripts/collect-evidence.sh (476 lines of dead code, never called, not executable) and added two formally closed hypotheses (evidence-collection-script, hypothesis-backlog-activation) to hypothesis-log.md.
