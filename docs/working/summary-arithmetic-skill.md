@@ -1,0 +1,1 @@
+Created skills/arithmetic.md: a minimal arithmetic evaluation skill that validates expressions against an allowlist regex and evaluates via python3 -c, with [arithmetic-skill] prefixed output for hypothesis traceability.
