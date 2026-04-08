@@ -17,6 +17,7 @@
 #   6. shellcheck passes on all .sh/.bash files
 #   7. Workflow complexity stays within soft budgets
 #   8. Hook scripts in hooks/ are executable
+#   9. Skill test-fixture coverage report (soft warning, not a gate)
 set -euo pipefail
 
 REPO_ROOT="$(cd "$(dirname "$0")/.." && pwd)"
@@ -442,6 +443,44 @@ check_hook_permissions() {
     fi
 }
 
+# ── 9. Skill test-fixture coverage ────────────────────────────────────────
+
+check_skill_fixture_coverage() {
+    section "Skill test-fixture coverage"
+
+    local total=0
+    local covered=0
+    local uncovered_skills=()
+
+    for skill in "$REPO_ROOT"/skills/*.md; do
+        [[ -f "$skill" ]] || continue
+        total=$((total + 1))
+
+        local skill_name
+        skill_name="$(basename "$skill" .md)"
+
+        local fixture_dir="$REPO_ROOT/test/skills/$skill_name/fixtures"
+        if [[ -d "$fixture_dir" ]] && ls "$fixture_dir"/* &>/dev/null 2>&1; then
+            covered=$((covered + 1))
+            pass "$skill_name: has test fixtures"
+        else
+            uncovered_skills+=("$skill_name")
+            warn "$skill_name: no test fixtures found"
+        fi
+    done
+
+    local uncovered=${#uncovered_skills[@]}
+    if [[ $total -eq 0 ]]; then
+        warn "No skill files found in skills/"
+    else
+        echo
+        bold "  Coverage: $covered/$total skills have test fixtures ($uncovered without)"
+        if [[ $uncovered -gt 0 ]]; then
+            warn "Skills lacking fixtures: ${uncovered_skills[*]}"
+        fi
+    fi
+}
+
 # ── Run all checks ─────────────────────────────────────────────────────────
 
 main() {
@@ -456,6 +495,7 @@ main() {
     check_shellcheck
     check_workflow_complexity
     check_hook_permissions
+    check_skill_fixture_coverage
 
     echo
     if [[ $FAIL -eq 0 ]]; then
