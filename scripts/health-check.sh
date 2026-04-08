@@ -18,6 +18,7 @@
 #   7. Workflow complexity stays within soft budgets
 #   8. Hook scripts in hooks/ are executable
 #   9. Skill test-fixture coverage report (soft warning, not a gate)
+#  10. Feature integration: si-functions.sh orphan detection (soft warning)
 set -euo pipefail
 
 REPO_ROOT="$(cd "$(dirname "$0")/.." && pwd)"
@@ -481,6 +482,69 @@ check_skill_fixture_coverage() {
     fi
 }
 
+# ── 10. Feature integration check (si-functions.sh) ───────────────────────
+
+check_feature_integration() {
+    section "Feature integration (si-functions.sh)"
+
+    local lib_file="$REPO_ROOT/scripts/lib/si-functions.sh"
+    if [[ ! -f "$lib_file" ]]; then
+        warn "si-functions.sh not found, skipping"
+        return
+    fi
+
+    # Extract top-level function names defined in si-functions.sh
+    local functions=()
+    while IFS= read -r fname; do
+        [[ -n "$fname" ]] && functions+=("$fname")
+    done < <(grep -oE '^[a-zA-Z_][a-zA-Z_0-9]*\s*\(\)' "$lib_file" | sed 's/[[:space:]]*()$//')
+
+    if [[ ${#functions[@]} -eq 0 ]]; then
+        warn "No functions found in si-functions.sh"
+        return
+    fi
+
+    # Collect all .sh entry-point scripts (everything except si-functions.sh itself)
+    local entry_scripts=()
+    while IFS= read -r -d '' f; do
+        [[ "$f" == "$lib_file" ]] && continue
+        entry_scripts+=("$f")
+    done < <(find "$REPO_ROOT/scripts" -type f -name '*.sh' -not -path '*/.git/*' -print0)
+
+    local orphan_count=0
+    local total=${#functions[@]}
+    local orphan_names=()
+
+    for fname in "${functions[@]}"; do
+        local found=false
+        for script in "${entry_scripts[@]}"; do
+            # Look for the function name being called (not just defined)
+            # Match word boundary: the function name followed by space, quote, or $
+            if grep -qE "(^|[^a-zA-Z_])${fname}([^a-zA-Z_0-9]|$)" "$script" 2>/dev/null; then
+                found=true
+                break
+            fi
+        done
+        if $found; then
+            pass "$fname: called from entry point"
+        else
+            warn "$fname: not called from any entry-point script (orphan)"
+            orphan_count=$((orphan_count + 1))
+            orphan_names+=("$fname")
+        fi
+    done
+
+    # Instrumentation for hypothesis evaluation
+    echo
+    bold "  Feature integration: $((total - orphan_count))/$total functions called from entry points"
+    if [[ $orphan_count -gt 0 ]]; then
+        warn "Orphaned functions ($orphan_count): ${orphan_names[*]}"
+        warn "These may be intentionally library-only, or may indicate unfinished integration."
+    else
+        pass "All si-functions.sh functions are called from at least one entry point"
+    fi
+}
+
 # ── Run all checks ─────────────────────────────────────────────────────────
 
 main() {
@@ -496,6 +560,7 @@ main() {
     check_workflow_complexity
     check_hook_permissions
     check_skill_fixture_coverage
+    check_feature_integration
 
     echo
     if [[ $FAIL -eq 0 ]]; then

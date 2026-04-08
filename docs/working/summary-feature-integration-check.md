@@ -1,0 +1,1 @@
+Added check 10 to health-check.sh: scans si-functions.sh for defined functions and warns about any not called from entry-point scripts (3 orphans found on first run: check_convergence_threshold, auto_expire_hypotheses, get_hypothesis_quality_guide).
