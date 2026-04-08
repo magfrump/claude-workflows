@@ -73,6 +73,12 @@ State a specific, falsifiable hypothesis:
 - **Good**: "The `parseDate` function returns null when the input has a timezone offset, because the regex doesn't account for `+HH:MM`."
 - **Bad**: "Something is wrong with date parsing."
 
+**Example hypotheses by bug category:**
+
+- **Regression**: "The `UserService.getById` query returns stale data because commit `a1b2c3d` switched from `findOne` to a cached lookup that doesn't invalidate on update." *Confirm*: bisect lands on that commit; reverting it fixes the issue. *Refute*: the cache is correctly invalidated and the stale data predates that commit.
+- **Performance degradation**: "The `/api/reports` endpoint P95 latency doubled because `buildReport` issues N+1 queries after the `Report` model added an eager-loaded `comments` association." *Confirm*: profiling shows `buildReport` generating O(N) SQL queries; removing the eager load restores prior latency. *Refute*: query count is unchanged and the latency increase is elsewhere (e.g., serialization).
+- **Intermittent failure**: "The `processQueue` worker test fails ~20% of runs because two jobs share a `tmp/output.csv` path and overwrite each other under concurrent execution." *Confirm*: running with `--parallel=1` eliminates the failure; adding per-job temp paths fixes it. *Refute*: the failure occurs even in serial execution, pointing to a different race condition or flaky assertion.
+
 A good hypothesis:
 - Names a **specific location** (function, line, module)
 - Identifies a **specific mechanism** (what's going wrong and why)
