@@ -872,6 +872,7 @@ docs/working/summary-${TASK_ID}.md"
 
     MAX_DIFF_LINES=500
     APPROVED_TASKS=""
+    REJECTED_TASKS=""
     echo "Validating implemented features..."
 
     for TASK_ID in $LAUNCHED_TASKS; do
@@ -1083,6 +1084,7 @@ Count only the automated assessment scores (Testability investment, Trigger clar
             echo "[$TASK_ID] REJECTED: $REJECT_REASON" >> "$WORKING_DIR/validation-round-$ROUND.log"
             record_gate "$TASK_ID" "verdict" "rejected"
             record_gate_detail "$TASK_ID" "verdict" "$(jq -n --arg reason "$REJECT_REASON" '{reject_reason: $reason}')"
+            REJECTED_TASKS="${REJECTED_TASKS:+$REJECTED_TASKS }$TASK_ID"
             # Clean up rejected worktree and branch
             git worktree remove "$WT_DIR" 2>/dev/null || true
             git branch -D "$BRANCH" 2>/dev/null || true
@@ -1101,6 +1103,16 @@ Count only the automated assessment scores (Testability investment, Trigger clar
         continue
     fi
     echo "Approved tasks: $APPROVED_TASKS"
+
+    # Run failure analysis when any tasks were rejected, to surface patterns
+    # for future idea generation / task scoping. Output goes to validation log
+    # so hypothesis-dashboard can later check if patterns influenced decisions.
+    if [ -n "$REJECTED_TASKS" ]; then
+        echo "Running failure analysis for rejected tasks: $REJECTED_TASKS"
+        echo "" >> "$WORKING_DIR/validation-round-$ROUND.log"
+        echo "=== Automated Failure Analysis (round $ROUND) ===" >> "$WORKING_DIR/validation-round-$ROUND.log"
+        "$SCRIPT_DIR/failure-analysis.sh" >> "$WORKING_DIR/validation-round-$ROUND.log" 2>&1 || true
+    fi
 
     # -------------------------------------------------------
     # Step 4b: Update problem history with solved problems only
