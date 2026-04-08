@@ -18,6 +18,9 @@
 #   CONVERGENCE_THRESHOLD  Percent overlap (0-100) of diagnosed problems
 #                          with prior rounds that triggers early stop
 #                          (default: 70)
+#   SKIP_AUTO_EXPIRE       Set to 1 to skip hypothesis auto-expiry
+#   SKIP_HYPOTHESIS_QUALITY_GUIDE  Set to 1 to omit hypothesis quality
+#                          guide from the task-creation prompt
 #
 # Configuration (hardcoded near top of main block):
 #   MAX_ROUNDS=5           Maximum number of improvement rounds
@@ -276,6 +279,14 @@ Tracks falsifiable predictions made at task creation time and their outcomes.
 | Round | Task ID | Hypothesis | Window | Checked at Round | Outcome | Evidence |
 |-------|---------|------------|--------|------------------|---------|----------|
 HEADER
+    fi
+
+    # Auto-expire overdue TRACKING hypotheses before evaluation
+    if [[ "${SKIP_AUTO_EXPIRE:-0}" != "1" ]]; then
+        echo "Running hypothesis auto-expiry (round $ROUND)..."
+        auto_expire_hypotheses "$ROUND" "$HYPOTHESIS_LOG" || true
+    else
+        echo "Skipping hypothesis auto-expiry (SKIP_AUTO_EXPIRE=1)"
     fi
 
     for PRIOR_ROUND in $(seq 1 $((ROUND - 1))); do
@@ -647,7 +658,7 @@ CONVERGENCE_EOF
         OVERLAP_PROMPT+="$_CONVERGENCE_BODY"
         OVERLAP_RESULT=$(claude -p "$OVERLAP_PROMPT" 2>/dev/null | grep -oP '\d+' | head -1) || true
 
-        if [ -n "$OVERLAP_RESULT" ] && [ "$OVERLAP_RESULT" -ge "$CONVERGENCE_THRESHOLD" ]; then
+        if [ -n "$OVERLAP_RESULT" ] && check_convergence_threshold "$OVERLAP_RESULT" "$CONVERGENCE_THRESHOLD"; then
             echo "Convergence detected: ${OVERLAP_RESULT}% of problems overlap with prior rounds (threshold: ${CONVERGENCE_THRESHOLD}%)."
             echo "Stopping before round $ROUND implementation ($((ROUND - 1)) rounds completed)."
             echo "[round-$ROUND] CONVERGED: ${OVERLAP_RESULT}% problem overlap" >> "$WORKING_DIR/validation-round-$ROUND.log"
@@ -663,6 +674,12 @@ CONVERGENCE_EOF
     # -------------------------------------------------------
     # Step 2: Filter into independent tasks
     # -------------------------------------------------------
+    # Build hypothesis quality guide for prompt injection
+    HYPOTHESIS_QUALITY_CONTEXT=""
+    if [[ "${SKIP_HYPOTHESIS_QUALITY_GUIDE:-0}" != "1" ]]; then
+        HYPOTHESIS_QUALITY_CONTEXT=$(get_hypothesis_quality_guide)
+    fi
+
     echo "Filtering ideas into tasks..."
     claude -p "Read docs/working/feature-ideas-round-$ROUND.md.
 
@@ -685,7 +702,7 @@ IMPORTANT: The hypothesis is defined NOW, at task creation time, so it can
 guide implementation decisions (instrumentation, design choices, metrics).
 Set \"retroactive\": false for all new tasks (this is the default). Only use
 \"retroactive\": true if backfilling a hypothesis onto an already-implemented task.
-
+${HYPOTHESIS_QUALITY_CONTEXT}
 Only include tasks where independent is true. Discard tasks that depend on
 other tasks in this round."
 
