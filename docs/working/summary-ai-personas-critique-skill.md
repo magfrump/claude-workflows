@@ -1,0 +1,1 @@
+Created `skills/ai-personas-critique.md` — a structured critique skill that selects 3–4 maximally orthogonal personas from a 17-persona framework (defined in `docs/working/ai-persona-definitions.md`), runs objections in "closest ally first" order, synthesizes into prioritized concerns, and tags each concern's novelty relative to Cowen/Yglesias critiques for hypothesis evaluation.
