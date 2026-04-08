@@ -1,0 +1,1 @@
+Extracted validate_task_json, check_convergence_threshold, and get_eligible_hypotheses into scripts/lib/si-functions.sh (140L), reducing self-improvement.sh from 1352 to 1231 lines; main script sources the lib file.
