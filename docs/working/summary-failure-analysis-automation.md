@@ -1,0 +1,1 @@
+Added automatic failure-analysis.sh invocation in self-improvement.sh after step 4 validation when any tasks are rejected, capturing the failure report into the round's validation log to close the feedback loop.
