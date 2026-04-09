@@ -77,6 +77,20 @@ You don't need to tag every sentence — use tags on claims that downstream deci
 
 If a previous loop's research doc covers overlapping territory, update it rather than creating a new file — but clearly mark what's new or changed.
 
+**Research sufficiency signals**: Research can expand indefinitely, especially in unfamiliar codebases. These signals help you judge when you've learned enough to plan effectively. They are additive guidance — not a gate or a mandatory checklist. Use them to calibrate effort, not to block progress.
+
+*Minimum coverage* — before moving to the plan step, confirm you have:
+- **Entry points traced**: You can name the function(s) or path(s) where execution enters the code you'll change, and you've read their implementations (not just signatures).
+- **Invariants documented**: The research doc's Invariants section has at least one entry backed by specific code references ([observed] tags).
+- **Prior art checked**: You searched for existing solutions to similar problems in the codebase and either documented what you found or noted that nothing relevant exists.
+
+*Stop-researching signals* — if any of these are true, you likely have enough context to plan:
+- **Diminishing returns**: New files you read confirm what you already know rather than revealing new constraints or connections.
+- **All [assumed] tags investigated**: Every [assumed] claim in your research doc has either been promoted to [observed]/[inferred] or explicitly noted as acceptable risk for planning purposes.
+- **Scope creep detected**: You're exploring code paths that are interesting but not required by the scope statement from step 1. Re-read your scope and stop if the current line of investigation doesn't serve it.
+
+When you move from research to planning, optionally note in the research doc how the transition was triggered (e.g., "Moved to plan: diminishing returns after tracing 3 callers" or "Moved to plan: all invariants observed"). This makes it possible to evaluate whether research duration is well-calibrated across sessions.
+
 **Design decisions during research**: If research reveals a genuine design choice — multiple viable approaches, an architectural fork, a library selection — invoke the **Divergent Design workflow** (`divergent-design.md`) as a sub-procedure before proceeding to the plan step. DD's output (a documented decision in `docs/decisions/`) becomes an input to the plan. DD's 80% confidence threshold governs whether the *design decision* can be resolved autonomously; RPI's implementation gate (step 4) still applies independently. In other words: DD may resolve the "what approach" question without user input, but the user still reviews the plan before implementation begins.
 
 Signals that you've hit a design decision:

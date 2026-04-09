@@ -1,0 +1,1 @@
+Added research sufficiency signals (minimum coverage criteria + stop-researching triggers) to RPI step 2 as additive guidance for calibrating research effort, with optional transition annotations to support hypothesis evaluation.
