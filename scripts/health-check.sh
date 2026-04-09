@@ -19,6 +19,7 @@
 #   8. Hook scripts in hooks/ are executable
 #   9. Skill test-fixture coverage report (soft warning, not a gate)
 #  10. Feature integration: si-functions.sh orphan detection (soft warning)
+#  11. Document freshness: flag stale spikes and onboarding docs (soft warning)
 set -euo pipefail
 
 REPO_ROOT="$(cd "$(dirname "$0")/.." && pwd)"
@@ -545,6 +546,95 @@ check_feature_integration() {
     fi
 }
 
+# ── 11. Document freshness (spikes + onboarding docs) ────────────────────
+
+check_doc_freshness() {
+    section "Document freshness (spikes + onboarding)"
+
+    local checked=0
+    local stale=0
+    local fresh=0
+    local missing_fields=0
+
+    # Collect candidate docs: docs/spikes/*.md and docs/working/onboarding-*.md
+    local docs=()
+    for f in "$REPO_ROOT"/docs/spikes/*.md; do
+        [[ -f "$f" ]] && docs+=("$f")
+    done
+    for f in "$REPO_ROOT"/docs/working/onboarding-*.md; do
+        [[ -f "$f" ]] && docs+=("$f")
+    done
+
+    if [[ ${#docs[@]} -eq 0 ]]; then
+        pass "No spike or onboarding docs found — nothing to check"
+        return
+    fi
+
+    for doc in "${docs[@]}"; do
+        local relpath="${doc#"$REPO_ROOT"/}"
+
+        # Extract Last verified date — match bold inline field outside code blocks.
+        # Skip lines inside fenced code blocks (``` ... ```).
+        local last_verified
+        last_verified="$(awk '
+            /^```/ { in_code = !in_code; next }
+            !in_code && /^\*\*Last verified:\*\*/ {
+                sub(/^\*\*Last verified:\*\*[[:space:]]*/, "")
+                print
+                exit
+            }
+        ' "$doc")"
+
+        # Extract Relevant paths — same approach, handle multi-word comma/space-separated
+        local relevant_paths
+        relevant_paths="$(awk '
+            /^```/ { in_code = !in_code; next }
+            !in_code && /^\*\*Relevant paths:\*\*/ {
+                sub(/^\*\*Relevant paths:\*\*[[:space:]]*/, "")
+                print
+                exit
+            }
+        ' "$doc")"
+
+        if [[ -z "$last_verified" || -z "$relevant_paths" ]]; then
+            missing_fields=$((missing_fields + 1))
+            warn "$relpath: missing freshness fields (Last verified / Relevant paths)"
+            continue
+        fi
+
+        # Validate date format (YYYY-MM-DD)
+        if ! [[ "$last_verified" =~ ^[0-9]{4}-[0-9]{2}-[0-9]{2}$ ]]; then
+            warn "$relpath: 'Last verified' is not a valid date: $last_verified"
+            missing_fields=$((missing_fields + 1))
+            continue
+        fi
+
+        checked=$((checked + 1))
+
+        # Split relevant_paths on commas and/or spaces into an array
+        local -a paths=()
+        IFS=', ' read -ra paths <<< "$relevant_paths"
+
+        # Run git log --since against tracked paths
+        local git_output
+        git_output="$(git -C "$REPO_ROOT" log --oneline --since="$last_verified" -- "${paths[@]}" 2>/dev/null || true)"
+
+        if [[ -n "$git_output" ]]; then
+            stale=$((stale + 1))
+            local commit_count
+            commit_count="$(echo "$git_output" | wc -l)"
+            warn "$relpath: STALE — $commit_count commit(s) to tracked paths since $last_verified"
+        else
+            fresh=$((fresh + 1))
+            pass "$relpath: fresh (no changes to tracked paths since $last_verified)"
+        fi
+    done
+
+    # Summary line for hypothesis evaluation
+    echo
+    bold "  Freshness: $checked checked, $fresh fresh, $stale stale, $missing_fields missing fields"
+}
+
 # ── Run all checks ─────────────────────────────────────────────────────────
 
 main() {
@@ -561,6 +651,7 @@ main() {
     check_hook_permissions
     check_skill_fixture_coverage
     check_feature_integration
+    check_doc_freshness
 
     echo
     if [[ $FAIL -eq 0 ]]; then
