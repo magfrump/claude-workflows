@@ -8,6 +8,8 @@ When facing non-trivial tasks, select the right workflow or skill using the deci
 
 For human orchestration of multiple concurrent Claude Code sessions, see `guides/parallel-sessions.md`.
 
+**How to use these workflows:** Just describe your task to Claude — it will evaluate the triggers below and automatically select the matching workflow. You can also request a specific workflow by name (e.g., "use the spike workflow for this"). If no trigger matches, Claude defaults to research-plan-implement (RPI). You don't need to memorize the table; it's here so you can see what Claude will do and why.
+
 ### Workflow decision tree
 
 Evaluate triggers top-to-bottom. Take the **first match**; if none match, default to RPI.
