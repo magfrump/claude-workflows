@@ -1,0 +1,1 @@
+Added optional Step 7 (post-merge follow-up checklist) to workflows/pr-prep.md with items for CI verification on main, regression monitoring, documentation updates, and feature flag cleanup — all framed as optional with a traceability prompt for noting actions taken.
