@@ -1,3 +1,17 @@
+---
+triggers:
+  keywords:
+    - branch strategy
+    - integration branch
+    - dev branch
+    - merge strategy
+    - multiple feature branches
+  session_signals:
+    - multiple concurrent feature branches active
+    - high-throughput feature development with async review
+    - need to test features together before merging to main
+---
+
 # Branch Strategy Guide
 
 ## Overview

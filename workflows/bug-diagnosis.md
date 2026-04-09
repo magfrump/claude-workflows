@@ -1,3 +1,27 @@
+---
+triggers:
+  disposition: implicit
+  note: >
+    Bug diagnosis is Claude Code's default debugging behavior. This workflow
+    documents the structured approach but does not need explicit activation —
+    Claude naturally follows hypothesis-test loops when diagnosing bugs.
+    Only reference this workflow explicitly when you want to enforce the
+    full structured process (diagnosis log, 3-hypothesis escape hatch, etc.)
+    rather than relying on implicit debugging behavior.
+  keywords:
+    - bug
+    - debug
+    - regression
+    - broken
+    - fix
+    - crash
+    - error
+  session_signals:
+    - bug with observable symptoms in known code area
+    - regression where previous behavior changed
+    - rapid hypothesis-test iteration more valuable than upfront research
+---
+
 # Bug Diagnosis Workflow
 
 ## When to use

@@ -1,3 +1,17 @@
+---
+triggers:
+  keywords:
+    - onboard
+    - new project
+    - orientation
+    - unfamiliar codebase
+    - first time in this repo
+  session_signals:
+    - first session in a repository with no prior working docs
+    - returning to a project after long absence
+    - RPI research feels impossible because you don't know where to start
+---
+
 # Codebase Onboarding Workflow
 
 *This workflow follows the [orchestrated review pattern](../patterns/orchestrated-review.md), with subsystems as the units of parallel exploration.*

@@ -1,3 +1,20 @@
+---
+triggers:
+  keywords:
+    - design
+    - architecture
+    - choose
+    - compare
+    - which approach
+    - library selection
+    - tradeoff
+  session_signals:
+    - 3+ viable approaches identified during research
+    - tradeoff evaluation needed between competing options
+    - premature convergence risk on a design decision
+    - "what should we build?" rather than "build this"
+---
+
 # Divergent Design Workflow
 
 *The diverge → diagnose → match → decide structure follows the [orchestrated review pattern](../patterns/orchestrated-review.md), with candidate approaches as the units of parallel evaluation.*

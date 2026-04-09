@@ -1,3 +1,20 @@
+---
+triggers:
+  keywords:
+    - feature
+    - implement
+    - add
+    - build
+    - refactor
+    - migrate
+    - non-trivial
+  session_signals:
+    - task touches more than one file
+    - unfamiliar area of codebase requiring research
+    - user requests a feature or enhancement
+    - default workflow when no other workflow is a better fit
+---
+
 # Research → Plan → Implement Workflow
 
 ## When to use

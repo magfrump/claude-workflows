@@ -4,17 +4,25 @@ This file applies to all projects. Project-specific CLAUDE.md files supplement t
 
 ## Cross-project Workflows
 
-When facing non-trivial tasks, check `~/.claude/workflows/` for applicable process docs before jumping to implementation. Key workflows:
+When facing non-trivial tasks, check `~/.claude/workflows/` for applicable process docs before jumping to implementation. Each workflow has a `triggers` field in its YAML frontmatter listing keywords, file types, and session signals that indicate when it applies. Key workflows:
 
-- **research-plan-implement.md** — The default development loop. Research the codebase → write a plan → get human review → implement in a fresh session. Use for any non-trivial feature or bug fix.
-- **divergent-design.md** — Structured brainstorming for architectural, library, or design decisions. Use when the first idea is probably not the best idea.
-- **task-decomposition.md** — Breaking large tasks into independent sub-investigations, optionally using sub-agents for parallel research. Use when a task touches multiple subsystems.
-- **pr-prep.md** — Packaging work for async review across timezones. Includes a required review-fix loop (code review + self-eval → fix → retest → re-review until clean). Use before opening any PR.
-- **spike.md** — Quick timeboxed exploration of a library, approach, or proof-of-concept. Use when the question is "can this work?" not "build this."
-- **branch-strategy.md** — Branch management and dev integration branch workflow for high-throughput feature development with async review.
-- **user-testing-workflow.md** — Planning, running, and interpreting usability tests. Use when you need to design a user test, write moderator scripts, or analyze usability findings.
-- **bug-diagnosis.md** — Lightweight hypothesis-test debugging loop: reproduce → isolate → hypothesize → test → fix → verify. Use for bugs in known areas of code where rapid iteration beats upfront research.
-- **codebase-onboarding.md** — Structured orientation for unfamiliar codebases. Use when starting a new project or returning after a long absence — before any task-specific work.
+- **research-plan-implement.md** — The default development loop. Research → plan → review → implement.
+  *Triggers:* keywords like "feature", "implement", "refactor", "migrate"; any task touching >1 file; default when no other workflow fits better.
+- **divergent-design.md** — Structured brainstorming for architectural, library, or design decisions.
+  *Triggers:* keywords like "design", "architecture", "choose", "compare", "which approach"; 3+ viable approaches identified; tradeoff evaluation needed.
+- **task-decomposition.md** — Breaking large tasks into independent sub-investigations with parallel research.
+  *Triggers:* keywords like "large task", "multiple subsystems", "decompose"; task touches 3+ independent subsystems; context degradation risk.
+- **pr-prep.md** — Packaging work for async review. Includes a required review-fix loop.
+  *Triggers:* keywords like "PR", "pull request", "ship", "ready for review"; implementation complete on a feature branch.
+- **spike.md** — Quick timeboxed exploration of a library, approach, or proof-of-concept.
+  *Triggers:* keywords like "feasible", "spike", "prototype", "can we", "how hard"; unknown library/API; feasibility question.
+- **branch-strategy.md** — Branch management and dev integration branch workflow for high-throughput development.
+  *Triggers:* keywords like "branch strategy", "integration branch", "dev branch"; multiple concurrent feature branches active.
+- **user-testing-workflow.md** — Planning, running, and interpreting usability tests.
+  *Triggers:* keywords like "usability", "user test", "moderator script", "SUS"; file types *.tsx, *.jsx, *.vue, *.html, *.cs; UI change ready for evaluation.
+- **bug-diagnosis.md** *(implicit)* — Lightweight hypothesis-test debugging loop: reproduce → isolate → hypothesize → test → fix → verify. Claude Code's default debugging behavior naturally follows this pattern. Reference the workflow explicitly only when you want to enforce the full structured process (diagnosis log, 3-hypothesis escape hatch). For bugs in unfamiliar code, prefer research-plan-implement instead.
+- **codebase-onboarding.md** — Structured orientation for unfamiliar codebases.
+  *Triggers:* keywords like "onboard", "new project", "orientation"; first session in a repo; returning after long absence; RPI research feels impossible.
 
 For human orchestration of multiple concurrent Claude Code sessions, see `guides/parallel-sessions.md` (not agent instructions — a reference for the developer).
 

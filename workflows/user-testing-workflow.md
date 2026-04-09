@@ -1,3 +1,26 @@
+---
+triggers:
+  keywords:
+    - usability
+    - user test
+    - user testing
+    - moderator script
+    - SUS score
+    - UX evaluation
+    - usability test
+  file_types:
+    - "*.tsx"
+    - "*.jsx"
+    - "*.vue"
+    - "*.svelte"
+    - "*.html"
+    - "*.cs"
+  session_signals:
+    - UI change ready for user evaluation
+    - planning a usability study or test session
+    - need to design tasks or moderator scripts for user testing
+---
+
 # User Testing Workflow Prompt
 
 A reusable guide for planning, running, and interpreting usability tests. Grounded in HCI literature (Nielsen, Brooke, Travis, Dumas & Redish, etc.) and adapted for small-team/indie contexts.

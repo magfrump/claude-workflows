@@ -1,3 +1,17 @@
+---
+triggers:
+  keywords:
+    - large task
+    - multiple subsystems
+    - parallel research
+    - decompose
+    - break down
+  session_signals:
+    - task touches 3+ independent subsystems
+    - sequential research risks context degradation
+    - sub-agents would benefit from parallel exploration
+---
+
 # Task Decomposition Workflow
 
 *This workflow follows the [orchestrated review pattern](../patterns/orchestrated-review.md).*

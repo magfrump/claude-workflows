@@ -1,0 +1,1 @@
+Added YAML frontmatter with `triggers` (keywords, file_types, session_signals) to all 10 workflow files, updated CLAUDE.md with inline trigger conditions, and marked bug-diagnosis as implicit (Claude Code's default behavior suffices) and review-fix-loop as embedded in pr-prep.

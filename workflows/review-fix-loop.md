@@ -1,3 +1,12 @@
+---
+triggers:
+  disposition: embedded
+  note: >
+    This workflow is embedded in pr-prep (Phase 1, step 3) and should not be
+    triggered independently. It is activated as part of the PR preparation
+    process. See pr-prep.md for the parent workflow.
+---
+
 # Review → Fix → Revalidate Loop
 
 This document is reference material for the review-fix loop step in [pr-prep](pr-prep.md). See pr-prep Step 3 for the procedure itself.

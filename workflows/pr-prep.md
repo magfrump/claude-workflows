@@ -1,3 +1,18 @@
+---
+triggers:
+  keywords:
+    - PR
+    - pull request
+    - review
+    - ship
+    - open PR
+    - ready for review
+  session_signals:
+    - implementation complete on a feature branch
+    - branch ready for human review
+    - /away mode and implementation step finished
+---
+
 # PR Preparation Workflow
 
 *The self-review and cleanup steps follow the [orchestrated review pattern](../patterns/orchestrated-review.md), with commits/files as the units of review.*

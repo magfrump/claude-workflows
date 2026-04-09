@@ -1,3 +1,20 @@
+---
+triggers:
+  keywords:
+    - feasible
+    - spike
+    - prototype
+    - proof of concept
+    - explore
+    - can we
+    - how hard
+    - is this possible
+  session_signals:
+    - unknown library or API needs evaluation
+    - feasibility question that can't be answered by reading code
+    - "can this work?" rather than "build this"
+---
+
 # Spike Workflow
 
 ## When to use
