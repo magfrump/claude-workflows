@@ -1,0 +1,1 @@
+Cherry-picked effectiveness-framing-replace (21a37c1) into main: replaces line-count complexity budget with value-justification frontmatter across 9 workflow files and health-check.sh, no conflicts with contextual activation rewrite.
