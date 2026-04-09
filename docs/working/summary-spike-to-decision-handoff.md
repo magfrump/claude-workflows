@@ -1,0 +1,1 @@
+Added step 5 "Decision output" to workflows/spike.md: after recording findings, create a decision record (tradeoff-heavy) or log entry (unambiguous) in docs/decisions/, closing the spike→decision workflow composition gap.
