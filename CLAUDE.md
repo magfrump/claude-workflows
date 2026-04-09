@@ -2,23 +2,51 @@
 
 This file applies to all projects. Project-specific CLAUDE.md files supplement this.
 
-## Cross-project Workflows
+## Workflow & Skill Activation
 
-When facing non-trivial tasks, check `~/.claude/workflows/` for applicable process docs before jumping to implementation. Key workflows:
+When facing non-trivial tasks, select the right workflow or skill using the decision tree below. Full process docs live in `~/.claude/workflows/` and `~/.claude/skills/`. When a workflow applies, follow it rather than jumping straight to implementation.
 
-- **research-plan-implement.md** — The default development loop. Research the codebase → write a plan → get human review → implement in a fresh session. Use for any non-trivial feature or bug fix.
-- **divergent-design.md** — Structured brainstorming for architectural, library, or design decisions. Use when the first idea is probably not the best idea.
-- **task-decomposition.md** — Breaking large tasks into independent sub-investigations, optionally using sub-agents for parallel research. Use when a task touches multiple subsystems.
-- **pr-prep.md** — Packaging work for async review across timezones. Includes a required review-fix loop (code review + self-eval → fix → retest → re-review until clean). Use before opening any PR.
-- **spike.md** — Quick timeboxed exploration of a library, approach, or proof-of-concept. Use when the question is "can this work?" not "build this."
-- **branch-strategy.md** — Branch management and dev integration branch workflow for high-throughput feature development with async review.
-- **user-testing-workflow.md** — Planning, running, and interpreting usability tests. Use when you need to design a user test, write moderator scripts, or analyze usability findings.
-- **bug-diagnosis.md** — Lightweight hypothesis-test debugging loop: reproduce → isolate → hypothesize → test → fix → verify. Use for bugs in known areas of code where rapid iteration beats upfront research.
-- **codebase-onboarding.md** — Structured orientation for unfamiliar codebases. Use when starting a new project or returning after a long absence — before any task-specific work.
+For human orchestration of multiple concurrent Claude Code sessions, see `guides/parallel-sessions.md`.
 
-For human orchestration of multiple concurrent Claude Code sessions, see `guides/parallel-sessions.md` (not agent instructions — a reference for the developer).
+### Workflow decision tree
 
-When a workflow applies, follow it rather than jumping straight to implementation. Default: research-plan-implement for features, divergent-design for decisions, spike for unknowns, codebase-onboarding for new projects.
+Evaluate triggers top-to-bottom. Take the **first match**; if none match, default to RPI.
+
+| # | Trigger condition | Activate | Notes |
+|---|-------------------|----------|-------|
+| 1 | **New/unfamiliar codebase**, or first session in a project with no `docs/thoughts/` | `codebase-onboarding.md` | Output feeds into RPI research — don't redo what onboarding already learned. |
+| 2 | **Task involves a design choice** with 3+ viable approaches, or keywords: "which approach", "tradeoff", "library selection", "architecture" | `divergent-design.md` | Often invoked as a sub-procedure within RPI (RPI step 2 signals → DD → decision feeds back into plan). DD↔RPI is the most common composition. |
+| 3 | **Non-trivial feature or bug fix** (touches >1 file, root cause unclear, needs codebase understanding) | `research-plan-implement.md` | The default. If RPI research reveals a design fork, invoke DD inline. If research reveals root cause of a bug, skip to Fix & Verify (see debugging defaults below). |
+| 4 | **Task touches multiple subsystems** and can be decomposed into independent sub-investigations | `task-decomposition.md` | Layer on top of RPI — each sub-task may itself follow RPI or spike. |
+| 5 | **Feasibility question**: "can this work?", unfamiliar library, proof-of-concept | `spike.md` | Spike output includes an RPI seed section; load it when transitioning to implementation. |
+| 6 | **Work is ready to open a PR**, or keywords: "open PR", "ready for review", "package this up" | `pr-prep.md` | Includes the review-fix loop (code-review + self-eval → fix → retest → re-review until clean). The review-fix loop is a required sub-procedure, not optional. |
+| 7 | **Planning, running, or analyzing a usability test**, or keywords: "user test", "moderator script", "usability" | `user-testing-workflow.md` | |
+| 8 | **High-throughput multi-branch development** with async review | `branch-strategy.md` | |
+
+### Debugging defaults (absorbed from bug-diagnosis)
+
+These principles apply to **all** bug-fixing work, whether inside RPI or standalone. The standalone `bug-diagnosis.md` workflow is deprecated — use these defaults directly.
+
+1. **Reproduce first.** Confirm you can trigger the bug reliably before diagnosing. Write the reproduction as a test if possible — it becomes your verification.
+2. **Read the error.** Stack traces, error messages, and log output often point directly to the problem. Start here, not with theories.
+3. **Hypothesize specifically.** State a falsifiable claim naming a specific location, mechanism, and testable outcome. Bad: "something is wrong with parsing." Good: "parseDate returns null for timezone offsets because the regex omits `+HH:MM`."
+4. **Test, don't guess.** Design the smallest experiment that confirms or refutes the hypothesis. If confirmed → fix. If refuted → record what you learned, form a new hypothesis.
+5. **Escape hatch at 3 failed hypotheses.** If 3+ hypotheses are refuted, stop iterating. Either you need better isolation (re-read the error, try git bisect) or you don't understand the code well enough (pivot to RPI's research phase — your failed hypotheses document what the bug *isn't*).
+6. **Fix root cause, not symptom.** Keep the fix minimal. Don't refactor nearby code. One fix per diagnosis.
+
+For complex bugs that need a formal diagnosis log, the template and full process remain available in `workflows/bug-diagnosis.md`.
+
+### Skill routing
+
+These skills activate based on what files are being modified, not by explicit request. Apply them proactively when triggers match.
+
+| Trigger | Skill | When |
+|---------|-------|------|
+| Diff touches **TSX, JSX, CSS, SCSS, Tailwind classes, Unity C# UI components**, or any visual rendering code | `ui-visual-review` | After implementation, before PR. Covers cross-resolution, overflow, sizing issues. |
+| Diff touches **auth, input handling, crypto, trust boundaries, file I/O, network calls, serialization** | `security-reviewer` | During implementation or review. Design-level flaws, not linter findings. |
+| **Opening or preparing a PR** (any codebase) | `code-review` | Orchestrates code-fact-check + security/performance/API-consistency critics in parallel. Integral to PR-prep's review-fix loop. |
+
+**Composition note:** `code-review` may invoke `ui-visual-review` and `security-reviewer` as sub-critics when the diff matches their triggers. When running standalone skills, check if a full `code-review` pass would be more appropriate.
 
 ## Context Packing
 
