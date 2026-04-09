@@ -1,0 +1,1 @@
+Added explicit write instructions to `skills/code-review.md` and `skills/security-reviewer.md` telling each skill to save findings with date-stamped filenames and `Commit: <hash>` metadata, ensuring review artifacts persist in `docs/reviews/` even when skills are invoked outside pr-prep context.

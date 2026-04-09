@@ -351,6 +351,8 @@ docs/reviews/
 ├── ui-visual-review.md            (if triggered)
 ```
 
+When saving review artifacts, include a `Commit: <hash>` metadata line at the top of each file and use date-stamped filenames (e.g., `security-review-2025-01-15.md`) so that results persist across review cycles.
+
 At the end of your chat synthesis, link to all documents.
 
 ---

@@ -241,8 +241,7 @@ address?
 
 ## Output Location
 
-When run standalone, save your critique as `docs/reviews/security-review.md` in the project
-root. Create `docs/reviews/` if it doesn't exist.
+When run standalone, save your critique as `docs/reviews/security-review-{date}.md` (e.g., `security-review-2025-01-15.md`) in the project root with a `Commit: <hash>` metadata line at the top; create `docs/reviews/` if it doesn't exist.
 
 When run via an orchestrator, the orchestrator specifies the output path — follow its
 instructions.
