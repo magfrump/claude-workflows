@@ -1,0 +1,1 @@
+Added monorepo scoping guidance to codebase-onboarding.md step 2: scope architecture mapping to the task-relevant package, note the top-level dependency graph, and list unexamined packages in Known Unknowns (step 5).
