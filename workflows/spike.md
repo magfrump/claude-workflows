@@ -27,10 +27,18 @@ State the specific question the spike answers in one sentence. Examples:
 
 If you can't state the question clearly, the spike isn't ready to start.
 
+**Optional: feasibility criteria** — When the spike question is genuinely binary ("can X do Y?", "is Z feasible?"), making success/failure criteria explicit up front leads to more decisive outcomes. Fill in this template:
+
+> - **Success looks like:** _[concrete observable that means "go"]_
+> - **Failure looks like:** _[concrete observable that means "no-go"]_
+> - **Ambiguous if:** _[what would leave the answer unclear — helps you plan what to test]_
+
+Skip this for exploratory spikes where the goal is to learn rather than decide (e.g., "How does X's API handle Y?" — there's no pass/fail, just discovery). When you do use it, revisit these criteria in step 4's Answer section to force a clear verdict.
+
 **Done when...**
 - [ ] The question is stated in one specific, answerable sentence
 - [ ] The question is about feasibility or behavior, not about implementation design
-- [ ] Success and failure criteria are implicit in the question (you'll know when it's answered)
+- [ ] Success and failure criteria are defined (explicitly via the template above, or implicitly in the question)
 
 ### 2. Set a timebox (recommended)
 

@@ -1,0 +1,1 @@
+Added optional feasibility criteria template (Success/Failure/Ambiguous) to spike.md step 1 for binary yes/no spike questions, framed as opt-in so exploratory spikes aren't forced into binary framing.
