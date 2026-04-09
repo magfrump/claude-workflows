@@ -12,6 +12,17 @@ description: >
 when: User wants a thorough multi-perspective review of a written draft
 ---
 
+## Dependencies
+
+This skill orchestrates the following sub-skills. Ensure they exist in `skills/` before use.
+
+**Required (always run):**
+- `fact-check.md` — verifies factual claims in the draft
+
+**Critics (dynamically discovered):**
+- All other `skills/*.md` files are candidate critics, auto-selected by topic relevance
+- Known critics include `cowen-critique.md` and `yglesias-critique.md`, but any skill file not listed as an orchestrator or fact-checker will be considered
+
 > On bad output, see guides/skill-recovery.md
 
 # Draft Review Orchestrator

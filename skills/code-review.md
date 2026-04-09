@@ -14,6 +14,24 @@ description: >
 when: User requests a full code review or PR review
 ---
 
+## Dependencies
+
+This skill orchestrates the following sub-skills. Ensure they exist in `skills/` before use.
+
+**Required (always run):**
+- `code-fact-check.md` — verifies factual claims in code comments, docs, and commit messages
+
+**Core critics (always run):**
+- `security-reviewer.md` — security design review
+- `performance-reviewer.md` — performance analysis
+- `api-consistency-reviewer.md` — API surface consistency
+
+**Contextual critics (auto-selected based on diff):**
+- `test-strategy.md` — triggered when source changes lack corresponding test changes
+- `tech-debt-triage.md` — triggered on large diffs (>10 files or >500 lines)
+- `dependency-upgrade.md` — triggered when dependency manifests change
+- `ui-visual-review.md` — triggered when diff touches UI rendering code
+
 > On bad output, see guides/skill-recovery.md
 
 # Code Review Orchestrator
