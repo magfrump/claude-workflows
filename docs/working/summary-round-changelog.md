@@ -1,0 +1,1 @@
+Created docs/working/round-changelog.md with structured per-round entries for R11–R15 including tasks selected/landed/deferred, key decisions, and feature lineage, replacing scattered archive files as the primary human-readable SI history.
