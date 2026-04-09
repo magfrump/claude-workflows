@@ -1,0 +1,1 @@
+Merged origin/feat/r3-effectiveness-framing-replace (21a37c1) into main via feat/r7 branch — no conflicts; replaced line-count complexity budget with value-justification frontmatter validation across 12 files.
