@@ -204,7 +204,13 @@ claims that need precision (mostly accurate), and claims that are solid (confirm
 
 **Structural critique:** Synthesize by convergence signal, not by critic. Lead with findings
 that multiple critics raised independently (highest signal). Then single-critic findings.
-Surface disagreements between critics explicitly — these are valuable.
+Surface disagreements between critics explicitly — these are valuable. Classify each
+disagreement as **factual** (resolvable with more evidence) or **perspective-based** (genuine
+tension reflecting different analytical frames). For factual disagreements, escalate to the
+fact-checker for a targeted check or flag the specific claim for author research. For
+perspective-based disagreements, present both positions with their reasoning and let the author
+decide — these tensions often reveal where the draft needs to acknowledge complexity rather than
+pick a side.
 
 **What the draft gets right:** Strengths that critics identified. The author needs to know
 what to preserve.
