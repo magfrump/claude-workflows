@@ -62,25 +62,78 @@ Long-lived documents (onboarding docs, spike records, shared thoughts) support *
 
 ## Operating Modes
 
-The user sets the current mode by typing `/active` or `/away`.
+The session operates in one of two modes: **active** or **away**. Mode is session-scoped and defaults to **active**.
+
+### How to switch modes
+
+The user signals a mode switch by including it in a message. All of these are equivalent:
+- `You are in /away mode.` (preamble style — most reliable)
+- `/away` or `/active` (standalone — may be intercepted by Claude Code's command parser; if so, include in a sentence instead)
+- `away mode` or `active mode` (plain text)
+
+**Platform note:** Claude Code reserves the `/` prefix for built-in commands. If `/away` or `/active` as a standalone message produces an error or no response, the user should use preamble style or plain text instead.
+
+### Acknowledgment protocol
+
+When you detect a mode switch, you MUST respond with:
+1. **Explicit confirmation**: "Switching to /away mode." or "Switching to /active mode."
+2. **Key behavior change**: One sentence stating the most important difference (e.g., "I will commit and push autonomously after each completed step.")
+
+If you are uncertain which mode is active (e.g., after context compression), **default to /active** and ask the user to confirm.
 
 ### /active (default)
 
-I'm at my desk. Pause before commits. Flag uncertainty. Wait for approval on plan steps before implementing.
+The user is at their desk and available for approval.
+
+**Require user approval before:**
+- Creating git commits
+- Pushing to remote
+- Creating or updating pull requests
+- Proceeding past plan review gates (RPI step 4)
+- Making architectural or design decisions not covered by the plan
+
+**Do autonomously (no approval needed):**
+- Reading files, searching code, running non-destructive commands
+- Editing files (the user reviews via tool approval)
+- Running tests, linters, and build checks
+- Writing research docs, plans, and working documents
+
+**Flag uncertainty:** When you encounter ambiguity, state it explicitly and wait for guidance rather than guessing.
 
 ### /away
 
-I'm not at my desk. Commit and push after each completed step without asking. Open draft PRs without asking.
+The user is not at their desk. Maximize progress within safe boundaries.
 
-**Never do these autonomously:** force-push, `git reset --hard`, delete branches, drop database tables, or any other destructive/irreversible operation. These always require explicit user approval regardless of mode.
+**Do autonomously (no approval needed):**
+- Everything in the /active autonomous list, plus:
+- Creating git commits (use the autonomous commit format below)
+- Pushing to remote after each completed logical step
+- Opening draft PRs
+- Making judgment calls on ambiguous-but-low-risk implementation details
 
-**Stop for:** failing tests, merge conflicts, ambiguous requirements where guessing wrong would waste significant work, or anything irreversible not covered above. Log all autonomous decisions in commit message bodies with a `Confidence` tag (high/medium/low) and a note about any choices not specified in the plan.
+**Still require user approval (regardless of mode):**
+- Force-push, `git reset --hard`, deleting branches, dropping database tables
+- Any destructive or irreversible operation
+- Decisions where guessing wrong would waste significant work
 
-When the user returns to `/active`, summarize: what was committed, what decisions were made, and anything flagged for review.
+**Stop and wait for the user when:**
+- Tests fail and the fix is not obvious
+- Merge conflicts arise
+- Requirements are ambiguous AND the wrong guess would waste significant effort
+- Anything irreversible not covered above
+
+Log all autonomous decisions in commit message bodies with a `Confidence` tag (high/medium/low) and a note about any choices not specified in the plan.
+
+### Returning to /active
+
+When the user switches back to /active, respond with a summary:
+- What was committed (list commits with one-line descriptions)
+- What decisions were made autonomously and their confidence level
+- Anything flagged for review or requiring follow-up
 
 ### Autonomous Commit Format
 
-When committing autonomously (in `/away` mode), include a confidence line in the commit message body:
+When committing autonomously (in /away mode), include a confidence line in the commit message body:
 
     Confidence: high|medium|low
     Notes: [any uncertainty or decisions made without human input]
