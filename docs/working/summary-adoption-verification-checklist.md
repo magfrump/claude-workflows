@@ -1,0 +1,1 @@
+Added a Verification section to guides/cross-project-setup.md with 4 smoke tests (RPI activation, code-review skill, divergent-design activation, artifact directory creation) to close the adoption loop from R14's guide.

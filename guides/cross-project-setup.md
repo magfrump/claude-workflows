@@ -41,3 +41,22 @@ These are specific to this repo's self-improvement loop and should **not** be co
 - **`docs/working/hypothesis-log.md`** and **`docs/working/hypothesis-backlog.md`** — Hypothesis tracking infrastructure for this repo's iterative development process.
 - **`guides/validation-gates.md`** and **`guides/subtraction-checklist.md`** — Tied to this repo's merge-gate and self-improvement loop, not general-purpose.
 - **`docs/working/ideas-backlog.md`** and round-tracking files — Internal roadmap artifacts.
+
+## Verification
+
+After setup, run these smoke tests to confirm workflows and skills activate correctly. If any fail, the most likely cause is a missing file reference in `CLAUDE.md` or a workflow/skill `.md` not copied to the target project.
+
+1. **RPI activation.** Describe a multi-file bug to Claude (e.g., "Fix the login timeout bug"). Verify that Claude activates the research-plan-implement workflow — you should see it begin a research phase and reference `docs/working/` for artifacts.
+
+2. **Code-review skill.** Ask Claude to review a diff or prepare a PR (e.g., "review this diff" or "open PR"). Verify the `code-review` skill triggers and produces output in `docs/reviews/`. If it invokes sub-critics (`security-reviewer`, `ui-visual-review`), those dependencies were copied correctly.
+
+3. **Divergent-design activation.** Ask a design question with multiple viable approaches (e.g., "which approach should we use for caching — Redis, Memcached, or local LRU?"). Verify Claude activates the divergent-design workflow and evaluates candidates before committing to one.
+
+4. **Artifact directories.** After completing any of the above, check that the expected directories exist and contain output:
+   - `docs/working/` — research doc or plan from the RPI run
+   - `docs/reviews/` — review output from the code-review run
+   - `docs/decisions/` — decision record or `log.md` entry from the DD run
+
+   If a directory is empty, the workflow ran but its output path may not match your `CLAUDE.md` configuration. Check the "Review Artifacts" and "Shared Thoughts" sections.
+
+**Tracking adoption issues:** If a smoke test catches a setup problem, note it briefly (what failed, what was missing) so you can assess whether the checklist is catching real issues. This helps evaluate whether verification steps are worth maintaining.
