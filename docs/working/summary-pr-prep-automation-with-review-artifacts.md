@@ -1,0 +1,1 @@
+Added mechanical automation to pr-prep.md: environment scan (Step 0), auto-detect test suites (Step 5a), PR description skeleton generation from commits + review artifact scan from docs/reviews/ (Step 6a), and a new "Review evidence" section in the PR template — all while keeping human-judgment steps manual.
