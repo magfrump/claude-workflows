@@ -1,1 +1,1 @@
-Created `guides/debugging-examples.md` (49 lines, 3 worked examples) and added a one-line CLAUDE.md reference from the debugging defaults section; also updated `guides/README.md` index to fix the BATS test failure that rejected the r9 attempt, without reverting task-decomp-briefing-patterns changes.
+Rebased r10 debugging-worked-examples branch onto current main to remove stale effectiveness-framing diffs, yielding a clean 5-file diff (guides/debugging-examples.md, guides/README.md, CLAUDE.md, scope-exception, summary); merged to main.
