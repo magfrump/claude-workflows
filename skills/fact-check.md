@@ -59,6 +59,32 @@ For every checkable claim:
 5. **Cite your sources.** Name the source (organization, publication, dataset) and year. If you found
    a URL, include it.
 
+## AI-Generated Draft Awareness
+
+When the draft source is known or suspected to be AI-generated (e.g., drafted by an LLM, or the user
+flags it as such), apply heightened scrutiny to the claim types most prone to hallucination:
+
+- **Specific numbers** — LLMs frequently fabricate statistics, percentages, and dollar amounts that
+  sound plausible but have no basis. Verify every number against a primary source, even if it "feels right."
+- **Named studies or reports** — Citations to papers, surveys, or datasets that don't exist are a
+  common hallucination pattern. Confirm the study exists, was published where claimed, and actually
+  says what the draft attributes to it.
+- **Attributed quotes** — Quotes attributed to named individuals may be paraphrased, conflated with
+  other statements, or entirely fabricated. Search for the exact quote and verify speaker, context,
+  and date.
+
+This is not a separate workflow — it's the same claim-checking process with a lower threshold for
+accepting claims at face value. In practice: search harder, default to "Unverified" rather than
+"Accurate" when evidence is thin, and treat the absence of a corroborating primary source as a
+meaningful signal rather than an inconvenience.
+
+**In the output report**, when AI-source scrutiny was applied:
+- Add `**Draft source:** AI-generated (heightened scrutiny applied)` to the report header.
+- For any claim where the heightened scrutiny changed your assessment (e.g., you would have rated
+  it "Accurate" on surface plausibility but downgraded after failing to find a primary source),
+  note this in the verdict explanation: "AI-source scrutiny: [brief explanation of what extra
+  verification revealed]."
+
 ## Confidence Calibration
 
 Use these criteria when assigning confidence levels. In your report, briefly state which criterion
