@@ -1,0 +1,1 @@
+Added three optional research-phase templates (new-feature, bug-investigation, refactor) in `workflows/templates/` and referenced them from the RPI workflow's research step as optional scaffolds that reduce blank-page friction without making the workflow rigid.
