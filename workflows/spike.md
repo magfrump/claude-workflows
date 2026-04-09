@@ -87,6 +87,24 @@ The "RPI seed" section is the handoff point. When a spike recommends proceeding,
 
 Save this to `docs/spikes/` in the project if the findings are relevant long-term, or just report to the user if ephemeral.
 
+Here's what a filled-in spike record looks like in practice:
+
+> **Question:** Can pdf-parse extract table structure from our sample invoices?
+>
+> **Answer:** Partial go. It extracts simple tables reliably, but nested/merged-cell tables need post-processing.
+>
+> **Key findings:**
+> - Simple grid tables (90% of our samples) extracted correctly with default settings
+> - Merged cells produced duplicate data in adjacent columns — fixable with a dedup pass
+> - Processing time was ~200ms per page, well within our 2s budget
+> - The library has no built-in header detection; we'd need a heuristic based on bold/font-size
+>
+> **RPI seed:** Scope is "add PDF table extraction to the import pipeline." Key constraint: merged-cell dedup must happen before data hits the normalizer. Start with `src/importers/pdf.ts` and `src/normalizers/table.ts`. Recommended approach: use pdf-parse for raw extraction, add a thin dedup layer, feed into existing normalizer.
+>
+> **Limitations:** The spike only tested 12 sample invoices — all English, all generated (not scanned). It didn't test PDFs with embedded images, scanned documents, or non-Latin character sets. RPI research should check whether those exist in production uploads before committing to this library.
+
+The exact sections don't matter — what matters is that the record captures a clear answer, what you learned, and enough context that someone starting the RPI phase doesn't repeat the spike's work or miss known gaps.
+
 **Done when...**
 - [ ] The spike question has a clear answer (yes/no/conditional) stated in 1-3 sentences
 - [ ] Key findings include what worked, what didn't, and any surprises
