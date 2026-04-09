@@ -31,3 +31,5 @@ Reference documents for specific processes and conventions. Unlike workflows (st
 - **[workflow-selection.md](workflow-selection.md)** — Prescriptive decision tree for choosing the right workflow given a task type. Use when unsure whether to reach for bug-diagnosis vs research-plan-implement, spike vs divergent-design, or any other workflow.
 
 - **[cross-project-setup.md](cross-project-setup.md)** — How to adopt workflows, skills, and artifact conventions from this repo in other projects. Covers full CLAUDE.md adoption, individual skill copying with dependencies, and directory setup. Includes what to skip (repo-specific scripts and hypothesis tracking).
+
+- **[skill-creation.md](skill-creation.md)** — How to write a new skill from scratch: required frontmatter, prompt structure conventions, CLAUDE.md routing entry, and optional test fixtures. Complements cross-project-setup by covering the path from copying existing skills to creating project-specific ones.
