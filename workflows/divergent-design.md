@@ -94,17 +94,17 @@ For the top 3-5 survivors, create a detailed comparison:
 
 #### Stress-test pass
 
-After building the tradeoff matrix, pressure-test the surviving approaches using these cognitive moves adapted from structured critique methods. Not all moves apply to every decision — use the ones that illuminate genuine differences between approaches.
+After building the tradeoff matrix, pressure-test the surviving approaches using these cognitive moves adapted from structured critique methods. Not all moves apply to every decision — select 2-4 moves whose "When to use" trigger matches the current decision context.
 
-| Move | What to ask | Best for |
-|------|------------|----------|
-| **Boring alternative** | Is there a simpler approach that gets 80% of the benefit? Does this approach's complexity earn its keep, or is the simpler version good enough? | Always worth checking — especially when a sophisticated approach is winning |
-| **Invert the thesis** | Argue sincerely for the opposite choice. What survives? What assumptions does the leading approach rest on that you haven't defended? | When one approach seems obviously best — the obvious answer is where hidden assumptions hide |
-| **Revealed preferences** | What do teams/users/systems actually do, vs. what they say they want? If the codebase already has a similar decision point, what did it choose and how did that go? | API design, developer experience, convention choices |
-| **Push to extreme** | Extend this approach's logic further than intended. What breaks? What hidden boundary conditions emerge? | Architecture decisions where the design will be lived with for a long time |
-| **Organizational survival** | Does this survive team turnover, priority shifts, and the person who championed it leaving? Will the next maintainer understand why this choice was made? | Decisions with long maintenance tails — framework selection, data model choices |
-| **Scale test** | What happens at 10x the current traffic, data, users, or contributors? Does the approach degrade gracefully or hit a cliff? | Scalability-sensitive decisions |
-| **Implementation org chart** | Who builds this? Who maintains it? What skills does the team actually have vs. need to acquire? | Build-vs-buy, framework selection, anything requiring new expertise |
+| Move | What to ask | When to use |
+|------|------------|-------------|
+| **Boring alternative** | Is there a simpler approach that gets 80% of the benefit? Does this approach's complexity earn its keep, or is the simpler version good enough? | Use when a complex or sophisticated approach is leading and you haven't verified that a simpler version would be insufficient. |
+| **Invert the thesis** | Argue sincerely for the opposite choice. What survives? What assumptions does the leading approach rest on that you haven't defended? | Use when one approach appears to dominate — unchallenged front-runners are where hidden assumptions hide. |
+| **Revealed preferences** | What do teams/users/systems actually do, vs. what they say they want? If the codebase already has a similar decision point, what did it choose and how did that go? | Use when the decision affects how humans interact with the system (APIs, UX, conventions) and actual usage patterns may differ from stated requirements. |
+| **Push to extreme** | Extend this approach's logic further than intended. What breaks? What hidden boundary conditions emerge? | Use when the design will be difficult to change later and must accommodate conditions beyond current parameters. |
+| **Organizational survival** | Does this survive team turnover, priority shifts, and the person who championed it leaving? Will the next maintainer understand why this choice was made? | Use when the decision's lifespan will exceed the current team's tenure — framework, data model, or infrastructure choices. |
+| **Scale test** | What happens at 10x the current traffic, data, users, or contributors? Does the approach degrade gracefully or hit a cliff? | Use when load, data volume, or user count is expected to grow significantly and the approaches differ in how they handle that growth. |
+| **Implementation org chart** | Who builds this? Who maintains it? What skills does the team actually have vs. need to acquire? | Use when the approaches require different skills or team structures to build and maintain, or involve build-vs-buy tradeoffs. |
 
 Apply 2-4 of the most relevant moves to each surviving approach. Update the tradeoff matrix if the stress test reveals new information — a changed risk rating, a previously unnoticed downside, or a boring alternative that should have been a candidate from the start.
 

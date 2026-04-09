@@ -1,0 +1,1 @@
+Standardized all 7 stress-test moves in divergent-design.md step 4 with explicit "When to use" trigger sentences, replacing the inconsistent "Best for" column to enable deliberate move selection based on decision context.
