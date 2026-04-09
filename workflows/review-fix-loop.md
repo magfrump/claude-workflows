@@ -1,3 +1,7 @@
+---
+value-justification: "Replaces open-ended review-comment-fix cycles with a structured convergence loop that reaches clean code in fewer iterations."
+---
+
 # Review → Fix → Revalidate Loop
 
 This document is reference material for the review-fix loop step in [pr-prep](pr-prep.md). See pr-prep Step 3 for the procedure itself.

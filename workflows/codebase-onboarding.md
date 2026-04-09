@@ -1,3 +1,7 @@
+---
+value-justification: "Replaces unstructured code exploration when joining a new project with systematic coverage of architecture, conventions, and key flows."
+---
+
 # Codebase Onboarding Workflow
 
 *This workflow follows the [orchestrated review pattern](../patterns/orchestrated-review.md), with subsystems as the units of parallel exploration.*
