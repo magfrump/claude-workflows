@@ -57,6 +57,8 @@ For each subsystem, note:
 
 Don't read every file. Read entry points and public interfaces to understand boundaries. Read one representative implementation per subsystem to understand internal patterns.
 
+**Monorepo scoping.** For monorepos with multiple packages or services, scope your architecture mapping to the package or service relevant to your first task — don't attempt to document every package in a single onboarding pass. Note the monorepo's top-level package dependency graph (e.g., from the root `package.json` workspaces, Cargo workspace members, or Go module layout) so you know which adjacent packages interact with yours. List all packages you did *not* examine in Known Unknowns (step 5) with a note that they were out of scope for the current task.
+
 If the codebase is large enough to warrant it (>20 files in multiple directories), use sub-agents to explore subsystems in parallel — one agent per subsystem, each producing the notes above for its area.
 
 **Suggested output structure.** When assembling your findings into the Architecture Map section of the orientation document, consider organizing around these three areas. This isn't a mandatory format — adapt it to fit the codebase — but it provides a useful default that downstream RPI research can quickly parse:
@@ -107,7 +109,7 @@ Note any conventions that are inconsistent (the codebase uses two different appr
 
 After steps 1-4, explicitly list:
 
-- **Modules you didn't read deeply** and why (too large, seemed peripheral, unclear purpose)
+- **Modules you didn't read deeply** and why (too large, seemed peripheral, unclear purpose). In monorepos, explicitly list every package or service you scoped out of the architecture map — these are known unknowns by design, not oversights.
 - **Connections you couldn't trace** (subsystem A calls subsystem B somehow, but the mechanism is unclear)
 - **Decisions that seem surprising** (why is this done this way? Was it intentional or accidental?)
 - **External dependencies you don't understand** (third-party services, internal APIs, shared databases)
@@ -129,7 +131,7 @@ Compile steps 1-5 into `docs/working/onboarding-{project}.md` with these section
 **Date:** {date}
 **Last verified:** {date}
 **Relevant paths:** {repo-relative paths this document covers — e.g., src/, lib/, configs/}
-**Scope:** {what was covered — "full repo" or "backend only" etc.}
+**Scope:** {what was covered — "full repo", "backend only", "packages/api + packages/shared only", etc.}
 
 ## Entry Points
 {bullet list from step 1}
