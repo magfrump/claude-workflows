@@ -1,0 +1,1 @@
+Added a human-oriented preamble before the workflow decision tree in CLAUDE.md explaining that users just describe their task and Claude selects the matching workflow automatically, with the option to request a workflow by name.
