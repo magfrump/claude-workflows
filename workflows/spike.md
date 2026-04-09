@@ -70,7 +70,11 @@ The "RPI seed" section is the handoff point. When a spike recommends proceeding,
 
 Save this to `docs/spikes/` in the project if the findings are relevant long-term, or just report to the user if ephemeral.
 
-### 5. Clean up (advanced)
+### 5. Decision output (recommended)
+
+If the spike's findings resolve a question with **meaningful tradeoffs** (multiple viable options, non-obvious consequences), create or update a decision record in `docs/decisions/NNN-title.md`. If the answer is **unambiguous** (one clear winner, straightforward rationale), add a row to `docs/decisions/log.md` instead. In either case, note the spike record as the source (e.g., "Based on spike: [question]"). Skip this step if the spike's answer is purely "proceed to RPI" with no architectural choice involved.
+
+### 6. Clean up (advanced)
 
 ```bash
 git checkout main
