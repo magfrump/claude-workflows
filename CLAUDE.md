@@ -48,6 +48,19 @@ These skills activate based on what files are being modified, not by explicit re
 
 **Composition note:** `code-review` may invoke `ui-visual-review` and `security-reviewer` as sub-critics when the diff matches their triggers. When running standalone skills, check if a full `code-review` pass would be more appropriate.
 
+### How workflows compose
+
+Workflows are not isolated — they hand off to each other. The most common composition paths:
+
+- **Codebase onboarding → RPI**: Onboarding's architecture map and conventions replace the broad exploration part of RPI research, letting you scope research to the specific task.
+- **RPI ↔ Divergent Design**: When RPI research surfaces 3+ viable approaches, invoke DD as a sub-procedure. DD's decision feeds back into the RPI plan. Carry RPI's constraints into DD's diagnosis step.
+- **RPI ↔ Spike**: When RPI hits a feasibility question that can't be answered by reading code, pause and spike it. The spike's RPI seed section is the handoff back — load it as input to RPI research.
+- **DD → Spike**: DD candidates that involve unfamiliar libraries or techniques can be validated with a spike before committing to a decision.
+- **RPI → PR-prep**: Once RPI implementation is complete, PR-prep packages the work for review. PR-prep embeds the review-fix loop (see `workflows/review-fix-loop.md`).
+- **Bug diagnosis → RPI**: After 3+ failed hypotheses, pivot to RPI's research phase — failed hypotheses document what the bug *isn't*.
+
+Each workflow's "When to pivot" section documents these handoffs in detail with specific triggers. When loading a downstream workflow, carry forward the upstream artifacts (research docs, decision records, spike seeds) rather than starting from scratch. When composing workflows, note the composition in commit messages or working docs (e.g., "DD output loaded into RPI plan") to maintain traceability.
+
 ## Context Packing
 
 Before starting any non-trivial implementation, explicitly establish context:
