@@ -83,7 +83,23 @@ Sub-agents should NOT:
 - [ ] Each sub-agent prompt specifies exact files/directories to examine, questions to answer, and where to write findings
 - [ ] All sub-agents have returned their findings
 
-### 4. Synthesize into a unified research doc
+### 4. Reconcile conflicting assumptions across sub-investigations
+
+Before synthesizing, check whether sub-agents made conflicting assumptions about shared interfaces — data shapes, API contracts, error handling conventions, or naming that spans multiple sub-investigations. When two sub-agents researched different subsystems that communicate through a shared interface, they may have described that interface differently or assumed incompatible behaviors.
+
+For each shared interface identified in step 1:
+- Compare what each relevant sub-agent assumed about its shape, behavior, and error cases
+- If assumptions conflict, resolve by reading the actual code (the ground truth) — don't pick one sub-agent's version arbitrarily
+- Document any conflicts found and their resolution in the research doc under a **Reconciliation** heading. If no conflicts were found, note that explicitly (e.g., "No cross-investigation conflicts identified")
+
+This step is lightweight when sub-investigations are truly independent. It becomes critical when sub-agents researched different sides of the same interface.
+
+**Done when...**
+- [ ] Each shared interface has been checked for conflicting assumptions across sub-agent findings
+- [ ] Conflicts (if any) are resolved by verifying against actual code, not by choosing one sub-agent's version
+- [ ] A Reconciliation section exists in the research doc (even if it just says "no conflicts found")
+
+### 5. Synthesize into a unified research doc
 
 Collect sub-agent outputs into a single research doc following the RPI naming convention: `docs/working/research-{topic}.md`. The synthesized doc must include all RPI-required sections (Scope, What exists, Invariants, Prior art, Gotchas) — sub-agent findings should be reorganized into these sections rather than preserved as separate per-area summaries. Resolve any contradictions or gaps. This synthesized research is what feeds into the plan step of the research-plan-implement workflow.
 
@@ -95,7 +111,7 @@ The main (orchestrating) agent is responsible for writing the final research doc
 - [ ] Sub-agent findings are reorganized by section, not preserved as separate per-area summaries
 - [ ] Contradictions or gaps between sub-agent findings are resolved or flagged
 
-### 5. Plan and implement sequentially
+### 6. Plan and implement sequentially
 
 From here, follow the normal research-plan-implement workflow. The decomposition was about parallelizing *understanding*, not *implementation*. The plan should address the full task as a coherent sequence.
 
