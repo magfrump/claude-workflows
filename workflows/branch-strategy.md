@@ -1,5 +1,20 @@
 # Branch Strategy Guide
 
+## Quick Version
+
+- **main** — Stable, reviewed. Only receives squash-merged PRs.
+- **dev** — Disposable integration branch. Merge features here for testing. Never commit directly.
+- **feat/\*** — Branch off `main`, develop, PR targets `main`.
+
+**Daily loop:**
+1. `git checkout -b feat/name main` — start feature from main
+2. `git checkout dev && git merge feat/name` — integrate for testing
+3. Push feat branch, open PR targeting main
+4. After PR merges: `git checkout dev && git merge main` — keep dev current
+5. Delete merged feature branches
+
+**Key rule:** Merge `main` into `dev` (not rebase) — squash-merge destroys commit identities, rebase causes phantom conflicts.
+
 ## Overview
 
 This strategy is designed for a workflow where:

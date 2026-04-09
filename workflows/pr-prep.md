@@ -2,6 +2,20 @@
 
 *The self-review and cleanup steps follow the [orchestrated review pattern](../patterns/orchestrated-review.md), with commits/files as the units of review.*
 
+## Quick Version
+
+**Phase 1 — Content** (is the code right?):
+1. **Gate checks** — Size under ~500 lines? Dependencies merged?
+2. **Open draft PR** — CI starts in parallel; async visibility for reviewers
+3. **Review-fix loop** — Run `/code-review` + `/self-eval`; triage findings (Must Fix → Must Address → Consider); fix, re-test, re-review until clean
+
+**Phase 2 — Packaging** (is the PR presentable?):
+4. **Clean commits** — Interactive rebase; each commit = one coherent reviewable change
+5. **Verify + annotate** — CI passes; add PR comments explaining unfamiliar code
+6. **Write PR description** — What/How/Test/Uncertainty/Decisions sections
+
+**Key rule:** Complete Phase 1 before Phase 2 — packaging is wasted if content issues force a rethink.
+
 ## When to use
 Before opening any pull request, especially when the reviewer is in a different timezone or unfamiliar with the libraries used.
 

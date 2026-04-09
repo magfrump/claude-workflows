@@ -1,5 +1,17 @@
 # Bug Diagnosis Workflow
 
+## Quick Version
+
+1. **Reproduce** — Confirm the bug; find the minimal trigger; check for flakiness
+2. **Isolate** — Read the error, git bisect for regressions, binary-search code paths, simplify inputs
+3. **Hypothesize** — State a specific, falsifiable prediction (name the function, mechanism, and expected outcome)
+4. **Test** — Run the smallest experiment that confirms or refutes the hypothesis
+5. **Fix** — Apply the minimal correct change; fix root cause, not symptom
+6. **Verify** — Reproduction passes, full test suite passes, edge cases covered
+
+**Key output:** `docs/working/diagnosis-{bug}.md` logging symptoms, hypotheses tested, root cause, and fix
+**Escape hatch:** After 3+ failed hypotheses, pivot to RPI to build deeper understanding.
+
 ## When to use
 - Bug fixes where you already know the area of code involved
 - Regressions where something that worked before now doesn't

@@ -1,0 +1,1 @@
+Added Quick Version TL;DR sections (5-10 line phase checklists with key outputs) near the top of the 5 longest workflow files: user-testing-workflow.md, research-plan-implement.md, bug-diagnosis.md, branch-strategy.md, and pr-prep.md.
