@@ -23,6 +23,7 @@ This workflow produces markdown artifacts in `docs/working/` within the project:
 
 - `docs/working/research-{topic}.md` — what Claude learned about the relevant codebase
 - `docs/working/plan-{topic}.md` — the implementation plan
+- `docs/working/checkpoint-{topic}.md` — curated context artifact for implementation session handoff (generated at the end of the plan phase)
 
 These files are **committed to the repo** but treated as disposable. They exist to support the current task and to give collaborators visibility into Claude's understanding. They are freely overwritten or replaced as work progresses. If something in a working doc has lasting value, move it to `docs/thoughts/` (living knowledge) or `docs/decisions/` (finalized decisions).
 
@@ -122,12 +123,58 @@ Produce a plan doc in `docs/working/`. Include:
 
 - **Risks**: What could go wrong, what's uncertain, what you'd want a reviewer to scrutinize.
 
+#### Checkpoint generation (final sub-step of planning)
+
+After the plan doc is complete, generate a checkpoint artifact at `docs/working/checkpoint-{topic}.md`. This is a **curated single-file context package** designed so that an implementation session can load this one file and have everything it needs — no hunting through research docs, plan docs, or prior conversation history.
+
+Use this template:
+
+```markdown
+# Checkpoint: {topic}
+Date: {YYYY-MM-DD}
+Branch: {current branch}
+Research: docs/working/research-{topic}.md
+Plan: docs/working/plan-{topic}.md
+
+## Key findings
+[Curated subset of research — only what the implementer needs to know.
+Include relevant architecture, patterns, and gotchas. Omit exploration
+dead ends and background that doesn't affect implementation decisions.
+Preserve confidence-provenance tags on load-bearing claims.]
+
+## Plan
+[The agreed approach and ordered steps from the plan doc.
+Copy or summarize — the goal is that the implementer doesn't need
+to open the plan doc separately.]
+
+## Invariants
+[What must not break. Copied from research, but filtered to only
+the invariants relevant to this specific plan's steps.]
+
+## File map
+[Every file the implementer will read or modify, with a one-line
+note on what they'll do there. Example:]
+- `src/api/handler.go` — add new endpoint (step 2)
+- `src/models/user.go` — extend User struct (step 1)
+- `tests/api/handler_test.go` — add integration tests (step 3)
+
+## Open questions
+[Anything unresolved that the implementer should watch for.
+Include decisions deferred during planning and assumptions
+tagged [assumed] in research that haven't been verified.]
+```
+
+The checkpoint is a *derived artifact* — it contains no new information, only a curated arrangement of information from the research and plan docs. If the plan is revised after annotation (step 4), regenerate the checkpoint to match.
+
+**Implementation sessions should load this checkpoint file as their primary context source.** The research and plan docs remain available for deep dives, but the checkpoint is the starting point. When starting a fresh implementation session, read `docs/working/checkpoint-{topic}.md` first; only consult the research or plan docs if the checkpoint doesn't answer a specific question.
+
 **Done when...**
 - [ ] Plan doc exists in `docs/working/` with all required sections (Scope, Approach, Steps, Size estimate, Test specification, Risks)
 - [ ] Each step is specific enough that someone could implement it without re-reading the research doc
 - [ ] Each step is small enough to be one commit
 - [ ] Test specification includes at least one test case per behavioral requirement
 - [ ] No single step would push a file past 500 lines without an explicit note
+- [ ] Checkpoint artifact exists at `docs/working/checkpoint-{topic}.md` with all template sections populated
 
 ### 4. Annotate (recommended) — human reviews and approves before implementation
 
@@ -150,6 +197,7 @@ Claude revises the plan doc based on feedback. This cycle repeats until the user
 - [ ] All user corrections have been incorporated into the plan doc (not just acknowledged conversationally)
 - [ ] If research feedback invalidated the plan, the plan was rewritten from scratch rather than patched
 - [ ] Plan doc reflects the final agreed approach — no unresolved "TBD" or "discuss" markers remain
+- [ ] Checkpoint artifact (`docs/working/checkpoint-{topic}.md`) has been regenerated to reflect the final approved plan
 
 ### 5. Implement (essential) — tests first, then code
 
@@ -169,7 +217,7 @@ If a step turns out to be wrong or incomplete during implementation, **stop and 
 
 **File size discipline**: Keep individual files under **500 lines**. If an implementation step would push a file past this threshold, split it before continuing. This applies to both new files and modifications to existing ones — if an existing file is already near the limit, factor out a coherent subset before adding to it. The 500-line limit is a guideline, not a hard rule; a 520-line file with cohesive logic is fine, but a 700-line file signals that something should have been split earlier.
 
-**Context management**: If the session context is getting heavy (many prior loops, large amount of code read), consider starting a fresh session and loading the plan doc. The plan should contain everything needed to implement without the prior conversational context. But this is a judgment call, not a hard rule — if context is still fresh and the task is flowing, continue in the same session. When ending a session to start fresh, write a handoff doc first (see step 6, "Session handoff") so the next session knows exactly where to resume.
+**Context management**: If the session context is getting heavy (many prior loops, large amount of code read), consider starting a fresh session and loading the checkpoint artifact (`docs/working/checkpoint-{topic}.md`). The checkpoint is designed to be the single file an implementation session needs to get started — it contains curated findings, the plan, invariants, and a file map. Only fall back to the full research or plan docs if the checkpoint doesn't answer a specific question. This is a judgment call, not a hard rule — if context is still fresh and the task is flowing, continue in the same session. When ending a session to start fresh, write a handoff doc first (see step 6, "Session handoff") so the next session knows exactly where to resume.
 
 **Done when...**
 - [ ] All plan steps are implemented with one commit per step
@@ -227,7 +275,7 @@ A handoff doc is not necessary when a session ends at a clean boundary — all p
 - **Trivial changes** (typo fixes, config tweaks, single-line bug fixes): Skip entirely, just make the change.
 - **Changes where you already understand the code**: Skip research, go straight to plan. Or update an existing research doc rather than writing from scratch.
 - **Urgent hotfixes**: Abbreviate to a mental plan, but write a retroactive decision doc if the fix was non-obvious.
-- **Continuation of a previous session's work**: If research and plan docs already exist and are still accurate, pick up from where implementation left off. If a handoff doc exists (`docs/working/handoff-{topic}.md`), load it first — it captures where the previous session stopped and what to do next. Verify the docs are still current before proceeding.
+- **Continuation of a previous session's work**: If research and plan docs already exist and are still accurate, pick up from where implementation left off. If a checkpoint artifact exists (`docs/working/checkpoint-{topic}.md`), load it as your primary context source — it contains curated findings, the plan, invariants, and a file map in a single file. If a handoff doc also exists (`docs/working/handoff-{topic}.md`), load it alongside the checkpoint — the handoff tells you *where you stopped*, the checkpoint tells you *everything else*. Verify the docs are still current before proceeding.
 
 ## Variant: Refactoring
 
