@@ -44,6 +44,8 @@ A reusable guide for planning, running, and interpreting usability tests. Ground
 - [ ] Observer protocol decided (silent, questions at end only)
 - [ ] Pilot session scheduled with a colleague before real sessions
 
+> **Unmoderated variant:** For unmoderated remote sessions, the moderator script (Phase 1) becomes embedded task instructions that participants follow independently — write them to be self-explanatory since you can't clarify in real time. Pilot testing shifts focus from moderator behavior to task clarity and tool setup. Analysis (Phase 3) works from recorded sessions and automatic metrics rather than live notes, so ensure your recording and observation template capture everything you'd normally ask a note-taker to track.
+
 ---
 
 ## Phase 1: Session Design
