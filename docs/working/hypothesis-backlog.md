@@ -6,6 +6,7 @@ before any implementation is attempted. See docs/decisions/008-hypothesis-screen
 ## Resolution Log
 
 - **Round 1 (2026-04-08):** Resolved 3 of 7 TRACKING hypotheses using human feedback from docs/human-author/feedback.md. Reduced TRACKING-with-no-evidence from 7 to 4. Generated 3 next-generation hypotheses (H-08, H-09, H-10).
+- **Round 2 (2026-04-08):** Verified H-10 fix (commit 26e8c41). Post-fix usage.jsonl contains 261 entries across 3 event types and 8 projects. H-10 marked CONFIRMED — logging gap is closed, unblocking H-01/H-05/H-07 evidence collection.
 
 | ID | Hypothesis | Evidence Sources | Created | Status | Last Checked | Evidence Summary |
 |----|-----------|-----------------|---------|--------|-------------|-----------------|
@@ -25,5 +26,5 @@ Informed by Round 1 resolution findings.
 |----|-----------|-----------------|---------|--------|-------------|-----------------|
 | H-08 | Workflows that automate multi-step processes the user would otherwise do manually (divergent-design, user-testing, RPI) have higher adoption than workflows that wrap single-step tasks (bug-diagnosis) | human-feedback, usage.jsonl | 2026-04-08 | TRACKING | — | Derived from H-03 refutation + H-04 confirmation + H-06 feedback. Author's stated adoption driver is "value over manual alternative." |
 | H-09 | Workflow adoption correlates with reduction in manual effort (steps saved), not with workflow brevity (line count) | human-feedback, usage.jsonl | 2026-04-08 | TRACKING | — | Replaces H-06. Author explicitly stated the value metric is enabling behavior that would otherwise require more work. Needs operationalization of "steps saved." |
-| H-10 | The usage.jsonl hook is missing >50% of actual workflow/skill invocations in external projects | usage.jsonl, human-feedback, git-log | 2026-04-08 | TRACKING | — | Author reports using divergent-design and ui-visual-review extensively, but usage.jsonl shows no corresponding entries. Resolving this is a prerequisite for evaluating H-01, H-05, H-07. |
+| H-10 | The usage.jsonl hook is missing >50% of actual workflow/skill invocations in external projects | usage.jsonl, human-feedback, git-log | 2026-04-08 | **CONFIRMED** | 2026-04-08 | Fix in commit 26e8c41 resolved the logging gap. Post-fix verification (2026-04-09) shows 261 entries: 182 workflow events across 8 projects, 66 valid skill events with 19 distinct names, 4 agent dispatches. Skill name extraction works for both flat files and symlinked paths. The 4 "SKILL"-named entries were pre-fix test artifacts from the audit branch itself. Hook is installed in ~/.claude/settings.json for Skill, Read, and Agent tools. H-01, H-05, H-07 evidence collection is now unblocked. |
 
