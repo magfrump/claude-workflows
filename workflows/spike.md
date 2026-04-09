@@ -48,6 +48,18 @@ Spikes have a hard time limit. Default: **30 minutes of active work** (which may
 - [ ] A time limit is stated (default 30 minutes if not specified)
 - [ ] The timebox is short enough to prevent the spike from becoming an implementation
 
+### Abandon signals — when to stop before the timebox expires
+
+These signals indicate the spike is no longer productive. When you notice one, stop working and act on it rather than continuing to the timebox limit.
+
+- **No convergence.** The timebox is more than half spent and you're not closer to an answer than when you started — findings are contradictory, each experiment raises new questions rather than narrowing the space, or you're blocked on something outside the spike's scope. **Action:** Record what you tried, mark the spike as "inconclusive — needs different approach," and stop. The "what didn't work" list is the spike's deliverable.
+
+- **Scope drift.** You've started investigating questions beyond the original one — adding "while I'm here" experiments, expanding to adjacent feasibility questions, or building more than the minimum needed to answer the question. **Action:** Stop. Check whether the original question is already answered (often it is, and the drift is a sign you're avoiding committing to the answer). If not, reframe: write down the new question as a separate spike, and finish or abandon the current one on its original scope.
+
+- **Wrong question.** You discover the spike is answering a different question than what actually matters — the assumption behind the question was wrong, the real blocker is elsewhere, or the answer (whatever it is) won't change the decision. **Action:** Stop immediately. Don't salvage partial findings by bending them toward the real question. Record what you learned about *why* the question was wrong, reframe, and start a new spike with the corrected question.
+
+When recording findings (step 4), note which signal triggered an early stop in the **Answer** section (e.g., "Stopped early: scope drift — original question answered at minute 15, additional exploration was beyond scope"). This makes spike records more useful for understanding why a spike ended the way it did.
+
 ### 3. Work in a throwaway space (essential)
 
 ```bash
