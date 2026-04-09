@@ -118,24 +118,18 @@ summary. If the user references a skill not listed here, they can include it via
 
 ### Step 3: Auto-select contextual critics
 
-Run a quick analysis of the diff to determine which contextual critics to include:
+Run a quick analysis of the diff to determine which contextual critics to include. Use the
+table below — check each row's diff characteristic and invoke the critic if it matches.
 
-- **`test-strategy`** — triggered when source files are changed without corresponding test
-  files changed. Check: are there changed files in `src/`, `lib/`, or similar that don't have
-  a matching change in `test/`, `tests/`, `__tests__/`, or `*_test.*` / `*.test.*`?
+| Diff characteristic | Critic to invoke | Rationale |
+|---|---|---|
+| Source files changed (`src/`, `lib/`, etc.) without corresponding test file changes (`test/`, `tests/`, `__tests__/`, `*_test.*`, `*.test.*`) | `test-strategy` | Untested source changes are the highest-risk gap a review can catch. |
+| Dependency manifests changed (`package.json`, `requirements.txt`, `Cargo.toml`, `go.mod`, `Gemfile`, `pyproject.toml`, `pom.xml`, or similar) | `dependency-upgrade` | Dependency changes carry supply-chain, compatibility, and licensing risk that general critics miss. |
+| Large diff: >10 files changed OR >500 added/removed lines (check via `git diff --stat`) | `tech-debt-triage` | Large changes are where debt accrues unnoticed; a dedicated pass catches structural issues. |
+| Diff touches UI rendering code: JSX/TSX with className or style props, CSS/SCSS files, HTML templates, C#/Unity UI components (Canvas, RectTransform, ScrollRect, UI namespace), Vue/Svelte templates, or files with Tailwind utility classes. Trigger is presence of visual/layout code, not file extension alone. | `ui-visual-review` | Visual regressions are invisible to text-based critics; this critic catches layout, overflow, and sizing issues. |
 
-- **`dependency-upgrade`** — triggered when dependency manifests are changed. Check: does the
-  diff touch `package.json`, `requirements.txt`, `Cargo.toml`, `go.mod`, `Gemfile`,
-  `pyproject.toml`, `pom.xml`, or similar dependency files?
-
-- **`tech-debt-triage`** — triggered when the diff is large. Check: does the diff span more
-  than 10 files or more than 500 added/removed lines? (Use `git diff --stat` to check.)
-
-- **`ui-visual-review`** — triggered when the diff touches UI rendering code. Check: does
-  the diff contain changes to files with visual elements — JSX/TSX with className or style
-  props, CSS/SCSS files, HTML templates, C#/Unity UI components (Canvas, RectTransform,
-  ScrollRect, UI namespace), Vue/Svelte templates, or any file with Tailwind utility classes?
-  The trigger is the presence of visual/layout code, not file extension alone.
+**How to check:** For each row, scan the diff file list and content. Multiple rows can match
+simultaneously — invoke all matching critics. If no rows match, no contextual critics run.
 
 ### Step 4: User overrides
 
