@@ -1,0 +1,1 @@
+Cherry-picked trigger examples from origin/feat/r11-workflow-trigger-examples onto current main, avoiding stale debugging-examples file deletions that caused prior rejection. Only CLAUDE.md and summary touched.
