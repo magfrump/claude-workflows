@@ -1,0 +1,1 @@
+Read-only audit of 5 skills against Anthropic's official skill-creator guidelines; identified 7 actionable divergences (non-standard frontmatter fields, flat-file structure, description truncation, line count excess, tool name mismatch) and wrote findings to guides/skill-format-audit.md.
