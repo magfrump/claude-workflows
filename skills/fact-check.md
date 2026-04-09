@@ -54,10 +54,28 @@ For every checkable claim:
      actually shows.
    - **Unverified** — You could not find reliable evidence to confirm or deny this claim. It may be
      true, but it needs a source.
-4. **State your confidence level** (high, medium, low) and briefly say why. "High confidence" means
-   multiple reliable sources agree. "Low confidence" means you found limited or conflicting evidence.
+4. **State your confidence level** (High, Medium, or Low) using the calibration criteria below,
+   and briefly say which criterion applies and why.
 5. **Cite your sources.** Name the source (organization, publication, dataset) and year. If you found
    a URL, include it.
+
+## Confidence Calibration
+
+Use these criteria when assigning confidence levels. In your report, briefly state which criterion
+applies so that confidence ratings are consistent and auditable.
+
+- **High** — Claim verified against a **primary source**: official documentation, direct code reading,
+  government data, peer-reviewed research, or another authoritative reference. Multiple independent
+  primary sources further strengthen a High rating.
+- **Medium** — Claim is consistent with **multiple secondary sources** (reputable journalism, expert
+  commentary, well-sourced reference material) or follows from a **strong inferential chain** grounded
+  in verified premises. No primary source was found, but the convergence of evidence is persuasive.
+- **Low** — Claim rests on a **single source**, relies on **indirect inference** (e.g., extrapolation
+  from loosely related data), or faces **conflicting signals** from sources of comparable reliability.
+  A Low rating does not mean the claim is wrong — it means the evidentiary basis is thin or contested.
+
+When in doubt between two levels, choose the lower one and explain what additional evidence would
+raise confidence.
 
 ## How to handle ambiguity
 
