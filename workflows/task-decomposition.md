@@ -25,9 +25,20 @@ Example decomposition for "add API endpoint with auth and rate limiting":
 - **Independent area B**: Is there existing rate limiting? What library/approach?
 - **Independent area C**: What's the data model for the resource being exposed?
 
+**Done when...**
+- [ ] The distinct areas of the codebase involved are listed
+- [ ] Each area is labeled as either a shared dependency or an independent sub-investigation
+- [ ] Independent areas can be researched without understanding the others first
+- [ ] Shared dependencies (if any) are identified and will be researched before independent areas
+
 ### 2. Research shared dependencies first
 
 If sub-investigations have a shared dependency, research that first in the main agent. Produce a research doc for it. This grounds all subsequent sub-investigations in the same understanding.
+
+**Done when...**
+- [ ] All shared dependencies have a research doc (or documented section) with findings
+- [ ] The research covers enough detail that sub-agents can work without re-investigating shared areas
+- [ ] If no shared dependencies exist, this step is explicitly skipped (not silently omitted)
 
 ### 3. Dispatch sub-agents for independent research
 
@@ -48,15 +59,30 @@ Sub-agents should NOT:
 - Make architectural decisions (that's the main agent + human's job)
 - Proceed to planning or implementation
 
+**Done when...**
+- [ ] Each independent area has a sub-agent dispatched (or researched sequentially if sub-agents are unavailable)
+- [ ] Each sub-agent prompt specifies exact files/directories to examine, questions to answer, and where to write findings
+- [ ] All sub-agents have returned their findings
+
 ### 4. Synthesize into a unified research doc
 
 Collect sub-agent outputs into a single research doc following the RPI naming convention: `docs/working/research-{topic}.md`. The synthesized doc must include all RPI-required sections (Scope, What exists, Invariants, Prior art, Gotchas) — sub-agent findings should be reorganized into these sections rather than preserved as separate per-area summaries. Resolve any contradictions or gaps. This synthesized research is what feeds into the plan step of the research-plan-implement workflow.
 
 The main (orchestrating) agent is responsible for writing the final research doc, not the sub-agents. Sub-agents produce raw findings; the main agent structures them into the RPI format.
 
+**Done when...**
+- [ ] A unified research doc exists at `docs/working/research-{topic}.md`
+- [ ] The doc includes all RPI-required sections (Scope, What exists, Invariants, Prior art, Gotchas)
+- [ ] Sub-agent findings are reorganized by section, not preserved as separate per-area summaries
+- [ ] Contradictions or gaps between sub-agent findings are resolved or flagged
+
 ### 5. Plan and implement sequentially
 
 From here, follow the normal research-plan-implement workflow. The decomposition was about parallelizing *understanding*, not *implementation*. The plan should address the full task as a coherent sequence.
+
+**Done when...**
+- [ ] The RPI workflow has been entered with the synthesized research doc as input
+- [ ] The plan addresses the full task as a coherent sequence (not as separate per-area plans)
 
 ## When to skip
 

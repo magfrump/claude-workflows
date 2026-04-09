@@ -1,0 +1,1 @@
+Added "Done when..." checklists to all steps in spike.md (5 steps), bug-diagnosis.md (6 steps), task-decomposition.md (5 steps), and branch-strategy.md (4 procedural sections), matching the concrete/observable style used in DD and RPI workflows.
