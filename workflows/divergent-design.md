@@ -31,12 +31,23 @@ Generate 8-15 candidate approaches. Quantity matters more than quality at this s
 - One sentence each, no evaluation yet
 - Number them for reference
 
+#### Generation health check
+
+After generating your initial candidates, scan for these common generation gaps. This is not evaluation — you are checking whether the *search space* is broad enough, not whether any candidate is good or bad. If a gap is found, generate additional candidates to fill it; never remove existing ones.
+
+- **Candidate clustering**: Do 3 or more candidates describe near-variants of the same underlying approach (e.g., three different caching strategies that all assume caching is the answer)? If so, you've anchored on one region of the solution space. Name the shared assumption and generate 2-3 candidates that violate it. Note which cluster triggered this so the pattern is visible in retrospect.
+- **Missing perspectives**: Is there a "do nothing" or "minimal change" option? A naive or brute-force option? An option that a newcomer unfamiliar with the codebase might suggest? These perspectives often survive pruning — their absence usually means anchoring, not that they were considered and rejected.
+- **Excessive vagueness**: Can each candidate be tested against a concrete constraint? A candidate like "use a better architecture" or "improve the data flow" can't be meaningfully evaluated in step 3's compatibility matrix. Replace vague candidates with specific ones — what *specific* architecture? What *specific* change to data flow?
+
+If the health check triggers additional generation, note it briefly (e.g., "Added 3-5 after health check flagged clustering around caching approaches"). This makes generation patterns visible across sessions.
+
 **Done when...**
 - [ ] At least 8 candidate approaches are listed
 - [ ] At least 2-3 approaches feel wrong, naive, or unconventional
 - [ ] A "do nothing" or "minimal change" option is included
 - [ ] An "ideal if effort were free" option is included
 - [ ] No evaluation or ranking has been applied yet — only generation
+- [ ] Generation health check passed: no unaddressed clustering, missing perspectives, or vague candidates
 
 ### 2. Diagnose — specify the actual problems and constraints
 
@@ -143,6 +154,8 @@ Generate 8-15 candidate explanations for the observed phenomenon. The same quant
 - Include at least 1 "null hypothesis" (the observation is noise, expected behavior, or measurement error)
 - Include at least 1 explanation that would imply a deeper systemic issue
 - One sentence each, no evaluation yet
+
+Apply the **generation health check** from step 1 of the main process, adapted for hypotheses: watch for clustering around one causal mechanism, missing null hypotheses, and explanations too vague to generate testable predictions.
 
 #### 2. Diagnose — identify distinguishing evidence
 

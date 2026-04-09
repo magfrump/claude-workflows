@@ -1,0 +1,1 @@
+Added a generation health check to DD step 1 (Diverge) that flags candidate clustering, missing perspectives, and excessive vagueness — framed as generation assistance to preserve the "no evaluation yet" principle, with a note in the epistemic variant to apply the same checks to hypotheses.
