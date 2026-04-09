@@ -1,0 +1,1 @@
+Added 'Lightweight refresh' subsection under codebase-onboarding.md's 'When to re-run' section with clear criteria for when a targeted refresh (review git log, update Architecture Map and Known Unknowns, bump Last verified) is proportionate vs. when a full 7-step re-run is needed.
