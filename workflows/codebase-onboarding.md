@@ -160,6 +160,16 @@ If no reviewer is available, treat the Known Unknowns section as a list of thing
 - [ ] Any reviewer corrections have been incorporated into the document
 - [ ] The onboarding doc is ready to serve as input for RPI research phases
 
+## Onboarding sufficiency
+
+Before handing off to RPI, verify the onboarding doc meets these criteria. If any fail, the doc has gaps that will slow down task work.
+
+1. **"Where would I look?" test.** For any likely task category (add a feature, fix a bug, change config, add a test), you can name the directory, file, or subsystem to start in — without re-reading code. If you can't, the Architecture Map or Suggested Starting Points section has gaps.
+2. **Unknowns are on-demand only.** Every item in Known Unknowns is something you'd investigate *when a task requires it*, not something that blocks general navigation. If any unknown would block multiple unrelated tasks, resolve it before handing off.
+3. **Conventions are actionable.** The Conventions section has enough detail that new code written following it would pass review without style corrections. If a convention is noted but not exemplified, add a file path and example.
+
+These criteria also apply when judging whether a *returning* onboarding session (triggered by staleness) has restored the doc to a usable state.
+
 ## Relationship to other workflows
 
 - **Feeds into task decomposition**: The architecture map helps identify which subsystems a large task touches, enabling better decomposition.
@@ -172,6 +182,17 @@ See also "When to pivot" above for RPI and DD handoff guidance.
 - When a major refactoring or migration has landed
 - When the orientation doc's Known Unknowns section is mostly resolved and you want a fresh scan for new unknowns
 - When the **freshness check** shows changes to tracked paths (see below)
+
+### Staleness signals
+
+These are concrete triggers that indicate the onboarding doc needs a refresh. Check for them before relying on an existing doc, especially at the start of a new session.
+
+1. **Major dependency upgrade.** A framework or runtime version bump (e.g., React 18→19, Python 3.11→3.12, Rails major version) can change conventions, entry points, and key abstractions. Check `git log --oneline --all -- '*lock*' 'package.json' 'requirements*.txt' '*.gemspec' 'go.mod'` for dependency changes since `Last verified`.
+2. **New subsystem added.** A new top-level directory, service, or module that didn't exist when the doc was written means the Architecture Map is incomplete. Check `git log --oneline --diff-filter=A --since="<Last verified date>" -- <Relevant paths>` for newly added files in structural locations.
+3. **High churn since last update.** If >30% of files under tracked `Relevant paths` have been modified since `Last verified`, the doc likely has stale descriptions. Check with `git diff --stat <last-verified-commit>..HEAD -- <Relevant paths>` and compare against total file count.
+4. **Doc age with active development.** If `Last verified` is >30 days old and the repo has had active commits in that period, refresh even if no single trigger above fires — accumulated small changes can silently invalidate the mental model.
+
+When any signal fires, re-run the full onboarding workflow rather than patching the doc incrementally. Update `Last verified` to today's date after the refresh, and note which signal triggered the re-run in the commit message (e.g., `docs: refresh onboarding — new subsystem added`).
 
 ### Freshness check
 
