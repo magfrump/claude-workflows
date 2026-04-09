@@ -39,7 +39,7 @@ document.
 
 These rules are absolute. Do not deviate from them under any circumstances.
 
-1. You MUST use the Task tool to spawn sub-agents for ALL fact-checking and critique work.
+1. You MUST use the Agent tool to spawn sub-agents for ALL fact-checking and critique work.
    You MUST NOT write fact-checks or critiques yourself. You are the orchestrator, not an
    analyst. If you find yourself writing analytical observations about the draft's claims or
    arguments, STOP — you are doing a sub-agent's job.
@@ -100,7 +100,7 @@ Keep this brief — a short paragraph, not a lengthy explanation.
 
 ### Stage 1: Fact-Check
 
-Spawn fact-check sub-agent(s) using the Task tool.
+Spawn fact-check sub-agent(s) using the Agent tool.
 
 **Default:** 1 fact-check agent.
 **Ensemble mode:** If the user requests it (e.g., "run 3 of each", "ensemble mode"), spawn
@@ -108,10 +108,10 @@ that many independent instances in parallel instead.
 
 For each fact-check agent, you MUST:
 1. Read the full contents of `skills/fact-check.md`
-2. Paste those contents directly into the Task tool prompt (sub-agents cannot read your files)
+2. Paste those contents directly into the Agent tool prompt (sub-agents cannot read your files)
 3. Include the full draft text in the prompt
 4. Instruct the agent to save its report as `docs/reviews/fact-check-report.md`
-5. Launch via the Task tool with `subagent_type: "general-purpose"`
+5. Launch via the Agent tool with `subagent_type: "general-purpose"`
 
 **CHECKPOINT:** Wait for ALL fact-check agent(s) to return results. Count the results. Do you
 have the expected number? If yes, proceed. If not, STOP and tell the user something went wrong.
@@ -143,7 +143,7 @@ and proceed directly.
 
 ### Stage 2: Critic Agents
 
-Now — and ONLY now — spawn critic sub-agents using the Task tool.
+Now — and ONLY now — spawn critic sub-agents using the Agent tool.
 
 **DO NOT write critiques yourself. You MUST dispatch each critique to a sub-agent via the Task
 tool.** This is non-negotiable.
@@ -153,15 +153,15 @@ tool.** This is non-negotiable.
 
 For each critic agent instance, you MUST:
 1. Read the full contents of that critic's skill file (e.g., `skills/cowen-critique.md`)
-2. Paste those contents directly into the Task tool prompt
+2. Paste those contents directly into the Agent tool prompt
 3. Include the full draft text
 4. Include the fact-check results (consensus summary if ensemble, or the single agent's findings)
 5. Instruct the agent to save its critique as `docs/reviews/[critic-name]-critique.md`.
    The agent decides what goes in the file based on its own skill instructions — do not
    prescribe the format.
-6. Launch via the Task tool with `subagent_type: "general-purpose"`
+6. Launch via the Agent tool with `subagent_type: "general-purpose"`
 
-**Launch ALL critic agents simultaneously** in a single message with multiple Task tool calls.
+**Launch ALL critic agents simultaneously** in a single message with multiple Agent tool calls.
 They must not see each other's output.
 
 **CHECKPOINT:** Wait for ALL critic agent(s) to return results. Count the results. Do you have
