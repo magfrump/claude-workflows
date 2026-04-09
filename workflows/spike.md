@@ -131,6 +131,8 @@ The exact sections don't matter — what matters is that the record captures a c
 - [ ] A recommendation is stated (proceed to RPI / try alternative / need more investigation)
 - [ ] If recommending "proceed," the RPI seed section is populated with scope, invariants, relevant files, gotchas, and gaps
 
+**Promote lasting discoveries.** If the spike produced knowledge with lasting value beyond the current task — library limitations, undocumented API behavior, approaches definitively ruled out — promote those findings to `docs/thoughts/` with `Last verified` and `Relevant paths` freshness fields before deleting the spike branch. This prevents valuable discovery from being lost when the throwaway branch is cleaned up. Even a 3-line note like "pdf-parse silently drops merged cells — discovered in spike 2024-03-15" is worth preserving if it would save a future session from re-discovering the same limitation.
+
 ### 5. Decision output (recommended)
 
 If the spike's findings resolve a question with **meaningful tradeoffs** (multiple viable options, non-obvious consequences), create or update a decision record in `docs/decisions/NNN-title.md`. If the answer is **unambiguous** (one clear winner, straightforward rationale), add a row to `docs/decisions/log.md` instead. In either case, note the spike record as the source (e.g., "Based on spike: [question]"). Skip this step if the spike's answer is purely "proceed to RPI" with no architectural choice involved.
