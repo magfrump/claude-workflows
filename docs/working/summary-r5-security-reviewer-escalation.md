@@ -1,0 +1,1 @@
+Added "Critical Finding Escalation" section to security-reviewer.md with 5 halt-and-escalate patterns (plaintext secrets, missing auth, injection, disabled TLS, hardcoded keys) and a prescribed escalation output block format.

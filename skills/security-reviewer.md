@@ -189,6 +189,53 @@ are good — it's about checking that:
 If you're not confident in your cryptographic assessment, say so and flag it for expert
 review rather than guessing.
 
+## Critical Finding Escalation
+
+Some findings are severe enough that they should **halt the review and be surfaced to a human
+immediately**, before continuing with the rest of the analysis. These are not just "Critical
+severity" — they are patterns where the risk is so high and the fix so urgent that burying them
+in a list of findings would be irresponsible.
+
+When any of the following patterns are detected, **stop normal review flow** and emit an
+escalation block (format below) before continuing with the remaining cognitive moves:
+
+1. **Plaintext credentials or secrets in source** — API keys, passwords, tokens, or connection
+   strings committed to the repository in cleartext (not references to secret stores or
+   environment variable names).
+2. **Missing authentication on privileged endpoints** — administrative, data-deletion, or
+   configuration-changing endpoints that can be reached without any authentication check.
+3. **SQL injection or command injection in user-facing code** — unsanitized user input
+   concatenated into SQL queries, shell commands, or system calls.
+4. **Disabled TLS or certificate verification** — code that sets `verify=False`,
+   `NODE_TLS_REJECT_UNAUTHORIZED=0`, `InsecureSkipVerify: true`, or equivalent, in
+   production code paths (not test fixtures).
+5. **Hardcoded cryptographic keys** — encryption keys, HMAC secrets, or signing keys
+   embedded as literals in source code rather than loaded from secure key management.
+
+Keep this list short. Adding patterns increases noise and escalation fatigue — only patterns
+with near-certain exploitability and high blast radius belong here.
+
+### Escalation output format
+
+When a pattern matches, emit this block **at the top of your critique output**, before the
+Trust Boundary Map:
+
+```
+> 🚨 **HALT — ESCALATE TO HUMAN**
+>
+> **Pattern:** [Which escalation pattern matched, e.g., "Plaintext credentials in source"]
+> **Location:** `path/to/file.ext:42`
+> **Detail:** [1-2 sentences: what was found and why it's urgent]
+>
+> This finding requires immediate human attention before the remaining review is actionable.
+> Do not merge or deploy until this is resolved.
+```
+
+If multiple escalation patterns match, emit one block per pattern. Then continue with the
+normal review below. Escalated findings should still appear in the Findings section with
+full detail — the escalation block is an **early warning**, not a replacement for the
+structured finding.
+
 ## How to Structure the Critique
 
 Output your critique as a Markdown document.
