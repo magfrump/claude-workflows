@@ -1,0 +1,1 @@
+Added three named abandon signals (no convergence, scope drift, wrong question) to spike.md between the timebox and throwaway-space steps, each with a specific action, so spikes stop early with a clear reason rather than running to timebox exhaustion.
