@@ -1,0 +1,1 @@
+Created `guides/debugging-examples.md` (49 lines) with three worked examples — hypothesis formation, 3-hypothesis escape hatch, root-cause vs. symptom fix — and added a one-line reference from the debugging defaults section in CLAUDE.md.
