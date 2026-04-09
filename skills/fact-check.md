@@ -59,6 +59,32 @@ For every checkable claim:
 5. **Cite your sources.** Name the source (organization, publication, dataset) and year. If you found
    a URL, include it.
 
+### Code-Based Claims
+
+When a draft makes claims about the codebase itself — function behavior, config defaults, API
+contracts, test coverage, module structure, error handling — **the primary source is the code**.
+
+For these claims, replace step 2's web search with direct code verification:
+
+- **Read the relevant source files.** Use file reading to inspect the actual implementation,
+  not documentation that may be stale.
+- **Grep for specifics.** Search for function names, config keys, default values, error strings,
+  or test assertions mentioned in the claim. A grep hit (or miss) is direct evidence.
+- **Check tests and config files.** Claims about test coverage or default behavior are verifiable
+  against test suites and configuration files.
+
+Apply the same verdict scale (Accurate / Mostly accurate / Disputed / Inaccurate / Unverified)
+and the same confidence calibration. A claim verified by reading the source code qualifies for
+**High confidence** — code is a primary source. A claim that contradicts what the code shows is
+**Inaccurate** regardless of what documentation or comments say.
+
+This does **not** replace web search for non-code claims. If a draft mixes codebase claims with
+external claims (statistics, policy references, attributed quotes), use code reading for the
+former and web search for the latter.
+
+In the output report, tag code-verified claims with their file path and line number so the
+author can trace your verification: e.g., `**Source:** src/config.ts:42`.
+
 ## AI-Generated Draft Awareness
 
 When the draft source is known or suspected to be AI-generated (e.g., drafted by an LLM, or the user
