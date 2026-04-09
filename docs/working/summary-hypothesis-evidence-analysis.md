@@ -1,0 +1,1 @@
+Analyzed 937 usage.jsonl entries (all from 2026-04-09); marked H-01, H-05, H-07 as INCONCLUSIVE — the hook logs file reads not activations, covers only 1 day, and shows only 2 external projects with 3 total events, making the data structurally insufficient for definitive verdicts.
