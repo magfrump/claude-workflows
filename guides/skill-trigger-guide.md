@@ -2,6 +2,8 @@
 
 Which skill to invoke for a given task. Skills are agent-invocable prompts that produce analysis artifacts — they differ from workflows (which structure multi-phase human+agent collaboration) and from guides (which document conventions).
 
+> **Canonical source:** CLAUDE.md's "Skill routing" table defines the three auto-triggered skills (ui-visual-review, security-reviewer, code-review). This guide is a superset covering all skills including manually invoked ones. If auto-trigger rules diverge, CLAUDE.md wins.
+
 **Key distinction:** Workflows answer "how should I work on this?" Skills answer "what analysis should I run on this artifact?"
 
 ## Quick-Reference: Task → Skill(s)
