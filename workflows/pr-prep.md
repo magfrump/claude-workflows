@@ -94,7 +94,15 @@ For each finding: confirm it's real by reading the code, then fix. Commit in coh
 
 **c. Run tests.** After fixing findings, re-run the test suite. Fixes often surface latent bugs — a tightened assertion may expose a helper bug, a scoping fix may reveal a silent false pass. Fix test breakage as separate commits.
 
-**d. Re-review.** Run the same review skills again. Compare against prior findings: are they resolved? Did fixes introduce new ones? Did reviewers surface issues previously masked?
+**d. Re-review.** On the first iteration, run full review skills against the complete diff vs main. On iterations 2+, scope the re-review to reduce redundant work:
+
+1. **Diff only the fixes.** Use `git diff <last-review-commit>..HEAD` to isolate code changed since the last review iteration. Run review skills against this narrower diff — unchanged code has already been reviewed.
+2. **Verify prior Must Fix findings.** Walk the prior review's Must Fix and Must Address items and confirm each is resolved in the new diff. Mark each as resolved or still-open. This is a targeted check, not a full re-read of surrounding code.
+3. **Spot-check for regressions.** Scan fix commits for unintended side effects (broken imports, changed signatures, shifted scoping). The narrower diff makes these easier to catch.
+
+If a fix touched code broadly enough that the narrower diff covers most of the PR, fall back to a full re-review — the incremental approach only helps when fixes are localized.
+
+**Tracking iteration scope:** Note in the review artifact whether each iteration used full or incremental scope, and how many prior findings were verified as resolved vs. still-open. This supports evaluating whether incremental re-review reduces review output length and duplicate findings over time.
 
 **e. Exit or repeat (3-iteration maximum).** Exit when no Must Fix items remain and Must Address items are resolved or explicitly acknowledged. Repeat if new findings appear. Each loop should be strictly smaller than the last.
 
