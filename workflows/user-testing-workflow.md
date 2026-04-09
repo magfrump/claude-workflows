@@ -1,3 +1,7 @@
+---
+value-justification: "Replaces improvised usability testing with a structured HCI-grounded protocol, ensuring consistent and actionable findings."
+---
+
 # User Testing Workflow Prompt
 
 A reusable guide for planning, running, and interpreting usability tests. Grounded in HCI literature (Nielsen, Brooke, Travis, Dumas & Redish, etc.) and adapted for small-team/indie contexts.
