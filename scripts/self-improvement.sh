@@ -657,7 +657,7 @@ CONVERGENCE_EOF
         OVERLAP_PROMPT+="$_CONVERGENCE_BODY"
         OVERLAP_RESULT=$(claude -p "$OVERLAP_PROMPT" 2>/dev/null | grep -oP '\d+' | head -1) || true
 
-        if [ -n "$OVERLAP_RESULT" ] && [ "$OVERLAP_RESULT" -ge "$CONVERGENCE_THRESHOLD" ]; then
+        if [ -n "$OVERLAP_RESULT" ] && check_convergence_threshold "$OVERLAP_RESULT" "$CONVERGENCE_THRESHOLD"; then
             echo "Convergence detected: ${OVERLAP_RESULT}% of problems overlap with prior rounds (threshold: ${CONVERGENCE_THRESHOLD}%)."
             echo "Stopping before round $ROUND implementation ($((ROUND - 1)) rounds completed)."
             echo "[round-$ROUND] CONVERGED: ${OVERLAP_RESULT}% problem overlap" >> "$WORKING_DIR/validation-round-$ROUND.log"
