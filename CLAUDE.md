@@ -14,14 +14,14 @@ Evaluate triggers top-to-bottom. Take the **first match**; if none match, defaul
 
 | # | Trigger condition | Activate | Notes |
 |---|-------------------|----------|-------|
-| 1 | **New/unfamiliar codebase**, or first session in a project with no `docs/thoughts/` | `codebase-onboarding.md` | Output feeds into RPI research — don't redo what onboarding already learned. |
-| 2 | **Task involves a design choice** with 3+ viable approaches, or keywords: "which approach", "tradeoff", "library selection", "architecture" | `divergent-design.md` | Often invoked as a sub-procedure within RPI (RPI step 2 signals → DD → decision feeds back into plan). DD↔RPI is the most common composition. |
-| 3 | **Non-trivial feature or bug fix** (touches >1 file, root cause unclear, needs codebase understanding) | `research-plan-implement.md` | The default. If RPI research reveals a design fork, invoke DD inline. If research reveals root cause of a bug, skip to Fix & Verify (see debugging defaults below). |
-| 4 | **Task touches multiple subsystems** and can be decomposed into independent sub-investigations | `task-decomposition.md` | Layer on top of RPI — each sub-task may itself follow RPI or spike. |
-| 5 | **Feasibility question**: "can this work?", unfamiliar library, proof-of-concept | `spike.md` | Spike output includes an RPI seed section; load it when transitioning to implementation. |
-| 6 | **Work is ready to open a PR**, or keywords: "open PR", "ready for review", "package this up" | `pr-prep.md` | Includes the review-fix loop (code-review + self-eval → fix → retest → re-review until clean). The review-fix loop is a required sub-procedure, not optional. |
-| 7 | **Planning, running, or analyzing a usability test**, or keywords: "user test", "moderator script", "usability" | `user-testing-workflow.md` | |
-| 8 | **High-throughput multi-branch development** with async review | `branch-strategy.md` | |
+| 1 | **New/unfamiliar codebase**, or first session in a project with no `docs/thoughts/` | `codebase-onboarding.md` | e.g., "Help me understand this repo" · Output feeds into RPI research — don't redo what onboarding already learned. |
+| 2 | **Task involves a design choice** with 3+ viable approaches, or keywords: "which approach", "tradeoff", "library selection", "architecture" | `divergent-design.md` | e.g., "Should we use Postgres or DynamoDB for this?" · Often invoked as a sub-procedure within RPI (RPI step 2 signals → DD → decision feeds back into plan). DD↔RPI is the most common composition. |
+| 3 | **Non-trivial feature or bug fix** (touches >1 file, root cause unclear, needs codebase understanding) | `research-plan-implement.md` | e.g., "Fix the login timeout bug" or "Add CSV export to the reports page" · The default. If RPI research reveals a design fork, invoke DD inline. If research reveals root cause of a bug, skip to Fix & Verify (see debugging defaults below). |
+| 4 | **Task touches multiple subsystems** and can be decomposed into independent sub-investigations | `task-decomposition.md` | e.g., "Migrate auth, billing, and notifications to the new API version" · Layer on top of RPI — each sub-task may itself follow RPI or spike. |
+| 5 | **Feasibility question**: "can this work?", unfamiliar library, proof-of-concept | `spike.md` | e.g., "Can we use WebSockets for real-time sync here?" · Spike output includes an RPI seed section; load it when transitioning to implementation. |
+| 6 | **Work is ready to open a PR**, or keywords: "open PR", "ready for review", "package this up" | `pr-prep.md` | e.g., "This is ready, open a PR" · Includes the review-fix loop (code-review + self-eval → fix → retest → re-review until clean). The review-fix loop is a required sub-procedure, not optional. |
+| 7 | **Planning, running, or analyzing a usability test**, or keywords: "user test", "moderator script", "usability" | `user-testing-workflow.md` | e.g., "Write a moderator script for testing the onboarding flow" |
+| 8 | **High-throughput multi-branch development** with async review | `branch-strategy.md` | e.g., "I have 5 features to ship this week, let's parallelize" |
 
 ### Debugging defaults (absorbed from bug-diagnosis)
 
