@@ -23,9 +23,18 @@ State the specific question the spike answers in one sentence. Examples:
 
 If you can't state the question clearly, the spike isn't ready to start.
 
+**Done when...**
+- [ ] The question is stated in one specific, answerable sentence
+- [ ] The question is about feasibility or behavior, not about implementation design
+- [ ] Success and failure criteria are implicit in the question (you'll know when it's answered)
+
 ### 2. Set a timebox (recommended)
 
 Spikes have a hard time limit. Default: **30 minutes of active work** (which may be 5-15 tool calls for an AI agent). If the question isn't answered by then, the answer is "this is harder than expected" — which is itself a useful answer.
+
+**Done when...**
+- [ ] A time limit is stated (default 30 minutes if not specified)
+- [ ] The timebox is short enough to prevent the spike from becoming an implementation
 
 ### 3. Work in a throwaway space (essential)
 
@@ -34,6 +43,10 @@ git checkout -b spike/description-date
 ```
 
 Spike code does NOT need to be clean, tested, or documented. It needs to answer the question. Cut every corner. Hardcode values. Skip error handling. Copy-paste from docs.
+
+**Done when...**
+- [ ] Work is on a dedicated spike branch, not on a feature or main branch
+- [ ] The spike question from step 1 has been answered, OR the timebox from step 2 has expired
 
 ### 4. Record the findings (recommended)
 
@@ -70,6 +83,12 @@ The "RPI seed" section is the handoff point. When a spike recommends proceeding,
 
 Save this to `docs/spikes/` in the project if the findings are relevant long-term, or just report to the user if ephemeral.
 
+**Done when...**
+- [ ] The spike question has a clear answer (yes/no/conditional) stated in 1-3 sentences
+- [ ] Key findings include what worked, what didn't, and any surprises
+- [ ] A recommendation is stated (proceed to RPI / try alternative / need more investigation)
+- [ ] If recommending "proceed," the RPI seed section is populated with scope, invariants, relevant files, gotchas, and gaps
+
 ### 5. Decision output (recommended)
 
 If the spike's findings resolve a question with **meaningful tradeoffs** (multiple viable options, non-obvious consequences), create or update a decision record in `docs/decisions/NNN-title.md`. If the answer is **unambiguous** (one clear winner, straightforward rationale), add a row to `docs/decisions/log.md` instead. In either case, note the spike record as the source (e.g., "Based on spike: [question]"). Skip this step if the spike's answer is purely "proceed to RPI" with no architectural choice involved.
@@ -82,6 +101,11 @@ git branch -D spike/description-date  # unless findings are worth preserving
 ```
 
 Spike branches should not be merged. If the spike validates an approach, start a fresh feature branch and implement properly using the research-plan-implement workflow. The spike record (especially the RPI seed section) serves as input to the RPI research phase — not a substitute for it.
+
+**Done when...**
+- [ ] Spike branch has been deleted (or explicitly preserved with a reason noted in the spike record)
+- [ ] No spike code has been merged into feature or main branches
+- [ ] If proceeding to RPI, a fresh feature branch is started from main
 
 ## When to reference a spike
 

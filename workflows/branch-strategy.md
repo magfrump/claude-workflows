@@ -42,6 +42,10 @@ git checkout main && git pull
 git checkout -b feat/my-feature
 ```
 
+**Done when...**
+- [ ] The feature branch is created from an up-to-date `main` (not from `dev` or another feature branch)
+- [ ] The branch name follows the `feat/` prefix convention
+
 ### Working on the feature
 Follow the research-plan-implement workflow. Commit frequently on the feature branch. When the feature is working:
 
@@ -55,6 +59,12 @@ npm run build && npm run lint
 
 If a feature branch has conflicts with dev, resolve them during the merge into dev. The feature branch itself stays untouched.
 
+**Done when...**
+- [ ] The feature branch is merged into `dev`
+- [ ] Build and lint pass on `dev` after the merge
+- [ ] Any merge conflicts were resolved on `dev`, not on the feature branch
+- [ ] The feature branch itself has no merge commits from `dev`
+
 ### Opening a PR
 When ready for review, push the feature branch and open a PR targeting main:
 
@@ -64,6 +74,11 @@ git push -u origin feat/my-feature
 ```
 
 The PR diff will show your feature's changes relative to main. The reviewer sees a clean, focused changeset even though dev has many other commits.
+
+**Done when...**
+- [ ] The feature branch is pushed to origin
+- [ ] A PR is open targeting `main` (not `dev`)
+- [ ] The PR diff shows only this feature's changes relative to `main`
 
 ### After PRs are approved and merged to main
 
@@ -85,6 +100,11 @@ git push origin --delete feat/landed-feature
 **Why merge, not rebase:** Squash-merge on the PR destroys the original commit identities. If you rebase dev onto main, git tries to replay commits whose content is already on main (via the squash), producing phantom conflicts. Merge avoids this — git recognizes the integrated work and merges cleanly.
 
 The merge commit is noise in dev's history, but dev's history is already noisy. The clean history lives in the PRs.
+
+**Done when...**
+- [ ] `main` is pulled and up to date
+- [ ] `main` is merged into `dev` (not rebased)
+- [ ] Merged feature branches are deleted locally and remotely
 
 ### Continuing work after merging main into dev
 

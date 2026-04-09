@@ -46,6 +46,13 @@ A good minimal reproduction:
 
 Write the minimal reproduction as a test if possible. This test becomes your verification that the fix works (step 6).
 
+**Done when...**
+- [ ] The bug can be triggered reliably with a specific, documented sequence
+- [ ] The exact error, wrong output, or unexpected behavior is recorded
+- [ ] A minimal reproduction exists (ideally as a failing test)
+- [ ] If the bug is intermittent, the frequency and any patterns are noted
+- [ ] If the bug cannot be reproduced, this is documented and escalated — do not proceed to step 2
+
 ### 2. Isolate — narrow the search space
 
 Reduce the problem space before forming hypotheses. Techniques, in rough order of usefulness:
@@ -65,6 +72,11 @@ Reduce the problem space before forming hypotheses. Techniques, in rough order o
 - **Check boundaries**: Recent changes, integration points, edge cases in input validation, off-by-one errors, null/empty handling.
 
 The goal of isolation is to go from "something is wrong" to "the problem is in *this function* with *this input*."
+
+**Done when...**
+- [ ] The problem is narrowed to a specific function, module, or code path
+- [ ] The input or condition that triggers the bug within that location is identified
+- [ ] At least one isolation technique was applied (error reading, bisect, binary search, input simplification, or boundary check)
 
 ### 3. Hypothesize — form a testable prediction
 
@@ -86,6 +98,12 @@ A good hypothesis:
 
 Record the hypothesis in your diagnosis log. If you're past hypothesis #2, you should definitely be writing these down — debugging without records leads to testing the same thing twice.
 
+**Done when...**
+- [ ] The hypothesis names a specific location (function, line, module)
+- [ ] The hypothesis identifies a specific mechanism (what's going wrong and why)
+- [ ] The hypothesis predicts a testable outcome (if I do X, I should see Y)
+- [ ] The hypothesis is recorded in the diagnosis log
+
 ### 4. Test — confirm or refute the hypothesis
 
 Design the smallest experiment that distinguishes "hypothesis is correct" from "hypothesis is wrong":
@@ -103,6 +121,12 @@ Design the smallest experiment that distinguishes "hypothesis is correct" from "
 - Are you isolating well enough? (Return to step 2)
 - Do you understand the code well enough? (Pivot to RPI)
 - Is the bug actually where you think it is? (Widen the search)
+
+**Done when...**
+- [ ] The hypothesis is confirmed (proceed to step 5) or refuted (return to step 3 with a new hypothesis)
+- [ ] The test result and what was learned are recorded in the diagnosis log
+- [ ] If refuted, the refutation explicitly narrows the search space for the next hypothesis
+- [ ] If 3+ hypotheses have been refuted, the escape hatch has been evaluated (re-isolate, pivot to RPI, or widen search)
 
 ### 5. Fix — apply the minimal correct change
 
@@ -126,12 +150,24 @@ Characterization tests are especially valuable when:
 - The code has complex branching or side effects
 - You're not confident about the blast radius of your change
 
+**Done when...**
+- [ ] The fix addresses the root cause, not just the symptom
+- [ ] The change is minimal — no unrelated refactoring, improvements, or other bug fixes included
+- [ ] If the code had poor test coverage, characterization tests were written before applying the fix
+- [ ] The fix is committed separately from any characterization tests
+
 ### 6. Verify — confirm the fix and check for collateral damage
 
 - **Run the reproduction from step 1**: It should now pass. If it doesn't, your fix is incomplete — return to step 5.
 - **Run the full test suite**: Your fix should not break other tests. If it does, assess whether those tests were testing buggy behavior (update them) or whether your fix has unintended side effects (revise the fix).
 - **Check edge cases**: Does your fix handle related edge cases, or did it only fix the specific case from the reproduction? Consider adding test cases for nearby boundaries.
 - **Review the diagnosis log**: Update it with the confirmed root cause and the fix applied. This log is useful context for PR review and for future debugging if the bug recurs.
+
+**Done when...**
+- [ ] The reproduction from step 1 now passes
+- [ ] The full test suite passes with no new failures
+- [ ] Edge cases related to the fix have been considered (and test cases added if warranted)
+- [ ] The diagnosis log is updated with the confirmed root cause and the fix applied
 
 ## Diagnosis log template
 
