@@ -1,3 +1,7 @@
+---
+value-justification: "Replaces manual pre-review cleanup with structured self-review, catching issues before async reviewers spend time on them."
+---
+
 # PR Preparation Workflow
 
 *The self-review and cleanup steps follow the [orchestrated review pattern](../patterns/orchestrated-review.md), with commits/files as the units of review.*
@@ -76,7 +80,6 @@ Run review skills and iterate until clean. This is required, not optional.
 - **Self-eval** (`/self-eval <target>`) — rubric assessment of any new or modified skills/workflows
 - **Documentation check** (manual) — if the PR changes public APIs, config options, or user-facing behavior, verify corresponding docs are updated (README, inline docs, decision records). Skip for internal refactors with no external surface.
 - **Dependency audit** (manual) — if the PR introduces or upgrades dependencies, check license compatibility, package size, and maintenance status. Flag unmaintained or unfamiliar packages. Skip if no dependency changes.
-- **Plan-drift check** (manual) — if a plan doc exists in `docs/working/` for this task, compare the diff against it and note: (1) planned items not yet implemented, (2) unplanned changes that appeared in the diff, and (3) plan assumptions that turned out wrong. Record any deviations found in the PR description's "Areas of uncertainty" section or as a comment on the PR. Skip if no plan doc exists for this work.
 
 **b. Triage and fix.** Read each review artifact. Work through findings in tier order:
 

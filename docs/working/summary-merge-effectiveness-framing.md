@@ -1,0 +1,1 @@
+Selectively merged effectiveness-framing-replace changes into main: replaced line-count complexity budget with value-justification frontmatter validation in health-check.sh and 9 workflow files; bug-diagnosis.md correctly flagged as missing frontmatter; CLAUDE.md changes deferred (see scope-exception-merge-effectiveness-framing.md).

@@ -15,7 +15,7 @@
 #   4. All test fixtures have corresponding expected-verdicts entries
 #   5. BATS tests pass (when report outputs exist)
 #   6. shellcheck passes on all .sh/.bash files
-#   7. Workflow complexity stays within soft budgets
+#   7. Workflow value-justification frontmatter is present
 #   8. Hook scripts in hooks/ are executable
 #   9. Skill test-fixture coverage report (soft warning, not a gate)
 #  10. Feature integration: si-functions.sh orphan detection (soft warning)
@@ -366,14 +366,13 @@ check_shellcheck() {
     done
 }
 
-# ── 7. Workflow complexity budgets ─────────────────────────────────────────
+# ── 7. Workflow value-justification frontmatter ───────────────────────────
 
-check_workflow_complexity() {
-    section "Workflow complexity"
+check_workflow_value_justification() {
+    section "Workflow value-justification"
 
-    local max_lines=200
-    local max_sections=15
     local count=0
+    local missing=0
 
     for wf in "$REPO_ROOT"/workflows/*.md; do
         [[ -f "$wf" ]] || continue
@@ -381,41 +380,45 @@ check_workflow_complexity() {
         local name
         name="$(basename "$wf")"
 
-        # Line count via wc
-        local lines
-        lines="$(wc -l < "$wf")"
-        lines=$((lines + 0))  # trim whitespace to integer
+        # Check for YAML frontmatter with value-justification field
+        # Frontmatter must start on line 1 with --- and contain value-justification: before closing ---
+        local has_frontmatter=false
+        local has_value_justification=false
+        local value=""
 
-        # Section count: ### headers
-        local sections
-        sections="$(awk '/^###[[:space:]]/ { n++ } END { print n+0 }' "$wf")"
-
-        # Cross-reference count: bold markdown references to .md files
-        local crossrefs
-        crossrefs="$(grep -coE '\*\*[a-zA-Z][-a-zA-Z0-9]*\.md\*\*' "$wf" || true)"
-        crossrefs=$((crossrefs + 0))
-
-        local flagged=false
-        if [[ $lines -gt $max_lines ]]; then
-            warn "$name: $lines lines (threshold: $max_lines)"
-            flagged=true
+        if head -1 "$wf" | grep -q '^---$'; then
+            has_frontmatter=true
+            # Extract value-justification from frontmatter (between first --- and next ---)
+            value="$(awk '
+                NR==1 && /^---$/ { in_fm=1; next }
+                in_fm && /^---$/ { exit }
+                in_fm && /^value-justification:/ {
+                    sub(/^value-justification:[[:space:]]*/, "")
+                    gsub(/^["'\'']|["'\'']$/, "")
+                    print
+                }
+            ' "$wf")"
+            if [[ -n "$value" ]]; then
+                has_value_justification=true
+            fi
         fi
-        if [[ $sections -gt $max_sections ]]; then
-            warn "$name: $sections sections (threshold: $max_sections)"
-            flagged=true
-        fi
 
-        if ! $flagged; then
-            pass "$name: ${lines}L / ${sections}S / ${crossrefs}xref"
+        if $has_value_justification; then
+            pass "$name: value-justification present"
         else
-            warn "$name: ${lines}L / ${sections}S / ${crossrefs}xref"
+            warn "$name: missing or empty value-justification in frontmatter"
+            missing=$((missing + 1))
         fi
     done
 
     if [[ $count -eq 0 ]]; then
         warn "No workflow files found in workflows/"
     else
-        pass "$count workflow(s) checked"
+        if [[ $missing -eq 0 ]]; then
+            pass "$count workflow(s) checked — all have value-justification"
+        else
+            warn "$count workflow(s) checked — $missing missing value-justification"
+        fi
     fi
 }
 
@@ -647,7 +650,7 @@ main() {
     check_fixture_verdicts
     check_bats
     check_shellcheck
-    check_workflow_complexity
+    check_workflow_value_justification
     check_hook_permissions
     check_skill_fixture_coverage
     check_feature_integration

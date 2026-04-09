@@ -1,3 +1,7 @@
+---
+value-justification: "Replaces jumping straight to implementation without understanding existing code, which causes rework and accidental breakage."
+---
+
 # Research → Plan → Implement Workflow
 
 ## When to use

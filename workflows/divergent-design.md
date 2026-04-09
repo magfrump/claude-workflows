@@ -1,3 +1,7 @@
+---
+value-justification: "Replaces ad-hoc architectural debates with structured multi-candidate evaluation, preventing premature commitment to the first idea."
+---
+
 # Divergent Design Workflow
 
 *The diverge → diagnose → match → decide structure follows the [orchestrated review pattern](../patterns/orchestrated-review.md), with candidate approaches as the units of parallel evaluation.*
