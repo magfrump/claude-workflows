@@ -22,12 +22,14 @@ In practice, most feature branches converge within a few loops, though this depe
 
 ## Convergence ceiling
 
-After **3 iterations**, if the reviewer is still surfacing new issues (not regressions introduced by prior fixes), stop and escalate to the user. Include:
+After **3 iterations**, if the reviewer is still surfacing new issues (not regressions introduced by prior fixes), **stop**. This mirrors the 3-hypothesis escape hatch in the debugging defaults — unbounded iteration has diminishing returns. Choose one of two exit paths:
 
-- **Iteration count**: how many loops have run
-- **What changed**: a brief summary of fixes applied in each iteration
-- **What remains flagged**: the new (non-regression) findings from the latest review
-- **Assessment**: why the loop isn't converging (e.g., fixes are revealing deeper issues, the change is too large for incremental review, the review criteria are shifting)
+1. **Ship with documented known issues.** If no Must Fix items remain but Must Address or Consider items persist, document the remaining findings in the PR description's "Areas of uncertainty" section and proceed to Phase 2 of pr-prep. The human reviewer sees the known issues and can make a judgment call about whether they block merge.
+2. **Escalate to human review.** If Must Fix items remain, or if you're unsure whether remaining findings are safe to ship, stop and present the user with:
+   - **Iteration count**: how many loops have run
+   - **What changed**: a brief summary of fixes applied in each iteration
+   - **What remains flagged**: the new (non-regression) findings from the latest review
+   - **Assessment**: why the loop isn't converging (e.g., fixes are revealing deeper issues, the change is too large for incremental review, the review criteria are shifting)
 
 This is a **soft ceiling**, not a hard stop. The user can say "continue" and the loop resumes for another iteration (the counter does not reset — iteration 4 still escalates after one more pass if new issues appear). But the default is to pause and let the human decide whether more iterations are productive or whether the approach needs to change (e.g., pivot to divergent-design, split the PR, or accept the remaining findings as known debt).
 
@@ -35,7 +37,7 @@ This is a **soft ceiling**, not a hard stop. The user can say "continue" and the
 
 **What counts as "new" vs. "regression":** A regression is a finding that was introduced by a fix from a prior iteration (e.g., a typo in a renamed variable, a broken import from a file move). A new issue is anything the reviewer surfaces that existed before the fix or that reflects a deeper problem. When in doubt, treat it as new — false positives on the ceiling are cheap (the user just says "continue"), while false negatives waste iterations.
 
-**Tracking convergence:** To evaluate whether this ceiling is set at the right level, note in the commit message or PR description when the ceiling is triggered (escalation after 3 iterations) or when loops converge cleanly in fewer iterations. This creates an audit trail for calibrating the threshold over time.
+**Tracking convergence:** To evaluate whether this ceiling is set at the right level, note in the PR description or commit message whether the loop converged cleanly (and in how many iterations) or hit the 3-iteration ceiling. This creates an audit trail for calibrating the threshold over time and for evaluating whether the bound prevents unbounded cycles in practice.
 
 ## Anti-patterns
 
