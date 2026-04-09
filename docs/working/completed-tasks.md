@@ -39,3 +39,19 @@
 - **collect-evidence-removal**: (no summary generated)
 - **orphan-function-wiring**: (no summary generated)
 - **task-summary-backfill**: (no summary generated)
+
+## Round 8
+
+- **plan-drift-checklist-item**: Added manual "Plan-drift check" item to PR-prep step 3a that asks the reviewer to compare the diff against the plan doc and note deviations (missing planned items, unplanned changes, wrong assumptions), with findings recorded in the PR description or as a comment.
+
+## Round 9
+
+- **task-decomp-briefing-patterns**: Expanded task-decomposition.md (91→126 lines) with 3 concrete sub-agent briefing examples, contradiction resolution guidance, common briefing mistakes, and structured "when NOT to decompose" heuristics including file-count and dependency-seriality thresholds.
+
+## Round 10
+
+- **effectiveness-framing**: Replaced line-count/section-count complexity budget checks in health-check.sh (`check_workflow_complexity`) with value-justification frontmatter validation (`check_workflow_value_justification`) across 9 workflow files. All active workflows now declare value via YAML frontmatter. This was the 10th attempt to land this change — prior attempts in R1–R9 were blocked by shellcheck failures and rebase conflicts.
+
+## Round 11
+
+- **debugging-worked-examples**: Added `guides/debugging-examples.md` with 3 worked scenarios grounding the CLAUDE.md debugging defaults: (a) good vs. bad hypothesis formation, (b) the 3-hypothesis escape hatch pivot, (c) root-cause vs. symptom fixes. Referenced from CLAUDE.md debugging section and indexed in `guides/README.md`.
