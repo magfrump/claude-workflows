@@ -59,6 +59,12 @@ Don't read every file. Read entry points and public interfaces to understand bou
 
 If the codebase is large enough to warrant it (>20 files in multiple directories), use sub-agents to explore subsystems in parallel — one agent per subsystem, each producing the notes above for its area.
 
+**Suggested output structure.** When assembling your findings into the Architecture Map section of the orientation document, consider organizing around these three areas. This isn't a mandatory format — adapt it to fit the codebase — but it provides a useful default that downstream RPI research can quickly parse:
+
+- **Subsystem inventory**: A table or list of each subsystem with its name, one-line responsibility, and 2-3 key files (entry points or central modules). This gives future sessions a lookup table for "where does X live?"
+- **Data flow**: How subsystems connect — which calls which, what data passes between them, and in what direction. A simple text diagram or arrow notation (e.g., `API layer → Service layer → Database`) is often enough. This answers "if I change subsystem A, what else might be affected?"
+- **External dependencies**: Databases, third-party APIs, message queues, shared services, or any system outside the codebase boundary. Note what each is used for and which subsystem owns the integration. This surfaces coupling that isn't visible from code structure alone.
+
 **Done when...**
 - [ ] Every major subsystem is identified with its directory/files, responsibility, key abstractions, and dependencies
 - [ ] At least one representative implementation per subsystem has been read (not just interfaces)
