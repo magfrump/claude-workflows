@@ -20,6 +20,7 @@ This is the most common workflow. When in doubt, use this one.
 - **← From Onboarding**: The onboarding doc's architecture map and key flows replace the "explore from scratch" part of research. Start research scoped to your specific task, not the whole codebase.
 - **→ Bug Diagnosis**: For bugs in code you already understand, the **Bug Diagnosis workflow** (`bug-diagnosis.md`) is faster — it skips the plan approval gate and iterates rapidly between hypothesis and test. Use RPI for bugs in unfamiliar code where you need to build a mental model first; use bug-diagnosis when you can already point to the likely area. If RPI research reveals the root cause, you can skip to bug-diagnosis's Fix and Verify steps rather than writing a full plan.
 - **← From Bug Diagnosis**: If debugging stalls after 3+ failed hypotheses, pivot here. The failed hypotheses become input to RPI research — they document what the bug *isn't*, narrowing the search space.
+- **← From Testing**: When usability testing identifies a feature to build or bug to fix, load the findings report (`user-testing-workflow.md` Phase 4) as input to RPI research. The severity-rated issues and prioritization matrix replace broad exploration — scope research to the specific problem testing surfaced, don't re-derive what testing already established. Reference the findings doc from your research and plan docs for traceability.
 
 ## Working documents
 

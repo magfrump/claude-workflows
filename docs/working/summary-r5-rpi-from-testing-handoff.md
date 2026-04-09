@@ -1,0 +1,1 @@
+Added `← From Testing` pivot entry to RPI's "When to pivot" section, creating a symmetric inbound handoff for user-testing-workflow's existing outbound `→ RPI` pivot — severity-rated findings and prioritization matrix replace broad exploration when testing surfaces a feature or bug.
