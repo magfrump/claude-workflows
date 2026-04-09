@@ -88,6 +88,21 @@ Accept user overrides:
 Do not paste the full diff into agent prompts. Instead, pass the scope specification so each
 agent runs its own `git diff` — this avoids context budget issues with large diffs.
 
+#### Large diff triage (~1000+ lines)
+
+Diffs exceeding roughly 1000 lines may exceed practical review capacity in a single pass.
+When the diff is this large, split the review into multiple passes by subsystem or file group:
+
+1. **Prioritize highest-risk files first:** auth, data handling, public API surfaces, and
+   trust boundary changes. Run the full pipeline on these files before lower-risk ones.
+2. **Group remaining files by subsystem** (e.g., database layer, UI components, utilities)
+   and review each group as a separate pass with its own scope (`--files`).
+3. **Note the triage in your plan summary** so the user sees which files were reviewed in
+   which pass and why the ordering was chosen. This makes split reviews auditable.
+
+Check diff size early via `git diff --stat` — if the line count crosses the ~1000-line
+threshold, propose the split to the user before launching Stage 1.
+
 ### Step 2: Known critic roles
 
 The orchestrator uses a fixed taxonomy of skills. Do not scan `skills/*.md` at runtime — use
