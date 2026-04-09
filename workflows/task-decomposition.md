@@ -1,3 +1,7 @@
+---
+value-justification: "Replaces sequential investigation of multi-subsystem tasks with parallel sub-investigations, reducing calendar time for complex work."
+---
+
 # Task Decomposition Workflow
 
 *This workflow follows the [orchestrated review pattern](../patterns/orchestrated-review.md).*
@@ -81,18 +85,9 @@ Sub-agents should NOT:
 
 ### 4. Synthesize into a unified research doc
 
-Collect sub-agent outputs into a single research doc following the RPI naming convention: `docs/working/research-{topic}.md`. The synthesized doc must include all RPI-required sections (Scope, What exists, Invariants, Prior art, Gotchas) — sub-agent findings should be reorganized into these sections rather than preserved as separate per-area summaries. This synthesized research is what feeds into the plan step of the research-plan-implement workflow.
+Collect sub-agent outputs into a single research doc following the RPI naming convention: `docs/working/research-{topic}.md`. The synthesized doc must include all RPI-required sections (Scope, What exists, Invariants, Prior art, Gotchas) — sub-agent findings should be reorganized into these sections rather than preserved as separate per-area summaries. Resolve any contradictions or gaps. This synthesized research is what feeds into the plan step of the research-plan-implement workflow.
 
 The main (orchestrating) agent is responsible for writing the final research doc, not the sub-agents. Sub-agents produce raw findings; the main agent structures them into the RPI format.
-
-#### Resolving contradictions between sub-agents
-
-When sub-agents report conflicting facts (e.g., one says auth uses JWT, another says session cookies):
-
-1. **Check if both are true** — different subsystems may legitimately use different approaches
-2. **Check provenance** — a finding from reading code outweighs one from reading comments or docs
-3. **Re-investigate the specific conflict** in the main agent — don't guess which sub-agent was right
-4. **Document the resolution** in the research doc — future readers need to know whether the inconsistency is real or was a research error
 
 **Done when...**
 - [ ] A unified research doc exists at `docs/working/research-{topic}.md`
@@ -108,19 +103,8 @@ From here, follow the normal research-plan-implement workflow. The decomposition
 - [ ] The RPI workflow has been entered with the synthesized research doc as input
 - [ ] The plan addresses the full task as a coherent sequence (not as separate per-area plans)
 
-## When NOT to decompose
+## When to skip
 
-Decomposition adds overhead: writing briefing prompts, waiting for sub-agents, synthesizing outputs, resolving contradictions. It pays off only when parallelism saves more time than coordination costs.
-
-**Don't decompose when:**
-- The task touches **fewer than 3 files** or the codebase is small enough to read in a few minutes — the briefing overhead exceeds the research time saved
-- Sub-investigations have **serial dependencies** — if B can't start until A finishes, there's nothing to parallelize
-- The task is a **single-subsystem deep dive** — one focused research pass is simpler than splitting into sub-questions
-- You **already understand the codebase well** — briefing sub-agents on what you already know is pure overhead
-
-**Do decompose when:**
-- The task spans **3+ distinct subsystems** that can be researched independently
-- Sequential research would take **>15 minutes** but the sub-investigations are independent
-- You're in an **unfamiliar codebase** and need to build understanding of multiple areas simultaneously
-
-If sub-agent dispatch isn't available in your environment, the decomposition list from step 1 is still useful as a research checklist — do the research sequentially in the main agent.
+- If the task only touches one subsystem, just do normal research-plan-implement — sub-agents add overhead without benefit.
+- If the codebase is small enough that you can read the relevant parts in a few minutes, don't bother decomposing.
+- If sub-agent dispatch isn't available in your Claude Code version, do the research sequentially in the main agent. The decomposition list from step 1 is still useful as a research checklist even without parallelism.
