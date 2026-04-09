@@ -24,6 +24,8 @@ Reference documents for specific processes and conventions. Unlike workflows (st
 
 - **[skill-trigger-guide.md](skill-trigger-guide.md)** — Maps common task types (code review, security audit, writing review, tech debt assessment, etc.) to the appropriate skill(s). Use when unsure which skill to invoke, or to understand how skills overlap and differ from workflows.
 
+- **[research-scaffolds.md](research-scaffolds.md)** — Optional copy-paste templates for RPI research docs (new feature, bug investigation, refactor). Use when starting a research doc from scratch feels slow.
+
 - **[debugging-examples.md](debugging-examples.md)** — Three worked examples grounding the debugging defaults: hypothesis formation, the 3-hypothesis escape hatch, and root-cause vs. symptom fixes.
 
 - **[workflow-selection.md](workflow-selection.md)** — Prescriptive decision tree for choosing the right workflow given a task type. Use when unsure whether to reach for bug-diagnosis vs research-plan-implement, spike vs divergent-design, or any other workflow.

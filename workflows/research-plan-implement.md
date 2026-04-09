@@ -58,7 +58,7 @@ In a multi-loop session, each loop gets its own scope. A loop can build on the p
 
 ### 2. Research (essential) — understand before proposing
 
-Read the relevant parts of the codebase and produce a research doc in `docs/working/`. This document should include:
+Read the relevant parts of the codebase and produce a research doc in `docs/working/`. Optional copy-paste scaffolds for common research types (new feature, bug, refactor) are available in `guides/research-scaffolds.md`. This document should include:
 
 - **Scope**: The one-sentence scope from step 1.
 - **What exists**: Which files, functions, and patterns are relevant. Not just names — summarize what they do and how they connect.

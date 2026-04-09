@@ -1,0 +1,1 @@
+Added guides/research-scaffolds.md with 3 optional copy-paste scaffolds (new feature, bug investigation, refactor) built around the required RPI research sections, referenced from RPI step 2 and guides/README.md.
