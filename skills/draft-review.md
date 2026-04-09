@@ -178,6 +178,40 @@ the expected number? If yes, proceed to Stage 3. If not, STOP and tell the user 
 
 You now have results from all sub-agents. NOW — and only now — produce your two deliverables.
 
+**Before synthesizing, cross-reference critic findings against the fact-check report.** For each
+critic's output, identify the key claims or premises their arguments depend on. Check each one
+against the fact-check verdicts:
+
+- If a critic's reasoning **depends on** a claim the fact-checker rated **Inaccurate** or
+  **Unverified**, that critique cannot stand as unqualified analysis. In the synthesis, present
+  the critique with an explicit caveat: state which underlying claim is disputed or unverified,
+  and note that the critique's force depends on a premise that did not survive fact-checking.
+- If a critic's reasoning depends on a claim rated **Mostly Accurate** or **Disputed**, note
+  the imprecision but do not disqualify the critique — flag it as conditional.
+- If a critic's reasoning depends only on claims rated **Accurate**, no caveat is needed.
+
+This extends the R5 disagreement protocol: where that protocol classifies critic-vs-critic
+conflicts as factual or perspective-based, this step catches critic-vs-fact-checker conflicts
+where a critic's argument is built on a factual premise the evidence does not support.
+
+**In the chat synthesis**, when presenting a caveated critique, use this format:
+
+> ⚠️ **Fact-check dependency:** [Critic name]'s argument that [summary] relies on the claim
+> "[claim]", which the fact-checker rated [Inaccurate/Unverified]. This critique should be
+> re-evaluated if the underlying claim is corrected or verified.
+
+**In the verification rubric**, critiques with fact-check dependency caveats should be noted
+in the 🟡 Amber tier with type "Fact-dependent critique" rather than being promoted to
+standalone structural findings. This prevents flawed factual premises from inflating the
+severity of structural critiques.
+
+**Tracking for evaluation:** When any fact-critic cross-reference caveat is triggered, include
+a line in the chat synthesis under a `### Fact-Critic Cross-References` heading listing each
+instance (critic name, claim, fact-check verdict, and whether the caveat changed the synthesis
+compared to what would have been presented without this check). This makes it possible to audit
+whether the cross-referencing caught issues that would otherwise have appeared as unqualified
+analysis.
+
 ---
 
 ## Deliverable 1: Freeform Chat Synthesis
