@@ -1,0 +1,1 @@
+Added hot-path gate to performance-reviewer.md scoping section: findings in cold paths (startup, config, migrations) default to Low/Informational severity, and reviewers must explicitly state path temperature in each finding for downstream verifiability.

@@ -47,6 +47,8 @@ enough surrounding context to understand call frequency, data sizes, and whether
 is in a hot path or a cold setup path — performance in a request handler matters differently
 than performance in a one-time migration script.
 
+**Hot-path gate for severity escalation.** Before classifying an algorithmic concern as Critical or High severity, confirm that the code path is actually hot — a request handler, a loop body called per-item at scale, or a high-frequency event callback. Code in cold paths (application startup, one-time configuration, CLI argument parsing, migration scripts) should default to Low or Informational severity unless the cold path blocks a latency-sensitive operation. When writing up a finding, explicitly state the path temperature (hot or cold) and the evidence for that classification so that downstream reviewers can verify the judgment.
+
 ## Using the Code Fact-Check Report
 
 If you have been provided a code-fact-check report, treat it as your foundation for
