@@ -1,0 +1,1 @@
+Added a "When to create a workflow vs. a skill" section to guides/skill-creation.md covering the original distinction, how the boundary has shifted (bug-diagnosis deprecation, DD-as-sub-procedure, orchestrator skills), decision criteria for new additions, and a full inventory table of current workflows/skills with form-factor-fit notes.
