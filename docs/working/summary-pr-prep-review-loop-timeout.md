@@ -1,0 +1,1 @@
+Added a firm 3-iteration termination bound to the pr-prep review-fix loop (step 3e) with two exit paths — ship with documented known issues or escalate to human review — and updated review-fix-loop.md to match, mirroring the debugging 3-hypothesis escape hatch pattern.
