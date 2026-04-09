@@ -204,6 +204,8 @@ Structure:
 ## What this does
 [1-3 sentences: what changed and why — use the commit list as a starting point]
 
+**Workflow provenance** (optional): [e.g., "RPI → DD → RPI" or "Spike → RPI → PR-prep"]
+
 ## How it works
 [Brief technical summary. Not a line-by-line walkthrough — describe the approach.]
 
@@ -234,6 +236,7 @@ For UI changes, capture before/after screenshots or a short recording and includ
 - [ ] All six sections are present (What this does, How it works, How to test, Areas of uncertainty, Decisions made, Review evidence)
 - [ ] Each section contains at least one substantive sentence (not a placeholder)
 - [ ] Review evidence section lists all `docs/reviews/` artifacts for this PR, or states "No review artifacts" if none exist
+- [ ] (Optional) If this PR involved multiple workflow compositions (e.g., RPI → DD → RPI), a workflow provenance line is included in "What this does"
 
 ## Retrospective
 
