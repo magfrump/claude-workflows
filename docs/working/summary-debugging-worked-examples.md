@@ -1,0 +1,1 @@
+Created `guides/debugging-examples.md` (49 lines, 3 worked examples) and added a one-line CLAUDE.md reference from the debugging defaults section; also updated `guides/README.md` index to fix the BATS test failure that rejected the r9 attempt, without reverting task-decomp-briefing-patterns changes.
