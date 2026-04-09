@@ -1,0 +1,1 @@
+Added a "How workflows compose" subsection to CLAUDE.md under Cross-project Workflows, documenting the six main composition paths between workflows (onboarding→RPI, RPI↔DD, RPI↔spike, DD→spike, RPI→PR-prep, bug-diagnosis→RPI) with references to each workflow's "When to pivot" section, and a traceability note encouraging commit messages to reference compositions.
