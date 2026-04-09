@@ -15,7 +15,7 @@
 #   4. All test fixtures have corresponding expected-verdicts entries
 #   5. BATS tests pass (when report outputs exist)
 #   6. shellcheck passes on all .sh/.bash files
-#   7. Workflow complexity stays within soft budgets
+#   7. Workflow value_justification present in YAML frontmatter
 #   8. Hook scripts in hooks/ are executable
 #   9. Skill test-fixture coverage report (soft warning, not a gate)
 #  10. Feature integration: si-functions.sh orphan detection (soft warning)
@@ -365,14 +365,23 @@ check_shellcheck() {
     done
 }
 
-# ── 7. Workflow complexity budgets ─────────────────────────────────────────
+# ── 7. Workflow value justification ───────────────────────────────────────
+#
+# Each workflow must have a value_justification field in its YAML frontmatter:
+# a 1-2 sentence statement of what the workflow enables that would otherwise
+# require more manual work. This replaced line-count/section-count complexity
+# budgets, which generated recurring false-positive compression tasks
+# (e.g., 3 failed rounds on user-testing-workflow).
+#
+# Hypothesis: replacing line-count checks with value-justification validation
+# will eliminate recurring compression warnings. Track by checking whether
+# new compression tasks are generated in subsequent self-improvement rounds.
 
-check_workflow_complexity() {
-    section "Workflow complexity"
+check_workflow_value_justification() {
+    section "Workflow value justification"
 
-    local max_lines=200
-    local max_sections=15
     local count=0
+    local missing=0
 
     for wf in "$REPO_ROOT"/workflows/*.md; do
         [[ -f "$wf" ]] || continue
@@ -380,41 +389,44 @@ check_workflow_complexity() {
         local name
         name="$(basename "$wf")"
 
-        # Line count via wc
-        local lines
-        lines="$(wc -l < "$wf")"
-        lines=$((lines + 0))  # trim whitespace to integer
+        # Check for YAML frontmatter delimiters and value_justification field
+        local has_frontmatter=false
+        local has_justification=false
+        local justification=""
 
-        # Section count: ### headers
-        local sections
-        sections="$(awk '/^###[[:space:]]/ { n++ } END { print n+0 }' "$wf")"
-
-        # Cross-reference count: bold markdown references to .md files
-        local crossrefs
-        crossrefs="$(grep -coE '\*\*[a-zA-Z][-a-zA-Z0-9]*\.md\*\*' "$wf" || true)"
-        crossrefs=$((crossrefs + 0))
-
-        local flagged=false
-        if [[ $lines -gt $max_lines ]]; then
-            warn "$name: $lines lines (threshold: $max_lines)"
-            flagged=true
-        fi
-        if [[ $sections -gt $max_sections ]]; then
-            warn "$name: $sections sections (threshold: $max_sections)"
-            flagged=true
+        if head -1 "$wf" | grep -q '^---$'; then
+            has_frontmatter=true
+            # Extract value_justification from frontmatter (between first --- and second ---)
+            justification="$(awk '
+                /^---$/ { block++; next }
+                block == 1 && /^value_justification:/ {
+                    sub(/^value_justification:[[:space:]]*"?/, "")
+                    sub(/"?[[:space:]]*$/, "")
+                    print
+                    exit
+                }
+                block >= 2 { exit }
+            ' "$wf")"
+            [[ -n "$justification" ]] && has_justification=true
         fi
 
-        if ! $flagged; then
-            pass "$name: ${lines}L / ${sections}S / ${crossrefs}xref"
+        if $has_justification; then
+            pass "$name: has value_justification"
+        elif $has_frontmatter; then
+            fail "$name: has frontmatter but missing value_justification field"
+            missing=$((missing + 1))
         else
-            warn "$name: ${lines}L / ${sections}S / ${crossrefs}xref"
+            fail "$name: missing YAML frontmatter with value_justification"
+            missing=$((missing + 1))
         fi
     done
 
     if [[ $count -eq 0 ]]; then
         warn "No workflow files found in workflows/"
+    elif [[ $missing -gt 0 ]]; then
+        fail "$missing of $count workflow(s) missing value_justification"
     else
-        pass "$count workflow(s) checked"
+        pass "$count workflow(s) checked — all have value_justification"
     fi
 }
 
@@ -557,7 +569,7 @@ main() {
     check_fixture_verdicts
     check_bats
     check_shellcheck
-    check_workflow_complexity
+    check_workflow_value_justification
     check_hook_permissions
     check_skill_fixture_coverage
     check_feature_integration

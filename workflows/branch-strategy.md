@@ -1,3 +1,7 @@
+---
+value_justification: "Coordinates concurrent feature work across async review cycles, preventing merge conflicts and lost work that would otherwise require manual branch management."
+---
+
 # Branch Strategy Guide
 
 ## Overview

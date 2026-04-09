@@ -1,3 +1,7 @@
+---
+value_justification: "Catches review issues before the PR is opened, reducing async review round-trips that add days of latency in cross-timezone teams."
+---
+
 # PR Preparation Workflow
 
 *The self-review and cleanup steps follow the [orchestrated review pattern](../patterns/orchestrated-review.md), with commits/files as the units of review.*

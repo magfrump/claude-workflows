@@ -1,3 +1,7 @@
+---
+value_justification: "Surfaces non-obvious design alternatives that a single-track approach would miss, reducing the risk of committing to a locally optimal but globally suboptimal architecture."
+---
+
 # Divergent Design Workflow
 
 *The diverge → diagnose → match → decide structure follows the [orchestrated review pattern](../patterns/orchestrated-review.md), with candidate approaches as the units of parallel evaluation.*

@@ -1,3 +1,7 @@
+---
+value_justification: "Gives a structured orientation for unfamiliar codebases, replacing ad-hoc exploration that misses key subsystems and conventions."
+---
+
 # Codebase Onboarding Workflow
 
 *This workflow follows the [orchestrated review pattern](../patterns/orchestrated-review.md), with subsystems as the units of parallel exploration.*

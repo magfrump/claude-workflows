@@ -1,3 +1,7 @@
+---
+value_justification: "Structures the reproduce-isolate-fix loop to prevent shotgun debugging, reducing time spent on fixes that don't address root causes."
+---
+
 # Bug Diagnosis Workflow
 
 ## When to use

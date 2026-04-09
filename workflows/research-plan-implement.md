@@ -1,3 +1,7 @@
+---
+value_justification: "Prevents wasted implementation effort by catching misunderstandings and bad approaches during research/planning, before code is written."
+---
+
 # Research → Plan → Implement Workflow
 
 ## When to use

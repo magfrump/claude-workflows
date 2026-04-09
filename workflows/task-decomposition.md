@@ -1,3 +1,7 @@
+---
+value_justification: "Enables parallel investigation of independent sub-problems, reducing wall-clock time for complex multi-subsystem tasks."
+---
+
 # Task Decomposition Workflow
 
 *This workflow follows the [orchestrated review pattern](../patterns/orchestrated-review.md).*

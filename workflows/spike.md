@@ -1,3 +1,7 @@
+---
+value_justification: "Answers 'can this work?' questions in a timeboxed way, preventing unbounded exploration that delays go/no-go decisions on technical approaches."
+---
+
 # Spike Workflow
 
 ## When to use

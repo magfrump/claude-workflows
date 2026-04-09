@@ -1,3 +1,7 @@
+---
+value_justification: "Provides a structured usability testing process that would otherwise require hiring a UX researcher or manually synthesizing HCI literature for each test."
+---
+
 # User Testing Workflow Prompt
 
 A reusable guide for planning, running, and interpreting usability tests. Grounded in HCI literature (Nielsen, Brooke, Travis, Dumas & Redish, etc.) and adapted for small-team/indie contexts.

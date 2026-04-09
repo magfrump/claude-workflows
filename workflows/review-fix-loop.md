@@ -1,3 +1,7 @@
+---
+value_justification: "Codifies the review-fix cycle as a repeatable loop, preventing incomplete fixes that pass self-review but fail under structured re-evaluation."
+---
+
 # Review → Fix → Revalidate Loop
 
 This document is reference material for the review-fix loop step in [pr-prep](pr-prep.md). See pr-prep Step 3 for the procedure itself.
