@@ -16,6 +16,23 @@ Reviews get more useful as the code gets cleaner — early reviews are dominated
 
 In practice, most feature branches converge within a few loops, though this depends on the size and complexity of the change.
 
+## Convergence ceiling
+
+After **3 iterations**, if the reviewer is still surfacing new issues (not regressions introduced by prior fixes), stop and escalate to the user. Include:
+
+- **Iteration count**: how many loops have run
+- **What changed**: a brief summary of fixes applied in each iteration
+- **What remains flagged**: the new (non-regression) findings from the latest review
+- **Assessment**: why the loop isn't converging (e.g., fixes are revealing deeper issues, the change is too large for incremental review, the review criteria are shifting)
+
+This is a **soft ceiling**, not a hard stop. The user can say "continue" and the loop resumes for another iteration (the counter does not reset — iteration 4 still escalates after one more pass if new issues appear). But the default is to pause and let the human decide whether more iterations are productive or whether the approach needs to change (e.g., pivot to divergent-design, split the PR, or accept the remaining findings as known debt).
+
+**Why this exists:** Review-fix loops have diminishing returns. Early iterations catch real issues; later iterations often churn on style or reveal that the underlying approach needs rethinking, not more polishing. Unbounded loops waste tokens without meaningful quality improvement.
+
+**What counts as "new" vs. "regression":** A regression is a finding that was introduced by a fix from a prior iteration (e.g., a typo in a renamed variable, a broken import from a file move). A new issue is anything the reviewer surfaces that existed before the fix or that reflects a deeper problem. When in doubt, treat it as new — false positives on the ceiling are cheap (the user just says "continue"), while false negatives waste iterations.
+
+**Tracking convergence:** To evaluate whether this ceiling is set at the right level, note in the commit message or PR description when the ceiling is triggered (escalation after 3 iterations) or when loops converge cleanly in fewer iterations. This creates an audit trail for calibrating the threshold over time.
+
 ## Anti-patterns
 
 These supplement the guidance in pr-prep Step 3 (which covers verifying findings and the convergence ceiling):
