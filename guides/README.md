@@ -35,3 +35,5 @@ Reference documents for specific processes and conventions. Unlike workflows (st
 - **[skill-creation.md](skill-creation.md)** — How to write a new skill from scratch: required frontmatter, prompt structure conventions, CLAUDE.md routing entry, and optional test fixtures. Complements cross-project-setup by covering the path from copying existing skills to creating project-specific ones.
 
 - **[task-decomposition-examples.md](task-decomposition-examples.md)** — Two worked examples for the task-decomposition workflow: a decomposable multi-service migration and a counter-example of a tightly coupled refactor that should not be decomposed. Use when deciding whether a task benefits from sub-agent decomposition.
+
+- **[skill-format-audit.md](skill-format-audit.md)** — Audit of the 5 most-used skills against Anthropic's skill-creator guidelines. Identifies 7 format divergences (non-standard frontmatter, description truncation, flat-file structure) with prioritized recommendations. Read-only reference; no skill files modified.
