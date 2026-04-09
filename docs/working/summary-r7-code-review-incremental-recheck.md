@@ -1,0 +1,1 @@
+Added incremental re-review guidance to pr-prep.md step 3d: on iterations 2+, scope re-review to git diff of fix commits plus targeted verification of prior Must Fix findings, with fallback to full re-review when fixes are broad.
