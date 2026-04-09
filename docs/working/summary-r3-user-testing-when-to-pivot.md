@@ -1,0 +1,1 @@
+Added a 'When to pivot' section to workflows/user-testing-workflow.md with handoff guidance for three transitions: → RPI (findings identify a feature/fix), → DD (findings reveal 3+ redesign directions), and ← From RPI (implementation needs usability validation before shipping).
