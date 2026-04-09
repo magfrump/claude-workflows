@@ -1,0 +1,1 @@
+Cherry-picked commit 3dd0bbd onto main (as feat/r13-hypothesis-backlog-retirement); retired H-02, H-08, H-09 as INCONCLUSIVE-EXPIRED in hypothesis-backlog.md and hypothesis-log.md — diff touches only those two files, confirming the cherry-pick hypothesis.
