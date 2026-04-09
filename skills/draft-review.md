@@ -84,6 +84,13 @@ If the user gives no direction on which critics to use, you choose. Consider:
 - If all available critics seem relevant, use all of them.
 - If some are clearly irrelevant to the draft's topic, skip them.
 
+**Short or narrowly scoped drafts:** For drafts under ~500 words or tightly focused technical
+pieces, consider running only the 1–2 most relevant critics rather than the full panel. Small
+content tends to produce redundant findings across multiple critics, and the extra agents consume
+context budget without adding signal. When you reduce the panel for this reason, note it
+explicitly in Step 3 (e.g., "Using a reduced critic panel — this is a short draft where
+additional critics would likely produce redundant findings").
+
 ### Step 3: Tell the user
 
 Before launching agents, briefly communicate:
