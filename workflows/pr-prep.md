@@ -11,13 +11,37 @@ The process has two phases: **content** (is the code right?) and **packaging** (
 
 See [decision 007](../docs/decisions/007-two-phase-pr-prep.md) for why this ordering was chosen.
 
+### Step 0: Environment scan (automated)
+
+Before starting either phase, run these commands to establish the state of the branch. These are mechanical — no judgment needed.
+
+```bash
+# Check for uncommitted work — stop and commit or stash before proceeding
+git status
+
+# Show what this branch changes vs main (file-level summary)
+git diff --stat main...HEAD
+
+# Show total lines changed (for the size check in step 1a)
+git diff --stat main...HEAD | tail -1
+```
+
+**If `git status` shows uncommitted changes**, commit or stash them before proceeding. PR prep operates on committed code — uncommitted changes will be invisible to reviewers and CI.
+
+**If the diff stat shows 0 files changed**, verify you're on the correct branch and that main is up to date (`git fetch origin main`).
+
+**Completion criteria:**
+- [ ] No uncommitted changes (clean working tree)
+- [ ] Branch diff summary reviewed — total files and lines changed are known
+- [ ] If issues found, resolved before proceeding to Phase 1
+
 ### Phase 1: Content
 
 #### 1. Gate checks
 
 Run these concurrently — both are fast, and either failing changes the plan:
 
-**a. Size check.** If the PR exceeds ~500 lines changed, consider whether it can be split before doing any other prep work. Look for:
+**a. Size check.** Use the line count from Step 0's diff stat. If the PR exceeds ~500 lines changed, consider whether it can be split before doing any other prep work. Look for:
 - A preparatory refactor that can land independently
 - Infrastructure/model changes separate from UI changes
 - A minimal first PR that adds the feature behind a flag, with polish in a follow-up
@@ -102,7 +126,21 @@ Squash WIP commits into logical chunks. Each commit in the final history should 
 
 These two steps have no dependency on each other and can run concurrently.
 
-**a. Verify CI passes.** Run whatever checks the project has: lint, build, tests. This runs on the rebased, reviewed code — the final form the reviewer will see. Fix anything broken. If you opened a draft PR in step 2, push the rebased branch to trigger CI remotely.
+**a. Verify CI passes (automated).** Run the project's checks on the rebased, reviewed code — the final form the reviewer will see. Auto-detect and run available test suites:
+
+```bash
+# Auto-detect and run available checks (run whichever apply):
+[[ -f package.json ]] && npm test
+[[ -f Makefile ]] && make test
+[[ -f pytest.ini || -f setup.py || -f pyproject.toml ]] && pytest
+[[ -f Cargo.toml ]] && cargo test
+[[ -d test/ && -f test/*.bats ]] && bats test/
+
+# If the project has a CI config, check what it runs and mirror locally:
+# .github/workflows/*.yml, Makefile, package.json scripts, etc.
+```
+
+Fix anything broken. If you opened a draft PR in step 2, push the rebased branch to trigger CI remotely.
 
 **b. Annotate the diff.** If the PR includes code in languages or libraries the reviewer may not know well, add **PR comments on your own PR** explaining non-obvious sections. This is cheaper than back-and-forth across timezones.
 
@@ -114,11 +152,43 @@ These two steps have no dependency on each other and can run concurrently.
 
 #### 6. Write the PR description
 
+**a. Generate skeleton (automated).** Run these commands to produce a draft PR description from commit history and review artifacts. The output is a starting point — human editing is required.
+
+```bash
+# List commits grouped by conventional prefix
+echo "## What this does"
+echo ""
+git log --oneline main..HEAD | head -20
+echo ""
+
+# Show files changed for the "How it works" section
+echo "## Files changed"
+git diff --name-only main...HEAD
+echo ""
+
+# Scan docs/reviews/ for artifacts on this branch
+echo "## Review evidence"
+BRANCH=$(git branch --show-current)
+# Extract keywords from branch name (split on / and -)
+KEYWORDS=$(echo "$BRANCH" | tr '/-' '\n' | grep -v '^feat$\|^fix$\|^refactor$\|^r[0-9]*$' | grep -v '^$')
+for kw in $KEYWORDS; do
+  # Case-insensitive match on review artifact filenames
+  find docs/reviews/ -iname "*${kw}*" -type f 2>/dev/null
+done | sort -u
+
+# Scan for decision records added on this branch
+echo ""
+echo "## Decisions made"
+git diff --name-only main...HEAD -- docs/decisions/
+```
+
+**b. Edit the skeleton (manual).** Review the generated output and reshape it into the PR description template below. The skeleton gives you raw material; your job is to add context, explain *why*, and flag uncertainty. Do not submit the skeleton as-is.
+
 Structure:
 
 ```markdown
 ## What this does
-[1-3 sentences: what changed and why]
+[1-3 sentences: what changed and why — use the commit list as a starting point]
 
 ## How it works
 [Brief technical summary. Not a line-by-line walkthrough — describe the approach.]
@@ -134,13 +204,22 @@ Structure:
 
 ## Decisions made
 [Link to any docs/decisions/ files created, or briefly note non-obvious choices]
+
+## Review evidence
+[List review artifacts from docs/reviews/ that were generated for this PR.
+ These are committed to the branch — reviewers can expand them for details.
+ Example:]
+- `docs/reviews/code-review-feature-name.md` — code review, all findings resolved
+- `docs/reviews/self-eval-feature-name.md` — self-eval, meets criteria
 ```
 
 For UI changes, capture before/after screenshots or a short recording and include them in the description. The reviewer may not be able to run the UI locally — visual evidence eliminates a round-trip.
 
 **Completion criteria:**
-- [ ] All five sections are present (What this does, How it works, How to test, Areas of uncertainty, Decisions made)
+- [ ] Skeleton was generated from commits and review artifacts (not written from scratch)
+- [ ] All six sections are present (What this does, How it works, How to test, Areas of uncertainty, Decisions made, Review evidence)
 - [ ] Each section contains at least one substantive sentence (not a placeholder)
+- [ ] Review evidence section lists all `docs/reviews/` artifacts for this PR, or states "No review artifacts" if none exist
 
 ## Retrospective
 
