@@ -1,0 +1,1 @@
+Added runtime verification guidance (Step 6) to ui-visual-review skill: screenshot capture procedures, cross-resolution verification checklist at 5 breakpoints, browser console log analysis steps, and visual regression detection workflow, with report template extensions for tracking static-vs-runtime analysis accuracy.
