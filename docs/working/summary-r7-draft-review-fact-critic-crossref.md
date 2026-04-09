@@ -1,0 +1,1 @@
+Added fact-critic cross-referencing to draft-review.md Stage 3: before synthesizing, each critic's key claims are checked against fact-check verdicts, and critiques depending on Inaccurate/Unverified claims are caveated rather than presented as standalone analysis.
