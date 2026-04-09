@@ -1,0 +1,1 @@
+Retired hypotheses H-02, H-08, H-09 from TRACKING to INCONCLUSIVE-EXPIRED in hypothesis-backlog.md (usage.jsonl structurally unfit, no alternative evidence, 10 rounds unresolved) and added corresponding tracking entry to hypothesis-log.md with evaluation window through round 13.
