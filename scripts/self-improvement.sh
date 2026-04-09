@@ -235,14 +235,14 @@ fi
 # Configuration
 REPO_DIR=~/claude-workflows
 WORKTREE_BASE=~/wt
-MAX_ROUNDS=5
+MAX_ROUNDS=15
 WORKING_DIR="$REPO_DIR/docs/working"
 ROUND_HISTORY="$WORKING_DIR/round-history.json"
 
 # Check required dependencies
 command -v jq &>/dev/null || { echo "Error: jq is required but not found"; exit 1; }
 
-CONVERGENCE_THRESHOLD=${CONVERGENCE_THRESHOLD:-70}  # percent overlap to trigger convergence
+CONVERGENCE_THRESHOLD=${CONVERGENCE_THRESHOLD:-90}  # percent overlap to trigger convergence
 HISTORY_FILE="$REPO_DIR/docs/working/problem-history.json"
 
 mkdir -p "$WORKING_DIR"

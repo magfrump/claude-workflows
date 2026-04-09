@@ -57,19 +57,19 @@ collect_tests() {
   printf '%s\n' "${files[@]}"
 }
 
-files=$(collect_tests "$category")
+matched=$(collect_tests "$category")
 
-if [[ -z "$files" ]]; then
+if [[ -z "$matched" ]]; then
   echo "No test files matched category: $category" >&2
   exit 1
 fi
 
 echo "=== Running $category tests ==="
-echo "$files" | while read -r f; do
+echo "$matched" | while read -r f; do
   echo "  $(basename "$f")"
 done
 echo ""
 
 # Pass all matched files to bats in a single invocation for proper TAP output.
 # shellcheck disable=SC2086
-exec bats $files
+exec bats $matched
