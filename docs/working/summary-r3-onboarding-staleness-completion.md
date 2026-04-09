@@ -1,0 +1,1 @@
+Added staleness signals (4 concrete refresh triggers with git commands) and onboarding sufficiency criteria (3 handoff-readiness checks) to codebase-onboarding.md, following the R2 pattern of adding stopping/refresh criteria to workflows.
