@@ -77,6 +77,20 @@ applies so that confidence ratings are consistent and auditable.
 When in doubt between two levels, choose the lower one and explain what additional evidence would
 raise confidence.
 
+### Source Ranking
+
+By default, **primary sources outrank secondary sources**. Primary sources include official
+documentation, source code, government data, and peer-reviewed publications. Secondary sources
+include blog posts, tutorials, Stack Overflow answers, and news commentary.
+
+When sources conflict, note the conflict explicitly in the claim's verdict explanation: state which
+source you preferred, which you set aside, and why. Typical reasons to prefer one source over
+another: recency, authoritativeness, directness of evidence, or methodological rigor.
+
+You may deviate from the default hierarchy when you have a clear reason — for example, a recent
+blog post from a core maintainer may outrank year-old official docs for a fast-moving project.
+When you deviate, say so and explain your reasoning.
+
 ## How to handle ambiguity
 
 Sometimes a claim is technically true but misleading, or true for one definition but false for another.
