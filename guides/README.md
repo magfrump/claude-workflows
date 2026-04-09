@@ -33,3 +33,5 @@ Reference documents for specific processes and conventions. Unlike workflows (st
 - **[cross-project-setup.md](cross-project-setup.md)** — How to adopt workflows, skills, and artifact conventions from this repo in other projects. Covers full CLAUDE.md adoption, individual skill copying with dependencies, and directory setup. Includes what to skip (repo-specific scripts and hypothesis tracking).
 
 - **[skill-creation.md](skill-creation.md)** — How to write a new skill from scratch: required frontmatter, prompt structure conventions, CLAUDE.md routing entry, and optional test fixtures. Complements cross-project-setup by covering the path from copying existing skills to creating project-specific ones.
+
+- **[task-decomposition-examples.md](task-decomposition-examples.md)** — Two worked examples for the task-decomposition workflow: a decomposable multi-service migration and a counter-example of a tightly coupled refactor that should not be decomposed. Use when deciding whether a task benefits from sub-agent decomposition.
