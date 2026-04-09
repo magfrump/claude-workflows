@@ -58,6 +58,87 @@ Create `test/skills/{skill-name}/` with:
 
 Run the skill against each fixture and compare output to eval criteria. This is manual today — there is no automated test harness.
 
+## When to create a workflow vs. a skill
+
+### The original distinction
+
+**Workflows** (`workflows/*.md`) are multi-step processes orchestrated by the human or by Claude following explicit decision gates. They use `value-justification` frontmatter, have "When to use" / "When to pivot" sections, and compose horizontally — RPI invokes DD as a sub-procedure, spike results feed back into RPI, etc. The human decides when to enter a workflow and often when to proceed past checkpoints.
+
+**Skills** (`skills/*.md`) are single-pass, agent-invocable tools. They use `name` / `description` / `when` frontmatter, activate based on code context (diff touches auth → `security-reviewer`) or explicit request, and produce a self-contained output (a review, a critique, a fact-check report). Skills compose hierarchically — `code-review` dispatches `security-reviewer`, `performance-reviewer`, and others in parallel.
+
+In short: workflows describe *how to work*; skills describe *what to analyze*.
+
+### How the boundary has shifted
+
+Practice has blurred the original line in two directions:
+
+1. **Workflows shrinking into skills.** `bug-diagnosis` was a standalone workflow with a structured diagnosis log, hypothesis tracking, and explicit pivot gates. In practice, most bugs didn't need that ceremony — pasting the error into Claude and following the 5-step debugging defaults (reproduce → read error → hypothesize → test → fix) was sufficient. The workflow was deprecated; its core loop was extracted into `skills/bug-diagnosis.md` for inline invocation. The full workflow remains as reference for complex bugs that genuinely need a formal log.
+
+2. **Skills growing workflow-like behavior.** `code-review` is a skill, but it orchestrates multiple sub-skills in stages, synthesizes results, and can trigger a review-fix loop. It has more internal structure than some workflows. Similarly, `draft-review` spawns parallel critic skills and produces a synthesis — it's an orchestrator wearing a skill's frontmatter.
+
+3. **Workflows used like skills.** Divergent Design is defined as a workflow, but it's most often invoked *within* RPI as a sub-procedure — RPI's research surfaces 3+ approaches, DD runs, the decision feeds back into RPI's plan. The user rarely triggers DD directly; it's summoned by workflow logic, much like how skills are summoned by diff context.
+
+### Decision criteria for new additions
+
+When proposing a new workflow or skill, ask:
+
+| Question | If yes → | If no → |
+|----------|----------|---------|
+| Does it require human judgment at intermediate checkpoints? | Workflow | Skill |
+| Can Claude complete it in a single pass given the right context? | Skill | Workflow |
+| Does it compose horizontally with other processes (hand-off, pivot)? | Workflow | Either |
+| Is it triggered by code context (diffs, file types) rather than task description? | Skill | Either |
+| Does it produce a self-contained artifact (review, report, critique)? | Skill | Either |
+
+**Gray area guidance:** If something could be either, prefer a skill. Skills are easier to invoke, test, and compose as sub-components. A skill can always be wrapped in a workflow later (as `code-review` is wrapped in `pr-prep`'s review-fix loop), but extracting a skill from a workflow is harder (as `bug-diagnosis` showed).
+
+### Current inventory
+
+The table below captures the current state of all workflows and skills, noting where the form factor fits naturally and where it's strained. This is descriptive, not prescriptive — the boundary should evolve based on usage.
+
+#### Workflows
+
+| Name | Form factor fit | Notes |
+|------|----------------|-------|
+| `research-plan-implement` | **Strong** | Multi-step with research → plan → review gate → implement. Human gates are load-bearing. |
+| `divergent-design` | **Adequate** | Often used as sub-procedure within RPI rather than standalone. Could work as a skill, but benefits from the structured candidate-evaluation steps. |
+| `codebase-onboarding` | **Strong** | Exploratory, multi-phase, feeds into downstream workflows. |
+| `spike` | **Strong** | Timeboxed with explicit go/no-go decision. Human judgment at the boundary. |
+| `pr-prep` | **Strong** | Orchestrates review-fix loop with human approval gates. |
+| `task-decomposition` | **Strong** | Decomposes into sub-tasks that each follow their own workflow. |
+| `branch-strategy` | **Strong** | Coordinates across multiple branches; inherently multi-session. |
+| `user-testing-workflow` | **Strong** | Plans, executes, and analyzes usability tests across phases. |
+| `review-fix-loop` | **Adequate** | Sub-procedure of `pr-prep`, not invoked standalone. More of a protocol than a workflow. |
+| `bug-diagnosis` | **Deprecated** | Core loop extracted to skill. Full workflow retained as reference for complex cases. |
+
+#### Skills
+
+| Name | Form factor fit | Notes |
+|------|----------------|-------|
+| `code-review` | **Adequate** | Orchestrator — more structured than typical skills. Fits because it produces a single artifact. |
+| `security-reviewer` | **Strong** | Standalone reviewer, single-pass, diff-triggered. Canonical skill pattern. |
+| `performance-reviewer` | **Strong** | Same pattern as `security-reviewer`. |
+| `ui-visual-review` | **Strong** | Diff-triggered, single-pass review. |
+| `api-consistency-reviewer` | **Strong** | Single-pass, diff-triggered. |
+| `code-fact-check` | **Strong** | Single-pass verification. |
+| `fact-check` | **Strong** | Prose fact-checking, single-pass. |
+| `draft-review` | **Adequate** | Orchestrator dispatching critics in parallel. Similar to `code-review`. |
+| `self-eval` | **Strong** | Single-pass scoring against rubric. |
+| `bug-diagnosis` | **Strong** | Extracted from workflow. Single-pass hypothesis-test-fix cycle. |
+| `test-strategy` | **Strong** | Single-pass analysis producing a test plan. |
+| `tech-debt-triage` | **Strong** | Single-pass prioritization. |
+| `dependency-upgrade` | **Strong** | Single-pass assessment. |
+| `architecture-review` | **Strong** | Single-pass review. |
+| `matrix-analysis` | **Strong** | Single-pass comparison across criteria. |
+| `what-if-analysis` | **Strong** | Single-pass consequence exploration. |
+| `cowen-critique` | **Strong** | Single-pass persona critique. |
+| `yglesias-critique` | **Strong** | Single-pass persona critique. |
+| `ai-personas-critique` | **Strong** | Multi-persona critique, single artifact. |
+
+### Evaluating this section's usefulness
+
+This section was added to help make more deliberate form-factor choices when proposing new skills or workflows. If you're reading this while deciding whether to create a workflow or a skill, note it in the relevant working doc (e.g., `docs/working/research-*.md`) — that trail helps evaluate whether the reference is actually consulted in practice.
+
 ## Models to study
 
 | Pattern | Example skill | What to learn |
