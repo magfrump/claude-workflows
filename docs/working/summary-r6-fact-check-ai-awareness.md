@@ -1,0 +1,1 @@
+Added an "AI-Generated Draft Awareness" section to skills/fact-check.md that directs the fact-checker to apply heightened scrutiny to specific numbers, named studies, and attributed quotes when the draft is AI-generated, with observable output markers (header annotation + per-claim notes) so activation can be confirmed in future invocations.
