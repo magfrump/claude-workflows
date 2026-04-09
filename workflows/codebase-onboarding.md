@@ -24,7 +24,7 @@ This is a **pre-task** workflow. It produces an orientation document that subseq
 This workflow produces:
 - `docs/working/onboarding-{project}.md` — the orientation document
 
-This file is committed to the repo and treated as a living reference. Unlike RPI working docs (which are disposable per-task artifacts), the onboarding doc has ongoing value and should be updated as understanding deepens. If it grows stale, re-run the workflow rather than patching incrementally.
+This file is committed to the repo and treated as a living reference. Unlike RPI working docs (which are disposable per-task artifacts), the onboarding doc has ongoing value and should be updated as understanding deepens. If it grows stale, re-run the workflow (or use a lightweight refresh for incremental changes — see "When to re-run").
 
 ## Process
 
@@ -200,7 +200,37 @@ These are concrete triggers that indicate the onboarding doc needs a refresh. Ch
 3. **High churn since last update.** If >30% of files under tracked `Relevant paths` have been modified since `Last verified`, the doc likely has stale descriptions. Check with `git diff --stat <last-verified-commit>..HEAD -- <Relevant paths>` and compare against total file count.
 4. **Doc age with active development.** If `Last verified` is >30 days old and the repo has had active commits in that period, refresh even if no single trigger above fires — accumulated small changes can silently invalidate the mental model.
 
-When any signal fires, re-run the full onboarding workflow rather than patching the doc incrementally. Update `Last verified` to today's date after the refresh, and note which signal triggered the re-run in the commit message (e.g., `docs: refresh onboarding — new subsystem added`).
+When a signal fires, decide whether a **full re-run** or a **lightweight refresh** is appropriate (see below). Update `Last verified` to today's date after either type of refresh, and note which signal triggered it in the commit message (e.g., `docs: refresh onboarding — new subsystem added`).
+
+### Lightweight refresh
+
+When staleness signals fire but changes are **incremental** — no new subsystems, no major dependency upgrades, no architectural shifts — a targeted refresh is proportionate. A full 7-step re-run is overkill when the existing orientation doc is fundamentally sound and just needs updating in the areas that changed.
+
+**When to use lightweight refresh (all must be true):**
+- Staleness signal #3 (high churn) or #4 (doc age) fired, but NOT #1 (major dependency upgrade) or #2 (new subsystem)
+- Changes are within existing subsystems, not across subsystem boundaries
+- The Architecture Map's subsystem inventory is still complete (no new top-level modules)
+
+**When to use full re-run instead:**
+- Signal #1 or #2 fired (new subsystems or major dependency changes)
+- Changes span multiple subsystem boundaries in ways that may have altered data flow
+- You're unsure whether the changes are incremental — when in doubt, full re-run
+
+**Lightweight refresh process:**
+
+1. **Review recent changes.** Run `git log --oneline --since="<Last verified date>" -- <Relevant paths>` and read the commits to understand what changed and where.
+2. **Update Architecture Map.** For each subsystem touched by recent changes, verify that its responsibility, key abstractions, and dependencies are still accurate. Update any that have drifted.
+3. **Update Known Unknowns.** Remove unknowns that have been resolved by recent work. Add new unknowns surfaced by the changes you reviewed.
+4. **Bump `Last verified`.** Set to today's date. Add a note in the commit message indicating this was a lightweight refresh (e.g., `docs: lightweight refresh onboarding — updated auth subsystem after session handling changes`).
+
+**Done when...**
+- [ ] `git log` since `Last verified` has been reviewed
+- [ ] Architecture Map reflects current state for all changed subsystems
+- [ ] Known Unknowns section is current (stale items removed, new gaps added)
+- [ ] `Last verified` date is updated
+- [ ] Onboarding sufficiency criteria still pass (the "Where would I look?" test, etc.)
+
+A lightweight refresh should take significantly less time than a full re-run — if you find yourself re-reading most of the codebase, abort and do a full re-run instead.
 
 ### Freshness check
 
