@@ -1,0 +1,1 @@
+Created guides/task-decomposition-examples.md with two worked examples: (a) a multi-service API migration showing full decomposition with briefing patterns, shared-dependency research, and synthesis, and (b) a tightly-coupled status-field refactor counter-example showing why decomposition adds overhead when sub-tasks aren't truly independent.
