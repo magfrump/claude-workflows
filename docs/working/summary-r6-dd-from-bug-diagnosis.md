@@ -1,0 +1,1 @@
+Added '← From Bug Diagnosis' pivot entry to workflows/divergent-design.md: when debugging reveals a design-level root cause with 3+ viable fix approaches, invoke DD directly, carrying the diagnosis log's root-cause analysis and failed hypotheses as constraints.
