@@ -250,3 +250,21 @@ After the PR is opened, take 2 minutes to close the loop on the workflow that pr
 **Completion criteria:**
 - [ ] At least one of the four questions answered with more than one sentence
 - [ ] Answer stored in `docs/thoughts/` or a commit message (not lost)
+
+## Step 7: Post-merge follow-up (optional)
+
+*These items are not required for every PR. Review the list after merge and act on whichever apply. Skip items that don't fit the change.*
+
+After the PR merges, there are follow-up tasks that are easy to forget in the moment of completion. Scanning this checklist takes under a minute and can prevent silent regressions or stale artifacts.
+
+**Checklist — act on what applies, skip the rest:**
+
+- [ ] **Verify CI passes on main.** Check that the merge commit's CI run is green. Rebased PRs can still break main if another PR landed between your last push and merge (semantic conflicts, flaky tests exposed by new code paths). A quick check catches these before they compound.
+- [ ] **Monitor for regressions in the first hour.** If the project has observability (error tracking, latency dashboards, log alerts), glance at them within an hour of merge. Not all bugs show up in tests — some only appear under real traffic or data patterns. Scale monitoring effort to the risk: a config change needs less watching than a new auth flow.
+- [ ] **Update affected documentation.** If the PR changed user-facing behavior, CLI flags, config options, or API contracts, verify that READMEs, onboarding docs, decision records, and `docs/thoughts/` entries still reflect reality. Documentation that contradicts the code is worse than no documentation.
+- [ ] **Remove feature flags if the feature shipped fully.** If the feature was gated behind a flag during development and is now fully rolled out, remove the flag and its branching logic. Leftover flags accumulate as dead code and confuse future readers.
+
+**This step is intentionally lightweight.** If you find yourself spending more than 5 minutes here, the items have likely surfaced real follow-up work — track that work separately rather than blocking PR completion on it.
+
+**Post-merge actions taken** (note here or in a commit message for traceability):
+- _e.g., "CI green on main after merge", "Removed `ENABLE_NEW_EXPORT` flag in follow-up commit", "No docs affected"_
