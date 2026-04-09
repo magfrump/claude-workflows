@@ -54,6 +54,10 @@ case "$TOOL_NAME" in
       WORKFLOW_NAME="${FILE_PATH##*/}"
       WORKFLOW_NAME="${WORKFLOW_NAME%.md}"
       log_event "workflow" "$WORKFLOW_NAME"
+    elif [[ "$FILE_PATH" == */skills/*.md ]]; then
+      SKILL_NAME="${FILE_PATH##*/}"
+      SKILL_NAME="${SKILL_NAME%.md}"
+      log_event "skill" "$SKILL_NAME"
     fi
     ;;
   Agent)
