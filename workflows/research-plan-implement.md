@@ -64,6 +64,12 @@ Read the relevant parts of the codebase and produce a research doc in `docs/work
 
 The research must be thorough. Read the actual implementations, not just signatures. If the research is wrong, everything downstream will be wrong.
 
+**Optional templates**: If you're staring at a blank research doc, scenario-specific templates in `workflows/templates/` can provide a starting structure with relevant questions to investigate. Pick the one closest to your task and adapt it — delete sections that don't apply, add sections that do. These are scaffolds, not forms.
+
+- `research-new-feature.md` — integration points, user-facing behavior, reuse opportunities
+- `research-bug-investigation.md` — reproduction steps, hypothesis tracking, error evidence
+- `research-refactor.md` — behavior characterization, caller/dependent mapping, test coverage assessment
+
 **Confidence-provenance tags**: When stating facts in the research doc, tag claims with their evidential basis so reviewers can quickly assess reliability:
 - **[observed]** — directly verified by reading code, running tests, or checking output. These are the load-bearing facts.
 - **[inferred]** — logically derived from observed evidence but not directly confirmed. Example: "function X is called only from Y [inferred from grep — no dynamic dispatch observed]."
