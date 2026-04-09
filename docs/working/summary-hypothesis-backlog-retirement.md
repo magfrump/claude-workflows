@@ -1,0 +1,1 @@
+Retired H-02, H-08, H-09 as INCONCLUSIVE-EXPIRED in hypothesis-backlog.md (usage.jsonl structurally unfit per R9, no alternative evidence source, 10 rounds without resolution) and logged the retirement hypothesis in hypothesis-log.md for evaluation at round 13.
