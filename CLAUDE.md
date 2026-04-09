@@ -34,6 +34,8 @@ These principles apply to **all** bug-fixing work, whether inside RPI or standal
 5. **Escape hatch at 3 failed hypotheses.** If 3+ hypotheses are refuted, stop iterating. Either you need better isolation (re-read the error, try git bisect) or you don't understand the code well enough (pivot to RPI's research phase — your failed hypotheses document what the bug *isn't*).
 6. **Fix root cause, not symptom.** Keep the fix minimal. Don't refactor nearby code. One fix per diagnosis.
 
+For worked examples of these defaults (hypothesis formation, the 3-hypothesis escape hatch, root-cause vs. symptom fixes), see `guides/debugging-examples.md`.
+
 For complex bugs that need a formal diagnosis log, the template and full process remain available in `workflows/bug-diagnosis.md`.
 
 ### Skill routing

@@ -1,0 +1,1 @@
+Rebased r10 debugging-worked-examples branch onto current main to remove stale effectiveness-framing diffs, yielding a clean 5-file diff (guides/debugging-examples.md, guides/README.md, CLAUDE.md, scope-exception, summary); merged to main.
