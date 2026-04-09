@@ -1,0 +1,1 @@
+Added external-impact requirement to DD prompt in self-improvement.sh: at least 3 ideas must target external-facing workflows/skills (DD, RPI, fact-check, etc.), with [EXTERNAL]/[INTERNAL] tags for verifiability.

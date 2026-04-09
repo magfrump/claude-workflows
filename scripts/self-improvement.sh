@@ -529,6 +529,16 @@ Generate feature improvement ideas for the workflows in this repo.
 Review docs/working/completed-tasks.md for what has already been done.
 ${PRIOR_CONTEXT}${SEED_CONTEXT}${SCREENING_CONTEXT}
 
+IMPORTANT — External-impact requirement:
+At least 3 of your generated ideas MUST directly improve a workflow or
+skill that is used in external projects. Examples of external-facing
+artifacts include: divergent-design, research-plan-implement, pr-prep,
+user-testing-workflow, bug-diagnosis, codebase-onboarding, and skills
+like fact-check, ui-visual-review, cowen-critique, yglesias-critique,
+and claude-api. Remaining idea slots may target internal SI
+infrastructure. Mark each idea with [EXTERNAL] or [INTERNAL] so this
+constraint is verifiable.
+
 If you cannot generate at least 3 genuinely new and valuable ideas that
 are not already completed or in progress, write only the word DONE on the
 first line of your output and stop. Note: re-attempts of rejected ideas
