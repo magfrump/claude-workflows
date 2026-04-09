@@ -1,0 +1,1 @@
+Added dependency manifest trigger to security-reviewer.md: new cognitive move #10 checks for newly added deps (maintenance/popularity), major version bumps (CVEs), unexplained lockfile churn, and removal of security-relevant packages; findings use `[Dependency change]` prefix for traceability.
