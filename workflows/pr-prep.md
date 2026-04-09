@@ -96,15 +96,24 @@ For each finding: confirm it's real by reading the code, then fix. Commit in coh
 
 **d. Re-review.** Run the same review skills again. Compare against prior findings: are they resolved? Did fixes introduce new ones? Did reviewers surface issues previously masked?
 
-**e. Exit or repeat.** Exit when no Must Fix items remain and Must Address items are resolved or explicitly acknowledged. Repeat if new findings appear. Each loop should be strictly smaller than the last — if findings aren't converging after 3-4 loops, the problem is architectural (use divergent-design or RPI, not more review loops).
+**e. Exit or repeat (3-iteration maximum).** Exit when no Must Fix items remain and Must Address items are resolved or explicitly acknowledged. Repeat if new findings appear. Each loop should be strictly smaller than the last.
 
-See `workflows/review-fix-loop.md` for extended discussion of loop dynamics and anti-patterns.
+**After 3 iterations**, if new findings are still appearing, **stop**. This mirrors the 3-hypothesis escape hatch in the debugging defaults — unbounded iteration has diminishing returns. Choose one of two exit paths:
+
+1. **Ship with documented known issues.** If no Must Fix items remain but Must Address or Consider items persist, document them in the PR description's "Areas of uncertainty" section and proceed to Phase 2. The reviewer sees the known issues and can make a judgment call.
+2. **Escalate to human review.** If Must Fix items remain, or if you're unsure whether remaining findings are safe to ship, stop and present the user with: iteration count, summary of fixes per iteration, remaining findings, and your assessment of why the loop isn't converging (e.g., fixes revealing deeper issues, change too large for incremental review, review criteria shifting).
+
+The user can override the ceiling and say "continue" — but the default is to stop. See `workflows/review-fix-loop.md` § Convergence ceiling for extended discussion.
+
+**Tracking:** Note in the PR description or commit message whether the loop converged cleanly (and in how many iterations) or hit the 3-iteration ceiling. This creates an audit trail for calibrating the threshold over time.
 
 **Completion criteria:**
 - [ ] Review artifacts exist in `docs/reviews/` for each review skill run
 - [ ] No Must Fix findings remain open
 - [ ] All Must Address findings are resolved or explicitly acknowledged in the PR description
 - [ ] Final review loop introduced no new Must Fix or Must Address findings
+- [ ] Iteration count noted (converged in N iterations, or ceiling hit at 3)
+- [ ] If ceiling hit: remaining findings documented in PR description, or escalated to human review
 - [ ] Review artifacts committed to the branch (see [PR Review Doc Inclusion guide](../guides/pr-review-doc-inclusion.md))
 
 ### Phase 2: Packaging
