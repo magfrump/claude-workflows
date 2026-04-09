@@ -2,55 +2,60 @@
 
 A prescriptive decision tree for choosing the right workflow given a task type. Start at the top and follow the first matching condition.
 
+> **Canonical source:** The workflow decision tree in `CLAUDE.md` is authoritative. This guide expands on it with disambiguation tips and worked examples. If this guide and CLAUDE.md conflict, CLAUDE.md wins.
+
 ## Quick-Start Decision Tree
+
+Evaluate triggers top-to-bottom. Take the **first match**; if none match, default to RPI.
 
 ```
 Is this a brand-new or unfamiliar codebase?
   YES → codebase-onboarding
   NO  ↓
 
-Is the task a bug fix?
-  YES → Is the bug in code you already understand?
-          YES → bug-diagnosis
-          NO  → research-plan-implement (research phase will build context)
-  NO  ↓
-
-Is the question "can this work?" or "how does this behave?"
-  YES → spike
-  NO  ↓
-
-Is the task a decision with multiple viable options?
+Does the task involve a design choice with 3+ viable approaches?
   YES → divergent-design
   NO  ↓
 
-Does the task touch 3+ subsystems that can be investigated independently?
+Is this a non-trivial feature or bug fix (touches >1 file, root cause unclear)?
+  YES → research-plan-implement
+  NO  ↓
+
+Does the task touch multiple subsystems that can be investigated independently?
   YES → task-decomposition
   NO  ↓
 
-Is this a non-trivial feature or change?
-  YES → research-plan-implement
+Is the question "can this work?" or a feasibility/proof-of-concept question?
+  YES → spike
+  NO  ↓
+
+Is the work ready to open a PR?
+  YES → pr-prep (includes review-fix-loop)
+  NO  ↓
+
+Planning, running, or analyzing a usability test?
+  YES → user-testing-workflow
+  NO  ↓
+
+High-throughput multi-branch development with async review?
+  YES → branch-strategy
   NO  → Just do it (no workflow needed)
 ```
 
-### Supporting workflows (apply on top of the above)
+### Debugging defaults (not a separate workflow)
 
-- **Ready to open a PR?** → [pr-prep](../workflows/pr-prep.md) (includes [review-fix-loop](../workflows/review-fix-loop.md))
-- **Running multiple independent tasks?** → [parallel-sessions](parallel-sessions.md) guide
-- **Managing many feature branches with async review?** → [branch-strategy](../workflows/branch-strategy.md)
-- **Need to plan and run a usability test?** → [user-testing-workflow](../workflows/user-testing-workflow.md)
+Bug-diagnosis is no longer a standalone workflow — its principles have been absorbed into CLAUDE.md's "Debugging defaults" section, which applies to **all** bug-fixing work (whether inside RPI or standalone). Key points:
+
+1. Reproduce first
+2. Read the error
+3. Hypothesize specifically
+4. Test, don't guess
+5. Escape hatch at 3 failed hypotheses → pivot to RPI research
+6. Fix root cause, not symptom
+
+For complex bugs that need a formal diagnosis log, the template remains in `workflows/bug-diagnosis.md`.
 
 ## Disambiguation: Similar Workflows
-
-### Bug-diagnosis vs Research-plan-implement (for bugs)
-
-| Factor | [bug-diagnosis](../workflows/bug-diagnosis.md) | [research-plan-implement](../workflows/research-plan-implement.md) |
-|---|---|---|
-| You understand the relevant code | Yes | No |
-| Hypothesis available quickly | Yes | Not yet |
-| Plan approval gate | No — fast iteration loop | Yes — human reviews plan |
-| Typical duration | Minutes | Session+ |
-
-**Rule of thumb:** If you can form a hypothesis within 5 minutes of reading the bug report, use bug-diagnosis. If you need to understand unfamiliar subsystems first, use research-plan-implement.
 
 ### Spike vs Divergent-design (for exploration)
 
@@ -81,8 +86,8 @@ Is this a non-trivial feature or change?
 | [divergent-design](../workflows/divergent-design.md) | Structured brainstorming for decisions with multiple options |
 | [task-decomposition](../workflows/task-decomposition.md) | Split large tasks into parallel sub-investigations |
 | [spike](../workflows/spike.md) | Timeboxed feasibility exploration on a throwaway branch |
-| [bug-diagnosis](../workflows/bug-diagnosis.md) | Fast hypothesis-test loop for bugs in known code |
 | [codebase-onboarding](../workflows/codebase-onboarding.md) | Structured orientation for unfamiliar codebases |
 | [pr-prep](../workflows/pr-prep.md) | Package work for async review (includes review-fix-loop) |
 | [branch-strategy](../workflows/branch-strategy.md) | High-throughput feature branches with async review |
 | [user-testing-workflow](../workflows/user-testing-workflow.md) | Plan, run, and interpret usability tests |
+| [bug-diagnosis](../workflows/bug-diagnosis.md) | Deprecated as standalone; debugging defaults absorbed into CLAUDE.md |

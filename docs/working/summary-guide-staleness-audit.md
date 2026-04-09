@@ -1,0 +1,1 @@
+Audited workflow-selection.md and skill-trigger-guide.md against CLAUDE.md: fixed workflow-selection.md (removed deprecated bug-diagnosis routing, reordered tree to match CLAUDE.md, promoted user-testing and branch-strategy to main tree); added canonical-source notes to both guides. Hypothesis confirmed: workflow-selection.md had significant divergence.
