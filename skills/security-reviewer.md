@@ -8,10 +8,12 @@ description: >
   skill when the user asks to "review for security", "check for vulnerabilities", "security audit
   this PR", "what could an attacker do with this", or "is this safe". Also trigger when code
   touches authentication, authorization, input handling, cryptography, file I/O, network calls,
-  or serialization. NOTE: This skill can be invoked standalone or by a code-review orchestrator.
+  or serialization. Also trigger when the diff includes changes to dependency manifests
+  (package.json, requirements.txt, go.mod, Cargo.toml, pyproject.toml, Gemfile, pom.xml,
+  build.gradle, etc.) or their lockfiles. NOTE: This skill can be invoked standalone or by a code-review orchestrator.
   If a code-fact-check report is provided, use it as your foundation for understanding what the
   code actually does and do not re-verify documented behavior.
-when: Code touches auth, input handling, crypto, or trust boundaries
+when: Code touches auth, input handling, crypto, trust boundaries, or dependency manifests
 requires:
   - name: code-fact-check
     description: >
@@ -45,6 +47,15 @@ git diff main...HEAD
 If the user provides an explicit scope (file list, directory, or PR number), use that instead.
 For each changed file, also read enough surrounding context to understand trust boundaries,
 callers, and data flow — a diff alone is rarely sufficient for security analysis.
+
+### Dependency manifest changes
+
+If the diff includes changes to dependency manifests (`package.json`, `requirements.txt`,
+`go.mod`, `Cargo.toml`, `pyproject.toml`, `Gemfile`, `pom.xml`, `build.gradle`, etc.) or
+their lockfiles (`package-lock.json`, `yarn.lock`, `poetry.lock`, `Cargo.lock`, `go.sum`,
+`Gemfile.lock`, etc.), apply cognitive move #10 (Review dependency changes) in addition to
+any other applicable moves. This is not a full supply chain audit — it is a focused check
+for the most common dependency-related risks that appear in diffs.
 
 ## Using the Code Fact-Check Report
 
@@ -188,6 +199,40 @@ are good — it's about checking that:
 
 If you're not confident in your cryptographic assessment, say so and flag it for expert
 review rather than guessing.
+
+### 10. Review dependency changes
+
+When the diff modifies dependency manifests or lockfiles, check for supply-chain risk with
+these focused checks:
+
+1. **Newly added dependencies** — Is this package well-maintained (recent commits, multiple
+   maintainers, significant download count)? Is it widely used for this purpose, or is it an
+   obscure alternative? A new dependency is new attack surface — each one should have a clear
+   reason to exist.
+
+2. **Major version bumps** — Major version changes can introduce breaking changes and may
+   coincide with security-relevant API changes. Check whether the bumped version has known
+   CVEs (search the advisory database for the package name and version range). Flag any bump
+   that skips multiple major versions, as this suggests a long-deferred update that may carry
+   compounding migration risk.
+
+3. **Lockfile-only changes** — When lockfile changes appear without corresponding manifest
+   changes, determine whether they reflect intentional updates (e.g., `npm audit fix`,
+   `dependabot`) or accidental regeneration. Unexplained lockfile churn can mask dependency
+   confusion attacks or introduce unintended transitive dependency changes.
+
+4. **Removal of security-relevant dependencies** — If the diff removes a dependency that
+   provides security functionality (e.g., `helmet`, `csurf`, `bcrypt`, `cors`, a WAF
+   middleware, or an input sanitization library), verify that its functionality has been
+   replaced or is genuinely no longer needed.
+
+This is not a full supply chain audit. Do not attempt to review every transitive dependency
+or reproduce build artifacts. Focus on what is visible and actionable from the diff.
+
+When reporting dependency findings, use the `[Dependency change]` prefix in the finding title
+so that these findings are identifiable in review output. This aids traceability when
+evaluating whether the dependency trigger is surfacing risks that would otherwise go
+unreviewed.
 
 ## Critical Finding Escalation
 
