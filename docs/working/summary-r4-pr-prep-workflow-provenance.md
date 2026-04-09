@@ -1,0 +1,1 @@
+Added an optional "Workflow provenance" one-liner to the PR description template in pr-prep.md (inside "What this does") with a matching optional checklist item, so reviewers of multi-workflow PRs can see the path taken (e.g., "RPI → DD → RPI") without adding overhead to simple PRs.
