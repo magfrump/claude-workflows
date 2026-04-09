@@ -1,3 +1,7 @@
+---
+value-justification: "Replaces unbounded exploration of unknowns with timeboxed feasibility checks that produce a clear go/no-go decision."
+---
+
 # Spike Workflow
 
 ## When to use

@@ -1,3 +1,7 @@
+---
+value-justification: "Replaces ad-hoc branch management with a structured strategy for high-throughput async development, preventing merge conflicts and lost work."
+---
+
 # Branch Strategy Guide
 
 ## Overview

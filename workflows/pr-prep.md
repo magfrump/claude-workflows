@@ -1,3 +1,7 @@
+---
+value-justification: "Replaces manual pre-review cleanup with structured self-review, catching issues before async reviewers spend time on them."
+---
+
 # PR Preparation Workflow
 
 *The self-review and cleanup steps follow the [orchestrated review pattern](../patterns/orchestrated-review.md), with commits/files as the units of review.*
