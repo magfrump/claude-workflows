@@ -76,3 +76,10 @@ For each finding:
 ```
 
 - [ ] For UI changes: include before/after screenshots or recording
+
+### 7. Post-Merge Follow-Up (optional)
+
+- [ ] **Verify CI passes on main** — check merge commit's CI run is green
+- [ ] **Monitor for regressions** — glance at observability within an hour of merge (skip if no observability)
+- [ ] **Update affected documentation** — verify READMEs, decision records, etc. still reflect reality
+- [ ] **Remove feature flags** — if the feature shipped fully, remove the flag and branching logic
