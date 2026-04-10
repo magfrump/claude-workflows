@@ -104,75 +104,10 @@ finalize_round_log() {
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 # shellcheck source=lib/si-functions.sh
 source "$SCRIPT_DIR/lib/si-functions.sh"
-
-# --- Task description linter ---
-# Advisory warnings for common task description failure patterns.
-# Non-blocking: prints warnings to stderr and always returns 0.
-# Args: $1 = path to tasks JSON file
-lint_task_descriptions() {
-    local tasks_file=$1
-    local task_count
-    task_count=$(jq 'length' "$tasks_file")
-
-    for i in $(seq 0 $((task_count - 1))); do
-        local tid desc
-        tid=$(jq -r ".[$i].id" "$tasks_file")
-        desc=$(jq -r ".[$i].description" "$tasks_file")
-        local ft_count
-        ft_count=$(jq ".[$i].files_touched | length" "$tasks_file")
-
-        local has_sh=false
-        local has_workflow_md=false
-        local creates_new_sh=false
-
-        for j in $(seq 0 $((ft_count - 1))); do
-            local fpath parent_dir
-            fpath=$(jq -r ".[$i].files_touched[$j]" "$tasks_file")
-            parent_dir=$(dirname "$fpath")
-
-            # (a) Parent directory doesn't exist
-            if [ "$parent_dir" != "." ] && [ ! -d "$parent_dir" ]; then
-                echo "  LINT WARNING [$tid]: parent directory does not exist: $parent_dir (for $fpath)" >&2
-            fi
-
-            # Track file types for cross-checks
-            case "$fpath" in
-                *.sh)
-                    has_sh=true
-                    if [ ! -f "$fpath" ]; then
-                        creates_new_sh=true
-                    fi
-                    ;;
-            esac
-            case "$fpath" in
-                workflows/*.md) has_workflow_md=true ;;
-            esac
-        done
-
-        # (b) .sh files but description doesn't mention shellcheck
-        if $has_sh; then
-            if ! echo "$desc" | grep -qi 'shellcheck'; then
-                echo "  LINT WARNING [$tid]: touches .sh files but description does not mention 'shellcheck'" >&2
-            fi
-        fi
-
-        # (c) creates new .sh file but description doesn't mention shell safety practices
-        if $creates_new_sh; then
-            if ! echo "$desc" | grep -qiE 'set -euo pipefail|shellcheck'; then
-                echo "  LINT WARNING [$tid]: creates new .sh file but description does not mention 'set -euo pipefail' or 'shellcheck'" >&2
-            fi
-        fi
-
-        # (d) workflow .md files but description doesn't mention BATS or section
-        if $has_workflow_md; then
-            if ! echo "$desc" | grep -qiE 'BATS|section'; then
-                echo "  LINT WARNING [$tid]: touches workflow .md files but description does not mention 'BATS' or 'section'" >&2
-            fi
-        fi
-    done
-
-    return 0
-}
+# shellcheck source=lib/si-input.sh
+source "$SCRIPT_DIR/lib/si-input.sh"
+# shellcheck source=lib/si-morning-summary.sh
+source "$SCRIPT_DIR/lib/si-morning-summary.sh"
 
 # --- Round summary printer ---
 # Reads the current ROUND_LOG_FILE to print a one-line human-readable summary.
@@ -259,80 +194,49 @@ fi
 
 cd "$REPO_DIR"
 
+# --- Pre-run input ---
+# Parse user feedback, priorities, and constraints from si-input.md.
+# Variables SI_FEEDBACK, SI_PRIORITIES, SI_OFF_LIMITS, SI_CONTEXT are set
+# (empty strings if file is missing or sections are blank).
+parse_si_input "$WORKING_DIR/si-input.md" || true
+
+# Build user input context for injection into prompts
+USER_INPUT_CONTEXT=""
+if [ -n "$SI_FEEDBACK" ]; then
+    USER_INPUT_CONTEXT+="
+## User feedback
+
+${SI_FEEDBACK}
+"
+fi
+if [ -n "$SI_PRIORITIES" ]; then
+    USER_INPUT_CONTEXT+="
+## User priorities
+
+${SI_PRIORITIES}
+"
+fi
+if [ -n "$SI_OFF_LIMITS" ]; then
+    USER_INPUT_CONTEXT+="
+## Off-limits — do not propose ideas touching these topics or files
+
+${SI_OFF_LIMITS}
+"
+fi
+if [ -n "$SI_CONTEXT" ]; then
+    USER_INPUT_CONTEXT+="
+## User context
+
+${SI_CONTEXT}
+"
+fi
+
+# Track which round we start at (for morning summary)
+START_ROUND=1
+
 for ROUND in $(seq 1 $MAX_ROUNDS); do
     echo "=== Round $ROUND ==="
     init_round_log "$ROUND"
-
-    # -------------------------------------------------------
-    # Step 0: Check hypothesis windows from prior rounds
-    # -------------------------------------------------------
-    HYPOTHESIS_LOG="$WORKING_DIR/hypothesis-log.md"
-    if [ ! -f "$HYPOTHESIS_LOG" ]; then
-        cat > "$HYPOTHESIS_LOG" <<'HEADER'
-# Hypothesis Log
-
-Tracks falsifiable predictions made at task creation time and their outcomes.
-
-| Round | Task ID | Hypothesis | Window | Checked at Round | Outcome | Evidence |
-|-------|---------|------------|--------|------------------|---------|----------|
-HEADER
-    fi
-
-    for PRIOR_ROUND in $(seq 1 $((ROUND - 1))); do
-        PRIOR_TASKS="$WORKING_DIR/tasks-round-$PRIOR_ROUND.json"
-        [ -f "$PRIOR_TASKS" ] || continue
-
-        # Get tasks that have a hypothesis, are not retroactive, and whose window has elapsed
-        ELIGIBLE=$(get_eligible_hypotheses "$ROUND" "$PRIOR_ROUND" < "$PRIOR_TASKS") || true
-
-        while IFS= read -r TASK_ID; do
-            [ -z "$TASK_ID" ] && continue
-            # Skip if already recorded in the log
-            if grep -qF "| $TASK_ID |" "$HYPOTHESIS_LOG" 2>/dev/null; then
-                continue
-            fi
-
-            # Check if the task was actually completed (approved and merged)
-            if ! grep -qF "**$TASK_ID**" "$WORKING_DIR/completed-tasks.md" 2>/dev/null; then
-                continue
-            fi
-
-            HYPOTHESIS=$(jq -r --arg tid "$TASK_ID" '.[] | select(.id==$tid) | .hypothesis' "$PRIOR_TASKS")
-            WINDOW=$(jq -r --arg tid "$TASK_ID" '.[] | select(.id==$tid) | .hypothesis_window // 3' "$PRIOR_TASKS")
-
-            echo "  Evaluating hypothesis for: $TASK_ID"
-            # Build the prompt with printf to avoid shell expansion of untrusted
-            # hypothesis text (which could contain $(...) or backticks).
-            EVAL_PROMPT=$(printf 'Evaluate this hypothesis from round %s (now round %s):
-
-Task: %s
-Hypothesis: %s
-Window: %s rounds
-
-Review the repo state, git log, completed-tasks.md, and validation logs to
-determine whether the hypothesis was CONFIRMED, REFUTED, or INCONCLUSIVE.
-
-Output exactly one line in this format:
-HYPOTHESIS_VERDICT: <CONFIRMED|REFUTED|INCONCLUSIVE> | <one-sentence evidence summary>' \
-                "$PRIOR_ROUND" "$ROUND" "$TASK_ID" "$HYPOTHESIS" "$WINDOW")
-            EVAL_RESULT=$(claude -p "$EVAL_PROMPT" 2>/dev/null) || true
-
-            VERDICT_LINE=$(echo "$EVAL_RESULT" | sed -n 's/.*HYPOTHESIS_VERDICT: //p' | head -1)
-            if [ -z "$VERDICT_LINE" ]; then
-                VERDICT_LINE="INCONCLUSIVE | evaluation failed to parse"
-            fi
-            OUTCOME=$(echo "$VERDICT_LINE" | cut -d'|' -f1 | sed 's/^[[:space:]]*//;s/[[:space:]]*$//')
-            EVIDENCE=$(echo "$VERDICT_LINE" | cut -d'|' -f2- | sed 's/^[[:space:]]*//;s/[[:space:]]*$//')
-
-            # Escape pipe characters to prevent breaking the markdown table
-            HYPOTHESIS_ESCAPED="${HYPOTHESIS//|/\\|}"
-            EVIDENCE_ESCAPED="${EVIDENCE//|/\\|}"
-
-            # Append to hypothesis log
-            echo "| $PRIOR_ROUND | $TASK_ID | $HYPOTHESIS_ESCAPED | $WINDOW | $ROUND | $OUTCOME | $EVIDENCE_ESCAPED |" >> "$HYPOTHESIS_LOG"
-            echo "    $TASK_ID: $OUTCOME"
-        done <<< "$ELIGIBLE"
-    done
 
     # -------------------------------------------------------
     # Step 0b: Build prior-round context for idea generation
@@ -456,54 +360,6 @@ as 'already proposed'. Only ideas listed as APPROVED are off-limits."
     fi
 
     # -------------------------------------------------------
-    # Step 0c: Gather hypothesis screening context
-    # -------------------------------------------------------
-    SCREENING_CONTEXT=""
-    SCREENING_SCRIPT="$REPO_DIR/scripts/hypothesis-screen.sh"
-    if [ -x "$SCREENING_SCRIPT" ]; then
-        echo "Gathering hypothesis screening context..."
-
-        # Get the full report for context injection
-        SCREENING_REPORT=$("$SCREENING_SCRIPT" report --markdown 2>/dev/null) || true
-
-        # Extract CONFIRMED hypothesis texts as seed candidates
-        CONFIRMED_SEEDS=""
-        if [ -n "$SCREENING_REPORT" ]; then
-            # Parse CONFIRMED section: lines matching "- **H-NN**: text"
-            CONFIRMED_SEEDS=$(echo "$SCREENING_REPORT" \
-                | sed -n '/^## CONFIRMED$/,/^## /{/^- \*\*/p}' \
-                | sed 's/^- \*\*H-[0-9]*\*\*: //' || true)
-        fi
-
-        if [ -n "$SCREENING_REPORT" ]; then
-            SCREENING_CONTEXT="
-## Hypothesis screening report — external evidence about what's valuable
-
-The following report summarizes hypotheses about workflow improvements,
-evaluated against external project usage, git history, and review artifacts.
-Use this to prioritize ideas that have external evidence of demand and
-avoid ideas where evidence suggests low value.
-
-${SCREENING_REPORT}
-"
-            # Append CONFIRMED hypotheses as seed candidates
-            if [ -n "$CONFIRMED_SEEDS" ]; then
-                SCREENING_CONTEXT="${SCREENING_CONTEXT}
-### Confirmed hypotheses — strong candidates for implementation
-
-These hypotheses have external evidence supporting them. Consider turning
-them into concrete improvement tasks:
-
-${CONFIRMED_SEEDS}
-"
-            fi
-            echo "  Screening context gathered (report + $(echo "$CONFIRMED_SEEDS" | grep -c . || echo 0) confirmed seeds)"
-        else
-            echo "  No screening data available"
-        fi
-    fi
-
-    # -------------------------------------------------------
     # Step 1: Generate ideas
     # -------------------------------------------------------
 
@@ -527,7 +383,7 @@ ${SEED_CONTENT}
 
 Generate feature improvement ideas for the workflows in this repo.
 Review docs/working/completed-tasks.md for what has already been done.
-${PRIOR_CONTEXT}${SEED_CONTEXT}${SCREENING_CONTEXT}
+${PRIOR_CONTEXT}${SEED_CONTEXT}${USER_INPUT_CONTEXT}
 
 IMPORTANT — External-impact requirement:
 At least 3 of your generated ideas MUST directly improve a workflow or
@@ -674,6 +530,15 @@ CONVERGENCE_EOF
     # Step 2: Filter into independent tasks
     # -------------------------------------------------------
     echo "Filtering ideas into tasks..."
+    # Build off-limits constraint for task filtering
+    TASK_OFF_LIMITS=""
+    if [ -n "$SI_OFF_LIMITS" ]; then
+        TASK_OFF_LIMITS="
+
+Do not create tasks that touch these topics or files:
+${SI_OFF_LIMITS}"
+    fi
+
     claude -p "Read docs/working/feature-ideas-round-$ROUND.md.
 
 For each surviving idea from the tradeoff matrix, assess whether it can be
@@ -682,22 +547,10 @@ of autonomous work).
 
 Output a JSON array to docs/working/tasks-round-$ROUND.json with fields:
 {\"id\": \"short-kebab-case\", \"description\": \"one paragraph task description\",
-\"files_touched\": [\"list of files\"], \"independent\": true/false,
-\"hypothesis\": \"a falsifiable prediction about the impact of this task\",
-\"hypothesis_window\": 3, \"retroactive\": false}
-
-The hypothesis field must state a concrete, falsifiable prediction about what
-this change will achieve (e.g. 'Adding schema validation will catch at least
-1 regression in the next 3 rounds'). The hypothesis_window is the number of
-rounds after which the hypothesis should be evaluated (default 3).
-
-IMPORTANT: The hypothesis is defined NOW, at task creation time, so it can
-guide implementation decisions (instrumentation, design choices, metrics).
-Set \"retroactive\": false for all new tasks (this is the default). Only use
-\"retroactive\": true if backfilling a hypothesis onto an already-implemented task.
+\"files_touched\": [\"list of files\"], \"independent\": true/false}
 
 Only include tasks where independent is true. Discard tasks that depend on
-other tasks in this round."
+other tasks in this round.${TASK_OFF_LIMITS}"
 
     TASKS_FILE="$WORKING_DIR/tasks-round-$ROUND.json"
     if [ ! -f "$TASKS_FILE" ]; then
@@ -772,12 +625,6 @@ other tasks in this round."
     fi
 
     # -------------------------------------------------------
-    # Step 2c: Lint task descriptions (advisory, non-blocking)
-    # -------------------------------------------------------
-    echo "Linting task descriptions..."
-    lint_task_descriptions "$TASKS_FILE"
-
-    # -------------------------------------------------------
     # Step 3: Implement in parallel worktrees
     # -------------------------------------------------------
     echo "Launching parallel implementation..."
@@ -794,7 +641,6 @@ other tasks in this round."
         }
 
         LAUNCHED_TASKS="${LAUNCHED_TASKS:+$LAUNCHED_TASKS }$TASK_ID"
-        HYPOTHESIS=$(jq -r ".[] | select(.id==\"$TASK_ID\") | .hypothesis // empty" "$TASKS_FILE")
 
         # Check prior round reports for failed attempts of the same task ID
         PRIOR_FAILURE_BLOCK=""
@@ -831,23 +677,10 @@ Address this specifically in your implementation to avoid the same failure.
         echo "  Started: $TASK_ID"
         (
             cd "$WT_DIR"
-            # Build hypothesis block for the prompt (only if hypothesis exists)
-            HYPOTHESIS_BLOCK=""
-            if [ -n "$HYPOTHESIS" ]; then
-                HYPOTHESIS_BLOCK="
-HYPOTHESIS — READ THIS BEFORE DESIGNING YOUR SOLUTION:
-This task was created with the following falsifiable prediction:
-  ${HYPOTHESIS}
-Your implementation should be designed so that this hypothesis can be
-evaluated later. Consider what instrumentation, output, or structure
-would make it possible to confirm or refute this prediction.
-
-"
-            fi
             claude -p "You are in /away mode. Commit and push when done.
 
 Task: $DESC
-${HYPOTHESIS_BLOCK}${PRIOR_FAILURE_BLOCK}
+${PRIOR_FAILURE_BLOCK}
 FILE SCOPE CONSTRAINT — READ THIS BEFORE STARTING:
 You may ONLY create or modify the following files: $FILES_TOUCHED
 Files under docs/working/ are also allowed (e.g., research docs, plan docs, summaries).
@@ -1235,7 +1068,18 @@ Then git add the resolved files and git commit to complete the merge."
 done
 
 echo "=== All rounds complete ==="
+
+# --- Post-run morning summary ---
+LAST_COMPLETED_ROUND=$((ROUND - 1))
+if [ "$LAST_COMPLETED_ROUND" -lt "$START_ROUND" ]; then
+    LAST_COMPLETED_ROUND=$START_ROUND
+fi
+SUMMARY_PATH="$WORKING_DIR/morning-summary.md"
+echo "Generating morning summary..."
+generate_morning_summary "$START_ROUND" "$LAST_COMPLETED_ROUND" "$SUMMARY_PATH" "$WORKING_DIR"
+
 echo "Completed tasks log: $WORKING_DIR/completed-tasks.md"
 echo "Round history: $ROUND_HISTORY"
+echo "Morning summary: $SUMMARY_PATH"
 
 fi  # end main-execution guard

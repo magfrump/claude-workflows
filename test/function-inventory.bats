@@ -1,7 +1,7 @@
 #!/usr/bin/env bats
 # @category fast
-# Regression guard: asserts all 8 exported functions from self-improvement.sh
-# exist and are callable. Catches accidental removal or rename.
+# Regression guard: asserts all exported functions from self-improvement.sh
+# and its library files exist and are callable.
 #
 # Usage: bats test/function-inventory.bats
 
@@ -15,10 +15,6 @@ setup() {
 
 @test "validate_task_json is a function" {
   [ "$(type -t validate_task_json)" = "function" ]
-}
-
-@test "get_eligible_hypotheses is a function" {
-  [ "$(type -t get_eligible_hypotheses)" = "function" ]
 }
 
 @test "init_round_log is a function" {
@@ -41,16 +37,25 @@ setup() {
   [ "$(type -t print_round_summary)" = "function" ]
 }
 
-@test "all 8 expected functions are present" {
+@test "parse_si_input is a function" {
+  [ "$(type -t parse_si_input)" = "function" ]
+}
+
+@test "generate_morning_summary is a function" {
+  [ "$(type -t generate_morning_summary)" = "function" ]
+}
+
+@test "all 9 expected functions are present" {
   local expected=(
     check_convergence_threshold
     validate_task_json
-    get_eligible_hypotheses
     init_round_log
     update_round_log
     record_gate
     finalize_round_log
     print_round_summary
+    parse_si_input
+    generate_morning_summary
   )
   local missing=()
   for fn in "${expected[@]}"; do
@@ -62,5 +67,5 @@ setup() {
     echo "Missing functions: ${missing[*]}" >&2
     return 1
   fi
-  [ ${#expected[@]} -eq 8 ]
+  [ ${#expected[@]} -eq 9 ]
 }
