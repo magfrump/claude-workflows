@@ -1,1 +1,1 @@
-Created skills/arithmetic-eval.md: a ~35-line skill that validates math expressions via regex allowlist and evaluates with python3 -c, with tagged output for hypothesis traceability and sympy extension path.
+Created skills/arithmetic-eval.md: two-mode math evaluation skill. Mode 1 validates bare arithmetic via regex allowlist. Mode 2 supports scientific computing (scipy, numpy, pandas, etc.) with an approved-modules allowlist and blocked-constructs list for portability to security-sensitive repos.
