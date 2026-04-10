@@ -1,0 +1,1 @@
+Created skills/arithmetic-eval.md: two-mode math evaluation skill. Mode 1 validates bare arithmetic via regex allowlist. Mode 2 supports scientific computing (scipy, numpy, pandas, etc.) with an approved-modules allowlist and blocked-constructs list for portability to security-sensitive repos.
