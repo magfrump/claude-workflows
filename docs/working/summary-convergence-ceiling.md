@@ -1,1 +1,0 @@
-Added explicit convergence ceiling to review-fix-loop.md: after 3 iterations with new (non-regression) issues, escalate to user with a change/findings summary; soft ceiling with user override, plus tracking guidance for hypothesis evaluation.

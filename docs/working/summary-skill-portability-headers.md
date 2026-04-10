@@ -1,1 +1,0 @@
-Added `## Dependencies` sections to `skills/code-review.md` and `skills/draft-review.md` listing the sub-skills each orchestrator requires, so users copying these skills to a new project can see what's needed before first use.

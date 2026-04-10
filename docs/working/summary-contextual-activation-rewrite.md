@@ -1,1 +1,0 @@
-Rewrote CLAUDE.md's flat workflow enumeration into an 8-entry decision tree with concrete trigger conditions, absorbed bug-diagnosis best patterns as inline debugging defaults, added skill routing rules (ui-visual-review, security-reviewer, code-review) with file-pattern triggers, and noted workflow composition relationships (DD↔RPI, review-fix-loop⊂PR-prep).

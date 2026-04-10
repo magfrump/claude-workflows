@@ -1,1 +1,0 @@
-Verified H-10 fix (26e8c41): post-fix usage.jsonl shows 261 entries (182 workflow, 66 skill, 4 agent) across 8 projects with 19 distinct skill names — logging gap is closed, H-10 marked CONFIRMED, H-01/H-05/H-07 evidence collection unblocked.

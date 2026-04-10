@@ -1,1 +1,0 @@
-Added checkpoint generation as the final sub-step of the RPI plan phase: after the plan doc is complete, a curated `docs/working/checkpoint-{topic}.md` artifact is generated containing key findings, plan, invariants, file map, and open questions — designed as the single file an implementation session loads instead of reconstructing context from scattered research/plan docs.

@@ -1,1 +1,0 @@
-Fixed hooks/log-usage.sh: SKILL.md files now extract parent-dir name instead of "SKILL"; reference docs in skill subdirectories are no longer false-positive logged; added .claude/commands/ tracking; agent dispatches now log subagent_type; added USAGE_LOG_DEBUG env var for raw input capture; used printf instead of echo for safer JSON handling.

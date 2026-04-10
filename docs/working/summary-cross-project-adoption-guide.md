@@ -1,1 +1,0 @@
-Created guides/cross-project-setup.md covering full CLAUDE.md adoption, individual skill copying with dependency maps, and artifact directory conventions, plus a "what to skip" section for repo-specific internals; added entry to guides/README.md.

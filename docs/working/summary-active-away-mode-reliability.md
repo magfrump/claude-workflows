@@ -1,1 +1,0 @@
-Rewrote CLAUDE.md Operating Modes section: added multiple trigger patterns (not just /slash), explicit acknowledgment protocol, precise per-mode behavioral contracts, default-to-active-when-uncertain rule, and documented the platform limitation where Claude Code's command parser may intercept standalone /active and /away messages.

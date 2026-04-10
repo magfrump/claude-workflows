@@ -1,1 +1,0 @@
-Added check #11 to health-check.sh: scans docs/spikes/*.md and docs/working/onboarding-*.md for freshness fields, runs git-log-since against tracked paths, and flags stale docs as soft warnings with counts for hypothesis evaluation.

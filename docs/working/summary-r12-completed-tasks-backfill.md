@@ -1,1 +1,0 @@
-Backfilled completed-tasks.md with R8-R11 entries (plan-drift-checklist, task-decomp-briefing-patterns, effectiveness-framing, debugging-worked-examples) derived from git history, merge commits, and round summary files; cross-referenced against ideas-backlog.md and feature-ideas.md to confirm completeness.

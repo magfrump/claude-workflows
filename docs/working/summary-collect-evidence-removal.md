@@ -1,1 +1,0 @@
-Deleted scripts/collect-evidence.sh (476 lines of dead code with both associated hypotheses REFUTED) and annotated the removal in hypothesis-log.md on the evidence-collection-script and hypothesis-backlog-activation entries.

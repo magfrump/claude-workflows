@@ -1,1 +1,0 @@
-Staleness sweep of ideas-backlog.md: rejected 4 items superseded by R1-R13 work (IB-02, IB-08, IB-09, IB-17), marked 5 pre-2026-04-03 items stale for inactivity (IB-18, IB-20, IB-21, IB-22, IB-23), kept 6 genuinely open items — 9 total changes confirms the hypothesis threshold of 5+.

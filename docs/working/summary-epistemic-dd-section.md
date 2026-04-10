@@ -1,1 +1,0 @@
-Added epistemic reasoning variant to divergent-design.md (hypothesis generation via DD structure) and [observed]/[inferred]/[assumed] confidence-provenance tags to research-plan-implement.md's research phase — no new files, just extensions to existing workflows.

@@ -1,1 +1,0 @@
-Wired `check_convergence_threshold` into self-improvement.sh's convergence check (the only real orphan — `auto_expire_hypotheses` and `get_hypothesis_quality_guide` were already removed per decision 009, and `print_hypothesis_summary` was already called from two entry points).

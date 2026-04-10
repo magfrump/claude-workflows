@@ -1,1 +1,0 @@
-Added a manual "Plan-drift check" item to PR-prep step 3a that asks the reviewer to compare the diff against the plan doc and note deviations (missing planned items, unplanned changes, wrong assumptions), with findings recorded in the PR description or as a comment.

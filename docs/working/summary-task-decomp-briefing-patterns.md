@@ -1,1 +1,0 @@
-Expanded task-decomposition.md (91→126 lines) with 3 concrete sub-agent briefing examples, contradiction resolution guidance, common briefing mistakes, and structured "when NOT to decompose" heuristics including file-count and dependency-seriality thresholds.

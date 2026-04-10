@@ -1,1 +1,0 @@
-Created guides/skill-creation.md covering frontmatter fields, prompt structure conventions, CLAUDE.md routing registration, and optional test fixtures, with references to security-reviewer, code-review, and code-fact-check as models; added entry to guides/README.md.
