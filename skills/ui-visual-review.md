@@ -59,10 +59,20 @@ than first impressions.
 
 ## Mandatory Execution Rules
 
-1. **Project-local guidelines are your primary authority.** Before doing anything else, check
-   for a project-local UI guidelines document (e.g., `docs/UI_LAYOUT_GUIDELINES.md`). If one
-   exists, it captures patterns already validated in this codebase — follow it. Everything
-   below fills gaps where the project has no guidance.
+1. **Project-local guidelines are your primary authority.** Before doing anything else, search
+   for a project-local UI guidelines document. Check these paths in order, stopping at the
+   first match:
+   1. `docs/UI_LAYOUT_GUIDELINES.md`
+   2. `docs/ui-guidelines.md`
+   3. `docs/design-system.md`
+   4. `STYLE.md`
+   5. Any markdown file in `docs/` referencing UI or layout standards (grep `docs/*.md` for
+      terms like "UI guidelines", "layout standards", "design system", "style guide")
+
+   If one exists, it captures patterns already validated in this codebase — follow it.
+   Everything below fills gaps where the project has no guidance. Searching beyond the
+   canonical path reduces false positives where the skill flags patterns the project
+   intentionally uses simply because the guideline doc lives at a different filename.
 
 2. You MUST NOT recommend solutions that hide content or affordances. If content overflows,
    make the overflow visible and scrollable — do not clip it silently.
