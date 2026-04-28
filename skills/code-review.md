@@ -341,6 +341,9 @@ overlapping concern), escalate that finding one tier:
 - 🟢 → 🟡
 - 🟡 → 🔴
 
+Fact-check counts as one of the 2+ flaggers — e.g., a high-confidence Incorrect finding plus
+one critic finding overlapping with that claim escalates the tier.
+
 Contextual critics (test-strategy, tech-debt-triage, dependency-upgrade) do **not** count
 toward escalation. Their findings remain in 🟢 Consider regardless of overlap with other
 critics. If a contextual critic flags the same issue as a core critic, note the agreement
