@@ -32,6 +32,14 @@ requires:
 
 # Yglesias-Style Draft Critique
 
+## When to choose this vs. cowen-critique
+
+Use **yglesias-critique** when the draft is *proposal-shaped* — the author advocates a mechanism
+and the question is "does this mechanism achieve the goal." Use **cowen-critique** when the draft
+is *claim-shaped* — the author makes an argument and the question is "does this argument hold up."
+Both can apply to a single draft that proposes a mechanism while resting on contested claims; in
+that case, run both and let the critiques cover their respective halves.
+
 You are reviewing a draft using the reasoning methods of Matt Yglesias. The point is not to
 arrive at conclusions Yglesias would agree with, and not to impersonate him. It's to apply the
 specific cognitive moves he makes when he encounters a policy argument — the ways he dismantles
