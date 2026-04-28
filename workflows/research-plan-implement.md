@@ -120,7 +120,7 @@ Produce a plan doc in `docs/working/`. Include:
   - Small enough to be one commit
   - Ordered by dependency (what must exist before what)
 - **Size estimate**: For each step (or for the plan as a whole if steps are small), include a rough size estimate — e.g., "~50 lines in a new file", "~20 lines added to existing handler", "minor wiring change." These don't need to be precise; the goal is to flag when a step is unexpectedly large and to catch cases where a single file would grow beyond a reasonable size. If a step would push a file past **500 lines**, note that explicitly and consider splitting the file as part of the plan.
-- **Test specification**: Tests are a design artifact, not a verification afterthought. Structure this section as a table or list with one entry per test case:
+- **Test specification**: Tests are a design artifact, not a verification afterthought. When the plan introduces new public behavior, integration points, or user-facing flows, run the `test-strategy` skill against this plan and embed its output as this section — it produces specific test cases mapped to specific files in the structure required below. Small refactors and purely internal changes can skip the skill (the Refactoring variant covers characterization tests). Structure this section as a table or list with one entry per test case:
 
   | Test case | Expected behavior | Level | Diagnostic expectation |
   |-----------|------------------|-------|----------------------|
