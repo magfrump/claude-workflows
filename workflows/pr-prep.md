@@ -248,7 +248,7 @@ For UI changes, capture before/after screenshots or a short recording and includ
 
 ## Retrospective
 
-After the PR is opened, take 2 minutes to close the loop on the workflow that produced it. Answer these in `docs/thoughts/` or a commit message — they compound over time.
+After the PR is opened, take 2 minutes to close the loop on the workflow that produced it. Save as `docs/thoughts/retro-{branch-or-feature}.md` so retros are discoverable across PRs. Commit message is acceptable for one-off observations that do not warrant a standalone file. These compound over time.
 
 1. **Plan vs. reality** — How closely did the implementation follow the plan? Where did it deviate, and was the deviation an improvement or a sign the plan missed something?
 2. **Skipped steps** — Were any workflow steps skipped or abbreviated? Why, and was that the right call in hindsight?
@@ -257,7 +257,7 @@ After the PR is opened, take 2 minutes to close the loop on the workflow that pr
 
 **Completion criteria:**
 - [ ] At least one of the four questions answered with more than one sentence
-- [ ] Answer stored in `docs/thoughts/` or a commit message (not lost)
+- [ ] Answer saved as `docs/thoughts/retro-{branch-or-feature}.md` so retros are discoverable across PRs (commit message is acceptable for one-off observations that do not warrant a standalone file)
 
 ## Step 7: Post-merge follow-up (optional)
 
@@ -274,5 +274,5 @@ After the PR merges, there are follow-up tasks that are easy to forget in the mo
 
 **This step is intentionally lightweight.** If you find yourself spending more than 5 minutes here, the items have likely surfaced real follow-up work — track that work separately rather than blocking PR completion on it.
 
-**Post-merge actions taken** (note here or in a commit message for traceability):
+**Post-merge actions taken** (append to `docs/thoughts/retro-{branch-or-feature}.md` so retros are discoverable across PRs; commit message is acceptable for one-off observations that do not warrant a standalone file):
 - _e.g., "CI green on main after merge", "Removed `ENABLE_NEW_EXPORT` flag in follow-up commit", "No docs affected"_
