@@ -38,6 +38,27 @@ main          ← stable, production-ready
 4. **`dev` is disposable.** If it gets too messy, delete and recreate it from `main` + re-merge all active feature branches.
 5. **Merge `main` into `dev`** periodically to keep it current after PRs land on main.
 
+## Conflict prevention
+
+Before starting a new feature branch, scan open feature branches for file overlap. Heavy overlap is a strong signal to sequence rather than parallelize — two branches editing the same files will conflict on merge into `dev`, and resolving those conflicts cancels out the parallelism gains.
+
+**Check overlap with an existing feature branch:**
+```bash
+git diff --name-only main..feat/existing-feature
+```
+
+**Scan all open feature branches at once:**
+```bash
+for b in $(git branch --list 'feat/*' | tr -d ' *'); do
+  echo "=== $b ==="; git diff --name-only main..$b;
+done
+```
+
+**Heuristics:**
+1. **No overlap** → parallelize freely.
+2. **Light overlap** (1-2 shared files, different sections) → proceed with awareness; merge the more invasive branch first so the second rebases against settled code.
+3. **Heavy overlap** (3+ shared files, or overlapping sections in the same file) → sequence: finish and merge one before starting the next, or combine them into a single feature branch.
+
 ## Daily workflow
 
 ### Starting a feature
