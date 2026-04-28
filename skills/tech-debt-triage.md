@@ -105,6 +105,26 @@ under which to revisit.
 **Defer and monitor** — uncertain whether the debt will become urgent. Set a specific trigger
 to re-evaluate (e.g., "revisit before starting the v3 API migration").
 
+#### When recommendation is "Fix now"
+
+Once "Fix now" is selected, route remediation by scope:
+
+**Non-trivial remediations** — defined as fixes that meet any of:
+- Touch more than one file
+- Require a migration (data transformation, API change, dependency upgrade)
+- Have unclear scope (you cannot enumerate the files or changes in advance)
+
+For these, hand off to the **research-plan-implement workflow**
+(`workflows/research-plan-implement.md`). Load the triage doc as input to RPI research —
+its analysis of carrying cost, fix scope, risk, and dependencies feeds directly into the
+research doc, so the research phase can focus on implementation specifics rather than
+re-deriving what triage already established. Reference the triage doc from the research
+and plan docs for traceability.
+
+**Trivial fixes** — rename, typo, or single-file refactor under ~50 LOC — fix in place.
+Don't formalize the work with a research doc and plan doc; the overhead exceeds the value.
+Make the change, run tests, commit.
+
 ## Output
 
 ### For a single debt item:
