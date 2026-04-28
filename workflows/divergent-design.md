@@ -125,7 +125,7 @@ If the tradeoff is genuinely unclear: **stop and consult the user.** Present the
 
 Create or update `docs/decisions/NNN-title.md` with:
 - Context: what prompted the decision
-- Options considered (brief — the full analysis doesn't need to be preserved)
+- Options considered (brief — the full analysis doesn't need to be preserved): 1 sentence per surviving candidate from step 4 (≥3 entries) explaining why it was not chosen
 - Decision and rationale
 - Consequences: what this makes easier, what this makes harder
 
