@@ -61,6 +61,8 @@ Without that line, a binary spike that omits the template fails this step's Done
 
 For non-binary spikes (open-ended discovery: "how does X handle Y?", "what's the latency of Z?"), the template is optional — fill it in if it sharpens the answer, skip it if the goal is genuinely learning rather than deciding. Either way, revisit these criteria (when present) in step 5's Answer section to force a clear verdict.
 
+Before moving to step 2 (Set a timebox), confirm the question can be operationalized with the tools and data available — if it cannot, reframe the question rather than starting the timer on an unanswerable spike.
+
 **Done when...**
 - [ ] The question is stated in one specific, answerable sentence
 - [ ] The question is about feasibility or behavior, not about implementation design
