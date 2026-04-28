@@ -108,18 +108,18 @@ If this is a general audit, read all relevant layout and styling files.
 
 This skill operates in two modes. The mode determines which checklist items to run.
 
-**Mechanical review (default)** — Runs checklist items 1-5 only. These are objective layout
-bug checks with clear right/wrong answers. This is the default when triggered by the
+**Mechanical review (default)** — Runs checklist items 1-5 and 8 only. These are objective
+layout bug checks with clear right/wrong answers. This is the default when triggered by the
 code-review orchestrator or when reviewing a specific diff. No web search unless genuinely
 uncertain about a CSS property. Fast and low-noise.
 
-**Full audit** — Runs all checklist items (1-7), including affordance review and responsive/
+**Full audit** — Runs all checklist items (1-8), including affordance review and responsive/
 cross-browser checks. Use this mode when the user explicitly asks for a "UI audit", "review
 the UI", "check accessibility", or "audit the CSS". Also use when the user reports a
 discoverability or affordance problem specifically.
 
-The mode split exists because items 1-5 are mechanical pattern-matching where AI agents are
-reliably accurate, while items 6-7 involve subjective judgment that can generate false
+The mode split exists because items 1-5 and 8 are mechanical pattern-matching where AI agents
+are reliably accurate, while items 6-7 involve subjective judgment that can generate false
 positives in projects using modern component libraries. Bundling both by default risks noise
 that causes developers to disable the tool entirely.
 
@@ -219,6 +219,18 @@ Note: discoverability is not only about making elements visible. Also consider:
 - Media queries that leave gaps between breakpoints
 - Text that doesn't reflow on narrow viewports (missing `overflow-wrap: break-word`)
 - CSS properties with incomplete browser support (check via web search when relevant)
+
+### 8. Interaction state coverage *(mechanical)*
+- Each interactive element (button, link, input, select, custom control) must have explicit
+  hover, focus, active, and disabled styles — or an inline comment noting reliance on browser
+  defaults (e.g., `// ui-review: relies on browser default focus ring`). Missing states usually
+  signal an unhandled keyboard or pointer path.
+- Data-bound components (lists, tables, fetched content, async forms) must also handle empty,
+  loading, and error states. A component that only renders the "happy path" breaks silently
+  when the data is missing or the request fails.
+- Prefix findings from this item with `[Interaction state]` in the report so activation of
+  this checklist item is observable in output (e.g., `[Interaction state] Submit button has
+  no :focus-visible style and no inline override comment`).
 
 ---
 
