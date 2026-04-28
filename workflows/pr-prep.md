@@ -239,11 +239,20 @@ Structure:
 
 For UI changes, capture before/after screenshots or a short recording and include them in the description. The reviewer may not be able to run the UI locally — visual evidence eliminates a round-trip.
 
+**c. Description gate (micro-check).** Before publishing the description (marking the draft PR ready for review, or opening the PR if no draft was made), answer these three questions about the description as written:
+
+1. **Why, not just what.** Does the description explain *why* this change exists — the problem it solves or the motivation behind it — and not only enumerate what files/lines changed?
+2. **Specific tests.** Does the description list the specific tests added or run (by name, file, or scenario), rather than vague phrases like "tested locally" or "all tests pass"?
+3. **Uncertainty flagged.** Does the description flag decisions made under uncertainty (in the "Areas of uncertainty" section) — judgment calls, untested assumptions, or trade-offs the reviewer may want to revisit?
+
+If any answer is **no**, revise the description before opening the PR. This gate is fast (under a minute) and catches the most common reviewer complaints: "I can't tell why this exists," "I don't know what was actually verified," and "what did you decide that I should double-check?"
+
 **Completion criteria:**
 - [ ] Skeleton was generated from commits and review artifacts (not written from scratch)
 - [ ] All six sections are present (What this does, How it works, How to test, Areas of uncertainty, Decisions made, Review evidence)
 - [ ] Each section contains at least one substantive sentence (not a placeholder)
 - [ ] Review evidence section lists all `docs/reviews/` artifacts for this PR, or states "No review artifacts" if none exist
+- [ ] Description gate (6c) passed: why is stated, specific tests listed, uncertainty flagged — or description was revised until all three are yes
 - [ ] (Optional) If this PR involved multiple workflow compositions (e.g., RPI → DD → RPI), a workflow provenance line is included in "What this does"
 
 ## Retrospective
