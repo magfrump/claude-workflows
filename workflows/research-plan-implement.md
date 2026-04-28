@@ -142,6 +142,8 @@ Produce a plan doc in `docs/working/`. Include:
 
 - **Risks**: What could go wrong, what's uncertain, what you'd want a reviewer to scrutinize.
 
+**Reference DD and spike output, don't duplicate it**: When a design decision record (`docs/decisions/`) or spike record backs a choice in this plan, link to the source by relative path with a one-sentence summary of what it establishes — don't copy the rationale into the plan doc. Example: `See docs/decisions/009-cache-strategy.md for rationale; binding constraint: must support multi-region invalidation.` Prefer linking unless the source is uncertain (still in flux, likely to be revised) or out-of-tree (not committed where reviewers can read it), in which case a short paraphrase in the plan is fine.
+
 #### Checkpoint generation (final sub-step of planning)
 
 After the plan doc is complete, generate a checkpoint artifact at `docs/working/checkpoint-{topic}.md`. This is a **curated single-file context package** designed so that an implementation session can load this one file and have everything it needs — no hunting through research docs, plan docs, or prior conversation history.
