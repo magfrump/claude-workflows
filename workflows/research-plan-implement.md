@@ -244,6 +244,7 @@ If a step turns out to be wrong or incomplete during implementation, **stop and 
 - [ ] Each commit message references the plan (e.g., "per plan-X step N")
 - [ ] Any deviations from the plan were written back to the plan doc before implementation continued
 - [ ] No file exceeds 500 lines without an explicit justification
+- [ ] When a step depended on an [assumed] research claim, the commit message body notes whether the assumption was confirmed by the implementation/tests or remains an accepted risk
 
 ### 6. Verify and loop (recommended)
 
