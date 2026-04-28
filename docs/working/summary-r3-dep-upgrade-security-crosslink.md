@@ -1,0 +1,1 @@
+Added a security-reviewer cross-link bullet to dependency-upgrade.md's Important section, instructing reviewers to run security-reviewer on the diff before recommending merge for CVE-driven, security-relevant, or crypto/auth upgrades — symmetric counterpart to R7's dep-manifest trigger.

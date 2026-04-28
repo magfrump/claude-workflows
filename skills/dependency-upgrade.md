@@ -163,5 +163,10 @@ Present the evaluation in chat. If the user requests a persisted artifact, save 
 - **For security upgrades, check the actual advisory.** Is the vulnerability exploitable in
   this project's usage? A vulnerability in a feature the project doesn't use may not require
   an emergency upgrade.
+- **Run the security-reviewer skill on the resulting diff before recommending merge** when the
+  upgrade is motivated by a CVE, replaces a security-relevant package, or bumps crypto/auth
+  dependencies. This is the symmetric counterpart to security-reviewer's own dep-manifest
+  trigger — that flags risks at manifest-change time; this catches issues introduced by the
+  call-site migration itself.
 - **When the upgrade path is unclear, recommend a spike.** If you can't confidently estimate
   the effort, say so and suggest a timeboxed investigation using the spike workflow.
