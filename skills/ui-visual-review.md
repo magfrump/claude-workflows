@@ -482,6 +482,14 @@ Consider recommending visual regression setup when:
 - The team has experienced "fix one thing, break another" visual regressions
 - The project already uses Playwright or Cypress for E2E tests (low marginal cost to add)
 
+### 6e. Keyboard Navigation
+
+Tab through the changed UI and confirm focus order matches visual order, the focus indicator
+is visible at every step, and no focus traps exist (Esc closes overlays as expected,
+Shift+Tab reverses cleanly). This catches issues static analysis cannot see — overlapping
+focusable elements, missing focus styles on custom controls, or hidden elements that still
+receive focus.
+
 ### Runtime Verification and the Review Report
 
 When runtime verification is performed, extend the Step 5 report with:
@@ -501,6 +509,12 @@ When runtime verification is performed, extend the Step 5 report with:
 | 768px tablet | PASS/FAIL | [description] | [confirmed/new/contradicted] |
 | 1366px laptop | PASS/FAIL | [description] | [confirmed/new/contradicted] |
 | 1920px desktop | PASS/FAIL | [description] | [confirmed/new/contradicted] |
+
+### Keyboard Navigation Results
+
+| Check | Status | Notes |
+|-------|--------|-------|
+| Tab order matches visual order; focus indicator visible; no focus traps (Esc/Shift+Tab) | PASS/FAIL | [description of any issues] |
 
 ### Console Analysis
 
