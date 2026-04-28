@@ -113,13 +113,13 @@ bug checks with clear right/wrong answers. This is the default when triggered by
 code-review orchestrator or when reviewing a specific diff. No web search unless genuinely
 uncertain about a CSS property. Fast and low-noise.
 
-**Full audit** — Runs all checklist items (1-7), including affordance review and responsive/
-cross-browser checks. Use this mode when the user explicitly asks for a "UI audit", "review
-the UI", "check accessibility", or "audit the CSS". Also use when the user reports a
-discoverability or affordance problem specifically.
+**Full audit** — Runs all checklist items (1-8), including affordance review, responsive/
+cross-browser checks, and semantic accessibility. Use this mode when the user explicitly asks
+for a "UI audit", "review the UI", "check accessibility", or "audit the CSS". Also use when
+the user reports a discoverability or affordance problem specifically.
 
 The mode split exists because items 1-5 are mechanical pattern-matching where AI agents are
-reliably accurate, while items 6-7 involve subjective judgment that can generate false
+reliably accurate, while items 6-8 involve subjective judgment that can generate false
 positives in projects using modern component libraries. Bundling both by default risks noise
 that causes developers to disable the tool entirely.
 
@@ -219,6 +219,22 @@ Note: discoverability is not only about making elements visible. Also consider:
 - Media queries that leave gaps between breakpoints
 - Text that doesn't reflow on narrow viewports (missing `overflow-wrap: break-word`)
 - CSS properties with incomplete browser support (check via web search when relevant)
+
+### 8. Semantic accessibility *(full audit mode only)*
+- **Heading hierarchy** — page has one `<h1>`, no skipped levels (h2 → h4), and headings
+  reflect document structure rather than visual styling (WCAG 1.3.1, 2.4.6)
+- **Landmark regions** — primary content is wrapped in semantic landmarks (`<main>`, `<nav>`,
+  `<header>`, `<footer>`, `<aside>`) so assistive tech can skip between sections (WCAG 1.3.1)
+- **ARIA labels on unlabeled controls** — icon-only buttons and other controls without visible
+  text have `aria-label` or `aria-labelledby`; avoid redundant or incorrect ARIA, which is
+  worse than none (WCAG 4.1.2)
+- **Alt text on meaningful images** — informational `<img>` elements have descriptive `alt`;
+  decorative images use `alt=""` so screen readers skip them (WCAG 1.1.1)
+- **Label-for associations on form controls** — every input has an associated `<label>` via
+  `for`/`id` or wrapping; placeholder text alone is not a label (WCAG 1.3.1, 3.3.2)
+
+Deeper semantic checks (live regions, focus order, role validity, screen-reader walkthroughs)
+fit naturally into Step 6 runtime verification when browser tooling is available.
 
 ---
 
