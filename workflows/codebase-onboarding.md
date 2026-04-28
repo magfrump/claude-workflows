@@ -66,6 +66,7 @@ If the codebase is large enough to warrant it (>20 files in multiple directories
 - **Subsystem inventory**: A table or list of each subsystem with its name, one-line responsibility, and 2-3 key files (entry points or central modules). This gives future sessions a lookup table for "where does X live?"
 - **Data flow**: How subsystems connect — which calls which, what data passes between them, and in what direction. A simple text diagram or arrow notation (e.g., `API layer → Service layer → Database`) is often enough. This answers "if I change subsystem A, what else might be affected?"
 - **External dependencies**: Databases, third-party APIs, message queues, shared services, or any system outside the codebase boundary. Note what each is used for and which subsystem owns the integration. This surfaces coupling that isn't visible from code structure alone.
+- **Test infrastructure**: Where test files live, the command to run them (e.g., `npm test`, `pytest`, `make test`), and which test category or directory covers each subsystem. This saves new contributors from rediscovering test setup at the start of every task. (Step 4 covers testing *conventions* — naming, fixtures, mocking — separately.)
 
 **Done when...**
 - [ ] Every major subsystem is identified with its directory/files, responsibility, key abstractions, and dependencies
