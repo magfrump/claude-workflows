@@ -30,7 +30,7 @@ Evaluate triggers top-to-bottom. Take the **first match**; if none match, defaul
 
 These principles apply to **all** bug-fixing work, whether inside RPI or standalone. The standalone `bug-diagnosis.md` workflow is deprecated — use these defaults directly.
 
-1. **Reproduce first.** Confirm you can trigger the bug reliably before diagnosing. Write the reproduction as a test if possible — it becomes your verification.
+1. **Reproduce first.** Confirm you can trigger the bug reliably before diagnosing. Write the reproduction as a test if possible — it becomes your verification. Reliable reproduction means the same input produces the bug in 3 consecutive trials, OR the failure rate is explicitly documented (e.g., "~30% of runs").
 2. **Read the error.** Stack traces, error messages, and log output often point directly to the problem. Start here, not with theories.
 3. **Hypothesize specifically.** State a falsifiable claim naming a specific location, mechanism, and testable outcome. Bad: "something is wrong with parsing." Good: "parseDate returns null for timezone offsets because the regex omits `+HH:MM`."
 4. **Test, don't guess.** Design the smallest experiment that confirms or refutes the hypothesis. If confirmed → fix. If refuted → record what you learned, form a new hypothesis.
