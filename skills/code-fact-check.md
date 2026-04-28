@@ -53,7 +53,24 @@ Not every comment needs checking. Focus on:
 - **Configuration claims** — "cache TTL is 5 minutes," "retries 3 times," "timeout after 30s"
 - **Reference claims** — "see issue #1234," "added in PR #567," "workaround for [specific bug]"
 - **Staleness signals** — references to functions, classes, files, or variables that may no longer
-  exist under that name
+  exist under that name. High-frequency stale-comment patterns to flag:
+    - **Aging TODO/FIXME without ownership** — TODO/FIXME comments older than 6 months (per `git
+      blame`) with no author tag or linked issue/PR. The lack of ownership means there's no one
+      to confirm the work is still relevant.
+    - **DEPRECATED annotations still in use** — code marked `@deprecated`, `# DEPRECATED`, or
+      similar, that is still imported or called elsewhere in the codebase. Grep for the symbol
+      to find live callers.
+    - **"We should eventually" promises** — aspirational comments ("we should eventually
+      consolidate this," "this will be replaced by X") with no follow-up reference (issue, PR,
+      or design doc). Promise without a tracking link is a staleness signal.
+    - **Docstring references that don't grep** — function or class names mentioned in docstrings
+      ("see `oldHelper`," "delegates to `LegacyParser`") that no longer exist in the codebase
+      under that name. Grep the symbol; if zero hits outside the docstring itself, the reference
+      is stale.
+    - **Version-conditional comments past their version** — comments scoped to a specific version
+      ("Python 2 compat," "pre-Node-18 workaround," "remove after v3.0") when the project has
+      moved past that version. Check the project's declared version (package.json,
+      pyproject.toml, etc.) against the comment's scope.
 
 Do NOT check:
 - Opinions or design rationale ("this approach is simpler than X")
