@@ -225,6 +225,54 @@ Severity guidelines:
 
 Order findings by severity (critical first), then by confidence.
 
+### Severity Calibration
+
+Before assigning a severity from the list above, classify the finding along two
+axes and use their combination as the default starting point. Adjust up or down
+based on confidence and concrete evidence (known data sizes, real call frequency).
+
+**Classification — Micro vs Macro:**
+
+- **Micro** — Per-operation overhead: an extra allocation, a redundant copy, a
+  string concatenation in a tight loop, an unneeded clone, a constant-factor
+  inefficiency. The cost is fixed per call; it only becomes a real problem when
+  the operation runs many times. Micro problems materialize *at scale*.
+- **Macro** — Algorithmic or structural: wrong complexity class (O(n²) where
+  O(n log n) suffices), N+1 query pattern, missing pagination, unbounded
+  collection growth, lock held across I/O. The cost grows with the data, not
+  with how often the code is invoked. Macro problems materialize *at any scale*
+  where the data set grows — they don't need load to bite.
+
+**Hot-path tag** (re-uses the hot-path gate above): **Hot** = request handler,
+per-item loop body called at scale, high-frequency event callback. **Cold** =
+application startup, one-time configuration, CLI argument parsing, migration
+script, infrequent admin operation.
+
+**Severity = classification × hot-path tag.** Use this matrix as the default:
+
+| Classification × Path | Default severity                                                |
+|-----------------------|-----------------------------------------------------------------|
+| Macro × Hot           | **High** (escalate to Critical when unbounded / DoS-enabling)   |
+| Macro × Cold          | Medium (algorithmic problems still bite when the cold path runs) |
+| Micro × Hot           | Low–Medium (escalate when constant factor is large or call frequency extreme) |
+| Micro × Cold          | **Informational**                                               |
+
+Macro × Hot anchors at High because algorithmic problems on hot paths are the
+class of issue this skill exists to catch; the default is "fix this before
+shipping" unless the analysis shows otherwise. Micro × Cold anchors at
+Informational because per-operation overhead in code that runs once is, by
+definition, not a performance problem worth a reviewer's time.
+
+When writing up a finding, name both tags explicitly so the calibration is
+auditable. A natural place is alongside the existing **Move:** line, e.g.:
+
+```
+**Classification:** Macro (N+1 query pattern) / Hot path (per-request handler)
+```
+
+This lets a downstream reviewer see *why* a finding landed at the severity it
+did and challenge the calibration if either tag is wrong.
+
 ### What Looks Good
 Note performance patterns in the diff that are correctly implemented — proper pagination,
 efficient queries, appropriate caching. Confirms which parts don't need rework.
