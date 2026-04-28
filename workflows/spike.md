@@ -44,6 +44,16 @@ Skip this for exploratory spikes where the goal is to learn rather than decide (
 
 Spikes have a hard time limit. Default: **30 minutes of active work** (which may be 5-15 tool calls for an AI agent). If the question isn't answered by then, the answer is "this is harder than expected" — which is itself a useful answer.
 
+**Anchor defaults by spike type.** Starting points, not rules — pick a number close to one of these, then adjust based on what the question actually requires.
+
+| Spike type | Starting timebox | Example question |
+|------------|------------------|------------------|
+| API capability check | 15-30 min | "Does this endpoint return the field we need?" |
+| Library evaluation | 1-2 hours | "Can pdf-parse handle our sample invoices?" |
+| Cross-cutting feasibility | Half-day max | "Can we add middleware auth without breaking the existing session flow?" |
+
+If you'd want a budget noticeably larger than the relevant row, that's usually a signal the question is too broad — split into smaller spikes rather than extending the timebox.
+
 **Done when...**
 - [ ] A time limit is stated (default 30 minutes if not specified)
 - [ ] The timebox is short enough to prevent the spike from becoming an implementation
