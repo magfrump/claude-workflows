@@ -87,6 +87,15 @@ State a specific, falsifiable hypothesis:
 - **Good**: "The `parseDate` function returns null when the input has a timezone offset, because the regex doesn't account for `+HH:MM`."
 - **Bad**: "Something is wrong with date parsing."
 
+**Generation prompts** — if you're staring at the isolated code with no candidate in mind, work through these to surface specific, testable hypotheses. Each prompt targets a common source of bugs that "just thinking harder" often misses:
+
+- **(a) What changed recently in this code path?** Check `git log` on the involved files and any callers. Recent edits, dependency bumps, or config changes are the highest-prior cause for regressions.
+- **(b) What state could differ from my mental model?** Cached values, in-memory singletons, environment variables, feature flags, or persisted records that survived across deploys. State drift is invisible until you name it.
+- **(c) What invariant might be violated?** What is this code assuming will always be true (non-null, sorted, unique, within range, owned by this thread)? Pick one and ask whether it actually holds in the failing case.
+- **(d) Where could the data differ from what's assumed?** Type, shape, encoding, units, time zone, locale, missing/extra fields, or unexpected values at boundaries (empty, zero, very large, unicode, trailing whitespace).
+
+Use these to generate candidate hypotheses, then specify the most likely one to the location/mechanism/outcome standard above. Generating ≥2 candidates before testing helps avoid the "untested hypothesis" failure mode where the first plausible idea gets picked and the alternatives are never considered.
+
 **Example hypotheses by bug category:**
 
 - **Regression**: "The `UserService.getById` query returns stale data because commit `a1b2c3d` switched from `findOne` to a cached lookup that doesn't invalidate on update." *Confirm*: bisect lands on that commit; reverting it fixes the issue. *Refute*: the cache is correctly invalidated and the stale data predates that commit.
