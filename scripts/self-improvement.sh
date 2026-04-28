@@ -56,6 +56,9 @@ init_round_log() {
     jq -n --argjson round "$round" --arg ts "$(date -u +%Y-%m-%dT%H:%M:%SZ)" \
         '{round: $round, timestamp: $ts, ideas: {}, tasks: {}, validation: {}, merges: {}, outcome: "incomplete"}' \
         > "$ROUND_LOG_FILE"
+    # Truncate per-round validation log so re-runs of the same round don't
+    # accumulate stale entries from prior runs.
+    : > "$WORKING_DIR/validation-round-${round}.log"
 }
 
 # Update a top-level field in the round log
@@ -98,6 +101,13 @@ finalize_round_log() {
     jq --slurpfile entry "$ROUND_LOG_FILE" '. += $entry' "$ROUND_HISTORY" > "$tmp" && mv "$tmp" "$ROUND_HISTORY"
 
     rm -f "$ROUND_LOG_FILE"
+
+    # Refresh the morning summary after every round so canceled or crashed
+    # runs still leave a partial summary on disk.
+    if declare -f generate_morning_summary >/dev/null 2>&1; then
+        generate_morning_summary "${START_ROUND:-1}" "$round" \
+            "$WORKING_DIR/morning-summary.md" "$WORKING_DIR" >/dev/null 2>&1 || true
+    fi
 }
 
 # --- Shared utility functions (sourced from lib) ---
@@ -1069,17 +1079,10 @@ done
 
 echo "=== All rounds complete ==="
 
-# --- Post-run morning summary ---
-LAST_COMPLETED_ROUND=$((ROUND - 1))
-if [ "$LAST_COMPLETED_ROUND" -lt "$START_ROUND" ]; then
-    LAST_COMPLETED_ROUND=$START_ROUND
-fi
-SUMMARY_PATH="$WORKING_DIR/morning-summary.md"
-echo "Generating morning summary..."
-generate_morning_summary "$START_ROUND" "$LAST_COMPLETED_ROUND" "$SUMMARY_PATH" "$WORKING_DIR"
-
+# Morning summary is refreshed inside finalize_round_log after every round,
+# so the file at $WORKING_DIR/morning-summary.md is already current.
 echo "Completed tasks log: $WORKING_DIR/completed-tasks.md"
 echo "Round history: $ROUND_HISTORY"
-echo "Morning summary: $SUMMARY_PATH"
+echo "Morning summary: $WORKING_DIR/morning-summary.md"
 
 fi  # end main-execution guard

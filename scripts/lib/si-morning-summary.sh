@@ -15,6 +15,25 @@ if [[ "${BASH_SOURCE[0]}" == "${0}" ]]; then
     exit 1
 fi
 
+# --- Internal: per-round task counts ---
+# Returns "launched approved rejected" for a given round report.
+# Prefers .summary.* (written at end of round); falls back to deriving from
+# .validation when .summary is absent (e.g. all_rejected early exits skip
+# summary writing, or run was canceled mid-round).
+_round_counts() {
+    local report="$1"
+    jq -r '
+        if (.summary // null) != null and (.summary.launched // null) != null then
+            "\(.summary.launched // 0) \(.summary.approved // 0) \(.summary.rejected // 0)"
+        else
+            ([.validation // {} | to_entries[] | select(.value.verdict != null)] | length) as $launched |
+            ([.validation // {} | to_entries[] | select(.value.verdict == "approved")] | length) as $approved |
+            ([.validation // {} | to_entries[] | select(.value.verdict == "rejected")] | length) as $rejected |
+            "\($launched) \($approved) \($rejected)"
+        end
+    ' "$report" 2>/dev/null || echo "0 0 0"
+}
+
 # --- Morning summary generator ---
 # Reads round reports, completed tasks, and hypothesis log to produce
 # a single post-run summary document.
@@ -59,10 +78,11 @@ _summary_header() {
         local report="$working_dir/round-${round_num}-report.json"
         [ -f "$report" ] || continue
 
-        local launched approved rejected
-        launched=$(jq '.summary.launched // 0' "$report" 2>/dev/null) || launched=0
-        approved=$(jq '.summary.approved // 0' "$report" 2>/dev/null) || approved=0
-        rejected=$(jq '.summary.rejected // 0' "$report" 2>/dev/null) || rejected=0
+        local counts launched approved rejected
+        counts=$(_round_counts "$report")
+        launched=$(echo "$counts" | awk '{print $1}')
+        approved=$(echo "$counts" | awk '{print $2}')
+        rejected=$(echo "$counts" | awk '{print $3}')
 
         total_attempted=$((total_attempted + launched))
         total_approved=$((total_approved + approved))
@@ -98,9 +118,10 @@ _summary_whats_new() {
         local report="$working_dir/round-${round_num}-report.json"
         [ -f "$report" ] || continue
 
-        local launched approved
-        launched=$(jq '.summary.launched // 0' "$report" 2>/dev/null) || launched=0
-        approved=$(jq '.summary.approved // 0' "$report" 2>/dev/null) || approved=0
+        local counts launched approved
+        counts=$(_round_counts "$report")
+        launched=$(echo "$counts" | awk '{print $1}')
+        approved=$(echo "$counts" | awk '{print $2}')
 
         echo ""
         echo "### Round $round_num ($launched tasks, $approved approved)"
