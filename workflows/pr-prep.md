@@ -106,6 +106,12 @@ If a fix touched code broadly enough that the narrower diff covers most of the P
 
 **e. Exit or repeat (3-iteration maximum).** Exit when no Must Fix items remain and Must Address items are resolved or explicitly acknowledged. Repeat if new findings appear. Each loop should be strictly smaller than the last.
 
+**Why didn't this converge? Classify before escalating** — each cause maps to a different ask of the human reviewer:
+
+- **(a) Findings genuinely new each pass — criteria expanding.** Each iteration surfaces qualitatively different issues; the reviewer's criteria are broadening rather than narrowing. *Escalation framing:* present the latest findings and ask the human whether they reflect real issues or scope creep in the review itself. If scope creep, narrow criteria and run one more pass.
+- **(b) Fixes incomplete — same finding re-flagged.** The reviewer keeps surfacing the same finding (or a close variant) because prior fixes didn't reach the root cause. *Escalation framing:* present the recurring finding alongside each fix attempt and ask the human to identify what the fixes are missing — usually a misread of the underlying constraint.
+- **(c) Change too large for incremental review — split needed.** The diff is large enough that each iteration touches mostly-new code, so reviews never see a stable surface to converge on. *Escalation framing:* propose split points (preparatory refactor, infrastructure vs UI, minimal flagged first PR) and ask the human to confirm a split before continuing.
+
 **After 3 iterations**, if new findings are still appearing, **stop**. This mirrors the 3-hypothesis escape hatch in the debugging defaults — unbounded iteration has diminishing returns. Choose one of two exit paths:
 
 1. **Ship with documented known issues.** If no Must Fix items remain but Must Address or Consider items persist, document them in the PR description's "Areas of uncertainty" section and proceed to Phase 2. The reviewer sees the known issues and can make a judgment call.
