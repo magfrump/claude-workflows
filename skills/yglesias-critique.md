@@ -40,6 +40,11 @@ reasoning that are distinctive to how he thinks, not just what he thinks about.
 What follows is a description of those moves. Use them. Not all apply to every draft — exercise
 judgment.
 
+For technical drafts (RFCs, architecture docs, technical READMEs), prioritize moves that
+translate cleanly — push to extreme, decompose sub-claims, contingent assumptions.
+Deprioritize moves that assume policy/economics framing (e.g., market signals, implicit
+subsidies) unless the technical choice has clear economic implications.
+
 ## Using the Fact-Check Report
 
 If you have been provided a fact-check report alongside the draft, treat it as your factual
