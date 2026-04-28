@@ -218,7 +218,7 @@ When staleness signals fire but changes are **incremental** — no new subsystem
 
 **Lightweight refresh process:**
 
-1. **Review recent changes.** Run `git log --oneline --since="<Last verified date>" -- <Relevant paths>` and read the commits to understand what changed and where.
+1. **Review recent changes.** Run `git log --oneline --since="<Last verified date>" -- <Relevant paths>` and read the commits to understand what changed and where. If any step-1 entry points have moved or been deleted since `Last verified`, escalate from lightweight refresh to a full re-run — entry-point churn signals the architecture map likely needs revisiting end-to-end.
 2. **Update Architecture Map.** For each subsystem touched by recent changes, verify that its responsibility, key abstractions, and dependencies are still accurate. Update any that have drifted.
 3. **Update Known Unknowns.** Remove unknowns that have been resolved by recent work. Add new unknowns surfaced by the changes you reviewed.
 4. **Bump `Last verified`.** Set to today's date. Add a note in the commit message indicating this was a lightweight refresh (e.g., `docs: lightweight refresh onboarding — updated auth subsystem after session handling changes`).
