@@ -85,6 +85,20 @@ former and web search for the latter.
 In the output report, tag code-verified claims with their file path and line number so the
 author can trace your verification: e.g., `**Source:** src/config.ts:42`.
 
+### Claim prioritization for long drafts
+
+For drafts >2000 words with 50+ checkable claims, prioritize the highest-leverage claims when
+budget is constrained: specific numbers (percentages, dollar amounts, counts), named studies
+or reports, attributed quotes, and named policies or laws. These are the claims most likely to
+be wrong, most likely to mislead if wrong, and most prone to hallucination in AI-generated
+drafts. General framing claims, summaries, and consensus characterizations can be deprioritized.
+
+When prioritization is applied and some claims are not checked, include a **Claims not checked**
+section in the output report listing each skipped claim with a one-line rationale (e.g., "general
+framing, no specific factual content"; "background context, not load-bearing for the argument").
+This makes the budget allocation explicit and reviewable, and is the observable signal that
+prioritization was applied.
+
 ## AI-Generated Draft Awareness
 
 When the draft source is known or suspected to be AI-generated (e.g., drafted by an LLM, or the user
