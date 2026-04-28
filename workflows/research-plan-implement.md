@@ -296,6 +296,16 @@ A handoff doc is not necessary when a session ends at a clean boundary — all p
 - **Urgent hotfixes**: Abbreviate to a mental plan, but write a retroactive decision doc if the fix was non-obvious.
 - **Continuation of a previous session's work**: If research and plan docs already exist and are still accurate, pick up from where implementation left off. If a checkpoint artifact exists (`docs/working/checkpoint-{topic}.md`), load it as your primary context source — it contains curated findings, the plan, invariants, and a file map in a single file. If a handoff doc also exists (`docs/working/handoff-{topic}.md`), load it alongside the checkpoint — the handoff tells you *where you stopped*, the checkpoint tells you *everything else*. Verify the docs are still current before proceeding.
 
+### Loading a checkpoint from a prior session
+
+Checkpoints aren't freshness-tracked (per `guides/doc-freshness.md` — RPI working docs are disposable), but they can still go stale: code referenced by the File map may have changed since the checkpoint was generated. Before relying on a checkpoint generated more than a few days ago, run:
+
+```bash
+git log --since=<checkpoint-date> -- <file map paths>
+```
+
+Use the checkpoint's `Date:` field and the paths from its File map. If the output is non-empty, read the commits and re-verify the checkpoint's load-bearing claims (invariants, key findings, file map notes) against the current code before proceeding. See `guides/doc-freshness.md` for the underlying heuristic.
+
 ## Variant: Refactoring
 
 When the task is a refactoring (restructuring code without changing behavior), RPI applies with these modifications:
