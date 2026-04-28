@@ -177,6 +177,17 @@ are in them. The reader can then weight them accordingly.
 This also means flagging when the draft is *more right than it realizes* about something. Not
 every observation should be a criticism.
 
+### When the draft is technical
+
+For technical drafts — architecture docs, RFCs, API designs, and similar — prioritize moves
+#4 (push to extreme), #7 (decompose sub-claims), and #8 (contingent assumptions). The weakest
+links tend to hide in scaling behavior, in bundled design decisions that should be evaluated
+separately, and in environmental conditions (load, deployment topology, team structure) the
+draft treats as fixed. Deprioritize #6 (market signals) and the economics-heavy framing
+examples elsewhere in this skill — markets and revealed-preference reasoning rarely speak
+clearly about internal engineering choices, and consumer-behavior analogies tend to mislead
+when applied to system design.
+
 ## How to Structure the Critique
 
 Output your critique as a Markdown document.
