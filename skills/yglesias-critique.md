@@ -195,6 +195,19 @@ most implementable policy that advances it. Compare the expected impact of the p
 to the draft's preferred version. If the popular version gets you 70% of the way there,
 the draft needs a very strong case for why the last 30% justifies the political risk.
 
+### Prioritization for non-policy drafts
+
+For non-policy drafts — engineering manifestos, process documents, technical proposals — lean
+hardest on agree-with-the-goal-demolish-the-mechanism (move #1) and trace-the-resource
+accounting (move #3), since the dominant failure mode of these drafts is hand-waving the
+actual cost of the proposed change in engineering time, coordination overhead, or
+maintenance burden. Deprioritize the election-cycle survival check (move #4) unless the
+draft has genuine political dynamics — a contested rollout, a stakeholder coalition that
+must keep buying in, an executive sponsor who could rotate out, or external regulatory
+exposure — in which case it applies as written. The remaining moves translate directly:
+boring levers, scale tests, implementation org charts, and popular-version reframings work
+the same in organizational and technical contexts as in policy ones.
+
 ## How to Structure the Critique
 
 Output your critique as a Markdown document.
