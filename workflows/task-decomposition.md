@@ -73,6 +73,18 @@ A sub-agent starts with zero context. Brief it like a colleague who just walked 
 
 Common briefing mistakes: omitting file paths (sub-agent wastes time searching), asking open-ended questions ("how does this work?" vs. specific questions), and not capping output length (sub-agent returns a wall of text you have to re-read).
 
+#### Recommended output scaffold
+
+A consistent output shape across sub-agents reduces format-normalization overhead at step 4 (Reconciliation). Suggest sub-agents structure findings as five sections — adapt or omit when an area doesn't fit:
+
+- **Files examined** — paths actually read
+- **Findings** — answers to the questions you asked
+- **Cross-interface assumptions** — what they assumed about interfaces shared with other sub-investigations
+- **Open questions** — things they couldn't answer or weren't asked to investigate
+- **Confidence in findings** — high / medium / low, with a brief reason for anything below high
+
+This is a default, not a mandate. A sub-agent doing a focused pattern search may only need Files examined + Findings; a sub-agent reading a complex subsystem benefits from the full scaffold.
+
 Sub-agents should NOT:
 - Write or modify source code (risk of conflicts with other sub-agents or the main agent)
 - Make architectural decisions (that's the main agent + human's job)
