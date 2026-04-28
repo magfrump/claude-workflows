@@ -72,11 +72,11 @@ Create a rough compatibility matrix:
 |---|---------|-----------|-----------|-----|
 | 1 | ...     | ✓         | ~         | ... |
 
-Key:
-- ✓ addresses well
-- ~ partial or uncertain
-- ✗ doesn't address
-- ⚠ actively makes worse
+Key (each glyph has exactly one meaning — apply consistently across runs):
+- ✓ = fully addresses, no major caveat
+- ~ = partial or uncertain
+- ✗ = does not address (but doesn't conflict)
+- ⚠ = actively makes worse
 
 For approaches that score well overall but have one fixable weakness, briefly sketch how to fix it (1-2 sentences). Discard anything with ⚠ on a hard constraint or mostly ✗ across the board.
 
@@ -178,11 +178,11 @@ Create an evidence compatibility matrix:
 |---|-----------|------------|------------|-----|
 | 1 | ...       | ✓ consistent | ✗ contradicted | ... |
 
-Key:
-- ✓ consistent with this evidence
-- ~ not clearly distinguished by this evidence
-- ✗ contradicted by this evidence
-- ? — evidence not yet gathered
+Key (each glyph has exactly one meaning — apply consistently across runs):
+- ✓ = consistent with this evidence; the hypothesis predicts or explains it
+- ~ = partially consistent, or the evidence does not clearly distinguish
+- ✗ = contradicted by this evidence
+- ? = evidence not yet gathered (no judgment possible)
 
 Discard hypotheses contradicted by [observed] evidence. Flag hypotheses that depend heavily on [assumed] evidence — these are the ones where gathering more information has the highest value.
 
