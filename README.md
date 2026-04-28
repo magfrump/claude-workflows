@@ -11,17 +11,47 @@ git clone <repo-url> ~/claude-workflows
 mkdir -p ~/.claude ~/.claude/hooks
 ln -s ~/claude-workflows/CLAUDE.md ~/.claude/CLAUDE.md
 ln -s ~/claude-workflows/workflows ~/.claude/workflows
+ln -s ~/claude-workflows/skills    ~/.claude/skills
+ln -s ~/claude-workflows/patterns  ~/.claude/patterns
+ln -s ~/claude-workflows/guides    ~/.claude/guides
 ln -s ~/claude-workflows/hooks/log-usage.sh ~/.claude/hooks/log-usage.sh
 ```
 
-### Antigravity / Gemini CLI
+### Gemini CLI (Linux/macOS)
 
 ```bash
 git clone <repo-url> ~/claude-workflows
 mkdir -p ~/.gemini
-ln -s ~/claude-workflows/GEMINI.md ~/.gemini/GEMINI.md
-ln -s ~/claude-workflows/workflows ~/.gemini/workflows
+ln -s ~/claude-workflows/GEMINI.md  ~/.gemini/GEMINI.md
+ln -s ~/claude-workflows/workflows  ~/.gemini/workflows
+ln -s ~/claude-workflows/skills     ~/.gemini/skills
+ln -s ~/claude-workflows/patterns   ~/.gemini/patterns
+ln -s ~/claude-workflows/guides     ~/.gemini/guides
 ```
+
+### Antigravity (built-in agent panel)
+
+The agent panel reads `~/.gemini/GEMINI.md` and the directories alongside it. Where `~` lives depends on where Antigravity itself is running:
+
+- **Antigravity on Linux/macOS** — use the Gemini CLI setup above.
+- **Antigravity on Windows (including WSL users)** — Antigravity is a Windows process even when your repo lives in WSL, so the links must be created on the Windows side at `%USERPROFILE%\.gemini\`. Symlinks to `\\wsl.localhost\<distro>\...` UNC targets need either Windows **Developer Mode** enabled (Settings → Privacy & security → For developers) or an elevated shell. Run from elevated PowerShell:
+
+  ```powershell
+  $base = "$env:USERPROFILE\.gemini"
+  $src  = '\\wsl.localhost\Ubuntu\home\<you>\claude-workflows'   # adjust distro + user
+  New-Item -ItemType Directory -Path $base -Force | Out-Null
+  foreach ($n in 'GEMINI.md','workflows','skills','patterns','guides') {
+      $link = Join-Path $base $n
+      if (Test-Path -LiteralPath $link) {
+          $i = Get-Item -LiteralPath $link -Force
+          if ($i.PSIsContainer) { [System.IO.Directory]::Delete($link) }
+          else { [System.IO.File]::Delete($link) }
+      }
+      New-Item -ItemType SymbolicLink -Path $link -Target (Join-Path $src $n) | Out-Null
+  }
+  ```
+
+  Single-quote the target paths — double-quoted strings in PowerShell may strip a leading backslash and break UNC resolution. Antigravity reads through the WSL 9P share, so WSL must be running for the panel to see workflow content.
 
 ### Cursor, Copilot, Cline, and other AGENTS.md-compatible tools
 

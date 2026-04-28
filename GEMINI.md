@@ -18,6 +18,24 @@ When facing non-trivial tasks, check `workflows/` for applicable process docs be
 
 When a workflow applies, follow it rather than jumping straight to implementation. Default: research-plan-implement for features, divergent-design for decisions, spike for unknowns, codebase-onboarding for new projects.
 
+## Skills
+
+Skills are focused, single-purpose process docs in `skills/`. Unlike workflows (which structure a whole task), skills activate based on what's being modified or what stage you're in. Apply them proactively when triggers match — read the skill file before starting the work it covers.
+
+| Trigger | Skill | When |
+|---------|-------|------|
+| Diff touches **TSX, JSX, CSS, SCSS, Tailwind classes, Unity C# UI components**, or any visual rendering code | `skills/ui-visual-review.md` | After implementation, before PR. Covers cross-resolution, overflow, sizing issues. |
+| Diff touches **auth, input handling, crypto, trust boundaries, file I/O, network calls, serialization** | `skills/security-reviewer.md` | During implementation or review. Design-level flaws, not linter findings. |
+| **Opening or preparing a PR** (any codebase) | `skills/code-review.md` | Orchestrates code-fact-check + security/performance/API-consistency critics in parallel. Integral to PR-prep's review-fix loop. |
+| Reviewing a draft document, blog post, or written argument | `skills/draft-review.md` | Coordinates fact-check + persona critiques (`cowen-critique`, `yglesias-critique`, `ai-personas-critique`). |
+| Verifying factual claims in code, comments, docs, or written content | `skills/fact-check.md` / `skills/code-fact-check.md` | When claims need source-backed verification. |
+| Evaluating tradeoffs across many options | `skills/matrix-analysis.md` / `skills/what-if-analysis.md` | Sub-procedures for divergent-design when the option space is wide. |
+| Triaging tech debt, planning a dependency upgrade, or scoping test strategy | `skills/tech-debt-triage.md`, `skills/dependency-upgrade.md`, `skills/test-strategy.md` | Use when the corresponding planning question comes up. |
+
+Other skills in `skills/` cover architecture review, performance review, API consistency, bug diagnosis, arithmetic eval, and self-eval. Browse the directory when a task wants a focused checklist rather than a full workflow.
+
+**Composition note:** `code-review` may invoke `ui-visual-review` and `security-reviewer` as sub-critics when the diff matches their triggers. When running a standalone skill, check whether a full `code-review` pass would be more appropriate.
+
 ## Context Packing
 
 Before starting any non-trivial implementation, explicitly establish context:
