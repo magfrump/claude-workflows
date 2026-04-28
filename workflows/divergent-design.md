@@ -32,6 +32,8 @@ Generate 8-15 candidate approaches. Quantity matters more than quality at this s
 - One sentence each, no evaluation yet
 - Number them for reference
 
+Before generating, scan `docs/decisions/log.md` and any `NNN-*.md` files in `docs/decisions/` for adjacent prior decisions on similar problems. If a relevant prior decision exists, include its choice as **candidate 0** (the status quo / "do same as before") so the team explicitly evaluates whether current circumstances differ enough to justify re-deriving rather than reusing. If `docs/decisions/` is empty or absent, this is a no-op.
+
 #### Generation health check
 
 After generating your initial candidates, scan for these common generation gaps. This is not evaluation — you are checking whether the *search space* is broad enough, not whether any candidate is good or bad. If a gap is found, generate additional candidates to fill it; never remove existing ones.
