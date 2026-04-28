@@ -123,7 +123,7 @@ This is the most important section for future work. It tells you where your unde
 
 ### 6. Produce the orientation document
 
-Compile steps 1-5 into `docs/working/onboarding-{project}.md` with these sections:
+Compile steps 1-5 into `docs/working/onboarding-{project}.md` with these sections. Include a one-line **section index** immediately after the frontmatter, listing each section with a half-sentence purpose — this lets downstream RPI sessions scope which sections to read instead of consuming the whole doc. Format it as a single line in the form `**Sections:** Entry points (§1) — startup/entry map; Architecture map (§2) — subsystem layout; ...` so a future session can grep or skim the top of the file and load only what's relevant.
 
 ```markdown
 # Codebase Orientation: {project name}
@@ -132,6 +132,8 @@ Compile steps 1-5 into `docs/working/onboarding-{project}.md` with these section
 **Last verified:** {date}
 **Relevant paths:** {repo-relative paths this document covers — e.g., src/, lib/, configs/}
 **Scope:** {what was covered — "full repo", "backend only", "packages/api + packages/shared only", etc.}
+
+**Sections:** Entry points (§1) — how the system starts; Architecture map (§2) — subsystem inventory and data flow; Key flows (§3) — end-to-end traces of representative operations; Conventions (§4) — local naming/error/test/config patterns; Known unknowns (§5) — gaps to verify before relying on; Suggested starting points (§6) — task-type-to-location lookup.
 
 ## Entry Points
 {bullet list from step 1}
@@ -155,6 +157,7 @@ Compile steps 1-5 into `docs/working/onboarding-{project}.md` with these section
 **Done when...**
 - [ ] `docs/working/onboarding-{project}.md` exists with all required sections (Entry Points, Architecture Map, Key Flows, Conventions, Known Unknowns, Suggested Starting Points)
 - [ ] `Last verified` and `Relevant paths` fields are populated in the frontmatter
+- [ ] One-line section index appears at the top with a half-sentence purpose per section
 - [ ] Document is committed to the repo
 
 ### 7. Gate — validate with the team
