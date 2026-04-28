@@ -29,11 +29,22 @@ Example decomposition for "add API endpoint with auth and rate limiting":
 - **Independent area B**: Is there existing rate limiting? What library/approach?
 - **Independent area C**: What's the data model for the resource being exposed?
 
+#### Quality signals — when not to decompose
+
+Independence isn't binary. Two areas can look separate on a directory map but be tightly coupled at runtime, and sub-agents researching them in parallel will produce findings that contradict each other once you try to integrate them. Step 4 catches such contradictions downstream via reconciliation, but reconciling assumptions after the fact wastes the parallelism you decomposed for. Catch coupling upstream by checking these signals before dispatching:
+
+- **Shared mutable state across areas.** If the candidate areas read or write the same in-memory store, cache, global config, session object, or database row through different code paths, they aren't independent — a sub-agent looking at one path can't reason about invariants without knowing what the other path does.
+- **More than 2 shared interfaces.** A small number of shared interfaces (data shapes, function contracts, error conventions) is normal and step 4 reconciliation handles it. Three or more is a coupling smell: the areas are effectively one subsystem with internal seams, and sub-agents will repeatedly need to make assumptions about each other's behavior.
+- **Monorepo cross-package imports between areas.** If area A's code imports from area B's package (or vice versa), the dependency graph contradicts the decomposition. Sub-agents told to research one package in isolation will miss the imported behavior.
+
+If any signal fires, consolidate the affected areas into a single sub-investigation (or research them sequentially in the main agent) before proceeding to step 2. Document the consolidation briefly so the reasoning is visible to reviewers.
+
 **Done when...**
 - [ ] The distinct areas of the codebase involved are listed
 - [ ] Each area is labeled as either a shared dependency or an independent sub-investigation
 - [ ] Independent areas can be researched without understanding the others first
 - [ ] Shared dependencies (if any) are identified and will be researched before independent areas
+- [ ] Each candidate area pair has been checked against the quality signals (shared mutable state, >2 shared interfaces, cross-package imports) and any consolidation is documented
 
 ### 2. Research shared dependencies first
 
