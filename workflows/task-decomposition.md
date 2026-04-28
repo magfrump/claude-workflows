@@ -92,6 +92,8 @@ For each shared interface identified in step 1:
 - If assumptions conflict, resolve by reading the actual code (the ground truth) — don't pick one sub-agent's version arbitrarily
 - Document any conflicts found and their resolution in the research doc under a **Reconciliation** heading. If no conflicts were found, note that explicitly (e.g., "No cross-investigation conflicts identified")
 
+When sub-task findings conflict about a shared interface, evidence tagged [observed] outranks [inferred], which outranks [assumed], in the absence of staleness signals. If both sides claim [observed], escalate to the user with the conflicting passages — do not silently pick one.
+
 This step is lightweight when sub-investigations are truly independent. It becomes critical when sub-agents researched different sides of the same interface.
 
 **Done when...**
