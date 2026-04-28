@@ -96,6 +96,10 @@ Ask the user or infer from context:
 - Is there a specific visual problem reported, or is this a general audit?
 - What is the target platform? (Default for web: modern evergreen browsers + mobile Safari.
   For Unity: target resolutions from player settings. For native: platform design guidelines.)
+- If the project contains multiple apps with different visual conventions (e.g., admin panel
+  + public site, mobile app + desktop app inside one repo), confirm which app this UI belongs
+  to and whether an app-scoped guidelines file exists (e.g.,
+  `apps/admin/UI_LAYOUT_GUIDELINES.md`).
 
 If the user points to a specific problem (e.g., "the sidebar disappears on small screens"),
 focus there first, then scan for related issues in the same component tree.
