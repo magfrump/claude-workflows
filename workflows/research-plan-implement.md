@@ -89,6 +89,7 @@ If a previous loop's research doc covers overlapping territory, update it rather
 - **Diminishing returns**: New files you read confirm what you already know rather than revealing new constraints or connections.
 - **All [assumed] tags investigated**: Every [assumed] claim in your research doc has either been promoted to [observed]/[inferred] or explicitly noted as acceptable risk for planning purposes.
 - **Scope creep detected**: You're exploring code paths that are interesting but not required by the scope statement from step 1. Re-read your scope and stop if the current line of investigation doesn't serve it.
+- **Bug-fix variant**: For bug fixes, research is sufficient when (a) the root cause is named, (b) a specific code location is pointed to, and (c) you can explain why current tests didn't catch the bug. Continued research past this point usually slips into adjacent code or symptom exploration rather than diagnosis.
 
 When you move from research to planning, optionally note in the research doc how the transition was triggered (e.g., "Moved to plan: diminishing returns after tracing 3 callers" or "Moved to plan: all invariants observed"). This makes it possible to evaluate whether research duration is well-calibrated across sessions.
 
