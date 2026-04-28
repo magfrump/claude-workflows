@@ -109,6 +109,13 @@ After building the tradeoff matrix, pressure-test the surviving approaches using
 
 Apply 2-4 of the most relevant moves to each surviving approach. Update the tradeoff matrix if the stress test reveals new information — a changed risk rating, a previously unnoticed downside, or a boring alternative that should have been a candidate from the start.
 
+#### Stress-test deltas (only if matrix changed)
+
+Skip this subsection entirely if the stress test confirmed every existing entry — an empty template is worse than no template. Otherwise log each change:
+- **Move applied:** [which of the 7 moves]
+- **What changed:** [matrix cell, candidate ranking, or new downside]
+- **Confidence shift:** [direction and rough magnitude — e.g., "lowered #2 from high to medium"]
+
 #### Decision
 
 If one approach clearly dominates (>80% confidence): document the decision and proceed.
