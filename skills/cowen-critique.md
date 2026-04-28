@@ -34,6 +34,12 @@ stress-tests reasoning that are distinctive to how he thinks, not just what he t
 What follows is a description of those moves. Use them. Not all of them will apply to every
 draft — exercise judgment.
 
+For technical drafts (architecture documents, RFCs, design specs), prioritize moves #4 (push
+to the extreme), #7 (decompose sub-claims), and #8 (contingent assumptions) — these surface
+boundary conditions, hidden dependencies, and over-bundled claims that technical writing
+tends to gloss. Deprioritize move #6 (market signals) unless the technical choice has economic
+implications, since most engineering decisions lack a directly observable market price.
+
 ## Using the Fact-Check Report
 
 If you have been provided a fact-check report alongside the draft, treat it as your factual
