@@ -59,6 +59,14 @@ For every checkable claim:
 5. **Cite your sources.** Name the source (organization, publication, dataset) and year. If you found
    a URL, include it.
 
+### Chunking Long Drafts
+
+For drafts with more than ~30 checkable claims, partition the work by section or topic and
+produce one verdict table per chunk before composing the overall report. Apply the same
+Confidence Calibration to each chunk. This is opt-in based on draft size, not a default —
+it prevents shallow per-claim verdicts that result from hitting the context budget on long
+drafts.
+
 ### Code-Based Claims
 
 When a draft makes claims about the codebase itself — function behavior, config defaults, API
