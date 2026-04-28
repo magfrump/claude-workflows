@@ -208,9 +208,14 @@ For each critic agent, you MUST:
 1. Read the full contents of that critic's skill file (e.g., `skills/security-reviewer.md`)
 2. Paste those contents directly into the Agent tool prompt
 3. Include the scope specification so the agent runs its own `git diff`
-4. Include the fact-check results. If the fact-check report is longer than 200 lines, include
-   only the findings rated Incorrect, Stale, or Mostly Accurate — skip Accurate claims to
-   save context budget.
+4. Include the fact-check results. If the fact-check report is longer than 200 lines, truncate
+   to the "Claims Requiring Attention" section (findings rated Incorrect, Stale, or Mostly
+   Accurate) to save context budget. When truncating, also prepend a 1-2 sentence
+   **Accurate-claims summary** that lists the count and key identifiers/themes of verified
+   claims — e.g., "Verified accurate, high-confidence: claims #3, #5, #7 covering input
+   validation, error handling, and config defaults." Without this summary, downstream critics
+   lose the signal that those claims were verified and may waste effort re-deriving them
+   from raw code.
 5. Instruct the agent to save its critique as `docs/reviews/{critic-name}-review.md`
 6. Launch via the Agent tool with `subagent_type: "general-purpose"`
 
@@ -396,4 +401,6 @@ At the end of your chat synthesis, link to all documents.
   pipeline re-runs and updates each status.
 - **Contextual critics are advisory.** Their findings go to Consider tier and never block merge.
 - **Fact-check report size management.** If the report exceeds 200 lines, paste only the
-  "Claims Requiring Attention" summary (Incorrect, Stale, Mostly Accurate) into critic prompts.
+  "Claims Requiring Attention" summary (Incorrect, Stale, Mostly Accurate) into critic prompts,
+  prefixed with a 1-2 sentence Accurate-claims summary (count + key identifiers/themes) so
+  critics retain the signal that the omitted claims were verified.
