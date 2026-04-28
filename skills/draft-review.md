@@ -235,10 +235,15 @@ the individual agent reports.
 
 If running multiple instances per agent type, the convergence patterns are the signal:
 
-*Within the same agent type:*
-- All instances agree → highest confidence
-- Most agree → high confidence
-- Instances disagree → lower confidence or genuinely ambiguous
+*Within the same agent type:* Use these thresholds when reporting convergence. State the
+numeric ratio (e.g., "3/3 agents") rather than a qualitative phrase like "most agree" — the
+threshold table determines the confidence tier, not the synthesizer's impression.
+
+| Agreement | Confidence tier | Interpretation |
+|---|---|---|
+| N/N | High confidence | All instances independently reached the same finding |
+| (N-1)/N | Medium confidence | One dissenter; finding is likely but not unanimous |
+| < (N-1)/N | Low / contested | Genuine disagreement; surface as a tension, not a finding |
 
 *Across different agent types:*
 - Fact-checker AND critics flag the same issue → very high signal
