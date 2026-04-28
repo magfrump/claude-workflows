@@ -168,6 +168,8 @@ If no reviewer is available, treat the Known Unknowns section as a list of thing
 - [ ] Any reviewer corrections have been incorporated into the document
 - [ ] The onboarding doc is ready to serve as input for RPI research phases
 
+**Next step:** Pick a small task within an examined subsystem and follow [research-plan-implement.md](research-plan-implement.md).
+
 ## Onboarding sufficiency
 
 Before handing off to RPI, verify the onboarding doc meets these criteria. If any fail, the doc has gaps that will slow down task work.
