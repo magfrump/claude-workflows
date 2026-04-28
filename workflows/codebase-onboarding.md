@@ -67,10 +67,17 @@ If the codebase is large enough to warrant it (>20 files in multiple directories
 - **Data flow**: How subsystems connect — which calls which, what data passes between them, and in what direction. A simple text diagram or arrow notation (e.g., `API layer → Service layer → Database`) is often enough. This answers "if I change subsystem A, what else might be affected?"
 - **External dependencies**: Databases, third-party APIs, message queues, shared services, or any system outside the codebase boundary. Note what each is used for and which subsystem owns the integration. This surfaces coupling that isn't visible from code structure alone.
 
+**How to run.** Capture the basic operational commands while you're already mapping the codebase. Keep it minimal — pointers to the source of truth, not a full operations runbook. Repos vary widely, so adapt the labels (e.g., `pnpm`/`uv`/`bazel`) to whatever the project actually uses.
+
+- **Test, build, and dev-server commands**: The exact invocations a contributor would run (e.g., `npm test`, `cargo build`, `make dev`). Name the canonical command per task; if multiple suites or targets exist, list each.
+- **Required environment setup**: Runtime versions, env vars, secrets, system dependencies (Postgres, Redis), and one-time setup commands (`npm install`, migrations, copying `.env.example`).
+- **Where these are defined**: Pointers to the source of truth (`package.json` scripts, `Makefile`, `Justfile`, `.env.example`, CI workflow file) so a future reader can verify nothing has drifted.
+
 **Done when...**
 - [ ] Every major subsystem is identified with its directory/files, responsibility, key abstractions, and dependencies
 - [ ] At least one representative implementation per subsystem has been read (not just interfaces)
 - [ ] Dependencies between subsystems are documented (what calls what)
+- [ ] Test, build, and dev-server commands and required environment setup are recorded with pointers to where they're defined
 
 ### 3. Trace key flows — follow data through the system
 
@@ -139,6 +146,9 @@ Compile steps 1-5 into `docs/working/onboarding-{project}.md` with these section
 ## Architecture Map
 {subsystem descriptions from step 2, with a text diagram if helpful}
 
+## How to Run
+{test, build, and dev-server commands; required environment setup; pointers to source-of-truth files (from step 2)}
+
 ## Key Flows
 {2-3 traced flows from step 3}
 
@@ -153,7 +163,7 @@ Compile steps 1-5 into `docs/working/onboarding-{project}.md` with these section
 ```
 
 **Done when...**
-- [ ] `docs/working/onboarding-{project}.md` exists with all required sections (Entry Points, Architecture Map, Key Flows, Conventions, Known Unknowns, Suggested Starting Points)
+- [ ] `docs/working/onboarding-{project}.md` exists with all required sections (Entry Points, Architecture Map, How to Run, Key Flows, Conventions, Known Unknowns, Suggested Starting Points)
 - [ ] `Last verified` and `Relevant paths` fields are populated in the frontmatter
 - [ ] Document is committed to the repo
 
@@ -175,6 +185,7 @@ Before handing off to RPI, verify the onboarding doc meets these criteria. If an
 1. **"Where would I look?" test.** For any likely task category (add a feature, fix a bug, change config, add a test), you can name the directory, file, or subsystem to start in — without re-reading code. If you can't, the Architecture Map or Suggested Starting Points section has gaps.
 2. **Unknowns are on-demand only.** Every item in Known Unknowns is something you'd investigate *when a task requires it*, not something that blocks general navigation. If any unknown would block multiple unrelated tasks, resolve it before handing off.
 3. **Conventions are actionable.** The Conventions section has enough detail that new code written following it would pass review without style corrections. If a convention is noted but not exemplified, add a file path and example.
+4. **Clean-checkout runnability.** A new contributor can run tests on a clean checkout without asking. The How to Run section names the test, build, and dev-server commands, lists required environment setup, and points to the source-of-truth files (`package.json`, `Makefile`, `.env.example`, etc.). If a contributor would have to grep CI configs to find the test command, the section has gaps.
 
 These criteria also apply when judging whether a *returning* onboarding session (triggered by staleness) has restored the doc to a usable state.
 
