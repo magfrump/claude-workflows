@@ -46,6 +46,9 @@ For every checkable claim:
    research, official databases, reputable news reporting. Prefer primary sources over secondary ones.
 3. **Assess accuracy.** Use one of these verdicts:
    - **Accurate** — The claim is supported by reliable evidence.
+     - For **time-bound claims** (current price, version, policy, headcount, etc.), use the
+       subtype **Accurate as of <YYYY-MM-DD>** to record the as-of date of the evidence. See
+       the Time-Bound Claims section below.
    - **Mostly accurate** — The claim is directionally correct but imprecise, outdated, or slightly off
      in magnitude. State what the correct figure or framing should be.
    - **Disputed** — Evidence exists on both sides, or different reliable sources disagree. State what
@@ -84,6 +87,34 @@ former and web search for the latter.
 
 In the output report, tag code-verified claims with their file path and line number so the
 author can trace your verification: e.g., `**Source:** src/config.ts:42`.
+
+### Time-Bound Claims
+
+Some claims describe **current state** rather than fixed historical fact: a price, a software
+version, a policy currently in force, a company's headcount, a feature flag's status, an active
+SLA. These claims may be true today but become false next week without anyone editing the draft.
+
+For any time-bound claim, you must:
+
+1. **Record the as-of date** of the evidence you collected — the date the underlying source
+   reflects, not necessarily the date you ran the search. (For example, if you cite a Q3 2025
+   earnings filing, the as-of date is the quarter's end date, not today's date. If you cite a
+   live pricing page with no published timestamp, use the date you accessed it and say so.)
+2. **Use the verdict subtype `Accurate as of <YYYY-MM-DD>`** in place of plain "Accurate" when
+   the claim checks out. The ISO 8601 date is required so re-runs of the fact-check can identify
+   which claims are stale candidates for re-verification.
+3. **Note the as-of date in the verdict explanation** when it materially affects interpretation
+   (e.g., "Pricing reflects the vendor's listed rate as of 2026-04-15; subject to change.").
+
+The other verdicts (Mostly accurate, Disputed, Inaccurate, Unverified) apply unchanged to
+time-bound claims — the as-of-date subtype is only attached to "Accurate" because that's the
+verdict whose truth value is most likely to drift silently with time. Do **not** apply this
+subtype to claims about fixed historical fact (e.g., "the 2008 financial crisis began in
+September 2008"); those are not time-bound even though they cite a date.
+
+When sources conflict on time-bound state, prefer the source with the most recent as-of date,
+unless an older primary source clearly supersedes a more recent secondary one. Note the
+recency-vs-authority tradeoff in your verdict explanation.
 
 ## AI-Generated Draft Awareness
 
@@ -183,6 +214,14 @@ Produce a Markdown document with this structure:
 ## Claim 2: "[exact quote from draft]"
 
 ...
+```
+
+For time-bound claims that check out, use the **Accurate as of <YYYY-MM-DD>** subtype on the
+verdict line. Omit the subtype for non-time-bound claims so the template stays uncluttered:
+
+```
+**Verdict:** Accurate as of 2026-04-15
+**Confidence:** High
 ```
 
 Order the claims by their appearance in the draft, not by verdict severity. Number them sequentially.
