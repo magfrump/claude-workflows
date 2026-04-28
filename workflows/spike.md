@@ -35,6 +35,8 @@ If you can't state the question clearly, the spike isn't ready to start.
 
 Skip this for exploratory spikes where the goal is to learn rather than decide (e.g., "How does X's API handle Y?" — there's no pass/fail, just discovery). When you do use it, revisit these criteria in step 4's Answer section to force a clear verdict.
 
+Before moving to step 2 (Set a timebox), confirm the question can be operationalized with the tools and data available — if it cannot, reframe the question rather than starting the timer on an unanswerable spike.
+
 **Done when...**
 - [ ] The question is stated in one specific, answerable sentence
 - [ ] The question is about feasibility or behavior, not about implementation design
