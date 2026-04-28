@@ -31,6 +31,7 @@ This skill orchestrates the following sub-skills. Ensure they exist in `skills/`
 - `tech-debt-triage.md` — triggered on large diffs (>10 files or >500 lines)
 - `dependency-upgrade.md` — triggered when dependency manifests change
 - `ui-visual-review.md` — triggered when diff touches UI rendering code
+- `architecture-review.md` — triggered when diff introduces new modules, abstractions, or restructures the import graph
 
 > On bad output, see guides/skill-recovery.md
 
@@ -127,6 +128,7 @@ summary. If the user references a skill not listed here, they can include it via
 - `tech-debt-triage.md`
 - `dependency-upgrade.md`
 - `ui-visual-review.md`
+- `architecture-review.md`
 
 **Not applicable to code review (skip):**
 - `fact-check.md`, `cowen-critique.md`, `yglesias-critique.md`
@@ -142,6 +144,7 @@ table below — check each row's diff characteristic and invoke the critic if it
 | Dependency manifests changed (`package.json`, `requirements.txt`, `Cargo.toml`, `go.mod`, `Gemfile`, `pyproject.toml`, `pom.xml`, or similar) | `dependency-upgrade` | Dependency changes carry supply-chain, compatibility, and licensing risk that general critics miss. |
 | Large diff: >10 files changed OR >500 added/removed lines (check via `git diff --stat`) | `tech-debt-triage` | Large changes are where debt accrues unnoticed; a dedicated pass catches structural issues. |
 | Diff touches UI rendering code: JSX/TSX with className or style props, CSS/SCSS files, HTML templates, C#/Unity UI components (Canvas, RectTransform, ScrollRect, UI namespace), Vue/Svelte templates, or files with Tailwind utility classes. Trigger is presence of visual/layout code, not file extension alone. | `ui-visual-review` | Visual regressions are invisible to text-based critics; this critic catches layout, overflow, and sizing issues. |
+| Diff introduces a new top-level module/package, a new abstract class or interface at depth <=2 from the project root, or restructures the import graph across >=3 files (moves, renames, or re-points imports). | `architecture-review` | Structural changes alter dependency direction, module boundaries, and coupling in ways that implementation-focused critics miss. |
 
 **How to check:** For each row, scan the diff file list and content. Multiple rows can match
 simultaneously — invoke all matching critics. If no rows match, no contextual critics run.
@@ -331,8 +334,8 @@ Use this table to map individual critic severity levels to rubric tiers:
 | 🟢 Consider | Low, Informational | Low, Informational | Minor, Informational | Unverifiable |
 
 **Contextual critics are advisory:** Findings from `test-strategy`, `tech-debt-triage`,
-`dependency-upgrade`, and `ui-visual-review` go to 🟢 Consider tier regardless of their
-internal severity. They inform but never block merge.
+`dependency-upgrade`, `ui-visual-review`, and `architecture-review` go to 🟢 Consider tier
+regardless of their internal severity. They inform but never block merge.
 
 ### Escalation Rule
 
@@ -341,9 +344,9 @@ overlapping concern), escalate that finding one tier:
 - 🟢 → 🟡
 - 🟡 → 🔴
 
-Contextual critics (test-strategy, tech-debt-triage, dependency-upgrade) do **not** count
-toward escalation. Their findings remain in 🟢 Consider regardless of overlap with other
-critics. If a contextual critic flags the same issue as a core critic, note the agreement
+Contextual critics (test-strategy, tech-debt-triage, dependency-upgrade, ui-visual-review,
+architecture-review) do **not** count toward escalation. Their findings remain in 🟢 Consider
+regardless of overlap with other critics. If a contextual critic flags the same issue as a core critic, note the agreement
 in the finding's description for visibility, but do not escalate — contextual critics are
 advisory and must not gain blocking power through the escalation mechanism.
 
@@ -376,6 +379,7 @@ docs/reviews/
 ├── tech-debt-triage-review.md     (if triggered)
 ├── dependency-upgrade-review.md   (if triggered)
 ├── ui-visual-review.md            (if triggered)
+├── architecture-review.md         (if triggered)
 ```
 
 When saving review artifacts, include a `Commit: <hash>` metadata line at the top of each file and use date-stamped filenames (e.g., `security-review-2025-01-15.md`) so that results persist across review cycles.
