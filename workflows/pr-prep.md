@@ -109,7 +109,15 @@ If a fix touched code broadly enough that the narrower diff covers most of the P
 **After 3 iterations**, if new findings are still appearing, **stop**. This mirrors the 3-hypothesis escape hatch in the debugging defaults — unbounded iteration has diminishing returns. Choose one of two exit paths:
 
 1. **Ship with documented known issues.** If no Must Fix items remain but Must Address or Consider items persist, document them in the PR description's "Areas of uncertainty" section and proceed to Phase 2. The reviewer sees the known issues and can make a judgment call.
-2. **Escalate to human review.** If Must Fix items remain, or if you're unsure whether remaining findings are safe to ship, stop and present the user with: iteration count, summary of fixes per iteration, remaining findings, and your assessment of why the loop isn't converging (e.g., fixes revealing deeper issues, change too large for incremental review, review criteria shifting).
+2. **Escalate to human review.** If Must Fix items remain, or if you're unsure whether remaining findings are safe to ship, stop and present the user with: iteration count, summary of fixes per iteration, remaining findings, and your assessment of why the loop isn't converging (e.g., fixes revealing deeper issues, change too large for incremental review, review criteria shifting). Use this template so escalation summaries stay consistent and complete:
+
+   ```markdown
+   ## Iterations (N completed)
+   ## Remaining Must Fix
+   ## Remaining Must Address
+   ## Convergence diagnosis (one sentence)
+   ## Recommended action (ship-with-issues / split-PR / pause for redesign)
+   ```
 
 The user can override the ceiling and say "continue" — but the default is to stop. See `workflows/review-fix-loop.md` § Convergence ceiling for extended discussion.
 
