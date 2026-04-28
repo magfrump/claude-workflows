@@ -58,6 +58,17 @@ These rules are absolute. Do not deviate from them under any circumstances.
 
 ---
 
+## Selection Disposition
+
+When choosing which critic agents to run, default to **including** any critic that does
+cognitive work the draft might benefit from, rather than defaulting to exclude. Critics run
+cheaply in parallel; the synthesis step naturally folds redundant findings together. The cost
+of running an extra critic is small — the cost of missing a high-signal critique is larger.
+Reserve exclusion for critics that obviously don't apply (e.g., a UI-visual reviewer on a
+written essay).
+
+---
+
 ## Before You Begin: Communicate the Plan
 
 Before launching any sub-agents, tell the user what you're about to do. This is important —
@@ -78,11 +89,12 @@ for. If you're unsure from the name alone, read the file.
 **User instructions always take priority.** If the user specifies which critics to use (e.g.,
 "use the Cowen critique" or "just the policy one"), follow their instructions exactly.
 
-If the user gives no direction on which critics to use, you choose. Consider:
-- What is the draft about? (policy, technology, culture, economics, etc.)
-- Which available critics are the best fit for this subject matter?
-- If all available critics seem relevant, use all of them.
-- If some are clearly irrelevant to the draft's topic, skip them.
+If the user gives no direction on which critics to use, you choose. Per the Selection
+Disposition above, default to including critics rather than excluding them. Read each
+critic's description and ask: does this critic do cognitive work that applies to this
+draft? If yes, include it. If you can't quickly state a specific reason this critic
+doesn't apply, include it. The bar for exclusion is "obviously inapplicable" (e.g.,
+UI-visual review on a written essay), not "topic doesn't match exactly."
 
 **Short or narrowly scoped drafts:** For drafts under ~500 words or tightly focused technical
 pieces, consider running only the 1–2 most relevant critics rather than the full panel. Small

@@ -1,20 +1,25 @@
 ---
 name: yglesias-critique
 description: >
-  Critique a draft (blog post, essay, article, or policy piece) using the cognitive methods and
-  reasoning patterns of Matt Yglesias. This goes beyond applying his known positions — it encodes
-  how he actually dismantles arguments, the specific intellectual moves he makes, and the habits of
-  mind that make his policy analysis distinctive. Produces a structured Markdown critique. Use this
-  skill whenever the user asks for a Yglesias-style review, or wants a critique focused on policy
-  feasibility, institutional capacity, cost disease, supply-side thinking, or political viability.
-  Also trigger when users say things like "would this policy actually work", "give me the pragmatic
-  critique", "what's the supply-side take", "am I being realistic here", or "poke holes in this
-  from a policy perspective". If the user uploads a written draft about policy, economics, or
-  politics and wants substantive pushback, this is the skill to use. NOTE: This skill is typically
-  invoked by the draft-review orchestrator, which provides a pre-built fact-check report. If a
-  fact-check report is provided, use it as your factual foundation and do not redo basic fact
-  verification.
-when: User wants a policy-focused pragmatic critique of a draft
+  Critique a draft that *proposes a mechanism* — any intervention where the author wants
+  something to happen — using the cognitive methods and reasoning patterns of Matt Yglesias.
+  This is the right critic for proposals of any kind: a software design, a research tool, a
+  community norm, a curriculum change, an organizational shift, or a government policy.
+  Yglesias's distinctive moves operate on proposed mechanisms generally:
+  agree-with-the-goal-demolish-the-mechanism, find the one boring lever nobody's pulling, trace
+  resources/effort through the system, check whether the proposal survives an adoption cycle,
+  run the "10 million people" test, swap in the implementation org chart, find the popular
+  version. Government policy is a special case, not the full scope. Use this skill whenever
+  the draft proposes an action and the author wants pragmatic pushback on whether the
+  mechanism actually achieves the stated goal — especially when the draft pairs a broad goal
+  with a narrow mechanism. Trigger phrases: "would this actually work", "give me the pragmatic
+  critique", "what's the boring lever", "is the mechanism the right one", "am I being
+  realistic here", "poke holes in this proposal", "would this policy actually work", "what's
+  the supply-side take". Produces a structured Markdown critique. NOTE: This skill is
+  typically invoked by the draft-review orchestrator, which provides a pre-built fact-check
+  report. If a fact-check report is provided, use it as your factual foundation and do not
+  redo basic fact verification.
+when: User wants pragmatic mechanism-vs-goal critique of any proposal
 requires:
   - name: fact-check
     description: >
@@ -44,12 +49,12 @@ that the fact-check report has already assessed.
 Instead:
 - **Reference the fact-check findings** where relevant to your critique. For example, if the
   fact-check report found a spending figure inaccurate, you can note that — but your job is
-  to analyze what it means for the policy proposal, not to re-verify the number.
+  to analyze what it means for the proposed mechanism, not to re-verify the number.
 - **Build on the fact-check** where it surfaces ambiguity. If the fact-check says a claim is
   "mostly accurate" or "disputed," that's useful input for assessing whether the proposed
   mechanism actually works.
 - **Focus your energy on the cognitive moves below**, which are what this skill uniquely provides.
-  The fact-checker establishes what's true. You establish whether the policy works.
+  The fact-checker establishes what's true. You establish whether the proposal works.
 
 If no fact-check report is provided, **emit the following warning at the top of your output
 before the critique begins:**
@@ -58,9 +63,12 @@ before the critique begins:**
 > verification. Checkable claims in the draft have not been assessed. For full verification,
 > run the `fact-check` skill first or use the `draft-review` orchestrator.
 
-Then proceed with the critique focusing on policy analysis and argument structure. Do NOT
+Then proceed with the critique focusing on argument structure and mechanism analysis. Do NOT
 attempt your own fact-checking — an ad-hoc spot-check without proper sourcing creates a
-false sense of verification. Leave factual assessment to the dedicated fact-check skill.
+false sense of verification. Leave factual assessment to the dedicated fact-check skill. When
+discussing checkable claims you cannot verify, flag them with your actual confidence level —
+"almost certainly correct," "sounds right but I'd want to check the primary source," "this
+claim is doing a lot of work and I'm only ~50% sure" are useful and different.
 
 ## The Cognitive Moves
 
@@ -187,16 +195,6 @@ most implementable policy that advances it. Compare the expected impact of the p
 to the draft's preferred version. If the popular version gets you 70% of the way there,
 the draft needs a very strong case for why the last 30% justifies the political risk.
 
-### 9. Verify the checkable facts with calibrated confidence
-
-For specific factual claims, flag them with your actual confidence level — not just "confirmed"
-or "disputed" but how sure you are and what would change your mind. "This is almost certainly
-correct," "this sounds right but I'd want to check the primary source," and "this claim is
-doing a lot of work and I'm only about 50% sure it's accurate" are all useful and different.
-
-**If a fact-check report was provided, skip this step.** The fact-checker has already done this
-work. Reference their findings where relevant to your critique.
-
 ## How to Structure the Critique
 
 Output your critique as a Markdown document.
@@ -209,9 +207,10 @@ actually advances it (move #1). If the mechanism undermines the goal, explain th
 What's the boring, unsexy intervention that would do most of the work (move #2)? Estimate
 its impact relative to the draft's proposal.
 
-### Follow the Money
-Trace the draft's proposed spending through the system (move #3). Estimate how much reaches
-the intended beneficiaries vs. gets absorbed by intermediaries, cost disease, or overhead.
+### Follow the Resource
+Trace the draft's proposed flow of money, effort, or attention through the system (move #3).
+Estimate how much reaches the intended outcome vs. gets absorbed by intermediaries, cost
+disease, or overhead.
 
 ### Factual Foundation
 If a fact-check report was provided, briefly summarize the key findings that matter for your
@@ -223,12 +222,13 @@ identify which claims in the draft would most benefit from fact-checking.
 What happens when 10 million people do this, or every state implements it, or it runs for
 20 years (move #6)? What breaks at scale that works in the draft's framing?
 
-### The Org Chart
-Who actually implements this (move #7)? Which agency, what authority, what track record?
+### Implementation & Maintenance
+Who actually implements this (move #7)? Which agency or team, what authority, what track
+record? Who maintains it once the original champions move on?
 
-### Political Survival
-Does this policy survive an election cycle (move #4)? Does it create defenders or opponents?
-What's the popular version that gets 80% of the benefit (move #8)?
+### Adoption Survival
+Does this proposal survive its adoption cycle (move #4)? Does it create defenders or
+opponents? What's the popular version that gets 80% of the benefit (move #8)?
 
 ### The Cost Disease Check
 If relevant: is this in a cost-diseased sector (move #5)? What share of new spending
