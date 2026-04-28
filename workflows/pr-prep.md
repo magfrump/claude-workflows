@@ -162,12 +162,25 @@ These two steps have no dependency on each other and can run concurrently.
 # .github/workflows/*.yml, Makefile, package.json scripts, etc.
 ```
 
-Fix anything broken. If you opened a draft PR in step 2, push the rebased branch to trigger CI remotely.
+If you opened a draft PR in step 2, push the rebased branch to trigger CI remotely.
+
+**Triage failures by class** — not every red check is a regression caused by this branch. Resist the reflex to "fix anything broken" without first identifying which class the failure belongs to:
+
+| Class | Cause | Action |
+|-------|-------|--------|
+| Caused by this branch | Failure traces to code changed on this branch (new test failure, lint error in changed files, build break, type error in modified module) | Fix before merging |
+| Pre-existing on main | Same failure reproduces on `main` at the merge base, or on an untouched file | File a separate issue or follow-up PR; do **not** block this PR. Note in PR description's "Areas of uncertainty" so the reviewer isn't surprised by the red check. |
+| Flaky / infra | Network timeout, runner OOM, intermittent third-party dependency, known race condition | Re-run the job once. If it fails again on re-run, treat as recurrent — file a flake issue and do not block this PR on it. If it passes on re-run, note in PR description. |
+
+**To decide between caused-by-branch and pre-existing**, run the failing check on `main` (or a fresh checkout of the merge base) before assuming the failure is yours. If the same failure appears on untouched code, it's pre-existing.
 
 **b. Annotate the diff.** If the PR includes code in languages or libraries the reviewer may not know well, add **PR comments on your own PR** explaining non-obvious sections. This is cheaper than back-and-forth across timezones.
 
 **Completion criteria:**
-- [ ] All project checks pass (lint, build, tests)
+- [ ] All CI failures triaged into one of the three classes (caused-by-branch / pre-existing / flaky)
+- [ ] Class (a) caused-by-branch failures: all fixed; checks now green
+- [ ] Class (b) pre-existing failures: filed separately and noted in PR description (do not block PR)
+- [ ] Class (c) flaky/infra failures: re-run once; recurrent flakes filed as issues and noted in PR description
 - [ ] No new warnings introduced (for projects that treat warnings as errors)
 - [ ] If PR uses unfamiliar libraries or patterns, at least one explanatory PR comment exists
 - [ ] If no unfamiliar code, annotation step is explicitly skipped (not forgotten)
