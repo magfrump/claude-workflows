@@ -76,7 +76,10 @@ different angles, not pile on the same concern from slightly different perspecti
    Yglesias is running (overlaps with mechanism/lever analysis).
 
 **State your selection** with a one-line justification for each persona chosen and which
-orthogonality dimensions they cover.
+orthogonality dimensions they cover. Then list 2-3 personas considered but not selected with
+a one-line reason each (e.g., redundancy with another pick, weaker domain fit, dimension
+already covered) — cap this section at 3-4 lines total to aid auditability across re-critiques
+without bloat.
 
 ## Step 4: Using the Fact-Check Report
 
