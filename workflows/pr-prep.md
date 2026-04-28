@@ -113,14 +113,19 @@ If a fix touched code broadly enough that the narrower diff covers most of the P
 
 The user can override the ceiling and say "continue" — but the default is to stop. See `workflows/review-fix-loop.md` § Convergence ceiling for extended discussion.
 
-**Tracking:** Note in the PR description or commit message whether the loop converged cleanly (and in how many iterations) or hit the 3-iteration ceiling. This creates an audit trail for calibrating the threshold over time.
+**Tracking:** Record the loop's outcome in the PR description so reviewers and future calibration have a consistent signal. This is symmetric across both exit paths:
+
+- **Converged cleanly** (exited before the 3-iteration ceiling): add a one-line summary to the PR description in the form `Review converged in N iterations; M Must Fix resolved, K Must Address acknowledged.` This gives reviewers a calibration signal for the common case — they can see at a glance how much the loop actually caught.
+- **Ceiling hit at 3 iterations:** follow the escalation paths above (ship-with-known-issues or escalate to human review), capturing iteration count, per-iteration fix summary, remaining findings, and assessment of why the loop didn't converge.
+
+Both forms feed the same audit trail for calibrating the 3-iteration threshold over time.
 
 **Completion criteria:**
 - [ ] Review artifacts exist in `docs/reviews/` for each review skill run
 - [ ] No Must Fix findings remain open
 - [ ] All Must Address findings are resolved or explicitly acknowledged in the PR description
 - [ ] Final review loop introduced no new Must Fix or Must Address findings
-- [ ] Iteration count noted (converged in N iterations, or ceiling hit at 3)
+- [ ] Loop outcome noted in PR description: convergence summary (`Review converged in N iterations; M Must Fix resolved, K Must Address acknowledged.`) if converged cleanly, or escalation summary if ceiling hit at 3
 - [ ] If ceiling hit: remaining findings documented in PR description, or escalated to human review
 - [ ] Review artifacts committed to the branch (see [PR Review Doc Inclusion guide](../guides/pr-review-doc-inclusion.md))
 
