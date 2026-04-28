@@ -27,18 +27,24 @@ State the specific question the spike answers in one sentence. Examples:
 
 If you can't state the question clearly, the spike isn't ready to start.
 
-**Optional: feasibility criteria** — When the spike question is genuinely binary ("can X do Y?", "is Z feasible?"), making success/failure criteria explicit up front leads to more decisive outcomes. Fill in this template:
+**Three common framings.** Spike questions usually fit one of three shapes, each with different up-front rigor and different findings formats. Pick the one your question matches and follow its conventions — that's worth more than a generic template.
 
-> - **Success looks like:** _[concrete observable that means "go"]_
-> - **Failure looks like:** _[concrete observable that means "no-go"]_
-> - **Ambiguous if:** _[what would leave the answer unclear — helps you plan what to test]_
+- **Binary feasibility** — "Can X do Y?" / "Is Z feasible?" The question has a yes/no answer. Before starting, fill in concrete observables for each case:
 
-Skip this for exploratory spikes where the goal is to learn rather than decide (e.g., "How does X's API handle Y?" — there's no pass/fail, just discovery). When you do use it, revisit these criteria in step 4's Answer section to force a clear verdict.
+  > - **Success looks like:** _[concrete observable that means "go"]_
+  > - **Failure looks like:** _[concrete observable that means "no-go"]_
+  > - **Ambiguous if:** _[what would leave the answer unclear — helps you plan what to test]_
+
+  Use the standard 30-minute timebox — binary questions usually resolve quickly or hit an obvious wall. In the findings (step 4), lead with a one-line verdict (go / no-go / partial) that references these criteria, then give the evidence underneath. Without explicit criteria, partial results lead to wishful "kinda works" verdicts that drag into implementation.
+
+- **Comparison** — "Which of A and B is faster / cheaper / simpler for Z?" The question chooses between known alternatives. Pick one decision metric up front (e.g., p95 latency, lines of integration code, dependency footprint) and commit to it; mixing metrics mid-spike produces ambiguous winners. Timebox is longer than binary because you implement each option's minimum viable test — default 45 minutes for two options, and consider splitting into separate spikes if you have three or more. Record findings as a small comparison table with metric values for each option, plus a one-sentence rationale for the winner. Note disqualifying gotchas (e.g., "B is faster but requires Node 22+") even when the metric is clear.
+
+- **Exploration** — "How does X behave for use case Y?" The question is characterizational; there is no pass/fail, just discovery. This shape is most prone to scope drift, so before starting state what "enough understanding" looks like (e.g., "I can predict X's output for our three main input shapes"). Use the standard 30-minute timebox but apply the abandon signals (step 2) more aggressively — if discoveries don't converge into a usable model of behavior by half-time, the honest answer is "needs deeper investigation." In the findings, record a behavior summary as a bulleted list of observed behaviors keyed to inputs, plus an explicit "open questions" list. Exploration spikes should leave a clear map of what's known and unknown, not a yes/no verdict.
 
 **Done when...**
 - [ ] The question is stated in one specific, answerable sentence
 - [ ] The question is about feasibility or behavior, not about implementation design
-- [ ] Success and failure criteria are defined (explicitly via the template above, or implicitly in the question)
+- [ ] The framing is identified and its pattern-specific up-front work is done (criteria template for binary, decision metric for comparison, discovery scope for exploration)
 
 ### 2. Set a timebox (recommended)
 
