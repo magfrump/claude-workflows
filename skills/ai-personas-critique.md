@@ -23,6 +23,23 @@ requires:
 
 > On bad output, see guides/skill-recovery.md
 
+> ## ⚠️ Standalone invocation only — skip if dispatched by an orchestrator
+>
+> If you were invoked directly by the user (not via `draft-review` or another orchestrator
+> that prepends a [goal preamble](../patterns/orchestrated-review.md#goal-preamble) with
+> `User goal:` / `Current task:` / `Success criterion:` lines), do this **before**
+> producing the critique:
+>
+> 1. **Capture the user's goal in 1-2 sentences.** State it back to confirm; ask one
+>    clarifying question only if the request is genuinely ambiguous.
+> 2. **Record it verbatim at the top of the report** as a `**User goal:**` line, alongside
+>    the other report header fields (Proposal, Domains, Personas selected, Personas in
+>    parallel). The User-goal anchor must persist in the saved artifact so downstream
+>    readers and tools see what frame the critique was produced under.
+>
+> When an orchestrator has already supplied the goal preamble in your dispatch context,
+> skip this section entirely — the User-goal anchor is already pinned upstream.
+
 # AI Personas Critique
 
 You are reviewing a proposal using dynamically selected critical personas. Your job is to
@@ -91,22 +108,74 @@ If no fact-check report is provided, emit this warning before the critique:
 
 ## Step 5: Run Each Persona's Critique
 
-For each selected persona, produce a focused critique section. Each section should:
+Treat each persona application as a dispatch. The personas run inline in a single pass, but
+without an explicit anchor each one drifts toward generic critique within its lens rather
+than staying tied to what the user actually asked the orchestration to evaluate. The goal
+preamble and Goal-Alignment Note from the [orchestrated-review pattern](../patterns/orchestrated-review.md#goal-preamble)
+are how this skill prevents that drift.
 
-1. **Name the persona** and state their core question.
-2. **Apply the lens** described in the catalog to the specific proposal. This is not generic
+For each selected persona, produce a focused critique section. Each section must:
+
+1. **Open with the canonical goal preamble.** Three lines, placed immediately under the
+   persona heading:
+
+   ```
+   User goal: <captured in the standalone block above, or lifted verbatim from the orchestrator's dispatch>
+   Current task: Apply the [Persona Name] lens — [persona's core question] — to this proposal.
+   Success criterion: A 100-200 word critique grounded in proposal specifics, with severity and a test/mitigation.
+   ```
+
+   The `User goal` line is identical across every persona section in a single run; do not
+   paraphrase it. `Current task` and `Success criterion` vary per persona.
+
+2. **Name the persona** and state their core question.
+3. **Apply the lens** described in the catalog to the specific proposal. This is not generic
    commentary — ground every observation in specific details from the proposal.
-3. **State the objection** clearly: what concern does this persona raise?
-4. **Assess severity:** Is this a fatal flaw, a significant weakness, or a point to consider?
-5. **Suggest a test or mitigation:** What would address this persona's concern?
+4. **State the objection** clearly: what concern does this persona raise?
+5. **Assess severity:** Is this a fatal flaw, a significant weakness, or a point to consider?
+6. **Suggest a test or mitigation:** What would address this persona's concern?
+7. **Close with a Goal-Alignment Note** using the canonical form from
+   [`patterns/orchestrated-review.md`](../patterns/orchestrated-review.md):
 
-Each persona's section should be 100-200 words. The goal is focused, specific objections —
-not exhaustive analysis. If a persona's lens doesn't reveal anything interesting about this
-particular proposal, say so briefly and move on rather than forcing a critique.
+   ```markdown
+   ## Goal-Alignment Note
+   - Answered: [yes / partial / no — one phrase]
+   - Out of scope: [what was set aside and why, or "none"]
+   - Escalate: [what the synthesis step should action separately, or "nothing"]
+   - Questions I would have asked: [1-3 short questions, only if scope was unclear; otherwise omit this bullet]
+   ```
+
+   One short bullet per line. No padding. The "Questions I would have asked" bullet is
+   optional — include it only when scope was genuinely ambiguous and the persona had to
+   make a non-trivial guess (e.g., which audience the proposal targets, or whether to
+   evaluate technical feasibility versus organizational feasibility).
+
+Each persona's critique content (steps 3-6) should be 100-200 words. The preamble (step 1)
+and Goal-Alignment Note (step 7) are bounded separately by their structure and don't count
+against the cap. The goal is focused, specific objections — not exhaustive analysis. If a
+persona's lens doesn't reveal anything interesting about this particular proposal, say so
+briefly in the critique body and answer `partial` in the Goal-Alignment Note rather than
+forcing a critique.
 
 ## Step 6: Synthesize
 
-After running all persona critiques, produce a synthesis that:
+Before writing the synthesis, **scan each persona's Goal-Alignment Note**:
+
+- Any persona whose `Answered:` value is `no` or `partial` — record the persona name and
+  the one-phrase reason. These signal that the lens did not fully engage the proposal and
+  the corresponding critique should be weighted accordingly.
+- Any non-trivial `Out of scope:` item (anything other than `none`) — fold into the blind
+  spots discussion below so the user sees what each persona deliberately set aside.
+- Any non-trivial `Escalate:` item (anything other than `nothing`) — surface in the synthesis
+  alongside the ranked findings so the user can action it separately.
+- Any `Questions I would have asked:` bullets — surface under a brief "Questions to clarify"
+  note in the synthesis when present, attributed to the persona that raised them. If multiple
+  personas asked semantically the same question, list it once.
+
+If a persona's section omitted the note entirely, treat that as a `partial` answer with reason
+"missing goal-alignment note" so the gap stays visible.
+
+Then produce the synthesis:
 
 1. **Identifies convergence:** Did multiple personas independently flag the same issue? These
    are the highest-signal findings.
@@ -117,6 +186,7 @@ After running all persona critiques, produce a synthesis that:
    3 personas at "significant weakness" outranks a single "fatal flaw" finding.
 4. **Names the blind spots:** Which critique dimensions (from the orthogonality guidance) are
    NOT covered by the selected personas? What might a persona covering those dimensions say?
+   Fold non-trivial out-of-scope items from the goal-alignment scan into this section.
 
 ## Output Format
 
@@ -125,6 +195,7 @@ Structure the output as a Markdown document:
 ```
 # AI Personas Critique
 
+**User goal:** [verbatim from standalone capture or orchestrator dispatch]
 **Proposal:** [title or one-line summary]
 **Domains:** [assigned domain tags]
 **Personas selected:** [names with one-line justifications]
@@ -136,12 +207,22 @@ Structure the output as a Markdown document:
 
 ### [Persona Name]: [Core Question]
 
+User goal: [same line as the header field above — paste verbatim]
+Current task: Apply the [Persona Name] lens — [core question] — to this proposal.
+Success criterion: A 100-200 word critique grounded in proposal specifics, with severity and a test/mitigation.
+
 [Critique content — 100-200 words, grounded in proposal specifics]
 
 **Severity:** [Fatal flaw | Significant weakness | Point to consider]
 **Test/mitigation:** [What would address this concern]
 
-[Repeat for each persona]
+## Goal-Alignment Note
+- Answered: [yes / partial / no — one phrase]
+- Out of scope: [what was set aside and why, or "none"]
+- Escalate: [what the synthesis step should action separately, or "nothing"]
+- Questions I would have asked: [optional — omit unless scope was unclear]
+
+[Repeat the persona section, including its preamble and Goal-Alignment Note, for each persona]
 
 ---
 
@@ -159,7 +240,8 @@ Structure the output as a Markdown document:
 | 1 | ... | ... | ... | ... |
 
 ### Blind Spots
-[Uncovered dimensions and what they might reveal]
+[Uncovered dimensions and what they might reveal, including non-trivial out-of-scope items
+collected from each persona's Goal-Alignment Note]
 ```
 
 ## Output Location
