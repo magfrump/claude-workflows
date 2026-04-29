@@ -35,6 +35,15 @@
 #   docs/working/round-history.json         Cumulative round history
 #   docs/working/completed-tasks.md         Running list of approved work
 #   docs/working/hypothesis-log.md          Hypothesis tracking table
+#
+# Hypothesis scope:
+#   New hypotheses appended via emit_hypothesis() must declare a scope of
+#   either `internal-si` (about SI infrastructure — gates, scripts, round
+#   bookkeeping; evaluated within SI runs) or `external-workflow` (about
+#   workflows or skills used in real projects; deferred to the user via
+#   the morning summary). Internal-si hypotheses are recorded with a
+#   non-empty initial outcome (`TRACKING-INTERNAL`) so the morning-summary
+#   parser does not surface them as deferred questions.
 
 set -euo pipefail
 
@@ -108,6 +117,46 @@ finalize_round_log() {
         generate_morning_summary "${START_ROUND:-1}" "$round" \
             "$WORKING_DIR/morning-summary.md" "$WORKING_DIR" >/dev/null 2>&1 || true
     fi
+}
+
+# --- Hypothesis emission ---
+# Append a falsifiable-prediction row to docs/working/hypothesis-log.md
+# with a required scope tag.
+#
+# Args: $1 = round, $2 = task_id, $3 = scope, $4 = hypothesis text,
+#       $5 = window (rounds), $6 = checked-at-round (target round to
+#       evaluate; may be empty)
+#
+# Scope contract:
+#   internal-si       — about SI infrastructure (gates, scripts, round
+#                       bookkeeping). Evaluated within SI runs using gate
+#                       stats and round reports; written with initial
+#                       outcome TRACKING-INTERNAL so the morning-summary
+#                       deferred-questions parser does not surface it
+#                       even on legacy parsers without scope-column
+#                       support.
+#   external-workflow — about a workflow or skill used in real projects.
+#                       Initial outcome is empty so the morning summary
+#                       surfaces it as a deferred user question.
+#
+# Pipe characters in the hypothesis are escaped to keep the markdown
+# table parseable.
+emit_hypothesis() {
+    local round=$1 task_id=$2 scope=$3 hypothesis=$4 window=$5 checked_at=${6:-}
+    local hyp_log="${WORKING_DIR:?WORKING_DIR must be set}/hypothesis-log.md"
+    local outcome
+    case "$scope" in
+        internal-si)        outcome="TRACKING-INTERNAL" ;;
+        external-workflow)  outcome="" ;;
+        *)
+            echo "Error: emit_hypothesis: scope must be internal-si or external-workflow (got: ${scope})" >&2
+            return 1
+            ;;
+    esac
+    local escaped_hypothesis=${hypothesis//|/\\|}
+    printf '| %s | %s | %s | %s | %s | %s |  |  | %s |\n' \
+        "$round" "$task_id" "$escaped_hypothesis" "$window" "$checked_at" "$outcome" "$scope" \
+        >> "$hyp_log"
 }
 
 # --- Shared utility functions (sourced from lib) ---
