@@ -47,6 +47,8 @@ Produce a bullet list of entry points with file paths. This is your map's starti
 
 ### 2. Map the architecture — identify subsystems
 
+**Why this onboarding (capture before mapping).** Before tracing subsystems, write a one-paragraph intent block naming what the onboarding is *for*: is there a specific upcoming task (e.g., "I need to add a new payment provider", "I'm investigating a slow report-generation path"), a returning-after-absence refresh, or a generic orientation with no task driving it? Name any subsystems the upcoming work is likely to touch and any areas the user has already said are out of scope. A subsystem mapped against a stated purpose surfaces the load-bearing details for that purpose; the same subsystem mapped in isolation produces a generic inventory. If no specific task drives this onboarding, say so explicitly ("general orientation, no specific task") so the mapping defaults to broad coverage rather than guessing at priorities. Hold the resulting text as `<onboarding-intent>` and reuse it verbatim in each sub-agent brief below under a `## What this onboarding is for` heading, so per-subsystem notes scope their key abstractions and surprise-flagging to the stated purpose.
+
 From the entry points, trace outward to identify the major subsystems. A "subsystem" is a cohesive cluster of code with a recognizable responsibility: the API layer, the data access layer, the auth system, the job queue, the CLI, etc.
 
 For each subsystem, note:
@@ -63,9 +65,10 @@ If the codebase is large enough to warrant it (>20 files in multiple directories
 
 **Sub-agent briefing template.** A sub-agent starts with zero prior context, so its brief must be self-contained. Use the following template per dispatch — one filled brief per subsystem:
 
+- **Onboarding intent**: paste `<onboarding-intent>` from above verbatim under a `## What this onboarding is for` heading at the top of the brief. This lets the sub-agent scope its key abstractions and surprise-flagging to the stated purpose rather than treating the subsystem in isolation. If the intent names this subsystem as load-bearing for the upcoming task, the sub-agent should err toward depth in the relevant areas; if the intent is "general orientation, no specific task", the sub-agent should default to broad coverage.
 - **Subsystem name**: the cluster being investigated (e.g., "auth", "job queue", "API layer").
 - **Files to read**: explicit paths or globs — entry points relevant to this subsystem, public interfaces, and 1–2 representative implementation files. Don't ask the sub-agent to discover its own scope; it will waste a turn searching.
-- **Questions to answer**: what is the subsystem's one-sentence responsibility? What are its 2–3 key abstractions (types, interfaces, or functions, with file paths)? Which other subsystems does it call or is called by? Are there inconsistencies or surprises worth flagging?
+- **Questions to answer**: what is the subsystem's one-sentence responsibility? What are its 2–3 key abstractions (types, interfaces, or functions, with file paths)? Which other subsystems does it call or is called by? Are there inconsistencies or surprises worth flagging — especially ones that matter for the stated onboarding intent?
 - **Output schema** (the sub-agent fills these fields and nothing else):
   - `Subsystem`: <name>
   - `Directory/files`: <where it lives>
@@ -84,6 +87,7 @@ This output drops directly into the Architecture Map without restructuring. If a
 - **External dependencies**: Databases, third-party APIs, message queues, shared services, or any system outside the codebase boundary. Note what each is used for and which subsystem owns the integration. This surfaces coupling that isn't visible from code structure alone.
 
 **Done when...**
+- [ ] `<onboarding-intent>` paragraph is written (or explicitly marked "general orientation, no specific task") and included in every sub-agent brief that was dispatched
 - [ ] Every major subsystem is identified with its directory/files, responsibility, key abstractions, and dependencies
 - [ ] At least one representative implementation per subsystem has been read (not just interfaces)
 - [ ] Dependencies between subsystems are documented (what calls what)
