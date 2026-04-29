@@ -30,6 +30,46 @@ Process units concurrently using sub-agents, each with a focused prompt and boun
 
 **Terminology note**: Use "sub-agent" consistently for the parallel execution mechanism, regardless of whether the underlying implementation uses the Task tool, Agent tool, or manual sequential processing.
 
+#### Goal preamble
+
+Every dispatched sub-agent prompt should begin with a 3-line **Goal preamble** prepended above the role-specific skill content. This is drift-prevention infrastructure: a sub-agent can produce output that is well-formed within its skill but mis-aligned with what the orchestration was actually trying to achieve. The preamble pins each dispatch to the user's outcome, the sub-agent's specific assignment, and the artifact it owes back, so role detail is interpreted in service of those three anchors. Workflows that follow this pattern should require the preamble in their dispatch instructions and cite this section.
+
+Canonical form — three lines, exactly:
+
+```
+User goal: <user's high-level outcome — what the human ultimately wants from this orchestration>
+Current task: <this sub-agent's specific assignment — narrower than the user goal>
+Success criterion: <what "done" looks like for this sub-agent — usually the artifact + path it must produce>
+```
+
+Cap at 3 lines. Constraints, scope notes, and reminders belong in the role-specific content that follows; expanding the preamble dilutes its purpose.
+
+Field semantics:
+
+- **User goal** — the outermost frame. Same across all sub-agents in a single orchestration run.
+- **Current task** — narrower than the user goal. Different per sub-agent. One imperative sentence.
+- **Success criterion** — the artifact this sub-agent must produce, ideally with the output path. Not the orchestrator's downstream synthesis success — this sub-agent's local "done" bar.
+
+Worked example — same dispatch (security critic in a code-review orchestration), filled well vs filled badly.
+
+**Well-filled (drift-resistant):**
+
+```
+User goal: Get a comprehensive code review on the current branch before opening a PR.
+Current task: Run security design review on the diff between the current branch and main.
+Success criterion: A markdown report saved to docs/reviews/security-review.md, structured per the security-reviewer skill.
+```
+
+**Badly filled (drift-prone):**
+
+```
+User goal: Review the code.
+Current task: Be a security reviewer.
+Success criterion: Write a good security review.
+```
+
+The bad version fails on each line. *User goal* is so generic it could prefix any orchestration, so the sub-agent learns nothing about which frame to apply. *Current task* restates the skill's identity instead of narrowing its assignment, so the sub-agent defaults to its skill template regardless of context. *Success criterion* names neither an artifact nor a path, so the sub-agent invents an output shape the orchestrator may not be able to consume during synthesis. Getting one line right does not save you if the others are vague — each anchor needs to land independently.
+
 #### Goal-alignment self-report
 
 Every dispatched sub-agent must append a short **Goal-Alignment Note** at the end of its required output. The note exists so the orchestrator can detect coverage gaps, intentional scope cuts, and escalations without re-reading the full critique. Workflows that follow this pattern should require the note in their dispatch instructions and cite this section.
