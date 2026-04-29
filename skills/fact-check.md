@@ -111,6 +111,35 @@ meaningful signal rather than an inconvenience.
   note this in the verdict explanation: "AI-source scrutiny: [brief explanation of what extra
   verification revealed]."
 
+## Quote attribution
+
+When the draft includes quotes attributed to a named person, apply these additional checks
+beyond verifying that the wording is reproduced accurately:
+
+- **Prefer the original primary source.** Locate the quote in its original venue — the book
+  and page number, the speech transcript and timestamp, the archived letter or other primary
+  text — rather than chaining through multiple secondary citations. Two articles citing each
+  other do not corroborate an attribution; they corroborate that the attribution has spread.
+  If a primary source is reachable, cite it (with the locator) and rate confidence accordingly.
+- **Use the "Secondary-only" verdict when no primary source is available.** If the wording
+  is widely cited but you cannot locate it in the speaker's actual writings, recordings, or
+  transcripts, mark the claim as **Secondary-only**. This is distinct from "Accurate": the
+  wording may be reproduced faithfully across sources, but the attribution itself is
+  unverified. State the implication explicitly in the verdict explanation — the speaker may
+  not have said this, even if many secondary sources claim they did — and list the secondary
+  sources you did find together with a note on the absence of a primary source.
+- **Flag silent misattribution risk.** If the same wording appears attributed to different
+  authors across reputable sources (e.g., one source attributes it to Mark Twain, another to
+  Will Rogers), surface the conflict in the verdict explanation. Multi-author attribution is
+  a strong signal that the quote is apocryphal or that an early misattribution has propagated
+  unchecked. Do not silently pick the most-cited attribution; name each candidate speaker and
+  the sources backing each, and downgrade the verdict to **Secondary-only** or **Disputed**
+  depending on whether any primary source survives the conflict.
+
+In the output report, **Secondary-only** appears alongside the standard verdicts and should
+be included in the Claims Requiring Author Attention summary. Extend the report's summary
+counts with a "[U] secondary-only" entry when any claim receives this verdict.
+
 ## Confidence Calibration
 
 Use these criteria when assigning confidence levels. In your report, briefly state which criterion
