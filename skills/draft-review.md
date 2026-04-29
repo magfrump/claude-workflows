@@ -214,6 +214,26 @@ the expected number? If yes, proceed to Stage 3. If not, STOP and tell the user 
 
 You now have results from all sub-agents. NOW — and only now — produce your two deliverables.
 
+#### Goal-alignment scan (run before producing deliverables)
+
+Before writing the chat synthesis, scan the **Goal-Alignment Note** appended by each
+sub-agent (see [`patterns/orchestrated-review.md`](../patterns/orchestrated-review.md)).
+Collect:
+
+- Any sub-agent whose `Answered:` value is `no` or `partial` — record the agent name
+  and the one-phrase reason verbatim. In ensemble mode, record per instance (e.g.,
+  "cowen-critique #2 — partial: skipped policy section").
+- Any non-trivial `Out of scope:` item — anything other than the literal sentinel
+  `none`. Record the agent name and the bullet text.
+- Any non-trivial `Escalate:` item — anything other than the literal sentinel
+  `nothing`. Record the agent name and the bullet text.
+
+If a sub-agent omitted the note entirely, treat that as a `partial` entry with reason
+"missing goal-alignment note" so the gap is still surfaced.
+
+The collected items feed the `### Coverage and Escalations` section of the chat
+synthesis below. They do not modify the rubric — coverage is a chat-synthesis concern.
+
 **Before synthesizing, cross-reference critic findings against the fact-check report.** For each
 critic's output, identify the key claims or premises their arguments depend on. Check each one
 against the fact-check verdicts:
@@ -275,6 +295,22 @@ Note convergence counts (e.g., "3/3 agents", "2/3 agents") throughout the synthe
 critics independently flag the same issue, that's high confidence.
 
 ### Structure the chat synthesis as:
+
+### Coverage and Escalations
+
+Surface the items collected in the Goal-alignment scan above so the user sees coverage
+limits before reading findings:
+
+- For each sub-agent that answered `no` or `partial`: list the agent name and the
+  one-phrase reason.
+- For each non-trivial `Out of scope:` bullet: list the agent name and what was set
+  aside.
+- For each non-trivial `Escalate:` bullet: list the agent name and what the
+  orchestrator should action separately.
+
+If the scan surfaced nothing, render this section with a single line: "All sub-agents
+fully addressed their scope; no out-of-scope or escalate items." The heading must
+still appear so the section is auditable across runs.
 
 **Factual issues:** What the fact-check found. Group into: claims that need fixing (inaccurate),
 claims that need precision (mostly accurate), and claims that are solid (confirmed accurate).
