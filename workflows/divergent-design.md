@@ -32,6 +32,17 @@ Generate 8-15 candidate approaches. Quantity matters more than quality at this s
 - One sentence each, no evaluation yet
 - Number them for reference
 
+#### Lens checklist (optional)
+
+Use these lenses as a generation aid to widen the search space. Scan your candidates and aim for at least 2 lenses to be represented — if everything clusters into a single lens, generate a few more from the missing ones. This is a soft prompt, not a gate: the post-generation health check below remains the only structural check.
+
+- **Technical** — architecture, algorithm, data structure, or implementation choice
+- **Interface** — API shape, UX flow, protocol, or data contract
+- **Procedural** — workflow, process, or how the work gets done (review cadence, gating, sequencing of steps)
+- **Social/organizational** — who decides, who owns it, who maintains it, where responsibility sits
+- **Time-shifted** — defer, accelerate, or sequence differently (do it later, do it now in a smaller form, split the rollout)
+- **Reframe** — do nothing, change the question, or solve an adjacent problem instead
+
 #### Generation health check
 
 After generating your initial candidates, scan for these common generation gaps. This is not evaluation — you are checking whether the *search space* is broad enough, not whether any candidate is good or bad. If a gap is found, generate additional candidates to fill it; never remove existing ones.
