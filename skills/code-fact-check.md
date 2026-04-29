@@ -8,6 +8,16 @@ description: >
   skill when the user asks to "verify the comments", "check the docs against the code", "audit
   documentation accuracy", or when upstream orchestration requests a code verification pass.
 when: User asks to verify comments, docs, or docstrings against code
+non-goals:
+  - Not a code reviewer — do not assess code quality, suggest refactors, or judge architecture; sibling critics (security-reviewer, performance-reviewer, api-consistency-reviewer) own those concerns.
+  - Not an intent reviewer — design rationale, TODO/HACK markers, license boilerplate, and comments that merely restate the code are not checkable claims; skip them rather than verdicting them.
+  - Not a runtime tester — claims that require runtime state, external systems, or domain expertise outside the codebase belong under the Unverifiable verdict, not Incorrect.
+  - Not a comment editorialist — state what the code actually does (or what the precise version should say) without speculating on why the comment drifted or proposing stylistic rewrites.
+adaptation-latitude:
+  - Trace depth scales with claim type — behavioral claims require reading the implementation end-to-end; configuration claims may need only a constant grep; staleness signals need only verifying the symbol still exists.
+  - Verdict calibration over precision theater — choose Mostly accurate when a claim is directionally right but missing a qualifier; reserve Incorrect for mismatches that would mislead a reader acting on the comment.
+  - Confidence reflects what you actually traced — drop to medium or low when paths branch, runtime state matters, or you only partially followed the call graph, rather than defaulting to High.
+  - Prioritization within scope — claims near recently changed lines and claims about modified functions are higher-yield than claims about untouched neighbors; spend effort accordingly when the scope is large.
 requires:
   - A codebase with comments, docstrings, or documentation to verify
 ---
