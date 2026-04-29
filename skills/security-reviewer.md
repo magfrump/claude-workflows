@@ -35,6 +35,23 @@ requires:
 
 > On bad output, see guides/skill-recovery.md
 
+> ## ⚠️ Standalone invocation only — skip if dispatched by an orchestrator
+>
+> If you were invoked directly by the user (not via `code-review` or another orchestrator
+> that prepends a [goal preamble](../patterns/orchestrated-review.md#goal-preamble) with
+> `User goal:` / `Current task:` / `Success criterion:` lines), do this **before**
+> producing the critique:
+>
+> 1. **Capture the user's goal in 1-2 sentences.** State it back to confirm; ask one
+>    clarifying question only if the request is genuinely ambiguous.
+> 2. **Record it verbatim at the top of the report** as a `**User goal:**` line, alongside
+>    the `Commit: <hash>` metadata line at the top of the saved artifact. The User-goal
+>    anchor must persist in the saved file so downstream readers and tools see what frame
+>    the review was produced under.
+>
+> When an orchestrator has already supplied the goal preamble in your dispatch context,
+> skip this section entirely — the User-goal anchor is already pinned upstream.
+
 # Security Code Review
 
 You are reviewing code changes for security vulnerabilities. The point is not to find issues

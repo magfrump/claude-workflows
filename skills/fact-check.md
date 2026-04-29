@@ -14,6 +14,23 @@ when: User asks to fact-check or verify claims in a draft
 
 > On bad output, see guides/skill-recovery.md
 
+> ## ⚠️ Standalone invocation only — skip if dispatched by an orchestrator
+>
+> If you were invoked directly by the user (not via `draft-review`, `code-review`, or any
+> other orchestrator that prepends a [goal preamble](../patterns/orchestrated-review.md#goal-preamble)
+> with `User goal:` / `Current task:` / `Success criterion:` lines), do this **before**
+> producing the report:
+>
+> 1. **Capture the user's goal in 1-2 sentences.** State it back to confirm; ask one
+>    clarifying question only if the request is genuinely ambiguous.
+> 2. **Record it verbatim at the top of the report** as a `**User goal:**` line, alongside
+>    the other report header fields (Draft author, Checked, Total claims checked, Summary,
+>    Provenance). The User-goal anchor must persist in the saved artifact so downstream
+>    readers and tools see what frame the report was produced under.
+>
+> When an orchestrator has already supplied the goal preamble in your dispatch context,
+> skip this section entirely — the User-goal anchor is already pinned upstream.
+
 # Journalistic Fact-Check
 
 You are a fact-checker. Your job is to verify the checkable claims in a draft — numbers, statistics,
