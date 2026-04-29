@@ -43,10 +43,7 @@ These hypotheses are still open. They cannot be evaluated autonomously
 because meaningful evidence requires real-world usage. Please answer
 when you have observations.
 
-1. **task-description-linter** (round 3): "Advisory lint warnings will prevent at least 1 gate failure in the next 3 rounds by surfacing missing shellcheck/BATS mentions or nonexistent parent directories before implementation begins, resulting in a lower file_scope or shellcheck gate-failure rate compared to rounds 1–3."
-   - Have you noticed any difference in the predicted direction?
-   - Can you point to a specific instance?
-
+No open hypotheses to evaluate.
 
 ## Recording Your Responses
 
