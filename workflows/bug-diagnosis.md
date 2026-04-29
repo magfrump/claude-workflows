@@ -28,6 +28,28 @@ These follow the same conventions as RPI working docs: committed to the repo, tr
 
 ## Process
 
+### 0. Pre-check — verify the failure isn't preexisting
+
+Before forming a hypothesis, confirm the failure does not exist on the base branch unmodified. A failure that reproduces on a clean base isn't a bug *you* introduced — it's environmental, upstream, or a preexisting issue. Chasing it as part of your current work wastes effort and conflates root causes; fix or report it where it actually lives.
+
+**Quick check:**
+```bash
+git stash
+<repro-command>
+git stash pop
+```
+
+Interpret the result:
+- **Failure does not reproduce on the clean base** → the failure is specific to your current changes; proceed to step 1.
+- **Failure reproduces on the clean base** → it's environmental or upstream. Stop diagnosing it as part of your current work. Examples: a flaky test on `main`, a broken dependency version, a misconfigured local environment, a regression introduced by an upstream merge. Fix it in its real location or escalate it as a separate issue.
+
+If your working changes can't easily be stashed (large schema migrations, untracked build artifacts, in-progress refactors that span many files), use `git worktree add` to check out the base branch in a separate directory and run the reproduction there instead.
+
+**Done when...**
+- [ ] The reproduction has been run on the unmodified base branch (via stash or worktree)
+- [ ] If the failure reproduces on the base, it has been escalated as environmental/upstream and is not being treated as part of the current work
+- [ ] If the failure does not reproduce on the base, it is confirmed to be specific to current changes — proceed to step 1
+
 ### 1. Reproduce — confirm the bug exists
 
 Before diagnosing, confirm you can trigger the bug reliably. A bug you can't reproduce is a bug you can't verify as fixed.
