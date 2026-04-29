@@ -8,8 +8,12 @@ description: >
   overlapping, invisible at certain resolutions, or otherwise broken across screen sizes. Also
   trigger when the user asks to "fix the layout", "make this responsive", "review the UI",
   "check visual elements", or "audit the CSS". Applies to any framework with visual elements:
-  React/JSX/TSX with Tailwind or CSS-in-JS, Unity/C# UI, Vue, Svelte, etc. Produces concrete
-  code fixes plus a structured report of findings. NOTE: This skill can be invoked standalone
+  React/JSX/TSX with Tailwind or CSS-in-JS, Unity/C# UI, Vue, Svelte, etc. Also covers 3D
+  viewport rendering when the page uses three.js, react-three-fiber, Babylon, model-viewer,
+  Unity-WebGL, Unreal Pixel Streaming, or loads .glb/.gltf assets — checking camera controls,
+  clipping planes, lighting, depth ordering, gizmos, asset bounds, and perf overlays.
+  Produces concrete code fixes plus a structured report of findings. NOTE: This skill can
+  be invoked standalone
   or by a code-review orchestrator. If a code-fact-check report is provided, use it as your
   foundation for understanding what the code actually does and do not re-verify documented
   behavior.
@@ -219,6 +223,74 @@ Note: discoverability is not only about making elements visible. Also consider:
 - Media queries that leave gaps between breakpoints
 - Text that doesn't reflow on narrow viewports (missing `overflow-wrap: break-word`)
 - CSS properties with incomplete browser support (check via web search when relevant)
+
+### 8. 3D viewport rendering *(when 3D content is rendered)*
+
+When the page renders interactive 3D content, extend the layout review with the checks
+below. These are mechanical failures (model invisible, orbit broken, geometry clipped) —
+treat them with the same rigor as item 1, not as full-audit-only judgment calls.
+
+**Trigger conditions — apply this section when any of these are present:**
+
+- TSX/JSX imports or references `three`, `@react-three/fiber`, `@react-three/drei`,
+  `@babylonjs/core` (or `babylonjs`), `<model-viewer>`, or a `<canvas>` used for WebGL/
+  WebGPU 3D rendering
+- Three.js / R3F primitives in the diff: `OrbitControls`, `TrackballControls`,
+  `PerspectiveCamera`, `OrthographicCamera`, `Raycaster`, `Scene`, `WebGLRenderer`
+- The page embeds a Unity-WebGL build (`UnityLoader`, `createUnityInstance`,
+  `Build/*.loader.js`, `Build/*.data`) or Unreal Pixel Streaming
+  (`PixelStreamingPlayer`, signaling-server URLs, `webrtc-player.js`)
+- URL, `src`, `import`, or `useGLTF()` references to `.glb`, `.gltf`, `.fbx`, `.obj`,
+  `.usdz`, or `.usd` assets
+
+**Checks:**
+
+- **Camera controls respond.** Orbit, pan, and zoom must work on the expected inputs
+  (mouse drag, wheel, pinch, two-finger drag). Verify there is no gimbal lock at extreme
+  pitch — controls that use Euler angles freeze when looking straight up/down. Prefer
+  quaternion-based controls (`OrbitControls` with `enableDamping`, or trackball-style)
+  when the camera needs full freedom.
+- **Clipping planes preserve the subject.** Near and far cull values must enclose the
+  model's world-space bounds. Symptoms: parts of the model disappear when zooming in
+  (near too large), the model never appears or pops in/out at distance (far too small),
+  or the model is larger than the far clip and never visible at any zoom level.
+  Default `near: 0.1, far: 1000` is wrong for both miniature (sub-millimeter) and
+  large (kilometer) scenes.
+- **Lighting is adequate.** The subject must be visible against the background. Watch
+  for silhouette failure — dark/unlit model on a dark canvas, or PBR materials rendered
+  with no environment map and no directional light. Verify at least one ambient or
+  hemisphere light is present so unlit faces aren't pure black, plus a key light for
+  shading. `<model-viewer>` defaults are usually safe; bare three.js scenes are not.
+- **Transparency and depth ordering.** Transparent meshes drawn out of order can occlude
+  opaque geometry behind them, leave halos around alpha-cut foliage/hair, or render with
+  a visible "front faces only" silhouette. Confirm transparent objects are sorted (or
+  `renderOrder` is set), `depthWrite` is `false` on glass/particles where appropriate,
+  and alpha-test thresholds match the asset's authoring.
+- **Gizmos are present and correctly oriented.** When the UI exposes manipulation handles
+  (translate/rotate/scale gizmos, axis indicators, view cube), the gizmo's axes must
+  match the world axes used by the underlying transform. A flipped Y or swapped Y/Z
+  silently inverts user input — common when mixing Y-up (three.js, glTF) with Z-up
+  (Blender export, Unreal). Gizmos should also stay on-screen when the camera moves
+  (rendered in screen-space or via a secondary camera/overlay scene).
+- **Asset bounds vs viewport.** Confirm the model is centered (its origin may be at one
+  corner — a common glTF export quirk) and at the right scale: not invisibly tiny, not
+  larger than the far-clip plane, not poking through the near plane. Auto-fitting the
+  camera to the asset's bounding box on load is the standard fix; cite a known utility
+  (`drei`'s `<Bounds>` / `<Center>`, or a manual `box.getBoundingSphere()` + camera
+  reposition) rather than hand-rolling distance math.
+- **Runtime perf indicators (when overlay is already present).** If the page exposes an
+  FPS / draw-call / triangle / memory overlay (`stats.js`, R3F `<Perf>`, Babylon
+  Inspector, Unity profiler), inspect it during interaction at each breakpoint: FPS
+  holding ~60 (or matching the configured target), draw calls not climbing on idle,
+  triangle count not unexpectedly high, GPU memory stable. Do not add an overlay solely
+  for this review — only inspect what the project already ships.
+
+**Static review limits.** Many 3D bugs only manifest at runtime (a far-clip set before
+the asset loads async, a directional light culled by the wrong layer mask, a control
+gimbal-lock that needs interactive verification). When the project is runnable, escalate
+to Step 6 (Runtime Verification) for any item above that can't be confirmed from code
+alone, and capture screenshots from at least two camera angles plus one mid-interaction
+frame.
 
 ---
 
