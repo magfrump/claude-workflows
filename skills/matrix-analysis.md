@@ -128,22 +128,42 @@ within that dimension, which is exactly what a matrix needs.
 
 For each criterion sub-agent, include in the prompt:
 
-1. **The criterion name and definition.** Be specific about what this criterion means and
+1. **The canonical goal preamble**, prepended at the very top of the prompt above all
+   role-specific content, per the
+   [goal preamble](../patterns/orchestrated-review.md#goal-preamble) spec. Three required
+   top-level lines:
+
+   ```
+   User goal: <the user's high-level outcome from this matrix-analysis run — same across all criterion sub-agents>
+   Current task: Score all items on the "<criterion>" criterion and return the structured per-criterion response.
+   Success criterion: A structured response under `## Criterion: <criterion>` with per-item Rating + Rationale, a Relative ranking, a Key differentiator, and a Goal-Alignment Note appended at the end.
+   ```
+
+   The User goal is the outermost frame and stays the same across every criterion sub-agent
+   in this run. The Current task narrows to the single assigned criterion. The Success
+   criterion names the structured per-criterion output the sub-agent owes back. Omit the
+   optional sub-bullets under Current task (Branch / Position in initiative / Blocked on)
+   unless the orchestrator already has those facts on hand from upstream — silence is
+   better than a guessed value.
+
+2. **The criterion name and definition.** Be specific about what this criterion means and
    what "strong" vs "weak" looks like along this dimension.
 
-2. **The scoring scale.** Default: Strong / Adequate / Weak with rationale. Or the user's
+3. **The scoring scale.** Default: Strong / Adequate / Weak with rationale. Or the user's
    requested scale.
 
-3. **All items to evaluate.** Include descriptions, code, links, or any context gathered
+4. **All items to evaluate.** Include descriptions, code, links, or any context gathered
    in Stage 1.
 
-4. **The decision-intent captured in Stage 1 Step 4**, prepended verbatim under a
+5. **The decision-intent captured in Stage 1 Step 4**, prepended verbatim under a
    `## What this decision is for` heading so the sub-agent can scope its rating to the
-   stated decision and priorities rather than treating the criterion in isolation.
+   stated decision and priorities rather than treating the criterion in isolation. This
+   sits below the goal preamble in the prompt — the preamble names the outermost frame,
+   the decision-intent names the priorities within that frame.
 
-5. **Any constraints or priorities** the user specified that are relevant to this criterion.
+6. **Any constraints or priorities** the user specified that are relevant to this criterion.
 
-6. **Instructions for output format.** Each sub-agent must return a structured response:
+7. **Instructions for output format.** Each sub-agent must return a structured response:
 
 ```
 ## Criterion: [criterion name]
@@ -165,9 +185,43 @@ For each criterion sub-agent, include in the prompt:
 [One sentence: what most separates the strongest from the weakest on this criterion?]
 ```
 
-7. **Instruction to be fair and evidence-based.** The sub-agent should evaluate based on
+8. **Instruction to be fair and evidence-based.** The sub-agent should evaluate based on
    evidence, not assumptions. If it cannot determine a rating for an item on this criterion,
    it should say "Insufficient information" rather than guess.
+
+9. **Append a Goal-Alignment Note** at the end of the sub-agent's output using the canonical
+   form from [`patterns/orchestrated-review.md`](../patterns/orchestrated-review.md):
+
+   ```markdown
+   ## Goal-Alignment Note
+   - Answered: [yes / partial / no — one phrase]
+   - Out of scope: [what was set aside and why, or "none"]
+   - Escalate: [what the orchestrator should action separately, or "nothing"]
+   - Questions I would have asked: [1-3 short questions, only if scope was unclear; otherwise omit this bullet]
+   ```
+
+   One short bullet per line. No padding. The "Questions I would have asked" bullet is
+   optional — include it only when scope was genuinely ambiguous and the sub-agent had to
+   make a non-trivial guess about how to rate items on this criterion. The Goal-Alignment
+   Note is read by the orchestrator during Stage 3 synthesis to surface coverage gaps,
+   scope cuts, and escalations without re-reading the full per-criterion response.
+
+**Worked example — dispatch goal preamble**
+
+Each criterion dispatch is prepended with the
+[goal preamble](../patterns/orchestrated-review.md#goal-preamble). A filled example for the
+"performance" criterion in a matrix comparing three databases:
+
+```
+User goal: Decide which database to adopt for the new analytics service.
+Current task: Score Postgres, MySQL, and DuckDB on the "performance" criterion and return the structured per-criterion response.
+Success criterion: A structured response under `## Criterion: performance` with per-item Rating + Rationale, a Relative ranking, a Key differentiator, and a Goal-Alignment Note appended at the end.
+```
+
+The User goal stays the same across every criterion sub-agent in this run; only the Current
+task changes per criterion. Do not add other content to the preamble — everything else
+(criterion definition, scoring scale, item descriptions, decision-intent paste, constraints,
+output format, Goal-Alignment Note instruction) goes in the role-specific content below it.
 
 **Launch ALL criterion sub-agents simultaneously** in a single message with multiple Agent
 tool calls. They must not see each other's output.
