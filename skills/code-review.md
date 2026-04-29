@@ -296,6 +296,21 @@ For each critic agent, you MUST:
    make a non-trivial guess about what to evaluate.
 9. Launch via the Agent tool with `subagent_type: "general-purpose"`
 
+**Worked example — dispatch goal preamble with optional Project-state fields**
+
+Each critic dispatch is prepended with the [goal preamble](../patterns/orchestrated-review.md#goal-preamble). When the orchestrator has the upstream research/plan/checkpoint/handoff doc's Project state lead block, lift those facts verbatim into the optional sub-bullets under Current task. A filled example for the security critic in this pipeline:
+
+```
+User goal: Get a comprehensive code review on the current branch before opening a PR.
+Current task: Run security design review on the diff between the current branch and main.
+  - Branch: feat/auth-token-storage
+  - Position in initiative: Step 2 of 4 in the auth-compliance epic; sibling branch feat/session-cleanup waiting on this review.
+  - Blocked on: nothing
+Success criterion: A markdown report saved to docs/reviews/security-review.md, structured per the security-reviewer skill.
+```
+
+If any of those facts isn't on hand, omit the corresponding sub-bullet rather than guessing — the fields exist to anchor the critic in real project context, not to be filled for completeness. Do not add other content to the preamble; everything else (scope spec, PR intent, fact-check excerpt, output path, tagging requirements) goes in the role-specific content below it.
+
 **Launch ALL critic agents simultaneously** in a single message with multiple Agent tool calls.
 They must not see each other's output.
 

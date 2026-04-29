@@ -32,22 +32,28 @@ Process units concurrently using sub-agents, each with a focused prompt and boun
 
 #### Goal preamble
 
-Every dispatched sub-agent prompt should begin with a 3-line **Goal preamble** prepended above the role-specific skill content. This is drift-prevention infrastructure: a sub-agent can produce output that is well-formed within its skill but mis-aligned with what the orchestration was actually trying to achieve. The preamble pins each dispatch to the user's outcome, the sub-agent's specific assignment, and the artifact it owes back, so role detail is interpreted in service of those three anchors. Workflows that follow this pattern should require the preamble in their dispatch instructions and cite this section.
+Every dispatched sub-agent prompt should begin with a compact **Goal preamble** prepended above the role-specific skill content. This is drift-prevention infrastructure: a sub-agent can produce output that is well-formed within its skill but mis-aligned with what the orchestration was actually trying to achieve. The preamble pins each dispatch to the user's outcome, the sub-agent's specific assignment, and the artifact it owes back, so role detail is interpreted in service of those three anchors. Workflows that follow this pattern should require the preamble in their dispatch instructions and cite this section.
 
-Canonical form — three lines, exactly:
+Canonical form — three top-level lines, with optional sub-bullets nested under Current task:
 
 ```
 User goal: <user's high-level outcome — what the human ultimately wants from this orchestration>
 Current task: <this sub-agent's specific assignment — narrower than the user goal>
+  - Branch: <branch name>                                                      (optional)
+  - Position in initiative: <parent epic, sibling branches, or "standalone">   (optional)
+  - Blocked on: <external dependency, pending decision, or "nothing">          (optional)
 Success criterion: <what "done" looks like for this sub-agent — usually the artifact + path it must produce>
 ```
 
-Cap at 3 lines. Constraints, scope notes, and reminders belong in the role-specific content that follows; expanding the preamble dilutes its purpose.
+The three top-level lines are required. The sub-bullets under Current task are optional — include each only when the orchestrator already has the fact (typically lifted verbatim from the upstream research/plan/checkpoint/handoff doc's Project state lead block defined in [`workflows/research-plan-implement.md`](../workflows/research-plan-implement.md)). Omit any field the orchestrator can't fill confidently — silence is better than a guessed value, since these fields exist to anchor the sub-agent in real project context, not to be filled for completeness. Do not expand the preamble beyond these three named sub-bullets; other constraints, scope notes, and reminders belong in the role-specific content that follows.
 
 Field semantics:
 
 - **User goal** — the outermost frame. Same across all sub-agents in a single orchestration run.
 - **Current task** — narrower than the user goal. Different per sub-agent. One imperative sentence.
+- **Branch** *(optional)* — the working branch the sub-agent will inspect. Lets the sub-agent run its own `git diff` or `gh pr view` without re-deriving scope from prose.
+- **Position in initiative** *(optional)* — where this branch sits in a larger effort: parent epic, sibling branches, or "standalone". Tells the sub-agent which neighboring work to treat as in-flight context vs. settled assumption.
+- **Blocked on** *(optional)* — external dependencies, pending decisions, or "nothing". Lets the sub-agent skip recommending fixes that depend on unresolved upstream work.
 - **Success criterion** — the artifact this sub-agent must produce, ideally with the output path. Not the orchestrator's downstream synthesis success — this sub-agent's local "done" bar.
 
 Worked example — same dispatch (security critic in a code-review orchestration), filled well vs filled badly.
