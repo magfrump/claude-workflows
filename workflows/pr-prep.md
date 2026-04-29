@@ -214,6 +214,14 @@ Structure:
 
 **Workflow provenance** (optional): [e.g., "RPI → DD → RPI" or "Spike → RPI → PR-prep"]
 
+## Status (optional)
+[Three-field block surfacing task status without forcing reviewers to read the diff.
+ Useful for stacked PRs, multi-step work, or branches that close some items but not others.
+ Omit the section entirely if all planned work is done and nothing is blocked.]
+- **Done:** [items completed in this PR]
+- **In progress:** [items partially done or still in flight in follow-up work]
+- **Blocked-on:** [items blocked, with what's blocking them — issue link, dependency, decision needed]
+
 ## How it works
 [Brief technical summary. Not a line-by-line walkthrough — describe the approach.]
 
@@ -237,6 +245,8 @@ Structure:
 - `docs/reviews/self-eval-feature-name.md` — self-eval, meets criteria
 ```
 
+**Commit-message footer convention** (optional): The same three-field block (`Done:` / `In progress:` / `Blocked-on:`) can be used as a commit-message footer to surface per-commit status without forcing readers to open the diff. Useful for autonomous-mode commits and stacked work where each commit lands an incremental slice.
+
 For UI changes, capture before/after screenshots or a short recording and include them in the description. The reviewer may not be able to run the UI locally — visual evidence eliminates a round-trip.
 
 **Completion criteria:**
@@ -245,6 +255,7 @@ For UI changes, capture before/after screenshots or a short recording and includ
 - [ ] Each section contains at least one substantive sentence (not a placeholder)
 - [ ] Review evidence section lists all `docs/reviews/` artifacts for this PR, or states "No review artifacts" if none exist
 - [ ] (Optional) If this PR involved multiple workflow compositions (e.g., RPI → DD → RPI), a workflow provenance line is included in "What this does"
+- [ ] (Optional) If the branch leaves work in flight or has dependencies, a Status block (Done / In progress / Blocked-on) is included
 
 ## Retrospective
 
