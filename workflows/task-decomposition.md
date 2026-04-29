@@ -60,18 +60,20 @@ Sub-agents are good for:
 
 #### Briefing patterns
 
-A sub-agent starts with zero context. Brief it like a colleague who just walked in — state what you're trying to accomplish, what to look at, and what to report back.
+A sub-agent starts with zero context. Every dispatch from this workflow must follow the orchestrated-review pattern's dispatch shape — the same discipline `code-review`, `draft-review`, and `spike` use when they orchestrate parallel investigation:
+
+- **Goal preamble**: prepend the [3-line goal preamble](../patterns/orchestrated-review.md#goal-preamble) (User goal / Current task / Success criterion) above any role-specific instructions. The User goal — the feature or change driving the decomposition — is identical across every sub-agent in the run; Current task and Success criterion vary per sub-investigation.
+- **Goal-alignment self-report**: require each sub-agent to append a [Goal-Alignment Note](../patterns/orchestrated-review.md#goal-alignment-self-report) at the end of its output. Synthesis (step 5) and the reconciliation step (step 4) read these notes to detect coverage gaps, intentional scope cuts, escalations, and silent guesses across sub-investigations — coverage signals task-decomposition was previously absorbing silently into the synthesized research doc.
 
 **Example — researching a subsystem:**
-> "Examine `src/auth/` and `src/middleware/auth.go`. Answer: (1) How are tokens validated? (2) Where is the middleware applied? (3) What happens on auth failure? Write findings to the 'Auth' section of `docs/working/research-api-endpoint.md`."
 
-**Example — cross-cutting pattern search:**
-> "Find all places rate limiting is applied in this codebase. For each, note: which library, what limits, whether it's per-user or global. The routing middleware is in `src/server/router.go` — start there. Report findings in under 200 words."
+```
+User goal: Add an authenticated, rate-limited API endpoint to the reports service.
+Current task: Examine `src/auth/` and `src/middleware/auth.go` and answer: (1) how are tokens validated, (2) where is the middleware applied, (3) what happens on auth failure.
+Success criterion: Findings written to the "Auth" section of `docs/working/research-api-endpoint.md`, with a Goal-Alignment Note appended at the end.
+```
 
-**Example — dependency analysis:**
-> "Read `package.json` and `src/pdf/generator.ts`. We're evaluating whether to replace the PDF library. Answer: What API surface do we actually use? How coupled is our code to this specific library? Are there test fixtures that depend on exact output?"
-
-Common briefing mistakes: omitting file paths (sub-agent wastes time searching), asking open-ended questions ("how does this work?" vs. specific questions), and not capping output length (sub-agent returns a wall of text you have to re-read).
+Common briefing mistakes: omitting file paths in the Current task (sub-agent wastes time searching), writing a Success criterion that names neither an artifact nor a path (sub-agent invents an output shape synthesis can't consume), and not capping output length. The pattern's [default output cap](../patterns/orchestrated-review.md#default-output-cap) — `<300 words summary; structured output may extend.` — applies unless the dispatch overrides it explicitly.
 
 Sub-agents should NOT:
 - Write or modify source code (risk of conflicts with other sub-agents or the main agent)
@@ -80,8 +82,8 @@ Sub-agents should NOT:
 
 **Done when...**
 - [ ] Each independent area has a sub-agent dispatched (or researched sequentially if sub-agents are unavailable)
-- [ ] Each sub-agent prompt specifies exact files/directories to examine, questions to answer, and where to write findings
-- [ ] All sub-agents have returned their findings
+- [ ] Each sub-agent prompt prepends the canonical goal preamble (User goal / Current task / Success criterion) and requires a Goal-Alignment Note in the output
+- [ ] All sub-agents have returned their findings, each ending with a Goal-Alignment Note
 
 ### 4. Reconcile conflicting assumptions across sub-investigations
 
