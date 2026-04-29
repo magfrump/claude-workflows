@@ -78,12 +78,13 @@ The bad version fails on each line. *User goal* is so generic it could prefix an
 
 #### Goal-alignment self-report
 
-Every dispatched sub-agent must append a short **Goal-Alignment Note** at the end of its required output. The note exists so the orchestrator can detect coverage gaps, intentional scope cuts, and escalations without re-reading the full critique. Workflows that follow this pattern should require the note in their dispatch instructions and cite this section.
+Every dispatched sub-agent must append a short **Goal-Alignment Note** at the end of its required output. The note exists so the orchestrator can detect coverage gaps, intentional scope cuts, escalations, and scope drift without re-reading the full critique. Workflows that follow this pattern should require the note in their dispatch instructions and cite this section.
 
-Canonical form — three required bullets, plus two optional bullets (see below). One short line each, no padding:
+Canonical form — four required bullets, plus two optional bullets (see below). One short line each, no padding:
 
 ```markdown
 ## Goal-Alignment Note
+- Success criterion (restated verbatim): [paste the Success criterion line from the goal preamble exactly as given — do not paraphrase]
 - Answered: [yes / partial / no — one phrase on what was / wasn't addressed]
 - Out of scope: [what was set aside and why, or "none"]
 - Escalate: [what the orchestrator should action separately, or "nothing"]
@@ -93,9 +94,11 @@ Canonical form — three required bullets, plus two optional bullets (see below)
 
 The note is read by the orchestrator during synthesis, not by humans, so brevity matters more than prose. Sub-agents that pad these bullets with extra detail are doing the orchestrator's synthesis work and should be corrected.
 
+The first bullet is a literal restatement, not a summary. The orchestrator uses it during synthesis to detect mis-paraphrase or scope drift cheaply: comparing the restated string to the criterion it actually dispatched flags any sub-agent that silently retargeted its output mid-task. If the restatement diverges from the dispatched line — even a paraphrase that "means the same thing" — treat the sub-agent's output as off-target and re-dispatch or downweight it in synthesis rather than trying to map findings onto the original criterion post-hoc.
+
 #### Questions I would have asked (optional)
 
-The fourth bullet exists to replace the silent-guess failure mode: when a sub-agent receives an under-specified prompt, it would otherwise pick a plausible interpretation, run with it, and never surface that a guess was made. Listing 1-3 questions the sub-agent would have asked the orchestrator if it could lets the synthesis step flag genuine scope ambiguity for the user instead of laundering it as confident output.
+This optional bullet exists to replace the silent-guess failure mode: when a sub-agent receives an under-specified prompt, it would otherwise pick a plausible interpretation, run with it, and never surface that a guess was made. Listing 1-3 questions the sub-agent would have asked the orchestrator if it could lets the synthesis step flag genuine scope ambiguity for the user instead of laundering it as confident output.
 
 Rules:
 - **Omit the bullet entirely when scope was clear.** A blank or "none" placeholder defeats the purpose — if you didn't have to guess, leave the bullet out.
