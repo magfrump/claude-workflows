@@ -173,6 +173,49 @@ You may deviate from the default hierarchy when you have a clear reason — for 
 blog post from a core maintainer may outrank year-old official docs for a fast-moving project.
 When you deviate, say so and explain your reasoning.
 
+## Provenance Tags
+
+Every verdict carries an explicit **provenance tag** describing how the evidence behind it was
+obtained. This vocabulary is shared with the [Epistemic Reasoning variant of the divergent-design
+workflow](../workflows/divergent-design.md#variant-epistemic-reasoning-hypothesis-generation) so a
+fact-check report and a DD evidence matrix can be read against each other without translation.
+
+- **[observed]** — Directly verified against a concrete artifact: file path with line number,
+  primary-source URL, document section, transcript timestamp, archived speech, dataset row, or
+  source-code definition. The reader can follow the citation back to the artifact and see the
+  thing for themselves.
+- **[inferred]** — Derived from cited material via a stated chain of reasoning. The chain composes
+  `[observed]` premises plus inference, or aggregates multiple secondary sources whose convergence
+  is persuasive. The chain itself must be written out in the verdict explanation so a reader can
+  audit the logic, not just the conclusion.
+- **[assumed]** — Believed true but not yet verified. No primary or convergent secondary evidence
+  was located in the time available. **This is a first-class state, not a fallback.** Surfacing
+  "we believe this but haven't actually checked" is more useful than burying the same uncertainty
+  under a confident-sounding verdict, and it tells the author exactly which claims still need a
+  source.
+
+Tag the **basis for the verdict**, not the verdict itself: an "Accurate" claim backed by a primary
+source is `[observed]`; an "Accurate" claim backed by triangulation across reputable secondaries
+is `[inferred]`; an "Unverified" claim is almost always `[assumed]`. Provenance is orthogonal to
+confidence — confidence is *how strong* the evidence is, provenance is *what kind* of evidence
+backs it.
+
+### Verdict ↔ provenance mapping
+
+| Verdict | Typical provenance | Example |
+|---------|--------------------|---------|
+| Accurate | `[observed]` | "The 2022 Inflation Reduction Act capped Medicare insulin at $35/month" — verified against the law text at congress.gov, Section 11406. |
+| Mostly accurate | `[observed]` + `[inferred]` | "Roughly 30 states have right-to-work laws" — NCSL list (primary, observed) shows 26; the rounded summary is inferred from the observed count. |
+| Disputed | `[inferred]` | "Minimum wage hikes reduce employment" — competing meta-analyses disagree; the verdict rests on inference across multiple secondary syntheses, none of which is decisive. |
+| Inaccurate | `[observed]` | "Norway's wealth tax is 8%" — Skatteetaten's official rate table shows 1.1% national + 0.7% municipal, directly contradicting the claim. |
+| Unverified | `[assumed]` | "One California daycare tried to expand and gave up after 18 months of permitting" — anecdote with no traceable artifact; the underlying state is assumed pending a source. |
+| Secondary-only | `[inferred]` | Quote attributed to Mark Twain found only in quote aggregators and op-eds; the attribution to Twain is inferred from a secondary citation chain, not observed in any Twain archive. |
+| Misleading (sub-flag) | `[observed]` literal claim, `[assumed]` implied claim | "Crime rose 5% last year" — observed in a city PD release, but the implied broader trend ("crime is surging") is assumed and not supported by the same source. |
+
+When a claim's provenance shifts mid-explanation (e.g., the literal wording is observed but the
+load-bearing implication is assumed), state both tags and label which part of the claim each
+applies to. The Misleading row above is the canonical case.
+
 ## How to handle ambiguity
 
 Sometimes a claim is technically true but misleading, or true for one definition but false for another.
@@ -196,6 +239,7 @@ Produce a Markdown document with this structure:
 **Checked:** [date]
 **Total claims checked:** [N]
 **Summary:** [X] accurate, [Y] mostly accurate, [Z] disputed, [W] inaccurate, [V] unverified
+**Provenance:** [A] observed, [B] inferred, [C] assumed
 
 ---
 
@@ -203,8 +247,11 @@ Produce a Markdown document with this structure:
 
 **Verdict:** [Accurate / Mostly accurate / Disputed / Inaccurate / Unverified]
 **Confidence:** [High / Medium / Low]
+**Provenance:** [observed | inferred | assumed]
 
-[2-4 sentences explaining what the evidence shows and why you reached this verdict.]
+[2-4 sentences explaining what the evidence shows and why you reached this verdict. For
+`[inferred]` verdicts, write out the inferential chain. For `[assumed]` verdicts, state what
+specific evidence would move the claim to `[inferred]` or `[observed]`.]
 
 **Sources:** [named sources with years]
 
