@@ -249,6 +249,92 @@ for ROUND in $(seq 1 $MAX_ROUNDS); do
     init_round_log "$ROUND"
 
     # -------------------------------------------------------
+    # Step 0a: Pre-round health gate
+    # -------------------------------------------------------
+    # Run scripts/health-check.sh against current main before generating
+    # ideas. If gates fail, halt the SI run so a broken main doesn't waste
+    # idea-generation and validation effort. The halt is logged to
+    # validation-round-N.log and prepended to the morning summary so the
+    # next-morning review surfaces the issue immediately.
+    echo "Running pre-round health check..."
+    HEALTH_LOG=$(mktemp)
+    if ! run_pre_round_health_check "$REPO_DIR" "$HEALTH_LOG"; then
+        HEALTH_FAILURES=$(summarize_health_check_failures "$HEALTH_LOG")
+
+        echo ""
+        echo "=== Pre-round health check FAILED for round $ROUND ==="
+        echo "$HEALTH_FAILURES"
+        echo ""
+        echo "Full health-check output:"
+        cat "$HEALTH_LOG"
+        echo ""
+
+        {
+            echo "[round-$ROUND] HEALTH CHECK FAILED — halting SI run"
+            echo ""
+            echo "Failed gates and responsible items:"
+            echo "$HEALTH_FAILURES"
+            echo ""
+            echo "Full health-check output:"
+            cat "$HEALTH_LOG"
+        } >> "$WORKING_DIR/validation-round-$ROUND.log"
+
+        HEALTH_DETAIL=$(jq -n --arg failures "$HEALTH_FAILURES" \
+            '{failed_gates: $failures}')
+        update_round_log '.health_check' "$HEALTH_DETAIL"
+        update_round_log '.outcome' '"health_check_failed"'
+        finalize_round_log "$ROUND"
+
+        # Prepend a halt notice to the morning summary so the failure is the
+        # first thing the user sees in next-morning review. finalize_round_log
+        # just regenerated morning-summary.md, so we read+rewrite it here.
+        SUMMARY_PATH="$WORKING_DIR/morning-summary.md"
+        if [ -f "$SUMMARY_PATH" ]; then
+            HALT_TMP=$(mktemp)
+            {
+                echo "# SI RUN HALTED — pre-round health check failed (round $ROUND)"
+                echo ""
+                echo "Date: $(date -u +%Y-%m-%dT%H:%M:%SZ)"
+                echo ""
+                echo "## Failed gates and responsible items"
+                echo ""
+                echo '```'
+                echo "$HEALTH_FAILURES"
+                echo '```'
+                echo ""
+                echo "## Full health-check output"
+                echo ""
+                echo '```'
+                cat "$HEALTH_LOG"
+                echo '```'
+                echo ""
+                echo "## Next steps"
+                echo ""
+                echo "1. Fix the failing gates on \`main\`."
+                echo "2. Re-run \`scripts/self-improvement.sh\`."
+                echo ""
+                echo "Validation log: \`docs/working/validation-round-$ROUND.log\`"
+                echo "Round report: \`docs/working/round-$ROUND-report.json\`"
+                echo ""
+                echo "---"
+                echo ""
+                cat "$SUMMARY_PATH"
+            } > "$HALT_TMP"
+            mv "$HALT_TMP" "$SUMMARY_PATH"
+        fi
+
+        rm -f "$HEALTH_LOG"
+
+        echo ""
+        echo "SI run halted. See:"
+        echo "  - $WORKING_DIR/validation-round-$ROUND.log"
+        echo "  - $WORKING_DIR/morning-summary.md"
+        exit 1
+    fi
+    echo "[round-$ROUND] HEALTH CHECK PASSED" >> "$WORKING_DIR/validation-round-$ROUND.log"
+    rm -f "$HEALTH_LOG"
+
+    # -------------------------------------------------------
     # Step 0b: Build prior-round context for idea generation
     # -------------------------------------------------------
     PRIOR_CONTEXT=""

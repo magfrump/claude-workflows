@@ -6,6 +6,8 @@
 #   validate_task_json   — Schema-validate a tasks JSON file
 #   check_convergence_threshold — Compare overlap % against a threshold
 #   print_gate_stats     — Print per-gate pass/fail/skip rates from round history
+#   run_pre_round_health_check — Run scripts/health-check.sh as a pre-round gate
+#   summarize_health_check_failures — Parse health-check output for failed gates
 #
 # Guard against direct execution
 if [[ "${BASH_SOURCE[0]}" == "${0}" ]]; then
@@ -176,4 +178,60 @@ print_gate_stats() {
     done <<< "$stats"
 
     echo ""
+}
+
+# --- Pre-round health gate ---
+# Runs scripts/health-check.sh against the repo and writes the full output
+# (stdout + stderr) to log_path. Returns the script's exit code so callers
+# can branch on pass/fail.
+# Args: $1 = repo_root, $2 = log_path
+# Returns: 0 if health-check passes, non-zero otherwise
+run_pre_round_health_check() {
+    local repo_root="$1"
+    local log_path="$2"
+    local script="$repo_root/scripts/health-check.sh"
+
+    if [ ! -x "$script" ]; then
+        echo "Pre-round health check: scripts/health-check.sh not found or not executable at $script" > "$log_path"
+        return 1
+    fi
+
+    # Run from repo_root so health-check's internal REPO_ROOT resolves to the
+    # repo we're guarding (not the worktree where SI runs).
+    (cd "$repo_root" && "$script") > "$log_path" 2>&1
+}
+
+# Parse health-check output to extract failed gates and responsible items.
+# Strips ANSI color codes, tracks section headers (── Name ──), and emits one
+# "[Section] item" line per "  ✗ " failure line. Output is plain ASCII suitable
+# for embedding in JSON via jq -Rs.
+# Args: $1 = path to health-check output log
+# Stdout: parsed failure summary, or "(no failures parsed)" if none found
+summarize_health_check_failures() {
+    local log_path="$1"
+    if [ ! -f "$log_path" ]; then
+        echo "(no health-check output)"
+        return
+    fi
+
+    local parsed
+    parsed=$(sed 's/\x1b\[[0-9;]*m//g' "$log_path" | awk '
+        /^── .* ──$/ {
+            section = $0
+            sub(/^── /, "", section)
+            sub(/ ──$/, "", section)
+            next
+        }
+        /^  ✗ / {
+            msg = $0
+            sub(/^  ✗ /, "", msg)
+            print "[" section "] " msg
+        }
+    ')
+
+    if [ -z "$parsed" ]; then
+        echo "(no failures parsed — check full output)"
+    else
+        echo "$parsed"
+    fi
 }
