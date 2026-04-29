@@ -165,6 +165,13 @@ For each criterion sub-agent, include in the prompt:
 [One sentence: what most separates the strongest from the weakest on this criterion?]
 ```
 
+   **Output cap:** Apply the canonical sub-agent convention — `<300 words summary;
+   structured output may extend.` (see `patterns/orchestrated-review.md` §"Default output
+   cap"). The per-item rating blocks, ranking, and key differentiator above are structured
+   output and may extend; the `Rationale` fields are prose and share the 300-word budget
+   across all items. Rationales padded beyond 2-3 sentences each force the orchestrator to
+   re-read filler during synthesis.
+
 7. **Instruction to be fair and evidence-based.** The sub-agent should evaluate based on
    evidence, not assumptions. If it cannot determine a rating for an item on this criterion,
    it should say "Insufficient information" rather than guess.
