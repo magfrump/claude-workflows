@@ -180,7 +180,7 @@ fi
 # Configuration
 REPO_DIR=~/claude-workflows
 WORKTREE_BASE=~/wt
-MAX_ROUNDS=15
+MAX_ROUNDS=1
 WORKING_DIR="$REPO_DIR/docs/working"
 ROUND_HISTORY="$WORKING_DIR/round-history.json"
 
