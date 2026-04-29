@@ -42,7 +42,7 @@ A reusable guide for planning, running, and interpreting usability tests. Ground
 - [ ] Compensation decided (even $10 gift cards matter for rapport)
 - [ ] Note-taker assigned (facilitator should NOT also take notes)
 - [ ] Observer protocol decided (silent, questions at end only)
-- [ ] Pilot session scheduled with a colleague before real sessions
+- [ ] Pilot session scheduled with a colleague before real sessions (see [Pilot Session](#pilot-session) at end of Phase 1 — the pilot must do hypothesis-discrimination, not just operational shakedown)
 
 > **Unmoderated variant:** For unmoderated remote sessions, the moderator script (Phase 1) becomes embedded task instructions that participants follow independently — write them to be self-explanatory since you can't clarify in real time. Pilot testing shifts focus from moderator behavior to task clarity and tool setup. Analysis (Phase 3) works from recorded sessions and automatic metrics rather than live notes, so ensure your recording and observation template capture everything you'd normally ask a note-taker to track.
 
@@ -145,6 +145,35 @@ If anything comes to mind later, feel free to reach out at [contact].
 
 [Stop recording. See participant out.]
 ```
+
+### Pilot Session
+
+Before running real participants, conduct at least one pilot — typically a colleague or non-target user. The pilot has **two jobs**, and the second is the one most teams skip:
+
+1. **Operational shakedown** — the moderator script flows, timing fits the budget, recording captures what you need, tasks are intelligible. Obvious purpose, easy to verify.
+2. **Hypothesis-discrimination check** — *if* this pilot's pattern of observations had come from a real participant, would it have moved your confidence on any Phase 0 research question or risky assumption? If the answer is no, your study is asking the wrong question and you must revise the design **before** spending real participants on it.
+
+Pick **one** hypothesis per pilot session. A single pilot can't carry weight for everything; trying to make it discriminate on all 4 research questions at once usually means it discriminates on none of them. Run additional pilots if you need to cover more.
+
+**Per-pilot checklist (in addition to the Phase 2 live checklist):**
+
+- [ ] Hypothesis tested by this pilot session: ____________________
+      *(Pick ONE Phase 0 research question or the riskiest assumption.)*
+- [ ] Observation that would shift confidence **up** in this hypothesis: ____________________
+- [ ] Observation that would shift confidence **down**: ____________________
+- [ ] Operational checks: timing within budget, recording captured, tasks read as intended, moderator stayed neutral
+
+**Go / no-go criteria for proceeding to real sessions:**
+
+| Outcome | Criterion | Action |
+|---------|-----------|--------|
+| ✅ **Go** | Pilot produced (or could plausibly have produced under realistic variation) observations that discriminate between answers to the chosen hypothesis, AND any operational issues are minor and fixable. | Apply operational fixes, proceed to Phase 2. |
+| 🛑 **No-go — design problem** | Pilot ran smoothly but you cannot point to any moment in the session where the participant's behavior would have updated your beliefs about the chosen hypothesis. The tasks probe something the participant has no opinion about, success criteria don't connect to the Phase 0 decisions, or the participant could "succeed" or "fail" without that telling you anything actionable. | Revise tasks, success criteria, or the research question itself. Re-pilot. Do **not** proceed to real sessions until a pilot would have been informative. |
+| 🛑 **No-go — operational problem** | Script timing, tooling, recording, or moderator behavior prevented reliable observation. | Fix and re-pilot. |
+
+> **Why both jobs matter:** A pilot that only verifies "the script flows smoothly" can pass while the underlying study is unfit for purpose. *Smooth-script, no-signal* is the most expensive failure mode in user testing — you discover it only after burning your real participant budget. Hypothesis-discrimination failure should be caught here, not in Phase 4.
+>
+> **What counts as "could plausibly have produced" discriminating observations:** the pilot itself is one data point and rarely settles a hypothesis on its own. The bar is whether *the design* — tasks, prompts, success criteria, what the moderator can observe — is *capable* of producing data that would distinguish answers. If the pilot's specific run was uninformative but a different participant on the same script clearly could have hit the discrimination criteria above, that's a Go. If you can't construct a plausible run that would, that's a design no-go.
 
 ---
 
