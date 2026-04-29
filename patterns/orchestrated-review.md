@@ -34,16 +34,29 @@ Process units concurrently using sub-agents, each with a focused prompt and boun
 
 Every dispatched sub-agent must append a short **Goal-Alignment Note** at the end of its required output. The note exists so the orchestrator can detect coverage gaps, intentional scope cuts, and escalations without re-reading the full critique. Workflows that follow this pattern should require the note in their dispatch instructions and cite this section.
 
-Canonical form — three bullets, one short line each, no padding:
+Canonical form — three required bullets, plus one optional bullet (see below). One short line each, no padding:
 
 ```markdown
 ## Goal-Alignment Note
 - Answered: [yes / partial / no — one phrase on what was / wasn't addressed]
 - Out of scope: [what was set aside and why, or "none"]
 - Escalate: [what the orchestrator should action separately, or "nothing"]
+- Questions I would have asked: [1-3 short questions, only if scope was unclear; otherwise omit this bullet]
 ```
 
 The note is read by the orchestrator during synthesis, not by humans, so brevity matters more than prose. Sub-agents that pad these bullets with extra detail are doing the orchestrator's synthesis work and should be corrected.
+
+#### Questions I would have asked (optional)
+
+The fourth bullet exists to replace the silent-guess failure mode: when a sub-agent receives an under-specified prompt, it would otherwise pick a plausible interpretation, run with it, and never surface that a guess was made. Listing 1-3 questions the sub-agent would have asked the orchestrator if it could lets the synthesis step flag genuine scope ambiguity for the user instead of laundering it as confident output.
+
+Rules:
+- **Omit the bullet entirely when scope was clear.** A blank or "none" placeholder defeats the purpose — if you didn't have to guess, leave the bullet out.
+- **Cap at 3 questions.** Pick the questions whose answers would have changed your output, not every clarification you can imagine. The cap exists to keep the note scannable; sub-agents that emit longer lists are reintroducing the noise the goal-alignment note was designed to avoid.
+- **Each question is one short line.** Phrase as a question, not a hedged statement. "Did you want test files included in scope?" beats "Unclear whether test files are in scope."
+- **Tie each question to a guess you actually made.** The bullet documents decisions that could have gone the other way given different orchestrator intent — not generic curiosity about the codebase.
+
+When this bullet is present, the orchestrator surfaces the questions during synthesis (typically under a "Questions to clarify" heading), attributes them to the sub-agent that raised them, and presents them alongside findings rather than burying them. Multiple sub-agents asking the same question is a strong signal the orchestrator under-specified the prompt and should de-duplicate before surfacing. See worked examples in [`skills/code-review.md`](../skills/code-review.md) and [`skills/draft-review.md`](../skills/draft-review.md).
 
 ### 3. Synthesize
 
