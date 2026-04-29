@@ -229,6 +229,12 @@ _summary_gate_stats() {
 }
 
 # --- Internal: deferred hypothesis evaluation ---
+# Surfaces hypotheses with empty Outcome as deferred user questions.
+# Skips rows whose Scope is "internal-si" — those are SI-infrastructure
+# hypotheses evaluated within the loop using gate stats and round reports,
+# not via real-world user observations. The Scope column is optional; if
+# it is absent (older log files), every empty-outcome row surfaces as
+# before.
 _summary_deferred_evaluation() {
     local hypothesis_log="$1"
 
@@ -245,6 +251,21 @@ _summary_deferred_evaluation() {
         return
     fi
 
+    # Locate the Scope column in the table header (1-based awk index, or 0
+    # if the column is absent). Match the header by anchoring on a
+    # well-known column name to avoid mistaking a hypothesis row that
+    # happens to contain "Scope" for the header.
+    local scope_col=0
+    scope_col=$(awk -F'|' '
+        /^\|/ && / Round / && / Scope / {
+            for (i = 1; i <= NF; i++) {
+                gsub(/^[ \t]+|[ \t]+$/, "", $i)
+                if ($i == "Scope") { print i; exit }
+            }
+        }
+    ' "$hypothesis_log")
+    scope_col="${scope_col:-0}"
+
     local count=0
     while IFS= read -r line; do
         [[ "$line" != \|* ]] && continue
@@ -254,19 +275,24 @@ _summary_deferred_evaluation() {
         outcome=$(echo "$line" | awk -F'|' '{gsub(/^[ \t]+|[ \t]+$/, "", $7); print $7}')
 
         # Empty outcome = still tracking
-        if [[ -z "$outcome" ]]; then
-            local round task_id hypothesis
-            round=$(echo "$line" | awk -F'|' '{gsub(/^[ \t]+|[ \t]+$/, "", $2); print $2}')
-            task_id=$(echo "$line" | awk -F'|' '{gsub(/^[ \t]+|[ \t]+$/, "", $3); print $3}')
-            hypothesis=$(echo "$line" | awk -F'|' '{gsub(/^[ \t]+|[ \t]+$/, "", $4); print $4}')
+        [[ -n "$outcome" ]] && continue
 
-            count=$((count + 1))
-            echo "${count}. **${task_id}** (round ${round}): \"${hypothesis}\""
-
-            # Generate targeted questions based on hypothesis content
-            _generate_questions "$hypothesis"
-            echo ""
+        if [[ "$scope_col" -gt 0 ]]; then
+            local scope
+            scope=$(echo "$line" | awk -F'|' -v c="$scope_col" '{gsub(/^[ \t]+|[ \t]+$/, "", $c); print $c}')
+            [[ "$scope" == "internal-si" ]] && continue
         fi
+
+        local round task_id hypothesis
+        round=$(echo "$line" | awk -F'|' '{gsub(/^[ \t]+|[ \t]+$/, "", $2); print $2}')
+        task_id=$(echo "$line" | awk -F'|' '{gsub(/^[ \t]+|[ \t]+$/, "", $3); print $3}')
+        hypothesis=$(echo "$line" | awk -F'|' '{gsub(/^[ \t]+|[ \t]+$/, "", $4); print $4}')
+
+        count=$((count + 1))
+        echo "${count}. **${task_id}** (round ${round}): \"${hypothesis}\""
+
+        _generate_questions "$hypothesis"
+        echo ""
     done < "$hypothesis_log"
 
     if [ "$count" -eq 0 ]; then
