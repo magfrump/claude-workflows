@@ -133,6 +133,33 @@ Keep this brief — a short paragraph, not a lengthy explanation.
 
 ## The Pipeline
 
+### Between-stage status banner
+
+After each between-stage handoff (end of Stage 1, end of Stage 2), emit a single
+one-line status banner directly in the chat so the user can judge progress and
+decide whether to interrupt before the next stage launches.
+
+**Format:** `Stage N (<stage-name>) complete: <key counts> — <next action>`
+
+- One line, plain text in the chat. Do not write the banner into any saved
+  artifact under `docs/reviews/`.
+- `<key counts>` is the smallest summary that helps the user judge whether to
+  intervene — e.g., counts of Inaccurate / Mostly Accurate / Unverified
+  fact-check findings after Stage 1, or count of critics returned (and any
+  that failed) after Stage 2.
+- `<next action>` names the next stage and its parallelism — e.g., "launching
+  2 critics in parallel" or "synthesizing into verification rubric and chat summary".
+
+**Worked example:**
+
+> Stage 1 (fact-check) complete: 2 Inaccurate, 1 Mostly Accurate, 3 Unverified — launching 2 critics in parallel (cowen-critique, yglesias-critique).
+>
+> Stage 2 (critics) complete: 2/2 critics returned (8 findings total) — synthesizing into verification rubric and chat summary.
+
+**Scope:** The banner is emitted *only* between stages. Do **not** emit a
+banner after Stage 3 — Stage 3's chat synthesis is itself the user-facing
+output, and a "Stage 3 complete" banner would duplicate or compete with it.
+
 ### Stage 1: Fact-Check
 
 Spawn fact-check sub-agent(s) using the Agent tool.
@@ -170,6 +197,11 @@ have the expected number? If yes, proceed. If not, STOP and tell the user someth
 If running ensemble: briefly synthesize the fact-check consensus before proceeding (which claims
 do agents agree on, which do they disagree on). This consensus summary is what you'll pass to
 the critic agents.
+
+After receiving substantive results, emit the between-stage status banner per the
+format spec above (e.g., `Stage 1 (fact-check) complete: <counts> — <next action>`).
+Emit it before the Fact-Check Gate so the user sees stage progress even if the gate
+pauses for input.
 
 #### Fact-Check Gate (optional)
 
@@ -237,9 +269,17 @@ They must not see each other's output.
 **CHECKPOINT:** Wait for ALL critic agent(s) to return results. Count the results. Do you have
 the expected number? If yes, proceed to Stage 3. If not, STOP and tell the user what's missing.
 
+After confirming the expected critic count, emit the between-stage status banner per the
+format spec above (e.g., `Stage 2 (critics) complete: <counts> — synthesizing into verification rubric and chat summary`).
+Emit it before launching Stage 3 so the user sees the handoff explicitly.
+
 ### Stage 3: Synthesize and Produce Outputs
 
 You now have results from all sub-agents. NOW — and only now — produce your two deliverables.
+
+**No banner after this stage.** Stage 3's chat synthesis (Deliverable 1) is itself the
+user-facing output. Do not prepend or append a "Stage 3 complete" banner — it would
+duplicate the synthesis. Banners are between-stage progress indicators, not synthesis output.
 
 #### Goal-alignment scan (run before producing deliverables)
 
