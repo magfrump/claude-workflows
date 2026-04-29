@@ -98,6 +98,18 @@ Rules:
 
 When this bullet is present, the orchestrator surfaces the questions during synthesis (typically under a "Questions to clarify" heading), attributes them to the sub-agent that raised them, and presents them alongside findings rather than burying them. Multiple sub-agents asking the same question is a strong signal the orchestrator under-specified the prompt and should de-duplicate before surfacing. See worked examples in [`skills/code-review.md`](../skills/code-review.md) and [`skills/draft-review.md`](../skills/draft-review.md).
 
+#### Context curation
+
+Every dispatch prompt is curated by the orchestrator. The point of curation is **drift prevention**, not byte-savings — context budget is rarely the binding constraint, but unfiltered upstream material reliably pulls a sub-agent off its assigned slice (re-litigating decisions already made upstream, critiquing material outside its scope, or anchoring on the previous agent's framing instead of the orchestrator's question). The 200-line fact-check excerpt rule in `skills/code-review.md` is the prototype: paste only the findings rated Incorrect / Stale / Mostly Accurate so the critic stays focused on what's actually contestable. Workflows that follow this pattern should curate every dispatch the same way and cite this section.
+
+Apply the same shape at every dispatch site:
+
+- **Include** — (1) the goal preamble: one or two sentences naming what this sub-agent is meant to produce and how its output will be used; (2) the scope spec: the exact slice the sub-agent should examine (files, directories, diff scope, draft passage), with instructions to gather its own primary evidence (e.g., run its own `git diff`) rather than relying on a paste; (3) only the relevant section of any upstream artifact — the specific findings, claims, or constraints that bear on this sub-agent's task.
+- **Exclude** — (1) the prior-conversation transcript between user and orchestrator (the goal preamble replaces it); (2) any upstream report pasted whole when it exceeds the per-skill cap (e.g., the full fact-check report past 200 lines, the full research doc, the full draft when only one section is being critiqued); (3) findings that are settled, off-topic for this sub-agent's domain, or already reflected in the goal preamble.
+- **Fallback (summary-with-link)** — when an upstream artifact exceeds the cap and you cannot cleanly pull "only the relevant section," paste a short orchestrator-written summary of what the sub-agent needs to know plus the artifact's path on disk (e.g., `docs/reviews/fact-check-report.md`). Sub-agents share the filesystem with the orchestrator and can read the full file if they need to. The summary, not the path, is what shapes the sub-agent's behavior — write it deliberately.
+
+Per-skill caps (the 200-line threshold, the short-draft reduced panel) are calibrations of this rule, not separate rules. New orchestrators should pick a cap appropriate to their domain and apply the Include / Exclude / Fallback shape above rather than re-deriving the principle.
+
 ### 3. Synthesize
 
 Collect parallel outputs into a single coherent artifact.
