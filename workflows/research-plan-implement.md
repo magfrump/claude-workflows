@@ -61,6 +61,10 @@ In a multi-loop session, each loop gets its own scope. A loop can build on the p
 
 Read the relevant parts of the codebase and produce a research doc in `docs/working/`. Optional copy-paste scaffolds for common research types (new feature, bug, refactor) are available in `guides/research-scaffolds.md`. This document should include:
 
+- **Project state** (lead block):
+  - **Branch purpose**: [one sentence — what this branch delivers]
+  - **Position in larger initiative**: [parent epic / sibling branches / "standalone" if none]
+  - **Blocked on**: [external dependency, pending decision, or "nothing"]
 - **Scope**: The one-sentence scope from step 1.
 - **What exists**: Which files, functions, and patterns are relevant. Not just names — summarize what they do and how they connect.
 - **Invariants**: What must not break. Existing APIs, data contracts, auth flows, caching layers, conventions other code depends on.
@@ -104,7 +108,7 @@ Signals that you've hit a design decision:
 The gate on **implementation** is firm: do not implement until the plan has been reviewed and approved. The gate on **planning** is soft: plan speculatively, expect revision.
 
 **Done when...**
-- [ ] Research doc exists in `docs/working/` with all required sections (Scope, What exists, Invariants, Prior art, Gotchas)
+- [ ] Research doc exists in `docs/working/` with all required sections (Project state, Scope, What exists, Invariants, Prior art, Gotchas)
 - [ ] Actual implementations were read, not just signatures or file names
 - [ ] Every invariant listed can be verified by pointing to specific code that depends on it
 - [ ] If 3+ viable approaches surfaced, a Divergent Design sub-procedure was invoked (or a note explains why it wasn't needed)
@@ -113,6 +117,10 @@ The gate on **implementation** is firm: do not implement until the plan has been
 
 Produce a plan doc in `docs/working/`. Include:
 
+- **Project state** (lead block):
+  - **Branch purpose**: [one sentence — what this branch delivers]
+  - **Position in larger initiative**: [parent epic / sibling branches / "standalone" if none]
+  - **Blocked on**: [external dependency, pending decision, or "nothing"]
 - **Scope**: Same scope statement, linking to the research doc.
 - **Approach**: 2-3 sentences on the high-level strategy, referencing findings from research.
 - **Steps**: Numbered list of concrete implementation actions. Each step should be:
@@ -193,7 +201,7 @@ The checkpoint is a *derived artifact* — it contains no new information, only 
 **Implementation sessions should load this checkpoint file as their primary context source.** The research and plan docs remain available for deep dives, but the checkpoint is the starting point. When starting a fresh implementation session, read `docs/working/checkpoint-{topic}.md` first; only consult the research or plan docs if the checkpoint doesn't answer a specific question.
 
 **Done when...**
-- [ ] Plan doc exists in `docs/working/` with all required sections (Scope, Approach, Steps, Size estimate, Test specification, Risks)
+- [ ] Plan doc exists in `docs/working/` with all required sections (Project state, Scope, Approach, Steps, Size estimate, Test specification, Risks)
 - [ ] Each step is specific enough that someone could implement it without re-reading the research doc
 - [ ] Each step is small enough to be one commit
 - [ ] Test specification includes at least one test case per behavioral requirement
