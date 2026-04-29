@@ -34,6 +34,46 @@ _round_counts() {
     ' "$report" 2>/dev/null || echo "0 0 0"
 }
 
+# --- Internal: gates with high failure rates for a round ---
+# Returns space-separated gate names where >=50% of launched tasks failed
+# that gate. "Launched" = tasks whose validation has a verdict set, so
+# pre-launch schema rejects are excluded. Only string-typed gate entries
+# are considered; "_detail" objects and the "verdict" key itself are
+# filtered out. "skip" status does not count as a failure.
+#
+# Why: a gate failing on the majority of launched tasks is more likely an
+# environmental regression (broken tool, missing binary, network outage)
+# than every task happening to break the same way. Surfacing this in the
+# round-summary line lets the operator notice and run health-check even
+# when the pre-round health check is bypassed.
+_round_high_failure_gates() {
+    local report="$1"
+    [ -f "$report" ] || { echo ""; return; }
+
+    # 50% threshold encoded as integer math: fails * 2 >= launched.
+    jq -r '
+        (.validation // {}) as $v |
+        ([$v | to_entries[] | select(.value.verdict != null)] | length) as $launched |
+        if $launched == 0 then empty
+        else
+            [ $v
+              | to_entries[]
+              | select(.value.verdict != null)
+              | .value
+              | to_entries[]
+              | select(.key != "verdict" and (.value | type) == "string")
+            ]
+            | group_by(.key)
+            | map({
+                gate: .[0].key,
+                fails: ([.[] | select(.value == "fail")] | length)
+              })
+            | map(select((.fails * 2) >= $launched))
+            | .[].gate
+        end
+    ' "$report" 2>/dev/null | tr '\n' ' ' | sed 's/ *$//'
+}
+
 # --- Morning summary generator ---
 # Reads round reports, completed tasks, and hypothesis log to produce
 # a single post-run summary document.
@@ -123,8 +163,14 @@ _summary_whats_new() {
         launched=$(echo "$counts" | awk '{print $1}')
         approved=$(echo "$counts" | awk '{print $2}')
 
+        local high_failure_gates round_suffix=""
+        high_failure_gates=$(_round_high_failure_gates "$report")
+        if [ -n "$high_failure_gates" ]; then
+            round_suffix=" (likely infrastructure issue — consider running scripts/health-check.sh)"
+        fi
+
         echo ""
-        echo "### Round $round_num ($launched tasks, $approved approved)"
+        echo "### Round $round_num ($launched tasks, $approved approved)$round_suffix"
         echo ""
 
         # List approved tasks with summaries
