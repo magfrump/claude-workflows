@@ -693,17 +693,16 @@ Task: $DESC
 ${PRIOR_FAILURE_BLOCK}
 FILE SCOPE CONSTRAINT — READ THIS BEFORE STARTING:
 You may ONLY create or modify the following files: $FILES_TOUCHED
-Files under docs/working/ are also allowed (e.g., research docs, plan docs, summaries).
+Files under docs/working/ are also allowed (e.g., research docs, plan docs).
 You MUST NOT create or modify any other files. If during implementation you
 discover a need to touch an unlisted file, STOP and document the reason in
 docs/working/scope-exception-${TASK_ID}.md instead of making the change.
 
 Follow the research-plan-implement workflow in ~/.claude/workflows/.
 Proceed through research and plan without waiting for human review.
-Implement the plan, commit with descriptive messages, and push.
-
-When finished, write a one-line summary of what you did to
-docs/working/summary-${TASK_ID}.md"
+Implement the plan, commit with descriptive messages, and push. The subject
+line of your final commit is used as the round summary, so make it
+descriptive (one clear sentence; conventional-commit prefix preferred)."
         ) &
         PIDS+=($!)
     done
@@ -1007,9 +1006,14 @@ SOLVED_EOF
     # Step 5: Merge approved features
     # -------------------------------------------------------
     echo "Merging approved features..."
+    declare -A BRANCH_TIP_SHAS=()
     for TASK_ID in $APPROVED_TASKS; do
         BRANCH="feat/r${ROUND}-${TASK_ID}"
         WT_DIR="$WORKTREE_BASE-$TASK_ID"
+
+        # Capture branch tip before merge so step 6 can derive a summary
+        # from the commit subject after the branch is deleted.
+        BRANCH_TIP_SHAS[$TASK_ID]=$(git rev-parse "$BRANCH" 2>/dev/null || echo "")
 
         echo "  Merging: $BRANCH"
         MERGE_STATUS="clean"
@@ -1052,9 +1056,19 @@ Then git add the resolved files and git commit to complete the merge."
         echo "## Round $ROUND"
         echo ""
         for TASK_ID in $APPROVED_TASKS; do
-            SUMMARY_FILE="$WORKING_DIR/summary-${TASK_ID}.md"
-            if [ -f "$SUMMARY_FILE" ]; then
-                echo "- **$TASK_ID**: $(cat "$SUMMARY_FILE")"
+            SUMMARY=""
+            TIP_SHA="${BRANCH_TIP_SHAS[$TASK_ID]:-}"
+            if [ -n "$TIP_SHA" ]; then
+                SUMMARY=$(git log -1 --format=%s "$TIP_SHA" 2>/dev/null) || SUMMARY=""
+            fi
+            # Fallback: legacy summary file (kept for backward compatibility
+            # with rounds that pre-date commit-derived summaries).
+            if [ -z "$SUMMARY" ]; then
+                SUMMARY_FILE="$WORKING_DIR/summary-${TASK_ID}.md"
+                [ -f "$SUMMARY_FILE" ] && SUMMARY=$(cat "$SUMMARY_FILE")
+            fi
+            if [ -n "$SUMMARY" ]; then
+                echo "- **$TASK_ID**: $SUMMARY"
             else
                 echo "- **$TASK_ID**: (no summary generated)"
             fi

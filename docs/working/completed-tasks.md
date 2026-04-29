@@ -60,3 +60,10 @@
 - **r7-draft-review-fact-critic-crossref**: Added fact-critic cross-referencing to draft-review.md Stage 3: before synthesizing, each critic's key claims are checked against fact-check verdicts, and critiques depending on Inaccurate/Unverified claims are caveated rather than presented as standalone analysis.
 - **r7-spike-finding-promotion**: Added finding-promotion guidance after spike.md step 4: promote lasting discoveries (library limitations, undocumented API behavior, ruled-out approaches) to docs/thoughts/ with freshness fields before deleting the spike branch.
 - **r7-onboarding-lightweight-refresh**: Added 'Lightweight refresh' subsection under codebase-onboarding.md's 'When to re-run' section with clear criteria for when a targeted refresh (review git log, update Architecture Map and Known Unknowns, bump Last verified) is proportionate vs. when a full 7-step re-run is needed.
+
+## Round 1
+
+- **ui-visual-review-3d-viewport**: feat(skills): add 3D viewport rendering subsection to ui-visual-review
+- **fact-check-quote-attribution**: feat(fact-check): add Quote attribution section with Secondary-only verdict
+- **bug-diagnosis-env-failure-step-zero**: docs(bug-diagnosis): add step 0 to verify failure isn't preexisting
+- **design-space-situating-skill**: feat: add design-space-situating skill
