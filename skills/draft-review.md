@@ -155,9 +155,13 @@ For each fact-check agent, you MUST:
    - Answered: [yes / partial / no — one phrase]
    - Out of scope: [what was set aside and why, or "none"]
    - Escalate: [what the orchestrator should action separately, or "nothing"]
+   - Questions I would have asked: [1-3 short questions, only if scope was unclear; otherwise omit this bullet]
    ```
 
-   One short bullet per line. No padding.
+   One short bullet per line. No padding. The "Questions I would have asked" bullet is
+   optional — include it only when scope was genuinely ambiguous and the agent had to
+   make a non-trivial guess about what to fact-check (e.g., whether a quoted passage
+   should be checked for accuracy of its source, or only paraphrased).
 6. Launch via the Agent tool with `subagent_type: "general-purpose"`
 
 **CHECKPOINT:** Wait for ALL fact-check agent(s) to return results. Count the results. Do you
@@ -218,9 +222,13 @@ For each critic agent instance, you MUST:
    - Answered: [yes / partial / no — one phrase]
    - Out of scope: [what was set aside and why, or "none"]
    - Escalate: [what the orchestrator should action separately, or "nothing"]
+   - Questions I would have asked: [1-3 short questions, only if scope was unclear; otherwise omit this bullet]
    ```
 
-   One short bullet per line. No padding.
+   One short bullet per line. No padding. The "Questions I would have asked" bullet is
+   optional — include it only when scope was genuinely ambiguous and the critic had to
+   make a non-trivial guess about what to evaluate (e.g., which audience the draft
+   targets, or whether to critique style or only argument structure).
 8. Launch via the Agent tool with `subagent_type: "general-purpose"`
 
 **Launch ALL critic agents simultaneously** in a single message with multiple Agent tool calls.
@@ -348,6 +356,31 @@ pick a side.
 what to preserve.
 
 **Actionable guidance:** Key revisions, ordered by priority and convergence signal.
+
+**Questions to clarify (if any sub-agent emitted them):** Scan each sub-agent's
+Goal-Alignment Note for the optional "Questions I would have asked" bullet. If one or more
+sub-agents emitted questions, surface them under a `### Questions to clarify` heading near
+the end of the chat synthesis, just before "Actionable guidance" or as a sibling subsection.
+De-duplicate: if multiple critics asked semantically the same question, list it once and
+note the agreement (multiple critics asking the same question is a strong signal that the
+draft itself is ambiguous about its own scope or audience). Attribute each question to the
+sub-agent that raised it. If no sub-agent emitted the bullet, omit the section entirely —
+do not invent placeholder questions.
+
+Worked example:
+
+> ### Questions to clarify
+>
+> Two critics flagged scope ambiguity:
+>
+> - **What audience is this draft for — policy practitioners or general readers?**
+>   *(cowen-critique, yglesias-critique — both flagged independently.)* Both critics
+>   evaluated against a general-reader frame; if the intended audience is policy
+>   practitioners, several "needs more background" findings should be downgraded to
+>   🟢 Consider.
+> - **Is the section "Counterarguments" meant as a steelman or a strawman pass?**
+>   *(yglesias-critique.)* The critic treated it as a steelman and judged it weak;
+>   if you intended it as a brief acknowledgment, the finding doesn't apply.
 
 ---
 

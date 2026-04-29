@@ -201,9 +201,12 @@ Spawn one agent with the code-fact-check skill.
    - Answered: [yes / partial / no — one phrase]
    - Out of scope: [what was set aside and why, or "none"]
    - Escalate: [what the orchestrator should action separately, or "nothing"]
+   - Questions I would have asked: [1-3 short questions, only if scope was unclear; otherwise omit this bullet]
    ```
 
-   One short bullet per line. No padding.
+   One short bullet per line. No padding. The "Questions I would have asked" bullet is
+   optional — include it only when scope was genuinely ambiguous and the agent had to
+   make a non-trivial guess about what to check.
 6. Launch via the Agent tool with `subagent_type: "general-purpose"`
 
 **CHECKPOINT:** Wait for the fact-check agent to return results. Verify you received a
@@ -252,9 +255,12 @@ For each critic agent, you MUST:
    - Answered: [yes / partial / no — one phrase]
    - Out of scope: [what was set aside and why, or "none"]
    - Escalate: [what the orchestrator should action separately, or "nothing"]
+   - Questions I would have asked: [1-3 short questions, only if scope was unclear; otherwise omit this bullet]
    ```
 
-   One short bullet per line. No padding.
+   One short bullet per line. No padding. The "Questions I would have asked" bullet is
+   optional — include it only when scope was genuinely ambiguous and the critic had to
+   make a non-trivial guess about what to evaluate.
 8. Launch via the Agent tool with `subagent_type: "general-purpose"`
 
 **Launch ALL critic agents simultaneously** in a single message with multiple Agent tool calls.
@@ -334,6 +340,30 @@ what to preserve during revisions.
 
 **Actionable guidance:** Key changes to make, ordered by severity. Where multiple critics
 agree, note the convergence.
+
+**Questions to clarify (if any sub-agent emitted them):** Scan each sub-agent's
+Goal-Alignment Note for the optional "Questions I would have asked" bullet. If one or more
+sub-agents emitted questions, surface them under a `### Questions to clarify` heading near
+the end of the chat synthesis, just before "Actionable guidance" or as a sibling subsection.
+De-duplicate: if multiple sub-agents asked semantically the same question, list it once and
+note the agreement (multiple sub-agents asking the same question is a strong signal that
+the prompt was under-specified). Attribute each question to the sub-agent that raised it.
+If no sub-agent emitted the bullet, omit the section entirely — do not invent placeholder
+questions.
+
+Worked example:
+
+> ### Questions to clarify
+>
+> Two sub-agents flagged that scope was ambiguous:
+>
+> - **Should the scripts under `scripts/migrations/` be in scope?** *(security-reviewer,
+>   performance-reviewer — both flagged independently.)* Both agents reviewed them; if
+>   you intended to exclude one-shot migration scripts, re-run with `--files` narrowed to
+>   `src/`.
+> - **Is the experimental `src/feature-flags/` directory production code or a sandbox?**
+>   *(api-consistency-reviewer.)* The critic treated it as production and flagged a
+>   breaking change in `flags.ts:42`; mark this as 🟢 Consider if it's sandbox-only.
 
 ---
 
