@@ -13,6 +13,7 @@ value-justification: "Replaces ad-hoc architectural debates with structured mult
 - Any decision where premature convergence is a risk
 - **As a sub-procedure within RPI**: When the research phase of `research-plan-implement.md` reveals a design decision, DD is invoked inline. The decision output feeds back into RPI's research doc and informs the plan. See RPI step 2 for trigger signals.
 - **Hypothesis generation** (epistemic variant): When the question is "what's true?" rather than "what should we build?" — e.g., explaining a bug, interpreting ambiguous behavior, or evaluating competing theories. See the Epistemic Reasoning variant below.
+- **Contested or unclear problem framing** (double-diamond variant): When stakeholders disagree on the goal, a prior attempt solved the wrong problem, or step 2 keeps surfacing contradictory constraints. See the Double Diamond (Purpose-First) variant below.
 
 ## When to pivot
 
@@ -209,3 +210,68 @@ The record should include:
 - Which hypotheses were eliminated and why
 
 **Evaluating epistemic DD usage**: A DD exercise counts as "epistemic mode" when its output is a ranked hypothesis list with evidence gaps rather than a decision record selecting an implementation approach.
+
+## Variant: Double Diamond (Purpose-First)
+
+When the *problem itself* is contested or unclear, a single divergent pass risks producing well-evaluated solutions to the wrong problem. The Double Diamond variant adds a problem-space diamond before the standard solution-space diamond:
+
+- **Diamond 1 (Purpose)**: Diverge across candidate framings of the problem, then converge on a single chosen framing.
+- **Diamond 2 (Solution)**: Run standard DD steps 1-4 (Diverge → Diagnose → Match and prune → Tradeoff matrix and decision) with the chosen framing as input, then document per step 5.
+
+The output of Diamond 1 is a one-paragraph **chosen framing record** that becomes the input to Diamond 2's diverge step. Without that record, Diamond 2 anchors implicitly on whichever framing came up first in conversation.
+
+### When to enter Diamond 1
+
+Enter the purpose diamond when any of the following hold:
+
+- **(a) Stakeholders disagree on the goal** — different parties describe the problem in incompatible terms (e.g., "this is a performance issue" vs. "this is an API design issue"). Solving any one framing won't satisfy the others, so the framing must be settled before solutions are generated.
+- **(b) Prior attempt failed because it solved the wrong problem** — a previous DD or implementation pass produced a working solution that didn't address the underlying need. The failure mode is "we built it, it works, but the original pain remains." Re-running standard DD without re-framing will likely repeat the miss.
+- **(c) Diagnose keeps surfacing contradictory constraints** — when running standard DD step 2, the constraint list contains pairs no approach can satisfy simultaneously (e.g., "must support all legacy data" + "must remove all legacy code paths"). Contradictory hard constraints usually signal that two distinct problems are being conflated under one DD.
+
+### When to skip Diamond 1
+
+Skip directly to Diamond 2 (standard DD) when **the problem is concrete and uncontested**: a single owner can state the problem in one unambiguous sentence, no prior attempt has misfired, and step 2's diagnosis converges on a coherent constraint set. Most architectural and library-selection decisions fall here — adding Diamond 1 to a well-scoped problem is ceremony, not clarity.
+
+### Diamond 1 (Purpose) — process
+
+#### 1a. Diverge — generate candidate framings
+
+Generate **6-10 candidate framings** of the problem. Each framing is a one-sentence statement of "what we are actually trying to solve." Requirements:
+
+- Include at least one framing each known stakeholder would recognize as their version of the problem
+- Include at least one framing that recasts the problem at a different scale (zoom in to a sub-problem; zoom out to the broader system)
+- Include at least one "null" framing — the problem doesn't exist or is already solved elsewhere
+- One sentence each, no evaluation yet
+- Number them for reference
+
+Apply the **generation health check** from step 1 of the main process, adapted for framings: watch for clustering around one stakeholder's vocabulary, missing perspectives (maintainer's view vs. user's view), and framings too vague to test (a framing must imply at least one falsifiable success criterion).
+
+#### 2a. Diagnose — what would each framing imply?
+
+For each candidate framing, briefly note:
+
+- **Success criterion**: how would we know this problem was solved?
+- **Implied solution space**: what kind of approaches does this framing suggest?
+- **What it leaves out**: what concerns does this framing fail to address?
+
+This step makes anchoring visible. If two framings have nearly identical success criteria, one is redundant. If a framing's "leaves out" list contains a hard concern from the triggering situation, it cannot be the chosen framing.
+
+#### 3a. Converge — choose one framing
+
+Select the framing that best explains the symptoms that triggered this DD, has a success criterion stakeholders can agree on (or articulate disagreement against), and leaves out the fewest hard concerns. If two framings tie and the choice is unclear, **stop and consult the user** rather than picking silently — the same gate as step 4 of standard DD.
+
+#### Output: chosen framing record
+
+Produce a single one-paragraph record at the end of Diamond 1, in the form:
+
+> **Chosen framing**: [one-sentence statement of the problem]. We selected this over [1-2 alternative framings] because [reason — usually grounded in success criteria or constraint coverage]. Diamond 2 will generate solutions evaluated against this framing; approaches that solve a different framing should be discarded as out-of-scope rather than treated as alternatives.
+
+This paragraph is the *only* artifact passed forward to Diamond 2. It replaces the implicit problem statement that standard DD takes for granted in step 1.
+
+### Diamond 2 (Solution) — proceed with standard DD
+
+With the chosen framing record in hand, run standard process steps 1-4. The framing's success criterion enters step 2 as a hard constraint, and its "leaves out" list defines what's out of scope — candidates that primarily solve a discarded framing are discarded in step 3 rather than evaluated as alternatives. Document the final decision per step 5, and reference the chosen framing record from the decision doc so future readers can see which problem was solved.
+
+### Worked example
+
+See [`docs/working/feature-ideas-round-1.md`](../docs/working/feature-ideas-round-1.md) for a worked Diamond 1: nine candidate framings of "what's missing from the workflow repo," a diagnosis matrix of each framing's success criterion and implied solution space, and the chosen framing record that fed into Diamond 2's candidate generation in [`docs/working/feature-ideas.md`](../docs/working/feature-ideas.md).
