@@ -689,7 +689,9 @@ Address this specifically in your implementation to avoid the same failure.
             cd "$WT_DIR"
             claude -p "You are in /away mode. Commit and push when done.
 
-Task: $DESC
+User goal: Improve the claude-workflows repo via self-improvement round ${ROUND}.
+Current task: ${DESC}
+Success criterion: A pushed branch feat/r${ROUND}-${TASK_ID} whose final-commit subject line is one descriptive sentence (used as the round summary; conventional-commit prefix preferred).
 ${PRIOR_FAILURE_BLOCK}
 FILE SCOPE CONSTRAINT — READ THIS BEFORE STARTING:
 You may ONLY create or modify the following files: $FILES_TOUCHED
@@ -700,9 +702,7 @@ docs/working/scope-exception-${TASK_ID}.md instead of making the change.
 
 Follow the research-plan-implement workflow in ~/.claude/workflows/.
 Proceed through research and plan without waiting for human review.
-Implement the plan, commit with descriptive messages, and push. The subject
-line of your final commit is used as the round summary, so make it
-descriptive (one clear sentence; conventional-commit prefix preferred)."
+Implement the plan and commit with descriptive messages."
         ) &
         PIDS+=($!)
     done
