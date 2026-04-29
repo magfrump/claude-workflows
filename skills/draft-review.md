@@ -130,7 +130,19 @@ For each fact-check agent, you MUST:
 2. Paste those contents directly into the Agent tool prompt (sub-agents cannot read your files)
 3. Include the full draft text in the prompt
 4. Instruct the agent to save its report as `docs/reviews/fact-check-report.md`
-5. Launch via the Agent tool with `subagent_type: "general-purpose"`
+5. Require the agent to append a **Goal-Alignment Note** at the end of its report and chat
+   summary using the canonical form from
+   [`patterns/orchestrated-review.md`](../patterns/orchestrated-review.md):
+
+   ```markdown
+   ## Goal-Alignment Note
+   - Answered: [yes / partial / no — one phrase]
+   - Out of scope: [what was set aside and why, or "none"]
+   - Escalate: [what the orchestrator should action separately, or "nothing"]
+   ```
+
+   One short bullet per line. No padding.
+6. Launch via the Agent tool with `subagent_type: "general-purpose"`
 
 **CHECKPOINT:** Wait for ALL fact-check agent(s) to return results. Count the results. Do you
 have the expected number? If yes, proceed. If not, STOP and tell the user something went wrong.
@@ -178,7 +190,19 @@ For each critic agent instance, you MUST:
 5. Instruct the agent to save its critique as `docs/reviews/[critic-name]-critique.md`.
    The agent decides what goes in the file based on its own skill instructions — do not
    prescribe the format.
-6. Launch via the Agent tool with `subagent_type: "general-purpose"`
+6. Require the agent to append a **Goal-Alignment Note** at the end of its critique and chat
+   summary using the canonical form from
+   [`patterns/orchestrated-review.md`](../patterns/orchestrated-review.md):
+
+   ```markdown
+   ## Goal-Alignment Note
+   - Answered: [yes / partial / no — one phrase]
+   - Out of scope: [what was set aside and why, or "none"]
+   - Escalate: [what the orchestrator should action separately, or "nothing"]
+   ```
+
+   One short bullet per line. No padding.
+7. Launch via the Agent tool with `subagent_type: "general-purpose"`
 
 **Launch ALL critic agents simultaneously** in a single message with multiple Agent tool calls.
 They must not see each other's output.

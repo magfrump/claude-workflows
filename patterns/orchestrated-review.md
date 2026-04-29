@@ -30,6 +30,21 @@ Process units concurrently using sub-agents, each with a focused prompt and boun
 
 **Terminology note**: Use "sub-agent" consistently for the parallel execution mechanism, regardless of whether the underlying implementation uses the Task tool, Agent tool, or manual sequential processing.
 
+#### Goal-alignment self-report
+
+Every dispatched sub-agent must append a short **Goal-Alignment Note** at the end of its required output. The note exists so the orchestrator can detect coverage gaps, intentional scope cuts, and escalations without re-reading the full critique. Workflows that follow this pattern should require the note in their dispatch instructions and cite this section.
+
+Canonical form — three bullets, one short line each, no padding:
+
+```markdown
+## Goal-Alignment Note
+- Answered: [yes / partial / no — one phrase on what was / wasn't addressed]
+- Out of scope: [what was set aside and why, or "none"]
+- Escalate: [what the orchestrator should action separately, or "nothing"]
+```
+
+The note is read by the orchestrator during synthesis, not by humans, so brevity matters more than prose. Sub-agents that pad these bullets with extra detail are doing the orchestrator's synthesis work and should be corrected.
+
 ### 3. Synthesize
 
 Collect parallel outputs into a single coherent artifact.
