@@ -24,6 +24,7 @@ This skill orchestrates the following sub-skills. Ensure they exist in `skills/`
 - Known critics include `cowen-critique.md` and `yglesias-critique.md`, but any skill file not listed as an orchestrator or fact-checker will be considered
 
 > On bad output, see guides/skill-recovery.md
+> When briefing dispatched sub-agents, see guides/sub-agent-briefing.md
 
 # Draft Review Orchestrator
 

@@ -14,6 +14,7 @@ when: User wants to compare or rank options across multiple criteria
 ---
 
 > On bad output, see guides/skill-recovery.md
+> When briefing dispatched sub-agents, see guides/sub-agent-briefing.md
 
 # Matrix Analysis Orchestrator
 

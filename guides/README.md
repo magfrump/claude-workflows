@@ -36,4 +36,6 @@ Reference documents for specific processes and conventions. Unlike workflows (st
 
 - **[task-decomposition-examples.md](task-decomposition-examples.md)** — Two worked examples for the task-decomposition workflow: a decomposable multi-service migration and a counter-example of a tightly coupled refactor that should not be decomposed. Use when deciding whether a task benefits from sub-agent decomposition.
 
+- **[sub-agent-briefing.md](sub-agent-briefing.md)** — Patterns for prompts dispatched to sub-agents: five required elements, a worked good example, and an anti-pattern catalog (omitted paths, open-ended questions, missing output cap, full-file paste, missing goal preamble). Consulted by orchestrator skills and decomposition workflows.
+
 - **[skill-format-audit.md](skill-format-audit.md)** — Audit of the 5 most-used skills against Anthropic's skill-creator guidelines. Identifies 7 format divergences (non-standard frontmatter, description truncation, flat-file structure) with prioritized recommendations. Read-only reference; no skill files modified.

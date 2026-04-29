@@ -60,18 +60,7 @@ Sub-agents are good for:
 
 #### Briefing patterns
 
-A sub-agent starts with zero context. Brief it like a colleague who just walked in — state what you're trying to accomplish, what to look at, and what to report back.
-
-**Example — researching a subsystem:**
-> "Examine `src/auth/` and `src/middleware/auth.go`. Answer: (1) How are tokens validated? (2) Where is the middleware applied? (3) What happens on auth failure? Write findings to the 'Auth' section of `docs/working/research-api-endpoint.md`."
-
-**Example — cross-cutting pattern search:**
-> "Find all places rate limiting is applied in this codebase. For each, note: which library, what limits, whether it's per-user or global. The routing middleware is in `src/server/router.go` — start there. Report findings in under 200 words."
-
-**Example — dependency analysis:**
-> "Read `package.json` and `src/pdf/generator.ts`. We're evaluating whether to replace the PDF library. Answer: What API surface do we actually use? How coupled is our code to this specific library? Are there test fixtures that depend on exact output?"
-
-Common briefing mistakes: omitting file paths (sub-agent wastes time searching), asking open-ended questions ("how does this work?" vs. specific questions), and not capping output length (sub-agent returns a wall of text you have to re-read).
+A sub-agent starts with zero context. Every prompt needs a goal preamble, exact paths, specific questions, an output cap, and a destination for findings. See `guides/sub-agent-briefing.md` for the full pattern, a worked example, and the anti-pattern catalog (omitted paths, open-ended questions, missing output cap, full-file paste, missing goal preamble).
 
 Sub-agents should NOT:
 - Write or modify source code (risk of conflicts with other sub-agents or the main agent)

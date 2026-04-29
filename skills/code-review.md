@@ -33,6 +33,7 @@ This skill orchestrates the following sub-skills. Ensure they exist in `skills/`
 - `ui-visual-review.md` — triggered when diff touches UI rendering code
 
 > On bad output, see guides/skill-recovery.md
+> When briefing dispatched sub-agents, see guides/sub-agent-briefing.md
 
 # Code Review Orchestrator
 
