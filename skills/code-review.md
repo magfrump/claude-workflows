@@ -192,7 +192,14 @@ Spawn one agent with the code-fact-check skill.
 3. Include the scope specification (e.g., "Review files changed on the current branch relative
    to main using `git diff main...HEAD`")
 4. Instruct the agent to save its report as `docs/reviews/code-fact-check-report.md`
-5. Require the agent to append a **Goal-Alignment Note** at the end of its report and chat
+5. Require the agent to tag every claim with a **Legibility-target** field
+   (`for-author`, `for-orchestrator-synthesis`, or `for-automated-gate`) per
+   the [legibility-target tagging](../patterns/orchestrated-review.md#legibility-target-tagging)
+   spec. Default mapping for fact-check claims: Incorrect / Stale / Mostly
+   Accurate → `for-author` (the author needs to fix or update); Verified /
+   Unverifiable → `for-orchestrator-synthesis` (orchestrator uses these for
+   coverage and convergence, doesn't need to surface verbatim).
+6. Require the agent to append a **Goal-Alignment Note** at the end of its report and chat
    summary using the canonical form from
    [`patterns/orchestrated-review.md`](../patterns/orchestrated-review.md):
 
@@ -207,7 +214,7 @@ Spawn one agent with the code-fact-check skill.
    One short bullet per line. No padding. The "Questions I would have asked" bullet is
    optional — include it only when scope was genuinely ambiguous and the agent had to
    make a non-trivial guess about what to check.
-6. Launch via the Agent tool with `subagent_type: "general-purpose"`
+7. Launch via the Agent tool with `subagent_type: "general-purpose"`
 
 **CHECKPOINT:** Wait for the fact-check agent to return results. Verify you received a
 substantive report. If it failed or returned empty, tell the user and ask how to proceed.
@@ -246,7 +253,33 @@ For each critic agent, you MUST:
    only the findings rated Incorrect, Stale, or Mostly Accurate — skip Accurate claims to
    save context budget.
 6. Instruct the agent to save its critique as `docs/reviews/{critic-name}-review.md`
-7. Require the agent to append a **Goal-Alignment Note** at the end of its critique and chat
+7. Require the agent to tag every finding with a **Legibility-target** field
+   (`for-author`, `for-orchestrator-synthesis`, or `for-automated-gate`) per
+   the [legibility-target tagging](../patterns/orchestrated-review.md#legibility-target-tagging)
+   spec. The tag goes on the finding alongside Severity / Confidence:
+
+   ```markdown
+   **Severity:** High
+   **Location:** `path/to/file.ext:42`
+   **Confidence:** High
+   **Legibility-target:** for-author
+   ```
+
+   Default mapping for code-review critics:
+   - **Actionable code finding** with a specific recommendation →
+     `for-author`. This is the default for nearly all critic findings.
+   - **Coverage/convergence note** ("no issues found in the auth flow",
+     "this overlaps with a performance finding in the same file") →
+     `for-orchestrator-synthesis`. Helps the orchestrator decide what to
+     surface but doesn't need to be shown to the author verbatim.
+   - **HALT-ESCALATE block, status verdict, or other parseable directive
+     intended for a downstream gate** → `for-automated-gate`. The
+     security-reviewer escalation block is the canonical example.
+
+   If a critic tags every finding `for-author`, that's a calibration
+   failure — flag it in synthesis rather than treating uniform tagging as
+   ground truth.
+8. Require the agent to append a **Goal-Alignment Note** at the end of its critique and chat
    summary using the canonical form from
    [`patterns/orchestrated-review.md`](../patterns/orchestrated-review.md):
 
@@ -261,7 +294,7 @@ For each critic agent, you MUST:
    One short bullet per line. No padding. The "Questions I would have asked" bullet is
    optional — include it only when scope was genuinely ambiguous and the critic had to
    make a non-trivial guess about what to evaluate.
-8. Launch via the Agent tool with `subagent_type: "general-purpose"`
+9. Launch via the Agent tool with `subagent_type: "general-purpose"`
 
 **Launch ALL critic agents simultaneously** in a single message with multiple Agent tool calls.
 They must not see each other's output.
@@ -365,6 +398,17 @@ Worked example:
 >   *(api-consistency-reviewer.)* The critic treated it as production and flagged a
 >   breaking change in `flags.ts:42`; mark this as 🟢 Consider if it's sandbox-only.
 
+**How to use legibility-target tags during synthesis:** Findings tagged
+`for-author` are the primary content of the chat synthesis and the rubric's
+🔴 / 🟡 / 🟢 tiers. Findings tagged `for-orchestrator-synthesis` feed your
+reasoning — coverage maps, convergence detection, "what got reviewed" — but
+do not get repeated verbatim in the chat output. Findings tagged
+`for-automated-gate` drive the rubric status line and any escalation
+blocks; they are referenced once (not duplicated as prose bullets) and link
+to the source critique. If a critic tagged everything `for-author`, note
+that in your synthesis as a calibration gap rather than treating it as
+signal.
+
 ---
 
 ## Deliverable 2: Code Review Rubric
@@ -386,9 +430,9 @@ document the author uses to track code review resolution.
 Issues that must be resolved before merge. Draft cannot pass review with any red items
 unresolved.
 
-| # | Finding | Domain | Location | Status |
-|---|---|---|---|---|
-| R1 | [Description] | [Security/Performance/etc.] | `path/to/file:42` | 🔴 Unresolved |
+| # | Finding | Domain | Location | Legibility-target | Status |
+|---|---|---|---|---|---|
+| R1 | [Description] | [Security/Performance/etc.] | `path/to/file:42` | for-author | 🔴 Unresolved |
 
 ---
 
@@ -397,9 +441,9 @@ unresolved.
 Issues that must be fixed or acknowledged by the author with justification for why they
 stand. Each must carry a resolution or author note.
 
-| # | Finding | Domain | Source | Status | Author note |
-|---|---|---|---|---|---|
-| A1 | [Description] | [Domain] | [Source, e.g., "Security + Performance", "Fact-check"] | 🟡 Open | — |
+| # | Finding | Domain | Source | Legibility-target | Status | Author note |
+|---|---|---|---|---|---|---|
+| A1 | [Description] | [Domain] | [Source, e.g., "Security + Performance", "Fact-check"] | for-author | 🟡 Open | — |
 
 ---
 
@@ -408,9 +452,9 @@ stand. Each must carry a resolution or author note.
 Advisory findings from contextual critics, single-critic suggestions, and improvement
 opportunities. Not required to pass review.
 
-| # | Finding | Source |
-|---|---|---|
-| C1 | [Suggestion] | [Which critic] |
+| # | Finding | Source | Legibility-target |
+|---|---|---|---|
+| C1 | [Suggestion] | [Which critic] | for-author |
 
 ---
 
@@ -418,15 +462,23 @@ opportunities. Not required to pass review.
 
 Patterns, implementations, or claims confirmed correct by fact-check and/or critics.
 
-| Item | Verdict | Source |
-|---|---|---|
-| [Description] | ✅ Confirmed | [Which agent] |
+| Item | Verdict | Source | Legibility-target |
+|---|---|---|---|
+| [Description] | ✅ Confirmed | [Which agent] | for-orchestrator-synthesis |
 
 ---
 
 To pass review: all 🔴 items must be resolved. All 🟡 items must be either fixed or
 carry an author note. 🟢 items are optional.
 ```
+
+**Legibility-target column:** Carry forward the tag each critic placed on
+the source finding (see [taxonomy](../patterns/orchestrated-review.md#legibility-target-tagging)).
+Typical mapping: 🔴 / 🟡 / 🟢 rows are `for-author`; ✅ rows are
+`for-orchestrator-synthesis`. `for-automated-gate` findings (e.g., the
+security-reviewer HALT-ESCALATE pattern) live in the escalation block
+above the rubric, not in these tables — they reference the source
+critique once instead of being duplicated as a row.
 
 ### Unified Severity Mapping
 

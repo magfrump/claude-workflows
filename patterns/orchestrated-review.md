@@ -126,6 +126,30 @@ Apply the same shape at every dispatch site:
 
 Per-skill caps (the 200-line threshold, the short-draft reduced panel) are calibrations of this rule, not separate rules. New orchestrators should pick a cap appropriate to their domain and apply the Include / Exclude / Fallback shape above rather than re-deriving the principle.
 
+#### Legibility-target tagging
+
+Every finding a sub-agent emits must declare its intended audience with a **legibility-target** tag. The tag does two jobs: it lets the orchestrator rank and filter findings during synthesis without re-reading them, and it tells the sub-agent how deeply to phrase the finding (full prose vs. terse signal). Workflows that follow this pattern should require the tag in their dispatch instructions and cite this section.
+
+Three values, fixed for now:
+
+- **`for-author`** — the human who wrote or maintains the code. Phrase as direct guidance: location, evidence, attack scenario or failure mode where applicable, and a recommendation. This is the default for any actionable finding.
+- **`for-orchestrator-synthesis`** — the orchestrator agent doing synthesis. Phrase terse and structured. Used for coverage observations ("no issues found in area X"), cross-critic convergence hints, and "looks correct" confirmations that help the orchestrator decide what to surface but don't need to be shown to the author verbatim.
+- **`for-automated-gate`** — a downstream automated check (CI gate, halt rule, blocking-vs-merging signal). Phrase as a parseable directive: pattern name, location, severity verdict. Reserve for findings whose primary consumer is a machine, not a person.
+
+Canonical form on a finding — a single-line field alongside severity/confidence:
+
+```markdown
+**Legibility-target:** for-author
+```
+
+How orchestrators consume the tag during synthesis:
+
+- **Filter:** `for-orchestrator-synthesis` findings are absorbed into orchestrator reasoning (coverage maps, convergence detection) and typically not surfaced verbatim to the user.
+- **Rank:** within a tier, `for-author` findings are surfaced before `for-orchestrator-synthesis` ones; `for-automated-gate` findings drive status lines and escalation blocks rather than appearing as prose bullets.
+- **Calibration check:** if a sub-agent tags every finding `for-author`, the dispatch instruction is failing to communicate the distinction. The orchestrator should treat uniform tagging as a signal to refine its critic prompt, not as ground truth.
+
+The taxonomy is intentionally narrow at three values. Expansion (e.g., a `for-reviewer-followup` or `for-author-future-revision` tag) is reserved for future rounds when usage data shows that the existing three values are conflating distinct audiences. Adding values speculatively defeats the calibration purpose.
+
 ### 3. Synthesize
 
 Collect parallel outputs into a single coherent artifact.
