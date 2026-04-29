@@ -88,7 +88,7 @@ Collect any context the user provides or that you need to pass to sub-agents:
 If items reference things in the codebase, read the relevant code now so you can include it
 in sub-agent prompts. Sub-agents cannot read your filesystem.
 
-### Step 4: Communicate the plan
+### Step 4: Communicate the plan and capture decision-intent
 
 Before launching sub-agents, tell the user:
 - The items being compared
@@ -98,6 +98,22 @@ Before launching sub-agents, tell the user:
 - Any weights, if applicable
 
 Keep this brief — a short list, not a lengthy explanation.
+
+Then write a **one-paragraph decision-intent** that names the actual decision
+the user is trying to make and any priorities they have stated (drawn from the
+user's request and the constraints/priorities gathered in Step 3). Show it to
+the user as part of the plan so they can correct it before sub-agents launch.
+
+Sub-agents scope ratings better when they know what the decision is *for*. A
+criterion like "performance" rated in isolation produces a generic score; the
+same criterion rated against "we need read-heavy throughput, write latency
+doesn't matter" produces a useful one. Capture this once here and reuse it in
+Stage 2.
+
+Hold the resulting text as `<decision-intent>` for Stage 2. You will paste it
+verbatim under a `## What this decision is for` heading in each criterion
+sub-agent's prompt so per-criterion ratings reflect stated priorities rather
+than treating each criterion in isolation.
 
 ---
 
@@ -121,9 +137,13 @@ For each criterion sub-agent, include in the prompt:
 3. **All items to evaluate.** Include descriptions, code, links, or any context gathered
    in Stage 1.
 
-4. **Any constraints or priorities** the user specified that are relevant to this criterion.
+4. **The decision-intent captured in Stage 1 Step 4**, prepended verbatim under a
+   `## What this decision is for` heading so the sub-agent can scope its rating to the
+   stated decision and priorities rather than treating the criterion in isolation.
 
-5. **Instructions for output format.** Each sub-agent must return a structured response:
+5. **Any constraints or priorities** the user specified that are relevant to this criterion.
+
+6. **Instructions for output format.** Each sub-agent must return a structured response:
 
 ```
 ## Criterion: [criterion name]
@@ -145,7 +165,7 @@ For each criterion sub-agent, include in the prompt:
 [One sentence: what most separates the strongest from the weakest on this criterion?]
 ```
 
-6. **Instruction to be fair and evidence-based.** The sub-agent should evaluate based on
+7. **Instruction to be fair and evidence-based.** The sub-agent should evaluate based on
    evidence, not assumptions. If it cannot determine a rating for an item on this criterion,
    it should say "Insufficient information" rather than guess.
 
