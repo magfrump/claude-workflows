@@ -702,7 +702,23 @@ Follow the research-plan-implement workflow in ~/.claude/workflows/.
 Proceed through research and plan without waiting for human review.
 Implement the plan, commit with descriptive messages, and push. The subject
 line of your final commit is used as the round summary, so make it
-descriptive (one clear sentence; conventional-commit prefix preferred)."
+descriptive (one clear sentence; conventional-commit prefix preferred).
+
+Success criteria — your work must clear ALL these validation gates before
+pushing. Self-check each gate before your final commit; if any would fail,
+fix it before exiting.
+  - commits: at least one commit on the feature branch (you must commit AND push)
+  - diff_size: insertions + deletions across 'git diff main..HEAD' is at most 500 lines
+  - file_scope: every changed file appears in the FILES_TOUCHED list above OR is
+    under 'docs/working/'. No other paths.
+  - critical_files: do not delete scripts/self-improvement.sh, docs/evaluation-rubric.md,
+    or CLAUDE.md
+  - tests: if a 'test/' directory exists in this worktree, 'bats test/' must pass
+  - shellcheck: every changed '.sh' file must pass 'shellcheck' with no findings
+  - self_eval: if you modify any file under 'skills/' or 'workflows/' (*.md), run
+    the self-eval skill (skills/self-eval.md) on it. The branch version passes if
+    it has fewer than 2 Weak automated scores OR no more Weak automated scores
+    than the same file on main."
         ) &
         PIDS+=($!)
     done
