@@ -103,7 +103,23 @@ When the diff is this large, split the review into multiple passes by subsystem 
 Check diff size early via `git diff --stat` — if the line count crosses the ~1000-line
 threshold, propose the split to the user before launching Stage 1.
 
-### Step 2: Known critic roles
+### Step 2: Capture PR intent
+
+Critics scope findings better when they know what the PR is trying to accomplish. Capture
+this once here and reuse it in Stage 2.
+
+- **If `--pr <N>` was passed:** Run `gh pr view <N> --json body --jq .body` to fetch the PR
+  description verbatim. If the body is empty, fall back to the branch-purpose summary below.
+- **Otherwise:** Compose a 2-line branch-purpose summary from recent commits. Read commits
+  on the current branch via `git log main..HEAD --pretty=format:"%s%n%b" --reverse` and
+  write a 2-line summary describing the goal of the branch — what is changing and why. If
+  the branch has no commits ahead of main, use the most recent commit subject.
+
+Hold the resulting text as `<pr-intent>` for Stage 2. You will paste it verbatim under a
+`## What this PR is trying to accomplish` heading in each critic's prompt so critics can
+scope findings to stated intent.
+
+### Step 3: Known critic roles
 
 The orchestrator uses a fixed taxonomy of skills. Do not scan `skills/*.md` at runtime — use
 the lists below. (If a listed file doesn't exist, skip it and note the gap in your plan
@@ -122,7 +138,7 @@ summary. If the user references a skill not listed here, they can include it via
 - `performance-reviewer.md`
 - `api-consistency-reviewer.md`
 
-**Contextual critics (auto-selected in Step 3, advisory only):**
+**Contextual critics (auto-selected in Step 4, advisory only):**
 - `test-strategy.md`
 - `tech-debt-triage.md`
 - `dependency-upgrade.md`
@@ -131,7 +147,7 @@ summary. If the user references a skill not listed here, they can include it via
 **Not applicable to code review (skip):**
 - `fact-check.md`, `cowen-critique.md`, `yglesias-critique.md`
 
-### Step 3: Auto-select contextual critics
+### Step 4: Auto-select contextual critics
 
 Run a quick analysis of the diff to determine which contextual critics to include. Use the
 table below — check each row's diff characteristic and invoke the critic if it matches.
@@ -146,14 +162,14 @@ table below — check each row's diff characteristic and invoke the critic if it
 **How to check:** For each row, scan the diff file list and content. Multiple rows can match
 simultaneously — invoke all matching critics. If no rows match, no contextual critics run.
 
-### Step 4: User overrides
+### Step 5: User overrides
 
 The user can include or exclude any critic:
 - `--include test-strategy` — force a contextual critic even if auto-selection didn't trigger it
 - `--exclude performance-reviewer` — skip a core critic
 - `--only security-reviewer,test-strategy` — run only these critics (overrides all auto-selection)
 
-### Step 5: Communicate the plan
+### Step 6: Communicate the plan
 
 Before launching any agents, tell the user:
 - The scope being reviewed
@@ -208,11 +224,14 @@ For each critic agent, you MUST:
 1. Read the full contents of that critic's skill file (e.g., `skills/security-reviewer.md`)
 2. Paste those contents directly into the Agent tool prompt
 3. Include the scope specification so the agent runs its own `git diff`
-4. Include the fact-check results. If the fact-check report is longer than 200 lines, include
+4. Include the PR intent captured in "Before You Begin" Step 2, prepended under a
+   `## What this PR is trying to accomplish` heading so the critic can scope findings to
+   stated intent
+5. Include the fact-check results. If the fact-check report is longer than 200 lines, include
    only the findings rated Incorrect, Stale, or Mostly Accurate — skip Accurate claims to
    save context budget.
-5. Instruct the agent to save its critique as `docs/reviews/{critic-name}-review.md`
-6. Launch via the Agent tool with `subagent_type: "general-purpose"`
+6. Instruct the agent to save its critique as `docs/reviews/{critic-name}-review.md`
+7. Launch via the Agent tool with `subagent_type: "general-purpose"`
 
 **Launch ALL critic agents simultaneously** in a single message with multiple Agent tool calls.
 They must not see each other's output.
