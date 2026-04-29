@@ -80,7 +80,7 @@ The bad version fails on each line. *User goal* is so generic it could prefix an
 
 Every dispatched sub-agent must append a short **Goal-Alignment Note** at the end of its required output. The note exists so the orchestrator can detect coverage gaps, intentional scope cuts, and escalations without re-reading the full critique. Workflows that follow this pattern should require the note in their dispatch instructions and cite this section.
 
-Canonical form — three required bullets, plus one optional bullet (see below). One short line each, no padding:
+Canonical form — three required bullets, plus two optional bullets (see below). One short line each, no padding:
 
 ```markdown
 ## Goal-Alignment Note
@@ -88,6 +88,7 @@ Canonical form — three required bullets, plus one optional bullet (see below).
 - Out of scope: [what was set aside and why, or "none"]
 - Escalate: [what the orchestrator should action separately, or "nothing"]
 - Questions I would have asked: [1-3 short questions, only if scope was unclear; otherwise omit this bullet]
+- Decisions I made: [1-3 short lines naming silent judgment calls between equally plausible interpretations; otherwise omit this bullet]
 ```
 
 The note is read by the orchestrator during synthesis, not by humans, so brevity matters more than prose. Sub-agents that pad these bullets with extra detail are doing the orchestrator's synthesis work and should be corrected.
@@ -104,6 +105,26 @@ Rules:
 
 When this bullet is present, the orchestrator surfaces the questions during synthesis (typically under a "Questions to clarify" heading), attributes them to the sub-agent that raised them, and presents them alongside findings rather than burying them. Multiple sub-agents asking the same question is a strong signal the orchestrator under-specified the prompt and should de-duplicate before surfacing. See worked examples in [`skills/code-review.md`](../skills/code-review.md) and [`skills/draft-review.md`](../skills/draft-review.md).
 
+#### Decisions I made (optional)
+
+The fifth bullet defeats the *committed* silent-guess failure mode, distinct from what the fourth bullet handles. When a sub-agent encounters two equally plausible interpretations and *picks one* to deliver its assignment, the choice is invisible to the orchestrator unless the sub-agent surfaces it. Listing 1-3 such decisions lets the synthesis step detect **value drift**: patterns where multiple sub-agents consistently picked the same side of a defensible split, in a direction that diverges from the orchestration's intent.
+
+Distinction from the fourth bullet:
+
+- **Questions I would have asked** — the sub-agent did *not* commit; it would have asked first if it could. Surfaced for clarification.
+- **Decisions I made** — the sub-agent *did* commit; it picked one of several defensible interpretations to deliver. Surfaced for verification and drift detection.
+
+A judgment call generally belongs in one bullet or the other, not both. If knowing the orchestrator's intent would have meaningfully changed the output and the sub-agent wants the question answered before proceeding next time, list it as a question. If the sub-agent committed to a defensible choice and wants the orchestrator to see what it picked, list it as a decision.
+
+Rules:
+
+- **Omit the bullet entirely when no silent judgment call was made.** A blank or "none" placeholder defeats the purpose. Surface only judgment calls between *equally plausible* interpretations — routine choices made within clear scope don't qualify.
+- **Cap at 3 decisions.** Pick the calls whose alternative would have meaningfully changed the output. The cap exists to keep the note scannable; sub-agents that emit longer lists are reintroducing the noise the goal-alignment note was designed to avoid.
+- **Each decision is one short line stating what was decided AND the defensible alternative.** "Treated 'security review' as design-level only, not configuration audit" beats "Made some scope decisions about what to review." The alternative is what makes the entry useful for drift detection.
+- **Tie each decision to a defensible alternative.** If only one interpretation was actually plausible, the call wasn't a judgment call — don't pad. The bullet documents choices another reasonable sub-agent could have made differently.
+
+When this bullet is present, the orchestrator scans the entries across sub-agents during synthesis. A single decision is informational and may not need surfacing. A pattern of decisions trending the same way (e.g., every critic narrowing scope, every critic preferring the higher severity rung on borderline calls) is a drift signal worth surfacing to the user, attributed to the sub-agents that raised it.
+
 #### Default output cap
 
 Every dispatched sub-agent should have an output cap stated in its dispatch instructions. The recommended default convention is:
@@ -114,7 +135,7 @@ What this means:
 
 - **Prose** (narrative findings, recommendations, explanations) fits within ~300 words. Sub-agents that exceed this are usually padding or doing the orchestrator's synthesis work.
 - **Structured output** (rubrics, decision matrices, tables, code-review reports with required fields) may extend beyond the cap when the structure itself is the deliverable. The cap applies to the prose around the structure, not the structure.
-- The **Goal-Alignment Note** above is bounded separately by its three-bullet form and does not count against the cap.
+- The **Goal-Alignment Note** above is bounded separately by its bullet-form structure (three required, up to two optional) and does not count against the cap.
 
 Why a cap: the orchestrator must read every sub-agent's output during synthesis. A bounded prose budget keeps synthesis cost predictable and pushes sub-agents to surface conclusions rather than buried-lede analysis.
 
