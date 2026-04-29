@@ -13,6 +13,7 @@ value-justification: "Replaces ad-hoc architectural debates with structured mult
 - Any decision where premature convergence is a risk
 - **As a sub-procedure within RPI**: When the research phase of `research-plan-implement.md` reveals a design decision, DD is invoked inline. The decision output feeds back into RPI's research doc and informs the plan. See RPI step 2 for trigger signals.
 - **Hypothesis generation** (epistemic variant): When the question is "what's true?" rather than "what should we build?" — e.g., explaining a bug, interpreting ambiguous behavior, or evaluating competing theories. See the Epistemic Reasoning variant below.
+- **Problem framing first** (purpose-first variant): When the *problem itself* is contested — stakeholders disagree on the goal, a prior solution failed because it solved the wrong problem, or step 2 keeps surfacing contradictory constraints. See the Double Diamond (Purpose-First) variant below.
 
 ## When to pivot
 
@@ -209,3 +210,71 @@ The record should include:
 - Which hypotheses were eliminated and why
 
 **Evaluating epistemic DD usage**: A DD exercise counts as "epistemic mode" when its output is a ranked hypothesis list with evidence gaps rather than a decision record selecting an implementation approach.
+
+## Variant: Double Diamond (Purpose-First)
+
+The standard DD process treats the problem statement as a given and diverges over solutions. The Double Diamond variant adds a *prior* divergence over the problem itself: before generating solutions, generate alternative framings of what the real problem is, converge on one, then proceed with normal DD using the chosen framing as input.
+
+This guards against the failure mode of efficiently solving the wrong problem. Most DD invocations should *not* use this variant — adding a problem-framing diamond when the problem is already concrete and uncontested wastes effort and invites scope creep. Skip Diamond 1 entirely when the problem statement is concrete, agreed-upon, and has not previously been mis-solved.
+
+### When to enter Diamond 1
+
+Enter the purpose-first variant when at least one of these triggers fires:
+
+- **(a) Stakeholders disagree on the goal.** Different people describe the problem in incompatible ways, or the brief shifts depending on who you ask. Solving any one of their stated problems will leave the others unsolved.
+- **(b) A prior solution attempt failed because it solved the wrong problem.** The previous attempt was technically successful but did not produce the outcome anyone wanted. This is the strongest signal — the framing was the bug.
+- **(c) DD step 2 keeps surfacing contradictory constraints.** When you try to run normal DD and the diagnose step produces hard constraints that mutually exclude each other, the contradiction usually lives in the problem framing, not the constraint set.
+
+If none of these apply and the problem is concrete and uncontested, skip this variant and use the standard process.
+
+### Diamond 1: Purpose — diverge and converge on framings
+
+#### 1a. Diverge — generate alternative problem framings
+
+Generate 5-10 candidate framings of what the real problem is. Each takes the form "what if the real problem is X?" Requirements:
+- Include the framing as currently stated (the default — what people are saying the problem is)
+- Include at least 2 framings that reframe the problem at a different level (more upstream, more downstream, or at a different abstraction layer)
+- Include at least 1 framing where the apparent problem is actually a symptom of something else
+- Include at least 1 framing where there is no problem to solve (the situation is acceptable, or the perceived problem is a mismatch of expectations)
+- One sentence each, no evaluation yet
+
+For each framing, briefly note who would endorse it and what outcome they would consider success. This surfaces stakeholder disagreement explicitly.
+
+#### 1b. Converge — choose one framing
+
+Evaluate the candidates against:
+- **Evidence**: Which framing is most consistent with the observable signals (failed prior attempts, contradictory constraints, stakeholder statements)?
+- **Tractability**: Can a solution to this framing actually be built within reach? A more accurate framing that is intractable at this level may need to be escalated rather than addressed here.
+- **Reversal cost**: If the framing turns out to be wrong, how much work is wasted? Prefer framings whose solutions retain value even if a better framing emerges later.
+
+If one framing dominates, select it. If two framings are close, prefer the one that subsumes the other (solving it would also address the alternative). If the choice is genuinely ambiguous, **stop and consult the user** — choosing the wrong framing wastes the entire downstream process.
+
+#### 1c. Output — chosen framing record
+
+Produce a single paragraph that states:
+- The chosen framing (one sentence: "the real problem is X")
+- Why this framing was chosen over the alternatives (one or two sentences)
+- What success looks like under this framing (one sentence — the outcome that, if achieved, means the framing was correct)
+
+This paragraph is the input to Diamond 2 step 1. Include it verbatim in the eventual decision record so reviewers can see what problem was actually being solved.
+
+**Done when...**
+- [ ] At least 5 candidate framings were generated, including the default and at least one "no problem" or "symptom of something else" option
+- [ ] Each framing has a one-line note about who would endorse it and what success means to them
+- [ ] One framing is selected, with a stated reason for choosing it over the alternatives
+- [ ] A one-paragraph chosen framing record exists and is ready to feed into Diamond 2
+
+### Diamond 2: Solution — standard DD with chosen framing as input
+
+Proceed with the existing DD process, steps 1-4, treating the chosen framing as the problem statement:
+
+- **Step 1 (Diverge)**: Generate solution candidates against the chosen framing — not the original brief.
+- **Step 2 (Diagnose)**: List constraints relevant to the chosen framing. Constraints from the original framing that don't apply to the chosen one should be dropped explicitly (and noted, in case the framing was wrong).
+- **Step 3 (Match and prune)**: Standard compatibility matrix.
+- **Step 4 (Tradeoff matrix and decision)**: Standard tradeoff and stress-test pass.
+
+If during Diamond 2 you find that constraints still contradict each other or no candidate addresses the chosen framing well, that is a signal that Diamond 1 chose the wrong framing. Return to Diamond 1's diverge step and reconsider — don't paper over framing problems with solution complexity.
+
+### Step 5: Document
+
+Use the standard step 5 documentation, with one addition: include the chosen framing paragraph at the top of the decision record's Context section, and briefly note which trigger(s) prompted the purpose-first variant. This makes it auditable whether the framing diamond produced value — a future reader can compare the chosen framing to what the original brief asked for.
