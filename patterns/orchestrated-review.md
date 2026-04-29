@@ -45,6 +45,22 @@ Canonical form — three bullets, one short line each, no padding:
 
 The note is read by the orchestrator during synthesis, not by humans, so brevity matters more than prose. Sub-agents that pad these bullets with extra detail are doing the orchestrator's synthesis work and should be corrected.
 
+#### Default output cap
+
+Every dispatched sub-agent should have an output cap stated in its dispatch instructions. The recommended default convention is:
+
+> `<300 words summary; structured output may extend.`
+
+What this means:
+
+- **Prose** (narrative findings, recommendations, explanations) fits within ~300 words. Sub-agents that exceed this are usually padding or doing the orchestrator's synthesis work.
+- **Structured output** (rubrics, decision matrices, tables, code-review reports with required fields) may extend beyond the cap when the structure itself is the deliverable. The cap applies to the prose around the structure, not the structure.
+- The **Goal-Alignment Note** above is bounded separately by its three-bullet form and does not count against the cap.
+
+Why a cap: the orchestrator must read every sub-agent's output during synthesis. A bounded prose budget keeps synthesis cost predictable and pushes sub-agents to surface conclusions rather than buried-lede analysis.
+
+Workflows whose domain genuinely needs more prose should override the default explicitly in the dispatch instructions and state why (e.g., "report in under 600 words because architectural narratives need room"). Workflows that don't specify a cap inherit this default.
+
 ### 3. Synthesize
 
 Collect parallel outputs into a single coherent artifact.
