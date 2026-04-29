@@ -209,3 +209,74 @@ The record should include:
 - Which hypotheses were eliminated and why
 
 **Evaluating epistemic DD usage**: A DD exercise counts as "epistemic mode" when its output is a ranked hypothesis list with evidence gaps rather than a decision record selecting an implementation approach.
+
+## Variant: Double Diamond (Purpose-First)
+
+The canonical DD process (steps 1-4) treats the problem as given and diverges across solutions. The Double Diamond variant adds a **first diamond** that diverges across problem *framings* before the existing solution diamond runs. The pattern is borrowed from design thinking: Diamond 1 finds the right problem to solve; Diamond 2 finds the right solution to that problem.
+
+Diamond 1's output is a one-paragraph chosen-framing record that becomes the input to Diamond 2's step 1. Diamond 2 is the existing DD steps 1-4, used unchanged.
+
+### When to use
+
+Enter Diamond 1 if any of the following triggers fire:
+
+- **(a) Stakeholders disagree on the goal.** Different people describe the problem in incompatible ways, or the "ask" shifts depending on who you talk to. Solving any one of their stated problems will leave the others unsatisfied.
+- **(b) A prior solution attempt failed because it solved the wrong problem.** A previous DD pass, spike, or shipped feature addressed the stated problem but didn't actually help — usage didn't change, complaints continued, or a new framing emerged after the fact. The problem statement was the bug, not the solution.
+- **(c) DD step 2 (Diagnose) keeps surfacing contradictory constraints.** When constraint enumeration produces hard requirements that no candidate can simultaneously satisfy, the contradiction often lives in the framing, not in the solution space. Re-frame before re-diverging.
+
+### When to skip
+
+Skip Diamond 1 when the problem is **clear and uncontested** — stakeholders agree on what's broken, no prior solution misfired on the wrong problem, and step 2 produces a coherent constraint set. In that case, proceed directly to Diamond 2 (the canonical DD steps 1-4) with the problem as stated.
+
+### Diamond 1 — Purpose
+
+#### 1a. Diverge — generate candidate problem framings
+
+Generate **8-10 candidate framings** of the problem, each phrased as "what if the real problem is X?". As with the main Diverge step, quantity matters more than quality at this stage.
+
+Requirements:
+- Include at least 2-3 framings that feel wrong, naive, or politically inconvenient
+- Include 1 "null framing": the problem is exactly what people are saying — no reframing needed
+- Include at least 1 framing that points to a deeper systemic issue (the stated problem is a symptom of something larger)
+- Include at least 1 framing that the most affected stakeholder would push back on
+- One sentence each, no evaluation yet
+
+Apply the **generation health check** from the main Diverge step, adapted for framings: watch for clustering around one stakeholder's perspective, missing null/systemic framings, and framings too vague to drive different constraint sets in Diamond 2.
+
+#### 1b. Converge — select one chosen framing
+
+For each candidate framing, briefly note (one line each):
+- **Who benefits** if this framing is correct (which stakeholder's pain goes away)
+- **What would count as resolved** under this framing (a concrete observable outcome)
+- **What evidence supports** this framing being the real problem (existing data, complaints, prior failed attempts)
+
+Discard framings that no stakeholder would recognize, or whose "resolved" condition is untestable. Then select the single framing that best explains the available evidence and unifies the contradictory constraints (if trigger (c) drove entry).
+
+If no framing dominates — multiple are plausible and the evidence doesn't distinguish — **stop and consult the user.** Reframing the problem is a decision with downstream cost; don't guess.
+
+**Required output: one-paragraph chosen framing record.** This paragraph must name:
+1. The problem as now framed (one sentence)
+2. The stakeholders this framing serves and any whose stated problem it deprioritizes
+3. What would count as resolved (observable, testable)
+4. Why this framing was chosen over the alternatives (one sentence on the deciding evidence)
+
+This paragraph is the input to Diamond 2 step 1 and replaces the implicit problem statement that the canonical DD process assumes.
+
+**Done when...**
+- [ ] 8-10 candidate framings exist, each phrased as "what if the real problem is X?"
+- [ ] At least one null framing, one systemic framing, and one that an affected stakeholder would resist are included
+- [ ] Each framing has one-line notes on beneficiary, resolution criterion, and supporting evidence
+- [ ] One framing is selected, or the user has been consulted on a genuine tie
+- [ ] A one-paragraph chosen framing record exists and is ready to feed Diamond 2 step 1
+
+### Diamond 2 — Solution
+
+Diamond 2 is the **existing DD process, steps 1-4, used unchanged**. The chosen framing record from Diamond 1 replaces the implicit problem statement at the top of step 1, and its "what would count as resolved" criterion becomes a hard constraint in step 2's diagnosis.
+
+Step 5 (Document) records both diamonds: include the chosen framing record (or a link to it) in the Context section of the decision record, so future readers can see *which problem* was chosen as well as which solution.
+
+### Composition with calling workflows
+
+- **From RPI**: When RPI step 2 invokes DD and any of triggers (a)/(b)/(c) above fire, use the Double Diamond variant. The chosen framing record updates RPI's research doc — the problem statement RPI was operating under may need to change.
+- **From bug diagnosis**: Trigger (b) — "the prior fix solved the wrong problem" — is the most common entry point. The diagnosis log's failed hypotheses become candidate framings ("what if the real problem is X?") in Diamond 1's diverge step.
+- **Skipping back to canonical DD**: If Diamond 1 converges to the null framing (the problem is exactly as stated), proceed to Diamond 2 with no changes — Diamond 1's only output in that case is the recorded confirmation that reframing was considered and rejected.
