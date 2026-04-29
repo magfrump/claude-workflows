@@ -16,8 +16,6 @@ non-goals:
 adaptation-latitude:
   - Trace depth scales with claim type — behavioral claims require reading the implementation end-to-end; configuration claims may need only a constant grep; staleness signals need only verifying the symbol still exists.
   - Verdict calibration over precision theater — choose Mostly accurate when a claim is directionally right but missing a qualifier; reserve Incorrect for mismatches that would mislead a reader acting on the comment.
-  - Confidence reflects what you actually traced — drop to medium or low when paths branch, runtime state matters, or you only partially followed the call graph, rather than defaulting to High.
-  - Prioritization within scope — claims near recently changed lines and claims about modified functions are higher-yield than claims about untouched neighbors; spend effort accordingly when the scope is large.
 requires:
   - A codebase with comments, docstrings, or documentation to verify
 ---
