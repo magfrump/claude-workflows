@@ -88,6 +88,43 @@ This output drops directly into the Architecture Map without restructuring. If a
 - [ ] At least one representative implementation per subsystem has been read (not just interfaces)
 - [ ] Dependencies between subsystems are documented (what calls what)
 
+### Pre-synthesis status banner
+
+After the parallel subsystem sub-agents in step 2 return — and before step 3
+begins flow tracing and the rest of the orientation-doc synthesis — emit a
+single one-line status banner directly in the chat. This gives the user a
+chance to see subsystem coverage and gaps and decide whether to interrupt
+before synthesis runs silently to completion. Mirrors the between-stage
+banner spec in [`skills/code-review.md`](../skills/code-review.md#between-stage-status-banner).
+
+**Format:** `Step 2 (subsystem map) complete: <coverage counts> — <next action>`
+
+- One line, plain text in the chat. Do **not** write the banner into the
+  orientation doc or any saved artifact under `docs/working/`.
+- `<coverage counts>` is the smallest summary that helps the user judge
+  whether to intervene — e.g., N/M subsystems mapped (with names), any
+  sub-agents that failed or returned partial results, packages explicitly
+  deferred (monorepo scope), and escalations or out-of-scope items flagged
+  in sub-agents' Goal-Alignment Notes.
+- `<next action>` names what comes next — e.g., "proceeding to flow tracing
+  in step 3" or "tracing 3 flows then drafting Conventions and Known
+  Unknowns".
+
+**Worked example:**
+
+> Step 2 (subsystem map) complete: 5/5 subsystems mapped (auth, api, jobs, db, cli), 2 packages deferred (out-of-scope monorepo), 1 escalation (auth↔jobs dependency unclear) — proceeding to flow tracing in step 3.
+
+**Scope:** Emit this banner *only* between step 2 and step 3. Do **not** emit
+equivalent banners after later steps — the orientation doc produced in step
+6 is itself the user-facing synthesis output, and a "step N complete" banner
+would duplicate or compete with it (mirrors code-review's "no banner after
+Stage 3" rule).
+
+When step 2 was completed without sub-agents (small codebases, single
+orchestrator pass), still emit the banner — the coverage counts come from
+the orchestrator's own subsystem mapping rather than sub-agent reports. The
+user-facing checkpoint value is the same.
+
 ### 3. Trace key flows — follow data through the system
 
 Pick 2-3 representative operations (e.g., "user signs up", "report is generated", "webhook is processed") and trace them end-to-end through the codebase. This reveals:
