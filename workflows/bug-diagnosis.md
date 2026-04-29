@@ -15,6 +15,7 @@ This workflow is optimized for speed. Unlike RPI, there is **no plan approval ga
 - **→ RPI**: If you've tested 3+ hypotheses without progress, you likely don't understand the code well enough. Pivot to RPI's research phase — your failed hypotheses become valuable input (they document what the bug *isn't*). Use RPI for bugs in unfamiliar code where you need to build understanding before you can form good hypotheses.
 - **→ Spike**: If the fix requires using an unfamiliar library or technique, spike it before implementing the fix.
 - **← From RPI**: When RPI research reveals the root cause of a bug, you can skip straight to this workflow's Fix and Verify steps (steps 5-6) rather than writing a full implementation plan. RPI's research doc serves as the diagnosis record.
+- **→ Out of scope**: If step 0 reveals the failure reproduces on the unmodified base branch, the bug is preexisting (environmental or upstream). Route it to the appropriate place — fix the environment, file a base-branch issue, or escalate to the upstream owner — rather than diagnosing it within the current changeset.
 
 **Choosing between this workflow and RPI for bugs:** Use bug-diagnosis when you can point to the area of code that's likely broken. Use RPI when you can't — when the symptom is clear but the location is unknown, or when the code is unfamiliar enough that you need to build a mental model before debugging.
 
@@ -27,6 +28,38 @@ This workflow produces a lightweight diagnosis log rather than separate research
 These follow the same conventions as RPI working docs: committed to the repo, treated as disposable, collapsed in GitHub diffs via `linguist-generated`.
 
 ## Process
+
+### 0. Verify the failure isn't preexisting
+
+Before forming a hypothesis, confirm the failure does **not** reproduce on the base branch unmodified. If it already fails on a clean base, your changes did not introduce it — diagnosing it inside your current changeset will mislead you and waste effort.
+
+**Quick-check snippet** (uncommitted changes):
+
+```bash
+git stash --include-untracked
+<repro-command>
+git stash pop
+```
+
+For changes already committed on a feature branch, run the repro from a worktree on the base branch (or a detached checkout of it) so HEAD doesn't move:
+
+```bash
+git worktree add /tmp/base-check <base-branch>
+cd /tmp/base-check && <repro-command>
+```
+
+**If the failure reproduces on a clean base:**
+- Classify it as **environmental** (broken local toolchain, OS, dependency state, missing service) or **upstream** (preexisting bug on the base branch).
+- Route it where it belongs — repair the environment, file an issue / patch against the base branch, or escalate to the team that owns the failing component.
+- Do **not** continue diagnosing it as part of your current changes. Stop this workflow.
+
+**If the failure does not reproduce on a clean base:**
+- The bug is attributable to your current changes. Continue to step 1.
+
+**Done when...**
+- [ ] The repro has been executed against the unmodified base branch
+- [ ] If it reproduced on the base, the failure has been classified (environmental or upstream) and routed appropriately — diagnosis is **not** continued in this workflow
+- [ ] If it did not reproduce on the base, this is recorded and the workflow proceeds to step 1
 
 ### 1. Reproduce — confirm the bug exists
 
