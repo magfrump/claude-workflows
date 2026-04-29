@@ -301,7 +301,15 @@ Branch: {current branch}
 
 ## Next steps
 - [Concrete first action for the next session — not "continue implementing" but "implement step 4 of plan-X, starting with the handler in src/api/"]
+
+## Task status
+- **Lifecycle**: in-progress | blocked | paused | complete  (pick one — these are the only valid values)
+- **Last commit**: `<short-hash> <subject>`  (paste the output of `git log -1 --oneline` at handoff time)
+- **Verify command**: `<single shell command>`  (e.g., `pytest tests/handoff/`, `npm test -- --run`, `cargo test --lib`)
+- **Expected result**: `<exact pass marker from that command>`  (e.g., `12 passed`, `All checks passed`, exit code 0)
 ```
+
+The Task status block exists so a fresh session can **re-verify** the marker rather than trust it. On load, the next session should run `git log -1 --oneline` and check the hash matches **Last commit**, then run the **Verify command** and confirm the output contains the **Expected result**. If either check fails, the handoff is stale — the branch has moved or tests have regressed — and state should be re-derived from the current branch (read recent commits, re-run the test suite) rather than picking up from the handoff's narrative sections. Keep the block to these four fields; if a field can't be tied to a shell command whose output a reader can match against, it doesn't belong here.
 
 The next session should load the handoff doc, the plan doc, and (if needed) the research doc. The handoff tells you *where you are*; the plan tells you *where you're going*; the research tells you *why*.
 
