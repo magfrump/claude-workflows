@@ -62,8 +62,14 @@ Sub-agents are good for:
 
 A sub-agent starts with zero context. Brief it like a colleague who just walked in — state what you're trying to accomplish, what to look at, and what to report back.
 
-**Example — researching a subsystem:**
-> "Examine `src/auth/` and `src/middleware/auth.go`. Answer: (1) How are tokens validated? (2) Where is the middleware applied? (3) What happens on auth failure? Write findings to the 'Auth' section of `docs/working/research-api-endpoint.md`."
+**Goal preamble.** Every sub-agent prompt must lead with the 3-line goal preamble (User goal / Current task / Success criterion) defined in [`patterns/orchestrated-review.md`](../patterns/orchestrated-review.md#goal-preamble-standard). This anchors the sub-agent before the file paths and questions that follow. Cap at 3 lines — extra context goes in the briefing body.
+
+**Example — researching a subsystem (with preamble):**
+> "User goal: Plan a new API endpoint that needs auth and rate limiting.
+> Current task: Research how auth currently works in this codebase.
+> Success criterion: Findings written to the 'Auth' section of `docs/working/research-api-endpoint.md`.
+>
+> Examine `src/auth/` and `src/middleware/auth.go`. Answer: (1) How are tokens validated? (2) Where is the middleware applied? (3) What happens on auth failure?"
 
 **Example — cross-cutting pattern search:**
 > "Find all places rate limiting is applied in this codebase. For each, note: which library, what limits, whether it's per-user or global. The routing middleware is in `src/server/router.go` — start there. Report findings in under 200 words."

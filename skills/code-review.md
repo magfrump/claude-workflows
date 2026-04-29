@@ -171,12 +171,13 @@ Keep this brief — a short paragraph.
 
 Spawn one agent with the code-fact-check skill.
 
-1. Read the full contents of `skills/code-fact-check.md`
-2. Paste those contents directly into the Agent tool prompt (sub-agents cannot read your files)
-3. Include the scope specification (e.g., "Review files changed on the current branch relative
+1. **Prepend the goal preamble** (3 lines, see [`patterns/orchestrated-review.md`](../patterns/orchestrated-review.md#goal-preamble-standard)) at the top of the Agent-tool prompt, before any skill content. For this dispatch, fill it with: User goal = the user's review ask (e.g., "Get a code review on the current branch before opening a PR"); Current task = "Run code-fact-check on the diff and produce a written report"; Success criterion = "A markdown report saved to `docs/reviews/code-fact-check-report.md`, formatted per the code-fact-check skill."
+2. Read the full contents of `skills/code-fact-check.md`
+3. Paste those contents directly into the Agent tool prompt after the preamble (sub-agents cannot read your files)
+4. Include the scope specification (e.g., "Review files changed on the current branch relative
    to main using `git diff main...HEAD`")
-4. Instruct the agent to save its report as `docs/reviews/code-fact-check-report.md`
-5. Launch via the Agent tool with `subagent_type: "general-purpose"`
+5. Instruct the agent to save its report as `docs/reviews/code-fact-check-report.md`
+6. Launch via the Agent tool with `subagent_type: "general-purpose"`
 
 **CHECKPOINT:** Wait for the fact-check agent to return results. Verify you received a
 substantive report. If it failed or returned empty, tell the user and ask how to proceed.
@@ -205,14 +206,15 @@ Agent tool.** This is non-negotiable.
 
 For each critic agent, you MUST:
 
-1. Read the full contents of that critic's skill file (e.g., `skills/security-reviewer.md`)
-2. Paste those contents directly into the Agent tool prompt
-3. Include the scope specification so the agent runs its own `git diff`
-4. Include the fact-check results. If the fact-check report is longer than 200 lines, include
+1. **Prepend the goal preamble** (3 lines, see [`patterns/orchestrated-review.md`](../patterns/orchestrated-review.md#goal-preamble-standard)) at the top of the Agent-tool prompt, before any skill content. The User goal stays constant across all critic dispatches; Current task and Success criterion change per critic (e.g., for security: Current task = "Run security design review on the diff", Success criterion = "A markdown critique saved to `docs/reviews/security-review.md`, structured per the security-reviewer skill").
+2. Read the full contents of that critic's skill file (e.g., `skills/security-reviewer.md`)
+3. Paste those contents directly into the Agent tool prompt after the preamble
+4. Include the scope specification so the agent runs its own `git diff`
+5. Include the fact-check results. If the fact-check report is longer than 200 lines, include
    only the findings rated Incorrect, Stale, or Mostly Accurate — skip Accurate claims to
    save context budget.
-5. Instruct the agent to save its critique as `docs/reviews/{critic-name}-review.md`
-6. Launch via the Agent tool with `subagent_type: "general-purpose"`
+6. Instruct the agent to save its critique as `docs/reviews/{critic-name}-review.md`
+7. Launch via the Agent tool with `subagent_type: "general-purpose"`
 
 **Launch ALL critic agents simultaneously** in a single message with multiple Agent tool calls.
 They must not see each other's output.
@@ -387,6 +389,7 @@ At the end of your chat synthesis, link to all documents.
 ## Important Reminders
 
 - **Always run fact-checking first.** Even if the user only asks for critic perspectives.
+- **Prepend the goal preamble** to every Agent-tool prompt (3 lines: User goal / Current task / Success criterion). See [`patterns/orchestrated-review.md`](../patterns/orchestrated-review.md#goal-preamble-standard). Cap at 3 lines.
 - **Paste skill file contents into agent prompts.** Sub-agents cannot read your filesystem.
 - **Pass scope, not diffs.** Each agent runs its own `git diff` to avoid context budget issues.
 - **All agents of the same stage run in parallel.** They must not see each other's output.

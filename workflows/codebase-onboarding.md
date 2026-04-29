@@ -59,7 +59,7 @@ Don't read every file. Read entry points and public interfaces to understand bou
 
 **Monorepo scoping.** For monorepos with multiple packages or services, scope your architecture mapping to the package or service relevant to your first task — don't attempt to document every package in a single onboarding pass. Note the monorepo's top-level package dependency graph (e.g., from the root `package.json` workspaces, Cargo workspace members, or Go module layout) so you know which adjacent packages interact with yours. List all packages you did *not* examine in Known Unknowns (step 5) with a note that they were out of scope for the current task.
 
-If the codebase is large enough to warrant it (>20 files in multiple directories), use sub-agents to explore subsystems in parallel — one agent per subsystem, each producing the notes above for its area.
+If the codebase is large enough to warrant it (>20 files in multiple directories), use sub-agents to explore subsystems in parallel — one agent per subsystem, each producing the notes above for its area. When dispatching, lead each sub-agent prompt with the 3-line goal preamble (User goal / Current task / Success criterion) defined in [`patterns/orchestrated-review.md`](../patterns/orchestrated-review.md#goal-preamble-standard) — for onboarding, Current task is "Map the {subsystem} subsystem" and Success criterion is the notes-format the orchestrator expects back.
 
 **Suggested output structure.** When assembling your findings into the Architecture Map section of the orientation document, consider organizing around these three areas. This isn't a mandatory format — adapt it to fit the codebase — but it provides a useful default that downstream RPI research can quickly parse:
 

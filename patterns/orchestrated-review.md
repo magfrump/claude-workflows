@@ -53,6 +53,68 @@ A decision point that determines whether to proceed, revise, or escalate.
 
 **Positioning note**: Gates don't have to come at the end. When a pipeline has multiple stages with increasing cost, an early gate between stages can prevent wasted work. The key question is: "If the upstream result changes the input to downstream stages, should we pause?" If yes, insert a conditional gate.
 
+## Goal preamble standard
+
+Every sub-agent dispatch in an orchestrated workflow MUST begin with a 3-line **goal preamble** prepended to the role-specific skill content. The preamble keeps the sub-agent oriented to the user's overall goal, its own assignment, and what success looks like — without re-reading the orchestrator's chat context (which it does not see).
+
+### Template (paste-ready, exactly 3 lines)
+
+```
+User goal: <user's high-level outcome — what the human ultimately wants from this orchestration>
+Current task: <this sub-agent's specific assignment — narrower than the user goal>
+Success criterion: <what "done" looks like for this sub-agent — usually the artifact + path it must produce>
+```
+
+Fill each placeholder per dispatch. Keep each line to one sentence.
+
+**Cap at 3 lines.** Do not expand into a fourth line for context, constraints, or reminders. Constraints and detailed instructions belong in the role-specific skill content that follows. The cap exists to keep the preamble scannable; longer preambles induce fatigue and get skimmed past.
+
+### Where to put it
+
+At the very top of the Agent-tool prompt, before the skill-file paste, scope spec, draft text, fact-check digest, or any other content. Sub-agents read top-down; the preamble must arrive before role detail so it frames everything that follows.
+
+### Before / after worked example
+
+A code-review orchestrator dispatching the security critic.
+
+**Before** (no preamble — sub-agent has to infer goal and success from skill content):
+
+```
+[full contents of skills/security-reviewer.md pasted here]
+
+Scope: review files changed on the current branch relative to main (run `git diff main...HEAD`).
+
+Fact-check findings to consider:
+- Claim "input is sanitized via escapeHtml" rated Incorrect (high confidence)…
+
+Save your critique as docs/reviews/security-review.md.
+```
+
+**After** (preamble prepended; nothing else removed):
+
+```
+User goal: Get a comprehensive code review on the current branch before opening a PR.
+Current task: Run security design review on the diff and produce a written critique.
+Success criterion: A markdown report saved to docs/reviews/security-review.md, structured per the security-reviewer skill.
+
+[full contents of skills/security-reviewer.md pasted here]
+
+Scope: review files changed on the current branch relative to main (run `git diff main...HEAD`).
+
+Fact-check findings to consider:
+- Claim "input is sanitized via escapeHtml" rated Incorrect (high confidence)…
+
+Save your critique as docs/reviews/security-review.md.
+```
+
+The preamble is additive: existing prompt content is unchanged, only prepended to.
+
+### Field semantics
+
+- **User goal** — the outermost frame. The same across all sub-agents in a single orchestration run (e.g., "code review the current branch", "review this draft", "compare these libraries").
+- **Current task** — narrower than the user goal. Different per sub-agent (e.g., "run security review", "score all libraries on documentation quality", "research how auth middleware is applied"). One sentence, imperative.
+- **Success criterion** — what artifact this sub-agent must produce, ideally with the output path. Not the orchestrator's downstream synthesis success — the sub-agent's local "done" bar.
+
 ## Using this pattern in new workflows
 
 When creating a workflow that involves breaking work into parts, processing them, and combining results, consider whether it follows this shape. If so:

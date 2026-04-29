@@ -126,11 +126,12 @@ Spawn fact-check sub-agent(s) using the Agent tool.
 that many independent instances in parallel instead.
 
 For each fact-check agent, you MUST:
-1. Read the full contents of `skills/fact-check.md`
-2. Paste those contents directly into the Agent tool prompt (sub-agents cannot read your files)
-3. Include the full draft text in the prompt
-4. Instruct the agent to save its report as `docs/reviews/fact-check-report.md`
-5. Launch via the Agent tool with `subagent_type: "general-purpose"`
+1. **Prepend the goal preamble** (3 lines, see [`patterns/orchestrated-review.md`](../patterns/orchestrated-review.md#goal-preamble-standard)) at the top of the Agent-tool prompt, before any skill content. For this dispatch: User goal = the user's review ask (e.g., "Review this draft and surface factual or structural issues"); Current task = "Fact-check the claims in this draft"; Success criterion = "A markdown report saved to `docs/reviews/fact-check-report.md`, formatted per the fact-check skill."
+2. Read the full contents of `skills/fact-check.md`
+3. Paste those contents directly into the Agent tool prompt after the preamble (sub-agents cannot read your files)
+4. Include the full draft text in the prompt
+5. Instruct the agent to save its report as `docs/reviews/fact-check-report.md`
+6. Launch via the Agent tool with `subagent_type: "general-purpose"`
 
 **CHECKPOINT:** Wait for ALL fact-check agent(s) to return results. Count the results. Do you
 have the expected number? If yes, proceed. If not, STOP and tell the user something went wrong.
@@ -171,14 +172,15 @@ tool.** This is non-negotiable.
 **Ensemble mode:** spawn N instances of each selected critic, where N matches the user's request.
 
 For each critic agent instance, you MUST:
-1. Read the full contents of that critic's skill file (e.g., `skills/cowen-critique.md`)
-2. Paste those contents directly into the Agent tool prompt
-3. Include the full draft text
-4. Include the fact-check results (consensus summary if ensemble, or the single agent's findings)
-5. Instruct the agent to save its critique as `docs/reviews/[critic-name]-critique.md`.
+1. **Prepend the goal preamble** (3 lines, see [`patterns/orchestrated-review.md`](../patterns/orchestrated-review.md#goal-preamble-standard)) at the top of the Agent-tool prompt, before any skill content. The User goal stays constant across all critic dispatches; Current task and Success criterion change per critic (e.g., for cowen-critique: Current task = "Apply the Tyler Cowen critique lens to this draft", Success criterion = "A markdown critique saved to `docs/reviews/cowen-critique.md`, structured per the cowen-critique skill").
+2. Read the full contents of that critic's skill file (e.g., `skills/cowen-critique.md`)
+3. Paste those contents directly into the Agent tool prompt after the preamble
+4. Include the full draft text
+5. Include the fact-check results (consensus summary if ensemble, or the single agent's findings)
+6. Instruct the agent to save its critique as `docs/reviews/[critic-name]-critique.md`.
    The agent decides what goes in the file based on its own skill instructions — do not
    prescribe the format.
-6. Launch via the Agent tool with `subagent_type: "general-purpose"`
+7. Launch via the Agent tool with `subagent_type: "general-purpose"`
 
 **Launch ALL critic agents simultaneously** in a single message with multiple Agent tool calls.
 They must not see each other's output.
@@ -386,6 +388,7 @@ At the end of your chat synthesis, link to all documents.
 ## Important Reminders
 
 - **Always run fact-checking first.** Even if the user only asks for critic perspectives.
+- **Prepend the goal preamble** to every Agent-tool prompt (3 lines: User goal / Current task / Success criterion). See [`patterns/orchestrated-review.md`](../patterns/orchestrated-review.md#goal-preamble-standard). Cap at 3 lines.
 - **Paste skill file contents into agent prompts.** Sub-agents cannot read your filesystem.
 - **All agents of the same stage run in parallel.** They must not see each other's output.
 - **Be honest about convergence.** Don't present a minority finding as consensus.

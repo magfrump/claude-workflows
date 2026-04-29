@@ -112,6 +112,8 @@ within that dimension, which is exactly what a matrix needs.
 
 For each criterion sub-agent, include in the prompt:
 
+0. **The goal preamble** (3 lines, see [`patterns/orchestrated-review.md`](../patterns/orchestrated-review.md#goal-preamble-standard)) at the very top, before any other content. The User goal stays constant across all criterion dispatches (e.g., "Compare these libraries for our use case and recommend one"); Current task is per-criterion (e.g., "Score all items on documentation quality"); Success criterion is "Return ratings + rationales in the structured response format below."
+
 1. **The criterion name and definition.** Be specific about what this criterion means and
    what "strong" vs "weak" looks like along this dimension.
 
@@ -284,6 +286,7 @@ At the end of your chat synthesis, link to the document.
 ## Important Reminders
 
 - **One sub-agent per criterion.** This ensures consistent calibration within each dimension.
+- **Prepend the goal preamble** to every Agent-tool prompt (3 lines: User goal / Current task / Success criterion). See [`patterns/orchestrated-review.md`](../patterns/orchestrated-review.md#goal-preamble-standard). Cap at 3 lines.
 - **All criterion agents run in parallel.** They must not see each other's output.
 - **Do not evaluate items yourself.** Your job is to orchestrate and synthesize.
 - **Be honest about the data.** If scores are close, say they're close. If data is missing,

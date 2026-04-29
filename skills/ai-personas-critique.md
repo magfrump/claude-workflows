@@ -91,6 +91,8 @@ If no fact-check report is provided, emit this warning before the critique:
 
 ## Step 5: Run Each Persona's Critique
 
+If this skill was invoked by an orchestrator (e.g., draft-review), the prompt may begin with a 3-line goal preamble (User goal / Current task / Success criterion) per [`patterns/orchestrated-review.md`](../patterns/orchestrated-review.md#goal-preamble-standard). Read it before running personas — tailor each persona's critique to the stated user goal and use the success criterion as the bar for what your output must contain.
+
 For each selected persona, produce a focused critique section. Each section should:
 
 1. **Name the persona** and state their core question.
