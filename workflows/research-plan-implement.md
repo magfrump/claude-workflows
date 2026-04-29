@@ -155,6 +155,11 @@ Branch: {current branch}
 Research: docs/working/research-{topic}.md
 Plan: docs/working/plan-{topic}.md
 
+## Project state
+- **Branch purpose**: [one sentence — what this branch delivers]
+- **Position in larger initiative**: [parent epic / sibling branches / "standalone" if none]
+- **Blocked on**: [external dependency, pending decision, or "nothing"]
+
 ## Key findings
 [Curated subset of research — only what the implementer needs to know.
 Include relevant architecture, patterns, and gotchas. Omit exploration
@@ -268,6 +273,11 @@ Save it to `docs/working/handoff-{topic}.md`, overwriting any previous handoff f
 # Handoff: {topic}
 Date: {YYYY-MM-DD}
 Branch: {current branch}
+
+## Project state
+- **Branch purpose**: [one sentence — what this branch delivers]
+- **Position in larger initiative**: [parent epic / sibling branches / "standalone" if none]
+- **Blocked on**: [external dependency, pending decision, or "nothing"]
 
 ## Accomplished this session
 - [What was completed — reference commit hashes or plan steps]
