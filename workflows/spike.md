@@ -68,6 +68,15 @@ git checkout -b spike/description-date
 
 Spike code does NOT need to be clean, tested, or documented. It needs to answer the question. Cut every corner. Hardcode values. Skip error handling. Copy-paste from docs.
 
+#### If you dispatch sub-agents
+
+Some spikes probe libraries by fanning out — one sub-agent per candidate library, per API surface, or per documentation source. When you dispatch sub-agents from a spike, apply the [orchestrated review pattern](../patterns/orchestrated-review.md) — the same discipline `code-review` and `draft-review` use when they orchestrate parallel investigation:
+
+- **Goal preamble**: prepend the [3-line preamble](../patterns/orchestrated-review.md#goal-preamble) (User goal / Current task / Success criterion) to each dispatch. The spike question from step 1 is the User goal, identical across all sub-agents in the run.
+- **Goal-alignment self-report**: require each sub-agent to append the [Goal-Alignment Note](../patterns/orchestrated-review.md#goal-alignment-self-report) so coverage gaps, scope cuts, and silent guesses surface during synthesis rather than being absorbed into the spike record.
+
+This discipline matters *more* under a tight timebox, not less — drift in a 30-minute spike eats the whole spike.
+
 **Done when...**
 - [ ] Work is on a dedicated spike branch, not on a feature or main branch
 - [ ] The spike question from step 1 has been answered, OR the timebox from step 2 has expired
