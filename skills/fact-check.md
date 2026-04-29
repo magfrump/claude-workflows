@@ -111,6 +111,36 @@ meaningful signal rather than an inconvenience.
   note this in the verdict explanation: "AI-source scrutiny: [brief explanation of what extra
   verification revealed]."
 
+## Quote attribution
+
+When the draft includes attributed quotes ("X said Y", "as Z wrote in [book]"), treat the
+**attribution** as a separate claim from the **wording**. A quote can be word-perfect and widely
+circulated and still be misattributed — the canonical examples (Twain, Einstein, Lincoln, Gandhi)
+have dense secondary citation chains for sayings none of them produced. Apply these rules in
+addition to the AI-source scrutiny above; they hold even for human-authored drafts.
+
+- **Prefer the original primary source.** What you are looking for is the book with a page number,
+  the transcript with a timestamp, the archived speech, the interview recording, or the digitized
+  letter — the artifact the speaker or author actually produced. Multiple secondary citations to
+  the same wording, even from reputable outlets, do not substitute for locating the quote in the
+  primary source.
+- **'Secondary-only' verdict.** When you cannot locate a primary source and the quote appears only
+  in secondary citations (news articles, quote aggregators, other essays, social media), mark the
+  attribution as **Secondary-only**. The wording may be well-attested, but the attribution itself
+  is unverified — the report must not imply otherwise. Treat this as distinct from "Accurate":
+  surface ubiquity is not evidence of provenance.
+- **Flag wording that travels.** If the same or near-identical wording appears attributed to
+  multiple different authors across sources, flag this in the verdict explanation. This is a
+  strong signal of misattribution: typically the quote belongs to none of them, or to one whose
+  claim is now buried under viral repetition.
+
+**In the output report**, when a quote is rated **Secondary-only**, the verdict explanation
+should include (1) the secondary sources where the quote appears, (2) the primary-source searches
+you ran and what they returned (e.g., "searched archive.org and Google Books for [book title], no
+match for the wording"), and (3) any competing attributions encountered. List Secondary-only
+quote claims under "Claims Requiring Author Attention" — they need either a primary-source
+citation or a softened framing in the draft.
+
 ## Confidence Calibration
 
 Use these criteria when assigning confidence levels. In your report, briefly state which criterion
