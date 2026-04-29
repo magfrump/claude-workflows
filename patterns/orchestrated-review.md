@@ -98,6 +98,22 @@ Rules:
 
 When this bullet is present, the orchestrator surfaces the questions during synthesis (typically under a "Questions to clarify" heading), attributes them to the sub-agent that raised them, and presents them alongside findings rather than burying them. Multiple sub-agents asking the same question is a strong signal the orchestrator under-specified the prompt and should de-duplicate before surfacing. See worked examples in [`skills/code-review.md`](../skills/code-review.md) and [`skills/draft-review.md`](../skills/draft-review.md).
 
+#### Default output cap
+
+Every dispatched sub-agent should have an output cap stated in its dispatch instructions. The recommended default convention is:
+
+> `<300 words summary; structured output may extend.`
+
+What this means:
+
+- **Prose** (narrative findings, recommendations, explanations) fits within ~300 words. Sub-agents that exceed this are usually padding or doing the orchestrator's synthesis work.
+- **Structured output** (rubrics, decision matrices, tables, code-review reports with required fields) may extend beyond the cap when the structure itself is the deliverable. The cap applies to the prose around the structure, not the structure.
+- The **Goal-Alignment Note** above is bounded separately by its three-bullet form and does not count against the cap.
+
+Why a cap: the orchestrator must read every sub-agent's output during synthesis. A bounded prose budget keeps synthesis cost predictable and pushes sub-agents to surface conclusions rather than buried-lede analysis.
+
+Workflows whose domain genuinely needs more prose should override the default explicitly in the dispatch instructions and state why (e.g., "report in under 600 words because architectural narratives need room"). Workflows that don't specify a cap inherit this default.
+
 #### Context curation
 
 Every dispatch prompt is curated by the orchestrator. The point of curation is **drift prevention**, not byte-savings — context budget is rarely the binding constraint, but unfiltered upstream material reliably pulls a sub-agent off its assigned slice (re-litigating decisions already made upstream, critiquing material outside its scope, or anchoring on the previous agent's framing instead of the orchestrator's question). The 200-line fact-check excerpt rule in `skills/code-review.md` is the prototype: paste only the findings rated Incorrect / Stale / Mostly Accurate so the critic stays focused on what's actually contestable. Workflows that follow this pattern should curate every dispatch the same way and cite this section.
