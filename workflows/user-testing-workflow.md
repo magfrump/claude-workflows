@@ -146,6 +146,53 @@ If anything comes to mind later, feel free to reach out at [contact].
 [Stop recording. See participant out.]
 ```
 
+### Pilot Session
+
+Run one pilot session before real sessions begin. The pilot is **not** a smoke test of the moderator script — it's a probe of whether the study design can actually move probability on the hypothesis you care about. Script smoothness, timing, and recording setup are table stakes; if you only check those, you can launch a study that runs perfectly and learns nothing.
+
+#### Frame the pilot as a hypothesis test
+
+Each pilot tests **one underlying research hypothesis**, tied to the riskiest assumption from Phase 0. State it explicitly before recruiting the pilot participant.
+
+```
+HYPOTHESIS: [a falsifiable claim about user behavior, comprehension, or
+            task feasibility — phrased so a 30-minute session could
+            plausibly produce evidence for or against it]
+
+EVIDENCE THAT MOVES PROBABILITY UP (hypothesis more likely):
+  - [observable behavior #1]
+  - [observable behavior #2 ...]
+
+EVIDENCE THAT MOVES PROBABILITY DOWN (hypothesis less likely):
+  - [observable behavior #1]
+  - [observable behavior #2 ...]
+```
+
+Examples of bad vs. good framing:
+
+| ❌ Bad framing | ✅ Good framing |
+|----------------|-----------------|
+| "Pilot to make sure the moderator script flows." | "Hypothesis: users won't recognize 'Workspace' as the entry point for project files. UP: participant searches outside Workspace; mentions Files/Projects/Documents instead. DOWN: participant clicks Workspace within 10 seconds without prompting." |
+| "Sanity-check the recording setup." | "Hypothesis: the new onboarding tour is skipped by experienced users in a way that makes them miss the keyboard shortcuts panel. UP: participant dismisses tour, later asks about a keyboard action. DOWN: participant either reads the tour or finds shortcuts via menu without missing a beat." |
+
+The hypothesis should be the same one your real sessions are designed to test — the pilot is checking whether the *design* can produce evidence on it, not exploring a different question.
+
+#### Run the pilot against the target
+
+Watch specifically for the up/down signals you named. Capture each one with a timestamp and a direct quote. Note signals that don't fit either column — these are the seeds of better hypotheses for the next round.
+
+Yes, also evaluate moderator-script flow, task wording, recording quality, and timing. But the primary question after the pilot is *did the session produce evidence that bears on the hypothesis?*, not *did the script run smoothly?*
+
+#### Pivot rule: if the pilot can't move probability, redesign
+
+After the pilot, evaluate against three outcomes:
+
+- **Pilot moved probability up or down on the hypothesis** → proceed to real sessions, applying any small wording fixes the pilot surfaced.
+- **Pilot produced no signal either way** → the study is asking the wrong question. **Stop and redesign before real sessions.** Common causes: tasks don't expose the behavior the hypothesis is about; the scenario primes the answer; the hypothesis isn't observable in a session of this length; success criteria are defined too coarsely to register the relevant moments.
+- **Pilot revealed the hypothesis was malformed** (e.g., probability already saturated at confirm/disconfirm before testing started, or the question collapsed into a different one) → reformulate the hypothesis and pilot again. Do not skip this step — running 5 real sessions on a malformed hypothesis is more expensive than delaying by one pilot.
+
+> **Why this matters**: Real-session cost is dominated by participant recruiting, scheduling, and analysis time, not the sessions themselves. A pilot that fails to move probability is your cheapest possible signal that the real study won't either. Treat the pivot — catching a study that can't learn before you spend the budget — as the pilot's most valuable possible outcome, not a failure of the pilot.
+
 ---
 
 ## Phase 2: Running Sessions
