@@ -635,6 +635,82 @@ other tasks in this round.${TASK_OFF_LIMITS}"
     fi
 
     # -------------------------------------------------------
+    # Step 2c: Compose round-purpose header for task agents
+    # -------------------------------------------------------
+    # Gives every per-task agent a consolidated view of WHY this round was
+    # launched (user priorities, recent feedback, project context) plus a
+    # one-line gate-stats summary of the most recent prior round so agents
+    # can watch for known failure modes. Each subsection is omitted when its
+    # source is empty, so the header collapses to nothing when there is no
+    # si-input.md and no prior round history.
+    PURPOSE_SECTIONS=""
+    if [ -n "$SI_PRIORITIES" ]; then
+        PURPOSE_SECTIONS+="
+### Priorities for this run
+${SI_PRIORITIES}
+"
+    fi
+    if [ -n "$SI_FEEDBACK" ]; then
+        PURPOSE_SECTIONS+="
+### Recent user feedback
+${SI_FEEDBACK}
+"
+    fi
+    if [ -n "$SI_CONTEXT" ]; then
+        PURPOSE_SECTIONS+="
+### Relevant project context
+${SI_CONTEXT}
+"
+    fi
+
+    # Pull the most recent prior round's gate stats from round-history.json.
+    # ROUND_HISTORY is appended to as rounds finalize, so within a multi-round
+    # run this naturally reflects the previous round of the same run; for the
+    # first round of a fresh run it reflects the last round of the prior run.
+    LAST_ROUND_STATS=""
+    if [ -s "$ROUND_HISTORY" ]; then
+        LAST_ENTRY=$(jq '.[-1] // empty' "$ROUND_HISTORY" 2>/dev/null) || LAST_ENTRY=""
+        if [ -n "$LAST_ENTRY" ] && [ "$LAST_ENTRY" != "null" ]; then
+            LR_NUM=$(echo "$LAST_ENTRY" | jq -r '.round // ""' 2>/dev/null || echo "")
+            LR_LAUNCHED=$(echo "$LAST_ENTRY" | jq -r '.summary.launched // 0' 2>/dev/null || echo 0)
+            LR_APPROVED=$(echo "$LAST_ENTRY" | jq -r '.summary.approved // 0' 2>/dev/null || echo 0)
+            LR_REJECTED=$(echo "$LAST_ENTRY" | jq -r '.summary.rejected // 0' 2>/dev/null || echo 0)
+            LR_FAIL_MODES=$(echo "$LAST_ENTRY" | jq -r '
+                [.validation // {} | to_entries[] | select(.value.verdict == "rejected") |
+                 .value | to_entries[] | select(.value == "fail" and .key != "verdict") | .key
+                ] | unique | join(", ")' 2>/dev/null || echo "")
+            # Coerce to digits-only so the integer test can't fail under set -e
+            [[ "$LR_LAUNCHED" =~ ^[0-9]+$ ]] || LR_LAUNCHED=0
+            if [ -n "$LR_NUM" ] && [ "$LR_LAUNCHED" -gt 0 ]; then
+                if [ -n "$LR_FAIL_MODES" ]; then
+                    LAST_ROUND_STATS="Round ${LR_NUM}: ${LR_LAUNCHED} launched, ${LR_APPROVED} approved, ${LR_REJECTED} rejected. Failure modes seen: ${LR_FAIL_MODES}. Pay extra attention to these gates in your implementation."
+                else
+                    LAST_ROUND_STATS="Round ${LR_NUM}: ${LR_LAUNCHED} launched, ${LR_APPROVED} approved, ${LR_REJECTED} rejected (no failures)."
+                fi
+            fi
+        fi
+    fi
+    if [ -n "$LAST_ROUND_STATS" ]; then
+        PURPOSE_SECTIONS+="
+### Most recent prior round
+${LAST_ROUND_STATS}
+"
+    fi
+
+    ROUND_PURPOSE_HEADER=""
+    if [ -n "$PURPOSE_SECTIONS" ]; then
+        ROUND_PURPOSE_HEADER="## Round purpose — read before starting
+
+This task is part of self-improvement round ${ROUND} for the claude-workflows
+repo. Your task description (below) says WHAT to build; this section says
+WHY this round was launched and what to keep in mind alongside the specific
+task.
+${PURPOSE_SECTIONS}
+---
+"
+    fi
+
+    # -------------------------------------------------------
     # Step 3: Implement in parallel worktrees
     # -------------------------------------------------------
     echo "Launching parallel implementation..."
@@ -688,7 +764,7 @@ Address this specifically in your implementation to avoid the same failure.
         (
             cd "$WT_DIR"
             claude -p "You are in /away mode. Commit and push when done.
-
+${ROUND_PURPOSE_HEADER}
 Task: $DESC
 ${PRIOR_FAILURE_BLOCK}
 FILE SCOPE CONSTRAINT — READ THIS BEFORE STARTING:
