@@ -689,7 +689,9 @@ Address this specifically in your implementation to avoid the same failure.
             cd "$WT_DIR"
             claude -p "You are in /away mode. Commit and push when done.
 
-Task: $DESC
+User goal: Improve the claude-workflows repo through this round of automated self-improvement by implementing the selected tasks as standalone branches that pass validation gates.
+Current task: $DESC
+Success criterion: branch pushed with descriptive commits
 ${PRIOR_FAILURE_BLOCK}
 FILE SCOPE CONSTRAINT — READ THIS BEFORE STARTING:
 You may ONLY create or modify the following files: $FILES_TOUCHED
