@@ -14,6 +14,16 @@ description: >
   If a code-fact-check report is provided, use it as your foundation for understanding what the
   code actually does and do not re-verify documented behavior.
 when: Code touches auth, input handling, crypto, trust boundaries, or dependency manifests
+non-goals:
+  - Not a linter or SAST replacement — do not report findings static analysis reliably catches (unused vars, simple type mismatches).
+  - Not a full supply-chain audit — dependency review is bounded to what is visible in the diff and lockfile changes; transitive trees are out of scope.
+  - Not security theater — do not recommend checks that cannot fail or over-validate trusted internal data.
+  - Not a cryptographic primitive review — when confidence is low, flag for expert review rather than asserting algorithm soundness.
+adaptation-latitude:
+  - Trust-boundary depth scales with diff scope — a one-line change near a known boundary may need only the immediate caller; a refactor that moves or introduces a boundary requires reading both sides.
+  - Cognitive moves are a menu, not a checklist — apply only the moves the diff implicates, and skip those that don't.
+  - Confidence calibration — when exploitability depends on context outside the diff, state the dependency explicitly rather than defaulting to either "safe" or "exploitable".
+  - Escalation threshold — reserve the HALT block for near-certain exploitability with high blast radius; do not lower the bar to make findings feel weightier.
 requires:
   - name: code-fact-check
     description: >

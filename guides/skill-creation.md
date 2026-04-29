@@ -23,6 +23,7 @@ requires:          # optional — omit if standalone
 - **description**: explains purpose and scope — this is what Claude reads to decide relevance.
 - **when**: heuristic trigger condition Claude evaluates against the current task.
 - **requires**: list dependencies by skill name. See `security-reviewer` (one dependency) vs `code-review` (multiple).
+- **non-goals** (optional): list of short phrases stating what the skill should *not* do — useful for critics whose scope abuts other critics or tools; see `security-reviewer` for the worked example, alongside its companion **adaptation-latitude** field which lists signals for scaling rigor by context.
 
 ## 2. Prompt structure
 
