@@ -249,6 +249,96 @@ for ROUND in $(seq 1 $MAX_ROUNDS); do
     init_round_log "$ROUND"
 
     # -------------------------------------------------------
+    # Step 0a: Pre-round health check
+    # -------------------------------------------------------
+    # Repo-level integrity gate. A broken main (shellcheck failures, missing
+    # skill frontmatter, fixture/verdict drift) causes every task to be
+    # rejected during validation — far more expensive than this fast probe.
+    echo "Running pre-round health check..."
+    HEALTH_LOG="$WORKING_DIR/health-check-round-${ROUND}.log"
+    if ! "$SCRIPT_DIR/health-check.sh" > "$HEALTH_LOG" 2>&1; then
+        # Strip ANSI color codes (the script colorizes output for terminals);
+        # then attribute each failure line to its section header.
+        FAILED_LINES=$(sed $'s/\033\\[[0-9;]*m//g' "$HEALTH_LOG" | awk '
+            /^── .* ──$/ {
+                section = $0
+                sub(/^── /, "", section)
+                sub(/ ──$/, "", section)
+                next
+            }
+            /^[[:space:]]*✗ / {
+                msg = $0
+                sub(/^[[:space:]]*✗ /, "", msg)
+                if (section != "") print section ": " msg
+                else print msg
+            }
+        ')
+        if [ -z "$FAILED_LINES" ]; then
+            FAILED_LINES="health-check.sh exited non-zero with no parseable failure lines"
+        fi
+
+        {
+            echo ""
+            echo "========================================================================"
+            echo "PRE-ROUND HEALTH CHECK FAILED — halting SI run"
+            echo "========================================================================"
+            echo ""
+            echo "Failed gates:"
+            echo "$FAILED_LINES" | sed 's/^/  - /'
+            echo ""
+            echo "Full output: $HEALTH_LOG"
+            echo "Fix the failing gates and rerun scripts/self-improvement.sh."
+            echo "========================================================================"
+        } >&2
+
+        # Append halt details to the per-round validation log.
+        {
+            echo "[round-${ROUND}] HEALTH CHECK FAILED — halting SI run"
+            echo "[round-${ROUND}] Failed gates:"
+            echo "$FAILED_LINES" | sed "s/^/[round-${ROUND}]   - /"
+            echo "[round-${ROUND}] Full output: $HEALTH_LOG"
+        } >> "$WORKING_DIR/validation-round-${ROUND}.log"
+
+        # Record structured failure in the round log so round-N-report.json
+        # carries the diagnostic.
+        FAILED_GATES_JSON=$(echo "$FAILED_LINES" | jq -R -s 'split("\n") | map(select(length > 0))')
+        HEALTH_DETAIL=$(jq -n --argjson failures "$FAILED_GATES_JSON" --arg log "$HEALTH_LOG" \
+            '{failed_gates: $failures, log_path: $log}')
+        update_round_log '.health_check' "$HEALTH_DETAIL"
+        update_round_log '.outcome' '"health_check_failed"'
+        finalize_round_log "$ROUND"
+
+        # Prepend a halt banner to the morning summary so next-morning review
+        # surfaces the issue immediately. finalize_round_log just regenerated
+        # the summary via si-morning-summary.sh; we annotate the result in place.
+        SUMMARY_FILE="$WORKING_DIR/morning-summary.md"
+        if [ -f "$SUMMARY_FILE" ]; then
+            HALT_TMP=$(mktemp)
+            {
+                echo "# SI RUN HALTED — Pre-round health check failed (round ${ROUND})"
+                echo ""
+                echo "The repo failed the pre-round health-check gate before idea generation."
+                echo "No ideas were generated and no tasks were launched in this round."
+                echo ""
+                echo "## Failed gates"
+                echo ""
+                echo "$FAILED_LINES" | sed 's/^/- /'
+                echo ""
+                echo "Full output: \`${HEALTH_LOG}\`"
+                echo ""
+                echo "Fix the failing gates and rerun \`scripts/self-improvement.sh\`."
+                echo ""
+                echo "---"
+                echo ""
+                cat "$SUMMARY_FILE"
+            } > "$HALT_TMP" && mv "$HALT_TMP" "$SUMMARY_FILE"
+        fi
+
+        exit 1
+    fi
+    echo "Pre-round health check passed."
+
+    # -------------------------------------------------------
     # Step 0b: Build prior-round context for idea generation
     # -------------------------------------------------------
     PRIOR_CONTEXT=""
