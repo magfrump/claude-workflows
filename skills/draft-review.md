@@ -100,10 +100,26 @@ UI-visual review on a written essay), not "topic doesn't match exactly."
 pieces, consider running only the 1–2 most relevant critics rather than the full panel. Small
 content tends to produce redundant findings across multiple critics, and the extra agents consume
 context budget without adding signal. When you reduce the panel for this reason, note it
-explicitly in Step 3 (e.g., "Using a reduced critic panel — this is a short draft where
+explicitly in Step 4 (e.g., "Using a reduced critic panel — this is a short draft where
 additional critics would likely produce redundant findings").
 
-### Step 3: Tell the user
+### Step 3: Capture draft intent
+
+Critics scope findings better when they know what the draft is trying to accomplish. Capture
+this once here and reuse it in Stage 2.
+
+- **If the user provided a thesis, goal, or framing for the draft** (e.g., "this is meant to
+  argue X", "the goal is to convince skeptics of Y", "this is a primer for Z audience"):
+  capture their words verbatim as the intent.
+- **Otherwise:** Compose a 2-line summary from the draft itself — line 1 from the title or
+  headline, line 2 from the opening paragraph or lede. The summary should describe what the
+  draft is and what it is trying to do, not what it says in detail.
+
+Hold the resulting text as `<draft-intent>` for Stage 2. You will paste it verbatim under a
+`## What this draft is trying to accomplish` heading in each critic's prompt so critics can
+scope feedback to stated intent rather than treating the draft generically.
+
+### Step 4: Tell the user
 
 Before launching agents, briefly communicate:
 - What critic agents you found and which you're going to use (and why, in a sentence)
@@ -186,11 +202,14 @@ For each critic agent instance, you MUST:
 1. Read the full contents of that critic's skill file (e.g., `skills/cowen-critique.md`)
 2. Paste those contents directly into the Agent tool prompt
 3. Include the full draft text
-4. Include the fact-check results (consensus summary if ensemble, or the single agent's findings)
-5. Instruct the agent to save its critique as `docs/reviews/[critic-name]-critique.md`.
+4. Include the draft intent captured in "Before You Begin" Step 3, prepended under a
+   `## What this draft is trying to accomplish` heading so the critic can scope feedback to
+   stated intent
+5. Include the fact-check results (consensus summary if ensemble, or the single agent's findings)
+6. Instruct the agent to save its critique as `docs/reviews/[critic-name]-critique.md`.
    The agent decides what goes in the file based on its own skill instructions — do not
    prescribe the format.
-6. Require the agent to append a **Goal-Alignment Note** at the end of its critique and chat
+7. Require the agent to append a **Goal-Alignment Note** at the end of its critique and chat
    summary using the canonical form from
    [`patterns/orchestrated-review.md`](../patterns/orchestrated-review.md):
 
@@ -202,7 +221,7 @@ For each critic agent instance, you MUST:
    ```
 
    One short bullet per line. No padding.
-7. Launch via the Agent tool with `subagent_type: "general-purpose"`
+8. Launch via the Agent tool with `subagent_type: "general-purpose"`
 
 **Launch ALL critic agents simultaneously** in a single message with multiple Agent tool calls.
 They must not see each other's output.
