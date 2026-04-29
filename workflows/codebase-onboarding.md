@@ -61,21 +61,52 @@ Don't read every file. Read entry points and public interfaces to understand bou
 
 If the codebase is large enough to warrant it (>20 files in multiple directories), use sub-agents to explore subsystems in parallel — one agent per subsystem, each producing the notes above for its area.
 
-**Sub-agent briefing template.** A sub-agent starts with zero prior context, so its brief must be self-contained. Use the following template per dispatch — one filled brief per subsystem:
+**Sub-agent briefing template.** A sub-agent starts with zero prior context, so its brief must be self-contained. Onboarding dispatches follow the [orchestrated review pattern](../patterns/orchestrated-review.md) — prepend the canonical [goal preamble](../patterns/orchestrated-review.md#goal-preamble), then specify scope and output schema. One filled brief per subsystem.
 
-- **Subsystem name**: the cluster being investigated (e.g., "auth", "job queue", "API layer").
+**Goal preamble** (required — three top-level lines, sub-bullets optional):
+
+```
+User goal: <user's high-level outcome — same across every sub-agent in this onboarding run, e.g., "Build an orientation doc for FooApp so the team's next RPI session can scope research without re-mapping the repo.">
+Current task: Map the <subsystem> subsystem.
+  - Branch: <branch name>                                                  (optional)
+  - Position in initiative: <e.g., "first onboarding pass on this repo">   (optional)
+  - Blocked on: <pending decision, or "nothing">                           (optional)
+Success criterion: A subsystem report following the schema below, suitable to drop into the Architecture Map of docs/working/onboarding-<project>.md.
+```
+
+Include each optional sub-bullet only when the orchestrator already has the fact (lifted from upstream onboarding context, not guessed). Omit any sub-bullet you cannot fill confidently — silence beats a guessed value.
+
+**Scope spec** (per dispatch):
+
 - **Files to read**: explicit paths or globs — entry points relevant to this subsystem, public interfaces, and 1–2 representative implementation files. Don't ask the sub-agent to discover its own scope; it will waste a turn searching.
 - **Questions to answer**: what is the subsystem's one-sentence responsibility? What are its 2–3 key abstractions (types, interfaces, or functions, with file paths)? Which other subsystems does it call or is called by? Are there inconsistencies or surprises worth flagging?
-- **Output schema** (the sub-agent fills these fields and nothing else):
-  - `Subsystem`: <name>
-  - `Directory/files`: <where it lives>
-  - `Responsibility`: <one sentence>
-  - `Key abstractions`: <2–3 items, each with a file path>
-  - `Dependencies`: <inbound and outbound, with subsystem names>
-  - `Representative file read`: <path of the implementation file used to confirm internal patterns>
-  - `Goal-Alignment Note`: per the [orchestrated review pattern](../patterns/orchestrated-review.md#goal-alignment-self-report) (three bullets: Answered / Out of scope / Escalate)
 
-This output drops directly into the Architecture Map without restructuring. If a sub-agent returns prose instead of the schema, re-dispatch with the schema repeated — don't do the synthesis work yourself.
+**Output schema** (the sub-agent fills these fields and nothing else):
+
+- `Subsystem`: <name>
+- `Directory/files`: <where it lives>
+- `Responsibility`: <one sentence>
+- `Key abstractions`: <2–3 items, each with a file path>
+- `Dependencies`: <inbound and outbound, with subsystem names>
+- `Representative file read`: <path of the implementation file used to confirm internal patterns>
+- `Goal-Alignment Note`: per the [orchestrated review pattern](../patterns/orchestrated-review.md#goal-alignment-self-report). The first bullet must restate the dispatched **Success criterion verbatim** so synthesis can detect mis-paraphrase or scope drift before merging the subsystem into the Architecture Map. Followed by the canonical Answered / Out of scope / Escalate bullets, plus the optional Questions I would have asked / Decisions I made bullets when scope was unclear or a silent judgment call was made.
+
+This output drops directly into the Architecture Map without restructuring. If a sub-agent returns prose instead of the schema, re-dispatch with the schema repeated — don't do the synthesis work yourself. If the Goal-Alignment Note's verbatim restatement diverges from the dispatched Success criterion, treat the report as off-target and re-dispatch rather than merging it.
+
+**Worked example** — a filled dispatch for the auth subsystem of a hypothetical FooApp. The example is illustrative, not prescriptive: stay literal about the three preamble lines and the schema fields — those carry the structure synthesis depends on — but adapt the prose framing to fit your subsystem.
+
+> **Goal preamble:**
+> User goal: Build an orientation doc for FooApp so the team's next RPI session can scope research without re-mapping the repo.
+> Current task: Map the auth subsystem.
+>   - Branch: feat/onboarding-fooapp
+>   - Position in initiative: first onboarding pass on this repo
+> Success criterion: A subsystem report following the schema below, suitable to drop into the Architecture Map of docs/working/onboarding-fooapp.md.
+>
+> **Scope:** read `src/auth/` (especially `tokens.go`, `validator.go`) and `src/middleware/auth.go`. Grep for `RequireAuth` to find call sites in other subsystems.
+>
+> **Answer:** (1) one-sentence responsibility, (2) 2–3 key abstractions with file paths, (3) which subsystems call into auth and which auth calls out to, (4) any inconsistencies or surprises (e.g., two competing token-validation paths, bypass routes for health checks).
+>
+> **Output:** fill the schema fields above. Append the Goal-Alignment Note with the Success criterion line restated verbatim, then Answered / Out of scope / Escalate, then Questions or Decisions if any silent calls were made. <300 words on prose; the schema may extend.
 
 **Suggested output structure.** When assembling your findings into the Architecture Map section of the orientation document, consider organizing around these three areas. This isn't a mandatory format — adapt it to fit the codebase — but it provides a useful default that downstream RPI research can quickly parse:
 
