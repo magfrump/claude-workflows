@@ -120,6 +120,7 @@ The user can override the ceiling and say "continue" — but the default is to s
 - [ ] No Must Fix findings remain open
 - [ ] All Must Address findings are resolved or explicitly acknowledged in the PR description
 - [ ] Final review loop introduced no new Must Fix or Must Address findings
+- [ ] Does the diff's files-touched match the plan's declared scope? If not, flag drift to the human for explicit acknowledgment.
 - [ ] Iteration count noted (converged in N iterations, or ceiling hit at 3)
 - [ ] If ceiling hit: remaining findings documented in PR description, or escalated to human review
 - [ ] Review artifacts committed to the branch (see [PR Review Doc Inclusion guide](../guides/pr-review-doc-inclusion.md))
