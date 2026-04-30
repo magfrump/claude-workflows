@@ -100,6 +100,7 @@ generate_morning_summary() {
 
     {
         _summary_header "$start_round" "$end_round" "$working_dir"
+        _summary_project_state "$start_round" "$end_round" "$working_dir"
         _summary_whats_new "$start_round" "$end_round" "$working_dir" "$round_history" "$completed_tasks"
         _summary_verdicts "$start_round" "$end_round" "$working_dir" "$hypothesis_log"
         _summary_gate_stats "$round_history"
@@ -152,6 +153,239 @@ _summary_header() {
 - Tasks approved: $total_approved (${approval_pct}%)
 - Tasks rejected: $total_rejected
 EOF
+}
+
+# --- Internal: Project State section ---
+# Cross-round state header that complements per-run stats. Renders, in order:
+#   - Open hypotheses (from hypothesis-log.md, empty Outcome column)
+#   - In-flight maintenance debt (recurring deferred tasks in round-changelog.md)
+#   - Recent rejections grouped by failing gate (from round reports)
+#   - Broken-pipeline status (TRACKING hypotheses in hypothesis-backlog.md)
+#   - Token burn rate (N/A when token-actuals.json is absent)
+#
+# Each subsection degrades gracefully when its data source is missing.
+_summary_project_state() {
+    local start_round="$1" end_round="$2" working_dir="$3"
+
+    echo ""
+    echo "## Project State"
+
+    _project_state_open_hypotheses "$working_dir/hypothesis-log.md"
+    _project_state_maintenance_debt "$working_dir/round-changelog.md"
+    _project_state_recent_rejections "$start_round" "$end_round" "$working_dir"
+    _project_state_broken_pipelines "$working_dir/hypothesis-backlog.md"
+    _project_state_token_burn "$working_dir/token-actuals.json"
+}
+
+# --- Internal: list hypotheses still tracking (empty Outcome column) ---
+_project_state_open_hypotheses() {
+    local hypothesis_log="$1"
+
+    echo ""
+    echo "### Open Hypotheses"
+    echo ""
+
+    if [ ! -f "$hypothesis_log" ]; then
+        echo "Open hypotheses: 0 (no hypothesis log found)"
+        return
+    fi
+
+    # Emit "task_id|round|hypothesis" for rows whose Outcome column is empty.
+    local rows
+    rows=$(awk -F'|' '
+        /^\|/ {
+            if ($0 ~ /^\|[ \t]*(Round|----)/) next
+            round = $2; tid = $3; hyp = $4; outcome = $7
+            gsub(/^[ \t]+|[ \t]+$/, "", round)
+            gsub(/^[ \t]+|[ \t]+$/, "", tid)
+            gsub(/^[ \t]+|[ \t]+$/, "", hyp)
+            gsub(/^[ \t]+|[ \t]+$/, "", outcome)
+            if (outcome == "" && tid != "") {
+                printf "%s|%s|%s\n", tid, round, hyp
+            }
+        }
+    ' "$hypothesis_log")
+
+    local count
+    count=$(printf '%s\n' "$rows" | grep -c . || true)
+
+    echo "Open hypotheses: ${count}"
+    if [ "$count" -eq 0 ]; then
+        return
+    fi
+
+    echo ""
+    while IFS='|' read -r tid round hyp; do
+        [ -z "$tid" ] && continue
+        # Trim hypothesis to first sentence or 80 chars, whichever comes first.
+        local short="${hyp%%.*}"
+        if [ "${#short}" -gt 80 ]; then
+            short="${short:0:77}..."
+        fi
+        echo "- **${tid}** (round ${round}): ${short}"
+    done <<< "$rows"
+}
+
+# --- Internal: tasks that have been deferred across multiple rounds ---
+# Parses round-changelog.md "### Tasks deferred" sections and surfaces task
+# IDs that appear in ≥2 rounds. The signal is: this task keeps slipping, and
+# is accumulating context cost / merge-conflict risk each round it sits.
+_project_state_maintenance_debt() {
+    local changelog="$1"
+
+    echo ""
+    echo "### In-flight Maintenance Debt"
+    echo ""
+
+    if [ ! -f "$changelog" ]; then
+        echo "No round-changelog.md; debt not tracked."
+        return
+    fi
+
+    # Walk the file, tracking whether we're inside a "Tasks deferred" block,
+    # and emit one line per "- **task-id**" bullet found inside such blocks.
+    local task_ids
+    task_ids=$(awk '
+        /^### Tasks deferred/ { in_block = 1; next }
+        /^### / { in_block = 0; next }
+        /^## / { in_block = 0; next }
+        in_block && /^- \*\*/ {
+            line = $0
+            sub(/^- \*\*/, "", line)
+            sub(/\*\*.*/, "", line)
+            if (line != "") print line
+        }
+    ' "$changelog" | sort | uniq -c | sort -rn)
+
+    local debt_lines
+    debt_lines=$(echo "$task_ids" | awk '$1 >= 2 { count = $1; $1 = ""; sub(/^ /, ""); printf "- **%s** — deferred in %d rounds\n", $0, count }')
+
+    if [ -z "$debt_lines" ]; then
+        echo "No recurring deferrals."
+    else
+        echo "$debt_lines"
+    fi
+}
+
+# --- Internal: rejected tasks in this run, grouped by failing gate ---
+_project_state_recent_rejections() {
+    local start_round="$1" end_round="$2" working_dir="$3"
+
+    echo ""
+    echo "### Recent Rejections by Failure Mode"
+    echo ""
+
+    # Collect "gate<TAB>task_id" pairs across all rejected tasks in this run.
+    local pairs=""
+    for round_num in $(seq "$start_round" "$end_round"); do
+        local report="$working_dir/round-${round_num}-report.json"
+        [ -f "$report" ] || continue
+
+        local round_pairs
+        round_pairs=$(jq -r '
+            .validation // {} | to_entries[] |
+            select(.value.verdict == "rejected") |
+            .key as $tid |
+            (.value | to_entries[] | select(.key != "verdict" and .value == "fail") | .key) as $gate |
+            "\($gate)\t\($tid)"
+        ' "$report" 2>/dev/null) || true
+
+        if [ -n "$round_pairs" ]; then
+            pairs="${pairs}${round_pairs}"$'\n'
+        fi
+    done
+
+    pairs=$(printf '%s' "$pairs" | grep -v '^$' || true)
+    if [ -z "$pairs" ]; then
+        echo "No rejections this run."
+        return
+    fi
+
+    # Group by gate, render "gate: N (task1, task2)".
+    local prev_gate="" gate_tasks="" gate_count=0
+    while IFS=$'\t' read -r gate tid; do
+        if [ "$gate" != "$prev_gate" ]; then
+            if [ -n "$prev_gate" ]; then
+                echo "- **${prev_gate}**: ${gate_count} (${gate_tasks})"
+            fi
+            prev_gate="$gate"
+            gate_tasks="$tid"
+            gate_count=1
+        else
+            gate_tasks="${gate_tasks}, ${tid}"
+            gate_count=$((gate_count + 1))
+        fi
+    done < <(printf '%s\n' "$pairs" | sort)
+
+    if [ -n "$prev_gate" ]; then
+        echo "- **${prev_gate}**: ${gate_count} (${gate_tasks})"
+    fi
+}
+
+# --- Internal: TRACKING hypotheses from the backlog (broken pipelines) ---
+# Surfaces unresolved structural questions like the skill-usage logging gap.
+# A row is "broken-pipeline" if its Status column contains "TRACKING" with no
+# other status modifier (CONFIRMED/REFUTED/INCONCLUSIVE entries are skipped).
+_project_state_broken_pipelines() {
+    local backlog="$1"
+
+    echo ""
+    echo "### Broken Pipelines (TRACKING)"
+    echo ""
+
+    if [ ! -f "$backlog" ]; then
+        echo "No hypothesis backlog found."
+        return
+    fi
+
+    local rows
+    rows=$(awk -F'|' '
+        /^\|/ {
+            if ($0 ~ /^\|[ \t]*(ID|----)/) next
+            id = $2; hyp = $3; status = $6
+            gsub(/^[ \t]+|[ \t]+$/, "", id)
+            gsub(/^[ \t]+|[ \t]+$/, "", hyp)
+            gsub(/^[ \t]+|[ \t]+$/, "", status)
+            # Strip markdown bold so "**TRACKING**" matches "TRACKING".
+            gsub(/\*\*/, "", status)
+            if (status == "TRACKING" && id != "") {
+                printf "%s|%s\n", id, hyp
+            }
+        }
+    ' "$backlog")
+
+    if [ -z "$rows" ]; then
+        echo "No tracking hypotheses."
+        return
+    fi
+
+    while IFS='|' read -r id hyp; do
+        [ -z "$id" ] && continue
+        local short="${hyp%%.*}"
+        if [ "${#short}" -gt 100 ]; then
+            short="${short:0:97}..."
+        fi
+        echo "- **${id}**: ${short}"
+    done <<< "$rows"
+}
+
+# --- Internal: token burn rate (N/A until r2-token-tracking-narrow ships) ---
+# Renders N/A when the actuals file is absent so this header can land
+# without depending on that task. When the file exists, future work in the
+# token-tracking task will replace this branch with a real computation.
+_project_state_token_burn() {
+    local actuals="$1"
+
+    echo ""
+    echo "### Token Burn Rate"
+    echo ""
+
+    if [ ! -f "$actuals" ]; then
+        echo "Token burn rate: N/A (token-actuals data not available)"
+        return
+    fi
+
+    echo "Token burn rate: N/A (token-actuals renderer not yet implemented)"
 }
 
 # --- Internal: per-round task listings ---
