@@ -58,6 +58,19 @@ If they can't, the framing is buried, ambiguous, or assumed — revise the moder
 
 > **Unmoderated variant:** For unmoderated remote sessions, the moderator script (Phase 1) becomes embedded task instructions that participants follow independently — write them to be self-explanatory since you can't clarify in real time. Pilot testing shifts focus from moderator behavior to task clarity and tool setup. Analysis (Phase 3) works from recorded sessions and automatic metrics rather than live notes, so ensure your recording and observation template capture everything you'd normally ask a note-taker to track.
 
+### Moderator Legibility Preflight
+
+Before finalizing the moderator script, the moderator must be able to articulate, in under 60 seconds and without rereading the script:
+
+- **Session goal** — what's being tested or learned (Phase 0 #1)
+- **Per-task success criteria** — for every task, what counts as completed / partial / failed (Phase 1 task template)
+
+- [ ] Moderator can recite session goal and every task's success criteria in <60 seconds without rereading
+
+If they can't, the script is overloaded — too many tasks, criteria phrased too vaguely to internalize, or scenarios elaborate enough that they crowd out the criteria. A moderator who has to mentally page back to the script mid-session can't adapt: they miss the moment a participant has functionally completed a task, default to scripted prompts when the situation calls for judgment, or fail to redirect a stuck participant because they're still looking up what "stuck" means for this task. Trim tasks (3–5 max — see Phase 1), tighten success criteria to observable endpoints, or simplify scenarios until the whole script fits in working memory. This is the moderator-side counterpart to the participant legibility check above: if a participant should be able to restate the session's purpose within 60 seconds of the protocol opening, the moderator running it should be able to operate from memory at the same level of fluency throughout.
+
+> **Unmoderated variant:** Skip this check for unmoderated sessions — there is no live moderator to adapt. The corresponding risk shifts into the embedded task instructions (which must be self-explanatory at first read) and is addressed by the participant-side legibility check above.
+
 ---
 
 ## Phase 1: Session Design
