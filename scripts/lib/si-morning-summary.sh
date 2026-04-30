@@ -7,7 +7,9 @@
 # Sourced by scripts/self-improvement.sh — do not execute directly.
 #
 # Functions:
-#   generate_morning_summary — Produce the morning summary markdown file
+#   generate_morning_summary — Produce the morning summary markdown file.
+#                              Returns 1 if the deferred-evaluation
+#                              regression assertion fires; 0 otherwise.
 #
 # Guard against direct execution
 if [[ "${BASH_SOURCE[0]}" == "${0}" ]]; then
@@ -82,7 +84,7 @@ _round_high_failure_gates() {
 #       $2 = end_round (integer, inclusive — last round that completed)
 #       $3 = output_path (where to write the summary)
 #       $4 = working_dir (path to docs/working)
-# Returns: 0 on success, 1 on missing arguments
+# Returns: 0 on success, 1 on missing arguments or regression assertion
 generate_morning_summary() {
     local start_round="${1:-}"
     local end_round="${2:-}"
@@ -98,15 +100,19 @@ generate_morning_summary() {
     local completed_tasks="$working_dir/completed-tasks.md"
     local hypothesis_log="$working_dir/hypothesis-log.md"
 
+    # _summary_deferred_evaluation may return non-zero if its regression
+    # assertion fires; capture and propagate so the caller can flag it.
+    local deferred_status=0
     {
         _summary_header "$start_round" "$end_round" "$working_dir"
         _summary_whats_new "$start_round" "$end_round" "$working_dir" "$round_history" "$completed_tasks"
         _summary_gate_stats "$round_history"
-        _summary_deferred_evaluation "$hypothesis_log"
+        _summary_deferred_evaluation "$hypothesis_log" || deferred_status=$?
         _summary_footer
     } > "$output_path"
 
     echo "  Morning summary written to: $output_path"
+    return "$deferred_status"
 }
 
 # --- Internal: header with run overview ---
@@ -229,12 +235,21 @@ _summary_gate_stats() {
 }
 
 # --- Internal: deferred hypothesis evaluation ---
-# Surfaces hypotheses with empty Outcome as deferred user questions.
+# Surfaces still-open hypotheses as deferred user questions. A row is
+# "still open" when its Outcome is empty (newly-tracked hypothesis whose
+# window has not yet closed) or "INCONCLUSIVE" (window closed without
+# enough evidence — still waiting on real-world observations). Rows
+# marked CONFIRMED, REFUTED, or INCONCLUSIVE-EXPIRED are treated as
+# resolved.
+#
 # Skips rows whose Scope is "internal-si" — those are SI-infrastructure
 # hypotheses evaluated within the loop using gate stats and round reports,
 # not via real-world user observations. The Scope column is optional; if
-# it is absent (older log files), every empty-outcome row surfaces as
-# before.
+# it is absent (older log files), every still-open row surfaces.
+#
+# Returns: 0 normally; 1 if the regression assertion fires
+# (open_in_log > 0 && surfaced_in_summary == 0). Writes a
+# REGRESSION ASSERTION FAILURE block to the section in that case.
 _summary_deferred_evaluation() {
     local hypothesis_log="$1"
 
@@ -248,7 +263,7 @@ _summary_deferred_evaluation() {
 
     if [ ! -f "$hypothesis_log" ]; then
         echo "No hypothesis log found."
-        return
+        return 0
     fi
 
     # Locate the Scope column in the table header (1-based awk index, or 0
@@ -266,6 +281,28 @@ _summary_deferred_evaluation() {
     ' "$hypothesis_log")
     scope_col="${scope_col:-0}"
 
+    # Independent count of open rows in the log, computed in a single
+    # self-contained awk pass. Kept independent from the surfacing loop
+    # below so that a future bug in the loop's parsing cannot silently
+    # zero out both sides of the regression assertion together.
+    local open_in_log
+    open_in_log=$(awk -F'|' -v scope_col="$scope_col" '
+        /^\|/ && !/^\|[[:space:]]*(Round|----)/ {
+            outcome = $7
+            gsub(/^[ \t]+|[ \t]+$/, "", outcome)
+            if (outcome == "CONFIRMED" || outcome == "REFUTED" \
+                || outcome == "INCONCLUSIVE-EXPIRED") next
+            if (scope_col > 0) {
+                scope = $scope_col
+                gsub(/^[ \t]+|[ \t]+$/, "", scope)
+                if (scope == "internal-si") next
+            }
+            n++
+        }
+        END { print (n + 0) }
+    ' "$hypothesis_log")
+    open_in_log="${open_in_log:-0}"
+
     local count=0
     while IFS= read -r line; do
         [[ "$line" != \|* ]] && continue
@@ -274,8 +311,13 @@ _summary_deferred_evaluation() {
         local outcome
         outcome=$(echo "$line" | awk -F'|' '{gsub(/^[ \t]+|[ \t]+$/, "", $7); print $7}')
 
-        # Empty outcome = still tracking
-        [[ -n "$outcome" ]] && continue
+        # Surface only rows that are still open: empty (no verdict yet)
+        # or INCONCLUSIVE (window closed without resolution; still
+        # waiting on real-world evidence).
+        case "$outcome" in
+            "" | "INCONCLUSIVE") ;;
+            *) continue ;;
+        esac
 
         if [[ "$scope_col" -gt 0 ]]; then
             local scope
@@ -298,6 +340,25 @@ _summary_deferred_evaluation() {
     if [ "$count" -eq 0 ]; then
         echo "No open hypotheses to evaluate."
     fi
+
+    # Regression assertion: the independent open-row count says the log
+    # has open hypotheses, but the surfacing loop emitted zero — the
+    # filter must have regressed (e.g., parsing wrong column, treating
+    # INCONCLUSIVE as resolved again, etc.). Make the failure visible
+    # in the summary itself and signal it via non-zero return.
+    if [ "$open_in_log" -gt 0 ] && [ "$count" -eq 0 ]; then
+        echo ""
+        echo "## REGRESSION ASSERTION FAILURE"
+        echo ""
+        echo "The deferred-evaluation surfacing logic emitted zero rows, but an"
+        echo "independent scan of \`hypothesis-log.md\` found ${open_in_log} open"
+        echo "hypotheses (Outcome empty or INCONCLUSIVE, excluding internal-si)."
+        echo "The morning-summary writer in \`scripts/lib/si-morning-summary.sh\`"
+        echo "is filtering them out. Investigate \`_summary_deferred_evaluation\`."
+        return 1
+    fi
+
+    return 0
 }
 
 # --- Internal: generate targeted questions for a hypothesis ---

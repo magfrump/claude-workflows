@@ -103,10 +103,22 @@ finalize_round_log() {
     rm -f "$ROUND_LOG_FILE"
 
     # Refresh the morning summary after every round so canceled or crashed
-    # runs still leave a partial summary on disk.
+    # runs still leave a partial summary on disk. A non-zero return from
+    # generate_morning_summary signals the deferred-evaluation regression
+    # assertion fired (open hypotheses exist but none surfaced) — record
+    # it on the round report so the failure stays visible after the run.
     if declare -f generate_morning_summary >/dev/null 2>&1; then
-        generate_morning_summary "${START_ROUND:-1}" "$round" \
-            "$WORKING_DIR/morning-summary.md" "$WORKING_DIR" >/dev/null 2>&1 || true
+        if ! generate_morning_summary "${START_ROUND:-1}" "$round" \
+                "$WORKING_DIR/morning-summary.md" "$WORKING_DIR" \
+                >/dev/null 2>&1; then
+            echo "  WARNING: morning-summary regression assertion failed for round ${round}" >&2
+            local report="$WORKING_DIR/round-${round}-report.json"
+            if [ -f "$report" ]; then
+                local tmp
+                tmp=$(mktemp)
+                jq '.morning_summary_failed = true' "$report" > "$tmp" && mv "$tmp" "$report"
+            fi
+        fi
     fi
 }
 
