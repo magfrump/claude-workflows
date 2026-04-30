@@ -59,13 +59,18 @@ In a multi-loop session, each loop gets its own scope. A loop can build on the p
 
 ### 2. Research (essential) — understand before proposing
 
-Read the relevant parts of the codebase and produce a research doc in `docs/working/`. Optional copy-paste scaffolds for common research types (new feature, bug, refactor) are available in `guides/research-scaffolds.md`. This document should include:
+Read the relevant parts of the codebase and produce a research doc in `docs/working/`. Optional copy-paste scaffolds for common research types (new feature, bug, refactor) are available in `guides/research-scaffolds.md`. The doc must begin with the standard three-line header described below, then include the body sections that follow.
 
-- **Project state** (lead block):
-  - **Branch purpose**: [one sentence — what this branch delivers]
-  - **Position in larger initiative**: [parent epic / sibling branches / "standalone" if none]
-  - **Blocked on**: [external dependency, pending decision, or "nothing"]
-- **Scope**: The one-sentence scope from step 1.
+**Header (required, top of file — three lines, in this order):**
+
+- **Goal**: One sentence — what this loop is trying to achieve. This is the same one-sentence scope statement from step 1.
+- **Project state**: One sentence — branch context, written as `<what this branch delivers> · <position in larger initiative, or "standalone"> · <blocked on, or "not blocked">`. Same three facts the old multi-field lead block carried, compressed to one scannable line.
+- **Task status**: Lifecycle keyword from `in-progress | blocked | paused | complete`, optionally followed by a free-form phase note in parens (e.g., `in-progress (research drafted, plan next)`). The keyword is required; the parenthetical is optional but recommended whenever a phase note would help a re-reader orient.
+
+The header mirrors the sub-agent goal-preamble pattern (see `patterns/orchestrated-review.md`) but applies it to the working doc itself: three named anchors that pin the doc to the user's outcome, the branch's place in the broader effort, and the doc's lifecycle. The intent is drift surfacing — every mid-task re-read should re-verify these three lines against reality. Update the **Task status** line whenever the doc is read or revised; if any line no longer matches reality, fix it before doing anything else with the doc. The header lives in the spec rather than as an optional pre-block precisely so the convention survives maintenance — no linter is needed when the required body content is what enforces it.
+
+After the header, the body must include:
+
 - **What exists**: Which files, functions, and patterns are relevant. Not just names — summarize what they do and how they connect.
 - **Invariants**: What must not break. Existing APIs, data contracts, auth flows, caching layers, conventions other code depends on.
 - **Prior art**: Does the codebase already solve a similar problem? If so, describe that solution — the new implementation should be consistent with it unless there's a reason to diverge.
@@ -108,20 +113,28 @@ Signals that you've hit a design decision:
 The gate on **implementation** is firm: do not implement until the plan has been reviewed and approved. The gate on **planning** is soft: plan speculatively, expect revision.
 
 **Done when...**
-- [ ] Research doc exists in `docs/working/` with all required sections (Project state, Scope, What exists, Invariants, Prior art, Gotchas)
+- [ ] Research doc exists in `docs/working/`, opens with the three-line header (Goal · Project state · Task status), and includes all required body sections (What exists, Invariants, Prior art, Gotchas)
+- [ ] The Task status line accurately reflects current lifecycle (re-read it; if it lies, fix it)
 - [ ] Actual implementations were read, not just signatures or file names
 - [ ] Every invariant listed can be verified by pointing to specific code that depends on it
 - [ ] If 3+ viable approaches surfaced, a Divergent Design sub-procedure was invoked (or a note explains why it wasn't needed)
 
 ### 3. Plan (essential) — specify the implementation steps
 
-Produce a plan doc in `docs/working/`. Include:
+Produce a plan doc in `docs/working/`. The doc must begin with the same three-line header used by research docs (see step 2), then a `Research:` cross-link line, then the body sections.
 
-- **Project state** (lead block):
-  - **Branch purpose**: [one sentence — what this branch delivers]
-  - **Position in larger initiative**: [parent epic / sibling branches / "standalone" if none]
-  - **Blocked on**: [external dependency, pending decision, or "nothing"]
-- **Scope**: Same scope statement, linking to the research doc.
+**Header (required, top of file — three lines, in this order):**
+
+- **Goal**: Same one-sentence goal as the corresponding research doc. If the goal has shifted since research was written, update both docs in lockstep.
+- **Project state**: Same one-sentence project state as the corresponding research doc, refreshed if anything has moved (sibling branches landed, blockers cleared, etc.).
+- **Task status**: Lifecycle keyword from `in-progress | blocked | paused | complete`, optionally followed by a free-form phase note in parens (e.g., `in-progress (plan drafted, awaiting approval)` or `in-progress (implementing step 2/5)`). The keyword is required; the parenthetical is optional but recommended whenever a phase note would help a re-reader orient.
+
+Immediately below the header, add a `Research: <relative path or link to the research doc>` metadata line so the plan can be navigated to its research counterpart in one hop. (This replaces the old "linking to the research doc" duty that used to live in the Scope bullet.)
+
+The header serves the same drift-surfacing purpose described in step 2: every mid-task re-read should re-verify the three lines against reality, and the Task status line should be updated whenever the doc is read or revised. Treat it as required body content — no optional pre-block, no YAML frontmatter, no linter; the spec text is the enforcement.
+
+After the header and research link, the body must include:
+
 - **Approach**: 2-3 sentences on the high-level strategy, referencing findings from research.
 - **Steps**: Numbered list of concrete implementation actions. Each step should be:
   - Specific enough that someone could do it without re-reading the research
@@ -201,7 +214,8 @@ The checkpoint is a *derived artifact* — it contains no new information, only 
 **Implementation sessions should load this checkpoint file as their primary context source.** The research and plan docs remain available for deep dives, but the checkpoint is the starting point. When starting a fresh implementation session, read `docs/working/checkpoint-{topic}.md` first; only consult the research or plan docs if the checkpoint doesn't answer a specific question.
 
 **Done when...**
-- [ ] Plan doc exists in `docs/working/` with all required sections (Project state, Scope, Approach, Steps, Size estimate, Test specification, Risks)
+- [ ] Plan doc exists in `docs/working/`, opens with the three-line header (Goal · Project state · Task status) followed by a `Research:` link line, and includes all required body sections (Approach, Steps, Size estimate, Test specification, Risks)
+- [ ] The Task status line accurately reflects current lifecycle (re-read it; if it lies, fix it)
 - [ ] Each step is specific enough that someone could implement it without re-reading the research doc
 - [ ] Each step is small enough to be one commit
 - [ ] Test specification includes at least one test case per behavioral requirement
