@@ -44,6 +44,18 @@ A reusable guide for planning, running, and interpreting usability tests. Ground
 - [ ] Observer protocol decided (silent, questions at end only)
 - [ ] Pilot session scheduled with a colleague before real sessions
 
+### Legibility Preflight
+
+Before finalizing the moderator script, run a 60-second legibility check during the pilot. At any point in the first minute after the protocol opens, the participant should be able to articulate, in their own words:
+
+- **Goal** — what the session is for (what's being tested or learned)
+- **State** — what they're being asked to do right now (the current task)
+- **Status** — where they are in the overall protocol (intro / warm-up / task N of M / wrap-up)
+
+- [ ] Pilot participant can articulate session goal and current task within 60 seconds of the protocol starting
+
+If they can't, the framing is buried, ambiguous, or assumed — revise the moderator script before recruiting real participants. A participant who doesn't know what they're doing in the first minute spends the rest of the session reverse-engineering the test instead of using the product, which contaminates both task data and post-session interviews. This check also surfaces team-side ambiguity: if the intro can't get a participant to restate the goal in 60 seconds, the team itself probably hasn't aligned on what the session is for, which is a Phase-0 problem masquerading as a Phase-1 wording problem.
+
 > **Unmoderated variant:** For unmoderated remote sessions, the moderator script (Phase 1) becomes embedded task instructions that participants follow independently — write them to be self-explanatory since you can't clarify in real time. Pilot testing shifts focus from moderator behavior to task clarity and tool setup. Analysis (Phase 3) works from recorded sessions and automatic metrics rather than live notes, so ensure your recording and observation template capture everything you'd normally ask a note-taker to track.
 
 ---
