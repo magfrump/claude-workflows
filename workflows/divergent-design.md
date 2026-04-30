@@ -120,6 +120,7 @@ If the tradeoff is genuinely unclear: **stop and consult the user.** Present the
 
 **Done when...**
 - [ ] Each surviving candidate carries a falsifiable hypothesis (expected observable, window, counter-evidence)
+- [ ] Each surviving candidate declares a predicted implementation cost — a token estimate or an hour estimate; treat as a soft prediction, not a strict cap
 - [ ] At least 2-4 stress-test moves were applied to each surviving approach
 - [ ] Tradeoff matrix is updated with any findings from the stress test
 - [ ] Either one approach dominates at >80% confidence, or the user has been consulted
