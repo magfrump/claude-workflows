@@ -706,6 +706,227 @@ _summary_verdicts() {
         echo "current claim type may not exercise the actual round-design"
         echo "loop — consider revising the claim framework."
     fi
+
+    _summary_task_legibility "$start_round" "$end_round" "$working_dir"
+}
+
+# --- Internal: locate plan/research docs for a task ---
+# Tries a fixed set of filename patterns under working_dir, then a single
+# glob fallback. Prints newline-separated absolute paths; empty when none
+# found.
+_find_task_doc() {
+    local tid="$1" working_dir="$2"
+    local found=""
+    local candidate
+    for candidate in \
+        "$working_dir/plan-${tid}.md" \
+        "$working_dir/research-${tid}.md" \
+        "$working_dir/${tid}-plan.md" \
+        "$working_dir/${tid}-research.md"; do
+        [ -f "$candidate" ] && found="${found}${candidate}"$'\n'
+    done
+
+    if [ -z "$found" ]; then
+        # Glob fallback — first match per role wins.
+        local g
+        for g in "$working_dir"/*"${tid}"*plan*.md; do
+            [ -f "$g" ] && { found="${found}${g}"$'\n'; break; }
+        done
+        for g in "$working_dir"/*"${tid}"*research*.md; do
+            [ -f "$g" ] && { found="${found}${g}"$'\n'; break; }
+        done
+    fi
+
+    printf '%s' "$found"
+}
+
+# --- Internal: score a single approved task's header legibility ---
+# Writes task-legibility-${tid}.json to working_dir with project_state and
+# task_status verdicts. Idempotent: existing cache file is preserved so
+# repeat regenerations don't re-invoke claude.
+#
+# Two-stage scoring:
+#   1. Presence — grep the doc(s) for "Project state" / "Task status".
+#      If absent → fail without invoking claude.
+#   2. Non-staleness — when claude is available and presence passed,
+#      send the first ~30 lines to claude with a JSON-only contract and
+#      have it judge whether the line content matches a merged-to-main
+#      branch. Fall back to presence-only on any failure path.
+_score_task_legibility() {
+    local tid="$1" working_dir="$2"
+    local cache_file="$working_dir/task-legibility-${tid}.json"
+
+    # Skip if a parseable cache exists.
+    if [ -f "$cache_file" ] && jq empty "$cache_file" 2>/dev/null; then
+        return 0
+    fi
+
+    local docs
+    docs=$(_find_task_doc "$tid" "$working_dir")
+
+    if [ -z "$docs" ]; then
+        jq -n \
+            --arg tid "$tid" \
+            --arg ts "$(date -u +%Y-%m-%dT%H:%M:%SZ)" \
+            '{task_id: $tid, doc_paths: [], project_state: "fail", task_status: "fail", reason: "no plan/research doc found", scored_at: $ts, judge: "no-doc"}' \
+            > "$cache_file" 2>/dev/null || rm -f "$cache_file"
+        return 0
+    fi
+
+    # Presence check across all located docs.
+    local has_proj=0 has_status=0
+    local doc
+    while IFS= read -r doc; do
+        [ -z "$doc" ] && continue
+        grep -qiE '\*\*Project state\*\*|^Project state:|## Project state' "$doc" 2>/dev/null && has_proj=1
+        grep -qiE '\*\*Task status\*\*|^Task status:|## Task status'       "$doc" 2>/dev/null && has_status=1
+    done <<< "$docs"
+
+    local proj="fail" status="fail"
+    [ "$has_proj"   -eq 1 ] && proj="pass"
+    [ "$has_status" -eq 1 ] && status="pass"
+
+    # Build doc_paths JSON array for the cache record.
+    local doc_paths_json
+    doc_paths_json=$(printf '%s' "$docs" | jq -R -s -c 'split("\n") | map(select(length > 0))')
+
+    # If neither line present, no need to call claude — record and return.
+    if [ "$has_proj" -eq 0 ] && [ "$has_status" -eq 0 ]; then
+        jq -n \
+            --arg tid "$tid" \
+            --argjson paths "$doc_paths_json" \
+            --arg ts "$(date -u +%Y-%m-%dT%H:%M:%SZ)" \
+            '{task_id: $tid, doc_paths: $paths, project_state: "fail", task_status: "fail", reason: "neither header line present", scored_at: $ts, judge: "presence-only"}' \
+            > "$cache_file" 2>/dev/null || rm -f "$cache_file"
+        return 0
+    fi
+
+    # Non-staleness via claude-judge when available.
+    if ! command -v claude >/dev/null 2>&1; then
+        jq -n \
+            --arg tid "$tid" \
+            --argjson paths "$doc_paths_json" \
+            --arg p "$proj" \
+            --arg s "$status" \
+            --arg ts "$(date -u +%Y-%m-%dT%H:%M:%SZ)" \
+            '{task_id: $tid, doc_paths: $paths, project_state: $p, task_status: $s, reason: "claude CLI not available; presence-only scoring", scored_at: $ts, judge: "presence-only"}' \
+            > "$cache_file" 2>/dev/null || rm -f "$cache_file"
+        return 0
+    fi
+
+    # Build a small context window: first 30 lines per doc.
+    local context=""
+    while IFS= read -r doc; do
+        [ -z "$doc" ] && continue
+        context="${context}--- ${doc} ---"$'\n'
+        context="${context}$(head -30 "$doc" 2>/dev/null)"$'\n'
+    done <<< "$docs"
+
+    local prompt="You are a doc-staleness judge for a self-improvement loop.
+
+The doc convention requires a three-line header at the top of plan and research docs:
+- **Goal**: one sentence
+- **Project state**: one sentence describing branch context (what it delivers, position, blocker)
+- **Task status**: keyword in {in-progress, blocked, paused, complete}, optionally followed by a (phase note)
+
+CONTEXT: this task was APPROVED and MERGED to main as part of the self-improvement loop. The doc should reflect that completed state by end-of-round.
+
+Score two dimensions:
+- project_state: \"pass\" if a Project state line is present AND its content is plausibly accurate for a merged branch (not described as not-yet-started or blocked); else \"fail\".
+- task_status: \"pass\" if a Task status line is present AND its keyword is \"complete\" (since the task merged); else \"fail\".
+
+Output ONLY a single JSON object on one line, no prose, no code fences:
+{\"project_state\":\"pass\"|\"fail\",\"task_status\":\"pass\"|\"fail\",\"reason\":\"<short>\"}
+
+DOC CONTENT:
+${context}"
+
+    local judgment
+    judgment=$(claude -p "$prompt" 2>/dev/null \
+        | tr -d '\r' \
+        | grep -oE '\{[^{}]*"project_state"[^{}]*\}' \
+        | head -1) || judgment=""
+
+    if [ -z "$judgment" ] || ! echo "$judgment" | jq empty 2>/dev/null; then
+        jq -n \
+            --arg tid "$tid" \
+            --argjson paths "$doc_paths_json" \
+            --arg p "$proj" \
+            --arg s "$status" \
+            --arg ts "$(date -u +%Y-%m-%dT%H:%M:%SZ)" \
+            '{task_id: $tid, doc_paths: $paths, project_state: $p, task_status: $s, reason: "claude judge returned no parseable JSON; presence-only scoring", scored_at: $ts, judge: "presence-only"}' \
+            > "$cache_file" 2>/dev/null || rm -f "$cache_file"
+        return 0
+    fi
+
+    # Merge claude's verdict with metadata.
+    echo "$judgment" | jq \
+        --arg tid "$tid" \
+        --argjson paths "$doc_paths_json" \
+        --arg ts "$(date -u +%Y-%m-%dT%H:%M:%SZ)" \
+        '{task_id: $tid, doc_paths: $paths, project_state: .project_state, task_status: .task_status, reason: (.reason // ""), scored_at: $ts, judge: "claude"}' \
+        > "$cache_file" 2>/dev/null || rm -f "$cache_file"
+}
+
+# --- Internal: aggregate task legibility metrics ---
+# Adds two scored lines to the verdict block: the percentage of approved
+# tasks whose plan/research doc carries a non-stale Project state line,
+# and the percentage with a non-stale Task status line. Both metrics are
+# scored by _score_task_legibility (presence + claude-judge non-staleness)
+# so adding empty header lines does not check the box.
+_summary_task_legibility() {
+    local start_round="$1" end_round="$2" working_dir="$3"
+
+    local total=0 proj_pass=0 status_pass=0 missing_doc=0
+
+    local round_num report approved_ids tid cache_file proj status judge
+    for round_num in $(seq "$start_round" "$end_round"); do
+        report="$working_dir/round-${round_num}-report.json"
+        [ -f "$report" ] || continue
+
+        approved_ids=$(jq -r '.validation // {} | to_entries[] | select(.value.verdict == "approved") | .key' "$report" 2>/dev/null) || continue
+
+        for tid in $approved_ids; do
+            [ -z "$tid" ] && continue
+            total=$((total + 1))
+
+            _score_task_legibility "$tid" "$working_dir"
+            cache_file="$working_dir/task-legibility-${tid}.json"
+            [ -f "$cache_file" ] || continue
+
+            proj=$(jq -r '.project_state // "fail"' "$cache_file" 2>/dev/null)
+            status=$(jq -r '.task_status   // "fail"' "$cache_file" 2>/dev/null)
+            judge=$(jq -r '.judge          // ""'     "$cache_file" 2>/dev/null)
+
+            [ "$proj"   = "pass" ] && proj_pass=$((proj_pass + 1))
+            [ "$status" = "pass" ] && status_pass=$((status_pass + 1))
+            [ "$judge"  = "no-doc" ] && missing_doc=$((missing_doc + 1))
+        done
+    done
+
+    echo ""
+    echo "### Task Legibility (Project State + Task Status)"
+    echo ""
+
+    if [ "$total" -eq 0 ]; then
+        echo "Task Legibility: no approved tasks to score."
+        return
+    fi
+
+    echo "Scores doc-header drift on approved tasks. Both metrics require"
+    echo "presence + non-staleness (the line must reflect the merged-to-main"
+    echo "state, judged by a small claude invocation) so adding empty"
+    echo "header lines does not check the box."
+    echo ""
+
+    local proj_pct=$(( (proj_pass * 100) / total ))
+    local status_pct=$(( (status_pass * 100) / total ))
+    echo "- Project State header current: ${proj_pass}/${total} (${proj_pct}%) approved tasks"
+    echo "- Task Status line non-stale:   ${status_pass}/${total} (${status_pct}%) approved tasks"
+
+    if [ "$missing_doc" -gt 0 ]; then
+        echo "- (${missing_doc} approved task(s) had no locatable plan/research doc — counted as failure on both metrics)"
+    fi
 }
 
 # --- Internal: generate targeted questions for a hypothesis ---
