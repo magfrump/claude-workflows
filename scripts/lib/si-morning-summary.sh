@@ -172,9 +172,76 @@ _summary_project_state() {
 
     _project_state_open_hypotheses "$working_dir/hypothesis-log.md"
     _project_state_maintenance_debt "$working_dir/round-changelog.md"
+    _project_state_category_mix "$start_round" "$end_round" "$working_dir"
     _project_state_recent_rejections "$start_round" "$end_round" "$working_dir"
     _project_state_broken_pipelines "$working_dir/hypothesis-backlog.md"
     _project_state_token_burn "$working_dir/token-actuals.json"
+}
+
+# --- Internal: per-category task mix across the run ---
+# Reads each round's tasks-round-N.json and counts tasks per category. The
+# allowed values are feature/maintenance/data-pipeline; tasks without a
+# category land in "uncategorized". The signal we want to surface is feature
+# work crowding out maintenance and data-pipeline repairs.
+_project_state_category_mix() {
+    local start_round="$1" end_round="$2" working_dir="$3"
+
+    echo ""
+    echo "### Task Category Mix"
+    echo ""
+
+    local feature=0 maintenance=0 datapipeline=0 uncategorized=0
+    local rounds_with_tasks=0
+    for round_num in $(seq "$start_round" "$end_round"); do
+        local tasks_file="$working_dir/tasks-round-${round_num}.json"
+        [ -f "$tasks_file" ] || continue
+        rounds_with_tasks=$((rounds_with_tasks + 1))
+
+        local counts
+        counts=$(jq -r '
+            [.[] | .category // "uncategorized"] |
+            "\([.[] | select(. == "feature")] | length) " +
+            "\([.[] | select(. == "maintenance")] | length) " +
+            "\([.[] | select(. == "data-pipeline")] | length) " +
+            "\([.[] | select(. == "uncategorized" or (. != "feature" and . != "maintenance" and . != "data-pipeline"))] | length)"
+        ' "$tasks_file" 2>/dev/null) || counts="0 0 0 0"
+
+        feature=$((feature + $(echo "$counts" | awk '{print $1}')))
+        maintenance=$((maintenance + $(echo "$counts" | awk '{print $2}')))
+        datapipeline=$((datapipeline + $(echo "$counts" | awk '{print $3}')))
+        uncategorized=$((uncategorized + $(echo "$counts" | awk '{print $4}')))
+    done
+
+    if [ "$rounds_with_tasks" -eq 0 ]; then
+        echo "No task data for this run."
+        return
+    fi
+
+    local total=$((feature + maintenance + datapipeline + uncategorized))
+    if [ "$total" -eq 0 ]; then
+        echo "No tasks in this run."
+        return
+    fi
+
+    echo "- feature: ${feature}"
+    echo "- maintenance: ${maintenance}"
+    echo "- data-pipeline: ${datapipeline}"
+    if [ "$uncategorized" -gt 0 ]; then
+        echo "- uncategorized: ${uncategorized}"
+    fi
+
+    # Interpretation hints: surface imbalance when at least some tasks are
+    # categorized. "Crowding out" = feature dominates the categorized pool
+    # while maintenance + data-pipeline are starved.
+    local categorized=$((feature + maintenance + datapipeline))
+    if [ "$categorized" -eq 0 ]; then
+        echo ""
+        echo "All tasks uncategorized — planner is not yet assigning categories."
+    elif [ "$categorized" -ge 3 ] && [ $((feature * 2)) -gt $((categorized)) ] && [ $((maintenance + datapipeline)) -lt "$feature" ]; then
+        local feature_pct=$(( (feature * 100) / categorized ))
+        echo ""
+        echo "Feature work is ${feature_pct}% of categorized tasks — maintenance and data-pipeline may be getting crowded out."
+    fi
 }
 
 # --- Internal: list hypotheses still tracking (empty Outcome column) ---
