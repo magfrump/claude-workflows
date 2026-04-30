@@ -93,6 +93,10 @@ Relevant paths: [repo-relative paths this spike investigated]
 Branch: spike/[name] (can be deleted)
 Time spent: [X minutes]
 
+- **Goal**: [the spike question, restated as a one-sentence goal — what this spike is trying to determine]
+- **Project state**: [<what this branch delivers> · <position in larger initiative, or "standalone"> · <blocked on, or "not blocked">]
+- **Task status**: [in-progress | blocked | paused | complete] (optional phase note in parens, e.g., `in-progress (running candidate experiments)`)
+
 ## Answer
 [1-3 sentences]
 
@@ -111,6 +115,8 @@ Time spent: [X minutes]
 - **Gotchas to carry forward**: [Non-obvious things that would bite someone who didn't do the spike]
 - **What the spike did NOT answer**: [Gaps the RPI research phase still needs to fill]
 ```
+
+The three-line header (Goal · Project state · Task status) immediately after the metadata block is the same drift-surfacing convention RPI working docs use (see `workflows/research-plan-implement.md` step 2). Lifecycle keyword vocabulary is identical: `in-progress | blocked | paused | complete`, with an optional parenthetical phase note. Update the **Task status** line whenever the spike record is read or revised; if any line no longer matches reality, fix it before doing anything else with the record.
 
 The "RPI seed" section is the handoff point. When a spike recommends proceeding, the RPI research phase should start by loading the spike record — the seed section provides initial direction so research doesn't repeat work the spike already did. Anything the spike learned about what exists, what connects to what, and what's fragile belongs here, not just in "key findings."
 
@@ -135,6 +141,8 @@ Here's what a filled-in spike record looks like in practice:
 The exact sections don't matter — what matters is that the record captures a clear answer, what you learned, and enough context that someone starting the RPI phase doesn't repeat the spike's work or miss known gaps.
 
 **Done when...**
+- [ ] Spike record opens with the three-line header (Goal · Project state · Task status) immediately after the metadata block
+- [ ] The Task status line accurately reflects current lifecycle (re-read it; if it lies, fix it)
 - [ ] The spike question has a clear answer (yes/no/conditional) stated in 1-3 sentences
 - [ ] Key findings include what worked, what didn't, and any surprises
 - [ ] A recommendation is stated (proceed to RPI / try alternative / need more investigation)
