@@ -94,6 +94,8 @@ For the top 3-5 survivors, create a detailed comparison:
 | Approach | Effort (hours/days) | Risk | Core problem coverage | Key downside |
 |----------|-------------------|------|----------------------|--------------|
 
+Each surviving candidate must also carry a **falsifiable hypothesis** in the form: *"If we choose this, we expect [observable outcome] within [window]; counter-evidence would be [X]."* For example: *"If we adopt the queue-based ingest, we expect p99 latency under 200ms within two weeks of rollout; counter-evidence would be sustained p99 above 400ms or queue depth growing across a full traffic cycle."* This makes the candidate's success conditions checkable post-decision and pre-prunes candidates whose claimed benefits can't be stated in falsifiable terms.
+
 #### Stress-test pass
 
 After building the tradeoff matrix, pressure-test the surviving approaches using these cognitive moves adapted from structured critique methods. Not all moves apply to every decision — select 2-4 moves whose "When to use" trigger matches the current decision context.
@@ -117,6 +119,7 @@ If one approach clearly dominates (>80% confidence): document the decision and p
 If the tradeoff is genuinely unclear: **stop and consult the user.** Present the matrix, state your tentative recommendation with reasoning, and identify what information would resolve the ambiguity.
 
 **Done when...**
+- [ ] Each surviving candidate carries a falsifiable hypothesis (expected observable, window, counter-evidence)
 - [ ] At least 2-4 stress-test moves were applied to each surviving approach
 - [ ] Tradeoff matrix is updated with any findings from the stress test
 - [ ] Either one approach dominates at >80% confidence, or the user has been consulted
