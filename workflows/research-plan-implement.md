@@ -141,7 +141,8 @@ After the header and research link, the body must include:
   - Small enough to be one commit
   - Ordered by dependency (what must exist before what)
 - **Size estimate**: For each step (or for the plan as a whole if steps are small), include a rough size estimate — e.g., "~50 lines in a new file", "~20 lines added to existing handler", "minor wiring change." These don't need to be precise; the goal is to flag when a step is unexpectedly large and to catch cases where a single file would grow beyond a reasonable size. If a step would push a file past **500 lines**, note that explicitly and consider splitting the file as part of the plan.
-- **Estimated context cost**: One line with rough token estimates for each phase — e.g., "Research ~20k, Implementation ~40k, Review ~15k (pause if any phase exceeds 2x)". Typical ranges: small docs/workflow edits run ~5–15k per phase; multi-file feature work runs ~20–60k per phase; deep cross-subsystem work runs higher. Precision is not the point — the estimate is an anchor so /away mode has a concrete stop-or-pause signal when actuals overshoot by 2x. Treat overruns as a prompt to checkpoint and reassess (start a fresh session, narrow scope, or escalate to the user), not a hard kill.
+- **Estimated context cost**: One line with rough token estimates for each phase — e.g., "Research ~20k, Implementation ~40k, Review ~15k". Typical ranges: small docs/workflow edits run ~5–15k per phase; multi-file feature work runs ~20–60k per phase; deep cross-subsystem work runs higher. Precision is not the point — the estimate is an anchor so /away mode has a concrete stop-or-pause signal when actuals overshoot. The pause threshold and reconciliation protocol live in step 5 (Implement) under "Context-cost budget (/away mode protocol)"; treat overruns as a prompt to checkpoint and reassess (start a fresh session, narrow scope, or escalate to the user), not a hard kill.
+- **Actual context cost (post-implementation)**: __ (one line mirroring the estimate's structure, filled in during step 5/6 — e.g., "Research ~22k, Implementation ~75k, Review ~10k"). Capturing it in the plan artifact, not just transient logs, makes the estimate-vs-actual comparison reviewable and lets later sessions calibrate future estimates.
 - **Test specification**: Tests are a design artifact, not a verification afterthought. Structure this section as a table or list with one entry per test case:
 
   | Test case | Expected behavior | Level | Diagnostic expectation |
@@ -215,13 +216,13 @@ The checkpoint is a *derived artifact* — it contains no new information, only 
 **Implementation sessions should load this checkpoint file as their primary context source.** The research and plan docs remain available for deep dives, but the checkpoint is the starting point. When starting a fresh implementation session, read `docs/working/checkpoint-{topic}.md` first; only consult the research or plan docs if the checkpoint doesn't answer a specific question.
 
 **Done when...**
-- [ ] Plan doc exists in `docs/working/`, opens with the three-line header (Goal · Project state · Task status) followed by a `Research:` link line, and includes all required body sections (Approach, Steps, Size estimate, Estimated context cost, Test specification, Risks)
+- [ ] Plan doc exists in `docs/working/`, opens with the three-line header (Goal · Project state · Task status) followed by a `Research:` link line, and includes all required body sections (Approach, Steps, Size estimate, Estimated context cost, Actual context cost (post-implementation) placeholder, Test specification, Risks)
 - [ ] The Task status line accurately reflects current lifecycle (re-read it; if it lies, fix it)
 - [ ] Each step is specific enough that someone could implement it without re-reading the research doc
 - [ ] Each step is small enough to be one commit
 - [ ] Test specification includes at least one test case per behavioral requirement
 - [ ] No single step would push a file past 500 lines without an explicit note
-- [ ] Plan doc includes an Estimated context cost line covering research, implementation, and review phases
+- [ ] Plan doc includes an Estimated context cost line covering research, implementation, and review phases, paired with an Actual context cost (post-implementation) placeholder line awaiting the post-implementation fill-in
 - [ ] Checkpoint artifact exists at `docs/working/checkpoint-{topic}.md` with all template sections populated
 
 ### 4. Annotate (recommended) — human reviews and approves before implementation
@@ -267,12 +268,16 @@ If a step turns out to be wrong or incomplete during implementation, **stop and 
 
 **Context management**: If the session context is getting heavy (many prior loops, large amount of code read), consider starting a fresh session and loading the checkpoint artifact (`docs/working/checkpoint-{topic}.md`). The checkpoint is designed to be the single file an implementation session needs to get started — it contains curated findings, the plan, invariants, and a file map. Only fall back to the full research or plan docs if the checkpoint doesn't answer a specific question. This is a judgment call, not a hard rule — if context is still fresh and the task is flowing, continue in the same session. When ending a session to start fresh, write a handoff doc first (see step 6, "Session handoff") so the next session knows exactly where to resume.
 
+**Context-cost budget (/away mode protocol)**: Before each autonomous commit in /away mode, compare actual context use against the plan's "Estimated context cost" line. If actuals exceed the estimate by 2x overall, or by +50% on any single phase, pause and write a checkpoint to `docs/working/checkpoint-{topic}.md` (regenerating or updating the existing one) capturing what's done, what's left, and why the budget overshot — then stop and either narrow scope, start a fresh session against the new checkpoint, or escalate to the user. Do not proceed silently through an overrun. This clause attaches to the autonomous commit format (see CLAUDE.md `/away` mode): the budget check runs at the same cadence as the `Confidence`/`Notes` lines, so the comparison prompt lives in an already-consulted section. Once implementation finishes (clean or via early checkpoint), fill in the plan's `Actual context cost (post-implementation)` field so the estimate-vs-actual comparison is captured in the artifact rather than only in transient logs.
+
 **Done when...**
 - [ ] All plan steps are implemented with one commit per step
 - [ ] Tests from the test specification pass
 - [ ] Each commit message references the plan (e.g., "per plan-X step N")
 - [ ] Any deviations from the plan were written back to the plan doc before implementation continued
 - [ ] No file exceeds 500 lines without an explicit justification
+- [ ] In /away mode, any 2x-overall or +50%-per-phase context overrun was checkpointed and paused rather than absorbed silently
+- [ ] Plan doc's `Actual context cost (post-implementation)` field is filled in (mirroring the estimate's per-phase structure)
 
 ### 6. Verify and loop (recommended)
 
