@@ -73,7 +73,11 @@ For every checkable claim:
      true, but it needs a source.
 4. **State your confidence level** (High, Medium, or Low) using the calibration criteria below,
    and briefly say which criterion applies and why.
-5. **Cite your sources.** Name the source (organization, publication, dataset) and year. If you found
+5. **State the scrutiny depth** for each source you relied on — `[abstract]`, `[deep-read]`,
+   or `[inferred]` — using the criteria in [Scrutiny Tags](#scrutiny-tags). Scrutiny is part
+   of the calibration, not a footnote: a High confidence verdict generally requires at least
+   one `[deep-read]` source (see [Scrutiny and confidence aggregation](#scrutiny-and-confidence-aggregation)).
+6. **Cite your sources.** Name the source (organization, publication, dataset) and year. If you found
    a URL, include it.
 
 ### Code-Based Claims
@@ -94,6 +98,13 @@ Apply the same verdict scale (Accurate / Mostly accurate / Disputed / Inaccurate
 and the same confidence calibration. A claim verified by reading the source code qualifies for
 **High confidence** — code is a primary source. A claim that contradicts what the code shows is
 **Inaccurate** regardless of what documentation or comments say.
+
+Code reads are by definition `[deep-read]` for the scrutiny tag — you have inspected the
+implementation directly, not a summary of it. If you grep-confirmed a single line without
+opening the surrounding function, that is still `[deep-read]` of the relevant artifact: the
+grep hit *is* the primary evidence. Use `[inferred]` only if you derived a code-based claim
+from release notes, changelogs, or commit messages without reading the code itself; that
+should be rare and usually warrants downgrading confidence below High.
 
 This does **not** replace web search for non-code claims. If a draft mixes codebase claims with
 external claims (statistics, policy references, attributed quotes), use code reading for the
@@ -165,7 +176,8 @@ applies so that confidence ratings are consistent and auditable.
 
 - **High** — Claim verified against a **primary source**: official documentation, direct code reading,
   government data, peer-reviewed research, or another authoritative reference. Multiple independent
-  primary sources further strengthen a High rating.
+  primary sources further strengthen a High rating. High confidence generally requires at least one
+  `[deep-read]` source — see [Scrutiny and confidence aggregation](#scrutiny-and-confidence-aggregation).
 - **Medium** — Claim is consistent with **multiple secondary sources** (reputable journalism, expert
   commentary, well-sourced reference material) or follows from a **strong inferential chain** grounded
   in verified premises. No primary source was found, but the convergence of evidence is persuasive.
@@ -233,6 +245,86 @@ When a claim's provenance shifts mid-explanation (e.g., the literal wording is o
 load-bearing implication is assumed), state both tags and label which part of the claim each
 applies to. The Misleading row above is the canonical case.
 
+## Scrutiny Tags
+
+Provenance tells the reader **what kind of evidence** backs the verdict. Scrutiny tells them
+**how deeply that evidence was engaged with**. Two High-confidence `[observed]` verdicts can
+still rest on very different reads — one fact-checker may have read a 40-page report
+end-to-end while another only skimmed its abstract. The skill's confidence rating alone
+cannot capture that gap; the scrutiny tag does.
+
+Every verdict carries a scrutiny tag describing the deepest level of engagement with the
+sources actually used:
+
+- **[abstract]** — Only the summary, abstract, search-result snippet, headline, executive
+  summary, or table-of-contents-level material was read. Common for web-search verifications
+  where the answer is visible in the snippet, or for academic papers where only the abstract
+  was consulted. Sufficient for many Medium-confidence verdicts; usually not sufficient on its
+  own for High.
+- **[deep-read]** — The full source artifact was opened and the relevant section read in
+  context: the section of the law text, the relevant chapter of the report, the function
+  body and surrounding code, the full dataset row including footnotes, the transcript passage
+  with surrounding turns, the speech in full. Code reads are `[deep-read]` by definition (see
+  [Code-Based Claims](#code-based-claims)). One `[deep-read]` of a primary source is the
+  baseline for a High-confidence `[observed]` verdict.
+- **[inferred]** — The source named or implied by the claim was *not* read; instead, the
+  fact-checker located evidence in a *different but related* artifact and inferred what the
+  named source must say. Examples: a peer review of a paper that summarizes its findings;
+  a release-notes mention of a code change without reading the code; a press summary of a
+  policy report; a Wikipedia citation chain leading to a paywalled or offline primary source.
+  Always weaker than `[abstract]` of the actual source — the inference itself is an
+  additional uncertainty.
+
+### `[inferred]` — disambiguation note
+
+`[inferred]` appears in both the provenance and scrutiny dimensions and means different
+things in each. They are independent and can co-occur:
+
+- **Provenance `[inferred]`** — the *verdict* is derived by reasoning over multiple cited
+  pieces of evidence. The chain of inference is what is being flagged.
+- **Scrutiny `[inferred]`** — a *specific source* was not directly read; its content was
+  inferred from a related artifact. The unread source is what is being flagged.
+
+A verdict can be provenance `[inferred]` (because the reasoning chains across sources) and
+scrutiny `[deep-read]` (because each source in the chain *was* read in full). The reverse
+combination is also valid. Always print scrutiny on its own labeled line so the dimension is
+unambiguous.
+
+### Scrutiny and confidence aggregation
+
+Scrutiny weights the evidence behind a confidence rating. The rule of thumb:
+
+> **One `[deep-read]` High beats two `[abstract]` Highs.**
+
+A single primary source read in full carries more evidentiary weight than two surface reads
+of secondary summaries, even when both surface reads point the same direction. In practice:
+
+- **High** confidence with a single source generally requires that source to be `[deep-read]`.
+  An `[abstract]`-only read of a primary source can support High only when the abstract
+  itself contains the specific number, quote, or claim being checked — not when High is
+  resting on the assumption that the body confirms what the abstract suggests.
+- **High** confidence aggregated across sources should weight `[deep-read]` and `[abstract]`
+  asymmetrically. Two `[abstract]` reads of secondary sources do **not** sum to a
+  primary-source `[deep-read]`. Combine them and you have, at best, Medium with strong
+  convergence — note the gap and what a `[deep-read]` would resolve.
+- **Scrutiny `[inferred]`** sources never on their own justify High confidence in the cited
+  claim; they may support a related inferential chain but the unread source remains an
+  unverified link.
+
+When confidence and scrutiny appear to be in tension (e.g., High confidence drawn entirely
+from `[abstract]` reads), explicitly justify the call in the verdict explanation or
+downgrade. Audit-ability matters more than the rating: a reader should be able to see how
+deeply you engaged with the evidence and decide whether they agree with the weighting.
+
+### Examples
+
+| Verdict | Confidence | Provenance | Scrutiny | Rationale |
+|---------|------------|------------|----------|-----------|
+| Accurate | High | `[observed]` | `[deep-read]` | Read Section 11406 of the IRA at congress.gov in full to verify the $35 insulin cap. |
+| Accurate | Medium | `[inferred]` | `[abstract]` | Three reputable news outlets summarize the same study; only their summaries (not the study itself) were consulted. Convergent but surface-level. |
+| Mostly accurate | Medium | `[observed]` | `[abstract]` | NCSL right-to-work-laws table viewed on the NCSL summary page; the underlying state-by-state PDF was not opened. The aggregate count is visible in the summary but state-level breakdown was not verified. |
+| Unverified | Low | `[assumed]` | `[inferred]` | A press release referenced an internal report with the relevant figure; the report itself was paywalled and could not be retrieved. The figure is inferred from the press release's framing. |
+
 ## How to handle ambiguity
 
 Sometimes a claim is technically true but misleading, or true for one definition but false for another.
@@ -257,6 +349,7 @@ Produce a Markdown document with this structure:
 **Total claims checked:** [N]
 **Summary:** [X] accurate, [Y] mostly accurate, [Z] disputed, [W] inaccurate, [V] unverified
 **Provenance:** [A] observed, [B] inferred, [C] assumed
+**Scrutiny:** [P] deep-read, [Q] abstract, [R] inferred
 
 ---
 
@@ -265,10 +358,13 @@ Produce a Markdown document with this structure:
 **Verdict:** [Accurate / Mostly accurate / Disputed / Inaccurate / Unverified]
 **Confidence:** [High / Medium / Low]
 **Provenance:** [observed | inferred | assumed]
+**Scrutiny:** [abstract | deep-read | inferred]
 
 [2-4 sentences explaining what the evidence shows and why you reached this verdict. For
-`[inferred]` verdicts, write out the inferential chain. For `[assumed]` verdicts, state what
-specific evidence would move the claim to `[inferred]` or `[observed]`.]
+provenance `[inferred]` verdicts, write out the inferential chain. For provenance
+`[assumed]` verdicts, state what specific evidence would move the claim to `[inferred]` or
+`[observed]`. When confidence appears in tension with scrutiny (e.g., High confidence on
+`[abstract]`-only reads), justify the call here.]
 
 **Sources:** [named sources with years]
 
