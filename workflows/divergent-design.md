@@ -91,8 +91,10 @@ For approaches that score well overall but have one fixable weakness, briefly sk
 
 For the top 3-5 survivors, create a detailed comparison:
 
-| Approach | Effort (hours/days) | Risk | Core problem coverage | Key downside |
-|----------|-------------------|------|----------------------|--------------|
+| Approach | Effort (hours/days) | Est. token cost | Risk | Core problem coverage | Key downside |
+|----------|-------------------|-----------------|------|----------------------|--------------|
+
+`Est. token cost` is a rough per-candidate token estimate for *implementing* the approach (the design-layer mirror of RPI's plan-doc context-cost line) — typical ranges run ~5–15k for small spec edits, ~20–60k for multi-file feature work, higher for cross-subsystem changes; pause and reassess if the actual run exceeds the estimate by 2x. The column is here so candidate selection weighs build cost alongside risk and coverage rather than treating it as a free variable.
 
 Each surviving candidate must also carry a **falsifiable hypothesis** in the form: *"If we choose this, we expect [observable outcome] within [window]; counter-evidence would be [X]."* For example: *"If we adopt the queue-based ingest, we expect p99 latency under 200ms within two weeks of rollout; counter-evidence would be sustained p99 above 400ms or queue depth growing across a full traffic cycle."* This makes the candidate's success conditions checkable post-decision and pre-prunes candidates whose claimed benefits can't be stated in falsifiable terms.
 
