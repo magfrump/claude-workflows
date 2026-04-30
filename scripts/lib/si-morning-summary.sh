@@ -34,6 +34,41 @@ _round_counts() {
     ' "$report" 2>/dev/null || echo "0 0 0"
 }
 
+# --- Internal: round-mean tokens ---
+# Returns "tokens_in_mean tokens_out_mean" averaged across all tasks present
+# in the round report's `.tokens` map. Empty string if the field is missing
+# (older reports written before token tracking) or empty.
+_round_mean_tokens() {
+    local report="$1"
+    [ -f "$report" ] || { echo ""; return; }
+
+    jq -r '
+        (.tokens // {}) as $t |
+        ($t | length) as $n |
+        if $n == 0 then ""
+        else
+            ([$t | to_entries[] | .value.tokens_in // 0] | add // 0) as $sum_in |
+            ([$t | to_entries[] | .value.tokens_out // 0] | add // 0) as $sum_out |
+            "\(($sum_in / $n) | floor) \(($sum_out / $n) | floor)"
+        end
+    ' "$report" 2>/dev/null
+}
+
+# --- Internal: format a token count as a human-readable string ---
+# Args: $1 = integer token count
+# Stdout: "1.2k" for >= 1000, otherwise the raw number.
+_format_tokens() {
+    local n="${1:-0}"
+    if [ "$n" -ge 1000 ]; then
+        # Render as one decimal of thousands; integer arithmetic only.
+        local whole=$(( n / 1000 ))
+        local tenths=$(( (n % 1000) / 100 ))
+        printf '%d.%dk' "$whole" "$tenths"
+    else
+        printf '%d' "$n"
+    fi
+}
+
 # --- Internal: gates with high failure rates for a round ---
 # Returns space-separated gate names where >=50% of launched tasks failed
 # that gate. "Launched" = tasks whose validation has a verdict set, so
@@ -169,8 +204,20 @@ _summary_whats_new() {
             round_suffix=" (likely infrastructure issue — consider running scripts/health-check.sh)"
         fi
 
+        # Append per-round mean token usage so over-budget rounds are visible
+        # at a glance. Empty string when the report has no `.tokens` data
+        # (older reports predating token tracking).
+        local token_means token_suffix=""
+        token_means=$(_round_mean_tokens "$report")
+        if [ -n "$token_means" ]; then
+            local mean_in mean_out
+            mean_in=$(echo "$token_means" | awk '{print $1}')
+            mean_out=$(echo "$token_means" | awk '{print $2}')
+            token_suffix=" — mean tokens: $(_format_tokens "$mean_in") in / $(_format_tokens "$mean_out") out"
+        fi
+
         echo ""
-        echo "### Round $round_num ($launched tasks, $approved approved)$round_suffix"
+        echo "### Round $round_num ($launched tasks, $approved approved)$round_suffix$token_suffix"
         echo ""
 
         # List approved tasks with summaries

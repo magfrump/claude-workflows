@@ -88,6 +88,47 @@ validate_task_json() {
     echo "$valid_tasks"
 }
 
+# --- Token usage extraction ---
+# Sum input/output tokens from a Claude CLI session.jsonl file produced by
+# `claude -p --session-id <uuid>`. The CLI writes one assistant row per
+# stop-reason chunk (text, tool_use, ...) all sharing the same `requestId`
+# and the same per-turn `usage` totals. We dedupe by requestId so each turn
+# is counted once.
+#
+# tokens_in counts the full input footprint for the turn:
+#   input_tokens + cache_creation_input_tokens + cache_read_input_tokens
+# This is the figure that captures whether a session burned through context,
+# which is the signal we care about for catching over-budget rounds.
+#
+# Args: $1 = path to session.jsonl
+# Stdout: "<tokens_in> <tokens_out>" (two integers; "0 0" if file is missing,
+#   empty, or contains no assistant rows with a usage block).
+sum_session_tokens() {
+    local session_file="$1"
+    if [ ! -f "$session_file" ]; then
+        echo "0 0"
+        return 0
+    fi
+
+    jq -r '
+        select(.type == "assistant" and .message.usage != null) |
+        [
+            (.requestId // .uuid // ""),
+            (.message.usage.input_tokens // 0),
+            (.message.usage.cache_creation_input_tokens // 0),
+            (.message.usage.cache_read_input_tokens // 0),
+            (.message.usage.output_tokens // 0)
+        ] | @tsv
+    ' "$session_file" 2>/dev/null \
+        | awk -F'\t' '
+            !seen[$1]++ {
+                tin += $2 + $3 + $4
+                tout += $5
+            }
+            END { printf "%d %d\n", tin + 0, tout + 0 }
+        '
+}
+
 # --- Convergence threshold check ---
 # Pure function: compares an overlap percentage against a threshold.
 # Args: $1 = overlap percentage (integer 0-100), $2 = threshold (integer 0-100)

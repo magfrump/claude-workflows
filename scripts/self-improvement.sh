@@ -54,7 +54,7 @@ init_round_log() {
     local round=$1
     ROUND_LOG_FILE=$(mktemp)
     jq -n --argjson round "$round" --arg ts "$(date -u +%Y-%m-%dT%H:%M:%SZ)" \
-        '{round: $round, timestamp: $ts, ideas: {}, tasks: {}, validation: {}, merges: {}, outcome: "incomplete"}' \
+        '{round: $round, timestamp: $ts, ideas: {}, tasks: {}, tokens: {}, validation: {}, merges: {}, outcome: "incomplete"}' \
         > "$ROUND_LOG_FILE"
     # Truncate per-round validation log so re-runs of the same round don't
     # accumulate stale entries from prior runs.
@@ -76,6 +76,17 @@ record_gate() {
     tmp=$(mktemp)
     jq --arg tid "$task_id" --arg g "$gate" --arg s "$status" \
         '.validation[$tid][$g] = $s' "$ROUND_LOG_FILE" > "$tmp" && mv "$tmp" "$ROUND_LOG_FILE"
+}
+
+# Record actual token usage for a launched task (top-level .tokens map,
+# kept outside .validation so gate-stats iterators are unaffected).
+record_task_tokens() {
+    local task_id=$1 tokens_in=$2 tokens_out=$3
+    local tmp
+    tmp=$(mktemp)
+    jq --arg tid "$task_id" --argjson tin "$tokens_in" --argjson tout "$tokens_out" \
+        '.tokens[$tid] = {tokens_in: $tin, tokens_out: $tout}' \
+        "$ROUND_LOG_FILE" > "$tmp" && mv "$tmp" "$ROUND_LOG_FILE"
 }
 
 # Record structured failure details for a gate
@@ -640,6 +651,9 @@ other tasks in this round.${TASK_OFF_LIMITS}"
     echo "Launching parallel implementation..."
     PIDS=()
     LAUNCHED_TASKS=""
+    # Per-task session log paths, populated below and read after `wait` to
+    # extract token usage for each implementer call.
+    declare -A TASK_SESSION_FILES=()
     for TASK_ID in $TASK_IDS; do
         DESC=$(jq -r ".[] | select(.id==\"$TASK_ID\") | .description" "$TASKS_FILE")
         FILES_TOUCHED=$(jq -r ".[] | select(.id==\"$TASK_ID\") | .files_touched[]" "$TASKS_FILE" | paste -sd', ')
@@ -651,6 +665,19 @@ other tasks in this round.${TASK_OFF_LIMITS}"
         }
 
         LAUNCHED_TASKS="${LAUNCHED_TASKS:+$LAUNCHED_TASKS }$TASK_ID"
+
+        # Generate a session UUID so we can locate the implementer's session
+        # log deterministically after the call returns. The Claude CLI writes
+        # logs to ~/.claude/projects/<cwd-dashed>/<session-id>.jsonl.
+        if command -v uuidgen >/dev/null 2>&1; then
+            TASK_SESSION_ID=$(uuidgen)
+        else
+            TASK_SESSION_ID=$(cat /proc/sys/kernel/random/uuid)
+        fi
+        # Convert the worktree path to the project-dir slug used by the CLI:
+        # leading '/' becomes '-', and every internal '/' becomes '-'.
+        WT_PROJECT_SLUG=$(echo "$WT_DIR" | sed 's|/|-|g')
+        TASK_SESSION_FILES[$TASK_ID]="$HOME/.claude/projects/$WT_PROJECT_SLUG/${TASK_SESSION_ID}.jsonl"
 
         # Check prior round reports for failed attempts of the same task ID
         PRIOR_FAILURE_BLOCK=""
@@ -687,7 +714,7 @@ Address this specifically in your implementation to avoid the same failure.
         echo "  Started: $TASK_ID"
         (
             cd "$WT_DIR"
-            claude -p "You are in /away mode. Commit and push when done.
+            claude -p --session-id "$TASK_SESSION_ID" "You are in /away mode. Commit and push when done.
 
 Task: $DESC
 ${PRIOR_FAILURE_BLOCK}
@@ -713,6 +740,16 @@ descriptive (one clear sentence; conventional-commit prefix preferred)."
         wait "$PID" || echo "Warning: task $PID exited with non-zero status"
     done
     echo "All tasks complete."
+
+    # Capture actual token usage from each implementer's session log.
+    # Sessions are persisted by the Claude CLI under
+    # ~/.claude/projects/<cwd-dashed>/<session-id>.jsonl. Missing files
+    # produce 0/0 (e.g. if the implementer crashed before any assistant turn).
+    for TASK_ID in $LAUNCHED_TASKS; do
+        SESSION_FILE="${TASK_SESSION_FILES[$TASK_ID]:-}"
+        read -r TOKENS_IN TOKENS_OUT < <(sum_session_tokens "$SESSION_FILE")
+        record_task_tokens "$TASK_ID" "${TOKENS_IN:-0}" "${TOKENS_OUT:-0}"
+    done
 
     # -------------------------------------------------------
     # Step 4: Validate implemented features
