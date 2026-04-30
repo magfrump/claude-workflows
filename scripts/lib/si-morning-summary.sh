@@ -169,8 +169,21 @@ _summary_whats_new() {
             round_suffix=" (likely infrastructure issue — consider running scripts/health-check.sh)"
         fi
 
+        local token_suffix=""
+        if declare -f round_mean_tokens >/dev/null 2>&1; then
+            local token_line
+            token_line=$(round_mean_tokens "$report")
+            if [ -n "$token_line" ]; then
+                # token_line: "<mean_in> <mean_out> <n>"
+                local mean_in mean_out
+                mean_in=$(echo "$token_line"  | awk '{print $1}')
+                mean_out=$(echo "$token_line" | awk '{print $2}')
+                token_suffix=" — mean tokens in/out: ${mean_in} / ${mean_out}"
+            fi
+        fi
+
         echo ""
-        echo "### Round $round_num ($launched tasks, $approved approved)$round_suffix"
+        echo "### Round $round_num ($launched tasks, $approved approved)$round_suffix$token_suffix"
         echo ""
 
         # List approved tasks with summaries

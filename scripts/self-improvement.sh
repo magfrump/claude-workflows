@@ -118,6 +118,8 @@ source "$SCRIPT_DIR/lib/si-functions.sh"
 source "$SCRIPT_DIR/lib/si-input.sh"
 # shellcheck source=lib/si-morning-summary.sh
 source "$SCRIPT_DIR/lib/si-morning-summary.sh"
+# shellcheck source=lib/si-token-tracking.sh
+source "$SCRIPT_DIR/lib/si-token-tracking.sh"
 
 # --- Round summary printer ---
 # Reads the current ROUND_LOG_FILE to print a one-line human-readable summary.
@@ -732,6 +734,8 @@ descriptive (one clear sentence; conventional-commit prefix preferred)."
         REJECT_REASON=""
 
         echo "  Checking: $TASK_ID"
+
+        record_implementer_tokens "$TASK_ID" "$WT_DIR" "$ROUND_LOG_FILE" || true
 
         # --- Gate 1a: Did the branch get any commits? ---
         COMMIT_COUNT=$(git rev-list --count "main..$BRANCH" 2>/dev/null || echo 0)
