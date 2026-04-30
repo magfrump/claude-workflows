@@ -98,15 +98,19 @@ generate_morning_summary() {
     local completed_tasks="$working_dir/completed-tasks.md"
     local hypothesis_log="$working_dir/hypothesis-log.md"
 
+    local deferred_status=0
     {
         _summary_header "$start_round" "$end_round" "$working_dir"
         _summary_whats_new "$start_round" "$end_round" "$working_dir" "$round_history" "$completed_tasks"
         _summary_gate_stats "$round_history"
-        _summary_deferred_evaluation "$hypothesis_log"
+        if ! _summary_deferred_evaluation "$hypothesis_log"; then
+            deferred_status=1
+        fi
         _summary_footer
     } > "$output_path"
 
     echo "  Morning summary written to: $output_path"
+    return "$deferred_status"
 }
 
 # --- Internal: header with run overview ---
@@ -228,13 +232,55 @@ _summary_gate_stats() {
     fi
 }
 
+# --- Internal: independent count of surfaceable hypotheses ---
+# Used by the regression assertion in _summary_deferred_evaluation to detect
+# parser regressions where the rendering loop produces zero rows despite
+# open hypotheses existing in the log. Implemented as a single awk pass
+# rather than the per-row bash loop so a bug in one cannot mask a bug in
+# the other.
+_count_surfaceable_hypotheses() {
+    local hypothesis_log="$1"
+    local scope_col="${2:-0}"
+    [ -f "$hypothesis_log" ] || { echo 0; return; }
+
+    awk -F'|' -v sc="$scope_col" '
+        /^\|/ {
+            # Skip header (literal "Round" in column 2) and separator rows.
+            second_col = $2
+            gsub(/^[ \t]+|[ \t]+$/, "", second_col)
+            if (second_col == "Round") next
+            if (second_col ~ /^-+$/) next
+
+            outcome = $7
+            gsub(/^[ \t]+|[ \t]+$/, "", outcome)
+            # Surface empty (TRACKING) and exact INCONCLUSIVE (window open).
+            # INCONCLUSIVE-EXPIRED, CONFIRMED, REFUTED are resolved.
+            if (outcome != "" && outcome != "INCONCLUSIVE") next
+
+            if (sc > 0) {
+                scope = $sc
+                gsub(/^[ \t]+|[ \t]+$/, "", scope)
+                if (scope == "internal-si") next
+            }
+            count++
+        }
+        END { print count + 0 }
+    ' "$hypothesis_log"
+}
+
 # --- Internal: deferred hypothesis evaluation ---
-# Surfaces hypotheses with empty Outcome as deferred user questions.
+# Surfaces hypotheses whose evaluation windows are still open as deferred
+# user questions. "Still open" = Outcome is empty (TRACKING) or exactly
+# INCONCLUSIVE; INCONCLUSIVE-EXPIRED, CONFIRMED, and REFUTED are resolved
+# and skipped.
+#
 # Skips rows whose Scope is "internal-si" — those are SI-infrastructure
 # hypotheses evaluated within the loop using gate stats and round reports,
 # not via real-world user observations. The Scope column is optional; if
-# it is absent (older log files), every empty-outcome row surfaces as
-# before.
+# it is absent (older log files), every open row surfaces.
+#
+# Returns 1 if the rendering loop surfaced zero rows but the independent
+# counter found open hypotheses — a parser regression.
 _summary_deferred_evaluation() {
     local hypothesis_log="$1"
 
@@ -248,7 +294,7 @@ _summary_deferred_evaluation() {
 
     if [ ! -f "$hypothesis_log" ]; then
         echo "No hypothesis log found."
-        return
+        return 0
     fi
 
     # Locate the Scope column in the table header (1-based awk index, or 0
@@ -274,8 +320,11 @@ _summary_deferred_evaluation() {
         local outcome
         outcome=$(echo "$line" | awk -F'|' '{gsub(/^[ \t]+|[ \t]+$/, "", $7); print $7}')
 
-        # Empty outcome = still tracking
-        [[ -n "$outcome" ]] && continue
+        # Surface only TRACKING (empty) and INCONCLUSIVE (window still open).
+        case "$outcome" in
+            ""|"INCONCLUSIVE") ;;
+            *) continue ;;
+        esac
 
         if [[ "$scope_col" -gt 0 ]]; then
             local scope
@@ -298,6 +347,21 @@ _summary_deferred_evaluation() {
     if [ "$count" -eq 0 ]; then
         echo "No open hypotheses to evaluate."
     fi
+
+    # Regression assertion: independent counter must agree that there were
+    # zero surfaceable rows. If the loop emitted nothing but open rows exist,
+    # the parser is broken — surface that fact in both the file and stderr.
+    local expected
+    expected=$(_count_surfaceable_hypotheses "$hypothesis_log" "$scope_col")
+    if [ "${expected:-0}" -gt 0 ] && [ "$count" -eq 0 ]; then
+        echo ""
+        echo "**REGRESSION**: ${expected} open hypotheses exist in the log but"
+        echo "none were surfaced. The parser in \`_summary_deferred_evaluation\`"
+        echo "is likely broken; check \`scripts/lib/si-morning-summary.sh\`."
+        echo "ERROR: morning-summary surfacing regression — open=${expected} surfaced=0" >&2
+        return 1
+    fi
+    return 0
 }
 
 # --- Internal: generate targeted questions for a hypothesis ---
