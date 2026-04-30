@@ -141,6 +141,7 @@ After the header and research link, the body must include:
   - Small enough to be one commit
   - Ordered by dependency (what must exist before what)
 - **Size estimate**: For each step (or for the plan as a whole if steps are small), include a rough size estimate — e.g., "~50 lines in a new file", "~20 lines added to existing handler", "minor wiring change." These don't need to be precise; the goal is to flag when a step is unexpectedly large and to catch cases where a single file would grow beyond a reasonable size. If a step would push a file past **500 lines**, note that explicitly and consider splitting the file as part of the plan.
+- **Estimated context cost**: One line with rough token estimates for each phase — e.g., "Research ~20k, Implementation ~40k, Review ~15k (pause if any phase exceeds 2x)". Typical ranges: small docs/workflow edits run ~5–15k per phase; multi-file feature work runs ~20–60k per phase; deep cross-subsystem work runs higher. Precision is not the point — the estimate is an anchor so /away mode has a concrete stop-or-pause signal when actuals overshoot by 2x. Treat overruns as a prompt to checkpoint and reassess (start a fresh session, narrow scope, or escalate to the user), not a hard kill.
 - **Test specification**: Tests are a design artifact, not a verification afterthought. Structure this section as a table or list with one entry per test case:
 
   | Test case | Expected behavior | Level | Diagnostic expectation |
@@ -214,12 +215,13 @@ The checkpoint is a *derived artifact* — it contains no new information, only 
 **Implementation sessions should load this checkpoint file as their primary context source.** The research and plan docs remain available for deep dives, but the checkpoint is the starting point. When starting a fresh implementation session, read `docs/working/checkpoint-{topic}.md` first; only consult the research or plan docs if the checkpoint doesn't answer a specific question.
 
 **Done when...**
-- [ ] Plan doc exists in `docs/working/`, opens with the three-line header (Goal · Project state · Task status) followed by a `Research:` link line, and includes all required body sections (Approach, Steps, Size estimate, Test specification, Risks)
+- [ ] Plan doc exists in `docs/working/`, opens with the three-line header (Goal · Project state · Task status) followed by a `Research:` link line, and includes all required body sections (Approach, Steps, Size estimate, Estimated context cost, Test specification, Risks)
 - [ ] The Task status line accurately reflects current lifecycle (re-read it; if it lies, fix it)
 - [ ] Each step is specific enough that someone could implement it without re-reading the research doc
 - [ ] Each step is small enough to be one commit
 - [ ] Test specification includes at least one test case per behavioral requirement
 - [ ] No single step would push a file past 500 lines without an explicit note
+- [ ] Plan doc includes an Estimated context cost line covering research, implementation, and review phases
 - [ ] Checkpoint artifact exists at `docs/working/checkpoint-{topic}.md` with all template sections populated
 
 ### 4. Annotate (recommended) — human reviews and approves before implementation
