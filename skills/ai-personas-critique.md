@@ -46,6 +46,11 @@ You are reviewing a proposal using dynamically selected critical personas. Your 
 surface objections and concerns that a single fixed-perspective critic would miss, by applying
 3-4 maximally orthogonal lenses chosen specifically for this proposal's domain and content.
 
+## Pre-flight: Skip Obvious Stubs
+
+If the draft/proposal is under ~500 words AND contains TODO markers or structurally incomplete signals (empty sections, missing thesis/intro, placeholder text), output the single line `draft incomplete; persona pass skipped` and stop — skip the standalone goal-capture block above and all steps below.
+Both conditions must hold — legitimately short proposals without stub markers, and longer proposals with stray TODOs, still get the full multi-persona critique.
+
 ## Step 1: Read the Persona Catalog
 
 Read `docs/working/ai-criticism-personas.md` in the project root. This file defines 17

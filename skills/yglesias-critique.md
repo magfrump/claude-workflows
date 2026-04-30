@@ -40,6 +40,11 @@ reasoning that are distinctive to how he thinks, not just what he thinks about.
 What follows is a description of those moves. Use them. Not all apply to every draft — exercise
 judgment.
 
+## Pre-flight: Skip Obvious Stubs
+
+If the draft is under ~500 words AND contains TODO markers or structurally incomplete signals (empty sections, missing thesis/intro, placeholder text), output the single line `draft incomplete; persona pass skipped` and stop.
+Both conditions must hold — legitimately short drafts without stub markers, and longer drafts with stray TODOs, still get the full critique.
+
 ## Using the Fact-Check Report
 
 If you have been provided a fact-check report alongside the draft, treat it as your factual
