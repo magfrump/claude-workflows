@@ -10,14 +10,26 @@
 # On older BATS the functions are silently ignored and the lazy-init
 # fallback in setup() runs the script on the first test instead.
 
-SCRIPT="$(cd "$(dirname "$BATS_TEST_FILENAME")/../.." && pwd)/scripts/health-check.sh"
+REPO_ROOT="$(cd "$(dirname "$BATS_TEST_FILENAME")/../.." && pwd)"
+SCRIPT="$REPO_ROOT/scripts/health-check.sh"
+HP_FIXTURE="$REPO_ROOT/test/scripts/fixtures/hypothesis-pipeline/good"
 
 # Deterministic cache path shared across all tests in this file.
 _HC_CACHE_DIR="/tmp/bats-hc-cache.$$"
 
 _run_and_cache() {
   mkdir -p "$_HC_CACHE_DIR"
-  run bash "$SCRIPT"
+  # Point the hypothesis-pipeline integrity check at the known-good
+  # fixture so this integration test stays green even when the live
+  # docs/working/ data has open integrity issues. The integrity check
+  # itself is unit-tested separately by hypothesis-pipeline-integrity.bats.
+  local baseline_tmp="$_HC_CACHE_DIR/baseline"
+  cp "$HP_FIXTURE/baseline" "$baseline_tmp"
+  HC_HYPOTHESIS_LOG="$HP_FIXTURE/hypothesis-log.md" \
+  HC_MORNING_SUMMARY="$HP_FIXTURE/morning-summary.md" \
+  HC_COMPLETED_TASKS="$HP_FIXTURE/completed-tasks.md" \
+  HC_HYPOTHESIS_BASELINE="$baseline_tmp" \
+    run bash "$SCRIPT"
   printf '%s' "$output" > "$_HC_CACHE_DIR/output"
   printf '%s' "$status" > "$_HC_CACHE_DIR/status"
 }
@@ -82,6 +94,10 @@ setup() {
 
 @test "output contains Hook script permissions section" {
   echo "$HC_OUTPUT" | grep -q "Hook script permissions"
+}
+
+@test "output contains Hypothesis pipeline integrity section" {
+  echo "$HC_OUTPUT" | grep -q "Hypothesis pipeline integrity"
 }
 
 @test "output ends with All checks passed" {

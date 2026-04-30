@@ -20,6 +20,7 @@
 #   9. Skill test-fixture coverage report (soft warning, not a gate)
 #  10. Feature integration: si-functions.sh orphan detection (soft warning)
 #  11. Document freshness: flag stale spikes and onboarding docs (soft warning)
+#  12. Hypothesis pipeline integrity: log rows ↔ approved tasks ↔ completed tasks ↔ deferred questions
 set -euo pipefail
 
 REPO_ROOT="$(cd "$(dirname "$0")/.." && pwd)"
@@ -632,6 +633,162 @@ check_doc_freshness() {
     bold "  Freshness: $checked checked, $fresh fresh, $stale stale, $missing_fields missing fields"
 }
 
+# ── 12. Hypothesis pipeline integrity ─────────────────────────────────────
+
+# Emit one TSV row per data row in a hypothesis-log.md table:
+#   round<TAB>task<TAB>window<TAB>checked<TAB>outcome
+# Field-separator regex matches `|` with optional surrounding whitespace.
+# Skips header / separator / non-data lines via the leading-digit guard.
+parse_hypothesis_rows() {
+    # Field separator: optional whitespace, a literal `|` (in a character
+    # class to avoid awk treating `\|` as alternation), optional whitespace.
+    awk -F '[[:space:]]*[|][[:space:]]*' '
+        /^[|][[:space:]]*[0-9]+[[:space:]]*[|]/ {
+            print $2 "\t" $3 "\t" $5 "\t" $6 "\t" $7
+        }
+    ' "$1"
+}
+
+check_hypothesis_pipeline_integrity() {
+    section "Hypothesis pipeline integrity"
+
+    local hypothesis_log="${HC_HYPOTHESIS_LOG:-$REPO_ROOT/docs/working/hypothesis-log.md}"
+    local morning_summary="${HC_MORNING_SUMMARY:-$REPO_ROOT/docs/working/morning-summary.md}"
+    local completed_tasks="${HC_COMPLETED_TASKS:-$REPO_ROOT/docs/working/completed-tasks.md}"
+    local baseline_file="${HC_HYPOTHESIS_BASELINE:-$REPO_ROOT/docs/working/.hypothesis-row-baseline}"
+
+    local missing=0
+    [[ -f "$hypothesis_log"  ]] || { warn "hypothesis-log.md not found at $hypothesis_log";   missing=1; }
+    [[ -f "$morning_summary" ]] || { warn "morning-summary.md not found at $morning_summary"; missing=1; }
+    [[ -f "$completed_tasks" ]] || { warn "completed-tasks.md not found at $completed_tasks"; missing=1; }
+    if [[ $missing -eq 1 ]]; then
+        warn "Skipping integrity check (missing inputs)"
+        return
+    fi
+
+    # Most recent round = the upper bound of "rounds X-Y" in morning-summary.
+    local most_recent_round
+    most_recent_round="$(sed -nE 's/.*Rounds completed:[[:space:]]*[0-9]+[[:space:]]*\(rounds[[:space:]]*[0-9]+-([0-9]+)\).*/\1/p' "$morning_summary" | head -1)"
+    if [[ -z "$most_recent_round" ]]; then
+        fail "Could not parse most recent round from morning-summary.md"
+        return
+    fi
+
+    local pipeline_ok=true
+
+    # ── (a) approved tasks → hypothesis-log rows ──
+    local approved_tasks
+    approved_tasks="$(awk -v round="$most_recent_round" '
+        /^### Round / {
+            # Match header like "### Round 2 (3 tasks, 2 approved)"
+            n = $3 + 0
+            in_round = (n == round + 0)
+            next
+        }
+        /^## / { in_round = 0 }
+        /^### / && !/^### Round / { in_round = 0 }
+        in_round && /^- \*\*[A-Za-z0-9_-]+\*\*:/ {
+            line = $0
+            sub(/^- \*\*/, "", line)
+            sub(/\*\*:.*$/, "", line)
+            print line
+        }
+    ' "$morning_summary")"
+
+    if [[ -n "$approved_tasks" ]]; then
+        while IFS= read -r task; do
+            [[ -z "$task" ]] && continue
+            if ! grep -qE "^[|][[:space:]]*${most_recent_round}[[:space:]]*[|][[:space:]]*${task}[[:space:]]*[|]" "$hypothesis_log"; then
+                fail "(a) approved task '$task' (Round $most_recent_round) has no row in hypothesis-log.md"
+                pipeline_ok=false
+            fi
+        done <<< "$approved_tasks"
+    fi
+
+    # Cache parsed rows once (used by checks b, c, d).
+    local rows
+    rows="$(parse_hypothesis_rows "$hypothesis_log")"
+
+    # ── (b) open TRACKING / INCONCLUSIVE rows → deferred-questions section ──
+    local deferred_tasks
+    deferred_tasks="$(awk '
+        /^## Deferred Evaluation Questions/ { in_section = 1; next }
+        in_section && /^## / { in_section = 0 }
+        in_section {
+            while (match($0, /\*\*[A-Za-z0-9_-]+\*\*/)) {
+                tok = substr($0, RSTART + 2, RLENGTH - 4)
+                print tok
+                $0 = substr($0, RSTART + RLENGTH)
+            }
+        }
+    ' "$morning_summary")"
+
+    local row_round row_task row_checked row_outcome window_open label
+    while IFS=$'\t' read -r row_round row_task _ row_checked row_outcome; do
+        [[ -z "$row_task" ]] && continue
+        window_open=false
+        if [[ -z "$row_outcome" ]]; then
+            if [[ -z "$row_checked" || "$row_checked" -gt "$most_recent_round" ]]; then
+                window_open=true
+            fi
+        elif [[ "$row_outcome" == "INCONCLUSIVE" ]]; then
+            if [[ -n "$row_checked" && "$row_checked" -gt "$most_recent_round" ]]; then
+                window_open=true
+            fi
+        fi
+        if $window_open; then
+            if ! grep -Fxq "$row_task" <<< "$deferred_tasks"; then
+                label="TRACKING"
+                [[ -n "$row_outcome" ]] && label="INCONCLUSIVE"
+                fail "(b) open $label row '$row_task' (Round $row_round) not in deferred-questions section"
+                pipeline_ok=false
+            fi
+        fi
+    done <<< "$rows"
+
+    # ── (c) every row's Round/Task ID matches an actual completed task ──
+    while IFS=$'\t' read -r row_round row_task _ _ _; do
+        [[ -z "$row_task" ]] && continue
+        if ! awk -v round="$row_round" -v task="$row_task" '
+            /^## Round / {
+                n = $3 + 0
+                in_round = (n == round + 0)
+                next
+            }
+            /^## / { in_round = 0 }
+            in_round && index($0, "**" task "**") {
+                found = 1
+                exit
+            }
+            END { exit !found }
+        ' "$completed_tasks"; then
+            fail "(c) hypothesis-log row '$row_task' (Round $row_round) has no matching completed task"
+            pipeline_ok=false
+        fi
+    done <<< "$rows"
+
+    # ── (d) row count monotonically non-decreasing ──
+    local current_count
+    current_count="$(grep -cE '^[|][[:space:]]*[0-9]+[[:space:]]*[|]' "$hypothesis_log" || true)"
+    [[ -z "$current_count" ]] && current_count=0
+    local baseline=0
+    if [[ -f "$baseline_file" ]]; then
+        baseline="$(tr -d '[:space:]' < "$baseline_file")"
+        [[ "$baseline" =~ ^[0-9]+$ ]] || baseline=0
+    fi
+    if [[ "$current_count" -lt "$baseline" ]]; then
+        fail "(d) hypothesis-log row count decreased: current=$current_count baseline=$baseline (orphan deletion?)"
+        pipeline_ok=false
+    elif [[ "$current_count" -gt "$baseline" ]]; then
+        # Persist the new high-water mark for future runs.
+        printf '%s\n' "$current_count" > "$baseline_file" 2>/dev/null || true
+    fi
+
+    if $pipeline_ok; then
+        pass "Hypothesis pipeline integrity: $current_count rows verified (latest round=$most_recent_round)"
+    fi
+}
+
 # ── Run all checks ─────────────────────────────────────────────────────────
 
 main() {
@@ -649,6 +806,7 @@ main() {
     check_skill_fixture_coverage
     check_feature_integration
     check_doc_freshness
+    check_hypothesis_pipeline_integrity
 
     echo
     if [[ $FAIL -eq 0 ]]; then
@@ -659,4 +817,9 @@ main() {
     exit "$FAIL"
 }
 
-main "$@"
+# Run main() only when this file is executed directly. When sourced
+# (e.g., from a BATS test calling check_hypothesis_pipeline_integrity),
+# only the function definitions are loaded.
+if [[ "${BASH_SOURCE[0]}" == "${0}" ]]; then
+    main "$@"
+fi
