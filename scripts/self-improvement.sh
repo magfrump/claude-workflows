@@ -549,6 +549,8 @@ Do not create tasks that touch these topics or files:
 ${SI_OFF_LIMITS}"
     fi
 
+    MAINTENANCE_SURVEY_FILE="$WORKING_DIR/maintenance-survey-round-$ROUND.md"
+
     claude -p "Read docs/working/feature-ideas-round-$ROUND.md.
 
 For each surviving idea from the tradeoff matrix, assess whether it can be
@@ -557,10 +559,49 @@ of autonomous work).
 
 Output a JSON array to docs/working/tasks-round-$ROUND.json with fields:
 {\"id\": \"short-kebab-case\", \"description\": \"one paragraph task description\",
-\"files_touched\": [\"list of files\"], \"independent\": true/false}
+\"files_touched\": [\"list of files\"], \"independent\": true/false,
+\"tags\": [\"feature\" | \"maintenance\" | \"data-pipeline\", ...]}
 
 Only include tasks where independent is true. Discard tasks that depend on
-other tasks in this round.${TASK_OFF_LIMITS}"
+other tasks in this round.${TASK_OFF_LIMITS}
+
+# Tag taxonomy
+
+Every task MUST include a non-empty 'tags' array drawn from this enum:
+- feature       — new behavior, workflow improvement, or skill enhancement
+- maintenance   — orphan-function wiring, health-check fixes, hypothesis-log
+                  cleanup, dead-code removal, doc freshness sweeps
+- data-pipeline — data-pipeline regression repair (round-history.json,
+                  problem-history.json, hypothesis-log.md, completed-tasks.md,
+                  validation logs, or any pipeline that ingests / aggregates
+                  per-round artifacts)
+
+A task may carry multiple tags (e.g. ['feature','maintenance']) when it
+genuinely fits both. The taxonomy is what downstream legibility tracking
+will aggregate, so be honest about which bucket each task belongs to.
+
+# Maintenance quota — REQUIRED
+
+Each round must select at least one task tagged 'maintenance' or
+'data-pipeline' alongside the feature work, sourced from any of:
+1. orphan-function warnings (run scripts/health-check.sh or grep for
+   functions defined but never called from an entry point)
+2. broken health-check items (failures or warnings in scripts/health-check.sh)
+3. hypothesis-log cleanup (stale TRACKING rows or expired windows in
+   docs/working/hypothesis-log.md)
+4. data-pipeline regressions (broken aggregations, missing fields, or
+   stale entries in the artifacts under docs/working/)
+
+Before generating tasks, survey those four sources and write your findings
+to ${MAINTENANCE_SURVEY_FILE}. The survey file MUST end with exactly one
+of these two marker lines on its own line:
+- MAINTENANCE_DEBT_DETECTED   (you found one or more eligible items)
+- NO_MAINTENANCE_DEBT_DETECTED (all four sources are clean)
+
+If the marker is MAINTENANCE_DEBT_DETECTED, your tasks JSON MUST contain
+at least one task tagged 'maintenance' or 'data-pipeline'. If the marker
+is NO_MAINTENANCE_DEBT_DETECTED, the maintenance quota is waived for this
+round and no maintenance task is required."
 
     TASKS_FILE="$WORKING_DIR/tasks-round-$ROUND.json"
     if [ ! -f "$TASKS_FILE" ]; then
@@ -633,6 +674,65 @@ other tasks in this round.${TASK_OFF_LIMITS}"
             record_gate "$TASK_ID" "schema" "pass"
         done
     fi
+
+    # -------------------------------------------------------
+    # Step 2c: Maintenance quota check
+    # -------------------------------------------------------
+    # Each round must include at least one task tagged 'maintenance' or
+    # 'data-pipeline' (sourced from orphan-function warnings, broken
+    # health-check items, hypothesis-log cleanup, or data-pipeline
+    # regressions). When the survey marker reports no debt, the quota is
+    # explicitly waived with 'no maintenance debt detected' rather than
+    # silently skipped — keeping the legibility-tracking pipeline honest.
+    echo "Checking maintenance quota..."
+
+    MAINT_TAGGED_IDS_JSON=$(jq '[.[] | select((.tags // []) | any(. == "maintenance" or . == "data-pipeline")) | .id]' "$TASKS_FILE" 2>/dev/null || echo '[]')
+    if ! echo "$MAINT_TAGGED_IDS_JSON" | jq empty 2>/dev/null; then
+        MAINT_TAGGED_IDS_JSON='[]'
+    fi
+    MAINT_TASK_COUNT=$(echo "$MAINT_TAGGED_IDS_JSON" | jq 'length')
+
+    SURVEY_VERDICT="missing"
+    if [ -f "$MAINTENANCE_SURVEY_FILE" ]; then
+        if grep -q '^NO_MAINTENANCE_DEBT_DETECTED$' "$MAINTENANCE_SURVEY_FILE" 2>/dev/null; then
+            SURVEY_VERDICT="no_debt"
+        elif grep -q '^MAINTENANCE_DEBT_DETECTED$' "$MAINTENANCE_SURVEY_FILE" 2>/dev/null; then
+            SURVEY_VERDICT="debt"
+        fi
+    fi
+
+    VIOLATION_NOTE=""
+    if [ "$MAINT_TASK_COUNT" -gt 0 ]; then
+        QUOTA_VERDICT="satisfied"
+        echo "  Maintenance quota satisfied: $MAINT_TASK_COUNT task(s) tagged maintenance/data-pipeline"
+        echo "[round-$ROUND] MAINTENANCE_QUOTA: satisfied ($MAINT_TASK_COUNT task(s))" \
+            >> "$WORKING_DIR/validation-round-$ROUND.log"
+    elif [ "$SURVEY_VERDICT" = "no_debt" ]; then
+        QUOTA_VERDICT="waived_no_debt"
+        echo "  no maintenance debt detected"
+        echo "[round-$ROUND] MAINTENANCE_QUOTA: no maintenance debt detected (waived)" \
+            >> "$WORKING_DIR/validation-round-$ROUND.log"
+    else
+        QUOTA_VERDICT="violated"
+        if [ "$SURVEY_VERDICT" = "debt" ]; then
+            VIOLATION_NOTE="survey reported debt but no maintenance/data-pipeline tagged task was generated"
+        else
+            VIOLATION_NOTE="maintenance survey marker missing — survey may not have run"
+        fi
+        echo "  WARNING: maintenance quota violated — $VIOLATION_NOTE"
+        echo "[round-$ROUND] MAINTENANCE_QUOTA: violated — $VIOLATION_NOTE" \
+            >> "$WORKING_DIR/validation-round-$ROUND.log"
+    fi
+
+    QUOTA_JSON=$(jq -n \
+        --arg verdict "$QUOTA_VERDICT" \
+        --argjson count "$MAINT_TASK_COUNT" \
+        --argjson tagged "$MAINT_TAGGED_IDS_JSON" \
+        --arg survey "$SURVEY_VERDICT" \
+        --arg note "$VIOLATION_NOTE" \
+        '{verdict: $verdict, maintenance_task_count: $count, tagged_tasks: $tagged, survey_verdict: $survey} +
+         (if $note == "" then {} else {violation_note: $note} end)')
+    update_round_log '.maintenance_quota' "$QUOTA_JSON"
 
     # -------------------------------------------------------
     # Step 3: Implement in parallel worktrees
