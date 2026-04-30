@@ -101,10 +101,18 @@ generate_morning_summary() {
     {
         _summary_header "$start_round" "$end_round" "$working_dir"
         _summary_whats_new "$start_round" "$end_round" "$working_dir" "$round_history" "$completed_tasks"
+        _summary_verdicts "$start_round" "$end_round" "$working_dir" "$hypothesis_log"
         _summary_gate_stats "$round_history"
         _summary_deferred_evaluation "$hypothesis_log"
         _summary_footer
     } > "$output_path"
+
+    # Capture the next round's claim using current state as baseline. The
+    # SI loop reinvokes this function after every finalize_round_log, so
+    # round (end_round + 1) inherits a baseline taken at its own start
+    # (= the moment round end_round wrapped up). Idempotent: an existing
+    # claim file is preserved so re-runs don't rewrite the baseline.
+    _capture_round_claim "$((end_round + 1))" "$working_dir" "$hypothesis_log"
 
     echo "  Morning summary written to: $output_path"
 }
@@ -297,6 +305,172 @@ _summary_deferred_evaluation() {
 
     if [ "$count" -eq 0 ]; then
         echo "No open hypotheses to evaluate."
+    fi
+}
+
+# --- Internal: count deferred (open) hypotheses ---
+# Mirrors the row filter used by _summary_deferred_evaluation: pipe-table
+# rows whose Outcome column (col 7) is empty, excluding internal-si scope.
+# Returns just the count to stdout.
+_count_deferred_hypotheses() {
+    local hypothesis_log="$1"
+    [ -f "$hypothesis_log" ] || { echo 0; return; }
+
+    local scope_col=0
+    scope_col=$(awk -F'|' '
+        /^\|/ && / Round / && / Scope / {
+            for (i = 1; i <= NF; i++) {
+                gsub(/^[ \t]+|[ \t]+$/, "", $i)
+                if ($i == "Scope") { print i; exit }
+            }
+        }
+    ' "$hypothesis_log")
+    scope_col="${scope_col:-0}"
+
+    local count=0
+    while IFS= read -r line; do
+        [[ "$line" != \|* ]] && continue
+        echo "$line" | grep -qE '^\|\s*(Round|----)' && continue
+
+        local outcome
+        outcome=$(echo "$line" | awk -F'|' '{gsub(/^[ \t]+|[ \t]+$/, "", $7); print $7}')
+        [[ -n "$outcome" ]] && continue
+
+        if [[ "$scope_col" -gt 0 ]]; then
+            local scope
+            scope=$(echo "$line" | awk -F'|' -v c="$scope_col" '{gsub(/^[ \t]+|[ \t]+$/, "", $c); print $c}')
+            [[ "$scope" == "internal-si" ]] && continue
+        fi
+        count=$((count + 1))
+    done < "$hypothesis_log"
+    echo "$count"
+}
+
+# --- Internal: capture a falsifiable claim for an upcoming round ---
+# Writes round-N-claim.json containing claim text, type, and baseline
+# metric values taken at capture time. Idempotent — existing files are
+# preserved so the baseline reflects the original round-start moment
+# even if the morning summary is regenerated mid-run.
+#
+# Claim type implemented: deferred_hypothesis_closure. Future types can
+# be added by extending the case switch in _evaluate_round_claim.
+_capture_round_claim() {
+    local round="$1" working_dir="$2" hypothesis_log="$3"
+    local claim_file="$working_dir/round-${round}-claim.json"
+    [ -f "$claim_file" ] && return 0
+    [ -d "$working_dir" ] || return 0
+
+    local baseline
+    baseline=$(_count_deferred_hypotheses "$hypothesis_log")
+
+    jq -n \
+        --argjson round "$round" \
+        --arg ts "$(date -u +%Y-%m-%dT%H:%M:%SZ)" \
+        --argjson baseline "$baseline" \
+        '{
+            round: $round,
+            captured_at: $ts,
+            claim: "close >=1 deferred hypothesis",
+            type: "deferred_hypothesis_closure",
+            params: {min_closures: 1, baseline_deferred_count: $baseline}
+        }' > "$claim_file" 2>/dev/null || rm -f "$claim_file"
+}
+
+# --- Internal: evaluate a round's claim and emit a VERDICT line ---
+# Reads round-N-claim.json, recomputes the claim's metric against the
+# current state, and prints a single markdown bullet starting with the
+# token "confirmed", "refuted", "inconclusive", or "no-claim". The
+# leading token is significant: _summary_verdicts pattern-matches on it
+# to tally the aggregate counts.
+_evaluate_round_claim() {
+    local round="$1" working_dir="$2" hypothesis_log="$3"
+    local claim_file="$working_dir/round-${round}-claim.json"
+
+    if [ ! -f "$claim_file" ]; then
+        echo "- **VERDICT (round ${round})**: no-claim — round predates claim capture"
+        return 0
+    fi
+
+    local claim_type baseline min_closures claim_text
+    claim_type=$(jq -r '.type // ""' "$claim_file" 2>/dev/null)
+    claim_text=$(jq -r '.claim // ""' "$claim_file" 2>/dev/null)
+    baseline=$(jq -r '.params.baseline_deferred_count // 0' "$claim_file" 2>/dev/null)
+    min_closures=$(jq -r '.params.min_closures // 1' "$claim_file" 2>/dev/null)
+    [[ "$baseline" =~ ^[0-9]+$ ]] || baseline=0
+    [[ "$min_closures" =~ ^[0-9]+$ ]] || min_closures=1
+
+    local current verdict reason target
+    case "$claim_type" in
+        deferred_hypothesis_closure)
+            current=$(_count_deferred_hypotheses "$hypothesis_log")
+            target=$(( baseline - min_closures ))
+            if [ ! -f "$hypothesis_log" ]; then
+                verdict="inconclusive"
+                reason="hypothesis log unavailable"
+            elif [ "$baseline" -eq 0 ]; then
+                verdict="inconclusive"
+                reason="baseline was 0 — no deferred hypotheses to close"
+            elif [ "$current" -le "$target" ]; then
+                verdict="confirmed"
+                reason="deferred hypotheses ${baseline} -> ${current} (closed >=${min_closures})"
+            elif [ "$current" -ge "$baseline" ]; then
+                verdict="refuted"
+                reason="deferred hypotheses ${baseline} -> ${current} (no net closures)"
+            else
+                verdict="inconclusive"
+                reason="deferred hypotheses ${baseline} -> ${current} (decrease below threshold of ${min_closures})"
+            fi
+            ;;
+        *)
+            verdict="inconclusive"
+            reason="unknown claim type: ${claim_type}"
+            ;;
+    esac
+
+    echo "- **VERDICT (round ${round})**: ${verdict} — claim \"${claim_text}\": ${reason}"
+}
+
+# --- Internal: per-round verdicts section ---
+# Prints VERDICT bullets for each round in the window plus an aggregate
+# tally. A persistent inconclusive-rate (>=50% of evaluated rounds) is
+# itself a metric: it suggests the claim type does not exercise the
+# actual round-design loop and the claim framework needs revision.
+_summary_verdicts() {
+    local start_round="$1" end_round="$2" working_dir="$3" hypothesis_log="$4"
+
+    echo ""
+    echo "## Round Claim Verdicts"
+    echo ""
+    echo "Each round captures a falsifiable claim at its start and is graded"
+    echo "against current artifacts at round end. Persistent inconclusive"
+    echo "verdicts indicate a flawed round-design loop."
+    echo ""
+
+    local confirmed=0 refuted=0 inconclusive=0 noclaim=0
+    for round_num in $(seq "$start_round" "$end_round"); do
+        local line
+        line=$(_evaluate_round_claim "$round_num" "$working_dir" "$hypothesis_log")
+        echo "$line"
+        case "$line" in
+            *": confirmed "*) confirmed=$((confirmed + 1)) ;;
+            *": refuted "*)   refuted=$((refuted + 1)) ;;
+            *": inconclusive "*) inconclusive=$((inconclusive + 1)) ;;
+            *": no-claim "*)  noclaim=$((noclaim + 1)) ;;
+        esac
+    done
+
+    local evaluated=$((confirmed + refuted + inconclusive))
+    echo ""
+    echo "Aggregate: ${confirmed} confirmed, ${refuted} refuted, ${inconclusive} inconclusive"
+    if [ "$noclaim" -gt 0 ]; then
+        echo "(${noclaim} round(s) without a claim file — predate claim capture)"
+    fi
+
+    if [ "$evaluated" -gt 0 ] && [ $((inconclusive * 2)) -ge "$evaluated" ]; then
+        echo ""
+        echo "Note: inconclusive verdicts are >=50% of evaluated rounds. The"
+        echo "current claim type may not exercise the actual round-design"
+        echo "loop — consider revising the claim framework."
     fi
 }
 
