@@ -214,6 +214,8 @@ Structure:
 
 **Workflow provenance** (optional): [e.g., "RPI → DD → RPI" or "Spike → RPI → PR-prep"]
 
+**Falsifiable expectation** (optional, check-by YYYY-MM-DD — default 2 weeks from merge): [e.g., "By the check-by date, the review-fix loop converges in ≤2 iterations on at least 3 of the next 5 PRs that touch this workflow"]
+
 ## How it works
 [Brief technical summary. Not a line-by-line walkthrough — describe the approach.]
 
@@ -245,6 +247,7 @@ For UI changes, capture before/after screenshots or a short recording and includ
 - [ ] Each section contains at least one substantive sentence (not a placeholder)
 - [ ] Review evidence section lists all `docs/reviews/` artifacts for this PR, or states "No review artifacts" if none exist
 - [ ] (Optional) If this PR involved multiple workflow compositions (e.g., RPI → DD → RPI), a workflow provenance line is included in "What this does"
+- [ ] (Optional) If the PR has a measurable expected outcome, a "Falsifiable expectation" line with a check-by date (default 2 weeks from merge) is included
 
 ## Retrospective
 
