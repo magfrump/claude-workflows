@@ -13,6 +13,12 @@ if [[ "${BASH_SOURCE[0]}" == "${0}" ]]; then
     exit 1
 fi
 
+# Allowed values for the per-task category field. Kept as a single-source-of-
+# truth string so the planner prompt, validator, and morning summary agree.
+# Why three values only: avoids bikeshedding while still surfacing when feature
+# work is crowding out maintenance and data-pipeline repairs.
+TASK_CATEGORIES_ALLOWED="feature maintenance data-pipeline"
+
 # --- Task JSON schema validation ---
 # Validates each task in a tasks JSON file against the expected schema.
 # Outputs a filtered JSON array (valid tasks only) to stdout.
@@ -45,6 +51,19 @@ validate_task_json() {
 
         if [ -n "$schema_err" ]; then
             echo "  SCHEMA REJECT [${tid:-task-$i}]: $schema_err" >&2
+            continue
+        fi
+
+        # Check category field. Strict-when-present: invalid values reject;
+        # absence is a lint warning so the loop keeps running until the
+        # planner prompt is updated to emit categories. See
+        # docs/working/scope-exception-r3-task-category-tagging.md.
+        local category
+        category=$(echo "$task" | jq -r '.category // ""')
+        if [ -z "$category" ]; then
+            echo "  LINT WARNING [$tid]: category missing — planner should assign one of: $TASK_CATEGORIES_ALLOWED" >&2
+        elif ! echo " $TASK_CATEGORIES_ALLOWED " | grep -q " $category "; then
+            echo "  SCHEMA REJECT [$tid]: category must be one of: $TASK_CATEGORIES_ALLOWED (got: $category)" >&2
             continue
         fi
 
