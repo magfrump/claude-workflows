@@ -184,7 +184,10 @@ Compile steps 1-5 into `docs/working/onboarding-{project}.md` with these section
 **Date:** {date}
 **Last verified:** {date}
 **Relevant paths:** {repo-relative paths this document covers — e.g., src/, lib/, configs/}
-**Scope:** {what was covered — "full repo", "backend only", "packages/api + packages/shared only", etc.}
+
+- **Goal**: One sentence — what this orientation doc covers (e.g., "full repo", "backend only", "packages/api + packages/shared only").
+- **Project state**: <what this branch delivers> · <position in larger initiative, or "standalone"> · <blocked on, or "not blocked">.
+- **Task status**: [in-progress | blocked | paused | complete] (optional phase note in parens, e.g., `in-progress (lightweight refresh after auth subsystem changes)`)
 
 ## Entry Points
 {bullet list from step 1}
@@ -205,8 +208,11 @@ Compile steps 1-5 into `docs/working/onboarding-{project}.md` with these section
 {for common task types, where to look first — e.g., "to add a new API endpoint, start with routes/ and follow the pattern in routes/users.ts"}
 ```
 
+The three-line header (Goal · Project state · Task status) below the metadata block is the same drift-surfacing convention RPI working docs use (see `workflows/research-plan-implement.md` step 2). Lifecycle keyword vocabulary is identical: `in-progress | blocked | paused | complete`. For a long-lived orientation doc, the Task status line typically reads `complete` after gate sign-off in step 7, switching back to `in-progress` during a re-run or lightweight refresh. Update it whenever the doc is read or revised; if any line no longer matches reality, fix it before doing anything else with the doc. The Goal line replaces the previous standalone `Scope:` field — same content, unified anchor.
+
 **Done when...**
-- [ ] `docs/working/onboarding-{project}.md` exists with all required sections (Entry Points, Architecture Map, Key Flows, Conventions, Known Unknowns, Suggested Starting Points)
+- [ ] `docs/working/onboarding-{project}.md` exists, opens with the three-line header (Goal · Project state · Task status) below the metadata block, and includes all required sections (Entry Points, Architecture Map, Key Flows, Conventions, Known Unknowns, Suggested Starting Points)
+- [ ] The Task status line accurately reflects current lifecycle (re-read it; if it lies, fix it)
 - [ ] `Last verified` and `Relevant paths` fields are populated in the frontmatter
 - [ ] Document is committed to the repo
 

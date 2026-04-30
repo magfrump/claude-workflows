@@ -127,17 +127,27 @@ If the tradeoff is genuinely unclear: **stop and consult the user.** Present the
 
 ### 5. Document
 
-Create or update `docs/decisions/NNN-title.md` with:
-- Context: what prompted the decision
-- Options considered (brief — the full analysis doesn't need to be preserved)
-- Decision and rationale
-- Consequences: what this makes easier, what this makes harder
+Create or update `docs/decisions/NNN-title.md`. The doc must begin with the standard three-line header used by RPI working docs (see `workflows/research-plan-implement.md` step 2):
 
-**Sub-threshold decisions**: Not every decision surfaced during DD warrants a full record. If the diverge phase quickly converges to a single obvious answer — no real tradeoffs, low reversal cost — add a row to [`docs/decisions/log.md`](../docs/decisions/log.md) instead and move on. The log's "when to use" criteria describe the boundary. Reserve full `NNN-title.md` records for decisions with genuine tradeoffs or lasting consequences.
+- **Goal**: One sentence — what this artifact is trying to achieve. For a DD decision record, this is the design decision being made.
+- **Project state**: One sentence — branch context, written as `<what this branch delivers> · <position in larger initiative, or "standalone"> · <blocked on, or "not blocked">`. When DD is invoked as a sub-procedure within RPI, this is the calling RPI loop's branch context.
+- **Task status**: Lifecycle keyword from `in-progress | blocked | paused | complete`, optionally followed by a free-form phase note in parens (e.g., `in-progress (decision drafted, awaiting review)`). The keyword is required; the parenthetical is optional but recommended whenever a phase note would help a re-reader orient.
+
+The header serves the same drift-surfacing purpose described in RPI step 2: every mid-task re-read should re-verify the three lines against reality, and the Task status line should be updated whenever the doc is read or revised. Treat it as required body content — no optional pre-block, no YAML frontmatter, no linter; the spec text is the enforcement.
+
+After the header, the body must include:
+
+- **Context**: what prompted the decision
+- **Options considered** (brief — the full analysis doesn't need to be preserved)
+- **Decision and rationale**
+- **Consequences**: what this makes easier, what this makes harder
+
+**Sub-threshold decisions**: Not every decision surfaced during DD warrants a full record. If the diverge phase quickly converges to a single obvious answer — no real tradeoffs, low reversal cost — add a row to [`docs/decisions/log.md`](../docs/decisions/log.md) instead and move on. The log's "when to use" criteria describe the boundary. Reserve full `NNN-title.md` records for decisions with genuine tradeoffs or lasting consequences. The three-line header requirement applies to full records only; sub-threshold log rows are exempt.
 
 **Done when...**
 - [ ] Decision record exists in `docs/decisions/NNN-title.md` (or a row in `log.md` for sub-threshold decisions)
-- [ ] Record includes Context, Options considered, Decision and rationale, and Consequences
+- [ ] For full records, the doc opens with the three-line header (Goal · Project state · Task status) and includes all required body sections (Context, Options considered, Decision and rationale, Consequences)
+- [ ] The Task status line accurately reflects current lifecycle (re-read it; if it lies, fix it)
 - [ ] The decision is referenced from the calling workflow's artifacts (e.g., the RPI plan doc)
 
 ## Variant: Epistemic Reasoning (Hypothesis Generation)
