@@ -1,8 +1,11 @@
 #!/bin/bash
 # Automated self-improvement loop for the claude-workflows repo.
-# Runs multiple rounds of: generate ideas → select tasks → implement in
-# worktrees → validate → merge approved changes. Stops when ideas are
-# exhausted or problem convergence is detected.
+# Runs multiple rounds of: generate ideas → select tasks → schema-validate
+# → hypothesis_present gate → implement in worktrees → validate → merge
+# approved changes. Stops when ideas are exhausted or problem convergence
+# is detected. Tasks must declare a falsifiable hypothesis, an explicit
+# success criterion, and a token-budget estimate before any
+# implementation tokens are spent (see Step 2c).
 #
 # Usage:
 #   scripts/self-improvement.sh [--seed-file FILE]
@@ -405,6 +408,27 @@ and claude-api. Remaining idea slots may target internal SI
 infrastructure. Mark each idea with [EXTERNAL] or [INTERNAL] so this
 constraint is verifiable.
 
+IMPORTANT — Hypothesis-first requirement:
+For every idea you keep through to the Survivors section, attach the
+following two fields directly under the survivor's bullet (use a nested
+list or labelled lines — any format the downstream task-filtering step
+can read):
+
+- Hypothesis: one sentence, falsifiable, naming what will change and
+  what measurable effect is expected. Trivial mechanical fixes
+  (renames, syntactic cleanups) satisfy this with a minimal claim such
+  as 'Renaming X to Y in N callers leaves all tests green and produces
+  no behavior change.' — but the field must still be present.
+- Success criterion: an explicit, observable check (test name, log
+  line, metric threshold, or yes/no question against repo state) that
+  decides confirm vs. refute.
+- Token budget: a positive integer estimate of implementation tokens
+  for the change. Trivial fixes typically estimate 2000-5000; multi-
+  file features estimate 10000-30000.
+
+These fields are required so the downstream hypothesis_present gate
+does not drop the task. Ideas without all three are wasted work.
+
 If you cannot generate at least 3 genuinely new and valuable ideas that
 are not already completed or in progress, write only the word DONE on the
 first line of your output and stop. Note: re-attempts of rejected ideas
@@ -556,8 +580,28 @@ implemented independently in a single Claude Code session (~10-15 minutes
 of autonomous work).
 
 Output a JSON array to docs/working/tasks-round-$ROUND.json with fields:
-{\"id\": \"short-kebab-case\", \"description\": \"one paragraph task description\",
-\"files_touched\": [\"list of files\"], \"independent\": true/false}
+{\"id\": \"short-kebab-case\",
+ \"description\": \"one paragraph task description\",
+ \"files_touched\": [\"list of files\"],
+ \"independent\": true/false,
+ \"hypothesis\": \"one-sentence falsifiable claim about the change's effect\",
+ \"success_criterion\": \"explicit, observable check that decides confirm vs. refute\",
+ \"token_budget\": 12000}
+
+Field rules — every task MUST include all of the above. Tasks missing
+hypothesis, success_criterion, or token_budget will be dropped by the
+hypothesis_present gate before implementation runs.
+
+- hypothesis: a single sentence stating what will change and what
+  measurable effect is expected. For trivial mechanical fixes (renames,
+  syntactic cleanups) use a minimal claim such as 'Renaming X to Y in N
+  callers leaves all tests green and produces no behavior change.'
+- success_criterion: an explicit, observable check (a test name, a log
+  line, a metric threshold, or a yes/no question against repo state)
+  that determines whether the hypothesis is confirmed or refuted.
+- token_budget: a positive integer estimate of implementation tokens
+  needed. Trivial fixes typically estimate 2000-5000; multi-file
+  features estimate 10000-30000. Pick a realistic number, not a wish.
 
 Only include tasks where independent is true. Discard tasks that depend on
 other tasks in this round.${TASK_OFF_LIMITS}"
@@ -632,6 +676,61 @@ other tasks in this round.${TASK_OFF_LIMITS}"
         for TASK_ID in $TASK_IDS; do
             record_gate "$TASK_ID" "schema" "pass"
         done
+    fi
+
+    # -------------------------------------------------------
+    # Step 2c: Hypothesis-present gate
+    # -------------------------------------------------------
+    # Every task must declare a one-sentence falsifiable hypothesis with an
+    # explicit success criterion AND a positive-integer token-budget
+    # estimate before implementation runs. Tasks lacking any of these are
+    # dropped here, so we don't spend implementation tokens on work whose
+    # outcome can't be evaluated. Trivial fixes (renames, mechanical
+    # cleanups) satisfy the gate with a minimal claim plus a small token
+    # estimate — the gate checks presence and shape, not ambition.
+    echo "Running hypothesis_present gate..."
+    HYP_VALID_TASKS="[]"
+    HYP_REJECTED_COUNT=0
+    for TASK_ID in $TASK_IDS; do
+        TASK_JSON=$(jq -c --arg tid "$TASK_ID" '.[] | select(.id==$tid)' "$TASKS_FILE")
+        HYP_ERR=""
+        if ! echo "$TASK_JSON" | jq -e '(.hypothesis | type) == "string" and (.hypothesis | length) > 0' >/dev/null 2>&1; then
+            HYP_ERR="missing or empty hypothesis"
+        elif ! echo "$TASK_JSON" | jq -e '(.success_criterion | type) == "string" and (.success_criterion | length) > 0' >/dev/null 2>&1; then
+            HYP_ERR="missing or empty success_criterion"
+        elif ! echo "$TASK_JSON" | jq -e '(.token_budget | type) == "number" and .token_budget > 0 and (.token_budget | floor) == .token_budget' >/dev/null 2>&1; then
+            HYP_ERR="missing or non-positive-integer token_budget"
+        fi
+
+        if [ -n "$HYP_ERR" ]; then
+            echo "  HYPOTHESIS REJECT [$TASK_ID]: $HYP_ERR"
+            echo "[round-$ROUND] HYPOTHESIS REJECT [$TASK_ID]: $HYP_ERR" >> "$WORKING_DIR/validation-round-$ROUND.log"
+            record_gate "$TASK_ID" "hypothesis_present" "fail"
+            record_gate_detail "$TASK_ID" "hypothesis_present" \
+                "$(jq -n --arg err "$HYP_ERR" '{error: $err}')"
+            HYP_REJECTED_COUNT=$((HYP_REJECTED_COUNT + 1))
+        else
+            record_gate "$TASK_ID" "hypothesis_present" "pass"
+            HYP_VALID_TASKS=$(echo "$HYP_VALID_TASKS" | jq --argjson t "$TASK_JSON" '. += [$t]')
+        fi
+    done
+
+    if [ "$HYP_REJECTED_COUNT" -gt 0 ]; then
+        HYP_VALID_COUNT=$(echo "$HYP_VALID_TASKS" | jq 'length')
+        echo "  hypothesis_present gate: $HYP_REJECTED_COUNT rejected, $HYP_VALID_COUNT valid"
+        echo "[round-$ROUND] HYPOTHESIS_PRESENT: $HYP_REJECTED_COUNT rejected, $HYP_VALID_COUNT valid" >> "$WORKING_DIR/validation-round-$ROUND.log"
+
+        echo "$HYP_VALID_TASKS" > "$TASKS_FILE"
+        TASK_IDS=$(jq -r '.[].id' "$TASKS_FILE")
+        TASK_COUNT=$(jq 'length' "$TASKS_FILE")
+        TASK_IDS_JSON=$(jq '[.[].id]' "$TASKS_FILE")
+
+        if [ "$HYP_VALID_COUNT" -eq 0 ]; then
+            echo "No tasks passed hypothesis_present gate. Skipping round."
+            update_round_log '.outcome' '"all_hypothesis_rejected"'
+            finalize_round_log "$ROUND"
+            continue
+        fi
     fi
 
     # -------------------------------------------------------
