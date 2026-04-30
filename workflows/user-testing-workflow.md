@@ -22,6 +22,7 @@ A reusable guide for planning, running, and interpreting usability tests. Ground
 2. **What do we want to learn?** (2–4 research questions, *not* yes/no)
 3. **What decisions will this inform?** (ship/don't ship, redesign X, prioritize Y)
 4. **What's the riskiest assumption?** (the thing that, if wrong, wastes the most work)
+5. **If the script's purpose is to evaluate AI output: does this task have a high-quality unscaffolded baseline?** If so, the test should compare the scaffolded output to the unscaffolded baseline rather than evaluating the scaffold in isolation. Scaffolding adds cost (latency, complexity, surface area for bugs), so the question worth answering is whether the scaffold beats the raw model — not whether it produces something usable on its own. If no strong baseline exists, say so explicitly and design the test around that gap rather than skipping the question.
 
 > **Litmus test**: If you can't name a decision this test will change, you're not ready to test. Reformulate until you can.
 
