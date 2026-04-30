@@ -104,7 +104,7 @@ generate_morning_summary() {
         _summary_whats_new "$start_round" "$end_round" "$working_dir" "$round_history" "$completed_tasks"
         _summary_verdicts "$start_round" "$end_round" "$working_dir" "$hypothesis_log"
         _summary_gate_stats "$round_history"
-        _summary_deferred_evaluation "$hypothesis_log"
+        _summary_deferred_evaluation "$hypothesis_log" "$end_round"
         _summary_footer
     } > "$output_path"
 
@@ -471,14 +471,23 @@ _summary_gate_stats() {
 }
 
 # --- Internal: deferred hypothesis evaluation ---
-# Surfaces hypotheses with empty Outcome as deferred user questions.
-# Skips rows whose Scope is "internal-si" — those are SI-infrastructure
-# hypotheses evaluated within the loop using gate stats and round reports,
-# not via real-world user observations. The Scope column is optional; if
-# it is absent (older log files), every empty-outcome row surfaces as
-# before.
+# Surfaces hypotheses whose evaluation window has matured and which still
+# have an empty Outcome — i.e. rows where Outcome is empty AND
+# Round + Window <= current_round. Rows whose window has not yet matured
+# are tracked in the "Open Hypotheses" section instead, so they aren't
+# asked about prematurely.
+#
+# Skips rows whose Scope is "internal-si" when that column exists — those
+# are SI-infrastructure hypotheses evaluated within the loop, not via
+# real-world user observations. The Scope column is optional.
+#
+# If current_round is omitted or non-numeric, the round-window check is
+# bypassed and every empty-Outcome row surfaces (legacy behaviour). Rows
+# with non-numeric Round or Window also bypass the check so older logs
+# still surface.
 _summary_deferred_evaluation() {
     local hypothesis_log="$1"
+    local current_round="${2:-0}"
 
     echo ""
     echo "## Deferred Evaluation Questions"
@@ -493,37 +502,12 @@ _summary_deferred_evaluation() {
         return
     fi
 
-    # Locate the Scope column in the table header (1-based awk index, or 0
-    # if the column is absent). Match the header by anchoring on a
-    # well-known column name to avoid mistaking a hypothesis row that
-    # happens to contain "Scope" for the header.
-    local scope_col=0
-    scope_col=$(awk -F'|' '
-        /^\|/ && / Round / && / Scope / {
-            for (i = 1; i <= NF; i++) {
-                gsub(/^[ \t]+|[ \t]+$/, "", $i)
-                if ($i == "Scope") { print i; exit }
-            }
-        }
-    ' "$hypothesis_log")
-    scope_col="${scope_col:-0}"
+    local scope_col
+    scope_col=$(_locate_scope_col "$hypothesis_log")
 
     local count=0
     while IFS= read -r line; do
-        [[ "$line" != \|* ]] && continue
-        echo "$line" | grep -qE '^\|\s*(Round|----)' && continue
-
-        local outcome
-        outcome=$(echo "$line" | awk -F'|' '{gsub(/^[ \t]+|[ \t]+$/, "", $7); print $7}')
-
-        # Empty outcome = still tracking
-        [[ -n "$outcome" ]] && continue
-
-        if [[ "$scope_col" -gt 0 ]]; then
-            local scope
-            scope=$(echo "$line" | awk -F'|' -v c="$scope_col" '{gsub(/^[ \t]+|[ \t]+$/, "", $c); print $c}')
-            [[ "$scope" == "internal-si" ]] && continue
-        fi
+        _row_is_open_deferred "$line" "$current_round" "$scope_col" || continue
 
         local round task_id hypothesis
         round=$(echo "$line" | awk -F'|' '{gsub(/^[ \t]+|[ \t]+$/, "", $2); print $2}')
@@ -542,16 +526,14 @@ _summary_deferred_evaluation() {
     fi
 }
 
-# --- Internal: count deferred (open) hypotheses ---
-# Mirrors the row filter used by _summary_deferred_evaluation: pipe-table
-# rows whose Outcome column (col 7) is empty, excluding internal-si scope.
-# Returns just the count to stdout.
-_count_deferred_hypotheses() {
+# --- Internal: locate the Scope column index in the log header ---
+# Returns the 1-based awk field index of the "Scope" column, or 0 if the
+# column is absent. Matched by anchoring on " Round " in the header line
+# to avoid mistaking hypothesis text that happens to contain "Scope".
+_locate_scope_col() {
     local hypothesis_log="$1"
-    [ -f "$hypothesis_log" ] || { echo 0; return; }
-
-    local scope_col=0
-    scope_col=$(awk -F'|' '
+    local idx
+    idx=$(awk -F'|' '
         /^\|/ && / Round / && / Scope / {
             for (i = 1; i <= NF; i++) {
                 gsub(/^[ \t]+|[ \t]+$/, "", $i)
@@ -559,22 +541,72 @@ _count_deferred_hypotheses() {
             }
         }
     ' "$hypothesis_log")
-    scope_col="${scope_col:-0}"
+    echo "${idx:-0}"
+}
+
+# --- Internal: shared row filter for deferred-question scans ---
+# Returns 0 (true) if the row should be surfaced as a deferred question:
+#   - is a data row (not header / separator)
+#   - has a non-empty Task ID
+#   - has an empty Outcome ($7)
+#   - is not Scope=internal-si (when that column exists)
+#   - has Round + Window <= current_round (when current_round > 0 and
+#     both Round and Window parse as integers)
+#
+# Returns 1 otherwise. current_round=0 disables the round-window check
+# so legacy callers behave unchanged.
+_row_is_open_deferred() {
+    local line="$1"
+    local current_round="${2:-0}"
+    local scope_col="${3:-0}"
+
+    [[ "$line" != \|* ]] && return 1
+    echo "$line" | grep -qE '^\|\s*(Round|----)' && return 1
+
+    local round window outcome task_id
+    round=$(echo "$line"   | awk -F'|' '{gsub(/^[ \t]+|[ \t]+$/, "", $2); print $2}')
+    task_id=$(echo "$line" | awk -F'|' '{gsub(/^[ \t]+|[ \t]+$/, "", $3); print $3}')
+    window=$(echo "$line"  | awk -F'|' '{gsub(/^[ \t]+|[ \t]+$/, "", $5); print $5}')
+    outcome=$(echo "$line" | awk -F'|' '{gsub(/^[ \t]+|[ \t]+$/, "", $7); print $7}')
+
+    [[ -z "$task_id" ]] && return 1
+    [[ -n "$outcome" ]] && return 1
+
+    if [[ "$scope_col" -gt 0 ]]; then
+        local scope
+        scope=$(echo "$line" | awk -F'|' -v c="$scope_col" '{gsub(/^[ \t]+|[ \t]+$/, "", $c); print $c}')
+        [[ "$scope" == "internal-si" ]] && return 1
+    fi
+
+    # Round-window gate: only apply when caller supplied a positive
+    # current_round AND both round/window parse as non-negative integers.
+    # Otherwise keep legacy behaviour (surface on empty outcome alone).
+    if [[ "$current_round" =~ ^[0-9]+$ ]] && [[ "$current_round" -gt 0 ]] \
+       && [[ "$round" =~ ^[0-9]+$ ]] && [[ "$window" =~ ^[0-9]+$ ]]; then
+        if (( round + window > current_round )); then
+            return 1
+        fi
+    fi
+
+    return 0
+}
+
+# --- Internal: count deferred (open) hypotheses ---
+# Mirrors the row filter used by _summary_deferred_evaluation: rows with
+# empty Outcome, non-internal-si scope, and Round + Window <= current_round
+# (the round-window gate is bypassed when current_round is 0/missing so
+# legacy callers keep their previous semantics).
+_count_deferred_hypotheses() {
+    local hypothesis_log="$1"
+    local current_round="${2:-0}"
+    [ -f "$hypothesis_log" ] || { echo 0; return; }
+
+    local scope_col
+    scope_col=$(_locate_scope_col "$hypothesis_log")
 
     local count=0
     while IFS= read -r line; do
-        [[ "$line" != \|* ]] && continue
-        echo "$line" | grep -qE '^\|\s*(Round|----)' && continue
-
-        local outcome
-        outcome=$(echo "$line" | awk -F'|' '{gsub(/^[ \t]+|[ \t]+$/, "", $7); print $7}')
-        [[ -n "$outcome" ]] && continue
-
-        if [[ "$scope_col" -gt 0 ]]; then
-            local scope
-            scope=$(echo "$line" | awk -F'|' -v c="$scope_col" '{gsub(/^[ \t]+|[ \t]+$/, "", $c); print $c}')
-            [[ "$scope" == "internal-si" ]] && continue
-        fi
+        _row_is_open_deferred "$line" "$current_round" "$scope_col" || continue
         count=$((count + 1))
     done < "$hypothesis_log"
     echo "$count"
@@ -594,8 +626,10 @@ _capture_round_claim() {
     [ -f "$claim_file" ] && return 0
     [ -d "$working_dir" ] || return 0
 
+    # Baseline counts only rows whose window has matured at this round —
+    # consistent with what the deferred-questions section surfaces.
     local baseline
-    baseline=$(_count_deferred_hypotheses "$hypothesis_log")
+    baseline=$(_count_deferred_hypotheses "$hypothesis_log" "$round")
 
     jq -n \
         --argjson round "$round" \
@@ -636,7 +670,7 @@ _evaluate_round_claim() {
     local current verdict reason target
     case "$claim_type" in
         deferred_hypothesis_closure)
-            current=$(_count_deferred_hypotheses "$hypothesis_log")
+            current=$(_count_deferred_hypotheses "$hypothesis_log" "$round")
             target=$(( baseline - min_closures ))
             if [ ! -f "$hypothesis_log" ]; then
                 verdict="inconclusive"
