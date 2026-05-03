@@ -168,6 +168,8 @@ The user can include or exclude any critic:
 - `--include test-strategy` — force a contextual critic even if auto-selection didn't trigger it
 - `--exclude performance-reviewer` — skip a core critic
 - `--only security-reviewer,test-strategy` — run only these critics (overrides all auto-selection)
+- `--all-critics` — disable the Stage 1 → Stage 2 core-critic down-selection (run every
+  core critic regardless of diff signals). Use when the user wants the full panel.
 
 ### Step 6: Communicate the plan
 
@@ -264,6 +266,43 @@ After receiving fact-check results, check whether any claims were rated **Incorr
 
 If the user passed `--no-gate`, or if there are no high-confidence Incorrect findings, skip
 this gate and proceed directly to Stage 2.
+
+### Core critic relevance check
+
+After the Fact-Check Gate (and only if the user did NOT pass `--all-critics`), inspect the
+diff and the fact-check report to determine whether any core critic's domain clearly does
+not apply, and skip only those. The default is **run all core critics** — skipping is
+conservative. The cost of running an extra critic is small; the cost of a missed finding
+is large. If you are uncertain whether a signal applies, do not skip.
+
+#### Skip signals (must be unambiguous)
+
+| Critic | Skip ONLY when | Run anyway when (overriding signals) |
+|---|---|---|
+| `performance-reviewer` | Diff is copy-only — markdown, docs, comments, or user-facing string-literal changes — with no logic, control-flow, data-structure, query, or dependency changes. | Any code change, query change, loop, dependency add/upgrade, or fact-check finding citing perf concern. |
+| `security-reviewer` | Diff is copy-only AND no string-literal change touches an HTML, SQL, shell, regex, auth, error-message, or URL/path context. | Any input handling, auth, crypto, file I/O, network, serialization, error/exception message change, or fact-check finding citing a security concern. |
+| `api-consistency-reviewer` | No public API surface touched: no exported function signature changes, no schema/contract changes, no route handlers, no public CLI flags, no module export changes, no published config keys. | Any exported symbol added/renamed/removed, any public schema or contract change, any new public flag, or a fact-check finding citing API drift. |
+
+#### How to apply
+
+1. Run `git diff --stat <scope>` and skim the file list.
+2. Spot-check actual diff content for any candidate skip — file extension alone is not
+   sufficient (a `.md` file may carry a code block that ships; a `.ts` file may be a
+   one-line copy change). Look at the diff before deciding.
+3. Cross-reference fact-check findings: if any Incorrect / Stale / Mostly Accurate finding
+   falls in a critic's domain, do NOT skip that critic, even if the diff signals would
+   otherwise allow it.
+4. When in doubt, run the critic. Document the call only when you skip.
+
+#### Logging skipped critics
+
+For every core critic you skip, you MUST record it in the rubric under the
+`## ⏭️ Skipped Core Critics` section (see Deliverable 2 below) with the critic name, the
+skip reason, and the specific signal observed (e.g., `git diff --stat` output excerpt or
+the fact-check finding cited). Also reference skips in the chat synthesis scope summary so
+the user sees coverage limits before reading findings.
+
+If `--all-critics` was passed, skip this step entirely; all core critics run.
 
 ### Stage 2: Critic Agents
 
@@ -523,6 +562,20 @@ Patterns, implementations, or claims confirmed correct by fact-check and/or crit
 | Item | Verdict | Source | Legibility-target |
 |---|---|---|---|
 | [Description] | ✅ Confirmed | [Which agent] | for-orchestrator-synthesis |
+
+---
+
+## ⏭️ Skipped Core Critics
+
+Core critics whose domain was judged not to apply at the Stage 1 → Stage 2 transition.
+This section makes coverage limits auditable across runs.
+
+| Critic | Reason | Signal |
+|---|---|---|
+| performance-reviewer | Diff is copy-only with no logic changes | `git diff --stat` shows only `docs/*.md` changes |
+
+If no critics were skipped, replace the table with the single line: "All core critics ran;
+no skips applied." The heading must still appear so skips remain auditable across runs.
 
 ---
 
