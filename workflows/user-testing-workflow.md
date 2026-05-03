@@ -266,6 +266,42 @@ Immediately after each session, facilitator + note-taker answer:
 - Calculate SUS scores (see appendix)
 - Aggregate SEQ scores per task
 
+### Step 1.5: Contrastive Session Pair Analysis
+
+**Activation:** Run this step for any task that was attempted by ≥2 participants. Skip for tasks only one participant reached.
+
+A flat issue list captures *what went wrong*. A pairwise diff captures *why this user hit it and that user didn't* — and "why" is usually a condition (prior knowledge, mental model on entry, what they noticed first), not a UI element. Surfacing conditions before clustering keeps the affinity step from collapsing genuinely different root causes into the same bucket because they produced the same surface symptom.
+
+**Procedure (per task):**
+
+1. Pick the clearest **successful** session for the task (Completed, low SEQ difficulty, few detours).
+2. Pick the clearest **struggling** session (Failed/Partial, high SEQ, visible frustration, or required help).
+3. Write a short pairwise diff — 4–8 bullets — covering:
+   - **Prior experience / domain familiarity** entering the task
+   - **Mental model on entry** — what they expected the system to do, in their words
+   - **First attention point** — where their eyes/cursor went in the first 10–15 seconds
+   - **Decision at the first fork** — what they chose and why (from think-aloud)
+   - **Recovery behavior** when the first attempt didn't work (if applicable)
+   - **Anything else that visibly differed** between the two runs
+
+```
+TASK: [task name]
+SUCCESS: [participant ID]   STRUGGLE: [participant ID]
+
+- Prior experience: [success had X; struggle had Y]
+- Mental model on entry: [...]
+- First attention point: [...]
+- Decision at first fork: [...]
+- Recovery behavior: [...]
+- Other notable divergence: [...]
+
+Candidate driving conditions: [1–3 conditions that plausibly explain the divergence]
+```
+
+Keep each diff short — this is a thinking aid, not a deliverable. The output feeds Step 2: each candidate driving condition becomes a note in the flat issue list (often distinct from the symptom note), and informs Step 3.5's "boring explanation" check by giving you a concrete alternative cause to test against.
+
+If no task has both a clear success and a clear struggle, note that explicitly — uniformly successful or uniformly failed tasks are themselves a finding worth recording before moving on.
+
 ### Step 2: Affinity Clustering
 
 1. Write each distinct observation/problem on a separate note (physical or Miro/FigJam)
