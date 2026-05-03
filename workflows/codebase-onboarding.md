@@ -59,6 +59,15 @@ Don't read every file. Read entry points and public interfaces to understand bou
 
 **Monorepo scoping.** For monorepos with multiple packages or services, scope your architecture mapping to the package or service relevant to your first task — don't attempt to document every package in a single onboarding pass. Note the monorepo's top-level package dependency graph (e.g., from the root `package.json` workspaces, Cargo workspace members, or Go module layout) so you know which adjacent packages interact with yours. List all packages you did *not* examine in Known Unknowns (step 5) with a note that they were out of scope for the current task.
 
+**Data-serialization projects.** When the project is fundamentally about converting one structured representation into another — board game rules → digital game state, website DOM → accessibility tree, document → embeddings, legacy schema → modern schema — treat the source and target formats as first-class entries in the Architecture Map alongside the conversion subsystem. The conversion *is* the architecture; persistence, UI, and tooling hang off of it. For each of these projects, document:
+
+- **Source format**: What it is, where it's defined (spec, schema, exemplar files), and which subsystem(s) parse or ingest it. If the source is an external artifact (a physical board game, a third-party website, a legacy database), name the artifact and the canonical reference used during ingestion.
+- **Target format**: What it is, where it's defined (output schema, downstream consumer expectations), and which subsystem(s) emit it.
+- **Conversion locus**: Which subsystem(s) own the transformation, and whether it's single-pass, multi-stage, or interactive (human-in-the-loop). Note any partial / streaming / incremental conversion behavior — these reshape how data flows and where errors surface.
+- **Lossy vs. lossless decisions**: For each meaningful source concept, whether it round-trips intact, is approximated, or is dropped — and where the decision is made (code path, config flag, or implicit behavior). This is usually the most consequential design surface for these projects; surfacing it during onboarding prevents later tasks from silently re-litigating settled tradeoffs or introducing new losses.
+
+If lossy-vs-lossless decisions aren't documented anywhere in the codebase, log them as Known Unknowns (step 5) for team verification — don't infer them from a single code reading. The same applies to format definitions that exist only as exemplar files: note the gap rather than reverse-engineering an implicit schema and treating it as authoritative.
+
 If the codebase is large enough to warrant it (>20 files in multiple directories), use sub-agents to explore subsystems in parallel — one agent per subsystem, each producing the notes above for its area.
 
 **Sub-agent briefing template.** A sub-agent starts with zero prior context, so its brief must be self-contained. Use the following template per dispatch — one filled brief per subsystem:
