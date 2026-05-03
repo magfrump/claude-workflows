@@ -43,6 +43,14 @@ After generating your initial candidates, scan for these common generation gaps.
 
 If the health check triggers additional generation, note it briefly (e.g., "Added 3-5 after health check flagged clustering around caching approaches"). This makes generation patterns visible across sessions.
 
+#### Parallel-lens variant (opt-in, when anchored)
+
+When the orchestrator is stuck or the health check keeps flagging the same anchor, dispatch **three parallel sub-agents tagged with distinct lenses** — **skeptic**, **simplifier**, and **contrarian** — and have each generate 3-5 candidates independently from the same problem statement. Merge the three lists into the main candidate set, dedupe near-duplicates, then re-run the health check on the merged set. The lenses are chosen to pull in different directions: the skeptic challenges the load-bearing assumptions, the simplifier asks what could be deleted instead of added, and the contrarian argues for the approach you'd dismiss out of hand.
+
+This variant is **documentation only** — the calling orchestrator dispatches the parallel agents itself; this workflow does not provide dispatch infrastructure, sub-agent definitions, or a merge tool. Each lens prompt is the lens tag plus the original problem statement; treat the agents as independent samplers, not as separate pipeline stages. Note in the candidate list which entries came from which lens so the pattern is visible in retrospect.
+
+**Boring fallback**: If anchored and you don't want to spin up parallel agents, restate the problem in your own words and re-diverge.
+
 **Done when...**
 - [ ] At least 8 candidate approaches are listed
 - [ ] At least 2-3 approaches feel wrong, naive, or unconventional
