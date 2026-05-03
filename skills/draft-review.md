@@ -301,6 +301,10 @@ If a sub-agent omitted the note entirely, treat that as a `partial` entry with r
 The collected items feed the `### Coverage and Escalations` section of the chat
 synthesis below. They do not modify the rubric — coverage is a chat-synthesis concern.
 
+#### Contrastive note (optional, capture during synthesis)
+
+Pick one finding the panel caught well, plus one likely-related issue you suspect was missed (sources: goal-alignment notes, escalations, or your own scan of the draft). State both in 1–2 lines, then propose one concrete prompt-refinement candidate — an added instruction, sharpened heuristic, or new check for a critic skill — that would have closed the gap on the next run. Skip if no genuine contrast is available; do not invent one. Capture only — no feedback pipeline consumes this yet.
+
 **Before synthesizing, cross-reference critic findings against the fact-check report.** For each
 critic's output, identify the key claims or premises their arguments depend on. Check each one
 against the fact-check verdicts:
