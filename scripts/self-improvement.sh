@@ -556,8 +556,25 @@ implemented independently in a single Claude Code session (~10-15 minutes
 of autonomous work).
 
 Output a JSON array to docs/working/tasks-round-$ROUND.json with fields:
-{\"id\": \"short-kebab-case\", \"description\": \"one paragraph task description\",
-\"files_touched\": [\"list of files\"], \"independent\": true/false}
+{\"id\": \"short-kebab-case\",
+ \"description\": \"one paragraph task description\",
+ \"files_touched\": [\"list of files\"],
+ \"independent\": true/false,
+ \"scope\": \"external\" | \"internal-si\" | \"infra\"}
+
+The \"scope\" field is REQUIRED on every task — the schema validator will
+reject any task that omits it or supplies a value outside the enum above.
+Use these definitions:
+  - \"external\":    work whose primary effect is on workflows/skills used
+                     in external projects (e.g. divergent-design,
+                     research-plan-implement, pr-prep, fact-check,
+                     ui-visual-review, claude-api).
+  - \"internal-si\": work that only affects the self-improvement loop
+                     itself — its scripts, prompts, validation gates,
+                     bookkeeping files, or morning-summary plumbing.
+  - \"infra\":       cross-cutting plumbing that is neither a user-facing
+                     workflow nor SI-specific (e.g. shared shell helpers,
+                     repo-wide tooling).
 
 Only include tasks where independent is true. Discard tasks that depend on
 other tasks in this round.${TASK_OFF_LIMITS}"

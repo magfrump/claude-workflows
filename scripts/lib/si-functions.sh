@@ -19,6 +19,14 @@ fi
 # work is crowding out maintenance and data-pipeline repairs.
 TASK_CATEGORIES_ALLOWED="feature maintenance data-pipeline"
 
+# Allowed values for the per-task scope field. Strict-required (unlike
+# category): a missing or invalid scope rejects the task. Why required:
+# the morning-summary deferred-question harvester treats an unscoped
+# hypothesis as external-facing, leaking internal-SI noise to the human.
+# Requiring scope at task creation prevents that leakage at its source
+# rather than backfilling later.
+TASK_SCOPES_ALLOWED="external internal-si infra"
+
 # --- Task JSON schema validation ---
 # Validates each task in a tasks JSON file against the expected schema.
 # Outputs a filtered JSON array (valid tasks only) to stdout.
@@ -64,6 +72,19 @@ validate_task_json() {
             echo "  LINT WARNING [$tid]: category missing — planner should assign one of: $TASK_CATEGORIES_ALLOWED" >&2
         elif ! echo " $TASK_CATEGORIES_ALLOWED " | grep -q " $category "; then
             echo "  SCHEMA REJECT [$tid]: category must be one of: $TASK_CATEGORIES_ALLOWED (got: $category)" >&2
+            continue
+        fi
+
+        # Check scope field. Strict-required: missing or invalid rejects.
+        # See header comment on TASK_SCOPES_ALLOWED for why this is stricter
+        # than the category check.
+        local scope
+        scope=$(echo "$task" | jq -r '.scope // ""')
+        if [ -z "$scope" ]; then
+            echo "  SCHEMA REJECT [$tid]: scope missing — must be one of: $TASK_SCOPES_ALLOWED" >&2
+            continue
+        elif ! echo " $TASK_SCOPES_ALLOWED " | grep -q " $scope "; then
+            echo "  SCHEMA REJECT [$tid]: scope must be one of: $TASK_SCOPES_ALLOWED (got: $scope)" >&2
             continue
         fi
 
