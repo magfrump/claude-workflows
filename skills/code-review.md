@@ -170,6 +170,12 @@ The user can include or exclude any critic:
 - `--only security-reviewer,test-strategy` — run only these critics (overrides all auto-selection)
 - `--all-critics` — disable the Stage 1.5 critic gate (run every core critic regardless
   of diff-shape or fact-check evidence signals). Use when the user wants the full panel.
+- `--chain <pair>` — opt into chain dispatch for the named critic pair (see
+  [Stage 2 dispatch modes](#stage-2-dispatch-modes)). Supported pairs:
+  `security→api-consistency` and `test-strategy→tech-debt-triage`. The
+  flag is the orchestrator's one-line signal to switch off the parallel
+  default for that pair only; all other critics still run in parallel
+  alongside the chain. Omit the flag to keep the parallel default.
 
 ### Step 6: Communicate the plan
 
@@ -198,14 +204,28 @@ decide whether to interrupt before the next stage launches.
 - `<key counts>` is the smallest summary that helps the user judge whether to
   intervene — e.g., counts of Incorrect / Stale fact-check findings after
   Stage 1, or count of critics returned (and any that failed) after Stage 2.
-- `<next action>` names the next stage and its parallelism — e.g., "launching
-  4 critics in parallel" or "synthesizing into rubric and chat summary".
+- `<next action>` names the next stage and its dispatch shape — e.g.,
+  "launching 4 critics in parallel", "launching 4 critics: 3 in parallel +
+  chain security→api-consistency", or "synthesizing into rubric and chat
+  summary".
+- The Stage 2-complete banner introduces synthesis (Stage 3). Because Stage
+  3 consumes Stage 2's output, this banner must include `dispatch mode:
+  <mode>` in `<key counts>` so the reader knows which dispatch shape
+  produced the findings before reading the synthesis. Use `parallel`,
+  `chain (<pair>)`, or `parallel + chain (<pair>)` — see
+  [Stage 2 dispatch modes](#stage-2-dispatch-modes).
 
-**Worked example:**
+**Worked example (parallel default):**
 
 > Stage 1 (fact-check) complete: 3 Incorrect findings, 1 Stale — launching 4 critics in parallel (security, performance, api-consistency, test-strategy).
 >
-> Stage 2 (critics) complete: 4/4 critics returned (12 findings total) — synthesizing into rubric and chat summary.
+> Stage 2 (critics) complete: 4/4 critics returned (12 findings total), dispatch mode: parallel — synthesizing into rubric and chat summary.
+
+**Worked example (chain mode opted in via `--chain security→api-consistency`):**
+
+> Stage 1 (fact-check) complete: 3 Incorrect findings, 1 Stale — launching 4 critics: 2 in parallel (performance, test-strategy) + chain security→api-consistency.
+>
+> Stage 2 (critics) complete: 4/4 critics returned (12 findings total), dispatch mode: parallel + chain (security→api-consistency) — synthesizing into rubric and chat summary.
 
 **Scope:** The banner is emitted *only* between stages. Do **not** emit a
 banner after Stage 3 — Stage 3's chat synthesis is itself the user-facing
@@ -349,6 +369,66 @@ the user sees coverage limits before reading findings.
 
 If `--all-critics` was passed, skip this step entirely; all core critics run.
 
+### Stage 2 dispatch modes
+
+Stage 2 has two dispatch modes. **Default is parallel** — every critic runs
+simultaneously and they do not see each other's output. Chain mode is
+**opt-in via `--chain <pair>`** and applies only to the named pair; all
+other critics still run in parallel alongside the chain.
+
+The orchestrator decision is one line: if the user passed `--chain <pair>`,
+run that pair sequentially with the upstream critic's findings injected into
+the downstream critic's prompt; otherwise, dispatch every selected critic in
+parallel.
+
+**State the chosen mode in the Stage 2-complete (synthesis-introducing)
+banner** so the reader knows which dispatch shape produced the findings
+(see [Between-stage status banner](#between-stage-status-banner) for format).
+
+#### When to chain
+
+Chain only when an upstream critic's findings genuinely change the
+downstream critic's scope — i.e., reading the upstream critique would let
+the downstream critic narrow its inspection or sharpen its priorities. If
+the downstream critic would do the same scan either way, parallel is
+strictly faster and equally informative; do not chain by default.
+
+#### Supported chain pairs
+
+| Pair | Trigger to opt in | What the handoff carries |
+|---|---|---|
+| `security→api-consistency` | Diff shifts auth or trust boundaries: new/changed auth checks, session handling, scope of a token, permission predicate, or anything security-reviewer is likely to surface as a boundary change. | The security critique's auth/boundary findings (file:line + summary) are injected into api-consistency-reviewer's prompt under a `## Chain context: security findings to scope around` heading. The downstream critic uses these as priority targets — checking that the new auth contract is consistent across exported handlers, schemas, route definitions, and CLI surfaces around those boundaries. |
+| `test-strategy→tech-debt-triage` | Diff has untested source changes AND a large/structural surface (the contextual triggers for both critics fire on the same diff). | The test-strategy critique's coverage-gap list (modules + functions lacking tests) is injected into tech-debt-triage's prompt under a `## Chain context: coverage gaps to inspect first` heading. The downstream critic prioritizes those modules — coverage gaps in complex code are evidence of poor factoring, so tech-debt-triage inspects them as candidate refactor targets rather than blanket-scanning the diff. |
+
+#### Mechanics
+
+When chain mode is active for a pair:
+
+1. Identify the upstream critic in the pair. Dispatch it via the Agent tool
+   exactly as documented in [Stage 2: Critic Agents](#stage-2-critic-agents)
+   below, in parallel with every non-chained critic.
+2. Wait for the upstream critic to return.
+3. Read the upstream critic's saved report. Extract the findings whose
+   domain is the chain trigger (auth/boundary findings for the security
+   chain; coverage-gap entries for the test-strategy chain). Limit to
+   findings with at least medium severity/confidence — pasting the full
+   report defeats the scope-narrowing purpose.
+4. Dispatch the downstream critic with the extracted findings prepended
+   under the `## Chain context: …` heading named in the table above. Place
+   it after the goal preamble and PR-intent block but before the scope
+   spec, so the critic reads it before deciding what to inspect.
+5. The downstream critic still produces its standard critique structure —
+   the chain context narrows scope, it does not replace the critique.
+6. All non-chained critics in the same Stage 2 are unaffected: they run in
+   parallel and do not wait on the chain.
+
+#### Trade-offs
+
+Chain mode adds one round-trip of latency to Stage 2 (the downstream critic
+cannot start until the upstream critic returns). It is worth that cost only
+when the trigger applies — without the trigger, the downstream critic gains
+no useful narrowing and the chain just slows Stage 2 down.
+
 ### Stage 2: Critic Agents
 
 Now — and ONLY now — spawn critic sub-agents using the Agent tool.
@@ -427,13 +507,19 @@ Success criterion: A markdown report saved to docs/reviews/security-review.md, s
 If any of those facts isn't on hand, omit the corresponding sub-bullet rather than guessing — the fields exist to anchor the critic in real project context, not to be filled for completeness. Do not add other content to the preamble; everything else (scope spec, PR intent, fact-check excerpt, output path, tagging requirements) goes in the role-specific content below it.
 
 **Launch ALL critic agents simultaneously** in a single message with multiple Agent tool calls.
-They must not see each other's output.
+They must not see each other's output. **Exception:** when [Stage 2 dispatch
+modes](#stage-2-dispatch-modes) chain mode is active for a pair, the
+downstream critic is dispatched in a second message after the upstream
+critic returns; every other critic still launches in the first parallel
+batch.
 
-**CHECKPOINT:** Wait for ALL critic agents to return results. Count the results. Do you have
-the expected number? If yes, proceed to Stage 3. If not, tell the user what's missing.
+**CHECKPOINT:** Wait for ALL critic agents to return results (including the
+downstream critic of any active chain). Count the results. Do you have the
+expected number? If yes, proceed to Stage 3. If not, tell the user what's
+missing.
 
 After confirming the expected critic count, emit the between-stage status banner per the
-format spec above (e.g., `Stage 2 (critics) complete: <counts> — synthesizing into rubric and chat summary`).
+format spec above (e.g., `Stage 2 (critics) complete: <counts>, dispatch mode: <mode> — synthesizing into rubric and chat summary`).
 Emit it before launching Stage 3 so the user sees the handoff explicitly.
 
 ### Stage 3: Synthesize and Produce Outputs
@@ -706,6 +792,9 @@ At the end of your chat synthesis, link to all documents.
 - **Paste skill file contents into agent prompts.** Sub-agents cannot read your filesystem.
 - **Pass scope, not diffs.** Each agent runs its own `git diff` to avoid context budget issues.
 - **All agents of the same stage run in parallel.** They must not see each other's output.
+  Exception: opt-in chain mode for a named critic pair (see
+  [Stage 2 dispatch modes](#stage-2-dispatch-modes)) deliberately feeds the
+  upstream critique into the downstream prompt for that pair only.
 - **Be honest about convergence.** Don't present a minority finding as consensus. Convergence
   detection is semantic (overlapping concern in the same code region), not mechanical.
 - **The rubric is designed for re-runs.** When the author fixes issues and runs again, the
