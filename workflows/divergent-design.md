@@ -40,6 +40,7 @@ After generating your initial candidates, scan for these common generation gaps.
 - **Candidate clustering**: Do 3 or more candidates describe near-variants of the same underlying approach (e.g., three different caching strategies that all assume caching is the answer)? If so, you've anchored on one region of the solution space. Name the shared assumption and generate 2-3 candidates that violate it. Note which cluster triggered this so the pattern is visible in retrospect.
 - **Missing perspectives**: Is there a "do nothing" or "minimal change" option? A naive or brute-force option? An option that a newcomer unfamiliar with the codebase might suggest? These perspectives often survive pruning — their absence usually means anchoring, not that they were considered and rejected.
 - **Excessive vagueness**: Can each candidate be tested against a concrete constraint? A candidate like "use a better architecture" or "improve the data flow" can't be meaningfully evaluated in step 3's compatibility matrix. Replace vague candidates with specific ones — what *specific* architecture? What *specific* change to data flow?
+- **Dimensional anchoring**: Do 5 or more candidates all change the *same dimension* of the system, even when each candidate is distinct (e.g., five different prompt edits, or five different orderings)? If so, the search has anchored on one lever — approach variety is high but dimension variety is zero. Name the dimension using a concrete taxonomy. For multi-agent workflows: *agent text* (prompts, instructions, descriptions), *agent set* (which agents exist; adding, removing, splitting, merging), *dispatch order* (sequencing, branching, parallelism, iteration), *communication topology* (who reads whose output, shared state, message structure), or *something else* (data formats, triggers, success criteria). For other domains, substitute concrete dimensions — "different architecture" doesn't count. Generate 1-2 candidates that move on a different named dimension.
 
 If the health check triggers additional generation, note it briefly (e.g., "Added 3-5 after health check flagged clustering around caching approaches"). This makes generation patterns visible across sessions.
 
@@ -49,7 +50,7 @@ If the health check triggers additional generation, note it briefly (e.g., "Adde
 - [ ] A "do nothing" or "minimal change" option is included
 - [ ] An "ideal if effort were free" option is included
 - [ ] No evaluation or ranking has been applied yet — only generation
-- [ ] Generation health check passed: no unaddressed clustering, missing perspectives, or vague candidates
+- [ ] Generation health check passed: no unaddressed clustering, missing perspectives, vague candidates, or dimensional anchoring
 
 ### 2. Diagnose — specify the actual problems and constraints
 
@@ -175,7 +176,7 @@ Generate 8-15 candidate explanations for the observed phenomenon. The same quant
 - Include at least 1 explanation that would imply a deeper systemic issue
 - One sentence each, no evaluation yet
 
-Apply the **generation health check** from step 1 of the main process, adapted for hypotheses: watch for clustering around one causal mechanism, missing null hypotheses, and explanations too vague to generate testable predictions.
+Apply the **generation health check** from step 1 of the main process, adapted for hypotheses: watch for clustering around one causal mechanism, missing null hypotheses, explanations too vague to generate testable predictions, and dimensional anchoring (5+ hypotheses all about the same causal layer — e.g., all about the database, all about the network, all about caching).
 
 #### 2. Diagnose — identify distinguishing evidence
 
@@ -262,7 +263,7 @@ Generate **6-10 candidate framings** of the problem. Each framing is a one-sente
 - One sentence each, no evaluation yet
 - Number them for reference
 
-Apply the **generation health check** from step 1 of the main process, adapted for framings: watch for clustering around one stakeholder's vocabulary, missing perspectives (maintainer's view vs. user's view), and framings too vague to test (a framing must imply at least one falsifiable success criterion).
+Apply the **generation health check** from step 1 of the main process, adapted for framings: watch for clustering around one stakeholder's vocabulary, missing perspectives (maintainer's view vs. user's view), framings too vague to test (a framing must imply at least one falsifiable success criterion), and dimensional anchoring (5+ framings all on the same axis — e.g., all about scope, all about timing, all about ownership).
 
 #### 2a. Diagnose — what would each framing imply?
 
