@@ -119,7 +119,11 @@ Hold the resulting text as `<pr-intent>` for Stage 2. You will paste it verbatim
 `## What this PR is trying to accomplish` heading in each critic's prompt so critics can
 scope findings to stated intent.
 
-### Step 3: Known critic roles
+### Step 3: Surface prior review findings (optional)
+
+If the diff touches files that appear in a prior `docs/reviews/*.md` report from the last 30 days (detect via `git log --since="30 days ago" -- docs/reviews/` and intersect those reports' `Location:` paths with the changed-file list), lift the **Must-Fix** rows whose locations still apply and hold them as `<prior-findings>` for Stage 2. You will paste them verbatim under a `## Prior review findings (advisory — worth checking, not verdict input)` heading in each critic's prompt so recurring issues are flagged explicitly rather than re-discovered. Treat them as hints about where to look — critics MUST NOT confirm them as findings or feed them into verdicts. Skip silently if no matching prior reports exist. (Extends the within-PR cross-iteration contrastive prompt in `workflows/pr-prep.md` step 3d to across-PR memory.)
+
+### Step 4: Known critic roles
 
 The orchestrator uses a fixed taxonomy of skills. Do not scan `skills/*.md` at runtime — use
 the lists below. (If a listed file doesn't exist, skip it and note the gap in your plan
@@ -138,7 +142,7 @@ summary. If the user references a skill not listed here, they can include it via
 - `performance-reviewer.md`
 - `api-consistency-reviewer.md`
 
-**Contextual critics (auto-selected in Step 4, advisory only):**
+**Contextual critics (auto-selected in Step 5, advisory only):**
 - `test-strategy.md`
 - `tech-debt-triage.md`
 - `dependency-upgrade.md`
@@ -147,7 +151,7 @@ summary. If the user references a skill not listed here, they can include it via
 **Not applicable to code review (skip):**
 - `fact-check.md`, `cowen-critique.md`, `yglesias-critique.md`
 
-### Step 4: Auto-select contextual critics
+### Step 5: Auto-select contextual critics
 
 Run a quick analysis of the diff to determine which contextual critics to include. Use the
 table below — check each row's diff characteristic and invoke the critic if it matches.
@@ -162,7 +166,7 @@ table below — check each row's diff characteristic and invoke the critic if it
 **How to check:** For each row, scan the diff file list and content. Multiple rows can match
 simultaneously — invoke all matching critics. If no rows match, no contextual critics run.
 
-### Step 5: User overrides
+### Step 6: User overrides
 
 The user can include or exclude any critic:
 - `--include test-strategy` — force a contextual critic even if auto-selection didn't trigger it
@@ -177,7 +181,7 @@ The user can include or exclude any critic:
   default for that pair only; all other critics still run in parallel
   alongside the chain. Omit the flag to keep the parallel default.
 
-### Step 6: Communicate the plan
+### Step 7: Communicate the plan
 
 Before launching any agents, tell the user:
 - The scope being reviewed
@@ -443,7 +447,9 @@ For each critic agent, you MUST:
 3. Include the scope specification so the agent runs its own `git diff`
 4. Include the PR intent captured in "Before You Begin" Step 2, prepended under a
    `## What this PR is trying to accomplish` heading so the critic can scope findings to
-   stated intent
+   stated intent. If Step 3 surfaced `<prior-findings>`, paste them verbatim under a
+   `## Prior review findings (advisory — worth checking, not verdict input)` heading
+   immediately after the intent block; otherwise omit this heading entirely.
 5. Include the fact-check results. If the fact-check report is longer than 200 lines, include
    only the findings rated Incorrect, Stale, or Mostly Accurate — skip Accurate claims to
    save context budget.
