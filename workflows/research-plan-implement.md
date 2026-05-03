@@ -258,6 +258,38 @@ Before writing any implementation code, re-read the three-line header (Goal · P
 
 ### 6. Implement (essential) — tests first, then code
 
+#### Codebase freshness check (fresh session only)
+
+When entering a **fresh session** for implementation (per the global `Fresh session for implementation` rule), the plan was written in a prior session and the underlying code may have moved while the plan sat between sessions. Step 5 re-verifies the **doc** against itself; this step re-verifies the **codebase** against the plan. Both run before any code is written.
+
+If implementation is continuing in the **same session** that produced the plan (no `/clear` and no new session in between), the plan is fresh by construction — skip this sub-section and proceed to the Test-first gate.
+
+In a fresh session:
+
+1. **Re-read the plan's Project state line** — the third line of the plan doc's three-line header. If the line no longer describes reality (a sibling branch landed, a blocker cleared, scope shifted), fix it in the plan doc before continuing. This overlaps deliberately with step 5; the explicit re-read here is the trigger for the codebase check below.
+
+2. **Find the plan's last-write time:**
+
+   ```
+   git log -1 --format=%aI -- docs/working/plan-{topic}.md
+   ```
+
+   Use the most recent commit that touched the plan doc — annotation-cycle commits (step 4) count, since they reflect the last revision of the agreed approach.
+
+3. **Run `git log --since=<plan-write-time>` against the plan's touched files.** Enumerate the files from the plan's Steps section and the checkpoint artifact's File map (`docs/working/checkpoint-{topic}.md`):
+
+   ```
+   git log --oneline --since=<plan-write-time> -- <file1> <file2> ...
+   ```
+
+   This is the same `git log --since` primitive defined in `guides/doc-freshness.md`, applied to the plan-to-implementation handoff.
+
+4. **Explicitly note any drift before coding.** State the result in your first session message:
+   - **Empty output** → plan is fresh against the codebase, proceed to the Test-first gate.
+   - **Non-empty output** → list the commits and decide per-commit whether each one invalidates the plan. Commits that touch unrelated regions of the same file are usually fine; commits that touch the same functions or behaviors the plan modifies require pausing and updating the plan (per step 6's "stop and update the plan doc first" rule) before coding.
+
+This operationalizes the freshness convention from `guides/doc-freshness.md` for the specific case of a fresh-session plan-to-implementation handoff. Skipping it produces "implemented against a stale plan" bugs that are expensive to catch in review.
+
 #### Test-first gate
 
 Before implementing feature code, write the tests specified in the plan's test specification section. Commit the tests separately: `test: add tests for X (per plan-Y step N)`. These tests should fail — they encode the behavior that doesn't exist yet.
@@ -279,6 +311,7 @@ If a step turns out to be wrong or incomplete during implementation, **stop and 
 **Context-cost budget (/away mode protocol)**: Before each autonomous commit in /away mode, compare actual context use against the plan's "Estimated context cost" line. If actuals exceed the estimate by 2x overall, or by +50% on any single phase, pause and write a checkpoint to `docs/working/checkpoint-{topic}.md` (regenerating or updating the existing one) capturing what's done, what's left, and why the budget overshot — then stop and either narrow scope, start a fresh session against the new checkpoint, or escalate to the user. Do not proceed silently through an overrun. This clause attaches to the autonomous commit format (see CLAUDE.md `/away` mode): the budget check runs at the same cadence as the `Confidence`/`Notes` lines, so the comparison prompt lives in an already-consulted section. Once implementation finishes (clean or via early checkpoint), fill in the plan's `Actual context cost (post-implementation)` field so the estimate-vs-actual comparison is captured in the artifact rather than only in transient logs.
 
 **Done when...**
+- [ ] In a fresh implementation session, the codebase freshness check ran (`git log --since=<plan-write-time>` against the plan's touched files) and any drift was explicitly noted before coding; in a same-session implementation, the check was explicitly skipped
 - [ ] All plan steps are implemented with one commit per step
 - [ ] Tests from the test specification pass
 - [ ] Each commit message references the plan (e.g., "per plan-X step N")
