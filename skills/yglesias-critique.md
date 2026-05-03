@@ -1,5 +1,6 @@
 ---
 name: yglesias-critique
+lens: revealed-preferences
 description: >
   Critique a draft that *proposes a mechanism* — any intervention where the author wants
   something to happen — using the cognitive methods and reasoning patterns of Matt Yglesias.
