@@ -102,6 +102,8 @@ For each finding: confirm it's real by reading the code, then fix. Commit in coh
 
 If a fix touched code broadly enough that the narrower diff covers most of the PR, fall back to a full re-review — the incremental approach only helps when fixes are localized.
 
+**Optional contrastive prompt (iteration N≥2):** What new findings appeared in iteration N that weren't in N-1, and are any of them critic noise (regressions vs real)?
+
 **Tracking iteration scope:** Note in the review artifact whether each iteration used full or incremental scope, and how many prior findings were verified as resolved vs. still-open. This supports evaluating whether incremental re-review reduces review output length and duplicate findings over time.
 
 **e. Exit or repeat (3-iteration maximum).** Exit when no Must Fix items remain and Must Address items are resolved or explicitly acknowledged. Repeat if new findings appear. Each loop should be strictly smaller than the last.
