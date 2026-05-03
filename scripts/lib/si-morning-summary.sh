@@ -513,7 +513,164 @@ _summary_whats_new() {
             failing_gate=$(jq -r --arg tid "$tid" '.validation[$tid] | to_entries[] | select(.value == "fail" and .key != "verdict") | .key' "$report" 2>/dev/null | head -1) || failing_gate="unknown"
             echo "- REJECTED: **${tid}** (failed: $failing_gate)"
         done
+
+        # Contrastive note: pair one approved + one rejected addressing a
+        # similar problem and surface a 1-2 sentence diff. No-op when
+        # either verdict list is empty or no clear shared-problem pair
+        # exists. See _compute_contrastive_pair.
+        _compute_contrastive_pair "$round_num" "$working_dir"
+        _emit_contrastive_note "$round_num" "$working_dir"
     done
+}
+
+# --- Internal: compute a contrastive approved/rejected pair for one round ---
+# Writes contrastive-note-round-N.json to working_dir. Idempotent: a parseable
+# cache file is preserved so re-runs don't re-invoke claude.
+#
+# Direct application of OMAC's Contrastive Comparator structural idea to the
+# SI loop: pair tasks with a shared underlying problem but divergent verdicts
+# so the next round's planner can absorb the lesson when setting priorities.
+#
+# Cache record shapes:
+#   Pair found:  {approved_id, rejected_id, note, round, generated_at}
+#   Skip:        {skip: true, reason, round, generated_at}
+#
+# Skip cases (all silent — emit no markdown):
+#   - report or tasks file missing
+#   - either verdict list empty (no contrast to draw)
+#   - claude CLI unavailable
+#   - claude returns no parseable JSON
+#   - claude judges no clear shared-problem pair exists
+_compute_contrastive_pair() {
+    local round="$1" working_dir="$2"
+    local cache_file="$working_dir/contrastive-note-round-${round}.json"
+    local report="$working_dir/round-${round}-report.json"
+    local tasks_file="$working_dir/tasks-round-${round}.json"
+
+    if [ -f "$cache_file" ] && jq empty "$cache_file" 2>/dev/null; then
+        return 0
+    fi
+
+    [ -f "$report" ] || return 0
+    [ -f "$tasks_file" ] || return 0
+
+    local approved_ids rejected_ids
+    approved_ids=$(jq -r '.validation // {} | to_entries[] | select(.value.verdict == "approved") | .key' "$report" 2>/dev/null)
+    rejected_ids=$(jq -r '.validation // {} | to_entries[] | select(.value.verdict == "rejected") | .key' "$report" 2>/dev/null)
+
+    if [ -z "$approved_ids" ] || [ -z "$rejected_ids" ]; then
+        _write_contrastive_skip "$cache_file" "$round" "round had only one verdict type"
+        return 0
+    fi
+
+    if ! command -v claude >/dev/null 2>&1; then
+        _write_contrastive_skip "$cache_file" "$round" "claude CLI not available"
+        return 0
+    fi
+
+    # Build per-verdict JSON arrays the prompt can quote verbatim. Approved
+    # entries carry id/description/files/category; rejected entries also
+    # carry the first failing gate from the round report.
+    local approved_ids_json rejected_ids_json
+    approved_ids_json=$(printf '%s\n' "$approved_ids" | jq -R . | jq -sc '[.[] | select(length > 0)]')
+    rejected_ids_json=$(printf '%s\n' "$rejected_ids" | jq -R . | jq -sc '[.[] | select(length > 0)]')
+
+    local approved_payload rejected_payload
+    approved_payload=$(jq -c --argjson ids "$approved_ids_json" '
+        [ .[] | select(.id as $id | $ids | index($id)) |
+          {id, description, files_touched, category: (.category // null)} ]
+    ' "$tasks_file" 2>/dev/null) || approved_payload="[]"
+
+    rejected_payload=$(jq -c --argjson ids "$rejected_ids_json" --slurpfile rep "$report" '
+        [ .[] | select(.id as $id | $ids | index($id)) |
+          .id as $id |
+          ($rep[0].validation[$id] // {}) as $v |
+          {id, description, files_touched, category: (.category // null),
+           failing_gate: ([ $v | to_entries[] | select(.key != "verdict" and (.value | type) == "string" and .value == "fail") | .key ] | first // "unknown")} ]
+    ' "$tasks_file" 2>/dev/null) || rejected_payload="[]"
+
+    if [ "$approved_payload" = "[]" ] || [ "$rejected_payload" = "[]" ]; then
+        _write_contrastive_skip "$cache_file" "$round" "tasks file did not contain matching task ids"
+        return 0
+    fi
+
+    local prompt="You are a contrastive-pair selector for a self-improvement loop.
+
+Round ${round} produced both APPROVED and REJECTED tasks. Find the single
+clearest pair where ONE approved task and ONE rejected task were addressing
+a SIMILAR underlying problem (similar goal, similar subsystem, similar files
+touched, or similar mechanism). Then in 1-2 sentences explain what differed
+between the approaches such that one passed validation and the other failed.
+
+If no pair shares a clearly similar underlying problem, return skip rather
+than forcing one — a forced pair is worse than no pair.
+
+APPROVED TASKS (JSON):
+${approved_payload}
+
+REJECTED TASKS (JSON, includes the failing gate):
+${rejected_payload}
+
+Output ONLY a single JSON object on one line. No prose, no code fences.
+- Pair found:
+  {\"approved_id\":\"<id>\",\"rejected_id\":\"<id>\",\"note\":\"<1-2 sentences on what differed>\"}
+- No clear shared-problem pair:
+  {\"skip\":true,\"reason\":\"<short>\"}"
+
+    local raw judgment
+    raw=$(claude -p "$prompt" 2>/dev/null | tr -d '\r') || raw=""
+    judgment=$(printf '%s' "$raw" | grep -oE '\{[^{}]*"(approved_id|skip)"[^{}]*\}' | head -1) || judgment=""
+
+    if [ -z "$judgment" ] || ! echo "$judgment" | jq empty 2>/dev/null; then
+        _write_contrastive_skip "$cache_file" "$round" "claude returned no parseable JSON"
+        return 0
+    fi
+
+    # Tag the cache with round + timestamp metadata, preserving claude's keys.
+    echo "$judgment" | jq \
+        --argjson round "$round" \
+        --arg ts "$(date -u +%Y-%m-%dT%H:%M:%SZ)" \
+        '. + {round: $round, generated_at: $ts}' \
+        > "$cache_file" 2>/dev/null || rm -f "$cache_file"
+}
+
+# --- Internal: write a skip-shaped cache file ---
+_write_contrastive_skip() {
+    local cache_file="$1" round="$2" reason="$3"
+    jq -n \
+        --argjson round "$round" \
+        --arg reason "$reason" \
+        --arg ts "$(date -u +%Y-%m-%dT%H:%M:%SZ)" \
+        '{skip: true, reason: $reason, round: $round, generated_at: $ts}' \
+        > "$cache_file" 2>/dev/null || rm -f "$cache_file"
+}
+
+# --- Internal: render the contrastive note for a round ---
+# Reads contrastive-note-round-N.json and emits a single markdown subsection
+# bullet when a pair was found. Silent no-op for skip / missing / malformed
+# caches so the surrounding round block stays clean.
+_emit_contrastive_note() {
+    local round="$1" working_dir="$2"
+    local cache_file="$working_dir/contrastive-note-round-${round}.json"
+
+    [ -f "$cache_file" ] || return 0
+    jq empty "$cache_file" 2>/dev/null || return 0
+
+    local skip
+    skip=$(jq -r '.skip // false' "$cache_file" 2>/dev/null)
+    [ "$skip" = "true" ] && return 0
+
+    local approved_id rejected_id note
+    approved_id=$(jq -r '.approved_id // ""' "$cache_file" 2>/dev/null)
+    rejected_id=$(jq -r '.rejected_id // ""' "$cache_file" 2>/dev/null)
+    note=$(jq -r '.note // ""' "$cache_file" 2>/dev/null)
+
+    if [ -z "$approved_id" ] || [ -z "$rejected_id" ] || [ -z "$note" ]; then
+        return 0
+    fi
+
+    echo ""
+    echo "**Contrastive note** (approved **${approved_id}** vs rejected **${rejected_id}**): ${note}"
 }
 
 # --- Internal: gate statistics ---
