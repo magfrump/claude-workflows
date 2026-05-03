@@ -77,11 +77,12 @@ If the codebase is large enough to warrant it (>20 files in multiple directories
 
 This output drops directly into the Architecture Map without restructuring. If a sub-agent returns prose instead of the schema, re-dispatch with the schema repeated — don't do the synthesis work yourself.
 
-**Suggested output structure.** When assembling your findings into the Architecture Map section of the orientation document, consider organizing around these three areas. This isn't a mandatory format — adapt it to fit the codebase — but it provides a useful default that downstream RPI research can quickly parse:
+**Suggested output structure.** When assembling your findings into the Architecture Map section of the orientation document, consider organizing around these areas. This isn't a mandatory format — adapt it to fit the codebase — but it provides a useful default that downstream RPI research can quickly parse:
 
 - **Subsystem inventory**: A table or list of each subsystem with its name, one-line responsibility, and 2-3 key files (entry points or central modules). This gives future sessions a lookup table for "where does X live?"
 - **Data flow**: How subsystems connect — which calls which, what data passes between them, and in what direction. A simple text diagram or arrow notation (e.g., `API layer → Service layer → Database`) is often enough. This answers "if I change subsystem A, what else might be affected?"
 - **External dependencies**: Databases, third-party APIs, message queues, shared services, or any system outside the codebase boundary. Note what each is used for and which subsystem owns the integration. This surfaces coupling that isn't visible from code structure alone.
+- **Subsystem coupling matrix** (optional): A small table or list naming pairs of subsystems that share state or call each other directly — e.g., `auth ↔ session-store: shared Redis keys`, `jobs → db: writes to users table`, `api → auth: direct function calls`. List only direct couplings; transitive impact is what downstream consumers derive from this matrix. Format flexibly — a 2-column list, an adjacency table, or annotated bullets all work. This complements Data flow's directional view with a pairwise quick-lookup optimized for change scoping. **When to consult**: downstream RPI research phases scoping a change to subsystem A should read this matrix first to identify the immediate blast radius — which other subsystems may need to be read, tested, or coordinated with — before tracing flows in detail.
 
 **Done when...**
 - [ ] Every major subsystem is identified with its directory/files, responsibility, key abstractions, and dependencies
