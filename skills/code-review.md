@@ -168,8 +168,8 @@ The user can include or exclude any critic:
 - `--include test-strategy` — force a contextual critic even if auto-selection didn't trigger it
 - `--exclude performance-reviewer` — skip a core critic
 - `--only security-reviewer,test-strategy` — run only these critics (overrides all auto-selection)
-- `--all-critics` — disable the Stage 1 → Stage 2 core-critic down-selection (run every
-  core critic regardless of diff signals). Use when the user wants the full panel.
+- `--all-critics` — disable the Stage 1.5 critic gate (run every core critic regardless
+  of diff-shape or fact-check evidence signals). Use when the user wants the full panel.
 
 ### Step 6: Communicate the plan
 
@@ -267,15 +267,57 @@ After receiving fact-check results, check whether any claims were rated **Incorr
 If the user passed `--no-gate`, or if there are no high-confidence Incorrect findings, skip
 this gate and proceed directly to Stage 2.
 
-### Core critic relevance check
+### Stage 1.5: Critic gating
 
-After the Fact-Check Gate (and only if the user did NOT pass `--all-critics`), inspect the
-diff and the fact-check report to determine whether any core critic's domain clearly does
-not apply, and skip only those. The default is **run all core critics** — skipping is
-conservative. The cost of running an extra critic is small; the cost of a missed finding
-is large. If you are uncertain whether a signal applies, do not skip.
+After the Fact-Check Gate (and only if the user did NOT pass `--all-critics`), narrow the
+core-critic set down before launching Stage 2. This stage applies two gating signals,
+ordered by when their input becomes available:
 
-#### Skip signals (must be unambiguous)
+- **First gate — diff-shape.** Already partially applied: Step 4 used the diff to select
+  contextual critics pre-Stage-1. Now extend the same diff-shape logic to the core
+  critics via the skip table below — `git diff --stat` and spot-checked diff content are
+  the inputs.
+- **Second gate — evidence (new).** The fact-check report is now in hand. Use it to
+  confirm that each remaining core critic has *some* corroborating evidence in its
+  domain. If the only thing keeping a critic alive is "we always run it," and Stage 1
+  surfaced nothing in its domain, downgrade it.
+
+The default is **run all core critics** — skipping is conservative. The cost of running
+an extra critic is small; the cost of a missed finding is large. If you are uncertain
+whether a signal applies, do not skip.
+
+**Boring version:** consult fact-check to optionally *downgrade* critics. Do not re-derive
+the critic set from scratch — the set entering Stage 1.5 is whatever survived Step 4
+selection + user overrides, and Stage 1.5 only narrows it further. Stage 1.5 never
+*promotes* a critic.
+
+This section runs silently — emit no status banner. The Stage 1 banner already fired
+before the Fact-Check Gate, and the Stage 2 banner fires after critics return.
+
+#### Evidence consultation (lead signal)
+
+For each remaining core critic, ask: did Stage 1 surface *any* claim — at any verdict,
+including Accurate or Unverifiable — that touches this critic's domain? And does the
+diff (which fact-check scoped over) actually contain files in that domain?
+
+| Critic | Domain heuristic — corroborating evidence is any of |
+|---|---|
+| `security-reviewer` | A fact-check claim or diff hunk touching auth, crypto, input handling, file I/O, network calls, serialization, error/exception messages, URL/path construction, or any string literal in an HTML/SQL/shell/regex context. |
+| `performance-reviewer` | A fact-check claim or diff hunk touching loops, queries, data-structure choice, hot paths, complexity claims (e.g., "O(n)"), caching, batching, or dependency add/upgrade. |
+| `api-consistency-reviewer` | A fact-check claim or diff hunk touching exported function signatures, schema/contract definitions, route handlers, public CLI flags, module exports, or published config keys. |
+
+If a critic's domain heuristic finds **zero corroborating evidence** in both the
+fact-check report and the diff, downgrade the critic to skip-with-note. Record the skip
+in the rubric's `## ⏭️ Skipped Core Critics` section with the signal cited as
+"no fact-check claims or diff content in domain."
+
+If *any* corroborating evidence exists — even a single Accurate fact-check claim, or a
+single diff hunk touching the domain — run the critic. The diff-shape skip table below
+still applies as a complementary signal, but evidence consultation has priority: a
+fact-check finding in the domain forces the critic to run regardless of how copy-only
+the diff appears.
+
+#### Skip signals (diff-shape, must be unambiguous)
 
 | Critic | Skip ONLY when | Run anyway when (overriding signals) |
 |---|---|---|
@@ -285,14 +327,17 @@ is large. If you are uncertain whether a signal applies, do not skip.
 
 #### How to apply
 
-1. Run `git diff --stat <scope>` and skim the file list.
-2. Spot-check actual diff content for any candidate skip — file extension alone is not
-   sufficient (a `.md` file may carry a code block that ships; a `.ts` file may be a
-   one-line copy change). Look at the diff before deciding.
-3. Cross-reference fact-check findings: if any Incorrect / Stale / Mostly Accurate finding
-   falls in a critic's domain, do NOT skip that critic, even if the diff signals would
-   otherwise allow it.
-4. When in doubt, run the critic. Document the call only when you skip.
+1. **Evidence consultation first.** For each remaining core critic, scan the fact-check
+   report and the diff for content matching the critic's domain heuristic above. If
+   *zero* corroborating evidence exists, the critic is a downgrade candidate.
+2. **Then check the diff-shape skip signals.** Run `git diff --stat <scope>` and
+   spot-check actual diff content — file extension alone is not sufficient (a `.md`
+   file may carry a code block that ships; a `.ts` file may be a one-line copy change).
+   The skip table above operationalizes the unambiguous cases.
+3. **Override rule:** if any Incorrect / Stale / Mostly Accurate fact-check finding
+   falls in a critic's domain, do NOT skip that critic, even if the diff-shape signals
+   would otherwise allow it. Evidence consultation outranks diff shape in both directions.
+4. **When in doubt, run the critic.** Document the call only when you skip.
 
 #### Logging skipped critics
 
@@ -567,8 +612,8 @@ Patterns, implementations, or claims confirmed correct by fact-check and/or crit
 
 ## ⏭️ Skipped Core Critics
 
-Core critics whose domain was judged not to apply at the Stage 1 → Stage 2 transition.
-This section makes coverage limits auditable across runs.
+Core critics downgraded by the Stage 1.5 critic gate (diff-shape skip and/or absence of
+corroborating fact-check evidence). This section makes coverage limits auditable across runs.
 
 | Critic | Reason | Signal |
 |---|---|---|
