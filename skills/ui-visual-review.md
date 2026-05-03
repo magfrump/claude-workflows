@@ -314,6 +314,29 @@ Common 3D-viewport failure modes that look like "the page is broken":
 - Controls dead → controls attached to wrong DOM element, or `controls.update()` missing
   from the loop, or Euler-based orbit hit gimbal lock
 
+### 9. Accessibility serialization *(when HTML structure, ARIA, or content extraction changes)*
+
+**Activation trigger.** Run this section when the diff touches HTML/JSX semantic structure
+(headings `h1`–`h6`, landmarks like `<nav>`/`<main>`/`<aside>`/`<header>`/`<footer>`), ARIA
+attributes (`aria-label`, `aria-labelledby`, `aria-describedby`, `role`), `alt` text on
+images, or any code that extracts visible content for non-visual consumers (screen readers,
+AI agents, summarization pipelines, RSS/Atom serializers).
+
+The visible UI and the serialized accessibility tree are two views of the same content and
+must agree. Check that ARIA labels reflect visible text — a button labeled "Submit" with
+`aria-label="Cancel"` lies to screen readers and to any consumer reading the accessibility
+tree. Every non-decorative image needs descriptive `alt` text; purely decorative images use
+`alt=""` (empty, not missing — a missing `alt` makes screen readers fall back to the
+filename). Semantic structure must be preserved through changes: don't swap `<h2>` for a
+styled `<div>`, don't drop landmark elements, and keep heading levels sequential (no jumping
+`<h2>` to `<h4>` for visual sizing). Tab/focus order must match visible reading order — flex
+`order`, `flex-direction: row-reverse`, and absolute positioning can desynchronize them;
+verify by tabbing through the modified component. Color must never be the sole signal:
+error states need icons or text, required fields need asterisks or "(required)", status
+changes need labels — not just a red border, green check, or color swap. This is a
+lightweight equivalence check, not a full accessibility audit; for WCAG conformance review
+use a dedicated accessibility skill.
+
 ---
 
 ## Step 3: Research When Uncertain
