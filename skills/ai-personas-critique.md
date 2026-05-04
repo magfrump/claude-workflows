@@ -1,6 +1,7 @@
 ---
 name: ai-personas-critique
 lens: ensemble-multi-perspective
+persona-last-sampled: 2026-05-03
 description: >
   Critically review a proposal, design, or argument using dynamically selected AI criticism
   personas. Unlike cowen-critique and yglesias-critique (which apply a fixed voice), this skill

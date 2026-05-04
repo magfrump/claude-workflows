@@ -20,6 +20,7 @@
 #   9. Skill test-fixture coverage report (soft warning, not a gate)
 #  10. Feature integration: si-functions.sh orphan detection (soft warning)
 #  11. Document freshness: flag stale spikes and onboarding docs (soft warning)
+#  12. Persona critique freshness: flag persona-last-sampled >180 days (soft warning)
 set -euo pipefail
 
 REPO_ROOT="$(cd "$(dirname "$0")/.." && pwd)"
@@ -89,7 +90,7 @@ check_skill_frontmatter() {
 
         # Check for unknown top-level keys.
         # Top-level keys are non-indented lines matching "key:" pattern.
-        local allowed_keys="name description when requires"
+        local allowed_keys="name description when requires lens persona-last-sampled"
         local unknown_keys
         unknown_keys="$(echo "$yaml" | grep -oE '^[a-zA-Z_-]+:' | sed 's/://' | while read -r key; do
             local found=false
@@ -632,6 +633,81 @@ check_doc_freshness() {
     bold "  Freshness: $checked checked, $fresh fresh, $stale stale, $missing_fields missing fields"
 }
 
+# ── 12. Persona critique freshness ────────────────────────────────────────
+
+# Soft-warning check: skills that carry a `persona-last-sampled: YYYY-MM-DD`
+# frontmatter field are flagged when the date is older than ~6 months
+# (180 days). Skills without the field are silently skipped — the field
+# is opt-in for persona-style critique skills. Re-sampling is a separate
+# manual step; this check only surfaces what needs attention.
+check_persona_freshness() {
+    section "Persona critique freshness"
+
+    local stale_days=180
+    local now_epoch
+    now_epoch="$(date +%s)"
+
+    local checked=0
+    local fresh=0
+    local stale=0
+    local malformed=0
+
+    for skill in "$REPO_ROOT"/skills/*.md; do
+        [[ -f "$skill" ]] || continue
+        local basename
+        basename="$(basename "$skill")"
+
+        # Extract YAML frontmatter (same convention as check #1).
+        local yaml
+        yaml="$(sed -n '/^---$/,/^---$/p' "$skill" | sed '1d;$d')"
+        [[ -n "$yaml" ]] || continue
+
+        # Extract the persona-last-sampled value (top-level key).
+        # awk (not grep) so a missing field doesn't trip set -e + pipefail.
+        local sampled
+        sampled="$(echo "$yaml" | awk '
+            /^persona-last-sampled:/ {
+                sub(/^persona-last-sampled:[[:space:]]*/, "")
+                print
+                exit
+            }
+        ')"
+
+        # Field is opt-in — silently skip skills without it.
+        [[ -n "$sampled" ]] || continue
+
+        checked=$((checked + 1))
+
+        # Validate YYYY-MM-DD format (mirrors check #11).
+        if ! [[ "$sampled" =~ ^[0-9]{4}-[0-9]{2}-[0-9]{2}$ ]]; then
+            warn "$basename: 'persona-last-sampled' is not a valid date: $sampled"
+            malformed=$((malformed + 1))
+            continue
+        fi
+
+        # GNU `date -d` — repo is Linux per other prior art (git log --since).
+        local sampled_epoch
+        sampled_epoch="$(date -d "$sampled" +%s 2>/dev/null || echo "")"
+        if [[ -z "$sampled_epoch" ]]; then
+            warn "$basename: could not parse persona-last-sampled date: $sampled"
+            malformed=$((malformed + 1))
+            continue
+        fi
+
+        local age_days=$(( (now_epoch - sampled_epoch) / 86400 ))
+        if (( age_days > stale_days )); then
+            warn "$basename: STALE — persona last sampled $age_days days ago ($sampled); re-sample recommended"
+            stale=$((stale + 1))
+        else
+            pass "$basename: fresh ($age_days days since $sampled)"
+            fresh=$((fresh + 1))
+        fi
+    done
+
+    echo
+    bold "  Persona freshness: $checked checked, $fresh fresh, $stale stale, $malformed malformed"
+}
+
 # ── Run all checks ─────────────────────────────────────────────────────────
 
 main() {
@@ -649,6 +725,7 @@ main() {
     check_skill_fixture_coverage
     check_feature_integration
     check_doc_freshness
+    check_persona_freshness
 
     echo
     if [[ $FAIL -eq 0 ]]; then
