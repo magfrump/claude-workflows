@@ -49,6 +49,33 @@ than performance in a one-time migration script.
 
 **Hot-path gate for severity escalation.** Before classifying an algorithmic concern as Critical or High severity, confirm that the code path is actually hot — a request handler, a loop body called per-item at scale, or a high-frequency event callback. Code in cold paths (application startup, one-time configuration, CLI argument parsing, migration scripts) should default to Low or Informational severity unless the cold path blocks a latency-sensitive operation. When writing up a finding, explicitly state the path temperature (hot or cold) and the evidence for that classification so that downstream reviewers can verify the judgment.
 
+## Baseline Requirement
+
+Every finding in your critique MUST include a baseline statement, in one of two forms:
+
+1. **Measured baseline** — a single number with explicit units, attributed to a real
+   measurement (profiler run, benchmark, production dashboard, log query, prior load test,
+   incident postmortem). Examples: "p99 latency 240 ms on staging load test 2026-04-22",
+   "heap usage 1.2 GB during nightly batch", "CPU 73% on production fleet during peak hour",
+   "1,800 queries/sec measured at the database proxy". One number, one unit, identifiable
+   source.
+
+2. **Speculative disclaimer** — the literal phrase `no baseline available — flagged as
+   speculative`. Use this whenever you cannot point to an actual measurement for the affected
+   path. A speculative finding is still worth raising, but the disclaimer makes clear that
+   the impact estimate is reasoning from code structure, not observed behavior.
+
+Findings without one of these two statements MUST NOT be emitted. The rule applies to every
+severity level, including Informational — "we should speed this up" without a starting number
+can never be verified, and "we sped this up" with no baseline cannot be measured against
+anything. If you cannot decide between the two forms, prefer the speculative disclaimer over
+inventing a number; fabricated baselines are worse than honest uncertainty.
+
+The baseline does not need to come from the diff itself. It can be drawn from existing
+dashboards, prior load tests, recent incident reports, log queries, or any other measurement
+the user has surfaced. If the user has shared no measurements and none are documented in the
+surrounding repo, every finding is speculative — say so plainly rather than guessing.
+
 ## Using the Code Fact-Check Report
 
 If you have been provided a code-fact-check report, treat it as your foundation for
@@ -208,6 +235,8 @@ For each finding, use this structure:
 **Location:** `path/to/file.ext:42-58`
 **Move:** [Which cognitive move surfaced this]
 **Confidence:** [High / Medium / Low]
+**Baseline:** [Either: a single measured number with units and an attributed source, OR the
+literal phrase "no baseline available — flagged as speculative". See Baseline Requirement.]
 
 [2-5 sentences: what the performance problem is, under what conditions it manifests, and
 what the expected impact is (latency? memory? throughput? cost?). Be specific about the
@@ -224,6 +253,49 @@ Severity guidelines:
 - **Informational**: Optimization opportunities, good patterns worth noting, "verify this"
 
 Order findings by severity (critical first), then by confidence.
+
+#### Example finding with a measured baseline
+
+```
+#### User feed query loads full thread bodies for preview list
+
+**Severity:** High
+**Location:** `app/feed/loader.py:88-104`
+**Move:** Database interaction pattern (overfetching)
+**Confidence:** High
+**Baseline:** p99 feed-render latency 480 ms, measured on the staging load test
+2026-04-22 (`docs/perf/staging-feed-2026-04-22.md`)
+
+The loader selects every column on `thread`, including the `body` text blob, but only the
+first 200 characters are rendered in the preview. Each request returns ~50 threads, so the
+unused payload dominates serialized response size. Reducing the SELECT to just the columns
+the preview renders should cut serialization time roughly in proportion to body length.
+
+**Recommendation:** Replace `SELECT *` with an explicit projection (`id, title, body[:200],
+author_id, posted_at`) and re-run the staging load test to confirm the improvement against
+the 480 ms baseline.
+```
+
+#### Example finding without a measured baseline
+
+```
+#### Permission check re-runs role lookup per item in admin export
+
+**Severity:** Medium
+**Location:** `app/admin/export.py:42-71`
+**Move:** Hidden multiplication
+**Confidence:** Medium
+**Baseline:** no baseline available — flagged as speculative
+
+`can_export(user, item)` is invoked once per row in the export loop, and each call queries
+`user_roles` to materialize the role set. The query is small, but it executes N times per
+export with no caching. With no measured baseline for export latency or query rate, the
+actual user-visible impact is unknown — the concern is structural rather than observed.
+
+**Recommendation:** Hoist the role lookup above the loop and pass the resulting set into
+`can_export`. Before merging, capture an export-latency baseline (e.g., one trace from a
+realistic export) so the change can be evaluated against real numbers.
+```
 
 ### What Looks Good
 Note performance patterns in the diff that are correctly implemented — proper pagination,
