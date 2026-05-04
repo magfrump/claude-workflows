@@ -337,6 +337,40 @@ changes need labels — not just a red border, green check, or color swap. This 
 lightweight equivalence check, not a full accessibility audit; for WCAG conformance review
 use a dedicated accessibility skill.
 
+### 10. Interactive element state matrix *(when diff touches interactive elements)*
+
+**Activation trigger.** Run this section when the diff modifies markup or styles for
+interactive elements: `<button>`, `<a>`, `<input>`, `<select>`, `<textarea>`, `<details>`,
+custom interactive components (anything with `role="button"`, `role="link"`,
+`role="checkbox"`, `role="switch"`, `role="tab"`, etc.), or styling that targets `:hover`,
+`:focus`, `:focus-visible`, `:active`, `:disabled`, `[aria-invalid]`, or equivalent
+class-based state selectors (`.is-active`, `.is-disabled`, `.has-error`). **Apply the
+matrix only to elements actually changed in the diff** — do not audit untouched
+interactive elements elsewhere in the file. PRs that touch only static markup
+(paragraphs, headings, layout containers) skip this section entirely.
+
+For each interactive element changed in the diff, verify all six states are defined and
+convey the right meaning:
+
+| State | What to verify | Common failure |
+|-------|----------------|----------------|
+| **Default** | Element looks interactive (border, background, or cursor signals affordance — see item 6); non-text contrast meets WCAG 1.4.11 (3:1 against adjacent colors) | Borderless input indistinguishable from a label; flat button mistaken for static text |
+| **Hover** | Visible style change distinct from default; never the *only* affordance, since keyboard-only and touch users won't see it | Hover-only scroll indicators or action buttons; hover styles missing entirely |
+| **Focus** | Visible focus ring (WCAG 2.4.7); minimum area and ≥3:1 contrast against both element and adjacent colors (WCAG 2.4.13 Level AAA); not obscured by sticky headers/footers (WCAG 2.4.11). Prefer `:focus-visible` over `:focus` so mouse users don't see rings on click | `outline: none` without replacement; focus ring same color as background; focus hidden behind a sticky toolbar |
+| **Active** | Pressed/clicked feedback distinct from hover and default; signals "I received your click" before the action completes. Note: CSS `:active` means *currently being pressed*, not "currently selected" or "current page" — those use `aria-current` or class-based state | Active state visually identical to default — user re-clicks; `:active` confused with selected state |
+| **Disabled** | Visibly disabled (reduced opacity or grayscale shift, plus `cursor: not-allowed`); the `disabled` attribute or `aria-disabled="true"` is set so the accessibility tree agrees with the visual; disabled controls remain perceivable (≥3:1 contrast for the icon/text per WCAG 1.4.11 is recommended though not strictly required for disabled controls) | Disabled buttons that look enabled; `pointer-events: none` without any visual change; styled-disabled with no `aria-disabled` |
+| **Error** | Error is signaled through icon + text, not color alone (WCAG 1.4.1); `aria-invalid="true"` is set on the field and `aria-describedby` links to the error message so screen readers announce it | Red border as sole error signal — invisible to colorblind users and absent from the accessibility tree |
+
+Cross-references: item 6 covers the underlying affordance principles; the *Affordance
+Principles Reference* section near the end of this skill lists the WCAG citations in full.
+This section is the diff-scoped, per-element matrix that ensures the principles are
+applied to the specific elements being changed.
+
+For static analysis, verify the relevant CSS rules / className variants exist for each
+state the element needs. For runtime confirmation that hover/active/error styles actually
+fire under interaction, defer to Step 6 (runtime verification) when available — static
+analysis cannot predict whether a CSS class actually triggers under user input.
+
 ---
 
 ## Step 3: Research When Uncertain
