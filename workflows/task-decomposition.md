@@ -15,9 +15,11 @@ This workflow is about decomposing work into independent sub-investigations and 
 
 ## Process
 
-### 1. Identify independent sub-investigations
+### 1. Capture the original goal and identify independent sub-investigations
 
-Before starting research, assess whether the task touches multiple independent subsystems. If so, list them:
+Before starting research, capture the user's original goal text verbatim — copy the exact request (or the closest single statement of the desired outcome) into the working notes that will become the synthesized research doc. The recompose step (step 6) checks the sum of sub-task findings against this verbatim text, so paraphrasing here weakens the later coverage check.
+
+Then assess whether the task touches multiple independent subsystems. If so, list them:
 
 - What are the distinct areas of the codebase involved?
 - Can each area be researched without understanding the others first?
@@ -30,6 +32,7 @@ Example decomposition for "add API endpoint with auth and rate limiting":
 - **Independent area C**: What's the data model for the resource being exposed?
 
 **Done when...**
+- [ ] The original goal text is captured verbatim (not paraphrased) for later use by the recompose step
 - [ ] The distinct areas of the codebase involved are listed
 - [ ] Each area is labeled as either a shared dependency or an independent sub-investigation
 - [ ] Independent areas can be researched without understanding the others first
@@ -111,7 +114,29 @@ The main (orchestrating) agent is responsible for writing the final research doc
 - [ ] Sub-agent findings are reorganized by section, not preserved as separate per-area summaries
 - [ ] Contradictions or gaps between sub-agent findings are resolved or flagged
 
-### 6. Plan and implement sequentially
+### 6. Recompose: verify the original goal is met by the sum of sub-tasks
+
+When sub-investigations rejoin at synthesis time, re-verify that the combined findings cover the original goal. Decomposition is lossy in two ways: a goal element that doesn't fit any sub-task neatly can be silently dropped during the split, and a finding that addresses a goal element gets reorganized into an RPI section (Invariants, Prior art, etc.) at synthesis time, so its connection to the goal element it answers becomes implicit. Without an explicit recompose check, gaps surface during planning or implementation rather than research, when they're more expensive to fix.
+
+This step complements step 4 (Reconcile). Reconcile catches *conflicting* assumptions across sub-investigations; recompose catches *missing* coverage of the original goal. Run them both.
+
+In the synthesized research doc:
+
+1. Add an **Original goal** section near the top that quotes the user's original goal text verbatim (the same text captured in step 1). Do not paraphrase — the verbatim copy is what makes the coverage check unambiguous.
+2. Add a **Coverage check** section that maps each element of the goal to the sub-task finding(s) that address it. Format as a list or table; if the goal has N distinct elements, the coverage check has N rows.
+3. Treat any goal element with no sub-task coverage as a gap. Resolve it before planning, either by:
+   - Dispatching an additional sub-agent (or main-agent research pass) to fill the gap, or
+   - Explicitly acknowledging the element as scoped out of this loop, with a one-line justification (e.g., "deferred to follow-up: requires UX input not available this session").
+
+A gap acknowledged in writing is fine; a gap silently dropped is not. The point of the recompose step is to make the choice visible.
+
+**Done when...**
+- [ ] The synthesized research doc has an **Original goal** section quoting the user's original goal text verbatim
+- [ ] The synthesized research doc has a **Coverage check** section mapping each element of the goal to the sub-task finding(s) that address it
+- [ ] Every goal element either has at least one sub-task finding that addresses it, or is explicitly acknowledged as scoped out with a written justification
+- [ ] No goal element is silently absent from the coverage check
+
+### 7. Plan and implement sequentially
 
 From here, follow the normal research-plan-implement workflow. The decomposition was about parallelizing *understanding*, not *implementation*. The plan should address the full task as a coherent sequence.
 
