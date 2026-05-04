@@ -99,9 +99,32 @@ Check whether the upgrade changes transitive dependencies:
 - Keeping up with latest → low urgency; evaluate cost/benefit
 - Dependency of a dependency requires it → check if avoidable
 
+### 5. Rollback rehearsal (precondition)
+
+Before starting the migration, the rollback procedure must be **documented** and
+**rehearsed**. An upgrade you don't know how to undo isn't safe to start.
+
+- **Documented** means writing down the exact commands that revert the change:
+  the lockfile/version pin restoration, the install command, and any
+  data/config changes that need to be unwound. Vague intent ("revert the
+  commit") doesn't count — write the literal commands.
+- **Rehearsed** means actually running those commands once and confirming a
+  **verification step** passes afterward. The verification step should be
+  small but real: a smoke test, an app boot, a focused test that exercises the
+  dependency's primary use in the project. Pick something that would *fail* if
+  the rollback left the project broken.
+- Rehearse on a scratch branch (or equivalent) so the rehearsal itself doesn't
+  destabilize ongoing work. The artifact of rehearsal is the "rehearsed on
+  {date/branch}, verification passed" line in the output template.
+
+Why this is a precondition, not a follow-up: rehearsing the rollback after a
+problem occurs is when you discover the lockfile changes don't fully revert,
+or that a database migration was one-way, or that the install command needs a
+flag you forgot. Find those problems while the upgrade hasn't shipped yet.
+
 ## Output
 
-```markdown
+````markdown
 ## Dependency Upgrade Evaluation: {package} {current} → {target}
 
 ### Summary
@@ -130,6 +153,23 @@ Check whether the upgrade changes transitive dependencies:
 ### Risk Factors
 - {Behavioral changes, performance concerns, compatibility issues, or "Low risk — well-tested upgrade path"}
 
+### Rollback Plan (precondition — complete before starting Migration Plan)
+
+**Exact rollback commands:**
+```
+{e.g.,
+git checkout -- package.json package-lock.json
+npm ci
+# if a data/config change was applied:
+{exact undo command}
+}
+```
+
+**Verification step** (run after rollback; must pass to confirm rollback worked):
+{e.g., `npm test -- src/payments` — exercises the dependency's primary use in this project; would fail if the lockfile didn't fully revert.}
+
+**Rehearsal status:** [ ] Rehearsed on {YYYY-MM-DD} on branch `{scratch-branch-name}`; verification step passed.
+
 ### Migration Plan
 {If recommending upgrade, provide concrete steps:}
 1. {Step 1 — e.g., "Update version in package.json"}
@@ -141,7 +181,7 @@ Check whether the upgrade changes transitive dependencies:
 ### If Not Upgrading
 {If recommending deferral, note what would change the recommendation — e.g., "Revisit when
 we start the API v3 work, which will require the new streaming API in this dependency."}
-```
+````
 
 ## Output Location
 
@@ -165,3 +205,6 @@ Present the evaluation in chat. If the user requests a persisted artifact, save 
   an emergency upgrade.
 - **When the upgrade path is unclear, recommend a spike.** If you can't confidently estimate
   the effort, say so and suggest a timeboxed investigation using the spike workflow.
+- **Don't start the migration until the rollback is documented and rehearsed.** A rollback
+  that's never been executed is not a rollback plan — it's a hope. Rehearse on a scratch
+  branch and confirm a verification step passes before touching the real upgrade.
