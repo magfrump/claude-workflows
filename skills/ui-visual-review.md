@@ -207,6 +207,11 @@ Ask for each element: "Should this size to its content or fill available space?"
 - Touch targets smaller than minimum sizes (WCAG 2.5.8: 24x24px minimum Level AA;
   WCAG 2.5.5: 44x44px Level AAA)
 
+For diff-scoped, mechanical state-coverage checks on interactive elements
+actually touched by the diff (default/hover/focus/active/disabled/error), see
+item 10 below — that runs in default mechanical-review mode, while the broader
+affordance review here remains full-audit only.
+
 Note: discoverability is not only about making elements visible. Also consider:
 - **Progressive disclosure** — showing controls in context when relevant, rather than
   displaying everything at once (which creates its own discoverability problem through clutter)
@@ -336,6 +341,81 @@ error states need icons or text, required fields need asterisks or "(required)",
 changes need labels — not just a red border, green check, or color swap. This is a
 lightweight equivalence check, not a full accessibility audit; for WCAG conformance review
 use a dedicated accessibility skill.
+
+### 10. Interactive element state matrix *(when diff touches interactive elements)*
+
+**Activation trigger.** Run this section when the diff adds or modifies any
+interactive element. "Interactive element" means anything a user can operate:
+
+- HTML/JSX: `<button>`, `<a href>`, `<input>`, `<textarea>`, `<select>`,
+  `<summary>`, elements with `onClick`/`onKeyDown`/`onChange` handlers, elements
+  with `role="button"` / `role="link"` / `role="checkbox"` / `role="tab"` /
+  `role="menuitem"` / etc., and custom components that wrap any of the above
+  (e.g., `<Button>`, `<TextField>`, `<Dropdown>`)
+- Unity/C#: `Button`, `Toggle`, `Slider`, `InputField`, `TMP_InputField`,
+  `Dropdown`, anything with an `EventTrigger` or `Selectable` subclass
+- Other frameworks: equivalent control primitives (Vue/Svelte form inputs,
+  SwiftUI `Button`/`Toggle`/`TextField`, etc.)
+
+**Scope.** This check is strictly diff-scoped. Verify states only for elements
+the diff *adds or modifies* — not every interactive element on the page. If the
+diff edits a button's label, the button is in scope; an unrelated button on the
+same page is not. This keeps the check mechanical and the signal high.
+
+**The matrix.** For each in-scope element, verify the following six states are
+handled. "Handled" means the state is either explicitly styled, explicitly
+inherited from a documented design system primitive, or explicitly N/A
+(documented as not applicable for this element).
+
+| State | What to verify | Common failure |
+|-------|---------------|----------------|
+| **Default** | Element is visible and visually distinct from surrounding non-interactive content (border, background, cursor, or other affordance). | Borderless input indistinguishable from a label; "ghost" button with no edge. |
+| **Hover** | Pointer hover triggers a perceptible change (background, border, color, cursor). Skip on touch-only contexts but verify pointer contexts still get it. | `:hover` styles missing on a custom `<div role="button">`; hover applied to the wrapper instead of the interactive child. |
+| **Focus** | Keyboard focus produces a visible indicator that meets WCAG 2.4.7 (visible) and ideally 2.4.13 (sufficient area + contrast). The indicator must not rely on color alone. | `outline: none` with no replacement; focus ring clipped by an `overflow: hidden` ancestor; focus ring on the wrong element after a custom focus delegation. |
+| **Active** | The pressed/clicked state is visually distinguishable (depressed style, color shift, or animation) so the user gets feedback that the action registered. | `:active` style absent — clicks feel "dead"; for custom controls, no `aria-pressed` / `aria-expanded` toggling. |
+| **Disabled** | Disabled elements are visibly disabled (sufficiently dimmed, not just slightly faded), do not respond to hover/focus interactivity, and expose `disabled` / `aria-disabled` to assistive tech. | `opacity: 0.9` reads as enabled; element is `aria-disabled` but still receives click handlers; disabled styling forgotten on custom button wrappers. |
+| **Error** *(form inputs and validatable controls only)* | Error state is conveyed by more than color (border + icon + text, or border + `aria-invalid` + linked error message via `aria-describedby`). N/A for non-validatable elements like plain buttons or links — mark explicitly. | Red border with no icon or text (fails WCAG 1.4.1 use of color); error message present visually but not associated via `aria-describedby`. |
+
+**Per-element checklist format.** When reporting, list each in-scope interactive
+element once with a row per state:
+
+```
+- [ ] <SubmitButton> (src/components/SubmitButton.tsx:42)
+  - [x] default — `bg-blue-600 text-white border` ✓
+  - [x] hover — `hover:bg-blue-700` ✓
+  - [ ] focus — no `focus-visible` ring; `outline: none` from reset is not replaced
+  - [x] active — `active:bg-blue-800` ✓
+  - [x] disabled — `disabled:opacity-50 disabled:cursor-not-allowed` ✓
+  - [N/A] error — button is not a validatable control
+```
+
+**Common failure modes:**
+
+- **Single-state styling.** Element has only the default state defined; hover,
+  focus, and active all look identical to default — the user gets no feedback.
+- **Hover-only feedback.** Element shows a hover state but has no focus state,
+  silently breaking keyboard navigation.
+- **`outline: none` without replacement.** A CSS reset removes the browser
+  default focus ring and nothing replaces it — common in design-system
+  components that expect the consumer to add `:focus-visible` styling and the
+  consumer forgot.
+- **Disabled-but-clickable.** `aria-disabled="true"` is set for screen readers
+  but the click handler still fires because the underlying element is not
+  actually `disabled`. Either set the native `disabled` attribute or guard the
+  handler.
+- **Color-only error state.** A red border indicates an invalid input, but
+  there is no icon, no `aria-invalid`, and no text message — fails WCAG 1.4.1
+  and is invisible to colorblind users and screen readers.
+- **State applied to wrapper, not interactive child.** The visible outline /
+  background lives on a parent `<div>` while the actual focusable element is a
+  child `<button>` — focus styling never appears because focus is on the child.
+- **Inconsistent state coverage across the diff.** Two new buttons in the same
+  diff handle hover/focus/active differently; flag the inconsistency so the
+  team standardizes before merging.
+
+This check is mechanical and runs in default review mode whenever the trigger
+fires. For broader affordance review (touch-target sizing, scroll affordances,
+discoverability), see item 6 — that runs only in full-audit mode.
 
 ---
 
