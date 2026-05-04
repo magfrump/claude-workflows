@@ -68,6 +68,37 @@ If no upstream reports are provided, **emit the following note at the top of you
 Then proceed with the full analysis. Tag all findings as `[NOVEL]` since there's no baseline
 to compare against.
 
+## Prior Art Check
+
+Before generating new what-if scenarios, search the project's prior decisions and working
+artifacts for the same scenarios. The team may have already considered some of these failure
+modes — surfacing prior consideration lets you focus on truly novel ground and connect new
+analyses to the existing reasoning trail.
+
+The specific move:
+
+1. **Extract scenario keywords** from the proposal — the systems, components, failure modes,
+   and risk vocabulary that matter (e.g., "migration", "cache invalidation", "rate limiting",
+   `user_preferences`, plus domain-specific terms). Aim for 5–10 keywords spanning what the
+   proposal *changes* and what could *fail* around it.
+2. **Grep `docs/decisions/` and `docs/working/`** for each keyword. Use case-insensitive
+   matching and cast a wide net — include synonyms and adjacent concepts. Example:
+   `grep -ril -e "migration" -e "backfill" -e "user_preferences" docs/decisions/ docs/working/`.
+3. **Read matches** to identify what was previously considered, what was concluded, and
+   whether circumstances have changed since. Skim the surrounding section, not just the
+   matched line — context matters.
+4. **Carry forward what you find** into the cognitive moves below. When a scenario you would
+   surface was already analyzed, tag it `[PRIOR CONSIDERATION]` and cite the file (and section
+   or heading where applicable). Do *not* drop the finding — surfacing the link is the value.
+
+Findings already considered are not failures of this analysis — they're context. Note them so
+the reader knows the team has been here before, and focus your novel work on the gaps. If the
+prior consideration reached a different conclusion than what you'd surface today, that's a
+finding in itself: circumstances may have changed, and the divergence is worth flagging.
+
+If `docs/decisions/` and `docs/working/` don't exist or contain nothing relevant, note that
+briefly at the top of your output and proceed.
+
 ## The Cognitive Moves
 
 ### 1. Name the load-bearing assumptions
@@ -275,9 +306,14 @@ A consolidated list of all findings, each tagged:
 - `[HIDDEN COUPLING]` — a dependency the proposal didn't map
 - `[REVERSIBILITY CLIFF]` — a point where reversal suddenly becomes much harder
 - `[SUCCESS COST]` — something lost even if the proposal works perfectly
+- `[PRIOR CONSIDERATION]` — a finding that surfaced in the Prior Art Check; cite the
+  source file (e.g., `docs/decisions/007-two-phase-pr-prep.md`) and note whether the
+  prior conclusion still applies or whether circumstances have changed
 
 This tagging enables direct comparison with upstream critique outputs to evaluate whether
-the what-if analysis surfaced genuinely new findings.
+the what-if analysis surfaced genuinely new findings. The `[PRIOR CONSIDERATION]` tag can
+combine with others (e.g., `[HIDDEN COUPLING] [PRIOR CONSIDERATION]`) when a prior artifact
+already named the coupling but the present proposal didn't carry it forward.
 
 ## Output Location
 
