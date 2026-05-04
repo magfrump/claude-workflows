@@ -39,6 +39,50 @@ This is a **soft ceiling**, not a hard stop. The user can say "continue" and the
 
 **Tracking convergence:** To evaluate whether this ceiling is set at the right level, note in the PR description or commit message whether the loop converged cleanly (and in how many iterations) or hit the 3-iteration ceiling. This creates an audit trail for calibrating the threshold over time and for evaluating whether the bound prevents unbounded cycles in practice.
 
+## Divergence detection (stuck-loop signal)
+
+The convergence ceiling catches *progress without convergence* — new findings keep appearing across iterations. It does not catch a different failure mode: **the same finding keeps re-appearing after you claimed to have fixed it.** That is a stuck loop, and it usually means the prior fix targeted a symptom rather than the underlying cause.
+
+### Signal
+
+After any iteration in which a finding was marked resolved (the review artifact called it fixed, or a commit referenced fixing it), inspect the next iteration's findings. Treat a finding as a **re-fire** if any of the following match a prior "fixed" finding:
+
+- **Identical text**, modulo trivial whitespace or numbering changes.
+- **Near-duplicate text**, within a ≤2-line edit-distance heuristic — i.e., adding, removing, or rewording up to two lines of the finding description leaves it equivalent. Apply this by reading the two findings side-by-side; no tooling required.
+- **Same location and category**: same file, same line ±5, same finding category (e.g., "missing null check", "race condition", "off-by-one").
+
+One re-fire is enough to trigger the signal — do not wait for a pattern to develop.
+
+### Action
+
+When a re-fire is detected:
+
+1. **Flag the loop as stuck.** Note in the current review artifact and in the next commit message which finding re-fired and which prior iteration claimed to fix it. This makes the stuck state visible in the audit trail rather than buried in diff churn.
+2. **Pivot to a deeper read of the underlying issue.** Do not patch the re-fired finding again at the same surface. Instead:
+   - Re-read the implementation around the finding, including callers and callees, not just the changed lines.
+   - Ask whether the prior fix addressed a symptom (e.g., guarded one call site) rather than the cause (e.g., the function's contract is wrong, the data shape is unexpected upstream, the abstraction leaks).
+   - Consider structural alternatives: refactor, change the contract, push the fix to a different layer, or accept the finding as a known limitation if the structural fix is out of scope.
+3. **Surface to the user.** Present:
+   - **Which finding re-fired**, with both the original and the new wording.
+   - **What the prior fix attempted** (commit hash and one-line summary).
+   - **The deeper-read result** — what you now believe the underlying issue is.
+   - **A recommendation** — refactor at the deeper level, accept and document as a known issue, escalate, or split the structural fix into a separate PR.
+
+### Flag only — never auto-abort
+
+This signal **flags and pivots; it does not stop the loop**. The user decides what to do:
+
+- "Continue patching" — they judge the re-fire is coincidental (e.g., two distinct bugs that happen to read alike). Resume the loop without further pivot.
+- "Apply the deeper fix" — proceed with the structural change you proposed.
+- "Accept and document" — record the finding as a known limitation in the PR description and exit the loop.
+- "Escalate" — same path as the convergence ceiling: hand off to human review.
+
+The cost of flagging a false positive is one short user prompt; the cost of missing a real stuck loop is iterations of churn that compound into the wrong kind of technical debt. Bias toward flagging.
+
+**Why this exists:** Re-fires are the loop's analogue of the symptom-vs-root-cause split from the debugging defaults. Patching the same surface repeatedly produces a fix history that looks productive in the diff but leaves the underlying cause intact — and often makes the eventual structural fix harder, because each surface patch is now a constraint to preserve. Catching this on the first re-fire is much cheaper than catching it after three.
+
+**Relationship to the convergence ceiling:** Divergence detection can fire on iteration 2 (one re-fire is enough), well before the 3-iteration ceiling. The ceiling is for *new* findings accumulating; this signal is for *old* findings recurring. Both surface to the user, both are flag-only, and a single loop can hit both — in which case the deeper-read pivot takes precedence over the ship/escalate choice from the ceiling.
+
 ## Anti-patterns
 
 These supplement the guidance in pr-prep Step 3 (which covers verifying findings and the convergence ceiling):
