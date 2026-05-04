@@ -249,6 +249,15 @@ for ROUND in $(seq 1 $MAX_ROUNDS); do
     init_round_log "$ROUND"
 
     # -------------------------------------------------------
+    # Step 0a: Value revisit — sample one old feature and ask
+    # whether it would still be built with 50% less context.
+    # Records yes/no + reason in docs/working/value-revisit-log.md
+    # as a lagging signal of feature over-investment. Never
+    # blocks the round.
+    # -------------------------------------------------------
+    value_revisit_step "$REPO_DIR" "$WORKING_DIR" || true
+
+    # -------------------------------------------------------
     # Step 0b: Build prior-round context for idea generation
     # -------------------------------------------------------
     PRIOR_CONTEXT=""

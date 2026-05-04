@@ -196,3 +196,105 @@ print_gate_stats() {
 
     echo ""
 }
+
+# --- Value revisit step ---
+# Samples one feature merged 30+ days ago and asks whether it would still be
+# built under tighter context constraints. Records the verdict + a one-line
+# reason in $working_dir/value-revisit-log.md so a trend of "no" answers
+# becomes visible as a lagging signal of over-investment.
+#
+# Args: $1 = repo_dir (where to run git), $2 = working_dir (where the log lives)
+# Side effects: appends one row to $working_dir/value-revisit-log.md, creating
+#   the file with a header on first run.
+# Never fails the caller: returns 0 even when there are no eligible commits or
+# the claude call errors. Call site uses `|| true` as belt-and-suspenders.
+value_revisit_step() {
+    local repo_dir=$1
+    local working_dir=$2
+    local log_file="$working_dir/value-revisit-log.md"
+
+    # First-parent merges on main capture the SI loop's per-feature integration
+    # commits without picking up sub-merges from inside feature branches.
+    local merges
+    merges=$(cd "$repo_dir" && git log --merges --first-parent \
+        --until="30 days ago" --format='%H%x09%s' main 2>/dev/null) || merges=""
+    if [ -z "$merges" ]; then
+        echo "  Value revisit: no merge commits older than 30 days, skipping"
+        return 0
+    fi
+
+    local sample sha subject merge_date feature_subject
+    sample=$(echo "$merges" | shuf -n 1)
+    sha=$(echo "$sample" | cut -f1)
+    subject=$(echo "$sample" | cut -f2-)
+    merge_date=$(cd "$repo_dir" && git log -1 --format='%cs' "$sha" 2>/dev/null) || merge_date="unknown"
+    # The 2nd parent of a merge commit is the merged branch tip — its subject
+    # usually carries more signal than the generic "Merge branch ..." line.
+    feature_subject=$(cd "$repo_dir" && git log -1 --format='%s' "${sha}^2" 2>/dev/null) || feature_subject=""
+
+    echo "  Value revisit: sampled ${sha:0:7} ($merge_date) — $subject"
+
+    local prompt
+    prompt="You are evaluating an old feature in this repo to test whether it earned its build cost.
+
+FEATURE MERGED ON: $merge_date
+MERGE COMMIT: $sha
+MERGE SUBJECT: $subject
+FEATURE BRANCH TIP SUBJECT: $feature_subject
+
+Inspect the change so you understand what was built:
+  cd $repo_dir && git show $sha --stat
+  cd $repo_dir && git log ${sha}^1..${sha}^2 --oneline
+
+Then answer this sharpened question:
+
+  If your context budget were 50% smaller, would you still build this?
+
+Output exactly two lines, nothing else:
+Line 1: YES or NO (uppercase, on its own line)
+Line 2: one sentence (max 30 words) explaining why."
+
+    local response
+    response=$(cd "$repo_dir" && claude -p "$prompt" 2>/dev/null) || response=""
+    if [ -z "$response" ]; then
+        echo "  Value revisit: claude call failed or returned empty, skipping"
+        return 0
+    fi
+
+    # Pull the first standalone YES/NO and the first non-empty non-verdict line.
+    local answer reason
+    answer=$(echo "$response" | grep -oE '^(YES|NO)$' | head -1)
+    reason=$(echo "$response" | grep -vE '^(YES|NO)$' | grep -vE '^[[:space:]]*$' | head -1 \
+        | sed 's/^[[:space:]]*//;s/[[:space:]]*$//')
+    if [ -z "$answer" ]; then
+        echo "  Value revisit: could not parse YES/NO from response, skipping"
+        return 0
+    fi
+    [ -z "$reason" ] && reason="(no reason provided)"
+
+    if [ ! -f "$log_file" ]; then
+        cat > "$log_file" <<'HEADER_EOF'
+# Value Revisit Log
+
+Each round, the SI loop samples one feature merged 30+ days ago and asks:
+
+> If your context budget were 50% smaller, would you still build this?
+
+A trend of `NO` answers signals features whose value depended on having
+abundant context — useful as a lagging indicator of over-investment.
+
+| Sampled on | Commit | Subject | Verdict | Reason |
+|------------|--------|---------|---------|--------|
+HEADER_EOF
+    fi
+
+    # Escape pipes so the markdown table stays valid.
+    local safe_subject safe_reason today
+    safe_subject=$(echo "$subject" | sed 's/|/\\|/g')
+    safe_reason=$(echo "$reason" | sed 's/|/\\|/g')
+    today=$(date -u +%Y-%m-%d)
+    printf '| %s | %s | %s | %s | %s |\n' \
+        "$today" "${sha:0:7}" "$safe_subject" "$answer" "$safe_reason" >> "$log_file"
+
+    echo "  Value revisit: $answer — $reason"
+}
