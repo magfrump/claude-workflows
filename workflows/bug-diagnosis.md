@@ -111,14 +111,27 @@ State a specific, falsifiable hypothesis:
 
 **Example hypotheses by bug category:**
 
-- **Regression**: "The `UserService.getById` query returns stale data because commit `a1b2c3d` switched from `findOne` to a cached lookup that doesn't invalidate on update." *Confirm*: bisect lands on that commit; reverting it fixes the issue. *Refute*: the cache is correctly invalidated and the stale data predates that commit.
-- **Performance degradation**: "The `/api/reports` endpoint P95 latency doubled because `buildReport` issues N+1 queries after the `Report` model added an eager-loaded `comments` association." *Confirm*: profiling shows `buildReport` generating O(N) SQL queries; removing the eager load restores prior latency. *Refute*: query count is unchanged and the latency increase is elsewhere (e.g., serialization).
-- **Intermittent failure**: "The `processQueue` worker test fails ~20% of runs because two jobs share a `tmp/output.csv` path and overwrite each other under concurrent execution." *Confirm*: running with `--parallel=1` eliminates the failure; adding per-job temp paths fixes it. *Refute*: the failure occurs even in serial execution, pointing to a different race condition or flaky assertion.
+- **Regression** *[from prior bug]*: "The `UserService.getById` query returns stale data because commit `a1b2c3d` switched from `findOne` to a cached lookup that doesn't invalidate on update." *Confirm*: bisect lands on that commit; reverting it fixes the issue. *Refute*: the cache is correctly invalidated and the stale data predates that commit.
+- **Performance degradation** *[from log analysis]*: "The `/api/reports` endpoint P95 latency doubled because `buildReport` issues N+1 queries after the `Report` model added an eager-loaded `comments` association." *Confirm*: profiling shows `buildReport` generating O(N) SQL queries; removing the eager load restores prior latency. *Refute*: query count is unchanged and the latency increase is elsewhere (e.g., serialization).
+- **Intermittent failure** *[from code reading]*: "The `processQueue` worker test fails ~20% of runs because two jobs share a `tmp/output.csv` path and overwrite each other under concurrent execution." *Confirm*: running with `--parallel=1` eliminates the failure; adding per-job temp paths fixes it. *Refute*: the failure occurs even in serial execution, pointing to a different race condition or flaky assertion.
 
 A good hypothesis:
 - Names a **specific location** (function, line, module)
 - Identifies a **specific mechanism** (what's going wrong and why)
 - Predicts a **testable outcome** (if I do X, I should see Y)
+- Carries exactly one **source tag** from the taxonomy below
+
+#### Source tag
+
+Every recorded hypothesis must carry exactly one inline tag from the following taxonomy, naming the kind of evidence that produced it. The source is a strong prior on the hypothesis's likelihood of being correct, and the mix of sources across hypotheses is a useful diagnostic when invoking the 3-hypothesis escape hatch (step 4) — three intuition-tagged misses signal a different kind of stuckness than three error-message-tagged misses.
+
+- **`[from error message]`** — Derived from the exception text, status code, panic, or error string itself. *Strongest signal*: the error usually names the proximal failure. Default starting point whenever an error is in hand.
+- **`[from log analysis]`** — Derived from log lines, traces, metrics, telemetry, or surrounding output that is distinct from the error itself. *Strong but more interpretive* — log evidence is suggestive rather than definitive, and correlation/causation confusion is common.
+- **`[from code reading]`** — Derived from reading the relevant source and reasoning about its control or data flow (e.g., spotting a missing null check on the function on the stack trace). *Strong when the suspect path is small* and on the trace; weaker as the surface grows or as you reason further from the failure point.
+- **`[from intuition]`** — Pattern-matching from prior debugging experience without a concrete signal in hand ("this kind of bug usually means X"). *Cheapest to form, most likely to be wrong*. Useful as a tiebreaker or when stronger sources are exhausted, but deprioritize when error-message, log, or code evidence is available.
+- **`[from prior bug]`** — Derived from a similar past bug, an entry in a known-issues / bug graveyard log, or institutional memory ("we hit this exact thing in module X last quarter"). *Strong when the prior bug is well-documented and the analogy is tight*; weak when the analogy is loose or the original was never root-caused.
+
+Place the tag inline at the start of the hypothesis statement (e.g., `[from error message] parseDate returns null when the input has a timezone offset...`). When two sources jointly produced the hypothesis, pick the one that did the most work — the tag names the dominant evidence, not every piece that contributed. If you genuinely can't pick a single source, that's a signal the hypothesis is too vague: tighten it before testing.
 
 Record the hypothesis in your diagnosis log. If you're past hypothesis #2, you should definitely be writing these down — debugging without records leads to testing the same thing twice.
 
@@ -126,7 +139,8 @@ Record the hypothesis in your diagnosis log. If you're past hypothesis #2, you s
 - [ ] The hypothesis names a specific location (function, line, module)
 - [ ] The hypothesis identifies a specific mechanism (what's going wrong and why)
 - [ ] The hypothesis predicts a testable outcome (if I do X, I should see Y)
-- [ ] The hypothesis is recorded in the diagnosis log
+- [ ] The hypothesis carries exactly one source tag from the taxonomy (`[from error message]` / `[from log analysis]` / `[from code reading]` / `[from intuition]` / `[from prior bug]`)
+- [ ] The hypothesis is recorded in the diagnosis log (with its source tag)
 
 ### 4. Test — confirm or refute the hypothesis
 
@@ -206,9 +220,9 @@ Date: {YYYY-MM-DD}
 [Minimal steps or test case that triggers the bug]
 
 ## Hypotheses tested
-| # | Hypothesis | Test | Result |
-|---|-----------|------|--------|
-| 1 | [specific claim] | [what you did] | [confirmed/refuted + what you learned] |
+| # | Source | Hypothesis | Test | Result |
+|---|--------|-----------|------|--------|
+| 1 | [from error message \| from log analysis \| from code reading \| from intuition \| from prior bug] | [specific claim] | [what you did] | [confirmed/refuted + what you learned] |
 
 ## Root cause
 [What's actually wrong, confirmed by hypothesis #N]
