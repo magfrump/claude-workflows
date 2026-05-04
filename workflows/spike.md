@@ -15,6 +15,7 @@ value-justification: "Replaces unbounded exploration of unknowns with timeboxed 
 - **→ RPI**: The most common pivot. When the spike answers "yes, this works," its RPI seed section (see step 4) is the handoff — load it as initial input to RPI research rather than starting from scratch.
 - **← From RPI**: When RPI research hits a "is this even feasible?" question that can't be answered by reading code, pause RPI and spike it. Carry the research doc's invariants as constraints for the spike.
 - **← From DD**: When a DD candidate needs feasibility validation, spike the uncertain option. The spike's findings feed back into DD's tradeoff matrix.
+- **→ DD**: When the spike was invoked from DD and other candidates remain viable (the spike validated or falsified one option without resolving the whole decision), the spike's DD seed section (see step 4) is the handoff — surviving candidates carry forward into DD's tradeoff matrix, falsified candidates feed DD's pruned-candidates list, and any new constraints update DD step 2.
 
 ## Process
 
@@ -106,7 +107,7 @@ Time spent: [X minutes]
 - [Surprises or gotchas]
 
 ## Recommendation
-[Proceed to RPI / Try alternative X / Need more investigation because Y]
+[Proceed to RPI / Return to DD with updated tradeoff matrix / Try alternative X / Need more investigation because Y]
 
 ## RPI seed (include if recommending "proceed")
 - **Scope for RPI**: [One-sentence scope statement, ready to use as the RPI loop's scope]
@@ -114,11 +115,19 @@ Time spent: [X minutes]
 - **Relevant files/APIs**: [What the RPI research phase should read first]
 - **Gotchas to carry forward**: [Non-obvious things that would bite someone who didn't do the spike]
 - **What the spike did NOT answer**: [Gaps the RPI research phase still needs to fill]
+
+## DD seed (include only if the spike was invoked from DD and other candidates remain viable)
+- **Surviving DD candidates**: [Candidate IDs the spike did not eliminate, with one-line status each — these carry forward into DD's tradeoff matrix as still-viable]
+- **Falsified DD candidates**: [Candidate IDs the spike ruled out, with one-line reason each — these feed DD step 5's pruned-candidates section so they aren't regenerated]
+- **Diagnostic constraints learned**: [Hard or soft constraints the spike surfaced that DD step 2 didn't already have, with the spike observation that justifies each one — drop these into DD step 2's constraint list]
+- **What the spike did NOT answer about other candidates**: [Untested candidates or unresolved questions DD step 4 may need a follow-up spike or stress-test move to evaluate]
 ```
 
 The three-line header (Goal · Project state · Task status) immediately after the metadata block is the same drift-surfacing convention RPI working docs use (see `workflows/research-plan-implement.md` step 2). Lifecycle keyword vocabulary is identical: `in-progress | blocked | paused | complete`, with an optional parenthetical phase note. Update the **Task status** line whenever the spike record is read or revised; if any line no longer matches reality, fix it before doing anything else with the record.
 
 The "RPI seed" section is the handoff point. When a spike recommends proceeding, the RPI research phase should start by loading the spike record — the seed section provides initial direction so research doesn't repeat work the spike already did. Anything the spike learned about what exists, what connects to what, and what's fragile belongs here, not just in "key findings."
+
+The "DD seed" section is a different handoff — only fill it in when the spike was launched from a DD pass that hasn't converged yet. Use it when the spike validated or falsified one or more candidates without resolving the whole decision (e.g., DD spawned the spike from step 4 to test a leading option; the test didn't disqualify the option but didn't make it dominant either). The seed lets DD resume in step 4 with an updated tradeoff matrix instead of regenerating candidates from scratch in step 1. If the spike was standalone or invoked from RPI rather than DD, omit this section — it's optional precisely so spikes that don't come from DD don't generate empty boilerplate.
 
 Save this to `docs/spikes/` in the project if the findings are relevant long-term, or just report to the user if ephemeral.
 
@@ -147,6 +156,7 @@ The exact sections don't matter — what matters is that the record captures a c
 - [ ] Key findings include what worked, what didn't, and any surprises
 - [ ] A recommendation is stated (proceed to RPI / try alternative / need more investigation)
 - [ ] If recommending "proceed," the RPI seed section is populated with scope, invariants, relevant files, gotchas, and gaps
+- [ ] If the spike was invoked from DD and other candidates remain viable, the DD seed section is populated with surviving candidates, falsified candidates, and diagnostic constraints learned (omit the section entirely if the spike wasn't from DD)
 
 **Promote lasting discoveries.** If the spike produced knowledge with lasting value beyond the current task — library limitations, undocumented API behavior, approaches definitively ruled out — promote those findings to `docs/thoughts/` with `Last verified` and `Relevant paths` freshness fields before deleting the spike branch. This prevents valuable discovery from being lost when the throwaway branch is cleaned up. Even a 3-line note like "pdf-parse silently drops merged cells — discovered in spike 2024-03-15" is worth preserving if it would save a future session from re-discovering the same limitation.
 
