@@ -124,7 +124,7 @@ git rebase main
 
 With high feature output, some practical patterns:
 
-**Don't keep stale branches.** Once a PR is merged, delete the feature branch locally and remotely.
+**Don't keep stale branches.** Once a PR is merged, delete the feature branch locally and remotely. For *in-flight* branches that have gone quiet (no merge into `dev` or rebase onto `main` in 7+ days), run the triage in **Stale branch triage** below before continuing work — the most common failure mode is silently resuming a branch whose relevance, ownership, or priority has changed since it was last touched.
 
 **Batch your PR openings.** Rather than opening 10 individual PRs, consider grouping related features into 3-4 larger PRs at end of day. This is a tradeoff — larger PRs are harder to review but reduce the reviewer's context-switching. Given a timezone offset, 3-4 well-described PRs are easier to process overnight than 10 small ones.
 
@@ -141,6 +141,36 @@ If branch A is an ancestor of branch B, you only need to merge B.
 git log --oneline main..dev | wc -l
 ```
 A large gap means merge conflicts become more likely and PRs become harder to review. If the gap is growing faster than review can close it, discuss review cadence with your coworker.
+
+## Stale branch triage
+
+A feature branch is **stale** when its tip commit is more than 7 days old and the branch has not been merged into `dev` or rebased onto `main` in that window. Stale branches are dangerous not because the code rots, but because the *context* around them rots — the original motivation, the assumed shape of `main`, the assumption that you (rather than a teammate) are still the right person to land it. Before resuming work on a stale branch, run this triage.
+
+**Detection.** List feature branches with no activity in the last 7 days:
+
+```bash
+for b in $(git for-each-ref --format='%(refname:short)' refs/heads/feat/); do
+  age=$(( ( $(date +%s) - $(git log -1 --format=%ct "$b") ) / 86400 ))
+  [ "$age" -gt 7 ] && echo "$age days  $b"
+done
+```
+
+**Triage gate.** For each stale branch, answer all three questions before continuing:
+
+1. **Still relevant?** Has `main` moved in a way that obviates this work? Has the underlying problem been solved another way, scoped out, or invalidated by a newer decision? Check `docs/decisions/` for anything that supersedes the branch's premise. If the work is no longer needed, archive or delete the branch — don't finish it out of sunk-cost momentum.
+
+2. **Still owner?** Are you still the right person to land this? On parallel or async teams, ownership drifts — the affected subsystem may now belong to a teammate, or someone else may have picked up an adjacent task that subsumes this one. If ownership has moved, hand off (push the branch, share the name, close your local copy) rather than continuing in parallel.
+
+3. **Still highest priority?** Compared to your current top item, is finishing this branch genuinely the best use of the next session? Stale branches often encode a quiet deprioritization that was never made explicit. If the honest answer is no, park it deliberately (note the state and the reason on the PR description or a working doc) instead of pretending you'll resume tomorrow.
+
+**Outcomes.** The triage resolves to one of four actions:
+
+- **Continue** — all three questions yes. Rebase onto current `main` (`git rebase main`) before resuming so the branch isn't fighting a stale base.
+- **Hand off** — ownership has moved. Push the branch, tell the new owner, delete your local copy. Don't keep working on it in parallel.
+- **Park** — still relevant but not the priority. Record current state and the reason for parking on the PR description or in a working doc, and stop touching the branch until the next triage cycle.
+- **Archive/delete** — no longer relevant. Delete locally and remotely. If the branch represented a real decision (an approach considered and abandoned), capture it in `docs/decisions/` so the reasoning isn't lost.
+
+**Automation deferred.** A future enhancement could run the detection one-liner automatically at session start and surface stale branches in a status line. For now, run it manually when opening a session that involves branch work in this repo.
 
 ## Setting up or resetting dev
 
@@ -173,5 +203,6 @@ This is disruptive (anyone else with dev checked out needs to reset), so use spa
 | After PRs merge to main | `git checkout dev && git merge main --no-edit` |
 | Delete merged branch | `git branch -d feat/name && git push origin --delete feat/name` |
 | Check dev divergence | `git log --oneline main..dev \| wc -l` |
+| List stale feature branches (7+ days) | `for b in $(git for-each-ref --format='%(refname:short)' refs/heads/feat/); do age=$(( ( $(date +%s) - $(git log -1 --format=%ct "$b") ) / 86400 )); [ "$age" -gt 7 ] && echo "$age days  $b"; done` |
 | Check branch subset | `git merge-base --is-ancestor feat/a feat/b` |
 | Reset dev | Delete dev, create from main, re-merge active features |
