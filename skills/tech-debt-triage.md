@@ -51,8 +51,25 @@ likely? Are there latent bugs that haven't manifested yet?
 **Cognitive load**: How much context does a developer need to safely modify this code? Is
 the code misleading (looks simple but has hidden complexity)?
 
-**Compounding**: Is this debt getting worse over time? Are other features building on top of
-it, making future fixes harder? Is the cost growing linearly or exponentially?
+**Cost of deferral (required)**: Quantify the rate at which the carrying or fix cost grows
+if this debt is left in place. State it as a single line in the form **`+X per Y`** —
+concrete units of harm per unit of time or activity. This rate is what makes "fix
+opportunistically" vs "carry intentionally" defensible: flat-cost debt can be carried
+indefinitely; growing-cost debt has a built-in deadline.
+
+Example phrasings (use whichever unit best matches the debt):
+
+- `+1 file affected per week` — the debt spreads to one more caller or module on the
+  current change cadence
+- `+1 person needs to learn legacy auth per quarter` — knowledge cost grows as the team
+  rotates or onboards
+- `+0.5 days of fix work per sprint` — refactor scope expands as new features build on top
+- `+1 incident per release` — bug rate is locked to the deferral horizon
+- `+1 deprecated API call per dependency upgrade` — debt accretes on each upstream change
+- `+0 — inert; cost is flat` — honest answer for debt that does not compound
+
+Be honest when the rate is zero. Inflated growth estimates push fix-now recommendations
+the rest of the analysis does not support; `+0 (inert)` is a valid and common answer.
 
 Rate the carrying cost: **High** (actively slowing work or causing bugs), **Medium** (adds
 friction but manageable), **Low** (ugly but inert — doesn't affect day-to-day work).
@@ -114,6 +131,7 @@ to re-evaluate (e.g., "revisit before starting the v3 API migration").
 
 **Location:** {file paths or module names}
 **Nature:** {what kind of debt — structural, algorithmic, dependency, testing, naming, etc.}
+**Cost of Deferral:** {`+X per Y` — e.g., `+1 file affected per week`, `+1 person learns legacy auth per quarter`, or `+0 — inert` if it does not compound}
 
 ### Carrying Cost: {High / Medium / Low}
 {2-4 sentences explaining the ongoing costs}
@@ -141,11 +159,11 @@ individual assessments and then a summary ranking:
 ```markdown
 ## Triage Summary
 
-| # | Debt Item | Carrying Cost | Fix Cost | Urgency | Recommendation |
-|---|-----------|:---:|:---:|:---:|---|
-| 1 | ... | High | Days | Imminent | Fix now |
-| 2 | ... | Medium | Hours | None | Fix opportunistically |
-| 3 | ... | Low | Weeks | None | Carry intentionally |
+| # | Debt Item | Carrying Cost | Cost of Deferral | Fix Cost | Urgency | Recommendation |
+|---|-----------|:---:|:---:|:---:|:---:|---|
+| 1 | ... | High | +1 file/week | Days | Imminent | Fix now |
+| 2 | ... | Medium | +0 (inert) | Hours | None | Fix opportunistically |
+| 3 | ... | Low | +1 person/quarter | Weeks | None | Carry intentionally |
 
 ### Recommended Order
 {If fixing multiple items, suggest sequencing based on urgency, dependencies between items,
@@ -172,3 +190,7 @@ Present the triage in chat. If the user requests a persisted artifact, save to
   forces changes in 20 callers may not be a net improvement. Account for the full blast radius.
 - **Be honest about uncertainty.** If you can't estimate the fix cost because the scope is
   unclear, say so. A wrong estimate is worse than an honest "I'd need to investigate further."
+- **Don't fabricate compounding.** The cost-of-deferral line is required, but `+0 — inert`
+  is a valid answer. Stable debt that does not spread, accrete, or erode knowledge belongs
+  in the "Carry intentionally" bucket; inflating its growth rate to justify a fix-now
+  recommendation corrupts the analysis.
