@@ -65,7 +65,46 @@ Before recommending new tests, understand what exists:
 - What test infrastructure exists? (Factories, fixtures, mocks, test databases, API stubs)
 - Are there gaps in the existing tests that matter more than testing the new code?
 
-### 3. Determine the test types needed
+### 3. Enumerate untested paths the change actually touches
+
+**This step is required and must complete before you recommend any tests.** Recommendations
+that aren't traceable to a specific gap in this enumeration are not allowed — that's how you
+end up with "test the happy path" advice that ignores what the diff actually changed.
+
+Walk the diff (or the in-scope code) hunk by hunk. For every one of the following that
+appears in or is reachable from the changed lines, decide whether an existing test exercises
+it. If none does, record it as a gap.
+
+Categories to enumerate:
+- **Branches**: every `if`/`else if`/`else`, `switch`/`match` arm, ternary, short-circuit
+  (`&&`/`||`/`??`), guard clause, and early return introduced or modified by the change.
+- **Error handlers**: every `try`/`catch`/`except`/`rescue`, error-returning branch
+  (`return Err(...)`, `throw new ...`, `if (err != nil)`), retry/backoff path, and
+  fallback-on-failure path.
+- **Edge cases reachable from the diff**: empty inputs, null/undefined/None, zero, negative
+  numbers, boundary values (0, 1, max, max+1), unicode, very large inputs, concurrent
+  callers, partial failures, timeouts.
+- **State transitions**: any new state a value can take, plus the transitions into and out
+  of that state (especially terminal/error states).
+- **External-call failure modes**: for every new network/DB/file/IPC call, the non-200, the
+  malformed response, the timeout, and the connection refused.
+
+For each gap, record one line in this exact form:
+
+```
+- path/to/file.ext:LINE-LINE — <one-clause description of the path> — not covered
+```
+
+The `LINE-LINE` must point at concrete lines in the diff (or in the file, post-change). The
+description must name the specific branch or condition ("error branch when `fetchUser` returns
+404", not "error handling"). If a path is partially covered (one arm tested, the other not),
+say so and name the missing arm.
+
+If a path *is* covered, you don't need to list it — but if you find yourself writing zero
+gaps for a non-trivial change, recheck. Real diffs almost always introduce uncovered paths;
+zero usually means you read signatures instead of bodies.
+
+### 4. Determine the test types needed
 
 For each piece of code in scope, recommend the appropriate test type(s):
 
@@ -94,7 +133,7 @@ between services, shared library interfaces, database schema expectations.
 Not every test type applies to every codebase. Recommend only types that fit the project's
 existing infrastructure or that are worth adding.
 
-### 4. Prioritize by value
+### 5. Prioritize by value
 
 Rank your test recommendations by the ratio of risk-reduced to effort-required:
 
@@ -118,6 +157,14 @@ Brief summary of the project's existing test patterns: framework, file locations
 conventions, available test infrastructure. This section ensures the recommended tests will
 be consistent with the codebase.
 
+### Untested Paths Touched by the Change
+
+Output the gap list produced in Analysis step 3, verbatim, before any recommendations. This
+section is mandatory — if it is empty or vague, the test plan is incomplete. Each entry must
+be in the form `path/file.ext:LINE-LINE — <specific path> — not covered`.
+
+Number the entries (`G1`, `G2`, ...) so recommendations below can reference them.
+
 ### Recommended Tests
 
 For each recommended test, specify:
@@ -125,6 +172,9 @@ For each recommended test, specify:
 ```
 #### [Test name/description]
 
+**Closes gaps:** [G1, G3 — must reference one or more entries from the section above;
+                   "none" is only acceptable for tests that verify a new invariant the
+                   diff introduces but doesn't branch on]
 **Type:** [unit / integration / e2e / property / snapshot / contract]
 **Priority:** [high / medium / low]
 **File:** [where to put this test — follow project conventions]
@@ -136,6 +186,10 @@ For each recommended test, specify:
 
 **Setup needed:** [any fixtures, mocks, or test infrastructure required]
 ```
+
+Every gap with priority high or medium should be closed by at least one recommended test.
+If you intentionally leave a gap uncovered, move it to **What NOT to Test** below with a
+reason — don't silently drop it.
 
 ### What NOT to Test
 Explicitly list code in scope that you're recommending against testing, and why. This is
@@ -168,3 +222,52 @@ skill's structure rather than generic "add tests" bullets.
   than no tests. Prefer testing behavior over implementation details.
 - **Read the actual code.** A test strategy based on function signatures will miss the
   important edge cases that live in the implementation.
+
+## Example: gap enumeration done right vs. wrong
+
+Suppose the diff adds rate-limiting to a webhook handler:
+
+```diff
+ // src/webhooks/handler.ts
+ export async function handleWebhook(req: Request): Promise<Response> {
++  const key = req.headers.get('x-source-id');
++  if (!key) return new Response('missing source id', { status: 400 });
++
++  const allowed = await rateLimiter.check(key);
++  if (!allowed) return new Response('rate limited', { status: 429 });
++
+   const payload = await req.json();
+-  return process(payload);
++  try {
++    return await process(payload);
++  } catch (err) {
++    log.error('process failed', { key, err });
++    return new Response('internal error', { status: 500 });
++  }
+ }
+```
+
+**Wrong (vague, abstract paths):**
+
+> Coverage gaps:
+> - Rate-limiting logic isn't tested.
+> - Error handling in the webhook handler is missing tests.
+> - Header validation should be tested.
+
+This is not a gap enumeration — it's a paraphrase of the diff. None of these entries point
+to a specific branch a reader can find, and they collapse multiple distinct paths into one
+bullet ("error handling" hides the 400, the 429, and the 500 as separate failure modes).
+
+**Right (specific lines, specific branches):**
+
+> Untested Paths Touched by the Change:
+> - **G1** — `src/webhooks/handler.ts:3` — early return 400 when `x-source-id` header is absent — not covered
+> - **G2** — `src/webhooks/handler.ts:6` — early return 429 when `rateLimiter.check` returns `false` — not covered
+> - **G3** — `src/webhooks/handler.ts:5` — happy path through `rateLimiter.check` returning `true` — not covered (no existing test reaches the new call)
+> - **G4** — `src/webhooks/handler.ts:11-14` — `catch` branch when `process` throws — not covered; existing tests stub `process` to resolve
+> - **G5** — `rateLimiter.check` failure mode (e.g., Redis connection refused) — not covered; the current code lets it bubble, which means the handler returns 500 with no `x-source-id`-scoped log line — confirm whether this is the intended contract before writing the test
+
+Each entry names a file, lines, and the specific branch or failure mode. G5 also flags an
+*ambiguity* surfaced by the enumeration — that's a feature, not noise. Recommended tests
+below can then say `**Closes gaps:** G1` or `**Closes gaps:** G2, G3` and the link from
+recommendation back to gap is auditable.
