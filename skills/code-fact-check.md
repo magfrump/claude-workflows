@@ -48,6 +48,21 @@ instead. The user may specify:
 Within the scoped files, also check claims in documentation files (`README.md`, files in `docs/`)
 that reference the scoped code.
 
+## Before you start: read the hallucination pattern log
+
+Before checking any claims, read `docs/reviews/hallucination-patterns.md` if it exists. This file
+records confirmed-hallucination patterns from prior runs in this project — fabricated symbols,
+methods, APIs, or behaviors that have been falsely claimed before. Treat each entry as a known
+suspect pattern.
+
+While checking, **explicitly compare every claim against the logged patterns**. If a claim matches
+or closely resembles a logged pattern, say so in that claim's verdict block (e.g., "Matches prior
+pattern: `Array.prototype.last claimed but does not exist` — first seen YYYY-MM-DD."). This both
+speeds up verification and makes recurrence visible.
+
+If the file does not exist, proceed normally; you will create it later if a hallucination pattern
+is confirmed (see "After you finish" below).
+
 ## What counts as a checkable claim
 
 Not every comment needs checking. Focus on:
@@ -192,6 +207,43 @@ project root. Create `docs/reviews/` if it doesn't exist.
 
 When run via an orchestrator, the orchestrator specifies the output path — follow its
 instructions.
+
+## After you finish: update the hallucination pattern log
+
+After producing the report, scan the **Incorrect** verdicts for fabrications: claims asserting that
+a symbol, method, API, or behavior exists when it does not exist in the code, the language, or any
+imported library. These are hallucination patterns and belong in
+`docs/reviews/hallucination-patterns.md`.
+
+What does **not** belong in the log (track in the per-run report only):
+
+- Stale renames — the symbol used to exist under a different name
+- Complexity miscounts — "O(n)" when implementation is O(n log n)
+- Outdated configuration values — TTL was 5 minutes, is now 10
+- Mostly accurate claims missing a qualifier
+
+What **does** belong in the log:
+
+- A method/function/property is claimed on a built-in or imported type and that member does not
+  exist (e.g., `Array.prototype.last`, `lodash.deepClone` when the real name is `cloneDeep`)
+- A symbol is claimed to be defined in a specific file and no such symbol exists anywhere in the
+  repo or its dependencies
+- An option, flag, or API parameter is referenced and the underlying library exposes no such
+  parameter
+
+For each qualifying fabrication, append a one-line entry to `docs/reviews/hallucination-patterns.md`
+under the `## Patterns` heading using this format:
+
+```
+- **<short pattern>** — <one-line description of why the claim is false>. First seen: YYYY-MM-DD, report: <path/to/report.md>.
+```
+
+Keep the short pattern grep-friendly and normalized (e.g., `Array.prototype.last claimed but does
+not exist`). Before appending, check whether the same short pattern already exists; if it does, do
+not duplicate — append the new report's path to the existing entry's report list instead.
+
+If the file does not exist yet, create it using the header template already established for this
+project (see existing `docs/reviews/hallucination-patterns.md` for format) before appending.
 
 ## Tone
 
