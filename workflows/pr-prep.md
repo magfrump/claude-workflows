@@ -78,6 +78,24 @@ Run review skills and iterate until clean. This is required, not optional.
 **a. Generate reviews.** Run skills in parallel; perform manual checks while waiting for results:
 - **Code review** (`/code-review`) — multi-critic structural review of the diff vs main
 - **Self-eval** (`/self-eval <target>`) — rubric assessment of any new or modified skills/workflows
+- **Test-evidence self-eval** (manual) — Enumerate the **Major changes** introduced by this PR (new features, observable behavior changes, bug fixes — exclude pure refactors, renames, and doc-only updates). For each Major change, write one bullet line in this exact format:
+
+    `- <Major change>: <file>:<test_name>` (test citation), **or**
+    `- <Major change>: no test — <one-sentence reason>` (explicit waiver)
+
+    The line MUST end with either a `file:test_name` citation or a single-sentence reason starting with `no test —`. "Tested manually," "covered later," and similar hand-waves are not acceptable reasons; the waiver must name a concrete reason the change is not amenable to automated testing (e.g., visual-only, infra change exercised in CI, third-party API behavior). Record the list in the PR description under a "Major changes — test evidence" heading or in a `docs/reviews/test-evidence-<branch>.md` artifact. The purpose is to make test gaps visible to the reviewer, not to gate on any specific test count.
+
+    **Worked example:**
+
+    ```markdown
+    ## Major changes — test evidence
+
+    - parseDate now accepts `+HH:MM` timezone offsets: tests/parse_date_test.py:test_parses_positive_offset
+    - Logout endpoint invalidates session cookies on expired sessions: tests/auth_test.py:test_logout_clears_session_cookie
+    - CSV export streams rows instead of buffering in memory: tests/export_test.py:test_csv_export_streams_large_dataset
+    - Empty-state illustration copy refreshed: no test — UI tweak, visual review only
+    - Retry policy on the upstream billing webhook: no test — exercised end-to-end in the staging integration job; unit-level mock would tautologically pass
+    ```
 - **Documentation check** (manual) — if the PR changes public APIs, config options, or user-facing behavior, verify corresponding docs are updated (README, inline docs, decision records). Skip for internal refactors with no external surface.
 - **Dependency audit** (manual) — if the PR introduces or upgrades dependencies, check license compatibility, package size, and maintenance status. Flag unmaintained or unfamiliar packages. Skip if no dependency changes.
 - **Plan-drift check** (manual) — if a plan doc exists in `docs/working/` for this task, compare the diff against it and note: (1) planned items not yet implemented, (2) unplanned changes that appeared in the diff, and (3) plan assumptions that turned out wrong. Record any deviations found in the PR description's "Areas of uncertainty" section or as a comment on the PR. Skip if no plan doc exists for this work.
@@ -125,6 +143,7 @@ The user can override the ceiling and say "continue" — but the default is to s
 - [ ] Iteration count noted (converged in N iterations, or ceiling hit at 3)
 - [ ] If ceiling hit: remaining findings documented in PR description, or escalated to human review
 - [ ] Review artifacts committed to the branch (see [PR Review Doc Inclusion guide](../guides/pr-review-doc-inclusion.md))
+- [ ] Test-evidence self-eval is recorded — every Major change cites a `file:test_name` or includes a one-sentence `no test — <reason>` waiver
 
 ### Phase 2: Packaging
 
@@ -222,6 +241,9 @@ Structure:
 ## How to test
 [Concrete steps the reviewer can follow to verify the change works]
 
+## Major changes — test evidence
+[One bullet per Major change. Each line ends with `file:test_name` (test citation) or `no test — <reason>` (explicit waiver). Generated during the test-evidence self-eval in step 3a.]
+
 ## Areas of uncertainty
 [Flag anything you're not confident about:
  - Libraries or patterns you haven't used before
@@ -243,8 +265,9 @@ For UI changes, capture before/after screenshots or a short recording and includ
 
 **Completion criteria:**
 - [ ] Skeleton was generated from commits and review artifacts (not written from scratch)
-- [ ] All six sections are present (What this does, How it works, How to test, Areas of uncertainty, Decisions made, Review evidence)
+- [ ] All seven sections are present (What this does, How it works, How to test, Major changes — test evidence, Areas of uncertainty, Decisions made, Review evidence)
 - [ ] Each section contains at least one substantive sentence (not a placeholder)
+- [ ] Major changes — test evidence section lists every Major change with a `file:test_name` citation or `no test — <reason>` waiver
 - [ ] Review evidence section lists all `docs/reviews/` artifacts for this PR, or states "No review artifacts" if none exist
 - [ ] (Optional) If this PR involved multiple workflow compositions (e.g., RPI → DD → RPI), a workflow provenance line is included in "What this does"
 
