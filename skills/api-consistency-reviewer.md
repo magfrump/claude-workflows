@@ -94,9 +94,9 @@ there's a documented decision to evolve the convention.
 
 ### 2. Check naming against the grain
 
-For every new name the diff introduces — endpoint paths, function names, parameter names,
-field names, error codes, event names — ask: "does this follow the pattern established by
-the 5 nearest neighbors?"
+For every new name the diff introduces — endpoint paths, function names, type/class names,
+parameter names, field names, error codes, event names, enum variants — ask: "does this
+follow the pattern established by the nearest neighbors?"
 
 Specific checks:
 - Does the endpoint path follow the same noun/verb structure as sibling endpoints?
@@ -106,9 +106,50 @@ Specific checks:
 - Are collection endpoints consistently pluralized?
 - Do similar operations have similar names? (If existing code uses `get`/`list`/`create`,
   does the new code use `fetch`/`find`/`new`?)
+- Do new types follow existing suffix/prefix conventions? (If existing types are bare
+  nouns like `User`, `Session`, does the new one introduce `UserDTO` or `IUser`?)
 
 A single inconsistency is a bug. Multiple inconsistencies suggest the developer didn't read
 the existing code.
+
+#### Name-pattern audit (required)
+
+For every new public name in the diff, run this concrete procedure and surface the results
+in your critique:
+
+1. **Enumerate the new names**, grouped by category — routes, functions/methods, types/classes,
+   enum variants, fields, parameters, error codes, event names. Skip purely private locals.
+2. **Find the 2-3 closest existing names** in the same category. "Closest" means: same
+   subsystem, same kind of operation, same domain noun, or otherwise the most analogous
+   names a future reader would reach for first. Use the codebase's index — grep for sibling
+   files, list exports from the same module, search for the same domain noun across the
+   repo. If the category has no existing members (this is the first of its kind), say so
+   explicitly.
+3. **Render the comparison as a table** so the inconsistency is visible at a glance. Each
+   row pairs one new name with its closest existing neighbors and a one-line verdict.
+
+The audit is mandatory for every review and goes in its own section of the output (see
+"How to Structure the Critique" below). Inconsistencies surfaced here become Findings under
+the rules in move #2; consistent names get a brief acknowledgment under "What Looks Good".
+
+**Example output block:**
+
+```markdown
+### Name-Pattern Audit
+
+| New name                       | Category | Closest existing                                    | Verdict      |
+|--------------------------------|----------|-----------------------------------------------------|--------------|
+| `fetchUserProfile`             | function | `getUserById`, `getUser`, `loadUserSettings`        | Inconsistent — existing read functions use `get`/`load`, not `fetch` |
+| `POST /users/sign_up`          | route    | `POST /users`, `POST /sessions`, `POST /orgs`       | Inconsistent — existing creates POST to the bare collection; no action-verb sub-paths |
+| `UserDTO`                      | type     | `User`, `UserProfile`, `UserSession`                | Inconsistent — existing types are bare nouns, no `DTO` suffix |
+| `ORDER_STATUS_PENDING_REVIEW`  | enum     | `ORDER_STATUS_PENDING`, `ORDER_STATUS_SHIPPED`, `ORDER_STATUS_CANCELLED` | Consistent — matches `ORDER_STATUS_<STATE>` shape |
+| `idempotency_key`              | param    | `request_id`, `client_token` (closest two; no third analog found) | Inconsistent — existing dedupe params use `_id`/`_token`, not `_key` |
+| `WorkflowRunStarted`           | event    | _(no existing workflow events found — first of its kind)_ | New category — note the convention being established |
+```
+
+A single row should fit on one line where possible; wrap the verdict if needed. If the diff
+introduces more than ~15 new names, group by category and audit the most public/visible ones
+first (routes > exported types > exported functions > internal helpers).
 
 ### 3. Trace the consumer contract
 
@@ -214,6 +255,12 @@ Output your critique as a Markdown document.
 ### Baseline Conventions
 Summarize the API conventions you observed in the existing codebase (move #1). This makes
 explicit what "consistent" means for this review and lets the author verify your baseline.
+
+### Name-Pattern Audit
+Render the table from move #2. Every new public name in the diff appears as a row with its
+2-3 closest existing neighbors and a one-line verdict. This section is required even when
+all names are consistent — the table is the evidence that you actually surveyed neighbors
+rather than eyeballing. Inconsistent rows get expanded into Findings below.
 
 ### Findings
 
