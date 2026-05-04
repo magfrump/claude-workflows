@@ -6,6 +6,8 @@
 #   validate_task_json   — Schema-validate a tasks JSON file
 #   check_convergence_threshold — Compare overlap % against a threshold
 #   print_gate_stats     — Print per-gate pass/fail/skip rates from round history
+#   find_task_lineage    — Grep round-changelog.md for prior tasks that touched given files
+#   prepend_lineage_to_plan — Prepend a Lineage section to a task's plan doc
 #
 # Guard against direct execution
 if [[ "${BASH_SOURCE[0]}" == "${0}" ]]; then
@@ -19,6 +21,94 @@ fi
 # work is crowding out maintenance and data-pipeline repairs.
 TASK_CATEGORIES_ALLOWED="feature maintenance data-pipeline"
 
+# --- Task lineage from round changelog ---
+# Walks docs/working/round-changelog.md and emits "Round N: task-id" for each
+# prior task whose entry mentions any of the given files. Files are matched by
+# full path OR basename — the changelog mixes both styles, so we accept either.
+# Dedupes (round, task) pairs. No-ops when the changelog is missing or no files
+# are supplied.
+# Args: $1 = changelog path, $2.. = files to search for
+# Stdout: zero or more "Round N: task-id" lines
+find_task_lineage() {
+    local changelog="$1"
+    shift
+    [ -f "$changelog" ] || return 0
+    [ "$#" -eq 0 ] && return 0
+
+    # Build a |-delimited list of needles (full path + basename for each file).
+    # Using literal substring matching via awk's index() avoids regex-escape bugs
+    # on paths containing dots, slashes, etc.
+    local needles=""
+    for f in "$@"; do
+        needles+="${f}|$(basename "$f")|"
+    done
+    needles="${needles%|}"
+
+    awk -v needles="$needles" '
+        BEGIN { n = split(needles, ns, "|") }
+        /^## Round / {
+            current_round = $0
+            sub(/^## /, "", current_round)
+            next
+        }
+        /^- \*\*[a-zA-Z0-9_-]+\*\*/ {
+            for (i = 1; i <= n; i++) {
+                if (length(ns[i]) > 0 && index($0, ns[i]) > 0) {
+                    if (match($0, /\*\*[a-zA-Z0-9_-]+\*\*/)) {
+                        tid = substr($0, RSTART+2, RLENGTH-4)
+                        key = current_round "||" tid
+                        if (!(key in seen)) {
+                            seen[key] = 1
+                            print current_round ": " tid
+                        }
+                    }
+                    break
+                }
+            }
+        }
+    ' "$changelog"
+}
+
+# --- Prepend lineage section to a task plan doc ---
+# Computes lineage via find_task_lineage; if any prior tasks are found, writes
+# a "## Lineage" section to the top of plan_path (creating the file as a stub
+# if it does not yet exist, prepending if it does). When the existing plan
+# already has a Lineage section at the top, leaves it alone (idempotent).
+# When no prior lineage is found, does nothing.
+# Args: $1 = changelog path, $2 = plan_path, $3.. = files
+prepend_lineage_to_plan() {
+    local changelog="$1"
+    local plan_path="$2"
+    shift 2
+
+    local lineage
+    lineage=$(find_task_lineage "$changelog" "$@")
+    [ -z "$lineage" ] && return 0
+
+    # Idempotency: if the plan already starts with "## Lineage", skip.
+    if [ -f "$plan_path" ] && head -n 1 "$plan_path" 2>/dev/null | grep -q '^## Lineage'; then
+        return 0
+    fi
+
+    local header
+    header=$'## Lineage\n\nPrior rounds that touched these files:\n'
+    while IFS= read -r line; do
+        header+="- ${line}"$'\n'
+    done <<< "$lineage"
+    header+=$'\n'
+
+    mkdir -p "$(dirname "$plan_path")"
+    if [ -f "$plan_path" ]; then
+        local tmp
+        tmp=$(mktemp)
+        printf '%s' "$header" > "$tmp"
+        cat "$plan_path" >> "$tmp"
+        mv "$tmp" "$plan_path"
+    else
+        printf '%s' "$header" > "$plan_path"
+    fi
+}
+
 # --- Task JSON schema validation ---
 # Validates each task in a tasks JSON file against the expected schema.
 # Outputs a filtered JSON array (valid tasks only) to stdout.
@@ -29,6 +119,18 @@ validate_task_json() {
     local valid_tasks="[]"
     local task_count
     task_count=$(jq 'length' "$tasks_file")
+
+    # Derive round number and working dir from the conventional path
+    # "<working_dir>/tasks-round-<N>.json". When the path does not match
+    # (e.g. unit tests passing /tmp/tasks.json), lineage seeding is skipped.
+    local seed_round="" seed_dir="" seed_changelog=""
+    local tasks_basename
+    tasks_basename=$(basename "$tasks_file")
+    if [[ "$tasks_basename" =~ ^tasks-round-([0-9]+)\.json$ ]]; then
+        seed_round="${BASH_REMATCH[1]}"
+        seed_dir=$(dirname "$tasks_file")
+        seed_changelog="$seed_dir/round-changelog.md"
+    fi
 
     for i in $(seq 0 $((task_count - 1))); do
         local task
@@ -102,6 +204,19 @@ validate_task_json() {
 
         # Task passed validation — add to valid list
         valid_tasks=$(echo "$valid_tasks" | jq --argjson t "$task" '. += [$t]')
+
+        # Seed plan stub with lineage from prior rounds. Only runs when the
+        # tasks file follows the conventional path (round number recoverable).
+        if [ -n "$seed_round" ] && [ -n "$tid" ]; then
+            local plan_path="$seed_dir/r${seed_round}-${tid}-plan.md"
+            local files_array=()
+            while IFS= read -r f; do
+                [ -n "$f" ] && files_array+=("$f")
+            done < <(echo "$task" | jq -r '.files_touched[]')
+            if [ "${#files_array[@]}" -gt 0 ]; then
+                prepend_lineage_to_plan "$seed_changelog" "$plan_path" "${files_array[@]}"
+            fi
+        fi
     done
 
     echo "$valid_tasks"
