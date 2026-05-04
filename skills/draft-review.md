@@ -392,9 +392,40 @@ Surface disagreements between critics explicitly — these are valuable. Classif
 disagreement as **factual** (resolvable with more evidence) or **perspective-based** (genuine
 tension reflecting different analytical frames). For factual disagreements, escalate to the
 fact-checker for a targeted check or flag the specific claim for author research. For
-perspective-based disagreements, present both positions with their reasoning and let the author
-decide — these tensions often reveal where the draft needs to acknowledge complexity rather than
-pick a side.
+perspective-based disagreements, present both positions with their reasoning. Whichever class
+a conflict falls into, you MUST also record it in the **Critic Conflict Reconciliations**
+table below — the prose synthesis is not a substitute for the row.
+
+**Critic conflict reconciliation (required):** When two critics produce conflicting verdicts
+on the same point, you MUST produce an explicit reconciliation row under a
+`### Critic Conflict Reconciliations` heading. Never silently average, blend, or omit the
+disagreement — averaging hides which lens the synthesis is filtered through, and silent
+omission lets the louder or more verbose critic win by default. For each conflict, name
+which critic's framing prevailed and explain why in one or two sentences, citing the
+basis for the choice (draft intent from Step 3, fact-check evidence, scope, etc.). If the
+tension is genuinely irreducible — both views defensible under the draft's stated intent —
+record the verdict as `Both stand` and route the conflict to 🟢 Consider in the rubric so
+the author decides; do not silently pick one. The row makes the orchestrator's reasoning
+auditable.
+
+Use this table format:
+
+| # | Topic | [Critic A] position | [Critic B] position | Prevailing framing | Why |
+|---|---|---|---|---|---|
+| X1 | [What they conflict about] | [A's verdict, ≤1 line] | [B's verdict, ≤1 line] | [Critic A / Critic B / Both stand] | [Reason in 1–2 sentences, citing draft intent, fact-check, or scope] |
+
+**Worked example:**
+
+> ### Critic Conflict Reconciliations
+>
+> | # | Topic | cowen-critique position | yglesias-critique position | Prevailing framing | Why |
+> |---|---|---|---|---|---|
+> | X1 | Tone of policy section | Too academic — needs concrete cases | Strong as-is — generality fits a primer | cowen-critique | Draft intent (Step 3) names "policy practitioners" as the audience; concrete cases serve practitioners better than primer-style generality, so cowen-critique's framing prevails and the finding lands in 🟡 Amber. |
+> | X2 | Whether to keep the counterargument section | Cut it — weakens the thesis | Expand it — strengthens credibility | Both stand | Genuine perspective tension between thesis-clarity and steelman-rigor; neither lens is privileged by stated intent. Routed to 🟢 Consider for author judgment. |
+
+If no critics produced conflicting verdicts, render this section with a single line:
+"No critic conflicts surfaced." The heading must still appear so reviewers can audit across
+runs that no conflicts were silently dropped.
 
 **What the draft gets right:** Strengths that critics identified. The author needs to know
 what to preserve.
