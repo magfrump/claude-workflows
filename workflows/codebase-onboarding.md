@@ -57,9 +57,9 @@ For each subsystem, note:
 
 Don't read every file. Read entry points and public interfaces to understand boundaries. Read one representative implementation per subsystem to understand internal patterns.
 
-**Monorepo scoping.** For monorepos with multiple packages or services, scope your architecture mapping to the package or service relevant to your first task — don't attempt to document every package in a single onboarding pass. Note the monorepo's top-level package dependency graph (e.g., from the root `package.json` workspaces, Cargo workspace members, or Go module layout) so you know which adjacent packages interact with yours. List all packages you did *not* examine in Known Unknowns (step 5) with a note that they were out of scope for the current task.
+**Monorepo scoping.** For monorepos with multiple packages or services, scope your architecture mapping to the package or service relevant to your first task — don't attempt to document every package in a single onboarding pass. Note the monorepo's top-level package dependency graph (e.g., from the root `package.json` workspaces, Cargo workspace members, or Go module layout) so you know which adjacent packages interact with yours. List all packages you did *not* examine in Known Unknowns (step 6) with a note that they were out of scope for the current task.
 
-**Accessible-output target.** For projects in the accessibility domain (web-accessibility serialization, screen-reader tooling, refreshable-braille drivers, structured-data export for assistive tech, etc.), the architecture map must name the concrete accessible-output target rather than treating accessibility as a generic concern. State which screen reader (NVDA, JAWS, VoiceOver, Orca, TalkBack), which braille protocol or stack (BRLTTY, Liblouis translation tables, USB HID Braille Display, refreshable-braille over Bluetooth), and/or which structured-data format (DAISY, EPUB Accessibility, MathML, WAI-ARIA roles, accessible PDF tags) each subsystem is built to drive. Different targets impose different invariants — an NVDA-targeted serializer can't substitute for a JAWS-targeted one without re-validation, and Liblouis braille tables aren't interchangeable across grade-1/grade-2 contractions. List the target(s) alongside the relevant subsystem(s) in the inventory; if multiple targets coexist, note which subsystem owns which, and flag any subsystem that claims to be target-agnostic in Known Unknowns (step 5) for verification.
+**Accessible-output target.** For projects in the accessibility domain (web-accessibility serialization, screen-reader tooling, refreshable-braille drivers, structured-data export for assistive tech, etc.), the architecture map must name the concrete accessible-output target rather than treating accessibility as a generic concern. State which screen reader (NVDA, JAWS, VoiceOver, Orca, TalkBack), which braille protocol or stack (BRLTTY, Liblouis translation tables, USB HID Braille Display, refreshable-braille over Bluetooth), and/or which structured-data format (DAISY, EPUB Accessibility, MathML, WAI-ARIA roles, accessible PDF tags) each subsystem is built to drive. Different targets impose different invariants — an NVDA-targeted serializer can't substitute for a JAWS-targeted one without re-validation, and Liblouis braille tables aren't interchangeable across grade-1/grade-2 contractions. List the target(s) alongside the relevant subsystem(s) in the inventory; if multiple targets coexist, note which subsystem owns which, and flag any subsystem that claims to be target-agnostic in Known Unknowns (step 6) for verification.
 
 If the codebase is large enough to warrant it (>20 files in multiple directories), use sub-agents to explore subsystems in parallel — one agent per subsystem, each producing the notes above for its area.
 
@@ -93,11 +93,12 @@ This output drops directly into the Architecture Map without restructuring. If a
 ### Pre-synthesis status banner
 
 After the parallel subsystem sub-agents in step 2 return — and before step 3
-begins flow tracing and the rest of the orientation-doc synthesis — emit a
-single one-line status banner directly in the chat. This gives the user a
-chance to see subsystem coverage and gaps and decide whether to interrupt
-before synthesis runs silently to completion. Mirrors the between-stage
-banner spec in [`skills/code-review.md`](../skills/code-review.md#between-stage-status-banner).
+begins the entry-point inventory and the rest of the orientation-doc
+synthesis — emit a single one-line status banner directly in the chat. This
+gives the user a chance to see subsystem coverage and gaps and decide
+whether to interrupt before synthesis runs silently to completion. Mirrors
+the between-stage banner spec in
+[`skills/code-review.md`](../skills/code-review.md#between-stage-status-banner).
 
 **Format:** `Step 2 (subsystem map) complete: <coverage counts> — <next action>`
 
@@ -108,17 +109,17 @@ banner spec in [`skills/code-review.md`](../skills/code-review.md#between-stage-
   sub-agents that failed or returned partial results, packages explicitly
   deferred (monorepo scope), and escalations or out-of-scope items flagged
   in sub-agents' Goal-Alignment Notes.
-- `<next action>` names what comes next — e.g., "proceeding to flow tracing
-  in step 3" or "tracing 3 flows then drafting Conventions and Known
-  Unknowns".
+- `<next action>` names what comes next — e.g., "proceeding to entry-point
+  inventory in step 3" or "inventorying entry points then tracing 3 flows
+  before drafting Conventions and Known Unknowns".
 
 **Worked example:**
 
-> Step 2 (subsystem map) complete: 5/5 subsystems mapped (auth, api, jobs, db, cli), 2 packages deferred (out-of-scope monorepo), 1 escalation (auth↔jobs dependency unclear) — proceeding to flow tracing in step 3.
+> Step 2 (subsystem map) complete: 5/5 subsystems mapped (auth, api, jobs, db, cli), 2 packages deferred (out-of-scope monorepo), 1 escalation (auth↔jobs dependency unclear) — proceeding to entry-point inventory in step 3.
 
 **Scope:** Emit this banner *only* between step 2 and step 3. Do **not** emit
 equivalent banners after later steps — the orientation doc produced in step
-6 is itself the user-facing synthesis output, and a "step N complete" banner
+7 is itself the user-facing synthesis output, and a "step N complete" banner
 would duplicate or compete with it (mirrors code-review's "no banner after
 Stage 3" rule).
 
@@ -127,7 +128,38 @@ orchestrator pass), still emit the banner — the coverage counts come from
 the orchestrator's own subsystem mapping rather than sub-agent reports. The
 user-facing checkpoint value is the same.
 
-### 3. Trace key flows — follow data through the system
+### 3. Inventory process entry points — exhaustively catalog every trigger
+
+Step 1 named a few entry points so you had somewhere to start reading. Step 2 mapped the subsystems those entry points live in. This step uses that subsystem map to enumerate **every** way the running system can be triggered, so step 4 can pick representative flows from a complete list rather than from whatever was easiest to find first.
+
+For each entry-point category present in the codebase, list every concrete instance with a file path and a one-line description:
+
+- **CLI commands**: top-level binaries and their subcommands; flags only when they change dispatch
+- **HTTP handlers**: route → handler mapping (or the framework equivalent: REST routes, GraphQL resolvers, gRPC services, RPC methods)
+- **Scheduled jobs / cron**: cron expressions or schedule definitions and the function they invoke
+- **Message consumers**: queue/topic name → consumer handler (Kafka, SQS, RabbitMQ, Pub/Sub, etc.)
+- **Background workers / daemons**: long-running processes not already covered (poll loops, watchers, supervisors)
+- **Webhooks / external event handlers**: third-party-event-driven entry points (Stripe webhooks, GitHub App events, S3 notifications, Lambda triggers)
+
+Stay at the directory level — list each instance, but **don't** trace what each handler does. Tracing is step 4's job. The output is a directory of "every way the system can be triggered" so flow selection in step 4 covers the system rather than whichever trigger you happened to read first.
+
+If a category has zero instances, write `None` for that category — explicit absence is more useful than silence (a future reader can tell the question was asked and answered).
+
+**When to skip this step.** Skip only when **all** of the following are true:
+- The codebase is a pure library or SDK — its sole consumers are application code outside the repo.
+- It contains no executable entry points: no `main()`, no HTTP server, no CLI binary, no scheduled-task definitions, no message-queue consumers, no Lambda/Functions/Worker handlers.
+- Step 1's public-API-surface coverage is the only externally visible surface; there is nothing else to enumerate.
+
+If even one is false (a library that ships a CLI for local use; a library with an embedded health-check HTTP server; a library that registers an event listener on import), do **not** skip — run the step but scope it to whichever entry-point types exist.
+
+When skipping, write a single line in the orientation doc's Process Entry Points section: `Skipped — pure-library codebase with no executable entry points; public API surface covered in step 1.` This makes the skip an explicit, reviewable decision rather than an oversight.
+
+**Done when...**
+- [ ] Each entry-point category above is addressed (with `None` written for any category with zero instances), OR the skip note is recorded with the criterion satisfied
+- [ ] Every listed instance has a file path and a one-line description
+- [ ] Step 4's flow selection can be made by picking from this list (not by re-discovering triggers)
+
+### 4. Trace key flows — follow data through the system
 
 Pick 2-3 representative operations (e.g., "user signs up", "report is generated", "webhook is processed") and trace them end-to-end through the codebase. This reveals:
 
@@ -143,7 +175,7 @@ For each flow, produce a numbered sequence of steps: "1. Request hits `routes/au
 - [ ] Flows reveal how subsystems actually connect (not just how the directory structure implies)
 - [ ] Each flow covers the complete path from entry point to final effect (no gaps marked "somehow")
 
-### 4. Identify conventions — learn the local dialect
+### 5. Identify conventions — learn the local dialect
 
 Every codebase has conventions that aren't in any style guide. Identify:
 
@@ -160,9 +192,9 @@ Note any conventions that are inconsistent (the codebase uses two different appr
 - [ ] Inconsistencies between competing conventions are explicitly noted
 - [ ] Each convention includes a concrete example from the codebase (file path and pattern)
 
-### 5. Catalog the unknowns — document what you don't understand
+### 6. Catalog the unknowns — document what you don't understand
 
-After steps 1-4, explicitly list:
+After steps 1-5, explicitly list:
 
 - **Modules you didn't read deeply** and why (too large, seemed peripheral, unclear purpose). In monorepos, explicitly list every package or service you scoped out of the architecture map — these are known unknowns by design, not oversights.
 - **Connections you couldn't trace** (subsystem A calls subsystem B somehow, but the mechanism is unclear)
@@ -174,11 +206,11 @@ This is the most important section for future work. It tells you where your unde
 **Done when...**
 - [ ] At least one item exists in each category (modules not read, connections not traced, surprising decisions, unclear dependencies)
 - [ ] Each unknown includes a reason why it's unknown (not just "didn't look at it")
-- [ ] No unknown is actually answerable from work already done in steps 1-4
+- [ ] No unknown is actually answerable from work already done in steps 1-5
 
-### 6. Produce the orientation document
+### 7. Produce the orientation document
 
-Compile steps 1-5 into `docs/working/onboarding-{project}.md` with these sections:
+Compile steps 1-6 into `docs/working/onboarding-{project}.md` with these sections:
 
 ```markdown
 # Codebase Orientation: {project name}
@@ -197,28 +229,31 @@ Compile steps 1-5 into `docs/working/onboarding-{project}.md` with these section
 ## Architecture Map
 {subsystem descriptions from step 2, with a text diagram if helpful}
 
+## Process Entry Points
+{exhaustive inventory from step 3, grouped by category — CLI, HTTP, scheduled jobs, message consumers, background workers, webhooks; categories with no instances marked `None`. If the step was skipped, record the skip note here.}
+
 ## Key Flows
-{2-3 traced flows from step 3}
+{2-3 traced flows from step 4}
 
 ## Conventions
-{patterns identified in step 4}
+{patterns identified in step 5}
 
 ## Known Unknowns
-{gaps identified in step 5}
+{gaps identified in step 6}
 
 ## Suggested Starting Points
 {for common task types, where to look first — e.g., "to add a new API endpoint, start with routes/ and follow the pattern in routes/users.ts"}
 ```
 
-The three-line header (Goal · Project state · Task status) below the metadata block is the same drift-surfacing convention RPI working docs use (see `workflows/research-plan-implement.md` step 2). Lifecycle keyword vocabulary is identical: `in-progress | blocked | paused | complete`. For a long-lived orientation doc, the Task status line typically reads `complete` after gate sign-off in step 7, switching back to `in-progress` during a re-run or lightweight refresh. Update it whenever the doc is read or revised; if any line no longer matches reality, fix it before doing anything else with the doc. The Goal line replaces the previous standalone `Scope:` field — same content, unified anchor.
+The three-line header (Goal · Project state · Task status) below the metadata block is the same drift-surfacing convention RPI working docs use (see `workflows/research-plan-implement.md` step 2). Lifecycle keyword vocabulary is identical: `in-progress | blocked | paused | complete`. For a long-lived orientation doc, the Task status line typically reads `complete` after gate sign-off in step 8, switching back to `in-progress` during a re-run or lightweight refresh. Update it whenever the doc is read or revised; if any line no longer matches reality, fix it before doing anything else with the doc. The Goal line replaces the previous standalone `Scope:` field — same content, unified anchor.
 
 **Done when...**
-- [ ] `docs/working/onboarding-{project}.md` exists, opens with the three-line header (Goal · Project state · Task status) below the metadata block, and includes all required sections (Entry Points, Architecture Map, Key Flows, Conventions, Known Unknowns, Suggested Starting Points)
+- [ ] `docs/working/onboarding-{project}.md` exists, opens with the three-line header (Goal · Project state · Task status) below the metadata block, and includes all required sections (Entry Points, Architecture Map, Process Entry Points, Key Flows, Conventions, Known Unknowns, Suggested Starting Points)
 - [ ] The Task status line accurately reflects current lifecycle (re-read it; if it lies, fix it)
 - [ ] `Last verified` and `Relevant paths` fields are populated in the frontmatter
 - [ ] Document is committed to the repo
 
-### 7. Gate — validate with the team
+### 8. Gate — validate with the team
 
 If possible, have someone familiar with the codebase review the orientation doc. They can correct misunderstandings cheaply here — a wrong mental model carried into implementation is expensive to fix later.
 
