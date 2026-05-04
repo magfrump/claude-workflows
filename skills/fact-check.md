@@ -77,8 +77,11 @@ For every checkable claim:
    or `[inferred]` — using the criteria in [Scrutiny Tags](#scrutiny-tags). Scrutiny is part
    of the calibration, not a footnote: a High confidence verdict generally requires at least
    one `[deep-read]` source (see [Scrutiny and confidence aggregation](#scrutiny-and-confidence-aggregation)).
-6. **Cite your sources.** Name the source (organization, publication, dataset) and year. If you found
-   a URL, include it.
+6. **Cite your sources with an inline citation.** Name the source (organization, publication, dataset)
+   and year, and include at least one of: a URL with anchor or fragment, a quoted text span (≤25
+   words) verbatim from the source, or a `[source: title, page/timestamp]` reference for unlinkable
+   sources (printed books, paywalled documents, podcast or video segments without timestamped URLs).
+   See [Inline Citations](#inline-citations) for the required formats and worked examples.
 
 ### Code-Based Claims
 
@@ -325,6 +328,86 @@ deeply you engaged with the evidence and decide whether they agree with the weig
 | Mostly accurate | Medium | `[observed]` | `[abstract]` | NCSL right-to-work-laws table viewed on the NCSL summary page; the underlying state-by-state PDF was not opened. The aggregate count is visible in the summary but state-level breakdown was not verified. |
 | Unverified | Low | `[assumed]` | `[inferred]` | A press release referenced an internal report with the relevant figure; the report itself was paywalled and could not be retrieved. The figure is inferred from the press release's framing. |
 
+## Inline Citations
+
+Every verdict must carry an **inline citation**: a specific, traceable pointer the reader can
+follow to verify the claim without re-running your search. Naming a source ("the GAO report",
+"Section 230", "*The Death and Life of Great American Cities*") is not enough — the reader
+needs to land on the exact passage. At least one of the three formats below is **required** on
+every verdict, regardless of confidence or provenance. A verdict without an inline citation is
+not complete.
+
+The acceptable formats are:
+
+- **URL with anchor or fragment.** Link to the specific section, table row, paragraph, or
+  fragment identifier rather than the document root. Examples: a `congress.gov` bill text URL
+  with the section anchor, a news article URL with a paragraph anchor, a dataset URL with a
+  query string that filters to the relevant row. A bare domain or document-root link is
+  **not sufficient** when the document is long enough that a reader cannot reasonably locate
+  the passage themselves.
+- **Quoted text span (≤25 words).** A direct quote from the source, in quotation marks, hard-
+  capped at 25 words. Use this when an anchor is unavailable, when the exact wording is what
+  is being verified, or when the URL points to dynamically rendered content where anchors are
+  unreliable. Always pair the quoted span with the source name and year so a reader can search
+  for it.
+- **`[source: title, page/timestamp]` form.** For unlinkable sources — printed books,
+  paywalled documents you accessed offline, podcast or video segments without timestamped
+  URLs, archival material, broadcast transcripts. Provide the title, author or publisher,
+  edition or year, and a precise locator: page number, chapter and section, podcast episode
+  number plus minute mark, video timestamp, archive box and folder, etc. The locator is what
+  makes this a citation rather than a name-drop.
+
+The three forms can be combined. A quoted span paired with an anchored URL is stronger than
+either alone, and recommended whenever both are available. For unlinkable sources, pairing
+`[source: ...]` with a quoted span is recommended so a reader without the book can still
+verify the wording against any later edition.
+
+### Worked examples
+
+**Example 1 — Linkable source (URL anchor + quoted span).**
+
+```
+## Claim 3: "The 2022 Inflation Reduction Act capped Medicare insulin at $35/month."
+
+**Verdict:** Accurate
+**Confidence:** High
+**Provenance:** [observed]
+**Scrutiny:** [deep-read]
+
+Section 11406 of the Inflation Reduction Act caps cost-sharing for a covered insulin product
+at $35 per month for Medicare Part D enrollees, effective for plan years beginning on or
+after January 1, 2023. Read the section in full at congress.gov; the cap text is direct and
+unambiguous.
+
+**Inline citation:** congress.gov, "H.R. 5376, Section 11406" —
+https://www.congress.gov/bill/117th-congress/house-bill/5376/text#toc-HD9C... — quoted span:
+"the applicable copayment amount for any month for any covered insulin product shall not
+exceed $35".
+**Sources:** Congress.gov, Public Law 117-169 (2022).
+```
+
+**Example 2 — Unlinkable source (book; `[source: ...]` form + quoted span).**
+
+```
+## Claim 7: "Jane Jacobs argued that a city's diversity comes from its mixture of primary uses."
+
+**Verdict:** Accurate
+**Confidence:** High
+**Provenance:** [observed]
+**Scrutiny:** [deep-read]
+
+The argument is laid out in *The Death and Life of Great American Cities*, Chapter 8 ("The
+need for primary mixed uses"), where Jacobs identifies primary mixed uses as the first of
+four generators of city diversity. The draft's paraphrase is faithful to the chapter's
+thesis.
+
+**Inline citation:** [source: Jane Jacobs, *The Death and Life of Great American Cities*,
+Random House, 1961, ch. 8, p. 152] — quoted span: "primary uses... must ensure the presence
+of people who go outdoors on different schedules and are in the place for different
+purposes".
+**Sources:** Jacobs, Jane. *The Death and Life of Great American Cities* (Random House, 1961).
+```
+
 ## How to handle ambiguity
 
 Sometimes a claim is technically true but misleading, or true for one definition but false for another.
@@ -366,6 +449,9 @@ provenance `[inferred]` verdicts, write out the inferential chain. For provenanc
 `[observed]`. When confidence appears in tension with scrutiny (e.g., High confidence on
 `[abstract]`-only reads), justify the call here.]
 
+**Inline citation:** [Required. At least one of: a URL with anchor or fragment, a quoted text
+span (≤25 words) verbatim from the source, or a `[source: title, page/timestamp]` reference
+for unlinkable sources. See the Inline Citations section for formats and examples.]
 **Sources:** [named sources with years]
 
 ---
