@@ -20,6 +20,7 @@
 #   9. Skill test-fixture coverage report (soft warning, not a gate)
 #  10. Feature integration: si-functions.sh orphan detection (soft warning)
 #  11. Document freshness: flag stale spikes and onboarding docs (soft warning)
+#  12. MD file semantic divergence: diff CLAUDE.md/AGENTS.md/GEMINI.md (soft warning)
 set -euo pipefail
 
 REPO_ROOT="$(cd "$(dirname "$0")/.." && pwd)"
@@ -632,6 +633,131 @@ check_doc_freshness() {
     bold "  Freshness: $checked checked, $fresh fresh, $stale stale, $missing_fields missing fields"
 }
 
+# ── 12. MD file semantic divergence ────────────────────────────────────────
+# CLAUDE.md is consumed by Claude Code; AGENTS.md and GEMINI.md feed other
+# agentic tools and can drift silently when CLAUDE.md is updated. This check
+# diff-summarizes the three files (sections + skill references) to surface
+# that drift. Soft warnings only — some divergence is intentional (e.g.,
+# CLAUDE-specific Operating Modes), so the check exists for human review,
+# not to gate on.
+
+check_md_semantic_divergence() {
+    section "MD file semantic divergence"
+
+    # Build canonical skill list from skills/*.md to detect references
+    local -a known_skills=()
+    local skill_file
+    for skill_file in "$REPO_ROOT"/skills/*.md; do
+        [[ -f "$skill_file" ]] && known_skills+=("$(basename "$skill_file" .md)")
+    done
+
+    local -a files=()
+    local -A h2_set=()
+    local -A h3_set=()
+    local -A skill_set=()
+    local -A line_count=()
+
+    local mdfile path
+    for mdfile in CLAUDE.md AGENTS.md GEMINI.md; do
+        path="$REPO_ROOT/$mdfile"
+        if [[ ! -f "$path" ]]; then
+            warn "$mdfile not found, skipping"
+            continue
+        fi
+        files+=("$mdfile")
+
+        # || true guards against pipefail when grep finds no matches
+        h2_set["$mdfile"]="$(grep -E '^## ' "$path" | sed 's/^## //' | sort -u || true)"
+        h3_set["$mdfile"]="$(grep -E '^### ' "$path" | sed 's/^### //' | sort -u || true)"
+        line_count["$mdfile"]="$(wc -l < "$path" | tr -d ' ')"
+
+        local refs=""
+        if [[ ${#known_skills[@]} -gt 0 ]]; then
+            local skill
+            for skill in "${known_skills[@]}"; do
+                # Token-boundary match: skill name surrounded by non-word chars
+                if grep -qE "(^|[^a-zA-Z0-9_-])${skill}([^a-zA-Z0-9_-]|$)" "$path"; then
+                    refs+="${skill}"$'\n'
+                fi
+            done
+        fi
+        skill_set["$mdfile"]="$(printf '%s' "$refs" | sort -u)"
+    done
+
+    if [[ ${#files[@]} -lt 2 ]]; then
+        warn "Fewer than 2 MD files found, skipping"
+        return
+    fi
+
+    # Per-file summary line (always shown, informational)
+    local h2c h3c skillc
+    for mdfile in "${files[@]}"; do
+        h2c="$(printf '%s\n' "${h2_set[$mdfile]}" | grep -c . || true)"
+        h3c="$(printf '%s\n' "${h3_set[$mdfile]}" | grep -c . || true)"
+        skillc="$(printf '%s\n' "${skill_set[$mdfile]}" | grep -c . || true)"
+        echo "  $mdfile: ${line_count[$mdfile]} lines, $h2c H2 + $h3c H3 sections, $skillc skill ref(s)"
+    done
+
+    local divergence=0
+
+    # 1) AGENTS.md and GEMINI.md should have identical section structure —
+    #    they target different tools but carry the same content.
+    if [[ -n "${h2_set[AGENTS.md]+x}" && -n "${h2_set[GEMINI.md]+x}" ]]; then
+        if [[ "${h2_set[AGENTS.md]}" == "${h2_set[GEMINI.md]}" \
+              && "${h3_set[AGENTS.md]}" == "${h3_set[GEMINI.md]}" ]]; then
+            pass "AGENTS.md and GEMINI.md have identical section structure"
+        else
+            warn "AGENTS.md and GEMINI.md have diverging section structure — these should be kept in sync"
+            divergence=$((divergence + 1))
+        fi
+    fi
+
+    # 2) Section diff: CLAUDE.md vs each sibling. Renamed sections will
+    #    appear on both sides — humans judge whether to align or accept.
+    local sibling only_claude only_sibling
+    if [[ -n "${h2_set[CLAUDE.md]+x}" ]]; then
+        for sibling in AGENTS.md GEMINI.md; do
+            [[ -n "${h2_set[$sibling]+x}" ]] || continue
+            only_claude="$(comm -23 <(printf '%s\n' "${h2_set[CLAUDE.md]}") <(printf '%s\n' "${h2_set[$sibling]}") | grep -v '^$' || true)"
+            only_sibling="$(comm -13 <(printf '%s\n' "${h2_set[CLAUDE.md]}") <(printf '%s\n' "${h2_set[$sibling]}") | grep -v '^$' || true)"
+            if [[ -n "$only_claude" ]]; then
+                warn "H2 sections in CLAUDE.md not in $sibling: $(echo "$only_claude" | tr '\n' '|' | sed 's/|/, /g; s/, $//')"
+                divergence=$((divergence + 1))
+            fi
+            if [[ -n "$only_sibling" ]]; then
+                warn "H2 sections in $sibling not in CLAUDE.md: $(echo "$only_sibling" | tr '\n' '|' | sed 's/|/, /g; s/, $//')"
+                divergence=$((divergence + 1))
+            fi
+        done
+    fi
+
+    # 3) Skill references: CLAUDE.md vs each sibling — highest-signal diff
+    #    because it points to specific skills whose mention hasn't propagated.
+    if [[ -n "${skill_set[CLAUDE.md]+x}" ]]; then
+        for sibling in AGENTS.md GEMINI.md; do
+            [[ -n "${skill_set[$sibling]+x}" ]] || continue
+            only_claude="$(comm -23 <(printf '%s\n' "${skill_set[CLAUDE.md]}") <(printf '%s\n' "${skill_set[$sibling]}") | grep -v '^$' || true)"
+            only_sibling="$(comm -13 <(printf '%s\n' "${skill_set[CLAUDE.md]}") <(printf '%s\n' "${skill_set[$sibling]}") | grep -v '^$' || true)"
+            if [[ -n "$only_claude" ]]; then
+                warn "Skills referenced in CLAUDE.md but not $sibling: $(echo "$only_claude" | tr '\n' ' ' | sed 's/ $//')"
+                divergence=$((divergence + 1))
+            fi
+            if [[ -n "$only_sibling" ]]; then
+                warn "Skills referenced in $sibling but not CLAUDE.md: $(echo "$only_sibling" | tr '\n' ' ' | sed 's/ $//')"
+                divergence=$((divergence + 1))
+            fi
+        done
+    fi
+
+    echo
+    if [[ $divergence -eq 0 ]]; then
+        pass "No semantic divergence detected across MD files"
+    else
+        bold "  $divergence divergence signal(s) detected"
+        warn "AGENTS.md and GEMINI.md are not read by Claude Code — content updates in CLAUDE.md may drift silently"
+    fi
+}
+
 # ── Run all checks ─────────────────────────────────────────────────────────
 
 main() {
@@ -649,6 +775,7 @@ main() {
     check_skill_fixture_coverage
     check_feature_integration
     check_doc_freshness
+    check_md_semantic_divergence
 
     echo
     if [[ $FAIL -eq 0 ]]; then
