@@ -5,17 +5,22 @@ description: >
   problems, module boundary breaches, and coupling issues. This is not a code review for
   implementation quality (security, performance, API consistency) — it focuses on whether a change
   maintains or improves the system's architectural health. Produces a structured Markdown critique
-  of code diffs. Use this skill when the user asks to "review the architecture", "check
+  of code diffs. Invoke this skill ONLY when the diff changes one or more of: (1) module
+  structure (new modules, renames, moves, package/directory layout), (2) public APIs (new or
+  changed exported types, functions, or interfaces; abstract classes/protocols), (3) data models
+  (schemas, DTOs, persisted contracts, message formats consumers depend on), or (4) cross-cutting
+  concerns (dependency injection wiring, middleware, auth/authz pipelines, logging/tracing setup,
+  caching layers, error-handling pipelines). SKIP this skill when the diff only modifies
+  implementation inside an existing module without touching its public surface — internal
+  refactors, bug fixes, perf tweaks, test additions, doc updates, and dependency-version bumps
+  alone are out of scope. Use this skill when the user asks to "review the architecture", "check
   dependencies", "is this well-structured", "review module boundaries", "SOLID review", "coupling
-  analysis", or "dependency direction check". Also trigger when a diff introduces new modules,
-  adds cross-module dependencies, changes public interfaces of internal modules, modifies
-  dependency injection wiring, or restructures package/directory layout. NOTE: This skill can be
-  invoked standalone or by a code-review orchestrator. If a code-fact-check report is provided,
-  use it as your foundation for understanding what the code actually does and do not re-verify
-  documented behavior.
+  analysis", or "dependency direction check". NOTE: This skill can be invoked standalone or by a
+  code-review orchestrator. If a code-fact-check report is provided, use it as your foundation
+  for understanding what the code actually does and do not re-verify documented behavior.
 when: >
-  Code introduces new modules, changes dependency relationships, crosses layer boundaries,
-  or restructures package layout
+  Diff changes module structure, public APIs, data models, or cross-cutting concerns. Skip when
+  the diff only modifies implementation inside an existing module.
 requires:
   - name: code-fact-check
     description: >
@@ -73,6 +78,80 @@ If the user provides an explicit scope (file list, directory, or PR number), use
 For each changed file, also read enough surrounding context to understand the module structure,
 dependency graph, and architectural layers — a diff alone rarely reveals structural problems.
 Read import statements, module boundaries, and the directory structure around changed files.
+
+## Scope Check (run before producing a critique)
+
+Architecture review is a structural lens, not a general code review. Before applying the
+cognitive moves, confirm the diff actually changes structure. If none of the four trigger
+categories below apply, **skip the review** and emit a short skip note instead (see "Skip path"
+below).
+
+### Trigger categories
+
+Invoke this skill only when the diff changes at least one of:
+
+1. **Module structure** — new modules or packages added; existing modules moved, renamed, split,
+   or merged; directory/package layout reorganized; new top-level subsystems introduced.
+2. **Public APIs** — new exported types, functions, classes, or constants; changes to the
+   signatures, contracts, or visibility of existing exports; new or modified abstract classes,
+   interfaces, traits, protocols, or other extension points; changes that widen or narrow a
+   module's public surface.
+3. **Data models** — schema changes (database tables, migrations, ORM models); new or modified
+   DTOs, request/response shapes, message/event formats, or other persisted/serialized contracts
+   that downstream consumers depend on; changes to identifier semantics, field nullability, or
+   cardinality.
+4. **Cross-cutting concerns** — dependency injection wiring or composition roots; middleware
+   chains; authentication/authorization pipelines; logging, tracing, or telemetry plumbing;
+   caching layers; error-handling and retry pipelines; framework lifecycle hooks; configuration
+   loading. These are concerns that span multiple modules and whose changes propagate widely.
+
+If at least one category applies, proceed with the review.
+
+### Skip path
+
+If the diff only modifies implementation **inside an existing module** without touching any of
+the four trigger categories, skip the review. Examples of work that should be skipped:
+
+- Internal refactors that preserve the public surface (renaming a private helper, extracting a
+  local function, inlining a private method).
+- Bug fixes that change behavior but not structure or contracts.
+- Performance tweaks confined to an algorithm body.
+- Test additions, test fixture changes, or test refactors that don't change production code.
+- Documentation, comment, or formatting changes.
+- Dependency-version bumps without accompanying code changes (these may warrant
+  `security-reviewer`, not architecture review).
+- Localization, copy, or static-asset changes.
+
+When skipping, output a brief note in place of the full critique:
+
+```
+# Architecture Review — Skipped
+
+**Reason:** The diff does not change module structure, public APIs, data models, or
+cross-cutting concerns. All changes are implementation-only inside existing modules.
+
+**Files reviewed for scope:** [list]
+
+**Trigger categories evaluated:**
+- Module structure: no
+- Public APIs: no
+- Data models: no
+- Cross-cutting concerns: no
+
+If the orchestrator or user believes a structural review is still warranted, re-invoke with
+an explicit scope or rationale.
+```
+
+Save the skip note to the same path the full critique would have used.
+
+### Edge cases
+
+- **Mixed diffs** — if some files are in scope and others are not, review only the in-scope
+  files and note the scoped exclusions in the skip note section of the report.
+- **Ambiguous changes** — when uncertain whether a change touches a public API (e.g., a
+  package-private symbol that's used across submodules), treat it as in-scope and proceed.
+- **New module that is internal-only** — still in scope under "module structure," even if no
+  public API is exposed yet; the structural decision is what's being reviewed.
 
 ## Using the Code Fact-Check Report
 
