@@ -20,6 +20,7 @@
 #   9. Skill test-fixture coverage report (soft warning, not a gate)
 #  10. Feature integration: si-functions.sh orphan detection (soft warning)
 #  11. Document freshness: flag stale spikes and onboarding docs (soft warning)
+#  12. Persona freshness: flag persona critique skills last sampled >~6 months ago
 set -euo pipefail
 
 REPO_ROOT="$(cd "$(dirname "$0")/.." && pwd)"
@@ -89,7 +90,7 @@ check_skill_frontmatter() {
 
         # Check for unknown top-level keys.
         # Top-level keys are non-indented lines matching "key:" pattern.
-        local allowed_keys="name description when requires"
+        local allowed_keys="name description when requires persona-last-sampled"
         local unknown_keys
         unknown_keys="$(echo "$yaml" | grep -oE '^[a-zA-Z_-]+:' | sed 's/://' | while read -r key; do
             local found=false
@@ -632,6 +633,74 @@ check_doc_freshness() {
     bold "  Freshness: $checked checked, $fresh fresh, $stale stale, $missing_fields missing fields"
 }
 
+# ── 12. Persona freshness (last-sampled within ~6 months) ────────────────
+
+check_persona_freshness() {
+    section "Persona freshness (last-sampled within ~6 months)"
+
+    # Skills carrying a 'persona-last-sampled: YYYY-MM-DD' frontmatter field
+    # encode when their persona model was last calibrated against current
+    # writings. Beyond ~6 months, the model may drift from the real persona.
+    local stale_threshold_days=180
+    local now_seconds
+    now_seconds="$(date +%s)"
+
+    local checked=0
+    local fresh=0
+    local stale=0
+    local invalid=0
+
+    for skill in "$REPO_ROOT"/skills/*.md; do
+        [[ -f "$skill" ]] || continue
+        local basename
+        basename="$(basename "$skill")"
+
+        local yaml
+        yaml="$(sed -n '/^---$/,/^---$/p' "$skill" | sed '1d;$d')"
+
+        local last_sampled
+        last_sampled="$(echo "$yaml" \
+            | sed -n 's/^persona-last-sampled:[[:space:]]*//p' \
+            | head -1 \
+            | tr -d '"' | tr -d "'" \
+            | awk '{$1=$1; print}')"
+
+        # Skill doesn't opt into freshness tracking — skip silently.
+        [[ -z "$last_sampled" ]] && continue
+
+        if ! [[ "$last_sampled" =~ ^[0-9]{4}-[0-9]{2}-[0-9]{2}$ ]]; then
+            warn "$basename: persona-last-sampled is not a valid YYYY-MM-DD date: $last_sampled"
+            invalid=$((invalid + 1))
+            continue
+        fi
+
+        local sampled_seconds
+        if ! sampled_seconds="$(date -d "$last_sampled" +%s 2>/dev/null)"; then
+            warn "$basename: could not parse persona-last-sampled date: $last_sampled"
+            invalid=$((invalid + 1))
+            continue
+        fi
+
+        checked=$((checked + 1))
+        local diff_days=$(( (now_seconds - sampled_seconds) / 86400 ))
+
+        if (( diff_days > stale_threshold_days )); then
+            warn "$basename: STALE — persona last sampled $diff_days days ago ($last_sampled, threshold $stale_threshold_days)"
+            stale=$((stale + 1))
+        else
+            pass "$basename: fresh ($diff_days days since $last_sampled)"
+            fresh=$((fresh + 1))
+        fi
+    done
+
+    echo
+    if [[ $checked -eq 0 && $invalid -eq 0 ]]; then
+        warn "No skill declares 'persona-last-sampled' — no personas tracked"
+    else
+        bold "  Persona freshness: $checked checked, $fresh fresh, $stale stale, $invalid invalid"
+    fi
+}
+
 # ── Run all checks ─────────────────────────────────────────────────────────
 
 main() {
@@ -649,6 +718,7 @@ main() {
     check_skill_fixture_coverage
     check_feature_integration
     check_doc_freshness
+    check_persona_freshness
 
     echo
     if [[ $FAIL -eq 0 ]]; then
