@@ -33,7 +33,17 @@ A reusable guide for planning, running, and interpreting usability tests. Ground
 | **Number per round** | 3–5 for qualitative/formative testing (Nielsen-Landauer model). Plan for ≥2 rounds. |
 | **Total across rounds** | 10+ if you need confidence; 5 is fine for "find the worst stuff fast" |
 | **Distinct user groups** | If ≥2 clearly different user populations, recruit 3–4 per group minimum |
-| **Recruitment source** | Target actual or near-actual users. Convenience samples (friends, coworkers) are *okay* for round 1 if you flag the bias explicitly. |
+| **Recruitment source** | Target actual or near-actual users. For convenience samples (friends, coworkers), see the escape-valve path under Recruitment Criteria below. |
+
+### Recruitment Criteria
+
+**Fill in these three fields before recruiting. Without them, you cannot tell whether the people you tested with were the right people, and downstream findings inherit that ambiguity.**
+
+1. **Target user attributes (with rationale)**: Who are you trying to recruit, and *why those attributes specifically?* Name the attributes (e.g., "self-identifies as a competitive Magic player; has played at least one paper event in the last 12 months") and tie each one to a research question or risky assumption from the scoping block above. An attribute without a rationale is decorative — if you can't say which finding the attribute protects, drop it.
+2. **Exclusion criteria**: Who would invalidate the signal if they slipped into the sample, and why? Frame protectively, not restrictively — the question is "whose presence would make me distrust the data," not "who's allowed in." Common categories: people with prior exposure to the prototype, employees of competing products under direct evaluation, participants from a previous round whose feedback you've already incorporated.
+3. **Sample-size justification**: Why this number, for this study? Reference the per-round and distinct-user-group guidance in Participant Planning above, then say what *this* study's number is and what specifically justifies it (e.g., "5 per group across 2 personas because the riskiest assumption splits cleanly along persona lines and we need enough per side to see a 2/5-vs-4/5 contrast"). The literature default is a starting point, not the justification.
+
+> **Convenience-sample escape valve**: If this is an informal pilot, internal smoke test, or otherwise not intended to support generalizable claims, you may skip the three fields above. The only requirement is that the findings report (Phase 4) opens with the disclosure: **"This is a convenience sample; results are indicative, not generalizable."** This path exists so informal pilots are not blocked — but the disclosure must travel with every downstream artifact that cites the findings, so anyone reading them later knows what kind of evidence they are.
 
 ### Logistics Checklist
 
