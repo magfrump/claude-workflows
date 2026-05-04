@@ -30,6 +30,7 @@
 #
 # Outputs:
 #   docs/working/feature-ideas-round-N.md   DD output per round
+#   docs/working/duplicates-round-N.md      Near-duplicate candidate report
 #   docs/working/tasks-round-N.json         Selected tasks per round
 #   docs/working/round-N-report.json        Structured log per round
 #   docs/working/round-history.json         Cumulative round history
@@ -428,6 +429,27 @@ docs/working/feature-ideas-round-$ROUND.md"
     IDEAS_JSON=$(jq -n --argjson count "$IDEA_COUNT" --arg file "feature-ideas-round-$ROUND.md" \
         '{generated: true, count: $count, file: $file}')
     update_round_log '.ideas' "$IDEAS_JSON"
+
+    # -------------------------------------------------------
+    # Step 1a-bis: Duplicate-candidate detection (pre-prune)
+    # -------------------------------------------------------
+    # Surface candidates that overlap heavily with prior round ideas or
+    # completed-task entries. Output is informational — used by the round to
+    # review near-duplicates before pruning, not to auto-modify candidates.
+    echo "Detecting near-duplicate candidates..."
+    detect_duplicate_candidates "$ROUND" "$WORKING_DIR" || true
+
+    DUPLICATES_FILE="$WORKING_DIR/duplicates-round-$ROUND.md"
+    if [ -f "$DUPLICATES_FILE" ]; then
+        # grep -c always prints a count, even when zero matches (exit 1).
+        # `|| true` swallows the exit-1 without doubling the output.
+        FLAGGED_COUNT=$(grep -cE '^## ' "$DUPLICATES_FILE" 2>/dev/null || true)
+        FLAGGED_COUNT=${FLAGGED_COUNT:-0}
+        DUPES_JSON=$(jq -n --argjson flagged "$FLAGGED_COUNT" \
+            --arg file "duplicates-round-$ROUND.md" \
+            '{flagged: $flagged, file: $file}')
+        update_round_log '.duplicates' "$DUPES_JSON"
+    fi
 
     # -------------------------------------------------------
     # Step 1b: Convergence detection

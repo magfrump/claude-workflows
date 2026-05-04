@@ -6,6 +6,7 @@
 #   validate_task_json   — Schema-validate a tasks JSON file
 #   check_convergence_threshold — Compare overlap % against a threshold
 #   print_gate_stats     — Print per-gate pass/fail/skip rates from round history
+#   detect_duplicate_candidates — Surface candidate-vs-prior matches for a round
 #
 # Guard against direct execution
 if [[ "${BASH_SOURCE[0]}" == "${0}" ]]; then
@@ -195,4 +196,175 @@ print_gate_stats() {
     done <<< "$stats"
 
     echo ""
+}
+
+# --- Duplicate-candidate detector ---
+# Surfaces candidate-vs-prior matches by keyword overlap. Runs after DD has
+# written feature-ideas-round-$round.md, before the SI loop's task-filtering
+# (prune) step — gives the round a chance to review near-duplicates without
+# auto-pruning anything.
+#
+# Args:
+#   $1 = round number
+#   $2 = working directory (e.g., docs/working)
+#
+# Reads:
+#   $2/feature-ideas-round-$1.md            (current round's candidates)
+#   $2/feature-ideas-round-*.md             (prior rounds, current excluded)
+#   $2/archive/*feature-ideas-round-*.md    (archived prior cycles)
+#   $2/completed-tasks.md                   (running list of approved work)
+#   $2/archive/*completed-tasks.md          (archived completed-task lists)
+#
+# Writes:
+#   $2/duplicates-round-$1.md   Report of flagged candidates with prior matches
+#
+# Stdout: one summary line. Exits 0 even when no priors exist or no flags.
+#
+# Env vars:
+#   DUPLICATE_OVERLAP_THRESHOLD  Percent of candidate-name keywords (4+ chars,
+#                                stopwords stripped) that must appear in a
+#                                prior file to flag as a near-duplicate
+#                                (default: 50).
+detect_duplicate_candidates() {
+    local round=$1
+    local working_dir=$2
+    local current_file="$working_dir/feature-ideas-round-${round}.md"
+    local report="$working_dir/duplicates-round-${round}.md"
+    local threshold="${DUPLICATE_OVERLAP_THRESHOLD:-50}"
+
+    if [ ! -f "$current_file" ]; then
+        echo "  Duplicate detector: no ideas file at $current_file, skipping" >&2
+        return 0
+    fi
+
+    # Collect prior files. Bash leaves a glob literal in place when no match;
+    # the -f test filters those out, so the four globs are safe even when the
+    # archive directory or earlier rounds don't exist.
+    local prior_files=()
+    local pattern f
+    for pattern in \
+        "$working_dir"/feature-ideas-round-*.md \
+        "$working_dir"/archive/*feature-ideas-round-*.md \
+        "$working_dir"/completed-tasks.md \
+        "$working_dir"/archive/*completed-tasks.md
+    do
+        for f in $pattern; do
+            [ -f "$f" ] || continue
+            # Skip the current round's own ideas file
+            [ "$f" -ef "$current_file" ] && continue
+            prior_files+=("$f")
+        done
+    done
+
+    # Stopword list. Includes generic English filler plus SI-domain words that
+    # would otherwise match every candidate (e.g. "round", "task", "skill").
+    # Without this filter, names like "Round-N task summary" trigger spurious
+    # high-overlap matches against any prior round's metadata.
+    local stopwords='this|that|with|when|from|will|does|been|have|each|over|into|than|then|some|such|also|where|what|which|while|after|before|other|these|those|there|their|about|because|between|across|during|under|using|used|onto|just|should|would|could|might|must|need|needs|make|makes|made|takes|take|gets|sets|puts|lets|mode|file|files|line|lines|task|tasks|round|rounds|step|steps|note|notes|idea|ideas|word|words|case|cases|rule|rules|tool|tools|kind|sort|type|types|item|items|name|names|part|parts|side|sides|time|times|year|years|good|done|long|same|less|more|much|most|many|both|here|even|self|like|true|false|null|none|external|internal|skill|skills|workflow|workflows|repo|repos|main|head|prior|next|new|old'
+
+    # Build report header.
+    {
+        echo "# Duplicate Candidate Report — Round ${round}"
+        echo ""
+        echo "_Generated: $(date -u +%Y-%m-%dT%H:%M:%SZ)_"
+        echo ""
+        echo "Threshold: ≥${threshold}% of candidate-name keywords appearing in a prior file."
+        echo "Sources scanned: ${#prior_files[@]} prior file(s)."
+        echo ""
+        echo "Surfaces possible near-duplicates for review before pruning. This report"
+        echo "is informational — no candidates have been pruned automatically."
+        echo ""
+    } > "$report"
+
+    if [ "${#prior_files[@]}" -eq 0 ]; then
+        echo "_No prior files found; nothing to compare against._" >> "$report"
+        echo "  Duplicate detector: no prior files; wrote empty report"
+        return 0
+    fi
+
+    # Extract candidate header lines: "<n>. **[TAG] Name** — desc..." or
+    # "<n>. **Name** — desc...". The DD diverge step uses one numbered list
+    # entry per candidate, with the name in bold.
+    local candidates_tmp
+    candidates_tmp=$(mktemp)
+    grep -E '^[[:space:]]*[0-9]+\.[[:space:]]+\*\*[^*]+\*\*' "$current_file" > "$candidates_tmp" || true
+
+    local total_candidates=0 flagged_candidates=0
+    while IFS= read -r line; do
+        [ -z "$line" ] && continue
+        total_candidates=$((total_candidates + 1))
+
+        # Pull bolded name; strip optional [TAG] prefix that the DD prompt
+        # asks Claude to attach (e.g. "[EXTERNAL]" / "[INTERNAL]").
+        local name
+        name=$(echo "$line" | sed -n 's/.*\*\*\([^*]*\)\*\*.*/\1/p' | sed 's/^\[[^]]*\][[:space:]]*//')
+        [ -z "$name" ] && continue
+
+        # Tokenize the name into a deduped keyword set. The trailing `|| true`
+        # absorbs the exit-1 grep returns when every token is a stopword,
+        # which would otherwise trip the parent script's pipefail.
+        local keywords kw_count
+        keywords=$(echo "$name" \
+            | tr '[:upper:]' '[:lower:]' \
+            | tr -c 'a-z0-9' '\n' \
+            | awk 'length($0) >= 4' \
+            | { grep -Evw "$stopwords" || true; } \
+            | sort -u)
+        kw_count=$(echo "$keywords" | grep -c . || true)
+
+        # Skip candidates whose name reduces to fewer than 2 substantive
+        # tokens — overlap percentages are meaningless on 1-token sets.
+        if [ "$kw_count" -lt 2 ]; then
+            continue
+        fi
+
+        local matches="" prior prior_lower matched pct hit_line basename_prior
+        for prior in "${prior_files[@]}"; do
+            prior_lower=$(tr '[:upper:]' '[:lower:]' < "$prior")
+            matched=0
+            while IFS= read -r kw; do
+                [ -z "$kw" ] && continue
+                if echo "$prior_lower" | grep -qw "$kw"; then
+                    matched=$((matched + 1))
+                fi
+            done <<< "$keywords"
+
+            pct=$(( (matched * 100) / kw_count ))
+            if [ "$pct" -ge "$threshold" ]; then
+                basename_prior=$(basename "$prior")
+                # Try to surface a context snippet by searching for the longest
+                # keyword in the prior file (case-insensitive). Falls back to
+                # the file name only if no snippet is found.
+                local longest_kw
+                longest_kw=$(echo "$keywords" | awk '{ print length, $0 }' | sort -rn | head -1 | cut -d' ' -f2-)
+                hit_line=""
+                if [ -n "$longest_kw" ]; then
+                    hit_line=$(grep -i -m1 -F "$longest_kw" "$prior" 2>/dev/null | head -c 200 | tr -d '\n' || true)
+                fi
+                if [ -n "$hit_line" ]; then
+                    matches+="- **${pct}%** overlap with \`${basename_prior}\`: ${hit_line}"$'\n'
+                else
+                    matches+="- **${pct}%** overlap with \`${basename_prior}\`"$'\n'
+                fi
+            fi
+        done
+
+        if [ -n "$matches" ]; then
+            flagged_candidates=$((flagged_candidates + 1))
+            {
+                echo "## ${name}"
+                echo ""
+                printf '%s\n' "$matches"
+            } >> "$report"
+        fi
+    done < "$candidates_tmp"
+    rm -f "$candidates_tmp"
+
+    {
+        echo "---"
+        echo ""
+        echo "**Summary:** ${flagged_candidates} of ${total_candidates} candidate(s) flagged at ≥${threshold}% keyword overlap."
+    } >> "$report"
+
+    echo "  Duplicate detector: ${flagged_candidates}/${total_candidates} flagged (report: $report)"
 }
