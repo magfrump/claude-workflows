@@ -123,7 +123,39 @@ scope findings to stated intent.
 
 If the diff touches files that appear in a prior `docs/reviews/*.md` report from the last 30 days (detect via `git log --since="30 days ago" -- docs/reviews/` and intersect those reports' `Location:` paths with the changed-file list), lift the **Must-Fix** rows whose locations still apply and hold them as `<prior-findings>` for Stage 2. You will paste them verbatim under a `## Prior review findings (advisory — worth checking, not verdict input)` heading in each critic's prompt so recurring issues are flagged explicitly rather than re-discovered. Treat them as hints about where to look — critics MUST NOT confirm them as findings or feed them into verdicts. Skip silently if no matching prior reports exist. (Extends the within-PR cross-iteration contrastive prompt in `workflows/pr-prep.md` step 3d to across-PR memory.)
 
-### Step 4: Known critic roles
+### Step 4: Read the override log (mandatory)
+
+Read `docs/reviews/override-log.md` before launching any sub-agents. The log records prior
+human decisions to demote 🔴/🟡 findings (Won't-Fix) or upgrade 🟢 findings (Must-Fix), so
+reviewers do not re-litigate the same calls each run. The log entry schema and instructions
+for adding entries live in that file; this step is the read side of the contract. The
+post-review write side lives in [Post-Review: Capture Overrides](#post-review-capture-overrides).
+
+If the file does not exist yet, create it from the schema in the override log's own
+"Entry schema" section (or skip silently if the project has not yet adopted the log — but
+note the absence in your plan summary so the user sees it).
+
+For every entry whose `Location:` falls inside (or whose free-text references a file in)
+the diff's changed-file list, lift it into `<prior-overrides>`. Hold this set for Stage 2
+and for the synthesis stage:
+
+- **Stage 2 injection:** When dispatching critics, paste matching entries verbatim under
+  a `## Prior overrides on this codebase (advisory — do not confirm as findings or feed into verdicts)`
+  heading. Place it immediately after the prior-findings block (or after the PR-intent
+  block if no prior findings applied). The heading text is load-bearing — it tells the
+  critic the entries exist as scope context, not as ground truth to validate. Critics
+  MUST NOT promote an override into a finding, and MUST NOT cite an override as
+  corroborating evidence in their verdicts.
+- **Synthesis citation:** Every run MUST cite which entries were considered, including
+  null citations when no entries matched. See Deliverable 1's "Overrides considered"
+  subsection below — that section is mandatory whether or not entries were lifted, so
+  the log cannot become write-only.
+
+If `<prior-overrides>` is empty (no entries match, or the log is empty), still emit the
+synthesis citation as an explicit null line ("No override-log entries matched the changed
+files."). Skipping the citation defeats the purpose of the log.
+
+### Step 5: Known critic roles
 
 The orchestrator uses a fixed taxonomy of skills. Do not scan `skills/*.md` at runtime — use
 the lists below. (If a listed file doesn't exist, skip it and note the gap in your plan
@@ -142,7 +174,7 @@ summary. If the user references a skill not listed here, they can include it via
 - `performance-reviewer.md`
 - `api-consistency-reviewer.md`
 
-**Contextual critics (auto-selected in Step 5, advisory only):**
+**Contextual critics (auto-selected in Step 6, advisory only):**
 - `test-strategy.md`
 - `tech-debt-triage.md`
 - `dependency-upgrade.md`
@@ -151,7 +183,7 @@ summary. If the user references a skill not listed here, they can include it via
 **Not applicable to code review (skip):**
 - `fact-check.md`, `cowen-critique.md`, `yglesias-critique.md`
 
-### Step 5: Auto-select contextual critics
+### Step 6: Auto-select contextual critics
 
 Run a quick analysis of the diff to determine which contextual critics to include. Use the
 table below — check each row's diff characteristic and invoke the critic if it matches.
@@ -166,7 +198,7 @@ table below — check each row's diff characteristic and invoke the critic if it
 **How to check:** For each row, scan the diff file list and content. Multiple rows can match
 simultaneously — invoke all matching critics. If no rows match, no contextual critics run.
 
-### Step 6: User overrides
+### Step 7: User overrides
 
 The user can include or exclude any critic:
 - `--include test-strategy` — force a contextual critic even if auto-selection didn't trigger it
@@ -181,7 +213,7 @@ The user can include or exclude any critic:
   default for that pair only; all other critics still run in parallel
   alongside the chain. Omit the flag to keep the parallel default.
 
-### Step 7: Communicate the plan
+### Step 8: Communicate the plan
 
 Before launching any agents, tell the user:
 - The scope being reviewed
@@ -297,7 +329,7 @@ After the Fact-Check Gate (and only if the user did NOT pass `--all-critics`), n
 core-critic set down before launching Stage 2. This stage applies two gating signals,
 ordered by when their input becomes available:
 
-- **First gate — diff-shape.** Already partially applied: Step 4 used the diff to select
+- **First gate — diff-shape.** Already partially applied: Step 6 used the diff to select
   contextual critics pre-Stage-1. Now extend the same diff-shape logic to the core
   critics via the skip table below — `git diff --stat` and spot-checked diff content are
   the inputs.
@@ -311,7 +343,7 @@ an extra critic is small; the cost of a missed finding is large. If you are unce
 whether a signal applies, do not skip.
 
 **Boring version:** consult fact-check to optionally *downgrade* critics. Do not re-derive
-the critic set from scratch — the set entering Stage 1.5 is whatever survived Step 4
+the critic set from scratch — the set entering Stage 1.5 is whatever survived Step 6
 selection + user overrides, and Stage 1.5 only narrows it further. Stage 1.5 never
 *promotes* a critic.
 
@@ -449,7 +481,13 @@ For each critic agent, you MUST:
    `## What this PR is trying to accomplish` heading so the critic can scope findings to
    stated intent. If Step 3 surfaced `<prior-findings>`, paste them verbatim under a
    `## Prior review findings (advisory — worth checking, not verdict input)` heading
-   immediately after the intent block; otherwise omit this heading entirely.
+   immediately after the intent block; otherwise omit this heading entirely. If Step 4
+   surfaced `<prior-overrides>` (matching entries from `docs/reviews/override-log.md`),
+   paste them verbatim under a `## Prior overrides on this codebase (advisory — do not confirm as findings or feed into verdicts)`
+   heading after the prior-findings block (or immediately after the intent block when
+   prior findings was skipped); otherwise omit this heading entirely. Critics MUST NOT
+   promote an override into a finding and MUST NOT cite an override as corroborating
+   evidence in their verdicts — overrides exist as scope context, not ground truth.
 5. Include the fact-check results. If the fact-check report is longer than 200 lines, include
    only the findings rated Incorrect, Stale, or Mostly Accurate — skip Accurate claims to
    save context budget.
@@ -585,6 +623,35 @@ limits before reading findings:
 If the scan surfaced nothing, render this section with a single line: "All sub-agents
 fully addressed their scope; no out-of-scope or escalate items." The heading must
 still appear so the section is auditable across runs.
+
+### Overrides considered
+
+Cite the override-log entries you considered on this run so the log cannot become
+write-only. This subsection is mandatory whether or not entries matched — the citation
+is the audit trail that proves Step 4 ran.
+
+For each entry in `<prior-overrides>` (the set lifted in Before You Begin Step 4),
+emit one bullet:
+
+- **`OV-NNN` — matched** — the entry's location overlapped a current finding; describe
+  in one phrase how the override changed treatment (e.g., "demote applied: kept the
+  security finding visible in 🟢 Consider rather than promoting to 🔴, per OV-007's
+  Won't-Fix-this-PR rationale").
+- **`OV-NNN` — no current match** — the entry's location is in the diff but no critic
+  surfaced a related finding; one phrase noting the override was not load-bearing this
+  run (e.g., "OV-007 watched but no security finding fired on `src/auth.ts` this run").
+- **`OV-NNN` — re-evaluation due** — the entry's `Re-evaluate when:` trigger has fired
+  (the referenced PR landed, the file changed in the way the rationale flagged, etc.);
+  one phrase explaining why the override should be revisited and surfaced as an
+  actionable item below.
+
+If `<prior-overrides>` was empty (no matching entries, or the log is empty/missing),
+render the subsection with a single line: "No override-log entries matched the changed
+files." The heading must still appear so the read-the-log obligation is auditable.
+
+If the override log file was missing entirely, the line reads instead: "Override log
+file (`docs/reviews/override-log.md`) not found — Step 4 was a no-op." Surface this in
+the chat synthesis (not silently) so the user can decide whether to seed the log.
 
 **Factual issues:** What the code fact-check found. Group into: claims that need fixing
 (Incorrect), claims that need updating (Stale, Mostly Accurate), and claims that are solid
@@ -792,6 +859,81 @@ At the end of your chat synthesis, link to all documents.
 
 ---
 
+## Post-Review: Capture Overrides
+
+After Deliverable 1 (chat synthesis) and Deliverable 2 (rubric) are produced and the
+human reviewer has decided which findings to override, append the override decisions to
+`docs/reviews/override-log.md`. This is the write side of the override-log contract; the
+read side runs in Before You Begin Step 4.
+
+### When this step runs
+
+This step is **post-synthesis and human-driven**. It does not run during the automated
+pipeline — it runs after the human has reviewed the rubric and either:
+
+1. **Edited the rubric directly** to demote a 🔴/🟡 row to 🟢, mark a row "won't fix"
+   with a reason, or upgrade a 🟢 row to a binding tier. The orchestrator should detect
+   the edit by re-reading the rubric and comparing against the version it produced.
+2. **Told the orchestrator conversationally** that they want to override one or more
+   findings. The orchestrator confirms the specifics (which finding, which tier, what
+   rationale) before drafting a log entry.
+
+If neither signal is present, no overrides exist for this run — do not write
+speculative entries. The default is silence.
+
+### What to write
+
+For each override the human authorized, draft an entry following the schema in
+`docs/reviews/override-log.md` ("Entry schema" section). The entry MUST include:
+
+- **`OV-NNN`**: Next unused integer (read the existing log's most recent ID and
+  increment).
+- **Date** in `YYYY-MM-DD`.
+- **Override type**: which tier change (Demote 🔴 → 🟢, Upgrade 🟢 → 🔴, etc.).
+- **Location** in `path/to/file:line` form (lifted from the original rubric row).
+- **Scope, original finding, domain, original verdict, override verdict, rationale,
+  decided-by, re-evaluate-when**: per the schema. Rationale is the load-bearing field
+  and must capture the human's reasoning, not a paraphrase.
+
+### What NOT to write
+
+- Speculative overrides not authorized by the human. If you suspect the human "probably
+  wants" to demote something, ask — do not assume.
+- Overrides driven by critic agreement alone. The log is a record of *human* decisions
+  about pipeline output. Critics agreeing among themselves is just convergence (already
+  handled by the Escalation Rule).
+- Resolution notes for 🟡 Must Address items the author addressed in the normal "Author
+  note" workflow. Those are resolutions, not overrides — they belong in the rubric, not
+  the log.
+- Generic style preferences, lint rule choices, or codebase-wide conventions — those
+  belong in `docs/decisions/` or a style guide.
+
+### Confirmation before append
+
+Before appending each entry to `docs/reviews/override-log.md`, read the drafted entry
+back to the human and confirm:
+
+- The rationale matches their intent (this is the load-bearing field — paraphrasing
+  introduces drift).
+- The `Re-evaluate when:` trigger is concrete enough to be evaluated on a future run
+  ("never (working as intended)" is acceptable; "maybe later" is not).
+- The override type matches what the human actually decided.
+
+Append only after confirmation. If the human rejects the draft, revise and re-confirm.
+
+### How to append
+
+Open `docs/reviews/override-log.md` and insert each new entry **above** the existing
+entries (most-recent first ordering, per the file's "How to read" section). The
+`OV-000` template entry stays at the bottom as the schema reference.
+
+Update the rubric's affected rows in the same write pass: the demote/upgrade should be
+reflected in the rubric's tier tables AND in a note pointing to the override entry
+(e.g., "see OV-007 in `docs/reviews/override-log.md` for rationale"). This way the
+rubric remains the per-run scoreboard while the log carries the rationale across runs.
+
+---
+
 ## Important Reminders
 
 - **Always run fact-checking first.** Even if the user only asks for critic perspectives.
@@ -808,3 +950,9 @@ At the end of your chat synthesis, link to all documents.
 - **Contextual critics are advisory.** Their findings go to Consider tier and never block merge.
 - **Fact-check report size management.** If the report exceeds 200 lines, paste only the
   "Claims Requiring Attention" summary (Incorrect, Stale, Mostly Accurate) into critic prompts.
+- **Override log is read-cite-write.** Step 4 reads `docs/reviews/override-log.md` and
+  injects matching entries into critic prompts; Deliverable 1's "Overrides considered"
+  subsection cites which entries were considered (mandatory, even when none matched);
+  the [Post-Review: Capture Overrides](#post-review-capture-overrides) section appends
+  new entries only after explicit human authorization. Skipping the citation lets the
+  log become write-only — do not skip it.
