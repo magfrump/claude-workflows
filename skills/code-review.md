@@ -103,6 +103,52 @@ When the diff is this large, split the review into multiple passes by subsystem 
 Check diff size early via `git diff --stat` — if the line count crosses the ~1000-line
 threshold, propose the split to the user before launching Stage 1.
 
+#### Per-file change-density triage (rewrite profile)
+
+Some files in a PR are reshaped enough that hunk-by-hunk diff review produces noise — the
+meaningful question is whether the *new* file is well-structured, not whether each
+individual hunk was a sensible local edit. For these files, switch the critics to a
+**rewrite profile**: ignore the diff and review the new version as if it were greenfield
+code, focused on architectural-level concerns (module boundaries, responsibilities, public
+surface, layering, naming) rather than line-level deltas.
+
+**Heuristic (tunable threshold, not a strict cutoff):** A file qualifies for the rewrite
+profile when it is *rewritten* more than *reshuffled* — roughly when
+`deleted_lines / old_total_lines > 40%`. Pure additions to an otherwise stable file do
+**not** qualify: the original code is preserved and hunk-level diff review is still the
+most informative lens. The 40% number is a default signal, not a hard cutoff:
+
+- Below the threshold but the new and old versions read as different designs (e.g., ~30%
+  deletions but a clear responsibility shift, renamed core type, or restructured public
+  API): opt in.
+- Above the threshold but most deletions are mechanical (removing dead imports,
+  reformatting, auto-generated boilerplate churn, license-header swaps): opt out.
+
+When in doubt, default to the standard diff review — rewrite profile is a deliberate
+scope shift to architectural feedback, and applying it to a file that's actually a careful
+local refactor will miss the line-level findings the author needs.
+
+**How to compute:**
+
+```bash
+git diff --numstat <scope> -- <file>   # gives: added\tdeleted\tpath
+git show main:<file> | wc -l           # gives old_total_lines
+```
+
+Skip rewrite-profile evaluation in these cases:
+- **New file** (no `main` version): the diff *is* the file — review as standard.
+- **Deleted file**: nothing to review as greenfield.
+- **Rename with low content churn**: standard review (use `git log --follow` to find the
+  old path if `git diff --numstat` reports the move as an add+delete pair).
+- **Binary or generated file**: skip review entirely.
+
+**How to apply:** During Step 1, build a `<rewrite-profile-files>` list of qualifying paths
+and hold it for the rest of the pipeline. Pass it forward to every Stage 2 critic dispatch
+(see [Stage 2: Critic Agents](#stage-2-critic-agents) step 4) so each critic switches the
+listed files to greenfield review while reviewing the rest of the diff hunk-by-hunk. Report
+the list in the plan summary (Step 7) so the user sees which files will be reviewed under
+which profile and can override the choice before launch.
+
 ### Step 2: Capture PR intent
 
 Critics scope findings better when they know what the PR is trying to accomplish. Capture
@@ -187,6 +233,7 @@ Before launching any agents, tell the user:
 - The scope being reviewed
 - Which core critics will run
 - Which contextual critics were auto-selected (and why)
+- Any files flagged for the rewrite profile (with the threshold used) — or "none, all files reviewed under standard diff profile"
 - Total agent count (1 fact-checker + N critics)
 
 Keep this brief — a short paragraph.
@@ -449,7 +496,16 @@ For each critic agent, you MUST:
    `## What this PR is trying to accomplish` heading so the critic can scope findings to
    stated intent. If Step 3 surfaced `<prior-findings>`, paste them verbatim under a
    `## Prior review findings (advisory — worth checking, not verdict input)` heading
-   immediately after the intent block; otherwise omit this heading entirely.
+   immediately after the intent block; otherwise omit this heading entirely. If Step 1's
+   per-file change-density triage produced `<rewrite-profile-files>`, paste the list
+   verbatim under a `## Rewrite-profile files (review the new version as greenfield, ignore the diff)`
+   heading after the prior-findings block, with this instruction inline: "For each file
+   listed here, fetch the current version (`git show HEAD:<path>` or read the working
+   tree) and review its architecture as if it were new code — module boundaries,
+   responsibilities, public surface, layering, and naming. Do not analyze diff hunks for
+   these files; the diff is uninformative because the file was substantially rewritten.
+   For every other file in scope, run your standard hunk-level critique." Otherwise omit
+   this heading entirely.
 5. Include the fact-check results. If the fact-check report is longer than 200 lines, include
    only the findings rated Incorrect, Stale, or Mostly Accurate — skip Accurate claims to
    save context budget.
@@ -568,7 +624,10 @@ the individual agent reports.
 
 ### Structure the chat synthesis as:
 
-**Scope summary:** What was reviewed — branch, files, diff size.
+**Scope summary:** What was reviewed — branch, files, diff size. Note any files reviewed
+under the rewrite profile (greenfield architectural review of the new version) rather than
+standard hunk-level diff review, so the author knows which findings are line-level and
+which are structural.
 
 ### Coverage and Escalations
 
