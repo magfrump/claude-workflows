@@ -146,6 +146,7 @@ After the header, the body must include:
 - **Options considered** (brief — the full analysis doesn't need to be preserved)
 - **Decision and rationale**
 - **Consequences**: what this makes easier, what this makes harder
+- **Revisit triggers**: a 2-line section. Line 1 is a `how to read` preamble — "Each entry is a concrete, observable condition that should prompt re-evaluating this decision. Future readers can grep this section when their context changes to see whether earlier decisions still apply." Line 2 is a compact list of falsifiable conditions with thresholds where applicable, e.g. `if dep X majors. if user count >10k. if p99 >200ms. if pattern Y needed in 3+ places.` Vague triggers like "if requirements change" are not allowed — each entry must name a specific signal a future reader could check.
 - **Pruned candidates and why** (anti-portfolio): a 2-line section. Line 1 is a `how to read` preamble — "Each entry is `[candidate-ID]: one-line reason for discard`. Future DDs in adjacent areas can grep this to avoid regenerating already-pruned approaches." Line 2 is a compact list, e.g. `[3]: relies on async queue we don't have. [5]: violates auth invariant. [7]: 10x cost of #2.` Include candidates pruned in step 3 (compatibility matrix) and any survivors discarded by the step 4 stress-test pass.
 - **Stress-test mitigations** (if any were applied in step 4): one-line `how to read` preamble per mitigation, naming the stress-test move that produced it and what it changed in the tradeoff matrix — e.g., "How to read: *Boring alternative* mitigation — replaced candidate #2 with a simpler variant after the move surfaced unjustified complexity." One preamble per mitigation so a future grep returns enough context to reapply the move without re-reading the full record.
 
@@ -153,9 +154,10 @@ After the header, the body must include:
 
 **Done when...**
 - [ ] Decision record exists in `docs/decisions/NNN-title.md` (or a row in `log.md` for sub-threshold decisions)
-- [ ] For full records, the doc opens with the three-line header (Goal · Project state · Task status) and includes all required body sections (Context, Options considered, Decision and rationale, Consequences, Pruned candidates and why)
+- [ ] For full records, the doc opens with the three-line header (Goal · Project state · Task status) and includes all required body sections (Context, Options considered, Decision and rationale, Consequences, Revisit triggers, Pruned candidates and why)
 - [ ] The Pruned candidates section opens with the `how to read` preamble and lists every discarded candidate (from step 3 prune and step 4 stress test) with a one-line reason
 - [ ] If any stress-test mitigations were applied in step 4, each is documented with its own one-line `how to read` preamble naming the move that produced it
+- [ ] The Revisit triggers section opens with the `how to read` preamble and lists at least 2-3 concrete, threshold-bearing conditions that would prompt revisiting the decision
 - [ ] The Task status line accurately reflects current lifecycle (re-read it; if it lies, fix it)
 - [ ] The decision is referenced from the calling workflow's artifacts (e.g., the RPI plan doc)
 
