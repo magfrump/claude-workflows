@@ -1,6 +1,7 @@
 ---
 name: cowen-critique
 lens: contrarian-economist
+persona-last-sampled: 2026-05-03
 description: >
   Critically review a draft (blog post, essay, article, or similar written piece) using the cognitive
   methods and reasoning patterns of economist Tyler Cowen. This goes beyond applying his known
