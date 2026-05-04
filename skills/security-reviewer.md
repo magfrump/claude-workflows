@@ -313,10 +313,41 @@ structured finding.
 Output your critique as a Markdown document.
 
 ### Trust Boundary Map
-Briefly describe the trust boundaries in the changed code (move #1). What enters from
-outside? What crosses between trust levels? This frames the rest of the review.
+
+Before listing any findings, articulate where input crosses trust boundaries in the
+changed code (move #1). Render the boundaries as a labeled ASCII/text diagram showing
+the flow from less-trusted to more-trusted context. Use `→` arrows and bracketed
+labels. **At least two diagram lines are required** for any non-trivial diff — if the
+diff genuinely touches only one boundary, state that explicitly and still render it
+in the diagram format.
+
+**Required format:**
+
+```
+B1: [user input]            → [validation point]    → [trusted internal]
+B2: [external API response] → [parser / validator]  → [domain model]
+```
+
+Each boundary gets a stable label (`B1`, `B2`, …) followed by a single line of the
+form `[source] → [transition point] → [destination]`. If the diff adds, moves, or
+removes a boundary, append `(new)`, `(moved)`, or `(removed)` to the label so the
+delta is visible. Use one line per distinct boundary the diff touches.
+
+Below the diagram, add 1-3 sentences of prose summarizing what enters from outside,
+what crosses between trust levels, and what assumptions about trustworthiness the
+diff makes. This diagram is load-bearing for the rest of the review: every finding
+below must cross-reference one of these boundary labels.
 
 ### Findings
+
+**Anchoring rule:** Every finding must reference a boundary from the Trust Boundary
+Map by its label (e.g., `B1`). Findings must not float unanchored. If a finding
+genuinely does not involve a trust boundary crossing (rare — e.g., a purely
+internal cryptographic-primitive choice with no input crossing involved), use
+`Boundary: Internal — no boundary` and justify in the finding body why a security
+issue exists absent any crossing. If you cannot tie a finding to a boundary or
+justify its absence, the finding is either out of scope for this skill or the
+Trust Boundary Map is incomplete — revise the map before listing the finding.
 
 For each finding, use this structure:
 
@@ -325,11 +356,14 @@ For each finding, use this structure:
 
 **Severity:** [Critical / High / Medium / Low / Informational]
 **Location:** `path/to/file.ext:42-58`
+**Boundary:** [B1, B2, … — label(s) from the Trust Boundary Map this finding sits on,
+or `Internal — no boundary` with justification in the body]
 **Move:** [Which cognitive move surfaced this]
 **Confidence:** [High / Medium / Low]
 
 [2-5 sentences: what the vulnerability is, how it could be exploited, and what the
-impact would be. Be specific about the attack scenario.]
+impact would be. Be specific about the attack scenario, and name the boundary
+transition where the trust assumption breaks.]
 
 **Recommendation:** [1-3 sentences: what to do about it.]
 ```
@@ -349,9 +383,9 @@ review from being purely negative and confirms which parts don't need rework.
 
 ### Summary Table
 
-| # | Finding | Severity | Location | Confidence |
-|---|---------|----------|----------|------------|
-| 1 | ...     | Critical | `f:42`   | High       |
+| # | Finding | Severity | Boundary | Location | Confidence |
+|---|---------|----------|----------|----------|------------|
+| 1 | ...     | Critical | B1       | `f:42`   | High       |
 
 ### Overall Assessment
 One paragraph: what's the security posture of this change? Are the issues fixable in place
