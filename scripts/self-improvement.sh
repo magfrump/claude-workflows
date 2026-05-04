@@ -553,16 +553,41 @@ ${SI_OFF_LIMITS}"
 
 For each surviving idea from the tradeoff matrix, assess whether it can be
 implemented independently in a single Claude Code session (~10-15 minutes
-of autonomous work).
+of autonomous work) AND whether its expected value clearly exceeds:
+  (a) the cost of an autonomous Claude session and reviewer attention, AND
+  (b) the opportunity cost of waiting for higher-quality ideas in a future
+      round.
 
 Output a JSON array to docs/working/tasks-round-$ROUND.json with fields:
 {\"id\": \"short-kebab-case\", \"description\": \"one paragraph task description\",
 \"files_touched\": [\"list of files\"], \"independent\": true/false}
 
-Only include tasks where independent is true. Discard tasks that depend on
-other tasks in this round.${TASK_OFF_LIMITS}"
+Only include tasks where independent is true AND the value-vs-cost threshold
+is clearly met. Discard tasks that depend on other tasks in this round, and
+discard tasks whose expected value is marginal, speculative, or primarily
+cosmetic.
+
+NULL-RESULT OPTION — legitimate round outcome:
+If, after applying the threshold, NO surviving idea clears the bar, do NOT
+launch a low-value task to satisfy round cadence. Instead:
+  1. Write an empty JSON array '[]' to docs/working/tasks-round-$ROUND.json.
+  2. Write a backlog-quality justification to
+     docs/working/no-task-justification-round-$ROUND.md. The justification
+     MUST:
+       - Reference the actual surviving ideas by name or number from the
+         feature-ideas file.
+       - State, per idea (or per cluster), the specific reason it failed
+         the threshold (e.g., 'minor wording refinement, no external-
+         workflow impact'; 'duplicates already-completed task X';
+         'depends on unmerged work in round N-1'; 'speculative — no
+         evidence the problem occurs in real use').
+       - Avoid generic phrases like 'no good ideas' or 'nothing
+         interesting' without grounding in specific backlog content.
+This null-result is preferred over launching marginal tasks.${TASK_OFF_LIMITS}"
 
     TASKS_FILE="$WORKING_DIR/tasks-round-$ROUND.json"
+    JUSTIFICATION_FILE="$WORKING_DIR/no-task-justification-round-$ROUND.md"
+
     if [ ! -f "$TASKS_FILE" ]; then
         echo "No tasks file generated. Skipping round."
         update_round_log '.tasks' '{"count": 0, "ids": []}'
@@ -573,9 +598,25 @@ other tasks in this round.${TASK_OFF_LIMITS}"
 
     TASK_IDS=$(jq -r '.[].id' "$TASKS_FILE")
     if [ -z "$TASK_IDS" ]; then
-        echo "No independent tasks found. Skipping round."
-        update_round_log '.tasks' '{"count": 0, "ids": []}'
-        update_round_log '.outcome' '"no_tasks"'
+        if [ -f "$JUSTIFICATION_FILE" ]; then
+            # Legitimate null-result: backlog had no candidate clearing the
+            # quality threshold. Embed a truncated justification in the round
+            # log and tag the outcome distinctly so it's not confused with a
+            # silent extraction failure.
+            echo "No tasks launched (below quality threshold)."
+            echo "Justification: $JUSTIFICATION_FILE"
+            JUSTIFICATION_TEXT=$(head -c 2000 "$JUSTIFICATION_FILE")
+            TASKS_JSON=$(jq -n --arg j "$JUSTIFICATION_TEXT" \
+                '{count: 0, ids: [], justification: $j}')
+            update_round_log '.tasks' "$TASKS_JSON"
+            update_round_log '.outcome' '"below_threshold"'
+            echo "[round-$ROUND] BELOW_THRESHOLD: backlog had no candidate clearing quality threshold" \
+                >> "$WORKING_DIR/validation-round-$ROUND.log"
+        else
+            echo "No independent tasks found. Skipping round."
+            update_round_log '.tasks' '{"count": 0, "ids": []}'
+            update_round_log '.outcome' '"no_tasks"'
+        fi
         finalize_round_log "$ROUND"
         continue
     fi
