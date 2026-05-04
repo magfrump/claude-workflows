@@ -5,6 +5,7 @@
 # Functions:
 #   validate_task_json   — Schema-validate a tasks JSON file
 #   check_convergence_threshold — Compare overlap % against a threshold
+#   detect_null_result_file — Return path if a valid round null-result file exists
 #   print_gate_stats     — Print per-gate pass/fail/skip rates from round history
 #
 # Guard against direct execution
@@ -129,6 +130,36 @@ check_convergence_threshold() {
     else
         return 1
     fi
+}
+
+# --- Null-result detection ---
+# Returns 0 and prints the file path if the round produced a structured
+# "no task — backlog below quality threshold" justification file. Returns 1
+# (silent) when the file is missing or doesn't look like a valid null-result
+# document (must start with the documented H1 marker so a stray empty file
+# can't accidentally short-circuit a round).
+#
+# Args:
+#   $1 = working dir (e.g. docs/working)
+#   $2 = round number
+#
+# Expected file: $1/tasks-round-$2-null-result.md
+# Expected first non-blank line: "# Round <N> Null Result"
+detect_null_result_file() {
+    local working_dir=$1
+    local round=$2
+    local path="$working_dir/tasks-round-${round}-null-result.md"
+
+    [ -f "$path" ] || return 1
+    [ -s "$path" ] || return 1
+
+    local first_line
+    first_line=$(grep -m1 -E '^[^[:space:]]' "$path" 2>/dev/null || true)
+    if [[ "$first_line" =~ ^#[[:space:]]+Round[[:space:]]+${round}[[:space:]]+Null[[:space:]]+Result ]]; then
+        echo "$path"
+        return 0
+    fi
+    return 1
 }
 
 # --- Gate stats dashboard ---

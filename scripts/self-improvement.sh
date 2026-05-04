@@ -549,20 +549,84 @@ Do not create tasks that touch these topics or files:
 ${SI_OFF_LIMITS}"
     fi
 
+    # --- Null-result return path ---
+    # The planner is permitted to terminate the round without selecting any
+    # tasks if no surviving DD idea clears the quality threshold below. The
+    # null-result file is the artifact justifying that decision; the script
+    # detects it after this prompt and skips implementation/validation/merge.
+    # See docs/working/plan-r1-si-null-result.md for the full design.
     claude -p "Read docs/working/feature-ideas-round-$ROUND.md.
 
 For each surviving idea from the tradeoff matrix, assess whether it can be
 implemented independently in a single Claude Code session (~10-15 minutes
-of autonomous work).
+of autonomous work) AND whether it clears the quality threshold below.
 
-Output a JSON array to docs/working/tasks-round-$ROUND.json with fields:
+Quality threshold — a task is worth implementing this round only when ALL hold:
+  1. Independently implementable in ~10-15 minutes.
+  2. Genuinely new — not in docs/working/completed-tasks.md; or, if a
+     re-attempt of a rejected idea, the new task addresses the recorded
+     failure reason.
+  3. External impact OR addresses a user-flagged problem — the change
+     either improves an externally-used workflow/skill (DD, RPI, PR-prep,
+     user-testing, fact-check, ui-visual-review, security-reviewer,
+     claude-api, codebase-onboarding, etc.) or directly addresses a
+     concrete item from docs/working/si-input.md.
+  4. Confidence the change won't regress existing behavior is reasonable —
+     speculative refactors touching many surfaces don't qualify.
+
+If at least one surviving idea clears all four criteria, output a JSON
+array to docs/working/tasks-round-$ROUND.json with fields:
 {\"id\": \"short-kebab-case\", \"description\": \"one paragraph task description\",
 \"files_touched\": [\"list of files\"], \"independent\": true/false}
 
-Only include tasks where independent is true. Discard tasks that depend on
-other tasks in this round.${TASK_OFF_LIMITS}"
+Only include tasks where independent is true and the idea clears the
+threshold. Discard tasks that depend on other tasks in this round.
+
+If NO surviving idea clears the threshold, do NOT write tasks-round-$ROUND.json.
+Instead, write a backlog-quality justification to
+docs/working/tasks-round-$ROUND-null-result.md using EXACTLY this format:
+
+# Round $ROUND Null Result — Backlog Below Quality Threshold
+
+## Threshold criteria
+<one paragraph restating the criteria you applied>
+
+## Candidates considered
+- **<idea name>** — assessment (1-2 sentences): which threshold criterion
+  it failed and why.
+- **<idea name>** — ...
+
+## Why no idea cleared the threshold
+1-3 sentences identifying the dominant gap. Choose the most accurate label:
+- **Quality gap** — ideas exist but each is low-leverage.
+- **Novelty gap** — ideas duplicate prior approved/rejected work without
+  meaningfully addressing the original failure reason.
+- **Impact alignment gap** — ideas don't touch external workflows or
+  user-flagged problems; loop is drifting inward.
+- **Risk/cost gap** — ideas plausibly valuable but too risky for one round.
+
+## Suggested next step
+Concrete signal that would help generate a >threshold candidate next time
+(e.g. specific user feedback to add to si-input.md, new external use case,
+DD refresh on a different problem axis).${TASK_OFF_LIMITS}"
 
     TASKS_FILE="$WORKING_DIR/tasks-round-$ROUND.json"
+
+    # Check for the null-result return path before complaining about a
+    # missing tasks file. If both files exist (planner over-produced), the
+    # null-result wins so the decision is auditable.
+    if NULL_RESULT_PATH=$(detect_null_result_file "$WORKING_DIR" "$ROUND"); then
+        echo "Round $ROUND: backlog below quality threshold — see $NULL_RESULT_PATH"
+        echo "[round-$ROUND] BELOW_QUALITY_THRESHOLD: $NULL_RESULT_PATH" \
+            >> "$WORKING_DIR/validation-round-$ROUND.log"
+        NULL_RESULT_JSON=$(jq -n --arg file "tasks-round-${ROUND}-null-result.md" \
+            '{count: 0, ids: [], null_result_file: $file}')
+        update_round_log '.tasks' "$NULL_RESULT_JSON"
+        update_round_log '.outcome' '"below_quality_threshold"'
+        finalize_round_log "$ROUND"
+        continue
+    fi
+
     if [ ! -f "$TASKS_FILE" ]; then
         echo "No tasks file generated. Skipping round."
         update_round_log '.tasks' '{"count": 0, "ids": []}'
