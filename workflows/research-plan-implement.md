@@ -140,6 +140,31 @@ After the header and research link, the body must include:
   - Specific enough that someone could do it without re-reading the research
   - Small enough to be one commit
   - Ordered by dependency (what must exist before what)
+- **Implementation order** (optional — required when the plan has more than 5 steps OR when implementation will run in /away mode; smaller plans done in /active mode are exempt): A file-level dependency listing that complements the step ordering. Where **Steps** answers "what to do in what order," Implementation order answers "which files can be touched in parallel and which depend on others being in place first." Group files into ordered **waves**: files within a wave have no dependencies on one another and can be implemented (or delegated to sub-agents) in parallel; later waves depend on earlier waves landing first. This is the section a /away-mode dispatcher reads to fan out work safely without re-deriving the dependency graph from Steps.
+
+  Notation — one bolded `Wave N` heading per wave with a parenthetical noting what unblocks it, then an indented list of files with a one-line note (optionally referencing the step number):
+
+  ```
+  - **Wave 1** (no dependencies):
+    - `path/to/file_a` — what changes here (step N)
+    - `path/to/file_b` — what changes here (step N)
+  - **Wave 2** (after Wave 1: depends on file_a/file_b):
+    - `path/to/file_c` — ... (step N)
+  ```
+
+  Worked example (for a hypothetical "add authenticated CSV export endpoint" plan):
+
+  - **Wave 1** (no dependencies — pure type/model additions):
+    - `src/models/user.go` — extend User struct with ExportToken field (step 1)
+    - `src/types/auth.go` — add AuthToken type and validator interface (step 2)
+  - **Wave 2** (after Wave 1: depends on User and AuthToken):
+    - `src/api/handler.go` — wire `/export.csv` endpoint (step 3)
+    - `src/api/middleware.go` — token validation middleware (step 4)
+  - **Wave 3** (after Wave 2: depends on handler + middleware being callable):
+    - `tests/api/handler_test.go` — integration tests covering auth + export (step 5)
+    - `docs/api.md` — endpoint documentation (step 6)
+
+  This block is complementary to the **File map** in the Checkpoint artifact (which is a flat enumeration of every file the implementer touches): File map answers *what to read*; Implementation order answers *in what order, and what can parallelize*. For small plans (≤5 steps run in /active mode), the linear Steps list is sufficient and this block adds noise rather than value.
 - **Size estimate**: For each step (or for the plan as a whole if steps are small), include a rough size estimate — e.g., "~50 lines in a new file", "~20 lines added to existing handler", "minor wiring change." These don't need to be precise; the goal is to flag when a step is unexpectedly large and to catch cases where a single file would grow beyond a reasonable size. If a step would push a file past **500 lines**, note that explicitly and consider splitting the file as part of the plan.
 - **Estimated context cost**: One line with rough token estimates for each phase — e.g., "Research ~20k, Implementation ~40k, Review ~15k". Typical ranges: small docs/workflow edits run ~5–15k per phase; multi-file feature work runs ~20–60k per phase; deep cross-subsystem work runs higher. Precision is not the point — the estimate is an anchor so /away mode has a concrete stop-or-pause signal when actuals overshoot. The pause threshold and reconciliation protocol live in step 6 (Implement) under "Context-cost budget (/away mode protocol)"; treat overruns as a prompt to checkpoint and reassess (start a fresh session, narrow scope, or escalate to the user), not a hard kill.
 - **Actual context cost (post-implementation)**: __ (one line mirroring the estimate's structure, filled in during step 6/7 — e.g., "Research ~22k, Implementation ~75k, Review ~10k"). Capturing it in the plan artifact, not just transient logs, makes the estimate-vs-actual comparison reviewable and lets later sessions calibrate future estimates.
@@ -223,6 +248,7 @@ The checkpoint is a *derived artifact* — it contains no new information, only 
 - [ ] Test specification includes at least one test case per behavioral requirement
 - [ ] No single step would push a file past 500 lines without an explicit note
 - [ ] Plan doc includes an Estimated context cost line covering research, implementation, and review phases, paired with an Actual context cost (post-implementation) placeholder line awaiting the post-implementation fill-in
+- [ ] If the plan has more than 5 steps OR will be implemented in /away mode, the Implementation order block is present and groups touched files into ordered waves; smaller /active-mode plans may omit it
 - [ ] Checkpoint artifact exists at `docs/working/checkpoint-{topic}.md` with all template sections populated
 
 ### 4. Annotate (recommended) — human reviews and approves before implementation
