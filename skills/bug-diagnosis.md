@@ -55,13 +55,27 @@ Goal: go from "something is wrong" to "the problem is in *this function* with *t
 State a **specific, falsifiable** hypothesis:
 
 - **Good**: "The `parseDate` function returns null when input has a timezone offset, because
-  the regex doesn't account for `+HH:MM`."
+  the regex doesn't account for `+HH:MM`. [from error message]"
 - **Bad**: "Something is wrong with date parsing."
 
 A good hypothesis names a **specific location**, a **specific mechanism**, and predicts a
 **testable outcome**.
 
-Record each hypothesis. After hypothesis #2, you must be writing these down.
+### Tag the source
+
+Every recorded hypothesis must carry one source tag indicating where the idea came from:
+
+- `[from error message]` — derived directly from a stack trace, exception text, or assertion message
+- `[from log analysis]` — derived from runtime/application/system logs or telemetry
+- `[from code reading]` — derived from reading source code, control flow, or data structures
+- `[from intuition]` — developer hunch or pattern recognition with no concrete evidence yet
+- `[from prior bug]` — analogous to a previously-seen bug in this or a similar codebase
+
+Why tag: provenance turns the hypothesis log into a dataset. Over time we can analyze which
+sources actually produce confirmed root causes — and tune debugging guidance accordingly. An
+`[from intuition]` hypothesis that gets refuted is still useful data; an untagged one is noise.
+
+Record each hypothesis with its tag. After hypothesis #2, you must be writing these down.
 
 ## Step 4: Test
 
@@ -98,7 +112,8 @@ When documenting the diagnosis (in a commit message, PR description, or diagnosi
 
 ```
 **Symptom:** [What went wrong]
-**Hypotheses tested:** [N tested, which confirmed]
+**Hypotheses tested:** [N tested, which confirmed; include source tags so the
+  confirmed-vs-refuted breakdown by provenance is preserved]
 **Root cause:** [What was actually wrong]
 **Fix:** [What was changed and why]
 ```

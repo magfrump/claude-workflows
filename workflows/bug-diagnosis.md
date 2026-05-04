@@ -106,19 +106,52 @@ The goal of isolation is to go from "something is wrong" to "the problem is in *
 
 State a specific, falsifiable hypothesis:
 
-- **Good**: "The `parseDate` function returns null when the input has a timezone offset, because the regex doesn't account for `+HH:MM`."
+- **Good**: "The `parseDate` function returns null when the input has a timezone offset, because the regex doesn't account for `+HH:MM`. [from error message]"
 - **Bad**: "Something is wrong with date parsing."
+
+#### Tag the source
+
+Every recorded hypothesis must carry one source tag in square brackets at the end, marking where the idea came from:
+
+| Tag | Meaning |
+|-----|---------|
+| `[from error message]` | Derived directly from a stack trace, exception text, or assertion message |
+| `[from log analysis]` | Derived from runtime/application/system logs or telemetry |
+| `[from code reading]` | Derived from reading source code, control flow, or data structures |
+| `[from intuition]` | Developer hunch or pattern recognition with no concrete evidence yet |
+| `[from prior bug]` | Analogous to a previously-seen bug in this or a similar codebase |
+
+Pick the **earliest** link in the chain — if a stack trace pointed you at a function and reading that function then suggested the mechanism, the tag is `[from error message]`, not `[from code reading]`. If two sources independently led to the same hypothesis, list both: `[from error message; from prior bug]`.
+
+**Why tag:** provenance turns the hypothesis log into a dataset. Once we have tagged hypotheses across many bugs, we can analyze which sources produce confirmed root causes vs. refutations — and tune debugging guidance accordingly (e.g., if `[from intuition]` hypotheses are refuted 80% of the time, that's a strong signal to require evidence before recording one). Without tags the log is opaque: a refuted hypothesis looks the same as a confirmed one, and we can't tell whether the bug was solved by reading the error or by lucky guessing.
+
+**Worked example.** A test fails with:
+
+```
+TypeError: Cannot read property 'getTime' of null
+  at formatTimestamp (utils/date.js:42)
+  at Report.render (report.js:118)
+```
+
+Three plausible hypotheses with different provenance:
+
+1. "`parseDate` in `utils/date.js:30` returns null for ISO strings with timezone offsets like `+05:30`, because the regex on line 33 only matches `Z`. The null then flows into `formatTimestamp` and crashes. [from error message]" — derived directly from the stack trace.
+2. "Recent migration `0042_add_timezone_column` added a `tz_offset` column but the report query in `report.js:90` doesn't select it, so timestamps are reconstructed without offset and `parseDate` rejects them. [from code reading]" — derived from reading the surrounding code.
+3. "This looks like the `formatTimestamp`/null bug we hit in the export pipeline last quarter — same shape, probably the same fix. [from prior bug]" — derived from pattern recognition against a previous incident.
+
+All three are testable. Hypothesis 1 is the cheapest to test and has the strongest provenance, so it goes first. If it's refuted, hypothesis 2 has stronger provenance than 3 and goes next. The tags don't determine truth, but they sequence the work.
 
 **Example hypotheses by bug category:**
 
-- **Regression**: "The `UserService.getById` query returns stale data because commit `a1b2c3d` switched from `findOne` to a cached lookup that doesn't invalidate on update." *Confirm*: bisect lands on that commit; reverting it fixes the issue. *Refute*: the cache is correctly invalidated and the stale data predates that commit.
-- **Performance degradation**: "The `/api/reports` endpoint P95 latency doubled because `buildReport` issues N+1 queries after the `Report` model added an eager-loaded `comments` association." *Confirm*: profiling shows `buildReport` generating O(N) SQL queries; removing the eager load restores prior latency. *Refute*: query count is unchanged and the latency increase is elsewhere (e.g., serialization).
-- **Intermittent failure**: "The `processQueue` worker test fails ~20% of runs because two jobs share a `tmp/output.csv` path and overwrite each other under concurrent execution." *Confirm*: running with `--parallel=1` eliminates the failure; adding per-job temp paths fixes it. *Refute*: the failure occurs even in serial execution, pointing to a different race condition or flaky assertion.
+- **Regression**: "The `UserService.getById` query returns stale data because commit `a1b2c3d` switched from `findOne` to a cached lookup that doesn't invalidate on update. [from code reading]" *Confirm*: bisect lands on that commit; reverting it fixes the issue. *Refute*: the cache is correctly invalidated and the stale data predates that commit.
+- **Performance degradation**: "The `/api/reports` endpoint P95 latency doubled because `buildReport` issues N+1 queries after the `Report` model added an eager-loaded `comments` association. [from log analysis]" *Confirm*: profiling shows `buildReport` generating O(N) SQL queries; removing the eager load restores prior latency. *Refute*: query count is unchanged and the latency increase is elsewhere (e.g., serialization).
+- **Intermittent failure**: "The `processQueue` worker test fails ~20% of runs because two jobs share a `tmp/output.csv` path and overwrite each other under concurrent execution. [from intuition]" *Confirm*: running with `--parallel=1` eliminates the failure; adding per-job temp paths fixes it. *Refute*: the failure occurs even in serial execution, pointing to a different race condition or flaky assertion.
 
 A good hypothesis:
 - Names a **specific location** (function, line, module)
 - Identifies a **specific mechanism** (what's going wrong and why)
 - Predicts a **testable outcome** (if I do X, I should see Y)
+- Carries a **source tag** identifying its provenance
 
 Record the hypothesis in your diagnosis log. If you're past hypothesis #2, you should definitely be writing these down — debugging without records leads to testing the same thing twice.
 
@@ -126,6 +159,7 @@ Record the hypothesis in your diagnosis log. If you're past hypothesis #2, you s
 - [ ] The hypothesis names a specific location (function, line, module)
 - [ ] The hypothesis identifies a specific mechanism (what's going wrong and why)
 - [ ] The hypothesis predicts a testable outcome (if I do X, I should see Y)
+- [ ] The hypothesis carries a source tag (`[from error message]`, `[from log analysis]`, `[from code reading]`, `[from intuition]`, or `[from prior bug]`)
 - [ ] The hypothesis is recorded in the diagnosis log
 
 ### 4. Test — confirm or refute the hypothesis
@@ -206,9 +240,9 @@ Date: {YYYY-MM-DD}
 [Minimal steps or test case that triggers the bug]
 
 ## Hypotheses tested
-| # | Hypothesis | Test | Result |
-|---|-----------|------|--------|
-| 1 | [specific claim] | [what you did] | [confirmed/refuted + what you learned] |
+| # | Hypothesis | Source | Test | Result |
+|---|-----------|--------|------|--------|
+| 1 | [specific claim] | [error message / log analysis / code reading / intuition / prior bug] | [what you did] | [confirmed/refuted + what you learned] |
 
 ## Root cause
 [What's actually wrong, confirmed by hypothesis #N]
