@@ -189,6 +189,8 @@ prompt that helps the human reviewer assess it efficiently. Include what you fou
 automated analysis that's relevant, and highlight the specific questions the human needs
 to answer.
 
+> **Order note:** Failure Mode Gracefulness ("what would make this not work in production?") is asked before Condition for Value ("is this ready?") so production-blocking failure modes surface first, before readiness conditions can be used to rationalize shipping.
+
 ### 5a: Counterfactual Gap
 
 Present:
@@ -213,20 +215,7 @@ Present:
   - Does this serve a goal you're actively pursuing?
   - Would you actually remember to reach for this tool when the situation arises?
 
-### 5c: Condition for Value
-
-Present:
-- **Stated or inferred conditions**: What must be true for this tool to be valuable?
-  (Pipeline must exist, user must work in a certain domain, certain frequency of use, etc.)
-- **Automated findings**: Which conditions can be verified from the codebase? (e.g., "The
-  code-review orchestrator that this skill depends on: EXISTS / DOES NOT EXIST")
-- **Questions for the reviewer**:
-  - Are the conditions met today?
-  - If not yet met, is there a realistic path? What would need to happen?
-  - Is this tool an investment pulling toward building missing infrastructure, or
-    speculative inventory?
-
-### 5d: Failure Mode Gracefulness
+### 5c: Failure Mode Gracefulness
 
 Present:
 - **Output structure**: Describe the target's output format and what makes failures
@@ -240,6 +229,19 @@ Present:
   - Based on your domain expertise, which failure modes are most likely?
   - Have you observed any silent failures in practice?
   - Is the detectable-to-silent failure ratio acceptable for your use case?
+
+### 5d: Condition for Value
+
+Present:
+- **Stated or inferred conditions**: What must be true for this tool to be valuable?
+  (Pipeline must exist, user must work in a certain domain, certain frequency of use, etc.)
+- **Automated findings**: Which conditions can be verified from the codebase? (e.g., "The
+  code-review orchestrator that this skill depends on: EXISTS / DOES NOT EXIST")
+- **Questions for the reviewer**:
+  - Are the conditions met today?
+  - If not yet met, is there a realistic path? What would need to happen?
+  - Is this tool an investment pulling toward building missing infrastructure, or
+    speculative inventory?
 
 ---
 
@@ -279,11 +281,11 @@ Use this format:
 
 {Structured prompt from Step 5b}
 
-### Condition for Value
+### Failure Mode Gracefulness
 
 {Structured prompt from Step 5c}
 
-### Failure Mode Gracefulness
+### Condition for Value
 
 {Structured prompt from Step 5d}
 
