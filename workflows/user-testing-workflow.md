@@ -26,6 +26,22 @@ A reusable guide for planning, running, and interpreting usability tests. Ground
 
 > **Litmus test**: If you can't name a decision this test will change, you're not ready to test. Reformulate until you can.
 
+### Recruitment Specification
+
+**Before recruiting, write down all three. If you can't, you don't yet know who you're testing for — and your findings won't survive the question "do these users represent the people we're shipping to?"**
+
+1. **Target attributes** — the characteristics a participant must have for their feedback to count toward your decision. Be specific and observable: "uses [product category] at least weekly," "has shipped a production [X] in the last 6 months," "manages a team of 3+ engineers." Avoid attributes that screen no one out ("interested in productivity tools," "comfortable with computers") — they admit anyone and produce findings that don't generalize to anyone in particular. If you have ≥2 distinct target populations, write a separate attribute list per population.
+2. **Exclusion criteria** — who you will turn away even if they're easy to recruit, and the bias each exclusion is preventing. Common exclusions: employees, friends/family, prior-round participants (priming), people who've seen the design (novelty bias), direct competitors (motivated reasoning). If you can't name the bias an exclusion prevents, the exclusion isn't doing work — drop it or replace it with one that does.
+3. **Sample-size justification** — for the planned N, state in 1–2 lines what that N is expected to surface and what it cannot. Example: "5 per group, per Nielsen-Landauer, surfaces ~85% of severity-3+ issues in the target population; will not quantify frequency below ~20% or detect rare-but-catastrophic failures." The point is to make the inferential limits explicit *before* findings are read as more general than the design supports.
+
+#### Convenience-sample escape valve
+
+If you can't meet the spec — recruiting is too slow, the target population is too narrow to reach in time, or you're testing earlier than the spec deserves — you may run a **convenience sample** (friends, coworkers, whoever you can get) without filling in target attributes, exclusion criteria, or sample-size justification. The only requirement is an **explicit non-generalizability disclosure** attached to the findings:
+
+> ⚠ **Convenience sample.** Participants were recruited for availability, not target-population fit. Findings indicate usability problems that exist for *these* users; they do not establish that target users will or won't hit the same problems. Treat as hypothesis-generating, not hypothesis-confirming.
+
+The disclosure must appear in the findings report (Phase 4 executive summary, not buried in an appendix) and in any presentation of results. Convenience samples are legitimate for exploratory rounds, shaking out task wording, or when the realistic alternative is no test at all — but findings from a convenience sample cannot be promoted to "users do X" without a follow-up round that meets the full spec.
+
 ### Participant Planning
 
 | Factor | Guidance |
@@ -33,7 +49,7 @@ A reusable guide for planning, running, and interpreting usability tests. Ground
 | **Number per round** | 3–5 for qualitative/formative testing (Nielsen-Landauer model). Plan for ≥2 rounds. |
 | **Total across rounds** | 10+ if you need confidence; 5 is fine for "find the worst stuff fast" |
 | **Distinct user groups** | If ≥2 clearly different user populations, recruit 3–4 per group minimum |
-| **Recruitment source** | Target actual or near-actual users. Convenience samples (friends, coworkers) are *okay* for round 1 if you flag the bias explicitly. |
+| **Recruitment source** | Target actual or near-actual users per the Recruitment Specification above. Convenience samples are permitted only via the escape valve (explicit non-generalizability disclosure attached to the findings). |
 
 ### Logistics Checklist
 
