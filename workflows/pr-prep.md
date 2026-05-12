@@ -82,7 +82,9 @@ Run review skills and iterate until clean. This is required, not optional.
 - **Dependency audit** (manual) — if the PR introduces or upgrades dependencies, check license compatibility, package size, and maintenance status. Flag unmaintained or unfamiliar packages. Skip if no dependency changes.
 - **Plan-drift check** (manual) — if a plan doc exists in `docs/working/` for this task, compare the diff against it and note: (1) planned items not yet implemented, (2) unplanned changes that appeared in the diff, and (3) plan assumptions that turned out wrong. Record any deviations found in the PR description's "Areas of uncertainty" section or as a comment on the PR. Skip if no plan doc exists for this work.
 
-**b. Triage and fix.** Read each review artifact. Work through findings in tier order:
+**b. Triage and fix.** Read each review artifact. Before sorting findings into the tier table, scan each finding against `docs/reviews/override-log.md`. Findings that match a prior `Won't-Fix` row (this PR or earlier — same location, or same category and substantively the same claim) are surfaced under a separate **Re-flagged settled decisions** subsection in the review artifact and do **not** enter the tier triage below. See `workflows/review-fix-loop.md` § Re-flagged settled decisions for the match criteria and how to deliberately promote a finding back into triage if the prior Won't-Fix no longer applies.
+
+Then work through the remaining findings in tier order:
 
 | Tier | Meaning | Action |
 |------|---------|--------|

@@ -83,6 +83,54 @@ The cost of flagging a false positive is one short user prompt; the cost of miss
 
 **Relationship to the convergence ceiling:** Divergence detection can fire on iteration 2 (one re-fire is enough), well before the 3-iteration ceiling. The ceiling is for *new* findings accumulating; this signal is for *old* findings recurring. Both surface to the user, both are flag-only, and a single loop can hit both — in which case the deeper-read pivot takes precedence over the ship/escalate choice from the ceiling.
 
+## Re-flagged settled decisions (override-log filter)
+
+The convergence ceiling watches for *new* findings that keep accumulating across iterations. Divergence detection watches for the *same* finding re-firing after a fix attempt. A third pattern sits between them: a finding re-fires because it was already resolved as **Won't-Fix** in the override log — either earlier in this PR's iteration history or in a prior PR. The critic does not read the log between iterations; you do.
+
+This section extends the override-log work shipped in round 1 (which made `docs/reviews/override-log.md` readable inside the `code-review` skill on every run) to the iteration loop, which sees the same finding re-fire across rounds and would otherwise re-triage it each time.
+
+### Signal
+
+Before triaging an iteration N review's findings into Must-Fix / Must-Address / Consider, scan each new finding against `docs/reviews/override-log.md`. A finding matches an override-log row when:
+
+- **Same location**: same file, same line ±5, AND/OR
+- **Same category and substantively the same claim**: e.g., both are "missing null check on `user.email`" or both are "log statement leaks PII at `auth.ts:42`".
+
+A row counts as a match only if its **Override verdict** is `Won't-Fix` (regardless of whether the row's `PR ref` is this PR or a prior one). Other override verdicts — `Defer`, promotions to `🔴 Must-Fix`, etc. — do not trigger this filter; only the explicit decision to *not* fix carries forward as noise-suppression.
+
+### Action
+
+A matched finding does **not** enter the Must-Fix / Must-Address / Consider triage. Instead, surface it under a separate **Re-flagged settled decisions** subsection in the review artifact (and in the PR description, if any of these findings persist to that stage). Each entry includes:
+
+- The finding's wording in the new review.
+- The override-log row it matched (date, PR ref, reason).
+- A one-line acknowledgement: "no action — see override-log."
+
+The Must-Fix/Must-Address triage proceeds on the remaining (un-matched) findings only. The "Re-flagged settled decisions" subsection is informational and does **not** block exit from the loop.
+
+### Disagreeing with a prior Won't-Fix
+
+If on review you believe the prior Won't-Fix call no longer applies — the code has changed, the reasoning has aged out, or the prior decision was wrong — promote the finding back into the normal triage by adding a fresh override-log row that supersedes the prior one (or by striking the original per the override-log's strikethrough convention). That promotion is a **deliberate, recorded act**, visible in the override-log diff, not a silent re-fire that the loop quietly re-triages.
+
+### Why this exists
+
+The same code is reviewed multiple times across the loop, and findings already settled as Won't-Fix can keep re-emerging because:
+
+- The diff under review grows between iterations as fixes land,
+- The critic is non-deterministic (slightly different wording or category each run),
+- A different critic (e.g., a sub-critic invoked by `code-review`) surfaces the same code path.
+
+Without this filter, settled decisions get re-litigated each round, churning both the triage step and the human's attention. With it, Won't-Fix carries forward as the default until someone deliberately revisits it.
+
+### Relationship to divergence detection
+
+Both this filter and divergence detection are "same finding re-appears" patterns, but they have opposite resolutions:
+
+- *Divergence detection* fires when the prior iteration claimed to **fix** the finding and it re-fires anyway — meaning the fix was likely a symptom-patch and you should re-read for the underlying cause.
+- *Re-flagged settled decisions* fires when the prior decision was **Won't-Fix** and the finding re-fires anyway — meaning the critic forgot a decision that was deliberately made, and the right action is to filter, not investigate.
+
+If a finding could match both (a prior iteration's fix attempt *and* an override-log Won't-Fix entry), divergence detection takes precedence — the active fix attempt is more recent and more specific to this PR's iteration history than a prior Won't-Fix call.
+
 ## Anti-patterns
 
 These supplement the guidance in pr-prep Step 3 (which covers verifying findings and the convergence ceiling):
