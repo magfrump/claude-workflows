@@ -161,7 +161,6 @@ EOF
 #   - Recurring maintenance debt (tasks deferred across multiple rounds in round-changelog.md)
 #   - Recent rejections grouped by failing gate (from round reports)
 #   - Broken-pipeline status (TRACKING hypotheses in hypothesis-backlog.md)
-#   - Token burn rate (N/A when token-actuals.json is absent)
 #
 # Each subsection degrades gracefully when its data source is missing.
 _summary_project_state() {
@@ -175,7 +174,6 @@ _summary_project_state() {
     _project_state_category_mix "$start_round" "$end_round" "$working_dir"
     _project_state_recent_rejections "$start_round" "$end_round" "$working_dir"
     _project_state_broken_pipelines "$working_dir/hypothesis-backlog.md"
-    _project_state_token_burn "$working_dir/token-actuals.json"
 }
 
 # --- Internal: per-category task mix across the run ---
@@ -434,24 +432,6 @@ _project_state_broken_pipelines() {
         fi
         echo "- **${id}**: ${short}"
     done <<< "$rows"
-}
-
-# --- Internal: token burn rate ---
-# Renders N/A when token-actuals.json is absent. When present, future
-# work will replace this stub with a real computation.
-_project_state_token_burn() {
-    local actuals="$1"
-
-    echo ""
-    echo "### Token Burn Rate"
-    echo ""
-
-    if [ ! -f "$actuals" ]; then
-        echo "Token burn rate: N/A (token-actuals data not available)"
-        return
-    fi
-
-    echo "Token burn rate: N/A (token-actuals renderer not yet implemented)"
 }
 
 # --- Internal: per-round task listings ---
