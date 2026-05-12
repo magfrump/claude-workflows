@@ -219,6 +219,44 @@ Note: discoverability is not only about making elements visible. Also consider:
   discoverable than prominently styled controls in unexpected places
 - **Redesigning to avoid overflow** — the best scroll bar is one you don't need. Before
   adding scroll indicators, ask whether the layout can be restructured to fit the content
+- **Default-Cost-of-Reversal** — when the diff introduces a UI that presents a preselected
+  default (radio button, dropdown, toggle, suggested value, prechecked checkbox, opt-in
+  modal with a primary action prefocused), confirm two things:
+  - **Reversal path is no more than one user action.** The user must be able to undo or
+    change the default by flipping the same control or selecting an adjacent alternative —
+    not by navigating to a settings page, reopening a modal, or hunting through a menu
+    tree. A one-action reversal means: one click on a different radio, one toggle flip,
+    one dropdown selection, one keystroke clearing an autofilled field. Multi-step
+    reversal paths (e.g., "uncheck this in Settings → Privacy → Sharing") fail this
+    criterion regardless of how prominent the default is, because they convert a "choice"
+    into homework.
+  - **Default is equally visible as the alternatives.** The default and its alternatives
+    must share control size, contrast, and proximity to the commit action so the user
+    perceives a choice rather than an unmarked path. A radio group where the default has
+    a filled circle and the alternatives are listed in muted text fails this criterion;
+    so does a confirmation dialog where the "accept default" button is large and colored
+    and the "change" link is small grey text below it. The selection state may differ
+    (that is the point of a default), but the affordance weight must not.
+
+  **Flag silent opt-ins.** A silent opt-in is a default that takes effect without ever
+  surfacing the choice in the user's primary flow — a "share with team" checkbox
+  prechecked inside a confirmation step the user assumed was just a Save button, a
+  newsletter signup prechecked inside an unrelated form, an analytics toggle defaulted
+  on in a sub-page the user never visits during normal onboarding. Silent opt-ins fail
+  both criteria (the user cannot reverse what they did not see, and a hidden default is
+  by definition not equally visible as alternatives) and should be flagged as a critical
+  affordance issue, not a minor one.
+
+  **Carve-out for user-confirmed defaults.** When the default reflects a value the user
+  previously set explicitly — saved preferences, "remember my choice", account-level
+  settings, the last-used value the user selected in a prior session — the rule does not
+  apply. The user has already authored the default, so the UI is honoring prior input
+  rather than imposing a new one. To make this carve-out auditable, the diff should
+  include a nearby comment naming the preference source (e.g., `// default from
+  userPrefs.defaultExportFormat — set by user in Settings`), so a later reviewer can
+  verify the source still exists and the carve-out still applies. If the preference
+  source is removed or refactored away, the default reverts to an imposed default and
+  the criteria above apply again.
 
 ### 7. Responsive and cross-browser concerns *(full audit mode only)*
 - Fixed dimensions (`width: 500px`) that won't adapt to viewport changes
