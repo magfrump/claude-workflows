@@ -519,7 +519,73 @@ _summary_whats_new() {
         # exists. See _compute_contrastive_pair.
         _compute_contrastive_pair "$round_num" "$working_dir"
         _emit_contrastive_note "$round_num" "$working_dir"
+
+        _emit_gate_skip_reasons "$round_num" "$working_dir"
     done
+}
+
+# --- Internal: per-task cause-of-skip for gates that skipped this round ---
+# Each gate's "skip" outcome has a deterministic precondition (e.g. self_eval
+# skips when no skills/ or workflows/ markdown was touched). Without a reason
+# surfaced alongside the task, a reader of the morning summary cannot tell
+# whether "skip" means "didn't apply" or "broken — never ran". This block
+# emits one line per (task, skipped-gate) pair: the gate name, the
+# precondition that wasn't met, and the task's declared file scope so the
+# reader can see exactly which files were in the diff that triggered the
+# skip. No-op when no tasks skipped any gate this round.
+_emit_gate_skip_reasons() {
+    local round="$1" working_dir="$2"
+    local report="$working_dir/round-${round}-report.json"
+    local tasks_file="$working_dir/tasks-round-${round}.json"
+
+    [ -f "$report" ] || return 0
+
+    # Pairs of "task_id<TAB>gate" for every gate that recorded "skip".
+    local pairs
+    pairs=$(jq -r '
+        .validation // {} | to_entries[] |
+        .key as $tid |
+        .value | to_entries[] |
+        select(.key != "verdict"
+               and (.key | endswith("_detail") | not)
+               and (.value | type) == "string"
+               and .value == "skip") |
+        "\($tid)\t\(.key)"
+    ' "$report" 2>/dev/null) || pairs=""
+
+    [ -z "$pairs" ] && return 0
+
+    echo ""
+    echo "**Skip reasons** (deterministic preconditions, not failures):"
+
+    local tid gate reason files
+    while IFS=$'\t' read -r tid gate; do
+        [ -z "$tid" ] && continue
+
+        case "$gate" in
+            self_eval)
+                reason="no skills/ or workflows/ *.md files in diff" ;;
+            shellcheck)
+                reason="no *.sh files in diff" ;;
+            tests)
+                reason="no test/ directory or bats not installed" ;;
+            *)
+                reason="precondition not met" ;;
+        esac
+
+        files=""
+        if [ -f "$tasks_file" ]; then
+            files=$(jq -r --arg tid "$tid" '
+                .[] | select(.id == $tid) | .files_touched // [] | join(", ")
+            ' "$tasks_file" 2>/dev/null) || files=""
+        fi
+
+        if [ -n "$files" ]; then
+            echo "- **${tid}** \`${gate}\` skipped — ${reason} (scope: ${files})"
+        else
+            echo "- **${tid}** \`${gate}\` skipped — ${reason}"
+        fi
+    done <<< "$pairs"
 }
 
 # --- Internal: compute a contrastive approved/rejected pair for one round ---

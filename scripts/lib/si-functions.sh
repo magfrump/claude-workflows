@@ -274,13 +274,18 @@ print_gate_stats() {
     fi
 
     # Validate JSON and extract gate stats in one jq call.
-    # For each validation entry, iterate over keys that are not "verdict",
-    # and count pass/fail/skip per gate name.
+    # Iterate validation entries, keeping only true gate verdicts: string-typed
+    # values (pass/fail/skip), excluding the per-task "verdict" key and any
+    # *_detail keys (those hold object-typed failure metadata, not gate
+    # outcomes, and previously rendered as bogus "0/N pass" rows like
+    # "self_eval_detail 0/2 pass").
     local stats
     stats=$(jq -r '
         if type != "array" then error("not an array") else . end |
         [ .[] | .validation // {} | to_entries[] | .value | to_entries[] |
-          select(.key != "verdict") ] |
+          select(.key != "verdict"
+                 and (.key | endswith("_detail") | not)
+                 and (.value | type) == "string") ] |
         if length == 0 then error("no gate data") else . end |
         group_by(.key) |
         map({
