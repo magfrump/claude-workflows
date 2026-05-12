@@ -334,13 +334,113 @@ tree. Every non-decorative image needs descriptive `alt` text; purely decorative
 `alt=""` (empty, not missing — a missing `alt` makes screen readers fall back to the
 filename). Semantic structure must be preserved through changes: don't swap `<h2>` for a
 styled `<div>`, don't drop landmark elements, and keep heading levels sequential (no jumping
-`<h2>` to `<h4>` for visual sizing). Tab/focus order must match visible reading order — flex
-`order`, `flex-direction: row-reverse`, and absolute positioning can desynchronize them;
-verify by tabbing through the modified component. Color must never be the sole signal:
+`<h2>` to `<h4>` for visual sizing). Tab/focus order must match visible reading order — see
+the **Tab traversal** sub-check below for the diff-scoped reachability and ordering check
+and its output format. Color must never be the sole signal:
 error states need icons or text, required fields need asterisks or "(required)", status
 changes need labels — not just a red border, green check, or color swap. This is a
 lightweight equivalence check, not a full accessibility audit; for WCAG conformance review
 use a dedicated accessibility skill.
+
+#### Tab traversal *(diff-scoped reachability and order check)*
+
+**Activation trigger.** Run this sub-check when the diff adds or modifies any of:
+- An interactive element (see item 10's definition — buttons, links, inputs, custom
+  widgets with `role` + handlers, Unity `Selectable` subclasses, etc.)
+- A meaningful informative landmark or live region (`<nav>`, `<main>`, `<aside>`,
+  `role="status"`, `role="alert"`, `aria-live` regions, headings used as navigation
+  anchors)
+- A `tabindex` attribute (any value), `contenteditable`, or an element whose
+  `display`/`visibility`/`inert` state changes
+- Any structural change that reorders siblings of focusable elements (insertion,
+  removal, `flex-direction: row-reverse`, `order`, absolute positioning shifts) —
+  these affect tab order even if the focusables themselves weren't edited
+
+**Scope.** Diff-scoped: verify reachability and order for elements the diff *adds or
+modifies*, plus any sibling focusables whose tab position would shift as a consequence.
+Do not enumerate the entire page. Cross-references: focus *styling* (what focus looks
+like when it lands) belongs to item 10's state matrix — do not re-verify it here.
+
+**What to verify.**
+- Every meaningful interactive element in scope is reachable by `Tab` (and reverse-reachable
+  by `Shift+Tab`). Custom widgets built on non-focusable elements (e.g., `<div role="button">`)
+  need `tabindex="0"` and keyboard handlers for `Enter`/`Space` (or `role`-appropriate keys).
+  (WCAG 2.1.1 Keyboard.)
+- Tab order matches visible reading order. Flex `order`, `flex-direction: row-reverse`,
+  CSS grid placement, and absolute positioning can desynchronize DOM order from visual
+  order; verify by reasoning about the DOM sequence against the rendered layout.
+  (WCAG 2.4.3 Focus Order.)
+- No positive `tabindex` values (`tabindex="1"`, `tabindex="2"`, …). Positive tabindex
+  overrides DOM order and is an anti-pattern. Allowed values: `0` (focusable in DOM
+  order) and `-1` (programmatically focusable, skipped by Tab).
+- No keyboard traps. Modals, dropdowns, and overlays must allow focus to leave — typically
+  via `Escape`, a visible close control, or focus-trap logic that releases on dismiss.
+  (WCAG 2.1.2 No Keyboard Trap.)
+- Hidden focusables: elements removed visually via `display: none`, `visibility: hidden`,
+  or `inert` should also leave the tab order. Off-screen-but-visible elements (e.g.,
+  `left: -9999px`, `transform: translateX(-100%)`) remain focusable unless `inert` or
+  `tabindex="-1"` is set — flag these unless the off-screen position is intentional
+  (e.g., a skip-link revealed on focus).
+- Informative landmarks and live regions are exposed even though they may not be in the
+  tab path: confirm they have appropriate `role` / `aria-label` / heading structure so
+  assistive tech can reach them via landmark navigation.
+
+**Output format.** Produce one ordered list per touched component, with elements listed
+in their actual tab order. Each row carries: tab index, element reference, file:line,
+and a brief reachability note (✓ for reachable in expected position, or a specific
+problem). Include unreachable-but-should-be elements at the end of the list under an
+"Unreachable" sub-heading so they are not silently dropped.
+
+```
+### Tab order — <ComponentName> (src/components/ComponentName.tsx)
+
+1. <button>Open menu</button> — src/components/ComponentName.tsx:18 — ✓
+2. <input name="search"> — src/components/ComponentName.tsx:24 — ✓
+3. <a href="/help"> — src/components/ComponentName.tsx:31 — ✓ (verify visual order:
+   appears after Submit visually due to `flex-direction: row-reverse` — DOM order is
+   correct, but visible order disagrees — flag as WCAG 2.4.3 violation)
+4. <button>Submit</button> — src/components/ComponentName.tsx:29 — ✓
+
+Unreachable:
+- <div role="button" onClick={…}>Edit</div> — src/components/ComponentName.tsx:42 —
+  missing `tabindex="0"` and key handler; not reachable by keyboard
+- <SettingsPanel> trigger — src/components/ComponentName.tsx:55 — focus trap on open
+  (no Escape handler, no close button receives focus)
+
+Informative landmarks (not in tab path, verified exposed):
+- <nav aria-label="Primary"> — src/components/ComponentName.tsx:12 — ✓
+- <div role="status" aria-live="polite"> — src/components/ComponentName.tsx:60 — ✓
+```
+
+For non-web frameworks, adapt the format: Unity uses `Selectable.navigation` and explicit
+`Navigation.Mode` values — list selectables in their `Navigation.selectOnDown` /
+`selectOnRight` chain order; SwiftUI uses `.focusable()` and `@FocusState` — list focusable
+views in their declared order within the focus scope.
+
+**Common failure modes.**
+
+- **Custom `<div>` / `<span>` widgets without `tabindex`.** Looks interactive (has
+  `onClick`, has hover state), but `Tab` skips it entirely. Fix: use a real `<button>`,
+  or add `tabindex="0"` plus `role` plus `Enter`/`Space` key handlers.
+- **Positive `tabindex` overriding DOM order.** Encountered in legacy form code;
+  invariably produces a tab path that's inconsistent with the rendered order and
+  doubly broken once new fields are added.
+- **Visually-reordered focusables.** `flex-direction: row-reverse`, `order: -1`, or
+  absolute positioning rearranges what the user sees but leaves DOM order — and
+  therefore tab order — unchanged. The user tabs to what looks like the second
+  control and lands on the third.
+- **Modal without focus management.** Modal opens but focus stays behind it; or modal
+  traps focus with no `Escape` handler and no focusable close button.
+- **Off-screen-but-focusable.** A drawer or panel hidden via `translateX(-100%)`
+  remains in the tab path; pressing `Tab` lands on an invisible button. Use `inert`
+  on the hidden container or set `tabindex="-1"` on every focusable inside it.
+- **Disabled control still in tab order.** `aria-disabled="true"` does not remove
+  an element from the tab path; only the real `disabled` attribute or `tabindex="-1"`
+  does. (See item 10 for the related "disabled-but-clickable" failure.)
+- **Tab order changed by a structural edit without re-checking siblings.** Inserting
+  a new button between two existing controls silently re-routes the keyboard path —
+  flag this and walk the order even when the surrounding siblings weren't otherwise
+  modified.
 
 **Epistemic transparency for AI-generated content.** When the diff renders LLM/AI-generated
 content alongside human-authored content, the AI section must carry a *persistent, legible*
