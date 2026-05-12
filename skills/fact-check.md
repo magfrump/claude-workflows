@@ -325,6 +325,40 @@ deeply you engaged with the evidence and decide whether they agree with the weig
 | Mostly accurate | Medium | `[observed]` | `[abstract]` | NCSL right-to-work-laws table viewed on the NCSL summary page; the underlying state-by-state PDF was not opened. The aggregate count is visible in the summary but state-level breakdown was not verified. |
 | Unverified | Low | `[assumed]` | `[inferred]` | A press release referenced an internal report with the relevant figure; the report itself was paywalled and could not be retrieved. The figure is inferred from the press release's framing. |
 
+## Citation Requirement
+
+Naming a source is not the same as citing it. Every verdict must include an **inline citation**
+that lets a reader land on the exact evidence behind the verdict without re-running your search.
+Choose one of these three formats:
+
+1. **URL with anchor.** A link that resolves to the specific section, paragraph, or row that
+   supports the claim — not just the document's homepage. Use the publisher's stable fragment
+   (`#section-id`) when available; otherwise use a fragment text directive (`#:~:text=...`),
+   a page-anchored PDF URL (`...report.pdf#page=12`), or the deepest URL the source provides.
+   For code, the file path with a line number — `src/config.ts:42` — is the equivalent of a
+   URL+anchor and counts as this format.
+2. **Quoted span (≤25 words) from the source.** A verbatim excerpt, in quotation marks, of
+   the sentence or clause that supports the claim. Keep it under 25 words: the cap forces you
+   to identify the load-bearing sentence rather than copying paragraphs. If the relevant
+   evidence cannot be expressed in 25 words (e.g., a multi-row table), use one of the other
+   formats instead.
+3. **`[source: title, page/timestamp]` tag** for unlinkable sources — paywalled articles,
+   printed books without a digitized edition, offline interview transcripts, archived
+   broadcasts, or proprietary databases. Include enough locator detail that a reader with
+   the same access could find the passage: `[source: Piketty, Capital in the 21st Century,
+   pp. 304–306]` or `[source: NPR Morning Edition, 2024-03-12, 07:42]`.
+
+A single citation usually suffices. When a verdict rests on multiple sources, cite the
+load-bearing one with one of the formats above and list the rest in the `Sources` line.
+For Secondary-only quote verdicts, the citation should point to the strongest secondary
+citation encountered, and the verdict explanation must still document the primary-source
+searches that failed.
+
+When no valid citation can be produced — the URL no longer resolves, the source is hearsay,
+or you only have a general impression that the claim is right — do not invent one. Mark the
+verdict **Unverified** with provenance `[assumed]` and say in the explanation what source
+would be needed.
+
 ## How to handle ambiguity
 
 Sometimes a claim is technically true but misleading, or true for one definition but false for another.
@@ -367,6 +401,7 @@ provenance `[inferred]` verdicts, write out the inferential chain. For provenanc
 `[abstract]`-only reads), justify the call here.]
 
 **Sources:** [named sources with years]
+**Citation:** [exactly one of: URL with anchor | "verbatim ≤25-word span" | [source: title, page/timestamp]]
 
 ---
 
@@ -409,3 +444,22 @@ for the argument.
   guess or infer.
 - Do not skip claims because they "seem right." Check them.
 - Do not add critique, suggestions, or structural feedback. That's not your job.
+
+## Self-check: citation completeness
+
+Before finalizing the report, scan every verdict for its **Citation** line and confirm each
+one matches exactly one of the three formats defined in [Citation Requirement](#citation-requirement):
+
+1. A URL with a section/anchor/page fragment (or a `path:line` for code claims).
+2. A verbatim quoted span of 25 words or fewer, in quotation marks.
+3. A `[source: title, page/timestamp]` tag with a locator concrete enough for an
+   equivalently-resourced reader to find the passage.
+
+A verdict that lacks a Citation line, carries a bare publisher name with no anchor, quotes a
+span over 25 words, or uses a `[source: ...]` tag without locator detail is **rejected** —
+rewrite it before the report goes out. If no valid citation can be produced for a claim,
+change the verdict to **Unverified** with provenance `[assumed]` and explain in the verdict
+body what source would be required.
+
+This self-check applies to every verdict, including Secondary-only quote verdicts and
+verdicts derived from code reads. Do not exempt any class of claim.
