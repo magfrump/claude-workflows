@@ -145,8 +145,11 @@ if [ -n "$usage_data" ]; then
     fi
   done <<< "$usage_data"
 
-  # Count unique branches per workflow from raw log
-  if [ ${#wf_total[@]} -gt 0 ]; then
+  # Count unique branches per workflow from raw log.
+  # ${wf_total[*]+x} expands to "x" only when at least one key has been
+  # assigned — safe under `set -u` on bash versions where ${#arr[@]} on
+  # an unpopulated associative array triggers "unbound variable".
+  if [ -n "${wf_total[*]+x}" ]; then
     while IFS=$'\t' read -r wf_name branch_count; do
       wf_branches["$wf_name"]=$branch_count
     done < <(jq -r --arg pf "$PROJECT_FILTER" \

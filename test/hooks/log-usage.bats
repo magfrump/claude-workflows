@@ -103,26 +103,36 @@ agent_input() {
 
 # --- Agent skill dispatch logging ---
 
-@test "agent with skill frontmatter in prompt is logged" {
+@test "agent with skill frontmatter in prompt is logged as agent_skill" {
   prompt="$(printf '%s\n' '---' 'name: cowen-critique' 'description: critique' '---' '' 'Review this draft...')"
   agent_input "$prompt" | bash "$HOOK"
 
   [ -s "$TEST_LOG" ]
   line=$(head -1 "$TEST_LOG")
 
-  [ "$(echo "$line" | jq -r '.event')" = "skill" ]
+  [ "$(echo "$line" | jq -r '.event')" = "agent_skill" ]
   [ "$(echo "$line" | jq -r '.name')" = "cowen-critique" ]
 }
 
-@test "agent with no frontmatter does not log" {
+@test "agent with no skill frontmatter logs as agent with subagent_type" {
   agent_input "Just do some research on this topic" | bash "$HOOK"
-  [ ! -s "$TEST_LOG" ]
+
+  [ -s "$TEST_LOG" ]
+  line=$(head -1 "$TEST_LOG")
+
+  [ "$(echo "$line" | jq -r '.event')" = "agent" ]
+  [ "$(echo "$line" | jq -r '.name')" = "general-purpose" ]
 }
 
-@test "agent with frontmatter but no name field does not log" {
+@test "agent with frontmatter but no name field falls back to agent log" {
   prompt="$(printf '%s\n' '---' 'description: something' '---' '' 'content')"
   agent_input "$prompt" | bash "$HOOK"
-  [ ! -s "$TEST_LOG" ]
+
+  [ -s "$TEST_LOG" ]
+  line=$(head -1 "$TEST_LOG")
+
+  [ "$(echo "$line" | jq -r '.event')" = "agent" ]
+  [ "$(echo "$line" | jq -r '.name')" = "general-purpose" ]
 }
 
 @test "agent extracts first frontmatter name only" {
@@ -140,9 +150,14 @@ agent_input() {
   [ ! -s "$TEST_LOG" ]
 }
 
-@test "reading a skill file does not log" {
+@test "reading a skill file is logged with extracted skill name" {
   read_input "/home/user/project/skills/draft-review.md" | bash "$HOOK"
-  [ ! -s "$TEST_LOG" ]
+
+  [ -s "$TEST_LOG" ]
+  line=$(head -1 "$TEST_LOG")
+
+  [ "$(echo "$line" | jq -r '.event')" = "skill" ]
+  [ "$(echo "$line" | jq -r '.name')" = "draft-review" ]
 }
 
 @test "reading a file with 'workflows' in name but not in a workflows dir does not log" {

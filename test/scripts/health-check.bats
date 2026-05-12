@@ -76,8 +76,8 @@ setup() {
   echo "$HC_OUTPUT" | grep -q "shellcheck"
 }
 
-@test "output contains Workflow complexity section" {
-  echo "$HC_OUTPUT" | grep -q "Workflow complexity"
+@test "output contains Workflow value-justification section" {
+  echo "$HC_OUTPUT" | grep -q "Workflow value-justification"
 }
 
 @test "output contains Hook script permissions section" {

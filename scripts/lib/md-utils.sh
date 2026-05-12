@@ -4,10 +4,18 @@
 # Print the YAML frontmatter block of a markdown file to stdout (without the
 # surrounding `---` fences). Prints nothing if the file has no frontmatter.
 #
+# Only the leading block is recognized: the file must start with `---`, and
+# extraction stops at the next `---`. This avoids treating in-body `---`
+# section dividers as additional frontmatter.
+#
 # Usage: extract_yaml_frontmatter path/to/file.md
 extract_yaml_frontmatter() {
     local file=$1
-    sed -n '/^---$/,/^---$/p' "$file" | sed '1d;$d'
+    awk '
+        NR==1 && /^---$/ { in_fm = 1; next }
+        in_fm && /^---$/ { exit }
+        in_fm { print }
+    ' "$file"
 }
 
 # Print the value of FIELD from the frontmatter of FILE.

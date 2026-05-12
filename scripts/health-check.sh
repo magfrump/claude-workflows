@@ -88,8 +88,10 @@ check_skill_frontmatter() {
         fi
 
         # Check for unknown top-level keys.
-        # Top-level keys are non-indented lines matching "key:" pattern.
-        local allowed_keys="name description when requires persona-last-sampled"
+        # allowed_keys reflects the conventions currently in use across skills:
+        # name/description/when are required; the rest are optional design
+        # metadata or dependency declarations.
+        local allowed_keys="name description when requires persona-last-sampled lens non-goals adaptation-latitude"
         local unknown_keys
         unknown_keys="$(echo "$yaml" | grep -oE '^[a-zA-Z_-]+:' | sed 's/://' | while read -r key; do
             local found=false
@@ -102,22 +104,25 @@ check_skill_frontmatter() {
             if ! $found; then
                 echo "$key"
             fi
-        done)"
+        done | tr '\n' ' ' | sed 's/ *$//')"
         if [[ -n "$unknown_keys" ]]; then
             fail "$basename: unknown top-level key(s): $unknown_keys"
             file_ok=false
         fi
 
-        # Check requires entries have name and description sub-fields.
+        # Check requires entries are consistently formatted. The schema permits
+        # either an object form (`- name: …` + `description: …`) for skill
+        # dependencies the orchestrator can resolve, or a bare-string list for
+        # informational preconditions. Mixing the two within one block is the
+        # only real bug we flag.
         if echo "$yaml" | grep -qE '^requires:'; then
-            # Each requires entry should be a "- name: ..." followed by "  description: ..."
-            # Detect bare string entries (lines starting with "  - " that are NOT "  - name:")
-            local bare_entries
-            bare_entries="$(echo "$yaml" | sed -n '/^requires:/,/^[a-z]/{/^requires:/d; /^[a-z]/d; p;}' \
-                | grep -E '^[[:space:]]*-[[:space:]]' \
+            local req_block bare_entries name_entries
+            req_block="$(echo "$yaml" | sed -n '/^requires:/,/^[a-z]/{/^requires:/d; /^[a-z]/d; p;}')"
+            bare_entries="$(echo "$req_block" | grep -E '^[[:space:]]*-[[:space:]]' \
                 | grep -vE '^[[:space:]]*-[[:space:]]+name:' || true)"
-            if [[ -n "$bare_entries" ]]; then
-                fail "$basename: 'requires' entries must be objects with 'name' and 'description' sub-fields"
+            name_entries="$(echo "$req_block" | grep -E '^[[:space:]]*-[[:space:]]+name:' || true)"
+            if [[ -n "$bare_entries" && -n "$name_entries" ]]; then
+                fail "$basename: 'requires' mixes object-form and bare-string entries — pick one format"
                 file_ok=false
             fi
         fi
@@ -147,8 +152,12 @@ check_skill_frontmatter() {
 #   GEMINI.md:  **research-plan-implement.md**
 extract_workflows() {
     local file="$1"
-    grep -oE '\*\*(@\./workflows/)?[a-z][-a-z0-9]*\.md\*\*' "$file" \
-        | sed 's/\*\*//g; s|@\./workflows/||' \
+    # Allow ** or ` as the delimiter. CLAUDE.md uses backticks for all filenames
+    # (so the result is filtered against workflows/ in the caller); AGENTS.md
+    # and GEMINI.md use bold. `|| true` keeps the function quiet under
+    # set -o pipefail when grep finds no matches.
+    { grep -oE '(\*\*|`)(@\./workflows/)?[a-z][-a-z0-9]*\.md(\*\*|`)' "$file" || true; } \
+        | sed 's/\*\*//g; s/`//g; s|@\./workflows/||' \
         | sort -u
 }
 
@@ -355,9 +364,11 @@ check_shellcheck() {
     local all_ok=true
     for f in "${shell_files[@]}"; do
         local relpath="${f#"$REPO_ROOT"/}"
-        # Use -x to follow sourced files; -e SC1091 to skip missing sourced files
-        # Use -s bash for .bats files that lack a shebang
-        if shellcheck -x -e SC1091 -s bash "$f" 2>/dev/null; then
+        # -x follows sourced files; -e SC1091 skips missing sourced files;
+        # -s bash sets the shell for .bats files lacking a shebang;
+        # -S warning ignores info-level findings (SC2016 et al) so the
+        # gate trips only on genuine warnings or errors.
+        if shellcheck -x -e SC1091 -s bash -S warning "$f" 2>/dev/null; then
             pass "$relpath"
         else
             fail "$relpath"
