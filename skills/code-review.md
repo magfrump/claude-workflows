@@ -67,6 +67,11 @@ These rules are absolute. Do not deviate from them under any circumstances.
 5. If a sub-agent fails or returns empty, note this honestly in the synthesis. Do not fill
    in the gap yourself.
 
+6. You MUST read `docs/reviews/override-log.md` during Step 3.5 of "Before You Begin" and
+   surface every matching row in both deliverables. The "no prior overrides matched this
+   diff" sentinel is not optional — emit it explicitly when the scan returns nothing so
+   the log cannot become write-only. See [Override-Log](#override-log) for capture format.
+
 ---
 
 ## Before You Begin
@@ -122,6 +127,20 @@ scope findings to stated intent.
 ### Step 3: Surface prior review findings (optional)
 
 If the diff touches files that appear in a prior `docs/reviews/*.md` report from the last 30 days (detect via `git log --since="30 days ago" -- docs/reviews/` and intersect those reports' `Location:` paths with the changed-file list), lift the **Must-Fix** rows whose locations still apply and hold them as `<prior-findings>` for Stage 2. You will paste them verbatim under a `## Prior review findings (advisory — worth checking, not verdict input)` heading in each critic's prompt so recurring issues are flagged explicitly rather than re-discovered. Treat them as hints about where to look — critics MUST NOT confirm them as findings or feed them into verdicts. Skip silently if no matching prior reports exist. (Extends the within-PR cross-iteration contrastive prompt in `workflows/pr-prep.md` step 3d to across-PR memory.)
+
+### Step 3.5: Scan the override log for prior decisions matching the current diff
+
+Read `docs/reviews/override-log.md` in full **before** rendering any findings. (Create the file if it does not yet exist using the skeleton in `docs/reviews/override-log.md` — the first override row landing in this run is itself capture, not just consumption.) For each row in the log's entry table, decide whether it applies to the current diff by checking, in order:
+
+1. **Location match.** The `Finding` cell records a `path/to/file:line` location. If the file is in the current diff and the line is within ±20 lines of a changed hunk, the entry is a candidate.
+2. **Category match.** If no location match, but the finding's category (security/auth, performance, API consistency, lint-style Nit, etc.) overlaps a critic that is about to run AND a file in the same subsystem is touched, the entry is a candidate.
+3. **Substantive match.** If the wording of `Finding` describes substantively the same claim a critic is likely to surface on the current diff (e.g., "missing null check at $function" recurring in a refactor of `$function`), it is a candidate even without a location or category hit.
+
+Hold every matched row as `<considered-overrides>` for Stage 3. Each entry MUST be surfaced in both deliverables (see Deliverable 1's `### Considered overrides` section and Deliverable 2's `Considered overrides` column / explicit "none matched" note). The log is not write-only: silent omission of a matched override is a calibration failure and a stage-3 self-check must catch it before publishing.
+
+If the override log is empty or contains no rows that match the current diff, record the negative result explicitly (`No prior overrides matched this diff.`) — the absence statement is part of the contract that prevents the log from being write-only.
+
+This step is **read-only with respect to the log** during the run. New overrides — produced when a human reviews this run's output and downgrades or upgrades a finding — are appended to `docs/reviews/override-log.md` as a follow-up step (see [Capturing new overrides](#capturing-new-overrides) below), not during dispatch.
 
 ### Step 4: Known critic roles
 
@@ -570,6 +589,19 @@ the individual agent reports.
 
 **Scope summary:** What was reviewed — branch, files, diff size.
 
+### Considered overrides
+
+Surface every row collected as `<considered-overrides>` in Step 3.5. For each match, list:
+
+- the override's `PR ref` and `Date`,
+- the finding it applied to (with `path/to/file:line`),
+- the `Original verdict → Override verdict` shorthand, and
+- the `Reason` recorded by the prior reviewer.
+
+Then, for each, state whether the current run's finding (if any) **inherits** the prior call, **departs** from it (and why), or is **not applicable** (different code, same location coincidentally). If a critic surfaced a finding that matches a prior `Won't-Fix` override and you are still flagging it as Must-Fix, explain the delta — new evidence, scope change, or you believe the prior call was wrong. Re-arguing a settled call without acknowledging it is the failure mode this section exists to prevent.
+
+If Step 3.5 found no matching rows, render the section with the single line: "No prior overrides matched this diff." The heading must still appear so absence is auditable across runs.
+
 ### Coverage and Escalations
 
 Surface the items collected in the Goal-alignment scan above so the user sees coverage
@@ -664,9 +696,9 @@ document the author uses to track code review resolution.
 Issues that must be resolved before merge. Draft cannot pass review with any red items
 unresolved.
 
-| # | Finding | Domain | Location | Legibility-target | Status |
-|---|---|---|---|---|---|
-| R1 | [Description] | [Security/Performance/etc.] | `path/to/file:42` | for-author | 🔴 Unresolved |
+| # | Finding | Domain | Location | Legibility-target | Considered overrides | Status |
+|---|---|---|---|---|---|---|
+| R1 | [Description] | [Security/Performance/etc.] | `path/to/file:42` | for-author | — _or_ `#123 Won't-Fix (override departed from — see chat)` | 🔴 Unresolved |
 
 ---
 
@@ -675,9 +707,9 @@ unresolved.
 Issues that must be fixed or acknowledged by the author with justification for why they
 stand. Each must carry a resolution or author note.
 
-| # | Finding | Domain | Source | Legibility-target | Status | Author note |
-|---|---|---|---|---|---|---|
-| A1 | [Description] | [Domain] | [Source, e.g., "Security + Performance", "Fact-check"] | for-author | 🟡 Open | — |
+| # | Finding | Domain | Source | Legibility-target | Considered overrides | Status | Author note |
+|---|---|---|---|---|---|---|---|
+| A1 | [Description] | [Domain] | [Source, e.g., "Security + Performance", "Fact-check"] | for-author | — | 🟡 Open | — |
 
 ---
 
@@ -686,9 +718,23 @@ stand. Each must carry a resolution or author note.
 Advisory findings from contextual critics, single-critic suggestions, and improvement
 opportunities. Not required to pass review.
 
-| # | Finding | Source | Legibility-target |
-|---|---|---|---|
-| C1 | [Suggestion] | [Which critic] | for-author |
+| # | Finding | Source | Legibility-target | Considered overrides |
+|---|---|---|---|---|
+| C1 | [Suggestion] | [Which critic] | for-author | — |
+
+---
+
+## ↩️ Considered Overrides
+
+Rows lifted from `docs/reviews/override-log.md` that matched the current diff per the
+Step 3.5 scan. Each row records how the current run treated the prior call.
+
+| Override (PR ref / Date) | Prior finding | Original → Override | Reason | This run's treatment |
+|---|---|---|---|---|
+| `#123` / 2026-04-12 | Null check in `auth.ts:42` (security) | 🔴 Must-Fix → Won't-Fix | "test-only path; covered by guard upstream" | Inherited — not re-flagged. |
+
+If no rows matched, replace the table with the single line: "No prior overrides
+matched this diff." The heading must still appear so absence is auditable across runs.
 
 ---
 
@@ -784,11 +830,73 @@ docs/reviews/
 ├── tech-debt-triage-review.md     (if triggered)
 ├── dependency-upgrade-review.md   (if triggered)
 ├── ui-visual-review.md            (if triggered)
+├── override-log.md                (append-only across runs — see "Capturing new overrides")
 ```
 
-When saving review artifacts, include a `Commit: <hash>` metadata line at the top of each file and use date-stamped filenames (e.g., `security-review-2025-01-15.md`) so that results persist across review cycles.
+When saving review artifacts, include a `Commit: <hash>` metadata line at the top of each file and use date-stamped filenames (e.g., `security-review-2025-01-15.md`) so that results persist across review cycles. **Exception:** `override-log.md` is **append-only** and persists across runs — never overwrite it, never date-stamp it, and never delete entries even when they become stale (mark them with a `~` strikethrough in the `Finding` cell if a reviewer judges them no longer applicable, but keep the row for audit purposes).
 
 At the end of your chat synthesis, link to all documents.
+
+---
+
+## Override-Log
+
+The override log (`docs/reviews/override-log.md`) is the persistent record of human
+overrides on this skill's output. It is both an **input** to every future run
+(consumed in Step 3.5) and an **output** of any run whose chat synthesis produces
+a human decision that contradicts the rubric verdict.
+
+### Capture format
+
+Each override is one row in the table at the bottom of `docs/reviews/override-log.md`.
+The columns are:
+
+| Field | Required | Example |
+|---|---|---|
+| `Date` | yes | `2026-05-12` (ISO date when the override was applied) |
+| `PR ref` | yes | `#482` (GitHub PR), `a1b2c3d` (short SHA), or `feat/auth-tokens` (branch) |
+| `Finding` | yes | `Missing null check in auth.ts:42 (security-reviewer)` — include `path:line` and the surfacing critic so future runs can match by location, category, and source |
+| `Original verdict` | yes | One of `🔴 Must-Fix`, `🟡 Must-Address`, `🟢 Consider`, `Nit` |
+| `Override verdict` | yes | One of `Won't-Fix`, `Defer`, `🟡 Must-Address`, `🔴 Must-Fix` (or comparable shorthand using the same vocabulary as Original) |
+| `Reason` | yes | One short sentence on the human's rationale (`"test-only path"`, `"deprecated module, removal scheduled in #501"`, `"team style; verbose form preferred here"`). If longer than ~30 words, link to a PR comment or `docs/decisions/NNN-*.md` instead of expanding the cell. |
+
+Rows are kept in reverse-chronological order (most recent at the top of the table)
+so that the freshest context is easiest to scan.
+
+### Capturing new overrides
+
+When a human review of this run's output produces a verdict change relative to the
+rubric — typically a Must-Fix → Won't-Fix or a Nit → Must-Fix promotion — append
+a row to `docs/reviews/override-log.md` immediately. The append happens:
+
+1. **Inside the same skill run** when the orchestrator records the human's verdict
+   in chat (e.g., the user says "this one is fine, skip it" or "actually promote that").
+2. **From the review-fix loop** in `workflows/pr-prep.md` when the loop terminates
+   with unresolved findings that the human explicitly waived.
+3. **Manually by the author** if the override is reached outside a structured run
+   (e.g., during PR review on GitHub) — the author writes the row themselves.
+
+In all three paths, fill every required field. Missing fields invalidate the row
+for future Step 3.5 matching: a row without a location cannot match by location,
+and a row without a reason cannot be evaluated for staleness.
+
+### Why this isn't write-only
+
+The risk with any "log of decisions" is that nothing reads it, so it grows in
+storage cost but adds no signal. This skill prevents that failure mode by:
+
+- **Mandatory read in Step 3.5.** The orchestrator MUST read the log before
+  rendering findings, on every run.
+- **Mandatory citation in deliverables.** Both the chat synthesis
+  (`### Considered overrides`) and the rubric (`## ↩️ Considered Overrides`)
+  must explicitly state which prior overrides applied — or that none did. The
+  "none matched" line is not optional; silent omission is treated as a
+  calibration failure in self-eval.
+- **Explicit delta on departure.** If the current run flags a finding that a
+  prior override marked Won't-Fix, the orchestrator must explain why it is
+  re-flagging — new evidence, scope change, or disagreement with the prior
+  call. Re-arguing a settled override without acknowledging it is the
+  specific failure this section exists to prevent.
 
 ---
 
@@ -808,3 +916,9 @@ At the end of your chat synthesis, link to all documents.
 - **Contextual critics are advisory.** Their findings go to Consider tier and never block merge.
 - **Fact-check report size management.** If the report exceeds 200 lines, paste only the
   "Claims Requiring Attention" summary (Incorrect, Stale, Mostly Accurate) into critic prompts.
+- **The override log is append-only and must be read on every run.** Step 3.5 reads
+  `docs/reviews/override-log.md` before any findings are rendered; both deliverables
+  must cite the matching rows (or explicitly state none matched). New overrides
+  produced by human review on this run get appended to the log per
+  [Capturing new overrides](#capturing-new-overrides). Never overwrite, date-stamp, or
+  delete entries.
