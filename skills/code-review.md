@@ -108,6 +108,8 @@ When the diff is this large, split the review into multiple passes by subsystem 
 Check diff size early via `git diff --stat` — if the line count crosses the ~1000-line
 threshold, propose the split to the user before launching Stage 1.
 
+Separately from total diff size, watch the per-file churn ratio. When any single file in the diff has more than 40% of its lines changed (compute as changed lines ÷ post-change file length from `git diff --stat`), treat that file's review as greenfield — evaluate architecture, naming, and module boundaries on the resulting code rather than against the diff. Diff comparison loses signal at high churn ratios because most lines moved or were rewritten, so reading them as deltas misses the real questions the rewrite raises. Apply this per file, not per pass: other files in the same diff may still warrant standard diff-level review.
+
 ### Step 2: Capture PR intent
 
 Critics scope findings better when they know what the PR is trying to accomplish. Capture
