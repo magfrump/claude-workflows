@@ -7,10 +7,15 @@ value-justification: "Replaces unstructured code exploration when joining a new 
 *This workflow follows the [orchestrated review pattern](../patterns/orchestrated-review.md), with subsystems as the units of parallel exploration.*
 
 ## When to use
-- You just cloned a repo and need to understand it before doing any work
-- You're switching to a project you haven't touched in months
-- A new team member needs a structured orientation to a codebase
-- The RPI research phase feels impossible because you don't even know where to start looking
+
+Use this workflow to acquire familiarity with a codebase you didn't write (or no longer remember). Triggers:
+
+- **Inherited codebase**: you just cloned a repo, joined a project, or took over code someone else built
+- **Returned-cold project**: you're returning to a project you haven't touched in months
+- **New-team-member orientation**: someone needs a structured walkthrough of an existing codebase
+- **RPI research is stuck**: you can't scope research because you don't even know where to start looking
+
+**Not a trigger:** from-scratch projects you started yourself — there is no prior architecture to map, so the workflow has nothing to do.
 
 This is a **pre-task** workflow. It produces an orientation document that subsequent RPI sessions can reference. Unlike RPI's research phase (which investigates code relevant to a specific task), onboarding maps the terrain broadly so you know where to look when tasks arrive.
 
