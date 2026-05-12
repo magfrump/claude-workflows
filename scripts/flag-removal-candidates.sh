@@ -23,16 +23,8 @@ set -euo pipefail
 
 REPO_ROOT="$(cd "$(dirname "$0")/.." && pwd)"
 
-# --- Color helpers (disabled when piped) ---
-if [ -t 1 ]; then
-  red()    { printf '\033[1;31m%s\033[0m\n' "$*"; }
-  yellow() { printf '\033[1;33m%s\033[0m\n' "$*"; }
-  bold()   { printf '\033[1m%s\033[0m\n' "$*"; }
-else
-  red()    { printf '%s\n' "$*"; }
-  yellow() { printf '%s\n' "$*"; }
-  bold()   { printf '%s\n' "$*"; }
-fi
+# shellcheck source=lib/log-format.sh
+source "$REPO_ROOT/scripts/lib/log-format.sh"
 
 # --- Parse options ---
 WITH_USAGE=0

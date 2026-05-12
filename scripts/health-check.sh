@@ -27,11 +27,10 @@ set -euo pipefail
 REPO_ROOT="$(cd "$(dirname "$0")/.." && pwd)"
 FAIL=0
 
-# --- Color helpers ---
-red()    { printf '\033[1;31m%s\033[0m\n' "$*"; }
-green()  { printf '\033[1;32m%s\033[0m\n' "$*"; }
-yellow() { printf '\033[1;33m%s\033[0m\n' "$*"; }
-bold()   { printf '\033[1m%s\033[0m\n' "$*"; }
+# shellcheck source=lib/log-format.sh
+source "$REPO_ROOT/scripts/lib/log-format.sh"
+# shellcheck source=lib/md-utils.sh
+source "$REPO_ROOT/scripts/lib/md-utils.sh"
 
 pass() { green "  ✓ $*"; }
 fail() { red   "  ✗ $*"; FAIL=1; }
@@ -50,9 +49,8 @@ check_skill_frontmatter() {
         local basename
         basename="$(basename "$skill")"
 
-        # Extract YAML block between first two --- lines
         local yaml
-        yaml="$(sed -n '/^---$/,/^---$/p' "$skill" | sed '1d;$d')"
+        yaml="$(extract_yaml_frontmatter "$skill")"
 
         if [[ -z "$yaml" ]]; then
             fail "$basename: no YAML frontmatter found"
@@ -387,16 +385,7 @@ check_workflow_value_justification() {
         local value=""
 
         if head -1 "$wf" | grep -q '^---$'; then
-            # Extract value-justification from frontmatter (between first --- and next ---)
-            value="$(awk '
-                NR==1 && /^---$/ { in_fm=1; next }
-                in_fm && /^---$/ { exit }
-                in_fm && /^value-justification:/ {
-                    sub(/^value-justification:[[:space:]]*/, "")
-                    gsub(/^["'"'"']|["'"'"']$/, "")
-                    print
-                }
-            ' "$wf")"
+            value="$(get_frontmatter_field "$wf" value-justification)"
         fi
 
         if [[ -n "$value" ]]; then
@@ -656,15 +645,8 @@ check_persona_freshness() {
         local basename
         basename="$(basename "$skill")"
 
-        local yaml
-        yaml="$(sed -n '/^---$/,/^---$/p' "$skill" | sed '1d;$d')"
-
         local last_sampled
-        last_sampled="$(echo "$yaml" \
-            | sed -n 's/^persona-last-sampled:[[:space:]]*//p' \
-            | head -1 \
-            | tr -d '"' | tr -d "'" \
-            | awk '{$1=$1; print}')"
+        last_sampled="$(get_frontmatter_field "$skill" persona-last-sampled)"
 
         # Skill doesn't opt into freshness tracking — skip silently.
         [[ -z "$last_sampled" ]] && continue

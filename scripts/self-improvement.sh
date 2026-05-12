@@ -17,10 +17,10 @@
 # Environment variables:
 #   CONVERGENCE_THRESHOLD  Percent overlap (0-100) of diagnosed problems
 #                          with prior rounds that triggers early stop
-#                          (default: 70)
+#                          (default: 80)
 #
 # Configuration (hardcoded near top of main block):
-#   MAX_ROUNDS=5           Maximum number of improvement rounds
+#   MAX_ROUNDS=3           Maximum number of improvement rounds
 #   WORKTREE_BASE=~/wt     Prefix for git worktree directories
 #
 # Prerequisites:
@@ -84,18 +84,14 @@ init_round_log() {
 # Update a top-level field in the round log
 update_round_log() {
     local path=$1 value=$2
-    local tmp
-    tmp=$(mktemp)
-    jq --argjson v "$value" "$path = \$v" "$ROUND_LOG_FILE" > "$tmp" && mv "$tmp" "$ROUND_LOG_FILE"
+    jq_update_inplace "$ROUND_LOG_FILE" --argjson v "$value" "$path = \$v"
 }
 
 # Record a gate result for a task
 record_gate() {
     local task_id=$1 gate=$2 status=$3
-    local tmp
-    tmp=$(mktemp)
-    jq --arg tid "$task_id" --arg g "$gate" --arg s "$status" \
-        '.validation[$tid][$g] = $s' "$ROUND_LOG_FILE" > "$tmp" && mv "$tmp" "$ROUND_LOG_FILE"
+    jq_update_inplace "$ROUND_LOG_FILE" --arg tid "$task_id" --arg g "$gate" --arg s "$status" \
+        '.validation[$tid][$g] = $s'
 }
 
 # Record structured failure details for a gate
@@ -103,10 +99,8 @@ record_gate() {
 record_gate_detail() {
     local task_id=$1 gate=$2 detail_json=$3
     local detail_key="${gate}_detail"
-    local tmp
-    tmp=$(mktemp)
-    jq --arg tid "$task_id" --arg dk "$detail_key" --argjson detail "$detail_json" \
-        '.validation[$tid][$dk] = $detail' "$ROUND_LOG_FILE" > "$tmp" && mv "$tmp" "$ROUND_LOG_FILE"
+    jq_update_inplace "$ROUND_LOG_FILE" --arg tid "$task_id" --arg dk "$detail_key" --argjson detail "$detail_json" \
+        '.validation[$tid][$dk] = $detail'
 }
 
 # Write per-round report and append to round-history.json
@@ -116,9 +110,7 @@ finalize_round_log() {
     cp "$ROUND_LOG_FILE" "$WORKING_DIR/round-${round}-report.json"
 
     # Append to round-history.json
-    local tmp
-    tmp=$(mktemp)
-    jq --slurpfile entry "$ROUND_LOG_FILE" '. += $entry' "$ROUND_HISTORY" > "$tmp" && mv "$tmp" "$ROUND_HISTORY"
+    jq_update_inplace "$ROUND_HISTORY" --slurpfile entry "$ROUND_LOG_FILE" '. += $entry'
 
     rm -f "$ROUND_LOG_FILE"
 
@@ -132,6 +124,10 @@ finalize_round_log() {
 
 # --- Shared utility functions (sourced from lib) ---
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+# shellcheck source=lib/preflight.sh
+source "$SCRIPT_DIR/lib/preflight.sh"
+# shellcheck source=lib/json-utils.sh
+source "$SCRIPT_DIR/lib/json-utils.sh"
 # shellcheck source=lib/si-functions.sh
 source "$SCRIPT_DIR/lib/si-functions.sh"
 # shellcheck source=lib/si-input.sh
@@ -200,14 +196,14 @@ fi
 # Configuration
 REPO_DIR=~/claude-workflows
 WORKTREE_BASE=~/wt
-MAX_ROUNDS=1
+MAX_ROUNDS=3
 WORKING_DIR="$REPO_DIR/docs/working"
 ROUND_HISTORY="$WORKING_DIR/round-history.json"
 
-# Check required dependencies
-command -v jq &>/dev/null || { echo "Error: jq is required but not found"; exit 1; }
+# Check required dependencies (preflight.sh sourced earlier via lib/)
+require_command jq
 
-CONVERGENCE_THRESHOLD=${CONVERGENCE_THRESHOLD:-90}  # percent overlap to trigger convergence
+CONVERGENCE_THRESHOLD=${CONVERGENCE_THRESHOLD:-80}  # percent overlap to trigger convergence
 HISTORY_FILE="$REPO_DIR/docs/working/problem-history.json"
 
 mkdir -p "$WORKING_DIR"
@@ -504,7 +500,7 @@ If there is no Diagnose section, output an empty array: []" 2>/dev/null | sed 's
     # --- DD Output Format Contract: Convergence Detection ---
     # Uses the PROBLEMS_JSON extracted above (a JSON array of problem strings)
     # to detect whether this round's diagnosed problems overlap with prior
-    # rounds' problems beyond a threshold (CONVERGENCE_THRESHOLD, default 70%).
+    # rounds' problems beyond a threshold (CONVERGENCE_THRESHOLD, default 80%).
     #
     # Data flow:
     #   1. PROBLEMS_JSON (current round) — extracted from DD's Diagnose section
@@ -522,10 +518,10 @@ If there is no Diagnose section, output an empty array: []" 2>/dev/null | sed 's
     if [ "$PROBLEM_COUNT" -gt 0 ] && [ -n "$PRIOR_PROBLEMS" ]; then
         echo "  Comparing $PROBLEM_COUNT problems against prior rounds..."
 
-        # Use Claude to assess semantic overlap between current and prior problems
-        # R2 fix: use heredoc to safely pass PRIOR_PROBLEMS (may contain special chars)
+        # Use Claude to assess semantic overlap between current and prior problems.
         # Variable parts are assigned first, then a quoted heredoc provides the
-        # static instruction text — preventing accidental shell expansion.
+        # static instruction text — preventing accidental shell expansion of
+        # special characters in PRIOR_PROBLEMS.
         OVERLAP_PROMPT="You are comparing two sets of problem descriptions to detect convergence.
 
 CURRENT ROUND PROBLEMS:
@@ -958,10 +954,7 @@ Count only the automated assessment scores (Testability investment, Trigger clar
             echo "[$TASK_ID] REJECTED: $REJECT_REASON" >> "$WORKING_DIR/validation-round-$ROUND.log"
             record_gate "$TASK_ID" "verdict" "rejected"
             record_gate_detail "$TASK_ID" "verdict" "$(jq -n --arg reason "$REJECT_REASON" '{reject_reason: $reason}')"
-            # Clean up rejected worktree and branch. --force is required because
-            # validation gates (e.g., self-eval) leave untracked files behind.
-            git worktree remove --force "$WT_DIR" 2>/dev/null || true
-            git branch -D "$BRANCH" 2>/dev/null || true
+            remove_worktree_and_branch "$WT_DIR" "$BRANCH" -D
         else
             echo "    APPROVED"
             echo "[$TASK_ID] APPROVED" >> "$WORKING_DIR/validation-round-$ROUND.log"
@@ -1059,14 +1052,11 @@ Then git add the resolved files and git commit to complete the merge."
         }
 
         # Record merge outcome
-        MERGE_TMP=$(mktemp)
-        jq --arg tid "$TASK_ID" --arg s "$MERGE_STATUS" \
-            '.merges[$tid] = $s' "$ROUND_LOG_FILE" > "$MERGE_TMP" && mv "$MERGE_TMP" "$ROUND_LOG_FILE"
+        jq_update_inplace "$ROUND_LOG_FILE" --arg tid "$TASK_ID" --arg s "$MERGE_STATUS" \
+            '.merges[$tid] = $s'
 
-        # Clean up worktree. --force handles untracked-file leftovers from
-        # validation; `branch -d` still refuses unmerged branches as a safety net.
-        git worktree remove --force "$WT_DIR" 2>/dev/null || true
-        git branch -d "$BRANCH" 2>/dev/null || true
+        # `branch -d` refuses unmerged branches — safety net for merge_failed cases.
+        remove_worktree_and_branch "$WT_DIR" "$BRANCH" -d
     done
 
     # Print human-readable round summary after merges
@@ -1086,8 +1076,6 @@ Then git add the resolved files and git commit to complete the merge."
             if [ -n "$TIP_SHA" ]; then
                 SUMMARY=$(git log -1 --format=%s "$TIP_SHA" 2>/dev/null) || SUMMARY=""
             fi
-            # Fallback: legacy summary file (kept for backward compatibility
-            # with rounds that pre-date commit-derived summaries).
             if [ -z "$SUMMARY" ]; then
                 SUMMARY_FILE="$WORKING_DIR/summary-${TASK_ID}.md"
                 [ -f "$SUMMARY_FILE" ] && SUMMARY=$(cat "$SUMMARY_FILE")

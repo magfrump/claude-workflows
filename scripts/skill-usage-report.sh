@@ -12,8 +12,10 @@
 
 set -euo pipefail
 
-# Verify jq is available (required for log parsing)
-command -v jq >/dev/null 2>&1 || { echo "Error: jq is required but not installed." >&2; exit 1; }
+SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+# shellcheck source=lib/preflight.sh
+source "$SCRIPT_DIR/lib/preflight.sh"
+require_command jq
 
 # Parse options
 PROJECT_FILTER=""

@@ -21,7 +21,9 @@ REPO_ROOT="$(cd "$SCRIPT_DIR/.." && pwd)"
 
 ROUND_HISTORY="${ROUND_HISTORY:-$REPO_ROOT/docs/working/round-history.json}"
 
-command -v jq >/dev/null 2>&1 || { echo "Error: jq is required" >&2; exit 1; }
+# shellcheck source=lib/preflight.sh
+source "$SCRIPT_DIR/lib/preflight.sh"
+require_command jq
 
 if [ ! -f "$ROUND_HISTORY" ]; then
   echo "No round history found"

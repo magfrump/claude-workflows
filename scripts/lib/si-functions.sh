@@ -8,6 +8,7 @@
 #   print_gate_stats     — Print per-gate pass/fail/skip rates from round history
 #   find_task_lineage    — Grep round-changelog.md for prior tasks that touched given files
 #   prepend_lineage_to_plan — Prepend a Lineage section to a task's plan doc
+#   remove_worktree_and_branch — Force-remove a worktree and delete its branch
 #
 # Guard against direct execution
 if [[ "${BASH_SOURCE[0]}" == "${0}" ]]; then
@@ -109,6 +110,17 @@ prepend_lineage_to_plan() {
     fi
 }
 
+# --- Worktree cleanup ---
+# Force-remove a worktree and delete its branch. --force on worktree remove
+# handles validation leftovers (untracked files from self-eval etc.) that
+# would otherwise leave orphan directories.
+# Args: $1 = worktree dir, $2 = branch name, $3 = -d (safe) or -D (force) — default -d
+remove_worktree_and_branch() {
+    local wt=$1 br=$2 delete_mode=${3:--d}
+    git worktree remove --force "$wt" 2>/dev/null || true
+    git branch "$delete_mode" "$br" 2>/dev/null || true
+}
+
 # --- Task JSON schema validation ---
 # Validates each task in a tasks JSON file against the expected schema.
 # Outputs a filtered JSON array (valid tasks only) to stdout.
@@ -157,9 +169,8 @@ validate_task_json() {
         fi
 
         # Check category field. Strict-when-present: invalid values reject;
-        # absence is a lint warning so the loop keeps running until the
-        # planner prompt is updated to emit categories. See
-        # docs/working/scope-exception-r3-task-category-tagging.md.
+        # absence is a lint warning so the loop keeps running while the
+        # planner prompt is still being tuned to emit categories reliably.
         local category
         category=$(echo "$task" | jq -r '.category // ""')
         if [ -z "$category" ]; then

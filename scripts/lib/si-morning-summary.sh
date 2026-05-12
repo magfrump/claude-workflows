@@ -158,7 +158,7 @@ EOF
 # --- Internal: Project State section ---
 # Cross-round state header that complements per-run stats. Renders, in order:
 #   - Open hypotheses (from hypothesis-log.md, empty Outcome column)
-#   - In-flight maintenance debt (recurring deferred tasks in round-changelog.md)
+#   - Recurring maintenance debt (tasks deferred across multiple rounds in round-changelog.md)
 #   - Recent rejections grouped by failing gate (from round reports)
 #   - Broken-pipeline status (TRACKING hypotheses in hypothesis-backlog.md)
 #   - Token burn rate (N/A when token-actuals.json is absent)
@@ -301,7 +301,7 @@ _project_state_maintenance_debt() {
     local changelog="$1"
 
     echo ""
-    echo "### In-flight Maintenance Debt"
+    echo "### Recurring Maintenance Debt"
     echo ""
 
     if [ ! -f "$changelog" ]; then
@@ -436,10 +436,9 @@ _project_state_broken_pipelines() {
     done <<< "$rows"
 }
 
-# --- Internal: token burn rate (N/A until r2-token-tracking-narrow ships) ---
-# Renders N/A when the actuals file is absent so this header can land
-# without depending on that task. When the file exists, future work in the
-# token-tracking task will replace this branch with a real computation.
+# --- Internal: token burn rate ---
+# Renders N/A when token-actuals.json is absent. When present, future
+# work will replace this stub with a real computation.
 _project_state_token_burn() {
     local actuals="$1"
 
