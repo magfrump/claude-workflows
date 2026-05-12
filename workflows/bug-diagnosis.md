@@ -150,21 +150,26 @@ Design the smallest experiment that distinguishes "hypothesis is correct" from "
 - **Write a focused test case**: A unit test that exercises the specific path your hypothesis identifies. This is often the minimal reproduction from step 1, refined.
 - **Modify the suspect code**: If your hypothesis says "this condition is wrong," temporarily fix it and see if the bug disappears.
 
-**Interpret the result:**
-- **Hypothesis confirmed** → proceed to Fix (step 5).
-- **Hypothesis refuted** → record what you learned, return to step 3 with a new hypothesis. The refutation narrows the search space — use it.
-- **Result is ambiguous** → your test wasn't specific enough. Refine the experiment, don't form a new hypothesis yet.
+**Interpret the result — every hypothesis ends in exactly one of three states:**
 
-**Escape hatch**: If you've tested 3+ hypotheses without confirming one, stop iterating and reassess:
+- **CONFIRMED** — the experiment ran, the precondition was met, and the predicted outcome occurred. → Proceed to Fix (step 5).
+- **REFUTED** — a designed experiment ran, the precondition was met, and the predicted outcome did *not* occur. The hypothesis has been falsified. → Record what you learned and return to step 3 with a new hypothesis. The refutation narrows the search space — use it.
+- **INCONCLUSIVE** — the experiment did not actually distinguish the hypothesis. Includes: no experiment was designed or executed; the precondition was never met (the suspect path was never exercised, the feature flag was off, the input never reached the branch); the experiment ran but was not specific enough to confirm or refute. → Redesign the experiment so it actually tests the hypothesis, or discard the hypothesis as untestable and form a new one.
+
+**Default state**: every hypothesis is INCONCLUSIVE until a designed experiment with met preconditions either confirms or refutes it. REFUTED is reserved for genuinely falsified hypotheses — "never tried" is not the same as "tried and failed," and conflating the two inflates the apparent failure rate and feeds misleading signal back into the next hypothesis.
+
+**Escape hatch**: If you've **REFUTED** 3+ hypotheses without confirming one, stop iterating and reassess. INCONCLUSIVE hypotheses do *not* tick this counter — the search space has not actually narrowed when an experiment failed to test what it claimed to test. If you're accumulating INCONCLUSIVE results, the problem is experimental design, not exhausted hypothesis space; fix the experiment before counting the hypothesis as a failure. Reassessment questions:
 - Are you isolating well enough? (Return to step 2)
 - Do you understand the code well enough? (Pivot to RPI)
 - Is the bug actually where you think it is? (Widen the search)
 
 **Done when...**
-- [ ] The hypothesis is confirmed (proceed to step 5) or refuted (return to step 3 with a new hypothesis)
-- [ ] The test result and what was learned are recorded in the diagnosis log
-- [ ] If refuted, the refutation explicitly narrows the search space for the next hypothesis
-- [ ] If 3+ hypotheses have been refuted, the escape hatch has been evaluated (re-isolate, pivot to RPI, or widen search)
+- [ ] The hypothesis state is recorded as exactly one of CONFIRMED, REFUTED, or INCONCLUSIVE
+- [ ] CONFIRMED → proceed to step 5
+- [ ] REFUTED → the refutation explicitly narrows the search space, and a new hypothesis is formed (return to step 3)
+- [ ] INCONCLUSIVE → the experiment is redesigned to actually test the hypothesis (precondition met, prediction specific enough), or the hypothesis is discarded as untestable. INCONCLUSIVE results are *not* counted toward the escape hatch
+- [ ] The test result, the hypothesis state, and what was learned are recorded in the diagnosis log
+- [ ] If 3+ hypotheses have been **REFUTED** (INCONCLUSIVE ones do not count), the escape hatch has been evaluated (re-isolate, pivot to RPI, or widen search)
 
 ### 5. Fix — apply the minimal correct change
 
@@ -220,9 +225,11 @@ Date: {YYYY-MM-DD}
 [Minimal steps or test case that triggers the bug]
 
 ## Hypotheses tested
-| # | Source | Hypothesis | Test | Result |
-|---|--------|-----------|------|--------|
-| 1 | [from error message \| from log analysis \| from code reading \| from intuition \| from prior bug] | [specific claim] | [what you did] | [confirmed/refuted + what you learned] |
+| # | Source | Hypothesis | Test | State | Notes |
+|---|--------|-----------|------|-------|-------|
+| 1 | [from error message \| from log analysis \| from code reading \| from intuition \| from prior bug] | [specific claim] | [experiment designed and run, or "not yet tested"] | [CONFIRMED \| REFUTED \| INCONCLUSIVE — default INCONCLUSIVE if no experiment ran or precondition unmet] | [what you learned; for INCONCLUSIVE, why the experiment didn't distinguish] |
+
+**State rules**: Use REFUTED only when a designed experiment ran with its precondition met and falsified the prediction. Use INCONCLUSIVE when no experiment ran, the precondition was never met, or the test wasn't specific enough to confirm or refute. Only REFUTED hypotheses count toward the 3-hypothesis escape hatch in step 4.
 
 ## Root cause
 [What's actually wrong, confirmed by hypothesis #N]
