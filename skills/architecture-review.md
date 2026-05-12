@@ -174,6 +174,83 @@ If no fact-check report is provided, **emit the following warning at the top of 
 
 Then proceed with architecture analysis based on reading the actual code.
 
+## Trust-Boundary Cross-Reference (Security-Reviewer Integration)
+
+When both architecture-review and security-reviewer run on the same diff, the security
+review's Trust Boundary Map is authoritative for *where trust transitions happen*.
+Architecture-review's module-boundary analysis (cognitive move #3) must be consistent
+with that map: module boundaries that coincide with trust boundaries inherit security
+significance, and any structural recommendation that moves, dissolves, or relocates a
+trust-boundary crossing carries security implications that must be surfaced rather than
+silently made.
+
+This is a **read-only** integration. Architecture-review consumes the security findings;
+it does not modify, supplement, or revise them. Trust boundaries themselves remain
+security-reviewer's domain — architecture-review does not produce its own trust-boundary
+findings.
+
+### Activation condition
+
+The cross-reference activates only when **both** of the following are true:
+
+1. A security-reviewer output file exists at `docs/reviews/security-review-*.md`
+   (the path convention used by `security-reviewer`).
+2. Architecture-review is about to produce module-boundary findings under cognitive
+   move #3.
+
+When either is missing — security-reviewer was not run, its output is not at the
+expected path, or the current architecture-review will not produce module-boundary
+findings — **this section is a no-op** and architecture-review proceeds with its
+default behavior.
+
+### Scan step (run before producing module-boundary findings)
+
+Before applying cognitive move #3, scan for a security-reviewer output file:
+
+```bash
+ls docs/reviews/security-review-*.md 2>/dev/null
+```
+
+If one or more matching files exist, read the most recent one and locate its **Trust
+Boundary Map** section. Extract the boundary labels (`B1`, `B2`, …), their `[source]
+→ [transition point] → [destination]` lines, and any `(new)`, `(moved)`, or
+`(removed)` deltas. If no file matches, skip the rest of this section and proceed
+with cognitive move #3 unchanged.
+
+### How to use the Trust Boundary Map
+
+When the map exists, apply these constraints to module-boundary findings:
+
+- **Reference boundary labels.** A module-boundary finding whose location coincides
+  with a labeled trust boundary must reference the label (e.g., "this widened
+  public surface sits on `B1` from the security review") so a downstream reader
+  can correlate the two reviews.
+- **Do not contradict boundary placement.** If the security review identifies the
+  trust boundary at a specific transition point, architecture-review must not
+  recommend a structural change that implicitly places the boundary elsewhere
+  without acknowledging the conflict. If the structural recommendation requires
+  moving a trust boundary, state that explicitly and defer the decision to a
+  combined architecture/security review.
+- **Flag security implications.** Recommendations that would move, dissolve, or
+  relocate a trust-boundary crossing must be tagged with a `**Security
+  implication:**` line in the finding body, naming the affected boundary label
+  and the consequence. This is not a security finding (security-reviewer owns
+  those) — it is a notice that the structural change has security-relevant
+  consequences the human reviewer must weigh.
+- **Module-boundary findings that do not touch any labeled trust boundary** are
+  unaffected by this section. Proceed normally.
+
+### What this section is not
+
+- Not a new finding category. Architecture-review still produces only its existing
+  severity tiers (Structural / Coupling / Minor / Informational).
+- Not a way to overrule security-reviewer. If architecture-review disagrees with
+  the security trust-boundary placement, surface that disagreement as a note in
+  the Overall Assessment for the human to resolve — do not modify the security
+  output.
+- Not an obligation to re-derive trust boundaries when no security review exists.
+  The activation condition is strict: both outputs must exist.
+
 ## The Cognitive Moves
 
 ### 1. Map the dependency direction
@@ -214,6 +291,12 @@ addition seems small, but the compound effect is a module that changes for many 
 reasons.
 
 ### 3. Audit the module boundary
+
+Before producing findings under this move, run the scan described in the
+"Trust-Boundary Cross-Reference (Security-Reviewer Integration)" section above. When a
+security-reviewer output exists, module-boundary findings that coincide with a labeled
+trust boundary must reference its label and flag any structural recommendation that
+would relocate the crossing.
 
 Every module has a public surface — the set of types, functions, and constants it exposes to
 the rest of the system. Changes to this surface ripple outward. For each module touched by the
