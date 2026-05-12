@@ -69,6 +69,154 @@ These rules are absolute. Do not deviate from them under any circumstances.
 
 ---
 
+## Profile Selection
+
+Before any other setup, decide which review **profile** is active for this run. The profile
+governs *what* the critics evaluate — not *whether* they run.
+
+Two profiles exist:
+
+- **`diff`** — Default. Critics evaluate the changes hunk-by-hunk: per-line risks,
+  per-claim factual accuracy, per-symbol API drift. This is the line-level critique the
+  pipeline has always produced.
+- **`rewrite`** — Critics ignore diff-level findings and evaluate the *new version* of
+  qualifying files greenfield — as if seeing the code for the first time. Findings are
+  architectural: module boundaries, naming, layering, public-surface coherence, test-shape
+  adequacy. A near-total rewrite warrants this take, because per-line nits drown out the
+  structural questions that actually matter for a from-scratch file.
+
+### Trigger
+
+The **rewrite** profile activates automatically when **any single file in scope has more
+than 40% line churn**, computed per file as:
+
+```
+churn_ratio = (additions + deletions) / max(old_lines, new_lines, 1)
+```
+
+If `churn_ratio > 0.40` for any one file, the entire review runs in rewrite profile. A
+single qualifying file flips the whole review — this is a profile decision for the run, not
+a per-file flag.
+
+**Guard against tiny-file noise:** skip files where `max(old_lines, new_lines) < 20` when
+evaluating the trigger. A brand-new 5-line config file should not flip the review into
+rewrite mode for the rest of the diff.
+
+### How to measure
+
+1. Run `git diff --numstat <scope>` to get per-file `(additions, deletions, path)`.
+2. For each file with at least one line of `max(old_lines, new_lines) >= 20`, compute
+   `old_lines` and `new_lines`:
+   - `old_lines`: `git show <base>:<path> | wc -l` (treat missing path as `0` — new file).
+   - `new_lines`: `git show HEAD:<path> | wc -l` (treat missing path as `0` — deleted file).
+   Use `<base>` matching the scope (`main` for `git diff main...HEAD`, the left side of a
+   commit range for `--range`, the parent of the diff for `--staged`).
+3. Compute `churn_ratio` per file. If any qualifying file exceeds `0.40`, activate the
+   rewrite profile and record which file(s) triggered it.
+
+For new files: `old_lines = 0`, so `churn_ratio = 1.0`. New files of meaningful size always
+qualify for rewrite-profile review — that is the correct behavior, because a new file *is*
+a greenfield. Pure deletions (`new_lines = 0`) do not trigger rewrite — there is no new
+version to review.
+
+### User override
+
+The user can force a profile with `--profile <diff|rewrite>`. The flag overrides
+auto-detection in both directions: `--profile diff` keeps the pipeline in diff mode even if
+some file crosses 40%; `--profile rewrite` forces rewrite mode even if nothing crossed the
+threshold (useful for "please re-review this file architecturally" requests).
+
+### What must change when profile = rewrite
+
+1. **Stage 2 critic prompts** include the rewrite-profile checklist instead of the
+   diff-profile checklist (see [Review Checklists by Profile](#review-checklists-by-profile))
+   and explicitly instruct critics to ignore line-level findings and review the new file
+   state architecturally.
+2. **The rubric header** (Deliverable 2) and the **chat scope summary** (Deliverable 1)
+   both print `**Profile:** rewrite` and list the files whose churn triggered the switch.
+3. **Severity mapping** continues to apply — the Unified Severity Mapping table still
+   governs which findings land in 🔴 / 🟡 / 🟢, regardless of profile.
+4. **Fact-check (Stage 1) is unchanged.** Claim verification is profile-agnostic — if a
+   comment or commit message asserts a falsehood, it is still wrong whether the surrounding
+   code was 5% changed or 95%.
+
+### What stays the same regardless of profile
+
+- The 3-stage pipeline contract (fact-check → critics → synthesis).
+- The Fact-Check Gate, Stage 1.5 critic gating, dispatch modes (parallel/chain), and all
+  user flags (`--include`, `--exclude`, `--only`, `--all-critics`, `--chain`).
+- Output locations and the rubric's overall structure.
+
+---
+
+## Review Checklists by Profile
+
+The orchestrator pastes one of these checklists into each Stage 2 critic prompt under a
+`## Active review profile: <name>` heading so the critic knows what to evaluate.
+
+### Diff profile (default)
+
+Standard line-level critique. Critics evaluate:
+
+- **Per-hunk correctness** — does each changed line do what the surrounding code expects?
+- **Per-symbol drift** — exported functions, schemas, route handlers, CLI flags: did the
+  contract change in a way callers care about?
+- **Per-claim accuracy** — comments, docstrings, commit messages — does the assertion match
+  the code as changed?
+- **Severity by line-level impact** — Critical / High / Medium / Low scoped to the specific
+  hunks introduced or modified.
+- **Context-around-the-change** — unchanged code is in scope only when the change has
+  altered its assumptions (e.g., a new call site that violates an upstream invariant).
+
+This is the historical critic behavior; in diff profile the checklist below is informational
+and critics may use their skill file's native structure.
+
+### Rewrite profile
+
+Greenfield architectural critique of the **new** version of each file whose churn triggered
+rewrite mode. Critics MUST NOT raise findings about which specific lines changed — they
+review the new file as if seeing it for the first time. Evaluate:
+
+1. **Module boundaries and responsibility.** Does the file have a single clear purpose? Are
+   the public exports the ones a caller would expect, or has the rewrite leaked internals?
+2. **Layering.** Does the file respect the project's existing layering conventions (e.g.,
+   handlers vs. services vs. repositories; UI vs. domain logic)? A rewrite is the moment
+   the original layering can quietly erode — name the erosion if you see it.
+3. **Naming.** Are types, functions, variables, and exported symbols named consistently
+   with both the new file's own internal vocabulary and the rest of the codebase? Rewrites
+   often introduce a new term for an old concept; flag the divergence.
+4. **Public-surface coherence.** Treat the exported API as a designed object. Are the
+   shapes consistent (e.g., all functions returning `Result<T>` vs. some throwing)? Does
+   the surface area match the file's stated responsibility, or has it grown grab-baggy?
+5. **Internal structure.** Function sizes, nesting depth, parameter-list shape, error
+   handling pattern. Architectural smells, not stylistic nits.
+6. **Test shape adequacy.** Do the existing (or newly added) tests exercise the rewrite's
+   new shape, or are they still testing the old shape's contract? A rewrite without
+   matching test reshape is a flag.
+7. **Dead-code residue.** Old helpers, types, or constants that survived the rewrite
+   despite no longer being referenced. Diff-level review misses these because each
+   individual symbol "looks fine."
+8. **Cross-file coupling implied by the new shape.** Did the rewrite create new
+   dependencies or new tight couplings that other modules now have to absorb? Name them.
+
+Critics must apply their domain to this checklist:
+
+- `security-reviewer` — auth model, trust boundaries, input handling pattern of the *new
+  file* as a whole, not which lines moved.
+- `performance-reviewer` — algorithmic shape of the new design (data-structure choice, hot
+  loops, query patterns), not micro-changes.
+- `api-consistency-reviewer` — the new public surface against the rest of the codebase's
+  conventions; this critic gets the most leverage in rewrite mode.
+- `code-fact-check` — still per-claim (claim verification is profile-agnostic, see Profile
+  Selection above).
+
+**Output expectations for rewrite profile.** Findings are architectural and reference
+files or regions, not single lines. A finding like "`Location: src/foo.ts:42`" is
+acceptable when a specific anchor helps the reader; a finding like "`Location:
+src/foo.ts` (whole file)" is also acceptable and often more honest in rewrite mode.
+
+---
+
 ## Before You Begin
 
 ### Step 1: Determine scope
@@ -103,51 +251,10 @@ When the diff is this large, split the review into multiple passes by subsystem 
 Check diff size early via `git diff --stat` — if the line count crosses the ~1000-line
 threshold, propose the split to the user before launching Stage 1.
 
-#### Per-file change-density triage (rewrite profile)
-
-Some files in a PR are reshaped enough that hunk-by-hunk diff review produces noise — the
-meaningful question is whether the *new* file is well-structured, not whether each
-individual hunk was a sensible local edit. For these files, switch the critics to a
-**rewrite profile**: ignore the diff and review the new version as if it were greenfield
-code, focused on architectural-level concerns (module boundaries, responsibilities, public
-surface, layering, naming) rather than line-level deltas.
-
-**Heuristic (tunable threshold, not a strict cutoff):** A file qualifies for the rewrite
-profile when it is *rewritten* more than *reshuffled* — roughly when
-`deleted_lines / old_total_lines > 40%`. Pure additions to an otherwise stable file do
-**not** qualify: the original code is preserved and hunk-level diff review is still the
-most informative lens. The 40% number is a default signal, not a hard cutoff:
-
-- Below the threshold but the new and old versions read as different designs (e.g., ~30%
-  deletions but a clear responsibility shift, renamed core type, or restructured public
-  API): opt in.
-- Above the threshold but most deletions are mechanical (removing dead imports,
-  reformatting, auto-generated boilerplate churn, license-header swaps): opt out.
-
-When in doubt, default to the standard diff review — rewrite profile is a deliberate
-scope shift to architectural feedback, and applying it to a file that's actually a careful
-local refactor will miss the line-level findings the author needs.
-
-**How to compute:**
-
-```bash
-git diff --numstat <scope> -- <file>   # gives: added\tdeleted\tpath
-git show main:<file> | wc -l           # gives old_total_lines
-```
-
-Skip rewrite-profile evaluation in these cases:
-- **New file** (no `main` version): the diff *is* the file — review as standard.
-- **Deleted file**: nothing to review as greenfield.
-- **Rename with low content churn**: standard review (use `git log --follow` to find the
-  old path if `git diff --numstat` reports the move as an add+delete pair).
-- **Binary or generated file**: skip review entirely.
-
-**How to apply:** During Step 1, build a `<rewrite-profile-files>` list of qualifying paths
-and hold it for the rest of the pipeline. Pass it forward to every Stage 2 critic dispatch
-(see [Stage 2: Critic Agents](#stage-2-critic-agents) step 4) so each critic switches the
-listed files to greenfield review while reviewing the rest of the diff hunk-by-hunk. Report
-the list in the plan summary (Step 7) so the user sees which files will be reviewed under
-which profile and can override the choice before launch.
+> **Note:** Profile selection (diff vs. rewrite) is decided once for the whole run at the
+> top of this skill — see [Profile Selection](#profile-selection). The trigger uses the
+> same `git diff --numstat` measurement described there; do not re-derive a per-file
+> profile here.
 
 ### Step 2: Capture PR intent
 
@@ -231,9 +338,10 @@ The user can include or exclude any critic:
 
 Before launching any agents, tell the user:
 - The scope being reviewed
+- **The active profile** (`diff` or `rewrite`) and, if `rewrite`, the file(s) whose churn
+  triggered it
 - Which core critics will run
 - Which contextual critics were auto-selected (and why)
-- Any files flagged for the rewrite profile (with the threshold used) — or "none, all files reviewed under standard diff profile"
 - Total agent count (1 fact-checker + N critics)
 
 Keep this brief — a short paragraph.
@@ -496,21 +604,21 @@ For each critic agent, you MUST:
    `## What this PR is trying to accomplish` heading so the critic can scope findings to
    stated intent. If Step 3 surfaced `<prior-findings>`, paste them verbatim under a
    `## Prior review findings (advisory — worth checking, not verdict input)` heading
-   immediately after the intent block; otherwise omit this heading entirely. If Step 1's
-   per-file change-density triage produced `<rewrite-profile-files>`, paste the list
-   verbatim under a `## Rewrite-profile files (review the new version as greenfield, ignore the diff)`
-   heading after the prior-findings block, with this instruction inline: "For each file
-   listed here, fetch the current version (`git show HEAD:<path>` or read the working
-   tree) and review its architecture as if it were new code — module boundaries,
-   responsibilities, public surface, layering, and naming. Do not analyze diff hunks for
-   these files; the diff is uninformative because the file was substantially rewritten.
-   For every other file in scope, run your standard hunk-level critique." Otherwise omit
-   this heading entirely.
+   immediately after the intent block; otherwise omit this heading entirely.
 5. Include the fact-check results. If the fact-check report is longer than 200 lines, include
    only the findings rated Incorrect, Stale, or Mostly Accurate — skip Accurate claims to
    save context budget.
-6. Instruct the agent to save its critique as `docs/reviews/{critic-name}-review.md`
-7. Require the agent to tag every finding with a **Legibility-target** field
+6. **Paste the active profile's checklist** verbatim under a
+   `## Active review profile: <name>` heading (see [Review Checklists by Profile](#review-checklists-by-profile)).
+   - If profile is `diff`, paste the Diff-profile checklist and let the critic use its
+     skill file's native structure.
+   - If profile is `rewrite`, paste the Rewrite-profile checklist AND prepend a one-line
+     directive: `Mode: REWRITE — ignore diff-line findings; review the new file state
+     architecturally per the checklist below.` Also list the files whose churn triggered
+     the switch so the critic knows which files to apply greenfield review to (other files
+     in scope get standard treatment).
+7. Instruct the agent to save its critique as `docs/reviews/{critic-name}-review.md`
+8. Require the agent to tag every finding with a **Legibility-target** field
    (`for-author`, `for-orchestrator-synthesis`, or `for-automated-gate`) per
    the [legibility-target tagging](../patterns/orchestrated-review.md#legibility-target-tagging)
    spec. The tag goes on the finding alongside Severity / Confidence:
@@ -536,7 +644,7 @@ For each critic agent, you MUST:
    If a critic tags every finding `for-author`, that's a calibration
    failure — flag it in synthesis rather than treating uniform tagging as
    ground truth.
-8. Require the agent to append a **Goal-Alignment Note** at the end of its critique and chat
+9. Require the agent to append a **Goal-Alignment Note** at the end of its critique and chat
    summary using the canonical form from
    [`patterns/orchestrated-review.md`](../patterns/orchestrated-review.md):
 
@@ -551,7 +659,7 @@ For each critic agent, you MUST:
    One short bullet per line. No padding. The "Questions I would have asked" bullet is
    optional — include it only when scope was genuinely ambiguous and the critic had to
    make a non-trivial guess about what to evaluate.
-9. Launch via the Agent tool with `subagent_type: "general-purpose"`
+10. Launch via the Agent tool with `subagent_type: "general-purpose"`
 
 **Worked example — dispatch goal preamble with optional Project-state fields**
 
@@ -624,10 +732,9 @@ the individual agent reports.
 
 ### Structure the chat synthesis as:
 
-**Scope summary:** What was reviewed — branch, files, diff size. Note any files reviewed
-under the rewrite profile (greenfield architectural review of the new version) rather than
-standard hunk-level diff review, so the author knows which findings are line-level and
-which are structural.
+**Scope summary:** What was reviewed — branch, files, diff size, and the **active profile**
+(`diff` or `rewrite`). When profile is `rewrite`, list the file(s) whose churn crossed the
+40% threshold so the reader knows which files received greenfield architectural review.
 
 ### Coverage and Escalations
 
@@ -714,7 +821,11 @@ document the author uses to track code review resolution.
 ```markdown
 # Code Review Rubric
 
-**Scope:** [branch/range] | **Reviewed:** [date] | **Status: 🔴 DOES NOT PASS** — [N] red item(s) unresolved
+**Scope:** [branch/range] | **Profile:** [diff|rewrite] | **Reviewed:** [date] | **Status: 🔴 DOES NOT PASS** — [N] red item(s) unresolved
+
+<!-- When Profile is `rewrite`, add a one-line note immediately below the header:
+     "Rewrite profile triggered by: <file1>, <file2> (>40% churn). Findings below are
+     architectural; per-line diff findings were not produced." -->
 
 ---
 
