@@ -40,11 +40,31 @@ set -euo pipefail
 
 # --- JSON logging helpers ---
 
-# Clean up temp files on early exit
+# Clean up temp files and any leftover worktrees on early exit.
+# Validation steps (e.g., self-eval) can leave untracked files in the worktree,
+# so `git worktree remove` without --force fails silently and leaves orphans —
+# always pass --force when cleaning up. RUN_WORKTREES tracks every worktree
+# created by this invocation so a crash mid-run cleans them up too.
 ROUND_LOG_FILE=""
+RUN_WORKTREES=()
+RUN_BRANCHES=()
 cleanup() {
     if [ -n "$ROUND_LOG_FILE" ] && [ -f "$ROUND_LOG_FILE" ]; then
         rm -f "$ROUND_LOG_FILE"
+    fi
+    # Force-remove any worktrees this run created that are still around.
+    # Run inside the main repo so `git worktree` commands target it (we may
+    # have been cd'd elsewhere when the trap fires).
+    if [ ${#RUN_WORKTREES[@]} -gt 0 ] && [ -d "${REPO_DIR:-}" ]; then
+        for wt in "${RUN_WORKTREES[@]}"; do
+            [ -d "$wt" ] || continue
+            git -C "$REPO_DIR" worktree remove --force "$wt" 2>/dev/null || true
+        done
+        for br in "${RUN_BRANCHES[@]}"; do
+            git -C "$REPO_DIR" show-ref --verify --quiet "refs/heads/$br" || continue
+            git -C "$REPO_DIR" branch -D "$br" 2>/dev/null || true
+        done
+        git -C "$REPO_DIR" worktree prune 2>/dev/null || true
     fi
 }
 trap cleanup EXIT ERR
@@ -649,6 +669,9 @@ other tasks in this round.${TASK_OFF_LIMITS}"
             echo "Warning: could not create worktree for $TASK_ID, skipping"
             continue
         }
+        # Track so the EXIT trap force-cleans these if the run crashes.
+        RUN_WORKTREES+=("$WT_DIR")
+        RUN_BRANCHES+=("feat/r${ROUND}-${TASK_ID}")
 
         LAUNCHED_TASKS="${LAUNCHED_TASKS:+$LAUNCHED_TASKS }$TASK_ID"
 
@@ -935,8 +958,9 @@ Count only the automated assessment scores (Testability investment, Trigger clar
             echo "[$TASK_ID] REJECTED: $REJECT_REASON" >> "$WORKING_DIR/validation-round-$ROUND.log"
             record_gate "$TASK_ID" "verdict" "rejected"
             record_gate_detail "$TASK_ID" "verdict" "$(jq -n --arg reason "$REJECT_REASON" '{reject_reason: $reason}')"
-            # Clean up rejected worktree and branch
-            git worktree remove "$WT_DIR" 2>/dev/null || true
+            # Clean up rejected worktree and branch. --force is required because
+            # validation gates (e.g., self-eval) leave untracked files behind.
+            git worktree remove --force "$WT_DIR" 2>/dev/null || true
             git branch -D "$BRANCH" 2>/dev/null || true
         else
             echo "    APPROVED"
@@ -1039,8 +1063,9 @@ Then git add the resolved files and git commit to complete the merge."
         jq --arg tid "$TASK_ID" --arg s "$MERGE_STATUS" \
             '.merges[$tid] = $s' "$ROUND_LOG_FILE" > "$MERGE_TMP" && mv "$MERGE_TMP" "$ROUND_LOG_FILE"
 
-        # Clean up worktree
-        git worktree remove "$WT_DIR" 2>/dev/null || true
+        # Clean up worktree. --force handles untracked-file leftovers from
+        # validation; `branch -d` still refuses unmerged branches as a safety net.
+        git worktree remove --force "$WT_DIR" 2>/dev/null || true
         git branch -d "$BRANCH" 2>/dev/null || true
     done
 

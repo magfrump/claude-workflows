@@ -388,6 +388,41 @@ EOF
   [[ "$output" == *"workflow .md"* ]]
 }
 
+@test "cleanup force-removes worktrees left dirty by validation" {
+  # Regression guard: validation steps (e.g. self-eval) write untracked files
+  # into the worktree. Without --force, `git worktree remove` fails silently
+  # and the worktree leaks. This test reproduces that condition and verifies
+  # the cleanup function clears it anyway.
+
+  REPO_DIR="$TEST_TMPDIR/repo"
+  mkdir -p "$REPO_DIR"
+  git -C "$REPO_DIR" init -q -b main
+  git -C "$REPO_DIR" config user.email t@t
+  git -C "$REPO_DIR" config user.name t
+  echo seed > "$REPO_DIR/seed.txt"
+  git -C "$REPO_DIR" add seed.txt
+  git -C "$REPO_DIR" commit -q -m seed
+
+  local wt="$TEST_TMPDIR/wt-dirty"
+  git -C "$REPO_DIR" worktree add -q "$wt" -b feat/r1-dirty main
+  # Mimic the self-eval artifact that broke prior cleanups.
+  mkdir -p "$wt/docs/reviews"
+  echo report > "$wt/docs/reviews/self-eval-x.md"
+
+  # Sanity: bare `worktree remove` (no --force) refuses a dirty worktree.
+  ! git -C "$REPO_DIR" worktree remove "$wt"
+  [ -d "$wt" ]
+
+  RUN_WORKTREES=("$wt")
+  RUN_BRANCHES=("feat/r1-dirty")
+  ROUND_LOG_FILE=""
+
+  cleanup
+
+  [ ! -d "$wt" ]
+  ! git -C "$REPO_DIR" show-ref --verify --quiet refs/heads/feat/r1-dirty
+}
+
 @test "lint produces no warnings for a well-formed task" {
   cat > "$TEST_TMPDIR/tasks.json" <<'EOF'
 [
