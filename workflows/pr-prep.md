@@ -245,6 +245,9 @@ For UI changes, capture before/after screenshots or a short recording and includ
 - [ ] Skeleton was generated from commits and review artifacts (not written from scratch)
 - [ ] All six sections are present (What this does, How it works, How to test, Areas of uncertainty, Decisions made, Review evidence)
 - [ ] Each section contains at least one substantive sentence (not a placeholder)
+- [ ] Each "Major change" line under "What this does" cites `file:test_name` evidence or carries a one-sentence `(no test: <reason>)` parenthetical. Example:
+  - `- feat: add CSV export — exports/csv.test.ts:exports_complete_rows`
+  - `- refactor: rename internal helper (no test: pure rename, no behavior change)`
 - [ ] Review evidence section lists all `docs/reviews/` artifacts for this PR, or states "No review artifacts" if none exist
 - [ ] (Optional) If this PR involved multiple workflow compositions (e.g., RPI → DD → RPI), a workflow provenance line is included in "What this does"
 
