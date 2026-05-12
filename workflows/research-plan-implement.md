@@ -140,6 +140,33 @@ After the header and research link, the body must include:
   - Specific enough that someone could do it without re-reading the research
   - Small enough to be one commit
   - Ordered by dependency (what must exist before what)
+- **Implementation order**: An explicit representation of the dependency structure of the Steps list, surfacing which steps must be sequential and which can run in parallel. The Steps list already says "ordered by dependency," but a linear list hides parallelism; this block makes it explicit so an implementer (human or autonomous) can pick up the next *available* step rather than the next *numbered* step.
+
+  **When required vs. optional:**
+  - **Required** when either (a) the plan has more than 5 steps, or (b) the plan will be implemented in /away mode (i.e., step 6 will run autonomously). The first triggers on cognitive load — a long linear list is hard to scan for parallelism. The second triggers on autonomy — an autonomous session benefits most from knowing which step to pick up next without re-deriving the dependency graph.
+  - **Optional** otherwise. For small plans implemented in /active mode, the Steps list's "ordered by dependency" guarantee is sufficient.
+
+  **Notation:** Either form is acceptable; pick whichever is clearer for the specific plan.
+
+  - *Compact arrow form*, with brackets grouping parallelizable steps: `[1, 2] → 3 → [4, 5, 6] → 7`. Read left-to-right; bracketed groups can run in any order or simultaneously; the arrow denotes a hard dependency.
+  - *Prose form*, listing groups by phase: "Phase A (parallelizable): steps 1, 2. Phase B (sequential): step 3. Phase C (parallelizable): steps 4, 5, 6. Phase D: step 7."
+
+  **Worked example.** A plan with 7 steps for adding a new API endpoint:
+
+  > Steps:
+  > 1. Add `User.email_verified` field to the model.
+  > 2. Add `Session.last_seen_at` field to the model.
+  > 3. Run the database migration that introduces both fields.
+  > 4. Add `POST /verify-email` handler.
+  > 5. Add `GET /session/heartbeat` handler.
+  > 6. Add integration tests for the new handlers.
+  > 7. Update the API changelog.
+  >
+  > Implementation order: `[1, 2] → 3 → [4, 5] → 6 → 7`
+  >
+  > Reading: steps 1 and 2 are independent model edits and can run in parallel. Step 3 depends on both (the migration covers both fields). Steps 4 and 5 each depend only on step 3 and can run in parallel. Step 6 depends on both handlers existing. Step 7 is documentation and runs last.
+
+  When in doubt, use the compact arrow form — it forces you to name the dependency edges explicitly, which is the point.
 - **Size estimate**: For each step (or for the plan as a whole if steps are small), include a rough size estimate — e.g., "~50 lines in a new file", "~20 lines added to existing handler", "minor wiring change." These don't need to be precise; the goal is to flag when a step is unexpectedly large and to catch cases where a single file would grow beyond a reasonable size. If a step would push a file past **500 lines**, note that explicitly and consider splitting the file as part of the plan.
 - **Estimated context cost**: One line with rough token estimates for each phase — e.g., "Research ~20k, Implementation ~40k, Review ~15k". Typical ranges: small docs/workflow edits run ~5–15k per phase; multi-file feature work runs ~20–60k per phase; deep cross-subsystem work runs higher. Precision is not the point — the estimate is an anchor so /away mode has a concrete stop-or-pause signal when actuals overshoot. The pause threshold and reconciliation protocol live in step 6 (Implement) under "Context-cost budget (/away mode protocol)"; treat overruns as a prompt to checkpoint and reassess (start a fresh session, narrow scope, or escalate to the user), not a hard kill.
 - **Actual context cost (post-implementation)**: __ (one line mirroring the estimate's structure, filled in during step 6/7 — e.g., "Research ~22k, Implementation ~75k, Review ~10k"). Capturing it in the plan artifact, not just transient logs, makes the estimate-vs-actual comparison reviewable and lets later sessions calibrate future estimates.
@@ -220,6 +247,7 @@ The checkpoint is a *derived artifact* — it contains no new information, only 
 - [ ] The Task status line accurately reflects current lifecycle (re-read it; if it lies, fix it)
 - [ ] Each step is specific enough that someone could implement it without re-reading the research doc
 - [ ] Each step is small enough to be one commit
+- [ ] Plan doc includes an Implementation order block when the plan has more than 5 steps OR will be implemented in /away mode (otherwise the block is optional)
 - [ ] Test specification includes at least one test case per behavioral requirement
 - [ ] No single step would push a file past 500 lines without an explicit note
 - [ ] Plan doc includes an Estimated context cost line covering research, implementation, and review phases, paired with an Actual context cost (post-implementation) placeholder line awaiting the post-implementation fill-in
