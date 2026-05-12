@@ -454,6 +454,35 @@ _project_state_token_burn() {
     echo "Token burn rate: N/A (token-actuals renderer not yet implemented)"
 }
 
+# --- Internal: emit a sub-bullet when self_eval was skipped for a task ---
+# Prints "  - self_eval skipped: <reason>" (no trailing newline beyond echo)
+# when validation[tid].self_eval == "skip" in the round report. Silent
+# otherwise.
+#
+# Reason source order:
+#   1. validation[tid].self_eval_detail.reason — future-proof; surfaces any
+#      detail field if a future skip path starts recording one.
+#   2. Static fallback "no skill/workflow files changed" — the only path that
+#      currently writes a skip status (scripts/self-improvement.sh: the
+#      else-branch when CHANGED_SKILLS is empty).
+_self_eval_skip_line() {
+    local report="$1" tid="$2"
+    [ -f "$report" ] || return 0
+    [ -n "$tid" ] || return 0
+
+    local status
+    status=$(jq -r --arg tid "$tid" '.validation[$tid].self_eval // ""' "$report" 2>/dev/null) || return 0
+    [ "$status" = "skip" ] || return 0
+
+    local reason
+    reason=$(jq -r --arg tid "$tid" \
+        '.validation[$tid].self_eval_detail.reason // "no skill/workflow files changed"' \
+        "$report" 2>/dev/null)
+    [ -z "$reason" ] && reason="no skill/workflow files changed"
+
+    echo "  - self_eval skipped: ${reason}"
+}
+
 # --- Internal: per-round task listings ---
 _summary_whats_new() {
     local start_round="$1" end_round="$2" working_dir="$3"
@@ -501,6 +530,7 @@ _summary_whats_new() {
             else
                 echo "- **${tid}**: (no summary available)"
             fi
+            _self_eval_skip_line "$report" "$tid"
         done
 
         # List rejected tasks with failure reasons
@@ -511,6 +541,7 @@ _summary_whats_new() {
             local failing_gate
             failing_gate=$(jq -r --arg tid "$tid" '.validation[$tid] | to_entries[] | select(.value == "fail" and .key != "verdict") | .key' "$report" 2>/dev/null | head -1) || failing_gate="unknown"
             echo "- REJECTED: **${tid}** (failed: $failing_gate)"
+            _self_eval_skip_line "$report" "$tid"
         done
 
         # Contrastive note: pair one approved + one rejected addressing a
