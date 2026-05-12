@@ -28,6 +28,36 @@ This file is committed to the repo and treated as a living reference. Unlike RPI
 
 ## Process
 
+### 0. From-scratch gate — choose the right path
+
+Before starting onboarding, check whether this is a mature codebase or a from-scratch project. Onboarding mis-fires on from-scratch projects: entry-point inventory and architecture mapping produce empty or trivial outputs when most of the system hasn't been written yet, wasting effort and creating false confidence that you "understand" a codebase that doesn't really exist.
+
+**Detection thresholds.** Treat the repo as from-scratch if EITHER of these is true:
+
+- **File count below 25.** Run `git ls-files | wc -l`. If the count is fewer than 25 tracked files — or the directory is not yet a git repo — treat as from-scratch.
+- **Repo age under 7 days.** Run `git log --reverse --format=%cI | head -1` and compare to today. If the first commit is less than 7 days old, or no commits exist yet, treat as from-scratch.
+
+The two signals catch different shapes of "nothing to onboard onto": file count catches the small-but-old sketch project that never grew structure; age catches the recently-bootstrapped project that has many generated files (template scaffolding, lockfiles, vendored deps) but hasn't yet developed real architecture. Either alone is sufficient to redirect — they are an OR, not an AND.
+
+**If from-scratch → project-charter path (this section only).** Skip steps 1–5 (entry points, architecture map, key flows, conventions, known unknowns) — there is not enough code yet for any of them to produce useful output. Instead, produce a short project charter that captures what the project is *meant to become*. Write it to `docs/working/charter-{project}.md` with the same three-line header (Goal · Project state · Task status) used by the standard onboarding doc (see step 6 for the header convention). Required sections:
+
+- **Goals.** Two or three sentences naming the user, the problem, and the intended outcome. What does success look like?
+- **Constraints.** Hard requirements that bound the design space: target platform, language/runtime, regulatory or compatibility requirements, performance budgets, team-size or deadline constraints.
+- **Initial module sketch.** A short list (three to seven items) of the subsystems the project is *expected* to grow into — one line each: name + intended responsibility. Mark each as `planned`, `started`, or `not-yet-needed`. This is a forecast, not a map; expect it to drift as the project grows.
+- **Decision seeds.** Architectural or library choices already made or actively under consideration. Link to `docs/decisions/` entries if they exist; otherwise note the open questions.
+- **Risks and unknowns.** What you don't yet know that will shape the project — feasibility questions, unclear requirements, dependencies on external decisions. This list will seed the Known Unknowns section when the project later graduates to the standard onboarding path.
+
+The charter is intentionally lighter than the full orientation doc: no entry-point inventory (there are none worth listing), no flow tracing (no flows yet), no convention catalog (conventions emerge with the code, not before it). Steps 6 (produce doc) and 7 (gate / review) still apply, scaled to the charter — commit the charter to the repo and, if possible, have a stakeholder confirm Goals and Constraints before any RPI work proceeds against it.
+
+**Re-evaluation.** Re-run this gate whenever either threshold is plausibly crossed — e.g., after a significant scaffolding pass, after roughly a month of active development, or whenever the charter starts feeling stale because real code has grown around it. Once both thresholds are exceeded (≥25 tracked files AND ≥7 days since first commit), graduate to the standard onboarding path (steps 1–7 below). The charter is preserved as historical context — link to it from the new orientation doc's Known Unknowns or Suggested Starting Points section — but the orientation doc supersedes it as the live reference.
+
+**Done when...**
+- [ ] File count and repo age have been checked against the thresholds and the result recorded (e.g., in the commit message or charter doc)
+- [ ] If from-scratch: `docs/working/charter-{project}.md` exists with Goals, Constraints, Initial module sketch, Decision seeds, and Risks/Unknowns, and is committed to the repo
+- [ ] If not from-scratch: proceed to step 1 below (standard onboarding path)
+
+**If not from-scratch → standard path.** Continue to step 1.
+
 ### 1. Entry points — find how the system starts
 
 Before reading deep into any module, identify the system's entry points. These anchor everything else.
