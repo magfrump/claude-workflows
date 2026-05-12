@@ -163,6 +163,30 @@ git push --force-with-lease origin dev
 
 This is disruptive (anyone else with dev checked out needs to reset), so use sparingly.
 
+## Stale-branch triage (advisory)
+
+When a feature branch has gone more than 7 days without a merge or rebase, run a quick self-check. **This is advisory, not a process gate** — nothing in this workflow refuses to merge or open a PR for a stale branch. The trigger exists because branches that quietly accumulate for weeks tend to be the ones that produce phantom conflicts, get re-discovered as duplicates of newer work, or stay open after the underlying need has changed. A 60-second check is cheaper than rebasing a month-old branch onto a moved main.
+
+Use `git for-each-ref --sort=-committerdate refs/heads/feat/* --format='%(committerdate:relative) %(refname:short)'` to see which feature branches are oldest.
+
+For each branch past the 7-day mark, answer three questions:
+
+1. **Still relevant?** — Does the feature still match current priorities? Has the underlying problem changed, been solved another way, or been deprioritized?
+2. **Still owner?** — Am I still the right person to land this, or has someone else picked it up (or should they)?
+3. **Still highest priority?** — Compared to the other branches I'm carrying right now, is this one I'd actually pick up next?
+
+Pick one of three outcomes:
+
+- **Action** — Rebase onto main and either merge into dev or open the PR now. Activity resets the implicit clock. Use this when all three answers are yes.
+- **Defer** — Close the PR (if open), delete the branch, and capture the work as an issue or note so it isn't lost. Use this when "still relevant?" or "still owner?" is no. Deferring is not failure; it's freeing the branch list for the work you're actually doing.
+- **Mark watching** — Explicitly accept "do nothing this week." Refresh the date stamp with an empty commit so the branch's stalled state is documented as intentional, not forgotten:
+  ```bash
+  git commit --allow-empty -m "chore: still watching feat/my-feature"
+  ```
+  Use this when the work is genuinely paused (waiting on a dependency, a decision, or a planned later milestone) and you want it to stay parked without auto-triggering the triage next week.
+
+The point of the third outcome is that "I checked and the right answer is to wait" is a valid answer. The triage exists to make stale-branch state visible, not to force premature defer-or-merge decisions.
+
 ## Quick reference
 
 | Action | Command |
@@ -175,3 +199,5 @@ This is disruptive (anyone else with dev checked out needs to reset), so use spa
 | Check dev divergence | `git log --oneline main..dev \| wc -l` |
 | Check branch subset | `git merge-base --is-ancestor feat/a feat/b` |
 | Reset dev | Delete dev, create from main, re-merge active features |
+| List feature branches by age | `git for-each-ref --sort=-committerdate refs/heads/feat/* --format='%(committerdate:relative) %(refname:short)'` |
+| Keep a paused branch parked | `git commit --allow-empty -m "chore: still watching feat/name"` |
