@@ -381,7 +381,7 @@ Produce a Markdown document with this structure:
 **Draft author:** [name]
 **Checked:** [date]
 **Total claims checked:** [N]
-**Summary:** [X] accurate, [Y] mostly accurate, [Z] disputed, [W] inaccurate, [V] unverified
+**Summary:** [X] accurate, [Y] mostly accurate, [Z] disputed, [W] inaccurate, [V] unverified, [U] secondary-only
 **Provenance:** [A] observed, [B] inferred, [C] assumed
 **Scrutiny:** [P] deep-read, [Q] abstract, [R] inferred
 
@@ -463,3 +463,5 @@ body what source would be required.
 
 This self-check applies to every verdict, including Secondary-only quote verdicts and
 verdicts derived from code reads. Do not exempt any class of claim.
+
+Also confirm the report header `**Summary:**` line tallies all six verdict types — accurate, mostly accurate, disputed, inaccurate, unverified, and **secondary-only** — so the prevalence of unsourced attributions is visible at a glance, not only inside "Claims Requiring Author Attention".
