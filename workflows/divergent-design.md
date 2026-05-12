@@ -209,8 +209,9 @@ Key:
 - ~ not clearly distinguished by this evidence
 - ✗ contradicted by this evidence
 - ? — evidence not yet gathered
+- **Untested ≠ refuted**: a hypothesis whose causal preconditions were never met (feature never deployed, tool never run, predicted trigger never occurred) is **INCONCLUSIVE** — every cell on its row is `?`, not `✗`. Only mark `✗` when evidence was gathered *and* contradicts the hypothesis. Conflating "never tested" with "refuted" inflates the apparent failure rate and feeds misleading signal back into downstream decisions.
 
-Discard hypotheses contradicted by [observed] evidence. Flag hypotheses that depend heavily on [assumed] evidence — these are the ones where gathering more information has the highest value.
+Discard hypotheses contradicted by [observed] evidence. Flag hypotheses that depend heavily on [assumed] evidence — these are the ones where gathering more information has the highest value. Do **not** discard INCONCLUSIVE hypotheses; they survive into step 4 with their evidence gap as the primary investigation target.
 
 #### 4. Rank and identify evidence gaps
 
@@ -218,11 +219,13 @@ Instead of a tradeoff matrix and decision, produce a **ranked hypothesis list**:
 
 | Rank | Hypothesis | Confidence | Key supporting evidence | Critical evidence gap |
 |------|-----------|------------|------------------------|----------------------|
-| 1 | ... | high/medium/low | ... | ... |
+| 1 | ... | INCONCLUSIVE / high / medium / low | ... | ... |
 
-**Confidence** reflects how well the hypothesis explains all [observed] evidence without relying on [assumed] claims.
+**Confidence** reflects how well the hypothesis explains all [observed] evidence without relying on [assumed] claims. It is a first-class state with four values:
+- **INCONCLUSIVE** — the hypothesis's causal preconditions were never met, so no evidence has been gathered for or against it. Rank these *above* low-confidence refuted hypotheses when prioritizing next investigation steps, because gathering even one piece of evidence yields high information value. Never collapse INCONCLUSIVE into "low" — they are categorically different (untested vs. tested-and-weak).
+- **high / medium / low** — evidence has been gathered and the confidence rating reflects how well the hypothesis explains it.
 
-**Critical evidence gap** identifies the single most valuable piece of information that would confirm or refute this hypothesis. This drives the next investigation step.
+**Critical evidence gap** identifies the single most valuable piece of information that would confirm or refute this hypothesis. This drives the next investigation step. For INCONCLUSIVE hypotheses, the gap is typically the precondition itself (e.g., "deploy the feature and observe for one week").
 
 #### 5. Document — hypothesis record
 
