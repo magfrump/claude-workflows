@@ -6,6 +6,19 @@ Human-readable per-round history of the self-improvement loop. Replaces `round-h
 
 ---
 
+## Outstanding debt
+
+Tracked here so per-round entries don't repeatedly re-discover the same blockers. Entries should name the symptom, the location, and what would close them out.
+
+### shellcheck gate carries a stricter severity threshold than the health-check diagnostic
+
+- **Symptom:** `shellcheck` gate stats in the most recent morning-summary show `0/48 pass (0%), 1 fail, 47 skip`. R1's `si-pre-round-health-check` task was rejected for `failed: shellcheck`. The high skip rate masks the fact that the *one* round that touched a `.sh` file failed; the gate's effective pass rate when it actually runs is 0%.
+- **Root cause:** The "info-message fix" (suppressing shellcheck info-level findings via `-S warning`) landed only in the diagnostic check at `scripts/health-check.sh:371` (`shellcheck -x -e SC1091 -s bash -S warning "$f"`, with the explanatory comment at 369–370). The SI validation gate at `scripts/self-improvement.sh:851` still invokes `shellcheck "$WT_DIR/$SH_FILE"` with default severity, so any info-level finding (SC2016, SC2155, SC2086, etc.) trips the gate and rejects the round even when the same file passes the health-check diagnostic.
+- **Verification:** Code-read only — sandbox blocked direct `shellcheck` invocations on this branch, so no fresh pass-rate measurement was taken. The asymmetry between the two call sites is the load-bearing evidence.
+- **Close-out criteria:** (a) align the SI gate's shellcheck invocation with the health-check diagnostic (`-S warning` plus the `-x -e SC1091 -s bash` flags that match how lib/* files are sourced), then (b) re-run a round that touches a `.sh` file and confirm the gate-stats row reports a non-zero pass count. Until both happen, treat shellcheck-gated rounds as expected to fail on info-level findings.
+
+---
+
 ## Round 15
 
 **Date:** 2026-04-09T00:54:00-07:00
