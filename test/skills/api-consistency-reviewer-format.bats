@@ -21,14 +21,20 @@ setup() {
   echo "$REPORT_CONTENT" | grep -qE '^\*\*Scope:\*\*'
 }
 
-@test "report has a Reviewed date field" {
-  echo "$REPORT_CONTENT" | grep -qE '^\*\*Reviewed:\*\*'
+@test "report has a Date field" {
+  echo "$REPORT_CONTENT" | grep -qE '^\*\*Date:\*\*'
 }
 
 # --- Baseline Conventions ---
 
 @test "report has Baseline Conventions section" {
   assert_section_exists "Baseline Conventions"
+}
+
+# --- Name-Pattern Audit (required per skill body) ---
+
+@test "report has Name-Pattern Audit section" {
+  assert_section_exists "Name-Pattern Audit"
 }
 
 # --- Findings section ---
@@ -53,13 +59,16 @@ setup() {
   assert_field_per_finding "Location"
 }
 
-@test "findings that have Confidence use allowed values" {
-  # API consistency reviews may omit per-finding Confidence lines
-  local values
-  values=$(echo "$REPORT_CONTENT" | sed -n 's/^\*\*Confidence:\*\* //p' || true)
-  if [ -n "$values" ]; then
-    assert_field_values "Confidence" "High|Medium|Low"
-  fi
+@test "each finding has a Move line" {
+  assert_field_per_finding "Move"
+}
+
+@test "each finding has a Confidence line" {
+  assert_field_per_finding "Confidence"
+}
+
+@test "confidence levels use only the allowed values" {
+  assert_field_values "Confidence" "High|Medium|Low"
 }
 
 @test "findings have Recommendation lines" {
