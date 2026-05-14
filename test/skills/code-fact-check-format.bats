@@ -32,6 +32,21 @@ setup() {
   echo "$REPORT_CONTENT" | grep -qE '^\*\*Total claims checked:\*\*'
 }
 
+@test "Total claims checked is a non-negative integer" {
+  local value
+  value=$(echo "$REPORT_CONTENT" | sed -n 's/^\*\*Total claims checked:\*\* *//p' | head -1 | tr -d '[:space:]')
+  [ -n "$value" ] || skip "no Total claims checked value found"
+  echo "$value" | grep -qE '^[0-9]+$'
+}
+
+@test "Total claims checked matches actual claim section count" {
+  local value
+  value=$(echo "$REPORT_CONTENT" | sed -n 's/^\*\*Total claims checked:\*\* *//p' | head -1 | tr -d '[:space:]')
+  [ -n "$value" ] || skip "no Total claims checked value found"
+  echo "$value" | grep -qE '^[0-9]+$' || skip "value not numeric"
+  [ "$value" = "$CLAIM_COUNT" ]
+}
+
 @test "report has a Summary line with verdict counts" {
   echo "$REPORT_CONTENT" | grep -qE '^\*\*Summary:\*\*.*verified.*incorrect'
 }
