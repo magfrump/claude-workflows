@@ -1,19 +1,29 @@
 ---
 name: api-consistency-reviewer
 description: >
-  Review code changes for API design consistency — both external HTTP/gRPC APIs and internal
-  module interfaces. This catches the class of bugs and usability problems that arise when
-  a codebase's APIs evolve inconsistently: different naming conventions across endpoints,
-  inconsistent error response formats, breaking changes disguised as additions, mixed
-  patterns for pagination or filtering, and interfaces that violate the expectations set by
-  the rest of the codebase. Produces a structured Markdown critique of code diffs. Use this
-  skill when the user asks to "check API consistency", "review the interface", "does this
-  match our conventions", "will this break clients", or "is this a good API". Also trigger
-  when code adds or modifies public endpoints, exported functions, SDK methods, CLI commands,
-  configuration schemas, or any interface that external or internal consumers depend on.
-  NOTE: This skill can be invoked standalone or by a code-review orchestrator. If a
-  code-fact-check report is provided, use it as your foundation for understanding what the
-  code actually does and do not re-verify documented behavior.
+  Review code changes for API design consistency across the surfaces that consumers actually
+  bind to: HTTP/REST endpoints, gRPC services, GraphQL schemas, SDK methods, exported library
+  functions, CLI commands and flags, configuration schemas, event payloads, and any other
+  interface that internal or external callers depend on. Catches the bugs and usability
+  problems that come from APIs evolving inconsistently — mixed naming conventions
+  (snake_case vs camelCase, get vs fetch, plural vs singular), inconsistent error response
+  formats, breaking changes disguised as additions, divergent pagination/filtering patterns,
+  request/response field asymmetries, and interfaces that quietly violate the expectations
+  the rest of the codebase has already established. Produces a structured Markdown critique
+  of code diffs with a name-pattern audit that compares every new public name against its
+  closest existing neighbors. Use this skill when the user asks to "check API consistency",
+  "review the interface", "does this match our conventions", "will this break clients",
+  "is this a good API", "audit endpoint naming", "check the SDK surface", or "compare to
+  sibling endpoints". Also trigger whenever a diff adds or modifies a public endpoint,
+  exported function/method/class, SDK method, CLI command or flag, config field, event
+  schema, or any consumer-facing contract — even when the user did not explicitly ask for
+  an API review. Distinct from architecture-review (which evaluates SOLID, dependency
+  direction, and module boundaries) and security-reviewer (which evaluates trust boundaries
+  and exploitability) — this skill evaluates whether the new surface matches the conventions
+  consumers have already learned. NOTE: This skill can be invoked standalone or by a
+  code-review orchestrator. If a code-fact-check report is provided, use it as your
+  foundation for understanding what the code actually does and do not re-verify documented
+  behavior.
 when: Code adds or modifies APIs, endpoints, or public interfaces
 requires:
   - name: code-fact-check
@@ -128,8 +138,11 @@ in your critique:
 3. **Render the comparison as a table** so the inconsistency is visible at a glance. Each
    row pairs one new name with its closest existing neighbors and a one-line verdict.
 
-The audit is mandatory for every review and goes in its own section of the output (see
-"How to Structure the Critique" below). Inconsistencies surfaced here become Findings under
+The audit goes in its own section of the output (see "How to Structure the Critique"
+below) and is expected for any diff that introduces new public names. If the diff
+genuinely introduces no new public names (e.g., an internals-only refactor that still
+touches a file under review), state that explicitly under the Name-Pattern Audit heading
+rather than skipping the section. Inconsistencies surfaced here become Findings under
 the rules in move #2; consistent names get a brief acknowledgment under "What Looks Good".
 
 **Example output block:**
@@ -261,7 +274,7 @@ discoverable. Follow with these header fields so readers know what was reviewed 
 # API Consistency Review — [short scope label, e.g., PR #347 or branch name]
 
 **Scope:** [branch diff / file list / directory under review]
-**Reviewed:** [YYYY-MM-DD]
+**Date:** [YYYY-MM-DD]
 ```
 
 If you've been given a fact-check report or other upstream artifact, add a `**Based on:**`
