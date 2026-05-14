@@ -252,6 +252,21 @@ If the codebase has existing patterns for idempotency, check that the new code f
 
 Output your critique as a Markdown document.
 
+### Title and Header
+
+Open with a top-level title that includes "API Consistency Review" so the report is
+discoverable. Follow with these header fields so readers know what was reviewed and when:
+
+```markdown
+# API Consistency Review — [short scope label, e.g., PR #347 or branch name]
+
+**Scope:** [branch diff / file list / directory under review]
+**Reviewed:** [YYYY-MM-DD]
+```
+
+If you've been given a fact-check report or other upstream artifact, add a `**Based on:**`
+line naming it. Keep the header to 3–5 lines; the substance belongs in the sections below.
+
 ### Baseline Conventions
 Summarize the API conventions you observed in the existing codebase (move #1). This makes
 explicit what "consistent" means for this review and lets the author verify your baseline.
