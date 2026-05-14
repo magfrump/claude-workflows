@@ -4,10 +4,16 @@ description: >
   Evaluate a piece of tech debt and produce a structured assessment: what it costs to carry,
   what it costs to fix, when it becomes urgent, and where it ranks relative to other work.
   Use this skill when the user asks "should we fix this", "is this worth refactoring",
-  "how bad is this tech debt", "prioritize these cleanup tasks", or when planning work and
-  deciding whether to address accumulated debt. Also trigger when code review surfaces
-  something that works but is fragile, overly complex, or blocking future work. Can evaluate
-  a single item or compare multiple debt items using the matrix-analysis pattern.
+  "how bad is this tech debt", "prioritize these cleanup tasks", "what's the highest-ROI
+  cleanup", or when scoping a cleanup sprint, refactor week, or backlog grooming pass.
+  Also trigger when code review surfaces something that works but is fragile, overly
+  complex, or blocking future work; when a developer complains that a module is "painful"
+  or "we should rewrite this"; when planning capacity and deciding whether to spend it on
+  debt versus features; or when a postmortem identifies underlying debt as a contributor.
+  Can evaluate a single item or compare multiple debt items using the matrix-analysis
+  pattern. Prefer running this skill over giving an ad-hoc opinion whenever the question
+  is "is fixing this worth it" — the structured carry/fix/urgency framing changes the
+  answer often enough to be worth the small overhead.
 when: User asks whether tech debt is worth fixing or how to prioritize it
 ---
 
@@ -179,9 +185,16 @@ to re-evaluate (e.g., "revisit before starting the v3 API migration").
 - {trigger 2}
 - {or: none identified — no imminent escalation}
 
-### Recommendation: {Fix now / Fix opportunistically / Carry intentionally / Defer and monitor}
+### Recommendation
+
+**Recommendation:** {Fix now | Fix opportunistically | Carry intentionally | Defer and monitor}
+
 {2-3 sentences with rationale, referencing the analysis above}
 ```
+
+The four allowed values for **Recommendation** are exactly: `Fix now`, `Fix opportunistically`,
+`Carry intentionally`, `Defer and monitor`. Use one verbatim — do not invent variants
+(e.g., "Fix later", "Monitor only").
 
 ### For multiple debt items:
 

@@ -26,6 +26,16 @@ setup() {
   echo "$REPORT_CONTENT" | grep -qE '\*\*Nature:\*\*'
 }
 
+@test "report has a Cost of Deferral field" {
+  echo "$REPORT_CONTENT" | grep -qE '\*\*Cost of Deferral:\*\*'
+}
+
+@test "cost of deferral uses +X per Y or inert form" {
+  # Accept either "+<number> ... per <unit>" or an inert marker (+0 ... inert).
+  echo "$REPORT_CONTENT" | grep -E '\*\*Cost of Deferral:\*\*' \
+    | grep -qiE '(\+[0-9]+(\.[0-9]+)?.*\bper\b|\+0.*inert|\binert\b)'
+}
+
 # --- Required sections ---
 
 @test "report has Carrying Cost section" {
@@ -60,6 +70,20 @@ setup() {
   assert_heading_exists "Recommendation"
 }
 
-@test "recommendation uses allowed values" {
-  echo "$REPORT_CONTENT" | grep -iE '(Recommendation|^Fix now|^Fix opportunistically|^Carry intentionally|^Defer and monitor)' | grep -qiE '(Fix now|Fix opportunistically|Carry intentionally|Defer and monitor)'
+@test "recommendation uses one of the four allowed values" {
+  # The Recommendation line must contain exactly one of the four prescribed verdicts.
+  echo "$REPORT_CONTENT" | grep -E '\*\*Recommendation:\*\*' \
+    | grep -qE '\b(Fix now|Fix opportunistically|Carry intentionally|Defer and monitor)\b'
+}
+
+# --- No leakage ---
+
+@test "report does not use dependency-upgrade recommendation verbs" {
+  # Guard against borrowed enums from the dependency-upgrade skill, which is the
+  # nearest decision-helper sibling and the most likely source of vocabulary drift.
+  ! echo "$REPORT_CONTENT" | grep -qE '\*\*Recommendation:\*\* (Upgrade now|Upgrade soon|Don.t upgrade)\b'
+}
+
+@test "report does not contain fact-check verdict language" {
+  ! echo "$REPORT_CONTENT" | grep -qiE '^\*\*Verdict:\*\* (Accurate|Mostly accurate|Disputed|Inaccurate|Unverified)$'
 }
