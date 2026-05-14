@@ -3,14 +3,20 @@ name: design-space-situating
 description: >
   Place a proposed design decision onto eight orthogonal dimensions of design technique
   (locus of authority, orientation in time, search/compose/emerge, modeling target,
-  reversibility, formality, social structure, legibility) and produce a one-paragraph
+  reversibility, formality, social structure, legibility) and produce a structured
   situating record that names what kind of decision this actually is. Use this skill when
   the user asks "what kind of decision is this", "situate this decision", "where does
-  this sit in the design space", or "frame this before we choose". Also trigger as a
-  sub-procedure when divergent-design surfaces contradictory constraints that no candidate
-  can satisfy — contradictory constraints often signal a misframed problem rather than a
-  genuine tradeoff. The output record becomes input to DD's diagnosis step (problem
-  statement) or RPI's plan step (decision framing); it is a frame, not a decision.
+  this sit in the design space", "frame this before we choose", "frame this before we
+  diverge", "what kind of problem is this", or "are we even framing this right". Also
+  trigger proactively as a sub-procedure when divergent-design surfaces contradictory
+  constraints that no candidate can satisfy, when DD's compatibility matrix has no green
+  cell, or when RPI research turns up a decision touching authority, time, reversibility,
+  formality, social structure, or legibility in ways the user has not named. Contradictory
+  constraints almost always signal a misframed problem rather than a genuine tradeoff —
+  run this skill before treating it as a tradeoff. The output record becomes input to
+  DD's diagnosis step (problem statement) or RPI's plan step (decision framing); it is a
+  frame, not a decision. Lean toward invoking this skill when in doubt — a 5-minute
+  framing pass routinely saves hours of misdirected design work.
 when: User wants to frame a design decision before choosing, or DD/RPI surfaces a misframing signal
 ---
 
@@ -233,40 +239,55 @@ layers will be expensive afterthoughts if they're not designed in.
 
 ## Output
 
-Produce a Markdown record with three sections:
+Produce a Markdown record with the following structure. All five sections
+(`Decision under situating`, `Situating paragraph`, `Dimensional placements`,
+`Tensions surfaced`, `Hand-off`) are required. The placements table must contain
+all eight dimensions, in the canonical order below, each as its own row.
 
 ```markdown
 # Situating Record: <decision name>
 
+**Date:** <YYYY-MM-DD>
+
 ## Decision under situating
+
 <the user's 1-3 sentence statement, verbatim if possible>
 
 ## Situating paragraph
+
 <3-6 sentences naming what kind of decision this is, leading with the most
-load-bearing dimensions, and explicitly noting any tensions>
+load-bearing dimensions, and explicitly noting any tensions surfaced below>
 
 ## Dimensional placements
 
-| Dimension | Placement | Rationale |
-|---|---|---|
-| 1. Locus of authority | Centralized / Mixed / Distributed | <one sentence tied to this decision> |
-| 2. Orientation in time | Backward / Forward; Snapshot / Process | <one sentence> |
-| 3. Search / Compose / Emerge | Search / Compose / Emerge / Mixed | <one sentence> |
-| 4. Modeling target | Receiver / Structure / Context | <one sentence> |
-| 5. Reversibility | Cheap / Expensive; gradient note | <one sentence> |
-| 6. Formality | Tacit / Explicit / Formal | <one sentence> |
-| 7. Social structure | Expert-led / Participatory / Community | <one sentence> |
-| 8. Legibility | Self / Peer / Stakeholder / Machine | <one sentence + any translation gaps> |
+| # | Dimension | Placement | Rationale |
+|---|---|---|---|
+| 1 | Locus of authority | one of: Centralized, Mixed, Distributed | one sentence tied to this specific decision |
+| 2 | Orientation in time | Backward or Forward; Snapshot or Process | one sentence |
+| 3 | Search / Compose / Emerge | one of: Search, Compose, Emerge, Mixed | one sentence |
+| 4 | Modeling target | one of: Receiver, Structure, Context | one sentence |
+| 5 | Reversibility | Cheap or Expensive; note the gradient over time | one sentence |
+| 6 | Formality | one of: Tacit, Explicit, Formal | one sentence |
+| 7 | Social structure | one of: Expert-led, Participatory, Community | one sentence |
+| 8 | Legibility | any of: Self, Peer, Stakeholder, Machine | one sentence; name any translation gaps |
+
+Use "Mixed" or "N/A — does not constrain" only when genuinely warranted; manufactured
+placements add noise.
 
 ## Tensions surfaced
+
 - <each contradiction or implicit default that the placements expose, one per bullet>
-- <or "None — placements are coherent" if no tensions found>
+- <or the single line "None — placements are coherent." if no tensions found>
 
 ## Hand-off
-This record is a frame, not a decision. It is intended as input to:
-- <DD's diagnosis step (step 2) — the constraints become testable>, or
-- <RPI's plan step — the decision's actual scope is now named>, or
-- <whatever workflow the user is composing this with>
+
+This record is a frame, not a decision. It is intended as input to one of:
+
+- DD's diagnosis step (step 2) — the constraints become testable
+- RPI's plan step — the decision's actual scope is now named
+- direct implementation — name the implementer and the first concrete next step
+
+Name which one applies here.
 ```
 
 ---
