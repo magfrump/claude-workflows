@@ -1,1 +1,0 @@
-Added factual vs. perspective-based disagreement classification framework to draft-review.md Stage 3 synthesis, so critics' conflicts get triaged (escalate to fact-check or present both sides) instead of just surfaced.

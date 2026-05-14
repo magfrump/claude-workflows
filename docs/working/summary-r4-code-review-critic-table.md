@@ -1,1 +1,0 @@
-Extracted code-review.md's contextual critic auto-selection logic from prose bullets into a structured `| Diff characteristic | Critic to invoke | Rationale |` trigger table, matching CLAUDE.md's skill routing format for auditability and consistency.

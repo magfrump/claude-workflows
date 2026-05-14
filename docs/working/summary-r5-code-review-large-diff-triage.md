@@ -1,1 +1,0 @@
-Added large-diff triage guidance (~1000+ lines) to code-review.md's scoping section: split reviews into multiple passes by subsystem, prioritize highest-risk files (auth, data handling, public API) first, and note the triage in the plan summary for auditability.

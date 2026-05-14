@@ -1,1 +1,0 @@
-Added finding-promotion guidance after spike.md step 4: promote lasting discoveries (library limitations, undocumented API behavior, ruled-out approaches) to docs/thoughts/ with freshness fields before deleting the spike branch.

@@ -1,1 +1,0 @@
-Added a suggested three-section output structure (subsystem inventory, data flow, external dependencies) to codebase-onboarding.md step 2, framed as a recommended default rather than a mandatory format, to improve architecture map consistency for downstream RPI consumption.

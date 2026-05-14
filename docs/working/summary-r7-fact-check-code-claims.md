@@ -1,1 +1,0 @@
-Added "Code-Based Claims" subsection to fact-check.md's "How to check each claim" section, directing the checker to use file reading and grep (not web search) for claims about the codebase itself, while preserving web search for non-code claims.

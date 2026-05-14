@@ -1,1 +1,0 @@
-Added step 4 (reconcile conflicting assumptions) to task-decomposition.md between dispatch and synthesize, requiring the orchestrating agent to check for contradictions about shared interfaces across sub-investigations and document findings in a Reconciliation heading before merging into a unified plan.

@@ -1,1 +1,0 @@
-Added guidance after Step 2 in skills/draft-review.md: for short drafts (<500 words) or narrowly scoped technical pieces, use only the 1–2 most relevant critics and explicitly note the reduced panel in the user-facing plan.

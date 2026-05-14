@@ -1,1 +1,0 @@
-Added a Source Ranking subsection to fact-check.md's Confidence Calibration section: primary sources outrank secondary by default, source conflicts must be noted explicitly with reasoning, and deviations from the hierarchy require explanation.

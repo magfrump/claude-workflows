@@ -1,1 +1,0 @@
-Added a "Confidence Calibration" section to skills/fact-check.md defining High (primary source), Medium (multiple secondary sources or strong inferential chain), and Low (single source, indirect inference, or conflicting signals) confidence levels, and updated the inline step 4 to reference it and require citing which criterion applies.
