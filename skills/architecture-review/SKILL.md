@@ -41,10 +41,10 @@ requires:
 >
 > 1. **Capture the user's goal in 1-2 sentences.** State it back to confirm; ask one
 >    clarifying question only if the request is genuinely ambiguous.
-> 2. **Record it verbatim at the top of the report** as a `**User goal:**` line, above
->    the Dependency Map section at the top of the saved artifact. The User-goal anchor
->    must persist in the saved file so downstream readers and tools see what frame the
->    review was produced under.
+> 2. **Record it verbatim at the top of the report** as a `**User goal:**` line, alongside
+>    the `Scope:` / `Date:` metadata at the top of the saved artifact (below the title,
+>    above the Dependency Map section). The User-goal anchor must persist in the saved
+>    file so downstream readers and tools see what frame the review was produced under.
 >
 > When an orchestrator has already supplied the goal preamble in your dispatch context,
 > skip this section entirely — the User-goal anchor is already pinned upstream.
@@ -400,6 +400,23 @@ problem worth flagging.
 ## How to Structure the Critique
 
 Output your critique as a Markdown document.
+
+### Title and Header
+
+Open with a top-level title that includes "Architecture Review" so the report is
+discoverable. Follow with these header fields so readers know what was reviewed and when:
+
+```markdown
+# Architecture Review — [short scope label, e.g., PR #347 or branch name]
+
+**Scope:** [branch diff / file list / directory under review]
+**Date:** [YYYY-MM-DD]
+```
+
+If you've been given a fact-check report or other upstream artifact, add a `**Based on:**`
+line naming it. If running standalone, the `**User goal:**` line described in the
+standalone-invocation section above goes here, beneath the header. Keep the header to 3–5
+lines; the substance belongs in the sections below.
 
 ### Dependency Map
 Briefly describe the dependency relationships in the changed code (move #1). Which modules
