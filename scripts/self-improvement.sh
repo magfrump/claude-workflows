@@ -257,6 +257,47 @@ ${SI_CONTEXT}
 "
 fi
 
+# --- Step 0a: Cycle framing ---
+# Apply problem-framing thinking to the SI cycle itself: produce a single
+# paragraph stating what this run is trying to solve plus 1-2 alternative
+# framings considered. Generated once per cycle (not per round) so the whole
+# loop has an explicit problem-side anchor, reducing the bias toward
+# 'ship more tasks' without first asking what problem is being solved.
+echo "Generating cycle framing..."
+CYCLE_FRAMING_FILE="$WORKING_DIR/cycle-framing.md"
+rm -f "$CYCLE_FRAMING_FILE"
+claude -p "You are starting a self-improvement cycle for the claude-workflows repo.
+
+Review recent work to understand the current state:
+- docs/working/completed-tasks.md (running list of approved work across rounds)
+- docs/working/round-history.json (structured per-round logs, if it exists)
+${USER_INPUT_CONTEXT}
+
+Write a single paragraph to docs/working/cycle-framing.md framing what this
+cycle is trying to solve. The paragraph must contain:
+1. One sentence naming the specific problem this cycle aims to address.
+2. 1-2 alternative framings of the problem that were considered but set
+   aside, each with a brief reason for setting it aside.
+
+Hard constraints:
+- ONE paragraph total. No headings, no bullet lists, no preamble.
+- The cap exists to bound maintenance cost; longer framings defeat the
+  purpose and will be discarded.
+- Frame the problem from the perspective of external workflow impact
+  (what does this cycle change for users of the workflows/skills?), not
+  internal SI plumbing." || echo "Warning: cycle framing generation failed, continuing without it"
+
+CYCLE_FRAMING_CONTEXT=""
+if [ -f "$CYCLE_FRAMING_FILE" ]; then
+    CYCLE_FRAMING_CONTEXT="
+## Cycle framing — what this run is trying to solve
+
+$(cat "$CYCLE_FRAMING_FILE")
+
+Use this framing as the problem-side anchor when generating and pruning
+ideas. Ideas that do not connect to this framing should be deprioritized."
+fi
+
 # Track which round we start at (for morning summary)
 START_ROUND=1
 
@@ -409,7 +450,7 @@ ${SEED_CONTENT}
 
 Generate feature improvement ideas for the workflows in this repo.
 Review docs/working/completed-tasks.md for what has already been done.
-${PRIOR_CONTEXT}${SEED_CONTEXT}${USER_INPUT_CONTEXT}
+${CYCLE_FRAMING_CONTEXT}${PRIOR_CONTEXT}${SEED_CONTEXT}${USER_INPUT_CONTEXT}
 
 IMPORTANT — External-impact requirement:
 At least 3 of your generated ideas MUST directly improve a workflow or
