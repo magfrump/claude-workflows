@@ -92,6 +92,10 @@ If they can't, the script is overloaded — too many tasks, criteria phrased too
 
 ## Phase 1: Session Design
 
+### Failure-Mode Pass
+
+Before writing tasks, name **3 specific failure modes this test should reveal** — concrete user behaviors that would count as the test working, not capabilities the design hopes to demonstrate. Examples: "abandons signup at the permissions screen," "completes the import but selects the wrong project," "reads the empty state as a loading screen and waits." This anchors task design on what could go wrong (a check against confirmation-test bias). If you can't name three, your Phase 0 riskiest assumption is too abstract — sharpen it before continuing.
+
 ### Task Construction
 
 **The #1 mistake is writing tasks that describe the UI instead of user goals.**
