@@ -216,6 +216,8 @@ Structure:
 
 **Workflow provenance** (optional): [e.g., "RPI → DD → RPI" or "Spike → RPI → PR-prep"]
 
+**Failures prevented** (optional): [one-line list of the specific failure modes this change addresses, if any]
+
 ## How it works
 [Brief technical summary. Not a line-by-line walkthrough — describe the approach.]
 
@@ -247,6 +249,7 @@ For UI changes, capture before/after screenshots or a short recording and includ
 - [ ] Each section contains at least one substantive sentence (not a placeholder)
 - [ ] Review evidence section lists all `docs/reviews/` artifacts for this PR, or states "No review artifacts" if none exist
 - [ ] (Optional) If this PR involved multiple workflow compositions (e.g., RPI → DD → RPI), a workflow provenance line is included in "What this does"
+- [ ] (Optional) If this change addresses specific failure modes surfaced by RPI/code-review/bug-diagnosis failure-driven thinking, a "Failures prevented" line is included in "What this does"
 
 ## Retrospective
 
