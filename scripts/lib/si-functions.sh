@@ -110,6 +110,56 @@ prepend_lineage_to_plan() {
     fi
 }
 
+# --- Cycle framing ---
+# Emit a one-paragraph docs/working/cycle-framing.md naming the current SI
+# cycle's (round's) focus. Called at the start of each round so idea
+# generation has an explicit problem-side anchor. The file is overwritten on
+# every call (only the most recent cycle's framing survives on disk; per-round
+# logs in round-N-report.json retain history if needed).
+# claude -p failures and missing output are non-fatal: callers should check
+# whether the file exists before injecting it into prompts.
+# Args: $1 = round number, $2 = working dir, $3 = user input context (may be empty)
+emit_cycle_framing() {
+    local round="$1"
+    local working_dir="$2"
+    local user_context="${3:-}"
+    local framing_file="$working_dir/cycle-framing.md"
+
+    rm -f "$framing_file"
+
+    local prompt
+    prompt="You are starting cycle ${round} of a self-improvement run for the
+claude-workflows repo.
+
+Review recent state before framing the cycle:
+- docs/working/completed-tasks.md (running list of approved work)
+- docs/working/round-history.json (per-round structured logs, if present)
+- docs/working/round-${round}-report.json is NOT yet written; earlier
+  round reports (round-1-report.json, etc.) describe what has just happened.
+${user_context}
+
+Write a single paragraph to docs/working/cycle-framing.md that names the
+focus of this cycle. The paragraph must contain:
+1. One sentence stating the specific problem THIS cycle aims to address.
+2. 1-2 alternative framings considered but set aside, each with a brief
+   reason for setting it aside.
+
+Hard constraints:
+- ONE paragraph total. No headings, no bullet lists, no preamble.
+- Frame the problem from the perspective of external workflow impact
+  (what changes for users of the workflows/skills?), not internal SI
+  plumbing.
+- The cap exists to bound maintenance cost; longer framings will be
+  discarded."
+
+    claude -p "$prompt" 2>/dev/null || true
+
+    if [ ! -f "$framing_file" ]; then
+        echo "  Warning: cycle framing not generated for round ${round}" >&2
+        return 0
+    fi
+}
+
 # --- Worktree cleanup ---
 # Force-remove a worktree and delete its branch. --force on worktree remove
 # handles validation leftovers (untracked files from self-eval etc.) that

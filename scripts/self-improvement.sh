@@ -265,6 +265,27 @@ for ROUND in $(seq 1 $MAX_ROUNDS); do
     init_round_log "$ROUND"
 
     # -------------------------------------------------------
+    # Step 0a: Cycle framing — name the focus of this cycle
+    # -------------------------------------------------------
+    # Emit docs/working/cycle-framing.md (overwritten each round) so idea
+    # generation has an explicit problem-side anchor for this cycle.
+    echo "Framing cycle (round $ROUND)..."
+    emit_cycle_framing "$ROUND" "$WORKING_DIR" "$USER_INPUT_CONTEXT"
+
+    CYCLE_FRAMING_CONTEXT=""
+    CYCLE_FRAMING_FILE="$WORKING_DIR/cycle-framing.md"
+    if [ -f "$CYCLE_FRAMING_FILE" ]; then
+        CYCLE_FRAMING_BODY="$(<"$CYCLE_FRAMING_FILE")"
+        CYCLE_FRAMING_CONTEXT="
+## Cycle framing — what this cycle is trying to solve
+
+${CYCLE_FRAMING_BODY}
+
+Use this framing as the problem-side anchor when generating and pruning
+ideas. Ideas that do not connect to this framing should be deprioritized."
+    fi
+
+    # -------------------------------------------------------
     # Step 0b: Build prior-round context for idea generation
     # -------------------------------------------------------
     PRIOR_CONTEXT=""
@@ -409,7 +430,7 @@ ${SEED_CONTENT}
 
 Generate feature improvement ideas for the workflows in this repo.
 Review docs/working/completed-tasks.md for what has already been done.
-${PRIOR_CONTEXT}${SEED_CONTEXT}${USER_INPUT_CONTEXT}
+${CYCLE_FRAMING_CONTEXT}${PRIOR_CONTEXT}${SEED_CONTEXT}${USER_INPUT_CONTEXT}
 
 IMPORTANT — External-impact requirement:
 At least 3 of your generated ideas MUST directly improve a workflow or
