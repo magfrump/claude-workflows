@@ -212,7 +212,7 @@ Structure:
 
 ```markdown
 ## What this does
-[1-3 sentences: what changed and why — use the commit list as a starting point]
+[1-3 sentences: what changed and why — use the commit list as a starting point. If this PR closes an issue, you can optionally annotate the close-line with a failure-mode bracket-tag, e.g., `Closes #123 [prevents: race-condition-on-double-submit]`.]
 
 **Workflow provenance** (optional): [e.g., "RPI → DD → RPI" or "Spike → RPI → PR-prep"]
 
