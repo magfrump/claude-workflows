@@ -220,6 +220,21 @@ the diff implements or modifies an algorithm:
 
 Output your critique as a Markdown document.
 
+### Title and Header
+
+Open with a top-level title that includes "Performance Review" so the report is
+discoverable. Follow with these header fields so readers know what was reviewed and when:
+
+```markdown
+# Performance Review — [short scope label, e.g., PR #347 or branch name]
+
+**Scope:** [branch diff / file list / directory under review]
+**Date:** [YYYY-MM-DD]
+```
+
+If you've been given a fact-check report or other upstream artifact, add a `**Based on:**`
+line naming it. Keep the header to 3–5 lines; the substance belongs in the sections below.
+
 ### Data Flow and Hot Paths
 Briefly describe what the changed code does, where it sits in the request/processing pipeline,
 and what the expected data sizes and call frequencies are. This frames the rest of the review.
