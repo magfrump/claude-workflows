@@ -891,7 +891,7 @@ descriptive (one clear sentence; conventional-commit prefix preferred)."
                             cp -r "$WT_DIR/skills" "$BASELINE_TMP/skills" 2>/dev/null || true
                         fi
                         echo "    Running baseline self-eval on main version of: $SKILL_FILE"
-                        BASELINE_OUTPUT=$(cd "$BASELINE_TMP" && claude -p "Use the self-eval skill defined in skills/self-eval.md to evaluate $SKILL_FILE.
+                        BASELINE_OUTPUT=$(cd "$BASELINE_TMP" && claude -p "Use the self-eval skill defined in skills/self-eval/SKILL.md to evaluate $SKILL_FILE.
 
 After writing the report, output exactly one line in this format:
 SELF_EVAL_RESULT: <number of Weak scores>
@@ -908,7 +908,7 @@ Count only the automated assessment scores (Testability investment, Trigger clar
                     fi
 
                     # --- Evaluate branch version ---
-                    EVAL_OUTPUT=$(cd "$WT_DIR" && claude -p "Use the self-eval skill defined in skills/self-eval.md to evaluate $SKILL_FILE.
+                    EVAL_OUTPUT=$(cd "$WT_DIR" && claude -p "Use the self-eval skill defined in skills/self-eval/SKILL.md to evaluate $SKILL_FILE.
 
 After writing the report, output exactly one line in this format:
 SELF_EVAL_RESULT: <number of Weak scores>

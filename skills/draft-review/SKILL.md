@@ -169,7 +169,7 @@ Spawn fact-check sub-agent(s) using the Agent tool.
 that many independent instances in parallel instead.
 
 For each fact-check agent, you MUST:
-1. Read the full contents of `skills/fact-check.md`
+1. Read the full contents of `skills/fact-check/SKILL.md`
 2. Paste those contents directly into the Agent tool prompt (sub-agents cannot read your files)
 3. Include the full draft text in the prompt
 4. Instruct the agent to save its report as `docs/reviews/fact-check-report.md`
@@ -235,7 +235,7 @@ tool.** This is non-negotiable.
 **Ensemble mode:** spawn N instances of each selected critic, where N matches the user's request.
 
 For each critic agent instance, you MUST:
-1. Read the full contents of that critic's skill file (e.g., `skills/cowen-critique.md`)
+1. Read the full contents of that critic's skill file (e.g., `skills/cowen-critique/SKILL.md`)
 2. Paste those contents directly into the Agent tool prompt
 3. Include the full draft text
 4. Include the draft intent captured in "Before You Begin" Step 3, prepended under a

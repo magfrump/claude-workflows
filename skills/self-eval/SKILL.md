@@ -28,7 +28,7 @@ justification is more useful than an inflated score.
 ## Step 1: Determine the Target
 
 The user specifies a target skill or workflow. Accept any of these forms:
-- A file path: `skills/fact-check.md`, `workflows/research-plan-implement.md`
+- A file path: `skills/fact-check/SKILL.md`, `workflows/research-plan-implement.md`
 - A skill name: `fact-check`, `draft-review`, `security-reviewer`
 - A workflow name: `research-plan-implement`, `divergent-design`
 
@@ -84,7 +84,7 @@ git log --oneline --all --grep="<target-name>" | head -20
 
 Search orchestrator skills for references to the target:
 
-1. Read `skills/draft-review.md` and `skills/code-review.md` (the known orchestrators).
+1. Read `skills/draft-review/SKILL.md` and `skills/code-review/SKILL.md` (the known orchestrators).
 2. Check if any skill's `requires` block references the target.
 3. Check if the target's own `requires` block references other skills.
 

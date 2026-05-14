@@ -12,7 +12,7 @@ A **baseline report** captures how a skill scores today — before any improveme
 ## Prerequisites
 
 - The evaluation rubric exists at `docs/evaluation-rubric.md`.
-- The self-eval skill exists at `skills/self-eval.md`.
+- The self-eval skill exists at `skills/self-eval/SKILL.md`.
 - The target skill or workflow exists in `skills/` or `workflows/`.
 
 ## How to Run a Baseline
@@ -32,7 +32,7 @@ Run the self-eval skill on the target:
 Or provide a path:
 
 ```
-/self-eval skills/fact-check.md
+/self-eval skills/fact-check/SKILL.md
 ```
 
 The skill reads the rubric, gathers context (sibling skills, test evidence, git history, pipeline references), and produces a structured report.

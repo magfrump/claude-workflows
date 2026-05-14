@@ -329,7 +329,7 @@ Q3: Will the user be able to overcome this on subsequent attempts?
 
 ### Step 3.5: Stress-Test Findings
 
-Before prioritizing, pressure-test each severity-rated finding with three questions adapted from structured critique methods ([Cowen-critique](../skills/cowen-critique.md) moves 1 & 3, [Yglesias-critique](../skills/yglesias-critique.md) move 7). These catch inflated severities and infeasible recommendations early.
+Before prioritizing, pressure-test each severity-rated finding with three questions adapted from structured critique methods ([Cowen-critique](../skills/cowen-critique/SKILL.md) moves 1 & 3, [Yglesias-critique](../skills/yglesias-critique/SKILL.md) move 7). These catch inflated severities and infeasible recommendations early.
 
 For each finding rated **Minor or above**, ask:
 

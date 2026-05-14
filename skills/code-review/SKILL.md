@@ -260,7 +260,7 @@ output, and a "Stage 3 complete" banner would duplicate or compete with it.
 
 Spawn one agent with the code-fact-check skill.
 
-1. Read the full contents of `skills/code-fact-check.md`
+1. Read the full contents of `skills/code-fact-check/SKILL.md`
 2. Paste those contents directly into the Agent tool prompt (sub-agents cannot read your files)
 3. Include the scope specification (e.g., "Review files changed on the current branch relative
    to main using `git diff main...HEAD`")
@@ -463,7 +463,7 @@ Agent tool.** This is non-negotiable.
 
 For each critic agent, you MUST:
 
-1. Read the full contents of that critic's skill file (e.g., `skills/security-reviewer.md`)
+1. Read the full contents of that critic's skill file (e.g., `skills/security-reviewer/SKILL.md`)
 2. Paste those contents directly into the Agent tool prompt
 3. Include the scope specification so the agent runs its own `git diff`
 4. Include the PR intent captured in "Before You Begin" Step 2, prepended under a
