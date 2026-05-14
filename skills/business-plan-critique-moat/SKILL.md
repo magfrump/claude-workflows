@@ -9,13 +9,18 @@ description: >
   early-stage plans fail is not market timing or product quality — it's that the named moat
   isn't structurally durable, the distribution channel can't scale, or the competitive response
   defeats the thesis once it works. Use this skill whenever a draft proposes a business or
-  product strategy and the author wants pressure on whether the durable advantage is real.
-  Trigger phrases: "review my business plan", "critique this pitch", "is this defensible",
-  "what's the moat", "stress-test the strategy", "would this survive competition", "fundraising
-  deck review", "GTM critique", "go-to-market feedback". Produces a structured Markdown
-  critique. Scope is intentionally narrow: market-sizing and unit-economics critiques are
-  explicitly deferred to separate future skills so this skill stays focused on durable
-  advantage. NOTE: This skill is typically invoked by the draft-review orchestrator, which
+  product strategy and the author wants pressure on whether the durable advantage is real, OR
+  whenever a draft names a moat, network effect, switching cost, distribution channel, or
+  competitive positioning claim. Trigger phrases: "review my business plan", "critique this
+  pitch", "is this defensible", "is this durable", "what's the moat", "moat review",
+  "moat-and-distribution critique", "stress-test the strategy", "would this survive competition",
+  "competitive response analysis", "fundraising deck review", "GTM critique", "go-to-market
+  feedback", "review the distribution strategy", "pressure-test the network effect". Produces
+  a structured Markdown critique. Scope is intentionally narrow: market-sizing and unit-economics
+  critiques are explicitly deferred to sibling skills (`business-plan-critique-unit-economics`
+  and a future market-sizing critic) so this skill stays focused on durable advantage. If the
+  draft is primarily about CAC/LTV/payback/margin math, route to the unit-economics sibling
+  instead. NOTE: This skill is typically invoked by the draft-review orchestrator, which
   provides a pre-built fact-check report. If a fact-check report is provided, use it as your
   factual foundation and do not redo basic fact verification.
 when: User wants a moat/distribution critique of a business plan, pitch, or strategy doc
@@ -213,7 +218,15 @@ implicitly betting on incumbent inaction.
 
 ## How to Structure the Critique
 
-Output your critique as a Markdown document.
+Output your critique as a Markdown document. The title MUST contain "Moat" (e.g.,
+`# Business-Plan Moat & Distribution Critique`).
+
+Each of the five lens-assessment sections below MUST include a `**Verdict:**` line whose value
+is one of `Durable`, `Plausible`, `Weak`, `Absent`, or `Not Claimed` (use `Not Claimed` only for
+the Network Effect lens when no network effect is claimed in the draft). Each lens-assessment
+section MUST also include a `**Confidence:**` line valued `High`, `Medium`, or `Low`, reflecting
+how confidently you can land the verdict given the evidence in the draft (and fact-check report,
+if provided). Place both fields at the top of the section, before prose.
 
 ### Moat Type Assessment
 Name the moat the plan claims (or implies). Map it to a durable moat archetype, or call out
