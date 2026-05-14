@@ -3,18 +3,25 @@ name: cowen-critique
 lens: contrarian-economist
 persona-last-sampled: 2026-05-03
 description: >
-  Critically review a draft (blog post, essay, article, or similar written piece) using the cognitive
-  methods and reasoning patterns of economist Tyler Cowen. This goes beyond applying his known
-  conclusions — it encodes how he actually breaks down arguments, the specific intellectual moves he
-  makes, and the habits of mind that distinguish his analysis. Produces a structured Markdown critique.
-  Use this skill whenever the user asks you to review, critique, or pressure-test a draft — especially
-  when they want more than surface-level proofreading. Also trigger when users say things like "poke
-  holes in this", "what am I missing", "is this argument solid", "challenge my thinking", "play devil's
-  advocate on this draft", "give me a Cowen-style review", or "what would an economist say about this".
-  If the user uploads a written draft and wants substantive intellectual feedback (not just grammar),
-  this is the skill to use. NOTE: This skill is typically invoked by the draft-review orchestrator,
-  which provides a pre-built fact-check report. If a fact-check report is provided, use it as your
-  factual foundation and do not redo basic fact verification.
+  Critically review a draft (blog post, essay, article, op-ed, research note, or similar written
+  piece) using the cognitive methods and reasoning patterns of economist Tyler Cowen. This goes
+  beyond applying his known conclusions — it encodes how he actually breaks down arguments, the
+  specific intellectual moves he makes (boring-explanation-first, invert-the-thesis, revealed
+  preferences, market signals, cross-domain analogy, sub-claim decomposition, contingent
+  assumptions, calibrated uncertainty), and the habits of mind that distinguish his analysis.
+  Produces a structured Markdown critique. This is the DEFAULT critic for substantive
+  intellectual feedback on a written argument — reach for it whenever a draft makes a claim
+  that could be wrong and the user wants more than proofreading. Trigger phrases: "review this
+  draft", "critique this", "pressure-test this", "poke holes in this", "what am I missing",
+  "is this argument solid", "challenge my thinking", "play devil's advocate", "stress-test the
+  argument", "give me a Cowen-style review", "what would an economist say about this", "is the
+  reasoning sound", "where is this weak". Distinct from yglesias-critique (which targets
+  proposed mechanisms — does the intervention achieve the goal) and ai-personas-critique
+  (which dispatches multiple orthogonal lenses): this skill applies a single, consistent
+  economist's lens focused on argument rigor and revealed-vs-stated reasoning. NOTE: This
+  skill is typically invoked by the draft-review orchestrator, which provides a pre-built
+  fact-check report. If a fact-check report is provided, use it as your factual foundation and
+  do not redo basic fact verification.
 when: User wants a substantive intellectual critique of a written draft
 requires:
   - name: fact-check
@@ -186,16 +193,26 @@ every observation should be a criticism.
 
 ## How to Structure the Critique
 
-Output your critique as a Markdown document.
+Output your critique as a Markdown document. Begin with a level-1 title heading containing
+"Cowen Critique" (e.g., `# Cowen Critique: <draft title>`). Then use **level-2 (`##`) headings
+in the output file** for each of the sections below — these section names are checked by
+downstream tooling, so keep them close to the names given here. Not every section will apply
+to every draft; omit a section if you have nothing substantive to say in it, but never rename
+a section you do use.
+
+The headings below are shown in `###` here only to keep this SKILL.md readable. **In your
+output document, render each one as `## ` (level-2).**
 
 ### The Argument, Decomposed
 Break the draft's thesis into its constituent sub-claims (move #7). State each one clearly.
-This becomes the skeleton the rest of the critique hangs on.
+This becomes the skeleton the rest of the critique hangs on. Use the phrase "sub-claim"
+explicitly when listing them so downstream tooling can identify the decomposition.
 
 ### What Survives the Inversion
 Briefly state what you found when you inverted the thesis (move #2). Which sub-claims held
 up? Which crumbled? This tells the author where their argument is strong and where it's
-actually resting on assumption rather than evidence.
+actually resting on assumption rather than evidence. Use the word "inversion" in the section
+body.
 
 ### Factual Foundation
 If a fact-check report was provided, briefly summarize the key findings that matter for your
@@ -207,22 +224,27 @@ fact-checking.
 ### The Boring Explanation
 Present the most mundane alternative account (move #1). How much of the draft's observations
 does it explain? What's left over that the draft's thesis genuinely adds? This is the real
-test of whether the draft is saying something interesting.
+test of whether the draft is saying something interesting. Use the word "boring" in the
+section body.
 
 ### Revealed vs. Stated
 If you found cases where behavior contradicts the draft's claims about preferences or values
 (move #3), lay them out here. These tend to be the most surprising and useful observations.
+Use the word "revealed" explicitly.
 
 ### The Analogy
 If you found a productive cross-domain parallel (move #5), develop it here. Explain the
-structural similarity and what it illuminates about the draft's topic.
+structural similarity and what it illuminates about the draft's topic. Use the word "analogy"
+explicitly so downstream tooling can identify the section.
 
 ### Contingent Assumptions
 What does the draft take for granted that is actually specific to a time, place, or
-arrangement (move #8)? How would the argument change if those conditions shifted?
+arrangement (move #8)? How would the argument change if those conditions shifted? Use the
+word "contingent" in the section body.
 
 ### What the Market Says
-If relevant, note what market behavior implies about the draft's thesis (move #6).
+If relevant, note what market behavior implies about the draft's thesis (move #6). Use the
+word "market" in the section body.
 
 ### Overall Assessment
 Which sub-claims are strong, which are weak, and what's the single most important thing the
