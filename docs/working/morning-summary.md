@@ -1,3 +1,5 @@
+Cycle framing: Convergence focus — close deferred hypotheses by surfacing them at the top of every morning summary.
+
 # Morning Summary — 2026-04-28
 
 ## Run Overview
