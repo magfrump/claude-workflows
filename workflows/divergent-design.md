@@ -342,6 +342,8 @@ Generate **6-10 candidate framings** of the problem. Each framing is a one-sente
 
 **Failure-form framings**: when framing a fix to an observed failure, candidate framings may be stated in failure-form — *the failure is X happening to Y because Z* — and the chosen framing defines which failures are in-scope vs out-of-scope.
 
+**Product-definition-form framings**: when framing what to build rather than what to fix, candidate framings may be stated in product-definition-form — *the product is X serving Y by Z* — and the chosen framing defines which user/job/mechanism are in-scope vs out-of-scope.
+
 Apply the **generation health check** from step 1 of the main process, adapted for framings: watch for clustering around one stakeholder's vocabulary, missing perspectives (maintainer's view vs. user's view), framings too vague to test (a framing must imply at least one falsifiable success criterion), and dimensional anchoring (5+ framings all on the same axis — e.g., all about scope, all about timing, all about ownership).
 
 #### 2a. Diagnose — what would each framing imply?
