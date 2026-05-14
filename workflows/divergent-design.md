@@ -14,6 +14,7 @@ value-justification: "Replaces ad-hoc architectural debates with structured mult
 - **As a sub-procedure within RPI**: When the research phase of `research-plan-implement.md` reveals a design decision, DD is invoked inline. The decision output feeds back into RPI's research doc and informs the plan. See RPI step 2 for trigger signals.
 - **Hypothesis generation** (epistemic variant): When the question is "what's true?" rather than "what should we build?" — e.g., explaining a bug, interpreting ambiguous behavior, or evaluating competing theories. See the Epistemic Reasoning variant below.
 - **Contested or unclear problem framing** (double-diamond variant): When stakeholders disagree on the goal, a prior attempt solved the wrong problem, or step 2 keeps surfacing contradictory constraints. See the Double Diamond (Purpose-First) variant below.
+- **Asymmetric failure cost** (failure-first variant): When one or more failure modes have much higher cost than the average outcome — security breach, data loss, irreversible UX, regulatory miss — and approaches should be authored against an explicit failure list rather than evaluated against it after the fact. See the Failure-First Generation variant below.
 
 ## When to pivot
 
@@ -367,3 +368,86 @@ With the chosen framing record in hand, run standard process steps 1-4. The fram
 ### Worked example
 
 See [`docs/working/feature-ideas-round-1.md`](../docs/working/feature-ideas-round-1.md) for a worked Diamond 1: nine candidate framings of "what's missing from the workflow repo," a diagnosis matrix of each framing's success criterion and implied solution space, and the chosen framing record that fed into Diamond 2's candidate generation in [`docs/working/feature-ideas.md`](../docs/working/feature-ideas.md).
+
+## Variant: Failure-First Generation
+
+When one failure mode dominates the cost calculation — a security breach, a silent data corruption, an irreversible UX failure, a regulatory miss — standard divergent generation can produce a well-rounded slate of approaches that all share the same blind spot. The compatibility matrix then evaluates that blind spot as one weak column rather than as a discard criterion. The Failure-First variant inverts the generation order: candidate failure modes are produced *before* candidate approaches, so each approach is authored against an explicit list of what mustn't happen. Approaches that don't cover the named critical failures are discarded regardless of how well they perform on the rest of the matrix.
+
+Use this variant when:
+- One or more failure modes have asymmetric cost — much higher than the average outcome — so missing them is more expensive than overshooting on scope or complexity
+- A prior design or implementation pass missed a critical failure case and the team wants the next attempt authored against that miss explicitly
+- The problem area has well-known failure patterns (auth, distributed systems, financial calculation, data migration, irreversible writes) that should anchor approach generation rather than be checked after the fact
+- Stakeholders agree more about "what must not happen" than about "what to optimize" — the constraint surface is easier to articulate than the goal
+
+Skip this variant when:
+- Outcomes are roughly equivalent in cost and the standard compatibility matrix already weighs them adequately
+- The failure modes themselves are still unknown — pivot to the Epistemic Reasoning variant first to generate hypotheses about what could fail, then return here once a failure list exists
+- The change is small, reversible, and entirely inside trusted code — RPI's premortem block (step 3) is sufficient at that scale and adding the variant is ceremony
+
+### Step modifications
+
+#### 1a. Diverge (failures) — generate candidate failure modes
+
+Before generating approaches, generate **8-12 candidate failure modes** the design must prevent. Requirements:
+- Each is a *specific, observable* failure — same falsifiability bar as RPI's premortem block (named failure, not free-form worry)
+- Include at least 1-2 **tail failures**: catastrophic but low-probability events
+- Include at least 1 **mundane failure**: common, easy to miss in review
+- Include at least 1 **silent failure**: the system appears to work but produces wrong results
+- Include at least 1 **delayed failure**: only visible weeks or months after deployment
+- One sentence each, no evaluation yet
+- Number them F1, F2, ... for reference
+
+For each failure, tag a **cost class** — *soft* (annoying, recoverable), *hard* (degrades service, manual remediation required), *critical* (data loss, security breach, irreversible). The cost class drives the discard rules in step 3.
+
+Apply the **generation health check** from step 1 of the main process, adapted for failures: watch for clustering around one causal layer (all-database, all-network), missing perspectives (operator vs. user vs. attacker vs. downstream consumer), and dimensional anchoring (5+ failures all on the same axis — e.g., all about latency, all about data corruption). Common gaps the check should surface: no insider-misuse failure, no failure during partial deploy, no failure during rollback, no failure that *only* a non-engineer would notice.
+
+**Done when...**
+- [ ] 8-12 numbered failure modes are listed, each specific enough to be observed if it occurred
+- [ ] At least one tail, one mundane, one silent, and one delayed failure are included
+- [ ] Each failure carries a cost-class tag (soft / hard / critical)
+- [ ] Generation health check passed: no unaddressed clustering, missing perspectives, or single-axis anchoring on the failure list
+
+#### 1b. Diverge (approaches) — generate candidates against the failure list
+
+Now run standard step 1, generating 8-15 approach candidates, with one anchoring modification: **the F1...Fn list from step 1a is visible during generation**, and each candidate should be authored to address at least one named failure mode. Don't prune candidates by coverage yet — that's step 3 — but use the failure list to prompt approaches that would otherwise be missed (e.g., "make F1 structurally impossible," "detect F2 within one minute," "degrade gracefully when F3 occurs"). The full generation health check from the main process still applies.
+
+#### 2. Diagnose — failures enter as constraints with cost-class labels
+
+Run standard step 2. The failure modes from step 1a enter the constraint list, with each **critical** failure becoming a **hard constraint** and each **soft** failure becoming a **soft constraint**. Hard-constraint failures must be addressed by any surviving candidate; soft-constraint failures are tradeable but tracked. Hard-cost-class failures are tradeable only if no surviving candidate covers them, in which case the gap itself is documented as a constraint the chosen approach knowingly leaves open.
+
+#### 3. Match and prune — failure coverage matrix
+
+The standard compatibility matrix is augmented with one column per numbered failure mode, in addition to the standard constraint columns:
+
+| # | Approach | F1 (crit) | F2 (hard) | F3 (soft) | ... | Problem 1 | Problem 2 |
+|---|---------|-----------|-----------|-----------|-----|-----------|-----------|
+| 1 | ...     | ✓         | ✓         | ~         | ... | ✓         | ✓         |
+
+Same ✓ / ~ / ✗ / ⚠ key as the standard matrix.
+
+**Additional discard rules specific to this variant:**
+- Any candidate with ✗ or ⚠ on a **critical** failure is discarded regardless of overall score. Covering tail failures is the variant's central value; trading them off for "average" coverage is precisely the pattern the variant exists to prevent.
+- Any candidate that covers fewer than half of the numbered failures should be examined for whether it solves a *different* framing of the problem. If so, it likely belongs in a different DD (or the Double Diamond variant is the correct entry point for this work).
+
+#### 4. Tradeoff matrix and decision — coverage is first-class
+
+Run standard step 4 with two modifications:
+
+- The **Core problem coverage** column expands into an explicit **Failure coverage** column listing which numbered failures each surviving approach addresses, partially addresses, and does not address (e.g., "covers F1, F2, F4 / partial on F3 / does not address F5"). This makes the coverage tradeoff legible at a glance rather than buried in the matrix.
+- Each surviving candidate's **falsifiable hypothesis** must name the failure modes whose absence would confirm the chosen approach. Example: *"If we adopt approach #4, we expect F1 (auth bypass) and F2 (replay attack) to produce zero confirmed incidents within six months; counter-evidence would be a single confirmed instance of either."* The standard falsifiable-hypothesis bar still applies — this just ensures failure coverage is part of the post-decision check.
+
+The stress-test pass applies as usual. **Invert the thesis** and **Push to extreme** are particularly load-bearing for this variant — they often surface uncovered failure modes that should have been on the F-list in step 1a. When that happens, loop back briefly: add the missing failure to step 1a, tag its cost class, and re-score only the surviving candidates against the new column. Do not re-run the full divergent pass; the goal is to close the gap, not restart generation.
+
+#### 5. Document — failure coverage is part of the record
+
+Standard step 5 with three additions to the decision record's body:
+
+- The **Context** section explicitly notes that the Failure-First Generation variant was used, so future greps for the variant find it.
+- A new section **Failure modes considered** (placed between *Context* and *Options considered*) lists the numbered failures from step 1a with their cost class, and pairs each with a one-line note on how the chosen approach addresses it. This parallels the RPI premortem block's `Failure mode / Guard` pairing — the two artifacts can be cross-referenced when a decision is implemented under RPI.
+- The **Revisit triggers** section must include one trigger per *critical* failure of the form "if F1 occurs once in production, revisit decision." Zero-tolerance triggers for critical failures make the variant's central value (asymmetric weight on tail failures) visible to future readers and revisitable when reality contradicts the design assumption.
+
+### When this variant composes with others
+
+- **With Epistemic Reasoning**: When failure modes are themselves unknown, run epistemic DD first to generate competing hypotheses about what could fail, then feed the surviving hypotheses into this variant's step 1a as the candidate failure list. The cost-class tagging happens here, not in the epistemic pass.
+- **With Double Diamond**: If the problem framing is contested *and* failure containment dominates, run Diamond 1 first to settle the framing, then run Diamond 2 as the Failure-First variant. The chosen framing's "leaves out" list is a useful prompt for step 1a's failure generation — failures the framing explicitly disclaims should not be on the F-list.
+- **With RPI's premortem block**: When DD is invoked as a sub-procedure within RPI, the failure list from step 1a carries forward directly into the RPI plan's *Failure modes considered* section. The DD record's "how the chosen approach addresses F#" notes become the plan's `Guard` column entries, saving a redundant generation pass and tying the design decision to the implementation guard.
