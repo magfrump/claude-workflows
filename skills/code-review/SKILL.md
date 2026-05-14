@@ -169,6 +169,11 @@ summary. If the user references a skill not listed here, they can include it via
 - `dependency-upgrade.md`
 - `ui-visual-review.md`
 
+**Structural critic (auto-selected in Step 5, uses its own severity mapping):**
+- `architecture-review.md` — unlike the advisory contextual critics, architecture-review
+  declares its own severity-to-rubric mapping (Structural → 🔴, Coupling → 🟡, Minor /
+  Informational → 🟢). Honor that mapping; do not flatten its findings to advisory.
+
 **Not applicable to code review (skip):**
 - `fact-check.md`, `cowen-critique.md`, `yglesias-critique.md`
 
@@ -183,6 +188,7 @@ table below — check each row's diff characteristic and invoke the critic if it
 | Dependency manifests changed (`package.json`, `requirements.txt`, `Cargo.toml`, `go.mod`, `Gemfile`, `pyproject.toml`, `pom.xml`, or similar) | `dependency-upgrade` | Dependency changes carry supply-chain, compatibility, and licensing risk that general critics miss. |
 | Large diff: >10 files changed OR >500 added/removed lines (check via `git diff --stat`) | `tech-debt-triage` | Large changes are where debt accrues unnoticed; a dedicated pass catches structural issues. |
 | Diff touches UI rendering code: JSX/TSX with className or style props, CSS/SCSS files, HTML templates, C#/Unity UI components (Canvas, RectTransform, ScrollRect, UI namespace), Vue/Svelte templates, or files with Tailwind utility classes. Trigger is presence of visual/layout code, not file extension alone. | `ui-visual-review` | Visual regressions are invisible to text-based critics; this critic catches layout, overflow, and sizing issues. |
+| Diff changes module structure (new modules, renames, moves, package/directory layout), public APIs of internal modules, data models (schemas, DTOs, persisted contracts, message formats), or cross-cutting concerns (DI wiring, middleware, auth pipelines, logging/tracing setup, caching layers, error-handling pipelines). Skip when the diff only modifies implementation inside an existing module without touching its public surface. | `architecture-review` | Structural drift compounds silently; this critic catches dependency-direction violations, module-boundary breaches, and coupling problems that the per-concern critics miss. |
 
 **How to check:** For each row, scan the diff file list and content. Multiple rows can match
 simultaneously — invoke all matching critics. If no rows match, no contextual critics run.
@@ -472,7 +478,7 @@ For each critic agent, you MUST:
    `## Prior review findings (advisory — worth checking, not verdict input)` heading
    immediately after the intent block; otherwise omit this heading entirely.
 5. Include the fact-check results. If the fact-check report is longer than 200 lines, include
-   only the findings rated Incorrect, Stale, or Mostly Accurate — skip Accurate claims to
+   only the findings rated Incorrect, Stale, or Mostly Accurate — skip Verified claims to
    save context budget.
 6. Instruct the agent to save its critique as `docs/reviews/{critic-name}-review.md`
 7. Require the agent to tag every finding with a **Legibility-target** field
@@ -622,7 +628,7 @@ still appear so the section is auditable across runs.
 
 **Factual issues:** What the code fact-check found. Group into: claims that need fixing
 (Incorrect), claims that need updating (Stale, Mostly Accurate), and claims that are solid
-(Accurate).
+(Verified).
 
 **Cross-critic findings:** Highest signal. Issues raised independently by 2+ critics
 targeting the same code region or overlapping concern. These indicate structural problems
@@ -780,20 +786,22 @@ critique once instead of being duplicated as a row.
 
 Use this table to map individual critic severity levels to rubric tiers:
 
-| Rubric Tier | Security | Performance | API Consistency | Fact-Check |
-|---|---|---|---|---|
-| 🔴 Must Fix | Critical, High | Critical | Breaking | Incorrect (high confidence) |
-| 🟡 Must Address | Medium | High, Medium | Inconsistent | Incorrect (medium confidence), Stale, Mostly Accurate |
-| 🟢 Consider | Low, Informational | Low, Informational | Minor, Informational | Unverifiable |
+| Rubric Tier | Security | Performance | API Consistency | Architecture | Fact-Check |
+|---|---|---|---|---|---|
+| 🔴 Must Fix | Critical, High | Critical | Breaking | Structural | Incorrect (high confidence) |
+| 🟡 Must Address | Medium | High, Medium | Inconsistent | Coupling | Incorrect (medium confidence), Stale, Mostly Accurate |
+| 🟢 Consider | Low, Informational | Low, Informational | Minor, Informational | Minor, Informational | Unverifiable |
 
 **Contextual critics are advisory:** Findings from `test-strategy`, `tech-debt-triage`,
 `dependency-upgrade`, and `ui-visual-review` go to 🟢 Consider tier regardless of their
-internal severity. They inform but never block merge.
+internal severity. They inform but never block merge. `architecture-review` is the
+exception: it is auto-selected like a contextual critic but uses its own severity-to-rubric
+mapping above and can produce blocking (🔴) findings.
 
 ### Escalation Rule
 
-If 2+ **core critics or fact-check** independently flag the same issue (same code region,
-overlapping concern), escalate that finding one tier:
+If 2+ **core critics, architecture-review, or fact-check** independently flag the same
+issue (same code region, overlapping concern), escalate that finding one tier:
 - 🟢 → 🟡
 - 🟡 → 🔴
 
@@ -828,6 +836,7 @@ docs/reviews/
 ├── security-review.md
 ├── performance-review.md
 ├── api-consistency-review.md
+├── architecture-review.md         (if triggered)
 ├── test-strategy-review.md        (if triggered)
 ├── tech-debt-triage-review.md     (if triggered)
 ├── dependency-upgrade-review.md   (if triggered)
