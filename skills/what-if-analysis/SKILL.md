@@ -17,12 +17,16 @@ description: >
   the critics *didn't* examine — that's where this skill adds the most value.
 when: User wants to explore consequences, failure modes, and second-order effects of a proposed change
 requires:
-  - name: cowen-critique or yglesias-critique
+  - name: cowen-critique
     description: >
-      An existing critique of the same artifact. Optional. When provided, this skill focuses on
-      the assumptions and failure modes that the critique did NOT surface, maximizing the unique
-      value of the what-if analysis. Without upstream critiques, the analysis covers the full
-      consequence space independently.
+      An existing cowen-style critique of the same artifact. Optional. When provided, this skill
+      focuses on the assumptions and failure modes that the critique did NOT surface, maximizing
+      the unique value of the what-if analysis.
+  - name: yglesias-critique
+    description: >
+      An existing yglesias-style critique of the same artifact. Optional. When provided, this skill
+      focuses on the assumptions and failure modes that the critique did NOT surface. Without any
+      upstream critiques, the analysis covers the full consequence space independently.
 ---
 
 > On bad output, see guides/skill-recovery.md
