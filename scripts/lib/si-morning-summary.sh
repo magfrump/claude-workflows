@@ -100,6 +100,7 @@ generate_morning_summary() {
 
     {
         _summary_header "$start_round" "$end_round" "$working_dir"
+        _summary_failure_modes_this_cycle "$start_round" "$end_round" "$working_dir"
         _summary_project_state "$start_round" "$end_round" "$working_dir"
         _summary_whats_new "$start_round" "$end_round" "$working_dir" "$round_history" "$completed_tasks"
         _summary_verdicts "$start_round" "$end_round" "$working_dir" "$hypothesis_log"
@@ -153,6 +154,82 @@ _summary_header() {
 - Tasks approved: $total_approved (${approval_pct}%)
 - Tasks rejected: $total_rejected
 EOF
+}
+
+# --- Internal: top-of-summary "Failure Modes This Cycle" block ---
+# Aggregates gate-fail (gate, task_id) pairs across rounds in scope and emits
+# the top 3 gates by distinct-task count. Sits just below Run Overview so an
+# operator skimming the summary sees the dominant failure mode at a glance,
+# without needing to scroll into the per-round detail.
+#
+# Dedupe rule: a (gate, task_id) pair is counted once even if it fails across
+# multiple rounds — repeated failures of the same task against the same gate
+# are one signal (this task keeps tripping that gate), not many.
+#
+# When there are no gate failures in scope, prints a placeholder line so the
+# section's presence is consistent and operators don't wonder whether the
+# block was skipped or just empty.
+_summary_failure_modes_this_cycle() {
+    local start_round="$1" end_round="$2" working_dir="$3"
+
+    echo ""
+    echo "## Failure Modes This Cycle"
+    echo ""
+
+    local pairs=""
+    local round_num report round_pairs
+    for round_num in $(seq "$start_round" "$end_round"); do
+        report="$working_dir/round-${round_num}-report.json"
+        [ -f "$report" ] || continue
+
+        round_pairs=$(jq -r '
+            .validation // {} | to_entries[] |
+            .key as $tid |
+            (.value | to_entries[] |
+              select(.key != "verdict"
+                     and (.value | type) == "string"
+                     and .value == "fail") |
+              .key) as $gate |
+            "\($gate)\t\($tid)"
+        ' "$report" 2>/dev/null) || round_pairs=""
+
+        if [ -n "$round_pairs" ]; then
+            pairs="${pairs}${round_pairs}"$'\n'
+        fi
+    done
+
+    pairs=$(printf '%s' "$pairs" | grep -v '^$' || true)
+    if [ -z "$pairs" ]; then
+        echo "No gate failures this cycle."
+        return
+    fi
+
+    # Dedupe (gate, task) so a task retried across rounds counts once per
+    # gate. Then group by gate, count distinct tasks, sort desc, top 3.
+    local top
+    top=$(printf '%s\n' "$pairs" | sort -u | awk -F'\t' '
+        {
+            gates[$1]++
+            if (tasks[$1] == "") {
+                tasks[$1] = $2
+            } else {
+                tasks[$1] = tasks[$1] ", " $2
+            }
+        }
+        END {
+            for (g in gates) {
+                printf "%d\t%s\t%s\n", gates[g], g, tasks[g]
+            }
+        }
+    ' | sort -k1,1 -rn -s | head -3)
+
+    echo "Top gate-fail patterns aggregated across this cycle's rounds (top 3):"
+    echo ""
+    local count gate task_list
+    while IFS=$'\t' read -r count gate task_list; do
+        [ -z "$gate" ] && continue
+        echo "- **${gate}**: ${count} task(s) (${task_list})"
+    done <<< "$top"
 }
 
 # --- Internal: Project State section ---
