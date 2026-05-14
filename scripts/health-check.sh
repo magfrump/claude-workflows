@@ -37,17 +37,49 @@ fail() { red   "  ✗ $*"; FAIL=1; }
 warn() { yellow "  ⚠ $*"; }
 section() { echo; bold "── $* ──"; }
 
+# Emit canonical skill markdown file paths, one per line, supporting both
+# layouts: flat (skills/<name>.md) and directory (skills/<name>/SKILL.md).
+# The directory form is the layout Claude Code's skill registry actually
+# picks up; the flat form is legacy and not auto-registered. Glob both so
+# migrations don't silently drop skills from validation.
+discover_skill_files() {
+    local skills_dir="$REPO_ROOT/skills"
+    [[ -d "$skills_dir" ]] || return 0
+    local f
+    for f in "$skills_dir"/*.md; do
+        [[ -f "$f" ]] && echo "$f"
+    done
+    for f in "$skills_dir"/*/SKILL.md; do
+        [[ -f "$f" ]] && echo "$f"
+    done
+}
+
+# Map a skill file path to its canonical skill name (no extension, no
+# layout-specific suffix). Both layouts collapse to the same name:
+#   skills/foo.md        -> foo
+#   skills/foo/SKILL.md  -> foo
+skill_name_from_path() {
+    local path="$1"
+    local base
+    base="$(basename "$path")"
+    if [[ "$base" == "SKILL.md" ]]; then
+        basename "$(dirname "$path")"
+    else
+        basename "$path" .md
+    fi
+}
+
 # ── 1. Skill YAML frontmatter ──────────────────────────────────────────────
 
 check_skill_frontmatter() {
     section "Skill YAML frontmatter"
     local count=0
     local drift_count=0
-    for skill in "$REPO_ROOT"/skills/*.md; do
-        [[ -f "$skill" ]] || continue
+    local skill
+    while IFS= read -r skill; do
         count=$((count + 1))
         local basename
-        basename="$(basename "$skill")"
+        basename="$(skill_name_from_path "$skill")"
 
         local yaml
         yaml="$(extract_yaml_frontmatter "$skill")"
@@ -132,7 +164,7 @@ check_skill_frontmatter() {
         else
             drift_count=$((drift_count + 1))
         fi
-    done
+    done < <(discover_skill_files)
     if [[ $count -eq 0 ]]; then
         fail "No skill files found in skills/"
     else
@@ -452,13 +484,12 @@ check_skill_fixture_coverage() {
     local total=0
     local covered=0
     local uncovered_skills=()
-
-    for skill in "$REPO_ROOT"/skills/*.md; do
-        [[ -f "$skill" ]] || continue
+    local skill
+    while IFS= read -r skill; do
         total=$((total + 1))
 
         local skill_name
-        skill_name="$(basename "$skill" .md)"
+        skill_name="$(skill_name_from_path "$skill")"
 
         local fixture_dir="$REPO_ROOT/test/skills/$skill_name/fixtures"
         if [[ -d "$fixture_dir" ]] && ls "$fixture_dir"/* &>/dev/null 2>&1; then
@@ -468,7 +499,7 @@ check_skill_fixture_coverage() {
             uncovered_skills+=("$skill_name")
             warn "$skill_name: no test fixtures found"
         fi
-    done
+    done < <(discover_skill_files)
 
     local uncovered=${#uncovered_skills[@]}
     if [[ $total -eq 0 ]]; then
@@ -668,10 +699,10 @@ check_persona_freshness() {
     local stale=0
     local invalid=0
 
-    for skill in "$REPO_ROOT"/skills/*.md; do
-        [[ -f "$skill" ]] || continue
+    local skill
+    while IFS= read -r skill; do
         local basename
-        basename="$(basename "$skill")"
+        basename="$(skill_name_from_path "$skill")"
 
         local last_sampled
         last_sampled="$(get_frontmatter_field "$skill" persona-last-sampled)"
@@ -702,7 +733,7 @@ check_persona_freshness() {
             pass "$basename: fresh ($diff_days days since $last_sampled)"
             fresh=$((fresh + 1))
         fi
-    done
+    done < <(discover_skill_files)
 
     echo
     if [[ $checked -eq 0 && $invalid -eq 0 ]]; then
@@ -723,12 +754,13 @@ check_persona_freshness() {
 check_md_semantic_divergence() {
     section "MD file semantic divergence"
 
-    # Build canonical skill list from skills/*.md to detect references
+    # Build canonical skill list from both flat and dir-form skills to detect
+    # references — discover_skill_files handles either layout.
     local -a known_skills=()
     local skill_file
-    for skill_file in "$REPO_ROOT"/skills/*.md; do
-        [[ -f "$skill_file" ]] && known_skills+=("$(basename "$skill_file" .md)")
-    done
+    while IFS= read -r skill_file; do
+        known_skills+=("$(skill_name_from_path "$skill_file")")
+    done < <(discover_skill_files)
 
     local -a files=()
     local -A h2_set=()
