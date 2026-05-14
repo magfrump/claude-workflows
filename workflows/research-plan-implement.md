@@ -59,15 +59,16 @@ In a multi-loop session, each loop gets its own scope. A loop can build on the p
 
 ### 2. Research (essential) — understand before proposing
 
-Read the relevant parts of the codebase and produce a research doc in `docs/working/`. Optional copy-paste scaffolds for common research types (new feature, bug, refactor) are available in `guides/research-scaffolds.md`. The doc must begin with the standard three-line header described below, then include the body sections that follow.
+Read the relevant parts of the codebase and produce a research doc in `docs/working/`. Optional copy-paste scaffolds for common research types (new feature, bug, refactor) are available in `guides/research-scaffolds.md`. The doc must begin with the standard four-line header described below, then include the body sections that follow.
 
-**Header (required, top of file — three lines, in this order):**
+**Header (required, top of file — four lines, in this order):**
 
 - **Goal**: One sentence — what this loop is trying to achieve. This is the same one-sentence scope statement from step 1.
+- **Problem framing**: One sentence stating the problem this loop is addressing, followed by `Considered and discarded: <one alternative framing the researcher considered and rejected>`. The discarded alternative is a different way the same situation could have been read (e.g., problem: "users can't export reports offline"; discarded: "the reports page is too slow"). Naming an alternative that was explicitly rejected forces the framing choice to be visible rather than implicit — a stale problem framing is the most expensive failure to discover late, because Goal, plan, tests, and implementation are all shaped by it. A line that can't name a plausible discarded alternative is the diagnostic that the framing wasn't actually examined; surface that gap here rather than defaulting to "Considered and discarded: none."
 - **Project state**: One sentence — branch context, written as `<what this branch delivers> · <position in larger initiative, or "standalone"> · <blocked on, or "not blocked"> (cite: <short-hash> | <branch-name> | <docs/path>)`. Same three facts the old multi-field lead block carried, compressed to one scannable line. The trailing `(cite: ...)` is a locator pointing to whichever artifact would let a reader verify the project-state claim — a `<short-hash>` for a load-bearing commit (e.g., "this branch delivers X" or "sibling Y just landed"), a `<branch-name>` for a tip-of-branch fact (e.g., "we sit alongside branch Z"), or a `<docs/path>` for a decision record or working doc (e.g., "blocked on decision N" or "follows from doc M"). Pick the **single** most load-bearing pointer — a self-auditing cite, not a complete reference list. This mirrors the inline-citation requirement on `skills/fact-check.md` verdicts: making each claim independently checkable means a stale hash, missing branch, or moved path immediately flags that the project state may no longer reflect reality, instead of the staleness sitting silent in a re-read.
 - **Task status**: Lifecycle keyword from `in-progress | blocked | paused | complete`, optionally followed by a free-form phase note in parens (e.g., `in-progress (research drafted, plan next)`). The keyword is required; the parenthetical is optional but recommended whenever a phase note would help a re-reader orient.
 
-The header mirrors the sub-agent goal-preamble pattern (see `patterns/orchestrated-review.md`) but applies it to the working doc itself: three named anchors that pin the doc to the user's outcome, the branch's place in the broader effort, and the doc's lifecycle. The intent is drift surfacing — every mid-task re-read should re-verify these three lines against reality. Update the **Task status** line whenever the doc is read or revised; if any line no longer matches reality, fix it before doing anything else with the doc. The header lives in the spec rather than as an optional pre-block precisely so the convention survives maintenance — no linter is needed when the required body content is what enforces it.
+The header mirrors the sub-agent goal-preamble pattern (see `patterns/orchestrated-review.md`) but applies it to the working doc itself: four named anchors that pin the doc to the user's outcome, the framing that produced that outcome, the branch's place in the broader effort, and the doc's lifecycle. The intent is drift surfacing — every mid-task re-read should re-verify these four lines against reality. Update the **Task status** line whenever the doc is read or revised; if any line no longer matches reality, fix it before doing anything else with the doc. The header lives in the spec rather than as an optional pre-block precisely so the convention survives maintenance — no linter is needed when the required body content is what enforces it.
 
 After the header, the body must include:
 
@@ -115,7 +116,8 @@ Signals that you've hit a design decision:
 The gate on **implementation** is firm: do not implement until the plan has been reviewed and approved. The gate on **planning** is soft: plan speculatively, expect revision.
 
 **Done when...**
-- [ ] Research doc exists in `docs/working/`, opens with the three-line header (Goal · Project state · Task status), and includes all required body sections (What exists, Invariants, Prior art, Gotchas)
+- [ ] Research doc exists in `docs/working/`, opens with the four-line header (Goal · Problem framing · Project state · Task status), and includes all required body sections (What exists, Invariants, Prior art, Gotchas)
+- [ ] Problem framing line names one alternative framing that was considered and discarded (not a placeholder like "Considered and discarded: none"); if no plausible alternative can be named, the framing hasn't been examined yet — do that work before continuing
 - [ ] Project state line ends with a `(cite: <short-hash> | <branch-name> | <docs/path>)` locator pointing to an artifact a reader can open to verify the claim; if no single artifact would verify it, the line itself is overclaiming and needs to be narrowed
 - [ ] The Task status line accurately reflects current lifecycle (re-read it; if it lies, fix it)
 - [ ] Actual implementations were read, not just signatures or file names
@@ -124,7 +126,7 @@ The gate on **implementation** is firm: do not implement until the plan has been
 
 ### 3. Plan (essential) — specify the implementation steps
 
-Produce a plan doc in `docs/working/`. The doc must begin with the same three-line header used by research docs (see step 2), then a `Research:` cross-link line, then the body sections.
+Produce a plan doc in `docs/working/`. The doc must begin with a three-line header (Goal · Project state · Task status) — the same three shared anchors as the research doc's header, defined in step 2. The research doc's Problem framing line is *not* repeated on the plan: framing is established once in research and inherited via the `Research:` cross-link line below. After the header, add the `Research:` cross-link line, then the body sections.
 
 **Header (required, top of file — three lines, in this order):**
 
@@ -301,11 +303,11 @@ Claude revises the plan doc based on feedback. This cycle repeats until the user
 
 ### 5. Self-check (essential) — re-read the header before implementation
 
-Before writing any implementation code, re-read the three-line header (Goal · Project state · Task status) at the top of both the research and plan docs and verify each line still describes reality. Research, planning, and the annotation cycle can take long enough that any of the three lines can drift: a sibling branch may have landed and shifted the project state, the goal may have narrowed in response to feedback, or the Task status may still claim "research drafted" when the plan is actually approved and ready to implement. Update any line that no longer matches reality in its source doc before coding begins. This is a thirty-second check, but skipping it produces "planned for X but ended up doing Y" drift — and that drift compounds when the plan doc is later read as project memory by a future session, because a stale header silently misrepresents what the work was actually for.
+Before writing any implementation code, re-read the header at the top of both the research and plan docs and verify each line still describes reality. The shared anchors on both docs are Goal · Project state · Task status; the research doc additionally carries a Problem framing line between Goal and Project state. Research, planning, and the annotation cycle can take long enough that any of these lines can drift: a sibling branch may have landed and shifted the project state, the goal may have narrowed in response to feedback, the problem framing the research is built on may have been invalidated by a finding that didn't make it back to the header, or the Task status may still claim "research drafted" when the plan is actually approved and ready to implement. Update any line that no longer matches reality in its source doc before coding begins. This is a thirty-second check, but skipping it produces "planned for X but ended up doing Y" drift — and that drift compounds when the plan doc is later read as project memory by a future session, because a stale header silently misrepresents what the work was actually for.
 
 **Done when...**
-- [ ] Three-line header on both the research doc and the plan doc has been re-read immediately before implementation begins
-- [ ] Any line (Goal, Project state, Task status) that no longer matches reality has been updated in its source doc before any implementation code is written
+- [ ] Header on both the research doc (Goal · Problem framing · Project state · Task status) and the plan doc (Goal · Project state · Task status) has been re-read immediately before implementation begins
+- [ ] Any line that no longer matches reality has been updated in its source doc before any implementation code is written
 
 ### 6. Implement (essential) — tests first, then code
 
