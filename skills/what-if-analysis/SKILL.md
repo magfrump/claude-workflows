@@ -12,9 +12,11 @@ description: >
   seeing", "pre-mortem this", "what are the risks", "what are the second-order effects", "what breaks
   if we're wrong", or "what if this assumption doesn't hold". Also trigger when the user is about to
   make a significant, hard-to-reverse change and wants to understand the consequence space before
-  committing. NOTE: This skill can optionally receive upstream reports (fact-check, critique) but
-  does not require them. If critique reports are provided, use them to identify which assumptions
-  the critics *didn't* examine — that's where this skill adds the most value.
+  committing, or when invoked as a sub-procedure of `divergent-design` to stress-test top candidates
+  before a decision is finalized. NOTE: This skill can optionally receive upstream reports
+  (fact-check, critique) but does not require them. If critique reports are provided, use them to
+  identify which assumptions the critics *didn't* examine — that's where this skill adds the most
+  value.
 when: User wants to explore consequences, failure modes, and second-order effects of a proposed change
 requires:
   - name: cowen-critique
@@ -280,23 +282,39 @@ proposal achieved its goals?" The answer reveals the true cost of success.
 
 ## How to Structure the Output
 
-Output your analysis as a Markdown document.
+Output your analysis as a Markdown document. Begin with a level-1 title and a header block, then
+the cognitive-move sections below. Sections for moves that produced no interesting findings may
+be marked "no findings" but should not be omitted — the reader needs to know the move was run.
 
-### Assumptions Map
+### Header
 
-List every load-bearing assumption (move #1). For each one, state:
-- The assumption itself
-- Whether it's explicit in the proposal or implicit
-- What happens if it's wrong (tweak / redesign / full retreat)
-- Tag: `[NOVEL]` if not surfaced by any upstream critique
+Begin the document with:
 
-### Pre-Mortem Scenarios
+```
+# What-If Analysis: <short proposal label>
 
-Present 3-5 concrete failure stories (move #2). Each should have:
-- A specific root cause
-- A specific chain of consequences
-- A specific observable outcome
-- A plausibility assessment (likely / plausible / unlikely-but-catastrophic)
+**Proposal:** <what is being analyzed — file path, decision name, or one-line summary>
+**Date:** <YYYY-MM-DD>
+**Mode:** <Consequence | Pre-mortem | Full>
+**Upstream critiques:** <list of skills whose reports were used, or "none">
+```
+
+### Assumptions Examined
+
+List every load-bearing assumption (move #1). For each one, use these fields:
+- **Assumption:** the claim itself
+- **Source:** explicit (cite location) or implicit
+- **If wrong:** tweak / redesign / full retreat
+- **Tag:** `[NOVEL]` if not surfaced by any upstream critique, otherwise omit
+
+### Pre-Mortem Scenarios (Failure Modes)
+
+Present 3-5 concrete failure stories (move #2). For each scenario, use these fields:
+- **Root cause:** the specific trigger
+- **Chain of consequences:** the ordered sequence from trigger to outcome
+- **Observable outcome:** what someone watching the system would see
+- **Plausibility:** Likely | Plausible | Unlikely-but-catastrophic
+- **Severity:** Low | Medium | High | Catastrophic
 
 ### Consequence Chains
 
@@ -355,6 +373,20 @@ This tagging enables direct comparison with upstream critique outputs to evaluat
 the what-if analysis surfaced genuinely new findings. The `[PRIOR CONSIDERATION]` tag can
 combine with others (e.g., `[HIDDEN COUPLING] [PRIOR CONSIDERATION]`) when a prior artifact
 already named the coupling but the present proposal didn't carry it forward.
+
+### Recommendations
+
+Close the document with a Recommendations section that translates the findings into action.
+Group them as:
+- **Must address before proceeding:** findings whose probability × severity makes shipping
+  without mitigation reckless. State the specific mitigation expected.
+- **Worth mitigating:** findings worth a tracking item but not a blocker. Suggest a watch
+  signal or contingency.
+- **Acknowledged risks:** findings the team can knowingly carry, with a rationale for why
+  the risk is acceptable.
+
+If no findings rise to "must address" severity, say so explicitly — a flat Recommendations
+section is more useful than an inflated one.
 
 ## Output Location
 
