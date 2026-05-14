@@ -41,12 +41,12 @@ five lenses scoped to that question.
 ## Scope (and what's deferred)
 
 This skill covers **moat and distribution only**. Two adjacent dimensions are explicitly out of
-scope and will be addressed by separate future skills:
+scope and addressed by sibling skills:
 
-- **Market-sizing critique** (TAM/SAM/SOM realism, segment definition, addressable customer
-  count) — deferred to a `business-plan-critique-market-sizing` skill.
 - **Unit-economics critique** (CAC/LTV math, gross margin, payback period, contribution margin
-  trajectories) — deferred to a `business-plan-critique-unit-economics` skill.
+  trajectories) — handled by the `business-plan-critique-unit-economics` skill.
+- **Market-sizing critique** (TAM/SAM/SOM realism, segment definition, addressable customer
+  count) — deferred to a future `business-plan-critique-market-sizing` skill.
 
 If the draft's biggest weakness is in one of those areas, name it briefly under "Out of scope"
 in your Goal-Alignment Note and let the orchestrator route it. Do not attempt those critiques
