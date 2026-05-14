@@ -573,10 +573,22 @@ of autonomous work).
 
 Output a JSON array to docs/working/tasks-round-$ROUND.json with fields:
 {\"id\": \"short-kebab-case\", \"description\": \"one paragraph task description\",
-\"files_touched\": [\"list of files\"], \"independent\": true/false}
+\"files_touched\": [\"list of files\"], \"independent\": true/false,
+\"hypothesis\": \"one-sentence falsifiable claim\",
+\"hypothesis_window\": <integer rounds before this can be evaluated>}
 
 Only include tasks where independent is true. Discard tasks that depend on
-other tasks in this round.${TASK_OFF_LIMITS}"
+other tasks in this round.
+
+Hypothesis guidance: each task must carry a falsifiable claim describing the
+observable change the user should see if the task delivers value. Frame it
+as a prediction about behavior, output, or measurable repo state — not as a
+restatement of what the task does. Pick a window of 1-5 rounds:
+  - 1 round: the change is observable in the next run's artifacts
+  - 2-3 rounds: requires accumulated usage or repeated cycles to assess
+  - 4-5 rounds: requires real-world adoption in external projects
+The loop will not evaluate hypotheses autonomously; they are logged for the
+user to assess from the morning summary.${TASK_OFF_LIMITS}"
 
     TASKS_FILE="$WORKING_DIR/tasks-round-$ROUND.json"
     if [ ! -f "$TASKS_FILE" ]; then
@@ -881,7 +893,9 @@ descriptive (one clear sentence; conventional-commit prefix preferred)."
 
                     # --- Baseline comparison: evaluate HEAD version first ---
                     BASELINE_WEAK=0
+                    IS_NEW_FILE=true
                     if git show "main:$SKILL_FILE" >/dev/null 2>&1; then
+                        IS_NEW_FILE=false
                         BASELINE_TMP=$(mktemp -d)
                         # Recreate directory structure so self-eval can find the file
                         mkdir -p "$BASELINE_TMP/$(dirname "$SKILL_FILE")"
@@ -916,23 +930,39 @@ SELF_EVAL_RESULT: <number of Weak scores>
 Count only the automated assessment scores (Testability investment, Trigger clarity, Overlap and redundancy, Test coverage, Pipeline readiness). Do not count human-review dimensions." 2>&1) || true
 
                     WEAK_COUNT=$(echo "$EVAL_OUTPUT" | grep -oP 'SELF_EVAL_RESULT: \K\d+' || echo "")
+                    # Parse Weak dimension names up front so we can apply the
+                    # new-file Test Coverage exclusion before gating.
+                    WEAK_DIMS=$(echo "$EVAL_OUTPUT" | grep -iP '^\|.*\|\s*Weak\s*\|' | sed 's/^|\s*//' | cut -d'|' -f1 | sed 's/^[[:space:]]*//;s/[[:space:]]*$//' | paste -sd',' || echo "")
+
+                    # New files cannot have automated tests or documented
+                    # real-world usage on the introducing commit, so Test
+                    # Coverage Weak is the default state — gating on it
+                    # penalizes the act of creation, not actual quality. We
+                    # still record the raw score for the detail field.
+                    EFFECTIVE_WEAK_COUNT="${WEAK_COUNT:-0}"
+                    EXCLUSION_NOTE=""
+                    if [ "$IS_NEW_FILE" = "true" ] && echo "$WEAK_DIMS" | grep -qi 'test coverage'; then
+                        EFFECTIVE_WEAK_COUNT=$((EFFECTIVE_WEAK_COUNT - 1))
+                        EXCLUSION_NOTE=" (Test Coverage Weak excluded for new file)"
+                    fi
+
                     if [ -z "$WEAK_COUNT" ]; then
                         echo "    Warning: self-eval did not produce a parseable result for $SKILL_FILE"
                         echo "[$TASK_ID] WARNING: self-eval unparseable for $SKILL_FILE" >> "$WORKING_DIR/validation-round-$ROUND.log"
-                    elif [ "$WEAK_COUNT" -ge 2 ] && [ "$WEAK_COUNT" -gt "$BASELINE_WEAK" ]; then
-                        REJECT_REASON="self-eval: $SKILL_FILE has $WEAK_COUNT Weak automated scores (baseline: $BASELINE_WEAK)"
-                        # Parse which dimensions scored Weak from the eval table output
-                        WEAK_DIMS=$(echo "$EVAL_OUTPUT" | grep -iP '^\|.*\|\s*Weak\s*\|' | sed 's/^|\s*//' | cut -d'|' -f1 | sed 's/^[[:space:]]*//;s/[[:space:]]*$//' | paste -sd',' || echo "")
+                    elif [ "$EFFECTIVE_WEAK_COUNT" -ge 2 ] && [ "$EFFECTIVE_WEAK_COUNT" -gt "$BASELINE_WEAK" ]; then
+                        REJECT_REASON="self-eval: $SKILL_FILE has $WEAK_COUNT Weak automated scores (baseline: $BASELINE_WEAK)${EXCLUSION_NOTE}"
                         SELF_EVAL_DETAIL=$(jq -n \
                             --arg file "$SKILL_FILE" \
                             --argjson weak_count "$WEAK_COUNT" \
+                            --argjson effective_weak_count "$EFFECTIVE_WEAK_COUNT" \
                             --arg weak_dimensions "$WEAK_DIMS" \
                             --argjson baseline_weak "$BASELINE_WEAK" \
-                            '{file: $file, weak_count: $weak_count, baseline_weak: $baseline_weak, weak_dimensions: ($weak_dimensions | split(",") | map(select(length > 0)))}')
+                            --argjson is_new_file "$([ "$IS_NEW_FILE" = "true" ] && echo true || echo false)" \
+                            '{file: $file, weak_count: $weak_count, effective_weak_count: $effective_weak_count, baseline_weak: $baseline_weak, is_new_file: $is_new_file, weak_dimensions: ($weak_dimensions | split(",") | map(select(length > 0)))}')
                         SELF_EVAL_PASSED=false
                         break
                     else
-                        echo "    self-eval OK: $SKILL_FILE ($WEAK_COUNT Weak, baseline: $BASELINE_WEAK)"
+                        echo "    self-eval OK: $SKILL_FILE ($WEAK_COUNT Weak, baseline: $BASELINE_WEAK)${EXCLUSION_NOTE}"
                     fi
                 done
                 if $SELF_EVAL_PASSED; then
@@ -1061,6 +1091,13 @@ Then git add the resolved files and git commit to complete the merge."
 
     # Print human-readable round summary after merges
     print_round_summary "$ROUND" "$WORKING_DIR/validation-round-$ROUND.log"
+
+    # Append approved-task hypotheses to the log. Outcome columns stay empty;
+    # the morning summary surfaces matured rows as deferred questions for the
+    # user to evaluate (the loop never auto-grades them — see Decision 010).
+    echo "Logging hypotheses for approved tasks..."
+    append_approved_hypotheses "$ROUND" "$TASKS_FILE" \
+        "$WORKING_DIR/hypothesis-log.md" "$APPROVED_TASKS"
 
     # -------------------------------------------------------
     # Step 6: Update completed tasks log

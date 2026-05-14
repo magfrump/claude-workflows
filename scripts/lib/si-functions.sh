@@ -9,6 +9,7 @@
 #   find_task_lineage    — Grep round-changelog.md for prior tasks that touched given files
 #   prepend_lineage_to_plan — Prepend a Lineage section to a task's plan doc
 #   remove_worktree_and_branch — Force-remove a worktree and delete its branch
+#   append_approved_hypotheses — Append approved-task hypotheses to hypothesis-log.md
 #
 # Guard against direct execution
 if [[ "${BASH_SOURCE[0]}" == "${0}" ]]; then
@@ -321,4 +322,61 @@ print_gate_stats() {
     done <<< "$stats"
 
     echo ""
+}
+
+# --- Append approved-task hypotheses to hypothesis-log.md ---
+# Reads tasks-round-N.json, picks rows whose IDs appear in the approved list,
+# and appends one markdown table row per task to hypothesis-log.md. Outcome
+# columns are left empty — the user fills them in via the morning summary.
+#
+# Header columns expected (created if file is absent):
+#   Round | Task ID | Hypothesis | Window | Checked at Round | Outcome | Status Date | Evidence
+#
+# Why approved-only: rejected tasks never landed, so their hypotheses describe
+# code that doesn't exist. Logging them would clutter the open-hypothesis list
+# with rows that can never resolve.
+#
+# Args: $1 = round number
+#       $2 = tasks JSON file path
+#       $3 = hypothesis log path
+#       $4 = space-separated list of approved task IDs
+append_approved_hypotheses() {
+    local round="$1" tasks_file="$2" log_file="$3" approved_ids="$4"
+    [ -f "$tasks_file" ] || return 0
+    [ -n "$approved_ids" ] || return 0
+
+    if [ ! -f "$log_file" ]; then
+        cat > "$log_file" <<'HEADER'
+# Hypothesis Log
+
+Tracks falsifiable predictions made at task creation time and their outcomes.
+
+| Round | Task ID | Hypothesis | Window | Checked at Round | Outcome | Status Date | Evidence |
+|-------|---------|------------|--------|------------------|---------|-------------|----------|
+HEADER
+    fi
+
+    # Guarantee a trailing newline so the first appended row doesn't glom onto
+    # the last existing line.
+    if [ -s "$log_file" ] && [ "$(tail -c1 "$log_file" | wc -l)" -eq 0 ]; then
+        printf '\n' >> "$log_file"
+    fi
+
+    local tid hyp window
+    for tid in $approved_ids; do
+        hyp=$(jq -r --arg id "$tid" '.[] | select(.id == $id) | .hypothesis // ""' "$tasks_file" 2>/dev/null)
+        window=$(jq -r --arg id "$tid" '.[] | select(.id == $id) | .hypothesis_window // ""' "$tasks_file" 2>/dev/null)
+
+        if [ -z "$hyp" ]; then
+            echo "  Warning: no hypothesis recorded for approved task: $tid" >&2
+            continue
+        fi
+        [[ "$window" =~ ^[0-9]+$ ]] || window="3"
+
+        # Escape pipe chars so they don't break the markdown table.
+        hyp="${hyp//|/\\|}"
+
+        printf '| %s | %s | %s | %s | %d | | | |\n' \
+            "$round" "$tid" "$hyp" "$window" "$((round + window))" >> "$log_file"
+    done
 }
