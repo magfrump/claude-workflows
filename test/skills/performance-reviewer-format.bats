@@ -69,6 +69,12 @@ setup() {
   assert_field_per_finding "Recommendation"
 }
 
+@test "each finding has a Baseline line" {
+  # Performance reviews must state a measured baseline or the literal
+  # "no baseline available — flagged as speculative" disclaimer.
+  assert_field_per_finding "Baseline"
+}
+
 # --- Ending sections ---
 
 @test "report has What Looks Good section" {

@@ -6,11 +6,15 @@ description: >
   algorithmic complexity issues, hidden N+1 patterns, unnecessary work in hot paths, resource
   lifecycle problems, and scaling bottlenecks that only appear under load. Produces a structured
   Markdown critique of code diffs. Use this skill when the user asks to "review for performance",
-  "will this scale", "check for bottlenecks", "is this efficient", or "what happens under load".
-  Also trigger when code touches database queries, loops over collections, caching, pagination,
-  batch operations, or request handling paths. NOTE: This skill can be invoked standalone or by
-  a code-review orchestrator. If a code-fact-check report is provided, use it as your foundation
-  for understanding what the code actually does and do not re-verify documented behavior.
+  "perf review", "will this scale", "check for bottlenecks", "is this efficient", "what happens
+  under load", "find the N+1", or "hot path analysis". Also trigger when code touches database
+  queries, ORM calls, loops over collections, caching, pagination, batch operations, request
+  handling paths, background workers, or any code in a measured hot path. This is the
+  performance critic — for security flaws use security-reviewer; for interface design use
+  api-consistency-reviewer; for module/dependency structure use architecture-review. NOTE: This
+  skill can be invoked standalone or by a code-review orchestrator. If a code-fact-check report
+  is provided, use it as your foundation for understanding what the code actually does and do
+  not re-verify documented behavior.
 when: Code touches queries, loops, caching, or request-handling paths
 requires:
   - name: code-fact-check
