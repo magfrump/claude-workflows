@@ -191,6 +191,25 @@ After the header and research link, the body must include:
 
   For simple features, this section can be brief (a few test cases in prose). For complex features, the table format helps ensure coverage. The human designs the test constraints; the LLM translates them into runnable test code.
 
+- **Failure modes considered**: A short list of 3-5 specific failures the plan should prevent, each paired with the guarding test or structural choice that prevents it. This is the premortem move: by writing "what specifically should not happen, and what catches it if I'm wrong," the plan author surfaces gaps where a step *sounds* correct but has no guard against the obvious failure. Risks (below) is open-ended scrutiny; this section is its paired counterpart — named failure ↔ named guard, not free-form worry.
+
+  **When required vs. optional:**
+  - **Required** when either (a) the plan has more than 5 steps, or (b) the plan touches a trust boundary (auth, input handling, crypto, file I/O, network or IPC boundaries, serialization, or any other code where untrusted input crosses into trusted execution — the same enumeration the `security-reviewer` skill triggers on). The first triggers on surface area: a long plan has more places where an unanticipated failure can land. The second triggers on consequence: at a trust boundary, an unanticipated failure can be exploitable rather than merely annoying.
+  - **Optional** otherwise. For small plans entirely inside trusted code, the Risks section's open-ended scrutiny is usually enough; the explicit failure-to-guard pairing adds overhead that isn't proportional to the risk.
+
+  **Format:** Either prose or a two-column table (Failure mode / Guard) is fine; the table form makes the pairing harder to overlook. Each entry must name a *specific* failure (not "something goes wrong") and a *specific* guard — either a test case named in the Test specification section above, or a structural choice already in the plan (a transaction, an ordering constraint, an interface boundary, an auth check). If a failure has no guard yet, the entry is a directive to add one *before implementation begins*, not a confession that the failure is acceptable. The 3-5 cap is a soft requirement: 1-2 entries is performative; 10+ is unfocused; the range forces the author to prioritize the most consequential failures.
+
+  **Worked example.** For the 7-step API endpoint plan from the Implementation order block above:
+
+  | Failure mode | Guard |
+  |-----|-----|
+  | `POST /verify-email` accepts requests with an invalid or missing token and flips `User.email_verified` to true | Test case in step 6 asserts that bad-token requests return 401 and leave `User.email_verified` unchanged |
+  | `GET /session/heartbeat` updates `last_seen_at` for unauthenticated requests | Structural: the handler checks auth before touching the session row; test in step 6 confirms the 401 path leaves `last_seen_at` unchanged |
+  | Step 3's migration applies `email_verified` but partially fails on `last_seen_at`, leaving the schema in a split state | Structural: migration adds both columns in a single transaction; rollback restores both fields atomically |
+  | Step 7's changelog lands but cites handler behavior that was reverted before merge | Ordering: step 7 commits last and references the handler commits by short hash, so a revert breaks the changelog reference and surfaces in review |
+
+  Four entries — within the 3-5 range. The premortem move is ~5 minutes of asking "what's the obvious failure for each step, and what catches it?" before declaring the plan ready for review. An entry that can't name its guard is a discovery, not a defect in the exercise: it tells the author what the plan still needs.
+
 - **Risks**: What could go wrong, what's uncertain, what you'd want a reviewer to scrutinize.
 
 #### Checkpoint generation (final sub-step of planning)
@@ -249,6 +268,7 @@ The checkpoint is a *derived artifact* — it contains no new information, only 
 - [ ] Each step is specific enough that someone could implement it without re-reading the research doc
 - [ ] Each step is small enough to be one commit
 - [ ] Plan doc includes an Implementation order block when the plan has more than 5 steps OR will be implemented in /away mode (otherwise the block is optional)
+- [ ] Plan doc includes a Failure modes considered block (3-5 specific failures, each paired with a guarding test or structural choice) when the plan has more than 5 steps OR touches a trust boundary (otherwise the block is optional)
 - [ ] Test specification includes at least one test case per behavioral requirement
 - [ ] No single step would push a file past 500 lines without an explicit note
 - [ ] Plan doc includes an Estimated context cost line covering research, implementation, and review phases, paired with an Actual context cost (post-implementation) placeholder line awaiting the post-implementation fill-in
