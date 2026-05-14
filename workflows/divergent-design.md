@@ -21,6 +21,7 @@ value-justification: "Replaces ad-hoc architectural debates with structured mult
 - **← From Bug Diagnosis**: When debugging surfaces a design-level root cause with 3+ viable fix approaches, invoke DD directly — don't route through RPI first. The diagnosis log's root-cause analysis and failed hypotheses become hard constraints in DD's diagnosis step (step 2): the root cause defines what must be solved, and the failed hypotheses document approaches already ruled out (pre-pruning step 3 candidates). This shortcut applies when the bug is understood but the *fix* is a design decision. If the root cause is still uncertain, stay in debugging or escalate to RPI research.
 - **→ RPI**: After DD produces a decision, return to RPI's plan step with the decision doc as input. Reference it from the plan; don't duplicate the rationale.
 - **→ Spike**: If DD candidates require feasibility validation, run a timeboxed spike on the uncertain option before finalizing the decision. The spike's findings update DD's tradeoff matrix.
+- **← From Failure-Driven Design** ([`failure-driven-design.md`](failure-driven-design.md)): When FDD's merge step (step 4) hits an irreconcilable conflict between two minimum-prevention sketches, DD is invoked as a sub-procedure to choose between them. The conflicting sketches become DD's diverge-step candidates, and each failure entry the sketches were meant to prevent becomes a hard constraint in DD's diagnose step (step 2). DD's decision feeds back into FDD's merged design record.
 
 ## Process
 
