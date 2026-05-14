@@ -53,6 +53,12 @@ setup() {
   assert_field_per_finding "Location"
 }
 
+@test "each finding has a Boundary line" {
+  # SKILL.md anchoring rule: every finding cross-references a Trust Boundary
+  # Map label (e.g., B1) or uses "Internal — no boundary" with justification.
+  assert_field_per_finding "Boundary"
+}
+
 @test "each finding has a Move line" {
   assert_field_per_finding "Move"
 }
