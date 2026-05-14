@@ -121,6 +121,69 @@ If the tradeoff is genuinely unclear: **stop and consult the user.** Present the
 
 When 2+ surviving candidates score within ~1 cell of each other on the tradeoff matrix, explicitly name the **axis of disagreement** (e.g., "speed vs robustness", "control vs simplicity") and the project's stated preference along that axis. If no stated preference exists, record "no stated preference, picked by tiebreaker rule X" so the buried judgment call is visible and revisitable by future readers.
 
+#### Variant: Trigger-bound decision rule (evidence arrives after commit)
+
+*Invoke this variant when critical evidence will arrive after the commit window* — i.e., when the decision must be made before the information needed to fully evaluate it can be obtained. The variant replaces the step-4 output: instead of selecting a single chosen approach, you produce a **decision rule** of the form *"if X observed → continue; if Y → revisit; if Z → reverse"* that wires the post-commit evidence flow into the decision itself.
+
+This is opt-in. If the trigger below doesn't apply, use the standard step-4 Decision section above and skip this variant entirely — the falsifiable-hypothesis line and step-5 Revisit triggers already cover normal post-decision monitoring.
+
+##### When to engage
+
+Engage the variant when **any** of these hold:
+
+- The decision must be committed before a key piece of evidence is available (e.g., a vendor contract signs before the first month of production traffic; a market-sizing assumption can't be tested until launch).
+- The decision is hard to reverse later, but cheap signals that would distinguish "still good" from "wrong call" will arrive during the implementation or rollout window.
+- The leading candidate's falsifiable hypothesis (already required by step 4) has its *counter-evidence window* extending past the commit point — so by the time counter-evidence is in, the decision is already locked in unless a rule was set in advance.
+
+If none apply, the problem is a static decision — proceed with the standard Decision section. Most architectural and library-selection decisions fall here; adding a decision rule to a problem whose evidence is already on the table is ceremony, not clarity.
+
+##### Output: the three-branch decision rule
+
+Replace the chosen-approach paragraph with a three-row rule keyed to specific observable signals:
+
+| Branch | Trigger condition | Action |
+|--------|------------------|--------|
+| **Continue** | [observable consistent with leading hypothesis] within [window] | proceed with chosen approach as planned |
+| **Revisit** | [partial / mixed signal] within [window] | re-run step 4 stress-test pass with the new evidence before the next commit gate; decision may stand or shift |
+| **Reverse** | [observable contradicting leading hypothesis] within [window] | abandon chosen approach in favor of **[pre-named fallback from step-3 survivors]** |
+
+Two requirements make this rule load-bearing rather than decorative:
+
+- **Each trigger condition is a specific, thresholded observable** — same falsifiability bar as the step-5 Revisit triggers. "If things go badly" is not a Reverse trigger; "if p99 latency exceeds 800 ms for any week" is.
+- **The Reverse branch pre-names a specific step-3 survivor candidate** as fallback, not "we'll figure it out then." Pre-naming is the variant's central value: a reversal decision made under post-evidence pressure tends to default to the cheapest fix or the loudest voice, not the best step-3 survivor. Naming it in advance turns the reversal into a binary check rather than a fresh strategic debate.
+
+##### Worked example — software case (build-vs-buy)
+
+Context: choosing between buying a managed analytics SaaS (candidate #2, leading) and building an in-house Kafka + Spark pipeline (candidate #4, step-3 survivor). The vendor contract must be signed before the first month of production traffic, but the buy option's per-event pricing and the build option's necessity only become measurable once real load is observed.
+
+Decision rule:
+
+| Branch | Trigger | Action |
+|--------|---------|--------|
+| Continue (buy) | First-month event volume within ±25% of vendor's quoted plan **and** p99 ingest latency < 500 ms | Keep vendor through renewal window |
+| Revisit | Event volume 25-100% over plan **or** p99 latency 500-800 ms in any week | Re-run step-4 tradeoff matrix with measured numbers before the renewal date |
+| Reverse | Event volume sustainedly > 2× plan **or** p99 latency > 800 ms | Exit vendor and implement candidate #4 (Kafka + Spark in-house) before contract renewal |
+
+The Reverse branch names #4 specifically rather than "build something," so when traffic spikes, the team isn't re-litigating which build approach to take under renewal-deadline pressure.
+
+##### Worked example — business case (market sizing assumption)
+
+Context: investing in a premium-tier feature whose business case rests on the assumption that ≥15% of free users will upgrade once the feature ships. The assumption can't be validated until the feature is live; engineering budget for the next quarter must be committed before any conversion data exists. Step-3 survivors included candidate #6 (premium-as-add-on, sold à la carte) and candidate #2 (re-package as free-tier enhancement).
+
+Decision rule:
+
+| Branch | Trigger | Action |
+|--------|---------|--------|
+| Continue (premium tier) | Upgrade rate ≥ 10% within first 6 weeks of launch | Continue investment per plan; full feature roadmap proceeds |
+| Revisit | Upgrade rate 5-10% in first 6 weeks | Re-run step-4 tradeoff matrix considering candidate #6 (premium-as-add-on) before committing next quarter's engineering budget |
+| Reverse | Upgrade rate < 5% sustained over 6 weeks | Sunset premium tier; re-enter the feature as a free-tier enhancement (candidate #2) |
+
+Pre-naming #6 as the Revisit fallback and #2 as the Reverse fallback turns "did the upgrade assumption hold?" into a binary check at the quarterly-planning gate, rather than a fresh strategic debate under deadline pressure.
+
+##### How the variant interacts with step 5
+
+When this variant is used, the step-5 decision record's **Decision and rationale** section contains the three-branch table (in place of the single chosen-approach paragraph), followed by a one-line *"Currently operating under: [Continue | Revisit | Reverse]"* status line. The Continue / Revisit / Reverse trigger conditions also enter the **Revisit triggers** section as thresholded entries, so the existing grep convention surfaces them. The chosen-branch line is part of the Task-status drift-check — update it whenever the team transitions across branches.
+
 **Done when...**
 - [ ] Each surviving candidate carries a falsifiable hypothesis (expected observable, window, counter-evidence)
 - [ ] Each surviving candidate declares a predicted implementation cost — a token estimate or an hour estimate; treat as a soft prediction, not a strict cap
@@ -129,6 +192,7 @@ When 2+ surviving candidates score within ~1 cell of each other on the tradeoff 
 - [ ] Either one approach dominates at >80% confidence, or the user has been consulted
 - [ ] If 2+ candidates scored within ~1 cell on the tradeoff matrix, the axis of disagreement and the project's stated preference (or the tiebreaker rule used in its absence) are recorded explicitly
 - [ ] The chosen approach is stated explicitly with a one-sentence rationale
+- [ ] *If the Trigger-bound decision rule variant was engaged*: the decision rule names a specific, thresholded observable for each of Continue / Revisit / Reverse, and the Reverse branch pre-names a specific step-3 survivor candidate as fallback (only fires when the variant trigger applies; default-path decisions skip this gate)
 
 ### 5. Document
 
