@@ -7,18 +7,25 @@
 load helpers
 
 setup() {
-  load_generic_report "${REPORT_PATH:-docs/reviews/ui-visual-review.md}"
+  load_generic_report "docs/reviews/ui-visual-review.md"
+  count_findings
 }
 
 # --- Header section ---
 
 @test "report has a title header with UI Visual Review" {
-  echo "$REPORT_CONTENT" | head -5 | grep -qiE '^# UI Visual Review'
+  echo "$REPORT_CONTENT" | head -5 | grep -qiE '^# .*UI Visual Review'
 }
 
-@test "report has a Summary section" {
-  assert_section_exists "Summary"
+@test "report has a Scope field" {
+  echo "$REPORT_CONTENT" | grep -qE '^\*\*Scope:\*\*'
 }
+
+@test "report has a Date field" {
+  echo "$REPORT_CONTENT" | grep -qE '^\*\*Date:\*\*'
+}
+
+# --- Environment section ---
 
 @test "report has an Environment section" {
   assert_section_exists "Environment"
@@ -36,27 +43,42 @@ setup() {
   echo "$section" | grep -qiE 'viewport'
 }
 
-# --- Severity sections ---
+# --- Findings section ---
 
-@test "report has at least one severity section" {
-  echo "$REPORT_CONTENT" | grep -qiE '^## (Critical|Major|Minor) Issues'
+@test "report has at least one finding" {
+  [ "$FINDING_COUNT" -gt 0 ]
 }
 
-# --- Findings format ---
-
-@test "each issue has a Problem field" {
-  local issues
-  issues=$(echo "$REPORT_CONTENT" | grep -cE '^\*\*Problem:\*\*' || true)
-  [ "$issues" -gt 0 ]
+@test "each finding has a Severity line" {
+  assert_field_per_finding "Severity"
 }
 
-@test "each issue has a Fix field or code block" {
-  # Issues should have either a **Fix:** field or a code block with the fix
-  local fixes code_blocks total
-  fixes=$(echo "$REPORT_CONTENT" | grep -cE '^\*\*Fix:\*\*' || true)
-  code_blocks=$(echo "$REPORT_CONTENT" | grep -cE '^```' || true)
-  total=$((fixes + code_blocks))
-  [ "$total" -gt 0 ]
+@test "severity values use only the allowed values" {
+  assert_field_values "Severity" "Critical|Major|Minor|Informational"
+}
+
+@test "each finding has a Location line" {
+  assert_field_per_finding "Location"
+}
+
+@test "each finding has an Issue type line" {
+  assert_field_per_finding "Issue type"
+}
+
+@test "each finding has a Move line" {
+  assert_field_per_finding "Move"
+}
+
+@test "each finding has a Confidence line" {
+  assert_field_per_finding "Confidence"
+}
+
+@test "confidence levels use only the allowed values" {
+  assert_field_values "Confidence" "High|Medium|Low"
+}
+
+@test "each finding has a Recommendation line" {
+  assert_field_per_finding "Recommendation"
 }
 
 # --- Best Practices table ---
@@ -89,12 +111,30 @@ setup() {
   echo "$section" | grep -qiE '(desktop|1920|1366)'
 }
 
-# --- No leakage from other skill types ---
+# --- Ending sections ---
+
+@test "report has What Looks Good section" {
+  assert_section_exists "What Looks Good"
+}
+
+@test "report has Summary Table section" {
+  assert_section_exists "Summary Table"
+}
+
+@test "report has Overall Assessment section" {
+  assert_section_exists "Overall Assessment"
+}
+
+# --- No leakage from sibling code critics ---
 
 @test "report does not contain fact-check verdicts" {
   ! echo "$REPORT_CONTENT" | grep -qiE '^\*\*Verdict:\*\* (Accurate|Mostly accurate|Disputed|Inaccurate|Unverified)$'
 }
 
-@test "report does not contain security severity levels" {
-  ! echo "$REPORT_CONTENT" | grep -qiE '^\*\*Severity:\*\* (Critical|High|Medium|Low|Informational)$'
+@test "report does not contain security-style trust boundary map" {
+  ! echo "$REPORT_CONTENT" | grep -qE '^## Trust Boundary Map'
+}
+
+@test "report does not contain performance-style data flow section" {
+  ! echo "$REPORT_CONTENT" | grep -qE '^## Data Flow and Hot Paths'
 }
