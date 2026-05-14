@@ -17,7 +17,7 @@ Evaluate triggers top-to-bottom. Take the **first match**; if none match, defaul
 | # | Trigger condition | Activate | Notes |
 |---|-------------------|----------|-------|
 | 1 | **New/unfamiliar codebase**, or first session in a project with no `docs/thoughts/` | `codebase-onboarding.md` | e.g., "Help me understand this repo" · Output feeds into RPI research — don't redo what onboarding already learned. |
-| 2 | **Task involves a design choice** with 3+ viable approaches, or keywords: "which approach", "tradeoff", "library selection", "architecture" | `divergent-design.md` | e.g., "Should we use Postgres or DynamoDB for this?" · Often invoked as a sub-procedure within RPI (RPI step 2 signals → DD → decision feeds back into plan). DD↔RPI is the most common composition. |
+| 2 | **Task involves a design choice** with 3+ viable approaches, or keywords: "which approach", "tradeoff", "library selection", "architecture" | `divergent-design.md` | e.g., "Should we use Postgres or DynamoDB for this?" · Often invoked as a sub-procedure within RPI (RPI step 2 signals → DD → decision feeds back into plan). DD↔RPI is the most common composition. · Within DD: `matrix-analysis` to score candidates, `what-if-analysis` to stress-test top picks, `design-space-situating` if the framing feels off. |
 | 3 | **Goal is to explain, theorize, or generate hypotheses** rather than build — keywords: "why does", "what's causing", "competing theories", "explain this behavior", "hypothesize" | `divergent-design.md` (epistemic variant) | e.g., "Why is latency spiking only on Tuesdays?" · Uses DD's Epistemic Reasoning section: candidates are competing explanations, output is a ranked hypothesis list, not a decision record. |
 | 4 | **Non-trivial feature or bug fix** (touches >1 file, root cause unclear, needs codebase understanding) | `research-plan-implement.md` | e.g., "Fix the login timeout bug" or "Add CSV export to the reports page" · The default. If RPI research reveals a design fork, invoke DD inline. If research reveals root cause of a bug, skip to Fix & Verify (see debugging defaults below). |
 | 5 | **Task touches multiple subsystems** and can be decomposed into independent sub-investigations | `task-decomposition.md` | e.g., "Migrate auth, billing, and notifications to the new API version" · Layer on top of RPI — each sub-task may itself follow RPI or spike. |
@@ -52,6 +52,20 @@ These skills activate based on what files are being modified, not by explicit re
 | **Opening or preparing a PR** (any codebase) | `code-review` | Orchestrates code-fact-check + security/performance/API-consistency critics in parallel. Integral to PR-prep's review-fix loop. |
 
 **Composition note:** `code-review` may invoke `ui-visual-review` and `security-reviewer` as sub-critics when the diff matches their triggers. When running standalone skills, check if a full `code-review` pass would be more appropriate.
+
+### Decision-helper skills
+
+These skills activate based on the *type of question* being asked, not on what files are being modified. Use them as sub-procedures within workflows (especially `divergent-design` and RPI) or standalone when the matching question comes up.
+
+| Trigger | Skill | When |
+|---------|-------|------|
+| **Framing a decision before choosing** — explicit request, or DD/RPI surfaces a misframing signal (constraints contradict, no candidate fits the brief) | `design-space-situating` | Places the decision on eight design-space dimensions and surfaces misframing. Output feeds DD's diagnosis step or RPI's plan. |
+| **Comparing or ranking 3+ options across multiple criteria** | `matrix-analysis` | Sub-procedure of DD when the option space is wide and a scoring matrix would clarify the choice. |
+| **Exploring consequences, failure modes, or second-order effects** of a proposed change | `what-if-analysis` | Sub-procedure of DD, or standalone when the question is "what could go wrong?" rather than "which option?" |
+| **Multi-perspective critique** of a proposal, design, or written argument | `ai-personas-critique` | Standalone, or invoked by `draft-review` alongside `cowen-critique` / `yglesias-critique`. |
+| **Dependency upgrade decision** — should we upgrade X, or how do we review a proposed bump | `dependency-upgrade` | Self-contained checklist. Use before opening or while reviewing a dep-bump PR. |
+| **Tech debt prioritization** — is this worth fixing, what's the order | `tech-debt-triage` | Self-contained. Use when planning cleanup or scoping a refactor sprint. |
+| **Testing plan question** — what tests to write for X, what to verify | `test-strategy` | Self-contained. Often invoked at the end of RPI's planning phase to scope verification. |
 
 ### How workflows compose
 
