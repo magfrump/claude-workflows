@@ -150,14 +150,29 @@ maintenance burden without new information.
 
 ## Output
 
-Produce a testing plan with this structure:
+Produce a testing plan with this structure. Use `##` (H2) for the section headings below
+so the document is navigable and consistent with other report-emitting skills.
 
-### Test Conventions
+### Title and Header
+
+Open with a top-level title that includes "Test Strategy" so the report is discoverable.
+Follow with header fields naming what was reviewed and when:
+
+```markdown
+# Test Strategy: [short scope label, e.g., feature name, PR #, or branch]
+
+**Scope:** [files, module, or diff under analysis]
+**Reviewed:** [YYYY-MM-DD]
+```
+
+Keep the header to 3–5 lines; substance belongs in the sections below.
+
+## Test Conventions
 Brief summary of the project's existing test patterns: framework, file locations, naming
 conventions, available test infrastructure. This section ensures the recommended tests will
 be consistent with the codebase.
 
-### Untested Paths Touched by the Change
+## Untested Paths Touched by the Change
 
 Output the gap list produced in Analysis step 3, verbatim, before any recommendations. This
 section is mandatory — if it is empty or vague, the test plan is incomplete. Each entry must
@@ -165,7 +180,7 @@ be in the form `path/file.ext:LINE-LINE — <specific path> — not covered`.
 
 Number the entries (`G1`, `G2`, ...) so recommendations below can reference them.
 
-### Recommended Tests
+## Recommended Tests
 
 For each recommended test, specify:
 
@@ -191,14 +206,21 @@ Every gap with priority high or medium should be closed by at least one recommen
 If you intentionally leave a gap uncovered, move it to **What NOT to Test** below with a
 reason — don't silently drop it.
 
-### What NOT to Test
+## What NOT to Test
 Explicitly list code in scope that you're recommending against testing, and why. This is
 as important as the test recommendations — it prevents wasted effort and shows that the
 plan is intentional, not just "test everything."
 
-### Coverage Gaps Beyond Current Scope
+## Coverage Gaps Beyond Current Scope
 If you noticed untested code outside the current scope that represents significant risk,
-note it briefly. This feeds into future test strategy sessions.
+note it as a numbered list so each gap is individually addressable. Use bold-numbered
+entries (`**1.** ...`, `**2.** ...`) so downstream readers and format checks can pick out
+discrete gaps. This feeds into future test strategy sessions.
+
+## Summary
+Close with a short summary (3–6 sentences) naming the highest-value recommended test, the
+main residual risk after the plan is executed, and any open questions the gap enumeration
+surfaced. This gives a reader the headline without forcing them to re-read the full plan.
 
 ## Output Location
 
