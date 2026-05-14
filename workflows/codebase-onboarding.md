@@ -145,6 +145,8 @@ Examples:
 - `Execution Surface: none — pure library; consumers drive execution via the public API documented in Entry Points.`
 - `Execution Surface: none — from-scratch project, no runtime wiring yet.`
 
+When the skip fires on a from-scratch project, the orientation doc may instead use DD's Double Diamond variant (sections 1a-3a) to produce a problem-framing record before architecture concerns exist.
+
 **Partial-skip rule.** If *some* execution modes exist (e.g., a CLI but no HTTP server, or HTTP handlers but no scheduled jobs), do **not** skip the step. Inventory the modes that exist and explicitly mark absent modes as "none" rather than silently omitting them. Only the all-absent case justifies the one-line skip note.
 
 ---
