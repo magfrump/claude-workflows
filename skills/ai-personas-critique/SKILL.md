@@ -142,10 +142,12 @@ For each selected persona, produce a focused critique section. Each section must
 5. **Assess severity:** Is this a fatal flaw, a significant weakness, or a point to consider?
 6. **Suggest a test or mitigation:** What would address this persona's concern?
 7. **Close with a Goal-Alignment Note** using the canonical form from
-   [`patterns/orchestrated-review.md`](../patterns/orchestrated-review.md):
+   [`patterns/orchestrated-review.md`](../patterns/orchestrated-review.md). Use a
+   `####` heading so the note sits *inside* its parent persona section (`###`)
+   rather than visually outranking it:
 
    ```markdown
-   ## Goal-Alignment Note
+   #### Goal-Alignment Note
    - Answered: [yes / partial / no — one phrase]
    - Out of scope: [what was set aside and why, or "none"]
    - Escalate: [what the synthesis step should action separately, or "nothing"]
@@ -179,8 +181,8 @@ Before writing the synthesis, **scan each persona's Goal-Alignment Note**:
   note in the synthesis when present, attributed to the persona that raised them. If multiple
   personas asked semantically the same question, list it once.
 
-If a persona's section omitted the note entirely, treat that as a `partial` answer with reason
-"missing goal-alignment note" so the gap stays visible.
+If a persona's section omitted the note entirely (no `#### Goal-Alignment Note` subsection),
+treat that as a `partial` answer with reason "missing goal-alignment note" so the gap stays visible.
 
 Then produce the synthesis:
 
@@ -223,7 +225,7 @@ Success criterion: A 100-200 word critique grounded in proposal specifics, with 
 **Severity:** [Fatal flaw | Significant weakness | Point to consider]
 **Test/mitigation:** [What would address this concern]
 
-## Goal-Alignment Note
+#### Goal-Alignment Note
 - Answered: [yes / partial / no — one phrase]
 - Out of scope: [what was set aside and why, or "none"]
 - Escalate: [what the synthesis step should action separately, or "nothing"]
