@@ -23,7 +23,7 @@ SCRIPT_DIR="$(cd "$(dirname "$0")" && pwd)"
 SKILL="${1:?Usage: generate-reports.bash <fact-check|code-fact-check> [fixture-prefix]}"
 FIXTURE_PREFIX="${2:-}"
 
-SKILL_FILE="$SCRIPT_DIR/../../skills/${SKILL}.md"
+SKILL_FILE="$SCRIPT_DIR/../../skills/${SKILL}/SKILL.md"
 FIXTURE_DIR="$SCRIPT_DIR/${SKILL}/fixtures"
 OUTPUT_DIR="$SCRIPT_DIR/${SKILL}/output"
 

@@ -21,10 +21,26 @@ extract_frontmatter() {
   local missing=""
   local checked=0
 
-  for skill in "$SKILLS_DIR"/*.md; do
-    [ -f "$skill" ] || continue
+  # Discover skills in both layouts: flat (skills/<name>.md) and
+  # directory (skills/<name>/SKILL.md). Claude Code's registry only
+  # auto-registers the directory form, but we validate frontmatter on
+  # whichever shape is present.
+  local -a skill_files=()
+  local f
+  for f in "$SKILLS_DIR"/*.md; do
+    [ -f "$f" ] && skill_files+=("$f")
+  done
+  for f in "$SKILLS_DIR"/*/SKILL.md; do
+    [ -f "$f" ] && skill_files+=("$f")
+  done
+
+  for skill in "${skill_files[@]}"; do
     local basename
-    basename=$(basename "$skill")
+    if [ "$(basename "$skill")" = "SKILL.md" ]; then
+      basename="$(basename "$(dirname "$skill")")"
+    else
+      basename="$(basename "$skill" .md)"
+    fi
     checked=$((checked + 1))
 
     local frontmatter
