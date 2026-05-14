@@ -1,15 +1,24 @@
 ---
 name: fact-check
 description: >
-  Perform rigorous journalistic fact-checking on a draft (blog post, essay, article, or policy piece).
-  This is not a critique or review — it's a neutral verification pass, like a newspaper's fact-checking
-  desk. For every checkable claim in the draft, search for evidence, assess accuracy, and report findings
-  with calibrated confidence. Produces a structured Markdown report that can be consumed by human readers
-  or passed to downstream critic agents. Use this skill whenever the user asks to "fact-check", "verify
-  the numbers", "check the claims", "source-check", or "make sure the facts are right" in a draft.
+  Perform rigorous journalistic fact-checking on a draft (blog post, essay, article, policy piece, or
+  any prose with checkable assertions). This is not a critique or review — it's a neutral verification
+  pass, like a newspaper's fact-checking desk. For every checkable claim in the draft, search for
+  evidence, assess accuracy, and report findings with calibrated confidence. Produces a structured
+  Markdown report that can be consumed by human readers or passed to downstream critic agents. Use
+  this skill whenever the user asks to "fact-check this", "verify the numbers", "check the claims",
+  "source-check", "is this true", "did this actually happen", "make sure the facts are right",
+  "verify this draft", or any phrasing that asks for factual verification rather than judgment.
   Also trigger when upstream orchestration (e.g., the draft-review skill) requests a fact-check pass
-  before running critic agents.
-when: User asks to fact-check or verify claims in a draft
+  before running critic agents — the orchestrator will supply a goal preamble.
+when: User asks to fact-check or verify factual claims in a draft
+non-goals:
+  - Not a critic — do not evaluate argument quality, framing, persuasiveness, or what the author missed; sibling critics (cowen-critique, yglesias-critique) own those concerns.
+  - Not a copy-editor — opinions, predictions, value judgments, and rhetorical framing are not checkable claims; skip them rather than verdicting them.
+  - Not an inferential reasoner — when no primary or convergent secondary source can be located in the time available, return Unverified rather than guessing from training data or surface plausibility.
+  - Not a stylistic editor — state what the evidence shows without proposing rewrites, softened phrasings, or suggested edits to the draft.
+requires:
+  - A draft (prose or document) containing claims to verify
 ---
 
 > On bad output, see guides/skill-recovery.md
@@ -71,6 +80,9 @@ For every checkable claim:
      actually shows.
    - **Unverified** — You could not find reliable evidence to confirm or deny this claim. It may be
      true, but it needs a source.
+   - **Secondary-only** — Used for attributed quotes whose wording is well-attested in secondary
+     citations but cannot be located in a primary source. See [Quote attribution](#quote-attribution)
+     for when this verdict applies and what its verdict explanation must contain.
 4. **State your confidence level** (High, Medium, or Low) using the calibration criteria below,
    and briefly say which criterion applies and why.
 5. **State the scrutiny depth** for each source you relied on — `[abstract]`, `[deep-read]`,
@@ -389,7 +401,7 @@ Produce a Markdown document with this structure:
 
 ## Claim 1: "[exact quote from draft]"
 
-**Verdict:** [Accurate / Mostly accurate / Disputed / Inaccurate / Unverified]
+**Verdict:** [Accurate / Mostly accurate / Disputed / Inaccurate / Unverified / Secondary-only]
 **Confidence:** [High / Medium / Low]
 **Provenance:** [observed | inferred | assumed]
 **Scrutiny:** [abstract | deep-read | inferred]
