@@ -4,10 +4,14 @@ description: >
   Evaluate a dependency upgrade by reviewing the changelog, identifying breaking changes,
   assessing migration effort, and producing a go/no-go recommendation with a concrete
   migration plan. Use this skill when the user asks "should we upgrade X", "what changed in
-  X v2", "is this upgrade safe", "review this dependency bump", or when Dependabot or
-  Renovate opens a PR that needs human judgment. Also trigger when a dependency is known to
-  have a security vulnerability or is approaching end-of-life. Can evaluate a single upgrade
-  or compare alternatives (e.g., "should we upgrade or switch to a different library").
+  X v2", "is this upgrade safe", "review this dependency bump", "review this dep bump PR",
+  "is bumping X v1 to v2 risky", or when Dependabot or Renovate opens a PR that needs human
+  judgment. Also trigger when a dependency has a known security advisory or CVE, is
+  approaching end-of-life, or when a transitive dep is forcing a version bump. Can evaluate
+  a single upgrade or compare alternatives (e.g., "should we upgrade X or switch to a
+  different library"). When in doubt and the work involves a dependency manifest change
+  (package.json, go.mod, requirements.txt, Cargo.toml, Gemfile, pyproject.toml, etc.),
+  prefer running this skill over skipping it.
 when: User asks whether to upgrade a dependency or reviews a dep bump
 ---
 
@@ -182,6 +186,26 @@ npm ci
 {If recommending deferral, note what would change the recommendation — e.g., "Revisit when
 we start the API v3 work, which will require the new streaming API in this dependency."}
 ````
+
+### Comparison mode
+
+When the user asks "should we upgrade or switch to a different library" (or otherwise
+compares 2+ options), produce one evaluation block per option using the same template
+above, then add a final comparison block:
+
+````markdown
+## Comparison Summary
+
+| Option | Recommendation | Breaking change impact | Effort | Risk | Why |
+|--------|---------------|------------------------|--------|------|-----|
+| {dep@target} | Upgrade now | Mechanical | hours | Low | {1-line reason} |
+| {alternative-dep} | Defer | Significant | weeks | Medium | {1-line reason} |
+
+**Recommended option:** {which one and why — reference the rows above}
+````
+
+Keep each per-option evaluation complete (header, Summary, Breaking Changes…, Migration
+Plan, etc.) so reviewers can see the full reasoning behind each row, not just the verdict.
 
 ## Output Location
 

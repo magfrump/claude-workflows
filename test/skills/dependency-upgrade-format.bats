@@ -58,10 +58,28 @@ setup() {
   assert_heading_exists "Risk Factors"
 }
 
+@test "report has Rollback Plan section" {
+  assert_heading_exists "Rollback Plan"
+}
+
 @test "report has Migration Plan section" {
   assert_heading_exists "Migration Plan"
 }
 
 @test "report has If Not Upgrading section" {
   assert_heading_exists "If Not Upgrading"
+}
+
+# --- No leakage from sibling decision-helper skills ---
+
+@test "report does not use tech-debt-triage recommendation values" {
+  ! echo "$REPORT_CONTENT" | grep -qiE '\*\*Recommendation:\*\*.*\b(Fix now|Fix opportunistically|Carry intentionally|Defer and monitor)\b'
+}
+
+@test "report does not use tech-debt-triage Carrying Cost section" {
+  ! echo "$REPORT_CONTENT" | grep -qiE '^#{2,4} .*Carrying Cost'
+}
+
+@test "report does not contain fact-check verdict language" {
+  ! echo "$REPORT_CONTENT" | grep -qiE '^\*\*Verdict:\*\* (Accurate|Mostly accurate|Disputed|Inaccurate|Unverified)$'
 }
