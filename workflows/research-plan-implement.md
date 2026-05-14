@@ -76,6 +76,8 @@ After the header, the body must include:
 - **Prior art**: Does the codebase already solve a similar problem? If so, describe that solution — the new implementation should be consistent with it unless there's a reason to diverge.
 - **Gotchas**: Anything surprising, non-obvious, or fragile in the relevant code.
 
+**Failure-pattern lookup**: Before forming the plan, grep `docs/thoughts/failure-patterns.md` for entries touching the area under research — symptom keywords (`null`, `timezone`, `n+1`, `race`, `stale`, etc.), file paths or subsystem names that may appear in the `ref:` field, and `cause:`/`fix:` categories that fit the work. The file is an append-only log of root-caused bugs maintained by `bug-diagnosis.md`; a hit is a strong prior on what could go wrong in similar code. List any matching entries by FP-NNN ID in the research doc — under Gotchas if the pattern is a known fragility in the affected code, or as a short "Prior failures" sub-section if multiple matches surface. Record "no matches" explicitly when the grep comes up empty, so a future reader can distinguish "this area has no recorded failures" from "the check was skipped."
+
 The research must be thorough. Read the actual implementations, not just signatures. If the research is wrong, everything downstream will be wrong.
 
 **Confidence-provenance tags**: When stating facts in the research doc, tag claims with their evidential basis so reviewers can quickly assess reliability:
