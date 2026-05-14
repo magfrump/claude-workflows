@@ -1,13 +1,19 @@
 ---
 name: code-fact-check
 description: >
-  Verify checkable claims in code comments, docstrings, commit messages, and documentation against
-  actual code behavior. This is the code equivalent of journalistic fact-checking: for every claim
-  about what code does, how it performs, or how it's structured, search the codebase for evidence
-  and report findings with calibrated confidence. Produces a structured Markdown report. Use this
-  skill when the user asks to "verify the comments", "check the docs against the code", "audit
-  documentation accuracy", or when upstream orchestration requests a code verification pass.
-when: User asks to verify comments, docs, or docstrings against code
+  Verify checkable claims in code comments, docstrings, commit messages, and project documentation
+  against actual code behavior. This is the code analog of the prose `fact-check` skill: where
+  `fact-check` checks essay claims against the world via web search, `code-fact-check` checks code
+  claims against the codebase via direct file reading. For every claim about what code does, how it
+  performs, or how it's structured, search the codebase for evidence and report findings with
+  calibrated confidence. Produces a structured Markdown report. Use this skill when the user asks
+  to "verify the comments", "check the docs against the code", "audit documentation accuracy",
+  "are the docstrings still accurate", "do the comments match the code", or when upstream
+  orchestration (e.g., the `code-review` skill) requests a code verification pass. Also trigger
+  when reviewing or onboarding to a codebase and the comments or docstrings look stale, drifted,
+  or contradict the surrounding implementation — running this skill before further work surfaces
+  documentation rot that would otherwise mislead later changes.
+when: User asks to verify comments, docs, docstrings, or commit messages against code; or upstream orchestrator requests a code verification pass
 non-goals:
   - Not a code reviewer — do not assess code quality, suggest refactors, or judge architecture; sibling critics (security-reviewer, performance-reviewer, api-consistency-reviewer) own those concerns.
   - Not an intent reviewer — design rationale, TODO/HACK markers, license boilerplate, and comments that merely restate the code are not checkable claims; skip them rather than verdicting them.
@@ -131,6 +137,22 @@ For every checkable claim:
 
 5. **Cite your evidence.** Reference the specific file and line number(s) you checked.
 
+## How to handle degenerate input
+
+If the scoped files contain no checkable claims — empty files, code with no comments or
+docstrings, binary or garbled content, single-line trivial assignments, or files where every
+comment falls in the "do NOT check" categories above — produce a minimal report rather than
+fabricating claims to fill the page. Acceptable forms:
+
+- An empty report (zero bytes) when the orchestrator allows it.
+- A header-only report with `**Total claims checked:** 0` and a short summary line explaining
+  there were no checkable claims (e.g., "No checkable claims found — file is empty / contains
+  no comments / is not parseable code"). Omit the per-claim sections entirely.
+
+Do not invent claims, do not hallucinate verdicts, and do not emit per-claim sections when
+there is nothing to check. Returning zero claims is the correct, calibrated outcome — not a
+failure mode.
+
 ## How to handle ambiguity
 
 When a claim could be read multiple ways:
@@ -149,7 +171,9 @@ the code do what the comment says?"
 
 ## Output format
 
-Produce a Markdown document with this structure:
+Produce a Markdown document with this structure. The header fields and per-claim fields below are
+required — downstream consumers (orchestrators, tests, rubrics) parse them by exact name and bold
+formatting.
 
 ```
 # Code Fact-Check Report
@@ -179,6 +203,25 @@ Produce a Markdown document with this structure:
 
 ...
 ```
+
+Required structure rules:
+
+- The first heading must be `# Code Fact-Check Report` on a single line.
+- Each of `**Repository:**`, `**Scope:**`, `**Checked:**`, `**Total claims checked:**`, and
+  `**Summary:**` must appear once in the header, on its own line, with the bold delimiters shown.
+- Each claim section starts with `## Claim N:` where N is a sequential integer starting at 1.
+- Within each claim, the five fields `**Location:**`, `**Type:**`, `**Verdict:**`,
+  `**Confidence:**`, `**Evidence:**` are mandatory and use the exact spelling above.
+- `Type` must be one of: Behavioral, Performance, Architectural, Invariant, Configuration,
+  Reference, Staleness. Compound types are allowed when a claim genuinely spans categories
+  (e.g., `Reference / Architectural`) — separate parts with ` / ` so each is a valid type.
+- `Verdict` must be exactly one of: Verified, Mostly accurate, Stale, Incorrect, Unverifiable.
+  Do not borrow verdicts from the prose `fact-check` skill (Accurate, Disputed, Inaccurate,
+  Unverified) — those belong to a different scale and will confuse downstream tooling.
+- `Confidence` must be exactly one of: High, Medium, Low.
+- `Location` and `Evidence` must use `path/to/file.ext:line` format (with optional line ranges
+  like `:15-30`) so a reader can jump directly to the cited code. Pure Reference claims may cite
+  bare paths or external locators if there is no in-file line to point at.
 
 Order claims by file path, then by line number within each file. Number them sequentially.
 
