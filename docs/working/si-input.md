@@ -5,6 +5,13 @@
 
 We saw a full run fail for BATS test when the test failure was from a change outside of the self improvement script. If a full round of features fails, this should trigger a health check to see if the failures are preexisting and correct them before returning to feature generation.
 
+## Failure modes from last cycle
+<!-- What failure modes have you seen in the last cycle that should drive next cycle's priorities?
+Examples:
+- "DD generated 3 trivial variants of the same approach — diversity criterion not enforced"
+- "Self-eval was skipped on small diffs without recording a skip-cause — a regression slipped through"
+- "Code review produced 15 findings but only 2 were actionable — signal/noise degraded over the round" -->
+
 ## Priorities
 <!-- What should the next run focus on? -->
 
