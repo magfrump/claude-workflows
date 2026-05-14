@@ -21,7 +21,7 @@ This skill orchestrates the following sub-skills. Ensure they exist in `skills/`
 
 **Critics (dynamically discovered):**
 - All other `skills/*.md` files are candidate critics, auto-selected by topic relevance
-- Known critics include `cowen-critique.md` and `yglesias-critique.md`, but any skill file not listed as an orchestrator or fact-checker will be considered
+- Known critics include `cowen-critique.md`, `yglesias-critique.md`, and `business-plan-critique.md`, but any skill file not listed as an orchestrator or fact-checker will be considered
 
 > On bad output, see guides/skill-recovery.md
 
@@ -66,6 +66,28 @@ cheaply in parallel; the synthesis step naturally folds redundant findings toget
 of running an extra critic is small — the cost of missing a high-signal critique is larger.
 Reserve exclusion for critics that obviously don't apply (e.g., a UI-visual reviewer on a
 written essay).
+
+### Plan-shaped content auto-includes business-plan-critique
+
+If the draft has pitch-deck, business-plan, or financial-model shape, `business-plan-critique`
+must be in the panel. Treat any of the following as sufficient evidence of plan-shape:
+
+- Sections with names like Problem, Solution, Market / TAM / SAM / SOM, Go-to-Market / GTM,
+  Pricing, Competition, Team, Traction, Financials, Projections, Ask, Use of Funds.
+- Financial tables or rendered-spreadsheet content: revenue forecasts, CAC, LTV, ARR, MRR,
+  burn, runway, headcount plans, P&L projections.
+- Vocabulary signals appearing repeatedly: TAM, SAM, SOM, ARR, MRR, CAC, LTV, payback, moat,
+  defensibility, runway, burn, GTM, ICP, ACV, ARPU.
+- Trigger phrases from the user: "is this fundable", "would investors buy this", "critique
+  my pitch deck", "pressure-test this plan", "stress-test the unit economics", "what would
+  a VC ask".
+
+Adding `business-plan-critique` does not displace `cowen-critique` or `yglesias-critique` —
+the three are complementary (contrarian-economist, pragmatic-mechanism, and
+investor-due-diligence lenses). Run all three on plan-shaped content unless the user
+narrows the panel explicitly. This auto-inclusion exists because plan-shaped drafts have a
+high cost of missing the investor-lens findings (market math, unit economics, moat,
+distribution, competition, timing) that no other critic in this orchestrator covers.
 
 ---
 
