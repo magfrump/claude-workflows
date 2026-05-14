@@ -42,6 +42,43 @@ What follows are the cognitive moves for this analysis. Not all will apply to ev
 exercise judgment. But resist the temptation to skip moves that feel uncomfortable or unlikely.
 The value of this analysis is in the surprises.
 
+## Two Modes: Name the One You Want
+
+This skill operates in two distinct modes that share machinery but answer different questions. A
+full run executes both; a focused run executes one. When invoking the skill, name the mode you
+want so the analysis is shaped accordingly. If the user doesn't name a mode, ask — or default
+to the full run and label each section by mode.
+
+**Mode A — Second-order consequence analysis ("if this assumption is wrong, what else breaks?").**
+This mode is forward-chained and assumption-centric. You start from the load-bearing assumptions
+(move #1), invert or perturb them, and trace the consequence chains outward through first, second,
+and third-order effects (moves #3, #4, #5). The question is not whether the proposal *will* fail
+but what the dependency surface looks like — which assumptions are load-bearing, which couplings
+are hidden, and which "obvious" claims would cascade if wrong. Output is a map of the consequence
+space, not a list of predicted outcomes. Use this when the proposal is conceptually sound but you
+need to understand its blast radius and fragility before committing.
+
+> Example invocation: *"Run a what-if analysis in consequence mode on this caching proposal —
+> I want to know which assumptions are load-bearing and what cascades if they're wrong, not
+> whether it'll fail."*
+
+**Mode B — Pre-mortem failure headline ("imagine 6 months later the project failed — write the
+headline").** This mode is backward-chained and narrative-centric. You assume the proposal has
+already shipped and already failed, then write the specific incident report: what went wrong,
+in what order, with what observable signature (move #2, with adversarial scenarios from move #6
+as raw material). The question is "what does the post-mortem actually say?" — concrete failure
+stories with named root causes, named systems, and named outcomes. Output is 3–5 plausible
+failure narratives, each detailed enough that a reader could turn it into a mitigation. Use this
+when you want to surface failure modes that advocacy makes invisible, or when the team has
+converged too quickly on a plan and needs to confront specific ways it could go wrong.
+
+> Example invocation: *"Pre-mortem this migration — it's six months from now and the rollout
+> failed. Give me three concrete failure stories with root causes and observable outcomes."*
+
+The two modes are complementary, not redundant. Mode A tells you which assumptions to worry
+about; Mode B tells you what worry looks like when it materializes. Run both for high-stakes
+changes; run one when the question is sharper.
+
 ## Using Upstream Reports
 
 If you have been provided critique reports (from cowen-critique, yglesias-critique, or others)
