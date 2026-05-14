@@ -1,27 +1,41 @@
 ---
 name: draft-review
 description: >
-  Orchestrate a comprehensive review of a written draft by coordinating fact-checking and critic
-  agents. This skill discovers available critic agents automatically, runs a fact-check first,
-  then spawns critic agents in parallel, then synthesizes their output into a freeform chat
-  summary plus a structured verification rubric document with red/amber/green status tracking.
-  Supports ensemble mode for higher confidence through convergence analysis. Use this skill
-  whenever the user wants a thorough review of a draft that combines fact-checking with
-  substantive critique. Also trigger when users say "review this draft", "give me feedback on
-  this", "fact-check and critique this", or request multiple perspectives on a piece of writing.
+  Orchestrate a comprehensive review of a written draft (blog post, essay, op-ed, policy memo,
+  investor deck, fundraising memo, founder pitch, go-to-market doc, or any prose argument) by
+  coordinating fact-checking and critic agents. Runs a 3-stage pipeline: fact-check → critic
+  agents in parallel → synthesis into a freeform chat summary plus a structured verification
+  rubric with red/amber/green status tracking. Auto-selects from available critics
+  (`cowen-critique`, `yglesias-critique`, `ai-personas-critique`, `business-plan-critique-moat`,
+  `business-plan-critique-unit-economics`) based on draft topic. Supports ensemble mode for
+  higher confidence through convergence analysis. Use this skill whenever the user wants a
+  thorough review of a draft that combines fact-checking with substantive critique. Trigger
+  phrases: "review this draft", "give me feedback on this", "fact-check and critique this",
+  "review my essay/post/memo/pitch/deck", "what am I missing", "multiple perspectives on this
+  piece", "stress-test this argument". For reviewing a single concern (just fact-check, just
+  one critic lens), use the standalone skill instead. For code review, use `code-review`.
 when: User wants a thorough multi-perspective review of a written draft
 ---
 
 ## Dependencies
 
-This skill orchestrates the following sub-skills. Ensure they exist in `skills/` before use.
+This skill orchestrates the following sub-skills. Skills live at `skills/<name>/SKILL.md`.
+Ensure they exist before use.
 
 **Required (always run):**
-- `fact-check.md` — verifies factual claims in the draft
+- `fact-check` — verifies factual claims in the draft
 
-**Critics (dynamically discovered):**
-- All other `skills/*.md` files are candidate critics, auto-selected by topic relevance
-- Known critics include `cowen-critique.md` and `yglesias-critique.md`, but any skill file not listed as an orchestrator or fact-checker will be considered
+**Known critics (consider for every run, auto-select per Step 2):**
+- `cowen-critique` — economist-style argument pressure (default for essays, op-eds, policy)
+- `yglesias-critique` — pragmatic mechanism-vs-goal critique of any proposed action
+- `ai-personas-critique` — ensemble of orthogonal AI personas; surfaces concerns single critics miss
+- `business-plan-critique-moat` — moat, distribution, competitive response (business-plan-shaped drafts)
+- `business-plan-critique-unit-economics` — CAC, LTV, contribution margin, payback (business-plan-shaped drafts)
+
+**Not applicable (skip):**
+- `code-fact-check`, `security-reviewer`, `performance-reviewer`, `api-consistency-reviewer`,
+  `architecture-review`, `ui-visual-review` — these review code, not prose
+- `code-review`, `matrix-analysis`, `draft-review` itself — other orchestrators
 
 > On bad output, see guides/skill-recovery.md
 
@@ -74,31 +88,36 @@ written essay).
 Before launching any sub-agents, tell the user what you're about to do. This is important —
 the user should understand the pipeline and what agents are available.
 
-### Step 1: Discover available agents
+### Step 1: Confirm critic taxonomy
 
-List all `skills/*.md` files in the project root. Two skills have fixed roles:
-- `draft-review.md` — that's you, the orchestrator. Skip it.
-- `fact-check.md` — the fact-checker. You'll always use this.
-
-Every other skill file is a potential critic agent. Read each one — the filename and the YAML
-frontmatter `description` field will tell you what it does and what kind of draft it's suited
-for. If you're unsure from the name alone, read the file.
+The orchestrator uses the fixed taxonomy in the [Dependencies](#dependencies) block above.
+Do **not** scan the filesystem at runtime — skills live at `skills/<name>/SKILL.md`, and any
+new prose-critic skill should be added to that block explicitly so its triggers are documented.
+If a listed critic skill file doesn't exist, skip it and note the gap in your plan summary.
+If the user references a critic not listed, treat their request as authoritative (Step 2 below).
 
 ### Step 2: Select critic agents
 
 **User instructions always take priority.** If the user specifies which critics to use (e.g.,
-"use the Cowen critique" or "just the policy one"), follow their instructions exactly.
+"use the Cowen critique" or "just the moat one"), follow their instructions exactly.
 
-If the user gives no direction on which critics to use, you choose. Per the Selection
-Disposition above, default to including critics rather than excluding them. Read each
-critic's description and ask: does this critic do cognitive work that applies to this
-draft? If yes, include it. If you can't quickly state a specific reason this critic
-doesn't apply, include it. The bar for exclusion is "obviously inapplicable" (e.g.,
-UI-visual review on a written essay), not "topic doesn't match exactly."
+Otherwise, auto-select per the table below. Per the Selection Disposition above, default to
+including critics rather than excluding them.
 
-**Short or narrowly scoped drafts:** For drafts under ~500 words or tightly focused technical
-pieces, consider running only the 1–2 most relevant critics rather than the full panel. Small
-content tends to produce redundant findings across multiple critics, and the extra agents consume
+| Draft signal | Auto-include |
+|---|---|
+| Essay, op-ed, blog post, policy piece, primer, or any argument-shaped prose | `cowen-critique` |
+| Draft proposes any mechanism, action, intervention, or policy — author wants something to happen | `yglesias-critique` |
+| Multi-domain proposal, or user asks "what am I missing", "diverse critiques", "stress-test from multiple angles" | `ai-personas-critique` |
+| Business-plan-shaped draft: founder pitch, investor deck narrative, GTM strategy doc, fundraising memo, product strategy brief | `business-plan-critique-moat` AND `business-plan-critique-unit-economics` (run both — they cover complementary failure modes) |
+
+Multiple rows can match — invoke all matching critics. If the bar for a critic is unclear, include it.
+The bar for exclusion is "obviously inapplicable" (e.g., business-plan critics on a poem),
+not "topic doesn't match exactly."
+
+**Short or narrowly scoped drafts:** For drafts under ~500 words or tightly focused pieces,
+consider running only the 1–2 most relevant critics rather than the full panel. Small content
+tends to produce redundant findings across multiple critics, and the extra agents consume
 context budget without adding signal. When you reduce the panel for this reason, note it
 explicitly in Step 4 (e.g., "Using a reduced critic panel — this is a short draft where
 additional critics would likely produce redundant findings").
