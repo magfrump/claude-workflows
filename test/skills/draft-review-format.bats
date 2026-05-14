@@ -28,7 +28,7 @@ setup() {
   echo "$REPORT_CONTENT" | grep -qiE '\*\*Status:.*(DOES NOT PASS|CONDITIONAL PASS|PASSES VERIFICATION)'
 }
 
-# --- Tiered sections ---
+# --- Tiered sections (red/amber/green/verified vocabulary) ---
 
 @test "report has Must Fix section" {
   echo "$REPORT_CONTENT" | grep -qiE '^## .*Must Fix'
@@ -44,6 +44,14 @@ setup() {
 
 @test "report has Verified section" {
   echo "$REPORT_CONTENT" | grep -qiE '^## .*Verified'
+}
+
+# --- Tier emoji vocabulary ---
+# The rubric uses 🔴 / 🟡 / 🟢 / ✅ to signal status. At least one of each
+# tier-emoji should appear when the corresponding section is non-empty.
+
+@test "report uses tier emojis (at least one of red/amber/green)" {
+  echo "$REPORT_CONTENT" | grep -qE '(🔴|🟡|🟢)'
 }
 
 # --- Status line validity ---
@@ -66,8 +74,21 @@ setup() {
   echo "$section" | grep -qE '(\|.*\||\(None\))'
 }
 
-# --- No leakage ---
+# --- No leakage from sibling code-review orchestrator ---
 
 @test "report does not contain code review language" {
   ! echo "$REPORT_CONTENT" | grep -qiE '(should refactor|code smell|technical debt|PASSES REVIEW)'
+}
+
+@test "report does not contain code-review-specific section headers" {
+  # These headings belong to docs/reviews/code-review-rubric.md, not the
+  # draft verification rubric. If they appear here, the orchestrators have
+  # cross-contaminated.
+  ! echo "$REPORT_CONTENT" | grep -qiE '^## .*(Skipped Core Critics|Considered Overrides|Confirmed Good)'
+}
+
+@test "report does not contain a code-review Scope header" {
+  # draft-review rubrics use **Draft:** in the header; code-review uses
+  # **Scope:**. The presence of **Scope:** signals cross-orchestrator drift.
+  ! echo "$REPORT_CONTENT" | head -5 | grep -qE '\*\*Scope:\*\*'
 }
