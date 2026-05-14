@@ -576,6 +576,80 @@ If a sub-agent omitted the note entirely, treat that as a `partial` entry with r
 The collected items feed the `### Coverage and Escalations` section of the chat
 synthesis below. They do not modify the rubric — coverage is a chat-synthesis concern.
 
+#### Failure-mode introduction scan (run after goal-alignment scan)
+
+This scan is **structural and forward-looking** across all failure types — data
+validation, error handling, state corruption, performance degradation. It is
+distinct from security-reviewer (which covers trust boundaries and exploitable
+conditions) and from the per-critic findings (which describe what static review
+caught). The scan projects what could go wrong with the new code in production
+once it ships, beyond what the panel already surfaced.
+
+**Trigger.** The scan fires when **both** are true:
+
+1. **Line-count threshold:** the diff adds more than 50 lines of new behavior.
+   Compute as `added - deleted` from `git diff --shortstat <scope>` — pure
+   refactors typically have added ≈ deleted, so the delta isolates net new
+   behavior. If `added - deleted <= 50`, skip the scan and record "below the
+   50-line new-behavior threshold."
+2. **Not refactor-only:** the branch is not a pure refactor. A diff is
+   refactor-only when any of these hold:
+   - All commits on the branch use a `refactor:`, `chore:`, or `style:`
+     conventional prefix.
+   - The PR title explicitly names the change as "refactor", "rename", "move",
+     "extract", or equivalent.
+   - `git diff --shortstat` shows added and deleted within 20% of each other
+     AND the diff introduces no new public exports, schemas, routes, or
+     entry points.
+
+   If any of these signals fire, skip the scan and record "refactor-only diff
+   — no new behavior to project failure modes against."
+
+If either condition fails, the scan is **skipped with a recorded reason**;
+deliverables still render the section with the skip line so the carve-out is
+auditable across runs.
+
+**What the scan produces.** When triggered, name exactly **3 failure modes**
+the diff introduces. Each failure mode MUST include:
+
+- **Category** — one of: `data validation`, `error handling`, `state corruption`,
+  `performance degradation`. At least **3 of the 4 categories** must be covered
+  across the 3 modes (so a single category cannot dominate the scan).
+- **Location** — `path/to/file:line` pointing at the changed code that introduces
+  the failure mode.
+- **Scenario** — a one- or two-sentence concrete trigger: what input, state,
+  load, or timing causes the failure.
+
+The 3 modes are **forward-looking projections**, not restatements of critic
+findings. If a critic already raised a specific issue at high severity, that
+issue is *not* one of the 3 failure modes — those are tracked in the rubric's
+🔴 / 🟡 tiers and the chat synthesis. The scan fills the gap between known
+findings and unknown unknowns — the failure modes the panel did *not* catch
+but that the diff structurally introduces.
+
+**Using security-reviewer findings as input.** If security-reviewer ran in
+Stage 2 and produced findings, read them before naming the 3 failure modes.
+Security findings are **priors that sharpen the projection**, not entries in
+the scan output:
+
+- A security finding about input handling or sanitization → sharpens the
+  `data validation` projection (look for adjacent inputs the security review
+  didn't reach).
+- A security finding about auth, sessions, or trust boundaries → sharpens
+  the `state corruption` projection (look for state transitions that depend
+  on the boundary holding).
+- Any HALT-escalate block → treat its failure scenario as covered; do not
+  re-list it as one of the 3 modes.
+
+The scan does NOT duplicate security-reviewer territory. Security covers
+exploitable trust-boundary conditions; this scan covers the broader failure-mode
+space across all four categories, including categories no critic was assigned
+(e.g., state corruption from race conditions, data validation gaps in
+internal-only inputs).
+
+Hold the 3 failure modes (or the skip note) as `<failure-modes-introduced>`
+for both deliverables below.
+
 #### Contrastive note (optional, capture during synthesis)
 
 Pick one finding the panel caught well, plus one likely-related issue you suspect was missed (sources: goal-alignment notes, escalations, or your own scan of the diff). State both in 1–2 lines, then propose one concrete prompt-refinement candidate — an added instruction, sharpened heuristic, or new check for a critic skill — that would have closed the gap on the next run. Skip if no genuine contrast is available; do not invent one. Capture only — no feedback pipeline consumes this yet.
@@ -629,6 +703,18 @@ targeting the same code region or overlapping concern. These indicate structural
 that manifest across multiple dimensions (e.g., a pattern that's both a security risk and
 a performance problem). Convergence detection is semantic — same file region plus overlapping
 concern — not mechanical keyword matching.
+
+### Failure modes introduced
+
+Surface the 3 failure modes held as `<failure-modes-introduced>` from the
+[failure-mode introduction scan](#failure-mode-introduction-scan-run-after-goal-alignment-scan)
+above. For each, list category, `path/to/file:line`, and the one- or two-sentence
+scenario. Order by category coverage (so the 3-of-4 spread is visible at a glance).
+
+If the scan was skipped, render this section with the single line: "Failure-mode
+scan skipped — [recorded reason: below the 50-line new-behavior threshold _or_
+refactor-only diff]." The heading must still appear so the carve-out is
+auditable across runs.
 
 **Per-domain findings:** Organize remaining findings by severity within each critic domain.
 Lead with Critical/High, then Medium, then Low/Informational.
@@ -761,6 +847,27 @@ corroborating fact-check evidence). This section makes coverage limits auditable
 
 If no critics were skipped, replace the table with the single line: "All core critics ran;
 no skips applied." The heading must still appear so skips remain auditable across runs.
+
+---
+
+## 🔬 Failure Modes Introduced
+
+Forward-looking failure-mode projections from the Stage 3 [failure-mode introduction
+scan](../../skills/code-review.md#failure-mode-introduction-scan-run-after-goal-alignment-scan).
+Fires when the diff adds more than 50 lines of new behavior and is not refactor-only;
+otherwise the row is replaced with a skip line. Categories drawn from data validation,
+error handling, state corruption, and performance degradation; at least 3 of the 4 must
+be covered across the 3 modes.
+
+| # | Category | Location | Scenario |
+|---|---|---|---|
+| F1 | Data validation | `path/to/file:42` | [What input/state/load triggers the failure] |
+| F2 | Error handling | `path/to/file:88` | [Concrete scenario] |
+| F3 | State corruption | `path/to/file:131` | [Concrete scenario] |
+
+If the scan was skipped, replace the table with the single line: "Failure-mode scan
+skipped — [below the 50-line new-behavior threshold _or_ refactor-only diff]." The
+heading must still appear so the carve-out is auditable across runs.
 
 ---
 
@@ -924,3 +1031,11 @@ storage cost but adds no signal. This skill prevents that failure mode by:
   produced by human review on this run get appended to the log per
   [Capturing new overrides](#capturing-new-overrides). Never overwrite, date-stamp, or
   delete entries.
+- **The failure-mode introduction scan is forward-looking, not security-specific.**
+  It fires in Stage 3 when the diff adds more than 50 lines of new behavior and is
+  not refactor-only — see [Failure-mode introduction scan](#failure-mode-introduction-scan-run-after-goal-alignment-scan)
+  for the trigger logic and carve-out. Security-reviewer findings inform the scan
+  as priors when both run, but the scan covers all four failure categories (data
+  validation, error handling, state corruption, performance degradation) and does
+  not restate security findings. When skipped, both deliverables still render the
+  section with the recorded reason so the carve-out remains auditable.
