@@ -15,7 +15,7 @@ Use this workflow to acquire familiarity with a codebase you didn't write (or no
 - **New-team-member orientation**: someone needs a structured walkthrough of an existing codebase
 - **RPI research is stuck**: you can't scope research because you don't even know where to start looking
 
-**Not a trigger:** from-scratch projects you started yourself — there is no prior architecture to map, so the workflow has nothing to do.
+**Not a trigger:** from-scratch projects you started yourself — there is no prior architecture to map. For from-scratch projects whose problem framing is still open, run the Double Diamond variant of [`workflows/divergent-design.md`](divergent-design.md) (steps 1a-3a) instead; return here once execution paths are wired.
 
 This is a **pre-task** workflow. It produces an orientation document that subsequent RPI sessions can reference. Unlike RPI's research phase (which investigates code relevant to a specific task), onboarding maps the terrain broadly so you know where to look when tasks arrive.
 
@@ -135,15 +135,20 @@ user-facing checkpoint value is the same.
 
 ### 3. Inventory the execution surface — enumerate entry points by execution mode
 
-**Skip criterion (at top of step).** Skip this step entirely if the project has *no* execution surface — a pure library whose runtime is driven entirely by consumers via its public API, a from-scratch project where execution paths have not yet been wired, or any other codebase that does not yet contain CLI commands, HTTP handlers, scheduled jobs, message consumers, or equivalent runtime triggers.
+**Skip criterion (at top of step).** Skip this step entirely if the project has *no* execution surface and the absence is **by design** — a pure library whose runtime is driven entirely by consumers via its public API, or any other codebase whose intended runtime triggers all live in consumer code rather than this repo. Do **not** silently skip when the absence reflects a *from-scratch project* whose execution paths have simply not been wired yet — see "From-scratch redirect" below for that case.
 
 When the criterion applies, the orientation doc's Execution Surface section is **not** omitted — it contains a single one-line note in this format:
 
 > `Execution Surface: none — <one-sentence reason>.`
 
-Examples:
+Example:
 - `Execution Surface: none — pure library; consumers drive execution via the public API documented in Entry Points.`
-- `Execution Surface: none — from-scratch project, no runtime wiring yet.`
+
+**From-scratch redirect.** A from-scratch project — one where no CLI commands, HTTP handlers, scheduled jobs, message consumers, or equivalent runtime triggers have been wired yet because the project is still at the framing stage — does **not** qualify for the silent skip above. The absence of runtime wiring usually signals that the problem framing itself is still open, and a silent "none" closes onboarding without surfacing that. Replace the Execution Surface section with this explicit pointer instead:
+
+> `Execution Surface: none — this looks from-scratch; for problem framing run the Double Diamond variant of [workflows/divergent-design.md](divergent-design.md) (steps 1a-3a) before continuing onboarding.`
+
+Diamond 1's chosen framing record (see `workflows/divergent-design.md` §"Output: chosen framing record") then becomes the input to a re-run of this onboarding workflow once execution paths are wired. Returning to onboarding without that record risks documenting structure for a problem the project no longer aims to solve.
 
 **Partial-skip rule.** If *some* execution modes exist (e.g., a CLI but no HTTP server, or HTTP handlers but no scheduled jobs), do **not** skip the step. Inventory the modes that exist and explicitly mark absent modes as "none" rather than silently omitting them. Only the all-absent case justifies the one-line skip note.
 
@@ -168,10 +173,10 @@ If the project has additional execution modes (signal handlers, file watchers, d
 The execution-surface inventory is the bridge between the structural Architecture Map (step 2) and the behavioral Key Flows (step 4): step 2 says "what subsystems exist," this step says "what makes them run," and step 4 says "what happens when one of them runs." If a flow traced in step 4 doesn't start at an entry point listed here, that mismatch is itself a gap to record in Known Unknowns (step 6).
 
 **Done when...**
-- [ ] Either the skip criterion applies and the Execution Surface section contains exactly one line in the documented format, *or* every existing execution mode is enumerated with trigger, location, owning subsystem, and one-line purpose
-- [ ] When not skipped, absent modes are explicitly marked "none" rather than silently omitted
-- [ ] When not skipped, every entry point maps to a subsystem from the Architecture Map (step 2); orphans are recorded in Known Unknowns (step 6)
-- [ ] Flow tracing in step 4 starts from entry points listed here (or from the documented skip-note when applicable)
+- [ ] Either the skip criterion applies and the Execution Surface section contains exactly one line in the documented format, the from-scratch redirect applies and the section contains the explicit DD pointer, *or* every existing execution mode is enumerated with trigger, location, owning subsystem, and one-line purpose
+- [ ] When not skipped or redirected, absent modes are explicitly marked "none" rather than silently omitted
+- [ ] When not skipped or redirected, every entry point maps to a subsystem from the Architecture Map (step 2); orphans are recorded in Known Unknowns (step 6)
+- [ ] Flow tracing in step 4 starts from entry points listed here (or from the documented skip-note / redirect when applicable)
 
 ### 4. Trace key flows — follow data through the system
 
@@ -244,7 +249,7 @@ Compile steps 1-6 into `docs/working/onboarding-{project}.md` with these section
 {subsystem descriptions from step 2, with a text diagram if helpful}
 
 ## Execution Surface
-{enumerated entry points from step 3, grouped by execution mode — CLI commands, HTTP handlers, scheduled jobs, message consumers, plus any project-specific modes. Absent modes marked "none". If step 3's skip criterion applied, this section contains exactly the one-line skip note: `Execution Surface: none — <reason>.`}
+{enumerated entry points from step 3, grouped by execution mode — CLI commands, HTTP handlers, scheduled jobs, message consumers, plus any project-specific modes. Absent modes marked "none". If step 3's skip criterion applied, this section contains exactly the one-line skip note: `Execution Surface: none — <reason>.` If step 3's from-scratch redirect applied, this section contains the explicit DD pointer in place of the skip note.}
 
 ## Key Flows
 {2-3 traced flows from step 4}
