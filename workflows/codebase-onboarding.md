@@ -62,9 +62,9 @@ For each subsystem, note:
 
 Don't read every file. Read entry points and public interfaces to understand boundaries. Read one representative implementation per subsystem to understand internal patterns.
 
-**Monorepo scoping.** For monorepos with multiple packages or services, scope your architecture mapping to the package or service relevant to your first task — don't attempt to document every package in a single onboarding pass. Note the monorepo's top-level package dependency graph (e.g., from the root `package.json` workspaces, Cargo workspace members, or Go module layout) so you know which adjacent packages interact with yours. List all packages you did *not* examine in Known Unknowns (step 6) with a note that they were out of scope for the current task.
+**Monorepo scoping.** For monorepos with multiple packages or services, scope your architecture mapping to the package or service relevant to your first task — don't attempt to document every package in a single onboarding pass. Note the monorepo's top-level package dependency graph (e.g., from the root `package.json` workspaces, Cargo workspace members, or Go module layout) so you know which adjacent packages interact with yours. List all packages you did *not* examine in Known Unknowns (step 7) with a note that they were out of scope for the current task.
 
-**Accessible-output target.** For projects in the accessibility domain (web-accessibility serialization, screen-reader tooling, refreshable-braille drivers, structured-data export for assistive tech, etc.), the architecture map must name the concrete accessible-output target rather than treating accessibility as a generic concern. State which screen reader (NVDA, JAWS, VoiceOver, Orca, TalkBack), which braille protocol or stack (BRLTTY, Liblouis translation tables, USB HID Braille Display, refreshable-braille over Bluetooth), and/or which structured-data format (DAISY, EPUB Accessibility, MathML, WAI-ARIA roles, accessible PDF tags) each subsystem is built to drive. Different targets impose different invariants — an NVDA-targeted serializer can't substitute for a JAWS-targeted one without re-validation, and Liblouis braille tables aren't interchangeable across grade-1/grade-2 contractions. List the target(s) alongside the relevant subsystem(s) in the inventory; if multiple targets coexist, note which subsystem owns which, and flag any subsystem that claims to be target-agnostic in Known Unknowns (step 6) for verification.
+**Accessible-output target.** For projects in the accessibility domain (web-accessibility serialization, screen-reader tooling, refreshable-braille drivers, structured-data export for assistive tech, etc.), the architecture map must name the concrete accessible-output target rather than treating accessibility as a generic concern. State which screen reader (NVDA, JAWS, VoiceOver, Orca, TalkBack), which braille protocol or stack (BRLTTY, Liblouis translation tables, USB HID Braille Display, refreshable-braille over Bluetooth), and/or which structured-data format (DAISY, EPUB Accessibility, MathML, WAI-ARIA roles, accessible PDF tags) each subsystem is built to drive. Different targets impose different invariants — an NVDA-targeted serializer can't substitute for a JAWS-targeted one without re-validation, and Liblouis braille tables aren't interchangeable across grade-1/grade-2 contractions. List the target(s) alongside the relevant subsystem(s) in the inventory; if multiple targets coexist, note which subsystem owns which, and flag any subsystem that claims to be target-agnostic in Known Unknowns (step 7) for verification.
 
 If the codebase is large enough to warrant it (>20 files in multiple directories), use sub-agents to explore subsystems in parallel — one agent per subsystem, each producing the notes above for its area.
 
@@ -153,7 +153,7 @@ When the step applies, enumerate every runtime entry point in the project, group
 
 - **Trigger**: what fires it — e.g., HTTP route `POST /api/users`, CLI command `myapp ingest <file>`, cron schedule `0 3 * * *`, Kafka topic `orders.created`.
 - **Location**: file path and handler/function name.
-- **Owning subsystem**: which subsystem from the Architecture Map (step 2) the entry point belongs to. Entry points that don't map cleanly to a listed subsystem are gaps — record them in Known Unknowns (step 6).
+- **Owning subsystem**: which subsystem from the Architecture Map (step 2) the entry point belongs to. Entry points that don't map cleanly to a listed subsystem are gaps — record them in Known Unknowns (step 7).
 - **One-line purpose**: what running it does (not how).
 
 Cover at minimum these four modes. Absent modes get the line "none" rather than being silently omitted, so a future reader can distinguish "we checked and there are no scheduled jobs" from "we forgot to look":
@@ -165,15 +165,24 @@ Cover at minimum these four modes. Absent modes get the line "none" rather than 
 
 If the project has additional execution modes (signal handlers, file watchers, daemon ticks, language-server protocol handlers, etc.), add them as further categories rather than forcing them into the four above.
 
-The execution-surface inventory is the bridge between the structural Architecture Map (step 2) and the behavioral Key Flows (step 4): step 2 says "what subsystems exist," this step says "what makes them run," and step 4 says "what happens when one of them runs." If a flow traced in step 4 doesn't start at an entry point listed here, that mismatch is itself a gap to record in Known Unknowns (step 6).
+The execution-surface inventory is the bridge between the structural Architecture Map (step 2) and the behavioral Key Flows (step 5): step 2 says "what subsystems exist," this step says "what makes them run," and step 5 says "what happens when one of them runs." If a flow traced in step 5 doesn't start at an entry point listed here, that mismatch is itself a gap to record in Known Unknowns (step 7).
 
 **Done when...**
 - [ ] Either the skip criterion applies and the Execution Surface section contains exactly one line in the documented format, *or* every existing execution mode is enumerated with trigger, location, owning subsystem, and one-line purpose
 - [ ] When not skipped, absent modes are explicitly marked "none" rather than silently omitted
-- [ ] When not skipped, every entry point maps to a subsystem from the Architecture Map (step 2); orphans are recorded in Known Unknowns (step 6)
-- [ ] Flow tracing in step 4 starts from entry points listed here (or from the documented skip-note when applicable)
+- [ ] When not skipped, every entry point maps to a subsystem from the Architecture Map (step 2); orphans are recorded in Known Unknowns (step 7)
+- [ ] Flow tracing in step 5 starts from entry points listed here (or from the documented skip-note when applicable)
 
-### 4. Trace key flows — follow data through the system
+### 4. Identify guarded invariants — observe what the design protects against
+
+Working from the Architecture Map and Execution Surface, list 2-3 failure modes this codebase is visibly designed to prevent and the code construct that guards each one — for example, transactions guarding partial writes, validation guarding malformed input, locks guarding concurrent updates, retries guarding transient network failures, idempotency keys guarding double-execution. The exercise is not exhaustive enumeration; it surfaces the implicit invariants the original authors considered important enough to enforce in code by reading the guards they wrote. The output doubles as a prior for debugging — these are the failure modes the authors knew to watch for, which composes with the failure-pattern library (`docs/thoughts/failure-patterns.md`) used in [`workflows/bug-diagnosis.md`](./bug-diagnosis.md) — and as a list of invariants you must not silently break when changing nearby code. Record each as `failure mode → guarding construct → file path:function`.
+
+**Done when...**
+- [ ] 2-3 failure modes are listed, each paired with the code construct that guards it
+- [ ] Each guard is anchored to a specific file path and function/type
+- [ ] Guards are observed from code, not assumed from convention or domain knowledge
+
+### 5. Trace key flows — follow data through the system
 
 Pick 2-3 representative operations (e.g., "user signs up", "report is generated", "webhook is processed") and trace them end-to-end through the codebase. This reveals:
 
@@ -189,7 +198,7 @@ For each flow, produce a numbered sequence of steps: "1. Request hits `routes/au
 - [ ] Flows reveal how subsystems actually connect (not just how the directory structure implies)
 - [ ] Each flow covers the complete path from entry point to final effect (no gaps marked "somehow")
 
-### 5. Identify conventions — learn the local dialect
+### 6. Identify conventions — learn the local dialect
 
 Every codebase has conventions that aren't in any style guide. Identify:
 
@@ -206,9 +215,9 @@ Note any conventions that are inconsistent (the codebase uses two different appr
 - [ ] Inconsistencies between competing conventions are explicitly noted
 - [ ] Each convention includes a concrete example from the codebase (file path and pattern)
 
-### 6. Catalog the unknowns — document what you don't understand
+### 7. Catalog the unknowns — document what you don't understand
 
-After steps 1-5, explicitly list:
+After steps 1-6, explicitly list:
 
 - **Modules you didn't read deeply** and why (too large, seemed peripheral, unclear purpose). In monorepos, explicitly list every package or service you scoped out of the architecture map — these are known unknowns by design, not oversights.
 - **Connections you couldn't trace** (subsystem A calls subsystem B somehow, but the mechanism is unclear)
@@ -220,11 +229,11 @@ This is the most important section for future work. It tells you where your unde
 **Done when...**
 - [ ] At least one item exists in each category (modules not read, connections not traced, surprising decisions, unclear dependencies)
 - [ ] Each unknown includes a reason why it's unknown (not just "didn't look at it")
-- [ ] No unknown is actually answerable from work already done in steps 1-5
+- [ ] No unknown is actually answerable from work already done in steps 1-6
 
-### 7. Produce the orientation document
+### 8. Produce the orientation document
 
-Compile steps 1-6 into `docs/working/onboarding-{project}.md` with these sections:
+Compile steps 1-7 into `docs/working/onboarding-{project}.md` with these sections:
 
 ```markdown
 # Codebase Orientation: {project name}
@@ -246,28 +255,31 @@ Compile steps 1-6 into `docs/working/onboarding-{project}.md` with these section
 ## Execution Surface
 {enumerated entry points from step 3, grouped by execution mode — CLI commands, HTTP handlers, scheduled jobs, message consumers, plus any project-specific modes. Absent modes marked "none". If step 3's skip criterion applied, this section contains exactly the one-line skip note: `Execution Surface: none — <reason>.`}
 
+## Guarded Invariants
+{2-3 failure modes from step 4 paired with their guarding constructs and file path:function anchors}
+
 ## Key Flows
-{2-3 traced flows from step 4}
+{2-3 traced flows from step 5}
 
 ## Conventions
-{patterns identified in step 5}
+{patterns identified in step 6}
 
 ## Known Unknowns
-{gaps identified in step 6}
+{gaps identified in step 7}
 
 ## Suggested Starting Points
 {for common task types, where to look first — e.g., "to add a new API endpoint, start with routes/ and follow the pattern in routes/users.ts"}
 ```
 
-The three-line header (Goal · Project state · Task status) below the metadata block is the same drift-surfacing convention RPI working docs use (see `workflows/research-plan-implement.md` step 2). Lifecycle keyword vocabulary is identical: `in-progress | blocked | paused | complete`. For a long-lived orientation doc, the Task status line typically reads `complete` after gate sign-off in step 8, switching back to `in-progress` during a re-run or lightweight refresh. Update it whenever the doc is read or revised; if any line no longer matches reality, fix it before doing anything else with the doc. The Goal line replaces the previous standalone `Scope:` field — same content, unified anchor.
+The three-line header (Goal · Project state · Task status) below the metadata block is the same drift-surfacing convention RPI working docs use (see `workflows/research-plan-implement.md` step 2). Lifecycle keyword vocabulary is identical: `in-progress | blocked | paused | complete`. For a long-lived orientation doc, the Task status line typically reads `complete` after gate sign-off in step 9, switching back to `in-progress` during a re-run or lightweight refresh. Update it whenever the doc is read or revised; if any line no longer matches reality, fix it before doing anything else with the doc. The Goal line replaces the previous standalone `Scope:` field — same content, unified anchor.
 
 **Done when...**
-- [ ] `docs/working/onboarding-{project}.md` exists, opens with the three-line header (Goal · Project state · Task status) below the metadata block, and includes all required sections (Entry Points, Architecture Map, Execution Surface, Key Flows, Conventions, Known Unknowns, Suggested Starting Points)
+- [ ] `docs/working/onboarding-{project}.md` exists, opens with the three-line header (Goal · Project state · Task status) below the metadata block, and includes all required sections (Entry Points, Architecture Map, Execution Surface, Guarded Invariants, Key Flows, Conventions, Known Unknowns, Suggested Starting Points)
 - [ ] The Task status line accurately reflects current lifecycle (re-read it; if it lies, fix it)
 - [ ] `Last verified` and `Relevant paths` fields are populated in the frontmatter
 - [ ] Document is committed to the repo
 
-### 8. Gate — validate with the team
+### 9. Gate — validate with the team
 
 If possible, have someone familiar with the codebase review the orientation doc. They can correct misunderstandings cheaply here — a wrong mental model carried into implementation is expensive to fix later.
 
