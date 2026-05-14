@@ -39,17 +39,32 @@ setup() {
 }
 
 @test "report has Consider section" {
-  echo "$REPORT_CONTENT" | grep -qiE '^## .*Consider'
+  # Match "Consider" as a whole word so it does not also match "Considered Overrides".
+  echo "$REPORT_CONTENT" | grep -qiE '^## .*\bConsider\b'
 }
 
 @test "report has Confirmed Good section" {
   echo "$REPORT_CONTENT" | grep -qiE '^## .*Confirmed Good'
 }
 
+# --- Auditability sections (override log + critic gating) ---
+
+@test "report has Considered Overrides section" {
+  echo "$REPORT_CONTENT" | grep -qiE '^## .*Considered Overrides'
+}
+
+@test "report has Skipped Core Critics section" {
+  echo "$REPORT_CONTENT" | grep -qiE '^## .*Skipped Core Critics'
+}
+
 # --- Status line validity ---
 
 @test "status uses one of the allowed values" {
   echo "$REPORT_CONTENT" | grep -qiE '(DOES NOT PASS|CONDITIONAL PASS|PASSES REVIEW)'
+}
+
+@test "status line carries an emoji indicator" {
+  echo "$REPORT_CONTENT" | grep -qE '\*\*Status:.*(🔴|🟡|✅)'
 }
 
 # --- Table structure ---
@@ -66,8 +81,23 @@ setup() {
   echo "$section" | grep -qE '(\|.*\||\(None\))'
 }
 
-# --- No leakage ---
+@test "Considered Overrides section contains a table or the empty-state sentinel" {
+  local section
+  section=$(echo "$REPORT_CONTENT" | sed -n '/^## .*Considered Overrides/,/^## /p' | head -n -1)
+  echo "$section" | grep -qE '(\|.*\||No prior overrides matched this diff\.)'
+}
 
-@test "report does not contain draft-review language" {
-  ! echo "$REPORT_CONTENT" | grep -qiE 'PASSES VERIFICATION'
+@test "Skipped Core Critics section contains a table or the empty-state sentinel" {
+  local section
+  section=$(echo "$REPORT_CONTENT" | sed -n '/^## .*Skipped Core Critics/,/^## /p' | head -n -1)
+  echo "$section" | grep -qE '(\|.*\||All core critics ran; no skips applied\.)'
+}
+
+# --- No leakage from draft-review ---
+
+@test "report does not contain draft-review verdict vocabulary" {
+  # draft-review uses "PASSES VERIFICATION"; code-review uses "PASSES REVIEW".
+  # Also reject "Draft Verification Rubric" / "Checked:" header fields that
+  # belong to draft-review's rubric.
+  ! echo "$REPORT_CONTENT" | grep -qiE '(PASSES VERIFICATION|Draft Verification Rubric|^\*\*Checked:\*\*|^\*\*Draft:\*\*)'
 }

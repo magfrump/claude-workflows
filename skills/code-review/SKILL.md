@@ -3,14 +3,17 @@ name: code-review
 description: >
   Orchestrate a comprehensive code review by coordinating code-fact-check and code critic agents
   (security-reviewer, performance-reviewer, api-consistency-reviewer) in parallel, with optional
-  contextual critics (test-strategy, tech-debt-triage, dependency-upgrade) auto-selected based on
-  the diff. Follows a 3-stage pipeline: code fact-check → critic agents → synthesis. Produces a
-  freeform chat summary plus a structured code review rubric with red/amber/green status tracking.
-  Use this skill when the user asks to "review this code", "full code review", "review this PR",
-  "run all critics", or wants a comprehensive multi-perspective review of code changes. Also trigger
-  when the user wants to combine security, performance, and API consistency review into a single
-  pass. For reviewing a single concern (just security, just performance), use the standalone
-  critic skill instead.
+  contextual critics (architecture-review, test-strategy, tech-debt-triage, dependency-upgrade,
+  ui-visual-review) auto-selected based on the diff. Follows a 3-stage pipeline: code fact-check →
+  critic agents → synthesis. Produces a freeform chat summary plus a structured code review rubric
+  with red/amber/green status tracking. Use this skill when the user asks to "review this code",
+  "review this PR", "review my changes", "review this diff", "full code review", "run all critics",
+  "code review this branch", or wants a multi-perspective review of code changes. Default to this
+  orchestrator whenever a PR is being prepared, opened, or evaluated — it composes security,
+  performance, API consistency, and (when triggered) architecture into a single pass. Also use
+  when the user asks for two or more of those concerns together. For a deliberately narrow review
+  on a single concern (just security, just performance), invoke the standalone critic skill
+  directly instead.
 when: User requests a full code review or PR review
 ---
 
@@ -26,7 +29,10 @@ This skill orchestrates the following sub-skills. Ensure they exist in `skills/`
 - `performance-reviewer.md` — performance analysis
 - `api-consistency-reviewer.md` — API surface consistency
 
-**Contextual critics (auto-selected based on diff):**
+**Structural critic (auto-selected, may produce blocking findings):**
+- `architecture-review.md` — triggered when diff changes module structure, public APIs of internal modules, data models, or cross-cutting concerns. Unlike the advisory contextual critics below, this critic declares its own severity-to-rubric mapping (Structural → 🔴, Coupling → 🟡, Minor/Informational → 🟢) and counts toward the convergence-escalation rule.
+
+**Contextual critics (auto-selected based on diff, advisory only — findings go to 🟢 Consider):**
 - `test-strategy.md` — triggered when source changes lack corresponding test changes
 - `tech-debt-triage.md` — triggered on large diffs (>10 files or >500 lines)
 - `dependency-upgrade.md` — triggered when dependency manifests change
