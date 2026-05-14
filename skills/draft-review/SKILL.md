@@ -242,9 +242,10 @@ For each critic agent instance, you MUST:
    `## What this draft is trying to accomplish` heading so the critic can scope feedback to
    stated intent
 5. Include the fact-check results (consensus summary if ensemble, or the single agent's findings)
-6. Instruct the agent to save its critique as `docs/reviews/[critic-name]-critique.md`.
-   The agent decides what goes in the file based on its own skill instructions — do not
-   prescribe the format.
+6. Instruct the agent to save its critique as `docs/reviews/<skill-name>.md` — use the
+   critic's skill filename without doubling the `-critique` suffix (e.g., `cowen-critique.md`,
+   not `cowen-critique-critique.md`). The agent decides what goes in the file based on its own
+   skill instructions — do not prescribe the format.
 7. Require the agent to append a **Goal-Alignment Note** at the end of its critique and chat
    summary using the canonical form from
    [`patterns/orchestrated-review.md`](../patterns/orchestrated-review.md):
@@ -560,7 +561,7 @@ home for writing-review outputs, parallel to `docs/working/` for RPI artifacts a
 docs/reviews/
 ├── verification-rubric.md
 ├── fact-check-report.md
-├── [critic-name]-critique.md    (one per critic used)
+├── <skill-name>.md              (one per critic used, e.g., cowen-critique.md)
 ```
 
 If `docs/reviews/` doesn't exist, create it. If prior review artifacts exist there from an
