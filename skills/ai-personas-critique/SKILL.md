@@ -55,9 +55,9 @@ Both conditions must hold — legitimately short proposals without stub markers,
 
 ## Step 1: Read the Persona Catalog
 
-Read `docs/working/ai-criticism-personas.md` in the project root. This file defines 17
-personas, each with a core question, domain tags, and a description of the lens they apply.
-It also contains orthogonality guidance for selection.
+Read `personas.md` in this skill's own directory (sibling to this SKILL.md file). This file
+defines 17 personas, each with a core question, domain tags, and a description of the lens
+they apply. It also contains orthogonality guidance for selection.
 
 **If the file is missing**, tell the user and fall back to selecting from this minimal set:
 Empiricist (evidence), Ethicist (harms), Systems Thinker (feedback loops), End User Advocate
