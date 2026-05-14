@@ -69,6 +69,7 @@ Generate 8-15 candidate approaches. Quantity matters more than quality at this s
 - Include at least 2-3 approaches that feel wrong, naive, or unconventional
 - Include at least 1 "do nothing" or "minimal change" option
 - Include at least 1 approach that would be ideal if effort/complexity were free
+- **Failure-driven invocation**: when the task is to prevent or harden against a specific failure (bug-fix design, security pass, reliability work), step 1's diverge may instead generate 8-15 specific failure modes the design must prevent — these become hard constraints in step 2, and step-1 approach candidates are generated in step 3 to cover them.
 - One sentence each, no evaluation yet
 - Number them for reference
 
