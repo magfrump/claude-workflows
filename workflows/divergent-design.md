@@ -539,8 +539,10 @@ For each candidate framing, briefly note:
 - **Success criterion**: how would we know this problem was solved?
 - **Implied solution space**: what kind of approaches does this framing suggest?
 - **What it leaves out**: what concerns does this framing fail to address?
+- **Stakeholder**: whose problem is this primarily? Pick from `user`, `maintainer`, `ops`, `investor`, or another concrete role — not "the team" or "everyone."
+- **Scope**: at what level does this framing operate? `sub-problem` (a piece of a larger system), `system` (the system as currently bounded), or `meta-problem` (the framing of the problem itself, or the system's relationship to its context).
 
-This step makes anchoring visible. If two framings have nearly identical success criteria, one is redundant. If a framing's "leaves out" list contains a hard concern from the triggering situation, it cannot be the chosen framing.
+This step makes anchoring visible. If two framings have nearly identical success criteria, one is redundant. If a framing's "leaves out" list contains a hard concern from the triggering situation, it cannot be the chosen framing. Read the stakeholder and scope columns down the list as a coverage matrix: if every candidate names the same stakeholder, or every candidate sits at the same scope, the diverge step (1a) anchored on one perspective — go back and generate framings that move on the absent dimension before converging in 3a. A healthy candidate set typically covers at least 2 stakeholders and at least 2 scopes.
 
 #### 3a. Converge — choose one framing
 
