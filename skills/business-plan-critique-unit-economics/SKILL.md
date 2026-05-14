@@ -3,20 +3,27 @@ name: business-plan-critique-unit-economics
 lens: unit-economics
 description: >
   Critically review a business-plan-shaped draft (founder pitch, investor deck narrative,
-  go-to-market strategy doc, fundraising memo, product strategy brief, or similar) using a
-  focused set of unit-economics lenses: CAC, LTV, contribution margin, payback period, and
-  gross-margin trajectory. This skill exists because many early-stage plans look defensible on
-  the moat and market story but quietly fail on the math — the per-customer economics either
-  never work or only work at a scale the business can't reach. Use this skill whenever a draft
-  proposes a business or product strategy and the author wants pressure on whether the unit
-  economics actually compound. Trigger phrases: "do the unit economics work", "review my CAC/LTV",
-  "critique the financial model", "is this fundable on the numbers", "stress-test the margins",
-  "payback period feedback", "contribution margin critique", "unit economics review". Produces
-  a structured Markdown critique. Scope is intentionally narrow: moat/distribution and
-  market-sizing critiques are explicitly deferred to sibling skills so this skill stays focused
-  on the per-customer math. NOTE: This skill is typically invoked by the draft-review
-  orchestrator, which provides a pre-built fact-check report. If a fact-check report is
-  provided, use it as your factual foundation and do not redo basic fact verification.
+  go-to-market strategy doc, fundraising memo, product strategy brief, financial model, or
+  similar) using a focused set of unit-economics lenses: CAC, LTV, contribution margin, payback
+  period, and gross-margin trajectory. This skill exists because many early-stage plans look
+  defensible on the moat and market story but quietly fail on the math — the per-customer
+  economics either never work or only work at a scale the business can't reach. Use this skill
+  whenever a draft proposes a business or product strategy and the author wants pressure on
+  whether the unit economics actually compound. Also trigger when the draft quotes CAC, LTV,
+  LTV/CAC ratio, churn, retention, gross margin, contribution margin, payback period, NRR/GRR,
+  or any per-customer profitability figure the author wants pressure-tested. Trigger phrases:
+  "do the unit economics work", "review my CAC/LTV", "critique the financial model",
+  "is this fundable on the numbers", "stress-test the margins", "payback period feedback",
+  "contribution margin critique", "unit economics review", "is the LTV real",
+  "are these margins defensible", "check the per-customer math", "review the CAC assumptions",
+  "what's wrong with my unit economics". Produces a structured Markdown critique with a known
+  section layout (CAC, LTV, Contribution Margin, Payback Period, Gross-Margin Trajectory,
+  Factual Foundation, Overall Assessment). Scope is intentionally narrow: moat/distribution
+  and market-sizing critiques are explicitly deferred to sibling skills
+  (`business-plan-critique-moat` and the future `business-plan-critique-market-sizing`) so this
+  skill stays focused on the per-customer math. NOTE: This skill is typically invoked by the
+  draft-review orchestrator, which provides a pre-built fact-check report. If a fact-check
+  report is provided, use it as your factual foundation and do not redo basic fact verification.
 when: User wants a unit-economics critique of a business plan, pitch, or strategy doc
 requires:
   - name: fact-check
@@ -240,7 +247,25 @@ hypothesis, not a baseline — say so.
 
 ## How to Structure the Critique
 
-Output your critique as a Markdown document.
+Output your critique as a Markdown document. Use this exact section layout so downstream
+consumers (orchestrators, format tests, human readers comparing critiques) can rely on the
+structure:
+
+```markdown
+# Unit-Economics Critique: <draft title or topic>
+
+## CAC Assessment
+## LTV Assessment
+## Contribution Margin Assessment
+## Payback Period Assessment
+## Gross-Margin Trajectory Assessment
+## Factual Foundation
+## Overall Assessment
+```
+
+If a lens does not apply to the draft (e.g., the plan reports no LTV figure at all), keep the
+section heading and state under it what the plan is missing rather than dropping the section.
+The skeleton is fixed; the content adapts.
 
 ### CAC Assessment
 Decompose CAC by channel where the plan permits. Identify any reliance on a non-scaling
