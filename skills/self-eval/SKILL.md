@@ -1,15 +1,21 @@
 ---
 name: self-eval
 description: >
-  Evaluate a skill or workflow against the project's evaluation rubric (docs/evaluation-rubric.md).
-  Automatically scores dimensions that can be assessed from code and structure (testability investment,
-  trigger clarity, overlap and redundancy, test coverage, pipeline readiness). Flags dimensions that
-  require human judgment (counterfactual gap, user-specific fit, condition for value, failure mode
-  gracefulness) with structured prompts to guide manual review. Produces a structured Markdown report.
-  Use this skill when the user asks to "evaluate this skill", "assess this workflow", "run the rubric
-  on X", "self-eval", or "how does X score on the rubric". Also trigger when adding a new skill or
-  workflow and wanting pre-merge assessment, or during periodic reassessment of existing tools.
-when: User asks to evaluate or score a skill or workflow against the rubric
+  Evaluate a single skill or workflow against the project's evaluation rubric
+  (docs/evaluation-rubric.md). Auto-scores five structural dimensions (testability investment,
+  trigger clarity, overlap and redundancy, test coverage, pipeline readiness) as
+  Strong/Adequate/Weak with justification. Flags the four judgment-dependent dimensions
+  (counterfactual gap, user-specific fit, failure mode gracefulness, condition for value) with
+  structured prompts so a human reviewer can finish the assessment efficiently. Produces a
+  structured Markdown report at docs/reviews/self-eval-{target}.md with a Key Questions list.
+  Use this skill whenever the user asks to "evaluate this skill", "assess this workflow",
+  "run the rubric on X", "self-eval", "score this skill", or "how does X hold up against the
+  rubric". Also trigger automatically before merging a new or substantially modified skill or
+  workflow (pre-merge gate), during periodic reassessment of existing tools when conditions
+  have changed (pipeline built/abandoned, usage shifted), and as part of the PR-prep review-fix
+  loop when the diff touches `skills/` or `workflows/`. When in doubt, run it — under-triggering
+  here means skills ship without rubric assessment.
+when: User asks to evaluate or score a skill or workflow against the rubric, or a PR modifies a skill/workflow file
 ---
 
 > On bad output, see guides/skill-recovery.md
@@ -249,12 +255,17 @@ Present:
 
 Save the evaluation report to `docs/reviews/self-eval-{target-name}.md`.
 
-Use this format:
+The output structure is contract: bats tests assert these section headings, field labels,
+and the constrained Strong/Adequate/Weak vocabulary. Do not rename, reorder, or drop
+sections. Do not introduce reviewer-style fields (`**Verdict:**`, `**Severity:**`,
+`**Confidence:**`) — those belong to critic skills, not self-eval.
+
+Use this format verbatim:
 
 ```markdown
 # Self-Evaluation: {target name}
 
-**Target:** `{file path}` | **Type:** {Skill / Workflow} | **Evaluated:** {date}
+**Target:** `{file path}` | **Type:** {Skill / Workflow} | **Evaluated:** {YYYY-MM-DD}
 **Evaluator:** Automated (self-eval skill) — human review required for flagged dimensions
 
 ---
@@ -263,11 +274,13 @@ Use this format:
 
 | Dimension | Score | Justification |
 |---|---|---|
-| Testability investment | {Strong/Adequate/Weak} | {1-2 sentences} |
-| Trigger clarity | {Strong/Adequate/Weak} | {1-2 sentences} |
-| Overlap and redundancy | {Strong/Adequate/Weak} | {1-2 sentences} |
-| Test coverage | {Strong/Adequate/Weak} | {1-2 sentences} |
-| Pipeline readiness | {Strong/Adequate/Weak} | {1-2 sentences} |
+| Testability investment | {Strong/Adequate/Weak} | {1-2 sentences citing specific evidence} |
+| Trigger clarity | {Strong/Adequate/Weak} | {1-2 sentences citing specific evidence} |
+| Overlap and redundancy | {Strong/Adequate/Weak} | {1-2 sentences citing specific evidence} |
+| Test coverage | {Strong/Adequate/Weak} | {1-2 sentences citing specific evidence} |
+| Pipeline readiness | {Strong/Adequate/Weak} | {1-2 sentences citing specific evidence} |
+
+All five rows are required. Use only `Strong`, `Adequate`, or `Weak` in the Score column.
 
 ---
 
@@ -293,13 +306,20 @@ Use this format:
 
 ## Key Questions
 
-{Emit 2-3 high-level questions as a numbered list (`1.`, `2.`, `3.`) — one item per
-question. These are the most important things the human reviewer should think about,
-modeled after the "Key question" sections in the rubric's example evaluations.}
+Emit 2-3 high-level questions as a numbered Markdown list (`1.`, `2.`, `3.`) — one
+question per list item. These are the most important things the human reviewer should
+think about, modeled after the "Key question" sections in the rubric's example
+evaluations. Each item starts with a bolded short claim, then 1-2 sentences of context
+ending in a question.
 
-1. **{Short claim or framing}.** {1-2 sentences of context, then the question.}
-2. **{Short claim or framing}.** {1-2 sentences of context, then the question.}
+1. **{Short claim or framing}.** {1-2 sentences of context, then the question?}
+2. **{Short claim or framing}.** {1-2 sentences of context, then the question?}
 ```
+
+Do not append a separate "Overall Recommendation" section — the Key Questions list IS
+the synthesis, by design (matching the rubric's example evaluations). The automated
+scores table is the verdict surface; the human-review prompts and Key Questions guide
+the rest.
 
 ---
 

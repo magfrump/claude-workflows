@@ -1,6 +1,8 @@
 #!/usr/bin/env bats
 # Validates the output format of self-eval reports.
 #
+# Note: Skips gracefully via load_generic_report when no report exists.
+#
 # Usage: Set REPORT_PATH to a generated report, then run:
 #   REPORT_PATH=docs/reviews/self-eval-fact-check.md bats test/skills/self-eval-format.bats
 
@@ -56,6 +58,12 @@ setup() {
   echo "$section" | grep -qiE '\| *Score'
 }
 
+@test "automated assessments table has Justification column" {
+  local section
+  section=$(echo "$REPORT_CONTENT" | sed -n '/^## Automated Assessments/,/^## /p' | head -n -1)
+  echo "$section" | grep -qiE '\| *Justification'
+}
+
 @test "scores use only the allowed values" {
   local section header_row score_col scores bad
   section=$(echo "$REPORT_CONTENT" | sed -n '/^## Automated Assessments/,/^## /p' | head -n -1)
@@ -75,6 +83,36 @@ setup() {
   section=$(echo "$REPORT_CONTENT" | sed -n '/^## Automated Assessments/,/^## /p' | head -n -1)
   row_count=$(echo "$section" | grep -E '^\|' | grep -vE '^\|.*---' | tail -n +2 | wc -l)
   [ "$row_count" -ge 5 ]
+}
+
+@test "automated assessments table includes Testability investment row" {
+  local section
+  section=$(echo "$REPORT_CONTENT" | sed -n '/^## Automated Assessments/,/^## /p' | head -n -1)
+  echo "$section" | grep -qiE '\|[[:space:]]*Testability investment[[:space:]]*\|'
+}
+
+@test "automated assessments table includes Trigger clarity row" {
+  local section
+  section=$(echo "$REPORT_CONTENT" | sed -n '/^## Automated Assessments/,/^## /p' | head -n -1)
+  echo "$section" | grep -qiE '\|[[:space:]]*Trigger clarity[[:space:]]*\|'
+}
+
+@test "automated assessments table includes Overlap and redundancy row" {
+  local section
+  section=$(echo "$REPORT_CONTENT" | sed -n '/^## Automated Assessments/,/^## /p' | head -n -1)
+  echo "$section" | grep -qiE '\|[[:space:]]*Overlap and redundancy[[:space:]]*\|'
+}
+
+@test "automated assessments table includes Test coverage row" {
+  local section
+  section=$(echo "$REPORT_CONTENT" | sed -n '/^## Automated Assessments/,/^## /p' | head -n -1)
+  echo "$section" | grep -qiE '\|[[:space:]]*Test coverage[[:space:]]*\|'
+}
+
+@test "automated assessments table includes Pipeline readiness row" {
+  local section
+  section=$(echo "$REPORT_CONTENT" | sed -n '/^## Automated Assessments/,/^## /p' | head -n -1)
+  echo "$section" | grep -qiE '\|[[:space:]]*Pipeline readiness[[:space:]]*\|'
 }
 
 # --- Flagged for Human Review ---
@@ -109,4 +147,25 @@ setup() {
   local section
   section=$(echo "$REPORT_CONTENT" | sed -n '/^## Key Questions/,$p')
   echo "$section" | grep -qE '^[0-9]+\.'
+}
+
+@test "key questions has at least 2 numbered items" {
+  local section count
+  section=$(echo "$REPORT_CONTENT" | sed -n '/^## Key Questions/,$p')
+  count=$(echo "$section" | grep -cE '^[0-9]+\.' || true)
+  [ "$count" -ge 2 ]
+}
+
+# --- Non-leakage from reviewer/critic skills ---
+
+@test "report does not leak Verdict field from critic skills" {
+  ! echo "$REPORT_CONTENT" | grep -qE '^\*\*Verdict:\*\*'
+}
+
+@test "report does not leak Severity field from critic skills" {
+  ! echo "$REPORT_CONTENT" | grep -qE '^\*\*Severity:\*\*'
+}
+
+@test "report does not contain Claim N headings from fact-check format" {
+  ! echo "$REPORT_CONTENT" | grep -qE '^## Claim [0-9]+'
 }
