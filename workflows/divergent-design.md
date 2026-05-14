@@ -6,6 +6,8 @@ value-justification: "Replaces ad-hoc architectural debates with structured mult
 
 *The diverge → diagnose → match → decide structure follows the [orchestrated review pattern](../patterns/orchestrated-review.md), with candidate approaches as the units of parallel evaluation.*
 
+**Problem-framing only?** If the task is to *frame* a contested or unclear problem (not yet to choose a solution), jump to the [Double Diamond (Purpose-First) variant](#variant-double-diamond-purpose-first) and run sections 1a-3a only — the chosen-framing record is the output, and Diamond 2 is skipped.
+
 ## When to use
 - Architectural decisions (how to structure a feature, which pattern to use)
 - Library or tool selection
@@ -311,6 +313,8 @@ When the *problem itself* is contested or unclear, a single divergent pass risks
 - **Diamond 2 (Solution)**: Run standard DD steps 1-4 (Diverge → Diagnose → Match and prune → Tradeoff matrix and decision) with the chosen framing as input, then document per step 5.
 
 The output of Diamond 1 is a one-paragraph **chosen framing record** that becomes the input to Diamond 2's diverge step. Without that record, Diamond 2 anchors implicitly on whichever framing came up first in conversation.
+
+**How to invoke standalone**: if your goal is only problem framing, run sections 1a-3a and stop; the chosen-framing record is the output. Diamond 2 (solution generation) is then deferred or owned by a separate workflow run.
 
 ### When to enter Diamond 1
 
