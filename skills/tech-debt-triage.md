@@ -74,7 +74,36 @@ the rest of the analysis does not support; `+0 (inert)` is a valid and common an
 Rate the carrying cost: **High** (actively slowing work or causing bugs), **Medium** (adds
 friction but manageable), **Low** (ugly but inert — doesn't affect day-to-day work).
 
-### 2. Cost of fixing — what would remediation require?
+### 2. Failure cost (optional) — what does an incident cost if this debt remains?
+
+This axis is independent of carrying cost. Carrying cost is what you pay today in friction
+and visible bugs. **Failure cost is the tail risk**: if this debt remains unaddressed and
+triggers an incident, how bad is the damage? Some debt is cheap to carry day-to-day but
+sits on top of a trapdoor (e.g., a known auth-validation gap that has not yet been exploited).
+
+Estimate failure cost as **incident probability × incident severity**:
+
+- **Incident probability**: How likely is this debt to cause a production failure within a
+  meaningful horizon (next quarter, next year)? Consider: known fragility, change frequency
+  in the area, dependence on hidden assumptions, blast radius if a small mistake slips in.
+
+- **Incident severity**: If the incident occurs, what's the impact? User-facing outage,
+  data loss or corruption, security breach, compliance violation, financial loss, reputation
+  damage.
+
+**Use this axis when** the debt sits in a security, payments, data-integrity, or compliance
+path — or anywhere the blast radius if it breaks is materially worse than the carrying cost
+suggests.
+
+**Leave it blank when** failure cost is unknown or not material. Most ergonomic debt (naming,
+code smell, mild duplication, awkward but tested code) has negligible failure cost — guessing
+a number for it corrupts the analysis. Blank is a valid and common answer; the skill operates
+the same way whether this axis is populated or not.
+
+Format: `{Low|Med|High} × {Low|Med|High}` (probability × severity), with a brief reason.
+Example: `Med × High — auth bypass possible if a future validation regression slips in`.
+
+### 3. Cost of fixing — what would remediation require?
 
 Estimate the fix:
 
@@ -93,7 +122,7 @@ or does it need to be sequenced with other changes?
 **Opportunity cost**: What feature work or other improvements would be delayed by doing this
 fix?
 
-### 3. Urgency triggers — when does this become critical?
+### 4. Urgency triggers — when does this become critical?
 
 Identify conditions that would escalate this debt from "should fix" to "must fix":
 
@@ -105,12 +134,14 @@ Identify conditions that would escalate this debt from "should fix" to "must fix
 
 If none of these are imminent, the debt may be worth carrying indefinitely.
 
-### 4. Fix-or-carry decision
+### 5. Fix-or-carry decision
 
 Combine the analysis into a clear recommendation:
 
 **Fix now** — carrying cost is high AND fix cost is manageable AND no urgent competing work.
-Or: an urgency trigger is imminent.
+Or: an urgency trigger is imminent. Or: failure cost is populated and severe (e.g.,
+`Med × High` or higher) even if carrying cost is low — tail-risk debt can justify a fix-now
+recommendation that the carrying-cost axis alone would not.
 
 **Fix opportunistically** — carrying cost is medium, fix is manageable, but there's no
 urgency. Schedule it when someone is already working in this area.
@@ -132,6 +163,7 @@ to re-evaluate (e.g., "revisit before starting the v3 API migration").
 **Location:** {file paths or module names}
 **Nature:** {what kind of debt — structural, algorithmic, dependency, testing, naming, etc.}
 **Cost of Deferral:** {`+X per Y` — e.g., `+1 file affected per week`, `+1 person learns legacy auth per quarter`, or `+0 — inert` if it does not compound}
+**Failure Cost:** {optional — `{prob} × {severity} — reason`, e.g., `Med × High — auth bypass if validation regresses`. Omit this line or leave it blank when failure cost is unknown or not material.}
 
 ### Carrying Cost: {High / Medium / Low}
 {2-4 sentences explaining the ongoing costs}
@@ -159,11 +191,17 @@ individual assessments and then a summary ranking:
 ```markdown
 ## Triage Summary
 
-| # | Debt Item | Carrying Cost | Cost of Deferral | Fix Cost | Urgency | Recommendation |
-|---|-----------|:---:|:---:|:---:|:---:|---|
-| 1 | ... | High | +1 file/week | Days | Imminent | Fix now |
-| 2 | ... | Medium | +0 (inert) | Hours | None | Fix opportunistically |
-| 3 | ... | Low | +1 person/quarter | Weeks | None | Carry intentionally |
+| # | Debt Item | Carrying Cost | Cost of Deferral | Failure Cost | Fix Cost | Urgency | Recommendation |
+|---|-----------|:---:|:---:|:---:|:---:|:---:|---|
+| 1 | Auth middleware skips one validation path | Low | +0 (inert) | Med × High — bypass if a regression lands | Days | None | Fix now |
+| 2 | Payments retry has no idempotency key | Medium | +1 incident per release | High × High — duplicate charges | Days | Imminent | Fix now |
+| 3 | Legacy report builder, sprawling but tested | Medium | +0.5 days fix work per sprint |  | Weeks | None | Fix opportunistically |
+| 4 | Inconsistent naming in utils/ | Low | +0 (inert) |  | Hours | None | Carry intentionally |
+
+The "Failure Cost" column is optional — rows 1 and 2 populate it because the debt sits in
+security and payments paths where blast radius is material; rows 3 and 4 leave it blank
+because the debt is ergonomic and incidents are not a meaningful risk. Both are valid
+starting states.
 
 ### Recommended Order
 {If fixing multiple items, suggest sequencing based on urgency, dependencies between items,
@@ -194,3 +232,8 @@ Present the triage in chat. If the user requests a persisted artifact, save to
   is a valid answer. Stable debt that does not spread, accrete, or erode knowledge belongs
   in the "Carry intentionally" bucket; inflating its growth rate to justify a fix-now
   recommendation corrupts the analysis.
+- **Don't fabricate failure cost.** The failure-cost axis is optional. If the debt is
+  ergonomic (naming, mild duplication, awkward but tested code) or you have no concrete
+  reason to believe an incident is plausible, leave it blank rather than guessing. A
+  speculative `Low × Low` adds noise without signal; a speculative `High × High` skews the
+  recommendation toward fix-now on no real evidence.
