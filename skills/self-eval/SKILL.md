@@ -293,9 +293,12 @@ Use this format:
 
 ## Key Questions
 
-{2-3 high-level questions that emerged from the evaluation — the most important things
-the human reviewer should think about. Modeled after the "Key question" sections in the
-rubric's example evaluations.}
+{Emit 2-3 high-level questions as a numbered list (`1.`, `2.`, `3.`) — one item per
+question. These are the most important things the human reviewer should think about,
+modeled after the "Key question" sections in the rubric's example evaluations.}
+
+1. **{Short claim or framing}.** {1-2 sentences of context, then the question.}
+2. **{Short claim or framing}.** {1-2 sentences of context, then the question.}
 ```
 
 ---
