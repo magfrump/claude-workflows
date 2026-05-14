@@ -3,6 +3,9 @@
 Date: 2026-03-23
 Time spent: ~10 minutes (design exercise, no throwaway code needed)
 
+**Last verified:** 2026-05-14
+**Relevant paths:** guides/doc-freshness.md, scripts/health-check.sh
+
 ## Answer
 
 Use a two-part heuristic: (1) a `last_verified` date field in document frontmatter/header, and (2) a `git log --since=<last_verified>` check against a list of `relevant_paths` stored in the document. If commits exist on those paths since the last verification date, the document is potentially stale.

@@ -483,6 +483,9 @@ check_skill_fixture_coverage() {
 }
 
 # ── 10. Feature integration check (si-functions.sh) ───────────────────────
+# A function is considered "wired in" if it is called from any entry-point
+# script OR from another function inside si-functions.sh (i.e., reached
+# transitively). Only functions with no caller at all are flagged as orphans.
 
 check_feature_integration() {
     section "Feature integration (si-functions.sh)"
@@ -516,17 +519,31 @@ check_feature_integration() {
     local orphan_names=()
 
     for fname in "${functions[@]}"; do
-        local found=false
+        local found_in_entry=false
         for script in "${entry_scripts[@]}"; do
-            # Look for the function name being called (not just defined)
-            # Match word boundary: the function name followed by space, quote, or $
+            # Match word boundary: function name preceded/followed by non-identifier
             if grep -qE "(^|[^a-zA-Z_])${fname}([^a-zA-Z_0-9]|$)" "$script" 2>/dev/null; then
-                found=true
+                found_in_entry=true
                 break
             fi
         done
-        if $found; then
+
+        # If no entry-point caller, check for intra-library calls — helpers
+        # used only by sibling functions in si-functions.sh are still wired in
+        # transitively when their caller is reached from an entry point.
+        local found_in_lib=false
+        if ! $found_in_entry; then
+            if grep -E "(^|[^a-zA-Z_])${fname}([^a-zA-Z_0-9]|$)" "$lib_file" 2>/dev/null \
+                | grep -vE "^${fname}[[:space:]]*\(\)" \
+                | grep -q .; then
+                found_in_lib=true
+            fi
+        fi
+
+        if $found_in_entry; then
             pass "$fname: called from entry point"
+        elif $found_in_lib; then
+            pass "$fname: called from sibling helper in $(basename "$lib_file")"
         else
             warn "$fname: not called from any entry-point script (orphan)"
             orphan_count=$((orphan_count + 1))

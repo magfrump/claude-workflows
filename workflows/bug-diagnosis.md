@@ -1,3 +1,8 @@
+---
+value-justification: "Retained as reference for the full diagnosis log template and detailed process. Core patterns (reproduce-first, hypothesis-test loop, 3-hypothesis escape hatch) have been absorbed into CLAUDE.md's Debugging defaults and now apply to all bug-fixing work automatically."
+status: deprecated
+---
+
 # Bug Diagnosis Workflow
 
 > **Deprecated.** The core patterns from this workflow (reproduce-first, hypothesis-test loop, 3-hypothesis escape hatch) have been absorbed into CLAUDE.md's "Debugging defaults" section and now apply to all bug-fixing work automatically. This file is retained as a reference for the full diagnosis log template and detailed process steps, but is no longer a standalone workflow entry in the decision tree.
