@@ -6,21 +6,27 @@ description: >
   Critique a draft that *proposes a mechanism* — any intervention where the author wants
   something to happen — using the cognitive methods and reasoning patterns of Matt Yglesias.
   This is the right critic for proposals of any kind: a software design, a research tool, a
-  community norm, a curriculum change, an organizational shift, or a government policy.
-  Yglesias's distinctive moves operate on proposed mechanisms generally:
-  agree-with-the-goal-demolish-the-mechanism, find the one boring lever nobody's pulling, trace
-  resources/effort through the system, check whether the proposal survives an adoption cycle,
-  run the "10 million people" test, swap in the implementation org chart, find the popular
-  version. Government policy is a special case, not the full scope. Use this skill whenever
-  the draft proposes an action and the author wants pragmatic pushback on whether the
-  mechanism actually achieves the stated goal — especially when the draft pairs a broad goal
-  with a narrow mechanism. Trigger phrases: "would this actually work", "give me the pragmatic
-  critique", "what's the boring lever", "is the mechanism the right one", "am I being
-  realistic here", "poke holes in this proposal", "would this policy actually work", "what's
-  the supply-side take". Produces a structured Markdown critique. NOTE: This skill is
-  typically invoked by the draft-review orchestrator, which provides a pre-built fact-check
-  report. If a fact-check report is provided, use it as your factual foundation and do not
-  redo basic fact verification.
+  community norm, a curriculum change, an organizational shift, a fundraising plan, or a
+  government policy. Yglesias's distinctive moves operate on proposed mechanisms generally:
+  agree-with-the-goal-demolish-the-mechanism, find the one boring lever nobody's pulling,
+  follow the money/effort through the system, check whether the proposal survives an
+  adoption cycle, run the "10 million people" scale test, swap in the implementation org
+  chart, identify the cost-disease trap, and find the popular version. Government policy
+  is a special case, not the full scope. This is the DEFAULT critic whenever a draft pairs
+  a goal with a proposed mechanism and the user wants pragmatic pushback on whether the
+  mechanism actually achieves the goal. Trigger phrases: "would this actually work", "give
+  me the pragmatic critique", "what's the boring lever", "is the mechanism the right one",
+  "am I being realistic here", "poke holes in this proposal", "would this policy actually
+  work", "what's the supply-side take", "follow the money on this", "what's the 10-million
+  -people test", "what's the popular version", "would this survive an election cycle",
+  "is this proposal implementable". Produces a structured Markdown critique. Distinct from
+  cowen-critique (which stress-tests argument rigor — is the reasoning sound) and
+  ai-personas-critique (which dispatches multiple orthogonal lenses): this skill applies a
+  single, consistent mechanism-feasibility lens — does the proposed intervention actually
+  achieve the stated goal at the scale and through the institutions the author has in mind.
+  NOTE: This skill is typically invoked by the draft-review orchestrator, which provides a
+  pre-built fact-check report. If a fact-check report is provided, use it as your factual
+  foundation and do not redo basic fact verification.
 when: User wants pragmatic mechanism-vs-goal critique of any proposal
 requires:
   - name: fact-check
@@ -204,42 +210,57 @@ the draft needs a very strong case for why the last 30% justifies the political 
 
 ## How to Structure the Critique
 
-Output your critique as a Markdown document.
+Output your critique as a Markdown document. Begin with a level-1 title heading containing
+"Yglesias Critique" (e.g., `# Yglesias Critique: <draft title>`). Then use **level-2 (`##`)
+headings in the output file** for each of the sections below — these section names are
+checked by downstream tooling, so keep them close to the names given here. Not every
+section will apply to every draft; omit a section if you have nothing substantive to say in
+it, but never rename a section you do use.
+
+The headings below are shown in `###` here only to keep this SKILL.md readable. **In your
+output document, render each one as `## ` (level-2).**
 
 ### The Goal vs. the Mechanism
 State what the author genuinely cares about (the goal), then assess whether their proposal
-actually advances it (move #1). If the mechanism undermines the goal, explain the causal chain.
+actually advances it (move #1). If the mechanism undermines the goal, explain the causal
+chain. Use the words "goal" and "mechanism" explicitly in this section so downstream
+tooling can identify the move.
 
 ### The Boring Lever
 What's the boring, unsexy intervention that would do most of the work (move #2)? Estimate
-its impact relative to the draft's proposal.
+its impact relative to the draft's proposal. Use the word "lever" in the section body.
 
-### Follow the Resource
-Trace the draft's proposed flow of money, effort, or attention through the system (move #3).
-Estimate how much reaches the intended outcome vs. gets absorbed by intermediaries, cost
-disease, or overhead.
+### Follow the Money
+Trace the draft's proposed flow of money, effort, or attention through the system (move
+#3). Estimate how much reaches the intended outcome vs. gets absorbed by intermediaries,
+cost disease, or overhead. Use the word "money" in the section body even if the underlying
+resource is effort or attention — the section name is fixed for tooling consistency.
 
 ### Factual Foundation
-If a fact-check report was provided, briefly summarize the key findings that matter for your
-critique — especially claims that affect the viability of the proposed mechanism. If no
-fact-check report was provided, note that factual claims were not independently verified and
-identify which claims in the draft would most benefit from fact-checking.
+If a fact-check report was provided, briefly summarize the key findings that matter for
+your critique — especially claims that affect the viability of the proposed mechanism. If
+no fact-check report was provided, note that factual claims were not independently verified
+and identify which claims in the draft would most benefit from fact-checking.
 
 ### The Scale Test
 What happens when 10 million people do this, or every state implements it, or it runs for
-20 years (move #6)? What breaks at scale that works in the draft's framing?
+20 years (move #6)? What breaks at scale that works in the draft's framing? Use the word
+"scale" in the section body.
 
-### Implementation & Maintenance
-Who actually implements this (move #7)? Which agency or team, what authority, what track
-record? Who maintains it once the original champions move on?
+### The Org Chart
+Who actually implements this (move #7)? Which agency, team, or organization; what
+authority; what track record? Who maintains it once the original champions move on? Use
+the phrase "org chart" in the section body.
 
 ### Adoption Survival
 Does this proposal survive its adoption cycle (move #4)? Does it create defenders or
-opponents? What's the popular version that gets 80% of the benefit (move #8)?
+opponents? What's the popular version that gets 80% of the benefit (move #8)? Use the
+word "adoption" in the section body.
 
 ### The Cost Disease Check
 If relevant: is this in a cost-diseased sector (move #5)? What share of new spending
-would produce new value vs. inflate existing costs?
+would produce new value vs. inflate existing costs? Use the phrase "cost disease" in the
+section body.
 
 ### Overall Assessment
 Which parts of the proposal are sound, which are wish-fulfillment, and what's the single
