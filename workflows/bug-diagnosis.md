@@ -14,7 +14,7 @@ This workflow is optimized for speed. Unlike RPI, there is **no plan approval ga
 
 - **→ RPI**: If you've tested 3+ hypotheses without progress, you likely don't understand the code well enough. Pivot to RPI's research phase — your failed hypotheses become valuable input (they document what the bug *isn't*). Use RPI for bugs in unfamiliar code where you need to build understanding before you can form good hypotheses.
 - **→ Spike**: If the fix requires using an unfamiliar library or technique, spike it before implementing the fix.
-- **← From RPI**: When RPI research reveals the root cause of a bug, you can skip straight to this workflow's Fix and Verify steps (steps 5-6) rather than writing a full implementation plan. RPI's research doc serves as the diagnosis record.
+- **← From RPI**: When RPI research reveals the root cause of a bug, you can skip straight to this workflow's Fix and Verify steps (steps 6-7) rather than writing a full implementation plan. RPI's research doc serves as the diagnosis record.
 
 **Choosing between this workflow and RPI for bugs:** Use bug-diagnosis when you can point to the area of code that's likely broken. Use RPI when you can't — when the symptom is clear but the location is unknown, or when the code is unfamiliar enough that you need to build a mental model before debugging.
 
@@ -68,7 +68,7 @@ A good minimal reproduction:
 - Can be run in isolation (ideally as a standalone test)
 - Makes the failure **obvious** — assert on the wrong behavior, don't just print output
 
-Write the minimal reproduction as a test if possible. This test becomes your verification that the fix works (step 6).
+Write the minimal reproduction as a test if possible. This test becomes your verification that the fix works (step 7).
 
 **Done when...**
 - [ ] The bug can be triggered reliably with a specific, documented sequence
@@ -77,7 +77,36 @@ Write the minimal reproduction as a test if possible. This test becomes your ver
 - [ ] If the bug is intermittent, the frequency and any patterns are noted
 - [ ] If the bug cannot be reproduced, this is documented and escalated — do not proceed to step 2
 
-### 2. Isolate — narrow the search space
+### 2. Check prior patterns — search the failure-pattern library
+
+Before forming a hypothesis, grep `docs/thoughts/failure-patterns.md` for the symptom signature from step 1. The library is an append-only one-line log of root-caused bugs (schema documented in the file's header). A match is a strong prior: a past bug with the same observable signature often has the same cause, and the recorded fix shape narrows what to test first. Skipping this step is how the library becomes write-only.
+
+**How to search:**
+
+```bash
+# By keyword drawn from the error message or observed behavior:
+grep -i '<keyword>' docs/thoughts/failure-patterns.md
+
+# By suspected cause category, if you already have one in mind:
+grep 'cause:<category>' docs/thoughts/failure-patterns.md
+```
+
+Try several keyword angles — the exact symptom phrasing rarely matches verbatim, but root tokens (e.g., `null`, `timezone`, `n+1`, `race`, `stale`, `boundary`) often will. Search recipes are documented in the failure-patterns.md header.
+
+**Interpret the result:**
+
+- **One or more matches** → record the matched IDs in your diagnosis log. When a hypothesis derives from a matched pattern, tag it `[from prior bug FP-NNN]` in step 4 so the prior is traceable. The matched fix shape is often the first thing to test.
+- **No matches** → proceed normally; the bug is novel relative to the library. Step 8 (Record the pattern) will add a new entry once you've root-caused it.
+- **File does not exist yet** → this is the first-ever diagnosis to consult it. Note the absence in your diagnosis log and let step 8 bootstrap the file from the schema.
+
+The library is intentionally lossy — only root-caused bugs get appended (see step 8). Absence of a match does not prove the bug is novel; it may just be unrecorded. But a match is meaningful signal and should not be ignored.
+
+**Done when...**
+- [ ] `docs/thoughts/failure-patterns.md` has been grep'd for terms drawn from the symptom (or noted as absent if the file does not exist)
+- [ ] Any matched pattern IDs are recorded in the diagnosis log
+- [ ] If a pattern matched, its recorded fix shape has been considered as a candidate starting point for hypothesis formation
+
+### 3. Isolate — narrow the search space
 
 Reduce the problem space before forming hypotheses. Techniques, in rough order of usefulness:
 
@@ -102,7 +131,7 @@ The goal of isolation is to go from "something is wrong" to "the problem is in *
 - [ ] The input or condition that triggers the bug within that location is identified
 - [ ] At least one isolation technique was applied (error reading, bisect, binary search, input simplification, or boundary check)
 
-### 3. Hypothesize — form a testable prediction
+### 4. Hypothesize — form a testable prediction
 
 State a specific, falsifiable hypothesis:
 
@@ -123,13 +152,13 @@ A good hypothesis:
 
 #### Source tag
 
-Every recorded hypothesis must carry exactly one inline tag from the following taxonomy, naming the kind of evidence that produced it. The source is a strong prior on the hypothesis's likelihood of being correct, and the mix of sources across hypotheses is a useful diagnostic when invoking the 3-hypothesis escape hatch (step 4) — three intuition-tagged misses signal a different kind of stuckness than three error-message-tagged misses.
+Every recorded hypothesis must carry exactly one inline tag from the following taxonomy, naming the kind of evidence that produced it. The source is a strong prior on the hypothesis's likelihood of being correct, and the mix of sources across hypotheses is a useful diagnostic when invoking the 3-hypothesis escape hatch (step 5) — three intuition-tagged misses signal a different kind of stuckness than three error-message-tagged misses.
 
 - **`[from error message]`** — Derived from the exception text, status code, panic, or error string itself. *Strongest signal*: the error usually names the proximal failure. Default starting point whenever an error is in hand.
 - **`[from log analysis]`** — Derived from log lines, traces, metrics, telemetry, or surrounding output that is distinct from the error itself. *Strong but more interpretive* — log evidence is suggestive rather than definitive, and correlation/causation confusion is common.
 - **`[from code reading]`** — Derived from reading the relevant source and reasoning about its control or data flow (e.g., spotting a missing null check on the function on the stack trace). *Strong when the suspect path is small* and on the trace; weaker as the surface grows or as you reason further from the failure point.
 - **`[from intuition]`** — Pattern-matching from prior debugging experience without a concrete signal in hand ("this kind of bug usually means X"). *Cheapest to form, most likely to be wrong*. Useful as a tiebreaker or when stronger sources are exhausted, but deprioritize when error-message, log, or code evidence is available.
-- **`[from prior bug]`** — Derived from a similar past bug, an entry in a known-issues / bug graveyard log, or institutional memory ("we hit this exact thing in module X last quarter"). *Strong when the prior bug is well-documented and the analogy is tight*; weak when the analogy is loose or the original was never root-caused.
+- **`[from prior bug]`** — Derived from a similar past bug, an entry in a known-issues / bug graveyard log, or institutional memory ("we hit this exact thing in module X last quarter"). *Strong when the prior bug is well-documented and the analogy is tight*; weak when the analogy is loose or the original was never root-caused. When the prior is a pattern from `docs/thoughts/failure-patterns.md` (i.e., it came out of step 2), cite the pattern ID directly: `[from prior bug FP-NNN]`. The recorded fix shape is the natural first thing to test.
 
 Place the tag inline at the start of the hypothesis statement (e.g., `[from error message] parseDate returns null when the input has a timezone offset...`). When two sources jointly produced the hypothesis, pick the one that did the most work — the tag names the dominant evidence, not every piece that contributed. If you genuinely can't pick a single source, that's a signal the hypothesis is too vague: tighten it before testing.
 
@@ -142,7 +171,7 @@ Record the hypothesis in your diagnosis log. If you're past hypothesis #2, you s
 - [ ] The hypothesis carries exactly one source tag from the taxonomy (`[from error message]` / `[from log analysis]` / `[from code reading]` / `[from intuition]` / `[from prior bug]`)
 - [ ] The hypothesis is recorded in the diagnosis log (with its source tag)
 
-### 4. Test — confirm or refute the hypothesis
+### 5. Test — confirm or refute the hypothesis
 
 Design the smallest experiment that distinguishes "hypothesis is correct" from "hypothesis is wrong":
 
@@ -152,26 +181,26 @@ Design the smallest experiment that distinguishes "hypothesis is correct" from "
 
 **Interpret the result — every hypothesis ends in exactly one of three states:**
 
-- **CONFIRMED** — the experiment ran, the precondition was met, and the predicted outcome occurred. → Proceed to Fix (step 5).
-- **REFUTED** — a designed experiment ran, the precondition was met, and the predicted outcome did *not* occur. The hypothesis has been falsified. → Record what you learned and return to step 3 with a new hypothesis. The refutation narrows the search space — use it.
+- **CONFIRMED** — the experiment ran, the precondition was met, and the predicted outcome occurred. → Proceed to Fix (step 6).
+- **REFUTED** — a designed experiment ran, the precondition was met, and the predicted outcome did *not* occur. The hypothesis has been falsified. → Record what you learned and return to step 4 with a new hypothesis. The refutation narrows the search space — use it.
 - **INCONCLUSIVE** — the experiment did not actually distinguish the hypothesis. Includes: no experiment was designed or executed; the precondition was never met (the suspect path was never exercised, the feature flag was off, the input never reached the branch); the experiment ran but was not specific enough to confirm or refute. → Redesign the experiment so it actually tests the hypothesis, or discard the hypothesis as untestable and form a new one.
 
 **Default state**: every hypothesis is INCONCLUSIVE until a designed experiment with met preconditions either confirms or refutes it. REFUTED is reserved for genuinely falsified hypotheses — "never tried" is not the same as "tried and failed," and conflating the two inflates the apparent failure rate and feeds misleading signal back into the next hypothesis.
 
 **Escape hatch**: If you've **REFUTED** 3+ hypotheses without confirming one, stop iterating and reassess. INCONCLUSIVE hypotheses do *not* tick this counter — the search space has not actually narrowed when an experiment failed to test what it claimed to test. If you're accumulating INCONCLUSIVE results, the problem is experimental design, not exhausted hypothesis space; fix the experiment before counting the hypothesis as a failure. Reassessment questions:
-- Are you isolating well enough? (Return to step 2)
+- Are you isolating well enough? (Return to step 3)
 - Do you understand the code well enough? (Pivot to RPI)
 - Is the bug actually where you think it is? (Widen the search)
 
 **Done when...**
 - [ ] The hypothesis state is recorded as exactly one of CONFIRMED, REFUTED, or INCONCLUSIVE
-- [ ] CONFIRMED → proceed to step 5
-- [ ] REFUTED → the refutation explicitly narrows the search space, and a new hypothesis is formed (return to step 3)
+- [ ] CONFIRMED → proceed to step 6
+- [ ] REFUTED → the refutation explicitly narrows the search space, and a new hypothesis is formed (return to step 4)
 - [ ] INCONCLUSIVE → the experiment is redesigned to actually test the hypothesis (precondition met, prediction specific enough), or the hypothesis is discarded as untestable. INCONCLUSIVE results are *not* counted toward the escape hatch
 - [ ] The test result, the hypothesis state, and what was learned are recorded in the diagnosis log
 - [ ] If 3+ hypotheses have been **REFUTED** (INCONCLUSIVE ones do not count), the escape hatch has been evaluated (re-isolate, pivot to RPI, or widen search)
 
-### 5. Fix — apply the minimal correct change
+### 6. Fix — apply the minimal correct change
 
 Once the root cause is confirmed:
 
@@ -199,9 +228,9 @@ Characterization tests are especially valuable when:
 - [ ] If the code had poor test coverage, characterization tests were written before applying the fix
 - [ ] The fix is committed separately from any characterization tests
 
-### 6. Verify — confirm the fix and check for collateral damage
+### 7. Verify — confirm the fix and check for collateral damage
 
-- **Run the reproduction from step 1**: It should now pass. If it doesn't, your fix is incomplete — return to step 5.
+- **Run the reproduction from step 1**: It should now pass. If it doesn't, your fix is incomplete — return to step 6.
 - **Run the full test suite**: Your fix should not break other tests. If it does, assess whether those tests were testing buggy behavior (update them) or whether your fix has unintended side effects (revise the fix).
 - **Check edge cases**: Does your fix handle related edge cases, or did it only fix the specific case from the reproduction? Consider adding test cases for nearby boundaries.
 - **Review the diagnosis log**: Update it with the confirmed root cause and the fix applied. This log is useful context for PR review and for future debugging if the bug recurs.
@@ -211,6 +240,34 @@ Characterization tests are especially valuable when:
 - [ ] The full test suite passes with no new failures
 - [ ] Edge cases related to the fix have been considered (and test cases added if warranted)
 - [ ] The diagnosis log is updated with the confirmed root cause and the fix applied
+
+### 8. Record the pattern — append to the failure-pattern library
+
+Once the fix is verified, append a one-line entry to `docs/thoughts/failure-patterns.md` capturing the {symptom, cause, fix} signature of this diagnosis. The library is a write-and-read tool — step 2 of every future diagnosis greps it. Records that aren't written don't help anyone; this step is what keeps step 2 from being write-only.
+
+**Format** (the full schema lives in the failure-patterns.md header — read it before your first entry):
+
+    - **FP-NNN** YYYY-MM-DD symptom:<keywords> cause:<category> fix:<category> ref:<diagnosis-doc-or-commit>
+
+Pick the next sequential `FP-NNN` (zero-padded to 3 digits) — look at the last entry in the file. Choose `symptom` keywords a future grep would actually try (root tokens from the error message and observable behavior, e.g., `null`, `timezone`, `n+1`, `race`, `stale`, plus a discriminator that ties them to this bug). Choose `cause` and `fix` categories from the starter vocabularies in failure-patterns.md, and only invent a new category when none fit — in which case add it to the vocabulary in the same commit so the next diagnosis can reuse it.
+
+**Examples:**
+
+    - **FP-001** 2026-05-13 symptom:null-from-parseDate-tz-offset cause:incomplete-regex fix:extend-regex ref:docs/working/diagnosis-date-parsing.md
+    - **FP-002** 2026-05-14 symptom:p95-doubled-reports-endpoint-eager-comments cause:n+1-query fix:remove-eager-load ref:docs/working/diagnosis-reports-perf.md
+
+**Skip pattern recording when:**
+
+- The diagnosis was abbreviated (obvious one-line bug — see "When to skip or abbreviate" below). Trivial typos and one-character fixes do not yield reusable {symptom, cause, fix} signatures.
+- The bug was confirmed environmental/upstream in step 0 (it was never your bug). Record it in the upstream project's tracker, not your library.
+- A matched pattern from step 2 was an exact recurrence with the same root cause and the same fix. In that case, don't add a duplicate — instead, leave a one-line note in your diagnosis log citing the matched `FP-NNN`, and (optionally) edit the matched entry's `ref` to point to the more recent diagnosis if it documents the recurrence better.
+
+**Done when...**
+- [ ] A new line has been appended to `docs/thoughts/failure-patterns.md` using the schema in the file header (or the skip condition above applies and is noted in the diagnosis log)
+- [ ] The new entry's `symptom` keywords are tokens a future bug-diagnosis would plausibly grep — not full sentences, not bug-specific identifiers
+- [ ] The new entry's `cause` and `fix` fields reuse existing vocabulary, or introduce a new category that is also added to the vocabulary section of failure-patterns.md in the same commit
+- [ ] The `ref` field points to the diagnosis log or fix commit so future readers can find the full reasoning
+- [ ] If step 2 matched a prior pattern, the new entry's relationship to it is noted in the diagnosis log (recurrence with same cause+fix → no new entry; same symptom but different cause → new entry, cite the near-miss `FP-NNN` for contrast)
 
 ## Diagnosis log template
 
@@ -224,22 +281,30 @@ Date: {YYYY-MM-DD}
 ## Reproduction
 [Minimal steps or test case that triggers the bug]
 
+## Prior patterns matched (step 2)
+[List matched pattern IDs from docs/thoughts/failure-patterns.md, or "none" if no match. Cite as FP-NNN. If a match drove a hypothesis, that hypothesis should carry the tag [from prior bug FP-NNN] below.]
+
 ## Hypotheses tested
 | # | Source | Hypothesis | Test | State | Notes |
 |---|--------|-----------|------|-------|-------|
-| 1 | [from error message \| from log analysis \| from code reading \| from intuition \| from prior bug] | [specific claim] | [experiment designed and run, or "not yet tested"] | [CONFIRMED \| REFUTED \| INCONCLUSIVE — default INCONCLUSIVE if no experiment ran or precondition unmet] | [what you learned; for INCONCLUSIVE, why the experiment didn't distinguish] |
+| 1 | [from error message \| from log analysis \| from code reading \| from intuition \| from prior bug \| from prior bug FP-NNN] | [specific claim] | [experiment designed and run, or "not yet tested"] | [CONFIRMED \| REFUTED \| INCONCLUSIVE — default INCONCLUSIVE if no experiment ran or precondition unmet] | [what you learned; for INCONCLUSIVE, why the experiment didn't distinguish] |
 
-**State rules**: Use REFUTED only when a designed experiment ran with its precondition met and falsified the prediction. Use INCONCLUSIVE when no experiment ran, the precondition was never met, or the test wasn't specific enough to confirm or refute. Only REFUTED hypotheses count toward the 3-hypothesis escape hatch in step 4.
+**State rules**: Use REFUTED only when a designed experiment ran with its precondition met and falsified the prediction. Use INCONCLUSIVE when no experiment ran, the precondition was never met, or the test wasn't specific enough to confirm or refute. Only REFUTED hypotheses count toward the 3-hypothesis escape hatch in step 5.
 
 ## Root cause
 [What's actually wrong, confirmed by hypothesis #N]
 
 ## Fix
 [What was changed and why this is the correct fix]
+
+## Pattern recorded (step 8)
+[The one-line entry appended to docs/thoughts/failure-patterns.md, e.g.:
+`- **FP-042** 2026-05-13 symptom:<keywords> cause:<category> fix:<category> ref:<this-doc-or-commit>`
+Or note "skip — trivial bug" / "skip — recurrence of FP-NNN, no new entry".]
 ```
 
 ## When to skip or abbreviate
 
-- **Obvious one-line bugs** (typo, wrong variable name, off-by-one): Fix directly, no diagnosis log needed.
-- **Test failures with clear assertion messages**: The test *is* your reproduction and verification — skip steps 1 and 6.
-- **Bugs found during RPI implementation**: If a bug surfaces while implementing a plan, fix it inline if trivial, or pause implementation and run this workflow if non-trivial. Record the diagnosis in a commit message rather than a separate doc.
+- **Obvious one-line bugs** (typo, wrong variable name): Fix directly, no diagnosis log or pattern entry needed. Trivial typos do not yield reusable {symptom, cause, fix} signatures, so step 8 is a no-op.
+- **Test failures with clear assertion messages**: The test *is* your reproduction and verification — skip steps 1 and 7. Still run step 2 (a one-second `grep` is cheap and may save iteration), and still run step 8 if the bug had a non-trivial cause.
+- **Bugs found during RPI implementation**: If a bug surfaces while implementing a plan, fix it inline if trivial, or pause implementation and run this workflow if non-trivial. Record the diagnosis in a commit message rather than a separate doc, and still append to `docs/thoughts/failure-patterns.md` if the cause is reusable — point the `ref` field at the commit SHA.
