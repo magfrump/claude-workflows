@@ -312,6 +312,21 @@ structured finding.
 
 Output your critique as a Markdown document.
 
+### Title and Header
+
+Open with a top-level title that includes "Security Review" so the report is
+discoverable. Follow with these header fields so readers know what was reviewed and when:
+
+```markdown
+# Security Review — [short scope label, e.g., PR #347 or branch name]
+
+**Scope:** [branch diff / file list / directory under review]
+**Date:** [YYYY-MM-DD]
+```
+
+If you've been given a fact-check report or other upstream artifact, add a `**Based on:**`
+line naming it. Keep the header to 3–5 lines; the substance belongs in the sections below.
+
 ### Trust Boundary Map
 
 Before listing any findings, articulate where input crosses trust boundaries in the
