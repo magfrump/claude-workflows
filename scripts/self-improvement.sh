@@ -119,7 +119,109 @@ finalize_round_log() {
     if declare -f generate_morning_summary >/dev/null 2>&1; then
         generate_morning_summary "${START_ROUND:-1}" "$round" \
             "$WORKING_DIR/morning-summary.md" "$WORKING_DIR" >/dev/null 2>&1 || true
+        # Splice the cross-task failure-modes block in near the top. Builds on
+        # the round-2 self-eval-skip-cause precedent (per-task surfacing) by
+        # extending to cross-task patterns.
+        insert_failure_modes_block "$WORKING_DIR/morning-summary.md" \
+            "${START_ROUND:-1}" "$round" "$WORKING_DIR" 2>/dev/null || true
     fi
+}
+
+# Aggregate gate-fail reasons across the current cycle's rounds and splice a
+# "Failure Modes This Cycle" block into the morning summary, right after the
+# Run Overview heading. Limits to top-3 patterns to bound length growth.
+#
+# Args: $1 = summary path, $2 = start_round, $3 = end_round, $4 = working_dir
+#
+# Source data: round-${N}-report.json files. Counts each (gate, task) "fail"
+# entry once per round it appears in — duplicates across rounds indicate
+# repeated attempts, which is meaningful signal.
+#
+# No-op when summary file is missing. Emits "No gate failures this cycle."
+# inside the block when no fails were recorded.
+insert_failure_modes_block() {
+    local summary_path="$1" start_round="$2" end_round="$3" working_dir="$4"
+    [ -f "$summary_path" ] || return 0
+
+    # Collect "gate\ttask_id" pairs across all rounds in scope.
+    local pairs="" round_num report round_pairs
+    for round_num in $(seq "$start_round" "$end_round"); do
+        report="$working_dir/round-${round_num}-report.json"
+        [ -f "$report" ] || continue
+        round_pairs=$(jq -r '
+            .validation // {} | to_entries[] |
+            .key as $tid |
+            (.value | to_entries[] |
+              select(.key != "verdict"
+                     and (.value | type) == "string"
+                     and .value == "fail") |
+              .key) as $gate |
+            "\($gate)\t\($tid)"
+        ' "$report" 2>/dev/null) || continue
+        [ -n "$round_pairs" ] && pairs="${pairs}${round_pairs}"$'\n'
+    done
+    pairs=$(printf '%s' "$pairs" | grep -v '^$' || true)
+
+    # Build the block content into a temp file.
+    local block_file
+    block_file=$(mktemp)
+    {
+        echo "## Failure Modes This Cycle"
+        echo ""
+        if [ -z "$pairs" ]; then
+            echo "No gate failures this cycle."
+        else
+            echo "Top gate-fail patterns aggregated across this run's rounds (top 3):"
+            echo ""
+            # Dedupe (gate, task) pairs so a task retried across rounds counts
+            # once per gate. Then group by gate, sort desc by count, take top 3.
+            printf '%s\n' "$pairs" | sort -u | awk -F'\t' '
+                {
+                    gates[$1]++
+                    tasks[$1] = (tasks[$1] ? tasks[$1] ", " $2 : $2)
+                }
+                END {
+                    for (g in gates) printf "%d\t%s\t%s\n", gates[g], g, tasks[g]
+                }
+            ' | sort -k1,1 -rn -s | head -3 | while IFS=$'\t' read -r count gate task_list; do
+                echo "- **${gate}**: ${count} task(s) (${task_list})"
+            done
+        fi
+        echo ""
+    } > "$block_file"
+
+    # Splice block in between Run Overview and the next "## " heading. If no
+    # subsequent heading exists (unusual), append at end as a fallback.
+    local tmp_out
+    tmp_out=$(mktemp)
+    awk -v block_file="$block_file" '
+        BEGIN {
+            while ((getline line < block_file) > 0) {
+                block = (block == "" ? line : block "\n" line)
+            }
+            close(block_file)
+            inserted = 0
+            seen_overview = 0
+        }
+        # Print block right before the first "## " heading that follows
+        # "## Run Overview". seen_overview is set after we have already
+        # printed the "## Run Overview" line itself, so this rule only
+        # fires on a later heading.
+        /^## / && seen_overview && !inserted {
+            print block
+            inserted = 1
+        }
+        { print }
+        /^## Run Overview/ { seen_overview = 1 }
+        END {
+            if (!inserted) {
+                print ""
+                print block
+            }
+        }
+    ' "$summary_path" > "$tmp_out" && mv "$tmp_out" "$summary_path"
+
+    rm -f "$block_file" "$tmp_out"
 }
 
 # --- Shared utility functions (sourced from lib) ---
