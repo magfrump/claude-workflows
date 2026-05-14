@@ -4,12 +4,18 @@ description: >
   Orchestrate a structured evaluation of multiple items across multiple criteria by dispatching
   parallel sub-agents — one per criterion — that each score all items along their assigned
   dimension. Compiles results into a comparison matrix, surfaces tradeoffs, and synthesizes an
-  overall recommendation. Use this skill when the user wants to compare options, evaluate
-  alternatives, rank candidates, or make a structured decision across multiple dimensions.
-  Also trigger when users say "compare these options", "evaluate X vs Y vs Z", "which of these
-  is best", "pros and cons matrix", "decision matrix", "trade-off analysis", or "score these
-  against criteria". Works with any combination of items and criteria: design alternatives,
-  libraries, vendors, architectures, approaches, tools, or any other set of comparable options.
+  overall recommendation. Use this skill whenever the user is choosing among 2+ named
+  alternatives along 2+ named dimensions — comparing options, evaluating alternatives, ranking
+  candidates, or making a structured decision across multiple dimensions. Trigger phrases:
+  "compare these options", "evaluate X vs Y vs Z", "which of these is best", "pros and cons
+  matrix", "decision matrix", "trade-off analysis", "score these against criteria", "tabulate
+  the options", "side-by-side comparison". Works with any combination of items and criteria:
+  design alternatives, libraries, vendors, architectures, approaches, tools, or any other set
+  of comparable options. Also trigger as a sub-procedure of divergent-design when the candidate
+  set is wide enough that a scoring matrix would clarify the choice, or when an RPI plan needs
+  to choose among 3+ approaches. Prefer this skill over an ad-hoc pros/cons list whenever the
+  decision crosses 2+ items and 2+ criteria — the parallel sub-agent dispatch produces more
+  consistent calibration than a single agent reasoning about everything at once.
 when: User wants to compare or rank options across multiple criteria
 ---
 
@@ -337,7 +343,7 @@ for reference and decision-tracking.
 ```markdown
 # Matrix Analysis
 
-**Items:** [item list] | **Criteria:** [N] | **Date:** [date]
+**Items:** [comma-separated item names] | **Criteria:** [N] | **Date:** [YYYY-MM-DD]
 
 ---
 
@@ -348,6 +354,12 @@ for reference and decision-tracking.
 | **Item A** | ++ rationale | + rationale | ... | [summary] |
 | **Item B** | + rationale | ++ rationale | ... | [summary] |
 | **Item C** | - rationale | + rationale | ... | [summary] |
+
+The matrix is a Markdown table with a header row (one column per criterion plus an
+optional `Overall` column) and one row per item. Cells use the rating symbol (`++`,
+`+`, `-`, `?` for qualitative scoring, or the user's numeric scale) followed by a
+brief rationale phrase. There must be at least 2 item rows and at least 2 criterion
+columns — anything smaller does not need this skill.
 
 ---
 

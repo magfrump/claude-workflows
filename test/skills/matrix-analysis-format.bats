@@ -54,9 +54,28 @@ setup() {
   echo "$section" | grep -qE '^\|.*\|'
 }
 
-@test "matrix uses rating symbols" {
-  # The matrix should use qualitative ratings: ++ / + / - / ?
-  echo "$REPORT_CONTENT" | grep -qE '(\+\+|\+[ |]|-[ |]|\?[ |])'
+@test "comparison matrix has a table separator row" {
+  # A valid markdown table has a separator row of dashes after the header.
+  local section
+  section=$(echo "$REPORT_CONTENT" | sed -n '/^## Comparison Matrix/,/^## /p' | head -n -1)
+  echo "$section" | grep -qE '^\|[ :-]*-+[ :-]*\|'
+}
+
+@test "comparison matrix has at least two item rows" {
+  # Count table rows that aren't the header or separator. The header row is the
+  # first row, separator is the dash row; subsequent rows are items.
+  local section item_rows
+  section=$(echo "$REPORT_CONTENT" | sed -n '/^## Comparison Matrix/,/^## /p' | head -n -1)
+  # Count all table rows, then subtract header + separator
+  local total_rows
+  total_rows=$(echo "$section" | grep -cE '^\|.*\|' || true)
+  item_rows=$((total_rows - 2))
+  [ "$item_rows" -ge 2 ]
+}
+
+@test "matrix uses rating symbols or numeric scores" {
+  # Matrix should use qualitative ratings (++/+/-/?) or numeric scores in cells.
+  echo "$REPORT_CONTENT" | grep -qE '(\+\+|\+[ |]|-[ |]|\?[ |]|[0-9]+/[0-9]+|\b[1-9]\b)'
 }
 
 # --- Detailed evaluations ---
@@ -73,4 +92,23 @@ setup() {
 
 @test "report has Evaluation Metadata section" {
   assert_heading_exists "Evaluation Metadata"
+}
+
+# --- No leakage from sibling decision-helper skills ---
+
+@test "report does not contain tech-debt-triage language" {
+  # tech-debt-triage uses Carrying Cost / Fix Cost / Urgency Triggers and recommendation
+  # verbs like "Fix now / Carry intentionally / Defer and monitor".
+  ! echo "$REPORT_CONTENT" | grep -qiE '(^## .*Carrying Cost|^## .*Fix Cost|^## .*Urgency Triggers|Fix opportunistically|Carry intentionally|Defer and monitor)'
+}
+
+@test "report does not contain design-space-situating language" {
+  # design-space-situating produces an eight-dimension situating record with dimensions
+  # like "Locus of Authority" or "Orientation in Time".
+  ! echo "$REPORT_CONTENT" | grep -qiE '(Locus of Authority|Orientation in Time|Search/Compose/Emerge|Modeling Target|situating record)'
+}
+
+@test "report does not contain what-if-analysis language" {
+  # what-if-analysis produces a pre-mortem with "Assumption" / "If wrong" sections.
+  ! echo "$REPORT_CONTENT" | grep -qiE '(^## .*Pre-?mortem|^## .*Failure Modes|^## .*Second-Order Effects|\*\*If wrong:\*\*)'
 }
