@@ -8,6 +8,13 @@
 
 **Hypothesis under test:** A read-only audit will identify at least 2 concrete format deviations across the 5 skills that, if fixed in a future round, would improve skill discoverability or consistency.
 
+## Status update (2026-05-14)
+
+- **F3 (flat file structure) — Resolved.** All 23 skills migrated to the `skills/<name>/SKILL.md` directory layout. See commits `edcd3a2` (test-strategy spike probe), `182de68` (bulk migration of the remaining 22 skills), plus `a417b01` teaching `scripts/health-check.sh` to discover both layouts and `4d8c68c` sweeping the resulting path references in AGENTS.md / GEMINI.md / internal cross-refs.
+- **F3 correction — "non-breaking, discovers both formats" was partly wrong.** The original recommendation (below) called this a non-breaking change because Claude Code would discover both layouts. The skill-registry spike (`7d6fb15` on `feat/skill-registry-spike`) disproved the auto-registration half of that claim: Claude Code's skill registry only picks up the `skills/<name>/SKILL.md` form, so the flat skills were never registered as invokable Skill-tool entries. They were still *findable* — the path listings in CLAUDE.md / AGENTS.md / GEMINI.md let a human (and a Claude session driven from those instructions) reference the flat files directly, which is how the project was running them up to this point. The migration converts that manual-reference workflow into automatic registry pickup; the cost is that any manual invocation paths someone had set up against the flat layout needed to be rewritten (which is what broke some skills mid-migration).
+- **F5 (ui-visual-review exceeds 500 lines) — Partially addressed.** The directory wrapper is now in place at `skills/ui-visual-review/SKILL.md`, so the proposed sub-file split is now mechanically feasible. The actual extraction of `runtime-verification.md` and `affordance-principles.md` into the directory is still pending.
+- **F1, F2, F4, F6, F7 — Still open.** None of the frontmatter, description-length, or tool-name findings were touched by the registry-spike work.
+
 ---
 
 ## Summary of Findings
@@ -68,7 +75,7 @@ skill-name/
   examples/       # optional
 ```
 
-**Current state:** All skills are flat `.md` files at `~/.claude/skills/code-review.md`, etc. There are no `SKILL.md` entrypoints and no supporting file directories.
+**Current state (as of audit on 2026-04-09):** All skills are flat `.md` files at `~/.claude/skills/code-review.md`, etc. There are no `SKILL.md` entrypoints and no supporting file directories. (Resolved 2026-05-14 — see the Status update block at the top of this document.)
 
 **Impact:** The flat-file approach works (Claude Code's docs confirm `.claude/commands/` style files still function), but it prevents:
 - Bundling scripts, templates, or reference docs with skills
@@ -77,7 +84,7 @@ skill-name/
 
 The skill-creator guidelines emphasize a three-level loading system: metadata (~100 words) always in context, SKILL.md body (<500 lines) loaded on trigger, bundled resources loaded as needed. The flat-file approach collapses all content into a single layer.
 
-**Recommendation:** Migrate to directory structure (e.g., `~/.claude/skills/code-review/SKILL.md`). For the larger skills (ui-visual-review at 582 lines, code-review at 391 lines), move reference material into supporting files. This is a non-breaking change -- Claude Code discovers both formats.
+**Recommendation:** Migrate to directory structure (e.g., `~/.claude/skills/code-review/SKILL.md`). For the larger skills (ui-visual-review at 582 lines, code-review at 391 lines), move reference material into supporting files. ~~This is a non-breaking change -- Claude Code discovers both formats.~~ **Correction (2026-05-14):** only half right. The flat skills were still findable via the path listings in CLAUDE.md / AGENTS.md / GEMINI.md, and could be invoked manually from there — but Claude Code's *skill registry* only auto-registers the `SKILL.md`-in-dir form. The migration broke any manual references that hardcoded `skills/<name>.md` paths (those needed to be rewritten to the new layout — see the path-sweep commit `4d8c68c`), in exchange for getting automatic registry pickup.
 
 ---
 
@@ -181,15 +188,15 @@ The flat `.md` file format and non-standard frontmatter fields work today becaus
 
 ## Prioritized Action Items
 
-| Priority | Finding | Effort | Impact |
-|----------|---------|--------|--------|
-| 1 | F1: Remove `when`, merge into `description` | Low | Activates dead trigger content |
-| 2 | F4: Front-load descriptions within 250 chars | Medium | Prevents trigger-phrase truncation |
-| 3 | F3: Migrate to directory-based skill structure | Medium | Enables progressive disclosure, supporting files |
-| 4 | F5: Extract ui-visual-review runtime sections | Low | Gets below 500-line limit |
-| 5 | F2: Move `requires` to markdown body | Low | Removes inert frontmatter |
-| 6 | F7: Fix Task->Agent tool name in draft-review | Low | Correctness |
-| 7 | F6: Consider `context: fork` for orchestrators | Low | Optional context optimization |
+| Priority | Status | Finding | Effort | Impact |
+|----------|--------|---------|--------|--------|
+| 1 | Open | F1: Remove `when`, merge into `description` | Low | Activates dead trigger content |
+| 2 | Open | F4: Front-load descriptions within 250 chars | Medium | Prevents trigger-phrase truncation |
+| 3 | **Done (2026-05-14)** | F3: Migrate to directory-based skill structure | Medium | Enables progressive disclosure, supporting files |
+| 4 | Partial | F5: Extract ui-visual-review runtime sections (directory now in place; sub-file split pending) | Low | Gets below 500-line limit |
+| 5 | Open | F2: Move `requires` to markdown body | Low | Removes inert frontmatter |
+| 6 | Open | F7: Fix Task->Agent tool name in draft-review | Low | Correctness |
+| 7 | Open | F6: Consider `context: fork` for orchestrators | Low | Optional context optimization |
 
 ---
 

@@ -172,7 +172,7 @@ The `scripts/self-improvement.sh` script itself was the target of shellcheck val
 
 **What it checks:** Any changed `.md` files under `skills/` or `workflows/` pass self-evaluation with fewer than 2 Weak automated scores.
 
-**Rationale:** Structural checks (gates 1a–1f) can't assess whether a skill or workflow is semantically well-formed. This gate uses the project's own `skills/self-eval.md` to evaluate quality across 5 automated dimensions.
+**Rationale:** Structural checks (gates 1a–1f) can't assess whether a skill or workflow is semantically well-formed. This gate uses the project's own `skills/self-eval/SKILL.md` to evaluate quality across 5 automated dimensions.
 
 **Fail message:** `self-eval: <filename> has N Weak automated scores`
 

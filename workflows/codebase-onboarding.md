@@ -103,7 +103,7 @@ synthesis — emit a single one-line status banner directly in the chat. This
 gives the user a chance to see subsystem coverage and gaps and decide whether
 to interrupt before synthesis runs silently to completion. Mirrors the
 between-stage banner spec in
-[`skills/code-review.md`](../skills/code-review.md#between-stage-status-banner).
+[`skills/code-review/SKILL.md`](../skills/code-review/SKILL.md#between-stage-status-banner).
 
 **Format:** `Step 2 (subsystem map) complete: <coverage counts> — <next action>`
 

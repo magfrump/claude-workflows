@@ -21,8 +21,8 @@ Documents that benefit from freshness tracking include two fields in their heade
 ---
 Last verified: 2026-03-23
 Relevant paths:
-  - skills/draft-review.md
-  - skills/fact-check.md
+  - skills/draft-review/SKILL.md
+  - skills/fact-check/SKILL.md
 ---
 ```
 

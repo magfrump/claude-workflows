@@ -23,7 +23,7 @@ Use a two-part heuristic: (1) a `last_verified` date field in document frontmatt
 
 ```markdown
 **Last verified:** 2026-03-23
-**Relevant paths:** workflows/, skills/fact-check.md
+**Relevant paths:** workflows/, skills/fact-check/SKILL.md
 ```
 
 - `Last verified` — the date someone (human or agent) last confirmed the document's accuracy
@@ -33,7 +33,7 @@ Use a two-part heuristic: (1) a `last_verified` date field in document frontmatt
 
 ```bash
 # Check if any commits touch relevant paths since last verification
-git log --oneline --since="2026-03-23" -- workflows/ skills/fact-check.md
+git log --oneline --since="2026-03-23" -- workflows/ skills/fact-check/SKILL.md
 ```
 
 - If output is non-empty → document is **potentially stale**

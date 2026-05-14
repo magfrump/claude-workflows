@@ -24,14 +24,14 @@ Skills are focused, single-purpose process docs in `skills/`. Unlike workflows (
 
 | Trigger | Skill | When |
 |---------|-------|------|
-| Diff touches **TSX, JSX, CSS, SCSS, Tailwind classes, Unity C# UI components**, or any visual rendering code | `skills/ui-visual-review.md` | After implementation, before PR. Covers cross-resolution, overflow, sizing issues. |
-| Diff touches **auth, input handling, crypto, trust boundaries, file I/O, network calls, serialization** | `skills/security-reviewer.md` | During implementation or review. Design-level flaws, not linter findings. |
-| **Opening or preparing a PR** (any codebase) | `skills/code-review.md` | Orchestrates code-fact-check + security/performance/API-consistency critics in parallel. Integral to PR-prep's review-fix loop. |
-| Reviewing a draft document, blog post, or written argument | `skills/draft-review.md` | Coordinates fact-check + persona critiques (`cowen-critique`, `yglesias-critique`, `ai-personas-critique`). |
-| Verifying factual claims in code, comments, docs, or written content | `skills/fact-check.md` / `skills/code-fact-check.md` | When claims need source-backed verification. |
-| Evaluating tradeoffs across many options | `skills/matrix-analysis.md` / `skills/what-if-analysis.md` | Sub-procedures for divergent-design when the option space is wide. |
-| **Framing a decision** before choosing — explicit request, or DD constraints contradict each other | `skills/design-space-situating.md` | Places the decision on eight design-space dimensions and surfaces misframing. Output feeds DD's diagnosis or RPI's plan. |
-| Triaging tech debt, planning a dependency upgrade, or scoping test strategy | `skills/tech-debt-triage.md`, `skills/dependency-upgrade.md`, `skills/test-strategy.md` | Use when the corresponding planning question comes up. |
+| Diff touches **TSX, JSX, CSS, SCSS, Tailwind classes, Unity C# UI components**, or any visual rendering code | `ui-visual-review` | After implementation, before PR. Covers cross-resolution, overflow, sizing issues. |
+| Diff touches **auth, input handling, crypto, trust boundaries, file I/O, network calls, serialization** | `security-reviewer` | During implementation or review. Design-level flaws, not linter findings. |
+| **Opening or preparing a PR** (any codebase) | `code-review` | Orchestrates code-fact-check + security/performance/API-consistency critics in parallel. Integral to PR-prep's review-fix loop. |
+| Reviewing a draft document, blog post, or written argument | `draft-review` | Coordinates fact-check + persona critiques (`cowen-critique`, `yglesias-critique`, `ai-personas-critique`). |
+| Verifying factual claims in code, comments, docs, or written content | `fact-check` / `code-fact-check` | When claims need source-backed verification. |
+| Evaluating tradeoffs across many options | `matrix-analysis` / `what-if-analysis` | Sub-procedures for divergent-design when the option space is wide. |
+| **Framing a decision** before choosing — explicit request, or DD constraints contradict each other | `design-space-situating` | Places the decision on eight design-space dimensions and surfaces misframing. Output feeds DD's diagnosis or RPI's plan. |
+| Triaging tech debt, planning a dependency upgrade, or scoping test strategy | `tech-debt-triage`, `dependency-upgrade`, `test-strategy` | Use when the corresponding planning question comes up. |
 
 Other skills in `skills/` cover architecture review, performance review, API consistency, bug diagnosis, arithmetic eval, and self-eval. Browse the directory when a task wants a focused checklist rather than a full workflow.
 
