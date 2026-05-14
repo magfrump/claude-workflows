@@ -17,21 +17,39 @@ setup() {
 }
 
 # --- Required analytical sections (cognitive moves) ---
+# SKILL.md prescribes level-2 (##) headings in the output file. Use
+# assert_section_exists where the section name is fixed; use
+# assert_heading_exists where a regex pattern is needed (e.g. for an
+# embedded period).
 
 @test "report has The Goal vs the Mechanism section" {
-  assert_heading_exists "Goal vs.*Mechanism"
+  # Heading is "## The Goal vs. the Mechanism" — period breaks a strict
+  # literal match, so use the regex helper.
+  assert_heading_exists "Goal vs\\.? the Mechanism"
 }
 
 @test "report has The Boring Lever section" {
-  assert_heading_exists "Boring Lever"
+  assert_section_exists "The Boring Lever"
 }
 
 @test "report has Follow the Money section" {
-  assert_heading_exists "Follow the Money"
+  assert_section_exists "Follow the Money"
 }
 
 @test "report has Factual Foundation section" {
-  assert_heading_exists "Factual Foundation"
+  assert_section_exists "Factual Foundation"
+}
+
+@test "report has The Scale Test section" {
+  assert_section_exists "The Scale Test"
+}
+
+@test "report has The Org Chart section" {
+  assert_section_exists "The Org Chart"
+}
+
+@test "report has Adoption Survival section" {
+  assert_section_exists "Adoption Survival"
 }
 
 @test "report has Overall Assessment section" {
@@ -46,15 +64,28 @@ setup() {
   [ "$section_count" -ge 5 ]
 }
 
-# --- No leakage ---
+# --- No leakage from reviewer / fact-check / sister critique skills ---
 
 @test "report does not contain severity/verdict scales from reviewer skills" {
   ! echo "$REPORT_CONTENT" | grep -qiE '^\*\*Severity:\*\* (Critical|High|Medium|Low|Informational)$'
   ! echo "$REPORT_CONTENT" | grep -qiE '^\*\*Verdict:\*\* (Accurate|Verified|Incorrect|Stale)$'
 }
 
-@test "report does not contain Cowen-specific analytical sections" {
-  # Yglesias critiques focus on policy mechanism, not intellectual stress-testing
+@test "report does not contain cowen-critique section headings" {
+  # Yglesias critiques focus on mechanism feasibility, not argument rigor.
+  # These are cowen-critique's prescribed level-2 section names.
+  ! echo "$REPORT_CONTENT" | grep -qiE '^## .*Argument,? Decomposed'
   ! echo "$REPORT_CONTENT" | grep -qiE '^## .*Survives the Inversion'
-  ! echo "$REPORT_CONTENT" | grep -qiE '^## .*Boring Explanation'
+  ! echo "$REPORT_CONTENT" | grep -qiE '^## The Boring Explanation'
+  ! echo "$REPORT_CONTENT" | grep -qiE '^## Revealed vs\.? Stated'
+  ! echo "$REPORT_CONTENT" | grep -qiE '^## The Analogy'
+  ! echo "$REPORT_CONTENT" | grep -qiE '^## Contingent Assumptions'
+  ! echo "$REPORT_CONTENT" | grep -qiE '^## What the Market Says'
+}
+
+@test "report does not contain ai-personas-critique structural headings" {
+  # ai-personas-critique uses a Goal-Alignment-by-persona structure that
+  # would indicate the wrong skill ran.
+  ! echo "$REPORT_CONTENT" | grep -qiE '^## .*Persona Selection'
+  ! echo "$REPORT_CONTENT" | grep -qiE '^## .*Persona [0-9]+:'
 }
