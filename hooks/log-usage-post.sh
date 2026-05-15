@@ -21,57 +21,49 @@ source "$(dirname "$(readlink -f "${BASH_SOURCE[0]}")")/lib/usage-common.sh"
 
 init_usage_hook post
 
-# Extract timing/token data from tool_response if present. Tool responses are
-# inconsistent across Claude Code versions, so we try several likely shapes
-# and emit only the fields we find. Missing fields are omitted, not zero.
-extract_num_field() {
-  # Usage: extract_num_field <field-name>
-  # Tries .tool_response.<field>, .tool_response.usage.<field>, .tool_response.metadata.<field>
-  local field="$1"
-  printf '%s' "$INPUT" | jq -r --arg f "$field" '
-    .tool_response // {} |
-    (.[$f] // .usage[$f]? // .metadata[$f]? // empty) |
-    select(type == "number") | tostring
-  ' 2>/dev/null
-}
-
-DURATION_MS=$(extract_num_field "duration_ms")
-TOTAL_TOKENS=$(extract_num_field "total_tokens")
-
 log_completion() {
-  # Usage: log_completion <event> <name>
-  local event="$1" name="$2"
+  # Usage: log_completion <event> <name> <duration_ms> <total_tokens>
+  # Empty numeric strings are omitted from the JSON record.
+  local event="$1" name="$2" duration_ms="$3" total_tokens="$4"
   jq -n -c \
     --arg ts "$TS" \
     --arg event "$event" \
     --arg name "$name" \
     --arg project "$PROJECT" \
     --arg branch "$BRANCH" \
-    --arg duration_ms "$DURATION_MS" \
-    --arg total_tokens "$TOTAL_TOKENS" \
+    --arg duration_ms "$duration_ms" \
+    --arg total_tokens "$total_tokens" \
     '{ts:$ts,event:$event,name:$name,project:$project,branch:$branch}
      | (if $duration_ms != "" then . + {duration_ms: ($duration_ms | tonumber)} else . end)
      | (if $total_tokens != "" then . + {total_tokens: ($total_tokens | tonumber)} else . end)' \
     >> "$LOG_FILE"
 }
 
+# Pick a numeric field from tool_response from any of three likely locations.
+# Used inside the single-pass jq below.
+PICK_NUM='def pick(f): (.tool_response // {}) | (.[f] // .usage[f]? // .metadata[f]? // null) | if type == "number" then tostring else "" end;'
+
 case "$TOOL_NAME" in
   Skill)
-    NAME=$(printf '%s' "$INPUT" | jq -r '.tool_input.skill // ""')
-    [[ -n "$NAME" ]] && log_completion "skill_completed" "$NAME"
+    # One jq pass extracts: skill name, duration_ms, total_tokens. Joined
+    # with ASCII Unit Separator so empty fields are preserved by `read`.
+    IFS=$'\x1f' read -r NAME DURATION_MS TOTAL_TOKENS < <(printf '%s' "$INPUT" \
+      | jq -r "$PICK_NUM"' [(.tool_input.skill // ""), pick("duration_ms"), pick("total_tokens")] | join("")')
+    [[ -n "$NAME" ]] && log_completion "skill_completed" "$NAME" "$DURATION_MS" "$TOTAL_TOKENS"
     ;;
   Agent)
-    # Mirror the pre-hook's name extraction: prefer YAML frontmatter name, fall
-    # back to subagent_type. This keeps pre/post events on the same key.
-    AGENT_PROMPT=$(printf '%s' "$INPUT" | jq -r '.tool_input.prompt // ""')
-    NAME=""
-    if [[ -n "$AGENT_PROMPT" ]]; then
-      NAME=$(extract_agent_name_from_prompt "$AGENT_PROMPT")
-    fi
-    if [[ -z "$NAME" ]]; then
-      NAME=$(printf '%s' "$INPUT" | jq -r '.tool_input.subagent_type // ""')
-    fi
-    [[ -n "$NAME" ]] && log_completion "agent_completed" "$NAME"
+    # One jq pass extracts: prompt (base64), subagent_type, duration_ms,
+    # total_tokens. Name resolution mirrors the pre-hook: prefer the YAML
+    # `name:` from the prompt, fall back to subagent_type.
+    IFS=$'\x1f' read -r AGENT_PROMPT_B64 AGENT_TYPE DURATION_MS TOTAL_TOKENS < <(printf '%s' "$INPUT" \
+      | jq -r "$PICK_NUM"' [(.tool_input.prompt // "" | @base64),
+                            (.tool_input.subagent_type // ""),
+                            pick("duration_ms"),
+                            pick("total_tokens")] | join("")')
+    AGENT_PROMPT=$(printf '%s' "$AGENT_PROMPT_B64" | base64 -d 2>/dev/null)
+    NAME=$(extract_agent_name_from_prompt "$AGENT_PROMPT")
+    [[ -z "$NAME" ]] && NAME="$AGENT_TYPE"
+    [[ -n "$NAME" ]] && log_completion "agent_completed" "$NAME" "$DURATION_MS" "$TOTAL_TOKENS"
     ;;
 esac
 
