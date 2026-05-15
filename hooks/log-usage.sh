@@ -4,32 +4,13 @@
 # Input: JSON on stdin with tool_name and tool_input
 # Output: nothing (passthrough — never blocks tool execution)
 
-# Never block tool execution, even on unexpected errors
-trap 'exit 0' ERR
+# Shared preamble + agent-name helper. Sets up trap, reads stdin into INPUT,
+# extracts TOOL_NAME (exits 0 for tools that aren't Skill/Read/Agent), and
+# populates TS / PROJECT / BRANCH / LOG_FILE.
+# shellcheck source=lib/usage-common.sh
+source "$(dirname "$(readlink -f "${BASH_SOURCE[0]}")")/lib/usage-common.sh"
 
-# Read stdin once, reuse for multiple extractions
-INPUT=$(cat)
-
-# Extract tool_name first for early exit — most tools are not logged
-TOOL_NAME=$(printf '%s' "$INPUT" | jq -r '.tool_name // ""')
-case "$TOOL_NAME" in
-  Skill|Read|Agent) ;;  # These are logged — continue
-  *) exit 0 ;;          # Everything else — skip all work
-esac
-
-LOG_FILE="${USAGE_LOG_FILE:-$HOME/.claude/logs/usage.jsonl}"
-[[ -d "${LOG_FILE%/*}" ]] || mkdir -p "${LOG_FILE%/*}"
-
-# Optional debug logging: set USAGE_LOG_DEBUG=1 to capture raw hook input
-if [[ "${USAGE_LOG_DEBUG:-}" == "1" ]]; then
-  DEBUG_FILE="${LOG_FILE%.jsonl}-debug.jsonl"
-  printf '%s\n' "$INPUT" >> "$DEBUG_FILE"
-fi
-
-TS=$(date -u +"%Y-%m-%dT%H:%M:%SZ")
-# Use git toplevel basename so worktrees resolve to the same project name
-PROJECT=$(basename "$(git rev-parse --show-toplevel 2>/dev/null)" 2>/dev/null || echo "${PWD##*/}")
-BRANCH=$(git branch --show-current 2>/dev/null || echo "unknown")
+init_usage_hook pre
 
 log_event() {
   # Usage: log_event <event> <name> [args] [via]
@@ -96,8 +77,7 @@ case "$TOOL_NAME" in
     AGENT_PROMPT=$(printf '%s' "$INPUT" | jq -r '.tool_input.prompt // ""')
     if [[ -n "$AGENT_PROMPT" ]]; then
       # Try extracting a skill/agent name from YAML frontmatter in the prompt
-      AGENT_SKILL=$(printf '%s' "$AGENT_PROMPT" \
-        | sed -n '/^---$/,/^---$/{/^name: */{ s/^name: *//; p; q; }}')
+      AGENT_SKILL=$(extract_agent_name_from_prompt "$AGENT_PROMPT")
       if [[ -n "$AGENT_SKILL" ]]; then
         log_event "agent_skill" "$AGENT_SKILL" "" "agent_dispatch"
       else

@@ -14,29 +14,12 @@
 # pre-event preceding this post-event. Duration is computed as post.ts - pre.ts
 # when `duration_ms` is not supplied by the tool_response.
 
-# Never block tool execution, even on unexpected errors
-trap 'exit 0' ERR
+# Shared preamble + agent-name helper. Same setup as log-usage.sh; sets
+# trap, reads INPUT, gates TOOL_NAME, and populates TS/PROJECT/BRANCH/LOG_FILE.
+# shellcheck source=lib/usage-common.sh
+source "$(dirname "$(readlink -f "${BASH_SOURCE[0]}")")/lib/usage-common.sh"
 
-INPUT=$(cat)
-
-TOOL_NAME=$(printf '%s' "$INPUT" | jq -r '.tool_name // ""')
-case "$TOOL_NAME" in
-  Skill|Agent) ;;   # Only post-events for these are useful
-  *) exit 0 ;;
-esac
-
-LOG_FILE="${USAGE_LOG_FILE:-$HOME/.claude/logs/usage.jsonl}"
-[[ -d "${LOG_FILE%/*}" ]] || mkdir -p "${LOG_FILE%/*}"
-
-# Optional debug logging mirrors the pre-hook for symmetry
-if [[ "${USAGE_LOG_DEBUG:-}" == "1" ]]; then
-  DEBUG_FILE="${LOG_FILE%.jsonl}-post-debug.jsonl"
-  printf '%s\n' "$INPUT" >> "$DEBUG_FILE"
-fi
-
-TS=$(date -u +"%Y-%m-%dT%H:%M:%SZ")
-PROJECT=$(basename "$(git rev-parse --show-toplevel 2>/dev/null)" 2>/dev/null || echo "${PWD##*/}")
-BRANCH=$(git branch --show-current 2>/dev/null || echo "unknown")
+init_usage_hook post
 
 # Extract timing/token data from tool_response if present. Tool responses are
 # inconsistent across Claude Code versions, so we try several likely shapes
@@ -83,8 +66,7 @@ case "$TOOL_NAME" in
     AGENT_PROMPT=$(printf '%s' "$INPUT" | jq -r '.tool_input.prompt // ""')
     NAME=""
     if [[ -n "$AGENT_PROMPT" ]]; then
-      NAME=$(printf '%s' "$AGENT_PROMPT" \
-        | sed -n '/^---$/,/^---$/{/^name: */{ s/^name: *//; p; q; }}')
+      NAME=$(extract_agent_name_from_prompt "$AGENT_PROMPT")
     fi
     if [[ -z "$NAME" ]]; then
       NAME=$(printf '%s' "$INPUT" | jq -r '.tool_input.subagent_type // ""')
