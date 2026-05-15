@@ -77,8 +77,6 @@ After the header, the body must include:
 - **Prior art**: Does the codebase already solve a similar problem? If so, describe that solution — the new implementation should be consistent with it unless there's a reason to diverge.
 - **Gotchas**: Anything surprising, non-obvious, or fragile in the relevant code.
 
-**Failure-pattern lookup**: Before forming the plan, grep `docs/thoughts/failure-patterns.md` for entries touching the area under research — symptom keywords (`null`, `timezone`, `n+1`, `race`, `stale`, etc.), file paths or subsystem names that may appear in the `ref:` field, and `cause:`/`fix:` categories that fit the work. The file is an append-only log of root-caused bugs maintained by `bug-diagnosis.md`; a hit is a strong prior on what could go wrong in similar code. List any matching entries by FP-NNN ID in the research doc — under Gotchas if the pattern is a known fragility in the affected code, or as a short "Prior failures" sub-section if multiple matches surface. Record "no matches" explicitly when the grep comes up empty, so a future reader can distinguish "this area has no recorded failures" from "the check was skipped."
-
 The research must be thorough. Read the actual implementations, not just signatures. If the research is wrong, everything downstream will be wrong.
 
 **Confidence-provenance tags**: When stating facts in the research doc, tag claims with their evidential basis so reviewers can quickly assess reliability:
@@ -115,6 +113,28 @@ Signals that you've hit a design decision:
 
 The gate on **implementation** is firm: do not implement until the plan has been reviewed and approved. The gate on **planning** is soft: plan speculatively, expect revision.
 
+#### Failure-pattern lookup (final sub-step of research)
+
+Before exiting step 2 — and therefore before the plan is formed — run a mechanical grep of `docs/thoughts/failure-patterns.md` for prior bugs that touch the area under research. The file is an append-only log of root-caused bugs maintained by `bug-diagnosis.md` (schema: `FP-NNN YYYY-MM-DD symptom:<...> cause:<...> fix:<...> ref:<...>`, fields hyphenated into single tokens so they're grep-friendly). A hit is a strong prior on what could go wrong in similar code; a miss is a fact worth recording explicitly so a future reader can distinguish "no recorded failures in this area" from "the check was skipped."
+
+Use a concrete extended-regex grep that combines all candidate keywords in one pass — symptom keywords (`null`, `timezone`, `n+1`, `race`, `stale`, etc.), file paths or subsystem names that may appear in the `ref:` field, and `cause:`/`fix:` categories that fit the work:
+
+```
+grep -inE '<keyword1>|<keyword2>|<keyword3>' docs/thoughts/failure-patterns.md
+```
+
+The `-i` makes the match case-insensitive (the schema is lowercase but author input may not be); the `-n` surfaces line numbers so each matched FP-NNN entry is easy to cite back; the `-E` lets you alternate keywords with `|`. Pick keywords from the same three buckets every time — symptoms, paths/subsystems, cause/fix categories — so the grep is reproducible by a re-reader.
+
+**Recording requirement (mandatory).** The research doc must contain a literal line in this exact form:
+
+```
+Failure-pattern grep: <matches or 'no matches found'>
+```
+
+Copy that string verbatim — the literal `Failure-pattern grep:` token is the audit handle that lets a re-reader (or a grep over the research doc itself) confirm the check ran. The value after the colon is either a comma-separated list of FP-NNN IDs that the grep returned (e.g., `Failure-pattern grep: FP-007, FP-014`) or the exact phrase `no matches found` (no quotes, no paraphrase) when the grep was empty. Do not omit the line when the grep returns nothing — recording the empty result is the point.
+
+The recording line lives **under Gotchas** when one or two FP-NNN entries matched (each one becomes a Gotcha bullet right under the line, summarizing the prior failure and what it implies for this work). When three or more entries match, add a short **Prior failures** sub-section to the body, list the matching FP-NNN entries there, and let the recording line under Gotchas point to it (e.g., `Failure-pattern grep: FP-007, FP-014, FP-022 (see Prior failures section)`). When the grep returns nothing, the recording line still lives under Gotchas — as a standalone bullet or sentence — with the value `no matches found`.
+
 **Done when...**
 - [ ] Research doc exists in `docs/working/`, opens with the four-line header (Goal · Problem framing · Project state · Task status), and includes all required body sections (What exists, Invariants, Prior art, Gotchas)
 - [ ] Problem framing line names one alternative framing that was considered and discarded (not a placeholder like "Considered and discarded: none"); if no plausible alternative can be named, the framing hasn't been examined yet — do that work before continuing
@@ -123,6 +143,7 @@ The gate on **implementation** is firm: do not implement until the plan has been
 - [ ] Actual implementations were read, not just signatures or file names
 - [ ] Every invariant listed can be verified by pointing to specific code that depends on it
 - [ ] If 3+ viable approaches surfaced, a Divergent Design sub-procedure was invoked (or a note explains why it wasn't needed)
+- [ ] The Failure-pattern lookup sub-step ran and the research doc contains a literal `Failure-pattern grep: <matches or 'no matches found'>` line — either listing matched FP-NNN IDs from `docs/thoughts/failure-patterns.md` or recording the empty result with the exact phrase `no matches found` (the literal `Failure-pattern grep:` token must be present verbatim so the check is grep-auditable)
 
 ### 3. Plan (essential) — specify the implementation steps
 
