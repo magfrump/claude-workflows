@@ -235,3 +235,40 @@ agent_input() {
   [ "$(sed -n '2p' "$TEST_LOG" | jq -r '.name')" = "beta" ]
   [ "$(sed -n '3p' "$TEST_LOG" | jq -r '.name')" = "gamma" ]
 }
+
+# --- `via` field distinguishes invocation vs consultation (decision 012 pillar 4) ---
+
+@test "skill tool invocation tags via=skill_tool" {
+  skill_input "draft-review" | bash "$HOOK"
+  [ "$(head -1 "$TEST_LOG" | jq -r '.via')" = "skill_tool" ]
+}
+
+@test "reading a SKILL.md tags via=file_read" {
+  read_input "/repo/skills/draft-review/SKILL.md" | bash "$HOOK"
+  [ "$(head -1 "$TEST_LOG" | jq -r '.via')" = "file_read" ]
+}
+
+@test "reading a workflow file tags via=file_read" {
+  read_input "/repo/workflows/rpi.md" | bash "$HOOK"
+  [ "$(head -1 "$TEST_LOG" | jq -r '.via')" = "file_read" ]
+}
+
+@test "agent dispatch tags via=agent_dispatch" {
+  agent_input "no frontmatter here" | bash "$HOOK"
+  [ "$(head -1 "$TEST_LOG" | jq -r '.via')" = "agent_dispatch" ]
+}
+
+@test "via field absent for legacy callers writing without it" {
+  # If something writes via the old 3-arg log_event signature, the entry must
+  # still be valid JSON with no `via` key (graceful degradation).
+  # Simulate by directly calling jq the same way the hook does internally.
+  jq -n -c \
+    --arg ts "2026-01-01T00:00:00Z" --arg event "skill" --arg name "x" \
+    --arg args "" --arg via "" --arg project "p" --arg branch "b" \
+    '{ts:$ts,event:$event,name:$name,project:$project,branch:$branch}
+     | (if $args != "" then . + {args:$args} else . end)
+     | (if $via  != "" then . + {via:$via}  else . end)' \
+    > "$TEST_LOG"
+  [ "$(jq 'has("via")' "$TEST_LOG")" = "false" ]
+  [ "$(jq 'has("args")' "$TEST_LOG")" = "false" ]
+}

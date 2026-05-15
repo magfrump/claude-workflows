@@ -32,17 +32,27 @@ PROJECT=$(basename "$(git rev-parse --show-toplevel 2>/dev/null)" 2>/dev/null ||
 BRANCH=$(git branch --show-current 2>/dev/null || echo "unknown")
 
 log_event() {
-  # Usage: log_event <event> <name> [args]
-  local event="$1" name="$2" args="${3:-}"
+  # Usage: log_event <event> <name> [args] [via]
+  # `via` distinguishes how the event was observed. Existing event types
+  # ("skill", "workflow", "agent", ...) are unchanged for backward compat with
+  # scripts/skill-usage-report.sh. Consumers wanting invocation-count
+  # preconditions (decision 012 pillar 4) should filter on
+  # `via == "skill_tool"` rather than counting raw event entries.
+  #   skill_tool      — Skill tool invocation (real use)
+  #   file_read       — Read of SKILL.md / workflow / command (consultation)
+  #   agent_dispatch  — Agent tool dispatch
+  local event="$1" name="$2" args="${3:-}" via="${4:-}"
   jq -n -c \
     --arg ts "$TS" \
     --arg event "$event" \
     --arg name "$name" \
     --arg args "$args" \
+    --arg via "$via" \
     --arg project "$PROJECT" \
     --arg branch "$BRANCH" \
-    'if $args == "" then {ts:$ts,event:$event,name:$name,project:$project,branch:$branch}
-     else {ts:$ts,event:$event,name:$name,args:$args,project:$project,branch:$branch} end' \
+    '{ts:$ts,event:$event,name:$name,project:$project,branch:$branch}
+     | (if $args != "" then . + {args:$args} else . end)
+     | (if $via  != "" then . + {via:$via}  else . end)' \
     >> "$LOG_FILE"
 }
 
@@ -100,7 +110,7 @@ case "$TOOL_NAME" in
     SKILL_NAME=$(printf '%s' "$INPUT" | jq -r '.tool_input.skill // ""')
     if [[ -n "$SKILL_NAME" ]]; then
       SKILL_ARGS=$(printf '%s' "$INPUT" | jq -r '.tool_input.args // ""')
-      log_event "skill" "$SKILL_NAME" "$SKILL_ARGS"
+      log_event "skill" "$SKILL_NAME" "$SKILL_ARGS" "skill_tool"
     fi
     ;;
   Read)
@@ -110,17 +120,17 @@ case "$TOOL_NAME" in
     if [[ "$FILE_PATH" == */skills/* ]]; then
       SKILL_NAME=$(extract_skill_name "$FILE_PATH")
       if [[ -n "$SKILL_NAME" ]]; then
-        log_event "skill" "$SKILL_NAME"
+        log_event "skill" "$SKILL_NAME" "" "file_read"
       fi
     elif [[ "$FILE_PATH" == */workflows/* ]]; then
       WORKFLOW_NAME=$(extract_workflow_name "$FILE_PATH")
       if [[ -n "$WORKFLOW_NAME" ]]; then
-        log_event "workflow" "$WORKFLOW_NAME"
+        log_event "workflow" "$WORKFLOW_NAME" "" "file_read"
       fi
     elif [[ "$FILE_PATH" == */commands/* ]]; then
       CMD_NAME=$(extract_command_name "$FILE_PATH")
       if [[ -n "$CMD_NAME" ]]; then
-        log_event "command" "$CMD_NAME"
+        log_event "command" "$CMD_NAME" "" "file_read"
       fi
     fi
     ;;
@@ -132,13 +142,13 @@ case "$TOOL_NAME" in
       AGENT_SKILL=$(printf '%s' "$AGENT_PROMPT" \
         | sed -n '/^---$/,/^---$/{/^name: */{ s/^name: *//; p; q; }}')
       if [[ -n "$AGENT_SKILL" ]]; then
-        log_event "agent_skill" "$AGENT_SKILL"
+        log_event "agent_skill" "$AGENT_SKILL" "" "agent_dispatch"
       else
         # Log agent dispatches with a subagent_type if present
         AGENT_TYPE=$(printf '%s' "$INPUT" | jq -r '.tool_input.subagent_type // ""')
         if [[ -n "$AGENT_TYPE" ]]; then
           AGENT_DESC=$(printf '%s' "$INPUT" | jq -r '.tool_input.description // ""')
-          log_event "agent" "$AGENT_TYPE" "$AGENT_DESC"
+          log_event "agent" "$AGENT_TYPE" "$AGENT_DESC" "agent_dispatch"
         fi
       fi
     fi
