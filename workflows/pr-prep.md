@@ -204,6 +204,44 @@ done | sort -u
 echo ""
 echo "## Decisions made"
 git diff --name-only main...HEAD -- docs/decisions/
+
+# Scan for pre-existing decision records whose Relevant-paths field matches changed files.
+# Output is auto-detected; the human edits the list before submitting (manual override).
+echo ""
+CHANGED_FILES=$(git diff --name-only main...HEAD)
+CITED=""
+for decision in docs/decisions/[0-9]*.md; do
+  [[ -f "$decision" ]] || continue
+  NUM=$(basename "$decision" | grep -oE '^[0-9]+')
+  # Extract paths from both supported formats (see guides/doc-freshness.md):
+  #   inline bold:   **Relevant paths:** path1, dir/, ...
+  #   YAML block:    Relevant paths:\n  - path1\n  - path2
+  PATHS=$(awk '
+    /^\*\*Relevant paths:\*\*/ {
+      sub(/^\*\*Relevant paths:\*\*[[:space:]]*/, "")
+      gsub(/,/, "\n"); print; next
+    }
+    /^Relevant paths:[[:space:]]*$/ { in_yaml=1; next }
+    in_yaml && /^[[:space:]]*-[[:space:]]+/ {
+      sub(/^[[:space:]]*-[[:space:]]+/, ""); print; next
+    }
+    in_yaml { in_yaml=0 }
+  ' "$decision" | sed 's/^[[:space:]]*//;s/[[:space:]]*$//' | grep -v '^$')
+  [[ -z "$PATHS" ]] && continue
+  while IFS= read -r p; do
+    [[ -z "$p" ]] && continue
+    # Prefix match so a tracked dir like "src/" catches "src/foo.ts"
+    if echo "$CHANGED_FILES" | grep -qE "^${p%/}(/|$)"; then
+      CITED="${CITED:+$CITED, }$NUM"
+      break
+    fi
+  done <<< "$PATHS"
+done
+if [[ -n "$CITED" ]]; then
+  echo "Decisions cited: $CITED"
+else
+  echo "Decisions cited: none -- change does not affect documented invariants"
+fi
 ```
 
 **b. Edit the skeleton (manual).** Review the generated output and reshape it into the PR description template below. The skeleton gives you raw material; your job is to add context, explain *why*, and flag uncertainty. Do not submit the skeleton as-is.
@@ -231,6 +269,9 @@ Structure:
 ## Decisions made
 [Link to any docs/decisions/ files created, or briefly note non-obvious choices]
 
+## Decisions cited
+[Pre-filled by step 6a as `Decisions cited: NNN, MMM` or `Decisions cited: none -- change does not affect documented invariants`. The scan matches changed files against each decision's `Relevant paths` field (see `guides/doc-freshness.md`). Confirm the list, add any decisions whose invariants this PR touches that the scan missed, and remove false positives. This makes invariant drift visible to reviewers at PR time.]
+
 ## Review evidence
 [List review artifacts from docs/reviews/ that were generated for this PR.
  These are committed to the branch — reviewers can expand them for details.
@@ -243,9 +284,10 @@ For UI changes, capture before/after screenshots or a short recording and includ
 
 **Completion criteria:**
 - [ ] Skeleton was generated from commits and review artifacts (not written from scratch)
-- [ ] All six sections are present (What this does, How it works, How to test, Areas of uncertainty, Decisions made, Review evidence)
+- [ ] All seven sections are present (What this does, How it works, How to test, Areas of uncertainty, Decisions made, Decisions cited, Review evidence)
 - [ ] Each section contains at least one substantive sentence (not a placeholder)
 - [ ] Review evidence section lists all `docs/reviews/` artifacts for this PR, or states "No review artifacts" if none exist
+- [ ] Decisions cited line is present and confirmed by the author (either a list of decision numbers or the explicit "none" justification)
 - [ ] (Optional) If this PR involved multiple workflow compositions (e.g., RPI → DD → RPI), a workflow provenance line is included in "What this does"
 
 ## Retrospective
