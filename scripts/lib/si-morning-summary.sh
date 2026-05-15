@@ -110,6 +110,7 @@ generate_morning_summary() {
         _summary_task_legibility "$start_round" "$end_round" "$working_dir"
         _summary_gate_stats "$round_history"
         _summary_deferred_evaluation "$hypothesis_log" "$end_round" "$working_dir"
+        _summary_stale_inconclusive "$hypothesis_log" "$end_round" "$working_dir"
         _summary_footer
     } > "$output_path"
 
@@ -880,6 +881,122 @@ _summary_deferred_evaluation() {
 
     if [ "$count" -eq 0 ]; then
         echo "No open hypotheses to evaluate."
+    fi
+}
+
+# --- Internal: stale INCONCLUSIVE hypotheses ---
+# Hypotheses with Outcome == "INCONCLUSIVE" whose evaluation window closed
+# at least 5 rounds ago AND that have received no new evidence in the last
+# 3 rounds. These are candidates for either reframe (if the conditions
+# that prevented evaluation could plausibly be retried) or archive (move
+# to docs/thoughts/hypothesis-archive.md).
+#
+# Match rule: Outcome exactly "INCONCLUSIVE". "INCONCLUSIVE-EXPIRED" rows
+# already carry an expired marker with a Status Date and are skipped here.
+#
+# "No new evidence" rule: the row's Task ID does not appear in the
+# `validation` field of any round report in rounds
+# [current_round-2 .. current_round]. A retry or follow-up task that
+# referenced the original task_id in the recent window means the
+# hypothesis is still being worked, not stale.
+_summary_stale_inconclusive() {
+    local hypothesis_log="$1"
+    local current_round="${2:-0}"
+    local working_dir="${3:-}"
+
+    echo ""
+    echo "## Stale INCONCLUSIVE — archive candidates"
+    echo ""
+
+    if [ ! -f "$hypothesis_log" ]; then
+        echo "No hypothesis log found."
+        return
+    fi
+
+    # Need a positive integer current_round to apply the window-elapsed gate.
+    if ! [[ "$current_round" =~ ^[0-9]+$ ]] || [ "$current_round" -le 0 ]; then
+        echo "Current round unknown; cannot evaluate staleness."
+        return
+    fi
+
+    local outcome_col window_col
+    outcome_col=$(_locate_log_col "$hypothesis_log" "Outcome")
+    window_col=$(_locate_log_col "$hypothesis_log" "Window")
+    # Pre-decision-012 layout: Outcome at column 7, Window at column 5
+    # (the Source column was inserted at column 5 in the new layout,
+    # shifting Window to column 6). Keep legacy logs parseable until they
+    # are migrated.
+    [[ "$outcome_col" -gt 0 ]] || outcome_col=7
+    [[ "$window_col"  -gt 0 ]] || window_col=5
+
+    # Pre-collect task_ids appearing in the recent 3-round window so the
+    # per-row check is O(1). Missing round reports are silently skipped.
+    local recent_ids=""
+    local r start_r
+    start_r=$(( current_round - 2 ))
+    [ "$start_r" -lt 1 ] && start_r=1
+    for r in $(seq "$start_r" "$current_round"); do
+        local report="$working_dir/round-${r}-report.json"
+        [ -f "$report" ] || continue
+        local ids
+        ids=$(jq -r '.validation // {} | to_entries[] | .key' "$report" 2>/dev/null) || ids=""
+        if [ -n "$ids" ]; then
+            recent_ids="${recent_ids}${ids}"$'\n'
+        fi
+    done
+
+    local count=0
+    local -a fields
+    local line
+    while IFS= read -r line; do
+        [[ "$line" != \|* ]] && continue
+        [[ "$line" =~ ^\|[[:space:]]*(Round|----) ]] && continue
+
+        _split_row_fields "$line" fields
+        local round task_id hypothesis window outcome
+        round="${fields[1]:-}"
+        task_id="${fields[2]:-}"
+        hypothesis="${fields[3]:-}"
+        window=$(_pick_col fields "$window_col")
+        outcome=$(_pick_col fields "$outcome_col")
+
+        [ -z "$task_id" ] && continue
+        [ "$outcome" = "INCONCLUSIVE" ] || continue
+
+        [[ "$round"  =~ ^[0-9]+$ ]] || continue
+        [[ "$window" =~ ^[0-9]+$ ]] || continue
+        # Window-elapsed gate: at least 5 full rounds past the window close.
+        if (( current_round - round - window < 5 )); then
+            continue
+        fi
+
+        # Evidence-window gate: skip if the task_id was touched recently.
+        if [ -n "$recent_ids" ] && printf '%s\n' "$recent_ids" | grep -Fxq "$task_id"; then
+            continue
+        fi
+
+        count=$((count + 1))
+        if [ "$count" -eq 1 ]; then
+            echo "These hypotheses are still INCONCLUSIVE, their evaluation window"
+            echo "closed at least 5 rounds ago, and no new evidence has been seen"
+            echo "in the last 3 rounds. Recommend either **reframe** (if the conditions"
+            echo "that prevented evaluation could plausibly be retried) or **archive**"
+            echo "(move to docs/thoughts/hypothesis-archive.md)."
+            echo ""
+        fi
+
+        # First-sentence trim, then 100-char hard cap, mirroring the
+        # truncation used in _project_state_broken_pipelines.
+        local short="${hypothesis%%.*}"
+        if [ "${#short}" -gt 100 ]; then
+            short="${short:0:97}..."
+        fi
+        local elapsed=$(( current_round - round - window ))
+        echo "- **${task_id}** (round ${round}, window ${window}, elapsed ${elapsed}): ${short}"
+    done < "$hypothesis_log"
+
+    if [ "$count" -eq 0 ]; then
+        echo "No stale INCONCLUSIVE hypotheses."
     fi
 }
 
