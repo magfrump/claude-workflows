@@ -59,7 +59,7 @@ The mechanical test at trigger time:
 | User's framing | Skill |
 |----------------|-------|
 | "pre-mortem the launch", "pre-mortem this", "imagine 6 months later and this failed — what happened?", "write the failure story", "give me the post-mortem before we ship", "tell me why this failed" | **pre-mortem** |
-| "what could go wrong with this", "stress-test this plan", "what are the risks", "trace the second-order effects", "what assumptions is this making", "what's the reversibility gradient" | **what-if-analysis** |
+| "what could go wrong with this", "stress-test this plan", "what are the risks", "trace the second-order effects", "what assumptions is this making", "what's the reversibility gradient", "what's the blast radius" | **what-if-analysis** |
 
 The split is not which skill is "better" — it's which cognitive move the user is asking
 for. Pre-mortem invokes the detective: the failure has already happened, you're writing the
