@@ -157,6 +157,34 @@ Each narrative should include:
   customer-facing symptoms, data corruption signatures, business impact in named units.
 - **Calibrated plausibility and severity** — not every failure is catastrophic, and not
   every catastrophe is likely.
+- **A closing action line** — every narrative MUST end with exactly one of:
+  - `Mitigation: <concrete change to plan/code with section/file pointer>` — names a
+    specific plan section header, file path + line number, function name, config key,
+    or migration step. Example: `Mitigation: add NULL-coalesce in migrate_users.py:204
+    before the region lookup, and gate the cutover step in plan §4 on a staging
+    backfill of the 2019 acquisition rows.`
+  - `Revisit trigger: <observable post-launch signal with metric>` — names a specific
+    metric, alert query, dashboard panel, or log signature with a threshold. Example:
+    `Revisit trigger: alert if auth.login.5xx_rate > 0.5% sustained for 5 minutes on
+    the EU region dashboard.`
+
+  Generic phrasings are not acceptable. The following are explicitly **disallowed** as
+  the closing line because they do not wire the narrative to an action a reader can
+  execute today:
+  - "Monitor in production" / "watch this carefully" / "keep an eye on it"
+  - "Add tests" / "improve test coverage" (without naming which test file or behavior)
+  - "Be careful during rollout" / "do a phased rollout" (without naming the gate
+    condition or the phase boundaries)
+  - "Document this" / "add a runbook" (without naming the runbook or the trigger that
+    invokes it)
+
+  Pick `Mitigation:` when the failure can be prevented by a plan or code change before
+  ship. Pick `Revisit trigger:` when the failure can only be detected post-launch and
+  the team needs a specific signal that says "this narrative is happening, act now."
+  If both apply, pick the stronger one (mitigation beats detection) and put the other
+  in the Recommendations section. This requirement exists so pre-mortem narratives do
+  not get read once and forgotten — every story names the artifact that closes the
+  loop.
 
 Generate 3–5 such narratives. **Diversify them**: avoid five variants of the same root
 cause. The goal is to cover the *space* of plausible failures, not the most likely single
@@ -217,6 +245,13 @@ narratives, then a recommendations section.
 - **Severity:** Low | Medium | High | Catastrophic
 - **Tag (optional):** `[PRIOR CONSIDERATION]` if the failure mode was previously analyzed
   in `docs/decisions/` or `docs/working/`; cite the source file
+- **Mitigation:** OR **Revisit trigger:** — **required closing line.** Exactly one of
+  the two, per the rules in "Each narrative should include" above. The line must name a
+  specific plan section, file:line, function, config key, metric, alert query, or log
+  signature. Generic phrasings ("monitor in production", "add tests", "be careful
+  during rollout", "document this") are not acceptable and must be rewritten until they
+  name a concrete artifact. A narrative without a valid closing line is incomplete —
+  rework it before emitting.
 
 ### Recommendations
 
@@ -253,6 +288,11 @@ stories ("it was harder than expected") are not useful. Specific stories ("the A
 limit on the third-party identity provider was 100/sec; the migration script burst at
 800/sec and triggered a 24-hour ban that took down login for the entire EU region") are
 useful.
+
+The same specificity standard applies to the required closing `Mitigation:` or
+`Revisit trigger:` line. A narrative that ends with "monitor closely" wastes the rest
+of the work — if the team cannot point to the file, the section, or the metric the
+closing line names, the narrative will be read once and forgotten. Force the wiring.
 
 Calibrate honestly. Inflated severity loses credibility; downplayed severity defeats the
 exercise. The reader should be able to look at the plausibility/severity tags and
