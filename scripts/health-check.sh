@@ -31,6 +31,8 @@ FAIL=0
 source "$REPO_ROOT/scripts/lib/log-format.sh"
 # shellcheck source=lib/md-utils.sh
 source "$REPO_ROOT/scripts/lib/md-utils.sh"
+# shellcheck source=lib/skill-paths.sh
+source "$REPO_ROOT/scripts/lib/skill-paths.sh"
 
 pass() { green "  ✓ $*"; }
 fail() { red   "  ✗ $*"; FAIL=1; }
@@ -54,19 +56,14 @@ discover_skill_files() {
     done
 }
 
-# Map a skill file path to its canonical skill name (no extension, no
-# layout-specific suffix). Both layouts collapse to the same name:
+# Map a skill file path to its canonical skill name. Both layouts collapse
+# to the same name:
 #   skills/foo.md        -> foo
 #   skills/foo/SKILL.md  -> foo
+# Thin wrapper over extract_skill_name in scripts/lib/skill-paths.sh — kept
+# under this name to avoid churning the rest of the script.
 skill_name_from_path() {
-    local path="$1"
-    local base
-    base="$(basename "$path")"
-    if [[ "$base" == "SKILL.md" ]]; then
-        basename "$(dirname "$path")"
-    else
-        basename "$path" .md
-    fi
+    extract_skill_name "$1"
 }
 
 # ── 1. Skill YAML frontmatter ──────────────────────────────────────────────

@@ -56,54 +56,11 @@ log_event() {
     >> "$LOG_FILE"
 }
 
-# Classify a file path under a /skills/ directory.
-# Returns the skill name via stdout, or nothing if it's not a skill definition.
-extract_skill_name() {
-  local filepath="$1"
-  # Get everything after the last /skills/ segment
-  local after_skills="${filepath##*/skills/}"
-
-  # Count slashes to determine depth
-  local stripped="${after_skills//[^\/]/}"
-  local depth=${#stripped}
-
-  if [[ $depth -eq 0 && "$after_skills" == *.md ]]; then
-    # Direct skill file: skills/fact-check.md → fact-check
-    printf '%s' "${after_skills%.md}"
-  elif [[ $depth -eq 1 ]]; then
-    # One level deep: skills/skill-name/SKILL.md → skill-name
-    local basename="${after_skills##*/}"
-    if [[ "$basename" == "SKILL.md" ]]; then
-      printf '%s' "${after_skills%%/*}"
-    fi
-    # Other files one level deep (e.g. skills/name/README.md) are skipped
-  fi
-  # Deeper paths (references, fixtures, etc.) are skipped
-}
-
-# Classify a file path under a /workflows/ directory.
-# Returns the workflow name via stdout, or nothing if it's not a workflow definition.
-extract_workflow_name() {
-  local filepath="$1"
-  local after_workflows="${filepath##*/workflows/}"
-
-  # Only match direct files (no subdirectories)
-  local stripped="${after_workflows//[^\/]/}"
-  if [[ ${#stripped} -eq 0 && "$after_workflows" == *.md ]]; then
-    printf '%s' "${after_workflows%.md}"
-  fi
-}
-
-# Classify a file path under a /commands/ directory (user-defined slash commands).
-extract_command_name() {
-  local filepath="$1"
-  local after_commands="${filepath##*/commands/}"
-
-  local stripped="${after_commands//[^\/]/}"
-  if [[ ${#stripped} -eq 0 && "$after_commands" == *.md ]]; then
-    printf '%s' "${after_commands%.md}"
-  fi
-}
+# Path-classification helpers live in scripts/lib/skill-paths.sh so the same
+# rule set is shared between this hook, scripts/health-check.sh, and
+# scripts/lib/si-morning-summary.sh.
+# shellcheck source=../scripts/lib/skill-paths.sh
+source "$(dirname "$(readlink -f "${BASH_SOURCE[0]}")")/../scripts/lib/skill-paths.sh"
 
 case "$TOOL_NAME" in
   Skill)

@@ -15,6 +15,10 @@ if [[ "${BASH_SOURCE[0]}" == "${0}" ]]; then
     exit 1
 fi
 
+# Shared path-classification helpers (used by _resolve_hypothesis_target).
+# shellcheck source=skill-paths.sh
+source "$(dirname "${BASH_SOURCE[0]}")/skill-paths.sh"
+
 # --- Internal: per-round task counts ---
 # Returns "launched approved rejected" for a given round report.
 # Prefers .summary.* (written at end of round); falls back to deriving from
@@ -877,13 +881,6 @@ _summary_deferred_evaluation() {
 # relative inputs (skills/foo.md) the substitution is a no-op, so fall back to
 # the leading-prefix form. Used to keep the skills/workflows path-classification
 # rules in one place.
-_strip_prefix_dir() {
-    local path="$1" dir="$2"
-    local rel="${path##*/"$dir"/}"
-    [ "$rel" = "$path" ] && rel="${path#"$dir"/}"
-    echo "$rel"
-}
-
 # --- Internal: extract skill/workflow targets from a task's files_touched ---
 # Args: $1 = round, $2 = task_id, $3 = working_dir
 # Output: zero or more lines of "skill:NAME" or "workflow:NAME" (deduped)
@@ -906,31 +903,18 @@ _resolve_hypothesis_target() {
     done
     [ -f "$tasks_file" ] || return 0
 
-    # Mirror the path-classification rules used by hooks/log-usage.sh so the
-    # target name matches what the logger writes to usage.jsonl.
+    # Path classification is shared with hooks/log-usage.sh via skill-paths.sh
+    # so the target name matches what the logger writes to usage.jsonl.
     jq -r --arg id "$tid" '
         .[] | select(.id == $id) | .files_touched[]?
     ' "$tasks_file" 2>/dev/null | while IFS= read -r path; do
         [ -z "$path" ] && continue
-        local rel
-        case "$path" in
-            */skills/*/SKILL.md|skills/*/SKILL.md)
-                rel=$(_strip_prefix_dir "$path" skills)
-                printf 'skill:%s\n' "${rel%%/SKILL.md}"
-                ;;
-            */skills/*.md|skills/*.md)
-                rel=$(_strip_prefix_dir "$path" skills)
-                # Only direct files under skills/ (no nested subdirs).
-                if [[ "$rel" != */* ]]; then
-                    printf 'skill:%s\n' "${rel%.md}"
-                fi
-                ;;
-            */workflows/*.md|workflows/*.md)
-                rel=$(_strip_prefix_dir "$path" workflows)
-                if [[ "$rel" != */* ]]; then
-                    printf 'workflow:%s\n' "${rel%.md}"
-                fi
-                ;;
+        local classified
+        classified=$(classify_skill_path "$path")
+        # Workflows are routed through file_read in _count_invocations, so they
+        # are valid targets here even though the doc strings emphasise skills.
+        case "$classified" in
+            skill:*|workflow:*) printf '%s\n' "$classified" ;;
         esac
     done | sort -u
 }
