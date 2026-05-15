@@ -326,26 +326,29 @@ _project_state_open_hypotheses() {
     fi
 
     # Outcome shifts position when the schema grows (decision 012 added
-    # Evaluator + Requires columns). Look it up by name from the header so
-    # the parser tolerates both old and new layouts.
-    local outcome_col
+    # Evaluator + Requires columns, then Source). Look it up by name from the
+    # header so the parser tolerates both old and new layouts.
+    local outcome_col source_col
     outcome_col=$(_locate_log_col "$hypothesis_log" "Outcome")
+    source_col=$(_locate_log_col "$hypothesis_log" "Source")
     # Fallback to 7 (pre-decision-012 layout) when the header is missing or
     # doesn't contain the column — keeps legacy logs readable.
     [[ "$outcome_col" -gt 0 ]] || outcome_col=7
 
-    # Emit "task_id|round|hypothesis" for rows whose Outcome column is empty.
+    # Emit "task_id|round|hypothesis|source" for rows whose Outcome is empty.
     local rows
-    rows=$(awk -F'|' -v oc="$outcome_col" '
+    rows=$(awk -F'|' -v oc="$outcome_col" -v sc="$source_col" '
         /^\|/ {
             if ($0 ~ /^\|[ \t]*(Round|----)/) next
             round = $2; tid = $3; hyp = $4; outcome = $(oc)
+            src = (sc > 0) ? $(sc) : ""
             gsub(/^[ \t]+|[ \t]+$/, "", round)
             gsub(/^[ \t]+|[ \t]+$/, "", tid)
             gsub(/^[ \t]+|[ \t]+$/, "", hyp)
             gsub(/^[ \t]+|[ \t]+$/, "", outcome)
+            gsub(/^[ \t]+|[ \t]+$/, "", src)
             if (outcome == "" && tid != "") {
-                printf "%s|%s|%s\n", tid, round, hyp
+                printf "%s|%s|%s|%s\n", tid, round, hyp, src
             }
         }
     ' "$hypothesis_log")
@@ -359,14 +362,21 @@ _project_state_open_hypotheses() {
     fi
 
     echo ""
-    while IFS='|' read -r tid round hyp; do
+    while IFS='|' read -r tid round hyp src; do
         [ -z "$tid" ] && continue
         # Trim hypothesis to first sentence or 80 chars, whichever comes first.
         local short="${hyp%%.*}"
         if [ "${#short}" -gt 80 ]; then
             short="${short:0:77}..."
         fi
-        echo "- **${tid}** (round ${round}): ${short}"
+        # Tag planner-authored hypotheses so the user reviews framing for
+        # optimism bias before evaluating (decision 012 pillar 3). Legacy
+        # rows with empty Source get no tag — we can't infer provenance.
+        local tag=""
+        if [ "$src" = "planner" ]; then
+            tag=" *[planner-authored — review framing]*"
+        fi
+        echo "- **${tid}** (round ${round}): ${short}${tag}"
     done <<< "$rows"
 }
 
@@ -816,11 +826,12 @@ _summary_deferred_evaluation() {
         return
     fi
 
-    local scope_col outcome_col evaluator_col requires_col
+    local scope_col outcome_col evaluator_col requires_col source_col
     scope_col=$(_locate_scope_col "$hypothesis_log")
     outcome_col=$(_locate_log_col "$hypothesis_log" "Outcome")
     evaluator_col=$(_locate_log_col "$hypothesis_log" "Evaluator")
     requires_col=$(_locate_log_col "$hypothesis_log" "Requires")
+    source_col=$(_locate_log_col "$hypothesis_log" "Source")
     # Pre-decision-012 logs put Outcome at column 7. Fall back so older
     # in-tree logs keep parsing until they are migrated.
     [[ "$outcome_col" -gt 0 ]] || outcome_col=7
@@ -829,7 +840,7 @@ _summary_deferred_evaluation() {
     while IFS= read -r line; do
         _row_is_open_deferred "$line" "$current_round" "$scope_col" "$outcome_col" || continue
 
-        local round task_id hypothesis evaluator requires
+        local round task_id hypothesis evaluator requires hyp_src
         round=$(echo "$line" | awk -F'|' '{gsub(/^[ \t]+|[ \t]+$/, "", $2); print $2}')
         task_id=$(echo "$line" | awk -F'|' '{gsub(/^[ \t]+|[ \t]+$/, "", $3); print $3}')
         hypothesis=$(echo "$line" | awk -F'|' '{gsub(/^[ \t]+|[ \t]+$/, "", $4); print $4}')
@@ -843,9 +854,18 @@ _summary_deferred_evaluation() {
         else
             requires=""
         fi
+        if [[ "$source_col" -gt 0 ]]; then
+            hyp_src=$(echo "$line" | awk -F'|' -v c="$source_col" '{gsub(/^[ \t]+|[ \t]+$/, "", $c); print $c}')
+        else
+            hyp_src=""
+        fi
 
         count=$((count + 1))
-        echo "${count}. **${task_id}** (round ${round}): \"${hypothesis}\""
+        local hyp_tag=""
+        if [ "$hyp_src" = "planner" ]; then
+            hyp_tag=" *[planner-authored — review framing]*"
+        fi
+        echo "${count}. **${task_id}** (round ${round}): \"${hypothesis}\"${hyp_tag}"
 
         # Script-evaluator rows get a precondition report instead of free-form
         # questions. The script never auto-writes outcomes; the user reads the

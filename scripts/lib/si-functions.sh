@@ -32,6 +32,12 @@ TASK_CATEGORIES_ALLOWED="feature maintenance data-pipeline"
 # named in only one place to avoid drift between bash and jq scopes.
 HYPOTHESIS_EVALUATORS_ALLOWED="script user"
 
+# Allowed values for the per-task hypothesis source (decision 012 pillar 3).
+# "user" = hypothesis inherited verbatim from a si-input.md priority; "planner"
+# = planner authored it under the pillar-2 adversarial framing. The morning
+# summary tags planner-authored open hypotheses so the user can review framing.
+HYPOTHESIS_SOURCES_ALLOWED="user planner"
+
 # --- Task lineage from round changelog ---
 # Walks docs/working/round-changelog.md and emits "Round N: task-id" for each
 # prior task whose entry mentions any of the given files. Files are matched by
@@ -226,6 +232,17 @@ validate_task_json() {
             continue
         fi
 
+        # Check hypothesis_source field (decision 012 pillar 3). Soft-introduce
+        # like evaluator — absence is a LINT WARNING, an invalid value rejects.
+        local hyp_source
+        hyp_source=$(echo "$task" | jq -r '.hypothesis_source // ""')
+        if [ -z "$hyp_source" ]; then
+            echo "  LINT WARNING [$tid]: hypothesis_source missing — planner should assign one of: $HYPOTHESIS_SOURCES_ALLOWED" >&2
+        elif ! echo " $HYPOTHESIS_SOURCES_ALLOWED " | grep -q " $hyp_source "; then
+            echo "  SCHEMA REJECT [$tid]: hypothesis_source must be one of: $HYPOTHESIS_SOURCES_ALLOWED (got: $hyp_source)" >&2
+            continue
+        fi
+
         # Check files_touched entries for glob patterns and valid parent directories
         local ft_errors=""
         local ft_count
@@ -375,7 +392,7 @@ print_gate_stats() {
 # columns are left empty — the user fills them in via the morning summary.
 #
 # Header columns expected (created if file is absent):
-#   Round | Task ID | Hypothesis | Window | Checked at Round | Outcome | Status Date | Evidence
+#   Round | Task ID | Hypothesis | Source | Window | Evaluator | Requires | Checked at Round | Outcome | Status Date | Evidence
 #
 # Why approved-only: rejected tasks never landed, so their hypotheses describe
 # code that doesn't exist. Logging them would clutter the open-hypothesis list
@@ -396,8 +413,8 @@ append_approved_hypotheses() {
 
 Tracks falsifiable predictions made at task creation time and their outcomes.
 
-| Round | Task ID | Hypothesis | Window | Evaluator | Requires | Checked at Round | Outcome | Status Date | Evidence |
-|-------|---------|------------|--------|-----------|----------|------------------|---------|-------------|----------|
+| Round | Task ID | Hypothesis | Source | Window | Evaluator | Requires | Checked at Round | Outcome | Status Date | Evidence |
+|-------|---------|------------|--------|--------|-----------|----------|------------------|---------|-------------|----------|
 HEADER
     fi
 
@@ -407,11 +424,12 @@ HEADER
         printf '\n' >> "$log_file"
     fi
 
-    local tid hyp window evaluator requires
+    local tid hyp window evaluator requires hyp_source
     for tid in $approved_ids; do
         hyp=$(jq -r --arg id "$tid" '.[] | select(.id == $id) | .hypothesis // ""' "$tasks_file" 2>/dev/null)
         window=$(jq -r --arg id "$tid" '.[] | select(.id == $id) | .hypothesis_window // ""' "$tasks_file" 2>/dev/null)
         evaluator=$(jq -r --arg id "$tid" '.[] | select(.id == $id) | .evaluator // ""' "$tasks_file" 2>/dev/null)
+        hyp_source=$(jq -r --arg id "$tid" '.[] | select(.id == $id) | .hypothesis_source // ""' "$tasks_file" 2>/dev/null)
         # Flatten the requires object to key=value;key=value so it fits in a
         # single markdown cell. Empty when the task has no requires field.
         requires=$(jq -r --arg id "$tid" '
@@ -428,7 +446,7 @@ HEADER
         # Escape pipe chars so they don't break the markdown table.
         hyp="${hyp//|/\\|}"
 
-        printf '| %s | %s | %s | %s | %s | %s | %d | | | |\n' \
-            "$round" "$tid" "$hyp" "$window" "$evaluator" "$requires" "$((round + window))" >> "$log_file"
+        printf '| %s | %s | %s | %s | %s | %s | %s | %d | | | |\n' \
+            "$round" "$tid" "$hyp" "$hyp_source" "$window" "$evaluator" "$requires" "$((round + window))" >> "$log_file"
     done
 }

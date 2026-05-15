@@ -7,6 +7,8 @@
 #
 # Functions:
 #   parse_si_input — Parse si-input.md and export section variables
+#   parse_si_priority_hypotheses — Extract user-supplied (priority, hypothesis)
+#       pre-commitment pairs from SI_PRIORITIES; emits JSON to stdout
 #
 # Guard against direct execution
 if [[ "${BASH_SOURCE[0]}" == "${0}" ]]; then
@@ -87,6 +89,87 @@ _save_si_section() {
         off-limits)  SI_OFF_LIMITS="$text" ;;
         context)     SI_CONTEXT="$text" ;;
     esac
+}
+
+# --- Extract priority+hypothesis pre-commitment pairs (decision 012 pillar 3) ---
+# Parses SI_PRIORITIES (or $1 if given) looking for:
+#
+#     - <priority text>
+#       - hypothesis: <hypothesis text>
+#         [optional continuation lines indented further]
+#
+# Emits a JSON array of {"priority": "...", "hypothesis": "..."} objects to
+# stdout. Only top-level bullets with an attached `hypothesis:` sub-bullet are
+# emitted; free-form prose and bullets without hypothesis attachments are
+# skipped here (they remain visible to the planner through the unmodified
+# SI_PRIORITIES injection).
+#
+# Why a separate channel: the planner currently sees SI_PRIORITIES as a
+# free-form blob. Pillar 3 adds a structured side-channel so user-attached
+# hypotheses can be inherited verbatim instead of being paraphrased into new
+# planner-authored ones.
+#
+# Args: $1 = priorities text (defaults to $SI_PRIORITIES)
+# Stdout: JSON array (empty array if no pairs found)
+parse_si_priority_hypotheses() {
+    local priorities_text="${1:-${SI_PRIORITIES:-}}"
+    if [ -z "$priorities_text" ]; then
+        echo "[]"
+        return 0
+    fi
+
+    # Walk the priorities text with a small state machine. We emit
+    # priority<TAB>hypothesis lines from awk and let jq build the JSON so
+    # quoting/escaping stays correct without hand-rolling it in awk.
+    local pairs
+    pairs=$(awk '
+        function trim(s) { gsub(/^[ \t]+|[ \t]+$/, "", s); return s }
+        function flush() {
+            if (priority != "" && hypothesis != "") {
+                printf "%s\t%s\n", priority, hypothesis
+            }
+            priority = ""; hypothesis = ""; in_hyp = 0
+        }
+        # Top-level bullet (no leading whitespace): new priority
+        /^[-*][ \t]+/ {
+            flush()
+            line = $0
+            sub(/^[-*][ \t]+/, "", line)
+            priority = trim(line)
+            next
+        }
+        # Indented "- hypothesis:" sub-bullet under the current priority
+        /^[ \t]+[-*][ \t]+[Hh]ypothesis:/ {
+            if (priority == "") next
+            line = $0
+            sub(/^[ \t]+[-*][ \t]+[Hh]ypothesis:[ \t]*/, "", line)
+            hypothesis = trim(line)
+            in_hyp = 1
+            next
+        }
+        # Continuation of hypothesis: indented but not a new bullet
+        in_hyp && /^[ \t]+[^- *\t]/ {
+            line = trim($0)
+            if (line != "") hypothesis = hypothesis " " line
+            next
+        }
+        # Blank line ends a hypothesis continuation but keeps the priority open
+        # for another sub-bullet (none defined yet — placeholder for future
+        # fields like "owner:" or "deadline:").
+        /^[ \t]*$/ { in_hyp = 0 }
+        END { flush() }
+    ' <<< "$priorities_text")
+
+    if [ -z "$pairs" ]; then
+        echo "[]"
+        return 0
+    fi
+
+    printf '%s\n' "$pairs" | jq -R -s '
+        split("\n") | map(select(length > 0)) |
+        map(split("\t")) |
+        map({priority: .[0], hypothesis: .[1]})
+    '
 }
 
 # Internal: trim leading and trailing blank lines

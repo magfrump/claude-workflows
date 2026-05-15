@@ -226,6 +226,12 @@ cd "$REPO_DIR"
 # (empty strings if file is missing or sections are blank).
 parse_si_input "$WORKING_DIR/si-input.md" || true
 
+# Decision 012 pillar 3: pre-commitment hypotheses attached to priorities.
+# Extracts the structured (priority, hypothesis) pairs the planner should
+# inherit verbatim. Empty array when the user attached none — free-form prose
+# in SI_PRIORITIES continues to flow through the unchanged injection below.
+SI_PRIORITY_HYPOTHESES_JSON=$(parse_si_priority_hypotheses)
+
 # Build user input context for injection into prompts
 USER_INPUT_CONTEXT=""
 if [ -n "$SI_FEEDBACK" ]; then
@@ -565,6 +571,24 @@ Do not create tasks that touch these topics or files:
 ${SI_OFF_LIMITS}"
     fi
 
+    # Decision 012 pillar 3: surface user-attached hypotheses for inheritance.
+    # When the array is non-empty, the planner is told to copy the matching
+    # hypothesis verbatim instead of inventing one. Empty array → no block;
+    # the planner authors all hypotheses under the pillar-2 adversarial framing.
+    TASK_USER_HYPOTHESES=""
+    if [ -n "$SI_PRIORITY_HYPOTHESES_JSON" ] && [ "$SI_PRIORITY_HYPOTHESES_JSON" != "[]" ]; then
+        TASK_USER_HYPOTHESES="
+
+User-attached hypotheses (decision 012 pillar 3). The user wrote these as
+pre-commitments in si-input.md. For each task you create that derives from
+one of these priorities, copy the matching hypothesis VERBATIM into the
+task's \"hypothesis\" field and set \"hypothesis_source\": \"user\". Do not
+paraphrase, summarise, or reframe — the user wants to evaluate the claim
+they actually wrote. Match by topic overlap, not exact string match.
+
+${SI_PRIORITY_HYPOTHESES_JSON}"
+    fi
+
     claude -p "Read docs/working/feature-ideas-round-$ROUND.md.
 
 For each surviving idea from the tradeoff matrix, assess whether it can be
@@ -576,6 +600,7 @@ Output a JSON array to docs/working/tasks-round-$ROUND.json with fields:
 \"files_touched\": [\"list of files\"], \"independent\": true/false,
 \"hypothesis\": \"one-sentence falsifiable claim\",
 \"hypothesis_window\": <integer rounds before this can be evaluated>,
+\"hypothesis_source\": \"user\" | \"planner\",
 \"evaluator\": \"script\" | \"user\",
 \"requires\": { \"metric_logged\"?: \"<name>\", \"invocations\"?: <int>, \"days_elapsed\"?: <int> }}
 
@@ -638,7 +663,16 @@ Requires guidance (only meaningful when evaluator is \"script\"):
   - days_elapsed: at least N days must have passed since hypothesis creation
 The script defers (marks INCONCLUSIVE, never auto-REFUTED) when these
 preconditions are unmet. Declare what would make the script's verdict
-trustworthy, not what would make it favorable.${TASK_OFF_LIMITS}"
+trustworthy, not what would make it favorable.
+
+Hypothesis_source guidance (decision 012 pillar 3):
+  - \"user\" — the hypothesis was lifted verbatim from a user-attached
+    pre-commitment under si-input.md's Priorities section. Only use this
+    value when a matching user-attached hypothesis appears in the block
+    below; do not retrofit it onto planner-authored framing.
+  - \"planner\" — the hypothesis was authored by you under the adversarial
+    framing above. The morning summary surfaces these with a review-framing
+    tag so the user can spot optimistic phrasing.${TASK_USER_HYPOTHESES}${TASK_OFF_LIMITS}"
 
     TASKS_FILE="$WORKING_DIR/tasks-round-$ROUND.json"
     if [ ! -f "$TASKS_FILE" ]; then

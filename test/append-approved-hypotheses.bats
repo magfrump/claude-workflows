@@ -22,16 +22,16 @@ write_tasks() {
   append_approved_hypotheses 3 "$TASKS" "$LOG" "task-a"
 
   grep -q '^# Hypothesis Log' "$LOG"
-  grep -q '^| Round | Task ID | Hypothesis | Window | Evaluator | Requires | Checked at Round' "$LOG"
-  # Row schema: round | tid | hyp | window | evaluator | requires | checked_at | ...
-  # Older tasks (no evaluator/requires) emit empty cells for those columns.
-  grep -qE '^\| 3 \| task-a \| foo will happen \| 2 \|  \|  \| 5 \|' "$LOG"
+  grep -q '^| Round | Task ID | Hypothesis | Source | Window | Evaluator | Requires | Checked at Round' "$LOG"
+  # Row schema: round | tid | hyp | source | window | evaluator | requires | checked_at | ...
+  # Older tasks (no source/evaluator/requires) emit empty cells for those columns.
+  grep -qE '^\| 3 \| task-a \| foo will happen \|  \| 2 \|  \|  \| 5 \|' "$LOG"
 }
 
 @test "uses default window of 3 when value is non-numeric" {
   write_tasks '[{"id":"task-b","description":"x","files_touched":["a"],"independent":true,"hypothesis":"bar","hypothesis_window":"oops"}]'
   append_approved_hypotheses 2 "$TASKS" "$LOG" "task-b"
-  grep -qE '^\| 2 \| task-b \| bar \| 3 \|  \|  \| 5 \|' "$LOG"
+  grep -qE '^\| 2 \| task-b \| bar \|  \| 3 \|  \|  \| 5 \|' "$LOG"
 }
 
 @test "skips tasks without a hypothesis and warns" {
@@ -53,7 +53,7 @@ write_tasks() {
 }
 
 @test "appends without glomming when existing log lacks trailing newline" {
-  printf '# Hypothesis Log\n\n| Round | Task ID | Hypothesis | Window | Evaluator | Requires | Checked at Round | Outcome | Status Date | Evidence |\n|-|-|-|-|-|-|-|-|-|-|\n| 1 | old | old hyp | 1 | user |  | 2 | CONFIRMED | | done |' > "$LOG"
+  printf '# Hypothesis Log\n\n| Round | Task ID | Hypothesis | Source | Window | Evaluator | Requires | Checked at Round | Outcome | Status Date | Evidence |\n|-|-|-|-|-|-|-|-|-|-|-|\n| 1 | old | old hyp |  | 1 | user |  | 2 | CONFIRMED | | done |' > "$LOG"
   write_tasks '[{"id":"task-a","description":"x","files_touched":["a"],"independent":true,"hypothesis":"new hyp","hypothesis_window":1}]'
   append_approved_hypotheses 2 "$TASKS" "$LOG" "task-a"
   # The new row must be on its own line, not appended to the previous row.
@@ -76,8 +76,8 @@ write_tasks() {
     "requires":{"metric_logged":"latency_p95","invocations":10}
   }]'
   append_approved_hypotheses 4 "$TASKS" "$LOG" "task-ev"
-  # Row: round | tid | hyp | window | script | metric_logged=latency_p95;invocations=10 | 6 | ...
-  grep -qE '^\| 4 \| task-ev \| latency stays below threshold \| 2 \| script \| metric_logged=latency_p95;invocations=10 \| 6 \|' "$LOG"
+  # Row: round | tid | hyp | source | window | evaluator | requires | checked_at | ...
+  grep -qE '^\| 4 \| task-ev \| latency stays below threshold \|  \| 2 \| script \| metric_logged=latency_p95;invocations=10 \| 6 \|' "$LOG"
 }
 
 @test "user-evaluator with no requires emits empty requires cell" {
@@ -87,5 +87,33 @@ write_tasks() {
     "evaluator":"user"
   }]'
   append_approved_hypotheses 1 "$TASKS" "$LOG" "task-u"
-  grep -qE '^\| 1 \| task-u \| user notices something \| 3 \| user \|  \| 4 \|' "$LOG"
+  grep -qE '^\| 1 \| task-u \| user notices something \|  \| 3 \| user \|  \| 4 \|' "$LOG"
+}
+
+# --- decision 012 pillar 3: hypothesis_source column ---
+
+@test "hypothesis_source column is populated when task carries it" {
+  write_tasks '[{
+    "id":"task-src","description":"x","files_touched":["a"],"independent":true,
+    "hypothesis":"the user attached this","hypothesis_window":2,
+    "hypothesis_source":"user","evaluator":"user"
+  }]'
+  append_approved_hypotheses 2 "$TASKS" "$LOG" "task-src"
+  grep -qE '^\| 2 \| task-src \| the user attached this \| user \| 2 \| user \|' "$LOG"
+}
+
+@test "planner-source hypothesis is logged with planner in Source cell" {
+  write_tasks '[{
+    "id":"task-plan","description":"x","files_touched":["a"],"independent":true,
+    "hypothesis":"the planner invented this","hypothesis_window":1,
+    "hypothesis_source":"planner","evaluator":"user"
+  }]'
+  append_approved_hypotheses 1 "$TASKS" "$LOG" "task-plan"
+  grep -qE '^\| 1 \| task-plan \| the planner invented this \| planner \| 1 \| user \|' "$LOG"
+}
+
+@test "missing hypothesis_source leaves the cell empty (legacy task)" {
+  write_tasks '[{"id":"task-old","description":"x","files_touched":["a"],"independent":true,"hypothesis":"legacy","hypothesis_window":1}]'
+  append_approved_hypotheses 1 "$TASKS" "$LOG" "task-old"
+  grep -qE '^\| 1 \| task-old \| legacy \|  \| 1 \|' "$LOG"
 }

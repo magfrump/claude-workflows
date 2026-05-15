@@ -189,3 +189,65 @@ write_tasks() {
   result=$(validate_task_json "$f")
   [ "$(echo "$result" | jq 'length')" -eq 0 ]
 }
+
+# --- decision 012 pillar 3: hypothesis_source field ---
+
+@test "valid hypothesis_source=user passes" {
+  local f
+  f=$(write_tasks '[{
+    "id": "t-hs-user",
+    "description": "x",
+    "files_touched": ["scripts/self-improvement.sh"],
+    "independent": true,
+    "evaluator": "user",
+    "hypothesis_source": "user"
+  }]')
+  result=$(validate_task_json "$f")
+  [ "$(echo "$result" | jq 'length')" -eq 1 ]
+}
+
+@test "valid hypothesis_source=planner passes" {
+  local f
+  f=$(write_tasks '[{
+    "id": "t-hs-plan",
+    "description": "x",
+    "files_touched": ["scripts/self-improvement.sh"],
+    "independent": true,
+    "evaluator": "user",
+    "hypothesis_source": "planner"
+  }]')
+  result=$(validate_task_json "$f")
+  [ "$(echo "$result" | jq 'length')" -eq 1 ]
+}
+
+@test "invalid hypothesis_source value is rejected" {
+  local f
+  f=$(write_tasks '[{
+    "id": "t-hs-bad",
+    "description": "x",
+    "files_touched": ["scripts/self-improvement.sh"],
+    "independent": true,
+    "evaluator": "user",
+    "hypothesis_source": "robot"
+  }]')
+  result=$(validate_task_json "$f")
+  [ "$(echo "$result" | jq 'length')" -eq 0 ]
+}
+
+@test "missing hypothesis_source is a lint warning, not a rejection" {
+  local f
+  f=$(write_tasks '[{
+    "id": "t-hs-none",
+    "description": "x",
+    "files_touched": ["scripts/self-improvement.sh"],
+    "independent": true,
+    "evaluator": "user"
+  }]')
+  local stderr_file
+  stderr_file=$(mktemp)
+  local stdout
+  stdout=$(validate_task_json "$f" 2>"$stderr_file")
+  grep -q "hypothesis_source missing" "$stderr_file"
+  [ "$(echo "$stdout" | jq 'length')" -eq 1 ]
+  rm -f "$stderr_file"
+}
