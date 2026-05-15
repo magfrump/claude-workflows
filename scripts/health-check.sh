@@ -515,12 +515,6 @@ check_skill_fixture_coverage() {
 # script OR from another function inside si-functions.sh (i.e., reached
 # transitively). Only functions with no caller at all are flagged as orphans.
 
-# Print lines in $2 that reference $1 as an identifier (preceded/followed by
-# a non-identifier character or line edge). Callers further filter as needed.
-_lines_referencing() {
-    grep -E "(^|[^a-zA-Z_])${1}([^a-zA-Z_0-9]|$)" "$2" 2>/dev/null
-}
-
 check_feature_integration() {
     section "Feature integration (si-functions.sh)"
 
@@ -541,12 +535,17 @@ check_feature_integration() {
         return
     fi
 
-    # Collect all .sh entry-point scripts (everything except si-functions.sh itself)
-    local entry_scripts=()
-    while IFS= read -r -d '' f; do
-        [[ "$f" == "$lib_file" ]] && continue
-        entry_scripts+=("$f")
-    done < <(find "$REPO_ROOT/scripts" -type f -name '*.sh' -not -path '*/.git/*' -print0)
+    # Concatenate every entry-point script's contents once. Greps then scan
+    # this single buffer for each function name instead of spawning
+    # F × S grep processes (F = function count, S = entry scripts).
+    local entry_buffer
+    entry_buffer=$(find "$REPO_ROOT/scripts" -type f -name '*.sh' -not -path '*/.git/*' \
+                   ! -wholename "$lib_file" -exec cat {} +)
+
+    # The library buffer is read once too. The sibling-helper check excludes
+    # the function's own definition line, so strip those lines up front.
+    local lib_buffer
+    lib_buffer=$(grep -vE '^[a-zA-Z_][a-zA-Z_0-9]*[[:space:]]*\(\)' "$lib_file")
 
     local orphan_count=0
     local total=${#functions[@]}
@@ -554,21 +553,16 @@ check_feature_integration() {
 
     for fname in "${functions[@]}"; do
         local found_in_entry=false
-        for script in "${entry_scripts[@]}"; do
-            if _lines_referencing "$fname" "$script" >/dev/null; then
-                found_in_entry=true
-                break
-            fi
-        done
+        if grep -qE "(^|[^a-zA-Z_])${fname}([^a-zA-Z_0-9]|$)" <<< "$entry_buffer"; then
+            found_in_entry=true
+        fi
 
         # If no entry-point caller, check for intra-library calls — helpers
         # used only by sibling functions in si-functions.sh are still wired in
         # transitively when their caller is reached from an entry point.
         local found_in_lib=false
         if ! $found_in_entry; then
-            if _lines_referencing "$fname" "$lib_file" \
-                | grep -vE "^${fname}[[:space:]]*\(\)" \
-                | grep -q .; then
+            if grep -qE "(^|[^a-zA-Z_])${fname}([^a-zA-Z_0-9]|$)" <<< "$lib_buffer"; then
                 found_in_lib=true
             fi
         fi
