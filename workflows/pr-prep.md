@@ -75,9 +75,57 @@ If it genuinely can't be split, note this in the PR description (step 6) and sug
 
 **b. Dependent PR check.** If this branch builds on other unmerged PRs, verify they've been merged or that this PR's base is set correctly. If dependencies haven't landed, decide whether to wait, rebase onto a dev integration branch, or open as a stacked PR with a clear note. Skip this check for standalone branches.
 
+**c. Pre-mortem fallback check.** This step is a **fallback** for the plan-time pre-mortem wiring in `research-plan-implement.md` step 4 (the high-stakes escalation under "Failure modes considered") and `spike.md`. The primary path is plan-time — context is fullest then, and that's when `/pre-mortem` should run. This step exists only to catch the cases where the primary path did not run: RPI was skipped, the spike workflow was not used, or scope grew past the high-stakes threshold during implementation. The default action here is **skip**; the trigger fires only when both conditions below hold.
+
+<!--
+pr-prep-pre-mortem-fallback-r2 (separability note for future self-eval):
+This step is intentionally distinct from the rejected R1 attempt
+(commit 6ee0ae8, "feat(pr-prep): fire pre-mortem on high-risk PRs at gate-check
+stage"). The polarity differs in a way self-eval can mechanically verify:
+
+  R1 — ran-by-default on high-risk PRs; an existing artifact short-circuited
+       the run. The default outcome was "run pre-mortem". Rejected because it
+       duplicated RPI step 4's plan-time wiring whenever both fired, and ran
+       a second time when the plan-time artifact lived under a different name.
+
+  R2 (this step) — skipped-by-default; the trigger fires only when no
+       `docs/working/pre-mortem-*.md` artifact exists for the branch AND the
+       diff is high-risk. The default outcome is "skip pre-mortem". It cannot
+       duplicate plan-time wiring because the existence of any plan-time
+       artifact in the branch-scoped location suppresses it.
+
+Separability test: if the existence of a branch-scoped pre-mortem artifact
+no longer suppresses this step, R2 has regressed toward R1 and should be
+re-evaluated.
+-->
+
+Run the check before opening the draft PR (step 2):
+
+```bash
+# (a) Does a branch-scoped pre-mortem artifact already exist?
+PREMORTEM_EXISTS=$(find docs/working -maxdepth 1 -name 'pre-mortem-*.md' -type f 2>/dev/null | head -1)
+
+# (b) Is the diff high-risk? Sum insertions + deletions; flag auth/crypto/migration paths.
+LOC_TOTAL=$(git diff --numstat main...HEAD | awk '{ i+=$1; d+=$2 } END { print i+d+0 }')
+HIGH_RISK_PATHS=$(git diff --name-only main...HEAD | grep -iE '(^|/)(auth|crypto|migration|migrate)' || true)
+
+if [[ -z "$PREMORTEM_EXISTS" ]] && { [[ "${LOC_TOTAL:-0}" -gt 500 ]] || [[ -n "$HIGH_RISK_PATHS" ]]; }; then
+  echo "Fallback pre-mortem trigger fires:"
+  echo "  - No docs/working/pre-mortem-*.md artifact found for this branch"
+  echo "  - Diff is high-risk (LOC=$LOC_TOTAL; high-risk paths: ${HIGH_RISK_PATHS:-none})"
+  echo "Run /pre-mortem on the diff and save the output to"
+  echo "  docs/working/pre-mortem-<branch-slug>.md"
+fi
+```
+
+**If the trigger fires**, run `/pre-mortem` against the diff and save the artifact to `docs/working/pre-mortem-<branch-slug>.md`. Cite the artifact in the PR description's "Areas of uncertainty" section so reviewers see the failure narratives the author considered. **If it does not fire**, record the reason briefly (artifact already exists at `<path>`, or diff is low-risk) — either in a commit message or as a one-line note in the PR description — so the audit trail shows the check was evaluated, not skipped.
+
+**This is a backstop, not the primary path.** If the trigger fires, treat that as a signal that the plan-time wiring failed for this branch and consider whether the workflow that produced this branch (RPI, spike, ad-hoc) needs to be adjusted — not just this single PR patched.
+
 **Completion criteria:**
 - [ ] PR is under 500 lines changed, OR PR description includes size justification and suggested file review order
 - [ ] No unmerged dependency PRs block this branch, OR base is set correctly for stacking
+- [ ] Fallback pre-mortem trigger was evaluated; if it fired, `docs/working/pre-mortem-<branch-slug>.md` exists and is cited in the PR description; if it did not fire, the reason is recorded
 
 #### 2. Open draft PR
 
