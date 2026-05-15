@@ -28,6 +28,21 @@ value-justification: "Replaces ad-hoc architectural debates with structured mult
 
 ### 1. Diverge — generate many possibilities
 
+#### 1.0 Pre-generation grep — carry forward prior pruning
+
+Before generating new candidates, grep `docs/decisions/*.md` for `Pruned candidates` sections using 2-4 keywords from the diagnosis (problem area, components involved, constraint types you'll be working with — formal step-2 wording isn't required yet, just the working problem statement). One pass works:
+
+    grep -B 1 -A 20 "Pruned candidates" docs/decisions/*.md | rg -i "keyword1|keyword2"
+
+For each historically-pruned candidate the grep surfaces, the eventual DD record must surface it too — pick one of:
+
+- **Carry forward**: explicitly accept the prior pruning rationale. Don't re-propose the candidate during generation; list it in the new record's Pruned candidates section annotated `[carried from NNN-title: prior reason]`.
+- **Revive**: write a one-line *why this time is different* (changed constraints, new infrastructure, prior pruning rested on a now-stale assumption) and re-introduce the candidate into generation. The new record annotates it `[revived from NNN-title: why this time is different]` in the Pruned candidates section and references the revival rationale in Decision and rationale if it's selected.
+
+If the grep returns nothing, record `Prior pruning grep: no matches found for [keywords]` in the new record's Pruned candidates section. "No matches found" is an acceptable — and expected — outcome for many decisions; the explicit line exists so the grep can't be silently skipped when nothing turns up.
+
+#### 1.1 Generate candidates
+
 Generate 8-15 candidate approaches. Quantity matters more than quality at this stage. Requirements:
 - Include at least 2-3 approaches that feel wrong, naive, or unconventional
 - Include at least 1 "do nothing" or "minimal change" option
@@ -47,6 +62,7 @@ After generating your initial candidates, scan for these common generation gaps.
 If the health check triggers additional generation, note it briefly (e.g., "Added 3-5 after health check flagged clustering around caching approaches"). This makes generation patterns visible across sessions.
 
 **Done when...**
+- [ ] Pre-generation grep against `docs/decisions/*.md` for prior `Pruned candidates` sections has been run; every surfaced candidate is either carried forward (annotated `[carried from NNN-title: prior reason]`) or revived (annotated `[revived from NNN-title: why this time is different]`); if the grep returned nothing, a `Prior pruning grep: no matches found for [keywords]` line is recorded
 - [ ] At least 8 candidate approaches are listed
 - [ ] At least 2-3 approaches feel wrong, naive, or unconventional
 - [ ] A "do nothing" or "minimal change" option is included
@@ -212,7 +228,7 @@ After the header, the body must include:
 - **Context**: what prompted the decision
 - **Options considered** (brief — the full analysis doesn't need to be preserved)
 - **Decision and rationale**: state the chosen approach and why. End the section with a one-line `See alternatives considered →` pointer to the Pruned candidates section below, so survivors and discarded options have peer prominence rather than the pruned set reading as a footnote.
-- **Pruned candidates and why** (anti-portfolio): a 2-line section, placed directly after Decision so it is reachable in ≤2 visual steps from the top of the record. Line 1 is a `how to read` preamble — "Each entry is `[candidate-ID]: one-line reason for discard`. Future DDs in adjacent areas can grep this section to avoid regenerating already-pruned approaches." Line 2 is a compact list, e.g. `[3]: relies on async queue we don't have. [5]: violates auth invariant. [7]: 10x cost of #2.` Include candidates pruned in step 3 (compatibility matrix) and any survivors discarded by the step 4 stress-test pass.
+- **Pruned candidates and why** (anti-portfolio): a 2-line section, placed directly after Decision so it is reachable in ≤2 visual steps from the top of the record. Line 1 is a `how to read` preamble — "Each entry is `[candidate-ID]: one-line reason for discard`. Future DDs in adjacent areas can grep this section to avoid regenerating already-pruned approaches." Line 2 is a compact list, e.g. `[3]: relies on async queue we don't have. [5]: violates auth invariant. [7]: 10x cost of #2.` Include candidates pruned in step 3 (compatibility matrix), survivors discarded by the step 4 stress-test pass, and the outcome of the step-1.0 pre-generation grep: each historically-pruned candidate surfaced by the grep must appear either annotated `[carried from NNN-title: prior reason]` (prior pruning rationale accepted) or annotated `[revived from NNN-title: why this time is different]` (and, if revived candidate was selected, cross-referenced from Decision and rationale). If the grep returned no matches, include the explicit line `Prior pruning grep: no matches found for [keywords]` so the search is visible even when it surfaced nothing.
 - **Stress-test mitigations** (if any were applied in step 4): one-line `how to read` preamble per mitigation, naming the stress-test move that produced it and what it changed in the tradeoff matrix — e.g., "How to read: *Boring alternative* mitigation — replaced candidate #2 with a simpler variant after the move surfaced unjustified complexity." One preamble per mitigation so a future grep returns enough context to reapply the move without re-reading the full record.
 - **Consequences**: what this makes easier, what this makes harder
 - **Revisit triggers**: a 2-line section. Line 1 is a `how to read` preamble — "Each entry is a concrete, observable condition that should prompt re-evaluating this decision. Future readers can grep this section when their context changes to see whether earlier decisions still apply." Line 2 is a compact list of falsifiable conditions with thresholds where applicable, e.g. `if dep X majors. if user count >10k. if p99 >200ms. if pattern Y needed in 3+ places.` Vague triggers like "if requirements change" are not allowed — each entry must name a specific signal a future reader could check.
@@ -225,6 +241,7 @@ After the header, the body must include:
 - [ ] For full records, the doc opens with the three-line header (Goal · Project state · Task status) and includes all required body sections in order (Context, Options considered, Decision and rationale, Pruned candidates and why, Stress-test mitigations if any, Consequences, Revisit triggers)
 - [ ] The Decision and rationale section closes with a `See alternatives considered →` pointer to the Pruned candidates section, so survivors and pruned options have peer prominence
 - [ ] The Pruned candidates section is positioned directly after Decision and rationale (reachable in ≤2 visual steps from the top of the record), opens with the `how to read` preamble, and lists every discarded candidate (from step 3 prune and step 4 stress test) with a one-line reason
+- [ ] The Pruned candidates section reflects the step-1.0 pre-generation grep outcome: every historically-pruned candidate the grep surfaced appears annotated `[carried from NNN-title: prior reason]` or `[revived from NNN-title: why this time is different]`; if the grep found nothing, a `Prior pruning grep: no matches found for [keywords]` line is present
 - [ ] If any stress-test mitigations were applied in step 4, each is documented with its own one-line `how to read` preamble naming the move that produced it
 - [ ] The Revisit triggers section opens with the `how to read` preamble and lists at least 2-3 concrete, threshold-bearing conditions that would prompt revisiting the decision
 - [ ] The Task status line accurately reflects current lifecycle (re-read it; if it lies, fix it)
