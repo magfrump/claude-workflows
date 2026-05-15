@@ -433,7 +433,50 @@ first line of your output and stop. Note: re-attempts of rejected ideas
 and previously unattempted survivors count as genuinely new ideas.
 
 Otherwise, write the full divergent design output to
-docs/working/feature-ideas-round-$ROUND.md"
+docs/working/feature-ideas-round-$ROUND.md.
+
+ROUND-LEVEL CLAIM — required final section (decision 012 pillar 1b):
+
+After the standard DD output, append a section titled exactly:
+
+  ## Hypothesis: this round's claim
+
+The body is one paragraph of pillar-2 adversarial framing — name the most
+likely way THIS ROUND (taken as a whole, across all selected ideas) fails
+to deliver value, and the concrete observation that would tell you that
+failure happened. A claim that just restates a single idea's hypothesis is
+not a round claim; the claim must cover the round as a unit.
+
+After the paragraph, declare four structured fields verbatim, in this
+order, as a bulleted list (field names match the per-task schema):
+
+  - evaluator: script | user
+  - requires: { metric_logged?: <name>, invocations?: <int>, days_elapsed?: <int> }
+  - hypothesis_window: <integer rounds before this claim can be evaluated>
+  - hypothesis_source: user | planner
+
+Field semantics (same as per-task hypotheses — see decision 012 pillars 1
+and 3):
+
+  - evaluator: pick \"script\" when a future round-claim evaluator can
+    decide from the invocation log at ~/.claude/logs/usage.jsonl without
+    a human judgement call; pick \"user\" when only a human observation
+    can decide. Both are first-class; do not default to one to dodge the
+    choice.
+  - requires: preconditions the round-claim evaluator checks before
+    deciding. Use only the keys metric_logged, invocations, days_elapsed.
+    When unmet, the verdict is INCONCLUSIVE (never auto-REFUTED).
+  - hypothesis_window: pick 1-5 rounds using the same scale as per-task
+    hypotheses — 1 if the failure is observable in next round's
+    artifacts, 2-3 if it requires accumulated usage, 4-5 if it requires
+    real-world adoption.
+  - hypothesis_source: set to \"user\" only when a matching si-input.md
+    priority's attached hypothesis covers this round's overall direction
+    and you have copied that hypothesis verbatim. Otherwise set
+    \"planner\".
+
+The separate round-claim evaluator consumes this structured section; the
+DD content above is unchanged."
 
     # Check for termination
     IDEAS_FILE="$WORKING_DIR/feature-ideas-round-$ROUND.md"
