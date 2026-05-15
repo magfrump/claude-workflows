@@ -75,7 +75,10 @@ For every checkable claim:
    - **Mostly accurate** — The claim is directionally correct but imprecise, outdated, or slightly off
      in magnitude. State what the correct figure or framing should be.
    - **Disputed** — Evidence exists on both sides, or different reliable sources disagree. State what
-     the disagreement is.
+     the disagreement is. Every Disputed verdict **must** include a one-sentence
+     `**Sources disagree:**` line in the report that names at least two source positions
+     (who claims X vs. who claims Y), so the structure of the disagreement is visible at a
+     glance, not only the fact that one exists. See [Output format](#output-format) for placement.
    - **Inaccurate** — The claim is wrong in a way that matters to the argument. State what the evidence
      actually shows.
    - **Unverified** — You could not find reliable evidence to confirm or deny this claim. It may be
@@ -434,6 +437,7 @@ provenance `[inferred]` verdicts, write out the inferential chain. For provenanc
 
 **Sources:** [named sources with years]
 **Citation:** [exactly one of: URL with anchor | "verbatim ≤25-word span" | [source: title, page/timestamp]]
+**Sources disagree:** [REQUIRED only when Verdict is Disputed — one sentence naming at least two source positions, e.g., "OECD's 2023 employment review reports a small negative effect, while CBPP's 2022 meta-analysis reports no measurable effect." Omit the line for all other verdicts.]
 
 ---
 
@@ -497,3 +501,20 @@ This self-check applies to every verdict, including Secondary-only quote verdict
 verdicts derived from code reads. Do not exempt any class of claim.
 
 Also confirm the report header `**Summary:**` line tallies all six verdict types — accurate, mostly accurate, disputed, inaccurate, unverified, and **secondary-only** — so the prevalence of unsourced attributions is visible at a glance, not only inside "Claims Requiring Author Attention".
+
+## Self-check: Disputed claims name both sides
+
+Before finalizing the report, scan every verdict rated **Disputed** and confirm each one
+carries a `**Sources disagree:**` line that:
+
+1. Is a single sentence.
+2. Names **at least two distinct source positions** (organization, study, or author on
+   each side) — not just "sources disagree" or "evidence is mixed".
+3. States, at minimum, who claims X and who claims Y, so the *structure* of the disagreement
+   is visible, not only its existence.
+
+A Disputed verdict missing this line, or carrying a `Sources disagree:` line that names
+only one side or hand-waves with "various sources", is **rejected** — rewrite it before the
+report goes out. If you cannot identify two distinct positions, the verdict is not
+Disputed: re-rate it as **Unverified** with provenance `[assumed]` and explain what
+evidence would be needed to establish the disagreement.
