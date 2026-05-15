@@ -43,7 +43,7 @@ git diff --stat main...HEAD | tail -1
 
 #### 1. Gate checks
 
-Run these concurrently — both are fast, and either failing changes the plan:
+Run these concurrently — all three are fast, and any failing changes the plan:
 
 **a. Size check.** Use the line count from Step 0's diff stat. If the PR exceeds ~500 lines changed, consider whether it can be split before doing any other prep work. Look for:
 - A preparatory refactor that can land independently
@@ -54,9 +54,16 @@ If it genuinely can't be split, note this in the PR description (step 6) and sug
 
 **b. Dependent PR check.** If this branch builds on other unmerged PRs, verify they've been merged or that this PR's base is set correctly. If dependencies haven't landed, decide whether to wait, rebase onto a dev integration branch, or open as a stacked PR with a clear note. Skip this check for standalone branches.
 
+**c. Pre-mortem trigger (high-risk PRs).** If the PR exceeds 500 lines OR touches auth, crypto, migrations, billing, or other irreversible operations, run `/pre-mortem` on the diff. The output becomes a `Risks acknowledged` subsection in the PR description (step 6), so reviewers see the failure narratives the author already considered. Mirrors the high-stakes trigger wired into the RPI plan step — this is the packaging-surface backstop for cases where the trigger fires only at PR time (e.g., scope grew during implementation, or RPI was skipped).
+
+**Short-circuit:** If `docs/reviews/pre-mortem.md` (or any `docs/reviews/pre-mortem-*.md`) already exists from this branch — typically produced during the RPI plan step — cite that artifact in the PR description rather than re-running. Re-run only if the diff has materially diverged from what the existing pre-mortem covered.
+
+Skip this check entirely for PRs under 500 lines that don't touch any of the listed high-risk surfaces.
+
 **Completion criteria:**
 - [ ] PR is under 500 lines changed, OR PR description includes size justification and suggested file review order
 - [ ] No unmerged dependency PRs block this branch, OR base is set correctly for stacking
+- [ ] If high-risk trigger fired: pre-mortem artifact exists in `docs/reviews/` (newly produced or cited from RPI), OR the trigger conditions are documented as not applicable
 
 #### 2. Open draft PR
 
@@ -228,6 +235,13 @@ Structure:
  - Performance implications you haven't measured
  - Edge cases you thought of but didn't handle]
 
+### Risks acknowledged
+[Include this subsection only if step 1c fired (high-risk trigger). Summarize the
+ pre-mortem's failure narratives — the named root causes and observable outcomes
+ the author considered, plus any mitigations already in the diff. Link to the
+ full artifact, e.g., `docs/reviews/pre-mortem.md`. If step 1c did not fire,
+ omit this subsection entirely.]
+
 ## Decisions made
 [Link to any docs/decisions/ files created, or briefly note non-obvious choices]
 
@@ -246,6 +260,7 @@ For UI changes, capture before/after screenshots or a short recording and includ
 - [ ] All six sections are present (What this does, How it works, How to test, Areas of uncertainty, Decisions made, Review evidence)
 - [ ] Each section contains at least one substantive sentence (not a placeholder)
 - [ ] Review evidence section lists all `docs/reviews/` artifacts for this PR, or states "No review artifacts" if none exist
+- [ ] If step 1c's high-risk trigger fired, a "Risks acknowledged" subsection summarizes the pre-mortem narratives and links to the artifact
 - [ ] (Optional) If this PR involved multiple workflow compositions (e.g., RPI → DD → RPI), a workflow provenance line is included in "What this does"
 
 ## Retrospective
