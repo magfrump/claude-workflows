@@ -229,6 +229,8 @@ git diff --name-only main...HEAD -- docs/decisions/
 
 **b. Edit the skeleton (manual).** Review the generated output and reshape it into the PR description template below. The skeleton gives you raw material; your job is to add context, explain *why*, and flag uncertainty. Do not submit the skeleton as-is.
 
+The template requires a `Decisions referenced:` line — a manual, conscious check the author fills in. This re-attempts a Round 1 rejection (commit `3dbcd78`) that tried to auto-detect citations by scanning `Relevant paths` fields in `docs/decisions/*.md`. The value here is the 5-second conscious check before opening review, not the regex — auto-detection added machinery without changing the author's behavior, so the regex was dropped and the prompt kept.
+
 Structure:
 
 ```markdown
@@ -252,6 +254,8 @@ Structure:
 ## Decisions made
 [Link to any docs/decisions/ files created, or briefly note non-obvious choices]
 
+Decisions referenced: [list of NNN decision IDs whose invariants this PR touches, or `none — change is independent of recorded decisions`]
+
 ## Review evidence
 [List review artifacts from docs/reviews/ that were generated for this PR.
  These are committed to the branch — reviewers can expand them for details.
@@ -266,6 +270,7 @@ For UI changes, capture before/after screenshots or a short recording and includ
 - [ ] Skeleton was generated from commits and review artifacts (not written from scratch)
 - [ ] All six sections are present (What this does, How it works, How to test, Areas of uncertainty, Decisions made, Review evidence)
 - [ ] Each section contains at least one substantive sentence (not a placeholder)
+- [ ] `Decisions referenced:` line is filled in — either a list of decision IDs or the explicit `none — change is independent of recorded decisions` (the conscious check is the point; do not leave the placeholder)
 - [ ] Review evidence section lists all `docs/reviews/` artifacts for this PR, or states "No review artifacts" if none exist
 - [ ] (Optional) If this PR involved multiple workflow compositions (e.g., RPI → DD → RPI), a workflow provenance line is included in "What this does"
 
