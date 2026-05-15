@@ -651,6 +651,8 @@ as advisory input. These inform but do not block.
 **What the code gets right:** Strengths that critics identified. The author needs to know
 what to preserve during revisions.
 
+**Failure-mode escalation:** Count the distinct new failure modes named across critic findings — the per-finding failure-mode phrase that `for-author` findings already carry per the [orchestrated-review pattern](../../patterns/orchestrated-review.md#legibility-target-tagging) (location, evidence, attack scenario or failure mode where applicable, recommendation). Dedupe overlapping concerns in the same code region to a single mode so the count tracks distinct modes, not finding multiplicity. If >=3 new failure modes are flagged, recommend `/pre-mortem` on the diff for narrative analysis; include the recommendation in the Chat Synthesis. The recommendation is advisory — the user decides whether to invoke `/pre-mortem`, not the orchestrator. The >=3 threshold is intentionally conservative to avoid escalation fatigue: at that count, independent failure modes start to suggest coupling and ordering between them that a narrative pre-mortem surfaces but per-critic flags miss. Below the threshold, the per-critic flags already carry the signal and a separate pre-mortem pass would be redundant.
+
 **Actionable guidance:** Key changes to make, ordered by severity. Where multiple critics
 agree, note the convergence.
 
