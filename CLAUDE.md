@@ -19,12 +19,13 @@ Evaluate triggers top-to-bottom. Take the **first match**; if none match, defaul
 | 1 | **New/unfamiliar codebase**, or first session in a project with no `docs/thoughts/` | `codebase-onboarding.md` | e.g., "Help me understand this repo" · Output feeds into RPI research — don't redo what onboarding already learned. |
 | 2 | **Task involves a design choice** with 3+ viable approaches, or keywords: "which approach", "tradeoff", "library selection", "architecture" | `divergent-design.md` | e.g., "Should we use Postgres or DynamoDB for this?" · Often invoked as a sub-procedure within RPI (RPI step 2 signals → DD → decision feeds back into plan). DD↔RPI is the most common composition. · Within DD: `matrix-analysis` to score candidates, `what-if-analysis` to stress-test top picks, `design-space-situating` if the framing feels off. |
 | 3 | **Goal is to explain, theorize, or generate hypotheses** rather than build — keywords: "why does", "what's causing", "competing theories", "explain this behavior", "hypothesize" | `divergent-design.md` (epistemic variant) | e.g., "Why is latency spiking only on Tuesdays?" · Uses DD's Epistemic Reasoning section: candidates are competing explanations, output is a ranked hypothesis list, not a decision record. |
-| 4 | **Non-trivial feature or bug fix** (touches >1 file, root cause unclear, needs codebase understanding) | `research-plan-implement.md` | e.g., "Fix the login timeout bug" or "Add CSV export to the reports page" · The default. If RPI research reveals a design fork, invoke DD inline. If research reveals root cause of a bug, skip to Fix & Verify (see debugging defaults below). |
-| 5 | **Task touches multiple subsystems** and can be decomposed into independent sub-investigations | `task-decomposition.md` | e.g., "Migrate auth, billing, and notifications to the new API version" · Layer on top of RPI — each sub-task may itself follow RPI or spike. |
-| 6 | **Feasibility question**: "can this work?", unfamiliar library, proof-of-concept | `spike.md` | e.g., "Can we use WebSockets for real-time sync here?" · Spike output includes an RPI seed section; load it when transitioning to implementation. |
-| 7 | **Work is ready to open a PR**, or keywords: "open PR", "ready for review", "package this up" | `pr-prep.md` | e.g., "This is ready, open a PR" · Includes the review-fix loop (code-review + self-eval → fix → retest → re-review until clean). The review-fix loop is a required sub-procedure, not optional. |
-| 8 | **Planning, running, or analyzing a usability test**, or keywords: "user test", "moderator script", "usability" | `user-testing-workflow.md` | e.g., "Write a moderator script for testing the onboarding flow" |
-| 9 | **High-throughput multi-branch development** with async review | `branch-strategy.md` | e.g., "I have 5 features to ship this week, let's parallelize" |
+| 4 | **Task involves building a new skill, workflow, plugin, slash command, or other reusable tool**, or keywords: "create a skill", "make a slash command", "build a workflow", "scaffold a plugin", "I need a tool that" | **Tooling discovery pass** (see below), then `skill-creator` if nothing fits | e.g., "I want a skill for fact-checking PDFs" · Past sessions have reinvented tools that already shipped (notably `skill-creator` itself). Skip only when the user has confirmed no existing tool fits. |
+| 5 | **Non-trivial feature or bug fix** (touches >1 file, root cause unclear, needs codebase understanding) | `research-plan-implement.md` | e.g., "Fix the login timeout bug" or "Add CSV export to the reports page" · The default. If RPI research reveals a design fork, invoke DD inline. If research reveals root cause of a bug, skip to Fix & Verify (see debugging defaults below). |
+| 6 | **Task touches multiple subsystems** and can be decomposed into independent sub-investigations | `task-decomposition.md` | e.g., "Migrate auth, billing, and notifications to the new API version" · Layer on top of RPI — each sub-task may itself follow RPI or spike. |
+| 7 | **Feasibility question**: "can this work?", unfamiliar library, proof-of-concept | `spike.md` | e.g., "Can we use WebSockets for real-time sync here?" · Spike output includes an RPI seed section; load it when transitioning to implementation. |
+| 8 | **Work is ready to open a PR**, or keywords: "open PR", "ready for review", "package this up" | `pr-prep.md` | e.g., "This is ready, open a PR" · Includes the review-fix loop (code-review + self-eval → fix → retest → re-review until clean). The review-fix loop is a required sub-procedure, not optional. |
+| 9 | **Planning, running, or analyzing a usability test**, or keywords: "user test", "moderator script", "usability" | `user-testing-workflow.md` | e.g., "Write a moderator script for testing the onboarding flow" |
+| 10 | **High-throughput multi-branch development** with async review | `branch-strategy.md` | e.g., "I have 5 features to ship this week, let's parallelize" |
 
 ### Debugging defaults (absorbed from bug-diagnosis)
 
@@ -40,6 +41,31 @@ These principles apply to **all** bug-fixing work, whether inside RPI or standal
 For worked examples of these defaults (hypothesis formation, the 3-hypothesis escape hatch, root-cause vs. symptom fixes), see `guides/debugging-examples.md`.
 
 For complex bugs that need a formal diagnosis log, the template and full process remain available in `workflows/bug-diagnosis.md`.
+
+### Tooling discovery (before building new skills/workflows)
+
+Triggered by row 4 of the decision tree. Before scaffolding a new skill, workflow, plugin, or slash command, run a discovery pass — past sessions reinvented tools that already shipped (notably `skill-creator` itself):
+
+1. **Local skills**: `ls ~/.claude/skills/` and grep matching `SKILL.md` files for the problem keywords
+2. **Plugin-shipped skills**: `find ~/.claude/plugins/cache -name SKILL.md` and grep
+3. **Local workflows**: `ls ~/.claude/workflows/`
+4. **Marketplace plugins** (not yet installed): `ls ~/.claude/plugins/marketplaces/*/` and grep their indexes
+
+Present matching candidates to the user with three choices — **use existing**, **extend existing**, or **build new**. Lead with anything the user might not know exists; surfacing options is the point, not gatekeeping. Only proceed to `skill-creator` (or equivalent scaffolding) after the user has explicitly chosen "build new."
+
+This gate fires before `skill-creator` regardless of how the task was entered (decision tree, direct skill invocation, or ad-hoc "let's build a skill" requests).
+
+### Plugin-shipped skills
+
+Plugins under `~/.claude/plugins/cache/` ship skills that auto-trigger from their own descriptions, independent of the routing tables below. The ones most relevant to routine work:
+
+- `frontend-design:frontend-design` — *building* distinctive frontend interfaces. Pairs with `ui-visual-review` below (build → review).
+- `claude-md-management:claude-md-improver` — auditing and editing CLAUDE.md files (use this when the user asks to update, audit, or improve a CLAUDE.md, including this one).
+- `claude-md-management:revise-claude-md` — slash command form of the above for targeted edits.
+- `skill-creator:skill-creator` — creating new skills. Reached via the Tooling-discovery gate when no existing tool fits.
+- `code-simplifier` — sweeping a recently changed area for reuse, quality, and efficiency. Useful as a follow-up after `code-review` if the diff is large.
+
+These don't need to be re-listed in the routing tables — they trigger on intent. Surface them when the local skills below don't fit and a plugin does. When both apply (e.g., a `frontend-design` build followed by `ui-visual-review`), use them together.
 
 ### Skill routing
 
