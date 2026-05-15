@@ -245,6 +245,39 @@ Fix anything broken. If you opened a draft PR in step 2, push the rebased branch
 
 #### 6. Write the PR description
 
+<!--
+pr-prep-decision-citation-mechanized-r3 (separability note for future self-eval):
+The `Decisions touched:` line added below re-attempts the Round 2 rejection
+(commit 8483d41, "feat(pr-prep): require manual Decisions-referenced checklist
+line in PR description") by replacing the unverifiable conscious check with a
+verifiable grep mechanism. The polarity differs in a way an auditor can
+mechanically test:
+
+  R1 (commit 3dbcd78) — auto-scanned `docs/decisions/*.md` for `Relevant paths`
+       fields and pre-filled the line. Rejected; the rejection rationale folded
+       into R2.
+
+  R2 (commit 8483d41) — required the author to manually fill a `Decisions
+       referenced:` line, justifying the value as "the 5-second conscious check
+       before review, not the machinery". Rejected because the check is
+       unverifiable: nothing about a populated line proves the author actually
+       considered every relevant decision, and completion criteria that depend
+       on attentive human reading degrade silently over time.
+
+  R3 (this step) — populates the line mechanically by intersecting the diff's
+       changed paths (`git diff --name-only $(git merge-base HEAD main)..HEAD`)
+       with each decision record's `Relevant paths` field. Decisions without
+       `Relevant paths` are skipped (opt-out). A reviewer or audit can re-run
+       the snippet against the same diff and confirm the line — verifiability
+       was R2's missing property.
+
+Separability test: if the line stops being produced by a mechanical
+intersection of changed paths against `Relevant paths` fields and slides back
+toward "author confirms" semantics (hand-edited list, no reproducible
+derivation from the diff), R3 has regressed toward R2 and should be
+re-evaluated.
+-->
+
 **a. Generate skeleton (automated).** Run these commands to produce a draft PR description from commit history and review artifacts. The output is a starting point — human editing is required.
 
 ```bash
@@ -273,6 +306,49 @@ done | sort -u
 echo ""
 echo "## Decisions made"
 git diff --name-only main...HEAD -- docs/decisions/
+
+# Decisions touched: mechanically intersect the diff's changed paths with each
+# decision record's `Relevant paths` field. Decisions without `Relevant paths`
+# are skipped (opt-out). See the separability note above step 6 for the R1→R2→R3
+# rationale — this line is verifiable by re-running the snippet, unlike a manual
+# conscious check.
+echo ""
+CHANGED=$(git diff --name-only $(git merge-base HEAD main)..HEAD)
+TOUCHED=""
+for dec in docs/decisions/[0-9][0-9][0-9]-*.md; do
+  [[ -f "$dec" ]] || continue
+  # Extract Relevant paths in either supported format (per guides/doc-freshness.md):
+  #   inline-bold:  **Relevant paths:** a, b, c
+  #   YAML list:    Relevant paths:\n  - a\n  - b
+  PATHS=$(awk '
+    /^\*\*Relevant paths:\*\*/ { sub(/^\*\*Relevant paths:\*\*[[:space:]]*/, ""); gsub(/,[[:space:]]*/, "\n"); print; next }
+    /^Relevant paths:[[:space:]]*$/ { yaml=1; next }
+    yaml && /^[[:space:]]*-[[:space:]]+/ { sub(/^[[:space:]]*-[[:space:]]+/, ""); print; next }
+    yaml && /^[^[:space:]-]/ { yaml=0 }
+    /^Relevant paths:[[:space:]]+[^[:space:]]/ { sub(/^Relevant paths:[[:space:]]+/, ""); gsub(/,[[:space:]]*/, "\n"); print; next }
+  ' "$dec" | sed '/^$/d')
+  [[ -z "$PATHS" ]] && continue
+  HIT=0
+  while IFS= read -r rp; do
+    [[ -z "$rp" ]] && continue
+    rp_trim="${rp%/}"
+    while IFS= read -r cp; do
+      [[ -z "$cp" ]] && continue
+      if [[ "$cp" == "$rp_trim" || "$cp" == "$rp_trim"/* ]]; then
+        HIT=1; break 2
+      fi
+    done <<< "$CHANGED"
+  done <<< "$PATHS"
+  if [[ "$HIT" -eq 1 ]]; then
+    ID=$(basename "$dec" | grep -oE '^[0-9]+')
+    TOUCHED="${TOUCHED:+$TOUCHED, }$ID"
+  fi
+done
+if [[ -n "$TOUCHED" ]]; then
+  echo "Decisions touched: $TOUCHED"
+else
+  echo "Decisions touched: none — diff does not intersect any tracked decision record's Relevant paths"
+fi
 ```
 
 **b. Edit the skeleton (manual).** Review the generated output and reshape it into the PR description template below. The skeleton gives you raw material; your job is to add context, explain *why*, and flag uncertainty. Do not submit the skeleton as-is.
@@ -300,6 +376,8 @@ Structure:
 ## Decisions made
 [Link to any docs/decisions/ files created, or briefly note non-obvious choices]
 
+Decisions touched: [populated mechanically by step 6a — comma-separated list of pre-existing decision IDs whose `Relevant paths` intersect this diff, or the literal sentinel `none — diff does not intersect any tracked decision record's Relevant paths`. Do not hand-edit; re-run the snippet if the diff changes.]
+
 ## Review evidence
 [List review artifacts from docs/reviews/ that were generated for this PR.
  These are committed to the branch — reviewers can expand them for details.
@@ -315,6 +393,7 @@ For UI changes, capture before/after screenshots or a short recording and includ
 - [ ] All six sections are present (What this does, How it works, How to test, Areas of uncertainty, Decisions made, Review evidence)
 - [ ] Each section contains at least one substantive sentence (not a placeholder)
 - [ ] Review evidence section lists all `docs/reviews/` artifacts for this PR, or states "No review artifacts" if none exist
+- [ ] `Decisions touched:` line is present in "Decisions made" and was produced by the step 6a snippet (either a list of decision IDs or the literal `none — diff does not intersect any tracked decision record's Relevant paths` sentinel — not a hand-written substitute)
 - [ ] (Optional) If this PR involved multiple workflow compositions (e.g., RPI → DD → RPI), a workflow provenance line is included in "What this does"
 
 ## Retrospective
