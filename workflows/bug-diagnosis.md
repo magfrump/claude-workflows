@@ -268,7 +268,8 @@ Pick the next sequential `FP-NNN` (zero-padded to 3 digits) — look at the last
 - A matched pattern from step 2 was an exact recurrence with the same root cause and the same fix. In that case, don't add a duplicate — instead, leave a one-line note in your diagnosis log citing the matched `FP-NNN`, and (optionally) edit the matched entry's `ref` to point to the more recent diagnosis if it documents the recurrence better.
 
 **Done when...**
-- [ ] A new line has been appended to `docs/thoughts/failure-patterns.md` using the schema in the file header (or the skip condition above applies and is noted in the diagnosis log)
+- [ ] A new line has been appended to `docs/thoughts/failure-patterns.md` using the schema in the file header — this is the default outcome of step 8 and the only way the library grows
+- [ ] If — and only if — one of the explicit skip conditions above applies, the diagnosis log names which skip condition (trivial bug / environmental-upstream / exact recurrence of FP-NNN) and why it applies. A bare "skipped" without a named condition is not acceptable; the default is to append
 - [ ] The new entry's `symptom` keywords are tokens a future bug-diagnosis would plausibly grep — not full sentences, not bug-specific identifiers
 - [ ] The new entry's `cause` and `fix` fields reuse existing vocabulary, or introduce a new category that is also added to the vocabulary section of failure-patterns.md in the same commit
 - [ ] The `ref` field points to the diagnosis log or fix commit so future readers can find the full reasoning
