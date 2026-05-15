@@ -22,14 +22,16 @@ write_tasks() {
   append_approved_hypotheses 3 "$TASKS" "$LOG" "task-a"
 
   grep -q '^# Hypothesis Log' "$LOG"
-  grep -q '^| Round | Task ID | Hypothesis' "$LOG"
-  grep -qE '^\| 3 \| task-a \| foo will happen \| 2 \| 5 \|' "$LOG"
+  grep -q '^| Round | Task ID | Hypothesis | Window | Evaluator | Requires | Checked at Round' "$LOG"
+  # Row schema: round | tid | hyp | window | evaluator | requires | checked_at | ...
+  # Older tasks (no evaluator/requires) emit empty cells for those columns.
+  grep -qE '^\| 3 \| task-a \| foo will happen \| 2 \|  \|  \| 5 \|' "$LOG"
 }
 
 @test "uses default window of 3 when value is non-numeric" {
   write_tasks '[{"id":"task-b","description":"x","files_touched":["a"],"independent":true,"hypothesis":"bar","hypothesis_window":"oops"}]'
   append_approved_hypotheses 2 "$TASKS" "$LOG" "task-b"
-  grep -qE '^\| 2 \| task-b \| bar \| 3 \| 5 \|' "$LOG"
+  grep -qE '^\| 2 \| task-b \| bar \| 3 \|  \|  \| 5 \|' "$LOG"
 }
 
 @test "skips tasks without a hypothesis and warns" {
@@ -51,7 +53,7 @@ write_tasks() {
 }
 
 @test "appends without glomming when existing log lacks trailing newline" {
-  printf '# Hypothesis Log\n\n| Round | Task ID | Hypothesis | Window | Checked at Round | Outcome | Status Date | Evidence |\n|-|-|-|-|-|-|-|-|\n| 1 | old | old hyp | 1 | 2 | CONFIRMED | | done |' > "$LOG"
+  printf '# Hypothesis Log\n\n| Round | Task ID | Hypothesis | Window | Evaluator | Requires | Checked at Round | Outcome | Status Date | Evidence |\n|-|-|-|-|-|-|-|-|-|-|\n| 1 | old | old hyp | 1 | user |  | 2 | CONFIRMED | | done |' > "$LOG"
   write_tasks '[{"id":"task-a","description":"x","files_touched":["a"],"independent":true,"hypothesis":"new hyp","hypothesis_window":1}]'
   append_approved_hypotheses 2 "$TASKS" "$LOG" "task-a"
   # The new row must be on its own line, not appended to the previous row.
@@ -62,4 +64,28 @@ write_tasks() {
   write_tasks '[{"id":"task-p","description":"x","files_touched":["a"],"independent":true,"hypothesis":"a | b","hypothesis_window":1}]'
   append_approved_hypotheses 1 "$TASKS" "$LOG" "task-p"
   grep -q 'a \\| b' "$LOG"
+}
+
+# --- decision 012 pillar 1: evaluator + requires columns ---
+
+@test "evaluator and requires columns are populated when task has them" {
+  write_tasks '[{
+    "id":"task-ev","description":"x","files_touched":["a"],"independent":true,
+    "hypothesis":"latency stays below threshold","hypothesis_window":2,
+    "evaluator":"script",
+    "requires":{"metric_logged":"latency_p95","invocations":10}
+  }]'
+  append_approved_hypotheses 4 "$TASKS" "$LOG" "task-ev"
+  # Row: round | tid | hyp | window | script | metric_logged=latency_p95;invocations=10 | 6 | ...
+  grep -qE '^\| 4 \| task-ev \| latency stays below threshold \| 2 \| script \| metric_logged=latency_p95;invocations=10 \| 6 \|' "$LOG"
+}
+
+@test "user-evaluator with no requires emits empty requires cell" {
+  write_tasks '[{
+    "id":"task-u","description":"x","files_touched":["a"],"independent":true,
+    "hypothesis":"user notices something","hypothesis_window":3,
+    "evaluator":"user"
+  }]'
+  append_approved_hypotheses 1 "$TASKS" "$LOG" "task-u"
+  grep -qE '^\| 1 \| task-u \| user notices something \| 3 \| user \|  \| 4 \|' "$LOG"
 }

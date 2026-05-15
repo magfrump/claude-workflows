@@ -23,6 +23,15 @@ fi
 # work is crowding out maintenance and data-pipeline repairs.
 TASK_CATEGORIES_ALLOWED="feature maintenance data-pipeline"
 
+# Allowed values for the per-task hypothesis evaluator (decision 012 pillar 1).
+# "script" = morning summary can check preconditions against the invocation
+# logger; "user" = only a human observation can decide the outcome. Either is
+# first-class; the field declares who is responsible for evaluation. The
+# allowed keys for the `requires` precondition object live inline in the
+# validator's jq filter (metric_logged, invocations, days_elapsed); they are
+# named in only one place to avoid drift between bash and jq scopes.
+HYPOTHESIS_EVALUATORS_ALLOWED="script user"
+
 # --- Task lineage from round changelog ---
 # Walks docs/working/round-changelog.md and emits "Round N: task-id" for each
 # prior task whose entry mentions any of the given files. Files are matched by
@@ -178,6 +187,42 @@ validate_task_json() {
             echo "  LINT WARNING [$tid]: category missing — planner should assign one of: $TASK_CATEGORIES_ALLOWED" >&2
         elif ! echo " $TASK_CATEGORIES_ALLOWED " | grep -q " $category "; then
             echo "  SCHEMA REJECT [$tid]: category must be one of: $TASK_CATEGORIES_ALLOWED (got: $category)" >&2
+            continue
+        fi
+
+        # Check evaluator field (decision 012 pillar 1). Soft-introduce as a
+        # LINT WARNING when absent — old planner output predates this field, so
+        # rejecting on absence would block the loop. Strict-when-present.
+        local evaluator
+        evaluator=$(echo "$task" | jq -r '.evaluator // ""')
+        if [ -z "$evaluator" ]; then
+            echo "  LINT WARNING [$tid]: evaluator missing — planner should assign one of: $HYPOTHESIS_EVALUATORS_ALLOWED" >&2
+        elif ! echo " $HYPOTHESIS_EVALUATORS_ALLOWED " | grep -q " $evaluator "; then
+            echo "  SCHEMA REJECT [$tid]: evaluator must be one of: $HYPOTHESIS_EVALUATORS_ALLOWED (got: $evaluator)" >&2
+            continue
+        fi
+
+        # Check requires field (decision 012 pillar 1). Optional, but when
+        # present must be an object with only the allowed keys and the right
+        # value types. Unknown keys would silently make a hypothesis
+        # uneval­uable, so they reject.
+        local requires_err
+        requires_err=$(echo "$task" | jq -r '
+            if (has("requires") | not) then empty
+            elif (.requires | type) != "object" then "requires must be an object"
+            else
+                ([.requires | keys[] | select(. as $k |
+                    ["metric_logged","invocations","days_elapsed"] | index($k) | not)] | first // null) as $bad_key |
+                if $bad_key != null then "requires has unknown key: \($bad_key); allowed: metric_logged, invocations, days_elapsed"
+                elif (.requires | has("metric_logged")) and (.requires.metric_logged | type) != "string" then "requires.metric_logged must be a string"
+                elif (.requires | has("invocations"))   and ((.requires.invocations   | type) != "number" or (.requires.invocations   | floor) != .requires.invocations) then "requires.invocations must be an integer"
+                elif (.requires | has("days_elapsed"))  and ((.requires.days_elapsed  | type) != "number" or (.requires.days_elapsed  | floor) != .requires.days_elapsed)  then "requires.days_elapsed must be an integer"
+                else empty
+                end
+            end
+        ')
+        if [ -n "$requires_err" ]; then
+            echo "  SCHEMA REJECT [$tid]: $requires_err" >&2
             continue
         fi
 
@@ -351,8 +396,8 @@ append_approved_hypotheses() {
 
 Tracks falsifiable predictions made at task creation time and their outcomes.
 
-| Round | Task ID | Hypothesis | Window | Checked at Round | Outcome | Status Date | Evidence |
-|-------|---------|------------|--------|------------------|---------|-------------|----------|
+| Round | Task ID | Hypothesis | Window | Evaluator | Requires | Checked at Round | Outcome | Status Date | Evidence |
+|-------|---------|------------|--------|-----------|----------|------------------|---------|-------------|----------|
 HEADER
     fi
 
@@ -362,10 +407,17 @@ HEADER
         printf '\n' >> "$log_file"
     fi
 
-    local tid hyp window
+    local tid hyp window evaluator requires
     for tid in $approved_ids; do
         hyp=$(jq -r --arg id "$tid" '.[] | select(.id == $id) | .hypothesis // ""' "$tasks_file" 2>/dev/null)
         window=$(jq -r --arg id "$tid" '.[] | select(.id == $id) | .hypothesis_window // ""' "$tasks_file" 2>/dev/null)
+        evaluator=$(jq -r --arg id "$tid" '.[] | select(.id == $id) | .evaluator // ""' "$tasks_file" 2>/dev/null)
+        # Flatten the requires object to key=value;key=value so it fits in a
+        # single markdown cell. Empty when the task has no requires field.
+        requires=$(jq -r --arg id "$tid" '
+            .[] | select(.id == $id) | .requires // {} |
+            to_entries | map("\(.key)=\(.value)") | join(";")
+        ' "$tasks_file" 2>/dev/null)
 
         if [ -z "$hyp" ]; then
             echo "  Warning: no hypothesis recorded for approved task: $tid" >&2
@@ -376,7 +428,7 @@ HEADER
         # Escape pipe chars so they don't break the markdown table.
         hyp="${hyp//|/\\|}"
 
-        printf '| %s | %s | %s | %s | %d | | | |\n' \
-            "$round" "$tid" "$hyp" "$window" "$((round + window))" >> "$log_file"
+        printf '| %s | %s | %s | %s | %s | %s | %d | | | |\n' \
+            "$round" "$tid" "$hyp" "$window" "$evaluator" "$requires" "$((round + window))" >> "$log_file"
     done
 }

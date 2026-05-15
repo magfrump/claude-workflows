@@ -325,12 +325,21 @@ _project_state_open_hypotheses() {
         return
     fi
 
+    # Outcome shifts position when the schema grows (decision 012 added
+    # Evaluator + Requires columns). Look it up by name from the header so
+    # the parser tolerates both old and new layouts.
+    local outcome_col
+    outcome_col=$(_locate_log_col "$hypothesis_log" "Outcome")
+    # Fallback to 7 (pre-decision-012 layout) when the header is missing or
+    # doesn't contain the column — keeps legacy logs readable.
+    [[ "$outcome_col" -gt 0 ]] || outcome_col=7
+
     # Emit "task_id|round|hypothesis" for rows whose Outcome column is empty.
     local rows
-    rows=$(awk -F'|' '
+    rows=$(awk -F'|' -v oc="$outcome_col" '
         /^\|/ {
             if ($0 ~ /^\|[ \t]*(Round|----)/) next
-            round = $2; tid = $3; hyp = $4; outcome = $7
+            round = $2; tid = $3; hyp = $4; outcome = $(oc)
             gsub(/^[ \t]+|[ \t]+$/, "", round)
             gsub(/^[ \t]+|[ \t]+$/, "", tid)
             gsub(/^[ \t]+|[ \t]+$/, "", hyp)
@@ -806,12 +815,16 @@ _summary_deferred_evaluation() {
         return
     fi
 
-    local scope_col
+    local scope_col outcome_col
     scope_col=$(_locate_scope_col "$hypothesis_log")
+    outcome_col=$(_locate_log_col "$hypothesis_log" "Outcome")
+    # Pre-decision-012 logs put Outcome at column 7. Fall back so older
+    # in-tree logs keep parsing until they are migrated.
+    [[ "$outcome_col" -gt 0 ]] || outcome_col=7
 
     local count=0
     while IFS= read -r line; do
-        _row_is_open_deferred "$line" "$current_round" "$scope_col" || continue
+        _row_is_open_deferred "$line" "$current_round" "$scope_col" "$outcome_col" || continue
 
         local round task_id hypothesis
         round=$(echo "$line" | awk -F'|' '{gsub(/^[ \t]+|[ \t]+$/, "", $2); print $2}')
@@ -830,39 +843,50 @@ _summary_deferred_evaluation() {
     fi
 }
 
-# --- Internal: locate the Scope column index in the log header ---
-# Returns the 1-based awk field index of the "Scope" column, or 0 if the
-# column is absent. Matched by anchoring on " Round " in the header line
-# to avoid mistaking hypothesis text that happens to contain "Scope".
-_locate_scope_col() {
-    local hypothesis_log="$1"
+# --- Internal: locate a named column's index in the log header ---
+# Returns the 1-based awk field index of a named column in the first header
+# row, or 0 if the column is absent. The header is identified as the line
+# starting with a pipe AND containing " Round " (a column every header has),
+# so we don't match hypothesis text that happens to mention the column name.
+# Args: $1 = hypothesis log path, $2 = column name to locate
+_locate_log_col() {
+    local hypothesis_log="$1" col_name="$2"
     local idx
-    idx=$(awk -F'|' '
-        /^\|/ && / Round / && / Scope / {
+    idx=$(awk -F'|' -v col="$col_name" '
+        /^\|/ && / Round / {
             for (i = 1; i <= NF; i++) {
                 gsub(/^[ \t]+|[ \t]+$/, "", $i)
-                if ($i == "Scope") { print i; exit }
+                if ($i == col) { print i; exit }
             }
+            exit
         }
     ' "$hypothesis_log")
     echo "${idx:-0}"
+}
+
+# Backward-compatible wrapper. Several call sites used this before
+# _locate_log_col existed; keep the name to minimise diff churn.
+_locate_scope_col() {
+    _locate_log_col "$1" "Scope"
 }
 
 # --- Internal: shared row filter for deferred-question scans ---
 # Returns 0 (true) if the row should be surfaced as a deferred question:
 #   - is a data row (not header / separator)
 #   - has a non-empty Task ID
-#   - has an empty Outcome ($7)
+#   - has an empty Outcome (column index supplied by caller)
 #   - is not Scope=internal-si (when that column exists)
 #   - has Round + Window <= current_round (when current_round > 0 and
 #     both Round and Window parse as integers)
 #
 # Returns 1 otherwise. current_round=0 disables the round-window check
-# so legacy callers behave unchanged.
+# so legacy callers behave unchanged. outcome_col defaults to 7 to keep
+# the function callable from older code paths that don't supply it.
 _row_is_open_deferred() {
     local line="$1"
     local current_round="${2:-0}"
     local scope_col="${3:-0}"
+    local outcome_col="${4:-7}"
 
     [[ "$line" != \|* ]] && return 1
     echo "$line" | grep -qE '^\|\s*(Round|----)' && return 1
@@ -871,7 +895,7 @@ _row_is_open_deferred() {
     round=$(echo "$line"   | awk -F'|' '{gsub(/^[ \t]+|[ \t]+$/, "", $2); print $2}')
     task_id=$(echo "$line" | awk -F'|' '{gsub(/^[ \t]+|[ \t]+$/, "", $3); print $3}')
     window=$(echo "$line"  | awk -F'|' '{gsub(/^[ \t]+|[ \t]+$/, "", $5); print $5}')
-    outcome=$(echo "$line" | awk -F'|' '{gsub(/^[ \t]+|[ \t]+$/, "", $7); print $7}')
+    outcome=$(echo "$line" | awk -F'|' -v c="$outcome_col" '{gsub(/^[ \t]+|[ \t]+$/, "", $c); print $c}')
 
     [[ -z "$task_id" ]] && return 1
     [[ -n "$outcome" ]] && return 1

@@ -575,7 +575,9 @@ Output a JSON array to docs/working/tasks-round-$ROUND.json with fields:
 {\"id\": \"short-kebab-case\", \"description\": \"one paragraph task description\",
 \"files_touched\": [\"list of files\"], \"independent\": true/false,
 \"hypothesis\": \"one-sentence falsifiable claim\",
-\"hypothesis_window\": <integer rounds before this can be evaluated>}
+\"hypothesis_window\": <integer rounds before this can be evaluated>,
+\"evaluator\": \"script\" | \"user\",
+\"requires\": { \"metric_logged\"?: \"<name>\", \"invocations\"?: <int>, \"days_elapsed\"?: <int> }}
 
 Only include tasks where independent is true. Discard tasks that depend on
 other tasks in this round.
@@ -588,7 +590,25 @@ restatement of what the task does. Pick a window of 1-5 rounds:
   - 2-3 rounds: requires accumulated usage or repeated cycles to assess
   - 4-5 rounds: requires real-world adoption in external projects
 The loop will not evaluate hypotheses autonomously; they are logged for the
-user to assess from the morning summary.${TASK_OFF_LIMITS}"
+user to assess from the morning summary.
+
+Evaluator guidance (decision 012 pillar 1):
+  - \"script\" — the morning summary can decide the outcome from the invocation
+    log at ~/.claude/logs/usage.jsonl (counts, durations, metrics). Use this
+    when the claim is structural and externally observable without a human
+    judgement call.
+  - \"user\" — only a human observation can decide. Use this when the claim
+    depends on whether the user would have noticed something, found a tool
+    useful, or made a different decision.
+Pick one. Both are first-class; do not default to one to dodge the choice.
+
+Requires guidance (only meaningful when evaluator is \"script\"):
+  - metric_logged: the named metric must appear in the invocation log
+  - invocations: the named skill/workflow must have been invoked at least N times
+  - days_elapsed: at least N days must have passed since hypothesis creation
+The script defers (marks INCONCLUSIVE, never auto-REFUTED) when these
+preconditions are unmet. Declare what would make the script's verdict
+trustworthy, not what would make it favorable.${TASK_OFF_LIMITS}"
 
     TASKS_FILE="$WORKING_DIR/tasks-round-$ROUND.json"
     if [ ! -f "$TASKS_FILE" ]; then
