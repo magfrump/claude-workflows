@@ -305,6 +305,8 @@ The checkpoint is a *derived artifact* — it contains no new information, only 
 
 **Implementation sessions should load this checkpoint file as their primary context source.** The research and plan docs remain available for deep dives, but the checkpoint is the starting point. When starting a fresh implementation session, read `docs/working/checkpoint-{topic}.md` first; only consult the research or plan docs if the checkpoint doesn't answer a specific question.
 
+**Context-budget warning (advisory, not gating).** After the checkpoint is written, scan its size. If the **File map** lists more than **20 entries**, or the rendered **Plan** section exceeds **400 lines**, emit a warning recommending the implementer review `workflows/task-decomposition.md` before starting step 6 — an oversized checkpoint is the diagnostic that the work probably wants to be split into independent sub-investigations rather than implemented as one loop. The thresholds are first-pass numbers (a 20-file working set or a 400-line plan section consumes a meaningful slice of a session's context budget on current models); they are written inline here so a later round can re-tune them by editing this paragraph, mirroring how the 500-line file-size guideline (step 6) and the Estimated-context-cost typical-ranges line (step 3) are stated. The warning is advisory only — it does not block implementation. If the implementer decides the checkpoint is fine as-is despite the size, that's a judgment call to record briefly (e.g., as a Risks bullet in the plan or a note alongside the Done-when checklist), not a gate to clear.
+
 **Done when...**
 - [ ] Plan doc exists in `docs/working/`, opens with the three-line header (Goal · Project state · Task status) followed by a `Research:` link line, and includes all required body sections (Approach, Steps, Size estimate, Estimated context cost, Actual context cost (post-implementation) placeholder, Test specification, Risks)
 - [ ] The Task status line accurately reflects current lifecycle (re-read it; if it lies, fix it)
@@ -318,6 +320,7 @@ The checkpoint is a *derived artifact* — it contains no new information, only 
 - [ ] Plan doc includes an Estimated context cost line covering research, implementation, and review phases, paired with an Actual context cost (post-implementation) placeholder line awaiting the post-implementation fill-in
 - [ ] The Test-strategy auto-invoke sub-step ran (or was short-circuited because `docs/working/test-strategy-{topic}.md` already existed for this loop), and its gap list (G1..Gn) plus Recommended Tests are reflected in the plan's Test specification subsection — or, if the skill returned no gaps or was unavailable, the subsection records that fact and was filled in manually
 - [ ] Checkpoint artifact exists at `docs/working/checkpoint-{topic}.md` with all template sections populated
+- [ ] If the checkpoint's File map has more than 20 entries or its Plan section exceeds 400 lines, the context-budget warning was acknowledged — either by decomposing the task via `workflows/task-decomposition.md` or by recording briefly (in plan Risks or alongside this checklist) why decomposition isn't warranted (advisory; an unacknowledged warning is not a hard gate, but it should not be silent)
 
 ### 4. Annotate (recommended) — human reviews and approves before implementation
 
