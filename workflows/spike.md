@@ -12,14 +12,31 @@ value-justification: "Replaces unbounded exploration of unknowns with timeboxed 
 
 ## When to pivot
 
-- **→ RPI**: The most common pivot. When the spike answers "yes, this works," its RPI seed section (see step 4) is the handoff — load it as initial input to RPI research rather than starting from scratch.
-- **→ DD** ([`divergent-design.md`](divergent-design.md)): When the spike surfaces multiple viable candidates rather than a single clear winner — or refutes the presumed approach and reveals alternatives worth comparing — its DD seed section (see step 4) is the handoff. Drop surviving candidates into DD step 1, falsified candidates into DD step 5's pruned-and-why, and diagnostic constraints into DD step 2, so DD doesn't regenerate work the spike already did.
+- **→ RPI**: The most common pivot. When the spike answers "yes, this works," its RPI seed section (see step 5) is the handoff — load it as initial input to RPI research rather than starting from scratch.
+- **→ DD** ([`divergent-design.md`](divergent-design.md)): When the spike surfaces multiple viable candidates rather than a single clear winner — or refutes the presumed approach and reveals alternatives worth comparing — its DD seed section (see step 5) is the handoff. Drop surviving candidates into DD step 1, falsified candidates into DD step 5's pruned-and-why, and diagnostic constraints into DD step 2, so DD doesn't regenerate work the spike already did.
 - **← From RPI**: When RPI research hits a "is this even feasible?" question that can't be answered by reading code, pause RPI and spike it. Carry the research doc's invariants as constraints for the spike.
 - **← From DD**: When a DD candidate needs feasibility validation, spike the uncertain option. The spike's findings feed back into DD's tradeoff matrix.
 
 ## Process
 
-### 1. Define the question (essential)
+### 1. Check the graveyard (essential)
+
+Before scoping the spike question, grep `docs/thoughts/spike-graveyard.md` for keywords from the question — library names, technique names, the specific behavior being tested. The graveyard records prior spikes that were abandoned, so a match means someone has tried this before and recorded why it didn't work.
+
+```bash
+grep -i -E "keyword1|keyword2|keyword3" docs/thoughts/spike-graveyard.md
+```
+
+Surface every match to the user before proceeding. A match doesn't always mean the spike is wasted — conditions may have changed (new library version, different constraints, the prior spike was scoped differently) — but the prior abandonment reason should inform the current question. If the prior reason still applies, abandon before starting; if not, note in step 2 why this attempt is different.
+
+If `docs/thoughts/spike-graveyard.md` doesn't exist yet, create it with the header from `workflows/spike.md`'s reference (see step 5 for the append format). An empty graveyard is fine — it just means no spike has been abandoned in this repo yet.
+
+**Done when...**
+- [ ] `docs/thoughts/spike-graveyard.md` has been grepped for keywords from the candidate spike question
+- [ ] Any matches have been surfaced and considered
+- [ ] If a prior abandonment reason still applies, the spike is abandoned before scoping; otherwise the differentiator is captured in step 2's question
+
+### 2. Define the question (essential)
 
 State the specific question the spike answers in one sentence. Examples:
 - "Can pdf-parse extract table structure from our sample PDFs?"
@@ -34,14 +51,14 @@ If you can't state the question clearly, the spike isn't ready to start.
 > - **Failure looks like:** _[concrete observable that means "no-go"]_
 > - **Ambiguous if:** _[what would leave the answer unclear — helps you plan what to test]_
 
-Skip this for exploratory spikes where the goal is to learn rather than decide (e.g., "How does X's API handle Y?" — there's no pass/fail, just discovery). When you do use it, revisit these criteria in step 4's Answer section to force a clear verdict.
+Skip this for exploratory spikes where the goal is to learn rather than decide (e.g., "How does X's API handle Y?" — there's no pass/fail, just discovery). When you do use it, revisit these criteria in step 5's Answer section to force a clear verdict.
 
 **Done when...**
 - [ ] The question is stated in one specific, answerable sentence
 - [ ] The question is about feasibility or behavior, not about implementation design
 - [ ] Success and failure criteria are defined (explicitly via the template above, or implicitly in the question)
 
-### 2. Set a timebox (recommended)
+### 3. Set a timebox (recommended)
 
 Spikes have a hard time limit. Default: **30 minutes of active work** (which may be 5-15 tool calls for an AI agent). If the question isn't answered by then, the answer is "this is harder than expected" — which is itself a useful answer.
 
@@ -59,9 +76,9 @@ These signals indicate the spike is no longer productive. When you notice one, s
 
 - **Wrong question.** You discover the spike is answering a different question than what actually matters — the assumption behind the question was wrong, the real blocker is elsewhere, or the answer (whatever it is) won't change the decision. **Action:** Stop immediately. Don't salvage partial findings by bending them toward the real question. Record what you learned about *why* the question was wrong, reframe, and start a new spike with the corrected question.
 
-When recording findings (step 4), note which signal triggered an early stop in the **Answer** section (e.g., "Stopped early: scope drift — original question answered at minute 15, additional exploration was beyond scope"). This makes spike records more useful for understanding why a spike ended the way it did.
+When recording findings (step 5), note which signal triggered an early stop in the **Answer** section (e.g., "Stopped early: scope drift — original question answered at minute 15, additional exploration was beyond scope"). This makes spike records more useful for understanding why a spike ended the way it did.
 
-### 3. Work in a throwaway space (essential)
+### 4. Work in a throwaway space (essential)
 
 ```bash
 git checkout -b spike/description-date
@@ -73,16 +90,16 @@ Spike code does NOT need to be clean, tested, or documented. It needs to answer 
 
 Some spikes probe libraries by fanning out — one sub-agent per candidate library, per API surface, or per documentation source. When you dispatch sub-agents from a spike, apply the [orchestrated review pattern](../patterns/orchestrated-review.md) — the same discipline `code-review` and `draft-review` use when they orchestrate parallel investigation:
 
-- **Goal preamble**: prepend the [3-line preamble](../patterns/orchestrated-review.md#goal-preamble) (User goal / Current task / Success criterion) to each dispatch. The spike question from step 1 is the User goal, identical across all sub-agents in the run.
+- **Goal preamble**: prepend the [3-line preamble](../patterns/orchestrated-review.md#goal-preamble) (User goal / Current task / Success criterion) to each dispatch. The spike question from step 2 is the User goal, identical across all sub-agents in the run.
 - **Goal-alignment self-report**: require each sub-agent to append the [Goal-Alignment Note](../patterns/orchestrated-review.md#goal-alignment-self-report) so coverage gaps, scope cuts, and silent guesses surface during synthesis rather than being absorbed into the spike record.
 
 This discipline matters *more* under a tight timebox, not less — drift in a 30-minute spike eats the whole spike.
 
 **Done when...**
 - [ ] Work is on a dedicated spike branch, not on a feature or main branch
-- [ ] The spike question from step 1 has been answered, OR the timebox from step 2 has expired
+- [ ] The spike question from step 2 has been answered, OR the timebox from step 3 has expired
 
-### 4. Record the findings (recommended)
+### 5. Record the findings (recommended)
 
 Before discarding the spike branch, create a brief record:
 
@@ -170,11 +187,24 @@ The exact sections don't matter — what matters is that the record captures a c
 
 **Promote lasting discoveries.** If the spike produced knowledge with lasting value beyond the current task — library limitations, undocumented API behavior, approaches definitively ruled out — promote those findings to `docs/thoughts/` with `Last verified` and `Relevant paths` freshness fields before deleting the spike branch. This prevents valuable discovery from being lost when the throwaway branch is cleaned up. Even a 3-line note like "pdf-parse silently drops merged cells — discovered in spike 2024-03-15" is worth preserving if it would save a future session from re-discovering the same limitation.
 
-### 5. Decision output (recommended)
+**Log abandoned approaches in the graveyard.** If the recommendation is anything other than "proceed to RPI" — i.e., the approach was refuted, the spike was inconclusive, an abandon signal triggered an early stop, or the pivot is "try alternative X" — append a one-line entry to `docs/thoughts/spike-graveyard.md` so a future spike's step 1 grep will surface this attempt:
+
+```
+<date> | <question> | <abandonment reason> | <branch>
+```
+
+- **date**: YYYY-MM-DD of the abandonment
+- **question**: the spike's original one-sentence question from step 2 (terse; if needed, trim adjectives so the line stays scannable)
+- **abandonment reason**: one clause naming the cause (e.g., "library silently drops merged cells", "no convergence at timebox", "wrong question — real blocker is in normalizer", "scope drift to adjacent question")
+- **branch**: the spike branch name — useful even after the branch is deleted, as a pointer for git archaeology
+
+Append even when the full spike record is not promoted to `docs/spikes/`. The graveyard is the lightweight always-on record; the full record is optional. DD pivots are a judgment call — append if the spike's tested approach was refuted (the alternatives are a different question), skip if the spike simply surfaced multiple viable candidates without ruling any out.
+
+### 6. Decision output (recommended)
 
 If the spike's findings resolve a question with **meaningful tradeoffs** (multiple viable options, non-obvious consequences), create or update a decision record in `docs/decisions/NNN-title.md`. If the answer is **unambiguous** (one clear winner, straightforward rationale), add a row to `docs/decisions/log.md` instead. In either case, note the spike record as the source (e.g., "Based on spike: [question]"). Skip this step if the spike's answer is purely "proceed to RPI" with no architectural choice involved.
 
-### 6. Clean up (advanced)
+### 7. Clean up (advanced)
 
 ```bash
 git checkout main
