@@ -63,9 +63,46 @@ Not every sentence needs checking. Focus on:
 Do NOT fact-check opinions, predictions, or value judgments. "These reforms won't make childcare cheap"
 is a judgment, not a checkable fact.
 
-## How to check each claim
+## Pass 1: Enumerate claims before verifying any of them
 
-For every checkable claim:
+Fact-checking is a **two-pass process**. Do not interleave enumeration with verification — the
+two passes serve different functions and mixing them lets claims slip past unchecked.
+
+- **Pass 1 (this section)** — walk the draft front to back and enumerate every checkable claim,
+  assigning each a stable ID (`C1`, `C2`, …) and a location. Produces the `## Claims identified`
+  section of the report.
+- **Pass 2 (next section)** — verify each enumerated claim, keyed by its ID. Produces the
+  per-claim verdict sections.
+
+The reason for the split: when enumeration and verification are interleaved, the model tends to
+stop short, conflate adjacent claims, or quietly skip claims that turn out to be hard to verify.
+An upfront enumeration produces a fixed checklist that the verification pass must traverse
+completely, and it makes the claim set auditable independently of the verdicts.
+
+### How to enumerate
+
+1. **Read the entire draft first.** Do not start verifying anything yet.
+2. **Walk the draft top to bottom** and, for each sentence or clause that meets the
+   [checkable-claim criteria](#what-counts-as-a-checkable-claim), emit one enumeration entry.
+3. **Assign a sequential ID.** Number claims `C1`, `C2`, … in the order they appear in the
+   draft. IDs are stable — Pass 2 verdicts will reference them by ID.
+4. **Record a draft location.** Either a paragraph reference (`paragraph 3`, `§ "Methodology",
+   paragraph 2`) or a short quoted snippet (≤ 15 words) that anchors the claim in the draft.
+   The location must be specific enough that a reader can find the claim in the original draft
+   without rereading the whole thing.
+5. **Capture the claim's surface form**, paraphrased to its load-bearing assertion. The exact
+   quote will appear again in the Pass 2 verdict heading — Pass 1's job is to make the set of
+   things being checked visible at a glance, not to repeat the full wording.
+6. **One claim per ID.** If a sentence contains two distinct checkable assertions (e.g., a
+   statistic *and* an attribution), split them into separate IDs.
+
+The enumeration must be complete before any verdict is written. If you discover a missed claim
+while running Pass 2, append it to the Claims identified section with a new ID and then verify
+it — never quietly insert it into the verdict stream without a corresponding enumeration entry.
+
+## Pass 2: Verify each enumerated claim
+
+Iterate the `## Claims identified` list in order. For every claim ID:
 
 1. **State the claim exactly as written in the draft.** Quote it.
 2. **Search for evidence.** Use web search. Look for primary sources: government data, peer-reviewed
@@ -422,7 +459,20 @@ Produce a Markdown document with this structure:
 
 ---
 
-## Claim 1: "[exact quote from draft]"
+## Claims identified
+
+The complete list of checkable claims extracted from the draft (Pass 1). Every verdict in the
+sections below must reference one of these IDs; every ID listed here must have a matching
+verdict section.
+
+- **C1** — "[short quoted snippet, ≤ 15 words]" (paragraph N / § "Section title")
+- **C2** — "[short quoted snippet]" (paragraph N)
+- **C3** — "[short quoted snippet]" (§ "Section title", paragraph M)
+- …
+
+---
+
+## Verdict for C1: "[exact quote from draft]"
 
 **Verdict:** [Accurate / Mostly accurate / Disputed / Inaccurate / Unverified / Secondary-only]
 **Confidence:** [High / Medium / Low]
@@ -441,20 +491,23 @@ provenance `[inferred]` verdicts, write out the inferential chain. For provenanc
 
 ---
 
-## Claim 2: "[exact quote from draft]"
+## Verdict for C2: "[exact quote from draft]"
 
 ...
 ```
 
-Order the claims by their appearance in the draft, not by verdict severity. Number them sequentially.
+Order the claims by their appearance in the draft, not by verdict severity. Claim IDs (`C1`,
+`C2`, …) are assigned during Pass 1 and reused verbatim as the keys of the verdict headings;
+once assigned, they do not change.
 
 At the end, include a summary section:
 
 ```
 ## Claims Requiring Author Attention
 
-[List only the claims rated Mostly Accurate, Disputed, Inaccurate, or Unverified — with a
-one-line explanation of what needs fixing or sourcing. This is the actionable checklist.]
+[List only the claims rated Mostly Accurate, Disputed, Inaccurate, or Unverified — each entry
+references its claim ID (e.g., "**C3** — …") with a one-line explanation of what needs fixing
+or sourcing. This is the actionable checklist.]
 ```
 
 ## Output Location
@@ -518,3 +571,33 @@ only one side or hand-waves with "various sources", is **rejected** — rewrite 
 report goes out. If you cannot identify two distinct positions, the verdict is not
 Disputed: re-rate it as **Unverified** with provenance `[assumed]` and explain what
 evidence would be needed to establish the disagreement.
+
+## Self-check: claim ID integrity
+
+Before finalizing the report, audit the relationship between the `## Claims identified`
+section and the per-claim verdict sections. The two-pass discipline only works if the IDs
+on both sides line up exactly.
+
+1. **Order:** the `## Claims identified` section must appear **before** any `## Verdict for
+   C…` heading in the document. A report that emits a verdict before listing the claim is
+   **rejected** — restructure so enumeration precedes verification.
+2. **Every verdict references a claim ID.** Each verdict heading must take the form
+   `## Verdict for C<N>: "[exact quote]"` where `C<N>` matches an entry in `## Claims
+   identified`. A verdict heading that omits the `C<N>` reference, uses a different
+   numbering scheme, or references an ID not present in the Claims identified list is
+   **rejected**.
+3. **No orphan IDs in verdicts.** Scan every `Verdict for C<N>` heading and confirm `C<N>`
+   appears in the Claims identified list. If a verdict references an ID that was never
+   enumerated, either add the missing entry to Claims identified (and re-number nothing —
+   IDs are stable) or remove the spurious verdict.
+4. **No missing verdicts.** Scan every ID in Claims identified and confirm it has a
+   corresponding `Verdict for C<N>` section. An enumerated claim with no verdict is
+   **rejected** — either produce the verdict (even if Unverified with provenance
+   `[assumed]`) or strike the entry from Claims identified with a one-line rationale.
+5. **IDs are stable.** Do not renumber claims after Pass 1. If a missed claim is found
+   during Pass 2, append it with the next unused ID — never reshuffle existing IDs, since
+   downstream readers and orchestrators may already be referencing them.
+
+If any of these checks fail, fix the report before delivering it. ID integrity is the
+spine of the two-pass approach; a report that breaks it is no more auditable than a
+single-pass interleaved verdict stream.
