@@ -31,7 +31,7 @@ Evaluate triggers top-to-bottom. Take the **first match**; if none match, defaul
 
 These principles apply to **all** bug-fixing work, whether inside RPI or standalone. The standalone `bug-diagnosis.md` workflow is deprecated — use these defaults directly.
 
-1. **Reproduce first.** Confirm you can trigger the bug reliably before diagnosing. Write the reproduction as a test if possible — it becomes your verification.
+1. **Reproduce first.** Before forming any hypothesis, record a concrete `Reproduction:` line at the start of the diagnosis session. It must be either (a) a runnable command (e.g., `pytest tests/foo.py::test_bar`, `curl -X POST https://api.example.com/...`) or (b) a numbered manual sequence with ≥2 steps (e.g., `1. Navigate to /login  2. Submit form with email=foo, password=bar  3. Observe 500 response`). Bare user-complaint prose ("users say login fails") is not a reproduction and is not acceptable — if that's all you have, get a concrete trigger before hypothesizing. Write the reproduction as a test if possible — it becomes your verification.
 2. **Read the error.** Stack traces, error messages, and log output often point directly to the problem. Start here, not with theories.
 3. **Hypothesize specifically.** State a falsifiable claim naming a specific location, mechanism, and testable outcome. Bad: "something is wrong with parsing." Good: "parseDate returns null for timezone offsets because the regex omits `+HH:MM`."
 4. **Test, don't guess.** Design the smallest experiment that confirms or refutes the hypothesis. If confirmed → fix. If refuted → record what you learned, form a new hypothesis.
