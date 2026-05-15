@@ -114,6 +114,7 @@ Time spent: [X minutes]
 - **Known invariants**: [Constraints or requirements discovered during the spike]
 - **Relevant files/APIs**: [What the RPI research phase should read first]
 - **Gotchas to carry forward**: [Non-obvious things that would bite someone who didn't do the spike]
+- **Failure narratives (from /pre-mortem)**: [3-5 named root-cause failure stories the RPI plan should defend against]
 - **What the spike did NOT answer**: [Gaps the RPI research phase still needs to fill]
 
 ## DD seed (include if recommending "explore alternatives via DD")
@@ -130,6 +131,8 @@ Time spent: [X minutes]
 ```
 
 The three-line header (Goal · Project state · Task status) immediately after the metadata block is the same drift-surfacing convention RPI working docs use (see `workflows/research-plan-implement.md` step 2). Lifecycle keyword vocabulary is identical: `in-progress | blocked | paused | complete`, with an optional parenthetical phase note. Update the **Task status** line whenever the spike record is read or revised; if any line no longer matches reality, fix it before doing anything else with the record.
+
+**Pre-mortem before emitting the RPI seed (proceed branch only).** Before emitting the RPI seed, run `/pre-mortem` on the proposed approach; the narratives become part of the spike record findings and are passed forward in the seed. The spike has gathered feasibility evidence ("we tried it, it worked") but no failure framing — the pre-mortem closes that gap by producing 3-5 retrospective failure narratives with named root causes. Capture the narratives in the seed's **Failure narratives** bullet so RPI's research phase inherits both the "yes, this works" evidence and the "here is how it could still fail" framing. Skip this for spikes that abandon the approach or pivot to DD: those branches already carry their own framing forward (an inconclusive record's "what didn't work" list, or a DD seed with falsified candidates and diagnostic constraints).
 
 The "RPI seed" section is the handoff point. When a spike recommends proceeding, the RPI research phase should start by loading the spike record — the seed section provides initial direction so research doesn't repeat work the spike already did. Anything the spike learned about what exists, what connects to what, and what's fragile belongs here, not just in "key findings."
 
@@ -162,6 +165,7 @@ The exact sections don't matter — what matters is that the record captures a c
 - [ ] Key findings include what worked, what didn't, and any surprises
 - [ ] A recommendation is stated (proceed to RPI / explore alternatives via DD / try alternative / need more investigation)
 - [ ] If recommending "proceed," the RPI seed section is populated with scope, invariants, relevant files, gotchas, and gaps
+- [ ] If recommending "proceed," `/pre-mortem` has been run on the proposed approach and its narratives are captured in the RPI seed's **Failure narratives** bullet
 - [ ] If recommending "explore alternatives via DD," the DD seed section is populated with surviving candidates (each a one-sentence approach), falsified candidates (each as `[ID]: reason`), diagnostic constraints labeled hard/soft, and remaining gaps
 
 **Promote lasting discoveries.** If the spike produced knowledge with lasting value beyond the current task — library limitations, undocumented API behavior, approaches definitively ruled out — promote those findings to `docs/thoughts/` with `Last verified` and `Relevant paths` freshness fields before deleting the spike branch. This prevents valuable discovery from being lost when the throwaway branch is cleaned up. Even a 3-line note like "pdf-parse silently drops merged cells — discovered in spike 2024-03-15" is worth preserving if it would save a future session from re-discovering the same limitation.
