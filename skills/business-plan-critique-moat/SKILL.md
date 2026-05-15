@@ -277,7 +277,7 @@ instructions.
 
 When dispatched by an orchestrator, append a Goal-Alignment Note at the end of your critique
 using the canonical form from
-[`patterns/orchestrated-review.md`](../patterns/orchestrated-review.md):
+[`patterns/orchestrated-review.md`](../../patterns/orchestrated-review.md):
 
 ```markdown
 ## Goal-Alignment Note

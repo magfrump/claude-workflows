@@ -35,7 +35,7 @@ requires:
 > ## ⚠️ Standalone invocation only — skip if dispatched by an orchestrator
 >
 > If you were invoked directly by the user (not via `code-review` or another orchestrator
-> that prepends a [goal preamble](../patterns/orchestrated-review.md#goal-preamble) with
+> that prepends a [goal preamble](../../patterns/orchestrated-review.md#goal-preamble) with
 > `User goal:` / `Current task:` / `Success criterion:` lines), do this **before**
 > producing the critique:
 >

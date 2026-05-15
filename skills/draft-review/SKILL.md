@@ -194,7 +194,7 @@ For each fact-check agent, you MUST:
 4. Instruct the agent to save its report as `docs/reviews/fact-check-report.md`
 5. Require the agent to append a **Goal-Alignment Note** at the end of its report and chat
    summary using the canonical form from
-   [`patterns/orchestrated-review.md`](../patterns/orchestrated-review.md):
+   [`patterns/orchestrated-review.md`](../../patterns/orchestrated-review.md):
 
    ```markdown
    ## Goal-Alignment Note
@@ -267,7 +267,7 @@ For each critic agent instance, you MUST:
    skill instructions — do not prescribe the format.
 7. Require the agent to append a **Goal-Alignment Note** at the end of its critique and chat
    summary using the canonical form from
-   [`patterns/orchestrated-review.md`](../patterns/orchestrated-review.md):
+   [`patterns/orchestrated-review.md`](../../patterns/orchestrated-review.md):
 
    ```markdown
    ## Goal-Alignment Note
@@ -304,7 +304,7 @@ duplicate the synthesis. Banners are between-stage progress indicators, not synt
 #### Goal-alignment scan (run before producing deliverables)
 
 Before writing the chat synthesis, scan the **Goal-Alignment Note** appended by each
-sub-agent (see [`patterns/orchestrated-review.md`](../patterns/orchestrated-review.md)).
+sub-agent (see [`patterns/orchestrated-review.md`](../../patterns/orchestrated-review.md)).
 Collect:
 
 - Any sub-agent whose `Answered:` value is `no` or `partial` — record the agent name

@@ -45,7 +45,7 @@ This skill orchestrates the following sub-skills. Ensure they exist in `skills/`
 You are an orchestrator. You coordinate a multi-stage review of code changes by dispatching
 work to specialized sub-agents and then synthesizing their output.
 
-This workflow follows the [orchestrated review pattern](../patterns/orchestrated-review.md).
+This workflow follows the [orchestrated review pattern](../../patterns/orchestrated-review.md).
 
 You produce two deliverables: a freeform chat summary and a structured code review rubric
 document.
@@ -279,14 +279,14 @@ Spawn one agent with the code-fact-check skill.
 4. Instruct the agent to save its report as `docs/reviews/code-fact-check-report.md`
 5. Require the agent to tag every claim with a **Legibility-target** field
    (`for-author`, `for-orchestrator-synthesis`, or `for-automated-gate`) per
-   the [legibility-target tagging](../patterns/orchestrated-review.md#legibility-target-tagging)
+   the [legibility-target tagging](../../patterns/orchestrated-review.md#legibility-target-tagging)
    spec. Default mapping for fact-check claims: Incorrect / Stale / Mostly
    Accurate → `for-author` (the author needs to fix or update); Verified /
    Unverifiable → `for-orchestrator-synthesis` (orchestrator uses these for
    coverage and convergence, doesn't need to surface verbatim).
 6. Require the agent to append a **Goal-Alignment Note** at the end of its report and chat
    summary using the canonical form from
-   [`patterns/orchestrated-review.md`](../patterns/orchestrated-review.md):
+   [`patterns/orchestrated-review.md`](../../patterns/orchestrated-review.md):
 
    ```markdown
    ## Goal-Alignment Note
@@ -489,7 +489,7 @@ For each critic agent, you MUST:
 6. Instruct the agent to save its critique as `docs/reviews/{critic-name}-review.md`
 7. Require the agent to tag every finding with a **Legibility-target** field
    (`for-author`, `for-orchestrator-synthesis`, or `for-automated-gate`) per
-   the [legibility-target tagging](../patterns/orchestrated-review.md#legibility-target-tagging)
+   the [legibility-target tagging](../../patterns/orchestrated-review.md#legibility-target-tagging)
    spec. The tag goes on the finding alongside Severity / Confidence:
 
    ```markdown
@@ -515,7 +515,7 @@ For each critic agent, you MUST:
    ground truth.
 8. Require the agent to append a **Goal-Alignment Note** at the end of its critique and chat
    summary using the canonical form from
-   [`patterns/orchestrated-review.md`](../patterns/orchestrated-review.md):
+   [`patterns/orchestrated-review.md`](../../patterns/orchestrated-review.md):
 
    ```markdown
    ## Goal-Alignment Note
@@ -532,7 +532,7 @@ For each critic agent, you MUST:
 
 **Worked example — dispatch goal preamble with optional Project-state fields**
 
-Each critic dispatch is prepended with the [goal preamble](../patterns/orchestrated-review.md#goal-preamble). When the orchestrator has the upstream research/plan/checkpoint/handoff doc's Project state lead block, lift those facts verbatim into the optional sub-bullets under Current task. A filled example for the security critic in this pipeline:
+Each critic dispatch is prepended with the [goal preamble](../../patterns/orchestrated-review.md#goal-preamble). When the orchestrator has the upstream research/plan/checkpoint/handoff doc's Project state lead block, lift those facts verbatim into the optional sub-bullets under Current task. A filled example for the security critic in this pipeline:
 
 ```
 User goal: Get a comprehensive code review on the current branch before opening a PR.
@@ -572,7 +572,7 @@ duplicate the synthesis. Banners are between-stage progress indicators, not synt
 #### Goal-alignment scan (run before producing deliverables)
 
 Before writing the chat synthesis, scan the **Goal-Alignment Note** appended by each
-sub-agent (see [`patterns/orchestrated-review.md`](../patterns/orchestrated-review.md)).
+sub-agent (see [`patterns/orchestrated-review.md`](../../patterns/orchestrated-review.md)).
 Collect:
 
 - Any sub-agent whose `Answered:` value is `no` or `partial` — record the agent name
@@ -781,7 +781,7 @@ carry an author note. 🟢 items are optional.
 ```
 
 **Legibility-target column:** Carry forward the tag each critic placed on
-the source finding (see [taxonomy](../patterns/orchestrated-review.md#legibility-target-tagging)).
+the source finding (see [taxonomy](../../patterns/orchestrated-review.md#legibility-target-tagging)).
 Typical mapping: 🔴 / 🟡 / 🟢 rows are `for-author`; ✅ rows are
 `for-orchestrator-synthesis`. `for-automated-gate` findings (e.g., the
 security-reviewer HALT-ESCALATE pattern) live in the escalation block

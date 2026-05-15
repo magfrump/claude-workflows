@@ -28,7 +28,7 @@ requires:
 > ## ⚠️ Standalone invocation only — skip if dispatched by an orchestrator
 >
 > If you were invoked directly by the user (not via `draft-review` or another orchestrator
-> that prepends a [goal preamble](../patterns/orchestrated-review.md#goal-preamble) with
+> that prepends a [goal preamble](../../patterns/orchestrated-review.md#goal-preamble) with
 > `User goal:` / `Current task:` / `Success criterion:` lines), do this **before**
 > producing the critique:
 >
@@ -118,7 +118,7 @@ If no fact-check report is provided, emit this warning before the critique:
 Treat each persona application as a dispatch. The personas run inline in a single pass, but
 without an explicit anchor each one drifts toward generic critique within its lens rather
 than staying tied to what the user actually asked the orchestration to evaluate. The goal
-preamble and Goal-Alignment Note from the [orchestrated-review pattern](../patterns/orchestrated-review.md#goal-preamble)
+preamble and Goal-Alignment Note from the [orchestrated-review pattern](../../patterns/orchestrated-review.md#goal-preamble)
 are how this skill prevents that drift.
 
 For each selected persona, produce a focused critique section. Each section must:
@@ -142,7 +142,7 @@ For each selected persona, produce a focused critique section. Each section must
 5. **Assess severity:** Is this a fatal flaw, a significant weakness, or a point to consider?
 6. **Suggest a test or mitigation:** What would address this persona's concern?
 7. **Close with a Goal-Alignment Note** using the canonical form from
-   [`patterns/orchestrated-review.md`](../patterns/orchestrated-review.md). Use a
+   [`patterns/orchestrated-review.md`](../../patterns/orchestrated-review.md). Use a
    `####` heading so the note sits *inside* its parent persona section (`###`)
    rather than visually outranking it:
 

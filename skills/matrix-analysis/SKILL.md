@@ -171,7 +171,7 @@ For each criterion sub-agent, include in the prompt:
 
 1. **The canonical goal preamble**, prepended at the very top of the prompt above all
    role-specific content, per the
-   [goal preamble](../patterns/orchestrated-review.md#goal-preamble) spec. Three required
+   [goal preamble](../../patterns/orchestrated-review.md#goal-preamble) spec. Three required
    top-level lines:
 
    ```
@@ -238,7 +238,7 @@ For each criterion sub-agent, include in the prompt:
    it should say "Insufficient information" rather than guess.
 
 9. **Append a Goal-Alignment Note** at the end of the sub-agent's output using the canonical
-   form from [`patterns/orchestrated-review.md`](../patterns/orchestrated-review.md):
+   form from [`patterns/orchestrated-review.md`](../../patterns/orchestrated-review.md):
 
    ```markdown
    ## Goal-Alignment Note
@@ -257,7 +257,7 @@ For each criterion sub-agent, include in the prompt:
 **Worked example — dispatch goal preamble**
 
 Each criterion dispatch is prepended with the
-[goal preamble](../patterns/orchestrated-review.md#goal-preamble). A filled example for the
+[goal preamble](../../patterns/orchestrated-review.md#goal-preamble). A filled example for the
 "performance" criterion in a matrix comparing three databases:
 
 ```

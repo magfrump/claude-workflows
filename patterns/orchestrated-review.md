@@ -106,7 +106,7 @@ Rules:
 - **Each question is one short line.** Phrase as a question, not a hedged statement. "Did you want test files included in scope?" beats "Unclear whether test files are in scope."
 - **Tie each question to a guess you actually made.** The bullet documents decisions that could have gone the other way given different orchestrator intent — not generic curiosity about the codebase.
 
-When this bullet is present, the orchestrator surfaces the questions during synthesis (typically under a "Questions to clarify" heading), attributes them to the sub-agent that raised them, and presents them alongside findings rather than burying them. Multiple sub-agents asking the same question is a strong signal the orchestrator under-specified the prompt and should de-duplicate before surfacing. See worked examples in [`skills/code-review.md`](../skills/code-review.md) and [`skills/draft-review.md`](../skills/draft-review.md).
+When this bullet is present, the orchestrator surfaces the questions during synthesis (typically under a "Questions to clarify" heading), attributes them to the sub-agent that raised them, and presents them alongside findings rather than burying them. Multiple sub-agents asking the same question is a strong signal the orchestrator under-specified the prompt and should de-duplicate before surfacing. See worked examples in [`skills/code-review/SKILL.md`](../skills/code-review/SKILL.md) and [`skills/draft-review/SKILL.md`](../skills/draft-review/SKILL.md).
 
 #### Decisions I made (optional)
 
