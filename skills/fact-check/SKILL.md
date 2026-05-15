@@ -107,9 +107,14 @@ For these claims, replace step 2's web search with direct code verification:
   against test suites and configuration files.
 
 Apply the same verdict scale (Accurate / Mostly accurate / Disputed / Inaccurate / Unverified)
-and the same confidence calibration. A claim verified by reading the source code qualifies for
-**High confidence** — code is a primary source. A claim that contradicts what the code shows is
-**Inaccurate** regardless of what documentation or comments say.
+and the same confidence calibration. Code is a **primary source**, so the derivation rule in
+[Confidence Calibration](#confidence-calibration) applies: a single code-read on its own
+qualifies for **Medium** confidence; reaching **High** requires a second independent primary
+source — typically a test that exercises the behavior, a spec or design doc the code implements,
+a related code path that corroborates the claim, or a referenced commit message documenting
+the original intent. A claim that contradicts what the code shows is **Inaccurate** regardless
+of what documentation or comments say, and the verdict's confidence still follows the
+derivation rule from whichever sources back the contradiction.
 
 Code reads are by definition `[deep-read]` for the scrutiny tag — you have inspected the
 implementation directly, not a summary of it. If you grep-confirmed a single line without
@@ -183,22 +188,33 @@ citation or a softened framing in the draft.
 
 ## Confidence Calibration
 
-Use these criteria when assigning confidence levels. In your report, briefly state which criterion
-applies so that confidence ratings are consistent and auditable.
+Confidence is **derivable from the cited sources**, not a free-floating self-rating. Mirror the
+discipline that [Provenance Tags](#provenance-tags) apply to the *kind* of evidence: an auditor
+reading the verdict's `Sources` line should be able to compute the Confidence value mechanically
+from the count and type of sources cited, then inspect the [scrutiny tag](#scrutiny-tags) to
+confirm or downgrade.
 
-- **High** — Claim verified against a **primary source**: official documentation, direct code reading,
-  government data, peer-reviewed research, or another authoritative reference. Multiple independent
-  primary sources further strengthen a High rating. High confidence generally requires at least one
-  `[deep-read]` source — see [Scrutiny and confidence aggregation](#scrutiny-and-confidence-aggregation).
-- **Medium** — Claim is consistent with **multiple secondary sources** (reputable journalism, expert
-  commentary, well-sourced reference material) or follows from a **strong inferential chain** grounded
-  in verified premises. No primary source was found, but the convergence of evidence is persuasive.
-- **Low** — Claim rests on a **single source**, relies on **indirect inference** (e.g., extrapolation
-  from loosely related data), or faces **conflicting signals** from sources of comparable reliability.
-  A Low rating does not mean the claim is wrong — it means the evidentiary basis is thin or contested.
+### Derivation rule
 
-When in doubt between two levels, choose the lower one and explain what additional evidence would
-raise confidence.
+- **High** — Backed by **≥2 independent primary sources**. "Independent" means different
+  organizations, methodologies, or datasets — not the same finding reported by two outlets, and
+  not two pages of the same publication. At least one of the cited primary sources must be
+  `[deep-read]` (see [Scrutiny and confidence aggregation](#scrutiny-and-confidence-aggregation)).
+- **Medium** — Backed by **exactly 1 primary source**, OR by **≥2 convergent secondary sources**
+  (reputable journalism, expert commentary, well-sourced reference material) whose evidence
+  aligns. A single primary source `[deep-read]` in full is the canonical Medium evidence; two
+  secondaries that triangulate without disagreement are the alternate path.
+- **Low** — Backed by **secondary sources only** — a single secondary citation, conflicting
+  signals across comparable sources, or evidence that rests on indirect inference from loosely
+  related data. A Low rating does not mean the claim is wrong — it means the evidentiary basis
+  is thin and a stronger source would lift the rating.
+
+When in doubt between two levels, choose the lower one and state in the verdict what additional
+evidence would lift it. **Never assign a confidence value that cannot be defended by pointing at
+the Sources line.** If the rule and the rating disagree, the rule wins — or the Sources line is
+incomplete and the rating needs to be recomputed.
+
+Primary sources are defined in [Source Ranking](#source-ranking) below.
 
 ### Source Ranking
 
@@ -278,7 +294,8 @@ sources actually used:
   body and surrounding code, the full dataset row including footnotes, the transcript passage
   with surrounding turns, the speech in full. Code reads are `[deep-read]` by definition (see
   [Code-Based Claims](#code-based-claims)). One `[deep-read]` of a primary source is the
-  baseline for a High-confidence `[observed]` verdict.
+  baseline scrutiny depth for any `[observed]` verdict; reaching High confidence additionally
+  requires a second independent primary source per the [derivation rule](#derivation-rule).
 - **[inferred]** — The source named or implied by the claim was *not* read; instead, the
   fact-checker located evidence in a *different but related* artifact and inferred what the
   named source must say. Examples: a peer review of a paper that summarizes its findings;
@@ -304,37 +321,40 @@ unambiguous.
 
 ### Scrutiny and confidence aggregation
 
-Scrutiny weights the evidence behind a confidence rating. The rule of thumb:
+The [derivation rule](#derivation-rule) sets the **floor**: confidence is computed mechanically
+from the count and type of cited sources. Scrutiny modulates that floor — it cannot lift it,
+but it can require a downgrade. In practice:
 
-> **One `[deep-read]` High beats two `[abstract]` Highs.**
+- **At least one cited source per verdict must be `[deep-read]`.** If every cited source is
+  `[abstract]` or scrutiny `[inferred]`, downgrade by one tier (High → Medium, Medium → Low,
+  Low → Unverified with provenance `[assumed]`).
+- **An `[abstract]`-only read of a primary source** can count toward the derivation rule's
+  primary-source count only when the abstract itself contains the specific number, quote, or
+  claim being checked — not when the rating rests on the assumption that the body confirms
+  what the abstract suggests. Otherwise treat it as scrutiny `[inferred]` for aggregation.
+- **Scrutiny `[inferred]` sources** (where the named source was not directly read but its
+  content was inferred from a related artifact) do not count toward the primary-source tally
+  on their own. Two scrutiny-`[inferred]` secondaries do **not** satisfy the "≥2 secondary"
+  path for Medium until at least one is opened.
+- **One `[deep-read]` primary source still does not lift Medium to High.** The derivation rule
+  requires the *count* of independent primary sources, regardless of how deeply any single one
+  was read. State in the verdict what a second independent primary source would resolve.
 
-A single primary source read in full carries more evidentiary weight than two surface reads
-of secondary summaries, even when both surface reads point the same direction. In practice:
-
-- **High** confidence with a single source generally requires that source to be `[deep-read]`.
-  An `[abstract]`-only read of a primary source can support High only when the abstract
-  itself contains the specific number, quote, or claim being checked — not when High is
-  resting on the assumption that the body confirms what the abstract suggests.
-- **High** confidence aggregated across sources should weight `[deep-read]` and `[abstract]`
-  asymmetrically. Two `[abstract]` reads of secondary sources do **not** sum to a
-  primary-source `[deep-read]`. Combine them and you have, at best, Medium with strong
-  convergence — note the gap and what a `[deep-read]` would resolve.
-- **Scrutiny `[inferred]`** sources never on their own justify High confidence in the cited
-  claim; they may support a related inferential chain but the unread source remains an
-  unverified link.
-
-When confidence and scrutiny appear to be in tension (e.g., High confidence drawn entirely
-from `[abstract]` reads), explicitly justify the call in the verdict explanation or
-downgrade. Audit-ability matters more than the rating: a reader should be able to see how
-deeply you engaged with the evidence and decide whether they agree with the weighting.
+When confidence and scrutiny appear to be in tension (e.g., High confidence drawn from two
+primary sources both read only at `[abstract]` depth), apply the downgrade in the report and
+justify the call in the verdict explanation. Audit-ability matters more than the rating: a
+reader should be able to recompute the tier from the Sources line and see how scrutiny
+modulated the result.
 
 ### Examples
 
 | Verdict | Confidence | Provenance | Scrutiny | Rationale |
 |---------|------------|------------|----------|-----------|
-| Accurate | High | `[observed]` | `[deep-read]` | Read Section 11406 of the IRA at congress.gov in full to verify the $35 insulin cap. |
-| Accurate | Medium | `[inferred]` | `[abstract]` | Three reputable news outlets summarize the same study; only their summaries (not the study itself) were consulted. Convergent but surface-level. |
-| Mostly accurate | Medium | `[observed]` | `[abstract]` | NCSL right-to-work-laws table viewed on the NCSL summary page; the underlying state-by-state PDF was not opened. The aggregate count is visible in the summary but state-level breakdown was not verified. |
+| Accurate | High | `[observed]` | `[deep-read]` | Two independent primary sources: Section 11406 of the IRA at congress.gov (read in full) and CMS's official Medicare Part D rule implementing the cap. Both confirm $35/month — derivation rule's ≥2-primary threshold met, with at least one `[deep-read]`. |
+| Accurate | Medium | `[observed]` | `[deep-read]` | Single primary source: Section 11406 of the IRA read in full. No second independent primary located; a CMS implementation rule or Treasury enforcement memo would lift this to High. |
+| Accurate | Medium | `[inferred]` | `[abstract]` | Three reputable news outlets (≥2 secondary) summarize the same study and agree; only their summaries (not the study itself) were consulted. Convergent secondaries satisfy the "≥2 secondary" path for Medium, but surface-level — `[deep-read]` of the study would lift to High once it counts as a second primary. |
+| Mostly accurate | Medium | `[observed]` | `[abstract]` | NCSL right-to-work-laws table viewed on the NCSL summary page (1 primary, `[abstract]`); the underlying state-by-state PDF was not opened. The aggregate count is visible in the summary but state-level breakdown was not verified. |
+| Low | Low | `[inferred]` | `[abstract]` | Single secondary source: a Vox explainer summarizing what a Treasury report supposedly says. No primary located, no convergent second secondary — derivation rule places this at Low until a primary or a second independent secondary is added. |
 | Unverified | Low | `[assumed]` | `[inferred]` | A press release referenced an internal report with the relevant figure; the report itself was paywalled and could not be retrieved. The figure is inferred from the press release's framing. |
 
 ## Citation Requirement
