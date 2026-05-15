@@ -105,7 +105,7 @@ generate_morning_summary() {
         _summary_whats_new "$start_round" "$end_round" "$working_dir" "$round_history" "$completed_tasks"
         _summary_task_legibility "$start_round" "$end_round" "$working_dir"
         _summary_gate_stats "$round_history"
-        _summary_deferred_evaluation "$hypothesis_log" "$end_round"
+        _summary_deferred_evaluation "$hypothesis_log" "$end_round" "$working_dir"
         _summary_footer
     } > "$output_path"
 
@@ -801,6 +801,7 @@ _summary_gate_stats() {
 _summary_deferred_evaluation() {
     local hypothesis_log="$1"
     local current_round="${2:-0}"
+    local working_dir="${3:-}"
 
     echo ""
     echo "## Deferred Evaluation Questions"
@@ -815,9 +816,11 @@ _summary_deferred_evaluation() {
         return
     fi
 
-    local scope_col outcome_col
+    local scope_col outcome_col evaluator_col requires_col
     scope_col=$(_locate_scope_col "$hypothesis_log")
     outcome_col=$(_locate_log_col "$hypothesis_log" "Outcome")
+    evaluator_col=$(_locate_log_col "$hypothesis_log" "Evaluator")
+    requires_col=$(_locate_log_col "$hypothesis_log" "Requires")
     # Pre-decision-012 logs put Outcome at column 7. Fall back so older
     # in-tree logs keep parsing until they are migrated.
     [[ "$outcome_col" -gt 0 ]] || outcome_col=7
@@ -826,20 +829,284 @@ _summary_deferred_evaluation() {
     while IFS= read -r line; do
         _row_is_open_deferred "$line" "$current_round" "$scope_col" "$outcome_col" || continue
 
-        local round task_id hypothesis
+        local round task_id hypothesis evaluator requires
         round=$(echo "$line" | awk -F'|' '{gsub(/^[ \t]+|[ \t]+$/, "", $2); print $2}')
         task_id=$(echo "$line" | awk -F'|' '{gsub(/^[ \t]+|[ \t]+$/, "", $3); print $3}')
         hypothesis=$(echo "$line" | awk -F'|' '{gsub(/^[ \t]+|[ \t]+$/, "", $4); print $4}')
+        if [[ "$evaluator_col" -gt 0 ]]; then
+            evaluator=$(echo "$line" | awk -F'|' -v c="$evaluator_col" '{gsub(/^[ \t]+|[ \t]+$/, "", $c); print $c}')
+        else
+            evaluator=""
+        fi
+        if [[ "$requires_col" -gt 0 ]]; then
+            requires=$(echo "$line" | awk -F'|' -v c="$requires_col" '{gsub(/^[ \t]+|[ \t]+$/, "", $c); print $c}')
+        else
+            requires=""
+        fi
 
         count=$((count + 1))
         echo "${count}. **${task_id}** (round ${round}): \"${hypothesis}\""
 
-        _generate_questions "$hypothesis"
+        # Script-evaluator rows get a precondition report instead of free-form
+        # questions. The script never auto-writes outcomes; the user reads the
+        # report and decides whether to mark INCONCLUSIVE / CONFIRMED / REFUTED
+        # in the log. (decision 012 pillar 1)
+        if [[ "$evaluator" == "script" ]]; then
+            _evaluate_script_preconditions "$round" "$task_id" "$requires" "$working_dir"
+        else
+            _generate_questions "$hypothesis"
+        fi
         echo ""
     done < "$hypothesis_log"
 
     if [ "$count" -eq 0 ]; then
         echo "No open hypotheses to evaluate."
+    fi
+}
+
+# --- Internal: extract skill/workflow targets from a task's files_touched ---
+# Args: $1 = round, $2 = task_id, $3 = working_dir
+# Output: zero or more lines of "skill:NAME" or "workflow:NAME" (deduped)
+# Side effect: none. Empty output means the target is unresolvable from this
+# task's files_touched (no skill/workflow paths, or task file missing).
+_resolve_hypothesis_target() {
+    local round="$1" tid="$2" working_dir="$3"
+    [ -z "$working_dir" ] && return 0
+
+    # Try current-round file first, then archived copies. The archive prefix is
+    # date-stamped, so glob and take the most recent.
+    local tasks_file=""
+    local candidate
+    for candidate in "$working_dir/tasks-round-$round.json" \
+                     "$working_dir"/archive/*tasks-round-"$round".json; do
+        if [ -f "$candidate" ]; then
+            tasks_file="$candidate"
+            break
+        fi
+    done
+    [ -f "$tasks_file" ] || return 0
+
+    # Mirror the path-classification rules used by hooks/log-usage.sh so the
+    # target name matches what the logger writes to usage.jsonl.
+    jq -r --arg id "$tid" '
+        .[] | select(.id == $id) | .files_touched[]?
+    ' "$tasks_file" 2>/dev/null | while IFS= read -r path; do
+        [ -z "$path" ] && continue
+        case "$path" in
+            */skills/*/SKILL.md|skills/*/SKILL.md)
+                local rel="${path##*/skills/}"
+                # When the path was already relative (no leading dir), strip
+                # by prefix instead of by the parametric pattern.
+                [ "$rel" = "$path" ] && rel="${path#skills/}"
+                printf 'skill:%s\n' "${rel%%/SKILL.md}"
+                ;;
+            */skills/*.md|skills/*.md)
+                local rel="${path##*/skills/}"
+                [ "$rel" = "$path" ] && rel="${path#skills/}"
+                # Only direct files under skills/ (no nested subdirs).
+                if [[ "$rel" != */* ]]; then
+                    printf 'skill:%s\n' "${rel%.md}"
+                fi
+                ;;
+            */workflows/*.md|workflows/*.md)
+                local rel="${path##*/workflows/}"
+                [ "$rel" = "$path" ] && rel="${path#workflows/}"
+                if [[ "$rel" != */* ]]; then
+                    printf 'workflow:%s\n' "${rel%.md}"
+                fi
+                ;;
+        esac
+    done | sort -u
+}
+
+# --- Internal: count invocations of one or more targets in the usage log ---
+# Skills are counted with via == "skill_tool" (real Skill-tool calls).
+# Workflows have no skill_tool channel, so file_read serves as the proxy —
+# documented so it's clear this is a deliberate fallback, not a bug.
+# Args: $1 = newline-separated target list (kind:name)
+# Output: a single integer (total count across all listed targets)
+_count_invocations() {
+    local targets="$1"
+    local log="${USAGE_LOG_FILE:-$HOME/.claude/logs/usage.jsonl}"
+    [ -f "$log" ] || { echo 0; return; }
+    [ -z "$targets" ] && { echo 0; return; }
+
+    local total=0
+    local line
+    while IFS= read -r line; do
+        [ -z "$line" ] && continue
+        local kind="${line%%:*}"
+        local name="${line#*:}"
+        [ -z "$name" ] && continue
+        local via_filter=".via == \"skill_tool\""
+        [ "$kind" = "workflow" ] && via_filter=".via == \"file_read\""
+        local count
+        count=$(jq -c --arg e "$kind" --arg n "$name" \
+            "select(.event == \$e and .name == \$n and $via_filter)" \
+            "$log" 2>/dev/null | wc -l)
+        total=$((total + count))
+    done <<< "$targets"
+    echo "$total"
+}
+
+# --- Internal: check whether a named field is present in any log entry ---
+# Args: $1 = target list, $2 = field name (e.g. "duration_ms", "total_tokens")
+# Returns 0 if at least one entry has the named field with a non-null value.
+_check_metric_logged() {
+    local targets="$1" field="$2"
+    local log="${USAGE_LOG_FILE:-$HOME/.claude/logs/usage.jsonl}"
+    [ -f "$log" ] || return 1
+    [ -z "$targets" ] && return 1
+
+    local line
+    while IFS= read -r line; do
+        [ -z "$line" ] && continue
+        local kind="${line%%:*}"
+        local name="${line#*:}"
+        [ -z "$name" ] && continue
+        local matches
+        matches=$(jq -c --arg e "$kind" --arg n "$name" --arg f "$field" '
+            select(.event == $e and .name == $n and has($f) and (.[$f] != null))
+        ' "$log" 2>/dev/null | head -1)
+        [ -n "$matches" ] && return 0
+    done <<< "$targets"
+    return 1
+}
+
+# --- Internal: days elapsed since a given round was recorded ---
+# Looks up the round report's `timestamp` field and computes whole days
+# elapsed since now. Echoes -1 if the round report is missing or has no
+# timestamp (caller treats -1 as "unresolvable"). NOW_EPOCH can be set in
+# tests to make the function deterministic.
+_days_since_round() {
+    local round="$1" working_dir="$2"
+    [ -z "$working_dir" ] && { echo -1; return; }
+
+    local report=""
+    local candidate
+    for candidate in "$working_dir/rounds/round-$round-report.json" \
+                     "$working_dir/round-$round-report.json" \
+                     "$working_dir"/archive/*round-"$round"-report.json; do
+        if [ -f "$candidate" ]; then
+            report="$candidate"
+            break
+        fi
+    done
+    [ -f "$report" ] || { echo -1; return; }
+
+    local round_ts
+    round_ts=$(jq -r '.timestamp // empty' "$report" 2>/dev/null)
+    [ -z "$round_ts" ] && { echo -1; return; }
+
+    local now_epoch round_epoch
+    now_epoch="${NOW_EPOCH:-$(date -u +%s)}"
+    round_epoch=$(date -u -d "$round_ts" +%s 2>/dev/null) || { echo -1; return; }
+    echo $(( (now_epoch - round_epoch) / 86400 ))
+}
+
+# --- Internal: run the precondition gate for a script-evaluator hypothesis ---
+# Args: $1 = round, $2 = task_id, $3 = requires-flattened string
+#       (key=val;key=val), $4 = working_dir
+# Output: a multi-line report block emitted to stdout, indented to fit under
+# the row header in _summary_deferred_evaluation. The script never writes to
+# the hypothesis log — the user reviews this report and decides the outcome.
+_evaluate_script_preconditions() {
+    local round="$1" tid="$2" requires_str="$3" working_dir="$4"
+    echo "   Evaluator: script"
+
+    # Resolve target from the task's files_touched. Empty target = unresolvable.
+    local targets
+    targets=$(_resolve_hypothesis_target "$round" "$tid" "$working_dir")
+    if [ -z "$targets" ]; then
+        echo "   Target: unresolvable (no skill/workflow in files_touched)"
+        echo "   → Recommendation: switch evaluator to \"user\" or restate the hypothesis"
+        return
+    fi
+    echo "   Target(s): $(echo "$targets" | tr '\n' ',' | sed 's/,$//;s/,/, /g')"
+
+    if [ -z "$requires_str" ]; then
+        echo "   Preconditions: none declared"
+        echo "   → Recommendation: this hypothesis can be evaluated now if signal is sufficient"
+        return
+    fi
+
+    # Parse the flattened requires string. Unknown keys are surfaced so the
+    # planner can fix a typo rather than have the gate silently ignore it.
+    local req_metric="" req_invocations="" req_days="" req_unknown=""
+    local IFS_SAVE="$IFS"
+    IFS=';'
+    local pair
+    for pair in $requires_str; do
+        IFS="$IFS_SAVE"
+        local key="${pair%%=*}"
+        local val="${pair#*=}"
+        key="${key// /}"
+        val="${val# }"; val="${val% }"
+        case "$key" in
+            metric_logged) req_metric="$val" ;;
+            invocations)   req_invocations="$val" ;;
+            days_elapsed)  req_days="$val" ;;
+            "") ;;
+            *) req_unknown="${req_unknown:+$req_unknown, }$key" ;;
+        esac
+        IFS=';'
+    done
+    IFS="$IFS_SAVE"
+
+    local all_met=1
+    local reasons=""
+    local checks=""
+
+    if [ -n "$req_invocations" ]; then
+        local actual
+        actual=$(_count_invocations "$targets")
+        if [ "$actual" -ge "$req_invocations" ]; then
+            checks="${checks}   - invocations≥${req_invocations}: MET (current: ${actual})"$'\n'
+        else
+            all_met=0
+            checks="${checks}   - invocations≥${req_invocations}: UNMET (current: ${actual})"$'\n'
+            reasons="${reasons:+$reasons; }invocations short (${actual}/${req_invocations})"
+        fi
+    fi
+
+    if [ -n "$req_metric" ]; then
+        if _check_metric_logged "$targets" "$req_metric"; then
+            checks="${checks}   - metric_logged=${req_metric}: MET"$'\n'
+        else
+            all_met=0
+            checks="${checks}   - metric_logged=${req_metric}: UNMET (no entries with this field)"$'\n'
+            reasons="${reasons:+$reasons; }metric ${req_metric} never logged"
+        fi
+    fi
+
+    if [ -n "$req_days" ]; then
+        local elapsed
+        elapsed=$(_days_since_round "$round" "$working_dir")
+        if [ "$elapsed" -lt 0 ]; then
+            all_met=0
+            checks="${checks}   - days_elapsed≥${req_days}: UNRESOLVABLE (no round timestamp)"$'\n'
+            reasons="${reasons:+$reasons; }round timestamp unavailable"
+        elif [ "$elapsed" -ge "$req_days" ]; then
+            checks="${checks}   - days_elapsed≥${req_days}: MET (current: ${elapsed})"$'\n'
+        else
+            all_met=0
+            checks="${checks}   - days_elapsed≥${req_days}: UNMET (current: ${elapsed})"$'\n'
+            reasons="${reasons:+$reasons; }only ${elapsed}/${req_days} days elapsed"
+        fi
+    fi
+
+    if [ -n "$req_unknown" ]; then
+        all_met=0
+        checks="${checks}   - unknown keys in requires: ${req_unknown}"$'\n'
+        reasons="${reasons:+$reasons; }unknown precondition keys: ${req_unknown}"
+    fi
+
+    [ -n "$checks" ] && printf '%s' "$checks"
+
+    if [ "$all_met" -eq 1 ]; then
+        echo "   → Recommendation: preconditions met, ready for CONFIRMED/REFUTED verdict"
+    else
+        echo "   → Recommendation: mark INCONCLUSIVE in hypothesis-log.md (${reasons})"
     fi
 }
 
