@@ -840,17 +840,24 @@ _summary_deferred_evaluation() {
     # in-tree logs keep parsing until they are migrated.
     [[ "$outcome_col" -gt 0 ]] || outcome_col=7
 
+    # Pre-aggregate the usage log once. Downstream precondition checks
+    # (_count_invocations / _check_metric_logged) read from the resulting
+    # lookup tables instead of spawning jq per (target × precondition).
+    _preaggregate_usage_log
+
     local count=0
+    local -a fields
     while IFS= read -r line; do
         _row_is_open_deferred "$line" "$current_round" "$scope_col" "$outcome_col" || continue
 
+        _split_row_fields "$line" fields
         local round task_id hypothesis evaluator requires hyp_src
-        round=$(_get_col "$line" 2)
-        task_id=$(_get_col "$line" 3)
-        hypothesis=$(_get_col "$line" 4)
-        evaluator=$(_get_col "$line" "$evaluator_col")
-        requires=$(_get_col "$line" "$requires_col")
-        hyp_src=$(_get_col "$line" "$source_col")
+        round="${fields[1]:-}"
+        task_id="${fields[2]:-}"
+        hypothesis="${fields[3]:-}"
+        evaluator=$(_pick_col fields "$evaluator_col")
+        requires=$(_pick_col fields "$requires_col")
+        hyp_src=$(_pick_col fields "$source_col")
 
         count=$((count + 1))
         local hyp_tag=""
@@ -919,6 +926,53 @@ _resolve_hypothesis_target() {
     done | sort -u
 }
 
+# --- Internal: pre-aggregate the usage log into lookup tables ---
+# One jq pass over usage.jsonl emits per-(event,name) facts that the
+# precondition helpers below consult in constant time:
+#   _LOG_INVOKE_COUNTS["$kind:$name"]   — total invocation count
+#   _LOG_METRIC_FLAGS["$kind:$name:$f"] — non-empty when field f was logged
+# Without pre-aggregation, every (hypothesis × target × precondition)
+# spawned its own jq pass that re-scanned the whole log.
+# Idempotent: call repeatedly without side effects beyond resetting the
+# tables. Tests that call _count_invocations / _check_metric_logged
+# directly skip pre-aggregation and fall back to a per-call jq pass.
+_preaggregate_usage_log() {
+    declare -gA _LOG_INVOKE_COUNTS=()
+    declare -gA _LOG_METRIC_FLAGS=()
+    _LOG_AGGREGATED=1
+
+    local log="${USAGE_LOG_FILE:-$HOME/.claude/logs/usage.jsonl}"
+    [ -f "$log" ] || return 0
+
+    local typ ev name extra key
+    while IFS=$'\t' read -r typ ev name extra; do
+        case "$typ" in
+            INVOKE)
+                key="$ev:$name"
+                _LOG_INVOKE_COUNTS["$key"]=$(( ${_LOG_INVOKE_COUNTS["$key"]:-0} + 1 ))
+                ;;
+            METRIC)
+                _LOG_METRIC_FLAGS["$ev:$name:$extra"]=1
+                ;;
+        esac
+    done < <(jq -r '
+        # Emit one INVOKE row per relevant entry; bash sums them.
+        (if (.event == "skill" and .via == "skill_tool")
+            or (.event == "workflow" and .via == "file_read") then
+            "INVOKE\t\(.event)\t\(.name)"
+         else empty end),
+        # Emit METRIC rows for any non-null duration_ms / total_tokens
+        # on a skill/workflow entry — the original _check_metric_logged
+        # matched .event == kind, so we mirror that here.
+        (select((.event == "skill" or .event == "workflow")
+                and (.duration_ms? // null) != null)
+            | "METRIC\t\(.event)\t\(.name)\tduration_ms"),
+        (select((.event == "skill" or .event == "workflow")
+                and (.total_tokens? // null) != null)
+            | "METRIC\t\(.event)\t\(.name)\ttotal_tokens")
+    ' "$log" 2>/dev/null)
+}
+
 # --- Internal: count invocations of one or more targets in the usage log ---
 # Skills are counted with via == "skill_tool" (real Skill-tool calls).
 # Workflows have no skill_tool channel, so file_read serves as the proxy —
@@ -927,10 +981,24 @@ _resolve_hypothesis_target() {
 # Output: a single integer (total count across all listed targets)
 _count_invocations() {
     local targets="$1"
-    local log="${USAGE_LOG_FILE:-$HOME/.claude/logs/usage.jsonl}"
-    [ -f "$log" ] || { echo 0; return; }
     [ -z "$targets" ] && { echo 0; return; }
 
+    # Fast path: pre-aggregation done, read from the lookup table.
+    if [ "${_LOG_AGGREGATED:-0}" = "1" ]; then
+        local total=0
+        local line
+        while IFS= read -r line; do
+            [ -z "$line" ] && continue
+            [ -z "${line#*:}" ] && continue
+            total=$(( total + ${_LOG_INVOKE_COUNTS["$line"]:-0} ))
+        done <<< "$targets"
+        echo "$total"
+        return
+    fi
+
+    # Fallback: no pre-aggregation, scan the log per target.
+    local log="${USAGE_LOG_FILE:-$HOME/.claude/logs/usage.jsonl}"
+    [ -f "$log" ] || { echo 0; return; }
     local total=0
     local line
     while IFS= read -r line; do
@@ -954,10 +1022,22 @@ _count_invocations() {
 # Returns 0 if at least one entry has the named field with a non-null value.
 _check_metric_logged() {
     local targets="$1" field="$2"
-    local log="${USAGE_LOG_FILE:-$HOME/.claude/logs/usage.jsonl}"
-    [ -f "$log" ] || return 1
     [ -z "$targets" ] && return 1
 
+    # Fast path: pre-aggregation done, read from the lookup table.
+    if [ "${_LOG_AGGREGATED:-0}" = "1" ]; then
+        local line
+        while IFS= read -r line; do
+            [ -z "$line" ] && continue
+            [ -z "${line#*:}" ] && continue
+            [ -n "${_LOG_METRIC_FLAGS["$line:$field"]:-}" ] && return 0
+        done <<< "$targets"
+        return 1
+    fi
+
+    # Fallback: no pre-aggregation, scan the log per target.
+    local log="${USAGE_LOG_FILE:-$HOME/.claude/logs/usage.jsonl}"
+    [ -f "$log" ] || return 1
     local line
     while IFS= read -r line; do
         [ -z "$line" ] && continue
@@ -1107,15 +1187,35 @@ _evaluate_script_preconditions() {
     fi
 }
 
-# --- Internal: extract one trimmed pipe-delimited column from a line ---
-# Returns the col-th field with leading/trailing whitespace stripped. A col
-# of 0 (the convention _locate_log_col uses for "not found") yields empty,
-# letting callers fold the absent-column branch into the same call.
-# Args: $1 = pipe-delimited line, $2 = 1-based column index
-_get_col() {
-    local line="$1" col="$2"
-    [[ "$col" -gt 0 ]] || { echo ""; return; }
-    echo "$line" | awk -F'|' -v c="$col" '{gsub(/^[ \t]+|[ \t]+$/, "", $c); print $c}'
+# --- Internal: split a pipe-delimited markdown row into a fields array ---
+# Writes into the array name passed by reference. Fields are trimmed of
+# leading/trailing whitespace. Indexing matches awk's `-F'|'` convention:
+# fields[0] is the empty string before the leading "|", so awk's $N maps
+# to fields[N-1] when N>=1.
+# Args: $1 = row, $2 = array variable name (nameref)
+_split_row_fields() {
+    local line="$1"
+    local -n out_ref="$2"
+    local -a raw
+    IFS='|' read -ra raw <<< "$line"
+    out_ref=()
+    local f trimmed
+    for f in "${raw[@]}"; do
+        trimmed="${f#"${f%%[![:space:]]*}"}"
+        trimmed="${trimmed%"${trimmed##*[![:space:]]}"}"
+        out_ref+=("$trimmed")
+    done
+}
+
+# Pick column `col` (1-based, awk-style) from a pre-split fields array.
+# Returns empty when col == 0 (the convention _locate_log_col uses for
+# "not found"), so callers can fold the absent-column branch into one call.
+# Args: $1 = array name (nameref), $2 = 1-based column
+_pick_col() {
+    local -n arr_ref="$1"
+    local col="$2"
+    [[ "$col" -gt 0 ]] || return 0
+    printf '%s' "${arr_ref[$((col-1))]:-}"
 }
 
 # --- Internal: locate a named column's index in the log header ---
@@ -1164,20 +1264,23 @@ _row_is_open_deferred() {
     local outcome_col="${4:-7}"
 
     [[ "$line" != \|* ]] && return 1
-    echo "$line" | grep -qE '^\|\s*(Round|----)' && return 1
+    [[ "$line" =~ ^\|[[:space:]]*(Round|----) ]] && return 1
 
-    local round window outcome task_id
-    round=$(_get_col "$line" 2)
-    task_id=$(_get_col "$line" 3)
-    window=$(_get_col "$line" 5)
-    outcome=$(_get_col "$line" "$outcome_col")
+    local -a fields
+    _split_row_fields "$line" fields
+
+    local round task_id window outcome
+    round="${fields[1]:-}"
+    task_id="${fields[2]:-}"
+    window="${fields[4]:-}"
+    outcome=$(_pick_col fields "$outcome_col")
 
     [[ -z "$task_id" ]] && return 1
     [[ -n "$outcome" ]] && return 1
 
     if [[ "$scope_col" -gt 0 ]]; then
         local scope
-        scope=$(_get_col "$line" "$scope_col")
+        scope=$(_pick_col fields "$scope_col")
         [[ "$scope" == "internal-si" ]] && return 1
     fi
 
