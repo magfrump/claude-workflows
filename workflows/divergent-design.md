@@ -78,11 +78,23 @@ List every concrete problem, requirement, and constraint the solution must addre
 
 Include non-obvious constraints: timezone gaps, skill gaps in the team, maintenance burden, deployment complexity, interaction with existing code, performance requirements. Also note which constraints are hard (must satisfy) vs soft (prefer to satisfy).
 
+**Hard constraints require a `success:` line.** Every constraint labeled `hard` must be paired with a `success: <observable>` line whose body names a specific test, metric, or artifact a future reader could actually check. Generic phrasing — *"works correctly"*, *"meets requirements"*, *"is performant"*, *"passes review"* — is explicitly disallowed: if the success line could be lifted verbatim into a different project's constraint and still read as true, it isn't a success line yet. The observable must be specific enough that the step-3 compatibility matrix can score an approach against it without further interpretation. Soft constraints don't require a success line, but may include one when the observable is cheap to name.
+
+**Worked examples — acceptable vs. unacceptable success lines for hard constraints**
+
+| Hard constraint | ✗ Unacceptable — generic | ✓ Acceptable — names a specific signal |
+|-----------------|--------------------------|----------------------------------------|
+| The data migration must complete without losing rows | `success: works correctly` | `success: reconciliation query shows source row-count == target row-count and zero entries in the failed_migration table before cutover` |
+| The new search endpoint must hold up under current traffic | `success: is performant` | `success: p99 latency < 200 ms at 1.5× current peak QPS, sustained across a 10-minute staging load test recorded in the perf dashboard` |
+
+The unacceptable column is what the constraint sounds like *before* the success-line discipline is applied; the acceptable column is what step 3 needs in order to score candidates against the constraint.
+
 **Done when...**
 - [ ] Every concrete problem and constraint is stated with enough specificity to test an approach against it
 - [ ] Each constraint is labeled as hard (must satisfy) or soft (prefer to satisfy)
 - [ ] Non-obvious constraints (team skills, deployment, maintenance) have been explicitly considered
 - [ ] No constraint uses vague language like "readable" or "good" without a measurable qualifier
+- [ ] Every constraint labeled `hard` is paired with a `success: <observable>` line whose body names a specific test, metric, or artifact — generic phrasing such as "works correctly", "meets requirements", "is performant", or "passes review" is disallowed
 
 ### 3. Match and prune
 
