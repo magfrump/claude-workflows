@@ -34,9 +34,30 @@ git diff --stat main...HEAD | tail -1
 
 **If the diff stat shows 0 files changed**, verify you're on the correct branch and that main is up to date (`git fetch origin main`).
 
+**Advisory: failure-pattern coverage.** If this branch has `fix(...)` commits, check whether each one produced a corresponding entry in `docs/thoughts/failure-patterns.md`. The check is mechanical but its output is advisory — not every `fix:` commit should yield a library entry (typos, dep bumps, one-line obvious fixes don't). The point is to surface the question, not to coerce an answer.
+
+```bash
+# Count fix(...) commits on this branch
+FIX_COMMITS=$(git log --oneline main..HEAD --grep='^fix' | wc -l)
+
+# Count new FP-NNN entries added to the library
+PATTERN_ADDITIONS=$(git diff main...HEAD -- docs/thoughts/failure-patterns.md \
+  | grep -cE '^\+- \*\*FP-[0-9]+\*\*' || true)
+
+if [[ "$FIX_COMMITS" -gt 0 && "$PATTERN_ADDITIONS" -eq 0 ]]; then
+  echo "Advisory: $FIX_COMMITS fix(...) commit(s) on branch, 0 new failure-pattern entries."
+  echo "  If any fix had a non-trivial {symptom, cause, fix} signature, consider"
+  echo "  appending an FP-NNN entry per workflows/bug-diagnosis.md step 8."
+  echo "  Legitimate skip cases: typo, dep bump, one-line obvious fix, environmental/upstream."
+fi
+```
+
+**Interpret the result:** A warning here is a prompt, not a block. For each `fix(...)` commit, ask: did the diagnosis surface a reusable cause-and-fix shape a future grep would want to find? If yes for any of them, return to `bug-diagnosis.md` step 8 and append the entry before opening the PR. If no for all of them, proceed — the legitimate-skip vocabulary in the warning covers the case. Do not invent FP entries to silence the warning; a misleading entry pollutes the library and degrades the prior signal for the next diagnosis.
+
 **Completion criteria:**
 - [ ] No uncommitted changes (clean working tree)
 - [ ] Branch diff summary reviewed — total files and lines changed are known
+- [ ] Failure-pattern advisory has been run; if it warned, each `fix(...)` commit was reviewed against the skip vocabulary and either an FP entry was appended or the skip rationale is recorded (commit message, PR description, or diagnosis log)
 - [ ] If issues found, resolved before proceeding to Phase 1
 
 ### Phase 1: Content
