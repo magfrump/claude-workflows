@@ -195,6 +195,8 @@ After the header and research link, the body must include:
 
   For simple features, this section can be brief (a few test cases in prose). For complex features, the table format helps ensure coverage. The human designs the test constraints; the LLM translates them into runnable test code.
 
+  The rows of this table are populated by the Test-strategy auto-invoke sub-step below — the `test-strategy` skill's gap enumeration (G1..Gn) and Recommended Tests are what fill this section. Authors only fill this section by hand when the auto-invoke is short-circuited (the skill was invoked manually earlier in the loop) or when the skill returns no gaps for a change too small to warrant one.
+
 - **Failure modes considered**: A short list of 3-5 specific failures the plan should prevent, each paired with the guarding test or structural choice that prevents it. This is the premortem move: by writing "what specifically should not happen, and what catches it if I'm wrong," the plan author surfaces gaps where a step *sounds* correct but has no guard against the obvious failure. Risks (below) is open-ended scrutiny; this section is its paired counterpart — named failure ↔ named guard, not free-form worry.
 
   **When required vs. optional:**
@@ -215,6 +217,20 @@ After the header and research link, the body must include:
   Four entries — within the 3-5 range. The premortem move is ~5 minutes of asking "what's the obvious failure for each step, and what catches it?" before declaring the plan ready for review. An entry that can't name its guard is a discovery, not a defect in the exercise: it tells the author what the plan still needs.
 
 - **Risks**: What could go wrong, what's uncertain, what you'd want a reviewer to scrutinize.
+
+#### Test-strategy auto-invoke (penultimate sub-step of planning)
+
+After the body sections above are drafted, automatically run the `test-strategy` skill scoped to the plan's intended changes. Treat it as a routine step of plan completion, the same way Failure-pattern lookup is routine inside step 2. Do not wait for the user to ask for it — that is the manual hand-off that this auto-invoke replaces, and it is reliably skipped in practice.
+
+The skill's output (defined by `~/.claude/skills/test-strategy/SKILL.md`) is a Markdown report. Fold it into the plan as follows:
+
+- The `## Untested Paths Touched by the Change` section — the numbered gap list (G1, G2, ...) — is the load-bearing artifact. Copy or summarize it into the plan's **Test specification** subsection so each gap remains addressable by its G-ID.
+- The `## Recommended Tests` entries become rows in the **Test specification** table; each row's "Test case" cell should preserve the `Closes gaps: G1, G3` cross-reference so the link from test back to gap is auditable.
+- The skill's `## What NOT to Test` and `## Coverage Gaps Beyond Current Scope` sections, if non-empty, are summarized in the plan's **Risks** bullet (or appended to it as short sub-bullets) so deferred coverage is visible to a reviewer.
+
+**Short-circuit.** Skip the auto-invoke if `docs/working/test-strategy-{topic}.md` already exists for this loop's `{topic}` — that file is the persisted artifact a manual `/test-strategy` invocation would have written (per the skill's Output Location at `~/.claude/skills/test-strategy/SKILL.md`). Its presence means the user has already run the skill for this loop; fold its contents into the plan as described above and proceed. The check is filename presence, not git mtime — the topic-scoped filename is already loop-scoped.
+
+**Failure handling.** If the skill produces no gaps for a small change, the plan author owns the **Test specification** subsection manually using the body-bullet's prose format; record "no gaps surfaced by `test-strategy` — manual test specification follows" so a reader can distinguish "the skill ran and found nothing" from "the skill was skipped." If the skill errors or is unavailable, note that inline at the head of the **Test specification** subsection and fall back to manual authorship. The auto-invoke is an aid; it is not a gate on plan completion.
 
 #### Checkpoint generation (final sub-step of planning)
 
@@ -276,6 +292,7 @@ The checkpoint is a *derived artifact* — it contains no new information, only 
 - [ ] Test specification includes at least one test case per behavioral requirement
 - [ ] No single step would push a file past 500 lines without an explicit note
 - [ ] Plan doc includes an Estimated context cost line covering research, implementation, and review phases, paired with an Actual context cost (post-implementation) placeholder line awaiting the post-implementation fill-in
+- [ ] The Test-strategy auto-invoke sub-step ran (or was short-circuited because `docs/working/test-strategy-{topic}.md` already existed for this loop), and its gap list (G1..Gn) plus Recommended Tests are reflected in the plan's Test specification subsection — or, if the skill returned no gaps or was unavailable, the subsection records that fact and was filled in manually
 - [ ] Checkpoint artifact exists at `docs/working/checkpoint-{topic}.md` with all template sections populated
 
 ### 4. Annotate (recommended) — human reviews and approves before implementation
