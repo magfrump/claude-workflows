@@ -99,7 +99,7 @@ log_invocation() {
 # --- _count_invocations ---
 
 @test "counts skill invocations via skill_tool" {
-  for i in 1 2 3; do log_invocation skill foo skill_tool; done
+  for _ in 1 2 3; do log_invocation skill foo skill_tool; done
   run _count_invocations "skill:foo"
   [ "$output" = "3" ]
 }
@@ -190,7 +190,7 @@ log_invocation() {
 
 @test "preconditions met → ready-for-verdict recommendation" {
   write_tasks 1 '[{"id":"t","description":"x","files_touched":["skills/foo/SKILL.md"],"independent":true}]'
-  for i in $(seq 1 10); do log_invocation skill foo skill_tool; done
+  for _ in $(seq 1 10); do log_invocation skill foo skill_tool; done
   run _evaluate_script_preconditions 1 t "invocations=5" "$WORKING_DIR"
   [[ "$output" == *"MET"* ]]
   [[ "$output" == *"ready for CONFIRMED/REFUTED"* ]]

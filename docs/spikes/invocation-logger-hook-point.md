@@ -1,10 +1,11 @@
 # Spike: Hook point for the invocation logger (decision 012 pillar 4)
 
 Date: 2026-05-14
-Last verified: 2026-05-14
-Relevant paths: `hooks/log-usage.sh`, `~/.claude/hooks/log-usage.sh`, `~/.claude/settings.json`, `~/.claude/logs/usage.jsonl`, `docs/decisions/012-hypothesis-grammar-for-user-surfaced-evaluation.md`
 Branch: none (read-only investigation)
 Time spent: ~25 min
+
+**Last verified:** 2026-05-14
+**Relevant paths:** hooks/log-usage.sh, hooks/log-usage-post.sh, scripts/lib/si-morning-summary.sh, docs/decisions/012-hypothesis-grammar-for-user-surfaced-evaluation.md
 
 - **Goal**: Determine whether an existing or extendable hook point in Claude Code can supply the invocation log decision 012 pillar 4 requires (skill/workflow invocations, timestamps, args, duration), with minimal new infrastructure.
 - **Project state**: investigation for decision 012 pillar 4 · part of the SI hypothesis-grammar rewrite · not blocked

@@ -825,12 +825,34 @@ check_md_semantic_divergence() {
 
     # 2) Section diff: CLAUDE.md vs each sibling. Renamed sections will
     #    appear on both sides — humans judge whether to align or accept.
+    #
+    # Some structural divergence is intentional: CLAUDE.md has Claude
+    # Code-specific sections (Operating Modes, Session Hygiene, …) and
+    # AGENTS.md/GEMINI.md split "Workflow & Skill Activation" into two
+    # H2s. These known-acceptable names are listed below so the check
+    # only flags unexpected drift. Add an entry only when the divergence
+    # is by design — every name here is a thing we promised not to sync.
+    # Newline-separated lists of section names whose absence from the
+    # sibling (or from CLAUDE) is by design. Add an entry only when the
+    # divergence is intentional — every name here is a thing we promised
+    # not to sync. "Workflow & Skill Activation" maps to AGENTS/GEMINI's
+    # split "Cross-project Workflows" + "Skills" pair.
+    local expected_claude_only="Operating Modes
+Review Artifacts
+Session Hygiene
+Workflow & Skill Activation"
+    local expected_sibling_only="Cross-project Workflows
+Skills"
+
     local sibling only_claude only_sibling
     if [[ -n "${h2_set[CLAUDE.md]+x}" ]]; then
         for sibling in AGENTS.md GEMINI.md; do
             [[ -n "${h2_set[$sibling]+x}" ]] || continue
             only_claude="$(comm -23 <(printf '%s\n' "${h2_set[CLAUDE.md]}") <(printf '%s\n' "${h2_set[$sibling]}") | grep -v '^$' || true)"
             only_sibling="$(comm -13 <(printf '%s\n' "${h2_set[CLAUDE.md]}") <(printf '%s\n' "${h2_set[$sibling]}") | grep -v '^$' || true)"
+            # Filter out intentionally-divergent section names.
+            only_claude="$(grep -vxF "$expected_claude_only" <<< "$only_claude" | grep -v '^$' || true)"
+            only_sibling="$(grep -vxF "$expected_sibling_only" <<< "$only_sibling" | grep -v '^$' || true)"
             if [[ -n "$only_claude" ]]; then
                 warn "H2 sections in CLAUDE.md not in $sibling: $(echo "$only_claude" | tr '\n' '|' | sed 's/|/, /g; s/, $//')"
                 divergence=$((divergence + 1))
