@@ -582,11 +582,41 @@ Output a JSON array to docs/working/tasks-round-$ROUND.json with fields:
 Only include tasks where independent is true. Discard tasks that depend on
 other tasks in this round.
 
-Hypothesis guidance: each task must carry a falsifiable claim describing the
-observable change the user should see if the task delivers value. Frame it
-as a prediction about behavior, output, or measurable repo state — not as a
-restatement of what the task does. Pick a window of 1-5 rounds:
-  - 1 round: the change is observable in the next run's artifacts
+Hypothesis guidance (decision 012 pillar 2 — adversarial / red-team framing):
+
+Each task must carry a falsifiable claim that names the most likely *failure*
+mode of this work, NOT a prediction of its success. Optimism bias makes
+success-framed hypotheses easy to write and hard to evaluate honestly;
+failure-framed ones are sharper, more memorable, and align with the
+failure-driven-design priority in si-input.md.
+
+A well-formed hypothesis answers both:
+  1. What is the most likely way this task fails to deliver value in practice?
+  2. What concrete observation would tell you that failure happened?
+
+Examples:
+
+  ✗ AVOID — success-framed, vague:
+      \"If we add skill X, code review will catch more bugs.\"
+  ✓ PREFER — failure-framed, observable:
+      \"The most likely failure of skill X is that it triggers on every PR and
+       adds noise without surfacing new issues. We'd see that as: thumbs-down
+       rate > 30% in the first 10 invocations.\"
+
+  ✗ AVOID — restates what the task does:
+      \"Adding the precondition gate will make hypothesis evaluation work.\"
+  ✓ PREFER — names a plausible failure:
+      \"The most likely failure of the precondition gate is that it defers so
+       often no hypothesis ever reaches CONFIRMED/REFUTED. We'd see that as:
+       ≥80% INCONCLUSIVE rate across 5 rounds.\"
+
+Name the failure that would actually matter — not the failure that's easy to
+prevent or rule out. If you cannot articulate a plausible failure mode, the
+task probably lacks a clear value claim and should be reconsidered before
+adding.
+
+Pick a hypothesis_window of 1-5 rounds:
+  - 1 round: the failure (or its absence) is observable in the next run's artifacts
   - 2-3 rounds: requires accumulated usage or repeated cycles to assess
   - 4-5 rounds: requires real-world adoption in external projects
 The loop will not evaluate hypotheses autonomously; they are logged for the
