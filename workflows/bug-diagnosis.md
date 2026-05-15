@@ -57,10 +57,25 @@ If your working changes can't easily be stashed (large schema migrations, untrac
 
 ### 1. Reproduce — confirm the bug exists
 
-Before diagnosing, confirm you can trigger the bug reliably. A bug you can't reproduce is a bug you can't verify as fixed.
+Before diagnosing, confirm you can trigger the bug reliably and record a concrete `Reproduction:` line at the top of the diagnosis log *before forming any hypothesis*. A bug you can't reproduce is a bug you can't verify as fixed, and a session that starts hypothesizing on prose symptoms produces low-signal guesses.
 
-- **Run the failing case**: Execute the test, request, or user action that triggers the bug. Record the exact error, wrong output, or unexpected behavior.
-- **Identify the minimal trigger**: Strip away unrelated setup. What is the smallest input or sequence that produces the bug?
+The `Reproduction:` line must take exactly one of these two forms:
+
+- **(a) A runnable command**: a single command (or short shell snippet) a reader can paste and execute to trigger the bug. Examples: `pytest tests/foo.py::test_bar`, `curl -X POST https://api.example.com/orders -d '{"qty":-1}'`, `node scripts/repro.js --user 42`.
+- **(b) A numbered manual sequence with ≥2 steps**: explicit, ordered actions a reader can perform to trigger the bug. Each step is a discrete action — not a description of the problem. Example:
+  ```
+  1. Log in as a user with role=admin
+  2. Navigate to /reports/new
+  3. Submit the form with title="" and click Save
+  4. Observe 500 response and "TypeError: Cannot read property 'length' of undefined" in console
+  ```
+
+Bare user-complaint prose ("users say login fails", "the dashboard is slow sometimes") is **not** a reproduction and is not acceptable as the `Reproduction:` line. If that is all you have, your first job is to get a concrete trigger — don't form hypotheses on prose.
+
+Once you have a valid `Reproduction:` line:
+
+- **Run the failing case**: Execute the command or sequence. Record the exact error, wrong output, or unexpected behavior.
+- **Identify the minimal trigger**: Strip away unrelated setup. What is the smallest input or sequence that produces the bug? Tighten the `Reproduction:` line as you minimize.
 - **Check for flakiness**: Run it 2-3 times. If the bug is intermittent, note the frequency and any patterns (timing-dependent, order-dependent, environment-dependent).
 
 If the bug can't be reproduced, document what you tried and escalate to the user — don't guess at fixes for phantom bugs.
@@ -76,9 +91,11 @@ A good minimal reproduction:
 Write the minimal reproduction as a test if possible. This test becomes your verification that the fix works (step 7).
 
 **Done when...**
-- [ ] The bug can be triggered reliably with a specific, documented sequence
+- [ ] A `Reproduction:` line is recorded at the top of the diagnosis log *before any hypothesis has been formed*
+- [ ] The `Reproduction:` line is either (a) a runnable command or (b) a numbered manual sequence with ≥2 steps — not bare prose, not a paraphrase of the user's complaint
+- [ ] The bug can be triggered reliably with that reproduction
 - [ ] The exact error, wrong output, or unexpected behavior is recorded
-- [ ] A minimal reproduction exists (ideally as a failing test)
+- [ ] A minimal reproduction exists (ideally as a failing test that wraps the `Reproduction:` command)
 - [ ] If the bug is intermittent, the frequency and any patterns are noted
 - [ ] If the bug cannot be reproduced, this is documented and escalated — do not proceed to step 2
 
@@ -347,11 +364,24 @@ Pick the next sequential `FP-NNN` (zero-padded to 3 digits) — look at the last
 # Diagnosis: {bug description}
 Date: {YYYY-MM-DD}
 
-## Symptom
-[What's going wrong — error message, wrong output, crash, etc.]
-
 ## Reproduction
-[Minimal steps or test case that triggers the bug]
+[REQUIRED — fill in BEFORE forming any hypothesis. Must be exactly one of:
+ (a) A runnable command, e.g.:
+       pytest tests/foo.py::test_bar
+       curl -X POST https://api.example.com/orders -d '{"qty":-1}'
+ (b) A numbered manual sequence with ≥2 steps, e.g.:
+       1. Log in as a user with role=admin
+       2. Navigate to /reports/new
+       3. Submit the form with title="" and click Save
+       4. Observe 500 response
+ Bare user-complaint prose ("users say login fails") is NOT acceptable here.
+ If a hypothesis has already been entered below and this section is still
+ prose, stop and get a concrete reproduction before continuing.]
+
+## Symptom
+[What's going wrong — error message, wrong output, crash, etc. Distinct from
+the Reproduction above: the Reproduction tells a reader how to trigger the
+bug; the Symptom describes what they should observe.]
 
 ## Prior patterns matched (step 2)
 [List matched pattern IDs from docs/thoughts/failure-patterns.md, or "none" if no match. Cite as FP-NNN. If a match drove a hypothesis, that hypothesis should carry the tag [from prior bug FP-NNN] below.]
