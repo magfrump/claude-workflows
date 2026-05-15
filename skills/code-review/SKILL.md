@@ -680,6 +680,59 @@ Worked example:
 >   *(api-consistency-reviewer.)* The critic treated it as production and flagged a
 >   breaking change in `flags.ts:42`; mark this as 🟢 Consider if it's sandbox-only.
 
+**Recommended next action (required final line):** End the chat synthesis with this
+exact line so the user always sees a concrete next step:
+
+> Recommended next action: [merge | fix red items then re-review | split PR | escalate to /pre-mortem | block on architectural review].
+
+Choose exactly one bracketed value. The choice is **mechanically derived from the rubric**
+per [Next-action derivation](#next-action-derivation) below — it is not a free-form
+judgment call, and the line must not hedge or list multiple options. The line is required
+even when the rubric is clean (rule 5 still applies). If the derivation ladder ever needs
+new rules, update the ladder first so the mapping stays the single source of truth.
+
+#### Next-action derivation
+
+Evaluate the rules top-to-bottom; the first matching rule wins. Inputs are the rubric
+the synthesis just produced (counts of 🔴 / 🟡 rows and which critics ran, including
+the `## ⏭️ Skipped Core Critics` section) and the diff size from `git diff --stat`.
+
+1. **block on architectural review** — Either: (a) Step 5 auto-selected
+   `architecture-review` but it did not produce a report this run (excluded via
+   `--exclude architecture-review`, failed, or otherwise skipped), or
+   (b) architecture-review ran and produced ≥1 🔴 Structural finding.
+   Architectural questions are a wider conversation than a line-fix — rerun with
+   architecture-review enabled, or address the structural finding in a separate
+   design pass before any other action.
+2. **split PR** — Total diff is >500 changed lines (added + removed per
+   `git diff --stat`) AND ≥1 🔴 item exists (and rule 1 did not match). Large
+   diffs combined with red findings multiply review risk per iteration; split
+   before iterating on fixes.
+3. **escalate to /pre-mortem** — 🔴 items span 3+ distinct critic domains (e.g.,
+   security + performance + api-consistency), OR ≥3 🔴 items total. Systemic
+   risk — invoke the `pre-mortem` skill before attempting line-level fixes,
+   because the failure mode is likely architectural rather than a sum of
+   independent defects.
+4. **fix red items then re-review** — ≥1 🔴 item exists (and rules 1–3 did not
+   match), OR 0 🔴 but >2 🟡 items are open without author notes resolving them.
+   The label covers the general non-merge fix path; amber-heavy reviews land
+   here because resolving the load through inline notes alone is impractical.
+5. **merge** — 0 🔴 items AND ≤2 🟡 items. Rubric status is either
+   ✅ PASSES REVIEW or a low-friction 🟡 CONDITIONAL PASS where amber items can
+   be resolved with inline author notes during merge prep.
+
+**Worked examples:**
+
+- 0 🔴, 0 🟡 → rule 5 → `Recommended next action: merge.`
+- 0 🔴, 1 🟡 → rule 5 → `Recommended next action: merge.`
+- 0 🔴, 4 🟡 → rule 4 (>2 amber, no red) → `Recommended next action: fix red items then re-review.`
+- 2 🔴 both in security, 200-line diff → rule 4 → `Recommended next action: fix red items then re-review.`
+- 1 🔴 in security, 800-line diff → rule 2 → `Recommended next action: split PR.`
+- 1 🔴 security + 1 🔴 performance + 1 🔴 api-consistency, 300-line diff → rule 3 (3 domains) → `Recommended next action: escalate to /pre-mortem.`
+- 4 🔴 all in security, 200-line diff → rule 3 (≥3 reds total) → `Recommended next action: escalate to /pre-mortem.`
+- 1 🔴 from architecture-review tagged Structural → rule 1 → `Recommended next action: block on architectural review.`
+- Diff adds a new module; architecture-review excluded via `--exclude` → rule 1 → `Recommended next action: block on architectural review.`
+
 **How to use legibility-target tags during synthesis:** Findings tagged
 `for-author` are the primary content of the chat synthesis and the rubric's
 🔴 / 🟡 / 🟢 tiers. Findings tagged `for-orchestrator-synthesis` feed your
@@ -941,3 +994,7 @@ storage cost but adds no signal. This skill prevents that failure mode by:
   produced by human review on this run get appended to the log per
   [Capturing new overrides](#capturing-new-overrides). Never overwrite, date-stamp, or
   delete entries.
+- **The chat synthesis must end with a `Recommended next action:` line.** Exactly one of
+  the five bracketed values, chosen mechanically per
+  [Next-action derivation](#next-action-derivation). Do not hedge, do not list multiple
+  options, do not skip the line when the rubric is clean — rule 5 still applies.
