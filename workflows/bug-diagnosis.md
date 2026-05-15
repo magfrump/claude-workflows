@@ -17,7 +17,7 @@ This workflow is optimized for speed. Unlike RPI, there is **no plan approval ga
 
 ## When to pivot
 
-- **→ RPI**: If you've tested 3+ hypotheses without progress, you likely don't understand the code well enough. Pivot to RPI's research phase — your failed hypotheses become valuable input (they document what the bug *isn't*). Use RPI for bugs in unfamiliar code where you need to build understanding before you can form good hypotheses.
+- **→ RPI**: If you've tested 3+ hypotheses without progress, you likely don't understand the code well enough. Pivot to RPI's research phase — your failed hypotheses become valuable input (they document what the bug *isn't*). Before pivoting, emit the handoff doc described in step 5's "Handoff doc (required when escape hatch fires)" sub-section: `docs/working/handoff-diagnosis-{bug-description}.md` with a "What this bug isn't" section the next RPI research doc opens with verbatim. Use RPI for bugs in unfamiliar code where you need to build understanding before you can form good hypotheses.
 - **→ Spike**: If the fix requires using an unfamiliar library or technique, spike it before implementing the fix.
 - **← From RPI**: When RPI research reveals the root cause of a bug, you can skip straight to this workflow's Fix and Verify steps (steps 6-7) rather than writing a full implementation plan. RPI's research doc serves as the diagnosis record.
 
@@ -194,8 +194,72 @@ Design the smallest experiment that distinguishes "hypothesis is correct" from "
 
 **Escape hatch**: If you've **REFUTED** 3+ hypotheses without confirming one, stop iterating and reassess. INCONCLUSIVE hypotheses do *not* tick this counter — the search space has not actually narrowed when an experiment failed to test what it claimed to test. If you're accumulating INCONCLUSIVE results, the problem is experimental design, not exhausted hypothesis space; fix the experiment before counting the hypothesis as a failure. Reassessment questions:
 - Are you isolating well enough? (Return to step 3)
-- Do you understand the code well enough? (Pivot to RPI)
+- Do you understand the code well enough? (Pivot to RPI — see "Handoff doc" below)
 - Is the bug actually where you think it is? (Widen the search)
+
+#### Handoff doc (required when escape hatch fires and you're pivoting to RPI)
+
+When the escape hatch fires *and* the chosen reassessment is "pivot to RPI" (the most common outcome), emit a structured handoff doc at `docs/working/handoff-diagnosis-{bug-description}.md` *before* opening the RPI research doc. The handoff is what carries refuted-hypothesis evidence across the workflow boundary — without it, three rounds of falsification work get re-derived from scratch, or worse, the next session re-tests one of the same hypotheses.
+
+The handoff is a **derivation** of the diagnosis log (the hypothesis table is already there), reframed for an RPI reader. The framing flip is the load-bearing move: "hypotheses we tested" → "things this bug isn't." That reframing turns falsification work into a narrowed search space the research phase can start from rather than a list of past attempts.
+
+**Content rules:**
+
+- Include only **REFUTED** hypotheses. INCONCLUSIVE ones did not eliminate anything from the search space, so they don't belong in "what this bug isn't" — list them under "Open / untested" instead so the next session knows they're unresolved.
+- For each refuted hypothesis, one entry with two lines: `tested:` (the prediction the experiment ran — what would have been true if the hypothesis held) and `learned:` (the region of the search space the refutation eliminates — phrased as a negative claim about the bug, not as a verdict on the hypothesis).
+- Keep entries short. Each `tested:` / `learned:` pair is 1-2 sentences.
+- Reference the source diagnosis log so a deeper reader can recover the full experiment.
+
+**Template:**
+
+```markdown
+# Handoff: bug-diagnosis → RPI for {bug description}
+Date: {YYYY-MM-DD}
+Diagnosis log: docs/working/diagnosis-{bug-description}.md
+Reason for pivot: escape hatch fired after N refuted hypotheses
+
+## What this bug isn't
+
+The following hypotheses were tested and refuted. Each entry names a region of
+the search space that the RPI research phase does not need to re-examine.
+
+1. **Not: {one-line negative claim about the bug}**
+   - tested: {what the experiment predicted would happen if the hypothesis held}
+   - learned: {what the refutation lets us say the bug is not — phrased as a constraint on where to look next}
+   - ref: hypothesis #{N} in diagnosis log
+
+2. **Not: {...}**
+   - tested: {...}
+   - learned: {...}
+   - ref: hypothesis #{N} in diagnosis log
+
+3. **Not: {...}**
+   - tested: {...}
+   - learned: {...}
+   - ref: hypothesis #{N} in diagnosis log
+
+## Open / untested
+
+[INCONCLUSIVE hypotheses from the diagnosis log, plus regions of the code
+the diagnosis never reached. These are starting points for RPI research,
+not eliminated regions.]
+
+## Instruction to the next RPI research doc
+
+The RPI research doc for this bug must open with the "What this bug isn't"
+section copied verbatim from this handoff. The refutation work was expensive;
+preserving it as the opening of research is what makes the pivot pay off.
+After that section, proceed with RPI research as normal: What exists,
+Invariants, Prior art, Gotchas.
+```
+
+**Worked example.** A bug-diagnosis loop investigating "PDF export occasionally produces blank pages" tested three hypotheses, all refuted: (a) the PDF library was returning null for certain glyphs, (b) a font cache was being evicted mid-render, (c) the worker was timing out on large jobs. The handoff doc's "What this bug isn't" section reads:
+
+> 1. **Not: a glyph-rendering null in the PDF library** — tested: corrupt or missing glyphs in the input would surface as `RenderError` in logs. learned: logs show clean render completion on every blank-page job, so the bug is not in glyph rendering. ref: hypothesis #1.
+> 2. **Not: font-cache eviction during render** — tested: pinning the font cache to never evict would eliminate the blank pages. learned: blank pages still occur with the cache pinned, so the bug is not cache-related. ref: hypothesis #2.
+> 3. **Not: worker timeout on large jobs** — tested: blank pages would correlate with job size > 10MB. learned: blank pages occur on small jobs too (median 1.2MB), so the bug is not timeout-related. ref: hypothesis #3.
+
+The "Open / untested" section then points RPI research at the rendering pipeline downstream of glyph emission — the region the three refutations have collectively narrowed to.
 
 **Done when...**
 - [ ] The hypothesis state is recorded as exactly one of CONFIRMED, REFUTED, or INCONCLUSIVE
@@ -204,6 +268,8 @@ Design the smallest experiment that distinguishes "hypothesis is correct" from "
 - [ ] INCONCLUSIVE → the experiment is redesigned to actually test the hypothesis (precondition met, prediction specific enough), or the hypothesis is discarded as untestable. INCONCLUSIVE results are *not* counted toward the escape hatch
 - [ ] The test result, the hypothesis state, and what was learned are recorded in the diagnosis log
 - [ ] If 3+ hypotheses have been **REFUTED** (INCONCLUSIVE ones do not count), the escape hatch has been evaluated (re-isolate, pivot to RPI, or widen search)
+- [ ] If the escape hatch fired and the chosen reassessment is "pivot to RPI", the handoff doc has been emitted at `docs/working/handoff-diagnosis-{bug-description}.md` per the "Handoff doc" sub-section: one "Not: ..." entry per refuted hypothesis with `tested:` / `learned:` / `ref:` lines, an "Open / untested" section for inconclusive hypotheses and unexamined regions, and the verbatim instruction that the next RPI research doc must open with the "What this bug isn't" section copied across
+- [ ] The subsequent RPI research doc (if started in the same session) opens with the handoff's "What this bug isn't" section copied verbatim, before its standard body sections (What exists, Invariants, Prior art, Gotchas)
 
 ### 6. Fix — apply the minimal correct change
 
