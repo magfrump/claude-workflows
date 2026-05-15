@@ -969,6 +969,7 @@ descriptive (one clear sentence; conventional-commit prefix preferred)."
             CHANGED_SKILLS=$(echo "$CHANGED_FILES" | grep -E '^(skills|workflows)/.+\.md$' || true)
             if [ -n "$CHANGED_SKILLS" ]; then
                 SELF_EVAL_PASSED=true
+                SELF_EVAL_SKILL_PATH="skills/self-eval/SKILL.md"
                 for SKILL_FILE in $CHANGED_SKILLS; do
                     if [ ! -f "$WT_DIR/$SKILL_FILE" ]; then
                         continue  # file was deleted, not added/modified
@@ -989,7 +990,7 @@ descriptive (one clear sentence; conventional-commit prefix preferred)."
                             cp -r "$WT_DIR/skills" "$BASELINE_TMP/skills" 2>/dev/null || true
                         fi
                         echo "    Running baseline self-eval on main version of: $SKILL_FILE"
-                        BASELINE_OUTPUT=$(cd "$BASELINE_TMP" && claude -p "Use the self-eval skill defined in skills/self-eval/SKILL.md to evaluate $SKILL_FILE.
+                        BASELINE_OUTPUT=$(cd "$BASELINE_TMP" && claude -p "Use the self-eval skill defined in $SELF_EVAL_SKILL_PATH to evaluate $SKILL_FILE.
 
 After writing the report, output exactly one line in this format:
 SELF_EVAL_RESULT: <number of Weak scores>
@@ -1006,7 +1007,7 @@ Count only the automated assessment scores (Testability investment, Trigger clar
                     fi
 
                     # --- Evaluate branch version ---
-                    EVAL_OUTPUT=$(cd "$WT_DIR" && claude -p "Use the self-eval skill defined in skills/self-eval/SKILL.md to evaluate $SKILL_FILE.
+                    EVAL_OUTPUT=$(cd "$WT_DIR" && claude -p "Use the self-eval skill defined in $SELF_EVAL_SKILL_PATH to evaluate $SKILL_FILE.
 
 After writing the report, output exactly one line in this format:
 SELF_EVAL_RESULT: <number of Weak scores>

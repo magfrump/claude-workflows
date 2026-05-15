@@ -26,10 +26,7 @@ TASK_CATEGORIES_ALLOWED="feature maintenance data-pipeline"
 # Allowed values for the per-task hypothesis evaluator (decision 012 pillar 1).
 # "script" = morning summary can check preconditions against the invocation
 # logger; "user" = only a human observation can decide the outcome. Either is
-# first-class; the field declares who is responsible for evaluation. The
-# allowed keys for the `requires` precondition object live inline in the
-# validator's jq filter (metric_logged, invocations, days_elapsed); they are
-# named in only one place to avoid drift between bash and jq scopes.
+# first-class; the field declares who is responsible for evaluation.
 HYPOTHESIS_EVALUATORS_ALLOWED="script user"
 
 # Allowed values for the per-task hypothesis source (decision 012 pillar 3).
@@ -37,6 +34,13 @@ HYPOTHESIS_EVALUATORS_ALLOWED="script user"
 # = planner authored it under the pillar-2 adversarial framing. The morning
 # summary tags planner-authored open hypotheses so the user can review framing.
 HYPOTHESIS_SOURCES_ALLOWED="user planner"
+
+# Allowed keys for the per-task `requires` precondition object (decision 012
+# pillar 1). Centralised here because the validator's jq filter and its human-
+# readable error message both need them; the morning-summary parser still has
+# per-key handling (each key has its own type and comparison semantics).
+HYPOTHESIS_REQUIRES_KEYS_ALLOWED="metric_logged, invocations, days_elapsed"
+HYPOTHESIS_REQUIRES_KEYS_ALLOWED_JSON='["metric_logged","invocations","days_elapsed"]'
 
 # --- Task lineage from round changelog ---
 # Walks docs/working/round-changelog.md and emits "Round N: task-id" for each
@@ -213,13 +217,15 @@ validate_task_json() {
         # value types. Unknown keys would silently make a hypothesis
         # uneval­uable, so they reject.
         local requires_err
-        requires_err=$(echo "$task" | jq -r '
+        requires_err=$(echo "$task" | jq -r \
+            --argjson allowed "$HYPOTHESIS_REQUIRES_KEYS_ALLOWED_JSON" \
+            --arg allowed_human "$HYPOTHESIS_REQUIRES_KEYS_ALLOWED" '
             if (has("requires") | not) then empty
             elif (.requires | type) != "object" then "requires must be an object"
             else
                 ([.requires | keys[] | select(. as $k |
-                    ["metric_logged","invocations","days_elapsed"] | index($k) | not)] | first // null) as $bad_key |
-                if $bad_key != null then "requires has unknown key: \($bad_key); allowed: metric_logged, invocations, days_elapsed"
+                    $allowed | index($k) | not)] | first // null) as $bad_key |
+                if $bad_key != null then "requires has unknown key: \($bad_key); allowed: \($allowed_human)"
                 elif (.requires | has("metric_logged")) and (.requires.metric_logged | type) != "string" then "requires.metric_logged must be a string"
                 elif (.requires | has("invocations"))   and ((.requires.invocations   | type) != "number" or (.requires.invocations   | floor) != .requires.invocations) then "requires.invocations must be an integer"
                 elif (.requires | has("days_elapsed"))  and ((.requires.days_elapsed  | type) != "number" or (.requires.days_elapsed  | floor) != .requires.days_elapsed)  then "requires.days_elapsed must be an integer"
@@ -424,18 +430,23 @@ HEADER
         printf '\n' >> "$log_file"
     fi
 
-    local tid hyp window evaluator requires hyp_source
+    local tid fields hyp hyp_source window evaluator requires
     for tid in $approved_ids; do
-        hyp=$(jq -r --arg id "$tid" '.[] | select(.id == $id) | .hypothesis // ""' "$tasks_file" 2>/dev/null)
-        window=$(jq -r --arg id "$tid" '.[] | select(.id == $id) | .hypothesis_window // ""' "$tasks_file" 2>/dev/null)
-        evaluator=$(jq -r --arg id "$tid" '.[] | select(.id == $id) | .evaluator // ""' "$tasks_file" 2>/dev/null)
-        hyp_source=$(jq -r --arg id "$tid" '.[] | select(.id == $id) | .hypothesis_source // ""' "$tasks_file" 2>/dev/null)
-        # Flatten the requires object to key=value;key=value so it fits in a
-        # single markdown cell. Empty when the task has no requires field.
-        requires=$(jq -r --arg id "$tid" '
-            .[] | select(.id == $id) | .requires // {} |
-            to_entries | map("\(.key)=\(.value)") | join(";")
+        # Single jq pass per task — emit the five fields joined by the ASCII
+        # Unit Separator so a stale task file isn't reparsed once per column.
+        # Tab won't work as a delimiter for `read` because it's IFS-whitespace
+        # and runs of whitespace coalesce, eating empty fields. `requires` is
+        # flattened to key=value;key=value so it fits in a single markdown cell.
+        fields=$(jq -r --arg id "$tid" '
+            .[] | select(.id == $id) | [
+                .hypothesis // "",
+                .hypothesis_source // "",
+                (.hypothesis_window // "" | tostring),
+                .evaluator // "",
+                ((.requires // {}) | to_entries | map("\(.key)=\(.value)") | join(";"))
+            ] | join("")
         ' "$tasks_file" 2>/dev/null)
+        IFS=$'\037' read -r hyp hyp_source window evaluator requires <<< "$fields"
 
         if [ -z "$hyp" ]; then
             echo "  Warning: no hypothesis recorded for approved task: $tid" >&2

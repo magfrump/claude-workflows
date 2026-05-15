@@ -841,24 +841,12 @@ _summary_deferred_evaluation() {
         _row_is_open_deferred "$line" "$current_round" "$scope_col" "$outcome_col" || continue
 
         local round task_id hypothesis evaluator requires hyp_src
-        round=$(echo "$line" | awk -F'|' '{gsub(/^[ \t]+|[ \t]+$/, "", $2); print $2}')
-        task_id=$(echo "$line" | awk -F'|' '{gsub(/^[ \t]+|[ \t]+$/, "", $3); print $3}')
-        hypothesis=$(echo "$line" | awk -F'|' '{gsub(/^[ \t]+|[ \t]+$/, "", $4); print $4}')
-        if [[ "$evaluator_col" -gt 0 ]]; then
-            evaluator=$(echo "$line" | awk -F'|' -v c="$evaluator_col" '{gsub(/^[ \t]+|[ \t]+$/, "", $c); print $c}')
-        else
-            evaluator=""
-        fi
-        if [[ "$requires_col" -gt 0 ]]; then
-            requires=$(echo "$line" | awk -F'|' -v c="$requires_col" '{gsub(/^[ \t]+|[ \t]+$/, "", $c); print $c}')
-        else
-            requires=""
-        fi
-        if [[ "$source_col" -gt 0 ]]; then
-            hyp_src=$(echo "$line" | awk -F'|' -v c="$source_col" '{gsub(/^[ \t]+|[ \t]+$/, "", $c); print $c}')
-        else
-            hyp_src=""
-        fi
+        round=$(_get_col "$line" 2)
+        task_id=$(_get_col "$line" 3)
+        hypothesis=$(_get_col "$line" 4)
+        evaluator=$(_get_col "$line" "$evaluator_col")
+        requires=$(_get_col "$line" "$requires_col")
+        hyp_src=$(_get_col "$line" "$source_col")
 
         count=$((count + 1))
         local hyp_tag=""
@@ -882,6 +870,18 @@ _summary_deferred_evaluation() {
     if [ "$count" -eq 0 ]; then
         echo "No open hypotheses to evaluate."
     fi
+}
+
+# --- Internal: strip "<dir>/" prefix from a path, whether absolute or relative ---
+# `${path##*/skills/}` only strips when "skills/" appears mid-path; for already-
+# relative inputs (skills/foo.md) the substitution is a no-op, so fall back to
+# the leading-prefix form. Used to keep the skills/workflows path-classification
+# rules in one place.
+_strip_prefix_dir() {
+    local path="$1" dir="$2"
+    local rel="${path##*/"$dir"/}"
+    [ "$rel" = "$path" ] && rel="${path#"$dir"/}"
+    echo "$rel"
 }
 
 # --- Internal: extract skill/workflow targets from a task's files_touched ---
@@ -912,25 +912,21 @@ _resolve_hypothesis_target() {
         .[] | select(.id == $id) | .files_touched[]?
     ' "$tasks_file" 2>/dev/null | while IFS= read -r path; do
         [ -z "$path" ] && continue
+        local rel
         case "$path" in
             */skills/*/SKILL.md|skills/*/SKILL.md)
-                local rel="${path##*/skills/}"
-                # When the path was already relative (no leading dir), strip
-                # by prefix instead of by the parametric pattern.
-                [ "$rel" = "$path" ] && rel="${path#skills/}"
+                rel=$(_strip_prefix_dir "$path" skills)
                 printf 'skill:%s\n' "${rel%%/SKILL.md}"
                 ;;
             */skills/*.md|skills/*.md)
-                local rel="${path##*/skills/}"
-                [ "$rel" = "$path" ] && rel="${path#skills/}"
+                rel=$(_strip_prefix_dir "$path" skills)
                 # Only direct files under skills/ (no nested subdirs).
                 if [[ "$rel" != */* ]]; then
                     printf 'skill:%s\n' "${rel%.md}"
                 fi
                 ;;
             */workflows/*.md|workflows/*.md)
-                local rel="${path##*/workflows/}"
-                [ "$rel" = "$path" ] && rel="${path#workflows/}"
+                rel=$(_strip_prefix_dir "$path" workflows)
                 if [[ "$rel" != */* ]]; then
                     printf 'workflow:%s\n' "${rel%.md}"
                 fi
@@ -1053,13 +1049,12 @@ _evaluate_script_preconditions() {
     # Parse the flattened requires string. Unknown keys are surfaced so the
     # planner can fix a typo rather than have the gate silently ignore it.
     local req_metric="" req_invocations="" req_days="" req_unknown=""
-    local IFS_SAVE="$IFS"
-    IFS=';'
-    local pair
-    for pair in $requires_str; do
-        IFS="$IFS_SAVE"
-        local key="${pair%%=*}"
-        local val="${pair#*=}"
+    local -a pairs
+    IFS=';' read -ra pairs <<< "$requires_str"
+    local pair key val
+    for pair in "${pairs[@]}"; do
+        key="${pair%%=*}"
+        val="${pair#*=}"
         key="${key// /}"
         val="${val# }"; val="${val% }"
         case "$key" in
@@ -1069,9 +1064,7 @@ _evaluate_script_preconditions() {
             "") ;;
             *) req_unknown="${req_unknown:+$req_unknown, }$key" ;;
         esac
-        IFS=';'
     done
-    IFS="$IFS_SAVE"
 
     local all_met=1
     local reasons=""
@@ -1130,6 +1123,17 @@ _evaluate_script_preconditions() {
     fi
 }
 
+# --- Internal: extract one trimmed pipe-delimited column from a line ---
+# Returns the col-th field with leading/trailing whitespace stripped. A col
+# of 0 (the convention _locate_log_col uses for "not found") yields empty,
+# letting callers fold the absent-column branch into the same call.
+# Args: $1 = pipe-delimited line, $2 = 1-based column index
+_get_col() {
+    local line="$1" col="$2"
+    [[ "$col" -gt 0 ]] || { echo ""; return; }
+    echo "$line" | awk -F'|' -v c="$col" '{gsub(/^[ \t]+|[ \t]+$/, "", $c); print $c}'
+}
+
 # --- Internal: locate a named column's index in the log header ---
 # Returns the 1-based awk field index of a named column in the first header
 # row, or 0 if the column is absent. The header is identified as the line
@@ -1179,17 +1183,17 @@ _row_is_open_deferred() {
     echo "$line" | grep -qE '^\|\s*(Round|----)' && return 1
 
     local round window outcome task_id
-    round=$(echo "$line"   | awk -F'|' '{gsub(/^[ \t]+|[ \t]+$/, "", $2); print $2}')
-    task_id=$(echo "$line" | awk -F'|' '{gsub(/^[ \t]+|[ \t]+$/, "", $3); print $3}')
-    window=$(echo "$line"  | awk -F'|' '{gsub(/^[ \t]+|[ \t]+$/, "", $5); print $5}')
-    outcome=$(echo "$line" | awk -F'|' -v c="$outcome_col" '{gsub(/^[ \t]+|[ \t]+$/, "", $c); print $c}')
+    round=$(_get_col "$line" 2)
+    task_id=$(_get_col "$line" 3)
+    window=$(_get_col "$line" 5)
+    outcome=$(_get_col "$line" "$outcome_col")
 
     [[ -z "$task_id" ]] && return 1
     [[ -n "$outcome" ]] && return 1
 
     if [[ "$scope_col" -gt 0 ]]; then
         local scope
-        scope=$(echo "$line" | awk -F'|' -v c="$scope_col" '{gsub(/^[ \t]+|[ \t]+$/, "", $c); print $c}')
+        scope=$(_get_col "$line" "$scope_col")
         [[ "$scope" == "internal-si" ]] && return 1
     fi
 

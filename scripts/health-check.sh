@@ -518,6 +518,12 @@ check_skill_fixture_coverage() {
 # script OR from another function inside si-functions.sh (i.e., reached
 # transitively). Only functions with no caller at all are flagged as orphans.
 
+# Print lines in $2 that reference $1 as an identifier (preceded/followed by
+# a non-identifier character or line edge). Callers further filter as needed.
+_lines_referencing() {
+    grep -E "(^|[^a-zA-Z_])${1}([^a-zA-Z_0-9]|$)" "$2" 2>/dev/null
+}
+
 check_feature_integration() {
     section "Feature integration (si-functions.sh)"
 
@@ -552,8 +558,7 @@ check_feature_integration() {
     for fname in "${functions[@]}"; do
         local found_in_entry=false
         for script in "${entry_scripts[@]}"; do
-            # Match word boundary: function name preceded/followed by non-identifier
-            if grep -qE "(^|[^a-zA-Z_])${fname}([^a-zA-Z_0-9]|$)" "$script" 2>/dev/null; then
+            if _lines_referencing "$fname" "$script" >/dev/null; then
                 found_in_entry=true
                 break
             fi
@@ -564,7 +569,7 @@ check_feature_integration() {
         # transitively when their caller is reached from an entry point.
         local found_in_lib=false
         if ! $found_in_entry; then
-            if grep -E "(^|[^a-zA-Z_])${fname}([^a-zA-Z_0-9]|$)" "$lib_file" 2>/dev/null \
+            if _lines_referencing "$fname" "$lib_file" \
                 | grep -vE "^${fname}[[:space:]]*\(\)" \
                 | grep -q .; then
                 found_in_lib=true
