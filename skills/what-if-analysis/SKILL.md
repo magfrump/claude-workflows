@@ -1,23 +1,30 @@
 ---
 name: what-if-analysis
 description: >
-  Perform a structured pre-mortem and consequence analysis of a proposed change — a plan, design,
-  migration, refactor, policy, or any artifact that proposes doing something different from the status
-  quo. This skill systematically explores "what if this assumption is wrong?" and "what would need to
-  be true for this to fail?" It traces second-order effects, maps hidden couplings, and stress-tests
-  the highest-confidence assumptions. Differentiated from critique skills (cowen-critique,
-  yglesias-critique) which evaluate whether an argument is *good* — this skill evaluates what happens
-  if the argument is *wrong*, and what the consequences are even if it's right. Use this skill when
-  the user asks things like "what could go wrong with this", "stress-test this plan", "what am I not
-  seeing", "pre-mortem this", "what are the risks", "what are the second-order effects", "what breaks
-  if we're wrong", or "what if this assumption doesn't hold". Also trigger when the user is about to
-  make a significant, hard-to-reverse change and wants to understand the consequence space before
-  committing, or when invoked as a sub-procedure of `divergent-design` to stress-test top candidates
-  before a decision is finalized. NOTE: This skill can optionally receive upstream reports
-  (fact-check, critique) but does not require them. If critique reports are provided, use them to
-  identify which assumptions the critics *didn't* examine — that's where this skill adds the most
-  value.
-when: User wants to explore consequences, failure modes, and second-order effects of a proposed change
+  Perform a structured prospective consequence analysis of a proposed change — a plan, design,
+  migration, refactor, policy, or any artifact that proposes doing something different from the
+  status quo. This skill systematically explores "what if this assumption is wrong?" and "what
+  would need to be true for this to fail?" It traces second-order effects, maps hidden couplings,
+  and stress-tests the highest-confidence assumptions. Differentiated from critique skills
+  (cowen-critique, yglesias-critique) which evaluate whether an argument is *good* — this skill
+  evaluates what happens if the argument is *wrong*, and what the consequences are even if it's
+  right. Use this skill when the user asks things like "what could go wrong with this",
+  "stress-test this plan", "what am I not seeing", "what are the risks", "what are the
+  second-order effects", "what breaks if we're wrong", "what assumptions is this making", or
+  "what if this assumption doesn't hold". Also trigger when the user is about to make a
+  significant, hard-to-reverse change and wants to understand the consequence space before
+  committing, or when invoked as a sub-procedure of `divergent-design` to stress-test top
+  candidates before a decision is finalized. Distinct from `pre-mortem`: that skill operates
+  retrospectively (assume failure has already happened → write the narrative of why), while
+  this skill operates prospectively (the plan is on the table → map the consequence space
+  around it). Trigger phrases that name a failure as *already having happened* — "pre-mortem
+  this", "imagine 6 months later and this failed", "write the failure story", "tell me why
+  this failed" — route to `pre-mortem`, not here. The two skills compose: run what-if first
+  to map the territory, then pre-mortem to walk the specific failure paths through it. NOTE:
+  This skill can optionally receive upstream reports (fact-check, critique) but does not
+  require them. If critique reports are provided, use them to identify which assumptions the
+  critics *didn't* examine — that's where this skill adds the most value.
+when: User wants to explore consequences, failure modes, and second-order effects of a proposed change — prospectively, from the plan forward
 requires:
   - name: cowen-critique
     description: >
@@ -35,55 +42,43 @@ requires:
 
 # What-If / Counterfactual Analysis
 
-You are performing a structured pre-mortem and consequence analysis of a proposed change. The point
-is not to evaluate whether the proposal is *good* — the critique skills do that. The point is to
-explore what happens if things go differently than the proposal expects, and what the consequences
-are even if everything goes exactly as planned.
+You are performing a structured prospective consequence analysis of a proposed change. The
+point is not to evaluate whether the proposal is *good* — the critique skills do that. The
+point is to explore what happens if things go differently than the proposal expects, and
+what the consequences are even if everything goes exactly as planned.
 
-This is the difference between a critic and a pre-mortem analyst. The critic asks "is this argument
-sound?" The pre-mortem analyst asks "assuming this argument is sound, what could still go wrong?
-And assuming it's unsound, what specifically breaks?"
+This is the difference between a critic and a consequence analyst. The critic asks "is this
+argument sound?" The consequence analyst asks "assuming this argument is sound, what could
+still go wrong? And assuming it's unsound, what specifically breaks?"
 
-What follows are the cognitive moves for this analysis. Not all will apply to every proposal —
-exercise judgment. But resist the temptation to skip moves that feel uncomfortable or unlikely.
-The value of this analysis is in the surprises.
+What follows are the cognitive moves for this analysis. Not all will apply to every proposal
+— exercise judgment. But resist the temptation to skip moves that feel uncomfortable or
+unlikely. The value of this analysis is in the surprises.
 
-## Two Modes: Name the One You Want
+## When to Use This Skill (vs. pre-mortem)
 
-This skill operates in two distinct modes that share machinery but answer different questions. A
-full run executes both; a focused run executes one. When invoking the skill, name the mode you
-want so the analysis is shaped accordingly. If the user doesn't name a mode, ask — or default
-to the full run and label each section by mode.
+This skill is the forward-chained, structural form: *"this is the plan — what could go
+wrong?"* The sibling skill `pre-mortem` is the backward-chained, narrative form: *"the
+project failed — what's the story?"*
 
-**Mode A — Second-order consequence analysis ("if this assumption is wrong, what else breaks?").**
-This mode is forward-chained and assumption-centric. You start from the load-bearing assumptions
-(move #1), invert or perturb them, and trace the consequence chains outward through first, second,
-and third-order effects (moves #3, #4, #5). The question is not whether the proposal *will* fail
-but what the dependency surface looks like — which assumptions are load-bearing, which couplings
-are hidden, and which "obvious" claims would cascade if wrong. Output is a map of the consequence
-space, not a list of predicted outcomes. Use this when the proposal is conceptually sound but you
-need to understand its blast radius and fragility before committing.
+The mechanical test at trigger time:
 
-> Example invocation: *"Run a what-if analysis in consequence mode on this caching proposal —
-> I want to know which assumptions are load-bearing and what cascades if they're wrong, not
-> whether it'll fail."*
+| User's framing | Skill |
+|----------------|-------|
+| "what could go wrong with this", "stress-test this plan", "what are the risks", "trace the second-order effects", "what assumptions is this making", "what's the reversibility gradient", "what's the blast radius" | **what-if-analysis** |
+| "pre-mortem the launch", "pre-mortem this", "imagine 6 months later and this failed — what happened?", "write the failure story", "tell me why this failed", "give me the post-mortem before we ship" | **pre-mortem** |
 
-**Mode B — Pre-mortem failure headline ("imagine 6 months later the project failed — write the
-headline").** This mode is backward-chained and narrative-centric. You assume the proposal has
-already shipped and already failed, then write the specific incident report: what went wrong,
-in what order, with what observable signature (move #2, with adversarial scenarios from move #6
-as raw material). The question is "what does the post-mortem actually say?" — concrete failure
-stories with named root causes, named systems, and named outcomes. Output is 3–5 plausible
-failure narratives, each detailed enough that a reader could turn it into a mitigation. Use this
-when you want to surface failure modes that advocacy makes invisible, or when the team has
-converged too quickly on a plan and needs to confront specific ways it could go wrong.
+The split is not which skill is "better" — it's which cognitive move the user is asking
+for. What-if invokes the structural analyst: the plan is on the table, you're mapping the
+consequence space around it (load-bearing assumptions, second-order effects, hidden
+couplings, reversibility gradient, cost of success). Pre-mortem invokes the detective: the
+failure has already happened, you're writing the report as narrative. Asking for the wrong
+one wastes the asymmetry that makes each move work.
 
-> Example invocation: *"Pre-mortem this migration — it's six months from now and the rollout
-> failed. Give me three concrete failure stories with root causes and observable outcomes."*
-
-The two modes are complementary, not redundant. Mode A tells you which assumptions to worry
-about; Mode B tells you what worry looks like when it materializes. Run both for high-stakes
-changes; run one when the question is sharper.
+The two compose. For high-stakes changes, run this skill first to surface load-bearing
+assumptions and consequence chains, then run `pre-mortem` to turn the most worrying parts
+of that map into concrete failure narratives. The what-if maps the territory; the
+pre-mortem walks the specific paths through it that end in failure.
 
 ## Using Upstream Reports
 
@@ -159,26 +154,7 @@ both the explicit ones and the ones the author takes for granted. Then for each 
 this is wrong, does the proposal need a tweak, a redesign, or a full retreat?" The ones that
 require a redesign or retreat are load-bearing. Focus the rest of your analysis on those.
 
-### 2. Pre-mortem: it's six months later and this failed
-
-This is Gary Klein's pre-mortem technique, applied with specificity. Don't just say "it might
-fail." Instead: *assume it has already failed*. It's six months after the change shipped.
-Something went wrong. What happened?
-
-Generate 3-5 specific, concrete failure stories. Each one should be a plausible narrative with
-specific details — not "the migration might have issues" but "the migration completed
-successfully on staging, but in production the 2.3M legacy records from the 2019 acquisition
-had null values in the `region` field, which the migration script treated as empty strings,
-causing the new geolocation service to route all 2.3M users to the default region."
-
-The power of the pre-mortem is that it shifts your psychology from "how do we make this work?"
-(advocate mode) to "what went wrong?" (detective mode). In detective mode, you notice things
-that advocacy makes invisible.
-
-Each failure story should trace from a specific root cause through specific consequences to a
-specific observable outcome. Vague failure stories ("it was harder than expected") are not useful.
-
-### 3. Trace second-order effects
+### 2. Trace second-order effects
 
 First-order effects are the direct, intended consequences of the change. The proposal already
 describes these. Your job is to go further.
@@ -196,7 +172,7 @@ The specific move: take each intended outcome of the proposal and ask "and then 
 Write out the chain. Many proposals are correct about their first-order effects but blind to
 the second and third-order consequences. The chains that lead somewhere bad are findings.
 
-### 4. Find the hidden coupling
+### 3. Find the hidden coupling
 
 The proposal changes thing A. But thing B depends on thing A, and thing C depends on thing B.
 The proposal may not know about thing C. Systems fail at coupling points that nobody mapped.
@@ -212,7 +188,7 @@ For proposals about systems: draw the coupling map one level deeper than the pro
 For proposals about processes or organizations: identify the informal agreements, handshakes,
 and conventions that the proposal disrupts.
 
-### 5. Invert the confidence
+### 4. Invert the confidence
 
 Find the claims in the proposal where the author is most confident — the parts stated as
 obvious, the assumptions that aren't even stated because they're taken as given, the steps
@@ -230,7 +206,7 @@ High-confidence assumptions are the most dangerous because they get the least sc
 a low-confidence assumption is wrong, the team probably has a contingency. If a high-confidence
 assumption is wrong, there's no plan B.
 
-### 6. Run the adversarial scenario
+### 5. Run the adversarial scenario
 
 This is not about malicious actors (though it can include them). It's about asking: if the
 environment were actively hostile to this proposal, what would that look like?
@@ -246,7 +222,7 @@ The specific move: pick the 2-3 environmental factors that matter most to the pr
 ask "what's the realistic worst case for each?" Not the apocalyptic worst case — the one that's
 maybe 10-20% likely. That's the scenario worth planning for.
 
-### 7. Check the reversibility gradient
+### 6. Check the reversibility gradient
 
 Some changes are easy to undo on day 1 but impossible to undo on day 180. The proposal may
 not describe this gradient.
@@ -265,7 +241,7 @@ later — needs more scrutiny upfront than a change that's equally reversible at
 Flag any cliff edges in the reversibility gradient: specific moments where reversal suddenly
 becomes much harder.
 
-### 8. Ask what success costs
+### 7. Ask what success costs
 
 Even if the proposal works perfectly — every assumption holds, every step succeeds, every
 outcome is as intended — what do you lose?
@@ -295,7 +271,6 @@ Begin the document with:
 
 **Proposal:** <what is being analyzed — file path, decision name, or one-line summary>
 **Date:** <YYYY-MM-DD>
-**Mode:** <Consequence | Pre-mortem | Full>
 **Upstream critiques:** <list of skills whose reports were used, or "none">
 ```
 
@@ -307,18 +282,9 @@ List every load-bearing assumption (move #1). For each one, use these fields:
 - **If wrong:** tweak / redesign / full retreat
 - **Tag:** `[NOVEL]` if not surfaced by any upstream critique, otherwise omit
 
-### Pre-Mortem Scenarios (Failure Modes)
-
-Present 3-5 concrete failure stories (move #2). For each scenario, use these fields:
-- **Root cause:** the specific trigger
-- **Chain of consequences:** the ordered sequence from trigger to outcome
-- **Observable outcome:** what someone watching the system would see
-- **Plausibility:** Likely | Plausible | Unlikely-but-catastrophic
-- **Severity:** Low | Medium | High | Catastrophic
-
 ### Consequence Chains
 
-Trace first → second → third-order effects (move #3) for the proposal's 2-3 most significant
+Trace first → second → third-order effects (move #2) for the proposal's 2-3 most significant
 intended outcomes. Use an indented chain format:
 
 ```
@@ -330,28 +296,28 @@ intended outcomes. Use an indented chain format:
 
 ### Coupling Analysis
 
-Map the hidden couplings (move #4) — the dependencies the proposal doesn't acknowledge.
+Map the hidden couplings (move #3) — the dependencies the proposal doesn't acknowledge.
 For each coupling, note whether it's visible (in a dependency graph or config) or invisible
 (convention, behavior, timing).
 
 ### Confidence Inversions
 
-For each high-confidence assumption inverted (move #5), describe the concrete scenario where
+For each high-confidence assumption inverted (move #4), describe the concrete scenario where
 it's wrong and what that does to the proposal.
 
 ### Adversarial Scenarios
 
-The 2-3 most important hostile-environment scenarios (move #6), with the realistic worst case
+The 2-3 most important hostile-environment scenarios (move #5), with the realistic worst case
 for each.
 
 ### Reversibility Map
 
-A timeline showing how hard reversal is at 1 week, 1 month, and 6 months (move #7). Flag
+A timeline showing how hard reversal is at 1 week, 1 month, and 6 months (move #6). Flag
 any cliff edges.
 
 ### Cost of Success
 
-What's lost even if everything works (move #8). Complexity, opportunity, maintenance, and
+What's lost even if everything works (move #7). Complexity, opportunity, maintenance, and
 optionality costs.
 
 ### Findings Summary
@@ -359,8 +325,6 @@ optionality costs.
 A consolidated list of all findings, each tagged:
 - `[UNEXAMINED ASSUMPTION]` — a load-bearing assumption that the proposal (and any upstream
   critiques) did not examine
-- `[NOVEL FAILURE MODE]` — a specific way the proposal could fail that was not identified
-  by any upstream analysis
 - `[SECOND-ORDER EFFECT]` — a consequence chain that the proposal didn't trace
 - `[HIDDEN COUPLING]` — a dependency the proposal didn't map
 - `[REVERSIBILITY CLIFF]` — a point where reversal suddenly becomes much harder
@@ -373,6 +337,10 @@ This tagging enables direct comparison with upstream critique outputs to evaluat
 the what-if analysis surfaced genuinely new findings. The `[PRIOR CONSIDERATION]` tag can
 combine with others (e.g., `[HIDDEN COUPLING] [PRIOR CONSIDERATION]`) when a prior artifact
 already named the coupling but the present proposal didn't carry it forward.
+
+If the proposal also needs concrete failure narratives (a story of *why* it failed, not
+just a map of *what could fail*), run the `pre-mortem` skill on the same artifact — it
+consumes this analysis as input and produces the narrative complement.
 
 ### Recommendations
 
@@ -393,7 +361,8 @@ section is more useful than an inflated one.
 Save your analysis as `docs/reviews/what-if-analysis.md` in the project root. Create
 `docs/reviews/` if it doesn't exist.
 
-If run alongside critique skills on the same artifact, all outputs coexist in `docs/reviews/`.
+If run alongside critique skills or `pre-mortem` on the same artifact, all outputs coexist
+in `docs/reviews/`.
 
 ## Tone
 
