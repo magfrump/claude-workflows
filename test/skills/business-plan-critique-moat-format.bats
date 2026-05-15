@@ -14,7 +14,7 @@ setup() {
 # --- Title ---
 
 @test "report has a title header with Moat identifier" {
-  echo "$REPORT_CONTENT" | head -5 | grep -qiE '^# .*Moat'
+  assert_title_matches '^# .*Moat'
 }
 
 # --- Required analytical sections (the five lenses) ---

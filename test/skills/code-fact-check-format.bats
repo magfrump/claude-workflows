@@ -13,7 +13,7 @@ setup() {
 # --- Header section ---
 
 @test "report has a title header" {
-  echo "$REPORT_CONTENT" | head -5 | grep -qE '^# Code Fact-Check Report'
+  assert_title_matches '^# Code Fact-Check Report' 5 "-qE"
 }
 
 @test "report has a Repository field" {

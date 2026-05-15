@@ -14,7 +14,7 @@ setup() {
 # --- Header section ---
 
 @test "report has a title header with UI Visual Review" {
-  echo "$REPORT_CONTENT" | head -5 | grep -qiE '^# .*UI Visual Review'
+  assert_title_matches '^# .*UI Visual Review'
 }
 
 @test "report has a Scope field" {

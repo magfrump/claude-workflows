@@ -75,6 +75,20 @@ assert_section_exists() {
   echo "$REPORT_CONTENT" | grep -qE "^## ${heading}"
 }
 
+# Assert that REPORT_CONTENT contains a title header matching `pattern`
+# (extended regex) within the first `max_lines` lines. Replaces the
+# `echo "$REPORT_CONTENT" | head -N | grep -qiE '...'` boilerplate the
+# *-format.bats suites all duplicate.
+# Args: $1 = pattern, $2 = optional max_lines (default 5),
+#       $3 = optional grep flags (default "-qiE")
+assert_title_matches() {
+  local pattern="$1"
+  local max_lines="${2:-5}"
+  local flags="${3:--qiE}"
+  # shellcheck disable=SC2086  # flags is a deliberately split flag string
+  echo "$REPORT_CONTENT" | head -"$max_lines" | grep $flags "$pattern"
+}
+
 # Assert a section (any heading level) exists, case-insensitive.
 assert_heading_exists() {
   local pattern="$1"

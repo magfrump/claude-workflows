@@ -15,7 +15,7 @@ setup() {
 # --- Header section ---
 
 @test "report has a title header with Self-Evaluation" {
-  echo "$REPORT_CONTENT" | head -15 | grep -qiE '^# Self-Evaluation'
+  assert_title_matches '^# Self-Evaluation' 15
 }
 
 @test "report has a Target field" {

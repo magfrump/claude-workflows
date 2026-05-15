@@ -15,7 +15,7 @@ setup() {
 # --- Title and header ---
 
 @test "record has a Situating Record title" {
-  echo "$REPORT_CONTENT" | head -5 | grep -qiE '^# .*Situating Record'
+  assert_title_matches '^# .*Situating Record'
 }
 
 @test "record has a Date field" {

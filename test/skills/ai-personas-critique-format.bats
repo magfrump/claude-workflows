@@ -13,7 +13,7 @@ setup() {
 # --- Title ---
 
 @test "report has a title header with AI Personas identifier" {
-  echo "$REPORT_CONTENT" | head -5 | grep -qiE '^# .*(AI Personas|Personas Critique)'
+  assert_title_matches '^# .*(AI Personas|Personas Critique)'
 }
 
 # --- Required header fields ---

@@ -15,7 +15,7 @@ setup() {
 # --- Header section ---
 
 @test "report has a title header with Dependency Upgrade" {
-  echo "$REPORT_CONTENT" | head -5 | grep -qiE '^#{1,2} .*Dependency Upgrade'
+  assert_title_matches '^#{1,2} .*Dependency Upgrade'
 }
 
 # --- Summary section ---

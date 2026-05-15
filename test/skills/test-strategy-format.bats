@@ -16,7 +16,7 @@ setup() {
 # --- Header section ---
 
 @test "report has a title header with Test Strategy" {
-  echo "$REPORT_CONTENT" | head -5 | grep -qiE '^#{1,2} .*Test Strategy'
+  assert_title_matches '^#{1,2} .*Test Strategy'
 }
 
 @test "report has a Scope field" {

@@ -13,7 +13,7 @@ setup() {
 # --- Title ---
 
 @test "report has a title header with Yglesias identifier" {
-  echo "$REPORT_CONTENT" | head -5 | grep -qiE '^# .*Yglesias.*Critique'
+  assert_title_matches '^# .*Yglesias.*Critique'
 }
 
 # --- Required analytical sections (cognitive moves) ---

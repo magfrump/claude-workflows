@@ -18,7 +18,7 @@ setup() {
 # --- Header section ---
 
 @test "report has a title header with Bug Diagnosis identifier" {
-  echo "$REPORT_CONTENT" | head -5 | grep -qiE '^# .*Bug Diagnosis'
+  assert_title_matches '^# .*Bug Diagnosis'
 }
 
 @test "report has a Date field" {

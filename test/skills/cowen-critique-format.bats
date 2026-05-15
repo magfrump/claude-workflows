@@ -13,7 +13,7 @@ setup() {
 # --- Title ---
 
 @test "report has a title header with Cowen identifier" {
-  echo "$REPORT_CONTENT" | head -5 | grep -qiE '^# .*Cowen.*Critique'
+  assert_title_matches '^# .*Cowen.*Critique'
 }
 
 # --- Required analytical sections (cognitive moves) ---

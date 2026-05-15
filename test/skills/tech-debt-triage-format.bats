@@ -15,7 +15,7 @@ setup() {
 # --- Header section ---
 
 @test "report has a title header with Tech Debt Triage" {
-  echo "$REPORT_CONTENT" | head -5 | grep -qiE '^#{1,2} .*Tech Debt Triage'
+  assert_title_matches '^#{1,2} .*Tech Debt Triage'
 }
 
 @test "report has a Location field" {

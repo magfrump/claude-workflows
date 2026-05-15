@@ -13,7 +13,7 @@ setup() {
 # --- Header section ---
 
 @test "report has a title header" {
-  echo "$REPORT_CONTENT" | head -5 | grep -qiE '^# .*Matrix.*Analysis'
+  assert_title_matches '^# .*Matrix.*Analysis'
 }
 
 @test "report has an Items field" {

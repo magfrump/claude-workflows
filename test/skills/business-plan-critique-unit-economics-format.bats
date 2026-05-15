@@ -14,7 +14,7 @@ setup() {
 # --- Title ---
 
 @test "report has a title header identifying it as a unit-economics critique" {
-  echo "$REPORT_CONTENT" | head -5 | grep -qiE '^# .*Unit.?Economics.*Critique'
+  assert_title_matches '^# .*Unit.?Economics.*Critique'
 }
 
 # --- Required per-lens sections ---

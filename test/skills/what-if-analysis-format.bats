@@ -16,7 +16,7 @@ setup() {
 # --- Header section ---
 
 @test "report has a title header with What-If Analysis" {
-  echo "$REPORT_CONTENT" | head -10 | grep -qiE '^# .*What.?If Analysis'
+  assert_title_matches '^# .*What.?If Analysis' 10
 }
 
 @test "report has a Proposal field" {
