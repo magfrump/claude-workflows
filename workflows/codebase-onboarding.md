@@ -231,9 +231,28 @@ This is the most important section for future work. It tells you where your unde
 - [ ] Each unknown includes a reason why it's unknown (not just "didn't look at it")
 - [ ] No unknown is actually answerable from work already done in steps 1-6
 
-### 8. Produce the orientation document
+### 8. Build the watch signals — link decision records to the architecture map
 
-Compile steps 1-7 into `docs/working/onboarding-{project}.md` with these sections:
+The orientation document is a snapshot of the codebase at a point in time. The decision records under `docs/decisions/` capture *why* things are the way they are, and may include a `## Revisit triggers` section that names the conditions under which the decision should be re-examined. The Watch Signals section ties these together so a future reader of the orientation doc can see at a glance which decisions are most likely to need attention next — bridging the static onboarding map to ongoing maintenance.
+
+**Recipe:**
+
+1. `grep '## Revisit triggers' docs/decisions/*.md` to find decision records that name re-examination conditions. For each match, read the section and extract the trigger condition (one or more sentences).
+2. Apply the relevance filter — keep a decision only if **either** of the following holds:
+   - The decision's `Last verified` field falls within the last 6 months (recent enough that the trigger is plausibly still actionable), **OR**
+   - The decision's `Relevant paths` overlap with the subsystem paths inventoried in the Architecture Map (step 2) — i.e., the decision still governs code on the onboarding doc's beat.
+3. For each surviving decision, emit one row of the form `[decision-NNN] if <trigger condition>` — where `NNN` is the decision's number and `<trigger condition>` is the named trigger (collapse multi-sentence triggers to a single readable clause; preserve the decision record's own wording where possible).
+
+Decisions without a `## Revisit triggers` section, without a `Last verified` field, and without a `Relevant paths` overlap are silently skipped — there is no maintenance signal to surface. If the project has no `docs/decisions/` directory, or no decision survives the filter, the Watch Signals section contains a single line in the format `Watch Signals: none — <one-sentence reason>.` (mirrors step 3's skip-note convention).
+
+**Done when...**
+- [ ] `docs/decisions/*.md` has been grep'd for `## Revisit triggers`
+- [ ] The relevance filter (Last-verified within 6 months OR Relevant-paths overlap with the Architecture Map) has been applied to every match
+- [ ] Each surviving decision appears as a `[decision-NNN] if <trigger condition>` row, or the section contains the documented `none — <reason>` note
+
+### 9. Produce the orientation document
+
+Compile steps 1-8 into `docs/working/onboarding-{project}.md` with these sections:
 
 ```markdown
 # Codebase Orientation: {project name}
@@ -267,19 +286,22 @@ Compile steps 1-7 into `docs/working/onboarding-{project}.md` with these section
 ## Known Unknowns
 {gaps identified in step 7}
 
+## Watch Signals
+{revisit triggers harvested in step 8, one `[decision-NNN] if <trigger condition>` per row; or, if no decision survives the relevance filter, the single line `Watch Signals: none — <reason>.`}
+
 ## Suggested Starting Points
 {for common task types, where to look first — e.g., "to add a new API endpoint, start with routes/ and follow the pattern in routes/users.ts"}
 ```
 
-The three-line header (Goal · Project state · Task status) below the metadata block is the same drift-surfacing convention RPI working docs use (see `workflows/research-plan-implement.md` step 2). Lifecycle keyword vocabulary is identical: `in-progress | blocked | paused | complete`. For a long-lived orientation doc, the Task status line typically reads `complete` after gate sign-off in step 9, switching back to `in-progress` during a re-run or lightweight refresh. Update it whenever the doc is read or revised; if any line no longer matches reality, fix it before doing anything else with the doc. The Goal line replaces the previous standalone `Scope:` field — same content, unified anchor.
+The three-line header (Goal · Project state · Task status) below the metadata block is the same drift-surfacing convention RPI working docs use (see `workflows/research-plan-implement.md` step 2). Lifecycle keyword vocabulary is identical: `in-progress | blocked | paused | complete`. For a long-lived orientation doc, the Task status line typically reads `complete` after gate sign-off in step 10, switching back to `in-progress` during a re-run or lightweight refresh. Update it whenever the doc is read or revised; if any line no longer matches reality, fix it before doing anything else with the doc. The Goal line replaces the previous standalone `Scope:` field — same content, unified anchor.
 
 **Done when...**
-- [ ] `docs/working/onboarding-{project}.md` exists, opens with the three-line header (Goal · Project state · Task status) below the metadata block, and includes all required sections (Entry Points, Architecture Map, Execution Surface, Guarded Invariants, Key Flows, Conventions, Known Unknowns, Suggested Starting Points)
+- [ ] `docs/working/onboarding-{project}.md` exists, opens with the three-line header (Goal · Project state · Task status) below the metadata block, and includes all required sections (Entry Points, Architecture Map, Execution Surface, Guarded Invariants, Key Flows, Conventions, Known Unknowns, Watch Signals, Suggested Starting Points)
 - [ ] The Task status line accurately reflects current lifecycle (re-read it; if it lies, fix it)
 - [ ] `Last verified` and `Relevant paths` fields are populated in the frontmatter
 - [ ] Document is committed to the repo
 
-### 9. Gate — validate with the team
+### 10. Gate — validate with the team
 
 If possible, have someone familiar with the codebase review the orientation doc. They can correct misunderstandings cheaply here — a wrong mental model carried into implementation is expensive to fix later.
 
@@ -343,12 +365,14 @@ When staleness signals fire but changes are **incremental** — no new subsystem
 1. **Review recent changes.** Run `git log --oneline --since="<Last verified date>" -- <Relevant paths>` and read the commits to understand what changed and where.
 2. **Update Architecture Map.** For each subsystem touched by recent changes, verify that its responsibility, key abstractions, and dependencies are still accurate. Update any that have drifted.
 3. **Update Known Unknowns.** Remove unknowns that have been resolved by recent work. Add new unknowns surfaced by the changes you reviewed.
-4. **Bump `Last verified`.** Set to today's date. Add a note in the commit message indicating this was a lightweight refresh (e.g., `docs: lightweight refresh onboarding — updated auth subsystem after session handling changes`).
+4. **Rebuild Watch Signals.** Re-run step 8's grep + relevance filter against `docs/decisions/*.md`. Decisions may have gained new `## Revisit triggers`, refreshed their `Last verified` date, or shifted `Relevant paths` since the last verification — any of those changes can add or remove rows from the section.
+5. **Bump `Last verified`.** Set to today's date. Add a note in the commit message indicating this was a lightweight refresh (e.g., `docs: lightweight refresh onboarding — updated auth subsystem after session handling changes`).
 
 **Done when...**
 - [ ] `git log` since `Last verified` has been reviewed
 - [ ] Architecture Map reflects current state for all changed subsystems
 - [ ] Known Unknowns section is current (stale items removed, new gaps added)
+- [ ] Watch Signals section has been regenerated against the current decision records
 - [ ] `Last verified` date is updated
 - [ ] Onboarding sufficiency criteria still pass (the "Where would I look?" test, etc.)
 
