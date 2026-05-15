@@ -68,7 +68,7 @@ Constraints:
 
 ### Pillar 1b: Round-level claim grammar (extension of pillars 1–3)
 
-The same `evaluator` / `requires` / `source` grammar pillars 1–3 establish for per-task hypotheses applies at the **round-as-a-whole** scope. The planner appends a `## Hypothesis: this round's claim` section to `docs/working/feature-ideas-round-N.md` whose body is a failure-framed paragraph followed by three structured fields:
+The same `evaluator` / `requires` / `hypothesis_window` / `hypothesis_source` grammar pillars 1–3 establish for per-task hypotheses applies at the **round-as-a-whole** scope. The planner appends a `## Hypothesis: this round's claim` section to `docs/working/feature-ideas-round-N.md` whose body is a failure-framed paragraph followed by four structured fields:
 
 ```
 ## Hypothesis: this round's claim
@@ -79,18 +79,22 @@ value, and the concrete observation that would tell you that failure happened.>
 
 - evaluator: script | user
 - requires: { metric_logged?: <name>, invocations?: <int>, days_elapsed?: <int> }
-- source: user | planner
+- hypothesis_window: <integer rounds before this claim can be evaluated>
+- hypothesis_source: user | planner
 ```
 
-The fields carry the same semantics as their per-task counterparts:
+Field names match the per-task schema verbatim (same identifiers in
+`tasks-round-N.json`) so a future evaluator can apply one grammar to both
+scopes. The fields carry the same semantics as their per-task counterparts:
 
 - `evaluator` — `script` when a separate round-claim evaluator can decide from the invocation logger (pillar 4) without a human judgement call; `user` when only a human observation can decide. Both are first-class.
 - `requires` — preconditions the round-claim evaluator checks before deciding. If unmet, the verdict is INCONCLUSIVE (never auto-REFUTED), matching the rule from decision 010 and pillar 1.
-- `source` — `user` when the round's claim was lifted verbatim from a matching `si-input.md` priority's attached hypothesis (pillar 3 applied at round scope); `planner` when the planner authored it. The morning summary tags `planner` round claims so the user can review framing.
+- `hypothesis_window` — integer 1–5 rounds using the same scale as per-task hypotheses (1 = observable in next round's artifacts; 2–3 = requires accumulated usage; 4–5 = requires real-world adoption).
+- `hypothesis_source` — `user` when the round's claim was lifted verbatim from a matching `si-input.md` priority's attached hypothesis (pillar 3 applied at round scope); `planner` when the planner authored it. The morning summary tags `planner` round claims so the user can review framing.
 
 The round claim covers the round taken as a unit, not any single task — e.g., "the most likely failure of this round is that the selected tasks collectively don't shift commit-prefix mix toward external-facing artifacts; we'd see that as ≥80% feat(si)-prefixed commits across the next 3 rounds." A claim that just restates one task's hypothesis is not a round claim.
 
-The round-claim evaluator itself is separate from this decision and lives elsewhere; this pillar specifies only the planner's output grammar so future rounds emit structured input the evaluator can consume.
+This pillar is **producer-only**: it specifies the planner's output grammar so future rounds emit structured input. The round-claim evaluator that consumes it lives outside this decision and is not yet wired up — until it lands, round claims accumulate in `feature-ideas-round-N.md` files but are not auto-validated; the only validation is whether the four field labels appear in the appended section. Consequently, schema drift between round and per-task grammar would only surface when the evaluator is written, not when the planner emits a malformed section. Keep the field names synchronized with the per-task schema in `scripts/self-improvement.sh`.
 
 ## What was added relative to decision 010
 
@@ -99,7 +103,7 @@ The round-claim evaluator itself is separate from this decision and lives elsewh
 - A workflow/skill invocation logger
 - A precondition gate in the morning summary that defers outcome rows when `requires:` is unmet
 - Adversarial framing as the planner default
-- Round-level claim section in `feature-ideas-round-N.md` carrying the same `evaluator` / `requires` / `source` grammar as per-task hypotheses (pillar 1b)
+- Round-level claim section in `feature-ideas-round-N.md` carrying the same `evaluator` / `requires` / `hypothesis_window` / `hypothesis_source` grammar as per-task hypotheses (pillar 1b)
 
 ## What stays from decision 010
 
@@ -135,7 +139,7 @@ These were strong candidates not in the core but worth revisiting once the four 
 ## Consequences
 
 - Hypothesis fields stay in the task schema (against the SI-script review's recommendation to drop them); they are the user's input-output surface, not the script's bookkeeping.
-- The planner prompt at `scripts/self-improvement.sh:577-591` is rewritten to require adversarial framing and to derive intent from `si-input.md` first.
+- The planner prompt (search `scripts/self-improvement.sh` for "Hypothesis guidance (decision 012 pillar 2") is rewritten to require adversarial framing and to derive intent from `si-input.md` first.
 - The ideas-generation prompt earlier in `scripts/self-improvement.sh` is extended to require a `## Hypothesis: this round's claim` section in `feature-ideas-round-N.md` carrying the same three structured fields per-task hypotheses do (pillar 1b).
 - A new invocation logger lives in `scripts/lib/` (path tbd at implementation time) and is sourced by the morning summary.
 - Steps 1b and 4b in `scripts/self-improvement.sh` (convergence detection / problem-history) remain candidates for deletion per the SI-script review — they are Claude-judges-Claude evaluation that this decision does not depend on and does not reinstate.

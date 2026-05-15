@@ -447,12 +447,13 @@ to deliver value, and the concrete observation that would tell you that
 failure happened. A claim that just restates a single idea's hypothesis is
 not a round claim; the claim must cover the round as a unit.
 
-After the paragraph, declare three structured fields verbatim, in this
-order, as a bulleted list:
+After the paragraph, declare four structured fields verbatim, in this
+order, as a bulleted list (field names match the per-task schema):
 
   - evaluator: script | user
   - requires: { metric_logged?: <name>, invocations?: <int>, days_elapsed?: <int> }
-  - source: user | planner
+  - hypothesis_window: <integer rounds before this claim can be evaluated>
+  - hypothesis_source: user | planner
 
 Field semantics (same as per-task hypotheses — see decision 012 pillars 1
 and 3):
@@ -465,9 +466,14 @@ and 3):
   - requires: preconditions the round-claim evaluator checks before
     deciding. Use only the keys metric_logged, invocations, days_elapsed.
     When unmet, the verdict is INCONCLUSIVE (never auto-REFUTED).
-  - source: set to \"user\" only when a matching si-input.md priority's
-    attached hypothesis covers this round's overall direction and you
-    have copied that hypothesis verbatim. Otherwise set \"planner\".
+  - hypothesis_window: pick 1-5 rounds using the same scale as per-task
+    hypotheses — 1 if the failure is observable in next round's
+    artifacts, 2-3 if it requires accumulated usage, 4-5 if it requires
+    real-world adoption.
+  - hypothesis_source: set to \"user\" only when a matching si-input.md
+    priority's attached hypothesis covers this round's overall direction
+    and you have copied that hypothesis verbatim. Otherwise set
+    \"planner\".
 
 The separate round-claim evaluator consumes this structured section; the
 DD content above is unchanged."
