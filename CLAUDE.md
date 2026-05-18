@@ -148,7 +148,7 @@ Long-lived documents (onboarding docs, spike records, shared thoughts) support *
 
 ## Operating Modes
 
-The session operates in one of two modes: **active** or **away**. Mode is session-scoped and defaults to **active**.
+The session operates in one of two modes: **active** or **away**. Mode is session-scoped and defaults to **away**.
 
 ### How to switch modes
 
@@ -165,9 +165,9 @@ When you detect a mode switch, you MUST respond with:
 1. **Explicit confirmation**: "Switching to /away mode." or "Switching to /active mode."
 2. **Key behavior change**: One sentence stating the most important difference (e.g., "I will commit and push autonomously after each completed step.")
 
-If you are uncertain which mode is active (e.g., after context compression), **default to /active** and ask the user to confirm.
+If you are uncertain which mode is active (e.g., after context compression), **default to /away** and ask the user to confirm.
 
-### /active (default)
+### /active
 
 The user is at their desk and available for approval.
 
@@ -186,9 +186,9 @@ The user is at their desk and available for approval.
 
 **Flag uncertainty:** When you encounter ambiguity, state it explicitly and wait for guidance rather than guessing.
 
-### /away
+### /away (default)
 
-The user is not at their desk. Maximize progress within safe boundaries.
+The user is not at their desk, or has not specified. Maximize progress within safe boundaries.
 
 **Do autonomously (no approval needed):**
 - Everything in the /active autonomous list, plus:
@@ -228,7 +228,13 @@ This creates a reviewable log of autonomous decisions.
 
 ## General Principles
 
-- Commit after each logical unit of work with conventional commit messages (feat:, fix:, refactor:, test:, docs:, spike:)
+- **Commit triggers (mechanical, not vibes-based).** "Logical unit of work" defers indefinitely. Instead, commit whenever any of these is true:
+  - (a) You completed a task or sub-task from an explicit plan (RPI plan checklist, decision record, todo list).
+  - (b) You finished a Ralph-loop iteration that touched files — commit **before** exiting the iteration so the next iteration sees committed state in `git log` rather than a dirty working tree.
+  - (c) Tests went from red to green (or you added a passing test).
+  - (d) You finished a coherent file group (implementation + its tests, or a function + its callers updated).
+  - (e) You're about to context-switch to a different concern, or are about to run a destructive/risky operation.
+  - When in doubt, commit. Small commits are cheap; large unstaged changes are expensive to review and recover. Use conventional prefixes (feat:, fix:, refactor:, test:, docs:, spike:).
 - When using an unfamiliar library or language feature, add a comment explaining "why" — the human reviewers may not know the library either
 - Prefer explicit over clever. Code is read more than written, and the readers may not share your context.
 - When you encounter a decision worth documenting, create or update `docs/decisions/NNN-title.md` in the project. For smaller decisions that don't warrant a full record (single clear answer, no meaningful tradeoffs), add a row to `docs/decisions/log.md` instead.
