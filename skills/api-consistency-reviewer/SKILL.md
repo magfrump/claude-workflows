@@ -122,6 +122,44 @@ Specific checks:
 A single inconsistency is a bug. Multiple inconsistencies suggest the developer didn't read
 the existing code.
 
+#### Precedent citation requirement (every naming finding)
+
+A naming finding is only meaningful if there's an established pattern to be inconsistent
+with. To make every naming finding auditable from the report content alone, each one
+**must** include one of these two literal lines in its body:
+
+- `Precedent: <pattern> used in <file path or path glob>` — the established pattern and
+  where a reader can verify it (concrete path like `src/api/users.ts:42` or a glob like
+  `src/api/**/*.ts`). Cite at least one; cite more when multiple sibling files reinforce
+  the pattern.
+- `No existing precedent in <searched scope>` — explicit statement that you looked and
+  found no analog. The `<searched scope>` must name what you actually grepped or listed
+  (e.g., `src/api/`, `all *.proto files`, `exported names in lib/`). Vague scopes like
+  "the codebase" are not acceptable.
+
+A naming finding lacking both lines is malformed. A reader must be able to grep for
+either `^Precedent:` or `^No existing precedent in` in the finding to confirm the rule
+was followed.
+
+**Severity downgrade when no precedent exists.** If a finding uses the `No existing
+precedent in ...` line, drop its severity by one tier from what move #2 or the audit
+table would otherwise have assigned:
+
+- Breaking → Inconsistent
+- Inconsistent → Minor
+- Minor → Informational
+- Informational → Informational (already at the floor; keep, but note the floor was hit)
+
+Rationale: without a precedent, the strongest claim available is "this is establishing a
+new convention" — which is informational at best, not a violation of existing
+expectations. The downgrade keeps the finding in the report (so the author can be
+deliberate about the convention being set) without overstating its severity.
+
+Findings that surface via move #7 (asymmetry) and are naming-shaped — e.g., "request
+field is `userId` but response field is `user_id`" — are also naming findings and must
+follow this rule. Non-naming findings (error envelope structure, pagination semantics,
+nullability) are governed by their own moves and do not require the precedent line.
+
 #### Name-pattern audit (required)
 
 For every new public name in the diff, run this concrete procedure and surface the results
@@ -135,8 +173,13 @@ in your critique:
    files, list exports from the same module, search for the same domain noun across the
    repo. If the category has no existing members (this is the first of its kind), say so
    explicitly.
-3. **Render the comparison as a table** so the inconsistency is visible at a glance. Each
-   row pairs one new name with its closest existing neighbors and a one-line verdict.
+3. **Record the precedent path** for each row — the file path or path glob where the
+   closest existing names live. This is the same citation that will appear in any Finding
+   expanded from the row, so capturing it here once avoids re-doing the search. If no
+   neighbors exist, record `none — searched <scope>` instead.
+4. **Render the comparison as a table** so the inconsistency is visible at a glance. Each
+   row pairs one new name with its closest existing neighbors, the precedent path, and a
+   one-line verdict.
 
 The audit goes in its own section of the output (see "How to Structure the Critique"
 below) and is expected for any diff that introduces new public names. If the diff
@@ -150,14 +193,14 @@ the rules in move #2; consistent names get a brief acknowledgment under "What Lo
 ```markdown
 ### Name-Pattern Audit
 
-| New name                       | Category | Closest existing                                    | Verdict      |
-|--------------------------------|----------|-----------------------------------------------------|--------------|
-| `fetchUserProfile`             | function | `getUserById`, `getUser`, `loadUserSettings`        | Inconsistent — existing read functions use `get`/`load`, not `fetch` |
-| `POST /users/sign_up`          | route    | `POST /users`, `POST /sessions`, `POST /orgs`       | Inconsistent — existing creates POST to the bare collection; no action-verb sub-paths |
-| `UserDTO`                      | type     | `User`, `UserProfile`, `UserSession`                | Inconsistent — existing types are bare nouns, no `DTO` suffix |
-| `ORDER_STATUS_PENDING_REVIEW`  | enum     | `ORDER_STATUS_PENDING`, `ORDER_STATUS_SHIPPED`, `ORDER_STATUS_CANCELLED` | Consistent — matches `ORDER_STATUS_<STATE>` shape |
-| `idempotency_key`              | param    | `request_id`, `client_token` (closest two; no third analog found) | Inconsistent — existing dedupe params use `_id`/`_token`, not `_key` |
-| `WorkflowRunStarted`           | event    | _(no existing workflow events found — first of its kind)_ | New category — note the convention being established |
+| New name                       | Category | Closest existing                                    | Precedent path                              | Verdict      |
+|--------------------------------|----------|-----------------------------------------------------|---------------------------------------------|--------------|
+| `fetchUserProfile`             | function | `getUserById`, `getUser`, `loadUserSettings`        | `src/services/users/*.ts`                   | Inconsistent — existing read functions use `get`/`load`, not `fetch` |
+| `POST /users/sign_up`          | route    | `POST /users`, `POST /sessions`, `POST /orgs`       | `src/routes/{users,sessions,orgs}.ts`       | Inconsistent — existing creates POST to the bare collection; no action-verb sub-paths |
+| `UserDTO`                      | type     | `User`, `UserProfile`, `UserSession`                | `src/types/user*.ts`                        | Inconsistent — existing types are bare nouns, no `DTO` suffix |
+| `ORDER_STATUS_PENDING_REVIEW`  | enum     | `ORDER_STATUS_PENDING`, `ORDER_STATUS_SHIPPED`, `ORDER_STATUS_CANCELLED` | `src/domain/orders/status.ts:12-24` | Consistent — matches `ORDER_STATUS_<STATE>` shape |
+| `idempotency_key`              | param    | `request_id`, `client_token` (closest two; no third analog found) | `src/middleware/dedupe.ts`, `src/api/v2/*.ts` | Inconsistent — existing dedupe params use `_id`/`_token`, not `_key` |
+| `WorkflowRunStarted`           | event    | _(no existing workflow events found — first of its kind)_ | none — searched `src/events/**` and `*.proto` | New category — note the convention being established |
 ```
 
 A single row should fit on one line where possible; wrap the verdict if needed. If the diff
@@ -302,6 +345,11 @@ For each finding, use this structure:
 **Move:** [Which cognitive move surfaced this]
 **Confidence:** [High / Medium / Low]
 
+[For naming findings only — pick exactly one of:]
+Precedent: <pattern> used in <file path or path glob>
+[— OR —]
+No existing precedent in <searched scope>
+
 [2-5 sentences: what the inconsistency or issue is, what the established pattern is,
 and what impact this has on consumers. Reference the specific existing code that
 establishes the baseline.]
@@ -318,6 +366,14 @@ Severity guidelines:
   non-critical documentation
 - **Informational**: Convention observations, suggestions for improvement, patterns worth
   establishing
+
+**Naming finding precedent rule.** Every naming finding (move #2, or naming-shaped
+findings surfaced via move #7) must include one of the two literal lines shown in the
+template — `Precedent: ...` or `No existing precedent in ...`. When the no-precedent
+line is used, downgrade the severity by one tier (Breaking → Inconsistent → Minor →
+Informational; Informational stays at the floor). See the "Precedent citation
+requirement" sub-section under move #2 for the full rule. A naming finding missing both
+lines is malformed and must be fixed before the report is delivered.
 
 Order findings by severity (breaking first), then by confidence.
 
