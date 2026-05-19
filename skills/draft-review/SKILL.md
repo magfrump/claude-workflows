@@ -410,14 +410,79 @@ still appear so the section is auditable across runs.
 claims that need precision (mostly accurate), and claims that are solid (confirmed accurate).
 
 **Structural critique:** Synthesize by convergence signal, not by critic. Lead with findings
-that multiple critics raised independently (highest signal). Then single-critic findings.
-Surface disagreements between critics explicitly — these are valuable. Classify each
-disagreement as **factual** (resolvable with more evidence) or **perspective-based** (genuine
-tension reflecting different analytical frames). For factual disagreements, escalate to the
-fact-checker for a targeted check or flag the specific claim for author research. For
-perspective-based disagreements, present both positions with their reasoning. Whichever class
-a conflict falls into, you MUST also record it in the **Critic Conflict Reconciliations**
-table below — the prose synthesis is not a substitute for the row.
+that multiple critics raised independently (highest signal) — rendered as the explicit
+`### Convergence` callout described below. Then single-critic findings. Surface disagreements
+between critics explicitly — these are valuable. Classify each disagreement as **factual**
+(resolvable with more evidence) or **perspective-based** (genuine tension reflecting different
+analytical frames). For factual disagreements, escalate to the fact-checker for a targeted
+check or flag the specific claim for author research. For perspective-based disagreements,
+present both positions with their reasoning. Whichever class a conflict falls into, you MUST
+also record it in the **Critic Conflict Reconciliations** table below — the prose synthesis
+is not a substitute for the row.
+
+**Convergent objections (required):** When two or more critic agents independently surface
+the same objection, you MUST produce an explicit `### Convergence` callout listing each
+convergent objection. Matching is on the *topic* of the concern, not literal wording: two
+critics calling out the same load-bearing issue under different vocabulary (e.g., one says
+"the moat is weak", another says "competitors will copy the playbook within six months")
+counts as one convergent objection even though the sentences share no content words. The
+operative test is whether the author would receive a single coherent revision instruction
+if the two findings were merged. Convergent objections are elevated above single-critic
+objections in the **Actionable guidance** subsection — order them first, ahead of any
+single-critic finding, and call out the convergence count inline (e.g., "raised by 2/3
+critics") so the priority signal is visible at the action level, not only in the callout.
+
+In ensemble mode, convergence may be cross-critic-type (different skills surfacing the same
+objection) or within-type (multiple instances of the same critic skill consistently
+surfacing the objection). Both count; attribute each entry to the specific instances that
+raised it (e.g., "cowen-critique #1, cowen-critique #3, yglesias-critique #2"). The
+existing `### Analyzing convergence (ensemble mode)` block above describes how to read
+convergence as a *signal*; this directive specifies the *rendered output* for that signal
+and applies in default mode (1 instance per critic) as well as in ensemble mode.
+
+The `### Convergence` heading MUST appear in every run, even when nothing converged. When
+no two critics surfaced the same objection, render the section with the exact literal line
+`No convergent objections across N critics.` (substituting `N` with the total count of
+critic instances run, including the degenerate single-critic case where convergence is
+structurally impossible). The exact sentinel must be present verbatim — not paraphrased
+to "no convergence" or "nothing converged" — so a re-reader (or a grep over saved
+synthesis output) can confirm the check ran rather than was silently skipped. This mirrors
+the audit-handle pattern used by the `### Coverage and Escalations` empty-case line and
+the `### Critic Conflict Reconciliations` `"No critic conflicts surfaced."` line.
+
+Use this format:
+
+> ### Convergence
+>
+> - **<Objection topic in one short phrase>** — <one-sentence framing of the shared concern>.
+>   *Raised by:* <critic-A>, <critic-B>[, <critic-C>...]
+> - **<Next convergent objection>** — ...
+
+When nothing convergent surfaced:
+
+> ### Convergence
+>
+> No convergent objections across N critics.
+
+**Worked example:**
+
+> ### Convergence
+>
+> - **Moat is not structurally durable** — both critics flag that the named competitive
+>   advantage relies on first-mover speed rather than a defensible asset; competitors can
+>   replicate the playbook within a typical product-build cycle.
+>   *Raised by:* business-plan-critique-moat, ai-personas-critique
+> - **CAC payback assumption is fragile under realistic churn** — the plan's payback math
+>   assumes steady-state retention that neither critic finds defended by the cited
+>   comparables.
+>   *Raised by:* business-plan-critique-unit-economics, cowen-critique
+
+Convergent objections route through the **existing** 🟡 Amber rubric tier — the same
+"Structural issues flagged by multiple critic types independently" rule already defined
+under the tier-assignment block below. Do not invent a new rubric tier for convergent
+objections; the elevation lives in chat synthesis ordering (lead position in Actionable
+guidance) and in being named in this callout, not in a structural change to the rubric
+tiers.
 
 **Critic conflict reconciliation (required):** When two critics produce conflicting verdicts
 on the same point, you MUST produce an explicit reconciliation row under a
