@@ -121,7 +121,7 @@ If you aren't confident about any of these, say so and read the relevant code be
 
 - **One task per session.** When a task is complete, use `/clear` or start a new session before beginning the next task. Carrying stale context into a new task degrades quality.
 - **Fresh session for implementation.** If you've spent a session on research and planning, start a new session for the actual coding. Load the plan artifact; don't rely on conversational context from the planning session.
-- **Context budget awareness.** Effectiveness degrades after ~10-20 minutes of autonomous work as context fills up. For longer tasks, break into steps with checkpoints rather than running continuously.
+- **Context budget awareness.** Effectiveness degrades after ~1-2 hours of autonomous work as context fills up. For longer tasks, break into steps with checkpoints rather than running continuously.
 
 ## Review Artifacts
 
