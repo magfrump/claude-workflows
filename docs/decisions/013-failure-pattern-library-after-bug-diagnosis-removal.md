@@ -18,3 +18,4 @@ C. Deprecate the library entirely.
 - pr-prep workflow now owns the write-side prompt.
 - Header of failure-patterns.md updated to reflect new paths.
 - Read-side (RPI research grep audit) unchanged.
+- **Known trigger gaps in Option B (vs. the old step-8 always-runs design):** (a) the advisory only fires when a branch contains `fix(...)`-prefixed commits — fixes shipped on `refactor:`, `chore:`, or other prefixes are invisible to the trigger; (b) pr-prep is itself optional (sole-contributor workflows or hotfix branches that skip pr-prep get no prompt). The library will accumulate more slowly than under step-8. Revisit if the pattern-learning loop visibly decays.
