@@ -135,7 +135,31 @@ For every checkable claim:
    - **Low confidence** — You could only partially trace the behavior, or the claim involves
      concurrency, external systems, or other factors that resist static analysis.
 
-5. **Cite your evidence.** Reference the specific file and line number(s) you checked.
+5. **Cite your evidence with quoted snippets or explicit paraphrase tags.** Every
+   factual assertion you make about what the code does must be backed in the prose
+   by *either*:
+
+   - **(a) A quoted code snippet from the source file with a `path:line` (or
+     `path:line-line`) reference.** Use a fenced code block or inline backticks
+     with the path/line callout — the reader must be able to jump to the exact
+     lines you read.
+   - **(b) An explicit `paraphrased — no quote available because <reason>` tag.**
+     Use this only when quoting is genuinely impractical. Valid reasons include:
+     "generated code; original output too long", "behavior spans many files",
+     "invariant inferred from multiple call sites", "claim covers absence of code
+     (no matching grep results)", "claim is about file structure / directory
+     layout, not a snippet", or a similarly specific reason.
+
+   **Do not mix the two without distinction.** Every sentence in the prose
+   explanation that describes what the code actually does must clearly fall into
+   one category — readers (and downstream critics like `security-reviewer` and
+   `performance-reviewer`) must be able to tell quoted-from-source claims apart
+   from paraphrased claims at a glance. A bare paraphrase with no tag is not
+   acceptable; a vague reason like "long" or "too much" is not acceptable.
+
+   The trailing `**Evidence:**` line still lists the file/line locations you
+   consulted (for navigation), but it does not replace the in-prose quote-or-tag
+   requirement.
 
 ## How to handle degenerate input
 
@@ -175,7 +199,7 @@ Produce a Markdown document with this structure. The header fields and per-claim
 required — downstream consumers (orchestrators, tests, rubrics) parse them by exact name and bold
 formatting.
 
-```
+````
 # Code Fact-Check Report
 
 **Repository:** [repo name or path]
@@ -186,23 +210,42 @@ formatting.
 
 ---
 
-## Claim 1: "[exact quote from comment/doc]"
+## Claim 1: "Returns null on failure"
 
-**Location:** `path/to/file.ext:42`
-**Type:** [Behavioral / Performance / Architectural / Invariant / Configuration / Reference / Staleness]
-**Verdict:** [Verified / Mostly accurate / Stale / Incorrect / Unverifiable]
-**Confidence:** [High / Medium / Low]
+**Location:** `src/api/user.js:42`
+**Type:** Behavioral
+**Verdict:** Mostly accurate
+**Confidence:** High
 
-[2-4 sentences explaining what the code actually does and why you reached this verdict.]
+The function returns `undefined`, not `null`, on the missing-user branch:
 
-**Evidence:** `path/to/evidence.ext:15-30`, `other/file.ext:88`
+```js
+// src/api/user.js:48-52
+if (!user) {
+  return undefined;
+}
+return user.profile;
+```
+
+The same `undefined` return is reached from the parse-error branch as well
+(paraphrased — no quote available because the error path is split across three
+helpers in `src/api/user.js` and `src/utils/parse.js` and reads more clearly as
+a summary than as a multi-fragment quote).
+
+**Evidence:** `src/api/user.js:48-52`, `src/api/user.js:71-79`, `src/utils/parse.js:14-22`
 
 ---
 
 ## Claim 2: "[exact quote]"
 
 ...
-```
+````
+
+The example above shows the two permitted forms side by side: the first sentence
+is backed by an inline quoted snippet with `path:line`; the second sentence is
+explicitly tagged `paraphrased — no quote available because <reason>` and the
+reason names a specific, checkable obstacle to quoting. Mirror this pattern in
+every per-claim explanation you produce.
 
 Required structure rules:
 
@@ -222,6 +265,17 @@ Required structure rules:
 - `Location` and `Evidence` must use `path/to/file.ext:line` format (with optional line ranges
   like `:15-30`) so a reader can jump directly to the cited code. Pure Reference claims may cite
   bare paths or external locators if there is no in-file line to point at.
+- **Quoted-evidence-or-paraphrase rule.** Every factual assertion in the per-claim
+  prose explanation must be backed by either (a) an inline quoted code snippet
+  from the source file with a `path:line` (or `path:line-line`) reference, or
+  (b) an explicit `paraphrased — no quote available because <reason>` tag with
+  a specific, checkable reason. Assertions that mix the two without distinction
+  — paraphrased prose with no tag, prose that names a file/line without quoting
+  it, or a `paraphrased` tag without a stated reason — are not allowed. This
+  rule lets downstream consumers (e.g., `security-reviewer`,
+  `performance-reviewer`) reliably separate quoted-from-source claims from
+  paraphrased claims when reading the report. The `**Evidence:**` line is a
+  navigation aid and does not satisfy this rule on its own.
 
 Order claims by file path, then by line number within each file. Number them sequentially.
 
