@@ -385,6 +385,10 @@ For each issue found, provide:
 
 Output your review as a Markdown document at `docs/reviews/ui-visual-review.md`.
 
+The **Keyboard Navigation** subsection (see below) is **required** in every report —
+even when the diff introduces no focusable elements. In that case, state so explicitly
+rather than omitting the section.
+
 ### Title and Header
 
 Open with a top-level title that includes "UI Visual Review" so the report is
@@ -457,6 +461,47 @@ prevents the review from being purely negative and confirms which parts don't ne
 | Principle | Source | How Applied |
 |-----------|--------|-------------|
 | [e.g., Visible scroll affordances] | [e.g., NNGroup, WCAG 1.4.10] | [e.g., Changed `overflow:hidden` to `overflow:auto`] |
+
+### Keyboard Navigation
+
+Required section. The diff is **in scope for keyboard review** if it adds or modifies
+any focusable element (buttons, links, inputs, custom widgets with `tabindex` or
+keyboard handlers, Unity `Selectable` subclasses, SwiftUI `.focusable()` views, etc.)
+or any modal/overlay/dropdown/popover that manages focus. If none of the above are
+touched, write exactly:
+
+> No new focusable elements in this diff.
+
+…and skip the four items below. Otherwise, address each item explicitly — do not omit
+an item; if it does not apply, mark it `N/A` with a one-line reason.
+
+**Focus order.** Walk Tab through the changed elements and confirm the keyboard path
+matches visible reading order. List the in-scope focusables in their actual tab order
+(file:line + brief reachability note). Flag any DOM-versus-visual mismatch (caused by
+`flex-direction: row-reverse`, CSS `order`, grid placement, or absolute positioning) as
+a WCAG 2.4.3 violation. For the full tab traversal procedure and output format, see
+`references/accessibility-serialization.md`.
+
+**Escape-key behavior.** For every modal, overlay, dropdown, popover, or other
+focus-managing region added or modified in the diff, confirm that `Escape` dismisses it
+and returns focus to the element that opened it. Cite the handler location (file:line)
+or flag its absence. If the diff modifies no such regions, write `N/A — no modals or
+overlays in this diff.`
+
+**Skip-link presence.** If the diff introduces or restructures page-level landmarks
+(`<header>`, `<nav>`, `<main>`, `<aside>`, `<footer>`) or top-of-page navigation,
+verify a skip-link to main content exists, is the first focusable element, and becomes
+visible on focus (WCAG 2.4.1 Bypass Blocks). If a skip-link already exists in the
+codebase, verify the diff has not broken it (target ID still present, link still first
+in tab order). If the diff touches no page-level structure, write `N/A — diff does not
+change page-level structure.`
+
+**Focus-trap risks.** Identify any modal, overlay, drawer, or off-screen-but-focusable
+region added or modified that could trap keyboard users without an escape path (WCAG
+2.1.2 No Keyboard Trap). Common culprits: modal without `Escape` handler and no
+focusable close button; drawer hidden via `transform: translateX(-100%)` whose contents
+remain in the tab path; `aria-disabled="true"` controls still receiving focus. For each
+risk, cite location and proposed fix. If none, write `No focus-trap risks identified.`
 
 ### Viewport Verification Checklist
 
