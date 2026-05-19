@@ -13,6 +13,14 @@ docs/working/plan-*.md
 docs/working/research-*.md
 docs/working/feature-ideas-round-*.md
 docs/working/external-ideas-candidates.md
+docs/working/hypothesis-log.md
+docs/working/si-input.md
+docs/working/completed-tasks.md
+docs/working/morning-summary.md
+docs/working/simplify-followup.md
+
+# Worktree directory (managed by Claude Code, not for tracking)
+.claude/
 
 # Personal notes
 ideas.txt
