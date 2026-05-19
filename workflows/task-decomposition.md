@@ -31,12 +31,31 @@ Example decomposition for "add API endpoint with auth and rate limiting":
 - **Independent area B**: Is there existing rate limiting? What library/approach?
 - **Independent area C**: What's the data model for the resource being exposed?
 
+#### Capture interface contracts before dispatch
+
+When **two or more sub-agents will be dispatched** in step 3, add an `## Interface contracts` subsection to the working notes *before* dispatching. The contracts make explicit the shared shapes the sub-investigations will collide on, so step 4 (Reconcile) can verify each one against a prediction rather than discovering conflicts organically.
+
+For each interface that spans two or more sub-investigations, write a contract entry naming:
+
+- **(a) Data shape** — the schema, type, struct fields, or message format that crosses the boundary. Be concrete (e.g., `User { id: UUID, email: string, role: enum(admin, member) }`), not vague (e.g., "the user object").
+- **(b) Error mode** — how failure surfaces (raised exception type, `null` / `None` return, `Result<T, E>`, `(value, ok)` tuple, HTTP status, etc.). Name the actual mechanism the code uses.
+- **(c) Codebase example** — at least one file:line reference showing the existing shape in use, so sub-agents (and the reconciliation step) can compare against ground truth.
+
+Example contract entry:
+> **Interface: `AuthMiddleware → Handler` user context**
+> (a) Shape: `context.Context` carrying `auth.User{ID uuid.UUID, Email string, Role auth.Role}` under key `auth.userCtxKey`.
+> (b) Error mode: middleware writes `401 Unauthorized` and returns without calling the handler; handlers can assume the user is present.
+> (c) Example: `src/middleware/auth.go:42` sets the value; `src/handlers/profile.go:18` reads it via `auth.UserFrom(ctx)`.
+
+**Escape line.** If sub-investigations genuinely share no interface, write the line verbatim in place of contract entries: `no shared interfaces — sub-investigations are fully independent`. Use this only when no data, no error type, and no naming convention crosses between the sub-tasks. If you're unsure, write the contracts — the cost is low.
+
 **Done when...**
 - [ ] The original goal text is captured verbatim (not paraphrased) for later use by the recompose step
 - [ ] The distinct areas of the codebase involved are listed
 - [ ] Each area is labeled as either a shared dependency or an independent sub-investigation
 - [ ] Independent areas can be researched without understanding the others first
 - [ ] Shared dependencies (if any) are identified and will be researched before independent areas
+- [ ] If ≥2 sub-agents will be dispatched, the working notes contain an `## Interface contracts` subsection with one entry per shared interface (each naming data shape, error mode, and ≥1 codebase example), OR the explicit escape line `no shared interfaces — sub-investigations are fully independent`
 
 ### 2. Research shared dependencies first
 
@@ -88,19 +107,21 @@ Sub-agents should NOT:
 
 ### 4. Reconcile conflicting assumptions across sub-investigations
 
-Before synthesizing, check whether sub-agents made conflicting assumptions about shared interfaces — data shapes, API contracts, error handling conventions, or naming that spans multiple sub-investigations. When two sub-agents researched different subsystems that communicate through a shared interface, they may have described that interface differently or assumed incompatible behaviors.
+Before synthesizing, verify each sub-agent's findings against the **interface contracts** captured in step 1. The contracts are the predictions; the sub-agent findings are the observations. Conflicts get surfaced against the contract (shape, error mode, codebase example) rather than discovered organically by hoping a contradiction jumps out.
 
-For each shared interface identified in step 1:
-- Compare what each relevant sub-agent assumed about its shape, behavior, and error cases
-- If assumptions conflict, resolve by reading the actual code (the ground truth) — don't pick one sub-agent's version arbitrarily
-- Document any conflicts found and their resolution in the research doc under a **Reconciliation** heading. If no conflicts were found, note that explicitly (e.g., "No cross-investigation conflicts identified")
+For each contract entry recorded in step 1's `## Interface contracts` subsection:
+- Walk the relevant sub-agent findings and check what each said about the contract's (a) data shape, (b) error mode, and (c) actual usage versus the cited codebase example.
+- If a sub-agent's finding disagrees with the contract, resolve by reading the actual code (the ground truth) — don't pick the contract or the sub-agent's version arbitrarily. Then update the contract entry to match the code, and re-check any other sub-agent finding that depended on the old prediction.
+- If two sub-agents disagree with each other on a contract they both touched, the contract was the prediction and the code is the tiebreaker — same rule applies.
+- Document each contract's outcome in the research doc under a **Reconciliation** heading: which contracts held as predicted, which were revised, and how each conflict was resolved. If no conflicts were found, note that explicitly (e.g., "All N contracts held as predicted").
 
-This step is lightweight when sub-investigations are truly independent. It becomes critical when sub-agents researched different sides of the same interface.
+If step 1 used the escape line (`no shared interfaces — sub-investigations are fully independent`), this step is a quick sanity check: skim the sub-agent findings to confirm no unexpected shared interface emerged. If one did, capture it as a late-added contract entry and reconcile it now. Record the result under **Reconciliation** (e.g., "Escape line held: no shared interfaces surfaced" or "Late contract added: …").
 
 **Done when...**
-- [ ] Each shared interface has been checked for conflicting assumptions across sub-agent findings
-- [ ] Conflicts (if any) are resolved by verifying against actual code, not by choosing one sub-agent's version
-- [ ] A Reconciliation section exists in the research doc (even if it just says "no conflicts found")
+- [ ] Each contract entry from step 1 has been verified against the sub-agent findings (shape, error mode, codebase example)
+- [ ] Contracts that the findings revised have been updated to match the actual code, and dependent findings re-checked
+- [ ] Conflicts are resolved by verifying against actual code, not by choosing one sub-agent's version or the original contract
+- [ ] A Reconciliation section exists in the research doc listing each contract's outcome (held / revised / late-added), or — if the escape line was used — confirming no shared interfaces emerged
 
 ### 5. Synthesize into a unified research doc
 
