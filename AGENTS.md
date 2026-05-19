@@ -13,7 +13,7 @@ When facing non-trivial tasks, check `workflows/` for applicable process docs be
 - **@./workflows/spike.md** — Quick timeboxed exploration of a library, approach, or proof-of-concept. Use when the question is "can this work?" not "build this."
 - **@./workflows/branch-strategy.md** — Branch management and dev integration branch workflow for high-throughput feature development with async review.
 - **@./workflows/user-testing-workflow.md** — Planning, running, and interpreting usability tests. Use when you need to design a user test, write moderator scripts, or analyze usability findings.
-- **@./workflows/bug-diagnosis.md** — Lightweight hypothesis-test debugging loop: reproduce → isolate → hypothesize → test → fix → verify. Use for bugs in known areas of code where rapid iteration beats upfront research.
+- **superpowers:systematic-debugging** — Hypothesis-test debugging loop. Local extension (3-failed-hypothesis escape hatch, RPI handoff) lives in CLAUDE.md's Debugging defaults section.
 - **@./workflows/codebase-onboarding.md** — Structured orientation for unfamiliar codebases. Use when starting a new project or returning after a long absence — before any task-specific work.
 
 When a workflow applies, follow it rather than jumping straight to implementation. Default: research-plan-implement for features, divergent-design for decisions, spike for unknowns, codebase-onboarding for new projects.
@@ -33,7 +33,7 @@ Skills are focused, single-purpose process docs in `skills/`. Unlike workflows (
 | **Framing a decision** before choosing — explicit request, or DD constraints contradict each other | `design-space-situating` | Places the decision on eight design-space dimensions and surfaces misframing. Output feeds DD's diagnosis or RPI's plan. |
 | Triaging tech debt, planning a dependency upgrade, or scoping test strategy | `tech-debt-triage`, `dependency-upgrade`, `test-strategy` | Use when the corresponding planning question comes up. |
 
-Other skills in `skills/` cover architecture review, performance review, API consistency, bug diagnosis, arithmetic eval, and self-eval. Browse the directory when a task wants a focused checklist rather than a full workflow.
+Other skills in `skills/` cover architecture review, performance review, API consistency, arithmetic eval, and self-eval. Browse the directory when a task wants a focused checklist rather than a full workflow.
 
 **Composition note:** `code-review` may invoke `ui-visual-review` and `security-reviewer` as sub-critics when the diff matches their triggers. When running a standalone skill, check whether a full `code-review` pass would be more appropriate.
 

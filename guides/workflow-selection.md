@@ -44,7 +44,7 @@ High-throughput multi-branch development with async review?
 
 ### Debugging defaults (not a separate workflow)
 
-Bug-diagnosis is no longer a standalone workflow — its principles have been absorbed into CLAUDE.md's "Debugging defaults" section, which applies to **all** bug-fixing work (whether inside RPI or standalone). Key points:
+Debugging is not a standalone workflow — invoke `superpowers:systematic-debugging` for the core loop, and see CLAUDE.md's "Debugging defaults" section for the local extension, which applies to **all** bug-fixing work (whether inside RPI or standalone). Key points:
 
 1. Reproduce first
 2. Read the error
@@ -52,8 +52,6 @@ Bug-diagnosis is no longer a standalone workflow — its principles have been ab
 4. Test, don't guess
 5. Escape hatch at 3 failed hypotheses → pivot to RPI research
 6. Fix root cause, not symptom
-
-For complex bugs that need a formal diagnosis log, the template remains in `workflows/bug-diagnosis.md`.
 
 ## Disambiguation: Similar Workflows
 
@@ -90,4 +88,3 @@ For complex bugs that need a formal diagnosis log, the template remains in `work
 | [pr-prep](../workflows/pr-prep.md) | Package work for async review (includes review-fix-loop) |
 | [branch-strategy](../workflows/branch-strategy.md) | High-throughput feature branches with async review |
 | [user-testing-workflow](../workflows/user-testing-workflow.md) | Plan, run, and interpret usability tests |
-| [bug-diagnosis](../workflows/bug-diagnosis.md) | Deprecated as standalone; debugging defaults absorbed into CLAUDE.md |

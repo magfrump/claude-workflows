@@ -27,20 +27,20 @@ Evaluate triggers top-to-bottom. Take the **first match**; if none match, defaul
 | 9 | **Planning, running, or analyzing a usability test**, or keywords: "user test", "moderator script", "usability" | `user-testing-workflow.md` | e.g., "Write a moderator script for testing the onboarding flow" |
 | 10 | **High-throughput multi-branch development** with async review | `branch-strategy.md` | e.g., "I have 5 features to ship this week, let's parallelize" |
 
-### Debugging defaults (absorbed from bug-diagnosis)
+### Debugging defaults
 
-These principles apply to **all** bug-fixing work, whether inside RPI or standalone. The standalone `bug-diagnosis.md` workflow is deprecated — use these defaults directly.
+Invoke `superpowers:systematic-debugging` for the core diagnostic loop. The numbered principles below are the local extension — the 3-failed-hypothesis escape hatch with handoff-doc emission, and the bug-diagnosis-to-RPI handoff path. These principles complement systematic-debugging, which provides the loop itself.
+
+These principles apply to **all** bug-fixing work, whether inside RPI or standalone.
 
 1. **Reproduce first.** Before forming any hypothesis, record a concrete `Reproduction:` line at the start of the diagnosis session. It must be either (a) a runnable command (e.g., `pytest tests/foo.py::test_bar`, `curl -X POST https://api.example.com/...`) or (b) a numbered manual sequence with ≥2 steps (e.g., `1. Navigate to /login  2. Submit form with email=foo, password=bar  3. Observe 500 response`). Bare user-complaint prose ("users say login fails") is not a reproduction and is not acceptable — if that's all you have, get a concrete trigger before hypothesizing. Write the reproduction as a test if possible — it becomes your verification.
 2. **Read the error.** Stack traces, error messages, and log output often point directly to the problem. Start here, not with theories.
 3. **Hypothesize specifically.** State a falsifiable claim naming a specific location, mechanism, and testable outcome. Bad: "something is wrong with parsing." Good: "parseDate returns null for timezone offsets because the regex omits `+HH:MM`."
 4. **Test, don't guess.** Design the smallest experiment that confirms or refutes the hypothesis. If confirmed → fix. If refuted → record what you learned, form a new hypothesis.
-5. **Escape hatch at 3 failed hypotheses.** If 3+ hypotheses are refuted, stop iterating. Either you need better isolation (re-read the error, try git bisect) or you don't understand the code well enough (pivot to RPI's research phase). Before pivoting, **emit a structured handoff doc** at `docs/working/handoff-diagnosis-{bug-description}.md` containing a "What this bug isn't" section — one entry per refuted hypothesis with `tested:` (the prediction the experiment ran) and `learned:` (the region of the search space the refutation eliminates). The subsequent RPI research doc must open with this section copied verbatim, so the failed-hypothesis evidence is preserved as input rather than lost. Full template lives in `workflows/bug-diagnosis.md` step 5.
+5. **Escape hatch at 3 failed hypotheses.** If 3+ hypotheses are refuted, stop iterating. Either you need better isolation (re-read the error, try git bisect) or you don't understand the code well enough (pivot to RPI's research phase). Before pivoting, **emit a structured handoff doc** at `docs/working/handoff-diagnosis-{bug-description}.md` containing a "What this bug isn't" section — one entry per refuted hypothesis with `tested:` (the prediction the experiment ran) and `learned:` (the region of the search space the refutation eliminates). The subsequent RPI research doc must open with this section copied verbatim, so the failed-hypothesis evidence is preserved as input rather than lost.
 6. **Fix root cause, not symptom.** Keep the fix minimal. Don't refactor nearby code. One fix per diagnosis.
 
 For worked examples of these defaults (hypothesis formation, the 3-hypothesis escape hatch, root-cause vs. symptom fixes), see `guides/debugging-examples.md`.
-
-For complex bugs that need a formal diagnosis log, the template and full process remain available in `workflows/bug-diagnosis.md`.
 
 ### Tooling discovery (before building new skills/workflows)
 
@@ -102,7 +102,7 @@ Workflows are not isolated — they hand off to each other. The most common comp
 - **RPI ↔ Spike**: When RPI hits a feasibility question that can't be answered by reading code, pause and spike it. The spike's RPI seed section is the handoff back — load it as input to RPI research.
 - **DD → Spike**: DD candidates that involve unfamiliar libraries or techniques can be validated with a spike before committing to a decision.
 - **RPI → PR-prep**: Once RPI implementation is complete, PR-prep packages the work for review. PR-prep embeds the review-fix loop (see `workflows/review-fix-loop.md`).
-- **Bug diagnosis → RPI**: After 3+ failed hypotheses, pivot to RPI's research phase. Emit `docs/working/handoff-diagnosis-{bug-description}.md` with a "What this bug isn't" section (one entry per refuted hypothesis: `tested:` / `learned:`) and open the RPI research doc with that section copied verbatim. Full template in `workflows/bug-diagnosis.md` step 5.
+- **`superpowers:systematic-debugging` → RPI**: After 3+ failed hypotheses, pivot to RPI's research phase. Emit `docs/working/handoff-diagnosis-{bug-description}.md` with a "What this bug isn't" section (one entry per refuted hypothesis: `tested:` / `learned:`) and open the RPI research doc with that section copied verbatim.
 
 Each workflow's "When to pivot" section documents these handoffs in detail with specific triggers. When loading a downstream workflow, carry forward the upstream artifacts (research docs, decision records, spike seeds) rather than starting from scratch. When composing workflows, note the composition in commit messages or working docs (e.g., "DD output loaded into RPI plan") to maintain traceability.
 

@@ -28,7 +28,7 @@ Reference documents for specific processes and conventions. Unlike workflows (st
 
 - **[debugging-examples.md](debugging-examples.md)** — Three worked examples grounding the debugging defaults: hypothesis formation, the 3-hypothesis escape hatch, and root-cause vs. symptom fixes.
 
-- **[workflow-selection.md](workflow-selection.md)** — Prescriptive decision tree for choosing the right workflow given a task type. Use when unsure whether to reach for bug-diagnosis vs research-plan-implement, spike vs divergent-design, or any other workflow.
+- **[workflow-selection.md](workflow-selection.md)** — Prescriptive decision tree for choosing the right workflow given a task type. Use when unsure whether to reach for spike vs divergent-design, task-decomposition vs research-plan-implement, or any other workflow.
 
 - **[cross-project-setup.md](cross-project-setup.md)** — How to adopt workflows, skills, and artifact conventions from this repo in other projects. Covers full CLAUDE.md adoption, individual skill copying with dependencies, and directory setup. Includes what to skip (repo-specific scripts and hypothesis tracking).
 

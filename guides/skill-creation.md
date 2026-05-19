@@ -73,7 +73,7 @@ In short: workflows describe *how to work*; skills describe *what to analyze*.
 
 Practice has blurred the original line in two directions:
 
-1. **Workflows shrinking into skills.** `bug-diagnosis` was a standalone workflow with a structured diagnosis log, hypothesis tracking, and explicit pivot gates. In practice, most bugs didn't need that ceremony — pasting the error into Claude and following the 5-step debugging defaults (reproduce → read error → hypothesize → test → fix) was sufficient. The workflow was deprecated; its core loop was extracted into `skills/bug-diagnosis.md` for inline invocation. The full workflow remains as reference for complex bugs that genuinely need a formal log.
+1. **Workflows shrinking into skills.** `bug-diagnosis` was once a standalone workflow with a structured diagnosis log, hypothesis tracking, and explicit pivot gates. In practice, most bugs didn't need that ceremony — pasting the error into Claude and following the 5-step debugging defaults (reproduce → read error → hypothesize → test → fix) was sufficient. The workflow was first deprecated in favor of a local inline skill, then both were ultimately removed in favor of the externally-shipped `superpowers:systematic-debugging` skill. The local extension (3-failed-hypothesis escape hatch with RPI handoff) now lives inline in CLAUDE.md's Debugging defaults section.
 
 2. **Skills growing workflow-like behavior.** `code-review` is a skill, but it orchestrates multiple sub-skills in stages, synthesizes results, and can trigger a review-fix loop. It has more internal structure than some workflows. Similarly, `draft-review` spawns parallel critic skills and produces a synthesis — it's an orchestrator wearing a skill's frontmatter.
 
@@ -110,7 +110,6 @@ The table below captures the current state of all workflows and skills, noting w
 | `branch-strategy` | **Strong** | Coordinates across multiple branches; inherently multi-session. |
 | `user-testing-workflow` | **Strong** | Plans, executes, and analyzes usability tests across phases. |
 | `review-fix-loop` | **Adequate** | Sub-procedure of `pr-prep`, not invoked standalone. More of a protocol than a workflow. |
-| `bug-diagnosis` | **Deprecated** | Core loop extracted to skill. Full workflow retained as reference for complex cases. |
 
 #### Skills
 
@@ -125,7 +124,6 @@ The table below captures the current state of all workflows and skills, noting w
 | `fact-check` | **Strong** | Prose fact-checking, single-pass. |
 | `draft-review` | **Adequate** | Orchestrator dispatching critics in parallel. Similar to `code-review`. |
 | `self-eval` | **Strong** | Single-pass scoring against rubric. |
-| `bug-diagnosis` | **Strong** | Extracted from workflow. Single-pass hypothesis-test-fix cycle. |
 | `test-strategy` | **Strong** | Single-pass analysis producing a test plan. |
 | `tech-debt-triage` | **Strong** | Single-pass prioritization. |
 | `dependency-upgrade` | **Strong** | Single-pass assessment. |
