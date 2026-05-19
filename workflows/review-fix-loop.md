@@ -20,28 +20,52 @@ Reviews get more useful as the code gets cleaner — early reviews are dominated
 
 In practice, most feature branches converge within a few loops, though this depends on the size and complexity of the change.
 
-## Convergence ceiling
+## Hard cap (3 iterations)
 
-After **3 iterations**, if the reviewer is still surfacing new issues (not regressions introduced by prior fixes), **stop**. This mirrors the 3-hypothesis escape hatch in the debugging defaults — unbounded iteration has diminishing returns. Choose one of two exit paths:
+The review→fix→re-review loop is bounded at **3 iterations**. This is a hard cap, not a soft ceiling: iteration 4 cannot begin until an explicit `escalate | split | abandon` decision has been recorded in writing. The cap mirrors the 3-hypothesis escape hatch in the debugging defaults — unbounded iteration has diminishing returns.
 
-1. **Ship with documented known issues.** If no Must Fix items remain but Must Address or Consider items persist, document the remaining findings in the PR description's "Areas of uncertainty" section and proceed to Phase 2 of pr-prep. The human reviewer sees the known issues and can make a judgment call about whether they block merge.
-2. **Escalate to human review.** If Must Fix items remain, or if you're unsure whether remaining findings are safe to ship, stop and present the user with:
-   - **Iteration count**: how many loops have run
-   - **What changed**: a brief summary of fixes applied in each iteration
-   - **What remains flagged**: the new (non-regression) findings from the latest review
-   - **Assessment**: why the loop isn't converging (e.g., fixes are revealing deeper issues, the change is too large for incremental review, the review criteria are shifting)
+The cap is **per-loop, not per-session**. Each review-fix loop carries its own counter; starting a fresh loop on a different PR or branch within the same session resets the count to zero. The counter belongs to the loop instance, not to the conversation.
 
-This is a **soft ceiling**, not a hard stop. The user can say "continue" and the loop resumes for another iteration (the counter does not reset — iteration 4 still escalates after one more pass if new issues appear). But the default is to pause and let the human decide whether more iterations are productive or whether the approach needs to change (e.g., pivot to divergent-design, split the PR, or accept the remaining findings as known debt).
+### Per-iteration header
+
+On entry to each iteration, emit a single header line:
+
+```
+Iteration N of 3
+```
+
+…where `N` is `1`, `2`, or `3`. The header must appear before any review-skill invocation or fix work in that iteration. It is the mechanical signal that the cap is live and counting, and it makes overruns visible in transcripts, review artifacts, and the audit trail. Skipping the header is itself an error — if you cannot produce the header (e.g., because you are uncertain which iteration you are in), stop and reconcile against the prior review artifacts before continuing.
+
+### Exit conditions (iterations 1–3)
+
+Exit the loop at the end of any iteration where:
+
+1. **Clean convergence.** No Must Fix items remain and Must Address items are resolved or explicitly acknowledged. Proceed to Phase 2 of pr-prep.
+2. **Ship with documented known issues.** No Must Fix items remain, but Must Address or Consider items persist. Document the remaining findings in the PR description's "Areas of uncertainty" section and proceed to Phase 2. The human reviewer sees the known issues and can make a judgment call about whether they block merge.
+
+If neither condition holds at the end of iteration 3, you have hit the cap. Do not begin iteration 4 implicitly — proceed to the gate below.
+
+### Iteration 4: cap-exceeded decision gate
+
+When iteration 3 ends without an exit condition met, the loop is paused at the cap. **No further fix work, re-review, or test run may proceed** until a written decision is recorded selecting one of:
+
+- **`escalate`** — Hand the loop off to a human reviewer. Present the iteration summary (counts, fixes per iteration, remaining findings, assessment of why convergence failed). The human reviewer may authorize additional iterations; only their explicit authorization permits iteration 4 to begin, and a new `Iteration 4 of N` header must reflect the revised bound they granted.
+- **`split`** — Break the change into smaller pieces that can each converge inside their own 3-iteration budget. Close this loop, open per-piece branches, and start a new loop (with a fresh counter) on each piece. The current PR is either closed or repurposed as the integration branch.
+- **`abandon`** — Revert or shelve the change. The chosen approach is not converging, and continuing to patch will compound debt. Record what was learned so a future attempt does not repeat the same path.
+
+The decision must be recorded in writing in one of: the latest review artifact (`docs/reviews/*.md`), a commit message on the branch, or the PR description's "Areas of uncertainty" section. The decision line must name the option (`escalate`, `split`, or `abandon`) explicitly so an audit can grep for it. A bare "let's keep going" is not a valid decision — it must select one of the three options.
+
+**Why a hard cap (not a soft override):** A soft ceiling that the user can dismiss with "continue" tends to be dismissed by default, especially late at night or under time pressure when the cost of stopping feels higher than the cost of one more pass. Empirically, loops that go past iteration 3 are usually not converging — they are accumulating churn that disguises the real problem (wrong approach, scope too large, or a structural issue masquerading as surface findings). Forcing an explicit option selection makes the writer name the failure mode rather than route around it.
 
 **Why this exists:** Review-fix loops have diminishing returns. Early iterations catch real issues; later iterations often churn on style or reveal that the underlying approach needs rethinking, not more polishing. Unbounded loops waste tokens without meaningful quality improvement.
 
-**What counts as "new" vs. "regression":** A regression is a finding that was introduced by a fix from a prior iteration (e.g., a typo in a renamed variable, a broken import from a file move). A new issue is anything the reviewer surfaces that existed before the fix or that reflects a deeper problem. When in doubt, treat it as new — false positives on the ceiling are cheap (the user just says "continue"), while false negatives waste iterations.
+**What counts as "new" vs. "regression":** A regression is a finding that was introduced by a fix from a prior iteration (e.g., a typo in a renamed variable, a broken import from a file move). A new issue is anything the reviewer surfaces that existed before the fix or that reflects a deeper problem. When in doubt, treat it as new — false positives on the ceiling are cheap (one option-selection prompt), while false negatives waste iterations and disguise the underlying failure.
 
-**Tracking convergence:** To evaluate whether this ceiling is set at the right level, note in the PR description or commit message whether the loop converged cleanly (and in how many iterations) or hit the 3-iteration ceiling. This creates an audit trail for calibrating the threshold over time and for evaluating whether the bound prevents unbounded cycles in practice.
+**Tracking convergence:** Note in the PR description or commit message whether the loop converged cleanly (and in how many iterations) or hit the iteration-4 gate. If the gate was hit, record which option (`escalate`, `split`, or `abandon`) was selected. This creates an audit trail for calibrating the threshold over time and for evaluating whether the cap prevents unbounded cycles in practice.
 
 ## Divergence detection (stuck-loop signal)
 
-The convergence ceiling catches *progress without convergence* — new findings keep appearing across iterations. It does not catch a different failure mode: **the same finding keeps re-appearing after you claimed to have fixed it.** That is a stuck loop, and it usually means the prior fix targeted a symptom rather than the underlying cause.
+The hard cap catches *progress without convergence* — new findings keep appearing across iterations. It does not catch a different failure mode: **the same finding keeps re-appearing after you claimed to have fixed it.** That is a stuck loop, and it usually means the prior fix targeted a symptom rather than the underlying cause.
 
 ### Signal
 
@@ -75,17 +99,17 @@ This signal **flags and pivots; it does not stop the loop**. The user decides wh
 - "Continue patching" — they judge the re-fire is coincidental (e.g., two distinct bugs that happen to read alike). Resume the loop without further pivot.
 - "Apply the deeper fix" — proceed with the structural change you proposed.
 - "Accept and document" — record the finding as a known limitation in the PR description and exit the loop.
-- "Escalate" — same path as the convergence ceiling: hand off to human review.
+- "Escalate" — same path as the cap-exceeded `escalate` option: hand off to human review.
 
 The cost of flagging a false positive is one short user prompt; the cost of missing a real stuck loop is iterations of churn that compound into the wrong kind of technical debt. Bias toward flagging.
 
 **Why this exists:** Re-fires are the loop's analogue of the symptom-vs-root-cause split from the debugging defaults. Patching the same surface repeatedly produces a fix history that looks productive in the diff but leaves the underlying cause intact — and often makes the eventual structural fix harder, because each surface patch is now a constraint to preserve. Catching this on the first re-fire is much cheaper than catching it after three.
 
-**Relationship to the convergence ceiling:** Divergence detection can fire on iteration 2 (one re-fire is enough), well before the 3-iteration ceiling. The ceiling is for *new* findings accumulating; this signal is for *old* findings recurring. Both surface to the user, both are flag-only, and a single loop can hit both — in which case the deeper-read pivot takes precedence over the ship/escalate choice from the ceiling.
+**Relationship to the hard cap:** Divergence detection can fire on iteration 2 (one re-fire is enough), well before the iteration-3 cap. The cap is for *new* findings accumulating across iterations; this signal is for *old* findings recurring within them. Divergence detection is flag-only — it surfaces a pivot recommendation to the user but does not itself force a gate. The cap is non-negotiable — iteration 4 cannot begin without a written `escalate | split | abandon` decision. A single loop can hit both: divergence detection on (say) iteration 2 triggers the deeper-read pivot, and if that pivot still leaves iteration 3 ending without convergence, the cap-exceeded gate fires next.
 
 ## Anti-patterns
 
-These supplement the guidance in pr-prep Step 3 (which covers verifying findings and the convergence ceiling):
+These supplement the guidance in pr-prep Step 3 (which covers verifying findings and the iteration cap):
 
 - **Fixing Consider items before Must Fix items.** Tier order exists for a reason — fixing a style issue in code that has a correctness bug is wasted work.
 - **Skipping the test run between fix and re-review.** The test run is where you catch issues the review didn't anticipate. Skipping it means the re-review may pass on code that doesn't actually work.
