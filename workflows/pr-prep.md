@@ -46,13 +46,16 @@ PATTERN_ADDITIONS=$(git diff main...HEAD -- docs/thoughts/failure-patterns.md \
 
 if [[ "$FIX_COMMITS" -gt 0 && "$PATTERN_ADDITIONS" -eq 0 ]]; then
   echo "Advisory: $FIX_COMMITS fix(...) commit(s) on branch, 0 new failure-pattern entries."
-  echo "  If any fix had a non-trivial {symptom, cause, fix} signature, consider"
-  echo "  appending an FP-NNN entry per workflows/bug-diagnosis.md step 8."
+  echo "  If any fix had a non-trivial {symptom, cause, fix} signature, append a new"
+  echo "  FP-NNN entry to docs/thoughts/failure-patterns.md describing the root cause"
+  echo "  and the symptom that led you to it. Use the existing entries as the format"
+  echo "  reference. Do not skip this step — the library's value compounds only if"
+  echo "  it's appended to."
   echo "  Legitimate skip cases: typo, dep bump, one-line obvious fix, environmental/upstream."
 fi
 ```
 
-**Interpret the result:** A warning here is a prompt, not a block. For each `fix(...)` commit, ask: did the diagnosis surface a reusable cause-and-fix shape a future grep would want to find? If yes for any of them, return to `bug-diagnosis.md` step 8 and append the entry before opening the PR. If no for all of them, proceed — the legitimate-skip vocabulary in the warning covers the case. Do not invent FP entries to silence the warning; a misleading entry pollutes the library and degrades the prior signal for the next diagnosis.
+**Interpret the result:** A warning here is a prompt, not a block. For each `fix(...)` commit, ask: did the diagnosis surface a reusable cause-and-fix shape a future grep would want to find? If yes for any of them, append a new FP-NNN entry to `docs/thoughts/failure-patterns.md` describing the root cause and the symptom that led you to it. Use the existing entries as the format reference. Do not skip this step — the library's value compounds only if it's appended to. If no for all of them, proceed — the legitimate-skip vocabulary in the warning covers the case. Do not invent FP entries to silence the warning; a misleading entry pollutes the library and degrades the prior signal for the next diagnosis.
 
 **Completion criteria:**
 - [ ] No uncommitted changes (clean working tree)

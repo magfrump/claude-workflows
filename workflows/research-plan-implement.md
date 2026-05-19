@@ -116,7 +116,7 @@ The gate on **implementation** is firm: do not implement until the plan has been
 
 #### Failure-pattern lookup (final sub-step of research)
 
-Before exiting step 2 — and therefore before the plan is formed — run a mechanical grep of `docs/thoughts/failure-patterns.md` for prior bugs that touch the area under research. The file is an append-only log of root-caused bugs maintained by `bug-diagnosis.md` (schema: `FP-NNN YYYY-MM-DD symptom:<...> cause:<...> fix:<...> ref:<...>`, fields hyphenated into single tokens so they're grep-friendly). A hit is a strong prior on what could go wrong in similar code; a miss is a fact worth recording explicitly so a future reader can distinguish "no recorded failures in this area" from "the check was skipped."
+Before exiting step 2 — and therefore before the plan is formed — run a mechanical grep of `docs/thoughts/failure-patterns.md` for prior bugs that touch the area under research. The file is an append-only log of root-caused bugs that this research step **reads**; new entries are **appended by `pr-prep.md`** when a `fix(...)` commit ships (schema: `FP-NNN YYYY-MM-DD symptom:<...> cause:<...> fix:<...> ref:<...>`, fields hyphenated into single tokens so they're grep-friendly). A hit is a strong prior on what could go wrong in similar code; a miss is a fact worth recording explicitly so a future reader can distinguish "no recorded failures in this area" from "the check was skipped."
 
 Use a concrete extended-regex grep that combines all candidate keywords in one pass — symptom keywords (`null`, `timezone`, `n+1`, `race`, `stale`, etc.), file paths or subsystem names that may appear in the `ref:` field, and `cause:`/`fix:` categories that fit the work:
 

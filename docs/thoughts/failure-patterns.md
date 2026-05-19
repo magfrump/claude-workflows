@@ -1,16 +1,15 @@
 # Failure Pattern Library
 
-> Append-only one-line log of root-caused bugs from `workflows/bug-diagnosis.md`.
-> Step 2 of each diagnosis greps this file for the symptom signature as a prior;
-> step 8 appends a new entry once the fix is verified. Read the schema below
-> before writing a new entry or grep'ing for an existing one.
+> Append-only one-line log of root-caused bugs. Append from pr-prep when a fix
+> commit ships; grep from research phase to surface relevant prior patterns.
+> Read the schema below before writing a new entry or grep'ing for an existing one.
 
-Last verified: 2026-05-13
-Relevant paths: workflows/bug-diagnosis.md
+Last verified: 2026-05-18
+Relevant paths: workflows/pr-prep.md (write-side: append FP-NNN on fix commits) · workflows/research-plan-implement.md (read-side: grep audit token in research phase)
 
 ## When to read this file
 
-- **Bug diagnosis step 2** greps this file by symptom keyword (e.g., `null`, `timezone`, `n+1`, `race`, `stale`) to surface prior bugs with the same observable signature. A match is a strong prior on the cause — the recorded fix shape is often the first thing to test.
+- **RPI research phase** greps this file by symptom keyword (e.g., `null`, `timezone`, `n+1`, `race`, `stale`) to surface prior bugs with the same observable signature. A match is a strong prior on the cause — the recorded fix shape is often the first thing to test.
 - **Codebase onboarding** can skim this for institutional debugging memory: recurring failure modes, hot spots, and the fix shapes the project keeps reaching for.
 
 ## Schema
@@ -74,7 +73,7 @@ grep 'fix:invalidate-cache' docs/thoughts/failure-patterns.md
 grep -E '^- \*\*FP-007\*\*' docs/thoughts/failure-patterns.md
 ```
 
-When citing a matched pattern in a diagnosis log, commit message, or hypothesis, use the form `FP-NNN`. In a bug-diagnosis hypothesis, the source-tag form is `[from prior bug FP-NNN]`.
+When citing a matched pattern in a research doc, commit message, or hypothesis, use the form `FP-NNN`. When tagging a hypothesis as derived from a prior pattern, use the source-tag form `[from prior bug FP-NNN]`.
 
 ## Patterns
 
