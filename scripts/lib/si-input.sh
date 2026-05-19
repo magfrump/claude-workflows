@@ -9,6 +9,9 @@
 #   parse_si_input — Parse si-input.md and export section variables
 #   parse_si_priority_hypotheses — Extract user-supplied (priority, hypothesis)
 #       pre-commitment pairs from SI_PRIORITIES; emits JSON to stdout
+#   prepend_si_input_rejected_history — New-cycle bootstrap: prepend an
+#       HTML-comment block at the top of si-input.md listing the last
+#       3 rounds' rejected task IDs and first-line rejection reasons
 #
 # Guard against direct execution
 if [[ "${BASH_SOURCE[0]}" == "${0}" ]]; then
@@ -170,6 +173,117 @@ parse_si_priority_hypotheses() {
         map(split("\t")) |
         map({priority: .[0], hypothesis: .[1]})
     '
+}
+
+# --- New-cycle bootstrap: prepend recent-rejections HTML comment block ---
+# Reads round-<N>-report.json files in the working dir, collects rejected
+# tasks from the 3 most recent rounds, and prepends a <!-- Recent rejections
+# (last 3 rounds): ... --> block at the top of si-input.md. Replaces any
+# prior such block so the function is idempotent.
+#
+# The block lives BEFORE any "## " section heading, so parse_si_input's
+# state machine treats it as preamble and discards it — user-editable
+# sections (Feedback / Priorities / Off-limits / Context) are untouched.
+#
+# Args:
+#   $1 = path to si-input.md
+#   $2 = working dir containing round-<N>-report.json files
+# Returns:
+#   0 always (no-op if no rejections found)
+prepend_si_input_rejected_history() {
+    local input_file="${1:-}"
+    local working_dir="${2:-}"
+
+    if [[ -z "$input_file" || -z "$working_dir" || ! -d "$working_dir" ]]; then
+        return 0
+    fi
+
+    # Collect the 3 most recent round numbers that have report files.
+    local recent_rounds
+    recent_rounds=$(
+        for report in "$working_dir"/round-*-report.json; do
+            [ -f "$report" ] || continue
+            local base="${report##*/}"
+            base="${base#round-}"
+            base="${base%-report.json}"
+            # Skip if not a positive integer.
+            [[ "$base" =~ ^[0-9]+$ ]] || continue
+            echo "$base"
+        done | sort -n | tail -3
+    )
+
+    if [ -z "$recent_rounds" ]; then
+        return 0
+    fi
+
+    # Build "round<TAB>task_id<TAB>first-line-of-reason" rows for rejected
+    # tasks. Task IDs within a round come out in jq's iteration order; rounds
+    # come out oldest-first across the recent_rounds list.
+    local rows=""
+    local round
+    while IFS= read -r round; do
+        [ -n "$round" ] || continue
+        local report="$working_dir/round-${round}-report.json"
+        [ -f "$report" ] || continue
+        local round_rows
+        round_rows=$(jq -r --arg round "$round" '
+            (.validation // {}) | to_entries[] |
+            select(.value.verdict == "rejected") |
+            .key as $tid |
+            ((.value.verdict_detail.reject_reason // "") | split("\n")[0]) as $reason |
+            "\($round)\t\($tid)\t\($reason)"
+        ' "$report" 2>/dev/null) || round_rows=""
+        if [ -n "$round_rows" ]; then
+            rows="${rows}${round_rows}"$'\n'
+        fi
+    done <<< "$recent_rounds"
+
+    rows=$(printf '%s' "$rows" | grep -v '^$' || true)
+    if [ -z "$rows" ]; then
+        return 0
+    fi
+
+    # Compose the comment block.
+    local block
+    block="<!-- Recent rejections (last 3 rounds):"$'\n'
+    local line round_n tid reason
+    while IFS=$'\t' read -r round_n tid reason; do
+        [ -n "$round_n" ] || continue
+        line="  Round ${round_n}: ${tid}"
+        if [ -n "$reason" ]; then
+            line="${line} — ${reason}"
+        fi
+        block="${block}${line}"$'\n'
+    done <<< "$rows"
+    block="${block}-->"$'\n'
+
+    # Write the new block to a temp file, then append the existing file's
+    # content (minus any prior "Recent rejections" block at its top).
+    local tmpfile
+    tmpfile=$(mktemp "${input_file}.XXXXXX")
+    printf '%s' "$block" > "$tmpfile"
+
+    if [ -f "$input_file" ]; then
+        # If the first line starts a prior block, skip up to and including
+        # the line that closes it, plus one optional blank separator.
+        local first_line=""
+        IFS= read -r first_line < "$input_file" || true
+        if [[ "$first_line" == "<!-- Recent rejections"* ]]; then
+            awk '
+                BEGIN { stripped = 0; skip_blank = 0 }
+                !stripped && /^-->$/ { stripped = 1; skip_blank = 1; next }
+                !stripped { next }
+                skip_blank { skip_blank = 0; if ($0 == "") next }
+                { print }
+            ' "$input_file" >> "$tmpfile"
+        else
+            cat "$input_file" >> "$tmpfile"
+        fi
+    fi
+
+    mv "$tmpfile" "$input_file"
+
+    return 0
 }
 
 # Internal: trim leading and trailing blank lines
