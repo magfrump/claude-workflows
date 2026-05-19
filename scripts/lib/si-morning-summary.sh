@@ -424,7 +424,21 @@ _project_state_maintenance_debt() {
     fi
 }
 
-# --- Internal: rejected tasks in this run, grouped by failing gate ---
+# --- Internal: rejected tasks in this run, grouped by (gate, primary file) ---
+# Reads each round's report for rejected (gate, task_id) pairs and joins with
+# tasks-round-N.json to look up the rejected task's primary file (basename of
+# files_touched[0]). Output groups rejections by gate AND by the file under
+# the gate, so the operator sees not just "which gate is failing" but "which
+# files are repeatedly tripping it":
+#
+#   - **tests**: 6 (rpi-plan.md: 3, dd.md: 2, pr-prep.md: 1)
+#
+# Tasks whose tasks file is missing or whose files_touched is empty fall back
+# to "unknown" so the rejection still counts but is visibly under-attributed.
+#
+# Maintenance signal: any file whose total rejection count across the cycle
+# is >=3 gets a trailing callout line so the operator can consider queueing
+# a maintenance task before the file accumulates more debt.
 _project_state_recent_rejections() {
     local start_round="$1" end_round="$2" working_dir="$3"
 
@@ -432,51 +446,116 @@ _project_state_recent_rejections() {
     echo "### Recent Rejections by Failure Mode"
     echo ""
 
-    # Collect "gate<TAB>task_id" pairs across all rejected tasks in this run.
-    local pairs=""
+    # Collect "gate<TAB>file_basename<TAB>task_id" triples for rejected tasks.
+    # Dedupe at the (gate, file, tid) level so a task retried across rounds
+    # against the same gate doesn't get double-counted.
+    local triples=""
+    local round_num report tasks_file round_triples
     for round_num in $(seq "$start_round" "$end_round"); do
-        local report="$working_dir/round-${round_num}-report.json"
+        report="$working_dir/round-${round_num}-report.json"
+        tasks_file="$working_dir/tasks-round-${round_num}.json"
         [ -f "$report" ] || continue
 
-        local round_pairs
-        round_pairs=$(jq -r '
-            .validation // {} | to_entries[] |
-            select(.value.verdict == "rejected") |
-            .key as $tid |
-            (.value | to_entries[] | select(.key != "verdict" and .value == "fail") | .key) as $gate |
-            "\($gate)\t\($tid)"
-        ' "$report" 2>/dev/null) || true
+        if [ -f "$tasks_file" ]; then
+            round_triples=$(jq -r --slurpfile tasks "$tasks_file" '
+                .validation // {} | to_entries[] |
+                select(.value.verdict == "rejected") |
+                .key as $tid |
+                (($tasks[0] | map(select(.id == $tid)) | first) // null) as $task |
+                ((($task.files_touched // [])[0]) // "unknown") as $file_path |
+                (if $file_path == "" then "unknown" else ($file_path | split("/") | last) end) as $file_base |
+                (.value | to_entries[] | select(.key != "verdict" and .value == "fail") | .key) as $gate |
+                "\($gate)\t\($file_base)\t\($tid)"
+            ' "$report" 2>/dev/null) || round_triples=""
+        else
+            round_triples=$(jq -r '
+                .validation // {} | to_entries[] |
+                select(.value.verdict == "rejected") |
+                .key as $tid |
+                (.value | to_entries[] | select(.key != "verdict" and .value == "fail") | .key) as $gate |
+                "\($gate)\tunknown\t\($tid)"
+            ' "$report" 2>/dev/null) || round_triples=""
+        fi
 
-        if [ -n "$round_pairs" ]; then
-            pairs="${pairs}${round_pairs}"$'\n'
+        if [ -n "$round_triples" ]; then
+            triples="${triples}${round_triples}"$'\n'
         fi
     done
 
-    pairs=$(printf '%s' "$pairs" | grep -v '^$' || true)
-    if [ -z "$pairs" ]; then
+    triples=$(printf '%s' "$triples" | grep -v '^$' || true)
+    if [ -z "$triples" ]; then
         echo "No rejections this run."
         return
     fi
 
-    # Group by gate, render "gate: N (task1, task2)".
-    local prev_gate="" gate_tasks="" gate_count=0
-    while IFS=$'\t' read -r gate tid; do
-        if [ "$gate" != "$prev_gate" ]; then
-            if [ -n "$prev_gate" ]; then
-                echo "- **${prev_gate}**: ${gate_count} (${gate_tasks})"
-            fi
-            prev_gate="$gate"
-            gate_tasks="$tid"
-            gate_count=1
-        else
-            gate_tasks="${gate_tasks}, ${tid}"
-            gate_count=$((gate_count + 1))
-        fi
-    done < <(printf '%s\n' "$pairs" | sort)
+    # Aggregate via awk: one pass produces both the grouped output and the
+    # maintenance signals. SUBSEP composes the (gate, file) key safely since
+    # both fields are tab-delimited inputs that never contain SUBSEP (0x1c).
+    printf '%s\n' "$triples" | sort -u | awk -F'\t' '
+        {
+            gate = $1
+            file = $2
+            gate_count[gate]++
+            key = gate SUBSEP file
+            gate_file_count[key]++
+            file_total[file]++
+            if (!seen_gate[gate]++) {
+                gates[++gn] = gate
+            }
+            if (!seen_gate_file[key]++) {
+                files_in_gate[gate] = (files_in_gate[gate] == "" ? file : files_in_gate[gate] "\t" file)
+            }
+        }
+        END {
+            # Sort gates by total count desc, name asc.
+            for (i = 1; i <= gn; i++) {
+                for (j = i + 1; j <= gn; j++) {
+                    if (gate_count[gates[j]] > gate_count[gates[i]] ||
+                        (gate_count[gates[j]] == gate_count[gates[i]] && gates[j] < gates[i])) {
+                        t = gates[i]; gates[i] = gates[j]; gates[j] = t
+                    }
+                }
+            }
+            for (i = 1; i <= gn; i++) {
+                g = gates[i]
+                fn_ = split(files_in_gate[g], farr, "\t")
+                # Sort files within the gate by count desc, name asc.
+                for (a = 1; a <= fn_; a++) {
+                    for (b = a + 1; b <= fn_; b++) {
+                        ka = g SUBSEP farr[a]; kb = g SUBSEP farr[b]
+                        if (gate_file_count[kb] > gate_file_count[ka] ||
+                            (gate_file_count[kb] == gate_file_count[ka] && farr[b] < farr[a])) {
+                            t = farr[a]; farr[a] = farr[b]; farr[b] = t
+                        }
+                    }
+                }
+                fstr = ""
+                for (a = 1; a <= fn_; a++) {
+                    f = farr[a]
+                    fstr = fstr (fstr == "" ? "" : ", ") f ": " gate_file_count[g SUBSEP f]
+                }
+                printf "- **%s**: %d (%s)\n", g, gate_count[g], fstr
+            }
 
-    if [ -n "$prev_gate" ]; then
-        echo "- **${prev_gate}**: ${gate_count} (${gate_tasks})"
-    fi
+            # Maintenance signals: files with >=3 total rejections across the
+            # cycle, regardless of which gate(s) they failed against.
+            mn = 0
+            for (f in file_total) {
+                if (file_total[f] >= 3) maint[++mn] = f
+            }
+            for (i = 1; i <= mn; i++) {
+                for (j = i + 1; j <= mn; j++) {
+                    if (maint[j] < maint[i]) {
+                        t = maint[i]; maint[i] = maint[j]; maint[j] = t
+                    }
+                }
+            }
+            if (mn > 0) print ""
+            for (i = 1; i <= mn; i++) {
+                printf "- Maintenance signal: %s has 3+ recent rejections - consider a maintenance task\n", maint[i]
+            }
+        }
+    '
 }
 
 # --- Internal: TRACKING hypotheses from the backlog (broken pipelines) ---
