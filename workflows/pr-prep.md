@@ -147,6 +147,8 @@ Skip if the project doesn't use CI or if you're the sole contributor and prefer 
 
 Run review skills and iterate until clean. This is required, not optional.
 
+**Before running the review-fix loop, invoke `superpowers:verification-before-completion`.** Analytical critique from the loop's critic ensemble is not a substitute for executed evidence. Verification must run first; if it fails (tests don't pass, claims can't be backed by output), do not proceed to the critic ensemble — fix the underlying issue first.
+
 **a. Generate reviews.** Run skills in parallel; perform manual checks while waiting for results:
 - **Code review** (`/code-review`) — multi-critic structural review of the diff vs main
 - **Self-eval** (`/self-eval <target>`) — rubric assessment of any new or modified skills/workflows
