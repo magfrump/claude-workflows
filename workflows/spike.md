@@ -45,18 +45,26 @@ State the specific question the spike answers in one sentence. Examples:
 
 If you can't state the question clearly, the spike isn't ready to start.
 
-**Optional: feasibility criteria** — When the spike question is genuinely binary ("can X do Y?", "is Z feasible?"), making success/failure criteria explicit up front leads to more decisive outcomes. Fill in this template:
+**Required for binary feasibility spikes: success/failure/ambiguous criteria.** A spike is *binary* when its question matches one of these prefixes: `can`, `will`, `is X feasible`, `does X work`. These are go/no-go questions whose answer is yes or no — and they're the spikes most prone to ending with a fuzzy "kinda works" verdict. For binary spikes, the template below is mandatory.
 
-> - **Success looks like:** _[concrete observable that means "go"]_
-> - **Failure looks like:** _[concrete observable that means "no-go"]_
+> - **Success looks like:** _[a specific measurable signal that means "go" — name a metric, observable behavior, or pass/fail outcome]_
+> - **Failure looks like:** _[a specific measurable signal that means "no-go" — symmetric to success]_
 > - **Ambiguous if:** _[what would leave the answer unclear — helps you plan what to test]_
 
-Skip this for exploratory spikes where the goal is to learn rather than decide (e.g., "How does X's API handle Y?" — there's no pass/fail, just discovery). When you do use it, revisit these criteria in step 5's Answer section to force a clear verdict.
+Each entry must name a specific measurable signal. Acceptable: "pdf-parse extracts ≥80% of table cells correctly across 12 sample PDFs", "round-trip latency stays under 500ms at p95 over 100 requests", "the library produces a parseable AST for our 3 representative input files". **Not acceptable**: "it works", "the library can handle our data", "the API is usable" — these are restatements of the question, not criteria.
+
+**Escape valve.** If a question matches a binary prefix but the real goal is discovery rather than decision (e.g., "Can Lean 4's tactic system express our proof patterns?" where the actual goal is mapping the API surface), write an explicit escape line at the top of this step:
+
+> `exploratory: <one-sentence reason this binary-shaped question is really discovery, not decision>`
+
+Without that line, a binary spike that omits the template fails this step's Done-when check.
+
+For non-binary spikes (open-ended discovery: "how does X handle Y?", "what's the latency of Z?"), the template is optional — fill it in if it sharpens the answer, skip it if the goal is genuinely learning rather than deciding. Either way, revisit these criteria (when present) in step 5's Answer section to force a clear verdict.
 
 **Done when...**
 - [ ] The question is stated in one specific, answerable sentence
 - [ ] The question is about feasibility or behavior, not about implementation design
-- [ ] Success and failure criteria are defined (explicitly via the template above, or implicitly in the question)
+- [ ] If the question matches a binary prefix (`can`, `will`, `is X feasible`, `does X work`), either (a) the feasibility-criteria template is filled in with a specific measurable signal for each of Success and Failure (not "it works" or equivalent restatements), or (b) an explicit `exploratory: <reason>` line is written at the top of this step justifying the omission
 
 ### 3. Set a timebox (recommended)
 
