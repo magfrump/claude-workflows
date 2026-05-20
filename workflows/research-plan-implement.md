@@ -247,6 +247,25 @@ After the header and research link, the body must include:
 
 - **Risks**: What could go wrong, what's uncertain, what you'd want a reviewer to scrutinize.
 
+- **Rollback**: A `## Rollback` subsection describing how to undo the change *after it has shipped and failed in production*. This is post-deployment recovery, not pre-implementation guarding (that's Failure modes considered) and not pre-ship scrutiny (that's Risks). The section must list **concrete commands or steps specific to this change** — the commit range to revert, the redeploy procedure, the schema or data restoration step, the feature flag to flip, the cache to invalidate, the dependent service to restart, whatever the actual recovery would be. A reader during an incident must be able to execute the section without re-deriving the procedure live.
+
+  **What is disallowed.** A Rollback section whose entire content is `git revert` — or any equivalent generic boilerplate that names no commit range, no redeploy step, no data-state action, and no change-specific detail — does not satisfy this requirement. "Revert and redeploy" with no specifics is the same failure. The test is mechanical: strip the boilerplate, and ask whether the remaining text would let a stranger recover the system at 3am. If nothing remains, the section is performative and must be rewritten.
+
+  **Irreversible components are allowed but must be named.** If part of the change cannot be cleanly rolled back (destructive schema migration without backup, third-party API call with no compensating action, customer-visible state change that can't be unwound), the section must *say so explicitly* and describe the closest available mitigation (partial rollback of the reversible portion, forward-fix path, manual recovery runbook). The gate rejects fiction (claiming reversibility that doesn't exist) but accepts honest "this is irreversible because X; the closest recovery is Y."
+
+  **Worked example.** For the 7-step API endpoint plan from the Implementation order block above:
+
+  > ## Rollback
+  >
+  > 1. `git revert <merge-commit-sha>` on `main` — reverts steps 1–7 atomically (the migration in step 3 was wrapped in a transaction, so this also reverts both column additions).
+  > 2. Redeploy `main` to staging, verify `POST /verify-email` and `GET /session/heartbeat` return 404, then promote to prod.
+  > 3. Run the down-migration `migrations/0042_user_session_fields_down.sql` to drop `User.email_verified` and `Session.last_seen_at` — both columns are additive and nullable, so dropping them is non-destructive to existing user/session rows.
+  > 4. Invalidate the API changelog cache (`bin/changelog-cache --purge v1.42`) so the reverted endpoints no longer appear in the published spec.
+  >
+  > No irreversible component. Average time-to-rollback under load: ~12 minutes (measured against the staging dry-run on 2026-05-10).
+
+  Four concrete steps, each naming the specific artifact (commit SHA placeholder, migration filename, cache key, dry-run reference). A reviewer can verify each one points at something real. "git revert" alone, with no commit range, no redeploy, no migration step, and no cache action, would be rejected — even though step 1 starts with `git revert`, the surrounding specifics are what make the section satisfy the requirement.
+
 #### Test-strategy auto-invoke (penultimate sub-step of planning)
 
 After the body sections above are drafted, automatically run the `test-strategy` skill scoped to the plan's intended changes. Treat it as a routine step of plan completion, the same way Failure-pattern lookup is routine inside step 2. Do not wait for the user to ask for it — that is the manual hand-off that this auto-invoke replaces, and it is reliably skipped in practice.
@@ -314,7 +333,7 @@ The checkpoint is a *derived artifact* — it contains no new information, only 
 **Context-budget warning (advisory, not gating).** After the checkpoint is written, scan its size. If the **File map** lists more than **20 entries**, or the rendered **Plan** section exceeds **400 lines**, emit a warning recommending the implementer review `workflows/task-decomposition.md` before starting step 6 — an oversized checkpoint is the diagnostic that the work probably wants to be split into independent sub-investigations rather than implemented as one loop. The thresholds are first-pass numbers (a 20-file working set or a 400-line plan section consumes a meaningful slice of a session's context budget on current models); they are written inline here so a later round can re-tune them by editing this paragraph, mirroring how the 500-line file-size guideline (step 6) and the Estimated-context-cost typical-ranges line (step 3) are stated. The warning is advisory only — it does not block implementation. If the implementer decides the checkpoint is fine as-is despite the size, that's a judgment call to record briefly (e.g., as a Risks bullet in the plan or a note alongside the Done-when checklist), not a gate to clear.
 
 **Done when...**
-- [ ] Plan doc exists in `docs/working/`, opens with the three-line header (Goal · Project state · Task status) followed by a `Research:` link line, and includes all required body sections (Approach, Steps, Size estimate, Estimated context cost, Actual context cost (post-implementation) placeholder, Test specification, Risks)
+- [ ] Plan doc exists in `docs/working/`, opens with the three-line header (Goal · Project state · Task status) followed by a `Research:` link line, and includes all required body sections (Approach, Steps, Size estimate, Estimated context cost, Actual context cost (post-implementation) placeholder, Test specification, Risks, Rollback)
 - [ ] The Task status line accurately reflects current lifecycle (re-read it; if it lies, fix it)
 - [ ] Each step is specific enough that someone could implement it without re-reading the research doc
 - [ ] Each step is small enough to be one commit
@@ -326,6 +345,7 @@ The checkpoint is a *derived artifact* — it contains no new information, only 
 - [ ] Test specification includes at least one test case per behavioral requirement
 - [ ] No single step would push a file past 500 lines without an explicit note
 - [ ] Plan doc includes an Estimated context cost line covering research, implementation, and review phases, paired with an Actual context cost (post-implementation) placeholder line awaiting the post-implementation fill-in
+- [ ] Plan doc includes a `## Rollback` subsection that lists **change-specific** commands or steps for undoing the change post-ship — specific commit range to revert, redeploy procedure, schema/data restoration, feature-flag flip, cache invalidation, or whatever applies. A Rollback section whose entire content is bare "git revert" (or any equivalent generic boilerplate naming no change-specific detail) does NOT satisfy this item. Irreversible components are allowed but must be named explicitly with the closest available mitigation
 - [ ] The Test-strategy auto-invoke sub-step ran (or was short-circuited because `docs/working/test-strategy-{topic}.md` already existed for this loop), and its gap list (G1..Gn) plus Recommended Tests are reflected in the plan's Test specification subsection — or, if the skill returned no gaps or was unavailable, the subsection records that fact and was filled in manually
 - [ ] Checkpoint artifact exists at `docs/working/checkpoint-{topic}.md` with all template sections populated
 - [ ] If the checkpoint's File map has more than 20 entries or its Plan section exceeds 400 lines, the context-budget warning was acknowledged — either by decomposing the task via `workflows/task-decomposition.md` or by recording briefly (in plan Risks or alongside this checklist) why decomposition isn't warranted (advisory; an unacknowledged warning is not a hard gate, but it should not be silent)
