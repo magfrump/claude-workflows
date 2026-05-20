@@ -461,3 +461,44 @@ HEADER
             "$round" "$tid" "$hyp" "$hyp_source" "$window" "$evaluator" "$requires" "$((round + window))" >> "$log_file"
     done
 }
+
+# --- Test-gate baseline helpers (failure-isolation) ---
+# The `tests` gate runs the whole bats suite inside each task's worktree. A
+# single pre-existing failure on the base commit (e.g. a deleted file still
+# referenced by a test) would otherwise reject EVERY task in the run, even
+# though none of them touched the failing test. These helpers let the gate
+# charge a task only for failures it INTRODUCES, by diffing the worktree's
+# failing tests against a baseline captured on the base commit at run start.
+#
+# Match on test NAME, not TAP number: bats renumbers tests across worktrees
+# (suite ordering differs), so "not ok 43 foo" and "not ok 55 foo" are the
+# same failure. Names are stable; numbers are not.
+
+# tap_failing_names — read TAP on stdin, print sorted-unique failing test names.
+# Strips the leading "not ok <N> " and any trailing " # ..." TAP directive.
+# Stdout: zero or more test-description lines, sorted and de-duplicated.
+tap_failing_names() {
+    grep -E '^not ok ' \
+        | sed -E 's/^not ok [0-9]+ //; s/ # .*$//' \
+        | LC_ALL=C sort -u
+}
+
+# tap_new_failures — read TAP on stdin, print failing test names that are NOT
+# present in the baseline file. These are the failures a task introduced.
+# Args: $1 = baseline file (one failing test name per line; missing/empty = no
+#            baseline, so every current failure is "new").
+# Stdout: zero or more new-failure names, sorted; empty output = no new failures.
+tap_new_failures() {
+    local baseline_file=$1
+    local current
+    current=$(tap_failing_names)
+    [ -z "$current" ] && return 0
+    if [ -n "$baseline_file" ] && [ -f "$baseline_file" ]; then
+        # Lines in current that are not in baseline.
+        LC_ALL=C comm -23 \
+            <(printf '%s\n' "$current") \
+            <(LC_ALL=C sort -u "$baseline_file")
+    else
+        printf '%s\n' "$current"
+    fi
+}

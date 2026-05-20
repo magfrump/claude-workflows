@@ -263,6 +263,31 @@ ${SI_CONTEXT}
 "
 fi
 
+# --- Test-gate baseline (failure isolation) ---
+# Capture which bats tests already fail on the base commit BEFORE any task
+# runs. The `tests` gate (Gate 1e) charges a task only for failures it adds on
+# top of this baseline — otherwise one pre-existing breakage (e.g. a deleted
+# file still referenced by a test) would reject every task in the run, as
+# happened on 2026-05-19 when all 14 tasks were rejected for an unrelated
+# bug-diagnosis.md regression. Approved tasks only merge when green, so the
+# baseline captured here stays valid across mid-run merges.
+REPO_ROOT="$(cd "$SCRIPT_DIR/.." && pwd)"
+TEST_BASELINE_FILE="$WORKING_DIR/test-baseline.txt"
+: > "$TEST_BASELINE_FILE"
+if [ -d "$REPO_ROOT/test" ] && command -v bats &>/dev/null; then
+    (cd "$REPO_ROOT" && bats test/ 2>&1) | tap_failing_names > "$TEST_BASELINE_FILE" || true
+    BASELINE_COUNT=$(grep -c . "$TEST_BASELINE_FILE" 2>/dev/null || echo 0)
+    if [ "$BASELINE_COUNT" -gt 0 ]; then
+        echo "############################################################" >&2
+        echo "WARNING: $BASELINE_COUNT test(s) ALREADY FAIL on the base commit." >&2
+        echo "These pre-existing failures will NOT be charged against tasks;" >&2
+        echo "tasks are rejected only for NEW failures they introduce. Fix the" >&2
+        echo "baseline so it cannot mask a real regression:" >&2
+        sed 's/^/  - /' "$TEST_BASELINE_FILE" >&2
+        echo "############################################################" >&2
+    fi
+fi
+
 # Track which round we start at (for morning summary)
 START_ROUND=1
 
@@ -965,11 +990,25 @@ descriptive (one clear sentence; conventional-commit prefix preferred)."
         if [ -z "$REJECT_REASON" ]; then
             if [ -d "$WT_DIR/test" ]; then
                 if command -v bats &>/dev/null; then
-                    if ! (cd "$WT_DIR" && bats test/ 2>&1); then
-                        REJECT_REASON="bats tests failed"
-                        record_gate "$TASK_ID" "tests" "fail"
-                    else
+                    if TEST_TAP=$(cd "$WT_DIR" && bats test/ 2>&1); then
                         record_gate "$TASK_ID" "tests" "pass"
+                    else
+                        # Non-zero exit. Charge the task only for failures it
+                        # introduced beyond the run-start baseline; pre-existing
+                        # baseline failures are not this task's fault.
+                        NEW_FAILS=$(printf '%s\n' "$TEST_TAP" | tap_new_failures "${TEST_BASELINE_FILE:-}")
+                        if [ -n "$NEW_FAILS" ]; then
+                            REJECT_REASON="bats tests failed (new failures introduced by this task)"
+                            record_gate "$TASK_ID" "tests" "fail"
+                            record_gate_detail "$TASK_ID" "tests" \
+                                "$(jq -n --arg f "$NEW_FAILS" '{new_failures: ($f | split("\n") | map(select(. != "")))}')"
+                        else
+                            # Only pre-existing baseline failures — pass the gate
+                            # but record that it ran against a dirty baseline.
+                            record_gate "$TASK_ID" "tests" "pass"
+                            record_gate_detail "$TASK_ID" "tests" \
+                                "$(jq -n --argjson n "${BASELINE_COUNT:-0}" '{baseline_only: true, baseline_failures: $n}')"
+                        fi
                     fi
                 else
                     record_gate "$TASK_ID" "tests" "skip"
