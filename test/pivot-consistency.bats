@@ -6,16 +6,15 @@
 # (printed output) rather than hard failures, since some pivots are
 # inherently one-directional (e.g., codebase-onboarding → RPI).
 #
-# Only checks the 5 workflows that currently have pivot sections.
+# Only checks the workflows that currently have pivot sections.
 #
 # Usage: bats test/pivot-consistency.bats
 
 setup() {
   WORKFLOW_DIR="$HOME/.claude/workflows"
 
-  # The 5 workflows that have '## When to pivot' sections.
+  # The workflows that have '## When to pivot' sections.
   PIVOT_WORKFLOWS=(
-    bug-diagnosis.md
     codebase-onboarding.md
     divergent-design.md
     research-plan-implement.md
@@ -27,7 +26,6 @@ setup() {
   # name, or common abbreviations used in prose.
   declare -gA WORKFLOW_PATTERNS
   WORKFLOW_PATTERNS=(
-    [bug-diagnosis.md]="bug-diagnosis|Bug Diagnosis|bug.diagnosis"
     [codebase-onboarding.md]="codebase-onboarding|Codebase Onboarding|[Oo]nboarding"
     [divergent-design.md]="divergent-design|Divergent Design|DD"
     [research-plan-implement.md]="research-plan-implement|Research.*Plan.*Implement|RPI"

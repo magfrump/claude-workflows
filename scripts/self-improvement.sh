@@ -421,7 +421,7 @@ IMPORTANT — External-impact requirement:
 At least 3 of your generated ideas MUST directly improve a workflow or
 skill that is used in external projects. Examples of external-facing
 artifacts include: divergent-design, research-plan-implement, pr-prep,
-user-testing-workflow, bug-diagnosis, codebase-onboarding, and skills
+user-testing-workflow, codebase-onboarding, and skills
 like fact-check, ui-visual-review, cowen-critique, yglesias-critique,
 and claude-api. Remaining idea slots may target internal SI
 infrastructure. Mark each idea with [EXTERNAL] or [INTERNAL] so this
