@@ -350,7 +350,10 @@ where a critic's argument is built on a factual premise the evidence does not su
 **In the verification rubric**, critiques with fact-check dependency caveats should be noted
 in the 🟡 Amber tier with type "Fact-dependent critique" rather than being promoted to
 standalone structural findings. This prevents flawed factual premises from inflating the
-severity of structural critiques.
+severity of structural critiques. These critic-sourced rows have no fact-check
+`**Confidence:**` line of their own, so their Confidence cell renders `—` (see
+[Confidence column](#confidence-column) in Deliverable 2) — do not borrow the confidence of
+the disputed claim the critique depends on.
 
 **Tracking for evaluation:** When any fact-critic cross-reference caveat is triggered, include
 a line in the chat synthesis under a `### Fact-Critic Cross-References` heading listing each
@@ -498,9 +501,9 @@ document the author uses to track revisions.
 Factual errors identified by fact-check. Draft cannot pass verification with any red items
 unresolved.
 
-| # | Claim in draft | Issue | Status |
-|---|---|---|---|
-| R1 | "[exact quote]" | [What's wrong. 1-2 sentences max.] | 🔴 Unresolved |
+| # | Claim in draft | Issue | Confidence | Status |
+|---|---|---|---|---|
+| R1 | "[exact quote]" | [What's wrong. 1-2 sentences max.] | High | 🔴 Unresolved |
 
 ---
 
@@ -509,9 +512,9 @@ unresolved.
 Imprecise/unverified claims, plus structural issues flagged by multiple critics (high-signal).
 Each must be fixed or acknowledged by author with a note explaining why it stands.
 
-| # | Item | Type | Status | Author note |
-|---|---|---|---|---|
-| A1 | [Description] | [Source, e.g., "Both critics", "Imprecise claim"] | 🟡 Open | — |
+| # | Item | Type | Confidence | Status | Author note |
+|---|---|---|---|---|---|
+| A1 | [Description] | [Source, e.g., "Both critics", "Imprecise claim"] | Medium | 🟡 Open | — |
 
 ---
 
@@ -530,15 +533,33 @@ consideration only.
 
 Claims confirmed accurate by the fact-check. No action needed.
 
-| Claim | Verdict |
-|---|---|
-| "[exact quote]" | ✅ Accurate |
+| Claim | Verdict | Confidence |
+|---|---|---|
+| "[exact quote]" | ✅ Accurate | High |
 
 ---
 
 To pass verification: all 🔴 items must be resolved. All 🟡 items must be either fixed or
 carry an author note. 🟢 items are optional.
 ```
+
+### Confidence column
+
+The **Confidence** column in the 🔴 Must Fix, 🟡 Must Address, and ✅ Verified tables records
+how sure the fact-check was about the verdict that produced the row. Populate it by copying the
+value **verbatim** from the corresponding fact-check verdict's `**Confidence:**` line (one of
+`High` / `Medium` / `Low`; see `skills/fact-check/SKILL.md`). In ensemble mode, copy the
+consensus confidence the same way you derive the consensus verdict.
+
+- **Never invent a confidence value.** If a row has no corresponding fact-check `**Confidence:**`
+  line, render the cell as `—`. This is the normal case for 🟡 Must Address rows sourced from
+  structural critic findings (`Both critics`, `Imprecise claim` from a critic, etc.) rather than
+  from a fact-check verdict — critics emit no `**Confidence:**` line, so those rows always show `—`.
+- A row whose source fact-check verdict exists but omits the `**Confidence:**` line also renders
+  `—` — copy what is there, never backfill a guess.
+
+The 🟢 Consider tier has no Confidence column: its rows come from critics, which carry no
+fact-check confidence.
 
 ### Tier assignment rules
 
@@ -561,6 +582,11 @@ carry an author note. 🟢 items are optional.
 **✅ Verified:**
 - All claims rated Accurate by fact-check
 - Include so the author knows which facts are confirmed solid
+
+**Confidence column (all tiers except 🟢 Consider):** Copy the value verbatim from the
+source fact-check verdict's `**Confidence:**` line (High / Medium / Low). A row with no
+source value — including structural critic findings in 🟡 Must Address — renders as `—`.
+Never invent a confidence value. See [Confidence column](#confidence-column) above.
 
 ### Rubric status line rules
 

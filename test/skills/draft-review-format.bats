@@ -74,6 +74,29 @@ setup() {
   echo "$section" | grep -qE '(\|.*\||\(None\))'
 }
 
+# --- Confidence column ---
+# The Must Fix / Must Address / Verified tables carry a Confidence column whose
+# value is copied verbatim from the fact-check verdict (or "—" when absent). The
+# 🟢 Consider table has no Confidence column (its rows come from critics).
+
+@test "Must Fix table has a Confidence column header" {
+  local section
+  section=$(echo "$REPORT_CONTENT" | sed -n '/^## .*Must Fix/,/^## /p' | head -n -1)
+  echo "$section" | grep -qiE '\|[[:space:]]*Confidence[[:space:]]*\|'
+}
+
+@test "Must Address table has a Confidence column header" {
+  local section
+  section=$(echo "$REPORT_CONTENT" | sed -n '/^## .*Must Address/,/^## /p' | head -n -1)
+  echo "$section" | grep -qiE '\|[[:space:]]*Confidence[[:space:]]*\|'
+}
+
+@test "Verified table has a Confidence column header" {
+  local section
+  section=$(echo "$REPORT_CONTENT" | sed -n '/^## .*Verified/,/^## /p' | head -n -1)
+  echo "$section" | grep -qiE '\|[[:space:]]*Confidence[[:space:]]*\|'
+}
+
 # --- No leakage from sibling code-review orchestrator ---
 
 @test "report does not contain code review language" {
