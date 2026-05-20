@@ -62,9 +62,9 @@ For each subsystem, note:
 
 Don't read every file. Read entry points and public interfaces to understand boundaries. Read one representative implementation per subsystem to understand internal patterns.
 
-**Monorepo scoping.** For monorepos with multiple packages or services, scope your architecture mapping to the package or service relevant to your first task — don't attempt to document every package in a single onboarding pass. Note the monorepo's top-level package dependency graph (e.g., from the root `package.json` workspaces, Cargo workspace members, or Go module layout) so you know which adjacent packages interact with yours. List all packages you did *not* examine in Known Unknowns (step 8) with a note that they were out of scope for the current task.
+**Monorepo scoping.** For monorepos with multiple packages or services, scope your architecture mapping to the package or service relevant to your first task — don't attempt to document every package in a single onboarding pass. Note the monorepo's top-level package dependency graph (e.g., from the root `package.json` workspaces, Cargo workspace members, or Go module layout) so you know which adjacent packages interact with yours. List all packages you did *not* examine in Known Unknowns (step 9) with a note that they were out of scope for the current task.
 
-**Accessible-output target.** For projects in the accessibility domain (web-accessibility serialization, screen-reader tooling, refreshable-braille drivers, structured-data export for assistive tech, etc.), the architecture map must name the concrete accessible-output target rather than treating accessibility as a generic concern. State which screen reader (NVDA, JAWS, VoiceOver, Orca, TalkBack), which braille protocol or stack (BRLTTY, Liblouis translation tables, USB HID Braille Display, refreshable-braille over Bluetooth), and/or which structured-data format (DAISY, EPUB Accessibility, MathML, WAI-ARIA roles, accessible PDF tags) each subsystem is built to drive. Different targets impose different invariants — an NVDA-targeted serializer can't substitute for a JAWS-targeted one without re-validation, and Liblouis braille tables aren't interchangeable across grade-1/grade-2 contractions. List the target(s) alongside the relevant subsystem(s) in the inventory; if multiple targets coexist, note which subsystem owns which, and flag any subsystem that claims to be target-agnostic in Known Unknowns (step 8) for verification.
+**Accessible-output target.** For projects in the accessibility domain (web-accessibility serialization, screen-reader tooling, refreshable-braille drivers, structured-data export for assistive tech, etc.), the architecture map must name the concrete accessible-output target rather than treating accessibility as a generic concern. State which screen reader (NVDA, JAWS, VoiceOver, Orca, TalkBack), which braille protocol or stack (BRLTTY, Liblouis translation tables, USB HID Braille Display, refreshable-braille over Bluetooth), and/or which structured-data format (DAISY, EPUB Accessibility, MathML, WAI-ARIA roles, accessible PDF tags) each subsystem is built to drive. Different targets impose different invariants — an NVDA-targeted serializer can't substitute for a JAWS-targeted one without re-validation, and Liblouis braille tables aren't interchangeable across grade-1/grade-2 contractions. List the target(s) alongside the relevant subsystem(s) in the inventory; if multiple targets coexist, note which subsystem owns which, and flag any subsystem that claims to be target-agnostic in Known Unknowns (step 9) for verification.
 
 If the codebase is large enough to warrant it (>20 files in multiple directories), use sub-agents to explore subsystems in parallel — one agent per subsystem, each producing the notes above for its area.
 
@@ -153,7 +153,7 @@ When the step applies, enumerate every runtime entry point in the project, group
 
 - **Trigger**: what fires it — e.g., HTTP route `POST /api/users`, CLI command `myapp ingest <file>`, cron schedule `0 3 * * *`, Kafka topic `orders.created`.
 - **Location**: file path and handler/function name.
-- **Owning subsystem**: which subsystem from the Architecture Map (step 2) the entry point belongs to. Entry points that don't map cleanly to a listed subsystem are gaps — record them in Known Unknowns (step 8).
+- **Owning subsystem**: which subsystem from the Architecture Map (step 2) the entry point belongs to. Entry points that don't map cleanly to a listed subsystem are gaps — record them in Known Unknowns (step 9).
 - **One-line purpose**: what running it does (not how).
 
 Cover at minimum these four modes. Absent modes get the line "none" rather than being silently omitted, so a future reader can distinguish "we checked and there are no scheduled jobs" from "we forgot to look":
@@ -165,12 +165,12 @@ Cover at minimum these four modes. Absent modes get the line "none" rather than 
 
 If the project has additional execution modes (signal handlers, file watchers, daemon ticks, language-server protocol handlers, etc.), add them as further categories rather than forcing them into the four above.
 
-The execution-surface inventory is the bridge between the structural Architecture Map (step 2) and the behavioral Key Flows (step 5): step 2 says "what subsystems exist," this step says "what makes them run," and step 5 says "what happens when one of them runs." If a flow traced in step 5 doesn't start at an entry point listed here, that mismatch is itself a gap to record in Known Unknowns (step 8).
+The execution-surface inventory is the bridge between the structural Architecture Map (step 2) and the behavioral Key Flows (step 5): step 2 says "what subsystems exist," this step says "what makes them run," and step 5 says "what happens when one of them runs." If a flow traced in step 5 doesn't start at an entry point listed here, that mismatch is itself a gap to record in Known Unknowns (step 9).
 
 **Done when...**
 - [ ] Either the skip criterion applies and the Execution Surface section contains exactly one line in the documented format, *or* every existing execution mode is enumerated with trigger, location, owning subsystem, and one-line purpose
 - [ ] When not skipped, absent modes are explicitly marked "none" rather than silently omitted
-- [ ] When not skipped, every entry point maps to a subsystem from the Architecture Map (step 2); orphans are recorded in Known Unknowns (step 8)
+- [ ] When not skipped, every entry point maps to a subsystem from the Architecture Map (step 2); orphans are recorded in Known Unknowns (step 9)
 - [ ] Flow tracing in step 5 starts from entry points listed here (or from the documented skip-note when applicable)
 
 ### 4. Identify guarded invariants — observe what the design protects against
@@ -207,7 +207,7 @@ Every codebase has conventions that aren't in any style guide. Identify:
 - **Configuration**: How is config loaded? Environment variables? Config files? Feature flags?
 - **Patterns and idioms**: Dependency injection? Repository pattern? Middleware chains? What design patterns appear repeatedly?
 
-Testing conventions get their own dedicated step (step 7) because they need to capture more than a single bullet — directory layout, mocking strategy, and runnable commands.
+Testing conventions get their own dedicated step (step 8) because they need to capture more than a single bullet — directory layout, mocking strategy, and runnable commands.
 
 Note any conventions that are inconsistent (the codebase uses two different approaches for the same thing) — these are important for knowing which pattern to follow when adding new code.
 
@@ -216,15 +216,43 @@ Note any conventions that are inconsistent (the codebase uses two different appr
 - [ ] Inconsistencies between competing conventions are explicitly noted
 - [ ] Each convention includes a concrete example from the codebase (file path and pattern)
 
-### 7. Document test patterns — capture how the codebase is tested
+### 7. Document build & run — capture install, dev loop, and test commands
+
+For a new contributor to be productive they need three commands they can copy-paste from a clean checkout: install dependencies, start a local dev loop, and run the test suite. Without these, the rest of the orientation doc is unactionable — a reader can find the right file but not run the change they made to it. Test Patterns (step 8) refines the test command for selecting a single test and documenting fixture/mock setup; this step captures the broader question of how to build and run the system at all.
+
+Capture each as a concrete, runnable command. If the project ships a `make` target, a `./scripts/*.sh` wrapper, or a package-manager script (`npm run dev`, `cargo run`, `python -m foo`), name the wrapper rather than its expansion.
+
+- **Install command** — the command that installs dependencies from a clean checkout (e.g., `npm install`, `pip install -e .`, `bundle install`, `cargo fetch`). If install requires multiple steps (system packages, language version managers, container builds), capture them in order.
+- **Dev-loop command** — the command that starts the local development server, watcher, or REPL the author uses while iterating (e.g., `npm run dev`, `cargo watch -x run`, `./bin/server`, `flask run --debug`). For library projects without a runnable server, name the build/test loop the author iterates on (e.g., `cargo build` + `cargo test`, `tsc --watch`).
+- **Test command** — the full-suite command (e.g., `npm test`, `pytest`, `cargo test`, `go test ./...`). Test Patterns' (step 8) "How to Run" dimension goes deeper on single-test selection and environment setup; this entry is the at-a-glance command.
+- **Dev server URL/port** *(if applicable)* — when the dev-loop command starts a server that binds to a port, record the URL and/or port the server listens on (e.g., `http://localhost:3000`, `localhost:8080`, `:5173`). Omit for projects whose dev loop is not a network server (CLI-only tools, library builds, batch jobs).
+
+Verify each command runs from a clean checkout. If a command was not run, flag it as unverified in Known Unknowns (step 9).
+
+**Empty-build skip note.** If the project has no build/run/test surface — pure-data repository, doc-only repository, schema-only repository — the Build & Run section is **not** omitted; it contains a single one-line note in this format (mirrors step 3's, step 8's, and step 10's skip-note convention):
+
+> `Build & Run: none — <one-sentence reason>.`
+
+Examples:
+- `Build & Run: none — doc-only repository, no runnable code.`
+- `Build & Run: none — schema-definitions repo, consumers handle build/install in their own projects.`
+
+**Partial-skip rule.** If *some* items exist but others do not (e.g., a library has install and test but no dev-loop server), do **not** skip the step. Capture what exists and explicitly mark absent items "none" rather than silently omitting them. Only the all-absent case justifies the one-line skip note.
+
+**Done when...**
+- [ ] All applicable commands are captured (install, dev-loop, test, and dev server URL/port if the dev loop binds to one), OR the documented `Build & Run: none — <reason>.` skip note applies
+- [ ] Absent items are explicitly marked "none" rather than silently omitted
+- [ ] Each captured command has been executed at least once from a clean checkout and verified to work, OR the unverified status is explicitly flagged in Known Unknowns (step 9)
+
+### 8. Document test patterns — capture how the codebase is tested
 
 A new contributor needs to run the existing suite, add a test that fits in, and understand what the tests do and don't guarantee. Capture three dimensions:
 
 - **Organization** — directory layout (where tests live, how they mirror or diverge from `src/`), naming conventions (`*.test.ts`, `*_test.go`, `tests/test_*.py`, etc.), and how test scope is signaled (unit vs integration vs e2e — separate directories, separate runners, file-name tags, framework-level marks like `@pytest.mark.integration`). Cite at least one example file path per layer that exists.
 - **Mocked vs real** — for each external dependency the suite touches (databases, third-party APIs, message queues, file I/O, filesystem, system time, network), state whether the test code uses the real thing, a fake/stub, an in-memory replacement, or a mock library. Cite at least one representative test file as evidence. This is the dimension where teams quietly make choices that produce both false confidence and unexpected CI failures — record what the codebase actually does, not what its README claims.
-- **How to run** — the concrete commands a fresh contributor would type. Include: the full-suite command, the single-file or single-test command (with framework-specific selector syntax), required environment setup (DB containers, fixtures, `.env` files, seed scripts, language-version managers), and any pre-flight steps that aren't automated (e.g., `make test-db-up`). If the project ships a wrapper script (`./scripts/test.sh`) or a `make test` target, name it. Verify each command runs from a clean checkout; if a command was not run, flag it as unverified in Known Unknowns (step 8).
+- **How to run** — the concrete commands a fresh contributor would type. Include: the full-suite command, the single-file or single-test command (with framework-specific selector syntax), required environment setup (DB containers, fixtures, `.env` files, seed scripts, language-version managers), and any pre-flight steps that aren't automated (e.g., `make test-db-up`). If the project ships a wrapper script (`./scripts/test.sh`) or a `make test` target, name it. Verify each command runs from a clean checkout; if a command was not run, flag it as unverified in Known Unknowns (step 9).
 
-**No-tests skip note.** If the project has no tests at all, the Test Patterns section is **not** omitted — it contains a single one-line note in this format (mirrors step 3 and step 9's skip-note convention):
+**No-tests skip note.** If the project has no tests at all, the Test Patterns section is **not** omitted — it contains a single one-line note in this format (mirrors step 3 and step 10's skip-note convention):
 
 > `Test Patterns: none — <one-sentence reason>.`
 
@@ -236,13 +264,13 @@ The skip note is reserved for the *all-absent* case. If some tests exist (unit b
 
 **Done when...**
 - [ ] All three dimensions (organization, mocked-vs-real, how to run) are populated with concrete file paths and commands, OR the documented `Test Patterns: none — <reason>.` skip note applies
-- [ ] No dimension is left as TODO, "see XYZ later", or empty placeholder text — if a dimension is genuinely unknown, capture what *is* known here and record the gap in Known Unknowns (step 8) by name
+- [ ] No dimension is left as TODO, "see XYZ later", or empty placeholder text — if a dimension is genuinely unknown, capture what *is* known here and record the gap in Known Unknowns (step 9) by name
 - [ ] At least one representative test file is cited as evidence for the mocked-vs-real characterization
-- [ ] Run commands have been executed at least once from a clean checkout and verified to work, OR the unverified status is explicitly flagged in Known Unknowns (step 8)
+- [ ] Run commands have been executed at least once from a clean checkout and verified to work, OR the unverified status is explicitly flagged in Known Unknowns (step 9)
 
-### 8. Catalog the unknowns — document what you don't understand
+### 9. Catalog the unknowns — document what you don't understand
 
-After steps 1-7, explicitly list:
+After steps 1-8, explicitly list:
 
 - **Modules you didn't read deeply** and why (too large, seemed peripheral, unclear purpose). In monorepos, explicitly list every package or service you scoped out of the architecture map — these are known unknowns by design, not oversights.
 - **Connections you couldn't trace** (subsystem A calls subsystem B somehow, but the mechanism is unclear)
@@ -254,9 +282,9 @@ This is the most important section for future work. It tells you where your unde
 **Done when...**
 - [ ] At least one item exists in each category (modules not read, connections not traced, surprising decisions, unclear dependencies)
 - [ ] Each unknown includes a reason why it's unknown (not just "didn't look at it")
-- [ ] No unknown is actually answerable from work already done in steps 1-7
+- [ ] No unknown is actually answerable from work already done in steps 1-8
 
-### 9. Build the watch signals — link decision records to the architecture map
+### 10. Build the watch signals — link decision records to the architecture map
 
 The orientation document is a snapshot of the codebase at a point in time. The decision records under `docs/decisions/` capture *why* things are the way they are, and may include a `## Revisit triggers` section that names the conditions under which the decision should be re-examined. The Watch Signals section ties these together so a future reader of the orientation doc can see at a glance which decisions are most likely to need attention next — bridging the static onboarding map to ongoing maintenance.
 
@@ -275,15 +303,15 @@ Decisions without a `## Revisit triggers` section, without a `Last verified` fie
 - [ ] The relevance filter (Last-verified within 6 months OR Relevant-paths overlap with the Architecture Map) has been applied to every match
 - [ ] Each surviving decision appears as a `[decision-NNN] if <trigger condition>` row, or the section contains the documented `none — <reason>` note
 
-### 10. Preload the decision inventory — enumerate decision records by recency
+### 11. Preload the decision inventory — enumerate decision records by recency
 
-Step 9 surfaces *which* decisions still carry maintenance triggers; this step provides the orientation doc with a flat **inventory** of every decision on file, so a future reader can see what has already been decided without re-scanning `docs/decisions/`. The two are complementary: Watch Signals is filtered and goal-driven, the inventory is exhaustive (up to a cap) and reference-only.
+Step 10 surfaces *which* decisions still carry maintenance triggers; this step provides the orientation doc with a flat **inventory** of every decision on file, so a future reader can see what has already been decided without re-scanning `docs/decisions/`. The two are complementary: Watch Signals is filtered and goal-driven, the inventory is exhaustive (up to a cap) and reference-only.
 
 **Recipe:**
 
 1. Enumerate files matching `docs/decisions/NNN-*.md` — three-digit numeric prefix, hyphen, free-form slug, `.md` extension. Exclude `log.md` and any other file that doesn't match the `NNN-*.md` pattern.
 2. If the enumeration is empty (no matching files, or the `docs/decisions/` directory doesn't exist), the section contains exactly one line: `Prior decisions: none on file`. Skip the remaining steps.
-3. Sort the matched files by most-recent update time, descending. Use `git log -1 --format=%aI -- <file>` per file to get the last commit timestamp (same `git log` primitive used in step 9 and the lightweight-refresh process). Fall back to filesystem mtime when a file has no git history (e.g., uncommitted).
+3. Sort the matched files by most-recent update time, descending. Use `git log -1 --format=%aI -- <file>` per file to get the last commit timestamp (same `git log` primitive used in step 10 and the lightweight-refresh process). Fall back to filesystem mtime when a file has no git history (e.g., uncommitted).
 4. For each of the **10 most recent** files, read the first H1 heading (the `# ...` line at the top of the file) and extract two fields:
    - **NNN**: the three-digit prefix from the filename (or equivalently, the leading number in the H1).
    - **Goal line text**: the part of the H1 after the `NNN:` prefix, trimmed. Decision records have two title format variants both in active use — `# Decision NNN: <title>` and `# NNN: <title>`. Strip any leading case-insensitive `Decision ` token before splitting on the first colon, so both variants yield the same Goal line text.
@@ -311,9 +339,9 @@ Prior decisions: none on file
 - [ ] If the enumeration is empty, the section contains exactly the line `Prior decisions: none on file`
 - [ ] Otherwise, the section contains one `[NNN]: <Goal line text>` row per decision in recency-sorted order, capped at 10, followed by the `+ N older decisions (see docs/decisions/)` summary line when the total exceeds 10
 
-### 11. Produce the orientation document
+### 12. Produce the orientation document
 
-Compile steps 1-10 into `docs/working/onboarding-{project}.md` with these sections:
+Compile steps 1-11 into `docs/working/onboarding-{project}.md` with these sections:
 
 ```markdown
 # Codebase Orientation: {project name}
@@ -344,33 +372,37 @@ Compile steps 1-10 into `docs/working/onboarding-{project}.md` with these sectio
 ## Conventions
 {patterns identified in step 6}
 
+## Build & Run
+{install command, dev-loop command, test command, and dev server URL/port (if applicable) from step 7. Absent items marked "none". If step 7's skip criterion applied, this section contains exactly the one-line skip note: `Build & Run: none — <reason>.`}
+
 ## Test Patterns
-{test patterns from step 7 — Organization (where tests live, naming, scope-layer separation), Mocked vs Real (per external dependency, with a representative test file cited), How to Run (full-suite command, single-test command, env setup, un-automated pre-flight steps). If the project has no tests, the section contains exactly the one-line skip note: `Test Patterns: none — <reason>.`}
+{test patterns from step 8 — Organization (where tests live, naming, scope-layer separation), Mocked vs Real (per external dependency, with a representative test file cited), How to Run (full-suite command, single-test command, env setup, un-automated pre-flight steps). If the project has no tests, the section contains exactly the one-line skip note: `Test Patterns: none — <reason>.`}
 
 ## Known Unknowns
-{gaps identified in step 8}
+{gaps identified in step 9}
 
 ## Watch Signals
-{revisit triggers harvested in step 9, one `[decision-NNN] if <trigger condition>` per row; or, if no decision survives the relevance filter, the single line `Watch Signals: none — <reason>.`}
+{revisit triggers harvested in step 10, one `[decision-NNN] if <trigger condition>` per row; or, if no decision survives the relevance filter, the single line `Watch Signals: none — <reason>.`}
 
 ## Decisions on file
-{inventory built in step 10, one `[NNN]: <Goal line text>` row per decision in recency-sorted order, capped at 10 with a trailing `+ N older decisions (see docs/decisions/)` summary line when the total exceeds 10; or, if no decision records exist, the single line `Prior decisions: none on file`.}
+{inventory built in step 11, one `[NNN]: <Goal line text>` row per decision in recency-sorted order, capped at 10 with a trailing `+ N older decisions (see docs/decisions/)` summary line when the total exceeds 10; or, if no decision records exist, the single line `Prior decisions: none on file`.}
 
 ## Suggested Starting Points
 {for common task types, where to look first — e.g., "to add a new API endpoint, start with routes/ and follow the pattern in routes/users.ts"}
 ```
 
-The three-line header (Goal · Project state · Task status) below the metadata block is the same drift-surfacing convention RPI working docs use (see `workflows/research-plan-implement.md` step 2). Lifecycle keyword vocabulary is identical: `in-progress | blocked | paused | complete`. For a long-lived orientation doc, the Task status line typically reads `complete` after gate sign-off in step 12, switching back to `in-progress` during a re-run or lightweight refresh. Update it whenever the doc is read or revised; if any line no longer matches reality, fix it before doing anything else with the doc. The Goal line replaces the previous standalone `Scope:` field — same content, unified anchor.
+The three-line header (Goal · Project state · Task status) below the metadata block is the same drift-surfacing convention RPI working docs use (see `workflows/research-plan-implement.md` step 2). Lifecycle keyword vocabulary is identical: `in-progress | blocked | paused | complete`. For a long-lived orientation doc, the Task status line typically reads `complete` after gate sign-off in step 13, switching back to `in-progress` during a re-run or lightweight refresh. Update it whenever the doc is read or revised; if any line no longer matches reality, fix it before doing anything else with the doc. The Goal line replaces the previous standalone `Scope:` field — same content, unified anchor.
 
 **Done when...**
-- [ ] `docs/working/onboarding-{project}.md` exists, opens with the three-line header (Goal · Project state · Task status) below the metadata block, and includes all required sections (Entry Points, Architecture Map, Execution Surface, Guarded Invariants, Key Flows, Conventions, Test Patterns, Known Unknowns, Watch Signals, Decisions on file, Suggested Starting Points)
+- [ ] `docs/working/onboarding-{project}.md` exists, opens with the three-line header (Goal · Project state · Task status) below the metadata block, and includes all required sections (Entry Points, Architecture Map, Execution Surface, Guarded Invariants, Key Flows, Conventions, Build & Run, Test Patterns, Known Unknowns, Watch Signals, Decisions on file, Suggested Starting Points)
 - [ ] The Decisions on file section either lists every `docs/decisions/NNN-*.md` (capped at 10 most-recently-updated, with the `+ N older decisions (see docs/decisions/)` summary when the total exceeds 10) in the documented `[NNN]: <Goal line text>` format, or contains exactly the line `Prior decisions: none on file` when the directory has no matching files
 - [ ] The Task status line accurately reflects current lifecycle (re-read it; if it lies, fix it)
 - [ ] `Last verified` and `Relevant paths` fields are populated in the frontmatter
+- [ ] **Build & Run finalization check**: the section is fully populated — no `TODO`, no "see XYZ later", no empty placeholder, no bullet whose body is only a heading. If a command is genuinely unknown, the section records what *is* known and the gap is filed in Known Unknowns by name; otherwise the section contains the documented `Build & Run: none — <reason>.` skip note. A bare `## Build & Run` heading with no body is treated as a blocking failure of this check.
 - [ ] **Test Patterns finalization check**: the section is fully populated — no `TODO`, no "see XYZ later", no empty placeholder, no bullet whose body is only a heading. If a dimension is genuinely unknown, the section records what *is* known and the gap is filed in Known Unknowns by name; otherwise the section contains the documented `Test Patterns: none — <reason>.` skip note. A bare `## Test Patterns` heading with no body is treated as a blocking failure of this check.
 - [ ] Document is committed to the repo
 
-### 12. Gate — validate with the team
+### 13. Gate — validate with the team
 
 If possible, have someone familiar with the codebase review the orientation doc. They can correct misunderstandings cheaply here — a wrong mental model carried into implementation is expensive to fix later.
 
@@ -388,7 +420,8 @@ Before handing off to RPI, verify the onboarding doc meets these criteria. If an
 1. **"Where would I look?" test.** For any likely task category (add a feature, fix a bug, change config, add a test), you can name the directory, file, or subsystem to start in — without re-reading code. If you can't, the Architecture Map or Suggested Starting Points section has gaps.
 2. **Unknowns are on-demand only.** Every item in Known Unknowns is something you'd investigate *when a task requires it*, not something that blocks general navigation. If any unknown would block multiple unrelated tasks, resolve it before handing off.
 3. **Conventions are actionable.** The Conventions section has enough detail that new code written following it would pass review without style corrections. If a convention is noted but not exemplified, add a file path and example.
-4. **Tests are runnable from the doc alone.** The Test Patterns section names the run commands and environment setup specifically enough that a new contributor can execute the suite without searching elsewhere. The Mocked-vs-Real dimension names what is faked so that a new contributor can predict which test failures imply real-system bugs and which imply mock drift. If either is missing or vague, the Test Patterns section has gaps. (Skipped if the doc carries the `Test Patterns: none — <reason>.` note.)
+4. **System is buildable and runnable from the doc alone.** The Build & Run section names the install and dev-loop commands specifically enough that a new contributor can install dependencies and start the system without searching elsewhere. If the dev loop binds to a network port, the URL/port is captured. If any applicable item is missing or vague, the Build & Run section has gaps. (Skipped if the doc carries the `Build & Run: none — <reason>.` note.)
+5. **Tests are runnable from the doc alone.** The Test Patterns section names the run commands and environment setup specifically enough that a new contributor can execute the suite without searching elsewhere. The Mocked-vs-Real dimension names what is faked so that a new contributor can predict which test failures imply real-system bugs and which imply mock drift. If either is missing or vague, the Test Patterns section has gaps. (Skipped if the doc carries the `Test Patterns: none — <reason>.` note.)
 
 These criteria also apply when judging whether a *returning* onboarding session (triggered by staleness) has restored the doc to a usable state.
 
@@ -435,8 +468,8 @@ When staleness signals fire but changes are **incremental** — no new subsystem
 1. **Review recent changes.** Run `git log --oneline --since="<Last verified date>" -- <Relevant paths>` and read the commits to understand what changed and where.
 2. **Update Architecture Map.** For each subsystem touched by recent changes, verify that its responsibility, key abstractions, and dependencies are still accurate. Update any that have drifted.
 3. **Update Known Unknowns.** Remove unknowns that have been resolved by recent work. Add new unknowns surfaced by the changes you reviewed.
-4. **Rebuild Watch Signals.** Re-run step 9's grep + relevance filter against `docs/decisions/*.md`. Decisions may have gained new `## Revisit triggers`, refreshed their `Last verified` date, or shifted `Relevant paths` since the last verification — any of those changes can add or remove rows from the section.
-5. **Rebuild Decisions on file.** Re-run step 10's enumeration against `docs/decisions/NNN-*.md`. New decision records may have been added or existing ones updated since the last verification — either changes the recency order and may shift the 10-row cap or the trailing `+ N older` summary.
+4. **Rebuild Watch Signals.** Re-run step 10's grep + relevance filter against `docs/decisions/*.md`. Decisions may have gained new `## Revisit triggers`, refreshed their `Last verified` date, or shifted `Relevant paths` since the last verification — any of those changes can add or remove rows from the section.
+5. **Rebuild Decisions on file.** Re-run step 11's enumeration against `docs/decisions/NNN-*.md`. New decision records may have been added or existing ones updated since the last verification — either changes the recency order and may shift the 10-row cap or the trailing `+ N older` summary.
 6. **Bump `Last verified`.** Set to today's date. Add a note in the commit message indicating this was a lightweight refresh (e.g., `docs: lightweight refresh onboarding — updated auth subsystem after session handling changes`).
 
 **Done when...**
