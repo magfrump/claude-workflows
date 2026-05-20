@@ -275,9 +275,45 @@ Decisions without a `## Revisit triggers` section, without a `Last verified` fie
 - [ ] The relevance filter (Last-verified within 6 months OR Relevant-paths overlap with the Architecture Map) has been applied to every match
 - [ ] Each surviving decision appears as a `[decision-NNN] if <trigger condition>` row, or the section contains the documented `none — <reason>` note
 
-### 10. Produce the orientation document
+### 10. Preload the decision inventory — enumerate decision records by recency
 
-Compile steps 1-9 into `docs/working/onboarding-{project}.md` with these sections:
+Step 9 surfaces *which* decisions still carry maintenance triggers; this step provides the orientation doc with a flat **inventory** of every decision on file, so a future reader can see what has already been decided without re-scanning `docs/decisions/`. The two are complementary: Watch Signals is filtered and goal-driven, the inventory is exhaustive (up to a cap) and reference-only.
+
+**Recipe:**
+
+1. Enumerate files matching `docs/decisions/NNN-*.md` — three-digit numeric prefix, hyphen, free-form slug, `.md` extension. Exclude `log.md` and any other file that doesn't match the `NNN-*.md` pattern.
+2. If the enumeration is empty (no matching files, or the `docs/decisions/` directory doesn't exist), the section contains exactly one line: `Prior decisions: none on file`. Skip the remaining steps.
+3. Sort the matched files by most-recent update time, descending. Use `git log -1 --format=%aI -- <file>` per file to get the last commit timestamp (same `git log` primitive used in step 9 and the lightweight-refresh process). Fall back to filesystem mtime when a file has no git history (e.g., uncommitted).
+4. For each of the **10 most recent** files, read the first H1 heading (the `# ...` line at the top of the file) and extract two fields:
+   - **NNN**: the three-digit prefix from the filename (or equivalently, the leading number in the H1).
+   - **Goal line text**: the part of the H1 after the `NNN:` prefix, trimmed. Decision records have two title format variants both in active use — `# Decision NNN: <title>` and `# NNN: <title>`. Strip any leading case-insensitive `Decision ` token before splitting on the first colon, so both variants yield the same Goal line text.
+5. Emit one row per file in the form `[NNN]: <Goal line text>`, in the recency-sorted order from step 3.
+6. If the total file count from step 1 exceeds 10, append a final summary line: `+ N older decisions (see docs/decisions/)` where `N = total - 10`. Omit this line when the total is 10 or fewer.
+
+**Worked example.** A `docs/decisions/` directory containing files numbered 001 through 013 (13 total), with 013 the most recently updated, would produce:
+
+```
+[013]: Failure-pattern library after bug-diagnosis removal
+[012]: Hypothesis Grammar for User-Surfaced Evaluation
+[011]: Draft-Review Critic Selection — Sequence Description Fix Before Rubric Reframe
+... (7 more rows, recency-ordered) ...
++ 3 older decisions (see docs/decisions/)
+```
+
+A `docs/decisions/` directory containing nothing (or no `NNN-*.md` files) would produce:
+
+```
+Prior decisions: none on file
+```
+
+**Done when...**
+- [ ] `docs/decisions/` has been enumerated for files matching `NNN-*.md` (or the directory's absence has been confirmed)
+- [ ] If the enumeration is empty, the section contains exactly the line `Prior decisions: none on file`
+- [ ] Otherwise, the section contains one `[NNN]: <Goal line text>` row per decision in recency-sorted order, capped at 10, followed by the `+ N older decisions (see docs/decisions/)` summary line when the total exceeds 10
+
+### 11. Produce the orientation document
+
+Compile steps 1-10 into `docs/working/onboarding-{project}.md` with these sections:
 
 ```markdown
 # Codebase Orientation: {project name}
@@ -317,20 +353,24 @@ Compile steps 1-9 into `docs/working/onboarding-{project}.md` with these section
 ## Watch Signals
 {revisit triggers harvested in step 9, one `[decision-NNN] if <trigger condition>` per row; or, if no decision survives the relevance filter, the single line `Watch Signals: none — <reason>.`}
 
+## Decisions on file
+{inventory built in step 10, one `[NNN]: <Goal line text>` row per decision in recency-sorted order, capped at 10 with a trailing `+ N older decisions (see docs/decisions/)` summary line when the total exceeds 10; or, if no decision records exist, the single line `Prior decisions: none on file`.}
+
 ## Suggested Starting Points
 {for common task types, where to look first — e.g., "to add a new API endpoint, start with routes/ and follow the pattern in routes/users.ts"}
 ```
 
-The three-line header (Goal · Project state · Task status) below the metadata block is the same drift-surfacing convention RPI working docs use (see `workflows/research-plan-implement.md` step 2). Lifecycle keyword vocabulary is identical: `in-progress | blocked | paused | complete`. For a long-lived orientation doc, the Task status line typically reads `complete` after gate sign-off in step 11, switching back to `in-progress` during a re-run or lightweight refresh. Update it whenever the doc is read or revised; if any line no longer matches reality, fix it before doing anything else with the doc. The Goal line replaces the previous standalone `Scope:` field — same content, unified anchor.
+The three-line header (Goal · Project state · Task status) below the metadata block is the same drift-surfacing convention RPI working docs use (see `workflows/research-plan-implement.md` step 2). Lifecycle keyword vocabulary is identical: `in-progress | blocked | paused | complete`. For a long-lived orientation doc, the Task status line typically reads `complete` after gate sign-off in step 12, switching back to `in-progress` during a re-run or lightweight refresh. Update it whenever the doc is read or revised; if any line no longer matches reality, fix it before doing anything else with the doc. The Goal line replaces the previous standalone `Scope:` field — same content, unified anchor.
 
 **Done when...**
-- [ ] `docs/working/onboarding-{project}.md` exists, opens with the three-line header (Goal · Project state · Task status) below the metadata block, and includes all required sections (Entry Points, Architecture Map, Execution Surface, Guarded Invariants, Key Flows, Conventions, Test Patterns, Known Unknowns, Watch Signals, Suggested Starting Points)
+- [ ] `docs/working/onboarding-{project}.md` exists, opens with the three-line header (Goal · Project state · Task status) below the metadata block, and includes all required sections (Entry Points, Architecture Map, Execution Surface, Guarded Invariants, Key Flows, Conventions, Test Patterns, Known Unknowns, Watch Signals, Decisions on file, Suggested Starting Points)
+- [ ] The Decisions on file section either lists every `docs/decisions/NNN-*.md` (capped at 10 most-recently-updated, with the `+ N older decisions (see docs/decisions/)` summary when the total exceeds 10) in the documented `[NNN]: <Goal line text>` format, or contains exactly the line `Prior decisions: none on file` when the directory has no matching files
 - [ ] The Task status line accurately reflects current lifecycle (re-read it; if it lies, fix it)
 - [ ] `Last verified` and `Relevant paths` fields are populated in the frontmatter
 - [ ] **Test Patterns finalization check**: the section is fully populated — no `TODO`, no "see XYZ later", no empty placeholder, no bullet whose body is only a heading. If a dimension is genuinely unknown, the section records what *is* known and the gap is filed in Known Unknowns by name; otherwise the section contains the documented `Test Patterns: none — <reason>.` skip note. A bare `## Test Patterns` heading with no body is treated as a blocking failure of this check.
 - [ ] Document is committed to the repo
 
-### 11. Gate — validate with the team
+### 12. Gate — validate with the team
 
 If possible, have someone familiar with the codebase review the orientation doc. They can correct misunderstandings cheaply here — a wrong mental model carried into implementation is expensive to fix later.
 
@@ -396,13 +436,15 @@ When staleness signals fire but changes are **incremental** — no new subsystem
 2. **Update Architecture Map.** For each subsystem touched by recent changes, verify that its responsibility, key abstractions, and dependencies are still accurate. Update any that have drifted.
 3. **Update Known Unknowns.** Remove unknowns that have been resolved by recent work. Add new unknowns surfaced by the changes you reviewed.
 4. **Rebuild Watch Signals.** Re-run step 9's grep + relevance filter against `docs/decisions/*.md`. Decisions may have gained new `## Revisit triggers`, refreshed their `Last verified` date, or shifted `Relevant paths` since the last verification — any of those changes can add or remove rows from the section.
-5. **Bump `Last verified`.** Set to today's date. Add a note in the commit message indicating this was a lightweight refresh (e.g., `docs: lightweight refresh onboarding — updated auth subsystem after session handling changes`).
+5. **Rebuild Decisions on file.** Re-run step 10's enumeration against `docs/decisions/NNN-*.md`. New decision records may have been added or existing ones updated since the last verification — either changes the recency order and may shift the 10-row cap or the trailing `+ N older` summary.
+6. **Bump `Last verified`.** Set to today's date. Add a note in the commit message indicating this was a lightweight refresh (e.g., `docs: lightweight refresh onboarding — updated auth subsystem after session handling changes`).
 
 **Done when...**
 - [ ] `git log` since `Last verified` has been reviewed
 - [ ] Architecture Map reflects current state for all changed subsystems
 - [ ] Known Unknowns section is current (stale items removed, new gaps added)
 - [ ] Watch Signals section has been regenerated against the current decision records
+- [ ] Decisions on file section has been regenerated against the current `docs/decisions/NNN-*.md` listing
 - [ ] `Last verified` date is updated
 - [ ] Onboarding sufficiency criteria still pass (the "Where would I look?" test, etc.)
 
