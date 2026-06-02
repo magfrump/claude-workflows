@@ -11,6 +11,13 @@ setup() {
   TEST_TMPDIR=$(mktemp -d)
   WORKING_DIR="$TEST_TMPDIR/working"
   mkdir -p "$WORKING_DIR"
+
+  # Isolate usage-log reads: _summary_deferred_evaluation pre-aggregates the
+  # usage log to evaluate script-evaluator preconditions.
+  USAGE_LOG_FILE="$TEST_TMPDIR/usage.jsonl"
+  export USAGE_LOG_FILE
+
+  HYP_LOG="$WORKING_DIR/hypothesis-log.md"
 }
 
 teardown() {
@@ -195,4 +202,148 @@ write_report() {
   write_report 1 "t1|rejected|tests=fail"
   run _project_state_recent_rejections 1 1 "$WORKING_DIR"
   [[ "$output" == *"### Recent Rejections by Failure Mode"* ]]
+}
+
+# ---------------------------------------------------------------------------
+# _summary_deferred_evaluation: the property restructure.
+#
+# The deferred section must surface the matured / precondition-MET hypotheses
+# (ready for a verdict) as the actionable few at the top and collapse the
+# not-yet-evaluable ones behind a count + expandable <details> list. Three
+# usability properties are under test:
+#   - discoverability-on-creation: the ready few appear first, above the wall
+#   - semantic-distance / feedback-continuity: the numbered total still equals
+#     _count_matured_deferred (the action block's N)
+#   - progressive-disclosure + collapse-not-delete: the rest stay reachable in
+#     a collapsed block, none dropped
+# ---------------------------------------------------------------------------
+
+# Schema matches the current hypothesis-log layout the script parses by name.
+write_hyp_header() {
+  {
+    echo "# Hypothesis Log"
+    echo ""
+    echo "| Round | Task ID | Hypothesis | Source | Window | Evaluator | Requires | Checked at Round | Outcome | Status Date | Evidence |"
+    echo "|-|-|-|-|-|-|-|-|-|-|-|"
+  } > "$HYP_LOG"
+}
+
+# Open user-evaluated row (empty Outcome) — always lands in the deferred group.
+append_user_row() {
+  local tid="$1" hyp="$2"
+  echo "| 1 | ${tid} | ${hyp} |  | 2 | user |  |  |  |  |  |" >> "$HYP_LOG"
+}
+
+# Open script-evaluated row with a Requires string. Pair with write_tasks +
+# log_inv to drive its preconditions MET (ready) or UNMET (deferred).
+append_script_row() {
+  local tid="$1" hyp="$2" requires="$3"
+  echo "| 1 | ${tid} | ${hyp} |  | 2 | script | ${requires} |  |  |  |  |" >> "$HYP_LOG"
+}
+
+# Closed row (Outcome filled) — excluded from the matured-open subset entirely.
+append_closed_row() {
+  local tid="$1" hyp="$2"
+  echo "| 1 | ${tid} | ${hyp} |  | 2 | user |  |  | CONFIRMED |  |  |" >> "$HYP_LOG"
+}
+
+# Append one skill invocation to the isolated usage log.
+log_inv() {
+  local name="$1"
+  echo "{\"event\":\"skill\",\"name\":\"${name}\",\"via\":\"skill_tool\"}" >> "$USAGE_LOG_FILE"
+}
+
+@test "progressive-disclosure: open user rows collapse into a counted <details> block, all reachable" {
+  write_hyp_header
+  append_user_row u1 "first user hyp"
+  append_user_row u2 "second user hyp"
+  append_user_row u3 "third user hyp"
+  run _summary_deferred_evaluation "$HYP_LOG" 10 "$WORKING_DIR"
+  [ "$status" -eq 0 ]
+  [[ "$output" == *"### Not Yet Evaluable (3)"* ]]
+  [[ "$output" == *"<details>"* ]]
+  [[ "$output" == *"</details>"* ]]
+  # collapse-not-delete: every hypothesis still present
+  [[ "$output" == *"u1"* ]]
+  [[ "$output" == *"u2"* ]]
+  [[ "$output" == *"u3"* ]]
+}
+
+@test "discoverability-on-creation: a precondition-MET script row appears under Ready, before the collapsed wall" {
+  write_hyp_header
+  append_script_row s1 "ready script hyp" "invocations=1"
+  append_user_row u1 "buried user hyp"
+  append_user_row u2 "buried user hyp two"
+  # s1 resolves to skill:foo and has 1+ invocation → preconditions MET.
+  write_tasks 1 "s1|skills/foo/SKILL.md"
+  log_inv foo
+  run _summary_deferred_evaluation "$HYP_LOG" 10 "$WORKING_DIR"
+  [ "$status" -eq 0 ]
+  [[ "$output" == *"### Ready for a Verdict (1)"* ]]
+  [[ "$output" == *"ready for CONFIRMED/REFUTED"* ]]
+  # Ordering: the Ready heading precedes the collapsed Not-Yet-Evaluable block.
+  local ready_line wall_line
+  ready_line=$(echo "$output" | grep -n "### Ready for a Verdict" | head -1 | cut -d: -f1)
+  wall_line=$(echo "$output" | grep -n "### Not Yet Evaluable" | head -1 | cut -d: -f1)
+  [ -n "$ready_line" ]
+  [ -n "$wall_line" ]
+  [ "$ready_line" -lt "$wall_line" ]
+}
+
+@test "feedback-continuity: numbered total equals _count_matured_deferred for a mixed log" {
+  write_hyp_header
+  append_script_row s1 "ready script hyp" "invocations=1"
+  append_script_row s2 "blocked script hyp" "invocations=5"
+  append_user_row u1 "user hyp"
+  append_closed_row c1 "closed hyp"
+  # s1 MET (1≥1), s2 UNMET (1<5); both resolve to skill:foo.
+  write_tasks 1 "s1|skills/foo/SKILL.md" "s2|skills/foo/SKILL.md"
+  log_inv foo
+
+  local n q
+  n=$(_count_matured_deferred "$HYP_LOG" 10)
+  q=$(_summary_deferred_evaluation "$HYP_LOG" 10 "$WORKING_DIR" | grep -cE '^[0-9]+\.')
+  [ "$n" -eq 3 ]
+  [ "$q" -eq 3 ]
+}
+
+@test "collapse-not-delete: a precondition-UNMET script row is collapsed, not promoted to Ready" {
+  write_hyp_header
+  append_script_row s1 "blocked script hyp" "invocations=5"
+  write_tasks 1 "s1|skills/foo/SKILL.md"
+  log_inv foo  # only 1 invocation; needs 5 → UNMET
+  run _summary_deferred_evaluation "$HYP_LOG" 10 "$WORKING_DIR"
+  [ "$status" -eq 0 ]
+  # No ready group at all, but the row is still present inside the wall.
+  [[ "$output" != *"### Ready for a Verdict"* ]]
+  [[ "$output" == *"### Not Yet Evaluable (1)"* ]]
+  [[ "$output" == *"s1"* ]]
+  [[ "$output" == *"INCONCLUSIVE"* ]]
+}
+
+@test "zero open rows emits the no-op line and no group headers" {
+  write_hyp_header
+  append_closed_row c1 "closed one"
+  append_closed_row c2 "closed two"
+  run _summary_deferred_evaluation "$HYP_LOG" 10 "$WORKING_DIR"
+  [ "$status" -eq 0 ]
+  [[ "$output" == *"No open hypotheses to evaluate."* ]]
+  [[ "$output" != *"### Ready for a Verdict"* ]]
+  [[ "$output" != *"<details>"* ]]
+}
+
+@test "missing hypothesis log degrades gracefully" {
+  run _summary_deferred_evaluation "$WORKING_DIR/nope.md" 10 "$WORKING_DIR"
+  [ "$status" -eq 0 ]
+  [[ "$output" == *"## Deferred Evaluation Questions"* ]]
+  [[ "$output" == *"No hypothesis log found."* ]]
+}
+
+@test "_evaluate_script_preconditions exit code: 0 when MET, 1 when UNMET" {
+  write_tasks 1 "s1|skills/foo/SKILL.md"
+  log_inv foo
+  run _evaluate_script_preconditions 1 s1 "invocations=1" "$WORKING_DIR"
+  [ "$status" -eq 0 ]
+  run _evaluate_script_preconditions 1 s1 "invocations=5" "$WORKING_DIR"
+  [ "$status" -eq 1 ]
 }
