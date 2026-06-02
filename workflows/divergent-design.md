@@ -30,6 +30,24 @@ value-justification: "Replaces ad-hoc architectural debates with structured mult
 
 ## Process
 
+### Output discipline (steps 1-3): compact console, full prose to the working doc
+
+Steps 1–3 generate a lot of text — 8–15 candidates with a generation health check, the pre-generation grep results, a full constraint list, and a compatibility matrix. Dumping all of it to the console floods the scrollback before the human ever reaches the step-4 decision block, which is the surface actually built for scrutiny: its **Acceptance checklist (structure gate)** holds it to *progressive disclosure* — show the index first, open detail on demand. That checklist governs only the step-4 surface; the flood happens one diamond earlier, upstream of it. Apply the same convention here: **write the full diverge / diagnose / match prose to a working doc, and emit only a compact one-line summary per step to the console.**
+
+- **Working doc** — write each step's full output to `docs/working/dd-{topic}.md` (the DD scratch doc for this decision). When DD is running as a sub-procedure within RPI, fold the prose into the calling loop's research doc instead of creating a second file. This is where the candidate descriptions, the pre-generation grep results, the health-check notes, the constraint statements, and the compatibility matrix live in full — nothing here is dropped, only relocated off the console.
+- **Console** — emit exactly one compact line per step as it completes, per the **Console output (compact)** note in each step below. The console becomes a short trail that sits *above* the step-4 decision block rather than burying it:
+
+```
+◇ step 1 diverge    12 candidates → docs/working/dd-{topic}.md
+                      1 do-nothing  2 managed SaaS  3 in-house Kafka  4 …
+◇ step 2 diagnose    9 constraints (6 hard · 3 soft) → docs/working/dd-{topic}.md
+◇ step 3 match       4 of 12 survived → [2] [4] [6] [1]
+```
+
+The per-step contents differ by what each step's index actually is: step 1 shows the candidate count plus the numbered one-line headlines (the search-space index); step 2 shows the constraint count with its hard/soft split; step 3 shows the surviving-candidate count plus the surviving IDs (the set that becomes the step-4 scorecard). In every case the console line is an index pointing at the working doc, never a replacement for the full prose — a reader who wants the detail opens the doc, exactly as they would expand a step-4 candidate card.
+
+This convention covers steps 1–3 only. Step 4 already renders its own purpose-built decision block (governed by its Acceptance checklist) and step 5 writes the archival decision record; neither is replaced by a compact console line.
+
 ### 1. Diverge — generate many possibilities
 
 #### 1.0 Pre-generation grep — carry forward prior pruning
@@ -65,6 +83,15 @@ After generating your initial candidates, scan for these common generation gaps.
 
 If the health check triggers additional generation, note it briefly (e.g., "Added 3-5 after health check flagged clustering around caching approaches"). This makes generation patterns visible across sessions.
 
+#### Console output (compact)
+
+Per the **Output discipline** convention above, write the full candidate list, the pre-generation grep results, and the generation health-check notes to the working doc. To the console, emit only the candidate count and the numbered one-line headlines — the index of the search space, not the per-candidate reasoning or the grep/health-check prose:
+
+```
+◇ step 1 diverge    12 candidates → docs/working/dd-{topic}.md
+                      1 do-nothing  2 managed SaaS  3 in-house Kafka  4 …
+```
+
 **Done when...**
 - [ ] Pre-generation grep against `docs/decisions/*.md` for prior `Pruned candidates` sections has been run; every surfaced candidate is either carried forward (annotated `[carried from NNN-title: prior reason]`) or revived (annotated `[revived from NNN-title: why this time is different]`); if the grep returned nothing, a `Prior pruning grep: no matches found for [keywords]` line is recorded
 - [ ] At least 8 candidate approaches are listed
@@ -73,6 +100,7 @@ If the health check triggers additional generation, note it briefly (e.g., "Adde
 - [ ] An "ideal if effort were free" option is included
 - [ ] No evaluation or ranking has been applied yet — only generation
 - [ ] Generation health check passed: no unaddressed clustering, missing perspectives, vague candidates, or dimensional anchoring
+- [ ] Full candidate list, pre-generation grep results, and health-check notes were written to the working doc (`docs/working/dd-{topic}.md`, or the calling RPI research doc); the console received only the candidate count plus the numbered one-line headlines
 
 ### 2. Diagnose — specify the actual problems and constraints
 
@@ -82,11 +110,20 @@ List every concrete problem, requirement, and constraint the solution must addre
 
 Include non-obvious constraints: timezone gaps, skill gaps in the team, maintenance burden, deployment complexity, interaction with existing code, performance requirements. Also note which constraints are hard (must satisfy) vs soft (prefer to satisfy).
 
+#### Console output (compact)
+
+Per the **Output discipline** convention above, write the full constraint list — each statement, its hard/soft label, and the non-obvious constraints — to the working doc. To the console, emit only the constraint count and its hard/soft split:
+
+```
+◇ step 2 diagnose    9 constraints (6 hard · 3 soft) → docs/working/dd-{topic}.md
+```
+
 **Done when...**
 - [ ] Every concrete problem and constraint is stated with enough specificity to test an approach against it
 - [ ] Each constraint is labeled as hard (must satisfy) or soft (prefer to satisfy)
 - [ ] Non-obvious constraints (team skills, deployment, maintenance) have been explicitly considered
 - [ ] No constraint uses vague language like "readable" or "good" without a measurable qualifier
+- [ ] Full constraint list was written to the working doc; the console received only the constraint count and its hard/soft split
 
 ### 3. Match and prune
 
@@ -104,11 +141,20 @@ Key:
 
 For approaches that score well overall but have one fixable weakness, briefly sketch how to fix it (1-2 sentences). Discard anything with ⚠ on a hard constraint or mostly ✗ across the board.
 
+#### Console output (compact)
+
+Per the **Output discipline** convention above, write the full compatibility matrix and the fix sketches for surviving approaches to the working doc. To the console, emit only the surviving-candidate count and the surviving IDs — the set that becomes the step-4 scorecard:
+
+```
+◇ step 3 match       4 of 12 survived → [2] [4] [6] [1]
+```
+
 **Done when...**
 - [ ] A compatibility matrix exists with every approach scored against every constraint
 - [ ] All approaches with ⚠ on a hard constraint or mostly ✗ are discarded
 - [ ] Fixable weaknesses in surviving approaches have a 1-2 sentence sketch of the fix
 - [ ] 3-5 approaches survive for detailed comparison
+- [ ] Full compatibility matrix was written to the working doc; the console received only the surviving-candidate count plus the surviving IDs
 
 ### 4. Tradeoff matrix and decision
 
