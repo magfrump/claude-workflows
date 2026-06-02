@@ -6,19 +6,20 @@ A small, reusable checklist that any workflow consults at the moment it must sto
 
 This is **not a workflow you run directly** — it's a reference, like [`orchestrated-review.md`](orchestrated-review.md). When a workflow's step says "ask the user X" or "the user reviews and approves," that step should require the prompt to satisfy the checklist below and cite this pattern. The goal is that a user can answer correctly *from the prompt alone*, without re-reading the plan, guessing what their answer will do, or fearing they can't take it back.
 
-The checklist encodes three usability properties — **signifier**, **conceptual model**, and **error recoverability** (Don Norman's vocabulary, applied to a text prompt instead of a physical control). A prompt that satisfies all three is self-explanatory; a prompt that drops one is the common failure mode where the user approves something they didn't understand, picks an option whose consequences were invisible, or commits to a choice believing it was final when it wasn't.
+The checklist encodes four usability properties — **signifier**, **conceptual model**, and **error recoverability** (Don Norman's vocabulary), plus **context continuity** (the usability principle of keeping system status visible across a transition) — all applied to a text prompt instead of a physical control. A prompt that satisfies all four is self-explanatory; a prompt that drops one is the common failure mode where the user approves something they didn't understand, picks an option whose consequences were invisible, commits to a choice believing it was final when it wasn't, or has to scroll back through prior output to reconstruct what they're even deciding about.
 
 ## The checklist
 
-Before sending any prompt that asks the user to decide, confirm, or choose, verify it carries all three:
+Before sending any prompt that asks the user to decide, confirm, or choose, verify it carries all four:
 
 - [ ] **Signifier** — the prompt makes the available actions and their input format *perceivable*. The user can see what the valid responses are (the options, or the expected input shape) without inferring them. No "what do I even type here?"
 - [ ] **Conceptual model** — the prompt states what each choice *will cause*. The user understands the consequence of each option — what happens next, what gets changed, what becomes true — before they pick. No "what does approving this actually do?"
 - [ ] **Error recoverability** — the prompt states whether and how the choice can be undone. The user knows if this is reversible, how to back out or correct a wrong answer, and how to abort entirely. No "is this my last chance — can I take it back?"
+- [ ] **Context continuity** — the prompt restates the carried context the answer depends on: what's already been decided and what state the answer operates on. The user can decide from the prompt alone, without scrolling back through prior output to reconstruct the situation. No "wait, what are we deciding about again?"
 
 If any box can't be checked, the prompt is incomplete — fix the prompt before sending it, don't rely on the user to ask the follow-up.
 
-## The three properties
+## The four properties
 
 ### Signifier
 
@@ -50,19 +51,29 @@ Error recoverability is how easily the user can *undo a mistake*. The prompt mak
 
 The test: the user knows, before answering, whether a wrong pick is a quick correction or a permanent commitment.
 
+### Context continuity
+
+Context continuity is the prompt carrying its own context forward across the transition to the user, so the decision doesn't require re-reading what came before. By the time a workflow stops to ask, the relevant output may have scrolled away, or the user may be returning after a break. The prompt restates the state the answer operates on:
+
+- What has already been decided or established that this choice builds on — the plan that was approved, the branch that was selected, the values gathered so far.
+- The current state the answer acts against — what exists now, what's pending, what the last step produced.
+- Enough of the prior result that the user need not scroll back to it — the relevant numbers, names, or paths appear in the prompt itself, not only in output above it.
+
+The test: a user returning to the terminal after a break can answer correctly from the prompt alone, without scrolling up to rebuild the context.
+
 ## Worked example
 
 Same prompt — a plan-approval gate — written badly and well.
 
-**Badly written (drops all three):**
+**Badly written (drops all four):**
 
 ```
 Plan is ready. Approve?
 ```
 
-This fails on each property. *Signifier:* the response space is invisible — is the answer yes/no, or is the user expected to type corrections? *Conceptual model:* "approve" has no stated consequence — does approving start implementation immediately, or just unlock it? *Error recoverability:* nothing says whether approval is final or whether the user can still change the plan afterward.
+This fails on each property. *Signifier:* the response space is invisible — is the answer yes/no, or is the user expected to type corrections? *Conceptual model:* "approve" has no stated consequence — does approving start implementation immediately, or just unlock it? *Error recoverability:* nothing says whether approval is final or whether the user can still change the plan afterward. *Context continuity:* nothing restates which plan, how many steps, or what was decided to get here — if the plan output has scrolled away, the user must scroll back to reconstruct what "approve" even refers to.
 
-**Well written (carries all three):**
+**Well written (carries all four):**
 
 ```
 The plan (docs/working/plan-export.md) has 5 steps; approving it starts
@@ -77,7 +88,7 @@ again for review before implementation code is written. Nothing is pushed
 until you say so.
 ```
 
-*Signifier:* three named options, each an action. *Conceptual model:* each option states what runs next. *Error recoverability:* the interrupt path, the second pause point, and "nothing is pushed until you say so" tell the user the cost of approving is recoverable. A user can answer this from the prompt alone.
+*Signifier:* three named options, each an action. *Conceptual model:* each option states what runs next. *Error recoverability:* the interrupt path, the second pause point, and "nothing is pushed until you say so" tell the user the cost of approving is recoverable. *Context continuity:* the prompt names the plan file, its step count, and the mode it will run in, so the decision needs nothing scrolled back. A user can answer this from the prompt alone.
 
 ## Anti-patterns
 
@@ -85,13 +96,14 @@ until you say so.
 - **Options without consequences** — a clean multiple-choice list where the labels name the choices but not their effects ("A / B / C"). Satisfies signifier, drops conceptual model.
 - **Silent irreversibility** — asking for confirmation of a destructive or outward-facing action (force-push, delete, send) without flagging that it can't be undone. The most expensive failure, because the missing property is exactly the one that mattered.
 - **No exit** — offering a fixed set of options with no "none of these / let me explain" path, forcing the user to pick a listed answer even when the right answer is "you've mis-framed the question."
+- **Context amnesia** — a prompt that assumes the user still has the prior output on screen ("Approve the above?", "Which of these do you want?") and restates none of it. After a long-running step whose output has scrolled away — or for a user returning after a break — the answer can't be given without scrolling back. Satisfies the other properties on paper but fails the moment the context isn't already visible.
 
 ## Using this pattern in new workflows
 
 When a workflow step asks the user to decide, confirm, or choose:
 
 1. Add a cross-reference at the call-site: "the prompt must satisfy the [requesting-user-input checklist](../patterns/requesting-user-input.md#the-checklist)."
-2. Add a `Done when...` item (or equivalent gate condition) asserting the prompt carried all three properties, so the wiring is auditable rather than aspirational.
+2. Add a `Done when...` item (or equivalent gate condition) asserting the prompt carried all four properties, so the wiring is auditable rather than aspirational.
 3. For prompts that gate an irreversible or outward-facing action, treat the error-recoverability property as load-bearing: the prompt must name the point of no return explicitly.
 
 **Example callers:**
