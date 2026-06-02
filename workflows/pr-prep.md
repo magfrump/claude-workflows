@@ -158,6 +158,14 @@ Run review skills and iterate until clean. This is required, not optional.
 - **Dependency audit** (manual) — if the PR introduces or upgrades dependencies, check license compatibility, package size, and maintenance status. Flag unmaintained or unfamiliar packages. Skip if no dependency changes.
 - **Plan-drift check** (manual) — if a plan doc exists in `docs/working/` for this task, compare the diff against it and note: (1) planned items not yet implemented, (2) unplanned changes that appeared in the diff, and (3) plan assumptions that turned out wrong. Record any deviations found in the PR description's "Areas of uncertainty" section or as a comment on the PR. Skip if no plan doc exists for this work.
 
+  **Carried-from line (RPI→pr-prep handoff).** A plan doc existing in `docs/working/` *is* the signal that this PR arrived through an RPI loop — so this same check is the RPI→pr-prep seam. While you have the plan doc open, also restate, in one line, the state the loop forwarded *into* the PR, recorded in the PR description's existing **Workflow provenance** field (step 6):
+
+  ```
+  ← carried from RPI: <state forwarded>
+  ```
+
+  `<state forwarded>` tersely names the load-bearing approach and the surviving constraints/invariants/decisions the diff must honor (and, if the RPI loop was itself entered from an upstream workflow, the originating decision record or spike/findings doc) — not a generic "see the plan." This is the *continuity* counterpart to the drift notes above: drift records what **diverged** from the plan; the carried-from line records what **crossed the seam intact**, so the reviewer sees the originating decisions without re-deriving them and can confirm the diff still honors them. The literal `← carried from` token is the grep audit handle (consistent with the `Failure-pattern grep:` and header `(cite: ...)` self-auditing conventions). The line is **conditional, never a placeholder**: standalone work has no plan doc and omits the line entirely — do not write `← carried from: none` (same rule as the Problem-framing line in `research-plan-implement.md`).
+
 **b. Triage and fix.** Read each review artifact. Work through findings in tier order:
 
 | Tier | Meaning | Action |
@@ -205,6 +213,7 @@ Both forms feed the same audit trail for calibrating the 3-iteration threshold o
 - [ ] Final review loop introduced no new Must Fix or Must Address findings
 - [ ] Loop outcome noted in PR description: convergence summary (`Review converged in N iterations; M Must Fix resolved, K Must Address acknowledged.`) if converged cleanly, or escalation summary if ceiling hit at 3
 - [ ] If ceiling hit: remaining findings documented in PR description, or escalated to human review
+- [ ] If a plan doc exists (work arrived via RPI), the Plan-drift check restated the forwarded state as a `← carried from RPI: <state forwarded>` line in the PR's Workflow provenance field; if the work is standalone (no plan doc), the line is correctly omitted (no `← carried from: none` placeholder)
 - [ ] Review artifacts committed to the branch (see [PR Review Doc Inclusion guide](../guides/pr-review-doc-inclusion.md))
 
 ### Phase 2: Packaging
