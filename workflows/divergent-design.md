@@ -186,6 +186,14 @@ Close the block with a one-line recommendation banner that states the chosen `#`
 ▶ recommend [2] managed SaaS · confidence 85% · runner-up [4], axis = speed-to-ship vs control
 ```
 
+##### Acceptance checklist (structure gate)
+
+The brainstorm display surface reads as structurally cleaner than an ad-hoc decision dump because it holds to three conventions — **boxed regions** (every region is a self-contained box-drawn frame), **progressive disclosure** (the index is shown first; detail is opened on demand, not dumped), and **one decision per screen** (a screen carries a single choice, never interleaved). This block adopts those same conventions, so "brainstorm's formatting is structurally nicer" becomes a concrete gate rather than a vibe: before the human scrutinizes the block, confirm it passes the checks below. These are drawn from the display property set (`docs/human-author/property-tests.json`: `discoverability-on-creation`, `conceptual-model-coherence`, `mapping-naturalness`) — each property names one way the rendered block can fail to communicate, and each check is the pass condition that closes it. A block that fails any check is re-rendered before the decision proceeds; it is not narrated around.
+
+- [ ] **Discoverability on creation** *(can the reader act without instruction?)* — On first render, the recommended candidate is visibly marked (`★`), the legend defines **every** glyph used in the grid, and the drill-down affordance (expand a card by naming its `#`) is stated on screen. A reader seeing the block for the first time can tell what is recommended and how to ask for more, with no out-of-band explanation. *(one-decision-per-screen: a single `DECISION:` banner heads the block; no second decision is interleaved.)*
+- [ ] **Conceptual-model coherence** *(is it one decision, or three artifacts?)* — The scorecard grid, the candidate cards, and the recommendation banner are views of the **same** decision: identical candidate set, identical axis names, and consistent ordering (recommendation-first, then descending coverage). No candidate, score, or axis appears in one region that contradicts or is absent from another. *(boxed regions: each region is its own box-drawn frame, so the reader can see at a glance which view they are reading.)*
+- [ ] **Mapping naturalness** *(does the encoding match the data?)* — Glyph severity runs one consistent direction in every column (`●` strong/low → `◐` partial/medium → `○` weak/high → `✗` fails a hard constraint), row position encodes recommendation priority, and an expanded card carries **exactly** its scorecard row's data — the hypothesis, stress-test moves, and coverage it compresses — with nothing added and nothing dropped. *(progressive-disclosure: the grid is the index, cards are the detail; the mapping from a row to its card is one-to-one and lossless.)*
+
 #### Decision
 
 If one approach clearly dominates (>80% confidence): document the decision and proceed.
@@ -262,7 +270,7 @@ When this variant is used, the step-5 decision record's **Decision and rationale
 - [ ] Each surviving candidate declares a predicted implementation cost — a token estimate or an hour estimate; treat as a soft prediction, not a strict cap
 - [ ] At least 2-4 stress-test moves were applied to each surviving approach
 - [ ] Tradeoff matrix is updated with any findings from the stress test
-- [ ] The Decision presentation block was rendered before any step-5 doc was written — scorecard grid (one glyph-scored row per surviving candidate, recommended row marked `★`), the recommended candidate's card expanded, and a recommendation banner — and it is what the user scrutinizes if consulted
+- [ ] The Decision presentation block was rendered before any step-5 doc was written — scorecard grid (one glyph-scored row per surviving candidate, recommended row marked `★`), the recommended candidate's card expanded, and a recommendation banner — and it passes the Decision-presentation **Acceptance checklist (structure gate)**: discoverability on creation, conceptual-model coherence, and mapping naturalness. It is what the user scrutinizes if consulted
 - [ ] Either one approach dominates at >80% confidence, or the user has been consulted
 - [ ] If 2+ candidates scored within ~1 cell on the tradeoff matrix, the axis of disagreement and the project's stated preference (or the tiebreaker rule used in its absence) are recorded explicitly
 - [ ] The chosen approach is stated explicitly with a one-sentence rationale
