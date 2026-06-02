@@ -366,8 +366,11 @@ Common annotations:
 
 Claude revises the plan doc based on feedback. This cycle repeats until the user is satisfied. Two rounds is typical; more than three suggests the research phase missed something — consider going back to step 2.
 
+Because this gate decides whether implementation begins, the prompt that asks for approval — and any clarifying question asked during the annotation cycle — must satisfy the [requesting-user-input checklist](../patterns/requesting-user-input.md#the-checklist): the user must be able to see what they're approving (signifier), what approval will cause (conceptual model — e.g. "approving starts implementation in /away mode"), and how to back out or push back (error recoverability — e.g. "approve with changes" and "not yet" paths). A bare "Plan ready, approve?" drops all three and is the failure this gate exists to prevent.
+
 **Done when...**
 - [ ] User has explicitly approved the plan (not just the research)
+- [ ] The approval prompt satisfied the [requesting-user-input checklist](../patterns/requesting-user-input.md#the-checklist) — the user could see what they were approving, what approval would cause, and how to back out
 - [ ] All user corrections have been incorporated into the plan doc (not just acknowledged conversationally)
 - [ ] If research feedback invalidated the plan, the plan was rewritten from scratch rather than patched
 - [ ] Plan doc reflects the final agreed approach — no unresolved "TBD" or "discuss" markers remain
