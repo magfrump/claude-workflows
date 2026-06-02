@@ -1,0 +1,143 @@
+#!/usr/bin/env bats
+# @category fast
+# Unit tests for the top-of-summary "What You Need To Do" action block in
+# scripts/lib/si-morning-summary.sh:
+#   _count_matured_deferred
+#   _summary_action_block
+#
+# Core property under test (feedback-continuity): the N named in the action
+# block equals the number of numbered questions rendered by
+# _summary_deferred_evaluation on the same hypothesis log + round.
+
+setup() {
+  source "$BATS_TEST_DIRNAME/../scripts/lib/log-format.sh"
+  source "$BATS_TEST_DIRNAME/../scripts/lib/si-morning-summary.sh"
+
+  TEST_TMPDIR=$(mktemp -d)
+  WORKING_DIR="$TEST_TMPDIR/working"
+  mkdir -p "$WORKING_DIR"
+  LOG="$WORKING_DIR/hypothesis-log.md"
+
+  # Isolate usage-log reads (deferred-evaluation pre-aggregates the usage log).
+  USAGE_LOG_FILE="$TEST_TMPDIR/usage.jsonl"
+  export USAGE_LOG_FILE
+}
+
+teardown() {
+  rm -rf "$TEST_TMPDIR"
+}
+
+# --- Fixture helpers ---
+
+write_log_header() {
+  {
+    echo "# Hypothesis Log"
+    echo ""
+    echo "| Round | Task ID | Hypothesis | Source | Window | Evaluator | Requires | Checked at Round | Outcome | Status Date | Evidence |"
+    echo "|-|-|-|-|-|-|-|-|-|-|-|"
+  } > "$LOG"
+}
+
+# Append one open (empty-Outcome) user-evaluated row that matures at round>=3.
+append_open_row() {
+  local tid="$1" hyp="$2"
+  echo "| 1 | ${tid} | ${hyp} |  | 2 | user |  |  |  |  |  |" >> "$LOG"
+}
+
+# Append one closed (Outcome filled) row — excluded from the matured subset.
+append_closed_row() {
+  local tid="$1" hyp="$2"
+  echo "| 1 | ${tid} | ${hyp} |  | 2 | user |  |  | CONFIRMED |  |  |" >> "$LOG"
+}
+
+# --- _count_matured_deferred ---
+
+@test "counts only open (empty-Outcome) rows" {
+  write_log_header
+  append_open_row h1 "first"
+  append_open_row h2 "second"
+  append_closed_row hc "closed"
+  run _count_matured_deferred "$LOG" 10
+  [ "$status" -eq 0 ]
+  [ "$output" -eq 2 ]
+}
+
+@test "missing log returns 0 without error" {
+  run _count_matured_deferred "$WORKING_DIR/does-not-exist.md" 10
+  [ "$status" -eq 0 ]
+  [ "$output" -eq 0 ]
+}
+
+@test "all-closed log returns 0" {
+  write_log_header
+  append_closed_row a "a"
+  append_closed_row b "b"
+  run _count_matured_deferred "$LOG" 10
+  [ "$status" -eq 0 ]
+  [ "$output" -eq 0 ]
+}
+
+# --- _summary_action_block ---
+
+@test "always emits the section header" {
+  write_log_header
+  append_open_row h1 "first"
+  run _summary_action_block "$LOG" 10
+  [ "$status" -eq 0 ]
+  [[ "$output" == *"## What You Need To Do"* ]]
+}
+
+@test "two matured rows: plural wording with the count and a pointer to the questions section" {
+  write_log_header
+  append_open_row h1 "first"
+  append_open_row h2 "second"
+  run _summary_action_block "$LOG" 10
+  [ "$status" -eq 0 ]
+  [[ "$output" == *"2 matured deferred hypothesis questions"* ]]
+  [[ "$output" == *"Deferred Evaluation Questions"* ]]
+}
+
+@test "one matured row: singular wording" {
+  write_log_header
+  append_open_row h1 "only one"
+  append_closed_row hc "closed"
+  run _summary_action_block "$LOG" 10
+  [ "$status" -eq 0 ]
+  [[ "$output" == *"1 matured deferred hypothesis question"* ]]
+  # Singular form must not read "questions"
+  [[ "$output" != *"hypothesis questions"* ]]
+}
+
+@test "zero matured rows: nothing-needed wording, header still present" {
+  write_log_header
+  append_closed_row a "a"
+  run _summary_action_block "$LOG" 10
+  [ "$status" -eq 0 ]
+  [[ "$output" == *"## What You Need To Do"* ]]
+  [[ "$output" == *"Nothing needs your input"* ]]
+}
+
+@test "missing log: zero-state line, no error, exit 0" {
+  run _summary_action_block "$WORKING_DIR/does-not-exist.md" 10
+  [ "$status" -eq 0 ]
+  [[ "$output" == *"## What You Need To Do"* ]]
+  [[ "$output" == *"Nothing needs your input"* ]]
+}
+
+# --- Feedback-continuity invariant ---
+
+@test "block count equals the number of questions in the deferred-evaluation section" {
+  write_log_header
+  append_open_row h1 "first hypothesis"
+  append_open_row h2 "second hypothesis"
+  append_closed_row hc "closed hypothesis"
+
+  local n q
+  n=$(_count_matured_deferred "$LOG" 10)
+  q=$(_summary_deferred_evaluation "$LOG" 10 "$WORKING_DIR" | grep -cE '^[0-9]+\.')
+  [ "$n" -eq "$q" ]
+  [ "$n" -eq 2 ]
+
+  run _summary_action_block "$LOG" 10
+  [[ "$output" == *"$n matured deferred hypothesis"* ]]
+}
