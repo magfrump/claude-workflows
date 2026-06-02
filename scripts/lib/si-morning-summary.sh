@@ -957,10 +957,6 @@ _summary_deferred_evaluation() {
     echo ""
     echo "## Deferred Evaluation Questions"
     echo ""
-    echo "These hypotheses are still open. They cannot be evaluated autonomously"
-    echo "because meaningful evidence requires real-world usage. Please answer"
-    echo "when you have observations."
-    echo ""
 
     if [ ! -f "$hypothesis_log" ]; then
         echo "No hypothesis log found."
@@ -982,7 +978,21 @@ _summary_deferred_evaluation() {
     # lookup tables instead of spawning jq per (target × precondition).
     _preaggregate_usage_log
 
-    local count=0
+    # Classification pass: split the matured-open rows into two groups so the
+    # few that are actually ready for a verdict aren't buried under the wall of
+    # not-yet-evaluable ones (discoverability-on-creation, semantic-distance,
+    # progressive-disclosure). Both groups are buffered with their full body so
+    # the emit pass can number them continuously 1..N — the total stays equal to
+    # _count_matured_deferred, the feedback-continuity invariant the action
+    # block depends on. Nothing is dropped; the deferred group is only collapsed
+    # behind a count + <details>, never deleted (invert-the-thesis mitigation).
+    #
+    # Ready = script-evaluator whose preconditions are MET now (or none declared);
+    # _evaluate_script_preconditions signals this via exit 0. Deferred = unmet/
+    # unresolvable script rows plus user-evaluator rows, which need real-world
+    # observation the user may not yet have and so aren't autonomously ready.
+    local -a ready_lines deferred_lines
+    local ready_count=0 deferred_count=0
     local -a fields
     while IFS= read -r line; do
         _row_is_open_deferred "$line" "$current_round" "$scope_col" "$outcome_col" || continue
@@ -996,27 +1006,73 @@ _summary_deferred_evaluation() {
         requires=$(_pick_col fields "$requires_col")
         hyp_src=$(_pick_col fields "$source_col")
 
-        count=$((count + 1))
         local hyp_tag=""
         if [ "$hyp_src" = "planner" ]; then
             hyp_tag=" *[planner-authored — review framing]*"
         fi
-        echo "${count}. **${task_id}** (round ${round}): \"${hypothesis}\"${hyp_tag}"
+        local header="**${task_id}** (round ${round}): \"${hypothesis}\"${hyp_tag}"
 
-        # Script-evaluator rows get a precondition report instead of free-form
-        # questions. The script never auto-writes outcomes; the user reads the
-        # report and decides whether to mark INCONCLUSIVE / CONFIRMED / REFUTED
-        # in the log. (decision 012 pillar 1)
         if [[ "$evaluator" == "script" ]]; then
-            _evaluate_script_preconditions "$round" "$task_id" "$requires" "$working_dir"
+            # Capture the precondition report and its readiness exit code. Run in
+            # a subshell via $(...); the pre-aggregated lookup tables are global
+            # and fork into it, so the fast path is preserved.
+            local report rc
+            report=$(_evaluate_script_preconditions "$round" "$task_id" "$requires" "$working_dir")
+            rc=$?
+            if [ "$rc" -eq 0 ]; then
+                ready_count=$((ready_count + 1))
+                ready_lines+=("${header}"$'\n'"${report}")
+            else
+                deferred_count=$((deferred_count + 1))
+                deferred_lines+=("${header}"$'\n'"${report}")
+            fi
         else
-            _generate_questions "$hypothesis"
+            deferred_count=$((deferred_count + 1))
+            local questions
+            questions=$(_generate_questions "$hypothesis")
+            deferred_lines+=("${header}"$'\n'"   *(awaiting your observations)*"$'\n'"${questions}")
         fi
-        echo ""
     done < "$hypothesis_log"
 
-    if [ "$count" -eq 0 ]; then
+    local total=$((ready_count + deferred_count))
+    if [ "$total" -eq 0 ]; then
         echo "No open hypotheses to evaluate."
+        return
+    fi
+
+    # Emit pass. Numbering is continuous across both groups (ready first), so
+    # `grep -cE '^[0-9]+\.'` over this output equals _count_matured_deferred.
+    local n=0 item
+    if [ "$ready_count" -gt 0 ]; then
+        echo "### Ready for a Verdict (${ready_count})"
+        echo ""
+        echo "Preconditions are met for these — read the check report and record a"
+        echo "CONFIRMED / REFUTED / INCONCLUSIVE outcome in hypothesis-log.md."
+        echo ""
+        for item in "${ready_lines[@]}"; do
+            n=$((n + 1))
+            printf '%s. %s\n' "$n" "$item"
+            echo ""
+        done
+    fi
+
+    if [ "$deferred_count" -gt 0 ]; then
+        local noun="hypotheses"
+        [ "$deferred_count" -eq 1 ] && noun="hypothesis"
+        echo "### Not Yet Evaluable (${deferred_count})"
+        echo ""
+        # Collapse the wall behind a count + expandable block: every row stays
+        # reachable (expand to view), but it no longer crowds out the ready few.
+        # In a plain terminal the <summary> line still front-loads the count.
+        echo "<details>"
+        echo "<summary>${deferred_count} open ${noun} not yet ready for a verdict — they need real-world usage or have unmet preconditions. Expand to view.</summary>"
+        echo ""
+        for item in "${deferred_lines[@]}"; do
+            n=$((n + 1))
+            printf '%s. %s\n' "$n" "$item"
+            echo ""
+        done
+        echo "</details>"
     fi
 }
 
@@ -1227,6 +1283,12 @@ _days_since_round() {
 # Output: a multi-line report block emitted to stdout, indented to fit under
 # the row header in _summary_deferred_evaluation. The script never writes to
 # the hypothesis log — the user reviews this report and decides the outcome.
+#
+# Exit code (readiness signal consumed by _summary_deferred_evaluation):
+#   0 = ready for a verdict now (all preconditions MET, or none declared)
+#   1 = not yet evaluable (precondition UNMET / unresolvable target / unknown key)
+# The exit code is purely additive — every output string this function printed
+# before is unchanged, so callers that only inspect stdout are unaffected.
 _evaluate_script_preconditions() {
     local round="$1" tid="$2" requires_str="$3" working_dir="$4"
     echo "   Evaluator: script"
@@ -1237,14 +1299,14 @@ _evaluate_script_preconditions() {
     if [ -z "$targets" ]; then
         echo "   Target: unresolvable (no skill/workflow in files_touched)"
         echo "   → Recommendation: switch evaluator to \"user\" or restate the hypothesis"
-        return
+        return 1
     fi
     echo "   Target(s): $(echo "$targets" | tr '\n' ',' | sed 's/,$//;s/,/, /g')"
 
     if [ -z "$requires_str" ]; then
         echo "   Preconditions: none declared"
         echo "   → Recommendation: this hypothesis can be evaluated now if signal is sufficient"
-        return
+        return 0
     fi
 
     # Parse the flattened requires string. Unknown keys are surfaced so the
@@ -1319,8 +1381,10 @@ _evaluate_script_preconditions() {
 
     if [ "$all_met" -eq 1 ]; then
         echo "   → Recommendation: preconditions met, ready for CONFIRMED/REFUTED verdict"
+        return 0
     else
         echo "   → Recommendation: mark INCONCLUSIVE in hypothesis-log.md (${reasons})"
+        return 1
     fi
 }
 
