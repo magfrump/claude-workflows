@@ -104,6 +104,7 @@ generate_morning_summary() {
 
     {
         _summary_header "$start_round" "$end_round" "$working_dir"
+        _summary_action_block "$hypothesis_log" "$end_round"
         _summary_failure_modes_this_cycle "$start_round" "$end_round" "$working_dir"
         _summary_project_state "$start_round" "$end_round" "$working_dir"
         _summary_whats_new "$start_round" "$end_round" "$working_dir" "$round_history" "$completed_tasks"
@@ -152,11 +153,69 @@ _summary_header() {
 EOF
 }
 
+# --- Internal: count of matured, still-open deferred hypotheses ---
+# Returns the integer number of hypothesis-log rows that _summary_deferred_evaluation
+# would surface as questions for the same (log, current_round): rows that are
+# open (empty Outcome), not Scope=internal-si, and whose maturity window has
+# elapsed. It deliberately reuses _row_is_open_deferred plus the same column-
+# location calls and Outcome-column fallback (7) as _summary_deferred_evaluation,
+# so the action block's N is equal to the question count below it by construction
+# (the feedback-continuity property — the top block must not claim a different
+# count than the section it points to). Echoes 0 when the log is missing.
+_count_matured_deferred() {
+    local hypothesis_log="$1"
+    local current_round="${2:-0}"
+
+    [ -f "$hypothesis_log" ] || { echo 0; return; }
+
+    local scope_col outcome_col
+    scope_col=$(_locate_scope_col "$hypothesis_log")
+    outcome_col=$(_locate_log_col "$hypothesis_log" "Outcome")
+    [[ "$outcome_col" -gt 0 ]] || outcome_col=7
+
+    local count=0
+    local line
+    while IFS= read -r line; do
+        _row_is_open_deferred "$line" "$current_round" "$scope_col" "$outcome_col" || continue
+        count=$((count + 1))
+    done < "$hypothesis_log"
+    echo "$count"
+}
+
+# --- Internal: top-of-summary "What You Need To Do" action block ---
+# Sits immediately below Run Overview so a returning user finds their single
+# primary action within the first screenful instead of scrolling past the full
+# open-hypothesis list. The one action that needs the user is answering the
+# matured deferred hypothesis questions (the "Deferred Evaluation Questions"
+# section); everything else in the summary is informational. The count comes
+# from _count_matured_deferred, which shares the deferred section's filter, so
+# the N named here always matches the number of questions below.
+_summary_action_block() {
+    local hypothesis_log="$1"
+    local current_round="${2:-0}"
+
+    local matured
+    matured=$(_count_matured_deferred "$hypothesis_log" "$current_round")
+
+    echo ""
+    echo "## What You Need To Do"
+    echo ""
+    if [ "$matured" -eq 0 ]; then
+        echo "Nothing needs your input right now — no deferred hypotheses have matured for evaluation this cycle. The sections below are informational; skim at your leisure."
+        return
+    fi
+
+    local noun="questions"
+    [ "$matured" -eq 1 ] && noun="question"
+    echo "**Answer the ${matured} matured deferred hypothesis ${noun}** in the \"Deferred Evaluation Questions\" section below. That is the one action that needs you this cycle; everything else in this summary is informational."
+}
+
 # --- Internal: top-of-summary "Failure Modes This Cycle" block ---
 # Aggregates gate-fail (gate, task_id) pairs across rounds in scope and emits
-# the top 3 gates by distinct-task count. Sits just below Run Overview so an
-# operator skimming the summary sees the dominant failure mode at a glance,
-# without needing to scroll into the per-round detail.
+# the top 3 gates by distinct-task count. Sits near the top (just below the
+# "What You Need To Do" action block) so an operator skimming the summary sees
+# the dominant failure mode at a glance, without needing to scroll into the
+# per-round detail.
 #
 # Dedupe rule: a (gate, task_id) pair is counted once even if it fails across
 # multiple rounds — repeated failures of the same task against the same gate
