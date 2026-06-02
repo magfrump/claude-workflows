@@ -177,6 +177,24 @@ it when `dev` has drifted far from the PRs (local branches deleted, stale, or ou
 actually under review), when phantom conflicts keep recurring, or on a regular cadence to keep the
 integration branch honest.
 
+### When to use
+
+This is the **standard process** for consolidating every in-flight PR into one testable branch — not
+an ad-hoc merge to improvise each time. Route a request here whenever it asks to pull all the open
+work together and resolve the conflicts. Trigger phrasings that should land on this procedure:
+
+- "merge all open PRs"
+- "build an integration branch"
+- "integrate everything and resolve conflicts"
+- "rebuild / refresh dev from the open PRs"
+- "test all the open PRs together"
+
+Each maps onto the numbered procedure below: enumerate the open PRs (step 1), build a fresh reviewable
+branch off `main` (step 2), merge each PR head and resolve conflicts (steps 3–5), verify the
+integrated branch (step 6), and promote only through the approval gate (step 7). If a request instead
+names a small set of *local* feature branches to re-merge — rather than the canonical open-PR set —
+use the lighter **Setting up or resetting dev** reset above.
+
 The procedure is built around three failure-driven invariants (see *Why this shape* below). Keep them
 in mind as you run the steps — every step exists to uphold one of them.
 
@@ -346,7 +364,7 @@ The point of the third outcome is that "I checked and the right answer is to wai
 | Check dev divergence | `git log --oneline main..dev \| wc -l` |
 | Check branch subset | `git merge-base --is-ancestor feat/a feat/b` |
 | Reset dev (lightweight, gated force-push) | Delete dev, create from main, re-merge active features |
-| Integration branch refresh (PR-driven, reviewable) | `gh pr list --state open`, fresh `dev-refresh-<date>` off main, merge each PR head, verify, push as new ref |
+| Integration branch refresh (PR-driven, reviewable) — triggers: "merge all open PRs", "build an integration branch", "integrate everything and resolve conflicts" | `gh pr list --state open`, fresh `dev-refresh-<date>` off main, merge each PR head, verify, push as new ref |
 | List open PRs to integrate | `gh pr list --state open --json number,headRefName,baseRefName,title` |
 | Reference a prior conflict resolution | `git show <previous-integration-branch>:<path>` (reference only — re-verify each hunk) |
 | List feature branches by age | `git for-each-ref --sort=-committerdate refs/heads/feat/* --format='%(committerdate:relative) %(refname:short)'` |
