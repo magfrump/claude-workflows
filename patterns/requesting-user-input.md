@@ -94,4 +94,7 @@ When a workflow step asks the user to decide, confirm, or choose:
 2. Add a `Done when...` item (or equivalent gate condition) asserting the prompt carried all three properties, so the wiring is auditable rather than aspirational.
 3. For prompts that gate an irreversible or outward-facing action, treat the error-recoverability property as load-bearing: the prompt must name the point of no return explicitly.
 
-**Example caller:** [`workflows/research-plan-implement.md`](../workflows/research-plan-implement.md) step 4 (Annotate) — the plan-approval gate — requires its approval prompt and any clarification asked during the annotation cycle to satisfy this checklist.
+**Example callers:**
+
+- [`workflows/research-plan-implement.md`](../workflows/research-plan-implement.md) step 4 (Annotate) — the plan-approval gate — requires its approval prompt and any clarification asked during the annotation cycle to satisfy this checklist. This is the *recoverable* case: the prompt's job is to make clear the choice can be walked back (approve-with-changes, not-yet, interrupt-after-any-commit).
+- [`workflows/branch-strategy.md`](../workflows/branch-strategy.md) Integration branch refresh, step 7 (Promote only through the approval gate) — the gate that approves force-pushing the shared `dev`. This is the *irreversible-for-others* case, and the first call-site where error-recoverability is **load-bearing** per step 3 above: the prompt must name the point of no return — the force-push cannot be cleanly undone — rather than reassure that the choice is reversible.

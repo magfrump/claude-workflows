@@ -260,6 +260,32 @@ Modes gate — the same gate that governs force-push, `reset --hard`, and branch
 approval, the fresh branch stands alone as the reviewable artifact; it does not disrupt anyone with
 the old `dev` checked out.
 
+Because that promotion is the most irreversible-for-others action in this workflow, the request for
+approval is not a bare "OK to swap `dev`?" — the prompt that asks for it must satisfy the
+[requesting-user-input checklist](../patterns/requesting-user-input.md#the-checklist). And because the
+action cannot be cleanly undone, its **error-recoverability** content is load-bearing (checklist §3,
+"Using this pattern"): the prompt must name the point of no return explicitly. A conforming prompt:
+
+> Integration refresh `dev-refresh-<YYYY-MM-DD>` is built and green. Promoting it means force-pushing
+> over the shared `dev`, which moves the branch every teammate has checked out and discards the
+> resolution currently on `dev`. Pick one:
+>   - **Promote now (force-push `dev`)** → I run `git push --force-with-lease origin dev` pointing
+>     `dev` at the refresh; the old `dev` tip leaves the shared ref.
+>   - **Keep as a separate ref** → nothing is force-pushed; `dev-refresh-<YYYY-MM-DD>` stays up for
+>     review and the team's `dev` is left untouched.
+>   - **Abort — something's off** → tell me what to change; nothing is pushed.
+>
+> This force-push cannot be cleanly undone: teammates with `dev` checked out must reset to the new
+> tip, and the previous `dev` history survives only in local reflogs. Capture the current tip
+> (`git rev-parse origin/dev`) first if you want a recovery point.
+
+The prompt carries all three checklist properties: the three named options are the **signifier**; each
+option's "→ I run… / nothing is pushed" clause is the **conceptual model**; and the closing "cannot be
+cleanly undone… capture the current tip first" sentence is the load-bearing **error-recoverability**
+content naming the point of no return. The human picking **Promote now** is the explicit approval the
+Operating Modes gate requires — the prompt is how that approval is solicited, not a relaxation of the
+gate.
+
 ### Why this shape (failure-driven)
 
 Each rule below exists because the naive version of this procedure has burned someone:
@@ -282,6 +308,7 @@ Each rule below exists because the naive version of this procedure has burned so
 - [ ] PRs absent from the previous integration branch were folded in and resolved from first principles
 - [ ] Build, lint, and tests pass on the fresh branch
 - [ ] The fresh branch was pushed as its own ref for inspection; the shared `dev` was **not** force-pushed without explicit human approval
+- [ ] If promotion over the shared `dev` was requested, the approval prompt satisfied the [requesting-user-input checklist](../patterns/requesting-user-input.md#the-checklist) — it named the available actions (signifier), stated what force-pushing `dev` would change (conceptual model), and made the irreversibility load-bearing: that the force-push cannot be cleanly undone and how to capture a recovery point first (error recoverability)
 
 ## Stale-branch triage (advisory)
 
