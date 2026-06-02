@@ -132,11 +132,61 @@ After building the tradeoff matrix, pressure-test the surviving approaches using
 
 Apply 2-4 of the most relevant moves to each surviving approach. Update the tradeoff matrix if the stress test reveals new information — a changed risk rating, a previously unnoticed downside, or a boring alternative that should have been a candidate from the start.
 
+#### Decision presentation
+
+Scrutiny happens *during* the decision, not after it. So before writing anything to `docs/decisions/` (step 5), render the tradeoff matrix and stress-test findings as a CLI-native decision block — the primary display surface the human reads at the moment of choosing. The step-5 markdown record is the *archive* of a decision already scrutinized here; it is not the surface you scrutinize on.
+
+The block's data is exactly what you already produced: the step-4 tradeoff matrix (one row per surviving candidate), the per-candidate falsifiable hypothesis, and the 2-4 stress-test moves applied to each. This sub-step only *renders* that data — it introduces no new analysis. Render it as console text (fenced block, box-drawing characters, matching the repo's existing CLI layouts) in three regions:
+
+**Region 1 — Scorecard grid.** A banner naming the decision, then one row per surviving candidate, scored with glyphs so the whole field is comparable at a glance. The recommended candidate is marked `★`; rows are ordered recommendation-first, then by descending coverage.
+
+```
+┌─ DECISION: <one-line decision goal from step-2 diagnosis> ─────────────┐
+│ <N> candidates survived step-3 pruning · scored on the step-4 axes     │
+└────────────────────────────────────────────────────────────────────────┘
+
+  legend   ● strong / low   ◐ partial / medium   ○ weak / high   ✗ fails hard constraint
+
+   #    approach              effort     risk    coverage   key downside
+  ───  ───────────────────  ─────────  ──────  ──────────  ─────────────────────────
+   2 ★  managed SaaS          ◐ 3d       ● low   ● 5/5 hard  ◐ vendor lock-in (mitig.)
+   4    in-house Kafka        ○ 3wk      ◐ med   ● 5/5 hard  ○ ops burden
+   6    premium add-on        ● 1d       ◐ med   ◐ 4/5 hard  ◐ unproven demand
+   1    do nothing            ● 0d       ● low   ✗ 1/5 hard  ✗ leaves core problem
+```
+
+Column semantics: `effort` carries the step-4 cost estimate (token or hour/day prediction) next to its glyph; `coverage` is hard-constraint satisfaction count from the step-3 matrix; `key downside` is the single worst residual, tagged `(mitig.)` when a stress-test mitigation addressed it. A `✗` in any cell flags a candidate that should already have been pruned — surface it, don't hide it.
+
+**Region 2 — Candidate cards (drill-down target).** For any candidate, render an expanded card carrying everything the scorecard row compresses: the falsifiable hypothesis verbatim, every stress-test move applied and what it changed, and coverage broken out hard/soft. This is the unit of scrutiny — the human reads the card before endorsing the row.
+
+```
+╭─ [2] managed SaaS   ★ recommended ─────────────────────────────────────╮
+│ effort    3 days (~12k tok)          risk   low                         │
+│ coverage  5/5 hard · 2/3 soft                                           │
+│ hypothesis  If chosen, p99 ingest < 500 ms within 2 weeks of rollout;   │
+│             counter-evidence = sustained p99 > 800 ms or queue growth.  │
+│ stress-tests applied                                                    │
+│   · Boring alternative → simpler single-region variant rejected:        │
+│       diagnosis requires multi-region, simple version can't.            │
+│   · Scale test       → degrades gracefully to 10× via vendor sharding.  │
+│ key downside  vendor lock-in — mitigated by an export pipeline kept     │
+│               warm (see Stress-test mitigations, step 5).               │
+╰─────────────────────────────────────────────────────────────────────────╯
+```
+
+**Region 3 — Drill-down protocol.** Default to the scorecard grid plus the recommended candidate's card expanded; keep the rest collapsed to their rows. Expand any other candidate's card on request (the human names a `#`), then collapse it again. Never dump all cards at once — the grid is the index, the cards are opened on demand, so the comparison stays legible while detail is one step away.
+
+Close the block with a one-line recommendation banner that states the chosen `#`, its confidence, and — when two candidates score within ~1 cell — the axis of disagreement (per the tie-handling in `#### Decision` below):
+
+```
+▶ recommend [2] managed SaaS · confidence 85% · runner-up [4], axis = speed-to-ship vs control
+```
+
 #### Decision
 
 If one approach clearly dominates (>80% confidence): document the decision and proceed.
 
-If the tradeoff is genuinely unclear: **stop and consult the user.** Present the matrix, state your tentative recommendation with reasoning, and identify what information would resolve the ambiguity.
+If the tradeoff is genuinely unclear: **stop and consult the user.** Show the Decision presentation block rendered above (not a re-typed prose summary), state your tentative recommendation with reasoning, and identify what information would resolve the ambiguity.
 
 When 2+ surviving candidates score within ~1 cell of each other on the tradeoff matrix, explicitly name the **axis of disagreement** (e.g., "speed vs robustness", "control vs simplicity") and the project's stated preference along that axis. If no stated preference exists, record "no stated preference, picked by tiebreaker rule X" so the buried judgment call is visible and revisitable by future readers.
 
@@ -208,6 +258,7 @@ When this variant is used, the step-5 decision record's **Decision and rationale
 - [ ] Each surviving candidate declares a predicted implementation cost — a token estimate or an hour estimate; treat as a soft prediction, not a strict cap
 - [ ] At least 2-4 stress-test moves were applied to each surviving approach
 - [ ] Tradeoff matrix is updated with any findings from the stress test
+- [ ] The Decision presentation block was rendered before any step-5 doc was written — scorecard grid (one glyph-scored row per surviving candidate, recommended row marked `★`), the recommended candidate's card expanded, and a recommendation banner — and it is what the user scrutinizes if consulted
 - [ ] Either one approach dominates at >80% confidence, or the user has been consulted
 - [ ] If 2+ candidates scored within ~1 cell on the tradeoff matrix, the axis of disagreement and the project's stated preference (or the tiebreaker rule used in its absence) are recorded explicitly
 - [ ] The chosen approach is stated explicitly with a one-sentence rationale
