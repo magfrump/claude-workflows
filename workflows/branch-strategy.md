@@ -195,7 +195,7 @@ integrated branch (step 6), and promote only through the approval gate (step 7).
 names a small set of *local* feature branches to re-merge — rather than the canonical open-PR set —
 use the lighter **Setting up or resetting dev** reset above.
 
-The procedure is built around three failure-driven invariants (see *Why this shape* below). Keep them
+The procedure is built around four failure-driven invariants (see *Why this shape* below). Keep them
 in mind as you run the steps — every step exists to uphold one of them.
 
 ### Procedure
@@ -236,17 +236,36 @@ Merge one PR at a time and stop at the first conflict — resolve it (step 4) be
 resolution is attributable to a single PR.
 
 **4. Resolve conflicts using the prior integration branch as reference *only*.** When a hunk
-conflicts, look at how the previous integration branch resolved the same region:
+conflicts, recover the intent of the earlier resolution from **two** sources — the resolved *code* and
+the recorded *rationale*:
 
 ```bash
-git show <previous-integration-branch>:<path>   # how it was resolved last time
+git show <previous-integration-branch>:<path>                 # what the hunk resolved to last time
+grep -n -A8 '<path>' docs/working/integration-conflicts.md    # why it was resolved that way
 ```
 
-Use that to recover the *intent* of the earlier resolution — but **re-verify every hunk against the
-current content of both sides before accepting it.** Prior resolutions go stale: a PR may have been
-revised after the last refresh, a branch force-updated, a conflicting PR closed. Blind-applying an old
-resolution silently reintroduces dropped changes or resurrects reverted ones. Treat the old resolution
-as a hint, re-derive the merge from the two *current* sides, and confirm the result reflects both.
+`git show` returns the resolved code but not the reasoning; the rationale log
+([`docs/working/integration-conflicts.md`](../docs/working/integration-conflicts.md)) records *why* —
+which side was authoritative, what was intentionally dropped, and what would make the resolution go
+stale. Read both, then **re-verify every hunk against the current content of both sides before
+accepting it.** Prior resolutions go stale: a PR may have been revised after the last refresh, a branch
+force-updated, a conflicting PR closed. Blind-applying an old resolution silently reintroduces dropped
+changes or resurrects reverted ones. Treat the old resolution as a hint, re-derive the merge from the
+two *current* sides, and confirm the result reflects both.
+
+**Then record the rationale.** After resolving each conflict, append an entry to the rationale log so
+the *next* refresh can recover your reasoning — not just your resulting code. Use the template in
+[`docs/working/integration-conflicts.md`](../docs/working/integration-conflicts.md); keep the `path:`
+line intact so the grep above finds it on the next build:
+
+> ### \<YYYY-MM-DD> · dev-refresh-\<YYYY-MM-DD>
+> - **path:** `<path>`  ·  **PR:** #\<n> `<headRef>`  ·  **region:** \<what conflicted>
+> - **resolution:** \<what the hunk became>  ·  **rationale:** \<why this side / what was dropped>
+> - **staleness signal:** \<what change to either side would make this resolution wrong>
+
+The log entry is the durable complement to `git show`: the resolved code lives in the branch, the
+reasoning behind it lives in the log. Without it, every refresh re-derives the same reasoning from
+scratch (or replays it blind).
 
 **5. Fold in PRs not yet on the previous integration branch.** Some open PRs are newer than the last
 refresh and have no prior resolution to reference. After replaying the known set, merge these in and
@@ -257,6 +276,9 @@ resolve their conflicts from first principles:
 # compare your enumerated list (step 1) against what the old branch already contained.
 git merge origin/<new-headRef> --no-edit
 ```
+
+Record a rationale entry (step 4) for each of these too, marking `origin: first-principles` since
+there is no prior resolution to reference — the next refresh will then have the reasoning on hand.
 
 **6. Verify the integrated branch.** Run the full build/lint/test on the fresh branch — this is the
 first time all current PRs have been tested together.
@@ -318,12 +340,20 @@ Each rule below exists because the naive version of this procedure has burned so
 - **Build on a fresh reviewable branch.** Doing the merge on a throwaway, date-stamped branch makes
   the conflict resolution an inspectable diff *before* anything lands. A reviewer (or you, later) can
   audit exactly how each conflict was resolved instead of trusting an in-place mutation.
+- **Rationale outlives code.** `git show <previous-integration-branch>:<path>` recovers *what* a hunk
+  resolved to, never *why*. The next refresh then either blind-applies a now-stale resolution or
+  re-derives reasoning that was already done. Recording each resolution's rationale in
+  [`docs/working/integration-conflicts.md`](../docs/working/integration-conflicts.md) — and grepping
+  it before resolving — makes the *intent* recoverable: authoritative side, intentionally dropped
+  changes, and the staleness signal that says when to distrust it. The code reference and the
+  rationale log are complements, keyed on the same `<path>`.
 
 **Done when...**
 - [ ] All open PRs were enumerated from `gh pr list` (not from the local branch list)
 - [ ] The refresh was built on a fresh, date-stamped branch off `main`; the previous integration branch is untouched and available for reference
 - [ ] Each open PR head was merged in; conflicts were resolved by re-verifying each hunk against both current sides, using the prior integration branch only as a reference
-- [ ] PRs absent from the previous integration branch were folded in and resolved from first principles
+- [ ] Before resolving each conflict, `docs/working/integration-conflicts.md` was grepped for the path's prior rationale; after resolving, a new entry (path, resolution, why, staleness signal) was appended
+- [ ] PRs absent from the previous integration branch were folded in and resolved from first principles (their rationale entries marked `origin: first-principles`)
 - [ ] Build, lint, and tests pass on the fresh branch
 - [ ] The fresh branch was pushed as its own ref for inspection; the shared `dev` was **not** force-pushed without explicit human approval
 - [ ] If promotion over the shared `dev` was requested, the approval prompt satisfied the [requesting-user-input checklist](../patterns/requesting-user-input.md#the-checklist) — it named the available actions (signifier), stated what force-pushing `dev` would change (conceptual model), and made the irreversibility load-bearing: that the force-push cannot be cleanly undone and how to capture a recovery point first (error recoverability)
@@ -366,6 +396,8 @@ The point of the third outcome is that "I checked and the right answer is to wai
 | Reset dev (lightweight, gated force-push) | Delete dev, create from main, re-merge active features |
 | Integration branch refresh (PR-driven, reviewable) — triggers: "merge all open PRs", "build an integration branch", "integrate everything and resolve conflicts" | `gh pr list --state open`, fresh `dev-refresh-<date>` off main, merge each PR head, verify, push as new ref |
 | List open PRs to integrate | `gh pr list --state open --json number,headRefName,baseRefName,title` |
-| Reference a prior conflict resolution | `git show <previous-integration-branch>:<path>` (reference only — re-verify each hunk) |
+| Reference a prior conflict resolution | `git show <previous-integration-branch>:<path>` (the resolved *code* — reference only, re-verify each hunk) |
+| Recover *why* a hunk was resolved before | `grep -n -A8 '<path>' docs/working/integration-conflicts.md` (the *rationale* — pairs with `git show`) |
+| Record a conflict resolution's rationale | Append an entry to `docs/working/integration-conflicts.md` (path, resolution, why, staleness signal) |
 | List feature branches by age | `git for-each-ref --sort=-committerdate refs/heads/feat/* --format='%(committerdate:relative) %(refname:short)'` |
 | Keep a paused branch parked | `git commit --allow-empty -m "chore: still watching feat/name"` |
