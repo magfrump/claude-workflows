@@ -161,7 +161,127 @@ git branch -m dev-new dev
 git push --force-with-lease origin dev
 ```
 
-This is disruptive (anyone else with dev checked out needs to reset), so use sparingly.
+This is disruptive (anyone else with dev checked out needs to reset), so use sparingly. The final
+`git push --force-with-lease origin dev` replaces a shared branch in place — that pointer swap is a
+**gated operation requiring explicit human approval** (see Operating Modes in CLAUDE.md), regardless
+of away/active mode. When you want the rebuild to be inspected before it lands on the shared branch,
+use the **Integration branch refresh** procedure below instead — it produces a fresh reviewable
+branch rather than overwriting `dev`.
+
+## Integration branch refresh
+
+The reset above re-merges the *local* feature branches you happen to be carrying. The **integration
+branch refresh** is the heavier, standardized sibling: it rebuilds the integration branch from the
+canonical set of in-flight work — **all open PRs** — in a conflict-aware, reviewable way. Reach for
+it when `dev` has drifted far from the PRs (local branches deleted, stale, or out of sync with what's
+actually under review), when phantom conflicts keep recurring, or on a regular cadence to keep the
+integration branch honest.
+
+The procedure is built around three failure-driven invariants (see *Why this shape* below). Keep them
+in mind as you run the steps — every step exists to uphold one of them.
+
+### Procedure
+
+**1. Enumerate all open PRs.** The open PRs — not your local branch list — are the source of truth for
+what's in flight. Local branches lie (deleted after a stale checkout, never fetched, renamed).
+
+```bash
+gh pr list --state open --json number,headRefName,baseRefName,title \
+  --jq '.[] | "\(.number)\t\(.headRefName)\t\(.title)"'
+```
+
+Record the list. This is the set you are integrating.
+
+**2. Build on a fresh, reviewable branch — never in place.** Create a new integration branch off an
+up-to-date `main`, named so the *previous* integration branch is preserved untouched for reference
+(pass the date in; don't compute it):
+
+```bash
+git checkout main && git pull
+git fetch origin
+git checkout -b dev-refresh-<YYYY-MM-DD> main
+```
+
+Building fresh means the entire conflict resolution lands as an inspectable diff against `main`. The
+existing shared `dev` is not touched, so nothing the team depends on moves until a human approves it.
+
+**3. Merge each open PR's head branch in.** Go oldest-first, or in dependency order if branch names
+encode it (`feat/auth-1-model` before `feat/auth-2-api`). Merge from the remote ref so you integrate
+exactly what's under review, not a stale local copy:
+
+```bash
+git fetch origin <headRef>
+git merge origin/<headRef> --no-edit
+```
+
+Merge one PR at a time and stop at the first conflict — resolve it (step 4) before moving on, so each
+resolution is attributable to a single PR.
+
+**4. Resolve conflicts using the prior integration branch as reference *only*.** When a hunk
+conflicts, look at how the previous integration branch resolved the same region:
+
+```bash
+git show <previous-integration-branch>:<path>   # how it was resolved last time
+```
+
+Use that to recover the *intent* of the earlier resolution — but **re-verify every hunk against the
+current content of both sides before accepting it.** Prior resolutions go stale: a PR may have been
+revised after the last refresh, a branch force-updated, a conflicting PR closed. Blind-applying an old
+resolution silently reintroduces dropped changes or resurrects reverted ones. Treat the old resolution
+as a hint, re-derive the merge from the two *current* sides, and confirm the result reflects both.
+
+**5. Fold in PRs not yet on the previous integration branch.** Some open PRs are newer than the last
+refresh and have no prior resolution to reference. After replaying the known set, merge these in and
+resolve their conflicts from first principles:
+
+```bash
+# PR heads present now but absent from the previous integration branch:
+# compare your enumerated list (step 1) against what the old branch already contained.
+git merge origin/<new-headRef> --no-edit
+```
+
+**6. Verify the integrated branch.** Run the full build/lint/test on the fresh branch — this is the
+first time all current PRs have been tested together.
+
+```bash
+npm run build && npm run lint   # plus the project's test command
+```
+
+**7. Promote only through the approval gate.** Push the fresh branch as its **own ref** and open it
+for inspection. The conflict resolution is now a reviewable diff:
+
+```bash
+git push -u origin dev-refresh-<YYYY-MM-DD>
+```
+
+Do **not** force-push over the shared `dev` to swap it in. Replacing the team's integration branch
+pointer is an irreversible-for-others operation and requires explicit human approval per the Operating
+Modes gate — the same gate that governs force-push, `reset --hard`, and branch deletion. Until that
+approval, the fresh branch stands alone as the reviewable artifact; it does not disrupt anyone with
+the old `dev` checked out.
+
+### Why this shape (failure-driven)
+
+Each rule below exists because the naive version of this procedure has burned someone:
+
+- **Never force-push over shared branches outside the approval gate.** Rebuilding by force-pushing
+  `dev` in place silently rebases everyone else's checkout and destroys the old resolution before
+  anyone can compare against it. The refresh instead produces a *new* branch; the shared-pointer swap
+  is gated on human approval (Operating Modes), not done automatically — even in `/away` mode.
+- **Prior resolutions are reference only.** The previous integration branch is a memory aid, not a
+  patch to replay. Branches and PRs change between refreshes, so a resolution that was correct last
+  week can drop or resurrect changes this week. Every hunk is re-verified against both current sides.
+- **Build on a fresh reviewable branch.** Doing the merge on a throwaway, date-stamped branch makes
+  the conflict resolution an inspectable diff *before* anything lands. A reviewer (or you, later) can
+  audit exactly how each conflict was resolved instead of trusting an in-place mutation.
+
+**Done when...**
+- [ ] All open PRs were enumerated from `gh pr list` (not from the local branch list)
+- [ ] The refresh was built on a fresh, date-stamped branch off `main`; the previous integration branch is untouched and available for reference
+- [ ] Each open PR head was merged in; conflicts were resolved by re-verifying each hunk against both current sides, using the prior integration branch only as a reference
+- [ ] PRs absent from the previous integration branch were folded in and resolved from first principles
+- [ ] Build, lint, and tests pass on the fresh branch
+- [ ] The fresh branch was pushed as its own ref for inspection; the shared `dev` was **not** force-pushed without explicit human approval
 
 ## Stale-branch triage (advisory)
 
@@ -198,6 +318,9 @@ The point of the third outcome is that "I checked and the right answer is to wai
 | Delete merged branch | `git branch -d feat/name && git push origin --delete feat/name` |
 | Check dev divergence | `git log --oneline main..dev \| wc -l` |
 | Check branch subset | `git merge-base --is-ancestor feat/a feat/b` |
-| Reset dev | Delete dev, create from main, re-merge active features |
+| Reset dev (lightweight, gated force-push) | Delete dev, create from main, re-merge active features |
+| Integration branch refresh (PR-driven, reviewable) | `gh pr list --state open`, fresh `dev-refresh-<date>` off main, merge each PR head, verify, push as new ref |
+| List open PRs to integrate | `gh pr list --state open --json number,headRefName,baseRefName,title` |
+| Reference a prior conflict resolution | `git show <previous-integration-branch>:<path>` (reference only — re-verify each hunk) |
 | List feature branches by age | `git for-each-ref --sort=-committerdate refs/heads/feat/* --format='%(committerdate:relative) %(refname:short)'` |
 | Keep a paused branch parked | `git commit --allow-empty -m "chore: still watching feat/name"` |
