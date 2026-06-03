@@ -77,6 +77,21 @@ Reserve the free-text path for answers that are genuinely open — a value, a na
 
 The two paths compose within one gate: a common shape is an `AskUserQuestion` whose listed options cover the expected choices while "Other" absorbs the open case — the user picks a named action when one fits and types a free answer when none does.
 
+### Comparison-heavy gates: route per-option detail to `preview`
+
+`AskUserQuestion` gives each option a third slot beyond label and description: `preview`, content rendered natively when that option is focused. The description is meant to be the one-line consequence — "if I pick this, then ______" — but on a gate whose options differ on *comparison data* (relative effort or cost, risk, diff size, multi-axis tradeoffs), that data tends to get crammed into the description until it is no longer a line but a paragraph the user can't scan. Route the comparison data to `preview` instead: the description stays the scannable consequence shown in the option list, and the per-option detail lives in the on-focus surface, surfaced exactly when the user is weighing that one option.
+
+This splits the conceptual-model property across two registers rather than dropping it. The consequence is always visible (description), and the supporting detail that justifies it — the scorecard row, the effort estimate, the risk notes, the tradeoff cells — is one focus-keystroke away (preview), rendered natively rather than flattened into prose. The test from [Conceptual model](#conceptual-model) still has to pass on the description alone; preview earns its place only by carrying the comparison detail that would otherwise overload that line.
+
+**Scope it to gates that are genuinely comparison-heavy.** This is a recommendation for gates whose options carry multi-axis data the user must weigh against each other — not a blanket mandate to populate `preview` on every prompt. Two named cases:
+
+- **DD's step-4 human consult** ([`workflows/divergent-design.md`](../workflows/divergent-design.md), Path B): each option is a surviving candidate that differs from its siblings along a whole scorecard row. The description carries the candidate's key downside plus its falsifiable hypothesis; `preview` is the natural home for that candidate's scorecard row and stress-test detail, so the option list stays scannable while the full comparison is a focus away.
+- **RPI plan approval** ([`workflows/research-plan-implement.md`](../workflows/research-plan-implement.md) step 4) when approve-as-written / approve-with-changes / not-yet differ on concrete effort or diff size: `preview` can hold the per-option diff summary or step count that distinguishes them.
+
+For a gate whose options *don't* differ on comparison data — a plain confirm/decline, or a yes/no/not-yet whose consequence fits in a line — the description alone carries the conceptual model, and an empty or padded `preview` is just noise. Don't add it.
+
+**Preview is a property of the prompt — keep it non-interactive-safe.** Like the four properties themselves, `preview` exists only on a path that actually issues an `AskUserQuestion` to a human; a decision that a non-interactive or overnight run resolves statically has no prompt, hence no preview surface. DD makes this concrete: only Path B (tradeoff unclear, human present) prompts — Path A (one approach dominates) and Path C (SI loop / overnight) render a static decision block and proceed without ever blocking. So the comparison data has two homes depending on the path: `preview` on the human-present prompt, and the static decision block on the paths that never prompt. Don't treat preview as the channel that carries comparison data to a non-interactive run — that is the static block's job; preview has nothing to render against there.
+
 ## Worked example
 
 Same prompt — a plan-approval gate — written badly and well.
