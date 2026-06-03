@@ -78,6 +78,8 @@ If it genuinely can't be split, note this in the PR description (step 6) and sug
 
 **b. Dependent PR check.** If this branch builds on other unmerged PRs, verify they've been merged or that this PR's base is set correctly. If dependencies haven't landed, decide whether to wait, rebase onto a dev integration branch, or open as a stacked PR with a clear note. Skip this check for standalone branches.
 
+When 2+ PRs are open or stacked together and you need to test them as a unit before review, don't improvise an ad-hoc dev merge — the standardized way to pull the whole in-flight set into one testable branch and resolve conflicts reviewably is the [Integration branch refresh](branch-strategy.md#integration-branch-refresh) in `branch-strategy.md`. It enumerates every open PR (not your local branch list), rebuilds a fresh `dev-refresh-<date>` off main, merges each PR head with conflict rationale recorded, and promotes only through the approval gate.
+
 **c. Pre-mortem fallback check.** This step is a **fallback** for the plan-time pre-mortem wiring in `research-plan-implement.md` step 4 (the high-stakes escalation under "Failure modes considered") and `spike.md`. The primary path is plan-time — context is fullest then, and that's when `/pre-mortem` should run. This step exists only to catch the cases where the primary path did not run: RPI was skipped, the spike workflow was not used, or scope grew past the high-stakes threshold during implementation. The default action here is **skip**; the trigger fires only when both conditions below hold.
 
 <!--
@@ -347,6 +349,7 @@ After the PR merges, there are follow-up tasks that are easy to forget in the mo
 - [ ] **Monitor for regressions in the first hour.** If the project has observability (error tracking, latency dashboards, log alerts), glance at them within an hour of merge. Not all bugs show up in tests — some only appear under real traffic or data patterns. Scale monitoring effort to the risk: a config change needs less watching than a new auth flow.
 - [ ] **Update affected documentation.** If the PR changed user-facing behavior, CLI flags, config options, or API contracts, verify that READMEs, onboarding docs, decision records, and `docs/thoughts/` entries still reflect reality. Documentation that contradicts the code is worse than no documentation.
 - [ ] **Remove feature flags if the feature shipped fully.** If the feature was gated behind a flag during development and is now fully rolled out, remove the flag and its branching logic. Leftover flags accumulate as dead code and confuse future readers.
+- [ ] **Consolidate remaining open PRs if 2+ are still in flight.** If this merge leaves 2+ PRs open or stacked, the standard way to pull them into one testable branch — and resolve the conflicts the just-landed merge may have introduced — is the [Integration branch refresh](branch-strategy.md#integration-branch-refresh) in `branch-strategy.md`. Rebuild the integration branch from the canonical open-PR set rather than re-merging local branches ad-hoc; this keeps the integration branch honest after main has moved.
 
 **This step is intentionally lightweight.** If you find yourself spending more than 5 minutes here, the items have likely surfaced real follow-up work — track that work separately rather than blocking PR completion on it.
 
