@@ -61,6 +61,22 @@ Context continuity is the prompt carrying its own context forward across the tra
 
 The test: a user returning to the terminal after a break can answer correctly from the prompt alone, without scrolling up to rebuild the context.
 
+## Preferred mechanism
+
+The four properties are requirements on the prompt, not a choice of tool — but the tool you reach for decides how much of the work is structural versus prose you have to remember to write. **Default to `AskUserQuestion` for any decision or approval gate; fall back to a free-text prompt only when the answer is genuinely open.**
+
+`AskUserQuestion` builds two of the four properties into its shape:
+
+- **Signifier comes for free.** Each option is a labelled action, so the response space is perceivable by construction — there is no way to render the prompt *without* showing the user what they can pick. A hand-rolled prompt has to state its options in prose, and the *Bare confirmation* and *Options without consequences* anti-patterns are exactly what happens when that prose is skipped.
+- **The conceptual model gets a dedicated slot.** Each option carries a description, which is where its consequence belongs — "if I pick this, then ______." The structure reserves the space; you still have to fill it with the real downstream effect rather than restating the label.
+- **The exit path is structural.** Every `AskUserQuestion` carries an automatic "Other" option, so the user is never trapped in a fixed set — the *No exit* anti-pattern can't occur. (Error recoverability still needs the reversibility/point-of-no-return statement written in; "Other" only covers the escape-from-the-options half.)
+
+What the structure does **not** supply is **context continuity** — `AskUserQuestion` has no slot that restates the carried state the answer depends on. Put that in the question text, and put each option's consequence in its description; the tool provides the slots, not the substance.
+
+Reserve the free-text path for answers that are genuinely open — a value, a name, a free-form correction, an explanation — that don't reduce to a small set of named choices. `AskUserQuestion` allows only two to four options per question; when the real answer space is wider than that, or unbounded, forcing it into four buckets misrepresents the decision. There, use a free-text prompt and satisfy all four properties in prose, following [the checklist](#the-checklist).
+
+The two paths compose within one gate: a common shape is an `AskUserQuestion` whose listed options cover the expected choices while "Other" absorbs the open case — the user picks a named action when one fits and types a free answer when none does.
+
 ## Worked example
 
 Same prompt — a plan-approval gate — written badly and well.
