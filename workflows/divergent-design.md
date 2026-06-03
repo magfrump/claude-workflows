@@ -242,11 +242,28 @@ The brainstorm display surface reads as structurally cleaner than an ad-hoc deci
 
 #### Decision
 
-If one approach clearly dominates (>80% confidence): document the decision and proceed.
+The decision resolves down exactly one of three mutually-exclusive paths. **Only the interactive-consult path (B) issues a live prompt.** The other two render the static Decision presentation block and proceed without ever blocking on input, so a non-interactive overnight run — the SI loop, or any `/away` batch — cannot hang waiting for an answer that will never arrive.
 
-If the tradeoff is genuinely unclear: **stop and consult the user.** Show the Decision presentation block rendered above (not a re-typed prose summary), state your tentative recommendation with reasoning, and identify what information would resolve the ambiguity.
+**Path A — one approach dominates (>80% confidence).** Document the decision and proceed. The Decision presentation block (the static fenced scorecard grid + recommended card) is already rendered above and carries into the step-5 record; do **not** call `AskUserQuestion` — there is nothing to consult on.
 
-When 2+ surviving candidates score within ~1 cell of each other on the tradeoff matrix, explicitly name the **axis of disagreement** (e.g., "speed vs robustness", "control vs simplicity") and the project's stated preference along that axis. If no stated preference exists, record "no stated preference, picked by tiebreaker rule X" so the buried judgment call is visible and revisitable by future readers.
+**Path B — tradeoff genuinely unclear, human present (interactive session).** This is the one path that consults the user, and it does so through a native `AskUserQuestion` prompt rather than a typed-out prose question:
+
+1. First render the Decision presentation block exactly as specified above (scorecard grid → recommended card → drill-down). The glyph-scored grid is the comparative view; it is shown **once**, here — the prompt that follows must **not** re-draw it.
+2. Then issue a single `AskUserQuestion` whose options are the surviving candidates. The grid is the comparison; this question is the choice affordance that follows it.
+
+Construct the prompt as:
+- **question** — the one-line decision goal from the step-2 diagnosis (the same text as the scorecard banner).
+- **header** — a ≤12-char label for the decision (a short topic tag).
+- **options** — one per surviving candidate, ordered recommendation-first (the same order as the grid):
+  - **label** = the approach name (the candidate's short name, 1–5 words). Mark the recommended candidate by placing it **first** and appending ` (Recommended)` to its label.
+  - **description** = the candidate's **key downside** (the scorecard's `key downside` cell, including any `(mitig.)` tag) followed by its **falsifiable hypothesis** verbatim (the step-4 *"If we choose this, we expect … within …; counter-evidence would be …"* line). These two facts are what distinguish the choice; the glyph-scored comparison already lives in the grid above, so the option text does not repeat it.
+- The tool always appends an **Other** choice, so the user can reject every listed candidate or name one not shown — state in the question what "Other" means here.
+
+**Option-count cap.** `AskUserQuestion` allows at most 4 options. When 5 candidates survive into step 4, list the **top 4 by recommendation priority** as options; the 5th remains visible in the preceding scorecard grid (which always shows the full survivor set) and selectable via **Other**. Say in the question that the full field is in the grid above. Never silently drop the 5th — the grid carries it; the cap only limits the native option slots.
+
+**Path C — tradeoff unclear, no human present (SI loop / any non-interactive overnight run).** Do **not** call `AskUserQuestion`; a prompt in a non-interactive run blocks forever and hangs the loop. Instead render the static Decision presentation block, record the tentative recommendation with its reasoning and the axis of disagreement (below), and emit the `## Round claim` subsection (step 5) so the unresolved choice is surfaced to the user *asynchronously* via the morning summary's precondition gate — not via a live prompt. The decision-012 round-claim mechanism is how an overnight-generated decision reaches the user; the live prompt is reserved for Path B. The trigger that selects Path C over Path B is the same multi-round / SI-loop context that gates the step-5 `## Round claim` subsection.
+
+When 2+ surviving candidates score within ~1 cell of each other on the tradeoff matrix, explicitly name the **axis of disagreement** (e.g., "speed vs robustness", "control vs simplicity") and the project's stated preference along that axis. If no stated preference exists, record "no stated preference, picked by tiebreaker rule X" so the buried judgment call is visible and revisitable by future readers. On Path B this axis is what the `AskUserQuestion` resolves; on Path C it is what the round claim hands to the user.
 
 #### Variant: Trigger-bound decision rule (evidence arrives after commit)
 
@@ -317,7 +334,7 @@ When this variant is used, the step-5 decision record's **Decision and rationale
 - [ ] At least 2-4 stress-test moves were applied to each surviving approach
 - [ ] Tradeoff matrix is updated with any findings from the stress test
 - [ ] The Decision presentation block was rendered before any step-5 doc was written — scorecard grid (one glyph-scored row per surviving candidate, recommended row marked `★`), the recommended candidate's card expanded, and a recommendation banner — and it passes the Decision-presentation **Acceptance checklist (structure gate)**: discoverability on creation, conceptual-model coherence, and mapping naturalness. It is what the user scrutinizes if consulted
-- [ ] Either one approach dominates at >80% confidence, or the user has been consulted
+- [ ] The decision resolved down exactly one path: **(A)** one approach dominates at >80% confidence — documented, no prompt; **(B)** tradeoff unclear with a human present — consulted via a native `AskUserQuestion` issued *after* (and not duplicating) the scorecard grid, with one option per surviving candidate (label = approach name, recommended one first with ` (Recommended)`; description = key downside + verbatim falsifiable hypothesis; ≤4 options, 5th survivor reachable via the grid + "Other"); or **(C)** tradeoff unclear in a non-interactive run (SI loop / overnight) — **no prompt issued**, static block rendered and the choice surfaced asynchronously via the `## Round claim` subsection
 - [ ] If 2+ candidates scored within ~1 cell on the tradeoff matrix, the axis of disagreement and the project's stated preference (or the tiebreaker rule used in its absence) are recorded explicitly
 - [ ] The chosen approach is stated explicitly with a one-sentence rationale
 - [ ] *If the Trigger-bound decision rule variant was engaged*: the decision rule names a specific, thresholded observable for each of Continue / Revisit / Reverse, and the Reverse branch pre-names a specific step-3 survivor candidate as fallback (only fires when the variant trigger applies; default-path decisions skip this gate)
