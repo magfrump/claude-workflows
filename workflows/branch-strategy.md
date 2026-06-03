@@ -170,12 +170,17 @@ branch rather than overwriting `dev`.
 
 ## Integration branch refresh
 
-The reset above re-merges the *local* feature branches you happen to be carrying. The **integration
-branch refresh** is the heavier, standardized sibling: it rebuilds the integration branch from the
-canonical set of in-flight work — **all open PRs** — in a conflict-aware, reviewable way. Reach for
-it when `dev` has drifted far from the PRs (local branches deleted, stale, or out of sync with what's
-actually under review), when phantom conflicts keep recurring, or on a regular cadence to keep the
-integration branch honest.
+**The standard process for consolidating every open PR into one testable integration branch.** This is
+a first-class procedure with the same standing as [research-plan-implement](research-plan-implement.md)
+or [pr-prep](pr-prep.md): when the task is "pull all the in-flight work together and resolve the
+conflicts," follow this named process rather than improvising a one-off merge each time.
+
+It rebuilds the integration branch from the canonical set of in-flight work — **all open PRs** — in a
+conflict-aware, reviewable way. Reach for it when `dev` has drifted far from the PRs (local branches
+deleted, stale, or out of sync with what's actually under review), when phantom conflicts keep
+recurring, or on a regular cadence to keep the integration branch honest. It is the heavier sibling of
+the lightweight [Setting up or resetting dev](#setting-up-or-resetting-dev) reset above, which re-merges
+only the *local* feature branches you happen to be carrying.
 
 ### When to use
 
