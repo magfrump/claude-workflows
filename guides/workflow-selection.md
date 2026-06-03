@@ -87,4 +87,5 @@ Debugging is not a standalone workflow — invoke `superpowers:systematic-debugg
 | [codebase-onboarding](../workflows/codebase-onboarding.md) | Structured orientation for unfamiliar codebases |
 | [pr-prep](../workflows/pr-prep.md) | Package work for async review (includes review-fix-loop) |
 | [branch-strategy](../workflows/branch-strategy.md) | High-throughput feature branches with async review |
+| [integration-branch-refresh](../workflows/branch-strategy.md#integration-branch-refresh) | Standard process to consolidate all open PRs into one reviewable, conflict-resolved integration branch |
 | [user-testing-workflow](../workflows/user-testing-workflow.md) | Plan, run, and interpret usability tests |
