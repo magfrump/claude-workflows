@@ -347,6 +347,47 @@ rendering, load `references/accessibility-serialization.md`. It covers the ARIA-
 visible-text equivalence check, diff-scoped tab order verification, and the persistent-
 label requirement for AI-generated content.
 
+### 11. Element overlap, z-order, and occlusion *(spatial / 3D layouts)*
+
+**Activation trigger.** Run this item when the diff touches a layout where elements are
+*meant* to share space and stack — not the document-flow layouts items 1–5 cover, but
+spatial ones: game boards and the pieces on them, draggable/droppable tokens, stacked or
+floating panels, overlays and HUDs layered over a canvas or viewport, absolutely- or
+fixed-positioned interactive layers, and 3D scenes (three.js, react-three-fiber, Babylon,
+Unity) where objects occlude each other. Like items 9 and 10, this triggers on the
+*presence of that content*, regardless of mechanical-vs-full-audit mode.
+
+**Why this is its own item.** Items 1–5 assume content should *not* overlap (overflow,
+clipping, and mis-anchored absolute positioning are all "things ended up on top of each
+other by mistake"). Spatial layouts invert that assumption: overlap is the *medium*.
+A card deck stacks on purpose; a modal is supposed to cover the board; a held piece floats
+above the squares. So the bug is never "things overlap" — it is "the *wrong* thing is on
+top," and an item that flagged every overlap would be pure noise on exactly the layouts it
+is meant to help.
+
+**Discriminate by construction — confirm intent before flagging.** Enumerate the
+overlapping/stacked elements in the changed layout, then sort each overlap into one of two
+buckets. Flag only the first.
+
+| Bucket | What it looks like | Action |
+|--------|--------------------|--------|
+| **Unintended occlusion** (bug) | An interactive control hidden behind another element (a button under a panel, a draggable handle covered by an overlay so it can't be grabbed); a game piece or token clipped *outside* the board/container bounds or rendered behind the board so it's unreachable; a tooltip/label drawn under the element it describes; a higher-priority layer (active modal, dragged item) painted *below* a lower-priority one because `z-index`/`renderOrder`/sibling order is inverted. | **Flag.** Cite the occluding pair and the inverted stacking source (`z-index`, DOM/sibling order, Unity sibling index / `Canvas.sortingOrder`, three.js `renderOrder`). |
+| **Intended layering** (not a bug) | A deliberately stacked card pile, fanned hand, or token stack; a modal/overlay/drawer that is *supposed* to cover what's beneath it; a held/dragged piece floating above the board mid-interaction; a HUD layer pinned over a viewport. | **Do not flag.** If intent is plausible but unconfirmed, ask or note the assumption rather than reporting it as a defect. |
+
+The discriminating question for each overlap is: **"Is the element on top supposed to be on
+top, and can the user still reach everything they need to?"** If yes → intended layering,
+leave it. If a control the user must operate is unreachable, or a piece has left its legal
+bounds → unintended occlusion, flag it. When the diff makes intent ambiguous and you can't
+resolve it from surrounding code, surface it as a question (or an inline-suppression
+candidate, per *Suppressing Known Findings*), not a Critical finding.
+
+For the *rendering-pipeline* causes of 3D occlusion (transparent meshes drawn in the wrong
+order, gizmos hidden inside the model, geometry clipped by near/far planes), this item
+defers to `references/3d-viewport.md` — that file covers `material.transparent`,
+`renderOrder`, `depthTest`/`depthWrite`, and clipping planes. This item is about layout
+*intent* (which element should be on top); load the 3D reference for *how* the renderer
+decides draw order.
+
 ---
 
 ## Step 3: Research When Uncertain
@@ -426,7 +467,7 @@ For each finding, use this structure:
 
 **Severity:** [Critical / Major / Minor / Informational]
 **Location:** `path/to/file.ext:42-58`
-**Issue type:** [Overflow | Sizing | Positioning | Affordance | Focus | Responsive | 3D | Accessibility serialization | State coverage | Other]
+**Issue type:** [Overflow | Sizing | Positioning | Occlusion / z-order | Affordance | Focus | Responsive | 3D | Accessibility serialization | State coverage | Other]
 **Viewport:** [which sizes are affected, e.g., 320px–768px; or "all"]
 **Move:** [Which checklist item surfaced this, e.g., "Step 2 item 1: unbounded content"]
 **Confidence:** [High / Medium / Low]
