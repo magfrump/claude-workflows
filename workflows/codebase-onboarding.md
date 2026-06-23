@@ -21,7 +21,7 @@ This is a **pre-task** workflow. It produces an orientation document that subseq
 
 ## When to pivot
 
-- **→ RPI**: The natural next step. Once onboarding is complete, pivot to RPI for your first task. The onboarding doc's architecture map, key flows, and conventions replace the broad exploration part of RPI research — scope research to your specific task instead.
+- **→ RPI**: The natural next step. Once onboarding is complete, pivot to RPI for your first task. The onboarding doc's architecture map, key flows, and conventions replace the broad exploration part of RPI research — scope research to your specific task instead. When a first task is named, step 12's **RPI Research Seed** section makes this handoff concrete: it pre-scopes those artifacts down to the task-relevant files, invariants, and prior art, shaped to drop straight into the RPI research doc's *What exists / Invariants / Prior art* sections so research doesn't re-derive what onboarding already learned.
 - **→ DD**: If the architecture map reveals structural conflicts with planned work, invoke DD to resolve the design question before starting RPI.
 
 ## Working documents
@@ -341,6 +341,21 @@ Prior decisions: none on file
 
 ### 12. Produce the orientation document
 
+**RPI Research Seed (task-scoped handoff).** The onboarding doc maps the terrain broadly, but the value it promises downstream is a *head start on RPI research* (see "When to pivot → RPI" above and CLAUDE.md's "Codebase onboarding → RPI" composition note). The RPI Research Seed section makes that promise a concrete artifact instead of prose: given the user's **first named task**, it scopes the just-built onboarding sections down to the task-relevant subset and arranges them to drop straight into the RPI research doc's body sections (`workflows/research-plan-implement.md` step 2 — *What exists / Invariants / Prior art*). Build it by selecting, not re-researching:
+
+- **Relevant files** (→ RPI *What exists*): from the Architecture Map, Execution Surface, and Suggested Starting Points, the files the first task will actually read or change — each with the one-line note on why it's in scope.
+- **Invariants in scope** (→ RPI *Invariants*): from Guarded Invariants, the `failure mode → guarding construct → file:function` entries the task must not break. Copy only the ones the task touches.
+- **Prior art** (→ RPI *Prior art*): from Key Flows and Conventions, the existing flow(s) or idiom(s) that already solve a similar problem, so the RPI implementation stays consistent with them.
+- **Open questions** (→ RPI research starting points): from Known Unknowns, the gaps the first task will have to resolve before or during its research phase.
+
+The seed is a **derived artifact** — it contains no new information, only a scoping of sections produced in steps 2, 4, 5, 6, and 9 onto the task. It is distinct from Suggested Starting Points: that section is a *task-category* lookup ("to add an endpoint, start in `routes/`"), whereas the seed is scoped to one *specific named task* and pre-mapped onto RPI's research sections.
+
+**When no first task is named** — the common case for broad new-team-member orientation — the section is **not** omitted; it carries a single one-line deferred note in this format (mirroring the `<Section>: none — <reason>.` skip-note convention used by Execution Surface, Build & Run, Test Patterns, and Watch Signals):
+
+> `RPI Research Seed: deferred — no first task named at onboarding time; populate when the first RPI task is scoped.`
+
+The deferred note is a first-class outcome, not a failure: the section is self-justifying as a documented handoff convention even before any task exercises it.
+
 Compile steps 1-11 into `docs/working/onboarding-{project}.md` with these sections:
 
 ```markdown
@@ -389,17 +404,28 @@ Compile steps 1-11 into `docs/working/onboarding-{project}.md` with these sectio
 
 ## Suggested Starting Points
 {for common task types, where to look first — e.g., "to add a new API endpoint, start with routes/ and follow the pattern in routes/users.ts"}
+
+## RPI Research Seed
+{the task-scoped handoff to RPI research. If a first task is named, fill the four mapped bullets below by selecting (not re-researching) from the sections above; each bullet drops into the named RPI research-doc section. If no first task is named, this section contains exactly the one-line deferred note: `RPI Research Seed: deferred — <reason>.`}
+
+*First task: {one-sentence statement of the user's first named task}*
+
+- **Relevant files** (→ RPI *What exists*): {task-relevant files from Architecture Map / Execution Surface / Suggested Starting Points, each with a one-line why-in-scope note}
+- **Invariants in scope** (→ RPI *Invariants*): {the Guarded Invariants entries this task must not break, copied with their `failure mode → guarding construct → file:function` anchors}
+- **Prior art** (→ RPI *Prior art*): {the Key Flows / Conventions entries that already solve a similar problem, so the implementation stays consistent}
+- **Open questions** (→ RPI research starting points): {the Known Unknowns entries this task will need to resolve}
 ```
 
 The three-line header (Goal · Project state · Task status) below the metadata block is the same drift-surfacing convention RPI working docs use (see `workflows/research-plan-implement.md` step 2). Lifecycle keyword vocabulary is identical: `in-progress | blocked | paused | complete`. For a long-lived orientation doc, the Task status line typically reads `complete` after gate sign-off in step 13, switching back to `in-progress` during a re-run or lightweight refresh. Update it whenever the doc is read or revised; if any line no longer matches reality, fix it before doing anything else with the doc. The Goal line replaces the previous standalone `Scope:` field — same content, unified anchor.
 
 **Done when...**
-- [ ] `docs/working/onboarding-{project}.md` exists, opens with the three-line header (Goal · Project state · Task status) below the metadata block, and includes all required sections (Entry Points, Architecture Map, Execution Surface, Guarded Invariants, Key Flows, Conventions, Build & Run, Test Patterns, Known Unknowns, Watch Signals, Decisions on file, Suggested Starting Points)
+- [ ] `docs/working/onboarding-{project}.md` exists, opens with the three-line header (Goal · Project state · Task status) below the metadata block, and includes all required sections (Entry Points, Architecture Map, Execution Surface, Guarded Invariants, Key Flows, Conventions, Build & Run, Test Patterns, Known Unknowns, Watch Signals, Decisions on file, Suggested Starting Points, RPI Research Seed)
 - [ ] The Decisions on file section either lists every `docs/decisions/NNN-*.md` (capped at 10 most-recently-updated, with the `+ N older decisions (see docs/decisions/)` summary when the total exceeds 10) in the documented `[NNN]: <Goal line text>` format, or contains exactly the line `Prior decisions: none on file` when the directory has no matching files
 - [ ] The Task status line accurately reflects current lifecycle (re-read it; if it lies, fix it)
 - [ ] `Last verified` and `Relevant paths` fields are populated in the frontmatter
 - [ ] **Build & Run finalization check**: the section is fully populated — no `TODO`, no "see XYZ later", no empty placeholder, no bullet whose body is only a heading. If a command is genuinely unknown, the section records what *is* known and the gap is filed in Known Unknowns by name; otherwise the section contains the documented `Build & Run: none — <reason>.` skip note. A bare `## Build & Run` heading with no body is treated as a blocking failure of this check.
 - [ ] **Test Patterns finalization check**: the section is fully populated — no `TODO`, no "see XYZ later", no empty placeholder, no bullet whose body is only a heading. If a dimension is genuinely unknown, the section records what *is* known and the gap is filed in Known Unknowns by name; otherwise the section contains the documented `Test Patterns: none — <reason>.` skip note. A bare `## Test Patterns` heading with no body is treated as a blocking failure of this check.
+- [ ] **RPI Research Seed check**: if a first task is named, the section scopes it to that task via the four mapped bullets (Relevant files → *What exists*, Invariants in scope → *Invariants*, Prior art → *Prior art*, Open questions → research starting points), each selected from a real `##` section above and not re-researched; if no first task is named, the section contains exactly the one-line `RPI Research Seed: deferred — <reason>.` note. A bare `## RPI Research Seed` heading with no body is treated as a blocking failure of this check.
 - [ ] Document is committed to the repo
 
 ### 13. Gate — validate with the team
