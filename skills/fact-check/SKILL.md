@@ -100,9 +100,62 @@ The enumeration must be complete before any verdict is written. If you discover 
 while running Pass 2, append it to the Claims identified section with a new ID and then verify
 it — never quietly insert it into the verdict stream without a corresponding enumeration entry.
 
+### Prioritize claims: load-bearing vs. peripheral
+
+Enumeration produces a flat list, but not all claims carry the same weight. A long draft can
+have dozens of checkable claims, and verifying them uniformly in appearance order spends the
+same scrutiny budget on a throwaway aside as on the keystone statistic the whole argument rests
+on. The final act of Pass 1 is to **tag each enumerated claim** so Pass 2 can spend its deepest
+verification effort where it matters most.
+
+Tag every claim with exactly one of:
+
+- **`[load-bearing]`** — the draft's central thesis collapses, or is materially undermined, if
+  this claim is false. These are the keystone facts: the headline statistic, the named policy
+  the argument turns on, the causal link the recommendation depends on. Ask: "if a reader
+  learned only that *this one claim* was wrong, would they stop believing the draft's main
+  point?" If yes, it is load-bearing.
+- **`[peripheral]`** — everything else: supporting color, illustrative asides, background
+  context, secondary statistics, claims whose falsity would dent but not topple the argument.
+  Peripheral does **not** mean unimportant or unchecked — it means checked *later* (see Pass 2).
+
+**Load-bearing claims must be a minority, by construction.** Cap the count of `[load-bearing]`
+tags at **`floor(N/3)`**, where `N` is the total number of enumerated claims. This ceiling is a
+strict minority for every `N` (e.g. N=6 → at most 2 load-bearing, N=9 → at most 3, N=12 → at
+most 4). The cap is the whole point of the tag: if most claims were load-bearing, the tag would
+no longer discriminate and the budget dilution it exists to prevent would return. When more
+claims feel load-bearing than the cap allows, keep only the *most* load-bearing — the ones whose
+falsity would most directly topple the thesis — and tag the rest peripheral. They are still
+verified; they are just verified after the keystones.
+
+**Small drafts skip prioritization.** When `floor(N/3)` is 0 (fewer than 3 enumerated claims),
+do not tag anything load-bearing — triage earns nothing on a 1–2-claim draft. Verify all claims
+at full depth in appearance order, and omit the `**Prioritization:**` header tally line.
+
+Record the tag inline on each `## Claims identified` entry (see [Output format](#output-format)).
+The tag is assigned during Pass 1 alongside the ID and location; it does not change the ID or
+the appearance order — it only governs the *verification sequence and depth* in Pass 2.
+
 ## Pass 2: Verify each enumerated claim
 
-Iterate the `## Claims identified` list in order. For every claim ID:
+**Verify load-bearing claims first and most deeply.** Pass 2 has two distinct ordering axes,
+and they must not be conflated:
+
+- **Processing order (governed by priority).** Verify all `[load-bearing]` claims *before* any
+  `[peripheral]` claim. Spend the deepest scrutiny here: target a `[deep-read]` of a primary
+  source and aim for the High-confidence bar (≥2 independent primary sources) wherever the
+  evidence allows. These are the claims whose verification budget the prioritization step exists
+  to protect, so they get the budget first, while attention and time are freshest. Verify
+  `[peripheral]` claims afterward; a lighter scrutiny depth (e.g. `[abstract]`) is acceptable for
+  them when budget is constrained — but they are **never skipped**. Every enumerated ID, load-
+  bearing and peripheral alike, must receive a verdict (the [claim-ID integrity self-check](#self-check-claim-id-integrity)
+  rejects any enumerated claim with no verdict).
+- **Report order (always appearance order).** The processing order above changes only *when* and
+  *how deeply* you verify each claim — it does **not** change how the report is rendered. The
+  per-claim verdict sections are still emitted in `C1, C2, …` appearance order (see
+  [Output format](#output-format)). Do not reorder the report by priority or by verdict severity.
+
+For every claim ID:
 
 1. **State the claim exactly as written in the draft.** Quote it.
 2. **Search for evidence.** Use web search. Look for primary sources: government data, peer-reviewed
@@ -456,6 +509,7 @@ Produce a Markdown document with this structure:
 **Summary:** [X] accurate, [Y] mostly accurate, [Z] disputed, [W] inaccurate, [V] unverified, [U] secondary-only
 **Provenance:** [A] observed, [B] inferred, [C] assumed
 **Scrutiny:** [P] deep-read, [Q] abstract, [R] inferred
+**Prioritization:** [L] load-bearing, [M] peripheral  (omit this line when N < 3 — see Pass 1 prioritization)
 
 ---
 
@@ -463,11 +517,14 @@ Produce a Markdown document with this structure:
 
 The complete list of checkable claims extracted from the draft (Pass 1). Every verdict in the
 sections below must reference one of these IDs; every ID listed here must have a matching
-verdict section.
+verdict section. Each entry carries its prioritization tag — `[load-bearing]` or `[peripheral]`
+(see [Prioritize claims](#prioritize-claims-load-bearing-vs-peripheral)) — immediately after the
+ID, except on drafts with fewer than 3 claims where prioritization is skipped and the tag is
+omitted.
 
-- **C1** — "[short quoted snippet, ≤ 15 words]" (paragraph N / § "Section title")
-- **C2** — "[short quoted snippet]" (paragraph N)
-- **C3** — "[short quoted snippet]" (§ "Section title", paragraph M)
+- **C1** `[load-bearing]` — "[short quoted snippet, ≤ 15 words]" (paragraph N / § "Section title")
+- **C2** `[peripheral]` — "[short quoted snippet]" (paragraph N)
+- **C3** `[peripheral]` — "[short quoted snippet]" (§ "Section title", paragraph M)
 - …
 
 ---
@@ -496,7 +553,10 @@ provenance `[inferred]` verdicts, write out the inferential chain. For provenanc
 ...
 ```
 
-Order the claims by their appearance in the draft, not by verdict severity. Claim IDs (`C1`,
+Order the claims by their appearance in the draft, not by verdict severity and not by
+prioritization tag. The load-bearing-first rule in Pass 2 governs the *verification sequence and
+depth*, not the *report layout*: a `[load-bearing]` claim that appears as C5 is verified before a
+`[peripheral]` C2, but it is still rendered fifth, after C2, in the report. Claim IDs (`C1`,
 `C2`, …) are assigned during Pass 1 and reused verbatim as the keys of the verdict headings;
 once assigned, they do not change.
 
@@ -601,3 +661,29 @@ on both sides line up exactly.
 If any of these checks fail, fix the report before delivering it. ID integrity is the
 spine of the two-pass approach; a report that breaks it is no more auditable than a
 single-pass interleaved verdict stream.
+
+## Self-check: load-bearing claims are a minority
+
+Before finalizing the report, audit the prioritization tags assigned in Pass 1. The tag only
+buys concentrated scrutiny if it actually discriminates — a report that tags most claims
+load-bearing has re-created the uniform-budget problem prioritization exists to solve.
+
+1. **Count the tags.** Let `N` be the total number of enumerated claims, `L` the number tagged
+   `[load-bearing]`, and `M` the number tagged `[peripheral]`. Confirm `L + M = N` (every claim
+   is tagged exactly once) — unless `N < 3`, in which case prioritization is skipped, no tags
+   are present, and the `**Prioritization:**` header line is omitted.
+2. **Enforce the minority cap.** Confirm `L ≤ floor(N/3)`. A report with more load-bearing
+   claims than the cap allows is **rejected** — re-examine the over-cap tags, keep only the most
+   thesis-critical as load-bearing, and re-tag the rest peripheral. `L` must also be a strict
+   minority (`L < M`); if `L ≥ M`, the cap was miscomputed or the tags are miscalibrated.
+3. **Confirm peripheral claims were still verified.** Every `[peripheral]` claim must have a
+   `## Verdict for C<N>` section, exactly like load-bearing claims. "Verified later" never means
+   "verified never." If a peripheral claim has no verdict, the [claim-ID integrity
+   self-check](#self-check-claim-id-integrity) already rejects the report; this check is the
+   reminder that the prioritization step does not license dropping the tail.
+4. **Confirm the header tally matches.** The `**Prioritization:**` line's `[L]` and `[M]` counts
+   must equal the tag counts in `## Claims identified`. A mismatch means tags were added or
+   changed after the header was written.
+
+If any check fails, fix the report before delivering it. The minority cap is what makes the
+load-bearing tag a *signal* rather than a label everyone wears.
