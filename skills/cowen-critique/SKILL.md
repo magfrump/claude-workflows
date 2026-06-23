@@ -250,6 +250,14 @@ word "market" in the section body.
 Which sub-claims are strong, which are weak, and what's the single most important thing the
 author should address? End constructively. The goal is to make the draft better.
 
+Close the section with a one-line **Load-bearing objection:** sentence. Name the single
+objection — drawn from any section above — most likely to change the author's decision if they
+took it seriously, then rank the next two or three beneath it in descending order of decision
+impact. This is a reasoned pick, not a restatement of the first section's heading: weigh each
+objection by how far the thesis would have to move to absorb it, and justify the top choice in
+a clause. A reader facing eight cognitive-move sections should learn from this one line which
+objection to act on first.
+
 ## Output Location
 
 When run standalone (not via the draft-review orchestrator), save your critique as

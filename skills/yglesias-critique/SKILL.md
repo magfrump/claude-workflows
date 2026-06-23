@@ -266,6 +266,14 @@ section body.
 Which parts of the proposal are sound, which are wish-fulfillment, and what's the single
 most important revision? End constructively — the goal is a better proposal, not a takedown.
 
+Close the section with a one-line **Load-bearing objection:** sentence. Name the single
+objection — drawn from any section above — most likely to change the author's decision about
+whether or how to pursue the mechanism, then rank the next two or three beneath it in
+descending order of decision impact. This is a reasoned pick, not a restatement of the first
+section's heading: weigh each objection by how much the proposal would have to change to
+survive it, and justify the top choice in a clause. A reader facing eight cognitive-move
+sections should learn from this one line which objection to act on first.
+
 ## Output Location
 
 When run standalone (not via the draft-review orchestrator), save your critique as
