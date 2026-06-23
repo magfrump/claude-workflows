@@ -26,6 +26,15 @@ When preconditions are not met within the window, the outcome is INCONCLUSIVE. T
 
 Both evaluator types are first-class: script-evaluated p95-latency claims have the same status as user-evaluated "did the skill surface something I'd have missed" claims, provided each declares appropriate preconditions.
 
+**Target-resolvability rule (generation-time).** A hypothesis may declare `evaluator: script` *only if* it names a concrete, script-checkable target that resolves to one of:
+
+- a path listed in the hypothesis's own `files_touched` (the per-task planning contract enforced by gate 1c — see `guides/validation-gates.md`), or
+- a named log the script reads — in practice the pillar-4 invocation logger, identified by the metric/counter name the `requires:` clause already references (e.g., `metric_logged: latency_p95`, `invocations: 10`).
+
+If neither holds — the hypothesis cites no file in its own `files_touched` and names no log the script can read — the planner **must default to `evaluator: user`** at authoring time. This is a *generation-time* gate: it selects the evaluator when the hypothesis is written, upstream of any evaluation-time verdict, and it never changes a verdict (the INCONCLUSIVE-not-REFUTED rule above is untouched).
+
+The rule fixes the recurring "Target unresolvable → switch evaluator to `user`" defect. Previously that switch happened at *evaluation* time: the script reached an open hypothesis, found no resolvable target, and fell back to `user` — but by then the morning summary had already passed, so the hypothesis stranded as un-adjudicable for a round (or indefinitely). Moving the switch to generation time means a hypothesis that can only be judged by a human is *authored* as `evaluator: user` from the start, so it surfaces in the very next summary instead of silently waiting for a script verdict that can never come. Defaulting to `user` is not a demotion: user-evaluated hypotheses are first-class, and an honestly user-evaluable claim adjudicated on time beats a script-labelled claim that never resolves.
+
 ### Pillar 2: Adversarial (red-team) framing by default
 
 Hypotheses are written as predicted **failures**, not predicted **successes**:
@@ -87,7 +96,7 @@ Field names match the per-task schema verbatim (same identifiers in
 `tasks-round-N.json`) so a future evaluator can apply one grammar to both
 scopes. The fields carry the same semantics as their per-task counterparts:
 
-- `evaluator` — `script` when a separate round-claim evaluator can decide from the invocation logger (pillar 4) without a human judgement call; `user` when only a human observation can decide. Both are first-class.
+- `evaluator` — `script` when a separate round-claim evaluator can decide from the invocation logger (pillar 4) without a human judgement call; `user` when only a human observation can decide. Both are first-class. The pillar-1 target-resolvability rule applies at this scope too, with one adaptation: a round claim has no single `files_touched`, so the *only* valid script target is the invocation logger / named log (identified by the metric or counter the round claim's `requires:` references). A round claim that names no such log must default to `evaluator: user`.
 - `requires` — preconditions the round-claim evaluator checks before deciding. If unmet, the verdict is INCONCLUSIVE (never auto-REFUTED), matching the rule from decision 010 and pillar 1.
 - `hypothesis_window` — integer 1–5 rounds using the same scale as per-task hypotheses (1 = observable in next round's artifacts; 2–3 = requires accumulated usage; 4–5 = requires real-world adoption).
 - `hypothesis_source` — `user` when the round's claim was lifted verbatim from a matching `si-input.md` priority's attached hypothesis (pillar 3 applied at round scope); `planner` when the planner authored it. The morning summary tags `planner` round claims so the user can review framing.
@@ -99,6 +108,7 @@ This pillar is **producer-only**: it specifies the planner's output grammar so f
 ## What was added relative to decision 010
 
 - Hypothesis schema gains `evaluator`, `requires`, `evaluation_window` fields
+- A generation-time target-resolvability rule: declaring `evaluator: script` requires a script-checkable target in the hypothesis's own `files_touched` or a named log the script reads; otherwise the planner defaults to `evaluator: user` at authoring time (closing the "Target unresolvable → switch evaluator to `user`" defect that stranded open hypotheses)
 - `si-input.md` becomes a *source* of hypotheses, not just feedback
 - A workflow/skill invocation logger
 - A precondition gate in the morning summary that defers outcome rows when `requires:` is unmet
@@ -140,6 +150,7 @@ These were strong candidates not in the core but worth revisiting once the four 
 
 - Hypothesis fields stay in the task schema (against the SI-script review's recommendation to drop them); they are the user's input-output surface, not the script's bookkeeping.
 - The planner prompt (search `scripts/self-improvement.sh` for "Hypothesis guidance (decision 012 pillar 2") is rewritten to require adversarial framing and to derive intent from `si-input.md` first.
+- The target-resolvability rule (pillar 1) is **producer-grammar specification only** in this revision: it defines what the planner must emit but is not yet wired into the planner prompt. Teaching the prompt to apply the rule — emit `evaluator: script` only when a resolvable target exists, else `evaluator: user` — is a deferred followup against `scripts/self-improvement.sh`, intentionally out of scope for this revision so the grammar can land without a script edit. Until that wiring lands, the rule is the normative authoring contract a reviewer checks hypotheses against, mirroring how pillar 1b is producer-only with its evaluator unwired.
 - The ideas-generation prompt earlier in `scripts/self-improvement.sh` is extended to require a `## Hypothesis: this round's claim` section in `feature-ideas-round-N.md` carrying the same three structured fields per-task hypotheses do (pillar 1b).
 - A new invocation logger lives in `scripts/lib/` (path tbd at implementation time) and is sourced by the morning summary.
 - Steps 1b and 4b in `scripts/self-improvement.sh` (convergence detection / problem-history) remain candidates for deletion per the SI-script review — they are Claude-judges-Claude evaluation that this decision does not depend on and does not reinstate.
