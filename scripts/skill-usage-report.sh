@@ -118,12 +118,15 @@ usage_data=$(jq -r --arg pf "$PROJECT_FILTER" \
 
 date_range=""
 if [ -n "$usage_data" ]; then
-  earliest=$(jq -r --arg pf "$PROJECT_FILTER" \
-    'select(.event and .name and .ts and (if $pf != "" then .project == $pf else true end)) | .ts' "$USAGE_LOG" \
-    | sort | head -1)
-  latest=$(jq -r --arg pf "$PROJECT_FILTER" \
-    'select(.event and .name and .ts and (if $pf != "" then .project == $pf else true end)) | .ts' "$USAGE_LOG" \
-    | sort | tail -1)
+  # Compute earliest/latest ts in a single slurped jq pass. ISO-8601 strings
+  # sort chronologically, so first/last of the sorted array are the bounds.
+  # Avoids the `sort | head -1` pattern, which raises SIGPIPE (head closes the
+  # pipe before sort finishes writing) and, under `pipefail` + `set -e`, aborts
+  # the whole script before any output is printed.
+  read -r earliest latest < <(jq -rs --arg pf "$PROJECT_FILTER" \
+    '[ .[] | select(.event and .name and .ts and (if $pf != "" then .project == $pf else true end)) | .ts ]
+     | sort
+     | if length > 0 then "\(.[0]) \(.[-1])" else "" end' "$USAGE_LOG")
   if [ -n "$earliest" ] && [ -n "$latest" ]; then
     date_range="${earliest} to ${latest}"
   fi
