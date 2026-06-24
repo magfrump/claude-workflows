@@ -74,7 +74,7 @@ Run these concurrently — both are fast, and either failing changes the plan:
 - Infrastructure/model changes separate from UI changes
 - A minimal first PR that adds the feature behind a flag, with polish in a follow-up
 
-If it genuinely can't be split, note this in the PR description (step 6) and suggest a review order for the files.
+If it genuinely can't be split, note this in the PR description (step 6). The **Reviewer's path — start here** section (step 6) is always required and already names the read-order entry point; for an oversized PR, expand that section from the default 1–3 files to walk the reviewer through the larger diff in dependency order, so a 1000-line change still has a named place to start rather than forcing the reviewer to reverse-engineer it.
 
 **b. Dependent PR check.** If this branch builds on other unmerged PRs, verify they've been merged or that this PR's base is set correctly. If dependencies haven't landed, decide whether to wait, rebase onto a dev integration branch, or open as a stacked PR with a clear note. Skip this check for standalone branches.
 
@@ -128,7 +128,7 @@ fi
 **This is a backstop, not the primary path.** If the trigger fires, treat that as a signal that the plan-time wiring failed for this branch and consider whether the workflow that produced this branch (RPI, spike, ad-hoc) needs to be adjusted — not just this single PR patched.
 
 **Completion criteria:**
-- [ ] PR is under 500 lines changed, OR PR description includes size justification and suggested file review order
+- [ ] PR is under 500 lines changed, OR PR description includes size justification and an expanded "Reviewer's path — start here" section (step 6) that walks the larger diff in read-order
 - [ ] No unmerged dependency PRs block this branch, OR base is set correctly for stacking
 - [ ] Fallback pre-mortem trigger was evaluated; if it fired, `docs/working/pre-mortem-<branch-slug>.md` exists and is cited in the PR description; if it did not fire, the reason is recorded
 
@@ -186,6 +186,8 @@ For each finding: confirm it's real by reading the code, then fix. Commit in coh
 
 If a fix touched code broadly enough that the narrower diff covers most of the PR, fall back to a full re-review — the incremental approach only helps when fixes are localized.
 
+**Scope drift.** If a re-review finding would expand the PR beyond the scope set in step 1 (size, files touched, stated intent), the default is to file a follow-up issue and decline the change in this PR. Comply only when the finding is a hard blocker for merge (correctness bug or unsafe state). When triggered, log a `follow-up issue filed: <id/title>` line in the review artifact so the deferral is visible to the reviewer.
+
 **Optional contrastive prompt (iteration N≥2):** What new findings appeared in iteration N that weren't in N-1, and are any of them critic noise (regressions vs real)?
 
 **Tracking iteration scope:** Note in the review artifact whether each iteration used full or incremental scope, and how many prior findings were verified as resolved vs. still-open. This supports evaluating whether incremental re-review reduces review output length and duplicate findings over time.
@@ -219,6 +221,7 @@ Both forms feed the same audit trail for calibrating the 3-iteration threshold o
 - [ ] No Must Fix findings remain open
 - [ ] All Must Address findings are resolved or explicitly acknowledged in the PR description
 - [ ] Final review loop introduced no new Must Fix or Must Address findings
+- [ ] Diff's files-touched match the plan's declared scope; if not, drift is flagged to the human for explicit acknowledgment
 - [ ] Loop outcome noted in PR description: convergence summary (`Review converged in N iterations; M Must Fix resolved, K Must Address acknowledged.`) if converged cleanly, or escalation summary if ceiling hit at 3
 - [ ] If ceiling hit: remaining findings documented in PR description, or escalated to human review
 - [ ] If a plan doc exists (work arrived via RPI), the Plan-drift check restated the forwarded state as a `← carried from RPI: <state forwarded>` line in the PR's Workflow provenance field; if the work is standalone (no plan doc), the line is correctly omitted (no `← carried from: none` placeholder)
@@ -329,6 +332,22 @@ Structure:
 
 **Workflow provenance** (optional): [e.g., "RPI → DD → RPI" or "Spike → RPI → PR-prep"]
 
+**Failures prevented** (optional): [one-line list of the specific failure modes this change addresses, if any]
+
+## Reviewer's path — start here
+[REQUIRED. Name the 1–3 files a reviewer should open *first*, in the order they should read
+them, so they understand why this change exists in under 5 minutes without reverse-engineering
+the diff. Rules that make a lazy fill visibly empty rather than plausible boilerplate:
+ - **Name actual files.** Each entry is a real path in backticks (`src/auth/session.ts`), not a
+   category ("the auth code") or a vague gesture ("the main changes"). If you can't name a path,
+   you haven't filled this in.
+ - **Read-order, not import-order.** The file that frames *why* the change exists comes first;
+   the files it enables come after. Lead with intent, not with the dependency graph.
+ - **One sentence of intent each.** Say what the reviewer should take from the file and why it
+   matters to the change — not what the file is.
+ - **1–3 entries.** If no single file is the center of gravity, the PR likely needs splitting
+   (see Phase 1, step 1a) — that's a signal, not a reason to leave this blank.]
+
 ## Status (optional)
 [Three-field block surfacing task status without forcing reviewers to read the diff.
  Useful for stacked PRs, multi-step work, or branches that close some items but not others.
@@ -377,11 +396,14 @@ If any answer is **no**, revise the description before opening the PR. This gate
 **Completion criteria:**
 - [ ] Skeleton was generated from commits and review artifacts (not written from scratch)
 - [ ] All six sections are present (What this does, How it works, How to test, Areas of uncertainty, Decisions made, Review evidence)
+- [ ] Reviewer's path — start here is filled with 1–3 actual file paths in read-order, each with a one-sentence intent (not a category or placeholder)
 - [ ] Each section contains at least one substantive sentence (not a placeholder)
+- [ ] Each "Major change" line under "What this does" cites `file:test_name` evidence or carries a one-sentence `(no test: <reason>)` parenthetical (e.g., `feat: add CSV export — exports/csv.test.ts:exports_complete_rows`)
 - [ ] `Decisions referenced:` line is filled in — either a list of decision IDs or the explicit `none — change is independent of recorded decisions` (the conscious check is the point; do not leave the placeholder)
 - [ ] Review evidence section lists all `docs/reviews/` artifacts for this PR, or states "No review artifacts" if none exist
 - [ ] Description gate (6c) passed: why is stated, specific tests listed, uncertainty flagged — or description was revised until all three are yes
 - [ ] (Optional) If this PR involved multiple workflow compositions (e.g., RPI → DD → RPI), a workflow provenance line is included in "What this does"
+- [ ] (Optional) If this change addresses specific failure modes surfaced by RPI/code-review failure-driven thinking, a "Failures prevented" line is included in "What this does"
 - [ ] (Optional) If the branch leaves work in flight or has dependencies, a Status block (Done / In progress / Blocked-on) is included
 
 ## Retrospective
