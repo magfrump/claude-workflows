@@ -1,396 +1,252 @@
 # Code Fact-Check Report
 
-**Repository:** claude-workflows
-**Scope:** Branch feat/foreground-tests vs main
-**Checked:** 2026-03-26
-**Total claims checked:** 28
-**Summary:** 19 verified, 4 mostly accurate, 1 stale, 0 incorrect, 4 unverifiable
+**Commit:** eb545b103fa2e55ec6deed43d775c4c2eea761c8
+**Repository:** /home/magfrump/claude-workflows
+**Scope:** `git diff main...HEAD` (CLAUDE.md, README.md, docs/working/verify-batch-feedback-reminder.sh, docs/working/wire-batch-feedback-reminder.md, hooks/batch-feedback-routing-reminder.sh)
+**Checked:** 2026-06-23
+**Total claims checked:** 16
+**Summary:** 16 verified, 0 mostly accurate, 0 stale, 0 incorrect, 0 unverifiable
 
 ---
 
-## Claim 1: "The RPI workflow mentions 'testing strategy' as a one-line plan section"
+## Claim 1: "fires only on (a) >=2 numbered list items, (b) >=2 bullet list items, or (c) an explicit multi-item enumeration phrasing. A single task, however it's phrased, must not match."
 
-**Location:** `docs/decisions/006-foregrounding-tests.md:8`
-**Type:** Architectural
-**Verdict:** Verified
-**Confidence:** High
-
-The main branch version of `workflows/research-plan-implement.md` at line 83 contains: `- **Testing strategy**: How to verify the implementation works. Specific test cases, not "add tests."` This is a single bullet point (one line) within the plan section.
-
-**Evidence:** `workflows/research-plan-implement.md:83` (main branch)
-
----
-
-## Claim 2: "'characterization tests first' in the refactoring variant"
-
-**Location:** `docs/decisions/006-foregrounding-tests.md:8`
-**Type:** Architectural
-**Verdict:** Verified
-**Confidence:** High
-
-The main branch RPI file contains `- **Characterization tests first**: If existing coverage is insufficient, the plan's first steps should add tests that lock in current behavior before any structural changes begin.` at line 168 in the Refactoring variant section.
-
-**Evidence:** `workflows/research-plan-implement.md:168` (main branch)
-
----
-
-## Claim 3: "neither gives tests a primary role in the human-LLM collaboration loop"
-
-**Location:** `docs/decisions/006-foregrounding-tests.md:8`
-**Type:** Architectural
-**Verdict:** Verified
-**Confidence:** High
-
-In the main branch RPI, testing appears only as: one bullet in the plan section (line 83), characterization tests as a safety net in the refactoring variant (lines 164, 168), and "run tests after every step" in implementation (line 172). None position tests as a design artifact or human-LLM interface.
-
-**Evidence:** `workflows/research-plan-implement.md:83,164,168,172` (main branch)
-
----
-
-## Claim 4: "Over a dozen approaches were generated via divergent design"
-
-**Location:** `docs/decisions/006-foregrounding-tests.md:18`
-**Type:** Reference
-**Verdict:** Unverifiable
-**Confidence:** Low
-
-Only 6 approaches are listed in the document (including "do nothing"). The remaining approaches are described as explored "in conversation" but no artifact preserves the full list. The phrase "over a dozen" cannot be confirmed or refuted.
-
-**Evidence:** `docs/decisions/006-foregrounding-tests.md:18-25` (only 6 options listed)
-
----
-
-## Claim 5: "Restructure the RPI Plan phase (step 3)"
-
-**Location:** `docs/decisions/006-foregrounding-tests.md:33`
-**Type:** Architectural
-**Verdict:** Verified
-**Confidence:** High
-
-Step 3 in RPI is indeed the Plan phase (heading at line 72: `### 3. Plan (essential) -- specify the implementation steps`). The test specification content is within this step (lines 83-101). The parenthetical "step 3" correctly identifies the Plan phase.
-
-**Evidence:** `workflows/research-plan-implement.md:72` (step 3 heading), `workflows/research-plan-implement.md:83-101` (test specification within step 3)
-
----
-
-## Claim 6: "Combine approaches 1 + 4 + 5, plus diagnostic guidance"
-
-**Location:** `docs/decisions/006-foregrounding-tests.md:29`
-**Type:** Architectural
-**Verdict:** Verified
-**Confidence:** High
-
-The decision claims to combine: (1) test-first plan step, (4) test taxonomy guide, (5) test review checkpoint, plus diagnostic guidance. In RPI: the test specification section replaces the one-liner (approach 1, lines 83-101), inline taxonomy guidance for four test levels (approach 4, lines 89-95), a test-first gate with human checkpoint before implementation (approach 5, lines 123-129), and diagnostic expectations guidance (lines 97-99). All four are present.
-
-**Evidence:** `workflows/research-plan-implement.md:83-101` (approaches 1+4+diagnostic), `workflows/research-plan-implement.md:123-129` (approach 5)
-
----
-
-## Claim 7: Decision log entry "#6" links to `006-foregrounding-tests.md`
-
-**Location:** `docs/decisions/log.md:10`
-**Type:** Reference
-**Verdict:** Verified
-**Confidence:** High
-
-The link `[006](006-foregrounding-tests.md)` is a valid relative link. The file `docs/decisions/006-foregrounding-tests.md` exists. Decisions 002-005 exist as full records, consistent with the log noting they do not appear in the lightweight log.
-
-**Evidence:** `docs/decisions/log.md:10`, all four files `docs/decisions/002-005*.md` confirmed to exist
-
----
-
-## Claim 8: "Tests are a design artifact, not a verification afterthought"
-
-**Location:** `workflows/research-plan-implement.md:83`
+**Location:** `hooks/batch-feedback-routing-reminder.sh:35-37`
 **Type:** Behavioral
 **Verdict:** Verified
 **Confidence:** High
+**Legibility-target:** for-orchestrator-synthesis
 
-The restructured RPI implements this: the test specification section in step 3 asks the human to specify test cases during planning with structured fields (lines 83-101), and step 5 adds a test-first gate where tests are written before feature code (lines 121-129). Tests are positioned as a planning activity.
+The script implements exactly three detection branches: numbered list via `grep -cE '^[[:space:]]*[0-9]+[.)][[:space:]]'` gated on `>= 2` (lines 50-51), bullet list via `grep -cE '^[[:space:]]*([-*•])[[:space:]]'` gated on `>= 2` (lines 54-55), and an enumeration regex `ENUM` (lines 60-64). The verify harness confirms single-task prompts ("single bug", "single feature", "one numbered step", "prose w/ number", "explain question") all produce empty output. All 15 cases pass.
 
-**Evidence:** `workflows/research-plan-implement.md:83-101` (test specification in plan), `workflows/research-plan-implement.md:121-129` (test-first gate)
+**Evidence:** `hooks/batch-feedback-routing-reminder.sh:50-65`; verify run output ALL PASS
 
 ---
 
-## Claim 9: "Like the research checkpoint, this should not block progress indefinitely"
+## Claim 2: "Non-blocking: always exits 0 and never emits a block decision"
 
-**Location:** `workflows/research-plan-implement.md:127`
+**Location:** `hooks/batch-feedback-routing-reminder.sh:38-39`
+**Type:** Invariant
+**Verdict:** Verified
+**Confidence:** High
+**Legibility-target:** for-orchestrator-synthesis
+
+The script omits `set -e`, the `emit()` function ends in `exit 0`, and the script ends in a bare `exit 0` (line 73). It writes only a reminder line to stdout, never a JSON block decision. The verify harness asserts `rc == 0` for every one of the 15 cases (including malformed JSON and missing prompt) and all pass.
+
+**Evidence:** `hooks/batch-feedback-routing-reminder.sh:42,46,73`; verify run `exit=0` on all 15 cases
+
+---
+
+## Claim 3: "Additive ... a standalone script wired as an *additional* UserPromptSubmit hook in settings.json; it does not replace existing hooks."
+
+**Location:** `hooks/batch-feedback-routing-reminder.sh:40-42`
 **Type:** Architectural
 **Verdict:** Verified
 **Confidence:** High
+**Legibility-target:** for-orchestrator-synthesis
 
-The research checkpoint at line 68 states: "this checkpoint should not block progress." The test review checkpoint at line 127 uses the same pattern: "this should not block progress indefinitely; if the user doesn't respond promptly, proceed with implementation but flag that tests haven't been reviewed." The analogy is accurate.
+Live `~/.claude/settings.json` `.hooks.UserPromptSubmit` contains a single entry with a `hooks` array of two commands: `bash $HOME/.claude/hooks/batch-feedback-routing-reminder.sh` and `bash $HOME/.claude/hooks/dd-routing-reminder.sh`. The batch hook is added alongside the dd hook, not replacing it.
 
-**Evidence:** `workflows/research-plan-implement.md:68` (research checkpoint), `workflows/research-plan-implement.md:127` (test review checkpoint)
-
----
-
-## Claim 10: "see also: Refactoring variant below"
-
-**Location:** `workflows/research-plan-implement.md:92`
-**Type:** Reference
-**Verdict:** Verified
-**Confidence:** High
-
-The characterization test level description references "Refactoring variant below." The Refactoring variant section exists at line 186.
-
-**Evidence:** `workflows/research-plan-implement.md:92` (reference), `workflows/research-plan-implement.md:186` (Refactoring variant heading)
+**Evidence:** `jq '.hooks.UserPromptSubmit' ~/.claude/settings.json` output (two-command block)
 
 ---
 
-## Claim 11: "the `test-strategy` skill has a full taxonomy"
+## Claim 4: shellcheck-clean
 
-**Location:** `workflows/research-plan-implement.md:95`
-**Type:** Reference
-**Verdict:** Verified
-**Confidence:** High
-
-The test-strategy skill at `skills/test-strategy.md:69-93` defines six test types: unit, integration, end-to-end, property-based, snapshot/golden, and contract. This is a superset of the four listed inline in RPI, making "full taxonomy" an accurate characterization.
-
-**Evidence:** `skills/test-strategy.md:69-93` (six test types defined)
-
----
-
-## Claim 12: "Commit the tests separately: `test: add tests for X (per plan-Y step N)`"
-
-**Location:** `workflows/research-plan-implement.md:125`
+**Location:** `hooks/batch-feedback-routing-reminder.sh` (whole file)
 **Type:** Behavioral
 **Verdict:** Verified
 **Confidence:** High
+**Legibility-target:** for-orchestrator-synthesis
 
-This is a prescriptive instruction defining a commit message format. The format is consistent with the existing commit convention at line 133: `feat: add user model (per plan-inline-edit-api step 1)`. Both use conventional commit prefix + plan reference.
+`shellcheck hooks/batch-feedback-routing-reminder.sh` produced no findings (exit 0, "SHELLCHECK CLEAN").
 
-**Evidence:** `workflows/research-plan-implement.md:125,133` (consistent commit message patterns)
-
----
-
-## Claim 13: "The test specification section adds approximately 15 lines to the plan step"
-
-**Location:** `docs/reviews/performance-review.md:19`
-**Type:** Behavioral
-**Verdict:** Verified
-**Confidence:** High
-
-The diff shows the plan section grew from 1 line (`- **Testing strategy**: ...`) to approximately 19 lines (lines 83-101 in the new version, accounting for blank lines). Calling this "approximately 15 lines" of net content is accurate.
-
-**Evidence:** `workflows/research-plan-implement.md:83-101` — plan section diff shows growth from 1 line to ~19 lines
+**Evidence:** shellcheck run output
 
 ---
 
-## Claim 14: "the test-first gate adds approximately 10 lines to the implementation step"
+## Claim 5: "the same pattern as the sibling dd-routing-reminder.sh"
 
-**Location:** `docs/reviews/performance-review.md:19`
-**Type:** Behavioral
-**Verdict:** Verified
-**Confidence:** High
-
-The diff shows the implementation step gained: a new heading (line 121), the test-first gate section (lines 123-129), an "Implementation" sub-heading (line 131), totaling approximately 12 net lines including blanks. "Approximately 10 lines" is accurate.
-
-**Evidence:** `workflows/research-plan-implement.md:121-131` — implementation step diff shows ~12 net lines added
-
----
-
-## Claim 15: "The RPI document grows from roughly 175 lines to 200 lines"
-
-**Location:** `docs/reviews/performance-review.md:12`
-**Type:** Behavioral
-**Verdict:** Mostly accurate
-**Confidence:** High
-
-The main branch RPI has 173 lines; the current branch has 202 lines (not 198 as the previous fact-check stated). The claim of "roughly 175 to 200" rounds up the original (173 to 175) and rounds down the new (202 to 200). The actual growth is 29 lines (not 25). The "roughly" qualifier makes this acceptable but the rounding goes in opposite directions.
-
-**Evidence:** `workflows/research-plan-implement.md:1-202` — `wc -l` on both versions: main=173, branch=202
-
----
-
-## Claim 16: "A template is available at `templates/gitattributes-snippet.txt` in this repo"
-
-**Location:** `workflows/research-plan-implement.md:35`
-**Type:** Reference
-**Verdict:** Verified
-**Confidence:** High
-
-The file `templates/gitattributes-snippet.txt` exists in the repository.
-
-**Evidence:** File existence confirmed
-
----
-
-## Claim 17: "See `guides/doc-freshness.md` for the freshness tracking heuristic"
-
-**Location:** `workflows/research-plan-implement.md:27`
-**Type:** Reference
-**Verdict:** Verified
-**Confidence:** High
-
-The file `guides/doc-freshness.md` exists in the repository.
-
-**Evidence:** File existence confirmed
-
----
-
-## Claim 18: "invoke the Divergent Design workflow (`divergent-design.md`)"
-
-**Location:** `workflows/research-plan-implement.md:61`
-**Type:** Reference
-**Verdict:** Verified
-**Confidence:** High
-
-The file `workflows/divergent-design.md` exists in the repository.
-
-**Evidence:** File existence confirmed
-
----
-
-## Claim 19: "Avoid logging secrets, credentials, or PII in diagnostic output"
-
-**Location:** `workflows/research-plan-implement.md:99`
-**Type:** Behavioral
-**Verdict:** Verified
-**Confidence:** High
-
-This is a prescriptive instruction that exists at line 99 of the current RPI. It was added per security review Finding 2 (C2 in the code review rubric). The instruction is present and functional.
-
-**Evidence:** `workflows/research-plan-implement.md:99`
-
----
-
-## Claim 20: "Other levels (e.g., end-to-end, snapshot, contract) are valid"
-
-**Location:** `workflows/research-plan-implement.md:95`
+**Location:** `hooks/batch-feedback-routing-reminder.sh:21-23`
 **Type:** Architectural
 **Verdict:** Verified
 **Confidence:** High
+**Legibility-target:** for-orchestrator-synthesis
 
-This was added per API consistency review Finding 3 (A2 in the code review rubric) to address the taxonomy asymmetry between RPI (4 levels) and the test-strategy skill (6 levels). The test-strategy skill at lines 78-93 defines end-to-end, snapshot/golden, and contract tests, confirming these are valid levels in the project's test vocabulary.
+`hooks/dd-routing-reminder.sh` exists and follows the same structure: no `set -e`, `INPUT=$(cat)`, jq `.prompt // ""` extraction with malformed-input fallback, `[[ -z "$PROMPT" ]] && exit 0`, narrow regex match, single one-line reminder, `exit 0`. The batch hook mirrors this pattern (with additional list-detection branches).
 
-**Evidence:** `workflows/research-plan-implement.md:95`, `skills/test-strategy.md:78-93`
+**Evidence:** `hooks/dd-routing-reminder.sh` (full file read); structural comparison
 
 ---
 
-## Claim 21: "When used as part of RPI, the test specification section of the plan doc"
+## Claim 6: CLAUDE.md rows renumbered correctly (old 2→3 … 10→11)
 
-**Location:** `skills/test-strategy.md:153`
+**Location:** `CLAUDE.md:18-28` (decision-tree table)
+**Type:** Configuration
+**Verdict:** Verified
+**Confidence:** High
+**Legibility-target:** for-orchestrator-synthesis
+
+The table now has rows numbered 1 through 11 sequentially with no gaps or duplicates. Row 2 is the new batch fan-out row; old row 2 (divergent-design) is now row 3, and each subsequent old row shifted +1, ending at old row 10 (branch-strategy) → row 11.
+
+**Evidence:** `grep -oE '^\| [0-9]+ ' CLAUDE.md` → 1,2,3,4,5,6,7,8,9,10,11
+
+---
+
+## Claim 7: the single "row 4" prose reference was updated to "row 5" and no dangling/incorrect row-number references remain
+
+**Location:** `CLAUDE.md:65` (Tooling discovery section)
 **Type:** Reference
 **Verdict:** Verified
 **Confidence:** High
+**Legibility-target:** for-orchestrator-synthesis
 
-The test-strategy skill now correctly references "test specification" at line 153, matching the current RPI section name at line 83. This was updated from the previous stale reference to "testing strategy" per code review rubric item R1.
+The Tooling-discovery prose now reads "Triggered by row 5 of the decision tree" (skill-creator is now row 5). Grep for `row 4|row 8|row 9|row 10` returns nothing. The only remaining row-number prose references are row 2, row 6, and row 7 — all consistent with the new numbering (row 6 = RPI, row 7 = task-decomposition).
 
-**Evidence:** `skills/test-strategy.md:153`, `workflows/research-plan-implement.md:83`
+**Evidence:** `CLAUDE.md:65`; `grep -n 'row 4...' CLAUDE.md` → none
 
 ---
 
-## Claim 22: "Can plug into RPI as the test specification section"
+## Claim 8: row 7 (task-decomposition) is correctly described as distinct from row 2
 
-**Location:** `docs/reviews/full-evaluation.md:211`
-**Type:** Architectural
+**Location:** `CLAUDE.md:25`
+**Type:** Reference
 **Verdict:** Verified
 **Confidence:** High
+**Legibility-target:** for-orchestrator-synthesis
 
-The full-evaluation document now correctly references "test specification" at lines 211 and 215, matching the current RPI section name. This was updated from "testing strategy" per code review rubric item A1.
+Row 7's Notes column contains "**Distinct from row 2:** this is *one* task whose research fans out (implementation stays sequential in the main agent); row 2 is *N independent tasks* that can each implement in parallel." The "Batch fan-out" section (line 59) and composition note (line 118) reinforce the same distinction consistently.
 
-**Evidence:** `docs/reviews/full-evaluation.md:211,215`, `workflows/research-plan-implement.md:83`
+**Evidence:** `CLAUDE.md:25,59,118`
 
 ---
 
-## Claim 23: "Git history shows 16+ commits directly referencing RPI"
+## Claim 9: the "Batch fan-out" section accurately names `superpowers:dispatching-parallel-agents` and `superpowers:using-git-worktrees` (skills are real)
 
-**Location:** `docs/reviews/self-eval-research-plan-implement.md:16`
+**Location:** `CLAUDE.md:46-66` and table row 2 (line 19)
 **Type:** Reference
-**Verdict:** Unverifiable
+**Verdict:** Verified
+**Confidence:** High
+**Legibility-target:** for-orchestrator-synthesis
+
+Both skills exist as installed superpowers plugin skills. `find ~/.claude/plugins` locates `skills/dispatching-parallel-agents/SKILL.md` and `skills/using-git-worktrees/SKILL.md` (versions 5.1.0, 6.0.0, 6.0.3). Both also appear in the available-skills list. Neither is a fabricated symbol.
+
+**Evidence:** `find ~/.claude/plugins/cache/.../superpowers/6.0.3/skills/{dispatching-parallel-agents,using-git-worktrees}/SKILL.md`; available-skills list
+
+---
+
+## Claim 10: "both reminders are now wired live"
+
+**Location:** `docs/working/wire-batch-feedback-reminder.md:19-22`
+**Type:** Configuration
+**Verdict:** Verified
+**Confidence:** High
+**Legibility-target:** for-orchestrator-synthesis
+
+Live settings show both commands present in `.hooks.UserPromptSubmit`, and both symlinks exist and resolve to existing target files in the checkout.
+
+**Evidence:** `jq '.hooks.UserPromptSubmit'` output; `ls -l`/`readlink -f` on both symlinks
+
+---
+
+## Claim 11: ".hooks.UserPromptSubmit contains the two-command block"
+
+**Location:** `docs/working/wire-batch-feedback-reminder.md:20-21`
+**Type:** Configuration
+**Verdict:** Verified
+**Confidence:** High
+**Legibility-target:** for-orchestrator-synthesis
+
+The live `UserPromptSubmit` array has one entry whose `hooks` array contains exactly the two `command` entries (batch then dd), matching the documented JSON block (lines 39-55 of the wiring doc).
+
+**Evidence:** `jq '.hooks.UserPromptSubmit' ~/.claude/settings.json`
+
+---
+
+## Claim 12: "both `~/.claude/hooks/*-reminder.sh` symlinks exist and resolve"
+
+**Location:** `docs/working/wire-batch-feedback-reminder.md:21-22`
+**Type:** Configuration
+**Verdict:** Verified
+**Confidence:** High
+**Legibility-target:** for-orchestrator-synthesis
+
+Both `~/.claude/hooks/batch-feedback-routing-reminder.sh` and `~/.claude/hooks/dd-routing-reminder.sh` are symlinks into `/home/magfrump/claude-workflows/hooks/`, and `readlink -f` confirms each resolves to an existing file.
+
+**Evidence:** `ls -l` and `readlink -f` output — both `[EXISTS]`
+
+---
+
+## Claim 13: "a missing target yields a non-zero (127) exit, which is a non-blocking error"
+
+**Location:** `docs/working/wire-batch-feedback-reminder.md:13-15`
+**Type:** Behavioral
+**Verdict:** Verified
 **Confidence:** Medium
+**Legibility-target:** for-orchestrator-synthesis
 
-A grep for "RPI" and "research-plan-implement" in git log finds 25 matching commits across all branches. The claim of "16+" is almost certainly met by any reasonable methodology, but the exact threshold depends on what counts as "directly referencing."
+`bash <missing-path>` returns 127 (standard "no such file" behavior for bash on a nonexistent script). UserPromptSubmit hooks treat a non-zero exit as non-blocking unless exit code 2 specifically (the documented blocking code for that hook); 127 is not a block. Confidence Medium because the precise harness semantics were inferred from Claude Code's documented hook contract rather than executed; the directional claim (127, non-blocking) is correct.
+Paraphrased — no quote available because this is harness runtime behavior, not code in the diff.
 
-**Evidence:** `git log --all --oneline --grep="RPI\|research-plan-implement"` returns 25 results
+**Evidence:** `docs/working/wire-batch-feedback-reminder.md:13-15`; bash exit-code convention
 
 ---
 
-## Claim 24: Cowen critique claims "13 (or at least 6) alternatives" were explored
+## Claim 14: README hook-listing lines accurately describe the two hooks
 
-**Location:** `docs/reviews/cowen-critique.md:26`
+**Location:** `README.md:106-107`
 **Type:** Reference
-**Verdict:** Mostly accurate
-**Confidence:** Medium
+**Verdict:** Verified
+**Confidence:** High
+**Legibility-target:** for-orchestrator-synthesis
 
-The decision record says "over a dozen" (not "13"). The Cowen critique parenthetically hedges with "(or at least 6)." The decision record lists 6 approaches. The "13" is the Cowen critique's interpolation of "over a dozen" into a specific number. The hedging "(or at least 6)" is accurate.
+Line 106 describes `hooks/dd-routing-reminder.sh` as a `UserPromptSubmit` hook nudging comparison/decision prompts toward divergent-design (non-blocking) — matches the dd hook's behavior and header. Line 107 describes `hooks/batch-feedback-routing-reminder.sh` as a `UserPromptSubmit` hook nudging multi-item prompts toward parallel-subagent fan-out per decision-tree row 2 (non-blocking), with wiring in `docs/working/wire-batch-feedback-reminder.md` — matches the batch hook's behavior, the row-2 reference, and the existing wiring-doc path.
 
-**Evidence:** `docs/decisions/006-foregrounding-tests.md:18` (says "over a dozen"), `docs/reviews/cowen-critique.md:26`
+**Evidence:** `README.md:106-107`; `hooks/dd-routing-reminder.sh`, `hooks/batch-feedback-routing-reminder.sh`
 
 ---
 
-## Claim 25: Cowen critique claims diagnostic expectations get "the longest explanation (lines 95-97 of the RPI workflow)"
+## Claim 15: verification harness "15 cases" and "all pass"
 
-**Location:** `docs/reviews/cowen-critique.md:76`
+**Location:** `docs/working/wire-batch-feedback-reminder.md:81` and `docs/working/verify-batch-feedback-reminder.sh`
 **Type:** Behavioral
-**Verdict:** Mostly accurate
+**Verdict:** Verified
 **Confidence:** High
+**Legibility-target:** for-orchestrator-synthesis
 
-The diagnostic expectations section starts at line 97 (not 95). Line 95 is the cross-reference to test-strategy. The diagnostic expectations paragraph at line 97 is indeed one of the longer individual explanations in the test specification section, though the test level taxonomy (lines 89-93) spans a comparable number of lines. The "longest explanation" claim is approximately correct.
+The harness contains exactly 15 `check` invocations (7 MATCH + 5 NO-MATCH + 3 ROBUSTNESS). Running `bash docs/working/verify-batch-feedback-reminder.sh` prints "ALL PASS" with exit 0; every case reports OK with `exit=0`.
 
-**Evidence:** `workflows/research-plan-implement.md:95` (cross-reference line, not diagnostic), `workflows/research-plan-implement.md:97` (diagnostic expectations)
+**Evidence:** `grep -cE '^[[:space:]]*check ' ...` → 15; verify run output "ALL PASS", RC=0
 
 ---
 
-## Claim 26: Yglesias critique references "line 95 of the RPI workflow" for diagnostic expectations
+## Claim 16: verify.sh header "every case exits 0 (never blocks)"
 
-**Location:** `docs/reviews/yglesias-critique.md:19`
-**Type:** Reference
-**Verdict:** Mostly accurate
-**Confidence:** High
-
-The diagnostic expectations section is at line 97, not line 95. Line 95 reads: "Other levels (e.g., end-to-end, snapshot, contract) are valid; the `test-strategy` skill has a full taxonomy." The reference is off by 2 lines.
-
-**Evidence:** `workflows/research-plan-implement.md:95` (cross-reference), `workflows/research-plan-implement.md:97` (actual diagnostic expectations)
-
----
-
-## Claim 27: Security review claims "line 103" contains the hard gate
-
-**Location:** `docs/reviews/security-review.md:25`
-**Type:** Reference
-**Verdict:** Stale
-**Confidence:** High
-
-The hard gate text ("implementation does not begin until the user has reviewed the plan") is at line 107, not line 103. The security review was likely written against an earlier version of the file or used a different line count. The current file has the hard gate at line 107.
-
-**Evidence:** `workflows/research-plan-implement.md:107` (actual location of hard gate)
-
----
-
-## Claim 28: Performance review claims "+14%" growth
-
-**Location:** `docs/reviews/performance-review.md:12`
+**Location:** `docs/working/verify-batch-feedback-reminder.sh:4`
 **Type:** Behavioral
-**Verdict:** Unverifiable
-**Confidence:** Medium
+**Verdict:** Verified
+**Confidence:** High
+**Legibility-target:** for-orchestrator-synthesis
 
-Main branch: 173 lines. Current branch: 202 lines. Growth: 29 lines, which is 16.8% (not 14%). If the review was calculated against an intermediate version with 198 lines, then 25/173 = 14.5% which rounds to 14%. The discrepancy suggests the percentage was calculated before the latest commit (which added the PII caveat and taxonomy note, adding ~4 lines).
+The harness asserts `rc == 0` per case and all 15 cases report `exit=0`. The header also claims "multi-item batches emit one reminder, single tasks emit nothing, malformed/empty input is silent" — all confirmed by the MATCH/NO-MATCH/ROBUSTNESS results.
 
-**Evidence:** `docs/reviews/performance-review.md:12` — `wc -l`: main=173, current=202; 29/173 = 16.8%
+**Evidence:** verify run — all 15 cases `exit=0`
 
 ---
 
 ## Claims Requiring Attention
-
+### Incorrect
+- (none)
 ### Stale
-- **Claim 27** (`docs/reviews/security-review.md:25`): References "line 103" for the hard gate, but the hard gate is now at line 107. The security review's line number is off, likely from an earlier version of the file.
-
+- (none)
 ### Mostly Accurate
-- **Claim 15** (`docs/reviews/performance-review.md:12`): "roughly 175 to 200 lines" -- actual is 173 to 202. The rounding goes in opposite directions and underestimates the growth (29 lines vs implied 25).
-- **Claim 24** (`docs/reviews/cowen-critique.md:26`): Interpolates "over a dozen" as "13" -- the hedged "(or at least 6)" saves accuracy.
-- **Claim 25** (`docs/reviews/cowen-critique.md:76`): "lines 95-97" should be "line 97" (line 95 is the cross-reference, not diagnostic expectations).
-- **Claim 26** (`docs/reviews/yglesias-critique.md:19`): "line 95" should be "line 97" for diagnostic expectations.
-
+- (none)
 ### Unverifiable
-- **Claim 4** (`docs/decisions/006-foregrounding-tests.md:18`): "Over a dozen approaches" -- only 6 are listed; no artifact preserves the full set.
-- **Claim 23** (`docs/reviews/self-eval-research-plan-implement.md:16`): "16+ commits directly referencing RPI" -- count exceeds 16 but exact methodology unclear.
-- **Claim 28** (`docs/reviews/performance-review.md:12`): "+14%" growth -- actual is 16.8%; may have been calculated against an intermediate file version.
+- (none)
 
-### Previously Flagged Items Now Resolved
-- **Previous Claim 19 (stale test-strategy reference)**: `skills/test-strategy.md:153` now correctly says "test specification" instead of "testing strategy." Resolved.
-- **Previous Claim A1 (stale full-evaluation reference)**: `docs/reviews/full-evaluation.md:211,215` now correctly says "test specification." Resolved.
-- **Previous Claim A3 (missing Date/Status)**: `docs/decisions/006-foregrounding-tests.md` now includes Date and Status fields. Resolved.
-- **Previous Claim A2 (taxonomy asymmetry)**: `workflows/research-plan-implement.md:95` now acknowledges other levels and cross-references the test-strategy skill. Resolved.
-- **Previous Claim C2 (PII caveat)**: `workflows/research-plan-implement.md:99` now includes the secrets/PII warning. Resolved.
+All 16 claims verified. No documentation rot, no fabricated symbols, no dangling row references. The renumbering is internally consistent, both named superpowers skills are real and installed, and the wiring doc's "wired live" status matches actual machine state.
+
+## Goal-Alignment Note
+- Answered: yes — all prioritized claims verified
+- Out of scope: code-quality/design judgments on the hook and CLAUDE.md prose (deferred to downstream critics per skill scope)
+- Escalate: nothing

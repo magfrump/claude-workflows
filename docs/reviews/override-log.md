@@ -60,4 +60,4 @@ than the core trio (e.g., ui-visual-review), name the critic in the
 
 | Date | PR ref | Finding | Original verdict | Override verdict | Reason |
 |---|---|---|---|---|---|
-| _no entries yet — first override will land here_ | | | | | |
+| 2026-06-23 | `feat/batch-feedback-subagent-routing` (#35) | Hook fires on every UserPromptSubmit incl. agent/tool notifications (`hooks/batch-feedback-routing-reminder.sh`, whole script) — security-reviewer Low + orchestrator observation (C1) | 🟢 Consider | Won't-Fix (intended) | Reminder targets the model not the human (no alert-fatigue); non-human submits are valid fan-out points; cost ~85 tok/firing. Broad firing preferred. |
