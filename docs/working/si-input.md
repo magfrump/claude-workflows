@@ -7,6 +7,9 @@
 <!-- Shape: short observations, one per line — verdicts on prior rounds welcome. -->
 <!-- e.g. (delete): The morning summary buried the verdict-ready items; the new action block fixed that. -->
 
+The abbreviated text of open hypotheses in morning summary isn't actionable. Either include much more text (5x?) or direct me to the real source of the descriptions that I can judge.
+
+Divergent design has been looking and feeling good.
 
 ## Priorities
 <!-- Drives: each priority becomes a planned task; a bullet with an attached hypothesis is inherited verbatim instead of reinvented. -->
@@ -14,6 +17,9 @@
 <!-- e.g. (delete): - Tighten the morning-summary action block -->
 <!-- e.g. (delete):   - hypothesis: likely failure is users skip it; I'd see that as no si-input edits next round -->
 
+There is a lot more usage data that may be interesting.
+
+If it's possible to capture and analyze places where I make corrections to double diamond criteria, that could be a useful source of "personalization" information.
 
 ## Off-limits
 <!-- Drives: the planner will not propose any idea that touches what you list here. -->
