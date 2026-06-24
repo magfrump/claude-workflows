@@ -93,20 +93,32 @@ Sub-agents are good for:
 
 #### Briefing patterns
 
-A sub-agent starts with zero context. Brief it like a colleague who just walked in — state what you're trying to accomplish, what to look at, and what to report back.
+A sub-agent starts with zero context. This workflow follows the [orchestrated review pattern](../patterns/orchestrated-review.md), so every dispatch must carry the same dispatch discipline `code-review`, `draft-review`, and `spike` use when they orchestrate parallel investigation — not just a freeform "brief it like a colleague" prompt:
 
-**Example — researching a subsystem:**
-> "Examine `src/auth/` and `src/middleware/auth.go`. Answer: (1) How are tokens validated? (2) Where is the middleware applied? (3) What happens on auth failure? Write findings to the 'Auth' section of `docs/working/research-api-endpoint.md`."
+- **Goal preamble.** Prepend the [3-line goal preamble](../patterns/orchestrated-review.md#goal-preamble) (User goal / Current task / Success criterion) above the role-specific instructions. The **User goal** — the feature or change driving the decomposition — is identical across every sub-agent in the run; **Current task** and **Success criterion** vary per sub-investigation. This is the orchestrated-review conformance the file's intro claims; without it the dispatch is just a freeform prompt.
+- **Goal-Alignment Note.** Require each sub-agent to append a [Goal-Alignment Note](../patterns/orchestrated-review.md#goal-alignment-self-report) at the end of its output. The reconciliation step (step 4) and synthesis (step 5) read these notes to surface coverage gaps, intentional scope cuts, escalations, and silent guesses across sub-investigations — drift that task-decomposition would otherwise absorb silently into the synthesized research doc.
 
-**Example — cross-cutting pattern search:**
-> "Find all places rate limiting is applied in this codebase. For each, note: which library, what limits, whether it's per-user or global. The routing middleware is in `src/server/router.go` — start there. Report findings in under 200 words."
+The canonical 3-line shape, applied to the auth sub-investigation from the running "API endpoint with auth + rate limiting" example:
 
-**Example — dependency analysis:**
-> "Read `package.json` and `src/pdf/generator.ts`. We're evaluating whether to replace the PDF library. Answer: What API surface do we actually use? How coupled is our code to this specific library? Are there test fixtures that depend on exact output?"
+```
+User goal: Add an authenticated, rate-limited API endpoint to the reports service.
+Current task: Examine `src/auth/` and `src/middleware/auth.go` and answer: (1) how are tokens validated, (2) where is the middleware applied, (3) what happens on auth failure.
+Success criterion: Findings written to the "Auth" section of `docs/working/research-api-endpoint.md`, with a Goal-Alignment Note appended at the end.
+```
+
+The same preamble wraps the other sub-investigations in the running example — only Current task and Success criterion change per area:
+
+**Example — cross-cutting pattern search (Current task / Success criterion):**
+> Current task: Find all places rate limiting is applied in this codebase. For each, note: which library, what limits, whether it's per-user or global. The routing middleware is in `src/server/router.go` — start there.
+> Success criterion: Findings in the "Rate limiting" section of `docs/working/research-api-endpoint.md`, under 200 words, with a Goal-Alignment Note appended.
+
+**Example — dependency analysis (Current task / Success criterion):**
+> Current task: Read `package.json` and `src/pdf/generator.ts`. We're evaluating whether to replace the PDF library. Answer: What API surface do we actually use? How coupled is our code to this specific library? Are there test fixtures that depend on exact output?
+> Success criterion: Findings in the "PDF library" section of the research doc, with a Goal-Alignment Note appended.
 
 **End-to-end example — parallel dispatch and recompose:** Continuing the API endpoint decomposition from step 1, after researching the shared routing/middleware dependency, dispatch three sub-agents in parallel by issuing three Agent tool calls in a single response — one for auth, one for rate limiting, one for the resource data model. Each prompt scopes its investigation tightly: the auth sub-agent examines `src/auth/` and reports token validation, where middleware is applied, and failure behavior; the rate-limiting sub-agent searches the codebase for existing rate-limit usage and reports library, configured limits, and whether keys are per-user or global; the data-model sub-agent reads the resource schema and reports field shapes and validation rules. All three return findings concurrently. In the recompose step, the main agent reads each report, checks for conflicts at shared interfaces (e.g., does the auth sub-agent's user-identity field match the rate-limiting sub-agent's rate-limit key?), resolves any conflicts against the actual code, and folds the reconciled findings into the unified research doc's Scope / What exists / Invariants / Gotchas sections — not preserved as three separate per-area appendices.
 
-Common briefing mistakes: omitting file paths (sub-agent wastes time searching), asking open-ended questions ("how does this work?" vs. specific questions), and not capping output length (sub-agent returns a wall of text you have to re-read).
+Common briefing mistakes: omitting file paths in the Current task (sub-agent wastes time searching), writing a Success criterion that names neither an artifact nor a path (sub-agent invents an output shape synthesis can't consume), and not capping output length. The pattern's [default output cap](../patterns/orchestrated-review.md#default-output-cap) — `<300 words summary; structured output may extend.` — applies unless the dispatch overrides it explicitly.
 
 #### Recommended output scaffold
 
@@ -127,8 +139,8 @@ Sub-agents should NOT:
 
 **Done when...**
 - [ ] Each independent area has a sub-agent dispatched (or researched sequentially if sub-agents are unavailable)
-- [ ] Each sub-agent prompt specifies exact files/directories to examine, questions to answer, and where to write findings
-- [ ] All sub-agents have returned their findings
+- [ ] Each sub-agent prompt prepends the canonical goal preamble (User goal / Current task / Success criterion) and requires a Goal-Alignment Note in the output, with exact files/directories, questions, and the output path named in the Current task / Success criterion
+- [ ] All sub-agents have returned their findings, each ending with a Goal-Alignment Note
 
 ### 4. Reconcile conflicting assumptions across sub-investigations
 
@@ -141,6 +153,8 @@ For each contract entry recorded in step 1's `## Interface contracts` subsection
 - Document each contract's outcome in the research doc under a **Reconciliation** heading: which contracts held as predicted, which were revised, and how each conflict was resolved. If no conflicts were found, note that explicitly (e.g., "All N contracts held as predicted").
 
 If step 1 used the escape line (`no shared interfaces — sub-investigations are fully independent`), this step is a quick sanity check: skim the sub-agent findings to confirm no unexpected shared interface emerged. If one did, capture it as a late-added contract entry and reconcile it now. Record the result under **Reconciliation** (e.g., "Escape line held: no shared interfaces surfaced" or "Late contract added: …").
+
+**Evidence-tag tiebreaker.** When reading the code to resolve a conflict isn't immediately possible and you must weigh the sub-agent findings themselves, prefer evidence by its RPI confidence tag: `[observed]` outranks `[inferred]`, which outranks `[assumed]` (absent staleness signals). This only orders the findings pending a code read — it is not a substitute for verifying against ground truth. The load-bearing case is the tie: if **two sub-agents both claim `[observed]`** for contradictory readings of the same contract, do **not** silently pick one — escalate to the user with both conflicting passages, since two direct observations disagreeing signals the contract or the code itself is ambiguous in a way the orchestrator shouldn't resolve by fiat.
 
 **Done when...**
 - [ ] Each contract entry from step 1 has been verified against the sub-agent findings (shape, error mode, codebase example)
