@@ -69,6 +69,24 @@ cleanup() {
 }
 trap cleanup EXIT ERR
 
+# Drop a worktree dir and branch from the run-tracking arrays. Called after a
+# worktree/branch has been deliberately disposed of (deleted, or intentionally
+# retained for manual recovery) so the EXIT trap does not re-process it — either
+# redundantly re-removing an already-gone path, or force-deleting work we chose
+# to keep. Args: $1 = worktree dir, $2 = branch name.
+untrack_worktree_and_branch() {
+    local wt=$1 br=$2 i
+    local new_wt=() new_br=()
+    for i in "${RUN_WORKTREES[@]:-}"; do
+        [ -n "$i" ] && [ "$i" != "$wt" ] && new_wt+=("$i")
+    done
+    for i in "${RUN_BRANCHES[@]:-}"; do
+        [ -n "$i" ] && [ "$i" != "$br" ] && new_br+=("$i")
+    done
+    RUN_WORKTREES=("${new_wt[@]}")
+    RUN_BRANCHES=("${new_br[@]}")
+}
+
 # Initialize a round log object as a temp file; sets ROUND_LOG_FILE
 init_round_log() {
     local round=$1
@@ -825,13 +843,21 @@ Hypothesis_source guidance (decision 012 pillar 3):
         FILES_TOUCHED=$(jq -r ".[] | select(.id==\"$TASK_ID\") | .files_touched[]" "$TASKS_FILE" | paste -sd', ')
         WT_DIR="$WORKTREE_BASE-$TASK_ID"
 
+        # Track the intended worktree dir and branch BEFORE attempting the add.
+        # A partial `worktree add` (e.g. the branch already exists from a prior
+        # crashed run, or the dir is half-registered) would otherwise orphan
+        # those artifacts: the old post-add appends were skipped by the
+        # `continue` below, leaving the leftovers invisible to both the explicit
+        # cleanup and the EXIT trap. The trap is idempotent — it guards on dir
+        # existence and `show-ref` — so registering a name that never got
+        # created is harmless.
+        RUN_WORKTREES+=("$WT_DIR")
+        RUN_BRANCHES+=("feat/r${ROUND}-${TASK_ID}")
+
         git worktree add "$WT_DIR" -b "feat/r${ROUND}-${TASK_ID}" main 2>/dev/null || {
             echo "Warning: could not create worktree for $TASK_ID, skipping"
             continue
         }
-        # Track so the EXIT trap force-cleans these if the run crashes.
-        RUN_WORKTREES+=("$WT_DIR")
-        RUN_BRANCHES+=("feat/r${ROUND}-${TASK_ID}")
 
         LAUNCHED_TASKS="${LAUNCHED_TASKS:+$LAUNCHED_TASKS }$TASK_ID"
 
@@ -1154,6 +1180,9 @@ Count only the automated assessment scores (Testability investment, Trigger clar
             record_gate "$TASK_ID" "verdict" "rejected"
             record_gate_detail "$TASK_ID" "verdict" "$(jq -n --arg reason "$REJECT_REASON" '{reject_reason: $reason}')"
             remove_worktree_and_branch "$WT_DIR" "$BRANCH" -D
+            # Untrack the now-deleted pair so the EXIT trap doesn't redundantly
+            # re-process it (Gap 3).
+            untrack_worktree_and_branch "$WT_DIR" "$BRANCH"
         else
             echo "    APPROVED"
             echo "[$TASK_ID] APPROVED" >> "$WORKING_DIR/validation-round-$ROUND.log"
@@ -1247,6 +1276,26 @@ Then git add the resolved files and git commit to complete the merge."
             else
                 MERGE_STATUS="conflict_unresolved"
                 echo "  WARNING: Merge conflicts remain unresolved for $BRANCH"
+                # Abort the half-finished merge so `main` is restored to a clean
+                # state — otherwise the in-progress merge poisons the NEXT
+                # approved task's `git merge` in this same loop (it would fail
+                # because a merge is already in progress).
+                git merge --abort 2>/dev/null || true
+                # A2 guard: confirm the abort actually cleaned up. If MERGE_HEAD
+                # still exists, the abort failed and `main` is wedged mid-merge —
+                # merging the next approved branch onto it would mis-attribute or
+                # tangle commits. Halt this round's merges loudly. Clear the
+                # tracking arrays first so the EXIT trap RETAINS all remaining
+                # worktrees/branches (including this one) for manual recovery
+                # instead of force-discarding approved work.
+                if git rev-parse -q --verify MERGE_HEAD >/dev/null 2>&1; then
+                    echo "  ERROR: git merge --abort failed for $BRANCH — main left mid-merge." >&2
+                    echo "  Halting round $ROUND merges; retaining all remaining worktrees/branches for manual recovery." >&2
+                    echo "[$TASK_ID] MERGE_ABORT_FAILED: $BRANCH — halting round $ROUND merges" >> "$WORKING_DIR/validation-round-$ROUND.log"
+                    RUN_WORKTREES=()
+                    RUN_BRANCHES=()
+                    break
+                fi
             fi
         }
 
@@ -1254,8 +1303,21 @@ Then git add the resolved files and git commit to complete the merge."
         jq_update_inplace "$ROUND_LOG_FILE" --arg tid "$TASK_ID" --arg s "$MERGE_STATUS" \
             '.merges[$tid] = $s'
 
-        # `branch -d` refuses unmerged branches — safety net for merge_failed cases.
-        remove_worktree_and_branch "$WT_DIR" "$BRANCH" -d
+        if [ "$MERGE_STATUS" = "conflict_unresolved" ]; then
+            # Approved work that could not be auto-merged. Do NOT silently
+            # discard it: retain the branch and its worktree for manual merge,
+            # and untrack them so the EXIT trap's force-delete leaves them
+            # intact. The morning review surfaces the merge status.
+            echo "  RETAINED for manual merge: branch $BRANCH (worktree $WT_DIR)"
+            echo "[$TASK_ID] RETAINED (conflict_unresolved): $BRANCH" >> "$WORKING_DIR/validation-round-$ROUND.log"
+            untrack_worktree_and_branch "$WT_DIR" "$BRANCH"
+        else
+            # Merged cleanly (or conflict auto-resolved): the branch is now
+            # reachable from main, so a safe `-d` delete succeeds. Untrack the
+            # pair so the EXIT trap doesn't redundantly re-remove it (Gap 3).
+            remove_worktree_and_branch "$WT_DIR" "$BRANCH" -d
+            untrack_worktree_and_branch "$WT_DIR" "$BRANCH"
+        fi
     done
 
     # Print human-readable round summary after merges

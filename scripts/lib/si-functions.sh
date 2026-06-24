@@ -138,6 +138,18 @@ prepend_lineage_to_plan() {
 remove_worktree_and_branch() {
     local wt=$1 br=$2 delete_mode=${3:--d}
     git worktree remove --force "$wt" 2>/dev/null || true
+    # Prune stale administrative entries (.git/worktrees/<name>) left behind if
+    # the remove only partially succeeded. A leftover registration makes the
+    # next same-named `git worktree add` fail, which is exactly the orphaning
+    # that strands a branch from a prior run.
+    git worktree prune 2>/dev/null || true
+    # Surface a genuine removal failure: if the directory is still present after
+    # a forced remove + prune, the worktree was not cleaned and the caller
+    # should know. A `git branch -d` refusal is expected (it intentionally keeps
+    # unmerged branches) so that path stays quiet.
+    if [ -d "$wt" ]; then
+        echo "Warning: failed to remove worktree $wt" >&2
+    fi
     git branch "$delete_mode" "$br" 2>/dev/null || true
 }
 
