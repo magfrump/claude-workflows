@@ -1,0 +1,217 @@
+branch	tip_sha	date	subject
+feat/r1-accessibility-reviewer-skill	ce753e6ebfda7268634ee8c52ea65ea06cf75ccc	2026-05-03	feat(skills): add accessibility-reviewer skill mirroring security-reviewer
+feat/r1-ai-personas-critique	517c4e073389754d0049a24db5c22322e9cbdbfd	2026-04-08	feat: add multi-persona AI criticism critique skill
+feat/r1-arithmetic-skill	fd74fad690400863b41348a5ebc6dd9bbd9806c4	2026-04-08	feat: add arithmetic evaluation skill for verified computation
+feat/r1-branch-stale-protocol	71aa5a230fd018e238d193b973b10f1881a78bf6	2026-05-03	feat(branch-strategy): add stale branch triage protocol (>7 day gate)
+feat/r1-bug-diagnosis-hypothesis-source-tag	df99899af381e40eeff02e4402ed73e4edd77852	2026-05-03	feat(bug-diagnosis): tag hypotheses with one of five provenance sources
+feat/r1-business-plan-critique-skill	e7a78ebfcc6f7a29f878e4d9885ca8e4ead18c64	2026-05-13	feat(skills): add business-plan-critique with investor-DD lenses and wire it into draft-review
+feat/r1-calibration-report-script	4d285193f94e0f06cb391d8d81cc6d5bf2a726fd	2026-04-08	feat: add hypothesis calibration report script
+feat/r1-code-review-failure-mode-check	bc6a58c7f85276785b2e44067743f7d7acccb2ea	2026-05-13	feat(code-review): add forward-looking failure-mode introduction scan to Stage 3
+feat/r1-code-review-override-log	581346953dc0be28fa6f2fe1fb290c40408ee4c7	2026-05-03	feat(code-review): add override log with read-cite-write contract
+feat/r1-code-review-rewrite-profile	545274470a6b2eadf2dd334d667aa954984fd422	2026-05-12	feat(code-review): switch to rewrite profile when any file exceeds 40% churn
+feat/r1-dd-double-diamond-variant	7024da1e1d073490ec21c89a964b17f6be804c55	2026-04-28	feat(dd): add Double Diamond (Purpose-First) variant
+feat/r1-dd-multi-lens-variant	d4b909500bdb00fc64b22350d6eb04d6b980a520	2026-05-03	docs(dd): add opt-in parallel-lens variant + boring fallback to step 1
+feat/r1-dd-revisit-triggers	ff8c46b572144863b9cbdb10595852d715e40279	2026-05-03	feat(dd): add revisit triggers section to decision record template
+feat/r1-epistemic-dd-workflow	0d29aa582cdafe282a169eecb769991e8c18b09a	2026-04-08	feat: add epistemic divergent design workflow for hypothesis-space expansion
+feat/r1-fact-check-inline-citation	4febb7f05b576fa22fdb834b67ef3001345a1be6	2026-05-03	feat(fact-check): require inline citations on every verdict
+feat/r1-failure-driven-design-workflow	5d805f36463c1543c186cd57af5ec00e907b1359	2026-05-13	feat: add failure-driven design workflow (generative counterpart to what-if-analysis)
+feat/r1-gitignore-restructuring	cfab57140ebb6dd8df342a4f29b4e02eded6b1dd	2026-04-08	refactor: restructure docs/working/ into rounds/, reports/, scratch/ subdirs
+feat/r1-hypothesis-evaluator-target-rule	c37b5c1406a1b241191572639a37cfc4e552b825	2026-06-23	docs(decision-012): record generation-time evaluator-target rule (script needs a resolvable skill/workflow in files_touched)
+feat/r1-hypothesis-mandatory-odds	bb207bffbf24c972c788a28a150d384395a0c98d	2026-04-08	feat: add mandatory odds_ratio field to hypothesis system
+feat/r1-ideas-backlog-restructure	90f45a021fb41ec0277d725051cc78dc1055c805	2026-04-08	feat: restructure ideas backlog with round-based lifecycle and prune rule
+feat/r1-onboarding-coupling-matrix	af0b99b0ef19d5f6202cbb944c4a1bb3806265d3	2026-05-03	docs(onboarding): add optional Subsystem coupling matrix to architecture map output
+feat/r1-onboarding-entry-point-inventory	6c57e78736481a11fecd5b102eb6eae43a75cb05	2026-05-03	feat(onboarding): add step 3 process-entry-point inventory between architecture map and flow tracing, with library skip criterion
+feat/r1-onboarding-entry-points	497ddbc7bfd0ad2c332e0ff6f802f5a082c0804b	2026-05-03	feat(onboarding): add execution-entry-points enumeration step with library skip criterion
+feat/r1-onboarding-from-scratch-branch	329ab2435e9ef83731d9715efa2d3b1b05e91d04	2026-05-12	feat(onboarding): add from-scratch gate that redirects tiny/new repos to a project-charter path
+feat/r1-onboarding-serialization-addendum	6142e88ac78ca94555eaba444d345d8fd6ab3296	2026-05-03	feat(onboarding): add optional Data-serialization projects subsection to architecture mapping
+feat/r1-persona-critique-freshness	4d6d69dcf436b32d91d13dda93c9f1edbbb247e1	2026-05-03	feat(skills): flag persona critiques whose persona-last-sampled is >180 days
+feat/r1-pr-decision-record-citation	3dbcd78d1d4e53950e81e91c84b274c2ab3def4f	2026-05-15	feat(pr-prep): cite pre-existing decisions touched by the diff
+feat/r1-pr-prep-pre-mortem-high-risk	6ee0ae8ce33e2cfe76d6487387a42eeeb5bed7bb	2026-05-15	feat(pr-prep): fire pre-mortem on high-risk PRs at gate-check stage
+feat/r1-pr-prep-review-doc-commit	838157e1e92b66a1edf245ed545882bdcd3455ad	2026-04-06	fix: restore actively-referenced files removed by subtraction step
+feat/r1-pr-prep-reviewer-orientation	a80b2b92014736f6d8baf87e7c687c5251af669c	2026-06-23	feat(pr-prep): require an intent-first "Reviewer's path — start here" section in the PR-description template
+feat/r1-pr-prep-test-evidence	1967b8576df2677a29ae9bebe144c2ad8165c684	2026-05-03	feat(pr-prep): require test citations or waivers for every Major change
+feat/r1-probability-calibration	bcb349d15b4c4847a7db15aa3aaa9c3a299d5073	2026-04-08	feat: add odds-ratio calibration tracking to hypothesis log
+feat/r1-problem-framing-standalone-workflow	76b9de0ea839d732263c9eda72fc1df66452d1a7	2026-05-13	feat: extract problem framing into standalone workflow with explicit exit paths
+feat/r1-r1-briefing-patterns-guide	d7ba8ad753c54308a036c450e650df5ad4b6b3fa	2026-04-29	docs: extract sub-agent briefing patterns into a reusable guide
+feat/r1-r1-bug-diagnosis-env-failure	250d8ed7cb52910d39779d80346d2fefea36cbd1	2026-04-28	docs(bug-diagnosis): add step 0 to verify failure isn't preexisting
+feat/r1-r1-claude-api-streaming-thinking	750361c7ebccb152e9e16232eb7ae60146c9927b	2026-04-28	feat(claude-api): add streaming + extended thinking subsection
+feat/r1-r1-code-review-accurate-summary	b05c0dd1055d8d7921b49096c6fb6c9e54a02f83	2026-04-28	docs: require accurate-claims summary when truncating fact-check for critics
+feat/r1-r1-code-review-escalation-rule-clarification	aaa0c6ebff03eaba5cfcce8b143a5fbc0e464083	2026-04-28	docs: clarify fact-check counts as flagger in escalation rule
+feat/r1-r1-cowen-yglesias-tech-draft-calibration	3b7ae1efed2dbf08bb2d96ad153354d00f0b4ee7	2026-04-28	docs: calibrate cowen and yglesias critiques for technical drafts
+feat/r1-r1-dd-double-diamond-variant	bab12c87519ad9de1e2bb56142a7c7b62de69cc6	2026-04-28	docs(dd): add Double Diamond (Purpose-First) variant
+feat/r1-r1-dd-lens-checklist	b5541de3f2a3ca1d6dd4b0a049f899bee814c2ba	2026-04-28	feat(dd): add optional lens checklist to generate step
+feat/r1-r1-drop-task-description-linter-deferred	07f0e6833a061319477ac81906edf1956cb19477	2026-04-29	feat(si): scope-tag hypotheses so internal-si ones don't surface as deferred user questions
+feat/r1-r1-fact-check-quote-attribution	1d5311e0ae74e98f58353e476a6d70a67b054e1f	2026-04-28	docs(fact-check): add Quote attribution subsection
+feat/r1-r1-goal-preamble-standard	3a53147329edc43d66cd28088455cc95365bb70a	2026-04-29	feat(orchestrators): standardize 3-line goal preamble for sub-agent prompts
+feat/r1-r1-hypothesis-backlog-retirement-closure	7ca066850985105cb0d1e48e585e00501efad281	2026-04-28	docs: close R11-R14 hypothesis-backlog-retirement saga as abandoned
+feat/r1-r1-hypothesis-first-task-gate	fc45fc63ba688b64583d37c9639e26dd22035c7e	2026-04-30	feat(self-improvement): add hypothesis_present early task gate
+feat/r1-r1-hypothesis-surfacing-audit-fix	8e87333c2227316a7c4a81e808c8065b0effdb3e	2026-04-30	fix(si): surface INCONCLUSIVE hypotheses in morning summary deferred-evaluation section
+feat/r1-r1-maintenance-quota	28be881092aba10241613f3ab30ed2cc622af010	2026-04-30	feat: enforce maintenance/data-pipeline task quota in round-planner
+feat/r1-r1-onboarding-entry-point-churn-trigger	40a12a1b6a49a22fbce3b7540ddcc00d78e0cbee	2026-04-28	docs: escalate to full re-run on entry-point churn in onboarding refresh
+feat/r1-r1-pr-prep-retro-doc-convention	672bae8a7da285441907622e74e1247b890ea691	2026-04-28	docs: specify retro doc filename convention in pr-prep
+feat/r1-r1-review-fix-loop-convergence-summary	4b2161417eb02f461aafbc0c6a4c0298a6c39d91	2026-04-28	docs: require clean-convergence summary in pr-prep review-fix loop
+feat/r1-r1-round-history-json-deprecation	dc75f47ecebb4171564a1ca3dff7b62a34fe3a52	2026-04-28	docs: log scope exception for r1 round-history.json deprecation
+feat/r1-r1-rpi-back-from-dd-pivot	42ce6e18a80a2bf55438193e1dd4bb1ef4adebda	2026-04-28	docs: add RPI ← From DD pivot for implementation-time constraint discovery
+feat/r1-r1-si-pre-round-health-check	a8f335dce87db46f941f21c3dd888b9d7254fdda	2026-04-28	feat(si): add pre-round health gate that halts on broken main
+feat/r1-r1-spike-testability-gate	8d46d5185be61261ee7115c78ef1e26aa71d4d6b	2026-04-28	docs(spike): add testability gate before step 2 timebox
+feat/r1-r1-token-tracking	3c4cb6681375708f033b4d2e74f3e67bde663d36	2026-04-30	feat(self-improvement): record per-task token usage and surface round-mean tokens in morning summary
+feat/r1-r1-ui-visual-review-3d-viewport	b2f78a1cb7d913f55067dfabbe8fd0168453f037	2026-04-28	feat(ui-review): add 3D viewport rendering checks and triggers
+feat/r1-r1-ui-visual-review-multi-app-scoping	757c0a86cb22a60c47526dc93f7c1a8408a71331	2026-04-28	docs: add multi-app scoping question to ui-visual-review Step 1
+feat/r1-r1-user-testing-dd-handoff-convention	a0cc80fa12963ab0bb8eee06059883d622bbd934	2026-04-28	docs: add DD handoff doc convention to user-testing-workflow
+feat/r1-r1-user-testing-hypothesis-pilot	ccb5fadb468a77478489f0a24dcb7bf717388d4c	2026-04-28	feat(user-testing): hypothesis-driven pilot phase with discrimination go/no-go
+feat/r1-rpi-plan-dependency-tree	4b13bc0186318a4c93ba50185a4502031a0eeed4	2026-05-03	feat(rpi): add optional Implementation order block to plan template for >5-step or /away-mode plans
+feat/r1-self-eval-detail-gate-diagnosis	547a3d7bada695462cff8609b8d2da3d15ec521f	2026-05-12	fix(si): exclude *_detail records from gate stats and surface per-task skip reasons
+feat/r1-self-improvement-modularization	c0566d3d753dc6b2a8f7c09fd4c93540d8176b50	2026-04-06	refactor: extract functions from self-improvement.sh into lib/si-functions.sh
+feat/r1-si-cycle-framing-record	8d9487be47af6cfb1a2e11724a8ac02316307c16	2026-05-13	feat(si): record one-paragraph cycle framing at SI cycle start
+feat/r1-si-duplicate-detector	00ffb4f6f1268331a1a098ebdace27d90128edd1	2026-05-03	feat(si): add pre-prune duplicate-candidate detector to surface near-duplicates against prior rounds and completed tasks
+feat/r1-si-emits-integration-refresh	dcd1e4ed3eeb4539d06d7b9dc1bb92811cd7de72	2026-06-03	feat(si): emit a build-only dev-refresh integration branch from each run's approved PRs
+feat/r1-si-failure-pattern-aggregation	83ffd977453a81d9730dc65fe39aa712d42afcda	2026-05-13	feat(si): aggregate gate-fail reasons into top-3 failure modes block in morning summary
+feat/r1-si-input-failure-prompt	9cf0686dc3c2f478ae60726b9cf26e1276e3b917	2026-05-13	feat(si): add 'Failure modes from last cycle' prompt to SI input
+feat/r1-si-null-result	63dbd60c0df83c787c80c634163f10fec599dd49	2026-05-03	feat(si): permit rounds to return null-result when backlog is below quality threshold
+feat/r1-si-null-result-acceptance	f764c9e00ea2ef34521e23f490c39c304d326b99	2026-05-03	feat(si): accept null-result rounds with backlog-quality justification
+feat/r1-si-pre-round-health-check	c1979275102fbc1401e7889758f422f144c25166	2026-04-28	feat(si): pre-round health-check gate halts run on repo breakage
+feat/r1-si-value-revisit	0a35202bf13fe876b1c9dccf752c3f579dfbe029	2026-05-03	feat(si): add round-start value-revisit step sampling old features for cost-revisited verdicts
+feat/r1-spike-dd-seed	f23f20aa55458d6c9ed03609281f122b1828f102	2026-05-03	feat(spike): add optional DD seed section for spikes invoked from DD
+feat/r1-token-burn-rate-plan	25d20bb1d21647222c0af88dc7c8da023a3bbb2c	2026-05-12	refactor(si): remove permanent N/A Token Burn Rate section from morning summary
+feat/r1-ui-visual-review-state-matrix	33ad0259aa083a425023d2a9ab8f5b091640d96b	2026-05-03	feat(ui-visual-review): add 6-state matrix (default/hover/focus/active/disabled/error) for diff-touched interactive elements
+feat/r1-user-testing-contrastive-analysis	7748cdd4ef33fb33353f7d0a684609ec978ba74e	2026-05-03	feat(user-testing): add contrastive session pair analysis to Phase 3
+feat/r1-user-testing-moderator-extract	9a7dbc340b115b572e62d72a3bab48807538d62a	2026-04-06	fix: restore actively-referenced files removed by subtraction step
+feat/r1-user-testing-recruitment-criteria	da2e7828a94c801d25a6bd8533a18a8b48fd6c8c	2026-05-03	feat(user-testing): add Phase-0 recruitment criteria block with convenience-sample escape valve
+feat/r1-workflow-effectiveness-framing	dbfafda7ac02089b72f7692aaaf8c5161b0a57a9	2026-04-08	feat: replace complexity check with value_justification validation
+feat/r1-workflow-trigger-transparency	6db1d53a63067036badb092f4b826a2a8733a28f	2026-04-08	feat: add trigger conditions to workflow frontmatter and CLAUDE.md
+feat/r10-debugging-worked-examples	b329bc5cf2840a4d570f73d7439c730d2eaf20e3	2026-04-08	docs: add summary for debugging worked examples task
+feat/r10-hypothesis-backlog-retirement	66443dc3c7c9e333898149b6f7e381ee7b546ee8	2026-04-08	feat: retire H-02, H-08, H-09 as INCONCLUSIVE-EXPIRED
+feat/r10-workflow-trigger-examples	3fadb89d9f1d4f3a16e086cd7f3218cf47c15af7	2026-04-08	feat: add example user requests to workflow decision tree
+feat/r11-hypothesis-backlog-retirement	08e578a5013931e8ed09a33f7fdbc38cd9c226fe	2026-04-08	feat: retire H-02, H-08, H-09 as INCONCLUSIVE-EXPIRED
+feat/r11-workflow-trigger-examples	cd0646a7dd2fd7d9214f91773dbc02eeca42c58e	2026-04-08	feat: add example user requests to workflow decision tree
+feat/r12-hypothesis-backlog-retirement	3dd0bbd13695bb855975caf4279a4003e88e7d00	2026-04-09	feat: retire H-02, H-08, H-09 as INCONCLUSIVE-EXPIRED
+feat/r13-hypothesis-backlog-retirement	5239ec57ec91ff8bd6903b2c6ec2b77feaea41bf	2026-04-09	docs: add summary for hypothesis-backlog-retirement task
+feat/r2-ai-personas-critique-skill	a9cd6c2777b1762de25cac59df2d4d2435c2fc7f	2026-04-08	docs: add summary for ai-personas-critique skill implementation
+feat/r2-arch-review-in-code-review	87f2f8eebda18bb38c6ddbce3e5194f0faa72b9d	2026-04-28	feat: wire architecture-review into code-review as contextual critic
+feat/r2-arithmetic-eval-skill	1a2666b9ec34f61567208f21aa983d4213561f51	2026-04-08	feat: add arithmetic-eval skill for exact calculation via python3
+feat/r2-convergence-transparency-report	39efa7509dce2d01d05bf699c8d37b2750840031	2026-04-08	feat: add convergence transparency report to self-improvement loop
+feat/r2-dd-failure-first-variant	69713bc975d6af257b2787cfd8a1db22577a3d04	2026-05-13	feat(divergent-design): add Failure-First Generation variant inverting diverge order
+feat/r2-dd-scoring-rubric	20cc89dd5357fd0cb1c1e7365b243339ff75de7a	2026-04-28	docs(divergent-design): tighten glyph rubric in step 3 and epistemic variant
+feat/r2-fact-check-temporal-anchor	83967cbd2d591005e9ec13b78441c2567c23af59	2026-04-28	feat: add time-bound claims handling to fact-check skill
+feat/r2-hypothesis-backlog-activation	b9a998e90506712a43ddffc952d77b9403f95fb7	2026-04-06	feat: activate hypothesis evidence pipeline with self-referential scan
+feat/r2-hypothesis-evaluation-automation	c35f632bc5e6202afd44dbf0ae37b90ae3af8074	2026-04-06	docs: add summary for hypothesis evaluation automation task
+feat/r2-hypothesis-evidence-analysis	260c8ad213b60c0cf5a4b39a48b1d3ac4a1ba932	2026-04-09	docs: resolve H-01, H-05, H-07 as INCONCLUSIVE from usage.jsonl analysis
+feat/r2-morning-summary-intentionality-aids	9dc18e04f4ecb0808aa191067fb5d6541b403757	2026-06-03	feat(si-morning-summary): give each verdict-ready hypothesis a YES/NO adjudication line from its counter-evidence window
+feat/r2-mvp-process-headers	b9748507575d3bd04a6135a0f015add9fb8f59b4	2026-04-06	docs: add summary for mvp-process-headers task
+feat/r2-onboarding-dd-double-diamond-handoff	6625a5cbf13cc6855217feb2bd6ece4ede2f0bdf	2026-05-13	feat(onboarding): replace from-scratch silent skip with explicit DD Double Diamond redirect
+feat/r2-pr-prep-ci-triage	5eba6e42a1a5138cda4ee7a072149686ad4a51de	2026-04-28	docs: add 3-class CI-failure triage to pr-prep step 5a
+feat/r2-pr-prep-decision-citation-checklist	8483d418e5d9c0f72a3f64d08a904570a7668fc1	2026-05-15	feat(pr-prep): require manual Decisions-referenced checklist line in PR description
+feat/r2-pr-prep-failures-prevented-line	60a4c6ac9c9790ab013b991a473ec8e5843dbad9	2026-05-13	feat(pr-prep): add optional 'Failures prevented' line to PR description template
+feat/r2-pr-prep-reviewer-orientation	1de97072a0ad1035c7cb9c1bc7d8b1820bb69cef	2026-06-23	feat(pr-prep): require an intent-first "Reviewer's path — start here" section naming 1–3 files in read-order
+feat/r2-pr-prep-test-evidence-bounded	9f6a24e191f58cec74c2d97c70d3a174e3ac2b97	2026-05-12	docs(pr-prep): require test evidence per major change in PR description
+feat/r2-r2-dd-candidate-token-cost-column	aa9e08d7fb5163b3788ce2025670415413918e7f	2026-04-30	feat(dd): add Est. token cost column to step-4 tradeoff matrix
+feat/r2-r2-hypothesis-pipeline-integrity	f1905dab214e286e34c9c228efe36ed308436198	2026-04-30	feat(health-check): add hypothesis pipeline integrity check
+feat/r2-r2-hypothesis-surfacing-fix	08f7101574e60206eafbeec32a15585a02d01875	2026-04-30	fix(si-morning-summary): surface INCONCLUSIVE hypotheses, add row-count regression guard
+feat/r2-r2-pr-prep-scope-drift-check	a8e184cb627cd8fe85d43a088b3daa922bf819c0	2026-04-30	feat(pr-prep): add files-touched scope-drift gate to step 3 exit criteria
+feat/r2-r2-si-round-purpose-header	dd82096edeee9e968cdc87b63d1d7f107cc61bf6	2026-04-29	feat(orchestration): inject round-purpose header into per-task agent prompts
+feat/r2-r2-task-status-block	afb22cb47bb8fc491ec672eb17fdd6f2f8d238b2	2026-04-29	docs(pr-prep): add optional Status block to PR-description template
+feat/r2-r2-token-tracking-narrow	d1a802d250112dbc4fa638442f77d86d7cb757f9	2026-04-30	feat: capture per-task implementer token usage from claude session logs and surface round mean in morning summary
+feat/r2-review-fix-loop-override-noise	44c29937ecfcbdc880b1bb4a807dbb26a658711e	2026-05-12	feat(review-fix-loop): filter findings matching Won't-Fix override-log rows out of per-iteration triage
+feat/r2-review-fix-non-convergence	ba4b8ea9019b5207d6698c9e03a5b1c8f59b0521	2026-04-28	docs: add review-fix non-convergence classification before escalation
+feat/r2-rpi-checkpoint-freshness	c58922e3a5d6a82f7d5a77f37eb06837e7957feb	2026-04-28	docs: add conditional checkpoint freshness check to RPI continuation guidance
+feat/r2-self-improvement-modularization-reduced	2c5daba777eda7ae07ab78c2fc287b129edad34f	2026-04-06	refactor: extract 3 pure functions into scripts/lib/si-functions.sh
+feat/r2-si-cycle-framing-shellcheck-clean	a7057666b4273030098d486915aa3b19370e381a	2026-05-13	feat(si): emit per-cycle docs/working/cycle-framing.md at round start
+feat/r2-si-emits-integration-refresh	e9b8dd57a7ee5829b47d950923ca0174a8e31211	2026-06-03	feat(si): execute branch-strategy integration refresh on the run's branches as a final build-only step
+feat/r2-si-seed-addressed-echo	db22b1b25ed2f26ecc134a0b1ce48eb3291546d1	2026-06-02	feat(si): echo already-shipped si-input seeds as adoption-gap questions instead of silently re-generating them
+feat/r2-skill-creator-format-audit	f3ac1450c49920a8061b9b81eaa761c7288c6b68	2026-04-09	feat: audit skills against skill-creator guidelines, fix Task→Agent tool refs
+feat/r2-spike-framing-patterns	750eb237175410ede31b24b142ba606673f104e8	2026-04-28	docs: add three question-framing patterns to spike step 1
+feat/r2-subtraction-mode-script	dc4fdbf31f106cef7bbca8832efce3f00ac84670	2026-04-06	feat: add flag-removal-candidates script for subtraction mode
+feat/r2-task-schema-path-validator	a3606bc14cac80bd2860215607d0f6ac63b84f62	2026-04-06	feat: add pre-flight path validation for files_touched in task schema
+feat/r2-ui-visual-review-semantic-a11y	7cdd3677a804d1a58c3cbbfdc4d5cfa0facbd15c	2026-04-28	docs: add semantic-a11y checklist to ui-visual-review full audit
+feat/r2-workflow-transition-handoff-line	0dfd106d5b40d72cdbef24c6f77d77783a2ba580	2026-06-02	feat(workflows): add "← carried from" transition handoff marker across DD→RPI and RPI→pr-prep seams
+feat/r3-claude-api-failure-modes-line	fb593b5f93e875e8b534ae0e31d056c1c03852b5	2026-05-13	feat(claude-api): add failure-modes line to description (model deprecation, context overflow, cache miss)
+feat/r3-dd-diamond1-healthcheck-examples	69f618f87e82e36b2b75c5484fc8e0e85b1e1cc3	2026-05-13	docs(dd): add concrete worked examples to Diamond 1 health-check enumeration
+feat/r3-dd-diamond1-stakeholder-scope-grid	9690bd1583b05c6ba292fd10e1a3150506fce994	2026-05-13	feat(dd): add stakeholder and scope columns to Diamond 1 diagnose step
+feat/r3-dd-step1-failure-mode-bullet	fd75a7d6a7947c970cae29c1bdbd511f3be98514	2026-05-13	feat(dd): add failure-driven invocation bullet to step 1 Diverge
+feat/r3-dd-step2-success-criterion-required	bc522c30427c099b505bff6b4f9f5488275d5b89	2026-05-15	feat(divergent-design): require success: line for every hard constraint in step 2
+feat/r3-effectiveness-framing-replace	21a37c1f571bbab913568fde71a9afe2b486c92d	2026-04-08	feat: replace line-count complexity budget with value-justification frontmatter
+feat/r3-hypothesis-evaluation-automation	7487a0ebf8d40db8c81fbe812abdda3044cf3b27	2026-04-06	docs: add summary for hypothesis-evaluation-automation task
+feat/r3-integration-execution-shellcheck-clean	e73f17986a6f50c6762c291ec385fb41544fab9e	2026-06-03	feat(si): add build-only end-of-cycle integration-branch refresh that merges the run's open PRs
+feat/r3-modularization-reland	86ea43751b4efd9b56b64adaeda469bc25cf7f2d	2026-04-06	docs: add modularization reland summary
+feat/r3-morning-summary-stale-inconclusive-archive	c287c731adaf8bfcd2f8ff9f56142cb613cf06c2	2026-05-15	feat(si): surface stale INCONCLUSIVE hypotheses in morning summary
+feat/r3-onboarding-fromscratch-dd-pointer-v3	667d5e05efa23375ca8e53cddf4411a219c6a54c	2026-05-13	docs(onboarding): note from-scratch projects may use DD Double Diamond instead of execution-surface skip
+feat/r3-post-merge-verification	e159401653451456f7e817bf11bb8a902e8971ce	2026-04-06	feat: add post-merge diffstat verification to detect empty merges
+feat/r3-pr-prep-decision-citation-mechanized	b10427fcf0cf712551f9073d1a77039960ec4557	2026-05-15	feat(pr-prep): mechanize Decisions touched line via Relevant paths intersection
+feat/r3-r3-dd-post-decision-fragility-note	6f31bb4a75aecb358705d2c51d9f30dd6252173f	2026-05-03	feat(dd): add post-decision fragility marker to DD decision record template
+feat/r3-r3-dd-stress-test-deltas	47ec497726b18c04de67ad5f1ba01e74658cd854	2026-04-28	docs: add optional stress-test deltas template to DD step 4
+feat/r3-r3-dep-upgrade-security-crosslink	da7d27523e7a2cc0ade20f1580823f6bb418e0b7	2026-04-28	docs(skills): cross-link dependency-upgrade to security-reviewer
+feat/r3-r3-onboarding-how-to-run	ad35610a0d9844d4d439edd31dd1b14d2638b2c2	2026-04-28	docs: add 'How to Run' to codebase-onboarding workflow
+feat/r3-r3-onboarding-task-purpose-context	8d897ce526d8571c9a8d6e1561ad512100420319	2026-04-29	feat: capture and propagate onboarding intent to subsystem sub-agents
+feat/r3-r3-persona-selection-log	47b3e731321c8d82d0362409e8275962c136a5f2	2026-04-28	docs: log considered-but-not-selected personas in step 3
+feat/r3-r3-pr-prep-registered-hypothesis	cc3d29528fb27ebabd58aa78b636fdbdef178eba	2026-04-30	feat(pr-prep): add optional falsifiable-expectation line with 2-week check-by default
+feat/r3-r3-rpi-reference-not-duplicate	bb8d91effd016847f1383f15934897e069efdee8	2026-04-28	docs: add reference-don't-duplicate guidance to RPI step 3
+feat/r3-r3-si-task-prompt-goal-preamble	1f22522ca4a7b1a4dd94ca8410d83394af759712	2026-04-29	feat(orchestration): use orchestrated-review goal-preamble in per-task SI dispatch
+feat/r3-r3-skill-creator-audit-readonly	d886e07985d595e8f95764f67ce4a61f319317ed	2026-04-09	docs: audit 5 skills against Anthropic skill-creator guidelines
+feat/r3-r3-task-decomp-dispatch-example	0b14d54a188a6d3eb3f41b80a9c0b076c81a21b3	2026-04-28	docs: add parallel-dispatch end-to-end example to task-decomposition
+feat/r3-r3-task-decomposition-examples	cd0cdf0bbabaaed1086bf54ac28a3a79ac27f496	2026-04-09	docs: add task-decomposition worked examples guide
+feat/r3-r3-tasks-schema-scope-required	398334d125dd473aac9d3c23db50e040c50ad277	2026-05-03	feat(si): require scope (external|internal-si|infra) on every planner task
+feat/r3-r3-tech-debt-rpi-handoff	00343b58db65e15b797ed506d2a0b13e1887e484	2026-04-28	docs: add Fix-now → RPI handoff sub-section to tech-debt-triage
+feat/r3-r3-test-strategy-rpi-trigger	eccaaa24c161bc046eca4aa3ee98c34aee4f4e4f	2026-04-28	docs: route RPI plan test specification through test-strategy skill
+feat/r3-r3-yglesias-non-policy	7dc769f8f3ce1bf6db28bf52be3dbe106e0606a5	2026-04-28	docs: add non-policy prioritization note to yglesias-critique
+feat/r3-self-eval-baseline-preview	bfc9d0155f8ba6d38aadebd527e00d203067667f	2026-04-06	feat: inject baseline self-eval scores into worktree agent prompts
+feat/r3-si-cycle-framing-python-only	2a455ba846bf00e7e29abe764ad5ad5ca9312cd9	2026-05-13	feat(si-morning-summary): add Python emitter for top-of-summary Cycle framing line (no .sh edits)
+feat/r3-simplification-audit	355fafd2edccd7b23589012634a2cb68547ecf03	2026-04-06	docs: add summary for simplification audit task
+feat/r3-task-summary-generation-fix	577adca3b5cf8c0fc413308758db69ad91fa179f	2026-04-08	fix: improve summary generation reliability in self-improvement.sh
+feat/r3-tests-gate-failure-isolation-task	c6abac118e5ab0aecc66534b17abde6f7e021e80	2026-05-19	diagnose(tests-gate): isolate pivot-consistency.bats bug-diagnosis.md regression as R3 blocker
+feat/r3-workflow-transition-handoff-line-narrowed	28a685ba9cb48fb97df3a6d9d6b6f65e14f93992	2026-06-02	feat(pr-prep): require an "← carried from RPI" continuity line at the RPI→pr-prep handoff, additive to the existing plan-drift check
+feat/r4-failure-analysis-automation	21f06d30db357a0cb26b44ee593ce967d61e8a9a	2026-04-08	docs: add summary for failure analysis automation task
+feat/r4-hypothesis-survey-runner	5c10a5cf5282a6cc04dff10d1c69889814ef632b	2026-04-08	fix: mark run-hypothesis-survey.sh as executable
+feat/r4-onboarding-sub-agent-canonical-form	a2e2aa48ebd1c1b60699d97537e0524f108ce397	2026-04-29	docs(onboarding): adopt canonical goal-preamble form for subsystem sub-agent dispatches
+feat/r4-r8-bug-diagnosis-hypothesis-prompts	e9df0b8cb10d80d624dc83c2d4ea70c32445731b	2026-04-28	docs: add hypothesis generation prompts to bug-diagnosis step 3
+feat/r4-r8-dd-prior-decision-seed	8eec8f164ff017e9f555743b7dbcedb450956e38	2026-04-28	docs: seed DD candidate 0 from prior decisions in docs/decisions/
+feat/r4-r8-draft-review-ensemble-threshold	138b6d2278883e369636681c0d903c160966e623	2026-04-28	docs: add ensemble convergence threshold table to draft-review
+feat/r4-r8-fact-check-chunking	a9e497e0ec937a2d0438bf91c69bae9dea4f9351	2026-04-28	docs: add chunking guidance for long drafts in fact-check skill
+feat/r4-r8-onboarding-section-index	73ef2f0c000e259d1a21507e995416a511affc01	2026-04-28	docs: require section index at top of orientation doc
+feat/r4-r8-pr-prep-escalation-template	2d1394e772ad6bed5b1348e2e639f3e80e076fa0	2026-04-28	docs: add escalation summary template to pr-prep step 3e
+feat/r4-r8-rpi-checkpoint-freshness	9cbad827a28a5312664ad7d4c923ddab7d65c87b	2026-04-28	docs: add checkpoint freshness check to RPI continuation guidance
+feat/r4-r8-task-decomp-evidence-priority	7b185d8edd87dc6019e5152b619eb22f0d56d83f	2026-04-28	docs: add evidence-priority tiebreaker to task-decomp reconciliation
+feat/r4-r8-ui-review-guideline-discovery	3c171c206a2ad86d8c27c1915dc3d21e71725696	2026-04-28	docs(ui-visual-review): add ordered guideline search list to Rule #1
+feat/r4-si-implementation-dispatch-preamble	800636fc090548a27c1fb4b45da27327e14567ef	2026-04-29	feat: add canonical goal preamble to SI implementation dispatch
+feat/r4-slim-workflow-companions	2f0a022d4ac190fe86d4ee181075ef5f6c0ebae2	2026-04-08	feat: add slim workflow companions for rpi, user-testing, onboarding, pr-prep
+feat/r4-task-decomp-canonical-goal-preamble	e7def9b252b47123ae05393ef6a2716bd4661f18	2026-04-29	feat(task-decomposition): require canonical goal preamble and Goal-Alignment Note in step 3 dispatches
+feat/r5-dead-script-cleanup	429f234a86371941b05f4ec56947116d6433854a	2026-04-08	refactor: remove dead scripts collect-evidence.sh and search-external-ideas.sh
+feat/r5-dry-run-mode	0f4066fb8a6f45684838875a794a5883b3b03c52	2026-04-08	feat: add --dry-run flag to self-improvement.sh
+feat/r5-internal-si-deferred-questions-tag-audit	260c3b53697d896cb96a17d3baccfe082f3bd0d1	2026-04-29	fix(si): backfill Scope column in hypothesis-log so internal-si rows stop leaking into deferred questions
+feat/r5-r5b-architecture-review-integration	4bda7e33f786cef749164d4e12da2366c4bc5837	2026-04-28	feat: integrate architecture-review as contextual critic in code-review
+feat/r5-r5b-code-fact-check-stale-patterns	f8db42e8a66b527cb22a45d442089571f3993861	2026-04-28	docs: enumerate high-frequency stale-comment patterns in code-fact-check
+feat/r5-r5b-cowen-technical-draft	745c1a0752ec9fb4c6144be5cd9e065c554ef2e5	2026-04-28	docs: add technical-draft prioritization note to cowen-critique
+feat/r5-r5b-onboarding-test-discovery	6747e1047bf2f13529ac937609e12604ee216116	2026-04-28	docs: add test infrastructure to onboarding architecture map
+feat/r5-r5b-perf-micro-macro	fa5e9bf4a65bf618e0fd7bacfc62679e56eb0b94	2026-04-28	feat: add severity calibration matrix to performance-reviewer skill
+feat/r5-r5b-pr-prep-description-gate	af3a6e42ca8283810b6e35916f7d2815383e16c5	2026-04-28	docs: add 3-question description gate to pr-prep workflow
+feat/r5-r5b-rpi-assumed-closeout	7f0a2dfe129e226e0075bab86f5f4616eaf4a486	2026-04-28	docs: require [assumed] tag closeout in RPI step 5 commits
+feat/r5-r5b-spike-timebox-defaults	6e5b263c2eb81879a7cca754d24f81a75655852e	2026-04-28	docs: add anchor timebox defaults table to spike workflow step 2
+feat/r5-r5b-task-decomp-output-template	16b751cf320ae3713843b57f8731a6386dc0619a	2026-04-28	docs: add recommended sub-agent output scaffold to task-decomposition step 3
+feat/r5-r5b-task-decomp-quality-signals	10505a2a178adf5c60ce137e59ee82af3c9b706f	2026-04-28	feat: add decomposition-quality signals to task-decomposition step 1
+feat/r5-r5b-ui-visual-keyboard-nav	13da9ba37471d029992816f1648ddff3a62a45f7	2026-04-28	docs(ui-visual-review): add keyboard navigation runtime sub-step
+feat/r5-si-implementer-validation-aware-success	066a2fc2d0280f8af331bee74fbd24f7bfd586fc	2026-04-29	feat(self-improvement): list explicit gate-passing predicates in implementer dispatch
+feat/r5-workflow-complexity-reduction	193a47a24acbd2371bc4dbd0be8f7dd729a03bcd	2026-04-08	docs: add summary for workflow complexity reduction task
+feat/r6-branch-strategy-conflict-prevention	49c5ea902b5f9b281b2af7ef9e2cefa700e5282b	2026-04-28	docs: add conflict prevention subsection to branch-strategy
+feat/r6-bug-diagnosis-repro-criterion	8ec200595c07d208835cbd2a6f158360db51d310	2026-04-28	docs: add reproduction reliability criterion to debugging default #1
+feat/r6-claude-api-caching-check	255a2598baa6737312630aa19338124d278c451b	2026-04-28	docs: log scope exception for claude-api caching-check task
+feat/r6-cowen-technical-draft-note	de457e5d171d3d1e3346d071eb86b721b93094ff	2026-04-28	docs: add technical-draft guidance subsection to cowen-critique
+feat/r6-dd-rejected-candidates-capture	d654eddc3e5e175048007b626bb5c11ee5fde087	2026-04-28	docs(divergent-design): require ≥3 rejected-candidate entries in decision record
+feat/r6-dead-script-cleanup-single	a91dd3d693e14eb1e676ee39612edfceb1710a7b	2026-04-08	refactor: remove dead script search-external-ideas.sh (353 lines)
+feat/r6-fact-check-long-draft-prioritization	3ce7afd3962929aa1b65d0f88efee3ba19846a88	2026-04-28	docs(fact-check): add claim prioritization guidance for long drafts
+feat/r6-hypothesis-log-archival	fc802a19f725e0419d4430edbc23e50d5dce2dc0	2026-04-28	docs: move resolved hypothesis-log entries to local archive
+feat/r6-onboarding-handoff-hint	deff32773e764759a08c39569fb40da5b4b7680d	2026-04-28	docs: add RPI handoff prompt to codebase-onboarding step 7
+feat/r6-pr-prep-scope-drift	51851cf95d3a535e56c85025819db87979b4bf17	2026-04-28	docs: add scope-drift default to pr-prep review-fix loop
+feat/r6-r6-pr-prep-post-merge-checklist	b27d179545468cd5ddbeab75d9ec8338828791da	2026-04-09	feat: add optional post-merge follow-up checklist to pr-prep workflow
+feat/r6-rpi-bug-fix-sufficiency-bullet	89c63b5d6e13235fda03f2e4b92cddfb9965fa80	2026-04-28	docs: add bug-fix variant to research sufficiency signals in RPI
+feat/r6-seed-context-enrichment	4203a49cf2ef09ac765650b6fe8ea243f619addd	2026-04-08	feat: inject gate pass/fail rates into DD idea generation prompt
+feat/r6-ui-interaction-states-checklist	6a87c3f08dc1ac52229232f1f40a43186b52ab39	2026-04-28	feat: add interaction-state coverage checklist item to ui-visual-review
+feat/r6-yglesias-cowen-disambiguation	2848257a5a2df22b664f9e1b1853672f93d363ba	2026-04-28	docs: add yglesias-vs-cowen disambiguation note to yglesias-critique
+feat/r7-collect-evidence-removal	c13cd5cab2b823c9331e95baba2e9d380441e39c	2026-04-08	feat: remove collect-evidence.sh (476 lines dead code) and close hypotheses
+feat/r7-merge-effectiveness-framing-replace	f695b282f706489184965a882982b1eecae9c127	2026-04-08	docs: add working summary for merge-effectiveness-framing-replace task
+feat/r7-orphan-function-wiring	bb705a59f1e005f7c1795c155bbffa2bfbeed3dd	2026-04-08	feat: wire 3 orphan si-functions into self-improvement.sh entry points
+feat/r7-task-summary-backfill	c10aa77a8139bac8c819ddb7d7d682f25587b3de	2026-04-08	docs: backfill 9 missing task summaries in completed-tasks.md
+feat/r7-workflow-composition-guide	bf2f4d57100092b387b818ef214061fe84861868	2026-04-08	docs: add workflow composition guide to CLAUDE.md
+feat/r8-merge-effectiveness-framing-replace	8e4259c6a2b2038683c61a14bb70aa803160eba3	2026-04-08	docs: add working summary for merge-effectiveness-framing-replace task
+feat/r8-rpi-research-templates	a4d486db36d61428cae99f101553cca6d1030f30	2026-04-08	docs: add working summary for rpi-research-templates task
+feat/r9-debugging-worked-examples	07bd34d5a488299b1c8b83d122646b7c8b1cea37	2026-04-08	docs: add working summary for debugging worked examples task
+feat/r9-merge-effectiveness-framing	1f7d09bc4c6ec5e55b1da0cf18ae9c538bb9bafb	2026-04-08	merge: integrate effectiveness-framing-replace from feat/r8
+feat/r9-usage-data-analysis-boring	173de6d4c608802494182cc7c61efe50143f1935	2026-04-08	docs: resolve H-01, H-05, H-07 as INCONCLUSIVE from usage.jsonl analysis
