@@ -22,6 +22,17 @@
 #   - Additive: a standalone script wired as an *additional* UserPromptSubmit
 #     hook in settings.json; it does not replace existing hooks.
 #
+# Design note — fires on ALL UserPromptSubmit events, BY INTENT. The reminder
+# is injected for the *model*, not shown to the human, so there is no human
+# alert-fatigue path. It consequently also fires on agent/tool completion
+# notifications (whose result text often carries bullet/numbered lists), not
+# only human prompts. That breadth is deliberate: a non-human submit that
+# enumerates several independent results can itself be a legitimate fan-out
+# point. Cost is ~85 tokens per firing (one stdout line) — negligible against
+# session context — so broad firing is preferred over adding submit-source
+# detection to suppress it. Do not "narrow" this to human prompts without a new
+# decision. (Reviewed 2026-06-23; see docs/reviews/override-log.md.)
+#
 # Input:  JSON on stdin (UserPromptSubmit payload; .prompt holds the text).
 # Output: at most one reminder line on stdout (added to context). Exit 0 always.
 
