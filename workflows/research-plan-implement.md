@@ -268,6 +268,8 @@ After the header and research link, the body must include:
 
   Four concrete steps, each naming the specific artifact (commit SHA placeholder, migration filename, cache key, dry-run reference). A reviewer can verify each one points at something real. "git revert" alone, with no commit range, no redeploy, no migration step, and no cache action, would be rejected — even though step 1 starts with `git revert`, the surrounding specifics are what make the section satisfy the requirement.
 
+**Reference DD and spike output, don't duplicate it**: When a design decision record (`docs/decisions/`) or spike record backs a choice in this plan, link to the source by relative path with a one-sentence summary of what it establishes — don't copy the rationale into the plan doc. Example: `See docs/decisions/009-cache-strategy.md for rationale; binding constraint: must support multi-region invalidation.` Prefer linking unless the source is uncertain (still in flux, likely to be revised) or out-of-tree (not committed where reviewers can read it), in which case a short paraphrase in the plan is fine.
+
 #### Test-strategy auto-invoke (penultimate sub-step of planning)
 
 After the body sections above are drafted, automatically run the `test-strategy` skill scoped to the plan's intended changes. Treat it as a routine step of plan completion, the same way Failure-pattern lookup is routine inside step 2. Do not wait for the user to ask for it — that is the manual hand-off that this auto-invoke replaces, and it is reliably skipped in practice.
@@ -447,6 +449,7 @@ If a step turns out to be wrong or incomplete during implementation, **stop and 
 - [ ] Each commit message references the plan (e.g., "per plan-X step N")
 - [ ] Any deviations from the plan were written back to the plan doc before implementation continued
 - [ ] No file exceeds 500 lines without an explicit justification
+- [ ] When a step depended on an [assumed] research claim, the commit message body notes whether the assumption was confirmed by the implementation/tests or remains an accepted risk
 - [ ] In /away mode, any 2x-overall or +50%-per-phase context overrun was checkpointed and paused rather than absorbed silently
 - [ ] Plan doc's `Actual context cost (post-implementation)` field is filled in (mirroring the estimate's per-phase structure)
 
