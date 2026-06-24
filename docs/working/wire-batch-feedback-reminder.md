@@ -12,16 +12,20 @@ The hook is inert until both steps below are done. Because the wired command is
 `bash <path>`, a missing target yields a non-zero (127) exit, which is a
 **non-blocking** error — it can never block prompt submission.
 
-> **Note:** As of this writing the sibling `dd-routing-reminder.sh` was committed
-> but never actually wired live (`.hooks.UserPromptSubmit` is absent from
-> `settings.json` and no `~/.claude/hooks/dd-routing-reminder.sh` symlink exists).
-> The block below wires **both** reminders at once. Drop the dd entry if you only
-> want the batch reminder.
+> **Status (applied on this machine, 2026-06-23):** both reminders are now wired
+> live — `.hooks.UserPromptSubmit` contains the two-command block below and both
+> `~/.claude/hooks/*-reminder.sh` symlinks exist and resolve. The steps below are
+> retained as the reproducible procedure for a fresh machine (or for re-applying
+> after a `settings.json` reset); they are not outstanding TODOs here.
+>
+> Originally the sibling `dd-routing-reminder.sh` had been committed but never
+> wired (`UserPromptSubmit` was absent and no symlink existed); this pass wired
+> **both** reminders at once. Drop the dd entry if you only want the batch one.
 
 ## 1. Add the UserPromptSubmit block to settings.json
 
-`UserPromptSubmit` is currently absent. Add it as a new key inside the existing
-`hooks` object (leave `PreToolUse`/`PostToolUse` untouched). A single
+On a machine where `UserPromptSubmit` is absent, add it as a new key inside the
+existing `hooks` object (leave `PreToolUse`/`PostToolUse` untouched). A single
 `UserPromptSubmit` entry can run multiple commands — both reminders go in one
 array:
 
