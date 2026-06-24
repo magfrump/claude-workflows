@@ -1279,8 +1279,23 @@ Then git add the resolved files and git commit to complete the merge."
                 # Abort the half-finished merge so `main` is restored to a clean
                 # state — otherwise the in-progress merge poisons the NEXT
                 # approved task's `git merge` in this same loop (it would fail
-                # with "merge already in progress").
+                # because a merge is already in progress).
                 git merge --abort 2>/dev/null || true
+                # A2 guard: confirm the abort actually cleaned up. If MERGE_HEAD
+                # still exists, the abort failed and `main` is wedged mid-merge —
+                # merging the next approved branch onto it would mis-attribute or
+                # tangle commits. Halt this round's merges loudly. Clear the
+                # tracking arrays first so the EXIT trap RETAINS all remaining
+                # worktrees/branches (including this one) for manual recovery
+                # instead of force-discarding approved work.
+                if git rev-parse -q --verify MERGE_HEAD >/dev/null 2>&1; then
+                    echo "  ERROR: git merge --abort failed for $BRANCH — main left mid-merge." >&2
+                    echo "  Halting round $ROUND merges; retaining all remaining worktrees/branches for manual recovery." >&2
+                    echo "[$TASK_ID] MERGE_ABORT_FAILED: $BRANCH — halting round $ROUND merges" >> "$WORKING_DIR/validation-round-$ROUND.log"
+                    RUN_WORKTREES=()
+                    RUN_BRANCHES=()
+                    break
+                fi
             fi
         }
 
