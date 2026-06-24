@@ -75,6 +75,17 @@ Generate 8-15 candidate approaches. Quantity matters more than quality at this s
 
 Before generating, scan `docs/decisions/log.md` and any `NNN-*.md` files in `docs/decisions/` for adjacent prior decisions on similar problems. If a relevant prior decision exists, include its choice as **candidate 0** (the status quo / "do same as before") so the team explicitly evaluates whether current circumstances differ enough to justify re-deriving rather than reusing. If `docs/decisions/` is empty or absent, this is a no-op.
 
+#### Lens checklist (optional)
+
+Use these lenses as a generation aid to widen the search space. Scan your candidates and aim for at least 2 lenses to be represented — if everything clusters into a single lens, generate a few more from the missing ones. This is a soft prompt, not a gate: the post-generation health check below remains the only structural check.
+
+- **Technical** — architecture, algorithm, data structure, or implementation choice
+- **Interface** — API shape, UX flow, protocol, or data contract
+- **Procedural** — workflow, process, or how the work gets done (review cadence, gating, sequencing of steps)
+- **Social/organizational** — who decides, who owns it, who maintains it, where responsibility sits
+- **Time-shifted** — defer, accelerate, or sequence differently (do it later, do it now in a smaller form, split the rollout)
+- **Reframe** — do nothing, change the question, or solve an adjacent problem instead
+
 #### Generation health check
 
 After generating your initial candidates, scan for these common generation gaps. This is not evaluation — you are checking whether the *search space* is broad enough, not whether any candidate is good or bad. If a gap is found, generate additional candidates to fill it; never remove existing ones.
@@ -113,6 +124,17 @@ List every concrete problem, requirement, and constraint the solution must addre
 
 Include non-obvious constraints: timezone gaps, skill gaps in the team, maintenance burden, deployment complexity, interaction with existing code, performance requirements. Also note which constraints are hard (must satisfy) vs soft (prefer to satisfy).
 
+**Hard constraints require a `success:` line.** Every constraint labeled `hard` must be paired with a `success: <observable>` line whose body names a specific test, metric, or artifact a future reader could actually check. Generic phrasing — *"works correctly"*, *"meets requirements"*, *"is performant"*, *"passes review"* — is explicitly disallowed: if the success line could be lifted verbatim into a different project's constraint and still read as true, it isn't a success line yet. The observable must be specific enough that the step-3 compatibility matrix can score an approach against it without further interpretation. Soft constraints don't require a success line, but may include one when the observable is cheap to name.
+
+**Worked examples — acceptable vs. unacceptable success lines for hard constraints**
+
+| Hard constraint | ✗ Unacceptable — generic | ✓ Acceptable — names a specific signal |
+|-----------------|--------------------------|----------------------------------------|
+| The data migration must complete without losing rows | `success: works correctly` | `success: reconciliation query shows source row-count == target row-count and zero entries in the failed_migration table before cutover` |
+| The new search endpoint must hold up under current traffic | `success: is performant` | `success: p99 latency < 200 ms at 1.5× current peak QPS, sustained across a 10-minute staging load test recorded in the perf dashboard` |
+
+The unacceptable column is what the constraint sounds like *before* the success-line discipline is applied; the acceptable column is what step 3 needs in order to score candidates against the constraint.
+
 #### Console output (compact)
 
 Per the **Output discipline** convention above, write the full constraint list — each statement, its hard/soft label, and the non-obvious constraints — to the working doc. To the console, emit only the constraint count and its hard/soft split:
@@ -126,6 +148,7 @@ Per the **Output discipline** convention above, write the full constraint list �
 - [ ] Each constraint is labeled as hard (must satisfy) or soft (prefer to satisfy)
 - [ ] Non-obvious constraints (team skills, deployment, maintenance) have been explicitly considered
 - [ ] No constraint uses vague language like "readable" or "good" without a measurable qualifier
+- [ ] Every constraint labeled `hard` is paired with a `success: <observable>` line whose body names a specific test, metric, or artifact — generic phrasing such as "works correctly", "meets requirements", "is performant", or "passes review" is disallowed
 - [ ] Full constraint list was written to the working doc; the console received only the constraint count and its hard/soft split
 
 ### 3. Match and prune
