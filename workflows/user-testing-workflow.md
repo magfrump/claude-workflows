@@ -9,7 +9,7 @@ A reusable guide for planning, running, and interpreting usability tests. Ground
 ## When to pivot
 
 - **→ RPI**: When test findings identify a specific feature to build or a bug to fix, pivot to RPI. Carry the findings report (Phase 4) as input to RPI research — the severity-rated issues and prioritization matrix replace the "explore from scratch" part of scoping. Reference the findings doc from the RPI plan; don't re-derive what testing already established.
-- **→ Divergent Design**: When findings reveal multiple possible redesign directions and the team faces a genuine design fork (3+ viable approaches to addressing the usability problems), invoke DD. Carry the affinity clusters (Phase 3, Step 2) and severity ratings into DD's diagnosis step — they're already half the constraint set. Return to user testing after DD produces a decision, to validate the chosen direction.
+- **→ Divergent Design**: When findings reveal multiple possible redesign directions and the team faces a genuine design fork (3+ viable approaches to addressing the usability problems), invoke DD. Carry the affinity clusters (Phase 3, Step 2) and severity ratings into DD's diagnosis step — they're already half the constraint set. Generate `docs/working/testing-findings-{topic}.md` with severity-rated cluster list and observed user behaviors as hard constraints, before invoking DD. Return to user testing after DD produces a decision, to validate the chosen direction.
 - **← From RPI**: When an RPI implementation needs usability validation before shipping, pivot here. The RPI plan's scope and success criteria (what the feature should accomplish) map directly to Phase 0's scoping questions — translate them into research questions and tasks. The implementation itself becomes the test artifact. This is the most common inbound pivot: build it, then test it.
 
 ---
@@ -287,6 +287,42 @@ Immediately after each session, facilitator + note-taker answer:
 - Fill in any gaps in observation notes
 - Calculate SUS scores (see appendix)
 - Aggregate SEQ scores per task
+
+### Step 1.5: Contrastive Session Pair Analysis
+
+**Activation:** Run this step for any task that was attempted by ≥2 participants. Skip for tasks only one participant reached.
+
+A flat issue list captures *what went wrong*. A pairwise diff captures *why this user hit it and that user didn't* — and "why" is usually a condition (prior knowledge, mental model on entry, what they noticed first), not a UI element. Surfacing conditions before clustering keeps the affinity step from collapsing genuinely different root causes into the same bucket because they produced the same surface symptom.
+
+**Procedure (per task):**
+
+1. Pick the clearest **successful** session for the task (Completed, low SEQ difficulty, few detours).
+2. Pick the clearest **struggling** session (Failed/Partial, high SEQ, visible frustration, or required help).
+3. Write a short pairwise diff — 4–8 bullets — covering:
+   - **Prior experience / domain familiarity** entering the task
+   - **Mental model on entry** — what they expected the system to do, in their words
+   - **First attention point** — where their eyes/cursor went in the first 10–15 seconds
+   - **Decision at the first fork** — what they chose and why (from think-aloud)
+   - **Recovery behavior** when the first attempt didn't work (if applicable)
+   - **Anything else that visibly differed** between the two runs
+
+```
+TASK: [task name]
+SUCCESS: [participant ID]   STRUGGLE: [participant ID]
+
+- Prior experience: [success had X; struggle had Y]
+- Mental model on entry: [...]
+- First attention point: [...]
+- Decision at first fork: [...]
+- Recovery behavior: [...]
+- Other notable divergence: [...]
+
+Candidate driving conditions: [1–3 conditions that plausibly explain the divergence]
+```
+
+Keep each diff short — this is a thinking aid, not a deliverable. The output feeds Step 2: each candidate driving condition becomes a note in the flat issue list (often distinct from the symptom note), and informs Step 3.5's "boring explanation" check by giving you a concrete alternative cause to test against.
+
+If no task has both a clear success and a clear struggle, note that explicitly — uniformly successful or uniformly failed tasks are themselves a finding worth recording before moving on.
 
 ### Step 2: Affinity Clustering
 

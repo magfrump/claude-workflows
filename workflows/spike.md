@@ -61,6 +61,8 @@ Without that line, a binary spike that omits the template fails this step's Done
 
 For non-binary spikes (open-ended discovery: "how does X handle Y?", "what's the latency of Z?"), the template is optional — fill it in if it sharpens the answer, skip it if the goal is genuinely learning rather than deciding. Either way, revisit these criteria (when present) in step 5's Answer section to force a clear verdict.
 
+Before moving to step 2 (Set a timebox), confirm the question can be operationalized with the tools and data available — if it cannot, reframe the question rather than starting the timer on an unanswerable spike.
+
 **Done when...**
 - [ ] The question is stated in one specific, answerable sentence
 - [ ] The question is about feasibility or behavior, not about implementation design
@@ -69,6 +71,16 @@ For non-binary spikes (open-ended discovery: "how does X handle Y?", "what's the
 ### 3. Set a timebox (recommended)
 
 Spikes have a hard time limit. Default: **30 minutes of active work** (which may be 5-15 tool calls for an AI agent). If the question isn't answered by then, the answer is "this is harder than expected" — which is itself a useful answer.
+
+**Anchor defaults by spike type.** Starting points, not rules — pick a number close to one of these, then adjust based on what the question actually requires.
+
+| Spike type | Starting timebox | Example question |
+|------------|------------------|------------------|
+| API capability check | 15-30 min | "Does this endpoint return the field we need?" |
+| Library evaluation | 1-2 hours | "Can pdf-parse handle our sample invoices?" |
+| Cross-cutting feasibility | Half-day max | "Can we add middleware auth without breaking the existing session flow?" |
+
+If you'd want a budget noticeably larger than the relevant row, that's usually a signal the question is too broad — split into smaller spikes rather than extending the timebox.
 
 **Done when...**
 - [ ] A time limit is stated (default 30 minutes if not specified)

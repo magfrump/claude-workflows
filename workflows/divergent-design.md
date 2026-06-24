@@ -69,8 +69,11 @@ Generate 8-15 candidate approaches. Quantity matters more than quality at this s
 - Include at least 2-3 approaches that feel wrong, naive, or unconventional
 - Include at least 1 "do nothing" or "minimal change" option
 - Include at least 1 approach that would be ideal if effort/complexity were free
+- **Failure-driven invocation**: when the task is to prevent or harden against a specific failure (bug-fix design, security pass, reliability work), step 1's diverge may instead generate 8-15 specific failure modes the design must prevent — these become hard constraints in step 2, and step-1 approach candidates are generated in step 3 to cover them.
 - One sentence each, no evaluation yet
 - Number them for reference
+
+Before generating, scan `docs/decisions/log.md` and any `NNN-*.md` files in `docs/decisions/` for adjacent prior decisions on similar problems. If a relevant prior decision exists, include its choice as **candidate 0** (the status quo / "do same as before") so the team explicitly evaluates whether current circumstances differ enough to justify re-deriving rather than reusing. If `docs/decisions/` is empty or absent, this is a no-op.
 
 #### Generation health check
 
@@ -539,8 +542,10 @@ For each candidate framing, briefly note:
 - **Success criterion**: how would we know this problem was solved?
 - **Implied solution space**: what kind of approaches does this framing suggest?
 - **What it leaves out**: what concerns does this framing fail to address?
+- **Stakeholder**: whose problem is this primarily? Pick from `user`, `maintainer`, `ops`, `investor`, or another concrete role — not "the team" or "everyone."
+- **Scope**: at what level does this framing operate? `sub-problem` (a piece of a larger system), `system` (the system as currently bounded), or `meta-problem` (the framing of the problem itself, or the system's relationship to its context).
 
-This step makes anchoring visible. If two framings have nearly identical success criteria, one is redundant. If a framing's "leaves out" list contains a hard concern from the triggering situation, it cannot be the chosen framing.
+This step makes anchoring visible. If two framings have nearly identical success criteria, one is redundant. If a framing's "leaves out" list contains a hard concern from the triggering situation, it cannot be the chosen framing. Read the stakeholder and scope columns down the list as a coverage matrix: if every candidate names the same stakeholder, or every candidate sits at the same scope, the diverge step (1a) anchored on one perspective — go back and generate framings that move on the absent dimension before converging in 3a. A healthy candidate set typically covers at least 2 stakeholders and at least 2 scopes.
 
 #### 3a. Converge — choose one framing
 

@@ -74,7 +74,7 @@ Run these concurrently — both are fast, and either failing changes the plan:
 - Infrastructure/model changes separate from UI changes
 - A minimal first PR that adds the feature behind a flag, with polish in a follow-up
 
-If it genuinely can't be split, note this in the PR description (step 6) and suggest a review order for the files.
+If it genuinely can't be split, note this in the PR description (step 6). The **Reviewer's path — start here** section (step 6) is always required and already names the read-order entry point; for an oversized PR, expand that section from the default 1–3 files to walk the reviewer through the larger diff in dependency order, so a 1000-line change still has a named place to start rather than forcing the reviewer to reverse-engineer it.
 
 **b. Dependent PR check.** If this branch builds on other unmerged PRs, verify they've been merged or that this PR's base is set correctly. If dependencies haven't landed, decide whether to wait, rebase onto a dev integration branch, or open as a stacked PR with a clear note. Skip this check for standalone branches.
 
@@ -128,7 +128,7 @@ fi
 **This is a backstop, not the primary path.** If the trigger fires, treat that as a signal that the plan-time wiring failed for this branch and consider whether the workflow that produced this branch (RPI, spike, ad-hoc) needs to be adjusted — not just this single PR patched.
 
 **Completion criteria:**
-- [ ] PR is under 500 lines changed, OR PR description includes size justification and suggested file review order
+- [ ] PR is under 500 lines changed, OR PR description includes size justification and an expanded "Reviewer's path — start here" section (step 6) that walks the larger diff in read-order
 - [ ] No unmerged dependency PRs block this branch, OR base is set correctly for stacking
 - [ ] Fallback pre-mortem trigger was evaluated; if it fired, `docs/working/pre-mortem-<branch-slug>.md` exists and is cited in the PR description; if it did not fire, the reason is recorded
 
@@ -158,6 +158,14 @@ Run review skills and iterate until clean. This is required, not optional.
 - **Dependency audit** (manual) — if the PR introduces or upgrades dependencies, check license compatibility, package size, and maintenance status. Flag unmaintained or unfamiliar packages. Skip if no dependency changes.
 - **Plan-drift check** (manual) — if a plan doc exists in `docs/working/` for this task, compare the diff against it and note: (1) planned items not yet implemented, (2) unplanned changes that appeared in the diff, and (3) plan assumptions that turned out wrong. Record any deviations found in the PR description's "Areas of uncertainty" section or as a comment on the PR. Skip if no plan doc exists for this work.
 
+  **Carried-from line (RPI→pr-prep handoff).** A plan doc existing in `docs/working/` *is* the signal that this PR arrived through an RPI loop — so this same check is the RPI→pr-prep seam. While you have the plan doc open, also restate, in one line, the state the loop forwarded *into* the PR, recorded in the PR description's existing **Workflow provenance** field (step 6):
+
+  ```
+  ← carried from RPI: <state forwarded>
+  ```
+
+  `<state forwarded>` tersely names the load-bearing approach and the surviving constraints/invariants/decisions the diff must honor (and, if the RPI loop was itself entered from an upstream workflow, the originating decision record or spike/findings doc) — not a generic "see the plan." This is the *continuity* counterpart to the drift notes above: drift records what **diverged** from the plan; the carried-from line records what **crossed the seam intact**, so the reviewer sees the originating decisions without re-deriving them and can confirm the diff still honors them. The literal `← carried from` token is the grep audit handle (consistent with the `Failure-pattern grep:` and header `(cite: ...)` self-auditing conventions). The line is **conditional, never a placeholder**: standalone work has no plan doc and omits the line entirely — do not write `← carried from: none` (same rule as the Problem-framing line in `research-plan-implement.md`).
+
 **b. Triage and fix.** Read each review artifact. Work through findings in tier order:
 
 | Tier | Meaning | Action |
@@ -178,6 +186,8 @@ For each finding: confirm it's real by reading the code, then fix. Commit in coh
 
 If a fix touched code broadly enough that the narrower diff covers most of the PR, fall back to a full re-review — the incremental approach only helps when fixes are localized.
 
+**Scope drift.** If a re-review finding would expand the PR beyond the scope set in step 1 (size, files touched, stated intent), the default is to file a follow-up issue and decline the change in this PR. Comply only when the finding is a hard blocker for merge (correctness bug or unsafe state). When triggered, log a `follow-up issue filed: <id/title>` line in the review artifact so the deferral is visible to the reviewer.
+
 **Optional contrastive prompt (iteration N≥2):** What new findings appeared in iteration N that weren't in N-1, and are any of them critic noise (regressions vs real)?
 
 **Tracking iteration scope:** Note in the review artifact whether each iteration used full or incremental scope, and how many prior findings were verified as resolved vs. still-open. This supports evaluating whether incremental re-review reduces review output length and duplicate findings over time.
@@ -187,19 +197,34 @@ If a fix touched code broadly enough that the narrower diff covers most of the P
 **After 3 iterations**, if new findings are still appearing, **stop**. This mirrors the 3-hypothesis escape hatch in the debugging defaults — unbounded iteration has diminishing returns. Choose one of two exit paths:
 
 1. **Ship with documented known issues.** If no Must Fix items remain but Must Address or Consider items persist, document them in the PR description's "Areas of uncertainty" section and proceed to Phase 2. The reviewer sees the known issues and can make a judgment call.
-2. **Escalate to human review.** If Must Fix items remain, or if you're unsure whether remaining findings are safe to ship, stop and present the user with: iteration count, summary of fixes per iteration, remaining findings, and your assessment of why the loop isn't converging (e.g., fixes revealing deeper issues, change too large for incremental review, review criteria shifting).
+2. **Escalate to human review.** If Must Fix items remain, or if you're unsure whether remaining findings are safe to ship, stop and present the user with: iteration count, summary of fixes per iteration, remaining findings, and your assessment of why the loop isn't converging (e.g., fixes revealing deeper issues, change too large for incremental review, review criteria shifting). Use this template so escalation summaries stay consistent and complete:
+
+   ```markdown
+   ## Iterations (N completed)
+   ## Remaining Must Fix
+   ## Remaining Must Address
+   ## Convergence diagnosis (one sentence)
+   ## Recommended action (ship-with-issues / split-PR / pause for redesign)
+   ```
 
 The user can override the ceiling and say "continue" — but the default is to stop. See `workflows/review-fix-loop.md` § Convergence ceiling for extended discussion.
 
-**Tracking:** Note in the PR description or commit message whether the loop converged cleanly (and in how many iterations) or hit the 3-iteration ceiling. This creates an audit trail for calibrating the threshold over time.
+**Tracking:** Record the loop's outcome in the PR description so reviewers and future calibration have a consistent signal. This is symmetric across both exit paths:
+
+- **Converged cleanly** (exited before the 3-iteration ceiling): add a one-line summary to the PR description in the form `Review converged in N iterations; M Must Fix resolved, K Must Address acknowledged.` This gives reviewers a calibration signal for the common case — they can see at a glance how much the loop actually caught.
+- **Ceiling hit at 3 iterations:** follow the escalation paths above (ship-with-known-issues or escalate to human review), capturing iteration count, per-iteration fix summary, remaining findings, and assessment of why the loop didn't converge.
+
+Both forms feed the same audit trail for calibrating the 3-iteration threshold over time.
 
 **Completion criteria:**
 - [ ] Review artifacts exist in `docs/reviews/` for each review skill run
 - [ ] No Must Fix findings remain open
 - [ ] All Must Address findings are resolved or explicitly acknowledged in the PR description
 - [ ] Final review loop introduced no new Must Fix or Must Address findings
-- [ ] Iteration count noted (converged in N iterations, or ceiling hit at 3)
+- [ ] Diff's files-touched match the plan's declared scope; if not, drift is flagged to the human for explicit acknowledgment
+- [ ] Loop outcome noted in PR description: convergence summary (`Review converged in N iterations; M Must Fix resolved, K Must Address acknowledged.`) if converged cleanly, or escalation summary if ceiling hit at 3
 - [ ] If ceiling hit: remaining findings documented in PR description, or escalated to human review
+- [ ] If a plan doc exists (work arrived via RPI), the Plan-drift check restated the forwarded state as a `← carried from RPI: <state forwarded>` line in the PR's Workflow provenance field; if the work is standalone (no plan doc), the line is correctly omitted (no `← carried from: none` placeholder)
 - [ ] Review artifacts committed to the branch (see [PR Review Doc Inclusion guide](../guides/pr-review-doc-inclusion.md))
 
 ### Phase 2: Packaging
@@ -240,12 +265,25 @@ These two steps have no dependency on each other and can run concurrently.
 # .github/workflows/*.yml, Makefile, package.json scripts, etc.
 ```
 
-Fix anything broken. If you opened a draft PR in step 2, push the rebased branch to trigger CI remotely.
+If you opened a draft PR in step 2, push the rebased branch to trigger CI remotely.
+
+**Triage failures by class** — not every red check is a regression caused by this branch. Resist the reflex to "fix anything broken" without first identifying which class the failure belongs to:
+
+| Class | Cause | Action |
+|-------|-------|--------|
+| Caused by this branch | Failure traces to code changed on this branch (new test failure, lint error in changed files, build break, type error in modified module) | Fix before merging |
+| Pre-existing on main | Same failure reproduces on `main` at the merge base, or on an untouched file | File a separate issue or follow-up PR; do **not** block this PR. Note in PR description's "Areas of uncertainty" so the reviewer isn't surprised by the red check. |
+| Flaky / infra | Network timeout, runner OOM, intermittent third-party dependency, known race condition | Re-run the job once. If it fails again on re-run, treat as recurrent — file a flake issue and do not block this PR on it. If it passes on re-run, note in PR description. |
+
+**To decide between caused-by-branch and pre-existing**, run the failing check on `main` (or a fresh checkout of the merge base) before assuming the failure is yours. If the same failure appears on untouched code, it's pre-existing.
 
 **b. Annotate the diff.** If the PR includes code in languages or libraries the reviewer may not know well, add **PR comments on your own PR** explaining non-obvious sections. This is cheaper than back-and-forth across timezones.
 
 **Completion criteria:**
-- [ ] All project checks pass (lint, build, tests)
+- [ ] All CI failures triaged into one of the three classes (caused-by-branch / pre-existing / flaky)
+- [ ] Class (a) caused-by-branch failures: all fixed; checks now green
+- [ ] Class (b) pre-existing failures: filed separately and noted in PR description (do not block PR)
+- [ ] Class (c) flaky/infra failures: re-run once; recurrent flakes filed as issues and noted in PR description
 - [ ] No new warnings introduced (for projects that treat warnings as errors)
 - [ ] If PR uses unfamiliar libraries or patterns, at least one explanatory PR comment exists
 - [ ] If no unfamiliar code, annotation step is explicitly skipped (not forgotten)
@@ -284,6 +322,8 @@ git diff --name-only main...HEAD -- docs/decisions/
 
 **b. Edit the skeleton (manual).** Review the generated output and reshape it into the PR description template below. The skeleton gives you raw material; your job is to add context, explain *why*, and flag uncertainty. Do not submit the skeleton as-is.
 
+The template requires a `Decisions referenced:` line — a manual, conscious check the author fills in. This re-attempts a Round 1 rejection (commit `3dbcd78`) that tried to auto-detect citations by scanning `Relevant paths` fields in `docs/decisions/*.md`. The value here is the 5-second conscious check before opening review, not the regex — auto-detection added machinery without changing the author's behavior, so the regex was dropped and the prompt kept.
+
 Structure:
 
 ```markdown
@@ -291,6 +331,30 @@ Structure:
 [1-3 sentences: what changed and why — use the commit list as a starting point. If this PR closes an issue, you can optionally annotate the close-line with a failure-mode bracket-tag, e.g., `Closes #123 [prevents: race-condition-on-double-submit]`.]
 
 **Workflow provenance** (optional): [e.g., "RPI → DD → RPI" or "Spike → RPI → PR-prep"]
+
+**Failures prevented** (optional): [one-line list of the specific failure modes this change addresses, if any]
+
+## Reviewer's path — start here
+[REQUIRED. Name the 1–3 files a reviewer should open *first*, in the order they should read
+them, so they understand why this change exists in under 5 minutes without reverse-engineering
+the diff. Rules that make a lazy fill visibly empty rather than plausible boilerplate:
+ - **Name actual files.** Each entry is a real path in backticks (`src/auth/session.ts`), not a
+   category ("the auth code") or a vague gesture ("the main changes"). If you can't name a path,
+   you haven't filled this in.
+ - **Read-order, not import-order.** The file that frames *why* the change exists comes first;
+   the files it enables come after. Lead with intent, not with the dependency graph.
+ - **One sentence of intent each.** Say what the reviewer should take from the file and why it
+   matters to the change — not what the file is.
+ - **1–3 entries.** If no single file is the center of gravity, the PR likely needs splitting
+   (see Phase 1, step 1a) — that's a signal, not a reason to leave this blank.]
+
+## Status (optional)
+[Three-field block surfacing task status without forcing reviewers to read the diff.
+ Useful for stacked PRs, multi-step work, or branches that close some items but not others.
+ Omit the section entirely if all planned work is done and nothing is blocked.]
+- **Done:** [items completed in this PR]
+- **In progress:** [items partially done or still in flight in follow-up work]
+- **Blocked-on:** [items blocked, with what's blocking them — issue link, dependency, decision needed]
 
 ## How it works
 [Brief technical summary. Not a line-by-line walkthrough — describe the approach.]
@@ -307,6 +371,8 @@ Structure:
 ## Decisions made
 [Link to any docs/decisions/ files created, or briefly note non-obvious choices]
 
+Decisions referenced: [list of NNN decision IDs whose invariants this PR touches, or `none — change is independent of recorded decisions`]
+
 ## Review evidence
 [List review artifacts from docs/reviews/ that were generated for this PR.
  These are committed to the branch — reviewers can expand them for details.
@@ -315,18 +381,34 @@ Structure:
 - `docs/reviews/self-eval-feature-name.md` — self-eval, meets criteria
 ```
 
+**Commit-message footer convention** (optional): The same three-field block (`Done:` / `In progress:` / `Blocked-on:`) can be used as a commit-message footer to surface per-commit status without forcing readers to open the diff. Useful for autonomous-mode commits and stacked work where each commit lands an incremental slice.
+
 For UI changes, capture before/after screenshots or a short recording and include them in the description. The reviewer may not be able to run the UI locally — visual evidence eliminates a round-trip.
+
+**c. Description gate (micro-check).** Before publishing the description (marking the draft PR ready for review, or opening the PR if no draft was made), answer these three questions about the description as written:
+
+1. **Why, not just what.** Does the description explain *why* this change exists — the problem it solves or the motivation behind it — and not only enumerate what files/lines changed?
+2. **Specific tests.** Does the description list the specific tests added or run (by name, file, or scenario), rather than vague phrases like "tested locally" or "all tests pass"?
+3. **Uncertainty flagged.** Does the description flag decisions made under uncertainty (in the "Areas of uncertainty" section) — judgment calls, untested assumptions, or trade-offs the reviewer may want to revisit?
+
+If any answer is **no**, revise the description before opening the PR. This gate is fast (under a minute) and catches the most common reviewer complaints: "I can't tell why this exists," "I don't know what was actually verified," and "what did you decide that I should double-check?"
 
 **Completion criteria:**
 - [ ] Skeleton was generated from commits and review artifacts (not written from scratch)
 - [ ] All six sections are present (What this does, How it works, How to test, Areas of uncertainty, Decisions made, Review evidence)
+- [ ] Reviewer's path — start here is filled with 1–3 actual file paths in read-order, each with a one-sentence intent (not a category or placeholder)
 - [ ] Each section contains at least one substantive sentence (not a placeholder)
+- [ ] Each "Major change" line under "What this does" cites `file:test_name` evidence or carries a one-sentence `(no test: <reason>)` parenthetical (e.g., `feat: add CSV export — exports/csv.test.ts:exports_complete_rows`)
+- [ ] `Decisions referenced:` line is filled in — either a list of decision IDs or the explicit `none — change is independent of recorded decisions` (the conscious check is the point; do not leave the placeholder)
 - [ ] Review evidence section lists all `docs/reviews/` artifacts for this PR, or states "No review artifacts" if none exist
+- [ ] Description gate (6c) passed: why is stated, specific tests listed, uncertainty flagged — or description was revised until all three are yes
 - [ ] (Optional) If this PR involved multiple workflow compositions (e.g., RPI → DD → RPI), a workflow provenance line is included in "What this does"
+- [ ] (Optional) If this change addresses specific failure modes surfaced by RPI/code-review failure-driven thinking, a "Failures prevented" line is included in "What this does"
+- [ ] (Optional) If the branch leaves work in flight or has dependencies, a Status block (Done / In progress / Blocked-on) is included
 
 ## Retrospective
 
-After the PR is opened, take 2 minutes to close the loop on the workflow that produced it. Answer these in `docs/thoughts/` or a commit message — they compound over time.
+After the PR is opened, take 2 minutes to close the loop on the workflow that produced it. Save as `docs/thoughts/retro-{branch-or-feature}.md` so retros are discoverable across PRs. Commit message is acceptable for one-off observations that do not warrant a standalone file. These compound over time.
 
 1. **Plan vs. reality** — How closely did the implementation follow the plan? Where did it deviate, and was the deviation an improvement or a sign the plan missed something?
 2. **Skipped steps** — Were any workflow steps skipped or abbreviated? Why, and was that the right call in hindsight?
@@ -335,7 +417,7 @@ After the PR is opened, take 2 minutes to close the loop on the workflow that pr
 
 **Completion criteria:**
 - [ ] At least one of the four questions answered with more than one sentence
-- [ ] Answer stored in `docs/thoughts/` or a commit message (not lost)
+- [ ] Answer saved as `docs/thoughts/retro-{branch-or-feature}.md` so retros are discoverable across PRs (commit message is acceptable for one-off observations that do not warrant a standalone file)
 
 ## Step 7: Post-merge follow-up (optional)
 
@@ -353,5 +435,5 @@ After the PR merges, there are follow-up tasks that are easy to forget in the mo
 
 **This step is intentionally lightweight.** If you find yourself spending more than 5 minutes here, the items have likely surfaced real follow-up work — track that work separately rather than blocking PR completion on it.
 
-**Post-merge actions taken** (note here or in a commit message for traceability):
+**Post-merge actions taken** (append to `docs/thoughts/retro-{branch-or-feature}.md` so retros are discoverable across PRs; commit message is acceptable for one-off observations that do not warrant a standalone file):
 - _e.g., "CI green on main after merge", "Removed `ENABLE_NEW_EXPORT` flag in follow-up commit", "No docs affected"_

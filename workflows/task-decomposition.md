@@ -31,6 +31,16 @@ Example decomposition for "add API endpoint with auth and rate limiting":
 - **Independent area B**: Is there existing rate limiting? What library/approach?
 - **Independent area C**: What's the data model for the resource being exposed?
 
+#### Quality signals — when not to decompose
+
+Independence isn't binary. Two areas can look separate on a directory map but be tightly coupled at runtime, and sub-agents researching them in parallel will produce findings that contradict each other once you try to integrate them. Step 4 catches such contradictions downstream via reconciliation, but reconciling assumptions after the fact wastes the parallelism you decomposed for. Catch coupling upstream by checking these signals before dispatching:
+
+- **Shared mutable state across areas.** If the candidate areas read or write the same in-memory store, cache, global config, session object, or database row through different code paths, they aren't independent — a sub-agent looking at one path can't reason about invariants without knowing what the other path does.
+- **More than 2 shared interfaces.** A small number of shared interfaces (data shapes, function contracts, error conventions) is normal and step 4 reconciliation handles it. Three or more is a coupling smell: the areas are effectively one subsystem with internal seams, and sub-agents will repeatedly need to make assumptions about each other's behavior.
+- **Monorepo cross-package imports between areas.** If area A's code imports from area B's package (or vice versa), the dependency graph contradicts the decomposition. Sub-agents told to research one package in isolation will miss the imported behavior.
+
+If any signal fires, consolidate the affected areas into a single sub-investigation (or research them sequentially in the main agent) before proceeding to step 2. Document the consolidation briefly so the reasoning is visible to reviewers.
+
 #### Capture interface contracts before dispatch
 
 When **two or more sub-agents will be dispatched** in step 3, add an `## Interface contracts` subsection to the working notes *before* dispatching. The contracts make explicit the shared shapes the sub-investigations will collide on, so step 4 (Reconcile) can verify each one against a prediction rather than discovering conflicts organically.
@@ -55,6 +65,7 @@ Example contract entry:
 - [ ] Each area is labeled as either a shared dependency or an independent sub-investigation
 - [ ] Independent areas can be researched without understanding the others first
 - [ ] Shared dependencies (if any) are identified and will be researched before independent areas
+- [ ] Each candidate area pair has been checked against the quality signals (shared mutable state, >2 shared interfaces, cross-package imports) and any consolidation is documented
 - [ ] If ≥2 sub-agents will be dispatched, the working notes contain an `## Interface contracts` subsection with one entry per shared interface (each naming data shape, error mode, and ≥1 codebase example), OR the explicit escape line `no shared interfaces — sub-investigations are fully independent`
 
 ### 2. Research shared dependencies first
@@ -93,7 +104,21 @@ A sub-agent starts with zero context. Brief it like a colleague who just walked 
 **Example — dependency analysis:**
 > "Read `package.json` and `src/pdf/generator.ts`. We're evaluating whether to replace the PDF library. Answer: What API surface do we actually use? How coupled is our code to this specific library? Are there test fixtures that depend on exact output?"
 
+**End-to-end example — parallel dispatch and recompose:** Continuing the API endpoint decomposition from step 1, after researching the shared routing/middleware dependency, dispatch three sub-agents in parallel by issuing three Agent tool calls in a single response — one for auth, one for rate limiting, one for the resource data model. Each prompt scopes its investigation tightly: the auth sub-agent examines `src/auth/` and reports token validation, where middleware is applied, and failure behavior; the rate-limiting sub-agent searches the codebase for existing rate-limit usage and reports library, configured limits, and whether keys are per-user or global; the data-model sub-agent reads the resource schema and reports field shapes and validation rules. All three return findings concurrently. In the recompose step, the main agent reads each report, checks for conflicts at shared interfaces (e.g., does the auth sub-agent's user-identity field match the rate-limiting sub-agent's rate-limit key?), resolves any conflicts against the actual code, and folds the reconciled findings into the unified research doc's Scope / What exists / Invariants / Gotchas sections — not preserved as three separate per-area appendices.
+
 Common briefing mistakes: omitting file paths (sub-agent wastes time searching), asking open-ended questions ("how does this work?" vs. specific questions), and not capping output length (sub-agent returns a wall of text you have to re-read).
+
+#### Recommended output scaffold
+
+A consistent output shape across sub-agents reduces format-normalization overhead at step 4 (Reconciliation). Suggest sub-agents structure findings as five sections — adapt or omit when an area doesn't fit:
+
+- **Files examined** — paths actually read
+- **Findings** — answers to the questions you asked
+- **Cross-interface assumptions** — what they assumed about interfaces shared with other sub-investigations
+- **Open questions** — things they couldn't answer or weren't asked to investigate
+- **Confidence in findings** — high / medium / low, with a brief reason for anything below high
+
+This is a default, not a mandate. A sub-agent doing a focused pattern search may only need Files examined + Findings; a sub-agent reading a complex subsystem benefits from the full scaffold.
 
 Sub-agents should NOT:
 - Write or modify source code (risk of conflicts with other sub-agents or the main agent)
