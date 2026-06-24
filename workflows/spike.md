@@ -61,12 +61,19 @@ Without that line, a binary spike that omits the template fails this step's Done
 
 For non-binary spikes (open-ended discovery: "how does X handle Y?", "what's the latency of Z?"), the template is optional — fill it in if it sharpens the answer, skip it if the goal is genuinely learning rather than deciding. Either way, revisit these criteria (when present) in step 5's Answer section to force a clear verdict.
 
-Before moving to step 2 (Set a timebox), confirm the question can be operationalized with the tools and data available — if it cannot, reframe the question rather than starting the timer on an unanswerable spike.
+Two non-binary shapes recur often enough to carry their own up-front conventions; matching one and following its convention is worth more than a generic template:
+
+- **Comparison** — "Which of A and B is faster / cheaper / simpler for Z?" The question chooses between known alternatives. Pick one decision metric up front (e.g., p95 latency, lines of integration code, dependency footprint) and commit to it; mixing metrics mid-spike produces ambiguous winners. Budget more time than a binary spike because you implement each option's minimum viable test — a useful starting point is ~45 minutes for two options, and split into separate spikes if you have three or more (see step 3's anchors). Record findings (step 5) as a small comparison table with metric values per option, plus a one-sentence rationale for the winner, and note disqualifying gotchas (e.g., "B is faster but requires Node 22+") even when the metric is clear.
+
+- **Exploration** — "How does X behave for use case Y?" The question is characterizational; there is no pass/fail, just discovery. This shape is the most prone to scope drift, so before starting, state what "enough understanding" looks like (e.g., "I can predict X's output for our three main input shapes"). Use the standard timebox but apply the abandon signals (after step 3) more aggressively — if discoveries don't converge into a usable model of behavior by half-time, the honest answer is "needs deeper investigation." In the findings, record a behavior summary as a bulleted list of observed behaviors keyed to inputs, plus an explicit "open questions" list. An exploration spike should leave a clear map of what's known and unknown, not a yes/no verdict.
+
+Before moving to step 3 (Set a timebox), confirm the question can be operationalized with the tools and data available — if it cannot, reframe the question rather than starting the timer on an unanswerable spike.
 
 **Done when...**
 - [ ] The question is stated in one specific, answerable sentence
 - [ ] The question is about feasibility or behavior, not about implementation design
 - [ ] If the question matches a binary prefix (`can`, `will`, `is X feasible`, `does X work`), either (a) the feasibility-criteria template is filled in with a specific measurable signal for each of Success and Failure (not "it works" or equivalent restatements), or (b) an explicit `exploratory: <reason>` line is written at the top of this step justifying the omission
+- [ ] If the question is a comparison ("which of A and B…"), a single decision metric is named and committed to; if it's an exploration ("how does X behave…"), what "enough understanding" looks like is stated before starting
 
 ### 3. Set a timebox (recommended)
 
