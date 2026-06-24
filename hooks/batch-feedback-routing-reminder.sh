@@ -62,12 +62,23 @@ ENUM+='|\bhere(?:'"'"'s| is| are)\b.{0,20}\b(the )?(feedback|bugs|issues|list)\b
 ENUM+='|\bthe following\b.{0,20}\b(feedback|bugs|issues|items|changes|tasks|requests)\b'
 ENUM+='|\b(batch|list|round) of (feedback|bugs|issues|fixes|changes|tasks|requests)\b'
 
-# grep -P for the optional-group '(?:...)'; fall back to grep -E (which lacks
-# (?:...)) by stripping the non-capturing marker if -P is unavailable.
-if printf '%s' "$PROMPT" | grep -iqP "$ENUM" 2>/dev/null; then
+# Prefer grep -P so the non-capturing '(?:...)' groups in ENUM work as written.
+# Fall back to grep -E only when -P is UNAVAILABLE — grep exits 2 on an
+# unsupported/errored -P, versus 1 for a clean no-match. Gate the fallback on
+# that error code, NOT on "didn't match": a plain no-match (exit 1) must not
+# trigger a redundant second scan of the same prompt.
+#
+# COUPLING NOTE: the "${ENUM//(\?:/(}" rewrite turns each '(?:' into a plain '('
+# so the pattern is valid ERE (which has no non-capturing groups). It assumes
+# every non-capturing group in ENUM is written exactly as '(?:'. If you add
+# another '(?:...)' group to ENUM, keep that spelling or this ERE fallback will
+# silently misparse on -P-less systems.
+printf '%s' "$PROMPT" | grep -iqP "$ENUM" 2>/dev/null
+pcre_rc=$?
+if [[ "$pcre_rc" -eq 0 ]]; then
   emit
-elif printf '%s' "$PROMPT" | grep -iqE "${ENUM//(\?:/(}" 2>/dev/null; then
-  emit
+elif [[ "$pcre_rc" -ge 2 ]]; then
+  printf '%s' "$PROMPT" | grep -iqE "${ENUM//(\?:/(}" 2>/dev/null && emit
 fi
 
 exit 0

@@ -101,7 +101,7 @@ These are alternatives to the AGENTS.md approach. Use whichever fits your setup 
 ### Human guides (reference for the developer, not agent instructions)
 - `guides/parallel-sessions.md` — How to orchestrate multiple concurrent agent sessions across git worktrees
 
-### Hooks (Claude Code PreToolUse hooks)
+### Hooks (Claude Code hooks)
 - `hooks/log-usage.sh` — Logs skill invocations and workflow file reads to `~/.claude/logs/usage.jsonl` for usage analytics
 - `hooks/dd-routing-reminder.sh` — `UserPromptSubmit` hook nudging explicit comparison/decision prompts toward the divergent-design workflow (non-blocking)
 - `hooks/batch-feedback-routing-reminder.sh` — `UserPromptSubmit` hook nudging multi-item prompts (batches of feedback) toward parallel-subagent fan-out per decision-tree row 2 (non-blocking); wiring instructions in `docs/working/wire-batch-feedback-reminder.md`

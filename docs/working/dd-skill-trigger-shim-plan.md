@@ -23,7 +23,7 @@ the existing `workflows/divergent-design.md`, it does not restate the workflow's
   repo-relative `workflows/...` paths (as code-review/self-eval use).
 - The precedence-over-brainstorming logic and the 3+-tradeoff-axis trigger test already
   live in `workflows/divergent-design.md` (When-to-use bullet + precedence callout) and
-  in CLAUDE.md row 2. The shim restates only the *routing test*, then defers.
+  in CLAUDE.md's divergent-design decision-tree row. The shim restates only the *routing test*, then defers.
 
 **Prior art.** `design-space-situating/SKILL.md` is the closest analog — a decision-helper
 skill with a long, trigger-phrase-dense description and a short body. Mirror its shape.
