@@ -1,4 +1,5 @@
 #!/usr/bin/env bats
+# @category fast
 # Validates the output format of ai-personas-critique reports.
 #
 # Usage: Set REPORT_PATH to a generated report, then run:

@@ -1,4 +1,5 @@
 #!/usr/bin/env bats
+# @category fast
 # Validates the structure of the arithmetic-eval SKILL.md itself.
 #
 # Judgment call: arithmetic-eval is a *utility* skill — it does not produce a

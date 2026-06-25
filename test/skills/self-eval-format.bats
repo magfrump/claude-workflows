@@ -1,4 +1,5 @@
 #!/usr/bin/env bats
+# @category fast
 # Validates the output format of self-eval reports.
 #
 # Note: Skips gracefully via load_generic_report when no report exists.

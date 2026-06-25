@@ -1,4 +1,5 @@
 #!/usr/bin/env bats
+# @category slow
 # Tests for scripts/failure-analysis.sh
 #
 # Validates failure analysis output format, graceful handling of missing/empty

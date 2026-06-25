@@ -1,4 +1,5 @@
 #!/usr/bin/env bats
+# @category fast
 # Validates the output format of code-fact-check reports.
 #
 # Usage: Set REPORT_PATH to a generated report, then run:

@@ -1,4 +1,5 @@
 #!/usr/bin/env bats
+# @category fast
 # Validates the output format of what-if-analysis reports.
 #
 # Note: No example report is committed — tests will skip via load_generic_report

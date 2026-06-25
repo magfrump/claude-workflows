@@ -1,4 +1,5 @@
 #!/usr/bin/env bats
+# @category fast
 # Validates that every skills/*.md file contains the required YAML frontmatter
 # fields: 'name', 'description', and at least one of 'trigger' or 'when'.
 #

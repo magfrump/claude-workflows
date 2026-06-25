@@ -1,4 +1,5 @@
 #!/usr/bin/env bats
+# @category fast
 # Validates the output format of draft-review verification rubrics.
 #
 # Usage: Set REPORT_PATH to a generated report, then run:

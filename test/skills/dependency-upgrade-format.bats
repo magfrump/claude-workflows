@@ -1,4 +1,5 @@
 #!/usr/bin/env bats
+# @category fast
 # Validates the output format of dependency-upgrade reports.
 #
 # Note: No example report exists yet — tests will skip via load_generic_report.

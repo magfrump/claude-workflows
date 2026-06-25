@@ -1,4 +1,5 @@
 #!/usr/bin/env bats
+# @category fast
 # Validates that cowen-critique reports cover the expected semantic dimensions.
 #
 # Usage: REPORT_PATH=path/to/report.md bats test/skills/cowen-critique/dimensions.bats

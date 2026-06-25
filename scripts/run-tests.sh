@@ -64,6 +64,45 @@ if [[ -z "$matched" ]]; then
   exit 1
 fi
 
+# Report-gating (mirrors scripts/health-check.sh): the *-format.bats and
+# *-eval.bats suites validate skill report output. They only carry signal when
+# a freshly generated report exists under test/skills/<skill>/output/; without
+# one they would fall back to stale committed docs/reviews/ artifacts and report
+# spurious failures. So unless generated reports are present, drop that class
+# from the run — exactly as health-check does — rather than asserting against
+# out-of-date defaults. Generate reports via test/skills/generate-reports.bash
+# to exercise them.
+has_reports=false
+for output_dir in "$REPO_ROOT"/test/skills/*/output/; do
+  if [[ -d "$output_dir" ]] && ls "$output_dir"/*.md &>/dev/null 2>&1; then
+    has_reports=true
+    break
+  fi
+done
+
+if ! $has_reports; then
+  filtered=""
+  skipped=0
+  while IFS= read -r f; do
+    [[ -z "$f" ]] && continue
+    case "$(basename "$f")" in
+      *-format.bats|*-eval.bats) skipped=$((skipped + 1)) ;;
+      *) filtered+="$f"$'\n' ;;
+    esac
+  done <<< "$matched"
+  matched="${filtered%$'\n'}"
+  if [[ "$skipped" -gt 0 ]]; then
+    echo "Note: skipping $skipped report-dependent suite(s) (*-format/*-eval) —" \
+         "no generated reports under test/skills/*/output/." >&2
+    echo "      Run test/skills/generate-reports.bash to exercise them." >&2
+    echo "" >&2
+  fi
+  if [[ -z "$matched" ]]; then
+    echo "No runnable test files after report-gating for category: $category" >&2
+    exit 0
+  fi
+fi
+
 echo "=== Running $category tests ==="
 echo "$matched" | while read -r f; do
   echo "  $(basename "$f")"

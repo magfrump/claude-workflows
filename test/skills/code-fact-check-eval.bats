@@ -1,4 +1,5 @@
 #!/usr/bin/env bats
+# @category fast
 # Evaluates code-fact-check skill output against expected verdicts and behavioral checks.
 #
 # Prerequisites: generate reports first:

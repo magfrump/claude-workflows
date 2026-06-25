@@ -1,4 +1,5 @@
 #!/usr/bin/env bats
+# @category fast
 # Validates the output format of test-strategy reports.
 #
 # Note: No example report ships in the repo — tests will skip via

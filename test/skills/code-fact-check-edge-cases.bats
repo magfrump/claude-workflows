@@ -1,4 +1,5 @@
 #!/usr/bin/env bats
+# @category fast
 # Edge-case / negative-fixture tests for the code-fact-check skill.
 # Verifies graceful handling of degenerate inputs: empty files, binary content,
 # no-comments code, and extremely short code.
