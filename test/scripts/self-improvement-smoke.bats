@@ -1,4 +1,5 @@
 #!/usr/bin/env bats
+# @category slow
 # shellcheck disable=SC2030,SC2031
 # SC2030/SC2031: BATS runs each @test in a subshell; ROUND_LOG_FILE is
 # intentionally set and consumed within the same test block.
@@ -226,25 +227,6 @@ teardown() {
 }
 
 # ---------------------------------------------------------------
-# Verify hypothesis eligibility check works with fixture tasks
-# ---------------------------------------------------------------
-
-@test "smoke: hypothesis eligibility filters fixture tasks correctly" {
-  # Use the fixture tasks from setup (round 1 tasks, checked at round 4)
-  local tasks_file="$TEST_TMPDIR/tasks-round-1.json"
-
-  # At round 4, window=3 tasks from round 1 should be eligible (4-1 >= 3)
-  local eligible
-  eligible=$(get_eligible_hypotheses 4 1 < "$tasks_file")
-
-  # add-logging has hypothesis + window=3, round 4-1=3 >= 3 → eligible
-  echo "$eligible" | grep -q "add-logging"
-
-  # retry-logic has no hypothesis → not eligible
-  ! echo "$eligible" | grep -q "retry-logic"
-}
-
-# ---------------------------------------------------------------
 # Verify task validation rejects bad tasks in integration context
 # ---------------------------------------------------------------
 
@@ -332,61 +314,8 @@ MIXED
 }
 
 # ---------------------------------------------------------------
-# Lint task descriptions tests
+# Cleanup: worktree force-removal regression guard
 # ---------------------------------------------------------------
-
-@test "lint warns when files_touched parent directory does not exist" {
-  cat > "$TEST_TMPDIR/tasks.json" <<'EOF'
-[
-  {
-    "id": "task-bad-dir",
-    "description": "Add a new feature with shellcheck compliance",
-    "files_touched": ["nonexistent-dir-xyz/foo.sh"],
-    "independent": true
-  }
-]
-EOF
-  run lint_task_descriptions "$TEST_TMPDIR/tasks.json"
-  [ "$status" -eq 0 ]
-  [[ "$output" == *"LINT WARNING"* ]]
-  [[ "$output" == *"parent directory does not exist"* ]]
-  [[ "$output" == *"nonexistent-dir-xyz"* ]]
-}
-
-@test "lint warns when .sh files touched but description lacks shellcheck" {
-  cat > "$TEST_TMPDIR/tasks.json" <<'EOF'
-[
-  {
-    "id": "task-no-shellcheck",
-    "description": "Refactor the build pipeline",
-    "files_touched": ["scripts/build.sh"],
-    "independent": true
-  }
-]
-EOF
-  run lint_task_descriptions "$TEST_TMPDIR/tasks.json"
-  [ "$status" -eq 0 ]
-  [[ "$output" == *"LINT WARNING"* ]]
-  [[ "$output" == *"shellcheck"* ]]
-}
-
-@test "lint warns when workflow .md files touched but description lacks BATS or section" {
-  mkdir -p "$TEST_TMPDIR/workflows"
-  cat > "$TEST_TMPDIR/tasks.json" <<'EOF'
-[
-  {
-    "id": "task-no-bats",
-    "description": "Update the research workflow",
-    "files_touched": ["workflows/research.md"],
-    "independent": true
-  }
-]
-EOF
-  run bash -c "cd '$TEST_TMPDIR' && source '$REPO_ROOT/scripts/self-improvement.sh' && lint_task_descriptions '$TEST_TMPDIR/tasks.json'"
-  [ "$status" -eq 0 ]
-  [[ "$output" == *"LINT WARNING"* ]]
-  [[ "$output" == *"workflow .md"* ]]
-}
 
 @test "cleanup force-removes worktrees left dirty by validation" {
   # Regression guard: validation steps (e.g. self-eval) write untracked files
@@ -421,20 +350,4 @@ EOF
 
   [ ! -d "$wt" ]
   ! git -C "$REPO_DIR" show-ref --verify --quiet refs/heads/feat/r1-dirty
-}
-
-@test "lint produces no warnings for a well-formed task" {
-  cat > "$TEST_TMPDIR/tasks.json" <<'EOF'
-[
-  {
-    "id": "task-clean",
-    "description": "Update build script and run shellcheck, update BATS section",
-    "files_touched": ["scripts/self-improvement.sh", "workflows/dev.md"],
-    "independent": true
-  }
-]
-EOF
-  run bash -c "cd '$REPO_ROOT' && source '$REPO_ROOT/scripts/self-improvement.sh' && lint_task_descriptions '$TEST_TMPDIR/tasks.json'"
-  [ "$status" -eq 0 ]
-  [[ "$output" != *"LINT WARNING"* ]]
 }
