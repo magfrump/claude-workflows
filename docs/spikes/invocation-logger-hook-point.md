@@ -4,7 +4,7 @@ Date: 2026-05-14
 Branch: none (read-only investigation)
 Time spent: ~25 min
 
-**Last verified:** 2026-05-14
+**Last verified:** 2026-06-24
 **Relevant paths:** hooks/log-usage.sh, hooks/log-usage-post.sh, scripts/lib/si-morning-summary.sh, docs/decisions/012-hypothesis-grammar-for-user-surfaced-evaluation.md
 
 - **Goal**: Determine whether an existing or extendable hook point in Claude Code can supply the invocation log decision 012 pillar 4 requires (skill/workflow invocations, timestamps, args, duration), with minimal new infrastructure.
@@ -12,6 +12,8 @@ Time spent: ~25 min
 - **Task status**: complete
 
 ## Answer
+
+> **Status update (2026-06-24):** The RPI this spike seeded has since shipped. Gaps #1 (duration), #2 (real-use vs consult), and #5 (metric stream) below are now implemented: `hooks/log-usage-post.sh` emits paired `skill_completed`/`agent_completed` events with `duration_ms`/`total_tokens`, and `hooks/log-usage.sh` tags each pre-event with a `via` field (`skill_tool` vs `file_read`) instead of splitting event types. `scripts/lib/si-morning-summary.sh` consumes both as METRIC rows for script-evaluator precondition gating (decision 012). The findings below are preserved as the original investigation record; per-finding resolution is noted inline.
 
 **Yes.** A working `PreToolUse` hook already exists at `~/.claude/hooks/log-usage.sh`, wired in `~/.claude/settings.json` for `Skill`, `Read`, and `Agent` tools, writing to `~/.claude/logs/usage.jsonl`. It already captures ~80% of what decision 012 pillar 4 specifies: timestamp, name, args, project, branch. The remaining gaps (duration, "real use vs consult" distinction, plugin-skill coverage) close with two small additions and one clarification — not a rewrite. The recent SKILL.md-directory migration was the structural change that makes plugin-skill capture work via the same path-matching code that already handles local skills.
 
@@ -21,7 +23,7 @@ Time spent: ~25 min
 
 - **4,645 log entries over ~2 months** in `~/.claude/logs/usage.jsonl`. Top names match real usage (`self-eval`, `code-review`, `divergent-design`, `research-plan-implement`, `draft-review`, `pr-prep`).
 - **Three event types are captured**: `skill` (2,707), `workflow` (1,486), `agent` (447). Plus `agent_skill` (4) and `command` (1).
-- **The hook path matching handles three skill-file layouts cleanly** (`extract_skill_name` in `~/.claude/hooks/log-usage.sh:46-66`):
+- **The hook path matching handles three skill-file layouts cleanly** (`extract_skill_name`, since extracted to `scripts/lib/skill-paths.sh` and shared with the hooks):
   - Old: `skills/<name>.md` → `<name>`
   - New: `skills/<name>/SKILL.md` → `<name>` (the migration the user mentioned)
   - Rejected: deeper paths like `skills/<name>/references/foo.md` → no log entry (correct)
@@ -31,15 +33,15 @@ Time spent: ~25 min
 
 ### What's broken or missing
 
-1. **No duration capture.** `PreToolUse` fires before invocation; there's no end-time, no token count, no success/failure signal. Script-evaluator preconditions like "p95 latency under N" or "average duration" can't be computed from current data.
+1. **No duration capture.** `PreToolUse` fires before invocation; there's no end-time, no token count, no success/failure signal. Script-evaluator preconditions like "p95 latency under N" or "average duration" can't be computed from current data. *(Resolved 2026-06-24: `hooks/log-usage-post.sh` PostToolUse hook now emits `skill_completed`/`agent_completed` with `duration_ms` and `total_tokens`.)*
 
-2. **No "real use vs consult" distinction.** The hook treats `Skill` tool invocations and `Read` of SKILL.md identically (both produce `event: skill`). Reading a SKILL.md to inspect it counts as "skill usage" — conflating consultation with use inflates invocation counts, which directly breaks decision 012's `requires: invocations: N` precondition gating.
+2. **No "real use vs consult" distinction.** The hook treats `Skill` tool invocations and `Read` of SKILL.md identically (both produce `event: skill`). Reading a SKILL.md to inspect it counts as "skill usage" — conflating consultation with use inflates invocation counts, which directly breaks decision 012's `requires: invocations: N` precondition gating. *(Resolved 2026-06-24: the pre-hook keeps `event: skill` but adds a `via` field — `skill_tool` for real use, `file_read` for consultation — so consumers filter on `via == "skill_tool"`.)*
 
 3. **Plugin coverage is partial — only ~7 entries for `skill-creator` despite the user invoking it more often.** The hook fires when SKILL.md is *read*, but if Claude Code loads plugin skill metadata directly (without reading SKILL.md), no event fires. Today's plugin installs (`frontend-design`, `claude-md-improver`) have **0 entries** despite presumably being available. Coverage depends on whether the runtime always reads SKILL.md or sometimes loads from a metadata index.
 
 4. **Misclassification leaks through.** A handful of entries have `name: "SKILL"`, `"advanced"`, `"patterns"`, `"parsing-techniques"`, `"skill-development"`, `"cross-skill-eval"` — all from past audit branches. These are sub-directories or unrelated files matching the path pattern. Low volume (~10 total) but they pollute aggregations.
 
-5. **No metric stream for script-eval hypotheses.** Decision 012's `requires: metric_logged: latency_p95` implies a *named metric* exists somewhere queryable. Today there's no such stream — only invocation events.
+5. **No metric stream for script-eval hypotheses.** Decision 012's `requires: metric_logged: latency_p95` implies a *named metric* exists somewhere queryable. Today there's no such stream — only invocation events. *(Resolved 2026-06-24: `duration_ms`/`total_tokens` on the completion events now feed METRIC rows that `scripts/lib/si-morning-summary.sh` aggregates for precondition gating.)*
 
 ### Skill-format-update observation
 
@@ -50,6 +52,8 @@ The user's intuition was right: the SKILL.md-directory migration is what enables
 **Proceed to RPI.** The hook point question is settled — extend the existing hook, don't build new infrastructure. The implementation is small (one new PostToolUse hook, one event-type split, one config knob), and it can ship before the rest of decision 012 since later pillars depend on this substrate.
 
 ## RPI seed
+
+> **Implemented 2026-06-24.** This seed has been built out. Note one deviation from the plan below: delta #2 proposed splitting `event: skill` into `skill_invoked`/`skill_consulted`; the shipped implementation instead keeps `event: skill` and adds a `via` field (`skill_tool`/`file_read`), preserving backward compatibility with `scripts/skill-usage-report.sh`. The post-hook (delta #1) shipped as `hooks/log-usage-post.sh`.
 
 - **Scope for RPI**: Extend the existing invocation logger to capture duration, distinguish skill *use* from skill *consult*, and verify plugin-skill coverage — without adding new logging streams or rewriting `log-usage.sh`.
 

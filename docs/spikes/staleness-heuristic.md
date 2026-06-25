@@ -3,7 +3,7 @@
 Date: 2026-03-23
 Time spent: ~10 minutes (design exercise, no throwaway code needed)
 
-**Last verified:** 2026-05-14
+**Last verified:** 2026-06-24
 **Relevant paths:** guides/doc-freshness.md, scripts/health-check.sh
 
 ## Answer
