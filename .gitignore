@@ -18,6 +18,8 @@ docs/working/si-input.md
 docs/working/completed-tasks.md
 docs/working/morning-summary.md
 docs/working/simplify-followup.md
+docs/working/*.txt
+docs/working/scratch/
 
 # Worktree directory (managed by Claude Code, not for tracking)
 .claude/
