@@ -28,6 +28,8 @@ Reference documents for specific processes and conventions. Unlike workflows (st
 
 - **[debugging-examples.md](debugging-examples.md)** — Three worked examples grounding the debugging defaults: hypothesis formation, the 3-hypothesis escape hatch, and root-cause vs. symptom fixes.
 
+- **[claude-config-security-checkup.md](claude-config-security-checkup.md)** — Two-layer audit of trusted-policy files (settings, CLAUDE.md, skills, memories) for prompt-injection and sandbox-escape payloads: a per-edit PostToolUse hook plus periodic full sweeps. Use after plugin installs, autonomous-loop merges, or pasting external content into policy files.
+
 - **[workflow-selection.md](workflow-selection.md)** — Prescriptive decision tree for choosing the right workflow given a task type. Use when unsure whether to reach for spike vs divergent-design, task-decomposition vs research-plan-implement, or any other workflow.
 
 - **[cross-project-setup.md](cross-project-setup.md)** — How to adopt workflows, skills, and artifact conventions from this repo in other projects. Covers full CLAUDE.md adoption, individual skill copying with dependencies, and directory setup. Includes what to skip (repo-specific scripts and hypothesis tracking).
