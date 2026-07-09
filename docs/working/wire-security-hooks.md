@@ -113,3 +113,13 @@ rm -f /tmp/cc-web-taint/testsid
 - Bash write detection is regex heuristics, not a shell parse; obfuscated
   writes can evade it. Backstops: sandbox `denyWrite ~/.claude` and the
   PostToolUse config audit.
+- **Known false positive:** prose inside a command is scanned as if it were
+  shell. In particular, `git commit -m` with a heredoc message is denied
+  whenever the message names a hard policy path, because the standard
+  `Co-Authored-By: ... <noreply@anthropic.com>` trailer's closing `>` matches
+  the redirect regex (verified 2026-07-09). Workaround: write the message to a
+  scratch file and use `git commit -F <file>`. Possible regex fix if the
+  friction recurs: add `\w` to the redirect lookbehind
+  (`(?<![0-9&\w])>>?(?![&])`) so `word>` — as in an email address — no longer
+  counts as a redirect; legitimate redirects nearly always follow whitespace
+  or a bare fd digit, which the pattern already skips.
