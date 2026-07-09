@@ -1,5 +1,10 @@
 # Wiring: claude-config-audit hook
 
+Status: **wired live 2026-07-09** (settings entry + symlink both applied;
+verified firing on a real memory-file write). Kept for re-application after a
+settings reset. See also `docs/working/wire-security-hooks.md` for the
+companion taint-gating hooks and the symlink-vs-copy tradeoff.
+
 `hooks/claude-config-audit.sh` is a `PostToolUse` hook that runs
 `~/private_reviews/claude_config_audit.py` against any edited **trusted-policy
 file** (settings*.json, CLAUDE.md/AGENTS.md, skill/command markdown, .mdc
