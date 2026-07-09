@@ -212,7 +212,6 @@ The user is not at their desk, or has not specified. Maximize progress within sa
 **Do autonomously (no approval needed):**
 - Everything in the /active autonomous list, plus:
 - Creating git commits (use the autonomous commit format below)
-- Pushing to remote after each completed logical step
 - Opening draft PRs
 - Making judgment calls on ambiguous-but-low-risk implementation details
 
