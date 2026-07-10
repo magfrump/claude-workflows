@@ -40,4 +40,6 @@ Reference documents for specific processes and conventions. Unlike workflows (st
 
 - **[skill-format-audit.md](skill-format-audit.md)** — Audit of the 5 most-used skills against Anthropic's skill-creator guidelines. Identifies 7 format divergences (non-standard frontmatter, description truncation, flat-file structure) with prioritized recommendations. Read-only reference; no skill files modified.
 
+- **[sandbox-tool-map.md](sandbox-tool-map.md)** — Substitution map from denied or prompt-generating tools (post-2026-07-09 hardening) to allowed equivalents: dedicated tools over shell, `rg --files` over `find`, `git commit -F` for trailer-bearing messages, test stubs for network-capable binaries. Consult on any sandbox or permission denial before retrying. Guarded against settings drift by `test/sandbox-tool-map-drift.bats`.
+
 - **[sub-agent-briefing.md](sub-agent-briefing.md)** — Five elements of a well-formed sub-agent prompt (goal preamble, exact paths, specific questions, output cap, output destination), one worked example, and an anti-pattern catalog. Use when dispatching sub-agents from any orchestrator or workflow.

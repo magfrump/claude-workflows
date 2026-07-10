@@ -257,3 +257,16 @@ This creates a reviewable log of autonomous decisions.
 - Prefer explicit over clever. Code is read more than written, and the readers may not share your context.
 - When you encounter a decision worth documenting, create or update `docs/decisions/NNN-title.md` in the project. For smaller decisions that don't warrant a full record (single clear answer, no meaningful tradeoffs), add a row to `docs/decisions/log.md` instead.
 - **Updating a PR body or title: use the REST API, not `gh pr edit`.** `gh pr edit --body/--title` can fail *silently* — GitHub's "Projects (classic)" GraphQL deprecation makes the mutation roll back without changing anything and without an error. Use `gh api repos/{owner}/{repo}/pulls/{number} -X PATCH -f body="..."` (or `-f title="..."`), which bypasses the broken GraphQL path. After any PR-body edit, verify the change is live on the PR rather than trusting the command's exit status.
+
+## Tool Preferences (sandbox-aware)
+
+Sessions run under a permission allowlist and bwrap sandbox (hardened 2026-07-09: `find`, `fd`, `wsl`, `hyperfine`, `sed -n`, and `terraform plan` are no longer allowlisted). Reach for allowed tools first instead of discovering denials by trial and error:
+
+- **Prefer dedicated tools over shell equivalents**: Read (not `cat`/`head`/`tail` for file contents), Edit (not `sed -i`), Write (not `>`/`tee`/heredoc redirects), Glob + Grep (not `find`), WebFetch (not `curl`/`wget`).
+- **File search**: `rg --files -g '<glob>'` or the Glob tool replaces ~all `find`/`fd` uses; `rg -l` / `rg -n` replace `grep -r` and `sed -n` inspection.
+- **Commit messages containing `<` or `>`** (e.g. Co-Authored-By trailers): write the message to a temp file and use `git commit -F <file>` — `-m` with a heredoc trips a known guard false positive.
+- **Tests that could invoke network-capable binaries** (`claude`, `curl`, `gh`, `wget`): stub them in bats `setup()` via a PATH shim — see `test/round-log-functions.bats` for the pattern.
+- **Temp files**: `$TMPDIR` or the session scratchpad, never bare `/tmp`.
+- **On a sandbox or permission denial**: consult `guides/sandbox-tool-map.md` for the allowed equivalent. Never retry the denied command verbatim, and never reach for sandbox-disable as a first resort.
+
+Full substitution map with rationale: `guides/sandbox-tool-map.md`.
