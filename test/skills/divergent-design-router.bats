@@ -59,7 +59,7 @@ extract_frontmatter() {
 }
 
 @test "skill defines the brainstorming-supersession boundary" {
-  # The router exists to compete with superpowers:brainstorming at selection time;
+  # The router exists to compete with open-ended brainstorming at selection time;
   # the contract must name both the supersede case and the fall-through-to-brainstorming case.
   echo "$SKILL_CONTENT" | grep -qiE 'brainstorming'
   echo "$SKILL_CONTENT" | grep -qiE 'supersede'

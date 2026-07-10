@@ -11,8 +11,8 @@ description: >
   "choose between", "decide between", "what are the options", "multiple approaches",
   "design choice", "design decision", "tradeoff", "trade-offs", "pros and cons",
   "library selection", "tool selection", "architecture". This skill SUPERSEDES
-  `superpowers:brainstorming` whenever the task is a decision among 3+ tradeoff-bearing
-  options: brainstorming may auto-fire before plan mode, but if you can name 3+ viable
+  open-ended brainstorming whenever the task is a decision among 3+ tradeoff-bearing
+  options: if you can name 3+ viable
   options that differ on a tradeoff axis, route here for the structured candidate/matrix
   presentation. Mechanical trigger test: can you name 3+ viable options that differ on a
   tradeoff axis? Yes → this skill. (If the solution space is genuinely open-ended with no
@@ -26,7 +26,7 @@ when: A creative task has resolved to a choice among 3+ tradeoff-bearing options
 # Divergent Design (router)
 
 This skill exists so divergent design competes at the **skill-selection layer**, where
-`superpowers:brainstorming` otherwise auto-wins on any "creative work." It does not
+open-ended brainstorming otherwise wins by default on any "creative work." It does not
 re-implement the workflow — it routes you into it.
 
 ## Trigger test (run this first)
@@ -35,7 +35,7 @@ Can you name **3+ viable options that differ on a tradeoff axis**?
 
 - **Yes** → this is a decision, not open-ended ideation. Proceed below.
 - **No** (the solution space is genuinely open-ended, no competing options exist yet) →
-  this skill does not apply; `superpowers:brainstorming` does. Stop here.
+  this skill does not apply; open-ended brainstorming does. Stop here.
 
 When the test passes, divergent design supersedes brainstorming even if brainstorming
 already auto-fired: the structured candidate/tradeoff/matrix presentation is the point.

@@ -6,7 +6,7 @@ Pick the **first** rule that matches your situation, top to bottom.
 |---|---|
 | New or unfamiliar codebase | **codebase-onboarding** |
 | Quick "can this work?" question, not "build this" | **spike** |
-| Bug with a known area of code | **`superpowers:systematic-debugging`** (skill, not a workflow — see CLAUDE.md's Debugging defaults for the local extension) |
+| Bug with a known area of code | **Systematic debugging** (practice, not a workflow — see CLAUDE.md's Debugging defaults) |
 | Architectural, library, or design decision with tradeoffs | **divergent-design** |
 | Task touches multiple subsystems independently | **task-decomposition** |
 | Planning or running a usability test | **user-testing-workflow** |

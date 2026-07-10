@@ -4,8 +4,8 @@
 # Fires when a prompt looks like it bundles 2+ INDEPENDENT tasks (the common
 # case being a batch of end-user feedback), and injects a single one-line,
 # non-blocking reminder suggesting the work be split and fanned out to parallel
-# subagents (superpowers:dispatching-parallel-agents, with git-worktree
-# isolation for items that implement) rather than ground through sequentially.
+# subagents (one Agent-tool dispatch per item, with git-worktree isolation for
+# items that implement) rather than ground through sequentially.
 #
 # This escalates decision-tree row 2 ("Message bundles 2+ independent tasks")
 # from skimmable prose to a harness-executed interception — the same pattern as
@@ -51,7 +51,7 @@ fi
 [[ -z "$PROMPT" ]] && exit 0
 
 emit() {
-  printf '%s\n' "💡 Routing reminder: this reads as multiple independent tasks — consider splitting them and dispatching one subagent per item (superpowers:dispatching-parallel-agents), with git-worktree isolation for any that implement, instead of working through them sequentially. See decision-tree row 2 / \"Batch fan-out\". (Non-blocking suggestion.)"
+  printf '%s\n' "💡 Routing reminder: this reads as multiple independent tasks — consider splitting them and dispatching one parallel subagent per item, with git-worktree isolation for any that implement, instead of working through them sequentially. See decision-tree row 2 / \"Batch fan-out\". (Non-blocking suggestion.)"
   exit 0
 }
 

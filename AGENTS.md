@@ -13,7 +13,7 @@ When facing non-trivial tasks, check `workflows/` for applicable process docs be
 - **@./workflows/spike.md** — Quick timeboxed exploration of a library, approach, or proof-of-concept. Use when the question is "can this work?" not "build this."
 - **@./workflows/branch-strategy.md** — Branch management and dev integration branch workflow for high-throughput feature development with async review.
 - **@./workflows/user-testing-workflow.md** — Planning, running, and interpreting usability tests. Use when you need to design a user test, write moderator scripts, or analyze usability findings.
-- **superpowers:systematic-debugging** — Hypothesis-test debugging loop. Local extension (3-failed-hypothesis escape hatch, RPI handoff) lives in CLAUDE.md's Debugging defaults section.
+- **Systematic debugging** — Hypothesis-test debugging loop (reproduce → read the error → hypothesize → test), defined in CLAUDE.md's Debugging defaults section along with the 3-failed-hypothesis escape hatch and RPI handoff.
 - **@./workflows/codebase-onboarding.md** — Structured orientation for unfamiliar codebases. Use when starting a new project or returning after a long absence — before any task-specific work.
 
 When a workflow applies, follow it rather than jumping straight to implementation. Default: research-plan-implement for features, divergent-design for decisions, spike for unknowns, codebase-onboarding for new projects.

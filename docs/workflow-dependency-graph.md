@@ -13,7 +13,7 @@ codebase-onboarding ──→ research-plan-implement (RPI) ──→ pr-prep
 task-decomposition ───→ RPI                    review-fix-loop
 branch-strategy ──────→ RPI                       │
                                                   └─→ DD / RPI (if architectural)
-superpowers:systematic-debugging ←──────→ RPI    (skill, not a workflow; see CLAUDE.md Debugging defaults)
+systematic debugging ←──────────────────→ RPI    (practice, not a workflow; see CLAUDE.md Debugging defaults)
 spike ←──────────────→ RPI
 spike ←──────────────→ DD
 

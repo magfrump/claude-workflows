@@ -44,7 +44,7 @@ High-throughput multi-branch development with async review?
 
 ### Debugging defaults (not a separate workflow)
 
-Debugging is not a standalone workflow — invoke `superpowers:systematic-debugging` for the core loop, and see CLAUDE.md's "Debugging defaults" section for the local extension, which applies to **all** bug-fixing work (whether inside RPI or standalone). Key points:
+Debugging is not a standalone workflow — CLAUDE.md's "Debugging defaults" section defines the core loop and its extensions, and applies to **all** bug-fixing work (whether inside RPI or standalone). Key points:
 
 1. Reproduce first
 2. Read the error
