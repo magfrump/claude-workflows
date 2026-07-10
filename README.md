@@ -23,10 +23,11 @@ for h in log-usage.sh log-usage-post.sh dd-routing-reminder.sh \
   ln -s ~/claude-workflows/hooks/$h ~/.claude/hooks/$h
 done
 
-# Security hooks (deliberate COPIES, not symlinks — see
+# Security + permission hooks (deliberate COPIES, not symlinks — see
 # docs/working/wire-security-hooks.md for why; re-copy after repo changes)
 cp ~/claude-workflows/hooks/guard-trusted-writes.py \
-   ~/claude-workflows/hooks/web-taint-mark.py ~/.claude/hooks/
+   ~/claude-workflows/hooks/web-taint-mark.py \
+   ~/claude-workflows/hooks/auto-approve-allowed-commands.sh ~/.claude/hooks/
 ```
 
 Hooks are inert until wired into `~/.claude/settings.json` (guarded,
@@ -112,8 +113,7 @@ machine, they must be recreated by hand:
 |---|---|---|
 | `~/.claude/settings.json` | Permissions allow/deny lists, hook wiring, sandbox config | Guarded and deliberately not repo-tracked; changes are recorded prose-style in the `docs/working/wire-*.md` docs |
 | `~/private_reviews/claude_config_audit.py` | Trusted-policy security auditor run by `claude-config-audit.sh` | Deliberately kept outside the repo so a policy-file attacker can't also edit the scanner; see `guides/claude-config-security-checkup.md` |
-| `~/.claude/hooks/auto-approve-allowed-commands.sh` | PreToolUse Bash hook that auto-approves piped commands whose every component is allowlisted | Deployed only — **not versioned anywhere**; depends on `shfmt` + `jq` |
-| `~/.claude/hooks/guard-trusted-writes.py`, `web-taint-mark.py` | Deployed copies of the repo's security hooks | Copies by design; re-copy deliberately after repo changes |
+| `~/.claude/hooks/guard-trusted-writes.py`, `web-taint-mark.py`, `auto-approve-allowed-commands.sh` | Deployed copies of the repo's security/permission hooks | Copies by design; re-copy deliberately after repo changes |
 | `/tmp/cc-web-taint/` | Runtime session-taint markers (0700) | Created on demand; cleared on reboot, which is fine — taint is per-session |
 | `~/.claude/logs/usage.jsonl` | Output of the usage-logging hooks | Created on demand |
 | `C:\Program Files\ClaudeCode\managed-settings.json` (`{}`) + `managed-settings.d\` | WSL2 only: mount points bwrap needs for the Bash sandbox | Create as Windows admin, or **every** Bash call fails at sandbox setup; see `docs/working/wire-security-hooks.md` |
@@ -150,6 +150,7 @@ machine, they must be recreated by hand:
 - `hooks/claude-config-audit.sh` — `PostToolUse` security audit of edited trusted-policy files via the external auditor (see `guides/claude-config-security-checkup.md`)
 - `hooks/guard-trusted-writes.py` — `PreToolUse` gate on writes to trusted-policy files: hard-deny on Bash write primitives targeting protected config paths, ask on soft policy paths when the session is web-tainted
 - `hooks/web-taint-mark.py` — `PostToolUse` marker that records the session ingested web content, feeding the guard's taint check
+- `hooks/auto-approve-allowed-commands.sh` — `PreToolUse` Bash hook that auto-approves piped/compound commands when every component matches an allowlisted prefix (Claude Code's native prefix matching doesn't handle pipes); depends on `shfmt` + `jq`
 
 ### Tests
 Bats suites under `test/` cover hooks (`test/hooks/`), skill contracts (`test/skills/`), scripts (`test/scripts/`), and repo invariants (cross-reference integrity, guide-index sync, workflow required sections). Run a suite with `bats <file>`.
