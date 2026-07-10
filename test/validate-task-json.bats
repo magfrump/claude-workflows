@@ -8,6 +8,14 @@ setup() {
   source "$BATS_TEST_DIRNAME/../scripts/self-improvement.sh"
 
   TEST_TMPDIR=$(mktemp -d)
+
+  # Stub the claude CLI so no sourced self-improvement function can ever
+  # reach the real one (live LLM call + sandbox network prompt).
+  # Convention enforced by test/fixture-hermeticity.bats.
+  mkdir -p "$BATS_TEST_TMPDIR/stub-bin"
+  printf '#!/usr/bin/env bash\nexit 0\n' > "$BATS_TEST_TMPDIR/stub-bin/claude"
+  chmod +x "$BATS_TEST_TMPDIR/stub-bin/claude"
+  PATH="$BATS_TEST_TMPDIR/stub-bin:$PATH"
 }
 
 teardown() {
