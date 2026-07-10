@@ -16,6 +16,15 @@ setup() {
   WORKING_DIR="$TEST_TMPDIR"
   ROUND_HISTORY="$TEST_TMPDIR/round-history.json"
   echo '[]' > "$ROUND_HISTORY"
+
+  # Stub the claude CLI so finalize_round_log's morning-summary refresh can
+  # never reach the real one (live LLM call + sandbox network prompt). These
+  # fixtures currently skip the LLM path only because they carry no verdicts;
+  # the stub makes that hermetic instead of accidental.
+  mkdir -p "$TEST_TMPDIR/bin"
+  printf '#!/usr/bin/env bash\nexit 0\n' > "$TEST_TMPDIR/bin/claude"
+  chmod +x "$TEST_TMPDIR/bin/claude"
+  PATH="$TEST_TMPDIR/bin:$PATH"
 }
 
 teardown() {

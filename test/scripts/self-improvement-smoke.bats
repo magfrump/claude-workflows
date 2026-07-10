@@ -26,6 +26,15 @@ setup() {
   ROUND_HISTORY="$TEST_TMPDIR/round-history.json"
   echo '[]' > "$ROUND_HISTORY"
 
+  # Stub the claude CLI: finalize_round_log refreshes the morning summary,
+  # and with mixed verdicts in the round report _compute_contrastive_pair
+  # would otherwise invoke the real claude -p (live LLM call + sandbox
+  # network prompt). Empty output is handled as "no parseable JSON" → skip.
+  mkdir -p "$TEST_TMPDIR/bin"
+  printf '#!/usr/bin/env bash\nexit 0\n' > "$TEST_TMPDIR/bin/claude"
+  chmod +x "$TEST_TMPDIR/bin/claude"
+  PATH="$TEST_TMPDIR/bin:$PATH"
+
   # --- Fixture: feature-ideas markdown (divergent-design output) ---
   cat > "$TEST_TMPDIR/feature-ideas-round-1.md" <<'IDEAS'
 ## 1. Diverge — Candidate Feature Ideas
