@@ -9,13 +9,36 @@ Reusable workflow definitions for AI coding agents. Works with Claude Code, Anti
 ```bash
 git clone <repo-url> ~/claude-workflows
 mkdir -p ~/.claude ~/.claude/hooks
+
+# Entry point + content directories (symlinks: repo edits are live immediately)
 ln -s ~/claude-workflows/CLAUDE.md ~/.claude/CLAUDE.md
 ln -s ~/claude-workflows/workflows ~/.claude/workflows
 ln -s ~/claude-workflows/skills    ~/.claude/skills
 ln -s ~/claude-workflows/patterns  ~/.claude/patterns
 ln -s ~/claude-workflows/guides    ~/.claude/guides
-ln -s ~/claude-workflows/hooks/log-usage.sh ~/.claude/hooks/log-usage.sh
+
+# Logging and routing hooks (symlinks, same convention)
+for h in log-usage.sh log-usage-post.sh dd-routing-reminder.sh \
+         batch-feedback-routing-reminder.sh claude-config-audit.sh; do
+  ln -s ~/claude-workflows/hooks/$h ~/.claude/hooks/$h
+done
+
+# Security hooks (deliberate COPIES, not symlinks — see
+# docs/working/wire-security-hooks.md for why; re-copy after repo changes)
+cp ~/claude-workflows/hooks/guard-trusted-writes.py \
+   ~/claude-workflows/hooks/web-taint-mark.py ~/.claude/hooks/
 ```
+
+Hooks are inert until wired into `~/.claude/settings.json` (guarded,
+not repo-tracked). The wiring docs hold the exact JSON to paste:
+
+- `docs/working/wire-security-hooks.md` — guard-trusted-writes (PreToolUse,
+  matcher must include `Bash`) + web-taint-mark (PostToolUse), plus the
+  2026-07-09 permissions/sandbox hardening applied alongside them
+- `docs/working/wire-claude-config-audit.md` — post-edit security audit of
+  trusted-policy files
+- `docs/working/wire-batch-feedback-reminder.md` — batch fan-out routing
+  reminder (dd-routing-reminder follows the same pattern)
 
 ### Gemini CLI (Linux/macOS)
 
@@ -79,6 +102,22 @@ Some tools have their own config directories that can also be symlinked:
 
 These are alternatives to the AGENTS.md approach. Use whichever fits your setup — the workflow files are the same either way.
 
+## Configuration outside this repo
+
+The repo is the versioned half of the setup. These files live outside it and
+are referenced by the hooks and instructions above — if you rebuild the
+machine, they must be recreated by hand:
+
+| File | Role | Notes |
+|---|---|---|
+| `~/.claude/settings.json` | Permissions allow/deny lists, hook wiring, sandbox config | Guarded and deliberately not repo-tracked; changes are recorded prose-style in the `docs/working/wire-*.md` docs |
+| `~/private_reviews/claude_config_audit.py` | Trusted-policy security auditor run by `claude-config-audit.sh` | Deliberately kept outside the repo so a policy-file attacker can't also edit the scanner; see `guides/claude-config-security-checkup.md` |
+| `~/.claude/hooks/auto-approve-allowed-commands.sh` | PreToolUse Bash hook that auto-approves piped commands whose every component is allowlisted | Deployed only — **not versioned anywhere**; depends on `shfmt` + `jq` |
+| `~/.claude/hooks/guard-trusted-writes.py`, `web-taint-mark.py` | Deployed copies of the repo's security hooks | Copies by design; re-copy deliberately after repo changes |
+| `/tmp/cc-web-taint/` | Runtime session-taint markers (0700) | Created on demand; cleared on reboot, which is fine — taint is per-session |
+| `~/.claude/logs/usage.jsonl` | Output of the usage-logging hooks | Created on demand |
+| `C:\Program Files\ClaudeCode\managed-settings.json` (`{}`) + `managed-settings.d\` | WSL2 only: mount points bwrap needs for the Bash sandbox | Create as Windows admin, or **every** Bash call fails at sandbox setup; see `docs/working/wire-security-hooks.md` |
+
 ## Contents
 
 ### Entry points (one per tool ecosystem)
@@ -94,20 +133,26 @@ These are alternatives to the AGENTS.md approach. Use whichever fits your setup 
 - `workflows/spike.md` — Timeboxed exploration of unknowns
 - `workflows/branch-strategy.md` — Branch management and dev integration branch workflow for high-throughput feature development
 - `workflows/user-testing-workflow.md` — Planning, running, and interpreting usability tests (HCI-grounded, small-team adapted)
+- `workflows/codebase-onboarding.md` — Structured orientation for unfamiliar codebases
+- `workflows/review-fix-loop.md` — The review → fix → retest → re-review sub-procedure embedded in pr-prep
 
 ### Patterns (shared structural patterns across workflows)
 - `patterns/orchestrated-review.md` — The decompose → parallel dispatch → synthesize → gate pattern, instantiated by task decomposition, divergent design, and PR prep
+- `patterns/requesting-user-input.md` — When and how workflows pause for human decisions
 
-### Human guides (reference for the developer, not agent instructions)
-- `guides/parallel-sessions.md` — How to orchestrate multiple concurrent agent sessions across git worktrees
+### Guides
+`guides/` holds ~20 reference documents (process conventions, debugging examples, skill authoring, security checkup, parallel sessions). See `guides/README.md` for the maintained index — a test (`test/guide-index-sync.bats`) keeps it in sync.
 
-### Hooks (Claude Code hooks)
-- `hooks/log-usage.sh` — Logs skill invocations and workflow file reads to `~/.claude/logs/usage.jsonl` for usage analytics
+### Hooks (Claude Code hooks; wiring under "Setup" above)
+- `hooks/log-usage.sh` / `hooks/log-usage-post.sh` — Log skill/agent invocations and workflow file reads to `~/.claude/logs/usage.jsonl` (shared code in `hooks/lib/`)
 - `hooks/dd-routing-reminder.sh` — `UserPromptSubmit` hook nudging explicit comparison/decision prompts toward the divergent-design workflow (non-blocking)
 - `hooks/batch-feedback-routing-reminder.sh` — `UserPromptSubmit` hook nudging multi-item prompts (batches of feedback) toward parallel-subagent fan-out per decision-tree row 2 (non-blocking); wiring instructions in `docs/working/wire-batch-feedback-reminder.md`
+- `hooks/claude-config-audit.sh` — `PostToolUse` security audit of edited trusted-policy files via the external auditor (see `guides/claude-config-security-checkup.md`)
+- `hooks/guard-trusted-writes.py` — `PreToolUse` gate on writes to trusted-policy files: hard-deny on Bash write primitives targeting protected config paths, ask on soft policy paths when the session is web-tainted
+- `hooks/web-taint-mark.py` — `PostToolUse` marker that records the session ingested web content, feeding the guard's taint check
 
 ### Tests
-- `test/hooks/log-usage.bats` — Bats test suite for the usage-logging hook
+Bats suites under `test/` cover hooks (`test/hooks/`), skill contracts (`test/skills/`), scripts (`test/scripts/`), and repo invariants (cross-reference integrity, guide-index sync, workflow required sections). Run a suite with `bats <file>`.
 
 ### Templates
 - `templates/gitattributes-snippet.txt` — `.gitattributes` rule to collapse `docs/working/` in GitHub PR diffs
@@ -124,7 +169,7 @@ These are alternatives to the AGENTS.md approach. Use whichever fits your setup 
 
 ## Skills
 
-The `.claude/skills/` directory contains Claude Code slash-command skills for draft review and fact-checking, sourced from [tomwalczak/claude-cowork-fact-checking-skills](https://github.com/tomwalczak/claude-cowork-fact-checking-skills).
+`skills/` holds 26 Claude Code skills (symlinked to `~/.claude/skills` by the setup above): review orchestrators (`code-review`, `draft-review`) and their critics (security, performance, API-consistency, architecture, fact-checking), decision helpers (`matrix-analysis`, `what-if-analysis`, `design-space-situating`, `pre-mortem`), persona critiques (`cowen-critique`, `yglesias-critique`, `ai-personas-critique`, business-plan critics), and process skills (`self-eval`, `test-strategy`, `tech-debt-triage`, `dependency-upgrade`, `ui-visual-review`, `divergent-design` router). Each skill's `SKILL.md` frontmatter declares its own triggers. The draft-review/fact-check family was originally seeded from [tomwalczak/claude-cowork-fact-checking-skills](https://github.com/tomwalczak/claude-cowork-fact-checking-skills) and has since diverged.
 
 ## Sharing with collaborators
 
