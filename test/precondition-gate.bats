@@ -19,6 +19,14 @@ setup() {
 
   USAGE_LOG_FILE="$TEST_TMPDIR/usage.jsonl"
   export USAGE_LOG_FILE
+
+  # Stub the claude CLI so no sourced morning-summary function (e.g.
+  # _compute_contrastive_pair) can ever reach the real one (live LLM call
+  # + sandbox network prompt). Enforced by test/fixture-hermeticity.bats.
+  mkdir -p "$BATS_TEST_TMPDIR/stub-bin"
+  printf '#!/usr/bin/env bash\nexit 0\n' > "$BATS_TEST_TMPDIR/stub-bin/claude"
+  chmod +x "$BATS_TEST_TMPDIR/stub-bin/claude"
+  PATH="$BATS_TEST_TMPDIR/stub-bin:$PATH"
 }
 
 teardown() {

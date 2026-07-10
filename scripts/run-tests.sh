@@ -2,6 +2,12 @@
 # Test runner that selectively executes BATS tests by category.
 # Each .bats file must contain a "# @category fast|slow" tag comment.
 #
+# Hermeticity convention (enforced by test/fixture-hermeticity.bats):
+# a suite whose code — including sourced/executed repo scripts — can invoke
+# a network-capable binary (claude, curl, wget, gh) must stub it in setup()
+# (create the binary under a test-local dir prepended to PATH), or opt out
+# with "# @network: allowed — <reason>" in its first 15 lines.
+#
 # Usage:
 #   scripts/run-tests.sh [--fast|--slow|--all]
 #
