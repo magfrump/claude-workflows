@@ -2,7 +2,7 @@
 
 - **Goal**: Place the entire Claude Code process (harness, all tools, agent-writable config) behind an OS-enforced boundary, closing the Read-tool credential-access and self-modification residual vectors at once.
 - **Project state**: standalone security-architecture decision · follows decision 014 and the 2026-07-09 nested-bwrap spike · blocked on one-time host setup (Docker Desktop WSL integration)
-- **Task status**: complete (decision made; implementation not yet started)
+- **Task status**: complete (decision made; implementation scaffolded 2026-07-13 — `.devcontainer/`, `scripts/devcontainer-session.sh` with trust-manifest gate + boundary self-probe, `guides/devcontainer-setup.md`; awaiting first launch + H1/H2 canary verification)
 
 ## Context
 
