@@ -67,7 +67,10 @@ while read -r cidr; do
         exit 1
     fi
     echo "Adding GitHub range $cidr"
-    ipset add allowed-domains "$cidr"
+    # -exist: tolerate duplicates — under set -e a duplicate add would kill
+    # the script mid-loop, after the flush but before the DROP policies,
+    # leaving the container wide open.
+    ipset add -exist allowed-domains "$cidr"
 done < <(echo "$gh_ranges" | jq -r '(.web + .api + .git)[]' | aggregate -q)
 
 # Resolve and add other allowed domains
@@ -107,7 +110,9 @@ for domain in \
             exit 1
         fi
         echo "Adding $ip for $domain"
-        ipset add allowed-domains "$ip"
+        # -exist: domains sharing a CDN can resolve to identical IPs
+        # (claude.ai / console.anthropic.com are both on Cloudflare).
+        ipset add -exist allowed-domains "$ip"
     done < <(echo "$ips")
 done
 

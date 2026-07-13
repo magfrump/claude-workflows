@@ -145,7 +145,15 @@ main() {
 
   check_manifest "$workspace"
   devcontainer up --workspace-folder "$workspace"
-  probe_boundary "$workspace"
+  # `devcontainer up` on an already-running container skips postStartCommand,
+  # so a failed earlier start can leave the firewall unenforced. Re-assert the
+  # baked (image-side, not agent-editable) script once, then re-probe.
+  if ! probe_boundary "$workspace"; then
+    echo "Re-asserting firewall via baked init-firewall.sh, then re-probing ..."
+    devcontainer exec --workspace-folder "$workspace" \
+      sudo /usr/local/bin/init-firewall.sh
+    probe_boundary "$workspace"
+  fi
   exec devcontainer exec --workspace-folder "$workspace" claude "$@"
 }
 
