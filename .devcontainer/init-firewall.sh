@@ -3,7 +3,9 @@
 # (anthropics/claude-code .devcontainer/init-firewall.sh). Local changes for
 # decision 015: extra allowlisted domains for this host's workflows
 # (openrouter.ai, elan.lean-lang.org, claude.ai / console.anthropic.com for
-# CC OAuth login). Keep minimal-diff against upstream.
+# CC OAuth login); statsig.anthropic.com dropped (NXDOMAIN since 2026-07);
+# non-critical resolution failures warn-and-skip instead of hard-failing.
+# Keep minimal-diff against upstream otherwise.
 set -euo pipefail  # Exit on error, undefined vars, and pipeline failures
 IFS=$'\n\t'       # Stricter word splitting
 
@@ -75,7 +77,6 @@ for domain in \
     "registry.npmjs.org" \
     "api.anthropic.com" \
     "sentry.io" \
-    "statsig.anthropic.com" \
     "statsig.com" \
     "marketplace.visualstudio.com" \
     "vscode.blob.core.windows.net" \
@@ -87,8 +88,17 @@ for domain in \
     echo "Resolving $domain..."
     ips=$(dig +noall +answer A "$domain" | awk '$4 == "A" {print $5}')
     if [ -z "$ips" ]; then
-        echo "ERROR: Failed to resolve $domain"
-        exit 1
+        # Local change vs upstream (which hard-fails on any domain): a dead
+        # domain must not brick session start — statsig.anthropic.com went
+        # NXDOMAIN in 2026-07 and did exactly that. Failing closed is safe
+        # here (the domain just stays unreachable), except api.anthropic.com,
+        # without which CC cannot run at all.
+        if [ "$domain" = "api.anthropic.com" ]; then
+            echo "ERROR: Failed to resolve critical domain $domain"
+            exit 1
+        fi
+        echo "WARNING: Failed to resolve $domain - skipping (stays blocked)"
+        continue
     fi
 
     while read -r ip; do
