@@ -1,0 +1,3 @@
+# lean — elan toolchain manager + Lean releases.
+elan.lean-lang.org
+releases.lean-lang.org

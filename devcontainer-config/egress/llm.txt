@@ -1,0 +1,6 @@
+# llm — third-party model APIs.
+#
+# Grant this deliberately. An LLM API is a general-purpose outbound channel: anything
+# the agent can put in a prompt leaves the boundary. It is not in `base` for that reason,
+# and it is not auto-detected — it must be requested explicitly at --register time.
+openrouter.ai

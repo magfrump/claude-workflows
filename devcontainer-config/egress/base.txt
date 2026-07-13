@@ -1,0 +1,14 @@
+# base — always applied, for every project. Keep this list as small as CC can run on.
+# GitHub's IP ranges are added separately from api.github.com/meta, not listed here.
+#
+# Format: one domain per line. Blank lines and #-comments ignored.
+
+# Claude Code itself: API, OAuth login, telemetry.
+api.anthropic.com
+claude.ai
+console.anthropic.com
+sentry.io
+statsig.com
+
+# Node toolchain — CC is an npm package and self-updates from here.
+registry.npmjs.org

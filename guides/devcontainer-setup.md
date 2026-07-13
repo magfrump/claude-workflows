@@ -1,12 +1,17 @@
-# Devcontainer setup — isolated Claude Code sessions (decision 015)
+# Devcontainer setup — isolated Claude Code sessions (decisions 015, 016)
 
 Last verified: 2026-07-13
-Relevant paths: `.devcontainer/`, `scripts/devcontainer-session.sh`, `test/devcontainer-session-functions.bats`
+Relevant paths: `devcontainer-config/`, `test/cc-isolated-functions.bats`, `.devcontainer/` (legacy), `scripts/devcontainer-session.sh` (legacy)
+
+Every CC project on this host runs inside a devcontainer, launched by one
+host-side command: `cc-isolated`.
 
 How this closes decision 015's two residual vectors: every tool (Read included)
-runs inside the container's mount namespace, and host credentials are simply
-not mounted (H1); the enforcement config is gated by a trust manifest stored in
-host `~/.config/claude-devcontainer/`, which the container never sees (H2).
+runs inside the container's mount namespace, and host credentials are simply not
+mounted (H1); the boundary config lives in host `~/.config/claude-devcontainer/`,
+which is in **no bind mount**, so a session cannot see or edit the boundary it
+runs under (H2 — decision 016 strengthened this; under 015 the config was
+committed in-repo and therefore agent-writable, gated only by the trust manifest).
 
 ## One-time host setup
 
@@ -22,66 +27,140 @@ host `~/.config/claude-devcontainer/`, which the container never sees (H2).
      work from inside a session. That is expected, and is part of the security
      story — don't "fix" it.
 2. **devcontainer CLI** (host): `npm install -g @devcontainers/cli`
-3. **Plant the canary** (host): `touch ~/.ssh/canary` — the launcher's H1
-   probe checks this exact file is invisible in-container.
-4. **Bless the enforcement config** (host, after reading the four files
-   yourself): `scripts/devcontainer-session.sh --bless`
+3. **Plant the canary** (host): `touch ~/.ssh/canary` — the launcher's H1 probe
+   checks this exact file is invisible in-container.
+4. **Install the config** (host, from this repo):
+
+   ```bash
+   ./devcontainer-config/install.sh
+   ```
+
+   This copies `devcontainer-config/` to `~/.config/claude-devcontainer/`, links
+   `~/.local/bin/cc-isolated`, and blesses the trust manifest. **Read the diff it
+   prints.** That diff is the rebuild gate: `devcontainer-config/` in this repo is
+   inside a bind mount and *is* agent-writable, but edits there are inert until a
+   human runs this script. Re-run it after any change to the canonical config.
 
 ## Starting a session
 
 ```bash
-scripts/devcontainer-session.sh
+cd ~/any/project && cc-isolated       # the repo containing $PWD
+cc-isolated ~/code/other-project      # or an explicit repo
 ```
 
-The launcher, in order: refuses to run if `.devcontainer/` or itself differs
-from the blessed manifest → `devcontainer up` (bind-mounts the repo at
-/workspace; first run builds the image, ~minutes) → boundary self-probe
-(canary invisible + egress default-deny live) → `devcontainer exec claude`.
+The launcher, in order: resolves the target to a git toplevel (refusing outright
+if you're not in a repo) → checks the installed config against the blessed
+manifest → `devcontainer up --override-config … --id-label cc-project=<id>`
+(bind-mounts that repo at /workspace; first run builds the image, ~minutes) →
+boundary self-probe → `devcontainer exec claude`.
 
-VS Code alternative: "Dev Containers: Reopen in Container" gives the same
-boundary but skips the manifest gate and self-probe — prefer the launcher for
-agent sessions; use VS Code attach for interactive poking.
+Target repos get **zero** new files. Nothing is committed into them, and nothing
+needs to be.
 
-First session only: run `claude` login inside the container. Credentials and
-memory persist in the named volume `claude-workflows-claude-config` (mounted
-at /home/node/.claude), surviving rebuilds. Per decision 015, **never** mount
-host `~/.claude` or any host credential directory.
+First session per project: run `claude` login inside the container. Credentials
+and memory persist in that project's own named volume
+(`cc-<project-id>-claude-config`, mounted at /home/node/.claude) and survive
+rebuilds. Each project gets its **own** volume — decision 016 H6 — so a
+compromised session in one project cannot read another's credentials or history.
+The cost is one login per project. Per decision 015, **never** mount host
+`~/.claude` or any host credential directory.
 
-Git push auth: the container gets no host SSH keys by design. Use a
-fine-grained PAT scoped to the repos the agent works on (`gh auth login`
-inside the container, or `GH_TOKEN`), never your real host credentials.
+Git push auth: the container gets no host SSH keys by design. Use a fine-grained
+PAT scoped to the repos the agent works on (`gh auth login` inside the container,
+or `GH_TOKEN`), never your real host credentials.
 
-## Verifying the boundary (H1/H2 canary probes)
+## Egress profiles
 
-The Continue trigger in decision 015 requires these to pass:
+Egress is default-deny. Every project gets the `base` allowlist (Anthropic API +
+OAuth, npm, GitHub's IP ranges). Anything more is granted per project, **host-side
+only**:
 
-- **H1 (credential denial):** inside a session, ask CC to read
-  `~/.ssh/canary` (host path) via the Read tool AND via Bash. Both must fail —
-  the file simply doesn't exist in the container's namespace. The launcher
-  probes the Bash half automatically at every start.
-- **H2 (control-plane immutability):** edit `.devcontainer/init-firewall.sh`
-  from inside a session, exit, and relaunch. The launcher must refuse with
-  "enforcement files changed since last bless". (The in-container edit is
-  possible — the repo is bind-mounted rw — but it cannot take effect without
-  a human re-bless at the rebuild gate. Revert with git after the test.)
-- **Egress:** `curl https://example.com` inside must fail; `git fetch` /
-  `api.anthropic.com` must work. `init-firewall.sh` self-verifies both at
-  container start, and the launcher re-probes example.com per session.
+```bash
+cc-isolated --register ~/code/api --profile python     # base + PyPI
+cc-isolated --register ~/code/tool --profile rust,lean # profiles compose
+cc-isolated --list                                     # who has what
+```
+
+Registering re-blesses (a project's egress *is* boundary config) and the next
+launch rebuilds that project's image. Available profiles are the files in
+`devcontainer-config/egress/`: `base`, `python`, `rust`, `lean`, `llm`, `vscode`.
+
+Two deliberate choices here:
+
+- **The repo never chooses its own egress.** `cc-isolated` will *suggest* a profile
+  from what it sees in the repo (`pyproject.toml` → python), but never applies it.
+  Letting an untrusted workspace grant itself network access would defeat the point.
+- **`llm` (openrouter.ai) is not in `base` and is never suggested.** An LLM API is a
+  general-purpose outbound channel — anything the agent can put in a prompt leaves
+  the boundary. Grant it deliberately or not at all.
+
+An agent inside a container cannot widen its own allowlist: the profile is written
+root-owned to `/etc/cc-egress-profile` at **build** time, `node` has NOPASSWD sudo
+for `init-firewall.sh` and nothing else, and sudo's `env_reset` strips the
+environment. Widening requires a host-side re-register, re-bless, and rebuild.
+
+## Verifying the boundary
+
+The launcher probes four things at every start and refuses to exec `claude` if any
+fail:
+
+- **H1 (credential denial):** `~/.ssh/canary` and the host home are invisible inside.
+- **Egress:** `https://example.com` is unreachable (default-deny is live).
+- **Workspace identity:** `/workspace` really is the repo you asked for — the git
+  HEAD+remote fingerprint is computed on the host and in the container and compared.
+  This is what catches an `--id-label` alias silently attaching you to another
+  project's container.
+- **H6 (volume not shared):** `/home/node/.claude` is stamped with this project's id;
+  a mismatch means two projects are sharing one credential volume.
+
+Do these by hand for the decision-015 Continue trigger:
+
+- **H1 both ways:** inside a session, ask CC to read `~/.ssh/canary` (host path) via
+  the Read tool *and* via Bash. Both must fail.
+- **H2 (control-plane immutability):** edit `devcontainer-config/init-firewall.sh`
+  from inside a session, exit, relaunch. Nothing happens — the edit is inert, because
+  the launcher reads `~/.config/claude-devcontainer/`, which the container cannot see.
+  Now run `./devcontainer-config/install.sh`: it must show your edit in the diff and
+  wait for approval. That is the gate. (Revert with git afterwards.)
 - **Tests:** `bats test/` green inside the container.
+
+## Migrating from the 015 per-repo launcher
+
+`scripts/devcontainer-session.sh` and `.devcontainer/` are the decision-015
+single-repo path. They still work for *this* repo and are kept until the new path is
+verified on the host. Once `cc-isolated` has launched a session here and in one other
+project, delete them:
+
+```bash
+git rm -r .devcontainer scripts/devcontainer-session.sh test/devcontainer-session-functions.bats
+rm -f ~/.config/claude-devcontainer/claude-workflows.sha256   # the old per-repo manifest
+```
+
+Do not maintain both. Two copies of `init-firewall.sh` is exactly the drift decision
+016 exists to prevent.
 
 ## Known limits and maintenance
 
+- **VS Code Dev Containers is not supported.** The extension discovers
+  `.devcontainer/devcontainer.json` in the workspace and does not consume
+  `--override-config`, so IDE-attach has no boundary config to find. The CLI launcher
+  is the supported entry point (decision 016, soft constraint S6, knowingly unmet). If
+  you need IDE attach, that's the trigger to implement candidate [4] (hybrid) from the
+  decision record.
 - **Firewall allowlist is resolve-at-start:** domains behind rotating CDN IPs
   (openrouter.ai is on Cloudflare) can go stale mid-session; rerun
-  `sudo /usr/local/bin/init-firewall.sh` inside the container if a previously
-  working host starts timing out.
-- **Image lifecycle:** `CLAUDE_CODE_VERSION=latest` is baked at build time.
-  Rebuild (`devcontainer up --remove-existing-container` after a `--bless` if
-  config changed) when CC falls behind; staleness >1 version for >2 weeks is
-  a decision-015 Revisit trigger.
+  `sudo /usr/local/bin/init-firewall.sh` inside the container if a previously working
+  host starts timing out.
+- **Image lifecycle:** `CLAUDE_CODE_VERSION=latest` is baked at build time. Rebuild
+  (`devcontainer up --remove-existing-container …` after an install + bless) when CC
+  falls behind; staleness >1 version for >2 weeks is a decision-015 Revisit trigger.
+  The egress profile is the *last* layer in the Dockerfile, so projects on different
+  profiles still share every heavy layer.
+- **One config, one blast radius:** a bad edit to the central config breaks every
+  project at once. After changing it, smoke-test with
+  `cc-isolated --probe-only <repo>` on more than one project before relying on it.
 - **SI loop / cron (H5, unverified):** overnight runs need reworking to
-  `devcontainer exec` non-interactively. Do not rely on overnight isolation
-  until this is proven — decision 015 lists it as a Revisit trigger.
-- **Drift-back hazard:** if >20% of agent work is still in host sessions
-  after week 2, the boundary is failing behaviorally (Revisit trigger). The
-  2-week Continue-trigger clock starts at first working devcontainer session.
+  `devcontainer exec` non-interactively. Do not rely on overnight isolation until this
+  is proven — decision 015 lists it as a Revisit trigger.
+- **Drift-back hazard:** if >20% of agent work is still in host sessions after week 2,
+  the boundary is failing behaviorally (Revisit trigger).

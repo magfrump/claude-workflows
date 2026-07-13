@@ -1,0 +1,60 @@
+{
+  // Central, project-agnostic devcontainer config (decision 016).
+  //
+  // This file is NOT meant to live in a target repo. It is installed to
+  // ~/.config/claude-devcontainer/ by install.sh and passed to the CLI with
+  // `--override-config`, so it sits outside every bind mount and no session can
+  // edit the boundary it runs under. Relative paths below (build.dockerfile,
+  // build.context) resolve against THIS file's directory, not the workspace —
+  // see the CLI's resolveConfigFilePath.
+  //
+  // The ${localEnv:*} values are exported by cc-isolated.sh before it invokes the
+  // CLI. They are what make one config serve N projects.
+  "name": "cc-isolated (${localEnv:CC_PROJECT_NAME})",
+
+  "build": {
+    "dockerfile": "Dockerfile",
+    "context": ".",
+    "args": {
+      "TZ": "${localEnv:TZ:America/Los_Angeles}",
+      "CLAUDE_CODE_VERSION": "latest",
+      "GIT_DELTA_VERSION": "0.18.2",
+      "ZSH_IN_DOCKER_VERSION": "1.2.0",
+      "CC_EGRESS_PROFILE": "${localEnv:CC_EGRESS_PROFILE}"
+    }
+  },
+
+  "runArgs": [
+    "--cap-add=NET_ADMIN",
+    "--cap-add=NET_RAW"
+  ],
+
+  "remoteUser": "node",
+
+  // Volumes are keyed on CC_PROJECT_ID (a hash of the target repo's absolute path),
+  // so each project gets its OWN /home/node/.claude. Decision 016 H6: sharing one
+  // volume across projects would let a compromised session in project A read
+  // project B's credentials, memory, and session history.
+  "mounts": [
+    "source=cc-${localEnv:CC_PROJECT_ID}-bashhistory,target=/commandhistory,type=volume",
+    "source=cc-${localEnv:CC_PROJECT_ID}-claude-config,target=/home/node/.claude,type=volume"
+  ],
+
+  "containerEnv": {
+    "NODE_OPTIONS": "--max-old-space-size=4096",
+    "CLAUDE_CONFIG_DIR": "/home/node/.claude",
+    "POWERLEVEL9K_DISABLE_GITSTATUS": "true",
+    // Read by the launcher's post-start volume-identity assertion.
+    "CC_PROJECT_ID": "${localEnv:CC_PROJECT_ID}",
+    "GIT_AUTHOR_NAME": "magfrump",
+    "GIT_AUTHOR_EMAIL": "magfrump@gmail.com",
+    "GIT_COMMITTER_NAME": "magfrump",
+    "GIT_COMMITTER_EMAIL": "magfrump@gmail.com"
+  },
+
+  "workspaceMount": "source=${localWorkspaceFolder},target=/workspace,type=bind,consistency=delegated",
+  "workspaceFolder": "/workspace",
+
+  "postStartCommand": "sudo /usr/local/bin/init-firewall.sh",
+  "waitFor": "postStartCommand"
+}

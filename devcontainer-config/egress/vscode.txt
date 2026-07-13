@@ -1,0 +1,6 @@
+# vscode — extension marketplace, for the (unsupported) IDE-attach path.
+# Not in `base`: the CLI launcher is the supported entry point, and a session that
+# never opens VS Code has no reason to reach the marketplace.
+marketplace.visualstudio.com
+vscode.blob.core.windows.net
+update.code.visualstudio.com

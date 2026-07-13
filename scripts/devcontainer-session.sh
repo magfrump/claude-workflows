@@ -2,6 +2,15 @@
 # devcontainer-session.sh — launch an isolated Claude Code session inside the
 # repo's devcontainer (decision 015: CC process isolation via Docker devcontainer).
 #
+# DEPRECATED (decision 016) — superseded by devcontainer-config/cc-isolated.sh.
+# This launcher only ever works for THIS repo: it derives its workspace from its own
+# path, so running it from another project silently opens a session on claude-workflows.
+# The replacement takes the workspace as an argument, serves every project from one
+# host-side config, and keeps that config out of every bind mount.
+#   Migrate:  ./devcontainer-config/install.sh  &&  cc-isolated
+# Kept only until the new path is verified on the host; then delete it and .devcontainer/
+# (see guides/devcontainer-setup.md → "Migrating from the 015 per-repo launcher").
+#
 # Run this from the HOST (your normal WSL terminal), never from inside a session:
 #   scripts/devcontainer-session.sh            # verify config trust + boundary, then start claude
 #   scripts/devcontainer-session.sh --bless    # re-bless .devcontainer/ after YOU reviewed a change

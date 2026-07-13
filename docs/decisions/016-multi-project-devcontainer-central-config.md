@@ -2,7 +2,7 @@
 
 - **Goal**: Decide how decision 015's devcontainer boundary is made available to every CC project on this host, rather than only the `claude-workflows` repo.
 - **Project state**: standalone follow-on to decision 015 · not blocked · implementation not yet started
-- **Task status**: complete (decision made 2026-07-13; DD working doc: `docs/working/dd-multi-project-devcontainer.md`; implementation pending — see Consequences)
+- **Task status**: complete (decision made 2026-07-13; DD working doc: `docs/working/dd-multi-project-devcontainer.md`; implemented 2026-07-13 in `devcontainer-config/` — 28 unit tests green, shellcheck clean; **awaiting host-side verification**: `install.sh` + a first `cc-isolated` launch in two projects, after which the legacy `.devcontainer/` and `scripts/devcontainer-session.sh` are deleted)
 
 ## Context
 
