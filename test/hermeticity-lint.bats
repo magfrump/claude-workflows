@@ -448,6 +448,25 @@ lint() {
   [ "$status" -eq 0 ]
 }
 
+@test "bash: a \`)\` in a string inside \$(...) does not hide a later spawn" {
+  # The command-substitution scanner matched the closing ) without quote
+  # awareness, so a `)` inside an echo string — `\$(echo "done :)" && curl x)` —
+  # closed the sub early and the real command after it vanished. A fail-open, and
+  # `:)` in echo strings is common. (The Python paren walk already guards this
+  # via _string_end; the shell scanner now does too.)
+  local fx="$FAKE/test/cmdsub.bats"
+  printf '#!/usr/bin/env bats\n' > "$fx"
+  printf '@test "smiley then fetch" {\n' >> "$fx"
+  # curl is inside $( … ), so it is genuinely in command position; keep it a
+  # printf ARG so this suite's own source has no bare call site.
+  printf '  msg="$(echo "done :)" && %s https://example.com)"\n' curl >> "$fx"
+  printf '}\n' >> "$fx"
+
+  run lint --lang bash
+  [ "$status" -eq 1 ]
+  [[ "$output" == *"can spawn \`curl\`"* ]]
+}
+
 # --- python: the second adapter (proves the contract generalizes) ----------
 
 @test "python: flags a subprocess spawn of a network binary" {

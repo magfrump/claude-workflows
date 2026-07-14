@@ -88,9 +88,28 @@ def _cmdsubs(text: str) -> tuple[str, list[str]]:
     out, bodies, i, n = [], [], 0, len(text)
     while i < n:
         if text.startswith("$(", i):
-            depth, j = 1, i + 2
+            # Match the closing ) with quote awareness: a ) inside a string
+            # literal — `$(echo "done :)" && curl x)` — must NOT close the
+            # substitution early, or the real command after it is never seen (a
+            # fail-open, and `:)`/`)` in echo strings is common). This mirrors
+            # what _string_end does for the Python paren walk.
+            depth, j, q = 1, i + 2, None
             while j < n and depth:
-                depth += (text[j] == "(") - (text[j] == ")")
+                c = text[j]
+                if q:
+                    if c == "\\" and q == '"' and j + 1 < n:
+                        j += 2
+                        continue
+                    if c == q:
+                        q = None
+                    j += 1
+                    continue
+                if c in "'\"":
+                    q = c
+                elif c == "(":
+                    depth += 1
+                elif c == ")":
+                    depth -= 1
                 j += 1
             bodies.append(text[i + 2 : max(j - 1, i + 2)])
             out.append(";")
