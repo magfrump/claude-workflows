@@ -56,7 +56,10 @@ while [[ $# -gt 0 ]]; do
     --no-loopback) loopback=0; shift ;;
     --)            shift; cmd=("$@"); break ;;
     -h|--help)
-      grep '^#' "$0" | sed 's/^# \{0,1\}//'
+      # Print ONLY the leading header block. `grep '^#'` would splice in the
+      # shebang (as `!/usr/bin/env bash`) and every internal rationale comment
+      # further down the file. Skip line 1 and stop at the first non-`#` line.
+      awk 'NR==1{next} /^#/{sub(/^# ?/,"");print;next} {exit}' "$0"
       exit 0
       ;;
     *)
@@ -184,6 +187,15 @@ if [[ "$primitive" == "bwrap" ]]; then
   # pinned to that tmpfs so an inherited TMPDIR cannot point the same mktemp back
   # at the read-only tree. (This is the profile the spike demoed:
   # docs/working/spike-nested-bwrap-fixture-confinement.md, "Known invariants".)
+  #
+  # Env is INHERITED, not cleared — a deliberate divergence from the spike's
+  # --clearenv invariant. That invariant was scoped to a bats-only profile with a
+  # known allowlist; a language-agnostic runner cannot --clearenv without
+  # reconstructing a per-toolchain allowlist (PATH, HOME, CARGO_HOME, npm/pip/go
+  # caches, BATS_*), and a wrong allowlist breaks suites silently (pre-mortem
+  # narrative 3). The outer proxy creds that --clearenv would have hidden are dead
+  # weight for egress here (the netns has no route and no proxy listener) but stay
+  # readable by fixture code, so treat scratch output as untrusted (narrative 4).
   exec bwrap \
     --ro-bind / / \
     --dev /dev \
