@@ -136,8 +136,8 @@ Two failure modes worth recognizing on sight:
   Python version needs a different base image, not a wider allowlist.
 
 Note the asymmetry with the hermeticity story: `uv pip install` reaching PyPI is a
-*build* step, not a *test* step. Test suites are still expected to be hermetic — see
-[test-hermeticity.md](test-hermeticity.md).
+*build* step, not a *test* step. Test suites are still expected to be hermetic (decision
+017, `guides/test-hermeticity.md` once that branch lands).
 
 ## Verifying the boundary
 
