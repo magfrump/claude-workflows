@@ -8,6 +8,11 @@
 # Usage: Set REPORT_PATH to a generated report, then run:
 #   REPORT_PATH=docs/reviews/pre-mortem.md bats test/skills/pre-mortem-format.bats
 
+# `run !` and `run -N` are bats >= 1.5 features. Declaring the requirement makes
+# bats enforce it (hard error on an older bats) instead of emitting BW02 and
+# leaving it an open question whether the flag-carrying assertions really assert.
+bats_require_minimum_version 1.5.0
+
 load helpers
 
 setup() {
@@ -105,10 +110,10 @@ setup() {
 
 @test "report does not contain what-if-analysis structural sections" {
   # what-if-analysis is the prospective sibling; pre-mortem is narrative-retrospective.
-  ! echo "$REPORT_CONTENT" | grep -qiE '^## .*Assumptions Examined'
-  ! echo "$REPORT_CONTENT" | grep -qiE '^## .*Consequence Chains'
-  ! echo "$REPORT_CONTENT" | grep -qiE '^## .*Coupling Analysis'
-  ! echo "$REPORT_CONTENT" | grep -qiE '^## .*Confidence Inversions'
+  run ! grep -qiE '^## .*Assumptions Examined' <<< "$REPORT_CONTENT"
+  run ! grep -qiE '^## .*Consequence Chains' <<< "$REPORT_CONTENT"
+  run ! grep -qiE '^## .*Coupling Analysis' <<< "$REPORT_CONTENT"
+  run ! grep -qiE '^## .*Confidence Inversions' <<< "$REPORT_CONTENT"
   ! echo "$REPORT_CONTENT" | grep -qiE '^## .*Reversibility Map'
 }
 

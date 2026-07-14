@@ -11,7 +11,10 @@
 #   6. The hook never blocks tool execution (always exits 0, no stdout)
 #   7. The hook survives malformed input and missing directories
 
-HOOK="$HOME/.claude/hooks/log-usage.sh"
+# Exercise the repo's hook, not the deployed copy under ~/.claude: the repo is
+# the source of truth (the deployed hook is a symlink back to it), so this keeps
+# the suite hermetic — it passes without the config having been installed.
+HOOK="${LOG_USAGE_HOOK:-$BATS_TEST_DIRNAME/../../hooks/log-usage.sh}"
 
 setup() {
   TEST_LOG=$(mktemp)

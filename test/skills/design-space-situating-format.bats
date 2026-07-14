@@ -7,6 +7,11 @@
 # Usage: Set REPORT_PATH to a generated record, then run:
 #   REPORT_PATH=docs/working/situating-<slug>.md bats test/skills/design-space-situating-format.bats
 
+# `run !` and `run -N` are bats >= 1.5 features. Declaring the requirement makes
+# bats enforce it (hard error on an older bats) instead of emitting BW02 and
+# leaving it an open question whether the flag-carrying assertions really assert.
+bats_require_minimum_version 1.5.0
+
 load helpers
 
 setup() {
@@ -192,28 +197,28 @@ setup() {
 
 @test "record does not contain matrix-analysis scoring rubric" {
   # Matrix-analysis uses ++/+/-/? rating cells; situating uses named placements.
-  ! echo "$REPORT_CONTENT" | grep -qE '^## Comparison Matrix'
+  run ! grep -qE '^## Comparison Matrix' <<< "$REPORT_CONTENT"
   ! echo "$REPORT_CONTENT" | grep -qE '^## Tradeoff Analysis'
 }
 
 @test "record does not contain what-if-analysis failure-mode sections" {
-  ! echo "$REPORT_CONTENT" | grep -qiE '^## Failure Modes'
+  run ! grep -qiE '^## Failure Modes' <<< "$REPORT_CONTENT"
   ! echo "$REPORT_CONTENT" | grep -qiE '^## Pre.mortem'
 }
 
 @test "record does not contain tech-debt-triage cost/urgency fields" {
-  ! echo "$REPORT_CONTENT" | grep -qE '^\*\*Carrying Cost:\*\*'
+  run ! grep -qE '^\*\*Carrying Cost:\*\*' <<< "$REPORT_CONTENT"
   ! echo "$REPORT_CONTENT" | grep -qE '^\*\*Fix Cost:\*\*'
 }
 
 @test "record does not contain reviewer-style severity/verdict scales" {
-  ! echo "$REPORT_CONTENT" | grep -qiE '^\*\*Severity:\*\* (Critical|High|Medium|Low|Informational)$'
+  run ! grep -qiE '^\*\*Severity:\*\* (Critical|High|Medium|Low|Informational)$' <<< "$REPORT_CONTENT"
   ! echo "$REPORT_CONTENT" | grep -qiE '^\*\*Verdict:\*\* (Accurate|Verified|Incorrect|Stale)$'
 }
 
 @test "record is a frame, not a recommendation — does not pick a candidate" {
   # Situating records should not contain decision-output language from DD or matrix-analysis.
-  ! echo "$REPORT_CONTENT" | grep -qiE '^## Recommendation'
-  ! echo "$REPORT_CONTENT" | grep -qiE '^## Decision'
+  run ! grep -qiE '^## Recommendation' <<< "$REPORT_CONTENT"
+  run ! grep -qiE '^## Decision' <<< "$REPORT_CONTENT"
   ! echo "$REPORT_CONTENT" | grep -qiE '^## Chosen Candidate'
 }

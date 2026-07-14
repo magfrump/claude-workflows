@@ -6,6 +6,11 @@
 #   REPORT_PATH=docs/reviews/business-plan-critique-unit-economics.md \
 #     bats test/skills/business-plan-critique-unit-economics-format.bats
 
+# `run !` and `run -N` are bats >= 1.5 features. Declaring the requirement makes
+# bats enforce it (hard error on an older bats) instead of emitting BW02 and
+# leaving it an open question whether the flag-carrying assertions really assert.
+bats_require_minimum_version 1.5.0
+
 load helpers
 
 setup() {
@@ -64,10 +69,10 @@ setup() {
 
 @test "report does not contain moat-critique section headings" {
   # Moat sister skill owns these lenses; this critique must stay narrow.
-  ! echo "$REPORT_CONTENT" | grep -qiE '^## .*Moat Type Assessment'
-  ! echo "$REPORT_CONTENT" | grep -qiE '^## .*Distribution Channel Assessment'
-  ! echo "$REPORT_CONTENT" | grep -qiE '^## .*Switching Cost Assessment'
-  ! echo "$REPORT_CONTENT" | grep -qiE '^## .*Network Effect Assessment'
+  run ! grep -qiE '^## .*Moat Type Assessment' <<< "$REPORT_CONTENT"
+  run ! grep -qiE '^## .*Distribution Channel Assessment' <<< "$REPORT_CONTENT"
+  run ! grep -qiE '^## .*Switching Cost Assessment' <<< "$REPORT_CONTENT"
+  run ! grep -qiE '^## .*Network Effect Assessment' <<< "$REPORT_CONTENT"
   ! echo "$REPORT_CONTENT" | grep -qiE '^## .*Competitive Response Assessment'
 }
 
@@ -75,8 +80,8 @@ setup() {
 
 @test "report does not contain Cowen-specific analytical sections" {
   # Cowen critiques focus on intellectual rigor, not unit-economics math.
-  ! echo "$REPORT_CONTENT" | grep -qiE '^#{2,3} .*Argument.*Decomposed'
-  ! echo "$REPORT_CONTENT" | grep -qiE '^#{2,3} .*Boring Explanation'
+  run ! grep -qiE '^#{2,3} .*Argument.*Decomposed' <<< "$REPORT_CONTENT"
+  run ! grep -qiE '^#{2,3} .*Boring Explanation' <<< "$REPORT_CONTENT"
   ! echo "$REPORT_CONTENT" | grep -qiE '^#{2,3} .*Survives the Inversion'
 }
 
@@ -84,14 +89,14 @@ setup() {
 
 @test "report does not contain Yglesias-specific analytical sections" {
   # Yglesias critiques focus on policy mechanism, not per-customer math.
-  ! echo "$REPORT_CONTENT" | grep -qiE '^#{2,3} .*Goal vs\.?\s*(the )?Mechanism'
-  ! echo "$REPORT_CONTENT" | grep -qiE '^#{2,3} .*Boring Lever'
+  run ! grep -qiE '^#{2,3} .*Goal vs\.?\s*(the )?Mechanism' <<< "$REPORT_CONTENT"
+  run ! grep -qiE '^#{2,3} .*Boring Lever' <<< "$REPORT_CONTENT"
   ! echo "$REPORT_CONTENT" | grep -qiE '^#{2,3} .*Follow the Money'
 }
 
 # --- No leakage from reviewer skills (severity/verdict scales) ---
 
 @test "report does not contain severity/verdict scales from reviewer skills" {
-  ! echo "$REPORT_CONTENT" | grep -qiE '^\*\*Severity:\*\* (Critical|High|Medium|Low|Informational)$'
+  run ! grep -qiE '^\*\*Severity:\*\* (Critical|High|Medium|Low|Informational)$' <<< "$REPORT_CONTENT"
   ! echo "$REPORT_CONTENT" | grep -qiE '^\*\*Verdict:\*\* (Accurate|Verified|Incorrect|Stale)$'
 }

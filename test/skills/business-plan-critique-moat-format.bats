@@ -6,6 +6,11 @@
 #   REPORT_PATH=docs/reviews/business-plan-critique-moat.md \
 #     bats test/skills/business-plan-critique-moat-format.bats
 
+# `run !` and `run -N` are bats >= 1.5 features. Declaring the requirement makes
+# bats enforce it (hard error on an older bats) instead of emitting BW02 and
+# leaving it an open question whether the flag-carrying assertions really assert.
+bats_require_minimum_version 1.5.0
+
 load helpers
 
 setup() {
@@ -92,23 +97,23 @@ setup() {
   # A passing mention is fine; the skill must not be using the unit-economics
   # vocabulary as its primary analytical frame. Block the obvious phrases that
   # would indicate scope creep into the sister skill.
-  ! echo "$REPORT_CONTENT" | grep -qiE '\bLTV/CAC ratio\b'
-  ! echo "$REPORT_CONTENT" | grep -qiE '\bcontribution margin per customer\b'
+  run ! grep -qiE '\bLTV/CAC ratio\b' <<< "$REPORT_CONTENT"
+  run ! grep -qiE '\bcontribution margin per customer\b' <<< "$REPORT_CONTENT"
   ! echo "$REPORT_CONTENT" | grep -qiE '\bpayback period\b.*\bmonths\b.*\bbenchmark\b'
 }
 
 # --- No leakage from neighboring critique skills ---
 
 @test "report does not contain Cowen-specific analytical sections" {
-  ! echo "$REPORT_CONTENT" | grep -qiE '^## .*Argument Decomposed'
-  ! echo "$REPORT_CONTENT" | grep -qiE '^## .*Survives the Inversion'
+  run ! grep -qiE '^## .*Argument Decomposed' <<< "$REPORT_CONTENT"
+  run ! grep -qiE '^## .*Survives the Inversion' <<< "$REPORT_CONTENT"
   ! echo "$REPORT_CONTENT" | grep -qiE '^## .*Boring Explanation'
 }
 
 @test "report does not contain Yglesias-specific analytical sections" {
-  ! echo "$REPORT_CONTENT" | grep -qiE '^## .*Goal vs.*Mechanism'
-  ! echo "$REPORT_CONTENT" | grep -qiE '^## .*Boring Lever'
-  ! echo "$REPORT_CONTENT" | grep -qiE '^## .*Follow the Money'
+  run ! grep -qiE '^## .*Goal vs.*Mechanism' <<< "$REPORT_CONTENT"
+  run ! grep -qiE '^## .*Boring Lever' <<< "$REPORT_CONTENT"
+  run ! grep -qiE '^## .*Follow the Money' <<< "$REPORT_CONTENT"
   ! echo "$REPORT_CONTENT" | grep -qiE '^## .*Org Chart'
 }
 

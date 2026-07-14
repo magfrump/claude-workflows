@@ -5,6 +5,11 @@
 # Usage: Set REPORT_PATH to a generated report, then run:
 #   REPORT_PATH=docs/reviews/cowen-critique.md bats test/skills/cowen-critique-format.bats
 
+# `run !` and `run -N` are bats >= 1.5 features. Declaring the requirement makes
+# bats enforce it (hard error on an older bats) instead of emitting BW02 and
+# leaving it an open question whether the flag-carrying assertions really assert.
+bats_require_minimum_version 1.5.0
+
 load helpers
 
 setup() {
@@ -56,18 +61,18 @@ setup() {
 # --- No leakage from reviewer / fact-check / yglesias skills ---
 
 @test "report does not contain severity/verdict scales from reviewer skills" {
-  ! echo "$REPORT_CONTENT" | grep -qiE '^\*\*Severity:\*\* (Critical|High|Medium|Low|Informational)$'
+  run ! grep -qiE '^\*\*Severity:\*\* (Critical|High|Medium|Low|Informational)$' <<< "$REPORT_CONTENT"
   ! echo "$REPORT_CONTENT" | grep -qiE '^\*\*Verdict:\*\* (Accurate|Verified|Incorrect|Stale)$'
 }
 
 @test "report does not contain yglesias mechanism-critique section headings" {
   # Cowen critiques focus on argument rigor, not mechanism feasibility.
   # These are yglesias-critique's prescribed section names.
-  ! echo "$REPORT_CONTENT" | grep -qiE '^## .*Goal vs\.? the Mechanism'
-  ! echo "$REPORT_CONTENT" | grep -qiE '^## .*Boring Lever'
-  ! echo "$REPORT_CONTENT" | grep -qiE '^## Follow the Money'
-  ! echo "$REPORT_CONTENT" | grep -qiE '^## .*Cost Disease'
-  ! echo "$REPORT_CONTENT" | grep -qiE '^## .*Scale Test'
-  ! echo "$REPORT_CONTENT" | grep -qiE '^## .*Org Chart'
+  run ! grep -qiE '^## .*Goal vs\.? the Mechanism' <<< "$REPORT_CONTENT"
+  run ! grep -qiE '^## .*Boring Lever' <<< "$REPORT_CONTENT"
+  run ! grep -qiE '^## Follow the Money' <<< "$REPORT_CONTENT"
+  run ! grep -qiE '^## .*Cost Disease' <<< "$REPORT_CONTENT"
+  run ! grep -qiE '^## .*Scale Test' <<< "$REPORT_CONTENT"
+  run ! grep -qiE '^## .*Org Chart' <<< "$REPORT_CONTENT"
   ! echo "$REPORT_CONTENT" | grep -qiE '^## .*Adoption Survival'
 }

@@ -22,6 +22,11 @@
 #
 # Usage: bats test/skills/arithmetic-eval-format.bats
 
+# `run !` and `run -N` are bats >= 1.5 features. Declaring the requirement makes
+# bats enforce it (hard error on an older bats) instead of emitting BW02 and
+# leaving it an open question whether the flag-carrying assertions really assert.
+bats_require_minimum_version 1.5.0
+
 setup() {
   REPO_ROOT="$(cd "$BATS_TEST_DIRNAME/../.." && pwd)"
   SKILL_PATH="$REPO_ROOT/skills/arithmetic-eval/SKILL.md"
@@ -148,6 +153,6 @@ setup() {
 @test "skill does not prescribe a report-style structure" {
   # arithmetic-eval is a utility, not a report producer. If someone adds report
   # scaffolding (Verdict/Confidence/Claim sections) the skill is being misused.
-  ! echo "$SKILL_CONTENT" | grep -qE '^## Claim [0-9]+'
+  run ! grep -qE '^## Claim [0-9]+' <<< "$SKILL_CONTENT"
   ! echo "$SKILL_CONTENT" | grep -qE '^\*\*Verdict:\*\*'
 }

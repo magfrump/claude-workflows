@@ -15,6 +15,13 @@
 # ~/private_reviews/claude_config_audit.py; the integration tests at the bottom
 # skip when it is absent.
 
+load ../lib/hermetic-env
+
+# Several tests below assert the hook is *silent* ([ -z "$output" ]). bats folds
+# stderr into $output, so an un-installed ambient locale would make every bash
+# subprocess emit a setlocale warning and fail those assertions.
+pin_hermetic_locale
+
 HOOK="$BATS_TEST_DIRNAME/../../hooks/claude-config-audit.sh"
 REAL_AUDIT="$HOME/private_reviews/claude_config_audit.py"
 

@@ -5,6 +5,11 @@
 # Usage: Set REPORT_PATH to a generated report, then run:
 #   REPORT_PATH=docs/reviews/yglesias-critique.md bats test/skills/yglesias-critique-format.bats
 
+# `run !` and `run -N` are bats >= 1.5 features. Declaring the requirement makes
+# bats enforce it (hard error on an older bats) instead of emitting BW02 and
+# leaving it an open question whether the flag-carrying assertions really assert.
+bats_require_minimum_version 1.5.0
+
 load helpers
 
 setup() {
@@ -68,25 +73,25 @@ setup() {
 # --- No leakage from reviewer / fact-check / sister critique skills ---
 
 @test "report does not contain severity/verdict scales from reviewer skills" {
-  ! echo "$REPORT_CONTENT" | grep -qiE '^\*\*Severity:\*\* (Critical|High|Medium|Low|Informational)$'
+  run ! grep -qiE '^\*\*Severity:\*\* (Critical|High|Medium|Low|Informational)$' <<< "$REPORT_CONTENT"
   ! echo "$REPORT_CONTENT" | grep -qiE '^\*\*Verdict:\*\* (Accurate|Verified|Incorrect|Stale)$'
 }
 
 @test "report does not contain cowen-critique section headings" {
   # Yglesias critiques focus on mechanism feasibility, not argument rigor.
   # These are cowen-critique's prescribed level-2 section names.
-  ! echo "$REPORT_CONTENT" | grep -qiE '^## .*Argument,? Decomposed'
-  ! echo "$REPORT_CONTENT" | grep -qiE '^## .*Survives the Inversion'
-  ! echo "$REPORT_CONTENT" | grep -qiE '^## The Boring Explanation'
-  ! echo "$REPORT_CONTENT" | grep -qiE '^## Revealed vs\.? Stated'
-  ! echo "$REPORT_CONTENT" | grep -qiE '^## The Analogy'
-  ! echo "$REPORT_CONTENT" | grep -qiE '^## Contingent Assumptions'
+  run ! grep -qiE '^## .*Argument,? Decomposed' <<< "$REPORT_CONTENT"
+  run ! grep -qiE '^## .*Survives the Inversion' <<< "$REPORT_CONTENT"
+  run ! grep -qiE '^## The Boring Explanation' <<< "$REPORT_CONTENT"
+  run ! grep -qiE '^## Revealed vs\.? Stated' <<< "$REPORT_CONTENT"
+  run ! grep -qiE '^## The Analogy' <<< "$REPORT_CONTENT"
+  run ! grep -qiE '^## Contingent Assumptions' <<< "$REPORT_CONTENT"
   ! echo "$REPORT_CONTENT" | grep -qiE '^## What the Market Says'
 }
 
 @test "report does not contain ai-personas-critique structural headings" {
   # ai-personas-critique uses a Goal-Alignment-by-persona structure that
   # would indicate the wrong skill ran.
-  ! echo "$REPORT_CONTENT" | grep -qiE '^## .*Persona Selection'
+  run ! grep -qiE '^## .*Persona Selection' <<< "$REPORT_CONTENT"
   ! echo "$REPORT_CONTENT" | grep -qiE '^## .*Persona [0-9]+:'
 }
