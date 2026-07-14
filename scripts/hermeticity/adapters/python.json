@@ -1,0 +1,67 @@
+{
+  "language": "python",
+  "_comment": "Scope is deliberately NARROW (decision 017, finding 3): we detect subprocess reach to a network binary, NOT in-process HTTP (requests/httpx). Detecting whether `requests.get(url)` is mocked needs interprocedural dataflow — an abstract interpreter, not a linter. Delegate that layer to pytest-socket et al; this adapter owns the layer nothing else covers (pytest-socket#401: subprocess settings 'are not carried over into the subprocess').",
+
+  "test_globs": ["test/**/test_*.py", "tests/**/test_*.py", "**/*_test.py"],
+  "exclude_globs": [
+    "**/.venv/**",
+    "**/venv/**",
+    "**/node_modules/**",
+    "**/site-packages/**",
+    "**/.git/**",
+    "**/.claude/**",
+    "**/.tox/**"
+  ],
+
+  "network_bins": ["claude", "curl", "wget", "gh"],
+
+  "comment_prefixes": ["#"],
+
+  "matcher": "spawn_call",
+  "spawn_tokens": [
+    "subprocess.run",
+    "subprocess.Popen",
+    "subprocess.call",
+    "subprocess.check_call",
+    "subprocess.check_output",
+    "subprocess.getoutput",
+    "os.system",
+    "os.popen",
+    "os.execv",
+    "os.execvp",
+    "os.spawnv"
+  ],
+
+  "closure": {
+    "_comment": "Follow repo-local imports only. A third-party import resolves to no file and is simply not followed — `import requests` is a signal, not a file to recurse into. THREE groups, and the resolver needs all three: (1) the module of a `from X import ...`, (2) its imported names — because `from pkg import mod` reaches pkg/mod.py, and the spawn lives in the NAME, not in pkg/__init__.py — and (3) a plain `import a.b` (which may list several: `import a.b, c.d`). The names group also accepts a parenthesized, multi-line list, which is what black and ruff produce. Leading dots on the module are LEVELS and the resolver honours them: `from ..runner import go` is the parent package, not this one.",
+    "reference_pattern": "^[ \\t]*(?:from[ \\t]+([.\\w]+)[ \\t]+import[ \\t]+(\\([^)]*\\)|[^\\n#]+)|import[ \\t]+([.\\w][\\w.,\\t ]*))",
+    "resolve": "module_path",
+    "extensions": [".py"],
+    "search_dirs": ["src", "lib", "scripts", "hooks"]
+  },
+
+  "_stub_scan_comment": "Deliberately ABSENT. Widening the stub search to imported helpers needs the same 'does it actually run?' analysis the bash adapter does (top-level code + functions the suite calls); without it, a stub merely DEFINED in a helper would exempt every module that imports it. Python's shape here is conftest fixtures, which is a different analysis. Until that exists, a Python stub must be visible in the test file itself — a false positive costs one line, a false pass costs an incident.",
+
+  "stub_rules": [
+    {
+      "_comment": "The spawn mechanism itself is patched. The target must BE subprocess (or its API) — an earlier version matched any patch() whose arguments merely contained the substring `subprocess`, so `mock.patch(\"app.subprocess_helper.run\")` marked the whole file stubbed for every binary.",
+      "all_of": [
+        "(?:monkeypatch\\.setattr|mock\\.patch(?:\\.object)?|patch(?:\\.object)?)\\s*\\(\\s*(?:[\"'](?:[\\w.]+\\.)?subprocess(?:\\.\\w+)?[\"']|(?:[\\w.]+\\.)?subprocess\\s*,)"
+      ]
+    },
+    {
+      "_comment": "PATH shim — the direct analogue of the bash pattern, and like it, TWO facts must co-occur: a file NAMED AFTER THE BINARY is created, AND PATH is pointed at the dir holding it. Accepting the PATH half alone was a false pass: the old rule `os.environ[\"PATH\"]` matched a bare *read* — `env = dict(PATH=os.environ[\"PATH\"])`, the ordinary way to build a subprocess env — and marked every binary in the file stubbed, greenlighting a suite that really did spawn curl.",
+      "all_of": [
+        "(?:monkeypatch\\.setenv\\(\\s*[\"']PATH[\"']|(?:os\\.environ|env)\\[[\"']PATH[\"']\\]\\s*=|os\\.environ\\.update|os\\.environ\\.setdefault\\(\\s*[\"']PATH[\"'])",
+        "(?:/[ \\t]*[\"']{bin}[\"']|/{bin}[\"']|,[ \\t]*[\"']{bin}[\"'][ \\t]*\\))"
+      ]
+    }
+  ],
+
+  "optout_scan_lines": 40,
+  "_optout_comment": "`pytestmark` is genuinely file-level, so honouring it file-wide is honest. A bare `@pytest.mark.network` decorator is NOT: it marks one test, but opted_out() is file-scoped, so one legitimately-networked integration test at the top of a module silently exempted every other test in the file — including ones added later that shell out unstubbed. That is precisely 014's failure mode (a silent escape hatch), so the decorator is not accepted; use `pytestmark` or the `@network: allowed` comment, both of which mean what the lint reads them to mean.",
+  "optout_patterns": [
+    "^#[ \\t]*@network:[ \\t]*allowed[^A-Za-z0-9\\n]+[A-Za-z0-9]",
+    "^[ \\t]*pytestmark[ \\t]*=[^\\n]*pytest\\.mark\\.(?:network|remote_data)"
+  ]
+}

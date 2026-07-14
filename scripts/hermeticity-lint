@@ -1,0 +1,890 @@
+#!/usr/bin/env python3
+"""Static test-hermeticity lint — polyglot, dependency-free, cross-project.
+
+THE RULE (one rule; see guides/test-hermeticity.md and docs/decisions/017)
+
+    If a test file — or any repo-local file it transitively references — can
+    SPAWN a network-capable binary (claude, curl, wget, gh, ...), then the test
+    must either stub that binary or carry an explicit opt-out with a reason.
+
+WHY ONLY THAT RULE
+
+    Decision 017, finding 3: statically *proving hermeticity* is undecidable in
+    practice. `client.get(url)` is byte-identical whether `url` is a mock
+    server's or api.stripe.com's, and the URL is a runtime value. So this lint
+    never asks "is this suite hermetic?" — it asks the narrow, decidable
+    question "does it spawn a network binary?", which is
+      (a) high-precision in every language, and
+      (b) the one class NO runtime blocker covers, in ANY language
+          (pytest-socket, nock, MSW, gock are all in-process monkeypatches and
+          are blind to a child process — pytest-socket#401 says so outright).
+
+    That is the class behind commit 4d39475, the incident this lint exists for.
+
+TRIAGE, NOT PROOF
+
+    A clean run does NOT mean the suite is hermetic. It means the suite does not
+    *spawn* a network binary. In-process HTTP (requests/fetch/reqwest) is out of
+    scope by design — delegate that to the ecosystem's own blocker. Ground truth
+    is a network namespace: scripts/confine-tests.sh, which this lint prints.
+
+VERDICTS are three-state, never binary: NETWORKED / STUBBED / UNCHECKED.
+
+ADDING A LANGUAGE
+    Drop a JSON file in scripts/hermeticity/adapters/. See adapters/README.md.
+"""
+
+from __future__ import annotations
+
+import argparse
+import fnmatch
+import json
+import os
+import re
+import sys
+from pathlib import Path
+
+# ---------------------------------------------------------------------------
+# Matchers: how a given language spawns a process.
+#
+# Two generic strategies cover every language we care about. A new language
+# picks one; it does not add a third.
+# ---------------------------------------------------------------------------
+
+
+def _strip_comments(text: str, prefixes: list[str]) -> str:
+    """Blank out full-line comments so binary names in prose never match."""
+    if not prefixes:
+        return text
+    alts = "|".join(re.escape(p) for p in prefixes)
+    return re.sub(rf"^[ \t]*(?:{alts}).*$", "", text, flags=re.MULTILINE)
+
+
+# --- shell tokenizer -------------------------------------------------------
+#
+# Command position in shell is not a regex. Three review passes each tightened a
+# regex and each opened a new hole: `run ! bash x.sh` (the house idiom) was not a
+# reference, `load "$DIR/x"` stopped resolving, a `(` inside a trailing comment
+# was a false call site, and the wrapper-chain pattern backtracked exponentially
+# (22 `--k=v` flags on one line = 1.7s; ~30 hangs CI outright). Those are four
+# faces of one mistake: pattern-matching a grammar. So tokenize once, properly,
+# and let every consumer ask structural questions of the tokens.
+#
+# It is a deliberately small model of shell — enough for "what is the command?"
+# and "which file does this line pull in?", not an interpreter.
+
+_SEPARATORS = ";&|\n(){}"
+_ASSIGN = re.compile(r"[A-Za-z_]\w*=")
+_NUMARG = re.compile(r"\d+[smhd]?$")
+
+
+def _cmdsubs(text: str) -> tuple[str, list[str]]:
+    """Split out $( … ) and ` … ` bodies; they are command positions of their own.
+
+    Returned separately (rather than tokenized in place) because they nest and
+    because they are live even inside double quotes: `out="$(env X=1 gh pr list)"`
+    really does run gh.
+    """
+    out, bodies, i, n = [], [], 0, len(text)
+    while i < n:
+        if text.startswith("$(", i):
+            # Match the closing ) with quote awareness: a ) inside a string
+            # literal — `$(echo "done :)" && curl x)` — must NOT close the
+            # substitution early, or the real command after it is never seen (a
+            # fail-open, and `:)`/`)` in echo strings is common). This mirrors
+            # what _string_end does for the Python paren walk.
+            depth, j, q = 1, i + 2, None
+            while j < n and depth:
+                c = text[j]
+                if q:
+                    if c == "\\" and q == '"' and j + 1 < n:
+                        j += 2
+                        continue
+                    if c == q:
+                        q = None
+                    j += 1
+                    continue
+                if c in "'\"":
+                    q = c
+                elif c == "(":
+                    depth += 1
+                elif c == ")":
+                    depth -= 1
+                j += 1
+            bodies.append(text[i + 2 : max(j - 1, i + 2)])
+            out.append(";")
+            i = j
+        elif text[i] == "`":
+            j = text.find("`", i + 1)
+            if j == -1:
+                break
+            bodies.append(text[i + 1 : j])
+            out.append(";")
+            i = j + 1
+        else:
+            out.append(text[i])
+            i += 1
+    return "".join(out), bodies
+
+
+def _segments(text: str, depth: int = 0) -> list[list[tuple[str, bool]]]:
+    """Tokenize into command segments: [(token, was_quoted), …] per command.
+
+    Quote state is tracked, so `#` only starts a comment outside quotes and at a
+    token boundary — which is why a trailing `# … (curl needs egress)` no longer
+    reads as a call site — and a quoted argument is flagged, so `bash -c "curl …"`
+    can be recursed into rather than mistaken for a bare word.
+    """
+    if depth > 4:  # runaway nesting; bail rather than recurse forever
+        return []
+    body, subs = _cmdsubs(text)
+    segs: list[list[tuple[str, bool]]] = []
+    cur: list[tuple[str, bool]] = []
+    tok, quoted, quote, i, n = "", False, None, 0, len(body)
+
+    def end_tok() -> None:
+        nonlocal tok, quoted
+        if tok or quoted:
+            cur.append((tok, quoted))
+        tok, quoted = "", False
+
+    def end_seg() -> None:
+        nonlocal cur
+        end_tok()
+        if cur:
+            segs.append(cur)
+        cur = []
+
+    while i < n:
+        c = body[i]
+        if quote:
+            if c == "\\" and quote == '"' and i + 1 < n:
+                tok += body[i + 1]
+                i += 2
+                continue
+            if c == quote:
+                quote = None
+            else:
+                tok += c
+            i += 1
+            continue
+        if c in "'\"":
+            quote, quoted = c, True
+            i += 1
+            continue
+        if c == "\\" and i + 1 < n:
+            tok += body[i + 1]
+            i += 2
+            continue
+        if c == "$" and i + 1 < n and body[i + 1] == "{":
+            # ${…} parameter expansion is a WORD part, not a command boundary:
+            # its braces are not the `{ }` separators, and its leading `#`
+            # (${#arr[@]}, a length op) is not a comment. Swallow the balanced
+            # span into the token. Without this, `{` splits a segment and the
+            # `#` blanks the rest of the line — so `[ ${#a} ]; curl x` lost its
+            # curl entirely (a fail-open, and ${#…} is pervasive in real shell).
+            depth2, j = 0, i + 1
+            while j < n:
+                if body[j] == "{":
+                    depth2 += 1
+                elif body[j] == "}":
+                    depth2 -= 1
+                    if depth2 == 0:
+                        j += 1
+                        break
+                j += 1
+            tok += body[i:j]
+            i = j
+            continue
+        if c == "#" and not tok and not quoted:
+            nl = body.find("\n", i)
+            i = n if nl == -1 else nl
+            continue
+        if c in " \t":
+            end_tok()
+            i += 1
+            continue
+        if c in _SEPARATORS:
+            end_seg()
+            i += 1
+            continue
+        tok += c
+        i += 1
+    end_seg()
+
+    for sub in subs:
+        segs.extend(_segments(sub, depth + 1))
+    return segs
+
+
+def _command_of(tokens: list[tuple[str, bool]], adapter: dict):
+    """The command a segment actually invokes, past its wrappers.
+
+    Returns (token, was_quoted, shell_ctx). Leading wrapper words
+    (`command_prefixes`), their flags, `FOO=1`-style assignments and bare numeric
+    args (timeout's 5) are stepped over. shell_ctx says a `bash`/`sh`/`eval`-type
+    wrapper was among them, so a quoted command token is a script to look inside,
+    not a word.
+    """
+    prefixes = set(adapter.get("command_prefixes", []))
+    shells = set(adapter.get("shell_wrappers", []))
+    shell_ctx = False
+    for raw, was_quoted in tokens:
+        if was_quoted:
+            return raw, True, shell_ctx
+        if raw in shells:
+            shell_ctx = True
+            continue
+        if raw in prefixes or raw.startswith("-") or _ASSIGN.match(raw) or _NUMARG.match(raw):
+            continue
+        return raw, False, shell_ctx
+    return None, False, shell_ctx
+
+
+def _match_command_position(text: str, binary: str, adapter: dict) -> bool:
+    """Shell-shaped: the binary IS the command.
+
+    Behind any chain of wrappers — `if curl …`, `timeout 5 wget …`,
+    `env FOO=1 gh …`, `run ! claude …` — and inside a `bash -c "…"` / `eval "…"`
+    string, which is the shell twin of the `shell=True` shape the spawn_call
+    matcher already advertises that it catches. Binary names in prose, echo
+    strings and comments are not commands and do not count.
+    """
+    for tokens in _segments(text):
+        cmd, was_quoted, shell_ctx = _command_of(tokens, adapter)
+        if cmd is None:
+            continue
+        if was_quoted:
+            # `bash -c "curl …"`: the string IS shell source. Anything else quoted
+            # is data (an echo argument), not a command.
+            if shell_ctx and _match_command_position(cmd, binary, adapter):
+                return True
+            continue
+        if cmd == binary or cmd.endswith("/" + binary):
+            return True
+    return False
+
+
+def _string_end(text: str, i: int, limit: int) -> int | None:
+    """If a string literal opens at text[i], return the index just past its close.
+
+    None means "this quote does not open a literal" (it never closes, e.g. an
+    apostrophe in prose) — the caller then treats it as an ordinary character.
+    """
+    for q in ('"""', "'''"):
+        if text.startswith(q, i):
+            end = text.find(q, i + 3)
+            return end + 3 if end != -1 and end + 3 <= limit else None
+    q, j = text[i], i + 1
+    while j < limit:
+        c = text[j]
+        if c == "\\":
+            j += 2
+            continue
+        if c == q:
+            return j + 1
+        if c == "\n":
+            return None  # single-quoted strings do not span lines
+        j += 1
+    return None
+
+
+def _call_windows(text: str, adapter: dict):
+    """Yield the source slice of each spawn call: from the token to its matching
+    close paren (bounded), so a multi-line `subprocess.run([...])` is one window.
+
+    This proximity model is what makes the matcher language-agnostic:
+    `subprocess.run(["curl"])`, `Command::new("curl")`, `exec.Command("curl")`
+    and `spawn("curl")` are all "spawn token, then the binary name nearby".
+
+    The depth walk skips string literals AND inline comments. It must: an
+    unbalanced `)` in either — `bash -c "echo :-) ; curl ..."`, or a trailing
+    `# spawn a fetcher :)` above the argument list — would otherwise close the
+    window before the binary name is ever seen. (_strip_comments only blanks
+    FULL-line comments, so a trailing one survives to be walked over here.)
+    """
+    prefixes = adapter.get("comment_prefixes", [])
+    for token in adapter.get("spawn_tokens", []):
+        for m in re.finditer(re.escape(token), text):
+            i = text.find("(", m.end())
+            if i == -1 or i - m.end() > 40:
+                # No call parens (e.g. a bare `Bun.$` tagged template) — take a
+                # short line-bounded window instead.
+                yield text[m.start() : m.start() + 300]
+                continue
+            depth, j, limit = 0, i, min(len(text), i + 2000)
+            while j < limit:
+                c = text[j]
+                if c in "\"'":
+                    end = _string_end(text, j, limit)
+                    if end is not None:
+                        j = end
+                        continue
+                if any(text.startswith(p, j) for p in prefixes):
+                    nl = text.find("\n", j)
+                    if nl == -1:
+                        break
+                    j = nl + 1
+                    continue
+                if c == "(":
+                    depth += 1
+                elif c == ")":
+                    depth -= 1
+                    if depth == 0:
+                        j += 1
+                        break
+                j += 1
+            yield text[m.start() : j]
+
+
+def _match_spawn_call(text: str, binary: str, adapter: dict) -> bool:
+    """Non-shell: a spawn token whose call window names the binary.
+
+    Deliberately over-approximates — the binary anywhere in the call window
+    counts, including inside a shell=True string. Over-approximation is the
+    design: false positives are annotated away, false negatives are incidents.
+    """
+    b = re.escape(binary)
+    # The binary as a bare word, or as the tail of a path ("/usr/bin/curl").
+    needle = re.compile(rf"(?<![\w./-]){b}(?![\w-])|/{b}(?![\w-])")
+    for window in _call_windows(text, adapter):
+        if needle.search(window):
+            return True
+    return False
+
+
+MATCHERS = {
+    "command_position": _match_command_position,
+    "spawn_call": _match_spawn_call,
+}
+
+# ---------------------------------------------------------------------------
+# Resolvers: how a file names the other repo-local files it pulls in.
+#
+# The transitive closure is the whole point — 4d39475 was INDIRECT (the suite's
+# own text held no call site; a sourced script did).
+# ---------------------------------------------------------------------------
+
+
+def _inside(p: Path, root: Path) -> bool:
+    """Repo-local only. A reference that climbs out of the tree (`load ../../x`)
+    is not ours to follow, and every caller reports paths relative to root."""
+    try:
+        p.resolve().relative_to(root.resolve())
+        return True
+    except ValueError:
+        return False
+
+
+def _shell_refs(text: str, cfg: dict) -> list[str]:
+    """Every script this shell code could actually RUN — structurally, not by
+    pattern. Three shapes, and nothing else:
+
+      load / source / .  <target>       the directive's argument
+      [wrappers] <cmd>                  a command that is a script path
+      VAR=<path>                        an assignment, because the house style is
+                                        SCRIPT="…/x.sh" … run bash "$SCRIPT"
+
+    A filename that merely appears — `skip "…run generate-reports.bash first"`,
+    `grep -q 'x.sh'`, `rm "…/y.sh"` — is a MENTION, not a reach, and following it
+    would force correct suites to write permanent opt-outs. The tokenizer draws
+    that line exactly: those filenames are arguments, never the command.
+    """
+    suffixes = tuple(cfg.get("script_suffixes", [".sh", ".bash"]))
+    directives = set(cfg.get("directives", ["load", "source", "."]))
+    out = []
+    for tokens in _segments(text):
+        if tokens[0][0] in directives and len(tokens) > 1:
+            out.append(tokens[1][0])  # `load helpers` — any target, suffix or not
+            continue
+        for raw, was_quoted in tokens:  # VAR="…/x.sh", incl. among leading assignments
+            if not was_quoted and _ASSIGN.match(raw):
+                value = raw.split("=", 1)[1]
+                if value.endswith(suffixes):
+                    out.append(value)
+            else:
+                break
+        cmd, _q, _s = _command_of(tokens, cfg)
+        if cmd and cmd.endswith(suffixes):
+            out.append(cmd)  # `run ! bash "$DIR/x.sh"` — a script IS the command
+    return out
+
+
+def _resolve_basename_in_dirs(text: str, f: Path, root: Path, cfg: dict) -> list[Path]:
+    """A referenced script → a repo-local file, two ways.
+
+    1. RELATIVE TO THE REFERRING FILE, which is what the shell and bats actually
+       do: `load helpers` in test/skills/foo.bats means test/skills/helpers.bash.
+       Resolving only by basename against a hand-listed set of search dirs meant
+       every helper dir had to be enumerated — and the one forgotten (test/skills/,
+       loaded by 20 suites) was a hole the gate could not see through at all.
+    2. BASENAME IN `search_dirs`, as the fallback for a path built from a variable
+       (`source "$BATS_TEST_DIRNAME/../scripts/foo.sh"`), which cannot be resolved
+       literally.
+
+    `extensions` lets a suffix-less token resolve ("" first, so an explicit foo.sh
+    matches itself, then .sh/.bash for bats' extension-less `load`).
+
+    Every result is NORMALIZED (`.resolve()`). An un-normalized `test/../scripts/x.sh`
+    still *looks* like it lives under test/ to a lexical path check — which is how a
+    product script sneaked past the guard that keeps product PATH tweaks from being
+    read as test stubs.
+    """
+    out = []
+    exts = cfg.get("extensions", [""])
+    for tok in _shell_refs(text, cfg):
+        # (1) literal, relative to the referring file — only for a plain path
+        # (no $VAR / brace expansion, which we cannot evaluate statically).
+        if re.fullmatch(r"[A-Za-z0-9_./-]+", tok):
+            base_dir = root if tok.startswith("/") else f.parent
+            for ext in exts:
+                cand = base_dir / (tok.lstrip("/") + ext)
+                if cand.is_file() and _inside(cand, root):
+                    out.append(cand.resolve())
+
+        # (2) basename, in the search dirs
+        base = os.path.basename(tok)
+        if not base:
+            continue
+        for d in cfg.get("search_dirs", []):
+            for ext in exts:
+                cand = root / d / (base + ext)
+                if cand.is_file():
+                    out.append(cand.resolve())
+    return out
+
+
+def _resolve_module_path(text: str, f: Path, root: Path, cfg: dict) -> list[Path]:
+    """Python-shaped: an import → a repo-local file.
+
+    Handles the three shapes that matter, because between them they are how a
+    test reaches a local helper:
+
+        import pkg.mod          → pkg/mod.py
+        from pkg import mod     → pkg/mod.py   (NOT just pkg/__init__.py: the
+                                                module holding the spawn is the
+                                                imported NAME, not the package)
+        from . import helper    → <this dir>/helper.py
+
+    Third-party imports resolve to nothing and are simply not followed — which
+    is what we want: `import requests` is not a file to recurse into.
+    """
+    out = []
+    exts = cfg.get("extensions", [".py"])
+    absolute = [root, f.parent] + [root / d for d in cfg.get("search_dirs", [])]
+
+    def add(bases: list[Path], dotted: str) -> None:
+        if not dotted:
+            return
+        rel = dotted.replace(".", os.sep)
+        for b in bases:
+            for ext in exts:
+                for cand in (b / (rel + ext), b / rel / ("__init__" + ext)):
+                    if cand.is_file() and _inside(cand, root):
+                        out.append(cand.resolve())
+
+    for m in re.finditer(cfg["reference_pattern"], text, re.MULTILINE):
+        module, names, plain = m.group(1), m.group(2), m.group(3)
+
+        if plain:  # `import a.b`, and `import a.b, c.d` — every name counts
+            for dotted in plain.split(","):
+                add(absolute, dotted.strip().split(" as ")[0].strip())
+            continue
+        if module is None:
+            continue
+
+        # `from <module> import <names>`. Leading dots are LEVELS, not decoration:
+        # one dot is this package, two is the parent. Stripping them all and always
+        # resolving against the importing file's own dir sent `from ..runner import
+        # go` looking in the wrong directory, and the helper fell out of the closure.
+        if module.startswith("."):
+            level = len(module) - len(module.lstrip("."))
+            base = f.parent
+            for _ in range(level - 1):
+                base = base.parent
+            bases = [base] if _inside(base, root) else []
+            module = module.lstrip(".")
+        else:
+            bases = absolute
+        add(bases, module)
+
+        # Each imported NAME may itself be the submodule that holds the spawn.
+        # `names` may be a parenthesized, multi-line list (black/ruff format).
+        for name in names.strip().strip("()").replace("\n", " ").split(","):
+            name = name.strip().split(" as ")[0].strip()
+            if name and name != "*":
+                add(bases, f"{module}.{name}" if module else name)
+    return out
+
+
+RESOLVERS = {
+    "basename_in_dirs": _resolve_basename_in_dirs,
+    "module_path": _resolve_module_path,
+}
+
+
+# ---------------------------------------------------------------------------
+# Which helper code actually RUNS
+#
+# A stub only stubs if it executes. Counting a helper's whole text meant a
+# `stub_claude()` merely DEFINED in a shared helper marked every suite that
+# loaded that helper as stubbed for claude — including suites that never call it,
+# and suites added later that really do spawn it. The guide tells people to put
+# shims in shared helpers, so that fail-open would have been triggered the first
+# time anyone followed the advice.
+#
+# So: a helper's top-level code runs on load, and a helper function runs when the
+# suite calls it (transitively). Nothing else counts.
+# ---------------------------------------------------------------------------
+
+
+_FUNC_DEF = re.compile(r"^[ \t]*(?:function[ \t]+)?([A-Za-z_][\w:.-]*)[ \t]*\([ \t]*\)[ \t]*\{", re.M)
+
+
+def _split_functions(text: str) -> tuple[str, dict[str, str]]:
+    """(top-level code, {function name: body}) for shell source."""
+    funcs, top, pos = {}, [], 0
+    for m in _FUNC_DEF.finditer(text):
+        if m.start() < pos:
+            continue
+        top.append(text[pos : m.start()])
+        j = text.index("{", m.end() - 1)
+        # Quote/comment-aware brace walk: a `}` inside a string literal or a
+        # comment must NOT close the body. A naive count truncated the body at
+        # `echo "}"`, spilling the rest (e.g. a PATH-shim stub) into top-level
+        # code, which _running_text credits as always-running — so an UNUSED
+        # helper wrongly stubbed the suite (a fail-open). `{` in a string had the
+        # dual effect: it swallowed following functions into this body.
+        depth, k, q = 0, j, None
+        n = len(text)
+        while k < n:
+            c = text[k]
+            if q:
+                if c == "\\" and q == '"' and k + 1 < n:
+                    k += 2
+                    continue
+                if c == q:
+                    q = None
+                k += 1
+                continue
+            if c in "'\"":
+                q = c
+            elif c == "\\" and k + 1 < n:
+                k += 2
+                continue
+            elif c == "#" and (k == 0 or text[k - 1] in " \t\n;&|(){}"):
+                nl = text.find("\n", k)
+                k = n if nl == -1 else nl
+                continue
+            elif c == "{":
+                depth += 1
+            elif c == "}":
+                depth -= 1
+                if depth == 0:
+                    break
+            k += 1
+        funcs[m.group(1)] = text[j:k]
+        pos = min(k + 1, len(text))
+    top.append(text[pos:])
+    return "".join(top), funcs
+
+
+def _invoked(text: str, adapter: dict) -> set[str]:
+    """The names this code calls in command position."""
+    names = set()
+    for tokens in _segments(text):
+        cmd, was_quoted, _ = _command_of(tokens, adapter)
+        if cmd and not was_quoted:
+            names.add(cmd)
+    return names
+
+
+def _running_text(suite_text: str, reach, f: Path, root: Path, adapter: "Adapter") -> str:
+    """The suite's text plus the helper code it actually executes."""
+    dirs = [Path(d).parts for d in adapter.spec.get("stub_scan_dirs", [])]
+    if not dirs:
+        return suite_text
+
+    parts, funcs = [suite_text], {}
+    for g, text in reach:
+        if g == f:
+            continue
+        rel = g.relative_to(root).parts
+        if not any(rel[: len(d)] == d for d in dirs):
+            continue  # a PATH tweak in a sourced PRODUCT script is not a test stub
+        top, fns = _split_functions(text)
+        parts.append(top)  # top-level helper code runs on load
+        funcs.update(fns)
+
+    called = _invoked("\n".join(parts), adapter.spec)
+    expanded: set[str] = set()
+    while True:
+        pending = (called & funcs.keys()) - expanded
+        if not pending:
+            break
+        for name in pending:
+            expanded.add(name)
+            parts.append(funcs[name])
+            called |= _invoked(funcs[name], adapter.spec)
+    return "\n".join(parts)
+
+# ---------------------------------------------------------------------------
+# Core
+# ---------------------------------------------------------------------------
+
+
+class Adapter:
+    def __init__(self, spec: dict, path: Path):
+        self.spec = spec
+        self.name = spec["language"]
+        self.path = path
+        for key in ("language", "test_globs", "matcher", "network_bins"):
+            if key not in spec:
+                raise ValueError(f"{path}: adapter missing required key '{key}'")
+        if spec["matcher"] not in MATCHERS:
+            raise ValueError(f"{path}: unknown matcher '{spec['matcher']}'")
+        c = spec.get("closure")
+        if c and c.get("resolve") not in RESOLVERS:
+            raise ValueError(f"{path}: unknown resolver '{c.get('resolve')}'")
+
+    def clean(self, f: Path) -> str:
+        try:
+            text = f.read_text(errors="replace")
+        except OSError:
+            return ""
+        return _strip_comments(text, self.spec.get("comment_prefixes", []))
+
+    def spawns(self, text: str, binary: str) -> bool:
+        return MATCHERS[self.spec["matcher"]](text, binary, self.spec)
+
+    def closure(self, start: Path, root: Path) -> list[Path]:
+        """start plus the transitive closure of repo-local files it references."""
+        # The resolver sees the WHOLE spec, not just the closure block: it needs
+        # the same `command_prefixes` / `shell_wrappers` the matcher uses. When
+        # they disagreed, `run bash x.sh` entered the reach and `run ! bash x.sh`
+        # did not — one notion of command position, or the gate has a blind spot
+        # shaped exactly like the difference.
+        cfg = {**self.spec, **self.spec["closure"]} if self.spec.get("closure") else None
+        seen, queue, order = set(), [start], []
+        while queue:
+            f = queue.pop(0)
+            key = str(f.resolve())
+            if key in seen:
+                continue
+            seen.add(key)
+            order.append(f)
+            if not cfg:
+                continue
+            for ref in RESOLVERS[cfg["resolve"]](self.clean(f), f, root, cfg):
+                if str(ref.resolve()) not in seen:
+                    queue.append(ref)
+        return order
+
+    def stubbed(self, text: str, binary: str) -> bool:
+        """A stub rule fires when EVERY regex in one rule group matches.
+
+        Bash's shim, for example, is two facts that must co-occur: a file named
+        after the binary is created, AND a directory is prepended to PATH.
+        """
+        # re.MULTILINE matters: these regexes were written against grep, which is
+        # line-scoped. Without it, `$` means end-of-file and a negated class can
+        # silently span newlines — which would make a stub appear to match text
+        # from an unrelated line, turning a real violation into a false pass.
+        for rule in self.spec.get("stub_rules", []):
+            pats = rule.get("all_of", [])
+            if pats and all(
+                re.search(p.replace("{bin}", re.escape(binary)), text, re.MULTILINE)
+                for p in pats
+            ):
+                return True
+        return False
+
+    def opted_out(self, f: Path) -> bool:
+        """Universal `@network: allowed — <reason>` (reason REQUIRED), plus any
+        native marker the ecosystem already has (pytest marks, build tags...).
+
+        A bare annotation with no reason does not count: 014's whole lesson is
+        that silent/unjustified escapes are the failure mode.
+        """
+        n = self.spec.get("optout_scan_lines", 15)
+        try:
+            head = "\n".join(f.read_text(errors="replace").splitlines()[:n])
+        except OSError:
+            return False
+        return any(re.search(p, head, re.M) for p in self.spec.get("optout_patterns", []))
+
+
+def load_adapters(adapter_dir: Path, only: list[str] | None) -> list[Adapter]:
+    out = []
+    for p in sorted(adapter_dir.glob("*.json")):
+        spec = json.loads(p.read_text())
+        if only and spec.get("language") not in only:
+            continue
+        out.append(Adapter(spec, p))
+    return out
+
+
+def _excluded(rel: str, pat: str) -> bool:
+    """fnmatch, plus the `**/dir/**` case fnmatch gets wrong.
+
+    fnmatch.translate("**/.venv/**") demands a literal `/` before `.venv`, so a
+    ROOT-level `.venv/` — the standard location, and what `uv venv` creates —
+    does not match and gets linted: the gate then fails on vendored third-party
+    files the user cannot fix. Treat a bare directory pattern as "this component
+    anywhere in the path", which is what it plainly means.
+    """
+    if fnmatch.fnmatch(rel, pat):
+        return True
+    core = pat.strip("*").strip("/")
+    if core and "/" not in core and "*" not in core:
+        return core in Path(rel).parts
+    return False
+
+
+def discover(root: Path, adapter: Adapter) -> list[Path]:
+    files = []
+    for pat in adapter.spec["test_globs"]:
+        files += [p for p in root.glob(pat) if p.is_file()]
+    for pat in adapter.spec.get("exclude_globs", []):
+        files = [p for p in files if not _excluded(str(p.relative_to(root)), pat)]
+    return sorted(set(files))
+
+
+def lint_file(f: Path, root: Path, adapter: Adapter) -> list[dict]:
+    if adapter.opted_out(f):
+        return []
+    suite_text = adapter.clean(f)
+    findings = []
+    # Walk the closure once, not once per binary: it re-reads and re-strips every
+    # file in the reach for each of the four network bins otherwise.
+    reach = [(g, adapter.clean(g)) for g in adapter.closure(f, root)]
+
+    # A stub counts if it RUNS: in the suite, in a loaded helper's top level, or in
+    # a helper function the suite actually calls. `load lib/stub-bins` + calling
+    # `stub_bins` in setup() is a real shim; a `stub_claude()` sitting unused in a
+    # shared helper is not, and treating it as one exempted every suite that merely
+    # loaded that helper.
+    stub_text = _running_text(suite_text, reach, f, root, adapter)
+
+    for binary in adapter.spec["network_bins"]:
+        hit = next((g for g, text in reach if adapter.spawns(text, binary)), None)
+        if hit and not adapter.stubbed(stub_text, binary):
+            findings.append(
+                {
+                    "file": str(f.relative_to(root)),
+                    "binary": binary,
+                    "callsite": str(hit.relative_to(root)),
+                    "indirect": hit != f,
+                    "language": adapter.name,
+                }
+            )
+    return findings
+
+
+def main() -> int:
+    ap = argparse.ArgumentParser(
+        description="Static test-hermeticity lint: no test may spawn a network binary unstubbed.",
+        epilog="This is TRIAGE, not proof. Ground truth is scripts/confine-tests.sh.",
+    )
+    ap.add_argument("--root", default=".", help="repo root to lint (default: cwd)")
+    ap.add_argument("--adapters", default=None, help="adapter dir (default: alongside this script)")
+    ap.add_argument("--lang", action="append", help="limit to a language (repeatable)")
+    ap.add_argument("--json", action="store_true", help="machine-readable output")
+    ap.add_argument("--list-adapters", action="store_true")
+    ap.add_argument(
+        "--closure",
+        metavar="FILE",
+        help="print the transitive closure of FILE and the network binaries each member "
+        "can spawn, then exit. This is how a suite anchors the detector to real call "
+        "sites: an assertion on a closure that must contain a known script fails loudly "
+        "when a heuristic regresses, instead of going vacuously green.",
+    )
+    args = ap.parse_args()
+
+    root = Path(args.root).resolve()
+    adapter_dir = (
+        Path(args.adapters) if args.adapters else Path(__file__).resolve().parent / "hermeticity" / "adapters"
+    )
+    if not adapter_dir.is_dir():
+        print(f"hermeticity-lint: no adapter dir at {adapter_dir}", file=sys.stderr)
+        return 2
+
+    try:
+        adapters = load_adapters(adapter_dir, args.lang)
+    except (ValueError, json.JSONDecodeError) as e:
+        print(f"hermeticity-lint: bad adapter: {e}", file=sys.stderr)
+        return 2
+
+    if args.list_adapters:
+        for a in adapters:
+            print(f"{a.name:10s} {', '.join(a.spec['test_globs'])}")
+        return 0
+    if not adapters:
+        print("hermeticity-lint: no adapters matched", file=sys.stderr)
+        return 2
+
+    if args.closure:
+        start = (root / args.closure).resolve()
+        if not start.is_file():
+            print(f"hermeticity-lint: no such file: {args.closure}", file=sys.stderr)
+            return 2
+        matched = [
+            a
+            for a in adapters
+            if any(fnmatch.fnmatch(start.name, os.path.basename(g)) for g in a.spec["test_globs"])
+        ]
+        if not matched:
+            print(f"hermeticity-lint: no adapter claims {args.closure}", file=sys.stderr)
+            return 2
+        for a in matched:
+            for g in a.closure(start, root):
+                bins = [b for b in a.spec["network_bins"] if a.spawns(a.clean(g), b)]
+                spawns = f"  spawns: {', '.join(bins)}" if bins else ""
+                print(f"{g.relative_to(root)}{spawns}")
+        return 0
+
+    findings, checked = [], {}
+    for a in adapters:
+        files = discover(root, a)
+        checked[a.name] = len(files)
+        for f in files:
+            findings += lint_file(f, root, a)
+
+    if args.json:
+        print(json.dumps({"findings": findings, "checked": checked}, indent=2))
+        return 1 if findings else 0
+
+    # H4: a language with no adapter must be reported as UNCHECKED, never as a
+    # silent pass. Gradual adoption is only safe if the gaps are visible.
+    scanned = sum(checked.values())
+    for lang, n in sorted(checked.items()):
+        if n == 0:
+            print(f"  UNCHECKED  {lang}: adapter loaded, but no test files matched", file=sys.stderr)
+    if scanned == 0:
+        print("hermeticity-lint: UNCHECKED — no test files found for any adapter.", file=sys.stderr)
+        print("  Gradual adoption: add an adapter for this project's language.", file=sys.stderr)
+        return 0
+
+    if not findings:
+        print(f"hermeticity-lint: {scanned} test file(s) checked, no unstubbed network spawns.")
+        print("  NOTE: this is triage, not proof — in-process HTTP is out of scope by design.")
+        print("  Ground truth: scripts/confine-tests.sh -- <your test command>")
+        return 0
+
+    print("hermeticity-lint: NETWORKED — test files can spawn a network binary unstubbed\n")
+    for v in findings:
+        via = f" (via {v['callsite']})" if v["indirect"] else ""
+        print(f"  {v['file']}: can spawn `{v['binary']}`{via}")
+    print(
+        "\nFix, pick one:\n"
+        "  1. Stub the binary: create an executable of that name in a test-local\n"
+        "     dir and prepend it to PATH (see guides/test-hermeticity.md).\n"
+        "  2. Opt out WITH A REASON, near the top of the file:\n"
+        "       # @network: allowed — <why the real binary is required>\n"
+        f"\n{len(findings)} violation(s) across {scanned} test file(s)."
+    )
+    return 1
+
+
+if __name__ == "__main__":
+    sys.exit(main())

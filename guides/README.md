@@ -44,4 +44,6 @@ Reference documents for specific processes and conventions. Unlike workflows (st
 
 - **[devcontainer-setup.md](devcontainer-setup.md)** — How to run Claude Code inside the `cc-isolated` devcontainer: one boundary per project, central config, egress firewall. Use when onboarding a new project onto the isolated-session setup (decisions 015/016).
 
+- **[test-hermeticity.md](test-hermeticity.md)** — The one hermeticity rule (no test may *spawn* a network binary unstubbed), why in-process HTTP is deliberately out of scope, the stub and opt-out patterns per language, and why the static lint is triage while the netns runner is ground truth. Consult when a `hermeticity-lint` violation fires, or when adopting the check in another project.
+
 - **[sub-agent-briefing.md](sub-agent-briefing.md)** — Five elements of a well-formed sub-agent prompt (goal preamble, exact paths, specific questions, output cap, output destination), one worked example, and an anti-pattern catalog. Use when dispatching sub-agents from any orchestrator or workflow.
