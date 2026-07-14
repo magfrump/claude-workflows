@@ -1,8 +1,40 @@
 # Spike: Can a bats suite run under a nested bwrap profile that provably denies network and confines writes on this WSL2 host?
 
+> ## ⚠ SUPERSEDED 2026-07-13 — the primitive this spike validated is GONE. Do not action the recommendation below.
+>
+> Re-probed 2026-07-13 in the current session environment. Decisions 015/016 moved sessions out of the
+> bwrap sandbox and into the `cc-isolated` **Docker devcontainer**, which measured a different boundary
+> than this spike did:
+>
+> | | this spike (2026-07-09) | re-probe (2026-07-13) |
+> |---|---|---|
+> | `bwrap` | present (0.6.1) | **ABSENT** |
+> | `unshare -rn true` | exit 0 | **EPERM** — seccomp blocks `CLONE_NEWUSER` |
+> | `uid_map` | `1000 1000 1` | `0 0 4294967295` (Docker init userns) |
+> | `CapEff` | — | **`0000000000000000`** (zero effective capabilities) |
+> | `iptables -L` | — | Permission denied |
+>
+> **The "Proceed to RPI" recommendation below is invalid as written**: the agent cannot create a
+> user/network namespace, so it cannot self-apply confinement to its own test runs. Confinement remains
+> achievable *at the container boundary from the host* (`docker run --network=none` for a test step),
+> but the in-container agent has no `docker` CLI, no socket, and no capabilities to invoke it — so this
+> is **host/CI-side infrastructure, not a runnable script this repo can ship.**
+>
+> This is the spike's own **pre-mortem narrative 1** — *"Platform pulls the rug… the harness gets
+> bypassed instead of fixed"* — realized within four days, before anything was built. The mitigation it
+> prescribed (a runner preflight probe + loud unconfined-mode warning) is now a hard requirement of any
+> revival, not an optional nicety.
+>
+> Also observed on re-probe: egress from a test is **live** (`curl https://github.com` → `200` inside the
+> session). The devcontainer's ipset allowlist bounds the blast radius but necessarily permits
+> `api.anthropic.com`, so the original 4d39475 incident class — a test making a real, billable
+> `claude -p` call — is **unmitigated at runtime today**.
+>
+> Superseding analysis and the resulting decision: `docs/working/dd-polyglot-test-hermeticity.md`.
+
 Date: 2026-07-09
-Last verified: 2026-07-09
-Relevant paths: test/guide-index-sync.bats, docs/decisions/014-secure-tool-guidance-layers.md, docs/working/dd-secure-tool-guidance.md
+Last verified: 2026-07-13 — **findings falsified by environment change; see the superseded banner above**
+Relevant paths: test/guide-index-sync.bats, docs/decisions/014-secure-tool-guidance-layers.md, docs/working/dd-secure-tool-guidance.md, docs/decisions/016-multi-project-devcontainer-central-config.md
 Branch: worktree-agent-af8ebf915c7a1c66d (worktree branch; spike is doc-only, no throwaway code to discard)
 Time spent: ~25 minutes of probing (within the 30-45 min timebox)
 
