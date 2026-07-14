@@ -157,6 +157,26 @@ def _segments(text: str, depth: int = 0) -> list[list[tuple[str, bool]]]:
             tok += body[i + 1]
             i += 2
             continue
+        if c == "$" and i + 1 < n and body[i + 1] == "{":
+            # ${…} parameter expansion is a WORD part, not a command boundary:
+            # its braces are not the `{ }` separators, and its leading `#`
+            # (${#arr[@]}, a length op) is not a comment. Swallow the balanced
+            # span into the token. Without this, `{` splits a segment and the
+            # `#` blanks the rest of the line — so `[ ${#a} ]; curl x` lost its
+            # curl entirely (a fail-open, and ${#…} is pervasive in real shell).
+            depth2, j = 0, i + 1
+            while j < n:
+                if body[j] == "{":
+                    depth2 += 1
+                elif body[j] == "}":
+                    depth2 -= 1
+                    if depth2 == 0:
+                        j += 1
+                        break
+                j += 1
+            tok += body[i:j]
+            i = j
+            continue
         if c == "#" and not tok and not quoted:
             nl = body.find("\n", i)
             i = n if nl == -1 else nl
@@ -510,11 +530,36 @@ def _split_functions(text: str) -> tuple[str, dict[str, str]]:
             continue
         top.append(text[pos : m.start()])
         j = text.index("{", m.end() - 1)
-        depth, k = 0, j
-        while k < len(text):
-            if text[k] == "{":
+        # Quote/comment-aware brace walk: a `}` inside a string literal or a
+        # comment must NOT close the body. A naive count truncated the body at
+        # `echo "}"`, spilling the rest (e.g. a PATH-shim stub) into top-level
+        # code, which _running_text credits as always-running — so an UNUSED
+        # helper wrongly stubbed the suite (a fail-open). `{` in a string had the
+        # dual effect: it swallowed following functions into this body.
+        depth, k, q = 0, j, None
+        n = len(text)
+        while k < n:
+            c = text[k]
+            if q:
+                if c == "\\" and q == '"' and k + 1 < n:
+                    k += 2
+                    continue
+                if c == q:
+                    q = None
+                k += 1
+                continue
+            if c in "'\"":
+                q = c
+            elif c == "\\" and k + 1 < n:
+                k += 2
+                continue
+            elif c == "#" and (k == 0 or text[k - 1] in " \t\n;&|(){}"):
+                nl = text.find("\n", k)
+                k = n if nl == -1 else nl
+                continue
+            elif c == "{":
                 depth += 1
-            elif text[k] == "}":
+            elif c == "}":
                 depth -= 1
                 if depth == 0:
                     break

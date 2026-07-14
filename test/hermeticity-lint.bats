@@ -380,6 +380,74 @@ lint() {
   [ "$status" -eq 0 ]
 }
 
+@test "bash: a \${#arr} length op does not hide a spawn later on the line" {
+  # ${#var} is a parameter-length expansion, not a comment. The tokenizer once
+  # split on its `{` and then read its `#` as starting a comment, blanking the
+  # REST of the line — so a real `curl` after a `[ ${#a[@]} ]` guard vanished. A
+  # fail-open, and ${#…} is pervasive (self-improvement.sh, the incident file,
+  # uses it).
+  local fx="$FAKE/test/lengthop.bats"
+  printf '#!/usr/bin/env bats\n' > "$fx"
+  printf '@test "guarded fetch" {\n' >> "$fx"
+  printf '  arr=(a b c)\n' >> "$fx"
+  printf '  if [ ${#arr[@]} -gt 0 ]; then curl https://example.com; fi\n' >> "$fx"
+  printf '}\n' >> "$fx"
+
+  run lint --lang bash
+  [ "$status" -eq 1 ]
+  [[ "$output" == *"can spawn \`curl\`"* ]]
+}
+
+@test "bash: a \`}\` inside a string in an UNUSED helper does not leak a stub" {
+  # _split_functions brace-matched without quote awareness: a `}` inside a string
+  # closed the function body early, spilling the PATH-shim lines below it into
+  # top-level code — which _running_text credits as always-running. So a
+  # stub_claude() that the suite never calls still marked it stubbed: a fail-open.
+  mkdir -p "$FAKE/test/lib"
+  printf 'claude -p "hi"\n' > "$FAKE/scripts/danger.sh"
+  printf 'stub_claude() {\n' > "$FAKE/test/lib/stubs.bash"
+  printf '  echo "a close brace } inside a string"\n' >> "$FAKE/test/lib/stubs.bash"
+  printf '  mkdir -p "$BATS_TEST_TMPDIR/bin"\n' >> "$FAKE/test/lib/stubs.bash"
+  printf '  printf "exit 0" > "$BATS_TEST_TMPDIR/bin/claude"\n' >> "$FAKE/test/lib/stubs.bash"
+  printf '  chmod +x "$BATS_TEST_TMPDIR/bin/claude"\n' >> "$FAKE/test/lib/stubs.bash"
+  printf '  PATH="$BATS_TEST_TMPDIR/bin:$PATH"\n' >> "$FAKE/test/lib/stubs.bash"
+  printf '}\n' >> "$FAKE/test/lib/stubs.bash"
+
+  local fx="$FAKE/test/leak.bats"
+  printf '#!/usr/bin/env bats\n' > "$fx"
+  printf 'load lib/stubs\n' >> "$fx"
+  printf '@test "never calls the stub" {\n' >> "$fx"
+  printf '  run bash "$BATS_TEST_DIRNAME/../scripts/danger.sh"\n' >> "$fx"
+  printf '}\n' >> "$fx"
+
+  run lint --lang bash
+  [ "$status" -eq 1 ]
+  [[ "$output" == *"can spawn \`claude\`"* ]]
+}
+
+@test "bash: a \`}\` inside a string in a CALLED stub is still credited" {
+  # The dual of the case above: making the brace walk quote-aware must not stop
+  # crediting a genuine stub that happens to contain a `}` in a string. If the
+  # suite DOES call the helper, the shim still counts and the suite is clean.
+  mkdir -p "$FAKE/test/lib"
+  printf 'stub_claude() {\n' > "$FAKE/test/lib/stubs.bash"
+  printf '  echo "a close brace } inside a string"\n' >> "$FAKE/test/lib/stubs.bash"
+  printf '  mkdir -p "$BATS_TEST_TMPDIR/bin"\n' >> "$FAKE/test/lib/stubs.bash"
+  printf '  printf "exit 0" > "$BATS_TEST_TMPDIR/bin/claude"\n' >> "$FAKE/test/lib/stubs.bash"
+  printf '  chmod +x "$BATS_TEST_TMPDIR/bin/claude"\n' >> "$FAKE/test/lib/stubs.bash"
+  printf '  PATH="$BATS_TEST_TMPDIR/bin:$PATH"\n' >> "$FAKE/test/lib/stubs.bash"
+  printf '}\n' >> "$FAKE/test/lib/stubs.bash"
+
+  local fx="$FAKE/test/uses-stub.bats"
+  printf '#!/usr/bin/env bats\n' > "$fx"
+  printf 'load lib/stubs\n' >> "$fx"
+  printf 'setup() {\n  stub_claude\n}\n' >> "$fx"
+  printf '@test "calls the stub then claude" {\n  run claude -p hi\n}\n' >> "$fx"
+
+  run lint --lang bash
+  [ "$status" -eq 0 ]
+}
+
 # --- python: the second adapter (proves the contract generalizes) ----------
 
 @test "python: flags a subprocess spawn of a network binary" {
