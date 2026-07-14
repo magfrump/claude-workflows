@@ -42,4 +42,6 @@ Reference documents for specific processes and conventions. Unlike workflows (st
 
 - **[sandbox-tool-map.md](sandbox-tool-map.md)** — Substitution map from denied or prompt-generating tools (post-2026-07-09 hardening) to allowed equivalents: dedicated tools over shell, `rg --files` over `find`, `git commit -F` for trailer-bearing messages, test stubs for network-capable binaries. Consult on any sandbox or permission denial before retrying. Guarded against settings drift by `test/sandbox-tool-map-drift.bats`.
 
+- **[devcontainer-setup.md](devcontainer-setup.md)** — How to run Claude Code inside the `cc-isolated` devcontainer: one boundary per project, central config, egress firewall. Use when onboarding a new project onto the isolated-session setup (decisions 015/016).
+
 - **[sub-agent-briefing.md](sub-agent-briefing.md)** — Five elements of a well-formed sub-agent prompt (goal preamble, exact paths, specific questions, output cap, output destination), one worked example, and an anti-pattern catalog. Use when dispatching sub-agents from any orchestrator or workflow.

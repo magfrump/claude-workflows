@@ -99,6 +99,46 @@ root-owned to `/etc/cc-egress-profile` at **build** time, `node` has NOPASSWD su
 for `init-firewall.sh` and nothing else, and sudo's `env_reset` strips the
 environment. Widening requires a host-side re-register, re-bless, and rebuild.
 
+## Python projects
+
+The image ships **`uv`** plus Debian's `python3.11`, and deliberately ships **no pip**.
+That is not an omission to work around: the `node:20` base has no `ensurepip`, so
+`python3 -m venv` fails outright, and uv replaces both the venv builder and the
+installer with one static binary. A uv venv also sidesteps Debian's PEP 668
+`EXTERNALLY-MANAGED` marker, which would block a system-wide `pip install` anyway.
+
+Host-side, once:
+
+```bash
+cc-isolated --register ~/code/api --profile python   # opens PyPI, re-blesses, rebuilds next launch
+cc-isolated ~/code/api
+```
+
+Then inside the container:
+
+```bash
+uv venv                 # .venv on the image's python3.11
+uv pip install pytest   # or `uv sync` if the repo has a uv lockfile
+.venv/bin/pytest
+```
+
+Two failure modes worth recognizing on sight:
+
+- **Missing `--profile python` breaks the install, not the venv.** `uv venv` touches no
+  network and succeeds under the `base` profile; `uv pip install` then dies with
+  `Network is unreachable` for `pypi.org`. That error means the project was never
+  registered — it does not mean uv is broken. Registration is host-side by design
+  (see above); an agent cannot grant itself PyPI.
+- **uv will not fetch an interpreter.** `UV_PYTHON_DOWNLOADS=never` is baked into the
+  image, so `uv venv --python 3.12` fails loudly rather than silently pulling a managed
+  CPython from GitHub — reachable regardless of profile, since `init-firewall.sh` always
+  admits GitHub's published IP ranges for every project. A project needing a different
+  Python version needs a different base image, not a wider allowlist.
+
+Note the asymmetry with the hermeticity story: `uv pip install` reaching PyPI is a
+*build* step, not a *test* step. Test suites are still expected to be hermetic (decision
+017, `guides/test-hermeticity.md` once that branch lands).
+
 ## Verifying the boundary
 
 The launcher probes five things at every start and refuses to exec `claude` if any

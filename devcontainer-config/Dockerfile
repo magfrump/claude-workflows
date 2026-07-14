@@ -63,6 +63,55 @@ RUN ARCH=$(dpkg --print-architecture) && \
   sudo dpkg -i "git-delta_${GIT_DELTA_VERSION}_${ARCH}.deb" && \
   rm "git-delta_${GIT_DELTA_VERSION}_${ARCH}.deb"
 
+# uv — the Python toolchain (decision log #18).
+#
+# The node:20 base ships python3.11 but no pip and, crucially, no `ensurepip`, so
+# `python3 -m venv` FAILS outright: there is no installer of any kind in the image.
+# The `python` egress profile was therefore opening PyPI to a container that had no
+# way to reach it. uv is a single static binary that is both the venv builder and the
+# installer, so one tool closes the whole gap (no pip/venv/ensurepip bootstrap chain,
+# and the venv sidesteps Debian's PEP 668 EXTERNALLY-MANAGED marker).
+#
+# Fetched from GitHub releases at a pinned version, mirroring the git-delta block
+# above, rather than `curl https://astral.sh/uv/install.sh | sh`: no new trusted
+# domain (GitHub is already the source for delta and zsh-in-docker), and a version
+# bump shows up in the diff.
+#
+# Astral publishes a `.sha256` file alongside every release asset; verify against
+# it rather than trusting the TLS channel alone (git-delta above does not, but that
+# predates this decision — don't skip a free check just to match an older layer).
+#
+# Installed to /usr/local/bin, which is root-owned. Unlike /usr/local/share (chowned
+# to node above for npm), `node` cannot rewrite the toolchain binary it runs.
+ARG UV_VERSION=0.11.28
+RUN case "$(dpkg --print-architecture)" in \
+    amd64) UV_TARGET=x86_64-unknown-linux-gnu ;; \
+    arm64) UV_TARGET=aarch64-unknown-linux-gnu ;; \
+    *) echo "uv: unsupported architecture $(dpkg --print-architecture)" >&2; exit 1 ;; \
+  esac && \
+  cd /tmp && \
+  UV_ASSET="uv-${UV_TARGET}.tar.gz" && \
+  wget -q "https://github.com/astral-sh/uv/releases/download/${UV_VERSION}/${UV_ASSET}" \
+    "https://github.com/astral-sh/uv/releases/download/${UV_VERSION}/${UV_ASSET}.sha256" && \
+  sha256sum -c "${UV_ASSET}.sha256" && \
+  tar xzf "${UV_ASSET}" && \
+  install -o root -g root -m 0755 "/tmp/uv-${UV_TARGET}/uv" /usr/local/bin/uv && \
+  install -o root -g root -m 0755 "/tmp/uv-${UV_TARGET}/uvx" /usr/local/bin/uvx && \
+  rm -rf "/tmp/uv-${UV_TARGET}" "/tmp/${UV_ASSET}" "/tmp/${UV_ASSET}.sha256"
+
+# UV_PYTHON_DOWNLOADS=never: uv resolves the interpreter itself, and when it dislikes
+# the system one it silently downloads a managed CPython from GitHub — reachable
+# because init-firewall.sh always admits GitHub's published IP ranges (from
+# api.github.com/meta), for every project, independent of egress profile. Pinning
+# UV_PYTHON_DOWNLOADS to `never` keeps the image's python3.11 the only interpreter,
+# so a version mismatch is a loud error rather than a quiet fetch through the firewall.
+#
+# UV_LINK_MODE=copy: the uv cache lives in the container filesystem while venvs live
+# under /workspace, a bind mount. Hardlinking across that device boundary is
+# impossible, so the default mode warns on every single install.
+ENV UV_PYTHON_DOWNLOADS=never \
+    UV_LINK_MODE=copy
+
 # Set up non-root user
 USER node
 
