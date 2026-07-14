@@ -29,6 +29,7 @@
       "CLAUDE_CODE_VERSION": "latest",
       "GIT_DELTA_VERSION": "0.18.2",
       "ZSH_IN_DOCKER_VERSION": "1.2.0",
+      "UV_VERSION": "0.11.28",
       "CC_EGRESS_PROFILE": "${localEnv:CC_EGRESS_PROFILE}"
     }
   },
