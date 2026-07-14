@@ -131,8 +131,9 @@ Two failure modes worth recognizing on sight:
   (see above); an agent cannot grant itself PyPI.
 - **uv will not fetch an interpreter.** `UV_PYTHON_DOWNLOADS=never` is baked into the
   image, so `uv venv --python 3.12` fails loudly rather than silently pulling a managed
-  CPython from GitHub, whose ranges the `base` profile already allows. A project needing
-  a different Python version needs a different base image, not a wider allowlist.
+  CPython from GitHub — reachable regardless of profile, since `init-firewall.sh` always
+  admits GitHub's published IP ranges for every project. A project needing a different
+  Python version needs a different base image, not a wider allowlist.
 
 Note the asymmetry with the hermeticity story: `uv pip install` reaching PyPI is a
 *build* step, not a *test* step. Test suites are still expected to be hermetic — see
