@@ -5,6 +5,11 @@
 # Usage: Set REPORT_PATH to a generated report, then run:
 #   REPORT_PATH=docs/reviews/ai-personas-critique.md bats test/skills/ai-personas-critique-format.bats
 
+# `run !` and `run -N` are bats >= 1.5 features. Declaring the requirement makes
+# bats enforce it (hard error on an older bats) instead of emitting BW02 and
+# leaving it an open question whether the flag-carrying assertions really assert.
+bats_require_minimum_version 1.5.0
+
 load helpers
 
 setup() {
@@ -133,20 +138,20 @@ setup() {
 
 @test "report does not contain Cowen-specific analytical section names" {
   # ai-personas-critique should not lift Cowen's fixed cognitive-move headings
-  ! echo "$REPORT_CONTENT" | grep -qiE '^#{1,4} .*Survives the Inversion'
-  ! echo "$REPORT_CONTENT" | grep -qiE '^#{1,4} .*Boring Explanation'
+  run ! grep -qiE '^#{1,4} .*Survives the Inversion' <<< "$REPORT_CONTENT"
+  run ! grep -qiE '^#{1,4} .*Boring Explanation' <<< "$REPORT_CONTENT"
   ! echo "$REPORT_CONTENT" | grep -qiE '^#{1,4} .*Argument Decomposed'
 }
 
 @test "report does not contain Yglesias-specific analytical section names" {
   # ai-personas-critique should not lift Yglesias's fixed cognitive-move headings
-  ! echo "$REPORT_CONTENT" | grep -qiE '^#{1,4} .*Goal vs\.? the Mechanism'
-  ! echo "$REPORT_CONTENT" | grep -qiE '^#{1,4} .*Boring Lever'
+  run ! grep -qiE '^#{1,4} .*Goal vs\.? the Mechanism' <<< "$REPORT_CONTENT"
+  run ! grep -qiE '^#{1,4} .*Boring Lever' <<< "$REPORT_CONTENT"
   ! echo "$REPORT_CONTENT" | grep -qiE '^#{1,4} .*10 Million People'
 }
 
 @test "report does not contain reviewer-style verdict scales" {
   # Personas critique uses Severity = Fatal/Significant/Point — not reviewer scales
-  ! echo "$REPORT_CONTENT" | grep -qiE '^\*\*Verdict:\*\* (Accurate|Verified|Incorrect|Stale)$'
+  run ! grep -qiE '^\*\*Verdict:\*\* (Accurate|Verified|Incorrect|Stale)$' <<< "$REPORT_CONTENT"
   ! echo "$REPORT_CONTENT" | grep -qiE '^\*\*Severity:\*\* (Critical|High|Medium|Low|Informational)$'
 }

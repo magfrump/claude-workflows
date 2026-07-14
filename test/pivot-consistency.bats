@@ -11,7 +11,9 @@
 # Usage: bats test/pivot-consistency.bats
 
 setup() {
-  WORKFLOW_DIR="$HOME/.claude/workflows"
+  # Repo-relative, not the deployed ~/.claude install — see the note in
+  # workflow-required-sections.bats. Keeps the suite hermetic.
+  WORKFLOW_DIR="${WORKFLOW_DIR:-$BATS_TEST_DIRNAME/../workflows}"
 
   # The workflows that have '## When to pivot' sections.
   PIVOT_WORKFLOWS=(

@@ -6,6 +6,11 @@
 # <!-- Recent rejections (last 3 rounds): ... --> HTML-comment block to
 # docs/working/si-input.md based on round-<N>-report.json files.
 
+# `run !` and `run -N` are bats >= 1.5 features. Declaring the requirement makes
+# bats enforce it (hard error on an older bats) instead of emitting BW02 and
+# leaving it an open question whether the flag-carrying assertions really assert.
+bats_require_minimum_version 1.5.0
+
 setup() {
   source "$BATS_TEST_DIRNAME/../scripts/lib/si-input.sh"
   TEST_TMPDIR=$(mktemp -d)
@@ -93,7 +98,7 @@ merge_validations() {
   prepend_si_input_rejected_history "$INPUT_FILE" "$WORKING_DIR"
 
   grep -q 'first line summary' "$INPUT_FILE"
-  ! grep -q 'second line details' "$INPUT_FILE"
+  run ! grep -q 'second line details' "$INPUT_FILE"
   ! grep -q 'third line more' "$INPUT_FILE"
 }
 
@@ -112,7 +117,7 @@ merge_validations() {
   grep -q 'task-r5' "$INPUT_FILE"
 
   # Older two excluded.
-  ! grep -q 'task-r1' "$INPUT_FILE"
+  run ! grep -q 'task-r1' "$INPUT_FILE"
   ! grep -q 'task-r2' "$INPUT_FILE"
 }
 

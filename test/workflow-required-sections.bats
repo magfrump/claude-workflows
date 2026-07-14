@@ -7,7 +7,12 @@
 # Usage: bats test/workflow-required-sections.bats
 
 setup() {
-  WORKFLOW_DIR="$HOME/.claude/workflows"
+  # Resolve workflows from the repo, not the deployed ~/.claude install: the
+  # repo is the source of truth (~/.claude/workflows is a symlink to it, per
+  # README), so reading it directly keeps the suite hermetic — it passes on a
+  # machine where the config has never been installed. Overridable to point the
+  # suite at a real deployment.
+  WORKFLOW_DIR="${WORKFLOW_DIR:-$BATS_TEST_DIRNAME/../workflows}"
 
   # These 6 workflows follow the standard convention of having
   # '## When to use' and numbered '### N.' process steps.

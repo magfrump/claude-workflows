@@ -10,7 +10,9 @@
 #   5. Unrecognized tools are silently ignored (Bash, Read, others)
 #   6. Output is valid JSONL; hook never blocks tool execution
 
-HOOK="$HOME/.claude/hooks/log-usage-post.sh"
+# Repo-relative, not the deployed ~/.claude copy — see the note in
+# log-usage.bats. Keeps the suite hermetic.
+HOOK="${LOG_USAGE_POST_HOOK:-$BATS_TEST_DIRNAME/../../hooks/log-usage-post.sh}"
 
 setup() {
   TEST_LOG=$(mktemp)
@@ -135,7 +137,7 @@ agent_post_subagent() {
 
 @test "post-event name matches pre-event name for the same skill" {
   # If a consumer wants to pair pre+post, the name field must be identical.
-  PRE_HOOK="$HOME/.claude/hooks/log-usage.sh"
+  PRE_HOOK="${LOG_USAGE_HOOK:-$BATS_TEST_DIRNAME/../../hooks/log-usage.sh}"
   printf '%s' '{"tool_name":"Skill","tool_input":{"skill":"draft-review","args":"hello"}}' | bash "$PRE_HOOK"
   skill_post "draft-review" "100" | bash "$HOOK"
   [ "$(sed -n '1p' "$TEST_LOG" | jq -r '.name')" = "draft-review" ]

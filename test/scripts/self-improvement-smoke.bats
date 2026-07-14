@@ -16,6 +16,11 @@
 #
 # Usage: bats test/scripts/self-improvement-smoke.bats
 
+# `run !` and `run -N` are bats >= 1.5 features. Declaring the requirement makes
+# bats enforce it (hard error on an older bats) instead of emitting BW02 and
+# leaving it an open question whether the flag-carrying assertions really assert.
+bats_require_minimum_version 1.5.0
+
 REPO_ROOT="$(cd "$(dirname "$BATS_TEST_FILENAME")/../.." && pwd)"
 
 setup() {
@@ -348,7 +353,7 @@ MIXED
   echo report > "$wt/docs/reviews/self-eval-x.md"
 
   # Sanity: bare `worktree remove` (no --force) refuses a dirty worktree.
-  ! git -C "$REPO_DIR" worktree remove "$wt"
+  run ! git -C "$REPO_DIR" worktree remove "$wt"
   [ -d "$wt" ]
 
   RUN_WORKTREES=("$wt")

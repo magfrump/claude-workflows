@@ -8,6 +8,12 @@
 #
 # Usage: bats test/test-baseline-gate.bats
 
+load lib/hermetic-env
+
+# These tests index into "${lines[@]}" from `run bash -c ...`; an un-installed
+# ambient locale would make bash's setlocale warning the first captured line.
+pin_hermetic_locale
+
 setup() {
   source "$BATS_TEST_DIRNAME/../scripts/lib/si-functions.sh"
   TEST_TMPDIR=$(mktemp -d)
