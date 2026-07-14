@@ -1,0 +1,49 @@
+{
+  "language": "bash",
+  "_comment": "1:1 port of the original test/fixture-hermeticity.bats rule (decision 014, layer 2). Behaviour must not drift: the 13 existing bats suites are the regression test.",
+
+  "test_globs": ["test/**/*.bats", "test/*.bats"],
+  "exclude_globs": ["**/.git/**", "**/.claude/**"],
+
+  "network_bins": ["claude", "curl", "wget", "gh"],
+
+  "comment_prefixes": ["#"],
+
+  "matcher": "command_position",
+
+  "_command_prefixes_comment": "Wrapper words that can stand between command position and the real command. Without them `if curl …`, `timeout 5 wget …`, `env FOO=1 gh …` and — the one that matters most here — bats' `run ! claude …` all hide the binary. This repo made `run !` its house idiom (63 assertions), so omitting `!` would blind the gate to the very shape it asks contributors to write. The SAME list drives the closure: `run ! bash x.sh` must pull x.sh into the reach exactly as `bash x.sh` does.",
+  "command_prefixes": [
+    "run", "!", "if", "then", "elif", "while", "until", "do",
+    "time", "timeout", "env", "command", "exec", "sudo", "nohup", "xargs", "stdbuf"
+  ],
+
+  "_shell_wrappers_comment": "Wrappers whose QUOTED argument is shell source, not data: `run bash -c \"curl …\"` and `eval \"curl …\"` are the shell twins of Python's shell=True, and the matcher looks inside them.",
+  "shell_wrappers": ["bash", "sh", "zsh", "eval", "source", "."],
+
+  "closure": {
+    "_comment": "4d39475 was INDIRECT: the suite sourced self-improvement.sh, which held the live `claude -p`. A file is REFERENCED when the suite could actually run it, and that question is answered structurally by the tokenizer, not by a regex — three passes of regex-tightening each opened a new hole (`run ! bash x.sh` not followed, `load \"$DIR/x\"` not resolved, exponential backtracking). Three shapes count, all transitive: a `load`/`source`/`.` directive; a script in command position behind any wrapper; and an assignment, because the house style is `SCRIPT=\"…/x.sh\"` … `run bash \"$SCRIPT\"`. Resolution is relative to the referring file first (what bats does — `load helpers` means helpers.bash NEXT TO THE SUITE), with search_dirs as the fallback for variable-built paths. Still deliberately over-approximate: sourcing a file that merely CONTAINS a call site counts as 'can invoke'. What it does NOT follow is a filename that is only MENTIONED — `skip \"…run generate-reports.bash first\"`, `grep -q 'x.sh'` — because a mention is not a reach, and following it flagged four honest suites whose only escape would have been a blanket opt-out they do not deserve.",
+    "resolve": "basename_in_dirs",
+    "directives": ["load", "source", "."],
+    "script_suffixes": [".sh", ".bash"],
+    "extensions": ["", ".sh", ".bash"],
+    "search_dirs": ["scripts", "scripts/lib", "hooks", "hooks/lib", "test", "test/lib"]
+  },
+
+  "_stub_scan_comment": "A stub in a loaded test helper counts — but only if it RUNS: the helper's top-level code, or a helper function the suite actually calls. A `stub_claude()` merely defined in a shared helper is not a stub, and counting it exempted every suite that loaded that helper. Scoped to the test tree: a PATH tweak inside a sourced product script is not a test stub.",
+  "stub_scan_dirs": ["test"],
+
+  "stub_rules": [
+    {
+      "_comment": "The PATH-shim pattern from round-log-functions.bats: a file named after the binary is created AND a dir is prepended to PATH. Both facts must co-occur.",
+      "all_of": [
+        "(>|touch |cp |install |ln (-[a-z]+ )?|chmod \\+x )[^#\\n]*/{bin}[\"']?([ \\t]|$)",
+        "PATH=\\S*:\\$PATH"
+      ]
+    }
+  ],
+
+  "optout_scan_lines": 15,
+  "optout_patterns": [
+    "^#[ \\t]*@network:[ \\t]*allowed[^A-Za-z0-9\\n]+[A-Za-z0-9]"
+  ]
+}

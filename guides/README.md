@@ -42,4 +42,6 @@ Reference documents for specific processes and conventions. Unlike workflows (st
 
 - **[sandbox-tool-map.md](sandbox-tool-map.md)** — Substitution map from denied or prompt-generating tools (post-2026-07-09 hardening) to allowed equivalents: dedicated tools over shell, `rg --files` over `find`, `git commit -F` for trailer-bearing messages, test stubs for network-capable binaries. Consult on any sandbox or permission denial before retrying. Guarded against settings drift by `test/sandbox-tool-map-drift.bats`.
 
+- **[test-hermeticity.md](test-hermeticity.md)** — The one hermeticity rule (no test may *spawn* a network binary unstubbed), why in-process HTTP is deliberately out of scope, the stub and opt-out patterns per language, and why the static lint is triage while the netns runner is ground truth. Consult when a `hermeticity-lint` violation fires, or when adopting the check in another project.
+
 - **[sub-agent-briefing.md](sub-agent-briefing.md)** — Five elements of a well-formed sub-agent prompt (goal preamble, exact paths, specific questions, output cap, output destination), one worked example, and an anti-pattern catalog. Use when dispatching sub-agents from any orchestrator or workflow.
