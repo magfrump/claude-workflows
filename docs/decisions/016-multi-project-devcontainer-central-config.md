@@ -148,3 +148,41 @@ decision. Future readers can grep this section when their context changes to see
 decisions still apply.
 
 If `--override-config` cannot resolve the `Dockerfile` build context from outside the workspace → fall back to referencing a prebuilt `claude-base` image by tag (the base-image sub-mechanism makes this a small change, not a redesign). If ≥1 project needs a repo-local `.devcontainer/` (a pre-existing devcontainer, or an IDE-attach workflow that the CLI launcher can't serve) → implement candidate **[4] hybrid**, the pre-named fallback, rather than re-opening the DD. If VS Code Dev Containers attach becomes a required workflow rather than a nice-to-have → same, [4]. If the number of isolated projects exceeds ~10 and per-project image builds exceed ~2 min each → the shared base image is no longer optional; make it a hard prerequisite. If a stale installed config is observed causing a boundary regression more than once → move the install step into the launcher itself (auto-install on hash mismatch, still gated by the manifest). If decision 015's Reverse trigger fires (Docker Desktop unavailable → podman rootless) → the central config must be re-verified against podman's `--override-config` support before assuming this decision carries over.
+
+## Post-implementation correction (2026-07-13)
+
+The first revisit trigger below fired on the first real multi-project launch:
+`cc-isolated ~/other-project` failed with "Dockerfile not found". **The named fallback
+(a prebuilt `claude-base` image by tag) was not needed.** `--override-config` *can*
+build from outside the workspace — it just cannot do so with **relative** build paths.
+
+Root cause: the CLI reads the override file's content but sets the config's
+`configFilePath` to the *workspace's* `.devcontainer/devcontainer.json`
+(`configContainer.ts`: `config.configFilePath = configFile`). `resolveConfigFilePath`
+then resolves `build.dockerfile`/`build.context` against that — i.e. against the target
+repo. Fix: anchor both to `${localEnv:CC_CONFIG_DIR}`, exported by the launcher.
+
+**This was a silent H2 breach, not just a build failure.** In a repo that *has* a
+`.devcontainer/Dockerfile`, the build succeeded against the repo's own Dockerfile and
+baked the repo's bind-mounted, agent-writable `init-firewall.sh` into the image. This
+repo still had its decision-015 `.devcontainer/`, so `cc-isolated` appeared verified
+here while never once using the central config: the egress profiles and
+`CC_EGRESS_PROFILE` (H5) were absent from the image entirely, and the boundary in force
+was one a session could have rewritten. The H2 manual check in the guide passed for the
+wrong reason — edits to `devcontainer-config/` *were* inert, but edits to
+`.devcontainer/init-firewall.sh` were not.
+
+Hardening, so this cannot recur silently:
+- Build paths are absolute; three bats tests in `test/cc-isolated-functions.bats` fail
+  if they are ever made relative again.
+- The boundary self-probe gained an **image-provenance** check: the running image must
+  carry `/usr/local/share/cc-egress/` and an `/etc/cc-egress-profile` matching the
+  registered profile — both of which only the central Dockerfile produces. A container
+  built from a repo's own Dockerfile now refuses to start `claude`.
+- The migration step in `guides/devcontainer-setup.md` now deletes the legacy
+  `.devcontainer/` **before** verification, because its presence invalidates the test.
+
+Lesson for the next boundary decision: "the config is outside the bind mount" was
+necessary but not sufficient for H2. What actually enforces the boundary is the
+**image**, and nothing checked that the image came from the config we blessed. Verify
+the artifact, not just the input.

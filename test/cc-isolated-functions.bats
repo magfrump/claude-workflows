@@ -281,3 +281,32 @@ firewall() {
   [ "$status" -eq 0 ]
   [[ "$output" == *"api.anthropic.com"* ]]
 }
+
+# --- build-path anchoring (regression: --override-config resolves relative build
+# --- paths against the TARGET REPO, not the config dir) ---
+#
+# These assert on the REAL devcontainer-config/devcontainer.json, not the stub in
+# setup(). A relative "dockerfile"/"context" here means the CLI builds
+# <repo>/.devcontainer/Dockerfile: a hard failure in repos without one, and a silent
+# H2 breach in repos that have one (their agent-writable init-firewall.sh gets baked
+# into the image). This is how cc-isolated shipped, and only the repo's own leftover
+# .devcontainer/ made it look like it worked.
+
+@test "devcontainer.json anchors build.dockerfile to the config dir, not the repo" {
+  run grep -E '"dockerfile"[[:space:]]*:' "$CONFIG_SRC/devcontainer.json"
+  [ "$status" -eq 0 ]
+  [[ "$output" == *'${localEnv:CC_CONFIG_DIR}/Dockerfile'* ]]
+}
+
+@test "devcontainer.json anchors build.context to the config dir, not the repo" {
+  run grep -E '"context"[[:space:]]*:' "$CONFIG_SRC/devcontainer.json"
+  [ "$status" -eq 0 ]
+  [[ "$output" == *'${localEnv:CC_CONFIG_DIR}'* ]]
+  # A bare "." would resolve to <repo>/.devcontainer — the bug.
+  [[ "$output" != *'": "."'* ]]
+}
+
+@test "the launcher exports CC_CONFIG_DIR (else the build paths resolve to /)" {
+  run grep -E '^\s*export .*CC_CONFIG_DIR|CC_CONFIG_DIR="\$\(config_dir\)"' "$CONFIG_SRC/cc-isolated.sh"
+  [ "$status" -eq 0 ]
+}

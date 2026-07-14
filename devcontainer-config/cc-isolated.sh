@@ -275,11 +275,30 @@ probe_boundary() {
     failures=$((failures + 1))
   fi
 
+  # Image provenance: the container must have been built from the CENTRAL Dockerfile.
+  # Only it creates /usr/local/share/cc-egress/ and bakes /etc/cc-egress-profile. If
+  # the CLI ever resolves the build against the target repo again (the bug that made
+  # a repo's own .devcontainer/Dockerfile get built instead — silently baking that
+  # repo's agent-writable init-firewall.sh), these are absent or the profile is wrong,
+  # and we refuse rather than hand the agent a boundary it wrote itself.
+  local want_profile="${CC_EGRESS_PROFILE:-}"
+  if ! devcontainer exec "${dc[@]}" bash -c "
+      test -r /usr/local/share/cc-egress/base.txt &&
+      test -r /etc/cc-egress-profile &&
+      [ \"\$(tr -d '[:space:]' < /etc/cc-egress-profile)\" = '$want_profile' ]"; then
+    echo "PROBE FAIL (image provenance): this container was NOT built from the central" >&2
+    echo "  Dockerfile at $(config_dir) (missing /usr/local/share/cc-egress, or its baked" >&2
+    echo "  egress profile is not '${want_profile:-<base only>}'). Refusing: the boundary in this image is" >&2
+    echo "  not the one you blessed. Rebuild with:" >&2
+    echo "    devcontainer up --remove-existing-container ${dc[*]}" >&2
+    failures=$((failures + 1))
+  fi
+
   if [ "$failures" -gt 0 ]; then
     echo "Boundary self-probe FAILED ($failures) — not starting Claude Code." >&2
     return 1
   fi
-  echo "Boundary self-probe passed (canary invisible · egress default-deny · workspace identity · volume not shared)."
+  echo "Boundary self-probe passed (canary invisible · egress default-deny · workspace identity · volume not shared · image from central Dockerfile)."
 }
 
 usage() {
@@ -338,7 +357,12 @@ main() {
   CC_PROJECT_ID="$pid"
   CC_PROJECT_NAME="$(basename "$ws")"
   CC_EGRESS_PROFILE="$eff_profile"
-  export CC_PROJECT_ID CC_PROJECT_NAME CC_EGRESS_PROFILE
+  # devcontainer.json anchors build.dockerfile/build.context to this. It MUST be
+  # absolute: under --override-config the CLI resolves relative build paths against
+  # the *target repo's* .devcontainer/, not against the config dir (see the comment
+  # in devcontainer.json). Unset, the build context would silently become the repo.
+  CC_CONFIG_DIR="$(config_dir)"
+  export CC_PROJECT_ID CC_PROJECT_NAME CC_EGRESS_PROFILE CC_CONFIG_DIR
 
   if [ ! -f "$HOME/.ssh/canary" ]; then
     echo "WARNING: no ~/.ssh/canary on the host — the H1 probe is weaker without it." >&2

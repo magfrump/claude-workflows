@@ -4,17 +4,26 @@
   // This file is NOT meant to live in a target repo. It is installed to
   // ~/.config/claude-devcontainer/ by install.sh and passed to the CLI with
   // `--override-config`, so it sits outside every bind mount and no session can
-  // edit the boundary it runs under. Relative paths below (build.dockerfile,
-  // build.context) resolve against THIS file's directory, not the workspace —
-  // see the CLI's resolveConfigFilePath.
+  // edit the boundary it runs under.
+  //
+  // BUILD PATHS MUST BE ABSOLUTE. Under `--override-config` the CLI reads this
+  // file's *content* but sets the config's configFilePath to the WORKSPACE's
+  // .devcontainer/devcontainer.json (configContainer.ts: `config.configFilePath =
+  // configFile`). Relative build paths therefore resolve against the target repo,
+  // not this directory: a bare "Dockerfile" means <repo>/.devcontainer/Dockerfile.
+  // In a repo without one that is a hard "Dockerfile not found"; in a repo that
+  // HAS one it silently builds the repo's own Dockerfile and bakes the repo's
+  // agent-writable init-firewall.sh into the image — H2 defeated, silently.
+  // Anchoring both paths to $CC_CONFIG_DIR keeps the build context in the config
+  // dir, which is in no bind mount. Never make these relative again.
   //
   // The ${localEnv:*} values are exported by cc-isolated.sh before it invokes the
   // CLI. They are what make one config serve N projects.
   "name": "cc-isolated (${localEnv:CC_PROJECT_NAME})",
 
   "build": {
-    "dockerfile": "Dockerfile",
-    "context": ".",
+    "dockerfile": "${localEnv:CC_CONFIG_DIR}/Dockerfile",
+    "context": "${localEnv:CC_CONFIG_DIR}",
     "args": {
       "TZ": "${localEnv:TZ:America/Los_Angeles}",
       "CLAUDE_CODE_VERSION": "latest",

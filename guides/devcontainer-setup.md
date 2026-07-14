@@ -101,8 +101,13 @@ environment. Widening requires a host-side re-register, re-bless, and rebuild.
 
 ## Verifying the boundary
 
-The launcher probes four things at every start and refuses to exec `claude` if any
+The launcher probes five things at every start and refuses to exec `claude` if any
 fail:
+
+- **Image provenance:** the running image was built from the central Dockerfile —
+  `/usr/local/share/cc-egress/` is present and `/etc/cc-egress-profile` holds the
+  profile you registered. This is what catches the target repo's own
+  `.devcontainer/Dockerfile` being built instead (see Known limits).
 
 - **H1 (credential denial):** `~/.ssh/canary` and the host home are invisible inside.
 - **Egress:** `https://example.com` is unreachable (default-deny is live).
@@ -126,21 +131,38 @@ Do these by hand for the decision-015 Continue trigger:
 
 ## Migrating from the 015 per-repo launcher
 
-`scripts/devcontainer-session.sh` and `.devcontainer/` are the decision-015
-single-repo path. They still work for *this* repo and are kept until the new path is
-verified on the host. Once `cc-isolated` has launched a session here and in one other
-project, delete them:
+**Delete the legacy `.devcontainer/` BEFORE you verify the new path, not after.** A
+leftover `.devcontainer/Dockerfile` in the target repo does not sit inertly beside
+`cc-isolated` — it *shadows* it. See the override-config gotcha under Known limits:
+a repo with its own `.devcontainer/Dockerfile` will have that one built instead of
+the central one, and the resulting image bakes the repo's own (bind-mounted,
+agent-writable) `init-firewall.sh`. The session comes up, the probes pass, and the
+boundary is one the agent could have written. Verifying while the legacy dir is
+still present tells you nothing.
 
 ```bash
 git rm -r .devcontainer scripts/devcontainer-session.sh test/devcontainer-session-functions.bats
 rm -f ~/.config/claude-devcontainer/claude-workflows.sha256   # the old per-repo manifest
 ```
 
+Then verify — the launcher's image-provenance probe now refuses to start `claude`
+unless the running image really came from the central Dockerfile.
+
 Do not maintain both. Two copies of `init-firewall.sh` is exactly the drift decision
 016 exists to prevent.
 
 ## Known limits and maintenance
 
+- **`--override-config` resolves relative build paths against the TARGET REPO.** The
+  CLI reads the override file's content but sets the config's `configFilePath` to the
+  workspace's `.devcontainer/devcontainer.json`
+  ([configContainer.ts](https://github.com/devcontainers/cli/blob/main/src/spec-node/configContainer.ts):
+  `config.configFilePath = configFile`). So a bare `"dockerfile": "Dockerfile"` means
+  `<repo>/.devcontainer/Dockerfile` — "not found" in most repos, and *silently the
+  wrong Dockerfile* in any repo that has one. `devcontainer.json` therefore anchors
+  `build.dockerfile` and `build.context` to `${localEnv:CC_CONFIG_DIR}`, exported by
+  the launcher. **Never make those paths relative again**; three bats tests guard it,
+  and the image-provenance probe catches it at runtime.
 - **VS Code Dev Containers is not supported.** The extension discovers
   `.devcontainer/devcontainer.json` in the workspace and does not consume
   `--override-config`, so IDE-attach has no boundary config to find. The CLI launcher
