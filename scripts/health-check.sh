@@ -375,18 +375,32 @@ check_shellcheck() {
         return
     fi
 
+    # Skip .claude/ as well as .git/: the self-improvement loop parks nested git
+    # worktrees under .claude/worktrees/ (gitignored). Those are whole second
+    # copies of this repo, so linting them both double-reports every finding and
+    # makes the result depend on which worktrees happen to be lying around
+    # locally — a stale one keeps failing the gate long after the branch is gone.
+    #
+    # Both prunes are ANCHORED at $REPO_ROOT. An unanchored '*/.claude/*' is
+    # matched against the absolute path, so when the checkout ITSELF sits under a
+    # .claude/ dir — which is exactly where the worktrees above live — it excludes
+    # every file in the repo, and the gate reports green having linted nothing.
     local shell_files=()
     while IFS= read -r -d '' f; do
         shell_files+=("$f")
-    done < <(find "$REPO_ROOT" -type f \( -name '*.sh' -o -name '*.bash' \) -not -path '*/.git/*' -print0)
+    done < <(find "$REPO_ROOT" -type f \( -name '*.sh' -o -name '*.bash' \) \
+        -not -path "$REPO_ROOT/.git/*" -not -path "$REPO_ROOT/.claude/*" -print0)
 
     # Also include .bats files — they're bash
     while IFS= read -r -d '' f; do
         shell_files+=("$f")
-    done < <(find "$REPO_ROOT" -type f -name '*.bats' -not -path '*/.git/*' -print0)
+    done < <(find "$REPO_ROOT" -type f -name '*.bats' \
+        -not -path "$REPO_ROOT/.git/*" -not -path "$REPO_ROOT/.claude/*" -print0)
 
+    # A zero-file scan is a broken discovery, not a clean repo: this gate exists
+    # in a repo that is mostly shell. Fail rather than pass vacuously.
     if [[ ${#shell_files[@]} -eq 0 ]]; then
-        warn "No shell files found"
+        fail "No shell files found — the discovery glob is broken, not the repo clean"
         return
     fi
 
