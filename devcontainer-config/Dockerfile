@@ -137,11 +137,16 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
     openjdk-17-jdk-headless \
   && apt-get clean && rm -rf /var/lib/apt/lists/*
 
-# cmdline-tools is fetched from dl.google.com at a pinned build number (mirroring the
-# git-delta/uv blocks: GitHub/Google are already trusted, and a bump shows in the diff).
-# Google does not publish a convenient per-asset .sha256, so this relies on TLS + the
-# pinned version rather than a separate checksum, matching the git-delta layer.
+# cmdline-tools is fetched from dl.google.com at a pinned build number and verified
+# against a pinned SHA-256 before extraction — matching the uv layer's verify-before-
+# extract discipline (the git-delta block above predates it). Google publishes the
+# per-package checksum in its SDK repository manifest (repository2-*.xml); the value is
+# pinned here rather than parsed at build time so verification does not depend on the
+# manifest still listing this (older) build. Bumping the version REQUIRES bumping the
+# hash in lockstep — `sha256sum -c` fails otherwise — so both always move together in
+# the diff, and a CDN/MITM tamper of the zip is caught rather than silently baked in.
 ARG ANDROID_CMDLINE_TOOLS_VERSION=11076708
+ARG ANDROID_CMDLINE_TOOLS_SHA256=2d2d50857e4eb553af5a6dc3ad507a17adf43d115264b1afc116f95c92e5e258
 ARG ANDROID_PLATFORM=android-35
 ARG ANDROID_BUILD_TOOLS=35.0.0
 ENV ANDROID_HOME=/opt/android-sdk \
@@ -150,6 +155,7 @@ RUN mkdir -p "$ANDROID_HOME/cmdline-tools" && \
   cd /tmp && \
   wget -q "https://dl.google.com/android/repository/commandlinetools-linux-${ANDROID_CMDLINE_TOOLS_VERSION}_latest.zip" \
     -O cmdline-tools.zip && \
+  echo "${ANDROID_CMDLINE_TOOLS_SHA256}  cmdline-tools.zip" | sha256sum -c - && \
   unzip -q cmdline-tools.zip -d "$ANDROID_HOME/cmdline-tools" && \
   mv "$ANDROID_HOME/cmdline-tools/cmdline-tools" "$ANDROID_HOME/cmdline-tools/latest" && \
   rm cmdline-tools.zip && \

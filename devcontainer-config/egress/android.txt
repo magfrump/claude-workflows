@@ -14,6 +14,16 @@
 # to the root-owned SDK dir is blocked at the filesystem, not the firewall.
 
 # Google Maven (google()) — AndroidX, the Android Gradle Plugin, Google libraries.
+#
+# ACCEPTED RISK (like the `llm` profile's, called out deliberately): the firewall
+# allowlists by destination IP, not SNI/Host (init-firewall.sh resolves A records and
+# matches on dst). These hostnames resolve to Google Front End IPs, which are
+# SNI-routed, so admitting them implicitly trusts the whole GFE-hosted Google surface
+# — including *writable* endpoints like storage.googleapis.com — as a potential
+# outbound channel for a compromised session. This is the same shared-IP weakness the
+# base profile already carries (GitHub's published CIDRs, PyPI behind Fastly); Google's
+# frontend is just the broadest instance. Tightening it needs an SNI-filtering egress
+# proxy, not a domain edit — out of scope here, accepted knowingly.
 dl.google.com
 maven.google.com
 
