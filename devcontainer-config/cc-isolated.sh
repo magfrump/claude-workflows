@@ -166,6 +166,12 @@ suggest_profiles() {
   if [ -e "$ws/lean-toolchain" ] || [ -e "$ws/lakefile.lean" ]; then
     s+=("lean")
   fi
+  # Gradle/Android: the wrapper (gradlew) or any Gradle build script. Groovy and
+  # Kotlin DSL variants both count.
+  if [ -e "$ws/gradlew" ] || [ -e "$ws/build.gradle" ] || [ -e "$ws/build.gradle.kts" ] || \
+     [ -e "$ws/settings.gradle" ] || [ -e "$ws/settings.gradle.kts" ]; then
+    s+=("android")
+  fi
   if [ ${#s[@]} -gt 0 ]; then
     (IFS=,; echo "${s[*]}")
   fi

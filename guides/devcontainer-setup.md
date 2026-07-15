@@ -1,6 +1,6 @@
 # Devcontainer setup — isolated Claude Code sessions (decisions 015, 016)
 
-Last verified: 2026-07-13
+Last verified: 2026-07-14
 Relevant paths: `devcontainer-config/`, `test/cc-isolated-functions.bats`, `.devcontainer/` (legacy), `scripts/devcontainer-session.sh` (legacy)
 
 Every CC project on this host runs inside a devcontainer, launched by one
@@ -83,7 +83,8 @@ cc-isolated --list                                     # who has what
 
 Registering re-blesses (a project's egress *is* boundary config) and the next
 launch rebuilds that project's image. Available profiles are the files in
-`devcontainer-config/egress/`: `base`, `python`, `rust`, `lean`, `llm`, `vscode`.
+`devcontainer-config/egress/`: `base`, `python`, `rust`, `lean`, `android`, `llm`,
+`vscode`.
 
 Two deliberate choices here:
 
@@ -138,6 +139,28 @@ Two failure modes worth recognizing on sight:
 Note the asymmetry with the hermeticity story: `uv pip install` reaching PyPI is a
 *build* step, not a *test* step. Test suites are still expected to be hermetic (decision
 017, `guides/test-hermeticity.md` once that branch lands).
+
+## Android projects
+
+The image bakes **JDK 17** and an Android SDK (cmdline-tools, `platform-tools`,
+`platforms;android-35`, `build-tools;35.0.0`) at `/opt/android-sdk` — the same
+pattern as uv: the toolchain ships unconditionally in the shared base and the
+`android` egress profile gates only the network (decision log #19). Because the SDK
+is baked at build time, its download needs no egress profile, and the SDK dir is
+root-owned so `node` builds against it but cannot rewrite it.
+
+```bash
+cc-isolated --register ~/code/app --profile android   # Google Maven + Central + Gradle
+cc-isolated ~/code/app
+# inside: ./gradlew assembleDebug
+```
+
+Same shape as the Python failure modes: dependency resolution reaching
+`dl.google.com`/Maven Central is a *runtime* step that needs the profile, and a
+build wanting an SDK component that isn't baked fails loudly (root-owned dir)
+rather than fetching it — that's a central-image rebuild
+(`ANDROID_PLATFORM`/`ANDROID_BUILD_TOOLS` in `devcontainer.json`), not a wider
+allowlist. Full workflow and troubleshooting: `guides/cc-isolated-usage.md`.
 
 ## Verifying the boundary
 

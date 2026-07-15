@@ -219,6 +219,20 @@ make_repo() {
   [ -z "$(project_profile "$TEST_TMPDIR/proj")" ]
 }
 
+@test "suggest_profiles proposes android for a gradle repo (Kotlin DSL)" {
+  make_repo "$TEST_TMPDIR/proj"
+  touch "$TEST_TMPDIR/proj/build.gradle.kts"
+  [ "$(suggest_profiles "$TEST_TMPDIR/proj")" = "android" ]
+  # Suggestion only — the repo's own build files must not grant it egress.
+  [ -z "$(project_profile "$TEST_TMPDIR/proj")" ]
+}
+
+@test "suggest_profiles proposes android for a repo with just the gradle wrapper" {
+  make_repo "$TEST_TMPDIR/proj"
+  touch "$TEST_TMPDIR/proj/gradlew"
+  [ "$(suggest_profiles "$TEST_TMPDIR/proj")" = "android" ]
+}
+
 @test "suggest_profiles is silent for a plain repo" {
   make_repo "$TEST_TMPDIR/proj"
   [ -z "$(suggest_profiles "$TEST_TMPDIR/proj")" ]
@@ -265,6 +279,20 @@ firewall() {
   [ "$status" -eq 0 ]
   [[ "$output" == *"pypi.org"* ]]
   [[ "$output" == *"elan.lean-lang.org"* ]]
+}
+
+@test "an android project gets Google Maven, Maven Central, and Gradle on top of base" {
+  echo 'android' > "$TEST_TMPDIR/profile"
+  run firewall
+  [ "$status" -eq 0 ]
+  [[ "$output" == *"api.anthropic.com"* ]]
+  [[ "$output" == *"dl.google.com"* ]]
+  [[ "$output" == *"repo.maven.apache.org"* ]]
+  [[ "$output" == *"services.gradle.org"* ]]
+  # base-only projects must not inherit any of this (H5).
+  : > "$TEST_TMPDIR/profile"
+  run firewall
+  [[ "$output" != *"dl.google.com"* ]]
 }
 
 @test "an unknown profile is a hard failure, not a silently narrower allowlist" {

@@ -112,6 +112,55 @@ RUN case "$(dpkg --print-architecture)" in \
 ENV UV_PYTHON_DOWNLOADS=never \
     UV_LINK_MODE=copy
 
+# Android toolchain — JDK 17 + a baked SDK (decision log #19).
+#
+# Unconditional, in the shared base image, exactly like uv above: a toolchain is
+# installed for everyone and the egress profile gates only NETWORK (the `android`
+# profile opens Google Maven / Maven Central / Gradle). The SDK is ~2GB, but because
+# every project builds this identical Dockerfile and only the final CC_EGRESS_PROFILE
+# layer varies, this is one content-addressed layer shared across all project images,
+# not a per-project cost (decision 016, S2).
+#
+# WHY JDK 17: it is the JDK the current Android Gradle Plugin targets. Debian bookworm
+# (the node:20 base) ships openjdk-17-jdk-headless, so no third-party JDK is needed.
+#
+# WHY BAKE THE SDK (and not fetch it at runtime): the SDK download happens during
+# `docker build`, which runs BEFORE init-firewall.sh exists, so it needs no egress
+# profile; a runtime fetch would need dl.google.com open and would re-download per
+# project. Baking it also means the SDK dir is root-owned — `node` runs builds against
+# it but cannot rewrite the toolchain it runs, mirroring uv's root-owned /usr/local/bin.
+#
+# A project that needs a platform or build-tools version other than the baked one
+# fails loudly (sdkmanager cannot write the root-owned dir) rather than silently
+# widening anything — that is a central-image rebuild, like uv needing another Python.
+RUN apt-get update && apt-get install -y --no-install-recommends \
+    openjdk-17-jdk-headless \
+  && apt-get clean && rm -rf /var/lib/apt/lists/*
+
+# cmdline-tools is fetched from dl.google.com at a pinned build number (mirroring the
+# git-delta/uv blocks: GitHub/Google are already trusted, and a bump shows in the diff).
+# Google does not publish a convenient per-asset .sha256, so this relies on TLS + the
+# pinned version rather than a separate checksum, matching the git-delta layer.
+ARG ANDROID_CMDLINE_TOOLS_VERSION=11076708
+ARG ANDROID_PLATFORM=android-35
+ARG ANDROID_BUILD_TOOLS=35.0.0
+ENV ANDROID_HOME=/opt/android-sdk \
+    ANDROID_SDK_ROOT=/opt/android-sdk
+RUN mkdir -p "$ANDROID_HOME/cmdline-tools" && \
+  cd /tmp && \
+  wget -q "https://dl.google.com/android/repository/commandlinetools-linux-${ANDROID_CMDLINE_TOOLS_VERSION}_latest.zip" \
+    -O cmdline-tools.zip && \
+  unzip -q cmdline-tools.zip -d "$ANDROID_HOME/cmdline-tools" && \
+  mv "$ANDROID_HOME/cmdline-tools/cmdline-tools" "$ANDROID_HOME/cmdline-tools/latest" && \
+  rm cmdline-tools.zip && \
+  yes | "$ANDROID_HOME/cmdline-tools/latest/bin/sdkmanager" --licenses >/dev/null && \
+  "$ANDROID_HOME/cmdline-tools/latest/bin/sdkmanager" \
+    "platform-tools" \
+    "platforms;${ANDROID_PLATFORM}" \
+    "build-tools;${ANDROID_BUILD_TOOLS}" >/dev/null && \
+  chown -R root:root "$ANDROID_HOME"
+ENV PATH=$PATH:/opt/android-sdk/cmdline-tools/latest/bin:/opt/android-sdk/platform-tools
+
 # Set up non-root user
 USER node
 

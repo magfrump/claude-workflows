@@ -1,0 +1,26 @@
+# android — Gradle / Android build dependency resolution.
+#
+# The SDK itself (cmdline-tools, platform-tools, one platform + build-tools) is baked
+# into the image at BUILD time, which is not subject to init-firewall.sh, so these
+# domains are for RUNTIME dependency resolution only — what `./gradlew` reaches when it
+# resolves AndroidX/Google + Maven Central artifacts and (if not cached) the Gradle
+# distribution named by the wrapper.
+#
+# A project that needs an SDK component NOT baked into the image (a different platform
+# or build-tools version) will fail loudly rather than fetch it, exactly like uv under
+# UV_PYTHON_DOWNLOADS=never: that is a rebuild of the central image, not a wider
+# allowlist. dl.google.com is admitted here anyway because it is also Google's Maven
+# host (google() resolves to dl.google.com/dl/android/maven2), but sdkmanager writing
+# to the root-owned SDK dir is blocked at the filesystem, not the firewall.
+
+# Google Maven (google()) — AndroidX, the Android Gradle Plugin, Google libraries.
+dl.google.com
+maven.google.com
+
+# Maven Central (mavenCentral()) — the bulk of JVM/Kotlin dependencies.
+repo.maven.apache.org
+repo1.maven.org
+
+# Gradle distribution (the wrapper) and the plugin portal (gradlePluginPortal()).
+services.gradle.org
+plugins.gradle.org

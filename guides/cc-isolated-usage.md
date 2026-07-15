@@ -54,6 +54,7 @@ GitHub IP ranges). Language toolchains are granted per project, **host-side only
 | `python`| `pypi.org`, `files.pythonhosted.org` | `pyproject.toml` · `requirements.txt` · `setup.py` |
 | `rust`  | `crates.io`, `index.crates.io`, `static.crates.io` | `Cargo.toml` |
 | `lean`  | `elan.lean-lang.org`, `releases.lean-lang.org` | `lean-toolchain` · `lakefile.lean` |
+| `android`| Google Maven (`dl.google.com`, `maven.google.com`), Maven Central, `services.gradle.org`, `plugins.gradle.org` | `gradlew` · `build.gradle[.kts]` · `settings.gradle[.kts]` |
 | `llm`   | `openrouter.ai` | never — deliberate opt-in |
 | `vscode`| VS Code marketplace hosts | never (IDE-attach is unsupported) |
 
@@ -77,15 +78,12 @@ the next launch rebuilds that project's image.
 
 ### What is NOT covered
 
-There is no profile — and no image toolchain — for JVM/Android/Go/Ruby/etc. In
-particular **Android development is not supported**: the image (`node:20` + `uv`
-+ `python3.11`) ships no JDK, Kotlin, Android SDK, or Gradle, and no profile opens
-Google Maven (`dl.google.com`, `maven.google.com`), Gradle distributions
-(`services.gradle.org`, `plugins.gradle.org`), or Maven Central. Supporting a new
-ecosystem is a real change — a new `egress/<name>.txt`, toolchain layers in the
-central `Dockerfile`, and a detection clause in `suggest_profiles()` — not a
-config toggle. The current registrable language toolchains are **Python, Rust,
-and Lean**.
+There is no profile — and no image toolchain — for non-Android JVM, Go, Ruby, etc.
+Supporting a new ecosystem is a real change, not a config toggle: it needs a new
+`egress/<name>.txt`, toolchain layers in the central `Dockerfile`, and a detection
+clause in `suggest_profiles()` (see decision log #18/#19 for the uv and Android
+precedents). The current registrable language toolchains are **Python, Rust, Lean,
+and Android**.
 
 ## First session per project
 
@@ -115,6 +113,35 @@ uv pip install pytest   # or `uv sync` if the repo has a uv lockfile
 - `uv venv --python 3.12` fails loudly rather than fetching an interpreter —
   `UV_PYTHON_DOWNLOADS=never` is baked in. A different Python version needs a
   different base image, not a wider allowlist.
+
+## Android inside the container
+
+The image bakes **JDK 17** plus an Android SDK (cmdline-tools, `platform-tools`,
+`platforms;android-35`, `build-tools;35.0.0`) at `/opt/android-sdk`, with
+`ANDROID_HOME`/`ANDROID_SDK_ROOT` set and the tools on `PATH`. After registering
+`--profile android`:
+
+```bash
+cc-isolated --register ~/code/app --profile android   # opens Google Maven / Central / Gradle
+cc-isolated ~/code/app
+# inside the container:
+./gradlew assembleDebug
+```
+
+Two failure modes worth recognizing on sight:
+
+- **`Could not resolve …` / `Network is unreachable` for `dl.google.com` or
+  `repo.maven.apache.org`** means the project was never registered with
+  `--profile android`. Dependency resolution is a runtime step and needs the
+  profile; registration is host-side by design (an agent cannot grant itself
+  Google Maven).
+- **`sdkmanager` fails to install a missing platform/build-tools version.** The SDK
+  dir is root-owned, so a build that wants an *unbaked* API level fails loudly
+  rather than fetching it — mirroring uv's `UV_PYTHON_DOWNLOADS=never`. That is a
+  central-image rebuild (bump `ANDROID_PLATFORM`/`ANDROID_BUILD_TOOLS` in
+  `devcontainer.json`, re-install, re-bless), not a wider allowlist. The SDK
+  download itself happens at **build** time (before the firewall exists), so it
+  needs no egress profile.
 
 ## The boundary self-probe
 
