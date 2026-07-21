@@ -230,8 +230,12 @@ probe_boundary() {
             --id-label "cc-project=$pid")
 
   # H1: host home (and the planted ~/.ssh/canary) must be invisible inside.
+  # host_home is passed as a positional arg (expands to $1 in the CONTAINER), not
+  # interpolated into the shell string — so a home path containing shell
+  # metacharacters can never become shell source (VULN-02 / decision 018).
+  # shellcheck disable=SC2016  # single-quoted on purpose: $1 expands in the CONTAINER
   if ! devcontainer exec "${dc[@]}" \
-      bash -c "! test -e '$host_home/.ssh/canary' && ! test -d '$host_home'"; then
+      bash -c '! test -e "$1/.ssh/canary" && ! test -d "$1"' _ "$host_home"; then
     echo "PROBE FAIL (H1): host home or ~/.ssh/canary is visible inside the container" >&2
     failures=$((failures + 1))
   fi
@@ -288,10 +292,13 @@ probe_boundary() {
   # repo's agent-writable init-firewall.sh), these are absent or the profile is wrong,
   # and we refuse rather than hand the agent a boundary it wrote itself.
   local want_profile="${CC_EGRESS_PROFILE:-}"
-  if ! devcontainer exec "${dc[@]}" bash -c "
+  # want_profile is passed as a positional arg (expands to $1 in the CONTAINER),
+  # not interpolated into the shell string (VULN-02 / decision 018).
+  # shellcheck disable=SC2016  # single-quoted on purpose: $1 expands in the CONTAINER
+  if ! devcontainer exec "${dc[@]}" bash -c '
       test -r /usr/local/share/cc-egress/base.txt &&
       test -r /etc/cc-egress-profile &&
-      [ \"\$(tr -d '[:space:]' < /etc/cc-egress-profile)\" = '$want_profile' ]"; then
+      [ "$(tr -d "[:space:]" < /etc/cc-egress-profile)" = "$1" ]' _ "$want_profile"; then
     echo "PROBE FAIL (image provenance): this container was NOT built from the central" >&2
     echo "  Dockerfile at $(config_dir) (missing /usr/local/share/cc-egress, or its baked" >&2
     echo "  egress profile is not '${want_profile:-<base only>}'). Refusing: the boundary in this image is" >&2
