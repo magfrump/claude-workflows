@@ -54,7 +54,8 @@ OPS = {ast.Add:operator.add, ast.Sub:operator.sub, ast.Mult:operator.mul,
        ast.Div:operator.truediv, ast.FloorDiv:operator.floordiv,
        ast.Mod:operator.mod, ast.Pow:operator.pow,
        ast.USub:operator.neg, ast.UAdd:operator.pos}
-MAX_EXP = 1000  # cap exponents so 9**9**9 can't exhaust CPU/memory
+MAX_EXP = 1000      # per-operation exponent cap
+MAX_BITS = 100000   # ~30k digits; caps RESULT size so nested a**b**c can't blow up
 def ev(n):
     if isinstance(n, ast.Expression): return ev(n.body)
     if isinstance(n, ast.Constant):
@@ -63,16 +64,24 @@ def ev(n):
     if isinstance(n, ast.UnaryOp) and type(n.op) in OPS:
         return OPS[type(n.op)](ev(n.operand))
     if isinstance(n, ast.BinOp) and type(n.op) in OPS:
-        if isinstance(n.op, ast.Pow) and abs(ev(n.right)) > MAX_EXP:
-            raise ValueError("exponent too large")
-        return OPS[type(n.op)](ev(n.left), ev(n.right))
+        l, r = ev(n.left), ev(n.right)   # each child evaluated exactly once
+        if isinstance(n.op, ast.Pow):
+            if abs(r) > MAX_EXP:
+                raise ValueError("exponent too large")
+            # Predict the result's bit length BEFORE computing, so a nested
+            # tower like ((10**1000)**1000)**1000 is rejected, not materialized.
+            if isinstance(l, int) and isinstance(r, int) and r > 0 \
+               and l not in (0, 1, -1) and r * l.bit_length() > MAX_BITS:
+                raise ValueError("result too large")
+        return OPS[type(n.op)](l, r)
     raise ValueError(f"disallowed: {type(n).__name__}")
 src = sys.stdin.read().replace("^", "**")
 print(f"[arithmetic-eval] {src.strip()} → {ev(ast.parse(src, mode='eval'))}")
 PYEOF
 
-# Evaluate — the expression is INERT stdin (quoted heredoc = no interpolation):
-timeout 5 python3 "$AE_DIR/eval.py" <<'EXPREOF'
+# Evaluate — expression is INERT stdin (quoted heredoc = no interpolation),
+# under CPU + memory limits so a pathological expression can't hang the host:
+( ulimit -t 5 -v 1000000 2>/dev/null; timeout 5 python3 "$AE_DIR/eval.py" ) <<'EXPREOF'
 <expression here>
 EXPREOF
 ```
@@ -97,15 +106,20 @@ ALLOWED_MODULES = {
     "fractions","decimal","datetime","pathlib","re","itertools","functools",
     "collections","operator","openpyxl","matplotlib",
 }
-BAD_NAMES = {"eval","exec","compile","__import__","getattr","setattr","delattr",
-             "globals","locals","vars","input","breakpoint","memoryview"}
+BAD_NAMES = {"eval","exec","compile","__import__","__builtins__","getattr","setattr",
+             "delattr","globals","locals","vars","input","breakpoint","memoryview"}
+# Attribute names specific enough NOT to collide with core scipy/pandas/json APIs.
+# Generic names (load/loads/rename/replace/run/call) are deliberately excluded —
+# they would reject json.load / df.rename / df.replace. Their dangerous cases are
+# covered elsewhere: pickle/subprocess/os are import-blocked, and np.load RCE is
+# caught by the allow_pickle check below.
 BAD_ATTRS = {
     "system","popen","spawn","spawnl","spawnv","fork","execl","execv",
-    "read_pickle","to_pickle","load","loads",              # pickle / np.load RCE
+    "read_pickle","to_pickle",                             # pandas pickle RCE
     "sympify","parse_expr",                                # sympy eval paths
     "write_text","write_bytes","unlink","rmtree","rmdir","mkdir",
-    "rename","replace","chmod","symlink_to","touch",       # filesystem writes
-    "check_output","run","call","Popen","getoutput",       # subprocess
+    "chmod","symlink_to","touch",                          # filesystem writes
+    "check_output","Popen","getoutput",                    # subprocess
 }
 def fail(msg, node=None):
     ln = f" (line {node.lineno})" if getattr(node, "lineno", None) else ""
@@ -136,15 +150,16 @@ for node in ast.walk(tree):
         is_open = (isinstance(f, ast.Name) and f.id == "open") or \
                   (isinstance(f, ast.Attribute) and f.attr == "open")
         if is_open:
-            mode = None
-            if len(node.args) >= 2 and isinstance(node.args[1], ast.Constant):
-                mode = node.args[1].value
+            mode_node = node.args[1] if len(node.args) >= 2 else None
             for kw in node.keywords:
-                if kw.arg == "mode" and isinstance(kw.value, ast.Constant):
-                    mode = kw.value.value
-            if isinstance(mode, str) and mode not in ("r","rb","rt") \
-               and any(c in mode for c in "waxr+"):
-                fail(f"open() in non-readonly mode '{mode}'", node)
+                if kw.arg == "mode":
+                    mode_node = kw.value
+            # No mode arg → read-only default, fine. Any mode present must be a
+            # literal read mode; a variable mode is unprovable, so fail closed.
+            if mode_node is not None:
+                ok = isinstance(mode_node, ast.Constant) and mode_node.value in ("r","rb","rt")
+                if not ok:
+                    fail("open() with non-read-only or non-literal mode", node)
         for kw in node.keywords:
             if kw.arg == "allow_pickle" and getattr(kw.value, "value", False) is True:
                 fail("allow_pickle=True (deserialization RCE)", node)
@@ -158,8 +173,12 @@ cat > "$AE_DIR/run.sh" <<'SHEOF'
 # static gate (check.py) must have passed first — this is the OS backstop.
 set -uo pipefail
 SCRIPT="$1"; DIR=$(dirname "$SCRIPT")
-# CPU 10s, address space ~2GB, max written file 50MB; wall-clock backstop 10s.
-LIM='ulimit -t 10 -v 2000000 -f 51200 2>/dev/null; exec timeout 10 python3 "$0"'
+# Pin thread pools to 1 so numpy/scipy/BLAS don't reserve multi-GB of virtual
+# memory and trip the -v limit (this is a verifier, not a compute cluster).
+export OMP_NUM_THREADS=1 OPENBLAS_NUM_THREADS=1 MKL_NUM_THREADS=1 NUMEXPR_NUM_THREADS=1
+# CPU 10s, address space ~8GB (generous headroom for BLAS arenas), written file
+# ≤50MB, wall-clock backstop 10s.
+LIM='ulimit -t 10 -v 8000000 -f 51200 2>/dev/null; exec timeout 10 python3 "$0"'
 if command -v bwrap >/dev/null 2>&1; then
   exec bwrap \
     --ro-bind / / --dev /dev --proc /proc \
@@ -167,6 +186,8 @@ if command -v bwrap >/dev/null 2>&1; then
     --unshare-all --die-with-parent --new-session \
     --clearenv --setenv PATH /usr/bin:/bin:/usr/local/bin \
     --setenv HOME /tmp --setenv MPLCONFIGDIR /tmp/mpl \
+    --setenv OMP_NUM_THREADS 1 --setenv OPENBLAS_NUM_THREADS 1 \
+    --setenv MKL_NUM_THREADS 1 --setenv NUMEXPR_NUM_THREADS 1 \
     bash -c "$LIM" "$SCRIPT"
 elif unshare -rn true 2>/dev/null; then
   exec unshare -rn bash -c "$LIM" "$SCRIPT"
@@ -176,9 +197,13 @@ else
 fi
 SHEOF
 
-# Gate, then run under the strongest available OS confinement:
-if python3 "$AE_DIR/check.py" "$AE_DIR/script.py"; then
+# Gate, then run under the strongest available OS confinement.
+# The else is REQUIRED: a missing helper OR a rejection must be loud — never a
+# silent no-output that tempts a fallback to an unverified (hallucinated) number.
+if [ -f "$AE_DIR/check.py" ] && python3 "$AE_DIR/check.py" "$AE_DIR/script.py"; then
   bash "$AE_DIR/run.sh" "$AE_DIR/script.py"
+else
+  echo "[arithmetic-eval] NOT EVALUATED (setup missing or script rejected) — do NOT use an unverified number" >&2
 fi
 ```
 
@@ -190,7 +215,7 @@ fi
 
 ### Blocked patterns (enforced by `check.py`, not by eyeballing)
 
-Non-approved imports; the names `eval`/`exec`/`compile`/`__import__`/`getattr`/`setattr`/`globals`/`locals`; deserialization sinks (`read_pickle`, `np.load(..., allow_pickle=True)`, `sympify`); filesystem-write methods (`write_text`, `unlink`, `rmtree`, `touch`, `rename`, …); subprocess entry points; dunder attribute access; and `open()` in any non-read mode.
+Non-approved imports; the names `eval`/`exec`/`compile`/`__import__`/`__builtins__`/`getattr`/`setattr`/`globals`/`locals`; deserialization sinks (`read_pickle`, `np.load(..., allow_pickle=True)`, `sympify`); filesystem-write methods (`write_text`, `unlink`, `rmtree`, `touch`, …); subprocess entry points; dunder attribute access; and `open()` with any mode that is not a literal read mode (a variable mode fails closed).
 
 Read-mode `open()` is permitted for loading data files — but remember it can disclose local secrets to output. Do not read paths outside the data you were asked to compute over.
 
@@ -205,12 +230,16 @@ Read-mode `open()` is permitted for loading data files — but remember it can d
 
 ## Examples
 
+> Both examples assume the one-time setup and the mode's helper-writing block
+> (`eval.py` for Mode 1; `check.py` + `run.sh` for Mode 2) have already run this
+> session. If `$AE_DIR` is unset, run the setup first.
+
 ### Example 1 — Mode 1: cost estimate inside a fact-check
 
 User claim: "We spent ~$3,600 last month on inference at $0.003/1K tokens."
 
 ```bash
-timeout 5 python3 "$AE_DIR/eval.py" <<'EXPREOF'
+( ulimit -t 5 -v 1000000 2>/dev/null; timeout 5 python3 "$AE_DIR/eval.py" ) <<'EXPREOF'
 3600 / 0.003 * 1000
 EXPREOF
 # → [arithmetic-eval] 3600 / 0.003 * 1000 → 1200000000.0
@@ -229,8 +258,10 @@ b = [92,  95,  91,  94,  93,  90,  96,  92]
 t, p = stats.ttest_ind(a, b)
 print(f"[arithmetic-eval] t={t:.3f}, p={p:.5f}")
 PYEOF
-if python3 "$AE_DIR/check.py" "$AE_DIR/script.py"; then
+if [ -f "$AE_DIR/check.py" ] && python3 "$AE_DIR/check.py" "$AE_DIR/script.py"; then
   bash "$AE_DIR/run.sh" "$AE_DIR/script.py"
+else
+  echo "[arithmetic-eval] NOT EVALUATED (setup missing or script rejected) — do NOT use an unverified number" >&2
 fi
 # → [arithmetic-eval] t=8.062, p=0.00001
 # Interpretation: claim supported at p < 0.05.
