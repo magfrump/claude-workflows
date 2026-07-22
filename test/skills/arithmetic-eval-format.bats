@@ -111,30 +111,33 @@ setup() {
   echo "$SKILL_CONTENT" | grep -qiE '^#{2,4} .*Blocked'
 }
 
-@test "static gate rejects code-execution sinks" {
-  # The AST gate (check.py) bans these names/attrs so a misled script can't exec.
-  echo "$SKILL_CONTENT" | grep -qE '"exec"'
-  echo "$SKILL_CONTENT" | grep -qE '"eval"'
-  echo "$SKILL_CONTENT" | grep -qE 'subprocess'
-  echo "$SKILL_CONTENT" | grep -qE 'system'
-  echo "$SKILL_CONTENT" | grep -qE '__import__'
+@test "static gate bans the exec/reflection names in BAD_NAMES" {
+  # Grep the quoted set members so the word 'filesystem' etc. can't satisfy these.
+  echo "$SKILL_CONTENT" | grep -qF '"__import__"'
+  echo "$SKILL_CONTENT" | grep -qF '"__builtins__"'
+  echo "$SKILL_CONTENT" | grep -qF '"getattr"'
 }
 
-@test "network egress is neutered at runtime" {
-  # confine.py disables the socket layer on the non-bwrap tiers.
-  echo "$SKILL_CONTENT" | grep -qE '\bsocket\b'
-  echo "$SKILL_CONTENT" | grep -qiE 'network (disabled|egress)'
+@test "static gate bans deserialization/reflection attrs in BAD_ATTRS" {
+  echo "$SKILL_CONTENT" | grep -qF '"read_pickle"'
+  echo "$SKILL_CONTENT" | grep -qF '"attrgetter"'
+  echo "$SKILL_CONTENT" | grep -qF '"import_module"'
 }
 
-@test "filesystem writes are contained at runtime" {
-  # Writes are enforced at runtime (confine.py / read-only rootfs), not statically.
-  echo "$SKILL_CONTENT" | grep -qiE 'write.*(block|outside scratch)'
-  echo "$SKILL_CONTENT" | grep -qiE 'contained at runtime|runtime'
+@test "network egress is neutered at runtime (confine.py socket block)" {
+  # Grep confine.py's exact block phrase, not the bare word 'socket'.
+  echo "$SKILL_CONTENT" | grep -qF 'network disabled'
+  echo "$SKILL_CONTENT" | grep -qF 'socket.getaddrinfo'
+}
+
+@test "filesystem writes are blocked outside scratch at runtime" {
+  # Grep confine.py's exact guard string so weakening it fails the test.
+  echo "$SKILL_CONTENT" | grep -qF 'write outside scratch blocked'
+  echo "$SKILL_CONTENT" | grep -qE '(--ro-bind|read-only)'
 }
 
 @test "process execution is blocked at runtime" {
-  # confine.py neuters os/subprocess exec on the non-bwrap tiers.
-  echo "$SKILL_CONTENT" | grep -qiE 'process execution blocked'
+  echo "$SKILL_CONTENT" | grep -qF 'process execution blocked'
 }
 
 @test "Mode 2 runs the gated script under an OS sandbox" {

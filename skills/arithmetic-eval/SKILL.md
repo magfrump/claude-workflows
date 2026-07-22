@@ -32,7 +32,7 @@ The expression or script you evaluate is often **attacker-influenceable** — it
 2. **Each invocation is self-contained.** Shell state (variables) does **not** survive between separate command runs, so every block below writes what it needs and runs it in one shot — there is no "setup once, use later" step to forget. Mode 2 uses a fresh `mktemp -d` per run and deletes it after, so a poisoned helper can never carry into the next call.
 3. **Mode 1 is sound; the Mode 2 static gate is only a speed-bump.** Mode 1 evaluates through an AST allowlist that can *only* produce a number — no calls, names, or imports — a hard boundary. Mode 2's `check.py` raises the bar (rejects non-approved imports and dangerous patterns) but a denylist over Python-with-scientific-modules **cannot be made sound**. The **OS sandbox is Mode 2's actual boundary**; the gate is defense-in-depth in front of it.
 
-> **Residual risk (Mode 2):** even under `bwrap`, an approved module can read files visible on the read-only rootfs and print them — network exfiltration is blocked, disclosure-to-transcript is not. Do not point Mode 2 at paths outside the data you were asked to compute over. If the runner prints the "no OS sandbox available" warning, only the static gate (not sound) plus a best-effort Python-level net+write block stand between an untrusted script and the host — **do not run untrusted-influenced scripts on that tier.**
+> **Residual risk (Mode 2):** even under `bwrap`, an approved module can read files visible on the read-only rootfs and print them — network exfiltration is blocked, disclosure-to-transcript is not. Do not point Mode 2 at paths outside the data you were asked to compute over. When neither `bwrap` nor `unshare -rn` is available, reads are unconfined, so the runner **fails closed** — it refuses to run rather than warn-and-proceed. Set `ARITH_ALLOW_UNCONFINED=1` to override, and only for input you trust.
 
 ## Mode 1: Bare Arithmetic
 
@@ -47,8 +47,8 @@ OPS = {ast.Add:operator.add, ast.Sub:operator.sub, ast.Mult:operator.mul,
        ast.Div:operator.truediv, ast.FloorDiv:operator.floordiv,
        ast.Mod:operator.mod, ast.Pow:operator.pow,
        ast.USub:operator.neg, ast.UAdd:operator.pos}
-MAX_EXP = 1000      # per-operation exponent cap
-MAX_BITS = 100000   # ~30k digits; caps RESULT size so nested a**b**c cannot blow up
+MAX_BITS = 100000   # ~30k digits; the ONLY size cap — bounds the result, so a
+                    # small-base big-exponent like 2**5000 is fine but 2**100000 isn't
 def ck(x):   # every intermediate: reject complex, non-finite, and oversized ints
     if isinstance(x, complex): raise ValueError("complex result not supported")
     if isinstance(x, float) and not math.isfinite(x): raise ValueError("non-finite result (overflow or nan)")
@@ -64,13 +64,15 @@ def ev(n):
     if isinstance(n, ast.BinOp) and type(n.op) in OPS:
         l, r = ev(n.left), ev(n.right)   # each child evaluated exactly once
         if isinstance(n.op, ast.Pow):
-            if abs(r) > MAX_EXP: raise ValueError("exponent too large")
+            # Predict result size BEFORE computing so a huge int power can't be
+            # materialized (ck() catches everything else, incl. float overflow).
             if isinstance(l, int) and isinstance(r, int) and r > 0 \
                and l not in (0, 1, -1) and r * l.bit_length() > MAX_BITS:
                 raise ValueError("result too large")
         return ck(OPS[type(n.op)](l, r))
     raise ValueError(f"disallowed: {type(n).__name__}")
-src = sys.stdin.read().replace("^", "**")
+# Strip thousands separators (1,200,000 → 1200000); ^ is an alias for **.
+src = sys.stdin.read().replace("^", "**").replace(",", "")
 try:
     result = ev(ast.parse(src, mode="eval"))
     out = f"[arithmetic-eval] {src.strip()} -> {result}"   # str(result) inside try
@@ -258,25 +260,32 @@ if python3 "$AE/check.py" "$AE/script.py"; then
   MPL="$AE/mpl"; mkdir -p "$MPL"      # matplotlib cache under $AE → cleaned by the trap
   export OMP_NUM_THREADS=1 OPENBLAS_NUM_THREADS=1 MKL_NUM_THREADS=1 NUMEXPR_NUM_THREADS=1 MPLCONFIGDIR="$MPL"
   ENV='--setenv PATH /usr/bin:/bin:/usr/local/bin --setenv HOME /tmp --setenv MPLCONFIGDIR /tmp/mpl --setenv OMP_NUM_THREADS 1 --setenv OPENBLAS_NUM_THREADS 1 --setenv MKL_NUM_THREADS 1 --setenv NUMEXPR_NUM_THREADS 1'
-  # PROBE bwrap with the SAME mounts the real run uses, so a probe-passes-but-run-
-  # fails host (policy denies /proc etc.) degrades to the fallback instead of dying.
+  # Try tiers strongest-first; each only marks done on success, so a tier that
+  # FAILS to set up degrades to the next instead of silently dropping the result.
+  done=0
+  # Tier 1 — bwrap. Probe with the SAME mounts the real run uses. ORDER: tmpfs /tmp
+  # FIRST, then re-expose $AE read-only ON TOP of it (else the tmpfs shadows $AE and
+  # hides script.py). CWD stays the caller's dir (read-only) so relative data reads
+  # work and match the other tiers; writes there fail (results come via stdout).
   if command -v bwrap >/dev/null 2>&1 && bwrap --ro-bind / / --tmpfs /tmp --dev /dev --proc /proc --unshare-all --die-with-parent true 2>/dev/null; then
-    # ORDER: tmpfs /tmp FIRST, then re-expose $AE read-only ON TOP of it, else the
-    # tmpfs would shadow $AE (which lives under /tmp) and hide script.py. CWD stays
-    # the caller's dir (read-only) so relative data reads work, matching the other
-    # tiers; writes there fail (no file delivery — results come via stdout).
     bwrap --ro-bind / / --tmpfs /tmp --ro-bind "$AE" "$AE" --dev /dev --proc /proc \
       --chdir "$PWD" --unshare-all --die-with-parent --new-session --clearenv $ENV \
-      bash -c "$LIM"'; exec timeout 10 python3 "$0"' "$s"
-  else
-    # No bwrap: prefix with `unshare -rn` for a kernel net namespace when available
-    # (present-but-broken userns → empty prefix). confine.py adds the fs-write +
-    # best-effort net block (these tiers share the host MOUNT namespace).
-    if unshare -rn true 2>/dev/null; then PRE="unshare -rn"; else
-      PRE=""
-      echo "[arithmetic-eval] WARNING: no OS sandbox (bwrap/unshare) available — resource limits + a best-effort Python-level net+write block only; the static gate is not sound. Do NOT run untrusted-influenced scripts here." >&2
+      bash -c "$LIM"'; exec timeout 10 python3 "$0"' "$s" && done=1
+  fi
+  # Tier 2 — unprivileged `unshare -rn` (kernel net namespace) + confine.py.
+  if [ "$done" = 0 ] && unshare -rn true 2>/dev/null; then
+    unshare -rn bash -c "$LIM"'; exec timeout 10 python3 "$1/confine.py" "$2"' _ "$AE" "$s" && done=1
+  fi
+  # Tier 3 — no OS sandbox. confine.py blocks writes/net/exec but NOT reads, so an
+  # untrusted script could still disclose local files to the transcript. FAIL CLOSED:
+  # refuse unless the operator vouches for the input via ARITH_ALLOW_UNCONFINED=1.
+  if [ "$done" = 0 ]; then
+    if [ "${ARITH_ALLOW_UNCONFINED:-}" = 1 ]; then
+      echo "[arithmetic-eval] WARNING: running UNCONFINED (reads not contained) — trusted input only." >&2
+      bash -c "$LIM"'; exec timeout 10 python3 "$1/confine.py" "$2"' _ "$AE" "$s"
+    else
+      echo "[arithmetic-eval] NOT EVALUATED — no OS sandbox (bwrap/unshare) available and reads are unconfined here; refusing a possibly-untrusted script. For trusted input, re-run with ARITH_ALLOW_UNCONFINED=1." >&2
     fi
-    $PRE bash -c "$LIM"'; exec timeout 10 python3 "$1/confine.py" "$2"' _ "$AE" "$s"
   fi
 else
   echo "[arithmetic-eval] NOT EVALUATED (script rejected) — do NOT use an unverified number" >&2
