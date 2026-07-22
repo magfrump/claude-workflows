@@ -126,10 +126,15 @@ setup() {
   echo "$SKILL_CONTENT" | grep -qiE 'network (disabled|egress)'
 }
 
-@test "filesystem writes are contained (runtime) and read-only open is the gate rule" {
-  # Read-mode open() is allowed; the runtime layer blocks writes outside scratch.
+@test "filesystem writes are contained at runtime" {
+  # Writes are enforced at runtime (confine.py / read-only rootfs), not statically.
   echo "$SKILL_CONTENT" | grep -qiE 'write.*(block|outside scratch)'
-  echo "$SKILL_CONTENT" | grep -qE 'literal read mode'
+  echo "$SKILL_CONTENT" | grep -qiE 'contained at runtime|runtime'
+}
+
+@test "process execution is blocked at runtime" {
+  # confine.py neuters os/subprocess exec on the non-bwrap tiers.
+  echo "$SKILL_CONTENT" | grep -qiE 'process execution blocked'
 }
 
 @test "Mode 2 runs the gated script under an OS sandbox" {

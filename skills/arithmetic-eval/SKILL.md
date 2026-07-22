@@ -49,9 +49,10 @@ OPS = {ast.Add:operator.add, ast.Sub:operator.sub, ast.Mult:operator.mul,
        ast.USub:operator.neg, ast.UAdd:operator.pos}
 MAX_EXP = 1000      # per-operation exponent cap
 MAX_BITS = 100000   # ~30k digits; caps RESULT size so nested a**b**c cannot blow up
-def ck(x):   # reject complex and non-finite (inf/nan) — not a verified real number
+def ck(x):   # every intermediate: reject complex, non-finite, and oversized ints
     if isinstance(x, complex): raise ValueError("complex result not supported")
     if isinstance(x, float) and not math.isfinite(x): raise ValueError("non-finite result (overflow or nan)")
+    if isinstance(x, int) and x.bit_length() > MAX_BITS: raise ValueError("result too large")
     return x
 def ev(n):
     if isinstance(n, ast.Expression): return ev(n.body)
@@ -102,8 +103,11 @@ cat > "$AE/check.py" <<'PYEOF'
 import ast, sys
 # pathlib is approved for READS; its write methods are blocked below and at runtime.
 # operator is approved EXCEPT attrgetter/methodcaller (reflection → RCE, banned below).
+# sys is NOT approved: sys.modules['importlib'].import_module(...) reaches any
+# non-approved module and defeats this whole gate. os/subprocess/socket/shutil are
+# likewise excluded — process exec / net / fs-write are contained at runtime.
 ALLOWED_MODULES = {
-    "math","statistics","scipy","numpy","pandas","sympy","csv","json","sys",
+    "math","statistics","scipy","numpy","pandas","sympy","csv","json",
     "fractions","decimal","datetime","pathlib","re","itertools","functools",
     "collections","operator","openpyxl","matplotlib",
 }
@@ -117,11 +121,13 @@ BAD_NAMES = {"eval","exec","compile","__import__","__builtins__","getattr","seta
 # grant no escalation inside an already-sandboxed script, so they stay allowed;
 # bare eval/exec remain banned via BAD_NAMES.
 BAD_ATTRS = {
-    "system","popen","spawn","spawnl","spawnv","fork","execl","execv",   # process exec
     "read_pickle",                                        # pandas pickle deserialization RCE
     "sympify","parse_expr",                                # sympy eval paths
-    "attrgetter","methodcaller",                           # operator reflection → RCE
-    "check_output","Popen","getoutput",                    # subprocess
+    "attrgetter","methodcaller","import_module",           # reflection → RCE
+    "check_output","Popen","getoutput",                    # subprocess (names ≠ data columns)
+    # Lowercase process-exec names (system/popen/fork/spawn*/exec*) are NOT here:
+    # they collide with DataFrame column access (df.system). os/subprocess are
+    # import-blocked, and process exec is blocked at RUNTIME by confine.py.
 }
 # Dunder strings used in reflection escapes — blocked as string literals so
 # getattr(x, "__globals__")-style access can't sneak through. __main__/__name__
@@ -168,20 +174,13 @@ for node in ast.walk(tree):
             fail(f"dangerous dunder access '.{node.attr}'", node)
     elif isinstance(node, ast.Call):
         f = node.func
-        # numpy allow_pickle via 3rd positional: np.load(file, mmap_mode, allow_pickle)
-        if isinstance(f, ast.Attribute) and f.attr == "load" and len(node.args) >= 3:
-            fail("load() with 3rd positional arg (numpy allow_pickle RCE)", node)
-        is_open = (isinstance(f, ast.Name) and f.id == "open") or \
-                  (isinstance(f, ast.Attribute) and f.attr == "open")
-        if is_open:
-            mode_node = node.args[1] if len(node.args) >= 2 else None
-            for kw in node.keywords:
-                if kw.arg == "mode": mode_node = kw.value
-            # No mode → read default. Any mode present must be a literal read mode;
-            # a variable mode is unprovable, so fail closed.
-            if mode_node is not None:
-                ok = isinstance(mode_node, ast.Constant) and mode_node.value in ("r","rb","rt")
-                if not ok: fail("open() with non-read-only or non-literal mode", node)
+        # numpy allow_pickle via a TRUTHY 3rd positional: np.load(file, mmap, allow_pickle).
+        # Require a truthy literal so unrelated 3-arg .load(a,b,c) helpers aren't rejected.
+        if isinstance(f, ast.Attribute) and f.attr == "load" and len(node.args) >= 3 \
+           and isinstance(node.args[2], ast.Constant) and bool(node.args[2].value):
+            fail("load() with truthy 3rd positional (numpy allow_pickle RCE)", node)
+        # open() mode is NOT gated here — writes are blocked at runtime (read-only
+        # rootfs / confine.py), so a variable mode isn't a false-rejection risk.
         for kw in node.keywords:
             if kw.arg == "allow_pickle":   # fail closed: anything not literal False
                 safe = isinstance(kw.value, ast.Constant) and kw.value.value is False
@@ -235,6 +234,18 @@ def _guard(fn):
 for _n in ("remove","unlink","rename","replace","rmdir","removedirs",
            "mkdir","makedirs","chmod","symlink","link","truncate"):
     if hasattr(os, _n): setattr(os, _n, _guard(getattr(os, _n)))
+def _no_exec(*a, **k):
+    raise PermissionError("process execution blocked (fallback tier)")
+for _n in ("system","popen","fork","forkpty","execl","execle","execlp","execlpe",
+           "execv","execve","execvp","execvpe","spawnl","spawnle","spawnlp","spawnlpe",
+           "spawnv","spawnve","spawnvp","spawnvpe","posix_spawn","posix_spawnp"):
+    if hasattr(os, _n): setattr(os, _n, _no_exec)
+try:                                       # neuter subprocess even if reached by reflection
+    import subprocess
+    for _n in ("run","call","check_call","check_output","getoutput","getstatusoutput","Popen"):
+        if hasattr(subprocess, _n): setattr(subprocess, _n, _no_exec)
+except Exception:
+    pass
 runpy.run_path(sys.argv[1], run_name="__main__")
 PYEOF
 
@@ -244,16 +255,18 @@ if python3 "$AE/check.py" "$AE/script.py"; then
   # CPU + address-space caps; wall-clock via `timeout`. No `ulimit -f` — it kills
   # oversized writes with an untaggable SIGXFSZ; scratch is ephemeral anyway.
   LIM='ulimit -t 10 -v 8000000 2>/dev/null'
-  MPL="${TMPDIR:-/tmp}/aeval-mpl"; mkdir -p "$MPL"      # scratch for matplotlib cache
+  MPL="$AE/mpl"; mkdir -p "$MPL"      # matplotlib cache under $AE → cleaned by the trap
   export OMP_NUM_THREADS=1 OPENBLAS_NUM_THREADS=1 MKL_NUM_THREADS=1 NUMEXPR_NUM_THREADS=1 MPLCONFIGDIR="$MPL"
   ENV='--setenv PATH /usr/bin:/bin:/usr/local/bin --setenv HOME /tmp --setenv MPLCONFIGDIR /tmp/mpl --setenv OMP_NUM_THREADS 1 --setenv OPENBLAS_NUM_THREADS 1 --setenv MKL_NUM_THREADS 1 --setenv NUMEXPR_NUM_THREADS 1'
-  # bwrap is PROBED for a working userns (present-but-broken must degrade, not fail).
-  if command -v bwrap >/dev/null 2>&1 && bwrap --ro-bind / / --unshare-all --die-with-parent true 2>/dev/null; then
+  # PROBE bwrap with the SAME mounts the real run uses, so a probe-passes-but-run-
+  # fails host (policy denies /proc etc.) degrades to the fallback instead of dying.
+  if command -v bwrap >/dev/null 2>&1 && bwrap --ro-bind / / --tmpfs /tmp --dev /dev --proc /proc --unshare-all --die-with-parent true 2>/dev/null; then
     # ORDER: tmpfs /tmp FIRST, then re-expose $AE read-only ON TOP of it, else the
-    # tmpfs would shadow $AE (which lives under /tmp) and hide script.py. CWD is an
-    # ephemeral tmpfs — any files the script writes are scratch, not delivered.
+    # tmpfs would shadow $AE (which lives under /tmp) and hide script.py. CWD stays
+    # the caller's dir (read-only) so relative data reads work, matching the other
+    # tiers; writes there fail (no file delivery — results come via stdout).
     bwrap --ro-bind / / --tmpfs /tmp --ro-bind "$AE" "$AE" --dev /dev --proc /proc \
-      --chdir /tmp --unshare-all --die-with-parent --new-session --clearenv $ENV \
+      --chdir "$PWD" --unshare-all --die-with-parent --new-session --clearenv $ENV \
       bash -c "$LIM"'; exec timeout 10 python3 "$0"' "$s"
   else
     # No bwrap: prefix with `unshare -rn` for a kernel net namespace when available
@@ -272,17 +285,17 @@ fi
 
 ### Approved modules (enforced by `check.py`)
 
-`math`, `statistics`, `sys`, `scipy`, `numpy`, `pandas`, `sympy`, `csv`, `json`,
+`math`, `statistics`, `scipy`, `numpy`, `pandas`, `sympy`, `csv`, `json`,
 `fractions`, `decimal`, `datetime`, `pathlib`, `re`, `itertools`, `functools`,
 `collections`, `operator`, `openpyxl`, `matplotlib`
 
-(`pathlib` is approved for reads. `operator` is approved except `attrgetter`/`methodcaller`, which give a reflection path to RCE.)
+(`pathlib` is approved for reads. `operator` is approved except `attrgetter`/`methodcaller`. `sys`/`os`/`subprocess`/`importlib` are **not** approved — they'd defeat the import gate by reflection.)
 
 ### Blocked patterns (enforced by `check.py`, not by eyeballing)
 
-The static gate targets **code-execution surfaces**; filesystem writes and network egress are enforced at **runtime** (read-only rootfs under bwrap; `confine.py` on the other tiers). Statically rejected: non-approved imports; the names `eval`/`exec`/`compile`/`__import__`/`__builtins__`/`getattr`/`setattr`/`delattr`/`globals`/`locals`/`vars`/`input`/`breakpoint`/`memoryview`; sympy eval paths (`sympify`, `parse_expr`) and `operator.attrgetter`/`methodcaller`; deserialization sinks (`read_pickle`; `np.load` with `allow_pickle` truthy **or** via a 3rd positional arg); subprocess entry points; the escape-relevant dunders as attribute *or* string literal (e.g. `__globals__`, `__class__` — but `.__version__`/`.__len__` are allowed); and `open()` with any mode that is not a literal read mode (a variable mode fails closed). Network egress is **not** blocked statically (too many URL false positives). `pandas` `.eval`/`.query` and pathlib/dataframe write methods are allowed at the gate — writes are contained at runtime, so a host write fails there rather than being over-rejected here.
+The static gate targets **code-execution surfaces**; filesystem writes, network egress, and process execution are enforced at **runtime** (read-only rootfs under bwrap; `confine.py` on the other tiers). Statically rejected: non-approved imports; the names `eval`/`exec`/`compile`/`__import__`/`__builtins__`/`getattr`/`setattr`/`delattr`/`globals`/`locals`/`vars`/`input`/`breakpoint`/`memoryview`; sympy eval paths (`sympify`, `parse_expr`), `operator.attrgetter`/`methodcaller`, and `import_module`; deserialization sinks (`read_pickle`; `np.load` with `allow_pickle` truthy or via a truthy 3rd positional arg); subprocess entry points (`Popen`/`check_output`/`getoutput`); and the escape-relevant dunders as attribute *or* string literal (e.g. `__globals__`, `__class__` — but `.__version__`/`.__len__` are allowed). Network egress is **not** blocked statically (URL false positives); `open()` modes and pandas `.eval`/`.query` are **not** gated either — writes/exec/egress are all contained at runtime, so those fail at execution rather than being over-rejected here.
 
-Read-mode `open()` is permitted for loading data files — but it can disclose local secrets to output. Do not read paths outside the data you were asked to compute over.
+Data files are read from the caller's working directory. **Prefer absolute paths** — under the bwrap tier the working directory is read-only and a relative path resolves against it, so a data file that has moved will fail cleanly rather than silently. Read-mode `open()` can disclose local secrets to output; do not read paths outside the data you were asked to compute over.
 
 ## Rules
 
