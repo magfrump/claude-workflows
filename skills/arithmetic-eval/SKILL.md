@@ -28,11 +28,10 @@ Exact-math tool available. **Use it instead of mental math.** Writing a number t
 The expression or script you evaluate is often **attacker-influenceable** — it comes from a document being fact-checked, a user claim, or code under review. Treat it as untrusted data. Two rules make that safe:
 
 1. **Never interpolate untrusted text into shell or Python source.** Feed it as *data* through a **quoted heredoc** (`<<'EOF'`), which disables all shell expansion of the body. Do not paste an expression into an `EXPR='...'` assignment — a single quote in the input breaks out and executes as shell.
-2. **Enforcement is by machine, not by eye.** Mode 1 evaluates through an AST allowlist (no `eval`); Mode 2 runs a static checker that rejects non-approved imports and dangerous call patterns. Both run under `timeout` + `ulimit`.
+2. **Mode 1 is sound; the Mode 2 static gate is only a speed-bump.** Mode 1 evaluates through an AST allowlist that can *only* produce a number — no calls, no names, no imports — so it is a hard boundary. Mode 2's `check.py` rejects non-approved imports and dangerous call patterns, but a denylist over Python-with-scientific-modules **cannot be made sound** (reflection, an eval surface inside an approved module, a future numpy CVE). Treat it as raising the bar, not as containment.
+3. **The OS sandbox is Mode 2's actual boundary.** Mode 2 scripts execute through `run.sh`, which picks the strongest sandbox available — `bwrap` (read-only rootfs, private tmpfs, no network, cleared env) → unprivileged `unshare -rn` (no network) → resource-limits + a best-effort Python-level network block, **warning loudly** in that last case. All tiers add `timeout` + `ulimit`.
 
-3. **OS confinement backs up the static gate.** Mode 2 scripts execute through `run.sh`, which picks the strongest sandbox available — `bwrap` (read-only rootfs, private tmpfs, no network, cleared env) → unprivileged `unshare -rn` (no network) → resource-limits-only, and **warns loudly** in that last case.
-
-> **Residual risk (Mode 2):** even under `bwrap`, an approved module can read files that are still visible on the read-only rootfs and print them to output — network exfiltration is blocked, but disclosure-to-transcript is not. Do not point Mode 2 at paths outside the data you were asked to compute over. If `run.sh` prints the "no OS sandbox available" warning, treat Mode 2 as unconfined and **do not run scripts influenced by untrusted input**.
+> **Residual risk (Mode 2):** even under `bwrap`, an approved module can read files still visible on the read-only rootfs and print them to output — network exfiltration is blocked, disclosure-to-transcript is not. Do not point Mode 2 at paths outside the data you were asked to compute over. If `run.sh` prints the "no OS sandbox available" warning, the static gate is the *only* code-exec barrier and it is not sound — **do not run scripts influenced by untrusted input on that tier.**
 
 ## One-time setup (per session)
 
@@ -76,14 +75,23 @@ def ev(n):
         return OPS[type(n.op)](l, r)
     raise ValueError(f"disallowed: {type(n).__name__}")
 src = sys.stdin.read().replace("^", "**")
-print(f"[arithmetic-eval] {src.strip()} → {ev(ast.parse(src, mode='eval'))}")
+try:
+    result = ev(ast.parse(src, mode="eval"))
+except (ValueError, SyntaxError, TypeError, ZeroDivisionError, OverflowError) as e:
+    print(f"[arithmetic-eval] REJECTED — {e}"); sys.exit(1)   # tagged, never a bare traceback
+print(f"[arithmetic-eval] {src.strip()} → {result}")
 PYEOF
 
 # Evaluate — expression is INERT stdin (quoted heredoc = no interpolation),
-# under CPU + memory limits so a pathological expression can't hang the host:
-( ulimit -t 5 -v 1000000 2>/dev/null; timeout 5 python3 "$AE_DIR/eval.py" ) <<'EXPREOF'
+# under CPU + memory limits so a pathological expression can't hang the host.
+# The [ -f ] guard keeps a skipped setup LOUD instead of a silent no-output.
+if [ -f "$AE_DIR/eval.py" ]; then
+  ( ulimit -t 5 -v 1000000 2>/dev/null; timeout 5 python3 "$AE_DIR/eval.py" ) <<'EXPREOF'
 <expression here>
 EXPREOF
+else
+  echo "[arithmetic-eval] NOT EVALUATED (setup missing) — do NOT use an unverified number" >&2
+fi
 ```
 
 On a disallowed character or oversized exponent the evaluator raises and prints nothing to stdout — that is a rejection, not a result. Do NOT fall back to mental math; fix the expression or report the error.
@@ -101,25 +109,37 @@ PYEOF
 # Write the static gate once per session:
 cat > "$AE_DIR/check.py" <<'PYEOF'
 import ast, sys
+# pathlib (general-purpose filesystem writes) and operator (attrgetter/methodcaller
+# → reflection RCE) are intentionally NOT approved — the OS sandbox is the backstop
+# for the write/exec surfaces that remain in numpy/pandas/openpyxl/matplotlib.
 ALLOWED_MODULES = {
     "math","statistics","scipy","numpy","pandas","sympy","csv","json",
-    "fractions","decimal","datetime","pathlib","re","itertools","functools",
-    "collections","operator","openpyxl","matplotlib",
+    "fractions","decimal","datetime","re","itertools","functools",
+    "collections","openpyxl","matplotlib",
 }
 BAD_NAMES = {"eval","exec","compile","__import__","__builtins__","getattr","setattr",
              "delattr","globals","locals","vars","input","breakpoint","memoryview"}
 # Attribute names specific enough NOT to collide with core scipy/pandas/json APIs.
 # Generic names (load/loads/rename/replace/run/call) are deliberately excluded —
 # they would reject json.load / df.rename / df.replace. Their dangerous cases are
-# covered elsewhere: pickle/subprocess/os are import-blocked, and np.load RCE is
-# caught by the allow_pickle check below.
+# covered elsewhere: pickle/subprocess/os/pathlib are import-blocked, and np.load
+# RCE is caught by the allow_pickle check below.
 BAD_ATTRS = {
     "system","popen","spawn","spawnl","spawnv","fork","execl","execv",
     "read_pickle","to_pickle",                             # pandas pickle RCE
-    "sympify","parse_expr",                                # sympy eval paths
+    "sympify","parse_expr","eval","query",                # expression-eval surfaces
     "write_text","write_bytes","unlink","rmtree","rmdir","mkdir",
-    "chmod","symlink_to","touch",                          # filesystem writes
+    "chmod","symlink_to","hardlink_to","touch",           # filesystem writes
     "check_output","Popen","getoutput",                    # subprocess
+}
+# Dunder strings used in reflection-based sandbox escapes — blocked as string
+# literals so `x.__class__` typed as getattr(x, "__class__") can't sneak through.
+# __main__/__name__/__file__ are deliberately allowed (the standard entry idiom).
+BAD_DUNDER_STRINGS = {
+    "__globals__","__builtins__","__import__","__class__","__bases__",
+    "__subclasses__","__mro__","__dict__","__getattribute__","__getattr__",
+    "__code__","__closure__","__func__","__self__","__loader__","__base__",
+    "__reduce__","__reduce_ex__","__subclasshook__","__init_subclass__",
 }
 def fail(msg, node=None):
     ln = f" (line {node.lineno})" if getattr(node, "lineno", None) else ""
@@ -140,6 +160,9 @@ for node in ast.walk(tree):
             fail(f"import from non-approved module '{node.module}'", node)
     elif isinstance(node, ast.Name) and node.id in BAD_NAMES:
         fail(f"use of banned name '{node.id}'", node)
+    elif isinstance(node, ast.Constant) and isinstance(node.value, str) \
+         and node.value in BAD_DUNDER_STRINGS:
+        fail(f"dangerous dunder string literal '{node.value}'", node)
     elif isinstance(node, ast.Attribute):
         if node.attr in BAD_ATTRS:
             fail(f"dangerous attribute/method '.{node.attr}'", node)
@@ -161,9 +184,23 @@ for node in ast.walk(tree):
                 if not ok:
                     fail("open() with non-read-only or non-literal mode", node)
         for kw in node.keywords:
-            if kw.arg == "allow_pickle" and getattr(kw.value, "value", False) is True:
-                fail("allow_pickle=True (deserialization RCE)", node)
+            # Fail closed: anything not a literal False (1, a variable, True) is unsafe.
+            if kw.arg == "allow_pickle":
+                safe = isinstance(kw.value, ast.Constant) and kw.value.value is False
+                if not safe:
+                    fail("allow_pickle not provably False (deserialization RCE)", node)
 sys.exit(0)
+PYEOF
+
+# Write the network-blocking loader used by the fallback tier (no namespace to
+# drop the net, so neuter Python's socket layer before running the script):
+cat > "$AE_DIR/nonet.py" <<'PYEOF'
+import socket, sys, runpy
+def _blocked(*a, **k):
+    raise OSError("network disabled in arithmetic-eval fallback tier")
+for _n in ("socket","create_connection","getaddrinfo","gethostbyname","gethostbyname_ex"):
+    setattr(socket, _n, _blocked)
+runpy.run_path(sys.argv[1], run_name="__main__")
 PYEOF
 
 # Write the confinement runner once per session:
@@ -192,15 +229,17 @@ if command -v bwrap >/dev/null 2>&1; then
 elif unshare -rn true 2>/dev/null; then
   exec unshare -rn bash -c "$LIM" "$SCRIPT"
 else
-  echo "[arithmetic-eval] WARNING: no OS sandbox (bwrap/unshare) available — resource limits only, NO network/filesystem confinement. Do NOT run untrusted-influenced scripts here." >&2
-  exec bash -c "$LIM" "$SCRIPT"
+  echo "[arithmetic-eval] WARNING: no OS sandbox (bwrap/unshare) available — resource limits + a best-effort Python-level network block only; local files stay readable and the static gate is not sound. Do NOT run untrusted-influenced scripts here." >&2
+  # nonet.py neuters the socket layer, then runpy's the script under the limits.
+  exec bash -c 'ulimit -t 10 -v 8000000 -f 51200 2>/dev/null; exec timeout 10 python3 "$1/nonet.py" "$2"' _ "$DIR" "$SCRIPT"
 fi
 SHEOF
 
 # Gate, then run under the strongest available OS confinement.
 # The else is REQUIRED: a missing helper OR a rejection must be loud — never a
 # silent no-output that tempts a fallback to an unverified (hallucinated) number.
-if [ -f "$AE_DIR/check.py" ] && python3 "$AE_DIR/check.py" "$AE_DIR/script.py"; then
+if [ -f "$AE_DIR/check.py" ] && [ -f "$AE_DIR/run.sh" ] && [ -f "$AE_DIR/nonet.py" ] \
+   && python3 "$AE_DIR/check.py" "$AE_DIR/script.py"; then
   bash "$AE_DIR/run.sh" "$AE_DIR/script.py"
 else
   echo "[arithmetic-eval] NOT EVALUATED (setup missing or script rejected) — do NOT use an unverified number" >&2
@@ -210,12 +249,14 @@ fi
 ### Approved modules (enforced by `check.py`)
 
 `math`, `statistics`, `scipy`, `numpy`, `pandas`, `sympy`, `csv`, `json`,
-`fractions`, `decimal`, `datetime`, `pathlib`, `re`, `itertools`, `functools`,
-`collections`, `operator`, `openpyxl`, `matplotlib`
+`fractions`, `decimal`, `datetime`, `re`, `itertools`, `functools`,
+`collections`, `openpyxl`, `matplotlib`
+
+(`pathlib` and `operator` are deliberately **not** approved — see the comment in `check.py`.)
 
 ### Blocked patterns (enforced by `check.py`, not by eyeballing)
 
-Non-approved imports; the names `eval`/`exec`/`compile`/`__import__`/`__builtins__`/`getattr`/`setattr`/`globals`/`locals`; deserialization sinks (`read_pickle`, `np.load(..., allow_pickle=True)`, `sympify`); filesystem-write methods (`write_text`, `unlink`, `rmtree`, `touch`, …); subprocess entry points; dunder attribute access; and `open()` with any mode that is not a literal read mode (a variable mode fails closed).
+Non-approved imports; the names `eval`/`exec`/`compile`/`__import__`/`__builtins__`/`getattr`/`setattr`/`delattr`/`globals`/`locals`/`vars`/`input`/`breakpoint`/`memoryview`; expression-eval surfaces (`.eval`, `.query`, `sympify`, `parse_expr`); deserialization sinks (`read_pickle`, and `np.load` unless `allow_pickle` is provably `False`); filesystem-write methods (`write_text`, `unlink`, `rmtree`, `touch`, …); subprocess entry points; dunder attribute *and* string-literal access (e.g. `"__globals__"`); and `open()` with any mode that is not a literal read mode (a variable mode fails closed).
 
 Read-mode `open()` is permitted for loading data files — but remember it can disclose local secrets to output. Do not read paths outside the data you were asked to compute over.
 
@@ -231,8 +272,10 @@ Read-mode `open()` is permitted for loading data files — but remember it can d
 ## Examples
 
 > Both examples assume the one-time setup and the mode's helper-writing block
-> (`eval.py` for Mode 1; `check.py` + `run.sh` for Mode 2) have already run this
-> session. If `$AE_DIR` is unset, run the setup first.
+> (`eval.py` for Mode 1; `check.py` + `run.sh` + `nonet.py` for Mode 2) have
+> already run this session. If `$AE_DIR` is unset, run the setup first. The
+> examples show only the per-invocation part; the gate-and-run form is exactly
+> the canonical block in each mode above — don't fork a divergent copy.
 
 ### Example 1 — Mode 1: cost estimate inside a fact-check
 
@@ -258,7 +301,9 @@ b = [92,  95,  91,  94,  93,  90,  96,  92]
 t, p = stats.ttest_ind(a, b)
 print(f"[arithmetic-eval] t={t:.3f}, p={p:.5f}")
 PYEOF
-if [ -f "$AE_DIR/check.py" ] && python3 "$AE_DIR/check.py" "$AE_DIR/script.py"; then
+# gate-and-run: identical to the canonical Mode 2 block above (do not diverge).
+if [ -f "$AE_DIR/check.py" ] && [ -f "$AE_DIR/run.sh" ] && [ -f "$AE_DIR/nonet.py" ] \
+   && python3 "$AE_DIR/check.py" "$AE_DIR/script.py"; then
   bash "$AE_DIR/run.sh" "$AE_DIR/script.py"
 else
   echo "[arithmetic-eval] NOT EVALUATED (setup missing or script rejected) — do NOT use an unverified number" >&2
