@@ -93,11 +93,11 @@ PYEOF
 cat > "$AE/check.py" <<'PYEOF'
 import ast, sys
 # pathlib is approved for READS; its write methods are blocked below and at runtime.
-# operator is intentionally NOT approved (attrgetter/methodcaller reflection → RCE).
+# operator is approved EXCEPT attrgetter/methodcaller (reflection → RCE, banned below).
 ALLOWED_MODULES = {
     "math","statistics","scipy","numpy","pandas","sympy","csv","json",
     "fractions","decimal","datetime","pathlib","re","itertools","functools",
-    "collections","openpyxl","matplotlib",
+    "collections","operator","openpyxl","matplotlib",
 }
 BAD_NAMES = {"eval","exec","compile","__import__","__builtins__","getattr","setattr",
              "delattr","globals","locals","vars","input","breakpoint","memoryview"}
@@ -105,10 +105,14 @@ BAD_NAMES = {"eval","exec","compile","__import__","__builtins__","getattr","seta
 # Generic names (load/rename/replace) are excluded — they'd reject json.load /
 # df.rename; their dangerous cases are handled by the positional-load and
 # allow_pickle checks below and by the OS sandbox / runtime confine layer.
+# NOTE: .eval/.query (pandas) are NOT blocked — inside an already-Python,
+# already-sandboxed script they grant no escalation, and blocking them breaks the
+# most common dataframe idioms. Bare eval/exec stay banned via BAD_NAMES.
 BAD_ATTRS = {
     "system","popen","spawn","spawnl","spawnv","fork","execl","execv",
     "read_pickle","to_pickle",                             # pandas pickle RCE
-    "sympify","parse_expr","eval","query",                # expression-eval surfaces
+    "sympify","parse_expr",                                # sympy eval paths
+    "attrgetter","methodcaller",                           # operator reflection → RCE
     "write_text","write_bytes","unlink","rmtree","rmdir","mkdir",
     "chmod","symlink_to","hardlink_to","touch",           # filesystem writes
     "check_output","Popen","getoutput",                    # subprocess
@@ -145,10 +149,11 @@ for node in ast.walk(tree):
     elif isinstance(node, ast.Name) and node.id in BAD_NAMES:
         fail(f"use of banned name '{node.id}'", node)
     elif isinstance(node, ast.Constant) and isinstance(node.value, str):
+        # Dunder-string reflection only. URL literals are NOT rejected here
+        # (too many false positives in data/labels); egress is blocked at
+        # runtime on every tier instead — see confine.py + the sandbox.
         if node.value in BAD_DUNDER_STRINGS:
             fail(f"dangerous dunder string literal '{node.value}'", node)
-        if "://" in node.value:
-            fail(f"URL literal not allowed: {node.value[:40]!r}", node)
     elif isinstance(node, ast.Attribute):
         if node.attr in BAD_ATTRS:
             fail(f"dangerous attribute/method '.{node.attr}'", node)
@@ -178,14 +183,23 @@ sys.exit(0)
 PYEOF
 
 cat > "$AE/confine.py" <<'PYEOF'
-# Best-effort Python-level confinement for the no-OS-sandbox fallback tier:
-# neuter network egress AND filesystem writes before running the target script.
-import builtins, io, socket, os, sys, runpy
+# Best-effort Python-level confinement for tiers without a mount namespace
+# (fallback, and unshare -rn). Neuter network egress and block filesystem writes
+# OUTSIDE scratch dirs — scratch stays writable so approved modules can write
+# caches (matplotlib) and outputs; host files are protected; reads are unrestricted.
+import builtins, io, socket, os, sys, runpy, tempfile
+_WRITABLE = tuple(sorted({os.path.realpath(p) for p in (
+    tempfile.gettempdir(), os.environ.get("TMPDIR",""), os.environ.get("MPLCONFIGDIR","")
+) if p}, key=len, reverse=True))
+def _ok(path):
+    try: rp = os.path.realpath(path)
+    except Exception: return False
+    return any(rp == w or rp.startswith(w + os.sep) for w in _WRITABLE)
 _real_open = builtins.open
 def _ro_open(file, mode="r", *a, **k):
     m = mode if isinstance(mode, str) else "r"
-    if any(c in m for c in "wax+"):
-        raise PermissionError(f"write-mode open blocked (fallback tier): {file!r}")
+    if any(c in m for c in "wax+") and not _ok(file):
+        raise PermissionError(f"write outside scratch blocked (fallback tier): {file!r}")
     return _real_open(file, mode, *a, **k)
 builtins.open = _ro_open
 io.open = _ro_open                         # pathlib/Path.write_text route through here
@@ -198,17 +212,22 @@ except (TypeError, AttributeError):
     pass
 socket.create_connection = _no_net
 socket.getaddrinfo = _no_net               # kills hostname resolution → most egress
-def _no_fs(*a, **k):
-    raise PermissionError("filesystem write blocked (fallback tier)")
 _real_osopen = os.open
 def _ro_osopen(path, flags, *a, **k):
-    if flags & (os.O_WRONLY | os.O_RDWR | os.O_CREAT | os.O_APPEND | os.O_TRUNC):
-        raise PermissionError("os.open write blocked (fallback tier)")
+    if flags & (os.O_WRONLY|os.O_RDWR|os.O_CREAT|os.O_APPEND|os.O_TRUNC) and not _ok(path):
+        raise PermissionError("os.open write outside scratch blocked (fallback tier)")
     return _real_osopen(path, flags, *a, **k)
 os.open = _ro_osopen
+def _guard(fn):
+    def w(*a, **k):
+        for p in a[:2]:                    # target (and dest for rename/link)
+            if isinstance(p, (str, bytes, os.PathLike)) and not _ok(p):
+                raise PermissionError("filesystem write outside scratch blocked (fallback tier)")
+        return fn(*a, **k)
+    return w
 for _n in ("remove","unlink","rename","replace","rmdir","removedirs",
            "mkdir","makedirs","chmod","symlink","link","truncate"):
-    if hasattr(os, _n): setattr(os, _n, _no_fs)
+    if hasattr(os, _n): setattr(os, _n, _guard(getattr(os, _n)))
 runpy.run_path(sys.argv[1], run_name="__main__")
 PYEOF
 
@@ -216,16 +235,21 @@ PYEOF
 if python3 "$AE/check.py" "$AE/script.py"; then
   s="$AE/script.py"
   LIM='ulimit -t 10 -v 8000000 -f 51200 2>/dev/null'   # CPU/addr-space/file-size caps
-  export OMP_NUM_THREADS=1 OPENBLAS_NUM_THREADS=1 MKL_NUM_THREADS=1 NUMEXPR_NUM_THREADS=1
+  MPL="${TMPDIR:-/tmp}/aeval-mpl"; mkdir -p "$MPL"      # scratch for matplotlib cache
+  export OMP_NUM_THREADS=1 OPENBLAS_NUM_THREADS=1 MKL_NUM_THREADS=1 NUMEXPR_NUM_THREADS=1 MPLCONFIGDIR="$MPL"
   ENV='--setenv PATH /usr/bin:/bin:/usr/local/bin --setenv HOME /tmp --setenv MPLCONFIGDIR /tmp/mpl --setenv OMP_NUM_THREADS 1 --setenv OPENBLAS_NUM_THREADS 1 --setenv MKL_NUM_THREADS 1 --setenv NUMEXPR_NUM_THREADS 1'
   # bwrap is PROBED for a working userns (present-but-broken must degrade, not fail).
   if command -v bwrap >/dev/null 2>&1 && bwrap --ro-bind / / --unshare-all --die-with-parent true 2>/dev/null; then
-    # helper dir mounted READ-ONLY (script can't poison check.py); CWD is writable tmpfs.
-    bwrap --ro-bind / / --ro-bind "$AE" "$AE" --dev /dev --proc /proc --tmpfs /tmp \
+    # ORDER: tmpfs /tmp FIRST, then re-expose $AE read-only ON TOP of it, else the
+    # tmpfs would shadow $AE (which lives under /tmp) and hide script.py. CWD is the
+    # writable tmpfs so legit savefig/output writes land there.
+    bwrap --ro-bind / / --tmpfs /tmp --ro-bind "$AE" "$AE" --dev /dev --proc /proc \
       --chdir /tmp --unshare-all --die-with-parent --new-session --clearenv $ENV \
       bash -c "$LIM"'; exec timeout 10 python3 "$0"' "$s"
   elif unshare -rn true 2>/dev/null; then
-    unshare -rn bash -c "$LIM"'; exec timeout 10 python3 "$0"' "$s"
+    # net namespace drops egress; confine.py adds the fs-write block (unshare shares
+    # the host MOUNT namespace, so without it the script could write host files).
+    unshare -rn bash -c "$LIM"'; exec timeout 10 python3 "$1/confine.py" "$2"' _ "$AE" "$s"
   else
     echo "[arithmetic-eval] WARNING: no OS sandbox (bwrap/unshare) available — resource limits + a best-effort Python-level net+write block only; the static gate is not sound. Do NOT run untrusted-influenced scripts here." >&2
     bash -c "$LIM"'; exec timeout 10 python3 "$1/confine.py" "$2"' _ "$AE" "$s"
@@ -239,13 +263,13 @@ fi
 
 `math`, `statistics`, `scipy`, `numpy`, `pandas`, `sympy`, `csv`, `json`,
 `fractions`, `decimal`, `datetime`, `pathlib`, `re`, `itertools`, `functools`,
-`collections`, `openpyxl`, `matplotlib`
+`collections`, `operator`, `openpyxl`, `matplotlib`
 
-(`operator` is deliberately **not** approved — `attrgetter`/`methodcaller` give a reflection path to RCE. `pathlib` is approved for reads; its write methods are blocked.)
+(`pathlib` is approved for reads; its write methods are blocked. `operator` is approved except `attrgetter`/`methodcaller`, which give a reflection path to RCE.)
 
 ### Blocked patterns (enforced by `check.py`, not by eyeballing)
 
-Non-approved imports; the names `eval`/`exec`/`compile`/`__import__`/`__builtins__`/`getattr`/`setattr`/`delattr`/`globals`/`locals`/`vars`/`input`/`breakpoint`/`memoryview`; expression-eval surfaces (`.eval`, `.query`, `sympify`, `parse_expr`); deserialization sinks (`read_pickle`; `np.load` with `allow_pickle` truthy **or** via a 3rd positional arg); filesystem-write methods (`write_text`, `unlink`, `rmtree`, `touch`, …); subprocess entry points; dunder attribute *and* string-literal access (e.g. `"__globals__"`); URL string literals (`…://…`); and `open()` with any mode that is not a literal read mode (a variable mode fails closed).
+Non-approved imports; the names `eval`/`exec`/`compile`/`__import__`/`__builtins__`/`getattr`/`setattr`/`delattr`/`globals`/`locals`/`vars`/`input`/`breakpoint`/`memoryview`; sympy eval paths (`sympify`, `parse_expr`) and `operator.attrgetter`/`methodcaller`; deserialization sinks (`read_pickle`; `np.load` with `allow_pickle` truthy **or** via a 3rd positional arg); filesystem-write methods (`write_text`, `unlink`, `rmtree`, `touch`, …); subprocess entry points; dunder attribute *and* string-literal access (e.g. `"__globals__"`); and `open()` with any mode that is not a literal read mode (a variable mode fails closed). Network egress is **not** blocked statically (too many URL false positives) — it is neutered at runtime on every tier. `pandas` `.eval`/`.query` are intentionally allowed (no escalation inside an already-sandboxed script).
 
 Read-mode `open()` is permitted for loading data files — but it can disclose local secrets to output. Do not read paths outside the data you were asked to compute over.
 
