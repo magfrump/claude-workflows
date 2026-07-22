@@ -30,7 +30,9 @@ The expression or script you evaluate is often **attacker-influenceable** — it
 1. **Never interpolate untrusted text into shell or Python source.** Feed it as *data* through a **quoted heredoc** (`<<'EOF'`), which disables all shell expansion of the body. Do not paste an expression into an `EXPR='...'` assignment — a single quote in the input breaks out and executes as shell.
 2. **Enforcement is by machine, not by eye.** Mode 1 evaluates through an AST allowlist (no `eval`); Mode 2 runs a static checker that rejects non-approved imports and dangerous call patterns. Both run under `timeout` + `ulimit`.
 
-> **Residual risk (Mode 2):** the static checker is defense-in-depth, not a sandbox. Approved modules can still read local files (and print them) and have edge-case exec paths. If the script is influenced by genuinely untrusted input, additionally run it under OS confinement — `bwrap --unshare-net --ro-bind / /` with rlimits — or don't run it.
+3. **OS confinement backs up the static gate.** Mode 2 scripts execute through `run.sh`, which picks the strongest sandbox available — `bwrap` (read-only rootfs, private tmpfs, no network, cleared env) → unprivileged `unshare -rn` (no network) → resource-limits-only, and **warns loudly** in that last case.
+
+> **Residual risk (Mode 2):** even under `bwrap`, an approved module can read files that are still visible on the read-only rootfs and print them to output — network exfiltration is blocked, but disclosure-to-transcript is not. Do not point Mode 2 at paths outside the data you were asked to compute over. If `run.sh` prints the "no OS sandbox available" warning, treat Mode 2 as unconfined and **do not run scripts influenced by untrusted input**.
 
 ## One-time setup (per session)
 
@@ -149,9 +151,34 @@ for node in ast.walk(tree):
 sys.exit(0)
 PYEOF
 
-# Gate, then run under CPU + address-space + wall-clock limits:
+# Write the confinement runner once per session:
+cat > "$AE_DIR/run.sh" <<'SHEOF'
+#!/usr/bin/env bash
+# Tiered OS confinement. Runs $1 under the strongest sandbox available. The
+# static gate (check.py) must have passed first — this is the OS backstop.
+set -uo pipefail
+SCRIPT="$1"; DIR=$(dirname "$SCRIPT")
+# CPU 10s, address space ~2GB, max written file 50MB; wall-clock backstop 10s.
+LIM='ulimit -t 10 -v 2000000 -f 51200 2>/dev/null; exec timeout 10 python3 "$0"'
+if command -v bwrap >/dev/null 2>&1; then
+  exec bwrap \
+    --ro-bind / / --dev /dev --proc /proc \
+    --tmpfs /tmp --tmpfs /run --bind "$DIR" "$DIR" \
+    --unshare-all --die-with-parent --new-session \
+    --clearenv --setenv PATH /usr/bin:/bin:/usr/local/bin \
+    --setenv HOME /tmp --setenv MPLCONFIGDIR /tmp/mpl \
+    bash -c "$LIM" "$SCRIPT"
+elif unshare -rn true 2>/dev/null; then
+  exec unshare -rn bash -c "$LIM" "$SCRIPT"
+else
+  echo "[arithmetic-eval] WARNING: no OS sandbox (bwrap/unshare) available — resource limits only, NO network/filesystem confinement. Do NOT run untrusted-influenced scripts here." >&2
+  exec bash -c "$LIM" "$SCRIPT"
+fi
+SHEOF
+
+# Gate, then run under the strongest available OS confinement:
 if python3 "$AE_DIR/check.py" "$AE_DIR/script.py"; then
-  ( ulimit -t 10 -v 2000000; timeout 10 python3 "$AE_DIR/script.py" )
+  bash "$AE_DIR/run.sh" "$AE_DIR/script.py"
 fi
 ```
 
@@ -203,7 +230,7 @@ t, p = stats.ttest_ind(a, b)
 print(f"[arithmetic-eval] t={t:.3f}, p={p:.5f}")
 PYEOF
 if python3 "$AE_DIR/check.py" "$AE_DIR/script.py"; then
-  ( ulimit -t 10 -v 2000000; timeout 10 python3 "$AE_DIR/script.py" )
+  bash "$AE_DIR/run.sh" "$AE_DIR/script.py"
 fi
 # → [arithmetic-eval] t=8.062, p=0.00001
 # Interpretation: claim supported at p < 0.05.
