@@ -19,7 +19,7 @@ when: User requests a full code review or PR review
 
 ## Dependencies
 
-This skill orchestrates the following sub-skills. Ensure they exist in `skills/` before use.
+Orchestrates the sub-skills below. Ensure they exist in `skills/` before use.
 
 **Required (always run):**
 - `code-fact-check.md` — verifies factual claims in code comments, docs, and commit messages
@@ -42,13 +42,11 @@ This skill orchestrates the following sub-skills. Ensure they exist in `skills/`
 
 # Code Review Orchestrator
 
-You are an orchestrator. You coordinate a multi-stage review of code changes by dispatching
-work to specialized sub-agents and then synthesizing their output.
+You are an orchestrator. Coordinate a multi-stage review of code changes by dispatching work to specialized sub-agents, then synthesizing their output.
 
-This workflow follows the [orchestrated review pattern](../../patterns/orchestrated-review.md).
+Follows the [orchestrated review pattern](../../patterns/orchestrated-review.md).
 
-You produce two deliverables: a freeform chat summary and a structured code review rubric
-document.
+Produce two deliverables: a freeform chat summary and a structured code review rubric document.
 
 ---
 
@@ -96,13 +94,11 @@ Accept user overrides:
 - **Commit range:** `--range abc123..def456`
 - **Staged changes:** `--staged` (use `git diff --cached`)
 
-Do not paste the full diff into agent prompts. Instead, pass the scope specification so each
-agent runs its own `git diff` — this avoids context budget issues with large diffs.
+Do not paste the full diff into agent prompts. Pass the scope specification so each agent runs its own `git diff` — this avoids context budget issues with large diffs.
 
 #### Large diff triage (~1000+ lines)
 
-Diffs exceeding roughly 1000 lines may exceed practical review capacity in a single pass.
-When the diff is this large, split the review into multiple passes by subsystem or file group:
+Diffs exceeding roughly 1000 lines may exceed practical review capacity in a single pass. When the diff is this large, split the review into multiple passes by subsystem or file group:
 
 1. **Prioritize highest-risk files first:** auth, data handling, public API surfaces, and
    trust boundary changes. Run the full pipeline on these files before lower-risk ones.
@@ -111,15 +107,13 @@ When the diff is this large, split the review into multiple passes by subsystem 
 3. **Note the triage in your plan summary** so the user sees which files were reviewed in
    which pass and why the ordering was chosen. This makes split reviews auditable.
 
-Check diff size early via `git diff --stat` — if the line count crosses the ~1000-line
-threshold, propose the split to the user before launching Stage 1.
+Check diff size early via `git diff --stat` — if the line count crosses the ~1000-line threshold, propose the split to the user before launching Stage 1.
 
-Separately from total diff size, watch the per-file churn ratio. When any single file in the diff has more than 40% of its lines changed (compute as changed lines ÷ post-change file length from `git diff --stat`), treat that file's review as greenfield — evaluate architecture, naming, and module boundaries on the resulting code rather than against the diff. Diff comparison loses signal at high churn ratios because most lines moved or were rewritten, so reading them as deltas misses the real questions the rewrite raises. Apply this per file, not per pass: other files in the same diff may still warrant standard diff-level review.
+Separately from total diff size, watch the per-file churn ratio. When any single file in the diff has more than 40% of its lines changed (compute as changed lines ÷ post-change file length from `git diff --stat`), treat that file's review as greenfield — evaluate architecture, naming, and module boundaries on the resulting code rather than against the diff. Diff comparison loses signal at high churn ratios because most lines moved or were rewritten. Apply this per file, not per pass: other files in the same diff may still warrant standard diff-level review.
 
 ### Step 2: Capture PR intent
 
-Critics scope findings better when they know what the PR is trying to accomplish. Capture
-this once here and reuse it in Stage 2.
+Critics scope findings better when they know what the PR is trying to accomplish. Capture once here and reuse in Stage 2.
 
 - **If `--pr <N>` was passed:** Run `gh pr view <N> --json body --jq .body` to fetch the PR
   description verbatim. If the body is empty, fall back to the branch-purpose summary below.
@@ -128,13 +122,11 @@ this once here and reuse it in Stage 2.
   write a 2-line summary describing the goal of the branch — what is changing and why. If
   the branch has no commits ahead of main, use the most recent commit subject.
 
-Hold the resulting text as `<pr-intent>` for Stage 2. You will paste it verbatim under a
-`## What this PR is trying to accomplish` heading in each critic's prompt so critics can
-scope findings to stated intent.
+Hold the resulting text as `<pr-intent>` for Stage 2. Paste it verbatim under a `## What this PR is trying to accomplish` heading in each critic's prompt so critics can scope findings to stated intent.
 
 ### Step 3: Surface prior review findings (optional)
 
-If the diff touches files that appear in a prior `docs/reviews/*.md` report from the last 30 days (detect via `git log --since="30 days ago" -- docs/reviews/` and intersect those reports' `Location:` paths with the changed-file list), lift the **Must-Fix** rows whose locations still apply and hold them as `<prior-findings>` for Stage 2. You will paste them verbatim under a `## Prior review findings (advisory — worth checking, not verdict input)` heading in each critic's prompt so recurring issues are flagged explicitly rather than re-discovered. Treat them as hints about where to look — critics MUST NOT confirm them as findings or feed them into verdicts. Skip silently if no matching prior reports exist. (Extends the within-PR cross-iteration contrastive prompt in `workflows/pr-prep.md` step 3d to across-PR memory.)
+If the diff touches files that appear in a prior `docs/reviews/*.md` report from the last 30 days (detect via `git log --since="30 days ago" -- docs/reviews/` and intersect those reports' `Location:` paths with the changed-file list), lift the **Must-Fix** rows whose locations still apply and hold them as `<prior-findings>` for Stage 2. Paste them verbatim under a `## Prior review findings (advisory — worth checking, not verdict input)` heading in each critic's prompt so recurring issues are flagged explicitly rather than re-discovered. Treat them as hints about where to look — critics MUST NOT confirm them as findings or feed them into verdicts. Skip silently if no matching prior reports exist. (Extends the within-PR cross-iteration contrastive prompt in `workflows/pr-prep.md` step 3d to across-PR memory.)
 
 ### Step 3.5: Scan the override log for prior decisions matching the current diff
 
@@ -152,9 +144,7 @@ This step is **read-only with respect to the log** during the run. New overrides
 
 ### Step 4: Known critic roles
 
-The orchestrator uses a fixed taxonomy of skills. Do not scan `skills/*.md` at runtime — use
-the lists below. (If a listed file doesn't exist, skip it and note the gap in your plan
-summary. If the user references a skill not listed here, they can include it via `--include`.)
+The orchestrator uses a fixed taxonomy of skills. Do not scan `skills/*.md` at runtime — use the lists below. (If a listed file doesn't exist, skip it and note the gap in your plan summary. If the user references a skill not listed here, they can include it via `--include`.)
 
 **Orchestrators (skip — not reviewers):**
 - `code-review.md` — that's you
@@ -185,8 +175,7 @@ summary. If the user references a skill not listed here, they can include it via
 
 ### Step 5: Auto-select contextual critics
 
-Run a quick analysis of the diff to determine which contextual critics to include. Use the
-table below — check each row's diff characteristic and invoke the critic if it matches.
+Run a quick analysis of the diff to determine which contextual critics to include. Use the table below — check each row's diff characteristic and invoke the critic if it matches.
 
 | Diff characteristic | Critic to invoke | Rationale |
 |---|---|---|
@@ -196,8 +185,7 @@ table below — check each row's diff characteristic and invoke the critic if it
 | Diff touches UI rendering code: JSX/TSX with className or style props, CSS/SCSS files, HTML templates, C#/Unity UI components (Canvas, RectTransform, ScrollRect, UI namespace), Vue/Svelte templates, or files with Tailwind utility classes. Trigger is presence of visual/layout code, not file extension alone. | `ui-visual-review` | Visual regressions are invisible to text-based critics; this critic catches layout, overflow, and sizing issues. |
 | Diff changes module structure (new modules, renames, moves, package/directory layout), public APIs of internal modules, data models (schemas, DTOs, persisted contracts, message formats), or cross-cutting concerns (DI wiring, middleware, auth pipelines, logging/tracing setup, caching layers, error-handling pipelines). Skip when the diff only modifies implementation inside an existing module without touching its public surface. | `architecture-review` | Structural drift compounds silently; this critic catches dependency-direction violations, module-boundary breaches, and coupling problems that the per-concern critics miss. |
 
-**How to check:** For each row, scan the diff file list and content. Multiple rows can match
-simultaneously — invoke all matching critics. If no rows match, no contextual critics run.
+**How to check:** For each row, scan the diff file list and content. Multiple rows can match simultaneously — invoke all matching critics. If no rows match, no contextual critics run.
 
 ### Step 6: User overrides
 
@@ -230,9 +218,7 @@ Keep this brief — a short paragraph.
 
 ### Between-stage status banner
 
-After each between-stage handoff (end of Stage 1, end of Stage 2), emit a single
-one-line status banner directly in the chat so the user can judge progress and
-decide whether to interrupt before the next stage launches.
+After each between-stage handoff (end of Stage 1, end of Stage 2), emit a single one-line status banner directly in the chat so the user can judge progress and decide whether to interrupt before the next stage launches.
 
 **Format:** `Stage N (<stage-name>) complete: <key counts> — <next action>`
 
@@ -264,9 +250,7 @@ decide whether to interrupt before the next stage launches.
 >
 > Stage 2 (critics) complete: 4/4 critics returned (12 findings total), dispatch mode: parallel + chain (security→api-consistency) — synthesizing into rubric and chat summary.
 
-**Scope:** The banner is emitted *only* between stages. Do **not** emit a
-banner after Stage 3 — Stage 3's chat synthesis is itself the user-facing
-output, and a "Stage 3 complete" banner would duplicate or compete with it.
+**Scope:** The banner is emitted *only* between stages. Do **not** emit a banner after Stage 3 — Stage 3's chat synthesis is itself the user-facing output, and a "Stage 3 complete" banner would duplicate or compete with it.
 
 ### Stage 1: Code Fact-Check
 
@@ -301,18 +285,13 @@ Spawn one agent with the code-fact-check skill.
    make a non-trivial guess about what to check.
 7. Launch via the Agent tool with `subagent_type: "general-purpose"`
 
-**CHECKPOINT:** Wait for the fact-check agent to return results. Verify you received a
-substantive report. If it failed or returned empty, tell the user and ask how to proceed.
+**CHECKPOINT:** Wait for the fact-check agent to return results. Verify you received a substantive report. If it failed or returned empty, tell the user and ask how to proceed.
 
-After receiving substantive results, emit the between-stage status banner per the
-format spec above (e.g., `Stage 1 (fact-check) complete: <counts> — <next action>`).
-Emit it before the Fact-Check Gate so the user sees stage progress even if the gate
-pauses for input.
+After receiving substantive results, emit the between-stage status banner per the format spec above (e.g., `Stage 1 (fact-check) complete: <counts> — <next action>`). Emit it before the Fact-Check Gate so the user sees stage progress even if the gate pauses for input.
 
 ### Fact-Check Gate
 
-After receiving fact-check results, check whether any claims were rated **Incorrect** at
-**high confidence**. If so:
+After receiving fact-check results, check whether any claims were rated **Incorrect** at **high confidence**. If so:
 
 1. **Pause before launching critics.** Present the high-confidence Incorrect findings to the
    user — specifically the claims, what the evidence shows, and the confidence level.
@@ -321,14 +300,11 @@ After receiving fact-check results, check whether any claims were rated **Incorr
    - **Fix first** — the user wants to address factual issues before running critics
    - **Skip critics** — the user only needed the fact-check
 
-If the user passed `--no-gate`, or if there are no high-confidence Incorrect findings, skip
-this gate and proceed directly to Stage 2.
+If the user passed `--no-gate`, or if there are no high-confidence Incorrect findings, skip this gate and proceed directly to Stage 2.
 
 ### Stage 1.5: Critic gating
 
-After the Fact-Check Gate (and only if the user did NOT pass `--all-critics`), narrow the
-core-critic set down before launching Stage 2. This stage applies two gating signals,
-ordered by when their input becomes available:
+After the Fact-Check Gate (and only if the user did NOT pass `--all-critics`), narrow the core-critic set down before launching Stage 2. This stage applies two gating signals, ordered by when their input becomes available:
 
 - **First gate — diff-shape.** Already partially applied: Step 4 used the diff to select
   contextual critics pre-Stage-1. Now extend the same diff-shape logic to the core
@@ -339,23 +315,15 @@ ordered by when their input becomes available:
   domain. If the only thing keeping a critic alive is "we always run it," and Stage 1
   surfaced nothing in its domain, downgrade it.
 
-The default is **run all core critics** — skipping is conservative. The cost of running
-an extra critic is small; the cost of a missed finding is large. If you are uncertain
-whether a signal applies, do not skip.
+The default is **run all core critics** — skipping is conservative. The cost of running an extra critic is small; the cost of a missed finding is large. If you are uncertain whether a signal applies, do not skip.
 
-**Boring version:** consult fact-check to optionally *downgrade* critics. Do not re-derive
-the critic set from scratch — the set entering Stage 1.5 is whatever survived Step 4
-selection + user overrides, and Stage 1.5 only narrows it further. Stage 1.5 never
-*promotes* a critic.
+**Boring version:** consult fact-check to optionally *downgrade* critics. Do not re-derive the critic set from scratch — the set entering Stage 1.5 is whatever survived Step 4 selection + user overrides, and Stage 1.5 only narrows it further. Stage 1.5 never *promotes* a critic.
 
-This section runs silently — emit no status banner. The Stage 1 banner already fired
-before the Fact-Check Gate, and the Stage 2 banner fires after critics return.
+This section runs silently — emit no status banner. The Stage 1 banner already fired before the Fact-Check Gate, and the Stage 2 banner fires after critics return.
 
 #### Evidence consultation (lead signal)
 
-For each remaining core critic, ask: did Stage 1 surface *any* claim — at any verdict,
-including Accurate or Unverifiable — that touches this critic's domain? And does the
-diff (which fact-check scoped over) actually contain files in that domain?
+For each remaining core critic, ask: did Stage 1 surface *any* claim — at any verdict, including Accurate or Unverifiable — that touches this critic's domain? And does the diff (which fact-check scoped over) actually contain files in that domain?
 
 | Critic | Domain heuristic — corroborating evidence is any of |
 |---|---|
@@ -363,16 +331,9 @@ diff (which fact-check scoped over) actually contain files in that domain?
 | `performance-reviewer` | A fact-check claim or diff hunk touching loops, queries, data-structure choice, hot paths, complexity claims (e.g., "O(n)"), caching, batching, or dependency add/upgrade. |
 | `api-consistency-reviewer` | A fact-check claim or diff hunk touching exported function signatures, schema/contract definitions, route handlers, public CLI flags, module exports, or published config keys. |
 
-If a critic's domain heuristic finds **zero corroborating evidence** in both the
-fact-check report and the diff, downgrade the critic to skip-with-note. Record the skip
-in the rubric's `## ⏭️ Skipped Core Critics` section with the signal cited as
-"no fact-check claims or diff content in domain."
+If a critic's domain heuristic finds **zero corroborating evidence** in both the fact-check report and the diff, downgrade the critic to skip-with-note. Record the skip in the rubric's `## ⏭️ Skipped Core Critics` section with the signal cited as "no fact-check claims or diff content in domain."
 
-If *any* corroborating evidence exists — even a single Accurate fact-check claim, or a
-single diff hunk touching the domain — run the critic. The diff-shape skip table below
-still applies as a complementary signal, but evidence consultation has priority: a
-fact-check finding in the domain forces the critic to run regardless of how copy-only
-the diff appears.
+If *any* corroborating evidence exists — even a single Accurate fact-check claim, or a single diff hunk touching the domain — run the critic. The diff-shape skip table below still applies as a complementary signal, but evidence consultation has priority: a fact-check finding in the domain forces the critic to run regardless of how copy-only the diff appears.
 
 #### Skip signals (diff-shape, must be unambiguous)
 
@@ -398,37 +359,21 @@ the diff appears.
 
 #### Logging skipped critics
 
-For every core critic you skip, you MUST record it in the rubric under the
-`## ⏭️ Skipped Core Critics` section (see Deliverable 2 below) with the critic name, the
-skip reason, and the specific signal observed (e.g., `git diff --stat` output excerpt or
-the fact-check finding cited). Also reference skips in the chat synthesis scope summary so
-the user sees coverage limits before reading findings.
+For every core critic you skip, you MUST record it in the rubric under the `## ⏭️ Skipped Core Critics` section (see Deliverable 2 below) with the critic name, the skip reason, and the specific signal observed (e.g., `git diff --stat` output excerpt or the fact-check finding cited). Also reference skips in the chat synthesis scope summary so the user sees coverage limits before reading findings.
 
 If `--all-critics` was passed, skip this step entirely; all core critics run.
 
 ### Stage 2 dispatch modes
 
-Stage 2 has two dispatch modes. **Default is parallel** — every critic runs
-simultaneously and they do not see each other's output. Chain mode is
-**opt-in via `--chain <pair>`** and applies only to the named pair; all
-other critics still run in parallel alongside the chain.
+Stage 2 has two dispatch modes. **Default is parallel** — every critic runs simultaneously and they do not see each other's output. Chain mode is **opt-in via `--chain <pair>`** and applies only to the named pair; all other critics still run in parallel alongside the chain.
 
-The orchestrator decision is one line: if the user passed `--chain <pair>`,
-run that pair sequentially with the upstream critic's findings injected into
-the downstream critic's prompt; otherwise, dispatch every selected critic in
-parallel.
+The orchestrator decision is one line: if the user passed `--chain <pair>`, run that pair sequentially with the upstream critic's findings injected into the downstream critic's prompt; otherwise, dispatch every selected critic in parallel.
 
-**State the chosen mode in the Stage 2-complete (synthesis-introducing)
-banner** so the reader knows which dispatch shape produced the findings
-(see [Between-stage status banner](#between-stage-status-banner) for format).
+**State the chosen mode in the Stage 2-complete (synthesis-introducing) banner** so the reader knows which dispatch shape produced the findings (see [Between-stage status banner](#between-stage-status-banner) for format).
 
 #### When to chain
 
-Chain only when an upstream critic's findings genuinely change the
-downstream critic's scope — i.e., reading the upstream critique would let
-the downstream critic narrow its inspection or sharpen its priorities. If
-the downstream critic would do the same scan either way, parallel is
-strictly faster and equally informative; do not chain by default.
+Chain only when an upstream critic's findings genuinely change the downstream critic's scope — i.e., reading the upstream critique would let the downstream critic narrow its inspection or sharpen its priorities. If the downstream critic would do the same scan either way, parallel is strictly faster and equally informative; do not chain by default.
 
 #### Supported chain pairs
 
@@ -461,17 +406,13 @@ When chain mode is active for a pair:
 
 #### Trade-offs
 
-Chain mode adds one round-trip of latency to Stage 2 (the downstream critic
-cannot start until the upstream critic returns). It is worth that cost only
-when the trigger applies — without the trigger, the downstream critic gains
-no useful narrowing and the chain just slows Stage 2 down.
+Chain mode adds one round-trip of latency to Stage 2 (the downstream critic cannot start until the upstream critic returns). It is worth that cost only when the trigger applies — without the trigger, the downstream critic gains no useful narrowing and the chain just slows Stage 2 down.
 
 ### Stage 2: Critic Agents
 
 Now — and ONLY now — spawn critic sub-agents using the Agent tool.
 
-**DO NOT write critiques yourself. You MUST dispatch each critique to a sub-agent via the
-Agent tool.** This is non-negotiable.
+**DO NOT write critiques yourself. You MUST dispatch each critique to a sub-agent via the Agent tool.** This is non-negotiable.
 
 For each critic agent, you MUST:
 
@@ -545,35 +486,21 @@ Success criterion: A markdown report saved to docs/reviews/security-review.md, s
 
 If any of those facts isn't on hand, omit the corresponding sub-bullet rather than guessing — the fields exist to anchor the critic in real project context, not to be filled for completeness. Do not add other content to the preamble; everything else (scope spec, PR intent, fact-check excerpt, output path, tagging requirements) goes in the role-specific content below it.
 
-**Launch ALL critic agents simultaneously** in a single message with multiple Agent tool calls.
-They must not see each other's output. **Exception:** when [Stage 2 dispatch
-modes](#stage-2-dispatch-modes) chain mode is active for a pair, the
-downstream critic is dispatched in a second message after the upstream
-critic returns; every other critic still launches in the first parallel
-batch.
+**Launch ALL critic agents simultaneously** in a single message with multiple Agent tool calls. They must not see each other's output. **Exception:** when [Stage 2 dispatch modes](#stage-2-dispatch-modes) chain mode is active for a pair, the downstream critic is dispatched in a second message after the upstream critic returns; every other critic still launches in the first parallel batch.
 
-**CHECKPOINT:** Wait for ALL critic agents to return results (including the
-downstream critic of any active chain). Count the results. Do you have the
-expected number? If yes, proceed to Stage 3. If not, tell the user what's
-missing.
+**CHECKPOINT:** Wait for ALL critic agents to return results (including the downstream critic of any active chain). Count the results. Do you have the expected number? If yes, proceed to Stage 3. If not, tell the user what's missing.
 
-After confirming the expected critic count, emit the between-stage status banner per the
-format spec above (e.g., `Stage 2 (critics) complete: <counts>, dispatch mode: <mode> — synthesizing into rubric and chat summary`).
-Emit it before launching Stage 3 so the user sees the handoff explicitly.
+After confirming the expected critic count, emit the between-stage status banner per the format spec above (e.g., `Stage 2 (critics) complete: <counts>, dispatch mode: <mode> — synthesizing into rubric and chat summary`). Emit it before launching Stage 3 so the user sees the handoff explicitly.
 
 ### Stage 3: Synthesize and Produce Outputs
 
 You now have results from all sub-agents. NOW — and only now — produce your two deliverables.
 
-**No banner after this stage.** Stage 3's chat synthesis (Deliverable 1) is itself the
-user-facing output. Do not prepend or append a "Stage 3 complete" banner — it would
-duplicate the synthesis. Banners are between-stage progress indicators, not synthesis output.
+**No banner after this stage.** Stage 3's chat synthesis (Deliverable 1) is itself the user-facing output. Do not prepend or append a "Stage 3 complete" banner — it would duplicate the synthesis. Banners are between-stage progress indicators, not synthesis output.
 
 #### Goal-alignment scan (run before producing deliverables)
 
-Before writing the chat synthesis, scan the **Goal-Alignment Note** appended by each
-sub-agent (see [`patterns/orchestrated-review.md`](../../patterns/orchestrated-review.md)).
-Collect:
+Before writing the chat synthesis, scan the **Goal-Alignment Note** appended by each sub-agent (see [`patterns/orchestrated-review.md`](../../patterns/orchestrated-review.md)). Collect:
 
 - Any sub-agent whose `Answered:` value is `no` or `partial` — record the agent name
   and the one-phrase reason verbatim.
@@ -582,11 +509,9 @@ Collect:
 - Any non-trivial `Escalate:` item — anything other than the literal sentinel
   `nothing`. Record the agent name and the bullet text.
 
-If a sub-agent omitted the note entirely, treat that as a `partial` entry with reason
-"missing goal-alignment note" so the gap is still surfaced.
+If a sub-agent omitted the note entirely, treat that as a `partial` entry with reason "missing goal-alignment note" so the gap is still surfaced.
 
-The collected items feed the `### Coverage and Escalations` section of the chat
-synthesis below. They do not modify the rubric — coverage is a chat-synthesis concern.
+The collected items feed the `### Coverage and Escalations` section of the chat synthesis below. They do not modify the rubric — coverage is a chat-synthesis concern.
 
 #### Contrastive note (optional, capture during synthesis)
 
@@ -596,8 +521,7 @@ Pick one finding the panel caught well, plus one likely-related issue you suspec
 
 ## Deliverable 1: Chat Synthesis
 
-Present this directly in the chat. It should be self-contained — assume the user has NOT read
-the individual agent reports.
+Present this directly in the chat. It should be self-contained — assume the user has NOT read the individual agent reports.
 
 ### Structure the chat synthesis as:
 
@@ -618,8 +542,7 @@ If Step 3.5 found no matching rows, render the section with the single line: "No
 
 ### Coverage and Escalations
 
-Surface the items collected in the Goal-alignment scan above so the user sees coverage
-limits before reading findings:
+Surface the items collected in the Goal-alignment scan above so the user sees coverage limits before reading findings:
 
 - For each sub-agent that answered `no` or `partial`: list the agent name and the
   one-phrase reason.
@@ -628,43 +551,23 @@ limits before reading findings:
 - For each non-trivial `Escalate:` bullet: list the agent name and what the
   orchestrator should action separately.
 
-If the scan surfaced nothing, render this section with a single line: "All sub-agents
-fully addressed their scope; no out-of-scope or escalate items." The heading must
-still appear so the section is auditable across runs.
+If the scan surfaced nothing, render this section with a single line: "All sub-agents fully addressed their scope; no out-of-scope or escalate items." The heading must still appear so the section is auditable across runs.
 
-**Factual issues:** What the code fact-check found. Group into: claims that need fixing
-(Incorrect), claims that need updating (Stale, Mostly Accurate), and claims that are solid
-(Verified).
+**Factual issues:** What the code fact-check found. Group into: claims that need fixing (Incorrect), claims that need updating (Stale, Mostly Accurate), and claims that are solid (Verified).
 
-**Cross-critic findings:** Highest signal. Issues raised independently by 2+ critics
-targeting the same code region or overlapping concern. These indicate structural problems
-that manifest across multiple dimensions (e.g., a pattern that's both a security risk and
-a performance problem). Convergence detection is semantic — same file region plus overlapping
-concern — not mechanical keyword matching.
+**Cross-critic findings:** Highest signal. Issues raised independently by 2+ critics targeting the same code region or overlapping concern. These indicate structural problems that manifest across multiple dimensions (e.g., a pattern that's both a security risk and a performance problem). Convergence detection is semantic — same file region plus overlapping concern — not mechanical keyword matching.
 
-**Per-domain findings:** Organize remaining findings by severity within each critic domain.
-Lead with Critical/High, then Medium, then Low/Informational.
+**Per-domain findings:** Organize remaining findings by severity within each critic domain. Lead with Critical/High, then Medium, then Low/Informational.
 
-**Contextual critic findings:** If contextual critics ran, present their findings separately
-as advisory input. These inform but do not block.
+**Contextual critic findings:** If contextual critics ran, present their findings separately as advisory input. These inform but do not block.
 
-**What the code gets right:** Strengths that critics identified. The author needs to know
-what to preserve during revisions.
+**What the code gets right:** Strengths that critics identified. The author needs to know what to preserve during revisions.
 
 **Failure-mode escalation:** Count the distinct new failure modes named across critic findings — the per-finding failure-mode phrase that `for-author` findings already carry per the [orchestrated-review pattern](../../patterns/orchestrated-review.md#legibility-target-tagging) (location, evidence, attack scenario or failure mode where applicable, recommendation). Dedupe overlapping concerns in the same code region to a single mode so the count tracks distinct modes, not finding multiplicity. If >=3 new failure modes are flagged, recommend `/pre-mortem` on the diff for narrative analysis; include the recommendation in the Chat Synthesis. The recommendation is advisory — the user decides whether to invoke `/pre-mortem`, not the orchestrator. The >=3 threshold is intentionally conservative to avoid escalation fatigue: at that count, independent failure modes start to suggest coupling and ordering between them that a narrative pre-mortem surfaces but per-critic flags miss. Below the threshold, the per-critic flags already carry the signal and a separate pre-mortem pass would be redundant.
 
-**Actionable guidance:** Key changes to make, ordered by severity. Where multiple critics
-agree, note the convergence.
+**Actionable guidance:** Key changes to make, ordered by severity. Where multiple critics agree, note the convergence.
 
-**Questions to clarify (if any sub-agent emitted them):** Scan each sub-agent's
-Goal-Alignment Note for the optional "Questions I would have asked" bullet. If one or more
-sub-agents emitted questions, surface them under a `### Questions to clarify` heading near
-the end of the chat synthesis, just before "Actionable guidance" or as a sibling subsection.
-De-duplicate: if multiple sub-agents asked semantically the same question, list it once and
-note the agreement (multiple sub-agents asking the same question is a strong signal that
-the prompt was under-specified). Attribute each question to the sub-agent that raised it.
-If no sub-agent emitted the bullet, omit the section entirely — do not invent placeholder
-questions.
+**Questions to clarify (if any sub-agent emitted them):** Scan each sub-agent's Goal-Alignment Note for the optional "Questions I would have asked" bullet. If one or more sub-agents emitted questions, surface them under a `### Questions to clarify` heading near the end of the chat synthesis, just before "Actionable guidance" or as a sibling subsection. De-duplicate: if multiple sub-agents asked semantically the same question, list it once and note the agreement (multiple sub-agents asking the same question is a strong signal that the prompt was under-specified). Attribute each question to the sub-agent that raised it. If no sub-agent emitted the bullet, omit the section entirely — do not invent placeholder questions.
 
 Worked example:
 
@@ -680,22 +583,15 @@ Worked example:
 >   *(api-consistency-reviewer.)* The critic treated it as production and flagged a
 >   breaking change in `flags.ts:42`; mark this as 🟢 Consider if it's sandbox-only.
 
-**Recommended next action (required final line):** End the chat synthesis with this
-exact line so the user always sees a concrete next step:
+**Recommended next action (required final line):** End the chat synthesis with this exact line so the user always sees a concrete next step:
 
 > Recommended next action: [merge | fix red items then re-review | split PR | escalate to /pre-mortem | block on architectural review].
 
-Choose exactly one bracketed value. The choice is **mechanically derived from the rubric**
-per [Next-action derivation](#next-action-derivation) below — it is not a free-form
-judgment call, and the line must not hedge or list multiple options. The line is required
-even when the rubric is clean (rule 5 still applies). If the derivation ladder ever needs
-new rules, update the ladder first so the mapping stays the single source of truth.
+Choose exactly one bracketed value. The choice is **mechanically derived from the rubric** per [Next-action derivation](#next-action-derivation) below — it is not a free-form judgment call, and the line must not hedge or list multiple options. The line is required even when the rubric is clean (rule 5 still applies). If the derivation ladder ever needs new rules, update the ladder first so the mapping stays the single source of truth.
 
 #### Next-action derivation
 
-Evaluate the rules top-to-bottom; the first matching rule wins. Inputs are the rubric
-the synthesis just produced (counts of 🔴 / 🟡 rows and which critics ran, including
-the `## ⏭️ Skipped Core Critics` section) and the diff size from `git diff --stat`.
+Evaluate the rules top-to-bottom; the first matching rule wins. Inputs are the rubric the synthesis just produced (counts of 🔴 / 🟡 rows and which critics ran, including the `## ⏭️ Skipped Core Critics` section) and the diff size from `git diff --stat`.
 
 1. **block on architectural review** — Either: (a) Step 5 auto-selected
    `architecture-review` but it did not produce a report this run (excluded via
@@ -733,23 +629,13 @@ the `## ⏭️ Skipped Core Critics` section) and the diff size from `git diff -
 - 1 🔴 from architecture-review tagged Structural → rule 1 → `Recommended next action: block on architectural review.`
 - Diff adds a new module; architecture-review excluded via `--exclude` → rule 1 → `Recommended next action: block on architectural review.`
 
-**How to use legibility-target tags during synthesis:** Findings tagged
-`for-author` are the primary content of the chat synthesis and the rubric's
-🔴 / 🟡 / 🟢 tiers. Findings tagged `for-orchestrator-synthesis` feed your
-reasoning — coverage maps, convergence detection, "what got reviewed" — but
-do not get repeated verbatim in the chat output. Findings tagged
-`for-automated-gate` drive the rubric status line and any escalation
-blocks; they are referenced once (not duplicated as prose bullets) and link
-to the source critique. If a critic tagged everything `for-author`, note
-that in your synthesis as a calibration gap rather than treating it as
-signal.
+**How to use legibility-target tags during synthesis:** Findings tagged `for-author` are the primary content of the chat synthesis and the rubric's 🔴 / 🟡 / 🟢 tiers. Findings tagged `for-orchestrator-synthesis` feed your reasoning — coverage maps, convergence detection, "what got reviewed" — but do not get repeated verbatim in the chat output. Findings tagged `for-automated-gate` drive the rubric status line and any escalation blocks; they are referenced once (not duplicated as prose bullets) and link to the source critique. If a critic tagged everything `for-author`, note that in your synthesis as a calibration gap rather than treating it as signal.
 
 ---
 
 ## Deliverable 2: Code Review Rubric
 
-Save this as `docs/reviews/code-review-rubric.md`. This is a structured, scannable
-document the author uses to track code review resolution.
+Save this as `docs/reviews/code-review-rubric.md`. This is a structured, scannable document the author uses to track code review resolution.
 
 **Use this exact format:**
 
@@ -835,13 +721,7 @@ To pass review: all 🔴 items must be resolved. All 🟡 items must be either f
 carry an author note. 🟢 items are optional.
 ```
 
-**Legibility-target column:** Carry forward the tag each critic placed on
-the source finding (see [taxonomy](../../patterns/orchestrated-review.md#legibility-target-tagging)).
-Typical mapping: 🔴 / 🟡 / 🟢 rows are `for-author`; ✅ rows are
-`for-orchestrator-synthesis`. `for-automated-gate` findings (e.g., the
-security-reviewer HALT-ESCALATE pattern) live in the escalation block
-above the rubric, not in these tables — they reference the source
-critique once instead of being duplicated as a row.
+**Legibility-target column:** Carry forward the tag each critic placed on the source finding (see [taxonomy](../../patterns/orchestrated-review.md#legibility-target-tagging)). Typical mapping: 🔴 / 🟡 / 🟢 rows are `for-author`; ✅ rows are `for-orchestrator-synthesis`. `for-automated-gate` findings (e.g., the security-reviewer HALT-ESCALATE pattern) live in the escalation block above the rubric, not in these tables — they reference the source critique once instead of being duplicated as a row.
 
 ### Unified Severity Mapping
 
@@ -853,28 +733,17 @@ Use this table to map individual critic severity levels to rubric tiers:
 | 🟡 Must Address | Medium | High, Medium | Inconsistent | Coupling | Incorrect (medium confidence), Stale, Mostly Accurate |
 | 🟢 Consider | Low, Informational | Low, Informational | Minor, Informational | Minor, Informational | Unverifiable |
 
-**Contextual critics are advisory:** Findings from `test-strategy`, `tech-debt-triage`,
-`dependency-upgrade`, and `ui-visual-review` go to 🟢 Consider tier regardless of their
-internal severity. They inform but never block merge. `architecture-review` is the
-exception: it is auto-selected like a contextual critic but uses its own severity-to-rubric
-mapping above and can produce blocking (🔴) findings.
+**Contextual critics are advisory:** Findings from `test-strategy`, `tech-debt-triage`, `dependency-upgrade`, and `ui-visual-review` go to 🟢 Consider tier regardless of their internal severity. They inform but never block merge. `architecture-review` is the exception: it is auto-selected like a contextual critic but uses its own severity-to-rubric mapping above and can produce blocking (🔴) findings.
 
 ### Escalation Rule
 
-If 2+ **core critics, architecture-review, or fact-check** independently flag the same
-issue (same code region, overlapping concern), escalate that finding one tier:
+If 2+ **core critics, architecture-review, or fact-check** independently flag the same issue (same code region, overlapping concern), escalate that finding one tier:
 - 🟢 → 🟡
 - 🟡 → 🔴
 
-Contextual critics (test-strategy, tech-debt-triage, dependency-upgrade) do **not** count
-toward escalation. Their findings remain in 🟢 Consider regardless of overlap with other
-critics. If a contextual critic flags the same issue as a core critic, note the agreement
-in the finding's description for visibility, but do not escalate — contextual critics are
-advisory and must not gain blocking power through the escalation mechanism.
+Contextual critics (test-strategy, tech-debt-triage, dependency-upgrade) do **not** count toward escalation. Their findings remain in 🟢 Consider regardless of overlap with other critics. If a contextual critic flags the same issue as a core critic, note the agreement in the finding's description for visibility, but do not escalate — contextual critics are advisory and must not gain blocking power through the escalation mechanism.
 
-This rewards convergence — independent agreement across domains is the strongest signal
-that an issue is real and important. When escalating, place the finding in its new
-(higher) tier section in the rubric, not in its original tier.
+This rewards convergence — independent agreement across domains is the strongest signal that an issue is real and important. When escalating, place the finding in its new (higher) tier section in the rubric, not in its original tier.
 
 ### Rubric Status Line
 
@@ -886,9 +755,7 @@ that an issue is real and important. When escalating, place the finding in its n
 
 ## Output Locations
 
-Save all review artifacts to `docs/reviews/` in the project root. Create the directory if
-it doesn't exist. If prior review artifacts exist from an earlier run, overwrite them — the
-rubric is designed for re-runs with updated status tracking.
+Save all review artifacts to `docs/reviews/` in the project root. Create the directory if it doesn't exist. If prior review artifacts exist from an earlier run, overwrite them — the rubric is designed for re-runs with updated status tracking.
 
 ```
 docs/reviews/
@@ -913,15 +780,11 @@ At the end of your chat synthesis, link to all documents.
 
 ## Override-Log
 
-The override log (`docs/reviews/override-log.md`) is the persistent record of human
-overrides on this skill's output. It is both an **input** to every future run
-(consumed in Step 3.5) and an **output** of any run whose chat synthesis produces
-a human decision that contradicts the rubric verdict.
+The override log (`docs/reviews/override-log.md`) is the persistent record of human overrides on this skill's output. It is both an **input** to every future run (consumed in Step 3.5) and an **output** of any run whose chat synthesis produces a human decision that contradicts the rubric verdict.
 
 ### Capture format
 
-Each override is one row in the table at the bottom of `docs/reviews/override-log.md`.
-The columns are:
+Each override is one row in the table at the bottom of `docs/reviews/override-log.md`. The columns are:
 
 | Field | Required | Example |
 |---|---|---|
@@ -932,14 +795,11 @@ The columns are:
 | `Override verdict` | yes | One of `Won't-Fix`, `Defer`, `🟡 Must-Address`, `🔴 Must-Fix` (or comparable shorthand using the same vocabulary as Original) |
 | `Reason` | yes | One short sentence on the human's rationale (`"test-only path"`, `"deprecated module, removal scheduled in #501"`, `"team style; verbose form preferred here"`). If longer than ~30 words, link to a PR comment or `docs/decisions/NNN-*.md` instead of expanding the cell. |
 
-Rows are kept in reverse-chronological order (most recent at the top of the table)
-so that the freshest context is easiest to scan.
+Rows are kept in reverse-chronological order (most recent at the top of the table) so that the freshest context is easiest to scan.
 
 ### Capturing new overrides
 
-When a human review of this run's output produces a verdict change relative to the
-rubric — typically a Must-Fix → Won't-Fix or a Nit → Must-Fix promotion — append
-a row to `docs/reviews/override-log.md` immediately. The append happens:
+When a human review of this run's output produces a verdict change relative to the rubric — typically a Must-Fix → Won't-Fix or a Nit → Must-Fix promotion — append a row to `docs/reviews/override-log.md` immediately. The append happens:
 
 1. **Inside the same skill run** when the orchestrator records the human's verdict
    in chat (e.g., the user says "this one is fine, skip it" or "actually promote that").
@@ -948,14 +808,11 @@ a row to `docs/reviews/override-log.md` immediately. The append happens:
 3. **Manually by the author** if the override is reached outside a structured run
    (e.g., during PR review on GitHub) — the author writes the row themselves.
 
-In all three paths, fill every required field. Missing fields invalidate the row
-for future Step 3.5 matching: a row without a location cannot match by location,
-and a row without a reason cannot be evaluated for staleness.
+In all three paths, fill every required field. Missing fields invalidate the row for future Step 3.5 matching: a row without a location cannot match by location, and a row without a reason cannot be evaluated for staleness.
 
 ### Why this isn't write-only
 
-The risk with any "log of decisions" is that nothing reads it, so it grows in
-storage cost but adds no signal. This skill prevents that failure mode by:
+The risk with any "log of decisions" is that nothing reads it, so it grows in storage cost but adds no signal. This skill prevents that failure mode by:
 
 - **Mandatory read in Step 3.5.** The orchestrator MUST read the log before
   rendering findings, on every run.

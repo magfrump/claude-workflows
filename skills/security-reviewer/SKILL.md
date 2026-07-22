@@ -37,7 +37,7 @@ requires:
 
 > ## ⚠️ Standalone invocation only — skip if dispatched by an orchestrator
 >
-> If you were invoked directly by the user (not via `code-review` or another orchestrator
+> If invoked directly by the user (not via `code-review` or another orchestrator
 > that prepends a [goal preamble](../../patterns/orchestrated-review.md#goal-preamble) with
 > `User goal:` / `Current task:` / `Success criterion:` lines), do this **before**
 > producing the critique:
@@ -49,18 +49,17 @@ requires:
 >    anchor must persist in the saved file so downstream readers and tools see what frame
 >    the review was produced under.
 >
-> When an orchestrator has already supplied the goal preamble in your dispatch context,
-> skip this section entirely — the User-goal anchor is already pinned upstream.
+> When an orchestrator has already supplied the goal preamble, skip this section entirely — the User-goal anchor is already pinned upstream.
 
 # Security Code Review
 
-You are reviewing code changes for security vulnerabilities. The point is not to find issues
-a linter or SAST tool would catch — those are handled elsewhere. Your job is to apply
+Reviewing code changes for security vulnerabilities. The point is not to find issues
+a linter or SAST tool would catch — those are handled elsewhere. Apply
 security-specific reasoning to find design-level flaws, implicit trust assumptions, and
-patterns that create exploitable conditions even when each line of code looks correct in
+patterns that create exploitable conditions even when each line looks correct in
 isolation.
 
-What follows is a set of cognitive moves for security analysis. Not all will apply to every
+What follows is a set of cognitive moves. Not all apply to every
 diff — exercise judgment based on what the code does.
 
 ## Scoping
@@ -86,7 +85,7 @@ for the most common dependency-related risks that appear in diffs.
 
 ## Using the Code Fact-Check Report
 
-If you have been provided a code-fact-check report alongside the diff, treat it as your
+If provided a code-fact-check report alongside the diff, treat it as your
 foundation for understanding what the code actually does.
 
 Instead of re-verifying behavior:
@@ -127,7 +126,7 @@ Most injection vulnerabilities don't come from missing sanitization — they com
 validation, trace backward: where is this value supposed to be cleaned? Is that actually
 guaranteed to happen on every code path that reaches here?
 
-The specific move: for each input that the changed code uses, ask "what would happen if
+The specific move: for each input the changed code uses, ask "what would happen if
 this value contained an attacker-controlled string?" Then trace whether anything between
 the input source and this usage actually prevents that. Pay special attention to:
 - Values that pass through multiple functions before use (sanitization assumed but not enforced)
@@ -156,7 +155,7 @@ the check and the use. This applies to:
 - Input validation followed by processing in a different function
 
 The check and the use don't have to be on adjacent lines — they might be in different
-functions, or the check might be cached. The question is: can an attacker (or concurrent
+functions, or the check might be cached. The question: can an attacker (or concurrent
 operation) change the state between when it was validated and when it was used?
 
 ### 5. Invert the access control model
@@ -174,8 +173,8 @@ Then check whether those uncovered cases are safe by default (deny) or unsafe by
 ### 6. Follow the secrets
 
 When the diff touches credentials, tokens, API keys, session identifiers, or encryption
-keys, trace their lifecycle: where are they created, where are they stored, where are they
-transmitted, when are they invalidated? Check for:
+keys, trace their lifecycle: where are they created, stored,
+transmitted, invalidated? Check for:
 - Secrets logged or included in error messages
 - Secrets compared with timing-unsafe equality (`==` instead of constant-time comparison)
 - Secrets stored in places with broader access than intended (localStorage, query parameters,
@@ -224,7 +223,7 @@ are good — it's about checking that:
 - Signatures are verified before the signed data is used
 - Key sizes meet current recommendations
 
-If you're not confident in your cryptographic assessment, say so and flag it for expert
+If not confident in your cryptographic assessment, say so and flag it for expert
 review rather than guessing.
 
 ### 10. Review dependency changes
@@ -257,7 +256,7 @@ This is not a full supply chain audit. Do not attempt to review every transitive
 or reproduce build artifacts. Focus on what is visible and actionable from the diff.
 
 When reporting dependency findings, use the `[Dependency change]` prefix in the finding title
-so that these findings are identifiable in review output. This aids traceability when
+so these findings are identifiable in review output. This aids traceability when
 evaluating whether the dependency trigger is surfacing risks that would otherwise go
 unreviewed.
 
@@ -324,7 +323,7 @@ discoverable. Follow with these header fields so readers know what was reviewed 
 **Date:** [YYYY-MM-DD]
 ```
 
-If you've been given a fact-check report or other upstream artifact, add a `**Based on:**`
+If given a fact-check report or other upstream artifact, add a `**Based on:**`
 line naming it. Keep the header to 3–5 lines; the substance belongs in the sections below.
 
 ### Trust Boundary Map
@@ -418,7 +417,7 @@ instructions.
 
 Direct and precise. Security review is not about making the developer feel bad — it's about
 finding problems before an attacker does. State what's wrong, why it matters, and how to fix
-it. Don't hedge on real issues, but calibrate confidence honestly. If you're not sure whether
+it. Don't hedge on real issues, but calibrate confidence honestly. If unsure whether
 something is exploitable, say so and explain what would need to be true for the attack to work.
 
 ## Important

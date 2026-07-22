@@ -20,17 +20,14 @@ when: Any arithmetic or scientific computation is needed (default on, not opt-in
 
 # Arithmetic Eval
 
-You have a tool for exact math. **Use it instead of mental math.** If you're about to
-write a number that is the result of a calculation — even a "simple" one like
-`12 * 365` or `15% of 240` — run it through this skill first. Mental arithmetic is
-the most common source of hallucinated facts in otherwise-careful work.
+Exact-math tool available. **Use it instead of mental math.** Writing a number that is a calculation result — even "simple" like `12 * 365` or `15% of 240` — run it through this skill first. Mental arithmetic is the most common source of hallucinated facts in otherwise-careful work.
 
 ## Mode 1: Bare Arithmetic
 
-For simple numeric expressions with no imports or function calls.
+Simple numeric expressions, no imports or function calls.
 
-1. **Sanitize** — strip to a Python-evaluable form (e.g., `^` → `**`).
-2. **Validate** — confirm the expression matches: `^[0-9+\-*/^%(),.\s]+$`
+1. **Sanitize** — strip to Python-evaluable form (e.g., `^` → `**`).
+2. **Validate** — confirm expression matches: `^[0-9+\-*/^%(),.\s]+$`
 3. **Evaluate**:
 
 ```bash
@@ -45,7 +42,7 @@ fi
 
 ## Mode 2: Scientific Computing
 
-For imports, function calls, multi-line scripts (t-tests, CSV loading, plotting, etc.).
+Imports, function calls, multi-line scripts (t-tests, CSV loading, plotting, etc.).
 
 1. **Check imports** — only modules from the approved list below.
 2. **Check for blocked constructs** — reject if any are present.
@@ -79,7 +76,7 @@ Read-mode `open()` is permitted for loading data files.
 - **Never skip validation**: even for `2+2`, run through the appropriate mode.
 - **Chain for multi-step**: break complex calculations into named intermediate steps.
 - **On rejection**: do NOT fall back to mental math. Fix the expression or report the error.
-- **Mode choice**: if the expression has only numbers and operators, use Mode 1. If it needs imports or function calls, use Mode 2.
+- **Mode choice**: only numbers and operators → Mode 1. Needs imports or function calls → Mode 2.
 
 ## Examples
 
@@ -119,5 +116,4 @@ python3 /tmp/arithmetic_eval.py
 Bad: writing "1.2M users × $4 ARPU = $4.8M/mo" without running the math.
 Good: run `1.2e6 * 4` through Mode 1, then write the verified number.
 
-The cost of running this skill is ~one bash invocation. The cost of a wrong
-number in a fact-check or cost estimate is much higher. When in doubt, run it.
+Running this skill costs ~one bash invocation. A wrong number in a fact-check or cost estimate costs much more. When in doubt, run it.

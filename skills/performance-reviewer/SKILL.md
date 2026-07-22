@@ -29,67 +29,41 @@ requires:
 
 # Performance Code Review
 
-You are reviewing code changes for performance problems. The point is not to find issues a
-profiler would catch on a benchmark — those require runtime measurement. Your job is to apply
-performance-specific reasoning to find algorithmic problems, hidden work multiplication,
-resource mismanagement, and scaling bottlenecks that are visible in the code structure even
-without running it.
+Review code changes for performance problems. Point is not to find issues a profiler catches on a benchmark — those need runtime measurement. Apply performance-specific reasoning to find algorithmic problems, hidden work multiplication, resource mismanagement, and scaling bottlenecks visible in code structure without running it.
 
-What follows is a set of cognitive moves for performance analysis. Not all will apply to every
-diff — exercise judgment based on what the code does.
+Cognitive moves follow. Not all apply to every diff — use judgment based on what the code does.
 
 ## Scoping
 
-By default, review files changed on the current branch relative to main:
+Default: review files changed on the current branch relative to main:
 
 ```bash
 git diff main...HEAD
 ```
 
-If the user provides an explicit scope, use that instead. For each changed file, also read
-enough surrounding context to understand call frequency, data sizes, and whether the code
-is in a hot path or a cold setup path — performance in a request handler matters differently
-than performance in a one-time migration script.
+If the user provides explicit scope, use that. For each changed file, read enough surrounding context to understand call frequency, data sizes, and whether the code is hot path or cold setup path — performance in a request handler matters differently than in a one-time migration script.
 
-**Hot-path gate for severity escalation.** Before classifying an algorithmic concern as Critical or High severity, confirm that the code path is actually hot — a request handler, a loop body called per-item at scale, or a high-frequency event callback. Code in cold paths (application startup, one-time configuration, CLI argument parsing, migration scripts) should default to Low or Informational severity unless the cold path blocks a latency-sensitive operation. When writing up a finding, explicitly state the path temperature (hot or cold) and the evidence for that classification so that downstream reviewers can verify the judgment.
+**Hot-path gate for severity escalation.** Before classifying an algorithmic concern as Critical or High, confirm the path is actually hot — a request handler, a loop body called per-item at scale, or a high-frequency event callback. Code in cold paths (application startup, one-time configuration, CLI argument parsing, migration scripts) should default to Low or Informational unless the cold path blocks a latency-sensitive operation. In each finding, explicitly state path temperature (hot or cold) and the evidence, so downstream reviewers can verify.
 
 ## Baseline Requirement
 
-Every finding in your critique MUST include a baseline statement, in one of two forms:
+Every finding MUST include a baseline statement, in one of two forms:
 
-1. **Measured baseline** — a single number with explicit units, attributed to a real
-   measurement (profiler run, benchmark, production dashboard, log query, prior load test,
-   incident postmortem). Examples: "p99 latency 240 ms on staging load test 2026-04-22",
-   "heap usage 1.2 GB during nightly batch", "CPU 73% on production fleet during peak hour",
-   "1,800 queries/sec measured at the database proxy". One number, one unit, identifiable
-   source.
+1. **Measured baseline** — a single number with explicit units, attributed to a real measurement (profiler run, benchmark, production dashboard, log query, prior load test, incident postmortem). Examples: "p99 latency 240 ms on staging load test 2026-04-22", "heap usage 1.2 GB during nightly batch", "CPU 73% on production fleet during peak hour", "1,800 queries/sec measured at the database proxy". One number, one unit, identifiable source.
 
-2. **Speculative disclaimer** — the literal phrase `no baseline available — flagged as
-   speculative`. Use this whenever you cannot point to an actual measurement for the affected
-   path. A speculative finding is still worth raising, but the disclaimer makes clear that
-   the impact estimate is reasoning from code structure, not observed behavior.
+2. **Speculative disclaimer** — the literal phrase `no baseline available — flagged as speculative`. Use whenever you cannot point to an actual measurement for the affected path. A speculative finding is still worth raising, but the disclaimer makes clear the impact estimate is reasoning from code structure, not observed behavior.
 
-Findings without one of these two statements MUST NOT be emitted. The rule applies to every
-severity level, including Informational — "we should speed this up" without a starting number
-can never be verified, and "we sped this up" with no baseline cannot be measured against
-anything. If you cannot decide between the two forms, prefer the speculative disclaimer over
-inventing a number; fabricated baselines are worse than honest uncertainty.
+Findings without one of these two statements MUST NOT be emitted. The rule applies to every severity level, including Informational — "we should speed this up" without a starting number can never be verified, and "we sped this up" with no baseline cannot be measured against anything. If you cannot decide between the two forms, prefer the speculative disclaimer over inventing a number; fabricated baselines are worse than honest uncertainty.
 
-The baseline does not need to come from the diff itself. It can be drawn from existing
-dashboards, prior load tests, recent incident reports, log queries, or any other measurement
-the user has surfaced. If the user has shared no measurements and none are documented in the
-surrounding repo, every finding is speculative — say so plainly rather than guessing.
+The baseline need not come from the diff itself. It can be drawn from existing dashboards, prior load tests, recent incident reports, log queries, or any other measurement the user has surfaced. If the user has shared no measurements and none are documented in the surrounding repo, every finding is speculative — say so plainly rather than guessing.
 
 ## Using the Code Fact-Check Report
 
-If you have been provided a code-fact-check report, treat it as your foundation for
-understanding what the code actually does.
+If provided a code-fact-check report, treat it as your foundation for understanding what the code does.
 
 Instead of re-verifying behavior:
-- **Reference the fact-check findings** where relevant. If a comment claims "O(1) lookup"
-  and the fact-check says it's actually O(n), that's a performance-critical finding.
-- **Build on stale claims.** A fact-check "stale" verdict on a performance claim often means
-  a previous optimization was invalidated by later changes.
+- **Reference the fact-check findings** where relevant. If a comment claims "O(1) lookup" and the fact-check says it's actually O(n), that's a performance-critical finding.
+- **Build on stale claims.** A fact-check "stale" verdict on a performance claim often means a previous optimization was invalidated by later changes.
 - **Focus on your cognitive moves**, which catch things fact-checking cannot.
 
 If no fact-check report is provided, **emit the following warning at the top of your output:**
@@ -104,38 +78,24 @@ Then proceed with performance analysis based on reading the actual code.
 
 ### 1. Count the hidden multiplications
 
-The most common performance bug is work that looks O(1) per item but is actually O(n) because
-it's nested inside something the developer didn't think of as a loop. For every operation in
-the diff, trace upward: how many times is this called? Is it inside a loop? Is the caller
-inside a loop? Is this a request handler (called once per request, but how many requests per
-second)?
+The most common performance bug is work that looks O(1) per item but is actually O(n) because it's nested inside something the developer didn't think of as a loop. For every operation in the diff, trace upward: how many times is this called? Is it inside a loop? Is the caller inside a loop? Is this a request handler (called once per request, but how many requests per second)?
 
-The specific move: multiply the cost of the operation by the number of times it executes in
-the worst realistic case. A database query in a loop is the classic N+1, but the same pattern
-appears in API calls, file reads, regex compilations, object allocations, and even logging.
-If the product exceeds what's reasonable, that's a finding.
+The move: multiply the cost of the operation by the number of times it executes in the worst realistic case. A database query in a loop is the classic N+1, but the same pattern appears in API calls, file reads, regex compilations, object allocations, and even logging. If the product exceeds what's reasonable, that's a finding.
 
 ### 2. Ask "what's the size of N?"
 
-When code operates on a collection, array, map, or query result, the first question is: how
-big can this get? Code that works fine for 10 items may break at 10,000 or 10,000,000. The
-diff may not tell you — you need to understand the data model.
+When code operates on a collection, array, map, or query result, first ask: how big can this get? Code that works fine for 10 items may break at 10,000 or 10,000,000. The diff may not tell you — understand the data model.
 
 For each collection in the diff, determine (or estimate):
 - What populates it? User data? System data? One per user? One per request?
 - Is there an upper bound? Is it enforced?
 - What's the growth rate? Linear with users? Quadratic? Unbounded?
 
-Then check whether the operations on that collection are appropriate for its realistic maximum
-size. Sorting a list that's always <100 items is fine. Sorting a list that could have 1M items
-needs a different approach.
+Then check whether operations on that collection are appropriate for its realistic maximum size. Sorting a list that's always <100 items is fine. Sorting a list that could have 1M items needs a different approach.
 
 ### 3. Find the work that moved to the wrong place
 
-Performance often degrades not because new work was added but because existing work was moved
-from where it's cheap to where it's expensive. Computing a value at startup is cheap;
-computing it per request is expensive. Computing it once and caching is cheap; recomputing it
-every time is expensive.
+Performance often degrades not because new work was added but because existing work moved from where it's cheap to where it's expensive. Computing a value at startup is cheap; per request is expensive. Computing once and caching is cheap; recomputing every time is expensive.
 
 Look for:
 - Computation moved from initialization to the hot path
@@ -143,41 +103,31 @@ Look for:
 - Work moved from batch to per-item processing
 - Synchronous work inserted into an async pipeline
 
-The reverse is also a finding: work correctly moved to a cheaper location is worth noting as
-a positive.
+The reverse is also a finding: work correctly moved to a cheaper location is worth noting as a positive.
 
 ### 4. Trace the memory lifecycle
 
-For every allocation in the diff — objects created, buffers allocated, connections opened,
-collections populated — ask: when is this freed? Is it freed at all? Specifically:
+For every allocation in the diff — objects created, buffers allocated, connections opened, collections populated — ask: when is this freed? Is it freed at all? Specifically:
 - Collections that grow without bound (appending in a loop without clear/reset)
 - Caches without eviction policies or size limits
 - Event listeners or callbacks registered without corresponding deregistration
 - Large objects held by closures longer than intended
 - Streams or iterators materialized into full arrays unnecessarily
 
-The question is not "does this leak memory in the traditional sense" but "does this hold
-onto more memory than it needs for longer than it needs to?"
+The question is not "does this leak memory in the traditional sense" but "does this hold onto more memory than it needs for longer than it needs to?"
 
 ### 5. Check the database interaction pattern
 
-If the diff touches database operations (queries, ORM calls, raw SQL), analyze the access
-pattern end-to-end:
+If the diff touches database operations (queries, ORM calls, raw SQL), analyze the access pattern end-to-end:
 - **N+1 queries**: Loading a list, then querying per item. Check for loops containing queries.
-- **Overfetching**: Selecting all columns when only a few are needed; loading full objects to
-  check one field.
-- **Missing indexes**: Queries filtering or sorting on columns that likely aren't indexed.
-  (You can't confirm indexes from code alone — flag as "verify index exists.")
+- **Overfetching**: Selecting all columns when only a few are needed; loading full objects to check one field.
+- **Missing indexes**: Queries filtering or sorting on columns that likely aren't indexed. (You can't confirm indexes from code alone — flag as "verify index exists.")
 - **Unbounded results**: Queries without LIMIT that return user-scale data.
-- **Transaction scope**: Transactions held open while doing expensive non-DB work (API calls,
-  file I/O, computation).
+- **Transaction scope**: Transactions held open while doing expensive non-DB work (API calls, file I/O, computation).
 
 ### 6. Identify the serialization tax
 
-Data that crosses a boundary — JSON encoding/decoding, protobuf serialization, database
-result mapping, HTTP request/response formatting — pays a per-crossing cost. When the diff
-adds or moves a boundary crossing, assess whether it's in a hot path and whether the data
-being serialized is larger than necessary.
+Data crossing a boundary — JSON encoding/decoding, protobuf serialization, database result mapping, HTTP request/response formatting — pays a per-crossing cost. When the diff adds or moves a boundary crossing, assess whether it's in a hot path and whether the data serialized is larger than necessary.
 
 Common patterns:
 - Serializing and deserializing the same data multiple times in one request path
@@ -187,9 +137,7 @@ Common patterns:
 
 ### 7. Find the contention point
 
-When code uses shared resources — locks, connection pools, shared caches, global state,
-database rows — ask whether the change increases contention. A lock that's held briefly is
-fine; a lock held across an I/O operation serializes all callers on that I/O latency.
+When code uses shared resources — locks, connection pools, shared caches, global state, database rows — ask whether the change increases contention. A lock held briefly is fine; a lock held across an I/O operation serializes all callers on that I/O latency.
 
 Check for:
 - Lock scope expanded to include more work (especially I/O)
@@ -200,21 +148,16 @@ Check for:
 ### 8. Question the cache
 
 If the diff adds, modifies, or removes caching, evaluate the caching decision:
-- **Hit rate**: Will this cache actually be hit? If the key space is large and access is
-  uniform, the cache may have a near-zero hit rate and only add complexity.
-- **Invalidation**: How does the cache know when to expire? If it doesn't, stale data
-  becomes a correctness problem. If it invalidates too aggressively, the cache is useless.
-- **Cost of a miss**: Is the cache hiding a problem that should be fixed? A cache over an
-  N+1 query is a bandaid, not a fix.
+- **Hit rate**: Will this cache actually be hit? If the key space is large and access is uniform, the cache may have a near-zero hit rate and only add complexity.
+- **Invalidation**: How does the cache know when to expire? If it doesn't, stale data becomes a correctness problem. If it invalidates too aggressively, the cache is useless.
+- **Cost of a miss**: Is the cache hiding a problem that should be fixed? A cache over an N+1 query is a bandaid, not a fix.
 - **Memory cost**: What's the maximum cache size? Is it bounded?
 
 If the diff removes a cache, ask why it was there — the reason may still apply.
 
 ### 9. Check the asymptotic behavior, not just the constant
 
-It's easy to focus on constant-factor optimizations (using a faster library, reducing
-allocations) while missing that the algorithm itself has the wrong complexity class. When
-the diff implements or modifies an algorithm:
+It's easy to focus on constant-factor optimizations (faster library, fewer allocations) while missing that the algorithm itself has the wrong complexity class. When the diff implements or modifies an algorithm:
 - What's the time complexity? Is it appropriate for the expected input size?
 - What's the space complexity? Does it matter for this use case?
 - Are there worst-case inputs that are realistic (not just adversarial)?
@@ -226,8 +169,7 @@ Output your critique as a Markdown document.
 
 ### Title and Header
 
-Open with a top-level title that includes "Performance Review" so the report is
-discoverable. Follow with these header fields so readers know what was reviewed and when:
+Open with a top-level title that includes "Performance Review" so the report is discoverable. Follow with these header fields:
 
 ```markdown
 # Performance Review — [short scope label, e.g., PR #347 or branch name]
@@ -236,12 +178,10 @@ discoverable. Follow with these header fields so readers know what was reviewed 
 **Date:** [YYYY-MM-DD]
 ```
 
-If you've been given a fact-check report or other upstream artifact, add a `**Based on:**`
-line naming it. Keep the header to 3–5 lines; the substance belongs in the sections below.
+If given a fact-check report or other upstream artifact, add a `**Based on:**` line naming it. Keep the header to 3–5 lines; substance belongs in the sections below.
 
 ### Data Flow and Hot Paths
-Briefly describe what the changed code does, where it sits in the request/processing pipeline,
-and what the expected data sizes and call frequencies are. This frames the rest of the review.
+Briefly describe what the changed code does, where it sits in the request/processing pipeline, and expected data sizes and call frequencies. This frames the rest of the review.
 
 ### Findings
 
@@ -318,26 +258,14 @@ realistic export) so the change can be evaluated against real numbers.
 
 ### Severity Calibration
 
-Before assigning a severity from the list above, classify the finding along two
-axes and use their combination as the default starting point. Adjust up or down
-based on confidence and concrete evidence (known data sizes, real call frequency).
+Before assigning a severity, classify the finding along two axes and use their combination as the default starting point. Adjust up or down based on confidence and concrete evidence (known data sizes, real call frequency).
 
 **Classification — Micro vs Macro:**
 
-- **Micro** — Per-operation overhead: an extra allocation, a redundant copy, a
-  string concatenation in a tight loop, an unneeded clone, a constant-factor
-  inefficiency. The cost is fixed per call; it only becomes a real problem when
-  the operation runs many times. Micro problems materialize *at scale*.
-- **Macro** — Algorithmic or structural: wrong complexity class (O(n²) where
-  O(n log n) suffices), N+1 query pattern, missing pagination, unbounded
-  collection growth, lock held across I/O. The cost grows with the data, not
-  with how often the code is invoked. Macro problems materialize *at any scale*
-  where the data set grows — they don't need load to bite.
+- **Micro** — Per-operation overhead: an extra allocation, a redundant copy, a string concatenation in a tight loop, an unneeded clone, a constant-factor inefficiency. Cost is fixed per call; only a real problem when the operation runs many times. Micro problems materialize *at scale*.
+- **Macro** — Algorithmic or structural: wrong complexity class (O(n²) where O(n log n) suffices), N+1 query pattern, missing pagination, unbounded collection growth, lock held across I/O. Cost grows with the data, not with how often the code is invoked. Macro problems materialize *at any scale* where the data set grows — they don't need load to bite.
 
-**Hot-path tag** (re-uses the hot-path gate above): **Hot** = request handler,
-per-item loop body called at scale, high-frequency event callback. **Cold** =
-application startup, one-time configuration, CLI argument parsing, migration
-script, infrequent admin operation.
+**Hot-path tag** (re-uses the hot-path gate above): **Hot** = request handler, per-item loop body called at scale, high-frequency event callback. **Cold** = application startup, one-time configuration, CLI argument parsing, migration script, infrequent admin operation.
 
 **Severity = classification × hot-path tag.** Use this matrix as the default:
 
@@ -348,25 +276,18 @@ script, infrequent admin operation.
 | Micro × Hot           | Low–Medium (escalate when constant factor is large or call frequency extreme) |
 | Micro × Cold          | **Informational**                                               |
 
-Macro × Hot anchors at High because algorithmic problems on hot paths are the
-class of issue this skill exists to catch; the default is "fix this before
-shipping" unless the analysis shows otherwise. Micro × Cold anchors at
-Informational because per-operation overhead in code that runs once is, by
-definition, not a performance problem worth a reviewer's time.
+Macro × Hot anchors at High because algorithmic problems on hot paths are the class of issue this skill exists to catch; the default is "fix this before shipping" unless the analysis shows otherwise. Micro × Cold anchors at Informational because per-operation overhead in code that runs once is, by definition, not a performance problem worth a reviewer's time.
 
-When writing up a finding, name both tags explicitly so the calibration is
-auditable. A natural place is alongside the existing **Move:** line, e.g.:
+When writing up a finding, name both tags explicitly so the calibration is auditable. A natural place is alongside the existing **Move:** line, e.g.:
 
 ```
 **Classification:** Macro (N+1 query pattern) / Hot path (per-request handler)
 ```
 
-This lets a downstream reviewer see *why* a finding landed at the severity it
-did and challenge the calibration if either tag is wrong.
+This lets a downstream reviewer see *why* a finding landed at the severity it did and challenge the calibration if either tag is wrong.
 
 ### What Looks Good
-Note performance patterns in the diff that are correctly implemented — proper pagination,
-efficient queries, appropriate caching. Confirms which parts don't need rework.
+Note performance patterns in the diff that are correctly implemented — proper pagination, efficient queries, appropriate caching. Confirms which parts don't need rework.
 
 ### Summary Table
 
@@ -375,34 +296,22 @@ efficient queries, appropriate caching. Confirms which parts don't need rework.
 | 1 | ...     | High     | `f:42`   | High       |
 
 ### Overall Assessment
-One paragraph: what's the performance posture of this change? Are the issues fixable in place
-or do they indicate a structural problem? What's the most important thing to address? Is
-profiling/benchmarking needed to confirm any findings?
+One paragraph: what's the performance posture of this change? Are issues fixable in place or do they indicate a structural problem? What's the most important thing to address? Is profiling/benchmarking needed to confirm any findings?
 
 ## Output Location
 
-When run standalone, save your critique as `docs/reviews/performance-review.md` in the project
-root. Create `docs/reviews/` if it doesn't exist.
+When run standalone, save your critique as `docs/reviews/performance-review.md` in the project root. Create `docs/reviews/` if it doesn't exist.
 
-When run via an orchestrator, the orchestrator specifies the output path — follow its
-instructions.
+When run via an orchestrator, the orchestrator specifies the output path — follow its instructions.
 
 ## Tone
 
-Practical and grounded. Performance review should be proportional to actual impact — don't
-flag constant-factor improvements in cold paths as though they matter. State the scaling
-factor, the expected data size, and the realistic impact. "This is O(n²) but n is always <10"
-is different from "this is O(n²) and n is the user count." Be honest about what requires
-measurement versus what's clear from the code.
+Practical and grounded. Performance review should be proportional to actual impact — don't flag constant-factor improvements in cold paths as though they matter. State the scaling factor, the expected data size, and the realistic impact. "This is O(n²) but n is always <10" is different from "this is O(n²) and n is the user count." Be honest about what requires measurement versus what's clear from the code.
 
 ## Important
 
-- Read the actual implementation for every performance-relevant code path. Do not assume
-  a function is cheap because its name suggests simplicity — read it.
-- Always determine call frequency and data size before assessing impact. A slow operation
-  called once at startup is not a finding. A slightly slow operation called per request is.
-- Do not recommend micro-optimizations unless they matter at the actual scale. Prefer
-  algorithmic improvements over constant-factor improvements.
+- Read the actual implementation for every performance-relevant code path. Do not assume a function is cheap because its name suggests simplicity — read it.
+- Always determine call frequency and data size before assessing impact. A slow operation called once at startup is not a finding. A slightly slow operation called per request is.
+- Do not recommend micro-optimizations unless they matter at the actual scale. Prefer algorithmic improvements over constant-factor improvements.
 - Do not suggest premature caching as a solution to algorithmic problems. Fix the algorithm.
-- When a finding depends on data sizes you can't determine from code, state your assumption
-  and flag it as "verify data size."
+- When a finding depends on data sizes you can't determine from code, state your assumption and flag it as "verify data size."

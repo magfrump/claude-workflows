@@ -25,17 +25,17 @@ when: A creative task has resolved to a choice among 3+ tradeoff-bearing options
 
 # Divergent Design (router)
 
-This skill exists so divergent design competes at the **skill-selection layer**, where
-open-ended brainstorming otherwise wins by default on any "creative work." It does not
-re-implement the workflow — it routes you into it.
+Exists so divergent design competes at the **skill-selection layer**, where open-ended
+brainstorming otherwise wins by default on any "creative work." Does not re-implement the
+workflow — routes into it.
 
 ## Trigger test (run this first)
 
 Can you name **3+ viable options that differ on a tradeoff axis**?
 
-- **Yes** → this is a decision, not open-ended ideation. Proceed below.
-- **No** (the solution space is genuinely open-ended, no competing options exist yet) →
-  this skill does not apply; open-ended brainstorming does. Stop here.
+- **Yes** → decision, not open-ended ideation. Proceed below.
+- **No** (solution space genuinely open-ended, no competing options yet) →
+  skill does not apply; open-ended brainstorming does. Stop here.
 
 When the test passes, divergent design supersedes brainstorming even if brainstorming
 already auto-fired: the structured candidate/tradeoff/matrix presentation is the point.

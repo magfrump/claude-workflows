@@ -19,112 +19,80 @@ when: User asks whether to upgrade a dependency or reviews a dep bump
 
 # Dependency Upgrade Evaluation
 
-You are evaluating whether and how to upgrade a dependency. The goal is to surface the risks,
-breaking changes, and migration effort so the user can make an informed decision — not to
-rubber-stamp or block the upgrade reflexively.
+Surface risks, breaking changes, and migration effort so the user can decide. Do not rubber-stamp or block reflexively.
 
 ## Scoping
 
 Determine what you're evaluating:
 
-1. **If the user names a specific upgrade** (e.g., "upgrade React from 17 to 18"): Evaluate
-   that specific version transition.
-2. **If the user asks about a dependency generally** (e.g., "should we upgrade lodash"): Check
-   the current version in use, the latest version available, and evaluate the gap.
-3. **If evaluating a security advisory**: Focus on the vulnerability, affected versions, and
-   the minimum upgrade path to resolve it.
+1. **User names a specific upgrade** (e.g., "upgrade React from 17 to 18"): evaluate that version transition.
+2. **User asks generally** (e.g., "should we upgrade lodash"): check current version, latest version, evaluate the gap.
+3. **Security advisory**: focus on the vulnerability, affected versions, and minimum upgrade path to resolve it.
 
 ### Gather information
 
-For the dependency in scope:
-
 **Current state in the project:**
-- What version is currently used? (Check package.json, go.mod, requirements.txt, Cargo.toml,
-  etc.)
-- How is it used? Search the codebase for imports/requires of the dependency. Note which APIs
-  and features are actually used — this determines which breaking changes matter.
-- Are there any version pins, overrides, or resolutions that constrain the upgrade?
+- Current version? (Check package.json, go.mod, requirements.txt, Cargo.toml, etc.)
+- How used? Search codebase for imports/requires. Note which APIs/features are actually used — this determines which breaking changes matter.
+- Any version pins, overrides, or resolutions constraining the upgrade?
 
 **Upgrade target:**
-- What's the target version? (Latest stable, a specific version, or the minimum version that
-  fixes a vulnerability)
-- What versions are between current and target? (Major version jumps may require stepping
-  through intermediate versions)
+- Target version? (Latest stable, specific version, or minimum version fixing a vulnerability)
+- Versions between current and target? (Major jumps may require stepping through intermediate versions)
 
 **Changelog and migration guides:**
-- Use web search to find the dependency's changelog, release notes, and migration guides.
-- Focus on breaking changes, deprecations, and new requirements (minimum runtime version,
-  peer dependency changes, dropped platform support).
+- Use web search to find the changelog, release notes, and migration guides.
+- Focus on breaking changes, deprecations, new requirements (minimum runtime version, peer dependency changes, dropped platform support).
 
 ## Analysis
 
 ### 1. Breaking changes impact
 
-For each breaking change between current and target version:
+For each breaking change between current and target:
 
-- **Does it affect this project?** Check whether the project uses the changed API. Many
-  breaking changes are irrelevant to a specific codebase.
-- **What's the migration path?** Is it a mechanical rename, a behavioral change, or a
-  conceptual redesign?
-- **Is there a codemod or migration tool?** Many major upgrades provide automated migration.
+- **Affects this project?** Check whether the project uses the changed API. Many breaking changes are irrelevant to a codebase.
+- **Migration path?** Mechanical rename, behavioral change, or conceptual redesign?
+- **Codemod or migration tool?** Many major upgrades provide automated migration.
 
-Rate the overall breaking change impact: **None** (no relevant breaking changes),
-**Mechanical** (find-and-replace or codemod), **Moderate** (requires thoughtful changes but
-straightforward), **Significant** (requires rethinking how the dependency is used).
+Rate overall impact: **None** (no relevant breaking changes), **Mechanical** (find-and-replace or codemod), **Moderate** (thoughtful but straightforward changes), **Significant** (rethink how the dependency is used).
 
 ### 2. Transitive dependency effects
 
-Check whether the upgrade changes transitive dependencies:
-
 - Will it force upgrades of other dependencies? (Peer dependency changes)
-- Does it conflict with other dependencies in the project? (Version resolution conflicts)
-- Does it change the minimum runtime or platform requirements?
+- Does it conflict with other dependencies? (Version resolution conflicts)
+- Does it change minimum runtime or platform requirements?
 
 ### 3. Risk assessment
 
 **What could go wrong?**
-- Subtle behavioral changes that aren't breaking in the API sense but change outcomes
-- Performance regressions (especially for core dependencies like ORMs, HTTP clients, bundlers)
-- Compatibility issues with the project's runtime environment
-- Incomplete migration leaving the codebase in a half-upgraded state
+- Subtle behavioral changes — not breaking in the API sense but changing outcomes
+- Performance regressions (especially core deps: ORMs, HTTP clients, bundlers)
+- Compatibility issues with the runtime environment
+- Incomplete migration leaving the codebase half-upgraded
 
 **How detectable are problems?**
-- Does the project have tests that would catch behavioral regressions?
-- Are there type checks that would surface API changes at compile time?
+- Tests that would catch behavioral regressions?
+- Type checks that would surface API changes at compile time?
 - Would problems manifest immediately or only under specific conditions?
 
 ### 4. Urgency
 
-**Why upgrade now (or not)?**
 - Security vulnerability with known exploits → urgent
 - Security advisory without known exploits → soon, not emergency
-- End-of-life / no longer receiving patches → plan the upgrade
-- New feature the project needs → upgrade when the feature is needed
+- End-of-life / no longer patched → plan the upgrade
+- New feature the project needs → upgrade when needed
 - Keeping up with latest → low urgency; evaluate cost/benefit
 - Dependency of a dependency requires it → check if avoidable
 
 ### 5. Rollback rehearsal (precondition)
 
-Before starting the migration, the rollback procedure must be **documented** and
-**rehearsed**. An upgrade you don't know how to undo isn't safe to start.
+Before starting the migration, the rollback procedure must be **documented** and **rehearsed**. An upgrade you don't know how to undo isn't safe to start.
 
-- **Documented** means writing down the exact commands that revert the change:
-  the lockfile/version pin restoration, the install command, and any
-  data/config changes that need to be unwound. Vague intent ("revert the
-  commit") doesn't count — write the literal commands.
-- **Rehearsed** means actually running those commands once and confirming a
-  **verification step** passes afterward. The verification step should be
-  small but real: a smoke test, an app boot, a focused test that exercises the
-  dependency's primary use in the project. Pick something that would *fail* if
-  the rollback left the project broken.
-- Rehearse on a scratch branch (or equivalent) so the rehearsal itself doesn't
-  destabilize ongoing work. The artifact of rehearsal is the "rehearsed on
-  {date/branch}, verification passed" line in the output template.
+- **Documented** means writing the exact commands that revert the change: lockfile/version pin restoration, the install command, and any data/config changes to unwind. Vague intent ("revert the commit") doesn't count — write the literal commands.
+- **Rehearsed** means running those commands once and confirming a **verification step** passes afterward. Keep it small but real: a smoke test, an app boot, a focused test exercising the dependency's primary use. Pick something that would *fail* if the rollback left the project broken.
+- Rehearse on a scratch branch (or equivalent) so the rehearsal doesn't destabilize ongoing work. The artifact is the "rehearsed on {date/branch}, verification passed" line in the output template.
 
-Why this is a precondition, not a follow-up: rehearsing the rollback after a
-problem occurs is when you discover the lockfile changes don't fully revert,
-or that a database migration was one-way, or that the install command needs a
-flag you forgot. Find those problems while the upgrade hasn't shipped yet.
+Why a precondition, not a follow-up: rehearsing after a problem occurs is when you discover the lockfile doesn't fully revert, a database migration was one-way, or the install command needs a forgotten flag. Find those problems while the upgrade hasn't shipped yet.
 
 ## Output
 
@@ -189,9 +157,7 @@ we start the API v3 work, which will require the new streaming API in this depen
 
 ### Comparison mode
 
-When the user asks "should we upgrade or switch to a different library" (or otherwise
-compares 2+ options), produce one evaluation block per option using the same template
-above, then add a final comparison block:
+When the user compares 2+ options ("should we upgrade or switch to a different library"), produce one evaluation block per option using the template above, then add a final comparison block:
 
 ````markdown
 ## Comparison Summary
@@ -204,36 +170,19 @@ above, then add a final comparison block:
 **Recommended option:** {which one and why — reference the rows above}
 ````
 
-Keep each per-option evaluation complete (header, Summary, Breaking Changes…, Migration
-Plan, etc.) so reviewers can see the full reasoning behind each row, not just the verdict.
+Keep each per-option evaluation complete (header, Summary, Breaking Changes…, Migration Plan, etc.) so reviewers see the full reasoning behind each row, not just the verdict.
 
 ## Output Location
 
-Present the evaluation in chat. If the user requests a persisted artifact, save to
-`docs/working/dep-upgrade-{package}-{version}.md`.
+Present the evaluation in chat. If the user requests a persisted artifact, save to `docs/working/dep-upgrade-{package}-{version}.md`.
 
 ## Important
 
-- **Search the codebase for actual usage.** Don't evaluate breaking changes in the abstract —
-  check whether the project uses the affected APIs. A "major breaking change" that the project
-  doesn't touch is irrelevant.
-- **Read the migration guide, not just the changelog.** Changelogs list what changed; migration
-  guides explain how to adapt. The effort estimate should be based on the migration path, not
-  the length of the changelog.
-- **Check for codemods.** Many libraries provide automated migration tools. A breaking change
-  with a codemod is mechanical work, not a design challenge.
-- **Don't recommend upgrading just to be current.** Every upgrade has nonzero risk and effort.
-  The benefit should justify the cost. "It's the latest version" is not sufficient motivation.
-- **For security upgrades, check the actual advisory.** Is the vulnerability exploitable in
-  this project's usage? A vulnerability in a feature the project doesn't use may not require
-  an emergency upgrade.
-- **Run the security-reviewer skill on the resulting diff before recommending merge** when the
-  upgrade is motivated by a CVE, replaces a security-relevant package, or bumps crypto/auth
-  dependencies. This is the symmetric counterpart to security-reviewer's own dep-manifest
-  trigger — that flags risks at manifest-change time; this catches issues introduced by the
-  call-site migration itself.
-- **When the upgrade path is unclear, recommend a spike.** If you can't confidently estimate
-  the effort, say so and suggest a timeboxed investigation using the spike workflow.
-- **Don't start the migration until the rollback is documented and rehearsed.** A rollback
-  that's never been executed is not a rollback plan — it's a hope. Rehearse on a scratch
-  branch and confirm a verification step passes before touching the real upgrade.
+- **Search the codebase for actual usage.** Don't evaluate breaking changes in the abstract — check whether the project uses the affected APIs. A "major breaking change" the project doesn't touch is irrelevant.
+- **Read the migration guide, not just the changelog.** Changelogs list what changed; migration guides explain how to adapt. Base the effort estimate on the migration path, not the changelog length.
+- **Check for codemods.** Many libraries provide automated migration tools. A breaking change with a codemod is mechanical work, not a design challenge.
+- **Don't recommend upgrading just to be current.** Every upgrade has nonzero risk and effort. The benefit should justify the cost. "It's the latest version" is not sufficient motivation.
+- **For security upgrades, check the actual advisory.** Is the vulnerability exploitable in this project's usage? A vulnerability in a feature the project doesn't use may not require an emergency upgrade.
+- **Run the security-reviewer skill on the resulting diff before recommending merge** when the upgrade is motivated by a CVE, replaces a security-relevant package, or bumps crypto/auth dependencies. This is the symmetric counterpart to security-reviewer's own dep-manifest trigger — that flags risks at manifest-change time; this catches issues introduced by the call-site migration itself.
+- **When the upgrade path is unclear, recommend a spike.** If you can't confidently estimate the effort, say so and suggest a timeboxed investigation using the spike workflow.
+- **Don't start the migration until the rollback is documented and rehearsed.** A rollback that's never been executed is not a rollback plan — it's a hope. Rehearse on a scratch branch and confirm a verification step passes before touching the real upgrade.

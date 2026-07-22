@@ -22,39 +22,32 @@ when: User asks to evaluate or score a skill or workflow against the rubric, or 
 
 # Self-Evaluation Skill
 
-You evaluate a single skill or workflow against the project's evaluation rubric. You produce
-automated assessments where possible and structured prompts for human review where judgment
-is required.
+Evaluate a single skill or workflow against the project's evaluation rubric. Produce automated assessments where possible and structured prompts for human review where judgment is required.
 
-You are an evaluator, not a cheerleader. Be honest about weaknesses. A low score with clear
-justification is more useful than an inflated score.
+You are an evaluator, not a cheerleader. Be honest about weaknesses. A low score with clear justification is more useful than an inflated score.
 
 ---
 
 ## Step 1: Determine the Target
 
-The user specifies a target skill or workflow. Accept any of these forms:
-- A file path: `skills/fact-check/SKILL.md`, `workflows/research-plan-implement.md`
-- A skill name: `fact-check`, `draft-review`, `security-reviewer`
-- A workflow name: `research-plan-implement`, `divergent-design`
+User specifies a target skill or workflow. Accept any form:
+- File path: `skills/fact-check/SKILL.md`, `workflows/research-plan-implement.md`
+- Skill name: `fact-check`, `draft-review`, `security-reviewer`
+- Workflow name: `research-plan-implement`, `divergent-design`
 
-If given a name without a path, look in `skills/` first, then `workflows/`. If not found
-in either, tell the user and stop.
+Given a name without a path, look in `skills/` first, then `workflows/`. If not found in either, tell the user and stop.
 
-Read the target file in full. Determine its type:
+Read the target file in full. Determine type:
 - **Skill** if it lives in `skills/` and has YAML frontmatter with `name` and `description`
 - **Workflow** if it lives in `workflows/`
 
-Note the type — some dimensions apply differently to skills vs. workflows (see the rubric's
-"Applying the rubric: skills vs. workflows" table).
+Note the type — some dimensions apply differently to skills vs. workflows (see the rubric's "Applying the rubric: skills vs. workflows" table).
 
 ---
 
 ## Step 2: Read the Rubric
 
-Read `docs/evaluation-rubric.md` in full. This is the authoritative source for dimension
-definitions and scoring criteria. Do not rely on a cached or hardcoded version — the rubric
-may have been updated since this skill was written.
+Read `docs/evaluation-rubric.md` in full — authoritative source for dimension definitions and scoring criteria. Do not rely on a cached or hardcoded version — the rubric may have been updated since this skill was written.
 
 Extract the 9 dimensions and their scoring guidance. Note the skills-vs-workflows table.
 
@@ -62,25 +55,23 @@ Extract the 9 dimensions and their scoring guidance. Note the skills-vs-workflow
 
 ## Step 3: Gather Context
 
-Before scoring, gather the evidence you'll need:
+Before scoring, gather evidence:
 
 ### 3a: Read all sibling files
 
-- If the target is a skill: read all other files in `skills/`. For each, note the `name`,
-  `description` from frontmatter, and skim the analytical approach / cognitive moves.
-- If the target is a workflow: read all other files in `workflows/`.
+- Target is a skill: read all other files in `skills/`. For each, note `name`, `description` from frontmatter, and skim the analytical approach / cognitive moves.
+- Target is a workflow: read all other files in `workflows/`.
 - Also read skills if evaluating a workflow, and vice versa — overlap can cross categories.
 
-You need this for overlap analysis and trigger clarity comparison.
+Needed for overlap analysis and trigger clarity comparison.
 
 ### 3b: Check for test evidence
 
-Search for evidence that the target has been tested or used:
+Search for evidence the target has been tested or used:
 
-1. Check `test/` directory for any test files referencing the target name.
-2. Check `docs/reviews/` for output artifacts that match the target's expected output
-   (e.g., a `fact-check-report.md` for the `fact-check` skill).
-3. Check git log for commits mentioning the target name, which may indicate real usage.
+1. Check `test/` directory for test files referencing the target name.
+2. Check `docs/reviews/` for output artifacts matching the target's expected output (e.g., a `fact-check-report.md` for the `fact-check` skill).
+3. Check git log for commits mentioning the target name, indicating real usage.
 
 ```bash
 git log --oneline --all --grep="<target-name>" | head -20
@@ -102,9 +93,7 @@ grep -rl "<target-name>" skills/ workflows/ patterns/
 
 ## Step 4: Automated Assessments
 
-For each of these 5 dimensions, produce a score (Strong / Adequate / Weak) with a
-justification based on the evidence gathered. The justification matters more than the
-label — it captures *why* and makes the evaluation actionable.
+For each of these 5 dimensions, produce a score (Strong / Adequate / Weak) with justification based on evidence gathered. The justification matters more than the label — it captures *why* and makes the evaluation actionable.
 
 ### 4a: Testability Investment
 
@@ -127,28 +116,26 @@ Assess whether the agent or user can reliably tell when to use this tool.
 
 **Analyze:**
 - Does the frontmatter `description` specify concrete trigger phrases or situations?
-- Are the triggering situations specific enough to avoid false positives?
-- Are they salient enough to avoid false negatives?
-- Compare triggers against ALL other skills and workflows. Are there ambiguous overlaps
-  where the user wouldn't know which to choose?
-- For skills that are pipeline stages: is the orchestrator's selection logic clear?
+- Are triggering situations specific enough to avoid false positives?
+- Salient enough to avoid false negatives?
+- Compare triggers against ALL other skills and workflows. Any ambiguous overlaps where the user wouldn't know which to choose?
+- For pipeline-stage skills: is the orchestrator's selection logic clear?
 
 **Score:**
 - **Strong**: Specific, unambiguous triggers. No confusing overlap with other tools. User would know exactly when to reach for this.
-- **Adequate**: Triggers are defined but some overlap exists with other tools, or the boundary is fuzzy in edge cases.
+- **Adequate**: Triggers defined but some overlap exists with other tools, or the boundary is fuzzy in edge cases.
 - **Weak**: Triggers are vague, overlap heavily with other tools, or the user would rarely think to invoke this unprompted.
 
 ### 4c: Overlap and Redundancy
 
-Assess whether this tool duplicates work that another tool already does.
+Assess whether this tool duplicates work another tool already does.
 
 **Analyze:**
 - Compare the target's analytical approach with every other skill/workflow.
 - Look at cognitive moves, analysis procedures, and output format — not just topic area.
 - Is the overlap structural (similar format) or substantive (similar analysis)?
 - Could two tools produce substantially similar output on the same input?
-- Does the target cover ground that a built-in Claude Code capability already handles?
-  (e.g., code-simplifier, verification-coordinator)
+- Does the target cover ground a built-in Claude Code capability already handles? (e.g., code-simplifier, verification-coordinator)
 
 **Score:**
 - **Strong**: No substantive overlap. The target provides a unique analytical lens or capability.
@@ -160,10 +147,10 @@ Assess whether this tool duplicates work that another tool already does.
 Assess what actual evidence exists that this tool works.
 
 **Analyze:**
-- Are there automated test cases in `test/`?
-- Are there example output artifacts in `docs/reviews/` or elsewhere?
-- Has the tool been used on real work (evidence from git history)?
-- Are there evaluation artifacts (like entries in `full-evaluation.md`)?
+- Automated test cases in `test/`?
+- Example output artifacts in `docs/reviews/` or elsewhere?
+- Used on real work (evidence from git history)?
+- Evaluation artifacts (like entries in `full-evaluation.md`)?
 
 **Score:**
 - **Strong**: Automated tests exist AND real-world usage is documented with example outputs.
@@ -175,7 +162,7 @@ Assess what actual evidence exists that this tool works.
 Assess whether this tool has a place in an existing pipeline.
 
 **Analyze:**
-- Is the tool standalone viable (useful when invoked directly, no pipeline needed)?
+- Standalone viable (useful invoked directly, no pipeline needed)?
 - Does an orchestrator exist that composes this tool? Which one?
 - Does the tool have a `requires` block indicating pipeline dependencies?
 - Do other skills reference this tool in their `requires` blocks?
@@ -190,10 +177,7 @@ Assess whether this tool has a place in an existing pipeline.
 
 ## Step 5: Human-Judgment Dimensions
 
-For each of these 4 dimensions, do NOT produce a score. Instead, produce a structured
-prompt that helps the human reviewer assess it efficiently. Include what you found from
-automated analysis that's relevant, and highlight the specific questions the human needs
-to answer.
+For each of these 4 dimensions, do NOT produce a score. Instead, produce a structured prompt that helps the human reviewer assess it efficiently. Include relevant automated findings, and highlight the specific questions the human needs to answer.
 
 > **Order note:** Failure Mode Gracefulness ("what would make this not work in production?") is asked before Condition for Value ("is this ready?") so production-blocking failure modes surface first, before readiness conditions can be used to rationalize shipping.
 
@@ -201,14 +185,11 @@ to answer.
 
 Present:
 - **What the tool does**: One-paragraph summary of the target's analytical approach.
-- **What generic prompting achieves**: What would happen if someone asked Claude to do
-  this without the skill file? Which specific elements (cognitive moves, pipeline stages,
-  structured output) would likely be missing?
+- **What generic prompting achieves**: What would happen if someone asked Claude to do this without the skill file? Which specific elements (cognitive moves, pipeline stages, structured output) would likely be missing?
 - **What built-in tools cover**: Do any built-in Claude Code capabilities overlap?
 - **Questions for the reviewer**:
   - How much of the skill's value comes from structure/consistency vs. unique analytical content?
-  - Is the gap "the skill adds moves the user wouldn't think of" or "the skill ensures
-    consistency the user would otherwise forget"?
+  - Is the gap "the skill adds moves the user wouldn't think of" or "the skill ensures consistency the user would otherwise forget"?
   - Under what conditions is the gap largest?
 
 ### 5b: User-Specific Fit
@@ -224,13 +205,9 @@ Present:
 ### 5c: Failure Mode Gracefulness
 
 Present:
-- **Output structure**: Describe the target's output format and what makes failures
-  detectable (e.g., side-by-side claim vs. evidence, structured verdicts, confidence levels).
-- **Potential silent failures**: Where could the tool produce authoritative-looking but
-  wrong output? (e.g., confident analysis built on misread code, plausible-sounding
-  cross-domain analogies that are structurally flawed)
-- **Pipeline mitigations**: Does the pipeline architecture catch failures? (e.g., fact-check
-  upstream of critics)
+- **Output structure**: Describe the target's output format and what makes failures detectable (e.g., side-by-side claim vs. evidence, structured verdicts, confidence levels).
+- **Potential silent failures**: Where could the tool produce authoritative-looking but wrong output? (e.g., confident analysis built on misread code, plausible-sounding cross-domain analogies that are structurally flawed)
+- **Pipeline mitigations**: Does the pipeline architecture catch failures? (e.g., fact-check upstream of critics)
 - **Questions for the reviewer**:
   - Based on your domain expertise, which failure modes are most likely?
   - Have you observed any silent failures in practice?
@@ -239,15 +216,12 @@ Present:
 ### 5d: Condition for Value
 
 Present:
-- **Stated or inferred conditions**: What must be true for this tool to be valuable?
-  (Pipeline must exist, user must work in a certain domain, certain frequency of use, etc.)
-- **Automated findings**: Which conditions can be verified from the codebase? (e.g., "The
-  code-review orchestrator that this skill depends on: EXISTS / DOES NOT EXIST")
+- **Stated or inferred conditions**: What must be true for this tool to be valuable? (Pipeline must exist, user must work in a certain domain, certain frequency of use, etc.)
+- **Automated findings**: Which conditions can be verified from the codebase? (e.g., "The code-review orchestrator that this skill depends on: EXISTS / DOES NOT EXIST")
 - **Questions for the reviewer**:
   - Are the conditions met today?
   - If not yet met, is there a realistic path? What would need to happen?
-  - Is this tool an investment pulling toward building missing infrastructure, or
-    speculative inventory?
+  - Is this tool an investment pulling toward building missing infrastructure, or speculative inventory?
 
 ---
 
@@ -255,10 +229,7 @@ Present:
 
 Save the evaluation report to `docs/reviews/self-eval-{target-name}.md`.
 
-The output structure is contract: bats tests assert these section headings, field labels,
-and the constrained Strong/Adequate/Weak vocabulary. Do not rename, reorder, or drop
-sections. Do not introduce reviewer-style fields (`**Verdict:**`, `**Severity:**`,
-`**Confidence:**`) — those belong to critic skills, not self-eval.
+The output structure is contract: bats tests assert these section headings, field labels, and the constrained Strong/Adequate/Weak vocabulary. Do not rename, reorder, or drop sections. Do not introduce reviewer-style fields (`**Verdict:**`, `**Severity:**`, `**Confidence:**`) — those belong to critic skills, not self-eval.
 
 Use this format verbatim:
 
@@ -316,10 +287,7 @@ ending in a question.
 2. **{Short claim or framing}.** {1-2 sentences of context, then the question?}
 ```
 
-Do not append a separate "Overall Recommendation" section — the Key Questions list IS
-the synthesis, by design (matching the rubric's example evaluations). The automated
-scores table is the verdict surface; the human-review prompts and Key Questions guide
-the rest.
+Do not append a separate "Overall Recommendation" section — the Key Questions list IS the synthesis, by design (matching the rubric's example evaluations). The automated scores table is the verdict surface; the human-review prompts and Key Questions guide the rest.
 
 ---
 

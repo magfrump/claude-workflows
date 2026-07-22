@@ -42,60 +42,35 @@ requires:
 
 # What-If / Counterfactual Analysis
 
-You are performing a structured prospective consequence analysis of a proposed change. The
-point is not to evaluate whether the proposal is *good* — the critique skills do that. The
-point is to explore what happens if things go differently than the proposal expects, and
-what the consequences are even if everything goes exactly as planned.
+Perform structured prospective consequence analysis of a proposed change. Point is not to evaluate whether the proposal is *good* — critique skills do that. Explore what happens if things go differently than expected, and what the consequences are even if everything goes as planned.
 
-This is the difference between a critic and a consequence analyst. The critic asks "is this
-argument sound?" The consequence analyst asks "assuming this argument is sound, what could
-still go wrong? And assuming it's unsound, what specifically breaks?"
+Critic asks "is this argument sound?" Consequence analyst asks "assuming this argument is sound, what could still go wrong? And assuming it's unsound, what specifically breaks?"
 
-What follows are the cognitive moves for this analysis. Not all will apply to every proposal
-— exercise judgment. But resist the temptation to skip moves that feel uncomfortable or
-unlikely. The value of this analysis is in the surprises.
+What follows are the cognitive moves. Not all apply to every proposal — exercise judgment. But resist skipping moves that feel uncomfortable or unlikely. The value is in the surprises.
 
 ## When to Use This Skill (vs. pre-mortem)
 
-This skill is the forward-chained, structural form: *"this is the plan — what could go
-wrong?"* The sibling skill `pre-mortem` is the backward-chained, narrative form: *"the
-project failed — what's the story?"*
+This skill is forward-chained, structural: *"this is the plan — what could go wrong?"* Sibling skill `pre-mortem` is backward-chained, narrative: *"the project failed — what's the story?"*
 
-The mechanical test at trigger time:
+Mechanical test at trigger time:
 
 | User's framing | Skill |
 |----------------|-------|
 | "what could go wrong with this", "stress-test this plan", "what are the risks", "trace the second-order effects", "what assumptions is this making", "what's the reversibility gradient", "what's the blast radius" | **what-if-analysis** |
 | "pre-mortem the launch", "pre-mortem this", "imagine 6 months later and this failed — what happened?", "write the failure story", "tell me why this failed", "give me the post-mortem before we ship" | **pre-mortem** |
 
-The split is not which skill is "better" — it's which cognitive move the user is asking
-for. What-if invokes the structural analyst: the plan is on the table, you're mapping the
-consequence space around it (load-bearing assumptions, second-order effects, hidden
-couplings, reversibility gradient, cost of success). Pre-mortem invokes the detective: the
-failure has already happened, you're writing the report as narrative. Asking for the wrong
-one wastes the asymmetry that makes each move work.
+Split is not which skill is "better" — it's which cognitive move the user wants. What-if invokes the structural analyst: the plan is on the table, map the consequence space around it (load-bearing assumptions, second-order effects, hidden couplings, reversibility gradient, cost of success). Pre-mortem invokes the detective: failure has already happened, write the report as narrative. Asking for the wrong one wastes the asymmetry that makes each move work.
 
-The two compose. For high-stakes changes, run this skill first to surface load-bearing
-assumptions and consequence chains, then run `pre-mortem` to turn the most worrying parts
-of that map into concrete failure narratives. The what-if maps the territory; the
-pre-mortem walks the specific paths through it that end in failure.
+The two compose. For high-stakes changes, run this skill first to surface load-bearing assumptions and consequence chains, then run `pre-mortem` to turn the most worrying parts into concrete failure narratives. What-if maps the territory; pre-mortem walks the specific paths through it that end in failure.
 
 ## Using Upstream Reports
 
-If you have been provided critique reports (from cowen-critique, yglesias-critique, or others)
-alongside the proposal, treat them as a map of *already-examined territory*. Your job is to
-explore the territory they didn't cover.
+If provided critique reports (cowen-critique, yglesias-critique, or others) alongside the proposal, treat them as a map of *already-examined territory*. Explore the territory they didn't cover.
 
 Specifically:
-- **Read the critiques for assumptions they surfaced.** Those assumptions have already been
-  examined. You don't need to re-examine them unless your analysis reveals a consequence chain
-  the critique missed.
-- **Focus on the assumptions the critiques took for granted.** Every critique makes its own
-  assumptions — about the environment, the timeline, the actors involved. Those meta-assumptions
-  are your primary target.
-- **Tag your novel findings.** When you surface an assumption or failure mode not mentioned in
-  any upstream critique, mark it with `[NOVEL]`. This makes it possible to evaluate whether
-  this skill is adding unique value beyond what critique skills provide.
+- **Read the critiques for assumptions they surfaced.** Those are already examined. Don't re-examine unless your analysis reveals a consequence chain the critique missed.
+- **Focus on assumptions the critiques took for granted.** Every critique makes its own meta-assumptions — environment, timeline, actors. Those are your primary target.
+- **Tag your novel findings.** When you surface an assumption or failure mode not in any upstream critique, mark it `[NOVEL]`. This lets evaluation judge whether this skill adds unique value.
 
 If no upstream reports are provided, **emit the following note at the top of your output:**
 
@@ -103,113 +78,65 @@ If no upstream reports are provided, **emit the following note at the top of you
 > independently. For maximum value, run a critique skill first (e.g., `cowen-critique`) and
 > provide its output — this skill is most powerful when focused on the gaps that critics miss.
 
-Then proceed with the full analysis. Tag all findings as `[NOVEL]` since there's no baseline
-to compare against.
+Then proceed with the full analysis. Tag all findings as `[NOVEL]` since there's no baseline to compare against.
 
 ## Prior Art Check
 
-Before generating new what-if scenarios, search the project's prior decisions and working
-artifacts for the same scenarios. The team may have already considered some of these failure
-modes — surfacing prior consideration lets you focus on truly novel ground and connect new
-analyses to the existing reasoning trail.
+Before generating new what-if scenarios, search the project's prior decisions and working artifacts for the same scenarios. The team may have already considered some failure modes — surfacing prior consideration lets you focus on novel ground and connect new analyses to the existing reasoning trail.
 
-The specific move:
+The move:
 
-1. **Extract scenario keywords** from the proposal — the systems, components, failure modes,
-   and risk vocabulary that matter (e.g., "migration", "cache invalidation", "rate limiting",
-   `user_preferences`, plus domain-specific terms). Aim for 5–10 keywords spanning what the
-   proposal *changes* and what could *fail* around it.
-2. **Grep `docs/decisions/` and `docs/working/`** for each keyword. Use case-insensitive
-   matching and cast a wide net — include synonyms and adjacent concepts. Example:
+1. **Extract scenario keywords** from the proposal — systems, components, failure modes, risk vocabulary (e.g., "migration", "cache invalidation", "rate limiting", `user_preferences`, plus domain terms). Aim for 5–10 keywords spanning what the proposal *changes* and what could *fail* around it.
+2. **Grep `docs/decisions/` and `docs/working/`** for each keyword. Use case-insensitive matching, cast a wide net, include synonyms and adjacent concepts. Example:
    `grep -ril -e "migration" -e "backfill" -e "user_preferences" docs/decisions/ docs/working/`.
-3. **Read matches** to identify what was previously considered, what was concluded, and
-   whether circumstances have changed since. Skim the surrounding section, not just the
-   matched line — context matters.
-4. **Carry forward what you find** into the cognitive moves below. When a scenario you would
-   surface was already analyzed, tag it `[PRIOR CONSIDERATION]` and cite the file (and section
-   or heading where applicable). Do *not* drop the finding — surfacing the link is the value.
+3. **Read matches** to identify what was previously considered, concluded, and whether circumstances changed. Skim the surrounding section, not just the matched line.
+4. **Carry forward what you find** into the cognitive moves below. When a scenario you would surface was already analyzed, tag it `[PRIOR CONSIDERATION]` and cite the file (and section/heading). Do *not* drop the finding — surfacing the link is the value.
 
-Findings already considered are not failures of this analysis — they're context. Note them so
-the reader knows the team has been here before, and focus your novel work on the gaps. If the
-prior consideration reached a different conclusion than what you'd surface today, that's a
-finding in itself: circumstances may have changed, and the divergence is worth flagging.
+Findings already considered are context, not failures. Note them so the reader knows the team has been here before; focus novel work on the gaps. If prior consideration reached a different conclusion than what you'd surface today, that's a finding: circumstances may have changed, and the divergence is worth flagging.
 
-If `docs/decisions/` and `docs/working/` don't exist or contain nothing relevant, note that
-briefly at the top of your output and proceed.
+If `docs/decisions/` and `docs/working/` don't exist or contain nothing relevant, note that briefly at the top of your output and proceed.
 
 ## The Cognitive Moves
 
 ### 1. Name the load-bearing assumptions
 
-Every proposal rests on assumptions — about the environment, the users, the technology, the
-timeline, the team's capabilities. Most proposals don't state these explicitly. Your first job
-is to extract them.
+Every proposal rests on assumptions — environment, users, technology, timeline, team capabilities. Most proposals don't state these. Extract them.
 
-But don't just list assumptions. *Rank them by load.* A load-bearing assumption is one where,
-if it's wrong, the entire proposal collapses or changes fundamentally. A cosmetic assumption is
-one where, if it's wrong, the proposal needs minor adjustment.
+Don't just list assumptions. *Rank them by load.* A load-bearing assumption is one where, if wrong, the entire proposal collapses or changes fundamentally. A cosmetic assumption needs only minor adjustment if wrong.
 
-The specific move: read the proposal and write down every "this assumes that..." you can find —
-both the explicit ones and the ones the author takes for granted. Then for each one, ask: "if
-this is wrong, does the proposal need a tweak, a redesign, or a full retreat?" The ones that
-require a redesign or retreat are load-bearing. Focus the rest of your analysis on those.
+The move: read the proposal, write down every "this assumes that..." — explicit and taken-for-granted. For each, ask: "if wrong, does the proposal need a tweak, a redesign, or a full retreat?" Redesign or retreat = load-bearing. Focus the rest of your analysis on those.
 
 ### 2. Trace second-order effects
 
-First-order effects are the direct, intended consequences of the change. The proposal already
-describes these. Your job is to go further.
+First-order effects are the direct, intended consequences. The proposal already describes these. Go further.
 
-Second-order: What changes *because of* the first-order effect? If you add a cache layer
-(first-order: faster reads), what changes because reads are now faster? Maybe the UI team
-builds features that assume fast reads, creating a hidden dependency on the cache. Maybe users
-start making more requests because the interface feels snappier, increasing write load.
+Second-order: What changes *because of* the first-order effect? Add a cache layer (first-order: faster reads) — what changes because reads are faster? UI team builds features assuming fast reads, creating hidden dependency on the cache. Users make more requests because the interface feels snappier, increasing write load.
 
-Third-order: What changes because of the second-order effect? The increased write load from
-snappier UX causes write latency to spike, which causes the retry logic to trigger, which
-causes a thundering herd, which causes an outage during peak hours.
+Third-order: What changes because of the second-order effect? Increased write load spikes write latency, triggers retry logic, causes a thundering herd, causes an outage during peak hours.
 
-The specific move: take each intended outcome of the proposal and ask "and then what?" twice.
-Write out the chain. Many proposals are correct about their first-order effects but blind to
-the second and third-order consequences. The chains that lead somewhere bad are findings.
+The move: take each intended outcome and ask "and then what?" twice. Write out the chain. Many proposals are correct about first-order effects but blind to second and third-order. Chains that lead somewhere bad are findings.
 
 ### 3. Find the hidden coupling
 
-The proposal changes thing A. But thing B depends on thing A, and thing C depends on thing B.
-The proposal may not know about thing C. Systems fail at coupling points that nobody mapped.
+The proposal changes thing A. Thing B depends on A, thing C depends on B. The proposal may not know about C. Systems fail at coupling points nobody mapped.
 
-This is not just "check the dependencies." The move is to look for *invisible* couplings —
-the ones that don't appear in dependency graphs because they're implicit. Shared conventions
-("every service assumes timestamps are in UTC"), shared resources (two systems that both assume
-they have exclusive access to the same queue), behavioral contracts (downstream consumers that
-depend on the *current behavior* of an API, not its documented contract), and temporal couplings
-(things that must happen in a specific order but nothing enforces that order).
+Not just "check the dependencies." Look for *invisible* couplings — ones absent from dependency graphs because they're implicit: shared conventions ("every service assumes timestamps are in UTC"), shared resources (two systems both assuming exclusive access to the same queue), behavioral contracts (consumers depending on *current behavior* of an API, not its documented contract), temporal couplings (things that must happen in order but nothing enforces it).
 
-For proposals about systems: draw the coupling map one level deeper than the proposal does.
-For proposals about processes or organizations: identify the informal agreements, handshakes,
-and conventions that the proposal disrupts.
+For systems: draw the coupling map one level deeper than the proposal does. For processes or organizations: identify the informal agreements, handshakes, and conventions the proposal disrupts.
 
 ### 4. Invert the confidence
 
-Find the claims in the proposal where the author is most confident — the parts stated as
-obvious, the assumptions that aren't even stated because they're taken as given, the steps
-described as straightforward.
+Find the claims where the author is most confident — stated as obvious, unstated because taken as given, described as straightforward.
 
-Now invert them. What if the "obvious" thing is wrong? What if the "straightforward" step is
-actually the hardest part? What if the thing everyone knows is true... isn't?
+Invert them. What if the "obvious" thing is wrong? What if the "straightforward" step is the hardest part? What if the thing everyone knows... isn't?
 
-The specific move: for each high-confidence claim, construct a concrete scenario where it's
-false, and trace the consequences. "Everyone knows our users prefer the web interface" — what
-if 40% of actual usage has quietly shifted to the mobile app and the analytics aren't tracking
-it? What does that do to the proposal?
+The move: for each high-confidence claim, construct a concrete scenario where it's false, trace the consequences. "Everyone knows our users prefer the web interface" — what if 40% of actual usage quietly shifted to the mobile app and analytics aren't tracking it? What does that do to the proposal?
 
-High-confidence assumptions are the most dangerous because they get the least scrutiny. If
-a low-confidence assumption is wrong, the team probably has a contingency. If a high-confidence
-assumption is wrong, there's no plan B.
+High-confidence assumptions are most dangerous because they get least scrutiny. If a low-confidence assumption is wrong, the team probably has a contingency. If a high-confidence assumption is wrong, there's no plan B.
 
 ### 5. Run the adversarial scenario
 
-This is not about malicious actors (though it can include them). It's about asking: if the
-environment were actively hostile to this proposal, what would that look like?
+Not about malicious actors (though it can include them). Ask: if the environment were actively hostile to this proposal, what would that look like?
 
 - What if the data is worse than expected?
 - What if the timeline is half what you think?
@@ -218,49 +145,36 @@ environment were actively hostile to this proposal, what would that look like?
 - What if the regulatory environment changes?
 - What if load is 10x what you projected?
 
-The specific move: pick the 2-3 environmental factors that matter most to the proposal and
-ask "what's the realistic worst case for each?" Not the apocalyptic worst case — the one that's
-maybe 10-20% likely. That's the scenario worth planning for.
+The move: pick the 2-3 environmental factors that matter most, ask "what's the realistic worst case for each?" Not the apocalyptic worst case — the one that's maybe 10-20% likely. That's the scenario worth planning for.
 
 ### 6. Check the reversibility gradient
 
-Some changes are easy to undo on day 1 but impossible to undo on day 180. The proposal may
-not describe this gradient.
+Some changes are easy to undo on day 1 but impossible on day 180. The proposal may not describe this gradient.
 
-The specific move: imagine you need to fully reverse this change at each of these timepoints:
+The move: imagine fully reversing this change at each timepoint:
 - 1 week after implementation
 - 1 month after implementation
 - 6 months after implementation
 
-What does reversal require at each stage? What data has been created that depends on the new
-state? What downstream systems have adapted? What user expectations have shifted? What
-contracts or commitments have been made based on the change?
+What does reversal require at each stage? What data has been created that depends on the new state? What downstream systems have adapted? What user expectations have shifted? What contracts or commitments have been made?
 
-A change with a steep reversibility gradient — easy to undo today, catastrophic to undo
-later — needs more scrutiny upfront than a change that's equally reversible at any point.
-Flag any cliff edges in the reversibility gradient: specific moments where reversal suddenly
-becomes much harder.
+A change with a steep reversibility gradient — easy to undo today, catastrophic later — needs more upfront scrutiny than one equally reversible at any point. Flag any cliff edges: specific moments where reversal suddenly becomes much harder.
 
 ### 7. Ask what success costs
 
-Even if the proposal works perfectly — every assumption holds, every step succeeds, every
-outcome is as intended — what do you lose?
+Even if the proposal works perfectly — every assumption holds, every step succeeds, every outcome as intended — what do you lose?
 
-Every change has costs beyond its direct resource expenditure:
+Every change has costs beyond direct resource expenditure:
 - **Complexity cost:** The system is now harder to understand, debug, or modify.
 - **Opportunity cost:** The team is now committed to this direction and not others.
-- **Maintenance cost:** Something new must now be kept alive, monitored, documented.
+- **Maintenance cost:** Something new must be kept alive, monitored, documented.
 - **Optionality cost:** Future choices are now constrained by this change.
 
-The specific move: write a paragraph describing the world after the proposal succeeds
-completely. Then ask: "what's worse about this world compared to today, even though the
-proposal achieved its goals?" The answer reveals the true cost of success.
+The move: write a paragraph describing the world after the proposal succeeds completely. Then ask: "what's worse about this world compared to today, even though the proposal achieved its goals?" The answer reveals the true cost of success.
 
 ## How to Structure the Output
 
-Output your analysis as a Markdown document. Begin with a level-1 title and a header block, then
-the cognitive-move sections below. Sections for moves that produced no interesting findings may
-be marked "no findings" but should not be omitted — the reader needs to know the move was run.
+Output as a Markdown document. Begin with a level-1 title and a header block, then the cognitive-move sections below. Sections for moves that produced no interesting findings may be marked "no findings" but must not be omitted — the reader needs to know the move was run.
 
 ### Header
 
@@ -276,7 +190,7 @@ Begin the document with:
 
 ### Assumptions Examined
 
-List every load-bearing assumption (move #1). For each one, use these fields:
+List every load-bearing assumption (move #1). For each, use these fields:
 - **Assumption:** the claim itself
 - **Source:** explicit (cite location) or implicit
 - **If wrong:** tweak / redesign / full retreat
@@ -284,8 +198,7 @@ List every load-bearing assumption (move #1). For each one, use these fields:
 
 ### Consequence Chains
 
-Trace first → second → third-order effects (move #2) for the proposal's 2-3 most significant
-intended outcomes. Use an indented chain format:
+Trace first → second → third-order effects (move #2) for the proposal's 2-3 most significant intended outcomes. Use an indented chain format:
 
 ```
 → First-order: [intended outcome]
@@ -296,87 +209,59 @@ intended outcomes. Use an indented chain format:
 
 ### Coupling Analysis
 
-Map the hidden couplings (move #3) — the dependencies the proposal doesn't acknowledge.
-For each coupling, note whether it's visible (in a dependency graph or config) or invisible
-(convention, behavior, timing).
+Map the hidden couplings (move #3) — the dependencies the proposal doesn't acknowledge. For each, note whether it's visible (dependency graph or config) or invisible (convention, behavior, timing).
 
 ### Confidence Inversions
 
-For each high-confidence assumption inverted (move #4), describe the concrete scenario where
-it's wrong and what that does to the proposal.
+For each high-confidence assumption inverted (move #4), describe the concrete scenario where it's wrong and what that does to the proposal.
 
 ### Adversarial Scenarios
 
-The 2-3 most important hostile-environment scenarios (move #5), with the realistic worst case
-for each.
+The 2-3 most important hostile-environment scenarios (move #5), with the realistic worst case for each.
 
 ### Reversibility Map
 
-A timeline showing how hard reversal is at 1 week, 1 month, and 6 months (move #6). Flag
-any cliff edges.
+A timeline showing how hard reversal is at 1 week, 1 month, and 6 months (move #6). Flag any cliff edges.
 
 ### Cost of Success
 
-What's lost even if everything works (move #7). Complexity, opportunity, maintenance, and
-optionality costs.
+What's lost even if everything works (move #7). Complexity, opportunity, maintenance, and optionality costs.
 
 ### Findings Summary
 
 A consolidated list of all findings, each tagged:
-- `[UNEXAMINED ASSUMPTION]` — a load-bearing assumption that the proposal (and any upstream
-  critiques) did not examine
-- `[SECOND-ORDER EFFECT]` — a consequence chain that the proposal didn't trace
+- `[UNEXAMINED ASSUMPTION]` — a load-bearing assumption the proposal (and any upstream critiques) did not examine
+- `[SECOND-ORDER EFFECT]` — a consequence chain the proposal didn't trace
 - `[HIDDEN COUPLING]` — a dependency the proposal didn't map
 - `[REVERSIBILITY CLIFF]` — a point where reversal suddenly becomes much harder
 - `[SUCCESS COST]` — something lost even if the proposal works perfectly
-- `[PRIOR CONSIDERATION]` — a finding that surfaced in the Prior Art Check; cite the
-  source file (e.g., `docs/decisions/007-two-phase-pr-prep.md`) and note whether the
-  prior conclusion still applies or whether circumstances have changed
+- `[PRIOR CONSIDERATION]` — a finding from the Prior Art Check; cite the source file (e.g., `docs/decisions/007-two-phase-pr-prep.md`) and note whether the prior conclusion still applies or circumstances changed
 
-This tagging enables direct comparison with upstream critique outputs to evaluate whether
-the what-if analysis surfaced genuinely new findings. The `[PRIOR CONSIDERATION]` tag can
-combine with others (e.g., `[HIDDEN COUPLING] [PRIOR CONSIDERATION]`) when a prior artifact
-already named the coupling but the present proposal didn't carry it forward.
+This tagging enables direct comparison with upstream critique outputs to evaluate whether the what-if analysis surfaced genuinely new findings. The `[PRIOR CONSIDERATION]` tag can combine with others (e.g., `[HIDDEN COUPLING] [PRIOR CONSIDERATION]`) when a prior artifact already named the coupling but the present proposal didn't carry it forward.
 
-If the proposal also needs concrete failure narratives (a story of *why* it failed, not
-just a map of *what could fail*), run the `pre-mortem` skill on the same artifact — it
-consumes this analysis as input and produces the narrative complement.
+If the proposal also needs concrete failure narratives (a story of *why* it failed, not just a map of *what could fail*), run the `pre-mortem` skill on the same artifact — it consumes this analysis as input and produces the narrative complement.
 
 ### Recommendations
 
-Close the document with a Recommendations section that translates the findings into action.
-Group them as:
-- **Must address before proceeding:** findings whose probability × severity makes shipping
-  without mitigation reckless. State the specific mitigation expected.
-- **Worth mitigating:** findings worth a tracking item but not a blocker. Suggest a watch
-  signal or contingency.
-- **Acknowledged risks:** findings the team can knowingly carry, with a rationale for why
-  the risk is acceptable.
+Close with a Recommendations section translating findings into action. Group them as:
+- **Must address before proceeding:** findings whose probability × severity makes shipping without mitigation reckless. State the specific mitigation expected.
+- **Worth mitigating:** findings worth a tracking item but not a blocker. Suggest a watch signal or contingency.
+- **Acknowledged risks:** findings the team can knowingly carry, with a rationale for why the risk is acceptable.
 
-If no findings rise to "must address" severity, say so explicitly — a flat Recommendations
-section is more useful than an inflated one.
+If no findings rise to "must address" severity, say so explicitly — a flat Recommendations section is more useful than an inflated one.
 
 ## Output Location
 
-Save your analysis as `docs/reviews/what-if-analysis.md` in the project root. Create
-`docs/reviews/` if it doesn't exist.
+Save your analysis as `docs/reviews/what-if-analysis.md` in the project root. Create `docs/reviews/` if it doesn't exist.
 
-If run alongside critique skills or `pre-mortem` on the same artifact, all outputs coexist
-in `docs/reviews/`.
+If run alongside critique skills or `pre-mortem` on the same artifact, all outputs coexist in `docs/reviews/`.
 
 ## Tone
 
-Constructive paranoia. The spirit is "let's find out what we haven't thought about" rather
-than "let me tell you why this will fail." You're not arguing against the proposal — you're
-mapping the territory around it that the proposal didn't explore.
+Constructive paranoia. The spirit is "let's find out what we haven't thought about" rather than "let me tell you why this will fail." You're not arguing against the proposal — you're mapping the territory around it that the proposal didn't explore.
 
-Be specific, not vague. "This might have issues" is not a finding. "If the `user_preferences`
-table has more than 50M rows, the ALTER TABLE will lock writes for 4+ minutes during peak
-hours" is a finding.
+Be specific, not vague. "This might have issues" is not a finding. "If the `user_preferences` table has more than 50M rows, the ALTER TABLE will lock writes for 4+ minutes during peak hours" is a finding.
 
-Calibrate severity honestly. Not everything is catastrophic. Some failure modes are minor
-inconveniences. Say which is which. The reader needs to know where to focus their attention.
+Calibrate severity honestly. Not everything is catastrophic. Some failure modes are minor inconveniences. Say which is which. The reader needs to know where to focus.
 
-When a move doesn't produce interesting findings for a particular proposal, say so briefly
-and move on. An honest "the reversibility gradient is flat — this is equally easy to undo at
-any point" is more useful than manufacturing concern.
+When a move doesn't produce interesting findings, say so briefly and move on. An honest "the reversibility gradient is flat — this is equally easy to undo at any point" is more useful than manufacturing concern.

@@ -35,13 +35,9 @@ requires:
 
 # Cowen-Style Draft Critique
 
-You are reviewing a draft using the reasoning methods of Tyler Cowen. The point here is not
-to arrive at conclusions Cowen would agree with, and definitely not to impersonate him. It's
-to apply the specific cognitive moves he makes when he encounters an argument — the ways he
-stress-tests reasoning that are distinctive to how he thinks, not just what he thinks about.
+Review a draft using Tyler Cowen's reasoning methods. Do not aim for conclusions Cowen would agree with. Do not impersonate him. Apply the specific cognitive moves he makes on an argument — how he stress-tests reasoning, not what he thinks about.
 
-What follows is a description of those moves. Use them. Not all of them will apply to every
-draft — exercise judgment.
+Moves described below. Use them. Not all apply to every draft — exercise judgment.
 
 ## Pre-flight: Skip Obvious Stubs
 
@@ -50,240 +46,128 @@ Both conditions must hold — legitimately short drafts without stub markers, an
 
 ## Using the Fact-Check Report
 
-If you have been provided a fact-check report alongside the draft, treat it as your factual
-foundation. You do not need to independently verify numbers, statistics, or named policies
-that the fact-check report has already assessed.
+If provided a fact-check report, treat it as your factual foundation. Do not independently verify numbers, statistics, or named policies it already assessed.
 
 Instead:
-- **Reference the fact-check findings** where relevant to your critique. For example, if the
-  fact-check report found a claim inaccurate, you can note that in passing, but your job is
-  to analyze what that inaccuracy means for the argument's structure — not to re-verify the number.
-- **Build on the fact-check** where it surfaces ambiguity. If the fact-check says a claim is
-  "mostly accurate" or "disputed," that's useful input for your own assessment of the argument's
-  strength.
-- **Focus your energy on the cognitive moves below**, which are what this skill uniquely provides.
-  The fact-checker establishes what's true. You establish what it means.
+- **Reference the fact-check findings** in your critique. If it found a claim inaccurate, note it in passing, but analyze what the inaccuracy means for the argument's structure — do not re-verify the number.
+- **Build on the fact-check** where it surfaces ambiguity. "Mostly accurate" or "disputed" is input for your own assessment of argument strength.
+- **Focus energy on the cognitive moves below** — what this skill uniquely provides. The fact-checker establishes what's true. You establish what it means.
 
-If no fact-check report is provided, **emit the following warning at the top of your output
-before the critique begins:**
+If no fact-check report is provided, **emit the following warning at the top of your output before the critique begins:**
 
 > ⚠️ **No fact-check report provided.** This critique does not include independent factual
 > verification. Checkable claims in the draft have not been assessed. For full verification,
 > run the `fact-check` skill first or use the `draft-review` orchestrator.
 
-Then proceed with the critique focusing on argument structure. Do NOT attempt your own
-fact-checking — an ad-hoc spot-check without proper sourcing creates a false sense of
-verification. Leave factual assessment to the dedicated fact-check skill.
+Then critique argument structure. Do NOT attempt your own fact-checking — an ad-hoc spot-check without proper sourcing creates a false sense of verification. Leave factual assessment to the dedicated fact-check skill.
 
 ## The Cognitive Moves
 
 ### 1. Try the boring explanation first
 
-Before engaging with the draft's theory of why something is happening, ask: is there a
-completely mundane explanation that accounts for the same observations? Cowen has a specific
-habit of reaching for the most ordinary, least dramatic explanation and seeing how much
-mileage it gets. If the draft argues that a trend reflects a deep cultural shift, check
-whether it could just be a price change. If it claims a policy succeeded because of clever
-design, check whether the economy was growing and everything was succeeding. The boring
-explanation often gets you 80% of the way there, and the draft's job is to explain the
-remaining 20% — most drafts skip this step entirely and jump to the interesting explanation.
+Before engaging the draft's theory of why something happens, ask: is there a mundane explanation for the same observations? Reach for the most ordinary, least dramatic explanation and see how much mileage it gets. If the draft argues a trend reflects a deep cultural shift, check whether it's just a price change. If it claims a policy succeeded through clever design, check whether the economy was growing and everything was succeeding. The boring explanation often gets 80% of the way there; the draft's job is the remaining 20% — most drafts skip this and jump to the interesting explanation.
 
 If the boring explanation does most of the work, say so. That's a finding.
 
 ### 2. Invert the claim and see what survives
 
-Take the draft's central thesis, flip it, and argue for the opposite for a few sentences.
-Not as a rhetorical trick, but as a genuine stress test. If the draft says "remote work is
-the future," seriously argue "remote work is a temporary blip" and see which parts of that
-counter-argument the draft has already defused and which it hasn't touched. The gaps you find
-are the real weaknesses — they're the places where the author assumed their conclusion
-rather than earning it.
+Take the central thesis, flip it, argue the opposite for a few sentences. Not a rhetorical trick — a genuine stress test. If the draft says "remote work is the future," seriously argue "remote work is a temporary blip" and see which parts the draft already defused and which it hasn't touched. The gaps are the real weaknesses — where the author assumed their conclusion rather than earning it.
 
-This is different from just "considering counterarguments." The move is to *inhabit* the
-opposing view sincerely enough that you discover things the draft's framing made invisible.
+Different from "considering counterarguments": *inhabit* the opposing view sincerely enough to discover things the draft's framing made invisible.
 
 ### 3. Follow revealed preferences, ignore stated ones
 
-When the draft describes what people or institutions want, believe, or value, check whether
-their *behavior* matches. This is Cowen's deepest reflex as an economist: what people say
-they want and what they actually do are often different, and the behavior is more honest.
+When the draft describes what people or institutions want, believe, or value, check whether their *behavior* matches. Cowen's deepest reflex as an economist: what people say they want and what they do often differ, and the behavior is more honest.
 
-If the draft says "employees prefer remote work," ask what's happening at the companies where
-the best talent is actually choosing to go. If it says "voters want policy X," check whether
-they vote for candidates who oppose X when other issues are on the ballot. If it says
-"universities value teaching," look at what they actually spend money on.
+If the draft says "employees prefer remote work," ask where the best talent is actually choosing to go. If "voters want policy X," check whether they vote for candidates who oppose X. If "universities value teaching," look at what they spend money on.
 
-The specific move is: find a stated preference in the draft, then look for behavioral evidence
-that contradicts it. When you find one, you've found something interesting.
+The move: find a stated preference, look for behavioral evidence that contradicts it. When you find one, you've found something interesting.
 
 ### 4. Push the argument to its logical extreme
 
-Take the draft's reasoning and extend it further than the author intended. If the logic is
-sound, the extreme version should still make some sense. If it becomes absurd, that absurdity
-reveals hidden assumptions or boundary conditions the draft didn't acknowledge.
+Extend the reasoning further than the author intended. If the logic is sound, the extreme version should still make some sense. If it becomes absurd, that absurdity reveals hidden assumptions or boundary conditions the draft didn't acknowledge.
 
-For example: if the draft argues that AI tutoring is better because it's personalized, push
-that to "so the ideal education is one student, one AI, zero human contact" — and use the
-obvious problems with that extreme to illuminate what's actually doing the work in education
-that isn't about information delivery. The extreme case makes the hidden variables visible.
+Example: if the draft argues AI tutoring is better because personalized, push to "the ideal education is one student, one AI, zero human contact" — use the obvious problems to illuminate what's actually doing the work in education that isn't information delivery. The extreme case makes hidden variables visible.
 
 ### 5. Find the cross-domain analogy nobody's making
 
-This is perhaps Cowen's most distinctive move. He reads across an absurd range of domains —
-food, music, travel, chess, art, emerging economies, classical literature — and constantly
-pattern-matches between them. When reading a draft about tech monopolies, he might think
-about how restaurant scenes evolve in cities. When reading about education, he might draw on
-how chess players actually develop skill.
+Cowen's most distinctive move. He reads across an absurd range of domains — food, music, travel, chess, art, emerging economies, classical literature — and pattern-matches between them. On tech monopolies he might think about how restaurant scenes evolve; on education, how chess players develop skill.
 
-When you critique a draft, actively look for an illuminating parallel from a completely
-different domain. Not a decorative analogy — a structural one, where the dynamics in domain B
-reveal something about domain A that the draft's own framing obscures. If the draft is about
-housing policy, ask whether the dynamics resemble something you know about from healthcare, or
-from how artistic movements evolve, or from how languages spread. The analogy should generate
-a genuinely new insight, not just illustrate a point the draft already makes.
+Actively look for an illuminating parallel from a different domain. Not decorative — structural, where dynamics in domain B reveal something about domain A the draft's framing obscures. If the draft is about housing policy, ask whether the dynamics resemble healthcare, artistic movements, or how languages spread. The analogy should generate a new insight, not illustrate a point the draft already makes.
 
 If you can't find a good one, don't force it. But try.
 
 ### 6. Ask "what's the market telling you?"
 
-If the draft's thesis is correct, there should be a market signal — or the absence of one
-should be surprising. This is a specific form of "check the base rate," but it's sharper.
+If the thesis is correct, there should be a market signal — or its absence should be surprising. A sharper form of "check the base rate."
 
-If the draft says "X is enormously undervalued," ask why the people with the most money at
-stake haven't already acted on that information. If it says "this industry is dying," ask why
-capital is still flowing in. If it says "this policy would generate huge returns," ask why
-no jurisdiction has scaled it. The market doesn't have to be right, but if your thesis
-implies the market is wrong, you need to explain *why* the market is wrong — not just assert
-that it is.
+If the draft says "X is enormously undervalued," ask why the people with the most money at stake haven't acted. If "this industry is dying," ask why capital is still flowing in. If "this policy would generate huge returns," ask why no jurisdiction has scaled it. The market doesn't have to be right, but if your thesis implies the market is wrong, explain *why* it's wrong — don't just assert it.
 
 ### 7. Decompose the claim into its actual sub-claims
 
-Most draft theses are actually 3-4 claims bundled together, and the author treats them as one.
-Cowen has a habit of pulling arguments apart into their constituent pieces and then checking
-whether each piece independently holds.
+Most theses are 3-4 claims bundled as one. Pull arguments apart into constituent pieces, then check whether each holds independently.
 
-"AI will make college obsolete" is actually: (a) AI can deliver educational content as well as
-professors, (b) content delivery is the main thing college does, (c) the credential value of
-college will erode, (d) students will choose the cheaper option. Each of these can be true or
-false independently, and the draft's conclusion requires all of them. Identifying which
-sub-claim is weakest is more useful than a general critique of the whole thesis.
+"AI will make college obsolete" is: (a) AI can deliver educational content as well as professors, (b) content delivery is the main thing college does, (c) the credential value of college will erode, (d) students will choose the cheaper option. Each can be true or false independently; the conclusion requires all. Identifying the weakest sub-claim is more useful than a general critique.
 
 ### 8. Notice what the draft treats as natural that is actually contingent
 
-Every argument has background assumptions it doesn't defend because the author takes them for
-granted. Cowen is good at spotting these — the things that feel like "of course" to the writer
-but are actually specific to a time, place, culture, or institutional arrangement.
+Every argument has undefended background assumptions the author takes for granted. Spot the "of course" things that are actually specific to a time, place, culture, or institutional arrangement.
 
-If the draft assumes universities will behave as they currently do, note that universities
-looked very different 50 years ago and might look different again. If it assumes American
-consumer preferences, ask how the argument plays in Seoul or Lagos. The point isn't cultural
-relativism — it's that contingent assumptions, once identified, often turn out to be the
-weakest link in the chain.
+If the draft assumes universities behave as they currently do, note they looked very different 50 years ago and might again. If it assumes American consumer preferences, ask how the argument plays in Seoul or Lagos. Not cultural relativism — contingent assumptions, once identified, often turn out to be the weakest link.
 
 ### 9. Calibrate your uncertainty honestly
 
-Cowen is comfortable saying "I don't know" and "this is about 60% likely." Most writers — and
-most critics — fake more certainty than they have. When you critique a draft, be explicit about
-your own confidence levels. Say "I'm fairly sure this statistic is wrong" differently from
-"this claim seems too strong but I can't verify it." Rate your critiques by how confident you
-are in them. The reader can then weight them accordingly.
+Cowen says "I don't know" and "this is about 60% likely." Most writers and critics fake more certainty than they have. Be explicit about your confidence. Say "I'm fairly sure this statistic is wrong" differently from "this claim seems too strong but I can't verify it." Rate critiques by confidence so the reader can weight them.
 
-This also means flagging when the draft is *more right than it realizes* about something. Not
-every observation should be a criticism.
+Also flag when the draft is *more right than it realizes*. Not every observation should be a criticism.
 
 ### When the draft is technical
 
-For technical drafts — architecture docs, RFCs, API designs, and similar — prioritize moves
-#4 (push to extreme), #7 (decompose sub-claims), and #8 (contingent assumptions). The weakest
-links tend to hide in scaling behavior, in bundled design decisions that should be evaluated
-separately, and in environmental conditions (load, deployment topology, team structure) the
-draft treats as fixed. Deprioritize #6 (market signals) and the economics-heavy framing
-examples elsewhere in this skill — markets and revealed-preference reasoning rarely speak
-clearly about internal engineering choices, and consumer-behavior analogies tend to mislead
-when applied to system design.
+For technical drafts — architecture docs, RFCs, API designs — prioritize moves #4 (push to extreme), #7 (decompose sub-claims), #8 (contingent assumptions). Weakest links hide in scaling behavior, bundled design decisions that should be evaluated separately, and environmental conditions (load, deployment topology, team structure) the draft treats as fixed. Deprioritize #6 (market signals) and economics-heavy framing — markets and revealed-preference reasoning rarely speak clearly about internal engineering choices, and consumer-behavior analogies mislead when applied to system design.
 
 ## How to Structure the Critique
 
-Output your critique as a Markdown document. Begin with a level-1 title heading containing
-"Cowen Critique" (e.g., `# Cowen Critique: <draft title>`). Then use **level-2 (`##`) headings
-in the output file** for each of the sections below — these section names are checked by
-downstream tooling, so keep them close to the names given here. Not every section will apply
-to every draft; omit a section if you have nothing substantive to say in it, but never rename
-a section you do use.
+Output the critique as a Markdown document. Begin with a level-1 title heading containing "Cowen Critique" (e.g., `# Cowen Critique: <draft title>`). Use **level-2 (`##`) headings in the output file** for each section below — these names are checked by downstream tooling, so keep them close to the names given. Omit a section if you have nothing substantive to say in it, but never rename a section you do use.
 
-The headings below are shown in `###` here only to keep this SKILL.md readable. **In your
-output document, render each one as `## ` (level-2).**
+Headings shown as `###` here only for readability. **In your output document, render each as `## ` (level-2).**
 
 ### The Argument, Decomposed
-Break the draft's thesis into its constituent sub-claims (move #7). State each one clearly.
-This becomes the skeleton the rest of the critique hangs on. Use the phrase "sub-claim"
-explicitly when listing them so downstream tooling can identify the decomposition.
+Break the thesis into constituent sub-claims (move #7). State each clearly. This is the skeleton the rest hangs on. Use the phrase "sub-claim" explicitly when listing them so downstream tooling can identify the decomposition.
 
 ### What Survives the Inversion
-Briefly state what you found when you inverted the thesis (move #2). Which sub-claims held
-up? Which crumbled? This tells the author where their argument is strong and where it's
-actually resting on assumption rather than evidence. Use the word "inversion" in the section
-body.
+State what you found inverting the thesis (move #2). Which sub-claims held? Which crumbled? Shows where the argument is strong and where it rests on assumption rather than evidence. Use the word "inversion" in the section body.
 
 ### Factual Foundation
-If a fact-check report was provided, briefly summarize the key findings that matter for your
-critique — especially claims rated "inaccurate," "disputed," or "unverified." Note how these
-affect the argument's structure. If no fact-check report was provided, note that factual claims
-were not independently verified and identify which claims in the draft would most benefit from
-fact-checking.
+If a fact-check report was provided, summarize the key findings that matter — especially claims rated "inaccurate," "disputed," or "unverified." Note how they affect the argument's structure. If none was provided, note that factual claims were not independently verified and identify which claims would most benefit from fact-checking.
 
 ### The Boring Explanation
-Present the most mundane alternative account (move #1). How much of the draft's observations
-does it explain? What's left over that the draft's thesis genuinely adds? This is the real
-test of whether the draft is saying something interesting. Use the word "boring" in the
-section body.
+Present the most mundane alternative account (move #1). How much does it explain? What's left over that the thesis genuinely adds? The real test of whether the draft says something interesting. Use the word "boring" in the section body.
 
 ### Revealed vs. Stated
-If you found cases where behavior contradicts the draft's claims about preferences or values
-(move #3), lay them out here. These tend to be the most surprising and useful observations.
-Use the word "revealed" explicitly.
+Lay out cases where behavior contradicts the draft's claims about preferences or values (move #3). These tend to be the most surprising and useful. Use the word "revealed" explicitly.
 
 ### The Analogy
-If you found a productive cross-domain parallel (move #5), develop it here. Explain the
-structural similarity and what it illuminates about the draft's topic. Use the word "analogy"
-explicitly so downstream tooling can identify the section.
+Develop any productive cross-domain parallel (move #5). Explain the structural similarity and what it illuminates. Use the word "analogy" explicitly so downstream tooling can identify the section.
 
 ### Contingent Assumptions
-What does the draft take for granted that is actually specific to a time, place, or
-arrangement (move #8)? How would the argument change if those conditions shifted? Use the
-word "contingent" in the section body.
+What does the draft take for granted that is specific to a time, place, or arrangement (move #8)? How would the argument change if those conditions shifted? Use the word "contingent" in the section body.
 
 ### What the Market Says
-If relevant, note what market behavior implies about the draft's thesis (move #6). Use the
-word "market" in the section body.
+If relevant, note what market behavior implies about the thesis (move #6). Use the word "market" in the section body.
 
 ### Overall Assessment
-Which sub-claims are strong, which are weak, and what's the single most important thing the
-author should address? End constructively. The goal is to make the draft better.
+Which sub-claims are strong, which weak, and the single most important thing to address. End constructively. Goal: make the draft better.
 
-Close the section with a one-line **Load-bearing objection:** sentence. Name the single
-objection — drawn from any section above — most likely to change the author's decision if they
-took it seriously, then rank the next two or three beneath it in descending order of decision
-impact. This is a reasoned pick, not a restatement of the first section's heading: weigh each
-objection by how far the thesis would have to move to absorb it, and justify the top choice in
-a clause. A reader facing eight cognitive-move sections should learn from this one line which
-objection to act on first.
+Close with a one-line **Load-bearing objection:** sentence. Name the single objection — from any section above — most likely to change the author's decision if taken seriously, then rank the next two or three beneath it in descending order of decision impact. A reasoned pick, not a restatement of the first heading: weigh each objection by how far the thesis would have to move to absorb it, and justify the top choice in a clause. A reader facing eight sections should learn from this one line which objection to act on first.
 
 ## Output Location
 
-When run standalone (not via the draft-review orchestrator), save your critique as
-`docs/reviews/cowen-critique.md` in the project root. Create `docs/reviews/` if it
-doesn't exist.
+Run standalone (not via draft-review orchestrator): save the critique as `docs/reviews/cowen-critique.md` in the project root. Create `docs/reviews/` if it doesn't exist.
 
-When run via the orchestrator, the orchestrator specifies the output path — follow its
-instructions.
+Run via orchestrator: use the output path it specifies.
 
 ## Tone
 
-Curious, not combative. The spirit is "let's see what's actually going on here" rather than
-"let me show you what's wrong." It's fine to be direct about weaknesses, but the posture is
-one of genuine intellectual interest, not point-scoring. If something in the draft is
-genuinely good or surprising, say so — Cowen does.
+Curious, not combative. "Let's see what's actually going on here," not "let me show you what's wrong." Be direct about weaknesses, but the posture is genuine intellectual interest, not point-scoring. If something is genuinely good or surprising, say so — Cowen does.
 
-Comfort with uncertainty is key. Don't pretend to know things you don't. "I'm not sure, but
-this is worth investigating" is a perfectly good thing to say.
+Comfort with uncertainty is key. Don't pretend to know things you don't. "I'm not sure, but this is worth investigating" is a perfectly good thing to say.

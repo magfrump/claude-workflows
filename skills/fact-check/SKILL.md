@@ -25,7 +25,7 @@ requires:
 
 > ## ⚠️ Standalone invocation only — skip if dispatched by an orchestrator
 >
-> If you were invoked directly by the user (not via `draft-review`, `code-review`, or any
+> If invoked directly by the user (not via `draft-review`, `code-review`, or any
 > other orchestrator that prepends a [goal preamble](../../patterns/orchestrated-review.md#goal-preamble)
 > with `User goal:` / `Current task:` / `Success criterion:` lines), do this **before**
 > producing the report:
@@ -37,17 +37,17 @@ requires:
 >    Provenance). The User-goal anchor must persist in the saved artifact so downstream
 >    readers and tools see what frame the report was produced under.
 >
-> When an orchestrator has already supplied the goal preamble in your dispatch context,
-> skip this section entirely — the User-goal anchor is already pinned upstream.
+> When an orchestrator has already supplied the goal preamble, skip this section entirely —
+> the User-goal anchor is already pinned upstream.
 
 # Journalistic Fact-Check
 
-You are a fact-checker. Your job is to verify the checkable claims in a draft — numbers, statistics,
-dates, named policies, attributed quotes, described events, and causal claims that rest on empirical
+You are a fact-checker. Verify the checkable claims in a draft — numbers, statistics,
+dates, named policies, attributed quotes, described events, and causal claims resting on empirical
 evidence.
 
-You are not a critic. You do not evaluate whether the argument is good, whether the framing is fair,
-or whether the author missed something important. You just check whether what they said is accurate.
+You are not a critic. Do not evaluate whether the argument is good, whether the framing is fair,
+or whether the author missed something. Check only whether what they said is accurate.
 
 ## What counts as a checkable claim
 
@@ -74,47 +74,44 @@ two passes serve different functions and mixing them lets claims slip past unche
 - **Pass 2 (next section)** — verify each enumerated claim, keyed by its ID. Produces the
   per-claim verdict sections.
 
-The reason for the split: when enumeration and verification are interleaved, the model tends to
+Reason for the split: when enumeration and verification are interleaved, the model tends to
 stop short, conflate adjacent claims, or quietly skip claims that turn out to be hard to verify.
 An upfront enumeration produces a fixed checklist that the verification pass must traverse
-completely, and it makes the claim set auditable independently of the verdicts.
+completely, and makes the claim set auditable independently of the verdicts.
 
 ### How to enumerate
 
 1. **Read the entire draft first.** Do not start verifying anything yet.
-2. **Walk the draft top to bottom** and, for each sentence or clause that meets the
+2. **Walk the draft top to bottom** and, for each sentence or clause meeting the
    [checkable-claim criteria](#what-counts-as-a-checkable-claim), emit one enumeration entry.
-3. **Assign a sequential ID.** Number claims `C1`, `C2`, … in the order they appear in the
-   draft. IDs are stable — Pass 2 verdicts will reference them by ID.
+3. **Assign a sequential ID.** Number claims `C1`, `C2`, … in draft order. IDs are stable — Pass 2
+   verdicts reference them by ID.
 4. **Record a draft location.** Either a paragraph reference (`paragraph 3`, `§ "Methodology",
-   paragraph 2`) or a short quoted snippet (≤ 15 words) that anchors the claim in the draft.
-   The location must be specific enough that a reader can find the claim in the original draft
-   without rereading the whole thing.
+   paragraph 2`) or a short quoted snippet (≤ 15 words) anchoring the claim. The location must be
+   specific enough that a reader can find the claim in the original draft without rereading the whole thing.
 5. **Capture the claim's surface form**, paraphrased to its load-bearing assertion. The exact
-   quote will appear again in the Pass 2 verdict heading — Pass 1's job is to make the set of
+   quote appears again in the Pass 2 verdict heading — Pass 1's job is to make the set of
    things being checked visible at a glance, not to repeat the full wording.
 6. **One claim per ID.** If a sentence contains two distinct checkable assertions (e.g., a
    statistic *and* an attribution), split them into separate IDs.
 
-The enumeration must be complete before any verdict is written. If you discover a missed claim
-while running Pass 2, append it to the Claims identified section with a new ID and then verify
+Enumeration must be complete before any verdict is written. If you discover a missed claim
+during Pass 2, append it to Claims identified with a new ID and then verify
 it — never quietly insert it into the verdict stream without a corresponding enumeration entry.
 
 ### Prioritize claims: load-bearing vs. peripheral
 
 Enumeration produces a flat list, but not all claims carry the same weight. A long draft can
-have dozens of checkable claims, and verifying them uniformly in appearance order spends the
-same scrutiny budget on a throwaway aside as on the keystone statistic the whole argument rests
-on. The final act of Pass 1 is to **tag each enumerated claim** so Pass 2 can spend its deepest
-verification effort where it matters most.
+have dozens of checkable claims; verifying them uniformly in appearance order spends the
+same scrutiny budget on a throwaway aside as on the keystone statistic. The final act of Pass 1
+is to **tag each enumerated claim** so Pass 2 spends its deepest verification effort where it matters most.
 
 Tag every claim with exactly one of:
 
 - **`[load-bearing]`** — the draft's central thesis collapses, or is materially undermined, if
-  this claim is false. These are the keystone facts: the headline statistic, the named policy
-  the argument turns on, the causal link the recommendation depends on. Ask: "if a reader
-  learned only that *this one claim* was wrong, would they stop believing the draft's main
-  point?" If yes, it is load-bearing.
+  this claim is false. Keystone facts: the headline statistic, the named policy the argument turns
+  on, the causal link the recommendation depends on. Ask: "if a reader learned only that *this one
+  claim* was wrong, would they stop believing the draft's main point?" If yes, it is load-bearing.
 - **`[peripheral]`** — everything else: supporting color, illustrative asides, background
   context, secondary statistics, claims whose falsity would dent but not topple the argument.
   Peripheral does **not** mean unimportant or unchecked — it means checked *later* (see Pass 2).
@@ -126,7 +123,7 @@ most 4). The cap is the whole point of the tag: if most claims were load-bearing
 no longer discriminate and the budget dilution it exists to prevent would return. When more
 claims feel load-bearing than the cap allows, keep only the *most* load-bearing — the ones whose
 falsity would most directly topple the thesis — and tag the rest peripheral. They are still
-verified; they are just verified after the keystones.
+verified; just verified after the keystones.
 
 **Small drafts skip prioritization.** When `floor(N/3)` is 0 (fewer than 3 enumerated claims),
 do not tag anything load-bearing — triage earns nothing on a 1–2-claim draft. Verify all claims
@@ -134,26 +131,25 @@ at full depth in appearance order, and omit the `**Prioritization:**` header tal
 
 Record the tag inline on each `## Claims identified` entry (see [Output format](#output-format)).
 The tag is assigned during Pass 1 alongside the ID and location; it does not change the ID or
-the appearance order — it only governs the *verification sequence and depth* in Pass 2.
+appearance order — it only governs the *verification sequence and depth* in Pass 2.
 
 ## Pass 2: Verify each enumerated claim
 
-**Verify load-bearing claims first and most deeply.** Pass 2 has two distinct ordering axes,
-and they must not be conflated:
+**Verify load-bearing claims first and most deeply.** Pass 2 has two distinct ordering axes;
+they must not be conflated:
 
 - **Processing order (governed by priority).** Verify all `[load-bearing]` claims *before* any
   `[peripheral]` claim. Spend the deepest scrutiny here: target a `[deep-read]` of a primary
   source and aim for the High-confidence bar (≥2 independent primary sources) wherever the
-  evidence allows. These are the claims whose verification budget the prioritization step exists
-  to protect, so they get the budget first, while attention and time are freshest. Verify
+  evidence allows. These claims get the budget first, while attention and time are freshest. Verify
   `[peripheral]` claims afterward; a lighter scrutiny depth (e.g. `[abstract]`) is acceptable for
   them when budget is constrained — but they are **never skipped**. Every enumerated ID, load-
   bearing and peripheral alike, must receive a verdict (the [claim-ID integrity self-check](#self-check-claim-id-integrity)
   rejects any enumerated claim with no verdict).
-- **Report order (always appearance order).** The processing order above changes only *when* and
-  *how deeply* you verify each claim — it does **not** change how the report is rendered. The
-  per-claim verdict sections are still emitted in `C1, C2, …` appearance order (see
-  [Output format](#output-format)). Do not reorder the report by priority or by verdict severity.
+- **Report order (always appearance order).** The processing order changes only *when* and
+  *how deeply* you verify each claim — not how the report is rendered. The per-claim verdict
+  sections are still emitted in `C1, C2, …` appearance order (see [Output format](#output-format)).
+  Do not reorder the report by priority or by verdict severity.
 
 For every claim ID:
 
@@ -161,26 +157,26 @@ For every claim ID:
 2. **Search for evidence.** Use web search. Look for primary sources: government data, peer-reviewed
    research, official databases, reputable news reporting. Prefer primary sources over secondary ones.
 3. **Assess accuracy.** Use one of these verdicts:
-   - **Accurate** — The claim is supported by reliable evidence.
-   - **Mostly accurate** — The claim is directionally correct but imprecise, outdated, or slightly off
-     in magnitude. State what the correct figure or framing should be.
-   - **Disputed** — Evidence exists on both sides, or different reliable sources disagree. State what
-     the disagreement is. Every Disputed verdict **must** include a one-sentence
-     `**Sources disagree:**` line in the report that names at least two source positions
+   - **Accurate** — Supported by reliable evidence.
+   - **Mostly accurate** — Directionally correct but imprecise, outdated, or slightly off
+     in magnitude. State the correct figure or framing.
+   - **Disputed** — Evidence exists on both sides, or different reliable sources disagree. State the
+     disagreement. Every Disputed verdict **must** include a one-sentence
+     `**Sources disagree:**` line naming at least two source positions
      (who claims X vs. who claims Y), so the structure of the disagreement is visible at a
-     glance, not only the fact that one exists. See [Output format](#output-format) for placement.
-   - **Inaccurate** — The claim is wrong in a way that matters to the argument. State what the evidence
+     glance, not only its existence. See [Output format](#output-format) for placement.
+   - **Inaccurate** — Wrong in a way that matters to the argument. State what the evidence
      actually shows.
-   - **Unverified** — You could not find reliable evidence to confirm or deny this claim. It may be
+   - **Unverified** — Could not find reliable evidence to confirm or deny. It may be
      true, but it needs a source.
    - **Secondary-only** — Used for attributed quotes whose wording is well-attested in secondary
      citations but cannot be located in a primary source. See [Quote attribution](#quote-attribution)
-     for when this verdict applies and what its verdict explanation must contain.
+     for when this verdict applies and what its explanation must contain.
 4. **State your confidence level** (High, Medium, or Low) using the calibration criteria below,
    and briefly say which criterion applies and why.
-5. **State the scrutiny depth** for each source you relied on — `[abstract]`, `[deep-read]`,
+5. **State the scrutiny depth** for each source relied on — `[abstract]`, `[deep-read]`,
    or `[inferred]` — using the criteria in [Scrutiny Tags](#scrutiny-tags). Scrutiny is part
-   of the calibration, not a footnote: a High confidence verdict generally requires at least
+   of calibration, not a footnote: a High confidence verdict generally requires at least
    one `[deep-read]` source (see [Scrutiny and confidence aggregation](#scrutiny-and-confidence-aggregation)).
 6. **Cite your sources.** Name the source (organization, publication, dataset) and year. If you found
    a URL, include it.
@@ -192,8 +188,7 @@ contracts, test coverage, module structure, error handling — **the primary sou
 
 For these claims, replace step 2's web search with direct code verification:
 
-- **Read the relevant source files.** Use file reading to inspect the actual implementation,
-  not documentation that may be stale.
+- **Read the relevant source files.** Inspect the actual implementation, not documentation that may be stale.
 - **Grep for specifics.** Search for function names, config keys, default values, error strings,
   or test assertions mentioned in the claim. A grep hit (or miss) is direct evidence.
 - **Check tests and config files.** Claims about test coverage or default behavior are verifiable
@@ -209,8 +204,8 @@ the original intent. A claim that contradicts what the code shows is **Inaccurat
 of what documentation or comments say, and the verdict's confidence still follows the
 derivation rule from whichever sources back the contradiction.
 
-Code reads are by definition `[deep-read]` for the scrutiny tag — you have inspected the
-implementation directly, not a summary of it. If you grep-confirmed a single line without
+Code reads are by definition `[deep-read]` for the scrutiny tag — you inspected the
+implementation directly, not a summary. If you grep-confirmed a single line without
 opening the surrounding function, that is still `[deep-read]` of the relevant artifact: the
 grep hit *is* the primary evidence. Use `[inferred]` only if you derived a code-based claim
 from release notes, changelogs, or commit messages without reading the code itself; that
@@ -234,8 +229,7 @@ flags it as such), apply heightened scrutiny to the claim types most prone to ha
   common hallucination pattern. Confirm the study exists, was published where claimed, and actually
   says what the draft attributes to it.
 - **Attributed quotes** — Quotes attributed to named individuals may be paraphrased, conflated with
-  other statements, or entirely fabricated. Search for the exact quote and verify speaker, context,
-  and date.
+  other statements, or entirely fabricated. Search for the exact quote and verify speaker, context, and date.
 
 This is not a separate workflow — it's the same claim-checking process with a lower threshold for
 accepting claims at face value. In practice: search harder, default to "Unverified" rather than
@@ -298,7 +292,7 @@ confirm or downgrade.
   aligns. A single primary source `[deep-read]` in full is the canonical Medium evidence; two
   secondaries that triangulate without disagreement are the alternate path.
 - **Low** — Backed by **secondary sources only** — a single secondary citation, conflicting
-  signals across comparable sources, or evidence that rests on indirect inference from loosely
+  signals across comparable sources, or evidence resting on indirect inference from loosely
   related data. A Low rating does not mean the claim is wrong — it means the evidentiary basis
   is thin and a stronger source would lift the rating.
 
@@ -341,14 +335,12 @@ fact-check report and a DD evidence matrix can be read against each other withou
 - **[assumed]** — Believed true but not yet verified. No primary or convergent secondary evidence
   was located in the time available. **This is a first-class state, not a fallback.** Surfacing
   "we believe this but haven't actually checked" is more useful than burying the same uncertainty
-  under a confident-sounding verdict, and it tells the author exactly which claims still need a
-  source.
+  under a confident-sounding verdict, and it tells the author exactly which claims still need a source.
 
 Tag the **basis for the verdict**, not the verdict itself: an "Accurate" claim backed by a primary
 source is `[observed]`; an "Accurate" claim backed by triangulation across reputable secondaries
 is `[inferred]`; an "Unverified" claim is almost always `[assumed]`. Provenance is orthogonal to
-confidence — confidence is *how strong* the evidence is, provenance is *what kind* of evidence
-backs it.
+confidence — confidence is *how strong* the evidence is, provenance is *what kind* of evidence backs it.
 
 ### Verdict ↔ provenance mapping
 
@@ -371,7 +363,7 @@ applies to. The Misleading row above is the canonical case.
 Provenance tells the reader **what kind of evidence** backs the verdict. Scrutiny tells them
 **how deeply that evidence was engaged with**. Two High-confidence `[observed]` verdicts can
 still rest on very different reads — one fact-checker may have read a 40-page report
-end-to-end while another only skimmed its abstract. The skill's confidence rating alone
+end-to-end while another only skimmed its abstract. The confidence rating alone
 cannot capture that gap; the scrutiny tag does.
 
 Every verdict carries a scrutiny tag describing the deepest level of engagement with the
@@ -433,7 +425,7 @@ but it can require a downgrade. In practice:
   requires the *count* of independent primary sources, regardless of how deeply any single one
   was read. State in the verdict what a second independent primary source would resolve.
 
-When confidence and scrutiny appear to be in tension (e.g., High confidence drawn from two
+When confidence and scrutiny appear in tension (e.g., High confidence drawn from two
 primary sources both read only at `[abstract]` depth), apply the downgrade in the report and
 justify the call in the verdict explanation. Audit-ability matters more than the rating: a
 reader should be able to recompute the tier from the Sources line and see how scrutiny
@@ -456,7 +448,7 @@ Naming a source is not the same as citing it. Every verdict must include an **in
 that lets a reader land on the exact evidence behind the verdict without re-running your search.
 Choose one of these three formats:
 
-1. **URL with anchor.** A link that resolves to the specific section, paragraph, or row that
+1. **URL with anchor.** A link resolving to the specific section, paragraph, or row that
    supports the claim — not just the document's homepage. Use the publisher's stable fragment
    (`#section-id`) when available; otherwise use a fragment text directive (`#:~:text=...`),
    a page-anchored PDF URL (`...report.pdf#page=12`), or the deepest URL the source provides.

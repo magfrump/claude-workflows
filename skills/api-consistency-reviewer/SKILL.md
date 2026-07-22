@@ -38,18 +38,16 @@ requires:
 
 # API Consistency Code Review
 
-You are reviewing code changes for API design consistency. The point is not to evaluate
-whether the API is the best possible design — it's to check whether the changed API is
-consistent with the patterns already established in the codebase and whether it honors the
-contracts that existing consumers depend on.
+Reviewing code changes for API design consistency. Don't evaluate whether the API is the best
+possible design — check whether the changed API is consistent with patterns already established
+in the codebase and whether it honors the contracts existing consumers depend on.
 
-Inconsistency in APIs creates cognitive load for consumers, causes integration bugs, and
-makes the codebase harder to learn. These problems are invisible to linters and type
-checkers — they require understanding the codebase's conventions and applying them to new
-code.
+API inconsistency creates consumer cognitive load, causes integration bugs, and makes the
+codebase harder to learn. Linters and type checkers can't see these problems — they require
+understanding the codebase's conventions and applying them to new code.
 
-What follows is a set of cognitive moves for API consistency analysis. Not all will apply
-to every diff — exercise judgment based on what the code does.
+Below: cognitive moves for API consistency analysis. Not all apply to every diff — judge by
+what the code does.
 
 ## Scoping
 
@@ -59,15 +57,15 @@ By default, review files changed on the current branch relative to main:
 git diff main...HEAD
 ```
 
-If the user provides an explicit scope, use that instead. For each changed file, also read
-enough of the surrounding codebase to understand existing conventions — the diff alone
-cannot tell you whether a naming choice is consistent or not. Read sibling endpoints,
-adjacent modules, and existing tests to establish the baseline.
+If the user provides explicit scope, use that instead. For each changed file, read enough
+surrounding codebase to understand existing conventions — the diff alone cannot tell you
+whether a naming choice is consistent. Read sibling endpoints, adjacent modules, and existing
+tests to establish the baseline.
 
 ## Using the Code Fact-Check Report
 
-If you have been provided a code-fact-check report, treat it as your foundation for
-understanding what the code actually does.
+If provided a code-fact-check report, treat it as your foundation for understanding what the
+code actually does.
 
 Instead of re-verifying behavior:
 - **Reference the fact-check findings** where relevant. If API documentation claims a
@@ -89,9 +87,8 @@ Then proceed with consistency analysis based on reading the actual code.
 
 ### 1. Establish the baseline conventions
 
-Before evaluating the diff, survey the existing codebase to understand its API patterns.
-Read 3-5 sibling endpoints, modules, or interfaces that are analogous to the changed code.
-Note:
+Before evaluating the diff, survey the existing codebase for its API patterns. Read 3-5
+sibling endpoints, modules, or interfaces analogous to the changed code. Note:
 - Naming conventions (camelCase vs snake_case, verb-noun patterns, pluralization)
 - Parameter ordering conventions (required before optional, resource ID first)
 - Response/return value structure (envelope pattern, flat, paginated)
@@ -181,12 +178,12 @@ in your critique:
    row pairs one new name with its closest existing neighbors, the precedent path, and a
    one-line verdict.
 
-The audit goes in its own section of the output (see "How to Structure the Critique"
-below) and is expected for any diff that introduces new public names. If the diff
-genuinely introduces no new public names (e.g., an internals-only refactor that still
-touches a file under review), state that explicitly under the Name-Pattern Audit heading
-rather than skipping the section. Inconsistencies surfaced here become Findings under
-the rules in move #2; consistent names get a brief acknowledgment under "What Looks Good".
+The audit goes in its own output section (see "How to Structure the Critique" below) and is
+expected for any diff introducing new public names. If the diff genuinely introduces no new
+public names (e.g., an internals-only refactor that still touches a file under review), state
+that explicitly under the Name-Pattern Audit heading rather than skipping the section.
+Inconsistencies surfaced here become Findings under the rules in move #2; consistent names get
+a brief acknowledgment under "What Looks Good".
 
 **Example output block:**
 
@@ -210,8 +207,8 @@ first (routes > exported types > exported functions > internal helpers).
 ### 3. Trace the consumer contract
 
 For every change to a public interface, ask: who calls this? What do they expect? Trace
-consumers — both internal callers (grep the codebase) and external consumers (API docs,
-SDKs, tests that mock this interface).
+consumers — internal callers (grep the codebase) and external consumers (API docs, SDKs, tests
+that mock this interface).
 
 Check for:
 - **Breaking changes**: Required parameters added to existing functions, fields removed from
@@ -227,8 +224,7 @@ will my code still work?"
 
 ### 4. Verify error consistency
 
-How the changed code handles and reports errors should match how the rest of the codebase
-does it. Check:
+The changed code's error handling and reporting should match the rest of the codebase. Check:
 - Do error responses use the same structure? (If existing errors return
   `{ "error": { "code": "...", "message": "..." } }`, does the new code match?)
 - Are HTTP status codes used consistently? (404 for not found, 422 for validation, etc.)
@@ -237,7 +233,7 @@ does it. Check:
 - Are error messages helpful and consistent in tone?
 - Do equivalent error conditions produce the same error type/code across endpoints?
 
-Inconsistent error handling is one of the most common API usability problems because each
+Inconsistent error handling is one of the most common API usability problems, because each
 endpoint is often written by a different developer at a different time.
 
 ### 5. Check the pagination and filtering pattern
@@ -276,21 +272,21 @@ APIs should be symmetric where symmetry is expected. Common asymmetries that ind
 - Query parameter names don't match response field names
 - Request uses camelCase but response uses snake_case
 
-For every field the diff adds or modifies, check that the same field is handled consistently
+For every field the diff adds or modifies, check the same field is handled consistently
 across all operations that touch it (CRUD, list, search).
 
 ### 8. Verify the nullability contract
 
-One of the most persistent sources of consumer bugs is unclear nullability. For every field
+Unclear nullability is one of the most persistent sources of consumer bugs. For every field
 in the diff:
 - Can it be null/undefined/absent? Under what conditions?
 - Is this consistent with how similar fields behave in existing endpoints?
 - Does the documentation (if any) match the actual nullability?
 - Are new nullable fields in responses safe for existing consumers who may not check for null?
 
-Special attention to: fields that are present in some responses but absent in others (e.g.,
-`expanded` fields that only appear with certain query parameters). These are fine if
-documented but dangerous if implicit.
+Special attention: fields present in some responses but absent in others (e.g., `expanded`
+fields that only appear with certain query parameters). Fine if documented, dangerous if
+implicit.
 
 ### 9. Check the idempotency and safety semantics
 
@@ -302,7 +298,7 @@ endpoint):
 - Is there a mechanism for consumers to detect duplicate processing (idempotency keys,
   conditional requests)?
 
-If the codebase has existing patterns for idempotency, check that the new code follows them.
+If the codebase has existing patterns for idempotency, check the new code follows them.
 
 ## How to Structure the Critique
 
@@ -310,8 +306,8 @@ Output your critique as a Markdown document.
 
 ### Title and Header
 
-Open with a top-level title that includes "API Consistency Review" so the report is
-discoverable. Follow with these header fields so readers know what was reviewed and when:
+Open with a top-level title including "API Consistency Review" so the report is discoverable.
+Follow with these header fields so readers know what was reviewed and when:
 
 ```markdown
 # API Consistency Review — [short scope label, e.g., PR #347 or branch name]
@@ -320,8 +316,8 @@ discoverable. Follow with these header fields so readers know what was reviewed 
 **Date:** [YYYY-MM-DD]
 ```
 
-If you've been given a fact-check report or other upstream artifact, add a `**Based on:**`
-line naming it. Keep the header to 3–5 lines; the substance belongs in the sections below.
+If given a fact-check report or other upstream artifact, add a `**Based on:**` line naming it.
+Keep the header to 3–5 lines; the substance belongs in the sections below.
 
 ### Baseline Conventions
 Summarize the API conventions you observed in the existing codebase (move #1). This makes

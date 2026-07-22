@@ -34,37 +34,35 @@ requires:
 
 > ## ⚠️ Standalone invocation only — skip if dispatched by an orchestrator
 >
-> If you were invoked directly by the user (not via `code-review` or another orchestrator
-> that prepends a [goal preamble](../../patterns/orchestrated-review.md#goal-preamble) with
+> If invoked directly by the user (not via `code-review` or another orchestrator
+> prepending a [goal preamble](../../patterns/orchestrated-review.md#goal-preamble) with
 > `User goal:` / `Current task:` / `Success criterion:` lines), do this **before**
 > producing the critique:
 >
 > 1. **Capture the user's goal in 1-2 sentences.** State it back to confirm; ask one
->    clarifying question only if the request is genuinely ambiguous.
+>    clarifying question only if genuinely ambiguous.
 > 2. **Record it verbatim at the top of the report** as a `**User goal:**` line, alongside
 >    the `Scope:` / `Date:` metadata at the top of the saved artifact (below the title,
 >    above the Dependency Map section). The User-goal anchor must persist in the saved
 >    file so downstream readers and tools see what frame the review was produced under.
 >
-> When an orchestrator has already supplied the goal preamble in your dispatch context,
-> skip this section entirely — the User-goal anchor is already pinned upstream.
+> When an orchestrator has already supplied the goal preamble, skip this section entirely —
+> the User-goal anchor is already pinned upstream.
 
 # Architecture Review
 
-You are reviewing code changes for structural integrity. The point is not to evaluate whether
-the code is correct, secure, or performant — those are handled by other critics. Your job is
-to apply architectural reasoning to find dependency direction violations, coupling problems,
-module boundary breaches, and structural decisions that will make the system harder to change
-over time.
+Review code changes for structural integrity. Do not evaluate correctness, security, or
+performance — other critics handle those. Apply architectural reasoning to find dependency
+direction violations, coupling problems, module boundary breaches, and structural decisions
+that make the system harder to change over time.
 
-Good architecture makes future changes cheaper. Bad architecture makes them expensive even when
-every line of code is individually correct. A codebase where every function is well-tested and
-secure can still be a nightmare to extend if modules are tightly coupled, dependencies flow in
-the wrong direction, and abstractions leak implementation details.
+Good architecture makes future changes cheaper; bad architecture makes them expensive even
+when every line is correct. A well-tested, secure codebase can still be a nightmare to extend
+if modules are tightly coupled, dependencies flow the wrong direction, and abstractions leak
+implementation details.
 
-What follows is a set of cognitive moves for architectural analysis. Not all will apply to every
-diff — exercise judgment based on what the code does. These are reasoning lenses, not a
-compliance checklist.
+What follows is a set of cognitive moves for architectural analysis. Not all apply to every
+diff — exercise judgment. These are reasoning lenses, not a compliance checklist.
 
 ## Scoping
 
@@ -74,51 +72,50 @@ By default, review files changed on the current branch relative to main:
 git diff main...HEAD
 ```
 
-If the user provides an explicit scope (file list, directory, or PR number), use that instead.
-For each changed file, also read enough surrounding context to understand the module structure,
+If the user provides explicit scope (file list, directory, or PR number), use that instead.
+For each changed file, read enough surrounding context to understand module structure,
 dependency graph, and architectural layers — a diff alone rarely reveals structural problems.
-Read import statements, module boundaries, and the directory structure around changed files.
+Read import statements, module boundaries, and directory structure around changed files.
 
 ## Scope Check (run before producing a critique)
 
 Architecture review is a structural lens, not a general code review. Before applying the
-cognitive moves, confirm the diff actually changes structure. If none of the four trigger
-categories below apply, **skip the review** and emit a short skip note instead (see "Skip path"
-below).
+cognitive moves, confirm the diff changes structure. If none of the four trigger categories
+apply, **skip the review** and emit a short skip note instead (see "Skip path").
 
 ### Trigger categories
 
 Invoke this skill only when the diff changes at least one of:
 
-1. **Module structure** — new modules or packages added; existing modules moved, renamed, split,
-   or merged; directory/package layout reorganized; new top-level subsystems introduced.
-2. **Public APIs** — new exported types, functions, classes, or constants; changes to the
+1. **Module structure** — new modules or packages; existing modules moved, renamed, split,
+   or merged; directory/package layout reorganized; new top-level subsystems.
+2. **Public APIs** — new exported types, functions, classes, or constants; changed
    signatures, contracts, or visibility of existing exports; new or modified abstract classes,
-   interfaces, traits, protocols, or other extension points; changes that widen or narrow a
+   interfaces, traits, protocols, or extension points; changes widening or narrowing a
    module's public surface.
 3. **Data models** — schema changes (database tables, migrations, ORM models); new or modified
    DTOs, request/response shapes, message/event formats, or other persisted/serialized contracts
-   that downstream consumers depend on; changes to identifier semantics, field nullability, or
+   downstream consumers depend on; changes to identifier semantics, field nullability, or
    cardinality.
 4. **Cross-cutting concerns** — dependency injection wiring or composition roots; middleware
    chains; authentication/authorization pipelines; logging, tracing, or telemetry plumbing;
    caching layers; error-handling and retry pipelines; framework lifecycle hooks; configuration
-   loading. These are concerns that span multiple modules and whose changes propagate widely.
+   loading. Concerns spanning multiple modules whose changes propagate widely.
 
 If at least one category applies, proceed with the review.
 
 ### Skip path
 
 If the diff only modifies implementation **inside an existing module** without touching any of
-the four trigger categories, skip the review. Examples of work that should be skipped:
+the four trigger categories, skip the review. Skip examples:
 
-- Internal refactors that preserve the public surface (renaming a private helper, extracting a
+- Internal refactors preserving the public surface (renaming a private helper, extracting a
   local function, inlining a private method).
-- Bug fixes that change behavior but not structure or contracts.
+- Bug fixes changing behavior but not structure or contracts.
 - Performance tweaks confined to an algorithm body.
-- Test additions, test fixture changes, or test refactors that don't change production code.
+- Test additions, fixture changes, or test refactors not changing production code.
 - Documentation, comment, or formatting changes.
-- Dependency-version bumps without accompanying code changes (these may warrant
+- Dependency-version bumps without accompanying code changes (may warrant
   `security-reviewer`, not architecture review).
 - Localization, copy, or static-asset changes.
 
@@ -146,25 +143,25 @@ Save the skip note to the same path the full critique would have used.
 
 ### Edge cases
 
-- **Mixed diffs** — if some files are in scope and others are not, review only the in-scope
-  files and note the scoped exclusions in the skip note section of the report.
+- **Mixed diffs** — if some files are in scope and others not, review only in-scope files and
+  note scoped exclusions in the skip note section of the report.
 - **Ambiguous changes** — when uncertain whether a change touches a public API (e.g., a
-  package-private symbol that's used across submodules), treat it as in-scope and proceed.
+  package-private symbol used across submodules), treat it as in-scope and proceed.
 - **New module that is internal-only** — still in scope under "module structure," even if no
-  public API is exposed yet; the structural decision is what's being reviewed.
+  public API is exposed yet; the structural decision is what's reviewed.
 
 ## Using the Code Fact-Check Report
 
-If you have been provided a code-fact-check report alongside the diff, treat it as your
-foundation for understanding what the code actually does.
+If provided a code-fact-check report alongside the diff, treat it as your foundation for
+understanding what the code actually does.
 
 Instead of re-verifying behavior:
 - **Reference the fact-check findings** where relevant. If a comment claims "this module has no
   external dependencies" and the fact-check says that's stale, that's an architecture-relevant
-  finding you should build on.
+  finding to build on.
 - **Focus on structural implications** of fact-check findings. A "mostly accurate" claim about
   module boundaries might indicate architectural drift.
-- **Prioritize your cognitive moves**, which are what this skill uniquely provides.
+- **Prioritize your cognitive moves** — what this skill uniquely provides.
 
 If no fact-check report is provided, **emit the following warning at the top of your output:**
 
@@ -179,29 +176,27 @@ Then proceed with architecture analysis based on reading the actual code.
 When both architecture-review and security-reviewer run on the same diff, the security
 review's Trust Boundary Map is authoritative for *where trust transitions happen*.
 Architecture-review's module-boundary analysis (cognitive move #3) must be consistent
-with that map: module boundaries that coincide with trust boundaries inherit security
+with that map: module boundaries coinciding with trust boundaries inherit security
 significance, and any structural recommendation that moves, dissolves, or relocates a
 trust-boundary crossing carries security implications that must be surfaced rather than
 silently made.
 
 This is a **read-only** integration. Architecture-review consumes the security findings;
-it does not modify, supplement, or revise them. Trust boundaries themselves remain
-security-reviewer's domain — architecture-review does not produce its own trust-boundary
-findings.
+it does not modify, supplement, or revise them. Trust boundaries remain security-reviewer's
+domain — architecture-review does not produce its own trust-boundary findings.
 
 ### Activation condition
 
-The cross-reference activates only when **both** of the following are true:
+The cross-reference activates only when **both** are true:
 
 1. A security-reviewer output file exists at `docs/reviews/security-review-*.md`
    (the path convention used by `security-reviewer`).
 2. Architecture-review is about to produce module-boundary findings under cognitive
    move #3.
 
-When either is missing — security-reviewer was not run, its output is not at the
-expected path, or the current architecture-review will not produce module-boundary
-findings — **this section is a no-op** and architecture-review proceeds with its
-default behavior.
+When either is missing — security-reviewer not run, output not at the expected path, or the
+current architecture-review will not produce module-boundary findings — **this section is a
+no-op** and architecture-review proceeds with default behavior.
 
 ### Scan step (run before producing module-boundary findings)
 
@@ -211,7 +206,7 @@ Before applying cognitive move #3, scan for a security-reviewer output file:
 ls docs/reviews/security-review-*.md 2>/dev/null
 ```
 
-If one or more matching files exist, read the most recent one and locate its **Trust
+If one or more matching files exist, read the most recent and locate its **Trust
 Boundary Map** section. Extract the boundary labels (`B1`, `B2`, …), their `[source]
 → [transition point] → [destination]` lines, and any `(new)`, `(moved)`, or
 `(removed)` deltas. If no file matches, skip the rest of this section and proceed
@@ -237,7 +232,7 @@ When the map exists, apply these constraints to module-boundary findings:
   and the consequence. This is not a security finding (security-reviewer owns
   those) — it is a notice that the structural change has security-relevant
   consequences the human reviewer must weigh.
-- **Module-boundary findings that do not touch any labeled trust boundary** are
+- **Module-boundary findings not touching any labeled trust boundary** are
   unaffected by this section. Proceed normally.
 
 ### What this section is not
@@ -263,13 +258,13 @@ should not depend on low-level modules — both should depend on abstractions.
 For each changed file, trace its imports and determine:
 - What does this module depend on? Are those dependencies more stable or more volatile?
 - What depends on this module? Will the change force those dependents to change too?
-- Does the change introduce a dependency that flows in the wrong direction — from stable core
+- Does the change introduce a dependency flowing the wrong direction — from stable core
   toward volatile periphery, or from domain logic toward infrastructure?
 
-The most damaging architectural changes are ones that reverse dependency direction — making
-the core depend on details rather than the other way around. A new import in a domain module
-that pulls in a database driver, HTTP client, or UI framework is a red flag regardless of
-how cleanly the code is written.
+The most damaging architectural changes reverse dependency direction — making the core depend
+on details rather than the reverse. A new import in a domain module pulling in a database
+driver, HTTP client, or UI framework is a red flag regardless of how cleanly the code is
+written.
 
 ### 2. Assess responsibility boundaries
 
@@ -282,9 +277,9 @@ Specific checks:
   (e.g., adding caching logic to a business rules module, adding logging configuration to a
   domain entity)
 - Does the change mix infrastructure concerns with domain logic? (e.g., SQL queries in a module
-  that defines business rules, HTTP response formatting in a service layer)
-- Does the change make a module depend on information it shouldn't need to know about? (e.g., a
-  payment processor that now needs to understand user preferences)
+  defining business rules, HTTP response formatting in a service layer)
+- Does the change make a module depend on information it shouldn't need? (e.g., a payment
+  processor that now needs to understand user preferences)
 
 A module accumulating responsibilities is often the first sign of architectural erosion — each
 addition seems small, but the compound effect is a module that changes for many unrelated
@@ -298,18 +293,17 @@ security-reviewer output exists, module-boundary findings that coincide with a l
 trust boundary must reference its label and flag any structural recommendation that
 would relocate the crossing.
 
-Every module has a public surface — the set of types, functions, and constants it exposes to
-the rest of the system. Changes to this surface ripple outward. For each module touched by the
-diff:
+Every module has a public surface — the types, functions, and constants it exposes to the rest
+of the system. Changes to this surface ripple outward. For each module touched by the diff:
 
 - Is the public surface intentional and minimal? Or does the change expose internal details
-  that consumers shouldn't depend on?
+  consumers shouldn't depend on?
 - Does the change widen the module's interface in a way that increases coupling? (e.g., exposing
   a concrete implementation type instead of an interface)
-- Are there things being exported that should be private? Are there internal types leaking into
-  public signatures?
+- Are things being exported that should be private? Are internal types leaking into public
+  signatures?
 - Does the change maintain encapsulation? Can consumers still treat this module as a black box,
-  or do they now need to understand its internals?
+  or must they now understand its internals?
 
 The test: if you replaced this module's implementation entirely (same interface, different
 internals), would the change in the diff make that replacement harder?
@@ -320,7 +314,7 @@ Most systems have implicit or explicit architectural layers (e.g., presentation 
 domain → infrastructure). Each layer should only depend on adjacent layers or on layers below
 it.
 
-For each changed file, identify which layer it belongs to, then check:
+For each changed file, identify its layer, then check:
 - Does the change reach across layers? (e.g., a controller directly querying the database,
   a domain entity formatting an HTTP response, a UI component making raw SQL calls)
 - Does the change bypass an intermediary layer? (e.g., presentation accessing domain logic
@@ -328,7 +322,7 @@ For each changed file, identify which layer it belongs to, then check:
 - Does the change push behavior into the wrong layer? (e.g., business rules in a controller,
   validation in the database layer, presentation logic in a domain model)
 
-If the codebase doesn't have explicit layers, identify the implicit layering from the directory
+If the codebase lacks explicit layers, identify the implicit layering from the directory
 structure and module organization. Note whether the change respects or violates that implicit
 structure.
 
@@ -341,7 +335,7 @@ interfaces), check whether they are role-specific and minimal:
   `Repository` interface with both read and write methods when some consumers only read)
 - Does the change add methods to an existing interface that only some implementors will use?
   This forces all implementors to change even if the new method is irrelevant to them.
-- Would the interface be better split into smaller, role-specific interfaces that consumers can
+- Would the interface be better split into smaller, role-specific interfaces consumers can
   compose?
 
 The signal: if an implementor of this interface has methods that throw `NotImplemented` or
@@ -354,9 +348,9 @@ interface), check whether the subtype can stand in for the base without surprise
 Substitution):
 
 - Does the subtype strengthen preconditions? (e.g., base accepts any string, subtype requires
-  non-empty — callers that pass empty strings will break)
+  non-empty — callers passing empty strings will break)
 - Does the subtype weaken postconditions? (e.g., base guarantees sorted output, subtype doesn't
-  — callers that depend on ordering will break)
+  — callers depending on ordering will break)
 - Does the subtype throw exceptions the base doesn't declare?
 - Does the subtype have side effects the base's contract doesn't mention?
 
@@ -370,16 +364,16 @@ For each cross-module dependency in the diff, assess how tight the coupling is:
 - **Data coupling** (good): modules share only simple data through well-defined interfaces
 - **Stamp coupling** (acceptable): modules share composite data structures
 - **Control coupling** (concerning): one module controls the behavior of another via flags or
-  parameters that dictate internal logic
+  parameters dictating internal logic
 - **Content coupling** (bad): one module reaches into another's internals (accessing private
   state, depending on internal data structures, using reflection to bypass encapsulation)
 
 For new dependencies, ask: if the depended-upon module changes its internals (not its interface),
 will this module break? If yes, the coupling is too tight.
 
-Also check for circular dependencies — modules that depend on each other directly or through a
-chain. Circular dependencies are architectural debt that makes both modules impossible to
-change, test, or deploy independently.
+Also check for circular dependencies — modules depending on each other directly or through a
+chain. Circular dependencies are architectural debt making both modules impossible to change,
+test, or deploy independently.
 
 ### 8. Evaluate extension points
 
@@ -390,8 +384,8 @@ When a diff adds new behavior or handles new cases, check whether it extends or 
 - Does the change modify existing code to handle a new case (adding branches to switch
   statements, if/else chains, special-case checks)? This violates OCP and suggests the code
   isn't structured for extension.
-- If modification was necessary, is there a reasonable way the code could be restructured to
-  support extension instead? Or is the modification pragmatically appropriate?
+- If modification was necessary, is there a reasonable way to restructure for extension instead?
+  Or is the modification pragmatically appropriate?
 
 Not every OCP violation is worth fixing — be pragmatic. A two-case if/else doesn't need a
 strategy pattern. But a switch statement that grows with every new feature type is a structural
@@ -403,8 +397,8 @@ Output your critique as a Markdown document.
 
 ### Title and Header
 
-Open with a top-level title that includes "Architecture Review" so the report is
-discoverable. Follow with these header fields so readers know what was reviewed and when:
+Open with a top-level title including "Architecture Review" so the report is discoverable.
+Follow with these header fields so readers know what was reviewed and when:
 
 ```markdown
 # Architecture Review — [short scope label, e.g., PR #347 or branch name]
@@ -413,10 +407,10 @@ discoverable. Follow with these header fields so readers know what was reviewed 
 **Date:** [YYYY-MM-DD]
 ```
 
-If you've been given a fact-check report or other upstream artifact, add a `**Based on:**`
-line naming it. If running standalone, the `**User goal:**` line described in the
-standalone-invocation section above goes here, beneath the header. Keep the header to 3–5
-lines; the substance belongs in the sections below.
+If given a fact-check report or other upstream artifact, add a `**Based on:**` line naming it.
+If running standalone, the `**User goal:**` line described in the standalone-invocation section
+goes here, beneath the header. Keep the header to 3–5 lines; substance belongs in the sections
+below.
 
 ### Dependency Map
 Briefly describe the dependency relationships in the changed code (move #1). Which modules
@@ -449,8 +443,8 @@ Severity guidelines:
   violated in a way that increases change propagation, interface too broad. These increase the
   cost of future changes in adjacent modules.
 - **Minor**: SRP stretch (responsibility slightly expanded but not fundamentally misplaced),
-  interface could be narrower, extension point missed where modification was used. These are
-  real but low-impact.
+  interface could be narrower, extension point missed where modification was used. Real but
+  low-impact.
 - **Informational**: Pattern observations, opportunities for structural improvement, conventions
   worth establishing. No immediate harm.
 
@@ -459,7 +453,7 @@ Order findings by severity (structural first), then by confidence.
 ### What Looks Good
 Note architectural decisions in the diff that are well-done — clean module boundaries,
 correct dependency direction, proper use of abstractions, good separation of concerns. This
-confirms which structural choices should be preserved during revisions.
+confirms which structural choices to preserve during revisions.
 
 ### Summary Table
 
