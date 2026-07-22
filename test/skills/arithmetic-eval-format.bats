@@ -80,10 +80,16 @@ setup() {
   echo "$SKILL_CONTENT" | grep -qF '[arithmetic-eval]'
 }
 
-@test "skill prescribes a regex allowlist for bare arithmetic" {
-  # The allowlist should appear as a runtime grep check on the expression.
-  echo "$SKILL_CONTENT" | grep -qE 'grep -qP'
-  echo "$SKILL_CONTENT" | grep -qiE '(allowlist|regex|validate)'
+@test "skill prescribes an AST allowlist evaluator for bare arithmetic" {
+  # Mode 1 evaluates through a Python AST walk (no eval), not a regex or shell eval.
+  echo "$SKILL_CONTENT" | grep -qE 'import ast'
+  echo "$SKILL_CONTENT" | grep -qE 'ast\.parse'
+  echo "$SKILL_CONTENT" | grep -qiE '(allowlist|AST)'
+}
+
+@test "bare arithmetic is fed as inert heredoc stdin, not interpolated" {
+  # Security-critical: the expression must never be pasted into shell/python source.
+  echo "$SKILL_CONTENT" | grep -qE "<<'EXPREOF'"
 }
 
 # --- Security ---
@@ -105,22 +111,30 @@ setup() {
   echo "$SKILL_CONTENT" | grep -qiE '^#{2,4} .*Blocked'
 }
 
-@test "blocked-constructs list rejects code-execution sinks" {
-  # These are the things a malicious-or-misled script could use to escape sandbox.
-  echo "$SKILL_CONTENT" | grep -qF 'exec('
-  echo "$SKILL_CONTENT" | grep -qF 'eval('
+@test "static gate rejects code-execution sinks" {
+  # The AST gate (check.py) bans these names/attrs so a misled script can't exec.
+  echo "$SKILL_CONTENT" | grep -qE '"exec"'
+  echo "$SKILL_CONTENT" | grep -qE '"eval"'
   echo "$SKILL_CONTENT" | grep -qE 'subprocess'
-  echo "$SKILL_CONTENT" | grep -qE 'os\.system'
+  echo "$SKILL_CONTENT" | grep -qE 'system'
   echo "$SKILL_CONTENT" | grep -qE '__import__'
 }
 
-@test "blocked-constructs list rejects network access" {
-  echo "$SKILL_CONTENT" | grep -qE '\b(socket|http|urllib|requests)\b'
+@test "network egress is neutered at runtime" {
+  # confine.py disables the socket layer on the non-bwrap tiers.
+  echo "$SKILL_CONTENT" | grep -qE '\bsocket\b'
+  echo "$SKILL_CONTENT" | grep -qiE 'network (disabled|egress)'
 }
 
-@test "blocked-constructs list restricts file write modes" {
-  # Read-mode open() is intentionally allowed; write/append/exclusive must be blocked.
-  echo "$SKILL_CONTENT" | grep -qE "open\(.*'w'|write/append"
+@test "filesystem writes are contained (runtime) and read-only open is the gate rule" {
+  # Read-mode open() is allowed; the runtime layer blocks writes outside scratch.
+  echo "$SKILL_CONTENT" | grep -qiE 'write.*(block|outside scratch)'
+  echo "$SKILL_CONTENT" | grep -qE 'literal read mode'
+}
+
+@test "Mode 2 runs the gated script under an OS sandbox" {
+  echo "$SKILL_CONTENT" | grep -qE '\bbwrap\b'
+  echo "$SKILL_CONTENT" | grep -qE 'check\.py'
 }
 
 # --- Rules ---
@@ -136,16 +150,15 @@ setup() {
 # --- Examples ---
 
 @test "skill has at least one Mode 1 worked example" {
-  # An example should show both the bash invocation and the [arithmetic-eval] output line.
   echo "$SKILL_CONTENT" | grep -qiE '^#{2,4} .*Example'
-  # And contain a runnable EXPR= line tied to python3
-  echo "$SKILL_CONTENT" | grep -qE "EXPR='"
+  # Mode 1 is a python3 -c evaluator fed by a heredoc.
+  echo "$SKILL_CONTENT" | grep -qE 'python3 -c'
 }
 
 @test "skill has at least one Mode 2 worked example" {
-  # Scientific example should appear: heredoc to /tmp/arithmetic_eval.py
-  echo "$SKILL_CONTENT" | grep -qE 'cat > /tmp/arithmetic_eval\.py'
-  echo "$SKILL_CONTENT" | grep -qE 'python3 /tmp/arithmetic_eval\.py'
+  # Scientific example uses a throwaway mktemp dir + gated script.py (not a fixed /tmp path).
+  echo "$SKILL_CONTENT" | grep -qE 'mktemp -d'
+  echo "$SKILL_CONTENT" | grep -qE '\$AE/script\.py'
 }
 
 # --- No leakage of report-style scaffolding ---
