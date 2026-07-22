@@ -19,9 +19,14 @@
 #                          with prior rounds that triggers early stop
 #                          (default: 80)
 #
-# Configuration (hardcoded near top of main block):
+# Configuration (near top of main block; each is overridable via env var):
 #   MAX_ROUNDS=3           Maximum number of improvement rounds
-#   WORKTREE_BASE=~/wt     Prefix for git worktree directories
+#   REPO_DIR               Repo to operate on. Defaults to the repo containing
+#                          this script (scripts/ sits at the repo root), so the
+#                          loop follows the checkout wherever it lives.
+#   WORKTREE_BASE          Prefix for git worktree directories. Defaults to
+#                          <repo>/.claude/wt-* — inside the sandbox
+#                          write-allowlist and gitignored (see .gitignore).
 #
 # Prerequisites:
 #   - jq
@@ -212,8 +217,17 @@ if [ -n "$SEED_FILE" ] && [ ! -f "$SEED_FILE" ]; then
 fi
 
 # Configuration
-REPO_DIR=~/claude-workflows
-WORKTREE_BASE=~/wt
+# REPO_DIR: derive from the script's own location (scripts/ lives at the repo
+# root) rather than hardcoding a home path. The 2026-07 sandbox move relocated
+# the checkout from ~/claude-workflows to the project workspace, and writes
+# outside the project + scratchpad are denied — a hardcoded ~ path breaks both
+# the `cd` below and every worktree create. Overridable for tests/cron.
+REPO_DIR="${REPO_DIR:-$(cd "$SCRIPT_DIR/.." && pwd)}"
+# WORKTREE_BASE: per-task worktrees must land inside the sandbox write-allowlist
+# (project + scratchpad); the old ~/wt sits outside it. The repo's .gitignore
+# reserves .claude/ as the managed worktree area (Claude Code's own worktrees
+# live in .claude/worktrees/), so worktrees here stay out of `git status`.
+WORKTREE_BASE="${WORKTREE_BASE:-$REPO_DIR/.claude/wt}"
 MAX_ROUNDS=3
 WORKING_DIR="$REPO_DIR/docs/working"
 ROUND_HISTORY="$WORKING_DIR/round-history.json"
@@ -226,6 +240,15 @@ HISTORY_FILE="$REPO_DIR/docs/working/problem-history.json"
 
 mkdir -p "$WORKING_DIR"
 touch "$WORKING_DIR/completed-tasks.md"
+
+# The sandbox write-allowlist covers the project and scratchpad, not bare /tmp.
+# mktemp honours $TMPDIR but falls back to /tmp when it is unset, which may be
+# unwritable under the hardened sandbox. Point $TMPDIR at a gitignored,
+# project-local dir so every mktemp in this run lands somewhere writable.
+if [ -z "${TMPDIR:-}" ]; then
+    export TMPDIR="$REPO_DIR/.claude/tmp"
+    mkdir -p "$TMPDIR"
+fi
 
 # Initialize round-history.json if it doesn't exist
 if [ ! -f "$ROUND_HISTORY" ]; then
@@ -289,7 +312,9 @@ fi
 # happened on 2026-05-19 when all 14 tasks were rejected for an unrelated
 # bug-diagnosis.md regression. Approved tasks only merge when green, so the
 # baseline captured here stays valid across mid-run merges.
-REPO_ROOT="$(cd "$SCRIPT_DIR/.." && pwd)"
+# REPO_ROOT is the same checkout as REPO_DIR (both derive from the script's
+# location); alias it so the test-baseline path can't drift from WORKING_DIR.
+REPO_ROOT="$REPO_DIR"
 TEST_BASELINE_FILE="$WORKING_DIR/test-baseline.txt"
 : > "$TEST_BASELINE_FILE"
 if [ -d "$REPO_ROOT/test" ] && command -v bats &>/dev/null; then
@@ -454,7 +479,7 @@ ${SEED_CONTENT}
     fi
 
     echo "Generating ideas (round $ROUND)..."
-    claude -p "Follow the divergent-design workflow in ~/.claude/workflows/divergent-design.md.
+    claude -p "Follow the divergent-design workflow in workflows/divergent-design.md.
 
 Generate feature improvement ideas for the workflows in this repo.
 Review docs/working/completed-tasks.md for what has already been done.
@@ -896,11 +921,11 @@ Address this specifically in your implementation to avoid the same failure.
         echo "  Started: $TASK_ID"
         (
             cd "$WT_DIR"
-            claude -p "You are in /away mode. Commit and push when done.
+            claude -p "You are in /away mode. Commit locally when done.
 
-User goal: Improve the claude-workflows repo through this round of automated self-improvement by implementing the selected tasks as standalone branches that pass validation gates.
+User goal: Improve the claude-workflows repo through this round of automated self-improvement by implementing the selected tasks as standalone branches that pass validation gates. The loop validates and merges each branch locally; do NOT push to any remote.
 Current task: $DESC
-Success criterion: branch pushed with descriptive commits
+Success criterion: local branch with descriptive commits (no push)
 ${PRIOR_FAILURE_BLOCK}
 FILE SCOPE CONSTRAINT — READ THIS BEFORE STARTING:
 You may ONLY create or modify the following files: $FILES_TOUCHED
@@ -909,11 +934,12 @@ You MUST NOT create or modify any other files. If during implementation you
 discover a need to touch an unlisted file, STOP and document the reason in
 docs/working/scope-exception-${TASK_ID}.md instead of making the change.
 
-Follow the research-plan-implement workflow in ~/.claude/workflows/.
+Follow the research-plan-implement workflow in workflows/research-plan-implement.md.
 Proceed through research and plan without waiting for human review.
-Implement the plan, commit with descriptive messages, and push. The subject
-line of your final commit is used as the round summary, so make it
-descriptive (one clear sentence; conventional-commit prefix preferred)."
+Implement the plan and commit with descriptive messages. Do not push — the
+loop merges your branch into local main after validation. The subject line of
+your final commit is used as the round summary, so make it descriptive (one
+clear sentence; conventional-commit prefix preferred)."
         ) &
         PIDS+=($!)
     done
