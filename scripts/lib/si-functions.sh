@@ -537,3 +537,34 @@ tap_new_failures() {
         printf '%s\n' "$current"
     fi
 }
+
+# --- Code-review gate helpers (design-level review parity) ---
+# The loop's mechanical gates (diff-size, file-scope, shellcheck, tests) check
+# surface mechanics but never run the repo's own multi-critic `code-review`
+# skill — the review the rest of the process treats as required (see
+# workflows/pr-prep.md step 3, "required, not optional"). The code_review gate
+# in self-improvement.sh runs that skill headless and asks it to emit a sentinel
+# line; these helpers turn the sentinel's red/Must-Fix count into a verdict,
+# mirroring how the self-eval gate consumes its SELF_EVAL_RESULT line.
+
+# parse_code_review_red — read code-review output on stdin, print the integer
+# from the LAST "CODE_REVIEW_RED: <n>" sentinel line. Prints nothing when no
+# parseable sentinel is present, which the caller treats as "unparseable" and
+# skips (never auto-rejects) — same policy as the self-eval gate.
+parse_code_review_red() {
+    grep -oE 'CODE_REVIEW_RED:[[:space:]]*[0-9]+' \
+        | grep -oE '[0-9]+$' \
+        | tail -1
+}
+
+# code_review_gate_verdict — decide the gate from the red-finding count. A task
+# passes only when it introduces zero red (Must-Fix) findings — the same exit
+# condition pr-prep's review-fix loop uses ("no Must Fix items remain"); amber
+# and green are advisory and do not block. Fails closed on a non-integer input
+# (garbage red count) rather than waving the task through.
+# Args: $1 = red count. Returns 0 (pass) when exactly 0, 1 (fail) otherwise.
+code_review_gate_verdict() {
+    local red=${1:-}
+    [[ "$red" =~ ^[0-9]+$ ]] || return 1
+    [ "$red" -eq 0 ]
+}

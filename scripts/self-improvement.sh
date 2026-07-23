@@ -1224,6 +1224,45 @@ Count only the automated assessment scores (Testability investment, Trigger clar
             fi
         fi
 
+        # --- Gate 1h: Multi-critic code review (design-level parity) ---
+        # The gates above check surface mechanics (size, scope, shellcheck,
+        # bats). This gate runs the repo's OWN `code-review` skill on the branch
+        # diff so every task — not just skills/workflows .md edits — is held to
+        # the multi-critic bar pr-prep step 3 calls "required, not optional".
+        # It gates only on red / Must-Fix findings, matching the review-fix
+        # loop's exit condition; amber/green are advisory. The per-task agent
+        # already self-reviews (its RPI→review-fix prompt), so this is the
+        # independent reviewer pass — the author/reviewer split pr-prep models.
+        # Parsing follows the self-eval precedent: the skill is asked to emit a
+        # CODE_REVIEW_RED sentinel; unparseable output skips (never auto-rejects).
+        if [ -z "$REJECT_REASON" ]; then
+            if command -v claude >/dev/null 2>&1; then
+                echo "    Running code-review on: $BRANCH"
+                CR_OUTPUT=$(cd "$WT_DIR" && claude -p "Run the code-review skill defined in skills/code-review/SKILL.md against this branch's diff versus main (git diff main...HEAD). Run non-interactively: do NOT pause at the fact-check gate — auto-select the applicable critics and proceed through all three stages to the rubric. Write the rubric to docs/reviews/ as usual.
+
+After the rubric, output exactly one final line in this format, and nothing after it:
+CODE_REVIEW_RED: <number of red / Must-Fix rubric rows>
+
+Count only rubric rows with red / 🔴 / Must-Fix status. Do not count amber or green rows." 2>&1) || true
+                CR_RED=$(printf '%s\n' "$CR_OUTPUT" | parse_code_review_red)
+                if [ -z "$CR_RED" ]; then
+                    echo "    Warning: code-review produced no parseable result for $BRANCH"
+                    echo "[$TASK_ID] WARNING: code-review unparseable for $BRANCH" >> "$WORKING_DIR/validation-round-$ROUND.log"
+                    record_gate "$TASK_ID" "code_review" "skip"
+                elif code_review_gate_verdict "$CR_RED"; then
+                    echo "    code-review OK: $BRANCH ($CR_RED red findings)"
+                    record_gate "$TASK_ID" "code_review" "pass"
+                    record_gate_detail "$TASK_ID" "code_review" "$(jq -n --argjson red "$CR_RED" '{red_findings: $red}')"
+                else
+                    REJECT_REASON="code-review: $CR_RED red (Must-Fix) finding(s)"
+                    record_gate "$TASK_ID" "code_review" "fail"
+                    record_gate_detail "$TASK_ID" "code_review" "$(jq -n --argjson red "$CR_RED" '{red_findings: $red}')"
+                fi
+            else
+                record_gate "$TASK_ID" "code_review" "skip"
+            fi
+        fi
+
         # --- Verdict ---
         if [ -n "$REJECT_REASON" ]; then
             echo "    REJECTED: $REJECT_REASON"

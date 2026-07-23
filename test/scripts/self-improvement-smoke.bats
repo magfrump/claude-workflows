@@ -133,6 +133,7 @@ teardown() {
     record_gate "$tid" "tests"    "pass"
     record_gate "$tid" "shellcheck" "pass"
     record_gate "$tid" "self_eval" "skip"
+    record_gate "$tid" "code_review" "pass"
   done
 
   # Approve first task, reject second (to test both paths)
