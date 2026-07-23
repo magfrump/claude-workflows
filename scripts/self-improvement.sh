@@ -952,10 +952,30 @@ Proceed through research and plan without waiting for human review.
 Per RPI step 2, before planning, grep docs/thoughts/failure-patterns.md for
 prior root-caused bugs in your area (symptom keywords, touched-file names); a
 hit is a strong prior on what can go wrong — test the recorded fix shape first.
-Implement the plan and commit with descriptive messages. Do not push — the
-loop merges your branch into local main after validation. The subject line of
-your final commit is used as the round summary, so make it descriptive (one
-clear sentence; conventional-commit prefix preferred).
+
+Implement the plan, then — before your final commit — run this repo's own
+pre-ship sequence, the same one pr-prep.md prescribes:
+  1. Verify (pr-prep step 3): exercise the changed behavior end-to-end and
+     confirm it does what the task intends (the /verify skill covers this).
+     Analytical review is not a substitute for observing the change run. Fix
+     any failure before step 2.
+  2. Review-fix loop (workflows/review-fix-loop.md): run the code-review skill
+     (skills/code-review/SKILL.md) on your diff, fix Must-Fix findings, re-test,
+     re-review. HARD-CAPPED at 3 iterations — do not begin a 4th; if Must-Fix
+     findings remain after 3, stop and record them in your retro (below) rather
+     than churning. The loop that validates you re-runs code-review as a merge
+     gate and rejects red findings, so clearing them here is what gets you merged.
+  3. Retro (pr-prep step 7): write a few sentences to
+     docs/thoughts/retro-r${ROUND}-${TASK_ID}.md — plan vs. reality, any workflow
+     steps you skipped and why, and surprises. These compound across rounds.
+  4. If your change fixes a root-caused bug, add a one-line 'Failure pattern:'
+     note (symptom / cause / fix) to that retro doc; the loop harvests these into
+     docs/thoughts/failure-patterns.md after merge. Do NOT edit that file yourself.
+
+Commit with descriptive messages. Do not push — the loop merges your branch into
+local main after validation. The subject line of your final commit is used as the
+round summary, so make it descriptive (one clear sentence; conventional-commit
+prefix preferred).
 
 You are acting in /away mode, so every commit body MUST follow this repo's
 Autonomous Commit Format (see CLAUDE.md): include a 'Confidence: high|medium|low'
@@ -1412,6 +1432,50 @@ Then git add the resolved files and git commit to complete the merge."
 
     # Print human-readable round summary after merges
     print_round_summary "$ROUND" "$WORKING_DIR/validation-round-$ROUND.log"
+
+    # -------------------------------------------------------
+    # Step 5b: Harvest failure patterns from merged fix tasks
+    # -------------------------------------------------------
+    # pr-prep.md appends an FP-NNN entry to docs/thoughts/failure-patterns.md
+    # whenever a fix(...) commit ships, and RPI step 2 greps that file. The
+    # per-task agents record a one-line 'Failure pattern:' in their retro docs
+    # but do NOT touch the append-only library — parallel worktrees would
+    # conflict on it. Harvest sequentially here (one claude call, after all
+    # merges) so the library actually accrues cross-round debugging memory
+    # instead of it living only in per-round JSON reports.
+    FP_LIB="$REPO_DIR/docs/thoughts/failure-patterns.md"
+    FIX_RETROS=""
+    for TASK_ID in $APPROVED_TASKS; do
+        TIP_SHA="${BRANCH_TIP_SHAS[$TASK_ID]:-}"
+        [ -n "$TIP_SHA" ] || continue
+        SUBJ=$(git log -1 --format=%s "$TIP_SHA" 2>/dev/null || echo "")
+        case "$SUBJ" in
+            fix:*|fix\(*) ;;    # only fix commits contribute failure patterns
+            *) continue ;;
+        esac
+        RETRO="$REPO_DIR/docs/thoughts/retro-r${ROUND}-${TASK_ID}.md"
+        [ -f "$RETRO" ] && FIX_RETROS="${FIX_RETROS} ${RETRO}"
+    done
+    if [ -f "$FP_LIB" ] && [ -n "$FIX_RETROS" ] && command -v claude >/dev/null 2>&1; then
+        echo "Harvesting failure patterns from fix tasks..."
+        NEXT_FP=$(grep -oE 'FP-[0-9]+' "$FP_LIB" | sed 's/FP-//' | sort -n | tail -1)
+        NEXT_FP=$((10#${NEXT_FP:-0} + 1))
+        claude -p "Append failure-pattern entries to docs/thoughts/failure-patterns.md.
+
+Read the schema at the top of that file, then read each retro doc listed below.
+For any retro whose 'Failure pattern:' note describes a genuine reusable
+root-caused bug, append ONE schema-conformant entry per pattern to the end of
+the list. Start numbering at FP-$(printf '%03d' "$NEXT_FP") and increment.
+Use hyphenated single-token field values; set ref: to the fix commit or retro
+path. Do not modify existing entries. If none describe a reusable pattern, make
+no change.
+
+Retro docs:${FIX_RETROS}" 2>/dev/null || true
+        if ! git diff --quiet -- "$FP_LIB" 2>/dev/null; then
+            git add "$FP_LIB"
+            git commit -m "docs(failure-patterns): harvest FP entries from round ${ROUND} fix tasks" 2>/dev/null || true
+        fi
+    fi
 
     # Append approved-task hypotheses to the log. Outcome columns stay empty;
     # the morning summary surfaces matured rows as deferred questions for the
