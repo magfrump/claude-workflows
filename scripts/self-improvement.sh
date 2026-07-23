@@ -937,17 +937,29 @@ Success criterion: local branch with descriptive commits (no push)
 ${PRIOR_FAILURE_BLOCK}
 FILE SCOPE CONSTRAINT — READ THIS BEFORE STARTING:
 You may ONLY create or modify the following files: $FILES_TOUCHED
-Files under docs/working/ are also allowed (e.g., research docs, plan docs).
+Files under docs/working/, docs/decisions/, docs/reviews/, and docs/thoughts/
+are also allowed — these are the process/learning artifacts this repo's own dev
+process expects you to produce (research/plan docs, decision records, review
+reports, retros). Do NOT edit docs/thoughts/failure-patterns.md directly; the
+loop appends failure-pattern entries after merge to avoid parallel-branch
+conflicts on that append-only file.
 You MUST NOT create or modify any other files. If during implementation you
 discover a need to touch an unlisted file, STOP and document the reason in
 docs/working/scope-exception-${TASK_ID}.md instead of making the change.
 
 Follow the research-plan-implement workflow in workflows/research-plan-implement.md.
 Proceed through research and plan without waiting for human review.
+Per RPI step 2, before planning, grep docs/thoughts/failure-patterns.md for
+prior root-caused bugs in your area (symptom keywords, touched-file names); a
+hit is a strong prior on what can go wrong — test the recorded fix shape first.
 Implement the plan and commit with descriptive messages. Do not push — the
 loop merges your branch into local main after validation. The subject line of
 your final commit is used as the round summary, so make it descriptive (one
-clear sentence; conventional-commit prefix preferred)."
+clear sentence; conventional-commit prefix preferred).
+
+You are acting in /away mode, so every commit body MUST follow this repo's
+Autonomous Commit Format (see CLAUDE.md): include a 'Confidence: high|medium|low'
+line and a 'Notes:' line recording any judgement calls made without human input."
         ) &
         PIDS+=($!)
     done
@@ -1018,7 +1030,12 @@ clear sentence; conventional-commit prefix preferred)."
             SCOPE_VIOLATIONS=""
             for FILE in $CHANGED_FILES; do
                 case "$FILE" in
-                    docs/working/*) continue ;;  # always allowed
+                    # Process/learning artifacts the repo's own dev process expects
+                    # tasks to produce are always in-scope, so a task never has to
+                    # trip a scope exception just to record a decision, a review, or
+                    # a retro/failure-pattern. Mirrors the FILE SCOPE CONSTRAINT in
+                    # the implement prompt below.
+                    docs/working/*|docs/decisions/*|docs/reviews/*|docs/thoughts/*) continue ;;
                 esac
                 if ! echo "$DECLARED_FILES" | grep -qF "$FILE"; then
                     SCOPE_VIOLATIONS="${SCOPE_VIOLATIONS}  ${FILE}\n"
