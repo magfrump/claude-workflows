@@ -1,6 +1,6 @@
 # cc-isolated — usage guide
 
-Last verified: 2026-07-14
+Last verified: 2026-07-22
 Relevant paths: `devcontainer-config/cc-isolated.sh`, `devcontainer-config/egress/`, `devcontainer-config/Dockerfile`, `test/cc-isolated-functions.bats`
 
 `cc-isolated` launches an isolated Claude Code session inside a devcontainer for
@@ -142,6 +142,40 @@ Two failure modes worth recognizing on sight:
   `devcontainer.json`, re-install, re-bless), not a wider allowlist. The SDK
   download itself happens at **build** time (before the firewall exists), so it
   needs no egress profile.
+
+## Rust inside the container
+
+The image bakes a **pinned stable Rust toolchain** (rustup + `rustc`/`cargo`, with
+`clippy` and `rustfmt`) under a root-owned `/opt/rustup` + `/opt/cargo`, on `PATH`.
+After registering `--profile rust`:
+
+```bash
+cc-isolated --register ~/code/crate --profile rust   # opens crates.io / index / static
+cc-isolated ~/code/crate
+# inside the container:
+cargo build            # registry cache lands in /home/node/.cargo (node-writable)
+cargo test
+```
+
+The toolchain binaries are root-owned (like uv and the Android SDK) — `node` compiles
+against them but cannot rewrite the compiler it runs. `CARGO_HOME` is repointed to a
+node-writable `/home/node/.cargo` so the crate registry cache, config, and `cargo
+install` output have somewhere to go; that only affects where cargo *writes*, not
+which toolchain it runs.
+
+Two failure modes worth recognizing on sight:
+
+- **`Network is unreachable` / `error: failed to get … crates.io`** means the project
+  was never registered with `--profile rust`. Crate resolution is a runtime step and
+  needs the profile; registration is host-side by design (an agent cannot grant itself
+  crates.io).
+- **`rustup update` / `rustup toolchain install …` fails** (can't write the root-owned
+  `RUSTUP_HOME`). The toolchain is pinned and baked at **build** time from
+  `static.rust-lang.org` — a host deliberately absent from `rust.txt`, since a pinned
+  toolchain never self-updates. A different Rust version is a central-image rebuild
+  (bump `RUST_VERSION` in `devcontainer.json`, re-install, re-bless), mirroring uv's
+  `UV_PYTHON_DOWNLOADS=never` and the Android SDK's root-owned dir — not a wider
+  allowlist.
 
 ## The boundary self-probe
 

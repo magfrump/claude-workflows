@@ -167,6 +167,76 @@ RUN mkdir -p "$ANDROID_HOME/cmdline-tools" && \
   chown -R root:root "$ANDROID_HOME"
 ENV PATH=$PATH:/opt/android-sdk/cmdline-tools/latest/bin:/opt/android-sdk/platform-tools
 
+# Rust toolchain — rustup + a pinned stable, root-owned (decision log #21).
+#
+# Third instance of the uv/Android pattern (#18, #19): decision 016 shipped a `rust`
+# egress profile (crates.io, index.crates.io, static.crates.io) and suggest_profiles
+# detects Cargo.toml, but the image had no cargo/rustc — a Rust project could reach
+# crates.io and still not compile, the same "reach the registry, can't use it" gap
+# that motivated uv. The toolchain goes in the shared base; the egress profile gates
+# only network.
+#
+# WHY RUSTUP (not `apt-get install rustc cargo`): bookworm ships Rust ~1.63, which
+# modern crates reject. rustup installs a pinned current stable and is the upstream-
+# blessed installer — mirroring #18's choice of the uv binary over apt's stale Python.
+#
+# ROOT-OWNED, IMMUTABLE TOOLCHAIN: rustup-init runs at build time (before
+# init-firewall.sh exists, so no egress profile is needed) with RUSTUP_HOME/CARGO_HOME
+# under /opt, then both are chowned root. `node` runs cargo/rustc but cannot rewrite
+# the compiler it runs — the same stance as uv's root-owned /usr/local/bin and the
+# root-owned Android SDK. static.rust-lang.org is therefore a BUILD-TIME-ONLY host and
+# is deliberately absent from egress/rust.txt; a pinned toolchain never self-updates,
+# so a `rustup update` fails loudly against the root-owned RUSTUP_HOME rather than
+# fetching — a different toolchain is a central-image rebuild, exactly like uv's
+# UV_PYTHON_DOWNLOADS=never and the Android SDK's root-owned dir.
+#
+# WRITABLE-CACHE SPLIT: cargo must write a registry cache at runtime, but the toolchain
+# must stay immutable. So the binaries and rustup proxies stay root-owned under
+# /opt/{rustup,cargo} (on PATH), while the FINAL CARGO_HOME points at a node-writable
+# /home/node/.cargo for the registry cache, config, and `cargo install` output. cargo
+# is resolved via PATH (the immutable proxies); CARGO_HOME only steers where cargo
+# WRITES, so repointing it does not weaken toolchain immutability.
+#
+# rustup-init is fetched at a pinned version and verified against the .sha256 published
+# alongside it (via sha256sum -c), matching uv's verify-before-use (#18). This is
+# transit-integrity only: the checksum comes from the SAME origin as the binary, so a
+# compromised/MITM'd static.rust-lang.org could serve a matching pair. The stronger
+# stance is the Android layer's (#19): pin the per-arch hash as a build ARG so a bump
+# is diff-visible and a hostile origin is caught. That is the recommended hardening
+# here too, deferred only because the authoring environment cannot reach the host to
+# obtain the two arch hashes; a host-side bump of RUSTUP_VERSION should pin them. The
+# blast radius is bounded: this runs at BUILD time into a root-owned dir, so a bad
+# rustup-init cannot widen egress or escape the per-project boundary — it could only
+# ship a bad compiler in the shared base, which the pin would close. The toolchain
+# rustup then installs is hash-checked by rustup against the channel manifest fetched
+# over TLS (not GPG-signed) — same origin, same caveat.
+ARG RUSTUP_VERSION=1.27.1
+ARG RUST_VERSION=1.83.0
+ENV RUSTUP_HOME=/opt/rustup \
+    CARGO_HOME=/opt/cargo \
+    PATH=/opt/cargo/bin:$PATH
+RUN case "$(dpkg --print-architecture)" in \
+      amd64) RUST_TARGET=x86_64-unknown-linux-gnu ;; \
+      arm64) RUST_TARGET=aarch64-unknown-linux-gnu ;; \
+      *) echo "rust: unsupported architecture $(dpkg --print-architecture)" >&2; exit 1 ;; \
+    esac && \
+    cd /tmp && \
+    RUSTUP_URL="https://static.rust-lang.org/rustup/archive/${RUSTUP_VERSION}/${RUST_TARGET}/rustup-init" && \
+    wget -q "$RUSTUP_URL" -O rustup-init && \
+    wget -q "${RUSTUP_URL}.sha256" -O rustup-init.sha256 && \
+    printf '%s  rustup-init\n' "$(cut -d' ' -f1 rustup-init.sha256)" | sha256sum -c - && \
+    chmod +x rustup-init && \
+    ./rustup-init -y --no-modify-path --profile minimal \
+      --default-toolchain "${RUST_VERSION}" \
+      --component clippy --component rustfmt && \
+    rm -f rustup-init rustup-init.sha256 && \
+    chown -R root:root /opt/rustup /opt/cargo && \
+    /opt/cargo/bin/rustc --version && /opt/cargo/bin/cargo --version
+# Runtime CARGO_HOME is node-writable (registry cache) while the toolchain under /opt
+# stays root-owned; PATH already resolves cargo/rustc to the immutable proxies.
+ENV CARGO_HOME=/home/node/.cargo
+RUN mkdir -p /home/node/.cargo && chown node:node /home/node/.cargo
+
 # Set up non-root user
 USER node
 

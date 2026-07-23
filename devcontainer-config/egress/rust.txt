@@ -1,4 +1,10 @@
 # rust — cargo registry + crate downloads.
+#
+# The toolchain itself (rustc/cargo, pinned) is baked into the image at BUILD time
+# from static.rust-lang.org, before init-firewall.sh exists — so that host is
+# deliberately NOT listed here. A pinned toolchain never self-updates at runtime;
+# `rustup update` fails loudly against the root-owned RUSTUP_HOME rather than reaching
+# out. Runtime egress is only the crate registry. See Dockerfile / decision log #21.
 crates.io
 index.crates.io
 static.crates.io

@@ -219,6 +219,14 @@ make_repo() {
   [ -z "$(project_profile "$TEST_TMPDIR/proj")" ]
 }
 
+@test "suggest_profiles proposes rust for a cargo repo but never applies it" {
+  make_repo "$TEST_TMPDIR/proj"
+  touch "$TEST_TMPDIR/proj/Cargo.toml"
+  [ "$(suggest_profiles "$TEST_TMPDIR/proj")" = "rust" ]
+  # Suggestion only — the repo's own manifest must not grant it egress.
+  [ -z "$(project_profile "$TEST_TMPDIR/proj")" ]
+}
+
 @test "suggest_profiles proposes android for a gradle repo (Kotlin DSL)" {
   make_repo "$TEST_TMPDIR/proj"
   touch "$TEST_TMPDIR/proj/build.gradle.kts"
