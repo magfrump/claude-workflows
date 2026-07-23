@@ -223,6 +223,12 @@ fi
 # outside the project + scratchpad are denied — a hardcoded ~ path breaks both
 # the `cd` below and every worktree create. Overridable for tests/cron.
 REPO_DIR="${REPO_DIR:-$(cd "$SCRIPT_DIR/.." && pwd)}"
+# Canonicalize to an absolute path. The default already is (cd/pwd), but an env
+# override may be relative — and WORKTREE_BASE, the EXIT-trap's `git -C`, and
+# the `cd "$REPO_DIR"` below all build on it, so a relative value would resolve
+# against the wrong base once we cd into it. A non-existent override fails the
+# cd loudly here rather than misbehaving later.
+REPO_DIR="$(cd "$REPO_DIR" && pwd)"
 # WORKTREE_BASE: per-task worktrees must land inside the sandbox write-allowlist
 # (project + scratchpad); the old ~/wt sits outside it. The repo's .gitignore
 # reserves .claude/ as the managed worktree area (Claude Code's own worktrees
@@ -243,9 +249,11 @@ touch "$WORKING_DIR/completed-tasks.md"
 
 # The sandbox write-allowlist covers the project and scratchpad, not bare /tmp.
 # mktemp honours $TMPDIR but falls back to /tmp when it is unset, which may be
-# unwritable under the hardened sandbox. Point $TMPDIR at a gitignored,
-# project-local dir so every mktemp in this run lands somewhere writable.
-if [ -z "${TMPDIR:-}" ]; then
+# unwritable under the hardened sandbox. Fire the fallback when $TMPDIR is unset
+# OR points at a non-writable dir (a parent may export TMPDIR=/tmp, which the
+# sandbox denies); otherwise the first mktemp aborts the whole run under set -e.
+# Point it at a gitignored, project-local dir so every mktemp lands writable.
+if [ -z "${TMPDIR:-}" ] || [ ! -w "${TMPDIR}" ]; then
     export TMPDIR="$REPO_DIR/.claude/tmp"
     mkdir -p "$TMPDIR"
 fi
