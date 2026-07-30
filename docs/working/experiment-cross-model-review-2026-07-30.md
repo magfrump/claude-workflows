@@ -13,7 +13,10 @@ against themselves). It could not answer whether the findings our pipeline produ
 This run asks the sharper version: **do other families find real issues that our own
 review process missed in practice — issues that survived into merged code?**
 
-Answer: **yes, three of them are live on `main` today.** Details in Results 1–3.
+Answer: **yes, four of them are live on `main` today.** Details in Results 1–3b. The run
+also produced two instructive false positives (Results 3c and 5), both severe, both from
+the diff-only arm — reported here because the cost side is what determines whether this
+belongs in the pipeline.
 
 ## Setup
 
@@ -132,6 +135,56 @@ The `[ -f "$FP_LIB" ]` guard anticipates the file being *absent* but not *empty*
 header-only is the natural initial state of such a file. Currently latent (the file has 2
 entries). Real defect, low severity, correctly rated Low by Kimi.
 
+## Result 3b — LIVE: `np.load` positional `allow_pickle` fails open while the keyword form fails closed
+
+D3 (`31e2d3a`). Found by **three families across seven replicates** — Kimi K3 3/3, Sol 3/3
+(High), Gemini (High) — and by no Sonnet replicate. Not in round 7's answer key.
+
+The gate has two branches for the same sink, with opposite failure modes:
+
+```python
+# positional — fails OPEN on anything non-literal
+if isinstance(f, ast.Attribute) and f.attr == "load" and len(node.args) >= 3 \
+   and isinstance(node.args[2], ast.Constant) and bool(node.args[2].value):
+    fail("load() with truthy 3rd positional (numpy allow_pickle RCE)", node)
+...
+# keyword — fails CLOSED on anything not literal False
+if kw.arg == "allow_pickle":
+    safe = isinstance(kw.value, ast.Constant) and kw.value.value is False
+    if not safe: fail("allow_pickle not provably False (deserialization RCE)", node)
+```
+
+`allow = True; np.load(path, None, allow)` → `args[2]` is an `ast.Name`, not a `Constant`,
+so the positional branch never fires.
+
+**The nuance the models mostly missed, and that matters for triage:** the `ast.Constant`
+requirement is *deliberate*. The inline comment says so — "Require a truthy literal so
+unrelated 3-arg `.load(a,b,c)` helpers aren't rejected." This is a conscious
+false-positive tradeoff, not an oversight. Kimi came closest to reading it correctly by
+noting the inconsistency with the keyword check rather than calling it a plain bug.
+
+So the real defect is narrower than "RCE bypass": **the prose overstates what the gate
+enforces.** Line 305 lists as statically rejected "`np.load` with `allow_pickle` truthy
+**or via a truthy 3rd positional arg**" — but a variable holding `True` is truthy at
+runtime and sails through. Either the doc should say "literal" or the branch should fail
+closed like its keyword twin. The undocumented positional/keyword asymmetry is the part
+worth fixing.
+
+## Result 3c — the other false positive: a Critical that confused two heredoc blocks
+
+Gemini r1 on D3 reported **Critical: "check.py evaluates payload natively on host"**,
+claiming `check.py` "unconditionally calls `runpy.run_path()`" so the payload executes
+unsandboxed before bwrap runs.
+
+**False.** `runpy.run_path` appears once in the file, at line 251 — inside the `confine.py`
+heredoc, which executes *inside* the sandbox and is the intended entry point. `check.py`
+(lines 104–191) contains no `runpy` at all. Gemini merged two adjacent `<<'PYEOF'` blocks
+into one file.
+
+Worth recording next to Result 5: the two most severe false positives in this run both came
+from misattributing code across boundaries the diff-only view flattens — sibling commits in
+one case, sibling heredocs in the other.
+
 ## Result 4 — the incumbent family abstained on a diff containing two real High bugs
 
 D2 (`503ebc9`) is the sharpest comparison in the run. Its answer key (`0c02887`) contains
@@ -190,7 +243,12 @@ Issue-level Jaccard, judge-matched (`anthropic/claude-sonnet-4.5`):
 |---|---|---|
 | D1 `8ef9d52` | 0.000 – 0.539 | 0.034 – 0.388 |
 | D2 `503ebc9` (fast) | 0.145 – 1.000\* | 0.000 – 0.000 |
+| D3 `31e2d3a` (full) | 0.333 – 0.778 | 0.000 – 0.513 |
 | D4 `7ceba3f` (fast) | 0.344 – 0.778 | 0.065 – 0.148 |
+
+D3 is the one diff where a cross-family pair (Gemini vs Sol, 0.513) exceeds some models'
+self-overlap — both converged on the `np.load` positional issue and the bwrap `--chdir`
+issue. Sonnet vs Kimi on the same diff is 0.000.
 
 Every pair involving Sonnet sits far below that model's own self-overlap — the tracker's
 Thread-1 signal that **cross-model union buys recall rather than resampling noise**.
@@ -245,6 +303,9 @@ at round 4 as F2.
 2. **Fix Result 2** (`sendto`/`sendmsg` in `confine.py`, or soften the "network disabled"
    claim and the bats assertion to match what is actually enforced).
 3. **Fix Result 3** (`|| true` on the `NEXT_FP` pipeline, matching its neighbours).
+3b. **Fix Result 3b** — either make the positional `np.load` branch fail closed like its
+    keyword twin, or correct line 305 to say "truthy *literal* 3rd positional" and document
+    the asymmetry deliberately.
 4. **Fix the J_self abstention artifact** in `scripts/cross-model-review.py` — report an
    abstention rate, and stop scoring empty-vs-empty as 1.0.
 5. **Consider a second-family critic in the review pipeline.** Result 4 is the evidence;
