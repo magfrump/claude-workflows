@@ -107,6 +107,54 @@ section() {
   section 'Must Fix' | grep -E '^\| R[0-9]+ \|' | grep -qE '`[^`]+:[0-9]+`'
 }
 
+# --- Golden ↔ SKILL.md template sync ---
+#
+# The skill says "changes to the template must be mirrored in the golden in the same
+# commit". This repo's own standing evidence (the override log that went unwritten for
+# nine runs because only prose asked for it) is that an unenforced instruction does not
+# execute. These two tests are the enforcement: they extract the structure of the rubric
+# template embedded in skills/code-review/SKILL.md and require the golden to match it, so
+# the mirroring either happens or the suite goes red.
+
+SKILL_MD="skills/code-review/SKILL.md"
+
+# Emit the fenced markdown rubric template from the skill.
+skill_template() {
+  awk '/\*\*Use this exact format/ { f = 1 }
+       f && /^```markdown/         { c = 1; next }
+       c && /^```$/                { exit }
+       c' "$SKILL_MD"
+}
+
+# Emit each table header row (a "|" line immediately followed by a "|---" separator).
+table_headers() {
+  awk '/^\|/ { prev = $0; getline nxt
+              if (nxt ~ /^\|[- |]+\|$/) print prev
+              # re-examine the line we consumed, it may itself start a table
+              if (nxt ~ /^\|/) { prev = nxt } }'
+}
+
+@test "golden's table headers match the skill's rubric template" {
+  [ -f "$SKILL_MD" ] || skip "not running from repo root"
+  local from_skill from_golden
+  from_skill=$(skill_template | table_headers)
+  from_golden=$(echo "$FIXTURE_CONTENT" | table_headers)
+  [ -n "$from_skill" ] || fail "could not extract the rubric template from $SKILL_MD"
+  if [ "$from_skill" != "$from_golden" ]; then
+    printf 'template headers:\n%s\n\ngolden headers:\n%s\n' "$from_skill" "$from_golden" >&2
+    fail "golden is out of sync with the rubric template in $SKILL_MD"
+  fi
+}
+
+@test "golden's section headings match the skill's rubric template" {
+  [ -f "$SKILL_MD" ] || skip "not running from repo root"
+  local from_skill from_golden
+  from_skill=$(skill_template | grep -E '^## ')
+  from_golden=$(echo "$FIXTURE_CONTENT" | grep -E '^## ')
+  [ "$from_skill" = "$from_golden" ] \
+    || fail "section headings differ:\n$(diff <(echo "$from_skill") <(echo "$from_golden") || true)"
+}
+
 # --- Guard against draft-review vocabulary leakage ---
 
 @test "fixture does not contain draft-review verdict vocabulary" {
