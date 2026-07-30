@@ -312,6 +312,67 @@ separates the two quantities cleanly: the author's triage removes roughly 10–1
 false-positive mass. That gap is what the pr-prep "confirm it's real" step actually does,
 now measured.
 
+## Result 8 — The role-skill scaffold substitutes for model tier (mostly); second-repo replication
+
+Two follow-on batches to Result 7.
+
+### 8a. Prompt-vs-tier isolation: ND3 × security-reviewer skill × 3 tiers × 2
+
+Result 7's sharpest cell was ND3's save-deserialization hole: opus-generalist 2/2,
+sonnet/haiku-generalist 0/4, lower tiers affirmatively declaring the code clean. Rerun
+with the **production security-reviewer skill prompt** instead of the generalist prompt:
+
+| A1-cluster recovery | generalist (R7) | + security-skill (R8) |
+|---|---|---|
+| haiku | 0/2 | **1/2** |
+| sonnet | 0/2 | **2/2** |
+| opus | 2/2 | 2/2 |
+
+**The scaffold, not the tier, was most of the effect.** Sonnet+skill finds the defect as
+reliably as opus-generalist; every skill run that fired produced a coherent
+serialization-boundary cluster (several also finding score-forgery and category-forgery
+angles the generalists missed). The one haiku+skill miss is the most instructive
+transcript of the day: it traced the exact boundary, quoted the exact unguarded access —
+then talked itself out of reporting it ("the resulting failures are defensive"). At the
+low tier the residual gap is *judgment after detection*, not detection.
+
+Consequences:
+- Result 7's "tier floor" is amended: **the floor is config-dependent.** sonnet+role-skill
+  ≈ opus-generalist on in-domain defects; haiku remains unreliable either way.
+- The role prompts are demonstrably load-bearing (this also explains Result 7's
+  generalist J_self being half of Result 1's role-critic J_self). The cognitive-move
+  scaffolds are not decoration; **do not** trade them for a generalist × N-samples
+  restructure without re-running this comparison.
+- §4.4's cheap-tier reviewer partially revives: sonnet+skill is a plausible decoupled
+  gate; haiku is not.
+
+### 8b. Second repo (meta-formalism-copilot, csp-headers pre-fix diff `d86d2dc..d90d6bb`)
+
+Historical rubric: 13 rows, headlined by R1 — `connect-src 'self'` breaking PNG export,
+found originally by tracing `fetch(dataUrl)` in `exportGraph.ts`, a different module.
+
+| | haiku ×1 | sonnet ×1 | opus ×2 |
+|---|---|---|---|
+| findings | 0 (NONE) | 3 | 7 + 7 (J_self ≈ 0.75) |
+| historical rows recovered (of 13) | 0 | 1 (A3) | ~4–5 (A1, A3, C1, C2, ~C3) |
+| R1 recovered | ✗ | ✗ | ✗ |
+
+The tier gradient replicates on a TS/Next.js codebase. Three notes:
+
+1. **R1 defeated every single-pass run.** The one finding requiring cross-file dynamic
+   reasoning (CSP directive × a consumer's `fetch` pattern in another module) was found
+   only by the original multi-critic pipeline. Single-pass fan-out — any tier — has a
+   ceiling below whole-codebase interaction bugs.
+2. **A severity dispute worth adjudicating someday:** both opus runs rate the
+   CSP-not-on-request gap **Critical** ("Next never nonces its scripts; page ships dead
+   HTML — `'strict-dynamic'` voids `'self'`"), where the historical panel filed the same
+   gap as 🟡 API-inconsistency. They cannot both be right about runtime impact; the
+   answer is empirical (does the page render under this Next version?) and untested here.
+3. haiku's NONE run **praised as "correctly excludes API routes"** the same matcher regex
+   sonnet flagged for prefix over-matching (`/apiary` skips CSP) — low-tier reviews
+   aren't just silent, they can act as false attestations. A "reviewed-clean" verdict
+   from a weak config is *worse* than no review because it carries assurance weight.
+
 ## Incidental finding that outranks the experiments — the Gate 1h security cluster
 
 All three D2 security runs independently converged (3/3, rated High/High/Med) on the same
@@ -347,7 +408,10 @@ sentinel, and fail closed.
 | NEW: fix Gate 1h (reviewer-in-worktree, sentinel nonce, fail-closed) | **Do first.** 3/3-stable High finding on live autonomous infrastructure. |
 | NEW: severity-band instability | Any future gate that keys on 🟡-vs-🟢 tier is keying on the *least* stable part of the output. Gates should key on issue identity or High-band findings, which are stable. |
 | NEW (Result 6): retrospective precision measurement is exhausted | Persisted rubrics are acceptance-filtered (~99% valid by construction). Raw precision and the convergence question now *require* pre-triage capture — raising the priority of the worktree-copy and override-log fixes from "data hygiene" to "only remaining measurement path." *(Amended by Result 7: fresh re-review of historical diffs is a second pre-acceptance path, and it worked — raw precision 86–89%.)* |
-| NEW (Result 7): critic/fixer model floor | Do not run review gates below the opus tier with current prompts: haiku/sonnet recovered 0/6 validated blocking defects and haiku's only findings were FPs. §4.4's "reviewer ≠ fixer via cheaper tier" is dead as written — decoupling must come from a different *frontier* model or config, not a smaller one. |
+| NEW (Result 7): critic/fixer model floor | Do not run review gates below the opus tier with current prompts: haiku/sonnet recovered 0/6 validated blocking defects and haiku's only findings were FPs. §4.4's "reviewer ≠ fixer via cheaper tier" is dead as written — decoupling must come from a different *frontier* model or config, not a smaller one. **Amended by Result 8a: the floor is config-dependent — sonnet + role-skill prompt ≈ opus-generalist on in-domain defects, so a sonnet+skill decoupled gate is viable; haiku is not, either way.** |
+| NEW (Result 8): role skills are load-bearing | The security-reviewer scaffold took sonnet from 0/2 to 2/2 on a validated blocking defect. Do not restructure toward generalist × N samples without re-running this comparison; Thread 8's restructure proposal is now doubly closed. |
+| NEW (Result 8): single-pass ceiling includes cross-file bugs | The only ground-truth finding requiring cross-module dynamic reasoning (MD1 R1) defeated all 4 fresh single-pass runs at every tier. Whole-pipeline (multi-critic + context) caught it historically. |
+| NEW (Result 8): weak reviews are false attestations | haiku's clean verdict specifically praised the code sonnet flagged. A low-tier "reviewed, no findings" carries negative value in a gate — prefer no review over a weak one wherever the verdict is consumed as assurance (Gate 1h currently consumes it exactly that way). |
 | NEW (Result 7): single-pass ceiling | Fresh opus and the historical panel each found stable, nearly disjoint finding-sets on the same diff. Any single config samples a minority of findable issues — the local evidence for N-sample union aggregation (recall), independent of the benchmark. |
 
 ## Reproduction
