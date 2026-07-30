@@ -373,6 +373,80 @@ The tier gradient replicates on a TS/Next.js codebase. Three notes:
    aren't just silent, they can act as false attestations. A "reviewed-clean" verdict
    from a weak config is *worse* than no review because it carries assurance weight.
 
+## Result 9 — Fable 5: the tier ladder does not top out at opus, and blind spots go both ways
+
+Same agentic generalist prompt as Result 7/8b, byte-identical, on all four diffs ×2
+replicates (8 runs).
+
+| | ND1 | ND2 | ND3 | MD1 |
+|---|---|---|---|---|
+| fable findings (r1/r2) | 3 / 4 | 4 / 3 | 1 / 2 | 3 / 4 |
+| fable J_self (issue level) | 0.40 | **~0.0** | 0.50 | **0.75** |
+| historical rows recovered | ~0 | A1 mechanism (r2) | A1 (2/2) | **A1, A3, R2** |
+
+**The headline, and it answers the question directly: fable found validated defects opus
+missed.**
+
+- **MD1 R2 — a 🔴 row — was recovered by fable 2/2 and by agentic opus 0/2.** ("Comment
+  claims Edge runtime, but Next 16 proxy defaults to Node.js.") Both agentic opus runs
+  produced 7 findings each and neither contained it.
+- **ND2's blocking A1 mechanism** (grant CONTENT on *any* SINGING exit → an interrupted
+  singer becomes *more* approachable, inverting the intended penalty) was derived by fable
+  r2 and by opus r1 — but not opus r2. Fable reached it by a different route: it framed
+  the issue as a player *farming* the CONTENT mood, i.e. as an exploit rather than a state
+  bug.
+- Conversely, opus found ND1 issues fable did not (framing-band edge cases, the halfFov
+  API trap), and produced far more findings per run overall.
+
+So the relationship is **non-total ordering**: neither model's set contains the other's.
+This is the first direct local evidence for H1 in
+`research-cross-model-review-hypotheses.md`, and it materially strengthens the
+aggregation case — the union is buying *coverage of disjoint blind spots*, not just
+variance reduction, which is a different (and better-supported) argument than the one
+SWR-Bench's same-family comparison could test.
+
+**Fable's other distinguishing property: brevity with a high hit rate.** 3.1 findings/run
+vs opus's 7.3, but a higher share landed on historical ground truth. On ND3 it produced
+*one* finding in r1 — and it was the blocking defect. If the binding cost is human triage
+attention (§5.5), fable's profile is materially better than its raw recall suggests.
+
+**Caveat that cuts the other way:** fable's ND2 J_self ≈ 0.0 — the two replicates shared
+no issue at all. Low volume plus low self-consistency means a single fable run is a
+lottery ticket on any given defect; it needs replicates more than opus does.
+
+## Result 10 — Opus 5 vs Opus 4.8 (headless, diff-inline, no tools)
+
+Both ids resolve distinctly (each self-reports its own id; the CLI rejects invalid ids, so
+this isn't silent fallback). 2 diffs × 2 replicates × 2 models = 8 runs, identical
+prompts, no tool access — so this isolates model from agentic behavior.
+
+| | opus 5 | opus 4.8 |
+|---|---|---|
+| findings/run (mean) | **4.5** | 1.75 |
+| ND3 blocking A1 recovered | 2/2 | 1/2 |
+| MD1 Critical (CSP-not-on-request) | 2/2 | 2/2 |
+| MD1 historical rows recovered | A1, A3, R2 + 2 novel | A1, A3 |
+
+**Reading:** 4.8 is not blind to the hard defects — it caught MD1's Critical on both runs
+with essentially the same mechanism description, and ND3's deserialization hole on one.
+What it produces is a **strictly thinner** report: roughly 40% of opus 5's finding volume,
+with the misses concentrated in the second tier of real-but-lower-severity issues (the
+matcher-regex over-match, the prefetch-CSP gap, the `instanceof`-under-downlevel trap).
+On this small sample 4.8's findings look close to a subset of 5's — the opposite of the
+fable/opus relationship, and consistent with same-lineage models having correlated
+coverage.
+
+**Practical consequence:** 4.8 is a reasonable cost-saving substitute *for catching
+blockers*, and a poor one for comprehensive review. It is a bad diversity pick precisely
+because it is same-lineage — pairing 5 with 4.8 buys much less than pairing 5 with fable,
+which is exactly what H2 predicts and what the OpenRouter sweep is designed to quantify
+across vendors.
+
+**Method note worth keeping:** this headless arm (diff inline, no tools) is cheap,
+perfectly reproducible, and vendor-portable — it is the same configuration
+`scripts/cross-model-review.py` uses, so these two rows are directly comparable to any
+future OpenRouter results.
+
 ## Incidental finding that outranks the experiments — the Gate 1h security cluster
 
 All three D2 security runs independently converged (3/3, rated High/High/Med) on the same
