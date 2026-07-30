@@ -551,6 +551,16 @@ If a sub-agent omitted the note entirely, treat that as a `partial` entry with r
 
 The collected items feed the `### Coverage and Escalations` section of the chat synthesis below. They do not modify the rubric — coverage is a chat-synthesis concern.
 
+#### Confirmed-Good cross-check (required before producing deliverables)
+
+Assemble the candidate `✅ Confirmed Good` rows, then run each one through
+[Confirmed Good is a claim, not an output](#confirmed-good-is-a-claim-not-an-output):
+Evidence present and grounded, enumeration behind any universally quantified claim, and no
+observation anywhere in the fact-check report inconsistent with it. Rows that fail are
+dropped (ungrounded) or moved to 🟡 Must Address as `Contested` (contradicted) per that
+section. Run this **before** writing either deliverable — it changes the rubric's contents,
+so it cannot be a post-hoc pass over a published table.
+
 #### Contrastive note (optional, capture during synthesis)
 
 Pick one finding the panel caught well, plus one likely-related issue you suspect was missed (sources: goal-alignment notes, escalations, or your own scan of the diff). State both in 1–2 lines, then propose one concrete prompt-refinement candidate — an added instruction, sharpened heuristic, or new check for a critic skill — that would have closed the gap on the next run. Skip if no genuine contrast is available; do not invent one. Capture only — no feedback pipeline consumes this yet.
@@ -624,6 +634,17 @@ Worked example:
 **Recommended next action (required final line):** End the chat synthesis with this exact line so the user always sees a concrete next step:
 
 > Recommended next action: [merge | fix red items then re-review | split PR | escalate to /pre-mortem | block on architectural review].
+
+**Single-sample label (required when the run is clean):** when the derivation below lands
+on `merge`, or the rubric status is `✅ PASSES REVIEW`, the line immediately *above*
+`Recommended next action:` must read exactly:
+
+> Single-sample review; absence of findings is not an attestation.
+
+This is the same standing label the rubric status line carries (see
+[The single-sample label](#the-single-sample-label)) and it is the whole of the hedging —
+one line, no elaboration. Omit it entirely on any other next action: a review that already
+tells the author to fix things is not being consumed as assurance.
 
 Choose exactly one bracketed value. The choice is **mechanically derived from the rubric** per [Next-action derivation](#next-action-derivation) below — it is not a free-form judgment call, and the line must not hedge or list multiple options. The line is required even when the rubric is clean (rule 5 still applies). If the derivation ladder ever needs new rules, update the ladder first so the mapping stays the single source of truth.
 
@@ -758,10 +779,12 @@ matched this diff." The heading must still appear so absence is auditable across
 ## ✅ Confirmed Good
 
 Patterns, implementations, or claims confirmed correct by fact-check and/or critics.
+Every row carries `Evidence` and has passed the Confirmed-Good cross-check — see
+[Confirmed Good is a claim, not an output](#confirmed-good-is-a-claim-not-an-output).
 
-| Item | Verdict | Source | Legibility-target |
-|---|---|---|---|
-| [Description] | ✅ Confirmed | [Which agent] | for-orchestrator-synthesis |
+| Item | Verdict | Evidence | Source | Legibility-target |
+|---|---|---|---|---|
+| [Description] | ✅ Confirmed | `path/to/file:42` — "[quoted fragment]" _or_ the enumeration that establishes it (`rg -n "[pattern]" [scope]` → N matches, all [disposition]) | [Which agent] | for-orchestrator-synthesis |
 
 ---
 
@@ -822,6 +845,68 @@ auditability — only 6 of 43 findings in one corpus carried a mechanically chec
 reference at all, which is why precision could never be measured without re-reading every
 finding by hand. Requiring Evidence makes the output machine-checkable going forward.
 Treat a firing check as a signal worth investigating, not as a routine occurrence.
+
+### Confirmed Good is a claim, not an output
+
+`✅ Confirmed Good` is the highest-assurance row this rubric emits, and until now it was
+the only tier nothing checked. On one measured diff, **two of three model tiers filed the
+branch's actual blocking defect under Confirmed Good** — and in one of them the
+disconfirming evidence was sitting in that same run's own fact-check report, recorded
+verbatim, while the security review certified the claim as "matches reality"
+(`docs/thoughts/code-review-evaluation-state.md` §1.3). Treat every ✅ row as a claim that
+has to survive the same grounding a 🔴 row does.
+
+**1. Evidence is mandatory.** Each ✅ row's `Evidence` cell is filled and checked with
+steps 1–3 of [Evidence grounding](#evidence-grounding) above — cite `path/to/file:line`,
+quote the text that appears there, resolve basenames before failing. Same form, same
+check; do not invent a second citation format.
+
+**2. An unlocatable ✅ row is deleted, not demoted.** If the evidence cannot be found, the
+row does **not** move to `## ⚠️ Unverified Findings` — that section exists for findings
+that would otherwise be 🔴 / 🟡, and a confirmation that cannot be grounded is not a
+finding at all. It is simply not a confirmation: drop the row. Do not restate it as prose
+elsewhere in the synthesis.
+
+**3. Exhaustiveness claims need enumeration, not an instance.** Most false confirmations
+here are universally quantified — "no `X` anywhere", "all client fetches are `/api/…`",
+"`connect-src 'self'` is sufficient", "sound with no unintended carve-outs". One
+confirming instance does not establish a claim of that shape, and citing one is the exact
+move that produced the observed miss. Evidence for a universally quantified ✅ row must be
+the **enumeration that was actually executed** and its scope (e.g. `rg -n "fetch\(" app`
+→ 12 matches, all relative `/api/…`). If no enumeration was run, the row may not be ✅:
+either reword it as the specific instance that *was* checked, or drop it.
+
+**4. Cross-check every ✅ row against the fact-check report (Stage 3, before publishing).**
+For each candidate ✅ row, re-read the fact-check report for any observation touching the
+same file, symbol, directive, or claim — **including observations recorded in passing,
+under a different claim number, or under a claim the fact-check itself marked Verified.**
+The observed failure was exactly this: the contradicting detail (`data:` URLs fetched
+client-side) was recorded as supporting colour inside a claim the fact-check verified. Ask
+of each observation "if this is true, is the ✅ claim still true?", not "did the fact-check
+label this a problem?".
+
+**On a contradiction, the row may not be published as ✅.** The behaviour is fixed so the
+item is neither silently dropped nor silently promoted:
+
+- Move it into `## 🟡 Must Address` as a single row worded as the contradiction itself —
+  what was certified, and which observation is inconsistent with it.
+- `Source:` is `Confirmed-Good cross-check`. `Domain` is the domain of the critic that
+  certified it. `Severity` is `Contested` — the confirmation was revoked, no critic
+  assigned this a native level, and inventing one would be a fabricated severity.
+- The fact-check observation goes in verbatim as the row's evidence, with its
+  `path/to/file:line`, so the author can adjudicate without re-deriving it.
+- 🟡 is the terminal tier for this mechanism. A contested confirmation is **not** promoted
+  to 🔴 by this check, and it does not count as corroboration under the
+  [Escalation Rule](#escalation-rule) — this revokes an over-claim, it does not
+  manufacture a blocking finding. 🟡 is the right home because it is the tier that means
+  "the author must fix this or say on the record why it stands", which is precisely what a
+  contested certification needs.
+- Name the revocation in the chat synthesis under **Actionable guidance**. A row that
+  moves must be visible as having moved; deleting it and moving on is the failure this
+  check exists to prevent.
+
+This check is cheap — it is a second read of an artifact already in context — and it is
+the one check that would have caught the observed miss.
 
 ### Unified Severity Mapping
 
@@ -889,7 +974,25 @@ This rewards convergence — independent agreement across domains is the stronge
 
 - Red items unresolved: `**Status: 🔴 DOES NOT PASS** — [N] red item(s) unresolved`
 - Zero red but amber open: `**Status: 🟡 CONDITIONAL PASS** — [N] amber item(s) awaiting resolution or justification`
-- All red and amber resolved: `**Status: ✅ PASSES REVIEW**`
+- All red and amber resolved: `**Status: ✅ PASSES REVIEW** — single-sample review; absence of findings is not an attestation`
+
+#### The single-sample label
+
+A passing verdict is **one draw**, not a proof of absence. Measured 🔴-band self-agreement
+between replicate runs of this pipeline on an identical diff is **0.14–0.25**
+(`docs/thoughts/code-review-evaluation-state.md` §1.4) — a second run of the same
+configuration on the same code frequently disagrees about what is blocking. So a clean
+result says "this run found nothing", never "there is nothing".
+
+Carry this label, verbatim and once, wherever a clean or passing verdict is emitted:
+
+> single-sample review; absence of findings is not an attestation
+
+It appears in exactly two places, and never more than once in each: appended to the
+`✅ PASSES REVIEW` status line above, and in the chat synthesis when the run is clean
+(see [Deliverable 1](#deliverable-1-chat-synthesis)). Do not expand it into a paragraph,
+do not repeat it per section, and do not attach it to a 🔴 or 🟡 verdict — those are not
+being consumed as assurance, and hedging them dilutes the label where it matters.
 
 ---
 
@@ -994,6 +1097,16 @@ The risk with any "log of decisions" is that nothing reads it, so it grows in st
   produced by human review on this run get appended to the log per
   [Capturing new overrides](#capturing-new-overrides). Never overwrite, date-stamp, or
   delete entries.
+- **`✅ Confirmed Good` is a claim, not an output.** Every row carries grounded
+  `Evidence`; universally quantified rows carry the enumeration that establishes them, not
+  one instance; and every row is cross-checked against the fact-check report before
+  publishing. A contradicted row moves to 🟡 Must Address as `Contested` — never dropped
+  silently, never promoted past 🟡. See
+  [Confirmed Good is a claim, not an output](#confirmed-good-is-a-claim-not-an-output).
+- **A clean run is one sample, not an attestation.** When the rubric passes or the next
+  action is `merge`, carry the standing label
+  "single-sample review; absence of findings is not an attestation" — once on the status
+  line and once in the chat synthesis, and nowhere else.
 - **The chat synthesis must end with a `Recommended next action:` line.** Exactly one of
   the five bracketed values, chosen mechanically per
   [Next-action derivation](#next-action-derivation). Do not hedge, do not list multiple

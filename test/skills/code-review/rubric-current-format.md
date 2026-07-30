@@ -24,6 +24,7 @@ stand. Each must carry a resolution or author note.
 |---|---|---|---|---|---|---|---|---|
 | A1 | `parseWindow` allocates a new buffer per call inside the request loop. | Performance | Medium | performance-reviewer | for-author | — | 🟡 Open | — |
 | A2 | New endpoint returns `204` where every sibling returns `200` with a body. | API Consistency | Inconsistent | api-consistency-reviewer | for-author | `#118` / 2026-05-02 | 🟡 Open | Deliberate; body is empty by spec. |
+| A3 | Confirmation revoked: the security review certified `connect-src 'self'` as sufficient, but the fact-check recorded "client fetches include `data:` URLs" at `src/export/graph.ts:24` — a `data:` fetch is not permitted by `connect-src 'self'`. | Security | Contested | Confirmed-Good cross-check | for-author | — | 🟡 Open | — |
 
 ---
 
@@ -54,9 +55,10 @@ Step 3.5 scan. Each row records how the current run treated the prior call.
 
 Patterns, implementations, or claims confirmed correct by fact-check and/or critics.
 
-| Item | Verdict | Source | Legibility-target |
-|---|---|---|---|
-| Refresh-token rotation matches the documented flow in `docs/auth.md`. | ✅ Confirmed | code-fact-check | for-orchestrator-synthesis |
+| Item | Verdict | Evidence | Source | Legibility-target |
+|---|---|---|---|---|
+| Refresh-token rotation matches the documented flow in `docs/auth.md`. | ✅ Confirmed | `src/auth/session.ts:88` — "rotateRefreshToken(prev, now)"; matches `docs/auth.md:31` | code-fact-check | for-orchestrator-synthesis |
+| No client-side code calls a third-party origin, so `connect-src 'self'` holds. | ✅ Confirmed | Enumeration: `rg -n "fetch\(" src` → 12 matches, all relative `/api/…` paths | security-reviewer | for-orchestrator-synthesis |
 
 ---
 

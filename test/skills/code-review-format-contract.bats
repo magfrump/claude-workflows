@@ -82,6 +82,39 @@ section() {
     || fail "no row carries a recognizable critic-native severity"
 }
 
+# --- Confirmed Good carries evidence (thoughts doc §1.3) ---
+#
+# Confirmed Good is the highest-assurance row the rubric emits, and on the MD1 diff two of
+# three model tiers filed the branch's actual blocking defect under it — one of them with
+# the disconfirming observation sitting in that same run's own fact-check report. The
+# Evidence column is what makes the row checkable at all.
+
+@test "Confirmed Good table has an Evidence column" {
+  section 'Confirmed Good' | grep -qE '^\|[[:space:]]*Item[[:space:]]*\|.*\|[[:space:]]*Evidence[[:space:]]*\|'
+}
+
+@test "every Confirmed Good row cites evidence" {
+  local row n=0
+  while IFS= read -r row; do
+    n=$((n + 1))
+    # Either a grounded `path:line` citation or the enumeration that establishes a
+    # universally quantified claim. An instance-shaped citation for an "all/none"
+    # claim is the exact move that produced the observed miss.
+    echo "$row" | grep -qE '(`[^`]+:[0-9]+`|[Ee]numeration|rg -n)' \
+      || fail "Confirmed Good row lacks evidence: $row"
+  done < <(section 'Confirmed Good' | grep -E '^\|.*✅ Confirmed')
+  [ "$n" -gt 0 ] || fail "fixture has no Confirmed Good rows"
+}
+
+@test "a contested confirmation lands in Must Address, not Confirmed Good" {
+  # The fixed behaviour on a Confirmed-Good/fact-check contradiction: the row is
+  # neither dropped silently nor promoted past amber.
+  section 'Must Address' | grep -qE '^\| A[0-9]+ \|.*Confirmed-Good cross-check' \
+    || fail "golden does not demonstrate the contested-confirmation row"
+  section 'Must Address' | grep -E 'Confirmed-Good cross-check' | grep -qE '\|[[:space:]]*Contested[[:space:]]*\|' \
+    || fail "contested row does not carry the Contested severity"
+}
+
 # --- Status columns (the calibration instrument added 5f17729) ---
 
 @test "every finding row carries a Status value" {

@@ -221,6 +221,61 @@ claude_headless_flags() {
     done
 }
 
+# --- Rubric selection for the advisory rubric/sentinel cross-check ---
+# The archive is populated by copying `$WT_DIR/docs/reviews/*.md` wholesale, and
+# these repos carry rubrics from *previous* branches in-tree. The old selector
+# was `ls -1 .../code-review-rubric*.md | head -1`, which returns the
+# lexicographically first name — for date-stamped rubrics that is the OLDEST
+# one, i.e. reliably the wrong file whenever any prior rubric is committed. Two
+# measurement batches were discarded to that bug (docs/thoughts/
+# code-review-evaluation-state.md §5.4 trap 1). It was also the outstanding
+# SC2012 shellcheck finding; globbing instead of parsing `ls` clears it.
+#
+# Select by CONTENT: a rubric belongs to this run only if it names the reviewed
+# commit or the run date. Filenames count too, since the skill encodes both the
+# date and (often) the commit range in the name. Scoring: commit match is worth
+# more than date match, because a stale rubric written today by a concurrent run
+# would tie on date alone.
+#
+# Emits nothing — deliberately — when no candidate matches, or when the best
+# score is a tie. The cross-check this feeds is advisory, so "no cross-check"
+# is a safe answer and a guess is not; the whole point of the fix is to stop
+# silently reading someone else's rubric.
+#
+# Args: $1 = archive dir, $2 = reviewed commit SHA (full or short, may be empty),
+#       $3 = run date as YYYY-MM-DD (may be empty).
+# Output: the single matching rubric path, or nothing.
+select_run_rubric() {
+    local dir=${1:-} sha=${2:-} run_date=${3:-}
+    [ -d "$dir" ] || return 0
+    local short=""
+    [ -n "$sha" ] && short=${sha:0:7}
+    local f haystack score best="" best_score=0 ties=0
+    for f in "$dir"/code-review-rubric*.md; do
+        [ -f "$f" ] || continue
+        # Basename first so a commit range encoded only in the filename counts.
+        haystack=$(printf '%s\n' "${f##*/}"; cat "$f")
+        score=0
+        if [ -n "$short" ] && printf '%s' "$haystack" | grep -qiE "(^|[^0-9a-fA-F])${short}[0-9a-fA-F]*([^0-9a-fA-F]|$)"; then
+            score=$((score + 2))
+        fi
+        if [ -n "$run_date" ] && printf '%s' "$haystack" | grep -qF "$run_date"; then
+            score=$((score + 1))
+        fi
+        [ "$score" -gt 0 ] || continue
+        if [ "$score" -gt "$best_score" ]; then
+            best_score=$score
+            best=$f
+            ties=1
+        elif [ "$score" -eq "$best_score" ]; then
+            ties=$((ties + 1))
+        fi
+    done
+    [ "$best_score" -gt 0 ] || return 0
+    [ "$ties" -eq 1 ] || return 0
+    printf '%s\n' "$best"
+}
+
 # --- Main execution guard ---
 # Allows sourcing this file for its functions (e.g., in tests) without
 # running the top-level loop.
@@ -1347,6 +1402,10 @@ Count only the automated assessment scores (Testability investment, Trigger clar
         # review corpus to calibrate against (see docs/working/
         # experiment-results-code-review-2026-07-29.md, Result 6).
         CR_ARCHIVE="$WORKING_DIR/reviews/round-$ROUND/$TASK_ID"
+        # Identity of *this* review, used to pick this run's rubric out of an
+        # archive that also holds rubrics committed on earlier branches.
+        CR_COMMIT=$(git -C "$WT_DIR" rev-parse HEAD 2>/dev/null || true)
+        CR_RUN_DATE=$(date +%F)
         if [ -z "$REJECT_REASON" ]; then
             if command -v claude >/dev/null 2>&1; then
                 echo "    Running code-review on: $BRANCH (model: $SI_CODE_REVIEW_MODEL)"
@@ -1401,7 +1460,13 @@ The bracketed token is a per-run identifier — reproduce it exactly. Count only
                     # unmeasured, and this repo's standing lesson is not to give an
                     # unvalidated mechanism authority. Promote to fail-closed only
                     # once the rate is known to be ~0.
-                    CR_RUBRIC_RED=$(count_rubric_red "$(ls -1 "$CR_ARCHIVE"/code-review-rubric*.md 2>/dev/null | head -1)")
+                    # Pick the rubric by content (commit + run date), never by
+                    # filename order — see select_run_rubric().
+                    CR_RUBRIC_FILE=$(select_run_rubric "$CR_ARCHIVE" "$CR_COMMIT" "$CR_RUN_DATE")
+                    if [ -z "$CR_RUBRIC_FILE" ] && compgen -G "$CR_ARCHIVE/code-review-rubric*.md" > /dev/null 2>&1; then
+                        echo "    NOTE: rubric present but none matches commit ${CR_COMMIT:0:7} / $CR_RUN_DATE — cross-check unavailable"
+                    fi
+                    CR_RUBRIC_RED=$(count_rubric_red "$CR_RUBRIC_FILE")
                     CR_AGREE="unavailable"
                     if [ -n "$CR_RUBRIC_RED" ]; then
                         if [ "$CR_RUBRIC_RED" -eq "$CR_RED" ]; then
