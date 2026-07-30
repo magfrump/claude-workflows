@@ -308,8 +308,40 @@ at round 4 as F2.
     the asymmetry deliberately.
 4. **Fix the J_self abstention artifact** in `scripts/cross-model-review.py` — report an
    abstention rate, and stop scoring empty-vs-empty as 1.0.
-5. **Consider a second-family critic in the review pipeline.** Result 4 is the evidence;
-   Result 5 is the constraint (it must have repo access, not diff-only).
+5. **Where to place a second model family — hypotheses, not yet a decision.** Result 4 is
+   the evidence that a different family removes the incumbent's correlated blind spots;
+   Result 5 is the constraint (a diff-only *full* review manufactures confident false
+   positives, so it needs real context — see the reviewer-context-management DD in
+   `docs/decisions/`). Rather than assume "run a whole parallel review in family B", the
+   run supports scoping the cross-family call to where diversity pays most:
+
+   - **5a — full second-family review** (all critics, family B in parallel). Highest recall,
+     highest cost, and the diff-only variant is the Result-5 false-positive machine. The
+     default to beat, not the recommendation.
+   - **5b — second family for the *fact-check* critic only.** The sharpest hypothesis. A
+     separate skill-suite rebuild found that many issues our pipeline misses **originate in
+     the fact-check stage** (claims in comments/docstrings/commit messages/docs that the code
+     does not back up — `skills/code-fact-check`). This run corroborates it from the other
+     direction: **three of the four cross-family wins are fact-check-class** — Result 1 (the
+     security-model *guarantee* that quoting a heredoc is sufficient, contradicted by
+     delimiter collision), Result 2 (the "network disabled" prose vs. the un-patched UDP
+     path), and Result 3b (line 305 claiming `np.load` positional args are statically
+     rejected when only literals are). Claim-vs-code mismatch is exactly where a
+     second family's independent read is cheap leverage, and code-fact-check is the smallest,
+     most context-bounded critic to route cross-family first.
+   - **5c — second family for *specific* critics with correlated incumbent blind spots.**
+     Beyond fact-check, target the critics where the incumbent abstains or converges wrongly
+     (Result 4's abstention; Result 5's false-consensus). Pick per-critic by measured
+     cross-family recall lift, not uniformly.
+
+   All three still require the context question (follow-up 6) resolved: 5b/5c are cheaper than
+   5a partly *because* a single critic needs less context than a full review, but each still
+   needs enough to avoid the sibling-commit false positives.
+6. **Resolve reviewer context management** (diff-only ↔ structured enrichment ↔ full agentic).
+   The Result-5 false positives are all "code was actually in a sibling commit the diff hid";
+   the open question is the cheapest context enrichment that closes that gap without
+   reintroducing full-agentic cost/non-determinism. Tracked as its own divergent-design pass
+   (`docs/decisions/` reviewer-context-management).
 
 ## Harness fixes made during this run
 
