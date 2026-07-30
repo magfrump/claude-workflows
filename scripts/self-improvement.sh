@@ -187,6 +187,40 @@ print_round_summary() {
     echo "$summary_line" >> "$validation_log"
 }
 
+# --- Headless (`claude -p`) confinement flags ---
+# Headless sessions do NOT inherit the interactive session's defaults, and the
+# two differences below silently break prompts that read fine to a human:
+#
+#   1. Write/Edit are DENIED by default in `claude -p`. A prompt that says
+#      "write the rubric to docs/reviews/" runs to completion, reports
+#      success, and persists nothing. `--permission-mode acceptEdits` is what
+#      makes the file actually appear.
+#   2. Read is CONFINED to the session's cwd. An orchestrator skill told to
+#      read its critics' `skills/<name>/SKILL.md` from outside cwd gets
+#      BLOCKED on each read and silently falls back to briefing the critics
+#      from its own paraphrase of the role — a materially weaker reviewer than
+#      the one the prompt believes it is invoking (see
+#      docs/working/experiment-results-code-review-2026-07-29.md Result 8a:
+#      the role skill, not the model tier, is the load-bearing element).
+#      `--add-dir` per out-of-cwd root is what makes those reads resolve.
+#
+# Both verified empirically 2026-07-30. Every `claude -p` below that writes
+# files, or reads outside its cwd, must carry the corresponding flags.
+#
+# Args: $@ = extra directories that must be readable beyond cwd. Empty or
+#            non-existent entries are dropped so the flag list never names a
+#            directory the CLI would reject.
+# Output: one flag token per line — collect with `mapfile -t arr < <(...)`.
+claude_headless_flags() {
+    local dir
+    printf '%s\n' "--permission-mode" "acceptEdits"
+    for dir in "$@"; do
+        [ -n "$dir" ] || continue
+        [ -d "$dir" ] || continue
+        printf '%s\n' "--add-dir" "$dir"
+    done
+}
+
 # --- Main execution guard ---
 # Allows sourcing this file for its functions (e.g., in tests) without
 # running the top-level loop.
@@ -487,7 +521,10 @@ ${SEED_CONTENT}
     fi
 
     echo "Generating ideas (round $ROUND)..."
-    claude -p "Follow the divergent-design workflow in workflows/divergent-design.md.
+    # Writes docs/working/feature-ideas-round-$ROUND.md; reads only the repo's
+    # own workflows/ under cwd. See claude_headless_flags().
+    mapfile -t IDEAS_FLAGS < <(claude_headless_flags)
+    claude -p "${IDEAS_FLAGS[@]}" "Follow the divergent-design workflow in workflows/divergent-design.md.
 
 Generate feature improvement ideas for the workflows in this repo.
 Review docs/working/completed-tasks.md for what has already been done.
@@ -708,7 +745,10 @@ they actually wrote. Match by topic overlap, not exact string match.
 ${SI_PRIORITY_HYPOTHESES_JSON}"
     fi
 
-    claude -p "Read docs/working/feature-ideas-round-$ROUND.md.
+    # Writes docs/working/tasks-round-$ROUND.json; reads only under cwd.
+    # See claude_headless_flags().
+    mapfile -t TASKS_FLAGS < <(claude_headless_flags)
+    claude -p "${TASKS_FLAGS[@]}" "Read docs/working/feature-ideas-round-$ROUND.md.
 
 For each surviving idea from the tradeoff matrix, assess whether it can be
 implemented independently in a single Claude Code session (~10-15 minutes
@@ -927,9 +967,14 @@ Address this specifically in your implementation to avoid the same failure.
         done
 
         echo "  Started: $TASK_ID"
+        # The implementing agent's whole job is to edit files and commit, so
+        # headless acceptEdits is mandatory (see claude_headless_flags()).
+        # No --add-dir: every path this prompt names — workflows/, skills/,
+        # docs/ — is inside the worktree it cds into.
+        mapfile -t IMPL_FLAGS < <(claude_headless_flags)
         (
             cd "$WT_DIR"
-            claude -p "You are in /away mode. Commit locally when done.
+            claude -p "${IMPL_FLAGS[@]}" "You are in /away mode. Commit locally when done.
 
 User goal: Improve the claude-workflows repo through this round of automated self-improvement by implementing the selected tasks as standalone branches that pass validation gates. The loop validates and merges each branch locally; do NOT push to any remote.
 Current task: $DESC
@@ -1151,6 +1196,11 @@ line and a 'Notes:' line recording any judgement calls made without human input.
             if [ -n "$CHANGED_SKILLS" ]; then
                 SELF_EVAL_PASSED=true
                 SELF_EVAL_SKILL_PATH="skills/self-eval/SKILL.md"
+                # self-eval writes a report file, so headless needs
+                # acceptEdits (see claude_headless_flags()). No --add-dir: the
+                # skill path is relative and lives inside each cwd (the
+                # worktree, and the baseline temp dir that copies skills/ in).
+                mapfile -t SE_FLAGS < <(claude_headless_flags)
                 for SKILL_FILE in $CHANGED_SKILLS; do
                     if [ ! -f "$WT_DIR/$SKILL_FILE" ]; then
                         continue  # file was deleted, not added/modified
@@ -1171,7 +1221,7 @@ line and a 'Notes:' line recording any judgement calls made without human input.
                             cp -r "$WT_DIR/skills" "$BASELINE_TMP/skills" 2>/dev/null || true
                         fi
                         echo "    Running baseline self-eval on main version of: $SKILL_FILE"
-                        BASELINE_OUTPUT=$(cd "$BASELINE_TMP" && claude -p "Use the self-eval skill defined in $SELF_EVAL_SKILL_PATH to evaluate $SKILL_FILE.
+                        BASELINE_OUTPUT=$(cd "$BASELINE_TMP" && claude -p "${SE_FLAGS[@]}" "Use the self-eval skill defined in $SELF_EVAL_SKILL_PATH to evaluate $SKILL_FILE.
 
 After writing the report, output exactly one line in this format:
 SELF_EVAL_RESULT: <number of Weak scores>
@@ -1188,7 +1238,7 @@ Count only the automated assessment scores (Testability investment, Trigger clar
                     fi
 
                     # --- Evaluate branch version ---
-                    EVAL_OUTPUT=$(cd "$WT_DIR" && claude -p "Use the self-eval skill defined in $SELF_EVAL_SKILL_PATH to evaluate $SKILL_FILE.
+                    EVAL_OUTPUT=$(cd "$WT_DIR" && claude -p "${SE_FLAGS[@]}" "Use the self-eval skill defined in $SELF_EVAL_SKILL_PATH to evaluate $SKILL_FILE.
 
 After writing the report, output exactly one line in this format:
 SELF_EVAL_RESULT: <number of Weak scores>
@@ -1274,8 +1324,17 @@ Count only the automated assessment scores (Testability investment, Trigger clar
         # worktree copy only when the baked payload is absent (non-cc-isolated
         # host), and say so, because that fallback re-opens the hole.
         CR_SKILL="/opt/claude-workflows/skills/code-review/SKILL.md"
+        # Roots the reviewer must be able to Read beyond its cwd ($WT_DIR).
+        # The baked payload holds both `skills/` (the orchestrator reads each
+        # critic's SKILL.md verbatim into the critic's Agent prompt) and
+        # `patterns/` (code-review's SKILL.md links ../../patterns/
+        # orchestrated-review.md), so one root covers both. Empty in the
+        # fallback case below, where the skill and patterns are inside the
+        # worktree and cwd confinement already reaches them.
+        CR_ADD_DIR="/opt/claude-workflows"
         if [ ! -r "$CR_SKILL" ]; then
             CR_SKILL="skills/code-review/SKILL.md"
+            CR_ADD_DIR=""
             echo "    NOTE: baked review skill not found; falling back to the branch copy (untrusted)."
         fi
         # Per-run nonce so branch content cannot forge the verdict line. Not
@@ -1292,7 +1351,13 @@ Count only the automated assessment scores (Testability investment, Trigger clar
             if command -v claude >/dev/null 2>&1; then
                 echo "    Running code-review on: $BRANCH (model: $SI_CODE_REVIEW_MODEL)"
                 CR_STATUS=0
-                CR_OUTPUT=$(cd "$WT_DIR" && claude -p --model "$SI_CODE_REVIEW_MODEL" "Run the code-review skill defined in $CR_SKILL against this branch's diff versus main (git diff main...HEAD). Run non-interactively: do NOT pause at the fact-check gate — auto-select the applicable critics and proceed through all three stages to the rubric. Write the rubric to docs/reviews/ as usual.
+                # Headless confinement flags — see claude_headless_flags().
+                # Without acceptEdits the "write the rubric to docs/reviews/"
+                # instruction below is a no-op; without the add-dir the
+                # orchestrator cannot Read the critics' SKILL.md files and
+                # quietly briefs them from a paraphrase instead.
+                mapfile -t CR_FLAGS < <(claude_headless_flags "$CR_ADD_DIR")
+                CR_OUTPUT=$(cd "$WT_DIR" && claude -p "${CR_FLAGS[@]}" --model "$SI_CODE_REVIEW_MODEL" "Run the code-review skill defined in $CR_SKILL against this branch's diff versus main (git diff main...HEAD). Run non-interactively: do NOT pause at the fact-check gate — auto-select the applicable critics and proceed through all three stages to the rubric. Write the rubric to docs/reviews/ as usual.
 
 Dispatch every critic sub-agent with an explicit strong model (--model $SI_CODE_REVIEW_MODEL on the Agent call); do not let sub-agents inherit a weaker default.
 
@@ -1463,8 +1528,12 @@ SOLVED_EOF
         MERGE_STATUS="clean"
         git merge "$BRANCH" --no-edit || {
             echo "  Conflict in $BRANCH, attempting auto-resolve..."
-            # Hand conflicts to Claude for resolution
-            claude -p "There are merge conflicts in the current repo.
+            # Hand conflicts to Claude for resolution. Resolving a conflict
+            # means editing the conflicted files, so headless needs
+            # acceptEdits (see claude_headless_flags()); everything it touches
+            # is in the current repo, so no --add-dir.
+            mapfile -t MERGE_FLAGS < <(claude_headless_flags)
+            claude -p "${MERGE_FLAGS[@]}" "There are merge conflicts in the current repo.
 Run git status to see conflicted files.
 Resolve each conflict by preserving the intent of both sides.
 Then git add the resolved files and git commit to complete the merge."
@@ -1549,7 +1618,11 @@ Then git add the resolved files and git commit to complete the merge."
         echo "Harvesting failure patterns from fix tasks..."
         NEXT_FP=$(grep -oE 'FP-[0-9]+' "$FP_LIB" | sed 's/FP-//' | sort -n | tail -1)
         NEXT_FP=$((10#${NEXT_FP:-0} + 1))
-        claude -p "Append failure-pattern entries to docs/thoughts/failure-patterns.md.
+        # Appends to docs/thoughts/failure-patterns.md, so headless needs
+        # acceptEdits (see claude_headless_flags()). The retro docs it reads
+        # are under $REPO_DIR, which is this process's cwd, so no --add-dir.
+        mapfile -t FP_FLAGS < <(claude_headless_flags)
+        claude -p "${FP_FLAGS[@]}" "Append failure-pattern entries to docs/thoughts/failure-patterns.md.
 
 Read the schema at the top of that file, then read each retro doc listed below.
 For any retro whose 'Failure pattern:' note describes a genuine reusable
