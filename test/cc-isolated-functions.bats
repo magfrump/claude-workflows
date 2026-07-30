@@ -426,7 +426,10 @@ firewall() {
 @test "Gate 1h pins an explicit reviewer model" {
   run grep -E 'SI_CODE_REVIEW_MODEL="\$\{SI_CODE_REVIEW_MODEL:-opus\}"' scripts/self-improvement.sh
   [ "$status" -eq 0 ]
-  run grep -E 'claude -p --model "\$SI_CODE_REVIEW_MODEL"' scripts/self-improvement.sh
+  # Tolerate anything between `claude -p` and the model pin: 96166d5 inserted the
+  # headless flags array there. The invariant under test is the model pin, not the
+  # argument order.
+  run grep -E 'claude -p .*--model "\$SI_CODE_REVIEW_MODEL"' scripts/self-improvement.sh
   [ "$status" -eq 0 ]
 }
 
