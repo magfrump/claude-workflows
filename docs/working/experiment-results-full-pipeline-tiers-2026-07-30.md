@@ -138,8 +138,19 @@ amber rows that no single-prompt config ever produced.
 
 ## Result 14 — Cross-tier convergence on defects the historical panel certified as clean
 
-The strongest new result, and it runs the other way. On ND2, opus and fable independently
-produced the **same three 🔴 rows**, all fact-check Incorrect:
+> **Amended by Result 14a (n=2).** The claim as originally written — "opus and fable
+> independently produced the **same three 🔴 rows**" — **does not replicate**. At r2 the
+> two tiers' red sets on these three rows intersect in *nothing*: R2 is red at opus only,
+> R1 at fable only, R3 at neither. What survives replication is weaker and different in
+> kind: the *mechanisms* behind R1 and R2 are found in 4/4 cells, but their **severity
+> band is not stable** (each flips 🔴↔🟡 across replicates via the fact-check
+> Incorrect-vs-Mostly-Accurate boundary), and R3 is 2/4. The load-bearing conclusion —
+> that the historical ✅ Confirmed Good row *"All new constants match their comments"* is
+> falsified — **stands**, on R2's 4/4 detection plus hand verification. Read the three
+> bullets below as *mechanisms found*, not as *red rows agreed*. Details: Result 14a.
+
+On ND2, opus and fable independently produced the following three findings, all fact-check
+Incorrect **in r1**:
 
 - R1 — the timer docblock claims it "mirrors how `wanderTimer`/`reproCooldown` are
   threaded"; neither field exists on `BehaviorContext`.
@@ -170,6 +181,11 @@ code path and then wrote:
 
 Sonnet's fact-check documented both halves separately — Claim 4 (`SINGING → CONTENT`) and
 Claim 5 (`FLEE` interrupts `SINGING`) — and never joined them.
+
+> **Sharpened by Result 14a.** At r2, opus did not clear A1 — it reconstructed the
+> mechanism completely ("mechanically it is a reward", "invisible to tests") and filed it
+> **🟢 Consider**. The failure is therefore not comprehension and not the docstring
+> deferring alone; a run can hold the full defect and still band it advisory.
 
 This is Result 7's F18 lesson replicating exactly: **an in-code intent claim is treated as
 dispositive, and the dominant false-negative class is true-mechanism / documented-intent.**
@@ -208,6 +224,188 @@ than tier, and gates should key on issue identity or the blocking band, not on �
 
 ---
 
+## Result 14a — ND2 replication (n=2)
+
+Two cells, byte-identical prompts to r1, only the tier name differing: `run-review.sh nd2
+opus 2` and `run-review.sh nd2 fable 2`. Both `rc=0` (opus 1700 s, fable 1111 s). Same
+pre-fix worktree, same `--no-gate`, same uniform-tier dispatch. Artifacts at
+`/home/node/cr-eval/runs/nd2-{opus,fable}-r2/`.
+
+### The headline: the convergence does not reproduce
+
+Result 14's claim was that two tiers independently produced *the same three 🔴 rows*. At
+r2 the two tiers' red sets on those three rows **intersect in nothing**.
+
+| GT-14 row | opus r1 | opus r2 | fable r1 | fable r2 | 🔴 in r2? |
+|---|---|---|---|---|---|
+| R1 timer docblock (`behavior.ts:77`) | 🔴 Incorrect | 🟡 Mostly Accurate (A2) | 🔴 Incorrect | 🔴 Incorrect (R2) | opus **no**, fable **yes** |
+| R2 `WARY_MOOD_DURATION` (`behavior.ts:121-127`) | 🔴 Incorrect | 🔴 Incorrect (R1) | 🔴 Incorrect | 🟡 Mostly accurate (A5) | opus **yes**, fable **no** |
+| R3 test comment `1.6` (`sim.test.ts:255`) | 🔴 Incorrect | **absent** | 🔴 Incorrect | **absent** | opus **no**, fable **no** |
+
+Two of six red-reproduction opportunities landed, and they landed in *opposite* cells. The
+"both tiers agree on all three" event reproduced zero times out of one.
+
+### What does survive, and it is worth separating
+
+**Mechanism detection is robust; severity banding is not.** R1 and R2 were each *found and
+correctly described* in 4/4 cells. Every cell that demoted one still stated the defect in
+plain terms — fable r2 on R2: *"WARY_MOOD_DURATION is 30.0 s, identical to the original's
+'~30s'; the value was kept, not scaled"*; opus r2 on R1: *"`wanderTimer`/`reproCooldown`
+… are **not** threaded into `BehaviorContext`; compare to `hunger` instead."* Identical
+finding, identical evidence, different band. The flip is entirely carried by one
+fact-check verdict boundary — **Incorrect vs Mostly Accurate** — which Result 16 showed is
+the *sole* channel that can produce a 🔴. Result 17 said severity is the least stable
+output across tiers; 14a extends that to **across replicates of the same tier**, and shows
+it is a single binary classification, not a gradual disagreement.
+
+**R3 is different — it is a genuine detection miss, and the mechanism is legible.** The
+string `1.6` appears at four comment sites in the diff's test files. At three of them
+(`behavior.test.ts:89,171,173`) it is *correct*: those tests hand-build a phenotype with
+`fleeDistance: 4.0`, and `4.0 × STATE_COMMITMENT.EATING (0.4) = 1.6`. Only
+`sim.test.ts:255` is wrong, because that test builds a `World` from seed 7 and the
+resulting genotype expresses `fleeDistance = 5.25` → `2.1`. Both r2 runs checked a
+`behavior.test.ts` site, verified it, and never visited `sim.test.ts:255`. This is a
+sampling failure with a decoy: the claim is checkable, but the *correct* instance is more
+numerous and is what claim-enumeration lands on first.
+
+**The load-bearing conclusion holds.** The historical rubric's ✅ Confirmed Good row *"All
+new constants match their comments"* is still falsified — by R2, found in 4/4 cells, and
+verified by hand below. Result 14's corpus-blindness caveat on Result 6 stands unchanged.
+What does not stand is treating two-tier red agreement as the evidence for it.
+
+### Independent verification (not taken from any agent's report)
+
+Read directly from the pre-fix worktree at
+`/home/node/.claude/jobs/92e878b0/tmp/wt/nd2/`:
+
+`packages/sim-core/src/behavior.ts:121-127` —
+
+> ```
+>  * Post-ANGRY WARY window (seconds) during which the creature's flee distance is elevated
+>  * (original: "Post-ANGRY return ... stays wary for ~30s"). Scaled down to the sim's
+>  * faster tempo but kept the LONGEST mood window so a spooked creature stays hard to
+>  * approach for a while.
+>  */
+> export const WARY_MOOD_DURATION = 30.0;
+> ```
+
+`initial_concept.md:98` — `Post-ANGRY return  6.0m  Spooked, stays wary for ~30s`.
+`30.0 === ~30`. Nothing was scaled. **R2 confirmed.**
+
+R1 confirmed the same way: `BehaviorContext` (`behavior.ts:56-85`) declares `state`,
+`phenotype`, `hunger`, `distanceToPlayer`, `playerSpeed`, `playerStealth`,
+`distanceToNearestFood` and the four new mood/timer fields — no `wanderTimer`, no
+`reproCooldown`; the only occurrence of either identifier in the whole file is the
+docblock making the claim, at line 77.
+
+R3 confirmed to the arithmetic: `sim.test.ts:255` reads *"inside the committed flee
+threshold (1.6)"*, and with `STATE_COMMITMENT.EATING = 0.4`, `playerSpeed: 1 ===
+CALM_PLAYER_SPEED` (speed factor 1.0) and `stealth: 0` (stealth factor 1.0), the threshold
+is exactly `fleeDistance × 0.4` — so `1.6` requires `fleeDistance = 4.0`, and the r1 runs'
+independently-reported `5.25` for seed 7 gives `2.1`. The comment is wrong for any
+genotype except the hand-built one from the *other* test file.
+
+### Findings volume, all four ND2 cells
+
+| | 🔴 | 🟡 | 🟢 | total | elapsed |
+|---|---|---|---|---|---|
+| opus r1 | 5 | 13 | 14 | 32 | — |
+| opus r2 | 3 | 10 | 19 | 32 | 1700 s |
+| fable r1 | 3 | 8 | 12 | 23 | — |
+| fable r2 | 2 | 6 | 12 | 20 | 1111 s |
+
+Total volume is stable within tier (opus 32/32, fable 23/20); the *distribution across
+bands* is not. Opus moved five rows down a band net; fable moved three. Result 11/7's
+opus-volume dominance replicates.
+
+### J_self — within-tier replicate agreement
+
+**Matching criteria, stated explicitly.** Two rows match if they name the same file (or
+same file pair for cross-file findings) *and* the same underlying mechanism, regardless
+of: rubric band (🔴/🟡/🟢), row ID, critic of origin, or wording. Where one replicate
+splits a mechanism across two rows and the other merges them (e.g. opus r1's R4 + R5 vs
+opus r2's C14; fable r1's A7 + A8 vs fable r2's R1), the pair is collapsed to one cluster
+before counting, so a formatting choice cannot inflate the union. Sandbox-bookkeeping rows
+("`npm test` unverifiable") are excluded from both sides as artifacts of the deviation,
+not findings. Matching is mine and unblinded, same as the r1 ground-truth matching.
+
+| Tier | ∩ | r1-only | r2-only | ∪ | **J_self** |
+|---|---|---|---|---|---|
+| opus | 21 | 11 | 11 | 43 | **≈ 0.49** |
+| fable | 14 | 7 | 4 | 25 | **≈ 0.56** |
+
+Restricted to the red band alone, agreement collapses:
+
+| Tier | red ∩ | red ∪ | **J_self(🔴)** |
+|---|---|---|---|
+| opus | 1 (`WARY_MOOD_DURATION`) | 7 | **0.14** |
+| fable | 1 (timer docblock) | 4 | **0.25** |
+
+So roughly **half** the finding set is reproducible within a tier, but only **one red row
+per tier** is. Cluster-merge judgment calls move the issue-level numbers by about ±0.05;
+they do not move the red-band numbers, which are small enough to enumerate by hand.
+
+**A different cross-tier convergence did appear in r2.** Opus r2's R2+R3 (widening
+`BehaviorState` breaks consumer `switch`/`Record`; four new *required* `BehaviorContext`
+fields break hand-built contexts) and fable r2's R1 are the same mechanism, filed 🔴 by
+both tiers. In r1 both tiers had this content too — but at 🟡 (opus A4, fable A7/A8, the
+latter explicitly tier-noting "critic-native severity is Breaking (→🔴 per mapping);
+tiered 🟡 because the break is fully contained in-commit"). Cross-tier convergence on ND2
+is therefore real and repeatable in *kind*; it just does not stay attached to the same
+rows. Both r2 cells also note this row has zero live blast radius (`private`, `0.0.0`, no
+consumers), which is what the r1 cells used to justify holding it at 🟡.
+
+### Finding in r2 but not r1 that is more severe than anything in r1
+
+**Yes, and it is the ground truth.** Opus r2 filed as **C1** (🟢 Consider, "highest-signal
+advisory"):
+
+> "A FLEE-interrupted song still sets CONTENT (`sim.ts:637-640`, keyed on `from ===
+> "SINGING"` unconditionally …). Consequence: interrupting a song halves the creature's
+> flee threshold for 6 s, so it leaves FLEE almost immediately and becomes *more*
+> approachable. The stated design intent (`behavior.ts:152-156`) is that interrupting a
+> song is 'the failure mode players learn to avoid' — mechanically it is a reward.
+> Invisible to tests, which assert only the transition, never the tick after."
+
+That is ND2's **GT A1** — the mood inversion the human fixed as a blocking finding in the
+very next commit (`31fd3c4`), and the defect Result 15 recorded as missed by all three
+tiers at r1. It is categorically more severe than any r1 red row on this diff: every r1
+🔴 is a comment-accuracy or contained-API-break issue, while this is a live behavioral
+inversion of the feature's central mechanic.
+
+This forces an amendment to Result 15's mechanism. At r1, opus reached the code path and
+*cleared* it ("that choice is fine") — consistent with Result 15's reading that an in-code
+intent claim is treated as dispositive. At r2, opus reached the code path, **rejected** the
+intent claim explicitly ("mechanically it is a reward"), reconstructed the full
+consequence including the test blind spot — and still filed it 🟢. Result 16's rule
+explains why: no fact-check **Incorrect** verdict and no api-consistency **Breaking**
+verdict attached to it, and *nothing else in the pipeline can produce a 🔴*. The escalation
+rule that Result 16 praised as "inert by construction" is, on this diff, the thing standing
+between a correct full-mechanism reconstruction of the branch's real defect and a red row.
+A tech-debt critic cannot escalate, no matter what it finds.
+
+(Opus r2 also surfaced 🟢 C8 — WARY's 30 s × 1.5 can raise the flee threshold to ~9.0 in a
+10×10 world, making FLEE absorbing for the full window — which is new in r2 and plausibly
+more severe than the r1 reds. It is downstream of R2: the window is 30 s *by accident*,
+because nothing was actually scaled.)
+
+### What this settles
+
+- **Settled negative:** ND2's three-red cross-tier convergence is not a stable property of
+  the pipeline. Do not cite it as two independent models agreeing on three rows.
+- **Settled positive:** the historical ✅ Confirmed Good row on constants-match-comments is
+  wrong, on 4/4 mechanism detection plus hand verification. Result 14's caveat on Result 6
+  is unaffected.
+- **New:** within-tier J_self ≈ 0.5 issue-level, ≈ 0.14–0.25 red-level. Any gate keyed on
+  red-row identity is keying on the least reproducible output the pipeline has. Result 1's
+  "presence is more stable than tier" needs the companion caveat that *presence is much
+  more stable than band*, and that band is where gates read.
+- **New:** the 🔴 monopoly held by fact-check-Incorrect / api-Breaking (Result 16) is now
+  a demonstrated false-negative mechanism, not just a design property — it suppressed a
+  fully-reconstructed GT A1 to 🟢.
+
+---
+
 ## Decision table delta
 
 | Prior position | Status after this arm |
@@ -217,13 +415,28 @@ than tier, and gates should key on issue identity or the blocking band, not on �
 | R8b: single-pass ceiling below cross-file bugs | **Confirmed as a config property.** The pipeline clears it at opus. |
 | R8b: weak reviews are false attestations | **Widened.** Observed at sonnet *and* fable, on the branch's actual 🔴, with the disconfirming evidence present in the same run's fact-check. Tier does not protect against this. |
 | R9 H1: non-total ordering across models | **Replicated per-row** on MD1. |
-| R6: ~99% precision of persisted rubrics | **Caveat sharpened.** Result 14 shows the corpus is blind to defects the original panel never raised, not merely to ones it raised and the author rejected. |
-| R7: dominant FP class is true-mechanism / disputed-intent | **Extended to false negatives.** Result 15. |
+| R6: ~99% precision of persisted rubrics | **Caveat sharpened, and it survives 14a.** The corpus is blind to defects the original panel never raised. Rests on R2's 4/4 mechanism detection + hand verification, no longer on two-tier red agreement. |
+| R14: two tiers agree on three 🔴 rows | **Falsified at n=2.** Red sets on those rows intersect in nothing at r2; R3 vanishes from both cells. Mechanisms replicate 4/4 (R1, R2) and 2/4 (R3); bands do not. Result 14a. |
+| R17: severity is the least stable output *across tiers* | **Widened to within-tier.** J_self(🔴) ≈ 0.14 (opus) / 0.25 (fable) across replicates of the same tier on the same diff. Result 14a. |
+| R16: escalation is inert by construction, fires only on fact-check corroboration | **Reclassified as a false-negative mechanism.** Opus r2 fully reconstructed ND2's GT A1 — rejecting the docstring's intent claim outright — and filed it 🟢, because no fact-check-Incorrect or api-Breaking verdict could attach. Result 14a. |
+| R7: dominant FP class is true-mechanism / disputed-intent | **Extended to false negatives (Result 15), then sharpened by 14a:** comprehension is not the binding constraint — a run can hold the whole defect and still band it advisory. |
 
 ## Highest-value follow-ups
 
-1. **Replicates.** n=1 per cell; ND2's opus/fable convergence deserves a second replicate
-   before it is treated as settled.
+1. **Replicates — ND2 done, and it came back negative.** Result 14a ran opus r2 and
+   fable r2. The three-red convergence **did not reproduce**; within-tier J_self is ≈0.49
+   (opus) / ≈0.56 (fable) issue-level and ≈0.14 / 0.25 on the red band alone. Two live
+   consequences, both now higher-value than more ND2 replicates:
+   (a) **Re-run ND3 and MD1 at n=2 before any of their per-row claims are cited** —
+   Results 11, 12, 13 and 17 all rest on single-cell red/amber assignments, and 14a shows
+   band assignment flips between replicates of the same tier on the same diff. MD1 R1
+   (opus-only recovery) is the most load-bearing single cell in the program and is
+   unreplicated.
+   (b) **Adjudicate the Incorrect-vs-Mostly-Accurate boundary in `code-fact-check`.** It is
+   the sole 🔴-producing channel (Result 16) and it is the entire mechanism of the r1↔r2
+   divergence — the same defect, described identically, lands on either side of it. A
+   worked rubric or few-shot calibration for that one verdict pair would buy more stability
+   than a tier upgrade.
 2. **A `✅ Confirmed Good` audit.** Result 12 makes that section the most dangerous output
    in the rubric. Nothing currently checks it, and it is where two of three tiers filed
    MD1's blocking defect.
@@ -235,7 +448,13 @@ than tier, and gates should key on issue identity or the blocking band, not on �
 ## Reproduction
 
 - Runner: `run-review.sh` / `driver.sh` in the session job scratchpad; run artifacts under
-  `/home/node/cr-eval/runs/<diff>-<tier>-r1/` (full `docs/reviews/` tree per cell).
+  `/home/node/cr-eval/runs/<diff>-<tier>-r<n>/` (full `docs/reviews/` tree per cell). r1 for
+  all nine cells; r2 additionally for `nd2-opus` and `nd2-fable` (Result 14a).
+- **Reading a cell's rubric:** each worktree carries *older* in-tree rubrics from earlier
+  branches (nd2's includes `code-review-rubric-2026-06-19-feature-observation-catalog.md`,
+  and the pre-existing `code-review-rubric.md` at the pre-fix commit). Select by content —
+  the file must name commit `2d0ee3c` **and** `Reviewed: 2026-07-30` — not by glob order or
+  mtime.
 - Worktrees: detached at `2d0ee3c`, `319f229`, `d90d6bb` in `external/`.
 - Ground truth: `31fd3c4:docs/reviews/code-review-rubric.md` (ND2),
   `1b0dcc8:…` (ND3), `6e88a5b:docs/reviews/csp-headers/code-review-rubric.md` (MD1).
