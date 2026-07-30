@@ -168,6 +168,59 @@ human channel); the temporal correction assumes fixed-in-same-commit implies
 valid-at-review-time (safe here: the author chose to fix them); blinding removed tier and
 convergence but the adjudicator could sometimes infer commit context.
 
+## Result 6 — External-repo corpus (added later same day): 287 findings, 99.0% valid — and why that number mostly isn't measuring the reviewer
+
+Three work repos were cloned read-only into `external/`. Two carry format-compatible
+rubric history (`nature_photographer`: 27 rubric commits, Jun 19–26; 
+`meta-formalism-copilot`: 13 distinct rubrics incl. 6 per-branch, Apr–Jun — its pre-skill
+era filters out automatically since extraction keys on rubric files). `threadwork` has no
+code-review rubrics (only a spec-critic artifact in a different format) and is excluded.
+
+Extraction: 287 findings (15 🔴 / 78 🟡 / 194 🟢 — 5/27/68%, near-identical to this
+repo's 2/23/74 tier mix). Blinded adjudication (tier stripped, shuffled, 4 parallel
+agents, temporal rule encoded from Result 5's lesson):
+
+| | valid | invalid | precision |
+|---|---|---|---|
+| 🔴 (n=15) | 15 | 0 | 100% |
+| 🟡 (n=78) | 78 | 0 | 100% |
+| 🟢 (n=194) | 191 | 3 | 98.5% |
+| **total** | **284** | **3** | **99.0%** |
+
+The 3 invalids are all 🟢-tier factual errors (claimed SVG overflow that never existed;
+"10 constants spread across files" when 5 exist in one file; a falsified "only
+non-verb-first export" uniqueness claim). Consistent with Result 5: **every genuine false
+positive across all four repos, n=330, sits in the advisory tier.** Blocking-tier
+precision is 16/16 across all repos.
+
+**The saturation caveat — flagged independently by 3 of the 4 adjudicators.** These
+rubrics were committed *alongside their own fixes*. A finding the author judged wrong
+would likely not produce a fix-and-commit-the-rubric event; discarded reviews (the Gate
+1h pattern) and rejected findings are absent from this corpus by construction. So ~99%
+is the precision of **author-accepted, persisted output** — an upper bound heavily
+filtered by acceptance, not raw reviewer precision. The corpus is also useless for the
+convergence question for the same reason: with verdicts saturated at valid,
+precision(converged) = precision(single-critic) trivially. (Census for when better data
+exists: 17 explicitly escalated + 17 convergent-but-unescalated findings — so the rule's
+inconsistent application replicates in both external repos.)
+
+**What this actually establishes:**
+
+1. **Raw-precision measurement requires pre-triage capture.** The only way to measure
+   what the reviewer emits (vs. what the author accepts) is to persist findings *before*
+   the fix pass — which is precisely the date-stamping + worktree-copy + override-log
+   fixes already queued. The retrospective route is exhausted.
+2. **Path-anchoring needs basename resolution.** 54/287 findings carry checkable file
+   refs; only 8 resolve as written — ~46 are basename shorthand (`genetics.ts` for
+   `packages/sim-core/src/genetics.ts`), 1 cites a file that never existed. A mechanical
+   `Evidence:` checker without basename resolution would false-positive on ~85% of
+   citations.
+3. **The domain-transfer caveat is retired.** np/mfc are real TS/TSX codebases and the
+   tier mix, factual-accuracy profile, FP-lives-in-🟢 pattern, and
+   inconsistent-escalation pattern all replicate.
+4. **nature_photographer's override log: present, zero rows, 27 sessions** — the
+   orphaned-write-path diagnosis replicates in a second repo.
+
 ## Incidental finding that outranks the experiments — the Gate 1h security cluster
 
 All three D2 security runs independently converged (3/3, rated High/High/Med) on the same
@@ -202,6 +255,7 @@ sentinel, and fail closed.
 | §4.6 ordering experiment | Not run (needs paired A/B against seeded bugs). |
 | NEW: fix Gate 1h (reviewer-in-worktree, sentinel nonce, fail-closed) | **Do first.** 3/3-stable High finding on live autonomous infrastructure. |
 | NEW: severity-band instability | Any future gate that keys on 🟡-vs-🟢 tier is keying on the *least* stable part of the output. Gates should key on issue identity or High-band findings, which are stable. |
+| NEW (Result 6): retrospective precision measurement is exhausted | Persisted rubrics are acceptance-filtered (~99% valid by construction). Raw precision and the convergence question now *require* pre-triage capture — raising the priority of the worktree-copy and override-log fixes from "data hygiene" to "only remaining measurement path." |
 
 ## Reproduction
 
