@@ -221,6 +221,97 @@ inconsistent application replicates in both external repos.)
 4. **nature_photographer's override log: present, zero rows, 27 sessions** — the
    orphaned-write-path diagnosis replicates in a second repo.
 
+## Result 7 — Fresh re-reviews of historical diffs: model tier dominates everything else measured today
+
+Design (user-proposed): re-review historical diffs whose original role-panel rubrics
+survive, using fresh single-pass **generalist** reviewers at three model tiers. Three
+nature_photographer sessions with cleanly reconstructable pre-fix states (the repo's
+`feat → fix-review-findings → docs-artifacts` commit discipline made this possible):
+
+- **ND1** `7db506d` observation/photo-capture/catalog (+1173) — historical rubric: 11 findings
+- **ND2** `2d0ee3c` ANGRY+SINGING states (+621) — 8 findings, incl. blocking A1 (mood reset on interrupted song)
+- **ND3** `319f229` session persistence (+681) — 8 findings, incl. blocking A1 (deserialize trusts untrusted body)
+
+3 diffs × {haiku 4.5, sonnet 5, opus 5} × 2 replicates, byte-identical prompts within a
+diff. 18 runs, 49 raw findings (37 after cross-run dedup).
+
+### Findings volume and headline-defect recall by tier
+
+| | haiku | sonnet | opus |
+|---|---|---|---|
+| findings/run (mean) | 0.3 | 0.5 | **7.3** |
+| runs returning NONE | 4/6 | 3/6 | 0/6 |
+| historical findings recovered (union, of 27) | 0 | 1 | 6 |
+| **validated blocking defects recovered (of 6 A-tier)** | **0** | **0** | **3** |
+
+The blocking-tier detail: ND3's save-deserialization hole (real enough that the next
+commit is its fix) was found by **opus 2/2 replicates, sonnet 0/2, haiku 0/2** — and both
+sonnet runs and one haiku run affirmatively declared the code clean ("no correctness or
+security issues found"). ND2's mood-inversion A1 was found by opus 1/2, sonnet 0/2,
+haiku 0/2. ND1's two A-tier findings were recovered by nobody.
+
+This is the tracker's Thread 5 claim landing on our own data: **aggregation cannot buy
+what the base model can't see.** No number of haiku/sonnet samples of this prompt config
+recovers findings they detect at rate 0. And it contradicts the "model tier does not
+cleanly predict review quality" caveat from SWR-Bench's stale model set — on current
+Claude tiers, tier dominated.
+
+### Consistency (the question this experiment was framed around)
+
+- **Within-tier:** haiku/sonnet replicates "agree" mostly by both returning ~nothing
+  (and when one does fire, the other doesn't — J=0 on 3 of 6 low-tier pairs). Opus
+  J_self at issue level: ND1 ≈ 0.38, ND2 ≈ 0.15, ND3 ≈ 0.35 — **lower** than the
+  role-critic panel's 0.70 from Result 1. Plausible causes confounded: generalist prompt
+  (no cognitive-move scaffold), bigger diffs, wider search space. Consistent with the
+  role prompts earning their keep as *variance reducers* rather than as lane-fillers.
+- **Cross-tier convergence happened exactly twice**, both times on findings the models'
+  own replicates didn't reproduce (zero-facing-vector: sonnet+opus on ND1; SINGING
+  missing-`atFood`: haiku+opus on ND2). Small-n support for cross-config convergence
+  being a meaningful signal precisely because it is rare.
+- **Cross-time/config:** fresh opus recovers almost none of the historical panel's ND1
+  set (1/11) while producing its own internally-replicated set (fleeDistance-saturation,
+  CATALOG_STATES exhaustiveness, …) that the historical panel missed entirely. Two
+  stable, nearly disjoint finding-populations on the same diff. **A single review pass —
+  any config — samples a minority of the findable-issue population.** This is the
+  strongest empirical argument yet for N-sample aggregation, and it comes from our own
+  repos rather than the benchmark.
+
+### Caveats
+
+Single-pass generalist ≠ the production multi-critic pipeline, so "fresh missed X" is
+evidence about *this config*, not the skill set. Historical-recall matching judged by the
+orchestrating session (unblinded). n = 3 diffs, one repo, 2 replicates/cell. Fresh-finding
+precision: adjudication in flight (see below when filled).
+
+### Raw (pre-acceptance) precision of fresh findings — the number the saturated corpus couldn't give
+
+Blinded-ish adjudication of the 37 deduplicated fresh findings, strict at-commit rule,
+quantitative claims re-derived rather than accepted: **32 valid / 5 invalid = 86.5%.**
+Per diff: ND1 13/14, ND2 11/15, ND3 8/9. The heavy quantitative derivations all checked
+out on re-derivation (fleeDistance bimodal-gap arithmetic, the 0.4 < 0.6 stealth-interrupt
+inequality, the completion-bonus identity).
+
+By tier (deduplicated contributions): **haiku 0/2 valid — its only two findings were both
+false positives; sonnet 3/3; opus ≈30/34 (~88%).** So the low tier's problem isn't just
+recall: when it does fire, it misfires.
+
+Structure of the 5 invalids: 1 arithmetic error (opus's DURATION+dt claim — refuted
+tick-by-tick) and **4 "documented as intended."** And one of those four is itself wrong:
+F18 (mood=CONTENT on a fear-interrupted song) was ruled invalid because the docstring
+calls the behavior "a deliberate small mercy" — but the next commit in history
+(`31fd3c4`) is the human fixing exactly that behavior, as blocking finding A1.
+Doc-based intent lost to revealed preference; corrected precision is arguably 33/37
+(89%). Two lessons: (a) the dominant FP class remains **true-mechanism /
+disputed-intent**, now on both sides of the ledger — findings *and* adjudications; (b) an
+LLM adjudicator that defers to in-code intent claims will systematically under-count
+exactly the findings humans end up acting on. The override log — human verdicts — remains
+the only clean instrument for this band.
+
+Raw precision (86–89%) vs. acceptance-filtered precision (~99%, Result 6) also finally
+separates the two quantities cleanly: the author's triage removes roughly 10–13 points of
+false-positive mass. That gap is what the pr-prep "confirm it's real" step actually does,
+now measured.
+
 ## Incidental finding that outranks the experiments — the Gate 1h security cluster
 
 All three D2 security runs independently converged (3/3, rated High/High/Med) on the same
@@ -255,7 +346,9 @@ sentinel, and fail closed.
 | §4.6 ordering experiment | Not run (needs paired A/B against seeded bugs). |
 | NEW: fix Gate 1h (reviewer-in-worktree, sentinel nonce, fail-closed) | **Do first.** 3/3-stable High finding on live autonomous infrastructure. |
 | NEW: severity-band instability | Any future gate that keys on 🟡-vs-🟢 tier is keying on the *least* stable part of the output. Gates should key on issue identity or High-band findings, which are stable. |
-| NEW (Result 6): retrospective precision measurement is exhausted | Persisted rubrics are acceptance-filtered (~99% valid by construction). Raw precision and the convergence question now *require* pre-triage capture — raising the priority of the worktree-copy and override-log fixes from "data hygiene" to "only remaining measurement path." |
+| NEW (Result 6): retrospective precision measurement is exhausted | Persisted rubrics are acceptance-filtered (~99% valid by construction). Raw precision and the convergence question now *require* pre-triage capture — raising the priority of the worktree-copy and override-log fixes from "data hygiene" to "only remaining measurement path." *(Amended by Result 7: fresh re-review of historical diffs is a second pre-acceptance path, and it worked — raw precision 86–89%.)* |
+| NEW (Result 7): critic/fixer model floor | Do not run review gates below the opus tier with current prompts: haiku/sonnet recovered 0/6 validated blocking defects and haiku's only findings were FPs. §4.4's "reviewer ≠ fixer via cheaper tier" is dead as written — decoupling must come from a different *frontier* model or config, not a smaller one. |
+| NEW (Result 7): single-pass ceiling | Fresh opus and the historical panel each found stable, nearly disjoint finding-sets on the same diff. Any single config samples a minority of findable issues — the local evidence for N-sample union aggregation (recall), independent of the benchmark. |
 
 ## Reproduction
 
