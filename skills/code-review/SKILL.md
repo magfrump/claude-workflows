@@ -436,9 +436,14 @@ For each critic agent, you MUST:
    ```markdown
    **Severity:** High
    **Location:** `path/to/file.ext:42`
+   **Evidence:** > const timeout = config.timeout;   ← verbatim from the cited lines
    **Confidence:** High
    **Legibility-target:** for-author
    ```
+
+   The **Evidence** field is required on every finding that cites a location: one or
+   more source lines copied *verbatim* from the cited file at the cited lines. See
+   [Evidence grounding](#evidence-grounding) for why, and for the check you run on it.
 
    Default mapping for code-review critics:
    - **Actionable code finding** with a specific recommendation →
@@ -721,9 +726,15 @@ stand. Each must carry a resolution or author note.
 Advisory findings from contextual critics, single-critic suggestions, and improvement
 opportunities. Not required to pass review.
 
-| # | Finding | Source | Legibility-target | Considered overrides |
-|---|---|---|---|---|
-| C1 | [Suggestion] | [Which critic] | for-author | — |
+| # | Finding | Source | Legibility-target | Considered overrides | Status |
+|---|---|---|---|---|---|
+| C1 | [Suggestion] | [Which critic] | for-author | — | 🟢 Open |
+
+The **Status** column is the cheapest calibration instrument in this document. 🟢 is ~70%
+of everything the pipeline emits, and it was the only tier with no disposition recorded —
+so three quarters of the corpus was unadjudicatable after the fact and precision in the
+advisory band could never be estimated. Mark each row `🟢 Open`, `Fixed`, `Won't-Fix`, or
+`Deferred` as it is resolved; a `Won't-Fix` here should also become an override-log row.
 
 ---
 
@@ -751,6 +762,21 @@ Patterns, implementations, or claims confirmed correct by fact-check and/or crit
 
 ---
 
+## ⚠️ Unverified Findings
+
+Findings whose **Evidence** block could not be located at the cited location (after
+basename resolution) per [Evidence grounding](#evidence-grounding). These are advisory
+only: they may not be 🔴 or 🟡 and do not count toward convergence.
+
+| # | Finding | Source | Cited location | Why unverified |
+|---|---|---|---|---|
+| U1 | [Description] | [Which critic] | `path/to/file:42` | No file matching `file` in repo |
+
+If every finding's evidence checked out, replace the table with the single line: "All
+findings' evidence resolved." The heading must still appear so the check is auditable.
+
+---
+
 ## ⏭️ Skipped Core Critics
 
 Core critics downgraded by the Stage 1.5 critic gate (diff-shape skip and/or absence of
@@ -771,6 +797,29 @@ carry an author note. 🟢 items are optional.
 
 **Legibility-target column:** Carry forward the tag each critic placed on the source finding (see [taxonomy](../../patterns/orchestrated-review.md#legibility-target-tagging)). Typical mapping: 🔴 / 🟡 / 🟢 rows are `for-author`; ✅ rows are `for-orchestrator-synthesis`. `for-automated-gate` findings (e.g., the security-reviewer HALT-ESCALATE pattern) live in the escalation block above the rubric, not in these tables — they reference the source critique once instead of being duplicated as a row.
 
+### Evidence grounding
+
+Before tiering, verify each finding's **Evidence** block against the file it cites.
+
+1. Read the cited file at the cited line range.
+2. Confirm the quoted text appears there (ignore leading/trailing whitespace).
+3. **Resolve basenames.** Critics routinely cite `genetics.ts` for
+   `packages/sim-core/src/genetics.ts` — in a 287-finding sample only 8 of 54 path
+   citations resolved as written, and ~46 were basename shorthand. A checker that does
+   not resolve basenames rejects ~85% of *correct* citations. Match on basename when the
+   full path does not resolve, and only fail when no file in the repo matches.
+4. A finding whose evidence cannot be located goes to a `## ⚠️ Unverified findings`
+   section: it may **not** be 🔴 or 🟡, and may not participate in convergence.
+
+**What this is and isn't for.** Anthropic's long-context guidance recommends
+quote-before-answer to suppress hallucination, and that is the usual rationale. On this
+repo's corpus it is *not* the binding problem: across 330 adjudicated findings there was
+**one** borderline location error and zero clear hallucinations. The real payoff is
+auditability — only 6 of 43 findings in one corpus carried a mechanically checkable
+reference at all, which is why precision could never be measured without re-reading every
+finding by hand. Requiring Evidence makes the output machine-checkable going forward.
+Treat a firing check as a signal worth investigating, not as a routine occurrence.
+
 ### Unified Severity Mapping
 
 Use this table to map individual critic severity levels to rubric tiers:
@@ -785,9 +834,37 @@ Use this table to map individual critic severity levels to rubric tiers:
 
 ### Escalation Rule
 
-If 2+ **core critics, architecture-review, or fact-check** independently flag the same issue (same code region, overlapping concern), escalate that finding one tier:
-- 🟢 → 🟡
-- 🟡 → 🔴
+If 2+ **core critics, architecture-review, or fact-check** flag the same issue (same code
+region, overlapping concern), **record the convergence** on the finding
+(`Convergence: security + performance`) and surface it in the synthesis as a
+prioritization signal.
+
+**Convergence alone no longer escalates a tier.** Promotion to a higher tier additionally
+requires one piece of corroboration that does not come from another critic sampling the
+same model:
+
+- a failing test or other executed evidence,
+- a fact-check verdict of **Incorrect**, or
+- explicit human confirmation during the run.
+
+With corroboration, escalate one tier (🟢 → 🟡, 🟡 → 🔴) and note which corroboration
+applied. Without it, the finding keeps its own tier and carries the convergence note.
+
+**Why this changed.** The rule previously read "independent agreement across domains is
+the strongest signal that an issue is real." In this repo the critics are **not
+independent** — they are the same model on the same diff, differing only by role prompt,
+so their errors are correlated by construction. Measurements
+(`docs/working/experiment-results-code-review-2026-07-29.md`, Results 2 and 5) found:
+cross-role convergence is *rare* (0–1 borderline case across 3 diffs), so the rule almost
+never fires; of the four historical convergence-escalations, the one with the **most**
+convergence (3 critics) is the one the human waived; and the escalation was applied
+inconsistently anyway (≥2 findings labelled convergent were never escalated). The
+mechanism was carrying merge-blocking authority on an untested n≈5.
+
+Note what the evidence did *not* show: those escalated findings were factually **valid**.
+The failure mode was true-but-unwanted — a real issue promoted to blocking against the
+author's judgment. That is why the corroboration required is executable or human, not
+another opinion.
 
 Contextual critics (test-strategy, tech-debt-triage, dependency-upgrade) do **not** count toward escalation. Their findings remain in 🟢 Consider regardless of overlap with other critics. If a contextual critic flags the same issue as a core critic, note the agreement in the finding's description for visibility, but do not escalate — contextual critics are advisory and must not gain blocking power through the escalation mechanism.
 
