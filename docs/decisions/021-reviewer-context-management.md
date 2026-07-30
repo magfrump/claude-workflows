@@ -5,7 +5,8 @@
 the cross-model / cheap-critic sweep as the primary consumer.
 **Project state**: Follows the 2026-07-30 cross-model OpenRouter review experiment · feeds
 `scripts/cross-model-review.py` and the `code-review` skill · standalone decision, not
-blocked.
+blocked. Synthesized into the unified state doc
+`docs/thoughts/code-review-evaluation-state.md` §5.0 and §2.
 **Task status**: complete (decision drafted, staged recommendation; Stage 1 ready to
 implement).
 

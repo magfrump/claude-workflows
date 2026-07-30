@@ -3,6 +3,9 @@
 **Harness:** `scripts/cross-model-review.py` (diff pasted inline, no tools, no agent).
 **Companion:** `experiment-results-code-review-2026-07-29.md` (single-family stability run).
 **Raw data:** `runs/cross-model/{gt,fast}-<sha>/findings.jsonl` + `overlap.json`.
+**Synthesis:** this arm's conclusions are folded into the unified state doc
+`docs/thoughts/code-review-evaluation-state.md` §5.0 — read that first for how this arm sits
+against the rest of the evaluation program.
 
 ## Question
 
