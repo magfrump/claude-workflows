@@ -168,13 +168,47 @@ Run review skills and iterate until clean. This is required, not optional.
 
 **b. Triage and fix.** Read each review artifact. Before sorting findings into the tier table below, scan each finding against `docs/reviews/override-log.md`. Findings that match a settled `Won't-Fix` row (this PR or an earlier one — same location, or same category and substantively the same claim) are surfaced under a separate **Re-flagged settled decisions** subsection in the review artifact and do **not** enter the tier triage. See `workflows/review-fix-loop.md` § Re-flagged settled decisions for the match criteria and the deliberate-promotion escape hatch (how to route a finding back into triage when the prior Won't-Fix no longer applies). This prefilter runs before the tier triage, but it does **not** override the Divergence detection check below — the two handle different re-fires: divergence detection *investigates* a re-fire the prior iteration tried to fix, whereas this filter *skips* a re-fire a human already settled as Won't-Fix. If a finding matches both (it was actively fix-attempted last iteration *and* carries a Won't-Fix row), divergence detection wins — see `workflows/review-fix-loop.md` § Re-flagged settled decisions. Only when neither applies does a finding enter the tier triage. Then work through the remaining findings in tier order:
 
-| Tier | Meaning | Action |
-|------|---------|--------|
-| Must Fix | Correctness bugs, false passes, wrong behavior | Fix before proceeding |
-| Must Address | Fragility, inconsistency, misleading tests | Fix or explicitly acknowledge |
-| Consider | Style, duplication, future-proofing | Fix if cheap, otherwise note for later |
+| Tier | Meaning | Action | If you do NOT fix it |
+|------|---------|--------|----------------------|
+| Must Fix | Correctness bugs, false passes, wrong behavior | Fix before proceeding | **Override-log row required** |
+| Must Address | Fragility, inconsistency, misleading tests | Fix or explicitly acknowledge | **Override-log row required** |
+| Consider | Style, duplication, future-proofing | Fix if cheap, otherwise note for later | **Override-log row required** |
 
 For each finding: confirm it's real by reading the code, then fix. Commit in coherent batches referencing finding IDs (e.g., `fix: Address code review findings A2-A5`).
+
+#### Capturing overrides — do it here, not later
+
+**Every finding you decline to fix is an override, and the row gets written in this step**,
+before the fix commit lands. Append to `docs/reviews/override-log.md` using the format in
+[`skills/code-review/SKILL.md`](../skills/code-review/SKILL.md#capture-format) — Date, PR
+ref, Finding (with `path:line` and the surfacing critic), Original verdict, Override
+verdict, Reason.
+
+This covers all three not-fixing outcomes the table above already sanctions: "explicitly
+acknowledge" (Must Address), "note for later" (Consider), and the scope-drift deferral
+below. It also covers a Must Fix you waive, which should be rare enough to feel wrong.
+
+**Why the capture instruction lives here rather than in the code-review skill.** It used
+to live only in `code-review`, scheduled for "inside the same skill run" — but the skill's
+job ends when it publishes the rubric, and the decision to *not fix something* is made
+later, right here, in the fix pass. The write had no owner at the moment it became
+possible. Result: 1 row against ~32 override-shaped verdicts since the log was created,
+with the verdicts landing in commit-message `Notes:` fields, PR "Areas of uncertainty"
+sections, and rubric `Author note` cells instead — three sinks closer to hand than the
+log. Diagnosis: `docs/working/handoff-diagnosis-override-log-not-written.md`.
+
+Two practical notes:
+
+- **The commit body is not a substitute.** `CLAUDE.md`'s autonomous-commit format asks for
+  a `Notes:` line, and in /away mode that is where waivers naturally go. Write the row
+  *and* the note — the row is what the next run reads at Step 3.5; a commit body is not
+  indexed by location and cannot suppress a re-fire.
+- **A `Won't-Fix` here should match the 🟢 `Status` cell** in the rubric, so the two
+  artifacts agree about what happened.
+
+**Completion check for this step:** the count of findings you declined to fix equals the
+count of new rows in `docs/reviews/override-log.md`. If those numbers differ, you have
+either fixed something silently or waived something silently.
 
 **c. Run tests.** After fixing findings, re-run the test suite. Fixes often surface latent bugs — a tightened assertion may expose a helper bug, a scoping fix may reveal a silent false pass. Fix test breakage as separate commits.
 
@@ -217,6 +251,7 @@ The user can override the ceiling and say "continue" — but the default is to s
 Both forms feed the same audit trail for calibrating the 3-iteration threshold over time.
 
 **Completion criteria:**
+- [ ] Every declined finding has a matching row in `docs/reviews/override-log.md` (counts equal)
 - [ ] Review artifacts exist in `docs/reviews/` for each review skill run
 - [ ] No Must Fix findings remain open
 - [ ] All Must Address findings are resolved or explicitly acknowledged in the PR description
