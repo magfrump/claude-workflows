@@ -1,0 +1,95 @@
+{
+  "_comment": [
+    "Canonical hook wiring for this repo's hooks, merged into ~/.claude/settings.json",
+    "by devcontainer-config/link-claude-home.sh at container start (decision 023).",
+    "",
+    "{{CLAUDE_DIR}} is substituted with the resolved config dir (CLAUDE_CONFIG_DIR, or",
+    "$HOME/.claude) at merge time — do not hardcode $HOME here: the token has to survive",
+    "a config dir that is not ~/.claude.",
+    "",
+    "Merging is by exact match on each matcher-group object, so re-running the linker is",
+    "idempotent and never touches hook entries this file did not put there. That also",
+    "means any edit to a group below strands the previous version in an already-merged",
+    "settings.json: bump it in the same commit as a linker run, or prune by hand.",
+    "",
+    "Every hook here is non-blocking EXCEPT guard-trusted-writes.py (denies writes to",
+    "trusted-policy paths) and auto-approve-allowed-commands.sh (grants permission).",
+    "Those two sit on the permission path — see decision 023 for why they are on by",
+    "default and how to opt out (CC_SKIP_HOOK_WIRING=1)."
+  ],
+
+  "UserPromptSubmit": [
+    {
+      "hooks": [
+        {
+          "type": "command",
+          "command": "bash {{CLAUDE_DIR}}/hooks/batch-feedback-routing-reminder.sh"
+        },
+        {
+          "type": "command",
+          "command": "bash {{CLAUDE_DIR}}/hooks/dd-routing-reminder.sh"
+        }
+      ]
+    }
+  ],
+
+  "PreToolUse": [
+    {
+      "matcher": "Edit|Write|MultiEdit|Bash",
+      "hooks": [
+        {
+          "type": "command",
+          "command": "python3 {{CLAUDE_DIR}}/hooks/guard-trusted-writes.py"
+        }
+      ]
+    },
+    {
+      "matcher": "Bash",
+      "hooks": [
+        {
+          "type": "command",
+          "command": "bash {{CLAUDE_DIR}}/hooks/auto-approve-allowed-commands.sh"
+        }
+      ]
+    },
+    {
+      "matcher": "Skill|Read|Agent",
+      "hooks": [
+        {
+          "type": "command",
+          "command": "bash {{CLAUDE_DIR}}/hooks/log-usage.sh"
+        }
+      ]
+    }
+  ],
+
+  "PostToolUse": [
+    {
+      "matcher": "Edit|Write|MultiEdit",
+      "hooks": [
+        {
+          "type": "command",
+          "command": "bash {{CLAUDE_DIR}}/hooks/claude-config-audit.sh"
+        }
+      ]
+    },
+    {
+      "matcher": "WebSearch|WebFetch",
+      "hooks": [
+        {
+          "type": "command",
+          "command": "python3 {{CLAUDE_DIR}}/hooks/web-taint-mark.py"
+        }
+      ]
+    },
+    {
+      "matcher": "Skill|Read|Agent",
+      "hooks": [
+        {
+          "type": "command",
+          "command": "bash {{CLAUDE_DIR}}/hooks/log-usage-post.sh"
+        }
+      ]
+    }
+  ]
+}

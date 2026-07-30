@@ -38,12 +38,13 @@ DEST="${CLAUDE_CONFIG_DIR:-$HOME/.claude}"
 [ -d "$SRC" ] || { echo "link-claude-home: no payload at $SRC — skipping." >&2; exit 0; }
 mkdir -p "$DEST"
 
-# Directories are linked wholesale; CLAUDE.md is a single file. `hooks` is
-# linked so the scripts are present and referenceable, but is deliberately NOT
-# wired into settings.json — hook wiring changes session behavior (including
-# PreToolUse guards that can block calls) and is a human opt-in, not something
-# an image rebuild should switch on silently. See decision 022.
-ENTRIES=(skills workflows guides patterns hooks CLAUDE.md)
+# Directories are linked wholesale; CLAUDE.md is a single file.
+#
+# `scripts` is here only because hooks/log-usage.sh sources
+# ../scripts/lib/skill-paths.sh relative to its own resolved path — without it
+# that hook aborts on every Skill/Read/Agent call. Linking the dir keeps the
+# relative source working from $SRC/hooks/.
+ENTRIES=(skills workflows guides patterns hooks scripts CLAUDE.md)
 
 linked=0 skipped=0
 for name in "${ENTRIES[@]}"; do
@@ -68,3 +69,63 @@ if [ -f "$SRC/.manifest" ]; then
 fi
 
 echo "link-claude-home: linked $linked entr$([ "$linked" -eq 1 ] && echo y || echo ies) from $SRC${skipped:+, skipped $skipped}"
+
+# --- Hook wiring (decision 023) ----------------------------------------------
+# Decision 022 shipped the hooks unwired, on the reasoning that hook wiring
+# changes session behavior and should be a human opt-in rather than something an
+# image rebuild switches on silently. 023 keeps the opt-in but moves it: the
+# human's gate is now install.sh's diff-and-bless (hooks/wiring.json is part of
+# the reviewed payload) rather than a hand-edit of settings.json in every
+# per-project volume, which in practice meant the hooks were never on anywhere.
+#
+# settings.json is MERGED, not linked. It lives in the per-project volume and
+# Claude Code writes to it at runtime (theme, effortLevel, ...); a symlink to the
+# root-owned payload would make those writes fail. So this is a default, not a
+# boundary — `node` can still edit the merged result, and it is restored on next
+# start. Anything that must be enforced belongs in the image, not here.
+#
+# Set CC_SKIP_HOOK_WIRING=1 to leave settings.json alone entirely.
+WIRING="$SRC/hooks/wiring.json"
+SETTINGS="$DEST/settings.json"
+
+if [ "${CC_SKIP_HOOK_WIRING:-}" = "1" ]; then
+  echo "link-claude-home: CC_SKIP_HOOK_WIRING=1 — leaving $SETTINGS unwired."
+elif [ ! -f "$WIRING" ]; then
+  echo "link-claude-home: no $WIRING — hooks linked but not wired." >&2
+elif ! command -v jq >/dev/null 2>&1; then
+  echo "link-claude-home: jq not found — hooks linked but not wired." >&2
+else
+  [ -f "$SETTINGS" ] || printf '{}\n' > "$SETTINGS"
+
+  # A settings.json the agent (or a crash) left unparseable must not be silently
+  # replaced — that would discard real user settings. Bail loudly instead.
+  if ! jq -e . "$SETTINGS" >/dev/null 2>&1; then
+    echo "link-claude-home: $SETTINGS is not valid JSON — refusing to touch it." >&2
+  else
+    # Merge semantics, per event key:
+    #   (existing - ours) + ours
+    # Array subtraction is deep equality, so re-running is exactly idempotent:
+    # our matcher-groups are removed and re-appended, and every group we did not
+    # author is preserved in place. `_comment` is dropped (keys_unsorted minus
+    # the underscore-prefixed ones) so documentation never lands in settings.
+    tmp="$SETTINGS.link-tmp.$$"
+    if jq --arg dir "$DEST" --slurpfile w "$WIRING" '
+          ($w[0]
+           | with_entries(select(.key | startswith("_") | not))
+           | walk(if type == "string"
+                  then gsub("\\{\\{CLAUDE_DIR\\}\\}"; $dir)
+                  else . end)) as $wiring
+          | .hooks //= {}
+          | reduce ($wiring | keys_unsorted[]) as $ev (
+              .;
+              .hooks[$ev] = (((.hooks[$ev] // []) - $wiring[$ev]) + $wiring[$ev])
+            )
+        ' "$SETTINGS" > "$tmp" 2>/dev/null && [ -s "$tmp" ]; then
+      mv -f "$tmp" "$SETTINGS"
+      echo "link-claude-home: wired $(jq -r '[.hooks[][]?.hooks[]?] | length' "$SETTINGS") hook command(s) into $SETTINGS"
+    else
+      rm -f "$tmp"
+      echo "link-claude-home: hook merge failed — $SETTINGS left unchanged." >&2
+    fi
+  fi
+fi

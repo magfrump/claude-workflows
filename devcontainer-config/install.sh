@@ -35,7 +35,11 @@ REPO_ROOT="$(cd "$SRC/.." && pwd)"
 # Assembled fresh on every install so the staged copy can never silently drift
 # from the repo — and, being inside $SRC, it shows up in the diff below, which
 # is the human's review gate. Do not hand-edit devcontainer-config/claude-home.
-CLAUDE_HOME_SRC=(CLAUDE.md skills workflows guides patterns hooks)
+#
+# `scripts` is staged for one reason: hooks/log-usage.sh sources
+# ../scripts/lib/skill-paths.sh relative to its own path, so a payload with
+# hooks but no scripts leaves that hook dead on arrival (decision 023).
+CLAUDE_HOME_SRC=(CLAUDE.md skills workflows guides patterns hooks scripts)
 STAGE="$SRC/claude-home"
 rm -rf "$STAGE"
 mkdir -p "$STAGE"

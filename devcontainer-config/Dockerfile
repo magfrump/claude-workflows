@@ -112,6 +112,45 @@ RUN case "$(dpkg --print-architecture)" in \
 ENV UV_PYTHON_DOWNLOADS=never \
     UV_LINK_MODE=copy
 
+# shfmt — the shell parser the auto-approve-allowed-commands hook depends on.
+#
+# WHY IT IS HERE AT ALL: hooks/auto-approve-allowed-commands.sh parses a Bash
+# command into its component commands (through pipes, &&, subshells, `bash -c`)
+# via `shfmt -tojson` before checking each component against the allowlist.
+# Without shfmt the parse fails, the hook takes its `|| exit 0` fallback, and it
+# silently never auto-approves anything — a no-op that looks like a wiring bug.
+# Now that the hooks are wired by default (decision 023), the dependency has to
+# be in the image or the wiring is inert.
+#
+# WHY A PINNED GITHUB RELEASE, NOT apt: bookworm has no `shfmt` binary package,
+# and the mvdan/sh releases are single static Go binaries — the same shape as
+# the uv and git-delta layers above.
+#
+# WHY THE HASHES ARE PINNED AS ARGS (the Android layer's discipline, #19, not
+# rustup's): v3.13.1 publishes no sha256sums.txt asset, so there is nothing to
+# `sha256sum -c` against at build time. Pinning the per-arch digest here means a
+# version bump MUST move the hash in the same diff — a CDN or MITM tamper of the
+# binary fails the build rather than being silently baked into the image that
+# decides which commands get auto-approved. That last clause is why this layer
+# verifies at all: shfmt sits on the permission path.
+#
+# Root-owned in /usr/local/bin, like uv: `node` runs the parser but cannot
+# rewrite it.
+ARG SHFMT_VERSION=3.13.1
+ARG SHFMT_SHA256_AMD64=fb096c5d1ac6beabbdbaa2874d025badb03ee07929f0c9ff67563ce8c75398b1
+ARG SHFMT_SHA256_ARM64=32d92acaa5cd8abb29fc49dac123dc412442d5713967819d8af2c29f1b3857c7
+RUN case "$(dpkg --print-architecture)" in \
+      amd64) SHFMT_ARCH=amd64; SHFMT_SHA="$SHFMT_SHA256_AMD64" ;; \
+      arm64) SHFMT_ARCH=arm64; SHFMT_SHA="$SHFMT_SHA256_ARM64" ;; \
+      *) echo "shfmt: unsupported architecture $(dpkg --print-architecture)" >&2; exit 1 ;; \
+    esac && \
+    cd /tmp && \
+    wget -q "https://github.com/mvdan/sh/releases/download/v${SHFMT_VERSION}/shfmt_v${SHFMT_VERSION}_linux_${SHFMT_ARCH}" -O shfmt && \
+    echo "${SHFMT_SHA}  shfmt" | sha256sum -c - && \
+    install -o root -g root -m 0755 /tmp/shfmt /usr/local/bin/shfmt && \
+    rm -f /tmp/shfmt && \
+    shfmt --version
+
 # Android toolchain — JDK 17 + a baked SDK (decision log #19).
 #
 # Unconditional, in the shared base image, exactly like uv above: a toolchain is

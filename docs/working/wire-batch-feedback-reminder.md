@@ -1,5 +1,12 @@
 # Wiring: batch-feedback-routing-reminder hook
 
+> **Superseded for cc-isolated by [decision 023](../decisions/023-wire-hooks-from-the-image.md)
+> (2026-07-30).** Inside the devcontainer, `hooks/wiring.json` is merged into
+> `~/.claude/settings.json` automatically at container start — the manual steps below are
+> neither needed nor sufficient there (a per-volume hand-edit does not survive a fresh
+> volume). This document remains the procedure for a **bare host install** with no
+> devcontainer.
+
 `hooks/batch-feedback-routing-reminder.sh` is a `UserPromptSubmit` hook that
 escalates decision-tree **row 2** ("Message bundles 2+ independent tasks") into a
 harness-injected, non-blocking reminder to fan work out to parallel subagents.

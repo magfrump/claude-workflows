@@ -69,6 +69,11 @@ loudly when it has to fall back to the branch copy.
 
 ### Hooks are shipped but NOT wired
 
+> **Superseded by [023](023-wire-hooks-from-the-image.md) (2026-07-30).** The opt-in below
+> was never exercisable — it required hand-editing `settings.json` inside every per-project
+> volume — so the hooks stayed inert everywhere. 023 keeps the human gate but moves it to
+> `install.sh`'s diff-and-bless, and wires all nine hooks by merge at container start.
+
 `hooks/` is linked so the scripts are present, but nothing is written to `settings.json`.
 Hook wiring changes session behavior — the `PreToolUse` guards can block tool calls — and
 that should be a human opt-in, not something an image rebuild switches on silently.
