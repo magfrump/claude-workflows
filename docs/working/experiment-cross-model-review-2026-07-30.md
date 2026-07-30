@@ -311,8 +311,8 @@ at round 4 as F2.
 5. **Where to place a second model family — hypotheses, not yet a decision.** Result 4 is
    the evidence that a different family removes the incumbent's correlated blind spots;
    Result 5 is the constraint (a diff-only *full* review manufactures confident false
-   positives, so it needs real context — see the reviewer-context-management DD in
-   `docs/decisions/`). Rather than assume "run a whole parallel review in family B", the
+   positives, so it needs real context — see decision `021-reviewer-context-management.md`).
+   Rather than assume "run a whole parallel review in family B", the
    run supports scoping the cross-family call to where diversity pays most:
 
    - **5a — full second-family review** (all critics, family B in parallel). Highest recall,
@@ -340,8 +340,12 @@ at round 4 as F2.
 6. **Resolve reviewer context management** (diff-only ↔ structured enrichment ↔ full agentic).
    The Result-5 false positives are all "code was actually in a sibling commit the diff hid";
    the open question is the cheapest context enrichment that closes that gap without
-   reintroducing full-agentic cost/non-determinism. Tracked as its own divergent-design pass
-   (`docs/decisions/` reviewer-context-management).
+   reintroducing full-agentic cost/non-determinism. Resolved by divergent-design decision
+   `021-reviewer-context-management.md`: a staged path — Stage 1 (git-only) enriches the
+   harness with the full logical changeset (sibling commits labelled "context only") plus
+   enclosing-file inclusion to kill the sibling-commit FP class; Stage 3 keeps the agentic
+   critic as a re-verification gate, so Result 5's "must have repo access" is honoured at
+   *verification*, not at the cheap generation fan-out (which preserves 5b/5c's economics).
 
 ## Harness fixes made during this run
 
