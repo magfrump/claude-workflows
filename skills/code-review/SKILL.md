@@ -690,7 +690,10 @@ substrate for calibrating critic precision, and for noticing that a finding was 
 rather than fixed — survives only in `git log -p`. Every other artifact this skill produces
 is already date-stamped; the rubric was the inconsistent one.
 
-**Use this exact format:**
+**Use this exact format.** A worked example of the format below, kept in sync with it, is
+`test/skills/code-review/rubric-current-format.md`; it is what
+`test/skills/code-review-format-contract.bats` asserts against, so changes to the template
+here must be mirrored there in the same commit.
 
 ```markdown
 # Code Review Rubric
@@ -704,9 +707,9 @@ is already date-stamped; the rubric was the inconsistent one.
 Issues that must be resolved before merge. Draft cannot pass review with any red items
 unresolved.
 
-| # | Finding | Domain | Location | Legibility-target | Considered overrides | Status |
-|---|---|---|---|---|---|---|
-| R1 | [Description] | [Security/Performance/etc.] | `path/to/file:42` | for-author | — _or_ `#123 Won't-Fix (override departed from — see chat)` | 🔴 Unresolved |
+| # | Finding | Domain | Severity | Location | Legibility-target | Considered overrides | Status |
+|---|---|---|---|---|---|---|---|
+| R1 | [Description] | [Security/Performance/etc.] | Critical | `path/to/file:42` | for-author | — _or_ `#123 Won't-Fix (override departed from — see chat)` | 🔴 Unresolved |
 
 ---
 
@@ -715,9 +718,9 @@ unresolved.
 Issues that must be fixed or acknowledged by the author with justification for why they
 stand. Each must carry a resolution or author note.
 
-| # | Finding | Domain | Source | Legibility-target | Considered overrides | Status | Author note |
-|---|---|---|---|---|---|---|---|
-| A1 | [Description] | [Domain] | [Source, e.g., "Security + Performance", "Fact-check"] | for-author | — | 🟡 Open | — |
+| # | Finding | Domain | Severity | Source | Legibility-target | Considered overrides | Status | Author note |
+|---|---|---|---|---|---|---|---|---|
+| A1 | [Description] | [Domain] | Medium | [Source, e.g., "Security + Performance", "Fact-check"] | for-author | — | 🟡 Open | — |
 
 ---
 
@@ -726,9 +729,9 @@ stand. Each must carry a resolution or author note.
 Advisory findings from contextual critics, single-critic suggestions, and improvement
 opportunities. Not required to pass review.
 
-| # | Finding | Source | Legibility-target | Considered overrides | Status |
-|---|---|---|---|---|---|
-| C1 | [Suggestion] | [Which critic] | for-author | — | 🟢 Open |
+| # | Finding | Source | Severity | Legibility-target | Considered overrides | Status |
+|---|---|---|---|---|---|---|
+| C1 | [Suggestion] | [Which critic] | Low | for-author | — | 🟢 Open |
 
 The **Status** column is the cheapest calibration instrument in this document. 🟢 is ~70%
 of everything the pipeline emits, and it was the only tier with no disposition recorded —
@@ -829,6 +832,18 @@ Use this table to map individual critic severity levels to rubric tiers:
 | 🔴 Must Fix | Critical, High | Critical | Breaking | Structural | Incorrect (high confidence) |
 | 🟡 Must Address | Medium | High, Medium | Inconsistent | Coupling | Incorrect (medium confidence), Stale, Mostly Accurate |
 | 🟢 Consider | Low, Informational | Low, Informational | Minor, Informational | Minor, Informational | Unverifiable |
+
+**Record the critic's own severity, don't discard it.** The `Severity` column on the 🔴 /
+🟡 / 🟢 tables carries the source critic's native level (Critical / High / Medium / Low /
+Informational, or the domain equivalent — Breaking, Structural, Incorrect) *verbatim*,
+before this table maps it to a tier. The mapping is lossy and it is lossy in the direction
+that matters: tier assignment is the **least** stable part of the output — identical
+prompts on an identical diff produced Medium/Low/Low for the same issue — while the
+critic-native High band is the **most** stable, with every finding any run rated High
+appearing in all runs of that diff
+(`docs/working/experiment-results-code-review-2026-07-29.md`, Result 1). Flattening to a
+tier throws away the reliable quantity and keeps the unreliable one. Recording both costs
+one column and lets a later gate key on whichever proves sound.
 
 **Contextual critics are advisory:** Findings from `test-strategy`, `tech-debt-triage`, `dependency-upgrade`, and `ui-visual-review` go to 🟢 Consider tier regardless of their internal severity. They inform but never block merge. `architecture-review` is the exception: it is auto-selected like a contextual critic but uses its own severity-to-rubric mapping above and can produce blocking (🔴) findings.
 
