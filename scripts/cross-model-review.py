@@ -230,9 +230,38 @@ def main():
             for model in args.models:
                 for r in range(1, args.replicates + 1):
                     t0 = time.time()
-                    resp = api(key, {"model": model, "messages": [{"role": "user", "content": prompt}]})
-                    text = resp["choices"][0]["message"]["content"]
+                    # A model that is unavailable to this account (402/404 tier gating) must
+                    # not abort the sweep: record the failure and keep the other models going.
+                    try:
+                        resp = api(key, {"model": model, "messages": [{"role": "user", "content": prompt}]})
+                    except Exception as e:  # noqa: BLE001 - per-run isolation is the point
+                        code = getattr(e, "code", "")
+                        fh.write(json.dumps({
+                            "model": model, "replicate": r, "prompt_sha": prompt_sha,
+                            "range": args.rev_range, "repo": os.path.basename(args.repo),
+                            "error": f"{type(e).__name__} {code}".strip(),
+                            "parse_ok": False, "n_findings": 0, "findings": [],
+                        }) + "\n")
+                        fh.flush()
+                        print(f"{model} r{r}: ERROR {type(e).__name__} {code}")
+                        continue
+                    # Reasoning models (e.g. kimi-k3) return message.content = null when the
+                    # completion budget is spent inside the reasoning trace. Treat that as a
+                    # failed run rather than a clean "no findings" one.
+                    choice = resp["choices"][0]
+                    text = choice["message"].get("content") or ""
+                    finish = choice.get("finish_reason")
                     rows, ok = parse_findings(text)
+                    if not text.strip():
+                        fh.write(json.dumps({
+                            "model": model, "replicate": r, "prompt_sha": prompt_sha,
+                            "range": args.rev_range, "repo": os.path.basename(args.repo),
+                            "error": f"empty-content finish_reason={finish}",
+                            "parse_ok": False, "n_findings": 0, "findings": [],
+                        }) + "\n")
+                        fh.flush()
+                        print(f"{model} r{r}: ERROR empty content (finish_reason={finish})")
+                        continue
                     usage = resp.get("usage", {})
                     rec = {
                         "model": model,
@@ -253,6 +282,13 @@ def main():
 
     # ---- analysis ----
     runs = [json.loads(l) for l in open(findings_path)]
+    # Errored runs are absent, not clean — counting them as empty finding lists would
+    # score a failed call as perfect agreement with another failed call.
+    errored = [r for r in runs if r.get("error")]
+    if errored:
+        print(f"\n({len(errored)} errored runs excluded from overlap: "
+              f"{sorted({r['model'] + ' ' + r['error'] for r in errored})})")
+    runs = [r for r in runs if not r.get("error")]
     by_key = {(r["model"], r["replicate"]): r["findings"] for r in runs}
     models = sorted({r["model"] for r in runs})
     reps = sorted({r["replicate"] for r in runs})
