@@ -429,3 +429,30 @@ firewall() {
   run grep -E 'claude -p --model "\$SI_CODE_REVIEW_MODEL"' scripts/self-improvement.sh
   [ "$status" -eq 0 ]
 }
+
+@test "Gate 1h archives review artifacts before the worktree is torn down" {
+  run grep -E 'cp -f "\$WT_DIR"/docs/reviews/\*\.md "\$CR_ARCHIVE/"' scripts/self-improvement.sh
+  [ "$status" -eq 0 ]
+  # Must be outside the worktree, or `git worktree remove --force` eats it.
+  run grep -E 'CR_ARCHIVE="\$WORKING_DIR/reviews/' scripts/self-improvement.sh
+  [ "$status" -eq 0 ]
+}
+
+@test "Gate 1h fails closed on reviewer error and on an unparseable verdict" {
+  run grep -E 'REJECT_REASON="code-review: reviewer exited' scripts/self-improvement.sh
+  [ "$status" -eq 0 ]
+  run grep -E 'REJECT_REASON="code-review: no parseable verdict' scripts/self-improvement.sh
+  [ "$status" -eq 0 ]
+  # The old fail-open swallow must be gone from the reviewer invocation.
+  run grep -E 'Do not count amber or green rows\." 2>&1\) \|\| true' scripts/self-improvement.sh
+  [ "$status" -ne 0 ]
+}
+
+@test "Gate 1h passes a per-run nonce the branch cannot know" {
+  run grep -E 'CR_NONCE=\$\(od -An -tx1 -N8 /dev/urandom' scripts/self-improvement.sh
+  [ "$status" -eq 0 ]
+  run grep -E 'CODE_REVIEW_RED\[\$CR_NONCE\]:' scripts/self-improvement.sh
+  [ "$status" -eq 0 ]
+  run grep -E 'parse_code_review_red "\$CR_NONCE"' scripts/self-improvement.sh
+  [ "$status" -eq 0 ]
+}

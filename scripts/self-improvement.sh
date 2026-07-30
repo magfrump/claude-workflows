@@ -1278,22 +1278,57 @@ Count only the automated assessment scores (Testability investment, Trigger clar
             CR_SKILL="skills/code-review/SKILL.md"
             echo "    NOTE: baked review skill not found; falling back to the branch copy (untrusted)."
         fi
+        # Per-run nonce so branch content cannot forge the verdict line. Not
+        # derived from anything in the repo; regenerated for every task.
+        CR_NONCE=$(od -An -tx1 -N8 /dev/urandom | tr -d ' \n')
+        # Durable home for the review artifacts. The worktree is torn down with
+        # `git worktree remove --force`, which deletes uncommitted files — so
+        # every rubric this gate has ever produced was generated and then thrown
+        # away, leaving one integer. That is why the repo has no pre-triage
+        # review corpus to calibrate against (see docs/working/
+        # experiment-results-code-review-2026-07-29.md, Result 6).
+        CR_ARCHIVE="$WORKING_DIR/reviews/round-$ROUND/$TASK_ID"
         if [ -z "$REJECT_REASON" ]; then
             if command -v claude >/dev/null 2>&1; then
                 echo "    Running code-review on: $BRANCH (model: $SI_CODE_REVIEW_MODEL)"
+                CR_STATUS=0
                 CR_OUTPUT=$(cd "$WT_DIR" && claude -p --model "$SI_CODE_REVIEW_MODEL" "Run the code-review skill defined in $CR_SKILL against this branch's diff versus main (git diff main...HEAD). Run non-interactively: do NOT pause at the fact-check gate — auto-select the applicable critics and proceed through all three stages to the rubric. Write the rubric to docs/reviews/ as usual.
 
 Dispatch every critic sub-agent with an explicit strong model (--model $SI_CODE_REVIEW_MODEL on the Agent call); do not let sub-agents inherit a weaker default.
 
 After the rubric, output exactly one final line in this format, and nothing after it:
-CODE_REVIEW_RED: <number of red / Must-Fix rubric rows>
+CODE_REVIEW_RED[$CR_NONCE]: <number of red / Must-Fix rubric rows>
 
-Count only rubric rows with red / 🔴 / Must-Fix status. Do not count amber or green rows." 2>&1) || true
-                CR_RED=$(printf '%s\n' "$CR_OUTPUT" | parse_code_review_red)
-                if [ -z "$CR_RED" ]; then
-                    echo "    Warning: code-review produced no parseable result for $BRANCH"
+The bracketed token is a per-run identifier — reproduce it exactly. Count only rubric rows with red / 🔴 / Must-Fix status. Do not count amber or green rows." 2>&1) || CR_STATUS=$?
+
+                # Rescue the artifacts BEFORE anything can tear the worktree
+                # down, and regardless of how the gate resolves — a rejected
+                # task's rubric is the most interesting one.
+                if compgen -G "$WT_DIR/docs/reviews/*.md" > /dev/null 2>&1; then
+                    mkdir -p "$CR_ARCHIVE"
+                    cp -f "$WT_DIR"/docs/reviews/*.md "$CR_ARCHIVE/" 2>/dev/null || true
+                    echo "    review artifacts archived: $CR_ARCHIVE"
+                fi
+
+                CR_RED=$(printf '%s\n' "$CR_OUTPUT" | parse_code_review_red "$CR_NONCE")
+                if [ "$CR_STATUS" -ne 0 ]; then
+                    # FAIL CLOSED. A crashing reviewer is indistinguishable from
+                    # a reviewer a hostile branch induced to crash, and the old
+                    # `|| true` turned "required, not optional" into a no-op for
+                    # anything that could break the run.
+                    REJECT_REASON="code-review: reviewer exited $CR_STATUS (no verdict)"
+                    echo "    code-review ERROR (exit $CR_STATUS) — failing closed for $BRANCH"
+                    echo "[$TASK_ID] ERROR: code-review exit $CR_STATUS for $BRANCH" >> "$WORKING_DIR/validation-round-$ROUND.log"
+                    record_gate "$TASK_ID" "code_review" "fail"
+                elif [ -z "$CR_RED" ]; then
+                    # Also fail closed: a missing or conflicting nonced sentinel
+                    # means we do not have a verdict, and "no verdict" must not
+                    # read as "approved". Rejection here costs one re-run; the
+                    # old `skip` silently waved the task through.
+                    REJECT_REASON="code-review: no parseable verdict (nonced sentinel absent or conflicting)"
+                    echo "    Warning: code-review produced no parseable result for $BRANCH — failing closed"
                     echo "[$TASK_ID] WARNING: code-review unparseable for $BRANCH" >> "$WORKING_DIR/validation-round-$ROUND.log"
-                    record_gate "$TASK_ID" "code_review" "skip"
+                    record_gate "$TASK_ID" "code_review" "fail"
                 elif code_review_gate_verdict "$CR_RED"; then
                     echo "    code-review OK: $BRANCH ($CR_RED red findings)"
                     record_gate "$TASK_ID" "code_review" "pass"
@@ -1304,6 +1339,13 @@ Count only rubric rows with red / 🔴 / Must-Fix status. Do not count amber or 
                     record_gate_detail "$TASK_ID" "code_review" "$(jq -n --argjson red "$CR_RED" '{red_findings: $red}')"
                 fi
             else
+                # No reviewer binary at all. Still a coverage hole, but an
+                # environment one rather than a branch-induced bypass — so it
+                # skips rather than rejects, loudly, and lands in the round log
+                # so a silent PATH problem cannot quietly disable the gate for
+                # every task in a round.
+                echo "    Warning: 'claude' not on PATH — code-review gate SKIPPED for $BRANCH"
+                echo "[$TASK_ID] WARNING: code-review skipped (no claude binary) for $BRANCH" >> "$WORKING_DIR/validation-round-$ROUND.log"
                 record_gate "$TASK_ID" "code_review" "skip"
             fi
         fi

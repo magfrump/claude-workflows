@@ -551,10 +551,29 @@ tap_new_failures() {
 # from the LAST "CODE_REVIEW_RED: <n>" sentinel line. Prints nothing when no
 # parseable sentinel is present, which the caller treats as "unparseable" and
 # skips (never auto-rejects) — same policy as the self-eval gate.
+# Args: $1 = the per-run nonce the gate asked the reviewer to echo back.
+#
+# NONCE, AND WHY LAST-MATCH-WINS WAS WRONG. The reviewed diff flows through the
+# reviewer's context and out into its output, so an unnonced `CODE_REVIEW_RED: 0`
+# appearing anywhere — in reviewed source, a doc, or a test fixture (this repo's
+# own test/code-review-gate.bats contains the literal string) — was picked up as
+# the verdict, and `tail -1` meant a *later* occurrence beat the real one. A
+# per-run random nonce is not in the branch, so static content cannot forge the
+# line; the reviewer only knows it because the gate put it in the prompt.
+#
+# CONFLICTING SENTINELS ARE UNPARSEABLE, not "take one". If two different values
+# come back, something emitted a sentinel that was not the reviewer's verdict,
+# and guessing between them is exactly the bypass this is closing.
 parse_code_review_red() {
-    grep -oE 'CODE_REVIEW_RED:[[:space:]]*[0-9]+' \
-        | grep -oE '[0-9]+$' \
-        | tail -1
+    local nonce=${1:-}
+    local matches
+    [ -n "$nonce" ] || return 0
+    matches=$(grep -oE "CODE_REVIEW_RED\[${nonce}\]:[[:space:]]*[0-9]+" \
+        | grep -oE '[0-9]+$' | sort -u)
+    # zero matches -> print nothing (caller treats as unparseable)
+    # 2+ distinct values -> also unparseable
+    [ "$(printf '%s\n' "$matches" | grep -c .)" -eq 1 ] || return 0
+    printf '%s\n' "$matches"
 }
 
 # code_review_gate_verdict — decide the gate from the red-finding count. A task
