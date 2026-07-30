@@ -306,10 +306,31 @@ def main():
             return 1.0
         if not fa or not fb:
             return 0.0
-        m = sum(1 for x in fa if any(stage1_candidates(x, y, args.slack) for y in fb))
+        # Greedy one-to-one match: each fb finding can be claimed at most once.
+        # Counting "every fa with any candidate" instead lets several fa map to one
+        # fb, so matches can exceed |fb|, making union < matches and Jaccard > 1.
+        matched_b = set()
+        m = 0
+        for x in fa:
+            for j, y in enumerate(fb):
+                if j in matched_b or not stage1_candidates(x, y, args.slack):
+                    continue
+                matched_b.add(j)
+                m += 1
+                break
         return m / (len(fa) + len(fb) - m)
 
-    results = {"judge": args.judge if key else "stage1-only", "self": {}, "cross": {}}
+    # Abstention rate makes the empty-vs-empty artifact visible: jaccard() scores two
+    # empty finding lists as 1.0 agreement, so a model that abstains on every replicate
+    # gets a perfect J_self. Report the fraction of (non-errored) replicates a model
+    # returned zero findings on, so a high J_self driven by abstention is legible.
+    abstain = {}
+    for m in models:
+        runs_m = [r for r in runs if r["model"] == m]
+        if runs_m:
+            abstain[m] = round(sum(1 for r in runs_m if not r["findings"]) / len(runs_m), 3)
+
+    results = {"judge": args.judge if key else "stage1-only", "abstain": abstain, "self": {}, "cross": {}}
     for m in models:
         pairs = [pair_j((m, a), (m, b)) for a, b in itertools.combinations(reps, 2) if (m, a) in by_key and (m, b) in by_key]
         if pairs:
@@ -322,7 +343,10 @@ def main():
     with open(os.path.join(args.out, "overlap.json"), "w") as fh:
         json.dump(results, fh, indent=2)
 
-    print("\n== J_self (same model, replicate pairs) ==")
+    print("\n== abstention rate (fraction of replicates with zero findings) ==")
+    for m, v in abstain.items():
+        print(f"  {m}: {v}")
+    print("== J_self (same model, replicate pairs) ==")
     for m, v in results["self"].items():
         print(f"  {m}: {v}")
     print("== J_cross (model pairs, all replicate combinations) ==")
