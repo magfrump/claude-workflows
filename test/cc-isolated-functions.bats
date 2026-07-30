@@ -346,3 +346,86 @@ firewall() {
   run grep -E '^\s*export .*CC_CONFIG_DIR|CC_CONFIG_DIR="\$\(config_dir\)"' "$CONFIG_SRC/cc-isolated.sh"
   [ "$status" -eq 0 ]
 }
+
+# --- decision 022: the claude-workflows payload ------------------------------
+# The bug these pin: /home/node/.claude is a per-project VOLUME, so a fresh
+# volume is empty and no cc-isolated session ever had this repo's skills
+# registered. The payload must be baked into the image and linked in at start.
+
+@test "Dockerfile copies the claude-home payload into the image" {
+  run grep -E '^COPY claude-home/ /opt/claude-workflows/' "$CONFIG_SRC/Dockerfile"
+  [ "$status" -eq 0 ]
+}
+
+@test "the payload is baked outside /home/node/.claude (a volume would shadow it)" {
+  # Any COPY targeting the volume path would be silently discarded at runtime.
+  run grep -E '^COPY .*/home/node/\.claude' "$CONFIG_SRC/Dockerfile"
+  [ "$status" -ne 0 ]
+}
+
+@test "the payload is root-owned and not writable by node" {
+  run grep -E 'chown -R root:root /opt/claude-workflows' "$CONFIG_SRC/Dockerfile"
+  [ "$status" -eq 0 ]
+  run grep -E 'find /opt/claude-workflows -type d -exec chmod 0555' "$CONFIG_SRC/Dockerfile"
+  [ "$status" -eq 0 ]
+}
+
+@test "hook scripts in the payload stay executable" {
+  run grep -E "find /opt/claude-workflows -type f .*-name '\*\.sh'.*chmod 0555" "$CONFIG_SRC/Dockerfile"
+  [ "$status" -eq 0 ]
+}
+
+@test "postStartCommand links the payload after the firewall, not before" {
+  run grep -E '"postStartCommand"' "$CONFIG_SRC/devcontainer.json"
+  [ "$status" -eq 0 ]
+  [[ "$output" == *'init-firewall.sh'* ]]
+  [[ "$output" == *'link-claude-home.sh'* ]]
+  # Firewall first: `&&` means a boundary failure aborts before anything else runs.
+  [[ "${output%%link-claude-home*}" == *'init-firewall.sh'* ]]
+}
+
+@test "install.sh stages the payload from the repo root" {
+  run grep -E 'CLAUDE_HOME_SRC=' "$CONFIG_SRC/install.sh"
+  [ "$status" -eq 0 ]
+  [[ "$output" == *'skills'* ]]
+  [[ "$output" == *'CLAUDE.md'* ]]
+  run grep -E 'PAYLOAD=.*claude-home' "$CONFIG_SRC/install.sh"
+  [ "$status" -eq 0 ]
+}
+
+@test "link-claude-home refuses to clobber a real file in the volume" {
+  src="$BATS_TEST_TMPDIR/payload"; dst="$BATS_TEST_TMPDIR/dest"
+  mkdir -p "$src/skills" "$dst"
+  printf 'user-owned\n' > "$dst/skills"
+  CC_WORKFLOWS_DIR="$src" CLAUDE_CONFIG_DIR="$dst" run bash "$CONFIG_SRC/link-claude-home.sh"
+  [ "$status" -eq 0 ]
+  [ "$(cat "$dst/skills")" = "user-owned" ]
+}
+
+@test "link-claude-home links the payload and is idempotent" {
+  src="$BATS_TEST_TMPDIR/p2"; dst="$BATS_TEST_TMPDIR/d2"
+  mkdir -p "$src/skills" "$dst"
+  CC_WORKFLOWS_DIR="$src" CLAUDE_CONFIG_DIR="$dst" bash "$CONFIG_SRC/link-claude-home.sh"
+  CC_WORKFLOWS_DIR="$src" CLAUDE_CONFIG_DIR="$dst" run bash "$CONFIG_SRC/link-claude-home.sh"
+  [ "$status" -eq 0 ]
+  [ -L "$dst/skills" ]
+  [ "$(readlink "$dst/skills")" = "$src/skills" ]
+}
+
+@test "link-claude-home is a no-op when the payload is absent (non-cc-isolated host)" {
+  dst="$BATS_TEST_TMPDIR/d3"; mkdir -p "$dst"
+  CC_WORKFLOWS_DIR="$BATS_TEST_TMPDIR/nope" CLAUDE_CONFIG_DIR="$dst" run bash "$CONFIG_SRC/link-claude-home.sh"
+  [ "$status" -eq 0 ]
+}
+
+@test "Gate 1h loads the review skill from the baked payload, not the branch" {
+  run grep -E 'CR_SKILL="/opt/claude-workflows/skills/code-review/SKILL.md"' scripts/self-improvement.sh
+  [ "$status" -eq 0 ]
+}
+
+@test "Gate 1h pins an explicit reviewer model" {
+  run grep -E 'SI_CODE_REVIEW_MODEL="\$\{SI_CODE_REVIEW_MODEL:-opus\}"' scripts/self-improvement.sh
+  [ "$status" -eq 0 ]
+  run grep -E 'claude -p --model "\$SI_CODE_REVIEW_MODEL"' scripts/self-improvement.sh
+  [ "$status" -eq 0 ]
+}

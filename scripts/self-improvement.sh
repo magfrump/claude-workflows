@@ -1255,10 +1255,35 @@ Count only the automated assessment scores (Testability investment, Trigger clar
         # independent reviewer pass — the author/reviewer split pr-prep models.
         # Parsing follows the self-eval precedent: the skill is asked to emit a
         # CODE_REVIEW_RED sentinel; unparseable output skips (never auto-rejects).
+        # MODEL PINNING (measured 2026-07-29, docs/working/experiment-results-
+        # code-review-2026-07-29.md Results 7-9). Model tier dominates blocking-
+        # defect recall: on validated defects, haiku and sonnet generalists
+        # recovered 0/6 while opus recovered 3/6, and haiku's only findings were
+        # false positives — a weak reviewer's "no findings" is a false
+        # attestation, which is exactly what this gate consumes. So the gate
+        # must never inherit an arbitrary session default. Override with
+        # SI_CODE_REVIEW_MODEL; `fable` is the reasonable alternative (it
+        # recovered a red row opus missed 2/2, but runs leaner with lower
+        # run-to-run consistency, so it is the diversity partner rather than the
+        # single-gate pick).
+        SI_CODE_REVIEW_MODEL="${SI_CODE_REVIEW_MODEL:-opus}"
+        # SKILL SOURCE (security). Read the review skill from the image-baked,
+        # root-owned payload (decision 022) rather than from $WT_DIR — the
+        # worktree is the branch under review, so pointing the reviewer at its
+        # copy lets a branch rewrite the critics that judge it. Fall back to the
+        # worktree copy only when the baked payload is absent (non-cc-isolated
+        # host), and say so, because that fallback re-opens the hole.
+        CR_SKILL="/opt/claude-workflows/skills/code-review/SKILL.md"
+        if [ ! -r "$CR_SKILL" ]; then
+            CR_SKILL="skills/code-review/SKILL.md"
+            echo "    NOTE: baked review skill not found; falling back to the branch copy (untrusted)."
+        fi
         if [ -z "$REJECT_REASON" ]; then
             if command -v claude >/dev/null 2>&1; then
-                echo "    Running code-review on: $BRANCH"
-                CR_OUTPUT=$(cd "$WT_DIR" && claude -p "Run the code-review skill defined in skills/code-review/SKILL.md against this branch's diff versus main (git diff main...HEAD). Run non-interactively: do NOT pause at the fact-check gate — auto-select the applicable critics and proceed through all three stages to the rubric. Write the rubric to docs/reviews/ as usual.
+                echo "    Running code-review on: $BRANCH (model: $SI_CODE_REVIEW_MODEL)"
+                CR_OUTPUT=$(cd "$WT_DIR" && claude -p --model "$SI_CODE_REVIEW_MODEL" "Run the code-review skill defined in $CR_SKILL against this branch's diff versus main (git diff main...HEAD). Run non-interactively: do NOT pause at the fact-check gate — auto-select the applicable critics and proceed through all three stages to the rubric. Write the rubric to docs/reviews/ as usual.
+
+Dispatch every critic sub-agent with an explicit strong model (--model $SI_CODE_REVIEW_MODEL on the Agent call); do not let sub-agents inherit a weaker default.
 
 After the rubric, output exactly one final line in this format, and nothing after it:
 CODE_REVIEW_RED: <number of red / Must-Fix rubric rows>

@@ -273,6 +273,16 @@ ARG CC_EGRESS_PROFILE=""
 
 COPY egress/ /usr/local/share/cc-egress/
 COPY init-firewall.sh /usr/local/bin/
+COPY link-claude-home.sh /usr/local/bin/
+
+# The claude-workflows payload (skills, workflows, guides, patterns, hooks, and
+# the global CLAUDE.md). Assembled from the repo by install.sh, so it is part of
+# the blessed config the human reviews — not something a session can inject.
+#
+# Placed OUTSIDE /home/node/.claude on purpose: that path is a per-project
+# volume (decision 016 H6) and a volume mount would shadow anything baked at
+# that path. link-claude-home.sh symlinks these in at container start instead.
+COPY claude-home/ /opt/claude-workflows/
 
 USER root
 
@@ -282,7 +292,11 @@ USER root
 # project's egress therefore requires a host-side re-register + re-bless + rebuild —
 # i.e. a human. This is what keeps H5 (per-project egress) from becoming a
 # self-service escape hatch for the agent.
-RUN chmod +x /usr/local/bin/init-firewall.sh && \
+RUN chmod +x /usr/local/bin/init-firewall.sh /usr/local/bin/link-claude-home.sh && \
+  chown -R root:root /opt/claude-workflows && \
+  find /opt/claude-workflows -type d -exec chmod 0555 {} + && \
+  find /opt/claude-workflows -type f -exec chmod 0444 {} + && \
+  find /opt/claude-workflows -type f \( -name '*.sh' -o -name '*.py' \) -exec chmod 0555 {} + && \
   chmod 0555 /usr/local/share/cc-egress && \
   chmod 0444 /usr/local/share/cc-egress/*.txt && \
   printf '%s\n' "${CC_EGRESS_PROFILE}" > /etc/cc-egress-profile && \

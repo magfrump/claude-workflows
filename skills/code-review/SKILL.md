@@ -469,7 +469,40 @@ For each critic agent, you MUST:
    One short bullet per line. No padding. The "Questions I would have asked" bullet is
    optional — include it only when scope was genuinely ambiguous and the critic had to
    make a non-trivial guess about what to evaluate.
-9. Launch via the Agent tool with `subagent_type: "general-purpose"`
+9. Launch via the Agent tool with `subagent_type: "general-purpose"` **and an explicit
+   strong `model`** — see [Critic model selection](#critic-model-selection). Do not let
+   critics inherit the session default.
+
+### Critic model selection
+
+Set `model` explicitly on every critic dispatch. Measured on this repo's and two other
+repos' history (`docs/working/experiment-results-code-review-2026-07-29.md`, Results 7–9):
+
+| Tier | Validated blocking defects recovered | Precision of its own findings |
+|---|---|---|
+| haiku | 0/6 | 0/2 — both findings were false positives |
+| sonnet (generalist prompt) | 0/6 | 3/3 |
+| sonnet (**this skill's prompt**) | 2/2 on the isolated case | — |
+| opus | 3/6 | ~88% |
+| fable | recovered a 🔴 row opus missed 2/2 | — |
+
+Three rules follow:
+
+- **Default to `opus` for critics.** It had the highest and most self-consistent
+  blocking-defect recall.
+- **Never run a critic on `haiku`.** Its clean verdicts are false attestations — in one
+  run it explicitly praised code another critic flagged as defective. A weak reviewer
+  reporting "no findings" is worse than no review, because the verdict carries assurance
+  weight downstream.
+- **`sonnet` is acceptable *only* with these role-skill prompts**, which closed most of
+  the tier gap (0/2 → 2/2 on the isolated defect). It is not acceptable for ad-hoc
+  generalist review.
+
+**Diversity note.** Model tiers do not form a strict hierarchy: fable recovered a red-tier
+finding that opus missed on both replicates, and opus found issues fable missed. When a
+diff is high-risk and budget allows, dispatching the *same* critic twice on two different
+frontier models and unioning the findings buys real coverage — the union is covering
+disjoint blind spots, not just reducing sampling variance.
 
 **Worked example — dispatch goal preamble with optional Project-state fields**
 

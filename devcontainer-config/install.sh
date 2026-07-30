@@ -21,7 +21,38 @@ BIN_DIR="${CLAUDE_DEVC_BIN_DIR:-$HOME/.local/bin}"
 ASSUME_YES="${1:-}"
 
 # install.sh itself is not installed — it runs from the repo.
-PAYLOAD=(devcontainer.json Dockerfile init-firewall.sh cc-isolated.sh egress)
+# `claude-home` is assembled below from the repo root before the diff is shown.
+PAYLOAD=(devcontainer.json Dockerfile init-firewall.sh cc-isolated.sh link-claude-home.sh egress claude-home)
+
+REPO_ROOT="$(cd "$SRC/.." && pwd)"
+
+# --- Assemble the claude-home payload (decision 022) -------------------------
+# The skills/workflows/guides/patterns/hooks and the global CLAUDE.md are baked
+# into the image so that EVERY cc-isolated session gets this repo's process, not
+# just sessions that happen to be editing this repo. They are staged here, into
+# the build context, because the Dockerfile's context is the config dir.
+#
+# Assembled fresh on every install so the staged copy can never silently drift
+# from the repo — and, being inside $SRC, it shows up in the diff below, which
+# is the human's review gate. Do not hand-edit devcontainer-config/claude-home.
+CLAUDE_HOME_SRC=(CLAUDE.md skills workflows guides patterns hooks)
+STAGE="$SRC/claude-home"
+rm -rf "$STAGE"
+mkdir -p "$STAGE"
+for item in "${CLAUDE_HOME_SRC[@]}"; do
+  if [ -e "$REPO_ROOT/$item" ]; then
+    cp -r "$REPO_ROOT/$item" "$STAGE/$item"
+  else
+    echo "WARNING: $REPO_ROOT/$item not found — omitted from the image payload." >&2
+  fi
+done
+# Provenance stamp: lets a session (and health-check) tell which commit's process
+# it is running, and detect that the image predates the repo it is editing.
+{
+  echo "commit=$(git -C "$REPO_ROOT" rev-parse HEAD 2>/dev/null || echo unknown)"
+  echo "dirty=$(test -n "$(git -C "$REPO_ROOT" status --porcelain 2>/dev/null)" && echo yes || echo no)"
+  echo "assembled_from=$REPO_ROOT"
+} > "$STAGE/.manifest"
 
 echo "Canonical (repo):  $SRC"
 echo "Installed (host):  $DEST"

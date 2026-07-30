@@ -3,4 +3,11 @@
 # Grant this deliberately. An LLM API is a general-purpose outbound channel: anything
 # the agent can put in a prompt leaves the boundary. It is not in `base` for that reason,
 # and it is not auto-detected — it must be requested explicitly at --register time.
+#
+# CDN CAVEAT. init-firewall.sh resolves each domain once, at container start, and
+# pins the resulting IPs into the allowed-domains ipset. openrouter.ai sits behind
+# a CDN whose IPs rotate, so a long-running session can see previously-working
+# calls start failing with a connection timeout rather than an HTTP error. If that
+# happens mid-experiment, restart the container to re-resolve — do not conclude the
+# model is unavailable. (Same failure mode applies to any CDN-fronted domain here.)
 openrouter.ai

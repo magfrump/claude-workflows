@@ -65,12 +65,28 @@
     "GIT_AUTHOR_NAME": "magfrump",
     "GIT_AUTHOR_EMAIL": "magfrump@gmail.com",
     "GIT_COMMITTER_NAME": "magfrump",
-    "GIT_COMMITTER_EMAIL": "magfrump@gmail.com"
+    "GIT_COMMITTER_EMAIL": "magfrump@gmail.com",
+
+    // Opt-in, and empty unless the host exports it. Only meaningful in a project
+    // registered with the `llm` egress profile — without that, openrouter.ai is
+    // firewalled and the key is inert.
+    //
+    // This is a real credential inside the sandbox: anything the agent can put in
+    // a prompt leaves the boundary, and a key in the container is a key a
+    // compromised session can exfiltrate through the very channel `llm` opens.
+    // Export it only for the session that needs it
+    // (`OPENROUTER_API_KEY=... cc-isolated`), prefer a spend-capped key, and
+    // revoke after. The long-term fix is a host-side key broker.
+    "OPENROUTER_API_KEY": "${localEnv:OPENROUTER_API_KEY}"
   },
 
   "workspaceMount": "source=${localWorkspaceFolder},target=/workspace,type=bind,consistency=delegated",
   "workspaceFolder": "/workspace",
 
-  "postStartCommand": "sudo /usr/local/bin/init-firewall.sh",
+  // Firewall first (it is the boundary), then link the baked claude-workflows
+  // payload into this project's ~/.claude volume (decision 022). The link step
+  // runs unprivileged as `node` and is idempotent, so it is safe to re-run on
+  // every start; `&&` means a firewall failure still aborts the session.
+  "postStartCommand": "sudo /usr/local/bin/init-firewall.sh && /usr/local/bin/link-claude-home.sh",
   "waitFor": "postStartCommand"
 }
