@@ -73,7 +73,22 @@ cp <checkout>/hooks/guard-trusted-writes.py <checkout>/hooks/web-taint-mark.py \
 (The same argument applies to the symlinked `claude-config-audit.sh`; converting
 it to a copy is an open follow-up.)
 
+In cc-isolated this whole concern is resolved differently and the copies are not
+needed: `~/.claude/hooks` symlinks into `/opt/claude-workflows/hooks`, which is
+root-owned `0555` inside the image. The agent cannot write through the symlink,
+and getting a repo change into a live session already requires a human running
+`install.sh` and blessing the diff (decision 022/023).
+
 ## Related settings hardening (2026-07-09, manual, not repo-tracked)
+
+> **Superseded for cc-isolated (2026-07-30, decision 023 amendment B.)** The
+> `permissions.deny` entries below are now tracked in `hooks/wiring.json` and
+> merged into `settings.json` at every container start. Leaving them as a manual
+> step meant they were never applied in any container, which made
+> `guard-trusted-writes.py`'s HARD tier a no-op for `Edit`/`Write` — the hook
+> defers there precisely *because* it expects these rules to exist. The
+> `permissions.allow` pruning and the `sandbox` block are still manual. This
+> section remains the procedure for a bare host.
 
 Applied alongside this wiring, recorded here since settings.json has no history:
 
@@ -82,7 +97,9 @@ Applied alongside this wiring, recorded here since settings.json has no history:
 - `permissions.allow`: removed arbitrary-execution-capable prefixes —
   `find:*`, `fd:*`, `wsl:*`, `hyperfine:*`, `sed -n:*`, `terraform plan:*`.
 - `sandbox`: enabled, with `denyRead` mirroring the credential deny list and
-  `denyWrite` on `~/.claude`, `~/CLAUDE.md`, and the external auditor script.
+  `denyWrite` on `~/.claude`, `~/CLAUDE.md`, and the auditor script (which as of
+  decision 023 amendment A ships in the repo at `scripts/claude_config_audit.py`
+  rather than at `~/private_reviews/`).
   The sandbox is deliberately broader than the Edit/Write deny rules so
   memories stay file-tool-writable while Bash sees `~/.claude` read-only.
 - WSL2 prerequisite: bwrap needs `C:\Program Files\ClaudeCode\managed-settings.json`

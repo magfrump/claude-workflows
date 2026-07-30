@@ -18,10 +18,18 @@
 #   - Audit script missing, python3 missing, malformed payload, non-policy
 #     file → silent exit 0. The hook must never break ordinary editing.
 #
-# The auditor lives OUTSIDE this repo (it reviews this repo's own policy
-# files, so it is deliberately not committed alongside them). Override the
-# location with CLAUDE_CONFIG_AUDIT_SCRIPT; disable entirely with
-# CLAUDE_CONFIG_AUDIT_DISABLE=1.
+# WHERE THE AUDITOR LIVES. It ships in this repo at scripts/, resolved
+# relative to this hook's own real path — the same trick log-usage.sh uses,
+# and the reason `scripts` is in the image payload (decision 023). It used to
+# live at ~/private_reviews/, outside the repo, so that a policy-file attacker
+# could not also edit the scanner; that path is still honored as a fallback
+# for bare-host installs. In cc-isolated the property is preserved more
+# strongly than the old location managed: the payload at /opt/claude-workflows
+# is root-owned 0555, so the agent cannot edit the auditor at all, whereas
+# ~/private_reviews was node-writable. See decision 023, amendment A.
+#
+# Resolution order: CLAUDE_CONFIG_AUDIT_SCRIPT → repo/payload scripts/ →
+# ~/private_reviews/. Disable entirely with CLAUDE_CONFIG_AUDIT_DISABLE=1.
 #
 # Input:  JSON on stdin (PostToolUse payload; .tool_input.file_path holds
 #         the edited path).
@@ -32,7 +40,14 @@
 
 [[ "${CLAUDE_CONFIG_AUDIT_DISABLE:-0}" == "1" ]] && exit 0
 
-AUDIT_SCRIPT="${CLAUDE_CONFIG_AUDIT_SCRIPT:-$HOME/private_reviews/claude_config_audit.py}"
+if [[ -n "${CLAUDE_CONFIG_AUDIT_SCRIPT:-}" ]]; then
+  AUDIT_SCRIPT="$CLAUDE_CONFIG_AUDIT_SCRIPT"
+else
+  # readlink -f so this resolves through ~/.claude/hooks -> /opt/claude-workflows/hooks.
+  HOOK_DIR=$(dirname "$(readlink -f "${BASH_SOURCE[0]}")")
+  AUDIT_SCRIPT="$HOOK_DIR/../scripts/claude_config_audit.py"
+  [[ -f "$AUDIT_SCRIPT" ]] || AUDIT_SCRIPT="$HOME/private_reviews/claude_config_audit.py"
+fi
 [[ -f "$AUDIT_SCRIPT" ]] || exit 0
 command -v python3 >/dev/null 2>&1 || exit 0
 

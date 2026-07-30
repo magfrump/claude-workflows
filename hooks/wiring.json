@@ -1,95 +1,124 @@
 {
   "_comment": [
-    "Canonical hook wiring for this repo's hooks, merged into ~/.claude/settings.json",
+    "Canonical settings.json wiring for this repo, merged into ~/.claude/settings.json",
     "by devcontainer-config/link-claude-home.sh at container start (decision 023).",
+    "",
+    "Two sections, both merged as (existing - ours) + ours:",
+    "  hooks       — event key -> matcher groups",
+    "  permissions — mode (deny/ask/allow) -> rule strings",
     "",
     "{{CLAUDE_DIR}} is substituted with the resolved config dir (CLAUDE_CONFIG_DIR, or",
     "$HOME/.claude) at merge time — do not hardcode $HOME here: the token has to survive",
     "a config dir that is not ~/.claude.",
     "",
-    "Merging is by exact match on each matcher-group object, so re-running the linker is",
-    "idempotent and never touches hook entries this file did not put there. That also",
-    "means any edit to a group below strands the previous version in an already-merged",
-    "settings.json: bump it in the same commit as a linker run, or prune by hand.",
+    "Merging is by exact match on each entry, so re-running the linker is idempotent and",
+    "never touches entries this file did not put there. That also means any edit to an",
+    "entry below strands the previous version in an already-merged settings.json: bump it",
+    "in the same commit as a linker run, or prune by hand.",
     "",
     "Every hook here is non-blocking EXCEPT guard-trusted-writes.py (denies writes to",
     "trusted-policy paths) and auto-approve-allowed-commands.sh (grants permission).",
     "Those two sit on the permission path — see decision 023 for why they are on by",
-    "default and how to opt out (CC_SKIP_HOOK_WIRING=1)."
+    "default and how to opt out (CC_SKIP_HOOK_WIRING=1).",
+    "",
+    "The permissions.deny block is not decoration: guard-trusted-writes.py DEFERS on its",
+    "HARD tier for the file tools rather than returning 'ask', because a hook 'ask' would",
+    "silently override permissions.deny (Claude Code issue #39344). The deny rules below",
+    "are what actually does the blocking on that path. Wiring the hook without them left",
+    "the HARD tier a no-op for Edit/Write — decision 023 amendment B."
   ],
 
-  "UserPromptSubmit": [
-    {
-      "hooks": [
-        {
-          "type": "command",
-          "command": "bash {{CLAUDE_DIR}}/hooks/batch-feedback-routing-reminder.sh"
-        },
-        {
-          "type": "command",
-          "command": "bash {{CLAUDE_DIR}}/hooks/dd-routing-reminder.sh"
-        }
-      ]
-    }
-  ],
+  "hooks": {
+    "UserPromptSubmit": [
+      {
+        "hooks": [
+          {
+            "type": "command",
+            "command": "bash {{CLAUDE_DIR}}/hooks/batch-feedback-routing-reminder.sh"
+          },
+          {
+            "type": "command",
+            "command": "bash {{CLAUDE_DIR}}/hooks/dd-routing-reminder.sh"
+          }
+        ]
+      }
+    ],
 
-  "PreToolUse": [
-    {
-      "matcher": "Edit|Write|MultiEdit|Bash",
-      "hooks": [
-        {
-          "type": "command",
-          "command": "python3 {{CLAUDE_DIR}}/hooks/guard-trusted-writes.py"
-        }
-      ]
-    },
-    {
-      "matcher": "Bash",
-      "hooks": [
-        {
-          "type": "command",
-          "command": "bash {{CLAUDE_DIR}}/hooks/auto-approve-allowed-commands.sh"
-        }
-      ]
-    },
-    {
-      "matcher": "Skill|Read|Agent",
-      "hooks": [
-        {
-          "type": "command",
-          "command": "bash {{CLAUDE_DIR}}/hooks/log-usage.sh"
-        }
-      ]
-    }
-  ],
+    "PreToolUse": [
+      {
+        "matcher": "Edit|Write|MultiEdit|Bash",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "python3 {{CLAUDE_DIR}}/hooks/guard-trusted-writes.py"
+          }
+        ]
+      },
+      {
+        "matcher": "Bash",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "bash {{CLAUDE_DIR}}/hooks/auto-approve-allowed-commands.sh"
+          }
+        ]
+      },
+      {
+        "matcher": "Skill|Read|Agent",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "bash {{CLAUDE_DIR}}/hooks/log-usage.sh"
+          }
+        ]
+      }
+    ],
 
-  "PostToolUse": [
-    {
-      "matcher": "Edit|Write|MultiEdit",
-      "hooks": [
-        {
-          "type": "command",
-          "command": "bash {{CLAUDE_DIR}}/hooks/claude-config-audit.sh"
-        }
-      ]
-    },
-    {
-      "matcher": "WebSearch|WebFetch",
-      "hooks": [
-        {
-          "type": "command",
-          "command": "python3 {{CLAUDE_DIR}}/hooks/web-taint-mark.py"
-        }
-      ]
-    },
-    {
-      "matcher": "Skill|Read|Agent",
-      "hooks": [
-        {
-          "type": "command",
-          "command": "bash {{CLAUDE_DIR}}/hooks/log-usage-post.sh"
-        }
-      ]
-    }
-  ]
+    "PostToolUse": [
+      {
+        "matcher": "Edit|Write|MultiEdit",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "bash {{CLAUDE_DIR}}/hooks/claude-config-audit.sh"
+          }
+        ]
+      },
+      {
+        "matcher": "WebSearch|WebFetch",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "python3 {{CLAUDE_DIR}}/hooks/web-taint-mark.py"
+          }
+        ]
+      },
+      {
+        "matcher": "Skill|Read|Agent",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "bash {{CLAUDE_DIR}}/hooks/log-usage-post.sh"
+          }
+        ]
+      }
+    ]
+  },
+
+  "permissions": {
+    "deny": [
+      "Read({{CLAUDE_DIR}}/.credentials.json)",
+      "Read(~/.config/gcloud/**)",
+      "Read(~/.npmrc)",
+
+      "Edit({{CLAUDE_DIR}}/settings*.json)",
+      "Write({{CLAUDE_DIR}}/settings*.json)",
+      "Edit({{CLAUDE_DIR}}/hooks/**)",
+      "Write({{CLAUDE_DIR}}/hooks/**)",
+      "Edit({{CLAUDE_DIR}}/CLAUDE.md)",
+      "Write({{CLAUDE_DIR}}/CLAUDE.md)",
+      "Edit(~/CLAUDE.md)",
+      "Write(~/CLAUDE.md)"
+    ]
+  }
 }

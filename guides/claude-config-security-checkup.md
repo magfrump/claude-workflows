@@ -10,7 +10,7 @@ Claude Code reads certain files as **instructions**, not data: `settings*.json`,
 rules. A prompt-injection or sandbox-escape payload smuggled into one of these
 — by a compromised plugin, a pasted snippet, or an errant autonomous edit —
 gets executed with the session's trust. This checkup process audits those
-trusted-policy files with `~/private_reviews/claude_config_audit.py`, which
+trusted-policy files with `~/.claude/scripts/claude_config_audit.py`, which
 detects:
 
 - **ESCAPE** — sandbox/permission bypasses (`bypassPermissions`,
@@ -41,11 +41,15 @@ session that made the edit is told to review or revert it; everything else is
 silent. Ordinary source edits are never scanned — the sandbox, not this
 scanner, is the mitigation for code-as-data.
 
-Wiring (settings.json + symlink) is manual; see
-`docs/working/wire-claude-config-audit.md`. Until wired, the hook is inert.
+In cc-isolated, wiring is automatic: the hook is merged into `settings.json` at
+every container start from `hooks/wiring.json`, and the auditor ships in the
+image payload (decision 023 and its amendment A). On a bare host the wiring is
+still manual — see `docs/working/wire-claude-config-audit.md`; until wired, the
+hook is inert.
 
-Env knobs: `CLAUDE_CONFIG_AUDIT_SCRIPT` overrides the auditor path
-(default `~/private_reviews/claude_config_audit.py`);
+Env knobs: `CLAUDE_CONFIG_AUDIT_SCRIPT` overrides the auditor path (default: the
+payload copy at `~/.claude/scripts/claude_config_audit.py`, falling back to
+`~/private_reviews/claude_config_audit.py`);
 `CLAUDE_CONFIG_AUDIT_DISABLE=1` disables the hook. If the auditor or
 `python3` is missing, the hook degrades to a silent no-op.
 
@@ -55,20 +59,20 @@ Run the auditor over everything it considers policy:
 
 ```sh
 # Default roots: ./.claude, ~/.claude, ./CLAUDE.md
-python3 ~/private_reviews/claude_config_audit.py
+python3 ~/.claude/scripts/claude_config_audit.py
 
 # Explicit roots — this repo IS ~/.claude's backing store, so sweep both:
-python3 ~/private_reviews/claude_config_audit.py ~/.claude ~/claude-workflows
+python3 ~/.claude/scripts/claude_config_audit.py ~/.claude ~/claude-workflows
 
 # Aggregate counts only (quick health signal):
-python3 ~/private_reviews/claude_config_audit.py --summary ~/.claude
+python3 ~/.claude/scripts/claude_config_audit.py --summary ~/.claude
 ```
 
 Run a sweep when:
 
 - **After installing or updating a plugin** — plugin-shipped skills auto-trigger
   from their own descriptions. Plugins are skipped by default; include them:
-  `python3 ~/private_reviews/claude_config_audit.py --include-plugins ~/.claude/plugins`
+  `python3 ~/.claude/scripts/claude_config_audit.py --include-plugins ~/.claude/plugins`
 - **After merging a branch that touched `skills/`, `workflows/`, `hooks/`,
   `CLAUDE.md`, or templates** — especially branches produced by autonomous
   (SI/Ralph) loops, where no human read every edit.

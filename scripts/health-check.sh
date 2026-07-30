@@ -16,7 +16,8 @@
 #   5. BATS tests pass (when report outputs exist)
 #   6. shellcheck passes on all .sh/.bash files
 #   7. Workflow value-justification frontmatter is present
-#   8. Hook scripts in hooks/ are executable
+#   8. Hook scripts in hooks/ are executable, and are wired into the live
+#      settings.json with their targets present (decision 023)
 #   9. Skill test-fixture coverage report (soft warning, not a gate)
 #  10. Feature integration: si-functions.sh orphan detection (soft warning)
 #  11. Document freshness: flag stale spikes and onboarding docs (soft warning)
@@ -487,6 +488,77 @@ check_hook_permissions() {
     fi
 }
 
+# ── 8b. Hooks are actually wired into the live settings.json ───────────────
+#
+# The recurring failure this repo keeps hitting is not a broken hook, it is a
+# hook that is present, looks installed, and does nothing (decisions 022, 023,
+# and 023 amendment A). Executable-bit checks do not catch any of it. This
+# check compares hooks/wiring.json against the settings.json the running
+# session actually reads, and confirms each command's target exists.
+#
+# Findings here are WARNINGS, not failures: they report a stale *environment*
+# (an image built before the current wiring.json, a volume that predates a
+# change), not a defect in the repo, and the fix is install.sh + bless +
+# rebuild on the host rather than an edit here. The repo-side invariants —
+# every wiring command points at a real hook, the deny rules the guard depends
+# on are declared — are hard-gated by test/link-claude-home-wiring.bats.
+
+check_hook_wiring() {
+    section "Hook wiring (live settings.json)"
+
+    local wiring="$REPO_ROOT/hooks/wiring.json"
+    local settings="${CLAUDE_CONFIG_DIR:-$HOME/.claude}/settings.json"
+
+    if [[ ! -f "$wiring" ]]; then
+        warn "hooks/wiring.json not found — nothing to compare against"
+        return
+    fi
+    if ! command -v jq >/dev/null 2>&1; then
+        warn "jq not found — skipping wiring comparison"
+        return
+    fi
+    if [[ ! -f "$settings" ]]; then
+        warn "No settings.json at $settings — not running in a wired container?"
+        return
+    fi
+
+    local missing=0 inert=0 total=0 cmd resolved
+    while IFS= read -r cmd; do
+        [[ -n "$cmd" ]] || continue
+        total=$((total + 1))
+        if ! jq -e --arg c "$cmd" \
+            '[.hooks[]?[]?.hooks[]? | select(.command == $c)] | length > 0' \
+            "$settings" >/dev/null 2>&1; then
+            warn "not wired: $cmd"
+            missing=$((missing + 1))
+            continue
+        fi
+        # Wired is not the same as working: the command's target has to exist.
+        resolved="${cmd##* }"
+        if [[ ! -e "$resolved" ]]; then
+            warn "wired but target missing: $resolved"
+            inert=$((inert + 1))
+        fi
+    done < <(jq -r '.hooks[][].hooks[].command' "$wiring" \
+             | sed "s#{{CLAUDE_DIR}}#${CLAUDE_CONFIG_DIR:-$HOME/.claude}#g")
+
+    if [[ $missing -eq 0 && $inert -eq 0 ]]; then
+        pass "$total wired hook command(s), all targets present"
+    fi
+
+    # The guard hook's HARD tier defers to permissions.deny for Edit/Write, so
+    # a missing deny rule silently disarms it (decision 023 amendment B).
+    local want_deny have_deny
+    want_deny=$(jq -r '.permissions.deny // [] | length' "$wiring")
+    have_deny=$(jq -r --arg d "${CLAUDE_CONFIG_DIR:-$HOME/.claude}" \
+        '[.permissions.deny[]? | select(. != null)] | length' "$settings" 2>/dev/null || echo 0)
+    if [[ "$want_deny" -gt 0 && "$have_deny" -eq 0 ]]; then
+        warn "permissions.deny is empty — guard-trusted-writes.py's HARD tier is a no-op for Edit/Write"
+    elif [[ "$want_deny" -gt 0 ]]; then
+        pass "permissions.deny present ($have_deny rule(s))"
+    fi
+}
+
 # ── 9. Skill test-fixture coverage ────────────────────────────────────────
 
 check_skill_fixture_coverage() {
@@ -915,6 +987,7 @@ main() {
     check_shellcheck
     check_workflow_value_justification
     check_hook_permissions
+    check_hook_wiring
     check_skill_fixture_coverage
     check_feature_integration
     check_doc_freshness

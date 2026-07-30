@@ -9,11 +9,13 @@
 #      are audited; ordinary source files are not
 #   4. Non-edit tools, malformed payloads, missing auditor, and auditor crashes
 #      all degrade to silent exit 0 — the hook never breaks ordinary editing
-#   5. Integration against the real auditor (skipped if not installed locally)
+#   5. Integration against the real auditor, which now ships in-repo
+#   6. Default resolution: with no env override the hook finds the in-repo
+#      auditor on its own (decision 023 amendment A — the hook was wired but
+#      inert for as long as the auditor lived outside the repo)
 #
-# Most tests use a stub auditor so they don't depend on the private script at
-# ~/private_reviews/claude_config_audit.py; the integration tests at the bottom
-# skip when it is absent.
+# Most tests use a stub auditor to pin the hook's own control flow; the
+# integration tests at the bottom exercise the real one.
 
 load ../lib/hermetic-env
 
@@ -23,7 +25,7 @@ load ../lib/hermetic-env
 pin_hermetic_locale
 
 HOOK="$BATS_TEST_DIRNAME/../../hooks/claude-config-audit.sh"
-REAL_AUDIT="$HOME/private_reviews/claude_config_audit.py"
+REAL_AUDIT="$BATS_TEST_DIRNAME/../../scripts/claude_config_audit.py"
 
 setup() {
   TEST_DIR=$(mktemp -d)
@@ -166,10 +168,26 @@ stub_invoked_on() {
   [ ! -s "$STUB_LOG" ]
 }
 
-# --- Integration with the real auditor (skipped when not installed) ---
+# --- Default resolution (no env override) ---
+
+@test "the auditor ships in this repo" {
+  # Decision 023 amendment A. While the auditor lived outside the repo, this
+  # hook was wired into every session and silently exited at the -f check.
+  [ -f "$REAL_AUDIT" ]
+}
+
+@test "with no env override the hook resolves the in-repo auditor" {
+  unset CLAUDE_CONFIG_AUDIT_SCRIPT
+  f="$TEST_DIR/settings.json"
+  printf '%s%s\n' '{"permissionMode": "bypass' 'Permissions"}' > "$f"
+  run bash "$HOOK" < <(edit_payload Edit "$f")
+  [ "$status" -eq 2 ]
+  [[ "$output" == *"ESCAPE"* ]]
+}
+
+# --- Integration with the real auditor ---
 
 @test "real auditor: bypassPermissions directive in settings.json → exit 2" {
-  [ -f "$REAL_AUDIT" ] || skip "real auditor not installed at $REAL_AUDIT"
   export CLAUDE_CONFIG_AUDIT_SCRIPT="$REAL_AUDIT"
   f="$TEST_DIR/settings.json"
   # Payload split across args so this test file never flags in audit sweeps;
@@ -181,7 +199,6 @@ stub_invoked_on() {
 }
 
 @test "real auditor: hidden bidi override in CLAUDE.md → exit 2" {
-  [ -f "$REAL_AUDIT" ] || skip "real auditor not installed at $REAL_AUDIT"
   export CLAUDE_CONFIG_AUDIT_SCRIPT="$REAL_AUDIT"
   f="$TEST_DIR/CLAUDE.md"
   printf '# Notes\nrun tests \xe2\x80\xaeplain text\n' > "$f"   # U+202E RLO
@@ -191,7 +208,6 @@ stub_invoked_on() {
 }
 
 @test "real auditor: benign settings.json → silent exit 0" {
-  [ -f "$REAL_AUDIT" ] || skip "real auditor not installed at $REAL_AUDIT"
   export CLAUDE_CONFIG_AUDIT_SCRIPT="$REAL_AUDIT"
   f="$TEST_DIR/settings.json"
   printf '{"model": "opus", "theme": "dark"}\n' > "$f"

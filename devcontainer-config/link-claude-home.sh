@@ -70,7 +70,7 @@ fi
 
 echo "link-claude-home: linked $linked entr$([ "$linked" -eq 1 ] && echo y || echo ies) from $SRC${skipped:+, skipped $skipped}"
 
-# --- Hook wiring (decision 023) ----------------------------------------------
+# --- Settings wiring: hooks + permissions (decision 023) ---------------------
 # Decision 022 shipped the hooks unwired, on the reasoning that hook wiring
 # changes session behavior and should be a human opt-in rather than something an
 # image rebuild switches on silently. 023 keeps the opt-in but moves it: the
@@ -102,12 +102,19 @@ else
   if ! jq -e . "$SETTINGS" >/dev/null 2>&1; then
     echo "link-claude-home: $SETTINGS is not valid JSON — refusing to touch it." >&2
   else
-    # Merge semantics, per event key:
+    # Merge semantics, per event key (hooks) and per mode (permissions):
     #   (existing - ours) + ours
     # Array subtraction is deep equality, so re-running is exactly idempotent:
-    # our matcher-groups are removed and re-appended, and every group we did not
-    # author is preserved in place. `_comment` is dropped (keys_unsorted minus
-    # the underscore-prefixed ones) so documentation never lands in settings.
+    # our entries are removed and re-appended, and everything we did not author
+    # is preserved in place. `_comment` is dropped so documentation never lands
+    # in settings.
+    #
+    # permissions.deny is merged for the same reason the hooks are, and it is
+    # not optional decoration: guard-trusted-writes.py deliberately DEFERS on
+    # its HARD tier for Edit/Write rather than returning "ask" (a hook "ask"
+    # silently overrides deny — Claude Code issue #39344), so the deny rules
+    # are what actually blocks that path. Wiring the hook alone left the HARD
+    # tier a no-op for the file tools (decision 023 amendment B).
     tmp="$SETTINGS.link-tmp.$$"
     if jq --arg dir "$DEST" --slurpfile w "$WIRING" '
           ($w[0]
@@ -116,13 +123,21 @@ else
                   then gsub("\\{\\{CLAUDE_DIR\\}\\}"; $dir)
                   else . end)) as $wiring
           | .hooks //= {}
-          | reduce ($wiring | keys_unsorted[]) as $ev (
+          | reduce (($wiring.hooks // {}) | keys_unsorted[]) as $ev (
               .;
-              .hooks[$ev] = (((.hooks[$ev] // []) - $wiring[$ev]) + $wiring[$ev])
+              .hooks[$ev] = (((.hooks[$ev] // []) - $wiring.hooks[$ev]) + $wiring.hooks[$ev])
+            )
+          | .permissions //= {}
+          | reduce (($wiring.permissions // {}) | keys_unsorted[]) as $mode (
+              .;
+              .permissions[$mode] =
+                (((.permissions[$mode] // []) - $wiring.permissions[$mode])
+                 + $wiring.permissions[$mode])
             )
         ' "$SETTINGS" > "$tmp" 2>/dev/null && [ -s "$tmp" ]; then
       mv -f "$tmp" "$SETTINGS"
-      echo "link-claude-home: wired $(jq -r '[.hooks[][]?.hooks[]?] | length' "$SETTINGS") hook command(s) into $SETTINGS"
+      echo "link-claude-home: wired $(jq -r '[.hooks[][]?.hooks[]?] | length' "$SETTINGS") hook command(s)" \
+           "and $(jq -r '[.permissions[]?[]?] | length' "$SETTINGS") permission rule(s) into $SETTINGS"
     else
       rm -f "$tmp"
       echo "link-claude-home: hook merge failed — $SETTINGS left unchanged." >&2

@@ -112,7 +112,7 @@ machine, they must be recreated by hand:
 | File | Role | Notes |
 |---|---|---|
 | `~/.claude/settings.json` | Permissions allow/deny lists, hook wiring, sandbox config | Guarded and deliberately not repo-tracked; changes are recorded prose-style in the `docs/working/wire-*.md` docs |
-| `~/private_reviews/claude_config_audit.py` | Trusted-policy security auditor run by `claude-config-audit.sh` | Deliberately kept outside the repo so a policy-file attacker can't also edit the scanner; see `guides/claude-config-security-checkup.md` |
+| ~~`~/private_reviews/claude_config_audit.py`~~ | Trusted-policy security auditor run by `claude-config-audit.sh` | **Now tracked at `scripts/claude_config_audit.py`** (decision 023 amendment A) — the image payload is root-owned `0555`, which keeps a policy-file attacker away from the scanner more firmly than the old location did. The `~/private_reviews/` path is still honored as a fallback for bare-host installs; see `guides/claude-config-security-checkup.md` |
 | `~/.claude/hooks/guard-trusted-writes.py`, `web-taint-mark.py`, `auto-approve-allowed-commands.sh` | Deployed copies of the repo's security/permission hooks | Copies by design; re-copy deliberately after repo changes |
 | `/tmp/cc-web-taint/` | Runtime session-taint markers (0700) | Created on demand; cleared on reboot, which is fine — taint is per-session |
 | `~/.claude/logs/usage.jsonl` | Output of the usage-logging hooks | Created on demand |
