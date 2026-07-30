@@ -7,6 +7,14 @@
 #     bats test/skills/code-review-format.bats
 #
 # With no REPORT_PATH, validates the newest date-stamped rubric in docs/reviews/.
+#
+# Scope: this suite checks a *real* rubric, so it can only assert the parts of the format
+# that the newest real artifact already satisfies — it answers "did the pipeline actually
+# emit a well-formed rubric last time it ran". The current format *contract* — including
+# sections and columns newer than the newest artifact — is asserted separately against a
+# golden in test/skills/code-review-format-contract.bats. Keep both: this one catches a
+# pipeline that stopped emitting a section, that one catches a spec change that no
+# artifact has exercised yet. Neither subsumes the other.
 
 load helpers
 
