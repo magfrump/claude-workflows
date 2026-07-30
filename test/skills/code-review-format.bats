@@ -3,12 +3,15 @@
 # Validates the output format of code-review rubrics.
 #
 # Usage: Set REPORT_PATH to a generated report, then run:
-#   REPORT_PATH=docs/reviews/code-review-rubric.md bats test/skills/code-review-format.bats
+#   REPORT_PATH=docs/reviews/code-review-rubric-2026-07-29-my-branch.md \
+#     bats test/skills/code-review-format.bats
+#
+# With no REPORT_PATH, validates the newest date-stamped rubric in docs/reviews/.
 
 load helpers
 
 setup() {
-  load_generic_report "docs/reviews/code-review-rubric.md"
+  load_generic_report "$(latest_rubric)"
 }
 
 # --- Header section ---

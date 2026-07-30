@@ -635,7 +635,22 @@ Evaluate the rules top-to-bottom; the first matching rule wins. Inputs are the r
 
 ## Deliverable 2: Code Review Rubric
 
-Save this as `docs/reviews/code-review-rubric.md`. This is a structured, scannable document the author uses to track code review resolution.
+Save this as `docs/reviews/code-review-rubric-<YYYY-MM-DD>-<branch-slug>.md` (e.g.
+`code-review-rubric-2026-07-29-feat-auth-tokens.md`), where `<branch-slug>` is the branch
+name with `/` replaced by `-`. This is a structured, scannable document the author uses to
+track code review resolution.
+
+**Within one review-fix loop, keep updating the same file** — iterations 2 and 3 update
+statuses in place, which is what the 🔴/🟡 `Status` columns are for. A *new* file is
+created only when the date or the branch changes, i.e. when it is a genuinely different
+review. This preserves in-loop status tracking while stopping each loop from destroying the
+prior loop's findings.
+
+Why date-stamped rather than overwritten: the rubric is the only durable record of what a
+review actually surfaced. Overwriting it means the pipeline's own output history — the
+substrate for calibrating critic precision, and for noticing that a finding was waived
+rather than fixed — survives only in `git log -p`. Every other artifact this skill produces
+is already date-stamped; the rubric was the inconsistent one.
 
 **Use this exact format:**
 
@@ -755,11 +770,11 @@ This rewards convergence — independent agreement across domains is the stronge
 
 ## Output Locations
 
-Save all review artifacts to `docs/reviews/` in the project root. Create the directory if it doesn't exist. If prior review artifacts exist from an earlier run, overwrite them — the rubric is designed for re-runs with updated status tracking.
+Save all review artifacts to `docs/reviews/` in the project root. Create the directory if it doesn't exist. Prior artifacts from an *earlier review* are never overwritten — date-stamping (below) keeps them. Within a single review-fix loop, iterations update the current run's files in place so status tracking works across iterations.
 
 ```
 docs/reviews/
-├── code-review-rubric.md
+├── code-review-rubric-<date>-<branch-slug>.md
 ├── code-fact-check-report.md
 ├── security-review.md
 ├── performance-review.md
@@ -840,8 +855,11 @@ The risk with any "log of decisions" is that nothing reads it, so it grows in st
   upstream critique into the downstream prompt for that pair only.
 - **Be honest about convergence.** Don't present a minority finding as consensus. Convergence
   detection is semantic (overlapping concern in the same code region), not mechanical.
-- **The rubric is designed for re-runs.** When the author fixes issues and runs again, the
-  pipeline re-runs and updates each status.
+- **The rubric is designed for re-runs, and is date-stamped per review.** Within one
+  review-fix loop, re-runs update the statuses in the same
+  `code-review-rubric-<date>-<branch-slug>.md`. A new date or branch means a new file —
+  never overwrite a prior review's rubric, since it is the only durable record of what the
+  pipeline surfaced and whether each finding was fixed or waived.
 - **Contextual critics are advisory.** Their findings go to Consider tier and never block merge.
 - **Fact-check report size management.** If the report exceeds 200 lines, paste only the
   "Claims Requiring Attention" summary (Incorrect, Stale, Mostly Accurate) into critic prompts.

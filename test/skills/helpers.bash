@@ -33,6 +33,21 @@ load_report() {
 
 # Call in setup() to load any report without requiring claims.
 # Args: $1 = default report path
+# Resolve the newest code-review rubric. Rubrics are date-stamped
+# (code-review-rubric-YYYY-MM-DD-<branch-slug>.md) so each review's findings survive the
+# next review; the ISO date leads the suffix, so lexical glob order is date order and the
+# last match is the newest. Falls back to the legacy undated name for artifacts predating
+# the date-stamping change.
+latest_rubric() {
+  local f newest=""
+  for f in docs/reviews/code-review-rubric-*.md; do
+    [ -e "$f" ] || continue
+    newest="$f"
+  done
+  [ -n "$newest" ] || newest="docs/reviews/code-review-rubric.md"
+  printf '%s' "$newest"
+}
+
 load_generic_report() {
   REPORT="${REPORT_PATH:-$1}"
   if [ ! -f "$REPORT" ]; then
