@@ -88,7 +88,7 @@ Deliberately included: a do-nothing (0), two that feel wrong (4, 12), two unconv
 | 4 | **pruned** | Inverts the evidence. Intersection discards exactly the disjoint blind-spot coverage that makes two models worth running; would have missed both models' unique reds. |
 | 5 | fails **H8** | Would discard most of this repo's real findings. Correct for a code-heavy repo, wrong here. Keep as an *escalation* path, not the gate. |
 | 6 | ⚠ **H7** | Principled (keys on H5's stable quantity) but k× cost on the most expensive gate. Cheaper approximation: 7. |
-| 7 | **strong** | Keys on the *stable* signal (H5) and avoids the unstable one (H4). Cheap. Needs critic-native severity to survive into the rubric, which the format currently flattens. |
+| 7 | **strong; unblocked** | Keys on the *stable* signal (H5) and avoids the unstable one (H4). Cheap. Its one blocker — critic-native severity being flattened into tiers by the rubric format — was removed in `923ffca`, which adds a `Severity` column carrying the source critic's level verbatim. Still deferred as a *gate*: no High-band data has been collected in the new format yet, so promoting it now would repeat the escalation-rule mistake of enforcing on n≈0. Ready to implement once a handful of rubrics carry the column. |
 | 8 | ⚠ | At 86–89% measured raw precision there is little FP mass to remove; BitsAI's 17%→57% context does not exist here. Deprioritized in Result 5 already. |
 | 9 | fails **H1/H3** | A queue with no human at decision time is a gate that never gates. |
 | 10 | ⚠ H8, but **promising** | The deterministic FP eliminator from Thread 7. Same testability problem as 5, but as a *filter on the testable subset* it costs one test run and is pure precision gain. |
@@ -114,5 +114,15 @@ it means the sentinel and the rubric disagree about what the review found.
 
 **Recommended next, for human decision:** candidate 3 (two-model union gate) is the
 best-supported unimplemented idea, and candidate 14 is the only one that touches the
-cross-file blind spot. Candidate 7 becomes attractive if critic-native severity is
-preserved into the rubric rather than flattened into tiers.
+cross-file blind spot.
+
+**Update 2026-07-30 (`923ffca`):** candidate 7's prerequisite is done — the rubric now
+carries a `Severity` column with the critic's native level, so the High band survives the
+tier mapping. Nothing keys on it yet. The cheapest path to a decision on 7 is to let a few
+rounds accumulate rubrics in the new format and then compare, per run, the High-band count
+against the 🔴 count: if High-band presence is as stable as Result 1 suggests while tier
+assignment is not, 7 is a strictly better gate input than the red count, at the same cost.
+That comparison is a `grep` over archived rubrics — no new experiment needed, just
+patience. The same archived-rubric corpus also answers the open question left by candidate
+13's advisory form (what the sentinel/rubric disagreement rate actually is), so one waiting
+period settles both.

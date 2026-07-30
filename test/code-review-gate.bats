@@ -136,3 +136,25 @@ setup() {
   result=$(count_rubric_red "$BATS_TEST_TMPDIR/nope.md")
   [ -z "$result" ]
 }
+
+# The synthetic rubrics above are minimal by design, so they would keep passing
+# even if the real rubric format drifted away from what the parser expects.
+# This one runs the parser against the golden rubric that
+# test/skills/code-review-format-contract.bats holds the skill to, which is the
+# only place the two coupled artifacts — the format the skill emits and the
+# parser the gate reads it with — are checked against each other.
+@test "count_rubric_red matches the golden rubric's red count" {
+  golden="${BATS_TEST_DIRNAME}/skills/code-review/rubric-current-format.md"
+  [ -f "$golden" ] || fail "golden rubric missing at $golden"
+  [ "$(count_rubric_red "$golden")" = "1" ]
+}
+
+@test "count_rubric_red is insensitive to column count" {
+  # Severity was added to the finding tables after the parser was written; the
+  # parser keys on the leading | R<n> | cell, so added columns must not shift it.
+  narrow="$BATS_TEST_TMPDIR/narrow.md"
+  wide="$BATS_TEST_TMPDIR/wide.md"
+  printf '## 🔴 Must Fix\n| R1 | a |\n## 🟡 x\n' > "$narrow"
+  printf '## 🔴 Must Fix\n| R1 | a | Security | Critical | `f.ts:1` | for-author | — | 🔴 Unresolved |\n## 🟡 x\n' > "$wide"
+  [ "$(count_rubric_red "$narrow")" = "$(count_rubric_red "$wide")" ]
+}
