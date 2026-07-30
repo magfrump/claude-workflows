@@ -576,6 +576,33 @@ parse_code_review_red() {
     printf '%s\n' "$matches"
 }
 
+# count_rubric_red — count 🔴 / Must-Fix rows in an archived code-review rubric.
+#
+# ADVISORY CROSS-CHECK (dd-review-gate-signal.md, candidate 13). The gate's
+# verdict comes from a sentinel the reviewer prints; the rubric is the richer
+# artifact it also writes. They should agree. Counting both and logging the
+# comparison costs nothing and detects a failure class neither catches alone —
+# a reviewer that writes a rubric full of reds and then reports zero, or that
+# reports reds it never wrote down. Deliberately NOT blocking yet: measure the
+# disagreement rate before giving it authority (the escalation-rule mistake was
+# enforcing an unvalidated mechanism).
+#
+# Counts rows in the "## 🔴 Must Fix" section only, matching the rubric format
+# in skills/code-review/SKILL.md: `| R1 | ... |`. Placeholder rows (`| — |`) do
+# not count. Prints nothing when no rubric is present or it has no Must Fix
+# section, which the caller treats as "no cross-check available".
+# Args: $1 = path to the rubric file.
+count_rubric_red() {
+    local f=${1:-}
+    [ -r "$f" ] || return 0
+    awk '
+        /^##[[:space:]]*🔴/ { inred = 1; next }
+        /^##[[:space:]]/    { inred = 0 }
+        inred && /^\|[[:space:]]*R[0-9]+[[:space:]]*\|/ { n++ }
+        END { if (seen || n) print n + 0; else print n + 0 }
+    ' "$f"
+}
+
 # code_review_gate_verdict — decide the gate from the red-finding count. A task
 # passes only when it introduces zero red (Must-Fix) findings — the same exit
 # condition pr-prep's review-fix loop uses ("no Must Fix items remain"); amber

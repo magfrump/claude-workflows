@@ -1329,14 +1329,36 @@ The bracketed token is a per-run identifier — reproduce it exactly. Count only
                     echo "    Warning: code-review produced no parseable result for $BRANCH — failing closed"
                     echo "[$TASK_ID] WARNING: code-review unparseable for $BRANCH" >> "$WORKING_DIR/validation-round-$ROUND.log"
                     record_gate "$TASK_ID" "code_review" "fail"
-                elif code_review_gate_verdict "$CR_RED"; then
-                    echo "    code-review OK: $BRANCH ($CR_RED red findings)"
-                    record_gate "$TASK_ID" "code_review" "pass"
-                    record_gate_detail "$TASK_ID" "code_review" "$(jq -n --argjson red "$CR_RED" '{red_findings: $red}')"
                 else
-                    REJECT_REASON="code-review: $CR_RED red (Must-Fix) finding(s)"
-                    record_gate "$TASK_ID" "code_review" "fail"
-                    record_gate_detail "$TASK_ID" "code_review" "$(jq -n --argjson red "$CR_RED" '{red_findings: $red}')"
+                    # ADVISORY cross-check (dd-review-gate-signal.md, candidate 13):
+                    # does the rubric the reviewer wrote agree with the number it
+                    # reported? Recorded, never blocking — the disagreement rate is
+                    # unmeasured, and this repo's standing lesson is not to give an
+                    # unvalidated mechanism authority. Promote to fail-closed only
+                    # once the rate is known to be ~0.
+                    CR_RUBRIC_RED=$(count_rubric_red "$(ls -1 "$CR_ARCHIVE"/code-review-rubric*.md 2>/dev/null | head -1)")
+                    CR_AGREE="unavailable"
+                    if [ -n "$CR_RUBRIC_RED" ]; then
+                        if [ "$CR_RUBRIC_RED" -eq "$CR_RED" ]; then
+                            CR_AGREE="yes"
+                        else
+                            CR_AGREE="no"
+                            echo "    NOTE: rubric shows $CR_RUBRIC_RED red row(s) but the sentinel reported $CR_RED (advisory)"
+                            echo "[$TASK_ID] NOTE: code-review rubric/sentinel disagree ($CR_RUBRIC_RED vs $CR_RED) for $BRANCH" \
+                                >> "$WORKING_DIR/validation-round-$ROUND.log"
+                        fi
+                    fi
+                    CR_DETAIL=$(jq -n --argjson red "$CR_RED" --arg agree "$CR_AGREE" \
+                        --arg rubric "${CR_RUBRIC_RED:-}" --arg model "$SI_CODE_REVIEW_MODEL" \
+                        '{red_findings: $red, model: $model, rubric_red: $rubric, rubric_sentinel_agree: $agree}')
+                    if code_review_gate_verdict "$CR_RED"; then
+                        echo "    code-review OK: $BRANCH ($CR_RED red findings)"
+                        record_gate "$TASK_ID" "code_review" "pass"
+                    else
+                        REJECT_REASON="code-review: $CR_RED red (Must-Fix) finding(s)"
+                        record_gate "$TASK_ID" "code_review" "fail"
+                    fi
+                    record_gate_detail "$TASK_ID" "code_review" "$CR_DETAIL"
                 fi
             else
                 # No reviewer binary at all. Still a coverage hole, but an

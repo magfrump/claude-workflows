@@ -108,3 +108,31 @@ setup() {
   run code_review_gate_verdict ""
   [ "$status" -ne 0 ]
 }
+
+# ---------------------------------------------------------------
+# count_rubric_red — advisory rubric/sentinel cross-check
+# (dd-review-gate-signal.md candidate 13; advisory, never blocking)
+# ---------------------------------------------------------------
+
+@test "count_rubric_red counts Must Fix rows only" {
+  f="$BATS_TEST_TMPDIR/r.md"
+  printf '# Rubric\n## 🔴 Must Fix\n| # | F |\n|---|---|\n| R1 | a |\n| R2 | b |\n## 🟡 Must Address\n| A1 | c |\n' > "$f"
+  [ "$(count_rubric_red "$f")" = "2" ]
+}
+
+@test "count_rubric_red ignores the empty-state placeholder row" {
+  f="$BATS_TEST_TMPDIR/r2.md"
+  printf '# Rubric\n## 🔴 Must Fix\n| # | F |\n|---|---|\n| — | — |\n## 🟡 x\n' > "$f"
+  [ "$(count_rubric_red "$f")" = "0" ]
+}
+
+@test "count_rubric_red does not count amber rows that follow" {
+  f="$BATS_TEST_TMPDIR/r3.md"
+  printf '## 🔴 Must Fix\n| R1 | a |\n## 🟡 Must Address\n| A1 | b |\n| A2 | c |\n' > "$f"
+  [ "$(count_rubric_red "$f")" = "1" ]
+}
+
+@test "count_rubric_red emits nothing when the rubric is absent" {
+  result=$(count_rubric_red "$BATS_TEST_TMPDIR/nope.md")
+  [ -z "$result" ]
+}
