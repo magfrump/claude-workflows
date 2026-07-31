@@ -271,7 +271,7 @@ What it established:
 - **Union buys recall; consensus does not buy precision.** Cross-family issue-level Jaccard ran
   well below within-family (every Sonnet-involving pair far below its own self-overlap) — §5.2's
   "score on detection" in action. But the two most severe false positives were confident,
-  sometimes *unanimous*, claims about code that existed in a **sibling commit** the single-commit
+  sometimes *multi-family-consensus*, claims about code that existed in a **sibling commit** the single-commit
   diff hid; cross-family consensus *amplified* the error. This is the concrete cost §5.1 warned
   of: diff-only is not the pipeline.
 
@@ -285,8 +285,9 @@ What it established:
   replicates): Results 3c and 5 reproduced **0/8 each**; Sonnet r2 even cited the
   labelled sibling context correctly ("gate 1h, already committed") — the failure mode
   inverted into correct use. Side signals: the D3 Sonnet/Gemini/Sol Jaccard pairs rose
-  to 0.28–0.40 (a redistribution — the Kimi pairs fell; D4's comparable pairs fell
-  slightly), Sonnet found the Result-3b `np.load` issue 2/2 (was 0/3 diff-only), and a
+  to 0.28–0.40 (a redistribution — the two largest Kimi pairs fell, the third rose
+  0.000→0.036; D4's comparable pairs fell, Sonnet↔Gemini to 0.0), Sonnet found the
+  Result-3b `np.load` issue 2/2 (was 0/3 diff-only), and a
   grounded 4-family consensus finding **persisted across both context modes** (bwrap
   `--tmpfs /tmp` vs `--chdir "$PWD"` — also 4-family in the diff-only baseline;
   surviving the FP-kill is the evidence it isn't a misattribution; untriaged). Actual

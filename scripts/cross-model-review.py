@@ -23,14 +23,15 @@ Design notes (see docs/working/experiment-results-code-review-2026-07-29.md):
   (docs/working/experiment-stage1-fp-kill-2026-07-31.md): the D3/D4 re-run
   reproduced neither FP in 0/8 replicates each, and cross-family agreement on
   real issues rose among the Sonnet/Gemini/Sol pairs on D3 (a redistribution:
-  Kimi pairs fell; D4's comparable pairs fell slightly). --context-base is
+  the two largest Kimi pairs fell; D4's comparable pairs fell). --context-base is
   therefore the RECOMMENDED mode for any review-quality use; run diff-only
   only as a deliberate recall probe or for comparability with pre-021
   measurements (live diff-only runs print a warning to stderr). Files larger
-  than --max-inline-kb, binary/undecodable files, and files past the
-  --max-total-inline-kb aggregate budget are listed but not inlined
-  (function-body extraction is the designated large-file fallback, not yet
-  built). Section
+  than --max-inline-kb, binary/undecodable files, and files that would push
+  the running inlined total over the --max-total-inline-kb aggregate budget
+  are listed but not inlined (best-fit skip: later smaller files that still
+  fit are inlined; function-body extraction is the designated large-file
+  fallback, not yet built). Section
   delimiters carry a nonce derived from the diff, so inlined repo content
   cannot forge an "UNDER REVIEW"/"CONTEXT ONLY" boundary. Without
   --context-base the prompt is byte-identical to the pre-021 harness, so
@@ -372,8 +373,9 @@ def main():
     ap.add_argument("--max-inline-kb", type=int, default=64, help="Stage 1: files larger than "
                     "this are listed but not inlined")
     ap.add_argument("--max-total-inline-kb", type=int, default=256, help="Stage 1: aggregate "
-                    "budget for inlined enclosing files; once the running total would exceed "
-                    "this, remaining files are listed but not inlined")
+                    "budget for inlined enclosing files; a file that would push the running "
+                    "total over the budget is listed but not inlined (later smaller files "
+                    "that still fit are inlined — best-fit skip, not a hard stop)")
     ap.add_argument("--dry-run", action="store_true", help="build the prompt, write it to "
                     "<out>/prompt.txt, print token/cost projections, and exit without calling any model")
     args = ap.parse_args()

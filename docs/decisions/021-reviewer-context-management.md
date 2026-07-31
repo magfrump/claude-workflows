@@ -14,9 +14,12 @@ byte-identical to pre-021) — offline cost measurement in
 guardrails hold). **Validated 2026-07-31**: the D3/D4 FP-kill re-run
 (`docs/working/experiment-stage1-fp-kill-2026-07-31.md`, 4 families × 2 replicates/cell)
 reproduced **neither** Result 3c nor Result 5 (0/8 each); actual spend $3.53, median
-call $0.226 — cost triggers did not fire (the actual worst call, $0.388, overshot the
-offline worst-call projection of $0.248 — the known reasoning-token estimator blind
-spot; the triggers are defined on the median band and sweep total, which held).
+call $0.226 — cost triggers did not fire under the pinned definitions (see Revisit
+triggers: the ~$0.33 band is a **median** trigger; the actual worst call, $0.388,
+overshot both the band and the offline worst-call projection of $0.248 — the known
+reasoning-token estimator blind spot — and would have fired a per-call reading; the
+median $0.226 and sweep total held. The $4.37 projection covers the 5-cell ND sweep,
+the $3.53 actual the 2-cell D3/D4 re-run — not directly comparable).
 
 ## Context
 
@@ -28,7 +31,9 @@ files; judge only from the diff below.*" The 2026-07-30 cross-model experiment
 incumbent Claude critic missed 0/6 (Result 4) — but also that it manufactures the run's
 worst false positives:
 
-- **Result 5**: on D4 **all four families**, several at High, flagged Tier A/B work as
+- **Result 5**: on D4 **three of four families** [corrected 2026-07-31 with the baseline
+  doc: originally "all four"; the committed data shows 6/11 replicates — Kimi 2/2,
+  Gemini 3/3, Sonnet 1/3, Sol 0/3], all at High, flagged Tier A/B work as
   "missing" — it was present, in **sibling commits** the single-commit diff couldn't show.
   Cross-family consensus made the FP look *stronger*, not weaker.
 - **Result 3c**: Gemini raised a **Critical** by merging two adjacent heredoc blocks in one
@@ -94,7 +99,7 @@ Adopt a **staged path** rather than a single point:
 
 **Why this level and not more:** it is the *lowest* context level that makes a cheap
 second-family critic viable. It removes the FP class that would otherwise flood the cheap
-critic with confident, unanimous, wrong findings (Result 5) while preserving H2/H3/H4 — so
+critic with confident, multi-family, wrong findings (Result 5) while preserving H2/H3/H4 — so
 the OpenRouter sweep keeps running and stays model-attributable. Stage 1 fixes
 *misattribution*; it explicitly does **not** claim to recover cross-file interaction bugs
 (MD1 R1 class) — that recall lives only in Stage 3's agentic gate.
@@ -146,4 +151,4 @@ How to read: each entry is a concrete, observable condition that should prompt
 re-evaluating this decision. Future readers can grep this section when their context
 changes to see whether earlier decisions still apply.
 
-`if Stage 1 is ever pointed at a repo not fully owned by the operator — add a secret-screening pass first (the harness ships whole files + branch diff to third-party APIs with no filtering; 2026-07-31 review finding A12). if a re-run of D3/D4 under Stage 1 still reproduces Results 3c or 5 (sibling-commit/heredoc misattribution). if Stage-1 whole-file+branch-diff prompts push per-call cost above the ~$0.33 median band or a sweep above $10. if a cross-file symbol FP rate is measured high enough to justify Stage 2's repo-map build. if a portable OpenRouter model gains reliable, uniform tool-calling that would let #6 satisfy H2/H3. if the production agentic critic is retired, removing the Stage-3 re-verify authority #9 depends on. if a measured cheap-critic recall gain fails to survive the Stage-3 re-verify gate (hypothesis #9 counter-evidence).`
+`if Stage 1 is ever pointed at a repo not fully owned by the operator — add a secret-screening pass first (the harness ships whole files + branch diff to third-party APIs with no filtering; 2026-07-31 review finding A12). if a re-run of D3/D4 under Stage 1 still reproduces Results 3c or 5 (sibling-commit/heredoc misattribution). if Stage-1 whole-file+branch-diff prompts push the **median** per-call cost above the ~$0.33 band (the diff-only Kimi per-call median; pinned 2026-07-31 — a single reasoning-heavy outlier does not trip it, and under a per-call reading the 2026-07-31 sweep's $0.388 worst call would already have fired this trigger while the median $0.226 held) or a sweep above $10. if a cross-file symbol FP rate is measured high enough to justify Stage 2's repo-map build. if a portable OpenRouter model gains reliable, uniform tool-calling that would let #6 satisfy H2/H3. if the production agentic critic is retired, removing the Stage-3 re-verify authority #9 depends on. if a measured cheap-critic recall gain fails to survive the Stage-3 re-verify gate (hypothesis #9 counter-evidence).`

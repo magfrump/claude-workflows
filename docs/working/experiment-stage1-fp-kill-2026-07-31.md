@@ -86,12 +86,13 @@ misattribution. Candidate follow-up, not yet triaged.
 
 Issue-level Jaccard (judge-matched), D3: the Sonnet↔Gemini↔Sol pairs now sit at
 0.28–0.40 (Sonnet-involving pairs were 0.000–0.119 in the baseline); the change is a
-redistribution, not a uniform rise — the three Kimi-involving pairs fell
-(0.258→0.042, 0.382→0.103) and so did the baseline maximum Gemini↔Sol (0.513→0.375).
+redistribution, not a uniform rise — the two largest Kimi-involving pairs fell
+(0.258→0.042, 0.382→0.103; the third rose 0.000→0.036) and so did the baseline
+maximum Gemini↔Sol (0.513→0.375).
 The non-Kimi trio converges on the same real issues (np.load, bwrap `/tmp`); Kimi
 diverges further (J_cross 0.036–0.103) — it still finds things nobody else does.
-D4 J_cross stays low (0.0–0.267; the three baseline-comparable pairs fell slightly):
-a docs+script diff spreads attention more.
+D4 J_cross stays low (0.0–0.267; the three baseline-comparable pairs fell,
+Sonnet↔Gemini to 0.0): a docs+script diff spreads attention more.
 
 Notable recall change: **Sonnet found the Result-3b `np.load` positional issue in 2/2
 D3 replicates** — diff-only, no Sonnet replicate found it (0/3). One run is not a

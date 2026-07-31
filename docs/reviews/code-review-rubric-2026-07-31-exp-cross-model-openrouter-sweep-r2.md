@@ -1,6 +1,6 @@
 # Code Review Rubric
 
-**Scope:** `git diff main...HEAD` (10 files, +207/−7; commits `8c23b7e` + `fbd8597`) | **Reviewed:** 2026-07-31 | **Status: 🟡 CONDITIONAL PASS** — 0 red open; all fixes applied in iteration 1, awaiting iteration-2 re-review
+**Scope:** `git diff main...HEAD` (10 files, +207/−7; commits `8c23b7e` + `fbd8597`) | **Reviewed:** 2026-07-31 | **Status: ✅ PASSES REVIEW** — 3 iterations: iter-1 fixes, iter-2 adversarial verification (NOT CLEAN: N1–N5), iter-3 fixes verified mechanically against artifacts
 
 **Commit:** fbd8597 · Review-fix loop iteration 1 · `-r2` suffix distinguishes this loop from the earlier 2026-07-31 loop on this branch's pre-merge diff (that rubric is preserved unmodified).
 
@@ -28,7 +28,7 @@ stand. Each must carry a resolution or author note.
 | # | Finding | Domain | Severity | Source | Legibility-target | Considered overrides | Status | Author note |
 |---|---|---|---|---|---|---|---|---|
 | A1 | Raw-data line lists `prompt.txt` but both files are untracked (commit `8c23b7e` states the findings+overlap convention) | Fact-check | Stale (High) | Fact-check Claim 6 | for-author | — | ✅ Fixed (iter 1) | — |
-| A2 | 021 status line keeps "worst call $0.248 … both guardrails hold" without noting the actual worst call ($0.388) overshot the projection by 56%; $4.37 vs $3.53 are different cell-sets | Fact-check | Mostly accurate (High) | Fact-check Claim 7 | for-author | — | ✅ Fixed (iter 1) | — |
+| A2 | 021 status line keeps "worst call $0.248 … both guardrails hold" without noting the actual worst call ($0.388) overshot the projection by 56%; $4.37 vs $3.53 are different cell-sets | Fact-check | Mostly accurate (High) | Fact-check Claim 7 | for-author | — | ✅ Fixed (iter 3) | Cell-set caveat added in iter 3 (iter-1 fix covered only the overshoot half) |
 | A3 | "on the same four families that produced them diff-only" — Result 3c came from one Gemini replicate (log row 30 + experiment Answer line) | Fact-check | Mostly accurate (High) | Fact-check Claim 8 | for-author | — | ✅ Fixed (iter 1) | — |
 | A4 | Unqualified "agreement rose" framing in 4 places (log row 30, state doc, experiment Result C "most pairs ≈0", harness docstring) — the D3 change is a redistribution (Sonnet pairs up, Kimi pairs and baseline max down); D4 fell | Fact-check | Mostly accurate (High) | Fact-check Claims 9-11 | for-author | — | ✅ Fixed (iter 1) | — |
 | A5 | Smaller precision defects: D3 sibling section is 7 commits not "rounds 1–5" alone; "72 KB" is chars÷1024 (file is 74,876 B); "all anchored to real constructs" holds only in its verifiable form | Fact-check | Mostly accurate (High/Med) | Fact-check Claims 12-14 | for-author | — | ✅ Fixed (iter 1) | — |
@@ -36,6 +36,11 @@ stand. Each must carry a resolution or author note.
 | A7 | No aggregate cap on inlined enclosing files: `--max-inline-kb` caps per-file, nothing caps the sum; prompt grows linearly in touched files (50 files ≈ 3.2 MB) with only the dollar-denominated `--max-usd` abort as backstop — a cliff the new "recommended" posture makes the default exposure | Performance | Medium (Macro × Cold) | Performance F1 | for-author | — | ✅ Fixed (iter 1) | — |
 | A8 | Partial-scope labelling rule lives only in Step-1 prose; neither the Stage-1 replicate checklist nor the Stage-2 critic-dispatch checklist mentions it (decision-29 precedent: requirements consumed at dispatch go into the numbered dispatch steps); ambiguous whether fact-check replicates are covered | API consistency | Inconsistent | API #1 | for-author | — | ✅ Fixed (iter 1) | — |
 | A9 | Decision-log row 30's Full Record cell links `[021]` — every other linked row self-links its own record number; row 30 has no full record of its own, so the cell should be `—` (021 is already cited in the row text) | API consistency | Inconsistent | API #2 | for-author | — | ✅ Fixed (iter 1) | — |
+| N1 | Iter-1 fix introduced "the three Kimi-involving pairs fell" — one rose (0.000→0.036); propagated to state doc, log row 30, docstring; "D4 fell slightly" understated Sonnet↔Gemini→0.0 | Iter-2 verifier | Medium (fact) | Iteration-2 re-review | for-author | — | ✅ Fixed (iter 3, verified against overlap.json) | — |
+| N2 | R1/R2's "all four families"/"unanimous" survived in decision 021 itself (lines 31, 97) and state doc :274 | Iter-2 verifier | Medium (fact) | Iteration-2 re-review | for-author | — | ✅ Fixed (iter 3, bracketed-correction convention) | — |
+| N3 | Iter-1 sentence declared the ~$0.33 trigger "held" under a definition the cost doc contradicts — per-call reading would mean a fired revisit trigger | Iter-2 verifier | Medium (soundness) | Iteration-2 re-review | for-author | — | ✅ Fixed (iter 3) | Definition pinned as **median** trigger in 021's revisit-triggers line + cost doc, with explicit disclosure that a per-call reading would have fired on $0.388 |
+| N4 | `--max-total-inline-kb` help/docstring said "remaining files" skipped — implementation is a best-fit skip (`continue`, not break) | Iter-2 verifier | Low (doc-vs-code) | Iteration-2 re-review | for-author | — | ✅ Fixed (iter 3) | No value guard added for aggregate < per-file cap (deliberate: silently-nothing-inlined is visible in the stats line) |
+| N5 | FILES NOT INLINED header ("too large or binary") no longer covers aggregate-budget entries; header text ships to the model | Iter-2 verifier | Low (staleness) | Iteration-2 re-review | for-author | — | Deferred | Rewording changes Stage-1 prompt bytes and would break the recorded D4 `prompt_sha` reproducibility promise; fold into the next prompt-template revision |
 
 ---
 
