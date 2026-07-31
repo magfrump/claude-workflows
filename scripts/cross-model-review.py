@@ -13,13 +13,19 @@ Design notes (see docs/working/experiment-results-code-review-2026-07-29.md):
   session experiments' headless arm (opus 5 vs 4.8), not the agentic arm, so
   cross-provider numbers are comparable: agentic context-fetch would confound
   model identity with retrieval behavior (tracker Thread 2).
-- Stage-1 context enrichment (decision 021, opt-in via --context-base): the
+- Stage-1 context enrichment (decision 021, via --context-base): the
   prompt gains (a) the sibling-branch diff from --context-base to the range
   start, explicitly labelled "already committed - context only, not under
   review", and (b) the full post-range contents of every file the reviewed
   diff touches. This kills the sibling-commit / flattened-boundary
   misattribution FP class (Results 3c & 5) while staying git-only, no-tools,
-  and byte-identical across models. Files larger than --max-inline-kb, and
+  and byte-identical across models. VALIDATED 2026-07-31
+  (docs/working/experiment-stage1-fp-kill-2026-07-31.md): the D3/D4 re-run
+  reproduced neither FP in 0/8 replicates each, and cross-family agreement on
+  real issues rose. --context-base is therefore the RECOMMENDED mode for any
+  review-quality use; run diff-only only as a deliberate recall probe or for
+  comparability with pre-021 measurements (live diff-only runs print a
+  warning to stderr). Files larger than --max-inline-kb, and
   binary/undecodable files, are listed but not inlined (function-body
   extraction is the designated large-file fallback, not yet built). Section
   delimiters carry a nonce derived from the diff, so inlined repo content
@@ -413,6 +419,12 @@ def main():
                 fh.write(prompt)
             print(f"dry run: prompt written to {os.path.join(args.out, 'prompt.txt')}; no calls made")
             return
+        if not args.context_base:
+            # Decision 021 + the 2026-07-31 FP-kill validation: diff-only manufactures
+            # sibling-commit/flattened-boundary FPs; Stage-1 context is the review-quality mode.
+            print("WARNING: diff-only mode is a recall probe with a known misattribution "
+                  "FP class (decision 021; validated fix: --context-base). Findings from "
+                  "this run must not be treated as review verdicts.", file=sys.stderr)
         if unpriced:
             sys.exit(f"cost guard cannot price: {', '.join(unpriced)} — refusing to send "
                      f"(pricing fetch failed or unknown model id); re-run when pricing resolves")

@@ -98,6 +98,8 @@ Accept user overrides:
 
 Do not paste the full diff into agent prompts. Pass the scope specification so each agent runs its own `git diff` — this avoids context budget issues with large diffs.
 
+**Partial-scope reviews must label out-of-scope sibling work.** When the scope is narrower than the full branch changeset (`--range`, `--staged`, or `--files` on a multi-commit branch), every critic prompt must state: (a) that commits/files on the branch outside the scope are *already committed — context only, not under review*, and (b) that before flagging work as "missing", the critic must check the rest of the branch (`git log main..HEAD`, `git diff main...HEAD -- <path>`) for it. This rule is validated, not speculative: the 2026-07-31 Stage-1 experiment (`docs/working/experiment-stage1-fp-kill-2026-07-31.md`, decision 021) showed unlabelled single-commit scope made **all four model families** unanimously flag work as missing that sat in sibling commits, and the label + sibling context reduced that FP class to 0/8 while *raising* agreement on real issues. The default full-branch scope (`git diff main...HEAD`) needs no label — the whole changeset is under review.
+
 #### Large diff triage (~1000+ lines)
 
 Diffs exceeding roughly 1000 lines may exceed practical review capacity in a single pass. When the diff is this large, split the review into multiple passes by subsystem or file group:
