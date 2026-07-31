@@ -23,11 +23,8 @@ Orchestrates the sub-skills below. Ensure they exist in `skills/` before use.
 
 **Required (always run):**
 - `code-fact-check.md` — verifies factual claims in code comments, docs, and commit messages.
-  Runs as **k=3 parallel replicates** on byte-identical prompts, merged most-severe-wins
-  (see Stage 1) — its Incorrect verdict is one of the two verdict-driven blocking channels
-  (state doc §1.0 names fact-check Incorrect and api-consistency Breaking), the only one
-  reachable by documentation-class findings, and it is measurably unstable on a single
-  sample (state doc §1.1, Result 14a).
+  Runs as **k=3 parallel replicates** merged most-severe-wins; the rationale lives in one
+  place — Stage 1's **Why three** — do not restate it elsewhere.
 
 **Core critics (always run):**
 - `security-reviewer.md` — security design review
@@ -1175,9 +1172,8 @@ The risk with any "log of decisions" is that nothing reads it, so it grows in st
 
 - **Always run fact-checking first, and always as k=3 replicates.** Even if the user only
   asks for critic perspectives. Byte-identical prompts, merged most-severe-wins, per-claim
-  replicate verdicts recorded, disagreement rate reported — a single fact-check sample is
-  a coin flip on one of the pipeline's two verdict-driven blocking channels (state doc
-  §1.0/§1.1).
+  replicate verdicts recorded, disagreement rate reported — rationale and mechanics live
+  in Stage 1's **Why three** and merge steps, the single canonical statement.
 - **Paste skill file contents into agent prompts.** Sub-agents cannot read your filesystem.
 - **Pass scope, not diffs.** Each agent runs its own `git diff` to avoid context budget issues.
 - **All agents of the same stage run in parallel.** They must not see each other's output.

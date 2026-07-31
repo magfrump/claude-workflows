@@ -1478,9 +1478,45 @@ The bracketed token is a per-run identifier — reproduce it exactly. Count only
                                 >> "$WORKING_DIR/validation-round-$ROUND.log"
                         fi
                     fi
+                    # ADVISORY replication check (rubric C3, 2026-07-30 review).
+                    # Stage 1 runs fact-check as k=3 replicates and stamps the
+                    # merged report with a `**Replication:**` header field plus a
+                    # `Commit:` line; without this check a degraded k=2 run (or a
+                    # stale report carried in from an earlier commit) is invisible
+                    # here, because the gate otherwise consumes one integer.
+                    # Recorded and logged, never blocking — same stance as the
+                    # rubric/sentinel cross-check above.
+                    CR_FC_REPORT="$CR_ARCHIVE/code-fact-check-report.md"
+                    CR_REPLICATION=""
+                    if [ -r "$CR_FC_REPORT" ]; then
+                        CR_REPLICATION=$(sed -n 's/^\*\*Replication:\*\* *//p' "$CR_FC_REPORT" | head -1)
+                        CR_FC_COMMIT=$(sed -n 's/^Commit: *//p' "$CR_FC_REPORT" | head -1)
+                        if [ -n "$CR_FC_COMMIT" ] && [ -n "$CR_COMMIT" ] \
+                            && [ "${CR_COMMIT#"$CR_FC_COMMIT"}" = "$CR_COMMIT" ]; then
+                            echo "    NOTE: fact-check report Commit ($CR_FC_COMMIT) does not match reviewed commit ${CR_COMMIT:0:7} — stale report, replication field untrusted (advisory)"
+                            echo "[$TASK_ID] NOTE: stale fact-check report ($CR_FC_COMMIT vs ${CR_COMMIT:0:7}) for $BRANCH" \
+                                >> "$WORKING_DIR/validation-round-$ROUND.log"
+                            CR_REPLICATION="stale"
+                        fi
+                    fi
+                    case "$CR_REPLICATION" in
+                        k=3*) : ;;  # full replication — nothing to report
+                        stale) : ;; # already logged above
+                        "")
+                            echo "    NOTE: merged fact-check report missing or lacks **Replication:** field — single-sample fact-check, not full k=3 (advisory)"
+                            echo "[$TASK_ID] NOTE: fact-check replication field absent for $BRANCH" \
+                                >> "$WORKING_DIR/validation-round-$ROUND.log"
+                            ;;
+                        *)
+                            echo "    NOTE: fact-check ran degraded (Replication: $CR_REPLICATION) — advisory"
+                            echo "[$TASK_ID] NOTE: degraded fact-check replication ($CR_REPLICATION) for $BRANCH" \
+                                >> "$WORKING_DIR/validation-round-$ROUND.log"
+                            ;;
+                    esac
                     CR_DETAIL=$(jq -n --argjson red "$CR_RED" --arg agree "$CR_AGREE" \
                         --arg rubric "${CR_RUBRIC_RED:-}" --arg model "$SI_CODE_REVIEW_MODEL" \
-                        '{red_findings: $red, model: $model, rubric_red: $rubric, rubric_sentinel_agree: $agree}')
+                        --arg replication "${CR_REPLICATION:-absent}" \
+                        '{red_findings: $red, model: $model, rubric_red: $rubric, rubric_sentinel_agree: $agree, factcheck_replication: $replication}')
                     if code_review_gate_verdict "$CR_RED"; then
                         echo "    code-review OK: $BRANCH ($CR_RED red findings)"
                         record_gate "$TASK_ID" "code_review" "pass"
