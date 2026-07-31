@@ -59,8 +59,8 @@ Pipeline: Stage 1 k=3 fact-check (first live run of the mechanism this branch sh
 | C17 | k=3 rationale copy-pasted into 5 artifacts, no canonical source — and it drifted (this run's R1 is the proof) | tech-debt-triage #2 | Medium (advisory) | for-author | — | 🟢 Partially addressed (all 5 sites now consistent; canonicalization still open) |
 | C18 | log.md rows outgrown the log format (4,014-char rows with subsections — the file's own promotion trigger) | tech-debt-triage #3 | Medium (advisory) | for-author | — | 🟢 Open |
 | C19 | Contract-test gaps: near-vacuous regex in test 2; nothing asserts the k restatements outside Stage 1 agree | tech-debt-triage #4 | Low (advisory) | for-author | — | 🟢 Open |
-| C20 | DD-sweep harness not committed (`run_dd_sweep.py` lived in job tmp); README table hand-transcribed — which is where R2/R3 arose | tech-debt-triage #5 | Low (advisory) | for-author | — | 🟢 Deferred (commit runner at next sweep) |
-| C21 | State-doc §1 status markers use 3 different "done" conventions; `Relevant paths` lacks the sweep dir | tech-debt-triage #6 | Low (advisory) | for-author | — | 🟢 Open |
+| C20 | DD-sweep harness not committed (`run_dd_sweep.py` lived in job tmp); README table hand-transcribed — which is where R2/R3 arose | tech-debt-triage #5 | Low (advisory) | for-author | — | ✅ Fixed (`scripts/dd-cross-model-sweep.py`, with a generate-don't-transcribe note for future sweeps) |
+| C21 | State-doc §1 status markers use 3 different "done" conventions; `Relevant paths` lacks the sweep dir | tech-debt-triage #6 | Low (advisory) | for-author | — | 🟢 Partially fixed (sweep dir + runner added to Relevant paths; marker unification still open) |
 
 ---
 

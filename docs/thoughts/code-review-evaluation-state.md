@@ -5,7 +5,7 @@
 > cross-model result. It is the shortest path to "what do we actually know."
 
 Last verified: 2026-07-30
-Relevant paths: skills/code-review/SKILL.md · skills/code-fact-check/SKILL.md · scripts/self-improvement.sh · scripts/cross-model-review.py · docs/working/experiment-results-code-review-2026-07-29.md · docs/working/experiment-results-full-pipeline-tiers-2026-07-30.md · docs/working/experiment-cross-model-review-2026-07-30.md · docs/decisions/021-reviewer-context-management.md · docs/working/research-cross-model-review-hypotheses.md
+Relevant paths: skills/code-review/SKILL.md · skills/code-fact-check/SKILL.md · scripts/self-improvement.sh · scripts/cross-model-review.py · scripts/dd-cross-model-sweep.py · runs/dd-cross-model-2026-07-30/ · docs/working/experiment-results-code-review-2026-07-29.md · docs/working/experiment-results-full-pipeline-tiers-2026-07-30.md · docs/working/experiment-cross-model-review-2026-07-30.md · docs/decisions/021-reviewer-context-management.md · docs/working/research-cross-model-review-hypotheses.md
 
 Two distinct arms carry the "2026-07-30" date and must not be conflated: the
 **full-pipeline tiers** arm (`experiment-results-full-pipeline-tiers-…`, agentic, source of
