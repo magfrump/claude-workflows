@@ -1090,20 +1090,33 @@ mechanism (decision 028).
 **Trigger — all three parts must be present in the critic report itself:**
 
 1. a **stated intent quoted verbatim** with `path/to/file:line` — a design document, a
-   sibling comment or docstring, a spec the code cites, or `<pr-intent>`;
+   sibling comment or docstring, a spec the code cites, or `<pr-intent>`. *Verbatim*
+   admits standard editorial marks — bracketed alterations (`[is]`) and elision (`…`) —
+   so long as the quoted words are recognizably the source's; a paraphrase is not a
+   quote (measured: the one true lift in the validation corpus carries an `[is]`
+   bracket, so a byte-exact reading fails the channel's own purpose);
 2. the **code's actual mechanism quoted or reconstructed** with `path/to/file:line`; and
-3. the report's own reasoning that the mechanism **defeats or inverts** the stated
-   intent.
+3. the report's own reasoning that the mechanism produces **runtime behaviour contrary
+   to the stated intent** — a behavioural defeat or inversion. Contradictions of a
+   stated *convention, structure, or hygiene principle* ("this code breaks the module
+   header's stated design principle") do **not** qualify, and neither does a claim that
+   documentation is *false* (that is fact-check-`Incorrect` territory). In the
+   validation replay this distinction alone removed every clear false lift while
+   keeping the true one.
 
 **Precision guard.** An intent claim alone, a missing quote on either side, or a critic's
 disagreement with a design's *wisdom* never qualifies. Do not lift a finding whose report
-does not contain both verbatim quotes — the channel's authority comes from evidence a
+does not contain both quotes — the channel's authority comes from evidence a
 human can re-verify in seconds, never from any critic's internal severity label.
 
 **On a qualifying finding:**
 
 - Place it in (or move it to) `## 🟡 Must Address` with `Severity: Contested-Soundness`
-  and `Source: Soundness cross-check (found by <critic>)`.
+  and `Source: Soundness cross-check (found by <critic>)`. **Lift only, never demote:** a
+  qualifying finding already at 🔴 (or already 🟡 via another channel) keeps its band and
+  simply gains the Contested-Soundness annotation — in the validation corpus 8 of 19
+  trigger fires were rows already promoted by existing channels, and a literal "move to
+  🟡" would have moved 🔴 rows *down*.
 - Both quotes go in verbatim as the row's evidence, each with its `path/to/file:line`,
   so the author can adjudicate without re-deriving the contradiction.
 - This applies **regardless of which critic filed the finding** — contextual critics
@@ -1117,13 +1130,18 @@ human can re-verify in seconds, never from any critic's internal severity label.
 - Name the lift in the chat synthesis under **Actionable guidance**. A row that moved
   must be visible as having moved.
 
-**Why 🟡 and not 🔴.** This mechanism is unvalidated, and unvalidated mechanisms get no
-blocking authority. 🟡 is also the ground-truth band: the human panel filed the measured
-case 🟡, and 🟡 means "the author must fix this or say on the record why it stands" —
-exactly what a contested soundness question needs. Validation falsifier (decision 028): a
-replay must lift the pre-fix ND2 reconstruction while lifting **nothing** on ND3's fixed
-`sim.ts:625-628` docstring or md1's `proxy.ts:14` carve-out; until that passes, the 🟡
-cap must not be lifted.
+**Why 🟡 and not 🔴.** This mechanism has one retrospective validation behind it and no
+prospective one, and such mechanisms get no blocking authority. 🟡 is also the
+ground-truth band: the human panel filed the measured case 🟡, and 🟡 means "the author
+must fix this or say on the record why it stands" — exactly what a contested soundness
+question needs. **Validation status (2026-07-30,
+`docs/working/validation-soundness-channel-2026-07-30.md`):** the decision-028 replay
+passed with recalibration — recall 1/1 on the ND2 reconstruction; ~1.3% clear-false-lift
+rate before the condition-3 behavioural-only tightening above, 0 after it; md1
+`proxy.ts:14` held non-vacuously (the negative control with real probing power — ND3's
+`sim.ts:625-628` control was vacuous in that corpus and future falsifiers should not
+rely on it). The 🟡 cap stands until a **prospective** corpus of ≥10 correct lifts
+accumulates (decision 028's cap-raise precondition).
 
 ### Rubric Status Line
 

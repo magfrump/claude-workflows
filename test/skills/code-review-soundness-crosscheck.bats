@@ -48,8 +48,14 @@ channel_flat() {
     || fail "trigger does not require the stated intent quoted verbatim with file:line"
   channel_flat | grep -qiE 'mechanism quoted or reconstructed.*path/to/file:line' \
     || fail "trigger does not require the code mechanism quoted with file:line"
-  channel_flat | grep -qiE 'defeats or inverts' \
-    || fail "trigger does not require the report's own inversion reasoning"
+  channel_flat | grep -qiE 'runtime behaviour contrary to the stated intent' \
+    || fail "trigger does not require the report's own behavioural-inversion reasoning"
+  # Post-validation recalibration: convention/hygiene contradictions must be excluded,
+  # and bracketed-alteration quotes must count as verbatim.
+  channel_flat | grep -qiE 'convention, structure, or hygiene principle.*do \*\*not\*\* qualify' \
+    || fail "the convention-contradiction exclusion (validation false-lift class) is missing"
+  channel_flat | grep -qiE 'bracketed alterations' \
+    || fail "the verbatim definition does not admit bracketed editorial alterations"
 }
 
 @test "the precision guard bars opinion-only lifts" {
@@ -108,10 +114,13 @@ channel_flat() {
 
 @test "the validation falsifier and the cap-lift bar are stated" {
   # Unvalidated mechanisms get no blocking authority; the negative controls are named.
-  channel_flat | grep -qiE 'unvalidated mechanisms get no blocking authority' \
+  channel_flat | grep -qiE 'get no blocking authority' \
     || fail "the no-blocking-authority rationale is not stated"
   channel_flat | grep -qiE 'sim\.ts:625-628|proxy\.ts:14' \
     || fail "the negative controls (ND3 fixed docstring / md1 proxy.ts:14) are not named"
-  channel_flat | grep -qiE 'until that passes.*🟡 cap must not be lifted' \
-    || fail "the bar against lifting the 🟡 cap before validation is not stated"
+  channel_flat | grep -qiE '🟡 cap stands until a \*\*prospective\*\* corpus of ≥10 correct lifts' \
+    || fail "the bar against lifting the 🟡 cap (prospective ≥10-lift corpus) is not stated"
+  # The lift-only clause from the validation replay: qualifying rows already 🔴 keep their band.
+  channel_flat | grep -qiE 'Lift only, never demote' \
+    || fail "the lift-only/never-demote clause is missing"
 }
