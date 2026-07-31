@@ -11,8 +11,10 @@ blocked. Synthesized into the unified state doc
 2026-07-31** (`scripts/cross-model-review.py --context-base`, opt-in; diff-only default
 byte-identical to pre-021) — offline cost measurement in
 `docs/working/stage1-context-cost-2026-07-31.md` (worst call $0.248, sweep $4.37: both
-guardrails hold). **Not yet validated against any model** — the D3/D4 FP-kill re-run
-awaits go-ahead.
+guardrails hold). **Validated 2026-07-31**: the D3/D4 FP-kill re-run
+(`docs/working/experiment-stage1-fp-kill-2026-07-31.md`, 4 families × 2 replicates/cell)
+reproduced **neither** Result 3c nor Result 5 (0/8 each); actual spend $3.53, median
+call $0.226 — cost triggers did not fire.
 
 ## Context
 
