@@ -7,8 +7,8 @@ FLEE/CONTENT inversion class) can reach a merge-relevant band.
 evaluation program's fixes to the review pipeline · implements
 `docs/thoughts/code-review-evaluation-state.md` §1.2, which routed this decision to
 divergent-design explicitly · not blocked.
-**Task status**: complete (decided Path A and implemented; validation replay outstanding —
-see Consequences).
+**Task status**: complete (decided, implemented, and validation replay run 2026-07-30 —
+falsifier passed with recalibration needed; see Addendum. The 🟡 cap stands.)
 
 ## Context
 
@@ -170,3 +170,7 @@ re-evaluating this decision. Future readers can grep this section when their con
 changes to see whether earlier decisions still apply.
 
 `if the falsifier's replay lifts a row on ND3's fixed sim.ts:625-628 or md1's proxy.ts:14 (either negative control) → tighten the trigger or revert to candidate [1]. if the ND2 replay produces no lift in 2/3 sessions because critics don't quote both sides → the quote-pair bar is unreachable in practice; consider requiring critics to emit the quote pair explicitly. if ≥3 Contested-Soundness rows across 10 archived rubrics are adjudicated wrong by the author → the precision guard is too loose; re-run this DD's step 4. if the replay validation passes (ND2 lift ≥2/3, negative controls 0/3) and a corpus of ≥10 correct lifts accumulates → a follow-up decision may consider the 🟡→🔴 question, which this record deliberately does not grant. if open question #6 is answered directly (an owner-cap-removal replay on ND2) → fold its result into the exception's scope. if the Escalation Rule is redesigned wholesale → this channel's "does not corroborate escalation" bar must be re-derived, not assumed.`
+
+## Addendum
+
+**2026-07-30 — validation replay run** (`docs/working/validation-soundness-channel-2026-07-30.md`): falsifier **passes 3/3 as written** (ND2 C1 lifts 🟢→🟡 with both verbatim quotes; md1 `proxy.ts:14` 0 lifts across 7 probes, precision guard held; ND3 `sim.ts:625-628` 0 lifts but **vacuous** — no ND3 report text touches it), yet the full-corpus sweep (315 findings) finds 4 clear false lifts (~1.3%, 3 distinct issues; dominant shape: convention-contradiction findings that quote a module-header principle) plus 2 debatable — adjacent to the "≥3 adjudicated wrong" revisit trigger — so the verdict is **pass-with-recalibration-needed**: tighten trigger condition 3 to *behavioral* defeat/inversion (excluding convention/hygiene contradictions and fact-check-`Incorrect`-class doc falsehoods), add an already-≥🟡 no-op clause, and define "verbatim" to admit bracketed alterations (the positive case needs the `[is]` bracket to count). The 🟡 cap stands; do not loosen the trigger's file:line bar.

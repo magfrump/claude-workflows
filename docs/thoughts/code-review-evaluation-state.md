@@ -113,9 +113,16 @@ quotes/reconstructs the actual mechanism (file:line), and states the inversion �
 **regardless of which critic filed it**, the one evidence-gated exception to the
 contextual-critic 🟢 cap, so both structural causes above are addressed. Terminal at 🟡
 (the human panel's band for ND2) and excluded from escalation corroboration, because the
-mechanism is unvalidated and unvalidated mechanisms get no blocking authority. **Not yet
-validated:** the replay falsifier (lift pre-fix ND2; nothing on ND3's fixed
-`sim.ts:625-628` or md1 `proxy.ts:14`) has not run; until it passes, the 🟡 cap stands.
+mechanism is unvalidated and unvalidated mechanisms get no blocking authority.
+**Validated 2026-07-30, pass-with-recalibration-needed**
+(`docs/working/validation-soundness-channel-2026-07-30.md`): the falsifier passed 3/3 as
+written — ND2's C1 lifts 🟢→🟡, md1 `proxy.ts:14` holds non-vacuously, ND3 `sim.ts:625-628`
+holds but vacuously (no ND3 report text touches it) — while the full-corpus sweep (315
+findings, 11 cells) measured recall 1/1 on cells that filed the defect and 4 clear false
+lifts (~1.3%, dominant shape: convention-contradiction findings quoting module-header
+principles), so trigger condition 3 needs tightening to *behavioral* inversion, "verbatim"
+must admit bracketed alterations, and an already-≥🟡 no-op clause is needed. The 🟡 cap
+stands (the cap-raise precondition also requires a ≥10-correct-lift corpus).
 The adjacent DD on intent claims (`docs/working/dd-code-intent-claims.md`, intent-coherence
 move inside `architecture-review`) remains its own track with its own falsifier.
 
