@@ -22,12 +22,15 @@ Design notes (see docs/working/experiment-results-code-review-2026-07-29.md):
   and byte-identical across models. VALIDATED 2026-07-31
   (docs/working/experiment-stage1-fp-kill-2026-07-31.md): the D3/D4 re-run
   reproduced neither FP in 0/8 replicates each, and cross-family agreement on
-  real issues rose. --context-base is therefore the RECOMMENDED mode for any
-  review-quality use; run diff-only only as a deliberate recall probe or for
-  comparability with pre-021 measurements (live diff-only runs print a
-  warning to stderr). Files larger than --max-inline-kb, and
-  binary/undecodable files, are listed but not inlined (function-body
-  extraction is the designated large-file fallback, not yet built). Section
+  real issues rose among the Sonnet/Gemini/Sol pairs on D3 (a redistribution:
+  Kimi pairs fell; D4's comparable pairs fell slightly). --context-base is
+  therefore the RECOMMENDED mode for any review-quality use; run diff-only
+  only as a deliberate recall probe or for comparability with pre-021
+  measurements (live diff-only runs print a warning to stderr). Files larger
+  than --max-inline-kb, binary/undecodable files, and files past the
+  --max-total-inline-kb aggregate budget are listed but not inlined
+  (function-body extraction is the designated large-file fallback, not yet
+  built). Section
   delimiters carry a nonce derived from the diff, so inlined repo content
   cannot forge an "UNDER REVIEW"/"CONTEXT ONLY" boundary. Without
   --context-base the prompt is byte-identical to the pre-021 harness, so
@@ -35,7 +38,9 @@ Design notes (see docs/working/experiment-results-code-review-2026-07-29.md):
 - WARNING: --context-base ships whole repo files and the sibling-branch diff
   to third-party model APIs, with no secret screening, and --dry-run persists
   the full prompt to <out>/prompt.txt. Use only on repos whose full contents
-  you are willing to send and store.
+  you are willing to send and store. prompt.txt is a whole-repo (or, with
+  --repo, a foreign-repo) snapshot: keep --out outside any tree you commit,
+  or rely on the runs/**/prompt.txt gitignore rule — never `git add` it.
 - --dry-run builds the prompt, writes it to <out>/prompt.txt, and prints
   per-section character counts, an aggregate token estimate, and projected
   per-model cost WITHOUT sending anything (pricing fetch is skipped if
@@ -157,7 +162,8 @@ def stage1_nonce(diff):
     return hashlib.sha256(diff.encode()).hexdigest()[:10]
 
 
-def build_stage1_context(repo, rev_range, context_base, max_inline_kb, nonce):
+def build_stage1_context(repo, rev_range, context_base, max_inline_kb, nonce,
+                         max_total_inline_kb=256):
     """Assemble decision-021 Stage-1 context sections.
 
     Returns (context_text, stats): stats has sibling_diff / enclosing_files as
@@ -218,6 +224,13 @@ def build_stage1_context(repo, rev_range, context_base, max_inline_kb, nonce):
             continue
         if len(content) > max_inline_kb * 1024:
             skipped.append((path, len(content), "over --max-inline-kb"))
+            continue
+        # Aggregate budget: --max-inline-kb caps each file, but a wide diff could
+        # otherwise grow the prompt linearly in touched-file count (50 files ~ 3 MB).
+        # Spill overflow into the existing FILES NOT INLINED section rather than
+        # relying on the dollar-denominated --max-usd abort as the only backstop.
+        if inlined + len(content) > max_total_inline_kb * 1024:
+            skipped.append((path, len(content), "over --max-total-inline-kb (aggregate)"))
             continue
         parts.append(header(f"CURRENT FILE CONTENTS - CONTEXT ONLY ({path} at {right})")
                      + content)
@@ -353,9 +366,14 @@ def main():
     ap.add_argument("--analyze-only", action="store_true", help="recompute overlap from existing findings.jsonl")
     ap.add_argument("--context-base", help="decision-021 Stage 1: enrich the prompt with the "
                     "sibling-branch diff from this ref to the range start, plus whole enclosing "
-                    "files. Omit for the historical diff-only prompt.")
+                    "files. RECOMMENDED for review-quality use (validated 2026-07-31; see module "
+                    "docstring). Omit only for a deliberate diff-only recall probe or pre-021 "
+                    "comparability.")
     ap.add_argument("--max-inline-kb", type=int, default=64, help="Stage 1: files larger than "
                     "this are listed but not inlined")
+    ap.add_argument("--max-total-inline-kb", type=int, default=256, help="Stage 1: aggregate "
+                    "budget for inlined enclosing files; once the running total would exceed "
+                    "this, remaining files are listed but not inlined")
     ap.add_argument("--dry-run", action="store_true", help="build the prompt, write it to "
                     "<out>/prompt.txt, print token/cost projections, and exit without calling any model")
     args = ap.parse_args()
@@ -379,7 +397,8 @@ def main():
         if args.context_base:
             nonce = stage1_nonce(diff)
             context, ctx_stats = build_stage1_context(
-                args.repo, args.rev_range, args.context_base, args.max_inline_kb, nonce)
+                args.repo, args.rev_range, args.context_base, args.max_inline_kb, nonce,
+                args.max_total_inline_kb)
             prompt = PROMPT_TEMPLATE_STAGE1.format(
                 label=label, diff=diff, context=context, nonce=nonce)
         else:
@@ -495,7 +514,8 @@ def main():
     variants = {(r.get("prompt_sha"), r.get("context_base")) for r in runs}
     if len(variants) > 1:
         print(f"WARNING: findings.jsonl mixes {len(variants)} (prompt_sha, context_base) "
-              f"variants — overlap numbers below pool across different prompts")
+              f"variants — overlap numbers below pool across different prompts",
+              file=sys.stderr)
     # Errored runs are absent, not clean — counting them as empty finding lists would
     # score a failed call as perfect agreement with another failed call.
     errored = [r for r in runs if r.get("error")]

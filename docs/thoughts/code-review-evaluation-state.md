@@ -284,11 +284,13 @@ What it established:
   (`docs/working/experiment-stage1-fp-kill-2026-07-31.md`, D3/D4, same 4 families × 2
   replicates): Results 3c and 5 reproduced **0/8 each**; Sonnet r2 even cited the
   labelled sibling context correctly ("gate 1h, already committed") — the failure mode
-  inverted into correct use. Side signals: D3 cross-family Jaccard rose to 0.28–0.40
-  (families converge on real issues under shared context), Sonnet found the Result-3b
-  `np.load` issue 2/2 (was 0/3 diff-only), and a new grounded 4-family consensus finding
-  emerged (bwrap `--tmpfs /tmp` vs `--chdir "$PWD"`, untriaged). Actual spend $3.53,
-  median call $0.226 — no cost trigger fired. That sibling-commit FP class forced the
+  inverted into correct use. Side signals: the D3 Sonnet/Gemini/Sol Jaccard pairs rose
+  to 0.28–0.40 (a redistribution — the Kimi pairs fell; D4's comparable pairs fell
+  slightly), Sonnet found the Result-3b `np.load` issue 2/2 (was 0/3 diff-only), and a
+  grounded 4-family consensus finding **persisted across both context modes** (bwrap
+  `--tmpfs /tmp` vs `--chdir "$PWD"` — also 4-family in the diff-only baseline;
+  surviving the FP-kill is the evidence it isn't a misattribution; untriaged). Actual
+  spend $3.53, median call $0.226 — no cost trigger fired. That sibling-commit FP class forced the
   diff-only↔agentic question §5.1 raises. Decision `021-reviewer-context-management.md` resolves
   it as a staged path: **Stage 1 (git-only)** feeds the harness the full logical changeset
   (sibling commits labelled "already committed — context only") plus enclosing files — killing

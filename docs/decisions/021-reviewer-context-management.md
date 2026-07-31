@@ -14,7 +14,9 @@ byte-identical to pre-021) — offline cost measurement in
 guardrails hold). **Validated 2026-07-31**: the D3/D4 FP-kill re-run
 (`docs/working/experiment-stage1-fp-kill-2026-07-31.md`, 4 families × 2 replicates/cell)
 reproduced **neither** Result 3c nor Result 5 (0/8 each); actual spend $3.53, median
-call $0.226 — cost triggers did not fire.
+call $0.226 — cost triggers did not fire (the actual worst call, $0.388, overshot the
+offline worst-call projection of $0.248 — the known reasoning-token estimator blind
+spot; the triggers are defined on the median band and sweep total, which held).
 
 ## Context
 

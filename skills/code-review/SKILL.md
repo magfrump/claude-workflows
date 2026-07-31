@@ -98,7 +98,7 @@ Accept user overrides:
 
 Do not paste the full diff into agent prompts. Pass the scope specification so each agent runs its own `git diff` — this avoids context budget issues with large diffs.
 
-**Partial-scope reviews must label out-of-scope sibling work.** When the scope is narrower than the full branch changeset (`--range`, `--staged`, or `--files` on a multi-commit branch), every critic prompt must state: (a) that commits/files on the branch outside the scope are *already committed — context only, not under review*, and (b) that before flagging work as "missing", the critic must check the rest of the branch (`git log main..HEAD`, `git diff main...HEAD -- <path>`) for it. This rule is validated, not speculative: the 2026-07-31 Stage-1 experiment (`docs/working/experiment-stage1-fp-kill-2026-07-31.md`, decision 021) showed unlabelled single-commit scope made **all four model families** unanimously flag work as missing that sat in sibling commits, and the label + sibling context reduced that FP class to 0/8 while *raising* agreement on real issues. The default full-branch scope (`git diff main...HEAD`) needs no label — the whole changeset is under review.
+**Partial-scope reviews must label out-of-scope sibling work.** When the scope is narrower than the full branch changeset (`--range`, `--staged`, `--files`, or a `--pr` covering part of a larger branch), every critic prompt must state: (a) that commits/files on the branch outside the scope are *already committed — context only, not under review*, and (b) that before flagging work as "missing", the critic must check the rest of the branch (`git log main..HEAD`, `git diff main...HEAD -- <path>`) for it. The label marks provenance, not trustworthiness — sibling context stays under normal scrutiny (a control *deleted* in a sibling commit is still a finding); only "this work is missing" claims are gated on checking it. This rule is validated, not speculative: the 2026-07-30 diff-only baseline sweep (`docs/working/experiment-cross-model-review-2026-07-30.md`, Result 5) showed unlabelled single-commit scope made three of four model families flag work as missing that sat in sibling commits (6 of 11 replicates, all at High), and the 2026-07-31 re-run under the label + sibling context (`docs/working/experiment-stage1-fp-kill-2026-07-31.md`, decision 021) reduced that FP class to 0/8 — while cross-family agreement on real issues rose among the Sonnet/Gemini/Sol pairs on the other cell. The default full-branch scope (`git diff main...HEAD`) needs no label — the whole changeset is under review.
 
 #### Large diff triage (~1000+ lines)
 
@@ -277,7 +277,10 @@ For each of the three replicate agents:
 1. Read the full contents of `skills/code-fact-check/SKILL.md`
 2. Paste those contents directly into the Agent tool prompt (sub-agents cannot read your files)
 3. Include the scope specification (e.g., "Review files changed on the current branch relative
-   to main using `git diff main...HEAD`")
+   to main using `git diff main...HEAD`"). If the scope is partial (`--range`, `--staged`,
+   `--files`, or a partial `--pr`), also include the labelling block required by Step 1's
+   partial-scope rule — the "already committed — context only, not under review" statement and
+   the check-siblings-before-flagging-missing directive apply to fact-check replicates too.
 3b. Compose **one rich shared brief** and include it verbatim in all three prompts: skim
    the diff and write a "claims that particularly need checking" list — the specific
    comments, docstrings, and commit-message claims in this diff that carry the most
@@ -523,7 +526,9 @@ For each critic agent, you MUST:
 
 1. Read the full contents of that critic's skill file (e.g., `skills/security-reviewer/SKILL.md`)
 2. Paste those contents directly into the Agent tool prompt
-3. Include the scope specification so the agent runs its own `git diff`
+3. Include the scope specification so the agent runs its own `git diff`. If the scope is
+   partial (`--range`, `--staged`, `--files`, or a partial `--pr`), also include the labelling
+   block required by Step 1's partial-scope rule
 4. Include the PR intent captured in "Before You Begin" Step 2, prepended under a
    `## What this PR is trying to accomplish` heading so the critic can scope findings to
    stated intent. If Step 3 surfaced `<prior-findings>`, paste them verbatim under a
