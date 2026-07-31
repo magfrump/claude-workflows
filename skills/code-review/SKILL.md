@@ -22,7 +22,9 @@ when: User requests a full code review or PR review
 Orchestrates the sub-skills below. Ensure they exist in `skills/` before use.
 
 **Required (always run):**
-- `code-fact-check.md` — verifies factual claims in code comments, docs, and commit messages
+- `code-fact-check.md` — verifies factual claims in code comments, docs, and commit messages.
+  Runs as **k=3 parallel replicates** merged most-severe-wins; the rationale lives in one
+  place — Stage 1's **Why three** — do not restate it elsewhere.
 
 **Core critics (always run):**
 - `security-reviewer.md` — security design review
@@ -208,7 +210,7 @@ Before launching any agents, tell the user:
 - The scope being reviewed
 - Which core critics will run
 - Which contextual critics were auto-selected (and why)
-- Total agent count (1 fact-checker + N critics)
+- Total agent count (3 fact-check replicates + N critics)
 
 Keep this brief — a short paragraph.
 
@@ -240,27 +242,67 @@ After each between-stage handoff (end of Stage 1, end of Stage 2), emit a single
 
 **Worked example (parallel default):**
 
-> Stage 1 (fact-check) complete: 3 Incorrect findings, 1 Stale — launching 4 critics in parallel (security, performance, api-consistency, test-strategy).
+> Stage 1 (fact-check, k=3) complete: 3 Incorrect findings, 1 Stale, verdict agreement 10/12 clusters — launching 4 critics in parallel (security, performance, api-consistency, test-strategy).
 >
 > Stage 2 (critics) complete: 4/4 critics returned (12 findings total), dispatch mode: parallel — synthesizing into rubric and chat summary.
 
 **Worked example (chain mode opted in via `--chain security→api-consistency`):**
 
-> Stage 1 (fact-check) complete: 3 Incorrect findings, 1 Stale — launching 4 critics: 2 in parallel (performance, test-strategy) + chain security→api-consistency.
+> Stage 1 (fact-check, k=3) complete: 3 Incorrect findings, 1 Stale, verdict agreement 10/12 clusters — launching 4 critics: 2 in parallel (performance, test-strategy) + chain security→api-consistency.
 >
 > Stage 2 (critics) complete: 4/4 critics returned (12 findings total), dispatch mode: parallel + chain (security→api-consistency) — synthesizing into rubric and chat summary.
 
 **Scope:** The banner is emitted *only* between stages. Do **not** emit a banner after Stage 3 — Stage 3's chat synthesis is itself the user-facing output, and a "Stage 3 complete" banner would duplicate or compete with it.
 
-### Stage 1: Code Fact-Check
+### Stage 1: Code Fact-Check (k=3 replicated)
 
-Spawn one agent with the code-fact-check skill.
+Spawn **three** agents with the code-fact-check skill, in parallel, on **byte-identical
+prompts** — same skill text, same scope spec, same instructions, differing only in the
+output path each is told to write.
+
+**Why three.** A fact-check **Incorrect** verdict is one of the two verdict-driven
+blocking channels (state doc §1.0: fact-check Incorrect or api-consistency Breaking; the
+[Unified Severity Mapping](#unified-severity-mapping) lists each critic's native 🔴 band) —
+and the only one reachable by documentation-class findings. It is also the least stable
+judgment in the pipeline: on identical input, the same comment defect was rated
+**Incorrect** by one run and **Mostly Accurate** by another, flipping the same finding
+between 🔴 and 🟡 (`docs/thoughts/code-review-evaluation-state.md` §1.1, Result 14a).
+A single sample of that judgment is a coin flip carrying merge-blocking authority.
+Replication converts it into a measured distribution.
+
+For each of the three replicate agents:
 
 1. Read the full contents of `skills/code-fact-check/SKILL.md`
 2. Paste those contents directly into the Agent tool prompt (sub-agents cannot read your files)
 3. Include the scope specification (e.g., "Review files changed on the current branch relative
    to main using `git diff main...HEAD`")
-4. Instruct the agent to save its report as `docs/reviews/code-fact-check-report.md`
+3b. Compose **one rich shared brief** and include it verbatim in all three prompts: skim
+   the diff and write a "claims that particularly need checking" list — the specific
+   comments, docstrings, and commit-message claims in this diff that carry the most
+   verdict weight — with an explicit directive to **verify each claim against the code
+   that actually exercises it (callers, fetch/consume sites, config that gates it),
+   not only the file the claim sits in**. Uniformity constrains *variation between
+   replicates*, never brief quality: the MD1-R1 replication
+   (`docs/working/experiment-md1-r1-replication-2026-07-30.md`) measured what happens
+   when orchestrators read the uniformity clause as license for lean generic prompts —
+   0/9 replicates reached the cross-file evidence that three separate single-agent
+   (k=1) runs had each found, 3 runs out of 3 (their briefs independently authored;
+   two rich, one lean). k=3 of a weak brief is a weaker instrument than k=1 of a
+   strong one; most-severe-wins cannot merge what no replicate found.
+4. Instruct the agent to save its report as `docs/reviews/code-fact-check-report-r<N>.md`
+   (N = 1, 2, 3), with a `Commit: <current HEAD short SHA>` line at the top. This
+   per-replicate path is the **only** permitted difference between the three prompts —
+   anything else varying would confound the disagreement measurement. (The rich shared
+   brief of step 3b is identical across replicates, so it does not violate this clause.)
+
+   **Stale-replicate guard:** before dispatching, delete or overwrite any existing
+   `docs/reviews/code-fact-check-report-r*.md` whose `Commit:` line does not match the
+   current HEAD — these directories are git-tracked, so a fresh worktree inherits prior
+   branches' replicates, and downstream steps that glob `r*.md` would silently read
+   another run's observations as this run's (the decision-25 rubric-selection failure
+   class). Every later consumer of the replicate reports must match them by `Commit:`,
+   never by glob alone. A replicate report with **no** `Commit:` line is treated as
+   stale (delete it too) — missing provenance is not a pass.
 5. Require the agent to tag every claim with a **Legibility-target** field
    (`for-author`, `for-orchestrator-synthesis`, or `for-automated-gate`) per
    the [legibility-target tagging](../../patterns/orchestrated-review.md#legibility-target-tagging)
@@ -283,15 +325,76 @@ Spawn one agent with the code-fact-check skill.
    One short bullet per line. No padding. The "Questions I would have asked" bullet is
    optional — include it only when scope was genuinely ambiguous and the agent had to
    make a non-trivial guess about what to check.
-7. Launch via the Agent tool with `subagent_type: "general-purpose"`
+7. Launch via the Agent tool with `subagent_type: "general-purpose"` — all three replicates
+   in a single message so they run in parallel and cannot see each other's output.
 
-**CHECKPOINT:** Wait for the fact-check agent to return results. Verify you received a substantive report. If it failed or returned empty, tell the user and ask how to proceed.
+**CHECKPOINT:** Wait for all three replicate agents to return. Verify you received at least
+**two** substantive reports — with fewer than two, no disagreement measurement is possible
+and the merged verdict degenerates back to a single sample. If only one replicate returned,
+tell the user and ask how to proceed; if two returned, proceed but record `k=2 (one
+replicate failed)` in the merged report's `**Replication:**` header field and the Stage 1
+banner. A report is *substantive* when it parses against the code-fact-check schema and
+either contains ≥1 claim section or explicitly records `**Total claims checked:** 0` with
+the no-checkable-claims rationale — an empty or truncated file is not substantive.
 
-After receiving substantive results, emit the between-stage status banner per the format spec above (e.g., `Stage 1 (fact-check) complete: <counts> — <next action>`). Emit it before the Fact-Check Gate so the user sees stage progress even if the gate pauses for input.
+#### Merging replicate verdicts (most-severe-wins)
+
+Produce the canonical `docs/reviews/code-fact-check-report.md` yourself by merging the
+replicate reports. This is mechanical collation, not analysis — you are combining verdicts
+the replicates already produced, never adding claims or evidence of your own (Mandatory
+Execution Rule 1 still stands).
+
+1. **Cluster claims across replicates.** Two claims are the same claim when they cite the
+   same file, overlapping line ranges (±5 lines), and assert substantially the same thing.
+   Clustering is semantic — replicates word the same claim differently; match on
+   (file, line-range, claim substance), not on string equality.
+2. **Take the most severe verdict any replicate assigned** to the cluster. Severity order,
+   most severe first: `Incorrect (high confidence)` > `Incorrect (medium confidence)` >
+   `Incorrect (low confidence)` >
+   `Stale` > `Mostly Accurate` > `Unverifiable` > `Verified`. Majority vote is explicitly
+   the wrong aggregator here: a defect one replicate *proves* Incorrect is Incorrect
+   regardless of what the other two concluded, and the observed failure mode is
+   under-calling, not over-calling (state doc §1.1). Carry the evidence and reasoning from
+   the replicate that assigned the winning verdict.
+3. **Record per-replicate verdicts on every merged claim, inside the standard schema.**
+   The merged report keeps the code-fact-check report format exactly — `# Code Fact-Check
+   Report` title, the five header fields, and per-claim `## Claim N:` sections with the
+   five mandatory bolded fields — so `test/skills/code-fact-check-format.bats` gates it
+   unchanged (a merged report with no `## Claim N:` sections makes that suite skip
+   silently, which is a gate abdicating, not passing). On top of the standard schema:
+   - `**Verdict:**` carries the plain winning verdict from the five-value enum
+     (`Incorrect`, `Stale`, …) and `**Confidence:**` the winning replicate's confidence.
+     The severity-order tokens in step 2 (`Incorrect (high confidence)` etc.) are ordering
+     vocabulary for the merge decision only — never written into a `**Verdict:**` field.
+   - Each claim adds a sixth bolded field `**Replicate verdicts:**
+     r1=<verdict> · r2=<verdict> · r3=<verdict>` (`—` for a replicate that did not
+     surface the claim; a claim surfaced by only one replicate keeps that replicate's
+     verdict and its Replicate-verdicts line ends with ` · single-replicate detection`).
+   - The header MUST carry, in addition to the five standard fields, a bolded
+     `**Commit:** <reviewed HEAD short SHA>` line (≥7 chars) and a bolded
+     `**Replication:** k=3` field (or `**Replication:** k=2 (one replicate failed)` on
+     the degraded path). These two are a parsed contract, not decoration: Gate 1h in
+     `scripts/self-improvement.sh` reads exactly these field names to detect stale
+     reports and degraded replication — a merged report missing either is advisory-flagged
+     as commit-unknown / single-sample even when the run was a genuine k=3.
+4. **Report the disagreement rate.** End the merged report with a `## Verdict stability`
+   section: total clusters, clusters where all reporting replicates agreed, clusters where
+   verdicts disagreed (list them with their per-replicate verdicts), and the resulting
+   agreement rate. This turns the blocking channel's noise floor from an invisible coin
+   flip into a tracked metric (state doc open question #2). If cumulative measurements
+   across runs show ≥90% verdict agreement on a ≥20-claim sample, k can drop to 2 — that
+   is §1.1's stated falsifier; record the observed rate either way.
+
+Everything downstream — the Fact-Check Gate, Stage 1.5 critic gating, critic prompts, the
+Confirmed-Good cross-check, and the severity mapping — consumes the **merged** report. The
+per-replicate reports stay on disk for audit and for the Confirmed-Good cross-check's
+observation scan.
+
+After producing the merged report, emit the between-stage status banner per the format spec above (e.g., `Stage 1 (fact-check, k=3) complete: <counts, incl. verdict agreement rate> — <next action>`). Emit it before the Fact-Check Gate so the user sees stage progress even if the gate pauses for input.
 
 ### Fact-Check Gate
 
-After receiving fact-check results, check whether any claims were rated **Incorrect** at **high confidence**. If so:
+After producing the merged fact-check report, check whether any merged claims carry the verdict **Incorrect** at **high confidence** — i.e., any replicate assigned it, per most-severe-wins. If so:
 
 1. **Pause before launching critics.** Present the high-confidence Incorrect findings to the
    user — specifically the claims, what the evidence shows, and the confidence level.
@@ -556,10 +659,27 @@ The collected items feed the `### Coverage and Escalations` section of the chat 
 Assemble the candidate `✅ Confirmed Good` rows, then run each one through
 [Confirmed Good is a claim, not an output](#confirmed-good-is-a-claim-not-an-output):
 Evidence present and grounded, enumeration behind any universally quantified claim, and no
-observation anywhere in the fact-check report inconsistent with it. Rows that fail are
+observation anywhere in the merged fact-check report **or any current-run per-replicate
+report** (matched by `Commit:` line, per the stale-replicate guard) inconsistent with it —
+an observation recorded only by a replicate whose verdict lost the severity contest still
+counts. To keep this from becoming four full re-reads at Stage 3, build the observation
+index once during the Stage-1 merge (file/symbol/directive touched per observation) and
+consult that index here. Rows that fail are
 dropped (ungrounded) or moved to 🟡 Must Address as `Contested` (contradicted) per that
 section. Run this **before** writing either deliverable — it changes the rubric's contents,
 so it cannot be a post-hoc pass over a published table.
+
+#### Soundness-contradiction cross-check (required before producing deliverables)
+
+Immediately after the Confirmed-Good cross-check, sweep every critic report — contextual
+critics included — for findings that meet the
+[Soundness-Contradiction Channel](#soundness-contradiction-channel) trigger: a stated
+intent quoted verbatim with `path/to/file:line`, the code's actual mechanism quoted or
+reconstructed with `path/to/file:line`, and the report's own reasoning that the mechanism
+defeats or inverts the stated intent. Each qualifying finding is placed in (or moved to)
+`## 🟡 Must Address` per that section. Run this **before** writing either deliverable —
+like the Confirmed-Good cross-check, it changes the rubric's contents, so it cannot be a
+post-hoc pass over a published table.
 
 #### Contrastive note (optional, capture during synthesis)
 
@@ -876,9 +996,13 @@ the **enumeration that was actually executed** and its scope (e.g. `rg -n "fetch
 → 12 matches, all relative `/api/…`). If no enumeration was run, the row may not be ✅:
 either reword it as the specific instance that *was* checked, or drop it.
 
-**4. Cross-check every ✅ row against the fact-check report (Stage 3, before publishing).**
-For each candidate ✅ row, re-read the fact-check report for any observation touching the
-same file, symbol, directive, or claim — **including observations recorded in passing,
+**4. Cross-check every ✅ row against the fact-check reports (Stage 3, before publishing).**
+For each candidate ✅ row, re-read the merged fact-check report **and each current-run
+per-replicate report** (`code-fact-check-report-r*.md` filtered to files whose `Commit:`
+line matches the current HEAD — the directory is git-tracked, so unfiltered globs read
+prior branches' replicates; an observation recorded by only one replicate may be absent
+from the merged claim it lost the severity contest to, and it still counts)
+for any observation touching the same file, symbol, directive, or claim — **including observations recorded in passing,
 under a different claim number, or under a claim the fact-check itself marked Verified.**
 The observed failure was exactly this: the contradicting detail (`data:` URLs fetched
 client-side) was recorded as supporting colour inside a claim the fact-check verified. Ask
@@ -930,7 +1054,7 @@ appearing in all runs of that diff
 tier throws away the reliable quantity and keeps the unreliable one. Recording both costs
 one column and lets a later gate key on whichever proves sound.
 
-**Contextual critics are advisory:** Findings from `test-strategy`, `tech-debt-triage`, `dependency-upgrade`, and `ui-visual-review` go to 🟢 Consider tier regardless of their internal severity. They inform but never block merge. `architecture-review` is the exception: it is auto-selected like a contextual critic but uses its own severity-to-rubric mapping above and can produce blocking (🔴) findings.
+**Contextual critics are advisory:** Findings from `test-strategy`, `tech-debt-triage`, `dependency-upgrade`, and `ui-visual-review` go to 🟢 Consider tier regardless of their internal severity. They inform but never block merge. `architecture-review` is the exception: it is auto-selected like a contextual critic but uses its own severity-to-rubric mapping above and can produce blocking (🔴) findings. One further exception is evidence-gated rather than critic-gated: a contextual-critic finding that meets the [Soundness-Contradiction Channel](#soundness-contradiction-channel) trigger is lifted to 🟡 Must Address — the only path by which a contextual-critic finding leaves 🟢, and terminal at 🟡.
 
 ### Escalation Rule
 
@@ -966,9 +1090,77 @@ The failure mode was true-but-unwanted — a real issue promoted to blocking aga
 author's judgment. That is why the corroboration required is executable or human, not
 another opinion.
 
-Contextual critics (test-strategy, tech-debt-triage, dependency-upgrade) do **not** count toward escalation. Their findings remain in 🟢 Consider regardless of overlap with other critics. If a contextual critic flags the same issue as a core critic, note the agreement in the finding's description for visibility, but do not escalate — contextual critics are advisory and must not gain blocking power through the escalation mechanism.
+Contextual critics (test-strategy, tech-debt-triage, dependency-upgrade) do **not** count toward escalation. Their findings remain in 🟢 Consider regardless of overlap with other critics. If a contextual critic flags the same issue as a core critic, note the agreement in the finding's description for visibility, but do not escalate — contextual critics are advisory and must not gain blocking power through the escalation mechanism. A contextual-critic finding lifted to 🟡 by the [Soundness-Contradiction Channel](#soundness-contradiction-channel) is likewise excluded here: the lift is terminal at 🟡 and does not count as escalation corroboration.
 
 This rewards convergence — independent agreement across domains is the strongest signal that an issue is real and important. When escalating, place the finding in its new (higher) tier section in the rubric, not in its original tier.
+
+### Soundness-Contradiction Channel
+
+A correctly-reasoned **soundness defect** — code whose documented behaviour is accurately
+described and wrong as design — can earn neither of the verdict-driven promotions: the
+fact-check correctly rates the accurate comment `Verified`, and nothing is `Breaking`. On
+a measured diff, a reviewer reached the ground-truth defect, rejected the docstring
+defending it, reconstructed the full behavioural inversion — and filed it 🟢, because no
+promotion channel existed (`docs/thoughts/code-review-evaluation-state.md` §1.2, Results
+15/14a); the historical human panel filed the same finding 🟡 and gated the merge on it.
+This channel closes that gap without granting blocking authority to an unvalidated
+mechanism (decision 028).
+
+**Trigger — all three parts must be present in the critic report itself:**
+
+1. a **stated intent quoted verbatim** with `path/to/file:line` — a design document, a
+   sibling comment or docstring, a spec the code cites, or `<pr-intent>`. *Verbatim*
+   admits standard editorial marks — bracketed alterations (`[is]`) and elision (`…`) —
+   so long as the quoted words are recognizably the source's; a paraphrase is not a
+   quote (measured: the one true lift in the validation corpus carries an `[is]`
+   bracket, so a byte-exact reading fails the channel's own purpose);
+2. the **code's actual mechanism quoted or reconstructed** with `path/to/file:line`; and
+3. the report's own reasoning that the mechanism produces **runtime behaviour contrary
+   to the stated intent** — a behavioural defeat or inversion. Contradictions of a
+   stated *convention, structure, or hygiene principle* ("this code breaks the module
+   header's stated design principle") do **not** qualify, and neither does a claim that
+   documentation is *false* (that is fact-check-`Incorrect` territory). In the
+   validation replay this distinction alone removed every clear false lift while
+   keeping the true one.
+
+**Precision guard.** An intent claim alone, a missing quote on either side, or a critic's
+disagreement with a design's *wisdom* never qualifies. Do not lift a finding whose report
+does not contain both quotes — the channel's authority comes from evidence a
+human can re-verify in seconds, never from any critic's internal severity label.
+
+**On a qualifying finding:**
+
+- Place it in (or move it to) `## 🟡 Must Address` with `Severity: Contested-Soundness`
+  and `Source: Soundness cross-check (found by <critic>)`. **Lift only, never demote:** a
+  qualifying finding already at 🔴 (or already 🟡 via another channel) keeps its band and
+  simply gains the Contested-Soundness annotation — in the validation corpus 8 of 19
+  trigger fires were rows already promoted by existing channels, and a literal "move to
+  🟡" would have moved 🔴 rows *down*.
+- Both quotes go in verbatim as the row's evidence, each with its `path/to/file:line`,
+  so the author can adjudicate without re-deriving the contradiction.
+- This applies **regardless of which critic filed the finding** — contextual critics
+  included. It is the one path by which a contextual-critic finding leaves 🟢 Consider;
+  the advisory rule otherwise stands unchanged.
+- **🟡 is the terminal tier for this channel.** A Contested-Soundness row is never
+  promoted to 🔴 by this mechanism, and it does not count as corroboration under the
+  [Escalation Rule](#escalation-rule) — the same bar the Confirmed-Good cross-check
+  carries. Executed evidence remains the path to 🔴: a failing test demonstrating the
+  inversion already promotes under the existing rule, with no help needed from here.
+- Name the lift in the chat synthesis under **Actionable guidance**. A row that moved
+  must be visible as having moved.
+
+**Why 🟡 and not 🔴.** This mechanism has one retrospective validation behind it and no
+prospective one, and such mechanisms get no blocking authority. 🟡 is also the
+ground-truth band: the human panel filed the measured case 🟡, and 🟡 means "the author
+must fix this or say on the record why it stands" — exactly what a contested soundness
+question needs. **Validation status (2026-07-30,
+`docs/working/validation-soundness-channel-2026-07-30.md`):** the decision-028 replay
+passed with recalibration — recall 1/1 on the ND2 reconstruction; ~1.3% clear-false-lift
+rate before the condition-3 behavioural-only tightening above, 0 after it; md1
+`proxy.ts:14` held non-vacuously (the negative control with real probing power — ND3's
+`sim.ts:625-628` control was vacuous in that corpus and future falsifiers should not
+rely on it). The 🟡 cap stands until a **prospective** corpus of ≥10 correct lifts
+accumulates (decision 028's cap-raise precondition).
 
 ### Rubric Status Line
 
@@ -1003,7 +1195,10 @@ Save all review artifacts to `docs/reviews/` in the project root. Create the dir
 ```
 docs/reviews/
 ├── code-review-rubric-<date>-<branch-slug>.md
-├── code-fact-check-report.md
+├── code-fact-check-report.md      (merged, most-severe-wins — the canonical report)
+├── code-fact-check-report-r1.md   (replicate — audit + Confirmed-Good observation scan)
+├── code-fact-check-report-r2.md   (replicate)
+├── code-fact-check-report-r3.md   (replicate)
 ├── security-review.md
 ├── performance-review.md
 ├── api-consistency-review.md
@@ -1074,7 +1269,10 @@ The risk with any "log of decisions" is that nothing reads it, so it grows in st
 
 ## Important Reminders
 
-- **Always run fact-checking first.** Even if the user only asks for critic perspectives.
+- **Always run fact-checking first, and always as k=3 replicates.** Even if the user only
+  asks for critic perspectives. Byte-identical prompts, merged most-severe-wins, per-claim
+  replicate verdicts recorded, disagreement rate reported — rationale and mechanics live
+  in Stage 1's **Why three** and merge steps, the single canonical statement.
 - **Paste skill file contents into agent prompts.** Sub-agents cannot read your filesystem.
 - **Pass scope, not diffs.** Each agent runs its own `git diff` to avoid context budget issues.
 - **All agents of the same stage run in parallel.** They must not see each other's output.
@@ -1088,7 +1286,7 @@ The risk with any "log of decisions" is that nothing reads it, so it grows in st
   `code-review-rubric-<date>-<branch-slug>.md`. A new date or branch means a new file —
   never overwrite a prior review's rubric, since it is the only durable record of what the
   pipeline surfaced and whether each finding was fixed or waived.
-- **Contextual critics are advisory.** Their findings go to Consider tier and never block merge.
+- **Contextual critics are advisory.** Their findings go to Consider tier and never block merge — with one evidence-gated exception: the Soundness-Contradiction Channel lifts a qualifying finding to 🟡, terminal there.
 - **Fact-check report size management.** If the report exceeds 200 lines, paste only the
   "Claims Requiring Attention" summary (Incorrect, Stale, Mostly Accurate) into critic prompts.
 - **The override log is append-only and must be read on every run.** Step 3.5 reads

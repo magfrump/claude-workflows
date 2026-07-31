@@ -1,252 +1,86 @@
-# Code Fact-Check Report
-
-**Commit:** eb545b103fa2e55ec6deed43d775c4c2eea761c8
-**Repository:** /home/magfrump/claude-workflows
-**Scope:** `git diff main...HEAD` (CLAUDE.md, README.md, docs/working/verify-batch-feedback-reminder.sh, docs/working/wire-batch-feedback-reminder.md, hooks/batch-feedback-routing-reminder.sh)
-**Checked:** 2026-06-23
-**Total claims checked:** 16
-**Summary:** 16 verified, 0 mostly accurate, 0 stale, 0 incorrect, 0 unverifiable
-
----
-
-## Claim 1: "fires only on (a) >=2 numbered list items, (b) >=2 bullet list items, or (c) an explicit multi-item enumeration phrasing. A single task, however it's phrased, must not match."
-
-**Location:** `hooks/batch-feedback-routing-reminder.sh:35-37`
-**Type:** Behavioral
-**Verdict:** Verified
-**Confidence:** High
-**Legibility-target:** for-orchestrator-synthesis
-
-The script implements exactly three detection branches: numbered list via `grep -cE '^[[:space:]]*[0-9]+[.)][[:space:]]'` gated on `>= 2` (lines 50-51), bullet list via `grep -cE '^[[:space:]]*([-*•])[[:space:]]'` gated on `>= 2` (lines 54-55), and an enumeration regex `ENUM` (lines 60-64). The verify harness confirms single-task prompts ("single bug", "single feature", "one numbered step", "prose w/ number", "explain question") all produce empty output. All 15 cases pass.
-
-**Evidence:** `hooks/batch-feedback-routing-reminder.sh:50-65`; verify run output ALL PASS
-
----
-
-## Claim 2: "Non-blocking: always exits 0 and never emits a block decision"
-
-**Location:** `hooks/batch-feedback-routing-reminder.sh:38-39`
-**Type:** Invariant
-**Verdict:** Verified
-**Confidence:** High
-**Legibility-target:** for-orchestrator-synthesis
-
-The script omits `set -e`, the `emit()` function ends in `exit 0`, and the script ends in a bare `exit 0` (line 73). It writes only a reminder line to stdout, never a JSON block decision. The verify harness asserts `rc == 0` for every one of the 15 cases (including malformed JSON and missing prompt) and all pass.
-
-**Evidence:** `hooks/batch-feedback-routing-reminder.sh:42,46,73`; verify run `exit=0` on all 15 cases
-
----
-
-## Claim 3: "Additive ... a standalone script wired as an *additional* UserPromptSubmit hook in settings.json; it does not replace existing hooks."
-
-**Location:** `hooks/batch-feedback-routing-reminder.sh:40-42`
-**Type:** Architectural
-**Verdict:** Verified
-**Confidence:** High
-**Legibility-target:** for-orchestrator-synthesis
-
-Live `~/.claude/settings.json` `.hooks.UserPromptSubmit` contains a single entry with a `hooks` array of two commands: `bash $HOME/.claude/hooks/batch-feedback-routing-reminder.sh` and `bash $HOME/.claude/hooks/dd-routing-reminder.sh`. The batch hook is added alongside the dd hook, not replacing it.
-
-**Evidence:** `jq '.hooks.UserPromptSubmit' ~/.claude/settings.json` output (two-command block)
-
----
-
-## Claim 4: shellcheck-clean
-
-**Location:** `hooks/batch-feedback-routing-reminder.sh` (whole file)
-**Type:** Behavioral
-**Verdict:** Verified
-**Confidence:** High
-**Legibility-target:** for-orchestrator-synthesis
-
-`shellcheck hooks/batch-feedback-routing-reminder.sh` produced no findings (exit 0, "SHELLCHECK CLEAN").
-
-**Evidence:** shellcheck run output
-
----
-
-## Claim 5: "the same pattern as the sibling dd-routing-reminder.sh"
-
-**Location:** `hooks/batch-feedback-routing-reminder.sh:21-23`
-**Type:** Architectural
-**Verdict:** Verified
-**Confidence:** High
-**Legibility-target:** for-orchestrator-synthesis
-
-`hooks/dd-routing-reminder.sh` exists and follows the same structure: no `set -e`, `INPUT=$(cat)`, jq `.prompt // ""` extraction with malformed-input fallback, `[[ -z "$PROMPT" ]] && exit 0`, narrow regex match, single one-line reminder, `exit 0`. The batch hook mirrors this pattern (with additional list-detection branches).
-
-**Evidence:** `hooks/dd-routing-reminder.sh` (full file read); structural comparison
-
----
-
-## Claim 6: CLAUDE.md rows renumbered correctly (old 2→3 … 10→11)
-
-**Location:** `CLAUDE.md:18-28` (decision-tree table)
-**Type:** Configuration
-**Verdict:** Verified
-**Confidence:** High
-**Legibility-target:** for-orchestrator-synthesis
-
-The table now has rows numbered 1 through 11 sequentially with no gaps or duplicates. Row 2 is the new batch fan-out row; old row 2 (divergent-design) is now row 3, and each subsequent old row shifted +1, ending at old row 10 (branch-strategy) → row 11.
-
-**Evidence:** `grep -oE '^\| [0-9]+ ' CLAUDE.md` → 1,2,3,4,5,6,7,8,9,10,11
-
----
-
-## Claim 7: the single "row 4" prose reference was updated to "row 5" and no dangling/incorrect row-number references remain
-
-**Location:** `CLAUDE.md:65` (Tooling discovery section)
-**Type:** Reference
-**Verdict:** Verified
-**Confidence:** High
-**Legibility-target:** for-orchestrator-synthesis
-
-The Tooling-discovery prose now reads "Triggered by row 5 of the decision tree" (skill-creator is now row 5). Grep for `row 4|row 8|row 9|row 10` returns nothing. The only remaining row-number prose references are row 2, row 6, and row 7 — all consistent with the new numbering (row 6 = RPI, row 7 = task-decomposition).
-
-**Evidence:** `CLAUDE.md:65`; `grep -n 'row 4...' CLAUDE.md` → none
-
----
-
-## Claim 8: row 7 (task-decomposition) is correctly described as distinct from row 2
-
-**Location:** `CLAUDE.md:25`
-**Type:** Reference
-**Verdict:** Verified
-**Confidence:** High
-**Legibility-target:** for-orchestrator-synthesis
-
-Row 7's Notes column contains "**Distinct from row 2:** this is *one* task whose research fans out (implementation stays sequential in the main agent); row 2 is *N independent tasks* that can each implement in parallel." The "Batch fan-out" section (line 59) and composition note (line 118) reinforce the same distinction consistently.
-
-**Evidence:** `CLAUDE.md:25,59,118`
-
----
-
-## Claim 9: the "Batch fan-out" section accurately names `superpowers:dispatching-parallel-agents` and `superpowers:using-git-worktrees` (skills are real)
-
-**Location:** `CLAUDE.md:46-66` and table row 2 (line 19)
-**Type:** Reference
-**Verdict:** Verified
-**Confidence:** High
-**Legibility-target:** for-orchestrator-synthesis
-
-Both skills exist as installed superpowers plugin skills. `find ~/.claude/plugins` locates `skills/dispatching-parallel-agents/SKILL.md` and `skills/using-git-worktrees/SKILL.md` (versions 5.1.0, 6.0.0, 6.0.3). Both also appear in the available-skills list. Neither is a fabricated symbol.
-
-**Evidence:** `find ~/.claude/plugins/cache/.../superpowers/6.0.3/skills/{dispatching-parallel-agents,using-git-worktrees}/SKILL.md`; available-skills list
-
----
-
-## Claim 10: "both reminders are now wired live"
-
-**Location:** `docs/working/wire-batch-feedback-reminder.md:19-22`
-**Type:** Configuration
-**Verdict:** Verified
-**Confidence:** High
-**Legibility-target:** for-orchestrator-synthesis
-
-Live settings show both commands present in `.hooks.UserPromptSubmit`, and both symlinks exist and resolve to existing target files in the checkout.
-
-**Evidence:** `jq '.hooks.UserPromptSubmit'` output; `ls -l`/`readlink -f` on both symlinks
-
----
-
-## Claim 11: ".hooks.UserPromptSubmit contains the two-command block"
-
-**Location:** `docs/working/wire-batch-feedback-reminder.md:20-21`
-**Type:** Configuration
-**Verdict:** Verified
-**Confidence:** High
-**Legibility-target:** for-orchestrator-synthesis
-
-The live `UserPromptSubmit` array has one entry whose `hooks` array contains exactly the two `command` entries (batch then dd), matching the documented JSON block (lines 39-55 of the wiring doc).
-
-**Evidence:** `jq '.hooks.UserPromptSubmit' ~/.claude/settings.json`
-
----
-
-## Claim 12: "both `~/.claude/hooks/*-reminder.sh` symlinks exist and resolve"
-
-**Location:** `docs/working/wire-batch-feedback-reminder.md:21-22`
-**Type:** Configuration
-**Verdict:** Verified
-**Confidence:** High
-**Legibility-target:** for-orchestrator-synthesis
-
-Both `~/.claude/hooks/batch-feedback-routing-reminder.sh` and `~/.claude/hooks/dd-routing-reminder.sh` are symlinks into `/home/magfrump/claude-workflows/hooks/`, and `readlink -f` confirms each resolves to an existing file.
-
-**Evidence:** `ls -l` and `readlink -f` output — both `[EXISTS]`
-
----
-
-## Claim 13: "a missing target yields a non-zero (127) exit, which is a non-blocking error"
-
-**Location:** `docs/working/wire-batch-feedback-reminder.md:13-15`
-**Type:** Behavioral
-**Verdict:** Verified
-**Confidence:** Medium
-**Legibility-target:** for-orchestrator-synthesis
-
-`bash <missing-path>` returns 127 (standard "no such file" behavior for bash on a nonexistent script). UserPromptSubmit hooks treat a non-zero exit as non-blocking unless exit code 2 specifically (the documented blocking code for that hook); 127 is not a block. Confidence Medium because the precise harness semantics were inferred from Claude Code's documented hook contract rather than executed; the directional claim (127, non-blocking) is correct.
-Paraphrased — no quote available because this is harness runtime behavior, not code in the diff.
-
-**Evidence:** `docs/working/wire-batch-feedback-reminder.md:13-15`; bash exit-code convention
-
----
-
-## Claim 14: README hook-listing lines accurately describe the two hooks
-
-**Location:** `README.md:106-107`
-**Type:** Reference
-**Verdict:** Verified
-**Confidence:** High
-**Legibility-target:** for-orchestrator-synthesis
-
-Line 106 describes `hooks/dd-routing-reminder.sh` as a `UserPromptSubmit` hook nudging comparison/decision prompts toward divergent-design (non-blocking) — matches the dd hook's behavior and header. Line 107 describes `hooks/batch-feedback-routing-reminder.sh` as a `UserPromptSubmit` hook nudging multi-item prompts toward parallel-subagent fan-out per decision-tree row 2 (non-blocking), with wiring in `docs/working/wire-batch-feedback-reminder.md` — matches the batch hook's behavior, the row-2 reference, and the existing wiring-doc path.
-
-**Evidence:** `README.md:106-107`; `hooks/dd-routing-reminder.sh`, `hooks/batch-feedback-routing-reminder.sh`
-
----
-
-## Claim 15: verification harness "15 cases" and "all pass"
-
-**Location:** `docs/working/wire-batch-feedback-reminder.md:81` and `docs/working/verify-batch-feedback-reminder.sh`
-**Type:** Behavioral
-**Verdict:** Verified
-**Confidence:** High
-**Legibility-target:** for-orchestrator-synthesis
-
-The harness contains exactly 15 `check` invocations (7 MATCH + 5 NO-MATCH + 3 ROBUSTNESS). Running `bash docs/working/verify-batch-feedback-reminder.sh` prints "ALL PASS" with exit 0; every case reports OK with `exit=0`.
-
-**Evidence:** `grep -cE '^[[:space:]]*check ' ...` → 15; verify run output "ALL PASS", RC=0
-
----
-
-## Claim 16: verify.sh header "every case exits 0 (never blocks)"
-
-**Location:** `docs/working/verify-batch-feedback-reminder.sh:4`
-**Type:** Behavioral
-**Verdict:** Verified
-**Confidence:** High
-**Legibility-target:** for-orchestrator-synthesis
-
-The harness asserts `rc == 0` per case and all 15 cases report `exit=0`. The header also claims "multi-item batches emit one reminder, single tasks emit nothing, malformed/empty input is silent" — all confirmed by the MATCH/NO-MATCH/ROBUSTNESS results.
-
-**Evidence:** verify run — all 15 cases `exit=0`
-
----
+# Code Fact-Check Report (merged, k=3 most-severe-wins)
+
+**Commit:** 62594fb
+**Replication:** k=3
+**Repository:** /workspace/.claude/worktrees/cross-model-review-sweep
+**Scope:** git diff main...HEAD (branch exp/cross-model-openrouter-sweep)
+**Checked:** 2026-07-31
+**Total claims checked:** 28 clusters (r1: 30 claims · r2: 28 · r3: 21; clustered by file, ±5-line range, claim substance)
+**Summary:** 15 verified, 10 mostly accurate, 2 stale, 1 incorrect, 1 unverifiable (sub-claim)
+
+Merged per `skills/code-review/SKILL.md` Stage 1 (most-severe-wins; severity order
+Incorrect-high > Incorrect-med > Incorrect-low > Stale > Mostly Accurate > Unverifiable >
+Verified). Per-replicate reports: `code-fact-check-report-r{1,2,3}.md`, all `Commit: 62594fb`.
+Replicates ran on identical prompts (rich shared brief, step 3b) differing only in output
+path. The prior merged report (Commit e9d05ea, 2026-07-30) is preserved in git history at
+this path. Hallucination pattern log read by all three; no entries matched, none appended.
+
+## Merged clusters
+
+| # | Claim (primary location) | r1 | r2 | r3 | Merged (most-severe-wins) |
+|---|---|---|---|---|---|
+| M1 | oc briefs "4.5–5.1KB … claims lists … *verbatim in both oc runs*" (`experiment-md1-r1-replication…:98-102`; echoed log row 29) | **Incorrect** | **Incorrect** | **Incorrect** | **Incorrect (High)** — unanimous. Measured briefs 4,524/5,067/**3,653** chars; oc-r3 ~20% below stated floor and (r3) has no claims list; the quoted directive is verbatim only in md1-opus-r1. Mechanism claim (rich-vs-lean) survives; sizes and attribution wrong. |
+| M2 | State doc open question #2 "Still zero data points" (`state doc:218`) | Stale | Stale | Stale | **Stale (High)** — this branch's own merged report (21/23 ≈ 0.91) and the MD1 cc cells (~47%) are data points; ≥20-claim threshold met. |
+| M3 | State doc §1.1 status "the first k=3 run has not executed" | — | — | Stale | **Stale (High)** — the branch's own review executed it. |
+| M4 | Step 3b: "a single richly-briefed run had found 3/3 times" (`SKILL.md:288-289`) | Mostly acc. | Mostly acc. | Mostly acc. | **Mostly Accurate (High)** — 3/3 is three separate k=1 runs (one find each), and one of the three was not richly briefed; reword. |
+| M5 | Log row 29 echo of M1's "4.5–5.1KB" | Mostly acc. | Mostly acc. | Incorrect (folded into M1) | **Mostly Accurate (High)** — fix range to 3.7–5.1KB and drop the all-runs claims-list attribution. |
+| M6 | "byte-identical" replicate prompts (cc cells; fix-r1 "7,834 bytes ×3"; q#1 row echo) | Mostly acc. | Mostly acc. | Mostly acc. | **Mostly Accurate (High)** — identical except the spec-permitted r1/r2/r3 output path (2 chars); 7,834 is chars (7,868 bytes). One wording fix clears 4 sites. |
+| M7 | §5.0 "~18k–41k tokens" (`state doc:282`) | Mostly acc. | Mostly acc. | Mostly acc. | **Mostly Accurate (High)** — MD1's Stage-1 prompt is ~2.2k tokens; true of 4/5 cells. |
+| M8 | Dagger footnote: MD1/ND2/ND3 "already merged into their mainlines" (`stage1-context-cost…:42-47`) | Mostly acc. | Verified | Verified | **Mostly Accurate (High)** — MD1's range end `d90d6bb` is NOT an ancestor of `integration/6.1`; its sibling section is empty because the range *starts* at a mainline commit. ND2/ND3 genuinely merged. |
+| M9 | `--dry-run` "prints per-section token estimates" (`cross-model-review.py:26`) | Mostly acc. | — | Mostly acc. | **Mostly Accurate (High)** — prints per-section char counts + one aggregate token estimate. |
+| M10 | build_stage1_context stats "section → char count" (`cross-model-review.py:125`) | Mostly acc. | Mostly acc. | Mostly acc. (folded) | **Mostly Accurate (High)** — `skipped_files` is a file count. |
+| M11 | Binary guard: `"\x00" in content[:8192]` lists binaries as skipped (`cross-model-review.py:160`) | Mostly acc. (Med) | Mostly acc. | Mostly acc. (Med) | **Mostly Accurate (Medium)** — guard unreachable for real binaries: `sh()` is `text=True`, `UnicodeDecodeError` uncaught → a committed PNG **crashes the Stage-1 build** (r1: empirically reproduced). Latent bug, no measured cell affected. |
+| M12 | "Files larger than --max-inline-kb are listed but not inlined" + default 64 | Verified | Mostly acc. | Mostly acc. (Med) | **Mostly Accurate (High)** — oversize path correct; binaries (when they don't crash, see M11) are listed under the "TOO LARGE" header, mislabelled. |
+| M13 | split_range docstring + three-dot caller semantics (`cross-model-review.py:115,139,318`) | Verified | Verified | Mostly acc. (Med) | **Mostly Accurate (Medium)** — for `a...b` ranges the sibling boundary `left` ≠ the reviewed diff's merge-base baseline; all current usage is two-dot. Caller-semantics nuance, not a docstring falsehood. |
+| M14 | Gate 1h comment/parsing vs SKILL merged-report format (`self-improvement.sh:1481-1516`) | Mostly acc. | Verified | Mostly acc. | **Mostly Accurate (High)** — parsing matches the instructed format (k=3/k=2 vocabulary, Commit prefix test), but the prior merged report lacked `**Replication:**` (gate would flag a genuine k=3 run as single-sample), and the SKILL mandates `Commit:` explicitly only on per-replicate reports. *This report adds the field; the SKILL-side mandate is a fix-loop item.* |
+| M15 | Phantom "§1.0" anchor in 4 files (state doc:53, SKILL.md:264, factcheck bats:7, log row 27) | Mostly acc. | Verified | — | **Mostly Accurate (High)** — no `§1.0` exists; content lives in "The one-paragraph state of things". Coordinated 4-file fix or add the anchor. |
+| M16 | dd-sweep "This is the runner that produced runs/…" (`dd-cross-model-sweep.py:4`) | Verified (Med) | **Unverifiable** (Med) | Verified | **Unverifiable (Medium)** — meta.json key sets match the script's output dict exactly, but the script was committed post-hoc (C20: reconstructed); original file/history unavailable. |
+| M17 | 021 header: built-untested, $0.248 / $4.37, guardrails hold | Verified | Verified | Verified | Verified (High) |
+| M18 | Log row 27: J_self 0.14–0.25; all four families ranked first; merge machinery | Verified | Verified | Verified | Verified (High) |
+| M19 | 0/9 cc vs 3/3 oc exportGraph; Fisher p≈0.0045 (recomputed 1/220 by all three) | Verified | Verified | Verified | Verified (High) |
+| M20 | Replication per-cell table (rc/elapsed/outcomes, all 7 cells) vs run artifacts | Verified | Verified | Verified | Verified (High) |
+| M21 | fix-r1 validation: 3/3 replicates reached exportGraph; 🔴 R1 with toBlob; token table | Verified | Verified | Verified | Verified (High) |
+| M22 | Cost-doc measured table: all 10 dry-runs re-executed and reproduce (±1–2 tok on merged-range cells); 0 files skipped | Verified | Verified | Verified | Verified (High) |
+| M23 | Cost projections: $1.95→$4.37 (2.2×), worst call $0.248; prices corroborated by sweep meta.json | Verified | Verified (Med) | Verified (Med) | Verified (High) |
+| M24 | README corrected M16/M17 values stand (6.2×/8.5×; runner-up "[2] measurement-first"; $1.21) | Verified | Verified | Verified | Verified (High) |
+| M25 | Diff-only prompt byte-identical to pre-021 (`git show main:` template comparison + reproduced token counts) | Verified | Verified | Verified | Verified (High) |
+| M26 | Kimi content:null / max_tokens 48000 cross-reference | Verified | — | Verified | Verified (High) |
+| M27 | q#1 closure row (5 cells, oc 3/3, cc 1/3, channels/tiers, hint-advantaged caveat) | Verified | Verified | Verified | Verified (High) |
+| M28 | bats headers (Results 14a/15, row 27/28 attributions, negative controls); soundness validation figures; log row 28 Path A/falsifier | Verified | Verified | Verified | Verified (High) |
+
+## Verdict stability
+
+- **Clusters with ≥2 replicate verdicts:** 26 (M3 single-replicate; M16's "runner" sub-claim reached by all three but verdicted differently).
+- **Agreement rate:** 20/26 ≈ **0.77** (cluster level, second measured sample; first was 21/23 ≈ 0.91).
+- **Disagreements (6):** M8, M12, M13, M14, M15, M16 — all on the Verified ↔ Mostly-Accurate/Unverifiable boundary; **no Incorrect ↔ Verified flip in this run** (contrast the first sample's two). The Incorrect cluster (M1) is unanimous 3/3.
+- Most-severe-wins resolved every disagreement per the ladder; all three replicates were substantive (30/28/21 claims), so the ≥2-substantive minimum is met.
 
 ## Claims Requiring Attention
-### Incorrect
-- (none)
-### Stale
-- (none)
-### Mostly Accurate
-- (none)
-### Unverifiable
-- (none)
 
-All 16 claims verified. No documentation rot, no fabricated symbols, no dangling row references. The renumbering is internally consistent, both named superpowers skills are real and installed, and the wiring doc's "wired live" status matches actual machine state.
+### Incorrect
+- **M1** (`docs/working/experiment-md1-r1-replication-2026-07-30.md:98-102`): oc brief sizes are 4,524/5,067/3,653 chars (not "4.5–5.1KB"); claims list present in 2/3 oc briefs only; the quoted directive is verbatim only in md1-opus-r1. Fix sizes, soften the mechanism claim (oc-r3 recovered R1 with a lean brief), fix "verbatim in both oc runs".
+
+### Stale
+- **M2** (`docs/thoughts/code-review-evaluation-state.md:218`): "Still zero data points" — two samples now exist (0.91 branch review; ~47% MD1 cc cells), pointing in opposite directions; update the row.
+- **M3** (state doc §1.1 status): "first k=3 run has not executed" — it has.
+
+### Mostly Accurate
+- **M4** (`skills/code-review/SKILL.md:288-289`): reword "a single richly-briefed run had found 3/3 times" → three separate k=1 runs, one not richly briefed.
+- **M5** (log row 29): range 3.7–5.1KB; attribution fix as M1.
+- **M6** (4 sites): "byte-identical" → "identical except the permitted replicate output path"; 7,834 chars not bytes.
+- **M7** (state doc §5.0): "~2k–41k tokens (~18k–41k on the non-trivial cells)".
+- **M8** (cost doc footnote): MD1 empty-sibling cause is range-starts-at-mainline, not merged.
+- **M9/M10** (`cross-model-review.py:26,125`): docstring says token estimates / char counts where it means char counts / a file count.
+- **M11** (`cross-model-review.py:111,153-162`): catch `UnicodeDecodeError` (or read bytes) so committed binaries are listed as skipped instead of crashing the build.
+- **M12** (`cross-model-review.py:163-169`): label the skip section to cover binary files, or split the reasons.
+- **M13** (`cross-model-review.py:114-119`): document the three-dot caller semantics or normalize `left` to the merge-base.
+- **M14** (`skills/code-review/SKILL.md` merge step / `self-improvement.sh:1481`): mandate `**Replication:**` and `Commit:` on the *merged* report explicitly (this report complies; make the contract say so).
+- **M15** (4 files): fix or anchor the phantom "§1.0" citation.
+
+### Unverifiable
+- **M16** (`scripts/dd-cross-model-sweep.py:4`): "runner that produced" — post-hoc reconstruction; would need the original job-tmp script or session history to verify identity (behavioral equivalence to the meta.json outputs is confirmed).
 
 ## Goal-Alignment Note
-- Answered: yes — all prioritized claims verified
-- Out of scope: code-quality/design judgments on the hook and CLAUDE.md prose (deferred to downstream critics per skill scope)
-- Escalate: nothing
+- Answered: yes — all ten briefed claim groups covered by all three replicates; every quantitative anchor re-executed or recomputed by at least two replicates independently.
+- Out of scope: claims inside immutable `runs/` artifacts and pre-existing `docs/reviews/` reports; live OpenRouter pricing (internal consistency + meta.json corroboration substituted).
+- Escalate: (1) M11 binary crash is a latent Stage-1 harness bug to fix before any live sweep on a repo with binary assets; (2) M14's contract gap (merged-report `**Replication:**` field) needs a SKILL.md line; (3) M1 propagates through log row 29 — fix at source and echoes together.

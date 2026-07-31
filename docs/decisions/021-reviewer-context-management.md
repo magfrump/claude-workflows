@@ -7,8 +7,12 @@ the cross-model / cheap-critic sweep as the primary consumer.
 `scripts/cross-model-review.py` and the `code-review` skill · standalone decision, not
 blocked. Synthesized into the unified state doc
 `docs/thoughts/code-review-evaluation-state.md` §5.0 and §2.
-**Task status**: complete (decision drafted, staged recommendation; Stage 1 ready to
-implement).
+**Task status**: complete (decision drafted, staged recommendation). Stage 1 **built
+2026-07-31** (`scripts/cross-model-review.py --context-base`, opt-in; diff-only default
+byte-identical to pre-021) — offline cost measurement in
+`docs/working/stage1-context-cost-2026-07-31.md` (worst call $0.248, sweep $4.37: both
+guardrails hold). **Not yet validated against any model** — the D3/D4 FP-kill re-run
+awaits go-ahead.
 
 ## Context
 
@@ -138,4 +142,4 @@ How to read: each entry is a concrete, observable condition that should prompt
 re-evaluating this decision. Future readers can grep this section when their context
 changes to see whether earlier decisions still apply.
 
-`if a re-run of D3/D4 under Stage 1 still reproduces Results 3c or 5 (sibling-commit/heredoc misattribution). if Stage-1 whole-file+branch-diff prompts push per-call cost above the ~$0.33 median band or a sweep above $10. if a cross-file symbol FP rate is measured high enough to justify Stage 2's repo-map build. if a portable OpenRouter model gains reliable, uniform tool-calling that would let #6 satisfy H2/H3. if the production agentic critic is retired, removing the Stage-3 re-verify authority #9 depends on. if a measured cheap-critic recall gain fails to survive the Stage-3 re-verify gate (hypothesis #9 counter-evidence).`
+`if Stage 1 is ever pointed at a repo not fully owned by the operator — add a secret-screening pass first (the harness ships whole files + branch diff to third-party APIs with no filtering; 2026-07-31 review finding A12). if a re-run of D3/D4 under Stage 1 still reproduces Results 3c or 5 (sibling-commit/heredoc misattribution). if Stage-1 whole-file+branch-diff prompts push per-call cost above the ~$0.33 median band or a sweep above $10. if a cross-file symbol FP rate is measured high enough to justify Stage 2's repo-map build. if a portable OpenRouter model gains reliable, uniform tool-calling that would let #6 satisfy H2/H3. if the production agentic critic is retired, removing the Stage-3 re-verify authority #9 depends on. if a measured cheap-critic recall gain fails to survive the Stage-3 re-verify gate (hypothesis #9 counter-evidence).`

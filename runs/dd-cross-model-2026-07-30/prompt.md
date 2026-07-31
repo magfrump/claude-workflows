@@ -1,0 +1,1004 @@
+# Task
+
+You are evaluating a real software repository's code-review process. Below you are given:
+
+1. `docs/thoughts/code-review-evaluation-state.md` — the living synthesis of everything an evaluation program has established about this repo's `code-review` skill (its detection/tiering behavior, known failure modes, open questions).
+2. `skills/divergent-design/SKILL.md` — a router skill.
+3. `workflows/divergent-design.md` — the full divergent-design (DD) workflow the router hands off to.
+
+**Your job:** apply the divergent-design workflow, end to end, to the decision:
+
+> **"Which actions should be taken next to improve this repo's code-review process?"**
+
+Use the evidence in the evaluation-state doc as your ground truth about the current state. The doc itself already suggests some actions (§1.1–1.4, §2, §3, §5.0) — treat those as inputs/candidates, not as a finished decision; you may generate candidates beyond them and you may disagree with the doc's prioritization if the evidence supports it.
+
+## Execution constraints (adapting the workflow to this single-response setting)
+
+You are running headless in a single response, with no tools, no filesystem, and no human to consult:
+
+- You cannot write `docs/working/dd-*.md` or run the pre-generation grep. Instead, put ALL full prose (candidates, constraints, matrices, stress tests) directly in your response, clearly sectioned per workflow step. For step 1.0, record the line `Prior pruning grep: not runnable in this setting` and move on.
+- Skip sub-agent mechanisms (`matrix-analysis` calibration) — score all cells yourself.
+- Decision path: use Path A if one approach dominates at >80% confidence, otherwise Path C (no human present): render the static Decision presentation block and record the tentative recommendation plus the axis of disagreement. Never ask the reader a question.
+- Skip the `## Round claim` subsection (this is a standalone single-shot run).
+- Note: several "actions" may be complementary rather than mutually exclusive. It is acceptable for your final decision to be a small ordered portfolio (e.g., "do X now, Y next, defer Z"), but the DD machinery — candidates, constraints, compatibility matrix, tradeoff matrix, stress tests — must still be applied to individual candidate actions so the matrices stay meaningful.
+
+## Required output structure (markdown, in this order)
+
+1. **Step 1 — Diverge**: 8–15 numbered candidate actions (one sentence each), including the required do-nothing/minimal, naive/unconventional, and ideal-if-effort-were-free candidates; then the generation health check notes.
+2. **Step 2 — Diagnose**: the full constraint list, each labeled hard/soft, every hard constraint with a `success: <observable>` line meeting the workflow's specificity bar.
+3. **Step 3 — Match and prune**: the full compatibility matrix (candidates × constraints, ✓/~/✗/⚠), discards with reasons, fix sketches for surviving candidates' fixable weaknesses, 3–5 survivors.
+4. **Step 4 — Tradeoff matrix and decision**: the detailed tradeoff table (effort/risk/coverage/key downside), a falsifiable hypothesis per survivor, 2–4 stress-test moves per survivor with what each changed, then the Decision presentation block (scorecard grid, recommended candidate's card, recommendation banner) rendered per the workflow's template, and the decision path taken (A or C) with rationale.
+5. **Step 5 — Decision record (inline)**: a compact version of the `docs/decisions/NNN-title.md` record: three-line header, Context, Options considered, Decision and rationale, Pruned candidates and why, Stress-test mitigations, Consequences, Revisit triggers.
+
+Be rigorous and specific — cite the evaluation-state doc's section/result numbers when a constraint or score rests on its evidence. Do not pad; depth over length.
+
+---
+
+# Input 1: docs/thoughts/code-review-evaluation-state.md
+
+# Code review: what the evaluation program has established
+
+> Living synthesis across every measurement arm run against this repo's `code-review`
+> skill. Read this before designing a new arm, changing the skill, or interpreting a
+> cross-model result. It is the shortest path to "what do we actually know."
+
+Last verified: 2026-07-30
+Relevant paths: skills/code-review/SKILL.md · skills/code-fact-check/SKILL.md · scripts/self-improvement.sh · scripts/cross-model-review.py · docs/working/experiment-results-code-review-2026-07-29.md · docs/working/experiment-results-full-pipeline-tiers-2026-07-30.md · docs/working/experiment-cross-model-review-2026-07-30.md · docs/decisions/021-reviewer-context-management.md · docs/working/research-cross-model-review-hypotheses.md
+
+Two distinct arms carry the "2026-07-30" date and must not be conflated: the
+**full-pipeline tiers** arm (`experiment-results-full-pipeline-tiers-…`, agentic, source of
+Results 11–17) and the **OpenRouter cross-model** arm (`experiment-cross-model-review-…`,
+headless diff-inline, four vendors). Each has its own "Result N" numbering; §5.0 records the
+cross-model arm by finding *name* to avoid the collision.
+
+## Who this is for
+
+- Anyone changing `skills/code-review/SKILL.md` or its critics.
+- **The cross-model track** (Gemini, Kimi K3, other vendors via
+  `scripts/cross-model-review.py`). §5 is written for you specifically — it lists the
+  comparability rules and the four traps that have already cost this program real work, and
+  §5.0 records what the first run of this arm actually found (and the context-management
+  decision, 021, that came out of it).
+- Anyone touching Gate 1h in `scripts/self-improvement.sh`.
+
+## The one-paragraph state of things
+
+The pipeline **detects** well and **tiers** badly. Across every arm, whether a real defect
+gets *found and correctly described* is far more stable than what severity band it lands
+in. The single gate that converts a finding into a blocker — a `code-fact-check` verdict of
+Incorrect, or an api-consistency Breaking — is both unstable run-to-run and structurally
+unreachable for whole classes of real defect. Every high-value action below follows from
+that one sentence.
+
+---
+
+## 1. Definitely needed (evidence is direct, and the failure has been observed)
+
+### 1.1 Run `code-fact-check` k≥3 times and combine, before anything downstream
+
+**Why.** Per Result 16, a fact-check Incorrect verdict is the *only* thing that promotes a
+finding to 🔴. Per Result 14a, that verdict is unstable on identical input: the same
+`WARY_MOOD_DURATION` comment defect was rated **Incorrect** by one run and **Mostly
+Accurate** by another, flipping the same finding between 🔴 and 🟡. Both runs described the
+defect correctly — only the verdict moved.
+
+So the pipeline's entire blocking channel currently rests on a single sample of the least
+stable judgment in it. J_self restricted to 🔴 rows is **0.14–0.25**; band-agnostic it is
+~0.5. This is the highest-leverage change available and it is cheap: fact-check is one
+agent, and the diff is already in context.
+
+**Shape.** k=3 fact-check agents on byte-identical prompts; cluster claims by
+(file, line-range, claim text); take the **most severe verdict** any run assigned, not the
+majority — a defect one run proves Incorrect is Incorrect regardless of what two others
+concluded, and the observed failure mode is under-calling, not over-calling. Log per-run
+verdicts so the disagreement rate becomes a tracked metric rather than an invisible coin
+flip.
+
+**Falsifier worth checking first:** if k=3 fact-check verdicts agree ≥90% of the time on a
+20-claim sample, the instability is smaller than Result 14a suggests and k can drop to 2.
+
+### 1.2 Give the escalation rule a second corroboration channel
+
+**Why.** Result 15 + 14a. On ND2, opus reached the ground-truth defect (a FLEE-interrupted
+song still grants CONTENT, so the intended penalty is mechanically a *reward*), explicitly
+**rejected** the docstring calling it "a deliberate small mercy," reconstructed the full
+consequence, noted it is invisible to tests — and filed it **🟢**, because no
+fact-check-Incorrect or api-Breaking verdict can attach to a state-machine soundness
+defect. The historical human panel filed the same finding 🟡 and gated the merge on it.
+
+Nothing was missed. The reasoning was complete and correct. It landed two bands low because
+the promotion gate had no channel it could use.
+
+This is a design decision with real options (a soundness-corroboration channel keyed on
+quoted-intent-vs-quoted-code contradiction; a failing-test requirement per Thread 7;
+routing such findings to a human queue) — **route it through `divergent-design`**, don't
+patch it ad hoc. What is *not* in question is that the gap is real and observed.
+
+### 1.3 Stop treating `✅ Confirmed Good` as an output; treat it as a claim requiring evidence
+
+**Why.** Result 12. On MD1, **two of three tiers filed the branch's actual blocking defect
+under Confirmed Good.** Fable's own fact-check report recorded the disconfirming evidence
+verbatim — *"client fetches are all relative `/api/…` paths or `data:` URLs in
+`app/lib/utils/exportGraph.ts:24,37`"* — and its security review then certified
+`connect-src 'self'` as **"matches reality."** Sonnet did the same.
+
+Result 8b observed this shape at haiku and it was recorded as a small-model property. It is
+**not tier-bounded.** Confirmed Good is the highest-assurance row the rubric emits and
+nothing currently checks it.
+
+**Minimum action:** require every Confirmed Good row to carry an `Evidence:` citation, and
+add a synthesis-stage cross-check that no Confirmed Good row contradicts an observation in
+the fact-check report. That specific cross-check would have caught the fable miss.
+
+### 1.4 Never let a single run's clean verdict stand as assurance
+
+Corollary of 1.3 and H5. A "no findings" result from one run is not evidence of absence —
+it is one sample from a distribution whose 🔴-level self-agreement is ~0.2. Anywhere a
+verdict is *consumed as assurance* (Gate 1h, pr-prep sign-off), require either
+corroboration or an explicit "single-sample, not an attestation" label.
+
+### 1.5 Done — headless flags (`96166d5`, log row 24)
+
+Every `claude -p` in `scripts/self-improvement.sh` that writes files or reads outside cwd
+now carries `--permission-mode acceptEdits` and the needed `--add-dir`. Before this, 7 of
+10 invocations could not persist anything, and Gate 1h's critics ran on the orchestrator's
+*paraphrase* of the role prompt rather than the real skill file. Result 8a measured the
+role prompt (not the tier) taking sonnet 0/2 → 2/2 on a validated blocking defect, so that
+was a materially weaker reviewer than the model pinning in decision 022 believed it bought.
+
+**Verified constraint for future work:** `--add-dir` does **not** propagate to `Agent`
+sub-agents. It is harmless here only because `skills/code-review/SKILL.md:260` has the
+orchestrator read-and-paste critic files precisely because "sub-agents cannot read your
+files." Any future skill expecting a sub-agent to read a payload path directly cannot work
+today.
+
+---
+
+## 2. Settled enough to act on, lower urgency
+
+- **Do not gate on 🟡-vs-🟢.** Tier assignment is the least stable output (Result 1, 17,
+  14a). Gates should key on issue identity or the blocking band only.
+- **Never run a critic on haiku.** Its clean verdicts are false attestations (Result 7/8).
+  Unchanged.
+- **`sonnet` is acceptable only with the role-skill prompts.** Result 8a, reconfirmed by
+  Result 13 — under the full pipeline all three tiers recovered ND3's blocking defect.
+- **Reviewer model ≠ fixer model.** Thread 6; independent of everything measured here.
+- **Role critics stay.** Abstention is clean (Result 3); roles partition rather than
+  duplicate (Result 2). The restructure-to-generalist proposal is closed twice over.
+- **A second *vendor* buys recall the incumbent structurally cannot** (§5.0). The OpenRouter
+  arm surfaced four real defects that survived up to seven Claude-family rounds; on one diff
+  the incumbent abstained 0/6 while another vendor caught both real bugs. Blind spots are
+  correlated within a family, so this is orthogonal to §1.1's k≥3 (which resamples one family
+  for *stability*, not *coverage*). The two compose: add a vendor for coverage, resample for
+  stability.
+- **Reviewer context management is decided — 021.** The pipeline sits on a staged path from
+  diff-only toward agentic: Stage 1 (git-only) enriches the harness with the full logical
+  changeset + enclosing files to kill the sibling-commit false-positive class; the production
+  agentic critic stays the Stage-3 re-verification authority. "Must have repo access" is
+  honoured at *verification*, not at cheap generation. See §5.0 and decision 021.
+
+## 3. Open, and now the highest-value unknowns
+
+| # | Question | Why it matters | Status |
+|---|---|---|---|
+| 1 | Does MD1 R1's recovery replicate? | It is the sole evidence that the pipeline clears the cross-file ceiling, and the basis for "config, not model." **n=1.** | **Run this next.** |
+| 2 | How often do fact-check verdicts disagree across replicates? | Sets k in §1.1 and quantifies the blocking channel's noise floor. | Unmeasured |
+| 3 | Is the MD1 nonce-delivery issue really 🔴? | Three independent configs say 🔴, history says 🟡. Settled empirically by one prod build. | Unresolved since Result 8b |
+| 4 | Does a Confirmed-Good-vs-fact-check cross-check actually catch the misses? | Cheap to test retrospectively against the 9 existing cells. | Not attempted |
+
+## 4. What each measured arm actually covers
+
+Do not cite a result without its config — the arms are not interchangeable.
+
+| Arm | Config | Answers |
+|---|---|---|
+| Results 1–4 | role critics, in-session, k=3 | stability, abstention, quote-anchoring |
+| Results 5–6 | historical rubric corpora | precision, but **acceptance-filtered** |
+| Result 7 | single-pass generalist, agentic | tier gradient |
+| Result 8a | single role skill | prompt-vs-tier isolation |
+| Result 9 | fable, generalist | non-total ordering |
+| Result 10 | **headless, diff inline, no tools** | model-only; the arm comparable to OpenRouter |
+| Results 11–17, 14a | **full pipeline**, headless + flags | pipeline-vs-single-pass, escalation behavior |
+| OpenRouter cross-model (§5.0) | **4 vendors, headless diff-inline, no tools, k=3** | multi-vendor recall vs. incumbent blind spots; diff-only precision cost. **Config-comparable only to Result 10** |
+
+---
+
+## 5. For the cross-model track (Gemini, Kimi K3, other vendors)
+
+### 5.0 The arm has now run — OpenRouter cross-model sweep (2026-07-30)
+
+Four vendors (Kimi K3, GPT-5.6 Sol, Gemini 3.1 Pro, and the incumbent Sonnet 5), **diff-inline
+/ no-tools / single-pass** — the Result-10-comparable config of §5.1 — over four ground-truth
+diffs from the arithmetic-eval review-fix chain, where the *next* commit's message is the
+answer key. Full write-up: `docs/working/experiment-cross-model-review-2026-07-30.md`. Findings
+are named, not numbered, here — that doc's "Result N" namespace collides with this one's.
+
+What it established:
+
+- **A second vendor buys recall on the incumbent's blind spots.** Four real weaknesses that
+  survived up to seven Claude-family review rounds were surfaced by non-Claude families: a
+  heredoc-delimiter-collision RCE, an unblocked UDP egress path in `confine.py`, a `pipefail`
+  loop-abort, and an `np.load` fail-open/doc mismatch. On the sharpest diff — two real High
+  bugs, one silently breaking the skill's primary path — **the incumbent Sonnet returned "no
+  findings" on all six replicates** while Sol caught both for ~$0.10. This is §1.4 ("a single
+  clean verdict is not assurance") observed cross-vendor: the incumbent's blind spots are
+  *correlated*, so resampling the same family cannot find them; a different family does. All
+  four are now fixed on this branch.
+
+- **Three of the four wins are Trap-4 (§5.4) cases** — true-mechanism / disputed-or-overstated
+  intent. The heredoc "guarantee," the "network disabled" prose, and the `np.load` line-305
+  claim each assert a property the code does not hold. `np.load` is textbook: an inline
+  "require a truthy literal" comment made every vendor except Kimi treat the gap as intended.
+  §5.4 named this the dominant false-negative/false-positive class from the adjudicator side;
+  the cross-model arm confirms it from the generation side, and it is *why* the fact-check
+  critic is the highest-value place to add a vendor (below).
+
+- **Union buys recall; consensus does not buy precision.** Cross-family issue-level Jaccard ran
+  well below within-family (every Sonnet-involving pair far below its own self-overlap) — §5.2's
+  "score on detection" in action. But the two most severe false positives were confident,
+  sometimes *unanimous*, claims about code that existed in a **sibling commit** the single-commit
+  diff hid; cross-family consensus *amplified* the error. This is the concrete cost §5.1 warned
+  of: diff-only is not the pipeline.
+
+- **Context management is now decided — 021.** That sibling-commit FP class forced the
+  diff-only↔agentic question §5.1 raises. Decision `021-reviewer-context-management.md` resolves
+  it as a staged path: **Stage 1 (git-only)** feeds the harness the full logical changeset
+  (sibling commits labelled "already committed — context only") plus enclosing files — killing
+  the FP class while keeping the sweep provider-portable, deterministic, and confound-controlled
+  (§5.1/§5.2's whole basis); **Stage 3** keeps the production agentic critic as a re-verification
+  gate, so "must have repo access" is honoured at *verification*, not at the cheap generation
+  fan-out. Recall win and precision cost reconciled without importing agentic non-determinism
+  into the portable sweep. Stage 1 explicitly does **not** recover cross-file interaction bugs
+  (the MD1-R1 class of Result 11) — that recall lives only in the Stage-3 agentic gate, which is
+  why Result 11's n=1 recovery (open question #1) is load-bearing, not incidental.
+
+- **Where to add a vendor — the fact-check critic first (hypothesis, tied to §1.1 and H5).**
+  Rather than run a whole second-family review (expensive, and the diff-only variant is the FP
+  machine above), scope the vendor to the least-stable, highest-leverage gate: `code-fact-check`
+  (§1.1). Independent evidence from a skill-suite rebuild is that many missed issues *originate*
+  in the fact-check stage; the three Trap-4 wins above corroborate it. Two refinements from this
+  doc are load-bearing: run the cross-vendor fact-check **k≥3, most-severe-wins** (§1.1), and
+  **audit the vendor's *clean* verdicts, not just its findings** (H5 — false attestation was
+  seen at sonnet and fable, and the D2 abstention above is a third instance). A narrower variant
+  routes only the specific critics with correlated incumbent blind spots. Both still require
+  021's Stage-1 context to avoid the sibling-commit FPs. (Full framing: follow-ups 5–6 of the
+  cross-model write-up.)
+
+- **Harness tooling now in place** (`scripts/cross-model-review.py`): reasoning-model
+  empty-content is recorded as an *errored* run, not a clean one (Kimi returns `content:null`
+  when the budget is spent inside the reasoning trace — it fired twice for real on D2); the
+  degraded stage-1 Jaccard double-count that could exceed 1.0 is fixed; and a per-model
+  **abstention rate** is reported, so a vendor that abstains its way to a perfect self-overlap
+  (the D2 Sonnet artifact) is legible rather than hidden — the discipline §5.2 and §1.4 demand.
+
+### 5.1 Comparability — the rule that governs everything
+
+`scripts/cross-model-review.py` runs **diff inline, no tools, single pass**. The full
+pipeline runs **agentic, multi-critic, with fact-check and synthesis**. These measure
+different objects and their numbers must never be placed in one table without the config
+column.
+
+- The **only** prior rows directly comparable to an OpenRouter sweep are **Result 10**
+  (opus 5 vs opus 4.8, headless diff-inline).
+- A Gemini or Kimi run without the role-skill prompts measures *that model plus a
+  paraphrase*, not the pipeline. Given Result 8a, that gap is larger than the tier gap you
+  are trying to measure. If the goal is "would this model be a good critic here," it must
+  run the actual role prompts.
+
+### 5.2 Score on detection, not on tier
+
+Tier is the least stable output in the system (J_self on 🔴 rows: 0.14–0.25). Cross-model
+J computed over *bands* will measure noise. Compute it over **issue identity** — same file,
+same underlying mechanism, band-agnostic — which is what §1.1 of
+`experiment-results-full-pipeline-tiers-2026-07-30.md` uses and what Result 14a's 0.49/0.56
+figures are.
+
+### 5.3 Hypothesis updates from the 2026-07-30 full-pipeline arm
+
+Amend `research-cross-model-review-hypotheses.md` before using it (the OpenRouter cross-model
+arm, §5.0, adds a second corroboration to **H5** — the incumbent's D2 abstention is false
+assurance from a third model, sonnet/fable being the first two — and independent confirmation
+of **H7/Trap-4** from the generation side):
+
+- **H4 (cross-file defects above the ceiling for every model) — falsified as stated.**
+  MD1 R1 was recovered by opus under the full pipeline, with both call sites and the exact
+  fix the human shipped. The ceiling is a property of the **single-pass config**, not of
+  models. H4's decision ("no amount of model spend fixes this — it's a context problem")
+  is wrong as written: multi-critic breadth sufficed, with no retrieval layer. **Caveat:
+  n=1** — this is open question #1 above.
+- **H5 (small models are net-negative as gates) — widen it.** False attestation on a
+  branch's actual 🔴 was observed at **sonnet and fable**, with the disconfirming evidence
+  present in the same run's own fact-check. A precision floor keyed on model size will not
+  catch this. Any vendor added to a panel needs its *clean verdicts* audited, not just its
+  findings.
+- **H7 (adjudicator blind spot, doc-deferent) — extends to reviewers.** Result 15: opus r1
+  reached ND2's defect and cleared it by deferring to the docstring. Result 14a: opus r2
+  rejected the docstring and *still* under-tiered it, via the §1.2 gate. Doc-deference and
+  the escalation gap are two separate failure modes that produce the same outcome.
+- **H1 (non-total ordering) — replicated per-row.** On MD1: opus found R1 and demoted R2;
+  fable found R2 and cleared R1. Neither set contains the other.
+
+### 5.4 Four traps this program has already hit
+
+1. **Rubric selection by filename.** These repos carry *older* rubrics in-tree from
+   previous branches. `ls docs/reviews/code-review-rubric*.md | head -1` silently returns
+   the wrong file. Select by **content** — match the reviewed commit SHA and the run date.
+   (`scripts/self-improvement.sh:1404` still has this bug.)
+2. **Acceptance-filtered corpora.** Persisted historical rubrics are ~99% "precise" by
+   construction — findings the author rejected never got committed. Worse, per Result 14
+   they are also blind to defects the original panel never raised. Retrospective precision
+   measurement is exhausted; only fresh runs give raw numbers.
+3. **Temporal leakage.** Reconstruct pre-fix state in a detached worktree and **verify** no
+   worktree contains its own rubric — do not assume. Reading files at current HEAD leaks
+   the fix.
+4. **`documented as intended`.** The dominant false-negative *and* false-positive class is
+   true-mechanism / disputed-intent. An in-code comment asserting a behavior is deliberate
+   has repeatedly beaten correct reasoning — in adjudicators (Result 7's F18) and in
+   reviewers (Result 15). The same docstring ("a deliberate small mercy") has now defeated
+   two separate agents in two separate arms. Treat intent claims as evidence to be weighed,
+   never as dispositive.
+
+### 5.5 Reusable harness
+
+Full-pipeline runner and worktree recipe: §Reproduction of
+`docs/working/experiment-results-full-pipeline-tiers-2026-07-30.md`. Headless invocations
+need `--permission-mode acceptEdits` and `--add-dir` (§1.5) or they silently degrade.
+Ground-truth diffs with reconstructable pre-fix state and surviving rubrics: ND2
+`2d0ee3c`, ND3 `319f229` (nature_photographer), MD1 `d86d2dc..d90d6bb`
+(meta-formalism-copilot).
+
+
+---
+
+# Input 2: skills/divergent-design/SKILL.md
+
+---
+name: divergent-design
+description: >
+  Route a tradeoff-bearing design decision into the divergent-design workflow
+  (diverge → diagnose → match → decide) instead of open-ended brainstorming. Use this
+  skill the moment a creative task resolves to choosing among competing approaches that
+  carry tradeoffs — building a feature, structuring a module, or selecting a library where
+  more than one option is viable. Trigger phrasings (same surface brainstorming would
+  catch): "which approach", "compare options", "compare approaches", "evaluate
+  alternatives", "weigh alternatives", "X vs Y", "should we use X or Y", "pick between",
+  "choose between", "decide between", "what are the options", "multiple approaches",
+  "design choice", "design decision", "tradeoff", "trade-offs", "pros and cons",
+  "library selection", "tool selection", "architecture". This skill SUPERSEDES
+  open-ended brainstorming whenever the task is a decision among 3+ tradeoff-bearing
+  options: if you can name 3+ viable
+  options that differ on a tradeoff axis, route here for the structured candidate/matrix
+  presentation. Mechanical trigger test: can you name 3+ viable options that differ on a
+  tradeoff axis? Yes → this skill. (If the solution space is genuinely open-ended with no
+  competing options yet, brainstorming still applies.) This is a thin router — it hands off
+  to `workflows/divergent-design.md`, which holds the full process; it does not duplicate it.
+when: A creative task has resolved to a choice among 3+ tradeoff-bearing options, and brainstorming would otherwise auto-win
+---
+
+> On bad output, see guides/skill-recovery.md
+
+# Divergent Design (router)
+
+Exists so divergent design competes at the **skill-selection layer**, where open-ended
+brainstorming otherwise wins by default on any "creative work." Does not re-implement the
+workflow — routes into it.
+
+## Trigger test (run this first)
+
+Can you name **3+ viable options that differ on a tradeoff axis**?
+
+- **Yes** → decision, not open-ended ideation. Proceed below.
+- **No** (solution space genuinely open-ended, no competing options yet) →
+  skill does not apply; open-ended brainstorming does. Stop here.
+
+When the test passes, divergent design supersedes brainstorming even if brainstorming
+already auto-fired: the structured candidate/tradeoff/matrix presentation is the point.
+
+## Hand off to the workflow
+
+Read and follow **`workflows/divergent-design.md`** end to end — it holds the full
+process (diverge → diagnose → match → decide), the epistemic and double-diamond variants,
+the compact-console output discipline, and the composition rules with RPI, spike, and
+systematic-debugging. Do not restate it here; this file is intentionally a stub
+(per decision 004, anti-redundancy).
+
+Per that workflow, write the full diverge/diagnose/match prose to `docs/working/dd-{topic}.md`
+(or fold it into the calling RPI research doc when DD runs as a sub-procedure), emit only the
+compact per-step console lines, and archive the final decision as `docs/decisions/NNN-title.md`.
+
+
+---
+
+# Input 3: workflows/divergent-design.md
+
+---
+value-justification: "Replaces ad-hoc architectural debates with structured multi-candidate evaluation, preventing premature commitment to the first idea."
+---
+
+# Divergent Design Workflow
+
+*The diverge → diagnose → match → decide structure follows the [orchestrated review pattern](../patterns/orchestrated-review.md), with candidate approaches as the units of parallel evaluation.*
+
+**Problem-framing only?** If the task is to *frame* a contested or unclear problem (not yet to choose a solution), jump to the [Double Diamond (Purpose-First) variant](#variant-double-diamond-purpose-first) and run sections 1a-3a only — the chosen-framing record is the output, and Diamond 2 is skipped.
+
+## When to use
+- Architectural decisions (how to structure a feature, which pattern to use)
+- Library or tool selection
+- Major feature design where multiple approaches exist
+- Any decision where premature convergence is a risk
+- **Trigger phrasings** (any of these should route here, not to open-ended brainstorming): "which approach", "compare options/approaches", "evaluate/weigh alternatives", "X vs Y", "should we use X or Y", "pick/choose/decide between", "what are the options", "multiple approaches", "design choice/decision", "tradeoff", "trade-offs", "pros and cons", "library/tool selection", "architecture"
+
+> **Precedence over open-ended brainstorming**: When a creative task — building a feature, adding functionality, modifying behavior — is actually a **decision among 3+ options that carry tradeoffs**, DD **supersedes** brainstorming. Brainstorming explores open-ended intent when the solution space is still unstructured; DD is the right tool the moment the task resolves to picking among competing approaches with real tradeoffs. If the task is a tradeoff-bearing choice, switch to DD and present the matrix — the structured candidate/tradeoff presentation is the point. **Trigger test:** can you name 3+ viable options that differ on a tradeoff axis? If yes → DD, not brainstorming. (If the solution space is genuinely open-ended and no competing options exist yet, brainstorming still applies.)
+
+- **As a sub-procedure within RPI**: When the research phase of `research-plan-implement.md` reveals a design decision, DD is invoked inline. The decision output feeds back into RPI's research doc and informs the plan. See RPI step 2 for trigger signals.
+- **Hypothesis generation** (epistemic variant): When the question is "what's true?" rather than "what should we build?" — e.g., explaining a bug, interpreting ambiguous behavior, or evaluating competing theories. See the Epistemic Reasoning variant below.
+- **Contested or unclear problem framing** (double-diamond variant): When stakeholders disagree on the goal, a prior attempt solved the wrong problem, or step 2 keeps surfacing contradictory constraints. See the Double Diamond (Purpose-First) variant below.
+
+## When to pivot
+
+- **← From RPI** (see RPI step 2 for triggers): Carry the research doc's invariants and constraints into DD's diagnosis step (step 2) — they're already half the work.
+- **← From systematic debugging** (CLAUDE.md's Debugging defaults): When debugging surfaces a design-level root cause with 3+ viable fix approaches, invoke DD directly — don't route through RPI first. The debugging session's root-cause analysis and failed hypotheses become hard constraints in DD's diagnosis step (step 2): the root cause defines what must be solved, and the failed hypotheses document approaches already ruled out (pre-pruning step 3 candidates). This shortcut applies when the bug is understood but the *fix* is a design decision. If the root cause is still uncertain, stay in debugging or escalate to RPI research.
+- **→ RPI**: After DD produces a decision, return to RPI's plan step with the decision doc as input. Reference it from the plan; don't duplicate the rationale.
+- **→ Spike**: If DD candidates require feasibility validation, run a timeboxed spike on the uncertain option before finalizing the decision. The spike's findings update DD's tradeoff matrix.
+
+## Process
+
+### Output discipline (steps 1-3): compact console, full prose to the working doc
+
+Steps 1–3 generate a lot of text — 8–15 candidates with a generation health check, the pre-generation grep results, a full constraint list, and a compatibility matrix. Dumping all of it to the console floods the scrollback before the human ever reaches the step-4 decision block, which is the surface actually built for scrutiny: its **Acceptance checklist (structure gate)** holds it to *progressive disclosure* — show the index first, open detail on demand. That checklist governs only the step-4 surface; the flood happens one diamond earlier, upstream of it. Apply the same convention here: **write the full diverge / diagnose / match prose to a working doc, and emit only a compact one-line summary per step to the console.**
+
+- **Working doc** — write each step's full output to `docs/working/dd-{topic}.md` (the DD scratch doc for this decision). When DD is running as a sub-procedure within RPI, fold the prose into the calling loop's research doc instead of creating a second file. This is where the candidate descriptions, the pre-generation grep results, the health-check notes, the constraint statements, and the compatibility matrix live in full — nothing here is dropped, only relocated off the console.
+- **Console** — emit exactly one compact line per step as it completes, per the **Console output (compact)** note in each step below. The console becomes a short trail that sits *above* the step-4 decision block rather than burying it:
+
+```
+◇ step 1 diverge    12 candidates → docs/working/dd-{topic}.md
+                      1 do-nothing  2 managed SaaS  3 in-house Kafka  4 …
+◇ step 2 diagnose    9 constraints (6 hard · 3 soft) → docs/working/dd-{topic}.md
+◇ step 3 match       4 of 12 survived → [2] [4] [6] [1]
+```
+
+The per-step contents differ by what each step's index actually is: step 1 shows the candidate count plus the numbered one-line headlines (the search-space index); step 2 shows the constraint count with its hard/soft split; step 3 shows the surviving-candidate count plus the surviving IDs (the set that becomes the step-4 scorecard). In every case the console line is an index pointing at the working doc, never a replacement for the full prose — a reader who wants the detail opens the doc, exactly as they would expand a step-4 candidate card.
+
+This convention covers steps 1–3 only. Step 4 already renders its own purpose-built decision block (governed by its Acceptance checklist) and step 5 writes the archival decision record; neither is replaced by a compact console line.
+
+### 1. Diverge — generate many possibilities
+
+#### 1.0 Pre-generation grep — carry forward prior pruning
+
+Before generating new candidates, grep `docs/decisions/*.md` for `Pruned candidates` sections using 2-4 keywords from the diagnosis (problem area, components involved, constraint types you'll be working with — formal step-2 wording isn't required yet, just the working problem statement). One pass works:
+
+    grep -B 1 -A 20 "Pruned candidates" docs/decisions/*.md | rg -i "keyword1|keyword2"
+
+For each historically-pruned candidate the grep surfaces, the eventual DD record must surface it too — pick one of:
+
+- **Carry forward**: explicitly accept the prior pruning rationale. Don't re-propose the candidate during generation; list it in the new record's Pruned candidates section annotated `[carried from NNN-title: prior reason]`.
+- **Revive**: write a one-line *why this time is different* (changed constraints, new infrastructure, prior pruning rested on a now-stale assumption) and re-introduce the candidate into generation. The new record annotates it `[revived from NNN-title: why this time is different]` in the Pruned candidates section and references the revival rationale in Decision and rationale if it's selected.
+
+If the grep returns nothing, record `Prior pruning grep: no matches found for [keywords]` in the new record's Pruned candidates section. "No matches found" is an acceptable — and expected — outcome for many decisions; the explicit line exists so the grep can't be silently skipped when nothing turns up.
+
+#### 1.1 Generate candidates
+
+Generate 8-15 candidate approaches. Quantity matters more than quality at this stage. Requirements:
+- Include at least 2-3 approaches that feel wrong, naive, or unconventional
+- Include at least 1 "do nothing" or "minimal change" option
+- Include at least 1 approach that would be ideal if effort/complexity were free
+- **Failure-driven invocation**: when the task is to prevent or harden against a specific failure (bug-fix design, security pass, reliability work), step 1's diverge may instead generate 8-15 specific failure modes the design must prevent — these become hard constraints in step 2, and step-1 approach candidates are generated in step 3 to cover them.
+- One sentence each, no evaluation yet
+- Number them for reference
+
+Before generating, scan `docs/decisions/log.md` and any `NNN-*.md` files in `docs/decisions/` for adjacent prior decisions on similar problems. If a relevant prior decision exists, include its choice as **candidate 0** (the status quo / "do same as before") so the team explicitly evaluates whether current circumstances differ enough to justify re-deriving rather than reusing. If `docs/decisions/` is empty or absent, this is a no-op.
+
+#### Lens checklist (optional)
+
+Use these lenses as a generation aid to widen the search space. Scan your candidates and aim for at least 2 lenses to be represented — if everything clusters into a single lens, generate a few more from the missing ones. This is a soft prompt, not a gate: the post-generation health check below remains the only structural check.
+
+- **Technical** — architecture, algorithm, data structure, or implementation choice
+- **Interface** — API shape, UX flow, protocol, or data contract
+- **Procedural** — workflow, process, or how the work gets done (review cadence, gating, sequencing of steps)
+- **Social/organizational** — who decides, who owns it, who maintains it, where responsibility sits
+- **Time-shifted** — defer, accelerate, or sequence differently (do it later, do it now in a smaller form, split the rollout)
+- **Reframe** — do nothing, change the question, or solve an adjacent problem instead
+
+#### Generation health check
+
+After generating your initial candidates, scan for these common generation gaps. This is not evaluation — you are checking whether the *search space* is broad enough, not whether any candidate is good or bad. If a gap is found, generate additional candidates to fill it; never remove existing ones.
+
+- **Candidate clustering**: Do 3 or more candidates describe near-variants of the same underlying approach (e.g., three different caching strategies that all assume caching is the answer)? If so, you've anchored on one region of the solution space. Name the shared assumption and generate 2-3 candidates that violate it. Note which cluster triggered this so the pattern is visible in retrospect.
+- **Missing perspectives**: Is there a "do nothing" or "minimal change" option? A naive or brute-force option? An option that a newcomer unfamiliar with the codebase might suggest? These perspectives often survive pruning — their absence usually means anchoring, not that they were considered and rejected.
+- **Excessive vagueness**: Can each candidate be tested against a concrete constraint? A candidate like "use a better architecture" or "improve the data flow" can't be meaningfully evaluated in step 3's compatibility matrix. Replace vague candidates with specific ones — what *specific* architecture? What *specific* change to data flow?
+- **Dimensional anchoring**: Do 5 or more candidates all change the *same dimension* of the system, even when each candidate is distinct (e.g., five different prompt edits, or five different orderings)? If so, the search has anchored on one lever — approach variety is high but dimension variety is zero. Name the dimension using a concrete taxonomy. For multi-agent workflows: *agent text* (prompts, instructions, descriptions), *agent set* (which agents exist; adding, removing, splitting, merging), *dispatch order* (sequencing, branching, parallelism, iteration), *communication topology* (who reads whose output, shared state, message structure), or *something else* (data formats, triggers, success criteria). For other domains, substitute concrete dimensions — "different architecture" doesn't count. Generate 1-2 candidates that move on a different named dimension.
+
+If the health check triggers additional generation, note it briefly (e.g., "Added 3-5 after health check flagged clustering around caching approaches"). This makes generation patterns visible across sessions.
+
+#### Console output (compact)
+
+Per the **Output discipline** convention above, write the full candidate list, the pre-generation grep results, and the generation health-check notes to the working doc. To the console, emit only the candidate count and the numbered one-line headlines — the index of the search space, not the per-candidate reasoning or the grep/health-check prose:
+
+```
+◇ step 1 diverge    12 candidates → docs/working/dd-{topic}.md
+                      1 do-nothing  2 managed SaaS  3 in-house Kafka  4 …
+```
+
+**Done when...**
+- [ ] Pre-generation grep against `docs/decisions/*.md` for prior `Pruned candidates` sections has been run; every surfaced candidate is either carried forward (annotated `[carried from NNN-title: prior reason]`) or revived (annotated `[revived from NNN-title: why this time is different]`); if the grep returned nothing, a `Prior pruning grep: no matches found for [keywords]` line is recorded
+- [ ] At least 8 candidate approaches are listed
+- [ ] At least 2-3 approaches feel wrong, naive, or unconventional
+- [ ] A "do nothing" or "minimal change" option is included
+- [ ] An "ideal if effort were free" option is included
+- [ ] No evaluation or ranking has been applied yet — only generation
+- [ ] Generation health check passed: no unaddressed clustering, missing perspectives, vague candidates, or dimensional anchoring
+- [ ] Full candidate list, pre-generation grep results, and health-check notes were written to the working doc (`docs/working/dd-{topic}.md`, or the calling RPI research doc); the console received only the candidate count plus the numbered one-line headlines
+
+### 2. Diagnose — specify the actual problems and constraints
+
+List every concrete problem, requirement, and constraint the solution must address. Be specific:
+- ✓ "The reviewer in IST timezone needs to understand intent in <5 minutes from the PR description alone"
+- ✗ "Code should be readable"
+
+Include non-obvious constraints: timezone gaps, skill gaps in the team, maintenance burden, deployment complexity, interaction with existing code, performance requirements. Also note which constraints are hard (must satisfy) vs soft (prefer to satisfy).
+
+**Hard constraints require a `success:` line.** Every constraint labeled `hard` must be paired with a `success: <observable>` line whose body names a specific test, metric, or artifact a future reader could actually check. Generic phrasing — *"works correctly"*, *"meets requirements"*, *"is performant"*, *"passes review"* — is explicitly disallowed: if the success line could be lifted verbatim into a different project's constraint and still read as true, it isn't a success line yet. The observable must be specific enough that the step-3 compatibility matrix can score an approach against it without further interpretation. Soft constraints don't require a success line, but may include one when the observable is cheap to name.
+
+**Worked examples — acceptable vs. unacceptable success lines for hard constraints**
+
+| Hard constraint | ✗ Unacceptable — generic | ✓ Acceptable — names a specific signal |
+|-----------------|--------------------------|----------------------------------------|
+| The data migration must complete without losing rows | `success: works correctly` | `success: reconciliation query shows source row-count == target row-count and zero entries in the failed_migration table before cutover` |
+| The new search endpoint must hold up under current traffic | `success: is performant` | `success: p99 latency < 200 ms at 1.5× current peak QPS, sustained across a 10-minute staging load test recorded in the perf dashboard` |
+
+The unacceptable column is what the constraint sounds like *before* the success-line discipline is applied; the acceptable column is what step 3 needs in order to score candidates against the constraint.
+
+#### Console output (compact)
+
+Per the **Output discipline** convention above, write the full constraint list — each statement, its hard/soft label, and the non-obvious constraints — to the working doc. To the console, emit only the constraint count and its hard/soft split:
+
+```
+◇ step 2 diagnose    9 constraints (6 hard · 3 soft) → docs/working/dd-{topic}.md
+```
+
+**Done when...**
+- [ ] Every concrete problem and constraint is stated with enough specificity to test an approach against it
+- [ ] Each constraint is labeled as hard (must satisfy) or soft (prefer to satisfy)
+- [ ] Non-obvious constraints (team skills, deployment, maintenance) have been explicitly considered
+- [ ] No constraint uses vague language like "readable" or "good" without a measurable qualifier
+- [ ] Every constraint labeled `hard` is paired with a `success: <observable>` line whose body names a specific test, metric, or artifact — generic phrasing such as "works correctly", "meets requirements", "is performant", or "passes review" is disallowed
+- [ ] Full constraint list was written to the working doc; the console received only the constraint count and its hard/soft split
+
+### 3. Match and prune
+
+Create a rough compatibility matrix:
+
+| # | Approach | Problem 1 | Problem 2 | ... |
+|---|---------|-----------|-----------|-----|
+| 1 | ...     | ✓         | ~         | ... |
+
+Key:
+- ✓ addresses well
+- ~ partial or uncertain
+- ✗ doesn't address
+- ⚠ actively makes worse
+
+For approaches that score well overall but have one fixable weakness, briefly sketch how to fix it (1-2 sentences). Discard anything with ⚠ on a hard constraint or mostly ✗ across the board.
+
+#### Console output (compact)
+
+Per the **Output discipline** convention above, write the full compatibility matrix and the fix sketches for surviving approaches to the working doc. To the console, emit only the surviving-candidate count and the surviving IDs — the set that becomes the step-4 scorecard:
+
+```
+◇ step 3 match       4 of 12 survived → [2] [4] [6] [1]
+```
+
+**Done when...**
+- [ ] A compatibility matrix exists with every approach scored against every constraint
+- [ ] All approaches with ⚠ on a hard constraint or mostly ✗ are discarded
+- [ ] Fixable weaknesses in surviving approaches have a 1-2 sentence sketch of the fix
+- [ ] 3-5 approaches survive for detailed comparison
+- [ ] Full compatibility matrix was written to the working doc; the console received only the surviving-candidate count plus the surviving IDs
+
+### 4. Tradeoff matrix and decision
+
+For the top 3-5 survivors, create a detailed comparison:
+
+| Approach | Effort (hours/days) | Risk | Core problem coverage | Key downside |
+|----------|-------------------|------|----------------------|--------------|
+
+Each surviving candidate must also carry a **falsifiable hypothesis** in the form: *"If we choose this, we expect [observable outcome] within [window]; counter-evidence would be [X]."* For example: *"If we adopt the queue-based ingest, we expect p99 latency under 200ms within two weeks of rollout; counter-evidence would be sustained p99 above 400ms or queue depth growing across a full traffic cycle."* This makes the candidate's success conditions checkable post-decision and pre-prunes candidates whose claimed benefits can't be stated in falsifiable terms.
+
+#### Optional: per-criterion scorecard calibration via `matrix-analysis`
+
+The tradeoff matrix above can be filled two ways. The default is to score every cell yourself — one agent reasoning across all candidates and all axes at once. The alternative, available when the survivor set is wide enough that single-agent calibration drift is a real risk, is to **invoke the `matrix-analysis` skill as a sub-procedure** so each axis is scored by its own sub-agent that sees every candidate on that one dimension and nothing else. This instantiates the parallel-evaluation pattern DD's header already names ([orchestrated review](../patterns/orchestrated-review.md), "candidate approaches as the units of parallel evaluation") — `matrix-analysis` is that pattern packaged, and the [self-eval](../docs/reviews/self-eval-divergent-design.md) already records the clean division of labor (matrix-analysis owns the *evaluation* sub-step; DD owns diverge/diagnose/decide). This sub-step changes only *how the comparable cells are produced*; the scorecard render, hypothesis, stress-test, and decision paths are untouched.
+
+**When to engage (opt-in).** Use it when 3-5 candidates survived step 3 **and** the effort/risk axes turn on judgment rather than a known number — i.e., where one agent scoring all cells at once tends to anchor each candidate's later cells on its earlier ones. Skip it when ≤2 candidates survive, when one approach already dominates at >80% confidence (Path A — the scorecard is a formality, not a decision aid), or when the three axes are mechanically determined and need no calibration. The mechanism costs three parallel sub-agents; spend them only when independent calibration could actually change a glyph.
+
+**The mapping.** `matrix-analysis` takes *items × criteria*; DD supplies:
+
+- **items** = the 3-5 step-3 survivors. Pass each candidate's short name, its step-3 compatibility-matrix row, and its one-line description as the item context — sub-agents cannot read the DD working doc, so everything they score on must be in the prompt.
+- **criteria** = exactly the three comparable scorecard axes — **effort**, **risk**, **coverage** — each framed *higher-is-better* so the returned rating maps onto DD's fixed glyph legend without inversion: define **effort** as "lower implementation cost rates Strong," **risk** as "lower residual risk rates Strong," and **coverage** as "more step-3 hard-constraints satisfied rates Strong" (pass coverage's raw met/total count from the step-3 matrix as the sub-agent's starting evidence; the sub-agent calibrates whether a partial-coverage row reads `◐` or `○`). `key downside` is **not** a criterion — it is a residual DD names, not a dimension scored.
+- **scoring** = `matrix-analysis`'s default Strong/Adequate/Weak, which maps one-to-one onto the scorecard glyphs: **Strong → ●**, **Adequate → ◐**, **Weak → ○**. A candidate that fails a hard constraint is already a `✗` from step 3 and should not have survived into this scorecard — surface it, don't re-score it. Pass the three axes as *given* criteria (not "items, please propose criteria") so `matrix-analysis`'s Stage-1 "confirm criteria with the user" step is pre-satisfied and never issues a prompt — this is what keeps the composition safe inside a non-interactive Path C / SI-loop run.
+- **decision-intent** (`matrix-analysis` Stage 1 Step 4) = the one-line step-2 diagnosis goal, so each axis is scored against what the decision is *for* rather than in the abstract.
+
+**What stays with DD.** `matrix-analysis` scores only the three comparable cells. Everything else in step 4 remains DD's: the per-candidate **falsifiable hypothesis**, the **stress-test pass** (which may still revise a glyph the sub-agents set — when it does, record the change as a stress-test mitigation), the **key downside**, the **Decision presentation block**, and the **Decision** path (A/B/C). Ingest the per-criterion ratings back into the step-4 tradeoff matrix and the scorecard grid; the effort/risk/coverage glyphs are now sub-agent-calibrated, but the rendering, hypothesis, stress-test, and decision logic are unchanged — the Acceptance checklist (structure gate) still governs the rendered block exactly as before.
+
+**Output disposition.** Per the steps 1-3 **Output discipline** convention, fold `matrix-analysis`'s per-criterion detail into the DD working doc (`docs/working/dd-{topic}.md`) rather than leaving it as a second console artifact; `matrix-analysis`'s own `docs/reviews/matrix-analysis.md` record is the detailed scoring archive, cross-referenced from the step-5 decision record's *Decision and rationale* section. Emit only the calibrated scorecard grid to the console, exactly as the non-composed path would.
+
+#### Stress-test pass
+
+After building the tradeoff matrix, pressure-test the surviving approaches using these cognitive moves adapted from structured critique methods. Not all moves apply to every decision — select 2-4 moves whose "When to use" trigger matches the current decision context.
+
+| Move | What to ask | When to use |
+|------|------------|-------------|
+| **Boring alternative** | Is there a simpler approach that gets 80% of the benefit? Does this approach's complexity earn its keep, or is the simpler version good enough? | Use when a complex or sophisticated approach is leading and you haven't verified that a simpler version would be insufficient. |
+| **Invert the thesis** | Argue sincerely for the opposite choice. What survives? What assumptions does the leading approach rest on that you haven't defended? | Use when one approach appears to dominate — unchallenged front-runners are where hidden assumptions hide. |
+| **Revealed preferences** | What do teams/users/systems actually do, vs. what they say they want? If the codebase already has a similar decision point, what did it choose and how did that go? | Use when the decision affects how humans interact with the system (APIs, UX, conventions) and actual usage patterns may differ from stated requirements. |
+| **Push to extreme** | Extend this approach's logic further than intended. What breaks? What hidden boundary conditions emerge? | Use when the design will be difficult to change later and must accommodate conditions beyond current parameters. |
+| **Organizational survival** | Does this survive team turnover, priority shifts, and the person who championed it leaving? Will the next maintainer understand why this choice was made? | Use when the decision's lifespan will exceed the current team's tenure — framework, data model, or infrastructure choices. |
+| **Scale test** | What happens at 10x the current traffic, data, users, or contributors? Does the approach degrade gracefully or hit a cliff? | Use when load, data volume, or user count is expected to grow significantly and the approaches differ in how they handle that growth. |
+| **Implementation org chart** | Who builds this? Who maintains it? What skills does the team actually have vs. need to acquire? | Use when the approaches require different skills or team structures to build and maintain, or involve build-vs-buy tradeoffs. |
+| **Failure-driven** | What new failure modes does each candidate enable that we haven't enumerated? Where could this break in ways the requirements didn't anticipate? | Use when the cost of an unanticipated failure category is high — security, billing, compliance, regulatory. Unlike push-to-extreme (extending existing logic) or scale test (load on known dimensions), this move enumerates new failure *categories* each candidate introduces. **Callout:** for high-stakes decisions, follow this move by invoking `/pre-mortem` on the top candidate; the one-line failure modes from this row become narrative seeds. |
+
+Apply 2-4 of the most relevant moves to each surviving approach. Update the tradeoff matrix if the stress test reveals new information — a changed risk rating, a previously unnoticed downside, or a boring alternative that should have been a candidate from the start.
+
+#### Decision presentation
+
+Scrutiny happens *during* the decision, not after it. So before writing anything to `docs/decisions/` (step 5), render the tradeoff matrix and stress-test findings as a CLI-native decision block — the primary display surface the human reads at the moment of choosing. The step-5 markdown record is the *archive* of a decision already scrutinized here; it is not the surface you scrutinize on.
+
+The block's data is exactly what you already produced: the step-4 tradeoff matrix (one row per surviving candidate), the per-candidate falsifiable hypothesis, and the 2-4 stress-test moves applied to each. This sub-step only *renders* that data — it introduces no new analysis. Render it as console text (fenced block, box-drawing characters, matching the repo's existing CLI layouts) in three regions.
+
+The three fenced blocks below are a **fill-in template, not an example to imitate**: each `<…>` is a slot you substitute with this decision's real candidate data, while the surrounding box-drawing, columns, legend, and ordering are fixed and copied verbatim. **Acceptance bar: no `<…>` slot may survive in a rendered block** — a residual `<token>` means a slot went unfilled. (The two placeholders already in the banner — `<…>` for the decision goal and `<N>` for the survivor count — follow this same convention; the template just extends it to every candidate-data cell.)
+
+Token key — substitute each slot with real data. The glyph legend (`●`/`◐`/`○`/`✗`) is fixed vocabulary, never a slot:
+
+- `<decision-goal>` — the one-line decision goal from the step-2 diagnosis (same text as the recommendation banner).
+- `<N>` — count of candidates that survived step-3 pruning.
+- `<ID>` — the candidate's step-1 number.
+- `<approach>` — the candidate's short name (1–5 words).
+- `<g>` — the cell glyph drawn from the legend (`●` strong/low, `◐` partial/medium, `○` weak/high, or `✗` for a hard-constraint failure that should already have been pruned — surface it, don't hide it).
+- `<effort>` — the step-4 cost estimate beside its glyph (e.g. a day/week count or token prediction).
+- `<risk>` — the risk label beside its glyph (low/med/high).
+- `<met>`/`<hard>` — hard-constraints satisfied / total, from the step-3 matrix.
+- `<soft-met>`/`<soft>` — soft-constraints satisfied / total (candidate card only).
+- `<downside>` — the single worst residual; append ` (mitig.)` only when a stress-test mitigation addressed it.
+- `<cost-detail>` — the parenthetical cost breakdown on the card (e.g. a token estimate).
+- `<hypothesis>` — the candidate's falsifiable hypothesis verbatim, in the step-4 *"If chosen, `<expected>` within `<window>`; counter-evidence = `<X>`."* form.
+- `<move>` / `<what-it-changed>` — one stress-test move applied and the matrix change it produced (one bullet per move).
+- `<conf>` — recommendation confidence percent.
+- `<runner-up-ID>` / `<axis>` — the runner-up's ID and the axis of disagreement, included only when two candidates score within ~1 cell.
+
+**Region 1 — Scorecard grid.** A banner naming the decision, then one row per surviving candidate, scored with glyphs so the whole field is comparable at a glance. The recommended candidate is marked `★`; rows are ordered recommendation-first, then by descending coverage.
+
+```
+┌─ DECISION: <decision-goal> ────────────────────────────────────────────┐
+│ <N> candidates survived step-3 pruning · scored on the step-4 axes     │
+└────────────────────────────────────────────────────────────────────────┘
+
+  legend   ● strong / low   ◐ partial / medium   ○ weak / high   ✗ fails hard constraint
+
+   #    approach              effort     risk    coverage   key downside
+  ───  ───────────────────  ─────────  ──────  ──────────  ─────────────────────────
+   <ID> ★ <approach>          <g> <effort>  <g> <risk>  <g> <met>/<hard> hard  <g> <downside>
+   ┄ one row per surviving candidate; recommendation-first (★ on the recommended row), then by descending coverage ┄
+```
+
+Column semantics: `effort` carries the step-4 cost estimate (token or hour/day prediction) next to its glyph; `coverage` is hard-constraint satisfaction count from the step-3 matrix; `key downside` is the single worst residual, tagged `(mitig.)` when a stress-test mitigation addressed it. A `✗` in any cell flags a candidate that should already have been pruned — surface it, don't hide it.
+
+**Region 2 — Candidate cards (drill-down target).** For any candidate, render an expanded card carrying everything the scorecard row compresses: the falsifiable hypothesis verbatim, every stress-test move applied and what it changed, and coverage broken out hard/soft. This is the unit of scrutiny — the human reads the card before endorsing the row. This same card format is the single source for the Path B `AskUserQuestion` option `preview` (see `#### Decision` → Path B): on the interactive path the card is what a focused option renders, so keep it bounded to ~12 lines.
+
+```
+╭─ [<ID>] <approach>   ★ recommended ─────────────────────────────────────╮
+│ effort    <effort> (<cost-detail>)          risk   <risk>               │
+│ coverage  <met>/<hard> hard · <soft-met>/<soft> soft                    │
+│ hypothesis  <hypothesis verbatim — "If chosen, <expected> within        │
+│             <window>; counter-evidence = <X>.">                         │
+│ stress-tests applied                                                    │
+│   · <move> → <what-it-changed>                                          │
+│   · <move> → <what-it-changed>                                          │
+│ key downside  <downside — name the residual and, if a stress-test       │
+│               mitigated it, how (cross-ref Stress-test mitigations,     │
+│               step 5)>                                                   │
+╰─────────────────────────────────────────────────────────────────────────╯
+```
+
+**Region 3 — Drill-down protocol.** Default to the scorecard grid plus the recommended candidate's card expanded; keep the rest collapsed to their rows. Expand any other candidate's card on request (the human names a `#`), then collapse it again. Never dump all cards at once — the grid is the index, the cards are opened on demand, so the comparison stays legible while detail is one step away.
+
+Close the block with a one-line recommendation banner that states the chosen `#`, its confidence, and — when two candidates score within ~1 cell — the axis of disagreement (per the tie-handling in `#### Decision` below):
+
+```
+▶ recommend [<ID>] <approach> · confidence <conf>% · runner-up [<runner-up-ID>], axis = <axis>
+```
+
+##### Acceptance checklist (structure gate)
+
+The brainstorm display surface reads as structurally cleaner than an ad-hoc decision dump because it holds to three conventions — **boxed regions** (every region is a self-contained box-drawn frame), **progressive disclosure** (the index is shown first; detail is opened on demand, not dumped), and **one decision per screen** (a screen carries a single choice, never interleaved). This block adopts those same conventions, so "brainstorm's formatting is structurally nicer" becomes a concrete gate rather than a vibe: before the human scrutinizes the block, confirm it passes the checks below. These are drawn from the display property set (`docs/human-author/property-tests.json`: `discoverability-on-creation`, `conceptual-model-coherence`, `mapping-naturalness`) — each property names one way the rendered block can fail to communicate, and each check is the pass condition that closes it. A block that fails any check is re-rendered before the decision proceeds; it is not narrated around.
+
+- [ ] **Discoverability on creation** *(can the reader act without instruction?)* — On first render, the recommended candidate is visibly marked (`★`), the legend defines **every** glyph used in the grid, and the drill-down affordance (expand a card by naming its `#`) is stated on screen. A reader seeing the block for the first time can tell what is recommended and how to ask for more, with no out-of-band explanation. *(one-decision-per-screen: a single `DECISION:` banner heads the block; no second decision is interleaved.)*
+- [ ] **Conceptual-model coherence** *(is it one decision, or three artifacts?)* — The scorecard grid, the candidate cards, and the recommendation banner are views of the **same** decision: identical candidate set, identical axis names, and consistent ordering (recommendation-first, then descending coverage). No candidate, score, or axis appears in one region that contradicts or is absent from another. *(boxed regions: each region is its own box-drawn frame, so the reader can see at a glance which view they are reading.)*
+- [ ] **Mapping naturalness** *(does the encoding match the data?)* — Glyph severity runs one consistent direction in every column (`●` strong/low → `◐` partial/medium → `○` weak/high → `✗` fails a hard constraint), row position encodes recommendation priority, and an expanded card carries **exactly** its scorecard row's data — the hypothesis, stress-test moves, and coverage it compresses — with nothing added and nothing dropped. *(progressive-disclosure: the grid is the index, cards are the detail; the mapping from a row to its card is one-to-one and lossless.)*
+
+#### Decision
+
+The decision resolves down exactly one of three mutually-exclusive paths. **Only the interactive-consult path (B) issues a live prompt.** The other two render the static Decision presentation block and proceed without ever blocking on input, so a non-interactive overnight run — the SI loop, or any `/away` batch — cannot hang waiting for an answer that will never arrive.
+
+**Path A — one approach dominates (>80% confidence).** Document the decision and proceed. The Decision presentation block (the static fenced scorecard grid + recommended card) is already rendered above and carries into the step-5 record; do **not** call `AskUserQuestion` — there is nothing to consult on.
+
+**Path B — tradeoff genuinely unclear, human present (interactive session).** This is the one path that consults the user, and it does so through a native `AskUserQuestion` prompt rather than a typed-out prose question:
+
+1. First render the Decision presentation block exactly as specified above (scorecard grid → recommended card → drill-down). The glyph-scored grid is the comparative view; it is shown **once**, here — the prompt that follows must **not** re-draw it.
+2. Then issue a single `AskUserQuestion` whose options are the surviving candidates. The grid is the comparison; this question is the choice affordance that follows it.
+
+Construct the prompt as:
+- **question** — the one-line decision goal from the step-2 diagnosis (the same text as the scorecard banner).
+- **header** — a ≤12-char label for the decision (a short topic tag).
+- **options** — one per surviving candidate, ordered recommendation-first (the same order as the grid):
+  - **label** = the approach name (the candidate's short name, 1–5 words). Mark the recommended candidate by placing it **first** and appending ` (Recommended)` to its label.
+  - **description** = the candidate's **key downside** (the scorecard's `key downside` cell, including any `(mitig.)` tag) followed by its **falsifiable hypothesis** verbatim (the step-4 *"If we choose this, we expect … within …; counter-evidence would be …"* line). These two facts are what distinguish the choice; the glyph-scored comparison already lives in the grid above, so the option text does not repeat it.
+  - **preview** = that candidate's **expanded card** — the exact Region 2 candidate-card render, so focusing the option natively opens its full evaluation instead of leaving it as fenced text the reader scrolls past. This is what turns the during-decision matrix into a *focus-to-expand* surface: the scorecard grid is the index, and the focused option's `preview` renders the same card Region 2 specifies. Populate it with exactly three things, all already produced in step 4 — (1) the candidate's **scorecard row** (its `effort` / `risk` / `coverage` / `key downside` cells), (2) the **stress-test moves applied to it** and what each changed, and (3) its **falsifiable hypothesis verbatim**. The `preview` introduces no new analysis; it re-renders what the grid row and Region 2 card already hold. **Bound each card to ~12 lines** so it fits the preview pane without truncation (Region 2's example card is already this length); if a candidate's analysis runs longer, keep the hypothesis verbatim and compress the stress-test lines to one each. Previews are per-option — only the focused option's card renders, so cards are never collectively dumped.
+- **Source-surface guarantee.** The `preview` pane is an enhancement, not the source of truth: the **static fenced scorecard grid** (Region 1) rendered in step 1 above remains the guaranteed source surface. If the preview pane is unavailable, or a card truncates, the grid still carries every candidate's row — and the recommended candidate's full card is still expanded inline per Region 3. Never move data *out* of the grid so it lives in the `preview` only; the `preview` re-renders what the grid and Region 2 cards already contain, so the decision stays legible even with no preview pane at all.
+- **Path B only.** This `preview` enrichment is scoped strictly to Path B — it is the one path that issues `AskUserQuestion`. Paths A and C and the non-interactive SI loop never call `AskUserQuestion` at all (see their definitions in this section), so they have no preview surface: they render only the static fenced scorecard grid (Region 1) plus the inline recommended card (Region 3) and proceed without prompting.
+- The tool always appends an **Other** choice, so the user can reject every listed candidate or name one not shown — state in the question what "Other" means here.
+
+**Option-count cap.** `AskUserQuestion` allows at most 4 options. When 5 candidates survive into step 4, list the **top 4 by recommendation priority** as options; the 5th remains visible in the preceding scorecard grid (which always shows the full survivor set) and selectable via **Other**. Say in the question that the full field is in the grid above. Never silently drop the 5th — the grid carries it; the cap only limits the native option slots.
+
+**Path C — tradeoff unclear, no human present (SI loop / any non-interactive overnight run).** Do **not** call `AskUserQuestion`; a prompt in a non-interactive run blocks forever and hangs the loop. Instead render the static Decision presentation block, record the tentative recommendation with its reasoning and the axis of disagreement (below), and emit the `## Round claim` subsection (step 5) so the unresolved choice is surfaced to the user *asynchronously* via the morning summary's precondition gate — not via a live prompt. The decision-012 round-claim mechanism is how an overnight-generated decision reaches the user; the live prompt is reserved for Path B. The trigger that selects Path C over Path B is the same multi-round / SI-loop context that gates the step-5 `## Round claim` subsection.
+
+When 2+ surviving candidates score within ~1 cell of each other on the tradeoff matrix, explicitly name the **axis of disagreement** (e.g., "speed vs robustness", "control vs simplicity") and the project's stated preference along that axis. If no stated preference exists, record "no stated preference, picked by tiebreaker rule X" so the buried judgment call is visible and revisitable by future readers. On Path B this axis is what the `AskUserQuestion` resolves; on Path C it is what the round claim hands to the user.
+
+#### Variant: Trigger-bound decision rule (evidence arrives after commit)
+
+*Invoke this variant when critical evidence will arrive after the commit window* — i.e., when the decision must be made before the information needed to fully evaluate it can be obtained. The variant replaces the step-4 output: instead of selecting a single chosen approach, you produce a **decision rule** of the form *"if X observed → continue; if Y → revisit; if Z → reverse"* that wires the post-commit evidence flow into the decision itself.
+
+This is opt-in. If the trigger below doesn't apply, use the standard step-4 Decision section above and skip this variant entirely — the falsifiable-hypothesis line and step-5 Revisit triggers already cover normal post-decision monitoring.
+
+##### When to engage
+
+Engage the variant when **any** of these hold:
+
+- The decision must be committed before a key piece of evidence is available (e.g., a vendor contract signs before the first month of production traffic; a market-sizing assumption can't be tested until launch).
+- The decision is hard to reverse later, but cheap signals that would distinguish "still good" from "wrong call" will arrive during the implementation or rollout window.
+- The leading candidate's falsifiable hypothesis (already required by step 4) has its *counter-evidence window* extending past the commit point — so by the time counter-evidence is in, the decision is already locked in unless a rule was set in advance.
+
+If none apply, the problem is a static decision — proceed with the standard Decision section. Most architectural and library-selection decisions fall here; adding a decision rule to a problem whose evidence is already on the table is ceremony, not clarity.
+
+##### Output: the three-branch decision rule
+
+Replace the chosen-approach paragraph with a three-row rule keyed to specific observable signals:
+
+| Branch | Trigger condition | Action |
+|--------|------------------|--------|
+| **Continue** | [observable consistent with leading hypothesis] within [window] | proceed with chosen approach as planned |
+| **Revisit** | [partial / mixed signal] within [window] | re-run step 4 stress-test pass with the new evidence before the next commit gate; decision may stand or shift |
+| **Reverse** | [observable contradicting leading hypothesis] within [window] | abandon chosen approach in favor of **[pre-named fallback from step-3 survivors]** |
+
+Two requirements make this rule load-bearing rather than decorative:
+
+- **Each trigger condition is a specific, thresholded observable** — same falsifiability bar as the step-5 Revisit triggers. "If things go badly" is not a Reverse trigger; "if p99 latency exceeds 800 ms for any week" is.
+- **The Reverse branch pre-names a specific step-3 survivor candidate** as fallback, not "we'll figure it out then." Pre-naming is the variant's central value: a reversal decision made under post-evidence pressure tends to default to the cheapest fix or the loudest voice, not the best step-3 survivor. Naming it in advance turns the reversal into a binary check rather than a fresh strategic debate.
+
+##### Worked example — software case (build-vs-buy)
+
+Context: choosing between buying a managed analytics SaaS (candidate #2, leading) and building an in-house Kafka + Spark pipeline (candidate #4, step-3 survivor). The vendor contract must be signed before the first month of production traffic, but the buy option's per-event pricing and the build option's necessity only become measurable once real load is observed.
+
+Decision rule:
+
+| Branch | Trigger | Action |
+|--------|---------|--------|
+| Continue (buy) | First-month event volume within ±25% of vendor's quoted plan **and** p99 ingest latency < 500 ms | Keep vendor through renewal window |
+| Revisit | Event volume 25-100% over plan **or** p99 latency 500-800 ms in any week | Re-run step-4 tradeoff matrix with measured numbers before the renewal date |
+| Reverse | Event volume sustainedly > 2× plan **or** p99 latency > 800 ms | Exit vendor and implement candidate #4 (Kafka + Spark in-house) before contract renewal |
+
+The Reverse branch names #4 specifically rather than "build something," so when traffic spikes, the team isn't re-litigating which build approach to take under renewal-deadline pressure.
+
+##### Worked example — business case (market sizing assumption)
+
+Context: investing in a premium-tier feature whose business case rests on the assumption that ≥15% of free users will upgrade once the feature ships. The assumption can't be validated until the feature is live; engineering budget for the next quarter must be committed before any conversion data exists. Step-3 survivors included candidate #6 (premium-as-add-on, sold à la carte) and candidate #2 (re-package as free-tier enhancement).
+
+Decision rule:
+
+| Branch | Trigger | Action |
+|--------|---------|--------|
+| Continue (premium tier) | Upgrade rate ≥ 10% within first 6 weeks of launch | Continue investment per plan; full feature roadmap proceeds |
+| Revisit | Upgrade rate 5-10% in first 6 weeks | Re-run step-4 tradeoff matrix considering candidate #6 (premium-as-add-on) before committing next quarter's engineering budget |
+| Reverse | Upgrade rate < 5% sustained over 6 weeks | Sunset premium tier; re-enter the feature as a free-tier enhancement (candidate #2) |
+
+Pre-naming #6 as the Revisit fallback and #2 as the Reverse fallback turns "did the upgrade assumption hold?" into a binary check at the quarterly-planning gate, rather than a fresh strategic debate under deadline pressure.
+
+##### How the variant interacts with step 5
+
+When this variant is used, the step-5 decision record's **Decision and rationale** section contains the three-branch table (in place of the single chosen-approach paragraph), followed by a one-line *"Currently operating under: [Continue | Revisit | Reverse]"* status line. The Continue / Revisit / Reverse trigger conditions also enter the **Revisit triggers** section as thresholded entries, so the existing grep convention surfaces them. The chosen-branch line is part of the Task-status drift-check — update it whenever the team transitions across branches.
+
+**Done when...**
+- [ ] Each surviving candidate carries a falsifiable hypothesis (expected observable, window, counter-evidence)
+- [ ] Each surviving candidate declares a predicted implementation cost — a token estimate or an hour estimate; treat as a soft prediction, not a strict cap
+- [ ] At least 2-4 stress-test moves were applied to each surviving approach
+- [ ] Tradeoff matrix is updated with any findings from the stress test
+- [ ] The Decision presentation block was rendered before any step-5 doc was written — scorecard grid (one glyph-scored row per surviving candidate, recommended row marked `★`), the recommended candidate's card expanded, and a recommendation banner — and it passes the Decision-presentation **Acceptance checklist (structure gate)**: discoverability on creation, conceptual-model coherence, and mapping naturalness. It is what the user scrutinizes if consulted
+- [ ] The decision resolved down exactly one path: **(A)** one approach dominates at >80% confidence — documented, no prompt; **(B)** tradeoff unclear with a human present — consulted via a native `AskUserQuestion` issued *after* (and not duplicating) the scorecard grid, with one option per surviving candidate (label = approach name, recommended one first with ` (Recommended)`; description = key downside + verbatim falsifiable hypothesis; `preview` = that candidate's expanded Region 2 card — scorecard row + stress-test moves applied + verbatim hypothesis, bounded to ~12 lines; ≤4 options, 5th survivor reachable via the grid + "Other"); or **(C)** tradeoff unclear in a non-interactive run (SI loop / overnight) — **no prompt issued**, static block rendered and the choice surfaced asynchronously via the `## Round claim` subsection
+- [ ] The `preview` enrichment was scoped strictly to Path B; the static fenced scorecard grid remained the guaranteed source surface (every candidate's row present even if the preview pane is unavailable or a card truncates), and Paths A and C / the SI loop rendered only that static grid and never called `AskUserQuestion`
+- [ ] If 2+ candidates scored within ~1 cell on the tradeoff matrix, the axis of disagreement and the project's stated preference (or the tiebreaker rule used in its absence) are recorded explicitly
+- [ ] The chosen approach is stated explicitly with a one-sentence rationale
+- [ ] *If the Trigger-bound decision rule variant was engaged*: the decision rule names a specific, thresholded observable for each of Continue / Revisit / Reverse, and the Reverse branch pre-names a specific step-3 survivor candidate as fallback (only fires when the variant trigger applies; default-path decisions skip this gate)
+- [ ] *If the per-criterion scorecard calibration was engaged*: the step-4 tradeoff cells (effort/risk/coverage) were produced by `matrix-analysis` sub-agents — one per axis, each framed higher-is-better, the three axes passed as *given* criteria so no Stage-1 user prompt fires — with ratings mapped Strong→● / Adequate→◐ / Weak→○ into the scorecard grid; the falsifiable hypothesis, stress-test pass, key downside, and decision path remained DD-owned (only fires when the optional mechanism is engaged; default-path decisions skip this gate)
+
+### 5. Document
+
+Create or update `docs/decisions/NNN-title.md`. The doc must begin with the standard three-line header used by RPI working docs (see `workflows/research-plan-implement.md` step 2):
+
+- **Goal**: One sentence — what this artifact is trying to achieve. For a DD decision record, this is the design decision being made.
+- **Project state**: One sentence — branch context, written as `<what this branch delivers> · <position in larger initiative, or "standalone"> · <blocked on, or "not blocked">`. When DD is invoked as a sub-procedure within RPI, this is the calling RPI loop's branch context.
+- **Task status**: Lifecycle keyword from `in-progress | blocked | paused | complete`, optionally followed by a free-form phase note in parens (e.g., `in-progress (decision drafted, awaiting review)`). The keyword is required; the parenthetical is optional but recommended whenever a phase note would help a re-reader orient.
+
+The header serves the same drift-surfacing purpose described in RPI step 2: every mid-task re-read should re-verify the three lines against reality, and the Task status line should be updated whenever the doc is read or revised. Treat it as required body content — no optional pre-block, no YAML frontmatter, no linter; the spec text is the enforcement.
+
+After the header, the body must include:
+
+- **Context**: what prompted the decision
+- **Options considered** (brief — the full analysis doesn't need to be preserved)
+- **Decision and rationale**: state the chosen approach and why. End the section with a one-line `See alternatives considered →` pointer to the Pruned candidates section below, so survivors and discarded options have peer prominence rather than the pruned set reading as a footnote.
+- **Pruned candidates and why** (anti-portfolio): a 2-line section, placed directly after Decision so it is reachable in ≤2 visual steps from the top of the record. Line 1 is a `how to read` preamble — "Each entry is `[candidate-ID]: one-line reason for discard`. Future DDs in adjacent areas can grep this section to avoid regenerating already-pruned approaches." Line 2 is a compact list, e.g. `[3]: relies on async queue we don't have. [5]: violates auth invariant. [7]: 10x cost of #2.` Include candidates pruned in step 3 (compatibility matrix), survivors discarded by the step 4 stress-test pass, and the outcome of the step-1.0 pre-generation grep: each historically-pruned candidate surfaced by the grep must appear either annotated `[carried from NNN-title: prior reason]` (prior pruning rationale accepted) or annotated `[revived from NNN-title: why this time is different]` (and, if revived candidate was selected, cross-referenced from Decision and rationale). If the grep returned no matches, include the explicit line `Prior pruning grep: no matches found for [keywords]` so the search is visible even when it surfaced nothing.
+- **Stress-test mitigations** (if any were applied in step 4): one-line `how to read` preamble per mitigation, naming the stress-test move that produced it and what it changed in the tradeoff matrix — e.g., "How to read: *Boring alternative* mitigation — replaced candidate #2 with a simpler variant after the move surfaced unjustified complexity." One preamble per mitigation so a future grep returns enough context to reapply the move without re-reading the full record.
+- **Consequences**: what this makes easier, what this makes harder
+- **Revisit triggers**: a 2-line section. Line 1 is a `how to read` preamble — "Each entry is a concrete, observable condition that should prompt re-evaluating this decision. Future readers can grep this section when their context changes to see whether earlier decisions still apply." Line 2 is a compact list of falsifiable conditions with thresholds where applicable, e.g. `if dep X majors. if user count >10k. if p99 >200ms. if pattern Y needed in 3+ places.` Vague triggers like "if requirements change" are not allowed — each entry must name a specific signal a future reader could check.
+- **Round claim** *(optional — only when DD is invoked within a multi-round generation/picker context, such as the SI loop where each round emits a decision that downstream rounds must evaluate)*: a single hypothesis attached to this round's chosen approach, written in the [decision 012](../docs/decisions/012-hypothesis-grammar-for-user-surfaced-evaluation.md) grammar so the morning summary's precondition gate can surface it for user evaluation in a later round. Standalone single-shot DD records skip this subsection — the step-4 falsifiable-hypothesis line on the chosen candidate already covers their evaluation surface. When included, the section declares the fields from decision 012 (`evaluator: script | user`, `requires:` preconditions, `evaluation_window:`, and the hypothesis text itself, framed as a predicted *failure* per pillar 2). Field semantics — including the INCONCLUSIVE-vs-REFUTED rule and the `planner-authored` flag for non-user-sourced hypotheses — live in decision 012; do not duplicate them here.
+
+**Sub-threshold decisions**: Not every decision surfaced during DD warrants a full record. If the diverge phase quickly converges to a single obvious answer — no real tradeoffs, low reversal cost — add a row to [`docs/decisions/log.md`](../docs/decisions/log.md) instead and move on. The log's "when to use" criteria describe the boundary. Reserve full `NNN-title.md` records for decisions with genuine tradeoffs or lasting consequences. The three-line header requirement applies to full records only; sub-threshold log rows are exempt.
+
+**Done when...**
+- [ ] Decision record exists in `docs/decisions/NNN-title.md` (or a row in `log.md` for sub-threshold decisions)
+- [ ] For full records, the doc opens with the three-line header (Goal · Project state · Task status) and includes all required body sections in order (Context, Options considered, Decision and rationale, Pruned candidates and why, Stress-test mitigations if any, Consequences, Revisit triggers)
+- [ ] The Decision and rationale section closes with a `See alternatives considered →` pointer to the Pruned candidates section, so survivors and pruned options have peer prominence
+- [ ] The Pruned candidates section is positioned directly after Decision and rationale (reachable in ≤2 visual steps from the top of the record), opens with the `how to read` preamble, and lists every discarded candidate (from step 3 prune and step 4 stress test) with a one-line reason
+- [ ] The Pruned candidates section reflects the step-1.0 pre-generation grep outcome: every historically-pruned candidate the grep surfaced appears annotated `[carried from NNN-title: prior reason]` or `[revived from NNN-title: why this time is different]`; if the grep found nothing, a `Prior pruning grep: no matches found for [keywords]` line is present
+- [ ] If any stress-test mitigations were applied in step 4, each is documented with its own one-line `how to read` preamble naming the move that produced it
+- [ ] The Revisit triggers section opens with the `how to read` preamble and lists at least 2-3 concrete, threshold-bearing conditions that would prompt revisiting the decision
+- [ ] The Task status line accurately reflects current lifecycle (re-read it; if it lies, fix it)
+- [ ] The decision is referenced from the calling workflow's artifacts (e.g., the RPI plan doc)
+- [ ] *If DD was invoked within a multi-round generation/picker context*: a `## Round claim` subsection is present with the four decision-012 fields (`evaluator`, `requires`, `evaluation_window`, hypothesis text), and the hypothesis is framed as a predicted failure per pillar 2 (only fires when the multi-round trigger applies; standalone single-shot records skip this gate)
+
+## Variant: Epistemic Reasoning (Hypothesis Generation)
+
+When the goal is to explain an observation rather than choose an implementation, DD can be used for structured hypothesis generation. Candidates become competing explanations, diagnosis identifies distinguishing evidence, and the output is a ranked hypothesis list rather than a decision record.
+
+Use this variant when:
+- A bug, behavior, or outcome has multiple plausible explanations
+- You need to distinguish between competing theories about *why* something is happening
+- The question is "what's true?" rather than "what should we build?"
+- Research has surfaced ambiguity that can't be resolved by reading more code — you need to reason about evidence
+
+### Step modifications
+
+#### 1. Diverge — generate competing explanations
+
+Generate 8-15 candidate explanations for the observed phenomenon. The same quantity-over-quality principle applies:
+- Include at least 2-3 explanations that seem unlikely or surprising
+- Include at least 1 "null hypothesis" (the observation is noise, expected behavior, or measurement error)
+- Include at least 1 explanation that would imply a deeper systemic issue
+- One sentence each, no evaluation yet
+
+Apply the **generation health check** from step 1 of the main process, adapted for hypotheses: watch for clustering around one causal mechanism, missing null hypotheses, explanations too vague to generate testable predictions, and dimensional anchoring (5+ hypotheses all about the same causal layer — e.g., all about the database, all about the network, all about caching).
+
+#### 2. Diagnose — identify distinguishing evidence
+
+Instead of listing constraints, list **observations and evidence** that distinguish between hypotheses:
+- What specific, observable predictions does each hypothesis make?
+- What evidence would confirm or refute each explanation?
+- Which pieces of evidence are already available vs. require new investigation?
+
+Label each piece of evidence with a confidence-provenance tag (see RPI's research phase for the convention):
+- **[observed]** — directly verified (you saw it in logs, code, output)
+- **[inferred]** — logically derived from observed evidence
+- **[assumed]** — believed true but not yet verified
+
+#### 3. Match and prune — evidence matrix
+
+Create an evidence compatibility matrix:
+
+| # | Hypothesis | Evidence 1 | Evidence 2 | ... |
+|---|-----------|------------|------------|-----|
+| 1 | ...       | ✓ consistent | ✗ contradicted | ... |
+
+Key:
+- ✓ consistent with this evidence
+- ~ not clearly distinguished by this evidence
+- ✗ contradicted by this evidence
+- ? — evidence not yet gathered
+- **Untested ≠ refuted**: a hypothesis whose causal preconditions were never met (feature never deployed, tool never run, predicted trigger never occurred) is **INCONCLUSIVE** — every cell on its row is `?`, not `✗`. Only mark `✗` when evidence was gathered *and* contradicts the hypothesis. Conflating "never tested" with "refuted" inflates the apparent failure rate and feeds misleading signal back into downstream decisions.
+
+Discard hypotheses contradicted by [observed] evidence. Flag hypotheses that depend heavily on [assumed] evidence — these are the ones where gathering more information has the highest value. Do **not** discard INCONCLUSIVE hypotheses; they survive into step 4 with their evidence gap as the primary investigation target.
+
+#### 4. Rank and identify evidence gaps
+
+Instead of a tradeoff matrix and decision, produce a **ranked hypothesis list**:
+
+| Rank | Hypothesis | Confidence | Key supporting evidence | Critical evidence gap |
+|------|-----------|------------|------------------------|----------------------|
+| 1 | ... | INCONCLUSIVE / high / medium / low | ... | ... |
+
+**Confidence** reflects how well the hypothesis explains all [observed] evidence without relying on [assumed] claims. It is a first-class state with four values:
+- **INCONCLUSIVE** — the hypothesis's causal preconditions were never met, so no evidence has been gathered for or against it. Rank these *above* low-confidence refuted hypotheses when prioritizing next investigation steps, because gathering even one piece of evidence yields high information value. Never collapse INCONCLUSIVE into "low" — they are categorically different (untested vs. tested-and-weak).
+- **high / medium / low** — evidence has been gathered and the confidence rating reflects how well the hypothesis explains it.
+
+**Critical evidence gap** identifies the single most valuable piece of information that would confirm or refute this hypothesis. This drives the next investigation step. For INCONCLUSIVE hypotheses, the gap is typically the precondition itself (e.g., "deploy the feature and observe for one week").
+
+#### 5. Document — hypothesis record
+
+Instead of a decision record, produce a hypothesis record. This can live in the calling workflow's research doc (if DD was invoked as a sub-procedure) or as a standalone working doc.
+
+The record should include:
+- The observation being explained
+- The ranked hypothesis list with evidence gaps
+- Recommended next investigation steps (ordered by information value — what would most efficiently distinguish between the top hypotheses?)
+- Which hypotheses were eliminated and why
+
+**Evaluating epistemic DD usage**: A DD exercise counts as "epistemic mode" when its output is a ranked hypothesis list with evidence gaps rather than a decision record selecting an implementation approach.
+
+## Variant: Double Diamond (Purpose-First)
+
+When the *problem itself* is contested or unclear, a single divergent pass risks producing well-evaluated solutions to the wrong problem. The Double Diamond variant adds a problem-space diamond before the standard solution-space diamond:
+
+- **Diamond 1 (Purpose)**: Diverge across candidate framings of the problem, then converge on a single chosen framing.
+- **Diamond 2 (Solution)**: Run standard DD steps 1-4 (Diverge → Diagnose → Match and prune → Tradeoff matrix and decision) with the chosen framing as input, then document per step 5.
+
+The output of Diamond 1 is a one-paragraph **chosen framing record** that becomes the input to Diamond 2's diverge step. Without that record, Diamond 2 anchors implicitly on whichever framing came up first in conversation.
+
+**How to invoke standalone**: if your goal is only problem framing, run sections 1a-3a and stop; the chosen-framing record is the output. Diamond 2 (solution generation) is then deferred or owned by a separate workflow run.
+
+### When to enter Diamond 1
+
+Enter the purpose diamond when any of the following hold:
+
+- **(a) Stakeholders disagree on the goal** — different parties describe the problem in incompatible terms (e.g., "this is a performance issue" vs. "this is an API design issue"). Solving any one framing won't satisfy the others, so the framing must be settled before solutions are generated.
+- **(b) Prior attempt failed because it solved the wrong problem** — a previous DD or implementation pass produced a working solution that didn't address the underlying need. The failure mode is "we built it, it works, but the original pain remains." Re-running standard DD without re-framing will likely repeat the miss.
+- **(c) Diagnose keeps surfacing contradictory constraints** — when running standard DD step 2, the constraint list contains pairs no approach can satisfy simultaneously (e.g., "must support all legacy data" + "must remove all legacy code paths"). Contradictory hard constraints usually signal that two distinct problems are being conflated under one DD.
+
+### When to skip Diamond 1
+
+Skip directly to Diamond 2 (standard DD) when **the problem is concrete and uncontested**: a single owner can state the problem in one unambiguous sentence, no prior attempt has misfired, and step 2's diagnosis converges on a coherent constraint set. Most architectural and library-selection decisions fall here — adding Diamond 1 to a well-scoped problem is ceremony, not clarity.
+
+### Diamond 1 (Purpose) — process
+
+#### 1a. Diverge — generate candidate framings
+
+Generate **6-10 candidate framings** of the problem. Each framing is a one-sentence statement of "what we are actually trying to solve." Requirements:
+
+- Include at least one framing each known stakeholder would recognize as their version of the problem
+- Include at least one framing that recasts the problem at a different scale (zoom in to a sub-problem; zoom out to the broader system)
+- Include at least one "null" framing — the problem doesn't exist or is already solved elsewhere
+- One sentence each, no evaluation yet
+- Number them for reference
+
+**Failure-form framings**: when framing a fix to an observed failure, candidate framings may be stated in failure-form — *the failure is X happening to Y because Z* — and the chosen framing defines which failures are in-scope vs out-of-scope.
+
+**Product-definition-form framings**: when framing what to build rather than what to fix, candidate framings may be stated in product-definition-form — *the product is X serving Y by Z* — and the chosen framing defines which user/job/mechanism are in-scope vs out-of-scope.
+
+Apply the **generation health check** from step 1 of the main process, adapted for framings: watch for clustering around one stakeholder's vocabulary, missing perspectives (maintainer's view vs. user's view), framings too vague to test (a framing must imply at least one falsifiable success criterion), and dimensional anchoring (5+ framings all on the same axis — e.g., all about scope, all about timing, all about ownership).
+
+#### 2a. Diagnose — what would each framing imply?
+
+For each candidate framing, briefly note:
+
+- **Success criterion**: how would we know this problem was solved?
+- **Implied solution space**: what kind of approaches does this framing suggest?
+- **What it leaves out**: what concerns does this framing fail to address?
+- **Stakeholder**: whose problem is this primarily? Pick from `user`, `maintainer`, `ops`, `investor`, or another concrete role — not "the team" or "everyone."
+- **Scope**: at what level does this framing operate? `sub-problem` (a piece of a larger system), `system` (the system as currently bounded), or `meta-problem` (the framing of the problem itself, or the system's relationship to its context).
+
+This step makes anchoring visible. If two framings have nearly identical success criteria, one is redundant. If a framing's "leaves out" list contains a hard concern from the triggering situation, it cannot be the chosen framing. Read the stakeholder and scope columns down the list as a coverage matrix: if every candidate names the same stakeholder, or every candidate sits at the same scope, the diverge step (1a) anchored on one perspective — go back and generate framings that move on the absent dimension before converging in 3a. A healthy candidate set typically covers at least 2 stakeholders and at least 2 scopes.
+
+#### 3a. Converge — choose one framing
+
+Select the framing that best explains the symptoms that triggered this DD, has a success criterion stakeholders can agree on (or articulate disagreement against), and leaves out the fewest hard concerns. If two framings tie and the choice is unclear, **stop and consult the user** rather than picking silently — the same gate as step 4 of standard DD.
+
+#### Output: chosen framing record
+
+Produce a single one-paragraph record at the end of Diamond 1, in the form:
+
+> **Chosen framing**: [one-sentence statement of the problem]. We selected this over [1-2 alternative framings] because [reason — usually grounded in success criteria or constraint coverage]. Diamond 2 will generate solutions evaluated against this framing; approaches that solve a different framing should be discarded as out-of-scope rather than treated as alternatives.
+
+This paragraph is the *only* artifact passed forward to Diamond 2. It replaces the implicit problem statement that standard DD takes for granted in step 1.
+
+### Diamond 2 (Solution) — proceed with standard DD
+
+With the chosen framing record in hand, run standard process steps 1-4. The framing's success criterion enters step 2 as a hard constraint, and its "leaves out" list defines what's out of scope — candidates that primarily solve a discarded framing are discarded in step 3 rather than evaluated as alternatives. Document the final decision per step 5, and reference the chosen framing record from the decision doc so future readers can see which problem was solved.
+
+### Worked example
+
+See [`docs/working/feature-ideas-round-1.md`](../docs/working/feature-ideas-round-1.md) for a worked Diamond 1: nine candidate framings of "what's missing from the workflow repo," a diagnosis matrix of each framing's success criterion and implied solution space, and the chosen framing record that fed into Diamond 2's candidate generation in [`docs/working/feature-ideas.md`](../docs/working/feature-ideas.md).
