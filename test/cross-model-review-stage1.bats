@@ -7,6 +7,8 @@
 # Uses a throwaway fixture repo per test run; keyless throughout (no network).
 
 setup_file() {
+  # `run --separate-stderr` (stderr-only warning test) needs the 1.5.0 run flags
+  bats_require_minimum_version 1.5.0
   export REPO_ROOT="$(cd "$BATS_TEST_DIRNAME/.." && pwd)"
   export SCRIPT="$REPO_ROOT/scripts/cross-model-review.py"
   export FIX="$BATS_FILE_TMPDIR/fixture-repo"
@@ -95,6 +97,37 @@ print('OK')
 "
   [ "$status" -eq 0 ]
   [[ "$output" == *OK* ]]
+}
+
+@test "live diff-only run warns on stderr only; stdout status lines stay clean" {
+  # Same keyless-safe live path as the cost-guard test below: bogus key ->
+  # unpriced -> guard exit, but the diff-only warning must fire first, on stderr.
+  run --separate-stderr env OPENROUTER_API_KEY=sk-or-bogus-offline "$SCRIPT" --repo "$FIX" \
+    --range "$LEFT..$RIGHT" --models fake/model --replicates 1 \
+    --out "$BATS_TEST_TMPDIR/out-warn"
+  [[ "$stderr" == *"diff-only mode is a recall probe"* ]]
+  [[ "$output" != *"recall probe"* ]]
+}
+
+@test "dry-run diff-only prints no recall-probe warning (early return precedes it)" {
+  run env -u OPENROUTER_API_KEY "$SCRIPT" --repo "$FIX" --range "$LEFT..$RIGHT" \
+    --out "$BATS_TEST_TMPDIR/out-warn-dry" --dry-run
+  [ "$status" -eq 0 ]
+  [[ "$output" != *"recall probe"* ]]
+}
+
+@test "live --context-base run prints no recall-probe warning" {
+  run env OPENROUTER_API_KEY=sk-or-bogus-offline "$SCRIPT" --repo "$FIX" \
+    --range "$LEFT..$RIGHT" --context-base main --models fake/model --replicates 1 \
+    --out "$BATS_TEST_TMPDIR/out-warn-cb"
+  [[ "$output" != *"recall probe"* ]]
+}
+
+@test "aggregate inline budget spills overflow into FILES NOT INLINED" {
+  run run_dry --max-total-inline-kb 0
+  [ "$status" -eq 0 ]
+  grep -q "a.txt.*over --max-total-inline-kb (aggregate)" "$BATS_TEST_TMPDIR/out/prompt.txt"
+  ! grep -q "CURRENT FILE CONTENTS - CONTEXT ONLY (a.txt" "$BATS_TEST_TMPDIR/out/prompt.txt"
 }
 
 @test "unpriced models fail the cost guard closed (non-dry-run refuses to send)" {

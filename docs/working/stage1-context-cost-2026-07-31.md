@@ -68,7 +68,10 @@ Per-call, worst cell (D4-shape, ~34k input tokens):
 Full 5-cell sweep, 4 models × 2 replicates (40 calls):
 **diff-only $1.95 → Stage-1 $4.37 (~2.2×)**.
 
-**Both 021 guardrails hold:** the priciest single call is $0.248 (Sol on ND2), under the
+**Both 021 guardrails hold:** [definition pinned 2026-07-31: the ~$0.33 band is a
+*median* per-call trigger — the phrasing below compares the priciest call against it
+only because in this offline projection even the worst call clears the band] the
+priciest single call is $0.248 (Sol on ND2), under the
 ~$0.33 median band trigger; the full-sweep projection $4.37 is under the $10 trigger.
 Judge-model matching calls (Stage-2 Jaccard) are unchanged by this build and additive as
 before.

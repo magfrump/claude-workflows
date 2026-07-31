@@ -217,10 +217,13 @@ Sol's three replicates cost ~$0.10 and returned in 60–85s each.
 
 ## Result 5 — the cost side: the highest-consensus finding on D4 was a false positive
 
-On D4, **all four families** flagged, several at High, that decision record 020 documents
+On D4, **three of four families** flagged, all at High, that decision record 020 documents
 Tier A (`file_scope` widening) and Tier B (gate 1h, `parse_code_review_red` /
 `code_review_gate_verdict` extracted to `si-functions.sh` with unit tests) while none of it
-appears in the diff. Kimi escalated it to a functional bug: the new prompt tells agents to
+appears in the diff. [Corrected 2026-07-31 per the Stage-1 validation's k=3 fact-check:
+this line originally said "all four families"; the committed data (`gt-7ceba3f` +
+`fast-7ceba3f`, 11 replicates) shows 6 replicates across Kimi 2/2, Gemini 3/3, Sonnet 1/3 —
+Sol filed it in 0/3.] Kimi escalated it to a functional bug: the new prompt tells agents to
 write `docs/thoughts/retro-*.md`, but if gate 1c only permits `docs/working/`, every task
 would be rejected by the loop's own validation.
 
@@ -233,8 +236,8 @@ would be rejected by the loop's own validation.
 
 Decision 020 is accurate; it describes a three-tier change of which `7ceba3f` is the third
 commit. The models saw one diff with no repo access and reasonably concluded the code was
-missing. **Diff-only review manufactures confident, unanimous, high-severity findings about
-anything that landed in a sibling commit.** Cross-family consensus did not help — it made
+missing. **Diff-only review manufactures confident, multi-family, high-severity findings
+about anything that landed in a sibling commit.** Cross-family consensus did not help — it made
 the false positive look stronger. This is an argument for keeping production critics
 agentic, and for treating the no-tools arm as a recall probe only.
 
