@@ -276,10 +276,23 @@ For each of the three replicate agents:
 2. Paste those contents directly into the Agent tool prompt (sub-agents cannot read your files)
 3. Include the scope specification (e.g., "Review files changed on the current branch relative
    to main using `git diff main...HEAD`")
+3b. Compose **one rich shared brief** and include it verbatim in all three prompts: skim
+   the diff and write a "claims that particularly need checking" list — the specific
+   comments, docstrings, and commit-message claims in this diff that carry the most
+   verdict weight — with an explicit directive to **verify each claim against the code
+   that actually exercises it (callers, fetch/consume sites, config that gates it),
+   not only the file the claim sits in**. Uniformity constrains *variation between
+   replicates*, never brief quality: the MD1-R1 replication
+   (`docs/working/experiment-md1-r1-replication-2026-07-30.md`) measured what happens
+   when orchestrators read the uniformity clause as license for lean generic prompts —
+   0/9 replicates reached the cross-file evidence a single richly-briefed run had
+   found 3/3 times. k=3 of a weak brief is a weaker instrument than k=1 of a strong
+   one; most-severe-wins cannot merge what no replicate found.
 4. Instruct the agent to save its report as `docs/reviews/code-fact-check-report-r<N>.md`
    (N = 1, 2, 3), with a `Commit: <current HEAD short SHA>` line at the top. This
    per-replicate path is the **only** permitted difference between the three prompts —
-   anything else varying would confound the disagreement measurement.
+   anything else varying would confound the disagreement measurement. (The rich shared
+   brief of step 3b is identical across replicates, so it does not violate this clause.)
 
    **Stale-replicate guard:** before dispatching, delete or overwrite any existing
    `docs/reviews/code-fact-check-report-r*.md` whose `Commit:` line does not match the

@@ -100,3 +100,18 @@ stage1_flat() {
   echo "$SKILL_CONTENT" | grep -qE 'code-fact-check-report-r\*\.md' \
     || fail "the Confirmed-Good cross-check does not name the per-replicate reports"
 }
+
+@test "a rich shared brief is required and shared verbatim across replicates" {
+  # MD1-R1 replication (experiment-md1-r1-replication-2026-07-30.md): lean generic
+  # replicate prompts collapsed the fact-check channel (0/9 cross-file hits vs 3/3
+  # under rich briefs). The brief must exist, be identical across replicates, and
+  # direct verification against the code that exercises each claim.
+  stage1_flat | grep -qiE 'one rich shared brief' \
+    || fail "no rich-shared-brief requirement in Stage 1"
+  stage1_flat | grep -qiE 'claims that particularly need checking' \
+    || fail "the claims-needing-checking list is not required"
+  stage1_flat | grep -qiE 'code that actually exercises it' \
+    || fail "the verify-against-exercising-code directive is missing"
+  stage1_flat | grep -qiE 'never brief quality' \
+    || fail "the uniformity-vs-quality clarification is missing"
+}
