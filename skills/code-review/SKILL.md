@@ -650,6 +650,18 @@ dropped (ungrounded) or moved to 🟡 Must Address as `Contested` (contradicted)
 section. Run this **before** writing either deliverable — it changes the rubric's contents,
 so it cannot be a post-hoc pass over a published table.
 
+#### Soundness-contradiction cross-check (required before producing deliverables)
+
+Immediately after the Confirmed-Good cross-check, sweep every critic report — contextual
+critics included — for findings that meet the
+[Soundness-Contradiction Channel](#soundness-contradiction-channel) trigger: a stated
+intent quoted verbatim with `path/to/file:line`, the code's actual mechanism quoted or
+reconstructed with `path/to/file:line`, and the report's own reasoning that the mechanism
+defeats or inverts the stated intent. Each qualifying finding is placed in (or moved to)
+`## 🟡 Must Address` per that section. Run this **before** writing either deliverable —
+like the Confirmed-Good cross-check, it changes the rubric's contents, so it cannot be a
+post-hoc pass over a published table.
+
 #### Contrastive note (optional, capture during synthesis)
 
 Pick one finding the panel caught well, plus one likely-related issue you suspect was missed (sources: goal-alignment notes, escalations, or your own scan of the diff). State both in 1–2 lines, then propose one concrete prompt-refinement candidate — an added instruction, sharpened heuristic, or new check for a critic skill — that would have closed the gap on the next run. Skip if no genuine contrast is available; do not invent one. Capture only — no feedback pipeline consumes this yet.
@@ -1023,7 +1035,7 @@ appearing in all runs of that diff
 tier throws away the reliable quantity and keeps the unreliable one. Recording both costs
 one column and lets a later gate key on whichever proves sound.
 
-**Contextual critics are advisory:** Findings from `test-strategy`, `tech-debt-triage`, `dependency-upgrade`, and `ui-visual-review` go to 🟢 Consider tier regardless of their internal severity. They inform but never block merge. `architecture-review` is the exception: it is auto-selected like a contextual critic but uses its own severity-to-rubric mapping above and can produce blocking (🔴) findings.
+**Contextual critics are advisory:** Findings from `test-strategy`, `tech-debt-triage`, `dependency-upgrade`, and `ui-visual-review` go to 🟢 Consider tier regardless of their internal severity. They inform but never block merge. `architecture-review` is the exception: it is auto-selected like a contextual critic but uses its own severity-to-rubric mapping above and can produce blocking (🔴) findings. One further exception is evidence-gated rather than critic-gated: a contextual-critic finding that meets the [Soundness-Contradiction Channel](#soundness-contradiction-channel) trigger is lifted to 🟡 Must Address — the only path by which a contextual-critic finding leaves 🟢, and terminal at 🟡.
 
 ### Escalation Rule
 
@@ -1059,9 +1071,59 @@ The failure mode was true-but-unwanted — a real issue promoted to blocking aga
 author's judgment. That is why the corroboration required is executable or human, not
 another opinion.
 
-Contextual critics (test-strategy, tech-debt-triage, dependency-upgrade) do **not** count toward escalation. Their findings remain in 🟢 Consider regardless of overlap with other critics. If a contextual critic flags the same issue as a core critic, note the agreement in the finding's description for visibility, but do not escalate — contextual critics are advisory and must not gain blocking power through the escalation mechanism.
+Contextual critics (test-strategy, tech-debt-triage, dependency-upgrade) do **not** count toward escalation. Their findings remain in 🟢 Consider regardless of overlap with other critics. If a contextual critic flags the same issue as a core critic, note the agreement in the finding's description for visibility, but do not escalate — contextual critics are advisory and must not gain blocking power through the escalation mechanism. A contextual-critic finding lifted to 🟡 by the [Soundness-Contradiction Channel](#soundness-contradiction-channel) is likewise excluded here: the lift is terminal at 🟡 and does not count as escalation corroboration.
 
 This rewards convergence — independent agreement across domains is the strongest signal that an issue is real and important. When escalating, place the finding in its new (higher) tier section in the rubric, not in its original tier.
+
+### Soundness-Contradiction Channel
+
+A correctly-reasoned **soundness defect** — code whose documented behaviour is accurately
+described and wrong as design — can earn neither of the verdict-driven promotions: the
+fact-check correctly rates the accurate comment `Verified`, and nothing is `Breaking`. On
+a measured diff, a reviewer reached the ground-truth defect, rejected the docstring
+defending it, reconstructed the full behavioural inversion — and filed it 🟢, because no
+promotion channel existed (`docs/thoughts/code-review-evaluation-state.md` §1.2, Results
+15/14a); the historical human panel filed the same finding 🟡 and gated the merge on it.
+This channel closes that gap without granting blocking authority to an unvalidated
+mechanism (decision 028).
+
+**Trigger — all three parts must be present in the critic report itself:**
+
+1. a **stated intent quoted verbatim** with `path/to/file:line` — a design document, a
+   sibling comment or docstring, a spec the code cites, or `<pr-intent>`;
+2. the **code's actual mechanism quoted or reconstructed** with `path/to/file:line`; and
+3. the report's own reasoning that the mechanism **defeats or inverts** the stated
+   intent.
+
+**Precision guard.** An intent claim alone, a missing quote on either side, or a critic's
+disagreement with a design's *wisdom* never qualifies. Do not lift a finding whose report
+does not contain both verbatim quotes — the channel's authority comes from evidence a
+human can re-verify in seconds, never from any critic's internal severity label.
+
+**On a qualifying finding:**
+
+- Place it in (or move it to) `## 🟡 Must Address` with `Severity: Contested-Soundness`
+  and `Source: Soundness cross-check (found by <critic>)`.
+- Both quotes go in verbatim as the row's evidence, each with its `path/to/file:line`,
+  so the author can adjudicate without re-deriving the contradiction.
+- This applies **regardless of which critic filed the finding** — contextual critics
+  included. It is the one path by which a contextual-critic finding leaves 🟢 Consider;
+  the advisory rule otherwise stands unchanged.
+- **🟡 is the terminal tier for this channel.** A Contested-Soundness row is never
+  promoted to 🔴 by this mechanism, and it does not count as corroboration under the
+  [Escalation Rule](#escalation-rule) — the same bar the Confirmed-Good cross-check
+  carries. Executed evidence remains the path to 🔴: a failing test demonstrating the
+  inversion already promotes under the existing rule, with no help needed from here.
+- Name the lift in the chat synthesis under **Actionable guidance**. A row that moved
+  must be visible as having moved.
+
+**Why 🟡 and not 🔴.** This mechanism is unvalidated, and unvalidated mechanisms get no
+blocking authority. 🟡 is also the ground-truth band: the human panel filed the measured
+case 🟡, and 🟡 means "the author must fix this or say on the record why it stands" —
+exactly what a contested soundness question needs. Validation falsifier (decision 028): a
+replay must lift the pre-fix ND2 reconstruction while lifting **nothing** on ND3's fixed
+`sim.ts:625-628` docstring or md1's `proxy.ts:14` carve-out; until that passes, the 🟡
+cap must not be lifted.
 
 ### Rubric Status Line
 
@@ -1187,7 +1249,7 @@ The risk with any "log of decisions" is that nothing reads it, so it grows in st
   `code-review-rubric-<date>-<branch-slug>.md`. A new date or branch means a new file —
   never overwrite a prior review's rubric, since it is the only durable record of what the
   pipeline surfaced and whether each finding was fixed or waived.
-- **Contextual critics are advisory.** Their findings go to Consider tier and never block merge.
+- **Contextual critics are advisory.** Their findings go to Consider tier and never block merge — with one evidence-gated exception: the Soundness-Contradiction Channel lifts a qualifying finding to 🟡, terminal there.
 - **Fact-check report size management.** If the report exceeds 200 lines, paste only the
   "Claims Requiring Attention" summary (Incorrect, Stale, Mostly Accurate) into critic prompts.
 - **The override log is append-only and must be read on every run.** Step 3.5 reads

@@ -104,10 +104,20 @@ reconstructs a live behavioural inversion cannot exceed 🟢 if it happens to be
 found it. Any fix for §1.2 that addresses only the corroboration channel leaves this half
 untouched.
 
-**Status:** a DD pass on the adjacent question — how to treat intent claims embedded in
-code — is at `docs/working/dd-code-intent-claims.md` (recommends an intent-coherence move
-inside `architecture-review`, with its own cheap falsifier). It deliberately does *not*
-decide §1.2; the escalation rule and the owner cap both remain open.
+**Status 2026-07-30: decided and implemented — decision 028** (log row 28,
+`docs/decisions/028-escalation-second-channel.md`, DD at
+`docs/working/dd-escalation-second-channel.md`). The escalation gate gained a
+**Soundness-Contradiction Channel**: a Stage-3 cross-check that lifts a finding to 🟡
+`Contested-Soundness` when its critic report quotes a stated intent verbatim (file:line),
+quotes/reconstructs the actual mechanism (file:line), and states the inversion — applying
+**regardless of which critic filed it**, the one evidence-gated exception to the
+contextual-critic 🟢 cap, so both structural causes above are addressed. Terminal at 🟡
+(the human panel's band for ND2) and excluded from escalation corroboration, because the
+mechanism is unvalidated and unvalidated mechanisms get no blocking authority. **Not yet
+validated:** the replay falsifier (lift pre-fix ND2; nothing on ND3's fixed
+`sim.ts:625-628` or md1 `proxy.ts:14`) has not run; until it passes, the 🟡 cap stands.
+The adjacent DD on intent claims (`docs/working/dd-code-intent-claims.md`, intent-coherence
+move inside `architecture-review`) remains its own track with its own falsifier.
 
 ### 1.3 Stop treating `✅ Confirmed Good` as an output; treat it as a claim requiring evidence
 
@@ -202,7 +212,7 @@ today.
 | 3 | Is the MD1 nonce-delivery issue really 🔴? | Three independent configs say 🔴, history says 🟡. Settled empirically by one prod build. | Unresolved since Result 8b |
 | 4 | Does a Confirmed-Good-vs-fact-check cross-check actually catch the misses? | Cheap to test retrospectively against the 9 existing cells. | **Closed** (full retrospective, `docs/working/retrospective-confirmed-good-2026-07-30.md`): 90 ✅ rows / 11 cells — rule 4 catches 2/2 observation-backed misses (fable MD1 ×2, one newly found beyond decision 25's sample) with 0 wrong kills; the 1 observation-free miss (sonnet MD1) is unreachable by any cross-check widening (all 8 run artifacts silent) — only rule 3's rewording touches it, so closing it stays with §1.1 k≥3. Decision-25's "82 rows" corrected to 90. Rule 4's exact "is the ✅ claim still true?" phrasing is load-bearing: 4 near-miss rows are correctly spared by it. |
 | 5 | Is the intent-coherence move in `architecture-review` load-bearing, or prose-nudging? | Decides the DD recommendation in `dd-code-intent-claims.md`; its own author names this the strongest objection. | Falsifier specified: re-run `architecture-review` on ND2 ×3 *without* the move; unaided recovery ≥2/3 means it is decoration. |
-| 6 | Does removing the owner cap change ND2's outcome? | The second structural cause in §1.2, and untested — opus's finding was 🟢-capped by critic ownership, not only by the escalation rule. | Not attempted |
+| 6 | Does removing the owner cap change ND2's outcome? | The second structural cause in §1.2, and untested — opus's finding was 🟢-capped by critic ownership, not only by the escalation rule. | Partially instrumented by decision 028: the Soundness-Contradiction Channel is a narrow, evidence-gated cap exception whose every lift is an auditable row, so the replay falsifier in 028 answers this directly for the quote-pair subclass. Full cap removal remains untested. |
 
 ## 4. What each measured arm actually covers
 
