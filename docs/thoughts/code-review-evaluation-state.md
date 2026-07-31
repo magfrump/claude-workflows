@@ -36,7 +36,16 @@ that one sentence.
 
 ## 1. Definitely needed (evidence is direct, and the failure has been observed)
 
-### 1.1 Run `code-fact-check` k≥3 times and combine, before anything downstream
+### 1.1 Run `code-fact-check` k≥3 times and combine, before anything downstream — **implemented** (log row 26)
+
+**Status 2026-07-30:** implemented in `skills/code-review/SKILL.md` Stage 1 exactly as
+shaped below (k=3, byte-identical prompts, cluster + most-severe-wins, per-replicate
+verdict logging, agreement rate reported per run in the merged report's `## Verdict
+stability` section). Cross-model corroboration: all four families in the DD sweep
+(`runs/dd-cross-model-2026-07-30/`) independently ranked this action first. The falsifier
+below is now *measurable in every run* — open question #2 resolves itself as agreement
+data accumulates. Not yet measured: the first k=3 run has not executed; the noise floor
+is still unquantified.
 
 **Why.** Per Result 16, a fact-check Incorrect verdict is the *only* thing that promotes a
 finding to 🔴. Per Result 14a, that verdict is unstable on identical input: the same
@@ -186,7 +195,7 @@ today.
 | # | Question | Why it matters | Status |
 |---|---|---|---|
 | 1 | Does MD1 R1's recovery replicate? | It is the sole evidence that the pipeline clears the cross-file ceiling, and the basis for "config, not model." **n=1.** | **Run this next.** |
-| 2 | How often do fact-check verdicts disagree across replicates? | Sets k in §1.1 and quantifies the blocking channel's noise floor. | Unmeasured |
+| 2 | How often do fact-check verdicts disagree across replicates? | Sets k in §1.1 and quantifies the blocking channel's noise floor. | **Instrumented** (log row 26): every k=3 run now reports its cluster agreement rate in the merged report's `## Verdict stability` section. Still zero data points — accumulate ≥20 clustered claims, then apply §1.1's falsifier (≥90% agreement → k=2). |
 | 3 | Is the MD1 nonce-delivery issue really 🔴? | Three independent configs say 🔴, history says 🟡. Settled empirically by one prod build. | Unresolved since Result 8b |
 | 4 | Does a Confirmed-Good-vs-fact-check cross-check actually catch the misses? | Cheap to test retrospectively against the 9 existing cells. | **Answered (§1.3): fable yes, sonnet no.** Shipped in `a9fa0ba`. |
 | 5 | Is the intent-coherence move in `architecture-review` load-bearing, or prose-nudging? | Decides the DD recommendation in `dd-code-intent-claims.md`; its own author names this the strongest objection. | Falsifier specified: re-run `architecture-review` on ND2 ×3 *without* the move; unaided recovery ≥2/3 means it is decoration. |

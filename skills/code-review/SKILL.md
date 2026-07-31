@@ -22,7 +22,10 @@ when: User requests a full code review or PR review
 Orchestrates the sub-skills below. Ensure they exist in `skills/` before use.
 
 **Required (always run):**
-- `code-fact-check.md` — verifies factual claims in code comments, docs, and commit messages
+- `code-fact-check.md` — verifies factual claims in code comments, docs, and commit messages.
+  Runs as **k=3 parallel replicates** on byte-identical prompts, merged most-severe-wins
+  (see Stage 1) — its verdict is the pipeline's only 🔴-promotion channel and is measurably
+  unstable on a single sample (state doc §1.1, Result 14a).
 
 **Core critics (always run):**
 - `security-reviewer.md` — security design review
@@ -208,7 +211,7 @@ Before launching any agents, tell the user:
 - The scope being reviewed
 - Which core critics will run
 - Which contextual critics were auto-selected (and why)
-- Total agent count (1 fact-checker + N critics)
+- Total agent count (3 fact-check replicates + N critics)
 
 Keep this brief — a short paragraph.
 
@@ -240,27 +243,41 @@ After each between-stage handoff (end of Stage 1, end of Stage 2), emit a single
 
 **Worked example (parallel default):**
 
-> Stage 1 (fact-check) complete: 3 Incorrect findings, 1 Stale — launching 4 critics in parallel (security, performance, api-consistency, test-strategy).
+> Stage 1 (fact-check, k=3) complete: 3 Incorrect findings, 1 Stale, verdict agreement 10/12 clusters — launching 4 critics in parallel (security, performance, api-consistency, test-strategy).
 >
 > Stage 2 (critics) complete: 4/4 critics returned (12 findings total), dispatch mode: parallel — synthesizing into rubric and chat summary.
 
 **Worked example (chain mode opted in via `--chain security→api-consistency`):**
 
-> Stage 1 (fact-check) complete: 3 Incorrect findings, 1 Stale — launching 4 critics: 2 in parallel (performance, test-strategy) + chain security→api-consistency.
+> Stage 1 (fact-check, k=3) complete: 3 Incorrect findings, 1 Stale, verdict agreement 10/12 clusters — launching 4 critics: 2 in parallel (performance, test-strategy) + chain security→api-consistency.
 >
 > Stage 2 (critics) complete: 4/4 critics returned (12 findings total), dispatch mode: parallel + chain (security→api-consistency) — synthesizing into rubric and chat summary.
 
 **Scope:** The banner is emitted *only* between stages. Do **not** emit a banner after Stage 3 — Stage 3's chat synthesis is itself the user-facing output, and a "Stage 3 complete" banner would duplicate or compete with it.
 
-### Stage 1: Code Fact-Check
+### Stage 1: Code Fact-Check (k=3 replicated)
 
-Spawn one agent with the code-fact-check skill.
+Spawn **three** agents with the code-fact-check skill, in parallel, on **byte-identical
+prompts** — same skill text, same scope spec, same instructions, differing only in the
+output path each is told to write.
+
+**Why three.** The fact-check verdict is the *only* channel that promotes a finding to 🔴
+(see [Unified Severity Mapping](#unified-severity-mapping)), and it is the least stable
+judgment in the pipeline: on identical input, the same comment defect was rated
+**Incorrect** by one run and **Mostly Accurate** by another, flipping the same finding
+between 🔴 and 🟡 (`docs/thoughts/code-review-evaluation-state.md` §1.1, Result 14a).
+A single sample of that judgment is a coin flip carrying merge-blocking authority.
+Replication converts it into a measured distribution.
+
+For each of the three replicate agents:
 
 1. Read the full contents of `skills/code-fact-check/SKILL.md`
 2. Paste those contents directly into the Agent tool prompt (sub-agents cannot read your files)
 3. Include the scope specification (e.g., "Review files changed on the current branch relative
    to main using `git diff main...HEAD`")
-4. Instruct the agent to save its report as `docs/reviews/code-fact-check-report.md`
+4. Instruct the agent to save its report as `docs/reviews/code-fact-check-report-r<N>.md`
+   (N = 1, 2, 3). This per-replicate path is the **only** permitted difference between the
+   three prompts — anything else varying would confound the disagreement measurement.
 5. Require the agent to tag every claim with a **Legibility-target** field
    (`for-author`, `for-orchestrator-synthesis`, or `for-automated-gate`) per
    the [legibility-target tagging](../../patterns/orchestrated-review.md#legibility-target-tagging)
@@ -283,15 +300,55 @@ Spawn one agent with the code-fact-check skill.
    One short bullet per line. No padding. The "Questions I would have asked" bullet is
    optional — include it only when scope was genuinely ambiguous and the agent had to
    make a non-trivial guess about what to check.
-7. Launch via the Agent tool with `subagent_type: "general-purpose"`
+7. Launch via the Agent tool with `subagent_type: "general-purpose"` — all three replicates
+   in a single message so they run in parallel and cannot see each other's output.
 
-**CHECKPOINT:** Wait for the fact-check agent to return results. Verify you received a substantive report. If it failed or returned empty, tell the user and ask how to proceed.
+**CHECKPOINT:** Wait for all three replicate agents to return. Verify you received at least
+**two** substantive reports — with fewer than two, no disagreement measurement is possible
+and the merged verdict degenerates back to a single sample. If only one replicate returned,
+tell the user and ask how to proceed; if two returned, proceed but record `k=2 (one
+replicate failed)` in the merged report header and the Stage 1 banner.
 
-After receiving substantive results, emit the between-stage status banner per the format spec above (e.g., `Stage 1 (fact-check) complete: <counts> — <next action>`). Emit it before the Fact-Check Gate so the user sees stage progress even if the gate pauses for input.
+#### Merging replicate verdicts (most-severe-wins)
+
+Produce the canonical `docs/reviews/code-fact-check-report.md` yourself by merging the
+replicate reports. This is mechanical collation, not analysis — you are combining verdicts
+the replicates already produced, never adding claims or evidence of your own (Mandatory
+Execution Rule 1 still stands).
+
+1. **Cluster claims across replicates.** Two claims are the same claim when they cite the
+   same file, overlapping line ranges (±5 lines), and assert substantially the same thing.
+   Clustering is semantic — replicates word the same claim differently; match on
+   (file, line-range, claim substance), not on string equality.
+2. **Take the most severe verdict any replicate assigned** to the cluster. Severity order,
+   most severe first: `Incorrect (high confidence)` > `Incorrect (medium confidence)` >
+   `Stale` > `Mostly Accurate` > `Unverifiable` > `Verified`. Majority vote is explicitly
+   the wrong aggregator here: a defect one replicate *proves* Incorrect is Incorrect
+   regardless of what the other two concluded, and the observed failure mode is
+   under-calling, not over-calling (state doc §1.1). Carry the evidence and reasoning from
+   the replicate that assigned the winning verdict.
+3. **Record per-replicate verdicts on every merged claim.** Each claim in the merged report
+   carries a `Replicate verdicts: r1=<verdict> · r2=<verdict> · r3=<verdict>` line (`—` for
+   a replicate that did not surface the claim; a claim surfaced by only one replicate keeps
+   that replicate's verdict and is flagged `single-replicate detection`).
+4. **Report the disagreement rate.** End the merged report with a `## Verdict stability`
+   section: total clusters, clusters where all reporting replicates agreed, clusters where
+   verdicts disagreed (list them with their per-replicate verdicts), and the resulting
+   agreement rate. This turns the blocking channel's noise floor from an invisible coin
+   flip into a tracked metric (state doc open question #2). If cumulative measurements
+   across runs show ≥90% verdict agreement on a ≥20-claim sample, k can drop to 2 — that
+   is §1.1's stated falsifier; record the observed rate either way.
+
+Everything downstream — the Fact-Check Gate, Stage 1.5 critic gating, critic prompts, the
+Confirmed-Good cross-check, and the severity mapping — consumes the **merged** report. The
+per-replicate reports stay on disk for audit and for the Confirmed-Good cross-check's
+observation scan.
+
+After producing the merged report, emit the between-stage status banner per the format spec above (e.g., `Stage 1 (fact-check, k=3) complete: <counts, incl. verdict agreement rate> — <next action>`). Emit it before the Fact-Check Gate so the user sees stage progress even if the gate pauses for input.
 
 ### Fact-Check Gate
 
-After receiving fact-check results, check whether any claims were rated **Incorrect** at **high confidence**. If so:
+After producing the merged fact-check report, check whether any merged claims carry the verdict **Incorrect** at **high confidence** — i.e., any replicate assigned it, per most-severe-wins. If so:
 
 1. **Pause before launching critics.** Present the high-confidence Incorrect findings to the
    user — specifically the claims, what the evidence shows, and the confidence level.
@@ -876,9 +933,11 @@ the **enumeration that was actually executed** and its scope (e.g. `rg -n "fetch
 → 12 matches, all relative `/api/…`). If no enumeration was run, the row may not be ✅:
 either reword it as the specific instance that *was* checked, or drop it.
 
-**4. Cross-check every ✅ row against the fact-check report (Stage 3, before publishing).**
-For each candidate ✅ row, re-read the fact-check report for any observation touching the
-same file, symbol, directive, or claim — **including observations recorded in passing,
+**4. Cross-check every ✅ row against the fact-check reports (Stage 3, before publishing).**
+For each candidate ✅ row, re-read the merged fact-check report **and each per-replicate
+report** (`code-fact-check-report-r*.md` — an observation recorded by only one replicate
+may be absent from the merged claim it lost the severity contest to, and it still counts)
+for any observation touching the same file, symbol, directive, or claim — **including observations recorded in passing,
 under a different claim number, or under a claim the fact-check itself marked Verified.**
 The observed failure was exactly this: the contradicting detail (`data:` URLs fetched
 client-side) was recorded as supporting colour inside a claim the fact-check verified. Ask
@@ -1003,7 +1062,10 @@ Save all review artifacts to `docs/reviews/` in the project root. Create the dir
 ```
 docs/reviews/
 ├── code-review-rubric-<date>-<branch-slug>.md
-├── code-fact-check-report.md
+├── code-fact-check-report.md      (merged, most-severe-wins — the canonical report)
+├── code-fact-check-report-r1.md   (replicate — audit + Confirmed-Good observation scan)
+├── code-fact-check-report-r2.md   (replicate)
+├── code-fact-check-report-r3.md   (replicate)
 ├── security-review.md
 ├── performance-review.md
 ├── api-consistency-review.md
@@ -1074,7 +1136,10 @@ The risk with any "log of decisions" is that nothing reads it, so it grows in st
 
 ## Important Reminders
 
-- **Always run fact-checking first.** Even if the user only asks for critic perspectives.
+- **Always run fact-checking first, and always as k=3 replicates.** Even if the user only
+  asks for critic perspectives. Byte-identical prompts, merged most-severe-wins, per-claim
+  replicate verdicts recorded, disagreement rate reported — a single fact-check sample is
+  a coin flip on the pipeline's only blocking channel (state doc §1.1).
 - **Paste skill file contents into agent prompts.** Sub-agents cannot read your filesystem.
 - **Pass scope, not diffs.** Each agent runs its own `git diff` to avoid context budget issues.
 - **All agents of the same stage run in parallel.** They must not see each other's output.
