@@ -1,7 +1,8 @@
 # Divergent-design cross-model sweep — 2026-07-30
 
-Four frontier models were given a **byte-identical prompt** (`prompt.md` in this
-directory) and asked to run the `divergent-design` workflow, end to end, on the
+Four frontier models were given the **same prompt** (`prompt.md` in this directory —
+constructed once and sent to each arm; no per-arm transmission hash was recorded, so
+byte-identity of delivery is by construction, not by artifact) and asked to run the `divergent-design` workflow, end to end, on the
 decision:
 
 > "Which actions should be taken next to improve this repo's code-review process?"
@@ -23,21 +24,23 @@ quality, stress-test usage, template fidelity of the Decision presentation block
   forbidden to read any file other than the prompt, to stay comparable. It differs
   from the OpenRouter arms in harness (Claude Code agent loop vs. raw chat
   completion), not in available context.
-- Per §5.2 discipline: when comparing, score on *which candidate actions and
-  constraints each model surfaced*, not on cosmetic scoring differences.
+- Extending §5.2's detection-not-tier discipline to DD outputs: when comparing,
+  score on *which candidate actions and constraints each model surfaced*, not on
+  cosmetic scoring differences.
 
 ## Results at a glance (details in each file)
 
 All four models independently converged on the **same top action: k≥3
-`code-fact-check` replication with most-severe-wins (§1.1)** — the strongest
-cross-family agreement this program has recorded on any question.
+`code-fact-check` replication with most-severe-wins (§1.1)** — unanimous
+cross-family agreement on the #1 pick (no prior arm asked a directly comparable
+ranking question, so no cross-arm comparison is claimed).
 
 | Model | Latency | Completion tok (reasoning) | Candidates | Survivors | Path | Confidence | Recommendation |
 |---|---|---|---|---|---|---|---|
 | Fable 5 (local) | ~5 min | n/a (agent) | 16 | 5 | C | 78% | Portfolio: k≥3 fact-check + evidence-bearing Confirmed Good in parallel; then MD1-R1 replication, then §1.2 escalation sub-DD; vendor-in-fact-check deferred behind 021 Stage 1 |
 | GPT-5.6 Sol | 155 s | 9,147 (2,233) | — | 5 | C | 78% | Fact-check replication first; runner-up Confirmed-Good evidence; axis = "unstable blocker promotion vs unsupported positive assurance" |
 | Gemini 3.1 Pro | 112 s | 15,594 (11,870) | — | 4 | A | 95% | k=3 incumbent fact-check dominates; vendor addition and soundness routing are fast-follows gated on the stabilized baseline |
-| Kimi K3 | 956 s | 32,487 (24,306) | 14 | 5 | C | 75% | k≥3 fact-check scoped to promotion-candidate claims (k set by pre-flight disagreement measurement); runner-up doc-order status quo |
+| Kimi K3 | 956 s | 32,487 (24,306) | 14 | 5 | C | 75% | k≥3 fact-check scoped to promotion-candidate claims (k set by pre-flight disagreement measurement); runner-up [2] measurement-first |
 
 Skill-fidelity notes for the primary (cross-model) reading:
 
@@ -46,7 +49,7 @@ Skill-fidelity notes for the primary (cross-model) reading:
   left unfilled `<…>` slots. All four honored the no-`AskUserQuestion` constraint.
 - **Depth spread:** Kimi produced the most aggressive stress-test pass (scope
   narrowing of k≥3 to promotion decisions only; queue-volume caps on human
-  routing) at ~9× Sol's latency. Gemini was the thinnest (~15k chars) and the
+  routing) at ~6× Sol's latency (and ~8.5× Gemini's). Gemini was the thinnest (~15k chars) and the
   only Path A / 95% call. Fable and Sol landed near-identical confidence (78%)
   and near-identical runner-up axes.
 - **Divergence worth reading:** where they differ is *sequencing and scoping* —

@@ -1,10 +1,12 @@
 #!/usr/bin/env bats
 # @category fast
 # Validates the k=3 fact-check replication contract in skills/code-review/SKILL.md
-# (docs/thoughts/code-review-evaluation-state.md §1.1, decision log row 26):
+# (docs/thoughts/code-review-evaluation-state.md §1.1, decision log row 27):
 #
-#   The fact-check verdict is the pipeline's only 🔴-promotion channel and is the least
-#   stable judgment in it (Result 14a: the same defect rated Incorrect by one run and
+#   A fact-check Incorrect verdict is one of the two verdict-driven blocking channels
+#   (state doc §1.0: fact-check Incorrect or api-consistency Breaking) — the only one
+#   reachable by documentation-class findings — and it is the least stable judgment in
+#   the pipeline (Result 14a: the same defect rated Incorrect by one run and
 #   Mostly Accurate by another, on identical input). Stage 1 therefore runs three
 #   replicates on byte-identical prompts and merges most-severe-wins, logging
 #   per-replicate verdicts so the disagreement rate is a tracked metric.
@@ -66,7 +68,7 @@ stage1_flat() {
 
 @test "the severity order is stated and runs Incorrect-high first, Verified last" {
   # The order is load-bearing: it defines what 'most severe' means mechanically.
-  stage1_flat | grep -qE 'Incorrect \(high confidence\)`? > `?Incorrect \(medium confidence\)`? > `?Stale`? > `?Mostly Accurate`? > `?Unverifiable`? > `?Verified' \
+  stage1_flat | grep -qE 'Incorrect \(high confidence\)`? > `?Incorrect \(medium confidence\)`? > `?Incorrect \(low confidence\)`? > `?Stale`? > `?Mostly Accurate`? > `?Unverifiable`? > `?Verified' \
     || fail "the verdict severity order is missing or misordered"
 }
 

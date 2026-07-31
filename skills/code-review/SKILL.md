@@ -24,8 +24,10 @@ Orchestrates the sub-skills below. Ensure they exist in `skills/` before use.
 **Required (always run):**
 - `code-fact-check.md` — verifies factual claims in code comments, docs, and commit messages.
   Runs as **k=3 parallel replicates** on byte-identical prompts, merged most-severe-wins
-  (see Stage 1) — its verdict is the pipeline's only 🔴-promotion channel and is measurably
-  unstable on a single sample (state doc §1.1, Result 14a).
+  (see Stage 1) — its Incorrect verdict is one of the two verdict-driven blocking channels
+  (state doc §1.0 names fact-check Incorrect and api-consistency Breaking), the only one
+  reachable by documentation-class findings, and it is measurably unstable on a single
+  sample (state doc §1.1, Result 14a).
 
 **Core critics (always run):**
 - `security-reviewer.md` — security design review
@@ -261,8 +263,10 @@ Spawn **three** agents with the code-fact-check skill, in parallel, on **byte-id
 prompts** — same skill text, same scope spec, same instructions, differing only in the
 output path each is told to write.
 
-**Why three.** The fact-check verdict is the *only* channel that promotes a finding to 🔴
-(see [Unified Severity Mapping](#unified-severity-mapping)), and it is the least stable
+**Why three.** A fact-check **Incorrect** verdict is one of the two verdict-driven
+blocking channels (state doc §1.0: fact-check Incorrect or api-consistency Breaking; the
+[Unified Severity Mapping](#unified-severity-mapping) lists each critic's native 🔴 band) —
+and the only one reachable by documentation-class findings. It is also the least stable
 judgment in the pipeline: on identical input, the same comment defect was rated
 **Incorrect** by one run and **Mostly Accurate** by another, flipping the same finding
 between 🔴 and 🟡 (`docs/thoughts/code-review-evaluation-state.md` §1.1, Result 14a).
@@ -276,8 +280,17 @@ For each of the three replicate agents:
 3. Include the scope specification (e.g., "Review files changed on the current branch relative
    to main using `git diff main...HEAD`")
 4. Instruct the agent to save its report as `docs/reviews/code-fact-check-report-r<N>.md`
-   (N = 1, 2, 3). This per-replicate path is the **only** permitted difference between the
-   three prompts — anything else varying would confound the disagreement measurement.
+   (N = 1, 2, 3), with a `Commit: <current HEAD short SHA>` line at the top. This
+   per-replicate path is the **only** permitted difference between the three prompts —
+   anything else varying would confound the disagreement measurement.
+
+   **Stale-replicate guard:** before dispatching, delete or overwrite any existing
+   `docs/reviews/code-fact-check-report-r*.md` whose `Commit:` line does not match the
+   current HEAD — these directories are git-tracked, so a fresh worktree inherits prior
+   branches' replicates, and downstream steps that glob `r*.md` would silently read
+   another run's observations as this run's (the decision-25 rubric-selection failure
+   class). Every later consumer of the replicate reports must match them by `Commit:`,
+   never by glob alone.
 5. Require the agent to tag every claim with a **Legibility-target** field
    (`for-author`, `for-orchestrator-synthesis`, or `for-automated-gate`) per
    the [legibility-target tagging](../../patterns/orchestrated-review.md#legibility-target-tagging)
@@ -307,7 +320,10 @@ For each of the three replicate agents:
 **two** substantive reports — with fewer than two, no disagreement measurement is possible
 and the merged verdict degenerates back to a single sample. If only one replicate returned,
 tell the user and ask how to proceed; if two returned, proceed but record `k=2 (one
-replicate failed)` in the merged report header and the Stage 1 banner.
+replicate failed)` in the merged report's `**Replication:**` header field and the Stage 1
+banner. A report is *substantive* when it parses against the code-fact-check schema and
+either contains ≥1 claim section or explicitly records `**Total claims checked:** 0` with
+the no-checkable-claims rationale — an empty or truncated file is not substantive.
 
 #### Merging replicate verdicts (most-severe-wins)
 
@@ -322,15 +338,29 @@ Execution Rule 1 still stands).
    (file, line-range, claim substance), not on string equality.
 2. **Take the most severe verdict any replicate assigned** to the cluster. Severity order,
    most severe first: `Incorrect (high confidence)` > `Incorrect (medium confidence)` >
+   `Incorrect (low confidence)` >
    `Stale` > `Mostly Accurate` > `Unverifiable` > `Verified`. Majority vote is explicitly
    the wrong aggregator here: a defect one replicate *proves* Incorrect is Incorrect
    regardless of what the other two concluded, and the observed failure mode is
    under-calling, not over-calling (state doc §1.1). Carry the evidence and reasoning from
    the replicate that assigned the winning verdict.
-3. **Record per-replicate verdicts on every merged claim.** Each claim in the merged report
-   carries a `Replicate verdicts: r1=<verdict> · r2=<verdict> · r3=<verdict>` line (`—` for
-   a replicate that did not surface the claim; a claim surfaced by only one replicate keeps
-   that replicate's verdict and is flagged `single-replicate detection`).
+3. **Record per-replicate verdicts on every merged claim, inside the standard schema.**
+   The merged report keeps the code-fact-check report format exactly — `# Code Fact-Check
+   Report` title, the five header fields, and per-claim `## Claim N:` sections with the
+   five mandatory bolded fields — so `test/skills/code-fact-check-format.bats` gates it
+   unchanged (a merged report with no `## Claim N:` sections makes that suite skip
+   silently, which is a gate abdicating, not passing). On top of the standard schema:
+   - `**Verdict:**` carries the plain winning verdict from the five-value enum
+     (`Incorrect`, `Stale`, …) and `**Confidence:**` the winning replicate's confidence.
+     The severity-order tokens in step 2 (`Incorrect (high confidence)` etc.) are ordering
+     vocabulary for the merge decision only — never written into a `**Verdict:**` field.
+   - Each claim adds a sixth bolded field `**Replicate verdicts:**
+     r1=<verdict> · r2=<verdict> · r3=<verdict>` (`—` for a replicate that did not
+     surface the claim; a claim surfaced by only one replicate keeps that replicate's
+     verdict and its Replicate-verdicts line ends with ` · single-replicate detection`).
+   - The header adds a bolded `**Replication:** k=3` field (or `**Replication:** k=2 (one
+     replicate failed)` on the degraded path) so consumers read k from a named field, not
+     from prose.
 4. **Report the disagreement rate.** End the merged report with a `## Verdict stability`
    section: total clusters, clusters where all reporting replicates agreed, clusters where
    verdicts disagreed (list them with their per-replicate verdicts), and the resulting
@@ -613,7 +643,12 @@ The collected items feed the `### Coverage and Escalations` section of the chat 
 Assemble the candidate `✅ Confirmed Good` rows, then run each one through
 [Confirmed Good is a claim, not an output](#confirmed-good-is-a-claim-not-an-output):
 Evidence present and grounded, enumeration behind any universally quantified claim, and no
-observation anywhere in the fact-check report inconsistent with it. Rows that fail are
+observation anywhere in the merged fact-check report **or any current-run per-replicate
+report** (matched by `Commit:` line, per the stale-replicate guard) inconsistent with it —
+an observation recorded only by a replicate whose verdict lost the severity contest still
+counts. To keep this from becoming four full re-reads at Stage 3, build the observation
+index once during the Stage-1 merge (file/symbol/directive touched per observation) and
+consult that index here. Rows that fail are
 dropped (ungrounded) or moved to 🟡 Must Address as `Contested` (contradicted) per that
 section. Run this **before** writing either deliverable — it changes the rubric's contents,
 so it cannot be a post-hoc pass over a published table.
@@ -934,9 +969,11 @@ the **enumeration that was actually executed** and its scope (e.g. `rg -n "fetch
 either reword it as the specific instance that *was* checked, or drop it.
 
 **4. Cross-check every ✅ row against the fact-check reports (Stage 3, before publishing).**
-For each candidate ✅ row, re-read the merged fact-check report **and each per-replicate
-report** (`code-fact-check-report-r*.md` — an observation recorded by only one replicate
-may be absent from the merged claim it lost the severity contest to, and it still counts)
+For each candidate ✅ row, re-read the merged fact-check report **and each current-run
+per-replicate report** (`code-fact-check-report-r*.md` filtered to files whose `Commit:`
+line matches the current HEAD — the directory is git-tracked, so unfiltered globs read
+prior branches' replicates; an observation recorded by only one replicate may be absent
+from the merged claim it lost the severity contest to, and it still counts)
 for any observation touching the same file, symbol, directive, or claim — **including observations recorded in passing,
 under a different claim number, or under a claim the fact-check itself marked Verified.**
 The observed failure was exactly this: the contradicting detail (`data:` URLs fetched
@@ -1139,7 +1176,8 @@ The risk with any "log of decisions" is that nothing reads it, so it grows in st
 - **Always run fact-checking first, and always as k=3 replicates.** Even if the user only
   asks for critic perspectives. Byte-identical prompts, merged most-severe-wins, per-claim
   replicate verdicts recorded, disagreement rate reported — a single fact-check sample is
-  a coin flip on the pipeline's only blocking channel (state doc §1.1).
+  a coin flip on one of the pipeline's two verdict-driven blocking channels (state doc
+  §1.0/§1.1).
 - **Paste skill file contents into agent prompts.** Sub-agents cannot read your filesystem.
 - **Pass scope, not diffs.** Each agent runs its own `git diff` to avoid context budget issues.
 - **All agents of the same stage run in parallel.** They must not see each other's output.
