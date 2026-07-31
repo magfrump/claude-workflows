@@ -174,8 +174,47 @@ replicate prompts.
 - cc k=3 verdict-agreement rates ran well below the ≥90% k-reduction threshold (cc-r4 reports
   47%), consistent with §1.1's premise that the fact-check verdict is the least stable judgment.
 
+## Validation of the step-3b fix (2026-07-31)
+
+Branch HEAD `8f49ed6` adds Stage 1 step 3b to `skills/code-review/SKILL.md`: one rich shared
+brief (claims-needing-checking list + verify-against-exercising-code directive), identical
+across the three replicates. One validation cell (n=1 by design), same hygiene as Phase 1
+(fresh clean clone at `d90d6bb`, `git status` clean, no `docs/reviews/` in-tree), same prompt
+as the cc cells.
+
+| Cell | Config | rc | Elapsed | GT-R1 outcome | Surfacing channel | Rubric tier | Call sites 24+37 | `toBlob` fix |
+|---|---|---|---|---|---|---|---|---|
+| md1-opus-fix-r1 | cc+3b | 0 | 1720s | **Recovered** | fact-check (Incorrect, high conf, **3/3 replicates**) + security + api-consistency convergence | 🔴 (their R2, `Contested-Soundness` annotated) | both | yes (stdout next-action, security-review, and test-strategy all prefer `toBlob()` over widening) |
+
+**Direct test of the fix's mechanism (from the transcript's Agent dispatches):**
+
+- The orchestrator **did write the rich shared brief**: all three replicate prompts are 7,834
+  bytes (vs 2,328–3,010 in the pre-fix cc cells), byte-identical across replicates, containing
+  a numbered claims list and the exercising-code directive. The `connect-src` entry reads:
+  *"Enumerate every browser-side network origin the app can reach under this policy: `fetch(`,
+  `XMLHttpRequest`, `EventSource`, … and anything a third-party script or analytics hook would
+  open"* — plus a general rule that universally quantified claims require an executed
+  enumeration (example given: `rg -n "fetch\(" app`, exactly the shape-agnostic pattern the
+  pre-fix replicates lacked).
+- **Fact-check replicates reached `exportGraph.ts`: 3/3** (vs 0/9 pre-fix). Merged Claim 7:
+  Incorrect, high confidence, 3/3 agreement, both call sites cited, traced through the client
+  entry point (`GraphPanel.tsx:102-104` dynamic import) — and it surfaced a detail beyond the
+  original ground truth: `graphToPngBlob`'s failure is swallowed by a `catch` that only
+  `console.warn`s, so the ZIP export **silently omits** `proof-graph.png`
+  (`app/lib/utils/exportAll.ts:61-69`).
+
+Token usage: input 67,725 · output 251,666 · cache_creation 700,335 · cache_read 4,790,483.
+
+Reading: the fix restores the oc-arm recovery path (fact-check-led, 🔴, `toBlob`, multi-critic
+convergence) inside the k=3 config, and the per-replicate hit rate went from 0/9 to 3/3.
+n=1 on the run level, but the mechanism variables the fix targets (brief length, claims list,
+directive presence, replicate hit rate) all moved exactly as predicted. The hint-leakage caveat
+above applies here too (the skill text still quotes this defect class as its worked example);
+the mechanism evidence — richer prompts causing replicate-level detection — is the part that
+generalizes.
+
 ## Cell inventory
 
-`/home/node/cr-eval/runs/{md1-opus-cc-r2,md1-opus-cc-r3,md1-opus-cc-r4,md1-opus-oc-r2,md1-opus-oc-r3}/`
+`/home/node/cr-eval/runs/{md1-opus-cc-r2,md1-opus-cc-r3,md1-opus-cc-r4,md1-opus-oc-r2,md1-opus-oc-r3,md1-opus-fix-r1}/`
 each with `prompt.txt`, `repo/`, `stdout.txt`, `stderr.txt`, `status.txt`, and the run's review
 artifacts under `repo/docs/reviews/`.
