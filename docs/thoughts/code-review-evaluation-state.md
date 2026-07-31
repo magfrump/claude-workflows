@@ -23,7 +23,7 @@ cross-model arm by finding *name* to avoid the collision.
   decision, 021, that came out of it).
 - Anyone touching Gate 1h in `scripts/self-improvement.sh`.
 
-## The one-paragraph state of things
+## 1.0 The one-paragraph state of things
 
 The pipeline **detects** well and **tiers** badly. Across every arm, whether a real defect
 gets *found and correctly described* is far more stable than what severity band it lands
@@ -46,7 +46,7 @@ section), with one deliberate deviation: clustering matches claim *substance* wi
 differently, so textual matching would under-cluster. Cross-model corroboration: all four families in the DD sweep
 (`runs/dd-cross-model-2026-07-30/`) independently ranked this action first. The falsifier
 below is now *measurable in every run* — open question #2 resolves itself as agreement
-data accumulates. Not yet measured: the first k=3 run has not executed; the noise floor
+data accumulates. First measurements exist (see open question #2); the noise floor
 is still unquantified.
 
 **Why.** Per Result 16, a fact-check Incorrect verdict is one of the two verdict-driven
@@ -214,8 +214,8 @@ today.
 
 | # | Question | Why it matters | Status |
 |---|---|---|---|
-| 1 | Does MD1 R1's recovery replicate? | It is the sole evidence that the pipeline clears the cross-file ceiling, and the basis for "config, not model." **n=1.** | **Closed with a split verdict** (`docs/working/experiment-md1-r1-replication-2026-07-30.md`, 5 fresh opus cells): the **original config recovers R1 reliably** — oc 3/3 incl. Result 11 (🔴, both call sites, `toBlob`) — so Result 11 was *not* variance and "config, not model" stands. But the **current k=3 config went 1/3** (two affirmative clears; the one recovery came at 🟡 via architecture-review + the 028/Confirmed-Good cross-checks, not fact-check): 0/9 cc fact-check replicates reached `exportGraph.ts` vs 3/3 oc runs (p≈0.0045). Cause: orchestrators read the k=3 uniformity clause as license for lean generic replicate briefs — k=3 of a weak brief < k=1 of a strong one. **Fixed in SKILL.md Stage 1 step 3b** (rich shared brief, identical across replicates) and **validated n=1** (`md1-opus-fix-r1`, doc §Validation): brief written (7.8KB ×3, byte-identical, claims list + exercising-code directive), fact-check reached `exportGraph.ts` **3/3 replicates** (vs 0/9 pre-fix), R1 recovered at 🔴 via the restored fact-check-led path incl. `toBlob` — plus a new finding beyond ground truth (`exportAll.ts:61-69` swallows the blocked PNG, ZIP silently omits it). Caveat: SKILL quotes this defect class as a worked example, so binary outcomes are hint-advantaged; the mechanism evidence (brief richness → replicate detection) is the generalizable part. |
-| 2 | How often do fact-check verdicts disagree across replicates? | Sets k in §1.1 and quantifies the blocking channel's noise floor. | **Instrumented** (log row 27): every k=3 run now reports its cluster agreement rate in the merged report's `## Verdict stability` section. Still zero data points — accumulate ≥20 clustered claims, then apply §1.1's falsifier (≥90% agreement → k=2). |
+| 1 | Does MD1 R1's recovery replicate? | It is the sole evidence that the pipeline clears the cross-file ceiling, and the basis for "config, not model." **n=1.** | **Closed with a split verdict** (`docs/working/experiment-md1-r1-replication-2026-07-30.md`, 5 fresh opus cells): the **original config recovers R1 reliably** — oc 3/3 incl. Result 11 (🔴, both call sites, `toBlob`) — so Result 11 was *not* variance and "config, not model" stands. But the **current k=3 config went 1/3** (two affirmative clears; the one recovery came at 🟡 via architecture-review + the 028/Confirmed-Good cross-checks, not fact-check): 0/9 cc fact-check replicates reached `exportGraph.ts` vs 3/3 oc runs (p≈0.0045). Cause: orchestrators read the k=3 uniformity clause as license for lean generic replicate briefs — k=3 of a weak brief < k=1 of a strong one. **Fixed in SKILL.md Stage 1 step 3b** (rich shared brief, identical across replicates) and **validated n=1** (`md1-opus-fix-r1`, doc §Validation): brief written (7,834 chars ×3, identical except the permitted output path, claims list + exercising-code directive), fact-check reached `exportGraph.ts` **3/3 replicates** (vs 0/9 pre-fix), R1 recovered at 🔴 via the restored fact-check-led path incl. `toBlob` — plus a new finding beyond ground truth (`exportAll.ts:61-69` swallows the blocked PNG, ZIP silently omits it). Caveat: SKILL quotes this defect class as a worked example, so binary outcomes are hint-advantaged; the mechanism evidence (brief richness → replicate detection) is the generalizable part. |
+| 2 | How often do fact-check verdicts disagree across replicates? | Sets k in §1.1 and quantifies the blocking channel's noise floor. | **Instrumented** (log row 27): every k=3 run now reports its cluster agreement rate in the merged report's `## Verdict stability` section. Two samples now exist, pointing in opposite directions: this repo's own reviews measured 21/23 ≈ 0.91 (2026-07-30) and 20/26 ≈ 0.77 (2026-07-31, disagreements all on the Verified↔Mostly-Accurate boundary), while the MD1 cc cells ran ~47% — neither side of the §1.1 falsifier (≥90% on a ≥20-claim *cumulative* sample → k=2) is settled; keep accumulating. |
 | 3 | Is the MD1 nonce-delivery issue really 🔴? | Three independent configs say 🔴, history says 🟡. Settled empirically by one prod build. | Unresolved since Result 8b |
 | 4 | Does a Confirmed-Good-vs-fact-check cross-check actually catch the misses? | Cheap to test retrospectively against the 9 existing cells. | **Closed** (full retrospective, `docs/working/retrospective-confirmed-good-2026-07-30.md`): 90 ✅ rows / 11 cells — rule 4 catches 2/2 observation-backed misses (fable MD1 ×2, one newly found beyond decision 25's sample) with 0 wrong kills; the 1 observation-free miss (sonnet MD1) is unreachable by any cross-check widening (all 8 run artifacts silent) — only rule 3's rewording touches it, so closing it stays with §1.1 k≥3. Decision-25's "82 rows" corrected to 90. Rule 4's exact "is the ✅ claim still true?" phrasing is load-bearing: 4 near-miss rows are correctly spared by it. |
 | 5 | Is the intent-coherence move in `architecture-review` load-bearing, or prose-nudging? | Decides the DD recommendation in `dd-code-intent-claims.md`; its own author names this the strongest objection. | Falsifier specified: re-run `architecture-review` on ND2 ×3 *without* the move; unaided recovery ≥2/3 means it is decoration. |
@@ -279,7 +279,7 @@ What it established:
   `scripts/cross-model-review.py --context-base <ref>` now assembles the Stage-1 prompt
   (labelled sibling-branch diff + whole enclosing files; `--dry-run` for no-spend cost
   projection). Offline measurement (`docs/working/stage1-context-cost-2026-07-31.md`):
-  prompts grow 2–6× to ~18k–41k tokens; worst call $0.248, full 4-model×2 sweep $4.37 —
+  prompts grow 2–6× to ~2k–41k tokens (18k–41k on the non-trivial cells); worst call $0.248, full 4-model×2 sweep $4.37 —
   both 021 guardrails hold. No model has seen the new prompt yet; the D3/D4 FP-kill
   validation run awaits go-ahead. That sibling-commit FP class forced the
   diff-only↔agentic question §5.1 raises. Decision `021-reviewer-context-management.md` resolves

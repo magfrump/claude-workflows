@@ -95,13 +95,17 @@ Phase 3 (oc): 2 additional original-config cells.
 
 Read directly from the transcripts (`Agent` tool dispatches):
 
-- oc orchestrators wrote **rich fact-check briefs (4.5–5.1KB)** containing a
-  "Claims that particularly need checking" list, including, verbatim in both oc runs:
-  *"`connect-src 'self'` is sufficient because … — verify against actual client-side
-  fetch/network code in the app."* That directive aims the agent straight at the enumeration
-  that finds `exportGraph.ts`.
-- cc orchestrators wrote **lean, generic replicate prompts (2.3–3.0KB, byte-identical across
-  replicates, no claims list)** in all three cc runs. The k=3 spec's uniformity clause ("the
+- oc orchestrators wrote fact-check briefs of **4,524 / 5,067 / 3,653 chars** (r1 / oc-r2 /
+  oc-r3). Two of the three (r1, oc-r2) carry a "Claims that particularly need checking"
+  list; the directive *"`connect-src 'self'` is sufficient because … — verify against actual
+  client-side fetch/network code in the app"* appears **verbatim only in r1** (oc-r2 has a
+  differently-worded analogue; oc-r3 has no claims list at all, and still recovered R1 —
+  so brief richness is a contributing mechanism, not the whole story; a k=1 agent owning
+  the whole fact-check may matter independently of brief size). [Corrected 2026-07-31:
+  the original text claimed "4.5–5.1KB … verbatim in both oc runs" — refuted by the
+  2026-07-31 k=3 fact-check, unanimous 3/3.]
+- cc orchestrators wrote **lean, generic replicate prompts (2,328–3,010 chars, identical
+  except the permitted per-replicate output path, no claims list)** in all three cc runs. The k=3 spec's uniformity clause ("the
   per-replicate output path is the **only** permitted difference between the three prompts —
   anything else varying would confound the disagreement measurement") is the plausible nudge:
   it frames the prompt as a controlled instrument rather than a tailored brief, and every cc
@@ -189,7 +193,8 @@ as the cc cells.
 **Direct test of the fix's mechanism (from the transcript's Agent dispatches):**
 
 - The orchestrator **did write the rich shared brief**: all three replicate prompts are 7,834
-  bytes (vs 2,328–3,010 in the pre-fix cc cells), byte-identical across replicates, containing
+  chars (7,868 bytes; vs 2,328–3,010 chars in the pre-fix cc cells), identical across
+  replicates except the permitted r1/r2/r3 output path, containing
   a numbered claims list and the exercising-code directive. The `connect-src` entry reads:
   *"Enumerate every browser-side network origin the app can reach under this policy: `fetch(`,
   `XMLHttpRequest`, `EventSource`, … and anything a third-party script or analytics hook would

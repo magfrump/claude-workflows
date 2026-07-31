@@ -1,7 +1,10 @@
 #!/usr/bin/env python3
 """One-shot divergent-design sweep: same prompt to N OpenRouter models, save raw markdown.
 
-This is the runner that produced runs/dd-cross-model-2026-07-30/ (the fourth arm,
+This is a post-hoc reconstruction of the runner that produced
+runs/dd-cross-model-2026-07-30/ (the original lived in job tmp; behavioral
+equivalence to the *.meta.json outputs is verified, identity is not). No spend
+guard: archival one-shot, max_tokens 48000 x 3 models. (The fourth arm,
 local Fable, ran as a Claude Code subagent given the same prompt file — no script).
 Committed per tech-debt finding C20 of the 2026-07-30 review: the sweep README's
 results table was hand-transcribed from the *.meta.json files this script writes,
@@ -19,7 +22,9 @@ model and saves raw markdown + usage metadata, nothing more.
 import json, os, sys, time, urllib.request
 
 API = "https://openrouter.ai/api/v1/chat/completions"
-KEY = os.environ["OPENROUTER_API_KEY"]
+KEY = os.environ.get("OPENROUTER_API_KEY") or sys.exit("OPENROUTER_API_KEY not set")
+if len(sys.argv) < 3:
+    sys.exit("usage: dd-cross-model-sweep.py <prompt-file> <out-dir>")
 PROMPT_PATH = sys.argv[1]
 OUT_DIR = sys.argv[2]
 MODELS = ["moonshotai/kimi-k3", "openai/gpt-5.6-sol", "google/gemini-3.1-pro-preview"]

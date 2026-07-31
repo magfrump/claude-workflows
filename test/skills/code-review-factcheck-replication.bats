@@ -96,9 +96,37 @@ stage1_flat() {
 
 @test "the Confirmed-Good cross-check scans the per-replicate reports too" {
   # Decision 25 marked this the out-of-scope gap; k=3 closes it only if the cross-check
-  # reads observations a losing replicate recorded.
-  echo "$SKILL_CONTENT" | grep -qE 'code-fact-check-report-r\*\.md' \
-    || fail "the Confirmed-Good cross-check does not name the per-replicate reports"
+  # reads observations a losing replicate recorded. Scoped to the cross-check section:
+  # a global grep also matches the stale-replicate guard and Stage-3 audit prose, so
+  # deleting the cross-check amendment would still pass (2026-07-31 review, C3).
+  local section
+  section=$(echo "$SKILL_CONTENT" | sed -n '/^#### Confirmed-Good cross-check/,/^#### Soundness-contradiction cross-check/p')
+  [ -n "$section" ] || fail "Confirmed-Good cross-check section not found"
+  echo "$section" | tr '\n' ' ' | tr -s ' ' | grep -qiE 'per-replicate report.*matched by .?Commit:' \
+    || fail "the Confirmed-Good cross-check does not scan Commit-matched per-replicate reports"
+}
+
+@test "the merged-report header mandates the fields Gate 1h parses" {
+  # Cross-artifact contract (2026-07-31 review, A9): Gate 1h in
+  # scripts/self-improvement.sh sed-parses these literal field names; the merge
+  # spec must mandate them on the MERGED report, and the gate must read them.
+  stage1_flat | grep -qE '\*\*Commit:\*\* <reviewed HEAD short SHA>' \
+    || fail "merge spec does not mandate the merged-report **Commit:** field"
+  stage1_flat | grep -qE '\*\*Replication:\*\* k=3' \
+    || fail "merge spec does not mandate the **Replication:** field"
+  stage1_flat | grep -qE 'k=2 \(one replicate failed\)' \
+    || fail "the degraded-path vocabulary is not stated"
+  local gate="$REPO_ROOT/scripts/self-improvement.sh"
+  [ -f "$gate" ] || skip "self-improvement.sh not found"
+  grep -qE 'Replication:' "$gate" || fail "Gate 1h does not parse **Replication:**"
+  grep -qE 'Commit:' "$gate" || fail "Gate 1h does not parse the Commit line"
+}
+
+@test "the section-extraction end anchors exist (no silent extract-to-EOF)" {
+  # Tech-debt D1 (2026-07-31): if the end heading is renamed, sed extracts to EOF
+  # and every scoped assertion can false-green against unrelated text.
+  echo "$SKILL_CONTENT" | grep -qE '^### Fact-Check Gate' \
+    || fail "stage1() end anchor '### Fact-Check Gate' missing - extraction unbounded"
 }
 
 @test "a rich shared brief is required and shared verbatim across replicates" {

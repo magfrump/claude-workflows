@@ -124,3 +124,11 @@ channel_flat() {
   channel_flat | grep -qiE 'Lift only, never demote' \
     || fail "the lift-only/never-demote clause is missing"
 }
+
+@test "the section-extraction end anchor exists (no silent extract-to-EOF)" {
+  # Tech-debt D1 (2026-07-31): channel() extracts up to '### Rubric Status Line';
+  # if that heading is renamed, extraction runs to EOF and scoped assertions can
+  # false-green against unrelated text.
+  echo "$SKILL_CONTENT" | grep -qE '^### Rubric Status Line' \
+    || fail "channel() end anchor '### Rubric Status Line' missing - extraction unbounded"
+}

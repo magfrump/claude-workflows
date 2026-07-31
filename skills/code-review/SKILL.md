@@ -285,9 +285,10 @@ For each of the three replicate agents:
    replicates*, never brief quality: the MD1-R1 replication
    (`docs/working/experiment-md1-r1-replication-2026-07-30.md`) measured what happens
    when orchestrators read the uniformity clause as license for lean generic prompts —
-   0/9 replicates reached the cross-file evidence a single richly-briefed run had
-   found 3/3 times. k=3 of a weak brief is a weaker instrument than k=1 of a strong
-   one; most-severe-wins cannot merge what no replicate found.
+   0/9 replicates reached the cross-file evidence that three separate single-agent
+   (k=1) runs had each found, 3 runs out of 3 (their briefs independently authored;
+   two rich, one lean). k=3 of a weak brief is a weaker instrument than k=1 of a
+   strong one; most-severe-wins cannot merge what no replicate found.
 4. Instruct the agent to save its report as `docs/reviews/code-fact-check-report-r<N>.md`
    (N = 1, 2, 3), with a `Commit: <current HEAD short SHA>` line at the top. This
    per-replicate path is the **only** permitted difference between the three prompts —
@@ -300,7 +301,8 @@ For each of the three replicate agents:
    branches' replicates, and downstream steps that glob `r*.md` would silently read
    another run's observations as this run's (the decision-25 rubric-selection failure
    class). Every later consumer of the replicate reports must match them by `Commit:`,
-   never by glob alone.
+   never by glob alone. A replicate report with **no** `Commit:` line is treated as
+   stale (delete it too) — missing provenance is not a pass.
 5. Require the agent to tag every claim with a **Legibility-target** field
    (`for-author`, `for-orchestrator-synthesis`, or `for-automated-gate`) per
    the [legibility-target tagging](../../patterns/orchestrated-review.md#legibility-target-tagging)
@@ -368,9 +370,13 @@ Execution Rule 1 still stands).
      r1=<verdict> · r2=<verdict> · r3=<verdict>` (`—` for a replicate that did not
      surface the claim; a claim surfaced by only one replicate keeps that replicate's
      verdict and its Replicate-verdicts line ends with ` · single-replicate detection`).
-   - The header adds a bolded `**Replication:** k=3` field (or `**Replication:** k=2 (one
-     replicate failed)` on the degraded path) so consumers read k from a named field, not
-     from prose.
+   - The header MUST carry, in addition to the five standard fields, a bolded
+     `**Commit:** <reviewed HEAD short SHA>` line (≥7 chars) and a bolded
+     `**Replication:** k=3` field (or `**Replication:** k=2 (one replicate failed)` on
+     the degraded path). These two are a parsed contract, not decoration: Gate 1h in
+     `scripts/self-improvement.sh` reads exactly these field names to detect stale
+     reports and degraded replication — a merged report missing either is advisory-flagged
+     as commit-unknown / single-sample even when the run was a genuine k=3.
 4. **Report the disagreement rate.** End the merged report with a `## Verdict stability`
    section: total clusters, clusters where all reporting replicates agreed, clusters where
    verdicts disagreed (list them with their per-replicate verdicts), and the resulting

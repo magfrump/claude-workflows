@@ -1,328 +1,439 @@
 # Code Fact-Check Report
 
-**Commit:** e9d05ea
-**Repository:** /workspace/.claude/worktrees/cross-model-review-sweep
-**Scope:** `git diff main...HEAD` on branch `exp/cross-model-openrouter-sweep` (skills/code-review/SKILL.md, docs/decisions/log.md, docs/thoughts/code-review-evaluation-state.md, runs/dd-cross-model-2026-07-30/README.md, test/skills/code-review-factcheck-replication.bats, plus branch commit messages; immutable experiment artifacts under runs/ checked only as evidence for claims made *about* them)
-**Checked:** 2026-07-30
-**Total claims checked:** 24
-**Summary:** 14 verified, 4 mostly accurate, 0 stale, 2 incorrect, 4 unverifiable
+**Commit:** 62594fb
 
-Checked docs/reviews/hallucination-patterns.md first: the Patterns section is empty ("Append entries below this line" with no entries), so no known suspect patterns applied.
+**Repository:** /workspace/.claude/worktrees/cross-model-review-sweep
+**Scope:** git diff main...HEAD (branch exp/cross-model-openrouter-sweep); replicate r3 of 3
+**Checked:** 2026-07-31
+**Total claims checked:** 21
+**Summary:** 12 verified, 6 mostly accurate, 2 stale, 1 incorrect, 0 unverifiable
+
+Hallucination pattern log (`docs/reviews/hallucination-patterns.md`) read before checking:
+its `## Patterns` section is empty, so no claim below is compared against prior patterns.
+No new fabrication-class entries qualify from this run (the one Incorrect verdict is a
+mis-measurement of run artifacts, not a fabricated symbol/API), so the log is unchanged.
 
 ---
 
-## Claim 1: "Stage 1 of `code-review` runs `code-fact-check` as k=3 parallel replicates on byte-identical prompts; the orchestrator merges by claim cluster (file, ±5-line range, claim substance) taking the **most severe** verdict any replicate assigned (Incorrect-high > Incorrect-medium > Stale > Mostly Accurate > Unverifiable > Verified), records per-replicate verdicts on every merged claim, and reports the cluster agreement rate in a `## Verdict stability` section"
+## Claim 1: 021 header — "Stage 1 built 2026-07-31 … offline cost measurement … (worst call $0.248, sweep $4.37: both guardrails hold)"
 
-**Location:** `docs/decisions/log.md:48`
-**Type:** Behavioral
+**Location:** `docs/decisions/021-reviewer-context-management.md:10-15`
+**Type:** Configuration / Reference
 **Verdict:** Verified
 **Confidence:** High
-**Legibility-target:** for-orchestrator-synthesis
 
-Every element of this description is present in `skills/code-review/SKILL.md`. Stage 1 heading: "### Stage 1: Code Fact-Check (k=3 replicated)" (`skills/code-review/SKILL.md:258`). The merge procedure states "Two claims are the same claim when they cite the same file, overlapping line ranges (±5 lines), and assert substantially the same thing", "Take the most severe verdict any replicate assigned... `Incorrect (high confidence)` > `Incorrect (medium confidence)` > `Stale` > `Mostly Accurate` > `Unverifiable` > `Verified`", "Record per-replicate verdicts on every merged claim", and "End the merged report with a `## Verdict stability` section" (paraphrased with embedded quotes from the Stage 1 merge steps, `skills/code-review/SKILL.md:305-333` region as shown in the branch diff). The contract test `test/skills/code-review-factcheck-replication.bats` asserts each element and all 10 tests pass (`1..10`, `ok 1`–`ok 10` on this checkout).
+The cited cost doc and the decision's own revisit triggers agree. The trigger text reads:
 
-**Evidence:** `skills/code-review/SKILL.md:258-333`, `test/skills/code-review-factcheck-replication.bats:1-100` (executed, 10/10 pass)
+```
+// docs/decisions/021-reviewer-context-management.md:145
+`… if Stage-1 whole-file+branch-diff prompts push per-call cost above the ~$0.33 median band or a sweep above $10. …`
+```
 
-## Claim 2: "a fact-check Incorrect verdict is the pipeline's *only* 🔴-promotion channel"
+I recomputed the worst call and the sweep from the reproduced dry-run token counts (see Claim 15) with the implied per-Mtok prices (Gemini $2/$12, Sol $5/$30, Kimi and Sonnet $3/$15, 1,500 output tokens/call): Sol on ND2 = 40,587×$5/M + 1,500×$30/M = **$0.2477 ≈ $0.248**, full sweep (5 cells × 4 models × 2 replicates) = **$4.37**, diff-only = **$1.95** (paraphrased — no quote available because these are arithmetic re-executions, not source text; run recorded in this session's `arithmetic` step). $0.248 < $0.33 and $4.37 < $10, so "both guardrails hold" is correct.
 
-**Location:** `docs/decisions/log.md:48` (also asserted at `skills/code-review/SKILL.md:27` and `skills/code-review/SKILL.md:264`; see Claims 16–17)
-**Type:** Architectural
-**Verdict:** Mostly accurate
-**Confidence:** High
-**Legibility-target:** for-author
+**Evidence:** `docs/decisions/021-reviewer-context-management.md:139-145`, `docs/working/stage1-context-cost-2026-07-31.md:51-68`
 
-The claim's own cited source contradicts the word "only" in two ways. First, Result 16 — the empirical basis — names *two* channels: "Every 🔴 in all nine runs traces to a fact-check **Incorrect** verdict or an **api-consistency Breaking** finding" (`docs/working/experiment-results-full-pipeline-tiers-2026-07-30.md:199-200`), and the same doc later refers to "the 🔴 monopoly held by fact-check-Incorrect / api-Breaking (Result 16)" (`docs/working/experiment-results-full-pipeline-tiers-2026-07-30.md:403`). Second, the Unified Severity Mapping table in the skill itself maps five sources to 🔴: "| 🔴 Must Fix | Critical, High | Critical | Breaking | Structural | Incorrect (high confidence) |" (`skills/code-review/SKILL.md:976`). The narrower "fact-check-only" phrasing is inherited from the pre-existing state doc §1.1 line ("Per Result 16, a fact-check Incorrect verdict is the *only* thing that promotes a finding to 🔴", `docs/thoughts/code-review-evaluation-state.md:50` — unchanged on this branch) and from `docs/working/experiment-results-full-pipeline-tiers-2026-07-30.md:256-257` ("the *sole* channel that can produce a 🔴"), so the sources are internally inconsistent. The substance — fact-check Incorrect is the dominant promotion channel and the unstable one — holds; "only" overstates it.
+---
 
-**Evidence:** `docs/working/experiment-results-full-pipeline-tiers-2026-07-30.md:197-203,256-257,403`, `skills/code-review/SKILL.md:974-978`, `docs/thoughts/code-review-evaluation-state.md:50`
-
-## Claim 3: "Result 14a showed it flipping between Incorrect and Mostly Accurate on identical input — the entire blocking channel rested on a single sample of the least stable judgment in the system (J_self on 🔴 rows 0.14–0.25)"
+## Claim 2: log row 27 — "J_self on 🔴 rows 0.14–0.25" and "all four families in the 2026-07-30 DD sweep independently ranked this action first"
 
 **Location:** `docs/decisions/log.md:48`
 **Type:** Reference
 **Verdict:** Verified
 **Confidence:** High
-**Legibility-target:** for-orchestrator-synthesis
 
-The state doc records exactly this: "the same `WARY_MOOD_DURATION` comment defect was rated **Incorrect** by one run and **Mostly Accurate** by another, flipping the same finding between 🔴 and 🟡" (`docs/thoughts/code-review-evaluation-state.md:52-53`) and "J_self restricted to 🔴 rows is **0.14–0.25**" (`docs/thoughts/code-review-evaluation-state.md:57`).
+Both figures trace to their sources. The tiers experiment doc:
 
-**Evidence:** `docs/thoughts/code-review-evaluation-state.md:50-57`
+```
+// docs/working/experiment-results-full-pipeline-tiers-2026-07-30.md:341-342
+| opus | 1 (`WARY_MOOD_DURATION`) | 7 | **0.14** |
+| fable | 1 (timer docblock) | 4 | **0.25** |
+```
 
-## Claim 4: "Per-replicate reports (`code-fact-check-report-r1..3.md`) persist for audit and for the decision-25 Confirmed-Good cross-check, which now scans them too (an observation recorded by a single replicate still counts against a ✅ row — this is the piece decision 25 marked out of scope)"
+The sweep README:
 
-**Location:** `docs/decisions/log.md:48`
-**Type:** Behavioral
-**Verdict:** Verified
-**Confidence:** Medium
-**Legibility-target:** for-orchestrator-synthesis
+```
+// runs/dd-cross-model-2026-07-30/README.md:33-35
+All four models independently converged on the **same top action: k≥3
+`code-fact-check` replication with most-severe-wins (§1.1)** — unanimous
+cross-family agreement on the #1 pick
+```
 
-The skill's Confirmed-Good move 4 was edited on this branch to read "re-read the merged fact-check report **and each per-replicate report** (`code-fact-check-report-r*.md` — an observation recorded by only one replicate may be absent from the merged claim it lost the severity contest to, and it still counts)" (branch diff to `skills/code-review/SKILL.md`, Confirmed-Good section). The Output Locations tree lists all three `-r1..3` files as "(replicate — audit + Confirmed-Good observation scan)". The out-of-scope mapping to decision 25 is supported: row 25 states "a run whose fact-check never observed the relevant fact is not made to observe it. Closing that gap needs the k≥3 fact-check of §1.1, deliberately out of scope" (`docs/decisions/log.md:47`). Confidence Medium only because row 25's out-of-scope gap (no observation existing at all) is closed by k=3 replication *probabilistically*, not deterministically — the row's parenthetical is a fair but slightly generous restatement.
+**Evidence:** `docs/working/experiment-results-full-pipeline-tiers-2026-07-30.md:339-342`, `runs/dd-cross-model-2026-07-30/README.md:33-43`
 
-**Evidence:** `skills/code-review/SKILL.md:933-939` (Confirmed-Good move 4), `skills/code-review/SKILL.md:1062-1072` (Output Locations), `docs/decisions/log.md:47`
+---
 
-## Claim 5: "§1.1's falsifier stands: ≥90% agreement on a ≥20-claim cumulative sample drops k to 2"
+## Claim 3: log row 28 — "(Path A, 85%)" and the falsifier "(lift pre-fix ND2; lift nothing on ND3's fixed `sim.ts:625-628` or md1 `proxy.ts:14`)"
 
-**Location:** `docs/decisions/log.md:48` (same falsifier restated in `skills/code-review/SKILL.md` Stage 1 merge step 4 and `docs/thoughts/code-review-evaluation-state.md:198`)
+**Location:** `docs/decisions/log.md:49`
 **Type:** Reference
 **Verdict:** Verified
 **Confidence:** High
-**Legibility-target:** for-orchestrator-synthesis
 
-State doc §1.1: "if k=3 fact-check verdicts agree ≥90% of the time on a 20-claim sample, the instability is smaller than Result 14a suggests and k can drop to 2" (`docs/thoughts/code-review-evaluation-state.md:68-69`). The "≥20" vs the source's "a 20-claim" is an immaterial tightening. The skill carries it: "If cumulative measurements across runs show ≥90% verdict agreement on a ≥20-claim sample, k can drop to 2 — that is §1.1's stated falsifier" (branch diff, Stage 1 merge step 4), and bats test 8 asserts its presence.
+The DD working doc's decision banner:
 
-**Evidence:** `docs/thoughts/code-review-evaluation-state.md:68-69`, `skills/code-review/SKILL.md:327-333`, `test/skills/code-review-factcheck-replication.bats:78-81`
+```
+// docs/working/dd-escalation-second-channel.md:310
+▶ recommend [12] Contested-Soundness cross-check · confidence 85% · runner-up [2′], axis = cover both structural causes vs minimal edit
+```
 
-## Claim 6: "all four families in the 2026-07-30 DD sweep (`runs/dd-cross-model-2026-07-30/`) independently ranked this action first"
+The falsifier's control locations match 028's validation addendum, which reports "falsifier **passes 3/3 as written** (ND2 C1 lifts 🟢→🟡 …; md1 `proxy.ts:14` 0 lifts across 7 probes …; ND3 `sim.ts:625-628` 0 lifts but **vacuous**)" (`docs/decisions/028-escalation-second-channel.md:176`).
 
-**Location:** `docs/decisions/log.md:48` (same claim at `runs/dd-cross-model-2026-07-30/README.md:31-32`, `docs/thoughts/code-review-evaluation-state.md:43-45`, and commit b6114ac)
-**Type:** Reference
-**Verdict:** Verified
-**Confidence:** High
-**Legibility-target:** for-orchestrator-synthesis
+**Evidence:** `docs/working/dd-escalation-second-channel.md:3,310`, `docs/decisions/028-escalation-second-channel.md:176`, `docs/working/validation-soundness-channel-2026-07-30.md:154-162`
 
-All four run artifacts carry the ★ recommendation on the k≥3/k=3 fact-check candidate: Fable "╭─ [2] k≥3 fact-check, most-severe-wins   ★ recommended" (`runs/dd-cross-model-2026-07-30/local_claude-fable-5.md:187`); Sol "╭─ [2] Fact-check replication   ★ recommended" (`openai_gpt-5.6-sol.md:256`); Gemini "╭─ [1] k=3 incumbent fact-check   ★ recommended" (`google_gemini-3.1-pro-preview.md:119`); Kimi "╭─ [3] k≥3 fact-check, most-severe-wins   ★ recommended" (`moonshotai_kimi-k3.md:153`).
+---
 
-**Evidence:** `runs/dd-cross-model-2026-07-30/local_claude-fable-5.md:187,207`, `openai_gpt-5.6-sol.md:256,283`, `google_gemini-3.1-pro-preview.md:119,135`, `moonshotai_kimi-k3.md:153,171`
+## Claim 4: log row 29 — "original-config orchestrators wrote 4.5–5.1KB briefs with claims-needing-checking lists ('verify against actual client-side fetch/network code')"
 
-## Claim 7: "implemented in `skills/code-review/SKILL.md` Stage 1 exactly as shaped below (k=3, byte-identical prompts, cluster + most-severe-wins, per-replicate verdict logging, agreement rate reported per run in the merged report's `## Verdict stability` section)"
-
-**Location:** `docs/thoughts/code-review-evaluation-state.md:41-44`
-**Type:** Behavioral
-**Verdict:** Mostly accurate
-**Confidence:** High
-**Legibility-target:** for-author
-
-Every item in the parenthetical is implemented (see Claim 1). The word "exactly" slightly overstates fidelity to the §1.1 shape: §1.1 says "cluster claims by (file, line-range, claim text)" (`docs/thoughts/code-review-evaluation-state.md:61-62`), while the implementation deliberately deviates — "match on (file, line-range, claim substance), not on string equality" plus an explicit ±5-line tolerance (SKILL.md Stage 1 merge step 1). The deviation is a refinement, not a contradiction of intent, but "exactly as shaped" is not literally true of the clustering key.
-
-**Evidence:** `docs/thoughts/code-review-evaluation-state.md:61-62`, `skills/code-review/SKILL.md:310-314`
-
-## Claim 8: "**Instrumented** (log row 26): every k=3 run now reports its cluster agreement rate in the merged report's `## Verdict stability` section. Still zero data points"
-
-**Location:** `docs/thoughts/code-review-evaluation-state.md:198` (open question #2 status)
-**Type:** Behavioral
-**Verdict:** Verified
-**Confidence:** High
-**Legibility-target:** for-orchestrator-synthesis
-
-Log row 26 exists (`docs/decisions/log.md:48`). The skill's merge step 4 requires the section and the rate: "End the merged report with a `## Verdict stability` section: total clusters... and the resulting agreement rate" (SKILL.md Stage 1 merge step 4); bats tests 7–8 enforce it. "Still zero data points" is consistent with the same file's own admission "the first k=3 run has not executed" (`docs/thoughts/code-review-evaluation-state.md:47`) and with no merged `code-fact-check-report.md` from a k=3 run existing on this branch.
-
-**Evidence:** `skills/code-review/SKILL.md:327-333`, `test/skills/code-review-factcheck-replication.bats:71-81`, `docs/decisions/log.md:48`
-
-## Claim 9: "Four frontier models were given a **byte-identical prompt** (`prompt.md` in this directory)"
-
-**Location:** `runs/dd-cross-model-2026-07-30/README.md:3-4` (also "identical bytes to all four models", README.md files table, and commit b6114ac "Same byte-identical prompt")
-**Type:** Configuration
-**Verdict:** Unverifiable
-**Confidence:** Medium
-**Legibility-target:** for-orchestrator-synthesis
-
-`prompt.md` exists (102,388 bytes) and embeds the three claimed inputs (see Claim 10). But no harness script, request log, or per-arm prompt hash is committed, so nothing in the repo records what bytes were actually transmitted to each of the four arms. The meta.json prompt-token counts differ across providers (23,759 / 22,737 / 22,856 — `*.meta.json`), which is consistent with identical bytes tokenized by different tokenizers but does not prove it. Paraphrased — no quote available because the transmission step left no artifact to quote.
-
-**Evidence:** `runs/dd-cross-model-2026-07-30/prompt.md` (exists, 102388 bytes), `runs/dd-cross-model-2026-07-30/google_gemini-3.1-pro-preview.meta.json`, `moonshotai_kimi-k3.meta.json`, `openai_gpt-5.6-sol.meta.json`
-
-## Claim 10: "Inputs embedded in the prompt: `docs/thoughts/code-review-evaluation-state.md`, `skills/divergent-design/SKILL.md`, and the full `workflows/divergent-design.md`"
-
-**Location:** `runs/dd-cross-model-2026-07-30/README.md:9-11`
-**Type:** Reference
-**Verdict:** Verified
-**Confidence:** High
-**Legibility-target:** for-orchestrator-synthesis
-
-`prompt.md` contains all three as labeled sections: "# Input 1: docs/thoughts/code-review-evaluation-state.md" (`prompt.md:37`), "# Input 2: skills/divergent-design/SKILL.md" (`prompt.md:353`), "# Input 3: workflows/divergent-design.md" (`prompt.md:412`), and the embedded state doc's §1.1 heading matches the pre-branch version ("### 1.1 Run `code-fact-check` k≥3 times and combine, before anything downstream", `prompt.md:77`).
-
-**Evidence:** `runs/dd-cross-model-2026-07-30/prompt.md:37,77,353,412`
-
-## Claim 11: "All four runs are **single-response, no tools, prompt-inline** — the Result-10-comparable config of the evaluation-state doc §5.1"
-
-**Location:** `runs/dd-cross-model-2026-07-30/README.md:19-20`
-**Type:** Configuration
-**Verdict:** Verified
-**Confidence:** Medium
-**Legibility-target:** for-orchestrator-synthesis
-
-The §5.1 reference is sound: §5.1 "Comparability — the rule that governs everything" states "The **only** prior rows directly comparable to an OpenRouter sweep are **Result 10**" (`docs/thoughts/code-review-evaluation-state.md:289,296`), and the doc's config table marks Result 10 as "**headless, diff inline, no tools**" (`docs/thoughts/code-review-evaluation-state.md:215`). The three OpenRouter meta files show `"finish_reason": "stop"` and `"attempt": 1` (single response); the Fable artifact self-describes as "Single-shot, headless" (`local_claude-fable-5.md:3`) and "Prior pruning grep: not runnable in this setting" (`local_claude-fable-5.md:9`). Confidence Medium because, as with Claim 9, the run conditions themselves are attested by the artifacts rather than independently recorded.
-
-**Evidence:** `docs/thoughts/code-review-evaluation-state.md:215,289-296`, `runs/dd-cross-model-2026-07-30/*.meta.json`, `local_claude-fable-5.md:3,9`
-
-## Claim 12: "The local Fable arm ran inside Claude Code as a subagent but was explicitly forbidden to read any file other than the prompt, to stay comparable"
-
-**Location:** `runs/dd-cross-model-2026-07-30/README.md:22-25` (also commit b6114ac: "barred from reading any file beyond the prompt")
-**Type:** Configuration
-**Verdict:** Unverifiable
-**Confidence:** Medium
-**Legibility-target:** for-orchestrator-synthesis
-
-The instruction given to the Fable subagent is not preserved anywhere in the repo, so the "explicitly forbidden" condition cannot be checked. The artifact's internals are consistent with it: "Prior-decision scan (from the material provided inline)" (`local_claude-fable-5.md:11-12`) and "Prior pruning grep: not runnable in this setting" (`local_claude-fable-5.md:9`) — the run behaves as if it had no file access. Consistent-with is not proof; the constraint itself is unrecorded.
-
-**Evidence:** `runs/dd-cross-model-2026-07-30/local_claude-fable-5.md:3,9,11-12`; paraphrased — no quote available for the constraint itself because the subagent's launch prompt was not committed.
-
-## Claim 13: "Per §5.2 discipline: when comparing, score on *which candidate actions and constraints each model surfaced*, not on cosmetic scoring differences"
-
-**Location:** `runs/dd-cross-model-2026-07-30/README.md:26-28`
-**Type:** Reference
-**Verdict:** Mostly accurate
-**Confidence:** Medium
-**Legibility-target:** for-author
-
-§5.2 exists and carries the analogous rule, but its actual content is about review outputs, not DD outputs: "### 5.2 Score on detection, not on tier ... Compute it over **issue identity** — same file, same underlying mechanism, band-agnostic" (`docs/thoughts/code-review-evaluation-state.md:303-307`). "Which candidate actions and constraints each model surfaced" is the README's own extension of that discipline to DD artifacts; §5.2 never mentions candidates, constraints, or scoring matrices. The citation is an apt analogy presented as a direct instruction from §5.2.
-
-**Evidence:** `docs/thoughts/code-review-evaluation-state.md:303-309`
-
-## Claim 14: "the strongest cross-family agreement this program has recorded on any question"
-
-**Location:** `runs/dd-cross-model-2026-07-30/README.md:33`
-**Type:** Reference
-**Verdict:** Unverifiable
-**Confidence:** Low
-**Legibility-target:** for-orchestrator-synthesis
-
-The 4/4 convergence itself is verified (Claim 6). The superlative — strongest agreement *ever recorded by the program* — would require an exhaustive comparison against every prior cross-family measurement (the §5.0 sweep, the nine eval cells, prior experiment docs), none of which record a comparable "agreement on a question" metric. No prior 4/4 cross-family convergence was found in the state doc or experiment results docs during this check, so the claim is plausible, but the comparison class is not enumerated anywhere. Paraphrased — no quote available because no artifact defines or ranks "cross-family agreement" across the program's history.
-
-**Evidence:** `docs/thoughts/code-review-evaluation-state.md` §5.0–§5.4 (no comparable metric found)
-
-## Claim 15: OpenRouter table metrics — "GPT-5.6 Sol | 155 s | 9,147 (2,233) | — | 5 | C | 78% ... Gemini 3.1 Pro | 112 s | 15,594 (11,870) | — | 4 | A | 95% ... Kimi K3 | 956 s | 32,487 (24,306) | 14 | 5 | C | 75%" and Fable "16 | 5 | C | 78%"
-
-**Location:** `runs/dd-cross-model-2026-07-30/README.md:37-40`
-**Type:** Performance
-**Verdict:** Verified
-**Confidence:** High
-**Legibility-target:** for-orchestrator-synthesis
-
-Meta files: Sol `"latency_s": 154.5` (rounds to 155), `"completion_tokens": 9147`, `"reasoning_tokens": 2233`; Gemini `"latency_s": 112.2`, `15594`, `11870`; Kimi `"latency_s": 955.9` (rounds to 956), `32487`, `24306` — all match. Candidates/survivors/path/confidence: Fable "Survivors: [2] [5] [6] [8] [9] (5 of 16)" and "confidence 78%", "Path C" (`local_claude-fable-5.md:112,207,210`); Sol "**Survivors:** [2], [3], [4], [5], [7]" (5), "confidence 78%", "Path C" (`openai_gpt-5.6-sol.md:162,283,290`); Gemini "**Surviving Candidates:** [1], [3], [4], [11]" (4), "confidence 95%", "Path A" (`google_gemini-3.1-pro-preview.md:71,135,137`); Kimi "**Candidates (14)**", "Survivors (5)", "confidence 75%", "Decision path: C" (`moonshotai_kimi-k3.md:12,105,171,176`). Fable's "~5 min" latency has no meta file — covered separately as Claim 23 note; the recommendation-column prose matches each artifact's recommendation except the Kimi runner-up (Claim 16).
-
-**Evidence:** `runs/dd-cross-model-2026-07-30/openai_gpt-5.6-sol.meta.json`, `google_gemini-3.1-pro-preview.meta.json`, `moonshotai_kimi-k3.meta.json`, `local_claude-fable-5.md:112,207,210`, `openai_gpt-5.6-sol.md:162,283,290`, `google_gemini-3.1-pro-preview.md:71,135,137`, `moonshotai_kimi-k3.md:12,105,171,176`
-
-## Claim 16: "Kimi K3 | ... | k≥3 fact-check scoped to promotion-candidate claims (k set by pre-flight disagreement measurement); runner-up doc-order status quo"
-
-**Location:** `runs/dd-cross-model-2026-07-30/README.md:40`
-**Type:** Reference
+**Location:** `docs/decisions/log.md:50` (same claim at `docs/working/experiment-md1-r1-replication-2026-07-30.md:98-102`)
+**Type:** Reference / Behavioral
 **Verdict:** Incorrect
 **Confidence:** High
-**Legibility-target:** for-author
 
-The first half is accurate — Kimi's stress-test pass narrowed scope: "resampling scoped to promotion-candidate claims" and "k is set by a day-scale pre-flight measurement, not fixed at 3" (`moonshotai_kimi-k3.md:101,128`). But the runner-up is misattributed. Kimi's recommendation line reads "▶ recommend [3] k≥3 fact-check, most-severe-wins · confidence 75% · **runner-up [2]**, axis = assurance-now vs evidence-first" (`moonshotai_kimi-k3.md:171-172`), and candidate [2] is "**Measurement-first:** before any skill edit, run the cheap queued arms..." (`moonshotai_kimi-k3.md:17`). The doc-order status quo is candidate [0] ("Doc-as-written (status quo)", `moonshotai_kimi-k3.md:14`) — a survivor, but not the runner-up. Not a fabrication (both candidates exist); a misattribution.
+I re-measured the fact-check `Agent` dispatches directly from the three oc cells' transcript jsonl under `/home/node/.claude/projects/-home-node-cr-eval-runs-<cell>-repo/` (paraphrased — no quote available because the evidence is byte-lengths and substring tests executed over transcript JSON, recorded in this session):
 
-**Evidence:** `runs/dd-cross-model-2026-07-30/moonshotai_kimi-k3.md:14,17,101,128,171-172`
+- `md1-opus-r1`: 4,524 bytes; has a "Claims that particularly need checking" list; contains the quoted directive verbatim ("— verify against actual client-side fetch/network code in the app.").
+- `md1-opus-oc-r2`: 5,067 bytes; has a claims list; does **not** contain the quoted directive — its analogous line reads "verify by searching the client-side code for any browser-originated fetch to a non-same-origin host".
+- `md1-opus-oc-r3`: **3,653 bytes; no claims list and no such directive** — its only fact-check instruction is to invoke the skill by name.
 
-## Claim 17: "**Template fidelity:** all four rendered the Decision presentation block with the box-drawing scorecard, legend, ★ marker, and recommendation banner; none left unfilled `<…>` slots. All four honored the no-`AskUserQuestion` constraint."
+So: the size range "4.5–5.1KB" excludes one of the three oc briefs (3.7KB); "with claims-needing-checking lists" holds for 2/3; and the replication doc's stronger phrasing "including, verbatim in both oc runs" (`docs/working/experiment-md1-r1-replication-2026-07-30.md:99-102`) is wrong under any reading of "both" — the exact directive appears in exactly one run (r1). This matters beyond wording: oc-r3 recovered GT-R1 with a lean, list-free brief, which weakens the brief-richness→detection mechanism the row and decision 29 rest on (the 0/9-vs-3/3 replicate-level contrast, Claim 12, still stands independently).
 
-**Location:** `runs/dd-cross-model-2026-07-30/README.md:44-47`
-**Type:** Behavioral
-**Verdict:** Verified
-**Confidence:** High
-**Legibility-target:** for-orchestrator-synthesis
+**Evidence:** `docs/decisions/log.md:50`, `docs/working/experiment-md1-r1-replication-2026-07-30.md:96-114`; transcript dispatches under `/home/node/.claude/projects/-home-node-cr-eval-runs-md1-opus-{r1,oc-r2,oc-r3}-repo/`
 
-Box-drawing (`╭─`) and ★ markers appear in all four artifacts (Claim 6 quotes); the legend glyph `●` appears in all four (`rg -l '●'` matches all four output files); each has a `▶ recommend ...` banner. A search for unfilled angle-bracket template slots (`<[a-zA-Z…]...>` excluding URLs) across the four outputs returned no matches. The prompt's no-`AskUserQuestion` constraint appears 10 times in `prompt.md`; the only occurrences in the outputs are compliance statements ("no `AskUserQuestion` issued" — `moonshotai_kimi-k3.md:176`, "(No native `AskUserQuestion` is issued)" — `google_gemini-3.1-pro-preview.md:137`), and Fable/Sol contain no invocation of it.
+---
 
-**Evidence:** `runs/dd-cross-model-2026-07-30/local_claude-fable-5.md:187,207`, `openai_gpt-5.6-sol.md:256,283,286`, `google_gemini-3.1-pro-preview.md:119,135,137`, `moonshotai_kimi-k3.md:153,171,176`; slot/glyph greps over all four files (no unfilled slots found)
+## Claim 5: log row 29 — "Fisher one-sided p≈0.0045" (0/9 cc replicates vs 3/3 oc samples)
 
-## Claim 18: "Kimi produced the most aggressive stress-test pass (scope narrowing of k≥3 to promotion decisions only; queue-volume caps on human routing) at ~9× Sol's latency"
-
-**Location:** `runs/dd-cross-model-2026-07-30/README.md:48-49`
-**Type:** Performance
-**Verdict:** Incorrect
-**Confidence:** High
-**Legibility-target:** for-author
-
-The stress-test content is accurate: "only the **promotion decision** needs k≥3" (`moonshotai_kimi-k3.md:128`) and "queue volume capped and logged" (`moonshotai_kimi-k3.md:130`). The multiplier is wrong: 955.9 s / 154.5 s = **6.19×** Sol's latency, verified by arithmetic-eval (`[arithmetic-eval] 955.9 / 154.5 -> 6.18705501618123`). The ~9× figure matches Kimi vs *Gemini* instead (955.9 / 112.2 = 8.52 ≈ 9, `[arithmetic-eval] 955.9 / 112.2 -> 8.519607843137255`) — the ratio appears to have been computed against the wrong arm. Actual: ~6× Sol, ~8.5× Gemini.
-
-**Evidence:** `runs/dd-cross-model-2026-07-30/openai_gpt-5.6-sol.meta.json` (`"latency_s": 154.5`), `moonshotai_kimi-k3.meta.json` (`"latency_s": 955.9`), `google_gemini-3.1-pro-preview.meta.json` (`"latency_s": 112.2`); arithmetic-eval runs above
-
-## Claim 19: "Gemini was the thinnest (~15k chars) and the only Path A / 95% call"
-
-**Location:** `runs/dd-cross-model-2026-07-30/README.md:49-50`
-**Type:** Behavioral
-**Verdict:** Verified
-**Confidence:** High
-**Legibility-target:** for-orchestrator-synthesis
-
-Byte counts: Gemini 15,827 vs Kimi 32,301, Sol 33,897, Fable 36,832 (`wc -c` on the four output files) — smallest, and ~15k. Paths/confidences: Gemini "Path A", "confidence 95%" (`google_gemini-3.1-pro-preview.md:135,137`); the other three are Path C at 78/78/75% (Claim 15 evidence). "Fable and Sol landed near-identical confidence (78%)" on the adjacent line also checks out (both exactly 78%).
-
-**Evidence:** `wc -c runs/dd-cross-model-2026-07-30/*.md`, `google_gemini-3.1-pro-preview.md:135,137`, `local_claude-fable-5.md:207`, `openai_gpt-5.6-sol.md:283`, `moonshotai_kimi-k3.md:171`
-
-## Claim 20: "Fable defers the second vendor behind 021 Stage-1 context; Gemini treats baseline stabilization as a hard prerequisite for everything; Kimi challenges the state doc's own §1 serial ordering ('content adopted, schedule rejected')"
-
-**Location:** `runs/dd-cross-model-2026-07-30/README.md:54-57`
+**Location:** `docs/decisions/log.md:50` (also `docs/working/experiment-md1-r1-replication-2026-07-30.md:92`, state doc line for open question #1)
 **Type:** Reference
 **Verdict:** Verified
 **Confidence:** High
-**Legibility-target:** for-orchestrator-synthesis
 
-Fable: "gate it behind candidate 7 (021 Stage-1 context lands first)" for "[8] Second vendor scoped to the fact-check critic" and "defer [8] until 021 Stage-1 lands" (`local_claude-fable-5.md:117,212`). Gemini: "The foundational requirement for any multi-vendor recall addition or soundness routing is a stable baseline gate... 1 must be prioritized first" (`google_gemini-3.1-pro-preview.md:137`). Kimi: "*Changed: 0's serial schedule is its disqualifier — content adopted, schedule rejected.*" (`moonshotai_kimi-k3.md:132`) — verbatim.
+Recomputed: hypergeometric one-sided exact for 0/9 vs 3/3 is C(3,3)·C(9,0)/C(12,3) = 1/220 ≈ **0.004545** (paraphrased — no quote available because this is an executed calculation, not source text). Matches "p≈0.0045".
 
-**Evidence:** `runs/dd-cross-model-2026-07-30/local_claude-fable-5.md:117,212`, `google_gemini-3.1-pro-preview.md:137`, `moonshotai_kimi-k3.md:132`
+**Evidence:** `docs/working/experiment-md1-r1-replication-2026-07-30.md:91-92`
 
-## Claim 21: "API cost: $1.21 total (Kimi $0.56 · Sol $0.42 · Gemini $0.23)"
+---
 
-**Location:** `runs/dd-cross-model-2026-07-30/README.md:57`
-**Type:** Performance
-**Verdict:** Verified
+## Claim 6: state doc §1.1 status — "Not yet measured: the first k=3 run has not executed; the noise floor is still unquantified"
+
+**Location:** `docs/thoughts/code-review-evaluation-state.md` (§1.1 status block added on this branch)
+**Type:** Staleness
+**Verdict:** Stale
 **Confidence:** High
-**Legibility-target:** for-orchestrator-synthesis
 
-Meta files record `"cost": 0.555516` (Kimi → $0.56), `"cost": 0.41725625` (Sol → $0.42), `"cost": 0.234646` (Gemini → $0.23). Sum verified by arithmetic-eval: `[arithmetic-eval] 0.234646 + 0.555516 + 0.41725625 -> 1.20741825` → $1.21. All roundings correct; the local Fable arm has no API cost, consistent with its exclusion.
+True when written (commit e9d05ea), false at HEAD: the first k=3 run has executed on this very branch and its merged report reports the noise floor:
 
-**Evidence:** `runs/dd-cross-model-2026-07-30/*.meta.json` cost fields; arithmetic-eval run above
+```
+// docs/reviews/code-fact-check-report.md:122-130
+## Verdict stability
+- **Clusters:** 28 merged (from 26 + 30 + 24 replicate claims).
+…
+- **Agreement rate:** 21/23 ≈ **0.91** (cluster level, first measured sample).
+```
 
-## Claim 22: Files table — "`prompt.md` ... `local_claude-fable-5.md` ... `openai_gpt-5.6-sol.md` ... `google_gemini-3.1-pro-preview.md` ... `moonshotai_kimi-k3.md` ... `*.meta.json` | Per-run latency/usage/finish_reason (OpenRouter arms)"
+That report was committed in `7fdf28a` ("apply review-fix loop findings from first live k=3 review run"), which is on this branch before HEAD.
 
-**Location:** `runs/dd-cross-model-2026-07-30/README.md:61-68`
-**Type:** Reference
-**Verdict:** Verified
+**Evidence:** `docs/reviews/code-fact-check-report.md:122-130`, git log `main..HEAD`
+
+---
+
+## Claim 7: state doc open question #2 — "Still zero data points — accumulate ≥20 clustered claims, then apply §1.1's falsifier"
+
+**Location:** `docs/thoughts/code-review-evaluation-state.md` (open-questions table row 2, edited on this branch)
+**Type:** Staleness
+**Verdict:** Stale
 **Confidence:** High
-**Legibility-target:** for-orchestrator-synthesis
 
-Directory listing matches exactly: the five named files plus `README.md` and exactly three `.meta.json` files — one per OpenRouter arm, none for the local Fable arm, as the table's "(OpenRouter arms)" qualifier states. Each meta.json contains `latency_s`, `usage`, and `finish_reason` fields as claimed.
+Same evidence as Claim 6: the branch's own merged report contains a first measured sample (28 clusters, agreement 21/23 ≈ 0.91 — already past the ≥20-cluster threshold on its own), and the external cc cells report rates too (e.g. cc-r4: "Verdict agreement was **8/17 clusters (47%)**", `/home/node/cr-eval/runs/md1-opus-cc-r4/stdout.txt:20`). "Still zero data points" was overtaken by commits earlier on this same branch.
 
-**Evidence:** `ls runs/dd-cross-model-2026-07-30/` (8 files), `runs/dd-cross-model-2026-07-30/google_gemini-3.1-pro-preview.meta.json` (fields `model`, `finish_reason`, `usage`, `latency_s`, `attempt`)
+**Evidence:** `docs/reviews/code-fact-check-report.md:122-130`, `/home/node/cr-eval/runs/md1-opus-cc-r4/stdout.txt:20`
 
-## Claim 23: "The fact-check verdict is the *only* channel that promotes a finding to 🔴 (see [Unified Severity Mapping](#unified-severity-mapping)) ... on identical input, the same comment defect was rated **Incorrect** by one run and **Mostly Accurate** by another, flipping the same finding between 🔴 and 🟡 (`docs/thoughts/code-review-evaluation-state.md` §1.1, Result 14a)"
+---
 
-**Location:** `skills/code-review/SKILL.md:264-270` (the "only 🔴-promotion channel" phrasing also at `skills/code-review/SKILL.md:27` and in the Important Reminders edit)
-**Type:** Architectural
+## Claim 8: state doc §5.0 — Stage 1 "prompts grow 2–6× to ~18k–41k tokens; worst call $0.248, full 4-model×2 sweep $4.37"
+
+**Location:** `docs/thoughts/code-review-evaluation-state.md` (§5.0 "Stage 1 built" bullet added on this branch)
+**Type:** Configuration
 **Verdict:** Mostly accurate
 **Confidence:** High
-**Legibility-target:** for-author
 
-Two sub-claims. The Result-14a flip is Verified — it quotes the state doc's account near-verbatim (`docs/thoughts/code-review-evaluation-state.md:51-54`), and the anchor target exists ("### Unified Severity Mapping", `skills/code-review/SKILL.md:970`). The "only channel" assertion is the same overstatement as Claim 2 — and here it is aggravated by pointing the reader at the very table that lists four *other* 🔴 sources ("Critical, High | Critical | Breaking | Structural" alongside "Incorrect (high confidence)", `skills/code-review/SKILL.md:976`). Also present: "the observed failure mode is under-calling, not over-calling (state doc §1.1)" in the merge step — Verified against "the observed failure mode is under-calling, not over-calling" (`docs/thoughts/code-review-evaluation-state.md:64`).
+The multipliers and dollar figures reproduce (growths 2.1×/3.5×/2.2×/4.8×/5.6×, so "2–6×" is fair; $0.248/$4.37 per Claim 1). But the token range "~18k–41k" excludes MD1, whose Stage-1 prompt is **2,150 tokens** (reproduced dry-run: "prompt size: 8,603 chars, ~2,150 tokens" — paraphrased from my re-executed dry-run output, no source quote because it is command output). Precise version: "~2k–41k tokens (18k–41k on the four non-trivial cells)".
 
-**Evidence:** `skills/code-review/SKILL.md:970-978`, `docs/thoughts/code-review-evaluation-state.md:51-54,64`, `docs/working/experiment-results-full-pipeline-tiers-2026-07-30.md:199-200`
+**Evidence:** `docs/working/stage1-context-cost-2026-07-31.md:34-40`, reproduced dry-runs (Claim 15)
 
-## Claim 24: bats header — "Validates the k=3 fact-check replication contract in skills/code-review/SKILL.md (docs/thoughts/code-review-evaluation-state.md §1.1, decision log row 26) ... Result 14a: the same defect rated Incorrect by one run and Mostly Accurate by another, on identical input ... Same enforcement rationale as code-review-assurance-contract.bats" — and the tests themselves assert what they claim
+---
 
-**Location:** `test/skills/code-review-factcheck-replication.bats:2-14` (behavioral check spans the whole file)
-**Type:** Behavioral
+## Claim 9: replication doc per-cell table — rc, elapsed, and per-cell GT-R1 outcomes
+
+**Location:** `docs/working/experiment-md1-r1-replication-2026-07-30.md:49-71,185-187`
+**Type:** Reference
 **Verdict:** Verified
 **Confidence:** High
-**Legibility-target:** for-orchestrator-synthesis
 
-All references resolve: SKILL.md Stage 1 exists as described; state doc §1.1 and log row 26 exist (Claims 1, 3); `test/skills/code-review-assurance-contract.bats` exists on disk; the Result 14a paraphrase matches `docs/thoughts/code-review-evaluation-state.md:51-54`. Behaviorally, the suite was executed on this checkout: `1..10`, all 10 tests pass, and the `stage1()` helper's sed range (`/^### Stage 1: Code Fact-Check/,/^### Fact-Check Gate/`) matches the comment "from its heading to the next ### heading" — "### Fact-Check Gate" is indeed the next `###` heading after Stage 1 in SKILL.md. Commit e9d05ea's "Contract test: ... (10 checks)" also matches the executed count.
+All six status files match the table exactly, e.g.:
 
-**Evidence:** `bats test/skills/code-review-factcheck-replication.bats` (10/10 ok), `test/skills/code-review-assurance-contract.bats` (exists), `skills/code-review/SKILL.md:258,343` region, `docs/thoughts/code-review-evaluation-state.md:51-54`
+```
+// /home/node/cr-eval/runs/md1-opus-fix-r1/status.txt
+rc=0 elapsed=1720s
+```
+
+(cc-r2 1414s, cc-r3 1200s, cc-r4 1218s, oc-r2 1134s, oc-r3 983s — all rc=0; paraphrased — no quote available because six one-line files read more clearly as a list). Spot-checked outcome cells against run artifacts: cc-r2's ✅ row certifying "`connect-src 'self'` breaks no current client fetch" is verbatim in its rubric (`/home/node/cr-eval/runs/md1-opus-cc-r2/repo/docs/reviews/code-review-rubric.md:89`); cc-r4's recovery via architecture-review is present (`exportGraph` appears in its architecture-review.md and rubric but no fact-check report); fix-r1's rubric R2 row is 🔴 with "`Convergence: security + api-consistency + fact-check(Incorrect, high conf, 3/3)`" and `Contested-Soundness` annotation (`…/md1-opus-fix-r1/repo/docs/reviews/code-review-rubric.md:27`).
+
+**Evidence:** `/home/node/cr-eval/runs/*/status.txt`, `/home/node/cr-eval/runs/md1-opus-cc-r2/repo/docs/reviews/code-review-rubric.md:89`, `/home/node/cr-eval/runs/md1-opus-fix-r1/repo/docs/reviews/code-review-rubric.md:27`
+
+---
+
+## Claim 10: replication doc — "0/9 fact-check replicates surfaced `exportGraph.ts`" (cc) and "3/3" (oc); fix-r1 "3/3 replicates"
+
+**Location:** `docs/working/experiment-md1-r1-replication-2026-07-30.md:85-92,199`
+**Type:** Reference / Architectural
+**Verdict:** Verified
+**Confidence:** High
+
+Executed enumeration: `grep -l exportGraph` over every `code-fact-check-report*.md` in the cells — **zero hits** across all 9 cc replicate reports (r1–r3 in cc-r2/cc-r3/cc-r4); hits in **all 3** oc single reports (r1, oc-r2, oc-r3); hits in **all 3** fix-r1 replicate reports plus the merged one (paraphrased — no quote available because the claim covers absence/presence across 16 files; grep executed this session). fix-r1's merged Claim 7 summary confirms the substance:
+
+```
+// /home/node/cr-eval/runs/md1-opus-fix-r1/repo/docs/reviews/code-fact-check-report.md:594
+- **Claim 7** (`proxy.ts:16-17`, high confidence, 3/3 replicates): `connect-src 'self'` is not sufficient — `app/lib/utils/exportGraph.ts:24` and `:37` `fetch()` a `data:` URL from the browser…
+```
+
+**Evidence:** `/home/node/cr-eval/runs/md1-opus-{cc-r2,cc-r3,cc-r4,oc-r2,oc-r3,r1,fix-r1}/repo/docs/reviews/code-fact-check-report*.md`
+
+---
+
+## Claim 11: replication doc validation — "all three replicate prompts are 7,834 bytes … byte-identical across replicates"
+
+**Location:** `docs/working/experiment-md1-r1-replication-2026-07-30.md:191-193`
+**Type:** Reference
+**Verdict:** Mostly accurate
+**Confidence:** High
+
+Measured from the fix-r1 transcript's `Agent` dispatches: all three fact-check replicate prompts are exactly 7,834 bytes and contain the claims list ("Enumerate every browser-side network origin…" present as quoted in the doc). But they are not literally byte-identical: the first differing byte is the output-path digit ("…-fact-check-report-r1.md" vs "-r2.md" — paraphrased from an executed byte-diff over transcript JSON; no source quote because the evidence is a computed diff). This is exactly the one difference the k=3 spec permits, so the claim is right in substance; precise version: "identical except the mandated per-replicate output path". The same nuance applies to the pre-fix cells' "byte-identical across replicates" at line 103 (2,328/2,691/3,010 bytes — matching the doc's "2.3–3.0KB" and line 191's "2,328–3,010").
+
+**Evidence:** transcript dispatches under `/home/node/.claude/projects/-home-node-cr-eval-runs-md1-opus-fix-r1-repo/`; `docs/working/experiment-md1-r1-replication-2026-07-30.md:103,191-199`
+
+---
+
+## Claim 12: SKILL.md step 3b — "0/9 replicates reached the cross-file evidence a single richly-briefed run had found 3/3 times"
+
+**Location:** `skills/code-review/SKILL.md:288-289`
+**Type:** Reference
+**Verdict:** Mostly accurate
+**Confidence:** High
+
+The 0/9 is verified (Claim 10). The "3/3" phrasing misstates the experiment's shape: it was **three separate original-config runs** (r1, oc-r2, oc-r3), each with a single fact-check agent that found the evidence — not "a single … run" finding it 3 times. The replication doc states it correctly: "the (single) fact-check agent found GT-R1 itself in **3/3 runs** (r1, oc-r2, oc-r3)" (`docs/working/experiment-md1-r1-replication-2026-07-30.md:82-83`). Additionally, "richly-briefed" overstates one of the three: oc-r3's brief was 3.7KB with no claims list (Claim 4) and still found it. Precise version: "0/9 replicates reached the cross-file evidence that single-fact-check runs under the original config had found in 3/3 runs".
+
+**Evidence:** `skills/code-review/SKILL.md:279-290`, `docs/working/experiment-md1-r1-replication-2026-07-30.md:82-92`
+
+---
+
+## Claim 13: runs README — corrected M16/M17 values stand ("runner-up [2] measurement-first"; "~6× Sol's latency (and ~8.5× Gemini's)") and the meta-derived table
+
+**Location:** `runs/dd-cross-model-2026-07-30/README.md:38-60`
+**Type:** Reference / Configuration
+**Verdict:** Verified
+**Confidence:** High
+
+Both prior-review fixes are in place and arithmetically correct against the meta.json files: Kimi 955.9s / Sol 154.5s = 6.2× ("~6×"), 955.9 / 112.2 = 8.5× ("~8.5×"); Kimi row ends "runner-up [2] measurement-first" (`README.md:43`). Table values match the meta files, e.g.:
+
+```
+// runs/dd-cross-model-2026-07-30/moonshotai_kimi-k3.meta.json
+"completion_tokens": 32487, … "reasoning_tokens": 24306, … "latency_s": 955.9
+```
+
+Cost line "$1.21 total (Kimi $0.56 · Sol $0.42 · Gemini $0.23)" matches the meta `cost` fields 0.555516 + 0.41725625 + 0.234646 = 1.207 (paraphrased — no quote available because it is a three-term sum over the three meta files).
+
+**Evidence:** `runs/dd-cross-model-2026-07-30/README.md:38-60`, `runs/dd-cross-model-2026-07-30/*.meta.json`, `docs/reviews/code-review-rubric-2026-07-30-exp-cross-model-openrouter-sweep.md:15-16`
+
+---
+
+## Claim 14: cross-model-review.py docstring — "Without --context-base the prompt is byte-identical to the pre-021 harness" and "--max-inline-kb" default 64
+
+**Location:** `scripts/cross-model-review.py:24-25,301-302`
+**Type:** Behavioral / Configuration
+**Verdict:** Verified
+**Confidence:** High
+
+`diff <(git show main:scripts/cross-model-review.py) scripts/cross-model-review.py` shows `PROMPT_TEMPLATE` is untouched, and the diff-only branch builds the prompt identically to main (`prompt = PROMPT_TEMPLATE.format(label=label, diff=diff)` at `scripts/cross-model-review.py:329`, vs main's one-line equivalent — paraphrased for the main side, no quote available because it is the pre-image of an executed `git show` diff). The default:
+
+```python
+# scripts/cross-model-review.py:301-302
+ap.add_argument("--max-inline-kb", type=int, default=64, help="Stage 1: files larger than "
+                "this are listed but not inlined")
+```
+
+**Evidence:** `scripts/cross-model-review.py:65-73,301-302,322-329`; `git show main:scripts/cross-model-review.py`
+
+---
+
+## Claim 15: stage1-context-cost doc — all five measured table rows (diff-only tokens, Stage-1 tokens, growth, sibling/enclosing sizes) are reproducible; "0 files skipped"; dagger footnote (empty sibling sections)
+
+**Location:** `docs/working/stage1-context-cost-2026-07-31.md:34-49`
+**Type:** Configuration / Reference
+**Verdict:** Verified
+**Confidence:** High
+
+Re-executed all ten dry-runs (5 cells × both modes) against `/workspace/external/{threadwork,meta-formalism-copilot,nature_photographer}`. Every number reproduces exactly, e.g. the D4 row:
+
+```
+// re-executed: scripts/cross-model-review.py --repo /workspace/external/threadwork --range '689e93c~1..689e93c' --context-base origin/master --dry-run
+prompt size: 135,376 chars, ~33,844 tokens (diff 23,511 chars, sibling diff 68,350, enclosing files 41,845, 0 skipped)
+```
+
+MD1 1,037→2,150; ND2 11,758→40,587; ND3 8,088→18,015; D3 6,637→31,945 (sibling 55,002, enclosing 44,929); all with "0 skipped" (paraphrased — no quote available because five near-identical command outputs read more clearly as a list; all reproduced this session). The dagger footnote is confirmed: MD1/ND2/ND3 (run with `--context-base origin/HEAD`, the merged mainline) print `sibling diff 0` — the section collapses to empty exactly as the footnote says. KB conversions and "55–68 KB (~14–17k tokens)" check out (68,350/4 ≈ 17.1k; 55,002/4 ≈ 13.75k).
+
+**Evidence:** `docs/working/stage1-context-cost-2026-07-31.md:34-49`, reproduced dry-run outputs against `/workspace/external/*`
+
+---
+
+## Claim 16: cost doc — "Projected cost … 1,500 output tokens assumed/call" table and "diff-only $1.95 → Stage-1 $4.37 (~2.2×)"
+
+**Location:** `docs/working/stage1-context-cost-2026-07-31.md:51-68`
+**Type:** Configuration
+**Verdict:** Verified
+**Confidence:** Medium
+
+The per-call table is internally consistent with a single price vector (Gemini $2/$12, Sol $5/$30, Kimi = Sonnet $3/$15 per Mtok): recomputing every cell from the reproduced token counts and 1,500 output tokens gives $0.030/$0.086, $0.075/$0.214, $0.041/$0.124 (×2) — matching the table to the cent — and totals $1.95 / $4.37 (ratio 2.24 ≈ "~2.2×"), with Sol-on-ND2 the priciest single call at $0.248 (paraphrased — no quote available because the evidence is a re-executed cost computation). Confidence Medium only because the underlying live OpenRouter prices of 2026-07-31 were not independently re-fetched (no API key in this session); the internal arithmetic and the price vector's plausibility are what is verified.
+
+**Evidence:** `docs/working/stage1-context-cost-2026-07-31.md:51-68`; arithmetic re-execution this session
+
+---
+
+## Claim 17: cross-model-review.py docstring — "--dry-run … prints per-section token estimates and projected per-model cost"; build_stage1_context docstring "stats maps section -> char count"
+
+**Location:** `scripts/cross-model-review.py:26-28,124-125`
+**Type:** Behavioral
+**Verdict:** Mostly accurate
+**Confidence:** High
+
+Two small imprecisions. (a) The per-section figures the dry-run prints are **character counts**, not token estimates — only the whole-prompt figure is tokenized:
+
+```python
+# scripts/cross-model-review.py:341-346
+print(f"prompt size: {len(prompt):,} chars, ~{int(est_in_tok):,} tokens "
+      f"(diff {len(diff):,} chars"
+      + (f", sibling diff {ctx_stats.get('sibling_diff', 0):,}, enclosing files "
+         f"{ctx_stats.get('enclosing_files', 0):,}, "
+```
+
+(b) `build_stage1_context`'s "stats maps section -> char count" is true for `sibling_diff` and `enclosing_files` but `stats["skipped_files"] = len(skipped)` (`scripts/cross-model-review.py:174`) is a **file count**. The printed keys match what the function returns (`sibling_diff`, `enclosing_files`, `skipped_files`), so nothing is misprinted — the docstrings are just loose about units.
+
+**Evidence:** `scripts/cross-model-review.py:122-175,339-346`
+
+---
+
+## Claim 18: docstring/help — "Files larger than --max-inline-kb are listed but not inlined"; the binary guard
+
+**Location:** `scripts/cross-model-review.py:22-24,160-172`
+**Type:** Behavioral
+**Verdict:** Mostly accurate
+**Confidence:** Medium
+
+The size fallback works as described, but the skip list has a second, undocumented population and a limited guard:
+
+```python
+# scripts/cross-model-review.py:160-164
+if "\x00" in content[:8192]:
+    skipped.append((path, len(content), "binary"))
+    continue
+if len(content) > max_inline_kb * 1024:
+    skipped.append((path, len(content), "over --max-inline-kb"))
+```
+
+Binary files (NUL in the first 8,192 chars) are also skipped — and listed under the header "=== FILES TOO LARGE TO INLINE (context unavailable…) ===" (`scripts/cross-model-review.py:171-172`) even when small, so the section title misdescribes them (the per-file "binary" reason line is accurate). Additionally, `sh()` runs `git show` with `text=True` (`scripts/cross-model-review.py:111`), so a file whose bytes do not decode in the locale encoding raises `UnicodeDecodeError` before the guard runs — the guard only catches NUL-bearing content that happened to decode. Medium confidence on that last point because it depends on the runtime locale (not exercised by any cell so far: all measured cells report 0 skipped).
+
+**Evidence:** `scripts/cross-model-review.py:109-111,152-172`
+
+---
+
+## Claim 19: split_range docstring and its Stage-1 callers — "Return (left, right) of a git range like 'a..b' / 'a...b'"; `--context-base` help "sibling-branch diff from this ref to the range start"
+
+**Location:** `scripts/cross-model-review.py:115,298-300`
+**Type:** Behavioral
+**Verdict:** Mostly accurate
+**Confidence:** Medium
+
+`split_range` itself does what it says:
+
+```python
+# scripts/cross-model-review.py:116-119
+parts = re.split(r"\.{2,3}", rev_range, maxsplit=1)
+left = parts[0].strip()
+right = parts[1].strip() if len(parts) > 1 and parts[1].strip() else "HEAD"
+```
+
+The imprecision is in how `build_stage1_context` consumes `left` for a **three-dot** range: `git diff a...b` reviews `merge-base(a,b)..b`, so the "range start" is the merge-base, not `a` — yet the sibling section is built as `context_base...left` (`scripts/cross-model-review.py:138`), i.e. up to `a` itself. For `a...b` with `a` ahead of the merge-base, commits between the merge-base and `a` would appear in the sibling ("already committed") section while being absent from the reviewed diff's baseline — a gap/overlap the help text's "range start" wording papers over. All documented usages (`abc~1..abc` style, and every measured cell) are two-dot, where left *is* the range start, so this is an edge-case qualifier, not an active defect.
+
+**Evidence:** `scripts/cross-model-review.py:114-150,298-300`
+
+---
+
+## Claim 20: dd-cross-model-sweep.py docstring — provenance ("Committed per tech-debt finding C20 … hand transcription is where both of that README's data errors came from"; Fable arm ran as a subagent, no script) and the Kimi max_tokens comment
+
+**Location:** `scripts/dd-cross-model-sweep.py:2-17,34-36`
+**Type:** Reference / Configuration
+**Verdict:** Verified
+**Confidence:** High
+
+C20 exists and says exactly this:
+
+```
+// docs/reviews/code-review-rubric-2026-07-30-exp-cross-model-openrouter-sweep.md:62
+| C20 | DD-sweep harness not committed (`run_dd_sweep.py` lived in job tmp); README table hand-transcribed — which is where R2/R3 arose | … | ✅ Fixed (`scripts/dd-cross-model-sweep.py`, …) |
+```
+
+R2/R3 are the README's two data errors (rows 15-16 of the same rubric), matching "both". The Fable-arm claim matches the README ("The local Fable arm ran inside Claude Code as a subagent", `runs/dd-cross-model-2026-07-30/README.md:23`) and the artifact layout: `local_claude-fable-5.md` exists with no `.meta.json`, while all three OpenRouter arms have one. The Kimi comment ("kimi-k3 spends budget inside the reasoning trace and returns content:null if max_tokens is too low … be generous") is backed by `"max_tokens": 48000` (`scripts/dd-cross-model-sweep.py:36`) and by Kimi's meta showing 24,306 of 32,487 completion tokens spent on reasoning — a budget a low cap would exhaust.
+
+**Evidence:** `scripts/dd-cross-model-sweep.py:2-17,30-37`, `docs/reviews/code-review-rubric-2026-07-30-exp-cross-model-openrouter-sweep.md:15-16,62`, `runs/dd-cross-model-2026-07-30/moonshotai_kimi-k3.meta.json`
+
+---
+
+## Claim 21: self-improvement.sh Gate 1h advisory check — "Stage 1 … stamps the merged report with a `**Replication:**` header field plus a `Commit:` line"; parsing matches the SKILL.md format
+
+**Location:** `scripts/self-improvement.sh` (advisory replication block added on this branch, diff hunk at ~:1481-1515)
+**Type:** Behavioral / Architectural
+**Verdict:** Mostly accurate
+**Confidence:** High
+
+The `**Replication:**` half is exactly right. The skill mandates the bolded field in the merged header:
+
+```
+// skills/code-review/SKILL.md:371-373
+- The header adds a bolded `**Replication:** k=3` field (or `**Replication:** k=2 (one
+  replicate failed)` on the degraded path) so consumers read k from a named field, not
+  from prose.
+```
+
+and the gate's `sed -n 's/^\*\*Replication:\*\* *//p'` matches it; the `case` arms (`k=3*` pass; anything else "degraded") align with the skill's k=3 / `k=2 (one replicate failed)` vocabulary, and the prefix test `[ "${CR_COMMIT#"$CR_FC_COMMIT"}" = "$CR_COMMIT" ]` correctly detects "short SHA is not a prefix of reviewed commit". The `Commit:` half over-states the spec: SKILL.md requires a `Commit: <short SHA>` line only on the **per-replicate** reports (`skills/code-review/SKILL.md:291-292` — "save its report as `docs/reviews/code-fact-check-report-r<N>.md` … with a `Commit: <current HEAD short SHA>` line at the top"); the merged-report format (lines 357-373) mandates the five standard header fields plus `**Replication:**` but no `Commit:` line. Observed merged reports do carry an unbolted `Commit:` line (`docs/reviews/code-fact-check-report.md:3` — "Commit: e9d05ea"; same in the fix-r1 cell), so the sed works in practice — but the stale-report detection rests on convention, not on anything the skill instructs, and a run that omits it silently skips that check (the gate degrades gracefully to the field-absent path).
+
+**Evidence:** `scripts/self-improvement.sh` (branch diff), `skills/code-review/SKILL.md:291-303,357-373`, `docs/reviews/code-fact-check-report.md:1-10`
 
 ---
 
 ## Claims Requiring Attention
 
 ### Incorrect
-- **Claim 16** (`runs/dd-cross-model-2026-07-30/README.md:40`): Kimi's runner-up is misattributed — the artifact names **[2] Measurement-first** as runner-up, not the doc-order status quo ([0], a survivor but not runner-up).
-- **Claim 18** (`runs/dd-cross-model-2026-07-30/README.md:48-49`): "~9× Sol's latency" — actual is 6.2× Sol (955.9/154.5); ~9× would be Kimi vs Gemini (8.5×).
+- **Claim 4** (`docs/decisions/log.md:50`; `docs/working/experiment-md1-r1-replication-2026-07-30.md:98-102`): "oc orchestrators wrote 4.5–5.1KB briefs with claims lists, including verbatim in both oc runs" — measured: 4,524 / 5,067 / **3,653** bytes; the claims list exists in 2/3; the quoted directive appears verbatim in exactly **one** run (r1). oc-r3 recovered GT-R1 with a lean, list-free brief, which weakens the stated brief-richness mechanism (the 0/9-vs-3/3 replicate-level result is unaffected).
 
 ### Stale
-- (none)
+- **Claim 6** (`docs/thoughts/code-review-evaluation-state.md` §1.1): "the first k=3 run has not executed" — it has, on this branch; its merged report measures the noise floor (21/23 ≈ 0.91).
+- **Claim 7** (`docs/thoughts/code-review-evaluation-state.md` open question #2): "Still zero data points" — the branch's own merged report contributes a 28-cluster sample, and four external k=3 cells report agreement rates (e.g. 47%).
 
 ### Mostly Accurate
-- **Claim 2** (`docs/decisions/log.md:48`): "only 🔴-promotion channel" — Result 16 names fact-check-Incorrect *or* api-consistency-Breaking, and the severity mapping lists five 🔴 sources.
-- **Claim 7** (`docs/thoughts/code-review-evaluation-state.md:41-44`): "exactly as shaped below" — the clustering key deviates (claim substance ±5 lines vs §1.1's "claim text").
-- **Claim 13** (`runs/dd-cross-model-2026-07-30/README.md:26-28`): "Per §5.2 discipline" cites a section about detection-vs-tier scoring; the candidate/constraint framing is the README's own extension.
-- **Claim 23** (`skills/code-review/SKILL.md:264-270`, also `:27`): same "only channel" overstatement as Claim 2, here pointing at the severity-mapping table that contradicts it.
+- **Claim 8** (`docs/thoughts/code-review-evaluation-state.md` §5.0): "~18k–41k tokens" excludes MD1's 2,150-token Stage-1 prompt; say "~2k–41k".
+- **Claim 11** (`docs/working/experiment-md1-r1-replication-2026-07-30.md:191`): "byte-identical" replicate prompts differ in the mandated output-path digit; say "identical except the per-replicate output path".
+- **Claim 12** (`skills/code-review/SKILL.md:288-289`): "a single richly-briefed run had found 3/3 times" — it was three separate single-fact-check runs, one find each; and one of the three was not richly briefed.
+- **Claim 17** (`scripts/cross-model-review.py:26-28,124-125`): dry-run "per-section token estimates" are char counts; `skipped_files` is a file count, not a char count.
+- **Claim 18** (`scripts/cross-model-review.py:22-24,160-172`): binary files are also skipped and listed under the "TOO LARGE TO INLINE" header; undecodable binaries would raise before the NUL guard.
+- **Claim 19** (`scripts/cross-model-review.py:115,298-300`): for three-dot ranges the sibling section's `left` boundary is not the reviewed diff's baseline (merge-base); all current usage is two-dot.
+- **Claim 21** (`scripts/self-improvement.sh` Gate 1h): the merged-report `Commit:` line the comment relies on is observed practice, not something `skills/code-review/SKILL.md` specifies for the merged report.
 
 ### Unverifiable
-- **Claim 9** (`runs/dd-cross-model-2026-07-30/README.md:3-4`): byte-identical transmission to all four arms — no harness log or prompt hash committed.
-- **Claim 12** (`runs/dd-cross-model-2026-07-30/README.md:22-25`): Fable arm's file-read prohibition — launch prompt not preserved; artifact internals are consistent with it.
-- **Claim 14** (`runs/dd-cross-model-2026-07-30/README.md:33`): "strongest cross-family agreement this program has recorded" — no comparable historical metric exists to rank against.
-- **Claim 15 note / Fable latency** (`runs/dd-cross-model-2026-07-30/README.md:37`): "~5 min" for the local Fable arm has no meta file or timing record (the row's other values are verified; tracked here so the gap is visible).
+- (none — the one candidate, the cost doc's live-pricing provenance, was resolved as internally consistent and downgraded to a confidence note on Claim 16.)
 
 ## Goal-Alignment Note
-- Answered: yes
-- Out of scope: claims *inside* the immutable experiment artifacts (`runs/dd-cross-model-2026-07-30/*.md` model outputs and `prompt.md`) per the scoping instruction — they were used only as evidence for claims made about them; unchanged pre-existing prose in log.md rows 21/24/25 and untouched state-doc sections.
-- Escalate: the two README Incorrect findings (Claims 16, 18) are one-line fixes in a mutable file; the "only 🔴-promotion channel" phrasing (Claims 2, 23) recurs in three shipped locations and in the pre-existing state doc §1.1 — worth one coordinated wording fix ("the only channel observed to fire in practice, alongside api-consistency Breaking") rather than piecemeal edits.
+- Answered: yes — all ten briefed claim areas checked; dry-runs re-executed, transcripts re-measured, arithmetic recomputed.
+- Out of scope: claims *inside* the immutable `runs/` and pre-existing `docs/reviews/` artifacts (checked only claims about them, per brief); the 2026-07-31 live OpenRouter price vector (not re-fetchable without a key — internal consistency verified instead).
+- Escalate: Claim 4 — the oc-brief mis-measurement propagates through the replication doc, log row 29, and (softened) SKILL.md step 3b; the oc-r3 counterexample (lean brief, still recovered) deserves a note in the mechanism story before row 29 is cited again. Claims 6/7 — the state doc contradicts its own branch's artifacts and should be refreshed in the same PR.
+- Questions I would have asked: none — scope was unambiguous.

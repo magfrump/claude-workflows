@@ -1490,8 +1490,22 @@ The bracketed token is a per-run identifier — reproduce it exactly. Count only
                     CR_REPLICATION=""
                     if [ -r "$CR_FC_REPORT" ]; then
                         CR_REPLICATION=$(sed -n 's/^\*\*Replication:\*\* *//p' "$CR_FC_REPORT" | head -1)
-                        CR_FC_COMMIT=$(sed -n 's/^Commit: *//p' "$CR_FC_REPORT" | head -1)
-                        if [ -n "$CR_FC_COMMIT" ] && [ -n "$CR_COMMIT" ] \
+                        # Accept both `Commit:` and `**Commit:**` (the merged-report
+                        # header bolds its fields); strip any trailing bold marker.
+                        CR_FC_COMMIT=$(sed -n -e 's/^\*\*Commit:\*\* *//p' -e 's/^Commit: *//p' "$CR_FC_REPORT" \
+                            | head -1 | tr -d '*' | tr -d ' ')
+                        if [ -z "$CR_FC_COMMIT" ]; then
+                            # Fail closed, not silent: a report with no Commit line
+                            # cannot be tied to the reviewed commit at all.
+                            echo "    NOTE: fact-check report has no Commit line — cannot verify freshness, replication field untrusted (advisory)"
+                            echo "[$TASK_ID] NOTE: fact-check report commit-unknown for $BRANCH" \
+                                >> "$WORKING_DIR/validation-round-$ROUND.log"
+                            CR_REPLICATION="commit-unknown"
+                        elif [ "${#CR_FC_COMMIT}" -lt 4 ]; then
+                            # A 1-3 char "SHA" prefix-matches ~1/16 of commits by luck.
+                            echo "    NOTE: fact-check report Commit line too short ($CR_FC_COMMIT) — treating as stale (advisory)"
+                            CR_REPLICATION="stale"
+                        elif [ -n "$CR_COMMIT" ] \
                             && [ "${CR_COMMIT#"$CR_FC_COMMIT"}" = "$CR_COMMIT" ]; then
                             echo "    NOTE: fact-check report Commit ($CR_FC_COMMIT) does not match reviewed commit ${CR_COMMIT:0:7} — stale report, replication field untrusted (advisory)"
                             echo "[$TASK_ID] NOTE: stale fact-check report ($CR_FC_COMMIT vs ${CR_COMMIT:0:7}) for $BRANCH" \
@@ -1501,7 +1515,7 @@ The bracketed token is a per-run identifier — reproduce it exactly. Count only
                     fi
                     case "$CR_REPLICATION" in
                         k=3*) : ;;  # full replication — nothing to report
-                        stale) : ;; # already logged above
+                        stale|commit-unknown) : ;; # already logged above
                         "")
                             echo "    NOTE: merged fact-check report missing or lacks **Replication:** field — single-sample fact-check, not full k=3 (advisory)"
                             echo "[$TASK_ID] NOTE: fact-check replication field absent for $BRANCH" \
@@ -1516,7 +1530,7 @@ The bracketed token is a per-run identifier — reproduce it exactly. Count only
                     CR_DETAIL=$(jq -n --argjson red "$CR_RED" --arg agree "$CR_AGREE" \
                         --arg rubric "${CR_RUBRIC_RED:-}" --arg model "$SI_CODE_REVIEW_MODEL" \
                         --arg replication "${CR_REPLICATION:-absent}" \
-                        '{red_findings: $red, model: $model, rubric_red: $rubric, rubric_sentinel_agree: $agree, factcheck_replication: $replication}')
+                        '{red_findings: $red, model: $model, rubric_red: $rubric, rubric_sentinel_agree: $agree, fact_check_replication: $replication}')
                     if code_review_gate_verdict "$CR_RED"; then
                         echo "    code-review OK: $BRANCH ($CR_RED red findings)"
                         record_gate "$TASK_ID" "code_review" "pass"

@@ -39,14 +39,20 @@ measurement path:
 | D3-shape | `0cc706b~1..0cc706b` (threadwork, base `origin/master`) | 6,637 | 31,945 | 4.8× | 55 KB | 45 KB |
 | D4-shape | `689e93c~1..689e93c` (threadwork, base `origin/master`) | 6,010 | 33,844 | 5.6× | 68 KB | 42 KB |
 
-† The MD1/ND2/ND3 ranges are already merged into their repos' mainlines, so
-`base...range-left` collapses to the merge-base and the sibling section is empty — a
-*historical-repo artifact*, not the review-time state. The two threadwork cells reconstruct
+† The sibling sections are empty as a *historical-repo artifact*, not the review-time
+state: ND2/ND3's commits are already merged into their repo's mainline, and MD1's range
+*starts at* a mainline commit (`d86d2dc` is an ancestor of `integration/6.1`; the range
+end `d90d6bb` is not merged) — either way `base...range-left` collapses to the merge-base. The two threadwork cells reconstruct
 the honest Result-5 scenario (mid-branch commit, unmerged branch over `origin/master`) and
 are the representative sibling-diff sizes: **55–68 KB (~14–17k tokens)**. For a live sweep
 expect the D3/D4 row shape, not the † rows.
 
 No cell hit the `--max-inline-kb` fallback (0 files skipped everywhere).
+
+*Post-review note (2026-07-31):* the review-fix loop added nonce-tagged section
+delimiters to the Stage-1 template (anti-spoofing, security finding A11), which grows
+each Stage-1 prompt by ~0.3% (e.g. D4-shape 135,376 → 135,810 chars). The table above
+records the pre-nonce measurements; the cost conclusions are unaffected.
 
 ## Projected cost (live OpenRouter pricing, 2026-07-31; 1,500 output tokens assumed/call)
 
