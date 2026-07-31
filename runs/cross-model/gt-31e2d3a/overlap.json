@@ -1,0 +1,17 @@
+{
+  "judge": "anthropic/claude-sonnet-4.5",
+  "self": {
+    "anthropic/claude-sonnet-5": 0.333,
+    "google/gemini-3.1-pro-preview": 0.7,
+    "moonshotai/kimi-k3": 0.429,
+    "openai/gpt-5.6-sol": 0.778
+  },
+  "cross": {
+    "anthropic/claude-sonnet-5 vs google/gemini-3.1-pro-preview": 0.119,
+    "anthropic/claude-sonnet-5 vs moonshotai/kimi-k3": 0.0,
+    "anthropic/claude-sonnet-5 vs openai/gpt-5.6-sol": 0.093,
+    "google/gemini-3.1-pro-preview vs moonshotai/kimi-k3": 0.258,
+    "google/gemini-3.1-pro-preview vs openai/gpt-5.6-sol": 0.513,
+    "moonshotai/kimi-k3 vs openai/gpt-5.6-sol": 0.382
+  }
+}

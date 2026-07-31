@@ -1681,7 +1681,7 @@ Then git add the resolved files and git commit to complete the merge."
     done
     if [ -f "$FP_LIB" ] && [ -n "$FIX_RETROS" ] && command -v claude >/dev/null 2>&1; then
         echo "Harvesting failure patterns from fix tasks..."
-        NEXT_FP=$(grep -oE 'FP-[0-9]+' "$FP_LIB" | sed 's/FP-//' | sort -n | tail -1)
+        NEXT_FP=$(grep -oE 'FP-[0-9]+' "$FP_LIB" | sed 's/FP-//' | sort -n | tail -1 || true)
         NEXT_FP=$((10#${NEXT_FP:-0} + 1))
         # Appends to docs/thoughts/failure-patterns.md, so headless needs
         # acceptEdits (see claude_headless_flags()). The retro docs it reads

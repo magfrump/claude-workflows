@@ -1,0 +1,13 @@
+{
+  "judge": "anthropic/claude-sonnet-4.5",
+  "self": {
+    "anthropic/claude-sonnet-5": 1.0,
+    "google/gemini-3.1-pro-preview": 0.145,
+    "openai/gpt-5.6-sol": 0.5
+  },
+  "cross": {
+    "anthropic/claude-sonnet-5 vs google/gemini-3.1-pro-preview": 0.0,
+    "anthropic/claude-sonnet-5 vs openai/gpt-5.6-sol": 0.0,
+    "google/gemini-3.1-pro-preview vs openai/gpt-5.6-sol": 0.0
+  }
+}

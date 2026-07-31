@@ -230,9 +230,38 @@ def main():
             for model in args.models:
                 for r in range(1, args.replicates + 1):
                     t0 = time.time()
-                    resp = api(key, {"model": model, "messages": [{"role": "user", "content": prompt}]})
-                    text = resp["choices"][0]["message"]["content"]
+                    # A model that is unavailable to this account (402/404 tier gating) must
+                    # not abort the sweep: record the failure and keep the other models going.
+                    try:
+                        resp = api(key, {"model": model, "messages": [{"role": "user", "content": prompt}]})
+                    except Exception as e:  # noqa: BLE001 - per-run isolation is the point
+                        code = getattr(e, "code", "")
+                        fh.write(json.dumps({
+                            "model": model, "replicate": r, "prompt_sha": prompt_sha,
+                            "range": args.rev_range, "repo": os.path.basename(args.repo),
+                            "error": f"{type(e).__name__} {code}".strip(),
+                            "parse_ok": False, "n_findings": 0, "findings": [],
+                        }) + "\n")
+                        fh.flush()
+                        print(f"{model} r{r}: ERROR {type(e).__name__} {code}")
+                        continue
+                    # Reasoning models (e.g. kimi-k3) return message.content = null when the
+                    # completion budget is spent inside the reasoning trace. Treat that as a
+                    # failed run rather than a clean "no findings" one.
+                    choice = resp["choices"][0]
+                    text = choice["message"].get("content") or ""
+                    finish = choice.get("finish_reason")
                     rows, ok = parse_findings(text)
+                    if not text.strip():
+                        fh.write(json.dumps({
+                            "model": model, "replicate": r, "prompt_sha": prompt_sha,
+                            "range": args.rev_range, "repo": os.path.basename(args.repo),
+                            "error": f"empty-content finish_reason={finish}",
+                            "parse_ok": False, "n_findings": 0, "findings": [],
+                        }) + "\n")
+                        fh.flush()
+                        print(f"{model} r{r}: ERROR empty content (finish_reason={finish})")
+                        continue
                     usage = resp.get("usage", {})
                     rec = {
                         "model": model,
@@ -253,6 +282,13 @@ def main():
 
     # ---- analysis ----
     runs = [json.loads(l) for l in open(findings_path)]
+    # Errored runs are absent, not clean — counting them as empty finding lists would
+    # score a failed call as perfect agreement with another failed call.
+    errored = [r for r in runs if r.get("error")]
+    if errored:
+        print(f"\n({len(errored)} errored runs excluded from overlap: "
+              f"{sorted({r['model'] + ' ' + r['error'] for r in errored})})")
+    runs = [r for r in runs if not r.get("error")]
     by_key = {(r["model"], r["replicate"]): r["findings"] for r in runs}
     models = sorted({r["model"] for r in runs})
     reps = sorted({r["replicate"] for r in runs})
@@ -270,10 +306,31 @@ def main():
             return 1.0
         if not fa or not fb:
             return 0.0
-        m = sum(1 for x in fa if any(stage1_candidates(x, y, args.slack) for y in fb))
+        # Greedy one-to-one match: each fb finding can be claimed at most once.
+        # Counting "every fa with any candidate" instead lets several fa map to one
+        # fb, so matches can exceed |fb|, making union < matches and Jaccard > 1.
+        matched_b = set()
+        m = 0
+        for x in fa:
+            for j, y in enumerate(fb):
+                if j in matched_b or not stage1_candidates(x, y, args.slack):
+                    continue
+                matched_b.add(j)
+                m += 1
+                break
         return m / (len(fa) + len(fb) - m)
 
-    results = {"judge": args.judge if key else "stage1-only", "self": {}, "cross": {}}
+    # Abstention rate makes the empty-vs-empty artifact visible: jaccard() scores two
+    # empty finding lists as 1.0 agreement, so a model that abstains on every replicate
+    # gets a perfect J_self. Report the fraction of (non-errored) replicates a model
+    # returned zero findings on, so a high J_self driven by abstention is legible.
+    abstain = {}
+    for m in models:
+        runs_m = [r for r in runs if r["model"] == m]
+        if runs_m:
+            abstain[m] = round(sum(1 for r in runs_m if not r["findings"]) / len(runs_m), 3)
+
+    results = {"judge": args.judge if key else "stage1-only", "abstain": abstain, "self": {}, "cross": {}}
     for m in models:
         pairs = [pair_j((m, a), (m, b)) for a, b in itertools.combinations(reps, 2) if (m, a) in by_key and (m, b) in by_key]
         if pairs:
@@ -286,7 +343,10 @@ def main():
     with open(os.path.join(args.out, "overlap.json"), "w") as fh:
         json.dump(results, fh, indent=2)
 
-    print("\n== J_self (same model, replicate pairs) ==")
+    print("\n== abstention rate (fraction of replicates with zero findings) ==")
+    for m, v in abstain.items():
+        print(f"  {m}: {v}")
+    print("== J_self (same model, replicate pairs) ==")
     for m, v in results["self"].items():
         print(f"  {m}: {v}")
     print("== J_cross (model pairs, all replicate combinations) ==")

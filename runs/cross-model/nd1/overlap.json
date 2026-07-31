@@ -1,0 +1,28 @@
+{
+  "judge": "anthropic/claude-sonnet-4.5",
+  "self": {
+    "anthropic/claude-sonnet-5": 0.083,
+    "deepseek/deepseek-v3.2": 0.0,
+    "moonshotai/kimi-k3": 0.317,
+    "openai/gpt-5.6-luna": 0.5,
+    "openai/gpt-5.6-sol": 0.522,
+    "openai/gpt-5.6-terra": 0.0
+  },
+  "cross": {
+    "anthropic/claude-sonnet-5 vs deepseek/deepseek-v3.2": 0.0,
+    "anthropic/claude-sonnet-5 vs moonshotai/kimi-k3": 0.198,
+    "anthropic/claude-sonnet-5 vs openai/gpt-5.6-luna": 0.0,
+    "anthropic/claude-sonnet-5 vs openai/gpt-5.6-sol": 0.028,
+    "anthropic/claude-sonnet-5 vs openai/gpt-5.6-terra": 0.037,
+    "deepseek/deepseek-v3.2 vs moonshotai/kimi-k3": 0.0,
+    "deepseek/deepseek-v3.2 vs openai/gpt-5.6-luna": 0.0,
+    "deepseek/deepseek-v3.2 vs openai/gpt-5.6-sol": 0.0,
+    "deepseek/deepseek-v3.2 vs openai/gpt-5.6-terra": 0.0,
+    "moonshotai/kimi-k3 vs openai/gpt-5.6-luna": 0.0,
+    "moonshotai/kimi-k3 vs openai/gpt-5.6-sol": 0.0,
+    "moonshotai/kimi-k3 vs openai/gpt-5.6-terra": 0.0,
+    "openai/gpt-5.6-luna vs openai/gpt-5.6-sol": 0.128,
+    "openai/gpt-5.6-luna vs openai/gpt-5.6-terra": 0.093,
+    "openai/gpt-5.6-sol vs openai/gpt-5.6-terra": 0.291
+  }
+}

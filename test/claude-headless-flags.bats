@@ -39,6 +39,7 @@ setup() {
   PATH="$TEST_TMPDIR/bin:$PATH"
 
   # The main-execution guard keeps the top-level loop from running on source.
+  # shellcheck source=../scripts/self-improvement.sh
   source "$SI_SCRIPT"
 
   # NOTE on failure output: sourcing leaks the script's `set -euo pipefail`

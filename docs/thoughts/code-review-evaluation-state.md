@@ -5,14 +5,22 @@
 > cross-model result. It is the shortest path to "what do we actually know."
 
 Last verified: 2026-07-30
-Relevant paths: skills/code-review/SKILL.md · skills/code-fact-check/SKILL.md · scripts/self-improvement.sh · scripts/cross-model-review.py · docs/working/experiment-results-code-review-2026-07-29.md · docs/working/experiment-results-full-pipeline-tiers-2026-07-30.md · docs/working/research-cross-model-review-hypotheses.md
+Relevant paths: skills/code-review/SKILL.md · skills/code-fact-check/SKILL.md · scripts/self-improvement.sh · scripts/cross-model-review.py · docs/working/experiment-results-code-review-2026-07-29.md · docs/working/experiment-results-full-pipeline-tiers-2026-07-30.md · docs/working/experiment-cross-model-review-2026-07-30.md · docs/decisions/021-reviewer-context-management.md · docs/working/research-cross-model-review-hypotheses.md
+
+Two distinct arms carry the "2026-07-30" date and must not be conflated: the
+**full-pipeline tiers** arm (`experiment-results-full-pipeline-tiers-…`, agentic, source of
+Results 11–17) and the **OpenRouter cross-model** arm (`experiment-cross-model-review-…`,
+headless diff-inline, four vendors). Each has its own "Result N" numbering; §5.0 records the
+cross-model arm by finding *name* to avoid the collision.
 
 ## Who this is for
 
 - Anyone changing `skills/code-review/SKILL.md` or its critics.
 - **The cross-model track** (Gemini, Kimi K3, other vendors via
   `scripts/cross-model-review.py`). §5 is written for you specifically — it lists the
-  comparability rules and the four traps that have already cost this program real work.
+  comparability rules and the four traps that have already cost this program real work, and
+  §5.0 records what the first run of this arm actually found (and the context-management
+  decision, 021, that came out of it).
 - Anyone touching Gate 1h in `scripts/self-improvement.sh`.
 
 ## The one-paragraph state of things
@@ -51,6 +59,14 @@ flip.
 **Falsifier worth checking first:** if k=3 fact-check verdicts agree ≥90% of the time on a
 20-claim sample, the instability is smaller than Result 14a suggests and k can drop to 2.
 
+**Known bound — replication cannot reach correctly-documented bad design.** On ND2, all
+**4 of the 4 cells that checked it** rated the "a FLEE-interrupted song still earns the
+CONTENT aftertaste" docstring `Verified / High` — *correctly*, because the code does
+exactly what the comment says. The defect is that the documented behaviour is wrong as
+design, which is outside `code-fact-check`'s scope by construction (see its first
+non-goal). Resampling makes an unstable verdict stable; it does not make an out-of-scope
+question in-scope. This class needs §1.2 and the intent-claim decision, not k≥3.
+
 ### 1.2 Give the escalation rule a second corroboration channel
 
 **Why.** Result 15 + 14a. On ND2, opus reached the ground-truth defect (a FLEE-interrupted
@@ -68,6 +84,19 @@ quoted-intent-vs-quoted-code contradiction; a failing-test requirement per Threa
 routing such findings to a human queue) — **route it through `divergent-design`**, don't
 patch it ad hoc. What is *not* in question is that the gap is real and observed.
 
+**There are two structural causes here, not one.** Besides the fact-check monopoly above,
+there is an **owner cap**: opus found ND2's defect inside `tech-debt-triage`, and
+`SKILL.md:933` caps every contextual critic's findings at 🟢 *regardless of internal
+severity* while `:969` bars them from escalation entirely. So even a critic that fully
+reconstructs a live behavioural inversion cannot exceed 🟢 if it happens to be the one that
+found it. Any fix for §1.2 that addresses only the corroboration channel leaves this half
+untouched.
+
+**Status:** a DD pass on the adjacent question — how to treat intent claims embedded in
+code — is at `docs/working/dd-code-intent-claims.md` (recommends an intent-coherence move
+inside `architecture-review`, with its own cheap falsifier). It deliberately does *not*
+decide §1.2; the escalation rule and the owner cap both remain open.
+
 ### 1.3 Stop treating `✅ Confirmed Good` as an output; treat it as a claim requiring evidence
 
 **Why.** Result 12. On MD1, **two of three tiers filed the branch's actual blocking defect
@@ -80,9 +109,25 @@ Result 8b observed this shape at haiku and it was recorded as a small-model prop
 **not tier-bounded.** Confirmed Good is the highest-assurance row the rubric emits and
 nothing currently checks it.
 
-**Minimum action:** require every Confirmed Good row to carry an `Evidence:` citation, and
-add a synthesis-stage cross-check that no Confirmed Good row contradicts an observation in
-the fact-check report. That specific cross-check would have caught the fable miss.
+**Shipped (`a9fa0ba`, log row 25) — with a measured partial.** The rubric's Confirmed Good
+table gained an `Evidence` column bound to the existing evidence-grounding format; an
+ungrounded row is *deleted* rather than downgraded; universally quantified rows ("no X
+anywhere", "no unintended carve-outs") must cite the enumeration actually executed; and
+Stage 3 cross-checks every ✅ row against the fact-check report — explicitly including
+observations recorded in passing *under a claim the fact-check itself marked Verified*,
+which is where the fable evidence was buried. A contradicting row moves to 🟡 with
+`Severity: Contested`, and is barred from counting as escalation corroboration.
+
+Validated retrospectively against the archived cells rather than asserted:
+
+- **fable — caught.** The enumeration rule and the cross-check both fire on it.
+- **sonnet — not caught, and it cannot be by this mechanism.** Its fact-check contains zero
+  occurrences of `connect-src`, `data:`, or `exportGraph` — there is no observation to
+  contradict. The enumeration rule covers it only weakly: a ✅ row can no longer assert the
+  branch is fine *without having looked*, but a run that never observed the fact is not
+  made to observe it. Closing that needs §1.1.
+- **0 of 82** Confirmed Good rows across all archived cells carried a checkable citation
+  before this change.
 
 ### 1.4 Never let a single run's clean verdict stand as assurance
 
@@ -90,6 +135,11 @@ Corollary of 1.3 and H5. A "no findings" result from one run is not evidence of 
 it is one sample from a distribution whose 🔴-level self-agreement is ~0.2. Anywhere a
 verdict is *consumed as assurance* (Gate 1h, pr-prep sign-off), require either
 corroboration or an explicit "single-sample, not an attestation" label.
+
+**Label shipped (`a9fa0ba`).** A passing rubric status and a `merge` recommendation both
+carry the single-sample caveat, bounded by a test so it cannot spread into per-section
+hedging. The *corroboration* half is not shipped — that is §1.1 and §5.0's second-vendor
+finding, which compose: resample one family for stability, add a family for coverage.
 
 ### 1.5 Done — headless flags (`96166d5`, log row 24)
 
@@ -119,6 +169,17 @@ today.
 - **Reviewer model ≠ fixer model.** Thread 6; independent of everything measured here.
 - **Role critics stay.** Abstention is clean (Result 3); roles partition rather than
   duplicate (Result 2). The restructure-to-generalist proposal is closed twice over.
+- **A second *vendor* buys recall the incumbent structurally cannot** (§5.0). The OpenRouter
+  arm surfaced four real defects that survived up to seven Claude-family rounds; on one diff
+  the incumbent abstained 0/6 while another vendor caught both real bugs. Blind spots are
+  correlated within a family, so this is orthogonal to §1.1's k≥3 (which resamples one family
+  for *stability*, not *coverage*). The two compose: add a vendor for coverage, resample for
+  stability.
+- **Reviewer context management is decided — 021.** The pipeline sits on a staged path from
+  diff-only toward agentic: Stage 1 (git-only) enriches the harness with the full logical
+  changeset + enclosing files to kill the sibling-commit false-positive class; the production
+  agentic critic stays the Stage-3 re-verification authority. "Must have repo access" is
+  honoured at *verification*, not at cheap generation. See §5.0 and decision 021.
 
 ## 3. Open, and now the highest-value unknowns
 
@@ -127,7 +188,9 @@ today.
 | 1 | Does MD1 R1's recovery replicate? | It is the sole evidence that the pipeline clears the cross-file ceiling, and the basis for "config, not model." **n=1.** | **Run this next.** |
 | 2 | How often do fact-check verdicts disagree across replicates? | Sets k in §1.1 and quantifies the blocking channel's noise floor. | Unmeasured |
 | 3 | Is the MD1 nonce-delivery issue really 🔴? | Three independent configs say 🔴, history says 🟡. Settled empirically by one prod build. | Unresolved since Result 8b |
-| 4 | Does a Confirmed-Good-vs-fact-check cross-check actually catch the misses? | Cheap to test retrospectively against the 9 existing cells. | Not attempted |
+| 4 | Does a Confirmed-Good-vs-fact-check cross-check actually catch the misses? | Cheap to test retrospectively against the 9 existing cells. | **Answered (§1.3): fable yes, sonnet no.** Shipped in `a9fa0ba`. |
+| 5 | Is the intent-coherence move in `architecture-review` load-bearing, or prose-nudging? | Decides the DD recommendation in `dd-code-intent-claims.md`; its own author names this the strongest objection. | Falsifier specified: re-run `architecture-review` on ND2 ×3 *without* the move; unaided recovery ≥2/3 means it is decoration. |
+| 6 | Does removing the owner cap change ND2's outcome? | The second structural cause in §1.2, and untested — opus's finding was 🟢-capped by critic ownership, not only by the escalation rule. | Not attempted |
 
 ## 4. What each measured arm actually covers
 
@@ -142,10 +205,77 @@ Do not cite a result without its config — the arms are not interchangeable.
 | Result 9 | fable, generalist | non-total ordering |
 | Result 10 | **headless, diff inline, no tools** | model-only; the arm comparable to OpenRouter |
 | Results 11–17, 14a | **full pipeline**, headless + flags | pipeline-vs-single-pass, escalation behavior |
+| OpenRouter cross-model (§5.0) | **4 vendors, headless diff-inline, no tools, k=3** | multi-vendor recall vs. incumbent blind spots; diff-only precision cost. **Config-comparable only to Result 10** |
 
 ---
 
 ## 5. For the cross-model track (Gemini, Kimi K3, other vendors)
+
+### 5.0 The arm has now run — OpenRouter cross-model sweep (2026-07-30)
+
+Four vendors (Kimi K3, GPT-5.6 Sol, Gemini 3.1 Pro, and the incumbent Sonnet 5), **diff-inline
+/ no-tools / single-pass** — the Result-10-comparable config of §5.1 — over four ground-truth
+diffs from the arithmetic-eval review-fix chain, where the *next* commit's message is the
+answer key. Full write-up: `docs/working/experiment-cross-model-review-2026-07-30.md`. Findings
+are named, not numbered, here — that doc's "Result N" namespace collides with this one's.
+
+What it established:
+
+- **A second vendor buys recall on the incumbent's blind spots.** Four real weaknesses that
+  survived up to seven Claude-family review rounds were surfaced by non-Claude families: a
+  heredoc-delimiter-collision RCE, an unblocked UDP egress path in `confine.py`, a `pipefail`
+  loop-abort, and an `np.load` fail-open/doc mismatch. On the sharpest diff — two real High
+  bugs, one silently breaking the skill's primary path — **the incumbent Sonnet returned "no
+  findings" on all six replicates** while Sol caught both for ~$0.10. This is §1.4 ("a single
+  clean verdict is not assurance") observed cross-vendor: the incumbent's blind spots are
+  *correlated*, so resampling the same family cannot find them; a different family does. All
+  four are now fixed on this branch.
+
+- **Three of the four wins are Trap-4 (§5.4) cases** — true-mechanism / disputed-or-overstated
+  intent. The heredoc "guarantee," the "network disabled" prose, and the `np.load` line-305
+  claim each assert a property the code does not hold. `np.load` is textbook: an inline
+  "require a truthy literal" comment made every vendor except Kimi treat the gap as intended.
+  §5.4 named this the dominant false-negative/false-positive class from the adjudicator side;
+  the cross-model arm confirms it from the generation side, and it is *why* the fact-check
+  critic is the highest-value place to add a vendor (below).
+
+- **Union buys recall; consensus does not buy precision.** Cross-family issue-level Jaccard ran
+  well below within-family (every Sonnet-involving pair far below its own self-overlap) — §5.2's
+  "score on detection" in action. But the two most severe false positives were confident,
+  sometimes *unanimous*, claims about code that existed in a **sibling commit** the single-commit
+  diff hid; cross-family consensus *amplified* the error. This is the concrete cost §5.1 warned
+  of: diff-only is not the pipeline.
+
+- **Context management is now decided — 021.** That sibling-commit FP class forced the
+  diff-only↔agentic question §5.1 raises. Decision `021-reviewer-context-management.md` resolves
+  it as a staged path: **Stage 1 (git-only)** feeds the harness the full logical changeset
+  (sibling commits labelled "already committed — context only") plus enclosing files — killing
+  the FP class while keeping the sweep provider-portable, deterministic, and confound-controlled
+  (§5.1/§5.2's whole basis); **Stage 3** keeps the production agentic critic as a re-verification
+  gate, so "must have repo access" is honoured at *verification*, not at the cheap generation
+  fan-out. Recall win and precision cost reconciled without importing agentic non-determinism
+  into the portable sweep. Stage 1 explicitly does **not** recover cross-file interaction bugs
+  (the MD1-R1 class of Result 11) — that recall lives only in the Stage-3 agentic gate, which is
+  why Result 11's n=1 recovery (open question #1) is load-bearing, not incidental.
+
+- **Where to add a vendor — the fact-check critic first (hypothesis, tied to §1.1 and H5).**
+  Rather than run a whole second-family review (expensive, and the diff-only variant is the FP
+  machine above), scope the vendor to the least-stable, highest-leverage gate: `code-fact-check`
+  (§1.1). Independent evidence from a skill-suite rebuild is that many missed issues *originate*
+  in the fact-check stage; the three Trap-4 wins above corroborate it. Two refinements from this
+  doc are load-bearing: run the cross-vendor fact-check **k≥3, most-severe-wins** (§1.1), and
+  **audit the vendor's *clean* verdicts, not just its findings** (H5 — false attestation was
+  seen at sonnet and fable, and the D2 abstention above is a third instance). A narrower variant
+  routes only the specific critics with correlated incumbent blind spots. Both still require
+  021's Stage-1 context to avoid the sibling-commit FPs. (Full framing: follow-ups 5–6 of the
+  cross-model write-up.)
+
+- **Harness tooling now in place** (`scripts/cross-model-review.py`): reasoning-model
+  empty-content is recorded as an *errored* run, not a clean one (Kimi returns `content:null`
+  when the budget is spent inside the reasoning trace — it fired twice for real on D2); the
+  degraded stage-1 Jaccard double-count that could exceed 1.0 is fixed; and a per-model
+  **abstention rate** is reported, so a vendor that abstains its way to a perfect self-overlap
+  (the D2 Sonnet artifact) is legible rather than hidden — the discipline §5.2 and §1.4 demand.
 
 ### 5.1 Comparability — the rule that governs everything
 
@@ -169,9 +299,12 @@ same underlying mechanism, band-agnostic — which is what §1.1 of
 `experiment-results-full-pipeline-tiers-2026-07-30.md` uses and what Result 14a's 0.49/0.56
 figures are.
 
-### 5.3 Hypothesis updates from the 2026-07-30 arm
+### 5.3 Hypothesis updates from the 2026-07-30 full-pipeline arm
 
-Amend `research-cross-model-review-hypotheses.md` before using it:
+Amend `research-cross-model-review-hypotheses.md` before using it (the OpenRouter cross-model
+arm, §5.0, adds a second corroboration to **H5** — the incumbent's D2 abstention is false
+assurance from a third model, sonnet/fable being the first two — and independent confirmation
+of **H7/Trap-4** from the generation side):
 
 - **H4 (cross-file defects above the ceiling for every model) — falsified as stated.**
   MD1 R1 was recovered by opus under the full pipeline, with both call sites and the exact
@@ -208,8 +341,16 @@ Amend `research-cross-model-review-hypotheses.md` before using it:
    true-mechanism / disputed-intent. An in-code comment asserting a behavior is deliberate
    has repeatedly beaten correct reasoning — in adjudicators (Result 7's F18) and in
    reviewers (Result 15). The same docstring ("a deliberate small mercy") has now defeated
-   two separate agents in two separate arms. Treat intent claims as evidence to be weighed,
-   never as dispositive.
+   two separate agents in two separate arms, and §5.0 confirms it from the *generation*
+   side across three of four cross-vendor wins. Treat intent claims as evidence to be
+   weighed, never as dispositive.
+
+   **The pipeline manufactures this trap for itself.** Across the archived reports, nine
+   recommend *adding an intent comment* as the remedy — five as an equal-weight alternative
+   to fixing the code — and the next run's fact-check then rates that new comment
+   `Verified`. A review that closes a finding by documenting the behaviour has converted a
+   defect into a permanent blind spot. Cut this remedy regardless of which candidate in
+   `docs/working/dd-code-intent-claims.md` lands.
 
 ### 5.5 Reusable harness
 
