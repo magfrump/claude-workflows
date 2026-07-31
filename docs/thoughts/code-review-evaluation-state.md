@@ -275,7 +275,13 @@ What it established:
   diff hid; cross-family consensus *amplified* the error. This is the concrete cost §5.1 warned
   of: diff-only is not the pipeline.
 
-- **Context management is now decided — 021.** That sibling-commit FP class forced the
+- **Context management is now decided — 021; Stage 1 built 2026-07-31, untested.**
+  `scripts/cross-model-review.py --context-base <ref>` now assembles the Stage-1 prompt
+  (labelled sibling-branch diff + whole enclosing files; `--dry-run` for no-spend cost
+  projection). Offline measurement (`docs/working/stage1-context-cost-2026-07-31.md`):
+  prompts grow 2–6× to ~18k–41k tokens; worst call $0.248, full 4-model×2 sweep $4.37 —
+  both 021 guardrails hold. No model has seen the new prompt yet; the D3/D4 FP-kill
+  validation run awaits go-ahead. That sibling-commit FP class forced the
   diff-only↔agentic question §5.1 raises. Decision `021-reviewer-context-management.md` resolves
   it as a staged path: **Stage 1 (git-only)** feeds the harness the full logical changeset
   (sibling commits labelled "already committed — context only") plus enclosing files — killing

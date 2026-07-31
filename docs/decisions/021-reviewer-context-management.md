@@ -7,8 +7,12 @@ the cross-model / cheap-critic sweep as the primary consumer.
 `scripts/cross-model-review.py` and the `code-review` skill · standalone decision, not
 blocked. Synthesized into the unified state doc
 `docs/thoughts/code-review-evaluation-state.md` §5.0 and §2.
-**Task status**: complete (decision drafted, staged recommendation; Stage 1 ready to
-implement).
+**Task status**: complete (decision drafted, staged recommendation). Stage 1 **built
+2026-07-31** (`scripts/cross-model-review.py --context-base`, opt-in; diff-only default
+byte-identical to pre-021) — offline cost measurement in
+`docs/working/stage1-context-cost-2026-07-31.md` (worst call $0.248, sweep $4.37: both
+guardrails hold). **Not yet validated against any model** — the D3/D4 FP-kill re-run
+awaits go-ahead.
 
 ## Context
 

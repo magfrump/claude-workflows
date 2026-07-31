@@ -13,6 +13,19 @@ Design notes (see docs/working/experiment-results-code-review-2026-07-29.md):
   session experiments' headless arm (opus 5 vs 4.8), not the agentic arm, so
   cross-provider numbers are comparable: agentic context-fetch would confound
   model identity with retrieval behavior (tracker Thread 2).
+- Stage-1 context enrichment (decision 021, opt-in via --context-base): the
+  prompt gains (a) the sibling-branch diff from --context-base to the range
+  start, explicitly labelled "already committed - context only, not under
+  review", and (b) the full post-range contents of every file the reviewed
+  diff touches. This kills the sibling-commit / flattened-boundary
+  misattribution FP class (Results 3c & 5) while staying git-only, no-tools,
+  and byte-identical across models. Files larger than --max-inline-kb are
+  listed but not inlined (function-body extraction is the designated fallback,
+  not yet built). Without --context-base the prompt is byte-identical to the
+  pre-021 harness, so historical numbers stay comparable.
+- --dry-run builds the prompt, writes it to <out>/prompt.txt, and prints
+  per-section token estimates and projected per-model cost WITHOUT sending
+  anything (pricing fetch is skipped if OPENROUTER_API_KEY is unset).
 - Stage-1 matching is deterministic (same file + line ranges within +/-N).
   Stage-2 (same-underlying-issue) is a judge-model call, pinned by --judge;
   changing the judge invalidates prior numbers, so the judge id is stamped
@@ -59,6 +72,27 @@ FINDINGS:
 === DIFF ({label}) ===
 {diff}"""
 
+# Stage-1 (decision 021) variant. The labelling is a build requirement, not
+# decoration: unlabelled sibling context makes models flag already-merged code
+# as new (invert-the-thesis mitigation in 021).
+PROMPT_TEMPLATE_STAGE1 = """You are reviewing a code diff. You cannot run commands or read files; judge only from the material below. Review for: correctness bugs, security issues, performance problems, API/consistency drift, misleading docs/comments. Report only findings that matter - do not pad.
+
+The material has three kinds of section:
+- "UNDER REVIEW": the diff you are reviewing. Findings must be about this diff only.
+- "ALREADY COMMITTED - CONTEXT ONLY": earlier commits on the same branch. This code is NOT under review. Do not report findings on it. Use it to avoid misattribution: work that looks missing from the diff may already exist here.
+- "CURRENT FILE CONTENTS - CONTEXT ONLY": the full current contents of each file the diff touches. Not under review. Use these to resolve boundaries the diff flattens (enclosing functions, adjacent blocks) and to check how changed code is actually used.
+
+Output format, exactly:
+
+FINDINGS:
+1. <path>:<lines> | <Critical/High/Medium/Low/Informational> | <domain> | <short title> | <1-2 sentence description>
+
+(or the single line "FINDINGS: NONE"). Nothing after the list.
+
+=== UNDER REVIEW ({label}) ===
+{diff}
+{context}"""
+
 JUDGE_PROMPT = """Two code-review findings are below. Answer YES if they describe the same underlying issue (same mechanism AND same consequence, even in different words), NO otherwise. Answer with exactly YES or NO.
 
 Finding A: {a}
@@ -75,6 +109,70 @@ FINDING_RE = re.compile(
 def sh(args, cwd=None):
     # argv-exec, never shell strings (decision 018)
     return subprocess.run(args, cwd=cwd, capture_output=True, text=True, check=True).stdout
+
+
+def split_range(rev_range):
+    """Return (left, right) of a git range like 'a..b' / 'a...b'; right defaults to HEAD."""
+    parts = re.split(r"\.{2,3}", rev_range, maxsplit=1)
+    left = parts[0].strip()
+    right = parts[1].strip() if len(parts) > 1 and parts[1].strip() else "HEAD"
+    return left, right
+
+
+def build_stage1_context(repo, rev_range, context_base, max_inline_kb):
+    """Assemble decision-021 Stage-1 context sections.
+
+    Returns (context_text, stats) where stats maps section -> char count for the
+    dry-run report. Sections:
+      1. sibling-branch diff: context_base...<range-left>, i.e. the commits of the
+         logical changeset already committed before the range under review.
+      2. whole enclosing files: post-range (<range-right>) contents of every file
+         the reviewed diff touches. Files over max_inline_kb are listed, not
+         inlined (021 reserves function-body extraction as the large-file
+         fallback; until that exists, an explicit omission beats silent one).
+    """
+    left, right = split_range(rev_range)
+    parts = []
+    stats = {}
+
+    sibling = sh(["git", "-C", repo, "diff", f"{context_base}...{left}"])
+    if sibling.strip():
+        header = (f"\n=== ALREADY COMMITTED - CONTEXT ONLY, NOT UNDER REVIEW "
+                  f"(branch diff {context_base}...{left}) ===\n")
+        parts.append(header + sibling)
+        stats["sibling_diff"] = len(sibling)
+    else:
+        parts.append(f"\n=== ALREADY COMMITTED - CONTEXT ONLY ===\n(none: no sibling "
+                     f"commits between {context_base} and the range start)\n")
+        stats["sibling_diff"] = 0
+
+    touched = [p for p in sh(
+        ["git", "-C", repo, "diff", "--name-only", rev_range]).splitlines() if p.strip()]
+    inlined, skipped = 0, []
+    for path in touched:
+        try:
+            content = sh(["git", "-C", repo, "show", f"{right}:{path}"])
+        except subprocess.CalledProcessError:
+            # deleted by the range (or rename target missing at right): nothing to inline
+            parts.append(f"\n=== CURRENT FILE CONTENTS - CONTEXT ONLY ({path}) ===\n"
+                         f"(file does not exist at {right} - deleted or renamed by the diff)\n")
+            continue
+        if "\x00" in content[:8192]:
+            skipped.append((path, len(content), "binary"))
+            continue
+        if len(content) > max_inline_kb * 1024:
+            skipped.append((path, len(content), "over --max-inline-kb"))
+            continue
+        parts.append(f"\n=== CURRENT FILE CONTENTS - CONTEXT ONLY ({path} at {right}) ===\n"
+                     + content)
+        inlined += len(content)
+    if skipped:
+        lines = "\n".join(f"- {p} ({n // 1024} KB, {why})" for p, n, why in skipped)
+        parts.append("\n=== FILES TOO LARGE TO INLINE (context unavailable; judge these "
+                     "from the diff alone) ===\n" + lines + "\n")
+    stats["enclosing_files"] = inlined
+    stats["skipped_files"] = len(skipped)
+    return "".join(parts), stats
 
 
 def api(key, payload, retries=3):
@@ -197,6 +295,13 @@ def main():
     ap.add_argument("--max-usd", type=float, default=5.00, help="abort if projected spend exceeds this")
     ap.add_argument("--out", required=True, help="output directory")
     ap.add_argument("--analyze-only", action="store_true", help="recompute overlap from existing findings.jsonl")
+    ap.add_argument("--context-base", help="decision-021 Stage 1: enrich the prompt with the "
+                    "sibling-branch diff from this ref to the range start, plus whole enclosing "
+                    "files. Omit for the historical diff-only prompt.")
+    ap.add_argument("--max-inline-kb", type=int, default=64, help="Stage 1: files larger than "
+                    "this are listed but not inlined")
+    ap.add_argument("--dry-run", action="store_true", help="build the prompt, write it to "
+                    "<out>/prompt.txt, print token/cost projections, and exit without calling any model")
     args = ap.parse_args()
 
     os.makedirs(args.out, exist_ok=True)
@@ -204,25 +309,55 @@ def main():
     key = os.environ.get("OPENROUTER_API_KEY", "")
 
     if not args.analyze_only:
-        if not key:
+        if not key and not args.dry_run:
             sys.exit("OPENROUTER_API_KEY not set")
-        if not (args.repo and args.rev_range and args.models):
-            sys.exit("--repo, --range, and --models are required unless --analyze-only")
+        if not (args.repo and args.rev_range):
+            sys.exit("--repo and --range are required unless --analyze-only")
+        if not args.models and not args.dry_run:
+            sys.exit("--models is required unless --dry-run or --analyze-only")
 
         diff = sh(["git", "-C", args.repo, "diff", args.rev_range])
         if not diff.strip():
             sys.exit(f"empty diff for range {args.rev_range}")
-        prompt = PROMPT_TEMPLATE.format(label=f"{os.path.basename(args.repo)} {args.rev_range}", diff=diff)
+        label = f"{os.path.basename(args.repo)} {args.rev_range}"
+        if args.context_base:
+            context, ctx_stats = build_stage1_context(
+                args.repo, args.rev_range, args.context_base, args.max_inline_kb)
+            prompt = PROMPT_TEMPLATE_STAGE1.format(label=label, diff=diff, context=context)
+        else:
+            context, ctx_stats = "", {}
+            prompt = PROMPT_TEMPLATE.format(label=label, diff=diff)
         prompt_sha = hashlib.sha256(prompt.encode()).hexdigest()[:12]
 
         # cost guard: ~4 chars/token heuristic on input, assume 1.5k output tokens/run
-        pricing = fetch_pricing(key)
+        pricing = fetch_pricing(key) if key else {}
         est_in_tok = len(prompt) / 4
         projected = 0.0
         for m in args.models:
             pin, pout = pricing.get(m, (0, 0))
             projected += args.replicates * (est_in_tok * pin + 1500 * pout)
-        print(f"projected spend: ${projected:.2f} across {len(args.models)} models x {args.replicates}")
+        mode = f"stage1(base={args.context_base})" if args.context_base else "diff-only"
+        print(f"context mode: {mode}, prompt sha {prompt_sha}")
+        print(f"prompt size: {len(prompt):,} chars, ~{int(est_in_tok):,} tokens "
+              f"(diff {len(diff):,} chars"
+              + (f", sibling diff {ctx_stats.get('sibling_diff', 0):,}, enclosing files "
+                 f"{ctx_stats.get('enclosing_files', 0):,}, "
+                 f"{ctx_stats.get('skipped_files', 0)} skipped" if args.context_base else "")
+              + ")")
+        if args.models:
+            print(f"projected spend: ${projected:.2f} across {len(args.models)} models x {args.replicates}")
+            if pricing:
+                for m in args.models:
+                    pin, pout = pricing.get(m, (0, 0))
+                    per_call = est_in_tok * pin + 1500 * pout
+                    print(f"  {m}: ~${per_call:.3f}/call")
+        if args.dry_run:
+            with open(os.path.join(args.out, "prompt.txt"), "w") as fh:
+                fh.write(prompt)
+            print(f"dry run: prompt written to {os.path.join(args.out, 'prompt.txt')}; no calls made"
+                  + ("" if pricing or not args.models else
+                     " (no OPENROUTER_API_KEY: token counts only, no $ projection)"))
+            return
         if projected > args.max_usd:
             sys.exit(f"projected ${projected:.2f} > --max-usd {args.max_usd}; raise the cap to proceed")
 
@@ -239,6 +374,7 @@ def main():
                         fh.write(json.dumps({
                             "model": model, "replicate": r, "prompt_sha": prompt_sha,
                             "range": args.rev_range, "repo": os.path.basename(args.repo),
+                            "context_base": args.context_base,
                             "error": f"{type(e).__name__} {code}".strip(),
                             "parse_ok": False, "n_findings": 0, "findings": [],
                         }) + "\n")
@@ -256,6 +392,7 @@ def main():
                         fh.write(json.dumps({
                             "model": model, "replicate": r, "prompt_sha": prompt_sha,
                             "range": args.rev_range, "repo": os.path.basename(args.repo),
+                            "context_base": args.context_base,
                             "error": f"empty-content finish_reason={finish}",
                             "parse_ok": False, "n_findings": 0, "findings": [],
                         }) + "\n")
@@ -269,6 +406,7 @@ def main():
                         "prompt_sha": prompt_sha,
                         "range": args.rev_range,
                         "repo": os.path.basename(args.repo),
+                        "context_base": args.context_base,
                         "parse_ok": ok,
                         "n_findings": len(rows),
                         "findings": rows,
