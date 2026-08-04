@@ -31,18 +31,27 @@ Narratives already partially considered there are tagged.
 
 ---
 
-## Narrative 2 — The taxonomy launders the firehose
+## Narrative 2 — OOS/NB become the judge's uncertainty dump
 
-**Root cause:** WUS weights (`OOS = 0.0`, `NB = −0.1`, spec §2.2) are too gentle relative to the observed failure mode: the agentic arm's ~11.6 findings/PR are mostly *factually true but useless* observations about adjacent code.
+*(Revised 2026-08-03: the original draft of this narrative claimed the gentle OOS/NB
+weights would let the firehose arm score near a curated arm. That was wrong twice over:
+(a) the differential is the design intent — an accurate low-impact finding costs seconds
+of reading, while an FP that requests a change can introduce a new bug, so they belong an
+order of magnitude apart; (b) WUS's denominator is total predictions, so OOS/NB dilute
+even at weight ~0 — a firehose arm at 11.6 findings/PR with 0.5 TP + 8 OOS + 3 NB lands
+near WUS ≈ 0.009 vs ≈ 0.27 for a curated 1.5-findings/PR arm. The surviving risk is
+misrouting *into* the cheap categories, below.)*
 
-**Chain of consequences:** Under the v1 judge these scored FP (4.9% precision — visibly terrible). Under v2, Stage 1 verifies them as facts, Stage 2 routes most to OOS (weight 0.0) and Stage 4 routes the rest to NB (−0.1). The firehose arm's WUS lands near the curated arm's WUS because the penalty for noise is an order of magnitude smaller than the reward for one TP. The fork "works," the numbers look respectable, and the metric that was built to expose the precision problem now hides it. Arm selection defaults back to gut feel; six months later the review process still opens with 12 findings on a clean PR.
+**Root cause:** The gentle buckets are only safe if entry into them is strict, and Stage 1's gate ("is the claim factually true?") is unfalsifiable-friendly: vague advisory findings — "consider adding validation here", "this could be more robust" — cannot be factually *false*, so a lenient judge routes them through Stage 1 and into NB at −0.1 (or OOS at 0.0) when they are epistemically FP-like: same review-and-dismiss friction as an FP, none of the verifiable content.
 
-**Observable outcome:** WUS bootstrap CIs overlap across arms whose cost differs 100× and whose findings/PR differ 8×; clean-PR says-clean rate stays at 0% while WUS reads ≥ 0.3.
+**Chain of consequences:** The verbose arm's output skews toward unfalsifiable advice (the observed n=7 clean-PR pattern: 12 findings, mean severity 4.35, "critical-sounding"). Stage 1 grants "true" because nothing checkable is asserted; the quote/line verification (§4) passes trivially because the quoted code exists — the *claim about it* was never falsifiable. FP counts drop not because the process improved but because the FP definition stopped seeing this class. WUS and precision both improve on paper across all arms simultaneously; the metric loses its ability to see the dominant noise class, and the friction it was built to price stays unpriced.
 
-**Plausibility:** Likely (>50%) — this is the direct continuation of the observed n=7 behavior. · **Severity:** High
-**Tag:** [PRIOR CONSIDERATION] — draft-review A4/A5 flagged WUS as precision-side-only and weights as provisional; DD stress-test "invert the thesis" flagged GT-side laundering.
+**Observable outcome:** In §6 audit artifacts, a large NB/OOS population whose findings contain no falsifiable claim (no predicted behavior, no concrete defect); category shares shift heavily from v1-FP to NB/OOS while human spot-checks still rate the same findings "would dismiss without action."
 
-**Mitigation:** Add a discrimination acceptance criterion to spec §7: on a 10-instance pilot, WUS (or the reported WUS + says-clean pair) must rank a deliberately-verbose arm below a curated arm and below diff-only; if not, revise `w_OOS`/`w_NB` (or add a per-PR findings-count denominator penalty) before any full run. Pre-register the expected ordering in the fork's README so weight-tuning-after-results is visible as such.
+**Plausibility:** Plausible · **Severity:** High
+**Tag:** [PRIOR CONSIDERATION] — draft-review A4/A5 flagged WUS as precision-side-only with provisional weights pending human calibration.
+
+**Mitigation:** Tighten spec §3 Stage 1 to require a *falsifiable* factual claim as the entry condition — a finding must assert something that could be false (a concrete defect, a predicted misbehavior); unfalsifiable advisory findings route to FP or a dedicated zero-content category rather than inheriting NB's mild weight. Keep the 10-instance discrimination pilot in §7, reframed as *validation* that the intended denominator dilution separates firehose < curated as designed — not as a weights fix — and include NB/OOS-routed findings in the Narrative-1 kappa sample so misrouting is measured, not assumed.
 
 ---
 
@@ -92,7 +101,7 @@ Narratives already partially considered there are tagged.
 
 **Must address before proceeding:**
 - **Narrative 1 (sequencing):** make the kappa pilot a hard precondition of full-arm judging — it is ~2 h of human time against ~$60+ of judge spend and all downstream credibility. This is also DD design [A]'s falsifiable hypothesis; running it first is what makes the counter-evidence window short.
-- **Narrative 2 (discrimination):** add the pre-registered arm-ordering pilot to §7. A GT-interpretation fork whose new metric can't fail the firehose has failed at its purpose.
+- **Narrative 2 (Stage-1 falsifiability):** the cheap categories must be strict at the door — require a falsifiable claim to pass Stage 1, and validate via the pre-registered arm-ordering pilot in §7 that the denominator dilution separates arms as designed.
 
 **Worth mitigating:**
 - **Narrative 3:** cheap — a template field (verbatim matched GT comment) plus 10 extra adjudication rows inside the Narrative-1 sample.
