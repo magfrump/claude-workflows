@@ -127,6 +127,16 @@ clean.
   verification is the universal baseline; `ast`/`libCST` enrichment is best-effort with
   `parse_fallback: true` flagging. Never assume the toolchain parses Py2 (this was the
   spec's R1 factual error, already fixed).
+- **Dataset diffs can silently drop whole files.** `astropy__astropy-10256` commit
+  `e3f9c959`: the real upstream commit rewrites `cextern/cfitsio/lib/eval_y.c` (3,734
+  lines) but the d5c5 `diff_text` omits the file entirely, so the reconstructed worktree
+  had a Bison-2.4.1 `eval_y.c` against a Bison-3.0.5 `eval_tab.h`. The review's sev-8
+  "lexer/parser token mismatch" finding was *true of the tree it reviewed* but is a
+  reconstruction artifact, not a PR bug — and the judge scores it as FP. Only 1 of 30
+  b30 instances affected (swept 2026-08-03 via upstream `--name-only` vs dataset file
+  lists), but the fork must add a reconstruction-fidelity check: when PR commits exist
+  upstream, diff the reconstructed head's file list against the real commit's and flag
+  mismatches in `generation.jsonl` (like `parse_fallback`).
 - All astropy so far — hold out a second repo slice before drawing writeup conclusions.
 - All 5 GT change-points in the judged n=7 slice were E-type; F-band recall untested.
 - Judge results are only internally comparable while the judge stays pinned; published
