@@ -1,0 +1,80 @@
+{
+  "experiment": "E1 \u2014 is full-pass cost findings-dependent? (review-canon.md \u00a73)",
+  "design": "Full pipeline pass-1 (k=3 fact-check + critics + rubric, NO fix loop) on dirty and clean states of 3 canon instances. Sequential cells; every subagent writes its artifact to disk stamped with the cell Commit SHA before returning; resume = scan artifacts, validate Commit line, dispatch only missing stages. Token usage recorded per agent from task notifications \u2014 tokens are the E1 metric.",
+  "critic_sets": {
+    "mfc-csp": [
+      "security",
+      "performance",
+      "api-consistency",
+      "architecture",
+      "ui-visual"
+    ],
+    "mfc-corpus": [
+      "security",
+      "performance",
+      "api-consistency",
+      "architecture"
+    ],
+    "mfc-fscompat": [
+      "security",
+      "performance",
+      "api-consistency",
+      "architecture"
+    ]
+  },
+  "critic_set_rule": "identical within an instance's dirty/clean pair (comparability)",
+  "cells": {
+    "csp-dirty": {
+      "range": "d86d2dc..d90d6bb",
+      "commit": "d90d6bb",
+      "stages": {
+        "fc-r1": "in-flight",
+        "fc-r2": "in-flight",
+        "fc-r3": "in-flight"
+      },
+      "tokens": {}
+    },
+    "csp-clean": {
+      "range": "d86d2dc..4f018ab",
+      "commit": "4f018ab",
+      "stages": {},
+      "tokens": {}
+    },
+    "corpus-dirty": {
+      "range": "dc6dfb0..2dc403e",
+      "commit": "2dc403e",
+      "stages": {},
+      "tokens": {}
+    },
+    "corpus-clean": {
+      "range": "dc6dfb0..4de2b00",
+      "commit": "4de2b00",
+      "stages": {},
+      "tokens": {}
+    },
+    "fscompat-dirty": {
+      "range": "d86d2dc..b64c1ca",
+      "commit": "b64c1ca",
+      "stages": {},
+      "tokens": {}
+    },
+    "fscompat-clean": {
+      "range": "d86d2dc..2cd3b67",
+      "commit": "2cd3b67",
+      "stages": {},
+      "tokens": {}
+    }
+  },
+  "cell_order": [
+    "csp-dirty",
+    "csp-clean",
+    "fscompat-dirty",
+    "fscompat-clean",
+    "corpus-dirty",
+    "corpus-clean"
+  ],
+  "stage_list_per_cell": "fc-r1 fc-r2 fc-r3 fc-merge <critics per set> rubric",
+  "resume_rule": "a stage is DONE iff its artifact exists at runs/review-arms/e1/<cell>/ with a Commit: line matching the cell commit; anything else re-dispatches",
+  "confound_notes": "clean ranges are supersets of dirty ranges (fixes add code, incl. tests); this is inherent to the question 'what does full review cost on the state you actually re-review'. corpus labels/scope: app/ code only, mirror the historical review scope in briefs.",
+  "status": "csp-dirty stage 1 dispatched 2026-08-06"
+}
