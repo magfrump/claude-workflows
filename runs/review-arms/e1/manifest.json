@@ -28,16 +28,46 @@
       "range": "d86d2dc..d90d6bb",
       "commit": "d90d6bb",
       "stages": {
-        "fc-r1": "in-flight",
-        "fc-r2": "in-flight",
-        "fc-r3": "in-flight"
+        "fc-r1": "done",
+        "fc-r2": "done",
+        "fc-r3": "done",
+        "fc-merge": "done",
+        "critic-security": "done",
+        "critic-performance": "done",
+        "critic-api-consistency": "done",
+        "critic-architecture": "done",
+        "critic-ui-visual": "done",
+        "rubric": "done"
       },
-      "tokens": {}
+      "tokens": {
+        "fc-r1": 80180,
+        "fc-r2": 77131,
+        "fc-r3": 88778,
+        "fc-merge": 90427,
+        "critic-ui-visual": 75030,
+        "critic-performance": 63964,
+        "critic-security": 68592,
+        "critic-architecture": 70580,
+        "critic-api-consistency": 76596,
+        "rubric": 126319
+      },
+      "result": {
+        "status": "DOES NOT PASS",
+        "red": 4,
+        "amber": 12,
+        "consider": 15,
+        "confirmed_good": 6,
+        "total_tokens": 817597
+      }
     },
     "csp-clean": {
       "range": "d86d2dc..4f018ab",
       "commit": "4f018ab",
-      "stages": {},
+      "stages": {
+        "fc-r1": "in-flight",
+        "fc-r2": "in-flight",
+        "fc-r3": "in-flight"
+      },
       "tokens": {}
     },
     "corpus-dirty": {
@@ -76,5 +106,5 @@
   "stage_list_per_cell": "fc-r1 fc-r2 fc-r3 fc-merge <critics per set> rubric",
   "resume_rule": "a stage is DONE iff its artifact exists at runs/review-arms/e1/<cell>/ with a Commit: line matching the cell commit; anything else re-dispatches",
   "confound_notes": "clean ranges are supersets of dirty ranges (fixes add code, incl. tests); this is inherent to the question 'what does full review cost on the state you actually re-review'. corpus labels/scope: app/ code only, mirror the historical review scope in briefs.",
-  "status": "csp-dirty stage 1 dispatched 2026-08-06"
+  "status": "csp-dirty COMPLETE (817,597 tokens); csp-clean stage 1 in flight"
 }
