@@ -17,11 +17,20 @@ piece 030 queued that didn't exist yet), and a cross-arm summary.
 | Arm | 030 id | Config | Hypothesis (from 030) |
 |-----|--------|--------|------------------------|
 | `base` | [0] | Stage-1 context, k=1, `anthropic/claude-sonnet-5` | judge-parseable findings, median ≤ $0.35/call |
-| `small` | [3] | same, `openai/gpt-5.6-sol` | ≥60% of base's verified-bug recall at ≤⅓ cost |
+| `small` | [3] | same, `google/gemini-3.1-flash-lite` | ≥60% of base's verified-bug recall at ≤⅓ cost |
 | `k3` | [7] | same as base, k=3, keep findings ≥2 replicates agree on | cuts FP-class findings ≥30% vs k=1 |
 
 Not built: [8] rubric/checklist call — 030 demoted it to build-only-if-base-precision-
 proves-deficient.
+
+Small-arm pin correction (2026-08-06): originally `openai/gpt-5.6-sol` per the
+2026-07-30 experiment's "Sol ~$0.03/call" note, but current OpenRouter pricing has
+Sol at $5/$30 per M — ~2.7× sonnet-5 ($2/$10), which inverts the "cost floor" label
+and violates the ≤⅓-cost premise of the 030 hypothesis. Repinned to
+`google/gemini-3.1-flash-lite` ($0.25/$1.50; ~$0.006/call at a 15k-token prompt vs
+~$0.045 for base). Gemini is an FP-validated family at pro tier; the flash-lite tier
+still owes a D3/D4 FP re-check before its findings are trusted (030's per-model
+re-validation duty).
 
 The consensus filter reuses the engine's two-stage matching (deterministic
 file+line-overlap pre-filter, then the pinned stage-2 judge when `OPENROUTER_API_KEY`

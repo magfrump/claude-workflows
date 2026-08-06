@@ -58,13 +58,18 @@ cmr = importlib.util.module_from_spec(_spec)
 _spec.loader.exec_module(cmr)
 
 # Model pins follow the validated 2026-07-31 sweep families: sonnet-5 is the
-# incumbent mid-tier family, gpt-5.6-sol the cheap family that still found
-# real High bugs in the 2026-07-30 experiment (Result 4).
+# incumbent mid-tier family. The small arm is pinned to gemini-3.1-flash-lite
+# ($0.25/$1.50 per M vs sonnet-5's $2/$10, checked 2026-08-06) - NOT gpt-5.6-sol,
+# whose current pricing ($5/$30) is ~2.7x sonnet-5 despite the 2026-07-30
+# experiment notes calling Sol cheap; only <=1/3 of base cost satisfies the 030
+# arm-[3] hypothesis premise. Gemini is one of the four FP-validated families
+# (at pro tier - the flash-lite tier still owes a D3/D4 FP re-check, 030's
+# per-model re-validation duty).
 ARMS = {
     "base": {"model": "anthropic/claude-sonnet-5", "replicates": 1, "consensus": None,
              "note": "030 arm [0]: promoted Stage-1 default, k=1"},
-    "small": {"model": "openai/gpt-5.6-sol", "replicates": 1, "consensus": None,
-              "note": "030 arm [3]: Sol-class cost floor"},
+    "small": {"model": "google/gemini-3.1-flash-lite", "replicates": 1, "consensus": None,
+              "note": "030 arm [3]: cost floor (~1/8 base input price)"},
     "k3": {"model": "anthropic/claude-sonnet-5", "replicates": 3, "consensus": 2,
            "note": "030 arm [7]: keep findings >=2 of 3 replicates agree on"},
 }
