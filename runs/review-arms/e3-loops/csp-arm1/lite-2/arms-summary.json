@@ -1,0 +1,14 @@
+{
+  "repo": "wt-csp-arm1",
+  "range": "d86d2dc..HEAD",
+  "context_base": "d86d2dc",
+  "arms": {
+    "base": {
+      "dry_run": true,
+      "model": "anthropic/claude-sonnet-5",
+      "replicates": 1,
+      "consensus": null,
+      "note": "030 arm [0]: promoted Stage-1 default, k=1"
+    }
+  }
+}
