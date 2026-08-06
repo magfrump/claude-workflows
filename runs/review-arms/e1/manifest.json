@@ -64,11 +64,37 @@
       "range": "d86d2dc..4f018ab",
       "commit": "4f018ab",
       "stages": {
-        "fc-r1": "in-flight",
-        "fc-r2": "in-flight",
-        "fc-r3": "in-flight"
+        "fc-r1": "done",
+        "fc-r2": "done",
+        "fc-r3": "done",
+        "fc-merge": "done",
+        "critic-security": "done",
+        "critic-performance": "done",
+        "critic-api-consistency": "done",
+        "critic-architecture": "done",
+        "critic-ui-visual": "done",
+        "rubric": "done"
       },
-      "tokens": {}
+      "tokens": {
+        "fc-r2": 87534,
+        "fc-r3": 87501,
+        "fc-r1": 99598,
+        "fc-merge": 106701,
+        "critic-performance": 69899,
+        "critic-security": 69151,
+        "critic-ui-visual": 80329,
+        "critic-architecture": 75973,
+        "critic-api-consistency": 83733,
+        "rubric": 137587
+      },
+      "result": {
+        "status": "DOES NOT PASS",
+        "red": 4,
+        "amber": 10,
+        "consider": 18,
+        "confirmed_good": 7,
+        "total_tokens": 898006
+      }
     },
     "corpus-dirty": {
       "range": "dc6dfb0..2dc403e",
@@ -106,5 +132,15 @@
   "stage_list_per_cell": "fc-r1 fc-r2 fc-r3 fc-merge <critics per set> rubric",
   "resume_rule": "a stage is DONE iff its artifact exists at runs/review-arms/e1/<cell>/ with a Commit: line matching the cell commit; anything else re-dispatches",
   "confound_notes": "clean ranges are supersets of dirty ranges (fixes add code, incl. tests); this is inherent to the question 'what does full review cost on the state you actually re-review'. corpus labels/scope: app/ code only, mirror the historical review scope in briefs.",
-  "status": "csp-dirty COMPLETE (817,597 tokens); csp-clean stage 1 in flight"
+  "status": "csp pair COMPLETE; fscompat pair next",
+  "pair_results": {
+    "csp": {
+      "dirty_tokens": 817597,
+      "clean_tokens": 898006,
+      "clean_over_dirty": 1.098,
+      "dirty_verdict": "4R/12A",
+      "clean_verdict": "4R/10A",
+      "note": "clean pass cost 110% of dirty; clean still red (1 new defect: vacuous test regexes; 1 unverified-runtime Breaking; 2 Structural). Fixed-pass model supported."
+    }
+  }
 }
