@@ -41,3 +41,4 @@ __pycache__/
 # to third-party APIs — never commit them (security finding A6, 2026-07-31 review).
 runs/**/prompt.txt
 runs/review-arms/e1/wt-*
+runs/review-arms/e3-loops/wt-*

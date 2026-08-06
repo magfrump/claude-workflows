@@ -1,0 +1,47 @@
+{
+  "experiment": "E3-loops \u2014 arm1 (lite loop then full loop) vs arm2 (full loop), FULL review-fix loops, fix tokens counted",
+  "hypothesis": "fixes driven by lite review reduce the number of full-review iterations",
+  "blocker_defs": {
+    "lite": "Critical|High|Medium (lite severity skews low; design choice)",
+    "full": "rubric \ud83d\udd34 rows"
+  },
+  "caps": {
+    "lite_iterations": 3,
+    "full_iterations": 3
+  },
+  "fix_rule": "fixer may fix OR waive-with-justification each blocker; waived rows count resolved (production fix-or-acknowledge rule)",
+  "reuse": {
+    "csp-arm2-full-1": "E1 csp-dirty pass (817,597 tok, 4R) reused as iteration 1",
+    "csp-arm1-lite-1": "E2 mfc-csp base run reused as lite iteration 1 (findings: dev-eval Medium, dynamic-rendering Medium, x-nonce Low, prefetch Low -> blockers: 2 Mediums)"
+  },
+  "lite_transport_note": "prompt built by scripts/review-arms.py --dry-run (byte-identical Stage-1 prompt); consumed by a no-tools sonnet subagent (no OpenRouter key in session); deviation recorded",
+  "instances": {
+    "csp": {
+      "base": "d86d2dc",
+      "dirty": "d90d6bb",
+      "arm1": {
+        "branch": "e3/csp-arm1",
+        "wt": "wt-csp-arm1",
+        "stages": {
+          "lite-1": "reused-from-E2",
+          "fix-1": "in-flight"
+        },
+        "tokens": {
+          "lite-1": 22851
+        }
+      },
+      "arm2": {
+        "branch": "e3/csp-arm2",
+        "wt": "wt-csp-arm2",
+        "stages": {
+          "full-1": "reused-from-E1",
+          "fix-1": "in-flight"
+        },
+        "tokens": {
+          "full-1": 817597
+        }
+      }
+    }
+  },
+  "status": "csp: both arm fixers in flight"
+}
