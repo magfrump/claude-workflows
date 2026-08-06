@@ -58,6 +58,16 @@ errored-run counts).
   secret screening. Operator-owned repos only; otherwise add a screening pass first.
 - Two-dot ranges only with `--context-base` (three-dot makes sibling context overlap
   the reviewed diff — see `split_range` docstring).
+- **Pick `--context-base` tightly.** The sibling section inlines the whole diff from
+  the base to the range start; on a merge-heavy branch a loose base explodes the
+  prompt (observed 2026-08-06 on meta-formalism-copilot: base `HEAD~10` → 789 KB
+  sibling diff, ~210k tokens/call; base at the range start → ~12k tokens). When the
+  range under review *is* the branch tip, set `--context-base` equal to the range
+  start (empty sibling section; you still get the enclosing files). The sibling
+  section only earns its tokens when reviewing a mid-branch slice whose sibling
+  commits are themselves modest. Always `--dry-run` first and read the token line.
+- Repos without a `main` branch need explicit refs (the wrapper preflights these and
+  lists local branches on failure).
 - Findings are *candidate* findings: the agentic critic remains the production
   re-verify authority (021 Stage 3); arm output is loop/benchmark signal, not verdicts.
 

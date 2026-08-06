@@ -120,6 +120,28 @@ def main():
     args = ap.parse_args()
 
     key = os.environ.get("OPENROUTER_API_KEY", "")
+
+    # Preflight the refs once, here, so a bad --range/--context-base fails with
+    # an actionable message instead of a git traceback from inside each arm.
+    left, right = cmr.split_range(args.rev_range)
+    for label, ref in [("--range start", left), ("--range end", right),
+                       ("--context-base", args.context_base)]:
+        r = subprocess.run(["git", "-C", args.repo, "rev-parse", "--verify",
+                            "--quiet", f"{ref}^{{commit}}"], capture_output=True)
+        if r.returncode != 0:
+            branches = subprocess.run(["git", "-C", args.repo, "branch",
+                                       "--format=%(refname:short)"],
+                                      capture_output=True, text=True).stdout.split()
+            sys.exit(f"{label} ref '{ref}' does not resolve in {args.repo}\n"
+                     f"local branches there: {', '.join(branches) or '(none)'}\n"
+                     f"hint: repos without 'main' need explicit refs, e.g. "
+                     f"--range 'HEAD~5..HEAD' --context-base HEAD~10, or the "
+                     f"repo's actual base branch")
+    if not subprocess.run(["git", "-C", args.repo, "diff", "--quiet",
+                           args.rev_range], capture_output=True).returncode:
+        sys.exit(f"empty diff for range {args.rev_range} in {args.repo} - "
+                 f"nothing to review")
+
     os.makedirs(args.out, exist_ok=True)
     summary = {}
 
