@@ -26,7 +26,8 @@
           "lite-1": "reused-from-E2",
           "fix-1": "done",
           "lite-2": "done",
-          "full-1": "critics in-flight"
+          "full-1": "done",
+          "fix-2": "dispatching"
         },
         "tokens": {
           "lite-1": 22851,
@@ -40,7 +41,8 @@
           "full-1-critic-architecture": 75909,
           "full-1-critic-security": 70111,
           "full-1-critic-ui-visual": 86771,
-          "full-1-critic-api-consistency": 91126
+          "full-1-critic-api-consistency": 91126,
+          "full-1-rubric": 133634
         },
         "fix_1_result": {
           "commit": "e5d95a9",
@@ -52,7 +54,13 @@
           ],
           "tests": "221/221 pass"
         },
-        "lite_loop_result": "CLEAN after 2 lite iterations (lite-2: 2 Low findings, 0 blockers)"
+        "lite_loop_result": "CLEAN after 2 lite iterations (lite-2: 2 Low findings, 0 blockers)",
+        "full_1_result": {
+          "status": "DOES NOT PASS",
+          "red": 4,
+          "amber": 12,
+          "note": "reds \u2248 arm2 iter-1 (nonce, connect-src, untested buildCsp, Edge-runtime comment); lite loop preempted none; lite carve-out landed in Confirmed Good; waive respected by critics"
+        }
       },
       "arm2": {
         "branch": "e3/csp-arm2",
@@ -60,7 +68,8 @@
         "stages": {
           "full-1": "reused-from-E1",
           "fix-1": "done",
-          "full-2": "critics in-flight"
+          "full-2": "done",
+          "fix-2": "dispatching"
         },
         "tokens": {
           "full-1": 817597,
@@ -73,7 +82,8 @@
           "full-2-critic-architecture": 88822,
           "full-2-critic-api-consistency": 90773,
           "full-2-critic-security": 95455,
-          "full-2-critic-ui-visual": 80594
+          "full-2-critic-ui-visual": 80594,
+          "full-2-rubric": 156073
         },
         "fix_1_result": {
           "commit": "99e1229",
@@ -84,6 +94,12 @@
             "R4 force-dynamic"
           ],
           "tests": "234/234 pass"
+        },
+        "full_2_result": {
+          "status": "DOES NOT PASS",
+          "red": 2,
+          "amber": 15,
+          "note": "all 4 iter-1 reds verified fixed; remaining reds: Edge-runtime comment (1-line) + immutable commit-message claim (unfixable \u2014 waive candidate)"
         }
       }
     }
