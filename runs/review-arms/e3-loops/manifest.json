@@ -26,7 +26,7 @@
           "lite-1": "reused-from-E2",
           "fix-1": "done",
           "lite-2": "done",
-          "full-1": "dispatching"
+          "full-1": "critics in-flight"
         },
         "tokens": {
           "lite-1": 22851,
@@ -34,7 +34,13 @@
           "lite-2": 59558,
           "full-1-fc-r3": 85806,
           "full-1-fc-r2": 86577,
-          "full-1-fc-r1": 98505
+          "full-1-fc-r1": 98505,
+          "full-1-fc-merge": 89859,
+          "full-1-critic-performance": 66552,
+          "full-1-critic-architecture": 75909,
+          "full-1-critic-security": 70111,
+          "full-1-critic-ui-visual": 86771,
+          "full-1-critic-api-consistency": 91126
         },
         "fix_1_result": {
           "commit": "e5d95a9",
@@ -54,14 +60,20 @@
         "stages": {
           "full-1": "reused-from-E1",
           "fix-1": "done",
-          "full-2": "in-flight"
+          "full-2": "critics in-flight"
         },
         "tokens": {
           "full-1": 817597,
           "fix-1": 77427,
           "full-2-fc-r3": 86000,
           "full-2-fc-r2": 93410,
-          "full-2-fc-r1": 96055
+          "full-2-fc-r1": 96055,
+          "full-2-fc-merge": 101894,
+          "full-2-critic-performance": 100897,
+          "full-2-critic-architecture": 88822,
+          "full-2-critic-api-consistency": 90773,
+          "full-2-critic-security": 95455,
+          "full-2-critic-ui-visual": 80594
         },
         "fix_1_result": {
           "commit": "99e1229",
