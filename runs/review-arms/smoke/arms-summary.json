@@ -1,0 +1,28 @@
+{
+  "repo": "workspace",
+  "range": "82318e8~1..82318e8",
+  "context_base": "82318e8~4",
+  "arms": {
+    "base": {
+      "dry_run": true,
+      "model": "anthropic/claude-sonnet-5",
+      "replicates": 1,
+      "consensus": null,
+      "note": "030 arm [0]: promoted Stage-1 default, k=1"
+    },
+    "small": {
+      "dry_run": true,
+      "model": "openai/gpt-5.6-sol",
+      "replicates": 1,
+      "consensus": null,
+      "note": "030 arm [3]: Sol-class cost floor"
+    },
+    "k3": {
+      "dry_run": true,
+      "model": "anthropic/claude-sonnet-5",
+      "replicates": 3,
+      "consensus": 2,
+      "note": "030 arm [7]: keep findings >=2 of 3 replicates agree on"
+    }
+  }
+}

@@ -1,0 +1,18 @@
+{
+  "repo": "meta-formalism-copilot",
+  "range": "dc6dfb0..2dc403e",
+  "context_base": "dc6dfb0",
+  "arms": {
+    "base": {
+      "model": "anthropic/claude-sonnet-5",
+      "replicates": 1,
+      "consensus": null,
+      "note": "030 arm [0]: promoted Stage-1 default, k=1",
+      "runs_ok": 1,
+      "runs_errored": 0,
+      "findings_raw": 3,
+      "tokens_in": 152961,
+      "tokens_out": 12165
+    }
+  }
+}
