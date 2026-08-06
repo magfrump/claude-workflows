@@ -145,8 +145,36 @@
     "fscompat-clean": {
       "range": "d86d2dc..2cd3b67",
       "commit": "2cd3b67",
-      "stages": {},
-      "tokens": {}
+      "stages": {
+        "fc-r1": "done",
+        "fc-r2": "done",
+        "fc-r3": "done",
+        "fc-merge": "done",
+        "critic-security": "done",
+        "critic-performance": "done",
+        "critic-api-consistency": "done",
+        "critic-architecture": "done",
+        "rubric": "done"
+      },
+      "tokens": {
+        "fc-r1": 74579,
+        "fc-r3": 70453,
+        "fc-r2": 75714,
+        "fc-merge": 89221,
+        "critic-security": 65629,
+        "critic-architecture": 65143,
+        "critic-api-consistency": 68779,
+        "critic-performance": 102174,
+        "rubric": 117992
+      },
+      "result": {
+        "status": "DOES NOT PASS",
+        "red": 1,
+        "amber": 12,
+        "consider": 12,
+        "confirmed_good": 10,
+        "total_tokens": 729684
+      }
     }
   },
   "cell_order": [
@@ -160,7 +188,7 @@
   "stage_list_per_cell": "fc-r1 fc-r2 fc-r3 fc-merge <critics per set> rubric",
   "resume_rule": "a stage is DONE iff its artifact exists at runs/review-arms/e1/<cell>/ with a Commit: line matching the cell commit; anything else re-dispatches",
   "confound_notes": "clean ranges are supersets of dirty ranges (fixes add code, incl. tests); this is inherent to the question 'what does full review cost on the state you actually re-review'. corpus labels/scope: app/ code only, mirror the historical review scope in briefs.",
-  "status": "fscompat-dirty COMPLETE (735,602); fscompat-clean next",
+  "status": "fscompat pair COMPLETE; corpus pair next",
   "pair_results": {
     "csp": {
       "dirty_tokens": 817597,
@@ -169,6 +197,14 @@
       "dirty_verdict": "4R/12A",
       "clean_verdict": "4R/10A",
       "note": "clean pass cost 110% of dirty; clean still red (1 new defect: vacuous test regexes; 1 unverified-runtime Breaking; 2 Structural). Fixed-pass model supported."
+    },
+    "fscompat": {
+      "dirty_tokens": 735602,
+      "clean_tokens": 729684,
+      "clean_over_dirty": 0.992,
+      "dirty_verdict": "4R/15A",
+      "clean_verdict": "1R/12A",
+      "note": "near-identical cost (0.99) with 4R->1R; fixed-pass confirmed on pair 2. cacheKey-waste + double-hash defects survive into clean (fix pass never touched them)."
     }
   }
 }
