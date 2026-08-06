@@ -126,6 +126,37 @@ def main():
 
     key = os.environ.get("OPENROUTER_API_KEY", "")
 
+    # Auth preflight: /api/v1/key is the cheapest endpoint that actually
+    # verifies the key. The engine's pricing fetch does NOT - /models is
+    # public and accepts any Authorization header - so an invalid/expired key
+    # otherwise sails past the cost guard and then 401s on every completion
+    # call (each retried 3x with backoff). Fail once, up front, instead.
+    if not args.dry_run:
+        if not key:
+            sys.exit("OPENROUTER_API_KEY not set (export it in this shell, or "
+                     "use --dry-run for a no-key cost preview)")
+        import urllib.error
+        import urllib.request
+        req = urllib.request.Request("https://openrouter.ai/api/v1/key",
+                                     headers={"Authorization": f"Bearer {key}"})
+        try:
+            with urllib.request.urlopen(req, timeout=30):
+                pass
+        except urllib.error.HTTPError as e:
+            if e.code == 401:
+                sys.exit("OPENROUTER_API_KEY was rejected (401). Common causes: "
+                         "expired/revoked key, a typo or trailing whitespace/"
+                         "newline in the export, or the key was created under a "
+                         "since-disabled org. Verify with:\n"
+                         "  curl -s https://openrouter.ai/api/v1/key "
+                         "-H \"Authorization: Bearer $OPENROUTER_API_KEY\"\n"
+                         "and regenerate at https://openrouter.ai/keys if needed.")
+            print(f"warning: key preflight returned HTTP {e.code}; "
+                  f"proceeding (only 401 is treated as fatal)", file=sys.stderr)
+        except Exception as e:  # noqa: BLE001 - network blip: don't block the run
+            print(f"warning: key preflight failed ({type(e).__name__}); "
+                  f"proceeding", file=sys.stderr)
+
     # Preflight the refs once, here, so a bad --range/--context-base fails with
     # an actionable message instead of a git traceback from inside each arm.
     left, right = cmr.split_range(args.rev_range)
