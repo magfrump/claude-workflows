@@ -111,8 +111,36 @@
     "fscompat-dirty": {
       "range": "d86d2dc..b64c1ca",
       "commit": "b64c1ca",
-      "stages": {},
-      "tokens": {}
+      "stages": {
+        "fc-r1": "done",
+        "fc-r2": "done",
+        "fc-r3": "done",
+        "fc-merge": "done",
+        "critic-security": "done",
+        "critic-performance": "done",
+        "critic-api-consistency": "done",
+        "critic-architecture": "done",
+        "rubric": "done"
+      },
+      "tokens": {
+        "fc-r1": 67164,
+        "fc-r3": 67661,
+        "fc-r2": 71023,
+        "fc-merge": 84141,
+        "critic-security": 68473,
+        "critic-api-consistency": 65926,
+        "critic-architecture": 84966,
+        "critic-performance": 104008,
+        "rubric": 122240
+      },
+      "result": {
+        "status": "DOES NOT PASS",
+        "red": 4,
+        "amber": 15,
+        "consider": 13,
+        "confirmed_good": 8,
+        "total_tokens": 735602
+      }
     },
     "fscompat-clean": {
       "range": "d86d2dc..2cd3b67",
@@ -132,7 +160,7 @@
   "stage_list_per_cell": "fc-r1 fc-r2 fc-r3 fc-merge <critics per set> rubric",
   "resume_rule": "a stage is DONE iff its artifact exists at runs/review-arms/e1/<cell>/ with a Commit: line matching the cell commit; anything else re-dispatches",
   "confound_notes": "clean ranges are supersets of dirty ranges (fixes add code, incl. tests); this is inherent to the question 'what does full review cost on the state you actually re-review'. corpus labels/scope: app/ code only, mirror the historical review scope in briefs.",
-  "status": "csp pair COMPLETE; fscompat pair next",
+  "status": "fscompat-dirty COMPLETE (735,602); fscompat-clean next",
   "pair_results": {
     "csp": {
       "dirty_tokens": 817597,
