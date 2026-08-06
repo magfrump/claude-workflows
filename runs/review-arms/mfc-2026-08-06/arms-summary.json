@@ -1,0 +1,42 @@
+{
+  "repo": "",
+  "range": "HEAD~3..HEAD",
+  "context_base": "HEAD~3",
+  "arms": {
+    "base": {
+      "model": "anthropic/claude-sonnet-5",
+      "replicates": 1,
+      "consensus": null,
+      "note": "030 arm [0]: promoted Stage-1 default, k=1",
+      "runs_ok": 1,
+      "runs_errored": 0,
+      "findings_raw": 2,
+      "tokens_in": 19137,
+      "tokens_out": 3714
+    },
+    "small": {
+      "model": "google/gemini-3.1-flash-lite",
+      "replicates": 1,
+      "consensus": null,
+      "note": "030 arm [3]: cost floor (~1/8 base input price)",
+      "runs_ok": 1,
+      "runs_errored": 0,
+      "findings_raw": 1,
+      "tokens_in": 13121,
+      "tokens_out": 154
+    },
+    "k3": {
+      "model": "anthropic/claude-sonnet-5",
+      "replicates": 3,
+      "consensus": 2,
+      "note": "030 arm [7]: keep findings >=2 of 3 replicates agree on",
+      "runs_ok": 3,
+      "runs_errored": 0,
+      "findings_raw": 5,
+      "tokens_in": 57411,
+      "tokens_out": 10816,
+      "clusters": 3,
+      "findings_consensus": 1
+    }
+  }
+}

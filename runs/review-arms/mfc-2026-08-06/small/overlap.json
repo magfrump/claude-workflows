@@ -1,0 +1,8 @@
+{
+  "judge": "anthropic/claude-sonnet-4.5",
+  "abstain": {
+    "google/gemini-3.1-flash-lite": 0.0
+  },
+  "self": {},
+  "cross": {}
+}

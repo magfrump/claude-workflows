@@ -1,0 +1,22 @@
+{
+  "min_votes": 2,
+  "judge": "anthropic/claude-sonnet-4.5",
+  "kept": [
+    {
+      "votes": [
+        1,
+        2,
+        3
+      ],
+      "path": "proxy.ts",
+      "lines": "28-30",
+      "sev": "Medium",
+      "domain": "security",
+      "title": "CSP unsafe-eval gated only by NODE_ENV",
+      "desc": "`allowUnsafeEval` defaults to `process.env.NODE_ENV !== \"production\"`, so any deployment where NODE_ENV isn't explicitly set to `\"production\"` (e.g. staging, misconfigured containers, `NODE_ENV=test`) will silently ship `'unsafe-eval'` in the CSP, weakening XSS mitigation without any explicit opt-in at the call site.",
+      "basename": "proxy.ts",
+      "line_start": 28,
+      "line_end": 30
+    }
+  ]
+}
