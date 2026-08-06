@@ -101,4 +101,12 @@ verified-recall retained (no label lost relative to P-A — the safety condition
   stratum), ~zero elsewhere; lite hits are fact-check-shaped → strengthens P-C. Canon
   label appends recorded in the results doc. (Doc restored after the 2026-08-06 archive
   sweep — the canon is live/append-only, exempt from working-doc archival.)
-- E1 needs a decision to spend ~4-5M subagent tokens; not launched autonomously.
+- E1 **run and complete 2026-08-06** (`e1-results-2026-08-06.md`, 5.26M subagent tokens,
+  6 cells): fixed-pass model confirmed 3/3 pairs (clean/dirty cost ratios 1.10/0.99/0.96,
+  mean ~1.02) — pass cost tracks diff size sublinearly, never finding count. Larger
+  second result: all three post-fix states failed re-review (4R/1R/5R), with two
+  fix-introduced defects (vacuous test regexes; fails-open C2 guard) and one
+  fresh-eyes-only defect (rehydration seam bypass). P-B saves iterations only (~40% of
+  instances × 1 iteration); P-C's premise sharpened — same-pass review of interleaved
+  fixes is the exploitable mechanism. E3 design is the open item. New later-fix label
+  candidates queued in the results doc.
