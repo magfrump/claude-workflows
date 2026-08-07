@@ -10,11 +10,15 @@
     "lean":     { "range": "d86d2dc..c95c9cb", "commit": "c95c9cb", "wt": "wt-lean",     "labels_RA": "2/1", "critic_candidates": ["security","performance","api-consistency","architecture","ui-visual","test-strategy"], "stages": {} },
     "hygiene":  { "range": "d86d2dc..f2f149b", "commit": "f2f149b", "wt": "wt-hygiene",  "labels_RA": "1/1", "critic_candidates": ["security","performance","api-consistency","architecture","test-strategy"], "stages": {} },
     "secdeps":  { "range": "d86d2dc..8bde50c", "commit": "8bde50c", "wt": "wt-secdeps",  "labels_RA": "1/1", "critic_candidates": ["security","performance","api-consistency","architecture","dependency-upgrade"], "stages": {} },
-    "deploy":   { "range": "d86d2dc..4329d6e", "commit": "4329d6e", "wt": "wt-deploy",   "labels_RA": "2/0", "critic_candidates": ["security","api-consistency"], "gating_note": "md-only copy diff: performance + most core critics expected to gate to skip (032 #1) — this cell measures the gating saving", "stages": {} },
+    "deploy":   { "range": "d86d2dc..4329d6e", "commit": "4329d6e", "wt": "wt-deploy",   "labels_RA": "2/0", "critic_candidates": ["security","api-consistency"], "gating_note": "md-only copy diff: performance + most core critics expected to gate to skip (032 #1) — this cell measures the gating saving", "stages": {"fact-check": {"status": "done", "tokens": 67024, "tool_uses": 8, "verdicts": "6V/1MA/2U/0I", "behavioral_red": false}, "gating": {"skipped": ["security", "performance", "api-consistency"], "ran": [], "reason": "copy-only md diff; zero corroborating evidence in fact-check or diff for any core critic (032 #1)"}, "rubric": {"status": "pending"}}, "cell_tokens_so_far": 67024 },
     "fscompat": { "range": "d86d2dc..b64c1ca", "commit": "b64c1ca", "wt": "wt-fscompat", "labels_RA": "1/4", "critic_candidates": ["security","performance","api-consistency","architecture"], "stages": {} },
     "corpus":   { "range": "dc6dfb0..2dc403e", "commit": "2dc403e", "wt": "wt-corpus",   "labels_RA": "0/4", "scope": "-- app/", "critic_candidates": ["security","performance","api-consistency","architecture","tech-debt-triage","test-strategy"], "stages": {} },
     "postfix":  { "range": "9c9edf5..7f30210", "commit": "7f30210", "wt": "wt-postfix",  "labels_RA": "1/8", "critic_candidates": ["security","performance","api-consistency","architecture","ui-visual"], "stages": {} }
   },
   "order": ["deploy", "secdeps", "fscompat", "csp", "hygiene", "lean", "postfix", "corpus"],
-  "order_rationale": "cheapest/gating-test first (deploy) to validate the pattern before the expensive corpus cell; corpus last."
+  "order_rationale": "cheapest/gating-test first (deploy) to validate the pattern before the expensive corpus cell; corpus last.",
+  "run_status": "complete (2026-08-06)",
+  "authoritative_records": "token-ledger.md (per-agent tokens + gating), results.md (cost + recall scoring). All 38 review artifacts on disk under <cell>/, each first line Commit-stamped. Worktrees wt-* retained (gitignored) for re-scoring / the csp test-strategy gap-fix re-run.",
+  "totals": {"stage1_factcheck_tokens": 627745, "stage2_critic_tokens": 2292452, "core_pipeline_tokens": 2920197, "agents": 37, "critics_skipped_by_gating": 9},
+  "known_gaps": ["csp test-strategy omitted from initial candidate set (source-without-tests) — dispatched as a follow-up gap-fix; see results.md §4", "deploy critics all gated (docs-only) → 2 cross-file reds unadjudicated; see results.md §4"]
 }
