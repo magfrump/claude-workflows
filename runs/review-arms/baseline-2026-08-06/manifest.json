@@ -1,0 +1,20 @@
+{
+  "experiment": "BASELINE — current-setup full pipeline over the whole canon (review-canon.md v1)",
+  "date": "2026-08-06",
+  "setup": "Decision 031 + 032 current setup: k=1 fact-check (031), Stage-1.5 critic gating (032 #1, savings measured), rich shared brief (029), Stage-1 context / worktree contamination guard (021). Single review pass per instance (NO fix loop) — this is the cost+recall baseline the 032 H3 >=15% claim and future loop runs measure against. #4 first-red short-circuit is NOT exercised (baseline pass runs the full surviving panel; short-circuit only fires under --loop-pass). #3 prompt-cache is automatic on the Agent-tool path.",
+  "method": "Mirrors E1 for comparability: sequential cells in commit-pinned detached worktrees (wt-<name>, gitignored). Every subagent reads its skill text from the prompt, diffs the pinned range in its worktree, writes its artifact to disk stamped with the cell Commit SHA before returning, and returns only a compact summary. Per-agent token usage is read from task notifications — tokens are the primary metric (same instrument as E1/E3). Resume = scan artifacts, validate Commit line, dispatch only missing stages.",
+  "metric": "subagent tokens per stage (from task notifications); findings by severity; recall vs canon labels (adjudicate-against-code, anti-SWR-Bench).",
+  "scope_note": "Dirty (reviewed) states only — the states carrying the canon R/A/C labels. corpus is a >1000-line diff: scoped to app/ (15 ts files) to match E1's corpus cell for comparability; the 13 md files are context-only. postfix is the post-review-fix state (already ground-truth-scored 2026-08-06); re-run here under current setup for a uniform baseline.",
+  "cells": {
+    "csp":      { "range": "d86d2dc..d90d6bb", "commit": "d90d6bb", "wt": "wt-csp",      "labels_RA": "2/4", "critic_candidates": ["security","performance","api-consistency","architecture","ui-visual"], "stages": {} },
+    "lean":     { "range": "d86d2dc..c95c9cb", "commit": "c95c9cb", "wt": "wt-lean",     "labels_RA": "2/1", "critic_candidates": ["security","performance","api-consistency","architecture","ui-visual","test-strategy"], "stages": {} },
+    "hygiene":  { "range": "d86d2dc..f2f149b", "commit": "f2f149b", "wt": "wt-hygiene",  "labels_RA": "1/1", "critic_candidates": ["security","performance","api-consistency","architecture","test-strategy"], "stages": {} },
+    "secdeps":  { "range": "d86d2dc..8bde50c", "commit": "8bde50c", "wt": "wt-secdeps",  "labels_RA": "1/1", "critic_candidates": ["security","performance","api-consistency","architecture","dependency-upgrade"], "stages": {} },
+    "deploy":   { "range": "d86d2dc..4329d6e", "commit": "4329d6e", "wt": "wt-deploy",   "labels_RA": "2/0", "critic_candidates": ["security","api-consistency"], "gating_note": "md-only copy diff: performance + most core critics expected to gate to skip (032 #1) — this cell measures the gating saving", "stages": {} },
+    "fscompat": { "range": "d86d2dc..b64c1ca", "commit": "b64c1ca", "wt": "wt-fscompat", "labels_RA": "1/4", "critic_candidates": ["security","performance","api-consistency","architecture"], "stages": {} },
+    "corpus":   { "range": "dc6dfb0..2dc403e", "commit": "2dc403e", "wt": "wt-corpus",   "labels_RA": "0/4", "scope": "-- app/", "critic_candidates": ["security","performance","api-consistency","architecture","tech-debt-triage","test-strategy"], "stages": {} },
+    "postfix":  { "range": "9c9edf5..7f30210", "commit": "7f30210", "wt": "wt-postfix",  "labels_RA": "1/8", "critic_candidates": ["security","performance","api-consistency","architecture","ui-visual"], "stages": {} }
+  },
+  "order": ["deploy", "secdeps", "fscompat", "csp", "hygiene", "lean", "postfix", "corpus"],
+  "order_rationale": "cheapest/gating-test first (deploy) to validate the pattern before the expensive corpus cell; corpus last."
+}

@@ -42,3 +42,4 @@ __pycache__/
 runs/**/prompt.txt
 runs/review-arms/e1/wt-*
 runs/review-arms/e3-loops/wt-*
+runs/review-arms/baseline-2026-08-06/wt-*
