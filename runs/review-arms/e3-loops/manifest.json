@@ -27,7 +27,8 @@
           "fix-1": "done",
           "lite-2": "done",
           "full-1": "done",
-          "fix-2": "done"
+          "fix-2": "done",
+          "full-2": "done"
         },
         "tokens": {
           "lite-1": 22851,
@@ -51,7 +52,9 @@
           "full-2-critic-ui-visual": 83612,
           "full-2-critic-security": 81945,
           "full-2-critic-performance": 91980,
-          "full-2-critic-architecture": 93850
+          "full-2-critic-architecture": 93850,
+          "full-2-critic-api-consistency": 108895,
+          "full-2-rubric": 155253
         },
         "fix_1_result": {
           "commit": "e5d95a9",
@@ -79,6 +82,13 @@
             "R4 runtime comment"
           ],
           "tests": "232/232 pass"
+        },
+        "result": {
+          "terminated": true,
+          "lite_iterations": 2,
+          "full_iterations": 2,
+          "final_status": "PASSES WITH AMBERS (0R/9A)",
+          "total_tokens": 2137136
         }
       },
       "arm2": {
@@ -154,5 +164,12 @@
       }
     }
   },
-  "status": "ARM2 TERMINATED at full iteration 3 (PASSES); arm1 api critic + rubric outstanding"
+  "status": "E3-LOOPS csp COMPLETE \u2014 both arms terminated",
+  "final_comparison": {
+    "arm1_total": 2137136,
+    "arm1_shape": "lite\u00d72 + lite-fix + full\u00d72 + full-fix",
+    "arm2_total": 3039841,
+    "arm2_shape": "full\u00d73 + full-fix\u00d72",
+    "arm1_over_arm2": 0.703
+  }
 }

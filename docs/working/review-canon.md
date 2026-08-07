@@ -108,5 +108,5 @@ verified-recall retained (no label lost relative to P-A — the safety condition
   fix-introduced defects (vacuous test regexes; fails-open C2 guard) and one
   fresh-eyes-only defect (rehydration seam bypass). P-B saves iterations only (~40% of
   instances × 1 iteration); P-C's premise sharpened — same-pass review of interleaved
-  fixes is the exploitable mechanism. E3 design is the open item. New later-fix label
+  fixes is the exploitable mechanism. E3 design is the open item. **E3-loops run 2026-08-06 on csp** (`e3-loops-results-2026-08-06.md`): both arms terminate; arm1 0.70× arm2 but variance-dominated (verdict draws on two marginal reds controlled loop length, ~1M tokens/pass); hypothesis not supported as mechanism; tier-policy fix identified as the high-leverage intervention. New later-fix label
   candidates queued in the results doc.
