@@ -239,7 +239,8 @@ is unchanged, so it has **zero effect on recall** (decision 032 H1).
 **Inline the shared review material** (this is the realized form of #3 — the 2026-08-06
 measurement, `runs/review-arms/baseline-2026-08-06/levers-3-4-measurement.md`, found the benefit is
 only captured when the shared material is actually inlined as one cacheable prefix; agents
-self-reading via tools shares no prefix and captures ~nothing). The shared block is, in this fixed
+self-reading via tools share only a ~330-token instruction prefix — ~8k cost-equivalent across
+the canon, negligible). The shared block is, in this fixed
 order (omit a part only when it does not apply, but keep the order so the cached prefix stays
 stable):
 
@@ -337,8 +338,12 @@ For each of the three replicate agents:
 
 1. Read the full contents of `skills/code-fact-check/SKILL.md`
 2. Paste those contents directly into the Agent tool prompt (sub-agents cannot read your files)
-3. Include the scope specification (e.g., "Review files changed on the current branch relative
-   to main using `git diff main...HEAD`"). If the scope is partial (`--range`, `--staged`,
+3. Deliver the review material per Step 1's conditional diff-delivery rule (see
+   [Inline shared-context prefix](#inline-shared-context-prefix-decision-032-3)): normal-sized
+   diff → the shared block (diff + enclosing-file context, inlined) opens the prompt;
+   large diff → include the scope specification instead (e.g., "Review files changed on the
+   current branch relative to main using `git diff main...HEAD`") and let the replicate
+   self-read. If the scope is partial (`--range`, `--staged`,
    `--files`, or a partial `--pr`), also include the labelling block required by Step 1's
    partial-scope rule — the "already committed — context only, not under review" statement and
    the check-siblings-before-flagging-missing directive apply to fact-check replicates too.
@@ -631,9 +636,12 @@ For each critic agent, you MUST:
 
 1. Read the full contents of that critic's skill file (e.g., `skills/security-reviewer/SKILL.md`)
 2. Paste those contents directly into the Agent tool prompt
-3. Include the scope specification so the agent runs its own `git diff`. If the scope is
-   partial (`--range`, `--staged`, `--files`, or a partial `--pr`), also include the labelling
-   block required by Step 1's partial-scope rule
+3. Deliver the review material per Step 1's conditional diff-delivery rule (see
+   [Inline shared-context prefix](#inline-shared-context-prefix-decision-032-3)): normal-sized
+   diff → the shared block (diff + enclosing-file context, inlined) opens the prompt; large
+   diff → include the scope specification instead, so the agent runs its own `git diff`. If
+   the scope is partial (`--range`, `--staged`, `--files`, or a partial `--pr`), also include
+   the labelling block required by Step 1's partial-scope rule
 4. Include the PR intent captured in "Before You Begin" Step 2, prepended under a
    `## What this PR is trying to accomplish` heading so the critic can scope findings to
    stated intent. If Step 3 surfaced `<prior-findings>`, paste them verbatim under a
@@ -1403,7 +1411,9 @@ The risk with any "log of decisions" is that nothing reads it, so it grows in st
   replicate verdicts recorded, disagreement rate reported — rationale and mechanics live
   in Stage 1's **Why three** and merge steps, the single canonical statement.
 - **Paste skill file contents into agent prompts.** Sub-agents cannot read your filesystem.
-- **Pass scope, not diffs.** Each agent runs its own `git diff` to avoid context budget issues.
+- **Diff delivery is conditional (Step 1 / decision 032 #3).** Normal-sized diff: inline it
+  once as the shared cacheable prefix of every agent prompt. Large diff (Step 1 thresholds):
+  pass scope, not diffs — each agent runs its own `git diff` to avoid context budget issues.
 - **All agents of the same stage run in parallel.** They must not see each other's output.
   Exception: opt-in chain mode for a named critic pair (see
   [Stage 2 dispatch modes](#stage-2-dispatch-modes)) deliberately feeds the

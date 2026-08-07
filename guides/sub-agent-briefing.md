@@ -75,7 +75,7 @@ Each anti-pattern below shows a broken prompt and the specific failure mode it p
 
 **Why it fails:** The sub-agent can read the file itself — pasting it doubles the context burn (your turn + the sub-agent's turn). Worse, large pastes crowd out the actual question, and the sub-agent may anchor on irrelevant sections.
 
-**Fix:** Pass the path, not the contents. The exception is when the sub-agent can't read your filesystem (e.g., reviewing draft text that exists only in conversation) — then paste the minimum needed. For code review, sub-agents run their own `git diff` rather than receive a pasted diff.
+**Fix:** Pass the path, not the contents. The exception is when the sub-agent can't read your filesystem (e.g., reviewing draft text that exists only in conversation) — then paste the minimum needed. A second, deliberate exception: material shared verbatim across a fan-out of agents can be worth inlining as a byte-identical cacheable prompt prefix — for code review, `skills/code-review/SKILL.md` Step 1 (decision 032 #3) inlines a normal-sized diff once for all agents and falls back to per-agent `git diff` self-read only for large diffs.
 
 ### 5. Missing goal preamble
 

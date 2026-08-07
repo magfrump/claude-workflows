@@ -10,7 +10,8 @@ subject → 🔴). Scanned all 225 commits reachable from HEAD via a 3-way subsy
 
 ### Candidate A (best fact-check trigger) — `throttle.ts` "last call always delivered"
 - **Exhibiting commit**: `e59c7ed` (feat: SSE streaming partial-JSON previews, #94) — introduced the
-  utility + the false comment; the comment persists **unchanged at HEAD**.
+  utility + the false comment; the false sentence persists **verbatim at HEAD** (the docstring
+  block later gained a `.cancel()` line).
 - **Location**: `app/lib/utils/throttle.ts:2` — `* The last call is always delivered (trailing edge).`
 - **Contradiction**: `throttle.ts:19-25` schedules the trailing timer only when none is set and
   captures the **first** blocked call's args; later calls in the window are silently dropped. The
@@ -38,7 +39,8 @@ subject → 🔴). Scanned all 225 commits reachable from HEAD via a 3-way subsy
 - **Consumer**: `integrateValidation.ts:51` → `resolveFieldPath(artifact, fieldPath)` returns null
   for the non-existent leading key → every LLM-proposed `counterexamples[i].*` proposal is dropped →
   `applyProposals` never edits. **Evidence integration for counterexample artifacts silently
-  no-ops** — unmasked, feature-breaking. The fix-commit message says so outright.
+  no-ops** — unmasked, feature-breaking. The fix-commit message states the field mismatch outright;
+  the silent-no-op consequence is inferred from the validation path.
 - **Why it's not the cleaner #4 trigger**: the false claim lives in a **prompt/schema string
   constant**, and the mismatch is **cross-file** (prompt vs artifacts.ts vs the emitting route). That
   is more naturally an **api-consistency critic** catch than a fact-check catch — so it might fire
@@ -56,7 +58,11 @@ subject → 🔴). Scanned all 225 commits reachable from HEAD via a 3-way subsy
 
 ## Bearing on the #4 measurement
 - **The scarcity IS the result.** One clean fact-check trigger (throttle) and one cross-file/prompt
-  case (evidence-integrate) in 225 commits, both already fixed, HEAD clean. In a maintained repo the
+  case (evidence-integrate) in 225 commits. [Corrected 2026-08-07 per review fact-check: only B
+  was fixed (2493d2a); A's false comment persists at HEAD (line 13 above) but grades 🟡 under T,
+  so HEAD carries no fact-check-visible behavioral 🔴 — "HEAD clean" holds only in that narrow
+  sense, and the empirical run later showed B, not A, is the candidate that actually fires the
+  gate.] In a maintained repo the
   condition that fires #4's high-value path is rare — matching the canon's 0/8. #4 stays a
   loop-safety option, not a reliable token reducer.
 - **If we run the empirical #4 fire**: use **Candidate A (`throttle.ts`)** as the fact-check trigger.

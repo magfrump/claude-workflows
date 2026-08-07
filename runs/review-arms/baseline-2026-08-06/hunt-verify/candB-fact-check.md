@@ -6,7 +6,8 @@ Commit: 6cf4b0d
 **Scope:** Introducing diff `6cf4b0d^..6cf4b0d`, evidence-integration feature (`app/api/evidence-integrate/`, `app/lib/utils/applyProposals.ts`)
 **Checked:** 2026-08-07
 **Total claims checked:** 9
-**Summary:** 7 verified, 0 mostly accurate, 0 stale, 1 incorrect, 1 unverifiable
+**Summary:** 8 verified, 0 mostly accurate, 0 stale, 1 incorrect, 0 unverifiable
+<!-- corrected 2026-08-07 per review fact-check: header previously said 7/…/1 unverifiable, disagreeing with the report body (8 Verified, 0 Unverifiable) -->
 
 ---
 
@@ -126,9 +127,9 @@ current = current?.[idx];
 if (current === undefined || current === null) return null;
 ```
 
-`validateProposal` then rejects the proposal (`if (!resolveFieldPath(artifact, fieldPath)) return null;`, integrateValidation.ts:56), and even if it slipped through, `applyProposals` skips it (`if (!resolved) continue;`, applyProposals.ts:74). So every per-scenario counterexample proposal the LLM is instructed to make is **silently dropped**; only top-level scalar paths (`claim`, `robustnessAssessment`, `summary`) survive. **Behavioral** — the counterexamples integration feature silently no-ops for all scenario-level edits.
+`validateProposal` then rejects the proposal (`if (!resolveFieldPath(artifact, fieldPath)) return null;`, integrateValidation.ts:51), and even if it slipped through, `applyProposals` skips it (`if (!resolved) continue;`, applyProposals.ts:74). So every per-scenario counterexample proposal the LLM is instructed to make is **silently dropped**; only top-level scalar paths (`claim`, `robustnessAssessment`, `summary`) survive. **Behavioral** — the counterexamples integration feature silently no-ops for all scenario-level edits.
 
-**Evidence:** `app/api/evidence-integrate/route.ts:53-68`, `app/lib/types/artifacts.ts:115-128`, `app/api/formalization/counterexamples/route.ts:8-19,49-54`, `app/components/panels/CounterexamplesPanel.tsx:26-27`, `app/lib/utils/applyProposals.ts:29-32,74`, `app/api/evidence-integrate/integrateValidation.ts:56`
+**Evidence:** `app/api/evidence-integrate/route.ts:53-68`, `app/lib/types/artifacts.ts:115-128`, `app/api/formalization/counterexamples/route.ts:8-19,49-54`, `app/components/panels/CounterexamplesPanel.tsx:26-27`, `app/lib/utils/applyProposals.ts:29-32,74`, `app/api/evidence-integrate/integrateValidation.ts:51`
 
 ---
 

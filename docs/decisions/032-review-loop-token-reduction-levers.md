@@ -100,10 +100,11 @@ The "adopt now" bundle is shipped:
   consultation + diff-shape skip table + `--all-critics` opt-out). No change needed; recorded
   here as adopted. It skips signal-less core critics exactly as #1 describes.
 - **#3 shared-context prefix / prompt-cache discipline** — added to `skills/code-review/SKILL.md`
-  as a new "Shared-context prefix" subsection under **The Pipeline**: the shared block is built
-  once, placed first byte-identical across all ~8 agents, with per-agent skill text in the tail
-  and the per-pass-varying fact-check summary last so the stable prefix stays cache-warm across
-  passes. Fenced production-loop-only; a guard note in `scripts/cross-model-review.py`'s
+  as a new subsection under **The Pipeline** (now titled "Inline shared-context prefix" since
+  2f5ad0b, which upgraded it from a discipline note to actual diff-inlining): the shared block
+  is built once, placed first byte-identical across all ~8 agents, with per-agent skill text in
+  the tail and the per-pass-varying fact-check summary last so the stable prefix stays cache-warm
+  across passes. Fenced production-loop-only; a guard note in `scripts/cross-model-review.py`'s
   docstring forbids porting caching to the sweep path (H4).
 - **#4 first-red short-circuit** — added `--loop-pass` (Step 6) and a "First-red short-circuit"
   subsection after the Fact-Check Gate in the SKILL; wired into `workflows/pr-prep.md` step 3d
@@ -118,22 +119,25 @@ the `levers-3-4-measurement.md` analysis **revise the H3 expectations downward f
 relocate the real savings:
 
 - **#3 prompt-cache: ~5% cost-equivalent, 0% token-count — NOT 20–40%.** The 20–40% estimate was
-  inherited from the cross-model harness, which *inlines the whole diff into the prompt*. The
-  production Agent-tool loop does **not** inline — critic agents self-read the diff/files/fact-check
-  via tools — so the shared cacheable *prefix* is small (~330 tok as-run). Caching is also a
-  billing-rate effect, invisible to the token-count metric. Realizing even the ~5% needs a SKILL
-  restructure to inline the shared diff+fact-check prefix. **Verdict: leave caching on (free),
-  but it is a single-digit-% cost lever on this path, not an H3-clearing one.**
+  inherited from the cross-model harness, which *inlines the whole diff into the prompt*. At
+  measurement time the production Agent-tool loop did **not** inline — critic agents self-read
+  the diff/files/fact-check via tools — so the shared cacheable *prefix* was small (~330 tok
+  as-run). Caching is also a billing-rate effect, invisible to the token-count metric. Realizing
+  even the ~5% needed the SKILL restructure to inline the shared diff+fact-check prefix, which
+  2f5ad0b subsequently shipped (Step 1 conditional inlining; the ~5% remains a projection until
+  a post-restructure cell is measured). **Verdict: leave caching on (free), but it is a
+  single-digit-% cost lever on this path, not an H3-clearing one.**
 - **#4 first-red short-circuit: high-variance, low-frequency — measured ~73% when it fires, but
   the trigger is rare.** Fired 0/8 on the canon (fact-check on reviewed states finds only comment/doc
   Incorrect →🟡). Empirically fired on a hunted commit (evidence-integrate `counterexamples`/`scenarios`,
-  `hunt-verify/results.md`): fact-check confirmed the behavioral 🔴 and #4 skipped the whole critic
+  `runs/review-arms/baseline-2026-08-06/hunt-verify/results.md`): fact-check confirmed the behavioral 🔴 and #4 skipped the whole critic
   panel = **238,155 tokens = 73% of that pass**. But a second hunted commit (throttle) had a real red
   that api-consistency rated **Breaking** while fact-check classified it **🟡 (impact masked)** → #4
   **did not fire, 0 saving despite the red**. The trigger requires a *fact-check-visible* behavioral
   lie; structural/critic-surfaced reds (the common case) give it nothing because the parallel critic
   wave is already dispatched. Expected loop saving ≈ P(fact-check-visible red) × ~73%, P low (0/8
-  canon; ~1 clean trigger in 225 commits). **Verdict: keep wired for loop safety — the rare
+  canon; ~1 empirically-confirmed trigger in 225 commits — and it was B, not the candidate the
+  hunt had predicted as the clean trigger). **Verdict: keep wired for loop safety — the rare
   big win is real — but do not budget it as a steady reducer.**
 - **Where the token savings actually are (measured):** 031 **k=1 ≈ 29%** off a k=3 pipeline, and
   032 **#1 gating ≈ 17%** off the ungated panel. These clear H3; #3/#4 do not on this workload.
