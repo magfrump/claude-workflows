@@ -246,5 +246,18 @@
       "two_pass_claim": "CONFIRMED \u2014 arm2 terminates at 2 full passes under T (fresh k=3 draw), matching arm1; the 3rd pass the old mapping forced is eliminated",
       "total_tokens": 612084
     }
+  },
+  "new_arms": {
+    "k1_recall": {
+      "tokens": 152433,
+      "finding": "every behavioral red surfaced by 3/3 replicates in every live state \u2014 no blind spot; p<1 cases are Incorrect-vs-MostlyAccurate severity splits not misses; corpus reds all p=1; 2-clean lifts worst case (p=2/3) to 0.889",
+      "verdict": "k=1+2-clean acceptable substitute for k=3 on behavioral-red recall for this corpus; residual is severity-calibration noise on comment-level items (T-amber class)"
+    },
+    "carry_live": {
+      "tokens": 94068,
+      "result": "csp worst case: 0 carried/15 rechecked/8-file changed-set; safety PASSED (structural non-hiding proof); ~0-10% saving on csp; absence-claims do not scope",
+      "projection": "corpus-class: 8/15 files unchanged -> ~half located-claim fact-check carries, ~15-20% of a whole pass"
+    },
+    "status": "defined + measured on csp; k1+2clean recall-parity confirmed; carry = large-diff-only lever"
   }
 }
