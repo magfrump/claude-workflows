@@ -351,6 +351,17 @@ between 🔴 and 🟡 (`docs/thoughts/code-review-evaluation-state.md` §1.1, Re
 A single sample of that judgment is a coin flip carrying merge-blocking authority.
 Replication converts it into a measured distribution.
 
+**Replication is loop-aware (decision 031, configuration C2 — 031 overrules the earlier
+blanket k=3 mandate).** On a `--loop-pass` (an intermediate or confirmation pass inside the
+review-fix loop, which requires **2 consecutive clean passes** before merge), run **k=1**: a
+single fact-check agent with the same rich shared brief (step 3b below — brief quality, not k,
+governs systematic recall), saving its report directly as the canonical
+`docs/reviews/code-fact-check-report.md` with `**Replication:** k=1 (loop pass, decision 031)`
+in the header; skip the merge machinery and the Verdict-stability section. The across-pass
+resampling of the 2-clean rule supplies the redundancy k=3 supplied within a pass (1−(1−p)ᴺ ≥
+1−(1−p)³ for N≥3 draws). The **k=3 protocol below applies to standalone single-pass reviews** —
+no loop, no second draw, so the replication happens within the pass.
+
 For each of the three replicate agents:
 
 1. Read the full contents of `skills/code-fact-check/SKILL.md`
@@ -515,8 +526,9 @@ Mechanics:
    architecture `Structural` finding is likewise a behavioral red.
 2. **Earliest trigger — the fact-check gate.** If Stage 1 already yields a behavioral 🔴, skip
    the **entire** Stage-1.5/Stage-2 critic panel for this pass. This is the largest saving (the
-   whole critic block) — measured at **~73% of the pass** on the one canon-adjacent case that
-   fired it (`runs/review-arms/baseline-2026-08-06/hunt-verify/results.md`). But it is **not** the
+   whole critic block) — measured at **~73% of the pass** on the one case that fired it, a
+   commit hunted from the external benchmark repo's history rather than one of the 8 canon
+   cells (`runs/review-arms/baseline-2026-08-06/hunt-verify/results.md`). But it is **not** the
    common case: fact-check finds a *behavioral* 🔴 rarely — most fact-check Incorrects are
    comment/doc (→🟡, no fire), and most real behavioral reds surface from the **critic panel**, not
    fact-check. So this trigger is high-value but low-frequency; do not expect it most passes.
@@ -1425,10 +1437,12 @@ The risk with any "log of decisions" is that nothing reads it, so it grows in st
 
 ## Important Reminders
 
-- **Always run fact-checking first, and always as k=3 replicates.** Even if the user only
-  asks for critic perspectives. Byte-identical prompts, merged most-severe-wins, per-claim
-  replicate verdicts recorded, disagreement rate reported — rationale and mechanics live
-  in Stage 1's **Why three** and merge steps, the single canonical statement.
+- **Always run fact-checking first; replication is loop-aware (decision 031).** Even if the
+  user only asks for critic perspectives. k=1 per pass inside the review-fix loop (paired
+  with the 2-consecutive-clean rule); k=3 for standalone single-pass reviews — byte-identical
+  prompts, merged most-severe-wins, per-claim replicate verdicts recorded, disagreement rate
+  reported. Rationale and mechanics live in Stage 1's **Why three**, its loop-aware
+  replication paragraph, and the merge steps — the single canonical statement.
 - **Paste skill file contents into agent prompts.** Sub-agents cannot read your filesystem.
 - **Diff delivery is conditional (Step 1 / decision 032 #3).** Within the 25k-token shared-block
   budget: inline it once as the shared cacheable prefix of every agent prompt. Over budget:

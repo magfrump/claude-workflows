@@ -129,6 +129,23 @@ stage1_flat() {
     || fail "stage1() end anchor '### Fact-Check Gate' missing - extraction unbounded"
 }
 
+@test "replication is loop-aware: k=1 on loop passes per decision 031, k=3 standalone" {
+  # Decision 031 (config C2) overrules the blanket k=3 mandate: k=1 per pass inside
+  # the review-fix loop, defensible only paired with the 2-consecutive-clean rule;
+  # k=3 remains the standalone single-pass protocol (no across-pass resampling).
+  stage1_flat | grep -qiE 'loop-aware \(decision 031' \
+    || fail "Stage 1 does not declare loop-aware replication per decision 031"
+  stage1_flat | grep -qE 'k=1 \(loop pass, decision 031\)' \
+    || fail "the k=1 loop-pass Replication header vocabulary is not stated"
+  stage1_flat | grep -qiE '2 consecutive clean passes|2-consecutive-clean' \
+    || fail "k=1 is not tied to the 2-consecutive-clean pairing"
+  stage1_flat | grep -qiE 'k=3 protocol below applies to standalone' \
+    || fail "k=3 is not scoped to standalone single-pass reviews"
+  echo "$SKILL_CONTENT" | sed -n '/^## Important Reminders/,$p' | tr '\n' ' ' | tr -s ' ' \
+    | grep -qiE 'loop-aware \(decision 031\)' \
+    || fail "Important Reminders does not carry the loop-aware replication rule"
+}
+
 @test "a rich shared brief is required and shared verbatim across replicates" {
   # MD1-R1 replication (experiment-md1-r1-replication-2026-07-30.md): lean generic
   # replicate prompts collapsed the fact-check channel (0/9 cross-file hits vs 3/3

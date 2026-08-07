@@ -90,6 +90,18 @@ property mid-pipeline. Design after E1/E2 numbers exist.
 verified-recall retained (no label lost relative to P-A — the safety condition); fix-churn
 (re-worded/oscillating findings across iterations).
 
+**Measurement-provenance convention (adopted 2026-08-07; closes rubric A6 of
+`docs/reviews/code-review-rubric-2026-08-07-main.md`)**: any run or sub-run that reports
+per-agent token figures MUST (a) append one row per agent to a `token-ledger.md` in the run
+directory *at measurement time*, as each task notification arrives — not reconstructed from
+memory afterward — and (b) register the sub-run's agents and totals in the run's
+`manifest.json`. Figures that exist only as prose in a results doc (the 2026-08-06
+`hunt-verify/` case: 8 agents / 577,971 tokens, fact-check verdict Unverifiable) are
+unauditable once the session ends; the ledger is what makes the arithmetic re-derivable
+from primary records. Retroactive transcription of already-lost telemetry is explicitly
+not required (cosmetic, per the 2026-08-07 tech-debt triage) — the convention binds the
+*next* measurement run forward.
+
 ## 4. Status
 
 - Canon v1: frozen above (8 rows). Expansion candidates: nd2/nd3 cells if the archive
