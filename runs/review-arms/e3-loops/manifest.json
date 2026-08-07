@@ -28,7 +28,9 @@
           "lite-2": "done",
           "full-1": "done",
           "fix-2": "done",
-          "full-2": "done"
+          "full-2": "done",
+          "amber-fix": "done",
+          "verify-pass": "fc in-flight"
         },
         "tokens": {
           "lite-1": 22851,
@@ -54,7 +56,8 @@
           "full-2-critic-performance": 91980,
           "full-2-critic-architecture": 93850,
           "full-2-critic-api-consistency": 108895,
-          "full-2-rubric": 155253
+          "full-2-rubric": 155253,
+          "amber-fix": 93668
         },
         "fix_1_result": {
           "commit": "e5d95a9",
@@ -84,11 +87,19 @@
           "tests": "232/232 pass"
         },
         "result": {
-          "terminated": true,
+          "terminated": false,
           "lite_iterations": 2,
           "full_iterations": 2,
           "final_status": "PASSES WITH AMBERS (0R/9A)",
-          "total_tokens": 2137136
+          "total_tokens": 2137136,
+          "note": "reopened under v2 criterion (0R+0A); amber-disposition round dispatched"
+        },
+        "amber_fix_result": {
+          "commit": "1eb081e",
+          "fixed": 8,
+          "acked": 1,
+          "tests": "236/236",
+          "notes": "deleted prefetch missing: clause; deleted x-nonce seam; buildCsp nodeEnv now required param; exportGraph invariant tests added"
         }
       },
       "arm2": {
@@ -99,7 +110,9 @@
           "fix-1": "done",
           "full-2": "done",
           "fix-2": "done",
-          "full-3": "done"
+          "full-3": "done",
+          "amber-fix": "done",
+          "verify-pass": "fc in-flight"
         },
         "tokens": {
           "full-1": 817597,
@@ -124,7 +137,8 @@
           "full-3-critic-ui-visual": 91054,
           "full-3-critic-architecture": 106701,
           "full-3-critic-api-consistency": 102038,
-          "full-3-rubric": 176929
+          "full-3-rubric": 176929,
+          "amber-fix": 107190
         },
         "fix_1_result": {
           "commit": "99e1229",
@@ -156,20 +170,28 @@
           "R2 immutable-history waive ACCEPTED; pass-3 rubric treats it as a considered override"
         ],
         "result": {
-          "terminated": true,
+          "terminated": false,
           "iterations_full": 3,
           "final_status": "PASSES (0R/14A)",
-          "total_tokens": 3039841
+          "total_tokens": 3039841,
+          "note": "reopened under v2 criterion (0R+0A); amber-disposition round dispatched"
+        },
+        "amber_fix_result": {
+          "commit": "ab4dbdb",
+          "fixed": 8,
+          "acked": 6,
+          "tests": "240/240"
         }
       }
     }
   },
-  "status": "E3-LOOPS csp COMPLETE \u2014 both arms terminated",
+  "status": "both verification-pass fact-checks in flight (6 replicates)",
   "final_comparison": {
     "arm1_total": 2137136,
     "arm1_shape": "lite\u00d72 + lite-fix + full\u00d72 + full-fix",
     "arm2_total": 3039841,
     "arm2_shape": "full\u00d73 + full-fix\u00d72",
     "arm1_over_arm2": 0.703
-  }
+  },
+  "termination_criterion_v2": "0R AND 0A (amber resolvable by fix or ack-with-note); comment fixes preferred over acks (same cost); no hard iteration cap"
 }
