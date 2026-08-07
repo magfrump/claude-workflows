@@ -19,6 +19,6 @@
   "order_rationale": "cheapest/gating-test first (deploy) to validate the pattern before the expensive corpus cell; corpus last.",
   "run_status": "complete (2026-08-06)",
   "authoritative_records": "token-ledger.md (per-agent tokens + gating), results.md (cost + recall scoring). All 38 review artifacts on disk under <cell>/, each first line Commit-stamped. Worktrees wt-* retained (gitignored) for re-scoring / the csp test-strategy gap-fix re-run.",
-  "totals": {"stage1_factcheck_tokens": 627745, "stage2_critic_tokens": 2292452, "core_pipeline_tokens": 2920197, "agents": 37, "critics_skipped_by_gating": 9},
-  "known_gaps": ["csp test-strategy omitted from initial candidate set (source-without-tests) — dispatched as a follow-up gap-fix; see results.md §4", "deploy critics all gated (docs-only) → 2 cross-file reds unadjudicated; see results.md §4"]
+  "totals": {"stage1_factcheck_tokens": 627745, "stage2_critic_tokens": 2358346, "core_pipeline_tokens": 2986091, "agents": 38, "critics_skipped_by_gating": 9},
+  "known_gaps": ["csp test-strategy gap-fix dispatched and folded into totals (canon A4 now hit); see results.md §4", "deploy critics all gated (docs-only) → 2 cross-file reds unadjudicated; see results.md §4"]
 }

@@ -79,4 +79,6 @@ Gating skipped 3 whole critics on deploy + 1 each on fscompat/hygiene/lean/csp +
 
 | csp | security | 77,879 | 2 Medium 🟡 (nonce never on request CSP → strict-dynamic blocks Next scripts, control inert; **connect-src 'self' blocks fetch(data:) in exportGraph.ts:24,37 — the cross-file GOLD defect, canon csp R1**) / 1 low (x-nonce dead) / 1 info |
 
-**Stage-2 critics total = 2,292,452 tokens / 29 critic agents. Stage-1 = 627,745. Core pipeline (fact-check + critics) = 2,920,197 tokens across 37 agents.** (Rubric synthesis done inline by orchestrator, not a separate measured subagent stage; E1's rubric stage was ~90–160k/cell → a fully-agentized run would add ~0.8–1.3M.)
+| csp | test-strategy | 65,894 | advisory: 6 Consider → 🟢 (gap-fix; G3 nonce/CSP propagation test would expose the wiring bug) — covers canon csp A4 |
+
+**Stage-2 critics total = 2,358,346 tokens / 30 critic agents. Stage-1 = 627,745. Core pipeline (fact-check + critics) = 2,986,091 tokens across 38 agents.** (Rubric synthesis done inline by orchestrator, not a separate measured subagent stage; E1's rubric stage was ~90–160k/cell → a fully-agentized run would add ~0.8–1.3M.)
