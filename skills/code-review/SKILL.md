@@ -1045,9 +1045,26 @@ Use this table to map individual critic severity levels to rubric tiers:
 
 | Rubric Tier | Security | Performance | API Consistency | Architecture | Fact-Check |
 |---|---|---|---|---|---|
-| 🔴 Must Fix | Critical, High | Critical | Breaking | Structural | Incorrect (high confidence) |
-| 🟡 Must Address | Medium | High, Medium | Inconsistent | Coupling | Incorrect (medium confidence), Stale, Mostly Accurate |
+| 🔴 Must Fix | Critical, High | Critical | Breaking | Structural | Incorrect (high confidence), **behavioral** |
+| 🟡 Must Address | Medium | High, Medium | Inconsistent | Coupling | Incorrect (medium confidence), Stale, Mostly Accurate, **Incorrect (high) on a comment/doc only** |
 | 🟢 Consider | Low, Informational | Low, Informational | Minor, Informational | Minor, Informational | Unverifiable |
+
+**Fact-check red is scoped by subject (decision 031).** A fact-check `Incorrect (high
+confidence)` is 🔴 only when the *code behaves wrong* — the comment/doc accurately
+describes broken behavior, or documents a contract/security rationale a future change
+would bind to and be misled by (those stay 🔴 here, or are already caught by
+api-consistency `Breaking` / the [Soundness-Contradiction Channel](#soundness-contradiction-channel)).
+When the code is correct and the claim's only consequence is that a *reader is
+misinformed* (e.g. a wrong runtime name in a comment, a stale "same pattern as X"
+pointer), map it to 🟡, not 🔴 — under the 0R+0A merge standard a comment fix costs the
+same as an ack, so it is still fixed, but a stale *comment* no longer carries a code
+defect's merge-blocking authority. **Immutable-history exception:** a fact-check Incorrect
+about a claim in an *already-merged commit message* (or any artifact no new commit can
+edit) is not a tier at all — route it to `docs/reviews/override-log.md` as an
+accepted-immutable acknowledgment and do not raise it as 🔴/🟡; blocking merge on
+unfixable history is a category error. Rationale and the measured driver (verdict-draw
+variance on these two marginal classes controls loop length, ~1M tokens per marginal-red
+pass) are in `docs/decisions/031-review-loop-tier-and-factcheck-policy.md`.
 
 **Record the critic's own severity, don't discard it.** The `Severity` column on the 🔴 /
 🟡 / 🟢 tables carries the source critic's native level (Critical / High / Medium / Low /
