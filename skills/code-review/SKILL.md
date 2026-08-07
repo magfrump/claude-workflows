@@ -205,6 +205,11 @@ The user can include or exclude any critic:
   flag is the orchestrator's one-line signal to switch off the parallel
   default for that pair only; all other critics still run in parallel
   alongside the chain. Omit the flag to keep the parallel default.
+- `--loop-pass` — mark this run as a **non-final pass of a review-fix loop** (set by
+  `pr-prep`'s loop for every pass except the terminal clean check). Enables the
+  [first-red short-circuit](#first-red-short-circuit-decision-032-4) and implies `--no-gate`
+  (no interactive Fact-Check-Gate pause — the short-circuit decides automatically). Never pass
+  it on the terminal pass: that pass must run the full panel so the amber inventory is complete.
 
 ### Step 7: Communicate the plan
 
@@ -219,6 +224,42 @@ Keep this brief — a short paragraph.
 ---
 
 ## The Pipeline
+
+### Shared-context prefix (prompt-cache discipline — decision 032 #3)
+
+Every Stage-1 replicate and Stage-2 critic prompt is assembled from two parts: a **shared
+context block** that is byte-identical across all agents in the run, and a **per-agent tail**
+(that agent's skill text + its output path + any chain context). Build the shared block **once**
+and place it **first, verbatim**, in every agent prompt; put everything that varies per agent
+**after** it. This lets the Anthropic prompt cache serve the shared block to all ~8 agents in a
+pass — and again on the next loop pass while it is unchanged — instead of re-billing it per
+agent. It is a pure transport optimization: the content each agent sees is unchanged, so it has
+**zero effect on recall** (decision 032 H1).
+
+The shared block is, in this fixed order (omit a part only when it does not apply, but keep the
+order so the cached prefix stays stable):
+
+1. The goal preamble (what a review pass is).
+2. The scope specification (the `git diff` spec — *not* the diff text; each agent still runs its
+   own diff per the Step 1 note).
+3. The partial-scope labelling block, if the scope is partial (Step 1).
+4. `## What this PR is trying to accomplish` — the `<pr-intent>` captured in Step 2.
+5. `## Prior review findings (advisory …)` — `<prior-findings>` from Step 3, if any.
+6. The Stage-1 merged fact-check summary (Stage 2 only; Incorrect/Stale/Mostly-Accurate rows
+   per the >200-line rule in Stage 2 step 5).
+
+**Stability rules that make the cache actually hit:**
+- Keep the shared block **first** and **byte-identical** across agents in a pass. The only
+  permitted per-agent variation lives in the tail (skill text, output path, chain context).
+- Across loop passes, the block's prefix stays cache-warm up to the parts that changed: parts
+  1–4 are typically stable across a fix→re-review cycle; the fact-check summary (part 6) changes
+  each pass and therefore sits **last** in the shared block, so the earlier, stable parts remain
+  a cacheable common prefix.
+- This discipline is **production-loop-only**. It must **not** be ported to
+  `scripts/cross-model-review.py`: that harness is the cross-model *sweep*, whose confound
+  control requires whole prompts that are byte-identical *across models* and stamped by
+  `prompt_sha`. Prompt caching is deliberately absent there (decision 032 H4) — see the guard
+  note in that file's module docstring.
 
 ### Between-stage status banner
 
@@ -409,6 +450,45 @@ After producing the merged fact-check report, check whether any merged claims ca
    - **Skip critics** — the user only needed the fact-check
 
 If the user passed `--no-gate`, or if there are no high-confidence Incorrect findings, skip this gate and proceed directly to Stage 2.
+
+### First-red short-circuit (decision 032 #4)
+
+Applies **only** when `--loop-pass` was passed — i.e., this is a non-final pass of a review-fix
+loop, so a fix and another full review pass are guaranteed to follow. Skip this section entirely
+on a normal (terminal or standalone) run.
+
+The rule: **once a behavioral 🔴 is confirmed on a `--loop-pass` run, stop the pass and hand
+back to the loop for the fix — do not launch the remaining review work.** A branch carrying a
+behavioral red is already non-mergeable this pass; the remaining critics' findings would be
+re-surfaced next pass over a churned surface, so paying for them now is waste (decision 032 #4;
+the token model is E1's finding that a pass is ~1M tokens regardless of how many findings it
+carries).
+
+Mechanics:
+
+1. **Behavioral 🔴 is defined by tier policy T (decision 031).** A fact-check high-confidence
+   Incorrect on **behavioral/contract** code is a red; a comment/doc-only Incorrect is 🟡 under
+   T and does **not** trigger the short-circuit. An api-consistency `Breaking` or an
+   architecture `Structural` finding is likewise a behavioral red.
+2. **Earliest trigger — the fact-check gate.** If Stage 1 already yields a behavioral 🔴, skip
+   the **entire** Stage-1.5/Stage-2 critic panel for this pass. This is the largest saving
+   (the whole critic block, ~350–550k) and the common case, because fact-check runs first.
+3. **Critic-stage trigger.** If no red came from fact-check but the critic panel is dispatched
+   and a critic returns a behavioral 🔴, do not launch any *second wave* (e.g., the downstream
+   leg of a `--chain` pair, or a large-diff subsequent file-group pass); let already-in-flight
+   parallel critics finish (they cost nothing more to collect) but treat the pass as decided.
+4. **Amber is NOT collected on a short-circuited pass.** Ambers gate merge only on the final
+   pass (0R+0A, decision 031); gathering them over a surface about to be re-fixed is wasted.
+5. **The terminal pass never short-circuits.** `pr-prep` runs the final, otherwise-clean pass
+   **without** `--loop-pass`, so the full panel runs to completion and the amber inventory is
+   complete for the 0R+0A merge decision. This is what preserves recall (decision 032 H1): a
+   behavioral red is never merged — it is caught by construction on the terminal full-panel
+   pass — and the short-circuit only defers non-decisive work between fixes.
+
+Emit a one-line note in the chat when short-circuiting (e.g.,
+`Loop-pass short-circuit: behavioral 🔴 confirmed at fact-check (<claim>) — skipping critics, returning to loop for fix.`),
+and write the rubric with only the confirmed red(s); mark the skipped critics in
+`## ⏭️ Skipped Core Critics` with the reason `loop-pass short-circuit (behavioral red confirmed)`.
 
 ### Stage 1.5: Critic gating
 

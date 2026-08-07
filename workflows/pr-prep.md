@@ -220,6 +220,16 @@ either fixed something silently or waived something silently.
 
 If a fix touched code broadly enough that the narrower diff covers most of the PR, fall back to a full re-review — the incremental approach only helps when fixes are localized.
 
+**First-red short-circuit on intermediate passes (decision 032 #4).** Pass `--loop-pass` to
+`/code-review` on any pass you expect to be followed by a fix — i.e., every pass except the one
+you run to *confirm* the branch is clean. With `--loop-pass`, the review stops as soon as a
+behavioral 🔴 is confirmed (skipping the rest of the critic panel for that pass), since a fix and
+another full pass are coming regardless; ambers are not gathered on a short-circuited pass. Run
+the final, expected-clean confirmation pass **without** `--loop-pass` so the full panel runs and
+the 0R+0A amber inventory is complete. This never risks recall: a behavioral red cannot merge —
+it is caught by construction on the terminal full-panel pass — the short-circuit only defers
+non-decisive work between fixes.
+
 **Scope drift.** If a re-review finding would expand the PR beyond the scope set in step 1 (size, files touched, stated intent), the default is to file a follow-up issue and decline the change in this PR. Comply only when the finding is a hard blocker for merge (correctness bug or unsafe state). When triggered, log a `follow-up issue filed: <id/title>` line in the review artifact so the deferral is visible to the reviewer.
 
 **Optional contrastive prompt (iteration N≥2):** What new findings appeared in iteration N that weren't in N-1, and are any of them critic noise (regressions vs real)?

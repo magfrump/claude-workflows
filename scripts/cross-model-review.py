@@ -52,6 +52,15 @@ Design notes (see docs/working/experiment-results-code-review-2026-07-29.md):
   into every output row.
 - Temperature is NOT set (provider default) because several providers reject
   or silently remap it; replicate variance is therefore "as deployed".
+- DO NOT add prompt caching (`cache_control` breakpoints) here. This is the
+  cross-model *sweep*: its confound control requires prompts that are
+  byte-identical ACROSS models and stamped by prompt_sha, and caching is a
+  per-provider cost lever that would confound cost/latency across families and
+  add a non-byte-identical field to the request. Prompt caching is adopted only
+  on the production review loop (the code-review SKILL's Agent-tool dispatch),
+  fenced off this path on purpose — decision 032 (#3 / H4). If you want cache
+  behavior for a live headless review, do it in the SKILL loop, not in this
+  benchmark harness.
 
 Usage:
   export OPENROUTER_API_KEY=sk-or-...

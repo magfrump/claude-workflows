@@ -92,9 +92,28 @@ panel) — modest saving, per-repo setup; adopt if cheap on the code-heavy TS ta
 - #2 tiering: **medium** — falsifier is any behavioral red the cheap-model tier misses in the
   loop-recall check; that check gates adoption.
 
+## Implementation status (2026-08-06)
+
+The "adopt now" bundle is shipped:
+
+- **#1 critic gating** — *already implemented* before this decision (SKILL Stage 1.5: evidence
+  consultation + diff-shape skip table + `--all-critics` opt-out). No change needed; recorded
+  here as adopted. It skips signal-less core critics exactly as #1 describes.
+- **#3 shared-context prefix / prompt-cache discipline** — added to `skills/code-review/SKILL.md`
+  as a new "Shared-context prefix" subsection under **The Pipeline**: the shared block is built
+  once, placed first byte-identical across all ~8 agents, with per-agent skill text in the tail
+  and the per-pass-varying fact-check summary last so the stable prefix stays cache-warm across
+  passes. Fenced production-loop-only; a guard note in `scripts/cross-model-review.py`'s
+  docstring forbids porting caching to the sweep path (H4).
+- **#4 first-red short-circuit** — added `--loop-pass` (Step 6) and a "First-red short-circuit"
+  subsection after the Fact-Check Gate in the SKILL; wired into `workflows/pr-prep.md` step 3d
+  (intermediate passes get `--loop-pass`; the confirmation pass runs the full panel). Behavioral
+  🔴 is defined by tier policy T (031); amber is gathered only on the terminal full-panel pass,
+  which is what preserves H1.
+
 ## Next
 
-- Implement #3/#1/#4 in `cross-model-review.py` / `code-review` SKILL (production-loop path
-  only for #3). Measure the pass-token delta on a canon instance to confirm H3 ≥15%.
-- Run #2 as the next arm on csp+corpus (reconstruct-then-live, k=1 protocol) before any
-  SKILL default change.
+- Measure the pass-token delta on a canon instance to confirm H3 ≥15% (the levers are shipped;
+  the ≥15% claim is still unmeasured on this pipeline).
+- Run #2 (model-tiering) as the next arm on csp+corpus (reconstruct-then-live, k=1 protocol)
+  before any SKILL default change.
