@@ -96,7 +96,7 @@ Accept user overrides:
 - **Commit range:** `--range abc123..def456`
 - **Staged changes:** `--staged` (use `git diff --cached`)
 
-Do not paste the full diff into agent prompts. Pass the scope specification so each agent runs its own `git diff` — this avoids context budget issues with large diffs.
+Diff delivery to agents is conditional (decision 032 #3, see [Inline shared-context prefix](#inline-shared-context-prefix-decision-032-3)): for a normal-sized diff, inline it once as the shared cacheable prefix of every agent prompt; for a **large diff** (the ~1000-line / >40%-churn threshold below), do **not** inline — pass the scope specification so each agent runs its own `git diff`, avoiding context-budget blowup. When in doubt on size, prefer self-read.
 
 **Partial-scope reviews must label out-of-scope sibling work.** When the scope is narrower than the full branch changeset (`--range`, `--staged`, `--files`, or a `--pr` covering part of a larger branch), every critic prompt must state: (a) that commits/files on the branch outside the scope are *already committed — context only, not under review*, and (b) that before flagging work as "missing", the critic must check the rest of the branch (`git log main..HEAD`, `git diff main...HEAD -- <path>`) for it. The label marks provenance, not trustworthiness — sibling context stays under normal scrutiny (a control *deleted* in a sibling commit is still a finding); only "this work is missing" claims are gated on checking it. This rule is validated, not speculative: the 2026-07-30 diff-only baseline sweep (`docs/working/experiment-cross-model-review-2026-07-30.md`, Result 5) showed unlabelled single-commit scope made three of four model families flag work as missing that sat in sibling commits (6 of 11 replicates, all at High), and the 2026-07-31 re-run under the label + sibling context (`docs/working/experiment-stage1-fp-kill-2026-07-31.md`, decision 021) reduced that FP class to 0/8 — while cross-family agreement on real issues rose among the Sonnet/Gemini/Sol pairs on the other cell. The default full-branch scope (`git diff main...HEAD`) needs no label — the whole changeset is under review.
 
@@ -225,41 +225,61 @@ Keep this brief — a short paragraph.
 
 ## The Pipeline
 
-### Shared-context prefix (prompt-cache discipline — decision 032 #3)
+### Inline shared-context prefix (decision 032 #3)
 
 Every Stage-1 replicate and Stage-2 critic prompt is assembled from two parts: a **shared
 context block** that is byte-identical across all agents in the run, and a **per-agent tail**
 (that agent's skill text + its output path + any chain context). Build the shared block **once**
 and place it **first, verbatim**, in every agent prompt; put everything that varies per agent
 **after** it. This lets the Anthropic prompt cache serve the shared block to all ~8 agents in a
-pass — and again on the next loop pass while it is unchanged — instead of re-billing it per
-agent. It is a pure transport optimization: the content each agent sees is unchanged, so it has
-**zero effect on recall** (decision 032 H1).
+pass — and again on the next loop pass while it is unchanged — at the cache-read rate instead of
+re-billing full input per agent. It is a pure transport optimization: the content each agent sees
+is unchanged, so it has **zero effect on recall** (decision 032 H1).
 
-The shared block is, in this fixed order (omit a part only when it does not apply, but keep the
-order so the cached prefix stays stable):
+**Inline the shared review material** (this is the realized form of #3 — the 2026-08-06
+measurement, `runs/review-arms/baseline-2026-08-06/levers-3-4-measurement.md`, found the benefit is
+only captured when the shared material is actually inlined as one cacheable prefix; agents
+self-reading via tools shares no prefix and captures ~nothing). The shared block is, in this fixed
+order (omit a part only when it does not apply, but keep the order so the cached prefix stays
+stable):
 
 1. The goal preamble (what a review pass is).
-2. The scope specification (the `git diff` spec — *not* the diff text; each agent still runs its
-   own diff per the Step 1 note).
+2. **The unified diff itself** (`git diff <scope>`), inlined — plus the decision-021 Stage-1
+   enclosing-file context (the post-scope contents of the files the diff touches), up to the
+   budget below. This is the bulk of the shared prefix; inlining it once and caching it across the
+   fan-out is where the saving comes from.
 3. The partial-scope labelling block, if the scope is partial (Step 1).
 4. `## What this PR is trying to accomplish` — the `<pr-intent>` captured in Step 2.
 5. `## Prior review findings (advisory …)` — `<prior-findings>` from Step 3, if any.
 6. The Stage-1 merged fact-check summary (Stage 2 only; Incorrect/Stale/Mostly-Accurate rows
    per the >200-line rule in Stage 2 step 5).
 
+Agents still have repo access and may read further files on demand (e.g. a cross-file consumer not
+in the enclosing set); inlining the diff + enclosing files just means they don't re-fetch the
+*shared* material, so it can be cached.
+
+**Size guard — when NOT to inline.** Inlining trades context-window budget for cache reuse, and for
+a large diff the window, not the bill, is the binding constraint. If the diff crosses the large-diff
+threshold (the ~1000-line / >40%-churn triage in Step 1) **or** the assembled shared block would be
+very large, **fall back to the pre-#3 behavior**: pass the scope spec and let each agent run its own
+`git diff` and read what it needs. State which mode you used in the plan summary. (This is why Step 1
+frames diff-inlining as conditional rather than forbidden.)
+
 **Stability rules that make the cache actually hit:**
 - Keep the shared block **first** and **byte-identical** across agents in a pass. The only
   permitted per-agent variation lives in the tail (skill text, output path, chain context).
 - Across loop passes, the block's prefix stays cache-warm up to the parts that changed: parts
-  1–4 are typically stable across a fix→re-review cycle; the fact-check summary (part 6) changes
-  each pass and therefore sits **last** in the shared block, so the earlier, stable parts remain
-  a cacheable common prefix.
-- This discipline is **production-loop-only**. It must **not** be ported to
-  `scripts/cross-model-review.py`: that harness is the cross-model *sweep*, whose confound
-  control requires whole prompts that are byte-identical *across models* and stamped by
-  `prompt_sha`. Prompt caching is deliberately absent there (decision 032 H4) — see the guard
-  note in that file's module docstring.
+  1–5 are stable across a fix→re-review cycle only if the diff/enclosing files are unchanged (a
+  fix mutates them, so cross-pass reuse is partial); the fact-check summary (part 6) changes each
+  pass and therefore sits **last**, so whatever prefix is unchanged remains a cacheable common
+  prefix.
+- **Measured benefit is modest — single-digit-% of input cost, 0% of token count** (caching is a
+  billing-rate effect, not a token-count reduction). Leave it on because it is free; do not expect
+  it to move the token-count ledger.
+- This is **production-loop-only**. It must **not** be ported to `scripts/cross-model-review.py`:
+  that harness is the cross-model *sweep*, whose confound control requires whole prompts that are
+  byte-identical *across models* and stamped by `prompt_sha`. Prompt caching is deliberately absent
+  there (decision 032 H4) — see the guard note in that file's module docstring.
 
 ### Between-stage status banner
 
@@ -471,12 +491,17 @@ Mechanics:
    T and does **not** trigger the short-circuit. An api-consistency `Breaking` or an
    architecture `Structural` finding is likewise a behavioral red.
 2. **Earliest trigger — the fact-check gate.** If Stage 1 already yields a behavioral 🔴, skip
-   the **entire** Stage-1.5/Stage-2 critic panel for this pass. This is the largest saving
-   (the whole critic block, ~350–550k) and the common case, because fact-check runs first.
-3. **Critic-stage trigger.** If no red came from fact-check but the critic panel is dispatched
-   and a critic returns a behavioral 🔴, do not launch any *second wave* (e.g., the downstream
-   leg of a `--chain` pair, or a large-diff subsequent file-group pass); let already-in-flight
-   parallel critics finish (they cost nothing more to collect) but treat the pass as decided.
+   the **entire** Stage-1.5/Stage-2 critic panel for this pass. This is the largest saving (the
+   whole critic block) — measured at **~73% of the pass** on the one canon-adjacent case that
+   fired it (`runs/review-arms/baseline-2026-08-06/hunt-verify/results.md`). But it is **not** the
+   common case: fact-check finds a *behavioral* 🔴 rarely — most fact-check Incorrects are
+   comment/doc (→🟡, no fire), and most real behavioral reds surface from the **critic panel**, not
+   fact-check. So this trigger is high-value but low-frequency; do not expect it most passes.
+3. **Critic-stage trigger (limited).** If no red came from fact-check but a dispatched critic
+   returns a behavioral 🔴, do not launch any *second wave* (the downstream leg of a `--chain`
+   pair, or a large-diff subsequent file-group pass). Note this saves little in practice: the core
+   panel is one parallel wave already in flight, so there is usually nothing left to skip (measured:
+   a critic-surfaced red saved 0). Let in-flight critics finish and treat the pass as decided.
 4. **Amber is NOT collected on a short-circuited pass.** Ambers gate merge only on the final
    pass (0R+0A, decision 031); gathering them over a surface about to be re-fixed is wasted.
 5. **The terminal pass never short-circuits.** `pr-prep` runs the final, otherwise-clean pass
