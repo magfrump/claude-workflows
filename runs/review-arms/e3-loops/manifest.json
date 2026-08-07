@@ -30,7 +30,7 @@
           "fix-2": "done",
           "full-2": "done",
           "amber-fix": "done",
-          "verify-pass": "fc in-flight"
+          "verify-pass": "critics in-flight"
         },
         "tokens": {
           "lite-1": 22851,
@@ -57,7 +57,11 @@
           "full-2-critic-architecture": 93850,
           "full-2-critic-api-consistency": 108895,
           "full-2-rubric": 155253,
-          "amber-fix": 93668
+          "amber-fix": 93668,
+          "verify-fc-r2": 95493,
+          "verify-fc-r3": 110804,
+          "verify-fc-r1": 105153,
+          "verify-fc-merge": 113984
         },
         "fix_1_result": {
           "commit": "e5d95a9",
@@ -112,7 +116,7 @@
           "fix-2": "done",
           "full-3": "done",
           "amber-fix": "done",
-          "verify-pass": "fc in-flight"
+          "verify-pass": "critics in-flight"
         },
         "tokens": {
           "full-1": 817597,
@@ -138,7 +142,11 @@
           "full-3-critic-architecture": 106701,
           "full-3-critic-api-consistency": 102038,
           "full-3-rubric": 176929,
-          "amber-fix": 107190
+          "amber-fix": 107190,
+          "verify-fc-r1": 100575,
+          "verify-fc-r3": 106337,
+          "verify-fc-r2": 126521,
+          "verify-fc-merge": 106074
         },
         "fix_1_result": {
           "commit": "99e1229",
