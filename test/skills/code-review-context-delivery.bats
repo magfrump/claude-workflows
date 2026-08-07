@@ -44,7 +44,7 @@ assert_all_windows_conditional() {
   while IFS= read -r line; do
     if [ "$line" = $'\x01' ]; then
       # collapse the window to one line so markers split by prose wrapping still match
-      if ! printf '%s\n' "$window" | tr -s '[:space:]' ' ' | grep -Eqi 'conditional|large[ -]diff|fall ?back'; then
+      if ! printf '%s\n' "$window" | tr -s '[:space:]' ' ' | grep -Eqi 'conditional|large[ -]diff|fall ?back|over budget|degrade'; then
         echo "window without conditionality marker for /$pattern/:" >&2
         printf '%s\n' "$window" >&2
         ok=0
@@ -61,7 +61,7 @@ assert_all_windows_conditional() {
   grep -q "Diff delivery to agents is conditional" "$BATS_TEST_DIRNAME/../../$SKILL"
 }
 
-@test "inline shared-context section inlines the unified diff as shared-block part 2" {
+@test "inline shared-context section inlines the unified diff as a shared-block part" {
   grep -q "The unified diff itself" "$BATS_TEST_DIRNAME/../../$SKILL"
 }
 
@@ -81,4 +81,24 @@ assert_all_windows_conditional() {
 @test "Stage-2 critic dispatch step references the conditional delivery rule" {
   awk '/^For each critic agent, you MUST:/,/^4\./' \
     "$BATS_TEST_DIRNAME/../../$SKILL" | grep -qi "conditional diff-delivery"
+}
+
+# --- the numeric budget and degrade ladder (decision log row 35) ---
+
+@test "size guard names the numeric shared-block budget" {
+  grep -qE 'Budget: 25,000 tokens' "$BATS_TEST_DIRNAME/../../$SKILL"
+}
+
+@test "degrade ladder inlines the diff alone before falling back to full self-read" {
+  awk '/\*\*Size guard/,/^\*\*Stability rules/' "$BATS_TEST_DIRNAME/../../$SKILL" \
+    | grep -qi 'diff only'
+}
+
+@test "per-file churn rule is explicitly excluded from the delivery gate" {
+  grep -q 'plays no part in this delivery gate' "$BATS_TEST_DIRNAME/../../$SKILL"
+}
+
+@test "mutable diff/enclosing part sits second-to-last in the shared block (part 5 of 6)" {
+  grep -qE '^5\. \*\*The unified diff itself\*\*' "$BATS_TEST_DIRNAME/../../$SKILL"
+  grep -qE '^6\. The Stage-1 merged fact-check summary' "$BATS_TEST_DIRNAME/../../$SKILL"
 }

@@ -96,7 +96,7 @@ Accept user overrides:
 - **Commit range:** `--range abc123..def456`
 - **Staged changes:** `--staged` (use `git diff --cached`)
 
-Diff delivery to agents is conditional (decision 032 #3, see [Inline shared-context prefix](#inline-shared-context-prefix-decision-032-3)): for a normal-sized diff, inline it once as the shared cacheable prefix of every agent prompt; for a **large diff** (the ~1000-line / >40%-churn threshold below), do **not** inline — pass the scope specification so each agent runs its own `git diff`, avoiding context-budget blowup. When in doubt on size, prefer self-read.
+Diff delivery to agents is conditional (decision 032 #3, see [Inline shared-context prefix](#inline-shared-context-prefix-decision-032-3)): assemble the shared block (diff + enclosing-file context) and measure it against the **25k-token budget** defined in that section. Within budget → inline it once as the shared cacheable prefix of every agent prompt. Over budget → degrade per that section's ladder (diff-only inline, then full self-read via the scope specification, each agent running its own `git diff`). The delivery gate is the byte/token budget alone — the ~1000-line triage below governs *splitting the review into passes*, and the >40%-churn rule governs *per-file review framing*; neither gates delivery.
 
 **Partial-scope reviews must label out-of-scope sibling work.** When the scope is narrower than the full branch changeset (`--range`, `--staged`, `--files`, or a `--pr` covering part of a larger branch), every critic prompt must state: (a) that commits/files on the branch outside the scope are *already committed — context only, not under review*, and (b) that before flagging work as "missing", the critic must check the rest of the branch (`git log main..HEAD`, `git diff main...HEAD -- <path>`) for it. The label marks provenance, not trustworthiness — sibling context stays under normal scrutiny (a control *deleted* in a sibling commit is still a finding); only "this work is missing" claims are gated on checking it. This rule is validated, not speculative: the 2026-07-30 diff-only baseline sweep (`docs/working/experiment-cross-model-review-2026-07-30.md`, Result 5) showed unlabelled single-commit scope made three of four model families flag work as missing that sat in sibling commits (6 of 11 replicates, all at High), and the 2026-07-31 re-run under the label + sibling context (`docs/working/experiment-stage1-fp-kill-2026-07-31.md`, decision 021) reduced that FP class to 0/8 — while cross-family agreement on real issues rose among the Sonnet/Gemini/Sol pairs on the other cell. The default full-branch scope (`git diff main...HEAD`) needs no label — the whole changeset is under review.
 
@@ -245,35 +245,52 @@ order (omit a part only when it does not apply, but keep the order so the cached
 stable):
 
 1. The goal preamble (what a review pass is).
-2. **The unified diff itself** (`git diff <scope>`), inlined — plus the decision-021 Stage-1
-   enclosing-file context (the post-scope contents of the files the diff touches), up to the
-   budget below. This is the bulk of the shared prefix; inlining it once and caching it across the
-   fan-out is where the saving comes from.
-3. The partial-scope labelling block, if the scope is partial (Step 1).
-4. `## What this PR is trying to accomplish` — the `<pr-intent>` captured in Step 2.
-5. `## Prior review findings (advisory …)` — `<prior-findings>` from Step 3, if any.
+2. The partial-scope labelling block, if the scope is partial (Step 1).
+3. `## What this PR is trying to accomplish` — the `<pr-intent>` captured in Step 2.
+4. `## Prior review findings (advisory …)` — `<prior-findings>` from Step 3, if any.
+5. **The unified diff itself** (`git diff <scope>`), inlined — plus the decision-021 Stage-1
+   enclosing-file context (the post-scope contents of the files the diff touches), subject to
+   the budget below. This is the bulk of the shared prefix; inlining it once and caching it
+   across the fan-out is where the saving comes from. It sits second-to-last because a fix
+   commit mutates it: parts 1–4 are stable across the whole loop, so ordering them first keeps
+   them a cache-warm common prefix across fix→re-review cycles.
 6. The Stage-1 merged fact-check summary (Stage 2 only; Incorrect/Stale/Mostly-Accurate rows
-   per the >200-line rule in Stage 2 step 5).
+   per the >200-line rule in Stage 2 step 5). Changes every pass, so it is last.
 
 Agents still have repo access and may read further files on demand (e.g. a cross-file consumer not
 in the enclosing set); inlining the diff + enclosing files just means they don't re-fetch the
 *shared* material, so it can be cached.
 
-**Size guard — when NOT to inline.** Inlining trades context-window budget for cache reuse, and for
-a large diff the window, not the bill, is the binding constraint. If the diff crosses the large-diff
-threshold (the ~1000-line / >40%-churn triage in Step 1) **or** the assembled shared block would be
-very large, **fall back to the pre-#3 behavior**: pass the scope spec and let each agent run its own
-`git diff` and read what it needs. State which mode you used in the plan summary. (This is why Step 1
-frames diff-inlining as conditional rather than forbidden.)
+**Size guard — the 25k-token budget and the degrade ladder.** Inlining trades context-window
+budget for cache reuse, and for a large change the window, not the bill, is the binding
+constraint. The gate is a number, measured on the assembled material, not a diff-line proxy —
+the dominant term is enclosing-file bytes, which the canon showed are decoupled from diff line
+count (7,663–69,575 chars/cell on similar-sized diffs):
+
+- **Budget: 25,000 tokens, estimated as chars/4 (i.e. ~100 KB of assembled part-5 material).**
+  Compute after assembling the diff + enclosing-file context (`wc -c` ÷ 4). The number is
+  calibrated to the 2026-08-06 canon: the largest measured cell was ~17.4k tokens, so every
+  measured cell inlines with ~45% headroom, and the budget stays ~12% of a 200k agent window
+  after skill text and working room. Revisit when a post-restructure measurement lands.
+- **Within budget** → inline diff + enclosing files as part 5.
+- **Over budget** → degrade, don't cliff: drop the enclosing-file context and inline the
+  **diff only** (agents self-read enclosing files on demand — they have repo access).
+- **Diff alone still over budget** → full fallback to the pre-#3 behavior: pass the scope spec
+  and let each agent run its own `git diff` and read what it needs.
+
+State which of the three modes you used in the plan summary (`delivery mode: inline` /
+`inline-diff-only` / `self-read`). (This is why Step 1 frames diff-inlining as conditional
+rather than forbidden. The per-file >40%-churn rule in Step 1 is a review-framing rule —
+greenfield vs diff-level evaluation — and plays no part in this delivery gate.)
 
 **Stability rules that make the cache actually hit:**
 - Keep the shared block **first** and **byte-identical** across agents in a pass. The only
   permitted per-agent variation lives in the tail (skill text, output path, chain context).
-- Across loop passes, the block's prefix stays cache-warm up to the parts that changed: parts
-  1–5 are stable across a fix→re-review cycle only if the diff/enclosing files are unchanged (a
-  fix mutates them, so cross-pass reuse is partial); the fact-check summary (part 6) changes each
-  pass and therefore sits **last**, so whatever prefix is unchanged remains a cacheable common
-  prefix.
+- Across loop passes, the block's prefix stays cache-warm up to the first part that changed:
+  parts 1–4 are stable across the whole fix→re-review loop; the diff/enclosing context (part 5)
+  mutates on every fix commit and therefore sits second-to-last; the fact-check summary
+  (part 6) changes each pass and sits last. Ordering stable-parts-first is what preserves a
+  cacheable common prefix across passes even when the diff changes.
 - **Measured benefit is modest — single-digit-% of input cost, 0% of token count** (caching is a
   billing-rate effect, not a token-count reduction). Leave it on because it is free; do not expect
   it to move the token-count ledger.
@@ -339,11 +356,12 @@ For each of the three replicate agents:
 1. Read the full contents of `skills/code-fact-check/SKILL.md`
 2. Paste those contents directly into the Agent tool prompt (sub-agents cannot read your files)
 3. Deliver the review material per Step 1's conditional diff-delivery rule (see
-   [Inline shared-context prefix](#inline-shared-context-prefix-decision-032-3)): normal-sized
-   diff → the shared block (diff + enclosing-file context, inlined) opens the prompt;
-   large diff → include the scope specification instead (e.g., "Review files changed on the
-   current branch relative to main using `git diff main...HEAD`") and let the replicate
-   self-read. If the scope is partial (`--range`, `--staged`,
+   [Inline shared-context prefix](#inline-shared-context-prefix-decision-032-3)): within the
+   25k-token budget → the shared block (diff + enclosing-file context, inlined) opens the
+   prompt; over budget → degrade per that section's ladder (inline the diff only, or fall back
+   to the scope specification — e.g., "Review files changed on the current branch relative
+   to main using `git diff main...HEAD`" — and let the replicate self-read). If the scope is
+   partial (`--range`, `--staged`,
    `--files`, or a partial `--pr`), also include the labelling block required by Step 1's
    partial-scope rule — the "already committed — context only, not under review" statement and
    the check-siblings-before-flagging-missing directive apply to fact-check replicates too.
@@ -637,9 +655,10 @@ For each critic agent, you MUST:
 1. Read the full contents of that critic's skill file (e.g., `skills/security-reviewer/SKILL.md`)
 2. Paste those contents directly into the Agent tool prompt
 3. Deliver the review material per Step 1's conditional diff-delivery rule (see
-   [Inline shared-context prefix](#inline-shared-context-prefix-decision-032-3)): normal-sized
-   diff → the shared block (diff + enclosing-file context, inlined) opens the prompt; large
-   diff → include the scope specification instead, so the agent runs its own `git diff`. If
+   [Inline shared-context prefix](#inline-shared-context-prefix-decision-032-3)): within the
+   25k-token budget → the shared block (diff + enclosing-file context, inlined) opens the
+   prompt; over budget → degrade per that section's ladder (inline the diff only, or fall
+   back to the scope specification so the agent runs its own `git diff`). If
    the scope is partial (`--range`, `--staged`, `--files`, or a partial `--pr`), also include
    the labelling block required by Step 1's partial-scope rule
 4. Include the PR intent captured in "Before You Begin" Step 2, prepended under a
@@ -1411,9 +1430,10 @@ The risk with any "log of decisions" is that nothing reads it, so it grows in st
   replicate verdicts recorded, disagreement rate reported — rationale and mechanics live
   in Stage 1's **Why three** and merge steps, the single canonical statement.
 - **Paste skill file contents into agent prompts.** Sub-agents cannot read your filesystem.
-- **Diff delivery is conditional (Step 1 / decision 032 #3).** Normal-sized diff: inline it
-  once as the shared cacheable prefix of every agent prompt. Large diff (Step 1 thresholds):
-  pass scope, not diffs — each agent runs its own `git diff` to avoid context budget issues.
+- **Diff delivery is conditional (Step 1 / decision 032 #3).** Within the 25k-token shared-block
+  budget: inline it once as the shared cacheable prefix of every agent prompt. Over budget:
+  degrade — inline the diff only, then as a last resort pass scope, not diffs, so each agent
+  runs its own `git diff` to avoid context budget issues.
 - **All agents of the same stage run in parallel.** They must not see each other's output.
   Exception: opt-in chain mode for a named critic pair (see
   [Stage 2 dispatch modes](#stage-2-dispatch-modes)) deliberately feeds the
