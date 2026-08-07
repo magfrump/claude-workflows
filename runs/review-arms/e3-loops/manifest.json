@@ -223,5 +223,28 @@
     "arm1_over_arm2": 0.763,
     "both_terminate": true,
     "verdict": "statistical tie (arm1 3.08M vs arm2 4.04M, ratio 0.76); hypothesis not supported"
+  },
+  "validation_T": {
+    "tokens": {
+      "fc-r1": 68914,
+      "fc-r3": 77942,
+      "fc-r2": 72683,
+      "fc-merge": 67866,
+      "critic-performance": 56361,
+      "critic-security": 63763,
+      "critic-api-consistency": 58220,
+      "critic-ui-visual": 68635,
+      "critic-architecture": 77700
+    },
+    "note": "fresh arm2 pass-2 review of 99e1229 under T (k=3, isolating T); r1: 0 fresh red",
+    "fc_result": "0 code-red under T (3 comment-only\u2192amber, 1 immutable\u2192override log)",
+    "stage": "COMPLETE",
+    "result": {
+      "confirmed": true,
+      "arm2_pass2_under_T": "0 RED (fc 0 code-red; sec/perf/api/arch/ui all 0 native red)",
+      "residual": "comment-only ambers (Edge-runtime, OpenAlex, x-nonce dead seam) + 1 immutable->override log; all dispositionable",
+      "two_pass_claim": "CONFIRMED \u2014 arm2 terminates at 2 full passes under T (fresh k=3 draw), matching arm1; the 3rd pass the old mapping forced is eliminated",
+      "total_tokens": 612084
+    }
   }
 }

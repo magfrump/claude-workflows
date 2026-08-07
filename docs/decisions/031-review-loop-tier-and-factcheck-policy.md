@@ -10,8 +10,15 @@
   the severity mapping in `skills/code-review/SKILL.md`. Merge standard is **0R + 0A**
   (amber resolvable by fix or ack-with-justification; comment fixes cost the same as an
   ack, so they are fixed).
-- **Task status**: decision made (T high-confidence, K/C medium, L scoped); SKILL edits are
-  follow-up.
+- **Task status**: decision made (T high-confidence, K/C medium, L scoped). **T
+  implemented** in `skills/code-review/SKILL.md` (Unified Severity Mapping, fact-check
+  cell) and **validated 2026-08-06**: a fresh k=3 full-review pass of arm 2's post-fix-1
+  state (`99e1229`) under T returned **0 red** on every axis (fact-check 0 code-red; all
+  five critics 0 native red), with the two marginal reds that forced arm 2's 3rd pass under
+  the old mapping landing 🟡 (Edge-runtime comment) and override-log (immutable 9b4e453
+  claim). This confirms the two-pass claim: **under T, arm 2 terminates at 2 full passes**,
+  matching arm 1 — the extra pass is eliminated. Validation cost 612k tokens
+  (`runs/review-arms/e3-loops/validate-T-arm2/`). K/C/L SKILL edits remain follow-up.
 
 ## Context
 
