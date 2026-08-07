@@ -223,8 +223,12 @@ If a fix touched code broadly enough that the narrower diff covers most of the P
 **First-red short-circuit on intermediate passes (decision 032 #4).** Pass `--loop-pass` to
 `/code-review` on any pass you expect to be followed by a fix — i.e., every pass except the one
 you run to *confirm* the branch is clean. With `--loop-pass`, the review stops as soon as a
-behavioral 🔴 is confirmed (skipping the rest of the critic panel for that pass), since a fix and
-another full pass are coming regardless; ambers are not gathered on a short-circuited pass. Run
+behavioral 🔴 is confirmed, since a fix and another full pass are coming regardless; ambers are
+not gathered on a short-circuited pass. Calibrate expectations per the 2026-08-06 measurement
+(SKILL "First-red short-circuit" mechanics): the big saving (~73% of a pass, the whole critic
+panel skipped) happens only on the rare fact-check-visible behavioral red; a red surfaced by the
+critic panel itself saves ~0, because the panel is one parallel wave already in flight. This is
+a loop-safety valve, not a steady cost reducer. Run
 the final, expected-clean confirmation pass **without** `--loop-pass` so the full panel runs and
 the 0R+0A amber inventory is complete. This never risks recall: a behavioral red cannot merge —
 it is caught by construction on the terminal full-panel pass — the short-circuit only defers

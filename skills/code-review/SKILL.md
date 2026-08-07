@@ -531,7 +531,9 @@ Mechanics:
    cells (`runs/review-arms/baseline-2026-08-06/hunt-verify/results.md`). But it is **not** the
    common case: fact-check finds a *behavioral* 🔴 rarely — most fact-check Incorrects are
    comment/doc (→🟡, no fire), and most real behavioral reds surface from the **critic panel**, not
-   fact-check. So this trigger is high-value but low-frequency; do not expect it most passes.
+   fact-check. So this trigger is high-value but low-frequency — expected per-pass value ≈ ~73% ×
+   P(fact-check-visible behavioral red) ≈ **0.3%** at the measured ~1-in-225 trigger rate, so the
+   rare big win carries its own denominator; do not expect it most passes.
 3. **Critic-stage trigger (limited).** If no red came from fact-check but a dispatched critic
    returns a behavioral 🔴, do not launch any *second wave* (the downstream leg of a `--chain`
    pair, or a large-diff subsequent file-group pass). Note this saves little in practice: the core
