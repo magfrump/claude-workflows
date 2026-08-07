@@ -30,7 +30,7 @@
           "fix-2": "done",
           "full-2": "done",
           "amber-fix": "done",
-          "verify-pass": "critics in-flight"
+          "verify-pass": "done"
         },
         "tokens": {
           "lite-1": 22851,
@@ -61,7 +61,13 @@
           "verify-fc-r2": 95493,
           "verify-fc-r3": 110804,
           "verify-fc-r1": 105153,
-          "verify-fc-merge": 113984
+          "verify-fc-merge": 113984,
+          "verify-critic-performance": 67735,
+          "verify-critic-ui-visual": 53545,
+          "verify-critic-architecture": 70726,
+          "verify-critic-security": 73500,
+          "verify-critic-api-consistency": 68405,
+          "verify-rubric": 90907
         },
         "fix_1_result": {
           "commit": "e5d95a9",
@@ -91,12 +97,12 @@
           "tests": "232/232 pass"
         },
         "result": {
-          "terminated": false,
-          "lite_iterations": 2,
-          "full_iterations": 2,
-          "final_status": "PASSES WITH AMBERS (0R/9A)",
-          "total_tokens": 2137136,
-          "note": "reopened under v2 criterion (0R+0A); amber-disposition round dispatched"
+          "terminated": true,
+          "final": "MEETS 0R+0A at verify pass",
+          "lite_iters": 2,
+          "full_iters": 2,
+          "amber_rounds": 1,
+          "total_tokens": 3081056
         },
         "amber_fix_result": {
           "commit": "1eb081e",
@@ -104,7 +110,8 @@
           "acked": 1,
           "tests": "236/236",
           "notes": "deleted prefetch missing: clause; deleted x-nonce seam; buildCsp nodeEnv now required param; exportGraph invariant tests added"
-        }
+        },
+        "verify_new_amber": "form-action maps Low->green under mapping; did NOT require a round (earlier note corrected)"
       },
       "arm2": {
         "branch": "e3/csp-arm2",
@@ -116,7 +123,7 @@
           "fix-2": "done",
           "full-3": "done",
           "amber-fix": "done",
-          "verify-pass": "critics in-flight"
+          "verify-pass": "done"
         },
         "tokens": {
           "full-1": 817597,
@@ -146,7 +153,13 @@
           "verify-fc-r1": 100575,
           "verify-fc-r3": 106337,
           "verify-fc-r2": 126521,
-          "verify-fc-merge": 106074
+          "verify-fc-merge": 106074,
+          "verify-critic-performance": 67489,
+          "verify-critic-ui-visual": 72069,
+          "verify-critic-security": 77448,
+          "verify-critic-api-consistency": 66893,
+          "verify-critic-architecture": 74469,
+          "verify-rubric": 92974
         },
         "fix_1_result": {
           "commit": "99e1229",
@@ -178,11 +191,11 @@
           "R2 immutable-history waive ACCEPTED; pass-3 rubric treats it as a considered override"
         ],
         "result": {
-          "terminated": false,
-          "iterations_full": 3,
-          "final_status": "PASSES (0R/14A)",
-          "total_tokens": 3039841,
-          "note": "reopened under v2 criterion (0R+0A); amber-disposition round dispatched"
+          "terminated": true,
+          "final": "MEETS 0R+0A at verify pass",
+          "full_iters": 3,
+          "amber_rounds": 1,
+          "total_tokens": 4037880
         },
         "amber_fix_result": {
           "commit": "ab4dbdb",
@@ -193,7 +206,7 @@
       }
     }
   },
-  "status": "both verification-pass fact-checks in flight (6 replicates)",
+  "status": "E3-LOOPS csp COMPLETE under 0R+0A \u2014 both arms MEET; final comparison recorded",
   "final_comparison": {
     "arm1_total": 2137136,
     "arm1_shape": "lite\u00d72 + lite-fix + full\u00d72 + full-fix",
@@ -201,5 +214,14 @@
     "arm2_shape": "full\u00d73 + full-fix\u00d72",
     "arm1_over_arm2": 0.703
   },
-  "termination_criterion_v2": "0R AND 0A (amber resolvable by fix or ack-with-note); comment fixes preferred over acks (same cost); no hard iteration cap"
+  "termination_criterion_v2": "0R AND 0A (amber resolvable by fix or ack-with-note); comment fixes preferred over acks (same cost); no hard iteration cap",
+  "final_comparison_0R0A": {
+    "arm1_total": 3081056,
+    "arm1_shape": "lite\u00d72 + lite-fix + full\u00d72 + full-fix + amber-disp + verify-pass",
+    "arm2_total": 4037880,
+    "arm2_shape": "full\u00d73 + full-fix\u00d72 + amber-disp + verify-pass",
+    "arm1_over_arm2": 0.763,
+    "both_terminate": true,
+    "verdict": "statistical tie (arm1 3.08M vs arm2 4.04M, ratio 0.76); hypothesis not supported"
+  }
 }
