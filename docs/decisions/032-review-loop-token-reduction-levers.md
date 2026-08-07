@@ -111,9 +111,35 @@ The "adopt now" bundle is shipped:
   🔴 is defined by tier policy T (031); amber is gathered only on the terminal full-panel pass,
   which is what preserves H1.
 
+## Measured on the canon (2026-08-06) — H3 revisited
+
+Baseline (`runs/review-arms/baseline-2026-08-06/`, full canon single pass = 2.99M tokens) plus
+the `levers-3-4-measurement.md` analysis **revise the H3 expectations downward for #3/#4** and
+relocate the real savings:
+
+- **#3 prompt-cache: ~5% cost-equivalent, 0% token-count — NOT 20–40%.** The 20–40% estimate was
+  inherited from the cross-model harness, which *inlines the whole diff into the prompt*. The
+  production Agent-tool loop does **not** inline — critic agents self-read the diff/files/fact-check
+  via tools — so the shared cacheable *prefix* is small (~330 tok as-run). Caching is also a
+  billing-rate effect, invisible to the token-count metric. Realizing even the ~5% needs a SKILL
+  restructure to inline the shared diff+fact-check prefix. **Verdict: leave caching on (free),
+  but it is a single-digit-% cost lever on this path, not an H3-clearing one.**
+- **#4 first-red short-circuit: 0 saving on a single pass; fired 0/8 on the canon.** Its
+  high-value trigger (a *fact-check* behavioral 🔴 → skip the whole panel) never fired because
+  fact-check on reviewed states finds only comment/doc Incorrect (→🟡 under T); the real reds come
+  from critics (one parallel wave, nothing to skip). #4 is loop-only and red-provenance-gated;
+  loop-estimate ≤~10% and only when the defect is a fact-check-visible comment/contract lie.
+  **Verdict: keep wired for loop safety; do not count on it for savings on structural-defect corpora.**
+- **Where the token savings actually are (measured):** 031 **k=1 ≈ 29%** off a k=3 pipeline, and
+  032 **#1 gating ≈ 17%** off the ungated panel. These clear H3; #3/#4 do not on this workload.
+
+So H3 (≥15% saving) is **met by #1 + k=1, not by #3/#4**. #1 was the load-bearing 032 lever.
+
 ## Next
 
-- Measure the pass-token delta on a canon instance to confirm H3 ≥15% (the levers are shipped;
-  the ≥15% claim is still unmeasured on this pipeline).
+- (Optional) Amend #3's guidance in the SKILL to state the single-digit-% production-loop benefit,
+  and only invest in inlining if a loop's cross-pass cache reuse proves it out.
+- (Optional) Empirically fire #4 on an E1 dirty state whose defect is a fact-check-visible
+  behavioral comment/contract lie, to convert its loop estimate to a measurement.
 - Run #2 (model-tiering) as the next arm on csp+corpus (reconstruct-then-live, k=1 protocol)
   before any SKILL default change.
