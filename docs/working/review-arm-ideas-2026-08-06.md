@@ -106,7 +106,34 @@ rubric(~120–160k) ≈ **~880k**. **k=1 removes 2 replicates + the merge ≈ �
 (Loop totals exclude the shared fix + amber-disposition + verify stages, which are
 arm-invariant; the table isolates the review-stage delta each arm changes.)
 
-## Conclusion (both runs complete)
+## Second instance — corpus (large diff; `second_instance_corpus` in the manifest)
+
+corpus was chosen as instance 2 precisely because it's the only canon instance large
+enough for carry-forward to plausibly compete. Ran: pass-1 reused from E1 corpus-dirty →
+T-rescore → real fix commit (`409e9dc`, 6 files) → dual pass-2 (full-scope k=3 baseline +
+scoped carry-forward k=1). Results:
+
+- **T leverage is low on corpus: 4R → 3R** (only the comment-red R4 demotes; three
+  architecture-Structural reds stand, verdict unchanged). Contrast csp, where T removed the
+  *deciding* reds. **T's leverage is instance-dependent** — large on comment/history-red-
+  limited instances, small on structurally-red ones.
+- **k=1 recall: parity, confirmed on corpus.** All 3 baseline replicates were unanimously
+  0 code-red at the fixed state; corpus's pass-1 behavioral reds were p=1 (3/3) in the E1
+  corpus corpus too. k=1 loses no behavioral red here. Full-scope k=3 fact-check = 322k
+  (~107k/replicate); k=1 ≈ 107k → ~⅔ saving on the fact-check stage, as on csp.
+- **Carry-forward: 0 carried / 30 rechecked — bought nothing, AGAIN.** The corrected
+  finding overturns this doc's earlier "large-diff → ~half carries" projection: that
+  projection counted files unchanged by the *fix diff* (8/15) but ignored the **one-hop
+  import closure**. The fix edited corpus's hub files (paths/manifest/adapters), and the
+  closure pulled in the module's remaining source (types, flag, workspaceStore), so the
+  14-file changed-set covered every file any claim cites. **Carry yield is governed by the
+  diff's centrality/coupling, not its size** — it pays only on a diff that is large *and*
+  localized (low fan-in/out). Neither canon instance qualifies (csp: small+central;
+  corpus: small-fix + high-fan-in). And the closure is *safety-required* — dropping it to
+  recover carry would risk missing cross-file invalidation — so in a tightly-coupled module
+  you cannot have both carry and safety.
+
+## Conclusion (both instances complete)
 
 - **Ship k=1 + 2-consecutive-clean** (Arm-K1C2, = 031's C2 minus carry) as the default:
   measured recall parity with k=3 on this corpus (every behavioral red surfaced by every
@@ -114,13 +141,16 @@ arm-invariant; the table isolates the review-stage delta each arm changes.)
   the extra clean pass, and every finding gets a genuine second pre-merge draw. The residual
   is comment-level severity noise, which T already sends to amber. Still n=1 instance — the
   031 falsifier (a merged behavioral red k=3 would have caught) stands.
-- **Make carry-forward conditional on changeset size, not default-on.** It saved ~0 on csp
-  (changeset ⊂ fix blast radius) and projects to ~half the *located*-claim fact-check on
-  corpus-class diffs (8/15 files unchanged by the first fix). Gate: enable when
-  changeset > ~10 files AND the fix touches < ~half of them. Two hard limits found:
-  (1) existential/absence claims don't file-scope, so they re-run regardless — carry saves
-  only on located claims; (2) the saving is on *fact-check only* (~30–45% of a pass), so
-  even best-case corpus carry trims ~15–20% of a whole pass, not half.
+- **Deprioritize carry-forward — it did not compete on either instance.** Measured ~0 on
+  csp (small central changeset) AND ~0 on corpus (small central fix whose one-hop closure
+  engulfed the coupled module). The earlier "large-diff → ~half carries" projection was
+  wrong: **centrality/coupling, not size, governs carry yield.** Carry pays only on a diff
+  that is large *and* localized (low fan-in/out), which neither canon instance is — and the
+  import closure that would recover carry in a coupled module is exactly what safety
+  forbids. Plus two standing limits: existential/absence claims never file-scope, and the
+  saving is fact-check-only (~30–45% of a pass). Net: carry is a niche lever for large
+  *modular* codebases, not a general one; do not build it before an instance actually
+  exhibits a large localized diff. k=1 already captures the fact-check saving universally.
 - **Composite Arm-Carry-K1** is the large-diff default: k=1's 33% + carry's large-diff
   fact-check trim, with cached prior-k=3 verdicts on the stable bulk and fresh draws on the
   churn. On small diffs it degenerates to Arm-K1 (carry contributes nothing), which is

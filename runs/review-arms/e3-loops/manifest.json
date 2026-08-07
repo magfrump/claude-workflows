@@ -259,5 +259,51 @@
       "projection": "corpus-class: 8/15 files unchanged -> ~half located-claim fact-check carries, ~15-20% of a whole pass"
     },
     "status": "defined + measured on csp; k1+2clean recall-parity confirmed; carry = large-diff-only lever"
+  },
+  "second_instance_corpus": {
+    "pass1_under_T": {
+      "tokens": 69892,
+      "result": "4R -> 3R (only the comment-red R4 demotes; 3 architecture-Structural reds stand; verdict unchanged \ud83d\udd34)",
+      "finding": "T leverage is instance-dependent: high on comment/history-red-limited instances (csp, flipped to clean), low on structurally-red instances (corpus, no flip)"
+    },
+    "fix": {
+      "commit": "409e9dc",
+      "files": 6,
+      "file_list": [
+        "paths.ts",
+        "storeAdapter.ts",
+        "opfsAdapter.ts",
+        "manifest.ts",
+        "__tests__/inMemoryCorpusFs.ts",
+        "__tests__/corpusFsContract.ts"
+      ],
+      "tests": "327 pass",
+      "disposition": "R1-R4 fixed, comment ambers fixed",
+      "tokens": 106092
+    },
+    "stage": "COMPLETE",
+    "pass2_tokens": {
+      "baseline-r2": 103773,
+      "baseline-r1": 107711,
+      "baseline-r3": 110118,
+      "baseline-fullscope-k3-total": 321602,
+      "carry-k1-scoped": 109223
+    },
+    "pass2_baseline_result": "0 code-red x3 (unanimous); all 4 structural fixes verified landed; residuals comment-only. Full-scope k=3 fc = 321,602 tokens (avg ~107k/replicate)",
+    "carry_result": {
+      "carried": 0,
+      "rechecked": 30,
+      "changed_set": 14,
+      "saving": "~0 (scoped read-scope \u2248 full-scope because 0 claims carried)",
+      "root_cause": "one-hop import closure of a central fix engulfs the tightly-coupled corpus module (types/flag/workspaceStore pulled in) \u2014 every cited file landed in the changed-set",
+      "finding": "carry yield is governed by diff CENTRALITY/coupling, not size; pays only on a large AND localized/modular diff. Neither canon instance qualifies (csp small+central; corpus small-fix+high-fan-in). Safety-required closure destroys carry in coupled modules."
+    },
+    "k1_recall_corpus_pass2": "parity \u2014 3/3 baseline replicates unanimous 0 code-red, so k=1 (any single replicate) also 0 code-red; comment residuals are T-amber class",
+    "arm_verdict": {
+      "K1": "COMPETITIVE (universal) \u2014 recall parity, ~33%/pass cheaper",
+      "K1C2": "COMPETITIVE (recommended default) \u2014 parity + 2nd draw, cost ~wash",
+      "Carry": "NOT competitive on either canon instance \u2014 needs large+localized diff",
+      "Carry-K1": "degenerates to K1 when carry=0; carry contributes nothing here"
+    }
   }
 }
