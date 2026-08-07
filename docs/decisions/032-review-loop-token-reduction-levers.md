@@ -124,12 +124,17 @@ relocate the real savings:
   billing-rate effect, invisible to the token-count metric. Realizing even the ~5% needs a SKILL
   restructure to inline the shared diff+fact-check prefix. **Verdict: leave caching on (free),
   but it is a single-digit-% cost lever on this path, not an H3-clearing one.**
-- **#4 first-red short-circuit: 0 saving on a single pass; fired 0/8 on the canon.** Its
-  high-value trigger (a *fact-check* behavioral 🔴 → skip the whole panel) never fired because
-  fact-check on reviewed states finds only comment/doc Incorrect (→🟡 under T); the real reds come
-  from critics (one parallel wave, nothing to skip). #4 is loop-only and red-provenance-gated;
-  loop-estimate ≤~10% and only when the defect is a fact-check-visible comment/contract lie.
-  **Verdict: keep wired for loop safety; do not count on it for savings on structural-defect corpora.**
+- **#4 first-red short-circuit: high-variance, low-frequency — measured ~73% when it fires, but
+  the trigger is rare.** Fired 0/8 on the canon (fact-check on reviewed states finds only comment/doc
+  Incorrect →🟡). Empirically fired on a hunted commit (evidence-integrate `counterexamples`/`scenarios`,
+  `hunt-verify/results.md`): fact-check confirmed the behavioral 🔴 and #4 skipped the whole critic
+  panel = **238,155 tokens = 73% of that pass**. But a second hunted commit (throttle) had a real red
+  that api-consistency rated **Breaking** while fact-check classified it **🟡 (impact masked)** → #4
+  **did not fire, 0 saving despite the red**. The trigger requires a *fact-check-visible* behavioral
+  lie; structural/critic-surfaced reds (the common case) give it nothing because the parallel critic
+  wave is already dispatched. Expected loop saving ≈ P(fact-check-visible red) × ~73%, P low (0/8
+  canon; ~1 clean trigger in 225 commits). **Verdict: keep wired for loop safety — the rare
+  big win is real — but do not budget it as a steady reducer.**
 - **Where the token savings actually are (measured):** 031 **k=1 ≈ 29%** off a k=3 pipeline, and
   032 **#1 gating ≈ 17%** off the ungated panel. These clear H3; #3/#4 do not on this workload.
 

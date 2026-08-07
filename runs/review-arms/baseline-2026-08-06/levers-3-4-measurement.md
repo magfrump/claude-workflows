@@ -91,6 +91,17 @@ on these states. The mechanism is sound; the workload rarely triggers it.
 a reliable token reducer** for this corpus — the reds here are structural/behavioral findings that
 live in the critic panel, not fact-check-visible comment/contract lies.
 
+**EMPIRICAL UPDATE (2026-08-06, `hunt-verify/results.md`)**: converted the estimate to a
+measurement on two hunted commits. **When #4 fires it cuts ~73% of the pass** (candidate B,
+evidence-integrate: fact-check 86,824 confirms the behavioral 🔴, panel of 238,155 skipped → pass
+324,979 → 86,824). But the **trigger is rare and strict**: candidate A (throttle) had a genuine
+behavioral red — api-consistency rated it **Breaking** — yet fact-check classified it **🟡
+(comment/doc, impact masked)**, so #4 **did not fire and saved 0** despite the red. So #4 is
+**high-variance, low-frequency**: ~73% on the rare pass whose blocker is a *fact-check-visible*
+behavioral lie, ~0 otherwise (structural/critic-surfaced reds — the common case — give it nothing,
+because the parallel critic wave is already dispatched). Expected loop saving ≈ P(fact-check-visible
+red) × ~73%, and P is low (canon 0/8; 1 clean trigger in 225 commits).
+
 ---
 
 ## What actually moved the number (for contrast — these ARE token-count savings)
