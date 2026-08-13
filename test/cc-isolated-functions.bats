@@ -23,7 +23,7 @@ setup() {
   export CLAUDE_DEVC_CONFIG_DIR="$TEST_TMPDIR/config"
   mkdir -p "$CLAUDE_DEVC_CONFIG_DIR/egress"
   echo '{"name":"x"}'        > "$CLAUDE_DEVC_CONFIG_DIR/devcontainer.json"
-  echo 'FROM node:20'        > "$CLAUDE_DEVC_CONFIG_DIR/Dockerfile"
+  echo 'FROM node:22'        > "$CLAUDE_DEVC_CONFIG_DIR/Dockerfile"
   echo '#!/bin/bash'         > "$CLAUDE_DEVC_CONFIG_DIR/init-firewall.sh"
   echo '#!/usr/bin/env bash' > "$CLAUDE_DEVC_CONFIG_DIR/cc-isolated.sh"
   echo 'api.anthropic.com'   > "$CLAUDE_DEVC_CONFIG_DIR/egress/base.txt"

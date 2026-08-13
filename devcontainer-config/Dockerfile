@@ -4,7 +4,11 @@
 #   - decision 016: egress profiles baked in; the profile is written root-owned to
 #     /etc/cc-egress-profile so an in-container agent cannot widen its own allowlist.
 # Keep this file minimal-diff against upstream so refreshes are easy.
-FROM node:20
+# node:22 (bookworm), bumped from node:20 2026-08-13: claude-code >=2.1.231
+# declares engines.node >=22, so the baked npm install started warning EBADENGINE
+# and a future release may hard-fail on node 20. Same Debian base, so the
+# python3.11/no-ensurepip and openjdk-17 notes below are unchanged.
+FROM node:22
 
 ARG TZ
 ENV TZ="$TZ"
@@ -65,7 +69,7 @@ RUN ARCH=$(dpkg --print-architecture) && \
 
 # uv — the Python toolchain (decision log #18).
 #
-# The node:20 base ships python3.11 but no pip and, crucially, no `ensurepip`, so
+# The node:22 (bookworm) base ships python3.11 but no pip and, crucially, no `ensurepip`, so
 # `python3 -m venv` FAILS outright: there is no installer of any kind in the image.
 # The `python` egress profile was therefore opening PyPI to a container that had no
 # way to reach it. uv is a single static binary that is both the venv builder and the
@@ -161,7 +165,7 @@ RUN case "$(dpkg --print-architecture)" in \
 # not a per-project cost (decision 016, S2).
 #
 # WHY JDK 17: it is the JDK the current Android Gradle Plugin targets. Debian bookworm
-# (the node:20 base) ships openjdk-17-jdk-headless, so no third-party JDK is needed.
+# (the node:22 base) ships openjdk-17-jdk-headless, so no third-party JDK is needed.
 #
 # WHY BAKE THE SDK (and not fetch it at runtime): the SDK download happens during
 # `docker build`, which runs BEFORE init-firewall.sh exists, so it needs no egress

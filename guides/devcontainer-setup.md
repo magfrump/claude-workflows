@@ -103,7 +103,7 @@ environment. Widening requires a host-side re-register, re-bless, and rebuild.
 ## Python projects
 
 The image ships **`uv`** plus Debian's `python3.11`, and deliberately ships **no pip**.
-That is not an omission to work around: the `node:20` base has no `ensurepip`, so
+That is not an omission to work around: the `node:22` base has no `ensurepip`, so
 `python3 -m venv` fails outright, and uv replaces both the venv builder and the
 installer with one static binary. A uv venv also sidesteps Debian's PEP 668
 `EXTERNALLY-MANAGED` marker, which would block a system-wide `pip install` anyway.

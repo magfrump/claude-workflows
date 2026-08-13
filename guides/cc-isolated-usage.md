@@ -98,7 +98,7 @@ or `GH_TOKEN`) — never real host credentials.
 
 ## Python inside the container
 
-The image ships `uv` (not pip — the `node:20` base has no `ensurepip`, so
+The image ships `uv` (not pip — the `node:22` base has no `ensurepip`, so
 `python3 -m venv` fails outright). After registering `--profile python`:
 
 ```bash
