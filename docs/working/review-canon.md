@@ -26,6 +26,10 @@ Evidence-grounded), plus retrospective adjudications where noted. Context base =
 Freeze rule: canon rows are append-only; a re-adjudication updates the provenance column,
 never rewrites the label in place.
 
+Per-issue ledger: `canon-issue-ledger.md` (2026-08-14) enumerates all 43 distinct known
+issues across the canon — the 24 original labels, the 9 postfix labels, 4 headless-arm
+appends, and 6 live-at-HEAD E1 findings — with which review process found each.
+
 ## 2. Reframe: the decision-relevant question is process composition, not arm recall
 
 Author call (2026-08-06): arm-vs-arm recall differences are not decision-relevant — the

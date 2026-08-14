@@ -1,0 +1,132 @@
+# Canon issue ledger: every known defect in the canon set, with per-review provenance
+
+**Date**: 2026-08-14 · **Companion to**: `review-canon.md` §1 (instances/labels) ·
+Living, append-only, like the canon itself — a re-adjudication updates a row's status
+column, never deletes the row.
+
+One row per **distinct underlying issue**. "Found by" columns:
+
+- **Pipeline** — the full agentic `code-review` harness. ✓(label) = the historical
+  review that produced the canon label (24/24 on stratum A by construction);
+  ✓(E1) = found by the 2026-08-06 fresh full-pipeline re-runs, not by the historical
+  panel; ✗ = the pipeline missed it at the state where it was findable.
+- **E2** — sonnet-5 k=1 headless, Stage-1 context (`e2-results-2026-08-06.md`).
+- **E4** — opus-5 k=3 headless union, Stage-1 context (`e4-results-2026-08-14.md`).
+  Votes given as k/3. "raw" = present in replicate raw output but dropped by the
+  engine's multi-path parser (harness bug, E4 doc §5).
+- n/a = the issue lives outside that arm's reviewed range (e.g. introduced by a fix
+  commit the arm never saw).
+
+## Count reconciliation
+
+| Stratum | Rows |
+|---|---|
+| A. Original review labels, 7 dirty instances (the E2/E4 "canon-24" frame) | 24 |
+| B. mfc-postfix labels (pipeline ground-truth run 2026-08-06; the canon's 8th row) | 9 |
+| C. Appended labels/candidates (found by headless arms, absent from the original rubrics) | 4 |
+| D. Live-at-HEAD defects surfaced by the E1 fresh re-runs on post-fix states | 6 |
+| **Total distinct issues** | **43** |
+
+Cross-cutting tallies (overlapping the strata): **later-fix-confirmed: 7** (A-csp-R1,
+A-corpus-A1..A4, C1 dev-eval, C4 matcher-prefix); **apparently live at HEAD: 7**
+(D1–D6 + C3; last verified 2026-08-13/14). If mfc-postfix is excluded (it was never in
+the E2/E4 24-label frame), the total is 34.
+
+## Stratum A — original review labels (7 dirty instances, 24 issues)
+
+| ID | Issue (1-line) | Pipeline | E2 | E4 | Status / fix |
+|---|---|---|---|---|---|
+| csp-R1 | `connect-src 'self'` blocks the `data:`/blob fetch in `exportGraph.ts` — PNG export breaks (gold stratum: 3 archived cells filed it Confirmed Good) | ✓(label; fresh-rerun recovery is config-dependent — oc 3/3, k=3-lean-brief 0/3, rich-brief 3/3) | ✗ | ✗ (cross-file) | fix-confirmed `4f018ab` (toBlob) |
+| csp-R2 | `proxy.ts:35-36` comment claims Edge runtime; middleware defaults to Node.js | ✓(label) | ✗ | ✗ (in-diff miss; rep1 ranged past the line) | fixed in review chain |
+| csp-A1 | CSP set on response only, never on forwarded request headers — Next.js can't extract the nonce (dead `x-nonce` plumbing) | ✓(label) | ✓ | ✓ 3/3 | fixed in review chain |
+| csp-A2 | `style-src 'unsafe-inline'` misattributed to Tailwind v4 | ✓(label) | ✗ | ✗ | fixed in review chain |
+| csp-A3 | `layout.tsx:27-30` comment misstates why `await headers()` is needed | ✓(label) | ✗ | ✓ 3/3 (rep2 states the correct mechanism) | fixed in review chain |
+| csp-A4 | No tests pin the CSP directive list | ✓(label) | ✗ | ✗ (test-strategy class) | — |
+| lean-R1 | README/ARCHITECTURE docs stale (removed mock-pass fallback / localhost default still documented) | ✓(label) | ✗ | ✗ (cross-file: docs outside diff) | — |
+| lean-R2 | Non-2xx verifier response masked as "unavailable", upstream body discarded | ✓(label) | ✓ | ✓ 3/3 | fix pending post-c95c9cb |
+| lean-A1 | `verifyLean()` client drops the route's typed `reason`/`detail` fields | ✓(label) | ✓ | ✓ 3/3 | — |
+| hyg-R1 | SSE protocol JSDoc documents `{error, details}`; emit site sends `{error}` only | ✓(label) | ✓ | ✓ 3/3 | — |
+| hyg-A1 | Invalid-JSON logging asymmetry: shared `artifactRoute.ts:107` still logs 500-char preview after edit/artifact tightened | ✓(label) | ✗ | ✗ (cross-file) | — |
+| sec-R1 | `react/no-danger: "warn"` contradicts the fail-loudly comment (warn exits 0) | ✓(label) | ✓ | ✓ 3/3 | — |
+| sec-A1 | `trust` AST-selector gaps: string-quoted key / shorthand / computed keys bypass the guardrail | ✓(label) | partial (found sibling class only) | ✓ 3/3 as-worded | — |
+| dep-R1 | CLAUDE.md:77 claims Vercel writes go to `/tmp`/warm container — refuted by `persist.ts`/`cache.ts` writing `cwd()/data` (EROFS, swallowed) | ✓(label) | ✗ | near-hit (mechanism named; CLAUDE.md treated as authority, not flagged) | — |
+| dep-R2 | README:120 "does not persist across invocations" — right conclusion, wrong mechanism (writes silently *fail*, not merely not-persist) | ✓(label) | ✗ | ✓ 3/3 | fixed in review chain |
+| fsc-R1 | `persist.ts:6-7` references a "Deploy to Vercel" README section that doesn't exist | ✓(label) | ✗ | ✓ 1/3 (union-only; consensus would drop it) | — |
+| fsc-A1 | Docstring omits that `/tmp` is per-Function-instance — concurrent analytics divergence | ✓(label) | ✗ | ✓ 2/3 | — |
+| fsc-A2 | Inconsistent rest-args vs join-at-callsite convention | ✓(label) | ✗ | ✗ (convention survey class) | — |
+| fsc-A3 | Cache hit-rate collapse on Vercel — cost impact | ✓(label) | ✗ | ✗ (deployment-model reasoning) | — |
+| fsc-A4 | `dataDir()` deploy invariant untested | ✓(label) | ✗ | ✗ (test-strategy class) | — |
+| cor-A1 | `customTypeIds`→`customArtifactTypeIds` naming inconsistency | ✓(label) | ✗ | ✗ (enumeration class) | fix-confirmed (follow-up commit) |
+| cor-A2 | storeAdapter `state/` blob path bypasses the `paths.ts` choke point | ✓(label) | ✗ | ✗ (enumeration class) | fix-confirmed (follow-up commit) |
+| cor-A3 | Stale comments (layout.ts ref in storeAdapter header; workspaceStore:44-46 ref) | ✓(label) | ✗ | raw only (2/3 reps; parse-dropped) | fix-confirmed (follow-up commit) |
+| cor-A4 | Manifest codec docstring drift: silent createdAt/updatedAt defaults vs "never silent default"; phantom `browser-storage-cleared` | ✓(label) | ✓ | ✓ 3/3 | fix-confirmed (follow-up commit) |
+
+## Stratum B — mfc-postfix labels (9c9edf5..7f30210 ground-truth run, 9 issues)
+
+Pipeline ✓ by construction for all nine (this rubric *is* the pipeline's 2026-08-06
+output). E4 was not run on this instance. E2 = the base arm pre-scored in the
+2026-08-06 comparison (1 hit + 1 FP — the referenced-but-not-touched-constant FP,
+the only confirmed headless FP in the whole program).
+
+| ID | Issue (1-line) | E2 |
+|---|---|---|
+| pf-R1 | `mergeStreamingPreview<T>` types partial-JSON parses as complete `T`; `between` contract disagrees 3 ways; next partial-field crash latent in 3 panels | ✗ |
+| pf-A1 | `allowUnsafeEval` defaults fail-open: `NODE_ENV !== "production"` grants `'unsafe-eval'` to test/staging/custom envs | ✓ |
+| pf-A2 | Default `buildCsp` call path untested (tests pin both explicit arms; production runs the default) | ✗ |
+| pf-A3 | Eval policy caller-selectable: exported `allowUnsafeEval` param means "dev-only" is enforced by there being one call site | ✗ |
+| pf-A4 | `process.env.NODE_ENV` read in a default parameter — ambient state in a previously pure formatter | ✗ |
+| pf-A5 | `data.results` used without truncation; misbehaving OpenAlex `per_page` turns `Math.max(...allWorks)` into a RangeError cliff | ✗ |
+| pf-A6 | Guard tests array presence not element presence: one-element `between` renders a dangling `A ↔` row | ✗ |
+| pf-A7 | connect-src docstring enumeration omits the DD-009 corpus git worker (silently drifts when S4/S5 ships) | ✗ |
+| pf-A8 | Comment-accuracy residue: dropped parity claim survives at `evidenceStore.ts:17`; "optional chaining" mischaracterization | ✗ |
+
+## Stratum C — appended labels/candidates found by headless arms (4 issues)
+
+| ID | Issue (1-line) | Pipeline | E2 | E4 | Status |
+|---|---|---|---|---|---|
+| C1 | csp: no dev-mode `'unsafe-eval'` relaxation — dev breaks under the new CSP | ✗ (at d90d6bb; the pipeline later reviewed the *fix* in the postfix range) | ✓ | ✓ 3/3 | **fix-confirmed `2e23824`** |
+| C2 | secdeps: `no-restricted-imports` misses `require()`/dynamic `import()` (sibling of sec-A1) | ✗ | ✓ (near-miss, appended) | ✓ 3/3 | candidate label |
+| C3 | corpus: `process.env?.NEXT_PUBLIC_CORPUS_FS` optional chaining likely breaks Next build-time inlining (`flag.ts`) | ✗ (survived review-fix `4de2b00`) | ✓ | ✓ 1/3 (independent second sighting) | **live at HEAD**; pending one `next build` runtime adjudication |
+| C4 | csp: middleware matcher lookahead is prefix-based, not segment-based (`api-foo`, `favicon.ico.png` slip through) — contradicts a rubric Confirmed-Good row | ✗ | ✗ | ✓ 2/3 | **fix-confirmed `ab4dbdb`** |
+
+## Stratum D — live-at-HEAD defects from the E1 fresh re-runs (6 issues)
+
+Found by full-pipeline re-runs on *post-fix* states (`e1-results-2026-08-06.md`) — i.e.
+by the pipeline's fresh eyes, not by the historical panels, and mostly missed by the
+loops that shipped the fixes. All six verified still live at project HEAD 2026-08-13.
+E2/E4 columns: n/a where the defect was introduced by a fix commit outside the arm's
+reviewed dirty range.
+
+| ID | Issue (1-line) | Pipeline | E2 | E4 | Notes |
+|---|---|---|---|---|---|
+| D1 | csp fix's test guard regex is vacuous — `/\bhttp:\b/` can never match (proved by execution, 3/3 replicates) | ✓(E1: csp-clean R1) | n/a | n/a | fix-introduced defect |
+| D2 | corpus fix's production hard-refuse fails open: `typeof process !== "undefined"` gating is asymmetric vs the ungated localStorage enable path | ✓(E1: corpus-clean R2) | n/a | n/a | fix-introduced defect |
+| D3 | Rehydration seam bypass: legacy `migrateFromV2()` re-fires over corpus state on every load, ungated by `isCorpusEnabled` (existed in the dirty state too) | ✓(E1: corpus-clean R1; the dirty pass missed it) | ✗ | ✓ raw only (2/3 reps; parse-dropped) — independent rediscovery, initially misfiled as "new" in the E4 doc | not in any rubric label set |
+| D4 | False "fresh ArrayBuffer view" comment above a plain `w.write(bytes)` (both corpus states) | ✓(E1: 3/3, both states) | ✗ | ✓ 1/3 | comment-accuracy class |
+| D5 | OPFS write race — un-serialized/un-debounced write seam (not on the author's carry list) | ✓(E1) | ✗ | probable — "drops debouncing and write serialization" (3/3) targets the same seam; same-issue match unadjudicated | rubric green C4 acknowledges the seam, defers to S2/S3/S5 |
+| D6 | fscompat cacheKey stored inside the cache file + double-hashing (both states) | ✓(E1) | ✗ | ✗ | — |
+
+## Adjacent true findings deliberately NOT counted as issues
+
+Kept out of the 43 to avoid inflating the ledger: rubric-green/Consider-tier items the
+arms independently rediscovered (hygiene C1/C4/C6, csp C3 dynamic-render tradeoff,
+fscompat C3 /tmp-no-eviction + C6 containment, deploy C3 env-var docs, secdeps C1/C2
+audit nits, corpus quota-error masking + slug collision + DOMException forward-compat +
+fake/OPFS empty-dir divergence, deploy public-reachability advisory), and
+true-but-by-design items (lean retry error-wipe, csp prefetch behavior, corpus
+analytics path placement). Each is recorded with its adjudication in the E2/E4 results
+docs; promote to Stratum C/D only if a later fix or HEAD adjudication elevates it.
+
+## Reading the found-by pattern (what the ledger shows at a glance)
+
+- **Headless-blind classes are consistent**: cross-file verification (csp-R1, lean-R1,
+  hyg-A1, dep-R1's last step, D6), repo-wide enumeration/convention (cor-A1/A2, fsc-A2),
+  test-strategy (csp-A4, fsc-A4), and structural/type-seam reasoning (pf-R1) are found
+  only by the full pipeline. That is the ~$14 tier's moat, unchanged by model tier or k.
+- **Pipeline-blind spots are real and recurrent**: 4 of the 43 (C1–C4) were found only
+  by ≤$1 headless arms, two of them later fix-confirmed, and two contradicting rubric
+  Confirmed-Good rows. Fresh-eyes re-runs (D1–D6) add six more the shipping loops
+  missed. No single process dominates.
+- **E4 ⊇ E2 on this corpus**: every E2 hit is also an E4 hit (secdeps sec-A1 upgraded
+  from sibling-class to as-worded), plus 7 additional stratum-A labels, C4, and the
+  D3/D4 rediscoveries. E2's remaining unique value is price ($0.81 vs $5.03/sweep).
