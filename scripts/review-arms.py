@@ -72,6 +72,14 @@ ARMS = {
               "note": "030 arm [3]: cost floor (~1/8 base input price)"},
     "k3": {"model": "anthropic/claude-sonnet-5", "replicates": 3, "consensus": 2,
            "note": "030 arm [7]: keep findings >=2 of 3 replicates agree on"},
+    # E4 middle-ground arm (2026-08-13): opus-tier model + k=3 replication,
+    # scored primarily as the UNION of replicate findings (fact-check-style
+    # most-severe-wins, per canon evidence that union buys recall while
+    # consensus does not buy precision). consensus=2 is still computed as a
+    # free secondary metric. Opus 5 = $5/$25 per M on OpenRouter vs sonnet-5's
+    # intro $2/$10, so a k=3 sweep projects ~7.5x the E2 base sweep ($0.81).
+    "opus-k3": {"model": "anthropic/claude-opus-5", "replicates": 3, "consensus": 2,
+                "note": "E4 middle ground: opus 5, k=3, union-scored"},
 }
 
 
