@@ -1,0 +1,373 @@
+[
+  {
+    "pr_title": "canon instance mfc-csp (d90d6bb)",
+    "url": "https://local.invalid/meta-formalism-copilot/mfc-csp",
+    "az_comment": "local canon instance of meta-formalism-copilot; not a GitHub PR",
+    "comments": [
+      {
+        "comment": "connect-src 'self' blocks the data:/blob fetch in exportGraph.ts - PNG export breaks",
+        "severity": "High",
+        "category": "bug",
+        "canon_issue_id": "csp-R1",
+        "mapping_provenance": "auto-mapped 2026-08-14, pending adjudication"
+      },
+      {
+        "comment": "proxy.ts:35-36 comment claims Edge runtime; middleware defaults to Node.js",
+        "severity": "Low",
+        "category": "doc_defect",
+        "canon_issue_id": "csp-R2",
+        "mapping_provenance": "auto-mapped 2026-08-14, pending adjudication"
+      },
+      {
+        "comment": "CSP set on response only - never on forwarded request headers so Next.js cannot extract the nonce (dead x-nonce plumbing)",
+        "severity": "High",
+        "category": "bug",
+        "canon_issue_id": "csp-A1",
+        "mapping_provenance": "auto-mapped 2026-08-14, pending adjudication"
+      },
+      {
+        "comment": "style-src 'unsafe-inline' misattributed to Tailwind v4",
+        "severity": "Low",
+        "category": "doc_defect",
+        "canon_issue_id": "csp-A2",
+        "mapping_provenance": "auto-mapped 2026-08-14, pending adjudication"
+      },
+      {
+        "comment": "layout.tsx:27-30 comment misstates why await headers() is needed",
+        "severity": "Low",
+        "category": "doc_defect",
+        "canon_issue_id": "csp-A3",
+        "mapping_provenance": "auto-mapped 2026-08-14, pending adjudication"
+      },
+      {
+        "comment": "no tests pin the CSP directive list",
+        "severity": "Medium",
+        "category": "test_gap",
+        "canon_issue_id": "csp-A4",
+        "mapping_provenance": "auto-mapped 2026-08-14, pending adjudication"
+      },
+      {
+        "comment": "csp: no dev-mode unsafe-eval relaxation - dev breaks under the new CSP",
+        "severity": "High",
+        "category": "bug",
+        "canon_issue_id": "C1",
+        "mapping_provenance": "auto-mapped 2026-08-14, pending adjudication"
+      },
+      {
+        "comment": "csp: middleware matcher lookahead is prefix-based not segment-based (api-foo / favicon.ico.png slip through) - contradicts rubric Confirmed-Good row",
+        "severity": "Medium",
+        "category": "bug",
+        "canon_issue_id": "C4",
+        "mapping_provenance": "auto-mapped 2026-08-14, pending adjudication"
+      },
+      {
+        "comment": "csp: middleware prefetch-skip (missing/purpose header exclusion) serves real HTML documents with no CSP at all",
+        "severity": "Critical",
+        "category": "security",
+        "canon_issue_id": "N1",
+        "mapping_provenance": "auto-mapped 2026-08-14, pending adjudication"
+      },
+      {
+        "comment": "csp: no worker-src directive under strict-dynamic - pdf.js worker blocked (degrades to fake-worker main thread)",
+        "severity": "Medium",
+        "category": "bug",
+        "canon_issue_id": "N7",
+        "mapping_provenance": "auto-mapped 2026-08-14, pending adjudication"
+      }
+    ]
+  },
+  {
+    "pr_title": "canon instance mfc-lean (c95c9cb)",
+    "url": "https://local.invalid/meta-formalism-copilot/mfc-lean",
+    "az_comment": "local canon instance of meta-formalism-copilot; not a GitHub PR",
+    "comments": [
+      {
+        "comment": "README/ARCHITECTURE docs stale (removed mock-pass fallback / localhost default still documented)",
+        "severity": "Medium",
+        "category": "doc_defect",
+        "canon_issue_id": "lean-R1",
+        "mapping_provenance": "auto-mapped 2026-08-14, pending adjudication"
+      },
+      {
+        "comment": "non-2xx verifier response masked as unavailable - upstream body discarded",
+        "severity": "Medium",
+        "category": "bug",
+        "canon_issue_id": "lean-R2",
+        "mapping_provenance": "auto-mapped 2026-08-14, pending adjudication"
+      },
+      {
+        "comment": "verifyLean() client drops the route's typed reason/detail fields",
+        "severity": "Medium",
+        "category": "api",
+        "canon_issue_id": "lean-A1",
+        "mapping_provenance": "auto-mapped 2026-08-14, pending adjudication"
+      },
+      {
+        "comment": "lean: removal of localhost:3100 default breaks the documented local-dev flow (unset env short-circuits to verifier-not-configured)",
+        "severity": "Medium",
+        "category": "bug",
+        "canon_issue_id": "N3",
+        "mapping_provenance": "auto-mapped 2026-08-14, pending adjudication"
+      },
+      {
+        "comment": "lean: decomposition path maps unavailable to \"unverified\" - node mode shows no badge/banner/Re-verify (silent)",
+        "severity": "Medium",
+        "category": "bug",
+        "canon_issue_id": "N4",
+        "mapping_provenance": "auto-mapped 2026-08-14, pending adjudication"
+      },
+      {
+        "comment": "lean: formalizeNode ignores result.unavailable - node marked failed with empty errors and dependents skipped",
+        "severity": "High",
+        "category": "bug",
+        "canon_issue_id": "N5",
+        "mapping_provenance": "auto-mapped 2026-08-14, pending adjudication"
+      }
+    ]
+  },
+  {
+    "pr_title": "canon instance mfc-hygiene (f2f149b)",
+    "url": "https://local.invalid/meta-formalism-copilot/mfc-hygiene",
+    "az_comment": "local canon instance of meta-formalism-copilot; not a GitHub PR",
+    "comments": [
+      {
+        "comment": "SSE protocol JSDoc documents {error - details} but emit site sends {error} only",
+        "severity": "Low",
+        "category": "doc_defect",
+        "canon_issue_id": "hyg-R1",
+        "mapping_provenance": "auto-mapped 2026-08-14, pending adjudication"
+      },
+      {
+        "comment": "invalid-JSON logging asymmetry: shared artifactRoute.ts:107 still logs 500-char preview after edit/artifact tightened",
+        "severity": "Low",
+        "category": "bug",
+        "canon_issue_id": "hyg-A1",
+        "mapping_provenance": "auto-mapped 2026-08-14, pending adjudication"
+      }
+    ]
+  },
+  {
+    "pr_title": "canon instance mfc-secdeps (8bde50c)",
+    "url": "https://local.invalid/meta-formalism-copilot/mfc-secdeps",
+    "az_comment": "local canon instance of meta-formalism-copilot; not a GitHub PR",
+    "comments": [
+      {
+        "comment": "react/no-danger set to warn contradicts fail-loudly comment (warn exits 0)",
+        "severity": "Medium",
+        "category": "bug",
+        "canon_issue_id": "sec-R1",
+        "mapping_provenance": "auto-mapped 2026-08-14, pending adjudication"
+      },
+      {
+        "comment": "trust AST-selector gaps: string-quoted key / shorthand / computed keys bypass the guardrail",
+        "severity": "Medium",
+        "category": "security",
+        "canon_issue_id": "sec-A1",
+        "mapping_provenance": "auto-mapped 2026-08-14, pending adjudication"
+      },
+      {
+        "comment": "secdeps: no-restricted-imports misses require()/dynamic import() (sibling of sec-A1)",
+        "severity": "Medium",
+        "category": "security",
+        "canon_issue_id": "C2",
+        "mapping_provenance": "auto-mapped 2026-08-14, pending adjudication"
+      },
+      {
+        "comment": "secdeps: new npm-audit CI gate fails on this very branch (5 high production advisories) - commit message claims it lands green",
+        "severity": "High",
+        "category": "bug",
+        "canon_issue_id": "N2",
+        "mapping_provenance": "auto-mapped 2026-08-14, pending adjudication"
+      }
+    ]
+  },
+  {
+    "pr_title": "canon instance mfc-deploy (4329d6e)",
+    "url": "https://local.invalid/meta-formalism-copilot/mfc-deploy",
+    "az_comment": "local canon instance of meta-formalism-copilot; not a GitHub PR",
+    "comments": [
+      {
+        "comment": "CLAUDE.md:77 claims Vercel writes go to /tmp - refuted by persist.ts/cache.ts writing cwd()/data (EROFS swallowed)",
+        "severity": "Medium",
+        "category": "doc_defect",
+        "canon_issue_id": "dep-R1",
+        "mapping_provenance": "auto-mapped 2026-08-14, pending adjudication"
+      },
+      {
+        "comment": "README:120 does-not-persist claim has right conclusion wrong mechanism (writes silently fail on read-only fs)",
+        "severity": "Low",
+        "category": "doc_defect",
+        "canon_issue_id": "dep-R2",
+        "mapping_provenance": "auto-mapped 2026-08-14, pending adjudication"
+      },
+      {
+        "comment": "deploy: \"+ Factor\" during streaming persists a partial causal-graph snapshot (frozen preview / DetailsView TypeError)",
+        "severity": "Medium",
+        "category": "bug",
+        "canon_issue_id": "N6",
+        "mapping_provenance": "auto-mapped 2026-08-14, pending adjudication"
+      }
+    ]
+  },
+  {
+    "pr_title": "canon instance mfc-fscompat (b64c1ca)",
+    "url": "https://local.invalid/meta-formalism-copilot/mfc-fscompat",
+    "az_comment": "local canon instance of meta-formalism-copilot; not a GitHub PR",
+    "comments": [
+      {
+        "comment": "persist.ts:6-7 references a Deploy-to-Vercel README section that does not exist",
+        "severity": "Low",
+        "category": "doc_defect",
+        "canon_issue_id": "fsc-R1",
+        "mapping_provenance": "auto-mapped 2026-08-14, pending adjudication"
+      },
+      {
+        "comment": "docstring omits that /tmp is per-Function-instance - concurrent analytics divergence",
+        "severity": "Medium",
+        "category": "doc_defect",
+        "canon_issue_id": "fsc-A1",
+        "mapping_provenance": "auto-mapped 2026-08-14, pending adjudication"
+      },
+      {
+        "comment": "inconsistent rest-args vs join-at-callsite convention",
+        "severity": "Low",
+        "category": "style",
+        "canon_issue_id": "fsc-A2",
+        "mapping_provenance": "auto-mapped 2026-08-14, pending adjudication"
+      },
+      {
+        "comment": "cache hit-rate collapse on Vercel - cost impact",
+        "severity": "Medium",
+        "category": "perf",
+        "canon_issue_id": "fsc-A3",
+        "mapping_provenance": "auto-mapped 2026-08-14, pending adjudication"
+      },
+      {
+        "comment": "dataDir() deploy invariant untested",
+        "severity": "Medium",
+        "category": "test_gap",
+        "canon_issue_id": "fsc-A4",
+        "mapping_provenance": "auto-mapped 2026-08-14, pending adjudication"
+      },
+      {
+        "comment": "fscompat cacheKey stored inside the cache file + double-hashing (both states)",
+        "severity": "Low",
+        "category": "bug",
+        "canon_issue_id": "D6",
+        "mapping_provenance": "auto-mapped 2026-08-14, pending adjudication"
+      }
+    ]
+  },
+  {
+    "pr_title": "canon instance mfc-corpus (2dc403e)",
+    "url": "https://local.invalid/meta-formalism-copilot/mfc-corpus",
+    "az_comment": "local canon instance of meta-formalism-copilot; not a GitHub PR",
+    "comments": [
+      {
+        "comment": "customTypeIds vs customArtifactTypeIds naming inconsistency",
+        "severity": "Low",
+        "category": "style",
+        "canon_issue_id": "cor-A1",
+        "mapping_provenance": "auto-mapped 2026-08-14, pending adjudication"
+      },
+      {
+        "comment": "storeAdapter state/ blob path bypasses the paths.ts choke point",
+        "severity": "Medium",
+        "category": "api",
+        "canon_issue_id": "cor-A2",
+        "mapping_provenance": "auto-mapped 2026-08-14, pending adjudication"
+      },
+      {
+        "comment": "stale comments (layout.ts ref in storeAdapter header; workspaceStore:44-46 ref)",
+        "severity": "Low",
+        "category": "doc_defect",
+        "canon_issue_id": "cor-A3",
+        "mapping_provenance": "auto-mapped 2026-08-14, pending adjudication"
+      },
+      {
+        "comment": "manifest codec docstring drift: silent createdAt/updatedAt defaults vs never-silent-default claim; phantom browser-storage-cleared",
+        "severity": "Medium",
+        "category": "doc_defect",
+        "canon_issue_id": "cor-A4",
+        "mapping_provenance": "auto-mapped 2026-08-14, pending adjudication"
+      },
+      {
+        "comment": "corpus: process.env?.NEXT_PUBLIC_CORPUS_FS optional chaining likely breaks Next build-time inlining (flag.ts)",
+        "severity": "High",
+        "category": "bug",
+        "canon_issue_id": "C3",
+        "mapping_provenance": "auto-mapped 2026-08-14, pending adjudication"
+      }
+    ]
+  },
+  {
+    "pr_title": "canon instance mfc-postfix (7f30210)",
+    "url": "https://local.invalid/meta-formalism-copilot/mfc-postfix",
+    "az_comment": "local canon instance of meta-formalism-copilot; not a GitHub PR",
+    "comments": [
+      {
+        "comment": "mergeStreamingPreview<T> types partial-JSON parses as complete T; between contract disagrees 3 ways; partial-field crash latent in 3 panels",
+        "severity": "High",
+        "category": "bug",
+        "canon_issue_id": "pf-R1",
+        "mapping_provenance": "auto-mapped 2026-08-14, pending adjudication"
+      },
+      {
+        "comment": "allowUnsafeEval defaults fail-open: NODE_ENV != production grants unsafe-eval to test/staging/custom envs",
+        "severity": "High",
+        "category": "security",
+        "canon_issue_id": "pf-A1",
+        "mapping_provenance": "auto-mapped 2026-08-14, pending adjudication"
+      },
+      {
+        "comment": "default buildCsp call path untested (tests pin both explicit arms; production runs the default)",
+        "severity": "Medium",
+        "category": "test_gap",
+        "canon_issue_id": "pf-A2",
+        "mapping_provenance": "auto-mapped 2026-08-14, pending adjudication"
+      },
+      {
+        "comment": "eval policy caller-selectable: exported allowUnsafeEval param means dev-only is enforced by there being one call site",
+        "severity": "Medium",
+        "category": "api",
+        "canon_issue_id": "pf-A3",
+        "mapping_provenance": "auto-mapped 2026-08-14, pending adjudication"
+      },
+      {
+        "comment": "process.env.NODE_ENV read in a default parameter - ambient state in a previously pure formatter",
+        "severity": "Low",
+        "category": "bug",
+        "canon_issue_id": "pf-A4",
+        "mapping_provenance": "auto-mapped 2026-08-14, pending adjudication"
+      },
+      {
+        "comment": "data.results used without truncation; misbehaving OpenAlex per_page turns Math.max(...allWorks) into a RangeError cliff",
+        "severity": "Medium",
+        "category": "bug",
+        "canon_issue_id": "pf-A5",
+        "mapping_provenance": "auto-mapped 2026-08-14, pending adjudication"
+      },
+      {
+        "comment": "guard tests array presence not element presence: one-element between renders a dangling A-to row",
+        "severity": "Medium",
+        "category": "bug",
+        "canon_issue_id": "pf-A6",
+        "mapping_provenance": "auto-mapped 2026-08-14, pending adjudication"
+      },
+      {
+        "comment": "connect-src docstring enumeration omits the DD-009 corpus git worker (drifts silently when S4/S5 ships)",
+        "severity": "Low",
+        "category": "doc_defect",
+        "canon_issue_id": "pf-A7",
+        "mapping_provenance": "auto-mapped 2026-08-14, pending adjudication"
+      },
+      {
+        "comment": "comment-accuracy residue: dropped parity claim survives at evidenceStore.ts:17; optional-chaining mischaracterization",
+        "severity": "Low",
+        "category": "doc_defect",
+        "canon_issue_id": "pf-A8",
+        "mapping_provenance": "auto-mapped 2026-08-14, pending adjudication"
+      }
+    ]
+  }
+]

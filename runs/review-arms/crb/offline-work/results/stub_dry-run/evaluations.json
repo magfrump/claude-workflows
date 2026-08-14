@@ -1,0 +1,1105 @@
+{
+  "https://local.invalid/meta-formalism-copilot/mfc-csp": {
+    "e2": {
+      "skipped": false,
+      "true_positives": [],
+      "false_positives": [
+        {
+          "candidate": "No CSP relaxation for dev-mode eval"
+        },
+        {
+          "candidate": "Root layout forces whole app to dynamic rendering"
+        },
+        {
+          "candidate": "x-nonce request header is set but never consumed"
+        },
+        {
+          "candidate": "Prefetch exclusion may be stale"
+        }
+      ],
+      "false_negatives": [
+        {
+          "golden_comment": "connect-src 'self' blocks the data:/blob fetch in exportGraph.ts - PNG export breaks",
+          "severity": "High",
+          "category": "bug"
+        },
+        {
+          "golden_comment": "proxy.ts:35-36 comment claims Edge runtime; middleware defaults to Node.js",
+          "severity": "Low",
+          "category": "doc_defect"
+        },
+        {
+          "golden_comment": "CSP set on response only - never on forwarded request headers so Next.js cannot extract the nonce (dead x-nonce plumbing)",
+          "severity": "High",
+          "category": "bug"
+        },
+        {
+          "golden_comment": "style-src 'unsafe-inline' misattributed to Tailwind v4",
+          "severity": "Low",
+          "category": "doc_defect"
+        },
+        {
+          "golden_comment": "layout.tsx:27-30 comment misstates why await headers() is needed",
+          "severity": "Low",
+          "category": "doc_defect"
+        },
+        {
+          "golden_comment": "no tests pin the CSP directive list",
+          "severity": "Medium",
+          "category": "test_gap"
+        },
+        {
+          "golden_comment": "csp: no dev-mode unsafe-eval relaxation - dev breaks under the new CSP",
+          "severity": "High",
+          "category": "bug"
+        },
+        {
+          "golden_comment": "csp: middleware matcher lookahead is prefix-based not segment-based (api-foo / favicon.ico.png slip through) - contradicts rubric Confirmed-Good row",
+          "severity": "Medium",
+          "category": "bug"
+        },
+        {
+          "golden_comment": "csp: middleware prefetch-skip (missing/purpose header exclusion) serves real HTML documents with no CSP at all",
+          "severity": "Critical",
+          "category": "security"
+        },
+        {
+          "golden_comment": "csp: no worker-src directive under strict-dynamic - pdf.js worker blocked (degrades to fake-worker main thread)",
+          "severity": "Medium",
+          "category": "bug"
+        }
+      ],
+      "errors": [],
+      "total_candidates": 4,
+      "total_golden": 10,
+      "tp": 0,
+      "fp": 4,
+      "fn": 10,
+      "errors_count": 0,
+      "precision": 0.0,
+      "recall": 0.0,
+      "tool": "e2",
+      "repo_name": "meta-formalism-copilot@d90d6bb",
+      "pr_url": "https://local.invalid/meta-formalism-copilot/mfc-csp"
+    },
+    "e4-union": {
+      "skipped": false,
+      "true_positives": [
+        {
+          "golden_comment": "csp: middleware matcher lookahead is prefix-based not segment-based (api-foo / favicon.ico.png slip through) - contradicts rubric Confirmed-Good row",
+          "severity": "Medium",
+          "category": "bug",
+          "matched_candidate": "Matcher lookahead is prefix-based, not segment-based",
+          "confidence": 0.5,
+          "reasoning": "stub word-overlap heuristic; shared=['lookahead', 'matcher', 'prefix', 'segment']"
+        }
+      ],
+      "false_positives": [
+        {
+          "candidate": "CSP nonce never reaches Next.js's own scripts"
+        },
+        {
+          "candidate": "Comment states a mechanism that doesn't exist"
+        },
+        {
+          "candidate": "Dev mode will break without `'unsafe-eval'`"
+        },
+        {
+          "candidate": "`x-nonce` request header is dead code"
+        },
+        {
+          "candidate": "`await headers()` in the root layout forces every route dynamic"
+        },
+        {
+          "candidate": "CSP not forwarded on request headers, so Next never nonces its scripts"
+        },
+        {
+          "candidate": "Comment misstates both the mechanism and the reason"
+        },
+        {
+          "candidate": "Missing `'unsafe-eval'` for development will break dev HMR"
+        },
+        {
+          "candidate": "`x-nonce` request header is set but never consumed"
+        },
+        {
+          "candidate": "Nonce never reaches Next.js renderer \u2014 all scripts blocked by `strict-dynamic`"
+        },
+        {
+          "candidate": "Comment misstates how Next.js obtains the nonce"
+        },
+        {
+          "candidate": "Dev mode breaks: no `'unsafe-eval'` / `blob:` worker allowance"
+        },
+        {
+          "candidate": "`await headers()` in root layout forces every route dynamic"
+        },
+        {
+          "candidate": "`x-nonce` is set but never consumed; comment describes behavior that doesn't exist"
+        },
+        {
+          "candidate": "Matcher regex over-excludes and drops CSP on prefetches"
+        }
+      ],
+      "false_negatives": [
+        {
+          "golden_comment": "connect-src 'self' blocks the data:/blob fetch in exportGraph.ts - PNG export breaks",
+          "severity": "High",
+          "category": "bug"
+        },
+        {
+          "golden_comment": "proxy.ts:35-36 comment claims Edge runtime; middleware defaults to Node.js",
+          "severity": "Low",
+          "category": "doc_defect"
+        },
+        {
+          "golden_comment": "CSP set on response only - never on forwarded request headers so Next.js cannot extract the nonce (dead x-nonce plumbing)",
+          "severity": "High",
+          "category": "bug"
+        },
+        {
+          "golden_comment": "style-src 'unsafe-inline' misattributed to Tailwind v4",
+          "severity": "Low",
+          "category": "doc_defect"
+        },
+        {
+          "golden_comment": "layout.tsx:27-30 comment misstates why await headers() is needed",
+          "severity": "Low",
+          "category": "doc_defect"
+        },
+        {
+          "golden_comment": "no tests pin the CSP directive list",
+          "severity": "Medium",
+          "category": "test_gap"
+        },
+        {
+          "golden_comment": "csp: no dev-mode unsafe-eval relaxation - dev breaks under the new CSP",
+          "severity": "High",
+          "category": "bug"
+        },
+        {
+          "golden_comment": "csp: middleware prefetch-skip (missing/purpose header exclusion) serves real HTML documents with no CSP at all",
+          "severity": "Critical",
+          "category": "security"
+        },
+        {
+          "golden_comment": "csp: no worker-src directive under strict-dynamic - pdf.js worker blocked (degrades to fake-worker main thread)",
+          "severity": "Medium",
+          "category": "bug"
+        }
+      ],
+      "errors": [],
+      "total_candidates": 16,
+      "total_golden": 10,
+      "tp": 1,
+      "fp": 15,
+      "fn": 9,
+      "errors_count": 0,
+      "precision": 0.0625,
+      "recall": 0.1,
+      "tool": "e4-union",
+      "repo_name": "meta-formalism-copilot@d90d6bb",
+      "pr_url": "https://local.invalid/meta-formalism-copilot/mfc-csp"
+    }
+  },
+  "https://local.invalid/meta-formalism-copilot/mfc-lean": {
+    "e2": {
+      "skipped": false,
+      "true_positives": [
+        {
+          "golden_comment": "verifyLean() client drops the route's typed reason/detail fields",
+          "severity": "Medium",
+          "category": "api",
+          "matched_candidate": "`reason`/`detail` fields from the verifier route are dropped by the client",
+          "confidence": 0.5,
+          "reasoning": "stub word-overlap heuristic; shared=['client', 'detail', 'fields', 'reason']"
+        }
+      ],
+      "false_positives": [
+        {
+          "candidate": "Non-2xx verifier responses are classified as \"unavailable\" and body is discarded"
+        }
+      ],
+      "false_negatives": [
+        {
+          "golden_comment": "README/ARCHITECTURE docs stale (removed mock-pass fallback / localhost default still documented)",
+          "severity": "Medium",
+          "category": "doc_defect"
+        },
+        {
+          "golden_comment": "non-2xx verifier response masked as unavailable - upstream body discarded",
+          "severity": "Medium",
+          "category": "bug"
+        },
+        {
+          "golden_comment": "lean: removal of localhost:3100 default breaks the documented local-dev flow (unset env short-circuits to verifier-not-configured)",
+          "severity": "Medium",
+          "category": "bug"
+        },
+        {
+          "golden_comment": "lean: decomposition path maps unavailable to \"unverified\" - node mode shows no badge/banner/Re-verify (silent)",
+          "severity": "Medium",
+          "category": "bug"
+        },
+        {
+          "golden_comment": "lean: formalizeNode ignores result.unavailable - node marked failed with empty errors and dependents skipped",
+          "severity": "High",
+          "category": "bug"
+        }
+      ],
+      "errors": [],
+      "total_candidates": 2,
+      "total_golden": 6,
+      "tp": 1,
+      "fp": 1,
+      "fn": 5,
+      "errors_count": 0,
+      "precision": 0.5,
+      "recall": 0.16666666666666666,
+      "tool": "e2",
+      "repo_name": "meta-formalism-copilot@c95c9cb",
+      "pr_url": "https://local.invalid/meta-formalism-copilot/mfc-lean"
+    },
+    "e4-union": {
+      "skipped": false,
+      "true_positives": [
+        {
+          "golden_comment": "non-2xx verifier response masked as unavailable - upstream body discarded",
+          "severity": "Medium",
+          "category": "bug",
+          "matched_candidate": "Non-2xx verifier responses now masked as \"unavailable\" and body discarded",
+          "confidence": 0.5,
+          "reasoning": "stub word-overlap heuristic; shared=['discarded', 'masked', 'unavailable', 'verifier']"
+        }
+      ],
+      "false_positives": [
+        {
+          "candidate": "Offline banner text wrong for the `verifier-error` reason"
+        },
+        {
+          "candidate": "`reason`/`detail` from the route are never surfaced"
+        },
+        {
+          "candidate": "Verifier HTTP error responses are swallowed and reported as \"unavailable\""
+        },
+        {
+          "candidate": "Route's `reason`/`detail` fields are never consumed"
+        },
+        {
+          "candidate": "Failures of the app's own API route still surface as \"Verification Failed\""
+        },
+        {
+          "candidate": "Prior real verification errors are discarded when the verifier drops out mid-retry"
+        },
+        {
+          "candidate": "Verifier error responses are swallowed, losing real diagnostics"
+        },
+        {
+          "candidate": "Banner text contradicts some unavailable reasons"
+        },
+        {
+          "candidate": "`reason`/`detail` from the route are never consumed"
+        }
+      ],
+      "false_negatives": [
+        {
+          "golden_comment": "README/ARCHITECTURE docs stale (removed mock-pass fallback / localhost default still documented)",
+          "severity": "Medium",
+          "category": "doc_defect"
+        },
+        {
+          "golden_comment": "verifyLean() client drops the route's typed reason/detail fields",
+          "severity": "Medium",
+          "category": "api"
+        },
+        {
+          "golden_comment": "lean: removal of localhost:3100 default breaks the documented local-dev flow (unset env short-circuits to verifier-not-configured)",
+          "severity": "Medium",
+          "category": "bug"
+        },
+        {
+          "golden_comment": "lean: decomposition path maps unavailable to \"unverified\" - node mode shows no badge/banner/Re-verify (silent)",
+          "severity": "Medium",
+          "category": "bug"
+        },
+        {
+          "golden_comment": "lean: formalizeNode ignores result.unavailable - node marked failed with empty errors and dependents skipped",
+          "severity": "High",
+          "category": "bug"
+        }
+      ],
+      "errors": [],
+      "total_candidates": 10,
+      "total_golden": 6,
+      "tp": 1,
+      "fp": 9,
+      "fn": 5,
+      "errors_count": 0,
+      "precision": 0.1,
+      "recall": 0.16666666666666666,
+      "tool": "e4-union",
+      "repo_name": "meta-formalism-copilot@c95c9cb",
+      "pr_url": "https://local.invalid/meta-formalism-copilot/mfc-lean"
+    }
+  },
+  "https://local.invalid/meta-formalism-copilot/mfc-hygiene": {
+    "e2": {
+      "skipped": false,
+      "true_positives": [],
+      "false_positives": [
+        {
+          "candidate": "Stale SSE protocol doc for error event"
+        },
+        {
+          "candidate": "`details` silently dropped from client-facing error SSE event"
+        }
+      ],
+      "false_negatives": [
+        {
+          "golden_comment": "SSE protocol JSDoc documents {error - details} but emit site sends {error} only",
+          "severity": "Low",
+          "category": "doc_defect"
+        },
+        {
+          "golden_comment": "invalid-JSON logging asymmetry: shared artifactRoute.ts:107 still logs 500-char preview after edit/artifact tightened",
+          "severity": "Low",
+          "category": "bug"
+        }
+      ],
+      "errors": [],
+      "total_candidates": 2,
+      "total_golden": 2,
+      "tp": 0,
+      "fp": 2,
+      "fn": 2,
+      "errors_count": 0,
+      "precision": 0.0,
+      "recall": 0.0,
+      "tool": "e2",
+      "repo_name": "meta-formalism-copilot@f2f149b",
+      "pr_url": "https://local.invalid/meta-formalism-copilot/mfc-hygiene"
+    },
+    "e4-union": {
+      "skipped": false,
+      "true_positives": [],
+      "false_positives": [
+        {
+          "candidate": "SSE protocol docblock still advertises `details` on error events"
+        },
+        {
+          "candidate": "`errorWithDetails` payload is now unreachable"
+        },
+        {
+          "candidate": "Exported `getAnthropicClient` renamed without compatibility alias"
+        },
+        {
+          "candidate": "Comment's stated rationale conflicts with the adjacent response"
+        },
+        {
+          "candidate": "`streamLlm` SSE contract still documents a `details` field"
+        },
+        {
+          "candidate": "OpenRouter stream error bodies are now completely discarded"
+        },
+        {
+          "candidate": "Comment's privacy rationale contradicted two lines later"
+        },
+        {
+          "candidate": "Test deletes API-key env vars without restoring them"
+        },
+        {
+          "candidate": "`streamLlm` JSDoc still documents the SSE contract as `event: error \u2014 { error: \"message\", details: \"...\" }`"
+        },
+        {
+          "candidate": "Provider error bodies in the streaming path are now dropped entirely"
+        },
+        {
+          "candidate": "Privacy rationale in the new comment is inconsistent with the same handler's behavior"
+        },
+        {
+          "candidate": "Exported `getAnthropicClient` renamed to `makeAnthropicClient`"
+        }
+      ],
+      "false_negatives": [
+        {
+          "golden_comment": "SSE protocol JSDoc documents {error - details} but emit site sends {error} only",
+          "severity": "Low",
+          "category": "doc_defect"
+        },
+        {
+          "golden_comment": "invalid-JSON logging asymmetry: shared artifactRoute.ts:107 still logs 500-char preview after edit/artifact tightened",
+          "severity": "Low",
+          "category": "bug"
+        }
+      ],
+      "errors": [],
+      "total_candidates": 12,
+      "total_golden": 2,
+      "tp": 0,
+      "fp": 12,
+      "fn": 2,
+      "errors_count": 0,
+      "precision": 0.0,
+      "recall": 0.0,
+      "tool": "e4-union",
+      "repo_name": "meta-formalism-copilot@f2f149b",
+      "pr_url": "https://local.invalid/meta-formalism-copilot/mfc-hygiene"
+    }
+  },
+  "https://local.invalid/meta-formalism-copilot/mfc-secdeps": {
+    "e2": {
+      "skipped": false,
+      "true_positives": [],
+      "false_positives": [
+        {
+          "candidate": "react/no-danger set to \"warn\" contradicts \"fail loudly\" claim"
+        },
+        {
+          "candidate": "no-restricted-imports only catches static ES import of rehype-raw"
+        }
+      ],
+      "false_negatives": [
+        {
+          "golden_comment": "react/no-danger set to warn contradicts fail-loudly comment (warn exits 0)",
+          "severity": "Medium",
+          "category": "bug"
+        },
+        {
+          "golden_comment": "trust AST-selector gaps: string-quoted key / shorthand / computed keys bypass the guardrail",
+          "severity": "Medium",
+          "category": "security"
+        },
+        {
+          "golden_comment": "secdeps: no-restricted-imports misses require()/dynamic import() (sibling of sec-A1)",
+          "severity": "Medium",
+          "category": "security"
+        },
+        {
+          "golden_comment": "secdeps: new npm-audit CI gate fails on this very branch (5 high production advisories) - commit message claims it lands green",
+          "severity": "High",
+          "category": "bug"
+        }
+      ],
+      "errors": [],
+      "total_candidates": 2,
+      "total_golden": 4,
+      "tp": 0,
+      "fp": 2,
+      "fn": 4,
+      "errors_count": 0,
+      "precision": 0.0,
+      "recall": 0.0,
+      "tool": "e2",
+      "repo_name": "meta-formalism-copilot@8bde50c",
+      "pr_url": "https://local.invalid/meta-formalism-copilot/mfc-secdeps"
+    },
+    "e4-union": {
+      "skipped": false,
+      "true_positives": [],
+      "false_positives": [
+        {
+          "candidate": "`react/no-danger` set to \"warn\" contradicts stated intent"
+        },
+        {
+          "candidate": "`trust: true` selector is trivially bypassed"
+        },
+        {
+          "candidate": "rehype-raw restriction misses subpaths and non-static imports"
+        },
+        {
+          "candidate": "`npm audit` makes CI non-deterministic and duplicated"
+        },
+        {
+          "candidate": "`react/no-danger` set to \"warn\" contradicts the \"fail loudly\" intent"
+        },
+        {
+          "candidate": "`trust` selector is narrower than the comment claims"
+        },
+        {
+          "candidate": "rehype-raw restriction is easily bypassed"
+        },
+        {
+          "candidate": "audit step makes CI failures time- and network-dependent"
+        },
+        {
+          "candidate": "`react/no-danger` as \"warn\" does not enforce anything"
+        },
+        {
+          "candidate": "`trust: true` selector is easy to bypass unintentionally"
+        },
+        {
+          "candidate": "rehype-raw ban has gaps"
+        },
+        {
+          "candidate": "`--omit=dev` comment overstates coverage; step is duplicated across the matrix"
+        }
+      ],
+      "false_negatives": [
+        {
+          "golden_comment": "react/no-danger set to warn contradicts fail-loudly comment (warn exits 0)",
+          "severity": "Medium",
+          "category": "bug"
+        },
+        {
+          "golden_comment": "trust AST-selector gaps: string-quoted key / shorthand / computed keys bypass the guardrail",
+          "severity": "Medium",
+          "category": "security"
+        },
+        {
+          "golden_comment": "secdeps: no-restricted-imports misses require()/dynamic import() (sibling of sec-A1)",
+          "severity": "Medium",
+          "category": "security"
+        },
+        {
+          "golden_comment": "secdeps: new npm-audit CI gate fails on this very branch (5 high production advisories) - commit message claims it lands green",
+          "severity": "High",
+          "category": "bug"
+        }
+      ],
+      "errors": [],
+      "total_candidates": 12,
+      "total_golden": 4,
+      "tp": 0,
+      "fp": 12,
+      "fn": 4,
+      "errors_count": 0,
+      "precision": 0.0,
+      "recall": 0.0,
+      "tool": "e4-union",
+      "repo_name": "meta-formalism-copilot@8bde50c",
+      "pr_url": "https://local.invalid/meta-formalism-copilot/mfc-secdeps"
+    }
+  },
+  "https://local.invalid/meta-formalism-copilot/mfc-deploy": {
+    "e2": {
+      "skipped": false,
+      "true_positives": [],
+      "false_positives": [
+        {
+          "candidate": "Deploy button hardcodes a specific GitHub account/repo"
+        }
+      ],
+      "false_negatives": [
+        {
+          "golden_comment": "CLAUDE.md:77 claims Vercel writes go to /tmp - refuted by persist.ts/cache.ts writing cwd()/data (EROFS swallowed)",
+          "severity": "Medium",
+          "category": "doc_defect"
+        },
+        {
+          "golden_comment": "README:120 does-not-persist claim has right conclusion wrong mechanism (writes silently fail on read-only fs)",
+          "severity": "Low",
+          "category": "doc_defect"
+        },
+        {
+          "golden_comment": "deploy: \"+ Factor\" during streaming persists a partial causal-graph snapshot (frozen preview / DetailsView TypeError)",
+          "severity": "Medium",
+          "category": "bug"
+        }
+      ],
+      "errors": [],
+      "total_candidates": 1,
+      "total_golden": 3,
+      "tp": 0,
+      "fp": 1,
+      "fn": 3,
+      "errors_count": 0,
+      "precision": 0.0,
+      "recall": 0.0,
+      "tool": "e2",
+      "repo_name": "meta-formalism-copilot@4329d6e",
+      "pr_url": "https://local.invalid/meta-formalism-copilot/mfc-deploy"
+    },
+    "e4-union": {
+      "skipped": false,
+      "true_positives": [],
+      "false_positives": [
+        {
+          "candidate": "`ANTHROPIC_API_KEY` listed as required but also described as replaceable by `OPENROUTER_API_KEY`"
+        },
+        {
+          "candidate": "Vercel filesystem limitation understated for analytics"
+        },
+        {
+          "candidate": "Deploy instructions omit that the deployment is publicly reachable with your key"
+        },
+        {
+          "candidate": "`ANTHROPIC_API_KEY` labelled required while OpenRouter is described as a substitute"
+        },
+        {
+          "candidate": "\"does not persist\" understates filesystem behavior on Vercel"
+        },
+        {
+          "candidate": "Vercel filesystem writes likely fail outright, not just fail to persist"
+        },
+        {
+          "candidate": "Local dev instructions never mention setting `ANTHROPIC_API_KEY`"
+        }
+      ],
+      "false_negatives": [
+        {
+          "golden_comment": "CLAUDE.md:77 claims Vercel writes go to /tmp - refuted by persist.ts/cache.ts writing cwd()/data (EROFS swallowed)",
+          "severity": "Medium",
+          "category": "doc_defect"
+        },
+        {
+          "golden_comment": "README:120 does-not-persist claim has right conclusion wrong mechanism (writes silently fail on read-only fs)",
+          "severity": "Low",
+          "category": "doc_defect"
+        },
+        {
+          "golden_comment": "deploy: \"+ Factor\" during streaming persists a partial causal-graph snapshot (frozen preview / DetailsView TypeError)",
+          "severity": "Medium",
+          "category": "bug"
+        }
+      ],
+      "errors": [],
+      "total_candidates": 7,
+      "total_golden": 3,
+      "tp": 0,
+      "fp": 7,
+      "fn": 3,
+      "errors_count": 0,
+      "precision": 0.0,
+      "recall": 0.0,
+      "tool": "e4-union",
+      "repo_name": "meta-formalism-copilot@4329d6e",
+      "pr_url": "https://local.invalid/meta-formalism-copilot/mfc-deploy"
+    }
+  },
+  "https://local.invalid/meta-formalism-copilot/mfc-fscompat": {
+    "e2": {
+      "skipped": false,
+      "true_positives": [],
+      "false_positives": [],
+      "false_negatives": [
+        {
+          "golden_comment": "persist.ts:6-7 references a Deploy-to-Vercel README section that does not exist",
+          "severity": "Low",
+          "category": "doc_defect"
+        },
+        {
+          "golden_comment": "docstring omits that /tmp is per-Function-instance - concurrent analytics divergence",
+          "severity": "Medium",
+          "category": "doc_defect"
+        },
+        {
+          "golden_comment": "inconsistent rest-args vs join-at-callsite convention",
+          "severity": "Low",
+          "category": "style"
+        },
+        {
+          "golden_comment": "cache hit-rate collapse on Vercel - cost impact",
+          "severity": "Medium",
+          "category": "perf"
+        },
+        {
+          "golden_comment": "dataDir() deploy invariant untested",
+          "severity": "Medium",
+          "category": "test_gap"
+        },
+        {
+          "golden_comment": "fscompat cacheKey stored inside the cache file + double-hashing (both states)",
+          "severity": "Low",
+          "category": "bug"
+        }
+      ],
+      "errors": [],
+      "total_candidates": 0,
+      "total_golden": 6,
+      "tp": 0,
+      "fp": 0,
+      "fn": 6,
+      "errors_count": 0,
+      "precision": 0.0,
+      "recall": 0.0,
+      "tool": "e2",
+      "repo_name": "meta-formalism-copilot@b64c1ca",
+      "pr_url": "https://local.invalid/meta-formalism-copilot/mfc-fscompat"
+    },
+    "e4-union": {
+      "skipped": false,
+      "true_positives": [],
+      "false_positives": [
+        {
+          "candidate": "Unbounded LLM cache growth in ephemeral `/tmp`"
+        },
+        {
+          "candidate": "Analytics file placed at `/tmp` root instead of a namespaced subdirectory"
+        },
+        {
+          "candidate": "Doc claims writes go to \"the repo's `data/` dir\""
+        },
+        {
+          "candidate": "LLM cache now writes to size-limited ephemeral `/tmp` with no eviction"
+        },
+        {
+          "candidate": "Comment understates the loss of analytics durability on Vercel"
+        },
+        {
+          "candidate": "LLM cache now writes unbounded data to Vercel `/tmp`"
+        },
+        {
+          "candidate": "Comment understates Vercel analytics behavior"
+        },
+        {
+          "candidate": "`dataDir()` joins arbitrary subpaths without containment check"
+        }
+      ],
+      "false_negatives": [
+        {
+          "golden_comment": "persist.ts:6-7 references a Deploy-to-Vercel README section that does not exist",
+          "severity": "Low",
+          "category": "doc_defect"
+        },
+        {
+          "golden_comment": "docstring omits that /tmp is per-Function-instance - concurrent analytics divergence",
+          "severity": "Medium",
+          "category": "doc_defect"
+        },
+        {
+          "golden_comment": "inconsistent rest-args vs join-at-callsite convention",
+          "severity": "Low",
+          "category": "style"
+        },
+        {
+          "golden_comment": "cache hit-rate collapse on Vercel - cost impact",
+          "severity": "Medium",
+          "category": "perf"
+        },
+        {
+          "golden_comment": "dataDir() deploy invariant untested",
+          "severity": "Medium",
+          "category": "test_gap"
+        },
+        {
+          "golden_comment": "fscompat cacheKey stored inside the cache file + double-hashing (both states)",
+          "severity": "Low",
+          "category": "bug"
+        }
+      ],
+      "errors": [],
+      "total_candidates": 8,
+      "total_golden": 6,
+      "tp": 0,
+      "fp": 8,
+      "fn": 6,
+      "errors_count": 0,
+      "precision": 0.0,
+      "recall": 0.0,
+      "tool": "e4-union",
+      "repo_name": "meta-formalism-copilot@b64c1ca",
+      "pr_url": "https://local.invalid/meta-formalism-copilot/mfc-fscompat"
+    }
+  },
+  "https://local.invalid/meta-formalism-copilot/mfc-corpus": {
+    "e2": {
+      "skipped": false,
+      "true_positives": [],
+      "false_positives": [
+        {
+          "candidate": "NEXT_PUBLIC_ env check uses optional chaining, risking broken build-time inlining"
+        },
+        {
+          "candidate": "Manifest parser silently drops malformed array entries instead of failing loud"
+        },
+        {
+          "candidate": "`\"not-found\"` error kind is defined but never produced by any implementation"
+        }
+      ],
+      "false_negatives": [
+        {
+          "golden_comment": "customTypeIds vs customArtifactTypeIds naming inconsistency",
+          "severity": "Low",
+          "category": "style"
+        },
+        {
+          "golden_comment": "storeAdapter state/ blob path bypasses the paths.ts choke point",
+          "severity": "Medium",
+          "category": "api"
+        },
+        {
+          "golden_comment": "stale comments (layout.ts ref in storeAdapter header; workspaceStore:44-46 ref)",
+          "severity": "Low",
+          "category": "doc_defect"
+        },
+        {
+          "golden_comment": "manifest codec docstring drift: silent createdAt/updatedAt defaults vs never-silent-default claim; phantom browser-storage-cleared",
+          "severity": "Medium",
+          "category": "doc_defect"
+        },
+        {
+          "golden_comment": "corpus: process.env?.NEXT_PUBLIC_CORPUS_FS optional chaining likely breaks Next build-time inlining (flag.ts)",
+          "severity": "High",
+          "category": "bug"
+        }
+      ],
+      "errors": [],
+      "total_candidates": 3,
+      "total_golden": 5,
+      "tp": 0,
+      "fp": 3,
+      "fn": 5,
+      "errors_count": 0,
+      "precision": 0.0,
+      "recall": 0.0,
+      "tool": "e2",
+      "repo_name": "meta-formalism-copilot@2dc403e",
+      "pr_url": "https://local.invalid/meta-formalism-copilot/mfc-corpus"
+    },
+    "e4-union": {
+      "skipped": false,
+      "true_positives": [],
+      "false_positives": [
+        {
+          "candidate": "Corpus-backed storage drops debouncing and write serialization"
+        },
+        {
+          "candidate": "Typed CorpusErrors at the store seam become unhandled promise rejections"
+        },
+        {
+          "candidate": "\"Dev-only\" flag has no dev guard"
+        },
+        {
+          "candidate": "Fail-loud manifest codec silently drops malformed array entries"
+        },
+        {
+          "candidate": "Slug sanitization can collide distinct workspace titles"
+        },
+        {
+          "candidate": "Comment claims a copy that the code does not make"
+        },
+        {
+          "candidate": "`finally { await w.close() }` can mask the quota error it is supposed to reify"
+        },
+        {
+          "candidate": "Corpus-backed storage drops the 300ms debounce and serialization of writes"
+        },
+        {
+          "candidate": "`process.env?.NEXT_PUBLIC_CORPUS_FS` may not be statically inlined in client bundles"
+        },
+        {
+          "candidate": "Fail-loud contract is violated for malformed array entries"
+        },
+        {
+          "candidate": "Fake and OPFS diverge on empty directories, weakening the LSP claim"
+        },
+        {
+          "candidate": "Corpus-backed storage has no debounce and no write serialization"
+        },
+        {
+          "candidate": "Flag is documented \"DEV-ONLY\" but nothing enforces it"
+        },
+        {
+          "candidate": "Quota detection depends on `instanceof DOMException`"
+        },
+        {
+          "candidate": "\"Fail-loud\" parser silently drops malformed array entries"
+        },
+        {
+          "candidate": "`close()` in `finally` can mask the original write error"
+        }
+      ],
+      "false_negatives": [
+        {
+          "golden_comment": "customTypeIds vs customArtifactTypeIds naming inconsistency",
+          "severity": "Low",
+          "category": "style"
+        },
+        {
+          "golden_comment": "storeAdapter state/ blob path bypasses the paths.ts choke point",
+          "severity": "Medium",
+          "category": "api"
+        },
+        {
+          "golden_comment": "stale comments (layout.ts ref in storeAdapter header; workspaceStore:44-46 ref)",
+          "severity": "Low",
+          "category": "doc_defect"
+        },
+        {
+          "golden_comment": "manifest codec docstring drift: silent createdAt/updatedAt defaults vs never-silent-default claim; phantom browser-storage-cleared",
+          "severity": "Medium",
+          "category": "doc_defect"
+        },
+        {
+          "golden_comment": "corpus: process.env?.NEXT_PUBLIC_CORPUS_FS optional chaining likely breaks Next build-time inlining (flag.ts)",
+          "severity": "High",
+          "category": "bug"
+        }
+      ],
+      "errors": [],
+      "total_candidates": 16,
+      "total_golden": 5,
+      "tp": 0,
+      "fp": 16,
+      "fn": 5,
+      "errors_count": 0,
+      "precision": 0.0,
+      "recall": 0.0,
+      "tool": "e4-union",
+      "repo_name": "meta-formalism-copilot@2dc403e",
+      "pr_url": "https://local.invalid/meta-formalism-copilot/mfc-corpus"
+    }
+  },
+  "https://local.invalid/meta-formalism-copilot/mfc-postfix": {
+    "e2": {
+      "skipped": false,
+      "true_positives": [],
+      "false_positives": [
+        {
+          "candidate": "Fail-open default for CSP `unsafe-eval`"
+        },
+        {
+          "candidate": "Comment references undefined constant"
+        }
+      ],
+      "false_negatives": [
+        {
+          "golden_comment": "mergeStreamingPreview<T> types partial-JSON parses as complete T; between contract disagrees 3 ways; partial-field crash latent in 3 panels",
+          "severity": "High",
+          "category": "bug"
+        },
+        {
+          "golden_comment": "allowUnsafeEval defaults fail-open: NODE_ENV != production grants unsafe-eval to test/staging/custom envs",
+          "severity": "High",
+          "category": "security"
+        },
+        {
+          "golden_comment": "default buildCsp call path untested (tests pin both explicit arms; production runs the default)",
+          "severity": "Medium",
+          "category": "test_gap"
+        },
+        {
+          "golden_comment": "eval policy caller-selectable: exported allowUnsafeEval param means dev-only is enforced by there being one call site",
+          "severity": "Medium",
+          "category": "api"
+        },
+        {
+          "golden_comment": "process.env.NODE_ENV read in a default parameter - ambient state in a previously pure formatter",
+          "severity": "Low",
+          "category": "bug"
+        },
+        {
+          "golden_comment": "data.results used without truncation; misbehaving OpenAlex per_page turns Math.max(...allWorks) into a RangeError cliff",
+          "severity": "Medium",
+          "category": "bug"
+        },
+        {
+          "golden_comment": "guard tests array presence not element presence: one-element between renders a dangling A-to row",
+          "severity": "Medium",
+          "category": "bug"
+        },
+        {
+          "golden_comment": "connect-src docstring enumeration omits the DD-009 corpus git worker (drifts silently when S4/S5 ships)",
+          "severity": "Low",
+          "category": "doc_defect"
+        },
+        {
+          "golden_comment": "comment-accuracy residue: dropped parity claim survives at evidenceStore.ts:17; optional-chaining mischaracterization",
+          "severity": "Low",
+          "category": "doc_defect"
+        }
+      ],
+      "errors": [],
+      "total_candidates": 2,
+      "total_golden": 9,
+      "tp": 0,
+      "fp": 2,
+      "fn": 9,
+      "errors_count": 0,
+      "precision": 0.0,
+      "recall": 0.0,
+      "tool": "e2",
+      "repo_name": "meta-formalism-copilot@7f30210",
+      "pr_url": "https://local.invalid/meta-formalism-copilot/mfc-postfix"
+    },
+    "e4-union": {
+      "skipped": false,
+      "true_positives": [],
+      "false_positives": [
+        {
+          "candidate": "CSP `unsafe-eval` default fails open when NODE_ENV is not exactly \"production\""
+        },
+        {
+          "candidate": "Truthiness guard still renders a bare \"\u2194\" row for partially streamed `between`"
+        },
+        {
+          "candidate": "CSP `'unsafe-eval'` fail-open for any non-production NODE_ENV"
+        },
+        {
+          "candidate": "Default-argument behaviour of buildCsp is now untested"
+        },
+        {
+          "candidate": "Truthiness guard still renders a bare \"\u2194\" for partially streamed tuples"
+        },
+        {
+          "candidate": "`'unsafe-eval'` enabled for any non-\"production\" NODE_ENV"
+        },
+        {
+          "candidate": "Regression test may be vacuous because `CollapsibleSection` is not mocked"
+        },
+        {
+          "candidate": "Doc de-referencing workspaceStore is only half applied"
+        }
+      ],
+      "false_negatives": [
+        {
+          "golden_comment": "mergeStreamingPreview<T> types partial-JSON parses as complete T; between contract disagrees 3 ways; partial-field crash latent in 3 panels",
+          "severity": "High",
+          "category": "bug"
+        },
+        {
+          "golden_comment": "allowUnsafeEval defaults fail-open: NODE_ENV != production grants unsafe-eval to test/staging/custom envs",
+          "severity": "High",
+          "category": "security"
+        },
+        {
+          "golden_comment": "default buildCsp call path untested (tests pin both explicit arms; production runs the default)",
+          "severity": "Medium",
+          "category": "test_gap"
+        },
+        {
+          "golden_comment": "eval policy caller-selectable: exported allowUnsafeEval param means dev-only is enforced by there being one call site",
+          "severity": "Medium",
+          "category": "api"
+        },
+        {
+          "golden_comment": "process.env.NODE_ENV read in a default parameter - ambient state in a previously pure formatter",
+          "severity": "Low",
+          "category": "bug"
+        },
+        {
+          "golden_comment": "data.results used without truncation; misbehaving OpenAlex per_page turns Math.max(...allWorks) into a RangeError cliff",
+          "severity": "Medium",
+          "category": "bug"
+        },
+        {
+          "golden_comment": "guard tests array presence not element presence: one-element between renders a dangling A-to row",
+          "severity": "Medium",
+          "category": "bug"
+        },
+        {
+          "golden_comment": "connect-src docstring enumeration omits the DD-009 corpus git worker (drifts silently when S4/S5 ships)",
+          "severity": "Low",
+          "category": "doc_defect"
+        },
+        {
+          "golden_comment": "comment-accuracy residue: dropped parity claim survives at evidenceStore.ts:17; optional-chaining mischaracterization",
+          "severity": "Low",
+          "category": "doc_defect"
+        }
+      ],
+      "errors": [],
+      "total_candidates": 8,
+      "total_golden": 9,
+      "tp": 0,
+      "fp": 8,
+      "fn": 9,
+      "errors_count": 0,
+      "precision": 0.0,
+      "recall": 0.0,
+      "tool": "e4-union",
+      "repo_name": "meta-formalism-copilot@7f30210",
+      "pr_url": "https://local.invalid/meta-formalism-copilot/mfc-postfix"
+    }
+  }
+}

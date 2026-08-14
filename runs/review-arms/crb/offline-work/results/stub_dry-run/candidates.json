@@ -1,0 +1,678 @@
+{
+  "https://local.invalid/meta-formalism-copilot/mfc-csp": {
+    "e2": [
+      {
+        "text": "No CSP relaxation for dev-mode eval",
+        "path": null,
+        "line": null,
+        "source": "extracted"
+      },
+      {
+        "text": "Root layout forces whole app to dynamic rendering",
+        "path": null,
+        "line": null,
+        "source": "extracted"
+      },
+      {
+        "text": "x-nonce request header is set but never consumed",
+        "path": null,
+        "line": null,
+        "source": "extracted"
+      },
+      {
+        "text": "Prefetch exclusion may be stale",
+        "path": null,
+        "line": null,
+        "source": "extracted"
+      }
+    ],
+    "e4-union": [
+      {
+        "text": "CSP nonce never reaches Next.js's own scripts",
+        "path": null,
+        "line": null,
+        "source": "extracted"
+      },
+      {
+        "text": "Comment states a mechanism that doesn't exist",
+        "path": null,
+        "line": null,
+        "source": "extracted"
+      },
+      {
+        "text": "Dev mode will break without `'unsafe-eval'`",
+        "path": null,
+        "line": null,
+        "source": "extracted"
+      },
+      {
+        "text": "`x-nonce` request header is dead code",
+        "path": null,
+        "line": null,
+        "source": "extracted"
+      },
+      {
+        "text": "`await headers()` in the root layout forces every route dynamic",
+        "path": null,
+        "line": null,
+        "source": "extracted"
+      },
+      {
+        "text": "CSP not forwarded on request headers, so Next never nonces its scripts",
+        "path": null,
+        "line": null,
+        "source": "extracted"
+      },
+      {
+        "text": "Comment misstates both the mechanism and the reason",
+        "path": null,
+        "line": null,
+        "source": "extracted"
+      },
+      {
+        "text": "Missing `'unsafe-eval'` for development will break dev HMR",
+        "path": null,
+        "line": null,
+        "source": "extracted"
+      },
+      {
+        "text": "`x-nonce` request header is set but never consumed",
+        "path": null,
+        "line": null,
+        "source": "extracted"
+      },
+      {
+        "text": "Matcher lookahead is prefix-based, not segment-based",
+        "path": null,
+        "line": null,
+        "source": "extracted"
+      },
+      {
+        "text": "Nonce never reaches Next.js renderer \u2014 all scripts blocked by `strict-dynamic`",
+        "path": null,
+        "line": null,
+        "source": "extracted"
+      },
+      {
+        "text": "Comment misstates how Next.js obtains the nonce",
+        "path": null,
+        "line": null,
+        "source": "extracted"
+      },
+      {
+        "text": "Dev mode breaks: no `'unsafe-eval'` / `blob:` worker allowance",
+        "path": null,
+        "line": null,
+        "source": "extracted"
+      },
+      {
+        "text": "`await headers()` in root layout forces every route dynamic",
+        "path": null,
+        "line": null,
+        "source": "extracted"
+      },
+      {
+        "text": "`x-nonce` is set but never consumed; comment describes behavior that doesn't exist",
+        "path": null,
+        "line": null,
+        "source": "extracted"
+      },
+      {
+        "text": "Matcher regex over-excludes and drops CSP on prefetches",
+        "path": null,
+        "line": null,
+        "source": "extracted"
+      }
+    ]
+  },
+  "https://local.invalid/meta-formalism-copilot/mfc-lean": {
+    "e2": [
+      {
+        "text": "Non-2xx verifier responses are classified as \"unavailable\" and body is discarded",
+        "path": null,
+        "line": null,
+        "source": "extracted"
+      },
+      {
+        "text": "`reason`/`detail` fields from the verifier route are dropped by the client",
+        "path": null,
+        "line": null,
+        "source": "extracted"
+      }
+    ],
+    "e4-union": [
+      {
+        "text": "Non-2xx verifier responses now masked as \"unavailable\" and body discarded",
+        "path": null,
+        "line": null,
+        "source": "extracted"
+      },
+      {
+        "text": "Offline banner text wrong for the `verifier-error` reason",
+        "path": null,
+        "line": null,
+        "source": "extracted"
+      },
+      {
+        "text": "`reason`/`detail` from the route are never surfaced",
+        "path": null,
+        "line": null,
+        "source": "extracted"
+      },
+      {
+        "text": "Verifier HTTP error responses are swallowed and reported as \"unavailable\"",
+        "path": null,
+        "line": null,
+        "source": "extracted"
+      },
+      {
+        "text": "Route's `reason`/`detail` fields are never consumed",
+        "path": null,
+        "line": null,
+        "source": "extracted"
+      },
+      {
+        "text": "Failures of the app's own API route still surface as \"Verification Failed\"",
+        "path": null,
+        "line": null,
+        "source": "extracted"
+      },
+      {
+        "text": "Prior real verification errors are discarded when the verifier drops out mid-retry",
+        "path": null,
+        "line": null,
+        "source": "extracted"
+      },
+      {
+        "text": "Verifier error responses are swallowed, losing real diagnostics",
+        "path": null,
+        "line": null,
+        "source": "extracted"
+      },
+      {
+        "text": "Banner text contradicts some unavailable reasons",
+        "path": null,
+        "line": null,
+        "source": "extracted"
+      },
+      {
+        "text": "`reason`/`detail` from the route are never consumed",
+        "path": null,
+        "line": null,
+        "source": "extracted"
+      }
+    ]
+  },
+  "https://local.invalid/meta-formalism-copilot/mfc-hygiene": {
+    "e2": [
+      {
+        "text": "Stale SSE protocol doc for error event",
+        "path": null,
+        "line": null,
+        "source": "extracted"
+      },
+      {
+        "text": "`details` silently dropped from client-facing error SSE event",
+        "path": null,
+        "line": null,
+        "source": "extracted"
+      }
+    ],
+    "e4-union": [
+      {
+        "text": "SSE protocol docblock still advertises `details` on error events",
+        "path": null,
+        "line": null,
+        "source": "extracted"
+      },
+      {
+        "text": "`errorWithDetails` payload is now unreachable",
+        "path": null,
+        "line": null,
+        "source": "extracted"
+      },
+      {
+        "text": "Exported `getAnthropicClient` renamed without compatibility alias",
+        "path": null,
+        "line": null,
+        "source": "extracted"
+      },
+      {
+        "text": "Comment's stated rationale conflicts with the adjacent response",
+        "path": null,
+        "line": null,
+        "source": "extracted"
+      },
+      {
+        "text": "`streamLlm` SSE contract still documents a `details` field",
+        "path": null,
+        "line": null,
+        "source": "extracted"
+      },
+      {
+        "text": "OpenRouter stream error bodies are now completely discarded",
+        "path": null,
+        "line": null,
+        "source": "extracted"
+      },
+      {
+        "text": "Comment's privacy rationale contradicted two lines later",
+        "path": null,
+        "line": null,
+        "source": "extracted"
+      },
+      {
+        "text": "Test deletes API-key env vars without restoring them",
+        "path": null,
+        "line": null,
+        "source": "extracted"
+      },
+      {
+        "text": "`streamLlm` JSDoc still documents the SSE contract as `event: error \u2014 { error: \"message\", details: \"...\" }`",
+        "path": null,
+        "line": null,
+        "source": "extracted"
+      },
+      {
+        "text": "Provider error bodies in the streaming path are now dropped entirely",
+        "path": null,
+        "line": null,
+        "source": "extracted"
+      },
+      {
+        "text": "Privacy rationale in the new comment is inconsistent with the same handler's behavior",
+        "path": null,
+        "line": null,
+        "source": "extracted"
+      },
+      {
+        "text": "Exported `getAnthropicClient` renamed to `makeAnthropicClient`",
+        "path": null,
+        "line": null,
+        "source": "extracted"
+      }
+    ]
+  },
+  "https://local.invalid/meta-formalism-copilot/mfc-secdeps": {
+    "e2": [
+      {
+        "text": "react/no-danger set to \"warn\" contradicts \"fail loudly\" claim",
+        "path": null,
+        "line": null,
+        "source": "extracted"
+      },
+      {
+        "text": "no-restricted-imports only catches static ES import of rehype-raw",
+        "path": null,
+        "line": null,
+        "source": "extracted"
+      }
+    ],
+    "e4-union": [
+      {
+        "text": "`react/no-danger` set to \"warn\" contradicts stated intent",
+        "path": null,
+        "line": null,
+        "source": "extracted"
+      },
+      {
+        "text": "`trust: true` selector is trivially bypassed",
+        "path": null,
+        "line": null,
+        "source": "extracted"
+      },
+      {
+        "text": "rehype-raw restriction misses subpaths and non-static imports",
+        "path": null,
+        "line": null,
+        "source": "extracted"
+      },
+      {
+        "text": "`npm audit` makes CI non-deterministic and duplicated",
+        "path": null,
+        "line": null,
+        "source": "extracted"
+      },
+      {
+        "text": "`react/no-danger` set to \"warn\" contradicts the \"fail loudly\" intent",
+        "path": null,
+        "line": null,
+        "source": "extracted"
+      },
+      {
+        "text": "`trust` selector is narrower than the comment claims",
+        "path": null,
+        "line": null,
+        "source": "extracted"
+      },
+      {
+        "text": "rehype-raw restriction is easily bypassed",
+        "path": null,
+        "line": null,
+        "source": "extracted"
+      },
+      {
+        "text": "audit step makes CI failures time- and network-dependent",
+        "path": null,
+        "line": null,
+        "source": "extracted"
+      },
+      {
+        "text": "`react/no-danger` as \"warn\" does not enforce anything",
+        "path": null,
+        "line": null,
+        "source": "extracted"
+      },
+      {
+        "text": "`trust: true` selector is easy to bypass unintentionally",
+        "path": null,
+        "line": null,
+        "source": "extracted"
+      },
+      {
+        "text": "rehype-raw ban has gaps",
+        "path": null,
+        "line": null,
+        "source": "extracted"
+      },
+      {
+        "text": "`--omit=dev` comment overstates coverage; step is duplicated across the matrix",
+        "path": null,
+        "line": null,
+        "source": "extracted"
+      }
+    ]
+  },
+  "https://local.invalid/meta-formalism-copilot/mfc-deploy": {
+    "e2": [
+      {
+        "text": "Deploy button hardcodes a specific GitHub account/repo",
+        "path": null,
+        "line": null,
+        "source": "extracted"
+      }
+    ],
+    "e4-union": [
+      {
+        "text": "`ANTHROPIC_API_KEY` listed as required but also described as replaceable by `OPENROUTER_API_KEY`",
+        "path": null,
+        "line": null,
+        "source": "extracted"
+      },
+      {
+        "text": "Vercel filesystem limitation understated for analytics",
+        "path": null,
+        "line": null,
+        "source": "extracted"
+      },
+      {
+        "text": "Deploy instructions omit that the deployment is publicly reachable with your key",
+        "path": null,
+        "line": null,
+        "source": "extracted"
+      },
+      {
+        "text": "`ANTHROPIC_API_KEY` labelled required while OpenRouter is described as a substitute",
+        "path": null,
+        "line": null,
+        "source": "extracted"
+      },
+      {
+        "text": "\"does not persist\" understates filesystem behavior on Vercel",
+        "path": null,
+        "line": null,
+        "source": "extracted"
+      },
+      {
+        "text": "Vercel filesystem writes likely fail outright, not just fail to persist",
+        "path": null,
+        "line": null,
+        "source": "extracted"
+      },
+      {
+        "text": "Local dev instructions never mention setting `ANTHROPIC_API_KEY`",
+        "path": null,
+        "line": null,
+        "source": "extracted"
+      }
+    ]
+  },
+  "https://local.invalid/meta-formalism-copilot/mfc-fscompat": {
+    "e4-union": [
+      {
+        "text": "Unbounded LLM cache growth in ephemeral `/tmp`",
+        "path": null,
+        "line": null,
+        "source": "extracted"
+      },
+      {
+        "text": "Analytics file placed at `/tmp` root instead of a namespaced subdirectory",
+        "path": null,
+        "line": null,
+        "source": "extracted"
+      },
+      {
+        "text": "Doc claims writes go to \"the repo's `data/` dir\"",
+        "path": null,
+        "line": null,
+        "source": "extracted"
+      },
+      {
+        "text": "LLM cache now writes to size-limited ephemeral `/tmp` with no eviction",
+        "path": null,
+        "line": null,
+        "source": "extracted"
+      },
+      {
+        "text": "Comment understates the loss of analytics durability on Vercel",
+        "path": null,
+        "line": null,
+        "source": "extracted"
+      },
+      {
+        "text": "LLM cache now writes unbounded data to Vercel `/tmp`",
+        "path": null,
+        "line": null,
+        "source": "extracted"
+      },
+      {
+        "text": "Comment understates Vercel analytics behavior",
+        "path": null,
+        "line": null,
+        "source": "extracted"
+      },
+      {
+        "text": "`dataDir()` joins arbitrary subpaths without containment check",
+        "path": null,
+        "line": null,
+        "source": "extracted"
+      }
+    ]
+  },
+  "https://local.invalid/meta-formalism-copilot/mfc-corpus": {
+    "e2": [
+      {
+        "text": "NEXT_PUBLIC_ env check uses optional chaining, risking broken build-time inlining",
+        "path": null,
+        "line": null,
+        "source": "extracted"
+      },
+      {
+        "text": "Manifest parser silently drops malformed array entries instead of failing loud",
+        "path": null,
+        "line": null,
+        "source": "extracted"
+      },
+      {
+        "text": "`\"not-found\"` error kind is defined but never produced by any implementation",
+        "path": null,
+        "line": null,
+        "source": "extracted"
+      }
+    ],
+    "e4-union": [
+      {
+        "text": "Corpus-backed storage drops debouncing and write serialization",
+        "path": null,
+        "line": null,
+        "source": "extracted"
+      },
+      {
+        "text": "Typed CorpusErrors at the store seam become unhandled promise rejections",
+        "path": null,
+        "line": null,
+        "source": "extracted"
+      },
+      {
+        "text": "\"Dev-only\" flag has no dev guard",
+        "path": null,
+        "line": null,
+        "source": "extracted"
+      },
+      {
+        "text": "Fail-loud manifest codec silently drops malformed array entries",
+        "path": null,
+        "line": null,
+        "source": "extracted"
+      },
+      {
+        "text": "Slug sanitization can collide distinct workspace titles",
+        "path": null,
+        "line": null,
+        "source": "extracted"
+      },
+      {
+        "text": "Comment claims a copy that the code does not make",
+        "path": null,
+        "line": null,
+        "source": "extracted"
+      },
+      {
+        "text": "`finally { await w.close() }` can mask the quota error it is supposed to reify",
+        "path": null,
+        "line": null,
+        "source": "extracted"
+      },
+      {
+        "text": "Corpus-backed storage drops the 300ms debounce and serialization of writes",
+        "path": null,
+        "line": null,
+        "source": "extracted"
+      },
+      {
+        "text": "`process.env?.NEXT_PUBLIC_CORPUS_FS` may not be statically inlined in client bundles",
+        "path": null,
+        "line": null,
+        "source": "extracted"
+      },
+      {
+        "text": "Fail-loud contract is violated for malformed array entries",
+        "path": null,
+        "line": null,
+        "source": "extracted"
+      },
+      {
+        "text": "Fake and OPFS diverge on empty directories, weakening the LSP claim",
+        "path": null,
+        "line": null,
+        "source": "extracted"
+      },
+      {
+        "text": "Corpus-backed storage has no debounce and no write serialization",
+        "path": null,
+        "line": null,
+        "source": "extracted"
+      },
+      {
+        "text": "Flag is documented \"DEV-ONLY\" but nothing enforces it",
+        "path": null,
+        "line": null,
+        "source": "extracted"
+      },
+      {
+        "text": "Quota detection depends on `instanceof DOMException`",
+        "path": null,
+        "line": null,
+        "source": "extracted"
+      },
+      {
+        "text": "\"Fail-loud\" parser silently drops malformed array entries",
+        "path": null,
+        "line": null,
+        "source": "extracted"
+      },
+      {
+        "text": "`close()` in `finally` can mask the original write error",
+        "path": null,
+        "line": null,
+        "source": "extracted"
+      }
+    ]
+  },
+  "https://local.invalid/meta-formalism-copilot/mfc-postfix": {
+    "e2": [
+      {
+        "text": "Fail-open default for CSP `unsafe-eval`",
+        "path": null,
+        "line": null,
+        "source": "extracted"
+      },
+      {
+        "text": "Comment references undefined constant",
+        "path": null,
+        "line": null,
+        "source": "extracted"
+      }
+    ],
+    "e4-union": [
+      {
+        "text": "CSP `unsafe-eval` default fails open when NODE_ENV is not exactly \"production\"",
+        "path": null,
+        "line": null,
+        "source": "extracted"
+      },
+      {
+        "text": "Truthiness guard still renders a bare \"\u2194\" row for partially streamed `between`",
+        "path": null,
+        "line": null,
+        "source": "extracted"
+      },
+      {
+        "text": "CSP `'unsafe-eval'` fail-open for any non-production NODE_ENV",
+        "path": null,
+        "line": null,
+        "source": "extracted"
+      },
+      {
+        "text": "Default-argument behaviour of buildCsp is now untested",
+        "path": null,
+        "line": null,
+        "source": "extracted"
+      },
+      {
+        "text": "Truthiness guard still renders a bare \"\u2194\" for partially streamed tuples",
+        "path": null,
+        "line": null,
+        "source": "extracted"
+      },
+      {
+        "text": "`'unsafe-eval'` enabled for any non-\"production\" NODE_ENV",
+        "path": null,
+        "line": null,
+        "source": "extracted"
+      },
+      {
+        "text": "Regression test may be vacuous because `CollapsibleSection` is not mocked",
+        "path": null,
+        "line": null,
+        "source": "extracted"
+      },
+      {
+        "text": "Doc de-referencing workspaceStore is only half applied",
+        "path": null,
+        "line": null,
+        "source": "extracted"
+      }
+    ]
+  }
+}

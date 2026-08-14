@@ -1,0 +1,14 @@
+{
+  "repo": "discourse__discourse-graphite__claude__PR3__20260127",
+  "range": "e25638da..pr-3",
+  "context_base": "e25638da",
+  "arms": {
+    "base": {
+      "dry_run": true,
+      "model": "anthropic/claude-sonnet-5",
+      "replicates": 1,
+      "consensus": null,
+      "note": "030 arm [0]: promoted Stage-1 default, k=1"
+    }
+  }
+}

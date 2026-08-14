@@ -1,0 +1,1146 @@
+{
+  "https://local.invalid/meta-formalism-copilot/mfc-csp": {
+    "pr_title": "canon instance mfc-csp (d90d6bb)",
+    "original_url": null,
+    "source_repo": "meta-formalism-copilot",
+    "golden_comments": [
+      {
+        "comment": "connect-src 'self' blocks the data:/blob fetch in exportGraph.ts - PNG export breaks",
+        "severity": "High",
+        "category": "bug",
+        "canon_issue_id": "csp-R1",
+        "mapping_provenance": "auto-mapped 2026-08-14, pending adjudication"
+      },
+      {
+        "comment": "proxy.ts:35-36 comment claims Edge runtime; middleware defaults to Node.js",
+        "severity": "Low",
+        "category": "doc_defect",
+        "canon_issue_id": "csp-R2",
+        "mapping_provenance": "auto-mapped 2026-08-14, pending adjudication"
+      },
+      {
+        "comment": "CSP set on response only - never on forwarded request headers so Next.js cannot extract the nonce (dead x-nonce plumbing)",
+        "severity": "High",
+        "category": "bug",
+        "canon_issue_id": "csp-A1",
+        "mapping_provenance": "auto-mapped 2026-08-14, pending adjudication"
+      },
+      {
+        "comment": "style-src 'unsafe-inline' misattributed to Tailwind v4",
+        "severity": "Low",
+        "category": "doc_defect",
+        "canon_issue_id": "csp-A2",
+        "mapping_provenance": "auto-mapped 2026-08-14, pending adjudication"
+      },
+      {
+        "comment": "layout.tsx:27-30 comment misstates why await headers() is needed",
+        "severity": "Low",
+        "category": "doc_defect",
+        "canon_issue_id": "csp-A3",
+        "mapping_provenance": "auto-mapped 2026-08-14, pending adjudication"
+      },
+      {
+        "comment": "no tests pin the CSP directive list",
+        "severity": "Medium",
+        "category": "test_gap",
+        "canon_issue_id": "csp-A4",
+        "mapping_provenance": "auto-mapped 2026-08-14, pending adjudication"
+      },
+      {
+        "comment": "csp: no dev-mode unsafe-eval relaxation - dev breaks under the new CSP",
+        "severity": "High",
+        "category": "bug",
+        "canon_issue_id": "C1",
+        "mapping_provenance": "auto-mapped 2026-08-14, pending adjudication"
+      },
+      {
+        "comment": "csp: middleware matcher lookahead is prefix-based not segment-based (api-foo / favicon.ico.png slip through) - contradicts rubric Confirmed-Good row",
+        "severity": "Medium",
+        "category": "bug",
+        "canon_issue_id": "C4",
+        "mapping_provenance": "auto-mapped 2026-08-14, pending adjudication"
+      },
+      {
+        "comment": "csp: middleware prefetch-skip (missing/purpose header exclusion) serves real HTML documents with no CSP at all",
+        "severity": "Critical",
+        "category": "security",
+        "canon_issue_id": "N1",
+        "mapping_provenance": "auto-mapped 2026-08-14, pending adjudication"
+      },
+      {
+        "comment": "csp: no worker-src directive under strict-dynamic - pdf.js worker blocked (degrades to fake-worker main thread)",
+        "severity": "Medium",
+        "category": "bug",
+        "canon_issue_id": "N7",
+        "mapping_provenance": "auto-mapped 2026-08-14, pending adjudication"
+      }
+    ],
+    "golden_source_file": "meta_formalism_copilot.json",
+    "az_comment": null,
+    "reviews": [
+      {
+        "tool": "e2",
+        "repo_name": "meta-formalism-copilot@d90d6bb",
+        "pr_url": "https://local.invalid/meta-formalism-copilot/mfc-csp",
+        "review_comments": [
+          {
+            "path": "proxy.ts",
+            "line": 1,
+            "body": "**No CSP relaxation for dev-mode eval**\n\nThe policy has no `'unsafe-eval'` allowance for `script-src`, but Next.js's dev server (Fast Refresh / webpack or Turbopack eval-based module loading) requires `unsafe-eval` in development; without a NODE_ENV-based carve-out this CSP will break HMR/dev builds, which Next's own CSP docs call out explicitly.",
+            "created_at": null
+          },
+          {
+            "path": "app/layout.tsx",
+            "line": 22,
+            "body": "**Root layout forces whole app to dynamic rendering**\n\nCalling `await headers()` unconditionally in `RootLayout` opts every route in the app out of static rendering/ISR, even pages that have no need for a per-request nonce, which can meaningfully increase server load/latency app-wide.",
+            "created_at": null
+          },
+          {
+            "path": "proxy.ts",
+            "line": 36,
+            "body": "**x-nonce request header is set but never consumed**\n\nThe proxy forwards `x-nonce` to server components via request headers, but no code (including the new `RootLayout`) reads it \u2014 the comment in the layout explicitly says it's unnecessary \u2014 leaving dead plumbing that may mislead future readers into thinking it's wired up for manual `<Script nonce>` usage.",
+            "created_at": null
+          },
+          {
+            "path": "proxy.ts",
+            "line": 58,
+            "body": "**Prefetch exclusion may be stale**\n\nThe matcher excludes prefetches via the `purpose: prefetch` header, but modern browsers/Next versions send `Sec-Purpose: prefetch`; if `purpose` is no longer sent, prefetch requests will consume/attach nonces unnecessarily, contradicting the stated intent of skipping prefetches.",
+            "created_at": null
+          }
+        ]
+      },
+      {
+        "tool": "e4-union",
+        "repo_name": "meta-formalism-copilot@d90d6bb",
+        "pr_url": "https://local.invalid/meta-formalism-copilot/mfc-csp",
+        "review_comments": [
+          {
+            "path": "proxy.ts",
+            "line": 44,
+            "body": "**CSP nonce never reaches Next.js's own scripts**\n\nNext.js extracts the nonce for its bootstrap/hydration `<script>` tags from the **incoming request's** `Content-Security-Policy` header, so the CSP must also be set on `requestHeaders` (as in Next's own docs), not just on the response. As written, Next's scripts are emitted without `nonce`, and because `'strict-dynamic'` causes `'self'` to be ignored in `script-src`, every script is blocked and the app fails to hydrate.",
+            "created_at": null
+          },
+          {
+            "path": "app/layout.tsx",
+            "line": 27,
+            "body": "**Comment states a mechanism that doesn't exist**\n\n\"Next.js automatically tags its own bootstrap `<script>` elements with the nonce from the response's CSP header\" is wrong \u2014 Next reads the CSP from the request headers forwarded by the proxy; this incorrect assumption is what causes finding 1 and will mislead future maintainers debugging blocked scripts.",
+            "created_at": null
+          },
+          {
+            "path": "proxy.ts",
+            "line": 21,
+            "body": "**Dev mode will break without `'unsafe-eval'`**\n\nNext.js's development server (HMR / Fast Refresh, React refresh runtime) uses `eval`, which this `script-src` forbids; a dev-only relaxation (`process.env.NODE_ENV !== \"production\"`) is normally required or local development is unusable.",
+            "created_at": null
+          },
+          {
+            "path": "proxy.ts",
+            "line": 39,
+            "body": "**`x-nonce` request header is dead code**\n\nThe comment says layouts read `x-nonce` and pass it to `<Script>` tags, but no consumer exists (the layout explicitly declines to read it), so this header and its rationale are stale.",
+            "created_at": null
+          },
+          {
+            "path": "app/layout.tsx",
+            "line": 22,
+            "body": "**`await headers()` in the root layout forces every route dynamic**\n\nOpting the root layout out of static rendering disables static generation and full-route caching for the entire app just to trigger the proxy; the proxy already runs on all matched requests, so this cost is only needed for pages that would otherwise be prerendered with a baked-in nonce.",
+            "created_at": null
+          },
+          {
+            "path": "proxy.ts",
+            "line": 41,
+            "body": "**CSP not forwarded on request headers, so Next never nonces its scripts**\n\nNext.js extracts the nonce for its bootstrap/hydration `<script>` tags from the *incoming request's* `Content-Security-Policy` header, but this code sets CSP only on the response (`response.headers.set`) and puts just `x-nonce` on the forwarded request headers. Because `'strict-dynamic'` makes the `'self'` source expression ignored, every Next script will be un-nonced and blocked, breaking hydration/client interactivity; the CSP header value must also be `set` on `requestHeaders`.",
+            "created_at": null
+          },
+          {
+            "path": "app/layout.tsx",
+            "line": 27,
+            "body": "**Comment misstates both the mechanism and the reason**\n\nProxy/middleware runs on every request regardless of whether a route is statically rendered \u2014 the real reason to opt out is that a prerendered HTML document would carry a stale nonce; and the claim that Next tags scripts \"from the response's CSP header\" is wrong (it reads the request header), which is what leads to finding #1.",
+            "created_at": null
+          },
+          {
+            "path": "proxy.ts",
+            "line": 22,
+            "body": "**Missing `'unsafe-eval'` for development will break dev HMR**\n\nNext dev builds (webpack `eval-source-map` and Turbopack HMR) execute code via `eval`/`new Function`; with `script-src` lacking `'unsafe-eval'` in dev, hot reload and dev overlay will be blocked. Consider branching on `process.env.NODE_ENV`.",
+            "created_at": null
+          },
+          {
+            "path": "proxy.ts",
+            "line": 39,
+            "body": "**`x-nonce` request header is set but never consumed**\n\nThe comment says layouts read it via `headers()` and pass it to `<Script>` tags, but `app/layout.tsx` explicitly does not read it, leaving dead state and a comment that contradicts the code.",
+            "created_at": null
+          },
+          {
+            "path": "proxy.ts",
+            "line": 57,
+            "body": "**Matcher lookahead is prefix-based, not segment-based**\n\n`(?!api|_next/static|_next/image|favicon.ico)` also excludes unrelated routes whose first segment merely starts with those strings (e.g. `/api-docs`, `/favicon.ico.txt`), silently dropping CSP for them; anchor with a trailing `/` or `$` (e.g. `api(?:/|$)`).",
+            "created_at": null
+          },
+          {
+            "path": "proxy.ts",
+            "line": 34,
+            "body": "**Nonce never reaches Next.js renderer \u2014 all scripts blocked by `strict-dynamic`**\n\nNext.js extracts the render nonce by parsing the `content-security-policy` header off the *incoming request* headers (`app-render` reads `req.headers['content-security-policy']`), not off the response. Since only `x-nonce` is forwarded on the request and nothing reads it, Next's bootstrap `<script>` tags get no `nonce` attribute; because `'strict-dynamic'` causes `'self'` to be ignored, every Next script is blocked and the app never hydrates. Fix by also doing `requestHeaders.set(\"Content-Security-Policy\", csp)`.",
+            "created_at": null
+          },
+          {
+            "path": "app/layout.tsx",
+            "line": 27,
+            "body": "**Comment misstates how Next.js obtains the nonce**\n\n\"Next.js automatically tags its own bootstrap `<script>` elements with the nonce from the response's CSP header\" is wrong \u2014 the nonce is read from the request-side CSP header, which this diff never sets; the comment hides the bug in #1.",
+            "created_at": null
+          },
+          {
+            "path": "proxy.ts",
+            "line": 20,
+            "body": "**Dev mode breaks: no `'unsafe-eval'` / `blob:` worker allowance**\n\nNext.js dev builds use `eval`-based source maps and React Refresh, so `script-src` without `'unsafe-eval'` (typically gated on `NODE_ENV !== 'production'`) will make `next dev` unusable; `default-src 'self'` also blocks `blob:` workers if any are used.",
+            "created_at": null
+          },
+          {
+            "path": "app/layout.tsx",
+            "line": 22,
+            "body": "**`await headers()` in root layout forces every route dynamic**\n\nCalling `headers()` in the root layout opts the entire app out of static generation and the full route cache, which is a site-wide rendering/perf regression; a per-request CSP header can instead be attached without disabling static rendering (or scoped to routes that actually need the nonce).",
+            "created_at": null
+          },
+          {
+            "path": "proxy.ts",
+            "line": 39,
+            "body": "**`x-nonce` is set but never consumed; comment describes behavior that doesn't exist**\n\nNo layout or component reads `x-nonce`, and the layout comment explicitly says it doesn't need to \u2014 leaving a header whose stated purpose (\"so layouts can read it and pass it to `<Script>` tags\") is unimplemented.",
+            "created_at": null
+          },
+          {
+            "path": "proxy.ts",
+            "line": 52,
+            "body": "**Matcher regex over-excludes and drops CSP on prefetches**\n\n`(?!api|_next/static|...)` is a prefix, not path-segment, match, so routes like `/apidocs` or `/favicon.icon` silently lose CSP; likewise all `next-router-prefetch`/`purpose: prefetch` responses ship with no CSP header at all.",
+            "created_at": null
+          }
+        ]
+      }
+    ]
+  },
+  "https://local.invalid/meta-formalism-copilot/mfc-lean": {
+    "pr_title": "canon instance mfc-lean (c95c9cb)",
+    "original_url": null,
+    "source_repo": "meta-formalism-copilot",
+    "golden_comments": [
+      {
+        "comment": "README/ARCHITECTURE docs stale (removed mock-pass fallback / localhost default still documented)",
+        "severity": "Medium",
+        "category": "doc_defect",
+        "canon_issue_id": "lean-R1",
+        "mapping_provenance": "auto-mapped 2026-08-14, pending adjudication"
+      },
+      {
+        "comment": "non-2xx verifier response masked as unavailable - upstream body discarded",
+        "severity": "Medium",
+        "category": "bug",
+        "canon_issue_id": "lean-R2",
+        "mapping_provenance": "auto-mapped 2026-08-14, pending adjudication"
+      },
+      {
+        "comment": "verifyLean() client drops the route's typed reason/detail fields",
+        "severity": "Medium",
+        "category": "api",
+        "canon_issue_id": "lean-A1",
+        "mapping_provenance": "auto-mapped 2026-08-14, pending adjudication"
+      },
+      {
+        "comment": "lean: removal of localhost:3100 default breaks the documented local-dev flow (unset env short-circuits to verifier-not-configured)",
+        "severity": "Medium",
+        "category": "bug",
+        "canon_issue_id": "N3",
+        "mapping_provenance": "auto-mapped 2026-08-14, pending adjudication"
+      },
+      {
+        "comment": "lean: decomposition path maps unavailable to \"unverified\" - node mode shows no badge/banner/Re-verify (silent)",
+        "severity": "Medium",
+        "category": "bug",
+        "canon_issue_id": "N4",
+        "mapping_provenance": "auto-mapped 2026-08-14, pending adjudication"
+      },
+      {
+        "comment": "lean: formalizeNode ignores result.unavailable - node marked failed with empty errors and dependents skipped",
+        "severity": "High",
+        "category": "bug",
+        "canon_issue_id": "N5",
+        "mapping_provenance": "auto-mapped 2026-08-14, pending adjudication"
+      }
+    ],
+    "golden_source_file": "meta_formalism_copilot.json",
+    "az_comment": null,
+    "reviews": [
+      {
+        "tool": "e2",
+        "repo_name": "meta-formalism-copilot@c95c9cb",
+        "pr_url": "https://local.invalid/meta-formalism-copilot/mfc-lean",
+        "review_comments": [
+          {
+            "path": "app/api/verification/lean/route.ts",
+            "line": 44,
+            "body": "**Non-2xx verifier responses are classified as \"unavailable\" and body is discarded**\n\nAny non-OK HTTP response from the external verifier is now treated as \"verifier unavailable\" without reading the response body, even if the verifier actually returned a valid `{valid:false, errors:...}` payload via a non-2xx status. This can mask genuine proof-invalid results as infrastructure failures, discard real error detail, and (via `leanRetryLoop`'s early-return on `unavailable`) prevent the normal retry-on-failure flow from running.",
+            "created_at": null
+          },
+          {
+            "path": "app/lib/formalization/api.ts",
+            "line": 126,
+            "body": "**`reason`/`detail` fields from the verifier route are dropped by the client**\n\nThe route returns a `reason` (`verifier-not-configured`/`verifier-unreachable`/`verifier-error`) and optional `detail`, but `verifyLean` only reads `valid`/`errors`/`unavailable`, discarding this diagnostic information so the UI can't distinguish \"not configured\" from \"unreachable\" from \"errored\".",
+            "created_at": null
+          }
+        ]
+      },
+      {
+        "tool": "e4-union",
+        "repo_name": "meta-formalism-copilot@c95c9cb",
+        "pr_url": "https://local.invalid/meta-formalism-copilot/mfc-lean",
+        "review_comments": [
+          {
+            "path": "app/api/verification/lean/route.ts",
+            "line": 45,
+            "body": "**Non-2xx verifier responses now masked as \"unavailable\" and body discarded**\n\nAny non-OK reply from the verifier (e.g. 400 for oversized/malformed `leanCode`, or a verifier that signals compile failure with a non-200 status) is reported as `unavailable: true` with only `HTTP <status>`, so real verification failures and request errors are silently presented as \"verifier offline\" and the verifier's error payload (previously forwarded) is lost.",
+            "created_at": null
+          },
+          {
+            "path": "app/components/features/lean-display/LeanCodeDisplay.tsx",
+            "line": 131,
+            "body": "**Offline banner text wrong for the `verifier-error` reason**\n\nThe banner unconditionally claims the verifier \"is not configured or unreachable\" and tells the user to set `LEAN_VERIFIER_URL`, which is inaccurate/misleading when the route returned `reason: \"verifier-error\"` (URL configured, verifier reachable but erroring).",
+            "created_at": null
+          },
+          {
+            "path": "app/lib/formalization/api.ts",
+            "line": 118,
+            "body": "**`reason`/`detail` from the route are never surfaced**\n\nThe route carefully distinguishes `verifier-not-configured` / `verifier-unreachable` / `verifier-error` (plus `detail`), but `verifyLean` drops both fields, so no caller can differentiate or display the cause; either propagate them or drop them from the response.",
+            "created_at": null
+          },
+          {
+            "path": "app/api/verification/lean/route.ts",
+            "line": 45,
+            "body": "**Verifier HTTP error responses are swallowed and reported as \"unavailable\"**\n\nAny non-2xx from the verifier (including a 4xx that rejects the submitted Lean code, or a 5xx that carries `errors` in the body) is now reported as `unavailable: true` with the body discarded, so a genuinely failing/rejected proof is presented to the user as \"not checked\" and all diagnostic output is lost.",
+            "created_at": null
+          },
+          {
+            "path": "app/lib/formalization/api.ts",
+            "line": 117,
+            "body": "**Route's `reason`/`detail` fields are never consumed**\n\nThe route returns a structured `reason` (\"verifier-not-configured\" | \"verifier-unreachable\" | \"verifier-error\") plus `detail`, but `verifyLean` drops both, so the UI can only show a hedged \"not configured or unreachable\" message and no debugging detail reaches the client \u2014 either propagate the fields or stop emitting them.",
+            "created_at": null
+          },
+          {
+            "path": "app/lib/formalization/api.ts",
+            "line": 118,
+            "body": "**Failures of the app's own API route still surface as \"Verification Failed\"**\n\n`verifyLean` never checks `res.ok`, so a 400 (\"leanCode is required\") or a 500/non-JSON response from `/api/verification/lean` yields `unavailable: false, valid: false` (or a thrown error caught as `invalid`), i.e. an unchecked proof is again labeled as a failed proof \u2014 the exact confusion this change targets.",
+            "created_at": null
+          },
+          {
+            "path": "app/lib/formalization/leanRetryLoop.ts",
+            "line": 71,
+            "body": "**Prior real verification errors are discarded when the verifier drops out mid-retry**\n\nIf attempts 1\u20132 produced genuine `errors` and attempt 3 hits an unavailable verifier, the loop returns `errors: \"\"` and calls `onErrors(\"\")`, so known-bad proof diagnostics are wiped and the UI reports \"proof not checked\" rather than the failures already observed.",
+            "created_at": null
+          },
+          {
+            "path": "app/api/verification/lean/route.ts",
+            "line": 45,
+            "body": "**Verifier error responses are swallowed, losing real diagnostics**\n\nAny non-2xx from the verifier (including 4xx like \"leanCode too large\" or a genuine build-service rejection) is now reported as `unavailable` with only `HTTP <status>`; the verifier's error body is discarded, so users see \"Verifier offline\" and an invitation to set `LEAN_VERIFIER_URL` even though the verifier is configured and reachable, and no actionable error text reaches the UI.",
+            "created_at": null
+          },
+          {
+            "path": "app/components/features/lean-display/LeanCodeDisplay.tsx",
+            "line": 133,
+            "body": "**Banner text contradicts some unavailable reasons**\n\nThe banner asserts the verifier \"is not configured or unreachable\" and tells the user to set `LEAN_VERIFIER_URL`, but the same status is produced for `verifier-error` (configured, reachable, returned HTTP error), making the guidance wrong in that case.",
+            "created_at": null
+          },
+          {
+            "path": "app/lib/formalization/api.ts",
+            "line": 118,
+            "body": "**`reason`/`detail` from the route are never consumed**\n\nThe route carefully distinguishes `verifier-not-configured` / `verifier-unreachable` / `verifier-error` and adds a `detail`, but `verifyLean` drops both fields, so the distinction is dead weight and the UI cannot show which failure occurred.",
+            "created_at": null
+          }
+        ]
+      }
+    ]
+  },
+  "https://local.invalid/meta-formalism-copilot/mfc-hygiene": {
+    "pr_title": "canon instance mfc-hygiene (f2f149b)",
+    "original_url": null,
+    "source_repo": "meta-formalism-copilot",
+    "golden_comments": [
+      {
+        "comment": "SSE protocol JSDoc documents {error - details} but emit site sends {error} only",
+        "severity": "Low",
+        "category": "doc_defect",
+        "canon_issue_id": "hyg-R1",
+        "mapping_provenance": "auto-mapped 2026-08-14, pending adjudication"
+      },
+      {
+        "comment": "invalid-JSON logging asymmetry: shared artifactRoute.ts:107 still logs 500-char preview after edit/artifact tightened",
+        "severity": "Low",
+        "category": "bug",
+        "canon_issue_id": "hyg-A1",
+        "mapping_provenance": "auto-mapped 2026-08-14, pending adjudication"
+      }
+    ],
+    "golden_source_file": "meta_formalism_copilot.json",
+    "az_comment": null,
+    "reviews": [
+      {
+        "tool": "e2",
+        "repo_name": "meta-formalism-copilot@f2f149b",
+        "pr_url": "https://local.invalid/meta-formalism-copilot/mfc-hygiene",
+        "review_comments": [
+          {
+            "path": "app/lib/llm/streamLlm.ts",
+            "line": 60,
+            "body": "**Stale SSE protocol doc for error event**\n\nThe JSDoc above `streamLlm` still documents `event: error \u2014 { error: \"message\", details: \"...\" }`, but the diff removed `details` from the emitted error payload (`sseEvent(\"error\", { error: message })`). The doc is now misleading for anyone implementing an SSE consumer.",
+            "created_at": null
+          },
+          {
+            "path": "app/lib/llm/streamLlm.ts",
+            "line": 158,
+            "body": "**`details` silently dropped from client-facing error SSE event**\n\nPreviously the `error` SSE event forwarded `details` (echoing provider error bodies) to the client; this diff removes it entirely from the outgoing event, not just from logs. Any existing frontend code reading `data.details` from the `error` SSE event will silently lose that information, and this is inconsistent with `app/api/edit/artifact/route.ts`, which still returns a `details` field to the (self-originating) caller for the same class of error.",
+            "created_at": null
+          }
+        ]
+      },
+      {
+        "tool": "e4-union",
+        "repo_name": "meta-formalism-copilot@f2f149b",
+        "pr_url": "https://local.invalid/meta-formalism-copilot/mfc-hygiene",
+        "review_comments": [
+          {
+            "path": "app/lib/llm/streamLlm.ts",
+            "line": 69,
+            "body": "**SSE protocol docblock still advertises `details` on error events**\n\nThe `streamLlm` JSDoc continues to document `event: error \u2014 { error: \"message\", details: \"...\" }`, but the catch block now emits only `{ error: message }`; any client written against this contract will read `undefined`.",
+            "created_at": null
+          },
+          {
+            "path": "app/lib/llm/streamLlm.ts",
+            "line": 25,
+            "body": "**`errorWithDetails` payload is now unreachable**\n\nWith `getErrorDetails` deleted, nothing in the process reads the attached `details` property, so the new comment's claim that it \"remains attached ... for any in-process consumer that opts in\" describes a consumer that does not exist; the OpenRouter error body is now silently discarded, removing the only diagnostic for non-2xx streaming failures.",
+            "created_at": null
+          },
+          {
+            "path": "app/lib/llm/callLlm.ts",
+            "line": 10,
+            "body": "**Exported `getAnthropicClient` renamed without compatibility alias**\n\nOnly `streamLlm.ts` is updated in this diff; any other importer (route handlers, existing tests, mocks referencing `getAnthropicClient`) would break at build time, and the rename is not noted anywhere as a breaking change.",
+            "created_at": null
+          },
+          {
+            "path": "app/api/edit/artifact/route.ts",
+            "line": 74,
+            "body": "**Comment's stated rationale conflicts with the adjacent response**\n\nThe comment argues `responseText` \"shouldn't end up in server logs\" because it derives from user source material, yet the very next statement returns a 500-char slice of it in the HTTP body, so the redaction is partial and the justification reads as stronger than the actual behavior.",
+            "created_at": null
+          },
+          {
+            "path": "app/lib/llm/streamLlm.ts",
+            "line": 66,
+            "body": "**`streamLlm` SSE contract still documents a `details` field**\n\nThe function-level JSDoc still advertises `event: error \u2014 { error: \"message\", details: \"...\" }`, but the catch block now emits only `{ error }`; clients following the doc will read an always-undefined field.",
+            "created_at": null
+          },
+          {
+            "path": "app/lib/llm/streamLlm.ts",
+            "line": 25,
+            "body": "**OpenRouter stream error bodies are now completely discarded**\n\n`errorWithDetails` still attaches `details`, but with `getErrorDetails` removed nothing logs or reads it anywhere, so a non-2xx OpenRouter response in the streaming path leaves only \"OpenRouter API error: <status>\" with no way to recover the provider message \u2014 the doc comment's claim about \"any in-process consumer that opts in\" describes a consumer that does not exist.",
+            "created_at": null
+          },
+          {
+            "path": "app/api/edit/artifact/route.ts",
+            "line": 77,
+            "body": "**Comment's privacy rationale contradicted two lines later**\n\nThe comment states `responseText` \"shouldn't end up in server logs\" because it derives from user material, yet the same handler still returns a 500-char slice in the response body; the stated protection is only partial and the comment reads as if the leak were closed.",
+            "created_at": null
+          },
+          {
+            "path": "app/lib/llm/callLlm.test.ts",
+            "line": 34,
+            "body": "**Test deletes API-key env vars without restoring them**\n\n`beforeEach` unconditionally `delete`s `ANTHROPIC_API_KEY`/`OPENROUTER_API_KEY` and never restores the originals, so other tests sharing the same worker process can observe an unexpectedly mock-only LLM configuration.",
+            "created_at": null
+          },
+          {
+            "path": "app/lib/llm/streamLlm.ts",
+            "line": 64,
+            "body": "**`streamLlm` JSDoc still documents the SSE contract as `event: error \u2014 { error: \"message\", details: \"...\" }`**\n\nThe catch block now emits only `{ error }`, so the module's own protocol documentation (and any client parsing `details` from the error event) is out of date with the code.",
+            "created_at": null
+          },
+          {
+            "path": "app/lib/llm/streamLlm.ts",
+            "line": 25,
+            "body": "**Provider error bodies in the streaming path are now dropped entirely**\n\n`errorWithDetails` still attaches `details` (OpenRouter's response body) but nothing reads it: it is neither logged nor sent over SSE, and no in-process consumer exists, so streaming OpenRouter failures (rate limits, model errors, bad payloads) are undiagnosable; the \"remains attached for any in-process consumer\" comment describes dead code.",
+            "created_at": null
+          },
+          {
+            "path": "app/api/edit/artifact/route.ts",
+            "line": 74,
+            "body": "**Privacy rationale in the new comment is inconsistent with the same handler's behavior**\n\nThe comment justifies stripping content from logs as sensitive, yet the response still returns `responseText.slice(0, 500)` and the `OpenRouterError` branch below still returns `err.details` to the caller, so the data is only hidden from operators, not from the wire.",
+            "created_at": null
+          },
+          {
+            "path": "app/lib/llm/callLlm.ts",
+            "line": 10,
+            "body": "**Exported `getAnthropicClient` renamed to `makeAnthropicClient`**\n\nOnly `streamLlm.ts` is updated in this diff; any other importer or test referencing the old exported name (it was public API) will fail to compile, and per-call construction also forgoes any client-level state/config reuse the SDK caches.",
+            "created_at": null
+          }
+        ]
+      }
+    ]
+  },
+  "https://local.invalid/meta-formalism-copilot/mfc-secdeps": {
+    "pr_title": "canon instance mfc-secdeps (8bde50c)",
+    "original_url": null,
+    "source_repo": "meta-formalism-copilot",
+    "golden_comments": [
+      {
+        "comment": "react/no-danger set to warn contradicts fail-loudly comment (warn exits 0)",
+        "severity": "Medium",
+        "category": "bug",
+        "canon_issue_id": "sec-R1",
+        "mapping_provenance": "auto-mapped 2026-08-14, pending adjudication"
+      },
+      {
+        "comment": "trust AST-selector gaps: string-quoted key / shorthand / computed keys bypass the guardrail",
+        "severity": "Medium",
+        "category": "security",
+        "canon_issue_id": "sec-A1",
+        "mapping_provenance": "auto-mapped 2026-08-14, pending adjudication"
+      },
+      {
+        "comment": "secdeps: no-restricted-imports misses require()/dynamic import() (sibling of sec-A1)",
+        "severity": "Medium",
+        "category": "security",
+        "canon_issue_id": "C2",
+        "mapping_provenance": "auto-mapped 2026-08-14, pending adjudication"
+      },
+      {
+        "comment": "secdeps: new npm-audit CI gate fails on this very branch (5 high production advisories) - commit message claims it lands green",
+        "severity": "High",
+        "category": "bug",
+        "canon_issue_id": "N2",
+        "mapping_provenance": "auto-mapped 2026-08-14, pending adjudication"
+      }
+    ],
+    "golden_source_file": "meta_formalism_copilot.json",
+    "az_comment": null,
+    "reviews": [
+      {
+        "tool": "e2",
+        "repo_name": "meta-formalism-copilot@8bde50c",
+        "pr_url": "https://local.invalid/meta-formalism-copilot/mfc-secdeps",
+        "review_comments": [
+          {
+            "path": "eslint.config.mjs",
+            "line": 55,
+            "body": "**react/no-danger set to \"warn\" contradicts \"fail loudly\" claim**\n\nThe block's comment states these rules are \"guardrails that fail loudly if a future change tries to weaken\" the XSS defenses, but `react/no-danger` is configured as `\"warn\"` rather than `\"error\"`. Unless the lint script treats warnings as failures, a future introduction of `dangerouslySetInnerHTML` would not actually fail CI, contradicting the stated intent.",
+            "created_at": null
+          },
+          {
+            "path": "eslint.config.mjs",
+            "line": 31,
+            "body": "**no-restricted-imports only catches static ES import of rehype-raw**\n\nThe `no-restricted-imports` rule targets `ImportDeclaration`s named `rehype-raw`; it will not flag `require('rehype-raw')` or dynamic `import('rehype-raw')`, leaving a gap in the \"defense-in-depth\" guardrail it claims to provide.",
+            "created_at": null
+          }
+        ]
+      },
+      {
+        "tool": "e4-union",
+        "repo_name": "meta-formalism-copilot@8bde50c",
+        "pr_url": "https://local.invalid/meta-formalism-copilot/mfc-secdeps",
+        "review_comments": [
+          {
+            "path": "eslint.config.mjs",
+            "line": 57,
+            "body": "**`react/no-danger` set to \"warn\" contradicts stated intent**\n\nThe block's comment says these rules \"fail loudly if a future change tries to weaken any of those\", but `react/no-danger` is only a warning, so introducing `dangerouslySetInnerHTML` will not fail `npm run lint`/CI unless lint runs with `--max-warnings=0`; either set it to \"error\" or fix the comment.",
+            "created_at": null
+          },
+          {
+            "path": "eslint.config.mjs",
+            "line": 47,
+            "body": "**`trust: true` selector is trivially bypassed**\n\n`Property[key.name='trust'][value.value=true]` only matches an identifier key with a literal `true`, so `{ \"trust\": true }`, `{ trust: !!1 }`, `{ trust: () => true }`, or `trust` supplied via a variable/spread all slip through, which undercuts the comment claiming the selector is \"broad enough\" to be a reliable guardrail.",
+            "created_at": null
+          },
+          {
+            "path": "eslint.config.mjs",
+            "line": 33,
+            "body": "**rehype-raw restriction misses subpaths and non-static imports**\n\n`paths: [{ name: \"rehype-raw\" }]` does not match `rehype-raw/lib/...`, `require(\"rehype-raw\")`, or dynamic `import()`; adding a `patterns: [\"rehype-raw\", \"rehype-raw/*\"]` entry would close the obvious gaps.",
+            "created_at": null
+          },
+          {
+            "path": ".github/workflows/ci.yml",
+            "line": 40,
+            "body": "**`npm audit` makes CI non-deterministic and duplicated**\n\nThe step hits the registry on every push/PR (and runs twice, once per Node matrix entry), so a newly published high-severity advisory in a prod dep breaks unrelated branches \u2014 the exact failure mode the comment claims to avoid by using `--audit-level=high`.",
+            "created_at": null
+          },
+          {
+            "path": "eslint.config.mjs",
+            "line": 57,
+            "body": "**`react/no-danger` set to \"warn\" contradicts the \"fail loudly\" intent**\n\nThe block comment says these rules \"fail loudly if a future change tries to weaken\" the XSS posture, but `react/no-danger` is `warn`, so a newly added `dangerouslySetInnerHTML` will pass `npm run lint` (no `--max-warnings=0` in CI) and land silently; use `\"error\"` for parity with the other two rules.",
+            "created_at": null
+          },
+          {
+            "path": "eslint.config.mjs",
+            "line": 47,
+            "body": "**`trust` selector is narrower than the comment claims**\n\n`Property[key.name='trust'][value.value=true]` misses the string-key form (`\"trust\": true`, where the key is on `key.value`) and, more importantly, misses KaTeX's function form (`trust: () => true`, `trust: ctx => ctx.command === '\\\\href'`) and any truthy non-literal (`trust: flag`), so the comment \"broad enough to catch `{ trust: true }` elsewhere too\" overstates the guardrail's coverage.",
+            "created_at": null
+          },
+          {
+            "path": "eslint.config.mjs",
+            "line": 33,
+            "body": "**rehype-raw restriction is easily bypassed**\n\n`no-restricted-imports` with `paths` only matches the exact specifier, so `import rehypeRaw from \"rehype-raw/lib/index.js\"`, `require(\"rehype-raw\")`, or a dynamic `import(\"rehype-raw\")` are not flagged; a `patterns: [\"rehype-raw\", \"rehype-raw/*\"]` entry (plus a `no-restricted-syntax`/require rule) would actually close the hole the comment claims to close.",
+            "created_at": null
+          },
+          {
+            "path": ".github/workflows/ci.yml",
+            "line": 39,
+            "body": "**audit step makes CI failures time- and network-dependent**\n\n`npm audit` is run once per matrix Node version and depends on the live registry, so unrelated PRs can fail (or flake) whenever a new high-severity advisory is published; consider a single non-matrix job or a scheduled workflow so functional CI stays deterministic.",
+            "created_at": null
+          },
+          {
+            "path": "eslint.config.mjs",
+            "line": 57,
+            "body": "**`react/no-danger` as \"warn\" does not enforce anything**\n\nThe block comment claims these rules \"fail loudly if a future change tries to weaken\" the XSS posture, but `warn` does not fail `npm run lint` (no `--max-warnings=0` in CI), so a newly introduced `dangerouslySetInnerHTML` would pass CI with only a warning; use `\"error\"` (or add `--max-warnings 0`).",
+            "created_at": null
+          },
+          {
+            "path": "eslint.config.mjs",
+            "line": 50,
+            "body": "**`trust: true` selector is easy to bypass unintentionally**\n\n`Property[key.name='trust'][value.value=true]` only matches identifier keys with a boolean literal; it silently misses `{ \"trust\": true }` (string key uses `key.value`), computed keys, `opts.trust = true` assignments, and truthy non-literals like `trust: 1` or `trust: someFlag` \u2014 consider adding `Property[key.value='trust'][value.value=true]` and an AssignmentExpression selector.",
+            "created_at": null
+          },
+          {
+            "path": "eslint.config.mjs",
+            "line": 33,
+            "body": "**rehype-raw ban has gaps**\n\n`paths` matches only the exact bare specifier, so `rehype-raw/lib/...` subpath imports, `require(\"rehype-raw\")`, and direct use of the underlying `hast-util-raw` are not blocked; adding a `patterns` entry (e.g. `rehype-raw*`, `hast-util-raw*`) would make the guardrail match its stated intent.",
+            "created_at": null
+          },
+          {
+            "path": ".github/workflows/ci.yml",
+            "line": 40,
+            "body": "**`--omit=dev` comment overstates coverage; step is duplicated across the matrix**\n\nIn a Next.js app many devDependencies are compiled/bundled into shipped client and server output, so \"only audit production deps (the ones that ship to users)\" is inaccurate; additionally the audit runs once per Node version (20 and 22) with identical results and depends on the live advisory DB, so it adds redundant network work and can fail CI on branches unrelated to the change.",
+            "created_at": null
+          }
+        ]
+      }
+    ]
+  },
+  "https://local.invalid/meta-formalism-copilot/mfc-deploy": {
+    "pr_title": "canon instance mfc-deploy (4329d6e)",
+    "original_url": null,
+    "source_repo": "meta-formalism-copilot",
+    "golden_comments": [
+      {
+        "comment": "CLAUDE.md:77 claims Vercel writes go to /tmp - refuted by persist.ts/cache.ts writing cwd()/data (EROFS swallowed)",
+        "severity": "Medium",
+        "category": "doc_defect",
+        "canon_issue_id": "dep-R1",
+        "mapping_provenance": "auto-mapped 2026-08-14, pending adjudication"
+      },
+      {
+        "comment": "README:120 does-not-persist claim has right conclusion wrong mechanism (writes silently fail on read-only fs)",
+        "severity": "Low",
+        "category": "doc_defect",
+        "canon_issue_id": "dep-R2",
+        "mapping_provenance": "auto-mapped 2026-08-14, pending adjudication"
+      },
+      {
+        "comment": "deploy: \"+ Factor\" during streaming persists a partial causal-graph snapshot (frozen preview / DetailsView TypeError)",
+        "severity": "Medium",
+        "category": "bug",
+        "canon_issue_id": "N6",
+        "mapping_provenance": "auto-mapped 2026-08-14, pending adjudication"
+      }
+    ],
+    "golden_source_file": "meta_formalism_copilot.json",
+    "az_comment": null,
+    "reviews": [
+      {
+        "tool": "e2",
+        "repo_name": "meta-formalism-copilot@4329d6e",
+        "pr_url": "https://local.invalid/meta-formalism-copilot/mfc-deploy",
+        "review_comments": [
+          {
+            "path": "README.md",
+            "line": 5,
+            "body": "**Deploy button hardcodes a specific GitHub account/repo**\n\nThe \"Deploy with Vercel\" URL hardcodes `repository-url=...aditya-adiga%2Fmeta-formalism-copilot`; if the canonical repo is renamed, transferred, or this doc is reused by a fork/downstream org, the button will silently point at the wrong source and break the \"self-hosted, run your own copy\" flow described in CLAUDE.md.",
+            "created_at": null
+          }
+        ]
+      },
+      {
+        "tool": "e4-union",
+        "repo_name": "meta-formalism-copilot@4329d6e",
+        "pr_url": "https://local.invalid/meta-formalism-copilot/mfc-deploy",
+        "review_comments": [
+          {
+            "path": "README.md",
+            "line": 103,
+            "body": "**`ANTHROPIC_API_KEY` listed as required but also described as replaceable by `OPENROUTER_API_KEY`**\n\nThe \"Required environment variable\" table and the optional table (\"fallback LLM provider when `ANTHROPIC_API_KEY` is unset\") contradict each other; state which is truly required and whether OpenRouter alone suffices.",
+            "created_at": null
+          },
+          {
+            "path": "README.md",
+            "line": 124,
+            "body": "**Vercel filesystem limitation understated for analytics**\n\nCLAUDE.md notes Vercel Functions can only write to `/tmp`, so an analytics/cache write to a repo-relative path would fail with a read-only-filesystem error rather than merely \"not persist\"; the README should say whether such writes error out (and whether they are caught) instead of implying benign non-persistence, and it omits the LLM cache limitation CLAUDE.md mentions.",
+            "created_at": null
+          },
+          {
+            "path": "README.md",
+            "line": 97,
+            "body": "**Deploy instructions omit that the deployment is publicly reachable with your key**\n\nThe new \"Deploy to Vercel\" section tells users to one-click deploy with their own `ANTHROPIC_API_KEY`, but never warns that the resulting Vercel URL has no authentication, so anyone who learns the URL can drive LLM calls (and file uploads) on the owner's key/budget. Given CLAUDE.md simultaneously asserts \"one trust boundary per deployment\", this omission is likely to mislead users into thinking the deployment is private.",
+            "created_at": null
+          },
+          {
+            "path": "README.md",
+            "line": 105,
+            "body": "**`ANTHROPIC_API_KEY` labelled required while OpenRouter is described as a substitute**\n\nThe table lists `ANTHROPIC_API_KEY` as the required var, but the optional table says `OPENROUTER_API_KEY` \"acts as a fallback LLM provider when `ANTHROPIC_API_KEY` is unset\", i.e. it can replace the \"required\" var; one of the two statements is wrong (or the precedence rule needs stating precisely) and the deploy-button `env=` param encodes the stricter claim.",
+            "created_at": null
+          },
+          {
+            "path": "README.md",
+            "line": 120,
+            "body": "**\"does not persist\" understates filesystem behavior on Vercel**\n\nOn Vercel, writes outside `/tmp` fail with a read-only-filesystem error rather than silently not persisting, so the analytics/LLM-cache paths may throw at runtime; the README (and the CLAUDE.md note) should say whether these writes error out, otherwise users will misdiagnose 500s as unrelated bugs.",
+            "created_at": null
+          },
+          {
+            "path": "README.md",
+            "line": 118,
+            "body": "**Vercel filesystem writes likely fail outright, not just fail to persist**\n\nThe docs say analytics history \"does not persist across Vercel function invocations\", but a Vercel Function's filesystem is read-only outside `/tmp`, so writes to a repo-relative log/cache path will throw (EROFS) rather than silently be ephemeral; if the analytics/LLM-cache write path isn't `/tmp`-aware this wording will mislead operators debugging 500s.",
+            "created_at": null
+          },
+          {
+            "path": "README.md",
+            "line": 56,
+            "body": "**Local dev instructions never mention setting `ANTHROPIC_API_KEY`**\n\nThe new Deploy section documents the required key for Vercel, but \"Prerequisites\"/\"Install and run\" still list only Node and Docker, so a user running `npm run dev` locally hits LLM failures with no documented `.env.local` step (which CLAUDE.md does reference).",
+            "created_at": null
+          }
+        ]
+      }
+    ]
+  },
+  "https://local.invalid/meta-formalism-copilot/mfc-fscompat": {
+    "pr_title": "canon instance mfc-fscompat (b64c1ca)",
+    "original_url": null,
+    "source_repo": "meta-formalism-copilot",
+    "golden_comments": [
+      {
+        "comment": "persist.ts:6-7 references a Deploy-to-Vercel README section that does not exist",
+        "severity": "Low",
+        "category": "doc_defect",
+        "canon_issue_id": "fsc-R1",
+        "mapping_provenance": "auto-mapped 2026-08-14, pending adjudication"
+      },
+      {
+        "comment": "docstring omits that /tmp is per-Function-instance - concurrent analytics divergence",
+        "severity": "Medium",
+        "category": "doc_defect",
+        "canon_issue_id": "fsc-A1",
+        "mapping_provenance": "auto-mapped 2026-08-14, pending adjudication"
+      },
+      {
+        "comment": "inconsistent rest-args vs join-at-callsite convention",
+        "severity": "Low",
+        "category": "style",
+        "canon_issue_id": "fsc-A2",
+        "mapping_provenance": "auto-mapped 2026-08-14, pending adjudication"
+      },
+      {
+        "comment": "cache hit-rate collapse on Vercel - cost impact",
+        "severity": "Medium",
+        "category": "perf",
+        "canon_issue_id": "fsc-A3",
+        "mapping_provenance": "auto-mapped 2026-08-14, pending adjudication"
+      },
+      {
+        "comment": "dataDir() deploy invariant untested",
+        "severity": "Medium",
+        "category": "test_gap",
+        "canon_issue_id": "fsc-A4",
+        "mapping_provenance": "auto-mapped 2026-08-14, pending adjudication"
+      },
+      {
+        "comment": "fscompat cacheKey stored inside the cache file + double-hashing (both states)",
+        "severity": "Low",
+        "category": "bug",
+        "canon_issue_id": "D6",
+        "mapping_provenance": "auto-mapped 2026-08-14, pending adjudication"
+      }
+    ],
+    "golden_source_file": "meta_formalism_copilot.json",
+    "az_comment": null,
+    "reviews": [
+      {
+        "tool": "e2",
+        "repo_name": "meta-formalism-copilot@b64c1ca",
+        "pr_url": "https://local.invalid/meta-formalism-copilot/mfc-fscompat",
+        "review_comments": []
+      },
+      {
+        "tool": "e4-union",
+        "repo_name": "meta-formalism-copilot@b64c1ca",
+        "pr_url": "https://local.invalid/meta-formalism-copilot/mfc-fscompat",
+        "review_comments": [
+          {
+            "path": "app/lib/utils/dataDir.ts",
+            "line": 13,
+            "body": "**Unbounded LLM cache growth in ephemeral `/tmp`**\n\nBefore this change cache writes on Vercel targeted a read-only path (so effectively no-ops/failures); now `setCachedResult` writes unbounded `.json` files into `/tmp/cache` with no size cap or eviction, which can exhaust the function's limited ephemeral disk (~512 MB) and cause subsequent write failures.",
+            "created_at": null
+          },
+          {
+            "path": "app/lib/analytics/persist.ts",
+            "line": 8,
+            "body": "**Analytics file placed at `/tmp` root instead of a namespaced subdirectory**\n\n`dataDir()` with no subpath returns bare `/tmp` on Vercel, so `analytics.jsonl` is written directly into the shared tmp namespace alongside anything else the runtime puts there; passing a subpath (e.g. `dataDir(\"analytics\")`) would keep the layout parallel to the local `data/` dir and avoid collisions.",
+            "created_at": null
+          },
+          {
+            "path": "app/lib/utils/dataDir.ts",
+            "line": 6,
+            "body": "**Doc claims writes go to \"the repo's `data/` dir\"**\n\nThe path is `process.cwd()/data`, which is not the repo root for standalone/packaged builds or when the server is started from another directory; the comment also references a \"Deploy to Vercel\" README section that this diff does not add.",
+            "created_at": null
+          },
+          {
+            "path": "app/lib/llm/cache.ts",
+            "line": 7,
+            "body": "**LLM cache now writes to size-limited ephemeral `/tmp` with no eviction**\n\nOn Vercel the cache dir becomes `/tmp`, which has a hard size cap (~512MB) shared with everything else in the function instance; `setCachedResult` never prunes or bounds entries, so long-lived warm containers can exhaust `/tmp` and start failing writes (or other `/tmp` users' writes) instead of just missing cache.",
+            "created_at": null
+          },
+          {
+            "path": "app/lib/analytics/persist.ts",
+            "line": 6,
+            "body": "**Comment understates the loss of analytics durability on Vercel**\n\n`/tmp` is per-instance, so analytics entries are also split and unreadable across *concurrent* function instances, not merely lost \"across cold starts\"; readers of `readAnalyticsEntries()` will see partial history even while warm, which the comment (and `dataDir`'s doc) does not convey.",
+            "created_at": null
+          },
+          {
+            "path": "app/lib/llm/cache.ts",
+            "line": 7,
+            "body": "**LLM cache now writes unbounded data to Vercel `/tmp`**\n\nPreviously cache writes on Vercel failed against the read-only `data/` path; now every miss persists a JSON file under `/tmp/cache` with no eviction or size cap, so long-lived warm containers can exhaust the ~512MB `/tmp` budget and cause subsequent write failures (including analytics appends, which share the same `/tmp`).",
+            "created_at": null
+          },
+          {
+            "path": "app/lib/analytics/persist.ts",
+            "line": 6,
+            "body": "**Comment understates Vercel analytics behavior**\n\nThe real failure mode is not just loss on cold start: concurrent Vercel containers each have their own `/tmp`, so reads of `analytics.jsonl` return divergent, partial histories depending on which instance serves the request; the comment should say results are per-instance and inconsistent, not merely non-durable.",
+            "created_at": null
+          },
+          {
+            "path": "app/lib/utils/dataDir.ts",
+            "line": 12,
+            "body": "**`dataDir()` joins arbitrary subpaths without containment check**\n\n`join` will happily resolve `..` segments out of the base directory; harmless today (only the literal `\"cache\"` is passed) but the helper is a general-purpose API and would allow traversal if ever called with request-derived input.",
+            "created_at": null
+          }
+        ]
+      }
+    ]
+  },
+  "https://local.invalid/meta-formalism-copilot/mfc-corpus": {
+    "pr_title": "canon instance mfc-corpus (2dc403e)",
+    "original_url": null,
+    "source_repo": "meta-formalism-copilot",
+    "golden_comments": [
+      {
+        "comment": "customTypeIds vs customArtifactTypeIds naming inconsistency",
+        "severity": "Low",
+        "category": "style",
+        "canon_issue_id": "cor-A1",
+        "mapping_provenance": "auto-mapped 2026-08-14, pending adjudication"
+      },
+      {
+        "comment": "storeAdapter state/ blob path bypasses the paths.ts choke point",
+        "severity": "Medium",
+        "category": "api",
+        "canon_issue_id": "cor-A2",
+        "mapping_provenance": "auto-mapped 2026-08-14, pending adjudication"
+      },
+      {
+        "comment": "stale comments (layout.ts ref in storeAdapter header; workspaceStore:44-46 ref)",
+        "severity": "Low",
+        "category": "doc_defect",
+        "canon_issue_id": "cor-A3",
+        "mapping_provenance": "auto-mapped 2026-08-14, pending adjudication"
+      },
+      {
+        "comment": "manifest codec docstring drift: silent createdAt/updatedAt defaults vs never-silent-default claim; phantom browser-storage-cleared",
+        "severity": "Medium",
+        "category": "doc_defect",
+        "canon_issue_id": "cor-A4",
+        "mapping_provenance": "auto-mapped 2026-08-14, pending adjudication"
+      },
+      {
+        "comment": "corpus: process.env?.NEXT_PUBLIC_CORPUS_FS optional chaining likely breaks Next build-time inlining (flag.ts)",
+        "severity": "High",
+        "category": "bug",
+        "canon_issue_id": "C3",
+        "mapping_provenance": "auto-mapped 2026-08-14, pending adjudication"
+      }
+    ],
+    "golden_source_file": "meta_formalism_copilot.json",
+    "az_comment": null,
+    "reviews": [
+      {
+        "tool": "e2",
+        "repo_name": "meta-formalism-copilot@2dc403e",
+        "pr_url": "https://local.invalid/meta-formalism-copilot/mfc-corpus",
+        "review_comments": [
+          {
+            "path": "app/lib/corpus/flag.ts",
+            "line": 16,
+            "body": "**NEXT_PUBLIC_ env check uses optional chaining, risking broken build-time inlining**\n\n`process.env?.NEXT_PUBLIC_CORPUS_FS === \"1\"` uses optional chaining on `process.env`; Next.js's webpack `NEXT_PUBLIC_*` inlining relies on matching the literal `process.env.NEXT_PUBLIC_X` member-expression pattern, and this documented enablement path (`NEXT_PUBLIC_CORPUS_FS=1`) may silently fail to be replaced at build time, leaving the env-based toggle non-functional in production bundles.",
+            "created_at": null
+          },
+          {
+            "path": "app/lib/corpus/manifest.ts",
+            "line": 87,
+            "body": "**Manifest parser silently drops malformed array entries instead of failing loud**\n\n`parseManifest` filters `sources`/`artifacts` with `.filter(isObject)` and `customTypeIds` with `.filter(x => typeof x === \"string\")` before validating required fields \u2014 non-object/non-string entries are silently discarded rather than triggering `fail()`, contradicting the file's own stated \"FAIL-LOUD\" contract (and the codec-contract docstring) that malformed manifest data must never be silently dropped/defaulted, since that would mask data loss.",
+            "created_at": null
+          },
+          {
+            "path": "app/lib/corpus/types.ts",
+            "line": 37,
+            "body": "**`\"not-found\"` error kind is defined but never produced by any implementation**\n\n`CorpusErrorKind` includes `{ kind: \"not-found\"; path: string }`, but `opfsAdapter.ts` (and the in-memory fake) return `null` for missing files/stats rather than throwing this kind anywhere in this diff \u2014 any exhaustive consumer switch must handle a variant that can never actually occur from the shipped implementations, which is misleading documentation-by-type.",
+            "created_at": null
+          }
+        ]
+      },
+      {
+        "tool": "e4-union",
+        "repo_name": "meta-formalism-copilot@2dc403e",
+        "pr_url": "https://local.invalid/meta-formalism-copilot/mfc-corpus",
+        "review_comments": [
+          {
+            "path": "app/lib/corpus/storeAdapter.ts",
+            "line": 50,
+            "body": "**Corpus-backed storage drops debouncing and write serialization**\n\nUnlike `createDebouncedLocalStorage`, the CorpusFS-backed `setItem` writes the whole persist blob on *every* `set()` (i.e. every keystroke) with no debounce and no queue, so overlapping async `writeFile` calls to the same OPFS file race; OPFS `createWritable()` takes an exclusive lock, so concurrent writes will reject with `NoModificationAllowedError` (mapped to `{kind:\"io\"}`) and/or land out of order, silently losing state.",
+            "created_at": null
+          },
+          {
+            "path": "app/lib/corpus/storeAdapter.ts",
+            "line": 56,
+            "body": "**Typed CorpusErrors at the store seam become unhandled promise rejections**\n\n`getItem`/`setItem`/`removeItem` propagate `CorpusError` (quota, unavailable, io) but zustand's persist does not await/handle `setItem`, so a quota failure on the corpus path surfaces as an unhandled rejection with no UI and no log \u2014 a *more* silent degradation than the `console.warn` the module's own header criticizes.",
+            "created_at": null
+          },
+          {
+            "path": "app/lib/corpus/flag.ts",
+            "line": 15,
+            "body": "**\"Dev-only\" flag has no dev guard**\n\nThe doc comment and CLAUDE.md both state the flag is \"DEV-ONLY\", but `isCorpusEnabled()` honors `NEXT_PUBLIC_CORPUS_FS=1` in production builds and the `corpus-fs-enabled` localStorage key in any browser; given enabling it means starting from an empty corpus with no migration, the missing `process.env.NODE_ENV !== \"production\"` check makes the claim misleading and the footgun real.",
+            "created_at": null
+          },
+          {
+            "path": "app/lib/corpus/manifest.ts",
+            "line": 88,
+            "body": "**Fail-loud manifest codec silently drops malformed array entries**\n\n`raw.sources.filter(isObject)`, `raw.artifacts.filter(isObject)` and `customTypeIds.filter(typeof x === \"string\")` discard non-conforming entries instead of failing, so a partially corrupted `workspace.json` parses \"successfully\" with fewer sources/artifacts \u2014 exactly the \"masquerades as no work / masks data loss\" outcome the header says parsing must prevent. `createdAt`/`updatedAt` are likewise silently defaulted to `now`.",
+            "created_at": null
+          },
+          {
+            "path": "app/lib/corpus/paths.ts",
+            "line": 35,
+            "body": "**Slug sanitization can collide distinct workspace titles**\n\n`workspaceSlug` collapses unsafe runs and lowercases, so \"a/b\", \"a-b\" and \"A B\" all map to `a-b`, and there is no collision/uniqueness handling at the only sanctioned source of workspace paths \u2014 two workspaces would silently share one folder in S4.",
+            "created_at": null
+          },
+          {
+            "path": "app/lib/corpus/opfsAdapter.ts",
+            "line": 117,
+            "body": "**Comment claims a copy that the code does not make**\n\nThe comment \"Pass a fresh ArrayBuffer view; some implementations dislike shared buffers\" sits above `await w.write(bytes)`, which passes the caller's array directly \u2014 either copy the bytes or delete the comment.",
+            "created_at": null
+          },
+          {
+            "path": "app/lib/corpus/opfsAdapter.ts",
+            "line": 110,
+            "body": "**`finally { await w.close() }` can mask the quota error it is supposed to reify**\n\nReal OPFS surfaces quota failures on `write()`/`close()`; if `write()` rejects, the unconditional `await w.close()` in `finally` will typically reject too (errored/closed stream) and that second error replaces the original, so the failure is mapped to `{kind:\"io\"}` instead of `{kind:\"quota-exceeded\"}`. The G7 test only stubs `createWritable()` throwing, so this realistic path is untested \u2014 consider `abort()`/try-catching the close and preserving the first error.",
+            "created_at": null
+          },
+          {
+            "path": "app/lib/corpus/storeAdapter.ts",
+            "line": 52,
+            "body": "**Corpus-backed storage drops the 300ms debounce and serialization of writes**\n\nThe localStorage path deliberately debounces \"to avoid JSON.stringify on every keystroke\", but `createCorpusBackedStorage` writes the whole persist blob to OPFS on every `set()` with no debounce and no write queue, so overlapping `createWritable()` calls on the same file can interleave (out-of-order last-write, or `NoModificationAllowedError`) and every keystroke triggers a full serialize+write.",
+            "created_at": null
+          },
+          {
+            "path": "app/lib/corpus/flag.ts",
+            "line": 16,
+            "body": "**`process.env?.NEXT_PUBLIC_CORPUS_FS` may not be statically inlined in client bundles**\n\nNext.js replaces the literal member expression `process.env.NEXT_PUBLIC_X`; writing it with optional chaining risks the substitution not matching, leaving `process.env` undefined in the browser and making the documented `NEXT_PUBLIC_CORPUS_FS=1` enable path silently inert (only the localStorage path would work).",
+            "created_at": null
+          },
+          {
+            "path": "app/lib/corpus/manifest.ts",
+            "line": 83,
+            "body": "**Fail-loud contract is violated for malformed array entries**\n\n`raw.sources.filter(isObject)` and `customTypeIds.filter(typeof === \"string\")` silently discard non-object/non-string entries, and `createdAt`/`updatedAt` silently default to `now`, which is exactly the \"silent partial default that masks data loss\" the file header and G11 claim to forbid.",
+            "created_at": null
+          },
+          {
+            "path": "app/lib/corpus/__tests__/inMemoryCorpusFs.ts",
+            "line": 29,
+            "body": "**Fake and OPFS diverge on empty directories, weakening the LSP claim**\n\nDirectories are implicit in the fake, so after `rm` of the last file in a dir the parent `readdir` no longer lists it, whereas OPFS keeps the now-empty directory entry; the shared contract suite doesn't cover this, so a consumer relying on `readdir` semantics can pass in CI and fail against real OPFS.",
+            "created_at": null
+          },
+          {
+            "path": "app/lib/corpus/storeAdapter.ts",
+            "line": 53,
+            "body": "**Corpus-backed storage has no debounce and no write serialization**\n\nUnlike the localStorage adapter (300ms debounce), `createCorpusBackedStorage` issues an OPFS `writeFile` on every zustand `setItem` (i.e. every keystroke-driven state change), and because the writes are async and unserialized, two overlapping `createWritable/write/close` cycles can complete out of order and persist a stale blob.",
+            "created_at": null
+          },
+          {
+            "path": "app/lib/corpus/flag.ts",
+            "line": 15,
+            "body": "**Flag is documented \"DEV-ONLY\" but nothing enforces it**\n\n`isCorpusEnabled()` returns true whenever `NEXT_PUBLIC_CORPUS_FS=1`, including in a production build; since S1 ships no migration, a deploy with that env var set silently starts users from an empty corpus and abandons their localStorage work. Add a `process.env.NODE_ENV !== \"production\"` guard to match the documented contract.",
+            "created_at": null
+          },
+          {
+            "path": "app/lib/corpus/opfsAdapter.ts",
+            "line": 45,
+            "body": "**Quota detection depends on `instanceof DOMException`**\n\nPer the newer WHATWG spec `QuotaExceededError` is its own `Error` subclass rather than a `DOMException`, so on browsers shipping that change a real OPFS quota failure would be misclassified as `{kind:\"io\"}`; matching on `name` (with a duck-typed check) is more robust, and the unit test's hand-built `DOMException` hides this.",
+            "created_at": null
+          },
+          {
+            "path": "app/lib/corpus/manifest.ts",
+            "line": 86,
+            "body": "**\"Fail-loud\" parser silently drops malformed array entries**\n\n`raw.sources.filter(isObject)`, `raw.artifacts.filter(isObject)` and `customTypeIds.filter(typeof x === \"string\")` discard non-conforming entries without error, so a partially corrupted manifest parses \"successfully\" with fewer sources/artifacts \u2014 exactly the silent data-loss masking the header claims to prevent.",
+            "created_at": null
+          },
+          {
+            "path": "app/lib/corpus/opfsAdapter.ts",
+            "line": 112,
+            "body": "**`close()` in `finally` can mask the original write error**\n\nIf `w.write(bytes)` rejects (e.g. quota) and the subsequent `await w.close()` also throws, the close error replaces the write error, so the failure is reified as `{kind:\"io\"}` instead of `quota-exceeded`.",
+            "created_at": null
+          }
+        ]
+      }
+    ]
+  },
+  "https://local.invalid/meta-formalism-copilot/mfc-postfix": {
+    "pr_title": "canon instance mfc-postfix (7f30210)",
+    "original_url": null,
+    "source_repo": "meta-formalism-copilot",
+    "golden_comments": [
+      {
+        "comment": "mergeStreamingPreview<T> types partial-JSON parses as complete T; between contract disagrees 3 ways; partial-field crash latent in 3 panels",
+        "severity": "High",
+        "category": "bug",
+        "canon_issue_id": "pf-R1",
+        "mapping_provenance": "auto-mapped 2026-08-14, pending adjudication"
+      },
+      {
+        "comment": "allowUnsafeEval defaults fail-open: NODE_ENV != production grants unsafe-eval to test/staging/custom envs",
+        "severity": "High",
+        "category": "security",
+        "canon_issue_id": "pf-A1",
+        "mapping_provenance": "auto-mapped 2026-08-14, pending adjudication"
+      },
+      {
+        "comment": "default buildCsp call path untested (tests pin both explicit arms; production runs the default)",
+        "severity": "Medium",
+        "category": "test_gap",
+        "canon_issue_id": "pf-A2",
+        "mapping_provenance": "auto-mapped 2026-08-14, pending adjudication"
+      },
+      {
+        "comment": "eval policy caller-selectable: exported allowUnsafeEval param means dev-only is enforced by there being one call site",
+        "severity": "Medium",
+        "category": "api",
+        "canon_issue_id": "pf-A3",
+        "mapping_provenance": "auto-mapped 2026-08-14, pending adjudication"
+      },
+      {
+        "comment": "process.env.NODE_ENV read in a default parameter - ambient state in a previously pure formatter",
+        "severity": "Low",
+        "category": "bug",
+        "canon_issue_id": "pf-A4",
+        "mapping_provenance": "auto-mapped 2026-08-14, pending adjudication"
+      },
+      {
+        "comment": "data.results used without truncation; misbehaving OpenAlex per_page turns Math.max(...allWorks) into a RangeError cliff",
+        "severity": "Medium",
+        "category": "bug",
+        "canon_issue_id": "pf-A5",
+        "mapping_provenance": "auto-mapped 2026-08-14, pending adjudication"
+      },
+      {
+        "comment": "guard tests array presence not element presence: one-element between renders a dangling A-to row",
+        "severity": "Medium",
+        "category": "bug",
+        "canon_issue_id": "pf-A6",
+        "mapping_provenance": "auto-mapped 2026-08-14, pending adjudication"
+      },
+      {
+        "comment": "connect-src docstring enumeration omits the DD-009 corpus git worker (drifts silently when S4/S5 ships)",
+        "severity": "Low",
+        "category": "doc_defect",
+        "canon_issue_id": "pf-A7",
+        "mapping_provenance": "auto-mapped 2026-08-14, pending adjudication"
+      },
+      {
+        "comment": "comment-accuracy residue: dropped parity claim survives at evidenceStore.ts:17; optional-chaining mischaracterization",
+        "severity": "Low",
+        "category": "doc_defect",
+        "canon_issue_id": "pf-A8",
+        "mapping_provenance": "auto-mapped 2026-08-14, pending adjudication"
+      }
+    ],
+    "golden_source_file": "meta_formalism_copilot.json",
+    "az_comment": null,
+    "reviews": [
+      {
+        "tool": "e2",
+        "repo_name": "meta-formalism-copilot@7f30210",
+        "pr_url": "https://local.invalid/meta-formalism-copilot/mfc-postfix",
+        "review_comments": [
+          {
+            "path": "proxy.ts",
+            "line": 26,
+            "body": "**Fail-open default for CSP `unsafe-eval`**\n\n`allowUnsafeEval` defaults to `process.env.NODE_ENV !== \"production\"`, so any misconfigured or non-standard deployment where `NODE_ENV` isn't exactly `\"production\"` (unset, `\"staging\"`, custom build scripts, etc.) silently weakens the CSP by adding `'unsafe-eval'` in production. A security-relevant default should fail closed (default to the strict policy) rather than fail open based on an easily-misconfigured env var.",
+            "created_at": null
+          },
+          {
+            "path": "app/api/evidence-search/route.ts",
+            "line": 177,
+            "body": "**Comment references undefined constant**\n\nThe updated comment cites `MAX_OVERRIDE_QUERIES (5)` and \"\u22643 queries\" for the LLM path, but neither `MAX_OVERRIDE_QUERIES` nor a cap of 3 is defined or visible in this file (the LLM path slices to 3, but the override cap isn't declared here), making the safety justification unverifiable/misleading to a reader of this file alone.",
+            "created_at": null
+          }
+        ]
+      },
+      {
+        "tool": "e4-union",
+        "repo_name": "meta-formalism-copilot@7f30210",
+        "pr_url": "https://local.invalid/meta-formalism-copilot/mfc-postfix",
+        "review_comments": [
+          {
+            "path": "proxy.ts",
+            "line": 26,
+            "body": "**CSP `unsafe-eval` default fails open when NODE_ENV is not exactly \"production\"**\n\n`allowUnsafeEval` defaults to `process.env.NODE_ENV !== \"production\"`, so any deployment where NODE_ENV is unset or set to something else (e.g. \"prod\", custom server, edge runtime without inlining) silently ships `script-src ... 'unsafe-eval'`; a fail-closed default (explicit opt-in, e.g. `NODE_ENV === \"development\"`) plus a test pinning the no-arg/default behaviour would prevent the relaxation from reaching production unnoticed.",
+            "created_at": null
+          },
+          {
+            "path": "app/components/panels/BalancedPerspectivesPanel.tsx",
+            "line": 113,
+            "body": "**Truthiness guard still renders a bare \"\u2194\" row for partially streamed `between`**\n\n`t.between && ...` passes for `[]` or `[\"A\"]` mid-stream, producing an empty or one-sided arrow row; guarding on `t.between?.length === 2` (or on both endpoints) would avoid the half-rendered artifact, and the new test only covers the fully-absent case.",
+            "created_at": null
+          },
+          {
+            "path": "proxy.ts",
+            "line": 27,
+            "body": "**CSP `'unsafe-eval'` fail-open for any non-production NODE_ENV**\n\nThe default is `process.env.NODE_ENV !== \"production\"`, so any deployment where NODE_ENV is unset, `\"staging\"`, or `\"test\"` silently ships `script-src ... 'unsafe-eval'`; an explicit `=== \"development\"` check would fail closed instead.",
+            "created_at": null
+          },
+          {
+            "path": "proxy.test.ts",
+            "line": 12,
+            "body": "**Default-argument behaviour of buildCsp is now untested**\n\nPinning `buildCsp(NONCE, false)` makes the \"no eval in production\" assertion independent of the default, so an inverted/relaxed default (e.g. always allowing eval) would no longer fail any test; consider an added case asserting the production default with NODE_ENV stubbed to \"production\".",
+            "created_at": null
+          },
+          {
+            "path": "app/components/panels/BalancedPerspectivesPanel.tsx",
+            "line": 113,
+            "body": "**Truthiness guard still renders a bare \"\u2194\" for partially streamed tuples**\n\n`t.between && ...` protects against `undefined`, but `between: []` or `[\"A\"]` (common mid-stream partial JSON) still renders the arrow with empty endpoint spans; a length check would cover the full streaming case the test documents.",
+            "created_at": null
+          },
+          {
+            "path": "proxy.ts",
+            "line": 26,
+            "body": "**`'unsafe-eval'` enabled for any non-\"production\" NODE_ENV**\n\nThe default `allowUnsafeEval = process.env.NODE_ENV !== \"production\"` also fires when NODE_ENV is unset, \"staging\", or a custom value, so a self-hosted/custom-server deployment that forgets to set NODE_ENV silently ships a CSP with `'unsafe-eval'`; an explicit opt-in (e.g. `NODE_ENV === \"development\"`) would fail closed instead.",
+            "created_at": null
+          },
+          {
+            "path": "app/components/panels/BalancedPerspectivesPanel.test.tsx",
+            "line": 1,
+            "body": "**Regression test may be vacuous because `CollapsibleSection` is not mocked**\n\nThe tensions block is rendered inside `<CollapsibleSection defaultOpen={false}>`; if that component renders children only when open, both assertions (`getByText('A')`, `getByText('Half-streamed tension')`) exercise nothing and the \"does not crash\" guarantee is not actually tested \u2014 mock it or open it explicitly as the other children are mocked.",
+            "created_at": null
+          },
+          {
+            "path": "app/lib/stores/evidenceStore.ts",
+            "line": 8,
+            "body": "**Doc de-referencing workspaceStore is only half applied**\n\nThe header comment was changed to drop the \"same debounced write pattern as workspaceStore\" claim, but the section header a few lines below still reads \"Debounced localStorage adapter (same pattern as workspaceStore)\", leaving the stale reference the diff intended to remove.",
+            "created_at": null
+          }
+        ]
+      }
+    ]
+  }
+}
