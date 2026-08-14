@@ -1,0 +1,44 @@
+issue ID,issue summary,repo,commit ID,Pipeline raised,E2 raised,E4 raised,fix status (including commit ID if fixed)
+csp-R1,connect-src 'self' blocks the data:/blob fetch in exportGraph.ts - PNG export breaks,meta-formalism-copilot,d90d6bb,yes (historical label; fresh-rerun recovery config-dependent),no,no (cross-file),fixed 4f018ab (toBlob)
+csp-R2,proxy.ts:35-36 comment claims Edge runtime; middleware defaults to Node.js,meta-formalism-copilot,d90d6bb,yes,no,no (in-diff miss),fixed in review-fix chain (commit unrecorded)
+csp-A1,CSP set on response only - never on forwarded request headers so Next.js cannot extract the nonce (dead x-nonce plumbing),meta-formalism-copilot,d90d6bb,yes,yes,yes (3/3),fixed in review-fix chain (commit unrecorded)
+csp-A2,style-src 'unsafe-inline' misattributed to Tailwind v4,meta-formalism-copilot,d90d6bb,yes,no,no,fixed in review-fix chain (commit unrecorded)
+csp-A3,layout.tsx:27-30 comment misstates why await headers() is needed,meta-formalism-copilot,d90d6bb,yes,no,yes (3/3),fixed in review-fix chain (commit unrecorded)
+csp-A4,no tests pin the CSP directive list,meta-formalism-copilot,d90d6bb,yes,no,no (test-strategy class),unknown/open
+lean-R1,README/ARCHITECTURE docs stale (removed mock-pass fallback / localhost default still documented),meta-formalism-copilot,c95c9cb,yes,no,no (cross-file),open at scoring time
+lean-R2,non-2xx verifier response masked as unavailable - upstream body discarded,meta-formalism-copilot,c95c9cb,yes,yes,yes (3/3),fix pending in post-c95c9cb commit
+lean-A1,verifyLean() client drops the route's typed reason/detail fields,meta-formalism-copilot,c95c9cb,yes,yes,yes (3/3),unknown/open
+hyg-R1,SSE protocol JSDoc documents {error - details} but emit site sends {error} only,meta-formalism-copilot,f2f149b,yes,yes,yes (3/3),unknown/open (still stale at f2f149b)
+hyg-A1,invalid-JSON logging asymmetry: shared artifactRoute.ts:107 still logs 500-char preview after edit/artifact tightened,meta-formalism-copilot,f2f149b,yes,no,no (cross-file),unknown/open
+sec-R1,react/no-danger set to warn contradicts fail-loudly comment (warn exits 0),meta-formalism-copilot,8bde50c,yes,yes,yes (3/3),unknown/open
+sec-A1,trust AST-selector gaps: string-quoted key / shorthand / computed keys bypass the guardrail,meta-formalism-copilot,8bde50c,yes,partial (sibling class only),yes (3/3 as-worded),unknown/open
+dep-R1,CLAUDE.md:77 claims Vercel writes go to /tmp - refuted by persist.ts/cache.ts writing cwd()/data (EROFS swallowed),meta-formalism-copilot,4329d6e,yes,no,near-hit (mechanism named; CLAUDE.md not itself flagged),unknown/open
+dep-R2,README:120 does-not-persist claim has right conclusion wrong mechanism (writes silently fail on read-only fs),meta-formalism-copilot,4329d6e,yes,no,yes (3/3),fixed in review-fix chain (README:120 rewritten; commit unrecorded)
+fsc-R1,persist.ts:6-7 references a Deploy-to-Vercel README section that does not exist,meta-formalism-copilot,b64c1ca,yes,no,yes (1/3 union-only),open at scoring time
+fsc-A1,docstring omits that /tmp is per-Function-instance - concurrent analytics divergence,meta-formalism-copilot,b64c1ca,yes,no,yes (2/3),unknown/open
+fsc-A2,inconsistent rest-args vs join-at-callsite convention,meta-formalism-copilot,b64c1ca,yes,no,no (convention survey class),fixed in review-fix chain (rest-args dropped; commit unrecorded)
+fsc-A3,cache hit-rate collapse on Vercel - cost impact,meta-formalism-copilot,b64c1ca,yes,no,no (deployment-model reasoning),unknown/open
+fsc-A4,dataDir() deploy invariant untested,meta-formalism-copilot,b64c1ca,yes,no,no (test-strategy class),unknown/open
+cor-A1,customTypeIds vs customArtifactTypeIds naming inconsistency,meta-formalism-copilot,2dc403e,yes,no,no (enumeration class),fixed 4de2b00
+cor-A2,storeAdapter state/ blob path bypasses the paths.ts choke point,meta-formalism-copilot,2dc403e,yes,no,no (enumeration class),fixed 4de2b00
+cor-A3,stale comments (layout.ts ref in storeAdapter header; workspaceStore:44-46 ref),meta-formalism-copilot,2dc403e,yes,no,yes (raw output of 2/3 reps; parse-dropped),fixed 4de2b00
+cor-A4,manifest codec docstring drift: silent createdAt/updatedAt defaults vs never-silent-default claim; phantom browser-storage-cleared,meta-formalism-copilot,2dc403e,yes,yes,yes (3/3),fixed 4de2b00
+pf-R1,mergeStreamingPreview<T> types partial-JSON parses as complete T; between contract disagrees 3 ways; partial-field crash latent in 3 panels,meta-formalism-copilot,7f30210,yes (ground-truth run),no,not run,unresolved at review (follow-up outside range: DeepPartial + schema minItems/maxItems)
+pf-A1,allowUnsafeEval defaults fail-open: NODE_ENV != production grants unsafe-eval to test/staging/custom envs,meta-formalism-copilot,7f30210,yes (ground-truth run),yes,not run,open at review (2026-08-06)
+pf-A2,default buildCsp call path untested (tests pin both explicit arms; production runs the default),meta-formalism-copilot,7f30210,yes (ground-truth run),no,not run,open at review (2026-08-06)
+pf-A3,eval policy caller-selectable: exported allowUnsafeEval param means dev-only is enforced by there being one call site,meta-formalism-copilot,7f30210,yes (ground-truth run),no,not run,open at review (2026-08-06)
+pf-A4,process.env.NODE_ENV read in a default parameter - ambient state in a previously pure formatter,meta-formalism-copilot,7f30210,yes (ground-truth run),no,not run,open at review (2026-08-06)
+pf-A5,data.results used without truncation; misbehaving OpenAlex per_page turns Math.max(...allWorks) into a RangeError cliff,meta-formalism-copilot,7f30210,yes (ground-truth run),no,not run,open at review (2026-08-06)
+pf-A6,guard tests array presence not element presence: one-element between renders a dangling A-to row,meta-formalism-copilot,7f30210,yes (ground-truth run),no,not run,open at review (2026-08-06)
+pf-A7,connect-src docstring enumeration omits the DD-009 corpus git worker (drifts silently when S4/S5 ships),meta-formalism-copilot,7f30210,yes (ground-truth run),no,not run,open at review (2026-08-06)
+pf-A8,comment-accuracy residue: dropped parity claim survives at evidenceStore.ts:17; optional-chaining mischaracterization,meta-formalism-copilot,7f30210,yes (ground-truth run),no,not run,open at review (2026-08-06)
+C1,csp: no dev-mode unsafe-eval relaxation - dev breaks under the new CSP,meta-formalism-copilot,d90d6bb,no (at d90d6bb; pipeline later reviewed the fix in the postfix range),yes,yes (3/3),fixed 2e23824
+C2,secdeps: no-restricted-imports misses require()/dynamic import() (sibling of sec-A1),meta-formalism-copilot,8bde50c,no,yes (near-miss appended),yes (3/3),candidate label; open
+C3,corpus: process.env?.NEXT_PUBLIC_CORPUS_FS optional chaining likely breaks Next build-time inlining (flag.ts),meta-formalism-copilot,2dc403e,no (survived review-fix 4de2b00),yes,yes (1/3),live at HEAD (2026-08-13); pending runtime adjudication
+C4,csp: middleware matcher lookahead is prefix-based not segment-based (api-foo / favicon.ico.png slip through) - contradicts rubric Confirmed-Good row,meta-formalism-copilot,d90d6bb,no,no,yes (2/3),fixed ab4dbdb
+D1,csp fix's test guard regex is vacuous - /\bhttp:\b/ can never match (proved by execution),meta-formalism-copilot,4f018ab,yes (E1 fresh re-run: csp-clean R1),n/a (out of reviewed range),n/a (out of reviewed range),live at HEAD (2026-08-13)
+D2,corpus fix's production hard-refuse fails open: typeof process gating asymmetric vs ungated localStorage enable path,meta-formalism-copilot,4de2b00,yes (E1 fresh re-run: corpus-clean R2),n/a (out of reviewed range),n/a (out of reviewed range),live at HEAD (2026-08-13)
+D3,rehydration seam bypass: legacy migrateFromV2() re-fires over corpus state on every load - ungated by isCorpusEnabled (existed in dirty state too),meta-formalism-copilot,4de2b00,yes (E1 fresh re-run: corpus-clean R1; dirty pass missed it),no,yes (raw output of 2/3 reps; parse-dropped),live at HEAD (2026-08-13)
+D4,false fresh-ArrayBuffer-view comment above a plain w.write(bytes) (both corpus states),meta-formalism-copilot,4de2b00,yes (E1 fresh re-run; 3/3 both states),no,yes (1/3),live at HEAD (2026-08-13)
+D5,OPFS write race - un-serialized/un-debounced write seam,meta-formalism-copilot,4de2b00,yes (E1 fresh re-run),no,probable (debounce/serialization finding 3/3 targets same seam; same-issue match unadjudicated),live at HEAD (2026-08-13)
+D6,fscompat cacheKey stored inside the cache file + double-hashing (both states),meta-formalism-copilot,b64c1ca,yes (E1 fresh re-run),no,no,live at HEAD (2026-08-13)
