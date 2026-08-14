@@ -157,11 +157,11 @@ counted as a miss).
 
 | Process | Findable | Found | Recall | Missed |
 |---|---|---|---|---|
-| Full pipeline **as operated** (historical loops + postfix ground-truth run) | 43 | 33 | **77%** | C1–C4 (headless-only finds; C4 filed Confirmed Good) + D1–D6 (own-fix defects and dirty-state issues the loops never surfaced — "the historical loops never re-reviewed their own fixes with fresh eyes", E1) |
+| Full pipeline **as operated** (historical loops + postfix ground-truth run; ~$14.60/instance ≈ **$116.80 per 8-instance sweep** — the sweep-total comparable to the arms' sweep costs) | 43 | 33 | **77%** | C1–C4 (headless-only finds; C4 filed Confirmed Good) + D1–D6 (own-fix defects and dirty-state issues the loops never surfaced — "the historical loops never re-reviewed their own fixes with fresh eyes", E1) |
 | Full pipeline **incl. E1 fresh re-runs** (same process, re-run as an experiment) | 43 | 39 | **91%** | C1–C4 — still invisible to every pipeline pass at any vintage |
 | E4 opus-k3 union (~$0.69/instance) | 41 (D1/D2 outside its ranges) | 20 firm + D3 (raw-only, parse-dropped) + D5 (probable-same, unadjudicated) | **49–54%** | the cross-file-verification / enumeration / test-strategy / structural classes |
 | E5 built-in /code-review, agentic dockerized (~$0.88/instance, exact per-run cost) | 41 | 18 firm + 1 partial | **~46%** | enumeration/convention, test-strategy, structural (pf-R1), D6 — but uniquely lands lean-R1, hyg-A1, and firm D3/D5 |
-| E6 ultrareview (subset: csp+deploy scored; secdeps crashed, re-run pending) | 10 (its subset) | 3 | **30% on subset** | uniquely lands csp-R1 — the only non-pipeline catch of the gold cross-file defect; 0/2 on deploy |
+| E6 ultrareview (one cleanly scored cell — all 3 sessions exited nonzero; deploy's empty result is abstention-vs-failure-unresolved; secdeps crashed; $0 billed, free tier consumed) | 8 (csp) | 3 | **3/8 on csp** | uniquely lands csp-R1 — the only non-pipeline catch of the gold cross-file defect |
 | E2 sonnet k=1 (~$0.12/instance) | 41 | 10 | **24%** | everything outside the in-diff doc-vs-code stratum |
 
 Notes on the judgment calls embedded above: pipeline-as-operated is charged with D1–D6
