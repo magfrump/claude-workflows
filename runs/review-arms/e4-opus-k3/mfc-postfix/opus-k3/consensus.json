@@ -1,0 +1,37 @@
+{
+  "min_votes": 2,
+  "judge": "anthropic/claude-sonnet-4.5",
+  "kept": [
+    {
+      "votes": [
+        1,
+        2,
+        3
+      ],
+      "path": "proxy.ts",
+      "lines": "26-33",
+      "sev": "Medium",
+      "domain": "security",
+      "title": "CSP `unsafe-eval` default fails open when NODE_ENV is not exactly \"production\"",
+      "desc": "`allowUnsafeEval` defaults to `process.env.NODE_ENV !== \"production\"`, so any deployment where NODE_ENV is unset or set to something else (e.g. \"prod\", custom server, edge runtime without inlining) silently ships `script-src ... 'unsafe-eval'`; a fail-closed default (explicit opt-in, e.g. `NODE_ENV === \"development\"`) plus a test pinning the no-arg/default behaviour would prevent the relaxation from reaching production unnoticed.",
+      "basename": "proxy.ts",
+      "line_start": 26,
+      "line_end": 33
+    },
+    {
+      "votes": [
+        1,
+        2
+      ],
+      "path": "app/components/panels/BalancedPerspectivesPanel.tsx",
+      "lines": "113-119",
+      "sev": "Low",
+      "domain": "correctness",
+      "title": "Truthiness guard still renders a bare \"\u2194\" row for partially streamed `between`",
+      "desc": "`t.between && ...` passes for `[]` or `[\"A\"]` mid-stream, producing an empty or one-sided arrow row; guarding on `t.between?.length === 2` (or on both endpoints) would avoid the half-rendered artifact, and the new test only covers the fully-absent case.",
+      "basename": "BalancedPerspectivesPanel.tsx",
+      "line_start": 113,
+      "line_end": 119
+    }
+  ]
+}

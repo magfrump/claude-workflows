@@ -64,21 +64,25 @@ the E2/E4 24-label frame), the total is 34.
 ## Stratum B — mfc-postfix labels (9c9edf5..7f30210 ground-truth run, 9 issues)
 
 Pipeline ✓ by construction for all nine (this rubric *is* the pipeline's 2026-08-06
-output). E4 was not run on this instance. E2 = the base arm pre-scored in the
-2026-08-06 comparison (1 hit + 1 FP — the referenced-but-not-touched-constant FP,
-the only confirmed headless FP in the whole program).
+output). E2 = the base arm pre-scored in the 2026-08-06 comparison (1 hit + 1 FP —
+the referenced-but-not-touched-constant class). E4 run 2026-08-14 post-sweep
+($0.48; adjudicated same-session): union 4/9, and one confirmed FP of its own — a
+hedged, single-vote test-vacuity speculation refuted by the CollapsibleSection
+source (children always rendered). Both headless FPs on the whole canon are on this
+instance; the E4 one dies at the k≥2 consensus gate (which would also drop the
+1-vote A2/A8 hits).
 
-| ID | Issue (1-line) | E2 |
-|---|---|---|
-| pf-R1 | `mergeStreamingPreview<T>` types partial-JSON parses as complete `T`; `between` contract disagrees 3 ways; next partial-field crash latent in 3 panels | ✗ |
-| pf-A1 | `allowUnsafeEval` defaults fail-open: `NODE_ENV !== "production"` grants `'unsafe-eval'` to test/staging/custom envs | ✓ |
-| pf-A2 | Default `buildCsp` call path untested (tests pin both explicit arms; production runs the default) | ✗ |
-| pf-A3 | Eval policy caller-selectable: exported `allowUnsafeEval` param means "dev-only" is enforced by there being one call site | ✗ |
-| pf-A4 | `process.env.NODE_ENV` read in a default parameter — ambient state in a previously pure formatter | ✗ |
-| pf-A5 | `data.results` used without truncation; misbehaving OpenAlex `per_page` turns `Math.max(...allWorks)` into a RangeError cliff | ✗ |
-| pf-A6 | Guard tests array presence not element presence: one-element `between` renders a dangling `A ↔` row | ✗ |
-| pf-A7 | connect-src docstring enumeration omits the DD-009 corpus git worker (silently drifts when S4/S5 ships) | ✗ |
-| pf-A8 | Comment-accuracy residue: dropped parity claim survives at `evidenceStore.ts:17`; "optional chaining" mischaracterization | ✗ |
+| ID | Issue (1-line) | E2 | E4 |
+|---|---|---|---|
+| pf-R1 | `mergeStreamingPreview<T>` types partial-JSON parses as complete `T`; `between` contract disagrees 3 ways; next partial-field crash latent in 3 panels | ✗ | ✗ (structural: caught the pf-A6 symptom, never the type-seam root) |
+| pf-A1 | `allowUnsafeEval` defaults fail-open: `NODE_ENV !== "production"` grants `'unsafe-eval'` to test/staging/custom envs | ✓ | ✓ 3/3 |
+| pf-A2 | Default `buildCsp` call path untested (tests pin both explicit arms; production runs the default) | ✗ | ✓ 1/3 (union-only) |
+| pf-A3 | Eval policy caller-selectable: exported `allowUnsafeEval` param means "dev-only" is enforced by there being one call site | ✗ | ✗ (in-diff miss) |
+| pf-A4 | `process.env.NODE_ENV` read in a default parameter — ambient state in a previously pure formatter | ✗ | ✗ (in-diff miss; cited in A1/A2 findings but never as the coupling defect) |
+| pf-A5 | `data.results` used without truncation; misbehaving OpenAlex `per_page` turns `Math.max(...allWorks)` into a RangeError cliff | ✗ | ✗ (cross-file) |
+| pf-A6 | Guard tests array presence not element presence: one-element `between` renders a dangling `A ↔` row | ✗ | ✓ 2/3 |
+| pf-A7 | connect-src docstring enumeration omits the DD-009 corpus git worker (silently drifts when S4/S5 ships) | ✗ | ✗ (enumeration class) |
+| pf-A8 | Comment-accuracy residue: dropped parity claim survives at `evidenceStore.ts:17`; "optional chaining" mischaracterization | ✗ | partial 1/3 (evidenceStore residue confirmed at HEAD; misses the optional-chaining half) |
 
 ## Stratum C — appended labels/candidates found by headless arms (4 issues)
 
@@ -128,5 +132,8 @@ docs; promote to Stratum C/D only if a later fix or HEAD adjudication elevates i
   Confirmed-Good rows. Fresh-eyes re-runs (D1–D6) add six more the shipping loops
   missed. No single process dominates.
 - **E4 ⊇ E2 on this corpus**: every E2 hit is also an E4 hit (secdeps sec-A1 upgraded
-  from sibling-class to as-worded), plus 7 additional stratum-A labels, C4, and the
-  D3/D4 rediscoveries. E2's remaining unique value is price ($0.81 vs $5.03/sweep).
+  from sibling-class to as-worded; postfix pf-A1 reproduced 3/3), plus 7 additional
+  stratum-A labels, 3 more postfix labels, C4, and the D3/D4 rediscoveries. E2's
+  remaining unique value is price ($0.81 vs $5.51/sweep incl. postfix). Headless FP
+  count across the whole canon: 2 (one per arm, both on mfc-postfix, different
+  classes; E4's is single-vote and consensus-killable).

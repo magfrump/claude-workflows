@@ -11,7 +11,8 @@
 | mfc-deploy | 3 | 26,841 | 4,889 | $0.26 |
 | mfc-fscompat | 3 | 10,518 | 4,862 | $0.17 |
 | mfc-corpus | 3 | 458,883 | 21,651 | $2.84 |
-| **total** | 21 | 643,272 | 71,949 | **$5.03** |
+| mfc-postfix (added 2026-08-14, post-sweep) | 3 | 57,462 | 7,842 | $0.48 |
+| **total** | 24 | 700,734 | 79,791 | **$5.51** |
 
 ## Scoring subagents (session 2026-08-14, one adjudicator per instance; token figures
 from task notifications at completion time)
