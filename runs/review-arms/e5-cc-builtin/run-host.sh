@@ -26,6 +26,11 @@ INSTANCES=("${@:-mfc-csp mfc-lean mfc-hygiene mfc-secdeps mfc-deploy mfc-fscompa
 
 [ -n "${ANTHROPIC_API_KEY:-}" ] || { echo "ANTHROPIC_API_KEY not set" >&2; exit 1; }
 
+# Docker creates a fresh named volume root-owned, but the review container runs
+# as uid 1000 (-u node) — chown it once, as root, before any -u node mount.
+docker run --rm -v cc-review-npm-cache:/home/node/.npm node:22 \
+  chown -R node:node /home/node/.npm
+
 for id in "${INSTANCES[@]}"; do
   clone="$CLONES/$id"
   [ -d "$clone/.git" ] || { echo "$id: clone missing — run scripts/prep-cc-review-clones.sh" >&2; exit 1; }
