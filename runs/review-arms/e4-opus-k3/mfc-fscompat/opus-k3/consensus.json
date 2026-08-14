@@ -1,0 +1,36 @@
+{
+  "min_votes": 2,
+  "judge": "anthropic/claude-sonnet-4.5",
+  "kept": [
+    {
+      "votes": [
+        2,
+        3
+      ],
+      "path": "app/lib/llm/cache.ts",
+      "lines": "7",
+      "sev": "Medium",
+      "domain": "correctness/reliability",
+      "title": "LLM cache now writes to size-limited ephemeral `/tmp` with no eviction",
+      "desc": "On Vercel the cache dir becomes `/tmp`, which has a hard size cap (~512MB) shared with everything else in the function instance; `setCachedResult` never prunes or bounds entries, so long-lived warm containers can exhaust `/tmp` and start failing writes (or other `/tmp` users' writes) instead of just missing cache.",
+      "basename": "cache.ts",
+      "line_start": 7,
+      "line_end": 7
+    },
+    {
+      "votes": [
+        2,
+        3
+      ],
+      "path": "app/lib/analytics/persist.ts",
+      "lines": "6-7",
+      "sev": "Low",
+      "domain": "misleading docs",
+      "title": "Comment understates the loss of analytics durability on Vercel",
+      "desc": "`/tmp` is per-instance, so analytics entries are also split and unreadable across *concurrent* function instances, not merely lost \"across cold starts\"; readers of `readAnalyticsEntries()` will see partial history even while warm, which the comment (and `dataDir`'s doc) does not convey.",
+      "basename": "persist.ts",
+      "line_start": 6,
+      "line_end": 7
+    }
+  ]
+}

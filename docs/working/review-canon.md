@@ -122,3 +122,18 @@ not required (cosmetic, per the 2026-08-07 tech-debt triage) — the convention 
   instances × 1 iteration); P-C's premise sharpened — same-pass review of interleaved
   fixes is the exploitable mechanism. E3 design is the open item. **E3-loops run 2026-08-06 on csp** (`e3-loops-results-2026-08-06.md`): both arms terminate; arm1 0.70× arm2 but variance-dominated (verdict draws on two marginal reds controlled loop length, ~1M tokens/pass); hypothesis not supported as mechanism; tier-policy fix identified as the high-leverage intervention. **Re-run under the production 0R+0A stopping rule (`e3-loops-0R0A-results-2026-08-06.md`)**: both arms MEET 0R+0A (arm1 3.08M / 2 full passes, arm2 4.04M / 3; ratio 0.76 — same one-pass gap, same verdict-draw-variance cause, hypothesis still not supported as mechanism). 0R+0A cost = 1 disposition round + 1 verify pass per arm, no spiral. Tier-policy edit (comment-Incorrect-High→amber; immutable-history→override log) remains the high-leverage change and would collapse the gap. New later-fix label
   candidates queued in the results doc.
+- E4 **run and scored 2026-08-14** (`e4-results-2026-08-14.md`, actual $5.03): the
+  middle-ground arm (opus-5, k=3, Stage-1, union-scored) recalls 11/24 canon labels
+  (vs E2's 6/24) plus all three post-E2 appended labels, at 0 confirmed FPs — ~2× lite
+  recall at ~6× lite cost, ~20× under the full harness. Key updates: the E2 miss
+  anatomy over-classified misses as context-bound (opus recovered deploy R2 and
+  fscompat R1/A1 from identical prompts — model tier moves the reachability boundary);
+  union > consensus confirmed within-family (two union-only label hits, no FP for
+  consensus to cut); two new full-pipeline miss candidates (csp matcher-prefix,
+  fix-confirmed `ab4dbdb` against a Confirmed-Good row; corpus legacy-v2 migration
+  clobber, live at HEAD) — canon appends recorded in the results doc. Actionable
+  harness bug: cross-model-review.py's parser drops multi-path findings (cost one
+  label hit and one new-miss candidate from parsed output). Residual misses cluster
+  as cross-file-verification / repo-enumeration / test-strategy — the full harness's
+  remaining moat; next middle-ground lever is context (cheap agentic pass), not model
+  or k.

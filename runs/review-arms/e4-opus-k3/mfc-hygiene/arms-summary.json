@@ -1,0 +1,20 @@
+{
+  "repo": "meta-formalism-copilot",
+  "range": "d86d2dc..f2f149b",
+  "context_base": "d86d2dc",
+  "arms": {
+    "opus-k3": {
+      "model": "anthropic/claude-opus-5",
+      "replicates": 3,
+      "consensus": 2,
+      "note": "E4 middle ground: opus 5, k=3, union-scored",
+      "runs_ok": 3,
+      "runs_errored": 0,
+      "findings_raw": 12,
+      "tokens_in": 41799,
+      "tokens_out": 7107,
+      "clusters": 5,
+      "findings_consensus": 4
+    }
+  }
+}

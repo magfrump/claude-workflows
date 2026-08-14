@@ -1,0 +1,100 @@
+{
+  "min_votes": 2,
+  "judge": "anthropic/claude-sonnet-4.5",
+  "kept": [
+    {
+      "votes": [
+        1,
+        2,
+        3
+      ],
+      "path": "proxy.ts",
+      "lines": "44-48",
+      "sev": "High",
+      "domain": "correctness",
+      "title": "CSP nonce never reaches Next.js's own scripts",
+      "desc": "Next.js extracts the nonce for its bootstrap/hydration `<script>` tags from the **incoming request's** `Content-Security-Policy` header, so the CSP must also be set on `requestHeaders` (as in Next's own docs), not just on the response. As written, Next's scripts are emitted without `nonce`, and because `'strict-dynamic'` causes `'self'` to be ignored in `script-src`, every script is blocked and the app fails to hydrate.",
+      "basename": "proxy.ts",
+      "line_start": 44,
+      "line_end": 48
+    },
+    {
+      "votes": [
+        1,
+        2,
+        3
+      ],
+      "path": "app/layout.tsx",
+      "lines": "27-30",
+      "sev": "Medium",
+      "domain": "misleading docs",
+      "title": "Comment states a mechanism that doesn't exist",
+      "desc": "\"Next.js automatically tags its own bootstrap `<script>` elements with the nonce from the response's CSP header\" is wrong \u2014 Next reads the CSP from the request headers forwarded by the proxy; this incorrect assumption is what causes finding 1 and will mislead future maintainers debugging blocked scripts.",
+      "basename": "layout.tsx",
+      "line_start": 27,
+      "line_end": 30
+    },
+    {
+      "votes": [
+        1,
+        2,
+        3
+      ],
+      "path": "proxy.ts",
+      "lines": "21-31",
+      "sev": "Medium",
+      "domain": "correctness",
+      "title": "Dev mode will break without `'unsafe-eval'`",
+      "desc": "Next.js's development server (HMR / Fast Refresh, React refresh runtime) uses `eval`, which this `script-src` forbids; a dev-only relaxation (`process.env.NODE_ENV !== \"production\"`) is normally required or local development is unusable.",
+      "basename": "proxy.ts",
+      "line_start": 21,
+      "line_end": 31
+    },
+    {
+      "votes": [
+        1,
+        2,
+        3
+      ],
+      "path": "proxy.ts",
+      "lines": "39-42",
+      "sev": "Low",
+      "domain": "consistency",
+      "title": "`x-nonce` request header is dead code",
+      "desc": "The comment says layouts read `x-nonce` and pass it to `<Script>` tags, but no consumer exists (the layout explicitly declines to read it), so this header and its rationale are stale.",
+      "basename": "proxy.ts",
+      "line_start": 39,
+      "line_end": 42
+    },
+    {
+      "votes": [
+        1,
+        3
+      ],
+      "path": "app/layout.tsx",
+      "lines": "22-31",
+      "sev": "Low",
+      "domain": "performance",
+      "title": "`await headers()` in the root layout forces every route dynamic",
+      "desc": "Opting the root layout out of static rendering disables static generation and full-route caching for the entire app just to trigger the proxy; the proxy already runs on all matched requests, so this cost is only needed for pages that would otherwise be prerendered with a baked-in nonce.",
+      "basename": "layout.tsx",
+      "line_start": 22,
+      "line_end": 31
+    },
+    {
+      "votes": [
+        2,
+        3
+      ],
+      "path": "proxy.ts",
+      "lines": "57",
+      "sev": "Low",
+      "domain": "correctness",
+      "title": "Matcher lookahead is prefix-based, not segment-based",
+      "desc": "`(?!api|_next/static|_next/image|favicon.ico)` also excludes unrelated routes whose first segment merely starts with those strings (e.g. `/api-docs`, `/favicon.ico.txt`), silently dropping CSP for them; anchor with a trailing `/` or `$` (e.g. `api(?:/|$)`).",
+      "basename": "proxy.ts",
+      "line_start": 57,
+      "line_end": 57
+    }
+  ]
+}

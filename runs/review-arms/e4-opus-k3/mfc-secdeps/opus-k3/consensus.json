@@ -1,0 +1,70 @@
+{
+  "min_votes": 2,
+  "judge": "anthropic/claude-sonnet-4.5",
+  "kept": [
+    {
+      "votes": [
+        1,
+        2,
+        3
+      ],
+      "path": "eslint.config.mjs",
+      "lines": "57",
+      "sev": "Medium",
+      "domain": "correctness",
+      "title": "`react/no-danger` set to \"warn\" contradicts stated intent",
+      "desc": "The block's comment says these rules \"fail loudly if a future change tries to weaken any of those\", but `react/no-danger` is only a warning, so introducing `dangerouslySetInnerHTML` will not fail `npm run lint`/CI unless lint runs with `--max-warnings=0`; either set it to \"error\" or fix the comment.",
+      "basename": "eslint.config.mjs",
+      "line_start": 57,
+      "line_end": 57
+    },
+    {
+      "votes": [
+        1,
+        2,
+        3
+      ],
+      "path": "eslint.config.mjs",
+      "lines": "47-55",
+      "sev": "Low",
+      "domain": "security",
+      "title": "`trust: true` selector is trivially bypassed",
+      "desc": "`Property[key.name='trust'][value.value=true]` only matches an identifier key with a literal `true`, so `{ \"trust\": true }`, `{ trust: !!1 }`, `{ trust: () => true }`, or `trust` supplied via a variable/spread all slip through, which undercuts the comment claiming the selector is \"broad enough\" to be a reliable guardrail.",
+      "basename": "eslint.config.mjs",
+      "line_start": 47,
+      "line_end": 55
+    },
+    {
+      "votes": [
+        1,
+        2,
+        3
+      ],
+      "path": "eslint.config.mjs",
+      "lines": "33-45",
+      "sev": "Low",
+      "domain": "security",
+      "title": "rehype-raw restriction misses subpaths and non-static imports",
+      "desc": "`paths: [{ name: \"rehype-raw\" }]` does not match `rehype-raw/lib/...`, `require(\"rehype-raw\")`, or dynamic `import()`; adding a `patterns: [\"rehype-raw\", \"rehype-raw/*\"]` entry would close the obvious gaps.",
+      "basename": "eslint.config.mjs",
+      "line_start": 33,
+      "line_end": 45
+    },
+    {
+      "votes": [
+        1,
+        2,
+        3
+      ],
+      "path": ".github/workflows/ci.yml",
+      "lines": "40-46",
+      "sev": "Low",
+      "domain": "CI reliability",
+      "title": "`npm audit` makes CI non-deterministic and duplicated",
+      "desc": "The step hits the registry on every push/PR (and runs twice, once per Node matrix entry), so a newly published high-severity advisory in a prod dep breaks unrelated branches \u2014 the exact failure mode the comment claims to avoid by using `--audit-level=high`.",
+      "basename": "ci.yml",
+      "line_start": 40,
+      "line_end": 46
+    }
+  ]
+}

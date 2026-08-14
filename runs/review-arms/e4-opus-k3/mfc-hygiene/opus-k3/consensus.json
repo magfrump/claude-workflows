@@ -1,0 +1,69 @@
+{
+  "min_votes": 2,
+  "judge": "anthropic/claude-sonnet-4.5",
+  "kept": [
+    {
+      "votes": [
+        1,
+        2,
+        3
+      ],
+      "path": "app/lib/llm/streamLlm.ts",
+      "lines": "69-72",
+      "sev": "Medium",
+      "domain": "misleading docs",
+      "title": "SSE protocol docblock still advertises `details` on error events",
+      "desc": "The `streamLlm` JSDoc continues to document `event: error \u2014 { error: \"message\", details: \"...\" }`, but the catch block now emits only `{ error: message }`; any client written against this contract will read `undefined`.",
+      "basename": "streamLlm.ts",
+      "line_start": 69,
+      "line_end": 72
+    },
+    {
+      "votes": [
+        1,
+        2,
+        3
+      ],
+      "path": "app/lib/llm/streamLlm.ts",
+      "lines": "25-33",
+      "sev": "Low",
+      "domain": "dead code / misleading comment",
+      "title": "`errorWithDetails` payload is now unreachable",
+      "desc": "With `getErrorDetails` deleted, nothing in the process reads the attached `details` property, so the new comment's claim that it \"remains attached ... for any in-process consumer that opts in\" describes a consumer that does not exist; the OpenRouter error body is now silently discarded, removing the only diagnostic for non-2xx streaming failures.",
+      "basename": "streamLlm.ts",
+      "line_start": 25,
+      "line_end": 33
+    },
+    {
+      "votes": [
+        1,
+        3
+      ],
+      "path": "app/lib/llm/callLlm.ts",
+      "lines": "10-16",
+      "sev": "Informational",
+      "domain": "API/consistency drift",
+      "title": "Exported `getAnthropicClient` renamed without compatibility alias",
+      "desc": "Only `streamLlm.ts` is updated in this diff; any other importer (route handlers, existing tests, mocks referencing `getAnthropicClient`) would break at build time, and the rename is not noted anywhere as a breaking change.",
+      "basename": "callLlm.ts",
+      "line_start": 10,
+      "line_end": 16
+    },
+    {
+      "votes": [
+        1,
+        2,
+        3
+      ],
+      "path": "app/api/edit/artifact/route.ts",
+      "lines": "74-81",
+      "sev": "Low",
+      "domain": "consistency",
+      "title": "Comment's stated rationale conflicts with the adjacent response",
+      "desc": "The comment argues `responseText` \"shouldn't end up in server logs\" because it derives from user source material, yet the very next statement returns a 500-char slice of it in the HTTP body, so the redaction is partial and the justification reads as stronger than the actual behavior.",
+      "basename": "route.ts",
+      "line_start": 74,
+      "line_end": 81
+    }
+  ]
+}

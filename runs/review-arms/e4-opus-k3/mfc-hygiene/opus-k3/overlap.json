@@ -1,0 +1,10 @@
+{
+  "judge": "anthropic/claude-sonnet-4.5",
+  "abstain": {
+    "anthropic/claude-opus-5": 0.0
+  },
+  "self": {
+    "anthropic/claude-opus-5": 0.733
+  },
+  "cross": {}
+}

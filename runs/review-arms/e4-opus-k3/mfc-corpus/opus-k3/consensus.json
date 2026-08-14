@@ -1,0 +1,68 @@
+{
+  "min_votes": 2,
+  "judge": "anthropic/claude-sonnet-4.5",
+  "kept": [
+    {
+      "votes": [
+        1,
+        2,
+        3
+      ],
+      "path": "app/lib/corpus/storeAdapter.ts",
+      "lines": "50-68",
+      "sev": "High",
+      "domain": "correctness/performance",
+      "title": "Corpus-backed storage drops debouncing and write serialization",
+      "desc": "Unlike `createDebouncedLocalStorage`, the CorpusFS-backed `setItem` writes the whole persist blob on *every* `set()` (i.e. every keystroke) with no debounce and no queue, so overlapping async `writeFile` calls to the same OPFS file race; OPFS `createWritable()` takes an exclusive lock, so concurrent writes will reject with `NoModificationAllowedError` (mapped to `{kind:\"io\"}`) and/or land out of order, silently losing state.",
+      "basename": "storeAdapter.ts",
+      "line_start": 50,
+      "line_end": 68
+    },
+    {
+      "votes": [
+        1,
+        3
+      ],
+      "path": "app/lib/corpus/flag.ts",
+      "lines": "15-24",
+      "sev": "Medium",
+      "domain": "security/docs",
+      "title": "\"Dev-only\" flag has no dev guard",
+      "desc": "The doc comment and CLAUDE.md both state the flag is \"DEV-ONLY\", but `isCorpusEnabled()` honors `NEXT_PUBLIC_CORPUS_FS=1` in production builds and the `corpus-fs-enabled` localStorage key in any browser; given enabling it means starting from an empty corpus with no migration, the missing `process.env.NODE_ENV !== \"production\"` check makes the claim misleading and the footgun real.",
+      "basename": "flag.ts",
+      "line_start": 15,
+      "line_end": 24
+    },
+    {
+      "votes": [
+        1,
+        2,
+        3
+      ],
+      "path": "app/lib/corpus/manifest.ts",
+      "lines": "88-105",
+      "sev": "Medium",
+      "domain": "correctness",
+      "title": "Fail-loud manifest codec silently drops malformed array entries",
+      "desc": "`raw.sources.filter(isObject)`, `raw.artifacts.filter(isObject)` and `customTypeIds.filter(typeof x === \"string\")` discard non-conforming entries instead of failing, so a partially corrupted `workspace.json` parses \"successfully\" with fewer sources/artifacts \u2014 exactly the \"masquerades as no work / masks data loss\" outcome the header says parsing must prevent. `createdAt`/`updatedAt` are likewise silently defaulted to `now`.",
+      "basename": "manifest.ts",
+      "line_start": 88,
+      "line_end": 105
+    },
+    {
+      "votes": [
+        2,
+        3
+      ],
+      "path": "app/lib/corpus/opfsAdapter.ts",
+      "lines": "110-127",
+      "sev": "Medium",
+      "domain": "correctness",
+      "title": "`finally { await w.close() }` can mask the quota error it is supposed to reify",
+      "desc": "Real OPFS surfaces quota failures on `write()`/`close()`; if `write()` rejects, the unconditional `await w.close()` in `finally` will typically reject too (errored/closed stream) and that second error replaces the original, so the failure is mapped to `{kind:\"io\"}` instead of `{kind:\"quota-exceeded\"}`. The G7 test only stubs `createWritable()` throwing, so this realistic path is untested \u2014 consider `abort()`/try-catching the close and preserving the first error.",
+      "basename": "opfsAdapter.ts",
+      "line_start": 110,
+      "line_end": 127
+    }
+  ]
+}

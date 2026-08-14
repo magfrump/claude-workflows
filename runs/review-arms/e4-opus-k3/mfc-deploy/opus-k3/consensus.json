@@ -1,0 +1,37 @@
+{
+  "min_votes": 2,
+  "judge": "anthropic/claude-sonnet-4.5",
+  "kept": [
+    {
+      "votes": [
+        1,
+        2
+      ],
+      "path": "README.md",
+      "lines": "103-119",
+      "sev": "Low",
+      "domain": "docs",
+      "title": "`ANTHROPIC_API_KEY` listed as required but also described as replaceable by `OPENROUTER_API_KEY`",
+      "desc": "The \"Required environment variable\" table and the optional table (\"fallback LLM provider when `ANTHROPIC_API_KEY` is unset\") contradict each other; state which is truly required and whether OpenRouter alone suffices.",
+      "basename": "README.md",
+      "line_start": 103,
+      "line_end": 119
+    },
+    {
+      "votes": [
+        1,
+        2,
+        3
+      ],
+      "path": "README.md",
+      "lines": "124",
+      "sev": "Low",
+      "domain": "docs",
+      "title": "Vercel filesystem limitation understated for analytics",
+      "desc": "CLAUDE.md notes Vercel Functions can only write to `/tmp`, so an analytics/cache write to a repo-relative path would fail with a read-only-filesystem error rather than merely \"not persist\"; the README should say whether such writes error out (and whether they are caught) instead of implying benign non-persistence, and it omits the LLM cache limitation CLAUDE.md mentions.",
+      "basename": "README.md",
+      "line_start": 124,
+      "line_end": 124
+    }
+  ]
+}
