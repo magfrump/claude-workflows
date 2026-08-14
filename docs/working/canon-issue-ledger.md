@@ -121,6 +121,39 @@ true-but-by-design items (lean retry error-wipe, csp prefetch behavior, corpus
 analytics path placement). Each is recorded with its adjudication in the E2/E4 results
 docs; promote to Stratum C/D only if a later fix or HEAD adjudication elevates it.
 
+## Process recall against the living ledger (the headline table)
+
+**Framing rule (author call, 2026-08-14): the purpose of this program is real-world
+value — every valid issue caught before production — not benchmark performance against
+frozen rubrics.** Rubrics are themselves pipeline output, so scoring only against them
+is circular in the incumbent's favor; an arm finding a bug the pipeline missed is the
+*ideal* finding, and it counts against the pipeline's recall here. Denominator per
+process = ledger issues **findable** in the input that process actually reviewed
+(an issue introduced by a fix commit a process never saw is excluded for it, not
+counted as a miss).
+
+| Process | Findable | Found | Recall | Missed |
+|---|---|---|---|---|
+| Full pipeline **as operated** (historical loops + postfix ground-truth run) | 43 | 33 | **77%** | C1–C4 (headless-only finds; C4 filed Confirmed Good) + D1–D6 (own-fix defects and dirty-state issues the loops never surfaced — "the historical loops never re-reviewed their own fixes with fresh eyes", E1) |
+| Full pipeline **incl. E1 fresh re-runs** (same process, re-run as an experiment) | 43 | 39 | **91%** | C1–C4 — still invisible to every pipeline pass at any vintage |
+| E4 opus-k3 union (~$0.69/instance) | 41 (D1/D2 outside its ranges) | 20 firm + D3 (raw-only, parse-dropped) + D5 (probable-same, unadjudicated) | **49–54%** | the cross-file-verification / enumeration / test-strategy / structural classes |
+| E2 sonnet k=1 (~$0.12/instance) | 41 | 10 | **24%** | everything outside the in-diff doc-vs-code stratum |
+
+Notes on the judgment calls embedded above: pipeline-as-operated is charged with D1–D6
+because reviewing its own fix commits was in the loops' scope (and when the process
+*was* pointed at fix commits — the postfix instance, the E1 re-runs — it found this
+class); C1–C4 are charged to every pipeline variant because all four existed at states
+it reviewed, one under an explicit Confirmed-Good verdict. Precision is not symmetric
+across rows: the arms' FP counts are measured (2 confirmed across both, both on
+mfc-postfix), while the pipeline's historical precision is unmeasurable retrospectively
+(acceptance-filtered corpora, §5.4 trap 2). The union of all processes is 43/43 by
+construction — the ledger *is* the union — which is itself the finding: no single
+process, at any price point, currently exceeds ~91% of known issues, and the cheap and
+expensive processes miss disjoint classes.
+
+Frozen-label recall (15/33 for E4, 7/33 for E2) remains in the E2/E4 results docs as a
+secondary comparability number for prior arms — it is not the headline metric.
+
 ## Reading the found-by pattern (what the ledger shows at a glance)
 
 - **Headless-blind classes are consistent**: cross-file verification (csp-R1, lean-R1,
