@@ -110,6 +110,29 @@ reviewed dirty range.
 | D5 | OPFS write race — un-serialized/un-debounced write seam (not on the author's carry list) | ✓(E1) | ✗ | probable — "drops debouncing and write serialization" (3/3) targets the same seam; same-issue match unadjudicated | rubric green C4 acknowledges the seam, defers to S2/S3/S5 |
 | D6 | fscompat cacheKey stored inside the cache file + double-hashing (both states) | ✓(E1) | ✗ | ✗ | — |
 
+## Stratum E — candidate rows from E5/E6 (2026-08-14; see e5-e6-results doc)
+
+Seven new candidate issues surfaced by the Claude-Code arms, all adjudicated true by
+scoring agents; N1 is fix-confirmed and a full row, the rest pend fix/HEAD adjudication.
+Per-issue found-by columns live in the CSV (which is the per-issue source of truth for
+E5/E6 across all strata — the tables above predate those arms):
+
+- **N1** csp: middleware prefetch-skip serves real HTML with no CSP (E5; **fix-confirmed
+  `ab4dbdb`**)
+- N2 secdeps: the new npm-audit CI gate fails on this very branch — commit message's
+  "lands green" claim is false (E5, verified by execution)
+- N3 lean: localhost-default removal breaks the documented local-dev flow (E5)
+- N4 lean: decomposition path maps `unavailable`→"unverified", silent in node mode (E5)
+- N5 lean: formalizeNode treats `unavailable` as failed and skips dependents (E5)
+- N6 deploy: "+ Factor" streaming race persists a partial causal-graph snapshot (E5;
+  pre-existing at the base commit — out-of-diff-scope candidate)
+- N7 csp: no `worker-src` under `'strict-dynamic'` — pdf.js worker blocked/degraded (E6,
+  verifier-kept; never fixed at HEAD)
+
+As candidates graduate, denominators grow — published recall figures are dated to the
+ledger revision they were computed against (E2/E4/E5/E6 figures above: the 43-row
+ledger of 2026-08-14).
+
 ## Adjacent true findings deliberately NOT counted as issues
 
 Kept out of the 43 to avoid inflating the ledger: rubric-green/Consider-tier items the
@@ -137,6 +160,8 @@ counted as a miss).
 | Full pipeline **as operated** (historical loops + postfix ground-truth run) | 43 | 33 | **77%** | C1–C4 (headless-only finds; C4 filed Confirmed Good) + D1–D6 (own-fix defects and dirty-state issues the loops never surfaced — "the historical loops never re-reviewed their own fixes with fresh eyes", E1) |
 | Full pipeline **incl. E1 fresh re-runs** (same process, re-run as an experiment) | 43 | 39 | **91%** | C1–C4 — still invisible to every pipeline pass at any vintage |
 | E4 opus-k3 union (~$0.69/instance) | 41 (D1/D2 outside its ranges) | 20 firm + D3 (raw-only, parse-dropped) + D5 (probable-same, unadjudicated) | **49–54%** | the cross-file-verification / enumeration / test-strategy / structural classes |
+| E5 built-in /code-review, agentic dockerized (~$0.88/instance, exact per-run cost) | 41 | 18 firm + 1 partial | **~46%** | enumeration/convention, test-strategy, structural (pf-R1), D6 — but uniquely lands lean-R1, hyg-A1, and firm D3/D5 |
+| E6 ultrareview (subset: csp+deploy scored; secdeps crashed, re-run pending) | 10 (its subset) | 3 | **30% on subset** | uniquely lands csp-R1 — the only non-pipeline catch of the gold cross-file defect; 0/2 on deploy |
 | E2 sonnet k=1 (~$0.12/instance) | 41 | 10 | **24%** | everything outside the in-diff doc-vs-code stratum |
 
 Notes on the judgment calls embedded above: pipeline-as-operated is charged with D1–D6
