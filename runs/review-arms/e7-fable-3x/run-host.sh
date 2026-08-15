@@ -17,12 +17,19 @@
 # + longer thinking ≈ $1.8–2.6/instance → ~$14–21 per 8-instance rep,
 # ~$45–65 for the full 3x sweep. Trim via args if that's too much.
 #
-# Prereqs: docker; ANTHROPIC_API_KEY exported (API billing => total_cost_usd
-# authoritative; Fable also requires the org to have 30-day data retention —
-# ZDR orgs get 400s on every request); clones built by
-# scripts/prep-cc-review-clones.sh.
+# Prereqs: docker; clones built by scripts/prep-cc-review-clones.sh; and ONE of:
+#   * CLAUDE_CODE_OAUTH_TOKEN — subscription billing. Mint once on the host with
+#     `claude setup-token` (long-lived OAuth token; plain env var, so the
+#     container still gets zero ~/.claude state). Caveats: total_cost_usd in
+#     result.json is then a list-price ESTIMATE, not a bill — label it so in
+#     the results doc; and 24 Fable runs draw on weekly subscription limits —
+#     a mid-sweep limit failure confounds the arm (cf. E6 free-tier), though
+#     the rep-skip logic lets you resume after the window resets.
+#   * ANTHROPIC_API_KEY — API billing; total_cost_usd authoritative. Fable
+#     needs 30-day data retention on the org (ZDR orgs 400 on every request).
+# If both are set, the OAuth token wins (API key is not passed in).
 #
-# Usage:  ANTHROPIC_API_KEY=sk-ant-... bash runs/review-arms/e7-fable-3x/run-host.sh [instance...]
+# Usage:  bash runs/review-arms/e7-fable-3x/run-host.sh [instance...]
 #         REPS=2 bash runs/review-arms/e7-fable-3x/run-host.sh mfc-csp   # fewer reps / subset
 set -euo pipefail
 cd "$(dirname "$0")/../../.."
@@ -33,7 +40,16 @@ CC_VERSION="2.1.232"   # pin for reproducibility; bump deliberately
 REPS="${REPS:-3}"
 [ $# -gt 0 ] && INSTANCES=("$@") || INSTANCES=(mfc-csp mfc-lean mfc-hygiene mfc-secdeps mfc-deploy mfc-fscompat mfc-corpus mfc-postfix)
 
-[ -n "${ANTHROPIC_API_KEY:-}" ] || { echo "ANTHROPIC_API_KEY not set" >&2; exit 1; }
+if [ -n "${CLAUDE_CODE_OAUTH_TOKEN:-}" ]; then
+  AUTH_ENV=(-e CLAUDE_CODE_OAUTH_TOKEN)
+  echo "Auth: subscription (CLAUDE_CODE_OAUTH_TOKEN) — total_cost_usd will be a list-price estimate, not billed spend."
+elif [ -n "${ANTHROPIC_API_KEY:-}" ]; then
+  AUTH_ENV=(-e ANTHROPIC_API_KEY)
+  echo "Auth: API key — total_cost_usd authoritative."
+else
+  echo "Set CLAUDE_CODE_OAUTH_TOKEN (subscription; mint via 'claude setup-token') or ANTHROPIC_API_KEY" >&2
+  exit 1
+fi
 
 # Docker creates a fresh named volume root-owned, but the review container runs
 # as uid 1000 (-u node) — chown it once, as root, before any -u node mount.
@@ -57,7 +73,7 @@ for id in "${INSTANCES[@]}"; do
     # --bare: no hooks/plugins/user-state — the repo's own CLAUDE.md is part
     # of the tree under review and loads as it would for any real user.
     docker run --rm -u node -w /repo \
-      -e ANTHROPIC_API_KEY \
+      "${AUTH_ENV[@]}" \
       -v "$clone":/repo \
       -v cc-review-npm-cache:/home/node/.npm \
       node:22 \
