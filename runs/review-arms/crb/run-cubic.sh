@@ -76,14 +76,23 @@ while read -r inst base head; do
   mkdir -p "$out"
 
   wt="$WT_ROOT/$inst"
-  if [ ! -d "$wt" ]; then
-    git -C "$MFC" worktree add "../../$wt" "$head"
+  # Use a local clone, not a git worktree: worktrees have a `.git` *file*
+  # pointing back into the main repo, which some tools' git integration can't
+  # follow. A same-disk clone shares objects via hardlinks, so it's cheap.
+  if [ -d "$wt" ] && [ -f "$wt/.git" ]; then
+    echo "    replacing stale worktree checkout at $wt with a clone"
+    git -C "$MFC" worktree remove --force "../../$wt" || rm -rf "$wt"
   fi
+  if [ ! -d "$wt" ]; then
+    git clone -q --no-checkout "$MFC" "$wt"
+  fi
+  git -C "$wt" checkout -q --detach "$head"
   git -C "$wt" branch -f "crb-base-$inst" "$base"
 
   echo "=== $inst ($base..$head)"
   start=$(date +%s)
   if (cd "$wt" && "$CUBIC_BIN" review --base "crb-base-$inst" --json \
+        --print-logs --log-level "${CUBIC_LOG_LEVEL:-DEBUG}" \
         >"../../../$out/review.json" 2>"../../../$out/stderr.log"); then
     secs=$(( $(date +%s) - start ))
     echo "    ok in ${secs}s -> $out/review.json"
@@ -91,6 +100,8 @@ while read -r inst base head; do
   else
     secs=$(( $(date +%s) - start ))
     echo "    FAILED after ${secs}s — see $out/stderr.log (review.json removed if empty)"
+    echo "    --- last stderr lines ---"
+    tail -n 8 "$out/stderr.log" | sed 's/^/    | /'
     [ -s "$out/review.json" ] || rm -f "$out/review.json"
     failed=$((failed+1))
   fi
