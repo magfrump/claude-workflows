@@ -112,6 +112,27 @@ packages take over.)
    would require pushing mfc instances as PRs to a public repo (privacy call
    for the author, and against current no-GitHub-routing practice).
 
+## Cubic CLI arm (2026-08-14; author chose Claude-Code auth over API key)
+
+Cubic ships a local CLI (`npm i -g @cubic-dev-ai/cli`, compiled binary) with
+`cubic review --base <branch> --json` — reviewable per canon instance without
+any GitHub app. Auth via `cubic auth connect claude-code` (reuses the Claude
+Code login; alternatives: `codex`/`cursor` connect, `cubic auth login`, or
+`ANTHROPIC_API_KEY`/`OPENAI_API_KEY` + `CUBIC_ANTHROPIC_BASE_URL` — OpenRouter's
+`/v1/messages` verified Anthropic-compatible if the BYO-key route is ever
+wanted).
+
+Runner: **`runs/review-arms/crb/run-cubic.sh`** (setup steps in header; run in
+a normal terminal — the CLI can't be executed from sandboxed sessions, the
+auto-mode classifier blocks it). Idempotent; worktrees under
+`external/crb-cubic/`; output `runs/review-arms/crb/cubic-cli/<inst>/review.json`.
+`canon-to-crb.py` already picks those up as tool `cubic-cli` (tolerant schema
+parser + freeform fallback; tighten after the first real run shows the schema).
+
+Caveat for the ledger: this is cubic's *local* review, documented by cubic as
+"intentionally faster and less thorough" than the cloud PR review their
+leaderboard row was scored on. File results as `cubic-cli`, not `cubic`.
+
 ## Next steps — direction (1)
 
 1. Script the materialization loop over the 50 PRs (one fork per original PR,

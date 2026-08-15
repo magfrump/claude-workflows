@@ -52,6 +52,10 @@ REVIEW_SOURCES = {
 }
 # postfix E2 results live under the 2026-08-06 sweep dir
 REVIEW_SOURCES["mfc-postfix"][0] = ("e2", "runs/review-arms/mfc-2026-08-06/base/findings.jsonl")
+# cubic CLI arm (runs/review-arms/crb/run-cubic.sh); .json files are parsed by
+# cubic_to_comments, .jsonl by findings_to_comments
+for _inst in INSTANCES.values():
+    REVIEW_SOURCES[_inst].append(("cubic-cli", f"runs/review-arms/crb/cubic-cli/{_inst}/review.json"))
 
 # PROVISIONAL severity/category mapping (author adjudication pending).
 SEV_CAT = {
@@ -129,6 +133,43 @@ def findings_to_comments(path: Path) -> list[dict]:
     return comments
 
 
+def cubic_to_comments(path: Path) -> list[dict]:
+    """Best-effort conversion of `cubic review --json` output to review_comments.
+
+    The exact schema is unadjudicated until the first real run; this tries the
+    obvious issue-list shapes and falls back to shipping the whole JSON as one
+    general comment — the benchmark's extract step LLM-splits freeform text
+    anyway, so the fallback still scores.
+    """
+    raw = path.read_text()
+    try:
+        data = json.loads(raw)
+    except json.JSONDecodeError:
+        return [{"path": None, "line": None, "body": raw, "created_at": None}]
+
+    items = None
+    if isinstance(data, list):
+        items = data
+    elif isinstance(data, dict):
+        for key in ("issues", "findings", "comments", "results", "reviews"):
+            if isinstance(data.get(key), list):
+                items = data[key]
+                break
+    if not items or not all(isinstance(i, dict) for i in items):
+        return [{"path": None, "line": None,
+                 "body": json.dumps(data, indent=2), "created_at": None}]
+
+    comments = []
+    for it in items:
+        fpath = it.get("path") or it.get("file") or it.get("filePath") or it.get("file_path")
+        line = it.get("line") or it.get("startLine") or it.get("line_start") or it.get("start_line")
+        title = it.get("title") or it.get("summary") or ""
+        desc = it.get("description") or it.get("body") or it.get("message") or it.get("text") or ""
+        body = f"**{title}**\n\n{desc}".strip("* \n") if (title or desc) else json.dumps(it, indent=2)
+        comments.append({"path": fpath, "line": line, "body": body, "created_at": None})
+    return comments
+
+
 def main() -> None:
     ap = argparse.ArgumentParser()
     ap.add_argument("--out", default="runs/review-arms/crb/offline-work")
@@ -158,7 +199,7 @@ def main() -> None:
             if not p.exists():
                 print(f"  [{inst}] no findings for tool {tool} ({rel}) — skipped")
                 continue
-            comments = findings_to_comments(p)
+            comments = cubic_to_comments(p) if p.suffix == ".json" else findings_to_comments(p)
             reviews.append({
                 "tool": tool,
                 "repo_name": f"meta-formalism-copilot@{commit}",
