@@ -36,8 +36,17 @@ OUT_ROOT=runs/review-arms/crb/cubic-cli
 export CUBIC_DISABLE_ANALYTICS=1 CUBIC_DISABLE_AUTOUPDATE=1
 
 command -v "$CUBIC_BIN" >/dev/null || { echo "cubic not found (npm i -g @cubic-dev-ai/cli, or set CUBIC_BIN)" >&2; exit 1; }
-"$CUBIC_BIN" auth list 2>/dev/null | grep -q "0 credentials" && {
-  echo "no cubic credential configured — run: cubic auth connect claude-code" >&2; exit 1; }
+# NOTE: `cubic auth list` reporting "0 credentials" is EXPECTED in claude-code
+# mode — `auth connect claude-code` sets a claudeCodeEnabled preference flag
+# and drives the local `claude` CLI via ACP; it stores nothing in auth.json.
+# The real prerequisites are: `claude` on PATH and logged in.
+if "$CUBIC_BIN" auth list 2>/dev/null | grep -q "0 credentials"; then
+  command -v claude >/dev/null || {
+    echo "0 cubic credentials and no claude CLI on PATH — run either" >&2
+    echo "  cubic auth connect claude-code   (needs a logged-in claude CLI)" >&2
+    echo "or cubic auth login" >&2; exit 1; }
+  echo "note: 0 stored credentials — assuming claude-code ACP mode (this is normal)"
+fi
 
 # id  base     head   (ranges: docs/working/review-canon.md §1)
 INSTANCES="
