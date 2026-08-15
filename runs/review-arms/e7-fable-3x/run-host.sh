@@ -143,12 +143,31 @@ sys.exit(0 if d.get("num_turns", 0) > 0 else 1)
       npx -y @anthropic-ai/claude-code@"$CC_VERSION" \
         "${BARE_FLAG[@]}" -p "/code-review main" \
         --model claude-fable-5 \
-        --output-format json \
+        --output-format stream-json --verbose \
         --dangerously-skip-permissions \
         --max-budget-usd 25.00 \
-      > "$dest/result.json" 2> "$dest/stderr.log" || {
+      > "$dest/transcript.jsonl" 2> "$dest/stderr.log" || {
         echo "$id rep$rep: claude exited non-zero — see $dest/stderr.log" >&2; continue; }
     t1=$(date +%s)
+    # Full-output capture (from rep2 on; decision 2026-08-15): transcript.jsonl
+    # holds every message — intermediate findings no longer lost to summary
+    # compression. result.json (the final "result" event) is derived from it so
+    # the skip logic and cost accounting are unchanged. NOTE: rep1 was scored
+    # on summary-only evidence; reps with transcripts are evidence-richer, so
+    # cross-rep scoring is not strictly comparable (author-accepted tradeoff).
+    python3 - "$dest/transcript.jsonl" "$dest/result.json" <<'EOF'
+import json, sys
+res = None
+for line in open(sys.argv[1]):
+    line = line.strip()
+    if not line: continue
+    try: d = json.loads(line)
+    except Exception: continue
+    if d.get("type") == "result": res = d
+if res is None:
+    sys.exit(f"no result event in {sys.argv[1]} — treat run as failed")
+json.dump(res, open(sys.argv[2], "w"))
+EOF
     python3 - "$dest/result.json" "$((t1-t0))" <<'EOF'
 import json, sys
 d = json.load(open(sys.argv[1]))
@@ -157,6 +176,6 @@ print(f"  cost=${d.get('total_cost_usd','?')} duration={sys.argv[2]}s "
 EOF
   done
 done
-echo "E7 done. Results in $OUT/<instance>/rep<N>/result.json (cost in total_cost_usd)."
+echo "E7 done. Results in $OUT/<instance>/rep<N>/{transcript.jsonl,result.json} (cost in total_cost_usd)."
 echo "Next: hand back to the workspace session for adjudication against the ledger"
 echo "(score each rep as its own cell; also compute per-instance union-of-reps)."
