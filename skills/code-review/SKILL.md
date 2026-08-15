@@ -341,6 +341,19 @@ Spawn **three** agents with the code-fact-check skill, in parallel, on **byte-id
 prompts** — same skill text, same scope spec, same instructions, differing only in the
 output path each is told to write.
 
+**Model (pinned — do not inherit the session model): `opus`, set explicitly on every
+fact-check Agent dispatch (k=3 and k=1 loop-pass alike).** Fact-check verdicts are
+load-bearing (the Incorrect channel blocks; verdicts feed Stage-1.5 gating), so the
+stage must not silently degrade with whatever model the session happens to run.
+Measured basis (`docs/working/fc-model-sweep-results-2026-08-15.md`; 3 models × 2
+canon cells × 2 replicates, identical prompts): sonnet — *even with this skill text
+as its role prompt* — produced 3 false "Verified" attestations on known-bad claims
+in 4 replicates (once after finding the refuting code), so the Stage-2 rule
+"sonnet acceptable with role-skill prompts" does **not** extend to Stage 1; opus and
+fable both scored 12/12 with 0 attestations, and fable's 2× price bought no marginal
+catch. Opus is therefore the pin in both directions: an upgrade from cheaper
+sessions, a cost cut from fable sessions.
+
 **Why three.** A fact-check **Incorrect** verdict is one of the two verdict-driven
 blocking channels (state doc §1.0: fact-check Incorrect or api-consistency Breaking; the
 [Unified Severity Mapping](#unified-severity-mapping) lists each critic's native 🔴 band) —
