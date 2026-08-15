@@ -56,13 +56,46 @@ fi
 docker run --rm -v cc-review-npm-cache:/home/node/.npm node:22 \
   chown -R node:node /home/node/.npm
 
+# ── Auth preflight ──────────────────────────────────────────────────────────
+# A bad credential does NOT make claude exit non-zero: it returns exit 0 with
+# result "Not logged in · Please run /login" and num_turns=0 (learned the hard
+# way, 2026-08-14). Verify auth with one cheap prompt before burning the sweep.
+echo "=== E7 preflight: verifying auth inside the container"
+docker run --rm -u node "${AUTH_ENV[@]}" -v cc-review-npm-cache:/home/node/.npm node:22 \
+  sh -c 'echo "  token length in container: ${#CLAUDE_CODE_OAUTH_TOKEN} (oauth) / ${#ANTHROPIC_API_KEY} (api key)"'
+preflight=$(docker run --rm -u node "${AUTH_ENV[@]}" -v cc-review-npm-cache:/home/node/.npm node:22 \
+  npx -y @anthropic-ai/claude-code@"$CC_VERSION" \
+    --bare -p "Reply with exactly: OK" --model claude-fable-5 --output-format json 2>&1) || true
+if ! printf '%s' "$preflight" | python3 -c '
+import json, sys
+try:
+    d = json.loads(sys.stdin.read().strip().splitlines()[-1])
+except Exception:
+    sys.exit(1)
+r = d.get("result") or ""
+sys.exit(0 if d.get("num_turns", 0) > 0 and "log in" not in r.lower() and "logged in" not in r.lower() else 1)
+'; then
+  echo "PREFLIGHT FAILED — the CLI could not authenticate. Raw response:" >&2
+  printf '%s\n' "$preflight" >&2
+  echo "If the token length above was 0, the env var never reached docker (re-export in THIS shell; sudo drops env)." >&2
+  echo "If the length was right but auth still failed, this CLI/mode may not honor CLAUDE_CODE_OAUTH_TOKEN — report back." >&2
+  exit 1
+fi
+echo "  preflight OK"
+
 for id in "${INSTANCES[@]}"; do
   clone="$CLONES/$id"
   [ -d "$clone/.git" ] || { echo "$id: clone missing — run scripts/prep-cc-review-clones.sh" >&2; exit 1; }
   for rep in $(seq 1 "$REPS"); do
     dest="$OUT/$id/rep$rep"
-    if [ -s "$dest/result.json" ]; then
-      echo "=== E7: $id rep$rep — result.json exists, skipping (delete to re-run)"
+    # Skip only genuinely completed reps: a failed-auth run leaves a result.json
+    # with num_turns=0, which must be re-run, not skipped.
+    if [ -s "$dest/result.json" ] && python3 -c '
+import json, sys
+d = json.load(open(sys.argv[1]))
+sys.exit(0 if d.get("num_turns", 0) > 0 else 1)
+' "$dest/result.json" 2>/dev/null; then
+      echo "=== E7: $id rep$rep — completed result exists, skipping (delete to re-run)"
       continue
     fi
     mkdir -p "$dest"
