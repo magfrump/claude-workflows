@@ -94,18 +94,25 @@ while read -r inst base head; do
 
   echo "=== $inst ($base..$head)"
   start=$(date +%s)
-  if (cd "$wt" && "$CUBIC_BIN" review --base "crb-base-$inst" --json \
-        --print-logs --log-level "${CUBIC_LOG_LEVEL:-DEBUG}" \
-        >"../../../$out/review.json" 2>"../../../$out/stderr.log"); then
-    secs=$(( $(date +%s) - start ))
-    echo "    ok in ${secs}s -> $out/review.json"
+  # NOTE: cubic exits nonzero when it FINDS issues (CI-gate convention), so
+  # success is judged by valid JSON on stdout, not by exit code.
+  set +e
+  (cd "$wt" && "$CUBIC_BIN" review --base "crb-base-$inst" --json \
+      --print-logs --log-level "${CUBIC_LOG_LEVEL:-DEBUG}" \
+      >"../../../$out/review.json" 2>"../../../$out/stderr.log")
+  rc=$?
+  set -e
+  secs=$(( $(date +%s) - start ))
+  if python3 -c "import json,sys; json.load(open(sys.argv[1]))" "$out/review.json" 2>/dev/null; then
+    n=$(python3 -c "import json,sys; d=json.load(open(sys.argv[1])); print(len(d.get('issues', [])))" "$out/review.json")
+    echo "    ok in ${secs}s (exit $rc, $n issues) -> $out/review.json"
     ran=$((ran+1))
   else
-    secs=$(( $(date +%s) - start ))
-    echo "    FAILED after ${secs}s — see $out/stderr.log (review.json removed if empty)"
+    echo "    FAILED after ${secs}s (exit $rc, no valid JSON) — see $out/stderr.log"
     echo "    --- last stderr lines ---"
     tail -n 8 "$out/stderr.log" | sed 's/^/    | /'
-    [ -s "$out/review.json" ] || rm -f "$out/review.json"
+    # keep invalid output for inspection but out of the skip-guard's way
+    if [ -s "$out/review.json" ]; then mv "$out/review.json" "$out/review.json.bad"; else rm -f "$out/review.json"; fi
     failed=$((failed+1))
   fi
 done <<EOF

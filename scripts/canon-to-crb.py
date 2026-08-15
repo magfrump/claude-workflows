@@ -163,7 +163,10 @@ def cubic_to_comments(path: Path) -> list[dict]:
     for it in items:
         fpath = it.get("path") or it.get("file") or it.get("filePath") or it.get("file_path")
         line = it.get("line") or it.get("startLine") or it.get("line_start") or it.get("start_line")
+        prio = it.get("priority") or it.get("severity") or ""
         title = it.get("title") or it.get("summary") or ""
+        if prio:
+            title = f"[{prio}] {title}".strip()
         desc = it.get("description") or it.get("body") or it.get("message") or it.get("text") or ""
         body = f"**{title}**\n\n{desc}".strip("* \n") if (title or desc) else json.dumps(it, indent=2)
         comments.append({"path": fpath, "line": line, "body": body, "created_at": None})

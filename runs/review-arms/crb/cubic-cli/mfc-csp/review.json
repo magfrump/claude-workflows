@@ -1,0 +1,46 @@
+{
+  "issues": [
+    {
+      "priority": "P0",
+      "file": "proxy.ts",
+      "line": 47,
+      "title": "Nonce never reaches the Next.js renderer, so the strict CSP blocks the app's own scripts",
+      "description": "The CSP header is set only on the *response*; Next.js extracts the nonce for its inline bootstrap/hydration scripts from the *request's* `Content-Security-Policy` header (the official pattern sets it on the forwarded `requestHeaders` as well, alongside `x-nonce`). As written, Next's inline scripts ship un-nonced, and under `script-src 'nonce-…' 'strict-dynamic'` (no `'unsafe-inline'` fallback) every page fails to hydrate — the CSP effectively breaks the entire app rather than protecting it. Fix: `requestHeaders.set(\"Content-Security-Policy\", buildCsp(nonce))` before `NextResponse.next(...)`."
+    },
+    {
+      "priority": "P1",
+      "file": "proxy.ts",
+      "line": 30,
+      "title": "Missing `worker-src` blocks the pdf.js worker, breaking/degrading PDF upload",
+      "description": "With `'strict-dynamic'` present, host sources like `'self'` are ignored, and workers can't carry nonces, so `worker-src` (falling back to `script-src`) blocks `new Worker(...)` for `pdf.worker.min.mjs` (`app/lib/utils/fileExtraction.ts:26-29`). At best pdf.js falls back to main-thread parsing (console errors, UI freezes on large PDFs); at worst PDF extraction — a core input path — fails outright. Add `worker-src 'self' blob:`."
+    },
+    {
+      "priority": "P2",
+      "file": "proxy.ts",
+      "line": 22,
+      "title": "No dev-mode carve-out for `'unsafe-eval'` breaks `npm run dev`",
+      "description": "Next.js dev mode (React Refresh/HMR) requires `eval`, which this `script-src` forbids unconditionally. Once the P0 is fixed and the CSP actually takes effect, the dev server will throw CSP violations on every page; the standard pattern is to append `'unsafe-eval'` (or relax the policy) when `process.env.NODE_ENV === \"development\"`."
+    },
+    {
+      "priority": "P3",
+      "file": "app/layout.tsx",
+      "line": 28,
+      "title": "Comment documents an incorrect nonce mechanism",
+      "description": "The comment claims Next.js tags its bootstrap scripts \"with the nonce from the response's CSP header\" — it actually reads the request header (this misunderstanding is the root cause of the P0). Left as-is, it will mislead future maintainers into thinking the response-only wiring is sufficient."
+    },
+    {
+      "priority": "P3",
+      "file": "proxy.ts",
+      "line": 29,
+      "title": "Missing `form-action 'self'` directive",
+      "description": "The policy hardens `base-uri`, `object-src`, and `frame-ancestors` but omits `form-action`, leaving injected `<form action=\"https://evil…\">` exfiltration unrestricted. Cheap to add alongside the existing hardening directives."
+    },
+    {
+      "priority": "P3",
+      "file": "proxy.ts",
+      "line": 19,
+      "title": "No tests for the new CSP proxy",
+      "description": "The repo's guidelines call for tests alongside implementation; `buildCsp` and the nonce/header wiring are pure and easily unit-testable (e.g., asserting the CSP lands on both request and response headers), which would have caught the P0."
+    }
+  ]
+}
