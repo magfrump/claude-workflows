@@ -4,9 +4,14 @@
 # One-time setup (interactive, run in a normal terminal):
 #   1. Install the CLI:            npm i -g @cubic-dev-ai/cli
 #      (or set CUBIC_BIN to an unpacked binary path)
-#   2. Connect Claude Code auth:   cubic auth connect claude-code
-#      — reuses your Claude Code login; no cubic.dev account or API key needed.
-#   3. Verify:                     cubic auth list     (expect 1 credential)
+#   2. Sign in to cubic.dev:       cubic auth login
+#      REQUIRED for `cubic review` — the binary hard-errors with "Cubic auth is
+#      required to start a review" otherwise. Free account; browser flow.
+#   3. Connect Claude Code auth:   cubic auth connect claude-code
+#      — makes the local logged-in `claude` CLI the model provider (ACP).
+#      This sets a preference flag only; `auth list` will still show just the
+#      cubic.dev credential from step 2, which is expected.
+#   4. Verify:                     cubic auth list     (expect 1 credential)
 #
 # Then run the sweep:
 #   bash runs/review-arms/crb/run-cubic.sh            # all 8 instances
@@ -36,16 +41,14 @@ OUT_ROOT=runs/review-arms/crb/cubic-cli
 export CUBIC_DISABLE_ANALYTICS=1 CUBIC_DISABLE_AUTOUPDATE=1
 
 command -v "$CUBIC_BIN" >/dev/null || { echo "cubic not found (npm i -g @cubic-dev-ai/cli, or set CUBIC_BIN)" >&2; exit 1; }
-# NOTE: `cubic auth list` reporting "0 credentials" is EXPECTED in claude-code
-# mode — `auth connect claude-code` sets a claudeCodeEnabled preference flag
-# and drives the local `claude` CLI via ACP; it stores nothing in auth.json.
-# The real prerequisites are: `claude` on PATH and logged in.
+# `cubic review` requires a cubic.dev session in auth.json ("Cubic auth is
+# required to start a review", verified against the 1.10.4 binary) — the
+# claude-code ACP connect alone is only the model provider, not review auth.
 if "$CUBIC_BIN" auth list 2>/dev/null | grep -q "0 credentials"; then
-  command -v claude >/dev/null || {
-    echo "0 cubic credentials and no claude CLI on PATH — run either" >&2
-    echo "  cubic auth connect claude-code   (needs a logged-in claude CLI)" >&2
-    echo "or cubic auth login" >&2; exit 1; }
-  echo "note: 0 stored credentials — assuming claude-code ACP mode (this is normal)"
+  echo 'no cubic.dev session — "cubic review" refuses to start without one.' >&2
+  echo 'run: cubic auth login   (free account; then optionally keep the' >&2
+  echo 'claude-code provider via: cubic auth connect claude-code)' >&2
+  exit 1
 fi
 
 # id  base     head   (ranges: docs/working/review-canon.md §1)
