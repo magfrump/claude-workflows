@@ -18,19 +18,21 @@
 # ~$45–65 for the full 3x sweep. Trim via args if that's too much.
 #
 # Prereqs: docker; clones built by scripts/prep-cc-review-clones.sh; and ONE of:
-#   * CLAUDE_CODE_OAUTH_TOKEN — subscription billing. Mint once on the host with
-#     `claude setup-token` (long-lived OAuth token; plain env var, so the
-#     container still gets zero ~/.claude state). Caveats: total_cost_usd in
+#   * CLAUDE_CREDENTIALS=~/.claude/.credentials.json — subscription billing.
+#     A copy of the file is mounted as the container's ~/.claude (credential
+#     only; no skills/hooks/CLAUDE.md leak). Caveats: total_cost_usd in
 #     result.json is then a list-price ESTIMATE, not a bill — label it so in
 #     the results doc; and 24 Fable runs draw on weekly subscription limits —
 #     a mid-sweep limit failure confounds the arm (cf. E6 free-tier), though
 #     the rep-skip logic lets you resume after the window resets.
+#     (CLAUDE_CODE_OAUTH_TOKEN does NOT work: --bare headless in CLI 2.1.232
+#     ignores it — verified 2026-08-14.)
 #   * ANTHROPIC_API_KEY — API billing; total_cost_usd authoritative. Fable
 #     needs 30-day data retention on the org (ZDR orgs 400 on every request).
-# If both are set, the OAuth token wins (API key is not passed in).
+# If both are set, the credentials file wins (API key is not passed in).
 #
-# Usage:  bash runs/review-arms/e7-fable-3x/run-host.sh [instance...]
-#         REPS=2 bash runs/review-arms/e7-fable-3x/run-host.sh mfc-csp   # fewer reps / subset
+# Usage:  CLAUDE_CREDENTIALS=~/.claude/.credentials.json bash runs/review-arms/e7-fable-3x/run-host.sh [instance...]
+#         REPS=2 ... run-host.sh mfc-csp   # fewer reps / subset
 set -euo pipefail
 cd "$(dirname "$0")/../../.."
 ROOT="$PWD"
@@ -40,14 +42,32 @@ CC_VERSION="2.1.232"   # pin for reproducibility; bump deliberately
 REPS="${REPS:-3}"
 [ $# -gt 0 ] && INSTANCES=("$@") || INSTANCES=(mfc-csp mfc-lean mfc-hygiene mfc-secdeps mfc-deploy mfc-fscompat mfc-corpus mfc-postfix)
 
-if [ -n "${CLAUDE_CODE_OAUTH_TOKEN:-}" ]; then
-  AUTH_ENV=(-e CLAUDE_CODE_OAUTH_TOKEN)
-  echo "Auth: subscription (CLAUDE_CODE_OAUTH_TOKEN) — total_cost_usd will be a list-price estimate, not billed spend."
+# Auth resolution, in preference order:
+#   1. CLAUDE_CREDENTIALS — path to a .credentials.json (usually
+#      ~/.claude/.credentials.json, written by 'claude /login'). A COPY is
+#      mounted as the container's ~/.claude, so only the credential — no
+#      skills/hooks/CLAUDE.md — crosses into the arm. This is the working
+#      subscription path: verified 2026-08-14 that CLI 2.1.232 in --bare
+#      headless mode does NOT honor CLAUDE_CODE_OAUTH_TOKEN (token present in
+#      container, still 'Not logged in').
+#   2. ANTHROPIC_API_KEY — API billing; total_cost_usd authoritative.
+# Caveat for mode 1: if the container refreshes the OAuth token mid-sweep and
+# the provider rotates refresh tokens, the host's copy can go stale — if
+# 'claude' on the host later demands /login, that's why.
+AUTH_ENV=() AUTH_MOUNT=()
+if [ -n "${CLAUDE_CREDENTIALS:-}" ]; then
+  [ -f "$CLAUDE_CREDENTIALS" ] || { echo "CLAUDE_CREDENTIALS=$CLAUDE_CREDENTIALS: no such file" >&2; exit 1; }
+  AUTH_DIR=$(mktemp -d)
+  trap 'rm -rf "$AUTH_DIR"' EXIT
+  cp "$CLAUDE_CREDENTIALS" "$AUTH_DIR/.credentials.json"
+  chmod 700 "$AUTH_DIR"; chmod 600 "$AUTH_DIR/.credentials.json"
+  AUTH_MOUNT=(-v "$AUTH_DIR":/home/node/.claude)
+  echo "Auth: subscription (credentials file copy) — total_cost_usd will be a list-price estimate, not billed spend."
 elif [ -n "${ANTHROPIC_API_KEY:-}" ]; then
   AUTH_ENV=(-e ANTHROPIC_API_KEY)
   echo "Auth: API key — total_cost_usd authoritative."
 else
-  echo "Set CLAUDE_CODE_OAUTH_TOKEN (subscription; mint via 'claude setup-token') or ANTHROPIC_API_KEY" >&2
+  echo "Set CLAUDE_CREDENTIALS=~/.claude/.credentials.json (subscription) or ANTHROPIC_API_KEY (API billing)" >&2
   exit 1
 fi
 
@@ -61,9 +81,9 @@ docker run --rm -v cc-review-npm-cache:/home/node/.npm node:22 \
 # result "Not logged in · Please run /login" and num_turns=0 (learned the hard
 # way, 2026-08-14). Verify auth with one cheap prompt before burning the sweep.
 echo "=== E7 preflight: verifying auth inside the container"
-docker run --rm -u node "${AUTH_ENV[@]}" -v cc-review-npm-cache:/home/node/.npm node:22 \
-  sh -c 'echo "  token length in container: ${#CLAUDE_CODE_OAUTH_TOKEN} (oauth) / ${#ANTHROPIC_API_KEY} (api key)"'
-preflight=$(docker run --rm -u node "${AUTH_ENV[@]}" -v cc-review-npm-cache:/home/node/.npm node:22 \
+docker run --rm -u node "${AUTH_ENV[@]}" "${AUTH_MOUNT[@]}" -v cc-review-npm-cache:/home/node/.npm node:22 \
+  sh -c '[ -f /home/node/.claude/.credentials.json ] && echo "  credentials file mounted" || echo "  api key length in container: ${#ANTHROPIC_API_KEY}"'
+preflight=$(docker run --rm -u node "${AUTH_ENV[@]}" "${AUTH_MOUNT[@]}" -v cc-review-npm-cache:/home/node/.npm node:22 \
   npx -y @anthropic-ai/claude-code@"$CC_VERSION" \
     --bare -p "Reply with exactly: OK" --model claude-fable-5 --output-format json 2>&1) || true
 if ! printf '%s' "$preflight" | python3 -c '
@@ -77,8 +97,8 @@ sys.exit(0 if d.get("num_turns", 0) > 0 and "log in" not in r.lower() and "logge
 '; then
   echo "PREFLIGHT FAILED — the CLI could not authenticate. Raw response:" >&2
   printf '%s\n' "$preflight" >&2
-  echo "If the token length above was 0, the env var never reached docker (re-export in THIS shell; sudo drops env)." >&2
-  echo "If the length was right but auth still failed, this CLI/mode may not honor CLAUDE_CODE_OAUTH_TOKEN — report back." >&2
+  echo "Subscription mode: check the host file is fresh — run 'claude' interactively once to refresh, then retry." >&2
+  echo "API mode: check the key and the org's data-retention setting (Fable needs 30-day retention)." >&2
   exit 1
 fi
 echo "  preflight OK"
@@ -106,7 +126,7 @@ sys.exit(0 if d.get("num_turns", 0) > 0 else 1)
     # --bare: no hooks/plugins/user-state — the repo's own CLAUDE.md is part
     # of the tree under review and loads as it would for any real user.
     docker run --rm -u node -w /repo \
-      "${AUTH_ENV[@]}" \
+      "${AUTH_ENV[@]}" "${AUTH_MOUNT[@]}" \
       -v "$clone":/repo \
       -v cc-review-npm-cache:/home/node/.npm \
       node:22 \
