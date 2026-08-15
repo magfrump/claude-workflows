@@ -25,12 +25,13 @@
 #     the results doc; and 24 Fable runs draw on weekly subscription limits —
 #     a mid-sweep limit failure confounds the arm (cf. E6 free-tier), though
 #     the rep-skip logic lets you resume after the window resets.
-#     IMPORTANT ARM-CONDITION DEVIATION vs E5: --bare blocks ALL subscription
-#     auth (env token and stored credentials alike — probe-verified
-#     2026-08-15), so subscription runs drop --bare. Consequence: repo-level
-#     .claude/agents + .claude/commands load in the 3 instances that have
-#     them (mfc-csp, mfc-deploy, mfc-secdeps; none appear in the diffs under
-#     review). Note this in the E7 results doc.
+#     ARM-CONDITION NOTE vs E5: --bare blocks ALL subscription auth (env token
+#     and stored credentials alike — probe-verified 2026-08-15), so
+#     subscription runs drop --bare. In principle that lets the repo-under-
+#     review's own .claude/agents+commands load; in practice those dirs exist
+#     only in mfc-csp/deploy/secdeps and are EMPTY (checked 2026-08-15), so
+#     the effective condition matches E5 apart from bare-mode's other
+#     UI/state suppression. One line in the E7 results doc suffices.
 #   * ANTHROPIC_API_KEY — API billing; total_cost_usd authoritative. Fable
 #     needs 30-day data retention on the org (ZDR orgs 400 on every request).
 # If both are set, the credentials file wins (API key is not passed in).
