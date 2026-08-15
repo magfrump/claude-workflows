@@ -1,0 +1,74 @@
+{
+  "issues": [
+    {
+      "priority": "P1",
+      "file": "app/lib/corpus/flag.ts",
+      "line": 15,
+      "title": "\"Dev-only\" flag guard is documented everywhere but not implemented",
+      "description": "The file header, plan, seam doc, and CLAUDE.md all state the flag is \"DEFAULT OFF and DEV-ONLY\", and the plan's failure-mode table cites \"flag is default-off + dev-only\" as the structural guard against silently discarding a user's localStorage workspace (flag-ON starts from an empty corpus; no migration until S4). But `isCorpusEnabled()` contains no `NODE_ENV`/dev check — `localStorage.setItem(\"corpus-fs-enabled\", \"1\")` in any production deployment, or `NEXT_PUBLIC_CORPUS_FS=1` in a production build, enables the corpus path and makes the user's existing workspace vanish from view. The promised data-loss guard is absent."
+    },
+    {
+      "priority": "P2",
+      "file": "app/lib/stores/workspaceStore.ts",
+      "line": 533,
+      "title": "With corpus flag ON, `onRehydrateStorage` can clobber rehydrated corpus state with stale v2 localStorage data",
+      "description": "The migration check reads `localStorage` keys (`workspace-v2`, `workspace-zustand-v1`) regardless of which storage backend is active. When the flag is ON and a legacy `workspace-v2` key exists but `workspace-zustand-v1` doesn't, `migrateFromV2()` runs on every load, overwriting the just-rehydrated OPFS-backed state with old v2 data (which is then persisted back to the corpus) — both corrupting flag-ON state and contradicting the documented \"flag-ON starts from an empty corpus, no migration in S1\" contract."
+    },
+    {
+      "priority": "P2",
+      "file": "app/lib/corpus/storeAdapter.ts",
+      "line": 61,
+      "title": "Corpus-backed `setItem` has no write serialization or debounce → stale-write race and write amplification",
+      "description": "The localStorage path debounces writes by 300 ms, but `createCorpusBackedStorage` issues an OPFS `writeFile` for every store `set()` with no queueing: overlapping writes to `state/<name>.json` each open their own `createWritable()` staging file, and whichever `close()` lands last wins — an earlier (stale) snapshot can complete after a newer one, persisting regressed state. It also turns every keystroke into a full-blob OPFS write chain."
+    },
+    {
+      "priority": "P2",
+      "file": "app/lib/corpus/manifest.ts",
+      "line": 87,
+      "title": "Fail-loud parse contract is undermined by silent per-entry drops",
+      "description": "The header mandates that a malformed manifest \"never\" parse into something that masks data loss, yet `sources.filter(isObject)`, `artifacts.filter(isObject)`, and `customTypeIds.filter(typeof === \"string\")` silently discard corrupted entries (and `createdAt`/`updatedAt` are silently replaced with `new Date()`), so a partially corrupted manifest parses \"successfully\" with sources/artifact pointers missing — precisely the masquerade the contract (and test G11) is supposed to prevent, in the module S4 will trust as its index."
+    },
+    {
+      "priority": "P3",
+      "file": "app/lib/corpus/paths.ts",
+      "line": 36,
+      "title": "`workspaceSlug` collisions map distinct workspace titles to the same directory",
+      "description": "Lowercasing plus collapsing all non-`[a-zA-Z0-9_-]` runs means titles like \"My Workspace\", \"my workspace!\", and \"MY-WORKSPACE\" all slug to `my-workspace`, so two different workspaces would share one `workspaces/<slug>/` tree and silently overwrite each other's manifest and artifacts once S4 wires the layout in. The module is explicitly the S1-frozen contract S2–S4 bind to, so the collision semantics deserve resolution (or a documented uniquing scheme) now."
+    },
+    {
+      "priority": "P3",
+      "file": "app/lib/corpus/paths.ts",
+      "line": 44,
+      "title": "Path builders throw plain `Error`, not `CorpusError`, breaking the module's typed-error model",
+      "description": "`workspaceSlug`/`safeSegment`/`artifactVersionPath` throw bare `Error`s (e.g. for an all-unicode title such as \"日本語\"), while the corpus module's stated contract is that failures reify as `CorpusError` with a discriminated kind — callers switching exhaustively on `CorpusErrorKind` will miss these, and an entirely-CJK workspace title becomes an unclassified crash path in S4."
+    },
+    {
+      "priority": "P3",
+      "file": "app/lib/corpus/manifest.ts",
+      "line": 84,
+      "title": "`manifestVersion` is validated as a number but never checked against `MANIFEST_VERSION`",
+      "description": "A future v2 manifest (or garbage like `manifestVersion: 999`) parses as if current with unknown fields silently dropped, defeating the point of carrying a version field in a fail-loud codec; an explicit version gate would turn forward-incompatibility into a typed error."
+    },
+    {
+      "priority": "P3",
+      "file": "app/lib/corpus/opfsAdapter.ts",
+      "line": 115,
+      "title": "Comment claims a fresh ArrayBuffer view is passed, but the code passes the caller's array directly",
+      "description": "The comment \"Pass a fresh ArrayBuffer view; some implementations dislike shared buffers\" describes a copy that isn't made — `w.write(bytes)` forwards the original `Uint8Array`. Either make the copy the comment promises or delete the comment; as written it documents behavior that doesn't exist."
+    },
+    {
+      "priority": "P3",
+      "file": "app/lib/corpus/__tests__/inMemoryCorpusFs.ts",
+      "line": 22,
+      "title": "Fake's `readFile` returns the live stored array, unlike real OPFS",
+      "description": "`writeFile` defensively copies but `readFile` hands back the stored `Uint8Array` by reference, so a consumer that mutates a read buffer would corrupt the fake's state while real OPFS (which materializes fresh bytes from `arrayBuffer()`) would be unaffected. Since fake-vs-OPFS divergence is the plan's own top residual risk and the contract suite is the substitutability proof, the fake should return `bytes.slice()`."
+    },
+    {
+      "priority": "P3",
+      "file": ".gitignore",
+      "line": 37,
+      "title": "`docs/user_research/property-tests.json` untracked but not ignored",
+      "description": "Commit 2dc403e removed the file from tracking (\"swept in by git add -A; restore to untracked\") but added no ignore entry, so the next `git add -A` will sweep it right back in; add it (or its directory pattern) to .gitignore to make the untracking stick."
+    }
+  ]
+}

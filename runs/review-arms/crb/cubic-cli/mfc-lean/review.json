@@ -1,0 +1,46 @@
+{
+  "issues": [
+    {
+      "priority": "P1",
+      "file": "app/lib/formalization/formalizeNode.ts",
+      "line": 61,
+      "title": "Unavailable verifier marks decomposition nodes \"failed\" and cascades skips through the queue",
+      "description": "`leanRetryLoop` now returns `{valid: false, unavailable: true}` when the verifier is missing, but `formalizeNode` was not updated and still maps `result.valid ? \"verified\" : \"failed\"` — so with `LEAN_VERIFIER_URL` unset (now the default, see below), every node with a deductive pipeline is marked \"Failed\" with empty `verificationErrors`, and `useAutoFormalizeQueue` (line 113-119) then skips all dependents with the misleading message \"Skipped: dependency X failed\". \"Formalize All\" without a verifier now fails an entire graph that previously completed."
+    },
+    {
+      "priority": "P2",
+      "file": "app/lib/types/decomposition.ts",
+      "line": 36,
+      "title": "New \"unavailable\" status silently collapsed to \"unverified\" in node-scoped flows",
+      "description": "`toNodeVerificationStatus` was not extended, so its `default` arm swallows `\"unavailable\"` (page.tsx:350 routes the node pipeline through it), and `fromNodeVerificationStatus` maps back to `\"none\"` — in decomposition mode the \"Verifier offline — proof not checked\" banner and badge never appear, and session restore (page.tsx:186) loses the state. The fix this branch implements is invisible for per-node verification."
+    },
+    {
+      "priority": "P2",
+      "file": "app/api/verification/lean/route.ts",
+      "line": 27,
+      "title": "Removed localhost:3100 default breaks the documented zero-config dev flow",
+      "description": "The base defaulted `LEAN_VERIFIER_URL` to `http://localhost:3100`; now an unset variable short-circuits to `unavailableResponse(\"verifier-not-configured\")` without ever trying the verifier. `docker-compose.yml` publishes the verifier on 3100 but nothing sets `LEAN_VERIFIER_URL` for the Next.js app, so the README's `docker compose up` + `npm run dev` flow now reports every proof as unchecked until the developer manually exports the variable."
+    },
+    {
+      "priority": "P2",
+      "file": "README.md",
+      "line": 84,
+      "title": "Docs still describe the removed mock-fallback behavior",
+      "description": "README lines 60, 84, and 92 (\"falls back to a mock response\", \"defaults to `http://localhost:3100`\", \"mock `{ valid: true, mock: true }`\") and docs/USER_GUIDE.md lines 203 and 345 (\"a mock 'valid' response is returned\") document behavior this branch deliberately removed; USER_GUIDE's badge list (lines 197-201) also omits the new \"Verifier offline\" state. Project CLAUDE.md requires updating these docs in the same PR as user-facing behavior changes."
+    },
+    {
+      "priority": "P3",
+      "file": "app/hooks/useFormalizationPipeline.ts",
+      "line": 164,
+      "title": "Network failure reaching the app's own verification route still reports \"Verification Failed\"",
+      "description": "The catch blocks in `handleReVerify` (line 164) and `handleLeanIterate` (line 206) set status `\"invalid\"` when `verifyLean`'s fetch rejects, so a proof that was never checked still displays as a failed proof — the exact misreporting class this change set out to eliminate, left unhandled for the app-server hop."
+    },
+    {
+      "priority": "P3",
+      "file": "app/lib/formalization/api.ts",
+      "line": 115,
+      "title": "No tests for the new unavailable-status mapping logic",
+      "description": "`verifyResultToStatus`, the `verifyLean` `unavailable` plumbing, and `leanRetryLoop`'s early-return on unavailable (the load-bearing \"unavailable wins over valid\" invariant) shipped without any unit tests, despite the project guideline to write Vitest tests alongside implementation."
+    }
+  ]
+}

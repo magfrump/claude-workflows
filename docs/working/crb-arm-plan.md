@@ -133,6 +133,39 @@ Caveat for the ledger: this is cubic's *local* review, documented by cubic as
 "intentionally faster and less thorough" than the cloud PR review their
 leaderboard row was scored on. File results as `cubic-cli`, not `cubic`.
 
+## First real-judge results (2026-08-14, sonnet-4.5 via OpenRouter)
+
+Full cubic sweep done (8/8 valid JSON; ~5 min/instance on the author's Max
+plan — reported usage ≈33% session / 5% weekly / 9% fable limits). Steps
+2/2.5/3 then run with a **live** shim (`shims-live/openai`, stdlib urllib →
+OpenRouter, since pypi is sandbox-blocked; put it before `shims/` on
+PYTHONPATH). Judge: `anthropic/claude-sonnet-4.5`, temperature 0. Output:
+`offline-work/results/anthropic_claude-sonnet-4.5/evaluations.json`.
+
+| Tool | Precision | Recall | F1 | Goldens matched | Unique catches |
+|---|---|---|---|---|---|
+| e2 | 57.1% | 26.7% | 36.4% | 12/45 | pf-A4 |
+| e4-union | 36.9% | 53.3% | 43.6% | 24/45 | C4, fsc-A1, pf-A2, pf-A3, pf-A6 |
+| cubic-cli | 39.6% | 42.2% | 40.9% | 19/45 | N3, N7, fsc-A4, lean-R1, pf-R1 |
+
+Union coverage 30/45. Reading notes:
+
+- cubic-cli lands between e2 and e4-union on recall at e4-like precision,
+  from ~35 findings total vs e4's ~89 flattened comments — a strong showing
+  for the "less thorough" local CLI. It uniquely matched **N7** (pdf.js
+  worker-src, previously ultrareview-only) and **pf-R1**, but emitted only
+  one finding on mfc-postfix (missed pf-A1 crash/security pair e2+e4 both hit).
+- Judge was stricter than my informal read: cubic's "no CSP tests" was NOT
+  credited as csp-A4. Judge-vs-ledger calibration diffs are expected; treat
+  these columns as the third-party view, ledger stays source of truth.
+- Nobody matched: csp-R1/R2/A2/A4, N2, N6, fsc-A2/A3, D6, cor-A1/A2/A3,
+  pf-A5/A7/A8 (15 issues).
+- Candidate NEW issue from cubic for adjudication: missing `form-action
+  'self'` (mfc-csp P3); the mfc-corpus P2s (rehydration clobber, storeAdapter
+  write race) also look ledger-worthy.
+- Cost of the judge pass: single-digit dollars at most on the OpenRouter key
+  (23 extracts + 22 dedups + judge matrix, sonnet-4.5).
+
 ## Next steps — direction (1)
 
 1. Script the materialization loop over the 50 PRs (one fork per original PR,

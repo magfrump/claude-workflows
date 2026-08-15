@@ -1,0 +1,358 @@
+INFO  2026-08-15T01:40:04 +177ms service=default version=1.10.4 args=["review","--base","crb-base-mfc-corpus","--json","--print-logs","--log-level","DEBUG"] cubic
+INFO  2026-08-15T01:40:04 +9ms service=auth userId=dc16113e-2788-430e-9c5c-202739d636a3 hasTokens=true Found CLI auth
+INFO  2026-08-15T01:40:04 +0ms service=auth userId=dc16113e-2788-430e-9c5c-202739d636a3 expiry=1786761604 secondsUntilExpiry=3600 isExpired=false force=false inProgress=false refreshCliToken
+INFO  2026-08-15T01:40:04 +0ms service=auth Token valid, skipping refresh
+INFO  2026-08-15T01:40:04 +0ms service=auth userId=dc16113e-2788-430e-9c5c-202739d636a3 hasTokens=true Found CLI auth
+INFO  2026-08-15T01:40:04 +0ms service=auth Token valid, skipping refresh
+INFO  2026-08-15T01:40:04 +0ms service=auth userId=dc16113e-2788-430e-9c5c-202739d636a3 expiry=1786761604 secondsUntilExpiry=3600 isExpired=false force=false inProgress=false refreshCliToken
+INFO  2026-08-15T01:40:04 +712ms service=tracking mode=base-branch Starting CLI session creation
+INFO  2026-08-15T01:40:04 +0ms service=auth userId=dc16113e-2788-430e-9c5c-202739d636a3 hasTokens=true Found CLI auth
+INFO  2026-08-15T01:40:04 +0ms service=auth userId=dc16113e-2788-430e-9c5c-202739d636a3 expiry=1786761604 secondsUntilExpiry=3600 isExpired=false force=false inProgress=false refreshCliToken
+INFO  2026-08-15T01:40:04 +0ms service=auth Token valid, skipping refresh
+DEBUG 2026-08-15T01:40:04 +0ms service=tracking userId=dc16113e-2788-430e-9c5c-202739d636a3 CLI credentials found
+DEBUG 2026-08-15T01:40:04 +0ms service=tracking url=https://www.cubic.dev/api/cli/ai/v3/sessions Calling session creation API
+DEBUG 2026-08-15T01:40:05 +431ms service=tracking file=/home/magfrump/.local/state/cubic/cli-sessions/token-84501a81 instanceId=84501a81 Session token written to file (sync)
+INFO  2026-08-15T01:40:05 +0ms service=tracking sessionToken=0a4f46c4... model=gpt-5.6-luna expiresAt=2026-08-15T01:55:06.250Z CLI session started
+INFO  2026-08-15T01:40:05 +1ms service=default directory=/home/magfrump/claude-workflows/external/crb-cubic/mfc-corpus creating instance
+INFO  2026-08-15T01:40:05 +0ms service=project directory=/home/magfrump/claude-workflows/external/crb-cubic/mfc-corpus fromDirectory
+INFO  2026-08-15T01:40:05 +1ms service=project status=started git.rev-parse
+INFO  2026-08-15T01:40:05 +6ms service=project status=completed duration=6 git.rev-parse
+INFO  2026-08-15T01:40:05 +7ms service=default directory=/home/magfrump/claude-workflows/external/crb-cubic/mfc-corpus bootstrapping
+INFO  2026-08-15T01:40:05 +2ms service=config path=/home/magfrump/.config/cubic/config.json loading
+INFO  2026-08-15T01:40:05 +1ms service=config path=/home/magfrump/.config/cubic/cubic.jsonc loading
+INFO  2026-08-15T01:40:05 +0ms service=config path=/home/magfrump/.config/cubic/cubic.json loading
+INFO  2026-08-15T01:40:05 +8ms service=bus type=* subscribing
+INFO  2026-08-15T01:40:05 +0ms service=format init
+INFO  2026-08-15T01:40:05 +0ms service=bus type=file.edited subscribing
+INFO  2026-08-15T01:40:05 +0ms service=lsp serverIds=deno, typescript, vue, eslint, gopls, ruby-lsp, pyright, elixir-ls, zls, csharp, sourcekit-lsp, rust, clangd, svelte, astro, jdtls, lua-ls enabled LSP servers
+INFO  2026-08-15T01:40:05 +74ms service=bus type=command.executed subscribing
+INFO  2026-08-15T01:40:05 +1ms service=session id=ses_ffcec7d25ffe6Sf9H1UZU8JfDv version=1.10.4 projectID=3ef17b6d3eb78b2b89af730a117988ba2678405f directory=/home/magfrump/claude-workflows/external/crb-cubic/mfc-corpus title=Review against crb-base-mfc-corpus time={"created":1786758005466,"updated":1786758005466} created
+INFO  2026-08-15T01:40:05 +3ms service=bus type=session.created publishing
+INFO  2026-08-15T01:40:05 +1ms service=bus type=session.updated publishing
+INFO  2026-08-15T01:40:05 +0ms service=bus type=message.part.updated subscribing
+INFO  2026-08-15T01:40:05 +0ms service=bus type=permission.updated subscribing
+INFO  2026-08-15T01:40:05 +2ms service=session.prompt session=ses_ffcec7d25ffe6Sf9H1UZU8JfDv directory=/home/magfrump/claude-workflows/external/crb-cubic/mfc-corpus prompt
+INFO  2026-08-15T01:40:05 +6ms service=auth userId=dc16113e-2788-430e-9c5c-202739d636a3 hasTokens=true Found CLI auth
+INFO  2026-08-15T01:40:05 +1ms service=auth userId=dc16113e-2788-430e-9c5c-202739d636a3 expiry=1786761604 secondsUntilExpiry=3599 isExpired=false force=false inProgress=false refreshCliToken
+INFO  2026-08-15T01:40:05 +0ms service=auth Token valid, skipping refresh
+INFO  2026-08-15T01:40:06 +1144ms service=bus type=message.updated publishing
+INFO  2026-08-15T01:40:06 +2ms service=bus type=message.part.updated publishing
+INFO  2026-08-15T01:40:07 +594ms service=bus type=session.updated publishing
+INFO  2026-08-15T01:40:07 +0ms service=session.lock sessionID=ses_ffcec7d25ffe6Sf9H1UZU8JfDv locked
+INFO  2026-08-15T01:40:07 +0ms service=session.prompt session=ses_ffcec7d25ffe6Sf9H1UZU8JfDv sessionID=ses_ffcec7d25ffe6Sf9H1UZU8JfDv locking
+INFO  2026-08-15T01:40:09 +2022ms service=bus type=message.updated publishing
+INFO  2026-08-15T01:40:09 +4ms service=bus type=message.part.updated publishing
+INFO  2026-08-15T01:40:12 +3013ms service=bus type=message.part.updated publishing
+INFO  2026-08-15T01:40:12 +712ms service=bus type=message.part.updated publishing
+INFO  2026-08-15T01:40:12 +2ms service=bus type=message.part.updated publishing
+INFO  2026-08-15T01:40:13 +740ms service=bus type=message.part.updated publishing
+INFO  2026-08-15T01:40:13 +13ms service=bus type=message.part.updated publishing
+INFO  2026-08-15T01:40:13 +1ms service=bus type=message.part.updated publishing
+INFO  2026-08-15T01:40:14 +565ms service=bus type=message.part.updated publishing
+INFO  2026-08-15T01:40:14 +537ms service=bus type=message.part.updated publishing
+INFO  2026-08-15T01:40:14 +38ms service=bus type=message.part.updated publishing
+INFO  2026-08-15T01:40:14 +10ms service=bus type=message.part.updated publishing
+INFO  2026-08-15T01:40:18 +3561ms service=bus type=message.part.updated publishing
+INFO  2026-08-15T01:40:19 +669ms service=bus type=message.part.updated publishing
+INFO  2026-08-15T01:40:19 +0ms service=bus type=message.part.updated publishing
+INFO  2026-08-15T01:40:19 +688ms service=bus type=message.part.updated publishing
+INFO  2026-08-15T01:40:19 +3ms service=bus type=message.part.updated publishing
+INFO  2026-08-15T01:40:19 +0ms service=bus type=message.part.updated publishing
+INFO  2026-08-15T01:40:20 +452ms service=bus type=message.part.updated publishing
+INFO  2026-08-15T01:40:20 +1ms service=bus type=message.part.updated publishing
+INFO  2026-08-15T01:40:20 +445ms service=bus type=message.part.updated publishing
+INFO  2026-08-15T01:40:20 +52ms service=bus type=message.part.updated publishing
+INFO  2026-08-15T01:40:20 +3ms service=bus type=message.part.updated publishing
+INFO  2026-08-15T01:40:24 +3627ms service=bus type=message.part.updated publishing
+INFO  2026-08-15T01:40:25 +723ms service=bus type=message.part.updated publishing
+INFO  2026-08-15T01:40:25 +8ms service=bus type=message.part.updated publishing
+INFO  2026-08-15T01:40:25 +742ms service=bus type=message.part.updated publishing
+INFO  2026-08-15T01:40:29 +3247ms service=bus type=message.part.updated publishing
+INFO  2026-08-15T01:40:29 +673ms service=bus type=message.part.updated publishing
+INFO  2026-08-15T01:40:29 +216ms service=bus type=message.part.updated publishing
+INFO  2026-08-15T01:40:29 +9ms service=bus type=message.part.updated publishing
+INFO  2026-08-15T01:40:30 +757ms service=bus type=message.part.updated publishing
+INFO  2026-08-15T01:40:36 +5551ms service=bus type=message.part.updated publishing
+INFO  2026-08-15T01:40:36 +1ms service=bus type=message.part.updated publishing
+INFO  2026-08-15T01:40:36 +15ms service=bus type=message.part.updated publishing
+INFO  2026-08-15T01:40:38 +2088ms service=bus type=message.part.updated publishing
+INFO  2026-08-15T01:40:44 +6229ms service=bus type=message.part.updated publishing
+INFO  2026-08-15T01:40:44 +0ms service=bus type=message.part.updated publishing
+INFO  2026-08-15T01:40:44 +239ms service=bus type=message.part.updated publishing
+INFO  2026-08-15T01:40:45 +714ms service=bus type=message.part.updated publishing
+INFO  2026-08-15T01:40:47 +1642ms service=bus type=message.part.updated publishing
+INFO  2026-08-15T01:40:47 +670ms service=bus type=message.part.updated publishing
+INFO  2026-08-15T01:40:47 +1ms service=bus type=message.part.updated publishing
+INFO  2026-08-15T01:40:48 +103ms service=bus type=message.part.updated publishing
+INFO  2026-08-15T01:40:48 +673ms service=bus type=message.part.updated publishing
+INFO  2026-08-15T01:41:10 +22065ms service=bus type=message.part.updated publishing
+INFO  2026-08-15T01:41:11 +839ms service=bus type=message.part.updated publishing
+INFO  2026-08-15T01:41:13 +1823ms service=bus type=message.part.updated publishing
+INFO  2026-08-15T01:41:13 +0ms service=bus type=message.part.updated publishing
+INFO  2026-08-15T01:41:13 +3ms service=bus type=message.part.updated publishing
+INFO  2026-08-15T01:41:16 +3031ms service=bus type=message.part.updated publishing
+INFO  2026-08-15T01:41:17 +679ms service=bus type=message.part.updated publishing
+INFO  2026-08-15T01:41:18 +901ms service=bus type=message.part.updated publishing
+INFO  2026-08-15T01:41:18 +11ms service=bus type=message.part.updated publishing
+INFO  2026-08-15T01:41:18 +58ms service=bus type=message.part.updated publishing
+INFO  2026-08-15T01:41:18 +657ms service=bus type=message.part.updated publishing
+INFO  2026-08-15T01:41:18 +12ms service=bus type=message.part.updated publishing
+INFO  2026-08-15T01:41:25 +6800ms service=bus type=message.part.updated publishing
+INFO  2026-08-15T01:41:26 +651ms service=bus type=message.part.updated publishing
+INFO  2026-08-15T01:41:32 +6738ms service=bus type=message.part.updated publishing
+INFO  2026-08-15T01:41:33 +66ms service=bus type=message.part.updated publishing
+INFO  2026-08-15T01:41:44 +11158ms service=bus type=message.part.updated publishing
+INFO  2026-08-15T01:41:44 +450ms service=bus type=message.part.updated publishing
+INFO  2026-08-15T01:41:44 +54ms service=bus type=message.part.updated publishing
+INFO  2026-08-15T01:41:46 +1397ms service=bus type=message.part.updated publishing
+INFO  2026-08-15T01:41:46 +678ms service=bus type=message.part.updated publishing
+INFO  2026-08-15T01:41:46 +6ms service=bus type=message.part.updated publishing
+INFO  2026-08-15T01:41:46 +56ms service=bus type=message.part.updated publishing
+INFO  2026-08-15T01:41:46 +4ms service=bus type=message.part.updated publishing
+INFO  2026-08-15T01:41:47 +386ms service=bus type=message.part.updated publishing
+INFO  2026-08-15T01:41:47 +51ms service=bus type=message.part.updated publishing
+INFO  2026-08-15T01:41:47 +4ms service=bus type=message.part.updated publishing
+INFO  2026-08-15T01:41:50 +3484ms service=bus type=message.part.updated publishing
+INFO  2026-08-15T01:41:50 +1ms service=bus type=message.part.updated publishing
+INFO  2026-08-15T01:41:50 +9ms service=bus type=message.part.updated publishing
+INFO  2026-08-15T01:41:50 +57ms service=bus type=message.part.updated publishing
+INFO  2026-08-15T01:41:50 +5ms service=bus type=message.part.updated publishing
+INFO  2026-08-15T01:41:54 +3420ms service=bus type=message.part.updated publishing
+INFO  2026-08-15T01:41:54 +228ms service=bus type=message.part.updated publishing
+INFO  2026-08-15T01:41:54 +2ms service=bus type=message.part.updated publishing
+INFO  2026-08-15T01:41:54 +10ms service=bus type=message.part.updated publishing
+INFO  2026-08-15T01:41:54 +5ms service=bus type=message.part.updated publishing
+INFO  2026-08-15T01:41:57 +2924ms service=bus type=message.part.updated publishing
+INFO  2026-08-15T01:41:57 +279ms service=bus type=message.part.updated publishing
+INFO  2026-08-15T01:41:57 +50ms service=bus type=message.part.updated publishing
+INFO  2026-08-15T01:42:01 +3936ms service=bus type=message.part.updated publishing
+INFO  2026-08-15T01:42:01 +55ms service=bus type=message.part.updated publishing
+INFO  2026-08-15T01:42:01 +50ms service=bus type=message.part.updated publishing
+INFO  2026-08-15T01:42:01 +2ms service=bus type=message.part.updated publishing
+INFO  2026-08-15T01:42:16 +14418ms service=bus type=message.part.updated publishing
+INFO  2026-08-15T01:42:16 +8ms service=bus type=message.part.updated publishing
+INFO  2026-08-15T01:42:16 +135ms service=bus type=message.part.updated publishing
+INFO  2026-08-15T01:42:17 +981ms service=bus type=message.part.updated publishing
+INFO  2026-08-15T01:42:19 +2334ms service=bus type=message.part.updated publishing
+INFO  2026-08-15T01:42:20 +528ms service=bus type=message.part.updated publishing
+INFO  2026-08-15T01:42:20 +26ms service=bus type=message.part.updated publishing
+INFO  2026-08-15T01:42:20 +732ms service=bus type=message.part.updated publishing
+INFO  2026-08-15T01:42:22 +1945ms service=bus type=message.part.updated publishing
+INFO  2026-08-15T01:42:23 +681ms service=bus type=message.part.updated publishing
+INFO  2026-08-15T01:42:23 +0ms service=bus type=message.part.updated publishing
+INFO  2026-08-15T01:42:23 +44ms service=bus type=message.part.updated publishing
+INFO  2026-08-15T01:42:24 +660ms service=bus type=message.part.updated publishing
+INFO  2026-08-15T01:42:46 +22308ms service=bus type=message.part.updated publishing
+INFO  2026-08-15T01:42:47 +679ms service=bus type=message.part.updated publishing
+INFO  2026-08-15T01:42:47 +6ms service=bus type=message.part.updated publishing
+INFO  2026-08-15T01:42:47 +53ms service=bus type=message.part.updated publishing
+INFO  2026-08-15T01:42:47 +10ms service=bus type=message.part.updated publishing
+INFO  2026-08-15T01:42:47 +80ms service=bus type=message.part.updated publishing
+INFO  2026-08-15T01:42:47 +70ms service=bus type=message.part.updated publishing
+INFO  2026-08-15T01:42:47 +9ms service=bus type=message.part.updated publishing
+INFO  2026-08-15T01:42:55 +8444ms service=bus type=message.part.updated publishing
+INFO  2026-08-15T01:42:55 +0ms service=bus type=message.part.updated publishing
+INFO  2026-08-15T01:42:55 +32ms service=bus type=message.part.updated publishing
+INFO  2026-08-15T01:42:56 +647ms service=bus type=message.part.updated publishing
+INFO  2026-08-15T01:42:56 +3ms service=bus type=message.part.updated publishing
+INFO  2026-08-15T01:42:56 +60ms service=bus type=message.part.updated publishing
+INFO  2026-08-15T01:42:56 +5ms service=bus type=message.part.updated publishing
+INFO  2026-08-15T01:42:57 +614ms service=bus type=message.part.updated publishing
+INFO  2026-08-15T01:42:57 +1ms service=bus type=message.part.updated publishing
+INFO  2026-08-15T01:42:57 +44ms service=bus type=message.part.updated publishing
+INFO  2026-08-15T01:42:57 +5ms service=bus type=message.part.updated publishing
+INFO  2026-08-15T01:42:57 +641ms service=bus type=message.part.updated publishing
+INFO  2026-08-15T01:42:57 +1ms service=bus type=message.part.updated publishing
+INFO  2026-08-15T01:42:58 +45ms service=bus type=message.part.updated publishing
+INFO  2026-08-15T01:42:58 +5ms service=bus type=message.part.updated publishing
+INFO  2026-08-15T01:42:58 +656ms service=bus type=message.part.updated publishing
+INFO  2026-08-15T01:42:58 +6ms service=bus type=message.part.updated publishing
+INFO  2026-08-15T01:42:58 +41ms service=bus type=message.part.updated publishing
+INFO  2026-08-15T01:42:58 +4ms service=bus type=message.part.updated publishing
+INFO  2026-08-15T01:42:59 +597ms service=bus type=message.part.updated publishing
+INFO  2026-08-15T01:42:59 +2ms service=bus type=message.part.updated publishing
+INFO  2026-08-15T01:42:59 +64ms service=bus type=message.part.updated publishing
+INFO  2026-08-15T01:42:59 +6ms service=bus type=message.part.updated publishing
+INFO  2026-08-15T01:42:59 +96ms service=bus type=message.part.updated publishing
+INFO  2026-08-15T01:42:59 +59ms service=bus type=message.part.updated publishing
+INFO  2026-08-15T01:42:59 +9ms service=bus type=message.part.updated publishing
+INFO  2026-08-15T01:43:41 +42413ms service=bus type=message.part.updated publishing
+INFO  2026-08-15T01:43:41 +9ms service=bus type=message.part.updated publishing
+INFO  2026-08-15T01:43:42 +24ms service=bus type=message.part.updated publishing
+INFO  2026-08-15T01:43:42 +506ms service=bus type=message.part.updated publishing
+INFO  2026-08-15T01:43:42 +51ms service=bus type=message.part.updated publishing
+INFO  2026-08-15T01:43:42 +6ms service=bus type=message.part.updated publishing
+INFO  2026-08-15T01:44:09 +26971ms service=bus type=message.part.updated publishing
+INFO  2026-08-15T01:44:09 +0ms service=bus type=message.part.updated publishing
+INFO  2026-08-15T01:44:10 +1354ms service=bus type=message.part.updated publishing
+INFO  2026-08-15T01:44:10 +1ms service=bus type=message.part.updated publishing
+INFO  2026-08-15T01:44:10 +49ms service=bus type=message.part.updated publishing
+INFO  2026-08-15T01:44:10 +4ms service=bus type=message.part.updated publishing
+INFO  2026-08-15T01:44:11 +619ms service=bus type=message.part.updated publishing
+INFO  2026-08-15T01:44:11 +1ms service=bus type=message.part.updated publishing
+INFO  2026-08-15T01:44:11 +55ms service=bus type=message.part.updated publishing
+INFO  2026-08-15T01:44:12 +505ms service=bus type=message.part.updated publishing
+INFO  2026-08-15T01:44:12 +46ms service=bus type=message.part.updated publishing
+INFO  2026-08-15T01:44:12 +10ms service=bus type=message.part.updated publishing
+INFO  2026-08-15T01:44:13 +1729ms service=bus type=message.part.updated publishing
+INFO  2026-08-15T01:44:14 +758ms service=bus type=message.part.updated publishing
+INFO  2026-08-15T01:44:14 +2ms service=bus type=message.part.updated publishing
+INFO  2026-08-15T01:44:14 +44ms service=bus type=message.part.updated publishing
+INFO  2026-08-15T01:44:14 +8ms service=bus type=message.part.updated publishing
+INFO  2026-08-15T01:44:17 +2440ms service=bus type=message.part.updated publishing
+INFO  2026-08-15T01:44:17 +4ms service=bus type=message.part.updated publishing
+INFO  2026-08-15T01:44:17 +50ms service=bus type=message.part.updated publishing
+INFO  2026-08-15T01:44:17 +12ms service=bus type=message.part.updated publishing
+INFO  2026-08-15T01:44:17 +618ms service=bus type=message.part.updated publishing
+INFO  2026-08-15T01:44:17 +1ms service=bus type=message.part.updated publishing
+INFO  2026-08-15T01:44:17 +17ms service=bus type=message.part.updated publishing
+INFO  2026-08-15T01:44:17 +39ms service=bus type=message.part.updated publishing
+INFO  2026-08-15T01:44:17 +10ms service=bus type=message.part.updated publishing
+INFO  2026-08-15T01:44:17 +3ms service=bus type=message.part.updated publishing
+INFO  2026-08-15T01:44:21 +3991ms service=bus type=message.part.updated publishing
+INFO  2026-08-15T01:44:22 +695ms service=bus type=message.part.updated publishing
+INFO  2026-08-15T01:44:22 +1ms service=bus type=message.part.updated publishing
+INFO  2026-08-15T01:44:22 +51ms service=bus type=message.part.updated publishing
+INFO  2026-08-15T01:44:22 +3ms service=bus type=message.part.updated publishing
+INFO  2026-08-15T01:44:23 +623ms service=bus type=message.part.updated publishing
+INFO  2026-08-15T01:44:23 +1ms service=bus type=message.part.updated publishing
+INFO  2026-08-15T01:44:23 +48ms service=bus type=message.part.updated publishing
+INFO  2026-08-15T01:44:23 +9ms service=bus type=message.part.updated publishing
+INFO  2026-08-15T01:44:23 +442ms service=bus type=message.part.updated publishing
+INFO  2026-08-15T01:44:23 +48ms service=bus type=message.part.updated publishing
+INFO  2026-08-15T01:44:23 +7ms service=bus type=message.part.updated publishing
+INFO  2026-08-15T01:44:34 +10784ms service=bus type=message.part.updated publishing
+INFO  2026-08-15T01:44:34 +0ms service=bus type=message.part.updated publishing
+INFO  2026-08-15T01:44:34 +31ms service=bus type=message.part.updated publishing
+INFO  2026-08-15T01:44:35 +1333ms service=bus type=message.part.updated publishing
+INFO  2026-08-15T01:44:35 +1ms service=bus type=message.part.updated publishing
+INFO  2026-08-15T01:44:36 +51ms service=bus type=message.part.updated publishing
+INFO  2026-08-15T01:44:36 +2ms service=bus type=message.part.updated publishing
+INFO  2026-08-15T01:44:36 +840ms service=bus type=message.part.updated publishing
+INFO  2026-08-15T01:44:36 +20ms service=bus type=message.part.updated publishing
+INFO  2026-08-15T01:44:36 +4ms service=bus type=message.part.updated publishing
+INFO  2026-08-15T01:44:36 +65ms service=bus type=message.part.updated publishing
+INFO  2026-08-15T01:44:36 +7ms service=bus type=message.part.updated publishing
+INFO  2026-08-15T01:44:36 +3ms service=bus type=message.part.updated publishing
+INFO  2026-08-15T01:44:36 +10ms service=bus type=message.part.updated publishing
+INFO  2026-08-15T01:46:07 +90064ms service=bus type=message.part.updated publishing
+INFO  2026-08-15T01:46:07 +32ms service=bus type=message.part.updated publishing
+INFO  2026-08-15T01:46:07 +0ms service=bus type=message.part.updated publishing
+INFO  2026-08-15T01:46:07 +0ms service=bus type=message.part.updated publishing
+INFO  2026-08-15T01:46:07 +0ms service=bus type=message.part.updated publishing
+INFO  2026-08-15T01:46:07 +0ms service=bus type=message.part.updated publishing
+INFO  2026-08-15T01:46:07 +0ms service=bus type=message.part.updated publishing
+INFO  2026-08-15T01:46:07 +0ms service=bus type=message.part.updated publishing
+INFO  2026-08-15T01:46:07 +0ms service=bus type=message.part.updated publishing
+INFO  2026-08-15T01:46:07 +0ms service=bus type=message.part.updated publishing
+INFO  2026-08-15T01:46:07 +0ms service=bus type=message.part.updated publishing
+INFO  2026-08-15T01:46:07 +0ms service=bus type=message.part.updated publishing
+INFO  2026-08-15T01:46:07 +0ms service=bus type=message.part.updated publishing
+INFO  2026-08-15T01:46:07 +0ms service=bus type=message.part.updated publishing
+INFO  2026-08-15T01:46:07 +739ms service=bus type=message.part.updated publishing
+INFO  2026-08-15T01:46:08 +571ms service=bus type=message.part.updated publishing
+INFO  2026-08-15T01:46:09 +689ms service=bus type=message.part.updated publishing
+INFO  2026-08-15T01:46:09 +673ms service=bus type=message.part.updated publishing
+INFO  2026-08-15T01:46:10 +688ms service=bus type=message.part.updated publishing
+INFO  2026-08-15T01:46:11 +666ms service=bus type=message.part.updated publishing
+INFO  2026-08-15T01:46:11 +684ms service=bus type=message.part.updated publishing
+INFO  2026-08-15T01:46:12 +673ms service=bus type=message.part.updated publishing
+INFO  2026-08-15T01:46:13 +679ms service=bus type=message.part.updated publishing
+INFO  2026-08-15T01:46:13 +682ms service=bus type=message.part.updated publishing
+INFO  2026-08-15T01:46:14 +679ms service=bus type=message.part.updated publishing
+INFO  2026-08-15T01:46:15 +680ms service=bus type=message.part.updated publishing
+INFO  2026-08-15T01:46:15 +676ms service=bus type=message.part.updated publishing
+INFO  2026-08-15T01:46:16 +681ms service=bus type=message.part.updated publishing
+INFO  2026-08-15T01:46:17 +679ms service=bus type=message.part.updated publishing
+INFO  2026-08-15T01:46:17 +683ms service=bus type=message.part.updated publishing
+INFO  2026-08-15T01:46:18 +682ms service=bus type=message.part.updated publishing
+INFO  2026-08-15T01:46:19 +1213ms service=bus type=message.part.updated publishing
+INFO  2026-08-15T01:46:21 +1281ms service=bus type=message.part.updated publishing
+INFO  2026-08-15T01:46:21 +710ms service=bus type=message.part.updated publishing
+INFO  2026-08-15T01:46:22 +651ms service=bus type=message.part.updated publishing
+INFO  2026-08-15T01:46:23 +682ms service=bus type=message.part.updated publishing
+INFO  2026-08-15T01:46:23 +741ms service=bus type=message.part.updated publishing
+INFO  2026-08-15T01:46:24 +682ms service=bus type=message.part.updated publishing
+INFO  2026-08-15T01:46:25 +741ms service=bus type=message.part.updated publishing
+INFO  2026-08-15T01:46:25 +681ms service=bus type=message.part.updated publishing
+INFO  2026-08-15T01:46:26 +703ms service=bus type=message.part.updated publishing
+INFO  2026-08-15T01:46:27 +398ms service=bus type=message.part.updated publishing
+INFO  2026-08-15T01:46:27 +20ms service=bus type=message.part.updated publishing
+INFO  2026-08-15T01:46:27 +0ms service=bus type=message.part.updated publishing
+INFO  2026-08-15T01:46:27 +0ms service=bus type=message.part.updated publishing
+INFO  2026-08-15T01:46:27 +0ms service=bus type=message.part.updated publishing
+INFO  2026-08-15T01:46:27 +0ms service=bus type=message.part.updated publishing
+INFO  2026-08-15T01:46:27 +0ms service=bus type=message.part.updated publishing
+INFO  2026-08-15T01:46:27 +0ms service=bus type=message.part.updated publishing
+INFO  2026-08-15T01:46:27 +0ms service=claude-code-acp provider=Claude Code durationMs=364578.391233 toolCalls=46 textParts=7 reasoningParts=0 ACP prompt completed
+INFO  2026-08-15T01:46:27 +0ms service=bus type=message.updated publishing
+INFO  2026-08-15T01:46:27 +1ms service=bus type=message.part.updated publishing
+INFO  2026-08-15T01:46:27 +21ms service=session.compaction pruning
+INFO  2026-08-15T01:46:27 +0ms service=session.lock sessionID=ses_ffcec7d25ffe6Sf9H1UZU8JfDv unlocked
+INFO  2026-08-15T01:46:27 +0ms service=session.prompt session=ses_ffcec7d25ffe6Sf9H1UZU8JfDv sessionID=ses_ffcec7d25ffe6Sf9H1UZU8JfDv unlocking
+INFO  2026-08-15T01:46:27 +2ms service=bus type=session.idle publishing
+INFO  2026-08-15T01:46:27 +0ms service=bus type=message.updated publishing
+INFO  2026-08-15T01:46:27 +0ms service=session.summary body=All changed files have been reviewed. One important caveat on method: the shell is broken in this session (bwrap sandbox init fails on a Windows-mount permission error before any command runs — even `echo ok` with sandbox disabled; the `/sandbox` command can manage restrictions, but the failure here is environmental). `git diff` was therefore impossible, and `origin/crb-base-mfc-corpus` doesn't exist in this clone's refs anyway. I reconstructed the review scope from the branch's own commit log and `docs/working/plan-corpus-s1.md` file map (which enumerates every file the corpus-S1 branch adds or edits), then read every one of those files in full: all six `app/lib/corpus/` modules, all six corpus test files, `workspaceStore.ts`, both new store tests, the two new docs, CLAUDE.md, and .gitignore. The `design-quality` agent type is not available in this session, so I performed the structural pass directly.
+
+
+**[P1] app/lib/corpus/flag.ts:15 - "Dev-only" flag guard is documented everywhere but not implemented**
+
+The file header, plan, seam doc, and CLAUDE.md all state the flag is "DEFAULT OFF and DEV-ONLY", and the plan's failure-mode table cites "flag is default-off + dev-only" as the structural guard against silently discarding a user's localStorage workspace (flag-ON starts from an empty corpus; no migration until S4). But `isCorpusEnabled()` contains no `NODE_ENV`/dev check — `localStorage.setItem("corpus-fs-enabled", "1")` in any production deployment, or `NEXT_PUBLIC_CORPUS_FS=1` in a production build, enables the corpus path and makes the user's existing workspace vanish from view. The promised data-loss guard is absent.
+
+
+**[P2] app/lib/stores/workspaceStore.ts:533 - With corpus flag ON, `onRehydrateStorage` can clobber rehydrated corpus state with stale v2 localStorage data**
+
+The migration check reads `localStorage` keys (`workspace-v2`, `workspace-zustand-v1`) regardless of which storage backend is active. When the flag is ON and a legacy `workspace-v2` key exists but `workspace-zustand-v1` doesn't, `migrateFromV2()` runs on every load, overwriting the just-rehydrated OPFS-backed state with old v2 data (which is then persisted back to the corpus) — both corrupting flag-ON state and contradicting the documented "flag-ON starts from an empty corpus, no migration in S1" contract.
+
+
+**[P2] app/lib/corpus/storeAdapter.ts:61 - Corpus-backed `setItem` has no write serialization or debounce → stale-write race and write amplification**
+
+The localStorage path debounces writes by 300 ms, but `createCorpusBackedStorage` issues an OPFS `writeFile` for every store `set()` with no queueing: overlapping writes to `state/<name>.json` each open their own `createWritable()` staging file, and whichever `close()` lands last wins — an earlier (stale) snapshot can complete after a newer one, persisting regressed state. It also turns every keystroke into a full-blob OPFS write chain.
+
+
+**[P2] app/lib/corpus/manifest.ts:87 - Fail-loud parse contract is undermined by silent per-entry drops**
+
+The header mandates that a malformed manifest "never" parse into something that masks data loss, yet `sources.filter(isObject)`, `artifacts.filter(isObject)`, and `customTypeIds.filter(typeof === "string")` silently discard corrupted entries (and `createdAt`/`updatedAt` are silently replaced with `new Date()`), so a partially corrupted manifest parses "successfully" with sources/artifact pointers missing — precisely the masquerade the contract (and test G11) is supposed to prevent, in the module S4 will trust as its index.
+
+
+**[P3] app/lib/corpus/paths.ts:36 - `workspaceSlug` collisions map distinct workspace titles to the same directory**
+
+Lowercasing plus collapsing all non-`[a-zA-Z0-9_-]` runs means titles like "My Workspace", "my workspace!", and "MY-WORKSPACE" all slug to `my-workspace`, so two different workspaces would share one `workspaces/<slug>/` tree and silently overwrite each other's manifest and artifacts once S4 wires the layout in. The module is explicitly the S1-frozen contract S2–S4 bind to, so the collision semantics deserve resolution (or a documented uniquing scheme) now.
+
+
+**[P3] app/lib/corpus/paths.ts:44 - Path builders throw plain `Error`, not `CorpusError`, breaking the module's typed-error model**
+
+`workspaceSlug`/`safeSegment`/`artifactVersionPath` throw bare `Error`s (e.g. for an all-unicode title such as "日本語"), while the corpus module's stated contract is that failures reify as `CorpusError` with a discriminated kind — callers switching exhaustively on `CorpusErrorKind` will miss these, and an entirely-CJK workspace title becomes an unclassified crash path in S4.
+
+
+**[P3] app/lib/corpus/manifest.ts:84 - `manifestVersion` is validated as a number but never checked against `MANIFEST_VERSION`**
+
+A future v2 manifest (or garbage like `manifestVersion: 999`) parses as if current with unknown fields silently dropped, defeating the point of carrying a version field in a fail-loud codec; an explicit version gate would turn forward-incompatibility into a typed error.
+
+
+**[P3] app/lib/corpus/opfsAdapter.ts:115 - Comment claims a fresh ArrayBuffer view is passed, but the code passes the caller's array directly**
+
+The comment "Pass a fresh ArrayBuffer view; some implementations dislike shared buffers" describes a copy that isn't made — `w.write(bytes)` forwards the original `Uint8Array`. Either make the copy the comment promises or delete the comment; as written it documents behavior that doesn't exist.
+
+
+**[P3] app/lib/corpus/__tests__/inMemoryCorpusFs.ts:22 - Fake's `readFile` returns the live stored array, unlike real OPFS**
+
+`writeFile` defensively copies but `readFile` hands back the stored `Uint8Array` by reference, so a consumer that mutates a read buffer would corrupt the fake's state while real OPFS (which materializes fresh bytes from `arrayBuffer()`) would be unaffected. Since fake-vs-OPFS divergence is the plan's own top residual risk and the contract suite is the substitutability proof, the fake should return `bytes.slice()`.
+
+
+**[P3] .gitignore:37 - `docs/user_research/property-tests.json` untracked but not ignored**
+
+Commit 2dc403e removed the file from tracking ("swept in by git add -A; restore to untracked") but added no ignore entry, so the next `git add -A` will sweep it right back in; add it (or its directory pattern) to .gitignore to make the untracking stick. body
+INFO  2026-08-15T01:46:27 +1ms service=bus type=session.updated publishing
+INFO  2026-08-15T01:46:27 +1ms service=bus type=message.updated publishing
+INFO  2026-08-15T01:46:27 +0ms service=bus type=session.diff publishing
+INFO  2026-08-15T01:46:27 +9ms service=session.compaction pruned=0 total=0 found
+INFO  2026-08-15T01:46:27 +1ms service=bus type=message.part.updated unsubscribing
+INFO  2026-08-15T01:46:27 +0ms service=bus type=permission.updated unsubscribing
+INFO  2026-08-15T01:46:27 +0ms service=default directory=/home/magfrump/claude-workflows/external/crb-cubic/mfc-corpus disposing instance
+INFO  2026-08-15T01:46:27 +0ms service=state key=/home/magfrump/claude-workflows/external/crb-cubic/mfc-corpus waiting for state disposal to complete
+INFO  2026-08-15T01:46:27 +1ms service=state key=/home/magfrump/claude-workflows/external/crb-cubic/mfc-corpus state disposal completed
+INFO  2026-08-15T01:46:27 +1ms service=auth userId=dc16113e-2788-430e-9c5c-202739d636a3 hasTokens=true Found CLI auth
+INFO  2026-08-15T01:46:27 +0ms service=auth userId=dc16113e-2788-430e-9c5c-202739d636a3 expiry=1786761604 secondsUntilExpiry=3217 isExpired=false force=false inProgress=false refreshCliToken
+INFO  2026-08-15T01:46:27 +0ms service=auth Token valid, skipping refresh
+WARN  2026-08-15T01:46:27 +31ms service=claude-code-acp code=0 sessionID=ses_ffcec7d25ffe6Sf9H1UZU8JfDv Claude Code process closed

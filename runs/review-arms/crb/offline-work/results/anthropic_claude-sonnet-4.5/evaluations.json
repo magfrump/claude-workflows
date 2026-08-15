@@ -1,0 +1,1591 @@
+{
+  "https://local.invalid/meta-formalism-copilot/mfc-csp": {
+    "e2": {
+      "skipped": false,
+      "true_positives": [
+        {
+          "golden_comment": "CSP set on response only - never on forwarded request headers so Next.js cannot extract the nonce (dead x-nonce plumbing)",
+          "severity": "High",
+          "category": "bug",
+          "matched_candidate": "x-nonce request header is forwarded by proxy but never consumed by any code, creating dead/misleading plumbing",
+          "confidence": 0.95,
+          "reasoning": "Both comments identify the same core issue: the x-nonce header forwarding mechanism is non-functional/dead code. The golden comment explains that CSP with nonce is only set on responses (not forwarded request headers), making Next.js unable to extract the nonce, thus rendering the x-nonce plumbing useless. The candidate issue states the x-nonce request header is forwarded but never consumed, which is the same problem from a slightly different angle - both are describing dead/non-functional nonce plumbing code."
+        },
+        {
+          "golden_comment": "csp: no dev-mode unsafe-eval relaxation - dev breaks under the new CSP",
+          "severity": "High",
+          "category": "bug",
+          "matched_candidate": "CSP lacks 'unsafe-eval' in script-src for development mode, breaking Next.js HMR/Fast Refresh which requires eval-based module loading",
+          "confidence": 0.95,
+          "reasoning": "Both comments identify the same core issue: the Content Security Policy (CSP) is missing 'unsafe-eval' in the script-src directive for development mode, which breaks development functionality. The golden comment mentions 'dev breaks under the new CSP' and references 'unsafe-eval relaxation', while the candidate provides more technical detail about Next.js HMR/Fast Refresh requiring eval-based module loading. Despite different levels of detail, they point to the identical underlying problem."
+        },
+        {
+          "golden_comment": "csp: middleware prefetch-skip (missing/purpose header exclusion) serves real HTML documents with no CSP at all",
+          "severity": "Critical",
+          "category": "security",
+          "matched_candidate": "Matcher excludes prefetches using 'purpose: prefetch' header, but modern browsers send 'Sec-Purpose: prefetch' instead, causing prefetch requests to unnecessarily consume nonces",
+          "confidence": 0.85,
+          "reasoning": "Both issues identify the same underlying problem: the middleware's prefetch detection logic is flawed because it checks for 'purpose: prefetch' header while modern browsers use 'Sec-Purpose: prefetch'. However, they describe different consequences - the golden comment focuses on the security impact (serving HTML without CSP), while the candidate focuses on performance (unnecessary nonce consumption). Despite different emphasis, they point to the same root cause and bug in the header checking logic."
+        }
+      ],
+      "false_positives": [
+        {
+          "candidate": "RootLayout calls await headers() unconditionally, forcing all routes to dynamic rendering and opting out of static rendering/ISR unnecessarily"
+        }
+      ],
+      "false_negatives": [
+        {
+          "golden_comment": "connect-src 'self' blocks the data:/blob fetch in exportGraph.ts - PNG export breaks",
+          "severity": "High",
+          "category": "bug"
+        },
+        {
+          "golden_comment": "proxy.ts:35-36 comment claims Edge runtime; middleware defaults to Node.js",
+          "severity": "Low",
+          "category": "doc_defect"
+        },
+        {
+          "golden_comment": "style-src 'unsafe-inline' misattributed to Tailwind v4",
+          "severity": "Low",
+          "category": "doc_defect"
+        },
+        {
+          "golden_comment": "layout.tsx:27-30 comment misstates why await headers() is needed",
+          "severity": "Low",
+          "category": "doc_defect"
+        },
+        {
+          "golden_comment": "no tests pin the CSP directive list",
+          "severity": "Medium",
+          "category": "test_gap"
+        },
+        {
+          "golden_comment": "csp: middleware matcher lookahead is prefix-based not segment-based (api-foo / favicon.ico.png slip through) - contradicts rubric Confirmed-Good row",
+          "severity": "Medium",
+          "category": "bug"
+        },
+        {
+          "golden_comment": "csp: no worker-src directive under strict-dynamic - pdf.js worker blocked (degrades to fake-worker main thread)",
+          "severity": "Medium",
+          "category": "bug"
+        }
+      ],
+      "errors": [],
+      "total_candidates": 4,
+      "total_golden": 10,
+      "tp": 3,
+      "fp": 1,
+      "fn": 7,
+      "errors_count": 0,
+      "precision": 0.75,
+      "recall": 0.3,
+      "tool": "e2",
+      "repo_name": "meta-formalism-copilot@d90d6bb",
+      "pr_url": "https://local.invalid/meta-formalism-copilot/mfc-csp"
+    },
+    "e4-union": {
+      "skipped": false,
+      "true_positives": [
+        {
+          "golden_comment": "CSP set on response only - never on forwarded request headers so Next.js cannot extract the nonce (dead x-nonce plumbing)",
+          "severity": "High",
+          "category": "bug",
+          "matched_candidate": "CSP header is set only on response headers, not on request headers, so Next.js cannot extract the nonce for its bootstrap/hydration script tags",
+          "confidence": 0.95,
+          "reasoning": "Both comments identify the same core issue: the CSP (Content Security Policy) header with nonce is only set on response headers and not on request headers, which prevents Next.js from extracting the nonce value it needs. The golden comment mentions 'dead x-nonce plumbing' while the candidate is more explicit about the consequence ('bootstrap/hydration script tags'), but they're describing the identical problem - the nonce isn't being forwarded in request headers where Next.js expects to find it."
+        },
+        {
+          "golden_comment": "layout.tsx:27-30 comment misstates why await headers() is needed",
+          "severity": "Low",
+          "category": "doc_defect",
+          "matched_candidate": "Comment incorrectly states Next.js reads nonce from response CSP header when it actually reads from request headers",
+          "confidence": 0.95,
+          "reasoning": "Both comments identify the same underlying issue: the comment in the code incorrectly describes why await headers() is needed or what Next.js does with the nonce/CSP headers. The golden comment says the comment 'misstates why await headers() is needed' and the candidate says the comment 'incorrectly states Next.js reads nonce from response CSP header when it actually reads from request headers'. These are describing the same problem - an inaccurate code comment about the headers() functionality."
+        },
+        {
+          "golden_comment": "csp: no dev-mode unsafe-eval relaxation - dev breaks under the new CSP",
+          "severity": "High",
+          "category": "bug",
+          "matched_candidate": "Missing 'unsafe-eval' in script-src will break Next.js development mode (HMR/Fast Refresh/React refresh runtime)",
+          "confidence": 0.95,
+          "reasoning": "Both comments identify the same core issue: the Content Security Policy (CSP) lacks 'unsafe-eval' in script-src, which breaks Next.js development mode functionality. The golden comment mentions 'dev-mode unsafe-eval relaxation' causing dev to break under new CSP, while the candidate explicitly states missing 'unsafe-eval' will break development mode features (HMR/Fast Refresh). They describe the same problem with different levels of detail."
+        },
+        {
+          "golden_comment": "csp: middleware matcher lookahead is prefix-based not segment-based (api-foo / favicon.ico.png slip through) - contradicts rubric Confirmed-Good row",
+          "severity": "Medium",
+          "category": "bug",
+          "matched_candidate": "Matcher regex uses prefix matching instead of segment-based matching, incorrectly excluding routes like /api-docs or /favicon.ico.txt",
+          "confidence": 0.95,
+          "reasoning": "Both comments identify the same underlying issue: the middleware matcher uses prefix-based matching instead of segment-based matching, which allows unintended routes to slip through. The golden comment mentions 'api-foo' and 'favicon.ico.png' as examples, while the candidate mentions '/api-docs' and '/favicon.ico.txt'. These are different examples but illustrate the exact same vulnerability - routes that start with the protected prefix but have additional characters are incorrectly excluded from CSP protection."
+        },
+        {
+          "golden_comment": "csp: middleware prefetch-skip (missing/purpose header exclusion) serves real HTML documents with no CSP at all",
+          "severity": "Critical",
+          "category": "security",
+          "matched_candidate": "CSP header is not set on prefetch requests (next-router-prefetch/purpose: prefetch responses)",
+          "confidence": 0.95,
+          "reasoning": "Both issues identify the same problem: CSP (Content Security Policy) headers are missing on prefetch requests. The golden comment mentions 'missing/purpose header exclusion' serving HTML without CSP, while the candidate specifically identifies that CSP headers are not set on 'next-router-prefetch/purpose: prefetch responses'. These are describing the same underlying security issue where prefetch requests lack CSP protection."
+        }
+      ],
+      "false_positives": [
+        {
+          "candidate": "x-nonce request header is set but never consumed by any layout or component, making it dead code"
+        },
+        {
+          "candidate": "await headers() call in root layout forces entire app to be dynamic, disabling static generation and full-route caching site-wide"
+        },
+        {
+          "candidate": "default-src 'self' blocks blob: workers if any are used"
+        }
+      ],
+      "false_negatives": [
+        {
+          "golden_comment": "connect-src 'self' blocks the data:/blob fetch in exportGraph.ts - PNG export breaks",
+          "severity": "High",
+          "category": "bug"
+        },
+        {
+          "golden_comment": "proxy.ts:35-36 comment claims Edge runtime; middleware defaults to Node.js",
+          "severity": "Low",
+          "category": "doc_defect"
+        },
+        {
+          "golden_comment": "style-src 'unsafe-inline' misattributed to Tailwind v4",
+          "severity": "Low",
+          "category": "doc_defect"
+        },
+        {
+          "golden_comment": "no tests pin the CSP directive list",
+          "severity": "Medium",
+          "category": "test_gap"
+        },
+        {
+          "golden_comment": "csp: no worker-src directive under strict-dynamic - pdf.js worker blocked (degrades to fake-worker main thread)",
+          "severity": "Medium",
+          "category": "bug"
+        }
+      ],
+      "errors": [],
+      "total_candidates": 10,
+      "total_golden": 10,
+      "tp": 5,
+      "fp": 3,
+      "fn": 5,
+      "errors_count": 0,
+      "precision": 0.5,
+      "recall": 0.5,
+      "tool": "e4-union",
+      "repo_name": "meta-formalism-copilot@d90d6bb",
+      "pr_url": "https://local.invalid/meta-formalism-copilot/mfc-csp"
+    },
+    "cubic-cli": {
+      "skipped": false,
+      "true_positives": [
+        {
+          "golden_comment": "CSP set on response only - never on forwarded request headers so Next.js cannot extract the nonce (dead x-nonce plumbing)",
+          "severity": "High",
+          "category": "bug",
+          "matched_candidate": "Nonce never reaches the Next.js renderer because CSP header is only set on response, not on request headers, causing Next.js inline scripts to ship un-nonced and breaking hydration under strict CSP",
+          "confidence": 0.95,
+          "reasoning": "Both comments identify the same core issue: the CSP nonce is set only on the response headers and not forwarded to the request headers, which prevents Next.js from extracting and using the nonce. The golden comment mentions 'dead x-nonce plumbing' while the candidate elaborates on the consequences (un-nonced inline scripts, broken hydration), but they're describing the same underlying bug in the nonce propagation mechanism."
+        },
+        {
+          "golden_comment": "layout.tsx:27-30 comment misstates why await headers() is needed",
+          "severity": "Low",
+          "category": "doc_defect",
+          "matched_candidate": "Comment incorrectly documents that Next.js reads nonce from response CSP header when it actually reads from request header",
+          "confidence": 0.95,
+          "reasoning": "Both comments identify the same issue: the comment in the code incorrectly describes why await headers() is needed or what Next.js does with the nonce/CSP header. The golden comment says the comment 'misstates why await headers() is needed' and the candidate says the comment 'incorrectly documents that Next.js reads nonce from response CSP header when it actually reads from request header'. These are describing the same underlying problem - the code comment contains incorrect information about the headers/nonce mechanism."
+        },
+        {
+          "golden_comment": "csp: no dev-mode unsafe-eval relaxation - dev breaks under the new CSP",
+          "severity": "High",
+          "category": "bug",
+          "matched_candidate": "No dev-mode carve-out for 'unsafe-eval' breaks npm run dev since Next.js dev mode requires eval for React Refresh/HMR",
+          "confidence": 0.95,
+          "reasoning": "Both comments identify the same core issue: the Content Security Policy (CSP) lacks a development-mode exception for 'unsafe-eval', which breaks the development server. The golden comment mentions 'dev breaks under the new CSP' and the candidate explicitly states 'breaks npm run dev' due to Next.js requiring eval for React Refresh/HMR in development mode. They are describing the same problem with different levels of detail."
+        },
+        {
+          "golden_comment": "csp: no worker-src directive under strict-dynamic - pdf.js worker blocked (degrades to fake-worker main thread)",
+          "severity": "Medium",
+          "category": "bug",
+          "matched_candidate": "Missing worker-src directive blocks pdf.js worker due to 'strict-dynamic' ignoring 'self', breaking or degrading PDF upload functionality",
+          "confidence": 0.95,
+          "reasoning": "Both comments identify the same core issue: the absence of a worker-src directive in the CSP causes pdf.js worker to be blocked when strict-dynamic is used (since strict-dynamic ignores 'self'). The candidate provides more detail about the consequence (degrading to fake-worker/main thread and breaking PDF upload), but the underlying technical problem is identical."
+        }
+      ],
+      "false_positives": [
+        {
+          "candidate": "Missing form-action 'self' directive leaves injected form exfiltration attacks unrestricted"
+        },
+        {
+          "candidate": "No tests for the new CSP proxy despite repo guidelines requiring tests alongside implementation"
+        }
+      ],
+      "false_negatives": [
+        {
+          "golden_comment": "connect-src 'self' blocks the data:/blob fetch in exportGraph.ts - PNG export breaks",
+          "severity": "High",
+          "category": "bug"
+        },
+        {
+          "golden_comment": "proxy.ts:35-36 comment claims Edge runtime; middleware defaults to Node.js",
+          "severity": "Low",
+          "category": "doc_defect"
+        },
+        {
+          "golden_comment": "style-src 'unsafe-inline' misattributed to Tailwind v4",
+          "severity": "Low",
+          "category": "doc_defect"
+        },
+        {
+          "golden_comment": "no tests pin the CSP directive list",
+          "severity": "Medium",
+          "category": "test_gap"
+        },
+        {
+          "golden_comment": "csp: middleware matcher lookahead is prefix-based not segment-based (api-foo / favicon.ico.png slip through) - contradicts rubric Confirmed-Good row",
+          "severity": "Medium",
+          "category": "bug"
+        },
+        {
+          "golden_comment": "csp: middleware prefetch-skip (missing/purpose header exclusion) serves real HTML documents with no CSP at all",
+          "severity": "Critical",
+          "category": "security"
+        }
+      ],
+      "errors": [],
+      "total_candidates": 6,
+      "total_golden": 10,
+      "tp": 4,
+      "fp": 2,
+      "fn": 6,
+      "errors_count": 0,
+      "precision": 0.6666666666666666,
+      "recall": 0.4,
+      "tool": "cubic-cli",
+      "repo_name": "meta-formalism-copilot@d90d6bb",
+      "pr_url": "https://local.invalid/meta-formalism-copilot/mfc-csp"
+    }
+  },
+  "https://local.invalid/meta-formalism-copilot/mfc-lean": {
+    "e2": {
+      "skipped": false,
+      "true_positives": [
+        {
+          "golden_comment": "non-2xx verifier response masked as unavailable - upstream body discarded",
+          "severity": "Medium",
+          "category": "bug",
+          "matched_candidate": "Non-2xx HTTP responses from external verifier are treated as 'verifier unavailable' without reading response body, even when verifier returns valid {valid:false, errors:...} payload",
+          "confidence": 0.95,
+          "reasoning": "Both the golden comment and candidate issue describe the same underlying problem: when the external verifier returns a non-2xx HTTP response, the system treats it as 'verifier unavailable' and discards/doesn't read the response body, even though the body may contain valid error information (like {valid:false, errors:...}). The candidate provides more technical detail about the expected payload format, but both identify the identical bug where non-2xx responses mask the actual verifier response content."
+        },
+        {
+          "golden_comment": "verifyLean() client drops the route's typed reason/detail fields",
+          "severity": "Medium",
+          "category": "api",
+          "matched_candidate": "verifyLean only reads valid/errors/unavailable fields and discards reason and detail fields returned by the verifier route",
+          "confidence": 0.98,
+          "reasoning": "Both comments identify the same issue: the verifyLean() function/client is not preserving the 'reason' and 'detail' fields from the verifier route's response. The golden comment states these 'typed reason/detail fields' are dropped, while the candidate specifies that 'only valid/errors/unavailable fields' are read and 'reason and detail fields' are discarded. These describe the exact same problem with slightly different wording."
+        }
+      ],
+      "false_positives": [
+        {
+          "candidate": "leanRetryLoop's early-return on 'unavailable' prevents normal retry-on-failure flow from running for non-2xx responses"
+        },
+        {
+          "candidate": "UI cannot distinguish between 'verifier-not-configured', 'verifier-unreachable', and 'verifier-error' states due to dropped diagnostic information"
+        }
+      ],
+      "false_negatives": [
+        {
+          "golden_comment": "README/ARCHITECTURE docs stale (removed mock-pass fallback / localhost default still documented)",
+          "severity": "Medium",
+          "category": "doc_defect"
+        },
+        {
+          "golden_comment": "lean: removal of localhost:3100 default breaks the documented local-dev flow (unset env short-circuits to verifier-not-configured)",
+          "severity": "Medium",
+          "category": "bug"
+        },
+        {
+          "golden_comment": "lean: decomposition path maps unavailable to \"unverified\" - node mode shows no badge/banner/Re-verify (silent)",
+          "severity": "Medium",
+          "category": "bug"
+        },
+        {
+          "golden_comment": "lean: formalizeNode ignores result.unavailable - node marked failed with empty errors and dependents skipped",
+          "severity": "High",
+          "category": "bug"
+        }
+      ],
+      "errors": [],
+      "total_candidates": 6,
+      "total_golden": 6,
+      "tp": 2,
+      "fp": 2,
+      "fn": 4,
+      "errors_count": 0,
+      "precision": 0.3333333333333333,
+      "recall": 0.3333333333333333,
+      "tool": "e2",
+      "repo_name": "meta-formalism-copilot@c95c9cb",
+      "pr_url": "https://local.invalid/meta-formalism-copilot/mfc-lean"
+    },
+    "e4-union": {
+      "skipped": false,
+      "true_positives": [
+        {
+          "golden_comment": "non-2xx verifier response masked as unavailable - upstream body discarded",
+          "severity": "Medium",
+          "category": "bug",
+          "matched_candidate": "Non-2xx verifier responses are masked as 'unavailable' with body discarded, losing real verification failures and error payloads",
+          "confidence": 0.95,
+          "reasoning": "Both comments identify the same core issue: non-2xx responses from a verifier are being masked/hidden as 'unavailable' and the response body is being discarded. The candidate provides more detail about the consequences (losing real verification failures and error payloads), but fundamentally describes the same problem as the golden comment."
+        },
+        {
+          "golden_comment": "verifyLean() client drops the route's typed reason/detail fields",
+          "severity": "Medium",
+          "category": "api",
+          "matched_candidate": "Route's 'reason' and 'detail' fields (verifier-not-configured/verifier-unreachable/verifier-error) are never surfaced by verifyLean, preventing callers from differentiating failure causes",
+          "confidence": 0.95,
+          "reasoning": "Both comments identify the same underlying issue: the verifyLean() function does not expose or surface the route's typed 'reason' and 'detail' fields (such as verifier-not-configured, verifier-unreachable, verifier-error). The golden comment states these fields are 'dropped' while the candidate explains they are 'never surfaced', preventing differentiation of failure causes. These are semantically equivalent descriptions of the same bug."
+        },
+        {
+          "golden_comment": "lean: decomposition path maps unavailable to \"unverified\" - node mode shows no badge/banner/Re-verify (silent)",
+          "severity": "Medium",
+          "category": "bug",
+          "matched_candidate": "verifyLean never checks res.ok, causing 400/500 responses from /api/verification/lean to be reported as failed proofs instead of unavailable",
+          "confidence": 0.85,
+          "reasoning": "The golden comment describes a user-facing symptom: decomposition path maps show as 'unverified' without proper UI feedback (no badge/banner/re-verify option) in node mode. The candidate issue identifies a root cause: the verifyLean function doesn't check res.ok, causing HTTP errors (400/500) to be misreported as failed proofs instead of unavailable status. These appear to be related - the candidate describes the technical bug that likely causes the golden comment's observed behavior. The missing res.ok check would cause error responses to be treated incorrectly, which could lead to the 'unverified' state without proper UI indicators."
+        },
+        {
+          "golden_comment": "lean: formalizeNode ignores result.unavailable - node marked failed with empty errors and dependents skipped",
+          "severity": "High",
+          "category": "bug",
+          "matched_candidate": "Prior real verification errors are discarded when verifier becomes unavailable mid-retry, replacing known-bad proof diagnostics with empty errors",
+          "confidence": 0.95,
+          "reasoning": "Both issues describe the same underlying bug: when the verifier becomes unavailable, the system discards existing error information and replaces it with empty errors, causing nodes to be marked as failed without proper diagnostics. The golden comment mentions 'formalizeNode ignores result.unavailable' leading to 'empty errors and dependents skipped', while the candidate describes 'real verification errors are discarded' and replaced with 'empty errors' when the verifier becomes unavailable. These are semantically identical descriptions of the same problem."
+        }
+      ],
+      "false_positives": [
+        {
+          "candidate": "Offline banner text incorrectly claims verifier is not configured or unreachable for 'verifier-error' reason when verifier is actually configured and reachable"
+        }
+      ],
+      "false_negatives": [
+        {
+          "golden_comment": "README/ARCHITECTURE docs stale (removed mock-pass fallback / localhost default still documented)",
+          "severity": "Medium",
+          "category": "doc_defect"
+        },
+        {
+          "golden_comment": "lean: removal of localhost:3100 default breaks the documented local-dev flow (unset env short-circuits to verifier-not-configured)",
+          "severity": "Medium",
+          "category": "bug"
+        }
+      ],
+      "errors": [],
+      "total_candidates": 6,
+      "total_golden": 6,
+      "tp": 4,
+      "fp": 1,
+      "fn": 2,
+      "errors_count": 0,
+      "precision": 0.6666666666666666,
+      "recall": 0.6666666666666666,
+      "tool": "e4-union",
+      "repo_name": "meta-formalism-copilot@c95c9cb",
+      "pr_url": "https://local.invalid/meta-formalism-copilot/mfc-lean"
+    },
+    "cubic-cli": {
+      "skipped": false,
+      "true_positives": [
+        {
+          "golden_comment": "README/ARCHITECTURE docs stale (removed mock-pass fallback / localhost default still documented)",
+          "severity": "Medium",
+          "category": "doc_defect",
+          "matched_candidate": "README lines 60, 84, and 92 still document removed mock-fallback behavior and localhost:3100 default",
+          "confidence": 0.92,
+          "reasoning": "Both comments identify the same underlying issue: documentation (README) that is outdated because it still describes removed mock-fallback behavior and localhost default settings. The candidate is more specific by citing exact line numbers (60, 84, 92) and mentioning 'localhost:3100', while the golden comment also mentions ARCHITECTURE docs. However, they both point to the core problem of stale documentation regarding removed mock-pass fallback and localhost defaults."
+        },
+        {
+          "golden_comment": "lean: removal of localhost:3100 default breaks the documented local-dev flow (unset env short-circuits to verifier-not-configured)",
+          "severity": "Medium",
+          "category": "bug",
+          "matched_candidate": "Removed localhost:3100 default for LEAN_VERIFIER_URL breaks zero-config dev flow, short-circuiting to unavailableResponse without trying the verifier",
+          "confidence": 0.95,
+          "reasoning": "Both comments identify the same core issue: the removal of the localhost:3100 default value for LEAN_VERIFIER_URL breaks the local development workflow. The golden comment mentions it 'short-circuits to verifier-not-configured' while the candidate says it 'short-circuits to unavailableResponse without trying the verifier' - these are semantically equivalent descriptions of the same problem where unset environment variables cause the verifier flow to fail prematurely instead of using a sensible default."
+        },
+        {
+          "golden_comment": "lean: decomposition path maps unavailable to \"unverified\" - node mode shows no badge/banner/Re-verify (silent)",
+          "severity": "Medium",
+          "category": "bug",
+          "matched_candidate": "fromNodeVerificationStatus maps 'unavailable' back to 'none', causing session restore to lose the unavailable state",
+          "confidence": 0.95,
+          "reasoning": "Both issues describe the same underlying problem: the 'unavailable' verification status is being lost or not properly handled. The golden comment describes the user-facing symptom (no badge/banner shown in node mode), while the candidate identifies the root cause (the fromNodeVerificationStatus function maps 'unavailable' to 'none', causing state loss during session restore). These are two perspectives on the same bug - the candidate explains WHY the golden comment's symptom occurs."
+        },
+        {
+          "golden_comment": "lean: formalizeNode ignores result.unavailable - node marked failed with empty errors and dependents skipped",
+          "severity": "High",
+          "category": "bug",
+          "matched_candidate": "leanRetryLoop returns {valid: false, unavailable: true} when verifier is missing, but formalizeNode still maps result.valid ? 'verified' : 'failed', causing nodes with deductive pipeline to be marked 'Failed' with empty verificationErrors when LEAN_VERIFIER_URL is unset",
+          "confidence": 0.95,
+          "reasoning": "Both issues identify the same underlying bug: formalizeNode incorrectly handles the 'unavailable' state from leanRetryLoop. The golden comment states that formalizeNode ignores result.unavailable, leading to nodes being marked as failed with empty errors. The candidate provides more specific detail about the root cause (checking only result.valid instead of also checking result.unavailable) and the triggering condition (missing LEAN_VERIFIER_URL), but describes the exact same problem and its consequences."
+        }
+      ],
+      "false_positives": [
+        {
+          "candidate": "useAutoFormalizeQueue skips all dependents with misleading message 'Skipped: dependency X failed' when verifier is unavailable"
+        },
+        {
+          "candidate": "USER_GUIDE badge list (lines 197-201) omits the new 'Verifier offline' state"
+        },
+        {
+          "candidate": "Catch blocks in handleReVerify (line 164) and handleLeanIterate (line 206) set status 'invalid' when verifyLean fetch rejects, misreporting unchecked proofs as failed proofs"
+        },
+        {
+          "candidate": "No unit tests for verifyResultToStatus, verifyLean unavailable plumbing, and leanRetryLoop's early-return on unavailable"
+        }
+      ],
+      "false_negatives": [
+        {
+          "golden_comment": "non-2xx verifier response masked as unavailable - upstream body discarded",
+          "severity": "Medium",
+          "category": "bug"
+        },
+        {
+          "golden_comment": "verifyLean() client drops the route's typed reason/detail fields",
+          "severity": "Medium",
+          "category": "api"
+        }
+      ],
+      "errors": [],
+      "total_candidates": 12,
+      "total_golden": 6,
+      "tp": 4,
+      "fp": 4,
+      "fn": 2,
+      "errors_count": 0,
+      "precision": 0.3333333333333333,
+      "recall": 0.6666666666666666,
+      "tool": "cubic-cli",
+      "repo_name": "meta-formalism-copilot@c95c9cb",
+      "pr_url": "https://local.invalid/meta-formalism-copilot/mfc-lean"
+    }
+  },
+  "https://local.invalid/meta-formalism-copilot/mfc-hygiene": {
+    "e2": {
+      "skipped": false,
+      "true_positives": [
+        {
+          "golden_comment": "SSE protocol JSDoc documents {error - details} but emit site sends {error} only",
+          "severity": "Low",
+          "category": "doc_defect",
+          "matched_candidate": "JSDoc above `streamLlm` still documents `details` field in error event, but the code no longer emits it in the error payload",
+          "confidence": 0.95,
+          "reasoning": "Both comments identify the same issue: the JSDoc documentation for the error event describes a 'details' field that is not actually emitted in the code. The golden comment mentions '{error - details}' in JSDoc but only '{error}' is sent, while the candidate explicitly states the JSDoc documents a 'details' field that is no longer emitted. These are semantically identical issues pointing to the same documentation-code mismatch."
+        },
+        {
+          "golden_comment": "invalid-JSON logging asymmetry: shared artifactRoute.ts:107 still logs 500-char preview after edit/artifact tightened",
+          "severity": "Low",
+          "category": "bug",
+          "matched_candidate": "Error SSE event is inconsistent with `app/api/edit/artifact/route.ts`, which still returns a `details` field for the same error class",
+          "confidence": 0.85,
+          "reasoning": "Both comments identify an inconsistency between shared artifactRoute.ts and app/api/edit/artifact/route.ts regarding error handling/logging. The golden comment specifically mentions a 500-char preview logging issue at line 107, while the candidate mentions inconsistent 'details' field in error SSE events. These appear to be describing the same asymmetry issue between the two files' error handling approaches, just with different levels of specificity about the manifestation."
+        }
+      ],
+      "false_positives": [
+        {
+          "candidate": "`details` field removed from error SSE event breaks existing frontend code that reads `data.details`"
+        }
+      ],
+      "false_negatives": [],
+      "errors": [],
+      "total_candidates": 3,
+      "total_golden": 2,
+      "tp": 2,
+      "fp": 1,
+      "fn": 0,
+      "errors_count": 0,
+      "precision": 0.6666666666666666,
+      "recall": 1.0,
+      "tool": "e2",
+      "repo_name": "meta-formalism-copilot@f2f149b",
+      "pr_url": "https://local.invalid/meta-formalism-copilot/mfc-hygiene"
+    },
+    "e4-union": {
+      "skipped": false,
+      "true_positives": [
+        {
+          "golden_comment": "SSE protocol JSDoc documents {error - details} but emit site sends {error} only",
+          "severity": "Low",
+          "category": "doc_defect",
+          "matched_candidate": "streamLlm JSDoc documents `event: error \u2014 { error: \"message\", details: \"...\" }` but catch block now emits only `{ error: message }`, causing clients to read undefined for details field",
+          "confidence": 0.95,
+          "reasoning": "Both comments identify the same issue: the JSDoc documentation specifies that error events should include both 'error' and 'details' fields, but the actual implementation only emits the 'error' field. The candidate provides more specific context (mentioning streamLlm and the catch block) while the golden comment is more concise, but they describe the exact same discrepancy between documented and actual behavior."
+        },
+        {
+          "golden_comment": "invalid-JSON logging asymmetry: shared artifactRoute.ts:107 still logs 500-char preview after edit/artifact tightened",
+          "severity": "Low",
+          "category": "bug",
+          "matched_candidate": "Comment claims responseText shouldn't end up in server logs due to user source material, but same handler returns 500-char slice in HTTP body, making redaction partial",
+          "confidence": 0.92,
+          "reasoning": "Both comments identify the same inconsistency in the shared artifactRoute.ts file: while there's a claim or intention to avoid logging sensitive user content (responseText), the code still logs or returns a 500-character preview/slice of that content. The golden comment specifically mentions line 107 and the asymmetry between edit/artifact handling, while the candidate describes the same partial redaction issue where a 500-char slice appears in the HTTP body despite claims about not logging user source material. These are semantically the same issue - incomplete protection of user content."
+        }
+      ],
+      "false_positives": [
+        {
+          "candidate": "errorWithDetails attaches details property but nothing reads it after getErrorDetails deletion, making OpenRouter error bodies silently discarded"
+        },
+        {
+          "candidate": "Exported getAnthropicClient renamed to makeAnthropicClient without compatibility alias, breaking existing importers and tests"
+        },
+        {
+          "candidate": "OpenRouter stream error bodies are completely discarded with no way to recover provider messages, leaving only status code for diagnostics"
+        },
+        {
+          "candidate": "Comment about in-process consumer opting in to details property describes non-existent consumer code"
+        },
+        {
+          "candidate": "Test deletes ANTHROPIC_API_KEY and OPENROUTER_API_KEY in beforeEach without restoring originals, affecting other tests in same worker process"
+        },
+        {
+          "candidate": "Per-call construction of Anthropic client forgoes any client-level state/config reuse that SDK caches"
+        }
+      ],
+      "false_negatives": [],
+      "errors": [],
+      "total_candidates": 9,
+      "total_golden": 2,
+      "tp": 2,
+      "fp": 6,
+      "fn": 0,
+      "errors_count": 0,
+      "precision": 0.2222222222222222,
+      "recall": 1.0,
+      "tool": "e4-union",
+      "repo_name": "meta-formalism-copilot@f2f149b",
+      "pr_url": "https://local.invalid/meta-formalism-copilot/mfc-hygiene"
+    },
+    "cubic-cli": {
+      "skipped": false,
+      "true_positives": [
+        {
+          "golden_comment": "SSE protocol JSDoc documents {error - details} but emit site sends {error} only",
+          "severity": "Low",
+          "category": "doc_defect",
+          "matched_candidate": "SSE protocol docstring documents a 'details' field in error events that the catch block no longer emits (only sends { error: message }), causing consumers to wait for a field that never arrives",
+          "confidence": 1.0,
+          "reasoning": "Both comments identify the same issue: the JSDoc/docstring documents that error events should include a 'details' field, but the actual implementation only sends an 'error' field (with the message). This mismatch between documentation and implementation causes consumers to expect data that never arrives."
+        },
+        {
+          "golden_comment": "invalid-JSON logging asymmetry: shared artifactRoute.ts:107 still logs 500-char preview after edit/artifact tightened",
+          "severity": "Low",
+          "category": "bug",
+          "matched_candidate": "LLM response preview (500 chars) still written to server logs in JSON-parse-failure path of shared artifact route helper, contradicting the branch's logging policy that excludes LLM output derived from user source material",
+          "confidence": 0.95,
+          "reasoning": "Both comments identify the same issue: the shared artifact route (artifactRoute.ts:107) still logs a 500-character preview of LLM response in the JSON parse failure path, which contradicts the branch's policy of tightening/excluding logging of LLM output. The golden comment mentions 'edit/artifact tightened' while the candidate mentions 'excludes LLM output derived from user source material' - these are semantically equivalent descriptions of the same logging policy change and the same overlooked logging statement."
+        }
+      ],
+      "false_positives": [
+        {
+          "candidate": "responseFormat JSDoc states 'Only used with the OpenRouter provider (Anthropic direct API does not support this)' but lines 139-146 pass the schema to Anthropic call via output_config, creating a contradiction where either JSDoc or code is wrong"
+        },
+        {
+          "candidate": "OpenRouter failures modeled inconsistently: callLlm throws typed OpenRouterError while streamOpenRouter throws ad-hoc Error with bolted-on details property via errorWithDetails that no consumer reads"
+        }
+      ],
+      "false_negatives": [],
+      "errors": [],
+      "total_candidates": 4,
+      "total_golden": 2,
+      "tp": 2,
+      "fp": 2,
+      "fn": 0,
+      "errors_count": 0,
+      "precision": 0.5,
+      "recall": 1.0,
+      "tool": "cubic-cli",
+      "repo_name": "meta-formalism-copilot@f2f149b",
+      "pr_url": "https://local.invalid/meta-formalism-copilot/mfc-hygiene"
+    }
+  },
+  "https://local.invalid/meta-formalism-copilot/mfc-secdeps": {
+    "e2": {
+      "skipped": false,
+      "true_positives": [
+        {
+          "golden_comment": "react/no-danger set to warn contradicts fail-loudly comment (warn exits 0)",
+          "severity": "Medium",
+          "category": "bug",
+          "matched_candidate": "react/no-danger is set to 'warn' instead of 'error', allowing dangerouslySetInnerHTML to pass CI without failing",
+          "confidence": 0.95,
+          "reasoning": "Both comments identify the same underlying issue: the react/no-danger rule is set to 'warn' instead of 'error', which means it won't fail CI/builds (exits with 0). The golden comment emphasizes the contradiction with a 'fail-loudly' comment, while the candidate focuses on the practical consequence (passing CI), but they're describing the same configuration problem."
+        },
+        {
+          "golden_comment": "secdeps: no-restricted-imports misses require()/dynamic import() (sibling of sec-A1)",
+          "severity": "Medium",
+          "category": "security",
+          "matched_candidate": "no-restricted-imports rule only catches static ES imports of rehype-raw, missing require() and dynamic import() calls",
+          "confidence": 0.95,
+          "reasoning": "Both comments identify the same underlying issue: the no-restricted-imports rule is incomplete because it only catches static ES6 imports but fails to detect require() calls and dynamic import() statements. The candidate specifically mentions 'rehype-raw' as an example, while the golden comment is more general, but they're describing the exact same security/linting gap."
+        }
+      ],
+      "false_positives": [],
+      "false_negatives": [
+        {
+          "golden_comment": "trust AST-selector gaps: string-quoted key / shorthand / computed keys bypass the guardrail",
+          "severity": "Medium",
+          "category": "security"
+        },
+        {
+          "golden_comment": "secdeps: new npm-audit CI gate fails on this very branch (5 high production advisories) - commit message claims it lands green",
+          "severity": "High",
+          "category": "bug"
+        }
+      ],
+      "errors": [],
+      "total_candidates": 2,
+      "total_golden": 4,
+      "tp": 2,
+      "fp": 0,
+      "fn": 2,
+      "errors_count": 0,
+      "precision": 1.0,
+      "recall": 0.5,
+      "tool": "e2",
+      "repo_name": "meta-formalism-copilot@8bde50c",
+      "pr_url": "https://local.invalid/meta-formalism-copilot/mfc-secdeps"
+    },
+    "e4-union": {
+      "skipped": false,
+      "true_positives": [
+        {
+          "golden_comment": "react/no-danger set to warn contradicts fail-loudly comment (warn exits 0)",
+          "severity": "Medium",
+          "category": "bug",
+          "matched_candidate": "react/no-danger set to \"warn\" instead of \"error\" contradicts comment claiming rules \"fail loudly\", allowing dangerouslySetInnerHTML to pass CI",
+          "confidence": 0.98,
+          "reasoning": "Both comments identify the same underlying issue: the react/no-danger rule is set to 'warn' instead of 'error', which contradicts the comment about failing loudly since warnings don't cause CI to fail (exit code 0). The candidate provides more detail about the consequence (allowing dangerouslySetInnerHTML to pass CI), but this is the natural implication of the issue described in the golden comment."
+        },
+        {
+          "golden_comment": "trust AST-selector gaps: string-quoted key / shorthand / computed keys bypass the guardrail",
+          "severity": "Medium",
+          "category": "security",
+          "matched_candidate": "trust: true selector Property[key.name='trust'][value.value=true] only matches identifier keys with literal true, missing string keys like {\"trust\": true}, computed keys, non-literal values, variables, and spreads",
+          "confidence": 0.95,
+          "reasoning": "Both comments identify the same underlying issue: the AST selector for 'trust' property detection has gaps that allow bypasses through alternative syntax forms. The golden comment mentions 'string-quoted key / shorthand / computed keys' as bypass methods, while the candidate explicitly lists 'string keys like {\"trust\": true}, computed keys, non-literal values, variables, and spreads' as missing cases. Both are describing how the selector only matches a narrow pattern (identifier key with literal true) and misses semantically equivalent alternatives."
+        },
+        {
+          "golden_comment": "secdeps: no-restricted-imports misses require()/dynamic import() (sibling of sec-A1)",
+          "severity": "Medium",
+          "category": "security",
+          "matched_candidate": "rehype-raw restriction using paths only matches exact bare specifier, missing subpath imports like rehype-raw/lib/..., require() calls, and dynamic import()",
+          "confidence": 0.95,
+          "reasoning": "Both issues identify the same underlying problem: the no-restricted-imports rule is incomplete because it only catches static ES6 imports but misses require() calls and dynamic import() statements. The golden comment explicitly states 'misses require()/dynamic import()' and the candidate issue also identifies that 'require() calls, and dynamic import()' are not being caught. While the candidate provides more specific context about rehype-raw and subpath imports, the core issue about missing require() and dynamic import() detection is identical."
+        }
+      ],
+      "false_positives": [
+        {
+          "candidate": "npm audit step runs on every push/PR making CI non-deterministic, as newly published advisories can break unrelated branches"
+        },
+        {
+          "candidate": "npm audit step is duplicated across Node matrix entries (runs twice for Node 20 and 22) with identical results"
+        },
+        {
+          "candidate": "trust selector misses KaTeX function form like trust: () => true or trust: ctx => ctx.command === '\\\\href'"
+        },
+        {
+          "candidate": "npm run lint has no --max-warnings=0 flag in CI, so warn-level rules don't actually fail the build"
+        },
+        {
+          "candidate": "trust selector misses assignment expressions like opts.trust = true"
+        },
+        {
+          "candidate": "--omit=dev comment claiming \"only audit production deps (the ones that ship to users)\" is inaccurate for Next.js apps where devDependencies are compiled/bundled into shipped output"
+        }
+      ],
+      "false_negatives": [
+        {
+          "golden_comment": "secdeps: new npm-audit CI gate fails on this very branch (5 high production advisories) - commit message claims it lands green",
+          "severity": "High",
+          "category": "bug"
+        }
+      ],
+      "errors": [],
+      "total_candidates": 11,
+      "total_golden": 4,
+      "tp": 3,
+      "fp": 6,
+      "fn": 1,
+      "errors_count": 0,
+      "precision": 0.2727272727272727,
+      "recall": 0.75,
+      "tool": "e4-union",
+      "repo_name": "meta-formalism-copilot@8bde50c",
+      "pr_url": "https://local.invalid/meta-formalism-copilot/mfc-secdeps"
+    },
+    "cubic-cli": {
+      "skipped": false,
+      "true_positives": [
+        {
+          "golden_comment": "react/no-danger set to warn contradicts fail-loudly comment (warn exits 0)",
+          "severity": "Medium",
+          "category": "bug",
+          "matched_candidate": "react/no-danger rule set to \"warn\" instead of \"error\" provides no CI enforcement because lint script lacks --max-warnings=0",
+          "confidence": 0.95,
+          "reasoning": "Both comments identify the same underlying issue: the react/no-danger rule is set to 'warn' instead of 'error', which contradicts the intention to fail loudly in CI. The golden comment notes this contradicts a 'fail-loudly comment' and that 'warn exits 0', while the candidate explains that without --max-warnings=0, warnings don't enforce CI failures. Both are pointing to the same configuration problem where the warning level won't cause CI to fail."
+        },
+        {
+          "golden_comment": "trust AST-selector gaps: string-quoted key / shorthand / computed keys bypass the guardrail",
+          "severity": "Medium",
+          "category": "security",
+          "matched_candidate": "trust: true selector Property[key.name='trust'][value.value=true] only matches identifier keys with literal true, missing string-quoted keys, shorthand syntax, computed keys, and non-literal values",
+          "confidence": 0.95,
+          "reasoning": "Both comments identify the same underlying issue: the AST selector for 'trust' property validation has gaps that allow bypassing the guardrail through alternative syntax forms (string-quoted keys, shorthand syntax, and computed keys). The candidate provides more technical detail about the selector pattern and explicitly mentions 'non-literal values' as an additional gap, but the core issue about bypassing the trust guardrail through these syntax variations is identical."
+        },
+        {
+          "golden_comment": "secdeps: no-restricted-imports misses require()/dynamic import() (sibling of sec-A1)",
+          "severity": "Medium",
+          "category": "security",
+          "matched_candidate": "rehype-raw ban using no-restricted-imports with paths only catches static imports of exact string \"rehype-raw\", missing dynamic imports and subpath imports like \"rehype-raw/lib/index.js\"",
+          "confidence": 0.92,
+          "reasoning": "Both issues identify that the no-restricted-imports rule only catches static imports and misses dynamic imports (require() and import()). The golden comment explicitly mentions 'misses require()/dynamic import()' while the candidate specifically describes how the rehype-raw ban misses 'dynamic imports' and also adds detail about subpath imports. These are describing the same underlying limitation of the no-restricted-imports rule."
+        }
+      ],
+      "false_positives": [],
+      "false_negatives": [
+        {
+          "golden_comment": "secdeps: new npm-audit CI gate fails on this very branch (5 high production advisories) - commit message claims it lands green",
+          "severity": "High",
+          "category": "bug"
+        }
+      ],
+      "errors": [],
+      "total_candidates": 3,
+      "total_golden": 4,
+      "tp": 3,
+      "fp": 0,
+      "fn": 1,
+      "errors_count": 0,
+      "precision": 1.0,
+      "recall": 0.75,
+      "tool": "cubic-cli",
+      "repo_name": "meta-formalism-copilot@8bde50c",
+      "pr_url": "https://local.invalid/meta-formalism-copilot/mfc-secdeps"
+    }
+  },
+  "https://local.invalid/meta-formalism-copilot/mfc-deploy": {
+    "e2": {
+      "skipped": false,
+      "true_positives": [],
+      "false_positives": [
+        {
+          "candidate": "Deploy with Vercel button hardcodes repository URL 'aditya-adiga%2Fmeta-formalism-copilot', which will break if the canonical repo is renamed, transferred, or if documentation is reused by forks/downstream organizations"
+        }
+      ],
+      "false_negatives": [
+        {
+          "golden_comment": "CLAUDE.md:77 claims Vercel writes go to /tmp - refuted by persist.ts/cache.ts writing cwd()/data (EROFS swallowed)",
+          "severity": "Medium",
+          "category": "doc_defect"
+        },
+        {
+          "golden_comment": "README:120 does-not-persist claim has right conclusion wrong mechanism (writes silently fail on read-only fs)",
+          "severity": "Low",
+          "category": "doc_defect"
+        },
+        {
+          "golden_comment": "deploy: \"+ Factor\" during streaming persists a partial causal-graph snapshot (frozen preview / DetailsView TypeError)",
+          "severity": "Medium",
+          "category": "bug"
+        }
+      ],
+      "errors": [],
+      "total_candidates": 1,
+      "total_golden": 3,
+      "tp": 0,
+      "fp": 1,
+      "fn": 3,
+      "errors_count": 0,
+      "precision": 0.0,
+      "recall": 0.0,
+      "tool": "e2",
+      "repo_name": "meta-formalism-copilot@4329d6e",
+      "pr_url": "https://local.invalid/meta-formalism-copilot/mfc-deploy"
+    },
+    "e4-union": {
+      "skipped": false,
+      "true_positives": [
+        {
+          "golden_comment": "CLAUDE.md:77 claims Vercel writes go to /tmp - refuted by persist.ts/cache.ts writing cwd()/data (EROFS swallowed)",
+          "severity": "Medium",
+          "category": "doc_defect",
+          "matched_candidate": "README understates Vercel filesystem limitation - writes to repo-relative paths fail with read-only-filesystem error rather than silently not persisting",
+          "confidence": 0.95,
+          "reasoning": "Both issues identify the same core problem: documentation (CLAUDE.md/README) incorrectly describes Vercel filesystem behavior, claiming writes go to /tmp when the code actually writes to repo-relative paths (cwd()/data), which fails on Vercel's read-only filesystem. The golden comment mentions EROFS being swallowed while the candidate mentions the error rather than silent failure, but both are pointing to the mismatch between documented behavior and actual implementation that causes filesystem issues on Vercel."
+        },
+        {
+          "golden_comment": "README:120 does-not-persist claim has right conclusion wrong mechanism (writes silently fail on read-only fs)",
+          "severity": "Low",
+          "category": "doc_defect",
+          "matched_candidate": "README understates Vercel filesystem limitation - writes to repo-relative paths fail with read-only-filesystem error rather than silently not persisting",
+          "confidence": 0.92,
+          "reasoning": "Both comments identify the same issue: the README's claim about data not persisting on Vercel is technically incorrect. The golden comment states the conclusion is right but the mechanism is wrong (writes silently fail on read-only fs), while the candidate says writes fail with read-only-filesystem error rather than silently not persisting. Both are pointing to the same underlying problem - the README mischaracterizes how the filesystem limitation manifests (actual error vs silent failure), though they describe the error behavior slightly differently."
+        }
+      ],
+      "false_positives": [
+        {
+          "candidate": "ANTHROPIC_API_KEY listed as required in table but contradicted by optional OPENROUTER_API_KEY fallback description - unclear which is truly required"
+        },
+        {
+          "candidate": "Deploy to Vercel instructions lack warning that deployment URL has no authentication, allowing anyone with the URL to use owner's API key"
+        },
+        {
+          "candidate": "Local development instructions missing required step to set ANTHROPIC_API_KEY in .env.local"
+        }
+      ],
+      "false_negatives": [
+        {
+          "golden_comment": "deploy: \"+ Factor\" during streaming persists a partial causal-graph snapshot (frozen preview / DetailsView TypeError)",
+          "severity": "Medium",
+          "category": "bug"
+        }
+      ],
+      "errors": [],
+      "total_candidates": 7,
+      "total_golden": 3,
+      "tp": 2,
+      "fp": 3,
+      "fn": 1,
+      "errors_count": 0,
+      "precision": 0.2857142857142857,
+      "recall": 0.6666666666666666,
+      "tool": "e4-union",
+      "repo_name": "meta-formalism-copilot@4329d6e",
+      "pr_url": "https://local.invalid/meta-formalism-copilot/mfc-deploy"
+    },
+    "cubic-cli": {
+      "skipped": false,
+      "true_positives": [
+        {
+          "golden_comment": "CLAUDE.md:77 claims Vercel writes go to /tmp - refuted by persist.ts/cache.ts writing cwd()/data (EROFS swallowed)",
+          "severity": "Medium",
+          "category": "doc_defect",
+          "matched_candidate": "Analytics limitation documentation incorrectly states analytics 'does not persist across Vercel function invocations' when writes actually fail immediately because process.cwd()/data is read-only on Vercel",
+          "confidence": 0.95,
+          "reasoning": "Both issues identify the same core problem: CLAUDE.md documentation incorrectly describes analytics persistence behavior on Vercel. The golden comment notes that CLAUDE.md:77 claims writes go to /tmp (implying they work but don't persist), when actually the code writes to cwd()/data which fails on Vercel's read-only filesystem (with EROFS errors being swallowed). The candidate issue makes the same point - the documentation says analytics 'does not persist' (implying writes work temporarily) when in reality writes fail immediately because cwd()/data is read-only on Vercel. Both identify the discrepancy between documentation and actual behavior regarding where writes occur and why they fail."
+        },
+        {
+          "golden_comment": "README:120 does-not-persist claim has right conclusion wrong mechanism (writes silently fail on read-only fs)",
+          "severity": "Low",
+          "category": "doc_defect",
+          "matched_candidate": "Analytics limitation documentation incorrectly states analytics 'does not persist across Vercel function invocations' when writes actually fail immediately because process.cwd()/data is read-only on Vercel",
+          "confidence": 0.95,
+          "reasoning": "Both comments identify the same issue: the README's claim about analytics not persisting is technically correct but for the wrong reason. The golden comment states the mechanism is wrong (writes silently fail on read-only fs), and the candidate makes the exact same point - that writes actually fail immediately because the filesystem is read-only on Vercel, not simply that data doesn't persist across invocations. Both are pointing to the same documentation inaccuracy about the underlying mechanism."
+        }
+      ],
+      "false_positives": [
+        {
+          "candidate": "Analytics writes in persist.ts throw errors that are silently swallowed in callLlm.ts:91, preventing any analytics from being recorded"
+        },
+        {
+          "candidate": "Analytics DELETE endpoint in app/api/analytics/route.ts:10 has no try/catch and returns 500 errors on Vercel"
+        },
+        {
+          "candidate": "Limitations section does not document that LLM response cache is disabled on Vercel due to filesystem write failures"
+        },
+        {
+          "candidate": "LLM cache writes to cwd()-relative path silently fail on Vercel, causing every repeated identical request to make fresh billed API calls"
+        }
+      ],
+      "false_negatives": [
+        {
+          "golden_comment": "deploy: \"+ Factor\" during streaming persists a partial causal-graph snapshot (frozen preview / DetailsView TypeError)",
+          "severity": "Medium",
+          "category": "bug"
+        }
+      ],
+      "errors": [],
+      "total_candidates": 5,
+      "total_golden": 3,
+      "tp": 2,
+      "fp": 4,
+      "fn": 1,
+      "errors_count": 0,
+      "precision": 0.4,
+      "recall": 0.6666666666666666,
+      "tool": "cubic-cli",
+      "repo_name": "meta-formalism-copilot@4329d6e",
+      "pr_url": "https://local.invalid/meta-formalism-copilot/mfc-deploy"
+    }
+  },
+  "https://local.invalid/meta-formalism-copilot/mfc-fscompat": {
+    "e2": {
+      "skipped": false,
+      "true_positives": [],
+      "false_positives": [],
+      "false_negatives": [
+        {
+          "golden_comment": "persist.ts:6-7 references a Deploy-to-Vercel README section that does not exist",
+          "severity": "Low",
+          "category": "doc_defect"
+        },
+        {
+          "golden_comment": "docstring omits that /tmp is per-Function-instance - concurrent analytics divergence",
+          "severity": "Medium",
+          "category": "doc_defect"
+        },
+        {
+          "golden_comment": "inconsistent rest-args vs join-at-callsite convention",
+          "severity": "Low",
+          "category": "style"
+        },
+        {
+          "golden_comment": "cache hit-rate collapse on Vercel - cost impact",
+          "severity": "Medium",
+          "category": "perf"
+        },
+        {
+          "golden_comment": "dataDir() deploy invariant untested",
+          "severity": "Medium",
+          "category": "test_gap"
+        },
+        {
+          "golden_comment": "fscompat cacheKey stored inside the cache file + double-hashing (both states)",
+          "severity": "Low",
+          "category": "bug"
+        }
+      ],
+      "errors": [],
+      "total_candidates": 0,
+      "total_golden": 6,
+      "tp": 0,
+      "fp": 0,
+      "fn": 6,
+      "errors_count": 0,
+      "precision": 0.0,
+      "recall": 0.0,
+      "tool": "e2",
+      "repo_name": "meta-formalism-copilot@b64c1ca",
+      "pr_url": "https://local.invalid/meta-formalism-copilot/mfc-fscompat"
+    },
+    "e4-union": {
+      "skipped": false,
+      "true_positives": [
+        {
+          "golden_comment": "persist.ts:6-7 references a Deploy-to-Vercel README section that does not exist",
+          "severity": "Low",
+          "category": "doc_defect",
+          "matched_candidate": "Documentation references a 'Deploy to Vercel' README section that this diff does not add",
+          "confidence": 0.95,
+          "reasoning": "Both comments identify the same issue: the code references a 'Deploy to Vercel' section in the README that doesn't exist. The golden comment specifies the exact location (persist.ts:6-7) while the candidate notes the section isn't added in the diff. They're describing the same underlying problem - a broken documentation reference."
+        },
+        {
+          "golden_comment": "docstring omits that /tmp is per-Function-instance - concurrent analytics divergence",
+          "severity": "Medium",
+          "category": "doc_defect",
+          "matched_candidate": "Analytics entries are split and unreadable across concurrent function instances on Vercel, not just lost across cold starts, causing readers to see partial history",
+          "confidence": 0.95,
+          "reasoning": "Both comments identify the same core issue: the documentation/code fails to account for the fact that /tmp storage is per-function-instance in serverless environments, leading to analytics data being split/divergent across concurrent executions. The golden comment focuses on the docstring omission and 'divergence', while the candidate describes the practical consequence (split/unreadable entries, partial history), but they're pointing to the identical underlying problem."
+        }
+      ],
+      "false_positives": [
+        {
+          "candidate": "setCachedResult writes unbounded .json files into /tmp/cache with no size cap or eviction, which can exhaust the function's limited ephemeral disk (~512 MB) and cause subsequent write failures"
+        },
+        {
+          "candidate": "Documentation claims writes go to 'the repo's data/ dir' but path is process.cwd()/data, which is not the repo root for standalone/packaged builds or when server is started from another directory"
+        },
+        {
+          "candidate": "dataDir() joins arbitrary subpaths without containment check, allowing .. segments to resolve out of the base directory if called with request-derived input"
+        }
+      ],
+      "false_negatives": [
+        {
+          "golden_comment": "inconsistent rest-args vs join-at-callsite convention",
+          "severity": "Low",
+          "category": "style"
+        },
+        {
+          "golden_comment": "cache hit-rate collapse on Vercel - cost impact",
+          "severity": "Medium",
+          "category": "perf"
+        },
+        {
+          "golden_comment": "dataDir() deploy invariant untested",
+          "severity": "Medium",
+          "category": "test_gap"
+        },
+        {
+          "golden_comment": "fscompat cacheKey stored inside the cache file + double-hashing (both states)",
+          "severity": "Low",
+          "category": "bug"
+        }
+      ],
+      "errors": [],
+      "total_candidates": 7,
+      "total_golden": 6,
+      "tp": 2,
+      "fp": 3,
+      "fn": 4,
+      "errors_count": 0,
+      "precision": 0.2857142857142857,
+      "recall": 0.3333333333333333,
+      "tool": "e4-union",
+      "repo_name": "meta-formalism-copilot@b64c1ca",
+      "pr_url": "https://local.invalid/meta-formalism-copilot/mfc-fscompat"
+    },
+    "cubic-cli": {
+      "skipped": false,
+      "true_positives": [
+        {
+          "golden_comment": "persist.ts:6-7 references a Deploy-to-Vercel README section that does not exist",
+          "severity": "Low",
+          "category": "doc_defect",
+          "matched_candidate": "Comment references a 'Deploy to Vercel' README section that doesn't exist in this branch",
+          "confidence": 0.95,
+          "reasoning": "Both comments identify the same issue: a reference in persist.ts (lines 6-7) to a 'Deploy to Vercel' README section that doesn't exist. The candidate mentions 'this branch' as additional context, but the core problem - a broken reference to a non-existent README section - is identical."
+        },
+        {
+          "golden_comment": "dataDir() deploy invariant untested",
+          "severity": "Medium",
+          "category": "test_gap",
+          "matched_candidate": "New helper has no unit test, violating repo convention in CLAUDE.md",
+          "confidence": 0.95,
+          "reasoning": "Both comments identify that the dataDir() helper function lacks unit tests. The golden comment states 'dataDir() deploy invariant untested' and the candidate states 'New helper has no unit test, violating repo convention in CLAUDE.md'. While the wording differs, they both point to the same underlying issue: the dataDir() function is missing test coverage."
+        }
+      ],
+      "false_positives": [
+        {
+          "candidate": "analytics.jsonl and cache/ directory are created directly under /tmp instead of app-namespaced subdirectory"
+        },
+        {
+          "candidate": "/tmp is shared with other libraries that commonly create /tmp/cache or temp files, risking file mingling"
+        },
+        {
+          "candidate": "clearAnalyticsEntries and cache reads are not immune to foreign files in shared /tmp"
+        }
+      ],
+      "false_negatives": [
+        {
+          "golden_comment": "docstring omits that /tmp is per-Function-instance - concurrent analytics divergence",
+          "severity": "Medium",
+          "category": "doc_defect"
+        },
+        {
+          "golden_comment": "inconsistent rest-args vs join-at-callsite convention",
+          "severity": "Low",
+          "category": "style"
+        },
+        {
+          "golden_comment": "cache hit-rate collapse on Vercel - cost impact",
+          "severity": "Medium",
+          "category": "perf"
+        },
+        {
+          "golden_comment": "fscompat cacheKey stored inside the cache file + double-hashing (both states)",
+          "severity": "Low",
+          "category": "bug"
+        }
+      ],
+      "errors": [],
+      "total_candidates": 8,
+      "total_golden": 6,
+      "tp": 2,
+      "fp": 3,
+      "fn": 4,
+      "errors_count": 0,
+      "precision": 0.25,
+      "recall": 0.3333333333333333,
+      "tool": "cubic-cli",
+      "repo_name": "meta-formalism-copilot@b64c1ca",
+      "pr_url": "https://local.invalid/meta-formalism-copilot/mfc-fscompat"
+    }
+  },
+  "https://local.invalid/meta-formalism-copilot/mfc-corpus": {
+    "e2": {
+      "skipped": false,
+      "true_positives": [
+        {
+          "golden_comment": "corpus: process.env?.NEXT_PUBLIC_CORPUS_FS optional chaining likely breaks Next build-time inlining (flag.ts)",
+          "severity": "High",
+          "category": "bug",
+          "matched_candidate": "process.env?.NEXT_PUBLIC_CORPUS_FS uses optional chaining which breaks Next.js webpack NEXT_PUBLIC_* build-time inlining pattern matching, potentially causing the env-based toggle to be non-functional in production bundles",
+          "confidence": 0.95,
+          "reasoning": "Both comments identify the same core issue: the use of optional chaining (?.) with process.env.NEXT_PUBLIC_CORPUS_FS breaks Next.js's build-time inlining mechanism for NEXT_PUBLIC_* environment variables. The golden comment mentions it 'likely breaks Next build-time inlining' while the candidate provides more detail about webpack pattern matching and production bundle implications, but they're describing the same underlying problem in the same file (flag.ts)."
+        }
+      ],
+      "false_positives": [
+        {
+          "candidate": "parseManifest silently drops malformed array entries using .filter(isObject) and .filter(x => typeof x === 'string') instead of calling fail(), violating the stated FAIL-LOUD contract that requires malformed manifest data to never be silently dropped"
+        },
+        {
+          "candidate": "CorpusErrorKind defines 'not-found' error kind with path field, but no implementation in opfsAdapter.ts or in-memory fake actually produces this error (they return null instead), creating unreachable code in exhaustive switch statements"
+        }
+      ],
+      "false_negatives": [
+        {
+          "golden_comment": "customTypeIds vs customArtifactTypeIds naming inconsistency",
+          "severity": "Low",
+          "category": "style"
+        },
+        {
+          "golden_comment": "storeAdapter state/ blob path bypasses the paths.ts choke point",
+          "severity": "Medium",
+          "category": "api"
+        },
+        {
+          "golden_comment": "stale comments (layout.ts ref in storeAdapter header; workspaceStore:44-46 ref)",
+          "severity": "Low",
+          "category": "doc_defect"
+        },
+        {
+          "golden_comment": "manifest codec docstring drift: silent createdAt/updatedAt defaults vs never-silent-default claim; phantom browser-storage-cleared",
+          "severity": "Medium",
+          "category": "doc_defect"
+        }
+      ],
+      "errors": [],
+      "total_candidates": 3,
+      "total_golden": 5,
+      "tp": 1,
+      "fp": 2,
+      "fn": 4,
+      "errors_count": 0,
+      "precision": 0.3333333333333333,
+      "recall": 0.2,
+      "tool": "e2",
+      "repo_name": "meta-formalism-copilot@2dc403e",
+      "pr_url": "https://local.invalid/meta-formalism-copilot/mfc-corpus"
+    },
+    "e4-union": {
+      "skipped": false,
+      "true_positives": [
+        {
+          "golden_comment": "manifest codec docstring drift: silent createdAt/updatedAt defaults vs never-silent-default claim; phantom browser-storage-cleared",
+          "severity": "Medium",
+          "category": "doc_defect",
+          "matched_candidate": "createdAt/updatedAt are silently defaulted to now instead of failing on malformed data",
+          "confidence": 0.75,
+          "reasoning": "The candidate issue identifies that createdAt/updatedAt are silently defaulted, which is a core part of the golden comment's 'silent createdAt/updatedAt defaults vs never-silent-default claim'. However, the golden comment appears to describe a broader issue including documentation drift (docstring claims vs actual behavior) and mentions a 'phantom browser-storage-cleared' aspect. The candidate captures the main technical issue but misses the documentation drift aspect and the additional phantom issue mentioned in the golden comment."
+        },
+        {
+          "golden_comment": "corpus: process.env?.NEXT_PUBLIC_CORPUS_FS optional chaining likely breaks Next build-time inlining (flag.ts)",
+          "severity": "High",
+          "category": "bug",
+          "matched_candidate": "process.env?.NEXT_PUBLIC_CORPUS_FS optional chaining may prevent Next.js static inlining, making env var enable path silently inert",
+          "confidence": 0.95,
+          "reasoning": "Both comments identify the same issue: using optional chaining (?.) with process.env.NEXT_PUBLIC_CORPUS_FS prevents Next.js from properly inlining environment variables at build time. The golden comment mentions 'breaks Next build-time inlining' while the candidate says 'may prevent Next.js static inlining, making env var enable path silently inert'. Both refer to the same file (flag.ts) and the same problematic pattern. The candidate provides slightly more detail about the consequence (making the env var path 'silently inert'), but the core issue is identical."
+        }
+      ],
+      "false_positives": [
+        {
+          "candidate": "CorpusFS-backed setItem writes the whole persist blob on every set() with no debounce, causing overlapping async writeFile calls to race"
+        },
+        {
+          "candidate": "Concurrent OPFS createWritable() calls can reject with NoModificationAllowedError or land out of order, silently losing state"
+        },
+        {
+          "candidate": "getItem/setItem/removeItem propagate CorpusError but zustand's persist does not await/handle setItem, causing unhandled promise rejections"
+        },
+        {
+          "candidate": "Quota failures on the corpus path surface as unhandled rejections with no UI and no log"
+        },
+        {
+          "candidate": "isCorpusEnabled() honors NEXT_PUBLIC_CORPUS_FS=1 in production builds despite documentation claiming it is dev-only"
+        },
+        {
+          "candidate": "Missing process.env.NODE_ENV !== 'production' check allows production use of corpus-fs flag"
+        },
+        {
+          "candidate": "Enabling corpus-fs in production starts from empty corpus with no migration, abandoning localStorage work"
+        },
+        {
+          "candidate": "workspaceSlug sanitization can collide distinct workspace titles (e.g., 'a/b', 'a-b', 'A B' all map to 'a-b')"
+        },
+        {
+          "candidate": "No collision/uniqueness handling for workspace paths, allowing two workspaces to silently share one folder"
+        },
+        {
+          "candidate": "Comment claims 'Pass a fresh ArrayBuffer view' but code passes caller's array directly without copying"
+        },
+        {
+          "candidate": "await w.close() in finally block can mask the original quota error by replacing it with a close error"
+        },
+        {
+          "candidate": "Quota failures on write()/close() may be misclassified as {kind:'io'} instead of {kind:'quota-exceeded'}"
+        },
+        {
+          "candidate": "G7 test only stubs createWritable() throwing, leaving realistic quota-on-write path untested"
+        },
+        {
+          "candidate": "Fake and OPFS diverge on empty directories after rm of last file, weakening LSP claim"
+        },
+        {
+          "candidate": "Shared contract suite doesn't cover empty directory semantics, allowing CI to pass while failing against real OPFS"
+        },
+        {
+          "candidate": "Quota detection depends on instanceof DOMException, which fails on browsers shipping QuotaExceededError as its own Error subclass"
+        },
+        {
+          "candidate": "Unit test's hand-built DOMException hides quota detection issue with newer WHATWG spec implementations"
+        }
+      ],
+      "false_negatives": [
+        {
+          "golden_comment": "customTypeIds vs customArtifactTypeIds naming inconsistency",
+          "severity": "Low",
+          "category": "style"
+        },
+        {
+          "golden_comment": "storeAdapter state/ blob path bypasses the paths.ts choke point",
+          "severity": "Medium",
+          "category": "api"
+        },
+        {
+          "golden_comment": "stale comments (layout.ts ref in storeAdapter header; workspaceStore:44-46 ref)",
+          "severity": "Low",
+          "category": "doc_defect"
+        }
+      ],
+      "errors": [],
+      "total_candidates": 23,
+      "total_golden": 5,
+      "tp": 2,
+      "fp": 17,
+      "fn": 3,
+      "errors_count": 0,
+      "precision": 0.08695652173913043,
+      "recall": 0.4,
+      "tool": "e4-union",
+      "repo_name": "meta-formalism-copilot@2dc403e",
+      "pr_url": "https://local.invalid/meta-formalism-copilot/mfc-corpus"
+    },
+    "cubic-cli": {
+      "skipped": false,
+      "true_positives": [
+        {
+          "golden_comment": "manifest codec docstring drift: silent createdAt/updatedAt defaults vs never-silent-default claim; phantom browser-storage-cleared",
+          "severity": "Medium",
+          "category": "doc_defect",
+          "matched_candidate": "Manifest parsing silently replaces corrupted createdAt/updatedAt with new Date(), masking data corruption",
+          "confidence": 0.85,
+          "reasoning": "Both comments identify the same core issue: the manifest codec silently defaults corrupted/invalid createdAt/updatedAt fields to new Date() without warning. The golden comment mentions 'silent defaults vs never-silent-default claim' and the candidate describes 'silently replaces corrupted createdAt/updatedAt with new Date(), masking data corruption'. Both are pointing to the same problematic behavior of silent replacement that masks data issues. The golden comment includes additional context about 'docstring drift' and 'phantom browser-storage-cleared' which the candidate doesn't mention, but the core issue being identified is the same."
+        }
+      ],
+      "false_positives": [
+        {
+          "candidate": "Dev-only flag guard is documented but not implemented - isCorpusEnabled() contains no NODE_ENV/dev check, allowing production users to enable corpus path and lose access to existing workspace"
+        },
+        {
+          "candidate": "With corpus flag ON, onRehydrateStorage can clobber rehydrated corpus state with stale v2 localStorage data when workspace-v2 exists but workspace-zustand-v1 doesn't"
+        },
+        {
+          "candidate": "Corpus-backed setItem has no write serialization or debounce, causing stale-write race conditions where earlier snapshots can overwrite newer ones"
+        },
+        {
+          "candidate": "Corpus-backed setItem issues full OPFS writeFile for every store set() without queueing, causing write amplification"
+        },
+        {
+          "candidate": "Manifest parsing silently drops corrupted entries via sources.filter(isObject), artifacts.filter(isObject), and customTypeIds.filter(), undermining fail-loud parse contract"
+        },
+        {
+          "candidate": "workspaceSlug collisions allow distinct workspace titles like 'My Workspace', 'my workspace!', and 'MY-WORKSPACE' to map to same directory and overwrite each other"
+        },
+        {
+          "candidate": "Path builders throw plain Error instead of CorpusError, breaking the module's typed-error model"
+        },
+        {
+          "candidate": "All-unicode workspace titles like '\u65e5\u672c\u8a9e' throw unclassified errors instead of typed CorpusError"
+        },
+        {
+          "candidate": "manifestVersion is validated as a number but never checked against MANIFEST_VERSION, allowing future/garbage versions to parse incorrectly"
+        },
+        {
+          "candidate": "Comment claims fresh ArrayBuffer view is passed to write() but code passes caller's array directly without copying"
+        },
+        {
+          "candidate": "Fake's readFile returns live stored array by reference instead of copy, allowing buffer mutation to corrupt fake's state unlike real OPFS"
+        },
+        {
+          "candidate": "docs/user_research/property-tests.json is untracked but not in .gitignore, will be re-added by future git add -A"
+        }
+      ],
+      "false_negatives": [
+        {
+          "golden_comment": "customTypeIds vs customArtifactTypeIds naming inconsistency",
+          "severity": "Low",
+          "category": "style"
+        },
+        {
+          "golden_comment": "storeAdapter state/ blob path bypasses the paths.ts choke point",
+          "severity": "Medium",
+          "category": "api"
+        },
+        {
+          "golden_comment": "stale comments (layout.ts ref in storeAdapter header; workspaceStore:44-46 ref)",
+          "severity": "Low",
+          "category": "doc_defect"
+        },
+        {
+          "golden_comment": "corpus: process.env?.NEXT_PUBLIC_CORPUS_FS optional chaining likely breaks Next build-time inlining (flag.ts)",
+          "severity": "High",
+          "category": "bug"
+        }
+      ],
+      "errors": [],
+      "total_candidates": 13,
+      "total_golden": 5,
+      "tp": 1,
+      "fp": 12,
+      "fn": 4,
+      "errors_count": 0,
+      "precision": 0.07692307692307693,
+      "recall": 0.2,
+      "tool": "cubic-cli",
+      "repo_name": "meta-formalism-copilot@2dc403e",
+      "pr_url": "https://local.invalid/meta-formalism-copilot/mfc-corpus"
+    }
+  },
+  "https://local.invalid/meta-formalism-copilot/mfc-postfix": {
+    "e2": {
+      "skipped": false,
+      "true_positives": [
+        {
+          "golden_comment": "allowUnsafeEval defaults fail-open: NODE_ENV != production grants unsafe-eval to test/staging/custom envs",
+          "severity": "High",
+          "category": "security",
+          "matched_candidate": "allowUnsafeEval defaults to process.env.NODE_ENV !== \"production\", causing misconfigured deployments (unset, \"staging\", etc.) to silently weaken CSP by adding 'unsafe-eval' in production",
+          "confidence": 0.95,
+          "reasoning": "Both comments identify the same core issue: the allowUnsafeEval default behavior uses NODE_ENV !== 'production' which causes non-production environments (staging, test, custom, or unset) to inadvertently enable 'unsafe-eval' in CSP. The golden comment emphasizes the 'fail-open' nature affecting test/staging/custom environments, while the candidate focuses on misconfigured deployments and the silent weakening of CSP. Despite different wording, both point to the identical security vulnerability where the default logic grants unsafe-eval to environments that should be secure."
+        },
+        {
+          "golden_comment": "process.env.NODE_ENV read in a default parameter - ambient state in a previously pure formatter",
+          "severity": "Low",
+          "category": "bug",
+          "matched_candidate": "allowUnsafeEval defaults to process.env.NODE_ENV !== \"production\", causing misconfigured deployments (unset, \"staging\", etc.) to silently weaken CSP by adding 'unsafe-eval' in production",
+          "confidence": 0.95,
+          "reasoning": "Both issues identify the same underlying problem: process.env.NODE_ENV is being read to set a default value (allowUnsafeEval), which introduces ambient state dependency. The golden comment focuses on the architectural concern (ambient state in a pure formatter), while the candidate focuses on the security/deployment implications (misconfigured environments weakening CSP). However, they're pointing to the exact same code issue - the problematic use of process.env.NODE_ENV in a default parameter."
+        }
+      ],
+      "false_positives": [
+        {
+          "candidate": "Comment references MAX_OVERRIDE_QUERIES constant that is not defined or visible in this file, making safety justification unverifiable"
+        },
+        {
+          "candidate": "Comment mentions cap of 3 queries for LLM path but this cap is not declared in the file"
+        }
+      ],
+      "false_negatives": [
+        {
+          "golden_comment": "mergeStreamingPreview<T> types partial-JSON parses as complete T; between contract disagrees 3 ways; partial-field crash latent in 3 panels",
+          "severity": "High",
+          "category": "bug"
+        },
+        {
+          "golden_comment": "default buildCsp call path untested (tests pin both explicit arms; production runs the default)",
+          "severity": "Medium",
+          "category": "test_gap"
+        },
+        {
+          "golden_comment": "eval policy caller-selectable: exported allowUnsafeEval param means dev-only is enforced by there being one call site",
+          "severity": "Medium",
+          "category": "api"
+        },
+        {
+          "golden_comment": "data.results used without truncation; misbehaving OpenAlex per_page turns Math.max(...allWorks) into a RangeError cliff",
+          "severity": "Medium",
+          "category": "bug"
+        },
+        {
+          "golden_comment": "guard tests array presence not element presence: one-element between renders a dangling A-to row",
+          "severity": "Medium",
+          "category": "bug"
+        },
+        {
+          "golden_comment": "connect-src docstring enumeration omits the DD-009 corpus git worker (drifts silently when S4/S5 ships)",
+          "severity": "Low",
+          "category": "doc_defect"
+        },
+        {
+          "golden_comment": "comment-accuracy residue: dropped parity claim survives at evidenceStore.ts:17; optional-chaining mischaracterization",
+          "severity": "Low",
+          "category": "doc_defect"
+        }
+      ],
+      "errors": [],
+      "total_candidates": 3,
+      "total_golden": 9,
+      "tp": 2,
+      "fp": 2,
+      "fn": 7,
+      "errors_count": 0,
+      "precision": 0.6666666666666666,
+      "recall": 0.2222222222222222,
+      "tool": "e2",
+      "repo_name": "meta-formalism-copilot@7f30210",
+      "pr_url": "https://local.invalid/meta-formalism-copilot/mfc-postfix"
+    },
+    "e4-union": {
+      "skipped": false,
+      "true_positives": [
+        {
+          "golden_comment": "allowUnsafeEval defaults fail-open: NODE_ENV != production grants unsafe-eval to test/staging/custom envs",
+          "severity": "High",
+          "category": "security",
+          "matched_candidate": "CSP `unsafe-eval` default fails open when NODE_ENV is not exactly \"production\" - any deployment where NODE_ENV is unset or set to something else (e.g. \"prod\", custom server, edge runtime) silently ships `script-src ... 'unsafe-eval'`",
+          "confidence": 0.95,
+          "reasoning": "Both comments identify the same security issue: the CSP unsafe-eval setting fails open (allows unsafe-eval) when NODE_ENV is not exactly 'production'. The golden comment mentions test/staging/custom environments, while the candidate mentions unset, 'prod', custom server, and edge runtime scenarios. Both are describing the same underlying bug where the default behavior is insecure for non-production NODE_ENV values."
+        },
+        {
+          "golden_comment": "default buildCsp call path untested (tests pin both explicit arms; production runs the default)",
+          "severity": "Medium",
+          "category": "test_gap",
+          "matched_candidate": "Default-argument behaviour of buildCsp is now untested - pinning `buildCsp(NONCE, false)` makes the \"no eval in production\" assertion independent of the default, so an inverted/relaxed default would no longer fail any test",
+          "confidence": 0.95,
+          "reasoning": "Both comments identify the same underlying issue: the tests explicitly pin both arguments to buildCsp (including the second parameter as false), which means the default code path that production uses is not being tested. The candidate explains this more verbosely by noting that pinning 'buildCsp(NONCE, false)' makes the test independent of the default value, while the golden comment more concisely states 'tests pin both explicit arms; production runs the default'. Both are pointing to the same gap in test coverage."
+        },
+        {
+          "golden_comment": "eval policy caller-selectable: exported allowUnsafeEval param means dev-only is enforced by there being one call site",
+          "severity": "Medium",
+          "category": "api",
+          "matched_candidate": "Default-argument behaviour of buildCsp is now untested - pinning `buildCsp(NONCE, false)` makes the \"no eval in production\" assertion independent of the default, so an inverted/relaxed default would no longer fail any test",
+          "confidence": 0.92,
+          "reasoning": "Both comments identify the same underlying issue: the test now explicitly passes `false` for the `allowUnsafeEval` parameter instead of relying on the default value. This means the test no longer validates that the default behavior prevents eval in production. The golden comment focuses on how the exported parameter makes enforcement dependent on the single call site, while the candidate focuses on how the default is now untested. These are two perspectives on the same problem - the test's effectiveness in ensuring production safety through default behavior has been compromised."
+        },
+        {
+          "golden_comment": "guard tests array presence not element presence: one-element between renders a dangling A-to row",
+          "severity": "Medium",
+          "category": "bug",
+          "matched_candidate": "Truthiness guard still renders a bare \"\u2194\" row for partially streamed `between` - `t.between && ...` passes for `[]` or `[\"A\"]` mid-stream, producing an empty or one-sided arrow row",
+          "confidence": 0.95,
+          "reasoning": "Both comments identify the same underlying issue: the truthiness guard for the 'between' array allows rendering when the array has one element, which produces an incomplete/dangling arrow row. The golden comment describes it as 'one-element between renders a dangling A-to row' while the candidate describes it as 'passes for [\"A\"] mid-stream, producing an empty or one-sided arrow row'. Both are pointing to the same bug where checking array presence (truthiness) rather than checking for sufficient elements (length >= 2) causes improper rendering of the between/arrow row."
+        }
+      ],
+      "false_positives": [
+        {
+          "candidate": "Regression test may be vacuous because `CollapsibleSection` is not mocked - if that component renders children only when open, both assertions exercise nothing and the \"does not crash\" guarantee is not actually tested"
+        },
+        {
+          "candidate": "Doc de-referencing workspaceStore is only half applied - the section header still reads \"Debounced localStorage adapter (same pattern as workspaceStore)\", leaving the stale reference the diff intended to remove"
+        }
+      ],
+      "false_negatives": [
+        {
+          "golden_comment": "mergeStreamingPreview<T> types partial-JSON parses as complete T; between contract disagrees 3 ways; partial-field crash latent in 3 panels",
+          "severity": "High",
+          "category": "bug"
+        },
+        {
+          "golden_comment": "process.env.NODE_ENV read in a default parameter - ambient state in a previously pure formatter",
+          "severity": "Low",
+          "category": "bug"
+        },
+        {
+          "golden_comment": "data.results used without truncation; misbehaving OpenAlex per_page turns Math.max(...allWorks) into a RangeError cliff",
+          "severity": "Medium",
+          "category": "bug"
+        },
+        {
+          "golden_comment": "connect-src docstring enumeration omits the DD-009 corpus git worker (drifts silently when S4/S5 ships)",
+          "severity": "Low",
+          "category": "doc_defect"
+        },
+        {
+          "golden_comment": "comment-accuracy residue: dropped parity claim survives at evidenceStore.ts:17; optional-chaining mischaracterization",
+          "severity": "Low",
+          "category": "doc_defect"
+        }
+      ],
+      "errors": [],
+      "total_candidates": 5,
+      "total_golden": 9,
+      "tp": 4,
+      "fp": 2,
+      "fn": 5,
+      "errors_count": 0,
+      "precision": 0.8,
+      "recall": 0.4444444444444444,
+      "tool": "e4-union",
+      "repo_name": "meta-formalism-copilot@7f30210",
+      "pr_url": "https://local.invalid/meta-formalism-copilot/mfc-postfix"
+    },
+    "cubic-cli": {
+      "skipped": false,
+      "true_positives": [
+        {
+          "golden_comment": "mergeStreamingPreview<T> types partial-JSON parses as complete T; between contract disagrees 3 ways; partial-field crash latent in 3 panels",
+          "severity": "High",
+          "category": "bug",
+          "matched_candidate": "DetailsView dereferences causalGraph.edges.length without guard during streaming, causing TypeError when array hasn't arrived yet",
+          "confidence": 0.85,
+          "reasoning": "The candidate issue identifies a specific instance (DetailsView accessing causalGraph.edges.length) of the broader problem described in the golden comment. The golden comment describes a systemic typing issue where mergeStreamingPreview types partial JSON as complete objects, leading to 'partial-field crash latent in 3 panels'. The candidate is describing one of those 3 panels crashing due to accessing a field that hasn't arrived yet during streaming - which is exactly the manifestation of the typing contract disagreement mentioned in the golden comment."
+        }
+      ],
+      "false_positives": [
+        {
+          "candidate": "DetailsView dereferences causalGraph.confounders.length without guard during streaming, causing TypeError when array hasn't arrived yet"
+        },
+        {
+          "candidate": "DetailsView dereferences c.affectedEdges.join(\", \") without guard during streaming, causing TypeError when array hasn't arrived yet"
+        }
+      ],
+      "false_negatives": [
+        {
+          "golden_comment": "allowUnsafeEval defaults fail-open: NODE_ENV != production grants unsafe-eval to test/staging/custom envs",
+          "severity": "High",
+          "category": "security"
+        },
+        {
+          "golden_comment": "default buildCsp call path untested (tests pin both explicit arms; production runs the default)",
+          "severity": "Medium",
+          "category": "test_gap"
+        },
+        {
+          "golden_comment": "eval policy caller-selectable: exported allowUnsafeEval param means dev-only is enforced by there being one call site",
+          "severity": "Medium",
+          "category": "api"
+        },
+        {
+          "golden_comment": "process.env.NODE_ENV read in a default parameter - ambient state in a previously pure formatter",
+          "severity": "Low",
+          "category": "bug"
+        },
+        {
+          "golden_comment": "data.results used without truncation; misbehaving OpenAlex per_page turns Math.max(...allWorks) into a RangeError cliff",
+          "severity": "Medium",
+          "category": "bug"
+        },
+        {
+          "golden_comment": "guard tests array presence not element presence: one-element between renders a dangling A-to row",
+          "severity": "Medium",
+          "category": "bug"
+        },
+        {
+          "golden_comment": "connect-src docstring enumeration omits the DD-009 corpus git worker (drifts silently when S4/S5 ships)",
+          "severity": "Low",
+          "category": "doc_defect"
+        },
+        {
+          "golden_comment": "comment-accuracy residue: dropped parity claim survives at evidenceStore.ts:17; optional-chaining mischaracterization",
+          "severity": "Low",
+          "category": "doc_defect"
+        }
+      ],
+      "errors": [],
+      "total_candidates": 3,
+      "total_golden": 9,
+      "tp": 1,
+      "fp": 2,
+      "fn": 8,
+      "errors_count": 0,
+      "precision": 0.3333333333333333,
+      "recall": 0.1111111111111111,
+      "tool": "cubic-cli",
+      "repo_name": "meta-formalism-copilot@7f30210",
+      "pr_url": "https://local.invalid/meta-formalism-copilot/mfc-postfix"
+    }
+  }
+}

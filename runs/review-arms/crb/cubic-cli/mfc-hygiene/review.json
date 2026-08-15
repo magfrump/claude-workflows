@@ -1,0 +1,32 @@
+{
+  "issues": [
+    {
+      "priority": "P1",
+      "file": "app/lib/formalization/artifactRoute.ts",
+      "line": 106,
+      "title": "LLM response preview still written to server logs, contradicting the branch's own logging policy",
+      "description": "The tightened-logging change establishes in three sibling sites (`callLlm.ts:182-186`, `streamLlm.ts:158-160`, `app/api/edit/artifact/route.ts:77-81`) that LLM output derived from the user's source material must not be written to server logs (length-only logging, with explicit rationale comments). The JSON-parse-failure path in the shared artifact route helper still `console.error`s a 500-char preview of the response — the exact data class the new policy excludes, and this is the highest-traffic parse-failure site since every formalization endpoint routes through it. One site was left behind by the cleanup."
+    },
+    {
+      "priority": "P2",
+      "file": "app/lib/llm/callLlm.ts",
+      "line": 57,
+      "title": "responseFormat JSDoc directly contradicts the code's Anthropic path",
+      "description": "The JSDoc says \"Only used with the OpenRouter provider (Anthropic direct API does not support this),\" but lines 139–146 pass the schema to the Anthropic call via `output_config` whenever `responseFormat` is set. One of the two is wrong — and because the param enters the request through a conditional object spread, TypeScript excess-property checking cannot flag it if `output_config` is not a valid SDK param, meaning every structured-output call (e.g. `formalization/causal-graph` with `ANTHROPIC_API_KEY` configured) would fail only at runtime. I could not verify SDK support because `node_modules` is not installed; either the JSDoc or the code path needs correcting."
+    },
+    {
+      "priority": "P3",
+      "file": "app/lib/llm/streamLlm.ts",
+      "line": 71,
+      "title": "SSE protocol docstring still documents a `details` field the error event no longer carries",
+      "description": "The catch block intentionally emits `{ error: message }` only (per the privacy comment at lines 158–159), but the protocol docstring above `streamLlm` still advertises `event: error — { error: \"message\", details: \"...\" }`. A consumer implemented against the docstring would wait for a field that never arrives. In a branch whose second commit exists specifically to make JSDoc describe present behavior, this doc drifted."
+    },
+    {
+      "priority": "P3",
+      "file": "app/lib/llm/streamLlm.ts",
+      "line": 263,
+      "title": "Same OpenRouter failure modeled two different ways across the two call paths",
+      "description": "`callLlm` throws the typed `OpenRouterError` (which route handlers pattern-match with `instanceof` to decide what to surface), while `streamOpenRouter` throws an ad-hoc `Error` with a bolted-on `details` property via `errorWithDetails` — a property no in-process consumer reads, as its newly tightened JSDoc itself concedes. Reusing `OpenRouterError` in the streaming path would delete `errorWithDetails` entirely along with the documentation burden the second commit just paid down."
+    }
+  ]
+}

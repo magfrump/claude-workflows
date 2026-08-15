@@ -1,0 +1,18 @@
+{
+  "issues": [
+    {
+      "priority": "P3",
+      "file": "README.md",
+      "line": 120,
+      "title": "Analytics limitation describes the wrong failure mode",
+      "description": "The new \"Limitations on Vercel\" bullet says analytics \"does not persist across Vercel function invocations,\" implying writes succeed within a warm container. In reality `persist.ts` writes to `process.cwd()/data`, which is read-only on Vercel, so writes throw and are silently swallowed (`callLlm.ts:91`) — nothing is ever recorded, and the analytics \"clear\" action (`DELETE` in `app/api/analytics/route.ts:10`, no try/catch) returns a 500. The \"treat as dev-only\" guidance is right, but the mechanism as documented is inaccurate in a commit whose stated purpose is doc accuracy."
+    },
+    {
+      "priority": "P3",
+      "file": "README.md",
+      "line": 117,
+      "title": "Limitations section omits that the LLM response cache is disabled on Vercel",
+      "description": "The LLM cache (`app/lib/llm/cache.ts:6`) also writes to a `cwd()`-relative path, so cache writes silently fail on Vercel and every repeated identical request makes a fresh billed API call. The new Limitations section covers Lean verification and analytics but not this cost-relevant limitation, even though the same diff's CLAUDE.md changes acknowledge the cache's filesystem dependence."
+    }
+  ]
+}

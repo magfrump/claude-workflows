@@ -1,0 +1,11 @@
+{
+  "issues": [
+    {
+      "priority": "P2",
+      "file": "app/components/panels/CausalGraphPanel.tsx",
+      "line": 69,
+      "title": "Same streaming-partial-data crash class fixed in BalancedPerspectivesPanel remains in CausalGraphPanel's Details view",
+      "description": "The diff's fix guards `t.between` because partial-JSON streaming can deliver objects with missing fields, but `DetailsView` — which receives the same streaming preview whenever final data is absent, gated only on `variables` being non-empty — still dereferences `causalGraph.edges.length`, `causalGraph.confounders.length`, and `c.affectedEdges.join(\", \")` with no guards. Clicking the \"Details\" toggle mid-stream before those arrays have arrived throws the identical TypeError the in-scope commit fixes, crashing the panel."
+    }
+  ]
+}

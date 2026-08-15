@@ -1,0 +1,245 @@
+INFO  2026-08-15T01:26:53 +172ms service=default version=1.10.4 args=["review","--base","crb-base-mfc-deploy","--json","--print-logs","--log-level","DEBUG"] cubic
+INFO  2026-08-15T01:26:54 +8ms service=auth userId=dc16113e-2788-430e-9c5c-202739d636a3 hasTokens=true Found CLI auth
+INFO  2026-08-15T01:26:54 +1ms service=auth userId=dc16113e-2788-430e-9c5c-202739d636a3 expiry=1786757696 secondsUntilExpiry=482 isExpired=false force=false inProgress=false refreshCliToken
+INFO  2026-08-15T01:26:54 +0ms service=auth Token valid, skipping refresh
+INFO  2026-08-15T01:26:54 +0ms service=auth userId=dc16113e-2788-430e-9c5c-202739d636a3 expiry=1786757696 secondsUntilExpiry=482 isExpired=false force=false inProgress=false refreshCliToken
+INFO  2026-08-15T01:26:54 +0ms service=auth userId=dc16113e-2788-430e-9c5c-202739d636a3 hasTokens=true Found CLI auth
+INFO  2026-08-15T01:26:54 +0ms service=auth Token valid, skipping refresh
+INFO  2026-08-15T01:26:54 +548ms service=tracking mode=base-branch Starting CLI session creation
+INFO  2026-08-15T01:26:54 +0ms service=auth userId=dc16113e-2788-430e-9c5c-202739d636a3 hasTokens=true Found CLI auth
+INFO  2026-08-15T01:26:54 +1ms service=auth userId=dc16113e-2788-430e-9c5c-202739d636a3 expiry=1786757696 secondsUntilExpiry=482 isExpired=false force=false inProgress=false refreshCliToken
+INFO  2026-08-15T01:26:54 +0ms service=auth Token valid, skipping refresh
+DEBUG 2026-08-15T01:26:54 +0ms service=tracking userId=dc16113e-2788-430e-9c5c-202739d636a3 CLI credentials found
+DEBUG 2026-08-15T01:26:54 +0ms service=tracking url=https://www.cubic.dev/api/cli/ai/v3/sessions Calling session creation API
+DEBUG 2026-08-15T01:26:54 +441ms service=tracking file=/home/magfrump/.local/state/cubic/cli-sessions/token-7d952ddf instanceId=7d952ddf Session token written to file (sync)
+INFO  2026-08-15T01:26:54 +0ms service=tracking sessionToken=7ca13b15... model=gpt-5.6-luna expiresAt=2026-08-15T01:41:55.410Z CLI session started
+INFO  2026-08-15T01:26:54 +0ms service=default directory=/home/magfrump/claude-workflows/external/crb-cubic/mfc-deploy creating instance
+INFO  2026-08-15T01:26:54 +1ms service=project directory=/home/magfrump/claude-workflows/external/crb-cubic/mfc-deploy fromDirectory
+INFO  2026-08-15T01:26:54 +0ms service=project status=started git.rev-parse
+INFO  2026-08-15T01:26:55 +11ms service=project status=completed duration=11 git.rev-parse
+INFO  2026-08-15T01:26:55 +8ms service=default directory=/home/magfrump/claude-workflows/external/crb-cubic/mfc-deploy bootstrapping
+INFO  2026-08-15T01:26:55 +1ms service=config path=/home/magfrump/.config/cubic/config.json loading
+INFO  2026-08-15T01:26:55 +1ms service=config path=/home/magfrump/.config/cubic/cubic.jsonc loading
+INFO  2026-08-15T01:26:55 +0ms service=config path=/home/magfrump/.config/cubic/cubic.json loading
+INFO  2026-08-15T01:26:55 +3ms service=bus type=* subscribing
+INFO  2026-08-15T01:26:55 +0ms service=format init
+INFO  2026-08-15T01:26:55 +0ms service=bus type=file.edited subscribing
+INFO  2026-08-15T01:26:55 +1ms service=lsp serverIds=deno, typescript, vue, eslint, gopls, ruby-lsp, pyright, elixir-ls, zls, csharp, sourcekit-lsp, rust, clangd, svelte, astro, jdtls, lua-ls enabled LSP servers
+INFO  2026-08-15T01:26:55 +27ms service=bus type=command.executed subscribing
+INFO  2026-08-15T01:26:55 +2ms service=session id=ses_ffcf88cb3ffesV2aKdh0hHEKQx version=1.10.4 projectID=3ef17b6d3eb78b2b89af730a117988ba2678405f directory=/home/magfrump/claude-workflows/external/crb-cubic/mfc-deploy title=Review against crb-base-mfc-deploy time={"created":1786757215053,"updated":1786757215053} created
+INFO  2026-08-15T01:26:55 +1ms service=bus type=session.created publishing
+INFO  2026-08-15T01:26:55 +0ms service=bus type=session.updated publishing
+INFO  2026-08-15T01:26:55 +1ms service=bus type=message.part.updated subscribing
+INFO  2026-08-15T01:26:55 +0ms service=bus type=permission.updated subscribing
+INFO  2026-08-15T01:26:55 +0ms service=session.prompt session=ses_ffcf88cb3ffesV2aKdh0hHEKQx directory=/home/magfrump/claude-workflows/external/crb-cubic/mfc-deploy prompt
+INFO  2026-08-15T01:26:55 +4ms service=auth userId=dc16113e-2788-430e-9c5c-202739d636a3 hasTokens=true Found CLI auth
+INFO  2026-08-15T01:26:55 +1ms service=auth userId=dc16113e-2788-430e-9c5c-202739d636a3 expiry=1786757696 secondsUntilExpiry=481 isExpired=false force=false inProgress=false refreshCliToken
+INFO  2026-08-15T01:26:55 +0ms service=auth Token valid, skipping refresh
+INFO  2026-08-15T01:26:55 +584ms service=bus type=message.updated publishing
+INFO  2026-08-15T01:26:55 +1ms service=bus type=message.part.updated publishing
+INFO  2026-08-15T01:26:55 +1ms service=bus type=session.updated publishing
+INFO  2026-08-15T01:26:55 +0ms service=session.lock sessionID=ses_ffcf88cb3ffesV2aKdh0hHEKQx locked
+INFO  2026-08-15T01:26:55 +0ms service=session.prompt session=ses_ffcf88cb3ffesV2aKdh0hHEKQx sessionID=ses_ffcf88cb3ffesV2aKdh0hHEKQx locking
+INFO  2026-08-15T01:26:57 +1566ms service=bus type=message.updated publishing
+INFO  2026-08-15T01:26:57 +5ms service=bus type=message.part.updated publishing
+INFO  2026-08-15T01:26:59 +2377ms service=bus type=message.part.updated publishing
+INFO  2026-08-15T01:27:00 +678ms service=bus type=message.part.updated publishing
+INFO  2026-08-15T01:27:00 +3ms service=bus type=message.part.updated publishing
+INFO  2026-08-15T01:27:00 +684ms service=bus type=message.part.updated publishing
+INFO  2026-08-15T01:27:00 +5ms service=bus type=message.part.updated publishing
+INFO  2026-08-15T01:27:00 +17ms service=bus type=message.part.updated publishing
+INFO  2026-08-15T01:27:01 +759ms service=bus type=message.part.updated publishing
+INFO  2026-08-15T01:27:01 +244ms service=bus type=message.part.updated publishing
+INFO  2026-08-15T01:27:01 +6ms service=bus type=message.part.updated publishing
+INFO  2026-08-15T01:27:02 +849ms service=bus type=message.part.updated publishing
+INFO  2026-08-15T01:27:02 +10ms service=bus type=message.part.updated publishing
+INFO  2026-08-15T01:27:06 +3742ms service=bus type=message.part.updated publishing
+INFO  2026-08-15T01:27:06 +0ms service=bus type=message.part.updated publishing
+INFO  2026-08-15T01:27:06 +30ms service=bus type=message.part.updated publishing
+INFO  2026-08-15T01:27:06 +5ms service=bus type=message.part.updated publishing
+INFO  2026-08-15T01:27:07 +650ms service=bus type=message.part.updated publishing
+INFO  2026-08-15T01:27:07 +2ms service=bus type=message.part.updated publishing
+INFO  2026-08-15T01:27:07 +6ms service=bus type=message.part.updated publishing
+INFO  2026-08-15T01:27:07 +609ms service=bus type=message.part.updated publishing
+INFO  2026-08-15T01:27:07 +0ms service=bus type=message.part.updated publishing
+INFO  2026-08-15T01:27:07 +14ms service=bus type=message.part.updated publishing
+INFO  2026-08-15T01:27:07 +59ms service=bus type=message.part.updated publishing
+INFO  2026-08-15T01:27:09 +1696ms service=bus type=message.part.updated publishing
+INFO  2026-08-15T01:27:09 +9ms service=bus type=message.part.updated publishing
+INFO  2026-08-15T01:27:12 +3246ms service=bus type=message.part.updated publishing
+INFO  2026-08-15T01:27:13 +682ms service=bus type=message.part.updated publishing
+INFO  2026-08-15T01:27:13 +1ms service=bus type=message.part.updated publishing
+INFO  2026-08-15T01:27:13 +11ms service=bus type=message.part.updated publishing
+INFO  2026-08-15T01:27:14 +640ms service=bus type=message.part.updated publishing
+INFO  2026-08-15T01:27:25 +11666ms service=bus type=message.part.updated publishing
+INFO  2026-08-15T01:27:26 +364ms service=bus type=message.part.updated publishing
+INFO  2026-08-15T01:27:26 +7ms service=bus type=message.part.updated publishing
+INFO  2026-08-15T01:27:27 +838ms service=bus type=message.part.updated publishing
+INFO  2026-08-15T01:27:38 +11748ms service=bus type=message.part.updated publishing
+INFO  2026-08-15T01:27:40 +1782ms service=bus type=message.part.updated publishing
+INFO  2026-08-15T01:27:43 +2699ms service=bus type=message.part.updated publishing
+INFO  2026-08-15T01:27:43 +204ms service=bus type=message.part.updated publishing
+INFO  2026-08-15T01:27:43 +6ms service=bus type=message.part.updated publishing
+INFO  2026-08-15T01:27:48 +4675ms service=bus type=message.part.updated publishing
+INFO  2026-08-15T01:27:48 +78ms service=bus type=message.part.updated publishing
+INFO  2026-08-15T01:27:48 +0ms service=claude-code-acp optionId=allow_always title=git -C /home/magfrump/claude-workflows/external/crb-cubic/mfc-deploy rev-parse --abbrev-ref HEAD Auto-approving Claude Code tool request
+INFO  2026-08-15T01:27:49 +715ms service=bus type=message.part.updated publishing
+INFO  2026-08-15T01:27:49 +187ms service=bus type=message.part.updated publishing
+INFO  2026-08-15T01:27:49 +93ms service=bus type=message.part.updated publishing
+INFO  2026-08-15T01:27:49 +0ms service=claude-code-acp optionId=allow_always title=git -C /home/magfrump/claude-workflows/external/crb-cubic/mfc-deploy log --oneline -10 Auto-approving Claude Code tool request
+INFO  2026-08-15T01:27:50 +706ms service=bus type=message.part.updated publishing
+INFO  2026-08-15T01:27:50 +200ms service=bus type=message.part.updated publishing
+INFO  2026-08-15T01:27:50 +92ms service=bus type=message.part.updated publishing
+INFO  2026-08-15T01:27:50 +1ms service=claude-code-acp optionId=allow_always title=git -C /home/magfrump/claude-workflows/external/crb-cubic/mfc-deploy diff origin/crb-base-mfc-deploy --stat Auto-approving Claude Code tool request
+INFO  2026-08-15T01:27:50 +610ms service=bus type=message.part.updated publishing
+INFO  2026-08-15T01:27:50 +11ms service=bus type=message.part.updated publishing
+INFO  2026-08-15T01:27:55 +4817ms service=bus type=message.part.updated publishing
+INFO  2026-08-15T01:27:55 +65ms service=bus type=message.part.updated publishing
+INFO  2026-08-15T01:28:07 +11290ms service=bus type=message.part.updated publishing
+INFO  2026-08-15T01:28:07 +688ms service=bus type=message.part.updated publishing
+INFO  2026-08-15T01:28:07 +2ms service=bus type=message.part.updated publishing
+INFO  2026-08-15T01:28:07 +49ms service=bus type=message.part.updated publishing
+INFO  2026-08-15T01:28:07 +11ms service=bus type=message.part.updated publishing
+INFO  2026-08-15T01:28:08 +615ms service=bus type=message.part.updated publishing
+INFO  2026-08-15T01:28:08 +0ms service=bus type=message.part.updated publishing
+INFO  2026-08-15T01:28:08 +107ms service=bus type=message.part.updated publishing
+INFO  2026-08-15T01:28:09 +575ms service=bus type=message.part.updated publishing
+INFO  2026-08-15T01:28:12 +3209ms service=bus type=message.part.updated publishing
+INFO  2026-08-15T01:28:12 +369ms service=bus type=message.part.updated publishing
+INFO  2026-08-15T01:28:12 +46ms service=bus type=message.part.updated publishing
+INFO  2026-08-15T01:28:12 +6ms service=bus type=message.part.updated publishing
+INFO  2026-08-15T01:28:16 +3906ms service=bus type=message.part.updated publishing
+INFO  2026-08-15T01:28:17 +388ms service=bus type=message.part.updated publishing
+INFO  2026-08-15T01:28:17 +8ms service=bus type=message.part.updated publishing
+INFO  2026-08-15T01:28:17 +7ms service=bus type=message.part.updated publishing
+INFO  2026-08-15T01:28:17 +9ms service=bus type=message.part.updated publishing
+INFO  2026-08-15T01:28:26 +9287ms service=bus type=message.part.updated publishing
+INFO  2026-08-15T01:28:27 +1259ms service=bus type=message.part.updated publishing
+INFO  2026-08-15T01:28:27 +2ms service=bus type=message.part.updated publishing
+INFO  2026-08-15T01:28:27 +4ms service=bus type=message.part.updated publishing
+INFO  2026-08-15T01:28:27 +49ms service=bus type=message.part.updated publishing
+INFO  2026-08-15T01:28:27 +2ms service=bus type=message.part.updated publishing
+INFO  2026-08-15T01:28:27 +3ms service=bus type=message.part.updated publishing
+INFO  2026-08-15T01:28:34 +7039ms service=bus type=message.part.updated publishing
+INFO  2026-08-15T01:28:34 +28ms service=bus type=message.part.updated publishing
+INFO  2026-08-15T01:28:34 +51ms service=bus type=message.part.updated publishing
+INFO  2026-08-15T01:28:34 +3ms service=bus type=message.part.updated publishing
+INFO  2026-08-15T01:29:09 +34775ms service=bus type=message.part.updated publishing
+INFO  2026-08-15T01:29:10 +734ms service=bus type=message.part.updated publishing
+INFO  2026-08-15T01:29:10 +2ms service=bus type=message.part.updated publishing
+INFO  2026-08-15T01:29:10 +45ms service=bus type=message.part.updated publishing
+INFO  2026-08-15T01:29:10 +4ms service=bus type=message.part.updated publishing
+INFO  2026-08-15T01:29:10 +47ms service=bus type=message.part.updated publishing
+INFO  2026-08-15T01:29:10 +62ms service=bus type=message.part.updated publishing
+INFO  2026-08-15T01:29:10 +6ms service=bus type=message.part.updated publishing
+INFO  2026-08-15T01:29:32 +22125ms service=bus type=message.part.updated publishing
+INFO  2026-08-15T01:29:33 +645ms service=bus type=message.part.updated publishing
+INFO  2026-08-15T01:29:33 +2ms service=bus type=message.part.updated publishing
+INFO  2026-08-15T01:29:33 +45ms service=bus type=message.part.updated publishing
+INFO  2026-08-15T01:29:33 +3ms service=bus type=message.part.updated publishing
+INFO  2026-08-15T01:29:33 +158ms service=bus type=message.part.updated publishing
+INFO  2026-08-15T01:29:33 +53ms service=bus type=message.part.updated publishing
+INFO  2026-08-15T01:29:33 +4ms service=bus type=message.part.updated publishing
+INFO  2026-08-15T01:29:55 +21891ms service=bus type=message.part.updated publishing
+INFO  2026-08-15T01:29:56 +1363ms service=bus type=message.part.updated publishing
+INFO  2026-08-15T01:29:56 +3ms service=bus type=message.part.updated publishing
+INFO  2026-08-15T01:29:56 +51ms service=bus type=message.part.updated publishing
+INFO  2026-08-15T01:29:56 +8ms service=bus type=message.part.updated publishing
+INFO  2026-08-15T01:29:57 +603ms service=bus type=message.part.updated publishing
+INFO  2026-08-15T01:29:57 +0ms service=bus type=message.part.updated publishing
+INFO  2026-08-15T01:29:57 +12ms service=bus type=message.part.updated publishing
+INFO  2026-08-15T01:29:57 +36ms service=bus type=message.part.updated publishing
+INFO  2026-08-15T01:29:57 +8ms service=bus type=message.part.updated publishing
+INFO  2026-08-15T01:29:57 +4ms service=bus type=message.part.updated publishing
+INFO  2026-08-15T01:29:57 +4ms service=bus type=message.part.updated publishing
+INFO  2026-08-15T01:30:19 +22394ms service=bus type=message.part.updated publishing
+INFO  2026-08-15T01:30:19 +2ms service=bus type=message.part.updated publishing
+INFO  2026-08-15T01:30:19 +29ms service=bus type=message.part.updated publishing
+INFO  2026-08-15T01:30:20 +657ms service=bus type=message.part.updated publishing
+INFO  2026-08-15T01:30:20 +2ms service=bus type=message.part.updated publishing
+INFO  2026-08-15T01:30:20 +45ms service=bus type=message.part.updated publishing
+INFO  2026-08-15T01:30:20 +4ms service=bus type=message.part.updated publishing
+INFO  2026-08-15T01:30:21 +627ms service=bus type=message.part.updated publishing
+INFO  2026-08-15T01:30:21 +2ms service=bus type=message.part.updated publishing
+INFO  2026-08-15T01:30:21 +43ms service=bus type=message.part.updated publishing
+INFO  2026-08-15T01:30:21 +6ms service=bus type=message.part.updated publishing
+INFO  2026-08-15T01:30:21 +524ms service=bus type=message.part.updated publishing
+INFO  2026-08-15T01:30:21 +35ms service=bus type=message.part.updated publishing
+INFO  2026-08-15T01:30:21 +50ms service=bus type=message.part.updated publishing
+INFO  2026-08-15T01:30:21 +5ms service=bus type=message.part.updated publishing
+INFO  2026-08-15T01:30:36 +14087ms service=bus type=message.part.updated publishing
+INFO  2026-08-15T01:30:36 +645ms service=bus type=message.part.updated publishing
+INFO  2026-08-15T01:30:36 +2ms service=bus type=message.part.updated publishing
+INFO  2026-08-15T01:30:36 +44ms service=bus type=message.part.updated publishing
+INFO  2026-08-15T01:30:36 +6ms service=bus type=message.part.updated publishing
+INFO  2026-08-15T01:30:37 +518ms service=bus type=message.part.updated publishing
+INFO  2026-08-15T01:30:37 +9ms service=bus type=message.part.updated publishing
+INFO  2026-08-15T01:30:37 +51ms service=bus type=message.part.updated publishing
+INFO  2026-08-15T01:30:37 +7ms service=bus type=message.part.updated publishing
+INFO  2026-08-15T01:31:13 +36476ms service=bus type=message.part.updated publishing
+INFO  2026-08-15T01:31:13 +32ms service=bus type=message.part.updated publishing
+INFO  2026-08-15T01:31:13 +8ms service=bus type=message.part.updated publishing
+INFO  2026-08-15T01:31:13 +1ms service=bus type=message.part.updated publishing
+INFO  2026-08-15T01:31:13 +24ms service=bus type=message.part.updated publishing
+INFO  2026-08-15T01:31:13 +64ms service=bus type=message.part.updated publishing
+INFO  2026-08-15T01:31:13 +5ms service=bus type=message.part.updated publishing
+INFO  2026-08-15T01:31:33 +19168ms service=bus type=message.part.updated publishing
+INFO  2026-08-15T01:31:33 +31ms service=bus type=message.part.updated publishing
+INFO  2026-08-15T01:31:33 +0ms service=bus type=message.part.updated publishing
+INFO  2026-08-15T01:31:33 +0ms service=bus type=message.part.updated publishing
+INFO  2026-08-15T01:31:33 +0ms service=bus type=message.part.updated publishing
+INFO  2026-08-15T01:31:33 +0ms service=bus type=message.part.updated publishing
+INFO  2026-08-15T01:31:33 +0ms service=bus type=message.part.updated publishing
+INFO  2026-08-15T01:31:33 +0ms service=bus type=message.part.updated publishing
+INFO  2026-08-15T01:31:33 +1ms service=bus type=message.part.updated publishing
+INFO  2026-08-15T01:31:33 +0ms service=bus type=message.part.updated publishing
+INFO  2026-08-15T01:31:33 +0ms service=bus type=message.part.updated publishing
+INFO  2026-08-15T01:31:33 +0ms service=bus type=message.part.updated publishing
+INFO  2026-08-15T01:31:33 +0ms service=bus type=message.part.updated publishing
+INFO  2026-08-15T01:31:33 +673ms service=bus type=message.part.updated publishing
+INFO  2026-08-15T01:31:34 +654ms service=bus type=message.part.updated publishing
+INFO  2026-08-15T01:31:35 +680ms service=bus type=message.part.updated publishing
+INFO  2026-08-15T01:31:35 +682ms service=bus type=message.part.updated publishing
+INFO  2026-08-15T01:31:36 +682ms service=bus type=message.part.updated publishing
+INFO  2026-08-15T01:31:36 +444ms service=bus type=message.part.updated publishing
+INFO  2026-08-15T01:31:36 +32ms service=bus type=message.part.updated publishing
+INFO  2026-08-15T01:31:36 +0ms service=bus type=message.part.updated publishing
+INFO  2026-08-15T01:31:36 +0ms service=bus type=message.part.updated publishing
+INFO  2026-08-15T01:31:36 +0ms service=bus type=message.part.updated publishing
+INFO  2026-08-15T01:31:36 +0ms service=bus type=message.part.updated publishing
+INFO  2026-08-15T01:31:36 +0ms service=claude-code-acp provider=Claude Code durationMs=269808.14239 toolCalls=30 textParts=5 reasoningParts=0 ACP prompt completed
+INFO  2026-08-15T01:31:36 +3ms service=bus type=message.updated publishing
+INFO  2026-08-15T01:31:36 +1ms service=bus type=message.part.updated publishing
+INFO  2026-08-15T01:31:36 +17ms service=session.compaction pruning
+INFO  2026-08-15T01:31:36 +0ms service=session.lock sessionID=ses_ffcf88cb3ffesV2aKdh0hHEKQx unlocked
+INFO  2026-08-15T01:31:36 +0ms service=session.prompt session=ses_ffcf88cb3ffesV2aKdh0hHEKQx sessionID=ses_ffcf88cb3ffesV2aKdh0hHEKQx unlocking
+INFO  2026-08-15T01:31:36 +2ms service=bus type=session.idle publishing
+INFO  2026-08-15T01:31:36 +0ms service=bus type=message.updated publishing
+INFO  2026-08-15T01:31:36 +0ms service=session.summary body=Verification complete. Before the findings, an important caveat about how this review was conducted:
+
+**Environment caveat:** The Bash tool is broken in this session — every command (including via subagents, and with sandbox overrides) fails at the sandbox wrapper with `bwrap: Can't mkdir /mnt/c/Users/WsiAccount/.claude: Permission denied`, so no git commands could run. Additionally, the ref `origin/crb-base-mfc-deploy` does not exist in this clone; the closest base ref is `origin/crb-base-mfc-csp` at `d86d2dc`, which is `HEAD~2`. I reconstructed the review scope from git metadata files: HEAD is detached at `4329d6e`, and the two commits above the base (`1859488` "docs: add Deploy-to-Vercel button and document deploy env vars" and `4329d6e` "docs: tighten Vercel deploy section, accurately describe verifier behavior") are a docs-only change to `README.md` and `CLAUDE.md`. I reviewed by fact-checking every claim in the new deploy documentation against the actual code (`app/api/verification/lean/route.ts`, `app/lib/llm/callLlm.ts`, `streamLlm.ts`, `cache.ts`, `models.ts`, `app/lib/analytics/persist.ts`, `app/lib/formalization/artifactRoute.ts`, `app/api/analytics/route.ts`). If the true `crb-base-mfc-deploy` ref differs from `d86d2dc`, this review may have missed files.
+
+What checked out as accurate: the Deploy button URL and its `#deploy-to-vercel` anchor; `LEAN_VERIFIER_URL` defaulting to `http://localhost:3100` with the `{ valid: true, mock: true }` fallback on unreachable; the OpenRouter-as-fallback-provider claim (both `callLlm` and `streamLlm` implement Anthropic → OpenRouter → mock, and routes pass an OpenRouter model); the OpenRouter privacy note; and the CLAUDE.md statement that the mock verifier response is treated as valid with no offline UI state. The diff is docs-only across two files, so no design-quality sub-agent pass was warranted.
+
+
+**[P3] README.md:120 - Analytics limitation describes the wrong failure mode**
+
+The new "Limitations on Vercel" bullet says analytics "does not persist across Vercel function invocations," implying writes succeed within a warm container. In reality `persist.ts` writes to `process.cwd()/data`, which is read-only on Vercel, so writes throw and are silently swallowed (`callLlm.ts:91`) — nothing is ever recorded, and the analytics "clear" action (`DELETE` in `app/api/analytics/route.ts:10`, no try/catch) returns a 500. The "treat as dev-only" guidance is right, but the mechanism as documented is inaccurate in a commit whose stated purpose is doc accuracy.
+
+
+**[P3] README.md:117 - Limitations section omits that the LLM response cache is disabled on Vercel**
+
+The LLM cache (`app/lib/llm/cache.ts:6`) also writes to a `cwd()`-relative path, so cache writes silently fail on Vercel and every repeated identical request makes a fresh billed API call. The new Limitations section covers Lean verification and analytics but not this cost-relevant limitation, even though the same diff's CLAUDE.md changes acknowledge the cache's filesystem dependence. body
+INFO  2026-08-15T01:31:36 +2ms service=bus type=session.updated publishing
+INFO  2026-08-15T01:31:36 +0ms service=bus type=message.updated publishing
+INFO  2026-08-15T01:31:36 +0ms service=bus type=session.diff publishing
+INFO  2026-08-15T01:31:37 +4ms service=session.compaction pruned=0 total=0 found
+INFO  2026-08-15T01:31:37 +1ms service=bus type=message.part.updated unsubscribing
+INFO  2026-08-15T01:31:37 +0ms service=bus type=permission.updated unsubscribing
+INFO  2026-08-15T01:31:37 +0ms service=default directory=/home/magfrump/claude-workflows/external/crb-cubic/mfc-deploy disposing instance
+INFO  2026-08-15T01:31:37 +0ms service=state key=/home/magfrump/claude-workflows/external/crb-cubic/mfc-deploy waiting for state disposal to complete
+INFO  2026-08-15T01:31:37 +1ms service=state key=/home/magfrump/claude-workflows/external/crb-cubic/mfc-deploy state disposal completed
+INFO  2026-08-15T01:31:37 +1ms service=auth userId=dc16113e-2788-430e-9c5c-202739d636a3 hasTokens=true Found CLI auth
+INFO  2026-08-15T01:31:37 +0ms service=auth userId=dc16113e-2788-430e-9c5c-202739d636a3 expiry=1786757696 secondsUntilExpiry=199 isExpired=false force=false inProgress=false refreshCliToken
+INFO  2026-08-15T01:31:37 +0ms service=auth Token valid, skipping refresh
+WARN  2026-08-15T01:31:37 +37ms service=claude-code-acp code=0 sessionID=ses_ffcf88cb3ffesV2aKdh0hHEKQx Claude Code process closed

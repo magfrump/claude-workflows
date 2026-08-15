@@ -1,0 +1,25 @@
+{
+  "issues": [
+    {
+      "priority": "P2",
+      "file": "app/lib/analytics/persist.ts",
+      "line": 6,
+      "title": "Comment references a \"Deploy to Vercel\" README section that doesn't exist in this branch",
+      "description": "The new comment says \"see Deploy to Vercel in README,\" but this branch's README.md has no such section (it exists only in the upstream repo's newer README). The diff changes Vercel deployment behavior without any README documentation, and the comment sends readers to a section they can't find — per this repo's documentation-maintenance guidelines, the README section should be added (or the reference dropped) in the same change."
+    },
+    {
+      "priority": "P3",
+      "file": "app/lib/utils/dataDir.ts",
+      "line": 12,
+      "title": "New helper has no unit test",
+      "description": "The repo convention (CLAUDE.md: \"Write tests alongside implementation\") isn't followed for this new helper, whose env-var branching and subpath joining are trivially testable; a test would also have caught that the `VERCEL` branch is only exercised in production."
+    },
+    {
+      "priority": "P3",
+      "file": "app/lib/utils/dataDir.ts",
+      "line": 13,
+      "title": "Writes land in the shared /tmp root instead of an app-namespaced subdirectory",
+      "description": "On Vercel, `analytics.jsonl` and the `cache/` directory are created directly under `/tmp`, which is shared with anything else in the runtime (other libraries commonly create `/tmp/cache` or temp files there). Using a namespaced base like `/tmp/mfc-data` would avoid mingling app persistence with unrelated temp files and make `clearAnalyticsEntries`/cache reads immune to foreign files."
+    }
+  ]
+}

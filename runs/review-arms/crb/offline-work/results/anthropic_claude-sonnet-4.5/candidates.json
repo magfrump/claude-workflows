@@ -1,0 +1,988 @@
+{
+  "https://local.invalid/meta-formalism-copilot/mfc-csp": {
+    "e2": [
+      {
+        "text": "CSP lacks 'unsafe-eval' in script-src for development mode, breaking Next.js HMR/Fast Refresh which requires eval-based module loading",
+        "path": null,
+        "line": null,
+        "source": "extracted"
+      },
+      {
+        "text": "RootLayout calls await headers() unconditionally, forcing all routes to dynamic rendering and opting out of static rendering/ISR unnecessarily",
+        "path": null,
+        "line": null,
+        "source": "extracted"
+      },
+      {
+        "text": "x-nonce request header is forwarded by proxy but never consumed by any code, creating dead/misleading plumbing",
+        "path": null,
+        "line": null,
+        "source": "extracted"
+      },
+      {
+        "text": "Matcher excludes prefetches using 'purpose: prefetch' header, but modern browsers send 'Sec-Purpose: prefetch' instead, causing prefetch requests to unnecessarily consume nonces",
+        "path": null,
+        "line": null,
+        "source": "extracted"
+      }
+    ],
+    "e4-union": [
+      {
+        "text": "CSP header is set only on response headers, not on request headers, so Next.js cannot extract the nonce for its bootstrap/hydration script tags",
+        "path": null,
+        "line": null,
+        "source": "extracted"
+      },
+      {
+        "text": "Next.js scripts are emitted without nonce attribute, causing all scripts to be blocked by 'strict-dynamic' CSP directive and breaking hydration",
+        "path": null,
+        "line": null,
+        "source": "extracted"
+      },
+      {
+        "text": "Comment incorrectly states Next.js reads nonce from response CSP header when it actually reads from request headers",
+        "path": null,
+        "line": null,
+        "source": "extracted"
+      },
+      {
+        "text": "Missing 'unsafe-eval' in script-src will break Next.js development mode (HMR/Fast Refresh/React refresh runtime)",
+        "path": null,
+        "line": null,
+        "source": "extracted"
+      },
+      {
+        "text": "x-nonce request header is set but never consumed by any layout or component, making it dead code",
+        "path": null,
+        "line": null,
+        "source": "extracted"
+      },
+      {
+        "text": "await headers() call in root layout forces entire app to be dynamic, disabling static generation and full-route caching site-wide",
+        "path": null,
+        "line": null,
+        "source": "extracted"
+      },
+      {
+        "text": "Matcher regex uses prefix matching instead of segment-based matching, incorrectly excluding routes like /api-docs or /favicon.ico.txt",
+        "path": null,
+        "line": null,
+        "source": "extracted"
+      },
+      {
+        "text": "Missing 'unsafe-eval' for development builds will block webpack eval-source-map and Turbopack HMR",
+        "path": null,
+        "line": null,
+        "source": "extracted"
+      },
+      {
+        "text": "default-src 'self' blocks blob: workers if any are used",
+        "path": null,
+        "line": null,
+        "source": "extracted"
+      },
+      {
+        "text": "CSP header is not set on prefetch requests (next-router-prefetch/purpose: prefetch responses)",
+        "path": null,
+        "line": null,
+        "source": "extracted"
+      }
+    ],
+    "cubic-cli": [
+      {
+        "text": "Nonce never reaches the Next.js renderer because CSP header is only set on response, not on request headers, causing Next.js inline scripts to ship un-nonced and breaking hydration under strict CSP",
+        "path": null,
+        "line": null,
+        "source": "extracted"
+      },
+      {
+        "text": "Missing worker-src directive blocks pdf.js worker due to 'strict-dynamic' ignoring 'self', breaking or degrading PDF upload functionality",
+        "path": null,
+        "line": null,
+        "source": "extracted"
+      },
+      {
+        "text": "No dev-mode carve-out for 'unsafe-eval' breaks npm run dev since Next.js dev mode requires eval for React Refresh/HMR",
+        "path": null,
+        "line": null,
+        "source": "extracted"
+      },
+      {
+        "text": "Comment incorrectly documents that Next.js reads nonce from response CSP header when it actually reads from request header",
+        "path": null,
+        "line": null,
+        "source": "extracted"
+      },
+      {
+        "text": "Missing form-action 'self' directive leaves injected form exfiltration attacks unrestricted",
+        "path": null,
+        "line": null,
+        "source": "extracted"
+      },
+      {
+        "text": "No tests for the new CSP proxy despite repo guidelines requiring tests alongside implementation",
+        "path": null,
+        "line": null,
+        "source": "extracted"
+      }
+    ]
+  },
+  "https://local.invalid/meta-formalism-copilot/mfc-lean": {
+    "e2": [
+      {
+        "text": "Non-2xx HTTP responses from external verifier are treated as 'verifier unavailable' without reading response body, even when verifier returns valid {valid:false, errors:...} payload",
+        "path": null,
+        "line": null,
+        "source": "extracted"
+      },
+      {
+        "text": "Genuine proof-invalid results are masked as infrastructure failures when verifier returns non-2xx status",
+        "path": null,
+        "line": null,
+        "source": "extracted"
+      },
+      {
+        "text": "Real error details are discarded when verifier returns non-2xx status with valid error payload",
+        "path": null,
+        "line": null,
+        "source": "extracted"
+      },
+      {
+        "text": "leanRetryLoop's early-return on 'unavailable' prevents normal retry-on-failure flow from running for non-2xx responses",
+        "path": null,
+        "line": null,
+        "source": "extracted"
+      },
+      {
+        "text": "verifyLean only reads valid/errors/unavailable fields and discards reason and detail fields returned by the verifier route",
+        "path": null,
+        "line": null,
+        "source": "extracted"
+      },
+      {
+        "text": "UI cannot distinguish between 'verifier-not-configured', 'verifier-unreachable', and 'verifier-error' states due to dropped diagnostic information",
+        "path": null,
+        "line": null,
+        "source": "extracted"
+      }
+    ],
+    "e4-union": [
+      {
+        "text": "Non-2xx verifier responses are masked as 'unavailable' with body discarded, losing real verification failures and error payloads",
+        "path": null,
+        "line": null,
+        "source": "extracted"
+      },
+      {
+        "text": "Offline banner text incorrectly claims verifier is not configured or unreachable for 'verifier-error' reason when verifier is actually configured and reachable",
+        "path": null,
+        "line": null,
+        "source": "extracted"
+      },
+      {
+        "text": "Route's 'reason' and 'detail' fields (verifier-not-configured/verifier-unreachable/verifier-error) are never surfaced by verifyLean, preventing callers from differentiating failure causes",
+        "path": null,
+        "line": null,
+        "source": "extracted"
+      },
+      {
+        "text": "verifyLean never checks res.ok, causing 400/500 responses from /api/verification/lean to be reported as failed proofs instead of unavailable",
+        "path": null,
+        "line": null,
+        "source": "extracted"
+      },
+      {
+        "text": "Prior real verification errors are discarded when verifier becomes unavailable mid-retry, replacing known-bad proof diagnostics with empty errors",
+        "path": null,
+        "line": null,
+        "source": "extracted"
+      },
+      {
+        "text": "Verifier 4xx responses (e.g. 'leanCode too large') are reported as 'unavailable' instead of actual error, misleading users about the failure cause",
+        "path": null,
+        "line": null,
+        "source": "extracted"
+      }
+    ],
+    "cubic-cli": [
+      {
+        "text": "leanRetryLoop returns {valid: false, unavailable: true} when verifier is missing, but formalizeNode still maps result.valid ? 'verified' : 'failed', causing nodes with deductive pipeline to be marked 'Failed' with empty verificationErrors when LEAN_VERIFIER_URL is unset",
+        "path": null,
+        "line": null,
+        "source": "extracted"
+      },
+      {
+        "text": "useAutoFormalizeQueue skips all dependents with misleading message 'Skipped: dependency X failed' when verifier is unavailable",
+        "path": null,
+        "line": null,
+        "source": "extracted"
+      },
+      {
+        "text": "toNodeVerificationStatus was not extended to handle 'unavailable' status, causing it to be swallowed by default arm in decomposition mode",
+        "path": null,
+        "line": null,
+        "source": "extracted"
+      },
+      {
+        "text": "fromNodeVerificationStatus maps 'unavailable' back to 'none', causing session restore to lose the unavailable state",
+        "path": null,
+        "line": null,
+        "source": "extracted"
+      },
+      {
+        "text": "Verifier offline banner and badge never appear in decomposition mode due to unavailable status being collapsed",
+        "path": null,
+        "line": null,
+        "source": "extracted"
+      },
+      {
+        "text": "Removed localhost:3100 default for LEAN_VERIFIER_URL breaks zero-config dev flow, short-circuiting to unavailableResponse without trying the verifier",
+        "path": null,
+        "line": null,
+        "source": "extracted"
+      },
+      {
+        "text": "docker-compose.yml publishes verifier on port 3100 but nothing sets LEAN_VERIFIER_URL for Next.js app, causing all proofs to be reported as unchecked in documented setup flow",
+        "path": null,
+        "line": null,
+        "source": "extracted"
+      },
+      {
+        "text": "README lines 60, 84, and 92 still document removed mock-fallback behavior and localhost:3100 default",
+        "path": null,
+        "line": null,
+        "source": "extracted"
+      },
+      {
+        "text": "docs/USER_GUIDE.md lines 203 and 345 still document removed mock valid response behavior",
+        "path": null,
+        "line": null,
+        "source": "extracted"
+      },
+      {
+        "text": "USER_GUIDE badge list (lines 197-201) omits the new 'Verifier offline' state",
+        "path": null,
+        "line": null,
+        "source": "extracted"
+      },
+      {
+        "text": "Catch blocks in handleReVerify (line 164) and handleLeanIterate (line 206) set status 'invalid' when verifyLean fetch rejects, misreporting unchecked proofs as failed proofs",
+        "path": null,
+        "line": null,
+        "source": "extracted"
+      },
+      {
+        "text": "No unit tests for verifyResultToStatus, verifyLean unavailable plumbing, and leanRetryLoop's early-return on unavailable",
+        "path": null,
+        "line": null,
+        "source": "extracted"
+      }
+    ]
+  },
+  "https://local.invalid/meta-formalism-copilot/mfc-hygiene": {
+    "e2": [
+      {
+        "text": "JSDoc above `streamLlm` still documents `details` field in error event, but the code no longer emits it in the error payload",
+        "path": null,
+        "line": null,
+        "source": "extracted"
+      },
+      {
+        "text": "`details` field removed from error SSE event breaks existing frontend code that reads `data.details`",
+        "path": null,
+        "line": null,
+        "source": "extracted"
+      },
+      {
+        "text": "Error SSE event is inconsistent with `app/api/edit/artifact/route.ts`, which still returns a `details` field for the same error class",
+        "path": null,
+        "line": null,
+        "source": "extracted"
+      }
+    ],
+    "e4-union": [
+      {
+        "text": "streamLlm JSDoc documents `event: error \u2014 { error: \"message\", details: \"...\" }` but catch block now emits only `{ error: message }`, causing clients to read undefined for details field",
+        "path": null,
+        "line": null,
+        "source": "extracted"
+      },
+      {
+        "text": "errorWithDetails attaches details property but nothing reads it after getErrorDetails deletion, making OpenRouter error bodies silently discarded",
+        "path": null,
+        "line": null,
+        "source": "extracted"
+      },
+      {
+        "text": "Exported getAnthropicClient renamed to makeAnthropicClient without compatibility alias, breaking existing importers and tests",
+        "path": null,
+        "line": null,
+        "source": "extracted"
+      },
+      {
+        "text": "Comment claims responseText shouldn't end up in server logs due to user source material, but same handler returns 500-char slice in HTTP body, making redaction partial",
+        "path": null,
+        "line": null,
+        "source": "extracted"
+      },
+      {
+        "text": "OpenRouter stream error bodies are completely discarded with no way to recover provider messages, leaving only status code for diagnostics",
+        "path": null,
+        "line": null,
+        "source": "extracted"
+      },
+      {
+        "text": "Comment about in-process consumer opting in to details property describes non-existent consumer code",
+        "path": null,
+        "line": null,
+        "source": "extracted"
+      },
+      {
+        "text": "Test deletes ANTHROPIC_API_KEY and OPENROUTER_API_KEY in beforeEach without restoring originals, affecting other tests in same worker process",
+        "path": null,
+        "line": null,
+        "source": "extracted"
+      },
+      {
+        "text": "Per-call construction of Anthropic client forgoes any client-level state/config reuse that SDK caches",
+        "path": null,
+        "line": null,
+        "source": "extracted"
+      },
+      {
+        "text": "Privacy rationale inconsistent: content stripped from logs but responseText.slice(0, 500) and err.details still returned to caller, hiding data only from operators",
+        "path": null,
+        "line": null,
+        "source": "extracted"
+      }
+    ],
+    "cubic-cli": [
+      {
+        "text": "LLM response preview (500 chars) still written to server logs in JSON-parse-failure path of shared artifact route helper, contradicting the branch's logging policy that excludes LLM output derived from user source material",
+        "path": null,
+        "line": null,
+        "source": "extracted"
+      },
+      {
+        "text": "responseFormat JSDoc states 'Only used with the OpenRouter provider (Anthropic direct API does not support this)' but lines 139-146 pass the schema to Anthropic call via output_config, creating a contradiction where either JSDoc or code is wrong",
+        "path": null,
+        "line": null,
+        "source": "extracted"
+      },
+      {
+        "text": "SSE protocol docstring documents a 'details' field in error events that the catch block no longer emits (only sends { error: message }), causing consumers to wait for a field that never arrives",
+        "path": null,
+        "line": null,
+        "source": "extracted"
+      },
+      {
+        "text": "OpenRouter failures modeled inconsistently: callLlm throws typed OpenRouterError while streamOpenRouter throws ad-hoc Error with bolted-on details property via errorWithDetails that no consumer reads",
+        "path": null,
+        "line": null,
+        "source": "extracted"
+      }
+    ]
+  },
+  "https://local.invalid/meta-formalism-copilot/mfc-secdeps": {
+    "e2": [
+      {
+        "text": "react/no-danger is set to 'warn' instead of 'error', allowing dangerouslySetInnerHTML to pass CI without failing",
+        "path": null,
+        "line": null,
+        "source": "extracted"
+      },
+      {
+        "text": "no-restricted-imports rule only catches static ES imports of rehype-raw, missing require() and dynamic import() calls",
+        "path": null,
+        "line": null,
+        "source": "extracted"
+      }
+    ],
+    "e4-union": [
+      {
+        "text": "react/no-danger set to \"warn\" instead of \"error\" contradicts comment claiming rules \"fail loudly\", allowing dangerouslySetInnerHTML to pass CI",
+        "path": null,
+        "line": null,
+        "source": "extracted"
+      },
+      {
+        "text": "trust: true selector Property[key.name='trust'][value.value=true] only matches identifier keys with literal true, missing string keys like {\"trust\": true}, computed keys, non-literal values, variables, and spreads",
+        "path": null,
+        "line": null,
+        "source": "extracted"
+      },
+      {
+        "text": "rehype-raw restriction using paths only matches exact bare specifier, missing subpath imports like rehype-raw/lib/..., require() calls, and dynamic import()",
+        "path": null,
+        "line": null,
+        "source": "extracted"
+      },
+      {
+        "text": "npm audit step runs on every push/PR making CI non-deterministic, as newly published advisories can break unrelated branches",
+        "path": null,
+        "line": null,
+        "source": "extracted"
+      },
+      {
+        "text": "npm audit step is duplicated across Node matrix entries (runs twice for Node 20 and 22) with identical results",
+        "path": null,
+        "line": null,
+        "source": "extracted"
+      },
+      {
+        "text": "trust selector misses KaTeX function form like trust: () => true or trust: ctx => ctx.command === '\\\\href'",
+        "path": null,
+        "line": null,
+        "source": "extracted"
+      },
+      {
+        "text": "trust selector misses string-key form {\"trust\": true} where key is on key.value instead of key.name",
+        "path": null,
+        "line": null,
+        "source": "extracted"
+      },
+      {
+        "text": "rehype-raw restriction missing patterns entry to block subpaths and related packages like hast-util-raw",
+        "path": null,
+        "line": null,
+        "source": "extracted"
+      },
+      {
+        "text": "npm run lint has no --max-warnings=0 flag in CI, so warn-level rules don't actually fail the build",
+        "path": null,
+        "line": null,
+        "source": "extracted"
+      },
+      {
+        "text": "trust selector misses assignment expressions like opts.trust = true",
+        "path": null,
+        "line": null,
+        "source": "extracted"
+      },
+      {
+        "text": "--omit=dev comment claiming \"only audit production deps (the ones that ship to users)\" is inaccurate for Next.js apps where devDependencies are compiled/bundled into shipped output",
+        "path": null,
+        "line": null,
+        "source": "extracted"
+      }
+    ],
+    "cubic-cli": [
+      {
+        "text": "react/no-danger rule set to \"warn\" instead of \"error\" provides no CI enforcement because lint script lacks --max-warnings=0",
+        "path": null,
+        "line": null,
+        "source": "extracted"
+      },
+      {
+        "text": "trust: true selector Property[key.name='trust'][value.value=true] only matches identifier keys with literal true, missing string-quoted keys, shorthand syntax, computed keys, and non-literal values",
+        "path": null,
+        "line": null,
+        "source": "extracted"
+      },
+      {
+        "text": "rehype-raw ban using no-restricted-imports with paths only catches static imports of exact string \"rehype-raw\", missing dynamic imports and subpath imports like \"rehype-raw/lib/index.js\"",
+        "path": null,
+        "line": null,
+        "source": "extracted"
+      }
+    ]
+  },
+  "https://local.invalid/meta-formalism-copilot/mfc-deploy": {
+    "e2": [
+      {
+        "text": "Deploy with Vercel button hardcodes repository URL 'aditya-adiga%2Fmeta-formalism-copilot', which will break if the canonical repo is renamed, transferred, or if documentation is reused by forks/downstream organizations",
+        "path": null,
+        "line": null,
+        "source": "extracted"
+      }
+    ],
+    "e4-union": [
+      {
+        "text": "ANTHROPIC_API_KEY listed as required in table but contradicted by optional OPENROUTER_API_KEY fallback description - unclear which is truly required",
+        "path": null,
+        "line": null,
+        "source": "extracted"
+      },
+      {
+        "text": "README understates Vercel filesystem limitation - writes to repo-relative paths fail with read-only-filesystem error rather than silently not persisting",
+        "path": null,
+        "line": null,
+        "source": "extracted"
+      },
+      {
+        "text": "README omits that analytics/cache writes may error out on Vercel instead of just failing to persist",
+        "path": null,
+        "line": null,
+        "source": "extracted"
+      },
+      {
+        "text": "README omits LLM cache filesystem limitation mentioned in CLAUDE.md",
+        "path": null,
+        "line": null,
+        "source": "extracted"
+      },
+      {
+        "text": "Deploy to Vercel instructions lack warning that deployment URL has no authentication, allowing anyone with the URL to use owner's API key",
+        "path": null,
+        "line": null,
+        "source": "extracted"
+      },
+      {
+        "text": "Analytics/LLM-cache write paths may throw EROFS errors at runtime on Vercel if not /tmp-aware",
+        "path": null,
+        "line": null,
+        "source": "extracted"
+      },
+      {
+        "text": "Local development instructions missing required step to set ANTHROPIC_API_KEY in .env.local",
+        "path": null,
+        "line": null,
+        "source": "extracted"
+      }
+    ],
+    "cubic-cli": [
+      {
+        "text": "Analytics limitation documentation incorrectly states analytics 'does not persist across Vercel function invocations' when writes actually fail immediately because process.cwd()/data is read-only on Vercel",
+        "path": null,
+        "line": null,
+        "source": "extracted"
+      },
+      {
+        "text": "Analytics writes in persist.ts throw errors that are silently swallowed in callLlm.ts:91, preventing any analytics from being recorded",
+        "path": null,
+        "line": null,
+        "source": "extracted"
+      },
+      {
+        "text": "Analytics DELETE endpoint in app/api/analytics/route.ts:10 has no try/catch and returns 500 errors on Vercel",
+        "path": null,
+        "line": null,
+        "source": "extracted"
+      },
+      {
+        "text": "Limitations section does not document that LLM response cache is disabled on Vercel due to filesystem write failures",
+        "path": null,
+        "line": null,
+        "source": "extracted"
+      },
+      {
+        "text": "LLM cache writes to cwd()-relative path silently fail on Vercel, causing every repeated identical request to make fresh billed API calls",
+        "path": null,
+        "line": null,
+        "source": "extracted"
+      }
+    ]
+  },
+  "https://local.invalid/meta-formalism-copilot/mfc-fscompat": {
+    "e4-union": [
+      {
+        "text": "setCachedResult writes unbounded .json files into /tmp/cache with no size cap or eviction, which can exhaust the function's limited ephemeral disk (~512 MB) and cause subsequent write failures",
+        "path": null,
+        "line": null,
+        "source": "extracted"
+      },
+      {
+        "text": "dataDir() with no subpath returns bare /tmp on Vercel, so analytics.jsonl is written directly into the shared tmp namespace instead of a namespaced subdirectory, risking collisions",
+        "path": null,
+        "line": null,
+        "source": "extracted"
+      },
+      {
+        "text": "Documentation claims writes go to 'the repo's data/ dir' but path is process.cwd()/data, which is not the repo root for standalone/packaged builds or when server is started from another directory",
+        "path": null,
+        "line": null,
+        "source": "extracted"
+      },
+      {
+        "text": "Documentation references a 'Deploy to Vercel' README section that this diff does not add",
+        "path": null,
+        "line": null,
+        "source": "extracted"
+      },
+      {
+        "text": "Analytics entries are split and unreadable across concurrent function instances on Vercel, not just lost across cold starts, causing readers to see partial history",
+        "path": null,
+        "line": null,
+        "source": "extracted"
+      },
+      {
+        "text": "Comment understates that analytics results are per-instance and inconsistent on Vercel, not merely non-durable",
+        "path": null,
+        "line": null,
+        "source": "extracted"
+      },
+      {
+        "text": "dataDir() joins arbitrary subpaths without containment check, allowing .. segments to resolve out of the base directory if called with request-derived input",
+        "path": null,
+        "line": null,
+        "source": "extracted"
+      }
+    ],
+    "cubic-cli": [
+      {
+        "text": "Comment references a 'Deploy to Vercel' README section that doesn't exist in this branch",
+        "path": null,
+        "line": null,
+        "source": "extracted"
+      },
+      {
+        "text": "README section should be added (or the reference dropped) in the same change per documentation-maintenance guidelines",
+        "path": null,
+        "line": null,
+        "source": "extracted"
+      },
+      {
+        "text": "New helper has no unit test, violating repo convention in CLAUDE.md",
+        "path": null,
+        "line": null,
+        "source": "extracted"
+      },
+      {
+        "text": "Helper's env-var branching and subpath joining are not tested despite being trivially testable",
+        "path": null,
+        "line": null,
+        "source": "extracted"
+      },
+      {
+        "text": "Test would have caught that the VERCEL branch is only exercised in production",
+        "path": null,
+        "line": null,
+        "source": "extracted"
+      },
+      {
+        "text": "analytics.jsonl and cache/ directory are created directly under /tmp instead of app-namespaced subdirectory",
+        "path": null,
+        "line": null,
+        "source": "extracted"
+      },
+      {
+        "text": "/tmp is shared with other libraries that commonly create /tmp/cache or temp files, risking file mingling",
+        "path": null,
+        "line": null,
+        "source": "extracted"
+      },
+      {
+        "text": "clearAnalyticsEntries and cache reads are not immune to foreign files in shared /tmp",
+        "path": null,
+        "line": null,
+        "source": "extracted"
+      }
+    ]
+  },
+  "https://local.invalid/meta-formalism-copilot/mfc-corpus": {
+    "e2": [
+      {
+        "text": "process.env?.NEXT_PUBLIC_CORPUS_FS uses optional chaining which breaks Next.js webpack NEXT_PUBLIC_* build-time inlining pattern matching, potentially causing the env-based toggle to be non-functional in production bundles",
+        "path": null,
+        "line": null,
+        "source": "extracted"
+      },
+      {
+        "text": "parseManifest silently drops malformed array entries using .filter(isObject) and .filter(x => typeof x === 'string') instead of calling fail(), violating the stated FAIL-LOUD contract that requires malformed manifest data to never be silently dropped",
+        "path": null,
+        "line": null,
+        "source": "extracted"
+      },
+      {
+        "text": "CorpusErrorKind defines 'not-found' error kind with path field, but no implementation in opfsAdapter.ts or in-memory fake actually produces this error (they return null instead), creating unreachable code in exhaustive switch statements",
+        "path": null,
+        "line": null,
+        "source": "extracted"
+      }
+    ],
+    "e4-union": [
+      {
+        "text": "CorpusFS-backed setItem writes the whole persist blob on every set() with no debounce, causing overlapping async writeFile calls to race",
+        "path": null,
+        "line": null,
+        "source": "extracted"
+      },
+      {
+        "text": "Concurrent OPFS createWritable() calls can reject with NoModificationAllowedError or land out of order, silently losing state",
+        "path": null,
+        "line": null,
+        "source": "extracted"
+      },
+      {
+        "text": "getItem/setItem/removeItem propagate CorpusError but zustand's persist does not await/handle setItem, causing unhandled promise rejections",
+        "path": null,
+        "line": null,
+        "source": "extracted"
+      },
+      {
+        "text": "Quota failures on the corpus path surface as unhandled rejections with no UI and no log",
+        "path": null,
+        "line": null,
+        "source": "extracted"
+      },
+      {
+        "text": "isCorpusEnabled() honors NEXT_PUBLIC_CORPUS_FS=1 in production builds despite documentation claiming it is dev-only",
+        "path": null,
+        "line": null,
+        "source": "extracted"
+      },
+      {
+        "text": "Missing process.env.NODE_ENV !== 'production' check allows production use of corpus-fs flag",
+        "path": null,
+        "line": null,
+        "source": "extracted"
+      },
+      {
+        "text": "Enabling corpus-fs in production starts from empty corpus with no migration, abandoning localStorage work",
+        "path": null,
+        "line": null,
+        "source": "extracted"
+      },
+      {
+        "text": "raw.sources.filter(isObject) silently discards non-conforming entries instead of failing",
+        "path": null,
+        "line": null,
+        "source": "extracted"
+      },
+      {
+        "text": "raw.artifacts.filter(isObject) silently discards non-conforming entries instead of failing",
+        "path": null,
+        "line": null,
+        "source": "extracted"
+      },
+      {
+        "text": "customTypeIds.filter(typeof x === 'string') silently discards non-conforming entries instead of failing",
+        "path": null,
+        "line": null,
+        "source": "extracted"
+      },
+      {
+        "text": "createdAt/updatedAt are silently defaulted to now instead of failing on malformed data",
+        "path": null,
+        "line": null,
+        "source": "extracted"
+      },
+      {
+        "text": "Partially corrupted workspace.json parses successfully with fewer sources/artifacts, masking data loss",
+        "path": null,
+        "line": null,
+        "source": "extracted"
+      },
+      {
+        "text": "workspaceSlug sanitization can collide distinct workspace titles (e.g., 'a/b', 'a-b', 'A B' all map to 'a-b')",
+        "path": null,
+        "line": null,
+        "source": "extracted"
+      },
+      {
+        "text": "No collision/uniqueness handling for workspace paths, allowing two workspaces to silently share one folder",
+        "path": null,
+        "line": null,
+        "source": "extracted"
+      },
+      {
+        "text": "Comment claims 'Pass a fresh ArrayBuffer view' but code passes caller's array directly without copying",
+        "path": null,
+        "line": null,
+        "source": "extracted"
+      },
+      {
+        "text": "await w.close() in finally block can mask the original quota error by replacing it with a close error",
+        "path": null,
+        "line": null,
+        "source": "extracted"
+      },
+      {
+        "text": "Quota failures on write()/close() may be misclassified as {kind:'io'} instead of {kind:'quota-exceeded'}",
+        "path": null,
+        "line": null,
+        "source": "extracted"
+      },
+      {
+        "text": "G7 test only stubs createWritable() throwing, leaving realistic quota-on-write path untested",
+        "path": null,
+        "line": null,
+        "source": "extracted"
+      },
+      {
+        "text": "process.env?.NEXT_PUBLIC_CORPUS_FS optional chaining may prevent Next.js static inlining, making env var enable path silently inert",
+        "path": null,
+        "line": null,
+        "source": "extracted"
+      },
+      {
+        "text": "Fake and OPFS diverge on empty directories after rm of last file, weakening LSP claim",
+        "path": null,
+        "line": null,
+        "source": "extracted"
+      },
+      {
+        "text": "Shared contract suite doesn't cover empty directory semantics, allowing CI to pass while failing against real OPFS",
+        "path": null,
+        "line": null,
+        "source": "extracted"
+      },
+      {
+        "text": "Quota detection depends on instanceof DOMException, which fails on browsers shipping QuotaExceededError as its own Error subclass",
+        "path": null,
+        "line": null,
+        "source": "extracted"
+      },
+      {
+        "text": "Unit test's hand-built DOMException hides quota detection issue with newer WHATWG spec implementations",
+        "path": null,
+        "line": null,
+        "source": "extracted"
+      }
+    ],
+    "cubic-cli": [
+      {
+        "text": "Dev-only flag guard is documented but not implemented - isCorpusEnabled() contains no NODE_ENV/dev check, allowing production users to enable corpus path and lose access to existing workspace",
+        "path": null,
+        "line": null,
+        "source": "extracted"
+      },
+      {
+        "text": "With corpus flag ON, onRehydrateStorage can clobber rehydrated corpus state with stale v2 localStorage data when workspace-v2 exists but workspace-zustand-v1 doesn't",
+        "path": null,
+        "line": null,
+        "source": "extracted"
+      },
+      {
+        "text": "Corpus-backed setItem has no write serialization or debounce, causing stale-write race conditions where earlier snapshots can overwrite newer ones",
+        "path": null,
+        "line": null,
+        "source": "extracted"
+      },
+      {
+        "text": "Corpus-backed setItem issues full OPFS writeFile for every store set() without queueing, causing write amplification",
+        "path": null,
+        "line": null,
+        "source": "extracted"
+      },
+      {
+        "text": "Manifest parsing silently drops corrupted entries via sources.filter(isObject), artifacts.filter(isObject), and customTypeIds.filter(), undermining fail-loud parse contract",
+        "path": null,
+        "line": null,
+        "source": "extracted"
+      },
+      {
+        "text": "Manifest parsing silently replaces corrupted createdAt/updatedAt with new Date(), masking data corruption",
+        "path": null,
+        "line": null,
+        "source": "extracted"
+      },
+      {
+        "text": "workspaceSlug collisions allow distinct workspace titles like 'My Workspace', 'my workspace!', and 'MY-WORKSPACE' to map to same directory and overwrite each other",
+        "path": null,
+        "line": null,
+        "source": "extracted"
+      },
+      {
+        "text": "Path builders throw plain Error instead of CorpusError, breaking the module's typed-error model",
+        "path": null,
+        "line": null,
+        "source": "extracted"
+      },
+      {
+        "text": "All-unicode workspace titles like '\u65e5\u672c\u8a9e' throw unclassified errors instead of typed CorpusError",
+        "path": null,
+        "line": null,
+        "source": "extracted"
+      },
+      {
+        "text": "manifestVersion is validated as a number but never checked against MANIFEST_VERSION, allowing future/garbage versions to parse incorrectly",
+        "path": null,
+        "line": null,
+        "source": "extracted"
+      },
+      {
+        "text": "Comment claims fresh ArrayBuffer view is passed to write() but code passes caller's array directly without copying",
+        "path": null,
+        "line": null,
+        "source": "extracted"
+      },
+      {
+        "text": "Fake's readFile returns live stored array by reference instead of copy, allowing buffer mutation to corrupt fake's state unlike real OPFS",
+        "path": null,
+        "line": null,
+        "source": "extracted"
+      },
+      {
+        "text": "docs/user_research/property-tests.json is untracked but not in .gitignore, will be re-added by future git add -A",
+        "path": null,
+        "line": null,
+        "source": "extracted"
+      }
+    ]
+  },
+  "https://local.invalid/meta-formalism-copilot/mfc-postfix": {
+    "e2": [
+      {
+        "text": "allowUnsafeEval defaults to process.env.NODE_ENV !== \"production\", causing misconfigured deployments (unset, \"staging\", etc.) to silently weaken CSP by adding 'unsafe-eval' in production",
+        "path": null,
+        "line": null,
+        "source": "extracted"
+      },
+      {
+        "text": "Comment references MAX_OVERRIDE_QUERIES constant that is not defined or visible in this file, making safety justification unverifiable",
+        "path": null,
+        "line": null,
+        "source": "extracted"
+      },
+      {
+        "text": "Comment mentions cap of 3 queries for LLM path but this cap is not declared in the file",
+        "path": null,
+        "line": null,
+        "source": "extracted"
+      }
+    ],
+    "e4-union": [
+      {
+        "text": "CSP `unsafe-eval` default fails open when NODE_ENV is not exactly \"production\" - any deployment where NODE_ENV is unset or set to something else (e.g. \"prod\", custom server, edge runtime) silently ships `script-src ... 'unsafe-eval'`",
+        "path": null,
+        "line": null,
+        "source": "extracted"
+      },
+      {
+        "text": "Truthiness guard still renders a bare \"\u2194\" row for partially streamed `between` - `t.between && ...` passes for `[]` or `[\"A\"]` mid-stream, producing an empty or one-sided arrow row",
+        "path": null,
+        "line": null,
+        "source": "extracted"
+      },
+      {
+        "text": "Default-argument behaviour of buildCsp is now untested - pinning `buildCsp(NONCE, false)` makes the \"no eval in production\" assertion independent of the default, so an inverted/relaxed default would no longer fail any test",
+        "path": null,
+        "line": null,
+        "source": "extracted"
+      },
+      {
+        "text": "Regression test may be vacuous because `CollapsibleSection` is not mocked - if that component renders children only when open, both assertions exercise nothing and the \"does not crash\" guarantee is not actually tested",
+        "path": null,
+        "line": null,
+        "source": "extracted"
+      },
+      {
+        "text": "Doc de-referencing workspaceStore is only half applied - the section header still reads \"Debounced localStorage adapter (same pattern as workspaceStore)\", leaving the stale reference the diff intended to remove",
+        "path": null,
+        "line": null,
+        "source": "extracted"
+      }
+    ],
+    "cubic-cli": [
+      {
+        "text": "DetailsView dereferences causalGraph.edges.length without guard during streaming, causing TypeError when array hasn't arrived yet",
+        "path": null,
+        "line": null,
+        "source": "extracted"
+      },
+      {
+        "text": "DetailsView dereferences causalGraph.confounders.length without guard during streaming, causing TypeError when array hasn't arrived yet",
+        "path": null,
+        "line": null,
+        "source": "extracted"
+      },
+      {
+        "text": "DetailsView dereferences c.affectedEdges.join(\", \") without guard during streaming, causing TypeError when array hasn't arrived yet",
+        "path": null,
+        "line": null,
+        "source": "extracted"
+      }
+    ]
+  }
+}

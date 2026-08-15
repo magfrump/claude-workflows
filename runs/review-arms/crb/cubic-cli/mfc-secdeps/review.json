@@ -1,0 +1,25 @@
+{
+  "issues": [
+    {
+      "priority": "P1",
+      "file": "eslint.config.mjs",
+      "line": 58,
+      "title": "`react/no-danger` set to \"warn\" provides no CI enforcement",
+      "description": "The `lint` script is bare `eslint` with no `--max-warnings=0`, so a warning-level rule exits 0 and the CI Lint step passes; a future PR introducing `dangerouslySetInnerHTML` sails through with only a log line nobody reads. This directly contradicts the block's own comment that these rules are \"guardrails that fail loudly\" — it should be `\"error\"` like the other two rules (or the lint script should add `--max-warnings=0`)."
+    },
+    {
+      "priority": "P2",
+      "file": "eslint.config.mjs",
+      "line": 53,
+      "title": "`trust: true` selector is easily bypassed and the comment overstates its coverage",
+      "description": "`Property[key.name='trust'][value.value=true]` only matches identifier keys with a literal `true`, so `{ \"trust\": true }` (string-quoted key has no `key.name`), shorthand `{ trust }`, computed keys, and `trust: someFlag` all slip past, while the adjacent comment claims the rule is \"Broad enough to catch `{ trust: true }` elsewhere too\". Add a second selector for literal keys (`Property[key.value='trust'][value.value=true]`) or document the gaps so the rule is treated as a best-effort tripwire rather than a guarantee."
+    },
+    {
+      "priority": "P3",
+      "file": "eslint.config.mjs",
+      "line": 40,
+      "title": "rehype-raw ban misses dynamic imports and subpath imports",
+      "description": "`no-restricted-imports` with `paths` only flags static imports of exactly `\"rehype-raw\"`; `await import(\"rehype-raw\")` and subpath imports like `\"rehype-raw/lib/index.js\"` are not reported. Using `patterns: [\"rehype-raw\", \"rehype-raw/*\"]` and noting the dynamic-import blind spot would make the guardrail match its stated intent (low impact today since the package isn't installed, so any import fails the build anyway)."
+    }
+  ]
+}

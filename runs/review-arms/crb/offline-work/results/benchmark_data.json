@@ -393,6 +393,49 @@
             "created_at": null
           }
         ]
+      },
+      {
+        "tool": "cubic-cli",
+        "repo_name": "meta-formalism-copilot@c95c9cb",
+        "pr_url": "https://local.invalid/meta-formalism-copilot/mfc-lean",
+        "review_comments": [
+          {
+            "path": "app/lib/formalization/formalizeNode.ts",
+            "line": 61,
+            "body": "[P1] Unavailable verifier marks decomposition nodes \"failed\" and cascades skips through the queue**\n\n`leanRetryLoop` now returns `{valid: false, unavailable: true}` when the verifier is missing, but `formalizeNode` was not updated and still maps `result.valid ? \"verified\" : \"failed\"` \u2014 so with `LEAN_VERIFIER_URL` unset (now the default, see below), every node with a deductive pipeline is marked \"Failed\" with empty `verificationErrors`, and `useAutoFormalizeQueue` (line 113-119) then skips all dependents with the misleading message \"Skipped: dependency X failed\". \"Formalize All\" without a verifier now fails an entire graph that previously completed.",
+            "created_at": null
+          },
+          {
+            "path": "app/lib/types/decomposition.ts",
+            "line": 36,
+            "body": "[P2] New \"unavailable\" status silently collapsed to \"unverified\" in node-scoped flows**\n\n`toNodeVerificationStatus` was not extended, so its `default` arm swallows `\"unavailable\"` (page.tsx:350 routes the node pipeline through it), and `fromNodeVerificationStatus` maps back to `\"none\"` \u2014 in decomposition mode the \"Verifier offline \u2014 proof not checked\" banner and badge never appear, and session restore (page.tsx:186) loses the state. The fix this branch implements is invisible for per-node verification.",
+            "created_at": null
+          },
+          {
+            "path": "app/api/verification/lean/route.ts",
+            "line": 27,
+            "body": "[P2] Removed localhost:3100 default breaks the documented zero-config dev flow**\n\nThe base defaulted `LEAN_VERIFIER_URL` to `http://localhost:3100`; now an unset variable short-circuits to `unavailableResponse(\"verifier-not-configured\")` without ever trying the verifier. `docker-compose.yml` publishes the verifier on 3100 but nothing sets `LEAN_VERIFIER_URL` for the Next.js app, so the README's `docker compose up` + `npm run dev` flow now reports every proof as unchecked until the developer manually exports the variable.",
+            "created_at": null
+          },
+          {
+            "path": "README.md",
+            "line": 84,
+            "body": "[P2] Docs still describe the removed mock-fallback behavior**\n\nREADME lines 60, 84, and 92 (\"falls back to a mock response\", \"defaults to `http://localhost:3100`\", \"mock `{ valid: true, mock: true }`\") and docs/USER_GUIDE.md lines 203 and 345 (\"a mock 'valid' response is returned\") document behavior this branch deliberately removed; USER_GUIDE's badge list (lines 197-201) also omits the new \"Verifier offline\" state. Project CLAUDE.md requires updating these docs in the same PR as user-facing behavior changes.",
+            "created_at": null
+          },
+          {
+            "path": "app/hooks/useFormalizationPipeline.ts",
+            "line": 164,
+            "body": "[P3] Network failure reaching the app's own verification route still reports \"Verification Failed\"**\n\nThe catch blocks in `handleReVerify` (line 164) and `handleLeanIterate` (line 206) set status `\"invalid\"` when `verifyLean`'s fetch rejects, so a proof that was never checked still displays as a failed proof \u2014 the exact misreporting class this change set out to eliminate, left unhandled for the app-server hop.",
+            "created_at": null
+          },
+          {
+            "path": "app/lib/formalization/api.ts",
+            "line": 115,
+            "body": "[P3] No tests for the new unavailable-status mapping logic**\n\n`verifyResultToStatus`, the `verifyLean` `unavailable` plumbing, and `leanRetryLoop`'s early-return on unavailable (the load-bearing \"unavailable wins over valid\" invariant) shipped without any unit tests, despite the project guideline to write Vitest tests alongside implementation.",
+            "created_at": null
+          }
+        ]
       }
     ]
   },
@@ -513,6 +556,37 @@
             "path": "app/lib/llm/callLlm.ts",
             "line": 10,
             "body": "**Exported `getAnthropicClient` renamed to `makeAnthropicClient`**\n\nOnly `streamLlm.ts` is updated in this diff; any other importer or test referencing the old exported name (it was public API) will fail to compile, and per-call construction also forgoes any client-level state/config reuse the SDK caches.",
+            "created_at": null
+          }
+        ]
+      },
+      {
+        "tool": "cubic-cli",
+        "repo_name": "meta-formalism-copilot@f2f149b",
+        "pr_url": "https://local.invalid/meta-formalism-copilot/mfc-hygiene",
+        "review_comments": [
+          {
+            "path": "app/lib/formalization/artifactRoute.ts",
+            "line": 106,
+            "body": "[P1] LLM response preview still written to server logs, contradicting the branch's own logging policy**\n\nThe tightened-logging change establishes in three sibling sites (`callLlm.ts:182-186`, `streamLlm.ts:158-160`, `app/api/edit/artifact/route.ts:77-81`) that LLM output derived from the user's source material must not be written to server logs (length-only logging, with explicit rationale comments). The JSON-parse-failure path in the shared artifact route helper still `console.error`s a 500-char preview of the response \u2014 the exact data class the new policy excludes, and this is the highest-traffic parse-failure site since every formalization endpoint routes through it. One site was left behind by the cleanup.",
+            "created_at": null
+          },
+          {
+            "path": "app/lib/llm/callLlm.ts",
+            "line": 57,
+            "body": "[P2] responseFormat JSDoc directly contradicts the code's Anthropic path**\n\nThe JSDoc says \"Only used with the OpenRouter provider (Anthropic direct API does not support this),\" but lines 139\u2013146 pass the schema to the Anthropic call via `output_config` whenever `responseFormat` is set. One of the two is wrong \u2014 and because the param enters the request through a conditional object spread, TypeScript excess-property checking cannot flag it if `output_config` is not a valid SDK param, meaning every structured-output call (e.g. `formalization/causal-graph` with `ANTHROPIC_API_KEY` configured) would fail only at runtime. I could not verify SDK support because `node_modules` is not installed; either the JSDoc or the code path needs correcting.",
+            "created_at": null
+          },
+          {
+            "path": "app/lib/llm/streamLlm.ts",
+            "line": 71,
+            "body": "[P3] SSE protocol docstring still documents a `details` field the error event no longer carries**\n\nThe catch block intentionally emits `{ error: message }` only (per the privacy comment at lines 158\u2013159), but the protocol docstring above `streamLlm` still advertises `event: error \u2014 { error: \"message\", details: \"...\" }`. A consumer implemented against the docstring would wait for a field that never arrives. In a branch whose second commit exists specifically to make JSDoc describe present behavior, this doc drifted.",
+            "created_at": null
+          },
+          {
+            "path": "app/lib/llm/streamLlm.ts",
+            "line": 263,
+            "body": "[P3] Same OpenRouter failure modeled two different ways across the two call paths**\n\n`callLlm` throws the typed `OpenRouterError` (which route handlers pattern-match with `instanceof` to decide what to surface), while `streamOpenRouter` throws an ad-hoc `Error` with a bolted-on `details` property via `errorWithDetails` \u2014 a property no in-process consumer reads, as its newly tightened JSDoc itself concedes. Reusing `OpenRouterError` in the streaming path would delete `errorWithDetails` entirely along with the documentation burden the second commit just paid down.",
             "created_at": null
           }
         ]
@@ -653,6 +727,31 @@
             "created_at": null
           }
         ]
+      },
+      {
+        "tool": "cubic-cli",
+        "repo_name": "meta-formalism-copilot@8bde50c",
+        "pr_url": "https://local.invalid/meta-formalism-copilot/mfc-secdeps",
+        "review_comments": [
+          {
+            "path": "eslint.config.mjs",
+            "line": 58,
+            "body": "[P1] `react/no-danger` set to \"warn\" provides no CI enforcement**\n\nThe `lint` script is bare `eslint` with no `--max-warnings=0`, so a warning-level rule exits 0 and the CI Lint step passes; a future PR introducing `dangerouslySetInnerHTML` sails through with only a log line nobody reads. This directly contradicts the block's own comment that these rules are \"guardrails that fail loudly\" \u2014 it should be `\"error\"` like the other two rules (or the lint script should add `--max-warnings=0`).",
+            "created_at": null
+          },
+          {
+            "path": "eslint.config.mjs",
+            "line": 53,
+            "body": "[P2] `trust: true` selector is easily bypassed and the comment overstates its coverage**\n\n`Property[key.name='trust'][value.value=true]` only matches identifier keys with a literal `true`, so `{ \"trust\": true }` (string-quoted key has no `key.name`), shorthand `{ trust }`, computed keys, and `trust: someFlag` all slip past, while the adjacent comment claims the rule is \"Broad enough to catch `{ trust: true }` elsewhere too\". Add a second selector for literal keys (`Property[key.value='trust'][value.value=true]`) or document the gaps so the rule is treated as a best-effort tripwire rather than a guarantee.",
+            "created_at": null
+          },
+          {
+            "path": "eslint.config.mjs",
+            "line": 40,
+            "body": "[P3] rehype-raw ban misses dynamic imports and subpath imports**\n\n`no-restricted-imports` with `paths` only flags static imports of exactly `\"rehype-raw\"`; `await import(\"rehype-raw\")` and subpath imports like `\"rehype-raw/lib/index.js\"` are not reported. Using `patterns: [\"rehype-raw\", \"rehype-raw/*\"]` and noting the dynamic-import blind spot would make the guardrail match its stated intent (low impact today since the package isn't installed, so any import fails the build anyway).",
+            "created_at": null
+          }
+        ]
       }
     ]
   },
@@ -744,6 +843,25 @@
             "path": "README.md",
             "line": 56,
             "body": "**Local dev instructions never mention setting `ANTHROPIC_API_KEY`**\n\nThe new Deploy section documents the required key for Vercel, but \"Prerequisites\"/\"Install and run\" still list only Node and Docker, so a user running `npm run dev` locally hits LLM failures with no documented `.env.local` step (which CLAUDE.md does reference).",
+            "created_at": null
+          }
+        ]
+      },
+      {
+        "tool": "cubic-cli",
+        "repo_name": "meta-formalism-copilot@4329d6e",
+        "pr_url": "https://local.invalid/meta-formalism-copilot/mfc-deploy",
+        "review_comments": [
+          {
+            "path": "README.md",
+            "line": 120,
+            "body": "[P3] Analytics limitation describes the wrong failure mode**\n\nThe new \"Limitations on Vercel\" bullet says analytics \"does not persist across Vercel function invocations,\" implying writes succeed within a warm container. In reality `persist.ts` writes to `process.cwd()/data`, which is read-only on Vercel, so writes throw and are silently swallowed (`callLlm.ts:91`) \u2014 nothing is ever recorded, and the analytics \"clear\" action (`DELETE` in `app/api/analytics/route.ts:10`, no try/catch) returns a 500. The \"treat as dev-only\" guidance is right, but the mechanism as documented is inaccurate in a commit whose stated purpose is doc accuracy.",
+            "created_at": null
+          },
+          {
+            "path": "README.md",
+            "line": 117,
+            "body": "[P3] Limitations section omits that the LLM response cache is disabled on Vercel**\n\nThe LLM cache (`app/lib/llm/cache.ts:6`) also writes to a `cwd()`-relative path, so cache writes silently fail on Vercel and every repeated identical request makes a fresh billed API call. The new Limitations section covers Lean verification and analytics but not this cost-relevant limitation, even though the same diff's CLAUDE.md changes acknowledge the cache's filesystem dependence.",
             "created_at": null
           }
         ]
@@ -858,6 +976,31 @@
             "path": "app/lib/utils/dataDir.ts",
             "line": 12,
             "body": "**`dataDir()` joins arbitrary subpaths without containment check**\n\n`join` will happily resolve `..` segments out of the base directory; harmless today (only the literal `\"cache\"` is passed) but the helper is a general-purpose API and would allow traversal if ever called with request-derived input.",
+            "created_at": null
+          }
+        ]
+      },
+      {
+        "tool": "cubic-cli",
+        "repo_name": "meta-formalism-copilot@b64c1ca",
+        "pr_url": "https://local.invalid/meta-formalism-copilot/mfc-fscompat",
+        "review_comments": [
+          {
+            "path": "app/lib/analytics/persist.ts",
+            "line": 6,
+            "body": "[P2] Comment references a \"Deploy to Vercel\" README section that doesn't exist in this branch**\n\nThe new comment says \"see Deploy to Vercel in README,\" but this branch's README.md has no such section (it exists only in the upstream repo's newer README). The diff changes Vercel deployment behavior without any README documentation, and the comment sends readers to a section they can't find \u2014 per this repo's documentation-maintenance guidelines, the README section should be added (or the reference dropped) in the same change.",
+            "created_at": null
+          },
+          {
+            "path": "app/lib/utils/dataDir.ts",
+            "line": 12,
+            "body": "[P3] New helper has no unit test**\n\nThe repo convention (CLAUDE.md: \"Write tests alongside implementation\") isn't followed for this new helper, whose env-var branching and subpath joining are trivially testable; a test would also have caught that the `VERCEL` branch is only exercised in production.",
+            "created_at": null
+          },
+          {
+            "path": "app/lib/utils/dataDir.ts",
+            "line": 13,
+            "body": "[P3] Writes land in the shared /tmp root instead of an app-namespaced subdirectory**\n\nOn Vercel, `analytics.jsonl` and the `cache/` directory are created directly under `/tmp`, which is shared with anything else in the runtime (other libraries commonly create `/tmp/cache` or temp files there). Using a namespaced base like `/tmp/mfc-data` would avoid mingling app persistence with unrelated temp files and make `clearAnalyticsEntries`/cache reads immune to foreign files.",
             "created_at": null
           }
         ]
@@ -1035,6 +1178,73 @@
             "created_at": null
           }
         ]
+      },
+      {
+        "tool": "cubic-cli",
+        "repo_name": "meta-formalism-copilot@2dc403e",
+        "pr_url": "https://local.invalid/meta-formalism-copilot/mfc-corpus",
+        "review_comments": [
+          {
+            "path": "app/lib/corpus/flag.ts",
+            "line": 15,
+            "body": "[P1] \"Dev-only\" flag guard is documented everywhere but not implemented**\n\nThe file header, plan, seam doc, and CLAUDE.md all state the flag is \"DEFAULT OFF and DEV-ONLY\", and the plan's failure-mode table cites \"flag is default-off + dev-only\" as the structural guard against silently discarding a user's localStorage workspace (flag-ON starts from an empty corpus; no migration until S4). But `isCorpusEnabled()` contains no `NODE_ENV`/dev check \u2014 `localStorage.setItem(\"corpus-fs-enabled\", \"1\")` in any production deployment, or `NEXT_PUBLIC_CORPUS_FS=1` in a production build, enables the corpus path and makes the user's existing workspace vanish from view. The promised data-loss guard is absent.",
+            "created_at": null
+          },
+          {
+            "path": "app/lib/stores/workspaceStore.ts",
+            "line": 533,
+            "body": "[P2] With corpus flag ON, `onRehydrateStorage` can clobber rehydrated corpus state with stale v2 localStorage data**\n\nThe migration check reads `localStorage` keys (`workspace-v2`, `workspace-zustand-v1`) regardless of which storage backend is active. When the flag is ON and a legacy `workspace-v2` key exists but `workspace-zustand-v1` doesn't, `migrateFromV2()` runs on every load, overwriting the just-rehydrated OPFS-backed state with old v2 data (which is then persisted back to the corpus) \u2014 both corrupting flag-ON state and contradicting the documented \"flag-ON starts from an empty corpus, no migration in S1\" contract.",
+            "created_at": null
+          },
+          {
+            "path": "app/lib/corpus/storeAdapter.ts",
+            "line": 61,
+            "body": "[P2] Corpus-backed `setItem` has no write serialization or debounce \u2192 stale-write race and write amplification**\n\nThe localStorage path debounces writes by 300 ms, but `createCorpusBackedStorage` issues an OPFS `writeFile` for every store `set()` with no queueing: overlapping writes to `state/<name>.json` each open their own `createWritable()` staging file, and whichever `close()` lands last wins \u2014 an earlier (stale) snapshot can complete after a newer one, persisting regressed state. It also turns every keystroke into a full-blob OPFS write chain.",
+            "created_at": null
+          },
+          {
+            "path": "app/lib/corpus/manifest.ts",
+            "line": 87,
+            "body": "[P2] Fail-loud parse contract is undermined by silent per-entry drops**\n\nThe header mandates that a malformed manifest \"never\" parse into something that masks data loss, yet `sources.filter(isObject)`, `artifacts.filter(isObject)`, and `customTypeIds.filter(typeof === \"string\")` silently discard corrupted entries (and `createdAt`/`updatedAt` are silently replaced with `new Date()`), so a partially corrupted manifest parses \"successfully\" with sources/artifact pointers missing \u2014 precisely the masquerade the contract (and test G11) is supposed to prevent, in the module S4 will trust as its index.",
+            "created_at": null
+          },
+          {
+            "path": "app/lib/corpus/paths.ts",
+            "line": 36,
+            "body": "[P3] `workspaceSlug` collisions map distinct workspace titles to the same directory**\n\nLowercasing plus collapsing all non-`[a-zA-Z0-9_-]` runs means titles like \"My Workspace\", \"my workspace!\", and \"MY-WORKSPACE\" all slug to `my-workspace`, so two different workspaces would share one `workspaces/<slug>/` tree and silently overwrite each other's manifest and artifacts once S4 wires the layout in. The module is explicitly the S1-frozen contract S2\u2013S4 bind to, so the collision semantics deserve resolution (or a documented uniquing scheme) now.",
+            "created_at": null
+          },
+          {
+            "path": "app/lib/corpus/paths.ts",
+            "line": 44,
+            "body": "[P3] Path builders throw plain `Error`, not `CorpusError`, breaking the module's typed-error model**\n\n`workspaceSlug`/`safeSegment`/`artifactVersionPath` throw bare `Error`s (e.g. for an all-unicode title such as \"\u65e5\u672c\u8a9e\"), while the corpus module's stated contract is that failures reify as `CorpusError` with a discriminated kind \u2014 callers switching exhaustively on `CorpusErrorKind` will miss these, and an entirely-CJK workspace title becomes an unclassified crash path in S4.",
+            "created_at": null
+          },
+          {
+            "path": "app/lib/corpus/manifest.ts",
+            "line": 84,
+            "body": "[P3] `manifestVersion` is validated as a number but never checked against `MANIFEST_VERSION`**\n\nA future v2 manifest (or garbage like `manifestVersion: 999`) parses as if current with unknown fields silently dropped, defeating the point of carrying a version field in a fail-loud codec; an explicit version gate would turn forward-incompatibility into a typed error.",
+            "created_at": null
+          },
+          {
+            "path": "app/lib/corpus/opfsAdapter.ts",
+            "line": 115,
+            "body": "[P3] Comment claims a fresh ArrayBuffer view is passed, but the code passes the caller's array directly**\n\nThe comment \"Pass a fresh ArrayBuffer view; some implementations dislike shared buffers\" describes a copy that isn't made \u2014 `w.write(bytes)` forwards the original `Uint8Array`. Either make the copy the comment promises or delete the comment; as written it documents behavior that doesn't exist.",
+            "created_at": null
+          },
+          {
+            "path": "app/lib/corpus/__tests__/inMemoryCorpusFs.ts",
+            "line": 22,
+            "body": "[P3] Fake's `readFile` returns the live stored array, unlike real OPFS**\n\n`writeFile` defensively copies but `readFile` hands back the stored `Uint8Array` by reference, so a consumer that mutates a read buffer would corrupt the fake's state while real OPFS (which materializes fresh bytes from `arrayBuffer()`) would be unaffected. Since fake-vs-OPFS divergence is the plan's own top residual risk and the contract suite is the substitutability proof, the fake should return `bytes.slice()`.",
+            "created_at": null
+          },
+          {
+            "path": ".gitignore",
+            "line": 37,
+            "body": "[P3] `docs/user_research/property-tests.json` untracked but not ignored**\n\nCommit 2dc403e removed the file from tracking (\"swept in by git add -A; restore to untracked\") but added no ignore entry, so the next `git add -A` will sweep it right back in; add it (or its directory pattern) to .gitignore to make the untracking stick.",
+            "created_at": null
+          }
+        ]
       }
     ]
   },
@@ -1180,6 +1390,19 @@
             "path": "app/lib/stores/evidenceStore.ts",
             "line": 8,
             "body": "**Doc de-referencing workspaceStore is only half applied**\n\nThe header comment was changed to drop the \"same debounced write pattern as workspaceStore\" claim, but the section header a few lines below still reads \"Debounced localStorage adapter (same pattern as workspaceStore)\", leaving the stale reference the diff intended to remove.",
+            "created_at": null
+          }
+        ]
+      },
+      {
+        "tool": "cubic-cli",
+        "repo_name": "meta-formalism-copilot@7f30210",
+        "pr_url": "https://local.invalid/meta-formalism-copilot/mfc-postfix",
+        "review_comments": [
+          {
+            "path": "app/components/panels/CausalGraphPanel.tsx",
+            "line": 69,
+            "body": "[P2] Same streaming-partial-data crash class fixed in BalancedPerspectivesPanel remains in CausalGraphPanel's Details view**\n\nThe diff's fix guards `t.between` because partial-JSON streaming can deliver objects with missing fields, but `DetailsView` \u2014 which receives the same streaming preview whenever final data is absent, gated only on `variables` being non-empty \u2014 still dereferences `causalGraph.edges.length`, `causalGraph.confounders.length`, and `c.affectedEdges.join(\", \")` with no guards. Clicking the \"Details\" toggle mid-stream before those arrays have arrived throws the identical TypeError the in-scope commit fixes, crashing the panel.",
             "created_at": null
           }
         ]
