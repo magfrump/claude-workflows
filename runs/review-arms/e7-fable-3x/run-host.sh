@@ -145,7 +145,7 @@ sys.exit(0 if d.get("num_turns", 0) > 0 else 1)
         --model claude-fable-5 \
         --output-format json \
         --dangerously-skip-permissions \
-        --max-budget-usd 15.00 \
+        --max-budget-usd 25.00 \
       > "$dest/result.json" 2> "$dest/stderr.log" || {
         echo "$id rep$rep: claude exited non-zero — see $dest/stderr.log" >&2; continue; }
     t1=$(date +%s)

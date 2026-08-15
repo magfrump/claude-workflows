@@ -110,12 +110,12 @@ reviewed dirty range.
 | D5 | OPFS write race — un-serialized/un-debounced write seam (not on the author's carry list) | ✓(E1) | ✗ | probable — "drops debouncing and write serialization" (3/3) targets the same seam; same-issue match unadjudicated | rubric green C4 acknowledges the seam, defers to S2/S3/S5 |
 | D6 | fscompat cacheKey stored inside the cache file + double-hashing (both states) | ✓(E1) | ✗ | ✗ | — |
 
-## Stratum E — candidate rows from E5/E6 (2026-08-14; see e5-e6-results doc)
+## Stratum E — candidate rows from E5/E6/E7 (2026-08-14/15; see e5-e6-results + e7-rep1-results docs)
 
-Seven new candidate issues surfaced by the Claude-Code arms, all adjudicated true by
-scoring agents; N1 is fix-confirmed and a full row, the rest pend fix/HEAD adjudication.
+Candidate issues surfaced by the Claude-Code arms, all adjudicated true by scoring
+agents; N1 is fix-confirmed and a full row, the rest pend fix/HEAD adjudication.
 Per-issue found-by columns live in the CSV (which is the per-issue source of truth for
-E5/E6 across all strata — the tables above predate those arms):
+E5/E6/E7 across all strata — the tables above predate those arms):
 
 - **N1** csp: middleware prefetch-skip serves real HTML with no CSP (E5; **fix-confirmed
   `ab4dbdb`**)
@@ -128,9 +128,24 @@ E5/E6 across all strata — the tables above predate those arms):
   pre-existing at the base commit — out-of-diff-scope candidate)
 - N7 csp: no `worker-src` under `'strict-dynamic'` — pdf.js worker blocked/degraded (E6,
   verifier-kept; never fixed at HEAD)
+- **N8** lean: workspaceStore partialize persists transient `unavailable` across reloads —
+  live persist path bypasses the branch's own sanitizer (E7r1)
+- **N9** secdeps: unscoped eslint rules block crashes lint on the first `.cjs` file
+  (plugin-react not found; E7r1, reproduced by execution)
+- **N10** deploy: CLAUDE.md claims unset `LEAN_VERIFIER_URL` → mock; unset actually
+  defaults to `localhost:3100` real verification (E7r1)
+- **N11** corpus: flag enforceable in production — no `NODE_ENV` gate despite DEV-ONLY
+  docstring; dirty-state ancestor of D2 (E7r1)
+- **N12** corpus: storeAdapter awaited `fs.writeFile` uncaught — write errors become
+  unhandled rejections (E7r1)
+- **N13** corpus: non-NotFound read error renders pristine defaults, next write clobbers
+  the intact OPFS file (E7r1)
+
+E7r1 also re-found N1, N2 (by execution), N3, N4, N5, and N7 — independent second
+sightings for six of the seven E5/E6 candidates (N6 not re-found).
 
 As candidates graduate, denominators grow — published recall figures are dated to the
-ledger revision they were computed against (E2/E4/E5/E6 figures above: the 43-row
+ledger revision they were computed against (E2/E4/E5/E6/E7 figures above: the 43-row
 ledger of 2026-08-14).
 
 ## Adjacent true findings deliberately NOT counted as issues
@@ -162,6 +177,7 @@ counted as a miss).
 | E4 opus-k3 union (~$0.69/instance) | 41 (D1/D2 outside its ranges) | 20 firm + D3 (raw-only, parse-dropped) + D5 (probable-same, unadjudicated) | **49–54%** | the cross-file-verification / enumeration / test-strategy / structural classes |
 | E5 built-in /code-review, agentic dockerized (~$0.88/instance, exact per-run cost) | 41 | 18 firm + 1 partial | **~46%** | enumeration/convention, test-strategy, structural (pf-R1), D6 — but uniquely lands lean-R1, hyg-A1, and firm D3/D5 |
 | E6 ultrareview (one cleanly scored cell — all 3 sessions exited nonzero; deploy's empty result is abstention-vs-failure-unresolved; secdeps crashed; $0 billed, free tier consumed) | 8 (csp) | 3 | **3/8 on csp** | uniquely lands csp-R1 — the only non-pipeline catch of the gold cross-file defect |
+| E7 fable rep1 (subscription-billed; ~$8.90/scored instance **list-price estimate**, $77.54 attempted-sweep incl. hygiene's $15.24 budget-cap death; 7/8 cells scored) | 39 (hygiene's 2 rows excluded — budget-cap failure; D1/D2 outside ranges) | 17 firm + 3 partial | **~44% firm, ~51% incl. partials** | perfect deploy (2/2 incl. **dep-R1, first non-pipeline full hit**) and secdeps (3/3); best-ever csp cell (5/8+1p incl. csp-R1); 0 FPs across all 7 cells; caveat: summary-only evidence base — fscompat 0/6 and cor-A3/D4 are partly output-truncation artifacts (full reports unsaved) |
 | E2 sonnet k=1 (~$0.12/instance) | 41 | 10 | **24%** | everything outside the in-diff doc-vs-code stratum |
 
 Notes on the judgment calls embedded above: pipeline-as-operated is charged with D1–D6
