@@ -166,6 +166,28 @@ Union coverage 30/45. Reading notes:
 - Cost of the judge pass: single-digit dollars at most on the OpenRouter key
   (23 extracts + 22 dedups + judge matrix, sonnet-4.5).
 
+### cubic-cli cost estimate (from author-reported plan usage, 2026-08-14)
+
+Reported for the 7-instance sweep (csp smoke ran earlier): ~33% session /
+~5% weekly / ~9% weekly-Fable limits on Max 20x ($200/mo ≈ $46.15/wk).
+Cubic logged no token counts and the ACP Claude sessions ran under the host
+Claude dir, so plan percentages are the only handle. Two frames:
+
+- **Marginal plan-capacity cost** (what the author actually forgoes): the
+  Fable cap binds (9% ≫ 5%). 8-instance sweep ≈ 10.3% of the weekly Fable
+  allowance ≈ **$4.75/sweep ≈ $0.59/instance** in subscription dollars;
+  incremental cash $0. Session limit (33%/7) is a throughput cap only:
+  ~2–3 sweeps per 5-h window.
+- **API-equivalent** (comparable to the ledger's $14.60 pipeline /
+  $0.88 E5 figures): Fable's weekly cap in API dollars is unpublished;
+  bounding via Max-20x agentic-hours guidance and Opus-4.5-tier pricing on
+  a ~5-min, few-hundred-ktok-cached session gives **~$2–6/instance ≈
+  $20–45 per 8-instance sweep** (mid ≈ $3.50/instance, ~$28/sweep).
+  UNVERIFIED band — same epistemic status as E6's $5–25 placeholder.
+
+Caveat: if the reported percentages also included the earlier csp smoke run
+(8 sessions since reset, not 7), scale per-instance figures by 7/8.
+
 ## Next steps — direction (1)
 
 1. Script the materialization loop over the 50 PRs (one fork per original PR,
