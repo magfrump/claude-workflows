@@ -25,8 +25,12 @@
 #     the results doc; and 24 Fable runs draw on weekly subscription limits —
 #     a mid-sweep limit failure confounds the arm (cf. E6 free-tier), though
 #     the rep-skip logic lets you resume after the window resets.
-#     (CLAUDE_CODE_OAUTH_TOKEN does NOT work: --bare headless in CLI 2.1.232
-#     ignores it — verified 2026-08-14.)
+#     IMPORTANT ARM-CONDITION DEVIATION vs E5: --bare blocks ALL subscription
+#     auth (env token and stored credentials alike — probe-verified
+#     2026-08-15), so subscription runs drop --bare. Consequence: repo-level
+#     .claude/agents + .claude/commands load in the 3 instances that have
+#     them (mfc-csp, mfc-deploy, mfc-secdeps; none appear in the diffs under
+#     review). Note this in the E7 results doc.
 #   * ANTHROPIC_API_KEY — API billing; total_cost_usd authoritative. Fable
 #     needs 30-day data retention on the org (ZDR orgs 400 on every request).
 # If both are set, the credentials file wins (API key is not passed in).
@@ -62,10 +66,12 @@ if [ -n "${CLAUDE_CREDENTIALS:-}" ]; then
   cp "$CLAUDE_CREDENTIALS" "$AUTH_DIR/.credentials.json"
   chmod 700 "$AUTH_DIR"; chmod 600 "$AUTH_DIR/.credentials.json"
   AUTH_MOUNT=(-v "$AUTH_DIR":/home/node/.claude)
-  echo "Auth: subscription (credentials file copy) — total_cost_usd will be a list-price estimate, not billed spend."
+  BARE_FLAG=()   # --bare blocks stored subscription credentials (verified 2026-08-15)
+  echo "Auth: subscription (credentials file copy, non-bare) — total_cost_usd will be a list-price estimate, not billed spend."
 elif [ -n "${ANTHROPIC_API_KEY:-}" ]; then
   AUTH_ENV=(-e ANTHROPIC_API_KEY)
-  echo "Auth: API key — total_cost_usd authoritative."
+  BARE_FLAG=(--bare)   # E5 parity
+  echo "Auth: API key (--bare) — total_cost_usd authoritative."
 else
   echo "Set CLAUDE_CREDENTIALS=~/.claude/.credentials.json (subscription) or ANTHROPIC_API_KEY (API billing)" >&2
   exit 1
@@ -85,7 +91,7 @@ docker run --rm -u node "${AUTH_ENV[@]}" "${AUTH_MOUNT[@]}" -v cc-review-npm-cac
   sh -c '[ -f /home/node/.claude/.credentials.json ] && echo "  credentials file mounted" || echo "  api key length in container: ${#ANTHROPIC_API_KEY}"'
 preflight=$(docker run --rm -u node "${AUTH_ENV[@]}" "${AUTH_MOUNT[@]}" -v cc-review-npm-cache:/home/node/.npm node:22 \
   npx -y @anthropic-ai/claude-code@"$CC_VERSION" \
-    --bare -p "Reply with exactly: OK" --model claude-fable-5 --output-format json 2>&1) || true
+    "${BARE_FLAG[@]}" -p "Reply with exactly: OK" --model claude-fable-5 --output-format json 2>&1) || true
 if ! printf '%s' "$preflight" | python3 -c '
 import json, sys
 try:
@@ -123,15 +129,18 @@ sys.exit(0 if d.get("num_turns", 0) > 0 else 1)
     t0=$(date +%s)
     # -u node: non-root (required by --dangerously-skip-permissions);
     # named volume caches the npx download across runs;
-    # --bare: no hooks/plugins/user-state — the repo's own CLAUDE.md is part
-    # of the tree under review and loads as it would for any real user.
+    # BARE_FLAG: --bare (API mode, E5 parity) or empty (subscription — --bare
+    # blocks stored credentials). Either way the container's ~/.claude holds at
+    # most the credential, so no host skills/hooks/CLAUDE.md can leak; the
+    # repo's own CLAUDE.md (and, non-bare, its .claude/agents+commands) loads
+    # as it would for any real user.
     docker run --rm -u node -w /repo \
       "${AUTH_ENV[@]}" "${AUTH_MOUNT[@]}" \
       -v "$clone":/repo \
       -v cc-review-npm-cache:/home/node/.npm \
       node:22 \
       npx -y @anthropic-ai/claude-code@"$CC_VERSION" \
-        --bare -p "/code-review main" \
+        "${BARE_FLAG[@]}" -p "/code-review main" \
         --model claude-fable-5 \
         --output-format json \
         --dangerously-skip-permissions \
