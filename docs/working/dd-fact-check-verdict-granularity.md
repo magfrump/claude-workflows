@@ -172,6 +172,7 @@ verdict flips should *drop*, since the flip-prone cases were exactly these molec
 
 Validation (H1/H3): re-run Stage-1 k=2, opus, mfc-deploy, amended skill text,
 same brief. Pass criteria: N10 and dep-R1 mechanism atoms land Incorrect (≥1 of 2
-reps each); dep-R2's conclusion atom stays non-Incorrect (no severity inflation on
-the genuinely-mostly-accurate class); benign Verified/MA rows unchanged. Results:
-see decision 033 addendum.
+reps each); no severity inflation on benign rows. **Result: PASSED, 2/2 on both
+target atoms (N10 at Incorrect-High, dep-R1 at Incorrect-Medium), zero benign
+inflation, splits spontaneous and format-clean — full table in decision 033's
+validation addendum.**

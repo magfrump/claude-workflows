@@ -1,7 +1,7 @@
 # 033 — Fact-check verdicts attach to atomic claims (compound-claim decomposition)
 
-**Date**: 2026-08-15 · **Status**: adopted, pending validation addendum (k=2 opus
-re-run on mfc-deploy) · **Method**: divergent-design (Path C — autonomous) ·
+**Date**: 2026-08-15 · **Status**: adopted, validation PASSED (addendum below) ·
+**Method**: divergent-design (Path C — autonomous) ·
 **Working doc**: `docs/working/dd-fact-check-verdict-granularity.md` ·
 **Follows**: [031](031-review-loop-tier-and-factcheck-policy.md) (tier scoping, k=1),
 the 2026-08-15 fact-check model pin (`docs/working/fc-model-sweep-results-2026-08-15.md`) ·
@@ -79,3 +79,38 @@ attestations were a different failure class untouched by this decision).
   atoms — without widening the band for benign qualifier-misses.
 - Behavior-affecting skill-prose change ⇒ lands before A8 (standing sequencing
   rule), which remains the next measurement.
+
+## Validation addendum (2026-08-15, same session)
+
+k=2 opus on mfc-deploy, amended skill, same brief
+(`runs/review-arms/fc-model-sweep/mfc-deploy/opus-v033-r{1,2}.md`; ~95–98k
+tokens/rep — no cost increase). **All pass criteria met:**
+
+- **N10**: both reps spontaneously split the claim exactly as the worked example
+  prescribes — Claim 4a "unset → mock" **Incorrect (High)** 2/2 (was 0/6 across the
+  whole pre-033 sweep), 4b "unreachable → mock" Verified. The blocking-grade verdict
+  now exists; the Fact-Check Gate fires.
+- **dep-R1**: both reps split CLAUDE.md:77 — 6a (dev half) Verified, 6b (the
+  `/tmp`-warm-container account of these writes) **Incorrect (Medium)** 2/2 (was MA
+  4/6 + a Verified/Unverifiable split). Medium, not High, because the refutation
+  rests partly on external platform knowledge — honest calibration; Incorrect at any
+  confidence now corroborates escalation and the row reads as a defect, though the
+  High-only gate stays unreached for platform-epistemics claims by design.
+- **No benign inflation**: the Incorrect count rose from 1 to 4 per rep, and every
+  new Incorrect is a target-class row (4a, 6b, the analytics-persistence atom, plus
+  commit 1859488's already-Incorrect claim). Benign qualifier-miss rows (deploy-
+  button target, required-env-var wording, README unset-row phrasing) stayed
+  MA/Verified/Unverifiable. dep-R2's split (15a "written to local filesystem"
+  Verified / 15b "does not persist across invocations" Incorrect-Medium) is judged
+  correct, not inflation: the atom implies within-invocation persistence that never
+  exists, and pre-033 opus-r2 already rated the row Incorrect (High) — post-033 is
+  the better-calibrated of the two.
+- **Format**: sub-claim headings (3a/3b, 4a/4b, 6a/6b, 13a/13b, 15a/15b, 17a/17b)
+  used correctly, all five fields per sub-claim, splits only on verdict divergence;
+  bats-compatible.
+
+Residual observation: each rep split the CLAUDE.md instance of the unset-claim but
+left its README twin (claim 12 / 13b) at MA — the merged-report clustering step is
+what reconciles same-substance claims, and the Incorrect-High landed on the primary
+instance in both reps, so no action; watch whether cross-location twins drift in
+production merges.
