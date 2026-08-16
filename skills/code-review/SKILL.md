@@ -460,7 +460,11 @@ Execution Rule 1 still stands).
 1. **Cluster claims across replicates.** Two claims are the same claim when they cite the
    same file, overlapping line ranges (±5 lines), and assert substantially the same thing.
    Clustering is semantic — replicates word the same claim differently; match on
-   (file, line-range, claim substance), not on string equality.
+   (file, line-range, claim substance), not on string equality. **Compound/atomic mismatch
+   (decision 033):** one replicate may verdict a sentence as a single compound claim while
+   another splits it into sub-claims (`7a`/`7b`); the compound clusters with each of its
+   parts, and most-severe-wins (step 2) applies across the whole cluster — a sub-claim's
+   Incorrect beats the compound's Mostly accurate.
 2. **Take the most severe verdict any replicate assigned** to the cluster. Severity order,
    most severe first: `Incorrect (high confidence)` > `Incorrect (medium confidence)` >
    `Incorrect (low confidence)` >

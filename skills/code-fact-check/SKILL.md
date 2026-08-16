@@ -21,7 +21,7 @@ non-goals:
   - Not a comment editorialist — state what the code actually does (or what the precise version should say) without speculating on why the comment drifted or proposing stylistic rewrites.
 adaptation-latitude:
   - Trace depth scales with claim type — behavioral claims require reading the implementation end-to-end; configuration claims may need only a constant grep; staleness signals need only verifying the symbol still exists.
-  - Verdict calibration over precision theater — choose Mostly accurate when a claim is directionally right but missing a qualifier; reserve Incorrect for mismatches that would mislead a reader acting on the comment.
+  - Verdict calibration over precision theater — choose Mostly accurate when a claim's mechanism and conclusion are both right but imprecise; reserve Incorrect for mismatches that would mislead a reader acting on the comment. A directionally-right conclusion never outweighs a refuted mechanism: verdict compound claims per the "Compound claims" section (split on verdict divergence; otherwise most-severe part wins).
 requires:
   - A codebase with comments, docstrings, or documentation to verify
 ---
@@ -137,13 +137,17 @@ For every checkable claim:
 
 3. **Assess accuracy.** Use one of these verdicts:
    - **Verified** — Code behavior matches the claim. Evidence confirms it.
-   - **Mostly accurate** — Directionally correct but imprecise or missing a qualifier. State
-     what the precise version should be. Example: comment says "O(n)" but implementation is
-     O(n log n), or comment says "returns null" but implementation returns undefined.
+   - **Mostly accurate** — Mechanism AND conclusion both right, merely imprecise or missing
+     a qualifier. State what the precise version should be. Example: comment says "O(n)" but
+     implementation is O(n log n), or comment says "returns null" but implementation returns
+     undefined. This verdict is NOT available to a claim whose stated mechanism the code
+     refutes — however correct its practical conclusion (see "Compound claims" below).
    - **Stale** — The claim was likely accurate when written but the code has since changed.
      The comment and code have diverged. State what the code actually does now.
    - **Incorrect** — The code contradicts the claim in a way that matters. State what the code
-     actually does.
+     actually does. A claim whose stated mechanism the code refutes is Incorrect (or Stale, if
+     it was once true) even when its practical conclusion happens to hold — a reader acting on
+     the mechanism is misled regardless of the conclusion.
    - **Unverifiable** — Cannot determine accuracy from static analysis of the codebase alone.
      The claim may require runtime testing, external system access, or domain expertise you
      don't have. State what would be needed to verify it.
@@ -213,6 +217,33 @@ When a comment describes intended behavior that differs from actual behavior, al
 against actual behavior. The question is "does the code do what the comment says?" not "should
 the code do what the comment says?"
 
+## Compound claims: verdict the atoms, not the sentence
+
+A single comment or doc sentence often fuses several checkable claims — most commonly a
+**mechanism** ("when X is unset the route falls back to a mock") and a **conclusion**
+("so on the server you get the mock response"). Verdicts attach to **atomic checkable
+claims**, never to the sentence as a whole (decision 033):
+
+- **Split on verdict divergence.** If the parts of a compound claim would earn different
+  verdicts, split it into sub-claims — `## Claim 7a:`, `## Claim 7b:` — each with the full
+  five mandatory fields. Do NOT split a claim whose parts all earn the same verdict;
+  atomizing agreeing parts is noise.
+- **Most-severe part wins when you don't split.** If splitting is impractical (the parts
+  are inseparable in context), the compound claim takes the verdict of its **most severe
+  part**, and the explanation must name which part carries it. Severity order: Incorrect >
+  Stale > Mostly accurate > Unverifiable > Verified. Never average: a directionally-right
+  conclusion does not soften a refuted mechanism to "Mostly accurate."
+
+Worked example. Doc says: *"When `SERVICE_URL` is unset or unreachable, the route falls
+back to a mock response."* The code substitutes a default URL when the variable is unset
+(`process.env.SERVICE_URL ?? "http://localhost:3100"`) and mocks only on fetch failure.
+Wrong: one claim, verdict *Mostly accurate* ("the end state is usually the mock"). Right:
+split — Claim Na *"unset → falls back to a mock"* is **Incorrect** (unset substitutes a
+default and can reach a real service; a reader acting on this — e.g. relying on mock
+behavior in tests, or debugging why verification is real — is misled); Claim Nb
+*"unreachable → falls back to a mock"* is **Verified**. The refuted mechanism keeps its
+blocking-grade verdict instead of being absorbed by the true half.
+
 ## Output format
 
 Produce a Markdown document with this structure. The header fields and per-claim fields below are
@@ -273,6 +304,9 @@ Required structure rules:
 - Each of `**Repository:**`, `**Scope:**`, `**Checked:**`, `**Total claims checked:**`, and
   `**Summary:**` must appear once in the header, on its own line, with the bold delimiters shown.
 - Each claim section starts with `## Claim N:` where N is a sequential integer starting at 1.
+  Sub-claims split from a compound claim (see "Compound claims" above) use `## Claim Na:`,
+  `## Claim Nb:` immediately after their shared number's position, each carrying the full set
+  of mandatory fields below.
 - Within each claim, the five fields `**Location:**`, `**Type:**`, `**Verdict:**`,
   `**Confidence:**`, `**Evidence:**` are mandatory and use the exact spelling above.
 - `Type` must be one of: Behavioral, Performance, Architectural, Invariant, Configuration,
