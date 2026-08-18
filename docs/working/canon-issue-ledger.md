@@ -1,6 +1,7 @@
 # Canon issue ledger: every known defect in the canon set, with per-review provenance
 
-**Date**: 2026-08-14 · **Companion to**: `review-canon.md` §1 (instances/labels) ·
+**Date**: 2026-08-14 · **Last revised**: 2026-08-17 (E7 rep2 scored; N14–N16 appended;
+N7 refuted) · **Companion to**: `review-canon.md` §1 (instances/labels) ·
 Living, append-only, like the canon itself — a re-adjudication updates a row's status
 column, never deletes the row.
 
@@ -110,7 +111,7 @@ reviewed dirty range.
 | D5 | OPFS write race — un-serialized/un-debounced write seam (not on the author's carry list) | ✓(E1) | ✗ | probable — "drops debouncing and write serialization" (3/3) targets the same seam; same-issue match unadjudicated | rubric green C4 acknowledges the seam, defers to S2/S3/S5 |
 | D6 | fscompat cacheKey stored inside the cache file + double-hashing (both states) | ✓(E1) | ✗ | ✗ | — |
 
-## Stratum E — candidate rows from E5/E6/E7 (2026-08-14/15; see e5-e6-results + e7-rep1-results docs)
+## Stratum E — candidate rows from E5/E6/E7 (2026-08-14/17; see e5-e6-results + e7-rep1/rep2-results docs)
 
 Candidate issues surfaced by the Claude-Code arms, all adjudicated true by scoring
 agents; N1 is fix-confirmed and a full row, the rest pend fix/HEAD adjudication.
@@ -127,7 +128,10 @@ E5/E6/E7 across all strata — the tables above predate those arms):
 - N6 deploy: "+ Factor" streaming race persists a partial causal-graph snapshot (E5;
   pre-existing at the base commit — out-of-diff-scope candidate)
 - N7 csp: no `worker-src` under `'strict-dynamic'` — pdf.js worker blocked/degraded (E6,
-  verifier-kept; never fixed at HEAD)
+  verifier-kept; never fixed at HEAD). **Candidate REFUTED by E7r2** with spec + WPT
+  evidence (w3c/webappsec-csp#200: `'strict-dynamic'` blesses worker creation; the WPT
+  strict-dynamic worker test passes in current Chrome/Firefox/Safari) — pending demotion
+  adjudication; if demoted it also retro-corrects E6's and E7r1's credited hits.
 - **N8** lean: workspaceStore partialize persists transient `unavailable` across reloads —
   live persist path bypasses the branch's own sanitizer (E7r1)
 - **N9** secdeps: unscoped eslint rules block crashes lint on the first `.cjs` file
@@ -141,8 +145,23 @@ E5/E6/E7 across all strata — the tables above predate those arms):
 - **N13** corpus: non-NotFound read error renders pristine defaults, next write clobbers
   the intact OPFS file (E7r1)
 
+- **N14** hygiene: `edit/artifact` caches unvalidated LLM text and never evicts — a
+  malformed response 502s permanently for that input; the sibling `artifactRoute.ts`
+  evicts on parse failure (E7r2, code-verified; pre-existing at f2f149b)
+- **N15** csp: `img-src 'self' data: blob:` blocks external images in markdown rendered
+  via LatexRenderer — unannounced behavior change (E7r2, verified against
+  react-markdown defaults)
+- **N16** deploy: docs' "no demo mode" + OpenRouter-"fallback" claims contradicted by
+  `callLlm.ts` — branches on key presence, not request failure; the deploy env table
+  makes the fallback unreachable; the Anthropic→OpenRouter→mock chain is a de facto
+  demo mode (E7r2)
+
 E7r1 also re-found N1, N2 (by execution), N3, N4, N5, and N7 — independent second
-sightings for six of the seven E5/E6 candidates (N6 not re-found).
+sightings for six of the seven E5/E6 candidates (N6 not re-found). E7r2 (5 scored
+cells) re-found N1, N2 (again by execution), N3, N4, N5, and N8; it did **not** re-find
+N6, N9, or N10 — and on N10 it went further astray, stamping the exact CLAUDE.md
+claim N10 refutes as "Accurate" (a false attestation, though the Vercel-context
+outcome coincidentally matches).
 
 As candidates graduate, denominators grow — published recall figures are dated to the
 ledger revision they were computed against (E2/E4/E5/E6/E7 figures above: the 43-row
@@ -178,6 +197,8 @@ counted as a miss).
 | E5 built-in /code-review, agentic dockerized (~$0.88/instance, exact per-run cost) | 41 | 18 firm + 1 partial | **~46%** | enumeration/convention, test-strategy, structural (pf-R1), D6 — but uniquely lands lean-R1, hyg-A1, and firm D3/D5 |
 | E6 ultrareview (one cleanly scored cell — all 3 sessions exited nonzero; deploy's empty result is abstention-vs-failure-unresolved; secdeps crashed; $0 billed, free tier consumed) | 8 (csp) | 3 | **3/8 on csp** | uniquely lands csp-R1 — the only non-pipeline catch of the gold cross-file defect |
 | E7 fable rep1 (subscription-billed; ~$8.90/scored instance **list-price estimate**, $77.54 attempted-sweep incl. hygiene's $15.24 budget-cap death; 7/8 cells scored) | 39 (hygiene's 2 rows excluded — budget-cap failure; D1/D2 outside ranges) | 17 firm + 3 partial | **~44% firm, ~51% incl. partials** | perfect deploy (2/2 incl. **dep-R1, first non-pipeline full hit**) and secdeps (3/3); best-ever csp cell (5/8+1p incl. csp-R1); 0 FPs across all 7 cells; caveat: summary-only evidence base — fscompat 0/6 and cor-A3/D4 are partly output-truncation artifacts (full reports unsaved) |
+| E7 fable rep2 (2026-08-17; full stream-json transcripts; $53.83 list across 5 scored cells, ~$10.77/scored instance; corpus+postfix died at the weekly usage limit, fscompat at an OAuth failure, all of rep3 at the session limit) | **18** (only the 5 scored cells' rows — the unscored 3 are the arm's historically weakest, so this recall is NOT sweep-comparable) | 15 firm + 1 partial | **83% firm on scored cells** | lean 3/3, hygiene 2/2, secdeps 3/3, deploy 2/2, csp 5/8+1p; 0 confirmed FPs; csp's verifier pass empirically refuted its own 7-of-8-finder csp-A1 consensus (self-hosted header merge, run live) and killed N7 with spec/WPT evidence; 1 false attestation (deploy stamped the claim N10 refutes as "Accurate") |
+| **E7 fable reps 1–2 union** (~$131.37 attempted total, list) | 41 (hygiene now scored via rep2; D1/D2 outside ranges) | 23 firm + 2 partial (cor-A4, pf-R1) | **56% firm, ~61% incl. partials** | best headless/CC-arm recall to date, above E4's 49–54%; csp union 7/8 (only csp-A2 unfound); remaining union misses concentrate in fscompat (0/6), corpus enumeration/comment tier, and postfix structural rows |
 | E2 sonnet k=1 (~$0.12/instance) | 41 | 10 | **24%** | everything outside the in-diff doc-vs-code stratum |
 
 Notes on the judgment calls embedded above: pipeline-as-operated is charged with D1–D6
@@ -197,10 +218,13 @@ secondary comparability number for prior arms — it is not the headline metric.
 
 ## Reading the found-by pattern (what the ledger shows at a glance)
 
-- **Headless-blind classes are consistent**: cross-file verification (csp-R1, lean-R1,
-  hyg-A1, dep-R1's last step, D6), repo-wide enumeration/convention (cor-A1/A2, fsc-A2),
-  test-strategy (csp-A4, fsc-A4), and structural/type-seam reasoning (pf-R1) are found
-  only by the full pipeline. That is the ~$14 tier's moat, unchanged by model tier or k.
+- **The headless-blind classes have eroded, not vanished**: cross-file verification fell
+  first (E5/E7r1: dep-R1, csp-R1, lean-R1; E7r2 repeated all three plus hyg-A1), and
+  E7r2 took a test-strategy row as-worded (csp-A4). What still holds as pipeline-only:
+  repo-wide enumeration/convention (cor-A1/A2, fsc-A2, pf-A7), comment-accuracy sweeps
+  (csp-A2 — unfound by any arm at any rep — csp-A3, cor-A3, D4, pf-A8), the pf-R1
+  type-seam root, and D6. The ~$14 tier's moat is now those classes, not "headless
+  can't cross files".
 - **Pipeline-blind spots are real and recurrent**: 4 of the 43 (C1–C4) were found only
   by ≤$1 headless arms, two of them later fix-confirmed, and two contradicting rubric
   Confirmed-Good rows. Fresh-eyes re-runs (D1–D6) add six more the shipping loops
