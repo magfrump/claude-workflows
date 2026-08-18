@@ -1,0 +1,27 @@
+
+ RUN  v4.1.6 /workspace/external/cc-review-eval/mfc-corpus
+
+stdout | app/lib/corpus/__tests__/r2_scratch.test.ts > r2: migrateFromV2 firing > returns true and populates the store when workspace-v2 exists
+R2 migrateFromV2 result: true
+R2 store sourceText: hello-from-v2
+
+stdout | app/lib/corpus/__tests__/r2_scratch.test.ts > r2: manifest silent field-level defaults > silently fabricates createdAt/updatedAt when absent (not fail-loud)
+R2 createdAt fabricated: 2026-08-18T06:55:51.377Z
+
+stdout | app/lib/corpus/__tests__/r2_scratch.test.ts > r2: manifest silent field-level defaults > silently drops non-object source entries instead of failing
+R2 sources after parse: [{"id":"good","label":"good","ext":"pdf"}]
+
+stdout | app/lib/corpus/__tests__/r2_scratch.test.ts > r2: manifest silent field-level defaults > silently drops non-string customTypeIds
+R2 customTypeIds after parse: ["ok"]
+
+ ✓ app/lib/corpus/__tests__/r2_scratch.test.ts > r2: migrateFromV2 firing > returns false and does not populate when no v2 data present 1ms
+ ✓ app/lib/corpus/__tests__/r2_scratch.test.ts > r2: migrateFromV2 firing > returns true and populates the store when workspace-v2 exists 2ms
+ ✓ app/lib/corpus/__tests__/r2_scratch.test.ts > r2: manifest silent field-level defaults > silently fabricates createdAt/updatedAt when absent (not fail-loud) 1ms
+ ✓ app/lib/corpus/__tests__/r2_scratch.test.ts > r2: manifest silent field-level defaults > silently drops non-object source entries instead of failing 0ms
+ ✓ app/lib/corpus/__tests__/r2_scratch.test.ts > r2: manifest silent field-level defaults > silently drops non-string customTypeIds 1ms
+
+ Test Files  1 passed (1)
+      Tests  5 passed (5)
+   Start at  23:55:50
+   Duration  673ms (transform 71ms, setup 44ms, import 77ms, tests 6ms, environment 425ms)
+

@@ -1,0 +1,4 @@
+file: /tmp/sec-probe-cache/deadbeef.json
+mode octal: 644
+world-readable (o+r): [33mtrue[39m
+umask: 22

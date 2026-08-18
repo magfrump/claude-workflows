@@ -1,0 +1,6 @@
+# E4: LEAN_VERIFIER_URL=http://127.0.0.1:3101 set, stub verifier listening there -> expect passthrough (env var points the route)
+cwd: /workspace/external/cc-review-eval/mfc-deploy (same dev server as E3; stub: node http server on :3101 returning {valid:false,errors:"stub-3101-response"})
+timestamp: 2026-08-18T06:16:16Z
+command: curl -s -X POST http://localhost:3400/api/verification/lean -H "Content-Type: application/json" -d {"leanCode":"theorem t : True := trivial"}
+{"valid":false,"errors":"stub-3101-response"}
+exit code: 0

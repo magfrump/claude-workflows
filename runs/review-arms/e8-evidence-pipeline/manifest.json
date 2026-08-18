@@ -1,0 +1,185 @@
+{
+ "experiment": "E8 \u2014 evidence-discipline pipeline (branch feat/critic-evidence-discipline) over all 8 canon dirty states",
+ "design": "Full pipeline per instance, E1 resume pattern: k=2 fact-check (execution-upgraded, decision-033 k) -> merge -> historical critic set (branch SKILL.md texts) -> fc-claims pass (critics' submitted endorsement claims, execution-verdicted) -> rubric (new Confirmed-Good provenance + triage-floor rules). All agents read skills from the branch working tree, run in external/cc-review-eval/<id>. Config deltas vs historical pipeline, to note in results: k=2 not k=3; orchestrator model fable-5; execution enabled.",
+ "purpose": "Observe the difference vs pipeline-as-operated on the 56-row ledger: (a) newly-caught rows among C1-C4/D3-D6/N-rows, (b) zero unscoped Confirmed-Good rows, (c) wrong-verdict classes (N1/C4/N10/D6/N2-style) eliminated, (d) finding-yield preserved on stratum A/B.",
+ "branch_commit": "f3c8e3d",
+ "tokens_note": "Per-stage tokens were NOT recorded at run time (all cells' tokens maps empty) - measurement-provenance miss, convention since amended (review-canon.md section 3). Sweep cost re-derived indirectly at ~$150-350 API-list-equivalent (~$19-44/instance); derivation in docs/working/e8-results-2026-08-18.md Caveats.",
+ "cells": {
+  "mfc-csp": {
+   "range": "d86d2dc..d90d6bb",
+   "commit": "d90d6bb",
+   "critics": [
+    "security",
+    "performance",
+    "api-consistency",
+    "test-strategy"
+   ],
+   "stages": {
+    "fc-r1": "done",
+    "fc-r2": "done",
+    "fc-merge": "done",
+    "critic-security": "done",
+    "critic-performance": "done",
+    "critic-api-consistency": "done",
+    "critic-test-strategy": "done",
+    "fc-claims": "done",
+    "rubric": "done"
+   },
+   "tokens": {}
+  },
+  "mfc-lean": {
+   "range": "d86d2dc..c95c9cb",
+   "commit": "c95c9cb",
+   "critics": [
+    "security",
+    "performance",
+    "api-consistency",
+    "ui-visual"
+   ],
+   "stages": {
+    "fc-r1": "done",
+    "fc-r2": "done",
+    "fc-merge": "done",
+    "critic-security": "done",
+    "critic-performance": "done",
+    "critic-api-consistency": "done",
+    "critic-ui-visual": "done",
+    "fc-claims": "done",
+    "rubric": "done"
+   },
+   "tokens": {}
+  },
+  "mfc-hygiene": {
+   "range": "d86d2dc..f2f149b",
+   "commit": "f2f149b",
+   "critics": [
+    "security",
+    "performance",
+    "api-consistency"
+   ],
+   "stages": {
+    "fc-r1": "done",
+    "fc-r2": "done",
+    "fc-merge": "done",
+    "critic-security": "done",
+    "critic-performance": "done",
+    "critic-api-consistency": "done",
+    "fc-claims": "done",
+    "rubric": "done"
+   },
+   "tokens": {}
+  },
+  "mfc-secdeps": {
+   "range": "d86d2dc..8bde50c",
+   "commit": "8bde50c",
+   "critics": [
+    "security",
+    "performance",
+    "api-consistency",
+    "dependency-upgrade"
+   ],
+   "stages": {
+    "fc-r1": "done",
+    "fc-r2": "done",
+    "fc-merge": "done",
+    "critic-security": "done",
+    "critic-performance": "done",
+    "critic-api-consistency": "done",
+    "critic-dependency-upgrade": "done",
+    "fc-claims": "done",
+    "rubric": "done"
+   },
+   "tokens": {}
+  },
+  "mfc-deploy": {
+   "range": "d86d2dc..4329d6e",
+   "commit": "4329d6e",
+   "critics": [
+    "security",
+    "performance",
+    "api-consistency"
+   ],
+   "stages": {
+    "fc-r1": "done",
+    "fc-r2": "done",
+    "fc-merge": "done",
+    "critic-security": "done",
+    "critic-performance": "done",
+    "critic-api-consistency": "done",
+    "fc-claims": "done",
+    "rubric": "done"
+   },
+   "tokens": {}
+  },
+  "mfc-fscompat": {
+   "range": "d86d2dc..b64c1ca",
+   "commit": "b64c1ca",
+   "critics": [
+    "security",
+    "performance",
+    "api-consistency",
+    "test-strategy"
+   ],
+   "stages": {
+    "fc-r1": "done",
+    "fc-r2": "done",
+    "fc-merge": "done",
+    "critic-security": "done",
+    "critic-performance": "done",
+    "critic-api-consistency": "done",
+    "critic-test-strategy": "done",
+    "fc-claims": "done",
+    "rubric": "done"
+   },
+   "tokens": {}
+  },
+  "mfc-corpus": {
+   "range": "dc6dfb0..2dc403e",
+   "commit": "2dc403e",
+   "critics": [
+    "security",
+    "performance",
+    "api-consistency",
+    "architecture",
+    "tech-debt-triage"
+   ],
+   "stages": {
+    "fc-r1": "done",
+    "fc-r2": "done",
+    "fc-merge": "done",
+    "critic-security": "done",
+    "critic-performance": "done",
+    "critic-api-consistency": "done",
+    "critic-architecture": "done",
+    "critic-tech-debt-triage": "done",
+    "fc-claims": "done",
+    "rubric": "done"
+   },
+   "tokens": {}
+  },
+  "mfc-postfix": {
+   "range": "9c9edf5..7f30210",
+   "commit": "7f30210",
+   "critics": [
+    "security",
+    "performance",
+    "api-consistency",
+    "architecture",
+    "ui-visual"
+   ],
+   "stages": {
+    "fc-r1": "done",
+    "fc-r2": "done",
+    "fc-merge": "done",
+    "critic-security": "done",
+    "critic-performance": "done",
+    "critic-api-consistency": "done",
+    "critic-architecture": "done",
+    "critic-ui-visual": "done",
+    "fc-claims": "done",
+    "rubric": "done"
+   },
+   "tokens": {}
+  }
+ }
+}

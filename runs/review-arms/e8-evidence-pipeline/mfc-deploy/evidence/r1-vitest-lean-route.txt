@@ -1,0 +1,14 @@
+# cmd: npx vitest run --environment=node app/api/verification/lean/cfc-tmp-route.test.ts
+# cwd: /workspace/external/cc-review-eval/mfc-deploy
+# date: 2026-08-18T06:18:30Z
+# note: 127.0.0.1:59999 has no listener; real fetch, no stubbing
+
+ RUN  v4.1.5 /workspace/external/cc-review-eval/mfc-deploy
+
+
+ Test Files  1 passed (1)
+      Tests  1 passed (1)
+   Start at  23:18:30
+   Duration  229ms (transform 27ms, setup 50ms, import 49ms, tests 20ms, environment 0ms)
+
+# exit: 0

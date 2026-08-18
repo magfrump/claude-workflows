@@ -1,0 +1,9 @@
+cmd: node key-count comparison of packages map, base (d86d2dc) vs HEAD (8bde50c)
+cwd: /workspace/external/cc-review-eval/mfc-secdeps
+date: 2026-08-18T06:26:20Z
+base package entries: [33m753[39m
+head package entries: [33m753[39m
+keys only in head: []
+keys only in base: []
+entries with differing content: ["node_modules/@xmldom/xmldom","node_modules/lodash"]
+exit=0

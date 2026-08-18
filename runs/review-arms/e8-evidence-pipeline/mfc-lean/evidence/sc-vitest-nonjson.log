@@ -1,0 +1,12 @@
+
+ RUN  v4.1.5 /workspace/external/cc-review-eval/mfc-lean
+
+ ✓ __sc_scratch.test.ts > non-JSON verifier-route response (platform-error shape) > verifyLean throws on a 504 text body instead of returning unavailable 4ms
+ ✓ __sc_scratch.test.ts > non-JSON verifier-route response (platform-error shape) > verifyLean throws even on a 200 non-JSON body (no ok-check, no catch) 0ms
+ ✓ __sc_scratch.test.ts > non-JSON verifier-route response (platform-error shape) > the throw propagates out of leanRetryLoop (never returns unavailable: true) 1ms
+
+ Test Files  1 passed (1)
+      Tests  3 passed (3)
+   Start at  23:43:42
+   Duration  652ms (transform 36ms, setup 46ms, import 28ms, tests 6ms, environment 455ms)
+

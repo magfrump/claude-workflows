@@ -1,0 +1,38 @@
+Error: Invalid package config /workspace/external/package.json while importing /workspace/external/cc-review-eval/mfc-hygiene. Unexpected end of JSON input
+    at __node_internal_ [90m(file:///workspace/external/cc-review-eval/mfc-hygiene/[39mnode_modules/[4mvitest[24m/dist/chunks/index.BCY_7LL2.js:461:11[90m)[39m
+    at new NodeError [90m(file:///workspace/external/cc-review-eval/mfc-hygiene/[39mnode_modules/[4mvitest[24m/dist/chunks/index.BCY_7LL2.js:405:5[90m)[39m
+    at read [90m(file:///workspace/external/cc-review-eval/mfc-hygiene/[39mnode_modules/[4mvitest[24m/dist/chunks/index.BCY_7LL2.js:592:21[90m)[39m
+    at getPackageScopeConfig [90m(file:///workspace/external/cc-review-eval/mfc-hygiene/[39mnode_modules/[4mvitest[24m/dist/chunks/index.BCY_7LL2.js:655:27[90m)[39m
+[90m    ... 6 lines matching cause stack trace ...[39m
+    at _resolve [90m(file:///workspace/external/cc-review-eval/mfc-hygiene/[39mnode_modules/[4mvitest[24m/dist/chunks/index.BCY_7LL2.js:2252:22[90m)[39m
+    at resolvePackage [90m(file:///workspace/external/cc-review-eval/mfc-hygiene/[39mnode_modules/[4mvitest[24m/dist/chunks/index.BCY_7LL2.js:2299:12[90m)[39m
+    at isPackageExists [90m(file:///workspace/external/cc-review-eval/mfc-hygiene/[39mnode_modules/[4mvitest[24m/dist/chunks/index.BCY_7LL2.js:2267:12[90m)[39m
+    at VitestPackageInstaller.ensureInstalled [90m(file:///workspace/external/cc-review-eval/mfc-hygiene/[39mnode_modules/[4mvitest[24m/dist/chunks/cli-api.Cjt90eJu.js:2322:23[90m)[39m
+    at prepareVitest [90m(file:///workspace/external/cc-review-eval/mfc-hygiene/[39mnode_modules/[4mvitest[24m/dist/chunks/cli-api.Cjt90eJu.js:14574:56[90m)[39m
+    at startVitest [90m(file:///workspace/external/cc-review-eval/mfc-hygiene/[39mnode_modules/[4mvitest[24m/dist/chunks/cli-api.Cjt90eJu.js:14515:14[90m)[39m
+    at start [90m(file:///workspace/external/cc-review-eval/mfc-hygiene/[39mnode_modules/[4mvitest[24m/dist/chunks/cac.DJJmV0dT.js:2340:15[90m)[39m
+    at CAC.run [90m(file:///workspace/external/cc-review-eval/mfc-hygiene/[39mnode_modules/[4mvitest[24m/dist/chunks/cac.DJJmV0dT.js:2318:2[90m)[39m {
+  code: [32m'ERR_INVALID_PACKAGE_CONFIG'[39m,
+  cause: SyntaxError: Unexpected end of JSON input
+      at JSON.parse (<anonymous>)
+      at read [90m(file:///workspace/external/cc-review-eval/mfc-hygiene/[39mnode_modules/[4mvitest[24m/dist/chunks/index.BCY_7LL2.js:589:21[90m)[39m
+      at getPackageScopeConfig [90m(file:///workspace/external/cc-review-eval/mfc-hygiene/[39mnode_modules/[4mvitest[24m/dist/chunks/index.BCY_7LL2.js:655:27[90m)[39m
+      at packageResolve [90m(file:///workspace/external/cc-review-eval/mfc-hygiene/[39mnode_modules/[4mvitest[24m/dist/chunks/index.BCY_7LL2.js:1805:25[90m)[39m
+      at moduleResolve [90m(file:///workspace/external/cc-review-eval/mfc-hygiene/[39mnode_modules/[4mvitest[24m/dist/chunks/index.BCY_7LL2.js:1945:18[90m)[39m
+      at _tryModuleResolve [90m(file:///workspace/external/cc-review-eval/mfc-hygiene/[39mnode_modules/[4mvitest[24m/dist/chunks/index.BCY_7LL2.js:1990:12[90m)[39m
+      at _resolve$1 [90m(file:///workspace/external/cc-review-eval/mfc-hygiene/[39mnode_modules/[4mvitest[24m/dist/chunks/index.BCY_7LL2.js:2045:16[90m)[39m
+      at resolveSync [90m(file:///workspace/external/cc-review-eval/mfc-hygiene/[39mnode_modules/[4mvitest[24m/dist/chunks/index.BCY_7LL2.js:2078:10[90m)[39m
+      at resolvePathSync [90m(file:///workspace/external/cc-review-eval/mfc-hygiene/[39mnode_modules/[4mvitest[24m/dist/chunks/index.BCY_7LL2.js:2081:24[90m)[39m
+      at _resolve [90m(file:///workspace/external/cc-review-eval/mfc-hygiene/[39mnode_modules/[4mvitest[24m/dist/chunks/index.BCY_7LL2.js:2252:22[90m)[39m
+}
+ MISSING DEPENDENCY  Cannot find dependency 'jsdom'
+
+
+ RUN  v4.1.5 /workspace/external/cc-review-eval/mfc-hygiene
+
+
+ Test Files  1 passed (1)
+      Tests  1 passed (1)
+   Start at  23:41:45
+   Duration  991ms (transform 38ms, setup 80ms, import 17ms, tests 19ms, environment 746ms)
+

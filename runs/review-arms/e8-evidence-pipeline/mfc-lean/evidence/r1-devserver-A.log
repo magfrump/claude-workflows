@@ -1,0 +1,30 @@
+
+> nextjs@0.1.0 dev
+> next dev
+
+[1m[38;2;173;127;168m▲ Next.js 16.2.4[39m[22m (Turbopack)
+- Local:         http://localhost:4321
+- Network:       http://172.17.0.2:4321
+[32m[1m✓[22m[39m Ready in 378ms
+[33m[1m⚠[22m[39m Warning: Next.js inferred your workspace root, but it may not be correct.
+ We detected multiple lockfiles and selected the directory of /workspace/pnpm-lock.yaml as the root directory.
+ To silence this warning, set `turbopack.root` in your Next.js config, or consider removing one of the lockfiles if it's not needed.
+   See https://nextjs.org/docs/app/api-reference/config/next-config-js/turbopack#root-directory for more information.
+ Detected additional lockfiles: 
+   * /workspace/external/cc-review-eval/mfc-lean/package-lock.json
+   * /workspace/external/pnpm-lock.yaml
+
+[31m[1m⨯[22m[39m Another [36mnext dev[39m server is already running.
+
+- Local:        [36mhttp://localhost:4460[39m
+- PID:          367515
+- Dir:          /workspace/external/cc-review-eval/mfc-lean
+- Log:          .next/dev/logs/next-development.log
+
+Run [36mkill 367515[39m to stop it.
+[35m[1mAttention[22m[39m: Next.js now collects completely anonymous telemetry regarding usage.
+This information is used to shape Next.js' roadmap and prioritize features.
+You can learn more, including how to opt-out if you'd not like to participate in this anonymous program, by visiting the following URL:
+[36mhttps://nextjs.org/telemetry[39m
+
+[?25h

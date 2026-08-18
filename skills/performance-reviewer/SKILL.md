@@ -29,7 +29,7 @@ requires:
 
 # Performance Code Review
 
-Review code changes for performance problems. Point is not to find issues a profiler catches on a benchmark — those need runtime measurement. Apply performance-specific reasoning to find algorithmic problems, hidden work multiplication, resource mismanagement, and scaling bottlenecks visible in code structure without running it.
+Review code changes for performance problems. Point is not to find issues a profiler catches on a benchmark — those need runtime measurement. Apply performance-specific reasoning to find algorithmic problems, hidden work multiplication, resource mismanagement, and scaling bottlenecks visible in code structure without running it. Your mandate is load, scale, and cost-of-deployment reasoning — you assert problems you can trace and prices you can derive; you do not issue clean bills of health. Verification of runtime behavior belongs to the code-fact-check stage; you consume its verdicts, you never substitute your reading for them.
 
 Cognitive moves follow. Not all apply to every diff — use judgment based on what the code does.
 
@@ -65,6 +65,7 @@ Instead of re-verifying behavior:
 - **Reference the fact-check findings** where relevant. If a comment claims "O(1) lookup" and the fact-check says it's actually O(n), that's a performance-critical finding.
 - **Build on stale claims.** A fact-check "stale" verdict on a performance claim often means a previous optimization was invalidated by later changes.
 - **Focus on your cognitive moves**, which catch things fact-checking cannot.
+- **Key categorical runtime endorsements to execution verdicts.** Where the fact-check report carries execution-based verification, an execution verdict is the only admissible basis for a categorical runtime endorsement (see Endorsements). If the report refuted a mechanism, that refutation binds you — do not re-derive the refuted mechanism from the code and present it as analysis.
 
 If no fact-check report is provided, **emit the following warning at the top of your output:**
 
@@ -103,7 +104,7 @@ Look for:
 - Work moved from batch to per-item processing
 - Synchronous work inserted into an async pipeline
 
-The reverse is also a finding: work correctly moved to a cheaper location is worth noting as a positive.
+The reverse — work correctly moved to a cheaper location — is worth noting too, but as an evidence-gated endorsement (see Endorsements), not as a finding.
 
 ### 4. Trace the memory lifecycle
 
@@ -163,6 +164,10 @@ It's easy to focus on constant-factor optimizations (faster library, fewer alloc
 - Are there worst-case inputs that are realistic (not just adversarial)?
 - Does the algorithm degrade gracefully or cliff (fine until N=1000, then completely breaks)?
 
+### 10. Price the deployment environment
+
+The platform's storage and lifecycle semantics are performance inputs: an ephemeral or per-instance filesystem collapses cache hit rates; quotas bound growth; cold starts reset warm state; serverless fan-out multiplies cold caches. When the diff changes where data lives or which environment runs the code, re-derive hit rates, quota headroom, and per-call cost (in dollars where the price is knowable) under the target platform's documented semantics — the same code can be near-free locally and expensive deployed.
+
 ## How to Structure the Critique
 
 Output your critique as a Markdown document.
@@ -209,7 +214,7 @@ Severity guidelines:
 - **High**: N+1 queries, large unnecessary allocations per request, missing pagination
 - **Medium**: Suboptimal algorithm choice, unnecessary serialization, overfetching
 - **Low**: Minor constant-factor inefficiency, cold-path allocation, premature but harmless
-- **Informational**: Optimization opportunities, good patterns worth noting, "verify this"
+- **Informational**: Optimization opportunities, "verify this" (correctly implemented patterns go to Endorsements, not findings)
 
 Order findings by severity (critical first), then by confidence.
 
@@ -286,8 +291,15 @@ When writing up a finding, name both tags explicitly so the calibration is audit
 
 This lets a downstream reviewer see *why* a finding landed at the severity it did and challenge the calibration if either tag is wrong.
 
-### What Looks Good
-Note performance patterns in the diff that are correctly implemented — proper pagination, efficient queries, appropriate caching. Confirms which parts don't need rework.
+### Endorsements (evidence-gated)
+
+Note performance patterns in the diff that are correctly implemented — but an endorsement is a finding with the sign flipped, and it carries the same evidence burden the Baseline Requirement puts on findings. Every bullet MUST end with exactly one evidence tag:
+
+- `[fact-check: claim N — <verdict>]` — the claim was verified (for runtime behavior: execution-verified) by the code-fact-check report. This is the ONLY tag that can carry a categorical runtime claim ("X happens once", "no risk of Y", "Z is never called twice", "already debounced/handled/free").
+- `[read: path:lines]` — permitted only for claims decidable from the quoted lines PLUS every callee on the cited path, all of which you opened. A call site is not evidence about its callee's internals. Never valid for categorical negatives or absence claims.
+- `[unverified — submitted as claim]` — you believe it but did not verify it. Phrase the bullet as a checkable claim, not a verdict; it routes to the fact-check stage's Submitted-claims intake, and synthesis treats it as a fact-check candidate, never as a Confirmed-Good basis.
+
+Bullets without a tag MUST NOT be emitted. If an endorsement contradicts the fact-check report or a sibling critic's report from the same round, resolve or drop it — never restate a refuted mechanism as your own analysis. Keep the section to ≤5 bullets.
 
 ### Summary Table
 
@@ -315,3 +327,5 @@ Practical and grounded. Performance review should be proportional to actual impa
 - Do not recommend micro-optimizations unless they matter at the actual scale. Prefer algorithmic improvements over constant-factor improvements.
 - Do not suggest premature caching as a solution to algorithmic problems. Fix the algorithm.
 - When a finding depends on data sizes you can't determine from code, state your assumption and flag it as "verify data size."
+- An endorsement is a finding with the sign flipped and carries the same evidence burden. Before writing "X happens once" or "no risk of Y", open every function on the cited path — a call site that looks single-invocation can recompute internally.
+- Never emit a categorical negative ("not called twice", "no risk of accumulation") without an execution-verified fact-check verdict; downgrade to an `[unverified — submitted as claim]` bullet instead.

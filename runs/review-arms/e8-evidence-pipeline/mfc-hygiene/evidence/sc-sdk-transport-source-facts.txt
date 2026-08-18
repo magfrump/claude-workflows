@@ -1,0 +1,8 @@
+SDK: @anthropic-ai/sdk version "version":"0.90.0"
+node: v20.20.2
+
+client.js:74  this.fetch = options.fetch ?? Shims.getDefaultFetch();
+client.js:72  this.fetchOptions = options.fetchOptions;
+internal/shims.js:9-14  getDefaultFetch(){ if (typeof fetch !== 'undefined') return fetch; throw ... }
+client.js:445-446  fetchOptions merges (this.fetchOptions ?? {}) and (options.fetchOptions ?? {})
+app/lib/llm/callLlm.ts:15  return new Anthropic({ apiKey });   // no fetch, no fetchOptions/dispatcher

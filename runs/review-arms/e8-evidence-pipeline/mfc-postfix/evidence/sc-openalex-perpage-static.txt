@@ -1,0 +1,23 @@
+Static establishment for submitted performance claim (OpenAlex per_page ceiling)
+Repo: /workspace/external/cc-review-eval/mfc-postfix  HEAD: 7f30210  (working tree pristine)
+Command: grep -n over app/api/evidence-search/route.ts  ·  2026-08-18
+
+What IS establishable statically (from the code alone):
+  route.ts:20   const PER_QUERY_RESULTS = 5;
+  route.ts:114  url.searchParams.set("per_page", String(PER_QUERY_RESULTS));   <- request sends per_page=5
+  route.ts:126  return (data.results ?? []) as OpenAlexWork[];                  <- NO slice of the response array
+  route.ts:181  const topScore = Math.max(...allWorks.map((w) => w.relevance_score ?? 0), 1);
+
+Conclusion: the code requests per_page=5 and does NOT clamp/slice data.results before
+concatenating into allWorks and spreading it. Therefore the argument-count bound on the
+Math.max spread depends ENTIRELY on OpenAlex's server-side behavior (whether it honors
+per_page and never exceeds its documented ceiling). That server-side behavior is NOT
+observable in-sandbox — it requires the live OpenAlex API.
+
+What is NOT establishable here (the submitted claim's actual assertion):
+  "OpenAlex honors per_page=5 and never returns more than its documented per_page
+   ceiling (200) in a single data.results array."
+  -> External-service guarantee. Not executable in-sandbox. Blocker: requires live
+     OpenAlex API responses (and their documented contract) which are not reachable
+     from the review sandbox. Per code-fact-check mandatory-execution rule this caps at
+     Unverifiable; static reading cannot promote it to Verified.

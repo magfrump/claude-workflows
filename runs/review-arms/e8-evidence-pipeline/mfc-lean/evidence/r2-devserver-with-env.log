@@ -1,0 +1,425 @@
+[1m[38;2;173;127;168m▲ Next.js 16.2.4[39m[22m (Turbopack)
+- Local:         http://localhost:4460
+- Network:       http://172.17.0.2:4460
+[32m[1m✓[22m[39m Ready in 373ms
+[33m[1m⚠[22m[39m Warning: Next.js inferred your workspace root, but it may not be correct.
+ We detected multiple lockfiles and selected the directory of /workspace/pnpm-lock.yaml as the root directory.
+ To silence this warning, set `turbopack.root` in your Next.js config, or consider removing one of the lockfiles if it's not needed.
+   See https://nextjs.org/docs/app/api-reference/config/next-config-js/turbopack#root-directory for more information.
+ Detected additional lockfiles: 
+   * /workspace/external/cc-review-eval/mfc-lean/package-lock.json
+   * /workspace/external/pnpm-lock.yaml
+
+[35m[1mAttention[22m[39m: Next.js now collects completely anonymous telemetry regarding usage.
+This information is used to shape Next.js' roadmap and prioritize features.
+You can learn more, including how to opt-out if you'd not like to participate in this anonymous program, by visiting the following URL:
+[36mhttps://nextjs.org/telemetry[39m
+
+
+[37m[1m○[22m[39m Compiling / ...
+[33m[1m⚠[22m[39m [next]/internal/font/google/eb_garamond_bd3c8b54.module.css
+Error while requesting resource
+There was an issue establishing a connection while requesting [32mhttps://fonts.googleapis.com/css2?family=EB+Garamond:wght@400..800&display=swap[39m
+
+Import trace:
+  Server Component:
+    [next]/internal/font/google/eb_garamond_bd3c8b54.module.css
+    [next]/internal/font/google/eb_garamond_bd3c8b54.js
+    ./external/cc-review-eval/mfc-lean/app/layout.tsx
+
+
+[33m[1m⚠[22m[39m [next]/internal/font/google/geist_mono_8d43a2aa.module.css
+Error while requesting resource
+There was an issue establishing a connection while requesting [32mhttps://fonts.googleapis.com/css2?family=Geist+Mono:wght@100..900&display=swap[39m
+
+Import trace:
+  Server Component:
+    [next]/internal/font/google/geist_mono_8d43a2aa.module.css
+    [next]/internal/font/google/geist_mono_8d43a2aa.js
+    ./external/cc-review-eval/mfc-lean/app/layout.tsx
+
+
+[33m[1m⚠[22m[39m [next]/internal/font/google/eb_garamond_bd3c8b54.module.css
+[32mnext/font:[39m warning:
+Failed to download `EB Garamond` from Google Fonts. Using fallback font instead.
+
+Import trace:
+  Server Component:
+    [next]/internal/font/google/eb_garamond_bd3c8b54.module.css
+    [next]/internal/font/google/eb_garamond_bd3c8b54.js
+    ./external/cc-review-eval/mfc-lean/app/layout.tsx
+
+
+[33m[1m⚠[22m[39m [next]/internal/font/google/geist_mono_8d43a2aa.module.css
+[32mnext/font:[39m warning:
+Failed to download `Geist Mono` from Google Fonts. Using fallback font instead.
+
+Import trace:
+  Server Component:
+    [next]/internal/font/google/geist_mono_8d43a2aa.module.css
+    [next]/internal/font/google/geist_mono_8d43a2aa.js
+    ./external/cc-review-eval/mfc-lean/app/layout.tsx
+
+
+ GET / [32m200[39m in 4.7s[2m (next.js: 4.3s, application-code: 363ms)[22m
+[33m[1m⚠[22m[39m [next]/internal/font/google/eb_garamond_bd3c8b54.module.css
+Error while requesting resource
+There was an issue establishing a connection while requesting [32mhttps://fonts.googleapis.com/css2?family=EB+Garamond:wght@400..800&display=swap[39m
+
+Import trace:
+  Server Component:
+    [next]/internal/font/google/eb_garamond_bd3c8b54.module.css
+    [next]/internal/font/google/eb_garamond_bd3c8b54.js
+    ./external/cc-review-eval/mfc-lean/app/layout.tsx
+
+
+[33m[1m⚠[22m[39m [next]/internal/font/google/geist_mono_8d43a2aa.module.css
+Error while requesting resource
+There was an issue establishing a connection while requesting [32mhttps://fonts.googleapis.com/css2?family=Geist+Mono:wght@100..900&display=swap[39m
+
+Import trace:
+  Server Component:
+    [next]/internal/font/google/geist_mono_8d43a2aa.module.css
+    [next]/internal/font/google/geist_mono_8d43a2aa.js
+    ./external/cc-review-eval/mfc-lean/app/layout.tsx
+
+
+[33m[1m⚠[22m[39m [next]/internal/font/google/eb_garamond_bd3c8b54.module.css
+[32mnext/font:[39m warning:
+Failed to download `EB Garamond` from Google Fonts. Using fallback font instead.
+
+Import trace:
+  Server Component:
+    [next]/internal/font/google/eb_garamond_bd3c8b54.module.css
+    [next]/internal/font/google/eb_garamond_bd3c8b54.js
+    ./external/cc-review-eval/mfc-lean/app/layout.tsx
+
+
+[33m[1m⚠[22m[39m [next]/internal/font/google/geist_mono_8d43a2aa.module.css
+[32mnext/font:[39m warning:
+Failed to download `Geist Mono` from Google Fonts. Using fallback font instead.
+
+Import trace:
+  Server Component:
+    [next]/internal/font/google/geist_mono_8d43a2aa.module.css
+    [next]/internal/font/google/geist_mono_8d43a2aa.js
+    ./external/cc-review-eval/mfc-lean/app/layout.tsx
+
+
+ POST /api/verification/lean [32m200[39m in 267ms[2m (next.js: 241ms, application-code: 26ms)[22m
+[33m[1m⚠[22m[39m [next]/internal/font/google/eb_garamond_bd3c8b54.module.css
+Error while requesting resource
+There was an issue establishing a connection while requesting [32mhttps://fonts.googleapis.com/css2?family=EB+Garamond:wght@400..800&display=swap[39m
+
+Import trace:
+  Server Component:
+    [next]/internal/font/google/eb_garamond_bd3c8b54.module.css
+    [next]/internal/font/google/eb_garamond_bd3c8b54.js
+    ./external/cc-review-eval/mfc-lean/app/layout.tsx
+
+
+[33m[1m⚠[22m[39m [next]/internal/font/google/geist_mono_8d43a2aa.module.css
+Error while requesting resource
+There was an issue establishing a connection while requesting [32mhttps://fonts.googleapis.com/css2?family=Geist+Mono:wght@100..900&display=swap[39m
+
+Import trace:
+  Server Component:
+    [next]/internal/font/google/geist_mono_8d43a2aa.module.css
+    [next]/internal/font/google/geist_mono_8d43a2aa.js
+    ./external/cc-review-eval/mfc-lean/app/layout.tsx
+
+
+[33m[1m⚠[22m[39m [next]/internal/font/google/eb_garamond_bd3c8b54.module.css
+[32mnext/font:[39m warning:
+Failed to download `EB Garamond` from Google Fonts. Using fallback font instead.
+
+Import trace:
+  Server Component:
+    [next]/internal/font/google/eb_garamond_bd3c8b54.module.css
+    [next]/internal/font/google/eb_garamond_bd3c8b54.js
+    ./external/cc-review-eval/mfc-lean/app/layout.tsx
+
+
+[33m[1m⚠[22m[39m [next]/internal/font/google/geist_mono_8d43a2aa.module.css
+[32mnext/font:[39m warning:
+Failed to download `Geist Mono` from Google Fonts. Using fallback font instead.
+
+Import trace:
+  Server Component:
+    [next]/internal/font/google/geist_mono_8d43a2aa.module.css
+    [next]/internal/font/google/geist_mono_8d43a2aa.js
+    ./external/cc-review-eval/mfc-lean/app/layout.tsx
+
+
+ POST /api/verification/lean [32m200[39m in 13ms[2m (next.js: 6ms, application-code: 7ms)[22m
+[33m[1m⚠[22m[39m [next]/internal/font/google/eb_garamond_bd3c8b54.module.css
+Error while requesting resource
+There was an issue establishing a connection while requesting [32mhttps://fonts.googleapis.com/css2?family=EB+Garamond:wght@400..800&display=swap[39m
+
+Import trace:
+  Server Component:
+    [next]/internal/font/google/eb_garamond_bd3c8b54.module.css
+    [next]/internal/font/google/eb_garamond_bd3c8b54.js
+    ./external/cc-review-eval/mfc-lean/app/layout.tsx
+
+
+[33m[1m⚠[22m[39m [next]/internal/font/google/geist_mono_8d43a2aa.module.css
+Error while requesting resource
+There was an issue establishing a connection while requesting [32mhttps://fonts.googleapis.com/css2?family=Geist+Mono:wght@100..900&display=swap[39m
+
+Import trace:
+  Server Component:
+    [next]/internal/font/google/geist_mono_8d43a2aa.module.css
+    [next]/internal/font/google/geist_mono_8d43a2aa.js
+    ./external/cc-review-eval/mfc-lean/app/layout.tsx
+
+
+[33m[1m⚠[22m[39m [next]/internal/font/google/eb_garamond_bd3c8b54.module.css
+[32mnext/font:[39m warning:
+Failed to download `EB Garamond` from Google Fonts. Using fallback font instead.
+
+Import trace:
+  Server Component:
+    [next]/internal/font/google/eb_garamond_bd3c8b54.module.css
+    [next]/internal/font/google/eb_garamond_bd3c8b54.js
+    ./external/cc-review-eval/mfc-lean/app/layout.tsx
+
+
+[33m[1m⚠[22m[39m [next]/internal/font/google/geist_mono_8d43a2aa.module.css
+[32mnext/font:[39m warning:
+Failed to download `Geist Mono` from Google Fonts. Using fallback font instead.
+
+Import trace:
+  Server Component:
+    [next]/internal/font/google/geist_mono_8d43a2aa.module.css
+    [next]/internal/font/google/geist_mono_8d43a2aa.js
+    ./external/cc-review-eval/mfc-lean/app/layout.tsx
+
+
+ POST /api/verification/lean [32m200[39m in 9ms[2m (next.js: 3ms, application-code: 6ms)[22m
+[33m[1m⚠[22m[39m [next]/internal/font/google/eb_garamond_bd3c8b54.module.css
+Error while requesting resource
+There was an issue establishing a connection while requesting [32mhttps://fonts.googleapis.com/css2?family=EB+Garamond:wght@400..800&display=swap[39m
+
+Import trace:
+  Server Component:
+    [next]/internal/font/google/eb_garamond_bd3c8b54.module.css
+    [next]/internal/font/google/eb_garamond_bd3c8b54.js
+    ./external/cc-review-eval/mfc-lean/app/layout.tsx
+
+
+[33m[1m⚠[22m[39m [next]/internal/font/google/geist_mono_8d43a2aa.module.css
+Error while requesting resource
+There was an issue establishing a connection while requesting [32mhttps://fonts.googleapis.com/css2?family=Geist+Mono:wght@100..900&display=swap[39m
+
+Import trace:
+  Server Component:
+    [next]/internal/font/google/geist_mono_8d43a2aa.module.css
+    [next]/internal/font/google/geist_mono_8d43a2aa.js
+    ./external/cc-review-eval/mfc-lean/app/layout.tsx
+
+
+[33m[1m⚠[22m[39m [next]/internal/font/google/eb_garamond_bd3c8b54.module.css
+[32mnext/font:[39m warning:
+Failed to download `EB Garamond` from Google Fonts. Using fallback font instead.
+
+Import trace:
+  Server Component:
+    [next]/internal/font/google/eb_garamond_bd3c8b54.module.css
+    [next]/internal/font/google/eb_garamond_bd3c8b54.js
+    ./external/cc-review-eval/mfc-lean/app/layout.tsx
+
+
+[33m[1m⚠[22m[39m [next]/internal/font/google/geist_mono_8d43a2aa.module.css
+[32mnext/font:[39m warning:
+Failed to download `Geist Mono` from Google Fonts. Using fallback font instead.
+
+Import trace:
+  Server Component:
+    [next]/internal/font/google/geist_mono_8d43a2aa.module.css
+    [next]/internal/font/google/geist_mono_8d43a2aa.js
+    ./external/cc-review-eval/mfc-lean/app/layout.tsx
+
+
+ POST /api/verification/lean [33m400[39m in 7ms[2m (next.js: 3ms, application-code: 4ms)[22m
+[33m[1m⚠[22m[39m [next]/internal/font/google/eb_garamond_bd3c8b54.module.css
+Error while requesting resource
+There was an issue establishing a connection while requesting [32mhttps://fonts.googleapis.com/css2?family=EB+Garamond:wght@400..800&display=swap[39m
+
+Import trace:
+  Server Component:
+    [next]/internal/font/google/eb_garamond_bd3c8b54.module.css
+    [next]/internal/font/google/eb_garamond_bd3c8b54.js
+    ./external/cc-review-eval/mfc-lean/app/layout.tsx
+
+
+[33m[1m⚠[22m[39m [next]/internal/font/google/geist_mono_8d43a2aa.module.css
+Error while requesting resource
+There was an issue establishing a connection while requesting [32mhttps://fonts.googleapis.com/css2?family=Geist+Mono:wght@100..900&display=swap[39m
+
+Import trace:
+  Server Component:
+    [next]/internal/font/google/geist_mono_8d43a2aa.module.css
+    [next]/internal/font/google/geist_mono_8d43a2aa.js
+    ./external/cc-review-eval/mfc-lean/app/layout.tsx
+
+
+[33m[1m⚠[22m[39m [next]/internal/font/google/eb_garamond_bd3c8b54.module.css
+[32mnext/font:[39m warning:
+Failed to download `EB Garamond` from Google Fonts. Using fallback font instead.
+
+Import trace:
+  Server Component:
+    [next]/internal/font/google/eb_garamond_bd3c8b54.module.css
+    [next]/internal/font/google/eb_garamond_bd3c8b54.js
+    ./external/cc-review-eval/mfc-lean/app/layout.tsx
+
+
+[33m[1m⚠[22m[39m [next]/internal/font/google/geist_mono_8d43a2aa.module.css
+[32mnext/font:[39m warning:
+Failed to download `Geist Mono` from Google Fonts. Using fallback font instead.
+
+Import trace:
+  Server Component:
+    [next]/internal/font/google/geist_mono_8d43a2aa.module.css
+    [next]/internal/font/google/geist_mono_8d43a2aa.js
+    ./external/cc-review-eval/mfc-lean/app/layout.tsx
+
+
+ POST /api/verification/lean [32m200[39m in 9ms[2m (next.js: 4ms, application-code: 5ms)[22m
+[33m[1m⚠[22m[39m [next]/internal/font/google/eb_garamond_bd3c8b54.module.css
+Error while requesting resource
+There was an issue establishing a connection while requesting [32mhttps://fonts.googleapis.com/css2?family=EB+Garamond:wght@400..800&display=swap[39m
+
+Import trace:
+  Server Component:
+    [next]/internal/font/google/eb_garamond_bd3c8b54.module.css
+    [next]/internal/font/google/eb_garamond_bd3c8b54.js
+    ./external/cc-review-eval/mfc-lean/app/layout.tsx
+
+
+[33m[1m⚠[22m[39m [next]/internal/font/google/geist_mono_8d43a2aa.module.css
+Error while requesting resource
+There was an issue establishing a connection while requesting [32mhttps://fonts.googleapis.com/css2?family=Geist+Mono:wght@100..900&display=swap[39m
+
+Import trace:
+  Server Component:
+    [next]/internal/font/google/geist_mono_8d43a2aa.module.css
+    [next]/internal/font/google/geist_mono_8d43a2aa.js
+    ./external/cc-review-eval/mfc-lean/app/layout.tsx
+
+
+[33m[1m⚠[22m[39m [next]/internal/font/google/eb_garamond_bd3c8b54.module.css
+[32mnext/font:[39m warning:
+Failed to download `EB Garamond` from Google Fonts. Using fallback font instead.
+
+Import trace:
+  Server Component:
+    [next]/internal/font/google/eb_garamond_bd3c8b54.module.css
+    [next]/internal/font/google/eb_garamond_bd3c8b54.js
+    ./external/cc-review-eval/mfc-lean/app/layout.tsx
+
+
+[33m[1m⚠[22m[39m [next]/internal/font/google/geist_mono_8d43a2aa.module.css
+[32mnext/font:[39m warning:
+Failed to download `Geist Mono` from Google Fonts. Using fallback font instead.
+
+Import trace:
+  Server Component:
+    [next]/internal/font/google/geist_mono_8d43a2aa.module.css
+    [next]/internal/font/google/geist_mono_8d43a2aa.js
+    ./external/cc-review-eval/mfc-lean/app/layout.tsx
+
+
+ POST /api/verification/lean [32m200[39m in 9ms[2m (next.js: 5ms, application-code: 4ms)[22m
+[33m[1m⚠[22m[39m [next]/internal/font/google/eb_garamond_bd3c8b54.module.css
+Error while requesting resource
+There was an issue establishing a connection while requesting [32mhttps://fonts.googleapis.com/css2?family=EB+Garamond:wght@400..800&display=swap[39m
+
+Import trace:
+  Server Component:
+    [next]/internal/font/google/eb_garamond_bd3c8b54.module.css
+    [next]/internal/font/google/eb_garamond_bd3c8b54.js
+    ./external/cc-review-eval/mfc-lean/app/layout.tsx
+
+
+[33m[1m⚠[22m[39m [next]/internal/font/google/geist_mono_8d43a2aa.module.css
+Error while requesting resource
+There was an issue establishing a connection while requesting [32mhttps://fonts.googleapis.com/css2?family=Geist+Mono:wght@100..900&display=swap[39m
+
+Import trace:
+  Server Component:
+    [next]/internal/font/google/geist_mono_8d43a2aa.module.css
+    [next]/internal/font/google/geist_mono_8d43a2aa.js
+    ./external/cc-review-eval/mfc-lean/app/layout.tsx
+
+
+[33m[1m⚠[22m[39m [next]/internal/font/google/eb_garamond_bd3c8b54.module.css
+[32mnext/font:[39m warning:
+Failed to download `EB Garamond` from Google Fonts. Using fallback font instead.
+
+Import trace:
+  Server Component:
+    [next]/internal/font/google/eb_garamond_bd3c8b54.module.css
+    [next]/internal/font/google/eb_garamond_bd3c8b54.js
+    ./external/cc-review-eval/mfc-lean/app/layout.tsx
+
+
+[33m[1m⚠[22m[39m [next]/internal/font/google/geist_mono_8d43a2aa.module.css
+[32mnext/font:[39m warning:
+Failed to download `Geist Mono` from Google Fonts. Using fallback font instead.
+
+Import trace:
+  Server Component:
+    [next]/internal/font/google/geist_mono_8d43a2aa.module.css
+    [next]/internal/font/google/geist_mono_8d43a2aa.js
+    ./external/cc-review-eval/mfc-lean/app/layout.tsx
+
+
+ POST /api/verification/lean [32m200[39m in 13ms[2m (next.js: 3ms, application-code: 11ms)[22m
+[33m[1m⚠[22m[39m [next]/internal/font/google/eb_garamond_bd3c8b54.module.css
+Error while requesting resource
+There was an issue establishing a connection while requesting [32mhttps://fonts.googleapis.com/css2?family=EB+Garamond:wght@400..800&display=swap[39m
+
+Import trace:
+  Server Component:
+    [next]/internal/font/google/eb_garamond_bd3c8b54.module.css
+    [next]/internal/font/google/eb_garamond_bd3c8b54.js
+    ./external/cc-review-eval/mfc-lean/app/layout.tsx
+
+
+[33m[1m⚠[22m[39m [next]/internal/font/google/geist_mono_8d43a2aa.module.css
+Error while requesting resource
+There was an issue establishing a connection while requesting [32mhttps://fonts.googleapis.com/css2?family=Geist+Mono:wght@100..900&display=swap[39m
+
+Import trace:
+  Server Component:
+    [next]/internal/font/google/geist_mono_8d43a2aa.module.css
+    [next]/internal/font/google/geist_mono_8d43a2aa.js
+    ./external/cc-review-eval/mfc-lean/app/layout.tsx
+
+
+[33m[1m⚠[22m[39m [next]/internal/font/google/eb_garamond_bd3c8b54.module.css
+[32mnext/font:[39m warning:
+Failed to download `EB Garamond` from Google Fonts. Using fallback font instead.
+
+Import trace:
+  Server Component:
+    [next]/internal/font/google/eb_garamond_bd3c8b54.module.css
+    [next]/internal/font/google/eb_garamond_bd3c8b54.js
+    ./external/cc-review-eval/mfc-lean/app/layout.tsx
+
+
+[33m[1m⚠[22m[39m [next]/internal/font/google/geist_mono_8d43a2aa.module.css
+[32mnext/font:[39m warning:
+Failed to download `Geist Mono` from Google Fonts. Using fallback font instead.
+
+Import trace:
+  Server Component:
+    [next]/internal/font/google/geist_mono_8d43a2aa.module.css
+    [next]/internal/font/google/geist_mono_8d43a2aa.js
+    ./external/cc-review-eval/mfc-lean/app/layout.tsx
+
+
+ POST /api/verification/lean [32m200[39m in 40ms[2m (next.js: 8ms, application-code: 32ms)[22m
+[?25h

@@ -1,0 +1,14 @@
+# r1 script-nonce audit over r1-curl-root-body.html (2026-08-18T06:32:40Z)
+$ grep -oP "<script[^>]*>" r1-curl-root-body.html | wc -l
+36
+$ grep -oP "<script[^>]*>" r1-curl-root-body.html | grep -vc "nonce=" (tags WITHOUT nonce)
+0
+$ CSP nonce from r1-curl-root-headers.txt:
+nonce-ZmMxYjM0ZTYtMWE2Mi00MWI3LWE0MTItNmZiNjFiZGYwODAx
+$ distinct nonce attr values in body:
+nonce="ZmMxYjM0ZTYtMWE2Mi00MWI3LWE0MTItNmZiNjFiZGYwODAx"
+$ style tags in body:
+0
+$ stylesheet links:
+<link rel="stylesheet" href="/_next/static/chunks/%5Broot-of-the-server%5D__0anae7b._.css" nonce="ZmMxYjM0ZTYtMWE2Mi00MWI3LWE0MTItNmZiNjFiZGYwODAx" data-precedence="next_static/chunks/[root-of-the-server]__0anae7b._.css"/>
+<link rel="stylesheet" href="/_next/static/chunks/12ib_reactflow_dist_style_0l7nx7e.css" nonce="ZmMxYjM0ZTYtMWE2Mi00MWI3LWE0MTItNmZiNjFiZGYwODAx" data-precedence="next_static/chunks/12ib_reactflow_dist_style_0l7nx7e.css"/>

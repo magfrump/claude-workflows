@@ -1,0 +1,29 @@
+2026-08-18T06:13:47Z
+cwd: /tmp/tmp.Hwb3CyAWFb (scratch, outside clone)
+cmd: npm install --package-lock-only --ignore-scripts && npm audit
+# npm audit report
+
+@xmldom/xmldom  <=0.8.12
+Severity: high
+xmldom: XML injection via unsafe CDATA serialization allows attacker-controlled markup insertion - https://github.com/advisories/GHSA-wh4c-j3r5-mjhp
+xmldom: Uncontrolled recursion in XML serialization leads to DoS - https://github.com/advisories/GHSA-2v35-w6hq-6mfw
+xmldom has XML injection through unvalidated DocumentType serialization - https://github.com/advisories/GHSA-f6ww-3ggp-fr8h
+xmldom has XML node injection through unvalidated processing instruction serialization - https://github.com/advisories/GHSA-x6wf-f3px-wcqx
+xmldom has XML node injection through unvalidated comment serialization - https://github.com/advisories/GHSA-j759-j44w-7fr8
+fix available via `npm audit fix --force`
+Will install @xmldom/xmldom@0.8.14, which is outside the stated dependency range
+node_modules/@xmldom/xmldom
+
+lodash  <=4.17.23
+Severity: high
+lodash vulnerable to Code Injection via `_.template` imports key names - https://github.com/advisories/GHSA-r5fr-rjxr-66jc
+lodash vulnerable to Prototype Pollution via array path bypass in `_.unset` and `_.omit` - https://github.com/advisories/GHSA-f23m-r3pf-42rh
+fix available via `npm audit fix --force`
+Will install lodash@4.18.1, which is outside the stated dependency range
+node_modules/lodash
+
+2 high severity vulnerabilities
+
+To address all issues, run:
+  npm audit fix --force
+exit: 1

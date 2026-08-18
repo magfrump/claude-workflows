@@ -1,0 +1,15 @@
+# E7: ANTHROPIC_API_KEY unset, OPENROUTER_API_KEY=sk-or-v1-fake... -> tests that the OpenRouter provider path (not mock) is selected
+cwd: /workspace/external/cc-review-eval/mfc-deploy (dev server: env -u ANTHROPIC_API_KEY OPENROUTER_API_KEY=sk-or-v1-fake-key-for-path-test npx next dev -p 3400)
+timestamp: 2026-08-18T06:17:20Z
+command: curl -s -w "
+HTTP %{http_code}" -X POST http://localhost:3400/api/edit/inline -H "Content-Type: application/json" -d {"fullText":"hello world","selection":{"start":0,"end":5,"text":"hello"},"instruction":"capitalize"}
+{"error":"OpenRouter API error: 401","details":"{\"error\":{\"message\":\"User not found.\",\"code\":401}}"}
+HTTP 502
+exit code: 0
+--- server log tail:
+    [next]/internal/font/google/geist_mono_8d43a2aa.js
+    ./external/cc-review-eval/mfc-deploy/app/layout.tsx
+
+
+[edit/inline] OpenRouter error: [33m401[39m {"error":{"message":"User not found.","code":401}}
+ POST /api/edit/inline [31m502[39m in 299ms[2m (next.js: 62ms, application-code: 237ms)[22m

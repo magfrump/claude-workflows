@@ -4,7 +4,8 @@ description: >
   Verify checkable claims in code comments, docstrings, commit messages, and project documentation
   against actual code behavior. This is the code analog of the prose `fact-check` skill: where
   `fact-check` checks essay claims against the world via web search, `code-fact-check` checks code
-  claims against the codebase via direct file reading. For every claim about what code does, how it
+  claims against the codebase via direct file reading — and, when a claim's subject is executable
+  in the review sandbox, by actually running it. For every claim about what code does, how it
   performs, or how it's structured, search the codebase for evidence and report findings with
   calibrated confidence. Produces a structured Markdown report. Use this skill when the user asks
   to "verify the comments", "check the docs against the code", "audit documentation accuracy",
@@ -17,7 +18,7 @@ when: User asks to verify comments, docs, docstrings, or commit messages against
 non-goals:
   - Not a code reviewer — do not assess code quality, suggest refactors, or judge architecture; sibling critics (security-reviewer, performance-reviewer, api-consistency-reviewer) own those concerns.
   - Not an intent reviewer — design rationale, TODO/HACK markers, license boilerplate, and comments that merely restate the code are not checkable claims; skip them rather than verdicting them.
-  - Not a runtime tester — claims that require runtime state, external systems, or domain expertise outside the codebase belong under the Unverifiable verdict, not Incorrect.
+  - Not a production tester — runtime verification IS in scope when the claim's subject is executable in the review sandbox (see "Verification mode"); claims requiring external systems, production state, or domain expertise outside the codebase remain Unverifiable, not Incorrect.
   - Not a comment editorialist — state what the code actually does (or what the precise version should say) without speculating on why the comment drifted or proposing stylistic rewrites.
 adaptation-latitude:
   - Trace depth scales with claim type — behavioral claims require reading the implementation end-to-end; configuration claims may need only a constant grep; staleness signals need only verifying the symbol still exists.
@@ -78,6 +79,13 @@ Not every comment needs checking. Focus on:
   "this is the only caller"
 - **Invariant claims** — "never null," "always positive," "thread-safe," "idempotent"
 - **Configuration claims** — "cache TTL is 5 minutes," "retries 3 times," "timeout after 30s"
+- **Implicit error-handling claims** — any comment or doc asserting an error is handled,
+  surfaced, sanitized, redacted, retried, or cached correctly ("errors are logged and
+  rethrown," "invalid input falls back to the cached value," "secrets are redacted before
+  logging"). These invite tracing the actual error path: follow the failure from where it is
+  raised to where it is observed, and answer "who observes this failure?" A handler that
+  swallows the error, or a sanitizer that some persistence path bypasses, refutes the claim
+  even though the happy path looks correct.
 - **Reference claims** — "see issue #1234," "added in PR #567," "workaround for [specific bug]"
 - **Staleness signals** — references to functions, classes, files, or variables that may no longer
   exist under that name. High-frequency stale-comment patterns to flag:
@@ -130,6 +138,10 @@ For every checkable claim:
      path violates the claimed invariant. Check tests for counterexamples.
    - **Configuration claims:** Read config files, constant definitions, or initialization code
      to verify specific values.
+   - **Implicit error-handling claims:** Trace the error path end-to-end — from where the
+     failure is raised to where it is caught, logged, retried, sanitized, or surfaced. Name
+     the observer. If the claimed handling is executable in the sandbox (e.g., a reproducible
+     failure input), prefer executing it (see "Verification mode" below).
    - **Reference claims:** Check if referenced issues, PRs, or files exist. For issue/PR
      references, verify they are accessible (use `gh` if available).
    - **Staleness signals:** Grep for the referenced symbol. Check if it was renamed or removed
@@ -148,9 +160,12 @@ For every checkable claim:
      actually does. A claim whose stated mechanism the code refutes is Incorrect (or Stale, if
      it was once true) even when its practical conclusion happens to hold — a reader acting on
      the mechanism is misled regardless of the conclusion.
-   - **Unverifiable** — Cannot determine accuracy from static analysis of the codebase alone.
-     The claim may require runtime testing, external system access, or domain expertise you
-     don't have. State what would be needed to verify it.
+   - **Unverifiable** — Cannot determine accuracy with the means available. The claim may
+     require external system access, production state, or domain expertise you don't have —
+     or it may be an executable guarantee you could not run (sandbox blocker, missing
+     dependencies): see "Verification mode" below for when execution is mandatory and static
+     reading caps the verdict here. State what would be needed to verify it, naming the
+     specific blocker if execution was required but blocked.
 
 4. **State your confidence level** (high, medium, low) and briefly say why.
    - **High confidence** — You read the implementation and the answer is clear.
@@ -184,6 +199,38 @@ For every checkable claim:
    The trailing `**Evidence:**` line still lists the file/line locations you
    consulted (for navigation), but it does not replace the in-prose quote-or-tag
    requirement.
+
+## Verification mode: static vs executed
+
+Every claim carries a required `**Verification mode:**` field, exactly one of:
+
+- **static** — the verdict rests on reading code, config, and history. This is the default
+  and remains sufficient for most claim types (architectural, staleness, configuration
+  constants, complexity analysis).
+- **executed** — the verdict rests, at least in part, on actually running something in the
+  review sandbox: a build, a lint, a test, a script, a reproduction.
+
+**Provenance requirements for `executed`.** An executed verdict must record: the exact
+command, the working directory it ran in, the exit code, and a timestamp. Raw output must be
+captured to a file (e.g., under `docs/reviews/execution-logs/`) and referenced from the claim's
+`**Evidence:**` line — prose like "(no output — exit 0)" is never acceptable provenance; the
+reader must be able to open the captured output. When execution consults a time-varying input
+(an advisory database, a package registry, a network service), name it with an as-of timestamp
+and add a staleness note to the verdict ("true as of the audit DB at <time>").
+
+**Mandatory-execution rule.** A claim whose subject is an *executable guarantee* — a CI/lint/
+build command behaving some way, a gate or script passing, a documented dev workflow
+functioning, an env-var default's runtime effect, a documented reproduction — MUST be executed
+when the sandbox permits. From static reading alone, such a claim's verdict is capped at
+**Unverifiable** (with "execution required" as the stated blocker) — it can never be
+`Verified` without running it. If execution is blocked (no network access, missing
+dependencies, sandbox restrictions), the verdict stays Unverifiable and the explanation names
+the specific blocker.
+
+**Execution depth scales with claim criticality** (per the adaptation-latitude clause):
+gates, builds, and lints are cheap — run them; full environment simulations are reserved for
+claims whose falsity would be blocking-grade. Claims requiring external systems or production
+state remain Unverifiable regardless of effort spent.
 
 ## How to handle degenerate input
 
@@ -226,7 +273,7 @@ claims**, never to the sentence as a whole (decision 033):
 
 - **Split on verdict divergence.** If the parts of a compound claim would earn different
   verdicts, split it into sub-claims — `## Claim 7a:`, `## Claim 7b:` — each with the full
-  five mandatory fields. Do NOT split a claim whose parts all earn the same verdict;
+  seven mandatory fields. Do NOT split a claim whose parts all earn the same verdict;
   atomizing agreeing parts is noise.
 - **Most-severe part wins when you don't split.** If splitting is impractical (the parts
   are inseparable in context), the compound claim takes the verdict of its **most severe
@@ -243,6 +290,20 @@ default and can reach a real service; a reader acting on this — e.g. relying o
 behavior in tests, or debugging why verification is real — is misled); Claim Nb
 *"unreachable → falls back to a mock"* is **Verified**. The refuted mechanism keeps its
 blocking-grade verdict instead of being absorbed by the true half.
+
+## Submitted claims: verdicting critic endorsements
+
+Besides claims harvested from comments and docs, you may receive **submitted claims**: critic
+agents (e.g., `security-reviewer`, `performance-reviewer`) may submit their would-be positive
+endorsements — "What Looks Good" assertions they would otherwise self-certify — for
+verification. The orchestrator (or user) supplies these as a list, each with the submitting
+critic's name and the assertion text.
+
+Verdict submitted claims under exactly the same rules as harvested claims: same verdicts, same
+evidence discipline, same verification-mode requirements — including the mandatory-execution
+rule where the assertion is an executable guarantee. Report them in a distinct
+`## Submitted Claims` section (see "Output format") so the orchestrator can map each verdict
+back to the critic that submitted it. If no claims were submitted, omit the section entirely.
 
 ## Output format
 
@@ -267,6 +328,8 @@ formatting.
 **Type:** Behavioral
 **Verdict:** Mostly accurate
 **Confidence:** High
+**Verification mode:** static
+**Scope:** Covers the missing-user and parse-error return branches of `getUserProfile`; does not establish behavior of failures raised inside `user.profile` accessors or callers' handling of the `undefined` return.
 
 The function returns `undefined`, not `null`, on the missing-user branch:
 
@@ -307,10 +370,18 @@ Required structure rules:
   Sub-claims split from a compound claim (see "Compound claims" above) use `## Claim Na:`,
   `## Claim Nb:` immediately after their shared number's position, each carrying the full set
   of mandatory fields below.
-- Within each claim, the five fields `**Location:**`, `**Type:**`, `**Verdict:**`,
-  `**Confidence:**`, `**Evidence:**` are mandatory and use the exact spelling above.
+- Within each claim, the seven fields `**Location:**`, `**Type:**`, `**Verdict:**`,
+  `**Confidence:**`, `**Verification mode:**`, `**Scope:**`, `**Evidence:**` are mandatory
+  and use the exact spelling above.
+- `Verification mode` must be exactly one of: static, executed. An `executed` claim must
+  carry the full provenance required by the "Verification mode" section (exact command, cwd,
+  exit code, timestamp, and a captured-output file referenced from `**Evidence:**`).
+- The per-claim `Scope` field is one sentence stating what the verdict covers AND what it
+  does not establish (e.g., "covers the sanitizer's mapping table; does not establish that
+  all persistence paths invoke the sanitizer"). It is distinct from the header-level
+  `**Scope:**` field, which describes the files checked.
 - `Type` must be one of: Behavioral, Performance, Architectural, Invariant, Configuration,
-  Reference, Staleness. Compound types are allowed when a claim genuinely spans categories
+  Error-handling, Reference, Staleness. Compound types are allowed when a claim genuinely spans categories
   (e.g., `Reference / Architectural`) — separate parts with ` / ` so each is a valid type.
 - `Verdict` must be exactly one of: Verified, Mostly accurate, Stale, Incorrect, Unverifiable.
   Do not borrow verdicts from the prose `fact-check` skill (Accurate, Disputed, Inaccurate,
@@ -318,7 +389,8 @@ Required structure rules:
 - `Confidence` must be exactly one of: High, Medium, Low.
 - `Location` and `Evidence` must use `path/to/file.ext:line` format (with optional line ranges
   like `:15-30`) so a reader can jump directly to the cited code. Pure Reference claims may cite
-  bare paths or external locators if there is no in-file line to point at.
+  bare paths or external locators if there is no in-file line to point at; executed claims may
+  additionally cite their captured-output file as a bare path.
 - **Quoted-evidence-or-paraphrase rule.** Every factual assertion in the per-claim
   prose explanation must be backed by either (a) an inline quoted code snippet
   from the source file with a `path:line` (or `path:line-line`) reference, or
@@ -332,6 +404,22 @@ Required structure rules:
   navigation aid and does not satisfy this rule on its own.
 
 Order claims by file path, then by line number within each file. Number them sequentially.
+
+If claims were submitted by critics (see "Submitted claims" above), report them after the
+harvested claims in a distinct section so the orchestrator can map verdicts back to the
+submitting critic. Each entry carries the same seven mandatory fields, plus a
+`**Submitted by:**` line naming the critic; continue the sequential numbering, and use the
+submitting critic's cited location (or the assertion's subject) for `**Location:**`:
+
+```
+## Submitted Claims
+
+## Claim N: "[assertion as submitted]"
+
+**Submitted by:** security-reviewer
+**Location:** `path/to/file.ext:line`
+...
+```
 
 At the end, include a summary section:
 

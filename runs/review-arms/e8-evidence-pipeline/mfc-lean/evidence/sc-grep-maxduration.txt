@@ -1,0 +1,16 @@
+# sc- grep: maxDuration / vercel config presence — cwd /workspace/external/cc-review-eval/mfc-lean — commit c95c9cb — 2026-08-18T06:42:58Z
+$ rg -n "maxDuration" --hidden -g "!node_modules" -g "!.git" .
+exit: 1
+$ ls vercel.json
+ls: cannot access 'vercel.json': No such file or directory
+exit: 2
+$ rg -n "export const (config|runtime|maxDuration|dynamic)" app/
+exit: 1
+$ cat next.config.ts
+import type { NextConfig } from "next";
+
+const nextConfig: NextConfig = {
+  /* config options here */
+};
+
+export default nextConfig;

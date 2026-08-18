@@ -1,0 +1,16 @@
+style-attr check ts=2026-08-18T06:32:41Z
+--- dev html style= attrs (first 5):
+style="font-family:var(--font-serif, &#x27;EB Garamond&#x27;, serif)"
+style="width:var(--rail-width);background:var(--rail-bg)"
+style="line-height:1.7;caret-color:#000000"
+style="line-height:1.7;caret-color:#000000"
+count:
+4
+--- prod html style= attr count:
+4
+--- prod stylesheet links:
+<link rel="stylesheet" href="/_next/static/chunks/0qqafo8jts909.css" nonce="NzhmNmUwMjEtNWM5Zi00Nzk1LWIzMTgtNzhmODZkOGZkM2M1" data-precedence="next"/>
+<link rel="stylesheet" href="/_next/static/chunks/145o.lsi86g0w.css" nonce="NzhmNmUwMjEtNWM5Zi00Nzk1LWIzMTgtNzhmODZkOGZkM2M1" data-precedence="next"/>
+<link rel="stylesheet" href="/_next/static/chunks/120975cjlqy-s.css" nonce="NzhmNmUwMjEtNWM5Zi00Nzk1LWIzMTgtNzhmODZkOGZkM2M1" data-precedence="next"/>
+--- prod style element count:
+0

@@ -1,0 +1,93 @@
+Error: Invalid package config /workspace/external/package.json while importing /workspace/external/cc-review-eval/mfc-lean. Unexpected end of JSON input
+    at __node_internal_ [90m(file:///workspace/external/cc-review-eval/mfc-lean/[39mnode_modules/[4mvitest[24m/dist/chunks/index.BCY_7LL2.js:461:11[90m)[39m
+    at new NodeError [90m(file:///workspace/external/cc-review-eval/mfc-lean/[39mnode_modules/[4mvitest[24m/dist/chunks/index.BCY_7LL2.js:405:5[90m)[39m
+    at read [90m(file:///workspace/external/cc-review-eval/mfc-lean/[39mnode_modules/[4mvitest[24m/dist/chunks/index.BCY_7LL2.js:592:21[90m)[39m
+    at getPackageScopeConfig [90m(file:///workspace/external/cc-review-eval/mfc-lean/[39mnode_modules/[4mvitest[24m/dist/chunks/index.BCY_7LL2.js:655:27[90m)[39m
+[90m    ... 6 lines matching cause stack trace ...[39m
+    at _resolve [90m(file:///workspace/external/cc-review-eval/mfc-lean/[39mnode_modules/[4mvitest[24m/dist/chunks/index.BCY_7LL2.js:2252:22[90m)[39m
+    at resolvePackage [90m(file:///workspace/external/cc-review-eval/mfc-lean/[39mnode_modules/[4mvitest[24m/dist/chunks/index.BCY_7LL2.js:2299:12[90m)[39m
+    at isPackageExists [90m(file:///workspace/external/cc-review-eval/mfc-lean/[39mnode_modules/[4mvitest[24m/dist/chunks/index.BCY_7LL2.js:2267:12[90m)[39m
+    at VitestPackageInstaller.ensureInstalled [90m(file:///workspace/external/cc-review-eval/mfc-lean/[39mnode_modules/[4mvitest[24m/dist/chunks/cli-api.Cjt90eJu.js:2322:23[90m)[39m
+    at prepareVitest [90m(file:///workspace/external/cc-review-eval/mfc-lean/[39mnode_modules/[4mvitest[24m/dist/chunks/cli-api.Cjt90eJu.js:14574:56[90m)[39m
+    at startVitest [90m(file:///workspace/external/cc-review-eval/mfc-lean/[39mnode_modules/[4mvitest[24m/dist/chunks/cli-api.Cjt90eJu.js:14515:14[90m)[39m
+    at start [90m(file:///workspace/external/cc-review-eval/mfc-lean/[39mnode_modules/[4mvitest[24m/dist/chunks/cac.DJJmV0dT.js:2340:15[90m)[39m
+    at CAC.run [90m(file:///workspace/external/cc-review-eval/mfc-lean/[39mnode_modules/[4mvitest[24m/dist/chunks/cac.DJJmV0dT.js:2318:2[90m)[39m {
+  code: [32m'ERR_INVALID_PACKAGE_CONFIG'[39m,
+  cause: SyntaxError: Unexpected end of JSON input
+      at JSON.parse (<anonymous>)
+      at read [90m(file:///workspace/external/cc-review-eval/mfc-lean/[39mnode_modules/[4mvitest[24m/dist/chunks/index.BCY_7LL2.js:589:21[90m)[39m
+      at getPackageScopeConfig [90m(file:///workspace/external/cc-review-eval/mfc-lean/[39mnode_modules/[4mvitest[24m/dist/chunks/index.BCY_7LL2.js:655:27[90m)[39m
+      at packageResolve [90m(file:///workspace/external/cc-review-eval/mfc-lean/[39mnode_modules/[4mvitest[24m/dist/chunks/index.BCY_7LL2.js:1805:25[90m)[39m
+      at moduleResolve [90m(file:///workspace/external/cc-review-eval/mfc-lean/[39mnode_modules/[4mvitest[24m/dist/chunks/index.BCY_7LL2.js:1945:18[90m)[39m
+      at _tryModuleResolve [90m(file:///workspace/external/cc-review-eval/mfc-lean/[39mnode_modules/[4mvitest[24m/dist/chunks/index.BCY_7LL2.js:1990:12[90m)[39m
+      at _resolve$1 [90m(file:///workspace/external/cc-review-eval/mfc-lean/[39mnode_modules/[4mvitest[24m/dist/chunks/index.BCY_7LL2.js:2045:16[90m)[39m
+      at resolveSync [90m(file:///workspace/external/cc-review-eval/mfc-lean/[39mnode_modules/[4mvitest[24m/dist/chunks/index.BCY_7LL2.js:2078:10[90m)[39m
+      at resolvePathSync [90m(file:///workspace/external/cc-review-eval/mfc-lean/[39mnode_modules/[4mvitest[24m/dist/chunks/index.BCY_7LL2.js:2081:24[90m)[39m
+      at _resolve [90m(file:///workspace/external/cc-review-eval/mfc-lean/[39mnode_modules/[4mvitest[24m/dist/chunks/index.BCY_7LL2.js:2252:22[90m)[39m
+}
+ MISSING DEPENDENCY  Cannot find dependency 'jsdom'
+
+
+ RUN  v4.1.5 /workspace/external/cc-review-eval/mfc-lean
+
+ ✓ app/lib/utils/workspacePersistence.test.ts > sanitizeVerificationStatus > passes through 'valid' 3ms
+ ✓ app/lib/utils/workspacePersistence.test.ts > sanitizeVerificationStatus > passes through 'invalid' 0ms
+ ✓ app/lib/utils/workspacePersistence.test.ts > sanitizeVerificationStatus > passes through 'none' 0ms
+ ✓ app/lib/utils/workspacePersistence.test.ts > sanitizeVerificationStatus > maps 'verifying' to 'none' 0ms
+ ✓ app/lib/utils/workspacePersistence.test.ts > sanitizeVerificationStatus > maps 'unavailable' to 'none' (transient verifier-state, not artifact-state) 0ms
+ ✓ app/lib/utils/workspacePersistence.test.ts > sanitizeVerificationStatus > maps unknown strings to 'none' 0ms
+ ✓ app/lib/utils/workspacePersistence.test.ts > sanitizeNodeStatus > passes through 'unverified' 0ms
+ ✓ app/lib/utils/workspacePersistence.test.ts > sanitizeNodeStatus > passes through 'verified' 0ms
+ ✓ app/lib/utils/workspacePersistence.test.ts > sanitizeNodeStatus > passes through 'failed' 0ms
+ ✓ app/lib/utils/workspacePersistence.test.ts > sanitizeNodeStatus > maps 'in-progress' to 'unverified' 0ms
+ ✓ app/lib/utils/workspacePersistence.test.ts > sanitizeNodeStatus > maps unknown strings to 'unverified' 0ms
+ ✓ app/lib/utils/workspacePersistence.test.ts > saveWorkspace > writes JSON to localStorage and returns true 2ms
+ ✓ app/lib/utils/workspacePersistence.test.ts > saveWorkspace > sanitizes 'verifying' status to 'none' 1ms
+ ✓ app/lib/utils/workspacePersistence.test.ts > saveWorkspace > sanitizes node 'in-progress' status to 'unverified' 1ms
+ ✓ app/lib/utils/workspacePersistence.test.ts > saveWorkspace > returns false on quota error 2ms
+ ✓ app/lib/utils/workspacePersistence.test.ts > loadWorkspace > returns null when localStorage is empty 1ms
+ ✓ app/lib/utils/workspacePersistence.test.ts > loadWorkspace > returns null for wrong version 0ms
+ ✓ app/lib/utils/workspacePersistence.test.ts > loadWorkspace > returns null for malformed JSON 0ms
+ ✓ app/lib/utils/workspacePersistence.test.ts > loadWorkspace > restores valid data correctly 2ms
+ ✓ app/lib/utils/workspacePersistence.test.ts > loadWorkspace > provides defaults for missing fields 1ms
+ ✓ app/lib/utils/workspacePersistence.test.ts > loadWorkspace > sanitizes 'verifying' to 'none' on load 0ms
+ ✓ app/lib/utils/workspacePersistence.test.ts > loadWorkspace > sanitizes node 'in-progress' to 'unverified' on load 0ms
+ ✓ app/lib/utils/workspacePersistence.test.ts > loadWorkspace > returns null for version 1 data (no longer accepted at v2 key) 0ms
+ ✓ app/lib/utils/workspacePersistence.test.ts > migrateV1Workspace > migrates v1 data to v2 key when no v2 data exists 1ms
+ ✓ app/lib/utils/workspacePersistence.test.ts > migrateV1Workspace > discards v1 data if v2 data already exists 0ms
+ ✓ app/lib/utils/workspacePersistence.test.ts > migrateV1Workspace > does nothing when no v1 data exists 0ms
+ ✓ app/lib/utils/workspacePersistence.test.ts > migrateV1Workspace > loadWorkspace integrates migration — v1 data becomes loadable 0ms
+ ✓ app/components/features/lean-display/LeanCodeDisplay.test.tsx > LeanCodeDisplay > renders code in a pre element in rendered mode 52ms
+ ✓ app/components/features/lean-display/LeanCodeDisplay.test.tsx > LeanCodeDisplay > shows the Edit button when code is present 9ms
+ ✓ app/components/features/lean-display/LeanCodeDisplay.test.tsx > LeanCodeDisplay > does not show Edit button when code is empty 5ms
+ ✓ app/components/panels/OutputPanel.test.tsx > OutputPanel > renders the Semiformal Proof heading 44ms
+ ✓ app/components/panels/OutputPanel.test.tsx > OutputPanel > does not show the Lean4 section when there is no lean code and phase is idle 8ms
+ ✓ app/components/panels/OutputPanel.test.tsx > OutputPanel > shows the Lean4 section when lean code is present 10ms
+ ✓ app/components/panels/OutputPanel.test.tsx > OutputPanel > shows the Lean4 section during lean loading phase even without code 7ms
+ ✓ app/components/panels/OutputPanel.test.tsx > OutputPanel > shows WholeTextEditBar when semiformal text exists 5ms
+ ✓ app/components/panels/OutputPanel.test.tsx > OutputPanel > hides WholeTextEditBar when semiformal text is empty 4ms
+ ✓ app/components/panels/OutputPanel.test.tsx > OutputPanel > shows "Applying edit..." during an edit operation 168ms
+ ✓ app/components/panels/OutputPanel.test.tsx > OutputPanel > VerificationBadge > shows "Verifying..." for verifying status 5ms
+ ✓ app/components/panels/OutputPanel.test.tsx > OutputPanel > VerificationBadge > shows "Verified" for valid status 6ms
+ ✓ app/components/panels/OutputPanel.test.tsx > OutputPanel > VerificationBadge > shows "Verification Failed" for invalid status 6ms
+ ✓ app/components/panels/OutputPanel.test.tsx > OutputPanel > VerificationBadge > shows "Verifier offline" for unavailable status (not a passing badge) 6ms
+ ✓ app/components/panels/OutputPanel.test.tsx > OutputPanel > VerificationBadge > shows nothing for none status 6ms
+ ✓ app/components/features/lean-display/LeanCodeDisplay.test.tsx > LeanCodeDisplay > switches to raw editing mode when Edit is clicked 186ms
+ ✓ app/components/features/lean-display/LeanCodeDisplay.test.tsx > LeanCodeDisplay > calls onCodeChange with local edits when Done is clicked 165ms
+ ✓ app/components/features/lean-display/LeanCodeDisplay.test.tsx > LeanCodeDisplay > shows verification errors when status is invalid 10ms
+ ✓ app/components/features/lean-display/LeanCodeDisplay.test.tsx > LeanCodeDisplay > shows the verifier-offline banner when status is unavailable 9ms
+ ✓ app/components/features/lean-display/LeanCodeDisplay.test.tsx > LeanCodeDisplay > shows Re-verify button when status is unavailable 7ms
+ ✓ app/components/features/lean-display/LeanCodeDisplay.test.tsx > LeanCodeDisplay > shows code metrics when verification is invalid 7ms
+ ✓ app/components/features/lean-display/LeanCodeDisplay.test.tsx > LeanCodeDisplay > shows Re-verify button on invalid status 7ms
+ ✓ app/components/features/lean-display/LeanCodeDisplay.test.tsx > LeanCodeDisplay > calls onReVerify when Re-verify is clicked 31ms
+ ✓ app/components/features/lean-display/LeanCodeDisplay.test.tsx > LeanCodeDisplay > disables Re-verify when iterating 9ms
+ ✓ app/components/features/lean-display/LeanCodeDisplay.test.tsx > LeanCodeDisplay > shows the iteration bar when code is present 6ms
+ ✓ app/components/features/lean-display/LeanCodeDisplay.test.tsx > LeanCodeDisplay > calls onIterate when instruction is submitted 83ms
+ ✓ app/components/features/lean-display/LeanCodeDisplay.test.tsx > LeanCodeDisplay > disables iteration input when iterating 5ms
+ ✓ app/components/features/lean-display/LeanCodeDisplay.test.tsx > LeanCodeDisplay > shows "Iterating…" placeholder when iterating 5ms
+
+ Test Files  3 passed (3)
+      Tests  55 passed (55)
+   Start at  23:22:51
+   Duration  1.76s (transform 423ms, setup 305ms, import 881ms, tests 903ms, environment 1.67s)
+

@@ -1,0 +1,6 @@
+# E8: Deploy-button repository-url reference — does github.com/aditya-adiga/meta-formalism-copilot exist?
+cwd: /workspace/external/cc-review-eval/mfc-deploy
+timestamp: 2026-08-18T06:18:39Z
+command: curl -sI https://github.com/aditya-adiga/meta-formalism-copilot -o /dev/null -w %{http_code}
+200
+exit code: 0

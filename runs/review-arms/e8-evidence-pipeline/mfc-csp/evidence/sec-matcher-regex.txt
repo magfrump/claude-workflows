@@ -1,0 +1,13 @@
+MATCH  (gets CSP)   /   <- page root
+MATCH  (gets CSP)   /dashboard   <- normal page
+SKIP   (NO CSP)     /api/analytics   <- api route (intended-exclude)
+SKIP   (NO CSP)     /_next/static/chunk.js   <- static asset (intended-exclude)
+SKIP   (NO CSP)     /favicon.ico   <- favicon (intended-exclude)
+SKIP   (NO CSP)     /apidocs   <- PAGE whose name starts with api
+SKIP   (NO CSP)     /api-keys   <- PAGE named api-keys
+SKIP   (NO CSP)     /apikey-help   <- PAGE apikey-help
+SKIP   (NO CSP)     /_next/staticx   <- path _next/staticx
+SKIP   (NO CSP)     /favicon.icoX   <- favicon.icoX (dot is any-char)
+SKIP   (NO CSP)     /faviconXico   <- faviconXico (unescaped dot)
+MATCH  (gets CSP)   /API/analytics   <- uppercase API route
+MATCH  (gets CSP)   /settings/apidata   <- api as non-leading segment

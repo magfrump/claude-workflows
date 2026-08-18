@@ -1,0 +1,6 @@
+# E2: LEAN_VERIFIER_URL unset, stub verifier listening on localhost:3100 -> tests whether unset means mock or default-URL passthrough
+cwd: /workspace/external/cc-review-eval/mfc-deploy (same dev server as E1, env unset; stub: node http server on :3100 returning {valid:false,errors:"stub-verifier-real-response"})
+timestamp: 2026-08-18T06:14:24Z
+command: curl -s -X POST http://localhost:3400/api/verification/lean -H "Content-Type: application/json" -d {"leanCode":"theorem t : True := trivial"}
+{"valid":false,"errors":"stub-verifier-real-response","url":"/verify"}
+exit code: 0

@@ -1,0 +1,15 @@
+
+ RUN  v4.1.5 /workspace/external/cc-review-eval/mfc-hygiene
+
+ ✓ app/lib/llm/r2-factcheck-lib.scratch.test.ts > streamLlm catch block redaction (streamLlm.ts:156-165) > SSE error event carries only { error }, no details key, body never logged or forwarded 27ms
+ ✓ app/lib/llm/r2-factcheck-lib.scratch.test.ts > streamLlm catch block redaction (streamLlm.ts:156-165) > cache hit emits a single done event (JSDoc streamLlm.ts:74) 1ms
+ ✓ app/lib/llm/r2-factcheck-lib.scratch.test.ts > streamAnthropic per-call client construction (streamLlm.ts:207) > constructs a fresh client with the env-current key on each stream 1ms
+ ✓ app/lib/llm/r2-factcheck-lib.scratch.test.ts > callLlm OpenRouter error handling (callLlm.ts:180-188) > logs status only; body rides on OpenRouterError.details 1ms
+ ✓ app/lib/llm/r2-factcheck-routes.scratch.test.ts > edit/artifact invalid-JSON redaction (route.ts:77-84) > logs only the length; response payload echoes a 500-char slice 38ms
+ ✓ app/lib/llm/r2-factcheck-routes.scratch.test.ts > artifactRoute invalid-JSON logging (artifactRoute.ts:106-107) — sibling route coverage > still logs a 500-char preview of the LLM response content 24ms
+
+ Test Files  2 passed (2)
+      Tests  6 passed (6)
+   Start at  23:42:49
+   Duration  713ms (transform 140ms, setup 99ms, import 77ms, tests 96ms, environment 867ms)
+

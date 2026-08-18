@@ -1,0 +1,121 @@
+// Source of the scratch test run for r2-vitest-vercel.txt (file was placed at
+// app/lib/utils/r2scratch-vercel.test.ts in the clone, run with VERCEL=1, then deleted).
+import { describe, it, expect } from "vitest";
+import { join } from "path";
+import { existsSync, readFileSync, rmSync } from "fs";
+import { dataDir } from "@/app/lib/utils/dataDir";
+import { appendAnalyticsEntry } from "@/app/lib/analytics/persist";
+import {
+  computeHash,
+  getCachedResult,
+  setCachedResult,
+  removeCachedResult,
+} from "@/app/lib/llm/cache";
+
+const created: string[] = [];
+
+describe("r2 vercel env (VERCEL=1)", () => {
+  it("precondition: VERCEL is set", () => {
+    expect(process.env.VERCEL).toBe("1");
+  });
+
+  it("dataDir() resolves to /tmp and dataDir('cache') to /tmp/cache", () => {
+    expect(dataDir()).toBe("/tmp");
+    expect(dataDir("cache")).toBe("/tmp/cache");
+  });
+
+  it("appendAnalyticsEntry writes to /tmp/analytics.jsonl, not <cwd>/data", () => {
+    const tmpFile = "/tmp/analytics.jsonl";
+    const repoFile = join(process.cwd(), "data", "analytics.jsonl");
+    const existedBefore = existsSync(tmpFile);
+    const marker = "r2-vercel-marker-8f3a";
+    appendAnalyticsEntry({
+      id: marker,
+      endpoint: "r2-scratch",
+      provider: "mock",
+      model: "mock",
+      inputTokens: 0,
+      outputTokens: 0,
+      costUsd: 0,
+      latencyMs: 0,
+      timestamp: new Date().toISOString(),
+    } as never);
+    expect(existsSync(tmpFile)).toBe(true);
+    expect(readFileSync(tmpFile, "utf-8")).toContain(marker);
+    expect(existsSync(repoFile)).toBe(false);
+    // cleanup
+    if (!existedBefore) {
+      rmSync(tmpFile);
+    } else {
+      const kept = readFileSync(tmpFile, "utf-8")
+        .split("\n")
+        .filter((l) => l.trim() && !l.includes(marker))
+        .join("\n");
+      rmSync(tmpFile);
+      if (kept) require("fs").writeFileSync(tmpFile, kept + "\n", "utf-8");
+    }
+  });
+
+  it("cache file stores {text, usage} JSON in /tmp/cache/<sha256>.json; hit overrides usage", async () => {
+    const args = ["r2-model", "r2-sys", "r2-user-8f3a", 123] as const;
+    const hash = computeHash(...args);
+    expect(hash).toMatch(/^[0-9a-f]{64}$/); // sha256 hex
+    const file = join("/tmp/cache", `${hash}.json`);
+    created.push(file);
+    await setCachedResult(hash, {
+      text: "r2-cached-text",
+      usage: {
+        provider: "anthropic",
+        model: "r2-model",
+        inputTokens: 10,
+        outputTokens: 20,
+        costUsd: 0.5,
+        latencyMs: 999,
+      } as never,
+    });
+    // what is actually stored on disk
+    const raw = JSON.parse(readFileSync(file, "utf-8"));
+    expect(raw).toEqual({
+      text: "r2-cached-text",
+      usage: {
+        provider: "anthropic",
+        model: "r2-model",
+        inputTokens: 10,
+        outputTokens: 20,
+        costUsd: 0.5,
+        latencyMs: 999,
+      },
+    });
+    // cache hit overrides usage fields
+    const hit = await getCachedResult(...args);
+    expect(hit).not.toBeNull();
+    expect(hit!.cacheHash).toBe(hash);
+    expect(hit!.usage.provider).toBe("cache");
+    expect(hit!.usage.costUsd).toBe(0);
+    expect(hit!.usage.latencyMs).toBe(0);
+    expect(hit!.usage.inputTokens).toBe(10); // untouched fields pass through
+    expect(hit!.text).toBe("r2-cached-text");
+  });
+
+  it("corrupt cache file is treated as a miss (returns null)", async () => {
+    const args = ["r2-model", "r2-sys", "r2-corrupt-8f3a", 123] as const;
+    const hash = computeHash(...args);
+    const file = join("/tmp/cache", `${hash}.json`);
+    created.push(file);
+    require("fs").mkdirSync("/tmp/cache", { recursive: true });
+    require("fs").writeFileSync(file, "{not valid json", "utf-8");
+    expect(await getCachedResult(...args)).toBeNull();
+  });
+
+  it("missing cache file is a miss; removeCachedResult on missing file does not throw", async () => {
+    const args = ["r2-model", "r2-sys", "r2-missing-8f3a", 123] as const;
+    expect(await getCachedResult(...args)).toBeNull();
+    await expect(removeCachedResult(...args)).resolves.toBeUndefined();
+  });
+
+  it("cleanup scratch cache files", () => {
+    for (const f of created) {
+      try { rmSync(f); } catch { /* already gone */ }
+    }
+  });
+});

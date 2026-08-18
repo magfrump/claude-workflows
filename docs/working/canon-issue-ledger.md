@@ -1,7 +1,11 @@
 # Canon issue ledger: every known defect in the canon set, with per-review provenance
 
-**Date**: 2026-08-14 · **Last revised**: 2026-08-17 (E7 rep2 scored; N14–N16 appended;
-N7 refuted; graduation pass — 13 N-rows counted, total 43→56, recall table rebased) ·
+**Date**: 2026-08-14 · **Last revised**: 2026-08-18 (added CSV `E8 raised` column,
+per-row provenance for all 60 rows; added Cost-per-run and False-positives columns to
+the process recall table, incl. N7's retroactive FP charge to E6/E7r1) ·
+prior revision: 2026-08-18 (E8 evidence-discipline pipeline scored — 47/54=87%, first
+process past ~80%, 0 FPs; see e8-results-2026-08-18.md) · earlier: 2026-08-17 (E7 rep2;
+N14–N16; N7 refuted; graduation pass 43→56) ·
 **Companion to**: `review-canon.md` §1 (instances/labels) ·
 Living, append-only, like the canon itself — a re-adjudication updates a row's status
 column, never deletes the row.
@@ -218,32 +222,44 @@ graduation grows every process's denominator; it grows a process's numerator onl
 where that process actually raised the row. Pre-graduation figures (43-row base)
 remain in the git history of this file and the per-arm results docs.
 
-| Process | Findable | Found | Recall | Missed |
-|---|---|---|---|---|
-| Full pipeline **as operated** (historical loops + postfix ground-truth run; ~$14.60/instance ≈ **$116.80 per 8-instance sweep** — the sweep-total comparable to the arms' sweep costs) | 56 | 33 | **59%** (was 77% on the 43-row base) | C1–C4 + D1–D6 (as before) + all 13 graduated N-rows — every one found only by the CC/headless arms, which is the graduation pass's headline: the pipeline's blind spot is now 23 confirmed issues, not 10 |
-| Full pipeline **incl. E1 fresh re-runs** (same process, re-run as an experiment) | 56 | 39 | **70%** (was 91%) | C1–C4 + N1–N5, N8–N15 — still invisible to every pipeline pass at any vintage |
-| E4 opus-k3 union (~$0.69/instance) | 54 (D1/D2 outside its ranges) | 20 firm + D3 (raw-only, parse-dropped) + D5 (probable-same, unadjudicated) | **37% firm, ~41% incl. raw/probable** | the cross-file / enumeration / test-strategy / structural classes, plus all graduated N-rows |
-| E5 built-in /code-review, agentic dockerized (~$0.88/instance, exact per-run cost) | 54 | 23 firm (18 + graduated N1–N5) + 1 partial | **~43% firm** | enumeration/convention, test-strategy, structural (pf-R1), D6, and 8 of the 13 graduated rows (N8–N15) — but uniquely lands lean-R1, hyg-A1, firm D3/D5, and originated N1–N6 |
-| E6 ultrareview (one cleanly scored cell — all 3 sessions exited nonzero; deploy's empty result is abstention-vs-failure-unresolved; secdeps crashed; $0 billed, free tier consumed) | 10 (csp rows incl. graduated N1, N15) | 3 (legacy count; its N7 credit is no longer creditable — refuted) | **3/10 on csp** | uniquely lands csp-R1 — the only non-pipeline catch of the gold cross-file defect |
-| E7 fable rep1 (subscription-billed; ~$8.90/scored instance **list-price estimate**, $77.54 attempted-sweep incl. hygiene's $15.24 budget-cap death; 7/8 cells scored) | 51 (hygiene's 3 rows excluded — budget-cap failure; D1/D2 outside ranges) | 28 firm (17 + graduated N1–N5, N8–N13) + 3 partial | **55% firm, ~61% incl. partials** | rep1's discovery yield (N8–N13, all now graduated) is what moves its own number; caveats unchanged: summary-only evidence base, fscompat 0/6 partly truncation-artifact |
-| E7 fable rep2 (2026-08-17; full stream-json transcripts; $53.83 list across 5 scored cells, ~$10.77/scored instance; corpus+postfix died at the weekly usage limit, fscompat at an OAuth failure, all of rep3 at the session limit) | **28** (5 scored cells' rows incl. 10 graduated; NOT sweep-comparable — the unscored 3 cells are the arm's weakest) | 23 firm (15 + graduated N1–N5, N8, N14, N15) + 1 partial | **82% firm on scored cells** | misses on the graduated tier: N9 and N10 (false-attested) only; 0 confirmed FPs; csp verifier refuted its own csp-A1 consensus and killed N7 |
-| **E7 fable reps 1–2 union** (~$131.37 attempted total, list) | 54 (hygiene scored via rep2; D1/D2 outside ranges) | 36 firm (23 + all 13 graduated rows — every one raised by rep1 or rep2) + 2 partial (cor-A4, pf-R1) | **67% firm, ~70% incl. partials** | best non-pipeline recall on the new base, within 3 points of pipeline-incl-E1 at comparable cost; misses unchanged (fscompat, corpus enumeration/comment tier, postfix structural, csp-A2) |
-| E2 sonnet k=1 (~$0.12/instance) | 54 | 10 | **19%** | everything outside the in-diff doc-vs-code stratum |
+| Process | Findable | Found | Recall | Cost per run | False positives | Missed |
+|---|---|---|---|---|---|---|
+| Full pipeline **as operated** (historical loops + postfix ground-truth run) | 56 | 33 | **59%** (was 77% on the 43-row base) | ~$14.60/instance ≈ **$116.80/8-instance sweep** (sweep-total comparable to the arms' sweep costs) | unmeasurable retrospectively (acceptance-filtered historical corpora, §5.4 trap 2) | C1–C4 + D1–D6 (as before) + all 13 graduated N-rows — every one found only by the CC/headless arms, which is the graduation pass's headline: the pipeline's blind spot is now 23 confirmed issues, not 10 |
+| Full pipeline **incl. E1 fresh re-runs** (same process, re-run as an experiment) | 56 | 39 | **70%** (was 91%) | same ~\$14.60/instance cost model (E1 confirmed pass cost is findings-independent, ratio ≈1.02 dirty/clean; no separate \$ conversion — `e1-results-2026-08-06.md`) | unmeasurable (same class) | C1–C4 + N1–N5, N8–N15 — still invisible to every pipeline pass at any vintage |
+| **E8 evidence-discipline pipeline** (branch `feat/critic-evidence-discipline`; execution-upgraded fact-check + endorsement-claim Stage 2.5 + provenance-ruled synthesis; full 8-instance sweep 2026-08-18; see `e8-results-2026-08-18.md` + `runs/review-arms/e8-evidence-pipeline/e8-scoring.md`) | 54 (D1/D2 out of every cell's range) | 47 | **87%** | ~$19–44/instance ≈ **$150–350/8-instance sweep** (indirect triangulation — per-stage token accounting was not recorded, a measurement-provenance miss; a small multiple of, not a fraction of, the historical pipeline's cost) | **0 confirmed** (0 clean false Confirmed-Goods; 1 over-broad-but-scoped-true Confirmed-Good, csp CG4 — masks csp-R1 without itself being a false attestation) | csp-R1 (masked by a scoped Confirmed-Good — the one place scope-narrowing hid a defect), N15 (img-src markdown images), N9 (.cjs crash mechanism), + non-diagnostic C1/C3/pf-A4/pf-A7. Both historical false-attestation traps (N10, pf-A5) caught by the fact-check refusing to attest; pf-R1 type-seam and C4 matcher (ex-Confirmed-Good) both flipped to red by execution. First single process past ~80% of the living ledger. |
+| E4 opus-k3 union | 54 (D1/D2 outside its ranges) | 20 firm + D3 (raw-only, parse-dropped) + D5 (probable-same, unadjudicated) | **37% firm, ~41% incl. raw/probable** | ~$0.69/instance ($5.51/8-instance sweep) | **1 confirmed** (single-vote, hedged CollapsibleSection test-vacuity speculation on mfc-postfix, refuted by source; k≥2 consensus would have dropped it) | the cross-file / enumeration / test-strategy / structural classes, plus all graduated N-rows |
+| E5 built-in /code-review, agentic dockerized | 54 | 23 firm (18 + graduated N1–N5) + 1 partial | **~43% firm** | ~$0.88/instance, exact `total_cost_usd` ($0.53–$1.14 range; $7.06/8-instance sweep) | **0 confirmed** | enumeration/convention, test-strategy, structural (pf-R1), D6, and 8 of the 13 graduated rows (N8–N15) — but uniquely lands lean-R1, hyg-A1, firm D3/D5, and originated N1–N6 |
+| E6 ultrareview (one cleanly scored cell — all 3 sessions exited nonzero; deploy's empty result is abstention-vs-failure-unresolved; secdeps crashed) | 10 (csp rows incl. graduated N1, N15) | 3 (legacy count; its N7 credit is no longer creditable — refuted) | **3/10 on csp** | $0 billed this sweep (free tier, 3/3 consumed); paid-run list price unverified (~$5–25?/cell) | **1 retroactive** — N7 (pdf.js worker-src) was kept as TRUE-minor and never re-scored down; E7r2's 2026-08-17 spec+WPT refutation makes it a false positive in hindsight. The only non-pipeline arm to have credited N7 as real. | uniquely lands csp-R1 — the only non-pipeline catch of the gold cross-file defect |
+| E7 fable rep1 (subscription-billed; 7/8 cells scored) | 51 (hygiene's 3 rows excluded — budget-cap failure; D1/D2 outside ranges) | 28 firm (17 + graduated N1–N5, N8–N13) + 3 partial | **55% firm, ~61% incl. partials** | ~$8.90/scored instance **list-price estimate** ($4.14–$15.24 range; $77.54 attempted-sweep incl. hygiene's wasted $15.24 budget-cap death) | **0 confirmed + 1 retroactive** (rep1 re-found and credited N7, since refuted by rep2 — same false positive as E6) + **1 false attestation**, a distinct failure mode: pf-A5's `Math.max` cap arithmetic certified as checking out when it doesn't (endorsing a false claim, not raising a new false finding) | rep1's discovery yield (N8–N13, all now graduated) is what moves its own number; caveats unchanged: summary-only evidence base, fscompat 0/6 partly truncation-artifact |
+| E7 fable rep2 (2026-08-17; full stream-json transcripts; corpus+postfix died at the weekly usage limit, fscompat at an OAuth failure, all of rep3 at the session limit) | **28** (5 scored cells' rows incl. 10 graduated; NOT sweep-comparable — the unscored 3 cells are the arm's weakest) | 23 firm (15 + graduated N1–N5, N8, N14, N15) + 1 partial | **82% firm on scored cells** | ~$10.77/scored instance ($53.83 list across 5 scored cells) | **0 confirmed** (rep2 itself *refuted* N7 by execution/spec evidence rather than crediting it — the correction, not the error) + **1 false attestation**: the fact-check stamped the CLAUDE.md unset-`LEAN_VERIFIER_URL`→mock claim "Accurate", the exact claim N10 refutes | misses on the graduated tier: N9 and N10 (false-attested) only; csp verifier refuted its own csp-A1 consensus and killed N7 |
+| **E7 fable reps 1–2 union** | 54 (hygiene scored via rep2; D1/D2 outside ranges) | 36 firm (23 + all 13 graduated rows — every one raised by rep1 or rep2) + 2 partial (cor-A4, pf-R1) | **67% firm, ~70% incl. partials** | ~$131.37 attempted total, list (rep1 $77.54 + rep2 $53.83; rep3 a total loss, quota/auth casualties, zero cost recorded) | **1 net confirmed** (N7 — raised true by rep1, self-corrected/refuted by rep2 within the same arm) + 1 false attestation (N10, rep2-only) | best non-pipeline recall on the new base, within 3 points of pipeline-incl-E1 at comparable cost; misses unchanged (fscompat, corpus enumeration/comment tier, postfix structural, csp-A2) |
+| E2 sonnet k=1 | 54 | 10 | **19%** | ~$0.12/instance ($0.81/8-instance sweep) | **0 confirmed** (the one historical FP candidate — mfc-postfix's referenced-but-not-touched constant, pre-scored — did not reproduce on this canon) | everything outside the in-diff doc-vs-code stratum |
 
 Notes on the judgment calls embedded above: pipeline-as-operated is charged with D1–D6
 because reviewing its own fix commits was in the loops' scope (and when the process
 *was* pointed at fix commits — the postfix instance, the E1 re-runs — it found this
 class); C1–C4 are charged to every pipeline variant because all four existed at states
 it reviewed, one under an explicit Confirmed-Good verdict. Precision is not symmetric
-across rows: the arms' FP counts are measured (2 confirmed across both, both on
-mfc-postfix), while the pipeline's historical precision is unmeasurable retrospectively
-(acceptance-filtered corpora, §5.4 trap 2). The union of all processes is 56/56 by
-construction — the ledger *is* the union — which is itself the finding: no single
-process, at any price point, currently exceeds ~70% of known issues, and the cheap and
-expensive processes miss disjoint classes. The graduation pass compressed the spread:
-pipeline-incl-E1 (70%) and the E7 union (67%) now sit three points apart from
-opposite directions — the pipeline holds the enumeration/comment/structural classes,
-the CC arms hold the 13 graduated discoveries the pipeline never surfaced.
+across rows: the arms' FP counts are measured, while the pipeline's historical precision
+is unmeasurable retrospectively (acceptance-filtered corpora, §5.4 trap 2). **N7's
+2026-08-17 refutation (spec + WPT evidence, E7r2) retroactively converts two prior
+"true" credits into false positives** — E6 (which kept it, never rescored) and E7 rep1
+(which re-found and credited it) — while E7 rep2 and E8 both get credit for either
+refuting it directly or never raising it; this is folded into the False positives column
+above rather than the Found/Recall columns, since N7 was never in the 56-row confirmed
+denominator to begin with. Confirmed FPs unrelated to N7 remain at 2 across all measured
+arms (E4's mfc-postfix speculation, E2's now-unreproduced referenced-constant class) plus
+2 false attestations (pf-A5 in E7r1, N10 in E7r2) — a failure mode distinct from a raised
+FP (endorsing an existing false claim vs. asserting a new one), tracked separately above.
+The union of all processes is 56/56 by construction — the ledger *is* the union — which
+is itself the finding: no single process, at any price point, currently exceeds ~87% of
+known issues (E8, 2026-08-18), and the cheap and expensive processes miss disjoint
+classes. The graduation pass compressed the spread among the *older* processes:
+pipeline-incl-E1 (70%) and the E7 union (67%) sit three points apart from opposite
+directions — the pipeline holds the enumeration/comment/structural classes, the CC arms
+hold the 13 graduated discoveries the pipeline never surfaced — but E8 now leads both by
+~17–20 points, closing much of the pipeline-only moat (pf-R1, D3–D6, fsc-A3, cor-A1) while
+holding the CC arms' 0-FP precision.
 
 Frozen-label recall (15/33 for E4, 7/33 for E2) remains in the E2/E4 results docs as a
 secondary comparability number for prior arms — it is not the headline metric.

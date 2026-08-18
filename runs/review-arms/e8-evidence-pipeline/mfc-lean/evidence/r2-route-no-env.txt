@@ -1,0 +1,9 @@
+=== r2 route execution: LEAN_VERIFIER_URL UNSET, dev server port 4460, cwd=/workspace/external/cc-review-eval/mfc-lean; stub verifier listening on 3100 to detect any default-URL fetch ===
+2026-08-18T06:25:36Z
+--- Case E: env unset -> expect verifier-not-configured, and NO request to localhost:3100 ---
+{"valid":false,"unavailable":true,"reason":"verifier-not-configured"}
+HTTP:200
+curl exit: 0
+--- stub-3100 log (would show GOT REQUEST if default URL were used) ---
+stub up on 3100
+2026-08-18T06:25:38Z

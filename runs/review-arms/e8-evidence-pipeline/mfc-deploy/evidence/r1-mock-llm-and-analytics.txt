@@ -1,0 +1,13 @@
+# run 1 (same dev server, all API keys unset): mock LLM fallback + local filesystem analytics write
+# cwd: /workspace/external/cc-review-eval/mfc-deploy
+# date: 2026-08-18T06:15:18Z
+
+## cmd: curl -s -X POST http://localhost:3000/api/formalization/semiformal -d {"sourceText":"cfc probe"}
+{"proof":"-- Mock formalization (no API key configured)\n\n-- Source: \"cfc probe\"\n\ntheorem example : ∀ (P Q : Prop), P → Q → P ∧ Q := by\n  intro hp hq\n  exact ⟨hp, hq⟩"}
+# exit: 0
+
+## data dir after call (ls -R data):
+data:
+analytics.jsonl
+## data/analytics.jsonl:
+{"id":"97ec5be5-2fc8-4e94-afa8-488b20b58f11","endpoint":"formalization/semiformal","provider":"mock","model":"mock","inputTokens":0,"outputTokens":0,"costUsd":0,"latencyMs":0,"timestamp":"2026-08-18T06:15:18.330Z"}

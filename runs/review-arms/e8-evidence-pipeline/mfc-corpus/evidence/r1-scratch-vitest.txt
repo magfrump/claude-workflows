@@ -1,0 +1,48 @@
+Error: Invalid package config /workspace/external/package.json while importing /workspace/external/cc-review-eval/mfc-corpus. Unexpected end of JSON input
+    at __node_internal_ [90m(file:///workspace/external/cc-review-eval/mfc-corpus/[39mnode_modules/[4mvitest[24m/dist/chunks/index.BCY_7LL2.js:461:11[90m)[39m
+    at new NodeError [90m(file:///workspace/external/cc-review-eval/mfc-corpus/[39mnode_modules/[4mvitest[24m/dist/chunks/index.BCY_7LL2.js:405:5[90m)[39m
+    at read [90m(file:///workspace/external/cc-review-eval/mfc-corpus/[39mnode_modules/[4mvitest[24m/dist/chunks/index.BCY_7LL2.js:592:21[90m)[39m
+    at getPackageScopeConfig [90m(file:///workspace/external/cc-review-eval/mfc-corpus/[39mnode_modules/[4mvitest[24m/dist/chunks/index.BCY_7LL2.js:655:27[90m)[39m
+[90m    ... 6 lines matching cause stack trace ...[39m
+    at _resolve [90m(file:///workspace/external/cc-review-eval/mfc-corpus/[39mnode_modules/[4mvitest[24m/dist/chunks/index.BCY_7LL2.js:2252:22[90m)[39m
+    at resolvePackage [90m(file:///workspace/external/cc-review-eval/mfc-corpus/[39mnode_modules/[4mvitest[24m/dist/chunks/index.BCY_7LL2.js:2299:12[90m)[39m
+    at isPackageExists [90m(file:///workspace/external/cc-review-eval/mfc-corpus/[39mnode_modules/[4mvitest[24m/dist/chunks/index.BCY_7LL2.js:2267:12[90m)[39m
+    at VitestPackageInstaller.ensureInstalled [90m(file:///workspace/external/cc-review-eval/mfc-corpus/[39mnode_modules/[4mvitest[24m/dist/chunks/cli-api.B5majYba.js:2323:23[90m)[39m
+    at prepareVitest [90m(file:///workspace/external/cc-review-eval/mfc-corpus/[39mnode_modules/[4mvitest[24m/dist/chunks/cli-api.B5majYba.js:14574:56[90m)[39m
+    at startVitest [90m(file:///workspace/external/cc-review-eval/mfc-corpus/[39mnode_modules/[4mvitest[24m/dist/chunks/cli-api.B5majYba.js:14515:14[90m)[39m
+    at start [90m(file:///workspace/external/cc-review-eval/mfc-corpus/[39mnode_modules/[4mvitest[24m/dist/chunks/cac.CVxlyDFd.js:2340:15[90m)[39m
+    at CAC.run [90m(file:///workspace/external/cc-review-eval/mfc-corpus/[39mnode_modules/[4mvitest[24m/dist/chunks/cac.CVxlyDFd.js:2318:2[90m)[39m {
+  code: [32m'ERR_INVALID_PACKAGE_CONFIG'[39m,
+  cause: SyntaxError: Unexpected end of JSON input
+      at JSON.parse (<anonymous>)
+      at read [90m(file:///workspace/external/cc-review-eval/mfc-corpus/[39mnode_modules/[4mvitest[24m/dist/chunks/index.BCY_7LL2.js:589:21[90m)[39m
+      at getPackageScopeConfig [90m(file:///workspace/external/cc-review-eval/mfc-corpus/[39mnode_modules/[4mvitest[24m/dist/chunks/index.BCY_7LL2.js:655:27[90m)[39m
+      at packageResolve [90m(file:///workspace/external/cc-review-eval/mfc-corpus/[39mnode_modules/[4mvitest[24m/dist/chunks/index.BCY_7LL2.js:1805:25[90m)[39m
+      at moduleResolve [90m(file:///workspace/external/cc-review-eval/mfc-corpus/[39mnode_modules/[4mvitest[24m/dist/chunks/index.BCY_7LL2.js:1945:18[90m)[39m
+      at _tryModuleResolve [90m(file:///workspace/external/cc-review-eval/mfc-corpus/[39mnode_modules/[4mvitest[24m/dist/chunks/index.BCY_7LL2.js:1990:12[90m)[39m
+      at _resolve$1 [90m(file:///workspace/external/cc-review-eval/mfc-corpus/[39mnode_modules/[4mvitest[24m/dist/chunks/index.BCY_7LL2.js:2045:16[90m)[39m
+      at resolveSync [90m(file:///workspace/external/cc-review-eval/mfc-corpus/[39mnode_modules/[4mvitest[24m/dist/chunks/index.BCY_7LL2.js:2078:10[90m)[39m
+      at resolvePathSync [90m(file:///workspace/external/cc-review-eval/mfc-corpus/[39mnode_modules/[4mvitest[24m/dist/chunks/index.BCY_7LL2.js:2081:24[90m)[39m
+      at _resolve [90m(file:///workspace/external/cc-review-eval/mfc-corpus/[39mnode_modules/[4mvitest[24m/dist/chunks/index.BCY_7LL2.js:2252:22[90m)[39m
+}
+ MISSING DEPENDENCY  Cannot find dependency 'jsdom'
+
+
+ RUN  v4.1.6 /workspace/external/cc-review-eval/mfc-corpus
+
+R1_CREATEDAT_RESULT: {"createdAt":"2026-08-18T06:54:10.606Z","updatedAt":"2026-08-18T06:54:10.606Z"}
+R1_LABEL_RESULT: [{"id":"s1","label":"s1","ext":"pdf"}]
+R1_OPFS_ERR: {"kind":"unavailable","reason":"navigator.storage.getDirectory is not available (SSR or unsupported browser)"}
+R1_WRITE_SAME_REF: [33mtrue[39m sameBuffer: [33mtrue[39m
+ ✓ app/lib/corpus/__tests__/factcheck_scratch_r1.test.ts > manifest silent-default docstring claim > throws CorpusError on absent/malformed whole manifest (fail-loud) 2ms
+ ✓ app/lib/corpus/__tests__/factcheck_scratch_r1.test.ts > manifest silent-default docstring claim > SILENTLY DEFAULTS malformed createdAt/updatedAt instead of throwing 2ms
+ ✓ app/lib/corpus/__tests__/factcheck_scratch_r1.test.ts > manifest silent-default docstring claim > SILENTLY DEFAULTS missing source label to id 0ms
+ ✓ app/lib/corpus/__tests__/factcheck_scratch_r1.test.ts > manifest silent-default docstring claim > round-trips a created manifest 1ms
+ ✓ app/lib/corpus/__tests__/factcheck_scratch_r1.test.ts > opfs SSR/unavailable guard claim > readFile rejects with CorpusError kind unavailable when no OPFS (jsdom) 1ms
+ ✓ app/lib/corpus/__tests__/factcheck_scratch_r1.test.ts > writeFile fresh-ArrayBuffer-view comment claim > passes bytes to write() unchanged (no fresh copy/slice) 1ms
+
+ Test Files  1 passed (1)
+      Tests  6 passed (6)
+   Start at  23:54:09
+   Duration  659ms (transform 44ms, setup 44ms, import 37ms, tests 8ms, environment 445ms)
+

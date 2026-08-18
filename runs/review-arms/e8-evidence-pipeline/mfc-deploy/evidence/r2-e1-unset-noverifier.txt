@@ -1,0 +1,6 @@
+# E1: LEAN_VERIFIER_URL unset, no verifier running -> expect mock
+cwd: /workspace/external/cc-review-eval/mfc-deploy (dev server: npx next dev -p 3400, env: LEAN_VERIFIER_URL/ANTHROPIC_API_KEY/OPENROUTER_API_KEY all unset)
+timestamp: 2026-08-18T06:14:06Z
+command: curl -s -X POST http://localhost:3400/api/verification/lean -H "Content-Type: application/json" -d {"leanCode":"theorem t : True := trivial"}
+{"valid":true,"mock":true}
+exit code: 0

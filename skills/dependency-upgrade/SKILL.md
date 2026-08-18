@@ -11,7 +11,11 @@ description: >
   a single upgrade or compare alternatives (e.g., "should we upgrade X or switch to a
   different library"). When in doubt and the work involves a dependency manifest change
   (package.json, go.mod, requirements.txt, Cargo.toml, Gemfile, pyproject.toml, etc.),
-  prefer running this skill over skipping it.
+  prefer running this skill over skipping it. NOTE: This skill can be invoked standalone or
+  by a code-review orchestrator. If a code-fact-check report is provided, it is the sole
+  source of execution results: consume its verdicts and cite its claim ids for any
+  command-outcome statement (audit, install, test, grep) and do not run or re-assert
+  command outcomes yourself.
 when: User asks whether to upgrade a dependency or reviews a dep bump
 ---
 
@@ -43,6 +47,21 @@ Determine what you're evaluating:
 **Changelog and migration guides:**
 - Use web search to find the changelog, release notes, and migration guides.
 - Focus on breaking changes, deprecations, new requirements (minimum runtime version, peer dependency changes, dropped platform support).
+
+## Execution evidence protocol
+
+Governs standalone mode — when no code-fact-check report is in context. (When one is provided, it is the sole source of execution results; cite its claim ids and skip this protocol.)
+
+Any statement of the form "command X produced result Y" that supports a verdict is an **execution claim** — including "quiet" results like an audit reporting nothing or a grep finding no matches. An execution claim is only expressible with its provenance attached:
+
+- (a) the exact command,
+- (b) cwd + commit SHA + lockfile hash,
+- (c) exit code,
+- (d) timestamp,
+- (e) for audit commands, the advisory-database/registry state the tool reports,
+- (f) the raw output — verbatim and complete inline for short read-only commands; captured to `docs/reviews/{branch}/evidence/{n}-{cmd-slug}.txt` for verdict-bearing gates (audit, install, test).
+
+Paraphrased output — "(no output — exit 0)" — is never provenance. If you cannot attach provenance, the only permitted phrasing is: ``Unverified — run `<cmd>` and attach output before relying on this.``
 
 ## Analysis
 
@@ -90,7 +109,7 @@ Before starting the migration, the rollback procedure must be **documented** and
 
 - **Documented** means writing the exact commands that revert the change: lockfile/version pin restoration, the install command, and any data/config changes to unwind. Vague intent ("revert the commit") doesn't count — write the literal commands.
 - **Rehearsed** means running those commands once and confirming a **verification step** passes afterward. Keep it small but real: a smoke test, an app boot, a focused test exercising the dependency's primary use. Pick something that would *fail* if the rollback left the project broken.
-- Rehearse on a scratch branch (or equivalent) so the rehearsal doesn't destabilize ongoing work. The artifact is the "rehearsed on {date/branch}, verification passed" line in the output template.
+- Rehearse on a scratch branch (or equivalent) so the rehearsal doesn't destabilize ongoing work. The artifact is the "rehearsed on {date/branch}, verification passed" line in the output template — itself an execution claim, so it carries the verification step's captured output (evidence path or verbatim) per the execution evidence protocol.
 
 Why a precondition, not a follow-up: rehearsing after a problem occurs is when you discover the lockfile doesn't fully revert, a database migration was one-way, or the install command needs a forgotten flag. Find those problems while the upgrade hasn't shipped yet.
 
@@ -104,6 +123,7 @@ Why a precondition, not a follow-up: rehearsing after a problem occurs is when y
 **Breaking change impact:** {None / Mechanical / Moderate / Significant}
 **Estimated effort:** {minutes / hours / days}
 **Risk:** {Low / Medium / High}
+**Audit state:** {as of YYYY-MM-DD HH:MM, advisory DB {metadata} — re-run at merge if >24h old or lockfile changed} / {Consumed from code-fact-check report, claims {ids}} / {Unverified}
 
 ### Motivation
 {Why is this upgrade being considered? Security? New features? Staying current?}
@@ -121,6 +141,15 @@ Why a precondition, not a follow-up: rehearsing after a problem occurs is when y
 
 ### Transitive Effects
 - {Peer dependency changes, version conflicts, runtime requirements, or "None identified"}
+
+### Execution Evidence
+
+| Command | Exit | As-of | Evidence |
+|---------|------|-------|----------|
+| {exact command} | {exit code} | {timestamp + advisory-DB state where applicable} | {fact-check claim id / evidence-file path / verbatim inline output} |
+| {command not run and not citable} | — | — | Unverified — recommended pre-merge check |
+
+No cell may be filled from memory or assumption — every row's evidence is a fact-check claim id, an evidence-file path, or verbatim inline output; anything else renders as `Unverified — recommended pre-merge check`.
 
 ### Risk Factors
 - {Behavioral changes, performance concerns, compatibility issues, or "Low risk — well-tested upgrade path"}
@@ -140,7 +169,7 @@ npm ci
 **Verification step** (run after rollback; must pass to confirm rollback worked):
 {e.g., `npm test -- src/payments` — exercises the dependency's primary use in this project; would fail if the lockfile didn't fully revert.}
 
-**Rehearsal status:** [ ] Rehearsed on {YYYY-MM-DD} on branch `{scratch-branch-name}`; verification step passed.
+**Rehearsal status:** [ ] Rehearsed on {YYYY-MM-DD} on branch `{scratch-branch-name}`; verification step passed — evidence: {evidence-file path or verbatim verification output}.
 
 ### Migration Plan
 {If recommending upgrade, provide concrete steps:}
@@ -182,7 +211,8 @@ Present the evaluation in chat. If the user requests a persisted artifact, save 
 - **Read the migration guide, not just the changelog.** Changelogs list what changed; migration guides explain how to adapt. Base the effort estimate on the migration path, not the changelog length.
 - **Check for codemods.** Many libraries provide automated migration tools. A breaking change with a codemod is mechanical work, not a design challenge.
 - **Don't recommend upgrading just to be current.** Every upgrade has nonzero risk and effort. The benefit should justify the cost. "It's the latest version" is not sufficient motivation.
-- **For security upgrades, check the actual advisory.** Is the vulnerability exploitable in this project's usage? A vulnerability in a feature the project doesn't use may not require an emergency upgrade.
+- **For security upgrades, check the actual advisory.** Is the vulnerability exploitable in this project's usage? A vulnerability in a feature the project doesn't use may not require an emergency upgrade. Advisory data is time-varying: an audit result is a snapshot, not a property of the branch. Scope every audit-derived verdict "as of {timestamp / advisory-DB state}" and state the re-run trigger: re-run the gate at merge time if the review is older than 24h or the lockfile changed since.
 - **Run the security-reviewer skill on the resulting diff before recommending merge** when the upgrade is motivated by a CVE, replaces a security-relevant package, or bumps crypto/auth dependencies. This is the symmetric counterpart to security-reviewer's own dep-manifest trigger — that flags risks at manifest-change time; this catches issues introduced by the call-site migration itself.
 - **When the upgrade path is unclear, recommend a spike.** If you can't confidently estimate the effort, say so and suggest a timeboxed investigation using the spike workflow.
 - **Don't start the migration until the rollback is documented and rehearsed.** A rollback that's never been executed is not a rollback plan — it's a hope. Rehearse on a scratch branch and confirm a verification step passes before touching the real upgrade.
+- **Never present a command you did not run in this session as having been run.** If a result is remembered, inferred, or expected, it is a prediction — label it as such. The evidence protocol exists because a fabricated "exit 0" once became a shipped "gate passes" rubric row (secdeps N2, 2026-04-27).

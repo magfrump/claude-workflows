@@ -1,0 +1,6 @@
+# E3: LEAN_VERIFIER_URL=http://127.0.0.1:3101 set but nothing listening (unreachable) -> expect mock
+cwd: /workspace/external/cc-review-eval/mfc-deploy (dev server: env -u ANTHROPIC_API_KEY -u OPENROUTER_API_KEY LEAN_VERIFIER_URL=http://127.0.0.1:3101 npx next dev -p 3400)
+timestamp: 2026-08-18T06:16:02Z
+command: curl -s -X POST http://localhost:3400/api/verification/lean -H "Content-Type: application/json" -d {"leanCode":"theorem t : True := trivial"}
+{"valid":true,"mock":true}
+exit code: 0

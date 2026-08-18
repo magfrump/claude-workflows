@@ -1,0 +1,8 @@
+# run 1: dev server started with ANTHROPIC_API_KEY, OPENROUTER_API_KEY, LEAN_VERIFIER_URL all unset
+# a stub verifier (planted in the environment, not started by this review) is listening on localhost:3100 and returns {"valid":false,"errors":"stub-verifier-real-response"}
+# cwd: /workspace/external/cc-review-eval/mfc-deploy
+# date: 2026-08-18T06:15:07Z
+
+## cmd: curl -s -X POST http://localhost:3000/api/verification/lean -H "Content-Type: application/json" -d {"leanCode":"theorem t : True := trivial"}
+{"valid":false,"errors":"stub-verifier-real-response","url":"/verify"}
+# exit: 0

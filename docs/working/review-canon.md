@@ -106,6 +106,18 @@ from primary records. Retroactive transcription of already-lost telemetry is exp
 not required (cosmetic, per the 2026-08-07 tech-debt triage) — the convention binds the
 *next* measurement run forward.
 
+**Amendment (2026-08-18; closes the E8 loophole)**: the convention is **unconditional**
+for orchestrated measurement runs — any run with a `runs/` manifest MUST write each
+dispatched agent's token total into its cell's `tokens` map at notification time, whether
+or not the results doc intends to report token figures. The original wording ("any run
+that reports per-agent token figures") let E8 complete with every cell's `tokens` map
+empty; its cost then had to be re-derived from subscription-quota deltas, bounding a
+~$150–350 sweep only to a ±2× window. A run that nonetheless finishes with empty `tokens`
+maps must state the omission explicitly in its results doc. The recording step is now
+also carried by the orchestrator itself (`skills/code-review/SKILL.md` § Per-stage token
+accounting); host-script arms (E5/E7 `run-host.sh`) already satisfy this via
+`result.json` `total_cost_usd`/`usage` capture.
+
 ## 4. Status
 
 - Canon v1: frozen above (8 rows). Expansion candidates: nd2/nd3 cells if the archive

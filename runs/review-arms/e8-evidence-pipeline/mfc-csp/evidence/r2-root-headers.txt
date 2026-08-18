@@ -1,0 +1,12 @@
+HTTP/1.1 200 OK
+content-security-policy: default-src 'self'; script-src 'self' 'nonce-NzhmNmUwMjEtNWM5Zi00Nzk1LWIzMTgtNzhmODZkOGZkM2M1' 'strict-dynamic'; style-src 'self' 'unsafe-inline'; img-src 'self' data: blob:; font-src 'self' data:; connect-src 'self'; frame-ancestors 'none'; base-uri 'self'; object-src 'none'
+Vary: rsc, next-router-state-tree, next-router-prefetch, next-router-segment-prefetch, Accept-Encoding
+link: </>; rel=preconnect; crossorigin=""
+X-Powered-By: Next.js
+Cache-Control: private, no-cache, no-store, max-age=0, must-revalidate
+Content-Type: text/html; charset=utf-8
+Date: Tue, 18 Aug 2026 06:27:56 GMT
+Connection: keep-alive
+Keep-Alive: timeout=5
+Transfer-Encoding: chunked
+

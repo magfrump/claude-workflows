@@ -1,0 +1,52 @@
+
+> nextjs@0.1.0 build
+> next build
+
+[33m[1m⚠[22m[39m Warning: Next.js inferred your workspace root, but it may not be correct.
+ We detected multiple lockfiles and selected the directory of /workspace/pnpm-lock.yaml as the root directory.
+ To silence this warning, set `turbopack.root` in your Next.js config, or consider removing one of the lockfiles if it's not needed.
+   See https://nextjs.org/docs/app/api-reference/config/next-config-js/turbopack#root-directory for more information.
+ Detected additional lockfiles: 
+   * /workspace/external/cc-review-eval/mfc-csp/pnpm-lock.yaml
+   * /workspace/external/pnpm-lock.yaml
+
+[1m[38;2;173;127;168m▲ Next.js 16.2.4[39m[22m (Turbopack)
+- Environments: .env.production.local, .env.local, .env.production, .env
+
+[37m[1m [22m[39m Creating an optimized production build ...
+[32m[1m✓[22m[39m Compiled successfully in 4.2s
+[37m[1m [22m[39m Running TypeScript ...
+[37m[1m [22m[39m Finished TypeScript in 4.0s ...
+[37m[1m [22m[39m Collecting page data using 15 workers ...
+[37m[1m [22m[39m Generating static pages using 15 workers (0/20) ...
+[37m[1m [22m[39m Generating static pages using 15 workers (5/20) 
+[37m[1m [22m[39m Generating static pages using 15 workers (10/20) 
+[37m[1m [22m[39m Generating static pages using 15 workers (15/20) 
+[32m[1m✓[22m[39m Generating static pages using 15 workers (20/20) in 231ms
+[37m[1m [22m[39m Finalizing page optimization ...
+
+[4mRoute (app)[24m
+┌ ƒ /
+├ ƒ /_not-found
+├ ƒ /api/analytics
+├ ƒ /api/decomposition/extract
+├ ƒ /api/edit/artifact
+├ ƒ /api/edit/inline
+├ ƒ /api/edit/whole
+├ ƒ /api/explanation/lean-error
+├ ƒ /api/formalization/causal-graph
+├ ƒ /api/formalization/counterexamples
+├ ƒ /api/formalization/dialectical-map
+├ ƒ /api/formalization/lean
+├ ƒ /api/formalization/property-tests
+├ ƒ /api/formalization/semiformal
+├ ƒ /api/formalization/statistical-model
+├ ƒ /api/predict
+├ ƒ /api/refine/context
+└ ƒ /api/verification/lean
+
+
+ƒ Proxy (Middleware)
+
+ƒ  (Dynamic)  server-rendered on demand
+

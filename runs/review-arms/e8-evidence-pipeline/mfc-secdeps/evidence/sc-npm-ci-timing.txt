@@ -1,0 +1,12 @@
+probe: npm ci duration, HEAD lockfile (8bde50c) vs base lockfile (d86d2dc), same package.json
+method: scratch dirs under /tmp/claude-1000/sc-probe/{head,base}; npm ci --ignore-scripts --no-audit --no-fund; run 1 = colder cache, run 2 = warm cache; shared npm cache
+node: v20.20.2  npm: 10.8.2
+--- head run 1 | cwd: /tmp/claude-1000/sc-probe/head | start: 2026-08-18T06:26:44Z
+exit=0 duration_s=6.7 installed=added 659 packages in 7s
+--- base run 1 | cwd: /tmp/claude-1000/sc-probe/base | start: 2026-08-18T06:26:50Z
+exit=0 duration_s=9.5 installed=added 659 packages in 9s
+--- head run 2 | cwd: /tmp/claude-1000/sc-probe/head | start: 2026-08-18T06:27:00Z
+exit=0 duration_s=10.4 installed=added 659 packages in 10s
+--- base run 2 | cwd: /tmp/claude-1000/sc-probe/base | start: 2026-08-18T06:27:12Z
+exit=0 duration_s=6.9 installed=added 659 packages in 7s
+end: 2026-08-18T06:27:19Z
