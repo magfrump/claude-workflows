@@ -342,6 +342,23 @@ After each between-stage handoff (end of Stage 1, end of Stage 2, and end of Sta
 
 **Scope:** The banner is emitted *only* between stages. Do **not** emit a banner after Stage 3 — Stage 3's chat synthesis is itself the user-facing output, and a "Stage 3 complete" banner would duplicate or compete with it.
 
+### Per-stage token accounting
+
+Every sub-agent's completion notification reports its token total. Record it **when the
+notification arrives**, not reconstructed from memory afterward:
+
+- **Measured runs** (this review is a cell of an experiment with a `manifest.json` under
+  `runs/`): write each stage's token total into the cell's `tokens` map immediately, per
+  the measurement-provenance convention in `docs/working/review-canon.md` §3 (E1's manifest
+  is the reference shape: one entry per stage plus `total_tokens`). Leaving the map empty
+  is a protocol violation to flag in the results doc — a week later, an empty `tokens: {}`
+  is indistinguishable from "not measured", and the run's cost can only be re-derived
+  indirectly (the E8 lesson: the sweep's cost had to be bounded from subscription-quota
+  deltas to ~$150–350, a ±2× window instead of a ledger).
+- **All runs**: include a one-line per-stage token summary in the Stage 3 chat synthesis
+  (e.g. `tokens: fc 3×80k, merge 90k, critics 4×65k, rubric 85k ≈ 700k total`), so the
+  figure exists in a durable transcript even when no manifest does.
+
 ### Stage 1: Code Fact-Check (k=3 replicated)
 
 Spawn **three** agents with the code-fact-check skill, in parallel, on **byte-identical

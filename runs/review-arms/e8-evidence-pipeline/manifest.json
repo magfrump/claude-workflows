@@ -3,6 +3,7 @@
  "design": "Full pipeline per instance, E1 resume pattern: k=2 fact-check (execution-upgraded, decision-033 k) -> merge -> historical critic set (branch SKILL.md texts) -> fc-claims pass (critics' submitted endorsement claims, execution-verdicted) -> rubric (new Confirmed-Good provenance + triage-floor rules). All agents read skills from the branch working tree, run in external/cc-review-eval/<id>. Config deltas vs historical pipeline, to note in results: k=2 not k=3; orchestrator model fable-5; execution enabled.",
  "purpose": "Observe the difference vs pipeline-as-operated on the 56-row ledger: (a) newly-caught rows among C1-C4/D3-D6/N-rows, (b) zero unscoped Confirmed-Good rows, (c) wrong-verdict classes (N1/C4/N10/D6/N2-style) eliminated, (d) finding-yield preserved on stratum A/B.",
  "branch_commit": "f3c8e3d",
+ "tokens_note": "Per-stage tokens were NOT recorded at run time (all cells' tokens maps empty) - measurement-provenance miss, convention since amended (review-canon.md section 3). Sweep cost re-derived indirectly at ~$150-350 API-list-equivalent (~$19-44/instance); derivation in docs/working/e8-results-2026-08-18.md Caveats.",
  "cells": {
   "mfc-csp": {
    "range": "d86d2dc..d90d6bb",
