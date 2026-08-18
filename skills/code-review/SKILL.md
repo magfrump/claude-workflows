@@ -22,9 +22,13 @@ when: User requests a full code review or PR review
 Orchestrates the sub-skills below. Ensure they exist in `skills/` before use.
 
 **Required (always run):**
-- `code-fact-check.md` — verifies factual claims in code comments, docs, and commit messages.
+- `code-fact-check.md` — verifies factual claims in code comments, docs, and commit messages,
+  statically or by execution in the review sandbox (every verdict carries
+  `**Verification mode:** static | executed` and a per-claim `Scope:` line).
   Runs as **k=3 parallel replicates** merged most-severe-wins; the rationale lives in one
-  place — Stage 1's **Why three** — do not restate it elsewhere.
+  place — Stage 1's **Why three** — do not restate it elsewhere. Its `## Submitted claims`
+  intake additionally verdicts critics' routed endorsement claims in
+  [Stage 2.5](#stage-25-endorsement-claim-verification-submitted-claims).
 
 **Core critics (always run):**
 - `security-reviewer.md` — security design review
@@ -65,7 +69,8 @@ These rules are absolute. Do not deviate from them under any circumstances.
    Stage 2 (critics).
 
 3. You MUST complete Stage 2 (critics) and receive ALL critic results before starting
-   Stage 3 (synthesis and rubric).
+   Stage 2.5 (endorsement-claim verification, when it applies) or Stage 3 (synthesis and
+   rubric). When Stage 2.5 runs, you MUST receive and merge its verdicts before Stage 3.
 
 4. You MUST NOT produce the code review rubric or chat synthesis until you have received
    results from every sub-agent you dispatched. No exceptions.
@@ -217,7 +222,8 @@ Before launching any agents, tell the user:
 - The scope being reviewed
 - Which core critics will run
 - Which contextual critics were auto-selected (and why)
-- Total agent count (3 fact-check replicates + N critics)
+- Total agent count (3 fact-check replicates + N critics, plus one Stage-2.5
+  submitted-claims fact-check pass if critics route endorsement claims)
 
 Keep this brief — a short paragraph.
 
@@ -301,7 +307,7 @@ greenfield vs diff-level evaluation — and plays no part in this delivery gate.
 
 ### Between-stage status banner
 
-After each between-stage handoff (end of Stage 1, end of Stage 2), emit a single one-line status banner directly in the chat so the user can judge progress and decide whether to interrupt before the next stage launches.
+After each between-stage handoff (end of Stage 1, end of Stage 2, and end of Stage 2.5 when that stage runs), emit a single one-line status banner directly in the chat so the user can judge progress and decide whether to interrupt before the next stage launches.
 
 **Format:** `Stage N (<stage-name>) complete: <key counts> — <next action>`
 
@@ -314,8 +320,9 @@ After each between-stage handoff (end of Stage 1, end of Stage 2), emit a single
   "launching 4 critics in parallel", "launching 4 critics: 3 in parallel +
   chain security→api-consistency", or "synthesizing into rubric and chat
   summary".
-- The Stage 2-complete banner introduces synthesis (Stage 3). Because Stage
-  3 consumes Stage 2's output, this banner must include `dispatch mode:
+- The Stage 2-complete banner introduces the next stage — Stage 2.5 when
+  endorsement claims were routed, otherwise synthesis (Stage 3). Because
+  later stages consume Stage 2's output, this banner must include `dispatch mode:
   <mode>` in `<key counts>` so the reader knows which dispatch shape
   produced the findings before reading the synthesis. Use `parallel`,
   `chain (<pair>)`, or `parallel + chain (<pair>)` — see
@@ -801,7 +808,62 @@ If any of those facts isn't on hand, omit the corresponding sub-bullet rather th
 
 **CHECKPOINT:** Wait for ALL critic agents to return results (including the downstream critic of any active chain). Count the results. Do you have the expected number? If yes, proceed to Stage 3. If not, tell the user what's missing.
 
-After confirming the expected critic count, emit the between-stage status banner per the format spec above (e.g., `Stage 2 (critics) complete: <counts>, dispatch mode: <mode> — synthesizing into rubric and chat summary`). Emit it before launching Stage 3 so the user sees the handoff explicitly.
+After confirming the expected critic count, emit the between-stage status banner per the format spec above (e.g., `Stage 2 (critics) complete: <counts>, dispatch mode: <mode> — synthesizing into rubric and chat summary`). Emit it before launching Stage 2.5 (when it applies) or Stage 3 so the user sees the handoff explicitly — when you already know Stage 2.5 will run, name it as the banner's next action (e.g., `— dispatching submitted-claims fact-check on 4 routed endorsement claims`).
+
+### Stage 2.5: Endorsement-claim verification (submitted claims)
+
+Critics no longer self-certify positives. The security-reviewer emits **Endorsement
+Claims** (entries marked `route: code-fact-check` where they could anchor a Confirmed-Good
+row), the performance-reviewer emits evidence-gated **Endorsements** (bullets tagged
+`[unverified — submitted as claim]`), and any other critic may mark a positive assertion
+the same way. A routed entry is a claim awaiting a verdict, not a verdict — this stage gets
+it verdicted through the fact-check skill's `## Submitted claims` intake, then feeds the
+verdicts into synthesis.
+
+1. **Collect.** Sweep every returned critic report for entries marked
+   `route: code-fact-check` or `[unverified — submitted as claim]`. For each, extract the
+   claim text, its `Location:`, the submitting critic's name, and (where present) its
+   `Verified / Not verified` scope pair. Endorsements the critic scoped without a routing
+   tag stay in its report as scoped prose — do not submit them; the routing tag is the
+   critic's own signal that the claim would otherwise justify a ✅ row.
+2. **Skip conditions.** If no routed claims exist, skip this stage silently — the rubric's
+   ✅ rows must then rest on Stage-1 verdicts alone. On a `--loop-pass`, skip it too:
+   routed claims stay *pending execution verification* (✅ rows are terminal-pass output,
+   and the decision-032 pass economics apply); the terminal pass runs the stage in full.
+3. **Dispatch one fact-check agent** — same mechanics as a Stage-1 replicate: paste
+   `skills/code-fact-check/SKILL.md`, deliver the review material per Step 1's conditional
+   diff-delivery rule, launch with `subagent_type: "general-purpose"` and the **model
+   pinned `opus`** exactly as Stage 1 pins it (submitted-claim verdicts feed ✅ rows, so
+   this dispatch must not silently degrade either). Supply the collected list under a
+   `## Submitted claims` heading — each entry with the submitting critic's name, the claim
+   text, and its location — and instruct the agent to verdict them per its "Submitted
+   claims" section: same verdicts, same evidence discipline, same mandatory-execution rule
+   (most routed endorsements are executable guarantees, so expect `executed`-mode
+   verdicts). Instruct it to save the report as
+   `docs/reviews/code-fact-check-submitted-claims.md` with a `Commit: <current HEAD short
+   SHA>` line. k=1 is deliberate here, not a degradation: these claims were authored by a
+   named critic rather than sampled from prose, so Stage 1's verdict-stability rationale
+   (**Why three**) does not transfer, and no merge machinery applies.
+4. **Merge.** Append the returned `## Submitted Claims` section to the canonical merged
+   report (`docs/reviews/code-fact-check-report.md`), preserving each verdict's fields
+   (including `Verification mode` and `Scope`) and the submitting critic's name, so every
+   downstream consumer — the Confirmed-Good cross-check, the Unified Severity Mapping —
+   reads one artifact. This is mechanical collation like the Stage-1 merge; you add no
+   verdicts of your own (Mandatory Execution Rule 1 still stands).
+5. **Feed back into synthesis.** A submitted claim verdicted `Verified` — with its
+   verification mode and `Scope:` line — is admissible backing for a ✅ row per provenance
+   rule 5 of [Confirmed Good is a claim, not an output](#confirmed-good-is-a-claim-not-an-output).
+   A submitted claim verdicted **Incorrect** is a finding, not a footnote: enter it in the
+   rubric tiered by the [Unified Severity Mapping](#unified-severity-mapping)'s fact-check
+   column (behavioral-vs-doc scoping included), with the fact-check evidence as the row's
+   evidence and `Source: <critic> endorsement, refuted by fact-check`. `Unverifiable`
+   verdicts — and routed claims left unverdicted on a skipped stage — surface as *pending
+   execution verification* wherever the strength would otherwise be cited, never as
+   confirmations.
+
+When the stage ran, emit a between-stage banner (e.g., `Stage 2.5 (endorsement-claim
+verification) complete: 4 submitted claims — 2 Verified (executed), 1 Incorrect, 1
+Unverifiable — synthesizing into rubric and chat summary`).
 
 ### Stage 3: Synthesize and Produce Outputs
 
@@ -828,15 +890,18 @@ The collected items feed the `### Coverage and Escalations` section of the chat 
 
 Assemble the candidate `✅ Confirmed Good` rows, then run each one through
 [Confirmed Good is a claim, not an output](#confirmed-good-is-a-claim-not-an-output):
-Evidence present and grounded, enumeration behind any universally quantified claim, and no
+Evidence present and grounded, enumeration behind any universally quantified claim,
+provenance per rule 5 (an `executed`-mode verdict, or a static verdict whose `Scope:` line
+covers the row's full breadth), and no
 observation anywhere in the merged fact-check report **or any current-run per-replicate
 report** (matched by `Commit:` line, per the stale-replicate guard) inconsistent with it —
 an observation recorded only by a replicate whose verdict lost the severity contest still
 counts. To keep this from becoming four full re-reads at Stage 3, build the observation
 index once during the Stage-1 merge (file/symbol/directive touched per observation) and
 consult that index here. Rows that fail are
-dropped (ungrounded) or moved to 🟡 Must Address as `Contested` (contradicted) per that
-section. Run this **before** writing either deliverable — it changes the rubric's contents,
+dropped (ungrounded), narrowed to what their backing verdict's scope actually covers
+(provenance shortfall, rule 5), or moved to 🟡 Must Address as `Contested` (contradicted)
+per that section. Run this **before** writing either deliverable — it changes the rubric's contents,
 so it cannot be a post-hoc pass over a published table.
 
 #### Soundness-contradiction cross-check (required before producing deliverables)
@@ -899,7 +964,7 @@ If the scan surfaced nothing, render this section with a single line: "All sub-a
 
 **Contextual critic findings:** If contextual critics ran, present their findings separately as advisory input. These inform but do not block.
 
-**What the code gets right:** Strengths that critics identified. The author needs to know what to preserve during revisions.
+**What the code gets right:** Strengths the pipeline actually established — verified endorsement claims (Stage-2.5 verdicts) and critics' scoped endorsements presented with their `Verified / Not verified` scope. Critics no longer write free-form "What Looks Good" praise; do not launder a routed-but-unverified claim into a strength — label it *pending execution verification*. The author needs to know what to preserve during revisions.
 
 **Failure-mode escalation:** Count the distinct new failure modes named across critic findings — the per-finding failure-mode phrase that `for-author` findings already carry per the [orchestrated-review pattern](../../patterns/orchestrated-review.md#legibility-target-tagging) (location, evidence, attack scenario or failure mode where applicable, recommendation). Dedupe overlapping concerns in the same code region to a single mode so the count tracks distinct modes, not finding multiplicity. If >=3 new failure modes are flagged, recommend `/pre-mortem` on the diff for narrative analysis; include the recommendation in the Chat Synthesis. The recommendation is advisory — the user decides whether to invoke `/pre-mortem`, not the orchestrator. The >=3 threshold is intentionally conservative to avoid escalation fatigue: at that count, independent failure modes start to suggest coupling and ordering between them that a narrative pre-mortem surfaces but per-critic flags miss. Below the threshold, the per-critic flags already carry the signal and a separate pre-mortem pass would be redundant.
 
@@ -1202,6 +1267,27 @@ item is neither silently dropped nor silently promoted:
 This check is cheap — it is a second read of an artifact already in context — and it is
 the one check that would have caught the observed miss.
 
+**5. Provenance: an executed verdict or a covering scope, nothing weaker.** A ✅ row may
+only assert what its backing verdict covers. Admissible backing is exactly one of:
+
+- a fact-check verdict with `**Verification mode:** executed` — harvested in Stage 1 or a
+  Stage-2.5 submitted-claims verdict; or
+- a static `Verified` verdict whose per-claim `Scope:` line covers the row's **full
+  breadth** — the row asserts nothing the scope sentence excludes.
+
+A critic's `Evidence: read-static` endorsement, an untagged or `[read:]`-tagged
+endorsement bullet, or a Verified stamp narrower than the row's wording is never
+promotable to a categorical ✅ row. When the evidence stops one hop short of the row's
+wording, either narrow the row to exactly what was established — the scoped instance, not
+the category — or omit it; do not soften the wording while keeping the categorical shape.
+This is the rubric-side pair of the fact-check `Scope:` field, and the one-hop-short
+promotions it blocks (a write-signature read certifying cache contents; a narrow Verified
+stamp certifying behavior it never tested) are the measured source of false ✅ rows
+(`docs/working/pipeline-persona-attribution-2026-08-17.md` §2). Cite the backing verdict
+in the row's `Evidence` cell alongside the `path:line` quote (e.g., `FC claim 7
+(executed)` or `FC submitted claim 2 (static; scope covers row)`) so provenance is
+auditable.
+
 ### Unified Severity Mapping
 
 Use this table to map individual critic severity levels to rubric tiers:
@@ -1242,6 +1328,25 @@ tier throws away the reliable quantity and keeps the unreliable one. Recording b
 one column and lets a later gate key on whichever proves sound.
 
 **Contextual critics are advisory:** Findings from `test-strategy`, `tech-debt-triage`, `dependency-upgrade`, and `ui-visual-review` go to 🟢 Consider tier regardless of their internal severity. They inform but never block merge. `architecture-review` is the exception: it is auto-selected like a contextual critic but uses its own severity-to-rubric mapping above and can produce blocking (🔴) findings. One further exception is evidence-gated rather than critic-gated: a contextual-critic finding that meets the [Soundness-Contradiction Channel](#soundness-contradiction-channel) trigger is lifted to 🟡 Must Address — the only path by which a contextual-critic finding leaves 🟢, and terminal at 🟡.
+
+### Mechanism visibility floor (triage-loss prevention)
+
+A finding that names a **concrete defect mechanism** — a specific location plus a causal
+chain by which behavior goes wrong ("the dev-only flag is enforceable in production
+because Y never checks Z"), not a vague concern — may never be dropped below rubric
+visibility on severity or remit grounds alone. Whatever tier the mapping above assigns,
+the floor is a 🟢 Consider row carrying the mechanism intact in its `Finding` cell — the
+causal chain, not a softened summary. "Out of remit for this critic", "unlikely in
+practice", or "defer to cleanup" are grounds for tier placement and author notes, never
+for omission. This binds synthesis, contextual critics' findings included: a mechanism a
+critic detected and then deferred on remit grounds still lands as a 🟢 row. Measured
+driver: on the attribution corpus, detected mechanisms died in severity triage/synthesis —
+found by a critic, reasoned correctly, then dropped or deferred out of the rubric entirely
+(`docs/working/pipeline-persona-attribution-2026-08-17.md` §2–3). The critic-side severity
+floors (e.g., security-reviewer's Floor rule) govern the level a critic may assign; this
+rule governs what synthesis may discard — both must hold. Evidence-grounding failures are
+unaffected: an ungrounded finding still routes to `## ⚠️ Unverified Findings` — that is an
+evidence rule, not a severity call.
 
 ### Escalation Rule
 
@@ -1386,6 +1491,7 @@ docs/reviews/
 ├── code-fact-check-report-r1.md   (replicate — audit + Confirmed-Good observation scan)
 ├── code-fact-check-report-r2.md   (replicate)
 ├── code-fact-check-report-r3.md   (replicate)
+├── code-fact-check-submitted-claims.md  (Stage 2.5 — if critics routed endorsement claims)
 ├── security-review.md
 ├── performance-review.md
 ├── api-consistency-review.md
@@ -1489,10 +1595,22 @@ The risk with any "log of decisions" is that nothing reads it, so it grows in st
   delete entries.
 - **`✅ Confirmed Good` is a claim, not an output.** Every row carries grounded
   `Evidence`; universally quantified rows carry the enumeration that establishes them, not
-  one instance; and every row is cross-checked against the fact-check report before
+  one instance; every row's backing is an `executed`-mode fact-check verdict or a static
+  verdict whose `Scope:` line covers the row's full breadth (provenance rule 5 — a
+  critic's read-static endorsement or a narrower Verified stamp never promotes to a
+  categorical ✅ row); and every row is cross-checked against the fact-check report before
   publishing. A contradicted row moves to 🟡 Must Address as `Contested` — never dropped
   silently, never promoted past 🟡. See
   [Confirmed Good is a claim, not an output](#confirmed-good-is-a-claim-not-an-output).
+- **Endorsement claims are verified, not self-certified.** Critic entries marked
+  `route: code-fact-check` or `[unverified — submitted as claim]` go through the Stage-2.5
+  submitted-claims fact-check pass; a routed claim without a verdict surfaces as *pending
+  execution verification*, never as a confirmation, and a refuted one enters the rubric as
+  a finding. See
+  [Stage 2.5](#stage-25-endorsement-claim-verification-submitted-claims).
+- **A named defect mechanism never drops below the rubric.** Severity and remit set the
+  tier — 🟢 Consider at minimum, mechanism intact — never omission. See
+  [Mechanism visibility floor](#mechanism-visibility-floor-triage-loss-prevention).
 - **A clean run is one sample, not an attestation.** When the rubric passes or the next
   action is `merge`, carry the standing label
   "single-sample review; absence of findings is not an attestation" — once on the status

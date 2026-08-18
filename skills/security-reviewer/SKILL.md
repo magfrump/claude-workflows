@@ -260,6 +260,26 @@ so these findings are identifiable in review output. This aids traceability when
 evaluating whether the dependency trigger is surfacing risks that would otherwise go
 unreviewed.
 
+### 11. Enumerate bypasses for every guardrail
+
+For every guardrail, matcher, sanitizer, or filter the diff adds or modifies — an auth
+middleware matcher, an input sanitizer, a path allowlist, a CSP directive, a rate limiter —
+enumerate **at least 3 candidate bypass inputs** before forming any opinion about it. Think
+like the attacker probing it: encoding variants, boundary values, alternate code paths that
+skip the guard, request shapes the matcher's pattern doesn't cover, response classes the
+policy doesn't reach.
+
+Each candidate must then be dispatched one of two ways:
+
+- **Tested** — traced through the actual code, or exercised via a fixture/execution, with
+  the outcome recorded.
+- **Listed** — placed under an explicit **"Untested bypass candidates"** heading in the
+  report, naming the input and the reason it wasn't tested.
+
+A guardrail with untested bypass candidates may not appear in Endorsement Claims. Enumerating
+what would break a guard and then declining to check is the honest state to report — it is
+not grounds for a clean verdict.
+
 ## Critical Finding Escalation
 
 Some findings are severe enough that they should **halt the review and be surfaced to a human
@@ -389,11 +409,53 @@ Severity guidelines:
 - **Low**: Minor information leak, missing security headers, overly permissive CORS
 - **Informational**: Defense-in-depth suggestions, hardening opportunities, non-exploitable patterns
 
+**Floor rule:** a finding that names a concrete mechanism by which a security property can
+be violated in a reachable environment (e.g., a dev-only flag that is enforceable in
+production) may not be rated below **Medium**. Environmental unlikelihood belongs in
+**Confidence**, not Severity — downgrading a named mechanism to Low/Informational is how
+real detections die in triage. (A scenario that requires the attacker to already control
+the host does not meet the reachable-environment bar.)
+
 Order findings by severity (critical first), then by confidence.
 
-### What Looks Good
-Note security practices in the diff that are correctly implemented. This prevents the
-review from being purely negative and confirms which parts don't need rework.
+### Endorsement Claims
+
+This section replaces free-form praise ("What Looks Good"). It still tells the author what
+doesn't need rework — but every positive statement is an **atomic, falsifiable claim**, not
+a verdict. The reviewer never self-certifies code as good; it states exactly what it
+established and hands anything stronger to execution-backed verification.
+
+Each entry uses this structure:
+
+```
+- **Claim:** [one atomic, falsifiable statement about a security property of the diff]
+  **Location:** `path/to/file.ext:42-58`
+  **Evidence:** executed | read-static
+  **Verified:** [exactly what was established — the specific code read or command run]
+  **Not verified:** [the nearest unread/unexecuted hop — a specific caller, code path,
+  or response class one step away, never a generic disclaimer]
+  **route: code-fact-check** [only where required — see below]
+```
+
+Rules:
+
+- **The `Verified / Not verified` pair is mandatory on every entry.** The `Not verified`
+  line must name the nearest concrete hop not covered (e.g., "caller payloads on the
+  non-streaming path", "documents served via prefetch"), not "everything else".
+- **Categorical vocabulary is banned on `Evidence: read-static` entries** — "safe", "only",
+  "never", "correct", "not a bug", "cannot", "correctly reflects", "eliminates". Reading
+  code licenses scoped observations, not categorical guarantees. Reading a write signature
+  never licenses "the cache contains only X" — the caller's payload is one hop away.
+- **Any claim that could justify a Confirmed-Good rubric row must be marked
+  `route: code-fact-check`.** These claims are submitted to the code-fact-check skill's
+  `## Submitted claims` intake for execution-backed verdicting; the verdict (Confirmed-Good
+  or refuted) comes from there, never from this review. Minor positives that would not
+  anchor a rubric row stay as scoped prose entries without the routing tag.
+- **A guardrail with untested bypass candidates (move #11) may not appear here at all.**
+
+When run standalone (no fact-check available to route to), `route: code-fact-check` entries
+remain in the report marked *pending execution verification* — they are still claims, not
+verdicts.
 
 ### Summary Table
 
@@ -405,6 +467,11 @@ review from being purely negative and confirms which parts don't need rework.
 One paragraph: what's the security posture of this change? Are the issues fixable in place
 or do they indicate an architectural problem? What's the single most important thing to
 address?
+
+A "safe to merge" conclusion is permitted only when every Endorsement Claim is either
+`Evidence: executed` or explicitly scoped with its `Not verified` hop named. Otherwise the
+assessment must say: *"no findings within the code paths read; endorsement claims pending
+execution verification"* — not a categorical all-clear.
 
 ## Output Location
 
@@ -431,4 +498,7 @@ something is exploitable, say so and explain what would need to be true for the 
 - Do not suggest security theater (adding checks that cannot fail, over-validating trusted
   internal data). Every recommendation should address a realistic threat.
 - When a finding depends on context you can't see (e.g., "this is safe IF the caller always
-  validates"), say so explicitly rather than assuming either way.
+  validates"), say so explicitly rather than assuming either way. The same rule binds
+  positive statements: a clean verdict extends only to the code paths actually read, and
+  every endorsement names what was not read. "I read the write signature" never licenses
+  "the cache contains only X" — the caller's payload is one hop away.
