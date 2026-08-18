@@ -1,17 +1,22 @@
 # Canon issue ledger: every known defect in the canon set, with per-review provenance
 
-**Date**: 2026-08-14 · **Last revised**: 2026-08-18 (E7 rep3 scored — 7/8 cells, 71%
-firm; E7r2's corpus/fscompat cells recovered from dead-cell status and scored —
-76.5% firm on 7 cells; reps 1–3 union now 78% firm on the 54-row base; added E7r3 CSV
-column, corrected E7r2 columns for corpus/fscompat; added 6 new candidate rows
-N17–N22; flagged a cross-rep C3 contradiction — E7r1 hit it, E7r2/E7r3 both assert an
-unverifiable "empirically refuted" claim; see e7-rep3-results-2026-08-18.md) · prior
-revision: 2026-08-18 (added CSV `E8 raised` column, per-row provenance for all 60
-rows; added Cost-per-run and False-positives columns to the process recall table,
-incl. N7's retroactive FP charge to E6/E7r1) · earlier: 2026-08-18 (E8
-evidence-discipline pipeline scored — 47/54=87%, first process past ~80%, 0 FPs; see
-e8-results-2026-08-18.md) · earlier: 2026-08-17 (E7 rep2; N14–N16; N7 refuted;
-graduation pass 43→56) ·
+**Date**: 2026-08-14 · **Last revised**: 2026-08-18 (new arm: **cubic CLI** v1.10.4,
+backed by Claude Code via ACP, scored on all 8 instances — 38.9% firm, 1 confirmed FP
+(re-asserts refuted N7), 2 confirmed false attestations in mfc-postfix; added
+`cubic-cli raised` CSV column; added 4 new candidate rows N23–N26, two of which
+(N23, N24) are now corroborated by 2 independent sightings from *different* arms; see
+cubic-cli-results-2026-08-18.md) · prior revision: 2026-08-18 (E7 rep3 scored — 7/8
+cells, 71% firm; E7r2's corpus/fscompat cells recovered from dead-cell status and
+scored — 76.5% firm on 7 cells; reps 1–3 union now 78% firm on the 54-row base; added
+E7r3 CSV column, corrected E7r2 columns for corpus/fscompat; added 6 new candidate
+rows N17–N22; flagged a cross-rep C3 contradiction — E7r1 hit it, E7r2/E7r3 both
+assert an unverifiable "empirically refuted" claim; see
+e7-rep3-results-2026-08-18.md) · earlier: 2026-08-18 (added CSV `E8 raised` column,
+per-row provenance for all 60 rows; added Cost-per-run and False-positives columns to
+the process recall table, incl. N7's retroactive FP charge to E6/E7r1) · earlier:
+2026-08-18 (E8 evidence-discipline pipeline scored — 47/54=87%, first process past
+~80%, 0 FPs; see e8-results-2026-08-18.md) · earlier: 2026-08-17 (E7 rep2; N14–N16;
+N7 refuted; graduation pass 43→56) ·
 **Companion to**: `review-canon.md` §1 (instances/labels) ·
 Living, append-only, like the canon itself — a re-adjudication updates a row's status
 column, never deletes the row.
@@ -44,8 +49,13 @@ Still candidates, outside the 56: **N6** (single E5 attestation, never re-found,
 independent verification), **N16** (plausible-only evidence, single attestation),
 **N17–N22** (2026-08-18, from the E7 rep2/rep3 recovery pass — N18/N19/N20 at 2
 independent sightings each, N17/N21/N22 at 1; none yet meet the 3-sighting or
-fix-in-history bar). **N7** is refuted (E7r2 spec/WPT evidence) and will not graduate
-absent new evidence.
+fix-in-history bar), **N23–N26** (2026-08-18, from the cubic CLI sweep — N23/N24 at 2
+independent sightings **from different arms** each, the strongest cross-arm
+corroboration signal on the ledger so far; N25/N26 at 1). **N7** is refuted (E7r2
+spec/WPT evidence) and will not graduate absent new evidence; it also collected its
+first confirmed false-positive credit (cubic CLI's csp worker-src claim, 2026-08-18) —
+a fresh mistake made *after* the refutation, not a holdover from the older runs that
+predate it.
 
 Graduation criteria per row: N1 fix-in-history (`ab4dbdb`) + 3 sightings; N2
 execution-reproduced ×3 (E5, E7r1, E7r2); N3/N4/N5 three attestations each,
@@ -226,6 +236,39 @@ the independent scoring agents could not reproduce in-sandbox (no working `next 
 — flagged as a possible unverifiable-claim pattern, not a confirmed false attestation,
 but excluded from the reps 1–3 union hit-count pending an actual build verification.
 
+**2026-08-18 cubic CLI sweep** (full details: `cubic-cli-results-2026-08-18.md`): a new
+arm, the `cubic` code-review CLI (v1.10.4) — its own logs confirm it orchestrates
+Claude Code as its execution backend via ACP, so this measures a different
+harness/prompt design on roughly the same model, not a new model. Four new candidates
+surfaced:
+
+- **N23** corpus: `workspaceSlug`/`safeSegment` collision — distinct titles (e.g. "My
+  Workspace", "my workspace!", "MY-WORKSPACE") all reduce to the same folder slug, no
+  collision detection (2 independent sightings **from different arms** — E7r3
+  PLAUSIBLE, cubic CONFIRMED)
+- **N24** corpus: `manifest.ts`'s `manifestVersion` field is type-checked but never
+  compared against the expected `MANIFEST_VERSION` constant — a future format bump
+  would silently misparse old manifests (2 independent sightings **from different
+  arms** — E7r2 CONFIRMED, cubic CONFIRMED)
+- **N25** deploy: the LLM response cache (`cache.ts`) silently fails to write on
+  Vercel via the same read-only-`cwd()` mechanism as dep-R1/dep-R2, but the docs'
+  Limitations section never mentions the cache (cubic, code-verified; single sighting)
+- **N26** csp: missing `form-action 'self'` CSP directive (cubic, code-verified;
+  single sighting)
+
+N23 and N24 are the strongest cross-arm corroboration on the ledger to date — two
+independent tools with different harnesses, not two reps of the same tool, converging
+on the same mechanism. Precision-wise, cubic recorded **1 confirmed false positive**
+(its csp `worker-src` finding re-asserts N7's already-refuted claim — the first FP on
+N7 recorded *after* the refutation, not a holdover from older runs) and **2 confirmed
+false attestations**, both in `mfc-postfix` — a session-summary claim certifying the
+CSP `'unsafe-eval'` dev carve-out as "verified with its pinned test suite" when the
+tests don't cover the vulnerable path (mirroring E7r1's pf-A5 trap in the same
+historically FP-prone cell), and a blanket "all comments verified consistent" claim
+contradicted by a stale duplicate comment. Note: `mfc-postfix` suffered a documented
+sandbox/shell failure this run (no working `git diff`), so its 0/9-firm score is a
+degraded-run artifact, not a clean signal — the false attestations stand regardless.
+
 **Graduation pass 2026-08-17**: N1–N5 and N8–N15 (13 rows) are confirmed and now
 count in the reconciliation total and in every process's denominator (criteria and
 per-row evidence in §Count reconciliation). N6 and N16 remain candidates; N7 is
@@ -276,6 +319,7 @@ remain in the git history of this file and the per-arm results docs.
 | E7 fable rep3 (2026-08-18; 7/8 cells, postfix dead a third time) | 45 (7 scored cells; D1/D2, postfix outside ranges) | 32 firm | **71.1% firm** | ~$9.80/scored instance ($68.61 list across 7 scored cells) | **0 confirmed** (N7 not raised — correctly silent, not repeating rep1's error) + **1 flagged-unverifiable claim** on C3 ("empirically REFUTED" — same unreproducible-build pattern as rep2, and contradicts rep1's own hit on this row) | secdeps perfect 5/5 (N2, N9 independently re-executed by the scoring agent); weakest cell fscompat 3/6 |
 | **E7 fable reps 1–3 union** | 54 (D1/D2 outside ranges; C3 excluded from the hit-count pending build verification — see contradiction note above) | 42 firm + 1 partial (pf-R1, postfix — only rep1 ever scored it) | **77.8% firm, ~79.6% incl. partial** | ~$222.60 attempted total, list (rep1 $77.54 + rep2-corrected $76.45 + rep3 $68.61) | **1 net confirmed** (N7 — raised true by rep1, self-corrected/refuted by rep2, correctly silent in rep3) + 1 false attestation (N10, rep2-only) + 1 flagged-unverifiable claim pattern (C3, 2 of 3 reps) | best non-pipeline recall on the 54-row base, now within 8–10 points of E8 (87%) rather than 20; only postfix (1 rep only) and the enumeration/comment classes remain a clear pipeline moat |
 | E2 sonnet k=1 | 54 | 10 | **19%** | ~$0.12/instance ($0.81/8-instance sweep) | **0 confirmed** (the one historical FP candidate — mfc-postfix's referenced-but-not-touched constant, pre-scored — did not reproduce on this canon) | everything outside the in-diff doc-vs-code stratum |
+| cubic CLI v1.10.4 (new arm, 2026-08-18; orchestrates Claude Code as its execution backend via ACP, own harness/prompts) | 54 | 21 firm + 1 partial (pf-R1) | **38.9% firm, ~40.7% incl. partial** | untrackable subscription/CLI billing (same class as E6); 4.5–10.8 min wall-clock/cell | **1 confirmed** (csp's `worker-src` finding re-asserts N7's already-refuted claim) + **2 confirmed false attestations** (both mfc-postfix — a fail-open CSP default falsely certified "verified with its pinned test suite," and a stale duplicate comment falsely certified consistent; mfc-postfix also suffered a documented sandbox failure this run, degrading its score independent of these) | static-only posture: caught every lint-rule-*design* gap on secdeps but missed both execution-only defects (N2, N9); never touches CLAUDE.md on deploy at all; 4 new candidates (N23–N26), two cross-arm-corroborated |
 
 Notes on the judgment calls embedded above: pipeline-as-operated is charged with D1–D6
 because reviewing its own fix commits was in the loops' scope (and when the process
