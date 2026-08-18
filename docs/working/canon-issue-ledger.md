@@ -1,7 +1,8 @@
 # Canon issue ledger: every known defect in the canon set, with per-review provenance
 
-**Date**: 2026-08-14 · **Last revised**: 2026-08-17 (E7 rep2 scored; N14–N16 appended;
-N7 refuted; graduation pass — 13 N-rows counted, total 43→56, recall table rebased) ·
+**Date**: 2026-08-14 · **Last revised**: 2026-08-18 (E8 evidence-discipline pipeline
+scored — 47/54=87%, first process past ~80%, 0 FPs; see e8-results-2026-08-18.md) ·
+prior revisions: 2026-08-17 (E7 rep2; N14–N16; N7 refuted; graduation pass 43→56) ·
 **Companion to**: `review-canon.md` §1 (instances/labels) ·
 Living, append-only, like the canon itself — a re-adjudication updates a row's status
 column, never deletes the row.
@@ -222,6 +223,7 @@ remain in the git history of this file and the per-arm results docs.
 |---|---|---|---|---|
 | Full pipeline **as operated** (historical loops + postfix ground-truth run; ~$14.60/instance ≈ **$116.80 per 8-instance sweep** — the sweep-total comparable to the arms' sweep costs) | 56 | 33 | **59%** (was 77% on the 43-row base) | C1–C4 + D1–D6 (as before) + all 13 graduated N-rows — every one found only by the CC/headless arms, which is the graduation pass's headline: the pipeline's blind spot is now 23 confirmed issues, not 10 |
 | Full pipeline **incl. E1 fresh re-runs** (same process, re-run as an experiment) | 56 | 39 | **70%** (was 91%) | C1–C4 + N1–N5, N8–N15 — still invisible to every pipeline pass at any vintage |
+| **E8 evidence-discipline pipeline** (branch `feat/critic-evidence-discipline`; execution-upgraded fact-check + endorsement-claim Stage 2.5 + provenance-ruled synthesis; full 8-instance sweep 2026-08-18; see `e8-results-2026-08-18.md` + `runs/review-arms/e8-evidence-pipeline/e8-scoring.md`) | 54 (D1/D2 out of every cell's range) | 47 | **87%** | csp-R1 (masked by a scoped Confirmed-Good — the one place scope-narrowing hid a defect), N15 (img-src markdown images), N9 (.cjs crash mechanism), + non-diagnostic C1/C3/pf-A4/pf-A7. **0 confirmed FPs, 0 clean false Confirmed-Goods**; both historical false-attestation traps (N10, pf-A5) caught by the fact-check refusing to attest; pf-R1 type-seam and C4 matcher (ex-Confirmed-Good) both flipped to red by execution. First single process past ~80% of the living ledger. |
 | E4 opus-k3 union (~$0.69/instance) | 54 (D1/D2 outside its ranges) | 20 firm + D3 (raw-only, parse-dropped) + D5 (probable-same, unadjudicated) | **37% firm, ~41% incl. raw/probable** | the cross-file / enumeration / test-strategy / structural classes, plus all graduated N-rows |
 | E5 built-in /code-review, agentic dockerized (~$0.88/instance, exact per-run cost) | 54 | 23 firm (18 + graduated N1–N5) + 1 partial | **~43% firm** | enumeration/convention, test-strategy, structural (pf-R1), D6, and 8 of the 13 graduated rows (N8–N15) — but uniquely lands lean-R1, hyg-A1, firm D3/D5, and originated N1–N6 |
 | E6 ultrareview (one cleanly scored cell — all 3 sessions exited nonzero; deploy's empty result is abstention-vs-failure-unresolved; secdeps crashed; $0 billed, free tier consumed) | 10 (csp rows incl. graduated N1, N15) | 3 (legacy count; its N7 credit is no longer creditable — refuted) | **3/10 on csp** | uniquely lands csp-R1 — the only non-pipeline catch of the gold cross-file defect |
