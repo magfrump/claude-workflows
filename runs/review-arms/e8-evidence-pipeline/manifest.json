@@ -2,7 +2,7 @@
  "experiment": "E8 \u2014 evidence-discipline pipeline (branch feat/critic-evidence-discipline) over all 8 canon dirty states",
  "design": "Full pipeline per instance, E1 resume pattern: k=2 fact-check (execution-upgraded, decision-033 k) -> merge -> historical critic set (branch SKILL.md texts) -> fc-claims pass (critics' submitted endorsement claims, execution-verdicted) -> rubric (new Confirmed-Good provenance + triage-floor rules). All agents read skills from the branch working tree, run in external/cc-review-eval/<id>. Config deltas vs historical pipeline, to note in results: k=2 not k=3; orchestrator model fable-5; execution enabled.",
  "purpose": "Observe the difference vs pipeline-as-operated on the 56-row ledger: (a) newly-caught rows among C1-C4/D3-D6/N-rows, (b) zero unscoped Confirmed-Good rows, (c) wrong-verdict classes (N1/C4/N10/D6/N2-style) eliminated, (d) finding-yield preserved on stratum A/B.",
- "branch_commit": null,
+ "branch_commit": "f3c8e3d",
  "cells": {
   "mfc-csp": {
    "range": "d86d2dc..d90d6bb",
@@ -14,15 +14,15 @@
     "test-strategy"
    ],
    "stages": {
-    "fc-r1": "pending",
-    "fc-r2": "pending",
-    "fc-merge": "pending",
-    "critic-security": "pending",
-    "critic-performance": "pending",
-    "critic-api-consistency": "pending",
-    "critic-test-strategy": "pending",
-    "fc-claims": "pending",
-    "rubric": "pending"
+    "fc-r1": "done",
+    "fc-r2": "done",
+    "fc-merge": "done",
+    "critic-security": "done",
+    "critic-performance": "done",
+    "critic-api-consistency": "done",
+    "critic-test-strategy": "done",
+    "fc-claims": "done",
+    "rubric": "done"
    },
    "tokens": {}
   },
@@ -36,15 +36,15 @@
     "ui-visual"
    ],
    "stages": {
-    "fc-r1": "pending",
-    "fc-r2": "pending",
-    "fc-merge": "pending",
-    "critic-security": "pending",
-    "critic-performance": "pending",
-    "critic-api-consistency": "pending",
-    "critic-ui-visual": "pending",
-    "fc-claims": "pending",
-    "rubric": "pending"
+    "fc-r1": "done",
+    "fc-r2": "done",
+    "fc-merge": "done",
+    "critic-security": "done",
+    "critic-performance": "done",
+    "critic-api-consistency": "done",
+    "critic-ui-visual": "done",
+    "fc-claims": "done",
+    "rubric": "done"
    },
    "tokens": {}
   },
@@ -57,14 +57,14 @@
     "api-consistency"
    ],
    "stages": {
-    "fc-r1": "pending",
-    "fc-r2": "pending",
-    "fc-merge": "pending",
-    "critic-security": "pending",
-    "critic-performance": "pending",
-    "critic-api-consistency": "pending",
-    "fc-claims": "pending",
-    "rubric": "pending"
+    "fc-r1": "done",
+    "fc-r2": "done",
+    "fc-merge": "done",
+    "critic-security": "done",
+    "critic-performance": "done",
+    "critic-api-consistency": "done",
+    "fc-claims": "done",
+    "rubric": "done"
    },
    "tokens": {}
   },
@@ -78,15 +78,15 @@
     "dependency-upgrade"
    ],
    "stages": {
-    "fc-r1": "pending",
-    "fc-r2": "pending",
-    "fc-merge": "pending",
-    "critic-security": "pending",
-    "critic-performance": "pending",
-    "critic-api-consistency": "pending",
-    "critic-dependency-upgrade": "pending",
-    "fc-claims": "pending",
-    "rubric": "pending"
+    "fc-r1": "done",
+    "fc-r2": "done",
+    "fc-merge": "done",
+    "critic-security": "done",
+    "critic-performance": "done",
+    "critic-api-consistency": "done",
+    "critic-dependency-upgrade": "done",
+    "fc-claims": "done",
+    "rubric": "done"
    },
    "tokens": {}
   },
@@ -99,14 +99,14 @@
     "api-consistency"
    ],
    "stages": {
-    "fc-r1": "pending",
-    "fc-r2": "pending",
-    "fc-merge": "pending",
-    "critic-security": "pending",
-    "critic-performance": "pending",
-    "critic-api-consistency": "pending",
-    "fc-claims": "pending",
-    "rubric": "pending"
+    "fc-r1": "done",
+    "fc-r2": "done",
+    "fc-merge": "done",
+    "critic-security": "done",
+    "critic-performance": "done",
+    "critic-api-consistency": "done",
+    "fc-claims": "done",
+    "rubric": "done"
    },
    "tokens": {}
   },
@@ -120,15 +120,15 @@
     "test-strategy"
    ],
    "stages": {
-    "fc-r1": "pending",
-    "fc-r2": "pending",
-    "fc-merge": "pending",
-    "critic-security": "pending",
-    "critic-performance": "pending",
-    "critic-api-consistency": "pending",
-    "critic-test-strategy": "pending",
-    "fc-claims": "pending",
-    "rubric": "pending"
+    "fc-r1": "done",
+    "fc-r2": "done",
+    "fc-merge": "done",
+    "critic-security": "done",
+    "critic-performance": "done",
+    "critic-api-consistency": "done",
+    "critic-test-strategy": "done",
+    "fc-claims": "done",
+    "rubric": "done"
    },
    "tokens": {}
   },
@@ -143,16 +143,16 @@
     "tech-debt-triage"
    ],
    "stages": {
-    "fc-r1": "pending",
-    "fc-r2": "pending",
-    "fc-merge": "pending",
-    "critic-security": "pending",
-    "critic-performance": "pending",
-    "critic-api-consistency": "pending",
-    "critic-architecture": "pending",
-    "critic-tech-debt-triage": "pending",
-    "fc-claims": "pending",
-    "rubric": "pending"
+    "fc-r1": "done",
+    "fc-r2": "done",
+    "fc-merge": "done",
+    "critic-security": "done",
+    "critic-performance": "done",
+    "critic-api-consistency": "done",
+    "critic-architecture": "done",
+    "critic-tech-debt-triage": "done",
+    "fc-claims": "done",
+    "rubric": "done"
    },
    "tokens": {}
   },
@@ -167,16 +167,16 @@
     "ui-visual"
    ],
    "stages": {
-    "fc-r1": "pending",
-    "fc-r2": "pending",
-    "fc-merge": "pending",
-    "critic-security": "pending",
-    "critic-performance": "pending",
-    "critic-api-consistency": "pending",
-    "critic-architecture": "pending",
-    "critic-ui-visual": "pending",
-    "fc-claims": "pending",
-    "rubric": "pending"
+    "fc-r1": "done",
+    "fc-r2": "done",
+    "fc-merge": "done",
+    "critic-security": "done",
+    "critic-performance": "done",
+    "critic-api-consistency": "done",
+    "critic-architecture": "done",
+    "critic-ui-visual": "done",
+    "fc-claims": "done",
+    "rubric": "done"
    },
    "tokens": {}
   }

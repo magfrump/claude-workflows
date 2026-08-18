@@ -1,0 +1,11 @@
+== Part A: SDK transport binding (per-instance vs shared) ==
+c1.fetch === c2.fetch                  : true
+c1.fetch === globalThis.fetch          : true
+c2.fetch === globalThis.fetch          : true
+c1.fetchOptions (per-client dispatcher): null
+c2.fetchOptions (per-client dispatcher): null
+c1.apiKey !== c2.apiKey (distinct keys): true
+
+== Part B: localhost keep-alive socket reuse (6 requests via c1.fetch/c2.fetch alternating) ==
+distinct server-observed TCP sockets   : 2
+(1 => connections pooled/reused process-globally across both clients; 6 => fresh connection per call)

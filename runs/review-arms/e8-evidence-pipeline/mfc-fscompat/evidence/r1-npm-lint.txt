@@ -1,0 +1,11 @@
+
+> nextjs@0.1.0 lint
+> eslint
+
+[0m
+[4m/workspace/external/cc-review-eval/mfc-fscompat/app/page.tsx[24m
+  [2m209:6[22m  [33mwarning[39m  React Hook useCallback has missing dependencies: 'setPersistedCausalGraph', 'setPersistedDialecticalMap', 'setPersistedPropertyTests', and 'setPersistedStatisticalModel'. Either include them or remove the dependency array  [2mreact-hooks/exhaustive-deps[22m
+  [2m271:6[22m  [33mwarning[39m  React Hook useCallback has missing dependencies: 'setPersistedCausalGraph', 'setPersistedDialecticalMap', 'setPersistedPropertyTests', and 'setPersistedStatisticalModel'. Either include them or remove the dependency array  [2mreact-hooks/exhaustive-deps[22m
+
+[33m[1m✖ 2 problems (0 errors, 2 warnings)[22m[39m
+[0m

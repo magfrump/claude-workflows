@@ -1,0 +1,9 @@
+=== D5 write-race probe: zustand persist un-awaited setItem ===
+zustand version: 5.0.13
+ENTER writeFile #1 value=1 inFlight=1
+ENTER writeFile #2 value=2 inFlight=2
+EXIT  writeFile #1 value=1 inFlight=1
+EXIT  writeFile #2 value=2 inFlight=0
+---
+maxConcurrent writeFile sequences in flight: [33m2[39m
+VERDICT: CONFIRMED — two writeFile sequences overlapped; persist does NOT await the prior setItem before firing the next. Completion order is not guaranteed to match issue order -> lost-update hazard.

@@ -1,0 +1,18 @@
+# evidence: files created under $(cwd)/data by the vitest callLlm run (mock + openrouter paths)
+# cwd: /workspace/external/cc-review-eval/mfc-deploy
+# date: 2026-08-18T06:14:28Z
+## ls -R data:
+data:
+analytics.jsonl
+cache
+
+data/cache:
+6ecd89609720c882163b626f147d6fd95ff2d57b2c5473310302e1458c76c393.json
+d79e5ccad56b5cb999524fab6d065de9fa8fc3e6a5de89257c770c498a330f4f.json
+## data/analytics.jsonl:
+{"id":"1243cc8c-9386-4ab8-a1d4-726c7fddc29d","endpoint":"cfc-test-nokeys","provider":"mock","model":"mock","inputTokens":0,"outputTokens":0,"costUsd":0,"latencyMs":0,"timestamp":"2026-08-18T06:14:08.198Z"}
+{"id":"b51f77bf-a8ce-4076-af06-8db3faf957e7","endpoint":"cfc-test-openrouter","provider":"openrouter","model":"anthropic/claude-opus-4","inputTokens":5,"outputTokens":7,"costUsd":0,"latencyMs":0,"timestamp":"2026-08-18T06:14:08.202Z"}
+{"id":"0954a07a-c68e-49e5-9ecf-76726f310a8c","endpoint":"cfc-test-or-nomodel","provider":"mock","model":"mock","inputTokens":0,"outputTokens":0,"costUsd":0,"latencyMs":0,"timestamp":"2026-08-18T06:14:08.204Z"}
+{"id":"899287e3-7a1d-4b00-9f86-727e5ab2f5cf","endpoint":"cfc-test-nokeys","provider":"mock","model":"mock","inputTokens":0,"outputTokens":0,"costUsd":0,"latencyMs":0,"timestamp":"2026-08-18T06:14:17.694Z"}
+{"id":"0c5ebbc7-3246-49ee-a47f-b71d2e0732a3","endpoint":"cfc-test-openrouter","provider":"openrouter","model":"anthropic/claude-opus-4","inputTokens":5,"outputTokens":7,"costUsd":0,"latencyMs":0,"timestamp":"2026-08-18T06:14:17.723Z"}
+{"id":"a62f4d53-a6e6-4ff7-8f93-571b581c2dfa","endpoint":"cfc-test-or-nomodel","provider":"mock","model":"mock","inputTokens":0,"outputTokens":0,"costUsd":0,"latencyMs":0,"timestamp":"2026-08-18T06:14:17.725Z"}

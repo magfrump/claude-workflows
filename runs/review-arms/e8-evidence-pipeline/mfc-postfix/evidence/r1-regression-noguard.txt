@@ -1,0 +1,9 @@
+ ❯ app/components/panels/BalancedPerspectivesPanel.test.tsx (2 tests | 1 failed) 46ms
+     × does not crash when a streamed tension is missing its between tuple 8ms
+⎯⎯⎯⎯⎯⎯⎯ Failed Tests 1 ⎯⎯⎯⎯⎯⎯⎯
+ FAIL  app/components/panels/BalancedPerspectivesPanel.test.tsx > BalancedPerspectivesPanel > does not crash when a streamed tension is missing its between tuple
+AssertionError: expected [Function] to not throw an error but 'TypeError: Cannot read properties of …' was thrown
+"TypeError: Cannot read properties of undefined (reading '0')"
+ Test Files  1 failed (1)
+      Tests  1 failed | 1 passed (2)
+   Duration  769ms (transform 65ms, setup 45ms, import 115ms, tests 46ms, environment 441ms)

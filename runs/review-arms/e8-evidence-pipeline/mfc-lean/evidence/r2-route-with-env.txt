@@ -1,0 +1,54 @@
+=== r2 route execution, dev server: LEAN_VERIFIER_URL=http://127.0.0.1:4461, cwd=/workspace/external/cc-review-eval/mfc-lean, port 4460 ===
+2026-08-18T06:23:56Z
+--- Case A: env set but nothing listening on 4461 (unreachable) ---
+{"valid":false,"unavailable":true,"reason":"verifier-unreachable"}
+HTTP:200
+curl exit: 0
+--- Start stub in error500 mode ---
+node:internal/modules/package_json_reader:93
+        throw error;
+        ^
+
+SyntaxError: Error parsing /workspace/package.json: Unexpected end of JSON input
+    at parse (<anonymous>)
+[90m    at read (node:internal/modules/package_json_reader:80:16)[39m
+[90m    at readPackage (node:internal/modules/package_json_reader:141:10)[39m
+[90m    at readPackageScope (node:internal/modules/package_json_reader:164:19)[39m
+[90m    at shouldUseESMLoader (node:internal/modules/run_main:79:15)[39m
+[90m    at Function.executeUserEntryPoint [as runMain] (node:internal/modules/run_main:157:24)[39m
+[90m    at node:internal/main/run_main_module:28:49[39m {
+  path: [32m'/workspace/package.json'[39m
+}
+
+Node.js v20.20.2
+--- Case B: verifier reachable, returns HTTP 500 ---
+{"valid":false,"unavailable":true,"reason":"verifier-unreachable"}
+HTTP:200
+curl exit: 0
+(eval):kill:12: kill 368185 failed: no such process
+node:internal/modules/package_json_reader:93
+        throw error;
+        ^
+
+SyntaxError: Error parsing /workspace/package.json: Unexpected end of JSON input
+    at parse (<anonymous>)
+[90m    at read (node:internal/modules/package_json_reader:80:16)[39m
+[90m    at readPackage (node:internal/modules/package_json_reader:141:10)[39m
+[90m    at readPackageScope (node:internal/modules/package_json_reader:164:19)[39m
+[90m    at shouldUseESMLoader (node:internal/modules/run_main:79:15)[39m
+[90m    at Function.executeUserEntryPoint [as runMain] (node:internal/modules/run_main:157:24)[39m
+[90m    at node:internal/main/run_main_module:28:49[39m {
+  path: [32m'/workspace/package.json'[39m
+}
+
+Node.js v20.20.2
+--- Case C: verifier reachable, returns 200 {valid:false,errors:...} (proves env URL is used) ---
+{"valid":false,"unavailable":true,"reason":"verifier-unreachable"}
+HTTP:200
+curl exit: 0
+(eval):kill:17: kill 368259 failed: no such process
+--- Case D: missing leanCode -> 400 (unchanged branch, context) ---
+{"error":"leanCode is required"}
+HTTP:400
+curl exit: 0
+2026-08-18T06:24:00Z

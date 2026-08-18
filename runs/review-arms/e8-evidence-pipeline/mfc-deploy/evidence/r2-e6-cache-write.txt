@@ -1,0 +1,105 @@
+# E6: LLM cache writes to local filesystem — vitest probe calling setCachedResult from app/lib/llm/cache.ts
+cwd: /workspace/external/cc-review-eval/mfc-deploy
+timestamp: 2026-08-18T06:17:42Z
+command: npx vitest run app/lib/llm/__r2_cfc_cache_write.test.ts (temporary probe test, deleted after run; source inlined below)
+Error: Invalid package config /workspace/external/package.json while importing /workspace/external/cc-review-eval/mfc-deploy. Unexpected end of JSON input
+    at __node_internal_ [90m(file:///workspace/external/cc-review-eval/mfc-deploy/[39mnode_modules/[4mvitest[24m/dist/chunks/index.BCY_7LL2.js:461:11[90m)[39m
+    at new NodeError [90m(file:///workspace/external/cc-review-eval/mfc-deploy/[39mnode_modules/[4mvitest[24m/dist/chunks/index.BCY_7LL2.js:405:5[90m)[39m
+    at read [90m(file:///workspace/external/cc-review-eval/mfc-deploy/[39mnode_modules/[4mvitest[24m/dist/chunks/index.BCY_7LL2.js:592:21[90m)[39m
+    at getPackageScopeConfig [90m(file:///workspace/external/cc-review-eval/mfc-deploy/[39mnode_modules/[4mvitest[24m/dist/chunks/index.BCY_7LL2.js:655:27[90m)[39m
+[90m    ... 6 lines matching cause stack trace ...[39m
+    at _resolve [90m(file:///workspace/external/cc-review-eval/mfc-deploy/[39mnode_modules/[4mvitest[24m/dist/chunks/index.BCY_7LL2.js:2252:22[90m)[39m
+    at resolvePackage [90m(file:///workspace/external/cc-review-eval/mfc-deploy/[39mnode_modules/[4mvitest[24m/dist/chunks/index.BCY_7LL2.js:2299:12[90m)[39m
+    at isPackageExists [90m(file:///workspace/external/cc-review-eval/mfc-deploy/[39mnode_modules/[4mvitest[24m/dist/chunks/index.BCY_7LL2.js:2267:12[90m)[39m
+    at VitestPackageInstaller.ensureInstalled [90m(file:///workspace/external/cc-review-eval/mfc-deploy/[39mnode_modules/[4mvitest[24m/dist/chunks/cli-api.Cjt90eJu.js:2322:23[90m)[39m
+    at prepareVitest [90m(file:///workspace/external/cc-review-eval/mfc-deploy/[39mnode_modules/[4mvitest[24m/dist/chunks/cli-api.Cjt90eJu.js:14574:56[90m)[39m
+    at startVitest [90m(file:///workspace/external/cc-review-eval/mfc-deploy/[39mnode_modules/[4mvitest[24m/dist/chunks/cli-api.Cjt90eJu.js:14515:14[90m)[39m
+    at start [90m(file:///workspace/external/cc-review-eval/mfc-deploy/[39mnode_modules/[4mvitest[24m/dist/chunks/cac.DJJmV0dT.js:2340:15[90m)[39m
+    at CAC.run [90m(file:///workspace/external/cc-review-eval/mfc-deploy/[39mnode_modules/[4mvitest[24m/dist/chunks/cac.DJJmV0dT.js:2318:2[90m)[39m {
+  code: [32m'ERR_INVALID_PACKAGE_CONFIG'[39m,
+  cause: SyntaxError: Unexpected end of JSON input
+      at JSON.parse (<anonymous>)
+      at read [90m(file:///workspace/external/cc-review-eval/mfc-deploy/[39mnode_modules/[4mvitest[24m/dist/chunks/index.BCY_7LL2.js:589:21[90m)[39m
+      at getPackageScopeConfig [90m(file:///workspace/external/cc-review-eval/mfc-deploy/[39mnode_modules/[4mvitest[24m/dist/chunks/index.BCY_7LL2.js:655:27[90m)[39m
+      at packageResolve [90m(file:///workspace/external/cc-review-eval/mfc-deploy/[39mnode_modules/[4mvitest[24m/dist/chunks/index.BCY_7LL2.js:1805:25[90m)[39m
+      at moduleResolve [90m(file:///workspace/external/cc-review-eval/mfc-deploy/[39mnode_modules/[4mvitest[24m/dist/chunks/index.BCY_7LL2.js:1945:18[90m)[39m
+      at _tryModuleResolve [90m(file:///workspace/external/cc-review-eval/mfc-deploy/[39mnode_modules/[4mvitest[24m/dist/chunks/index.BCY_7LL2.js:1990:12[90m)[39m
+      at _resolve$1 [90m(file:///workspace/external/cc-review-eval/mfc-deploy/[39mnode_modules/[4mvitest[24m/dist/chunks/index.BCY_7LL2.js:2045:16[90m)[39m
+      at resolveSync [90m(file:///workspace/external/cc-review-eval/mfc-deploy/[39mnode_modules/[4mvitest[24m/dist/chunks/index.BCY_7LL2.js:2078:10[90m)[39m
+      at resolvePathSync [90m(file:///workspace/external/cc-review-eval/mfc-deploy/[39mnode_modules/[4mvitest[24m/dist/chunks/index.BCY_7LL2.js:2081:24[90m)[39m
+      at _resolve [90m(file:///workspace/external/cc-review-eval/mfc-deploy/[39mnode_modules/[4mvitest[24m/dist/chunks/index.BCY_7LL2.js:2252:22[90m)[39m
+}
+ MISSING DEPENDENCY  Cannot find dependency 'jsdom'
+
+
+ RUN  v4.1.5 /workspace/external/cc-review-eval/mfc-deploy
+
+ ❯ app/lib/llm/__r2_cfc_cache_write.test.ts (1 test | 1 failed) 8ms
+     × setCachedResult writes data/cache/<hash>.json to the local filesystem 7ms
+
+⎯⎯⎯⎯⎯⎯⎯ Failed Tests 1 ⎯⎯⎯⎯⎯⎯⎯
+
+ FAIL  app/lib/llm/__r2_cfc_cache_write.test.ts > cfc-r2 cache filesystem write probe > setCachedResult writes data/cache/<hash>.json to the local filesystem
+AssertionError: expected true to be false // Object.is equality
+
+- Expected
++ Received
+
+- false
++ true
+
+ ❯ app/lib/llm/__r2_cfc_cache_write.test.ts:35:34
+     33|
+     34|     await removeCachedResult(hash); // clean up the cache file
+     35|     expect(existsSync(filePath)).toBe(false);
+       |                                  ^
+     36|   });
+     37| });
+
+⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[1/1]⎯
+
+
+ Test Files  1 failed (1)
+      Tests  1 failed (1)
+   Start at  23:17:43
+   Duration  654ms (transform 29ms, setup 47ms, import 20ms, tests 8ms, environment 460ms)
+
+exit code: 1
+--- probe test source:
+// Temporary code-fact-check probe (replicate r2) — verifies the LLM cache
+// writes to the local filesystem at data/cache/<hash>.json under process.cwd().
+// This file is deleted after the run.
+import { describe, it, expect } from "vitest";
+import { existsSync, readFileSync } from "fs";
+import { join } from "path";
+import { computeHash, setCachedResult, getCachedResult, removeCachedResult } from "./cache";
+
+describe("cfc-r2 cache filesystem write probe", () => {
+  it("setCachedResult writes data/cache/<hash>.json to the local filesystem", async () => {
+    const model = "cfc-r2-probe-model";
+    const sys = "probe-system";
+    const user = "probe-user";
+    const maxTokens = 7;
+    const hash = computeHash(model, sys, user, maxTokens);
+    const filePath = join(process.cwd(), "data", "cache", `${hash}.json`);
+
+    await setCachedResult(hash, {
+      text: "probe-text",
+      usage: {
+        provider: "mock", model, inputTokens: 1, outputTokens: 1,
+        costUsd: 0, latencyMs: 0,
+      },
+      cacheKey: { model, systemPrompt: sys, userContent: user, maxTokens },
+    } as never);
+
+    expect(existsSync(filePath)).toBe(true);
+    const onDisk = JSON.parse(readFileSync(filePath, "utf-8"));
+    expect(onDisk.text).toBe("probe-text");
+
+    const roundTrip = await getCachedResult(model, sys, user, maxTokens);
+    expect(roundTrip?.text).toBe("probe-text");
+
+    await removeCachedResult(hash); // clean up the cache file
+    expect(existsSync(filePath)).toBe(false);
+  });
+});

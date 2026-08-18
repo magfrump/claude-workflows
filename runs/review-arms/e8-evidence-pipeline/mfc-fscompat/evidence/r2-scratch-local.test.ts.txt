@@ -1,0 +1,51 @@
+// Source of the scratch test run for r2-vitest-local.txt (file was placed at
+// app/lib/utils/r2scratch-local.test.ts in the clone, run, then deleted to keep the clone pristine).
+import { describe, it, expect } from "vitest";
+import { join } from "path";
+import { existsSync, readFileSync, rmSync } from "fs";
+import { dataDir } from "@/app/lib/utils/dataDir";
+import { appendAnalyticsEntry } from "@/app/lib/analytics/persist";
+
+describe("r2 local env (VERCEL unset)", () => {
+  it("precondition: VERCEL is not set", () => {
+    expect(process.env.VERCEL).toBeUndefined();
+  });
+
+  it("dataDir() resolves to <cwd>/data and dataDir('cache') to <cwd>/data/cache", () => {
+    expect(dataDir()).toBe(join(process.cwd(), "data"));
+    expect(dataDir("cache")).toBe(join(process.cwd(), "data", "cache"));
+  });
+
+  it("appendAnalyticsEntry writes to <cwd>/data/analytics.jsonl (durable repo dir)", () => {
+    const file = join(process.cwd(), "data", "analytics.jsonl");
+    const existedBefore = existsSync(file);
+    const marker = "r2-local-marker-8f3a";
+    appendAnalyticsEntry({
+      id: marker,
+      endpoint: "r2-scratch",
+      provider: "mock",
+      model: "mock",
+      inputTokens: 0,
+      outputTokens: 0,
+      costUsd: 0,
+      latencyMs: 0,
+      timestamp: new Date().toISOString(),
+    } as never);
+    expect(existsSync(file)).toBe(true);
+    expect(readFileSync(file, "utf-8")).toContain(marker);
+    // cleanup: remove only what this test created
+    if (!existedBefore) {
+      rmSync(file);
+      try { rmSync(join(process.cwd(), "data"), { recursive: false }); } catch { /* non-empty: leave */ }
+    } else {
+      const kept = readFileSync(file, "utf-8")
+        .split("\n")
+        .filter((l) => l.trim() && !l.includes(marker))
+        .join("\n");
+      rmSync(file);
+      if (kept) {
+        require("fs").writeFileSync(file, kept + "\n", "utf-8");
+      }
+    }
+  });
+});

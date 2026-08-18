@@ -1,0 +1,26 @@
+cwd=/workspace timestamp=2026-08-18T06:27:56Z
+$ curl -s -D headers http://localhost:4231/ (HTML saved)
+exit=0
+--- script tags:
+<script src="/_next/static/chunks/0_0neb_tu2q4s.js" async="" nonce="NzhmNmUwMjEtNWM5Zi00Nzk1LWIzMTgtNzhmODZkOGZkM2M1">
+<script src="/_next/static/chunks/05x164im~vxz5.js" async="" nonce="NzhmNmUwMjEtNWM5Zi00Nzk1LWIzMTgtNzhmODZkOGZkM2M1">
+<script src="/_next/static/chunks/turbopack-0fg3n29~3v0xo.js" async="" nonce="NzhmNmUwMjEtNWM5Zi00Nzk1LWIzMTgtNzhmODZkOGZkM2M1">
+<script src="/_next/static/chunks/10grfdb47a~r2.js" async="" nonce="NzhmNmUwMjEtNWM5Zi00Nzk1LWIzMTgtNzhmODZkOGZkM2M1">
+<script src="/_next/static/chunks/0d5e0eqwpw5k4.js" async="" nonce="NzhmNmUwMjEtNWM5Zi00Nzk1LWIzMTgtNzhmODZkOGZkM2M1">
+<script src="/_next/static/chunks/0czeu3rmhyguh.js" async="" nonce="NzhmNmUwMjEtNWM5Zi00Nzk1LWIzMTgtNzhmODZkOGZkM2M1">
+<script src="/_next/static/chunks/03xpmw9qg8~e1.js" async="" nonce="NzhmNmUwMjEtNWM5Zi00Nzk1LWIzMTgtNzhmODZkOGZkM2M1">
+<script src="/_next/static/chunks/07cir5icqoxhl.js" async="" nonce="NzhmNmUwMjEtNWM5Zi00Nzk1LWIzMTgtNzhmODZkOGZkM2M1">
+<script src="/_next/static/chunks/03~yq9q893hmn.js" noModule="" nonce="NzhmNmUwMjEtNWM5Zi00Nzk1LWIzMTgtNzhmODZkOGZkM2M1">
+<script src="/_next/static/chunks/116_vkj7o4ltg.js" nonce="NzhmNmUwMjEtNWM5Zi00Nzk1LWIzMTgtNzhmODZkOGZkM2M1" id="_R_" async="">
+<script nonce="NzhmNmUwMjEtNWM5Zi00Nzk1LWIzMTgtNzhmODZkOGZkM2M1">
+<script nonce="NzhmNmUwMjEtNWM5Zi00Nzk1LWIzMTgtNzhmODZkOGZkM2M1">
+<script nonce="NzhmNmUwMjEtNWM5Zi00Nzk1LWIzMTgtNzhmODZkOGZkM2M1">
+<script nonce="NzhmNmUwMjEtNWM5Zi00Nzk1LWIzMTgtNzhmODZkOGZkM2M1">
+<script nonce="NzhmNmUwMjEtNWM5Zi00Nzk1LWIzMTgtNzhmODZkOGZkM2M1">
+--- nonce occurrences in HTML:
+2
+--- inline style elements/attrs:
+style="font-family:var(--font-serif, &#x27;EB Garamond&#x27;, serif)"
+style="width:var(--rail-width);background:var(--rail-bg)"
+style="line-height:1.7;caret-color:#000000"
+style="line-height:1.7;caret-color:#000000"

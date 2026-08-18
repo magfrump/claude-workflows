@@ -1,0 +1,89 @@
+cwd=/workspace  timestamp=2026-08-18T06:26:54Z
+=== root url=http://localhost:4231/ hdr=''
+HTTP/1.1 200 OK
+content-security-policy: default-src 'self'; script-src 'self' 'nonce-MWY1MjlhZDYtYWQyMy00ZjJjLWFlMzktZTEyZjdkZWIyNTgx' 'strict-dynamic'; style-src 'self' 'unsafe-inline'; img-src 'self' data: blob:; font-src 'self' data:; connect-src 'self'; frame-ancestors 'none'; base-uri 'self'; object-src 'none'
+Vary: rsc, next-router-state-tree, next-router-prefetch, next-router-segment-prefetch, Accept-Encoding
+link: </>; rel=preconnect; crossorigin=""
+X-Powered-By: Next.js
+Cache-Control: private, no-cache, no-store, max-age=0, must-revalidate
+Content-Type: text/html; charset=utf-8
+Date: Tue, 18 Aug 2026 06:26:54 GMT
+Connection: keep-alive
+Keep-Alive: timeout=5
+Transfer-Encoding: chunked
+
+exit=0
+=== api-analytics url=http://localhost:4231/api/analytics hdr=''
+HTTP/1.1 200 OK
+vary: rsc, next-router-state-tree, next-router-prefetch, next-router-segment-prefetch
+content-type: application/json
+Date: Tue, 18 Aug 2026 06:26:54 GMT
+Connection: keep-alive
+Keep-Alive: timeout=5
+Transfer-Encoding: chunked
+
+exit=0
+=== favicon url=http://localhost:4231/favicon.ico hdr=''
+HTTP/1.1 200 OK
+vary: rsc, next-router-state-tree, next-router-prefetch, next-router-segment-prefetch
+x-nextjs-cache: HIT
+cache-control: public, max-age=0, must-revalidate
+content-type: image/x-icon
+Date: Tue, 18 Aug 2026 06:26:54 GMT
+Connection: keep-alive
+Keep-Alive: timeout=5
+Transfer-Encoding: chunked
+
+exit=0
+=== static-asset url=http://localhost:4231/_next/static/chunks/xyz.js hdr=''
+HTTP/1.1 404 Not Found
+Cache-Control: private, no-cache, no-store, max-age=0, must-revalidate
+Content-Type: text/plain; charset=utf-8
+Vary: Accept-Encoding
+Date: Tue, 18 Aug 2026 06:26:54 GMT
+Connection: keep-alive
+Keep-Alive: timeout=5
+Transfer-Encoding: chunked
+
+exit=0
+=== prefetch-nrp url=http://localhost:4231/ hdr='next-router-prefetch: 1'
+exit=28
+=== prefetch-purpose url=http://localhost:4231/ hdr='purpose: prefetch'
+HTTP/1.1 200 OK
+Vary: rsc, next-router-state-tree, next-router-prefetch, next-router-segment-prefetch, Accept-Encoding
+link: </>; rel=preconnect; crossorigin=""
+X-Powered-By: Next.js
+Cache-Control: private, no-cache, no-store, max-age=0, must-revalidate
+Content-Type: text/html; charset=utf-8
+Date: Tue, 18 Aug 2026 06:27:09 GMT
+Connection: keep-alive
+Keep-Alive: timeout=5
+Transfer-Encoding: chunked
+
+exit=0
+=== random-page url=http://localhost:4231/some-random-page hdr=''
+HTTP/1.1 404 Not Found
+content-security-policy: default-src 'self'; script-src 'self' 'nonce-YjlkYTRiMmItMDIzOC00M2RhLWFlODYtYTM1NmE5NGZmYjVm' 'strict-dynamic'; style-src 'self' 'unsafe-inline'; img-src 'self' data: blob:; font-src 'self' data:; connect-src 'self'; frame-ancestors 'none'; base-uri 'self'; object-src 'none'
+Cache-Control: private, no-cache, no-store, max-age=0, must-revalidate
+Vary: rsc, next-router-state-tree, next-router-prefetch, next-router-segment-prefetch, Accept-Encoding
+X-Powered-By: Next.js
+Content-Type: text/html; charset=utf-8
+Date: Tue, 18 Aug 2026 06:27:09 GMT
+Connection: keep-alive
+Keep-Alive: timeout=5
+Transfer-Encoding: chunked
+
+exit=0
+retry prefetch-nrp timestamp=2026-08-18T06:27:18Z
+HTTP/1.1 200 OK
+Vary: rsc, next-router-state-tree, next-router-prefetch, next-router-segment-prefetch, Accept-Encoding
+Cache-Control: private, no-cache, no-store, max-age=0, must-revalidate
+Content-Type: text/x-component
+Date: Tue, 18 Aug 2026 06:27:18 GMT
+Connection: keep-alive
+Keep-Alive: timeout=5
+Transfer-Encoding: chunked
+
+exit=0
+=== retry without RSC header
+exit=28

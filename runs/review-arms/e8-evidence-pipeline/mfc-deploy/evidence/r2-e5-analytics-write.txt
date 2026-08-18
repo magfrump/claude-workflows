@@ -1,0 +1,11 @@
+# E5: no API keys configured -> callLlm mock fallback; verifies analytics log written to local filesystem (data/analytics.jsonl under process.cwd())
+cwd: /workspace/external/cc-review-eval/mfc-deploy (same dev server as E3/E4; ANTHROPIC_API_KEY and OPENROUTER_API_KEY unset)
+timestamp: 2026-08-18T06:16:27Z
+pre-state: data dir exists? no
+command: curl -s -X POST http://localhost:3400/api/edit/inline -H "Content-Type: application/json" -d {"fullText":"hello world","selection":{"start":0,"end":5,"text":"hello"},"instruction":"capitalize"}
+{"text":"[mock edit: \"capitalize\" applied to \"hello\"]"}
+exit code: 0
+post-state: data/analytics.jsonl:
+{"id":"693fe49e-8805-4e90-ae46-73ee3dbd4ac3","endpoint":"edit/inline","provider":"mock","model":"mock","inputTokens":0,"outputTokens":0,"costUsd":0,"latencyMs":0,"timestamp":"2026-08-18T06:16:27.597Z"}
+data:
+analytics.jsonl

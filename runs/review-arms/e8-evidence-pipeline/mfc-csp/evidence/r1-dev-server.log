@@ -1,0 +1,69 @@
+
+> nextjs@0.1.0 dev
+> next dev
+
+[1m[38;2;173;127;168m▲ Next.js 16.2.4[39m[22m (Turbopack)
+- Local:         http://localhost:4101
+- Network:       http://172.17.0.2:4101
+- Environments: .env.development.local, .env.local, .env.development, .env
+[32m[1m✓[22m[39m Ready in 257ms
+[33m[1m⚠[22m[39m Warning: Next.js inferred your workspace root, but it may not be correct.
+ We detected multiple lockfiles and selected the directory of /workspace/pnpm-lock.yaml as the root directory.
+ To silence this warning, set `turbopack.root` in your Next.js config, or consider removing one of the lockfiles if it's not needed.
+   See https://nextjs.org/docs/app/api-reference/config/next-config-js/turbopack#root-directory for more information.
+ Detected additional lockfiles: 
+   * /workspace/external/cc-review-eval/mfc-csp/pnpm-lock.yaml
+   * /workspace/external/pnpm-lock.yaml
+
+
+[37m[1m○[22m[39m Compiling / ...
+ GET / [32m200[39m in 5.3s[2m (next.js: 4.8s, proxy.ts: 138ms, application-code: 384ms)[22m
+ GET / [32m200[39m in 49ms[2m (next.js: 5ms, proxy.ts: 5ms, application-code: 39ms)[22m
+ GET / [32m200[39m in 40ms[2m (next.js: 3ms, proxy.ts: 3ms, application-code: 34ms)[22m
+ GET / [32m200[39m in 44ms[2m (next.js: 2ms, proxy.ts: 7ms, application-code: 35ms)[22m
+ GET /api/analytics [32m200[39m in 450ms[2m (next.js: 438ms, application-code: 12ms)[22m
+ GET / [32m200[39m in 91s[2m (next.js: 4ms, application-code: 91s)[22m
+[?25h
+
+> nextjs@0.1.0 dev
+> next dev
+
+[1m[38;2;173;127;168m▲ Next.js 16.2.4[39m[22m (Turbopack)
+- Local:         http://localhost:4101
+- Network:       http://172.17.0.2:4101
+- Environments: .env.development.local, .env.local, .env.development, .env
+[32m[1m✓[22m[39m Ready in 249ms
+[33m[1m⚠[22m[39m Warning: Next.js inferred your workspace root, but it may not be correct.
+ We detected multiple lockfiles and selected the directory of /workspace/pnpm-lock.yaml as the root directory.
+ To silence this warning, set `turbopack.root` in your Next.js config, or consider removing one of the lockfiles if it's not needed.
+   See https://nextjs.org/docs/app/api-reference/config/next-config-js/turbopack#root-directory for more information.
+ Detected additional lockfiles: 
+   * /workspace/external/cc-review-eval/mfc-csp/pnpm-lock.yaml
+   * /workspace/external/pnpm-lock.yaml
+
+
+ GET / [32m200[39m in 546ms[2m (next.js: 64ms, proxy.ts: 115ms, application-code: 367ms)[22m
+ GET / [32m200[39m in 44ms[2m (next.js: 3ms, application-code: 41ms)[22m
+ GET / [32m200[39m in 7ms[2m (next.js: 3ms, application-code: 4ms)[22m
+[?25h
+
+> nextjs@0.1.0 dev
+> next dev
+
+[1m[38;2;173;127;168m▲ Next.js 16.2.4[39m[22m (Turbopack)
+- Local:         http://localhost:4101
+- Network:       http://172.17.0.2:4101
+- Environments: .env.development.local, .env.local, .env.development, .env
+[32m[1m✓[22m[39m Ready in 252ms
+[33m[1m⚠[22m[39m Warning: Next.js inferred your workspace root, but it may not be correct.
+ We detected multiple lockfiles and selected the directory of /workspace/pnpm-lock.yaml as the root directory.
+ To silence this warning, set `turbopack.root` in your Next.js config, or consider removing one of the lockfiles if it's not needed.
+   See https://nextjs.org/docs/app/api-reference/config/next-config-js/turbopack#root-directory for more information.
+ Detected additional lockfiles: 
+   * /workspace/external/cc-review-eval/mfc-csp/pnpm-lock.yaml
+   * /workspace/external/pnpm-lock.yaml
+
+
+ GET /__r1probe [33m404[39m in 704ms[2m (next.js: 400ms, proxy.ts: 148ms, application-code: 155ms)[22m
+ GET /r1probe [32m200[39m in 472ms[2m (next.js: 341ms, proxy.ts: 47ms, application-code: 84ms)[22m
+[?25h

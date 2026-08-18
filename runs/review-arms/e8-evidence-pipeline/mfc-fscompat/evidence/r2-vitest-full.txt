@@ -1,0 +1,14 @@
+
+> nextjs@0.1.0 test
+> vitest run
+
+
+ RUN  v4.1.5 /workspace/external/cc-review-eval/mfc-fscompat
+
+
+ Test Files  24 passed (24)
+      Tests  221 passed (221)
+   Start at  23:42:58
+   Duration  3.87s (transform 1.95s, setup 2.09s, import 5.98s, tests 7.73s, environment 27.99s)
+
+tests exit=0

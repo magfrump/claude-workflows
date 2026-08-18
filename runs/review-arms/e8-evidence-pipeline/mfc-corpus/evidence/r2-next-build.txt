@@ -1,0 +1,64 @@
+
+> nextjs@0.1.0 build
+> next build
+
+[33m[1m⚠[22m[39m Warning: Next.js inferred your workspace root, but it may not be correct.
+ We detected multiple lockfiles and selected the directory of /workspace/pnpm-lock.yaml as the root directory.
+ To silence this warning, set `turbopack.root` in your Next.js config, or consider removing one of the lockfiles if it's not needed.
+   See https://nextjs.org/docs/app/api-reference/config/next-config-js/turbopack#root-directory for more information.
+ Detected additional lockfiles: 
+   * /workspace/external/cc-review-eval/mfc-corpus/package-lock.json
+   * /workspace/external/pnpm-lock.yaml
+
+[1m[38;2;173;127;168m▲ Next.js 16.2.6[39m[22m (Turbopack)
+
+[37m[1m [22m[39m Creating an optimized production build ...
+Turbopack build encountered 2 warnings:
+[next]/internal/font/google/eb_garamond_bd3c8b54.module.css
+Error while requesting resource
+There was an issue establishing a connection while requesting [32mhttps://fonts.googleapis.com/css2?family=EB+Garamond:wght@400..800&display=swap[39m
+
+Import trace:
+  Server Component:
+    [next]/internal/font/google/eb_garamond_bd3c8b54.module.css
+    [next]/internal/font/google/eb_garamond_bd3c8b54.js
+    ./external/cc-review-eval/mfc-corpus/app/layout.tsx
+
+
+[next]/internal/font/google/geist_mono_8d43a2aa.module.css
+Error while requesting resource
+There was an issue establishing a connection while requesting [32mhttps://fonts.googleapis.com/css2?family=Geist+Mono:wght@100..900&display=swap[39m
+
+Import trace:
+  Server Component:
+    [next]/internal/font/google/geist_mono_8d43a2aa.module.css
+    [next]/internal/font/google/geist_mono_8d43a2aa.js
+    ./external/cc-review-eval/mfc-corpus/app/layout.tsx
+
+
+
+> Build error occurred
+Error: Turbopack build failed with 2 errors:
+[next]/internal/font/google/eb_garamond_bd3c8b54.module.css
+[32mnext/font:[39m error:
+Failed to fetch `EB Garamond` from Google Fonts.
+
+Import trace:
+  Server Component:
+    [next]/internal/font/google/eb_garamond_bd3c8b54.module.css
+    [next]/internal/font/google/eb_garamond_bd3c8b54.js
+    ./external/cc-review-eval/mfc-corpus/app/layout.tsx
+
+
+[next]/internal/font/google/geist_mono_8d43a2aa.module.css
+[32mnext/font:[39m error:
+Failed to fetch `Geist Mono` from Google Fonts.
+
+Import trace:
+  Server Component:
+    [next]/internal/font/google/geist_mono_8d43a2aa.module.css
+    [next]/internal/font/google/geist_mono_8d43a2aa.js
+    ./external/cc-review-eval/mfc-corpus/app/layout.tsx
+
+
+    at [3mignore-listed frames[23m

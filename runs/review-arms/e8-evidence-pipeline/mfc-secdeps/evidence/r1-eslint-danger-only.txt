@@ -1,0 +1,15 @@
+cmd: npx eslint app/r1-scratch-danger-only.tsx
+cwd: /workspace/external/cc-review-eval/mfc-secdeps
+date: 2026-08-18T06:12:48Z
+--- fixture content ---
+export function Fixture() {
+  return <div dangerouslySetInnerHTML={{ __html: "<b>hi</b>" }} />;
+}
+--- eslint output ---
+[0m
+[4m/workspace/external/cc-review-eval/mfc-secdeps/app/r1-scratch-danger-only.tsx[24m
+  [2m2:15[22m  [33mwarning[39m  Dangerous property 'dangerouslySetInnerHTML' found  [2mreact/no-danger[22m
+
+[33m[1m✖ 1 problem (0 errors, 1 warning)[22m[39m
+[0m
+exit=0

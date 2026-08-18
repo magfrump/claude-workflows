@@ -1,0 +1,16 @@
+
+ RUN  v4.1.6 /workspace/external/cc-review-eval/mfc-corpus
+
+SEC_ENV_PROD_RESULT: [33mtrue[39m
+SEC_LS_PROD_RESULT: [33mtrue[39m
+SEC_SPLITPATH_REQUESTED: [".."]
+SEC_SPLITPATH_TRAVERSAL_RESULT: CorpusError:io
+ ✓ app/lib/corpus/__tests__/sec_scratch.test.ts > sec: flag enablement under NODE_ENV=production > env NEXT_PUBLIC_CORPUS_FS=1 enables even when NODE_ENV=production (no dev gate) 6ms
+ ✓ app/lib/corpus/__tests__/sec_scratch.test.ts > sec: flag enablement under NODE_ENV=production > localStorage opt-in enables in production browser (no dev gate on window path) 1ms
+ ✓ app/lib/corpus/__tests__/sec_scratch.test.ts > sec: splitPath traversal handling > splitPath does NOT reject ../ segments (relies on OPFS getDirectoryHandle) 14ms
+
+ Test Files  1 passed (1)
+      Tests  3 passed (3)
+   Start at  00:06:52
+   Duration  615ms (transform 38ms, setup 42ms, import 14ms, tests 22ms, environment 418ms)
+

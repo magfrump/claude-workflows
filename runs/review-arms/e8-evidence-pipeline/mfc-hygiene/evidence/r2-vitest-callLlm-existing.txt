@@ -1,0 +1,10 @@
+
+ RUN  v4.1.5 /workspace/external/cc-review-eval/mfc-hygiene
+
+ ✓ app/lib/llm/callLlm.test.ts > callLlm Anthropic client lifetime > constructs a fresh Anthropic client per call (no singleton) 21ms
+
+ Test Files  1 passed (1)
+      Tests  1 passed (1)
+   Start at  23:42:50
+   Duration  651ms (transform 42ms, setup 50ms, import 20ms, tests 22ms, environment 441ms)
+

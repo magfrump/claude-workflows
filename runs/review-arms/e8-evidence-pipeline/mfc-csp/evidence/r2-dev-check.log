@@ -1,0 +1,13 @@
+dev probe (own dev server, port 4232) ts=2026-08-18T06:32:25Z cwd=/workspace/external/cc-review-eval/mfc-csp
+$ curl -s -D r2-dev-headers.txt http://localhost:4232/ -o r2-dev-page.html
+exit=0
+--- dev CSP header:
+content-security-policy: default-src 'self'; script-src 'self' 'nonce-OTZlZmQ5ZTUtYTg4MS00YmFlLWFmMDctNzRiYzc1YTlkMTM4' 'strict-dynamic'; style-src 'self' 'unsafe-inline'; img-src 'self' data: blob:; font-src 'self' data:; connect-src 'self'; frame-ancestors 'none'; base-uri 'self'; object-src 'none'
+--- style element open-tags (first 8):
+--- style element count:
+0
+--- link stylesheets:
+<link rel="stylesheet" href="/_next/static/chunks/%5Broot-of-the-server%5D__0anae7b._.css" nonce="OTZlZmQ5ZTUtYTg4MS00YmFlLWFmMDctNzRiYzc1YTlkMTM4" data-precedence="next_static/chunks/[root-of-the-server]__0anae7b._.css"/>
+<link rel="stylesheet" href="/_next/static/chunks/12ib_reactflow_dist_style_0l7nx7e.css" nonce="OTZlZmQ5ZTUtYTg4MS00YmFlLWFmMDctNzRiYzc1YTlkMTM4" data-precedence="next_static/chunks/12ib_reactflow_dist_style_0l7nx7e.css"/>
+--- distinct nonces in dev html:
+     39 nonce="OTZlZmQ5ZTUtYTg4MS00YmFlLWFmMDctNzRiYzc1YTlkMTM4"

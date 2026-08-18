@@ -1,0 +1,32 @@
+
+> nextjs@0.1.0 start
+> next start
+
+[1m[38;2;173;127;168m▲ Next.js 16.2.4[39m[22m
+- Local:         http://localhost:4231
+- Network:       http://172.17.0.2:4231
+[32m[1m✓[22m[39m Ready in 104ms
+[33m[1m⚠[22m[39m Warning: Next.js inferred your workspace root, but it may not be correct.
+ We detected multiple lockfiles and selected the directory of /workspace/pnpm-lock.yaml as the root directory.
+ To silence this warning, set `outputFileTracingRoot` in your Next.js config, or consider removing one of the lockfiles if it's not needed.
+   See https://nextjs.org/docs/app/api-reference/config/next-config-js/output#caveats for more information.
+ Detected additional lockfiles: 
+   * /workspace/external/cc-review-eval/mfc-csp/pnpm-lock.yaml
+   * /workspace/external/pnpm-lock.yaml
+
+
+> nextjs@0.1.0 start
+> next start
+
+[1m[38;2;173;127;168m▲ Next.js 16.2.4[39m[22m
+- Local:         http://localhost:4231
+- Network:       http://172.17.0.2:4231
+[32m[1m✓[22m[39m Ready in 105ms
+[33m[1m⚠[22m[39m Warning: Next.js inferred your workspace root, but it may not be correct.
+ We detected multiple lockfiles and selected the directory of /workspace/pnpm-lock.yaml as the root directory.
+ To silence this warning, set `outputFileTracingRoot` in your Next.js config, or consider removing one of the lockfiles if it's not needed.
+   See https://nextjs.org/docs/app/api-reference/config/next-config-js/output#caveats for more information.
+ Detected additional lockfiles: 
+   * /workspace/external/cc-review-eval/mfc-csp/pnpm-lock.yaml
+   * /workspace/external/pnpm-lock.yaml
+

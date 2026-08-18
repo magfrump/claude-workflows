@@ -1,0 +1,74 @@
+// Source of the scratch test executed for r1-datadir-scratch-vitest.txt.
+// Was written to app/lib/utils/dataDir.scratch.test.ts in the clone, run once
+// (exit 0, 6/6 passed, 2026-08-18T06:42:19Z), then deleted to leave the clone
+// pristine. Command: npx vitest run app/lib/utils/dataDir.scratch.test.ts
+// cwd: /workspace/external/cc-review-eval/mfc-fscompat (HEAD b64c1ca)
+
+import { describe, it, expect, beforeEach, afterAll, vi } from "vitest";
+import { join } from "path";
+import { existsSync, readFileSync, rmSync, unlinkSync } from "fs";
+
+const CWD_DATA = join(process.cwd(), "data");
+
+afterAll(() => {
+  // Clean every artifact this scratch test can create.
+  try { unlinkSync("/tmp/analytics.jsonl"); } catch {}
+  try { rmSync("/tmp/cache", { recursive: true, force: true }); } catch {}
+  try { rmSync(CWD_DATA, { recursive: true, force: true }); } catch {}
+  delete process.env.VERCEL;
+});
+
+beforeEach(() => {
+  vi.resetModules();
+});
+
+describe("dataDir() env branching", () => {
+  it("VERCEL unset -> <cwd>/data, subpaths joined", async () => {
+    delete process.env.VERCEL;
+    const { dataDir } = await import("./dataDir");
+    expect(dataDir()).toBe(CWD_DATA);
+    expect(dataDir("cache")).toBe(join(CWD_DATA, "cache"));
+  });
+
+  it("VERCEL set -> /tmp, subpaths joined", async () => {
+    process.env.VERCEL = "1";
+    const { dataDir } = await import("./dataDir");
+    expect(dataDir()).toBe("/tmp");
+    expect(dataDir("cache")).toBe("/tmp/cache");
+  });
+});
+
+describe("where writes actually land", () => {
+  it("analytics append lands in /tmp/analytics.jsonl when VERCEL is set", async () => {
+    process.env.VERCEL = "1";
+    const persist = await import("@/app/lib/analytics/persist");
+    persist.appendAnalyticsEntry({ id: "scratch-vercel", endpoint: "scratch" } as never);
+    expect(existsSync("/tmp/analytics.jsonl")).toBe(true);
+    expect(readFileSync("/tmp/analytics.jsonl", "utf-8")).toContain("scratch-vercel");
+    expect(existsSync(join(CWD_DATA, "analytics.jsonl"))).toBe(false);
+  });
+
+  it("analytics append lands in <cwd>/data/analytics.jsonl when VERCEL is unset", async () => {
+    delete process.env.VERCEL;
+    const persist = await import("@/app/lib/analytics/persist");
+    persist.appendAnalyticsEntry({ id: "scratch-local", endpoint: "scratch" } as never);
+    const local = join(CWD_DATA, "analytics.jsonl");
+    expect(existsSync(local)).toBe(true);
+    expect(readFileSync(local, "utf-8")).toContain("scratch-local");
+  });
+
+  it("cache write lands in /tmp/cache/<hash>.json when VERCEL is set", async () => {
+    process.env.VERCEL = "1";
+    const cache = await import("@/app/lib/llm/cache");
+    await cache.setCachedResult("scratchhash", { text: "x", usage: {} as never });
+    expect(existsSync("/tmp/cache/scratchhash.json")).toBe(true);
+    expect(existsSync(join(CWD_DATA, "cache", "scratchhash.json"))).toBe(false);
+  });
+
+  it("cache write lands in <cwd>/data/cache/<hash>.json when VERCEL is unset", async () => {
+    delete process.env.VERCEL;
+    const cache = await import("@/app/lib/llm/cache");
+    await cache.setCachedResult("scratchhash2", { text: "y", usage: {} as never });
+    expect(existsSync(join(CWD_DATA, "cache", "scratchhash2.json"))).toBe(true);
+  });
+});

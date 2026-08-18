@@ -1,0 +1,7 @@
+"production"   eval-free
+"development"  GRANTS unsafe-eval
+"test"         GRANTS unsafe-eval
+"staging"      GRANTS unsafe-eval
+"preview"      GRANTS unsafe-eval
+""             GRANTS unsafe-eval
+<unset>        GRANTS unsafe-eval

@@ -1,0 +1,10 @@
+=== A1: POST valid leanCode, LEAN_VERIFIER_URL unset ===
+curl: (7) Failed to connect to localhost port 4321 after 0 ms: Couldn't connect to server
+
+HTTP_STATUS=000
+CURL_EXIT=7
+=== A2: POST missing leanCode ===
+curl: (7) Failed to connect to localhost port 4321 after 0 ms: Couldn't connect to server
+
+HTTP_STATUS=000
+CURL_EXIT=7

@@ -1,0 +1,13 @@
+# cmd: npx vitest run --environment=node app/lib/llm/cfc-tmp-fallback.test.ts
+# cwd: /workspace/external/cc-review-eval/mfc-deploy
+# date: 2026-08-18T06:14:16Z
+
+ RUN  v4.1.5 /workspace/external/cc-review-eval/mfc-deploy
+
+
+ Test Files  1 passed (1)
+      Tests  3 passed (3)
+   Start at  23:14:17
+   Duration  266ms (transform 47ms, setup 53ms, import 66ms, tests 35ms, environment 0ms)
+
+# exit: 0

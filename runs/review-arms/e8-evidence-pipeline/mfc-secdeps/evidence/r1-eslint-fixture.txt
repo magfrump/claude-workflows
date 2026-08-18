@@ -1,0 +1,22 @@
+cmd: npx eslint app/r1-scratch-lint-fixture.tsx
+cwd: /workspace/external/cc-review-eval/mfc-secdeps
+date: 2026-08-18T06:12:36Z
+--- fixture content ---
+// Scratch fixture for lint-rule verification (deleted after the check).
+import rehypeRaw from "rehype-raw";
+
+export const katexOptions = { trust: true, strict: false };
+
+export function Fixture() {
+  return <div dangerouslySetInnerHTML={{ __html: "<b>hi</b>" }} data-plugin={rehypeRaw} />;
+}
+--- eslint output ---
+[0m
+[4m/workspace/external/cc-review-eval/mfc-secdeps/app/r1-scratch-lint-fixture.tsx[24m
+  [2m2:1[22m   [31merror[39m    'rehype-raw' import is restricted from being used. rehype-raw lets raw HTML in markdown render as live DOM, which defeats sanitization on LLM output. If you genuinely need it, write an ADR and disable this rule explicitly  [2mno-restricted-imports[22m
+  [2m4:31[22m  [31merror[39m    trust: true on KaTeX/rehype-katex (or anywhere similar) re-enables active links and raw HTML in math output. Don't enable this; if you must, write an ADR and disable this rule explicitly                                     [2mno-restricted-syntax[22m
+  [2m7:15[22m  [33mwarning[39m  Dangerous property 'dangerouslySetInnerHTML' found                                                                                                                                                                             [2mreact/no-danger[22m
+
+[31m[1m✖ 3 problems (2 errors, 1 warning)[22m[39m
+[0m
+exit=1

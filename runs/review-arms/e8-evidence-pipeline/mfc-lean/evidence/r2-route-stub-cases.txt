@@ -1,0 +1,13 @@
+=== r2 route execution stub cases (inline node -e), dev server LEAN_VERIFIER_URL=http://127.0.0.1:4461, port 4460, cwd=/workspace/external/cc-review-eval/mfc-lean ===
+2026-08-18T06:24:28Z
+stub up mode=error500
+--- Case B: verifier reachable, returns HTTP 500 ---
+{"valid":false,"unavailable":true,"reason":"verifier-error","detail":"HTTP 500"}
+HTTP:200
+curl exit: 0
+stub up mode=invalid
+--- Case C: verifier reachable, 200 {valid:false,errors:...} (passthrough; proves env URL used) ---
+{"valid":false,"errors":"stub: unsolved goals"}
+HTTP:200
+curl exit: 0
+2026-08-18T06:24:31Z

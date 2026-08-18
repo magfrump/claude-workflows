@@ -1,0 +1,23 @@
+
+ RUN  v4.1.5 /workspace/external/cc-review-eval/mfc-hygiene
+
+stdout | app/lib/llm/__r1scratch.redaction.test.ts > callLlm OpenRouter error redaction (callLlm.ts:180-188) > logs only status+endpoint; body rides on OpenRouterError.details
+CAPTURED-LOG-CALLLM: "[r1test] OpenRouter error: status=418"
+
+stdout | app/lib/llm/__r1scratch.redaction.test.ts > streamLlm error path (streamLlm.ts:156-165) > SSE error event carries { error } only — no details key; log has no body
+CAPTURED-SSE-RAW: "event: error\ndata: {\"error\":\"OpenRouter API error: 500\"}\n\n"
+CAPTURED-LOG-STREAM: "[r1stream] Stream error: OpenRouter API error: 500"
+
+ ✓ app/lib/llm/__r1scratch.redaction.test.ts > callLlm OpenRouter error redaction (callLlm.ts:180-188) > logs only status+endpoint; body rides on OpenRouterError.details 40ms
+ ✓ app/lib/llm/__r1scratch.redaction.test.ts > streamLlm error path (streamLlm.ts:156-165) > SSE error event carries { error } only — no details key; log has no body 12ms
+stdout | app/api/edit/artifact/__r1scratch.route.test.ts > edit/artifact invalid-JSON handling > logs only the char count; response 502 carries a 500-char details slice
+CAPTURED-RESPONSE-BODY: {"error":"LLM response was not valid JSON","details":"USER_SOURCE_MATERIAL not json USER_SOURCE_MATERIAL not json USER_SOURCE_MATERIAL not json USER_SOURCE_MATERIAL not json USER_SOURCE_MATERIAL not j
+CAPTURED-LOG-ROUTE: "[edit/artifact] LLM returned invalid JSON: 900 chars"
+
+ ✓ app/api/edit/artifact/__r1scratch.route.test.ts > edit/artifact invalid-JSON handling > logs only the char count; response 502 carries a 500-char details slice 87ms
+
+ Test Files  2 passed (2)
+      Tests  3 passed (3)
+   Start at  23:42:55
+   Duration  813ms (transform 123ms, setup 105ms, import 56ms, tests 141ms, environment 1.02s)
+

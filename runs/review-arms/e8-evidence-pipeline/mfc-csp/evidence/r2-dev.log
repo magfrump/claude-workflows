@@ -1,0 +1,47 @@
+
+> nextjs@0.1.0 dev
+> next dev
+
+[1m[38;2;173;127;168m▲ Next.js 16.2.4[39m[22m (Turbopack)
+- Local:         http://localhost:4232
+- Network:       http://172.17.0.2:4232
+- Environments: .env.development.local, .env.local, .env.development, .env
+[32m[1m✓[22m[39m Ready in 257ms
+[33m[1m⚠[22m[39m Warning: Next.js inferred your workspace root, but it may not be correct.
+ We detected multiple lockfiles and selected the directory of /workspace/pnpm-lock.yaml as the root directory.
+ To silence this warning, set `turbopack.root` in your Next.js config, or consider removing one of the lockfiles if it's not needed.
+   See https://nextjs.org/docs/app/api-reference/config/next-config-js/turbopack#root-directory for more information.
+ Detected additional lockfiles: 
+   * /workspace/external/cc-review-eval/mfc-csp/pnpm-lock.yaml
+   * /workspace/external/pnpm-lock.yaml
+
+[31m[1m⨯[22m[39m Another [36mnext dev[39m server is already running.
+
+- Local:        [36mhttp://localhost:4101[39m
+- PID:          371545
+- Dir:          /workspace/external/cc-review-eval/mfc-csp
+- Log:          .next/dev/logs/next-development.log
+
+Run [36mkill 371545[39m to stop it.
+[?25h
+
+> nextjs@0.1.0 dev
+> next dev
+
+[1m[38;2;173;127;168m▲ Next.js 16.2.4[39m[22m (Turbopack)
+- Local:         http://localhost:4232
+- Network:       http://172.17.0.2:4232
+- Environments: .env.development.local, .env.local, .env.development, .env
+[32m[1m✓[22m[39m Ready in 243ms
+[33m[1m⚠[22m[39m Warning: Next.js inferred your workspace root, but it may not be correct.
+ We detected multiple lockfiles and selected the directory of /workspace/pnpm-lock.yaml as the root directory.
+ To silence this warning, set `turbopack.root` in your Next.js config, or consider removing one of the lockfiles if it's not needed.
+   See https://nextjs.org/docs/app/api-reference/config/next-config-js/turbopack#root-directory for more information.
+ Detected additional lockfiles: 
+   * /workspace/external/cc-review-eval/mfc-csp/pnpm-lock.yaml
+   * /workspace/external/pnpm-lock.yaml
+
+
+ GET / [32m200[39m in 506ms[2m (next.js: 66ms, proxy.ts: 102ms, application-code: 338ms)[22m
+ GET / [32m200[39m in 40ms[2m (next.js: 3ms, proxy.ts: 4ms, application-code: 33ms)[22m
+[?25h

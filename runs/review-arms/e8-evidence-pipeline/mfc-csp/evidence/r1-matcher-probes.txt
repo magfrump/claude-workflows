@@ -1,0 +1,28 @@
+== GET / (page)
+HTTP/1.1 200 OK
+content-security-policy: default-src 'self'; script-src 'self' 'nonce-NmRiMDE0OTMtOGMwMC00YzNkLTk5MmYtZmJhZjQ4MTdkMDk2' 'strict-dynamic'; style-src 'self' 'unsafe-inline'; img-src 'self' data: blob:; font-src 'self' data:; connect-src 'self'; frame-ancestors 'none'; base-uri 'self'; object-src 'none'
+
+== GET /api/analytics
+HTTP/1.1 200 OK
+
+== GET /favicon.ico
+HTTP/1.1 200 OK
+
+== GET /_next/static css chunk
+HTTP/1.1 200 OK
+
+== GET / with next-router-prefetch header
+
+== GET / with purpose: prefetch header
+
+== GET /nonexistent-page
+
+== GET / with purpose: prefetch header
+HTTP/1.1 200 OK
+curl_exit=0
+== GET / with next-router-prefetch: 1 header + RSC
+HTTP/1.1 200 OK
+curl_exit=0
+== GET /_next/image
+HTTP/1.1 200 OK
+Content-Security-Policy: script-src 'none'; frame-src 'none'; sandbox;

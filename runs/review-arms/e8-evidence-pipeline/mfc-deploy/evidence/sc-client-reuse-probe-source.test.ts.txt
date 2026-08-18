@@ -1,0 +1,110 @@
+Source of the temporary probe test executed for the submitted-claims report
+(placed at app/lib/llm/sc-client-reuse.probe.test.ts during the run, deleted
+afterward so the clone stays pristine). Output: sc-client-reuse-probe.txt.
+
+// TEMPORARY Stage-2.5 fact-check probe — counts Anthropic SDK client constructions
+// across repeated callLlm and streamLlm invocations within one warm module instance.
+// This file is deleted after the run; it is not part of the repo.
+import { describe, it, expect, vi, beforeAll } from "vitest";
+
+let constructionCount = 0;
+
+vi.mock("@anthropic-ai/sdk", () => {
+  class MockAnthropic {
+    messages: {
+      create: (args: unknown) => Promise<unknown>;
+      stream: (args: unknown) => {
+        on: (ev: string, cb: (t: string) => void) => void;
+        finalMessage: () => Promise<unknown>;
+      };
+    };
+    constructor() {
+      constructionCount++;
+      this.messages = {
+        create: async () => ({
+          content: [{ type: "text", text: "mock-response" }],
+          usage: { input_tokens: 1, output_tokens: 1 },
+        }),
+        stream: () => ({
+          on: (_ev: string, _cb: (t: string) => void) => {},
+          finalMessage: async () => ({
+            content: [{ type: "text", text: "mock-stream" }],
+            usage: { input_tokens: 1, output_tokens: 1 },
+          }),
+        }),
+      };
+    }
+  }
+  return { default: MockAnthropic };
+});
+
+// Keep the probe off the real filesystem: no cache reads/writes, no analytics writes.
+vi.mock("./cache", () => ({
+  computeHash: () => "probe-hash",
+  getCachedResult: async () => null,
+  setCachedResult: async () => {},
+}));
+vi.mock("@/app/lib/analytics/persist", () => ({
+  appendAnalyticsEntry: () => {},
+}));
+
+beforeAll(() => {
+  process.env.ANTHROPIC_API_KEY = "sk-probe-not-a-real-key";
+  delete process.env.OPENROUTER_API_KEY;
+});
+
+describe("Anthropic client reuse per warm instance", () => {
+  it("constructs the SDK client at most once across repeated callLlm and streamLlm calls", async () => {
+    const { callLlm, getAnthropicClient } = await import("./callLlm");
+    const { streamLlm } = await import("./streamLlm");
+
+    expect(constructionCount).toBe(0); // lazy: import alone constructs nothing
+
+    // 3 non-streaming calls with distinct prompts (no cache hits — cache mocked to miss)
+    for (let i = 0; i < 3; i++) {
+      await callLlm({
+        endpoint: `probe-${i}`,
+        systemPrompt: `sys-${i}`,
+        userContent: `user-${i}`,
+        maxTokens: 16,
+      });
+    }
+    console.log(`constructions after 3x callLlm: ${constructionCount}`);
+
+    // 2 streaming calls, fully consumed
+    for (let i = 0; i < 2; i++) {
+      const stream = streamLlm({
+        endpoint: `probe-stream-${i}`,
+        systemPrompt: `sys-s-${i}`,
+        userContent: `user-s-${i}`,
+        maxTokens: 16,
+      });
+      const reader = stream.getReader();
+      // drain
+      while (true) {
+        const { done } = await reader.read();
+        if (done) break;
+      }
+    }
+    console.log(`constructions after 3x callLlm + 2x streamLlm: ${constructionCount}`);
+
+    // direct repeated getAnthropicClient calls also reuse
+    const a = getAnthropicClient("sk-probe-not-a-real-key");
+    const b = getAnthropicClient("sk-probe-not-a-real-key");
+    expect(a).toBe(b);
+
+    console.log(`final construction count: ${constructionCount}`);
+    expect(constructionCount).toBe(1);
+  });
+});
+
+---
+Provenance note on exit code: the vitest process exits 1 despite "Test Files 1
+passed (1) / Tests 1 passed (1)". The nonzero exit is caused by a pre-existing
+startup error outside the target repo — /workspace/external/package.json is a
+0-byte file, which makes Node's package-scope resolution throw
+ERR_INVALID_PACKAGE_CONFIG ("Unexpected end of JSON input") while vitest probes
+for optional deps (see the stack trace at the top of sc-client-reuse-probe.txt);
+the jsdom "MISSING DEPENDENCY" warning from the same probe is also cosmetic (the
+suite ran and passed). The test result itself, including all three
+construction-count log lines (1, 1, 1) and the passing assertions, is authoritative.
