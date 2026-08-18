@@ -1,11 +1,17 @@
 # Canon issue ledger: every known defect in the canon set, with per-review provenance
 
-**Date**: 2026-08-14 · **Last revised**: 2026-08-18 (added CSV `E8 raised` column,
-per-row provenance for all 60 rows; added Cost-per-run and False-positives columns to
-the process recall table, incl. N7's retroactive FP charge to E6/E7r1) ·
-prior revision: 2026-08-18 (E8 evidence-discipline pipeline scored — 47/54=87%, first
-process past ~80%, 0 FPs; see e8-results-2026-08-18.md) · earlier: 2026-08-17 (E7 rep2;
-N14–N16; N7 refuted; graduation pass 43→56) ·
+**Date**: 2026-08-14 · **Last revised**: 2026-08-18 (E7 rep3 scored — 7/8 cells, 71%
+firm; E7r2's corpus/fscompat cells recovered from dead-cell status and scored —
+76.5% firm on 7 cells; reps 1–3 union now 78% firm on the 54-row base; added E7r3 CSV
+column, corrected E7r2 columns for corpus/fscompat; added 6 new candidate rows
+N17–N22; flagged a cross-rep C3 contradiction — E7r1 hit it, E7r2/E7r3 both assert an
+unverifiable "empirically refuted" claim; see e7-rep3-results-2026-08-18.md) · prior
+revision: 2026-08-18 (added CSV `E8 raised` column, per-row provenance for all 60
+rows; added Cost-per-run and False-positives columns to the process recall table,
+incl. N7's retroactive FP charge to E6/E7r1) · earlier: 2026-08-18 (E8
+evidence-discipline pipeline scored — 47/54=87%, first process past ~80%, 0 FPs; see
+e8-results-2026-08-18.md) · earlier: 2026-08-17 (E7 rep2; N14–N16; N7 refuted;
+graduation pass 43→56) ·
 **Companion to**: `review-canon.md` §1 (instances/labels) ·
 Living, append-only, like the canon itself — a re-adjudication updates a row's status
 column, never deletes the row.
@@ -35,8 +41,11 @@ One row per **distinct underlying issue**. "Found by" columns:
 | **Total distinct issues** | **56** |
 
 Still candidates, outside the 56: **N6** (single E5 attestation, never re-found, no
-independent verification), **N16** (plausible-only evidence, single attestation).
-**N7** is refuted (E7r2 spec/WPT evidence) and will not graduate absent new evidence.
+independent verification), **N16** (plausible-only evidence, single attestation),
+**N17–N22** (2026-08-18, from the E7 rep2/rep3 recovery pass — N18/N19/N20 at 2
+independent sightings each, N17/N21/N22 at 1; none yet meet the 3-sighting or
+fix-in-history bar). **N7** is refuted (E7r2 spec/WPT evidence) and will not graduate
+absent new evidence.
 
 Graduation criteria per row: N1 fix-in-history (`ab4dbdb`) + 3 sightings; N2
 execution-reproduced ×3 (E5, E7r1, E7r2); N3/N4/N5 three attestations each,
@@ -177,6 +186,27 @@ E5/E6/E7 across all strata — the tables above predate those arms):
   `callLlm.ts` — branches on key presence, not request failure; the deploy env table
   makes the fallback unreachable; the Anthropic→OpenRouter→mock chain is a de facto
   demo mode (E7r2)
+- **N17** hygiene: Anthropic SDK still stringifies and logs/streams the full provider
+  error body (including request content) despite the redaction diff's explicit
+  guarantee — `streamLlm.ts:160` (E7r3, code-verified against `@anthropic-ai/sdk`'s
+  `APIError.makeMessage` source; single sighting)
+- **N18** corpus: `opfsAdapter.ts`'s `finally { close() }` masks a `QuotaExceededError`
+  as generic `{kind:"io"}`, contradicting the module's own no-swallow docstring
+  (2 independent sightings — E7r2 and E7r3, both code-traced)
+- **N19** corpus: pre-hydration sync-back writes `DEFAULT_STATE` over the OPFS blob
+  before rehydration resolves — permanent data loss if the tab closes before hydration
+  completes (2 independent sightings, same root cause different manifestation site —
+  E7r2's `storeAdapter.ts` hydration race and E7r3's `page.tsx` mount effect)
+- **N20** fscompat: `process.env.VERCEL` truthy check also fires locally after `vercel
+  env pull`/`vercel dev` (Vercel CLI sets `VERCEL=1` by default), silently redirecting
+  local writes to `/tmp` (2 independent sightings — E7r1's "VERCEL-env local-dev
+  misroute," adjudicated TRUE-minor at the time but never matched to a ledger row, and
+  E7r3's same claim)
+- **N21** secdeps: the npm-audit CI gate doesn't cover the `verifier/` subproject (no
+  lockfile, absent from dependabot config, eslint globally ignores it) — the part that
+  ships as a Docker image is unaudited (E7r3, code-verified; single sighting)
+- **N22** csp: `proxy.ts:16` comment cites a nonexistent "OpenAlex" integration/service
+  — phantom reference, same class as fsc-R1 (E7r3, code-verified; single sighting)
 
 E7r1 also re-found N1, N2 (by execution), N3, N4, N5, and N7 — independent second
 sightings for six of the seven E5/E6 candidates (N6 not re-found). E7r2 (5 scored
@@ -184,6 +214,17 @@ cells) re-found N1, N2 (again by execution), N3, N4, N5, and N8; it did **not** 
 N6, N9, or N10 — and on N10 it went further astray, stamping the exact CLAUDE.md
 claim N10 refutes as "Accurate" (a false attestation, though the Vercel-context
 outcome coincidentally matches).
+
+**2026-08-18 rep3 pass** (full details: `e7-rep3-results-2026-08-18.md`): E7r2's
+previously-dead `mfc-corpus` and `mfc-fscompat` cells recovered and were scored for the
+first time (8/11 and 3/5-live respectively); E7r3 scored 7 of 8 cells (postfix dead all
+three reps now). Six new candidates surfaced (N17–N22 above), three of them (N18, N19,
+N20) at 2 independent sightings — the strongest candidates for a future graduation pass.
+**A cross-rep contradiction surfaced on C3**: E7r1 hit it as real; both E7r2 and E7r3
+assert an "empirically verified/refuted" claim about Next's build-time inlining that
+the independent scoring agents could not reproduce in-sandbox (no working `next build`)
+— flagged as a possible unverifiable-claim pattern, not a confirmed false attestation,
+but excluded from the reps 1–3 union hit-count pending an actual build verification.
 
 **Graduation pass 2026-08-17**: N1–N5 and N8–N15 (13 rows) are confirmed and now
 count in the reconciliation total and in every process's denominator (criteria and
@@ -231,8 +272,9 @@ remain in the git history of this file and the per-arm results docs.
 | E5 built-in /code-review, agentic dockerized | 54 | 23 firm (18 + graduated N1–N5) + 1 partial | **~43% firm** | ~$0.88/instance, exact `total_cost_usd` ($0.53–$1.14 range; $7.06/8-instance sweep) | **0 confirmed** | enumeration/convention, test-strategy, structural (pf-R1), D6, and 8 of the 13 graduated rows (N8–N15) — but uniquely lands lean-R1, hyg-A1, firm D3/D5, and originated N1–N6 |
 | E6 ultrareview (one cleanly scored cell — all 3 sessions exited nonzero; deploy's empty result is abstention-vs-failure-unresolved; secdeps crashed) | 10 (csp rows incl. graduated N1, N15) | 3 (legacy count; its N7 credit is no longer creditable — refuted) | **3/10 on csp** | $0 billed this sweep (free tier, 3/3 consumed); paid-run list price unverified (~$5–25?/cell) | **1 retroactive** — N7 (pdf.js worker-src) was kept as TRUE-minor and never re-scored down; E7r2's 2026-08-17 spec+WPT refutation makes it a false positive in hindsight. The only non-pipeline arm to have credited N7 as real. | uniquely lands csp-R1 — the only non-pipeline catch of the gold cross-file defect |
 | E7 fable rep1 (subscription-billed; 7/8 cells scored) | 51 (hygiene's 3 rows excluded — budget-cap failure; D1/D2 outside ranges) | 28 firm (17 + graduated N1–N5, N8–N13) + 3 partial | **55% firm, ~61% incl. partials** | ~$8.90/scored instance **list-price estimate** ($4.14–$15.24 range; $77.54 attempted-sweep incl. hygiene's wasted $15.24 budget-cap death) | **0 confirmed + 1 retroactive** (rep1 re-found and credited N7, since refuted by rep2 — same false positive as E6) + **1 false attestation**, a distinct failure mode: pf-A5's `Math.max` cap arithmetic certified as checking out when it doesn't (endorsing a false claim, not raising a new false finding) | rep1's discovery yield (N8–N13, all now graduated) is what moves its own number; caveats unchanged: summary-only evidence base, fscompat 0/6 partly truncation-artifact |
-| E7 fable rep2 (2026-08-17; full stream-json transcripts; corpus+postfix died at the weekly usage limit, fscompat at an OAuth failure, all of rep3 at the session limit) | **28** (5 scored cells' rows incl. 10 graduated; NOT sweep-comparable — the unscored 3 cells are the arm's weakest) | 23 firm (15 + graduated N1–N5, N8, N14, N15) + 1 partial | **82% firm on scored cells** | ~$10.77/scored instance ($53.83 list across 5 scored cells) | **0 confirmed** (rep2 itself *refuted* N7 by execution/spec evidence rather than crediting it — the correction, not the error) + **1 false attestation**: the fact-check stamped the CLAUDE.md unset-`LEAN_VERIFIER_URL`→mock claim "Accurate", the exact claim N10 refutes | misses on the graduated tier: N9 and N10 (false-attested) only; csp verifier refuted its own csp-A1 consensus and killed N7 |
-| **E7 fable reps 1–2 union** | 54 (hygiene scored via rep2; D1/D2 outside ranges) | 36 firm (23 + all 13 graduated rows — every one raised by rep1 or rep2) + 2 partial (cor-A4, pf-R1) | **67% firm, ~70% incl. partials** | ~$131.37 attempted total, list (rep1 $77.54 + rep2 $53.83; rep3 a total loss, quota/auth casualties, zero cost recorded) | **1 net confirmed** (N7 — raised true by rep1, self-corrected/refuted by rep2 within the same arm) + 1 false attestation (N10, rep2-only) | best non-pipeline recall on the new base, within 3 points of pipeline-incl-E1 at comparable cost; misses unchanged (fscompat, corpus enumeration/comment tier, postfix structural, csp-A2) |
+| E7 fable rep2 **corrected** (2026-08-18; corpus+fscompat recovered from dead-cell status and scored for the first time; postfix still dead) | **34** (7 scored cells; fsc-A2 excluded, already fixed in this checkout; D1/D2, postfix outside ranges) | 26 firm + 1 partial | **76.5% firm, ~79% incl. partial** | ~$10.92/scored instance ($76.45 list across 7 scored cells, up from $53.83 across 5) | **0 confirmed** (rep2 itself *refuted* N7 by execution/spec evidence rather than crediting it — the correction, not the error) + **1 false attestation** (N10, unchanged from prior scoring) + **1 flagged-unverifiable claim** on C3 ("verified inlined by Turbopack" — scoring agent could not reproduce a working `next build` to confirm) | corpus (8/11) and fscompat (3/5 live) close most of the "unscored cells" caveat from the original 5-cell figure |
+| E7 fable rep3 (2026-08-18; 7/8 cells, postfix dead a third time) | 45 (7 scored cells; D1/D2, postfix outside ranges) | 32 firm | **71.1% firm** | ~$9.80/scored instance ($68.61 list across 7 scored cells) | **0 confirmed** (N7 not raised — correctly silent, not repeating rep1's error) + **1 flagged-unverifiable claim** on C3 ("empirically REFUTED" — same unreproducible-build pattern as rep2, and contradicts rep1's own hit on this row) | secdeps perfect 5/5 (N2, N9 independently re-executed by the scoring agent); weakest cell fscompat 3/6 |
+| **E7 fable reps 1–3 union** | 54 (D1/D2 outside ranges; C3 excluded from the hit-count pending build verification — see contradiction note above) | 42 firm + 1 partial (pf-R1, postfix — only rep1 ever scored it) | **77.8% firm, ~79.6% incl. partial** | ~$222.60 attempted total, list (rep1 $77.54 + rep2-corrected $76.45 + rep3 $68.61) | **1 net confirmed** (N7 — raised true by rep1, self-corrected/refuted by rep2, correctly silent in rep3) + 1 false attestation (N10, rep2-only) + 1 flagged-unverifiable claim pattern (C3, 2 of 3 reps) | best non-pipeline recall on the 54-row base, now within 8–10 points of E8 (87%) rather than 20; only postfix (1 rep only) and the enumeration/comment classes remain a clear pipeline moat |
 | E2 sonnet k=1 | 54 | 10 | **19%** | ~$0.12/instance ($0.81/8-instance sweep) | **0 confirmed** (the one historical FP candidate — mfc-postfix's referenced-but-not-touched constant, pre-scored — did not reproduce on this canon) | everything outside the in-diff doc-vs-code stratum |
 
 Notes on the judgment calls embedded above: pipeline-as-operated is charged with D1–D6
