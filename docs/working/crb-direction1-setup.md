@@ -25,8 +25,9 @@ result is a row in a 49-tool leaderboard we did not build.
 scripts/crb-materialize.py --list          # 50 PRs, 173 goldens
 scripts/crb-materialize.py --per-repo 1    # 5-PR pilot: one per upstream project
 scripts/crb-materialize.py --all           # all 50 (~6-7 GB)
-scripts/crb-materialize.py --verify <slug> # re-assert containment (read-only)
-scripts/crb-materialize.py --reset  <slug> # restore to materialized state, then verify
+scripts/crb-materialize.py --verify   <slug> # re-check the BASELINE (read-only)
+scripts/crb-materialize.py --restore  <slug> # wipe + re-extract (what each cell does)
+scripts/crb-materialize.py --snapshot <slug> # baseline a clone made before 2026-08-19
 ```
 
 Clones the benchmark's fork of each PR (`claude-code`'s copy — any tool's fork
@@ -61,8 +62,10 @@ ANTHROPIC_API_KEY=sk-ant-... bash runs/review-arms/crb-pipeline/run-host.sh
 # plan only ($0):    DRY_RUN=1 bash runs/review-arms/crb-pipeline/run-host.sh
 ```
 
-Per instance: `claude -p "/code-review main"` in a fresh `node:22` container
-with a **copy of this repo's payload** (`skills/ workflows/ guides/ patterns/
+Per instance: `claude -p "/code-review main"` in a fresh container built from
+`docker/Dockerfile.review` (`node:22` + the pinned CLI, baked rather than
+`npx`-installed so a running cell needs exactly one reachable host), with a
+**copy of this repo's payload** (`skills/ workflows/ guides/ patterns/
 CLAUDE.md`, via `git archive $PAYLOAD_REF`) mounted as `~/.claude`. That is what
 makes this *the pipeline* rather than Claude Code's built-in reviewer — E5/E7
 deliberately run `--bare` so the payload does **not** load.
@@ -73,76 +76,102 @@ workflows CLAUDE.md` is empty as of 2026-08-18, so `PAYLOAD_REF=main` (the
 default) *is* the evidence-discipline arm. `run-meta.json` records the exact
 payload commit, model, CLI version and per-cell cost for every sweep.
 
-Two preflight checks run before any instance, because both failure modes cost a
-whole sweep silently:
+**The cell runs behind an egress allowlist.** The review container is attached
+to an `--internal` docker network with no route off the host; the single way out
+is a tinyproxy sidecar that `CONNECT`s to **`api.anthropic.com` and nothing
+else** (`docker/Dockerfile.proxy`, `docker/egress-allowlist`). This is the
+control R3 asked for, and it is what turns answer-key retrieval from *detected*
+into *prevented*: the merged upstream PR lives on github.com, which a cell
+cannot reach by `git`, `curl`, `gh`, or WebFetch. It also removes the
+exfiltration path for `ANTHROPIC_API_KEY` that a crafted file in a benchmark
+fork otherwise had.
+
+Three preflight checks run before any instance, because each failure mode costs
+a whole sweep silently:
 1. **auth** — a bad credential returns exit 0 with `"Not logged in"` (E7);
 2. **skill registration** — the model is asked to list its skills and the run
    aborts unless `code-review` is among them. Without this check a mis-mounted
    payload would measure the built-in reviewer under the pipeline's name, which
-   is exactly the failure decision 022 was written for.
+   is exactly the failure decision 022 was written for. It runs *inside* the
+   restricted network, so it doubles as proof a real headless invocation still
+   works through the proxy;
+3. **egress**, three legs, all of which must pass or the sweep exits 5 before
+   spending anything: `api.anthropic.com` reachable *through* the proxy;
+   `github.com` **refused** through the proxy (the filter works); `github.com`
+   **unroutable** with no proxy env (the network really is internal, so a
+   subprocess that ignores `HTTPS_PROXY` is still contained). Three legs because
+   each fails for a different reason, and a single test that passes for the
+   wrong reason is how this harness has gone wrong before.
 
 Outputs land in `runs/review-arms/crb-pipeline/<slug>/`: `transcript.jsonl`
 (full stream), `result.json` (cost/turns), `review.md` (final text), and
 `artifacts/` (anything the pipeline wrote into the repo — the rubric and critic
 reports). `transcript.jsonl` and `stderr.log` are **gitignored**: they quote
 foreign-repo file contents verbatim, the same reason `runs/**/prompt.txt` is
-ignored. The clone is reset with `crb-materialize.py --reset <slug>` after
-harvesting, so re-runs start from the same state.
+ignored.
 
-Three guards run per cell, all added after the 2026-08-18 review:
+Artifacts are collected by `scripts/crb-harvest-artifacts.py`, which diffs the
+tree's `.md`/`.json` files against the baseline index rather than asking git.
+The old harvest ran `git status` **on the host** as the first command after the
+container exited — the exact point `core.fsmonitor` fires — and it also honoured
+`.gitignore`, so a rubric written under a path the upstream repo ignores was
+silently dropped.
 
-- **Containment is re-asserted before and after every cell** via
-  `crb-materialize.py --reset <slug>` — the invariant is established at
-  materialize time but the clone is then mounted read-write into an agent
-  container, so it is re-checked rather than assumed. A pre-run failure skips
-  the cell. A post-run failure **voids** it: `CONTAINMENT_FAILED` is written into
-  the cell dir and `result.json` is rewritten with `is_error: true` /
-  `subtype: "containment_failed"`, so the resume predicate will not bank it and
+Three guards run per cell:
+
+- **Every cell starts from a wipe, not a repair.** `crb-materialize.py --restore
+  <slug>` deletes the work clone and re-extracts a **hash-pinned baseline tar**
+  built by `materialize()` from a tree no container had touched. Nothing on the
+  host runs `git` against a `.git` the review container had write access to.
+
+  That arrangement is what the 2026-08-19 review broke out of, five ways: the
+  host-side `checkout --force` / `reset --hard` / `clean -qffdx` / `gc` / `fsck`
+  executed `post-checkout` and `reference-transaction` hooks, `core.hooksPath`,
+  `core.fsmonitor`, and a `filter.X.smudge` reachable from tracked
+  `.gitattributes` **with no agent action at all** — plus `core.worktree`
+  redirecting `git clean -qffdx` at an unrelated host directory, which the
+  critic executed. No enumeration of dangerous config keys closes that; not
+  reading the foreign `.git` does.
+
+  Everything the old `--reset` had to *classify* therefore stops being a
+  question. An agent commit, a staged edit, a created branch, a deleted `main`,
+  a nested clone of the answer key: all simply gone, none of them confusable
+  with contamination. A voided cell also no longer leaves a permanently dead
+  clone. Guarded by `test/crb-disposable-clone.bats`.
+
+- **The post-run audit runs inside a throwaway container.**
+  `scripts/crb-audit-clone.sh` (via `docker run --network none`, no API key)
+  reads the outgoing clone for a surviving remote, a `.git/FETCH_HEAD`, an
+  unreachable commit under `git fsck --no-reflogs`, a commit that does not
+  descend from the reviewed head, or a nested repository. On any of those the
+  cell is **voided**: `CONTAINMENT_FAILED` is written into the cell dir and
+  `result.json` is rewritten with `is_error: true` / `subtype:
+  "containment_failed"`, so the resume predicate will not bank it and
   `crb-pipeline-to-benchmark.py` refuses to inject it. That matters because a
   contaminated clone yields a plausibly *high* score, not an obvious error.
+  Guarded by `test/crb-audit-clone.bats`, whose load-bearing cases are the ones
+  that must still void.
 
-  `--reset` distinguishes agent *work* from *contamination*, which the
-  2026-08-18 pre-mortem (narratives 1–2) found the previous version could not.
-  The payload's own `CLAUDE.md` instructs the reviewing agent to commit, so
-  voiding on any stray commit would void most cells of the sweep. A commit that
-  **descends from the reviewed head**, in a clone with **no fetch traces**, is
-  therefore **reset** — along with staged edits, created branches/tags, and a
-  deleted `main`. A surviving **remote**, a **fetch trace**, or a commit that
-  does **not** descend from the head still **voids**. The old reset
-  (`git checkout -- . && git clean -qfdx`) restored tracked files *from the
-  index*, so it undid neither a commit nor a `git add`: a commit voided the cell
-  and left the clone failing its pre-run check on every later attempt, and a
-  staged edit rode into the next attempt invisibly. Guarded by
-  `test/crb-containment-reset.bats`, whose load-bearing cases are the ones that
-  must still void.
+  > **What this does and does not establish.** The audit is **evidence, not the
+  > control** — the control is the egress allowlist above. Its checks exist
+  > because the earlier design rested on "a commit on top of the head cannot
+  > contain the answer key — there is no remote to fetch it from", which the
+  > 2026-08-18 k=3 fact-check **refuted by execution, unanimously**: `git fetch
+  > <URL> <refspec>` needs no configured remote, and its objects land in
+  > `.git/FETCH_HEAD`, which `git rev-list --all` does not walk. Descent is not
+  > evidence of agent authorship either — the upstream *merge* commit of the PR
+  > descends from the PR head too.
+  >
+  > `--no-reflogs` is load-bearing on the unreachable-commit check: `git fsck`
+  > counts reflog entries as reachability roots, so without it a fetched commit
+  > whose ref was deleted still reads as reachable and the check is inert (found
+  > on the iteration-2 fact-check; the non-vacuity is now pinned by a test).
+  >
+  > **Treat a fired check as proof of contamination, never a quiet pass as proof
+  > of cleanliness.** Residual, unclosed: a DNS side channel through docker's
+  > embedded resolver, and any retrieval that happens entirely in the model's
+  > context without touching the repository.
 
-  > **What this does NOT establish.** The `--reset` design originally rested on
-  > "a commit on top of the head cannot contain the answer key — there is no
-  > remote to fetch it from". The 2026-08-18 k=3 fact-check **refuted that by
-  > execution, unanimously**: `git fetch <URL> <refspec>` needs no configured
-  > remote, and its objects land in `.git/FETCH_HEAD`, which `git rev-list
-  > --all` does not walk. A replicate fetched an answer key with zero remotes,
-  > deleted the ref, committed the content on top of `review`, and the guard
-  > passed it as benign. Descent is also not evidence of agent authorship on its
-  > own — the upstream *merge* commit of the PR descends from the PR head too.
-  >
-  > What now runs is **detection of fetch traces** (`.git/FETCH_HEAD`, and
-  > unreachable commits under `git fsck --no-reflogs`), with `materialize()`
-  > and `--reset` both restoring a clean object-store baseline so those traces
-  > mean something. Defeating it requires deleting `FETCH_HEAD` **and** expiring
-  > the reflogs **and** running `gc --prune=now` — deleting `FETCH_HEAD` alone
-  > still voids. But an agent that simply clones elsewhere in the container
-  > filesystem is untouched by any of this. **Nothing git-local can prevent that
-  > while the container has unrestricted egress** — the actual control is the
-  > egress allowlist tracked as R3. Treat a fired check as proof of
-  > contamination, never a quiet pass as proof of cleanliness.
-  >
-  > *(The `--no-reflogs` flag was added on the iteration-2 fact-check, which
-  > found the unreachable-commit check inert without it: `git fsck` counts
-  > reflog entries as reachability roots, so a fetched commit whose ref was
-  > deleted stayed "reachable". `test/crb-containment-reset.bats` now pins the
-  > check's non-vacuity — the benign two-cell sequence must VOID when
-  > `scrub_object_store()` is stubbed out.)*
 - **Completed cells are skipped only if they actually produced a review** —
   `NOT is_error AND subtype == "success" AND len(result) >= 200 AND` no
   known non-review signature (auth "logged in", quota "hit your weekly/session
@@ -317,6 +346,15 @@ API billing.
    profile-free (All). Re-cut by profile before claiming a headline number.
 5. **One sample per cell.** No replication is wired here (E7 exists for that
    question). Treat a pilot row as a point estimate.
+6. **Containment is now prevention plus evidence — say which one a number
+   rests on.** Answer-key retrieval over the network is *prevented* by the
+   egress allowlist, and that is the claim worth making. `voided_cells: []` in
+   `run-meta.json` remains only "nothing was detected" — the file says so in its
+   own `voided_cells_meaning` field. Two residual paths are unclosed and belong
+   in any write-up: a low-bandwidth DNS side channel through docker's embedded
+   resolver, and contamination that never touches the repository (the model
+   recalling the merged PR from training data, which is caveat 1 and is not
+   addressable by any container control).
 
 ## What is verified vs assumed
 
@@ -336,3 +374,18 @@ the chain. Run one instance first (`run-host.sh keycloak-PR36880`, the smallest
 diff) and read `review.md` + `artifacts/` before launching a sweep. Also
 unverified: the Anthropic-endpoint judge path with a real key (only the stub
 shims have run here), and the real per-instance cost.
+
+**Not verified, added 2026-08-19 — everything docker-shaped in the egress
+work.** The images have not been built, the network has not been created, and
+the proxy has never run: this session has no docker. What *is* verified here is
+the logic that does not need it — the disposable-clone snapshot/restore round
+trip and all five void cases against real fixture repos, the harvest against a
+real `.gitignore`, and the config-level pins (`test/crb-disposable-clone.bats`,
+`test/crb-audit-clone.bats`, `test/crb-harvest-artifacts.bats`,
+`test/crb-egress-config.bats`). The allowlist itself is proven **on the host, by
+the egress preflight, before any paid cell** — which is deliberate: it is a
+control whose only honest verification is execution, so it was built to test
+itself rather than to be asserted here. Two specific assumptions it will settle:
+that Claude Code honours `HTTPS_PROXY`, and that docker's embedded DNS still
+resolves for containers on an `--internal` network. **If the first is wrong, the
+preflight fails at $0** — which is the designed outcome, not a surprise.

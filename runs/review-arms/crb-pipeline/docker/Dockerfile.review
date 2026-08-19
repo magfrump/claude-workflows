@@ -1,0 +1,28 @@
+# Review container for the CRB direction-1 arm.
+#
+# Why an image instead of `npx -y @anthropic-ai/claude-code@VER` at run time:
+# the review container runs behind an egress allowlist, and installing at run
+# time would force `registry.npmjs.org` (plus its CDN) into that allowlist for
+# every paid cell. Baking the CLI means a running cell needs exactly ONE
+# reachable host, `api.anthropic.com`, which is what makes the allowlist a
+# meaningful control rather than a gesture.
+#
+# Built once by run-host.sh with normal network, before the restricted network
+# is created. The CLI version is still pinned, so the arm is comparable to
+# E5/E7 which pin the same way.
+ARG NODE_TAG=22
+FROM node:${NODE_TAG}
+
+ARG CC_VERSION
+RUN test -n "$CC_VERSION" || (echo "build arg CC_VERSION is required" >&2; exit 1)
+RUN npm install -g "@anthropic-ai/claude-code@${CC_VERSION}" \
+ && npm cache clean --force
+
+# Proven at build time so a broken image fails here rather than mid-sweep, and
+# recorded in the image so `docker inspect` can answer "which CLI ran".
+RUN claude --version
+LABEL crb.cc_version="${CC_VERSION}"
+
+USER node
+WORKDIR /repo
+ENTRYPOINT ["claude"]

@@ -35,6 +35,24 @@
 #     own in most cases — the canon instances had one. Repo-local instructions
 #     load as they would for any real user.
 #
+# TWO CONTROLS, added 2026-08-19, answering the review escalation:
+#
+#   EGRESS ALLOWLIST. The review container runs on an --internal docker network
+#   whose only route out is a tinyproxy sidecar that CONNECTs to exactly one
+#   host, api.anthropic.com (docker/Dockerfile.proxy + docker/egress-allowlist).
+#   Before this, the container had unrestricted egress: the merged upstream PR —
+#   the answer key — was one curl away, and a crafted file in a benchmark fork
+#   could exfiltrate ANTHROPIC_API_KEY (2026-08-18 rubric R3, 2026-08-19 R4).
+#   The allowlist makes retrieval PREVENTED rather than detected. The preflight
+#   below proves it by execution before any paid cell; it does not assume it.
+#
+#   DISPOSABLE CLONES. Each cell wipes its clone and re-extracts a hash-pinned
+#   baseline tar. No host process runs `git` against a `.git` the container had
+#   write access to — the arrangement out of which the 2026-08-19 review
+#   executed five host-side code-execution paths plus a `core.worktree` redirect
+#   that deleted files in an unrelated host directory (R1/R2). Post-run
+#   detection runs inside a throwaway container (scripts/crb-audit-clone.sh).
+#
 # Prereqs:
 #   * docker
 #   * ANTHROPIC_API_KEY exported (API billing => result.json's total_cost_usd is
@@ -71,6 +89,16 @@ SWEEP_BUDGET="${SWEEP_BUDGET:-250.00}"
 # cell from being re-paid indefinitely.
 MAX_ATTEMPTS="${MAX_ATTEMPTS:-2}"
 DRY_RUN="${DRY_RUN:-}"
+DOCKER_DIR="$ROOT/runs/review-arms/crb-pipeline/docker"
+REVIEW_IMAGE="crb-review:$CC_VERSION"
+PROXY_IMAGE="crb-egress-proxy:$(git -C "$ROOT" rev-parse --short HEAD)"
+EGRESS_NET="crb-inner"
+# Pinned so tinyproxy.conf's Allow line can name the subnet exactly rather than
+# proxying for whatever else is on this host's default bridge. Override only if
+# it collides with something already on the machine.
+EGRESS_SUBNET="${EGRESS_SUBNET:-172.31.250.0/24}"
+PROXY_NAME="crb-egress-proxy"
+PROXY_URL="http://$PROXY_NAME:3128"
 
 [ -f "$MANIFEST" ] || { echo "no $MANIFEST — run scripts/crb-materialize.py first" >&2; exit 1; }
 
@@ -108,23 +136,108 @@ if [ -n "$DRY_RUN" ]; then
 fi
 [ -n "${ANTHROPIC_API_KEY:-}" ] || { echo "ANTHROPIC_API_KEY not set" >&2; exit 1; }
 
-# Docker creates a fresh named volume root-owned, but the review container runs
-# as uid 1000 (-u node) — chown it once, as root, before any -u node mount.
-docker run --rm -v cc-review-npm-cache:/home/node/.npm node:22 \
-  chown -R node:node /home/node/.npm
+# ── Images: built once, pinned, before the restricted network exists ────────
+# The review image bakes the pinned CLI instead of `npx -y ...@VER` per cell.
+# That is what lets the egress allowlist hold ONE host: installing at run time
+# would force registry.npmjs.org (and its CDN) into the allowlist for every paid
+# cell, and an allowlist with a package registry in it is not much of a control.
+echo "=== images"
+docker build --quiet --build-arg CC_VERSION="$CC_VERSION" \
+  -f "$DOCKER_DIR/Dockerfile.review" -t "$REVIEW_IMAGE" "$DOCKER_DIR" >/dev/null
+docker build --quiet -f "$DOCKER_DIR/Dockerfile.proxy" -t "$PROXY_IMAGE" \
+  "$DOCKER_DIR" >/dev/null
+echo "  review: $REVIEW_IMAGE (claude-code $CC_VERSION baked)"
+echo "  proxy:  $PROXY_IMAGE ($(grep -c '^[^#]' "$DOCKER_DIR/egress-allowlist") allowed host(s))"
 
-# ── Preflight: auth AND skill registration ──────────────────────────────────
+# ── Egress allowlist: an --internal network plus one proxy sidecar ──────────
+# --internal means containers on it have NO route off this host. The proxy is
+# attached to it AND to the default bridge, so it is the only path out, and it
+# CONNECTs to api.anthropic.com alone.
+setup_egress() {
+  docker rm -f "$PROXY_NAME" >/dev/null 2>&1 || true
+  docker network rm "$EGRESS_NET" >/dev/null 2>&1 || true
+  docker network create --internal --subnet "$EGRESS_SUBNET" "$EGRESS_NET" >/dev/null
+  docker run -d --name "$PROXY_NAME" --network "$EGRESS_NET" \
+    --restart no "$PROXY_IMAGE" >/dev/null
+  # Second attachment AFTER creation: a container created on the internal
+  # network and then joined to the bridge keeps both, and this ordering makes
+  # the internal network its primary one.
+  docker network connect bridge "$PROXY_NAME" >/dev/null
+}
+teardown_egress() {
+  docker rm -f "$PROXY_NAME" >/dev/null 2>&1 || true
+  docker network rm "$EGRESS_NET" >/dev/null 2>&1 || true
+}
+echo "=== egress allowlist"
+setup_egress
+# Replaces the payload-only trap: from here the sweep owns a network and a
+# container, and a Ctrl-C that left them running would leave a proxy attached to
+# this host's bridge indefinitely. Superseded once more below, when run-meta
+# joins the handler — every version keeps every job.
+trap 'teardown_egress; rm -rf "$PAYLOAD_SRC"' EXIT
+echo "  network $EGRESS_NET ($EGRESS_SUBNET, --internal), proxy $PROXY_NAME up"
+
+# Run a command in a throwaway container on the restricted network, exactly as a
+# review cell sees it. Used by the preflight so the thing tested IS the thing
+# that runs, not a re-description of it.
+in_cell_net() {
+  docker run --rm --network "$EGRESS_NET" \
+    -e HTTP_PROXY="$PROXY_URL" -e HTTPS_PROXY="$PROXY_URL" \
+    -e http_proxy="$PROXY_URL" -e https_proxy="$PROXY_URL" \
+    --entrypoint bash "$REVIEW_IMAGE" -c "$1"
+}
+
+# ── Egress preflight: PROVE the allowlist, three ways ───────────────────────
+# This is the control that makes the arm's numbers meaningful (an agent that can
+# fetch the merged PR scores well for the wrong reason) and the one that keeps
+# ANTHROPIC_API_KEY out of a hostile fork's reach. So it is tested by execution
+# before any money is spent, and each leg is separate because they fail for
+# different reasons — a single test passing for the wrong reason is how this
+# harness has gone wrong before.
+echo "=== egress preflight"
+# (1) positive: the API is reachable THROUGH the proxy. Any HTTP status proves
+# the tunnel; 401 is the expected answer to an unauthenticated GET, and we do
+# not send the key here.
+api_code=$(in_cell_net 'curl -s -o /dev/null -w "%{http_code}" --max-time 25 https://api.anthropic.com/v1/models || echo 000')
+[ "$api_code" != "000" ] || {
+  echo "  FAIL: api.anthropic.com unreachable through the proxy — every cell would fail" >&2
+  exit 5; }
+echo "  ok  api.anthropic.com reachable through the proxy (HTTP $api_code)"
+# (2) negative: a non-allowlisted host through the proxy must be REFUSED by the
+# filter. github.com specifically: it is where the answer key lives.
+gh_code=$(in_cell_net 'curl -s -o /dev/null -w "%{http_code}" --max-time 25 https://github.com/ || echo 000')
+case "$gh_code" in
+  403|000) echo "  ok  github.com refused through the proxy (HTTP $gh_code)" ;;
+  *) echo "  FAIL: github.com returned HTTP $gh_code through the proxy — the allowlist is NOT filtering." >&2
+     echo "        The answer key is reachable from a review cell; refusing to spend." >&2
+     exit 5 ;;
+esac
+# (3) negative: with the proxy env removed there must be no route at all, so a
+# cell that simply ignores HTTPS_PROXY (curl, git, a subprocess) is still
+# contained. Without this leg the control would be advisory.
+direct=$(docker run --rm --network "$EGRESS_NET" --entrypoint bash "$REVIEW_IMAGE" \
+  -c 'curl -s -o /dev/null -w "%{http_code}" --max-time 20 https://github.com/ || echo 000')
+[ "$direct" = "000" ] || {
+  echo "  FAIL: github.com returned HTTP $direct with NO proxy env — the network is not internal." >&2
+  exit 5; }
+echo "  ok  github.com unroutable without the proxy (network is --internal)"
+
+# ── Preflight: auth AND skill registration, ON THE RESTRICTED NETWORK ───────
 # Two failure modes cost a whole sweep if unchecked:
 #  (a) bad credential — the CLI exits 0 with result "Not logged in" (E7 note);
 #  (b) payload mounted but skills not registered — the run then silently
 #      measures Claude Code's built-in review, i.e. the E5 arm under a wrong
 #      label. Decision 022 exists because exactly this happened in cc-isolated.
+# Running it inside $EGRESS_NET makes it do a third job: prove a real headless
+# invocation still works through the proxy, before 50 of them are paid for.
 echo "=== preflight"
 PF_HOME=$(mktemp -d); cp -r "$PAYLOAD_SRC/." "$PF_HOME/"; chmod -R u+w "$PF_HOME"
 preflight=$(docker run --rm -u node -e ANTHROPIC_API_KEY \
+  --network "$EGRESS_NET" \
+  -e HTTPS_PROXY="$PROXY_URL" -e HTTP_PROXY="$PROXY_URL" \
+  -e https_proxy="$PROXY_URL" -e http_proxy="$PROXY_URL" \
   -v "$PF_HOME":/home/node/.claude \
-  -v cc-review-npm-cache:/home/node/.npm node:22 \
-  npx -y @anthropic-ai/claude-code@"$CC_VERSION" \
+  "$REVIEW_IMAGE" \
     -p "List the names of your available skills, comma separated. Nothing else." \
     --model "$MODEL" --output-format json 2>&1) || true
 rm -rf "$PF_HOME"
@@ -146,7 +259,7 @@ if d.get("num_turns", 0) < 1 or "log in" in low or "logged in" in low:
 if "code-review" not in r:
     sys.exit("  payload skills NOT registered — the run would measure the "
              f"built-in reviewer, not the pipeline. Model said: {r[:300]!r}")
-print("  preflight OK — auth good, code-review skill registered")
+print("  preflight OK — auth good, code-review skill registered, egress constrained")
 EOF
 
 # ── Sweep-level provenance: which payload actually ran (review-canon §3) ─────
@@ -242,12 +355,17 @@ print(f"\nrun-meta: {meta_path} — {len(cells)} cell(s), total ${total:.2f}"
       + (f", {len(voided)} VOIDED by containment" if voided else ""))
 EOF
 }
-# Replaces the payload-only trap set above: both jobs, one handler.
-trap 'write_run_meta; rm -rf "$PAYLOAD_SRC"' EXIT
+# All three jobs, one handler.
+trap 'write_run_meta; teardown_egress; rm -rf "$PAYLOAD_SRC"' EXIT
 
 for id in "${INSTANCES[@]}"; do
   clone="$CLONES/$id"
-  [ -d "$clone/.git" ] || { echo "$id: clone missing — run scripts/crb-materialize.py --slug $id" >&2
+  # The BASELINE, not the clone, is the precondition now: --restore below builds
+  # the clone from it, and a work clone left over from a previous cell is not
+  # evidence that this cell can run.
+  [ -f "$CLONES/.baselines/$id.tar" ] || {
+    echo "$id: no baseline — run scripts/crb-materialize.py --slug $id (or --snapshot $id" >&2
+    echo "    if the clone already exists and no container has run against it)" >&2
     skipped_bad=$((skipped_bad+1)); continue; }
   dest="$OUT/$id"
   # "Complete" must mean PRODUCED A REVIEW. The rules, and the artifacts they
@@ -285,19 +403,18 @@ for id in "${INSTANCES[@]}"; do
   fi
   mkdir -p "$dest"
   echo "=== $id"
-  # Containment is re-asserted around every cell, not just at materialize time:
-  # a read-write mount plus an agent with network access is exactly the shape
-  # that could re-add a remote and fetch the merged upstream fix (the answer
-  # key). Failing here costs one cell; failing silently would invalidate the arm.
-  # Checked BEFORE the payload copy below, so a skipped cell leaks no temp dir.
-  # --reset (not --verify): the cell must START from the materialized state, so
-  # anything a previous run left behind is undone here rather than reviewed.
-  python3 "$ROOT/scripts/crb-materialize.py" --reset "$id" || {
-    echo "$id: PRE-RUN containment check failed — skipping cell" >&2
-    echo "    If this says FETCH_HEAD present and/or 'invalid sha1 pointer' on a clone" >&2
-    echo "    that has never run a cell, it was materialized before 2026-08-19 and only" >&2
-    echo "    needs the one-shot baseline upgrade:" >&2
-    echo "      python3 scripts/crb-materialize.py --heal $id" >&2
+  # Every cell starts from a WIPE, not a repair: the work clone is deleted and
+  # re-extracted from a hash-pinned baseline built before any container existed.
+  # An agent commit, a staged edit, a created branch, a deleted `main`, a nested
+  # clone of the answer key — none of them can reach this cell, and none of them
+  # has to be told apart from contamination by a heuristic. Host `git` never
+  # reads the outgoing `.git` (2026-08-19 rubric R1/R2).
+  # Run BEFORE the payload copy below, so a skipped cell leaks no temp dir.
+  python3 "$ROOT/scripts/crb-materialize.py" --restore "$id" || {
+    echo "$id: RESTORE failed — skipping cell" >&2
+    echo "    A clone materialized before 2026-08-19 has no baseline yet. If no" >&2
+    echo "    container has ever run against it, build one once:" >&2
+    echo "      python3 scripts/crb-materialize.py --snapshot $id" >&2
     skipped_bad=$((skipped_bad+1)); continue; }
   # Fresh writable payload copy per instance: Claude Code writes settings.json,
   # projects/, todos/ into ~/.claude, and one instance's state must not leak
@@ -308,13 +425,18 @@ for id in "${INSTANCES[@]}"; do
   # and the tree reset below, so re-runs start from the same state.
   #
   t0=$(date +%s)
+  # --network $EGRESS_NET: no route off this host except the proxy, which
+  # CONNECTs to api.anthropic.com and nothing else. The key is still passed in —
+  # the cell has to authenticate — but there is now nowhere else to send it, and
+  # the merged upstream PR is not reachable. Proven by the egress preflight.
   docker run --rm -u node -w /repo \
     -e ANTHROPIC_API_KEY \
+    --network "$EGRESS_NET" \
+    -e HTTPS_PROXY="$PROXY_URL" -e HTTP_PROXY="$PROXY_URL" \
+    -e https_proxy="$PROXY_URL" -e http_proxy="$PROXY_URL" \
     -v "$clone":/repo \
     -v "$INST_HOME":/home/node/.claude \
-    -v cc-review-npm-cache:/home/node/.npm \
-    node:22 \
-    npx -y @anthropic-ai/claude-code@"$CC_VERSION" \
+    "$REVIEW_IMAGE" \
       -p "/code-review main" \
       --model "$MODEL" \
       --output-format stream-json --verbose \
@@ -347,54 +469,32 @@ if res is None:
 json.dump(res, open(sys.argv[2], "w"))
 open(sys.argv[3], "w").write(res.get("result") or "")
 EOF
-  mkdir -p "$dest/artifacts"
-  # Stay NUL-delimited end to end. `read -r -d ''` is the only form that
-  # survives a newline in a filename — piping through `tr '\0' '\n'` would throw
-  # away exactly the property `-z` buys, and a fixed `cut -c4-` then eats three
-  # characters of any record that arrives without a status prefix.
-  # Porcelain v1 -z emits "XY path" per record, plus a SECOND record holding the
-  # original path for a rename/copy; consume and drop that one.
-  # The path comes from a repository we do not own and this loop runs on the
-  # HOST, so it is treated as untrusted: absolute or `..`-bearing paths are
-  # refused rather than normalised, since `$dest/artifacts/$f` would otherwise
-  # write outside the artifacts dir.
-  while IFS= read -r -d '' entry; do
-    [ ${#entry} -gt 3 ] || continue
-    st=${entry:0:2}
-    f=${entry:3}
-    case "$st" in
-      R*|C*) read -r -d '' _orig || true ;;
-    esac
-    case "$f" in
-      *.md|*.json) ;;
-      *) continue ;;
-    esac
-    case "$f" in
-      /*|*..*) echo "  !! $id: refusing suspicious artifact path: $f" >&2; continue ;;
-    esac
-    [ -f "$clone/$f" ] || continue
-    mkdir -p "$dest/artifacts/$(dirname "$f")"
-    # --no-dereference so a symlink the agent left behind is copied as a link
-    # rather than followed into host files. It only covers the final component,
-    # which is why the traversal guard above is the load-bearing check.
-    cp --no-dereference "$clone/$f" "$dest/artifacts/$f" 2>/dev/null || true
-  done < <(git -C "$clone" status --porcelain=v1 -z --untracked-files=all)
-  # Reset AND re-verify in one call. This used to be `git checkout -- .` plus
-  # `git clean -qfdx`, which restores tracked files FROM THE INDEX: neither a
-  # commit nor a `git add` was undone by it, and the containment check reads refs
-  # and remotes, not the index — so a staged edit rode into the next attempt
-  # invisibly, and a commit (which this repo's own CLAUDE.md, mounted into every
-  # container, instructs the agent to make) voided the cell AND left the clone
-  # permanently failing its pre-run check. --reset distinguishes the two: agent
-  # work on top of the reviewed head is undone; a surviving remote or a commit
-  # outside that ancestry still voids.
+  # Artifacts: diff the tree against the baseline index instead of asking git.
+  # The old harvest ran `git -C "$clone" status` ON THE HOST as the FIRST
+  # command after the container exited — which is exactly where core.fsmonitor
+  # fires (2026-08-19 R1). It was also incomplete: --untracked-files=all still
+  # honours .gitignore, so a rubric written under a path the upstream repo
+  # ignores never appeared. Nothing below reads .git.
+  python3 "$ROOT/scripts/crb-harvest-artifacts.py" \
+    "$clone" "$CLONES/.baselines/$id.index.json" "$dest/artifacts" || {
+      echo "$id: HARVEST invocation failed — see above" >&2; exit 4; }
+
+  # Post-run audit, INSIDE a throwaway container: read the outgoing clone for
+  # evidence of contamination, where a hostile .git can reach nothing but a
+  # container that is about to be deleted. --network none, no API key.
   #
-  # A post-run failure must VOID the cell, not just print. A contaminated clone
-  # produces a plausibly HIGH score, so a warning that leaves result.json marked
-  # successful is the worst outcome: the resume predicate would bank it and the
-  # injector would ship it. Rewrite the result so both refuse it.
-  if ! python3 "$ROOT/scripts/crb-materialize.py" --reset "$id"; then
-    echo "$id: POST-RUN containment check FAILED — voiding this cell" >&2
+  # This is EVIDENCE, not the control. The control is the egress allowlist; this
+  # records whether anything got past it. A void still matters — a contaminated
+  # cell scores plausibly HIGH, so banking it is the worst outcome — but a quiet
+  # pass is not proof of cleanliness.
+  head_sha=$(python3 -c '
+import json, sys
+print(json.load(open(sys.argv[1]))[sys.argv[2]]["head"])' "$MANIFEST" "$id")
+  if ! docker run --rm --network none -u node \
+        -v "$clone":/repo \
+        -v "$ROOT/scripts/crb-audit-clone.sh":/audit.sh:ro \
+        --entrypoint bash "$REVIEW_IMAGE" /audit.sh /repo "$head_sha"; then
+    echo "$id: POST-RUN containment audit FAILED — voiding this cell" >&2
     : > "$dest/CONTAINMENT_FAILED"
     python3 - "$dest/result.json" <<'EOF' || true
 import json, sys
@@ -407,6 +507,9 @@ d["subtype"] = "containment_failed"
 json.dump(d, open(sys.argv[1], "w"))
 EOF
   fi
+  # The clone is left as the container wrote it; the NEXT cell's --restore wipes
+  # it. Nothing on the host touches it in between, and a voided cell no longer
+  # leaves a permanently dead clone (2026-08-19 A8).
 
   python3 - "$dest/result.json" "$((t1-t0))" "$dest" <<'EOF'
 import json, os, sys

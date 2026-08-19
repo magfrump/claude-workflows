@@ -1,0 +1,9 @@
+# Hosts a review cell may reach. Anchored regexes, matched against the CONNECT
+# target host (FilterExtended On, FilterURLs Off).
+#
+# EXACTLY ONE ENTRY IS INTENDED. Every addition widens the channel through which
+# a reviewing agent could reach the answer key -- the merged upstream PR -- and
+# through which repository-controlled content could exfiltrate ANTHROPIC_API_KEY.
+# test/crb-egress-config.bats pins the count, so adding a host is a deliberate,
+# reviewed act rather than an edit nobody notices.
+^api\.anthropic\.com$

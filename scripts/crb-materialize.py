@@ -19,36 +19,60 @@ Clones are SHALLOW (--depth, default 50): enough history for context and
 blame-ish reading, not enough to reach unrelated later work. Measured on the
 5-PR pilot: 33-195 MB each (see clone_mb in the manifest).
 
+DISPOSABLE CLONES. Each verified clone is frozen into a hash-pinned baseline
+tar under external/crb-eval/.baselines/, and a review cell is a wipe-and-extract
+of that tar rather than a repair of the previous cell's tree. The reason is not
+tidiness: the work clone is mounted read-write into a
+`--dangerously-skip-permissions` container, and the 2026-08-19 review executed
+five host-side code-execution paths out of the host then running `git` against
+that container-written `.git` (hooks, core.hooksPath, core.fsmonitor, a smudge
+filter reachable from tracked `.gitattributes` alone), plus `core.worktree`
+redirecting `git clean -qffdx` at an unrelated host directory. So the host does
+not read a used `.git` at all. Post-run detection moved to
+scripts/crb-audit-clone.sh, which runs inside a throwaway container.
+
 Usage:
   scripts/crb-materialize.py --list                     # what's available
   scripts/crb-materialize.py --per-repo 1               # 5-PR pilot (1/repo)
   scripts/crb-materialize.py --slug discourse-graphite-PR1 keycloak-PR37429
-  scripts/crb-materialize.py --all                      # all 50 (~6-7 GB)
+  scripts/crb-materialize.py --all                      # all 50 (~13 GB w/ baselines)
   scripts/crb-materialize.py --per-repo 1 --dry-run     # print, clone nothing
-  scripts/crb-materialize.py --verify grafana-PR79265   # re-check containment
-  scripts/crb-materialize.py --reset  grafana-PR79265   # restore, then re-check
+  scripts/crb-materialize.py --verify   grafana-PR79265 # re-check the baseline
+  scripts/crb-materialize.py --restore  grafana-PR79265 # wipe + re-extract (per cell)
+  scripts/crb-materialize.py --snapshot grafana-PR79265 # baseline a pre-existing clone
 
 Writes/updates runs/review-arms/crb/instances.json. Each record carries: url,
 source_repo, pr_title, fork, fork_url, head, base, commits, n_goldens,
-files_changed, insertions, deletions, clone_mb, depth. The runner
+files_changed, insertions, deletions, clone_mb, depth, baseline_tar,
+baseline_sha256, baseline_mb, baseline_files_indexed. The runner
 (runs/review-arms/crb-pipeline/run-host.sh) and the injector
 (scripts/crb-pipeline-to-benchmark.py) both read that manifest, so the PR
 identity travels with the artifacts instead of being re-derived.
 """
 
 import argparse
+import hashlib
 import json
 import os
 import re
 import shutil
 import subprocess
 import sys
+import tempfile
 from pathlib import Path
 
 WORKSPACE = Path(__file__).resolve().parent.parent
 BENCH = WORKSPACE / "external/code-review-benchmark/offline"
 BENCH_DATA = BENCH / "results/benchmark_data.json"
 DST_ROOT = WORKSPACE / "external/crb-eval"
+# Pristine per-slug snapshots. A cell is a wipe-and-extract of one of these, so
+# nothing the review container writes can survive into the next cell and no host
+# process ever runs `git` against container-written state (2026-08-19 rubric
+# R1/R2). Built from a clone no container has touched, and pinned by sha256 in
+# the manifest so a tampered baseline refuses to restore.
+BASELINE_ROOT = DST_ROOT / ".baselines"
+# Harvest looks at these only; see scripts/crb-harvest-artifacts.py.
+ARTIFACT_SUFFIXES = (".md", ".json")
 # The manifest lives under runs/ (tracked) rather than beside the clones:
 # external/ is gitignored, and the slug -> PR mapping is provenance the
 # results depend on, so it must survive a clone wipe.
@@ -168,11 +192,12 @@ def dir_mb(path: Path) -> int:
 def verify_containment(dst: Path, slug: str, head: str = None):
     """Assert the no-answer-key invariant on a clone. Returns (n_commits, stat).
 
-    Callable on purpose: materialize() establishes this invariant once, but the
-    clone is later mounted READ-WRITE into a review container, so the property
-    has to be re-checkable before and after every cell rather than proven once
-    at creation. run-host.sh calls this via --reset, which resets first and
-    then asserts this; --verify is the read-only form for a human.
+    Runs ONLY on trees no container has touched: the freshly cloned tree inside
+    materialize(), the same tree under --snapshot, and a temp extract of the
+    baseline under --verify. It used to run per cell, against the clone the
+    review container had just written — that is the arrangement the 2026-08-19
+    review broke out of (R1/R2), and it is why the per-cell check is now a wipe
+    plus an audit inside a container instead.
 
     Guard (a) nothing reachable outside the reviewed head's ancestry;
     (b) no remote survives (a re-added remote is the route by which a reviewing
@@ -197,110 +222,19 @@ def verify_containment(dst: Path, slug: str, head: str = None):
     return n_commits, stat
 
 
-def fetch_traces(dst: Path):
-    """Evidence that something fetched into this clone since it was scrubbed.
-
-    WHY THIS EXISTS — and what it does NOT do. The 2026-08-18 k=3 fact-check
-    refuted, by execution in all three replicates, the claim this module used to
-    rest on ("with no remote there is no route to fetch it"). `git fetch <URL>
-    <refspec>` needs no configured remote. It leaves no remote, and the objects
-    it writes are reachable via `.git/FETCH_HEAD`, which `git rev-list --all`
-    does NOT walk. So neither the remote check nor the stray check sees it: a
-    replicate built a clone the way materialize() does, fetched an answer key
-    with zero remotes, deleted the fetched ref, committed the content on top of
-    `review`, and the guard passed it as benign agent work.
-
-    These two checks are therefore DETECTION OF TRACES, not prevention:
-
-      (a) `.git/FETCH_HEAD` — written by every fetch, including a by-URL fetch.
-          materialize() deletes it after its own fetches so its later presence
-          is meaningful.
-      (b) unreachable commits — what a fetch-then-delete-the-ref leaves behind,
-          under `--no-reflogs`.
-
-    `--no-reflogs` is load-bearing and was added on the iteration-2 fact-check.
-    Without it `git fsck` treats reflog entries as reachability roots, so a
-    fetched commit whose ref was deleted stays "reachable" through that ref's
-    reflog and check (b) never fires — the check was inert for its stated
-    purpose. It is what makes scrub_object_store() load-bearing in turn: with
-    reflogs no longer masking anything, the commits reset_clone() discards WOULD
-    read as unreachable on the next cell unless the reflogs are expired.
-
-    Defeating both checks requires removing FETCH_HEAD *and* expiring the
-    reflogs *and* running `gc --prune=now` — deleting FETCH_HEAD alone still
-    voids. That is a higher bar than the earlier comment here claimed, but it is
-    still only a bar, not a wall: an agent that clones somewhere else in the
-    container filesystem is untouched by any of this. Nothing git-local can
-    prevent that while the container has unrestricted egress — the actual
-    control is the egress allowlist tracked as R3 in
-    docs/reviews/code-review-rubric-2026-08-18-feat-crb-direction1-harness.md.
-    Treat a fired check as proof of contamination, never a quiet pass as proof
-    of cleanliness.
-    """
-    traces = []
-    if (dst / ".git" / "FETCH_HEAD").exists():
-        traces.append("FETCH_HEAD present — something fetched into this clone")
-    # --connectivity-only skips object content validation; on a 33-195 MB clone
-    # that is the expensive half. (It is NOT what keeps fsck quiet on a shallow
-    # clone — measured: fsck is equally quiet on a --depth=1 clone without it.)
-    r = subprocess.run(["git", "fsck", "--unreachable", "--no-reflogs",
-                        "--connectivity-only", "--no-progress"],
-                       cwd=dst, capture_output=True, text=True)
-    out = (r.stdout or "") + (r.stderr or "")
-    unreachable = [l for l in out.splitlines()
-                   if l.startswith("unreachable commit")]
-    if unreachable:
-        traces.append(f"{len(unreachable)} unreachable commit(s) — "
-                      f"a fetched ref that was deleted leaves exactly this")
-    # fsck's own errors must not be swallowed. A clean clone exits 0; anything
-    # else means the check could not do its job, and a containment check that
-    # silently could-not-run is the failure mode this whole module exists to
-    # avoid. (materialize() leaves no dangling symref for this to trip on —
-    # see the remote-removal ordering there.)
-    errors = [l for l in out.splitlines() if l.startswith("error:")]
-    if errors:
-        traces.append(f"git fsck reported {len(errors)} error(s), first: "
-                      f"{errors[0][:160]} — cannot certify containment")
-    return traces
-
-
-def classify_strays(dst: Path, head: str):
-    """(strays, foreign) for commits reachable from a ref but not from `head`.
-
-    `foreign` = does not descend from the reviewed head. Descent is NECESSARY
-    for a stray to be treated as benign agent work, and it is NOT SUFFICIENT —
-    see fetch_traces() above, and note the second refutation the fact-check
-    raised: the upstream MERGE commit of this PR descends from the PR head, so
-    descent is not evidence of agent authorship. Benign classification requires
-    descent AND a clean fetch_traces(); the caller enforces both.
-
-    The expected benign case is real and common: the payload's own CLAUDE.md
-    instructs the reviewing agent to commit its work, so voiding on any stray
-    (the pre-cf6e7c9 behaviour) would void most cells of the sweep.
-    """
-    strays = [l for l in sh(["git", "rev-list", "--all", "--not", head],
-                            cwd=dst).splitlines() if l]
-    foreign = [c for c in strays
-               if subprocess.run(["git", "merge-base", "--is-ancestor", head, c],
-                                 cwd=dst, capture_output=True).returncode != 0]
-    return strays, foreign
-
-
 def scrub_object_store(dst: Path):
-    """Restore the post-materialize baseline: no reflogs, no unreachable objects,
-    no FETCH_HEAD.
+    """Restore the post-materialize baseline: no reflogs, no unreachable
+    objects, no FETCH_HEAD.
 
-    Load-bearing, and pinned by test/crb-containment-reset.bats. Because
-    fetch_traces() runs `git fsck --no-reflogs`, the commits reset_clone() has
-    just discarded are genuinely unreachable, and WOULD fire check (b) on the
-    next cell's pre-run check — voiding a clean cell — if the reflogs were not
-    expired here.
+    Load-bearing for the AUDIT, not for the reset (there is no reset any more).
+    scripts/crb-audit-clone.sh voids a cell on a leftover `.git/FETCH_HEAD` and
+    on unreachable commits under `git fsck --no-reflogs`. materialize()'s own
+    fetches write both, so unless they are cleared here EVERY baseline would
+    carry them and EVERY cell would void — and the checks would mean nothing.
+    Clearing them is what makes their later presence evidence.
 
-    (This rationale was wrong when first written: without `--no-reflogs`, fsck
-    treated the reflog as a root, nothing ever read as unreachable, and removing
-    this call left the suite green. The iteration-2 fact-check caught it. The
-    fix was to make the check strict rather than to delete the call, since a
-    check that cannot fire is worse than no check.)
+    Runs on a clone this script just built from the fork, before any container
+    has seen it, which is the only reason it is safe to run host `git` here.
     """
     # Heals a clone materialized before the remote-removal ordering fix, whose
     # refs/remotes/origin/HEAD symref was left dangling. for-each-ref does not
@@ -312,64 +246,124 @@ def scrub_object_store(dst: Path):
     (dst / ".git" / "FETCH_HEAD").unlink(missing_ok=True)
 
 
-def reset_clone(dst: Path, slug: str, head: str, base: str):
-    """Restore a clone to its materialized ref/index/worktree state. Returns a
-    note describing what had to be undone (empty when nothing had).
+def sha256_file(path: Path, _bufsize: int = 1 << 20) -> str:
+    h = hashlib.sha256()
+    with open(path, "rb") as fh:
+        for chunk in iter(lambda: fh.read(_bufsize), b""):
+            h.update(chunk)
+    return h.hexdigest()
 
-    Raises RuntimeError — i.e. VOIDS the cell — for contamination: a surviving
-    remote, a trace of a fetch (see fetch_traces), or a commit that does not
-    descend from the reviewed head. Agent-authored commits ON TOP of the head,
-    in a clone with no fetch traces, are reset rather than voided.
 
-    This is the between-cells reset, and it replaced `git checkout -- .` +
-    `git clean -qfdx`, which restored *tracked files from the index* and so
-    undid neither a commit nor a `git add`. Both survivals were silent: the
-    containment check inspects refs and remotes, not the index.
+def artifact_index(dst: Path) -> dict:
+    """{relpath: sha256} for every .md/.json file in the clone, .git excluded.
+
+    The baseline the harvest diffs against (scripts/crb-harvest-artifacts.py).
+    It replaces `git status --porcelain --untracked-files=all`, which had to run
+    on the host against a container-written `.git` (2026-08-19 rubric R1: the
+    harvest's `git status` was the FIRST host command after the container
+    exited, and `core.fsmonitor` fires on exactly that). It is also strictly
+    more complete: `--untracked-files=all` still honours `.gitignore`, so a
+    rubric written under a path the upstream repo ignores was invisible to it.
+
+    Symlinks are never followed and never indexed, in either direction: a
+    symlinked directory is the one way an os.walk could leave the clone.
     """
-    remotes = sh(["git", "remote"], cwd=dst)
-    if remotes:
-        raise RuntimeError(f"{slug}: remote(s) present ({remotes.split()!r}) — "
-                           "answer-key containment is broken")
-    # Checked before the descent test so the VOID message names the fetch rather
-    # than the commit — on a fetch-and-copy both checks fire, so the order
-    # changes which reason is reported, not the verdict.
-    traces = fetch_traces(dst)
-    if traces:
-        raise RuntimeError(f"{slug}: {'; '.join(traces)} — containment is broken")
-    strays, foreign = classify_strays(dst, head)
-    if foreign:
+    index = {}
+    for root, dirs, files in os.walk(dst, followlinks=False):
+        # Repository internals are not artifacts, at any depth — a nested repo's
+        # object store is megabytes of content nobody reviews.
+        dirs[:] = [d for d in dirs
+                   if d != ".git" and not (Path(root) / d).is_symlink()]
+        for name in files:
+            if not name.endswith(ARTIFACT_SUFFIXES):
+                continue
+            fp = Path(root) / name
+            if fp.is_symlink() or not fp.is_file():
+                continue
+            index[str(fp.relative_to(dst))] = sha256_file(fp)
+    return index
+
+
+def snapshot_baseline(dst: Path, slug: str) -> dict:
+    """Freeze a PRISTINE clone as the per-cell restore point. Manifest fields.
+
+    ONLY EVER CALL THIS ON A CLONE NO CONTAINER HAS TOUCHED. The baseline is the
+    definition of "clean" for every later cell, so snapshotting a used clone
+    would launder whatever that cell left behind into the baseline itself.
+    materialize() calls it immediately after verify_containment(); the CLI mode
+    refuses to overwrite an existing baseline without --force for the same
+    reason.
+    """
+    BASELINE_ROOT.mkdir(parents=True, exist_ok=True)
+    tar = BASELINE_ROOT / f"{slug}.tar"
+    part = BASELINE_ROOT / f"{slug}.tar.part"
+    # `-C dst .` so the archive holds clone-relative paths: extraction then does
+    # not depend on where the clone lived when it was made.
+    sh(["tar", "--create", "--file", str(part), "-C", str(dst), "."])
+    # Atomic publish. A half-written baseline that is restorable is worse than
+    # none: it would restore a truncated repo and the cell would review nothing.
+    part.replace(tar)
+    index = artifact_index(dst)
+    (BASELINE_ROOT / f"{slug}.index.json").write_text(
+        json.dumps(index, indent=0, sort_keys=True) + "\n")
+    digest = sha256_file(tar)
+    print(f"  baseline: {tar.name} ({round(tar.stat().st_size / (1024 * 1024))} MB, "
+          f"sha256 {digest[:12]}…), {len(index)} artifact path(s) indexed")
+    return {
+        # Informational provenance only — restore_clone() derives the path from
+        # the slug rather than trusting this string, so a hand-edited manifest
+        # cannot redirect an extraction. Recorded workspace-relative when it can
+        # be (the normal case, and what a results doc should quote) and absolute
+        # otherwise, rather than raising: a provenance field must not be able to
+        # fail a snapshot.
+        "baseline_tar": str(tar.relative_to(WORKSPACE)
+                            if tar.is_relative_to(WORKSPACE) else tar),
+        "baseline_sha256": digest,
+        "baseline_mb": round(tar.stat().st_size / (1024 * 1024)),
+        "baseline_files_indexed": len(index),
+    }
+
+
+def restore_clone(slug: str, rec: dict) -> str:
+    """Wipe the work clone and re-extract it from the hash-pinned baseline.
+
+    This replaced reset_clone(), which repaired the clone in place with
+    `checkout --force` / `reset --hard` / `clean -qffdx` / `gc` / `fsck` — all
+    of them HOST git commands run against a `.git` that a
+    `--dangerously-skip-permissions` container had just had write access to. The
+    2026-08-19 review executed five host-side code-execution paths out of that
+    arrangement (hooks, `core.hooksPath`, `core.fsmonitor`, a smudge filter
+    reachable from tracked `.gitattributes` alone) plus `core.worktree`
+    redirecting `git clean -qffdx` at an unrelated host directory. No
+    enumeration of dangerous config keys closes that; not reading the foreign
+    `.git` at all does.
+
+    Everything the old reset had to reason about therefore stops being a
+    question: an agent commit, a staged edit, a created branch, a deleted
+    `main`, a nested clone of the answer key — all are simply gone, and none of
+    them can be confused with contamination. Detection moved to
+    scripts/crb-audit-clone.sh, which runs on the outgoing clone inside a
+    throwaway container and only has to record evidence, never repair.
+    """
+    tar = BASELINE_ROOT / f"{slug}.tar"
+    if not tar.is_file():
+        raise RuntimeError(f"no baseline at {tar} — run --snapshot {slug}")
+    want = rec.get("baseline_sha256")
+    if not want:
+        raise RuntimeError(f"manifest has no baseline_sha256 — run --snapshot {slug}")
+    got = sha256_file(tar)
+    if got != want:
         raise RuntimeError(
-            f"{slug}: {len(foreign)} commit(s) reachable outside the reviewed head "
-            f"and NOT descended from it ({foreign[0][:12]}…) — containment is broken")
-    dirty = sh(["git", "status", "--porcelain"], cwd=dst)
-    # -B moves `review` back onto the pinned head from wherever HEAD now is;
-    # --force discards worktree state; the explicit reset --hard then guarantees
-    # the index matches too (a staged edit is what `checkout -- .` used to keep).
-    sh(["git", "checkout", "--force", "--quiet", "-B", "review", head], cwd=dst)
-    sh(["git", "reset", "--hard", "--quiet", head], cwd=dst)
-    sh(["git", "branch", "--quiet", "-f", "main", base], cwd=dst)
-    # Same scrub materialize() performs, so a branch or tag the agent created
-    # cannot linger into the next cell and read as a stray commit there.
-    for ref in sh(["git", "for-each-ref", "--format=%(refname)",
-                   "refs/heads", "refs/tags", "refs/remotes"], cwd=dst).splitlines():
-        if ref not in ("refs/heads/review", "refs/heads/main"):
-            sh(["git", "update-ref", "-d", ref], cwd=dst)
-    # -ff (not -f): a single -f SILENTLY SKIPS nested repositories, exits 0, and
-    # -q suppresses the warning. A `git clone <answer-key>` inside /repo would
-    # therefore survive across cells, invisible to FETCH_HEAD, to
-    # `fsck --no-reflogs` (different object store) and to `rev-list --all`.
-    # Found by execution, 2026-08-19 security review.
-    sh(["git", "clean", "-qffdx"], cwd=dst)
-    # Restore the object-store baseline LAST: the commits just discarded are
-    # unreachable now, and the next cell's fetch_traces() would read them as a
-    # deleted fetched ref and void a clean cell.
-    scrub_object_store(dst)
-    notes = []
-    if strays:
-        notes.append(f"{len(strays)} agent commit(s) on top of the head, reset")
-    if dirty:
-        notes.append(f"{len(dirty.splitlines())} dirty path(s) cleaned")
-    return "; ".join(notes)
+            f"baseline sha256 mismatch (manifest {want[:12]}…, file {got[:12]}…) — "
+            f"refusing to restore. Re-materialize this slug.")
+    dst = DST_ROOT / slug
+    if dst.exists():
+        shutil.rmtree(dst)
+    dst.mkdir(parents=True)
+    sh(["tar", "--extract", "--file", str(tar), "-C", str(dst)])
+    if not (dst / ".git").is_dir():
+        raise RuntimeError(f"restored tree has no .git — baseline {tar.name} is corrupt")
+    return f"restored from {tar.name} ({want[:12]}…)"
 
 
 def materialize(slug, url, entry, fork, depth, force):
@@ -408,7 +402,7 @@ def materialize(slug, url, entry, fork, depth, force):
     # `update-ref -d` instead DEREFERENCES it — git removes the branch it points
     # at and leaves the symref dangling, after which `git fsck` exits non-zero
     # with "invalid sha1 pointer" on every later call. That was harmless only
-    # while fetch_traces() ignored fsck's exit status; it no longer does.
+    # while the fsck check ignored fsck's exit status; the audit no longer does.
     subprocess.run(["git", "remote", "remove", "origin"], cwd=dst,
                    capture_output=True, text=True)
     refs = sh(["git", "for-each-ref", "--format=%(refname)",
@@ -418,7 +412,7 @@ def materialize(slug, url, entry, fork, depth, force):
             sh(["git", "update-ref", "-d", ref], cwd=dst)
     # Also deletes .git/FETCH_HEAD, which THIS function's own fetches wrote.
     # Deleting it here is what makes its later presence meaningful evidence to
-    # fetch_traces() rather than a leftover of materialization.
+    # scripts/crb-audit-clone.sh rather than a leftover of materialization.
     scrub_object_store(dst)
 
     n_commits, stat = verify_containment(dst, slug, head)
@@ -435,13 +429,20 @@ def materialize(slug, url, entry, fork, depth, force):
     mb = dir_mb(dst)
     print(f"{slug}: ok — {n_commits} commit(s), {files} files "
           f"(+{ins}/-{dels}), {mb} MB on disk")
-    return {
+    rec = {
         "url": url, "source_repo": entry["source_repo"], "pr_title": entry["pr_title"],
         "fork": fork, "fork_url": remote, "head": head, "base": base,
         "commits": n_commits, "n_goldens": len(entry["golden_comments"]),
         "files_changed": files, "insertions": ins, "deletions": dels,
         "clone_mb": mb, "depth": depth,
     }
+    # Snapshot LAST, and only after verify_containment has passed: the baseline
+    # is the definition of "clean" every later cell restores to, so it must be
+    # taken from a tree that has just been proven contained. Doubles the disk
+    # cost of the arm (pilot ~670 MB -> ~1.3 GB; --all ~6.5 -> ~13 GB), which is
+    # the price of never running host git against a container-written .git.
+    rec.update(snapshot_baseline(dst, slug))
+    return rec
 
 
 def main():
@@ -454,85 +455,110 @@ def main():
     g.add_argument("--slug", nargs="+", help="explicit slugs (see --list)")
     g.add_argument("--list", action="store_true", help="list available PRs and exit")
     g.add_argument("--verify", nargs="+", metavar="SLUG",
-                   help="re-assert answer-key containment on existing clone(s) and exit "
-                        "(read-only)")
-    g.add_argument("--reset", nargs="+", metavar="SLUG",
-                   help="DESTRUCTIVE. Restore clone(s) to the materialized state, then "
-                        "verify — undoes agent commits/edits, voids only on contamination "
-                        "(used by run-host.sh before and after each review cell)")
-    g.add_argument("--heal", nargs="+", metavar="SLUG",
-                   help="one-shot: bring clone(s) materialized before 2026-08-19 up to the "
-                        "current baseline (drops leftover FETCH_HEAD and the dangling "
-                        "refs/remotes/origin/HEAD), then verify. Run once after upgrading; "
-                        "see the note in main().")
+                   help="re-assert answer-key containment on the BASELINE of clone(s) "
+                        "and exit (read-only; extracts to a temp dir, never touches the "
+                        "work clone)")
+    g.add_argument("--restore", nargs="+", metavar="SLUG",
+                   help="DESTRUCTIVE. Wipe the work clone(s) and re-extract from the "
+                        "hash-pinned baseline — the per-cell reset run-host.sh performs "
+                        "before every review cell. No git runs against the old tree.")
+    g.add_argument("--snapshot", nargs="+", metavar="SLUG",
+                   help="build the baseline for clone(s) materialized before this "
+                        "existed. ONLY on a clone no container has run against; refuses "
+                        "to overwrite an existing baseline without --force.")
     ap.add_argument("--depth", type=int, default=50, help="shallow clone depth (default 50)")
     ap.add_argument("--force", action="store_true", help="rebuild existing clones")
     ap.add_argument("--dry-run", action="store_true", help="print the selection, clone nothing")
     args = ap.parse_args()
 
-    if args.verify or args.reset or args.heal:
-        # --heal exists because 46a5f17 made fetch_traces() strict, and EVERY clone
-        # materialized before it carries the two signatures it now voids on:
-        # a leftover .git/FETCH_HEAD (written by materialize's own fetches) and a
-        # dangling refs/remotes/origin/HEAD (left by `update-ref -d`
-        # dereferencing the symref). Measured by the 2026-08-19 performance
-        # review: all 5 pilot clones fail the pre-run gate, so the sweep skips
-        # every cell and exits 3 at $0 spent.
-        #
-        # This is deliberately a SEPARATE, OPERATOR-RUN mode rather than an
-        # auto-heal inside reset_clone(): auto-healing would mean the per-cell
-        # gate silently repairs exactly the evidence it exists to detect. Run it
-        # once, then the strict gate is meaningful again.
-        slugs = args.verify or args.reset or args.heal
-        resetting = bool(args.reset)
-        healing = bool(args.heal)
+    if args.verify or args.restore or args.snapshot:
+        slugs = args.verify or args.restore or args.snapshot
+        mode = ("--verify" if args.verify else
+                "--restore" if args.restore else "--snapshot")
         # --dry-run applies to these modes too. It used to be read only further
-        # down, so `--reset SLUG --dry-run` ran the full destructive reset while
-        # its own help text advertised "clone nothing".
+        # down, so `--reset SLUG --dry-run` (the mode --restore replaced) ran the
+        # full destructive reset while its help text advertised "clone nothing".
         if args.dry_run:
-            mode = "--heal" if healing else "--reset" if resetting else "--verify"
             print(f"--dry-run: would run {mode} on {len(slugs)} clone(s): "
                   f"{', '.join(slugs)}. Nothing touched.")
             return
         manifest = json.loads(MANIFEST.read_text()) if MANIFEST.exists() else {}
         bad = []
         for slug in slugs:
-            dst = DST_ROOT / slug
-            if not (dst / ".git").is_dir():
-                print(f"  !! {slug}: no clone at {dst}", file=sys.stderr)
-                bad.append(slug)
-                continue
-            # Pin to the manifest's recorded head. Without it the stray-commit
-            # check is self-referential — it would compare the clone against its
-            # OWN current `review` tip, so a moved ref passes trivially. A slug
-            # absent from the manifest therefore cannot be verified, and saying
-            # so is the only honest outcome: run-host.sh accepts slugs from argv,
-            # so this is reachable, and a silent weak pass is what R2 is about.
             rec = manifest.get(slug) or {}
-            head, base = rec.get("head"), rec.get("base")
-            if not head or (resetting and not base):
+            head = rec.get("head")
+            # --verify and --snapshot run verify_containment, whose stray-commit
+            # check is self-referential without a pinned head: compared against
+            # the clone's OWN current `review` tip, a moved ref passes trivially.
+            # A slug absent from the manifest therefore cannot be verified, and
+            # saying so is the only honest outcome — run-host.sh accepts slugs
+            # from argv, so this is reachable.
+            #
+            # --restore is deliberately NOT in that list: it asserts nothing
+            # about the clone, it deletes it and unpacks a hash-pinned archive.
+            # Its precondition is baseline_sha256, which restore_clone() checks
+            # and names. Requiring a head here would have made every restore
+            # depend on a field it does not use.
+            if not head and not args.restore:
                 print(f"  !! {slug}: no manifest entry — cannot pin the reviewed head, "
                       f"so containment is unverifiable. Re-materialize this slug.",
                       file=sys.stderr)
                 bad.append(slug)
                 continue
             try:
-                if healing:
+                if args.restore:
+                    print(f"  {slug}: {restore_clone(slug, rec)}")
+                elif args.snapshot:
+                    dst = DST_ROOT / slug
+                    if not (dst / ".git").is_dir():
+                        raise RuntimeError(f"no clone at {dst}")
+                    # Refusing here is the only guard against laundering a used
+                    # clone into the baseline: once a baseline exists every cell
+                    # restores from it, so a second snapshot is legitimate only
+                    # after a deliberate re-materialize.
+                    if (BASELINE_ROOT / f"{slug}.tar").exists() and not args.force:
+                        raise RuntimeError(
+                            "a baseline already exists. Re-snapshotting is only correct "
+                            "on a clone NO container has run against — pass --force if "
+                            "that is true, or re-materialize with --slug --force.")
+                    # Clears materialize()'s own FETCH_HEAD and any dangling
+                    # origin/HEAD, so the baseline starts from the same state a
+                    # freshly materialized clone would.
                     scrub_object_store(dst)
-                    note = "healed to the current baseline"
-                elif resetting:
-                    note = reset_clone(dst, slug, head, base)
+                    n_commits, stat = verify_containment(dst, slug, head)
+                    print(f"  {slug}: containment ok — {n_commits} commit(s), {stat}")
+                    rec.update(snapshot_baseline(dst, slug))
+                    manifest[slug] = rec
+                    MANIFEST.write_text(
+                        json.dumps(manifest, indent=2, sort_keys=True) + "\n")
                 else:
-                    note = ""
-                n_commits, stat = verify_containment(dst, slug, head)
+                    # Verify the BASELINE, not the work clone: the work clone may
+                    # have been mounted read-write into an agent container, and
+                    # host git must never read a `.git` from one (2026-08-19
+                    # R1/R2). The baseline is hash-pinned and was built before any
+                    # container existed, so a temp extract of it is safe to inspect
+                    # — and it is also the thing every cell actually starts from.
+                    tar = BASELINE_ROOT / f"{slug}.tar"
+                    if not tar.is_file():
+                        raise RuntimeError(f"no baseline at {tar} — run --snapshot {slug}")
+                    want = rec.get("baseline_sha256")
+                    got = sha256_file(tar)
+                    if not want:
+                        raise RuntimeError("manifest has no baseline_sha256")
+                    if got != want:
+                        raise RuntimeError(f"baseline sha256 mismatch "
+                                           f"(manifest {want[:12]}…, file {got[:12]}…)")
+                    with tempfile.TemporaryDirectory(prefix=f"crb-verify-{slug}-") as tmp:
+                        sh(["tar", "--extract", "--file", str(tar), "-C", tmp])
+                        n_commits, stat = verify_containment(Path(tmp), slug, head)
+                    print(f"  {slug}: baseline ok — sha256 {got[:12]}…, "
+                          f"{n_commits} commit(s), {stat}")
             except Exception as e:
-                print(f"  !! {slug}: CONTAINMENT CHECK FAILED — {e}", file=sys.stderr)
+                print(f"  !! {slug}: {mode.lstrip('-').upper()} FAILED — {e}", file=sys.stderr)
                 bad.append(slug)
                 continue
-            print(f"  {slug}: containment ok — {n_commits} commit(s), {stat}"
-                  + (f" [{note}]" if note else ""))
         if bad:
-            sys.exit(f"containment check failed for: {', '.join(bad)}")
+            sys.exit(f"{mode} failed for: {', '.join(bad)}")
         return
 
     prs = load_prs()
@@ -544,12 +570,13 @@ def main():
         print(f"\n{len(prs)} PRs, {sum(len(e['golden_comments']) for _, _, e, _ in prs)} goldens")
         return
     if not (args.all or args.per_repo or args.slug):
-        # DESTRUCTIVE modes are marked: --reset rewrites refs, index and worktree
-        # and expires reflogs; --force rebuilds a clone from scratch; --heal
-        # expires reflogs and drops FETCH_HEAD. --verify and --list are read-only.
+        # DESTRUCTIVE modes are marked: --restore deletes the work clone outright;
+        # --force rebuilds a clone from scratch. --verify, --snapshot and --list
+        # do not destroy anything (--snapshot refuses to overwrite a baseline
+        # without --force).
         ap.error("pick one of --list / --per-repo N / --slug ... / --all / "
-                 "--verify SLUG ... (read-only) / --reset SLUG ... (DESTRUCTIVE) / "
-                 "--heal SLUG ... (DESTRUCTIVE, one-shot)")
+                 "--verify SLUG ... (read-only) / --restore SLUG ... (DESTRUCTIVE: "
+                 "wipes the work clone) / --snapshot SLUG ... (writes a baseline)")
 
     sel = select(prs, args)
     print(f"Selected {len(sel)} PR(s), "
