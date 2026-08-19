@@ -100,8 +100,12 @@ Three guards run per cell, all added after the 2026-08-18 review:
   `subtype: "containment_failed"`, so the resume predicate will not bank it and
   `crb-pipeline-to-benchmark.py` refuses to inject it. That matters because a
   contaminated clone yields a plausibly *high* score, not an obvious error.
-- **Completed cells are skipped only if they actually succeeded** —
-  `num_turns > 0 AND NOT is_error AND subtype == "success"`. Verified against a
+- **Completed cells are skipped only if they actually produced a review** —
+  `NOT is_error AND subtype == "success" AND len(result) >= 200 AND` no
+  known non-review signature (auth "logged in", quota "hit your weekly limit").
+  `num_turns` is deliberately *not* part of the test: 8 real cells in this repo
+  are genuine successes with `num_turns == 0` and 3–7 KB of review text, so
+  requiring turns re-pays for completed work. Verified against a
   real budget-exhausted cell in this repo
   (`runs/review-arms/e7-fable-3x/mfc-hygiene/rep1/result.json`:
   `is_error: true`, `subtype: "error_max_budget_usd"`, `num_turns: 1`,

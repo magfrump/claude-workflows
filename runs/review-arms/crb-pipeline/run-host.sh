@@ -182,7 +182,14 @@ sys.exit(0 if ok else 1)' "$dest/result.json" 2>/dev/null; then
     skipped_ok=$((skipped_ok+1)); continue
   fi
   if [ -s "$dest/result.json" ]; then
-    attempts=$(grep -c . "$dest/attempts.jsonl" 2>/dev/null || echo 0)
+    # `grep -c` prints 0 AND exits 1 on no match, so `|| echo 0` would append a
+    # SECOND zero — `attempts` becomes "0\n0", the -ge test errors, and bash
+    # abandons the rest of this cell's loop body without running it.
+    attempts=0
+    if [ -f "$dest/attempts.jsonl" ]; then
+      attempts=$(grep -c . "$dest/attempts.jsonl" || true)
+      [ -n "$attempts" ] || attempts=0
+    fi
     if [ "$attempts" -ge "$MAX_ATTEMPTS" ]; then
       echo "=== $id — $attempts failed attempt(s), at MAX_ATTEMPTS — skipping (delete $dest to reset)" >&2
       skipped_bad=$((skipped_bad+1)); continue
@@ -367,19 +374,46 @@ meta_path, ref, sha, model, ccv, out = sys.argv[1:7]
 cells = {}
 for name in sorted(os.listdir(out)):
     rp = os.path.join(out, name, "result.json")
-    if os.path.isfile(rp):
-        try:
-            d = json.load(open(rp))
-        except Exception:
-            continue
-        cells[name] = {"cost_usd": d.get("total_cost_usd"), "turns": d.get("num_turns"),
-                       "usage": d.get("usage")}
+    if not os.path.isfile(rp):
+        continue
+    try:
+        d = json.load(open(rp))
+    except Exception:
+        continue
+    # Billed spend is the sum over ATTEMPTS, not the final result: a retried
+    # cell overwrites result.json, so reporting that alone under-states what was
+    # actually paid — and this file is the provenance a results doc quotes.
+    attempts, attempt_cost = [], 0.0
+    lp = os.path.join(out, name, "attempts.jsonl")
+    if os.path.isfile(lp):
+        for line in open(lp):
+            line = line.strip()
+            if not line:
+                continue
+            try:
+                a = json.loads(line)
+            except Exception:
+                continue
+            attempts.append(a)
+            attempt_cost += a.get("cost_usd") or 0
+    final = d.get("total_cost_usd") or 0
+    cells[name] = {"cost_usd": attempt_cost if attempts else final,
+                   "final_cost_usd": final,
+                   "attempts": len(attempts) or 1,
+                   "voided_containment": os.path.isfile(
+                       os.path.join(out, name, "CONTAINMENT_FAILED")),
+                   "turns": d.get("num_turns"), "usage": d.get("usage")}
+total = sum(c["cost_usd"] or 0 for c in cells.values())
+retried = [n for n, c in cells.items() if c["attempts"] > 1]
+voided = [n for n, c in cells.items() if c["voided_containment"]]
 json.dump({"arm": "crb-pipeline", "payload_ref": ref, "payload_commit": sha,
            "model": model, "cc_version": ccv, "cells": cells,
-           "total_cost_usd": round(sum(c["cost_usd"] or 0 for c in cells.values()), 4)},
+           "retried_cells": retried, "voided_cells": voided,
+           "total_cost_usd": round(total, 4)},
           open(meta_path, "w"), indent=2)
-print(f"\nrun-meta: {meta_path} — {len(cells)} cell(s), "
-      f"total ${sum(c['cost_usd'] or 0 for c in cells.values()):.2f}")
+print(f"\nrun-meta: {meta_path} — {len(cells)} cell(s), total ${total:.2f}"
+      + (f", {len(retried)} retried" if retried else "")
+      + (f", {len(voided)} VOIDED by containment" if voided else ""))
 EOF
 echo "Cells: $ran ran, $skipped_ok already complete, $skipped_bad skipped as unusable"
 # Exit non-zero when nothing ran AND something was unusable. Otherwise a
