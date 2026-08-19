@@ -61,8 +61,15 @@ MODEL="${MODEL:-claude-fable-5}"
 BUDGET="${BUDGET:-25.00}"
 # Sweep-level ceiling. BUDGET caps ONE instance; without an aggregate the loop
 # will happily spend BUDGET x 50 unattended before run-meta.json first reports a
-# total. Checked after every cell, so the worst overshoot is one instance.
-SWEEP_BUDGET="${SWEEP_BUDGET:-75.00}"
+# total. Checked after every cell, so the worst overshoot is SWEEP_BUDGET+BUDGET.
+# Default sits ABOVE the setup doc's own $50-200 pilot estimate, deliberately: a
+# ceiling that halts a legitimate pilot partway is a worse failure than one that
+# needs raising for a full sweep. Raise it explicitly for --all.
+SWEEP_BUDGET="${SWEEP_BUDGET:-250.00}"
+# Retries overwrite result.json, so spend must be ledgered per ATTEMPT or the
+# gate under-counts every re-run. MAX_ATTEMPTS stops a deterministically-failing
+# cell from being re-paid indefinitely.
+MAX_ATTEMPTS="${MAX_ATTEMPTS:-2}"
 DRY_RUN="${DRY_RUN:-}"
 
 [ -f "$MANIFEST" ] || { echo "no $MANIFEST — run scripts/crb-materialize.py first" >&2; exit 1; }
@@ -75,6 +82,8 @@ import json, sys
 print("\n".join(sorted(json.load(open(sys.argv[1])))))' "$MANIFEST")
 fi
 [ "${#INSTANCES[@]}" -gt 0 ] || { echo "no instances in $MANIFEST" >&2; exit 1; }
+# Counters so the sweep can distinguish "nothing to do" from "nothing worked".
+ran=0; skipped_ok=0; skipped_bad=0
 
 echo "Arm:      pipeline @ $PAYLOAD_REF"
 echo "Model:    $MODEL (budget \$$BUDGET/instance)"
@@ -142,26 +151,54 @@ EOF
 
 for id in "${INSTANCES[@]}"; do
   clone="$CLONES/$id"
-  [ -d "$clone/.git" ] || { echo "$id: clone missing — run scripts/crb-materialize.py --slug $id" >&2; continue; }
+  [ -d "$clone/.git" ] || { echo "$id: clone missing — run scripts/crb-materialize.py --slug $id" >&2
+    skipped_bad=$((skipped_bad+1)); continue; }
   dest="$OUT/$id"
-  # "Complete" must mean SUCCEEDED, not "took turns". A cell that exhausted
-  # --max-budget-usd or errored still records num_turns > 0, so a turns-only
-  # predicate banks the expensive failures as done and locks them out of retry.
+  # "Complete" must mean PRODUCED A REVIEW. Measured against the 32 result.json
+  # files already in this repo, no single field decides it:
+  #   * is_error/subtype catch the real budget exhaustion
+  #     (e7-fable-3x/mfc-hygiene/rep1: subtype=error_max_budget_usd, $15.24) —
+  #     a turns-only predicate banked exactly that and locked it out of retry;
+  #   * but 8 e5-cc-builtin cells are genuine successes with num_turns == 0 and
+  #     3-7 KB of real review text, so requiring turns > 0 re-pays for work
+  #     already done;
+  #   * and 2 e7 cells report subtype=success, is_error=false, num_turns=0 with
+  #     a 51-56 char body that is actually "You've hit your weekly limit".
+  # So: trust subtype/is_error, then look at what came out.
   if [ -s "$dest/result.json" ] && python3 -c '
 import json, sys
 d = json.load(open(sys.argv[1]))
-ok = (d.get("num_turns", 0) > 0
-      and not d.get("is_error")
-      and d.get("subtype", "success") == "success")
+r = (d.get("result") or "").strip()
+low = r.lower()
+# Signatures of a run that returned cleanly without reviewing anything.
+NON_REVIEW = ("log in", "logged in", "hit your weekly limit",
+              "hit your session limit", "limit · resets", "limit - resets")
+ok = (not d.get("is_error")
+      and d.get("subtype", "success") == "success"
+      and len(r) >= 200                      # real reviews run to KBs; these run to ~50 chars
+      and not any(s in low for s in NON_REVIEW))
 sys.exit(0 if ok else 1)' "$dest/result.json" 2>/dev/null; then
     echo "=== $id — completed result exists, skipping (delete to re-run)"
-    continue
+    skipped_ok=$((skipped_ok+1)); continue
   fi
   if [ -s "$dest/result.json" ]; then
-    echo "=== $id — prior result was incomplete/errored, re-running"
+    attempts=$(grep -c . "$dest/attempts.jsonl" 2>/dev/null || echo 0)
+    if [ "$attempts" -ge "$MAX_ATTEMPTS" ]; then
+      echo "=== $id — $attempts failed attempt(s), at MAX_ATTEMPTS — skipping (delete $dest to reset)" >&2
+      skipped_bad=$((skipped_bad+1)); continue
+    fi
+    echo "=== $id — prior result was incomplete/errored, re-running (attempt $((attempts+1)))"
   fi
   mkdir -p "$dest"
   echo "=== $id"
+  # Containment is re-asserted around every cell, not just at materialize time:
+  # a read-write mount plus an agent with network access is exactly the shape
+  # that could re-add a remote and fetch the merged upstream fix (the answer
+  # key). Failing here costs one cell; failing silently would invalidate the arm.
+  # Checked BEFORE the payload copy below, so a skipped cell leaks no temp dir.
+  python3 "$ROOT/scripts/crb-materialize.py" --verify "$id" || {
+    echo "$id: PRE-RUN containment check failed — skipping cell" >&2
+    skipped_bad=$((skipped_bad+1)); continue; }
   # Fresh writable payload copy per instance: Claude Code writes settings.json,
   # projects/, todos/ into ~/.claude, and one instance's state must not leak
   # into the next (nor back into the payload source).
@@ -170,12 +207,6 @@ sys.exit(0 if ok else 1)' "$dest/result.json" 2>/dev/null; then
   # rubric to docs/reviews/ in the repo under review. Artifacts are harvested
   # and the tree reset below, so re-runs start from the same state.
   #
-  # Containment is re-asserted around every cell, not just at materialize time:
-  # a read-write mount plus an agent with network access is exactly the shape
-  # that could re-add a remote and fetch the merged upstream fix (the answer
-  # key). Failing here costs one cell; failing silently would invalidate the arm.
-  python3 "$ROOT/scripts/crb-materialize.py" --verify "$id" || {
-    echo "$id: PRE-RUN containment check failed — skipping cell" >&2; continue; }
   t0=$(date +%s)
   docker run --rm -u node -w /repo \
     -e ANTHROPIC_API_KEY \
@@ -192,6 +223,7 @@ sys.exit(0 if ok else 1)' "$dest/result.json" 2>/dev/null; then
     > "$dest/transcript.jsonl" 2> "$dest/stderr.log" || {
       echo "$id: claude exited non-zero — see $dest/stderr.log" >&2; }
   t1=$(date +%s)
+  ran=$((ran+1))
   rm -rf "$INST_HOME"
 
   # Harvest: the final result event (cost/turns) + the review text, and any
@@ -216,25 +248,59 @@ json.dump(res, open(sys.argv[2], "w"))
 open(sys.argv[3], "w").write(res.get("result") or "")
 EOF
   mkdir -p "$dest/artifacts"
-  # -z + cut: `git status --porcelain` pads the XY status to 3 chars, and NUL
-  # termination is the only form that survives paths with spaces. `awk $2` also
-  # dropped the second half of rename entries.
-  (cd "$clone" && git status --porcelain=v1 -z --untracked-files=all) \
-    | tr '\0' '\n' | cut -c4- | grep -E '\.(md|json)$' \
-    | while read -r f; do
-        [ -f "$clone/$f" ] || continue
-        mkdir -p "$dest/artifacts/$(dirname "$f")"
-        # --no-dereference: the agent could leave a symlink in the repo, and this
-        # cp runs on the HOST, so following it would copy host files into a
-        # tracked artifacts dir.
-        cp --no-dereference "$clone/$f" "$dest/artifacts/$f" 2>/dev/null || true
-      done
+  # Stay NUL-delimited end to end. `read -r -d ''` is the only form that
+  # survives a newline in a filename — piping through `tr '\0' '\n'` would throw
+  # away exactly the property `-z` buys, and a fixed `cut -c4-` then eats three
+  # characters of any record that arrives without a status prefix.
+  # Porcelain v1 -z emits "XY path" per record, plus a SECOND record holding the
+  # original path for a rename/copy; consume and drop that one.
+  # The path comes from a repository we do not own and this loop runs on the
+  # HOST, so it is treated as untrusted: absolute or `..`-bearing paths are
+  # refused rather than normalised, since `$dest/artifacts/$f` would otherwise
+  # write outside the artifacts dir.
+  while IFS= read -r -d '' entry; do
+    [ ${#entry} -gt 3 ] || continue
+    st=${entry:0:2}
+    f=${entry:3}
+    case "$st" in
+      R*|C*) read -r -d '' _orig || true ;;
+    esac
+    case "$f" in
+      *.md|*.json) ;;
+      *) continue ;;
+    esac
+    case "$f" in
+      /*|*..*) echo "  !! $id: refusing suspicious artifact path: $f" >&2; continue ;;
+    esac
+    [ -f "$clone/$f" ] || continue
+    mkdir -p "$dest/artifacts/$(dirname "$f")"
+    # --no-dereference so a symlink the agent left behind is copied as a link
+    # rather than followed into host files. It only covers the final component,
+    # which is why the traversal guard above is the load-bearing check.
+    cp --no-dereference "$clone/$f" "$dest/artifacts/$f" 2>/dev/null || true
+  done < <(git -C "$clone" status --porcelain=v1 -z --untracked-files=all)
   # -x as well as -d: without it, gitignored files the review created survive
   # into the next run of this instance, and the harvest above misses them too.
   git -C "$clone" checkout -- . 2>/dev/null || true
   git -C "$clone" clean -qfdx 2>/dev/null || true
-  python3 "$ROOT/scripts/crb-materialize.py" --verify "$id" \
-    || echo "$id: POST-RUN containment check FAILED — treat this cell's result as void" >&2
+  # A post-run failure must VOID the cell, not just print. A contaminated clone
+  # produces a plausibly HIGH score, so a warning that leaves result.json marked
+  # successful is the worst outcome: the resume predicate would bank it and the
+  # injector would ship it. Rewrite the result so both refuse it.
+  if ! python3 "$ROOT/scripts/crb-materialize.py" --verify "$id"; then
+    echo "$id: POST-RUN containment check FAILED — voiding this cell" >&2
+    : > "$dest/CONTAINMENT_FAILED"
+    python3 - "$dest/result.json" <<'EOF' || true
+import json, sys
+try:
+    d = json.load(open(sys.argv[1]))
+except Exception:
+    d = {}
+d["is_error"] = True
+d["subtype"] = "containment_failed"
+json.dump(d, open(sys.argv[1], "w"))
+EOF
+  fi
 
   python3 - "$dest/result.json" "$((t1-t0))" "$dest" <<'EOF'
 import json, os, sys
@@ -248,14 +314,41 @@ print(f"  cost=${d.get('total_cost_usd','?')} duration={sys.argv[2]}s "
       f"artifacts={n}")
 EOF
 
+  # Ledger this attempt's spend BEFORE the gate. result.json is overwritten by a
+  # retry, so summing result.json alone silently forgets every earlier paid
+  # attempt — the gate would then under-count exactly the cells costing most.
+  python3 - "$dest/result.json" "$dest/attempts.jsonl" <<'EOF' || true
+import json, sys
+try:
+    d = json.load(open(sys.argv[1]))
+except Exception:
+    d = {}
+rec = {"cost_usd": d.get("total_cost_usd") or 0, "turns": d.get("num_turns"),
+       "is_error": bool(d.get("is_error")), "subtype": d.get("subtype")}
+with open(sys.argv[2], "a") as fh:
+    fh.write(json.dumps(rec) + "\n")
+EOF
+
   # Aggregate spend gate. BUDGET caps one instance; this caps the sweep, so an
-  # unattended --all run cannot quietly spend BUDGET x N. Re-summed from the
-  # cells on disk each time, so it survives a resumed sweep.
+  # unattended --all run cannot quietly spend BUDGET x N. Summed over ATTEMPTS
+  # across all cells, so it survives both a resumed sweep and re-run cells.
   python3 - "$OUT" "$SWEEP_BUDGET" <<'EOF' || { echo "SWEEP BUDGET EXCEEDED — stopping. Raise SWEEP_BUDGET to continue." >&2; exit 2; }
 import json, os, sys
 out, cap = sys.argv[1], float(sys.argv[2])
 total = 0.0
-for name in os.listdir(out):
+for name in sorted(os.listdir(out)):
+    ledger = os.path.join(out, name, "attempts.jsonl")
+    if os.path.isfile(ledger):
+        for line in open(ledger):
+            line = line.strip()
+            if not line:
+                continue
+            try:
+                total += json.loads(line).get("cost_usd") or 0
+            except Exception:
+                pass
+        continue
+    # Cell from a pre-ledger run: fall back to its final result.
     rp = os.path.join(out, name, "result.json")
     if os.path.isfile(rp):
         try:
@@ -288,4 +381,13 @@ json.dump({"arm": "crb-pipeline", "payload_ref": ref, "payload_commit": sha,
 print(f"\nrun-meta: {meta_path} — {len(cells)} cell(s), "
       f"total ${sum(c['cost_usd'] or 0 for c in cells.values()):.2f}")
 EOF
+echo "Cells: $ran ran, $skipped_ok already complete, $skipped_bad skipped as unusable"
+# Exit non-zero when nothing ran AND something was unusable. Otherwise a
+# persistent containment break, or every clone missing, skips all 50 cells and
+# still exits 0 — which reads to a caller (or a human skimming) as a clean sweep
+# that simply had nothing to do.
+if [ "$ran" -eq 0 ] && [ "$skipped_bad" -gt 0 ]; then
+  echo "NO CELL RAN and $skipped_bad instance(s) were unusable — not a clean sweep." >&2
+  exit 3
+fi
 echo "Next: scripts/crb-pipeline-to-benchmark.py  (inject as a benchmark tool, then judge)"

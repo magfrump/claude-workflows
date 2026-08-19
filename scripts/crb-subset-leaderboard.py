@@ -23,16 +23,13 @@ import json
 import sys
 from pathlib import Path
 
-WORKSPACE = Path(__file__).resolve().parent.parent
-# Kept in sync with crb-pipeline-to-benchmark.py's defaults. --judge/--out
-# there change where evaluations land, so both are flags here too rather than
-# a hard-coded path that silently misses and reports "run step 3 first".
-DEFAULT_OUT = WORKSPACE / "runs/review-arms/crb/offline-work-50"
-DEFAULT_JUDGE = "claude-opus-4-5-20251101"
-
-
-def sanitize_model(model: str) -> str:
-    return model.strip().replace("/", "_")
+sys.path.insert(0, str(Path(__file__).resolve().parent))
+# One definition of the work-dir identity, shared with the injector: --judge and
+# --out there change where evaluations land, so this reads the same constants
+# rather than hand-copying them and holding them in sync by comment.
+from crb_common import (  # noqa: E402
+    DEFAULT_JUDGE, DEFAULT_OUT, DEFAULT_TOOL, WORKSPACE, sanitize_model,
+)
 
 
 def f1(p, r):
@@ -48,7 +45,7 @@ def main():
                     help=f"benchmark work dir written by the injector (default {DEFAULT_OUT})")
     ap.add_argument("--judge", default=DEFAULT_JUDGE,
                     help=f"judge model id whose results to read (default {DEFAULT_JUDGE})")
-    ap.add_argument("--tool", default="mfc-pipeline-e8", help="our arm's tool name")
+    ap.add_argument("--tool", default=DEFAULT_TOOL, help="our arm's tool name")
     ap.add_argument("--all-prs", action="store_true",
                     help="rank over every PR in the evaluations file (that is all 50 only "
                          "when the file was seeded from the benchmark's checked-in results)")

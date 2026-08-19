@@ -203,6 +203,12 @@ def materialize(slug, url, entry, fork, depth, force):
             return None
         shutil.rmtree(dst)
     print(f"=== {slug}  ({entry['source_repo']}, {len(entry['golden_comments'])} goldens)")
+    # `fork` is interpolated into the clone URL and comes from the vendored
+    # dataset. slug_for() only constrains the two components it uses for the
+    # directory name, so validate the whole thing here: a `../` component would
+    # resolve to a different GitHub owner than FORK_ORG.
+    if not re.fullmatch(r"[A-Za-z0-9._-]+", fork):
+        raise ValueError(f"unsafe fork repo name {fork!r}")
     remote = f"{FORK_ORG}/{fork}"
     # --no-checkout: the working tree is populated from `review` below, not from
     # the fork's default branch (which is the BASE — checking it out first would
@@ -279,11 +285,20 @@ def main():
                 print(f"  !! {slug}: no clone at {dst}", file=sys.stderr)
                 bad.append(slug)
                 continue
+            # Pin to the manifest's recorded head. Without it the stray-commit
+            # check is self-referential — it would compare the clone against its
+            # OWN current `review` tip, so a moved ref passes trivially. A slug
+            # absent from the manifest therefore cannot be verified, and saying
+            # so is the only honest outcome: run-host.sh accepts slugs from argv,
+            # so this is reachable, and a silent weak pass is what R2 is about.
+            head = (manifest.get(slug) or {}).get("head")
+            if not head:
+                print(f"  !! {slug}: no manifest entry — cannot pin the reviewed head, "
+                      f"so containment is unverifiable. Re-materialize this slug.",
+                      file=sys.stderr)
+                bad.append(slug)
+                continue
             try:
-                # Pin to the manifest's recorded head where we have it, so a
-                # clone whose `review` ref was moved fails instead of passing
-                # against its own new tip.
-                head = (manifest.get(slug) or {}).get("head")
                 n_commits, stat = verify_containment(dst, slug, head)
             except Exception as e:
                 print(f"  !! {slug}: CONTAINMENT CHECK FAILED — {e}", file=sys.stderr)
@@ -323,6 +338,13 @@ def main():
             rec = materialize(slug, url, entry, fork, args.depth, args.force)
         except Exception as e:  # keep going; one bad fork shouldn't stop a sweep
             print(f"{slug}: FAILED — {e}", file=sys.stderr)
+            # Remove the partial clone. Leaving it costs up to ~200 MB AND makes
+            # the next run print "exists, skipping" for a repo that never passed
+            # its guards — the failure would then hide itself.
+            partial = DST_ROOT / slug
+            if partial.is_dir():
+                shutil.rmtree(partial, ignore_errors=True)
+                print(f"{slug}: removed partial clone at {partial}", file=sys.stderr)
             failures.append(slug)
             continue
         if rec:

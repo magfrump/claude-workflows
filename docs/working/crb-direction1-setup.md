@@ -95,14 +95,25 @@ Three guards run per cell, all added after the 2026-08-18 review:
   `crb-materialize.py --verify <slug>` — the invariant is established at
   materialize time but the clone is then mounted read-write into an agent
   container, so it is re-checked rather than assumed. A pre-run failure skips
-  the cell; a post-run failure marks that cell's result void.
+  the cell. A post-run failure **voids** it: `CONTAINMENT_FAILED` is written into
+  the cell dir and `result.json` is rewritten with `is_error: true` /
+  `subtype: "containment_failed"`, so the resume predicate will not bank it and
+  `crb-pipeline-to-benchmark.py` refuses to inject it. That matters because a
+  contaminated clone yields a plausibly *high* score, not an obvious error.
 - **Completed cells are skipped only if they actually succeeded** —
-  `num_turns > 0 AND NOT is_error AND subtype == "success"`. A cell that
-  exhausted `--max-budget-usd` still records turns, and a turns-only predicate
-  would bank it as done and lock it out of retry.
-- **`SWEEP_BUDGET` (default $75) caps the whole sweep**, re-summed from the
-  cells on disk after each instance. `BUDGET` caps one instance only; without an
-  aggregate an unattended `--all` can spend `BUDGET × 50`.
+  `num_turns > 0 AND NOT is_error AND subtype == "success"`. Verified against a
+  real budget-exhausted cell in this repo
+  (`runs/review-arms/e7-fable-3x/mfc-hygiene/rep1/result.json`:
+  `is_error: true`, `subtype: "error_max_budget_usd"`, `num_turns: 1`,
+  `$15.24` spent) — the old turns-only predicate banked exactly that.
+- **`SWEEP_BUDGET` (default $250) caps the whole sweep.** `BUDGET` caps one
+  instance only; without an aggregate an unattended `--all` can spend
+  `BUDGET × 50`. Spend is ledgered per *attempt* in each cell's
+  `attempts.jsonl`, because a retry overwrites `result.json` and summing final
+  results alone would forget every earlier paid attempt. `MAX_ATTEMPTS`
+  (default 2) stops a deterministically-failing cell being re-paid forever.
+  The default sits above the $50–200 pilot estimate below on purpose: a ceiling
+  that halts a legitimate pilot partway is worse than one you raise for `--all`.
 
 **Deviations from E8-as-run, to state in any results doc:** E8 was orchestrated
 stage-by-stage by a session (k=2 fact-check, per-instance critic list). Here the

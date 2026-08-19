@@ -88,9 +88,17 @@ PY
   [ "$output" = "$before" ]
 }
 
-@test "--sections consider alone still excludes Considered Overrides" {
-  run probe "$GOLDEN" \
-    "[c['body'] for c in m.comments_from_rubric(md, ['Consider']) if 'Inherited' in c['body'] or 'Override' in c['body']]"
+# Discriminating on purpose, and the narrowest case: `--sections consider` is the
+# invocation where "consider" vs "considered overrides" actually collides. With
+# the pre-fix substring filter this goes 2 -> 3 comments on the rename (the
+# override row is injected); with the section match anchored it stays 2.
+@test "--sections consider is unaffected by the Considered Overrides column name" {
+  local renamed="$BATS_TEST_TMPDIR/renamed-consider.md"
+  sed 's/| Prior finding |/| Finding |/' "$GOLDEN" > "$renamed"
+  run probe "$GOLDEN" "len(m.comments_from_rubric(md, ['Consider']))"
   [ "$status" -eq 0 ]
-  [ "$output" = "[]" ]
+  local before="$output"
+  run probe "$renamed" "len(m.comments_from_rubric(md, ['Consider']))"
+  [ "$status" -eq 0 ]
+  [ "$output" = "$before" ]
 }
