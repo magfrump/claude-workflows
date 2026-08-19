@@ -1,855 +1,1098 @@
 # Code Fact-Check Report
 
-**Repository:** `/workspace` (claude-workflows)
-**Commit:** cf6e7c9
-**Scope:** `git diff HEAD~1..HEAD` on `feat/crb-direction1-harness` — 9 files (docs/working/crb-direction1-setup.md, runs/review-arms/crb-pipeline/run-host.sh, scripts/crb-cell-status.py, scripts/crb-materialize.py, scripts/crb-subset-leaderboard.py, scripts/crb_common.py, test/crb-cell-status.bats, test/crb-containment-reset.bats, test/crb-subset-attrition.bats)
-**Checked:** 2026-08-18
-**Total claims checked:** 30
-**Summary:** 24 verified, 2 mostly accurate, 2 stale, 2 incorrect, 0 unverifiable
+**Repository:** `/workspace` (branch `feat/crb-direction1-harness`)
+**Commit:** 197eec6
+**Scope:** the single commit `197eec6` (`git show 197eec6`) — 16 files: `docs/decisions/034-crb-egress-allowlist-and-disposable-clones.md`, `docs/working/crb-direction1-setup.md`, `docs/working/crb-egress-and-disposable-clones-plan.md`, `runs/review-arms/crb-pipeline/docker/{Dockerfile.proxy,Dockerfile.review,egress-allowlist,tinyproxy.conf}`, `runs/review-arms/crb-pipeline/run-host.sh`, `scripts/{crb-materialize.py,crb-audit-clone.sh,crb-harvest-artifacts.py}`, `test/crb-{audit-clone,disposable-clone,egress-config,harvest-artifacts}.bats`, `test/crb-containment-reset.bats` (deleted), plus the commit message. The two >40%-churn files (`scripts/crb-materialize.py`, `runs/review-arms/crb-pipeline/run-host.sh`) are evaluated against the resulting code, not the diff. Sibling commits on the branch were consulted as context only.
+**Checked:** 2026-08-19
+**Total claims checked:** 34
+**Summary:** 22 verified, 7 mostly accurate, 2 stale, 2 incorrect, 1 unverifiable
 
-> **Partial scope.** This report covers commit `cf6e7c9` only. Sibling commits on
-> `feat/crb-direction1-harness` are context, not subject. No finding below is a
-> "this work is missing" claim.
+**Hallucination-pattern log:** `docs/reviews/hallucination-patterns.md` was read before checking. Two logged patterns, both of the class *"a specific measured value quoted from a checked-in artifact set that does not contain it"* (`STUB_MAX_LEN` corpus statistic; `total_golden` 11/13). Claims 1, 23 and 25 in this report are of exactly that class — quoted disk/size figures sourced from checked-in artifacts — and were each recomputed from the artifacts rather than accepted. None matched a logged pattern.
 
-> **Prior-run hallucination patterns.** `docs/reviews/hallucination-patterns.md`
-> logs one pattern (`total_golden` 11 vs 13 claimed in CRB evaluations.json but no
-> PR has more than 9 goldens). Every quantitative claim below was compared against
-> it; the recurring shape — *a doc quoting specific measured values out of a
-> checked-in artifact without re-measuring* — recurs in Claims 14 and 17 of this
-> report, both of which quote corpus statistics that the corpus does not support.
+**Execution note.** Nothing docker-shaped could be executed (no docker in this environment, as the commit message and `docs/decisions/034` both state). Per the skill's mandatory-execution rule, executable guarantees that require docker or tinyproxy are capped at Unverifiable, with the blocker named. What *was* executed: the four new bats suites, a from-scratch reproduction of `materialize()`'s object-store state, and read-only inspection of the five existing pilot clones. Logs under `docs/reviews/execution-logs/`.
 
 ---
 
-## Claim 1: "The clone is reset with `crb-materialize.py --reset <slug>` after harvesting" / "Containment is re-asserted before and after every cell via `crb-materialize.py --reset <slug>`"
+## Claim 1: "Disk roughly doubles: pilot ~670 MB → ~1.3 GB, `--all` ~6.5 → ~13 GB"
 
-**Location:** `docs/working/crb-direction1-setup.md:89`, `docs/working/crb-direction1-setup.md:95`
+**Location:** `docs/decisions/034-crb-egress-allowlist-and-disposable-clones.md:63`
+**Type:** Configuration / Performance
+**Verdict:** Verified
+**Confidence:** High
+**Verification mode:** executed
+**Legibility-target:** for-orchestrator-synthesis
+**Scope:** Covers the pilot figure against the checked-in manifest and the clones on disk, and the `--all` figure as a linear extrapolation; does not establish that the 45 unmaterialized PRs have the same size distribution as the 5 pilot PRs.
+
+The pilot base figure is exactly the sum of `clone_mb` in the checked-in manifest — 190 + 33 + 125 + 127 + 195 = 670:
+
+```json
+// runs/review-arms/crb/instances.json — clone_mb per slug
+cal_com-PR11059 190 · discourse-graphite-PR4 33 · grafana-PR79265 125 · keycloak-PR36880 127 · sentry-greptile-PR5 195
+```
+
+Measured apparent size on disk today is 705 MB total (`docs/reviews/execution-logs/cfc-r3-disk-2026-08-19.txt`), consistent with "~670 MB" as a manifest-derived figure (`dir_mb()` sums file sizes and skips directory entries, which `du` counts).
+
+The doubling follows from the baseline being an *uncompressed* tar of the same tree:
+
+```python
+# scripts/crb-materialize.py:302
+sh(["tar", "--create", "--file", str(part), "-C", str(dst), "."])
+```
+
+so baseline_mb ≈ clone_mb and pilot total ≈ 1.34 GB. The `--all` figure is 670/5 × 50 = 6.7 GB base → ~13.4 GB with baselines; "~6.5 → ~13" rounds that (paraphrased — no quote available because the claim is arithmetic over the manifest values quoted above, not a snippet).
+
+**Evidence:** `docs/decisions/034-crb-egress-allowlist-and-disposable-clones.md:63`, `scripts/crb-materialize.py:298-324`, `runs/review-arms/crb/instances.json`, `docs/reviews/execution-logs/cfc-r3-disk-2026-08-19.txt`
+Executed: `du -sm --apparent-size external/crb-eval/*`, cwd `/workspace`, exit 0, 2026-08-19T23:09:53Z.
+
+---
+
+## Claim 2: "R3 (nested clone) and A8 (a voided cell leaving a permanently dead clone) are closed structurally rather than by a flag or a message"
+
+**Location:** `docs/decisions/034-crb-egress-allowlist-and-disposable-clones.md:65-66`
 **Type:** Architectural
 **Verdict:** Verified
 **Confidence:** High
-**Verification mode:** static
-**Scope:** Covers which subcommand run-host.sh invokes at the two per-cell containment points; does not establish that the reset succeeds against a real materialized clone (no clones exist under `external/crb-eval` in this sandbox).
-
-The runner invokes `--reset` at both points. Pre-run:
-
-```bash
-# runs/review-arms/crb-pipeline/run-host.sh:262-264
-  python3 "$ROOT/scripts/crb-materialize.py" --reset "$id" || {
-    echo "$id: PRE-RUN containment check failed — skipping cell" >&2
-    skipped_bad=$((skipped_bad+1)); continue; }
-```
-
-Post-run, after artifact harvesting:
-
-```bash
-# runs/review-arms/crb-pipeline/run-host.sh:359-361
-  if ! python3 "$ROOT/scripts/crb-materialize.py" --reset "$id"; then
-    echo "$id: POST-RUN containment check FAILED — voiding this cell" >&2
-    : > "$dest/CONTAINMENT_FAILED"
-```
-
-**Evidence:** `runs/review-arms/crb-pipeline/run-host.sh:262-264`, `runs/review-arms/crb-pipeline/run-host.sh:359-361`, `docs/working/crb-direction1-setup.md:89-96`
-
----
-
-## Claim 2: "`--reset` … it is **reset**, along with staged edits, created branches/tags, and a deleted `main`. A surviving **remote**, or any commit reachable outside the reviewed head's ancestry, still **voids**."
-
-**Location:** `docs/working/crb-direction1-setup.md:104-113`
-**Type:** Behavioral
-**Verdict:** Verified
-**Confidence:** High
 **Verification mode:** executed
-**Scope:** Covers each of the five reset cases and the two void cases as exercised by the checked-in bats fixtures; does not establish behavior against a shallow real clone, nor that the void set is *complete* (see Claim 21b).
+**Legibility-target:** for-orchestrator-synthesis
+**Scope:** Covers whether a nested repo and a voided cell's clone are removed by the new mechanism regardless of any flag; does not establish that a nested clone is *detected* before the wipe (it is, separately, by the audit) nor that the review it produced is discarded.
 
-`reset_clone()` performs each named restoration:
-
-```python
-# scripts/crb-materialize.py:244-253
-    sh(["git", "checkout", "--force", "--quiet", "-B", "review", head], cwd=dst)
-    sh(["git", "reset", "--hard", "--quiet", head], cwd=dst)
-    sh(["git", "branch", "--quiet", "-f", "main", base], cwd=dst)
-    ...
-        if ref not in ("refs/heads/review", "refs/heads/main"):
-            sh(["git", "update-ref", "-d", ref], cwd=dst)
-    sh(["git", "clean", "-qfdx"], cwd=dst)
-```
-
-and voids on the two named contamination shapes:
+A nested repository no longer needs `git clean -ff` to be removed, because the whole tree is deleted:
 
 ```python
-# scripts/crb-materialize.py:231-239
-    remotes = sh(["git", "remote"], cwd=dst)
-    if remotes:
-        raise RuntimeError(f"{slug}: remote(s) present ({remotes.split()!r}) — "
-                           "answer-key containment is broken")
-    strays, foreign = classify_strays(dst, head)
-    if foreign:
-        raise RuntimeError(
-            f"{slug}: {len(foreign)} commit(s) reachable outside the reviewed head "
+# scripts/crb-materialize.py:359-363
+dst = DST_ROOT / slug
+if dst.exists():
+    shutil.rmtree(dst)
+dst.mkdir(parents=True)
+sh(["tar", "--extract", "--file", str(tar), "-C", str(dst)])
 ```
 
-All 14 cases in `test/crb-containment-reset.bats` pass, including the two void cases (`ok 24 a re-added remote still VOIDS the cell`, `ok 25 a commit outside the reviewed ancestry still VOIDS the cell`).
+Pinned by test: *"restore destroys a nested clone of the answer key"* asserts `[ ! -d "$CLONE/vendor" ]` (`test/crb-disposable-clone.bats:110-118`), which passed.
 
-Command: `bats test/crb-cell-status.bats test/crb-containment-reset.bats test/crb-subset-attrition.bats`; cwd `/workspace`; exit code 0; 2026-08-18T19:44:22-07:00; 32/32 ok.
-
-**Evidence:** `scripts/crb-materialize.py:231-259`, `test/crb-containment-reset.bats:63-178`, `docs/reviews/execution-logs/r3-bats-crb.txt`
-
----
-
-## Claim 3: "The old reset (`git checkout -- . && git clean -qfdx`) restored tracked files *from the index*, so it undid neither a commit nor a `git add`: a commit voided the cell and left the clone failing its pre-run check on every later attempt"
-
-**Location:** `docs/working/crb-direction1-setup.md:110-114` (same claim at `runs/review-arms/crb-pipeline/run-host.sh:345-353`, `scripts/crb-materialize.py:226-229`)
-**Type:** Behavioral
-**Verdict:** Verified
-**Confidence:** High
-**Verification mode:** static
-**Scope:** Covers what the parent commit's reset sequence did and the consequence for the pre-run check; does not re-derive git's documented `checkout -- <path>` semantics by execution.
-
-The parent commit's reset was exactly the quoted pair:
+A8: the voided clone is not repaired but is not left dead either — the next cell's restore recreates it:
 
 ```bash
-# git show HEAD~1:runs/review-arms/crb-pipeline/run-host.sh (pre-cf6e7c9)
-  git -C "$clone" checkout -- . 2>/dev/null || true
-  git -C "$clone" clean -qfdx 2>/dev/null || true
+# runs/review-arms/crb-pipeline/run-host.sh:510-512
+# The clone is left as the container wrote it; the NEXT cell's --restore wipes
+# it. Nothing on the host touches it in between, and a voided cell no longer
+# leaves a permanently dead clone (2026-08-19 A8).
 ```
 
-`git checkout -- <paths>` with no tree-ish argument copies from the index, so a `git add` is preserved rather than undone, and neither form touches refs (paraphrased — no quote available because the claim is about documented git semantics, not about a snippet in this repo).
+and the restore is unconditional at the top of each cell (`runs/review-arms/crb-pipeline/run-host.sh:413`).
 
-The "failing forever" half follows from the check's own stray rule: with `review` advanced past the manifest head by an agent commit, `rev-list --all --not head` is non-empty and the check raises:
-
-```python
-# scripts/crb-materialize.py:184-187
-    stray = sh(["git", "rev-list", "--all", "--not", head], cwd=dst)
-    stray_n = len([l for l in stray.splitlines() if l])
-    if stray_n:
-        raise RuntimeError(f"{slug}: {stray_n} stray commit(s) reachable outside the reviewed head")
-```
-
-`test/crb-containment-reset.bats:81-89` ("the clone still verifies on the NEXT cell after an agent commit") pins the fix for that case and passes.
-
-**Evidence:** `runs/review-arms/crb-pipeline/run-host.sh:345-353`, `scripts/crb-materialize.py:184-187`, `test/crb-containment-reset.bats:81-89`
+**Evidence:** `scripts/crb-materialize.py:348-366`, `runs/review-arms/crb-pipeline/run-host.sh:406-418`, `runs/review-arms/crb-pipeline/run-host.sh:510-512`, `test/crb-disposable-clone.bats:110-118`, `docs/reviews/execution-logs/cfc-r3-bats-2026-08-19.txt`
+Executed: `bats test/crb-audit-clone.bats test/crb-disposable-clone.bats test/crb-harvest-artifacts.bats test/crb-egress-config.bats`, cwd `/workspace`, exit 0, 2026-08-19T23:07:02Z, 37 ok / 0 not ok.
 
 ---
 
-## Claim 4: "The non-review signatures apply **only below 1000 chars** … two pilot instances are auth-domain (`keycloak-PR36880`, `cal_com-PR11059`)"
+## Claim 3: "The harvest became strictly more complete: `git status --untracked-files=all` honours `.gitignore`, so a rubric written to an ignored path used to vanish."
 
-**Location:** `docs/working/crb-direction1-setup.md:122-126`
-**Type:** Behavioral / Configuration
-**Verdict:** Verified
-**Confidence:** High
-**Verification mode:** static
-**Scope:** Covers the length gate on `NON_REVIEW` and the auth-domain characterization of the two named manifest entries; does not establish that no *other* pilot instance touches auth code.
-
-The substring list is consulted only inside the sub-`STUB_MAX_LEN` band:
-
-```python
-# scripts/crb-cell-status.py:64-70
-    if len(r) < MIN_REVIEW_LEN:
-        return False, f"body is {len(r)} chars, under the {MIN_REVIEW_LEN}-char floor"
-    if len(r) < STUB_MAX_LEN:
-        low = r.lower()
-        hit = next((s for s in NON_REVIEW if s in low), None)
-```
-
-with `STUB_MAX_LEN = 1000` (`scripts/crb-cell-status.py:46`).
-
-The manifest holds exactly 5 instances, of which the two named carry auth-domain titles (paraphrased — no quote available because the values were read out of a 5-record JSON manifest rather than a source line): `keycloak-PR36880` → *"Add Client resource type and scopes to authorization schema"*, `cal_com-PR11059` → *"OAuth credential sync and app integration enhancements"*.
-
-**Evidence:** `scripts/crb-cell-status.py:40-53`, `scripts/crb-cell-status.py:64-70`, `runs/review-arms/crb/instances.json`
-
----
-
-## Claim 5: "8 real cells in this repo are genuine successes with `num_turns == 0` and 3–7 KB of review text"
-
-**Location:** `docs/working/crb-direction1-setup.md:127-129`
-**Type:** Configuration
+**Location:** `docs/decisions/034-crb-egress-allowlist-and-disposable-clones.md:67-68`
+**Type:** Behavioral
 **Verdict:** Mostly accurate
 **Confidence:** High
-**Verification mode:** static
-**Scope:** Covers the count, the `num_turns` value, and the stated size band for the eight `e5-cc-builtin` cells; does not affect the predicate, which uses a 200-char floor well below either bound.
-
-There are exactly 8 `e5-cc-builtin` cells, all with `num_turns == 0` and `is_error` false, but their bodies span **2733–7121 chars (2.7–7.1 KB)**, not 3–7 KB — `mfc-postfix` is 2733 chars (paraphrased — no quote available because the figures were computed by iterating the 32 checked-in `result.json` artifacts, which are data files with no quotable comment line). The precise version is "2.7–7 KB". Same wording appears at `scripts/crb-cell-status.py:20-21` (Claim 14).
-
-**Evidence:** `runs/review-arms/e5-cc-builtin/*/result.json`, `docs/working/crb-direction1-setup.md:127-129`
-
----
-
-## Claim 6: "`run-meta.json` is written from an `EXIT` trap, so the budget halt, a `Ctrl-C`, and a docker failure all still leave the provenance file"
-
-**Location:** `docs/working/crb-direction1-setup.md:143-146`
-**Type:** Behavioral / Error-handling
-**Verdict:** Verified
-**Confidence:** High
 **Verification mode:** executed
-**Scope:** Covers all three named termination paths for a shell that has reached the `trap` at line 220; does not establish behavior for SIGKILL, for a failure before line 220 (where no cell has run and no meta is expected), or for a host crash.
+**Legibility-target:** for-author
+**Scope:** Covers the file sets the old and new harvests capture; does not establish anything about the artifacts' downstream use by the injector.
 
-The handler is installed as an `EXIT` trap before the loop:
+The `.gitignore` half is correct and is proven by execution (see Claim 21). The word **strictly** is what overstates it: the new harvest captures *less* than the old one in two cases the old had no equivalent of.
 
-```bash
-# runs/review-arms/crb-pipeline/run-host.sh:219-220
-# Replaces the payload-only trap set above: both jobs, one handler.
-trap 'write_run_meta; rm -rf "$PAYLOAD_SRC"' EXIT
-```
-
-- **Budget halt**: the gate exits from inside the loop, which fires the EXIT trap: `python3 - "$OUT" "$SWEEP_BUDGET" <<'EOF' || { echo "SWEEP BUDGET EXCEEDED — stopping. Raise SWEEP_BUDGET to continue." >&2; exit 2; }` (`runs/review-arms/crb-pipeline/run-host.sh:404`).
-- **Ctrl-C**: executed. A `set -euo pipefail` script with only an `EXIT` trap, sent SIGINT while sleeping, printed `EXIT TRAP RAN`.
-- **Docker failure**: the `docker run` is guarded and does not terminate the shell at all — `> "$dest/transcript.jsonl" 2> "$dest/stderr.log" || { echo "$id: claude exited non-zero — see $dest/stderr.log" >&2; }` (`runs/review-arms/crb-pipeline/run-host.sh:286-287`) — so the sweep continues to the normal `write_run_meta` at line 432.
-
-Command: `bash sigint.sh & kill -INT $!` (exp1 in the log); cwd `$TMPDIR/r3exp`; exit code 0; 2026-08-18T19:46:13-07:00.
-
-**Evidence:** `runs/review-arms/crb-pipeline/run-host.sh:219-220`, `runs/review-arms/crb-pipeline/run-host.sh:286-287`, `runs/review-arms/crb-pipeline/run-host.sh:404`, `runs/review-arms/crb-pipeline/run-host.sh:432`, `docs/reviews/execution-logs/r3-bash-git-semantics.txt`
-
----
-
-## Claim 7: "**On `--all`, expect to hit it** — the 50-PR estimate is $500–2000"
-
-**Location:** `docs/working/crb-direction1-setup.md:142-143`
-**Type:** Configuration
-**Verdict:** Verified
-**Confidence:** High
-**Verification mode:** static
-**Scope:** Covers the internal consistency of the ceiling against the doc's own cost table; does not validate the cost estimate itself against real sweep spend.
-
-The default ceiling is `SWEEP_BUDGET="${SWEEP_BUDGET:-250.00}"` (`runs/review-arms/crb-pipeline/run-host.sh:68`), and the doc's own cost table gives `| All 50 | **~$500–2000** | do not commit to this before a pilot |` (`docs/working/crb-direction1-setup.md:247`). $250 < $500, so an `--all` run halts. The parallel comment inside the script — "the default ceiling (which sits under the setup doc's own $500-2000 estimate)" (`runs/review-arms/crb-pipeline/run-host.sh:155-156`) — is consistent with this, as is the separate header claim that the default sits *above* the $50–200 pilot estimate (`docs/working/crb-direction1-setup.md:246`).
-
-**Evidence:** `runs/review-arms/crb-pipeline/run-host.sh:62-68`, `docs/working/crb-direction1-setup.md:246-247`
-
----
-
-## Claim 8: "The script now cross-checks the judged subset against `run-meta.json`'s `requested_instances`, names every missing cell with its reason, and repeats the warning inside `--markdown` … If it prints `attrition NOT checked`, the run-meta was not found"
-
-**Location:** `docs/working/crb-direction1-setup.md:230-239`
-**Type:** Behavioral
-**Verdict:** Verified
-**Confidence:** High
-**Verification mode:** executed
-**Scope:** Covers the cross-check source field, the per-cell reason strings, the markdown duplication, and the missing-run-meta message; does not establish that the reason assigned to a given cell is the *true* cause of its loss (the reasons are inferred from run-meta fields, not from cell logs).
+(a) Caps. The old loop copied every matching path with no ceiling; the new one stops:
 
 ```python
-# scripts/crb-subset-leaderboard.py:56-58
-    cells = meta.get("cells") or {}
-    requested = meta.get("requested_instances") or sorted(cells)
-    voided = set(meta.get("voided_cells") or [])
+# scripts/crb-harvest-artifacts.py:115-119
+if copied >= MAX_FILES or total + size > MAX_TOTAL_BYTES:
+    print(f"  !! harvest cap reached ({copied} files, {total} bytes) — "
+          f"remaining artifacts NOT captured", file=sys.stderr)
+    skipped += 1
+    break
 ```
 
-Markdown duplication:
+(b) Symlinked artifacts. The old harvest copied them (as links); the new one skips them:
 
 ```python
-# scripts/crb-subset-leaderboard.py:175-177
-        # Same reasoning for the skew warning: it belongs where the table is read.
-        for note in ([warn] if warn else []) + ([("\n".join(att_lines))] if att_lines else []):
-            print("> " + note.replace("\n", "\n> ") + "\n")
+# scripts/crb-harvest-artifacts.py:72-73
+if fp.is_symlink() or not fp.is_file():
+    continue
 ```
 
-The missing-run-meta branch returns `f"!! subset attrition NOT checked: no run-meta.json at {run_meta_path} …"` (`scripts/crb-subset-leaderboard.py:52-54`). All six cases in `test/crb-subset-attrition.bats` pass (tests 27–32 in the captured run), including `attrition appears in the markdown body, not only on stderr` and `a missing run-meta says attrition was NOT checked rather than staying silent`.
-
-Command: `bats test/crb-cell-status.bats test/crb-containment-reset.bats test/crb-subset-attrition.bats`; cwd `/workspace`; exit 0; 2026-08-18T19:44:22-07:00.
-
-**Evidence:** `scripts/crb-subset-leaderboard.py:40-80`, `scripts/crb-subset-leaderboard.py:165-177`, `test/crb-subset-attrition.bats:68-117`, `docs/reviews/execution-logs/r3-bats-crb.txt`
-
----
-
-## Claim 9: "the SWEEP_BUDGET gate below exits 2 from INSIDE the loop, so the halt … wrote no run-meta.json at all"
-
-**Location:** `runs/review-arms/crb-pipeline/run-host.sh:152-158`
-**Type:** Behavioral
-**Verdict:** Verified
-**Confidence:** High
-**Verification mode:** static
-**Scope:** Covers the pre-cf6e7c9 control flow that produced the missing provenance file; does not re-run the parent commit's script.
-
-The gate is inside the `for id in "${INSTANCES[@]}"` body and exits:
+against the old:
 
 ```bash
-# runs/review-arms/crb-pipeline/run-host.sh:404
-  python3 - "$OUT" "$SWEEP_BUDGET" <<'EOF' || { echo "SWEEP BUDGET EXCEEDED — stopping. Raise SWEEP_BUDGET to continue." >&2; exit 2; }
+# runs/review-arms/crb-pipeline/run-host.sh@197eec6^:380
+cp --no-dereference "$clone/$f" "$dest/artifacts/$f" 2>/dev/null || true
 ```
 
-and in the parent commit the meta writer was a bare inline block placed *after* `done`, with no trap (paraphrased — no quote available because the claim is about the position of a ~40-line block relative to the loop terminator in the deleted version; the deletion is visible in `git diff HEAD~1..HEAD` at the `-# Sweep-level provenance` hunk).
+Both differences are deliberate hardening and both are reported rather than silent, so the practical conclusion (the new harvest sees the artifacts that matter, and the old one dropped some) holds; "strictly more complete" is the imprecision. A precise version: *"more complete on the case that mattered — gitignored paths — at the cost of refusing symlinks and capping total volume, both reported."*
 
-**Evidence:** `runs/review-arms/crb-pipeline/run-host.sh:152-158`, `runs/review-arms/crb-pipeline/run-host.sh:404`, `git diff HEAD~1..HEAD -- runs/review-arms/crb-pipeline/run-host.sh`
-
----
-
-## Claim 10: "Replaces the payload-only trap set above: both jobs, one handler."
-
-**Location:** `runs/review-arms/crb-pipeline/run-host.sh:219`
-**Type:** Behavioral
-**Verdict:** Verified
-**Confidence:** High
-**Verification mode:** executed
-**Scope:** Covers trap replacement and `PAYLOAD_SRC` cleanup on the exit paths that exist in this script; does not cover SIGKILL or an `exec`-replaced shell.
-
-A second `trap … EXIT` replaces the first rather than appending — executed: `bash -c 'trap "echo FIRST" EXIT; trap "echo SECOND" EXIT; echo body'` printed `body` then `SECOND` only (exp3 in the log; cwd `$TMPDIR/r3exp`; exit 0; 2026-08-18T19:46:13-07:00).
-
-`PAYLOAD_SRC` cleanup survives on every path because both traps remove it — the first from creation (`trap 'rm -rf "$PAYLOAD_SRC"' EXIT`, `runs/review-arms/crb-pipeline/run-host.sh:97`) until line 220, covering the payload check `exit 1` (line 103), the `DRY_RUN` `exit 0` (line 108), the missing-key `exit 1` (line 109) and the preflight `exit 1` (line 132); the replacement (line 220) removes it thereafter. The replacement's first command cannot abort the handler under `errexit`, since `write_run_meta` ends in `python3 … || true` or an early `return 0`:
-
-```bash
-# runs/review-arms/crb-pipeline/run-host.sh:160-164
-write_run_meta() {
-  if [ -n "$META_WRITTEN" ]; then return 0; fi
-  META_WRITTEN=1
-  python3 - "$OUT/run-meta.json" "$PAYLOAD_REF" "$PAYLOAD_SHA" "$MODEL" \
-           "$CC_VERSION" "$OUT" "${INSTANCES[*]}" <<'EOF' || true
-```
-
-**Evidence:** `runs/review-arms/crb-pipeline/run-host.sh:96-109`, `runs/review-arms/crb-pipeline/run-host.sh:160-164`, `runs/review-arms/crb-pipeline/run-host.sh:219-220`, `docs/reviews/execution-logs/r3-bash-git-semantics.txt`
+**Evidence:** `scripts/crb-harvest-artifacts.py:39-46`, `scripts/crb-harvest-artifacts.py:66-80`, `scripts/crb-harvest-artifacts.py:107-125`, `runs/review-arms/crb-pipeline/run-host.sh@197eec6^:360-381`
 
 ---
 
-## Claim 11: "It prints its reason either way; capture it so the re-run message says WHY."
+## Claim 4: "`--reset` and `--heal` are gone; `--restore` and `--snapshot` replace them. R6 (no existing clone could pass the pre-run gate) dissolves with them."
 
-**Location:** `runs/review-arms/crb-pipeline/run-host.sh:227-230`
-**Type:** Behavioral
-**Verdict:** Verified
-**Confidence:** High
-**Verification mode:** static
-**Scope:** Covers the capture of the predicate's reason line into the re-run log message; does not cover the case where `result.json` is absent (then `cell_status` stays empty and the message ends with a bare colon, which is unreachable because the enclosing branch requires a non-empty `result.json`).
-
-`crb-cell-status.py` prints on both paths — `print(reason); return 0 if ok else 1` (`scripts/crb-cell-status.py:86-87`) — and the runner captures stdout+stderr regardless of exit status, then uses it:
-
-```bash
-# runs/review-arms/crb-pipeline/run-host.sh:231-236
-  cell_status=""
-  if [ -s "$dest/result.json" ]; then
-    if cell_status=$(python3 "$ROOT/scripts/crb-cell-status.py" "$dest/result.json" 2>&1); then
-```
-
-```bash
-# runs/review-arms/crb-pipeline/run-host.sh:251
-    echo "=== $id — prior result was incomplete/errored, re-running (attempt $((attempts+1))): $cell_status"
-```
-
-**Evidence:** `runs/review-arms/crb-pipeline/run-host.sh:227-251`, `scripts/crb-cell-status.py:85-87`
-
----
-
-## Claim 12: "Checked BEFORE the payload copy below, so a skipped cell leaks no temp dir."
-
-**Location:** `runs/review-arms/crb-pipeline/run-host.sh:259`
-**Type:** Behavioral
-**Verdict:** Verified
-**Confidence:** High
-**Verification mode:** static
-**Scope:** Covers the ordering of the pre-run containment call relative to the per-instance `mktemp -d`; does not cover the payload `mktemp` at line 96 or the preflight `mktemp` at line 123.
-
-The containment call precedes the per-instance temp dir, and its failure path `continue`s before it:
-
-```bash
-# runs/review-arms/crb-pipeline/run-host.sh:262-268
-  python3 "$ROOT/scripts/crb-materialize.py" --reset "$id" || {
-    echo "$id: PRE-RUN containment check failed — skipping cell" >&2
-    skipped_bad=$((skipped_bad+1)); continue; }
-  ...
-  INST_HOME=$(mktemp -d); cp -r "$PAYLOAD_SRC/." "$INST_HOME/"; chmod -R u+w "$INST_HOME"
-```
-
-**Evidence:** `runs/review-arms/crb-pipeline/run-host.sh:255-268`
-
----
-
-## Claim 13: "Measured against the 32 result.json files under runs/review-arms/ … e7-fable-3x/mfc-hygiene/rep1: subtype=error_max_budget_usd, $15.24"
-
-**Location:** `scripts/crb-cell-status.py:14-19`
-**Type:** Configuration
-**Verdict:** Verified
-**Confidence:** High
-**Verification mode:** executed
-**Scope:** Covers the corpus size, the named cell's subtype and cost, and the existence of the whole-corpus assertion in the bats suite; does not establish that a turns-only predicate historically banked that cell (a claim about a past predicate version, not checked here).
-
-Enumerating `runs/review-arms/**/result.json` yields exactly 32 files, and `runs/review-arms/e7-fable-3x/mfc-hygiene/rep1/result.json` carries `is_error=True subtype='error_max_budget_usd' turns=1 len=0 cost=15.240262` (paraphrased — no quote available because these are data files, read by iterating and printing fields rather than by quoting a source line). $15.240262 rounds to $15.24.
-
-The bats suite does assert the verdict on all of them:
-
-```bash
-# test/crb-cell-status.bats:157-158
-for p in sorted(glob.glob(os.path.join(root, "runs/review-arms/**/result.json"),
-                          recursive=True)):
-```
-
-Command: `bats test/crb-cell-status.bats …`; cwd `/workspace`; exit 0; 2026-08-18T19:44:22-07:00 — `ok 14 verdicts on all checked-in result.json files are unchanged`.
-
-**Evidence:** `scripts/crb-cell-status.py:14-25`, `test/crb-cell-status.bats:150-176`, `docs/reviews/execution-logs/r3-bats-crb.txt`
-
----
-
-## Claim 14: "8 e5-cc-builtin cells are genuine successes with num_turns == 0 and 3-7 KB of real review text"
-
-**Location:** `scripts/crb-cell-status.py:20-21`
-**Type:** Configuration
-**Verdict:** Mostly accurate
-**Confidence:** High
-**Verification mode:** static
-**Scope:** Covers the count, the `num_turns` value and the size band; does not change the predicate's behavior, which never consults these numbers.
-
-Eight `e5-cc-builtin` cells exist, all `is_error=False subtype='success' turns=0`, with body lengths 7121, 4918, 4651, 4381, 3758, 3720, 3435 and **2733** chars (paraphrased — no quote available because the figures come from iterating the 32 checked-in `result.json` data files). The lower bound is 2.7 KB, not 3 KB; the precise version is "2.7–7 KB". Compare the logged hallucination pattern *"`total_golden` 11 vs 13 claimed … but no PR has more than 9 goldens"* — same shape (a quoted corpus statistic that re-measurement does not reproduce), though here the miss is a rounding of one endpoint rather than a fabricated value.
-
-**Evidence:** `runs/review-arms/e5-cc-builtin/*/result.json`, `scripts/crb-cell-status.py:20-21`
-
----
-
-## Claim 15: "2 e7 cells report subtype=success, is_error=false, num_turns=0 with a 51-56 char body"
-
-**Location:** `scripts/crb-cell-status.py:22-23`
-**Type:** Configuration
-**Verdict:** Verified
-**Confidence:** High
-**Verification mode:** static
-**Scope:** Covers the count and the four stated fields for the two stub cells; does not verify that the bodies' text is literally "You've hit your weekly limit".
-
-Exactly two cells in the corpus match: `e7-fable-3x/mfc-postfix/rep2` (`is_error=False subtype='success' turns=0 len=56 cost=0`) and `e7-fable-3x/mfc-postfix/rep3` (`… len=51 cost=0`) (paraphrased — no quote available because the values were read out of `result.json` data files). No other cell in the corpus has a body under 1208 chars.
-
-**Evidence:** `runs/review-arms/e7-fable-3x/mfc-postfix/rep2/result.json`, `runs/review-arms/e7-fable-3x/mfc-postfix/rep3/result.json`
-
----
-
-## Claim 16: "the two in-repo examples are 51 and 56 characters … The 32-file corpus that validated this predicate contains no auth-domain reviews"
-
-**Location:** `scripts/crb-cell-status.py:31-39`
-**Type:** Configuration
-**Verdict:** Verified
-**Confidence:** Medium
-**Verification mode:** static
-**Scope:** Covers the stub lengths (exact) and the absence of auth-domain instances in the corpus (inferred from instance naming, not from reading all 32 review bodies).
-
-The 51/56-char figures reproduce exactly (see Claim 15). The corpus's eight instance names — `mfc-corpus`, `mfc-csp`, `mfc-deploy`, `mfc-fscompat`, `mfc-hygiene`, `mfc-lean`, `mfc-postfix`, `mfc-secdeps` — are meta-formalism-copilot canon instances, none of which is an auth-domain change (paraphrased — no quote available because the claim covers the absence of a category across a directory of artifacts; `mfc-secdeps` is dependency-security, not authentication). Confidence is Medium because this rests on instance identity rather than on scanning each body for auth prose.
-
-**Evidence:** `runs/review-arms/e5-cc-builtin/`, `runs/review-arms/e7-fable-3x/`, `scripts/crb-cell-status.py:31-41`
-
----
-
-## Claim 17: "The stubs run to ~56 chars and the shortest real review in the corpus is over 3 KB, so anywhere in between works; 1000 sits an order of magnitude clear of both."
-
-**Location:** `scripts/crb-cell-status.py:42-46`
-**Type:** Configuration
+**Location:** `docs/decisions/034-crb-egress-allowlist-and-disposable-clones.md:69-70`
+**Type:** Architectural / Behavioral
 **Verdict:** Incorrect
 **Confidence:** High
 **Verification mode:** static
-**Scope:** Covers the stated corpus bounds that justify `STUB_MAX_LEN = 1000`; does not establish that any real review would actually be misclassified (none in the corpus is), only that the stated safety margin does not exist.
+**Legibility-target:** for-author
+**Scope:** Covers whether R6's reported symptom (no clone that currently exists can run a cell; `ran=0` → exit 3) is reachable from the shipped code with the checked-in manifest and the five clones on disk; does not establish what happens after an operator runs `--snapshot` (that path does work).
 
-The shortest real (non-stub) review in the corpus is **1208 chars**, not "over 3 KB": `e7-fable-3x/mfc-fscompat/rep1` at 1208, `mfc-hygiene/rep2` at 1236, `mfc-deploy/rep2` at 1246, `mfc-csp/rep1` at 1261, `mfc-secdeps/rep3` at 1287, `mfc-lean/rep2` at 1289 — twenty of the twenty-two e7 review cells are between 1.2 and 3.0 KB (paraphrased — no quote available because the lengths were computed by iterating the 32 `result.json` data files). Only the eight `e5-cc-builtin` cells reach 2.7–7.1 KB.
+The first sentence is correct — `--reset`/`--heal` are absent from the argument parser (`scripts/crb-materialize.py:451-471`) and from the runner, pinned by a test (`test/crb-egress-config.bats:106-107`, passed).
 
-Consequently `STUB_MAX_LEN = 1000` is *not* "an order of magnitude clear of both": it is ~18× the stub length but only **1.2× below the shortest real review**, a margin of 208 characters. A reader acting on the stated margin — e.g. concluding it is safe to raise `STUB_MAX_LEN` toward the "3 KB" floor the comment asserts — would put roughly twenty of the corpus's own review bodies inside the substring-matching band, which is exactly the failure the constant exists to prevent. The precise version: "the shortest real review in the corpus is ~1.2 KB, so 1000 clears the stubs by ~18× but the real reviews by only ~20%".
+The R6 sentence is refuted. R6 was *"the harness as committed cannot run a single cell against any clone that currently exists… `run-host.sh` counts each as `skipped_bad` → `ran=0` → exit 3"* (`docs/reviews/code-review-rubric-2026-08-19-feat-crb-direction1-harness.md:98`). The pre-run *gate* is indeed gone, but the precondition that replaced it reproduces the same symptom on the same five clones: the loop now requires a baseline tar, and none of the five has one (`external/crb-eval/.baselines/` does not exist):
 
-**Evidence:** `runs/review-arms/e7-fable-3x/*/rep*/result.json`, `scripts/crb-cell-status.py:42-46`
+```bash
+# runs/review-arms/crb-pipeline/run-host.sh:366-369
+[ -f "$CLONES/.baselines/$id.tar" ] || {
+    echo "$id: no baseline — run scripts/crb-materialize.py --slug $id (or --snapshot $id" >&2
+    echo "    if the clone already exists and no container has run against it)" >&2
+    skipped_bad=$((skipped_bad+1)); continue; }
+```
+
+which feeds the identical terminal path:
+
+```bash
+# runs/review-arms/crb-pipeline/run-host.sh:578-581
+if [ "$ran" -eq 0 ] && [ "$skipped_bad" -gt 0 ]; then
+  echo "NO CELL RAN and $skipped_bad instance(s) were unusable — not a clean sweep." >&2
+  exit 3
+fi
+```
+
+The remediation is also the same shape R6 was closed with: a one-shot, operator-run mode (`--snapshot`, previously `--heal`). So R6 did not dissolve; it was renamed. A reader acting on "dissolves" — running the sweep against the current clones expecting cells to execute — gets `exit 3` and zero cells. Precise version: *"R6's pre-run gate is gone; the equivalent precondition is now a missing baseline, remediated once per clone by `--snapshot`."*
+
+**Evidence:** `docs/decisions/034-crb-egress-allowlist-and-disposable-clones.md:69-70`, `runs/review-arms/crb-pipeline/run-host.sh:363-369`, `runs/review-arms/crb-pipeline/run-host.sh:574-581`, `scripts/crb-materialize.py:451-471`, `docs/reviews/code-review-rubric-2026-08-19-feat-crb-direction1-harness.md:98`, `docs/reviews/execution-logs/cfc-r3-pilot-clone-state-2026-08-19.txt`
 
 ---
 
-## Claim 18: "This floor is what actually rejects both stubs in the corpus (51 and 56 chars) — NON_REVIEW is never consulted for them. The substring list therefore only governs the 200-1000 char band … asserted in test/crb-cell-status.bats"
+## Claim 5: "`scripts/crb-materialize.py --all           # all 50 (~6-7 GB)`"
 
-**Location:** `scripts/crb-cell-status.py:47-53`
+**Location:** `docs/working/crb-direction1-setup.md:27`
+**Type:** Configuration
+**Verdict:** Stale
+**Confidence:** High
+**Verification mode:** static
+**Legibility-target:** for-author
+**Scope:** Covers the disk figure quoted in the setup doc's Materialize section; does not re-examine the underlying measurement (Claim 1 does).
+
+This commit added the baseline tars, which double the on-disk cost, and updated the figure in two other places but not here. The same command's cost is stated as roughly double in the script this line documents:
+
+```python
+# scripts/crb-materialize.py:38
+  scripts/crb-materialize.py --all                      # all 50 (~13 GB w/ baselines)
+```
+
+and in the decision record:
+
+```
+# docs/decisions/034-crb-egress-allowlist-and-disposable-clones.md:63
+- Disk roughly doubles: pilot ~670 MB → ~1.3 GB, `--all` ~6.5 → ~13 GB.
+```
+
+The setup doc still reads `~6-7 GB`, the pre-baseline number. Fix: `~13 GB (clones + baselines)`.
+
+**Evidence:** `docs/working/crb-direction1-setup.md:27`, `scripts/crb-materialize.py:38`, `docs/decisions/034-crb-egress-allowlist-and-disposable-clones.md:63`
+
+---
+
+## Claim 6: "Fail closed at build time: … Assert both halves here so the image cannot be built in that state."
+
+**Location:** `runs/review-arms/crb-pipeline/docker/Dockerfile.proxy:15-23`
+**Type:** Invariant
+**Verdict:** Verified
+**Confidence:** High
+**Verification mode:** static
+**Legibility-target:** for-orchestrator-synthesis
+**Scope:** Covers whether the assertion fires on the two failure modes the comment names (missing/mistyped `FilterDefaultDeny`, empty or fully-commented filter file); does not establish that the assertion covers other ways the filter can misbehave (notably `FilterURLs` — see Claim 10 — which the assertion does not check and does not claim to).
+
+The two named halves are each asserted, and a failing `grep` fails the `RUN` because the three are `&&`-chained:
+
+```dockerfile
+# runs/review-arms/crb-pipeline/docker/Dockerfile.proxy:21-23
+RUN grep -qE '^[[:space:]]*FilterDefaultDeny[[:space:]]+Yes' /etc/tinyproxy/tinyproxy.conf \
+ && grep -qE '^[[:space:]]*Filter[[:space:]]+"/etc/tinyproxy/filter"' /etc/tinyproxy/tinyproxy.conf \
+ && grep -qE '^[^#[:space:]]' /etc/tinyproxy/filter
+```
+
+The first pattern is case-sensitive and anchored, so a mistyped directive name does not match and the build fails — which is the "mistyped `FilterDefaultDeny`" case the comment names. The third pattern requires at least one line whose first character is neither `#` nor whitespace, which is the "empty or commented-out filter file" case. Both files as committed satisfy all three (`runs/review-arms/crb-pipeline/docker/tinyproxy.conf:25,29`, `runs/review-arms/crb-pipeline/docker/egress-allowlist:9`), and the same three patterns are independently pinned by `test/crb-egress-config.bats:36-43` (passed).
+
+**Evidence:** `runs/review-arms/crb-pipeline/docker/Dockerfile.proxy:15-23`, `runs/review-arms/crb-pipeline/docker/tinyproxy.conf:22-29`, `runs/review-arms/crb-pipeline/docker/egress-allowlist:9`, `test/crb-egress-config.bats:36-43`
+
+---
+
+## Claim 7: "Baking the CLI means a running cell needs exactly ONE reachable host, `api.anthropic.com`"
+
+**Location:** `runs/review-arms/crb-pipeline/docker/Dockerfile.review:6-8` (restated at `runs/review-arms/crb-pipeline/run-host.sh:140-143`, `docs/decisions/034-crb-egress-allowlist-and-disposable-clones.md:44-46`, `docs/working/crb-direction1-setup.md:65-68`)
+**Type:** Behavioral / Configuration
+**Verdict:** Mostly accurate
+**Confidence:** Medium
+**Verification mode:** static
+**Legibility-target:** for-author
+**Scope:** Covers what removing the per-cell `npx` install does to the required host set, and what this repository's own prior egress work records about Claude Code's host set; does not establish the runtime behaviour of CLI version 2.1.232 behind this proxy — that requires docker and is what the preflight is for.
+
+The mechanism is right: the install moves to build time with normal network, so `registry.npmjs.org` leaves the per-cell path.
+
+```dockerfile
+# runs/review-arms/crb-pipeline/docker/Dockerfile.review:18-19
+RUN npm install -g "@anthropic-ai/claude-code@${CC_VERSION}" \
+ && npm cache clean --force
+```
+
+pinned negatively by `test/crb-egress-config.bats:56-63` (no `npx -y @anthropic-ai/claude-code` in the runner; passed).
+
+"Exactly one" overstates the conclusion, on this repository's own evidence. The base egress profile used by the project's other Claude Code containment work lists six hosts as the minimum:
+
+```
+# devcontainer-config/egress/base.txt:6-14
+# Claude Code itself: API, OAuth login, telemetry.
+api.anthropic.com
+claude.ai
+console.anthropic.com
+sentry.io
+statsig.com
+…
+registry.npmjs.org
+```
+
+with only one of them marked as required:
+
+```bash
+# devcontainer-config/init-firewall.sh:139-146
+# A dead domain must not brick session start (statsig.anthropic.com went
+# NXDOMAIN in 2026-07 and did exactly that). Failing closed is safe here —
+# the domain just stays unreachable — except api.anthropic.com, without
+# which CC cannot run at all.
+```
+
+So "one host is *required*" is supported by prior in-repo evidence; "needs exactly one reachable host" reads as "reaches exactly one", and the cell will also attempt telemetry/error-reporting hosts that the allowlist refuses. Nothing in `Dockerfile.review` or `run-host.sh` sets `DISABLE_AUTOUPDATER`, `CLAUDE_CODE_DISABLE_NONESSENTIAL_TRAFFIC`, or equivalent (paraphrased — no quote available because the claim covers the absence of code: grep for those names across `/workspace` returns hits only in `devcontainer-config/` and an archived working doc, none in the files under review). Precise version: *"a running cell **requires** exactly one reachable host; non-essential traffic to the other Claude Code endpoints is refused by the proxy."* The preflight's live headless invocation (`runs/review-arms/crb-pipeline/run-host.sh:235-242`) is the right place this gets settled at $0.
+
+**Evidence:** `runs/review-arms/crb-pipeline/docker/Dockerfile.review:1-19`, `runs/review-arms/crb-pipeline/run-host.sh:139-150`, `runs/review-arms/crb-pipeline/run-host.sh:225-263`, `devcontainer-config/egress/base.txt:6-14`, `devcontainer-config/init-firewall.sh:134-148`, `test/crb-egress-config.bats:56-63`
+
+---
+
+## Claim 8: "The proxy is reachable only from the internal `crb-inner` network, whose subnet run-host.sh pins so this line can be exact."
+
+**Location:** `runs/review-arms/crb-pipeline/docker/tinyproxy.conf:12-16`
+**Type:** Configuration
+**Verdict:** Mostly accurate
+**Confidence:** High
+**Verification mode:** executed
+**Legibility-target:** for-author
+**Scope:** Covers the correspondence between the `Allow` line and the subnet the runner creates, including the override path; does not establish tinyproxy's runtime enforcement of `Allow` (docker/tinyproxy unavailable).
+
+The correspondence holds for the default and is test-enforced:
+
+```bash
+# runs/review-arms/crb-pipeline/run-host.sh:99
+EGRESS_SUBNET="${EGRESS_SUBNET:-172.31.250.0/24}"
+```
+
+```
+# runs/review-arms/crb-pipeline/docker/tinyproxy.conf:16
+Allow 172.31.250.0/24
+```
+
+```bash
+# test/crb-egress-config.bats:52-53
+subnet=$(grep -oE '^[[:space:]]*Allow[[:space:]]+[0-9./]+' "$DOCKER_DIR/tinyproxy.conf" | awk '{print $2}')
+grep -q "EGRESS_SUBNET=\"\${EGRESS_SUBNET:-$subnet}\"" "$RUNNER"
+```
+
+(passed). The imprecision: "run-host.sh pins" describes a *default*, not a pin — `EGRESS_SUBNET` is environment-overridable, and the runner's own comment invites overriding it (`runs/review-arms/crb-pipeline/run-host.sh:96-98`, "Override only if it collides with something already on the machine"), at which point the baked `Allow` line no longer covers the network. The failure is safe rather than silent — the proxy would deny the cell network, and preflight leg 1 exits 5 at $0 (`runs/review-arms/crb-pipeline/run-host.sh:201-204`) — and the bats test would not catch it, since it compares the file default only. Precise version: *"…whose subnet run-host.sh defaults to this value; overriding `EGRESS_SUBNET` without rebuilding the proxy image fails the preflight."*
+
+**Evidence:** `runs/review-arms/crb-pipeline/docker/tinyproxy.conf:12-16`, `runs/review-arms/crb-pipeline/run-host.sh:96-99`, `runs/review-arms/crb-pipeline/run-host.sh:198-205`, `test/crb-egress-config.bats:45-54`, `docs/reviews/execution-logs/cfc-r3-bats-2026-08-19.txt`
+Executed: `bats test/…` (four suites), cwd `/workspace`, exit 0, 2026-08-19T23:07:02Z.
+
+---
+
+## Claim 9a: "CONNECT to 443 only: … every other port [is] refused, so the tunnel cannot be repointed at an arbitrary service."
+
+**Location:** `runs/review-arms/crb-pipeline/docker/tinyproxy.conf:18-20`
+**Type:** Configuration
+**Verdict:** Unverifiable
+**Confidence:** Medium
+**Verification mode:** static
+**Legibility-target:** for-orchestrator-synthesis
+**Scope:** Covers the CONNECT-port half of the comment only; the plain-HTTP half is Claim 9b.
+
+The directive is present exactly as described:
+
+```
+# runs/review-arms/crb-pipeline/docker/tinyproxy.conf:20
+ConnectPort 443
+```
+
+and is pinned by `test/crb-egress-config.bats:46-47` (passed). Whether tinyproxy then refuses CONNECT to every other port is a property of the third-party daemon, and the blocker to establishing it is **execution: neither docker nor tinyproxy is installed in this environment** (`which tinyproxy` → not found; `/usr/share/doc/tinyproxy` absent), so the claim cannot be exercised. To verify it, add a fourth preflight leg attempting `CONNECT api.anthropic.com:8443` (or any non-443 port) through the proxy and asserting refusal — the same shape as the existing three legs, at $0.
+
+**Evidence:** `runs/review-arms/crb-pipeline/docker/tinyproxy.conf:18-20`, `test/crb-egress-config.bats:45-54`, `runs/review-arms/crb-pipeline/run-host.sh:197-223`
+
+---
+
+## Claim 9b: "plain-HTTP proxying … [is] refused" [by `ConnectPort 443`]
+
+**Location:** `runs/review-arms/crb-pipeline/docker/tinyproxy.conf:18-20`
+**Type:** Configuration
+**Verdict:** Incorrect
+**Confidence:** Medium
+**Verification mode:** static
+**Legibility-target:** for-author
+**Scope:** Covers the stated mechanism (that `ConnectPort` governs plain-HTTP proxying); does not establish what a plain-HTTP request through this proxy actually returns — that needs execution, and the practical containment conclusion is separately carried by the `Filter` (see below).
+
+The comment attributes the refusal of plain-HTTP proxying to `ConnectPort`:
+
+```
+# runs/review-arms/crb-pipeline/docker/tinyproxy.conf:18-20
+# CONNECT to 443 only: plain-HTTP proxying and every other port are refused, so
+# the tunnel cannot be repointed at an arbitrary service.
+ConnectPort 443
+```
+
+`ConnectPort` scopes the ports permitted for the **CONNECT method**; it does not govern ordinary proxied `GET http://host/…` requests, which take a different path through tinyproxy entirely. The runner exports `HTTP_PROXY`/`http_proxy` alongside the HTTPS variants (`runs/review-arms/crb-pipeline/run-host.sh:185-186`, `:435-436`), so plain-HTTP proxying is a live path for a cell, and nothing in this config file disables it.
+
+The practical conclusion still holds, but by a different mechanism than the one stated: a plain-HTTP request is subject to the same host filter, which allows one host —
+
+```
+# runs/review-arms/crb-pipeline/docker/tinyproxy.conf:25-29
+Filter "/etc/tinyproxy/filter"
+FilterURLs Off
+FilterExtended On
+FilterCaseSensitive Off
+FilterDefaultDeny Yes
+```
+
+— so `http://github.com/` is refused by the *filter*, not by `ConnectPort`. Per the compound-claim rule, a refuted mechanism keeps its verdict even when the conclusion holds: a reader who removes or widens `Filter` while trusting `ConnectPort` to block plain HTTP would be wrong. Precise version: *"`ConnectPort 443` limits the CONNECT method to 443; plain-HTTP proxying is left to the host filter, which allows the same single host."* The preflight's negative leg (leg 2) tests `https://github.com/` only, so it would not detect this either (`runs/review-arms/crb-pipeline/run-host.sh:208`).
+
+**Evidence:** `runs/review-arms/crb-pipeline/docker/tinyproxy.conf:18-29`, `runs/review-arms/crb-pipeline/run-host.sh:183-188`, `runs/review-arms/crb-pipeline/run-host.sh:206-214`, `runs/review-arms/crb-pipeline/run-host.sh:432-436`
+
+---
+
+## Claim 10: "`FilterURLs Off` => the filter matches the HOST, which for a CONNECT request is the tunnel target. `FilterDefaultDeny` inverts the usual sense: entries are what is ALLOWED, everything else is refused."
+
+**Location:** `runs/review-arms/crb-pipeline/docker/tinyproxy.conf:22-24`
+**Type:** Configuration
+**Verdict:** Verified
+**Confidence:** Medium
+**Verification mode:** static
+**Legibility-target:** for-orchestrator-synthesis
+**Scope:** Covers the documented semantics of the three filter directives and the shape of the allowlist file they consume; does not establish runtime filtering behaviour (docker/tinyproxy unavailable — that is preflight leg 2's job).
+
+Both directives are present and consistent with the allowlist file's own header, which is written as host regexes rather than URL regexes:
+
+```
+# runs/review-arms/crb-pipeline/docker/egress-allowlist:1-2,9
+# Hosts a review cell may reach. Anchored regexes, matched against the CONNECT
+# target host (FilterExtended On, FilterURLs Off).
+^api\.anthropic\.com$
+```
+
+`FilterExtended On` selects POSIX extended regular expressions, under which `^…$` anchors the whole host, so the entry cannot match `api.anthropic.com.evil.example`. Exactly one non-comment line exists, asserted by test:
+
+```bash
+# test/crb-egress-config.bats:26-29
+run grep -c '^[^#]' "$DOCKER_DIR/egress-allowlist"
+[ "$output" = "1" ]
+run grep '^[^#]' "$DOCKER_DIR/egress-allowlist"
+[ "$output" = '^api\.anthropic\.com$' ]
+```
+
+(passed). Confidence is Medium rather than High because the directive semantics are third-party documentation, not code in this repository.
+
+**Evidence:** `runs/review-arms/crb-pipeline/docker/tinyproxy.conf:22-29`, `runs/review-arms/crb-pipeline/docker/egress-allowlist:1-9`, `test/crb-egress-config.bats:25-43`
+
+---
+
+## Claim 11: "Checked after every cell, so the worst overshoot is SWEEP_BUDGET+BUDGET."
+
+**Location:** `runs/review-arms/crb-pipeline/run-host.sh:80-82`
+**Type:** Behavioral
+**Verdict:** Verified
+**Confidence:** High
+**Verification mode:** static
+**Legibility-target:** for-orchestrator-synthesis
+**Scope:** Covers the placement of the gate relative to the cell body and the ledger it sums; does not establish that `--max-budget-usd` is itself a hard ceiling on one cell's spend (that is a CLI property, not this code's).
+
+The gate is the last statement in the loop body, after the attempt is ledgered:
+
+```bash
+# runs/review-arms/crb-pipeline/run-host.sh:544
+python3 - "$OUT" "$SWEEP_BUDGET" <<'EOF' || { echo "SWEEP BUDGET EXCEEDED — stopping. Raise SWEEP_BUDGET to continue." >&2; exit 2; }
+```
+
+and it sums `attempts.jsonl` across all cells, falling back to `result.json` for pre-ledger cells (`runs/review-arms/crb-pipeline/run-host.sh:548-566`), tripping at `total >= cap`. Since the check runs only between cells, the running total can exceed the cap by at most the cost of the cell in flight, which `--max-budget-usd "$BUDGET"` caps (`runs/review-arms/crb-pipeline/run-host.sh:444`).
+
+**Evidence:** `runs/review-arms/crb-pipeline/run-host.sh:80-90`, `runs/review-arms/crb-pipeline/run-host.sh:526-569`
+
+---
+
+## Claim 12: "each leg is separate because they fail for different reasons — a single test passing for the wrong reason is how this harness has gone wrong before."
+
+**Location:** `runs/review-arms/crb-pipeline/run-host.sh:190-196`
+**Type:** Architectural
+**Verdict:** Verified
+**Confidence:** High
+**Verification mode:** static
+**Legibility-target:** for-orchestrator-synthesis
+**Scope:** Covers that the three legs have distinct failure causes and that each exits 5; does not establish that the legs pass at runtime (docker unavailable), nor that the three are exhaustive — Claim 9b names a fourth path (plain HTTP) no leg exercises.
+
+The three legs test the proxy tunnel, the filter, and the network's internality, and each has its own exit:
+
+```bash
+# runs/review-arms/crb-pipeline/run-host.sh:201-223  (abridged to the three predicates)
+api_code=$(in_cell_net 'curl … https://api.anthropic.com/v1/models || echo 000')
+[ "$api_code" != "000" ] || { …; exit 5; }
+gh_code=$(in_cell_net 'curl … https://github.com/ || echo 000')
+case "$gh_code" in 403|000) … ;; *) …; exit 5 ;; esac
+direct=$(docker run --rm --network "$EGRESS_NET" --entrypoint bash "$REVIEW_IMAGE" -c 'curl … https://github.com/ || echo 000')
+[ "$direct" = "000" ] || { …; exit 5; }
+```
+
+Leg 1 fails if the proxy or the tunnel is broken; leg 2 fails if the filter is not filtering; leg 3 fails if the network is not `--internal` (leg 3 removes the proxy env, so it tests routing rather than the proxy). Leg 2's acceptance of `000` (which is also leg 3's pass condition) is not a hole, because a dead proxy is caught by leg 1 first, which runs before it. The presence of all three legs and `exit 5` on each is pinned by `test/crb-egress-config.bats:110-118` (passed).
+
+**Evidence:** `runs/review-arms/crb-pipeline/run-host.sh:190-223`, `runs/review-arms/crb-pipeline/run-host.sh:180-188`, `test/crb-egress-config.bats:110-118`
+
+---
+
+## Claim 13: "Artifacts are harvested and the tree reset below, so re-runs start from the same state."
+
+**Location:** `runs/review-arms/crb-pipeline/run-host.sh:423-425`
+**Type:** Behavioral
+**Verdict:** Stale
+**Confidence:** High
+**Verification mode:** static
+**Legibility-target:** for-author
+**Scope:** Covers the "reset below" half of the sentence against the resulting loop body; does not dispute the conclusion, which the relocated restore still delivers.
+
+The comment survived the file's restructuring. Nothing below it in the loop body resets the tree — the reset moved to the *top* of the next iteration:
+
+```bash
+# runs/review-arms/crb-pipeline/run-host.sh:413
+  python3 "$ROOT/scripts/crb-materialize.py" --restore "$id" || {
+```
+
+and the code that now occupies the position "below" says so explicitly:
+
+```bash
+# runs/review-arms/crb-pipeline/run-host.sh:510-511
+  # The clone is left as the container wrote it; the NEXT cell's --restore wipes
+  # it. Nothing on the host touches it in between…
+```
+
+Fix: *"Artifacts are harvested below and the tree is wiped by the next cell's `--restore`, so re-runs start from the same state."* (The stray bare `#` at `runs/review-arms/crb-pipeline/run-host.sh:426` is what remains of the removed sentence.)
+
+**Evidence:** `runs/review-arms/crb-pipeline/run-host.sh:406-418`, `runs/review-arms/crb-pipeline/run-host.sh:423-426`, `runs/review-arms/crb-pipeline/run-host.sh:510-512`
+
+---
+
+## Claim 14: "Nothing below reads `.git`."
+
+**Location:** `runs/review-arms/crb-pipeline/run-host.sh:472-477`
+**Type:** Invariant
+**Verdict:** Verified
+**Confidence:** High
+**Verification mode:** executed
+**Legibility-target:** for-orchestrator-synthesis
+**Scope:** Covers everything the host runs after the review container exits within the cell body; does not cover the audit, which reads `.git` deliberately but inside a container (Claim 15).
+
+The three host steps after the container exits are the transcript parse (reads `$dest/transcript.jsonl` only, `runs/review-arms/crb-pipeline/run-host.sh:453-471`), the harvest, and a manifest read for the head sha:
+
+```bash
+# runs/review-arms/crb-pipeline/run-host.sh:490-492
+  head_sha=$(python3 -c '
+import json, sys
+print(json.load(open(sys.argv[1]))[sys.argv[2]]["head"])' "$MANIFEST" "$id")
+```
+
+— the pinned head comes from the tracked manifest, not from the clone. The harvest walks the tree and excludes `.git` at every depth before descending:
+
+```python
+# scripts/crb-harvest-artifacts.py:64-65
+dirs[:] = [d for d in dirs
+           if d != ".git" and not (Path(root) / d).is_symlink()]
+```
+
+Pinned by two passing tests: *"repository internals are never harvested"* (`test/crb-harvest-artifacts.bats:102-113`) and the runner-level grep *"the runner never runs host git against the work clone"* (`test/crb-egress-config.bats:94-99`).
+
+**Evidence:** `runs/review-arms/crb-pipeline/run-host.sh:451-492`, `scripts/crb-harvest-artifacts.py:57-80`, `test/crb-harvest-artifacts.bats:102-113`, `test/crb-egress-config.bats:94-99`, `docs/reviews/execution-logs/cfc-r3-bats-2026-08-19.txt`
+Executed: `bats test/…` (four suites), cwd `/workspace`, exit 0, 2026-08-19T23:07:02Z.
+
+---
+
+## Claim 15: "Post-run audit, INSIDE a throwaway container … `--network none`, no API key."
+
+**Location:** `runs/review-arms/crb-pipeline/run-host.sh:482-489`
 **Type:** Behavioral
 **Verdict:** Verified
 **Confidence:** High
 **Verification mode:** executed
-**Scope:** Covers the ordering of the length floor ahead of the substring test and the presence of tests pinning that division; does not cover Claim 17's separate assertion about where the upper bound sits relative to real reviews.
-
-The floor is checked first and returns before `NON_REVIEW` is reachable:
-
-```python
-# scripts/crb-cell-status.py:64-70
-    if len(r) < MIN_REVIEW_LEN:
-        return False, f"body is {len(r)} chars, under the {MIN_REVIEW_LEN}-char floor"
-    if len(r) < STUB_MAX_LEN:
-        low = r.lower()
-        hit = next((s for s in NON_REVIEW if s in low), None)
-```
-
-and the tests assert the *reason*, not just the verdict:
+**Legibility-target:** for-orchestrator-synthesis
+**Scope:** Covers the audit's invocation flags and the disposal of its container; does not establish that the audit's *checks* are complete (the same comment disclaims that, and Claim 20 covers one of them).
 
 ```bash
-# test/crb-cell-status.bats:75-79
-@test "the short auth stub is rejected — by the length floor" {
-  check '{"subtype":"success","is_error":false,"result":"Not logged in · Please run /login"}'
-  [ "$status" -eq 1 ]
-  [[ "$output" == *floor* ]]
+# runs/review-arms/crb-pipeline/run-host.sh:493-496
+  if ! docker run --rm --network none -u node \
+        -v "$clone":/repo \
+        -v "$ROOT/scripts/crb-audit-clone.sh":/audit.sh:ro \
+        --entrypoint bash "$REVIEW_IMAGE" /audit.sh /repo "$head_sha"; then
 ```
 
-Command: `bats test/crb-cell-status.bats …`; cwd `/workspace`; exit 0; 2026-08-18T19:44:22-07:00 — tests 5–9 pass.
+`--rm` disposes it, `--network none` is present, and `ANTHROPIC_API_KEY` is not passed. Independently pinned by a test that parses the runner and asserts both properties on the audit's `docker run` line (`test/crb-egress-config.bats:79-90`, passed). The comment's characterisation of the audit as *"EVIDENCE, not the control"* matches the script's own closing line (`scripts/crb-audit-clone.sh:96`).
 
-**Evidence:** `scripts/crb-cell-status.py:56-71`, `test/crb-cell-status.bats:70-106`, `docs/reviews/execution-logs/r3-bats-crb.txt`
+**Evidence:** `runs/review-arms/crb-pipeline/run-host.sh:482-509`, `test/crb-egress-config.bats:79-90`, `scripts/crb-audit-clone.sh:95-96`, `docs/reviews/execution-logs/cfc-r3-bats-2026-08-19.txt`
+Executed: `bats test/…` (four suites), cwd `/workspace`, exit 0, 2026-08-19T23:07:02Z.
 
 ---
 
-## Claim 19: "`--verify … re-check containment (read-only)` / `--reset … restore, then re-check`" (usage block and argparse help)
+## Claim 16: "a voided cell no longer leaves a permanently dead clone (2026-08-19 A8)"
 
-**Location:** `scripts/crb-materialize.py:28-29`, `scripts/crb-materialize.py:335-341`
-**Type:** Behavioral / Reference
+**Location:** `runs/review-arms/crb-pipeline/run-host.sh:510-512`
+**Type:** Behavioral
 **Verdict:** Verified
 **Confidence:** High
 **Verification mode:** static
-**Scope:** Covers whether each flag's documented behavior matches its implementation and which one run-host.sh calls; does not cover the flags' behavior on a slug missing from the manifest beyond the code path read.
+**Legibility-target:** for-orchestrator-synthesis
+**Scope:** Covers the clone's fate after a void; does not cover the cell's *result*, which is deliberately marked failed and excluded downstream.
 
-`--verify` runs only read commands (`rev-parse`, `rev-list`, `remote`, `diff --shortstat`) via `verify_containment` and never mutates:
-
-```python
-# scripts/crb-materialize.py:373-374
-                note = reset_clone(dst, slug, head, base) if resetting else ""
-                n_commits, stat = verify_containment(dst, slug, head)
-```
-
-`--reset`'s help matches `reset_clone`'s contract, including the "voids only on contamination" and "used by run-host.sh" parts:
-
-```python
-# scripts/crb-materialize.py:338-341
-    g.add_argument("--reset", nargs="+", metavar="SLUG",
-                   help="restore clone(s) to the materialized state, then verify — "
-                        "undoes agent commits/edits, voids only on contamination "
-                        "(used by run-host.sh before and after each review cell)")
-```
-
-run-host.sh calls `--reset` at both cell boundaries (Claim 1) and calls `--verify` nowhere: `grep -n 'crb-materialize.py' runs/review-arms/crb-pipeline/run-host.sh` returns only the two `--reset` lines and the "clone missing" hint (paraphrased — no quote available because this is an absence-of-match result).
-
-**Evidence:** `scripts/crb-materialize.py:22-29`, `scripts/crb-materialize.py:335-383`, `runs/review-arms/crb-pipeline/run-host.sh:224`, `runs/review-arms/crb-pipeline/run-host.sh:262`, `runs/review-arms/crb-pipeline/run-host.sh:359`
-
----
-
-## Claim 20: "run-host.sh calls this via `--verify`."
-
-**Location:** `scripts/crb-materialize.py:174`
-**Type:** Architectural
-**Verdict:** Stale
-**Confidence:** High
-**Verification mode:** static
-**Scope:** Covers the named caller path of `verify_containment`; does not imply the function is uncalled — `--reset` calls it after resetting.
-
-This line in `verify_containment`'s docstring was accurate before `cf6e7c9`; the same commit switched both call sites to `--reset`:
+The void path writes a marker and rewrites `result.json` but performs no repair and no deletion of the clone:
 
 ```bash
-# runs/review-arms/crb-pipeline/run-host.sh:262
-  python3 "$ROOT/scripts/crb-materialize.py" --reset "$id" || {
+# runs/review-arms/crb-pipeline/run-host.sh:497-508
+    echo "$id: POST-RUN containment audit FAILED — voiding this cell" >&2
+    : > "$dest/CONTAINMENT_FAILED"
+    …
+d["is_error"] = True
+d["subtype"] = "containment_failed"
 ```
 
-What the code now does: run-host.sh calls `verify_containment` **via `--reset`**, which runs `reset_clone()` first and `verify_containment()` second (`scripts/crb-materialize.py:373-374`). `--verify` remains implemented and user-facing but has no caller inside the harness.
+The next cell restores unconditionally, with no gate that a previously-voided clone could fail (`runs/review-arms/crb-pipeline/run-host.sh:413`); `restore_clone()` deletes and re-extracts regardless of the tree's state (`scripts/crb-materialize.py:359-363`). Downstream, the marker is what excludes the cell, not the clone's condition (`scripts/crb-pipeline-to-benchmark.py:242-243`, `scripts/crb-cell-status.py:74-75`).
 
-**Evidence:** `scripts/crb-materialize.py:168-181`, `scripts/crb-materialize.py:373-374`, `runs/review-arms/crb-pipeline/run-host.sh:262`, `runs/review-arms/crb-pipeline/run-host.sh:359`
+**Evidence:** `runs/review-arms/crb-pipeline/run-host.sh:493-512`, `scripts/crb-materialize.py:348-366`, `scripts/crb-pipeline-to-benchmark.py:242-243`, `scripts/crb-cell-status.py:74-75`
 
 ---
 
-## Claim 21a: "A stray that DESCENDS from the reviewed head … cannot contain the answer key: the merged upstream fix is not a descendant of the PR head in this clone"
+## Claim 17a: "RUNS INSIDE A THROWAWAY CONTAINER, never on the host."
 
-**Location:** `scripts/crb-materialize.py:205-208`
-**Type:** Invariant
+**Location:** `scripts/crb-audit-clone.sh:4`
+**Type:** Architectural
+**Verdict:** Verified
+**Confidence:** High
+**Verification mode:** executed
+**Legibility-target:** for-orchestrator-synthesis
+**Scope:** Covers every invocation of this script in the repository; does not prevent an operator from running it by hand on the host (nothing enforces the claim in code — it is a header statement, and the only in-repo caller honours it).
+
+The only invocation is the containerised one quoted in Claim 15. Grepping the repository for other callers finds none outside tests (paraphrased — no quote available because the claim covers the absence of code: `crb-audit-clone.sh` appears in `runs/review-arms/crb-pipeline/run-host.sh:495`, `test/crb-audit-clone.bats:31`, and documentation only). The bats suite drives it directly on the host against fixture repos, which the file's own header anticipates:
+
+```bash
+# test/crb-audit-clone.bats:25-27
+# The script runs inside a container in production. Nothing in it is
+# docker-specific, so these tests drive it directly against fixture repos.
+```
+
+**Evidence:** `scripts/crb-audit-clone.sh:1-13`, `runs/review-arms/crb-pipeline/run-host.sh:493-496`, `test/crb-audit-clone.bats:25-31`, `test/crb-egress-config.bats:79-90`
+Executed: `bats test/…` (four suites), cwd `/workspace`, exit 0, 2026-08-19T23:07:02Z, log `docs/reviews/execution-logs/cfc-r3-bats-2026-08-19.txt`.
+
+---
+
+## Claim 17b: "run-host.sh invokes it as: `docker run --rm --network none -v "$clone":/repo -v .../crb-audit-clone.sh:/audit.sh:ro <image> bash /audit.sh /repo <head-sha>`"
+
+**Location:** `scripts/crb-audit-clone.sh:10-13`
+**Type:** Reference
 **Verdict:** Mostly accurate
-**Confidence:** Medium
+**Confidence:** High
 **Verification mode:** static
-**Scope:** Covers whether the answer key is a descendant of the reviewed head *as the clone is materialized*; does not cover what an agent can add to the clone during a cell (Claim 21b), and does not enumerate the benchmark's merge strategies.
+**Legibility-target:** for-author
+**Scope:** Covers the fidelity of the quoted command line to the real invocation; does not affect the surrounding claim about containerisation (Claim 17a).
 
-As materialized, the clone holds no upstream future at all: `materialize()` deletes every ref but `review`/`main`, removes the remote, expires reflogs and prunes:
+The quoted line, run verbatim, would not execute the audit. The review image sets `ENTRYPOINT ["claude"]`:
+
+```dockerfile
+# runs/review-arms/crb-pipeline/docker/Dockerfile.review:28
+ENTRYPOINT ["claude"]
+```
+
+so `<image> bash /audit.sh /repo <sha>` becomes `claude bash /audit.sh …`. The real call overrides the entrypoint and runs as `node`:
+
+```bash
+# runs/review-arms/crb-pipeline/run-host.sh:493-496
+  if ! docker run --rm --network none -u node \
+        -v "$clone":/repo \
+        -v "$ROOT/scripts/crb-audit-clone.sh":/audit.sh:ro \
+        --entrypoint bash "$REVIEW_IMAGE" /audit.sh /repo "$head_sha"; then
+```
+
+Precise version: add `-u node` and `--entrypoint bash` before `<image>` and drop the standalone `bash`.
+
+**Evidence:** `scripts/crb-audit-clone.sh:10-13`, `runs/review-arms/crb-pipeline/docker/Dockerfile.review:26-28`, `runs/review-arms/crb-pipeline/run-host.sh:493-496`
+
+---
+
+## Claim 18: "Exit: 0 = nothing detected · 1 = VOID (contamination) · 2 = could not check."
+
+**Location:** `scripts/crb-audit-clone.sh:23`
+**Type:** Behavioral
+**Verdict:** Mostly accurate
+**Confidence:** High
+**Verification mode:** executed
+**Legibility-target:** for-author
+**Scope:** Covers the mapping between the three exit codes and the conditions that produce them; does not dispute the runner's handling, which treats any non-zero as a void and is the safe reading.
+
+Exit 2 is reached only by the three pre-flight guards — wrong argument count, no `.git`, non-hex sha (`scripts/crb-audit-clone.sh:26-32`). The genuinely "could not check" case at runtime — `git fsck` itself erroring — exits **1**, not 2:
+
+```bash
+# scripts/crb-audit-clone.sh:63-67
+# fsck's own errors must not be swallowed: a check that could not run is the
+# failure mode this file exists to avoid.
+if printf '%s\n' "$fsck_out" | grep -q '^error:'; then
+  note "git fsck errored (…) — cannot certify containment"
+fi
+```
+
+because `note` appends to `traces`, and any non-empty `traces` exits 1 (`scripts/crb-audit-clone.sh:90-94`). This is confirmed by execution: the test *"a corrupt object store reports 'cannot certify' rather than passing"* asserts `[ "$status" -eq 1 ]` (`test/crb-audit-clone.bats:122-131`, passed). Failing closed is the right behaviour; the header's legend is what is imprecise. Precise version: *"2 = the audit could not start (bad arguments, no `.git`); a check that runs but cannot certify (fsck errors) is reported as a void."*
+
+**Evidence:** `scripts/crb-audit-clone.sh:23`, `scripts/crb-audit-clone.sh:26-32`, `scripts/crb-audit-clone.sh:60-67`, `scripts/crb-audit-clone.sh:90-96`, `test/crb-audit-clone.bats:120-140`, `docs/reviews/execution-logs/cfc-r3-bats-2026-08-19.txt`
+Executed: `bats test/…` (four suites), cwd `/workspace`, exit 0, 2026-08-19T23:07:02Z.
+
+---
+
+## Claim 19: "Belt and braces on top of the container boundary — none of the commands below trigger hooks or a fsmonitor today, and these overrides mean that stays true if one is added later."
+
+**Location:** `scripts/crb-audit-clone.sh:34-42`
+**Type:** Invariant
+**Verdict:** Verified
+**Confidence:** High
+**Verification mode:** static
+**Legibility-target:** for-orchestrator-synthesis
+**Scope:** Covers the git commands this script issues and the precedence of its `-c` overrides; does not establish behaviour for git versions other than the one in the review image, and does not cover the non-git `find` at `scripts/crb-audit-clone.sh:87`.
+
+The wrapper applies the overrides to every git call in the file:
+
+```bash
+# scripts/crb-audit-clone.sh:40-42
+git() { command git -c safe.directory="$CLONE" -c core.hooksPath=/dev/null \
+                    -c core.fsmonitor= -c protocol.ext.allow=never \
+                    -C "$CLONE" "$@"; }
+```
+
+`-c` is command-line configuration, which takes precedence over the repository's own `.git/config`, so a hostile `core.hooksPath` or `core.fsmonitor` in the clone is overridden rather than merged.
+
+The commands actually issued through it are `remote` (`:48`), `fsck` (`:60`), `rev-list` (`:73`) and `merge-base --is-ancestor` (`:77`). None of these refreshes the index or checks out a tree, which is what invokes a fsmonitor; none of them is a checkout, commit, merge, push or receive, which is what runs hooks. The two commands the 2026-08-19 review executed out of — `git status` (fsmonitor) and `git checkout --force` / `clean` (hooks, `core.worktree`) — are absent (paraphrased — no quote available because the claim covers the absence of code: the file contains no `status`, `checkout`, `clean`, `gc`, `reset` or `fetch` invocation).
+
+**Evidence:** `scripts/crb-audit-clone.sh:34-42`, `scripts/crb-audit-clone.sh:47-88`, `docs/reviews/code-review-rubric-2026-08-19-feat-crb-direction1-harness.md:93`
+
+---
+
+## Claim 20: "`--no-reflogs` is load-bearing: git fsck counts reflog entries as reachability roots, so without it a fetched commit whose ref was deleted still reads as reachable and this check is inert."
+
+**Location:** `scripts/crb-audit-clone.sh:57-59` (restated at `docs/working/crb-direction1-setup.md:166-169`)
+**Type:** Behavioral
+**Verdict:** Verified
+**Confidence:** High
+**Verification mode:** executed
+**Legibility-target:** for-orchestrator-synthesis
+**Scope:** Covers the flag's effect on the unreachable-commit check under git 2.39.5; does not establish that the check catches every non-git retrieval route (it does not, and the file says so).
+
+The flag is present in the audited command:
+
+```bash
+# scripts/crb-audit-clone.sh:60
+fsck_out=$(git fsck --unreachable --no-reflogs --connectivity-only --no-progress 2>&1)
+```
+
+and non-vacuity is asserted by a test that runs both forms against the same fixture and requires the without-flag form to see nothing and the with-flag form to see the commit:
+
+```bash
+# test/crb-audit-clone.bats:150-155
+run git -C "$CLONE" fsck --unreachable --connectivity-only --no-progress
+[[ "$output" != *"unreachable commit"* ]]
+run git -C "$CLONE" fsck --unreachable --no-reflogs --connectivity-only --no-progress
+[[ "$output" == *"unreachable commit"* ]]
+```
+
+That test passed in this session's run (test 28 of 37, `ok the unreachable-commit check is non-vacuous only because of --no-reflogs`).
+
+**Evidence:** `scripts/crb-audit-clone.sh:57-62`, `test/crb-audit-clone.bats:142-158`, `docs/reviews/execution-logs/cfc-r3-bats-2026-08-19.txt`
+Executed: `bats test/crb-audit-clone.bats test/crb-disposable-clone.bats test/crb-harvest-artifacts.bats test/crb-egress-config.bats`, cwd `/workspace`, exit 0, 2026-08-19T23:07:02Z.
+
+---
+
+## Claim 21: "`--untracked-files=all` still honours `.gitignore`, so a rubric written to a path the upstream repo ignores was invisible."
+
+**Location:** `scripts/crb-harvest-artifacts.py:11-14` (restated at `runs/review-arms/crb-pipeline/run-host.sh:475-477`, `scripts/crb-materialize.py:264-266`, `docs/decisions/034-…:67-68`)
+**Type:** Behavioral
+**Verdict:** Verified
+**Confidence:** High
+**Verification mode:** executed
+**Legibility-target:** for-orchestrator-synthesis
+**Scope:** Covers the git behaviour and the new harvest's coverage of the ignored path; does not establish the sub-claim *"Several benchmark repos ignore `docs/`-adjacent paths"*, which is unverifiable here — the fork clones' `.gitignore` files are the only evidence and only 5 of 50 forks are materialized (none of the five ignores `docs/reviews/`).
+
+The test carries its own negative control, so the git behaviour is established by execution rather than asserted:
+
+```bash
+# test/crb-harvest-artifacts.bats:88-101 (abridged)
+echo 'docs/reviews/' > "$CLONE/.gitignore"
+…
+echo '# rubric' > "$CLONE/docs/reviews/rubric.md"
+run git -C "$CLONE" status --porcelain --untracked-files=all
+[[ "$output" != *"rubric.md"* ]]
+harvest
+[ "$status" -eq 0 ]
+[ -f "$DEST/docs/reviews/rubric.md" ]
+```
+
+Both halves passed: git did not report the file, and the new harvest captured it. The new harvest's coverage comes from walking rather than asking git (`scripts/crb-harvest-artifacts.py:60-80`).
+
+**Evidence:** `scripts/crb-harvest-artifacts.py:1-30`, `scripts/crb-harvest-artifacts.py:57-80`, `test/crb-harvest-artifacts.bats:82-101`, `docs/reviews/execution-logs/cfc-r3-bats-2026-08-19.txt`
+Executed: `bats test/…` (four suites), cwd `/workspace`, exit 0, 2026-08-19T23:07:02Z.
+
+---
+
+## Claim 22: "symlinks are never followed or copied, and per-file and total size caps stop a hostile or runaway repo from filling the host disk"
+
+**Location:** `scripts/crb-harvest-artifacts.py:22-25`
+**Type:** Invariant
+**Verdict:** Verified
+**Confidence:** High
+**Verification mode:** executed
+**Legibility-target:** for-orchestrator-synthesis
+**Scope:** Covers symlink handling and the three caps in `crb-harvest-artifacts.py`; does not establish that the caps are correctly sized for real pipeline output, and does not cover hardlinks (which cannot escape a directory tree in the relevant sense).
+
+Escape is blocked in two independent places. `os.walk` is called with `followlinks=False`, so a symlinked directory is never descended into, and symlinked directories are additionally pruned from `dirs`:
 
 ```python
-# scripts/crb-materialize.py:293-301
-    refs = sh(["git", "for-each-ref", "--format=%(refname)",
-               "refs/heads", "refs/tags", "refs/remotes"], cwd=dst).splitlines()
-    for ref in refs:
-        if ref not in ("refs/heads/review", "refs/heads/main"):
-            sh(["git", "update-ref", "-d", ref], cwd=dst)
-    subprocess.run(["git", "remote", "remove", "origin"], cwd=dst,
-                   capture_output=True, text=True)
+# scripts/crb-harvest-artifacts.py:60-65
+for root, dirs, files in os.walk(clone, followlinks=False):
+    dirs[:] = [d for d in dirs
+               if d != ".git" and not (Path(root) / d).is_symlink()]
+```
+
+and a symlinked *file* is neither hashed nor copied:
+
+```python
+# scripts/crb-harvest-artifacts.py:70-73
+# A symlink is not an artifact, and copying one preserves a pointer
+# into the host filesystem that a later reader would follow.
+if fp.is_symlink() or not fp.is_file():
+    continue
+```
+
+Exercised by *"a symlinked artifact is not harvested and not followed"* (`test/crb-harvest-artifacts.bats:115-127`), which plants both a symlinked file (`/etc/passwd`) and a symlink to a directory outside the clone and asserts `harvested 0 artifact(s)`; it passed. Caps: `MAX_FILE_BYTES`, `MAX_TOTAL_BYTES`, `MAX_FILES` at `scripts/crb-harvest-artifacts.py:44-46`, enforced at `:110-119`, with the over-size case exercised by `test/crb-harvest-artifacts.bats:128-140` (passed).
+
+**Evidence:** `scripts/crb-harvest-artifacts.py:22-25`, `scripts/crb-harvest-artifacts.py:39-46`, `scripts/crb-harvest-artifacts.py:57-125`, `test/crb-harvest-artifacts.bats:115-140`, `docs/reviews/execution-logs/cfc-r3-bats-2026-08-19.txt`
+Executed: `bats test/…` (four suites), cwd `/workspace`, exit 0, 2026-08-19T23:07:02Z.
+
+---
+
+## Claim 23: "Clones are SHALLOW (--depth, default 50) … Measured on the 5-PR pilot: 33-195 MB each (see clone_mb in the manifest)."
+
+**Location:** `scripts/crb-materialize.py:18-20`
+**Type:** Configuration
+**Verdict:** Verified
+**Confidence:** High
+**Verification mode:** executed
+**Legibility-target:** for-orchestrator-synthesis
+**Scope:** Covers the depth default and the quoted size range against the checked-in manifest and the clones on disk; does not establish the range for the 45 unmaterialized PRs.
+
+The default is 50:
+
+```python
+# scripts/crb-materialize.py:469
+ap.add_argument("--depth", type=int, default=50, help="shallow clone depth (default 50)")
+```
+
+and `clone_mb` in the manifest ranges 33 (discourse-graphite-PR4) to 195 (sentry-greptile-PR5), matching the quoted bounds exactly. Measured apparent sizes today are 32–205 MB (`docs/reviews/execution-logs/cfc-r3-disk-2026-08-19.txt`), consistent with the manifest figures given that `dir_mb()` omits directory entries (`scripts/crb-materialize.py:180-189`).
+
+**Evidence:** `scripts/crb-materialize.py:18-20`, `scripts/crb-materialize.py:180-189`, `scripts/crb-materialize.py:469`, `runs/review-arms/crb/instances.json`, `docs/reviews/execution-logs/cfc-r3-disk-2026-08-19.txt`
+Executed: `du -sm --apparent-size external/crb-eval/*`, cwd `/workspace`, exit 0, 2026-08-19T23:09:53Z.
+
+---
+
+## Claim 24: "So the host does not read a used `.git` at all."
+
+**Location:** `scripts/crb-materialize.py:30-32` (restated at `docs/decisions/034-…:34-40` "no host `git` remains anywhere in the cell path", `docs/working/crb-direction1-setup.md:126-127`)
+**Type:** Invariant
+**Verdict:** Mostly accurate
+**Confidence:** High
+**Verification mode:** static
+**Legibility-target:** for-author
+**Scope:** Covers every host-side git invocation reachable from this script and the runner; does not assess whether the residual path is exploitable in practice (no cell has yet run — `runs/review-arms/crb-pipeline/` contains no cell directories, so no clone on disk is container-written today).
+
+For the **cell path** the claim holds exactly, and is test-pinned: the runner issues no git against the clone (`test/crb-egress-config.bats:94-99`, passed), the restore is `rmtree` + `tar --extract` with no git (`scripts/crb-materialize.py:359-366`), `--verify` inspects a temp extract of the hash-pinned baseline rather than the work clone (`scripts/crb-materialize.py:534-555`), and the audit runs in a container.
+
+The residual is `--snapshot`, which runs host git against whatever tree sits at `DST_ROOT/slug`:
+
+```python
+# scripts/crb-materialize.py:524-530
+                    # Clears materialize()'s own FETCH_HEAD and any dangling
+                    # origin/HEAD, so the baseline starts from the same state a
+                    # freshly materialized clone would.
+                    scrub_object_store(dst)
+                    n_commits, stat = verify_containment(dst, slug, head)
+```
+
+`scrub_object_store` issues `git symbolic-ref -d`, `git reflog expire` and `git gc` (`scripts/crb-materialize.py:242-246`) and `verify_containment` issues `git rev-parse`, `git rev-list`, `git remote` and `git diff` (`scripts/crb-materialize.py:208-219`) — all on the host. The only code-level guard is a refusal to overwrite an **existing** baseline:
+
+```python
+# scripts/crb-materialize.py:519-523
+                    if (BASELINE_ROOT / f"{slug}.tar").exists() and not args.force:
+                        raise RuntimeError(
+                            "a baseline already exists. Re-snapshotting is only correct "
+                            "on a clone NO container has run against — pass --force if "
+                            "that is true, or re-materialize with --slug --force.")
+```
+
+which does not fire for a clone that has no baseline yet — precisely the five pilot clones, and precisely the case `run-host.sh` directs the operator to (`runs/review-arms/crb-pipeline/run-host.sh:415-417`). The invariant on that path is documented (`scripts/crb-materialize.py:290-296`, "ONLY EVER CALL THIS ON A CLONE NO CONTAINER HAS TOUCHED") rather than enforced. Precise version: *"no host `git` runs against a used `.git` in the cell path; `--snapshot` is the one host-git entry point, and its precondition — a clone no container has touched — is the operator's to honour."*
+
+**Evidence:** `scripts/crb-materialize.py:22-32`, `scripts/crb-materialize.py:192-246`, `scripts/crb-materialize.py:287-296`, `scripts/crb-materialize.py:509-555`, `runs/review-arms/crb-pipeline/run-host.sh:413-418`, `test/crb-egress-config.bats:94-99`, `docs/reviews/execution-logs/cfc-r3-pilot-clone-state-2026-08-19.txt`
+
+---
+
+## Claim 25: "`scripts/crb-materialize.py --all                      # all 50 (~13 GB w/ baselines)`"
+
+**Location:** `scripts/crb-materialize.py:38`
+**Type:** Configuration
+**Verdict:** Verified
+**Confidence:** Medium
+**Verification mode:** static
+**Legibility-target:** for-orchestrator-synthesis
+**Scope:** Covers the arithmetic behind the figure given the pilot measurements; does not establish that the 45 unmaterialized PRs match the pilot's mean size, which is the source of the Medium confidence.
+
+Extrapolating the measured pilot (670 MB for 5 clones, doubled by the uncompressed baseline tars — see Claim 1) to 50 PRs gives 6.7 GB × 2 = 13.4 GB, which "~13 GB w/ baselines" states correctly. This is the figure `docs/working/crb-direction1-setup.md:27` was not updated to match (Claim 5).
+
+**Evidence:** `scripts/crb-materialize.py:38`, `scripts/crb-materialize.py:298-324`, `runs/review-arms/crb/instances.json`, `docs/decisions/034-crb-egress-allowlist-and-disposable-clones.md:63`
+
+---
+
+## Claim 26: "Each record carries: url, source_repo, pr_title, fork, fork_url, head, base, commits, n_goldens, files_changed, insertions, deletions, clone_mb, depth, baseline_tar, baseline_sha256, baseline_mb, baseline_files_indexed."
+
+**Location:** `scripts/crb-materialize.py:44-50`
+**Type:** Configuration
+**Verdict:** Verified
+**Confidence:** High
+**Verification mode:** static
+**Legibility-target:** for-orchestrator-synthesis
+**Scope:** Covers the fields a record written by `materialize()` carries; does not establish that the checked-in `instances.json` (written before this commit) already has the four baseline fields — it does not, which is expected and is what `--snapshot` adds.
+
+The record is assembled from exactly these keys, in two steps:
+
+```python
+# scripts/crb-materialize.py:432-444 (abridged)
+    rec = {
+        "url": url, "source_repo": …, "pr_title": …,
+        "fork": fork, "fork_url": remote, "head": head, "base": base,
+        "commits": n_commits, "n_goldens": …,
+        "files_changed": files, "insertions": ins, "deletions": dels,
+        "clone_mb": mb, "depth": depth,
+    }
+    rec.update(snapshot_baseline(dst, slug))
+```
+
+and `snapshot_baseline` returns exactly the four baseline keys (`scripts/crb-materialize.py:312-324`). No listed key is absent and no unlisted key is present.
+
+**Evidence:** `scripts/crb-materialize.py:44-50`, `scripts/crb-materialize.py:312-324`, `scripts/crb-materialize.py:432-445`
+
+---
+
+## Claim 27: "materialize()'s own fetches write both [FETCH_HEAD and unreachable commits], so unless they are cleared here EVERY baseline would carry them and EVERY cell would void — and the checks would mean nothing. Clearing them is what makes their later presence evidence."
+
+**Location:** `scripts/crb-materialize.py:226-237` (`scrub_object_store` docstring; restated at `scripts/crb-materialize.py:413-415`)
+**Type:** Behavioral / Invariant
+**Verdict:** Verified
+**Confidence:** High
+**Verification mode:** executed
+**Legibility-target:** for-orchestrator-synthesis
+**Scope:** Covers that materialize()'s clone/fetch/ref-prune sequence leaves both artefacts and that the scrub clears both, reproduced against a local fixture fork; does not establish the count of unreachable commits for any particular benchmark fork (it depends on how far the fork's default branch has advanced past the merge-base).
+
+Reproduced from scratch. A bare "fork" with a default branch two commits deep plus `refs/pull/1/head`, put through exactly the steps at `scripts/crb-materialize.py:387-412` (clone `--no-checkout --depth=50`, fetch the PR head, checkout, `branch -f main <merge-base>`, `remote remove origin`, prune all other refs), then measured before and after the scrub:
+
+```
+# docs/reviews/execution-logs/cfc-r3-scrub-reproduction-2026-08-19.txt
+=== BEFORE scrub_object_store
+FETCH_HEAD: present
+unreachable commits: 1
+=== AFTER scrub_object_store (reflog expire --expire=now --all; gc --quiet --prune=now; unlink FETCH_HEAD)
+FETCH_HEAD: absent
+unreachable commits: 0
+```
+
+Both are exactly the two conditions the audit voids on (`scripts/crb-audit-clone.sh:55`, `:60-62`), so without the scrub every cell would void — the docstring's claim, confirmed. The claim is further corroborated on real data: all five existing pilot clones, materialized before the ordering fix, still carry `FETCH_HEAD` (`docs/reviews/execution-logs/cfc-r3-pilot-clone-state-2026-08-19.txt`), which is why `--snapshot` calls the scrub before baselining them (`scripts/crb-materialize.py:524-527`).
+
+The scrub itself is:
+
+```python
+# scripts/crb-materialize.py:242-246
+    subprocess.run(["git", "symbolic-ref", "-d", "refs/remotes/origin/HEAD"],
+                   cwd=dst, capture_output=True, text=True)
     sh(["git", "reflog", "expire", "--expire=now", "--all"], cwd=dst)
     sh(["git", "gc", "--quiet", "--prune=now"], cwd=dst)
+    (dst / ".git" / "FETCH_HEAD").unlink(missing_ok=True)
 ```
 
-and a fork whose default branch already contained the merged PR could not materialize at all, because `merge-base(review, origin/HEAD)` would equal the head and `verify_containment` rejects an empty range: `if n_commits == 0 or not stat: raise RuntimeError(f"{slug}: empty review range …")` (`scripts/crb-materialize.py:194-195`).
-
-The imprecision is the word "not a descendant". A merge commit that lands PR #1 on the base branch has the PR head as a parent and therefore *does* descend from it (paraphrased — no quote available because this is git DAG semantics, not a snippet in this repo). The claim holds because such a commit is absent from the clone, not because descent fails — so descent-from-head is not, on its own, evidence that a commit is agent-authored. The precise version: "the merged upstream fix is *absent from* this clone, and (per Claim 21b) the routes that could introduce it are the ones the checks below must catch."
-
-**Evidence:** `scripts/crb-materialize.py:194-196`, `scripts/crb-materialize.py:199-215`, `scripts/crb-materialize.py:280-301`
+**Evidence:** `scripts/crb-materialize.py:225-246`, `scripts/crb-materialize.py:387-416`, `scripts/crb-audit-clone.sh:51-62`, `docs/reviews/execution-logs/cfc-r3-scrub-reproduction-2026-08-19.txt`, `docs/reviews/execution-logs/cfc-r3-pilot-clone-state-2026-08-19.txt`
+Executed: `bash scratchpad/repro.sh` (fixture fork + materialize steps + scrub), cwd `/workspace`, exit 1 (from `set -e` on the final `grep -c` matching zero lines — i.e. the expected zero unreachable commits; all steps completed, see the log's trailing note), 2026-08-19T23:09:32Z.
 
 ---
 
-## Claim 21b: "with no remote there is no route to fetch it"
+## Claim 28: "Symlinks are never followed and never indexed, in either direction: a symlinked directory is the one way an os.walk could leave the clone."
 
-**Location:** `scripts/crb-materialize.py:207-208`
-**Type:** Invariant / Error-handling
-**Verdict:** Incorrect
-**Confidence:** High
-**Verification mode:** executed
-**Scope:** Covers whether the absence of a configured remote prevents fetching, and whether such a fetch is visible to the harness's containment checks; does not assert that any agent has done this, nor quantify likelihood.
-
-`git fetch` accepts a URL directly and needs no configured remote. Executed in a scratch repo with zero remotes: `git fetch <path-to-other-repo> master` exited 0, wrote `FETCH_HEAD`, and made the "answer key" commit reachable (`git show FETCH_HEAD` printed it) while `git remote` stayed empty.
-
-Both harness checks miss this. The remote check reads the config only — `remotes = sh(["git", "remote"], cwd=dst)` (`scripts/crb-materialize.py:231`) — and the stray check enumerates refs only:
-
-```python
-# scripts/crb-materialize.py:210-211
-    strays = [l for l in sh(["git", "rev-list", "--all", "--not", head],
-                            cwd=dst).splitlines() if l]
-```
-
-`git rev-list --all` walks `refs/`, which does not include `FETCH_HEAD`; the executed run confirms `git rev-list --all --not HEAD` printed nothing while the fetched commit was reachable by name. The container the claim protects has an unrestricted network, `--dangerously-skip-permissions` and a read-write `/repo` mount (`runs/review-arms/crb-pipeline/run-host.sh:274-285`), so the route is available in the arm as configured. The precise version: "no *configured* remote survives, and a re-added remote voids the cell; a URL-argument fetch leaves no remote and no ref, and is therefore not detected."
-
-Command: `git fetch "$PWD/up" master` in a clone with `origin` removed (exp2 in the log); cwd `$TMPDIR/r3exp`; exit 0; 2026-08-18T19:46:13-07:00.
-
-**Evidence:** `scripts/crb-materialize.py:199-215`, `scripts/crb-materialize.py:231-234`, `runs/review-arms/crb-pipeline/run-host.sh:274-285`, `docs/reviews/execution-logs/r3-bash-git-semantics.txt`
-
----
-
-## Claim 22: "Raises RuntimeError — i.e. VOIDS the cell — only for contamination: a surviving remote, or a commit reachable outside the reviewed head's ancestry."
-
-**Location:** `scripts/crb-materialize.py:222-225`
-**Type:** Error-handling
-**Verdict:** Verified
-**Confidence:** Medium
-**Verification mode:** static
-**Scope:** Covers the two explicit `raise` sites in `reset_clone` and the caller's handling; does not cover incidental `RuntimeError`s from `sh(..., check=True)` when a git command fails for unrelated reasons (e.g. a locked index), which the caller also treats as a containment failure.
-
-The only explicit raises are the two named (quoted under Claim 2). Note the "only" is qualified in practice: every `sh()` call in `reset_clone` uses `check=True` and so raises on any git failure —
-
-```python
-# scripts/crb-materialize.py:67-69
-    if check and r.returncode != 0:
-        raise RuntimeError(f"{' '.join(args)} failed ({r.returncode}): "
-                           f"{(r.stderr or '').strip()[:500]}")
-```
-
-— and the caller catches `Exception` broadly and reports "CONTAINMENT CHECK FAILED" (`scripts/crb-materialize.py:375-377`). This fails safe (a git error voids rather than passes), so the claim's practical direction holds.
-
-**Evidence:** `scripts/crb-materialize.py:63-70`, `scripts/crb-materialize.py:218-259`, `scripts/crb-materialize.py:372-378`
-
----
-
-## Claim 23: "`-B` moves `review` back onto the pinned head from wherever HEAD now is; `--force` discards worktree state; the explicit `reset --hard` then guarantees the index matches too"
-
-**Location:** `scripts/crb-materialize.py:241-243`
-**Type:** Behavioral
-**Verdict:** Verified
-**Confidence:** High
-**Verification mode:** executed
-**Scope:** Covers the three stated effects as exercised by the bats fixtures (moved branch, dirty worktree, staged edit); does not cover a clone left with a detached HEAD mid-rebase or an in-progress merge.
-
-```python
-# scripts/crb-materialize.py:244-245
-    sh(["git", "checkout", "--force", "--quiet", "-B", "review", head], cwd=dst)
-    sh(["git", "reset", "--hard", "--quiet", head], cwd=dst)
-```
-
-The index claim is directly pinned: `test/crb-containment-reset.bats:92-100` stages a contaminated edit and asserts both the restored content and `[ -z "$(git -C "$CLONE" status --porcelain)" ]`; it passes (`ok 19 a staged edit to a tracked file is undone`). The branch-move and worktree claims are pinned by `ok 20`, `ok 22` and `ok 23` in the same captured run.
-
-Command: `bats test/crb-containment-reset.bats …`; cwd `/workspace`; exit 0; 2026-08-18T19:44:22-07:00.
-
-**Evidence:** `scripts/crb-materialize.py:241-253`, `test/crb-containment-reset.bats:92-140`, `docs/reviews/execution-logs/r3-bats-crb.txt`
-
----
-
-## Claim 24: "(lines, checked) — sweep cells that are NOT in the judged subset … Reporting the count is not enough — the reader needs to know which PRs left and why."
-
-**Location:** `scripts/crb-subset-leaderboard.py:41-49`
-**Type:** Behavioral
-**Verdict:** Verified
-**Confidence:** High
-**Verification mode:** static
-**Scope:** Covers the return shape and the per-slug reason strings; does not establish that the four reason branches are exhaustive of real-world loss causes.
-
-The function returns a `(list, bool)` pair on all three exits (`return ([...], False)`, `return ([], True)`, `return ([...], True)` at `scripts/crb-subset-leaderboard.py:52-80`) and names each lost slug with a reason:
-
-```python
-# scripts/crb-subset-leaderboard.py:66-73
-        if slug in voided:
-            why = "voided by a post-run containment failure"
-        elif slug not in cells:
-            why = "no cell produced (missing clone, or pre-run containment failure)"
-        elif not url:
-            why = f"not in {MANIFEST.name} — cannot map the slug to a PR"
-        else:
-            why = "ran, but has no judged row (no reviewable output, or not injected)"
-        lost.append(f"     {slug:28} {why}")
-```
-
-**Evidence:** `scripts/crb-subset-leaderboard.py:40-80`
-
----
-
-## Claim 25: "Attrition is always measured against the PRs OUR tool was judged on, even under `--all-prs` where the displayed subset is everything"
-
-**Location:** `scripts/crb-subset-leaderboard.py:110-113`
-**Type:** Behavioral
-**Verdict:** Verified
-**Confidence:** High
-**Verification mode:** executed
-**Scope:** Covers the argument passed to `attrition()` under both scoping modes; does not cover the correctness of the ranking rows themselves.
-
-`our_urls` is computed independently of `--all-prs` and is what `attrition()` receives:
-
-```python
-# scripts/crb-subset-leaderboard.py:113-114
-    our_urls = sorted(u for u, tools in evals.items() if args.tool in tools)
-    urls = sorted(evals) if args.all_prs else our_urls
-```
-
-```python
-# scripts/crb-subset-leaderboard.py:169
-    att_lines, _checked = attrition(our_urls, Path(args.run_meta))
-```
-
-Pinned by `ok 30 attrition is reported under --all-prs too (subset scope is not the question)` in the captured run (cwd `/workspace`; exit 0; 2026-08-18T19:44:22-07:00).
-
-**Evidence:** `scripts/crb-subset-leaderboard.py:110-114`, `scripts/crb-subset-leaderboard.py:165-170`, `test/crb-subset-attrition.bats:94-99`, `docs/reviews/execution-logs/r3-bats-crb.txt`
-
----
-
-## Claim 26: "Written by run-host.sh. The leaderboard reads it to tell 'we ranked on 3 PRs' apart from 'we asked for 5 and 2 fell out'"
-
-**Location:** `scripts/crb_common.py:28-32`
-**Type:** Architectural / Configuration
-**Verdict:** Verified
-**Confidence:** High
-**Verification mode:** static
-**Scope:** Covers the path agreement and the field names shared between writer and reader; does not cover fields written but unread (`missing_cells`, `retried_cells` are written and only `missing_cells`'s information is recomputed by the reader).
-
-Path agreement: `RUN_META = WORKSPACE / "runs/review-arms/crb-pipeline/run-meta.json"` (`scripts/crb_common.py:32`) matches the writer, whose `OUT="$ROOT/runs/review-arms/crb-pipeline"` (`runs/review-arms/crb-pipeline/run-host.sh:54`) and which writes `"$OUT/run-meta.json"` (`runs/review-arms/crb-pipeline/run-host.sh:163`).
-
-Field agreement — the writer emits:
-
-```python
-# runs/review-arms/crb-pipeline/run-host.sh:207-212
-json.dump({"arm": "crb-pipeline", "payload_ref": ref, "payload_commit": sha,
-           "model": model, "cc_version": ccv, "cells": cells,
-           "requested_instances": req,
-           "missing_cells": [s for s in req if s not in cells],
-           "retried_cells": retried, "voided_cells": voided,
-```
-
-and the reader consumes exactly `cells`, `requested_instances`, `voided_cells` (quoted under Claim 8) — no name mismatch, so attrition cannot silently under-report through a typo'd field.
-
-**Evidence:** `scripts/crb_common.py:28-32`, `runs/review-arms/crb-pipeline/run-host.sh:54`, `runs/review-arms/crb-pipeline/run-host.sh:163`, `runs/review-arms/crb-pipeline/run-host.sh:207-212`, `scripts/crb-subset-leaderboard.py:56-58`
-
----
-
-## Claim 27: "32 cells, of which exactly 3 are known-bad: one budget exhaustion and two quota stubs" (`complete=29 incomplete=3`)
-
-**Location:** `test/crb-cell-status.bats:170-175`
-**Type:** Configuration
-**Verdict:** Verified
-**Confidence:** High
-**Verification mode:** executed
-**Scope:** Covers the corpus split and the identity of the three incomplete cells as of the checked-in artifacts; does not establish that the split is *correct* in the sense of matching a human's judgment of each body.
-
-Independent enumeration of the 32 artifacts gives exactly three failures of the predicate: `e7-fable-3x/mfc-hygiene/rep1` (`is_error=True`, `error_max_budget_usd`), `e7-fable-3x/mfc-postfix/rep2` (56-char body) and `e7-fable-3x/mfc-postfix/rep3` (51-char body) — every other cell has `is_error=False`, `subtype='success'` and a body ≥ 1208 chars (paraphrased — no quote available because the split was computed by iterating data files). The suite's own assertions agree:
-
-```bash
-# test/crb-cell-status.bats:172-175
-  [[ "$output" == *"complete=29 incomplete=3"* ]]
-  [[ "$output" == *"mfc-hygiene/rep1"* ]]
-  [[ "$output" == *"mfc-postfix/rep2"* ]]
-  [[ "$output" == *"mfc-postfix/rep3"* ]]
-```
-
-Command: `bats test/crb-cell-status.bats test/crb-containment-reset.bats test/crb-subset-attrition.bats`; cwd `/workspace`; exit 0; 2026-08-18T19:44:22-07:00; `ok 14 verdicts on all checked-in result.json files are unchanged`.
-
-**Evidence:** `test/crb-cell-status.bats:148-176`, `runs/review-arms/`, `docs/reviews/execution-logs/r3-bats-crb.txt`
-
----
-
-## Claim 28: "a `git branch -f review` here would fail exactly the way materialize() warns about at crb-materialize.py:221-223"
-
-**Location:** `test/crb-containment-reset.bats:114-115`
-**Type:** Reference
-**Verdict:** Stale
-**Confidence:** High
-**Verification mode:** static
-**Scope:** Covers the cited line range only; the substantive point (materialize() warns about force-updating a checked-out branch) is still true at the new location.
-
-`crb-materialize.py:221-223` in the *parent* commit held the warning the test cites:
-
-```python
-# git show HEAD~1:scripts/crb-materialize.py, lines 221-223
-    # Check out `review` FIRST: on forks whose default branch is itself named
-    # `main`, HEAD still points at it after --no-checkout, and git refuses to
-    # force-update the branch that is checked out.
-```
-
-The same commit that added this test inserted `classify_strays`/`reset_clone` above it, so at `cf6e7c9` those lines are inside `reset_clone`'s docstring:
-
-```python
-# scripts/crb-materialize.py:221-223
-    Raises RuntimeError — i.e. VOIDS the cell — only for contamination:
-    a surviving remote, or a commit reachable outside the reviewed head's
-    ancestry. Agent-authored commits on top of the head are reset, not voided.
-```
-
-The warning now lives at `scripts/crb-materialize.py:285-287`.
-
-**Evidence:** `test/crb-containment-reset.bats:113-116`, `scripts/crb-materialize.py:218-230`, `scripts/crb-materialize.py:285-289`
-
----
-
-## Claim 29: "Hermetic: synthetic evaluations/run-meta in BATS_TEST_TMPDIR. It does read the real runs/review-arms/crb/instances.json … which is read-only."
-
-**Location:** `test/crb-subset-attrition.bats:15-17`
+**Location:** `scripts/crb-materialize.py:268-270` (`artifact_index` docstring)
 **Type:** Invariant
 **Verdict:** Verified
 **Confidence:** High
 **Verification mode:** executed
-**Scope:** Covers the suite's writes and its one real-file read; does not cover the other two suites' hermeticity claims beyond the observed clean tree.
+**Legibility-target:** for-orchestrator-synthesis
+**Scope:** Covers `artifact_index`'s own walk; does not cover `dir_mb()` at `scripts/crb-materialize.py:180-189`, which walks with the default `followlinks=False` but does not filter symlinked entries — it only sums sizes, so no escape follows from that.
 
-The suite writes only under `$BATS_TEST_TMPDIR`:
+Same two-layer construction as the harvest (Claim 22), and the two walks are deliberately identical so the baseline and the diff agree:
 
-```bash
-# test/crb-subset-attrition.bats:29, 48
-  python3 - "$MANIFEST" "$1" "$TOOL" "$BATS_TEST_TMPDIR/evaluations.json" <<'PY'
-  python3 - "$MANIFEST" "$BATS_TEST_TMPDIR/run-meta.json" "${1:-}" <<'PY'
+```python
+# scripts/crb-materialize.py:272-283
+    for root, dirs, files in os.walk(dst, followlinks=False):
+        dirs[:] = [d for d in dirs
+                   if d != ".git" and not (Path(root) / d).is_symlink()]
+        for name in files:
+            if not name.endswith(ARTIFACT_SUFFIXES):
+                continue
+            fp = Path(root) / name
+            if fp.is_symlink() or not fp.is_file():
+                continue
+            index[str(fp.relative_to(dst))] = sha256_file(fp)
 ```
 
-and reads the manifest via `export MANIFEST="$REPO_ROOT/runs/review-arms/crb/instances.json"` (`test/crb-subset-attrition.bats:22`) without writing it. After the full 32-test run, `git status --porcelain` showed no modification to `runs/review-arms/crb/instances.json` or any tracked file (paraphrased — no quote available because this is an absence-of-output observation).
+`followlinks=False` is what stops descent through a symlinked directory (the `dirs[:]` filter is the belt to that braces, and also keeps the entry out of the walk's own bookkeeping). Exercised by *"artifact_index covers .md/.json, skips .git, and ignores symlinks"* (`test/crb-disposable-clone.bats:153-164`), which plants `ln -s /etc/passwd evil.md` and asserts it is absent from the index; it passed.
 
-Command: `bats … test/crb-subset-attrition.bats`; cwd `/workspace`; exit 0; 2026-08-18T19:44:22-07:00.
-
-**Evidence:** `test/crb-subset-attrition.bats:15-60`, `docs/reviews/execution-logs/r3-bats-crb.txt`
+**Evidence:** `scripts/crb-materialize.py:257-284`, `test/crb-disposable-clone.bats:153-164`, `docs/reviews/execution-logs/cfc-r3-bats-2026-08-19.txt`
+Executed: `bats test/…` (four suites), cwd `/workspace`, exit 0, 2026-08-19T23:07:02Z.
 
 ---
 
-## Claim 30: "the load-bearing assertions here are the two negatives — a re-added remote and a commit outside the reviewed ancestry must still fail, or the fix has quietly disarmed the answer-key guard"
+## Claim 29: "materialize() calls it immediately after verify_containment(); the CLI mode refuses to overwrite an existing baseline without --force for the same reason."
 
-**Location:** `test/crb-containment-reset.bats:15-17`
+**Location:** `scripts/crb-materialize.py:293-296` (`snapshot_baseline` docstring)
 **Type:** Architectural
 **Verdict:** Verified
 **Confidence:** High
-**Verification mode:** executed
-**Scope:** Covers that the two named negative cases exist and fail-as-required; does not establish that they are *sufficient* to detect every contamination route (Claim 21b names one they do not cover).
+**Verification mode:** static
+**Legibility-target:** for-orchestrator-synthesis
+**Scope:** Covers the call ordering in `materialize()` and the CLI's overwrite refusal; does not establish that the refusal is sufficient to enforce the docstring's stated precondition on a *first* snapshot — Claim 24 covers that gap.
 
-Both negatives exist and assert a void:
+Ordering in `materialize()`: `verify_containment` at `scripts/crb-materialize.py:418`, then the record is built, then
 
-```bash
-# test/crb-containment-reset.bats:145-151
-@test "a re-added remote still VOIDS the cell" {
-  git -C "$CLONE" remote add origin https://example.invalid/x.git
-  reset_and_verify
-  [ "$status" -eq 1 ]
-  [[ "$output" == *VOID* ]]
-  [[ "$output" == *remote* ]]
+```python
+# scripts/crb-materialize.py:444
+    rec.update(snapshot_baseline(dst, slug))
 ```
 
-plus a third (`a tag pointing outside the reviewed ancestry still VOIDS the cell`, `test/crb-containment-reset.bats:167-178`). All three pass (`ok 24`, `ok 25`, `ok 26`).
+with the comment at `:439-443` giving the same reason. The CLI refusal is quoted in Claim 24 (`scripts/crb-materialize.py:519-523`), and the `--snapshot` path also re-runs `verify_containment` before snapshotting (`scripts/crb-materialize.py:528`). The baseline is published atomically via a `.part` rename (`scripts/crb-materialize.py:299-305`), so a partially written tar is never restorable — pinned negatively by *"a tampered baseline refuses to restore"* (`test/crb-disposable-clone.bats:132-139`, passed).
 
-Command: `bats test/crb-containment-reset.bats …`; cwd `/workspace`; exit 0; 2026-08-18T19:44:22-07:00.
+**Evidence:** `scripts/crb-materialize.py:287-324`, `scripts/crb-materialize.py:418-445`, `scripts/crb-materialize.py:511-533`, `test/crb-disposable-clone.bats:132-151`
 
-**Evidence:** `test/crb-containment-reset.bats:142-178`, `docs/reviews/execution-logs/r3-bats-crb.txt`
+---
+
+## Claim 30: "This replaced reset_clone(), which repaired the clone in place with `checkout --force` / `reset --hard` / `clean -qffdx` / `gc` / `fsck` — all of them HOST git commands…"
+
+**Location:** `scripts/crb-materialize.py:329-339` (`restore_clone` docstring)
+**Type:** Reference / Architectural
+**Verdict:** Verified
+**Confidence:** High
+**Verification mode:** static
+**Legibility-target:** for-orchestrator-synthesis
+**Scope:** Covers the accuracy of the enumeration against the deleted `reset_clone()`; does not re-verify the reviewer's five execution paths, which are taken from the 2026-08-19 rubric.
+
+Every command named appears in the deleted function or the helpers it called, at the parent commit:
+
+```python
+# scripts/crb-materialize.py@197eec6^:348-362 (abridged)
+    sh(["git", "checkout", "--force", "--quiet", "-B", "review", head], cwd=dst)
+    sh(["git", "reset", "--hard", "--quiet", head], cwd=dst)
+    …
+    sh(["git", "clean", "-qffdx"], cwd=dst)
+```
+
+with `gc` in `scrub_object_store` (`scripts/crb-materialize.py@197eec6^:311`) and `fsck` in `fetch_traces` (`scripts/crb-materialize.py@197eec6^:246`), both called from the same reset path. `reset_clone`, `fetch_traces` and `classify_strays` are absent from the current file (paraphrased — no quote available because the claim covers the absence of code: grep for those three names across `scripts/` and `runs/` returns no hits). The five execution paths and the `core.worktree` redirect match the rubric's R1/R2 rows verbatim (`docs/reviews/code-review-rubric-2026-08-19-feat-crb-direction1-harness.md:93-94`).
+
+**Evidence:** `scripts/crb-materialize.py:327-346`, `scripts/crb-materialize.py@197eec6^:246,311,340-366`, `docs/reviews/code-review-rubric-2026-08-19-feat-crb-direction1-harness.md:93-94`
+
+---
+
+## Claim 31: "Tests: 37 new across four suites (disposable-clone, audit-clone, harvest-artifacts, egress-config)"
+
+**Location:** commit `197eec6` message, body
+**Type:** Configuration
+**Verdict:** Verified
+**Confidence:** High
+**Verification mode:** executed
+**Legibility-target:** for-orchestrator-synthesis
+**Scope:** Covers the count and the suite names, and that all 37 pass in this environment; does not assess the tests' strength or coverage.
+
+Counts per suite: `crb-disposable-clone.bats` 9, `crb-audit-clone.bats` 10, `crb-harvest-artifacts.bats` 9, `crb-egress-config.bats` 9 — total 37, matching the claim, and all four files are additions in this commit (`git show --stat 197eec6`). Executed:
+
+```
+# docs/reviews/execution-logs/cfc-r3-bats-2026-08-19.txt (summary)
+ok lines: 37   not ok lines: 0
+```
+
+**Evidence:** `test/crb-disposable-clone.bats`, `test/crb-audit-clone.bats`, `test/crb-harvest-artifacts.bats`, `test/crb-egress-config.bats`, `docs/reviews/execution-logs/cfc-r3-bats-2026-08-19.txt`
+Executed: `bats test/crb-audit-clone.bats test/crb-disposable-clone.bats test/crb-harvest-artifacts.bats test/crb-egress-config.bats`, cwd `/workspace`, exit 0, 2026-08-19T23:07:02Z.
+
+---
+
+## Claim 32: "test/crb-containment-reset.bats removed with the code it pinned, its load-bearing void cases carried into crb-audit-clone."
+
+**Location:** commit `197eec6` message, body (restated at `test/crb-audit-clone.bats:9-23`)
+**Type:** Reference / Architectural
+**Verdict:** Mostly accurate
+**Confidence:** High
+**Verification mode:** static
+**Legibility-target:** for-author
+**Scope:** Covers the case-by-case correspondence between the deleted suite's void cases and the new audit suite; does not assess whether the uncarried cases *should* have been carried, only that the claim's "carried" is not exhaustive.
+
+The removal is correct — `reset_clone`, `fetch_traces` and `classify_strays` are gone (Claim 30), so the suite that pinned them had nothing left to pin. Four of the deleted suite's void cases have direct counterparts:
+
+| deleted (`test/crb-containment-reset.bats@197eec6^`) | counterpart (`test/crb-audit-clone.bats`) |
+|---|---|
+| `:145` a re-added remote still VOIDS the cell | `:71` a surviving remote VOIDS |
+| `:153` a commit outside the reviewed ancestry still VOIDS | `:102` a commit that does not descend from the head VOIDS |
+| `:186` r1's exact attack: fetch by URL, delete the ref, commit on top | `:89` a fetched-then-deleted ref VOIDS via the unreachable commit |
+| `:202` a bare fetch by URL leaves FETCH_HEAD and VOIDS | `:79` a FETCH_HEAD trace VOIDS |
+
+Three cases from the deleted suite have **no counterpart in any of the four new suites** (paraphrased — no quote available because the claim covers the absence of tests: the four new `.bats` files contain no test creating a tag, no shallow-clone fixture, and no test asserting a benign sequence stays clean across two cells):
+
+- `:385` *"a tag pointing outside the reviewed ancestry still VOIDS the cell"* — the behaviour survives (`git rev-list --all` at `scripts/crb-audit-clone.sh:73` walks `refs/tags`), but nothing pins that a tag, specifically, reaches the check. A ref type is exactly the kind of thing a later narrowing (`--branches` instead of `--all`) would silently drop.
+- `:239` *"scrub_object_store is load-bearing — benign sequence VOIDS without it"* — the property this report verifies by hand in Claim 27 is now unpinned; nothing fails if `scrub_object_store` is deleted from `materialize()`.
+- `:284` *"fetch-trace detection is quiet on a SHALLOW clone"* — the false-positive control. `test/crb-audit-clone.bats`'s pristine fixture is a locally-created, non-shallow repo (`test/crb-audit-clone.bats:34-53`), so nothing establishes that a real `--depth=50` clone audits clean.
+
+Precise version: *"…its five load-bearing void cases carried into crb-audit-clone; the tag variant, the scrub non-vacuity case and the shallow-clone false-positive control were not carried."*
+
+**Evidence:** `test/crb-audit-clone.bats:9-23`, `test/crb-audit-clone.bats:34-158`, `test/crb-containment-reset.bats@197eec6^:145,153,186,202,239,284,385`, `scripts/crb-audit-clone.sh:69-81`
 
 ---
 
 ## Claims Requiring Attention
 
 ### Incorrect
-- **Claim 17** (`scripts/crb-cell-status.py:42-46`): "the shortest real review in the corpus is over 3 KB … 1000 sits an order of magnitude clear of both" — the shortest real review is 1208 chars and twenty corpus reviews sit between 1.2 and 3.0 KB, so the margin above `STUB_MAX_LEN` is ~20%, not an order of magnitude. Legibility-target: for-author.
-- **Claim 21b** (`scripts/crb-materialize.py:207-208`): "with no remote there is no route to fetch it" — `git fetch <URL>` needs no configured remote, leaves no remote and no ref, and is invisible to both `git remote` and `git rev-list --all`; executed proof in `docs/reviews/execution-logs/r3-bash-git-semantics.txt`. Legibility-target: for-author (and see Escalate — this is the same trust boundary as the still-open R3).
+- **Claim 4** (`docs/decisions/034-crb-egress-allowlist-and-disposable-clones.md:69-70`): "R6 … dissolves with them" is refuted — with the five existing clones and no baselines, `run-host.sh` still skips every instance (`skipped_bad`) and exits 3 having run nothing, which is R6's reported symptom verbatim; the remediation is still a one-shot operator command, renamed `--heal` → `--snapshot`. Restate as "R6's pre-run gate is gone; the equivalent precondition is a missing baseline, remediated once per clone by `--snapshot`."
+- **Claim 9b** (`runs/review-arms/crb-pipeline/docker/tinyproxy.conf:18-20`): `ConnectPort 443` is credited with refusing plain-HTTP proxying; `ConnectPort` scopes the CONNECT method only. Plain HTTP is refused by the `Filter`, not by `ConnectPort`, and `HTTP_PROXY`/`http_proxy` are exported to every cell. Restate the mechanism, and consider a fourth preflight leg covering `http://github.com/` and a non-443 `CONNECT` — both $0.
 
 ### Stale
-- **Claim 20** (`scripts/crb-materialize.py:174`): "run-host.sh calls this via `--verify`" — both call sites became `--reset` in this same commit; `verify_containment` is now reached through `--reset`. Legibility-target: for-author.
-- **Claim 28** (`test/crb-containment-reset.bats:114-115`): the cited `crb-materialize.py:221-223` pointed at the pre-commit line numbers; the warning is now at `:285-287`, and `:221-223` is `reset_clone`'s docstring. Legibility-target: for-author.
+- **Claim 5** (`docs/working/crb-direction1-setup.md:27`): `--all` still quoted at `~6-7 GB`, the pre-baseline figure; this commit's own docstring and decision record say `~13 GB`.
+- **Claim 13** (`runs/review-arms/crb-pipeline/run-host.sh:423-425`): "the tree reset below" — no reset exists below; the wipe moved to the next cell's `--restore` at the top of the loop. Also leaves a stray bare `#` at `:426`.
 
 ### Mostly Accurate
-- **Claim 5** (`docs/working/crb-direction1-setup.md:127-129`) and **Claim 14** (`scripts/crb-cell-status.py:20-21`): "3–7 KB" understates the range's floor — the eight e5 cells span 2.7–7.1 KB. Legibility-target: for-author.
-- **Claim 21a** (`scripts/crb-materialize.py:205-208`): "the merged upstream fix is not a descendant of the PR head" — true because the fix is absent from the clone, not because descent fails; a merge commit of the PR does descend from its head, so descent alone is not evidence of agent authorship. Legibility-target: for-author.
-
-### Verified (for-orchestrator-synthesis)
-Claims 1, 2, 3, 4, 6, 7, 8, 9, 10, 11, 12, 13, 15, 16, 18, 19, 22, 23, 24, 25, 26, 27, 29, 30. Notably: the four pre-mortem narratives this commit claims to close (reset semantics, attrition reporting, EXIT-trap provenance, the 1000-char stub band) each check out against the code and against the 32 executed tests.
+- **Claim 3** (`docs/decisions/034-…:67-68`): "strictly more complete" — the new harvest also refuses symlinked artifacts and caps files/bytes, so it can capture less than the old one; both are reported, not silent.
+- **Claim 7** (`runs/review-arms/crb-pipeline/docker/Dockerfile.review:6-8`): "needs exactly ONE reachable host" — one host is *required*; this repo's own base egress profile lists five more that Claude Code contacts (claude.ai, console.anthropic.com, sentry.io, statsig.com, registry.npmjs.org), and nothing disables the autoupdater or non-essential traffic. Say "requires" rather than "needs", or set the disabling env vars.
+- **Claim 8** (`runs/review-arms/crb-pipeline/docker/tinyproxy.conf:12-16`): `EGRESS_SUBNET` is a default, not a pin; overriding it desynchronises the baked `Allow` line (fails closed at preflight leg 1, and the bats test compares the default only).
+- **Claim 17b** (`scripts/crb-audit-clone.sh:10-13`): the quoted `docker run` line omits `-u node` and `--entrypoint bash`; run verbatim it would invoke `claude bash /audit.sh …` because the image's ENTRYPOINT is `claude`.
+- **Claim 18** (`scripts/crb-audit-clone.sh:23`): the exit legend maps "could not check" to 2, but an fsck error — the archetypal could-not-check — exits 1 by design (fail closed). Reword the legend.
+- **Claim 24** (`scripts/crb-materialize.py:30-32`): "the host does not read a used `.git` at all" holds for the cell path but not for `--snapshot`, which runs `symbolic-ref`/`reflog expire`/`gc`/`rev-list`/`diff` on the host against whatever tree is at `DST_ROOT/slug`; its precondition is documented, and enforced only when a baseline already exists.
+- **Claim 32** (commit message): three cases from the deleted suite have no counterpart — the tag-outside-ancestry void, the `scrub_object_store` non-vacuity case, and the shallow-clone false-positive control.
 
 ### Unverifiable
-None.
+- **Claim 9a** (`runs/review-arms/crb-pipeline/docker/tinyproxy.conf:18-20`): whether tinyproxy refuses CONNECT to non-443 ports cannot be established here — neither docker nor tinyproxy is installed (`which tinyproxy` → not found). A fourth preflight leg attempting `CONNECT api.anthropic.com:8443` would settle it at $0.
 
 ---
 
 ## Goal-Alignment Note
-- Answered: yes — 30 claims in `cf6e7c9` verdicted, report saved.
-- Out of scope: code-quality and security judgments (e.g. whether `reset_clone`'s void policy is *the right* policy, and the still-open R3 credential/network exposure) — those belong to `security-reviewer`; commits outside `cf6e7c9` were read as context only.
-- Escalate: Claim 21b is a factual refutation of a load-bearing containment claim, not just a comment fix — the answer-key guard does not detect a URL-argument `git fetch`, which the arm's container (unrestricted network, `--dangerously-skip-permissions`, read-write `/repo`) permits. Route it to `security-reviewer` alongside the open R3 before the sweep spends money. Claim 17's margin error should be fixed in the same pass, since a later reader raising `STUB_MAX_LEN` on the strength of the stated "3 KB" floor would re-introduce pre-mortem narrative 5.
+- Answered: yes — 34 claims verdicted against commit `197eec6`, with the docker-shaped absence treated as a known constraint rather than a defect.
+- Out of scope: code quality, security judgement, and test-design critique (sibling critics own those); the sweep's own dollar estimates and benchmark-injection logic, which this commit does not touch; sibling commits on the branch, consulted as context only.
+- Escalate: (1) Claim 4 — the decision record states R6 dissolved, but the shipped harness still exits 3 with zero cells against the five clones that exist; someone must run `--snapshot` on each before the sweep, and the doc should say so. (2) Claim 9b + 9a — the egress preflight has no plain-HTTP leg and no non-443 CONNECT leg; both are $0 additions and both cover paths the tinyproxy comment currently mis-attributes. (3) Claim 7 — whether a cell functions with a single reachable host is the one remaining unverified assumption gating paid spend; the preflight is the right place, and it is already wired.

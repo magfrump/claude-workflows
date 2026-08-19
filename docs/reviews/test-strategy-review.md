@@ -1,549 +1,208 @@
-# Test Strategy: CRB direction-1 harness, review-fix iteration 2
+# Test Strategy: CRB direction-1 harness — egress allowlist + disposable clones (197eec6)
 
-**Scope:** `git diff 59733d8..HEAD -- . ':!docs/reviews'` — commits cf6e7c9, 5bd0b09, 46a5f17
-**Under test:** `test/crb-cell-status.bats`, `test/crb-containment-reset.bats`, `test/crb-subset-attrition.bats` and the sources they pin (`scripts/crb-cell-status.py`, `scripts/crb-materialize.py`, `scripts/crb-subset-leaderboard.py`, `runs/review-arms/crb-pipeline/run-host.sh`)
-**Reviewed:** 2026-08-18
-**Method:** read + 30 source mutations executed against a scratch copy at `/workspace/.scratch/ts-mut` (repo never modified)
-
-All findings are **advisory (Consider tier)** unless explicitly marked otherwise. Two are marked
-`Soundness-Contradiction` because a comment in the diff asserts something the same diff's other
-comment measures as false, and because a named guard is provably not held by the test that claims
-to hold it.
-
----
+**Scope:** commit `197eec6` on `feat/crb-direction1-harness` — `scripts/crb-materialize.py` (rewritten), `scripts/crb-audit-clone.sh` (new), `scripts/crb-harvest-artifacts.py` (new), `runs/review-arms/crb-pipeline/run-host.sh` (rewired), `docker/{Dockerfile.review,Dockerfile.proxy,tinyproxy.conf,egress-allowlist}` (new), and the four new suites (`test/crb-{disposable-clone,audit-clone,harvest-artifacts,egress-config}.bats`, 37 tests) that replaced the deleted `test/crb-containment-reset.bats`.
+**Reviewed:** 2026-08-19
+**Method:** read the implementations, ran the four suites (37/37 green at 197eec6), then ran **21 mutations** against a throwaway worktree of 197eec6 — **7 caught, 14 survived**. Every finding below that says "survives" was executed, not inferred.
 
 ## Test Conventions
 
-- **Framework:** bats, one `.bats` file per concern in `test/`, discovered by `scripts/run-tests.sh`
-  via a mandatory `# @category fast|slow` header comment. All three new suites are tagged `fast`
-  and are picked up correctly.
-- **Hermeticity (decision 017):** tmpdir-only writes (`BATS_TEST_TMPDIR`), no network, no mutation
-  of tracked files. All three suites comply on writes. Two of them *read* mutable checked-in
-  artifacts (`runs/review-arms/**/result.json`, `runs/review-arms/crb/instances.json`) — see G1/G2.
-- **Python-under-test:** the repo has no pytest harness; python is exercised from bats either by
-  CLI invocation or by `importlib.util.spec_from_file_location` + direct function call. Both
-  patterns pre-exist; the inconsistency is not novel, but where it lands matters (G3).
-- **Style:** long "why this exists" header comments naming the pre-mortem narrative each suite
-  closes. Good practice, and the source of one of the defects below (a header comment that is
-  factually contradicted by the source it guards).
-
----
-
-## Mutation results — the requested deliverable
-
-30 mutations applied one at a time to a scratch copy; all 38 tests re-run per mutation.
-**22 caught, 10 missed.** Missed mutations, worst first:
-
-| # | Mutation | Result | Why it matters |
-|---|---|---|---|
-| M31 | `crb-materialize.py:489` — `note = reset_clone(...) if resetting else ""` → `note = ""` (i.e. `--reset` no longer resets) | **MISSED — 38/38 green** | The entire CLI surface `run-host.sh` actually calls is uncovered. G4 |
-| M18 | `crb-cell-status.py:62` — `STUB_MAX_LEN = 300` → `1000` (verbatim the cf6e7c9 bug that all three k=3 replicates caught) | **MISSED** | The suite's own headline regression is re-introducible silently. G5 |
-| M32 | `crb-materialize.py:482` — drop the `resetting and not base` guard | MISSED | New error branch, zero coverage. G6 |
-| M4 | `crb-materialize.py:261` — delete the `git fsck` error-trace check | MISSED | Test 15 asserts only the *heal*, never the *detect*. G7 |
-| M23 | `crb-cell-status.py:98` — delete the non-dict guard | MISSED | Test asserts exit 1; an uncaught traceback is also exit 1. G8 |
-| M29 | `crb-subset-leaderboard.py:69` — delete the "no cell produced" reason branch | MISSED | The pre-run-containment-failure / missing-clone drop is never exercised. G9 |
-| M5 | `crb-materialize.py:329-331` — delete `reset_clone`'s remote VOID | MISSED | Verdict is still VOID (held by `verify_containment`), so the *behaviour* is safe; the *named* guard is not pinned. G10 |
-| M8 | `crb-materialize.py:349` — delete `git reset --hard` | MISSED | Provably redundant with `checkout --force -B`; the comment claims it is what fixes staged edits. G11 |
-| M15 | `crb-materialize.py:312` — delete the `FETCH_HEAD.unlink()` in `scrub_object_store` | MISSED | Unreachable from the reset path (a fetch raises first); load-bearing only in `materialize()`, which has no tests. G12 |
-| M14 | `crb-materialize.py:247` — drop `--connectivity-only` | MISSED | Benign (perf flag) — but the bats comment claims it is what keeps fsck quiet on shallow clones, which `crb-materialize.py:243-245` measures as false. G13 |
-
-Caught (22, no action needed): FETCH_HEAD presence check; `--no-reflogs` removal; unreachable-commit
-check removal; foreign-commit VOID removal; `git clean -x`; ref-pruning loop; `main` restore;
-`scrub_object_store` call removal; dangling-symref heal; `STUB_MAX_LEN → 100000`; length-floor
-removal; `is_error`; `subtype`; `NON_REVIEW` list removal and partial truncation; voided-reason
-branch; `our_urls` → `urls`; markdown attrition block; silent missing-run-meta; stderr attrition
-emission; `classify_strays` neutering; dirty-path note.
-
-The suite is, on the whole, **not vacuous** — 22/30 is a good mutation score for hand-written
-guards, and the two negative-control tests (re-added remote, foreign commit) plus the explicit
-`scrub_object_store` non-vacuity test do real work. The misses cluster in one place: **the CLI /
-wiring layer that production actually invokes**, as opposed to the library functions.
-
----
+- **Framework:** bats, one file per unit under test in `test/`, `# @category fast` header, a prose block at the top of each file explaining *why* the file exists and which rubric item it answers.
+- **Hermeticity:** fixtures are throwaway git repos built in `BATS_TEST_TMPDIR`; no network, no docker, no writes outside the tmpdir. `scripts/hermeticity-lint` enforces the no-network half and is green (98 files checked).
+- **Python-under-bats pattern:** load the module with `importlib.util.spec_from_file_location`, monkeypatch `DST_ROOT` / `BASELINE_ROOT` / `MANIFEST`, drive one function (`run_mat` in `crb-disposable-clone.bats:54-80`). A **second** pattern exists for CLI-level drive: rewrite the module's three root constants into a patched copy and `subprocess.run` it (`crb-disposable-clone.bats:182-200`) — this is the anti-A3 pattern and it works (control C2 below).
+- **Non-vacuity tests are an established convention here**: `crb-audit-clone.bats:146` and `crb-cell-status.bats:194` both exist purely to prove another test can fail. That convention is the right home for most recommendations below.
+- **Shell-script assertions** are `grep`-over-source pins (`crb-egress-config.bats`), sometimes with an embedded python heredoc that line-continuation-joins `docker run` blocks first.
 
 ## Untested Paths Touched by the Change
 
-### G1 — corpus pin breaks on the first cell of the sweep it guards
-- **Severity:** High (advisory)
-- **Location:** `test/crb-cell-status.bats:152-178`
-- **Evidence:**
-  ```
-  for p in sorted(glob.glob(os.path.join(root, "runs/review-arms/**/result.json"),
-                            recursive=True)):
-  ...
-  [[ "$output" == *"complete=29 incomplete=3"* ]]
-  ```
-  and `runs/review-arms/crb-pipeline/run-host.sh:54`:
-  ```
-  OUT="$ROOT/runs/review-arms/crb-pipeline"
-  ```
-  `runs/review-arms/crb-pipeline/` is **not** in `.gitignore` (`git check-ignore` → not ignored).
-- **Reproduced:** wrote one synthetic `runs/review-arms/crb-pipeline/<slug>/result.json` into the
-  scratch copy; test 32 fails immediately (`complete=29 incomplete=3` no longer matches).
-- **Answering the direct question — good test or brittle?** *Both, and the brittleness is fatal in
-  this specific layout.* The idea (pin verdicts on the corpus the rules were derived from) is right
-  and it is the only test that would catch a rule change moving a real cell across the line. The
-  execution couples a hard-coded count to a directory the harness under test writes into. The
-  first `$10-40` cell of the real sweep turns this suite red, and a red suite during a live sweep
-  is a suite people start ignoring — exactly when the predicate's verdicts matter most.
-- **Fix (cheap):** restrict the glob to the fixed historical arms (`runs/review-arms/e*/`,
-  `mfc-*`, `fc-model-sweep`, …) or exclude `crb-pipeline/`; better, assert the split *per known
-  path* (the three named INCOMPLETE files, plus "no other file is INCOMPLETE") rather than a total
-  count, so adding cells is not a failure but a *new* incomplete cell is.
-- **Confidence:** High (executed)
-- **Legibility-target:** for-author
+Mutation results are quoted per gap: **survived** = the suite stayed 37/37 green with the control removed.
 
-### G2 — attrition suite breaks when the manifest grows past 5 (i.e. at `--all`)
-- **Severity:** Medium (advisory)
-- **Location:** `test/crb-subset-attrition.bats:22, 68-99`
-- **Evidence:**
-  ```
-  export MANIFEST="$REPO_ROOT/runs/review-arms/crb/instances.json"
-  ...
-  [[ "$output" == *"5 PR(s)"* ]]
-  [[ "$output" == *"SUBSET ATTRITION: 2 of 5"* ]]
-  ```
-  The manifest currently holds 5 entries; the setup doc's target is 50.
-- **Reproduced:** added 6 synthetic manifest entries in the scratch copy → tests 1, 2 and 4 fail.
-- **Fix:** synthesize the manifest in `BATS_TEST_TMPDIR` and point the script at it, or derive the
-  expected counts from `len(manifest)` instead of literals. The header comment defends reading the
-  real manifest as "the same coupling the script has in production" — true for the *mapping*, not
-  for the *cardinality*.
-- **Confidence:** High (executed)
-- **Legibility-target:** for-author
+- **G1** — `scripts/crb-materialize.py:225-246` — `scrub_object_store()`: the reflog-expire / `gc --prune=now` / `FETCH_HEAD` unlink that makes every later audit check non-vacuous — **not covered**. `grep -rn scrub_object_store test/` returns zero hits. Mutation: replaced the whole body with `return` → **37/37 green**. The deleted suite had a dedicated non-vacuity test for exactly this (`crb-containment-reset.bats:239`, "scrub_object_store is load-bearing"); it did not carry over.
+- **G2** — `scripts/crb-materialize.py:519-523` — the `--snapshot` refusal when a baseline already exists and `--force` was not passed ("the only guard against laundering a used clone into the baseline", per its own comment) — **not covered**. Mutation: `if False:` → **37/37 green**. The suite drives `snapshot_baseline()` through `importlib` only; the CLI `--snapshot` path has no test at all. This is A3's exact shape, one function over.
+- **G3** — `scripts/crb-materialize.py:502-507` — the `--verify`/`--snapshot` refusal for a slug absent from the manifest ("cannot pin the reviewed head, so containment is unverifiable"), including the deliberate `and not args.restore` carve-out — **not covered**. Mutation: `if False:` → **37/37 green**.
+- **G4** — `scripts/crb-materialize.py:364-365` — `restore_clone()`'s "restored tree has no `.git` — baseline is corrupt" guard, i.e. the truncated-but-hash-matching baseline — **not covered**. Mutation: deleted → **37/37 green**.
+- **G5** — `runs/review-arms/crb-pipeline/run-host.sh:209-214` — egress preflight **leg 2's accept set** (`403|000` → ok, anything else → `exit 5`) — **not covered**. Mutation: widened to `200|403|000` → **37/37 green**. `crb-egress-config.bats:110-118` pins only the *echo strings* and `grep -c 'exit 5' >= 3`, neither of which moves.
+- **G6** — `runs/review-arms/crb-pipeline/run-host.sh:220-222` — leg 3's condition `[ "$direct" = "000" ]`, the leg that proves the network is `--internal` — **not covered**. Mutation: `[ -n "$direct" ]` (passes for *any* HTTP status, including 200) → **37/37 green**.
+- **G7** — `runs/review-arms/crb-pipeline/run-host.sh:159` — `docker network create --internal` — **not covered**. Mutation: `--internal` removed → **37/37 green**. (Runtime leg 3 would catch it *if* leg 3's condition is intact — but G6 shows that condition is itself unpinned, so G6+G7 compose into a silent loss of the whole route control.)
+- **G8** — `runs/review-arms/crb-pipeline/docker/tinyproxy.conf:20` — `ConnectPort 443` as an *exclusive* pin ("plain-HTTP proxying and every other port are refused") — **partially covered**: `crb-egress-config.bats:46` asserts the 443 line is present but nothing asserts no *other* `ConnectPort` line exists. Mutation: added `ConnectPort 80` and `ConnectPort 8080` → **37/37 green**. Note the merged fact-check already found `ConnectPort` credited with refusing plain HTTP with no leg exercising it; the config pin has the same hole from the other side.
+- **G9** — `scripts/crb-harvest-artifacts.py:115-119` — the `MAX_FILES` / `MAX_TOTAL_BYTES` cap-reached branch (skip-and-break, with the "remaining artifacts NOT captured" warning) — **not covered**. Mutation: `if False:` → **37/37 green**. Only the per-file cap (`:110`) has a test.
+- **G10** — `runs/review-arms/crb-pipeline/run-host.sh:413-418` — the `--restore` failure branch (`skipped_bad++; continue`) — **not covered**, and the mutation is worse than a missing test: replacing the `||` guard with `|| true` (restore failure swallowed, cell proceeds on whatever tree is there) → **37/37 green**. `crb-egress-config.bats:101-107` pins the *text* `--restore "$id"`, not that its failure stops the cell.
+- **G11** — `runs/review-arms/crb-pipeline/run-host.sh:366-369` — the "no baseline → skip, `skipped_bad++`" branch, and the `ran==0 && skipped_bad>0 → exit 3` terminal at `:578-581` — **not covered**. This is not hypothetical: `external/crb-eval/.baselines` **does not exist** on this machine while five clones do, so *every* instance takes this branch today and the whole sweep's first real behaviour is an untested path.
+- **G12** — `runs/review-arms/crb-pipeline/run-host.sh:493-509` — the audit-exit-code mapping. `crb-audit-clone.sh` documents three outcomes (`0` clean, `1` VOID, `2` could-not-check) and `crb-audit-clone.bats:133` pins that the script distinguishes them — but the runner's `if ! docker run ...` collapses `2` into `1`: a docker hiccup or a manifest without a `head` field marks a paid $10-40 cell `containment_failed`. **Not covered**; nothing asserts the mapping either way.
+- **G13** — `runs/review-arms/crb-pipeline/run-host.sh:498` — `: > "$dest/CONTAINMENT_FAILED"`, the marker `write_run_meta` reads at `:318-319` to populate `voided_cells` — **not covered**. Mutation: marker write removed → **37/37 green**, and `run-meta.json` then reports `voided_cells: []` for a voided sweep, which is exactly the over-read the surrounding comment (`:341-348`) exists to prevent.
+- **G14** — `scripts/crb-audit-clone.sh:60` — `--connectivity-only` on `git fsck`, against a **shallow** clone (production clones are `--depth 50`) — **not covered**. The deleted suite had this control (`crb-containment-reset.bats`, "fetch-trace detection is quiet on a SHALLOW clone"); the new suite's fixtures are all full clones. The audit converts any `^error:` line into a VOID (`:65-67`), so a false positive here voids *every* cell of the sweep. I built a shallow fixture by hand and a correctly-scrubbed one audits clean (exit 0) — the code is right today, but nothing holds it there.
+- **G15** — `scripts/crb-materialize.py:274-276` — `artifact_index()`'s `.git` exclusion — **not covered in the direction that matters**. Mutation: exclusion removed from `artifact_index` only → **37/37 green**, because the fixture's `.git` happens to contain no `.md`/`.json`. `crb-disposable-clone.bats:153` claims to pin "skips .git" and does not. (The opposite asymmetry — harvest walking `.git` — *is* caught, by `crb-harvest-artifacts.bats:102`.)
+- **G16** — `runs/review-arms/crb-pipeline/docker/Dockerfile.proxy:61-63` — the build-time fail-closed assert on `FilterDefaultDeny` / `Filter` / non-empty filter — **not covered**. Mutation: `RUN grep -qE ...` block deleted → **37/37 green**. Low severity: `crb-egress-config.bats:36-43` pins the same three facts from the repo side, so this is a redundant control losing its redundancy silently.
+- **G17** — `test/crb-disposable-clone.bats:168-173` (the test itself, not the code) — `CLI --restore --dry-run destroys nothing` runs the **unpatched** script, so its roots are the real `external/crb-eval` and the real `runs/review-arms/crb/instances.json`, while its positive assertion `[ -f "$CLONE/f.txt" ]` checks a `BATS_TEST_TMPDIR` path the real CLI can never reach. It catches the A1 regression (mutation confirmed: removing the early return turns it red) but for an incidental reason — the exit status of "no baseline at .../fixture.tar". **If a real slug named `fixture` with a valid baseline ever existed, this test would silently delete that clone and still pass.** This is A5's shape (test corpus coupled to the live tree), relocated.
+- **G18** — `scripts/crb-audit-clone.sh:69-81` — the tag-pointing-outside-ancestry variant of the descent check — **not covered** (the deleted suite had it at `:385`). Lower than G14: the code path is shared with the orphan-commit case, which *is* covered (`crb-audit-clone.bats:102`); only the `refs/tags` reachability half is unexercised.
 
-### G3 — importlib vs CLI: the inconsistency is only harmful where it hides the wiring
-- **Severity:** Medium (advisory) — this is the direct answer to the third question asked
-- **Location:** `test/crb-containment-reset.bats:47-61` (importlib only);
-  `test/crb-cell-status.bats:29-33` (CLI) vs `:152-170` (importlib);
-  `test/crb-subset-attrition.bats:62-66` (CLI only)
-- **Assessment:** the inconsistency per se is harmless — `crb-cell-status.bats` deliberately uses
-  CLI for exit-code semantics and importlib for the bulk corpus sweep, which is the right split.
-  It becomes harmful in exactly one place: `crb-containment-reset.bats` never invokes
-  `crb-materialize.py --reset` at all, so `main()`'s reset wiring is untested (G4, G6), while
-  `run-host.sh` calls **only** that path. Secondary cost: the corpus-pin harness re-implements
-  `main()`'s `unreadable` handling (`except Exception: incomplete.append((p, "unreadable"))`)
-  rather than calling it, so the two can drift.
-- **Confidence:** High
-- **Legibility-target:** for-orchestrator-synthesis
+### Answers to the three questions asked
 
-### G4 — `crb-materialize.py:489` — `--reset` branch that calls `reset_clone` — not covered
-- **Severity:** High (advisory); this is the mutation the requester most wanted found
-- **Evidence:**
-  ```python
-  note = reset_clone(dst, slug, head, base) if resetting else ""
-  n_commits, stat = verify_containment(dst, slug, head)
-  ```
-  Replacing the first line with `note = ""` leaves all 38 tests green. The harness would then
-  behave as if `run-host.sh` still called `--verify`, i.e. the entire fix in cf6e7c9 would be
-  inert while the suite reports success.
-- **Blast radius:** every cell of the sweep starts from an un-reset clone; agent commits accumulate;
-  the first cell's commit voids every subsequent cell of that slug (the exact pre-mortem narrative-1
-  failure). Silent — voided cells only show up as attrition in the leaderboard.
-- **Confidence:** High (executed)
-- **Legibility-target:** for-author
-
-### G5 — `crb-cell-status.py:62,82` — the 300–1000 char band — not covered
-- **Severity:** High (advisory)
-- **Evidence:**
-  ```python
-  STUB_MAX_LEN = 300
-  ...
-  if len(r) < STUB_MAX_LEN:
-      low = r.lower()
-      hit = next((s for s in NON_REVIEW if s in low), None)
-  ```
-  Every "long review" test in the suite builds a body of ~2,600–3,000 chars
-  (`test/crb-cell-status.bats:56-57`, `64-65`, `46-48`). Nothing sits between the 300 floor and
-  ~2.6 KB, so reverting `STUB_MAX_LEN` to its cf6e7c9 value of 1000 — the defect all three k=3
-  replicates independently caught, and the reason this file's longest comment exists — passes the
-  suite unchanged.
-- **Cost model:** a 400–900 char genuine review of an auth PR (two of five pilot instances are
-  auth-domain) is judged incomplete → re-paid at $10-40 → dropped at `MAX_ATTEMPTS` → the PR leaves
-  the judged subset. That is precisely the biasing failure narrative 5 describes.
-- **Confidence:** High (executed)
-- **Legibility-target:** for-author
-
-### G6 — `crb-materialize.py:482` — `resetting and not base` error branch — not covered
-- **Severity:** Low-Medium (advisory)
-- **Evidence:** `if not head or (resetting and not base):` — no manifest entry currently lacks
-  `base` (checked: 0 of 5), so the branch is unreachable from the real manifest and only fires on a
-  partially-written or hand-edited manifest. Removing the `resetting and not base` clause leaves
-  38/38 green; `reset_clone(dst, slug, head, None)` would then run `git branch -f main None`.
-- **Confidence:** High (executed)
-- **Legibility-target:** for-author
-
-### G7 — `crb-materialize.py:261-264` — the `git fsck` error trace — not covered
-- **Severity:** Medium (advisory)
-- **Evidence:** the test that names this behaviour asserts only the second half of it —
-  `test/crb-containment-reset.bats:265-279`:
-  ```
-  @test "a dangling origin/HEAD symref is detected, and scrub heals it" {
-  ...
-  print("BEFORE:", m.fetch_traces(dst))
-  ...
-  [[ "$output" == *"AFTER: []"* ]]
-  ```
-  `BEFORE:` is printed and never asserted. I ran `fetch_traces` on that fixture directly: it
-  returns `['git fsck reported 1 error(s), first: error: refs/remotes/origin/HEAD: invalid sha1
-  pointer … — cannot certify containment']`, so the detection is real — just unpinned. Deleting
-  `if errors:` leaves 38/38 green.
-- **Why it matters:** this check is the "a containment check that silently could-not-run" guard.
-  Its failure mode is *inverted* from the rest: if it stops firing, contamination goes unreported;
-  if it over-fires, every cell of a $50-2000 sweep voids. Both directions deserve a pin.
-- **Fix:** one added line — `[[ "$output" == *"BEFORE:"*"fsck reported"* ]]`. Verified this would
-  catch M4.
-- **Confidence:** High (executed)
-- **Legibility-target:** for-author
-
-### G8 — `crb-cell-status.py:98-100` — non-dict guard — asserted vacuously
-- **Severity:** Low (advisory)
-- **Evidence:** `test/crb-cell-status.bats:145-148`
-  ```
-  @test "a JSON array (not an object) is rejected, not crashed on" {
-    check '[]'
-    [ "$status" -eq 1 ]
-  }
-  ```
-  A raw `AttributeError` traceback also exits 1, so the "not crashed on" half is unasserted; the
-  guard can be deleted with the suite green. The sibling test at `:139-143` gets this right by
-  asserting `*unreadable*`.
-- **Fix:** `[[ "$output" == *"not an object"* ]]`.
-- **Confidence:** High (executed)
-- **Legibility-target:** for-author
-
-### G9 — `crb-subset-leaderboard.py:69-72` — the `missing_cells` and unmapped-slug reasons — not covered
-- **Severity:** Medium (advisory)
-- **Evidence:**
-  ```python
-  elif slug not in cells:
-      why = "no cell produced (missing clone, or pre-run containment failure)"
-  elif not url:
-      why = f"not in {MANIFEST.name} — cannot map the slug to a PR"
-  ```
-  `make_run_meta` (`test/crb-subset-attrition.bats:47-60`) always emits a `cells` entry for every
-  requested slug, so `slug not in cells` never holds in any test. Deleting the branch is green.
-- **Cost model:** this is the *highest-signal* attrition class — a slug that never produced a cell
-  is a pre-run containment failure or a missing clone, i.e. a systematic harness fault, not a
-  per-PR one. Mis-attributing it to "ran, but has no judged row" would send the reader looking at
-  the reviewer instead of the harness.
-- **Confidence:** High (executed)
-- **Legibility-target:** for-author
-
-### G10 — `crb-materialize.py:329-331` — `reset_clone`'s own remote VOID — not pinned by the test that claims it
-- **Severity:** Low (advisory) — behaviour is safe, the label is wrong
-- **Tier:** `Soundness-Contradiction` on the test's stated claim
-- **Evidence:** `test/crb-containment-reset.bats:14-17` says "the load-bearing assertions here are
-  the two negatives — a re-added remote and a commit outside the reviewed ancestry must still
-  fail". Deleting `reset_clone`'s remote check leaves test 9 ("a re-added remote still VOIDS the
-  cell") **passing**, because `reset_and_verify` also calls `verify_containment`, whose identical
-  check at `crb-materialize.py:189-191` fires. The verdict is preserved; the layer is not.
-- **Why it is not zero:** with `reset_clone`'s check gone, the reset runs *first* — discarding the
-  agent's commits and `gc --prune=now`-ing the objects — and only then does `verify_containment`
-  void. The cell is still voided, but the forensic evidence of what the agent did is destroyed
-  before anyone can look at it. That ordering is deliberate in the source (`# Checked before the
-  descent test so the VOID message names the fetch`) and worth an explicit test.
-- **Fix:** assert the reason string is `reset_clone`'s (`*"answer-key containment is broken"*`
-  before the reset happens), or call `reset_clone` alone in one dedicated test.
-- **Confidence:** High (executed)
-- **Legibility-target:** for-author
-
-### G11 — `crb-materialize.py:349` — `git reset --hard` is redundant; its comment says otherwise
-- **Severity:** Low (advisory)
-- **Tier:** `Soundness-Contradiction` (comment vs measured behaviour)
-- **Evidence:**
-  ```python
-  # -B moves `review` back onto the pinned head from wherever HEAD now is;
-  # --force discards worktree state; the explicit reset --hard then guarantees
-  # the index matches too (a staged edit is what `checkout -- .` used to keep).
-  sh(["git", "checkout", "--force", "--quiet", "-B", "review", head], cwd=dst)
-  sh(["git", "reset", "--hard", "--quiet", head], cwd=dst)
-  ```
-  Deleting the `reset --hard` line leaves all 38 green, including "a staged edit to a tracked file
-  is undone" — because `git checkout --force -B` already rewrites the index. The comment credits
-  the wrong line for the fix.
-- **Recommendation:** keep the line (belt-and-braces on a $50-2000 run is cheap), fix the comment
-  to say so, or drop it. Do not leave a comment asserting a causal role the code does not have —
-  this is the same class as the two prior findings this loop already produced.
-- **Confidence:** High (executed)
-- **Legibility-target:** for-author
-
-### G12 — `materialize()` has no test at all; `FETCH_HEAD` deletion at materialize time is the premise of check (a)
-- **Severity:** Medium (advisory)
-- **Location:** `scripts/crb-materialize.py:312` (`unlink`), `:414-417` (the `scrub_object_store`
-  call inside `materialize()`)
-- **Evidence:** `fetch_traces` docstring: *"materialize() deletes it after its own fetches so its
-  later presence is meaningful."* Deleting the `unlink` leaves 38/38 green, because in the reset
-  path a present `FETCH_HEAD` raises before `scrub_object_store` is ever reached — the unlink is
-  only load-bearing in `materialize()`, which no test exercises. If it ever regressed, **every**
-  cell of the sweep would void on a leftover `FETCH_HEAD` from materialization.
-- **Feasible to test hermetically:** yes — `materialize()` clones from a URL, and a local
-  `file://$BATS_TEST_TMPDIR/upstream` repo is a URL. The suite already builds one
-  (`make_answer_key_repo`).
-- **Confidence:** High (executed)
-- **Legibility-target:** for-author
-
-### G13 — `test/crb-containment-reset.bats:282-284` — the shallow test's stated premise is contradicted by the source it guards
-- **Severity:** Low (advisory)
-- **Tier:** `Soundness-Contradiction`
-- **Evidence:** test comment:
-  ```
-  # Real clones are SHALLOW (--depth 50). git fsck on a shallow repo can complain
-  # about the grafted boundary; --connectivity-only is what keeps it quiet.
-  ```
-  same-diff source comment, `scripts/crb-materialize.py:243-245`:
-  ```python
-  # --connectivity-only skips object content validation; on a 33-195 MB clone
-  # that is the expensive half. (It is NOT what keeps fsck quiet on a shallow
-  # clone — measured: fsck is equally quiet on a --depth=1 clone without it.)
-  ```
-  Confirmed by mutation: removing `--connectivity-only` leaves the shallow test green. The *test*
-  is still worth keeping (it pins "no false-positive void on a shallow clone", which is the real
-  risk); only its comment is wrong.
-- **Confidence:** High (executed)
-- **Legibility-target:** for-author
-
-### G14 — `scripts/crb-materialize.py:236-241` — "FETCH_HEAD removed but objects left unreachable" — not covered
-- **Severity:** Medium (advisory)
-- **Evidence:** the docstring makes a specific security claim —
-  *"Defeating both checks requires removing FETCH_HEAD **and** expiring the reflogs **and** running
-  `gc --prune=now` — deleting FETCH_HEAD alone still voids."* No test exercises "delete FETCH_HEAD
-  alone". Mutation M1 (removing the FETCH_HEAD check) was caught by only one test, and M3
-  (removing the unreachable-commit check) by only the indirect non-vacuity test — meaning the two
-  checks currently cover each other's fixtures rather than each having its own.
-- **Confidence:** High (executed)
-- **Legibility-target:** for-author
-
-### G15 — `runs/review-arms/crb-pipeline/run-host.sh:159-224` — `write_run_meta` — not covered, and it is the producer of the schema the attrition suite consumes
-- **Severity:** Medium (advisory) — this is the answer to the "untestable under docker" question
-- **Evidence:** no bats file references `run-host.sh` (`rg -l 'run-host.sh' test/` → only
-  `crb-subset-attrition.bats`, and only in a comment). The attrition suite builds its own
-  `run-meta.json` with `requested_instances` / `cells` / `voided_cells`; `write_run_meta` emits
-  those keys at `run-host.sh:206-212`. Nothing checks the two agree. A producer-side rename passes
-  every test and the leaderboard then reports "attrition NOT checked" or, worse, silently reports
-  zero attrition.
-- **What is genuinely docker-bound vs merely entangled:**
-  - *Docker-bound (do not test):* the `docker run` cell invocation, the preflight container, the
-    npm-cache chown.
-  - *Not docker-bound, currently untested:* `write_run_meta` (pure python over a directory tree);
-    the `SWEEP_BUDGET` aggregate gate at `:404-429` (pure python over `attempts.jsonl`); the
-    `MAX_ATTEMPTS` counting at `:238-252` (pure bash, and it carries a scar comment about a
-    `grep -c` bug that already bit once); the artifact-harvest traversal guard at `:324-344` (pure
-    bash + `git status`, and it is the security control for untrusted third-party paths).
-  - *The specific behaviour cf6e7c9 added and nothing pins:* run-meta is now written **from an EXIT
-    trap** so that the `SWEEP_BUDGET` `exit 2` (which happens *inside* the loop) still produces
-    provenance. That is the fix's whole point and it has no test.
-- **Confidence:** High
-- **Legibility-target:** for-orchestrator-synthesis
-
-### G16 — `scripts/crb-subset-leaderboard.py:87` — the `checked` return value is discarded
-- **Severity:** Low (advisory)
-- **Evidence:** `att_lines, _checked = attrition(our_urls, Path(args.run_meta))` — `_checked` is
-  never read. The "not checked" state reaches the reader only as prose inside `att_lines`, so a
-  future caller (e.g. an automated gate on the results doc) has no machine-readable signal.
-  Test 6 pins the prose, which is the right thing given the current design, but the dead return
-  value invites a false assumption that the state is available.
-- **Confidence:** High
-- **Legibility-target:** for-author
-
----
+1. **"Can any suite be made green by a mutation that removes the control it claims to pin?"** Yes — 14 of 21. The four highest-value survivors are G1 (the enabler of every audit check), G2 (the baseline-laundering guard), G5+G6 (the preflight's own verdicts) and G10 (a swallowed restore failure). The suites are strong where they were written to answer a named prior defect (every anti-A3, anti-A4, FETCH_HEAD, `--no-reflogs`, symlink and remote mutation was caught) and thin everywhere else — they pin the *last* review's findings rather than the new code's branch set.
+2. **"Is the boundary between what `crb-egress-config.bats` pins and what the runtime preflight must prove drawn honestly?"** The *stated* boundary is honest — the file's header says plainly it cannot prove the allowlist filters. But things fall between the two halves, because the config suite pins the preflight's **existence** (echo strings, `exit 5` count) while the preflight's **verdicts** are pinned by nothing and cannot run here. G5, G6 and G7 each turn the control off while leaving every string the suite greps for intact. Concretely: a sweep can be started with a non-`--internal` network and a leg-3 test that accepts HTTP 200, with 37/37 green and all three "ok" lines printed. That is the gap the boundary is currently hiding.
+3. **"Does the new baseline/index contract introduce an A5-style test-corpus collision?"** Mostly no, and I checked: `external/` (hence `.baselines/`) is gitignored; `test/cross-reference-integrity.bats` only walks `workflows|skills|guides|patterns`, so harvested `.md` artifacts under `runs/` cannot redden it; `crb-cell-status.bats:165-169`'s `LIVE` exclusion still covers the harvest's output dir; the injector's `runs.glob("*/")` (`scripts/crb-pipeline-to-benchmark.py:219`) requires `review.md`, so the newly-added `runs/review-arms/crb-pipeline/docker/` directory is skipped. Two residuals: **G17** above is a genuine live-tree coupling, and `docker/` now sits inside the sweep's output root, so the next glob written over `OUT/*/` without a content predicate will pick up a source directory.
 
 ## Recommended Tests
 
-#### T1 — Pin the 300–1000 char band with an auth-domain review
-**Closes gaps:** G5
-**Type:** unit · **Priority:** high
-**File:** `test/crb-cell-status.bats`
-**What it verifies:** a genuine but short review of auth code is COMPLETE, so `STUB_MAX_LEN` cannot
-drift back up without a red test.
-**Key cases:**
-- 450-char body containing `"logged in"` → exit 0 (would fail at `STUB_MAX_LEN=1000`)
-- 950-char body containing `"log in"` → exit 0
-- exactly 299-char body containing `"log in"` → exit 1, reason `non-review stub`
-- exactly 300-char body containing `"log in"` → exit 0 (boundary, pins the `<` vs `<=`)
-**Setup needed:** none beyond the existing `check` helper.
+#### scrub_object_store is load-bearing — a stubbed scrub makes the audit void a benign cell
 
-#### T2 — Drive `crb-materialize.py --reset` through the CLI
-**Closes gaps:** G4, G6, G3
-**Type:** integration · **Priority:** high
-**File:** `test/crb-containment-reset.bats`
-**What it verifies:** the path `run-host.sh` actually invokes resets, verifies, and reports.
-**Key cases:**
-- agent commit present → `--reset <slug>` exits 0, stdout contains `containment ok` **and**
-  `[1 agent commit(s) …]`, and `git rev-parse review == $HEAD_SHA` afterwards (catches M31)
-- re-added remote → exits non-zero, stderr `CONTAINMENT CHECK FAILED`
-- manifest entry with `head` but no `base` → exits non-zero with the "cannot pin" message
-  (catches M32)
-**Setup needed:** the script resolves `DST_ROOT` and `MANIFEST` from module constants, so this
-needs either a `--clones-root`/env override or a temporary manifest + clone dir. Adding one env
-override to `crb-materialize.py` is the smaller change and makes the whole CLI testable. This is
-the single highest-value item in the plan.
-
-#### T3 — Assert the *detection* half of the fsck-error check
-**Closes gaps:** G7
-**Type:** unit · **Priority:** high (one line)
-**File:** `test/crb-containment-reset.bats:265-279`
-**What it verifies:** `fetch_traces` reports a non-clean fsck rather than silently passing.
-**Key cases:** add `[[ "$output" == *"BEFORE:"*"fsck reported"*"cannot certify containment"* ]]`.
-Verified this catches M4.
-
-#### T4 — De-brittle the corpus pin
 **Closes gaps:** G1
-**Type:** snapshot · **Priority:** high
-**File:** `test/crb-cell-status.bats:152-178`
-**What it verifies:** the predicate's verdict on the historical corpus, without breaking when the
-sweep writes new cells.
+**Type:** unit (non-vacuity)
+**Priority:** high
+**File:** `test/crb-disposable-clone.bats` (new test; the deleted suite's version lived in `crb-containment-reset.bats:239` and is the template)
+**What it verifies:** that the audit's FETCH_HEAD and unreachable-commit checks are only ever quiet because `scrub_object_store()` ran — i.e. removing the call makes a *clean* baseline audit VOID.
 **Key cases:**
-- exclude `runs/review-arms/crb-pipeline/` from the glob (or list the historical arm dirs)
-- assert the INCOMPLETE **set** equals exactly the three named paths, rather than a total count
-- keep a `complete >= 29` lower bound so a rule change that mass-rejects still fires
+- Build the fixture clone, run `m.snapshot_baseline()` with `m.scrub_object_store` intact, extract the tar to a temp dir, run `scripts/crb-audit-clone.sh` on it → exit 0.
+- Same sequence with `m.scrub_object_store = lambda dst: None` and a `git fetch`-shaped precondition (touch `.git/FETCH_HEAD`, or make a commit and `reset --hard` back without expiring reflogs before snapshot) → audit exits 1 and names `FETCH_HEAD present` / `unreachable commit`.
+- Assert the first case fails when the mutation is applied, so the pair cannot both pass vacuously.
+
+**Setup needed:** none beyond the existing `run_mat` harness plus `$AUDIT` from `crb-audit-clone.bats`; this test deliberately spans both scripts, which is the only place the coupling is visible.
+
+#### CLI `--snapshot` refuses a second baseline without `--force`, and refuses a clone that isn't there
+
+**Closes gaps:** G2, G3
+**Type:** integration (CLI-level, using the source-rewrite pattern at `crb-disposable-clone.bats:182-200`)
+**Priority:** high
+**File:** `test/crb-disposable-clone.bats`
+**What it verifies:** the two guards on the only surface that can launder a container-written clone into every subsequent cell's definition of "clean".
+**Key cases:**
+- `--snapshot fixture` on a clone with an existing baseline → non-zero exit, output contains `a baseline already exists`, and the on-disk `fixture.tar` **mtime and sha256 are unchanged**.
+- Same with `--force` → exit 0 and a *new* sha256 in the manifest.
+- `--verify fixture` (and `--snapshot fixture`) with `fixture` absent from the manifest → non-zero, output contains `cannot pin the reviewed head`.
+- `--restore fixture` with `fixture` absent from the manifest → the *different* error (`no baseline_sha256`), pinning the deliberate `and not args.restore` carve-out at `:502`.
+
+**Setup needed:** the existing patched-copy harness; drive the patched script with `subprocess.run` so this is CLI-level and not another importlib-only pin.
+
+#### The egress preflight's three legs each accept only what they claim to
+
+**Closes gaps:** G5, G6, G7
+**Type:** unit, after a small extraction
+**Priority:** high
+**File:** `test/crb-egress-config.bats` (verdict cases) — requires extracting the three legs' verdict logic out of `run-host.sh` into e.g. `scripts/crb-egress-verdict.sh <leg> <http_code>` (exit 0 = leg passed, 5 = halt), exactly as `crb-cell-status.py` was extracted from this same runner "so they have fixtures".
+**What it verifies:** that leg 1 halts only on `000`, leg 2 halts on **any** code that is not `403`/`000` (specifically 200 and 302), and leg 3 halts on anything but `000`.
+**Key cases:**
+- `verdict api 401` → 0; `verdict api 200` → 0; `verdict api 000` → 5.
+- `verdict filter 403` → 0; `verdict filter 000` → 0; `verdict filter 200` → 5 (**the mutation that currently survives**); `verdict filter 302` → 5.
+- `verdict route 000` → 0; `verdict route 200` → 5; `verdict route 403` → 5 (a *refused* answer from the proxy is not the same as no route).
+- A source pin in the same file that `run-host.sh` calls the extracted verdict script for all three legs, and that `docker network create` still carries `--internal`.
+
+**Setup needed:** the extraction. It is small (three `case`/test expressions), and without it these three legs stay verifiable only by spending money.
+
+#### A restore failure stops the cell
+
+**Closes gaps:** G10, G11
+**Type:** integration (runner loop, with docker and the CLI stubbed via PATH shim — the pattern in `test/round-log-functions.bats`)
+**Priority:** high
+**File:** `test/crb-run-host-cell-loop.bats` (new; there is currently **no** test that executes any part of `run-host.sh`)
+**What it verifies:** the two skip branches that every instance takes today, and that neither can be turned into a "carry on anyway".
+**Key cases:**
+- Manifest with one slug, no `.baselines/<slug>.tar` → the cell is skipped, `skipped_bad` increments, no `docker run` shim is invoked for a review cell, script exits **3** with `NO CELL RAN`.
+- Baseline present but `crb-materialize.py --restore` stubbed to exit 1 → the review `docker run` is **never** invoked (this is the G10 mutation, and it must be the assertion, not the grep).
+- Both baseline and restore succeed → the review container *is* invoked exactly once, with `--network` naming the egress net.
+
+**Setup needed:** PATH shims for `docker` and `python3`-invoked scripts that log their argv to a file; `DRY_RUN` is not usable here since it exits before the loop. Budget: this is the largest single item in the plan, and it is the only way G10-G12 become testable at all.
+
+#### The audit's exit code 2 is "could not check", not a void
+
+**Closes gaps:** G12, G13
+**Type:** integration (same new runner-loop file)
+**Priority:** medium
+**File:** `test/crb-run-host-cell-loop.bats`
+**What it verifies:** the runner distinguishes the audit's documented outcomes, and records a real void where `write_run_meta` will find it.
+**Key cases:**
+- Audit shim exits 1 → `$dest/CONTAINMENT_FAILED` exists, `result.json` gains `"subtype": "containment_failed"`, and `run-meta.json`'s `voided_cells` names the slug (this is the G13 mutation).
+- Audit shim exits 2 → the cell is **not** silently banked, but is distinguishable from contamination in the artifacts (decide the contract first — see the open question in the Summary; today both write the same marker).
+- Manifest entry lacking `head` → the `head_sha=$(python3 -c ...)` substitution at `:490-492` aborts the sweep under `set -e`; assert the failure is reported rather than swallowed.
+
+**Setup needed:** the shim harness from the previous item.
+
+#### Harvest stops at the total-size and file-count caps
+
+**Closes gaps:** G9
+**Type:** unit
+**Priority:** medium
+**File:** `test/crb-harvest-artifacts.bats`
+**What it verifies:** the cap-reached branch runs, warns, and leaves the already-copied artifacts intact.
+**Key cases:**
+- 501 small `.md` files → `harvested 500 artifact(s)`, stderr contains `harvest cap reached`, exit 0.
+- Twelve 5 MB-minus-1-byte `.md` files (under the per-file cap, over the 50 MB total) → copy stops at the total cap, the warning names a byte count, exit is still 0 and the earlier files are present in `$DEST`.
+- Assert `MAX_FILES` cannot be raised unnoticed, in the style of `crb-cell-status.bats:194` (a fixture that sits between the current cap and a plausible larger one).
+
+**Setup needed:** none; `head -c … /dev/zero | tr` as already used at `crb-harvest-artifacts.bats:130`. Keep total fixture bytes modest by lowering the caps via an env override if one is added, otherwise ~55 MB of tmpdir writes per run is acceptable for a `fast` suite but should be measured.
+
+#### The audit is quiet on a shallow clone
+
+**Closes gaps:** G14
+**Type:** unit (regression control, carried over from the deleted suite)
+**Priority:** medium
+**File:** `test/crb-audit-clone.bats`
+**What it verifies:** `git fsck` on a `--depth`-limited clone with a `.git/shallow` graft produces no `^error:` line, so the audit does not void every cell of a sweep on a false positive.
+**Key cases:**
+- `git clone --depth=1 file://$UPSTREAM` of a 5-commit repo, scrubbed the way `materialize()` scrubs (remove remote, `symbolic-ref -d refs/remotes/origin/HEAD`, prune refs, expire reflogs, `gc --prune=now`, delete `FETCH_HEAD`), `review`/`main` set → audit exits 0. (I verified this passes today by hand; the point is to hold it.)
+- The same fixture with `--connectivity-only` removed from the audit's fsck line asserted to be the *only* reason it stays quiet, if that turns out to be reproducible on this git version — otherwise assert the shallow case alone and note the limitation in the test's comment rather than writing a non-vacuity claim you cannot back.
+
+**Setup needed:** a local `file://` upstream repo in `BATS_TEST_TMPDIR` — the deleted suite's `make_answer_key_repo` helper is the template and can be recovered from `git show 197eec6^:test/crb-containment-reset.bats`.
+
+#### `ConnectPort` is 443 and nothing else
+
+**Closes gaps:** G8
+**Type:** unit (config pin)
+**Priority:** medium
+**File:** `test/crb-egress-config.bats`
+**What it verifies:** the tunnel cannot be widened by *addition*, which is how config controls actually rot.
+**Key cases:**
+- `grep -cE '^[[:space:]]*ConnectPort' tinyproxy.conf` equals exactly `1`, and that one line is `443`.
+- Same exactness treatment for `Allow`: exactly one `Allow` line, and it equals `$EGRESS_SUBNET` (today the subnet round-trip at `:52-53` breaks incidentally on a second `Allow`, which is luck, not a test).
+
 **Setup needed:** none.
 
-#### T5 — Contract test between `write_run_meta` and `attrition`
-**Closes gaps:** G15, G9
-**Type:** contract · **Priority:** high
-**File:** new `test/crb-run-meta.bats`
-**What it verifies:** the JSON `run-host.sh` writes is the JSON the leaderboard reads.
+#### The `--dry-run` test stops depending on the live tree
+
+**Closes gaps:** G17
+**Type:** unit (test hygiene, not new coverage)
+**Priority:** medium
+**File:** `test/crb-disposable-clone.bats:168-173` (rewrite in place)
+**What it verifies:** the same A1 regression, but through the patched-copy harness so the assertion is about a clone the test owns.
 **Key cases:**
-- build a fake `$OUT` tree (two cells with `result.json` + `attempts.jsonl`, one with
-  `CONTAINMENT_FAILED`, one requested slug with **no** directory at all), source the
-  `write_run_meta` function out of `run-host.sh`, run it, then feed the produced `run-meta.json`
-  straight into `crb-subset-leaderboard.py`
-- assert the missing slug is reported as `no cell produced` (closes G9 with the *real* producer)
-- assert the `CONTAINMENT_FAILED` cell is reported as `voided by a post-run containment failure`
-- assert `cost_usd` sums over `attempts.jsonl`, not over `result.json`
-**Setup needed:** `run-host.sh` currently does all its work at top level; extracting the two python
-heredocs (`write_run_meta`, the sweep-budget gate) into `scripts/` — as cf6e7c9 already did for the
-cell-status predicate — is the pattern to repeat. Alternatively source the function with the
-top-level body guarded, but extraction is cleaner and consistent with this diff's own precedent.
+- Run the *patched* script (roots redirected into `$WORK`) with `--restore fixture --dry-run` after a successful snapshot, with the work clone deliberately dirtied → exit 0, `Nothing touched` in output, and `f.txt` still reads the dirtied value, i.e. the restore demonstrably did **not** happen.
+- Keep one assertion that the real CLI never resolves a slug outside `$WORK`: assert `external/crb-eval/fixture` does not exist before and after.
 
-#### T6 — `materialize()` end-to-end against a `file://` upstream
-**Closes gaps:** G12
-**Type:** integration · **Priority:** medium
-**File:** `test/crb-containment-reset.bats` (or a new `crb-materialize.bats`)
-**What it verifies:** the post-materialize baseline that every later check assumes.
-**Key cases:** materialize from a local `file://` repo with two branches and a tag → afterwards
-`git remote` is empty, refs are exactly `refs/heads/{review,main}`, `.git/FETCH_HEAD` does not
-exist, and `fetch_traces()` returns `[]`.
-**Setup needed:** the same env override as T2 for `DST_ROOT`; a local bare repo as the "fork".
+**Setup needed:** none — reuse the existing patched-copy block.
 
-#### T7 — FETCH_HEAD deleted, objects left behind
-**Closes gaps:** G14
-**Type:** integration · **Priority:** medium
-**File:** `test/crb-containment-reset.bats`
-**What it verifies:** the docstring's stated bar — that removing FETCH_HEAD alone does not defeat
-containment.
-**Key cases:** fetch by URL into `refs/heads/stolen`, `update-ref -d` it, `rm .git/FETCH_HEAD`,
-then `reset_and_verify` → VOID with `unreachable` in the reason. Gives check (b) a fixture of its
-own instead of relying on check (a).
+#### `artifact_index` really excludes `.git`
 
-#### T8 — Synthesize the manifest in the attrition suite
-**Closes gaps:** G2
-**Type:** unit · **Priority:** medium
-**File:** `test/crb-subset-attrition.bats`
-**What it verifies:** attrition arithmetic, independent of how many PRs are currently materialized.
-**Key cases:** write a 5-slug manifest into `BATS_TEST_TMPDIR`, point the script at it
-(needs a `--manifest` flag or an env override on `crb_common.MANIFEST`), and keep the existing
-assertions. Second case: 50-slug manifest, 3 judged → `SUBSET ATTRITION: 47 of 50`.
-
-#### T9 — Assert the reason, not just the verdict, on the two negative controls
-**Closes gaps:** G10, G8
-**Type:** unit · **Priority:** medium (two lines each)
-**File:** `test/crb-containment-reset.bats:145-151`, `test/crb-cell-status.bats:145-148`
-**What it verifies:** that the named guard, not a downstream one, produced the refusal.
-**Key cases:** call `reset_clone` alone (no `verify_containment`) in the remote test and assert
-`answer-key containment is broken`; assert `not an object` in the JSON-array test.
-
-#### T10 — Sweep-budget gate and MAX_ATTEMPTS counting
-**Closes gaps:** G15 (partial)
-**Type:** unit · **Priority:** medium
-**File:** new `test/crb-run-meta.bats`
-**What it verifies:** the two cost controls that stand between this harness and an unbounded bill.
+**Closes gaps:** G15
+**Type:** unit
+**Priority:** low
+**File:** `test/crb-disposable-clone.bats:153` (strengthen the existing test)
+**What it verifies:** the exclusion, rather than the fixture's coincidence.
 **Key cases:**
-- `attempts.jsonl` with 3 lines totalling $260 against `SWEEP_BUDGET=250` → gate exits 1
-- a cell dir with `result.json` but no `attempts.jsonl` (pre-ledger) → its `total_cost_usd` counts
-- empty `attempts.jsonl` → `attempts=0`, cell is retried (the `grep -c` scar at `run-host.sh:239`)
-- `attempts.jsonl` with `MAX_ATTEMPTS` lines → cell skipped, `skipped_bad` incremented
-**Setup needed:** extraction of the gate heredoc into `scripts/`, as in T5.
+- Write `$CLONE/.git/hooks/notes.md` and `$CLONE/.git/x.json` before indexing; assert neither appears in the index. (Today both the `.git` filter and no filter give the same answer.)
 
----
+**Setup needed:** none.
 
 ## What NOT to Test
 
-- **The `docker run` cell invocation, the preflight container, and the npm-cache chown**
-  (`run-host.sh:113-131`, `:274-287`). Genuinely host/docker-bound, and the existing repo
-  convention (E5/E7 arms) is that these are exercised by running the arm, not by tests. Mocking
-  docker here would test the mock.
-- **`--connectivity-only`** (G13). It is a performance flag with no behavioural contract; fix the
-  comment, do not add a test.
-- **`git reset --hard`** (G11). Provably redundant. Do not write a test to pin a line that has no
-  effect — fix the comment or delete the line.
-- **`crb-cell-status.py`'s `main()` usage/argv error** (`:91-92`). Trivial, single branch,
-  no cost consequence.
-- **The `elif not url` branch** in `attrition` (`crb-subset-leaderboard.py:71`) beyond what T5
-  covers incidentally — it requires a run-meta and manifest that disagree, which the T5 fixture
-  produces for free but which is not worth its own test.
-- **`fetch_traces`' behaviour under a hostile agent that clones elsewhere in the container.** The
-  docstring already says this is out of reach of anything git-local; the control is the egress
-  allowlist (tracked as R3). A test here would encode a false sense of coverage.
-
----
+- **Anything docker-shaped, in bats.** The images, the `--internal` network and tinyproxy are correctly out of scope for a hermetic suite, and the commit is explicit about it. The recommendation above is not "test docker" — it is "make the preflight's *verdict logic* a testable unit so the part that does not need docker stops riding on the part that does".
+- **G18 (tag outside ancestry)** — the descent check's code path is already exercised by the orphan-commit case (`crb-audit-clone.bats:102`); a tag variant would pin `refs/tags` inclusion in `rev-list --all`, which is git's behaviour, not this script's. Restore it only if the audit ever grows a per-refspace filter.
+- **G16 (Dockerfile.proxy build assert)** — the same three facts are pinned from the repo side by `crb-egress-config.bats:36-43`, and testing a `RUN grep` needs a docker build. Leave it; note in the Dockerfile comment that the bats file is the primary pin and the `RUN` is belt-and-braces, so a future reader does not treat it as the control.
+- **`sha256_file`, `dir_mb`, `slug_for`** — either trivially covered by the round-trip cases or unchanged by this commit.
+- **`write_run_meta`'s union-of-requested_instances logic** — pre-existing and covered by `test/crb-subset-attrition.bats`.
 
 ## Coverage Gaps Beyond Current Scope
 
-**1.** `run-host.sh`'s artifact-harvest loop (`:324-344`) is the only place third-party,
-agent-influenced path strings cross onto the host filesystem, and the traversal guard
-(`case "$f" in /*|*..*)`) has no test. It is pure bash over `git status --porcelain -z` output and
-is straightforwardly testable in a tmpdir repo. Highest-risk untested code in the arm that this
-diff did not touch.
+**1.** `runs/review-arms/crb-pipeline/run-host.sh` has **no executing test of any kind** — 582 lines, every dollar of the sweep flows through it, and its only verification is `grep`-over-source from `crb-egress-config.bats`. The recommendation above adds the first one; the retry/`MAX_ATTEMPTS` logic (`:389-403`), the `SWEEP_BUDGET` gate (`:544-569`) and the `attempts.jsonl` ledger (`:529-539`) remain unexercised and are all money-handling code.
 
-**2.** The post-VOID state transition is undocumented and untested: when post-run `--reset` raises,
-`reset_clone` raises *before* restoring anything, so the clone stays contaminated and every later
-cell for that slug fails its pre-run check. That is probably the right quarantine semantics, but
-nothing states it and nothing pins it — and it interacts with `MAX_ATTEMPTS` to silently and
-permanently drop a PR from the judged subset.
+**2.** No test covers `crb-materialize.py`'s `materialize()` / `resolve_base()` / `verify_containment()` end-to-end against a local `file://` fork fixture. The deleted suite at least drove `verify_containment()`; nothing does now. A single `file://`-based fixture would cover the remote-removal-before-ref-pruning ordering that `:454-462` warns about at length.
 
-**3.** `verify_containment` (`:171-196`) predates this diff and has no direct test; the new suite
-exercises it only as the second half of `reset_and_verify`. Its remote check is currently what
-makes the G10 mutation harmless, which means an untested function is load-bearing for a tested one.
+**3.** The five clones in `external/crb-eval/` have no baselines and no manifest `baseline_sha256`, so the very first action of the next sweep is the untested G11 branch, ending in `exit 3`. Whether the fix is `--snapshot` on five clones that containers *have* previously run against (which G2 exists to forbid) or a re-materialize is a **decision**, not a test — but it needs making before the sweep, and today no test would tell you which state you are in.
 
-**4.** No test asserts that a containment-voided `result.json` (rewritten with
-`is_error=true, subtype=containment_failed` at `run-host.sh:362-371`) is judged INCOMPLETE by
-`crb-cell-status.py`. The two were written in the same commit and the coupling is real: if the
-predicate ever stopped honouring `is_error`, a voided cell would be banked as complete and shipped
-to the judge. `crb-cell-status.bats` test 9 covers `is_error` generically but not this subtype.
-
----
+**4.** `runs/review-arms/crb-pipeline/` is now simultaneously a source directory (`docker/`) and the sweep's output root. Nothing breaks today, but the next glob written over `OUT/*/` without a content predicate repeats A5. Consider moving the docker context out of `OUT`, or add a one-line pin that `docker/` contains no `result.json`/`review.md`.
 
 ## Summary
 
-The three new suites are substantially better than vacuous: 22 of 30 source mutations were caught,
-the two "must still VOID" negative controls do real work, and the explicit `scrub_object_store`
-non-vacuity test (46a5f17) is exactly the right response to the earlier vacuity finding. The
-misses cluster in one identifiable place — **the CLI and wiring layer that production actually
-calls**. The single highest-value test to add is **T2**: `crb-materialize.py --reset` can be made a
-no-op and all 38 tests stay green, which would silently revert the entire cf6e7c9 fix while the
-suite reports success. Close behind is **T1**: reverting `STUB_MAX_LEN` from 300 to 1000 — the
-exact defect three fact-check replicates caught — is also invisible to the suite, because every
-"long review" fixture is ~2.6 KB and nothing occupies the 300–1000 band the constant governs. On
-the corpus-pin question: the idea is sound but the execution is fatally brittle in this layout —
-`runs/review-arms/crb-pipeline/` is both the glob's search space and the sweep's output directory,
-so the first paid cell turns the suite red (reproduced). The main residual risk after this plan is
-`run-host.sh` itself: `write_run_meta` produces the schema `attrition` consumes, neither side is
-tested against the other, and the EXIT-trap behaviour that cf6e7c9 added specifically so a
-budget halt still yields provenance has no test at all. The open question the enumeration surfaced
-is whether the post-VOID quarantine (gap 2 above) is intended permanent exclusion or an
-oversight — that decision changes whether attrition from a contaminated clone is a bug or a
-feature.
-
----
+The highest-value single test is the **`scrub_object_store` non-vacuity pin (G1)**: it is one function whose removal leaves all 37 tests green while silently converting every audit check in the sweep into a check that cannot fire — and the deleted suite had exactly this test, so the regression is a carry-over miss rather than a new design gap. Close behind it are the preflight verdict extraction (G5/G6/G7), which is the only way the egress control becomes verifiable at $0 rather than by execution during a paid sweep, and the first executing test of `run-host.sh`'s cell loop (G10/G11), whose swallow-the-restore-failure mutation survives today and whose no-baseline branch is the path the next sweep will actually take. Mutation score for the four suites is 7/21 caught; the caught set is almost exactly the set of defects the *previous* review named (A3, A1, `--no-reflogs`, FETCH_HEAD, symlinks, remotes, allowlist size), which is a suite written to a findings list rather than to the code's branch set — good discipline, incomplete coverage. The main residual risk after this plan is executed is unchanged and correctly stated by the commit: nothing docker-shaped has run, so the allowlist's filtering behaviour is still proven only by the runtime preflight — but after these tests, the preflight's own pass/fail logic would at least be pinned, which it is not now. Two open questions the enumeration surfaced: (a) should the runner distinguish audit exit 2 ("could not check") from exit 1 ("VOID"), given that today a docker hiccup discards a $10-40 cell as contaminated; (b) the five existing clones cannot be baselined without violating the `--snapshot`-only-on-pristine rule that G2 guards, so the pre-sweep remediation path needs deciding explicitly.
 
 ## Goal-Alignment Note
-- **Answered:** yes — mutation-tested all three suites; 10 missed mutations listed with reproduction
-- **Out of scope:** the docker-bound cell invocation and preflight (correctly untestable on the
-  host); `docs/human-author/LLM Code Review.md` and `docs/working/crb-direction1-setup.md`
-  (documentation, no test surface); pre-existing suites outside the diff
-- **Escalate:** (a) G1 — the corpus pin will go red on the first paid cell of the sweep; decide
-  before spending, not during. (b) G4/G5 — two silent-revert holes in the highest-cost controls;
-  both are cheap to close and worth closing before the sweep. (c) Coverage gap 2 — the post-VOID
-  quarantine semantics need a decision, not a test.
+- Answered: yes — mutation-probed all four new suites, answered all three named questions, report saved to `docs/reviews/test-strategy-review.md`.
+- Out of scope: docker-runtime verification (deliberate, per the brief); everything on the branch before 197eec6 (context only); the fact-check's prose/doc-accuracy findings, which I used as input rather than re-verifying.
+- Escalate: (1) the five existing clones have no baselines and cannot legitimately be `--snapshot`ed if any container has run against them — a pre-sweep decision, not a test; (2) `run-host.sh` has no executing test at all, which is a scope call bigger than this commit; (3) the audit-exit-2 contract (could-not-check vs void) needs deciding before it can be tested.

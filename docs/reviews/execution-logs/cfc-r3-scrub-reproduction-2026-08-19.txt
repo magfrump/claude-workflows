@@ -1,0 +1,16 @@
+code-fact-check r3 — scrub_object_store non-vacuity reproduction
+command: bash scratchpad/repro.sh   cwd: /workspace
+bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+date: 2026-08-19T23:09:32Z
+tmpdir: /tmp/tmp.A2Inf1hJwH
+git version 2.39.5
+--- materialize() steps up to crb-materialize.py:416 (clone/fetch/checkout/branch/remote-remove/ref-prune)
+=== BEFORE scrub_object_store
+FETCH_HEAD: present
+unreachable commits: 1
+=== scrub_object_store (reflog expire --expire=now --all; gc --quiet --prune=now; unlink FETCH_HEAD)
+=== AFTER scrub_object_store
+FETCH_HEAD: absent
+unreachable commits: 0
+exit: 1
+note: exit 1 comes from set -e on the final 'grep -c' returning 1 for zero matches (i.e. zero unreachable commits after the scrub — the expected result); all steps above completed.

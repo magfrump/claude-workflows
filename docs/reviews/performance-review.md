@@ -1,225 +1,377 @@
-# Performance Review — CRB direction-1 harness, iteration 2 (`59733d8..HEAD`)
+# Performance Review — commit `197eec6` (feat/crb-direction1-harness)
 
-**Scope:** `git diff 59733d8..HEAD -- . ':!docs/reviews'` — commits cf6e7c9, 5bd0b09, 46a5f17
-**Date:** 2026-08-18
-**Based on:** the k=3 code-fact-check of this pass (`docs/reviews/code-fact-check-report-r{1,2,3}.md`, summarised in the review brief); all Incorrect findings were doc/comment mechanism errors closed in 46a5f17.
-**Measurements taken for this review:** all timings below were executed by me on this machine against the five real pilot clones in `external/crb-eval/` (33–243 MB on disk, 8.5–74 MiB packs) and the 32 `result.json` files under `runs/review-arms/`. Where I state a number, I ran it; where I could not, the finding carries the speculative disclaimer.
+**Scope:** commit `197eec6` only (partial scope). Files evaluated on the resulting code:
+`runs/review-arms/crb-pipeline/run-host.sh`, `scripts/crb-materialize.py`,
+`scripts/crb-harvest-artifacts.py`, `scripts/crb-audit-clone.sh`,
+`runs/review-arms/crb-pipeline/docker/{Dockerfile.review,Dockerfile.proxy,tinyproxy.conf,egress-allowlist}`
+**Date:** 2026-08-19
+**Based on:** `docs/reviews/code-fact-check-report.md` (merged, k=3),
+`docs/decisions/034-crb-egress-allowlist-and-disposable-clones.md`
+**Performance frame:** dollars and sweep throughput, not milliseconds. A cell is a $10–40
+headless review; a sweep is 5–50 cells under a `SWEEP_BUDGET` ceiling.
+
+---
 
 ## Data Flow and Hot Paths
 
-`run-host.sh` iterates `INSTANCES` (5 for the pilot, 50 for the full sweep), one **cell** per iteration. Per cell:
+`run-host.sh` is a serial, operator-launched sweep. Once per invocation it builds two images,
+creates an `--internal` docker network plus a tinyproxy sidecar, runs a three-leg egress
+preflight and one paid model preflight. Then, once per instance, it: checks for a baseline tar
+→ `crb-materialize.py --restore` (rmtree + sha256-verified tar extract) → copies the payload →
+runs the review container → parses the transcript → `crb-harvest-artifacts.py` (tree walk +
+sha256 diff against the baseline index) → launches a second, throwaway container running
+`crb-audit-clone.sh` → appends to `attempts.jsonl` → re-scans every cell's ledger against
+`SWEEP_BUDGET`.
 
-1. `crb-cell-status.py` decides whether an existing `result.json` counts as complete (skip vs re-pay).
-2. `crb-materialize.py --reset <slug>` — pre-run containment reset (`reset_clone` + `verify_containment`).
-3. `docker run … claude -p "/code-review main"` — **the only expensive step**. Measured on the 32 in-repo `result.json` files: min 80 s, **median 161 s**, max 327 s wall, $8–18 billed each; the brief budgets $10–40 per cell.
-4. Harvest (`git status --porcelain=v1 -z` walk + copy), post-run `--reset` (identical work to step 2), attempt ledger append, sweep-budget gate.
+**Path temperature.** Nothing here is a request handler. The per-cell loop body is the hottest
+path in the system and it executes at most 50 times, gated by a review that costs $10–40 and
+minutes of wall clock. `materialize()` / `--snapshot` / `--verify` are cold: once per slug,
+operator-invoked. Severity is therefore driven by *dollars per occurrence*, not by CPU.
 
-The **only hot path in this diff is the per-cell loop body**, and it is hot in the cost sense (dollars per iteration), not the latency sense — 50 iterations total, each dominated by a ~3-minute container. Everything else (`attrition()`, `write_run_meta`) is a cold, once-per-invocation path. That asymmetry is what drives the calibration below: findings that waste a *cell* are severe; findings that waste *seconds* are not, however many times they repeat.
+**Sizes, measured on this host (2026-08-19, `/workspace/external/crb-eval`, 5 pilot clones):**
 
-Data sizes: 50 clones, 33–243 MB on disk, 3.8k–17.1k tracked files, packs 8.5–74 MiB. Manifest and `run-meta.json` are ≤50 records.
+| slug | clone (du) | `.git` | tar | `.md`/`.json` files | inodes |
+|---|---|---|---|---|---|
+| discourse-graphite-PR4 | 41 MB | 10 MB | 33 MB | 49 | 4,692 |
+| cal_com-PR11059 | 206 MB | 75 MB | — | 358 | 5,058 |
+| keycloak-PR36880 | 162 MB | 43 MB | — | 215 | — |
+| grafana-PR79265 | 170 MB | 32 MB | 137 MB | 1,490 | 16,319 |
+| sentry-greptile-PR5 | 243 MB | 33 MB | 210 MB | 711 | 19,601 |
+
+**Per-cell overhead this commit adds, measured on the same clones** (Python replicas of
+`snapshot_baseline`/`restore_clone`/`artifact_index`/`changed_artifacts`, and the audit's own
+git commands run directly against the clones):
+
+| step | discourse (33 MB) | grafana (137 MB) | sentry (210 MB) |
+|---|---|---|---|
+| sha256 over baseline tar | 0.02 s | 0.1 s | 0.1 s |
+| `rm -rf` work clone | 0.04 s | 0.2 s | 0.2 s |
+| `tar --extract` | 0.1 s | 0.6 s | 0.6 s |
+| harvest walk + sha256 (`.md`/`.json`) | 0.02 s | 0.1 s | 0.05 s |
+| audit `git fsck --connectivity-only` | 0.01 s | 0.02 s | 0.02 s |
+| audit `find` for nested repos | 0.00 s | 0.02 s | 0.02 s |
+| audit `rev-list --all --not HEAD` | 0.00 s | 0.00 s | 0.00 s |
+
+Adding ~1 s for the extra `docker run` of the audit container and ~0.3 s for five short-lived
+`python3` interpreters, **the commit's added per-cell overhead is ≈ 2–3 s on the largest pilot
+clone**. Against the closest measured per-cell review duration on this project — 4.5–10.8
+minutes per cell for the cubic CLI arm (`docs/working/archive/2026-08-19-canon-issue-ledger.md:331`)
+— that is **0.3–1.1% of one cell**, or roughly 2 minutes across a 50-cell sweep. The
+"seconds, not minutes × 50" question the scope asks is answered on the measured side: seconds.
+
+**Disk.** Baselines are uncompressed tars, so the doubling in decision 034 is real
+(`fact-check claim 1 — Mostly Accurate`). Measured free space on the clone filesystem is
+**280 GB of 1,007 GB (71% used)**, so `--all` at ~13 GB consumes ~1.3% of remaining headroom.
+Disk is not a binding constraint on this arm.
+
+The cost risks in this commit are therefore **not** its compute. They are in the retry, budget
+and liveness machinery that surrounds the paid container.
 
 ---
 
 ## Findings
 
-#### Every existing clone fails the new pre-run containment reset — sweep throughput is zero, and recovery costs a 6–7 GB re-clone
+#### A cell that dies before emitting a `result` event retries without bound and ledgers $0
 
 **Severity:** High
-**Location:** `scripts/crb-materialize.py:329-338` (`reset_clone` order), `scripts/crb-materialize.py:289-312` (`scrub_object_store`), `scripts/crb-materialize.py:399-417` (materialize ordering fix), `runs/review-arms/crb-pipeline/run-host.sh:262-264`
-**Move:** Price the deployment environment (move 10) — the platform here is the on-disk clone population the sweep is deployed against
-**Classification:** Macro (structural — a guard that rejects 100% of the input population) / Cold path (per-cell setup) — **escalated to High** because the observable outcome is zero paid throughput on a $50–2000 operation, and the recovery cost is bandwidth-bound, not code-bound
-**Confidence:** High — reproduced by execution on all five clones
-**Baseline:** measured — **5 of 5 pilot clones fail**; `python3 scripts/crb-materialize.py --reset <slug>` exits 1 in 0.06 s for every slug in `external/crb-eval/`
-
-`reset_clone()` runs `fetch_traces()` *before* `scrub_object_store()`, by design (scrubbing first would erase the evidence the check looks for). But `fetch_traces()` now voids on two conditions that every clone materialized before this diff already carries: a leftover `.git/FETCH_HEAD`, and the dangling `refs/remotes/origin/HEAD` symref that the pre-fix ref-pruning order left behind. Verbatim, from `scripts/crb-materialize.py:240-263`:
-
-```python
-    traces = []
-    if (dst / ".git" / "FETCH_HEAD").exists():
-        traces.append("FETCH_HEAD present — something fetched into this clone")
-    …
-    errors = [l for l in out.splitlines() if l.startswith("error:")]
-    if errors:
-        traces.append(f"git fsck reported {len(errors)} error(s), first: "
-                      f"{errors[0][:160]} — cannot certify containment")
-```
-
-Executed against the real clones:
-
-```
-$ python3 scripts/crb-materialize.py --reset sentry-greptile-PR5
-  !! sentry-greptile-PR5: CONTAINMENT CHECK FAILED — sentry-greptile-PR5: FETCH_HEAD present
-  — something fetched into this clone; git fsck reported 1 error(s), first: error:
-  refs/remotes/origin/HEAD: invalid sha1 pointer 0000…0000 — cannot certify containment
-  — containment is broken
-```
-
-All five clones show both conditions (`FETCH_HEAD present` + the same `invalid sha1 pointer`). In `run-host.sh:262-264` the pre-run `--reset` failure `continue`s the cell as `skipped_bad`, so **every cell is skipped, `ran=0`, and the script exits 3** ("NO CELL RAN"). The sweep spends $0 and produces nothing — which is the safe direction, but it means the pilot cannot start.
-
-The sharper point is that the healer already exists and is unreachable. `scrub_object_store()` at `scripts/crb-materialize.py:305-312` opens with:
-
-```python
-    # Heals a clone materialized before the remote-removal ordering fix, whose
-    # refs/remotes/origin/HEAD symref was left dangling. for-each-ref does not
-    # list a broken ref, so the ref-pruning loop cannot reach it.
-    subprocess.run(["git", "symbolic-ref", "-d", "refs/remotes/origin/HEAD"], …)
-```
-
-I verified by execution that calling `scrub_object_store()` directly on a copy of `cal_com-PR11059` in the broken state clears both the fsck error and `FETCH_HEAD` in one call — but `reset_clone()` raises before ever reaching it, so the heal fires only for clones that do not need it.
-
-**Recommendation:** Do **not** reorder the scrub ahead of the check — that would defeat the containment guard. Add an explicit one-shot migration instead: a `--heal-legacy SLUG…` mode (or a documented `--force` re-materialize) that recognises the two pre-fix signatures specifically, plus a preflight in `run-host.sh` that runs `--verify` over all requested slugs *before* the first container starts, so the operator learns this at $0 rather than after 50 skipped cells. Re-materializing instead costs ~1 GB of clone traffic for the pilot and 6–7 GB for the full 50; budget that before the sweep, not during it.
-
----
-
-#### A cell that dies before emitting a `result` event retries without bound, and its spend is ledgered as $0
-
-**Severity:** High
-**Location:** `runs/review-arms/crb-pipeline/run-host.sh:238-252` (the `MAX_ATTEMPTS` guard), `:294-312` (harvest), `:389-399` (attempt ledger), `:404-429` (sweep gate)
-**Move:** Count the hidden multiplications — the multiplier here is sweep restarts, and each unit of work costs $10–40
-**Classification:** Macro (unbounded retry with no terminating condition) / Hot path (the per-cell loop body, the only path that spends money)
-**Confidence:** High for the control-flow trace; Medium for how often a cell actually dies this way
-**Baseline:** measured — per-cell billed spend on the 32 in-repo results is $8.01–$18.24, so one un-metered retry is worth roughly one median cell; `no baseline available — flagged as speculative` for the *frequency* of result-event-less exits, which has not been observed in this repo's arms
-
-The retry ceiling is nested inside an existence test for `result.json`:
-
-```bash
-  if [ -s "$dest/result.json" ]; then
-    …
-    if [ "$attempts" -ge "$MAX_ATTEMPTS" ]; then
-      echo "=== $id — $attempts failed attempt(s), at MAX_ATTEMPTS — skipping …" >&2
-```
-
-But the harvester only writes `result.json` when it finds a `result` event:
-
-```python
-if res is None:
-    print("  !! no result event — treat this instance as failed", file=sys.stderr)
-    sys.exit(0)
-json.dump(res, open(sys.argv[2], "w"))
-```
-
-So a container killed mid-run (OOM, host reboot, `docker` failure, a stream truncated before the final event) leaves no `result.json`. `attempts.jsonl` still grows — the ledger step tolerates the missing file and writes `{"cost_usd": 0, …}` — but nothing ever reads it, because the guard that would is gated on the file that was never written. Every subsequent sweep re-runs that cell from scratch, forever. Two costs compound: the tokens are paid each time, and the sweep-budget gate sums `cost_usd` from that same ledger, so the spend is recorded as **$0** and does not count toward `SWEEP_BUDGET`. The one class of failure that can burn money repeatedly is exactly the class the aggregate ceiling cannot see.
-
-Note on scope: the enclosing `if [ -s "$dest/result.json" ]` guard predates this diff. It is raised here because this diff reworks the completion predicate that sits directly above it and inherits the same gate, and because it is the sharpest answer to "anything that makes a retried sweep re-pay for work already done."
-
-**Recommendation:** Hoist the attempt-count check out of the `result.json` existence test so it runs whenever `attempts.jsonl` exists. Separately, have the harvester write a minimal `result.json` (`{"is_error": true, "subtype": "no_result_event"}`) when `res is None`, so the cell is visible to both the predicate and the ledger; and record the container's non-zero exit in the attempt record so a $0 cost is distinguishable from an unmeasured one.
-
----
-
-#### `SWEEP_BUDGET` is a lifetime-of-directory ceiling, not a per-invocation one — a resumed sweep pays one extra cell before halting again
-
-**Severity:** Medium
-**Location:** `runs/review-arms/crb-pipeline/run-host.sh:404-429`, `:62-68`
-**Move:** Find the work that moved to the wrong place — the aggregate moved from "this run" to "this directory", which is the right place for auditing and the wrong place for a ceiling
-**Classification:** Macro (cost-governance semantics, not a constant factor) / Hot path (evaluated after every paid cell)
+**Location:** `runs/review-arms/crb-pipeline/run-host.sh:376-401`, `:460-470`, `:529-539`
+**Move:** Count the hidden multiplications / price the deployment environment
+**Classification:** Macro (unbounded retry of a priced operation) / Hot path (the per-cell loop body, the only path that spends money)
 **Confidence:** High
-**Baseline:** measured — the gate is exact and cheap; a synthetic 50-cell `$OUT` at $12.50/cell sums to `$625.00` in **0.021 s** per invocation
+**Baseline:** $14.60/instance measured on the canon ledger; $19–44/instance re-derived on the
+E8 sweep (`docs/working/crb-direction1-setup.md:305`). `BUDGET` defaults to $25.00
+(`run-host.sh:82`).
 
-The gate walks every directory under `$OUT`, not the cells of this run:
+Both retry guards are nested inside the same existence test:
 
-```python
-out, cap = sys.argv[1], float(sys.argv[2])
-total = 0.0
-for name in sorted(os.listdir(out)):
-    ledger = os.path.join(out, name, "attempts.jsonl")
+```
+376:  if [ -s "$dest/result.json" ]; then
+...
+389:  if [ -s "$dest/result.json" ]; then
+...
+398:    if [ "$attempts" -ge "$MAX_ATTEMPTS" ]; then
+399:      echo "=== $id — $attempts failed attempt(s), at MAX_ATTEMPTS — skipping (delete $dest to reset)" >&2
+400:      skipped_bad=$((skipped_bad+1)); continue
 ```
 
-That is deliberate ("survives both a resumed sweep and re-run cells") and correct for the audit trail, but it makes the ceiling monotonic in the directory's whole history. Two consequences with real money attached. First, the $50–200 pilot's spend counts against the default `SWEEP_BUDGET=250` when the operator later runs `--all` into the same `$OUT` — the full sweep halts almost immediately unless the ceiling is raised, which is survivable but silently converts the "raise it for `--all`" instruction into "raise it by pilot-spend + full-sweep estimate". Second, and worse: cells that are *skipped* as already-complete `continue` before the gate, so on a resume the gate is first evaluated only after the first genuinely-new cell has already been paid for. If the historical total already exceeds the cap, each resume attempt costs one more cell ($8–18 measured, $10–40 budgeted) before halting again. Restarting a halted sweep three times to nudge the ceiling costs three cells.
+and `result.json` is only written when a `result` event is found in the transcript:
 
-**Recommendation:** Evaluate the gate once *before* the first container of the run as well as after each cell, so a resume that is already over the ceiling halts at $0 instead of at one cell. Consider reporting both numbers in the gate's log line — `spend this run: $X (directory total $Y) / $cap` — so the operator can see which one is binding.
+```
+466:  if res is None:
+467:      print("  !! no result event — treat this instance as failed", file=sys.stderr)
+468:      sys.exit(0)
+```
+
+A container that is OOM-killed, loses its API connection, or is Ctrl-C'd mid-review writes no
+`result.json`, so on the next invocation the cell falls through *both* tests and re-runs — with
+no attempt counter consulted, at every resume, forever. The same failure also corrupts the
+ledger: the attempt record loads `result.json`, fails, and writes `{"cost_usd": 0}`
+(`:529-539`), so a cell that burned up to `BUDGET` at Anthropic is recorded as free and is
+invisible to `SWEEP_BUDGET` as well. This commit does not introduce the bug, but it enlarges
+its blast radius: the new preconditions (a proxy sidecar, an `--internal` network, a baked
+image) add failure modes whose signature is exactly "container never reaches a result event",
+and Finding 3 gives one of them a mechanism that hits all 50 cells at once.
+
+**Recommendation:** Move the `MAX_ATTEMPTS` check out of the `result.json` branch and gate it
+on `attempts.jsonl` alone, and always append an attempt record — including a
+`{"cost_usd": null, "subtype": "no_result_event"}` row when the transcript has no result — so
+that unmeasurable spend is visibly unmeasurable rather than silently zero.
 
 ---
 
-#### A post-run containment void leaves the clone un-reset, so the cell is permanently dead and the PR silently leaves the denominator
+#### `SWEEP_BUDGET` is only evaluated after a cell is paid for, and skipped cells jump the gate
 
 **Severity:** Medium
-**Location:** `scripts/crb-materialize.py:329-343` (raises before any reset work), `runs/review-arms/crb-pipeline/run-host.sh:359-372`
-**Move:** Trace the resource lifecycle — the resource is a 33–243 MB clone whose only reset path is the code that just refused to run
-**Classification:** Macro (a per-instance resource enters an absorbing failed state) / Hot path (per-cell)
-**Confidence:** High for the control flow; Medium for how often real agent behaviour trips `foreign` or a fetch trace
-**Baseline:** measured — one lost cell is $8.01–$18.24 of already-billed spend (32 in-repo results), plus a 33–243 MB re-clone to recover; `no baseline available — flagged as speculative` for the void rate
+**Location:** `runs/review-arms/crb-pipeline/run-host.sh:544-570`, with the `continue`s at `:369`, `:380`, `:400`, `:418`
+**Move:** Find the work that moved to the wrong place
+**Classification:** Macro (the ceiling is checked strictly after the spend it exists to prevent) / Hot path (per-cell)
+**Confidence:** High
+**Baseline:** `SWEEP_BUDGET` default $250.00 (`run-host.sh:86`); `--all` estimated at
+$500–2000 (`docs/working/crb-direction1-setup.md:307`), i.e. the ceiling is *expected* to be
+hit on a full sweep.
 
-`reset_clone()` raises on a surviving remote, a fetch trace, or a foreign commit *before* it performs any of the `checkout --force` / `reset --hard` / `clean -qfdx` / `scrub_object_store()` work. So when the post-run `--reset` voids a cell, the contaminated clone is left exactly as the agent left it. The next sweep's pre-run `--reset` re-reads the same state, raises the same error, and the cell is counted `skipped_bad` — permanently, across every future sweep, with no message telling the operator that `rm -rf` plus a re-materialize is the fix (the `MAX_ATTEMPTS` path does say "delete `$dest` to reset"; this path says nothing equivalent about the clone).
+The aggregate gate runs at the very bottom of the loop body, so its guarantee is "stop after
+the first cell that crosses the line", and the header comment concedes the overshoot
+(`:84-86`: "the worst overshoot is SWEEP_BUDGET+BUDGET"). What is less visible is the resume
+case: every early `continue` — missing baseline (`:369`), already-complete cell (`:380`),
+`MAX_ATTEMPTS` reached (`:400`), failed `--restore` (`:418`) — returns to the top of the loop
+*without* touching the gate. A sweep resumed after a `SWEEP_BUDGET` halt therefore walks past
+all its completed cells for free, reaches the first unfinished one, and pays a full
+$10–40 review before the gate is consulted for the first time. On `--all`, where hitting the
+ceiling is the designed outcome, that is one unintended cell per resume.
 
-The money is already sunk, so this is not a re-pay finding — it is a denominator finding. The PR drops out of the judged subset, which the new `attrition()` block does now surface (good), but the sweep silently loses capacity it cannot regain in-place.
-
-**Recommendation:** On a post-run void, either quarantine the clone (rename it aside) or emit an explicit remediation line naming the exact command — `scripts/crb-materialize.py --slug <id> --force`. If quarantining, note that this reintroduces the disk cost of a second copy; the cheaper option is the message.
+**Recommendation:** Hoist the gate to the *top* of the loop body, before the baseline check, so
+that the ceiling is evaluated once per iteration regardless of which path the iteration takes.
+The existing bottom-of-loop check can then be deleted; the per-attempt ledger it reads is
+already written before it runs.
 
 ---
 
-#### Per-cell containment machinery costs ~1.6 s against a 161 s median cell — immaterial, and `--connectivity-only` does earn its keep
+#### One non-restarting proxy sidecar gates every paid cell, and liveness is checked only once
+
+**Severity:** Medium
+**Location:** `runs/review-arms/crb-pipeline/run-host.sh:156-166` (`setup_egress`, `--restart no`), `:197-231` (preflight, once per invocation), `:432-446` (per-cell review container)
+**Move:** Find the contention point / trace the resource lifecycle
+**Classification:** Macro (single shared dependency for the whole sweep, with no per-use health check) / Hot path (per-cell)
+**Confidence:** Medium
+**Baseline:** no baseline available — flagged as speculative (nothing docker-shaped has been
+executed; the proxy has never run).
+
+`crb-egress-proxy` is created once, with `--restart no`, and is the only route off the
+`--internal` network. The three-leg egress preflight and the paid auth preflight prove it is
+healthy at t=0 and are never repeated. If the sidecar exits at any point during a multi-hour
+sweep — crash, OOM, an operator's `docker system prune`, a daemon restart — every subsequent
+cell launches a review container that cannot reach `api.anthropic.com`, fails within seconds,
+and (per Finding 1) most likely writes no `result.json` at all. The sweep does not notice: it
+proceeds through all remaining instances, `ran` increments for each, and the run ends with a
+long list of cells that are simultaneously "attempted", "unledgered", and "eligible for
+unbounded retry". The wall-clock loss is the whole remaining sweep; the dollar loss is small
+per cell but the *recovery* cost is a full re-run of everything after the failure point.
+
+**Recommendation:** Add a $0 liveness probe immediately before each `docker run` of the review
+container — reuse `in_cell_net` (`:183-189`) with a `--max-time 10` curl to
+`api.anthropic.com` — and abort the sweep on failure rather than continuing. Consider
+`--restart unless-stopped` on the sidecar; the `EXIT` trap already tears it down
+(`:167-170`, `:359`).
+
+---
+
+#### The paid auth preflight is spent once per invocation and never appears in any ledger
 
 **Severity:** Low
-**Location:** `scripts/crb-materialize.py:243-248`, `:289-312`, `:315-367`; `runs/review-arms/crb-pipeline/run-host.sh:262-264`, `:359`
-**Move:** Count the hidden multiplications — and then check the product against the real denominator
-**Classification:** Micro (fixed per-call host-side git work) / Hot path (twice per cell)
-**Confidence:** High — measured directly
-**Baseline:** measured — full `reset_clone()` + `verify_containment()` on the two largest pilot clones: **0.61 s** (`cal_com-PR11059`, 74 MiB pack, 206 MB tree) and **0.75 s** (`sentry-greptile-PR5`, 30 MiB pack, 17k files); against a **median cell duration of 161 s** across the 32 in-repo `result.json` files
+**Location:** `runs/review-arms/crb-pipeline/run-host.sh:235-247`
+**Move:** Price the deployment environment
+**Classification:** Micro (one small model call) / Cold path (once per invocation, not per cell)
+**Confidence:** High
+**Baseline:** no baseline available — flagged as speculative for the preflight's own token
+cost; the surrounding sweep totals are $50–200 (pilot) and $500–2000 (`--all`)
+(`docs/working/crb-direction1-setup.md:306-307`).
 
-Component breakdown (`cal_com` / `sentry`, seconds):
+`preflight` is a real headless `claude` invocation on `$MODEL`, made before any cell runs. Its
+output goes to `$OUT/preflight.json`, which is neither an `attempts.jsonl` row nor a cell
+directory, so it is counted by neither `write_run_meta`'s `total_cost_usd` (`:290-352`) nor the
+`SWEEP_BUDGET` gate (`:544-570`). It is small — a "list your skills" turn — but it is paid on
+*every* invocation, and this harness is designed to be resumed: a sweep halted and restarted
+ten times pays it ten times, all outside the number a results doc quotes as the arm's cost.
+This matters more given the fact-check's Claim 4 finding (`R6` did not dissolve): in the
+repository's current state, with no baselines materialized, an operator who runs the sweep
+pays the preflight and then exits 3 with every instance `skipped_bad` — a non-zero spend on a
+run that reports no cells.
 
-| op | cal_com | sentry |
-|---|---|---|
-| `fsck --unreachable --no-reflogs --connectivity-only` | 0.013 | 0.024 |
-| *(same fsck **without** `--connectivity-only`)* | *0.724* | *0.814* |
-| `status --porcelain` | 0.259 | 0.442 |
-| `gc --quiet --prune=now` | 0.301 | 0.188 |
-| everything else combined | 0.037 | 0.093 |
-| **total per `--reset`** | **0.610** | **0.747** |
-
-Two calls per cell puts the containment tax at **1.2–1.5 s on a 161 s median cell, ≈0.9%**, and ~75 s across a full 50-cell sweep. It costs no API dollars. The `git gc --prune=now` concern in the brief does not survive measurement: the clones' *packs* are 8.5–74 MiB even though the directories are 33–243 MB (the working tree is the bulk), so the repack is 0.19–0.30 s, not the minutes a 195 MB object store would imply. A post-agent reset (12 new files, 480 KB, one commit) measured **0.37 s** — cheaper than the clean-clone case, since `gc` had already run.
-
-On the specific question: **`--connectivity-only` is doing what the comment claims.** It cuts the fsck from 0.72–0.81 s to 0.013–0.024 s — a 30–55x reduction, consistent with skipping per-object SHA-1 content validation. The saving is real and the reasoning is sound; it is simply saving 1.6 s per cell out of 161 s, so it is a correctness-preserving nicety rather than a load-bearing optimisation.
-
-**Recommendation:** No change. If the redundancy still grates, the pre-run `--reset` could be skipped when the immediately-preceding post-run `--reset` on the same slug succeeded within the same process — but that would trade a verified invariant for ~0.7 s per cell and is not worth it.
+**Recommendation:** Parse `total_cost_usd` out of `preflight.json` and write it as a
+`preflight` pseudo-cell row so it flows into both `run-meta.json` and the `SWEEP_BUDGET` sum.
+Alternatively, move the paid preflight behind a "no baseline exists for any requested
+instance" pre-check so the R6 state fails before spending anything.
 
 ---
 
-#### Three per-cell/per-sweep overheads flagged in the brief, all measured and all immaterial
+#### The audit forks one `git merge-base` per stray commit, unbounded, in exactly the case it fires
+
+**Severity:** Low
+**Location:** `scripts/crb-audit-clone.sh:73-81`
+**Move:** Ask "what's the size of N?"
+**Classification:** Macro (per-item subprocess over an unbounded collection) / Cold path (once per cell, post-review)
+**Confidence:** High
+**Baseline:** `git rev-list --all --not HEAD` measured at 0.00 s on all five pilot clones
+(this host, 2026-08-19) — N is 0 in the clean case.
+
+```
+73: strays=$(git rev-list --all --not "$HEAD_SHA" 2>/dev/null)
+75: for c in $strays; do
+77:   if ! git merge-base --is-ancestor "$HEAD_SHA" "$c" >/dev/null 2>&1; then
+```
+
+In the clean case `main` is an ancestor of the head and `strays` is empty, which is why this
+costs nothing today. But the loop exists for the case where it *isn't* clean, and the most
+important such case — a cell that ran `git fetch <url> <refspec>` against the upstream repo,
+the answer-key retrieval this whole design targets — brings in the fork's entire remaining
+history, so N becomes thousands and the loop forks one `git` process per commit. The reporting
+value saturates after the first foreign commit (`:79` prints only when `n_foreign` is 1), so
+every additional fork buys only a counter. The consequence is not a wrong verdict, just a slow
+one at the worst moment.
+
+**Recommendation:** Cap the examined set (e.g. `head -200`, and report ">200 stray commits"),
+or replace the loop with a single set operation — `git rev-list --all --not "$HEAD_SHA"` minus
+`git rev-list --ancestry-path "$HEAD_SHA"..--all` — computed in two processes instead of N.
+
+---
+
+#### tinyproxy's 600 s idle timeout can cost a full re-paid cell
+
+**Severity:** Low
+**Location:** `runs/review-arms/crb-pipeline/docker/tinyproxy.conf:6` (`Timeout 600`), consumed by `run-host.sh:432-446`
+**Move:** Trace the resource lifecycle / find the contention point
+**Classification:** Micro (one connection setting) / Hot path (the tunnel every paid cell depends on)
+**Confidence:** Low
+**Baseline:** no baseline available — flagged as speculative; the proxy has never run and no
+per-cell tunnel-idle distribution exists.
+
+Every cell's API traffic now traverses a CONNECT tunnel with a 600 s inactivity cap that did
+not exist before this commit. Streaming responses keep the tunnel active, so the common case is
+fine; the exposure is a long local gap between API turns (a slow subagent hand-off, a large
+local tool sequence) that idles a pooled connection past ten minutes. If the CLI does not
+transparently re-establish, the cell errors *after* spending most of a $10–40 review, and lands
+in the retry path — which re-pays the cell in full. `MaxClients 100` / `StartServers 2`
+(`tinyproxy.conf:9-10`) are comfortable for a serial sweep even with a fan-out of parallel
+critic subagents, but would need re-derivation if cells are ever run concurrently.
+
+**Recommendation:** Raise `Timeout` well above the longest plausible cell (e.g. 3600) — the
+value has no security function, since the allowlist and `ConnectPort 443` do the filtering —
+and record the observed per-cell tunnel behaviour from the pilot before the full sweep.
+
+---
+
+#### The sweep-budget gate re-reads every cell's ledger after every cell
 
 **Severity:** Informational
-**Location:** `runs/review-arms/crb-pipeline/run-host.sh:233` (cell-status subprocess), `:404-429` (sweep gate), `scripts/crb-subset-leaderboard.py:646-687` and `:734` (`attrition`)
-**Move:** Ask "what's the size of N?" — N is 50, and every structure here is linear or quadratic in 50 over kilobyte files
-**Classification:** Micro / Cold-to-warm (all three sit beside a 161 s container or in a once-per-run CLI)
-**Confidence:** High — measured
-**Baseline:** measured, individually below, against the 161 s median cell duration
+**Location:** `runs/review-arms/crb-pipeline/run-host.sh:544-570`
+**Move:** Count the hidden multiplications
+**Classification:** Micro (repeated small file reads) / Hot path (per-cell)
+**Confidence:** High
+**Baseline:** 50 cells maximum (`docs/working/crb-direction1-setup.md:307`); each
+`attempts.jsonl` is ≤ `MAX_ATTEMPTS` JSON lines.
 
-- **`crb-cell-status.py` as a subprocess instead of inline:** **0.020 s** per invocation, once per cell, ≤1 s across a 50-cell sweep. That is 0.012% of a median cell. The extraction bought fixtures (`test/crb-cell-status.bats`) for the predicate that decides whether to re-pay $10–40; the trade is overwhelmingly correct.
-- **Sweep-budget gate re-summing every cell's `attempts.jsonl` after every cell (O(cells²)):** **0.021 s** per invocation on a synthetic 50-cell `$OUT`; **0.71 s** for all 50 invocations of a full sweep, python startup included. At N=50 the quadratic term is 2500 reads of 1–2-line files. It would need N in the thousands to matter, and the sweep is capped at 50 PRs by the dataset.
-- **`attrition()` reading run-meta and the manifest on every invocation:** it is called **once**, from `main()` (`att_lines, _checked = attrition(our_urls, Path(args.run_meta))`), in a CLI that runs once per results write-up. Both files are ≤50 records. There is no per-row re-read to eliminate.
+The gate re-scans `os.listdir($OUT)` and re-parses every cell's `attempts.jsonl` on each
+iteration, so a 50-cell sweep performs ~1,275 ledger reads instead of 50. At these sizes the
+cost is microseconds and there is nothing to fix for performance reasons — it is recorded only
+because this loop is the arm's money gate, and if the ledger ever grows to per-turn records the
+quadratic re-scan is where it will first be felt.
 
-**Recommendation:** No action on any of the three. If a future variant ever fans the leaderboard out per-PR, hoist the manifest read out of `attrition()` then — not now.
+**Recommendation:** No action. If ledgers ever become large, keep a running total in the shell
+and re-derive from disk only on resume.
+
+---
+
+#### Baselines are stored as uncompressed tars
+
+**Severity:** Informational
+**Location:** `scripts/crb-materialize.py:300-306` (`tar --create`, no compression flag)
+**Move:** Price the deployment environment
+**Classification:** Micro (constant-factor storage) / Cold path (once per slug)
+**Confidence:** High
+**Baseline:** 280 GB free of 1,007 GB on the clone filesystem, measured on this host
+2026-08-19; `--all` projected at ~13 GB with baselines
+(`docs/decisions/034-...:63`, `fact-check claim 1 — Mostly Accurate`).
+
+The doubling is real and correctly documented. Compression would not recover much — the
+clones are 10–75 MB of already-compressed `.git` packfiles plus a working tree — and it would
+add CPU to the per-cell restore, which is currently the cheapest part of the loop (0.6 s
+extract, measured). Recording this only to close the disk axis the scope raised: at 1.3% of
+free space for the full sweep, disk does not constrain this arm, and the uncompressed choice is
+the right one for a per-cell hot path.
+
+**Recommendation:** No action. Note that `docs/working/crb-direction1-setup.md:27` still says
+`~6-7 GB` (`fact-check claim 5 — Stale`); fixing that line is the only disk-related work
+outstanding.
 
 ---
 
 ## Endorsements
 
-- The completion predicate's two length constants sit in an empirically empty band with wide margin on both sides: `MIN_REVIEW_LEN = 200` and `STUB_MAX_LEN = 300` against a corpus whose stubs are 51 and 56 characters and whose shortest genuine review is 1,208 — 4x above the stub ceiling and 4x below the shortest real body, so neither the false-complete nor the re-pay direction is close to firing on the measured corpus. `[read: scripts/crb-cell-status.py:278-300 plus the 32 result.json bodies under runs/review-arms/, whose lengths I enumerated]`
-- Cost is summed over `attempts.jsonl` rather than the overwritable `result.json` in both the sweep gate and `run-meta.json`, which is the arrangement that makes a retried cell's earlier paid attempts visible to the ceiling rather than silently forgotten. `[read: runs/review-arms/crb-pipeline/run-host.sh:176-199, 389-399, 404-419]`
-- Moving `write_run_meta` into an `EXIT` trap means the `SWEEP_BUDGET` halt — which exits 2 from inside the loop — still writes the provenance file the operator needs to decide whether to raise the ceiling. `[read: runs/review-arms/crb-pipeline/run-host.sh:159-220, 404, 432]`
-- The `--reset` code path returns from `main()` before `load_prs()`, so a per-cell reset never parses the benchmark dataset — the per-cell python cost is manifest-only. `[read: scripts/crb-materialize.py:463-501]`
-- Skipping already-complete cells `continue`s before both the container and the budget gate, so a resumed sweep pays nothing for work it recognises as done. `[unverified — submitted as claim]` — claim: on a resume, a cell whose `result.json` passes `crb-cell-status.py` starts no container and appends no ledger line.
+- The per-cell restore verifies the baseline sha256 before extracting, and the tar is read
+  twice (hash, then extract) — measured at 0.1 s + 0.6 s on the 210 MB sentry baseline on this
+  host, so the integrity check is effectively free relative to the extract it guards.
+  `[unverified — submitted as claim]`
+- The review container's entrypoint is the baked `claude` binary
+  (`docker/Dockerfile.review:18-28`), and the run command at `run-host.sh:432-446` no longer
+  contains the `npx -y @anthropic-ai/claude-code@"$CC_VERSION"` that the pre-`197eec6` version
+  of that command carried — so per-cell package resolution is out of the paid path, not merely
+  cached. `[read: runs/review-arms/crb-pipeline/docker/Dockerfile.review:16-28 + runs/review-arms/crb-pipeline/run-host.sh:432-446]`
+- R3 (nested clone) and A8 (a voided cell leaving a permanently dead clone) are closed
+  structurally: the clone is left as written and the next cell's `--restore` wipes it, so no
+  cell is permanently lost to a void and no operator action is needed to recover one.
+  `[fact-check: claim 2 — Verified]`
+- The disposable-clone design is per-slug and shares no mutable host state between cells
+  (each cell touches only `$CLONES/$id`, its own `$OUT/$id`, and a private `mktemp -d` payload),
+  so nothing in this commit blocks running cells concurrently against the one shared proxy —
+  the serial loop is now the only thing serializing the sweep.
+  `[unverified — submitted as claim]`
+- `git fsck --connectivity-only --no-reflogs` in the audit measured 0.01–0.02 s across all five
+  pilot clones on this host, so moving detection into a throwaway container costs container
+  startup rather than analysis time. `[unverified — submitted as claim]`
+
+---
 
 ## Summary Table
 
 | # | Finding | Severity | Location | Confidence |
 |---|---------|----------|----------|------------|
-| 1 | Every existing clone fails the pre-run reset; zero cells run, recovery is a 6–7 GB re-clone | High | `scripts/crb-materialize.py:329-338` | High |
-| 2 | Cell with no `result` event retries unboundedly and is ledgered as $0 | High | `run-host.sh:238-252, 294-312` | High |
-| 3 | `SWEEP_BUDGET` is a directory-lifetime ceiling; a resume pays one cell before re-halting | Medium | `run-host.sh:404-429` | High |
-| 4 | Post-run void leaves the clone un-reset; cell permanently dead, no remediation message | Medium | `crb-materialize.py:329-343` | High |
-| 5 | Containment machinery ≈1.4 s/cell vs 161 s median (0.9%); `--connectivity-only` saves 30–55x | Low | `crb-materialize.py:243-248` | High |
-| 6 | cell-status subprocess (0.020 s), O(cells²) gate (0.71 s/sweep), `attrition()` (called once) | Informational | `run-host.sh:233, 404` | High |
+| 1 | No-result cells retry unboundedly and ledger `cost_usd: 0` | High | `run-host.sh:376-401,460-470,529-539` | High |
+| 2 | `SWEEP_BUDGET` checked after the spend; skips jump the gate | Medium | `run-host.sh:544-570` vs `:369,380,400,418` | High |
+| 3 | Non-restarting proxy sidecar, liveness checked once per sweep | Medium | `run-host.sh:156-166,197-231,432-446` | Medium |
+| 4 | Paid auth preflight is unledgered and paid per invocation | Low | `run-host.sh:235-247` | High |
+| 5 | Audit forks one `merge-base` per stray commit, unbounded | Low | `crb-audit-clone.sh:73-81` | High |
+| 6 | tinyproxy `Timeout 600` can cost a re-paid cell | Low | `docker/tinyproxy.conf:6` | Low |
+| 7 | Budget gate re-reads all ledgers per cell (O(N²)) | Informational | `run-host.sh:544-570` | High |
+| 8 | Baselines stored uncompressed (disk doubling, not a constraint) | Informational | `crb-materialize.py:300-306` | High |
+
+---
 
 ## Overall Assessment
 
-The performance posture of the *changed code itself* is good, and the three overheads the brief was most worried about are, on measurement, noise: the containment machinery costs about 0.9% of a cell, the extracted status predicate costs 0.02 s, and the quadratic budget gate costs 0.71 seconds across an entire 50-cell sweep. `--connectivity-only` is genuinely load-bearing for keeping fsck cheap (30–55x), and the `git gc` worry rests on a size confusion — the packs are 8.5–74 MiB, not the 33–243 MB of the directories. None of that should hold up the sweep.
+On the question the scope actually asks — is the new per-cell overhead seconds or minutes × 50
+— the measured answer is seconds: ≈ 2–3 s per cell (sha256 0.1 s, `rm -rf` 0.2 s, extract
+0.6 s, harvest walk 0.1 s, audit git commands 0.05 s, plus one container launch), against a
+per-cell review of 4.5–10.8 minutes and $10–40. That is under ~1% of a cell and about two
+minutes across a 50-cell sweep. Disk is likewise a non-issue: ~13 GB for `--all` against 280 GB
+free. The disposable-clone and egress-allowlist controls are, on the compute and storage axes,
+essentially free, and the harness pays for them with a design that is also more parallelizable
+than what it replaced.
 
-What should hold up the sweep is finding 1: **the harness as committed cannot run a single cell against any clone that currently exists on disk.** All five pilot clones carry the two pre-fix signatures (`FETCH_HEAD`, dangling `refs/remotes/origin/HEAD`) that `fetch_traces()` now treats as contamination, and the healer written for exactly that case is unreachable because the check that fires precedes it. The failure is safe — $0 spent, exit 3 — but it is discovered only after the operator has set up a sweep, and the fix is bandwidth (6–7 GB) rather than code. Fix that first, and add the `--verify`-all preflight so the next such migration surfaces at $0.
-
-The two cost-governance findings (2 and 3) are the ones that matter for a $500–2000 operation: the aggregate ceiling cannot see spend from cells that die before emitting a result event, and those same cells retry without limit; and the ceiling's directory-lifetime semantics make each resume attempt cost a cell. Both are fixable in place with a few lines — hoist the attempt check out of the `result.json` guard, write a stub result on `res is None`, and evaluate the gate once before the first container. No profiling is needed to confirm anything here; every number in this review was measured, and the remaining uncertainty is frequency (how often a cell dies without a result event, how often a cell voids), not magnitude.
+The cost exposure is entirely in the money machinery around the container, and the two ambers
+carried into this review are still open and are now more likely to fire, not less. Finding 1 is
+the one to fix before any paid sweep: the new preconditions (a sidecar that must stay up, an
+`--internal` network, a baked image) all fail in the shape "container never emits a result
+event", which is precisely the shape that bypasses `MAX_ATTEMPTS` and ledgers $0. Finding 3
+supplies a plausible mechanism that puts all 50 cells into that state at once, and Finding 2
+means the ceiling that is supposed to bound the damage is consulted only after the next cell is
+paid for. Fix 1 and 2 together — they are a few lines each and are independent of anything
+docker-shaped, so both are verifiable on this host at $0 — and add the liveness probe from 3
+before the pilot. No profiling is needed for any finding here; the numbers that matter are
+already measured, and what remains unmeasurable is the docker layer, which the commit
+deliberately defers to its own $0 preflight.
 
 ## Goal-Alignment Note
-- Answered: yes — all five questions in the brief answered with measured numbers, plus one blocking issue found by execution.
-- Out of scope: container/npx startup cost per cell and the `INST_HOME` payload copy (unchanged by this diff); the judge and injector stages downstream of `run-meta.json`; the egress-allowlist control (R3) referenced in `fetch_traces()`, which is a security not a performance control.
-- Escalate: finding 1 blocks the pilot outright and is not a code fix — the orchestrator should decide between a one-shot `--heal-legacy` mode and a `--force` re-materialize of all clones, and should budget the 6–7 GB before scheduling the sweep. Findings 2 and 3 are small edits but touch cost governance, so they belong in the same pass as any other budget-gate change rather than being split across iterations. Working copies I made under `/workspace/.scratch/perf/` (two clone copies, ~450 MB) can be deleted.
+- Answered: yes — per-cell overhead quantified as seconds, cost risks located in the retry/budget path
+- Out of scope: security properties of the allowlist and the audit's detection coverage (security-reviewer's); correctness of the fact-check's Incorrect verdicts (accepted as given); anything requiring docker execution
+- Escalate: A6 (Finding 1) and A7 (Finding 2) are still open after three review rounds and are both few-line, $0-verifiable fixes — the orchestrator should treat them as blocking the pilot rather than as carried ambers. A8 is confirmed closed structurally by the fact-check, and I found no performance-side regression from that closure.

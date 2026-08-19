@@ -1,0 +1,92 @@
+bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+1..37
+bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+ok 1 a pristine clone audits clean
+bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+ok 2 an agent commit on top of the head does NOT void
+bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+ok 3 a surviving remote VOIDS
+bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+ok 4 a FETCH_HEAD trace VOIDS
+bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+ok 5 a fetched-then-deleted ref VOIDS via the unreachable commit
+bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+ok 6 a commit that does not descend from the head VOIDS
+bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+ok 7 a nested repository VOIDS
+bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+ok 8 a corrupt object store reports 'cannot certify' rather than passing
+bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+ok 9 usage errors exit 2, distinct from a void
+bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+ok 10 the unreachable-commit check is non-vacuous only because of --no-reflogs
+bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+ok 11 snapshot then restore is a byte-identical round trip
+bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+ok 12 restore erases an agent commit, a staged edit and a created branch
+bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+ok 13 restore destroys a nested clone of the answer key
+bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+ok 14 restore erases a re-added remote and a deleted main
+bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+ok 15 a tampered baseline refuses to restore
+bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+ok 16 restore refuses when the manifest carries no baseline hash
+bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+ok 17 artifact_index covers .md/.json, skips .git, and ignores symlinks
+bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+ok 18 CLI --restore --dry-run destroys nothing
+bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+ok 19 CLI --restore reaches restore_clone (no-op mutation would fail)
+bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+ok 20 the allowlist names exactly one host, anchored
+bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+ok 21 the proxy config denies by default and points at the allowlist
+bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+ok 22 the proxy tunnels 443 only and serves only the pinned subnet
+bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+ok 23 the review image bakes the CLI rather than installing per cell
+bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+ok 24 every container that carries the API key is on the restricted network
+bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+ok 25 the audit container has no network and no key
+bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+ok 26 the runner never runs host git against the work clone
+bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+ok 27 the runner restores from the baseline before every cell
+bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+ok 28 the egress preflight tests both directions and blocks the sweep
+bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+ok 29 an unchanged tree harvests nothing
+bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+ok 30 a new rubric is harvested with its directory structure
+bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+ok 31 a modified pre-existing file is harvested as modified
+bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+ok 32 an artifact written to a gitignored path is still harvested
+bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+ok 33 repository internals are never harvested
+bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+ok 34 a symlinked artifact is not harvested and not followed
+bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+ok 35 an oversized file is skipped, named, and does not stop the harvest
+bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+ok 36 a missing baseline index is an invocation error, not an empty harvest
+bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+ok 37 usage and a missing clone both exit 2
+EXIT=0

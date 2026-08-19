@@ -1,0 +1,9 @@
+code-fact-check r3 — pilot clone disk (apparent size, matching dir_mb())
+command: du -sm --apparent-size external/crb-eval/*   cwd: /workspace   date: 2026-08-19T23:09:53Z
+195	external/crb-eval/cal_com-PR11059
+32	external/crb-eval/discourse-graphite-PR4
+136	external/crb-eval/grafana-PR79265
+139	external/crb-eval/keycloak-PR36880
+205	external/crb-eval/sentry-greptile-PR5
+705	total
+exit: 0
