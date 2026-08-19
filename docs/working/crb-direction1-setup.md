@@ -25,7 +25,8 @@ result is a row in a 49-tool leaderboard we did not build.
 scripts/crb-materialize.py --list          # 50 PRs, 173 goldens
 scripts/crb-materialize.py --per-repo 1    # 5-PR pilot: one per upstream project
 scripts/crb-materialize.py --all           # all 50 (~6-7 GB)
-scripts/crb-materialize.py --verify <slug> # re-assert containment on a clone
+scripts/crb-materialize.py --verify <slug> # re-assert containment (read-only)
+scripts/crb-materialize.py --reset  <slug> # restore to materialized state, then verify
 ```
 
 Clones the benchmark's fork of each PR (`claude-code`'s copy — any tool's fork
@@ -85,14 +86,13 @@ Outputs land in `runs/review-arms/crb-pipeline/<slug>/`: `transcript.jsonl`
 `artifacts/` (anything the pipeline wrote into the repo — the rubric and critic
 reports). `transcript.jsonl` and `stderr.log` are **gitignored**: they quote
 foreign-repo file contents verbatim, the same reason `runs/**/prompt.txt` is
-ignored. The clone is reset with `git checkout -- . && git clean -qfdx` after
-harvesting (`-x` so gitignored files the review created do not survive), so
-re-runs start from the same state.
+ignored. The clone is reset with `crb-materialize.py --reset <slug>` after
+harvesting, so re-runs start from the same state.
 
 Three guards run per cell, all added after the 2026-08-18 review:
 
 - **Containment is re-asserted before and after every cell** via
-  `crb-materialize.py --verify <slug>` — the invariant is established at
+  `crb-materialize.py --reset <slug>` — the invariant is established at
   materialize time but the clone is then mounted read-write into an agent
   container, so it is re-checked rather than assumed. A pre-run failure skips
   the cell. A post-run failure **voids** it: `CONTAINMENT_FAILED` is written into
@@ -100,9 +100,30 @@ Three guards run per cell, all added after the 2026-08-18 review:
   `subtype: "containment_failed"`, so the resume predicate will not bank it and
   `crb-pipeline-to-benchmark.py` refuses to inject it. That matters because a
   contaminated clone yields a plausibly *high* score, not an obvious error.
+
+  `--reset` distinguishes agent *work* from *contamination*, which the
+  2026-08-18 pre-mortem (narratives 1–2) found the previous version could not.
+  The payload's own `CLAUDE.md` instructs the reviewing agent to commit, and a
+  commit on top of the reviewed head cannot contain the answer key — there is no
+  remote to fetch it from — so it is **reset**, along with staged edits, created
+  branches/tags, and a deleted `main`. A surviving **remote**, or any commit
+  reachable outside the reviewed head's ancestry, still **voids**. The old reset
+  (`git checkout -- . && git clean -qfdx`) restored tracked files *from the
+  index*, so it undid neither a commit nor a `git add`: a commit voided the cell
+  and left the clone failing its pre-run check on every later attempt, and a
+  staged edit rode into the next attempt invisibly. Guarded by
+  `test/crb-containment-reset.bats`, whose load-bearing cases are the two that
+  must still void.
 - **Completed cells are skipped only if they actually produced a review** —
   `NOT is_error AND subtype == "success" AND len(result) >= 200 AND` no
   known non-review signature (auth "logged in", quota "hit your weekly limit").
+  The rules and the artifacts they were derived from live in
+  `scripts/crb-cell-status.py`, with fixtures in `test/crb-cell-status.bats`.
+  The non-review signatures apply **only below 1000 chars**: "logged in" is
+  ordinary prose in a review of auth code, and two pilot instances are
+  auth-domain (`keycloak-PR36880`, `cal_com-PR11059`), so matching them in a
+  multi-KB body would re-pay for good reviews and then drop those PRs out of the
+  judged subset (pre-mortem narrative 5).
   `num_turns` is deliberately *not* part of the test: 8 real cells in this repo
   are genuine successes with `num_turns == 0` and 3–7 KB of review text, so
   requiring turns re-pays for completed work. Verified against a
@@ -118,6 +139,11 @@ Three guards run per cell, all added after the 2026-08-18 review:
   (default 2) stops a deterministically-failing cell being re-paid forever.
   The default sits above the $50–200 pilot estimate below on purpose: a ceiling
   that halts a legitimate pilot partway is worse than one you raise for `--all`.
+  **On `--all`, expect to hit it** — the 50-PR estimate is $500–2000 — so raise
+  it deliberately rather than discovering it at cell 15. `run-meta.json` is
+  written from an `EXIT` trap, so the budget halt, a `Ctrl-C`, and a docker
+  failure all still leave the provenance file (pre-mortem narrative 4); it
+  previously sat after the loop and the halt skipped it.
 
 **Deviations from E8-as-run, to state in any results doc:** E8 was orchestrated
 stage-by-stage by a session (k=2 fact-check, per-instance critic list). Here the
@@ -201,6 +227,16 @@ scripts/crb-subset-leaderboard.py --tool mfc-pipeline-e8   # ranking on OUR PRs 
 - `crb-subset-leaderboard.py` re-aggregates **every** tool over exactly the PRs
   our arm reviewed (micro-averaged, step 3's convention). Step 3's own table
   compares our 5 PRs against their 50 — different denominators, not a ranking.
+- **Read the `SUBSET ATTRITION` line before quoting any number.** The subset is
+  "PRs our tool has a judged row for", so a cell that was voided, budget-killed,
+  or dropped at `MAX_ATTEMPTS` leaves the denominator silently — and the cells
+  that fail are the ones the pipeline struggled on, so what remains is selected
+  *for* pipeline success and biases recall in our favour (pre-mortem narrative
+  3). The script now cross-checks the judged subset against
+  `run-meta.json`'s `requested_instances`, names every missing cell with its
+  reason, and repeats the warning inside `--markdown` so it survives the
+  copy-paste into a results doc. If it prints `attrition NOT checked`, the
+  run-meta was not found — fix that before believing the table.
 
 ## Cost model
 

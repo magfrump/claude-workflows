@@ -28,12 +28,57 @@ sys.path.insert(0, str(Path(__file__).resolve().parent))
 # --out there change where evaluations land, so this reads the same constants
 # rather than hand-copying them and holding them in sync by comment.
 from crb_common import (  # noqa: E402
-    DEFAULT_JUDGE, DEFAULT_OUT, DEFAULT_TOOL, WORKSPACE, sanitize_model,
+    DEFAULT_JUDGE, DEFAULT_OUT, DEFAULT_TOOL, MANIFEST, RUN_META, WORKSPACE,
+    sanitize_model,
 )
 
 
 def f1(p, r):
     return 2 * p * r / (p + r) if (p + r) else 0.0
+
+
+def attrition(urls, run_meta_path: Path):
+    """(lines, checked) — sweep cells that are NOT in the judged subset.
+
+    The subset is defined as "PRs our tool has a judged row for", which means a
+    cell that produced nothing injectable removes itself from the denominator
+    without appearing anywhere in this table. That attrition is not random: the
+    cells that fail are the ones where the pipeline struggled, so a subset
+    selected this way is selected FOR pipeline success, and the resulting recall
+    is biased in our own favour. Reporting the count is not enough — the reader
+    needs to know which PRs left and why.
+    """
+    if not run_meta_path.exists():
+        return ([f"!! subset attrition NOT checked: no run-meta.json at {run_meta_path} "
+                 f"(pass --run-meta to point at one). The {len(urls)} PR(s) below are the "
+                 f"ones that were judged, which is not necessarily the ones that were run."],
+                False)
+    meta = json.loads(run_meta_path.read_text())
+    manifest = json.loads(MANIFEST.read_text()) if MANIFEST.exists() else {}
+    cells = meta.get("cells") or {}
+    requested = meta.get("requested_instances") or sorted(cells)
+    voided = set(meta.get("voided_cells") or [])
+    judged = set(urls)
+    lost = []
+    for slug in requested:
+        url = (manifest.get(slug) or {}).get("url")
+        if url and url in judged:
+            continue
+        if slug in voided:
+            why = "voided by a post-run containment failure"
+        elif slug not in cells:
+            why = "no cell produced (missing clone, or pre-run containment failure)"
+        elif not url:
+            why = f"not in {MANIFEST.name} — cannot map the slug to a PR"
+        else:
+            why = "ran, but has no judged row (no reviewable output, or not injected)"
+        lost.append(f"     {slug:28} {why}")
+    if not lost:
+        return ([], True)
+    return ([f"!! SUBSET ATTRITION: {len(lost)} of {len(requested)} attempted cell(s) are NOT "
+             f"in this ranking. The subset is defined by which PRs our tool was judged on, "
+             f"so failed cells drop out of the denominator — which biases the numbers below "
+             f"in our favour. Missing:"] + lost, True)
 
 
 def main():
@@ -50,6 +95,9 @@ def main():
                     help="rank over every PR in the evaluations file (that is all 50 only "
                          "when the file was seeded from the benchmark's checked-in results)")
     ap.add_argument("--markdown", action="store_true", help="emit a markdown table")
+    ap.add_argument("--run-meta", default=str(RUN_META),
+                    help=f"sweep provenance to check subset attrition against "
+                         f"(default {RUN_META})")
     args = ap.parse_args()
 
     path = (Path(args.evaluations) if args.evaluations
@@ -59,8 +107,11 @@ def main():
                  f"(or point --out/--judge/--evaluations at the right dir)")
     evals = json.loads(path.read_text())
 
-    urls = sorted(evals) if args.all_prs else sorted(
-        u for u, tools in evals.items() if args.tool in tools)
+    # Attrition is always measured against the PRs OUR tool was judged on, even
+    # under --all-prs where the displayed subset is everything: the question is
+    # what happened to the cells we ran, not how the table is scoped.
+    our_urls = sorted(u for u, tools in evals.items() if args.tool in tools)
+    urls = sorted(evals) if args.all_prs else our_urls
     if not urls:
         sys.exit(f"tool {args.tool!r} has no judged PRs in {path}")
 
@@ -93,6 +144,7 @@ def main():
     # same golden set, and in the checked-in evaluations it frequently was not
     # (goldens were revised between tool runs). Surface it in the output rather
     # than in a runbook nobody re-reads at write-up time.
+    warn = ""
     skew = []
     for url in urls:
         golds = {t: r.get("total_golden", 0) for t, r in evals[url].items()
@@ -109,8 +161,20 @@ def main():
                    if lo_than_ours else "")
                 + ". Recall is not denominator-uniform — see the gold column.")
         print(warn, file=sys.stderr)
+
+    # Attrition goes to stderr like the skew warning AND into the markdown body:
+    # the markdown is what gets pasted into a results doc, and a caveat that
+    # only ever existed on a terminal is a caveat that will not survive to the
+    # place the number is quoted.
+    att_lines, _checked = attrition(our_urls, Path(args.run_meta))
+    for line in att_lines:
+        print(line, file=sys.stderr)
+
     if args.markdown:
         print(f"Subset: {header} · micro-averaged · judge: {path.parent.name}\n")
+        # Same reasoning for the skew warning: it belongs where the table is read.
+        for note in ([warn] if warn else []) + ([("\n".join(att_lines))] if att_lines else []):
+            print("> " + note.replace("\n", "\n> ") + "\n")
         print("| # | Tool | Precision | Recall | F1 | PRs | Cands | Goldens |")
         print("|---|---|---|---|---|---|---|---|")
         for i, (tool, p, r, f, a) in enumerate(rows, 1):

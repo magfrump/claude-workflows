@@ -26,6 +26,7 @@ Usage:
   scripts/crb-materialize.py --all                      # all 50 (~6-7 GB)
   scripts/crb-materialize.py --per-repo 1 --dry-run     # print, clone nothing
   scripts/crb-materialize.py --verify grafana-PR79265   # re-check containment
+  scripts/crb-materialize.py --reset  grafana-PR79265   # restore, then re-check
 
 Writes/updates runs/review-arms/crb/instances.json. Each record carries: url,
 source_repo, pr_title, fork, fork_url, head, base, commits, n_goldens,
@@ -195,6 +196,69 @@ def verify_containment(dst: Path, slug: str, head: str = None):
     return n_commits, stat
 
 
+def classify_strays(dst: Path, head: str):
+    """(strays, foreign) for commits reachable from a ref but not from `head`.
+
+    A stray that DESCENDS from the reviewed head was authored inside the clone
+    after materialization — the reviewing agent committing its own rubric is the
+    expected case, since the payload's CLAUDE.md instructs exactly that. It
+    cannot contain the answer key: the merged upstream fix is not a descendant
+    of the PR head in this clone, and with no remote there is no route to fetch
+    it. A stray that does NOT descend from head is the shape a fetch would leave,
+    and is treated as contamination.
+    """
+    strays = [l for l in sh(["git", "rev-list", "--all", "--not", head],
+                            cwd=dst).splitlines() if l]
+    foreign = [c for c in strays
+               if subprocess.run(["git", "merge-base", "--is-ancestor", head, c],
+                                 cwd=dst, capture_output=True).returncode != 0]
+    return strays, foreign
+
+
+def reset_clone(dst: Path, slug: str, head: str, base: str):
+    """Restore a clone to its materialized ref/index/worktree state. Returns a
+    note describing what had to be undone (empty when nothing had).
+
+    Raises RuntimeError — i.e. VOIDS the cell — only for contamination:
+    a surviving remote, or a commit reachable outside the reviewed head's
+    ancestry. Agent-authored commits on top of the head are reset, not voided.
+
+    This is the between-cells reset, and it replaced `git checkout -- .` +
+    `git clean -qfdx`, which restored *tracked files from the index* and so
+    undid neither a commit nor a `git add`. Both survivals were silent: the
+    containment check inspects refs and remotes, not the index.
+    """
+    remotes = sh(["git", "remote"], cwd=dst)
+    if remotes:
+        raise RuntimeError(f"{slug}: remote(s) present ({remotes.split()!r}) — "
+                           "answer-key containment is broken")
+    strays, foreign = classify_strays(dst, head)
+    if foreign:
+        raise RuntimeError(
+            f"{slug}: {len(foreign)} commit(s) reachable outside the reviewed head "
+            f"and NOT descended from it ({foreign[0][:12]}…) — containment is broken")
+    dirty = sh(["git", "status", "--porcelain"], cwd=dst)
+    # -B moves `review` back onto the pinned head from wherever HEAD now is;
+    # --force discards worktree state; the explicit reset --hard then guarantees
+    # the index matches too (a staged edit is what `checkout -- .` used to keep).
+    sh(["git", "checkout", "--force", "--quiet", "-B", "review", head], cwd=dst)
+    sh(["git", "reset", "--hard", "--quiet", head], cwd=dst)
+    sh(["git", "branch", "--quiet", "-f", "main", base], cwd=dst)
+    # Same scrub materialize() performs, so a branch or tag the agent created
+    # cannot linger into the next cell and read as a stray commit there.
+    for ref in sh(["git", "for-each-ref", "--format=%(refname)",
+                   "refs/heads", "refs/tags", "refs/remotes"], cwd=dst).splitlines():
+        if ref not in ("refs/heads/review", "refs/heads/main"):
+            sh(["git", "update-ref", "-d", ref], cwd=dst)
+    sh(["git", "clean", "-qfdx"], cwd=dst)
+    notes = []
+    if strays:
+        notes.append(f"{len(strays)} agent commit(s) on top of the head, reset")
+    if dirty:
+        notes.append(f"{len(dirty.splitlines())} dirty path(s) cleaned")
+    return "; ".join(notes)
+
+
 def materialize(slug, url, entry, fork, depth, force):
     dst = DST_ROOT / slug
     if dst.exists():
@@ -270,16 +334,22 @@ def main():
     g.add_argument("--list", action="store_true", help="list available PRs and exit")
     g.add_argument("--verify", nargs="+", metavar="SLUG",
                    help="re-assert answer-key containment on existing clone(s) and exit "
+                        "(read-only)")
+    g.add_argument("--reset", nargs="+", metavar="SLUG",
+                   help="restore clone(s) to the materialized state, then verify — "
+                        "undoes agent commits/edits, voids only on contamination "
                         "(used by run-host.sh before and after each review cell)")
     ap.add_argument("--depth", type=int, default=50, help="shallow clone depth (default 50)")
     ap.add_argument("--force", action="store_true", help="rebuild existing clones")
     ap.add_argument("--dry-run", action="store_true", help="print the selection, clone nothing")
     args = ap.parse_args()
 
-    if args.verify:
+    if args.verify or args.reset:
+        slugs = args.verify or args.reset
+        resetting = bool(args.reset)
         manifest = json.loads(MANIFEST.read_text()) if MANIFEST.exists() else {}
         bad = []
-        for slug in args.verify:
+        for slug in slugs:
             dst = DST_ROOT / slug
             if not (dst / ".git").is_dir():
                 print(f"  !! {slug}: no clone at {dst}", file=sys.stderr)
@@ -291,20 +361,23 @@ def main():
             # absent from the manifest therefore cannot be verified, and saying
             # so is the only honest outcome: run-host.sh accepts slugs from argv,
             # so this is reachable, and a silent weak pass is what R2 is about.
-            head = (manifest.get(slug) or {}).get("head")
-            if not head:
+            rec = manifest.get(slug) or {}
+            head, base = rec.get("head"), rec.get("base")
+            if not head or (resetting and not base):
                 print(f"  !! {slug}: no manifest entry — cannot pin the reviewed head, "
                       f"so containment is unverifiable. Re-materialize this slug.",
                       file=sys.stderr)
                 bad.append(slug)
                 continue
             try:
+                note = reset_clone(dst, slug, head, base) if resetting else ""
                 n_commits, stat = verify_containment(dst, slug, head)
             except Exception as e:
                 print(f"  !! {slug}: CONTAINMENT CHECK FAILED — {e}", file=sys.stderr)
                 bad.append(slug)
                 continue
-            print(f"  {slug}: containment ok — {n_commits} commit(s), {stat}")
+            print(f"  {slug}: containment ok — {n_commits} commit(s), {stat}"
+                  + (f" [{note}]" if note else ""))
         if bad:
             sys.exit(f"containment check failed for: {', '.join(bad)}")
         return
@@ -318,7 +391,8 @@ def main():
         print(f"\n{len(prs)} PRs, {sum(len(e['golden_comments']) for _, _, e, _ in prs)} goldens")
         return
     if not (args.all or args.per_repo or args.slug):
-        ap.error("pick one of --list / --per-repo N / --slug ... / --all / --verify SLUG ...")
+        ap.error("pick one of --list / --per-repo N / --slug ... / --all / "
+                 "--verify SLUG ... / --reset SLUG ...")
 
     sel = select(prs, args)
     print(f"Selected {len(sel)} PR(s), "

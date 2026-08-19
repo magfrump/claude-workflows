@@ -25,6 +25,11 @@ BENCH_DATA = BENCH / "results/benchmark_data.json"
 MANIFEST = WORKSPACE / "runs/review-arms/crb/instances.json"
 
 DEFAULT_OUT = WORKSPACE / "runs/review-arms/crb/offline-work-50"
+# Written by run-host.sh. The leaderboard reads it to tell "we ranked on 3 PRs"
+# apart from "we asked for 5 and 2 fell out", which is otherwise invisible:
+# a cell that produced no injectable findings never enters the judged set and so
+# silently removes itself from the denominator.
+RUN_META = WORKSPACE / "runs/review-arms/crb-pipeline/run-meta.json"
 DEFAULT_JUDGE = "claude-opus-4-5-20251101"
 DEFAULT_TOOL = "mfc-pipeline-e8"
 

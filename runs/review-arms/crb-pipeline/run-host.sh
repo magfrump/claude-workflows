@@ -149,37 +149,91 @@ if "code-review" not in r:
 print("  preflight OK — auth good, code-review skill registered")
 EOF
 
+# ── Sweep-level provenance: which payload actually ran (review-canon §3) ─────
+# A function, and trapped on EXIT, because it used to sit inline after the loop:
+# the SWEEP_BUDGET gate below exits 2 from INSIDE the loop, so the halt that is
+# the *designed* outcome of an --all run at the default ceiling (which sits
+# under the setup doc's own $500-2000 estimate) wrote no run-meta.json at all —
+# the provenance file was missing at exactly the moment a spend decision needed
+# it. Ctrl-C and a docker failure had the same hole.
+META_WRITTEN=""
+write_run_meta() {
+  if [ -n "$META_WRITTEN" ]; then return 0; fi
+  META_WRITTEN=1
+  python3 - "$OUT/run-meta.json" "$PAYLOAD_REF" "$PAYLOAD_SHA" "$MODEL" \
+           "$CC_VERSION" "$OUT" "${INSTANCES[*]}" <<'EOF' || true
+import json, os, sys
+meta_path, ref, sha, model, ccv, out, requested = sys.argv[1:8]
+cells = {}
+for name in sorted(os.listdir(out)):
+    rp = os.path.join(out, name, "result.json")
+    if not os.path.isfile(rp):
+        continue
+    try:
+        d = json.load(open(rp))
+    except Exception:
+        continue
+    # Billed spend is the sum over ATTEMPTS, not the final result: a retried
+    # cell overwrites result.json, so reporting that alone under-states what was
+    # actually paid — and this file is the provenance a results doc quotes.
+    attempts, attempt_cost = [], 0.0
+    lp = os.path.join(out, name, "attempts.jsonl")
+    if os.path.isfile(lp):
+        for line in open(lp):
+            line = line.strip()
+            if not line:
+                continue
+            try:
+                a = json.loads(line)
+            except Exception:
+                continue
+            attempts.append(a)
+            attempt_cost += a.get("cost_usd") or 0
+    final = d.get("total_cost_usd") or 0
+    cells[name] = {"cost_usd": attempt_cost if attempts else final,
+                   "final_cost_usd": final,
+                   "attempts": len(attempts) or 1,
+                   "voided_containment": os.path.isfile(
+                       os.path.join(out, name, "CONTAINMENT_FAILED")),
+                   "turns": d.get("num_turns"), "usage": d.get("usage")}
+total = sum(c["cost_usd"] or 0 for c in cells.values())
+retried = [n for n, c in cells.items() if c["attempts"] > 1]
+voided = [n for n, c in cells.items() if c["voided_containment"]]
+# requested_instances is what the sweep was ASKED to do. A slug that never got
+# far enough to write a result.json (missing clone, pre-run containment failure)
+# appears here and nowhere else, and it is what lets the leaderboard tell
+# "reviewed 3 PRs" apart from "asked for 5, 2 disappeared".
+req = requested.split()
+json.dump({"arm": "crb-pipeline", "payload_ref": ref, "payload_commit": sha,
+           "model": model, "cc_version": ccv, "cells": cells,
+           "requested_instances": req,
+           "missing_cells": [s for s in req if s not in cells],
+           "retried_cells": retried, "voided_cells": voided,
+           "total_cost_usd": round(total, 4)},
+          open(meta_path, "w"), indent=2)
+print(f"\nrun-meta: {meta_path} — {len(cells)} cell(s), total ${total:.2f}"
+      + (f", {len(retried)} retried" if retried else "")
+      + (f", {len(voided)} VOIDED by containment" if voided else ""))
+EOF
+}
+# Replaces the payload-only trap set above: both jobs, one handler.
+trap 'write_run_meta; rm -rf "$PAYLOAD_SRC"' EXIT
+
 for id in "${INSTANCES[@]}"; do
   clone="$CLONES/$id"
   [ -d "$clone/.git" ] || { echo "$id: clone missing — run scripts/crb-materialize.py --slug $id" >&2
     skipped_bad=$((skipped_bad+1)); continue; }
   dest="$OUT/$id"
-  # "Complete" must mean PRODUCED A REVIEW. Measured against the 32 result.json
-  # files already in this repo, no single field decides it:
-  #   * is_error/subtype catch the real budget exhaustion
-  #     (e7-fable-3x/mfc-hygiene/rep1: subtype=error_max_budget_usd, $15.24) —
-  #     a turns-only predicate banked exactly that and locked it out of retry;
-  #   * but 8 e5-cc-builtin cells are genuine successes with num_turns == 0 and
-  #     3-7 KB of real review text, so requiring turns > 0 re-pays for work
-  #     already done;
-  #   * and 2 e7 cells report subtype=success, is_error=false, num_turns=0 with
-  #     a 51-56 char body that is actually "You've hit your weekly limit".
-  # So: trust subtype/is_error, then look at what came out.
-  if [ -s "$dest/result.json" ] && python3 -c '
-import json, sys
-d = json.load(open(sys.argv[1]))
-r = (d.get("result") or "").strip()
-low = r.lower()
-# Signatures of a run that returned cleanly without reviewing anything.
-NON_REVIEW = ("log in", "logged in", "hit your weekly limit",
-              "hit your session limit", "limit · resets", "limit - resets")
-ok = (not d.get("is_error")
-      and d.get("subtype", "success") == "success"
-      and len(r) >= 200                      # real reviews run to KBs; these run to ~50 chars
-      and not any(s in low for s in NON_REVIEW))
-sys.exit(0 if ok else 1)' "$dest/result.json" 2>/dev/null; then
-    echo "=== $id — completed result exists, skipping (delete to re-run)"
-    skipped_ok=$((skipped_ok+1)); continue
+  # "Complete" must mean PRODUCED A REVIEW. The rules, and the artifacts they
+  # were measured against, live in scripts/crb-cell-status.py — extracted from
+  # here so they have fixtures (test/crb-cell-status.bats). It prints its reason
+  # either way; capture it so the re-run message says WHY.
+  cell_status=""
+  if [ -s "$dest/result.json" ]; then
+    if cell_status=$(python3 "$ROOT/scripts/crb-cell-status.py" "$dest/result.json" 2>&1); then
+      echo "=== $id — completed result exists, skipping (delete to re-run)"
+      skipped_ok=$((skipped_ok+1)); continue
+    fi
   fi
   if [ -s "$dest/result.json" ]; then
     # `grep -c` prints 0 AND exits 1 on no match, so `|| echo 0` would append a
@@ -194,7 +248,7 @@ sys.exit(0 if ok else 1)' "$dest/result.json" 2>/dev/null; then
       echo "=== $id — $attempts failed attempt(s), at MAX_ATTEMPTS — skipping (delete $dest to reset)" >&2
       skipped_bad=$((skipped_bad+1)); continue
     fi
-    echo "=== $id — prior result was incomplete/errored, re-running (attempt $((attempts+1)))"
+    echo "=== $id — prior result was incomplete/errored, re-running (attempt $((attempts+1))): $cell_status"
   fi
   mkdir -p "$dest"
   echo "=== $id"
@@ -203,7 +257,9 @@ sys.exit(0 if ok else 1)' "$dest/result.json" 2>/dev/null; then
   # that could re-add a remote and fetch the merged upstream fix (the answer
   # key). Failing here costs one cell; failing silently would invalidate the arm.
   # Checked BEFORE the payload copy below, so a skipped cell leaks no temp dir.
-  python3 "$ROOT/scripts/crb-materialize.py" --verify "$id" || {
+  # --reset (not --verify): the cell must START from the materialized state, so
+  # anything a previous run left behind is undone here rather than reviewed.
+  python3 "$ROOT/scripts/crb-materialize.py" --reset "$id" || {
     echo "$id: PRE-RUN containment check failed — skipping cell" >&2
     skipped_bad=$((skipped_bad+1)); continue; }
   # Fresh writable payload copy per instance: Claude Code writes settings.json,
@@ -286,15 +342,21 @@ EOF
     # which is why the traversal guard above is the load-bearing check.
     cp --no-dereference "$clone/$f" "$dest/artifacts/$f" 2>/dev/null || true
   done < <(git -C "$clone" status --porcelain=v1 -z --untracked-files=all)
-  # -x as well as -d: without it, gitignored files the review created survive
-  # into the next run of this instance, and the harvest above misses them too.
-  git -C "$clone" checkout -- . 2>/dev/null || true
-  git -C "$clone" clean -qfdx 2>/dev/null || true
+  # Reset AND re-verify in one call. This used to be `git checkout -- .` plus
+  # `git clean -qfdx`, which restores tracked files FROM THE INDEX: neither a
+  # commit nor a `git add` was undone by it, and the containment check reads refs
+  # and remotes, not the index — so a staged edit rode into the next attempt
+  # invisibly, and a commit (which this repo's own CLAUDE.md, mounted into every
+  # container, instructs the agent to make) voided the cell AND left the clone
+  # permanently failing its pre-run check. --reset distinguishes the two: agent
+  # work on top of the reviewed head is undone; a surviving remote or a commit
+  # outside that ancestry still voids.
+  #
   # A post-run failure must VOID the cell, not just print. A contaminated clone
   # produces a plausibly HIGH score, so a warning that leaves result.json marked
   # successful is the worst outcome: the resume predicate would bank it and the
   # injector would ship it. Rewrite the result so both refuse it.
-  if ! python3 "$ROOT/scripts/crb-materialize.py" --verify "$id"; then
+  if ! python3 "$ROOT/scripts/crb-materialize.py" --reset "$id"; then
     echo "$id: POST-RUN containment check FAILED — voiding this cell" >&2
     : > "$dest/CONTAINMENT_FAILED"
     python3 - "$dest/result.json" <<'EOF' || true
@@ -367,54 +429,7 @@ sys.exit(1 if total >= cap else 0)
 EOF
 done
 
-# Sweep-level provenance: which payload actually ran (review-canon section 3).
-python3 - "$OUT/run-meta.json" "$PAYLOAD_REF" "$PAYLOAD_SHA" "$MODEL" "$CC_VERSION" "$OUT" <<'EOF'
-import json, os, sys
-meta_path, ref, sha, model, ccv, out = sys.argv[1:7]
-cells = {}
-for name in sorted(os.listdir(out)):
-    rp = os.path.join(out, name, "result.json")
-    if not os.path.isfile(rp):
-        continue
-    try:
-        d = json.load(open(rp))
-    except Exception:
-        continue
-    # Billed spend is the sum over ATTEMPTS, not the final result: a retried
-    # cell overwrites result.json, so reporting that alone under-states what was
-    # actually paid — and this file is the provenance a results doc quotes.
-    attempts, attempt_cost = [], 0.0
-    lp = os.path.join(out, name, "attempts.jsonl")
-    if os.path.isfile(lp):
-        for line in open(lp):
-            line = line.strip()
-            if not line:
-                continue
-            try:
-                a = json.loads(line)
-            except Exception:
-                continue
-            attempts.append(a)
-            attempt_cost += a.get("cost_usd") or 0
-    final = d.get("total_cost_usd") or 0
-    cells[name] = {"cost_usd": attempt_cost if attempts else final,
-                   "final_cost_usd": final,
-                   "attempts": len(attempts) or 1,
-                   "voided_containment": os.path.isfile(
-                       os.path.join(out, name, "CONTAINMENT_FAILED")),
-                   "turns": d.get("num_turns"), "usage": d.get("usage")}
-total = sum(c["cost_usd"] or 0 for c in cells.values())
-retried = [n for n, c in cells.items() if c["attempts"] > 1]
-voided = [n for n, c in cells.items() if c["voided_containment"]]
-json.dump({"arm": "crb-pipeline", "payload_ref": ref, "payload_commit": sha,
-           "model": model, "cc_version": ccv, "cells": cells,
-           "retried_cells": retried, "voided_cells": voided,
-           "total_cost_usd": round(total, 4)},
-          open(meta_path, "w"), indent=2)
-print(f"\nrun-meta: {meta_path} — {len(cells)} cell(s), total ${total:.2f}"
-      + (f", {len(retried)} retried" if retried else "")
-      + (f", {len(voided)} VOIDED by containment" if voided else ""))
-EOF
+write_run_meta
 echo "Cells: $ran ran, $skipped_ok already complete, $skipped_bad skipped as unusable"
 # Exit non-zero when nothing ran AND something was unusable. Otherwise a
 # persistent containment break, or every clone missing, skips all 50 cells and
