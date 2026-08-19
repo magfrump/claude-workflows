@@ -25,6 +25,7 @@ result is a row in a 49-tool leaderboard we did not build.
 scripts/crb-materialize.py --list          # 50 PRs, 173 goldens
 scripts/crb-materialize.py --per-repo 1    # 5-PR pilot: one per upstream project
 scripts/crb-materialize.py --all           # all 50 (~6-7 GB)
+scripts/crb-materialize.py --verify <slug> # re-assert containment on a clone
 ```
 
 Clones the benchmark's fork of each PR (`claude-code`'s copy — any tool's fork
@@ -82,9 +83,26 @@ whole sweep silently:
 Outputs land in `runs/review-arms/crb-pipeline/<slug>/`: `transcript.jsonl`
 (full stream), `result.json` (cost/turns), `review.md` (final text), and
 `artifacts/` (anything the pipeline wrote into the repo — the rubric and critic
-reports). The clone is reset with `git checkout -- . && git clean -fd` after
-harvesting, so re-runs start from the same state. Completed cells are skipped
-on re-invocation (`num_turns > 0`), so a sweep resumes.
+reports). `transcript.jsonl` and `stderr.log` are **gitignored**: they quote
+foreign-repo file contents verbatim, the same reason `runs/**/prompt.txt` is
+ignored. The clone is reset with `git checkout -- . && git clean -qfdx` after
+harvesting (`-x` so gitignored files the review created do not survive), so
+re-runs start from the same state.
+
+Three guards run per cell, all added after the 2026-08-18 review:
+
+- **Containment is re-asserted before and after every cell** via
+  `crb-materialize.py --verify <slug>` — the invariant is established at
+  materialize time but the clone is then mounted read-write into an agent
+  container, so it is re-checked rather than assumed. A pre-run failure skips
+  the cell; a post-run failure marks that cell's result void.
+- **Completed cells are skipped only if they actually succeeded** —
+  `num_turns > 0 AND NOT is_error AND subtype == "success"`. A cell that
+  exhausted `--max-budget-usd` still records turns, and a turns-only predicate
+  would bank it as done and lock it out of retry.
+- **`SWEEP_BUDGET` (default $75) caps the whole sweep**, re-summed from the
+  cells on disk after each instance. `BUDGET` caps one instance only; without an
+  aggregate an unattended `--all` can spend `BUDGET × 50`.
 
 **Deviations from E8-as-run, to state in any results doc:** E8 was orchestrated
 stage-by-stage by a session (k=2 fact-check, per-instance critic list). Here the
@@ -115,15 +133,31 @@ benchmark's checked-in results for that judge, and writes a `RUN.md` runbook.
 median of **4** findings per PR; an E8 rubric carries ~**16** (1 red + 8 amber
 + 7 green on `mfc-csp`). Every unmatched green counts as a false positive, so
 the all-sections row will look precision-poor by construction. Score
-`--sections fix address` as a second tool name in the same judge pass (judging
-is per-tool, so this costs one extra judge sweep, not a new review sweep) and
-report both.
+`--sections fix address` as a second tool name (judging is per-tool, so this
+costs one extra judge sweep, not a new review sweep) and report both. Note it is
+a **separate** judge invocation over a separate work dir — the `--out` above —
+so the two variants land in different `evaluations.json` files and cannot appear
+in one leaderboard table; run `crb-subset-leaderboard.py` once per work dir.
 
 ### 4. Judge and rank
+
+**Preferred — run the generated script.** The injector writes an executable
+`judge.sh` into the work dir that sets every env var, refuses to start if
+`MARTIAN_BASE_URL` is not an `api.anthropic.com` endpoint, and passes `--tool`
+to all three steps:
+
+```bash
+ANTHROPIC_API_KEY=sk-ant-... runs/review-arms/crb/offline-work-50/judge.sh
+```
+
+Equivalent by hand (both footguns are on you):
 
 ```bash
 cd runs/review-arms/crb/offline-work-50
 export PYTHONPATH=/workspace/external/code-review-benchmark/offline   # or `uv sync` in offline/
+# MARTIAN_BASE_URL is NOT optional: the benchmark defaults it to
+# https://api.withmartian.com/v1 (step3_judge_comments.py:106), so exporting the
+# key without it sends an Anthropic credential to a third party.
 export MARTIAN_API_KEY="$ANTHROPIC_API_KEY" \
        MARTIAN_BASE_URL=https://api.anthropic.com/v1/ \
        MARTIAN_MODEL=claude-opus-4-5-20251101
@@ -140,9 +174,13 @@ scripts/crb-subset-leaderboard.py --tool mfc-pipeline-e8   # ranking on OUR PRs 
   published leaderboard with no judge-variance caveat. The results dir the run
   writes is named after the id verbatim (`claude-opus-4-5-20251101`), which is
   why the injector seeds *that* directory.
-- **`--tool` is mandatory on all three steps.** Without it step 2 re-extracts
-  the ~52 `(PR, tool)` pairs missing from the checked-in candidates file and
-  step 3 re-judges them — paid work that overwrites published numbers with ours.
+- **`--tool` is mandatory on all three steps** (`judge.sh` does this for you).
+  Without it step 2 re-extracts the **50** `(PR, tool)` pairs missing from the
+  checked-in candidates file — all `greptile-v5`; 216 pairs are absent, 166 of
+  them below step 2's ≥20-char extraction gate. Step 3 itself would *not*
+  re-judge them, since the seeded `evaluations.json` is already complete at 2449
+  pairs; the exposure is that those new extractions flow into **step 2.5**, for
+  which no `dedup_groups.json` is checked in — roughly **2233 paid LLM calls**.
   Verified: with `--tool`, the pilot needs exactly as many extractions as we
   have cells.
 - `crb-subset-leaderboard.py` re-aggregates **every** tool over exactly the PRs
@@ -169,11 +207,26 @@ API billing.
    offline half. These PRs are public and predate our models' cutoffs; a high
    score is not evidence of generalization. Their online half exists for this
    reason and needs a GitHub app, so it stays out of scope here.
-2. **Non-uniform golden denominators in the checked-in evaluations** — on the
-   same 2 PRs, different tools' checked-in rows show `total_golden` 11 vs 13
-   (goldens were revised between tool runs). Cross-tool recall is therefore not
-   perfectly denominator-uniform; `crb-subset-leaderboard.py` prints each tool's
-   `gold` so the mismatch is visible rather than hidden.
+2. **Non-uniform golden denominators in the checked-in evaluations** — measured
+   against `results/anthropic_claude-opus-4-5-20251101/evaluations.json`:
+   **24 of the 50 PRs** have a `total_golden` that differs across tools (values
+   range 1–9), because goldens were revised between tool runs. **Four of the
+   five pilot PRs are affected**, and the skew is systematic rather than noisy:
+   28 of the 49 tools were scored against a *smaller* golden set than our arm
+   will be, which inflates their recall relative to ours. Cross-tool recall is
+   therefore **not** denominator-uniform. `crb-subset-leaderboard.py` prints
+   each tool's `gold` column and now also emits an explicit
+   `GOLDEN-DENOMINATOR SKEW` warning on stderr whenever a subset contains such
+   a PR, so this cannot be missed at write-up time.
+   *(Corrected 2026-08-18: this caveat previously read "the same 2 PRs … 11 vs
+   13", which understated the effect ~12× and cited values that occur nowhere in
+   the file — the maximum golden count on any PR is 9.)*
+2b. **Dedup asymmetry, in the opposite direction** — our arm is judged **with**
+   `step2_5_dedup_candidates` active, while the checked-in rows for the other 49
+   tools were judged **without** any `dedup_groups.json` present. Dedup
+   suppresses false positives by propagating a match to sibling candidates, so
+   our *precision* is flattered by an unmeasured amount. Report both this and
+   caveat 2 together; they bias in opposite directions and neither is quantified.
 3. **Our arm is judged on its rubric, other tools on posted PR comments.** The
    rubric is a denser artifact than an inline comment thread; the extraction
    step normalizes both to issue lists, but the shapes differ.

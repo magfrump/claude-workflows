@@ -40,6 +40,13 @@ __pycache__/
 # Stage-1 dry-run/live prompt snapshots are whole-repo (or foreign-repo) content shipped
 # to third-party APIs — never commit them (security finding A6, 2026-07-31 review).
 runs/**/prompt.txt
+# Same rule, same reason: a headless run's stream transcript is a strict SUPERSET of
+# prompt.txt — it quotes every file the agent read, verbatim, from repositories we do
+# not own. The CRB arm would add 50 of these. (2026-08-18 review, finding A4.)
+# NOTE the 16 transcripts already committed under runs/review-arms/e7-fable-3x/ predate
+# this rule and stay tracked; this prevents new ones, it does not rewrite history.
+runs/**/transcript.jsonl
+runs/**/stderr.log
 runs/review-arms/e1/wt-*
 runs/review-arms/e3-loops/wt-*
 runs/review-arms/baseline-2026-08-06/wt-*

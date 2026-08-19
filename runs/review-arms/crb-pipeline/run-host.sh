@@ -59,6 +59,10 @@ PAYLOAD_REF="${PAYLOAD_REF:-main}"   # == feat/critic-evidence-discipline (merge
 # per-token price if the sweep needs to be cheaper.
 MODEL="${MODEL:-claude-fable-5}"
 BUDGET="${BUDGET:-25.00}"
+# Sweep-level ceiling. BUDGET caps ONE instance; without an aggregate the loop
+# will happily spend BUDGET x 50 unattended before run-meta.json first reports a
+# total. Checked after every cell, so the worst overshoot is one instance.
+SWEEP_BUDGET="${SWEEP_BUDGET:-75.00}"
 DRY_RUN="${DRY_RUN:-}"
 
 [ -f "$MANIFEST" ] || { echo "no $MANIFEST — run scripts/crb-materialize.py first" >&2; exit 1; }
@@ -123,7 +127,12 @@ try:
 except Exception as e:
     sys.exit(f"  preflight output is not JSON ({e})")
 r = (d.get("result") or "")
-if d.get("num_turns", 0) < 1 or "log in" in r.lower():
+# Both spellings, deliberately: E7 learned the exact failure string the hard way
+# (e7-fable-3x/run-host.sh:87-89 — exit 0, result "Not logged in · Please run
+# /login", num_turns=0). "log in" does NOT match "logged in", so testing only the
+# former leaves num_turns as the single point of failure for auth detection.
+low = r.lower()
+if d.get("num_turns", 0) < 1 or "log in" in low or "logged in" in low:
     sys.exit(f"  auth failed: {r[:200]!r}")
 if "code-review" not in r:
     sys.exit("  payload skills NOT registered — the run would measure the "
@@ -135,12 +144,21 @@ for id in "${INSTANCES[@]}"; do
   clone="$CLONES/$id"
   [ -d "$clone/.git" ] || { echo "$id: clone missing — run scripts/crb-materialize.py --slug $id" >&2; continue; }
   dest="$OUT/$id"
+  # "Complete" must mean SUCCEEDED, not "took turns". A cell that exhausted
+  # --max-budget-usd or errored still records num_turns > 0, so a turns-only
+  # predicate banks the expensive failures as done and locks them out of retry.
   if [ -s "$dest/result.json" ] && python3 -c '
 import json, sys
 d = json.load(open(sys.argv[1]))
-sys.exit(0 if d.get("num_turns", 0) > 0 else 1)' "$dest/result.json" 2>/dev/null; then
+ok = (d.get("num_turns", 0) > 0
+      and not d.get("is_error")
+      and d.get("subtype", "success") == "success")
+sys.exit(0 if ok else 1)' "$dest/result.json" 2>/dev/null; then
     echo "=== $id — completed result exists, skipping (delete to re-run)"
     continue
+  fi
+  if [ -s "$dest/result.json" ]; then
+    echo "=== $id — prior result was incomplete/errored, re-running"
   fi
   mkdir -p "$dest"
   echo "=== $id"
@@ -151,6 +169,13 @@ sys.exit(0 if d.get("num_turns", 0) > 0 else 1)' "$dest/result.json" 2>/dev/null
   # The clone is mounted read-write on purpose: the code-review skill writes its
   # rubric to docs/reviews/ in the repo under review. Artifacts are harvested
   # and the tree reset below, so re-runs start from the same state.
+  #
+  # Containment is re-asserted around every cell, not just at materialize time:
+  # a read-write mount plus an agent with network access is exactly the shape
+  # that could re-add a remote and fetch the merged upstream fix (the answer
+  # key). Failing here costs one cell; failing silently would invalidate the arm.
+  python3 "$ROOT/scripts/crb-materialize.py" --verify "$id" || {
+    echo "$id: PRE-RUN containment check failed — skipping cell" >&2; continue; }
   t0=$(date +%s)
   docker run --rm -u node -w /repo \
     -e ANTHROPIC_API_KEY \
@@ -191,14 +216,25 @@ json.dump(res, open(sys.argv[2], "w"))
 open(sys.argv[3], "w").write(res.get("result") or "")
 EOF
   mkdir -p "$dest/artifacts"
-  (cd "$clone" && git status --porcelain --untracked-files=all) \
-    | awk '{print $2}' | grep -E '\.(md|json)$' \
+  # -z + cut: `git status --porcelain` pads the XY status to 3 chars, and NUL
+  # termination is the only form that survives paths with spaces. `awk $2` also
+  # dropped the second half of rename entries.
+  (cd "$clone" && git status --porcelain=v1 -z --untracked-files=all) \
+    | tr '\0' '\n' | cut -c4- | grep -E '\.(md|json)$' \
     | while read -r f; do
+        [ -f "$clone/$f" ] || continue
         mkdir -p "$dest/artifacts/$(dirname "$f")"
-        cp "$clone/$f" "$dest/artifacts/$f" 2>/dev/null || true
+        # --no-dereference: the agent could leave a symlink in the repo, and this
+        # cp runs on the HOST, so following it would copy host files into a
+        # tracked artifacts dir.
+        cp --no-dereference "$clone/$f" "$dest/artifacts/$f" 2>/dev/null || true
       done
+  # -x as well as -d: without it, gitignored files the review created survive
+  # into the next run of this instance, and the harvest above misses them too.
   git -C "$clone" checkout -- . 2>/dev/null || true
-  git -C "$clone" clean -qfd 2>/dev/null || true
+  git -C "$clone" clean -qfdx 2>/dev/null || true
+  python3 "$ROOT/scripts/crb-materialize.py" --verify "$id" \
+    || echo "$id: POST-RUN containment check FAILED — treat this cell's result as void" >&2
 
   python3 - "$dest/result.json" "$((t1-t0))" "$dest" <<'EOF'
 import json, os, sys
@@ -210,6 +246,24 @@ n = sum(len(files) for _r, _d, files in os.walk(sys.argv[3] + "/artifacts"))
 print(f"  cost=${d.get('total_cost_usd','?')} duration={sys.argv[2]}s "
       f"turns={d.get('num_turns','?')} review_len={len(d.get('result') or '')} "
       f"artifacts={n}")
+EOF
+
+  # Aggregate spend gate. BUDGET caps one instance; this caps the sweep, so an
+  # unattended --all run cannot quietly spend BUDGET x N. Re-summed from the
+  # cells on disk each time, so it survives a resumed sweep.
+  python3 - "$OUT" "$SWEEP_BUDGET" <<'EOF' || { echo "SWEEP BUDGET EXCEEDED — stopping. Raise SWEEP_BUDGET to continue." >&2; exit 2; }
+import json, os, sys
+out, cap = sys.argv[1], float(sys.argv[2])
+total = 0.0
+for name in os.listdir(out):
+    rp = os.path.join(out, name, "result.json")
+    if os.path.isfile(rp):
+        try:
+            total += json.load(open(rp)).get("total_cost_usd") or 0
+        except Exception:
+            pass
+print(f"  sweep spend so far: ${total:.2f} / ${cap:.2f}")
+sys.exit(1 if total >= cap else 0)
 EOF
 done
 

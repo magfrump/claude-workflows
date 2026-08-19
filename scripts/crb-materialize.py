@@ -16,18 +16,20 @@ This mirrors scripts/prep-cc-review-clones.sh, which does the same job for the
 meta-formalism-copilot canon instances.
 
 Clones are SHALLOW (--depth, default 50): enough history for context and
-blame-ish reading, not enough to reach unrelated later work, and ~1 order of
-magnitude smaller on disk than a full clone of grafana/keycloak.
+blame-ish reading, not enough to reach unrelated later work. Measured on the
+5-PR pilot: 33-195 MB each (see clone_mb in the manifest).
 
 Usage:
   scripts/crb-materialize.py --list                     # what's available
   scripts/crb-materialize.py --per-repo 1               # 5-PR pilot (1/repo)
   scripts/crb-materialize.py --slug discourse-graphite-PR1 keycloak-PR37429
-  scripts/crb-materialize.py --all                      # all 50 (~15-25GB)
+  scripts/crb-materialize.py --all                      # all 50 (~6-7 GB)
   scripts/crb-materialize.py --per-repo 1 --dry-run     # print, clone nothing
+  scripts/crb-materialize.py --verify grafana-PR79265   # re-check containment
 
-Writes/updates runs/review-arms/crb/instances.json: slug -> {url, fork, head, base,
-n_goldens, files_changed, insertions, deletions, clone_mb}. The runner
+Writes/updates runs/review-arms/crb/instances.json. Each record carries: url,
+source_repo, pr_title, fork, fork_url, head, base, commits, n_goldens,
+files_changed, insertions, deletions, clone_mb, depth. The runner
 (runs/review-arms/crb-pipeline/run-host.sh) and the injector
 (scripts/crb-pipeline-to-benchmark.py) both read that manifest, so the PR
 identity travels with the artifacts instead of being re-derived.
@@ -36,6 +38,7 @@ identity travels with the artifacts instead of being re-derived.
 import argparse
 import json
 import os
+import re
 import shutil
 import subprocess
 import sys
@@ -67,11 +70,21 @@ def sh(args, cwd=None, check=True, capture=True):
 
 
 def slug_for(repo_name: str) -> str:
-    """keycloak__keycloak__claude-code__PR37429__20260310 -> keycloak-PR37429."""
+    """keycloak__keycloak__claude-code__PR37429__20260310 -> keycloak-PR37429.
+
+    The result becomes a directory name under DST_ROOT, so it is constrained to
+    a safe charset rather than trusted: repo_name comes from the vendored
+    dataset, and `Path(DST_ROOT) / "/abs"` would silently discard DST_ROOT while
+    a `/` or `..` component would escape it — into a tree that --force then
+    shutil.rmtree()s.
+    """
     parts = repo_name.split("__")
     if len(parts) < 4:
         raise ValueError(f"unexpected fork repo name: {repo_name}")
-    return f"{parts[1]}-{parts[3]}".replace(".", "_")
+    slug = f"{parts[1]}-{parts[3]}".replace(".", "_")
+    if not re.fullmatch(r"[A-Za-z0-9_-]+", slug):
+        raise ValueError(f"unsafe slug {slug!r} derived from fork repo name {repo_name!r}")
+    return slug
 
 
 def load_prs():
@@ -91,10 +104,11 @@ def load_prs():
 
 
 def family(source_repo: str) -> str:
-    """Upstream project a dataset entry belongs to. The dataset splits a few
-    projects across mirror repos (discourse-graphite, sentry-greptile,
+    """Upstream project a dataset entry belongs to. The dataset splits two
+    projects across mirror repos (sentry / sentry-greptile, keycloak /
     keycloak-greptile); for stratification those are the same codebase, so
-    --per-repo 1 should yield 5 PRs (one per project), not 7."""
+    --per-repo 1 yields 5 PRs (one per project), not 7. Note discourse-graphite
+    is NOT such a split — it is the only name discourse appears under."""
     return source_repo.split("-")[0]
 
 
@@ -108,7 +122,9 @@ def select(prs, args):
         return sel
     if args.all:
         return prs
-    # --per-repo N: the N PRs with the most golden comments in each source repo.
+    # --per-repo N: the N PRs with the most golden comments in each source
+    # PROJECT — the grouping key is family(source_repo), not source_repo, and
+    # that difference is exactly what makes this 5 PRs rather than 7.
     # Rationale: goldens are the denominator of recall, so per dollar of review
     # this maximizes measurable signal. Ties break on slug for determinism.
     by_repo = {}
@@ -148,6 +164,37 @@ def dir_mb(path: Path) -> int:
     return round(total / (1024 * 1024))
 
 
+def verify_containment(dst: Path, slug: str, head: str = None):
+    """Assert the no-answer-key invariant on a clone. Returns (n_commits, stat).
+
+    Callable on purpose: materialize() establishes this invariant once, but the
+    clone is later mounted READ-WRITE into a review container, so the property
+    has to be re-checkable before and after every cell rather than proven once
+    at creation. run-host.sh calls this via --verify.
+
+    Guard (a) nothing reachable outside the reviewed head's ancestry;
+    (b) no remote survives (a re-added remote is the route by which a reviewing
+        agent could fetch the merged upstream fix — the answer key);
+    (c) the review range is non-empty and the blobs its diff touches are present
+        locally, so a partial/broken clone fails here rather than mid-review.
+    """
+    if head is None:
+        head = sh(["git", "rev-parse", "review"], cwd=dst)
+    stray = sh(["git", "rev-list", "--all", "--not", head], cwd=dst)
+    stray_n = len([l for l in stray.splitlines() if l])
+    if stray_n:
+        raise RuntimeError(f"{slug}: {stray_n} stray commit(s) reachable outside the reviewed head")
+    remotes = sh(["git", "remote"], cwd=dst)
+    if remotes:
+        raise RuntimeError(f"{slug}: remote(s) present ({remotes.split()!r}) — "
+                           "answer-key containment is broken")
+    n_commits = int(sh(["git", "rev-list", "--count", "main..review"], cwd=dst))
+    stat = sh(["git", "diff", "--shortstat", "main", "review"], cwd=dst)
+    if n_commits == 0 or not stat:
+        raise RuntimeError(f"{slug}: empty review range (commits={n_commits}, stat={stat!r})")
+    return n_commits, stat
+
+
 def materialize(slug, url, entry, fork, depth, force):
     dst = DST_ROOT / slug
     if dst.exists():
@@ -183,17 +230,7 @@ def materialize(slug, url, entry, fork, depth, force):
     sh(["git", "reflog", "expire", "--expire=now", "--all"], cwd=dst)
     sh(["git", "gc", "--quiet", "--prune=now"], cwd=dst)
 
-    # Guard (a): nothing reachable outside the reviewed head's ancestry.
-    stray = sh(["git", "rev-list", "--all", "--not", head], cwd=dst)
-    stray_n = len([l for l in stray.splitlines() if l])
-    if stray_n:
-        raise RuntimeError(f"{slug}: {stray_n} stray commit(s) survived the scrub")
-    # Guard (b): the range is non-empty and its blobs are present locally (a
-    # partial/broken clone shows up here rather than mid-review).
-    n_commits = int(sh(["git", "rev-list", "--count", "main..review"], cwd=dst))
-    stat = sh(["git", "diff", "--shortstat", "main", "review"], cwd=dst)
-    if n_commits == 0 or not stat:
-        raise RuntimeError(f"{slug}: empty review range (commits={n_commits}, stat={stat!r})")
+    n_commits, stat = verify_containment(dst, slug, head)
     files = ins = dels = 0
     for chunk in stat.split(","):
         c = chunk.strip()
@@ -225,10 +262,37 @@ def main():
                    help="N PRs per source repo, most-goldens-first (N=1 -> 5-PR pilot)")
     g.add_argument("--slug", nargs="+", help="explicit slugs (see --list)")
     g.add_argument("--list", action="store_true", help="list available PRs and exit")
+    g.add_argument("--verify", nargs="+", metavar="SLUG",
+                   help="re-assert answer-key containment on existing clone(s) and exit "
+                        "(used by run-host.sh before and after each review cell)")
     ap.add_argument("--depth", type=int, default=50, help="shallow clone depth (default 50)")
     ap.add_argument("--force", action="store_true", help="rebuild existing clones")
     ap.add_argument("--dry-run", action="store_true", help="print the selection, clone nothing")
     args = ap.parse_args()
+
+    if args.verify:
+        manifest = json.loads(MANIFEST.read_text()) if MANIFEST.exists() else {}
+        bad = []
+        for slug in args.verify:
+            dst = DST_ROOT / slug
+            if not (dst / ".git").is_dir():
+                print(f"  !! {slug}: no clone at {dst}", file=sys.stderr)
+                bad.append(slug)
+                continue
+            try:
+                # Pin to the manifest's recorded head where we have it, so a
+                # clone whose `review` ref was moved fails instead of passing
+                # against its own new tip.
+                head = (manifest.get(slug) or {}).get("head")
+                n_commits, stat = verify_containment(dst, slug, head)
+            except Exception as e:
+                print(f"  !! {slug}: CONTAINMENT CHECK FAILED — {e}", file=sys.stderr)
+                bad.append(slug)
+                continue
+            print(f"  {slug}: containment ok — {n_commits} commit(s), {stat}")
+        if bad:
+            sys.exit(f"containment check failed for: {', '.join(bad)}")
+        return
 
     prs = load_prs()
     if args.list:
@@ -239,7 +303,7 @@ def main():
         print(f"\n{len(prs)} PRs, {sum(len(e['golden_comments']) for _, _, e, _ in prs)} goldens")
         return
     if not (args.all or args.per_repo or args.slug):
-        ap.error("pick one of --list / --per-repo N / --slug ... / --all")
+        ap.error("pick one of --list / --per-repo N / --slug ... / --all / --verify SLUG ...")
 
     sel = select(prs, args)
     print(f"Selected {len(sel)} PR(s), "

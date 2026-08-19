@@ -11,8 +11,12 @@ What it writes under --out (default runs/review-arms/crb/offline-work-50/):
   results/benchmark_data.json
       the benchmark's own file, with one extra entry in each covered PR's
       "reviews" list: {"tool": <--tool-name>, "review_comments": [...]}.
-      Untouched PRs and every other tool's reviews are preserved verbatim, so
-      the aggregate table at the end of step 3 is a real leaderboard.
+      Untouched PRs and every other tool's reviews are preserved verbatim.
+      NOTE this does NOT make step 3's own aggregate table a leaderboard when
+      our arm covers fewer PRs than the other tools: that table sums each tool
+      over every PR it has results for, so a 5-PR pilot row is compared against
+      50-PR rows. Use scripts/crb-subset-leaderboard.py, which re-aggregates
+      every tool over exactly the PRs our arm was judged on.
   results/<judge>/candidates.json, evaluations.json
       copied from the benchmark's checked-in results for that judge (unless
       --no-seed). Steps 2 and 3 skip any (PR, tool) pair already present, so
@@ -57,7 +61,20 @@ DEFAULT_JUDGE = "claude-opus-4-5-20251101"
 
 # Rubric section headers we treat as findings. "Confirmed Good" and "Considered
 # Overrides" are deliberately absent.
+#
+# Matching is on the NORMALIZED HEADING, not a substring: "consider" is a
+# substring of "considered overrides", so a substring test lets that section
+# through, and it emitted nothing only by the accident that its column is named
+# "Prior finding" rather than "Finding". A rename in skills/code-review/SKILL.md
+# would have started injecting already-waived findings as guaranteed false
+# positives. Anchor here so the exclusion is a property of this file.
 FINDING_SECTIONS = ("Must Fix", "Must Address", "Consider")
+
+
+def normalize_section(title: str) -> str:
+    """Rubric heading -> comparable key. Strips the emoji and punctuation the
+    template decorates headings with ("## 🔴 Must Fix" -> "must fix")."""
+    return re.sub(r"[^a-z ]", "", title.lower()).strip()
 
 
 def sanitize_model(model: str) -> str:
@@ -99,8 +116,9 @@ def comments_from_rubric(md: str, sections=FINDING_SECTIONS):
     severity/domain metadata the row carries, which is what the benchmark's
     extraction step reads."""
     out = []
+    wanted = {normalize_section(s) for s in sections}
     for section, header, rows in md_tables(md):
-        if not any(s.lower() in section.lower() for s in sections):
+        if normalize_section(section) not in wanted:
             continue
         idx = {h.lower(): i for i, h in enumerate(header)}
         f_i = idx.get("finding")
@@ -167,7 +185,10 @@ def main():
                                  formatter_class=argparse.RawDescriptionHelpFormatter)
     ap.add_argument("--runs", default=str(DEFAULT_RUNS), help="arm output dir")
     ap.add_argument("--out", default=str(DEFAULT_OUT), help="benchmark work dir to write")
-    ap.add_argument("--tool-name", default="mfc-pipeline-e8",
+    # --tool is the spelling used by crb-subset-leaderboard.py AND by all three
+    # vendored benchmark steps; --tool-name is kept as the original spelling so
+    # existing invocations keep working.
+    ap.add_argument("--tool-name", "--tool", dest="tool_name", default="mfc-pipeline-e8",
                     help="tool name in benchmark_data.json (default mfc-pipeline-e8)")
     ap.add_argument("--judge", default=DEFAULT_JUDGE,
                     help=f"judge model id whose results dir to seed (default {DEFAULT_JUDGE})")
@@ -254,6 +275,9 @@ def main():
     if args.no_seed:
         print("--no-seed: judge dir left empty; all 50 tools will be re-judged.")
     elif src.exists():
+        # Seeding is what keeps the judge pass at ~$17 instead of ~$850, so a
+        # partial or failed seed is an error, not a warning. Exiting here beats
+        # discovering it from the bill.
         for name in ("candidates.json", "evaluations.json"):
             s = src / name
             if s.exists() and not (jdir / name).exists():
@@ -261,14 +285,23 @@ def main():
                 print(f"Seeded {jdir/name} from {s.relative_to(BENCH)}")
             elif (jdir / name).exists():
                 print(f"Kept existing {jdir/name} (delete to re-seed)")
+            elif not s.exists():
+                sys.exit(f"seed source {s} is missing — refusing to continue: an unseeded "
+                         f"judge dir re-judges every tool (~50x cost). Pass --no-seed to "
+                         f"do that deliberately.")
     else:
-        print(f"  !! no checked-in results for judge {args.judge} — "
-              f"nothing to seed; the judge run will score every tool.", file=sys.stderr)
+        sys.exit(f"no checked-in results for judge {args.judge} at {src} — refusing to "
+                 f"continue: the judge run would score every tool (~50x cost). Pass "
+                 f"--no-seed to do that deliberately.")
 
     # The work dir carries its own runbook: the --tool flag is not optional
-    # decoration. Without it step 2 re-extracts the ~52 (PR, tool) pairs the
-    # checked-in candidates file happens to be missing, and step 3 would re-judge
-    # them — paid work that overwrites published numbers with ours.
+    # decoration. Without it step 2 re-extracts the 50 (PR, tool) pairs the
+    # checked-in candidates file is missing (all greptile-v5; 216 pairs are
+    # absent, 166 of them below step 2's >=20-char extraction gate). Step 3
+    # itself would not re-judge them — the seeded evaluations.json is complete
+    # at 2449 pairs — but those new extractions flow into step 2.5, for which
+    # NO dedup_groups.json is checked in, so an unscoped run there is roughly
+    # 2233 paid LLM calls. That is the real unguarded cost.
     runbook = f"""# Judging run for `{args.tool_name}`
 
 Judge: `{args.judge}` · work dir written by `scripts/crb-pipeline-to-benchmark.py`.
@@ -295,6 +328,47 @@ python3 /workspace/scripts/crb-subset-leaderboard.py \\
 """
     (out / "RUN.md").write_text(runbook)
     print(f"Wrote {out/'RUN.md'} (runbook for the judging steps)")
+
+    # An executable runbook, so the two things a human can get wrong are not
+    # left to a human. (1) MARTIAN_BASE_URL is coupled to MARTIAN_API_KEY: the
+    # benchmark defaults the base URL to api.withmartian.com, so exporting the
+    # key WITHOUT the URL sends an Anthropic credential to a third party.
+    # (2) --tool must be on all three steps; see the note above for the cost.
+    judge_sh = f"""#!/usr/bin/env bash
+# Generated by scripts/crb-pipeline-to-benchmark.py — do not hand-edit.
+# Runs the benchmark's judging steps for `{args.tool_name}` only.
+set -euo pipefail
+cd "$(dirname "$0")"
+
+: "${{MARTIAN_API_KEY:=${{ANTHROPIC_API_KEY:-}}}}"
+: "${{MARTIAN_BASE_URL:=https://api.anthropic.com/v1/}}"
+: "${{MARTIAN_MODEL:={args.judge}}}"
+export MARTIAN_API_KEY MARTIAN_BASE_URL MARTIAN_MODEL
+export PYTHONPATH="${{PYTHONPATH:-{BENCH}}}"
+
+[ -n "$MARTIAN_API_KEY" ] || {{ echo "MARTIAN_API_KEY (or ANTHROPIC_API_KEY) not set" >&2; exit 1; }}
+# Fail closed rather than shipping the key to whatever host happens to be the
+# default. Override deliberately if you really are judging via another provider.
+case "$MARTIAN_BASE_URL" in
+  *api.anthropic.com*) ;;
+  *) echo "MARTIAN_BASE_URL is '$MARTIAN_BASE_URL', not an api.anthropic.com endpoint." >&2
+     echo "Refusing to send MARTIAN_API_KEY there. Set CRB_ALLOW_FOREIGN_ENDPOINT=1 to override." >&2
+     [ "${{CRB_ALLOW_FOREIGN_ENDPOINT:-}}" = "1" ] || exit 1 ;;
+esac
+
+for step in step2_extract_comments step2_5_dedup_candidates step3_judge_comments; do
+  echo "=== $step --tool {args.tool_name}"
+  python -m "code_review_benchmark.$step" --tool "{args.tool_name}"
+done
+
+python3 {WORKSPACE}/scripts/crb-subset-leaderboard.py \\
+  --evaluations "{out}/results/{sanitize_model(args.judge)}/evaluations.json" \\
+  --tool "{args.tool_name}"
+"""
+    judge_path = out / "judge.sh"
+    judge_path.write_text(judge_sh)
+    judge_path.chmod(0o755)
+    print(f"Wrote {judge_path} (executable — prefer it over hand-running the steps)")
     print(f"\nNext (from {out}, with MARTIAN_* env set — see "
           f"docs/working/crb-direction1-setup.md):")
     for step in ("step2_extract_comments", "step2_5_dedup_candidates", "step3_judge_comments"):

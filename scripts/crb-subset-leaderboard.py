@@ -12,8 +12,9 @@ same convention step 3 uses for its aggregate table.
 
 Usage:
   scripts/crb-subset-leaderboard.py                       # subset = our tool's PRs
-  scripts/crb-subset-leaderboard.py --tool mfc-pipeline-main
-  scripts/crb-subset-leaderboard.py --all-prs             # full 50-PR leaderboard
+  scripts/crb-subset-leaderboard.py --tool mfc-pipeline-e8-redamber
+  scripts/crb-subset-leaderboard.py --all-prs             # every PR in the evals file
+  scripts/crb-subset-leaderboard.py --judge claude-sonnet-4-5-20250929
   scripts/crb-subset-leaderboard.py --markdown > table.md
 """
 
@@ -23,8 +24,15 @@ import sys
 from pathlib import Path
 
 WORKSPACE = Path(__file__).resolve().parent.parent
-DEFAULT_EVALS = (WORKSPACE / "runs/review-arms/crb/offline-work-50/results"
-                 / "claude-opus-4-5-20251101/evaluations.json")
+# Kept in sync with crb-pipeline-to-benchmark.py's defaults. --judge/--out
+# there change where evaluations land, so both are flags here too rather than
+# a hard-coded path that silently misses and reports "run step 3 first".
+DEFAULT_OUT = WORKSPACE / "runs/review-arms/crb/offline-work-50"
+DEFAULT_JUDGE = "claude-opus-4-5-20251101"
+
+
+def sanitize_model(model: str) -> str:
+    return model.strip().replace("/", "_")
 
 
 def f1(p, r):
@@ -34,16 +42,24 @@ def f1(p, r):
 def main():
     ap = argparse.ArgumentParser(description=__doc__,
                                  formatter_class=argparse.RawDescriptionHelpFormatter)
-    ap.add_argument("--evaluations", default=str(DEFAULT_EVALS))
+    ap.add_argument("--evaluations", default=None,
+                    help="explicit evaluations.json (overrides --out/--judge)")
+    ap.add_argument("--out", default=str(DEFAULT_OUT),
+                    help=f"benchmark work dir written by the injector (default {DEFAULT_OUT})")
+    ap.add_argument("--judge", default=DEFAULT_JUDGE,
+                    help=f"judge model id whose results to read (default {DEFAULT_JUDGE})")
     ap.add_argument("--tool", default="mfc-pipeline-e8", help="our arm's tool name")
     ap.add_argument("--all-prs", action="store_true",
-                    help="rank over every PR in the file instead of our tool's subset")
+                    help="rank over every PR in the evaluations file (that is all 50 only "
+                         "when the file was seeded from the benchmark's checked-in results)")
     ap.add_argument("--markdown", action="store_true", help="emit a markdown table")
     args = ap.parse_args()
 
-    path = Path(args.evaluations)
+    path = (Path(args.evaluations) if args.evaluations
+            else Path(args.out) / "results" / sanitize_model(args.judge) / "evaluations.json")
     if not path.exists():
-        sys.exit(f"no evaluations at {path} — run step 3 first")
+        sys.exit(f"no evaluations at {path} — run step 3 first "
+                 f"(or point --out/--judge/--evaluations at the right dir)")
     evals = json.loads(path.read_text())
 
     urls = sorted(evals) if args.all_prs else sorted(
@@ -75,6 +91,27 @@ def main():
                  for u in urls for t in [args.tool] if t in evals[u])
     header = (f"{len(urls)} PR(s), {n_gold} goldens on the {args.tool} rows"
               if not args.all_prs else f"all {len(urls)} PRs")
+
+    # Recall is only cross-tool comparable if every tool was scored against the
+    # same golden set, and in the checked-in evaluations it frequently was not
+    # (goldens were revised between tool runs). Surface it in the output rather
+    # than in a runbook nobody re-reads at write-up time.
+    skew = []
+    for url in urls:
+        golds = {t: r.get("total_golden", 0) for t, r in evals[url].items()
+                 if not r.get("skipped")}
+        if len(set(golds.values())) > 1:
+            ours = golds.get(args.tool)
+            skew.append((url, min(golds.values()), max(golds.values()), ours))
+    if skew:
+        lo_than_ours = sum(1 for _u, lo, _hi, ours in skew if ours is not None and lo < ours)
+        warn = (f"!! GOLDEN-DENOMINATOR SKEW: {len(skew)} of {len(urls)} PR(s) in this subset "
+                f"have non-uniform total_golden across tools"
+                + (f"; on {lo_than_ours} of them at least one tool was scored against FEWER "
+                   f"goldens than {args.tool}, which inflates their recall relative to ours"
+                   if lo_than_ours else "")
+                + ". Recall is not denominator-uniform — see the gold column.")
+        print(warn, file=sys.stderr)
     if args.markdown:
         print(f"Subset: {header} · micro-averaged · judge: {path.parent.name}\n")
         print("| # | Tool | Precision | Recall | F1 | PRs | Cands | Goldens |")
