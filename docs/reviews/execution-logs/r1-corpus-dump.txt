@@ -1,0 +1,49 @@
+2026-08-19T02:57:00Z
+cwd=/workspace  cmd=python3 (inline) over runs/review-arms/**/result.json
+32 files
+runs/review-arms/e5-cc-builtin/mfc-corpus/result.json | subtype=success is_error=False turns=0 len=7121 cost=1.13555625
+runs/review-arms/e5-cc-builtin/mfc-csp/result.json | subtype=success is_error=False turns=0 len=4651 cost=0.7811165000000001
+runs/review-arms/e5-cc-builtin/mfc-deploy/result.json | subtype=success is_error=False turns=0 len=3758 cost=1.1394765000000002
+runs/review-arms/e5-cc-builtin/mfc-fscompat/result.json | subtype=success is_error=False turns=0 len=3435 cost=0.5312992499999999
+runs/review-arms/e5-cc-builtin/mfc-hygiene/result.json | subtype=success is_error=False turns=0 len=3720 cost=0.92024975
+runs/review-arms/e5-cc-builtin/mfc-lean/result.json | subtype=success is_error=False turns=0 len=4918 cost=1.0208735
+runs/review-arms/e5-cc-builtin/mfc-postfix/result.json | subtype=success is_error=False turns=0 len=2733 cost=0.8706717499999999
+runs/review-arms/e5-cc-builtin/mfc-secdeps/result.json | subtype=success is_error=False turns=0 len=4381 cost=0.6578655
+runs/review-arms/e7-fable-3x/mfc-corpus/rep1/result.json | subtype=success is_error=False turns=5 len=1704 cost=12.862935499999997
+runs/review-arms/e7-fable-3x/mfc-corpus/rep2/result.json | subtype=success is_error=False turns=2 len=1845 cost=18.135840999999992
+runs/review-arms/e7-fable-3x/mfc-corpus/rep3/result.json | subtype=success is_error=False turns=2 len=2410 cost=15.488011500000002
+runs/review-arms/e7-fable-3x/mfc-csp/rep1/result.json | subtype=success is_error=False turns=6 len=1261 cost=7.9752740000000015
+runs/review-arms/e7-fable-3x/mfc-csp/rep2/result.json | subtype=success is_error=False turns=2 len=2624 cost=18.24014699999999
+runs/review-arms/e7-fable-3x/mfc-csp/rep3/result.json | subtype=success is_error=False turns=4 len=1545 cost=7.067080750000001
+runs/review-arms/e7-fable-3x/mfc-deploy/rep1/result.json | subtype=success is_error=False turns=4 len=1842 cost=5.9925904999999995
+runs/review-arms/e7-fable-3x/mfc-deploy/rep2/result.json | subtype=success is_error=False turns=7 len=1246 cost=5.141329750000001
+runs/review-arms/e7-fable-3x/mfc-deploy/rep3/result.json | subtype=success is_error=False turns=6 len=2974 cost=9.283553249999999
+runs/review-arms/e7-fable-3x/mfc-fscompat/rep1/result.json | subtype=success is_error=False turns=9 len=1208 cost=4.14402425
+runs/review-arms/e7-fable-3x/mfc-fscompat/rep2/result.json | subtype=success is_error=False turns=6 len=1457 cost=4.478806500000001
+runs/review-arms/e7-fable-3x/mfc-fscompat/rep3/result.json | subtype=success is_error=False turns=9 len=1639 cost=7.835302999999997
+runs/review-arms/e7-fable-3x/mfc-hygiene/rep1/result.json | subtype=error_max_budget_usd is_error=True turns=1 len=0 cost=15.240262000000001
+runs/review-arms/e7-fable-3x/mfc-hygiene/rep2/result.json | subtype=success is_error=False turns=11 len=1236 cost=9.900854750000002
+runs/review-arms/e7-fable-3x/mfc-hygiene/rep3/result.json | subtype=success is_error=False turns=3 len=2315 cost=11.63088775
+runs/review-arms/e7-fable-3x/mfc-lean/rep1/result.json | subtype=success is_error=False turns=3 len=1486 cost=14.869811499999999
+runs/review-arms/e7-fable-3x/mfc-lean/rep2/result.json | subtype=success is_error=False turns=2 len=1289 cost=12.544998749999996
+runs/review-arms/e7-fable-3x/mfc-lean/rep3/result.json | subtype=success is_error=False turns=13 len=1821 cost=10.322790000000003
+runs/review-arms/e7-fable-3x/mfc-postfix/rep1/result.json | subtype=success is_error=False turns=13 len=1299 cost=9.49688675
+runs/review-arms/e7-fable-3x/mfc-postfix/rep2/result.json | subtype=success is_error=False turns=0 len=56 cost=0
+runs/review-arms/e7-fable-3x/mfc-postfix/rep3/result.json | subtype=success is_error=False turns=0 len=51 cost=0
+runs/review-arms/e7-fable-3x/mfc-secdeps/rep1/result.json | subtype=success is_error=False turns=8 len=1633 cost=6.957518749999998
+runs/review-arms/e7-fable-3x/mfc-secdeps/rep2/result.json | subtype=success is_error=False turns=7 len=1792 cost=8.0060415
+runs/review-arms/e7-fable-3x/mfc-secdeps/rep3/result.json | subtype=success is_error=False turns=10 len=1287 cost=6.982346350000003
+---- stub bodies ----
+runs/review-arms/e7-fable-3x/mfc-postfix/rep2/result.json "You've hit your weekly limit · resets Aug 18, 12am (UTC)"
+runs/review-arms/e7-fable-3x/mfc-postfix/rep3/result.json "You've hit your session limit · resets 5:10am (UTC)"
+---- substring scan over all 32 ----
+runs/review-arms/e7-fable-3x/mfc-postfix/rep2/result.json 56 ['hit your weekly limit', 'limit · resets']
+runs/review-arms/e7-fable-3x/mfc-postfix/rep3/result.json 51 ['hit your session limit', 'limit · resets']
+---- crb-cell-status.py verdicts ----
+complete 29 incomplete 3
+  ('runs/review-arms/e7-fable-3x/mfc-hygiene/rep1/result.json', "is_error=true subtype='error_max_budget_usd'")
+  ('runs/review-arms/e7-fable-3x/mfc-postfix/rep2/result.json', 'body is 56 chars, under the 200-char floor')
+  ('runs/review-arms/e7-fable-3x/mfc-postfix/rep3/result.json', 'body is 51 chars, under the 200-char floor')
+shortest body >=200 chars: (1208, 'runs/review-arms/e7-fable-3x/mfc-fscompat/rep1/result.json')
+exit=0
+2026-08-19T02:57:01Z

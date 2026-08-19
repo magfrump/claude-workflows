@@ -1,0 +1,43 @@
+2026-08-19T02:50:06Z
++(eval):2> git init -q idx
++(eval):2> cd idx
++(eval):2> git config user.email t@t
++(eval):2> git config user.name t
++(eval):3> echo original
++(eval):3> git add f.txt
++(eval):3> git commit -qm base
++(eval):4> echo 'AGENT EDIT'
++(eval):4> git add f.txt
++(eval):5> echo 'AGENT COMMIT'
++(eval):5> git add g.txt
++(eval):5> git commit -qm 'agent commit'
++(eval):6> echo 'AGENT EDIT 2'
++(eval):7> git checkout -- .
++(eval):7> git clean -qfdx
++(eval):8> set +x
+--- after the OLD reset (git checkout -- . && git clean -qfdx) ---
+AGENT EDIT
+f.txt
+g.txt
+e012d12 agent commit
+300a29e base
+2026-08-19T02:50:06Z
+2026-08-19T02:50:15Z
+=== case 2: staged-but-uncommitted edit vs 'git checkout -- .' ===
++(eval):2> git init -q idx2
++(eval):2> cd idx2
++(eval):2> git config user.email t@t
++(eval):2> git config user.name t
++(eval):3> echo original
++(eval):3> git add f.txt
++(eval):3> git commit -qm base
++(eval):4> echo 'STAGED AGENT EDIT'
++(eval):4> git add f.txt
++(eval):5> git checkout -- .
++(eval):5> git clean -qfdx
++(eval):6> set +x
+--- worktree content after old reset ---
+STAGED AGENT EDIT
+--- vs the new reset (git reset --hard HEAD) ---
+original
+2026-08-19T02:50:15Z

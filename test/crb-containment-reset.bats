@@ -112,7 +112,7 @@ PY
   printf 'ignored/\n' > "$CLONE/.gitignore"
   # `review` is checked out, so the commit advances it — a `git branch -f review`
   # here would fail exactly the way materialize() warns about at
-  # crb-materialize.py:221-223.
+  # crb-materialize.py's materialize(), which documents the same footgun.
   git -C "$CLONE" add .gitignore; git -C "$CLONE" commit -qm ignore
   export HEAD_SHA=$(git -C "$CLONE" rev-parse HEAD)
   mkdir -p "$CLONE/ignored"; echo cached > "$CLONE/ignored/state.json"
@@ -162,6 +162,96 @@ PY
   [ "$status" -eq 1 ]
   [[ "$output" == *VOID* ]]
   [[ "$output" == *"NOT descended"* ]]
+}
+
+# ── Fetch traces. The k=3 fact-check on cf6e7c9 refuted, by execution in all
+# three replicates, the claim that "with no remote there is no route to fetch".
+# `git fetch <URL> <refspec>` needs no remote and lands in .git/FETCH_HEAD,
+# which `git rev-list --all` does not walk. r1 fetched an answer key with zero
+# remotes, deleted the ref, committed the content on top of the head — and the
+# guard passed it as benign agent work. These tests pin the detection that
+# replaced that claim.
+
+# Build a separate repo to act as the "upstream future" holding the merged fix.
+make_answer_key_repo() {
+  export UPSTREAM="$BATS_TEST_TMPDIR/upstream"
+  rm -rf "$UPSTREAM"; mkdir -p "$UPSTREAM"
+  git -C "$UPSTREAM" init -q
+  git -C "$UPSTREAM" config user.email t@t; git -C "$UPSTREAM" config user.name t
+  echo "the merged upstream fix" > "$UPSTREAM/ANSWER_KEY.txt"
+  git -C "$UPSTREAM" add ANSWER_KEY.txt
+  git -C "$UPSTREAM" commit -qm "the answer key"
+}
+
+@test "r1's exact attack: fetch by URL, delete the ref, commit on top — VOIDS" {
+  make_answer_key_repo
+  # No remote is configured at any point.
+  [ -z "$(git -C "$CLONE" remote)" ]
+  git -C "$CLONE" fetch -q "file://$UPSTREAM" master:refs/heads/stolen 2>/dev/null \
+    || git -C "$CLONE" fetch -q "file://$UPSTREAM" main:refs/heads/stolen
+  git -C "$CLONE" cat-file -p refs/heads/stolen:ANSWER_KEY.txt > "$CLONE/leaked.txt"
+  git -C "$CLONE" update-ref -d refs/heads/stolen
+  git -C "$CLONE" add leaked.txt
+  git -C "$CLONE" commit -qm "review notes"   # descends from head — looks benign
+  [ -z "$(git -C "$CLONE" remote)" ]          # still no remote
+  reset_and_verify
+  [ "$status" -eq 1 ]
+  [[ "$output" == *VOID* ]]
+}
+
+@test "a bare fetch by URL leaves FETCH_HEAD and VOIDS" {
+  make_answer_key_repo
+  git -C "$CLONE" fetch -q "file://$UPSTREAM" 2>/dev/null || true
+  [ -f "$CLONE/.git/FETCH_HEAD" ]
+  reset_and_verify
+  [ "$status" -eq 1 ]
+  [[ "$output" == *VOID* ]]
+  [[ "$output" == *FETCH_HEAD* ]]
+}
+
+# The regression risk of the fix itself: if reset_clone did not restore the
+# object-store baseline, the commits it just discarded would read as
+# "unreachable" on the NEXT cell and void a clean cell. This is the test that
+# the detection does not eat the benign case it was carved around.
+@test "consecutive benign cells stay clean — reset restores the object baseline" {
+  git -C "$CLONE" commit -q --allow-empty -m "cell 1 agent commit"
+  reset_and_verify
+  [ "$status" -eq 0 ]
+  [ ! -f "$CLONE/.git/FETCH_HEAD" ]
+  git -C "$CLONE" commit -q --allow-empty -m "cell 2 agent commit"
+  reset_and_verify
+  [ "$status" -eq 0 ]
+  reset_and_verify
+  [ "$status" -eq 0 ]
+  [[ "$output" == "OK: " ]]
+}
+
+# Real clones are SHALLOW (--depth 50). git fsck on a shallow repo can complain
+# about the grafted boundary; --connectivity-only is what keeps it quiet. If
+# this fires, every cell of the sweep voids on a false positive.
+@test "fetch-trace detection is quiet on a SHALLOW clone" {
+  make_answer_key_repo
+  for i in 1 2 3; do
+    echo "c$i" >> "$UPSTREAM/f.txt"
+    git -C "$UPSTREAM" add f.txt; git -C "$UPSTREAM" commit -qm "c$i"
+  done
+  SHALLOW="$BATS_TEST_TMPDIR/shallow"
+  rm -rf "$SHALLOW"
+  git clone -q --depth=1 "file://$UPSTREAM" "$SHALLOW"
+  git -C "$SHALLOW" config user.email t@t; git -C "$SHALLOW" config user.name t
+  [ -f "$SHALLOW/.git/shallow" ]
+  git -C "$SHALLOW" remote remove origin
+  run python3 - "$SCRIPT" "$SHALLOW" <<'PY'
+import importlib.util, sys
+from pathlib import Path
+spec = importlib.util.spec_from_file_location("mat", sys.argv[1])
+m = importlib.util.module_from_spec(spec); spec.loader.exec_module(m)
+dst = Path(sys.argv[2])
+m.scrub_object_store(dst)          # the baseline materialize() leaves
+print("TRACES:", m.fetch_traces(dst))
+PY
+  [ "$status" -eq 0 ]
+  [[ "$output" == "TRACES: []" ]]
 }
 
 @test "a tag pointing outside the reviewed ancestry still VOIDS the cell" {

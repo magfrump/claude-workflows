@@ -201,7 +201,7 @@ retried = [n for n, c in cells.items() if c["attempts"] > 1]
 voided = [n for n, c in cells.items() if c["voided_containment"]]
 # requested_instances is what the sweep was ASKED to do. A slug that never got
 # far enough to write a result.json (missing clone, pre-run containment failure)
-# appears here and nowhere else, and it is what lets the leaderboard tell
+# appears here and in missing_cells below, and is what lets the leaderboard tell
 # "reviewed 3 PRs" apart from "asked for 5, 2 disappeared".
 req = requested.split()
 json.dump({"arm": "crb-pipeline", "payload_ref": ref, "payload_commit": sha,

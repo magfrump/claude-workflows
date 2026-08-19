@@ -1,0 +1,54 @@
+=== 2026-08-18T19:47:39-07:00  cwd=/workspace  cmd: python3 (inline) survey of runs/review-arms/**/result.json + scripts/crb-cell-status.py verdicts
+total result.json: 32
+COMPLETE   runs/review-arms/e5-cc-builtin/mfc-corpus/result.json | is_error=False subtype='success' turns=0 len=7121 cost=1.13555625 | complete — 7121 char body, subtype=success
+COMPLETE   runs/review-arms/e5-cc-builtin/mfc-csp/result.json | is_error=False subtype='success' turns=0 len=4651 cost=0.7811165000000001 | complete — 4651 char body, subtype=success
+COMPLETE   runs/review-arms/e5-cc-builtin/mfc-deploy/result.json | is_error=False subtype='success' turns=0 len=3758 cost=1.1394765000000002 | complete — 3758 char body, subtype=success
+COMPLETE   runs/review-arms/e5-cc-builtin/mfc-fscompat/result.json | is_error=False subtype='success' turns=0 len=3435 cost=0.5312992499999999 | complete — 3435 char body, subtype=success
+COMPLETE   runs/review-arms/e5-cc-builtin/mfc-hygiene/result.json | is_error=False subtype='success' turns=0 len=3720 cost=0.92024975 | complete — 3720 char body, subtype=success
+COMPLETE   runs/review-arms/e5-cc-builtin/mfc-lean/result.json | is_error=False subtype='success' turns=0 len=4918 cost=1.0208735 | complete — 4918 char body, subtype=success
+COMPLETE   runs/review-arms/e5-cc-builtin/mfc-postfix/result.json | is_error=False subtype='success' turns=0 len=2733 cost=0.8706717499999999 | complete — 2733 char body, subtype=success
+COMPLETE   runs/review-arms/e5-cc-builtin/mfc-secdeps/result.json | is_error=False subtype='success' turns=0 len=4381 cost=0.6578655 | complete — 4381 char body, subtype=success
+COMPLETE   runs/review-arms/e7-fable-3x/mfc-corpus/rep1/result.json | is_error=False subtype='success' turns=5 len=1704 cost=12.862935499999997 | complete — 1704 char body, subtype=success
+COMPLETE   runs/review-arms/e7-fable-3x/mfc-corpus/rep2/result.json | is_error=False subtype='success' turns=2 len=1845 cost=18.135840999999992 | complete — 1845 char body, subtype=success
+COMPLETE   runs/review-arms/e7-fable-3x/mfc-corpus/rep3/result.json | is_error=False subtype='success' turns=2 len=2410 cost=15.488011500000002 | complete — 2410 char body, subtype=success
+COMPLETE   runs/review-arms/e7-fable-3x/mfc-csp/rep1/result.json | is_error=False subtype='success' turns=6 len=1261 cost=7.9752740000000015 | complete — 1261 char body, subtype=success
+COMPLETE   runs/review-arms/e7-fable-3x/mfc-csp/rep2/result.json | is_error=False subtype='success' turns=2 len=2624 cost=18.24014699999999 | complete — 2624 char body, subtype=success
+COMPLETE   runs/review-arms/e7-fable-3x/mfc-csp/rep3/result.json | is_error=False subtype='success' turns=4 len=1545 cost=7.067080750000001 | complete — 1545 char body, subtype=success
+COMPLETE   runs/review-arms/e7-fable-3x/mfc-deploy/rep1/result.json | is_error=False subtype='success' turns=4 len=1842 cost=5.9925904999999995 | complete — 1842 char body, subtype=success
+COMPLETE   runs/review-arms/e7-fable-3x/mfc-deploy/rep2/result.json | is_error=False subtype='success' turns=7 len=1246 cost=5.141329750000001 | complete — 1246 char body, subtype=success
+COMPLETE   runs/review-arms/e7-fable-3x/mfc-deploy/rep3/result.json | is_error=False subtype='success' turns=6 len=2974 cost=9.283553249999999 | complete — 2974 char body, subtype=success
+COMPLETE   runs/review-arms/e7-fable-3x/mfc-fscompat/rep1/result.json | is_error=False subtype='success' turns=9 len=1208 cost=4.14402425 | complete — 1208 char body, subtype=success
+COMPLETE   runs/review-arms/e7-fable-3x/mfc-fscompat/rep2/result.json | is_error=False subtype='success' turns=6 len=1457 cost=4.478806500000001 | complete — 1457 char body, subtype=success
+COMPLETE   runs/review-arms/e7-fable-3x/mfc-fscompat/rep3/result.json | is_error=False subtype='success' turns=9 len=1639 cost=7.835302999999997 | complete — 1639 char body, subtype=success
+INCOMPLETE runs/review-arms/e7-fable-3x/mfc-hygiene/rep1/result.json | is_error=True subtype='error_max_budget_usd' turns=1 len=0 cost=15.240262000000001 | is_error=true subtype='error_max_budget_usd'
+COMPLETE   runs/review-arms/e7-fable-3x/mfc-hygiene/rep2/result.json | is_error=False subtype='success' turns=11 len=1236 cost=9.900854750000002 | complete — 1236 char body, subtype=success
+COMPLETE   runs/review-arms/e7-fable-3x/mfc-hygiene/rep3/result.json | is_error=False subtype='success' turns=3 len=2315 cost=11.63088775 | complete — 2315 char body, subtype=success
+COMPLETE   runs/review-arms/e7-fable-3x/mfc-lean/rep1/result.json | is_error=False subtype='success' turns=3 len=1486 cost=14.869811499999999 | complete — 1486 char body, subtype=success
+COMPLETE   runs/review-arms/e7-fable-3x/mfc-lean/rep2/result.json | is_error=False subtype='success' turns=2 len=1289 cost=12.544998749999996 | complete — 1289 char body, subtype=success
+COMPLETE   runs/review-arms/e7-fable-3x/mfc-lean/rep3/result.json | is_error=False subtype='success' turns=13 len=1821 cost=10.322790000000003 | complete — 1821 char body, subtype=success
+COMPLETE   runs/review-arms/e7-fable-3x/mfc-postfix/rep1/result.json | is_error=False subtype='success' turns=13 len=1299 cost=9.49688675 | complete — 1299 char body, subtype=success
+INCOMPLETE runs/review-arms/e7-fable-3x/mfc-postfix/rep2/result.json | is_error=False subtype='success' turns=0 len=56 cost=0 | body is 56 chars, under the 200-char floor
+INCOMPLETE runs/review-arms/e7-fable-3x/mfc-postfix/rep3/result.json | is_error=False subtype='success' turns=0 len=51 cost=0 | body is 51 chars, under the 200-char floor
+COMPLETE   runs/review-arms/e7-fable-3x/mfc-secdeps/rep1/result.json | is_error=False subtype='success' turns=8 len=1633 cost=6.957518749999998 | complete — 1633 char body, subtype=success
+COMPLETE   runs/review-arms/e7-fable-3x/mfc-secdeps/rep2/result.json | is_error=False subtype='success' turns=7 len=1792 cost=8.0060415 | complete — 1792 char body, subtype=success
+COMPLETE   runs/review-arms/e7-fable-3x/mfc-secdeps/rep3/result.json | is_error=False subtype='success' turns=10 len=1287 cost=6.982346350000003 | complete — 1287 char body, subtype=success
+complete 29 incomplete 3
+e5-cc-builtin cells: 8 lengths: [2733, 3435, 3720, 3758, 4381, 4651, 4918, 7121]
+shortest body >=200 chars: (1208, 'runs/review-arms/e7-fable-3x/mfc-fscompat/rep1/result.json')
+bodies in [1000,3000): 22
+EXIT=0
+
+=== 2026-08-18T19:51:38-07:00 addendum  cwd=/workspace
+--- stub bodies:
+runs/review-arms/e7-fable-3x/mfc-postfix/rep2/result.json "You've hit your weekly limit · resets Aug 18, 12am (UTC)"
+runs/review-arms/e7-fable-3x/mfc-postfix/rep3/result.json "You've hit your session limit · resets 5:10am (UTC)"
+--- NON_REVIEW substring scan over all 32 bodies:
+runs/review-arms/e7-fable-3x/mfc-deploy/rep2/result.json ['auth'] 1246
+(no other hits)
+--- manifest slugs and titles:
+cal_com-PR11059 | OAuth credential sync and app integration enhancements
+discourse-graphite-PR4 | Enhance embed URL handling and validation system
+grafana-PR79265 | Anonymous: Add configurable device limit
+keycloak-PR36880 | Add Client resource type and scopes to authorization schema
+sentry-greptile-PR5 | Replays Self-Serve Bulk Delete System
+EXIT=0

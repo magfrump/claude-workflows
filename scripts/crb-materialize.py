@@ -171,7 +171,8 @@ def verify_containment(dst: Path, slug: str, head: str = None):
     Callable on purpose: materialize() establishes this invariant once, but the
     clone is later mounted READ-WRITE into a review container, so the property
     has to be re-checkable before and after every cell rather than proven once
-    at creation. run-host.sh calls this via --verify.
+    at creation. run-host.sh calls this via --reset, which resets first and
+    then asserts this; --verify is the read-only form for a human.
 
     Guard (a) nothing reachable outside the reviewed head's ancestry;
     (b) no remote survives (a re-added remote is the route by which a reviewing
@@ -196,16 +197,63 @@ def verify_containment(dst: Path, slug: str, head: str = None):
     return n_commits, stat
 
 
+def fetch_traces(dst: Path):
+    """Evidence that something fetched into this clone since it was scrubbed.
+
+    WHY THIS EXISTS — and what it does NOT do. The 2026-08-18 k=3 fact-check
+    refuted, by execution in all three replicates, the claim this module used to
+    rest on ("with no remote there is no route to fetch it"). `git fetch <URL>
+    <refspec>` needs no configured remote. It leaves no remote, and the objects
+    it writes are reachable via `.git/FETCH_HEAD`, which `git rev-list --all`
+    does NOT walk. So neither the remote check nor the stray check sees it: a
+    replicate built a clone the way materialize() does, fetched an answer key
+    with zero remotes, deleted the fetched ref, committed the content on top of
+    `review`, and the guard passed it as benign agent work.
+
+    These two checks are therefore DETECTION OF TRACES, not prevention:
+
+      (a) `.git/FETCH_HEAD` — written by every fetch, including a by-URL fetch.
+          materialize() deletes it after its own fetches so its later presence
+          is meaningful.
+      (b) unreachable commits — what a fetch-then-delete-the-ref leaves behind.
+          materialize() and reset_clone() both end with `reflog expire` +
+          `gc --prune=now`, so a clean clone has none.
+
+    An agent that also removes FETCH_HEAD, or that clones somewhere else in the
+    container filesystem entirely, defeats both. Nothing git-local can prevent
+    that while the container has unrestricted egress — the actual control is the
+    egress allowlist tracked as R3 in
+    docs/reviews/code-review-rubric-2026-08-18-feat-crb-direction1-harness.md.
+    Treat a fired check as proof of contamination, never a quiet pass as proof
+    of cleanliness.
+    """
+    traces = []
+    if (dst / ".git" / "FETCH_HEAD").exists():
+        traces.append("FETCH_HEAD present — something fetched into this clone")
+    # --connectivity-only keeps this cheap on 33-195 MB clones and avoids
+    # content checks that a SHALLOW clone's boundary would otherwise trip.
+    out = sh(["git", "fsck", "--unreachable", "--connectivity-only",
+              "--no-progress"], cwd=dst, check=False)
+    unreachable = [l for l in out.splitlines() if l.startswith("unreachable commit")]
+    if unreachable:
+        traces.append(f"{len(unreachable)} unreachable commit(s) — "
+                      f"a fetched ref that was deleted leaves exactly this")
+    return traces
+
+
 def classify_strays(dst: Path, head: str):
     """(strays, foreign) for commits reachable from a ref but not from `head`.
 
-    A stray that DESCENDS from the reviewed head was authored inside the clone
-    after materialization — the reviewing agent committing its own rubric is the
-    expected case, since the payload's CLAUDE.md instructs exactly that. It
-    cannot contain the answer key: the merged upstream fix is not a descendant
-    of the PR head in this clone, and with no remote there is no route to fetch
-    it. A stray that does NOT descend from head is the shape a fetch would leave,
-    and is treated as contamination.
+    `foreign` = does not descend from the reviewed head. Descent is NECESSARY
+    for a stray to be treated as benign agent work, and it is NOT SUFFICIENT —
+    see fetch_traces() above, and note the second refutation the fact-check
+    raised: the upstream MERGE commit of this PR descends from the PR head, so
+    descent is not evidence of agent authorship. Benign classification requires
+    descent AND a clean fetch_traces(); the caller enforces both.
+
+    The expected benign case is real and common: the payload's own CLAUDE.md
+    instructs the reviewing agent to commit its work, so voiding on any stray
+    (the pre-cf6e7c9 behaviour) would void most cells of the sweep.
     """
     strays = [l for l in sh(["git", "rev-list", "--all", "--not", head],
                             cwd=dst).splitlines() if l]
@@ -215,13 +263,24 @@ def classify_strays(dst: Path, head: str):
     return strays, foreign
 
 
+def scrub_object_store(dst: Path):
+    """Restore the post-materialize baseline: no reflogs, no unreachable objects,
+    no FETCH_HEAD. Without this, the commits reset_clone() just discarded would
+    read as `unreachable` on the NEXT cell's pre-run check and void a clean cell.
+    """
+    sh(["git", "reflog", "expire", "--expire=now", "--all"], cwd=dst)
+    sh(["git", "gc", "--quiet", "--prune=now"], cwd=dst)
+    (dst / ".git" / "FETCH_HEAD").unlink(missing_ok=True)
+
+
 def reset_clone(dst: Path, slug: str, head: str, base: str):
     """Restore a clone to its materialized ref/index/worktree state. Returns a
     note describing what had to be undone (empty when nothing had).
 
-    Raises RuntimeError — i.e. VOIDS the cell — only for contamination:
-    a surviving remote, or a commit reachable outside the reviewed head's
-    ancestry. Agent-authored commits on top of the head are reset, not voided.
+    Raises RuntimeError — i.e. VOIDS the cell — for contamination: a surviving
+    remote, a trace of a fetch (see fetch_traces), or a commit that does not
+    descend from the reviewed head. Agent-authored commits ON TOP of the head,
+    in a clone with no fetch traces, are reset rather than voided.
 
     This is the between-cells reset, and it replaced `git checkout -- .` +
     `git clean -qfdx`, which restored *tracked files from the index* and so
@@ -232,6 +291,12 @@ def reset_clone(dst: Path, slug: str, head: str, base: str):
     if remotes:
         raise RuntimeError(f"{slug}: remote(s) present ({remotes.split()!r}) — "
                            "answer-key containment is broken")
+    # Checked BEFORE the descent test, because descent is the weaker signal: a
+    # fetched commit copied on top of the head descends from it and would
+    # otherwise pass as benign.
+    traces = fetch_traces(dst)
+    if traces:
+        raise RuntimeError(f"{slug}: {'; '.join(traces)} — containment is broken")
     strays, foreign = classify_strays(dst, head)
     if foreign:
         raise RuntimeError(
@@ -251,6 +316,10 @@ def reset_clone(dst: Path, slug: str, head: str, base: str):
         if ref not in ("refs/heads/review", "refs/heads/main"):
             sh(["git", "update-ref", "-d", ref], cwd=dst)
     sh(["git", "clean", "-qfdx"], cwd=dst)
+    # Restore the object-store baseline LAST: the commits just discarded are
+    # unreachable now, and the next cell's fetch_traces() would read them as a
+    # deleted fetched ref and void a clean cell.
+    scrub_object_store(dst)
     notes = []
     if strays:
         notes.append(f"{len(strays)} agent commit(s) on top of the head, reset")
@@ -297,8 +366,10 @@ def materialize(slug, url, entry, fork, depth, force):
             sh(["git", "update-ref", "-d", ref], cwd=dst)
     subprocess.run(["git", "remote", "remove", "origin"], cwd=dst,
                    capture_output=True, text=True)
-    sh(["git", "reflog", "expire", "--expire=now", "--all"], cwd=dst)
-    sh(["git", "gc", "--quiet", "--prune=now"], cwd=dst)
+    # Also deletes .git/FETCH_HEAD, which THIS function's own fetches wrote.
+    # Deleting it here is what makes its later presence meaningful evidence to
+    # fetch_traces() rather than a leftover of materialization.
+    scrub_object_store(dst)
 
     n_commits, stat = verify_containment(dst, slug, head)
     files = ins = dels = 0

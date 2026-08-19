@@ -103,29 +103,51 @@ Three guards run per cell, all added after the 2026-08-18 review:
 
   `--reset` distinguishes agent *work* from *contamination*, which the
   2026-08-18 pre-mortem (narratives 1–2) found the previous version could not.
-  The payload's own `CLAUDE.md` instructs the reviewing agent to commit, and a
-  commit on top of the reviewed head cannot contain the answer key — there is no
-  remote to fetch it from — so it is **reset**, along with staged edits, created
-  branches/tags, and a deleted `main`. A surviving **remote**, or any commit
-  reachable outside the reviewed head's ancestry, still **voids**. The old reset
+  The payload's own `CLAUDE.md` instructs the reviewing agent to commit, so
+  voiding on any stray commit would void most cells of the sweep. A commit that
+  **descends from the reviewed head**, in a clone with **no fetch traces**, is
+  therefore **reset** — along with staged edits, created branches/tags, and a
+  deleted `main`. A surviving **remote**, a **fetch trace**, or a commit that
+  does **not** descend from the head still **voids**. The old reset
   (`git checkout -- . && git clean -qfdx`) restored tracked files *from the
   index*, so it undid neither a commit nor a `git add`: a commit voided the cell
   and left the clone failing its pre-run check on every later attempt, and a
   staged edit rode into the next attempt invisibly. Guarded by
-  `test/crb-containment-reset.bats`, whose load-bearing cases are the two that
+  `test/crb-containment-reset.bats`, whose load-bearing cases are the ones that
   must still void.
+
+  > **What this does NOT establish.** The `--reset` design originally rested on
+  > "a commit on top of the head cannot contain the answer key — there is no
+  > remote to fetch it from". The 2026-08-18 k=3 fact-check **refuted that by
+  > execution, unanimously**: `git fetch <URL> <refspec>` needs no configured
+  > remote, and its objects land in `.git/FETCH_HEAD`, which `git rev-list
+  > --all` does not walk. A replicate fetched an answer key with zero remotes,
+  > deleted the ref, committed the content on top of `review`, and the guard
+  > passed it as benign. Descent is also not evidence of agent authorship on its
+  > own — the upstream *merge* commit of the PR descends from the PR head too.
+  >
+  > What now runs is **detection of fetch traces** (`.git/FETCH_HEAD`, and
+  > unreachable commits — what a fetched-then-deleted ref leaves), with
+  > `materialize()` and `--reset` both restoring a clean object-store baseline
+  > so those traces mean something. An agent that also deletes `FETCH_HEAD`, or
+  > clones elsewhere in the container filesystem, defeats it. **Nothing
+  > git-local can prevent this while the container has unrestricted egress** —
+  > the actual control is the egress allowlist tracked as R3. Treat a fired
+  > check as proof of contamination, never a quiet pass as proof of cleanliness.
 - **Completed cells are skipped only if they actually produced a review** —
   `NOT is_error AND subtype == "success" AND len(result) >= 200 AND` no
-  known non-review signature (auth "logged in", quota "hit your weekly limit").
+  known non-review signature (auth "logged in", quota "hit your weekly/session
+  limit").
   The rules and the artifacts they were derived from live in
   `scripts/crb-cell-status.py`, with fixtures in `test/crb-cell-status.bats`.
-  The non-review signatures apply **only below 1000 chars**: "logged in" is
+  The non-review signatures apply **only below 300 chars** (the two stubs are 51
+  and 56 chars; the shortest real review in the corpus is 1,208): "logged in" is
   ordinary prose in a review of auth code, and two pilot instances are
   auth-domain (`keycloak-PR36880`, `cal_com-PR11059`), so matching them in a
   multi-KB body would re-pay for good reviews and then drop those PRs out of the
   judged subset (pre-mortem narrative 5).
   `num_turns` is deliberately *not* part of the test: 8 real cells in this repo
-  are genuine successes with `num_turns == 0` and 3–7 KB of review text, so
+  are genuine successes with `num_turns == 0` and 2.7–7.1 KB of review text, so
   requiring turns re-pays for completed work. Verified against a
   real budget-exhausted cell in this repo
   (`runs/review-arms/e7-fable-3x/mfc-hygiene/rep1/result.json`:

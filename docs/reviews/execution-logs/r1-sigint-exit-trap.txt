@@ -1,0 +1,10 @@
+2026-08-19T02:48:29Z
+cwd=/workspace/cfcr1
+== Ctrl-C analogue: SIGINT to the foreground process group of a bash script with an EXIT trap, interrupted while a tolerated child (sleep) runs inside the loop ==
+--- captured output ---
+bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+cell 1 start
+EXIT TRAP RAN (write_run_meta analogue)
+
+exit=0
+2026-08-19T02:48:31Z

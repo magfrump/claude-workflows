@@ -1,0 +1,12 @@
+=== 2026-08-18T19:44:44-07:00 test: second EXIT trap replaces first; EXIT trap under SIGINT
+bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+started
+TRAP-B
+child exit=0
+--- test: EXIT trap runs on exit-from-inside-loop under set -e
+bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+cell 1
+budget exceeded
+TRAP-RAN
+t2 exit=2
+--- bash version: GNU bash, version 5.2.15(1)-release (x86_64-pc-linux-gnu)

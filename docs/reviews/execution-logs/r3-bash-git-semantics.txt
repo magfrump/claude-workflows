@@ -1,0 +1,25 @@
+2026-08-18T19:46:13-07:00
+--- exp1: bash EXIT trap under SIGINT
+bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+started
+EXIT TRAP RAN
+wait status=0
+--- exp2: git fetch by URL with no remote configured
+remotes above (empty)
+fetch exit=0
+FETCH_HEAD:
+2f48dbfd65e8f02b1824d8eb83b0ba1a123b2f23		branch 'master' of /tmp/r3exp/up
+rev-list --all --not HEAD:
+(empty above = invisible to containment check)
+content reachable:
+commit 2f48dbfd65e8f02b1824d8eb83b0ba1a123b2f23
+Author: magfrump <magfrump@gmail.com>
+Date:   Tue Aug 18 19:46:40 2026 -0700
+
+    answer key
+remotes after:
+(none)
+--- exp3: second trap on EXIT replaces the first
+bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+body
+SECOND

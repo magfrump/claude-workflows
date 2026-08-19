@@ -8,8 +8,13 @@ Extracted from run-host.sh so the predicate has fixtures. It is the arm's
 resume/retry gate: a false "complete" banks a failed cell and locks it out of
 retry, while a false "incomplete" re-pays $10-40 for a review that already
 succeeded and, after MAX_ATTEMPTS, drops the PR out of the judged subset
-entirely. Both directions have already happened in this repo's arms, which is
-why the rules below are keyed to measured artifacts rather than to intuition.
+entirely. The false-COMPLETE direction has already happened in this repo's
+arms (e7's turns-only predicate banked a budget-exhausted cell); the
+false-incomplete direction is a projected risk, not yet an observed one --
+e5-cc-builtin's runner had no resume predicate at all, so its eight
+num_turns == 0 reviews were never re-paid. Both directions are cheap to get
+wrong, which is why the rules below are keyed to measured artifacts rather than
+to intuition.
 
 Measured against the 32 result.json files under runs/review-arms/ (see
 test/crb-cell-status.bats, which asserts this script's verdict on all of them):
@@ -17,10 +22,12 @@ test/crb-cell-status.bats, which asserts this script's verdict on all of them):
   * is_error / subtype catch real budget exhaustion
     (e7-fable-3x/mfc-hygiene/rep1: subtype=error_max_budget_usd, $15.24) — a
     turns-only predicate banked exactly that one and locked it out of retry;
-  * 8 e5-cc-builtin cells are genuine successes with num_turns == 0 and 3-7 KB
-    of real review text, so requiring turns > 0 re-pays for finished work;
+  * 8 e5-cc-builtin cells are genuine successes with num_turns == 0 and
+    2.7-7.1 KB of real review text, so requiring turns > 0 re-pays for
+    finished work;
   * 2 e7 cells report subtype=success, is_error=false, num_turns=0 with a 51-56
-    char body that is actually "You've hit your weekly limit".
+    char body that is actually a quota stub -- one weekly limit (56 chars),
+    one session limit (51 chars).
 
 So: trust subtype/is_error, then look at what came out.
 """
@@ -40,15 +47,24 @@ import sys
 NON_REVIEW = ("log in", "logged in", "hit your weekly limit",
               "hit your session limit", "limit · resets", "limit - resets")
 # Above this length a body is a review, not a stub, and NON_REVIEW no longer
-# applies. The stubs run to ~56 chars and the shortest real review in the corpus
-# is over 3 KB, so anywhere in between works; 1000 sits an order of magnitude
-# clear of both.
-STUB_MAX_LEN = 1000
+# applies. Measured on the 32-cell corpus, NOT estimated: the two stubs are 51
+# and 56 chars; the SHORTEST REAL REVIEW IS 1,208 chars, and 20 of the 32 bodies
+# sit between 1.2 and 3.0 KB. 300 therefore clears the stubs by ~5x and the
+# shortest real review by ~4x, roughly centred in the empty band.
+#
+# This was 1000 in cf6e7c9, justified by a claim that the shortest real review
+# was "over 3 KB" — a value that appears nowhere in the corpus. All three k=3
+# fact-check replicates caught it independently (logged to
+# docs/reviews/hallucination-patterns.md). At 1000 the real-review margin was
+# ~20%, i.e. one short review away from re-introducing the very failure this
+# file exists to prevent: rejecting a genuine review of auth code because it
+# says "logged in". Do not raise this without re-measuring the corpus minimum.
+STUB_MAX_LEN = 300
 # A real review runs to kilobytes. This floor is what actually rejects both
 # stubs in the corpus (51 and 56 chars) — NON_REVIEW is never consulted for
-# them. The substring list therefore only governs the 200-1000 char band: a
-# stub wordier than the two we have seen. Keeping both rules is deliberate
-# (neither is load-bearing alone), but the division of labour is asserted in
+# them. The substring list therefore only governs the 200-300 char band: a stub
+# wordier than the two we have seen. Keeping both rules is deliberate (neither
+# is load-bearing alone), but the division of labour is asserted in
 # test/crb-cell-status.bats so it cannot drift unnoticed.
 MIN_REVIEW_LEN = 200
 

@@ -1,0 +1,9 @@
+=== 2026-08-18T19:45:30-07:00 can a clone with NO remote still fetch external history?
+remotes: []
+fetch-by-URL exit=0
+FETCH_HEAD content visible:
+c637faa the answer key
+THE MERGED FIX
+rev-list --all --not HEAD => []
+git remote after fetch: []
+refs: [refs/heads/master]

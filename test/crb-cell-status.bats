@@ -84,13 +84,15 @@ print(json.dumps({"subtype": "success", "is_error": False, "result": body}))')"
   [[ "$output" == *floor* ]]
 }
 
-# The band NON_REVIEW actually governs: long enough to clear the floor, short
-# enough that no real review is that terse. This is the only case where the
-# substring list is load-bearing.
+# The band NON_REVIEW actually governs: 200-300 chars — long enough to clear the
+# floor, short enough that no real review is that terse (corpus minimum for a
+# real review is 1,208 chars). This is the only case where the substring list is
+# load-bearing, and the band is narrow on purpose: at STUB_MAX_LEN=1000 it
+# reached up into real reviews, which is the failure this file guards.
 @test "a mid-length auth stub is rejected by the substring rule" {
   check "$(python3 -c '
 import json
-body = "Not logged in · Please run /login to authenticate. " * 8
+body = "Not logged in · Please run /login to authenticate. " * 5
 print(json.dumps({"subtype": "success", "is_error": False, "result": body}))')"
   [ "$status" -eq 1 ]
   [[ "$output" == *"non-review stub"* ]]
@@ -99,7 +101,7 @@ print(json.dumps({"subtype": "success", "is_error": False, "result": body}))')"
 @test "a mid-length quota stub is rejected by the substring rule" {
   check "$(python3 -c '
 import json
-body = "You have hit your weekly limit · resets Thursday 9am UTC. " * 8
+body = "You have hit your weekly limit · resets Thu 9am UTC. " * 4
 print(json.dumps({"subtype": "success", "is_error": False, "result": body}))')"
   [ "$status" -eq 1 ]
   [[ "$output" == *"non-review stub"* ]]
