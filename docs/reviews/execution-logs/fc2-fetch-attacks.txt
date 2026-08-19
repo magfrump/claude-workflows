@@ -1,0 +1,29 @@
+# ran Wed Aug 19 03:12:50 UTC 2026 cwd=/workspace/.scratch/fc2
+$ python3 drv.py
+From file:///workspace/.scratch/fc2/up
+ * [new branch]      answerbr   -> stolen
+   remotes: ''
+   FETCH_HEAD exists: True
+--- A: by-URL fetch, ref kept, FETCH_HEAD kept
+   traces: ['FETCH_HEAD present — something fetched into this clone']
+   strays: 1 foreign: 1
+   reset_clone: VOIDED — scratch: FETCH_HEAD present — something fetched into this clone — containment is broken
+--- B: fetch, ref deleted, FETCH_HEAD kept
+   traces: ['FETCH_HEAD present — something fetched into this clone', '1 unreachable commit(s) — a fetched ref that was deleted leaves exactly this']
+   strays: 0 foreign: 0
+   reset_clone: VOIDED — scratch: FETCH_HEAD present — something fetched into this clone; 1 unreachable commit(s) — a fetched ref that was deleted leaves exactly this — containment is broken
+   answer.txt in tree: True
+--- C: fetch, content committed on top of review, ref+FETCH_HEAD deleted
+   traces: ['1 unreachable commit(s) — a fetched ref that was deleted leaves exactly this']
+   strays: 1 foreign: 0
+   reset_clone: VOIDED — scratch: 1 unreachable commit(s) — a fetched ref that was deleted leaves exactly this — containment is broken
+--- D: fetch, ref deleted, FETCH_HEAD deleted
+   traces: ['1 unreachable commit(s) — a fetched ref that was deleted leaves exactly this']
+   strays: 0 foreign: 0
+   reset_clone: VOIDED — scratch: 1 unreachable commit(s) — a fetched ref that was deleted leaves exactly this — containment is broken
+   answer.txt in tree: True
+--- E: as C, plus reflog expire + gc --prune=now
+   traces: []
+   strays: 1 foreign: 0
+   reset_clone: PASSED (note='1 agent commit(s) on top of the head, reset')
+exit=0

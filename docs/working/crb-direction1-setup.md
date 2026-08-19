@@ -127,13 +127,22 @@ Three guards run per cell, all added after the 2026-08-18 review:
   > own — the upstream *merge* commit of the PR descends from the PR head too.
   >
   > What now runs is **detection of fetch traces** (`.git/FETCH_HEAD`, and
-  > unreachable commits — what a fetched-then-deleted ref leaves), with
-  > `materialize()` and `--reset` both restoring a clean object-store baseline
-  > so those traces mean something. An agent that also deletes `FETCH_HEAD`, or
-  > clones elsewhere in the container filesystem, defeats it. **Nothing
-  > git-local can prevent this while the container has unrestricted egress** —
-  > the actual control is the egress allowlist tracked as R3. Treat a fired
-  > check as proof of contamination, never a quiet pass as proof of cleanliness.
+  > unreachable commits under `git fsck --no-reflogs`), with `materialize()`
+  > and `--reset` both restoring a clean object-store baseline so those traces
+  > mean something. Defeating it requires deleting `FETCH_HEAD` **and** expiring
+  > the reflogs **and** running `gc --prune=now` — deleting `FETCH_HEAD` alone
+  > still voids. But an agent that simply clones elsewhere in the container
+  > filesystem is untouched by any of this. **Nothing git-local can prevent that
+  > while the container has unrestricted egress** — the actual control is the
+  > egress allowlist tracked as R3. Treat a fired check as proof of
+  > contamination, never a quiet pass as proof of cleanliness.
+  >
+  > *(The `--no-reflogs` flag was added on the iteration-2 fact-check, which
+  > found the unreachable-commit check inert without it: `git fsck` counts
+  > reflog entries as reachability roots, so a fetched commit whose ref was
+  > deleted stayed "reachable". `test/crb-containment-reset.bats` now pins the
+  > check's non-vacuity — the benign two-cell sequence must VOID when
+  > `scrub_object_store()` is stubbed out.)*
 - **Completed cells are skipped only if they actually produced a review** —
   `NOT is_error AND subtype == "success" AND len(result) >= 200 AND` no
   known non-review signature (auth "logged in", quota "hit your weekly/session

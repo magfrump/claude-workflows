@@ -1,0 +1,21 @@
+# ran Wed Aug 19 03:12:51 UTC 2026 cwd=/workspace/.scratch/fc2
+$ python3 drv2.py
+CLAIM2 current order (traces first): VOIDED -> scratch: 1 unreachable commit(s) — a fetched ref that was deleted leaves exactly this — containment is broken
+CLAIM2 swapped order (descent first): VOIDED -> TRACES void: ['1 unreachable commit(s) — a fetched ref that was deleted leaves exactly this']
+CLAIM3 WITH scrub_object_store: post-run reset -> 1 agent commit(s) on top of the head, reset
+CLAIM3 WITH scrub_object_store: NEXT cell pre-run traces -> []
+CLAIM3 WITH scrub_object_store: NEXT cell pre-run reset PASSED
+CLAIM3 WITHOUT scrub_object_store: post-run reset -> no-scrub reset done
+CLAIM3 WITHOUT scrub_object_store: NEXT cell pre-run traces -> []
+CLAIM3 WITHOUT scrub_object_store: NEXT cell pre-run reset PASSED
+exit=0
+$ python3 drv3.py
+logAllRefUpdates: true
+reflog HEAD lines: 4
+agent commit still in reflog: False
+fsck --unreachable --connectivity-only (default, reflogs count as roots):
+    []
+fsck --unreachable --connectivity-only --no-reflogs:
+    ['unreachable blob 49f445cd76e754b9f6ea0a8f37c7e2cebe0267ed', 'unreachable commit 4ca0a19d8a93648fd7ea1b2880b2076280638299', 'unreachable tree 552891dc7efd298a4c7b00d1909caa41d4404d69']
+fetch_traces(): []
+exit=0

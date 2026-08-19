@@ -209,10 +209,16 @@ make_answer_key_repo() {
   [[ "$output" == *FETCH_HEAD* ]]
 }
 
-# The regression risk of the fix itself: if reset_clone did not restore the
-# object-store baseline, the commits it just discarded would read as
-# "unreachable" on the NEXT cell and void a clean cell. This is the test that
-# the detection does not eat the benign case it was carved around.
+# The regression risk of the fix itself: fetch_traces() runs `git fsck
+# --no-reflogs`, so the commits reset_clone() discards ARE unreachable and would
+# void the next cell if the reflogs were not expired. This is the test that the
+# detection does not eat the benign case it was carved around.
+#
+# The iteration-2 fact-check found the earlier version of this pair vacuous:
+# without --no-reflogs, fsck treated the reflog as a root, nothing ever read as
+# unreachable, and deleting scrub_object_store() left the suite green. The
+# companion test below now fails without the call, which is what makes this one
+# mean something.
 @test "consecutive benign cells stay clean — reset restores the object baseline" {
   git -C "$CLONE" commit -q --allow-empty -m "cell 1 agent commit"
   reset_and_verify
@@ -224,6 +230,52 @@ make_answer_key_repo() {
   reset_and_verify
   [ "$status" -eq 0 ]
   [[ "$output" == "OK: " ]]
+}
+
+# Non-vacuity: with scrub_object_store() stubbed out, the SAME benign sequence
+# must fail. Without this, "consecutive benign cells stay clean" passes whether
+# or not the call exists — which is exactly what the iteration-2 fact-check
+# caught, by deleting the call and watching the suite stay green.
+@test "scrub_object_store is load-bearing — benign sequence VOIDS without it" {
+  git -C "$CLONE" commit -q --allow-empty -m "cell 1 agent commit"
+  run python3 - "$SCRIPT" "$CLONE" "$HEAD_SHA" "$BASE" <<'PY'
+import importlib.util, sys
+from pathlib import Path
+spec = importlib.util.spec_from_file_location("mat", sys.argv[1])
+m = importlib.util.module_from_spec(spec); spec.loader.exec_module(m)
+m.scrub_object_store = lambda dst: None          # the call under test, removed
+dst, head, base = Path(sys.argv[2]), sys.argv[3], sys.argv[4]
+m.reset_clone(dst, "fixture", head, base)        # cell 1: discards the commit
+try:                                             # cell 2 pre-run check
+    m.reset_clone(dst, "fixture", head, base)
+    m.verify_containment(dst, "fixture", head)
+except Exception as e:
+    print(f"VOID: {e}"); sys.exit(1)
+print("OK — scrub_object_store was NOT load-bearing")
+PY
+  [ "$status" -eq 1 ]
+  [[ "$output" == *VOID* ]]
+  [[ "$output" == *unreachable* ]]
+}
+
+# fsck's exit status is no longer swallowed, so a clone that makes fsck error
+# would void every cell of the sweep. materialize() removes the remote before
+# pruning refs precisely so refs/remotes/origin/HEAD is not left dangling —
+# `update-ref -d` would dereference that symref and delete its target instead.
+@test "a dangling origin/HEAD symref is detected, and scrub heals it" {
+  git -C "$CLONE" symbolic-ref refs/remotes/origin/HEAD refs/heads/nonexistent
+  run python3 - "$SCRIPT" "$CLONE" <<'PY'
+import importlib.util, sys
+from pathlib import Path
+spec = importlib.util.spec_from_file_location("mat", sys.argv[1])
+m = importlib.util.module_from_spec(spec); spec.loader.exec_module(m)
+dst = Path(sys.argv[2])
+print("BEFORE:", m.fetch_traces(dst))
+m.scrub_object_store(dst)
+print("AFTER:", m.fetch_traces(dst))
+PY
+  [ "$status" -eq 0 ]
+  [[ "$output" == *"AFTER: []"* ]]
 }
 
 # Real clones are SHALLOW (--depth 50). git fsck on a shallow repo can complain

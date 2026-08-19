@@ -215,14 +215,24 @@ def fetch_traces(dst: Path):
       (a) `.git/FETCH_HEAD` — written by every fetch, including a by-URL fetch.
           materialize() deletes it after its own fetches so its later presence
           is meaningful.
-      (b) unreachable commits — what a fetch-then-delete-the-ref leaves behind.
-          materialize() and reset_clone() both end with `reflog expire` +
-          `gc --prune=now`, so a clean clone has none.
+      (b) unreachable commits — what a fetch-then-delete-the-ref leaves behind,
+          under `--no-reflogs`.
 
-    An agent that also removes FETCH_HEAD, or that clones somewhere else in the
-    container filesystem entirely, defeats both. Nothing git-local can prevent
-    that while the container has unrestricted egress — the actual control is the
-    egress allowlist tracked as R3 in
+    `--no-reflogs` is load-bearing and was added on the iteration-2 fact-check.
+    Without it `git fsck` treats reflog entries as reachability roots, so a
+    fetched commit whose ref was deleted stays "reachable" through that ref's
+    reflog and check (b) never fires — the check was inert for its stated
+    purpose. It is what makes scrub_object_store() load-bearing in turn: with
+    reflogs no longer masking anything, the commits reset_clone() discards WOULD
+    read as unreachable on the next cell unless the reflogs are expired.
+
+    Defeating both checks requires removing FETCH_HEAD *and* expiring the
+    reflogs *and* running `gc --prune=now` — deleting FETCH_HEAD alone still
+    voids. That is a higher bar than the earlier comment here claimed, but it is
+    still only a bar, not a wall: an agent that clones somewhere else in the
+    container filesystem is untouched by any of this. Nothing git-local can
+    prevent that while the container has unrestricted egress — the actual
+    control is the egress allowlist tracked as R3 in
     docs/reviews/code-review-rubric-2026-08-18-feat-crb-direction1-harness.md.
     Treat a fired check as proof of contamination, never a quiet pass as proof
     of cleanliness.
@@ -230,14 +240,27 @@ def fetch_traces(dst: Path):
     traces = []
     if (dst / ".git" / "FETCH_HEAD").exists():
         traces.append("FETCH_HEAD present — something fetched into this clone")
-    # --connectivity-only keeps this cheap on 33-195 MB clones and avoids
-    # content checks that a SHALLOW clone's boundary would otherwise trip.
-    out = sh(["git", "fsck", "--unreachable", "--connectivity-only",
-              "--no-progress"], cwd=dst, check=False)
-    unreachable = [l for l in out.splitlines() if l.startswith("unreachable commit")]
+    # --connectivity-only skips object content validation; on a 33-195 MB clone
+    # that is the expensive half. (It is NOT what keeps fsck quiet on a shallow
+    # clone — measured: fsck is equally quiet on a --depth=1 clone without it.)
+    r = subprocess.run(["git", "fsck", "--unreachable", "--no-reflogs",
+                        "--connectivity-only", "--no-progress"],
+                       cwd=dst, capture_output=True, text=True)
+    out = (r.stdout or "") + (r.stderr or "")
+    unreachable = [l for l in out.splitlines()
+                   if l.startswith("unreachable commit")]
     if unreachable:
         traces.append(f"{len(unreachable)} unreachable commit(s) — "
                       f"a fetched ref that was deleted leaves exactly this")
+    # fsck's own errors must not be swallowed. A clean clone exits 0; anything
+    # else means the check could not do its job, and a containment check that
+    # silently could-not-run is the failure mode this whole module exists to
+    # avoid. (materialize() leaves no dangling symref for this to trip on —
+    # see the remote-removal ordering there.)
+    errors = [l for l in out.splitlines() if l.startswith("error:")]
+    if errors:
+        traces.append(f"git fsck reported {len(errors)} error(s), first: "
+                      f"{errors[0][:160]} — cannot certify containment")
     return traces
 
 
@@ -265,9 +288,25 @@ def classify_strays(dst: Path, head: str):
 
 def scrub_object_store(dst: Path):
     """Restore the post-materialize baseline: no reflogs, no unreachable objects,
-    no FETCH_HEAD. Without this, the commits reset_clone() just discarded would
-    read as `unreachable` on the NEXT cell's pre-run check and void a clean cell.
+    no FETCH_HEAD.
+
+    Load-bearing, and pinned by test/crb-containment-reset.bats. Because
+    fetch_traces() runs `git fsck --no-reflogs`, the commits reset_clone() has
+    just discarded are genuinely unreachable, and WOULD fire check (b) on the
+    next cell's pre-run check — voiding a clean cell — if the reflogs were not
+    expired here.
+
+    (This rationale was wrong when first written: without `--no-reflogs`, fsck
+    treated the reflog as a root, nothing ever read as unreachable, and removing
+    this call left the suite green. The iteration-2 fact-check caught it. The
+    fix was to make the check strict rather than to delete the call, since a
+    check that cannot fire is worse than no check.)
     """
+    # Heals a clone materialized before the remote-removal ordering fix, whose
+    # refs/remotes/origin/HEAD symref was left dangling. for-each-ref does not
+    # list a broken ref, so the ref-pruning loop cannot reach it.
+    subprocess.run(["git", "symbolic-ref", "-d", "refs/remotes/origin/HEAD"],
+                   cwd=dst, capture_output=True, text=True)
     sh(["git", "reflog", "expire", "--expire=now", "--all"], cwd=dst)
     sh(["git", "gc", "--quiet", "--prune=now"], cwd=dst)
     (dst / ".git" / "FETCH_HEAD").unlink(missing_ok=True)
@@ -291,9 +330,9 @@ def reset_clone(dst: Path, slug: str, head: str, base: str):
     if remotes:
         raise RuntimeError(f"{slug}: remote(s) present ({remotes.split()!r}) — "
                            "answer-key containment is broken")
-    # Checked BEFORE the descent test, because descent is the weaker signal: a
-    # fetched commit copied on top of the head descends from it and would
-    # otherwise pass as benign.
+    # Checked before the descent test so the VOID message names the fetch rather
+    # than the commit — on a fetch-and-copy both checks fire, so the order
+    # changes which reason is reported, not the verdict.
     traces = fetch_traces(dst)
     if traces:
         raise RuntimeError(f"{slug}: {'; '.join(traces)} — containment is broken")
@@ -359,13 +398,19 @@ def materialize(slug, url, entry, fork, depth, force):
 
     # Scrub: every ref except review/main, the remote, and the reflogs. After
     # this the clone has no route to anything outside the reviewed ancestry.
+    # Remove the remote FIRST: it takes refs/remotes/origin/* with it, including
+    # the symbolic refs/remotes/origin/HEAD. Deleting that symref via
+    # `update-ref -d` instead DEREFERENCES it — git removes the branch it points
+    # at and leaves the symref dangling, after which `git fsck` exits non-zero
+    # with "invalid sha1 pointer" on every later call. That was harmless only
+    # while fetch_traces() ignored fsck's exit status; it no longer does.
+    subprocess.run(["git", "remote", "remove", "origin"], cwd=dst,
+                   capture_output=True, text=True)
     refs = sh(["git", "for-each-ref", "--format=%(refname)",
                "refs/heads", "refs/tags", "refs/remotes"], cwd=dst).splitlines()
     for ref in refs:
         if ref not in ("refs/heads/review", "refs/heads/main"):
             sh(["git", "update-ref", "-d", ref], cwd=dst)
-    subprocess.run(["git", "remote", "remove", "origin"], cwd=dst,
-                   capture_output=True, text=True)
     # Also deletes .git/FETCH_HEAD, which THIS function's own fetches wrote.
     # Deleting it here is what makes its later presence meaningful evidence to
     # fetch_traces() rather than a leftover of materialization.
