@@ -22,3 +22,5 @@ Keep `<short pattern>` short and normalized so future runs can grep for it (e.g.
 ## Patterns
 
 <!-- Append entries below this line. -->
+
+- **`total_golden` 11 vs 13 claimed in CRB evaluations.json but no PR has more than 9 goldens** — a doc caveat cited two specific denominator values as read out of `external/code-review-benchmark/offline/results/anthropic_claude-opus-4-5-20251101/evaluations.json`; neither value occurs in that file or in `benchmark_data.json` (max goldens per PR is 9), and the real disagreement spans 24 of 50 PRs with values 1–9, not 2 PRs. First seen: 2026-08-18, report: docs/reviews/code-fact-check-report-r3.md, docs/reviews/code-fact-check-report-r2.md.

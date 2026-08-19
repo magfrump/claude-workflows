@@ -1,584 +1,1446 @@
 # Code Fact-Check Report
 
-**Commit:** 2f5ad0b
+**Repository:** `/workspace` (claude-workflows)
+**Commit:** 90de392
+**Scope:** branch diff `feat/crb-direction1-harness` vs `main` — 7 files, +1209/-0
+**Checked:** 2026-08-18
+**Total claims checked:** 46
+**Summary:** 28 verified, 12 mostly accurate, 1 stale, 2 incorrect, 3 unverifiable
 
-**Repository:** /workspace
-**Scope:** Commit range `HEAD~3..HEAD` (de9ccf7, 45fa1df, 2f5ad0b): `skills/code-review/SKILL.md`, `docs/decisions/032-review-loop-token-reduction-levers.md`, `docs/decisions/log.md` row 34, `runs/review-arms/baseline-2026-08-06/hunt-factcheck-behavioral-lie.md`, `runs/review-arms/baseline-2026-08-06/hunt-verify/*`, `runs/review-arms/baseline-2026-08-06/levers-3-4-measurement.md`, plus the three commit messages
-**Checked:** 2026-08-07
-**Total claims checked:** 29
-**Summary:** 20 verified, 2 mostly accurate, 3 stale, 2 incorrect, 2 unverifiable
-
-Pre-check: `docs/reviews/hallucination-patterns.md` read — the Patterns section is empty (no logged suspect patterns to compare against).
-
-External-repo note: the hunted commits live in `/workspace/external/meta-formalism-copilot` (HEAD `7f30210`), with worktrees `wt-candA` (pinned `e59c7ed`) and `wt-candB` (pinned `6cf4b0d`) under `runs/review-arms/baseline-2026-08-06/` — all accessible, so external-repo reference claims were spot-checked directly rather than marked Unverifiable.
+> **Repo-state incident, discovered mid-run — escalate before merging.** Partway through
+> this pass, `/workspace` lost every local branch ref except `main`, every remote-tracking
+> ref, the `origin` remote from `.git/config`, and all reflogs; `git gc --prune=now` then
+> pruned the now-unreachable commit **90de392 itself** (`git cat-file -t 90de392` →
+> `fatal: Not a valid object name`). The scope command in my brief
+> (`git diff main...HEAD`) succeeded on my first tool call and fails now. See the
+> **Repo-state incident** section at the end for evidence, blast radius, and a
+> non-destructive recovery recipe. **The reviewed content is not lost** — the index and
+> working tree still hold it, and `git diff --cached --stat main` reproduces the exact
+> `7 files changed, 1209 insertions(+)` diff, so every claim below was checked against
+> byte-identical content.
 
 ---
 
-## Claim 1: "Empirically fired on a hunted commit (evidence-integrate `counterexamples`/`scenarios`, `hunt-verify/results.md`): fact-check confirmed the behavioral 🔴 and #4 skipped the whole critic panel = **238,155 tokens = 73% of that pass**"
+## Claim 1: "steps 1 and 3 below are built and dry-run green … Judge cost is bounded by seeding the checked-in opus-4-5 results and passing `--tool`, so only our arm is judged (~$1.5 for a 5-PR pilot, ~$13–22 for all 50)"
 
-**Location:** `docs/decisions/032-review-loop-token-reduction-levers.md:129-131`
-**Type:** Configuration / Reference
+**Location:** `docs/working/crb-arm-plan.md:193-201`
+**Type:** Behavioral / Configuration
 **Verdict:** Verified
 **Confidence:** High
 **Legibility-target:** for-orchestrator-synthesis
 
-The cited measurement doc records exactly these numbers:
+The confinement mechanism is real on both paid steps. Step 2 skips any `(PR, tool)` pair
+already in the seeded candidates file:
 
+```python
+# external/code-review-benchmark/offline/code_review_benchmark/step2_extract_comments.py:196-198
+            # Skip if already has candidates for this (golden_url, tool)
+            if golden_url in all_candidates and tool in all_candidates[golden_url]:
+                continue
 ```
-// runs/review-arms/baseline-2026-08-06/hunt-verify/results.md:15-19
-| **panel total (what #4 skips)** | **238,155** | |
-- Pass **without** #4 = 86,824 + 238,155 = **324,979**
-- **#4 saving = 238,155 tokens = 73.3% of the red-gated pass.**
+
+and step 3 skips any pair already in the seeded evaluations file:
+
+```python
+# external/code-review-benchmark/offline/code_review_benchmark/step3_judge_comments.py:487-489
+            if not args.force and state.is_done(golden_url, tool):
+                skipped += 1
 ```
 
-Arithmetic checked with python3: 74,502 + 84,050 + 79,603 = 238,155; 86,824 + 238,155 = 324,979; 238,155 / 324,979 = 73.28% ≈ "73%" (paraphrased — no quote available because the assertion is a computation, not a snippet). The fact-check-🔴 premise matches `candB-fact-check.md` Claim 3 (Incorrect/High, "**Behavioral** — the counterexamples integration feature silently no-ops for all scenario-level edits", `hunt-verify/candB-fact-check.md:129`).
+The seeding itself is implemented at `scripts/crb-pipeline-to-benchmark.py:254-263`. The
+dollar figures are forward-looking estimates and are not independently checkable here; the
+`~$13–22` matches the cost table at `docs/working/crb-direction1-setup.md:159`.
 
-**Evidence:** `runs/review-arms/baseline-2026-08-06/hunt-verify/results.md:8-19`, `runs/review-arms/baseline-2026-08-06/hunt-verify/candB-fact-check.md:68-131`
+**Evidence:** `docs/working/crb-arm-plan.md:193-201`, `external/code-review-benchmark/offline/code_review_benchmark/step2_extract_comments.py:196-198`, `external/code-review-benchmark/offline/code_review_benchmark/step3_judge_comments.py:487-489`, `scripts/crb-pipeline-to-benchmark.py:254-263`
 
 ---
 
-## Claim 2: "a second hunted commit (throttle) had a real red that api-consistency rated **Breaking** while fact-check classified it **🟡 (impact masked)** → #4 **did not fire, 0 saving despite the red**"
+## Claim 2: "`scripts/crb-materialize.py --list # 50 PRs, 173 goldens`"
 
-**Location:** `docs/decisions/032-review-loop-token-reduction-levers.md:131-133`
-**Type:** Reference / Behavioral
+**Location:** `docs/working/crb-direction1-setup.md:25`
+**Type:** Configuration
 **Verdict:** Verified
 **Confidence:** High
 **Legibility-target:** for-orchestrator-synthesis
 
-The candA critic report rates the same contract lie Breaking:
+Executing `load_prs()` from the script against the vendored dataset returns exactly 50 PRs;
+summing `len(entry["golden_comments"])` over the dataset returns 173 (paraphrased — no quote
+available because the figure is the result of running the script's own loader over a 5 MB
+generated JSON data file, not a snippet in either file).
 
-```
-// runs/review-arms/baseline-2026-08-06/hunt-verify/candA-critic-api-consistency.md:192
-| 2 | JSDoc "last call always delivered" contradicts impl | Breaking | `throttle.ts:1-2,18-24` | High |
-```
-
-The candA fact-check classifies it masked/doc-only: "Therefore the subject is **comment/doc-only** for these consumers ... the cumulative-snapshot + final-flush pattern masks any behavioral consequence" (`hunt-verify/candA-fact-check.md:514`). And results.md records the 0 saving: "Pass = 66,717 + 186,275 = **252,992**. **#4 saving = 0.**" (`hunt-verify/results.md:31`).
-
-**Evidence:** `runs/review-arms/baseline-2026-08-06/hunt-verify/candA-critic-api-consistency.md:158-192`, `runs/review-arms/baseline-2026-08-06/hunt-verify/candA-fact-check.md:456-514`, `runs/review-arms/baseline-2026-08-06/hunt-verify/results.md:21-36`
+**Evidence:** `scripts/crb-materialize.py:77-90`, `scripts/crb-materialize.py:234-240`, `external/code-review-benchmark/offline/results/benchmark_data.json`
 
 ---
 
-## Claim 3: "Expected loop saving ≈ P(fact-check-visible red) × ~73%, P low (0/8 canon; ~1 clean trigger in 225 commits)"
+## Claim 3: "`scripts/crb-materialize.py --all # all 50 (~6-7 GB)`"
 
-**Location:** `docs/decisions/032-review-loop-token-reduction-levers.md:135-136`
-**Type:** Configuration / Reference
+**Location:** `docs/working/crb-direction1-setup.md:27`
+**Type:** Configuration
+**Verdict:** Verified
+**Confidence:** Medium
+**Legibility-target:** for-orchestrator-synthesis
+
+Consistent with the measured pilot: the five `clone_mb` values in the manifest are 190, 33,
+125, 127, 195 (`runs/review-arms/crb/instances.json:5,20,36,52,68`), averaging ~134 MB, so
+50 clones project to ~6.7 GB. Medium confidence only because the pilot is a
+most-goldens-first selection, not a random sample of clone sizes. **Note the conflict:** the
+same commit's script docstring says `~15-25GB` for the same command — see Claim 26.
+
+**Evidence:** `docs/working/crb-direction1-setup.md:27`, `runs/review-arms/crb/instances.json:5,20,36,52,68`, `scripts/crb-materialize.py:26`
+
+---
+
+## Claim 4: Pilot table — per-slug goldens / commits / diff / disk, and "33 goldens over 5 PRs"
+
+**Location:** `docs/working/crb-direction1-setup.md:40-48`
+**Type:** Configuration
+**Verdict:** Verified
+**Confidence:** High
+**Legibility-target:** for-orchestrator-synthesis
+
+Every cell matches the manifest. E.g. the keycloak row's "1 file +3/-3, 127 MB":
+
+```json
+// runs/review-arms/crb/instances.json:51-56
+    "clone_mb": 127,
+    "commits": 1,
+    "deletions": 3,
+    "depth": 50,
+    "files_changed": 1,
+```
+
+The four other rows check out identically against
+`runs/review-arms/crb/instances.json:2-17,18-33,34-49,66-81` (paraphrased — no quote
+available because reproducing all five records verbatim would duplicate most of the
+82-line manifest). Running the script's `select()` with `--per-repo 1` reproduces exactly
+these five slugs and sums to 33 goldens.
+
+**Evidence:** `docs/working/crb-direction1-setup.md:40-51`, `runs/review-arms/crb/instances.json:1-82`, `scripts/crb-materialize.py:101-122`
+
+---
+
+## Claim 5: "a bad credential returns exit 0 with `\"Not logged in\"` (E7)"
+
+**Location:** `docs/working/crb-direction1-setup.md:76`, duplicated at `runs/review-arms/crb-pipeline/run-host.sh:104-105`
+**Type:** Behavioral / Reference
 **Verdict:** Mostly accurate
 **Confidence:** High
 **Legibility-target:** for-author
 
-The two rates are grounded: "Across all 8 cells, fact-check produced **zero** behavioral 🔴" (`levers-3-4-measurement.md:70-71`), and results.md: "the 225-commit hunt found **2** candidates, and **1 of those 2 (A) still classified 🟡** at fact-check" (`hunt-verify/results.md:41-43`) — i.e., 1 of 225 empirically trips the gate. The imprecision: "~1 *clean trigger*" echoes the hunt doc's label "One clean fact-check trigger (throttle)" (`hunt-factcheck-behavioral-lie.md:104`), but the candidate the hunt called the clean trigger (A, throttle) is the one that empirically did NOT fire; the one that fired was B, which the hunt rated the "weaker fit" for the fact-check gate. The rate "~1 in 225" holds; the identity of the trigger flipped between prediction and measurement. A precise version would say "~1 empirically-confirmed trigger in 225 commits (and it was not the predicted one)".
+The referenced E7 observation exists and is more specific than the restatement:
 
-**Evidence:** `runs/review-arms/baseline-2026-08-06/levers-3-4-measurement.md:68-72`, `runs/review-arms/baseline-2026-08-06/hunt-verify/results.md:38-45`, `runs/review-arms/baseline-2026-08-06/hunt-factcheck-behavioral-lie.md:103-107`
-
----
-
-## Claim 4: log row 34 amendment — "#4 first-red short-circuit is high-variance/low-frequency: measured ~73% saving when it fires ... the empirical run confirmed one fires (evidence-integrate: fact-check 🔴 → skip 238,155-token panel = 73% of the pass) and one does NOT (throttle: real red but fact-check graded it 🟡 ...)"
-
-**Location:** `docs/decisions/log.md:53`
-**Type:** Configuration / Reference
-**Verdict:** Verified
-**Confidence:** High
-**Legibility-target:** for-orchestrator-synthesis
-
-All numeric and verdict content is identical to the 032 full-record bullet (Claims 1–2) and to `hunt-verify/results.md`; the two decision documents do not disagree with each other or with the evidence files. The row's "a 225-commit hunt found 2 fact-check-visible-behavioral-lie candidates" matches the hunt doc's "2 candidates cleared the bar" (`hunt-factcheck-behavioral-lie.md:10`). Cross-file consistency confirmed by side-by-side reading (paraphrased — no quote available because the claim is agreement across four documents, not a single snippet).
-
-**Evidence:** `docs/decisions/log.md:53`, `docs/decisions/032-review-loop-token-reduction-levers.md:127-137`, `runs/review-arms/baseline-2026-08-06/hunt-verify/results.md:8-45`
-
----
-
-## Claim 5: "2 candidates cleared the bar (both historical); HEAD is clean" / "One clean fact-check trigger (throttle) and one cross-file/prompt case (evidence-integrate) in 225 commits, **both already fixed, HEAD clean**"
-
-**Location:** `runs/review-arms/baseline-2026-08-06/hunt-factcheck-behavioral-lie.md:10,103-106`
-**Type:** Behavioral / Staleness
-**Verdict:** Incorrect
-**Confidence:** High
-**Legibility-target:** for-author
-
-"Both already fixed" is false for candidate A, and the document contradicts itself: its own candidate-A section says "the comment persists **unchanged at HEAD**" (`hunt-factcheck-behavioral-lie.md:13`). I verified at the external repo's HEAD (`7f30210`): the false docstring line is still present —
-
-```ts
-// external/meta-formalism-copilot/app/lib/utils/throttle.ts:2 (at HEAD 7f30210)
- *  The last call is always delivered (trailing edge).
+```bash
+# runs/review-arms/e7-fable-3x/run-host.sh:88-89
+# result "Not logged in · Please run /login" and num_turns=0 (learned the hard
 ```
 
-— and the implementation still delivers the first-blocked-call's args (the trailing `setTimeout` still closes over the arming call's `args`; later in-window calls still hit `else if (!timer)` = false and are dropped — same mechanism as at e59c7ed; a `.cancel()` method was added later, but the last-call-delivery lie was never fixed). Only candidate B was fixed (`2493d2a`, "fix: rename counterexamples→scenarios in evidence-integrate schema docs" — commit message verified in the external repo). A charitable reading of "HEAD clean" — "no fact-check-visible behavioral 🔴 at HEAD under tier policy T" — is defensible given A empirically grades 🟡, but "both already fixed" is flatly contradicted by the file's own line 13 and by the code at HEAD.
+The imprecision is in the *detector*, not the description. E7's own preflight guarded on
+both spellings:
 
-**Evidence:** `runs/review-arms/baseline-2026-08-06/hunt-factcheck-behavioral-lie.md:10,13,103-106`, `external/meta-formalism-copilot/app/lib/utils/throttle.ts:1-33` (at 7f30210)
-
----
-
-## Claim 6: "Scanned all 225 commits reachable from HEAD"
-
-**Location:** `runs/review-arms/baseline-2026-08-06/hunt-factcheck-behavioral-lie.md:7` (also commit message de9ccf7)
-**Type:** Reference
-**Verdict:** Verified
-**Confidence:** High
-**Legibility-target:** for-orchestrator-synthesis
-
-`git rev-list --count HEAD` in `/workspace/external/meta-formalism-copilot` returns exactly 225 (paraphrased — no quote available because the evidence is a command output, not file content). Whether all 225 were actually *scanned* by the three agents is a process claim not checkable statically; the count itself is exact.
-
-**Evidence:** `external/meta-formalism-copilot` (git rev-list at HEAD 7f30210)
-
----
-
-## Claim 7: Candidate A description — commit `e59c7ed` "(feat: SSE streaming partial-JSON previews, #94)" introduced `throttle.ts`; `throttle.ts:2` reads "The last call is always delivered (trailing edge)"; `throttle.ts:19-25` "schedules the trailing timer only when none is set and captures the **first** blocked call's args; later calls in the window are silently dropped"
-
-**Location:** `runs/review-arms/baseline-2026-08-06/hunt-factcheck-behavioral-lie.md:11-16`
-**Type:** Reference / Behavioral
-**Verdict:** Verified
-**Confidence:** High
-**Legibility-target:** for-orchestrator-synthesis
-
-Commit exists with the stated message: `e59c7ed feat: SSE streaming with partial-JSON previews for all artifact panels (#94)` (git log in wt-candA). The comment and mechanism at e59c7ed:
-
-```ts
-// wt-candA app/lib/utils/throttle.ts:1-2 (at e59c7ed)
-/** Returns a throttled version of `fn` that runs at most once per `ms` milliseconds.
- *  The last call is always delivered (trailing edge). */
+```python
+# runs/review-arms/e7-fable-3x/run-host.sh:103
+sys.exit(0 if d.get("num_turns", 0) > 0 and "log in" not in r.lower() and "logged in" not in r.lower() else 1)
 ```
 
-```ts
-// wt-candA app/lib/utils/throttle.ts:19-25 (at e59c7ed)
-} else if (!timer) {
-  timer = setTimeout(() => {
-    lastRun = Date.now();
-    timer = null;
-    fn(...args);
-  }, remaining);
-}
+The new preflight kept only the first:
+
+```python
+# runs/review-arms/crb-pipeline/run-host.sh:126-127
+if d.get("num_turns", 0) < 1 or "log in" in r.lower():
+    sys.exit(f"  auth failed: {r[:200]!r}")
 ```
 
-The `args` in the timer closure are those of the call that armed it (the first blocked call); any later call in the window finds `timer` non-null, fails `else if (!timer)`, and falls through with no else branch — dropped. The described contradiction is real.
+`"log in"` is not a substring of `"not logged in · please run /login"` — neither `"logged
+in"` nor `"/login"` contains `log`+space+`in`. The case is still caught, but solely by the
+`num_turns < 1` arm (E7 records `num_turns=0` for it), not by the string test the comment
+foregrounds. Tighten by restoring E7's `"logged in"` clause.
 
-**Evidence:** `runs/review-arms/baseline-2026-08-06/wt-candA/app/lib/utils/throttle.ts:1-27` (at e59c7ed)
+**Evidence:** `runs/review-arms/crb-pipeline/run-host.sh:104-105,126-127`, `runs/review-arms/e7-fable-3x/run-host.sh:88-89,103`, `docs/working/crb-direction1-setup.md:76`
 
 ---
 
-## Claim 8: Candidate A consumer references — "`useFormalizationPipeline.ts:66-68` (+ `:96,:188`, `useDecomposition.ts:130`, `useArtifactGeneration.ts:73`) — `throttle(accumulated => setSemiformal(accumulated), 50)`"
+## Claim 6: "**The E8 payload is `main`.** `feat/critic-evidence-discipline` was merged at `d9234c9`, and `git diff main feat/critic-evidence-discipline -- skills workflows CLAUDE.md` is empty as of 2026-08-18"
 
-**Location:** `runs/review-arms/baseline-2026-08-06/hunt-factcheck-behavioral-lie.md:17-19`
+**Location:** `docs/working/crb-direction1-setup.md:68-72`, duplicated at `runs/review-arms/crb-pipeline/run-host.sh:19-25` and in the commit message
 **Type:** Architectural / Reference
 **Verdict:** Verified
 **Confidence:** High
 **Legibility-target:** for-orchestrator-synthesis
 
-All cited call sites exist at the external repo's HEAD at the cited lines:
+All three sub-claims hold (paraphrased — no quote available because these are git-history
+facts, not file contents): `d9234c9` is a real commit titled
+`merge: E8 evidence-discipline pipeline + ledger updates into main`; `git branch --merged
+main` lists `feat/critic-evidence-discipline`; and the named three-path diff produces zero
+output. Checked before the ref loss described in the incident section — `d9234c9` and
+`main`'s 1236-commit history both survive it.
 
-```
-// grep -n "throttle(" at external HEAD
-app/hooks/useFormalizationPipeline.ts:66:      const onToken = throttle((accumulated: string) => {
-app/hooks/useFormalizationPipeline.ts:96:      const onToken = throttle((accumulated: string) => {
-app/hooks/useFormalizationPipeline.ts:188:     const onToken = throttle((accumulated: string) => {
-app/hooks/useDecomposition.ts:130:     const onToken = throttle((accumulated: string) => {
-app/hooks/useArtifactGeneration.ts:73:        const onPartial = throttle((accumulated: string) => {
-```
-
-(These are HEAD line numbers; the candA-fact-check report cites different line numbers — 66, 179, 47 — because it read the worktree pinned at e59c7ed, where the same call sites sit at those earlier positions. Both sets check out in their respective states.)
-
-**Evidence:** `external/meta-formalism-copilot/app/hooks/useFormalizationPipeline.ts:66,96,188`, `external/meta-formalism-copilot/app/hooks/useDecomposition.ts:130`, `external/meta-formalism-copilot/app/hooks/useArtifactGeneration.ts:73`
+**Evidence:** `docs/working/crb-direction1-setup.md:68-72`, `runs/review-arms/crb-pipeline/run-host.sh:19-25`, git history at `d9234c9`
 
 ---
 
-## Claim 9: Candidate B description — introduced by `6cf4b0d`, exhibited at `c2f5e8c`, "fixed by `2493d2a` (fix: rename counterexamples→scenarios in evidence-integrate schema docs)"; schema doc at `route.ts:46-58` says `counterexamples[i].scenario` while the real key is `scenarios` (`artifacts.ts:118`); `integrateValidation.ts:51` → `resolveFieldPath` → null → proposals dropped
+## Claim 7: "The clone is reset with `git checkout -- . && git clean -fd` after harvesting, so re-runs start from the same state."
 
-**Location:** `runs/review-arms/baseline-2026-08-06/hunt-factcheck-behavioral-lie.md:31-42`
-**Type:** Reference / Behavioral
+**Location:** `docs/working/crb-direction1-setup.md:85-86`, duplicated at `runs/review-arms/crb-pipeline/run-host.sh:150-153`
+**Type:** Behavioral
+**Verdict:** Mostly accurate
+**Confidence:** High
+**Legibility-target:** for-author
+
+The reset runs as described:
+
+```bash
+# runs/review-arms/crb-pipeline/run-host.sh:200-201
+  git -C "$clone" checkout -- . 2>/dev/null || true
+  git -C "$clone" clean -qfd 2>/dev/null || true
+```
+
+`checkout -- .` restores tracked modifications and `clean -fd` removes untracked files and
+directories, so the *tracked* tree does return to its prior state. The unqualified "the same
+state" overstates two gaps: (a) `git clean` without `-x` leaves files matching the upstream
+repo's `.gitignore` in place — cal.com, grafana, keycloak and sentry all ship `.gitignore`
+files, so anything the pipeline writes into an ignored path (build output, `node_modules`,
+`.env`-shaped files, a `docs/`-adjacent ignored dir) persists into the next run; and (b) the
+harvest that precedes it also only sees `git status` output, so ignored artifacts are neither
+collected nor cleared. Precise version: "the tracked tree is reset; ignored paths are not."
+
+**Evidence:** `runs/review-arms/crb-pipeline/run-host.sh:193-201`, `docs/working/crb-direction1-setup.md:85-86`
+
+---
+
+## Claim 8: "the 49 benchmark tools post a median of **4** findings per PR; an E8 rubric carries ~**16** (1 red + 8 amber + 7 green on `mfc-csp`)"
+
+**Location:** `docs/working/crb-direction1-setup.md:114-116`, duplicated at `scripts/crb-pipeline-to-benchmark.py:177-178` and in the commit message
+**Type:** Configuration
+**Verdict:** Mostly accurate
+**Confidence:** High
+**Legibility-target:** for-author
+
+The `~16` half is exact. Running the injector's own parser over the referenced fixture yields
+16 findings across three sections with counts 1 / 8 / 7 (paraphrased — no quote available
+because the figure is the return value of executing `comments_from_rubric` against
+`runs/review-arms/e8-evidence-pipeline/mfc-csp/code-review-rubric.md`, not a literal in
+either file).
+
+The `median of 4` half depends on an unstated denominator. Over all 2 449 `(PR, tool)` pairs
+in `benchmark_data.json` the median is **3** (mean 3.91); the median is 4.0 only if the 167
+pairs whose review carries no comments are excluded. Since precision/recall for those empty
+rows is exactly what the surrounding argument is about, the inclusive figure (3) is the
+defensible one. Median-of-per-tool-medians is also 3. State it as "median 3 (4 among
+non-empty reviews)".
+
+**Evidence:** `docs/working/crb-direction1-setup.md:114-116`, `scripts/crb-pipeline-to-benchmark.py:177-180`, `external/code-review-benchmark/offline/results/benchmark_data.json`, `runs/review-arms/e8-evidence-pipeline/mfc-csp/code-review-rubric.md`
+
+---
+
+## Claim 9: "The results dir the run writes is named after the id verbatim (`claude-opus-4-5-20251101`), which is why the injector seeds *that* directory."
+
+**Location:** `docs/working/crb-direction1-setup.md:137-142`
+**Type:** Behavioral / Configuration
 **Verdict:** Verified
 **Confidence:** High
 **Legibility-target:** for-orchestrator-synthesis
 
-All three commits exist in the external repo with matching messages, and `6cf4b0d` is an ancestor of `2493d2a` (git log / merge-base in wt-candB): `6cf4b0d feat: add assisted evidence integration...`, `c2f5e8c fix: prevent infinite re-render loop...`, `2493d2a fix: rename counterexamples→scenarios in evidence-integrate schema docs`. The schema-doc lie at 6cf4b0d:
+The vendored steps derive the directory from `MARTIAN_MODEL` with only slashes replaced:
 
-```ts
-// wt-candB app/api/evidence-integrate/route.ts:46-49 (at 6cf4b0d)
-counterexamples: `The artifact is a counterexamples analysis with this structure:
-{
-  "claim": "string",
-  "counterexamples": [{ "id": "string", "scenario": "string", ... }],
+```python
+# external/code-review-benchmark/offline/code_review_benchmark/step2_extract_comments.py:60-68
+def sanitize_model_name(model: str) -> str:
+    """Sanitize model name for use as directory name."""
+    return model.strip().replace("/", "_")
+
+def get_model_dir() -> Path:
+    """Get the model-specific results directory, creating it if needed."""
+    model = os.environ.get("MARTIAN_MODEL", "openai/gpt-4o-mini")
+    model_dir = RESULTS_DIR / sanitize_model_name(model)
 ```
 
-The real key is `scenarios` (`wt-candB app/lib/types/artifacts.ts:118`, `scenarios: Array<{`), and the drop site is real:
+`MARTIAN_MODEL=claude-opus-4-5-20251101` (no slash) therefore yields
+`results/claude-opus-4-5-20251101/`, which is exactly what the injector creates and what the
+leaderboard's default path expects:
 
-```ts
-// wt-candB app/api/evidence-integrate/integrateValidation.ts:51 (at 6cf4b0d)
-if (!resolveFieldPath(artifact, fieldPath)) return null;
+```python
+# scripts/crb-pipeline-to-benchmark.py:249-253
+    jdir = out / "results" / sanitize_model(args.judge)
+    jdir.mkdir(parents=True, exist_ok=True)
+    src = BENCH / "results" / sanitize_model(f"anthropic/{args.judge}")
 ```
 
-**Evidence:** `runs/review-arms/baseline-2026-08-06/wt-candB/app/api/evidence-integrate/route.ts:46-61`, `runs/review-arms/baseline-2026-08-06/wt-candB/app/lib/types/artifacts.ts:118`, `runs/review-arms/baseline-2026-08-06/wt-candB/app/api/evidence-integrate/integrateValidation.ts:51`
+The checked-in source directory `results/anthropic_claude-opus-4-5-20251101/` exists on disk,
+so the `f"anthropic/{args.judge}"` first-try lookup resolves. The chain jdir → RUN.md →
+`crb-subset-leaderboard.py:26-27` all use the same unprefixed name. Answers task item 17
+affirmatively.
+
+**Evidence:** `external/code-review-benchmark/offline/code_review_benchmark/step2_extract_comments.py:60-68`, `scripts/crb-pipeline-to-benchmark.py:249-253,292`, `scripts/crb-subset-leaderboard.py:26-27`, `external/code-review-benchmark/offline/results/anthropic_claude-opus-4-5-20251101/`
 
 ---
 
-## Claim 10: candB-fact-check header — "**Total claims checked:** 9 / **Summary:** 7 verified, 0 mostly accurate, 0 stale, 1 incorrect, 1 unverifiable"
+## Claim 10: "**Non-uniform golden denominators** — on the same 2 PRs, different tools' checked-in rows show `total_golden` 11 vs 13"
 
-**Location:** `runs/review-arms/baseline-2026-08-06/hunt-verify/candB-fact-check.md:8-9`
+**Location:** `docs/working/crb-direction1-setup.md:172-176`
 **Type:** Configuration
 **Verdict:** Incorrect
 **Confidence:** High
 **Legibility-target:** for-author
 
-The report's body contains 9 claims with verdicts: Claims 1, 2, 4, 5, 6, 7, 8, 9 = **Verified** (8 of them) and Claim 3 = **Incorrect** — zero Unverifiable. The body's own summary section agrees with the body, not the header:
+The phenomenon is real but both numbers in the claim are wrong, in the direction that
+*understates* the problem. Across the checked-in
+`anthropic_claude-opus-4-5-20251101/evaluations.json`, **24 of 50 PRs** — not 2 — carry more
+than one distinct `total_golden` value among their non-skipped tool rows. The observed
+value-pairs are `(2,3)×7, (4,5)×2, (1,2)×2, (3,5)×2, (2,4)×2, (3,6)×2, (3,4)×2, (5,6)×2,
+(4,7), (6,8), (5,9)`. The specific pair `11 vs 13` cannot occur anywhere in the file: the
+maximum `total_golden` over all 2 449 rows is **9**. The other two checked-in judge
+directories (`anthropic_claude-sonnet-4-5-20250929`, `openai_gpt-5.2`) show the identical
+24-PR pattern. (Paraphrased — no quote available because these are aggregate statistics over
+a 7.6 MB generated JSON file with no single citable line.)
 
-```
-// runs/review-arms/baseline-2026-08-06/hunt-verify/candB-fact-check.md:289-290
-### Unverifiable
-- None material. (Claim 9 verified at Medium confidence.)
-```
+The mitigation sentence that follows is accurate: the leaderboard does print each tool's
+gold total (`scripts/crb-subset-leaderboard.py:84-85,93-94`). Fix the caveat to read "on 24
+of 50 PRs, tools' rows disagree on `total_golden` by 1–4 goldens."
 
-So the header should read "8 verified, 0 mostly accurate, 0 stale, 1 incorrect, 0 unverifiable". The totals line (9) is right; the breakdown is wrong (7+1+1 sums to 9 but misallocates one Verified claim to Unverifiable). This is an internal-consistency defect in a committed run artifact, not a fabrication.
-
-**Evidence:** `runs/review-arms/baseline-2026-08-06/hunt-verify/candB-fact-check.md:8-9,13-274,289-290`
-
----
-
-## Claim 11: candB-fact-check Claim 3 — "`validateProposal` then rejects the proposal (`if (!resolveFieldPath(artifact, fieldPath)) return null;`, integrateValidation.ts:56)"
-
-**Location:** `runs/review-arms/baseline-2026-08-06/hunt-verify/candB-fact-check.md:129,131`
-**Type:** Reference / Behavioral
-**Verdict:** Mostly accurate
-**Confidence:** High
-**Legibility-target:** for-author
-
-The quoted code line is real and verbatim, but it sits at line **51**, not 56, in the worktree at 6cf4b0d:
-
-```ts
-// wt-candB app/api/evidence-integrate/integrateValidation.ts:51 (at 6cf4b0d)
-if (!resolveFieldPath(artifact, fieldPath)) return null;
-```
-
-The behavioral claim (rejection on unresolvable path) is correct; only the line reference is off by 5. The hunt doc cites the correct line (`integrateValidation.ts:51`, `hunt-factcheck-behavioral-lie.md:40`).
-
-**Evidence:** `runs/review-arms/baseline-2026-08-06/wt-candB/app/api/evidence-integrate/integrateValidation.ts:51`
+**Evidence:** `docs/working/crb-direction1-setup.md:172-176`, `external/code-review-benchmark/offline/results/anthropic_claude-opus-4-5-20251101/evaluations.json`, `scripts/crb-subset-leaderboard.py:84-85`
 
 ---
 
-## Claim 12: results.md arithmetic — B panel 238,155, B pass 324,979, saving "73.3% of the red-gated pass"; A panel 186,275, A pass 252,992; measurement cost "577,971 tokens"
+## Claim 11: "`offline/analysis/score_profiles.py` implements Strict/Core/All profiles by golden category."
 
-**Location:** `runs/review-arms/baseline-2026-08-06/hunt-verify/results.md:15-19,28-31,57-59`
-**Type:** Configuration / Performance
+**Location:** `docs/working/crb-direction1-setup.md:180-181`
+**Type:** Reference / Architectural
 **Verdict:** Verified
 **Confidence:** High
 **Legibility-target:** for-orchestrator-synthesis
 
-All sums and percentages recomputed with python3 from the tables' own per-agent rows (paraphrased — no quote available because the assertions are computations over the tables quoted in Claims 1–2): 74,502 + 84,050 + 79,603 = 238,155; 86,824 + 238,155 = 324,979; 238,155/324,979 = 73.28% (doc says 73.3% — correct to one decimal); 62,230 + 65,996 + 58,049 = 186,275; 66,717 + 186,275 = 252,992; 252,992 + 238,155 + 86,824 = 577,971. Every derived number in the file follows from its own inputs.
+The file exists and defines exactly those three profiles keyed by golden category:
 
-**Evidence:** `runs/review-arms/baseline-2026-08-06/hunt-verify/results.md:8-19,23-31,57-59`
+```python
+# external/code-review-benchmark/offline/analysis/score_profiles.py:19-25
+PROFILE_CATEGORIES: dict[str, frozenset[str]] = {
+    "strict": frozenset({"bug", "security", "concurrency", "data", "api"}),
+    "core": frozenset({"bug", "security", "concurrency", "data", "api", "perf", "test_gap", "doc_defect"}),
+    "all": frozenset({
+        "bug", "security", "concurrency", "data", "api",
+        "perf", "test_gap", "doc_defect", "style", "speculative",
+    }),
+}
+```
+
+Golden comments do carry a `category` field, so the profiles are applicable to this dataset.
+
+**Evidence:** `docs/working/crb-direction1-setup.md:180-182`, `external/code-review-benchmark/offline/analysis/score_profiles.py:19-25,160`
 
 ---
 
-## Claim 13: results.md verdict column — B: fact-check "Incorrect(High), behavioral → 🔴", security "1 Med (proto-pollution-shaped)", api-consistency "Breaking", architecture "Structural 🔴"; A: fact-check "Incorrect(High) but subject comment/doc → 🟡", performance "Low", api-consistency "2 Breaking", test-strategy "5 Consider"
+## Claim 12: "**Verified in this session ($0):** … the injector against a real E8 rubric fixture (16 findings parsed from `mfc-csp`, 9 with `--sections fix address`) … `run-host.sh` passes `bash -n` and its `DRY_RUN=1` path builds and validates the payload (25 skills, `code-review` present)."
 
-**Location:** `runs/review-arms/baseline-2026-08-06/hunt-verify/results.md:10-14,23-28`
+**Location:** `docs/working/crb-direction1-setup.md:188-195`
+**Type:** Behavioral
+**Verdict:** Verified
+**Confidence:** High
+**Legibility-target:** for-orchestrator-synthesis
+
+Re-ran each checkable half. `comments_from_rubric` on the `mfc-csp` rubric returns 16
+comments with the default sections and 9 with `["Must Fix", "Must Address"]`. `bash -n
+runs/review-arms/crb-pipeline/run-host.sh` exits 0. `git ls-tree -r --name-only main skills |
+grep 'SKILL.md$' | wc -l` returns 25, matching the payload counter at line 88 and the
+`code-review` assertion at lines 89-90 (paraphrased — no quote available because all four are
+command results rather than file contents).
+
+**Evidence:** `docs/working/crb-direction1-setup.md:188-195`, `scripts/crb-pipeline-to-benchmark.py:97-129`, `runs/review-arms/crb-pipeline/run-host.sh:85-90`
+
+---
+
+## Claim 13: "docker cannot run inside a session; same constraint as E5/E7/cc-isolated."
+
+**Location:** `runs/review-arms/crb-pipeline/run-host.sh:3-4`
+**Type:** Reference / Architectural
+**Verdict:** Verified
+**Confidence:** High
+**Legibility-target:** for-orchestrator-synthesis
+
+The prior arm states the same constraint in the same words:
+
+```bash
+# runs/review-arms/e7-fable-3x/run-host.sh:4-5
+# ── RUN FROM THE HOST (WSL terminal), never from inside a Claude session ──
+# (docker cannot run inside a session; same constraint as E5/cc-isolated.)
+```
+
+The cc-isolated / devcontainer half is corroborated by
+`docs/decisions/015-cc-process-isolation-docker-devcontainer.md`, which records the Docker
+Desktop WSL-integration host setup as a prerequisite outside the agent's boundary.
+
+**Evidence:** `runs/review-arms/crb-pipeline/run-host.sh:3-4`, `runs/review-arms/e7-fable-3x/run-host.sh:4-5`, `docs/decisions/015-cc-process-isolation-docker-devcontainer.md:4,45-48`
+
+---
+
+## Claim 14: "87% recall / 0 FPs on the canon, `docs/working/e8-results-2026-08-18.md`"
+
+**Location:** `runs/review-arms/crb-pipeline/run-host.sh:19-21`
 **Type:** Reference
 **Verdict:** Verified
 **Confidence:** High
 **Legibility-target:** for-orchestrator-synthesis
 
-Each cell matches the corresponding report in the same directory. Spot quotes: candB security summary row "`__proto__` terminal key in field-path write sink | Medium" (`candB-critic-security.md` summary table); candB architecture finding 1 "**Severity:** Structural" (`candB-critic-architecture.md`); candB api-consistency finding 1 "**Severity:** Breaking" (`candB-critic-api-consistency.md`); candA api-consistency summary table lists two Breaking rows (`candA-critic-api-consistency.md:190-193`); candA performance finding 1 "**Severity:** Low" (`candA-critic-performance.md`); candA test-strategy enumerates G1–G5 all "Severity: Consider" (`candA-critic-test-strategy.md`). Remaining cells match by the same side-by-side reading (paraphrased — no quote available because the claim is agreement across seven documents).
+The cited doc's results table carries both figures:
 
-**Evidence:** `runs/review-arms/baseline-2026-08-06/hunt-verify/candB-fact-check.md:72-73`, `candB-critic-security.md`, `candB-critic-api-consistency.md`, `candB-critic-architecture.md`, `candA-fact-check.md:459-461,514`, `candA-critic-performance.md`, `candA-critic-api-consistency.md:190-193`, `candA-critic-test-strategy.md` (all under `runs/review-arms/baseline-2026-08-06/hunt-verify/`)
+```markdown
+<!-- docs/working/e8-results-2026-08-18.md:18 -->
+| **E8 evidence-discipline pipeline** | 54 | 47 | **87%** | **0** | **0 clean** (1 over-broad, scoped-true) |
+```
 
----
+47/54 = 87%. The "0 FPs" column is `Confirmed FPs`, and the doc's own qualifier — "E8's 0 FPs
+are measured; the historical pipeline's precision is unmeasurable retrospectively"
+(`docs/working/e8-results-2026-08-18.md:118-119`) — is not carried into the header, but the
+header does not claim a comparison either.
 
-## Claim 14: results.md — "Per-agent tokens from task notifications" (the raw per-agent token figures, e.g. fact-check 86,824, security 74,502, etc.)
-
-**Location:** `runs/review-arms/baseline-2026-08-06/hunt-verify/results.md:3` (and the table rows)
-**Type:** Configuration
-**Verdict:** Unverifiable
-**Confidence:** High
-**Legibility-target:** for-orchestrator-synthesis
-
-The internal arithmetic over these figures checks out (Claim 12), but the figures themselves originate from ephemeral Agent-tool task notifications that are not persisted anywhere in the repository — no notification log, transcript, or ledger row for the candA/candB runs exists on disk (paraphrased — no quote available because the claim covers absence of code: searches of `runs/review-arms/baseline-2026-08-06/` found no per-agent token source besides this file). Verifying them would require the original session's task-notification records. Note the canon baseline uses the same instrument (`token-ledger.md` exists for those cells), so the method is established; only these specific eight numbers are unauditable.
-
-**Evidence:** `runs/review-arms/baseline-2026-08-06/hunt-verify/results.md:3,10-14,23-28`
+**Evidence:** `runs/review-arms/crb-pipeline/run-host.sh:19-21`, `docs/working/e8-results-2026-08-18.md:16-18,50-52`
 
 ---
 
-## Claim 15: levers-3-4-measurement.md EMPIRICAL UPDATE — "fact-check 86,824 confirms the behavioral 🔴, panel of 238,155 skipped → pass 324,979 → 86,824 ... ~73% ... P is low (canon 0/8; 1 clean trigger in 225 commits)"
+## Claim 15: "E8 was orchestrated stage-by-stage by a human-driven session (k=2 fact-check, explicit critic list per instance)."
 
-**Location:** `runs/review-arms/baseline-2026-08-06/levers-3-4-measurement.md:94-103`
-**Type:** Configuration / Reference
-**Verdict:** Verified
-**Confidence:** High
-**Legibility-target:** for-orchestrator-synthesis
-
-Numerically identical to `hunt-verify/results.md` (Claim 12 arithmetic) and consistent with the pre-existing "fired **0/8**" finding earlier in the same file ("Across all 8 cells, fact-check produced **zero** behavioral 🔴", `levers-3-4-measurement.md:70-71`). The "1 clean trigger" phrasing carries the same identity-flip imprecision noted in Claim 3, but here the surrounding sentence explicitly names which candidate fired (B) and which didn't (A), so the reader is not misled.
-
-**Evidence:** `runs/review-arms/baseline-2026-08-06/levers-3-4-measurement.md:68-72,94-103`, `runs/review-arms/baseline-2026-08-06/hunt-verify/results.md:8-31`
-
----
-
-## Claim 16: Step 1 — "Diff delivery to agents is conditional (decision 032 #3, see [Inline shared-context prefix](#inline-shared-context-prefix-decision-032-3)): for a normal-sized diff, inline it once ...; for a **large diff** (the ~1000-line / >40%-churn threshold below), do **not** inline"
-
-**Location:** `skills/code-review/SKILL.md:99`
+**Location:** `runs/review-arms/crb-pipeline/run-host.sh:28-31`, duplicated at `docs/working/crb-direction1-setup.md:89-92`
 **Type:** Reference / Architectural
 **Verdict:** Verified
 **Confidence:** High
 **Legibility-target:** for-orchestrator-synthesis
 
-The anchor resolves: the heading "### Inline shared-context prefix (decision 032 #3)" exists at `skills/code-review/SKILL.md:228` and slugifies to `inline-shared-context-prefix-decision-032-3`. Both referenced thresholds exist below in the same step: "if the line count crosses the ~1000-line threshold" (`SKILL.md:114`) and "more than 40% of its lines changed" (`SKILL.md:116`). The size-guard fallback described here matches the prefix section's own guard ("fall back to the pre-#3 behavior: pass the scope spec and let each agent run its own `git diff`", `SKILL.md:263-265`). This line is internally consistent with the new policy; the *un-updated* references elsewhere are Claims 19, 22, 23.
+The E8 results doc records both the orchestration mode and `k=2`:
 
-**Evidence:** `skills/code-review/SKILL.md:99,114-116,228,261-266`
+```markdown
+<!-- docs/working/e8-results-2026-08-18.md:7 -->
+provenance-ruled rubric synthesis. Orchestrated locally (fable-5), k=2
+```
+
+and lists the config deltas explicitly: "**Config deltas vs the historical pipeline**: k=2
+not k=3; orchestrator on fable-5" (`docs/working/e8-results-2026-08-18.md:96-97`).
+
+**Evidence:** `runs/review-arms/crb-pipeline/run-host.sh:28-31`, `docs/working/e8-results-2026-08-18.md:7,96-97`
 
 ---
 
-## Claim 17: "the 2026-08-06 measurement, `runs/review-arms/baseline-2026-08-06/levers-3-4-measurement.md`, found the benefit is only captured when the shared material is actually inlined as one cacheable prefix; agents self-reading via tools shares no prefix and captures ~nothing"
+## Claim 16: "hooks/ and scripts/ are NOT in the payload (they write to host paths and log usage); E5/E7 also ran hookless."
 
-**Location:** `skills/code-review/SKILL.md:239-242`
-**Type:** Reference / Configuration
-**Verdict:** Verified
-**Confidence:** High
-**Legibility-target:** for-orchestrator-synthesis
-
-The cited doc says exactly this:
-
-```
-// runs/review-arms/baseline-2026-08-06/levers-3-4-measurement.md:25-29
-**Second finding — the SKILL path barely shares a prefix.** In the production loop ...
-critic agents are given a scope spec and **self-read** the diff, enclosing files, and
-the fact-check report via tools. The genuinely byte-identical shared *prompt prefix* was my
-~250-word instruction block (~330 tokens). So the **realized** #3 saving on the as-run structure ≈
-330 × (N−1) × 0.9 per cell ≈ **~1–1.5k cost-equiv/cell, ~8k across the canon — negligible.**
-```
-
-One contextual note for the author (not a mismatch in the checked claim): the same doc's own recommendation ran the other way — "Worth having (caching is free to leave on), not worth a big SKILL rewrite to force-inline" (`levers-3-4-measurement.md:58-59`). The SKILL accurately reports what the measurement *found* while adopting the restructure the doc judged not worth it; that is a design choice, outside fact-check scope, but readers tracing the citation will find the divergent recommendation.
-
-**Evidence:** `runs/review-arms/baseline-2026-08-06/levers-3-4-measurement.md:25-31,56-59`
-
----
-
-## Claim 18: "**Measured benefit is modest — single-digit-% of input cost, 0% of token count** (caching is a billing-rate effect, not a token-count reduction)"
-
-**Location:** `skills/code-review/SKILL.md:276-278`
-**Type:** Performance / Reference
-**Verdict:** Verified
-**Confidence:** High
-**Legibility-target:** for-orchestrator-synthesis
-
-Matches the measurement doc:
-
-```
-// runs/review-arms/baseline-2026-08-06/levers-3-4-measurement.md:48
-**≈157k cost-equivalent ÷ 2.99M ≈ 5.3% of input cost, 0% of token count** — and only if the SKILL
-is restructured to inline+cache.
-```
-
-Recomputed: 157,400 / 2,986,091 = 5.27% — single-digit, as claimed (paraphrased — no quote available because the check is a computation). The billing-rate framing matches `levers-3-4-measurement.md:20-23` ("prompt caching does not reduce the number of tokens *processed* ... It reduces the *billing rate*").
-
-**Evidence:** `runs/review-arms/baseline-2026-08-06/levers-3-4-measurement.md:20-23,33-48`
-
----
-
-## Claim 19: Stage 1 dispatch step 3 — "Include the scope specification (e.g., 'Review files changed on the current branch relative to main using `git diff main...HEAD`')"
-
-**Location:** `skills/code-review/SKILL.md:340-344`
-**Type:** Architectural
-**Verdict:** Stale
-**Confidence:** High
-**Legibility-target:** for-author
-
-This dispatch instruction still describes only the scope-spec/self-read delivery mode:
-
-```
-// skills/code-review/SKILL.md:340-341
-3. Include the scope specification (e.g., "Review files changed on the current branch relative
-   to main using `git diff main...HEAD`"). If the scope is partial ...
-```
-
-Under the new Step 1 policy (`SKILL.md:99`) and the Inline shared-context prefix section (`SKILL.md:239-249`, which lists "**The unified diff itself** (`git diff <scope>`), inlined" as shared-block part 2 for Stage-1 replicates and Stage-2 critics alike), a normal-sized diff should be *inlined* into the fact-check replicate prompts, with scope-spec-only delivery reserved for the large-diff fallback. This step was accurate before 2f5ad0b and was not updated with it; as written it instructs the pre-#3 behavior unconditionally.
-
-**Evidence:** `skills/code-review/SKILL.md:99,239-249,340-344`
-
----
-
-## Claim 20: #4 mechanics item 2 — "This is the largest saving (the whole critic block) — measured at **~73% of the pass** on the one canon-adjacent case that fired it (`runs/review-arms/baseline-2026-08-06/hunt-verify/results.md`). But it is **not** the common case"
-
-**Location:** `skills/code-review/SKILL.md:493-499`
-**Type:** Performance / Reference
-**Verdict:** Verified
-**Confidence:** High
-**Legibility-target:** for-orchestrator-synthesis
-
-The cited file records "73.3% of the red-gated pass" for candidate B (`hunt-verify/results.md:19`, quoted at Claim 1), and B is indeed the *only* case that fired it (A did not fire — `results.md:31`, "#4 saving = 0"). "One ... case that fired it" and "~73%" both match; the arithmetic behind 73.3% was recomputed and holds (Claim 12). The rarity framing ("not the common case") matches `results.md:38-45` ("It fires rarely ... canon reviewed states **0/8**"), which corrects the pre-2f5ad0b SKILL text that had called this trigger "the common case" — the correction is faithful to the evidence.
-
-**Evidence:** `runs/review-arms/baseline-2026-08-06/hunt-verify/results.md:15-19,29-31,38-45`
-
----
-
-## Claim 21: #4 mechanics item 3 — "the core panel is one parallel wave already in flight, so there is usually nothing left to skip (measured: a critic-surfaced red saved 0)"
-
-**Location:** `skills/code-review/SKILL.md:500-504`
-**Type:** Performance / Reference
-**Verdict:** Verified
-**Confidence:** High
-**Legibility-target:** for-orchestrator-synthesis
-
-Candidate A is the measured instance: it contained a genuine behavioral red surfaced by a critic, and the saving was zero —
-
-```
-// runs/review-arms/baseline-2026-08-06/hunt-verify/results.md:31-36
-- Pass = 66,717 + 186,275 = **252,992**. **#4 saving = 0.**
-- **The sharp point**: candidate A *does* contain a behavioral red — api-consistency rated the same
-  contract lie **Breaking (🔴)**. ... **A red was present and #4 still saved nothing.**
-```
-
-**Evidence:** `runs/review-arms/baseline-2026-08-06/hunt-verify/results.md:21-36`
-
----
-
-## Claim 22: Stage 2 dispatch step 3 — "Include the scope specification so the agent runs its own `git diff`"
-
-**Location:** `skills/code-review/SKILL.md:634-636`
-**Type:** Architectural
-**Verdict:** Stale
-**Confidence:** High
-**Legibility-target:** for-author
-
-```
-// skills/code-review/SKILL.md:634
-3. Include the scope specification so the agent runs its own `git diff`. If the scope is
-```
-
-The rationale clause "so the agent runs its own `git diff`" states the pre-#3 delivery mode unconditionally, contradicting the new conditional policy (Step 1, `SKILL.md:99`) and the prefix section that now inlines the diff as shared-block part 2 for critic prompts (`SKILL.md:246-249`). Under the new policy, self-read is the large-diff fallback, not the default. Un-updated cross-reference from before 2f5ad0b.
-
-**Evidence:** `skills/code-review/SKILL.md:99,246-249,634`
-
----
-
-## Claim 23: Important Reminders — "**Pass scope, not diffs.** Each agent runs its own `git diff` to avoid context budget issues."
-
-**Location:** `skills/code-review/SKILL.md:1406`
-**Type:** Architectural
-**Verdict:** Stale
-**Confidence:** High
-**Legibility-target:** for-author
-
-```
-// skills/code-review/SKILL.md:1406
-- **Pass scope, not diffs.** Each agent runs its own `git diff` to avoid context budget issues.
-```
-
-This is the most direct internal contradiction left by 2f5ad0b: it categorically forbids exactly what Step 1 (`SKILL.md:99`, "for a normal-sized diff, inline it once as the shared cacheable prefix of every agent prompt") and the prefix section (`SKILL.md:246-249`) now mandate for normal-sized diffs. An orchestrator reading the reminders list in isolation would follow the pre-#3 behavior and — per the measurement this diff cites — capture ~none of the #3 benefit. Accurate before 2f5ad0b; not updated with it.
-
-**Evidence:** `skills/code-review/SKILL.md:99,239-249,1406`
-
----
-
-## Claim 24: commit de9ccf7 — "read-only scan, no code changed" plus the candidate facts restated from the hunt doc (throttle.ts:2, consumers in useFormalizationPipeline, e59c7ed; c2f5e8c, fixed 2493d2a)
-
-**Location:** commit message `de9ccf7`
-**Type:** Reference / Behavioral
-**Verdict:** Verified
-**Confidence:** High
-**Legibility-target:** for-orchestrator-synthesis
-
-The commit's diffstat is a single added markdown file — `git show --stat de9ccf7` lists only `runs/review-arms/baseline-2026-08-06/hunt-factcheck-behavioral-lie.md | 67 ++...`, no code files (paraphrased — no quote available because the evidence is a git diffstat, not file content). The restated candidate facts are the same claims verified above (Claims 6–9). Note the message's "both historical (HEAD clean)" inherits the Claim 5 defect in its weaker form — the parenthetical is defensible under the tier-T reading, and the message, unlike the hunt doc, does not say "both already fixed".
-
-**Evidence:** git show de9ccf7; `runs/review-arms/baseline-2026-08-06/hunt-factcheck-behavioral-lie.md` (Claims 6-9)
-
----
-
-## Claim 25: commit 45fa1df — "worktrees wt-candA/wt-candB gitignored"
-
-**Location:** commit message `45fa1df`
+**Location:** `runs/review-arms/crb-pipeline/run-host.sh:34-35`
 **Type:** Configuration
 **Verdict:** Verified
 **Confidence:** High
 **Legibility-target:** for-orchestrator-synthesis
 
-```
-// .gitignore:45
-runs/review-arms/baseline-2026-08-06/wt-*
+The payload is built from an explicit five-path `git archive` that omits both directories:
+
+```bash
+# runs/review-arms/crb-pipeline/run-host.sh:85-86
+git -C "$ROOT" archive "$PAYLOAD_REF" skills workflows guides patterns CLAUDE.md \
+  | tar -x -C "$PAYLOAD_SRC"
 ```
 
-`git check-ignore -v` confirms both paths match this rule (paraphrased — no quote available because the confirmation is a command output). The pattern pre-dates this range (added in `2c7f10d`, the baseline scaffold commit), so the message claims an existing fact, not new work — accurate either way.
+Nothing else is copied into `$PAYLOAD_SRC` before the per-instance `cp -r` at line 150, so
+`hooks/` and `scripts/` cannot reach the container.
 
-**Evidence:** `.gitignore:45`
+**Evidence:** `runs/review-arms/crb-pipeline/run-host.sh:34-35,83-88,110,150`
 
 ---
 
-## Claim 26: commit 45fa1df — "238,155 tokens = 73% of the pass ... canon 0/8; ~1 clean trigger in 225 commits ... per-agent tokens from task notifications ... Measurement cost ~578k + ~335k hunt"
+## Claim 17: "`CC_VERSION=\"${CC_VERSION:-2.1.232}\"   # pin for reproducibility; bump deliberately`"
 
-**Location:** commit message `45fa1df`
-**Type:** Configuration / Reference
+**Location:** `runs/review-arms/crb-pipeline/run-host.sh:55`
+**Type:** Configuration
+**Verdict:** Verified
+**Confidence:** Medium
+**Legibility-target:** for-orchestrator-synthesis
+
+Version 2.1.232 is a real published `@anthropic-ai/claude-code` version and was the version
+E7 actually ran — an E7 transcript captured a skill payload path stamped with it:
+
+```
+# runs/review-arms/e7-fable-3x/mfc-hygiene/rep2/transcript.jsonl:194
+"Base directory for this skill: /tmp/claude-1000/bundled-skills/2.1.232/…"
+```
+
+E7's own header corroborates ("verified 2026-08-14 that CLI 2.1.232 in `--bare` headless
+mode …", `runs/review-arms/e7-fable-3x/run-host.sh:56`). Medium confidence only on whether
+the version remains fetchable from npm today, which needs registry access.
+
+**Evidence:** `runs/review-arms/crb-pipeline/run-host.sh:55`, `runs/review-arms/e7-fable-3x/run-host.sh:56`, `runs/review-arms/e7-fable-3x/mfc-hygiene/rep2/transcript.jsonl:194`
+
+---
+
+## Claim 18: "`PAYLOAD_REF=\"${PAYLOAD_REF:-main}\"   # == feat/critic-evidence-discipline (merged, see header)`"
+
+**Location:** `runs/review-arms/crb-pipeline/run-host.sh:56`
+**Type:** Configuration
+**Verdict:** Verified
+**Confidence:** High
+**Legibility-target:** for-orchestrator-synthesis
+
+Equality is asserted only over the payload paths, and that is exactly what the payload uses
+(`git archive "$PAYLOAD_REF" skills workflows guides patterns CLAUDE.md`, line 85). The
+three-path diff between the two refs is empty — see Claim 6. Two of the five archived paths
+(`guides`, `patterns`) are outside the diff the header quotes, so strictly the comment
+depends on those also being identical; they are, since the branch is fully merged into main
+and main has advanced only by `docs/` commits since `d9234c9`.
+
+**Evidence:** `runs/review-arms/crb-pipeline/run-host.sh:56,85`, git history `main` vs `feat/critic-evidence-discipline`
+
+---
+
+## Claim 19: "E8's canon sweep ran the orchestrator on Fable 5 … MODEL=opus is ~1/2 the per-token price"
+
+**Location:** `runs/review-arms/crb-pipeline/run-host.sh:57-59`
+**Type:** Reference / Configuration
+**Verdict:** Verified
+**Confidence:** High
+**Legibility-target:** for-orchestrator-synthesis
+
+First half: "Orchestrated locally (fable-5)" (`docs/working/e8-results-2026-08-18.md:7`) and
+"orchestrator on fable-5" (line 96-97).
+
+Second half: `claude-fable-5` list pricing is $10/M input, $50/M output; the Opus tier
+(`claude-opus-5` / `4.8` / `4.7` / `4.6`) is $5/M input, $25/M output — exactly half on both
+axes (paraphrased — no quote available because the pricing table lives in the `claude-api`
+skill's model reference, not in this repo). The repo corroborates independently: the E8
+results doc records "Fable 5 list prices: $10/M input, $50/M output"
+(`docs/working/e8-results-2026-08-18.md:111-112`) and the E7 header records
+"claude-fable-5 (exact ID; $10/$50 per MTok — 2x Opus)"
+(`runs/review-arms/e7-fable-3x/run-host.sh:8`). "~1/2" is if anything conservative — it is
+exactly 1/2.
+
+**Evidence:** `runs/review-arms/crb-pipeline/run-host.sh:57-60`, `docs/working/e8-results-2026-08-18.md:7,111-112`, `runs/review-arms/e7-fable-3x/run-host.sh:8`
+
+---
+
+## Claim 20: "`git archive` (not a bind mount of $ROOT) so a running review cannot edit the skills that are reviewing it, and so an unrelated local edit mid-sweep cannot change the arm's condition halfway through."
+
+**Location:** `runs/review-arms/crb-pipeline/run-host.sh:79-82`
+**Type:** Invariant
+**Verdict:** Verified
+**Confidence:** High
+**Legibility-target:** for-orchestrator-synthesis
+
+The payload is extracted once from a committed ref into a tempdir before the loop:
+
+```bash
+# runs/review-arms/crb-pipeline/run-host.sh:83-87
+PAYLOAD_SRC=$(mktemp -d)
+trap 'rm -rf "$PAYLOAD_SRC"' EXIT
+git -C "$ROOT" archive "$PAYLOAD_REF" skills workflows guides patterns CLAUDE.md \
+  | tar -x -C "$PAYLOAD_SRC"
+PAYLOAD_SHA=$(git -C "$ROOT" rev-parse "$PAYLOAD_REF")
+```
+
+`git archive <ref>` reads the committed tree, so uncommitted worktree edits are excluded, and
+the extraction happens once — outside the `for id in …` loop that starts at line 134 — so
+mid-sweep edits to `$ROOT` cannot reach any later instance. Only `$INST_HOME` (a per-instance
+`cp -r` of `$PAYLOAD_SRC`, line 150) is ever mounted into a container; `$ROOT` never is.
+
+**Evidence:** `runs/review-arms/crb-pipeline/run-host.sh:83-88,134,150,155-160`
+
+---
+
+## Claim 21: "Docker creates a fresh named volume root-owned, but the review container runs as uid 1000 (`-u node`) — chown it once, as root, before any `-u node` mount."
+
+**Location:** `runs/review-arms/crb-pipeline/run-host.sh:97-99`
+**Type:** Behavioral
+**Verdict:** Mostly accurate
+**Confidence:** Medium
+**Legibility-target:** for-author
+
+The remediation matches the description exactly — a root container chowns the volume before
+any `-u node` use:
+
+```bash
+# runs/review-arms/crb-pipeline/run-host.sh:100-101
+docker run --rm -v cc-review-npm-cache:/home/node/.npm node:22 \
+  chown -R node:node /home/node/.npm
+```
+
+Two imprecisions. (a) Docker does not unconditionally create named volumes root-owned: on
+first mount it *seeds* the volume from the image's content at that path, inheriting that
+path's ownership; `node:22` ships `/home/node/.npm` owned by `node`, so a genuinely fresh
+volume is often already correct — the failure mode this guards is a volume created by an
+earlier root-run container, which is a real and recurring case but not "fresh". (b) `-u node`
+selects the *user named* `node`, which happens to be uid 1000 in `node:22`; the comment
+states the uid as if it were the mechanism. Neither imprecision affects behavior — the chown
+is idempotent and harmless. Medium confidence because Docker's volume-seeding semantics are
+not observable from this repo.
+
+**Evidence:** `runs/review-arms/crb-pipeline/run-host.sh:97-101,111-116,155-160`
+
+---
+
+## Claim 22: "(b) payload mounted but skills not registered — the run then silently measures Claude Code's built-in review, i.e. the E5 arm under a wrong label. Decision 022 exists because exactly this happened in cc-isolated."
+
+**Location:** `runs/review-arms/crb-pipeline/run-host.sh:106-108`
+**Type:** Reference / Architectural
+**Verdict:** Verified
+**Confidence:** High
+**Legibility-target:** for-orchestrator-synthesis
+
+`docs/decisions/022-claude-workflows-payload-in-cc-isolated.md` exists and is precisely about
+the payload not reaching a containerized Claude Code, including the silent-staleness failure
+mode: "frozen at whatever the payload was the day its volume was created, with no signal"
+(`docs/decisions/022-claude-workflows-payload-in-cc-isolated.md:55`). The preflight the
+comment introduces does test registration by name:
+
+```python
+# runs/review-arms/crb-pipeline/run-host.sh:128-130
+if "code-review" not in r:
+    sys.exit("  payload skills NOT registered — the run would measure the "
+             f"built-in reviewer, not the pipeline. Model said: {r[:300]!r}")
+```
+
+**Evidence:** `runs/review-arms/crb-pipeline/run-host.sh:106-108,111-131`, `docs/decisions/022-claude-workflows-payload-in-cc-isolated.md:1,38,55`
+
+---
+
+## Claim 23: "Completed cells are skipped on re-invocation (`num_turns > 0`), so a sweep resumes."
+
+**Location:** `runs/review-arms/crb-pipeline/run-host.sh:138-143`, restated at `docs/working/crb-direction1-setup.md:86-87`
+**Type:** Behavioral
+**Verdict:** Verified
+**Confidence:** High
+**Legibility-target:** for-orchestrator-synthesis
+
+The guard reads exactly that predicate off the harvested result file:
+
+```bash
+# runs/review-arms/crb-pipeline/run-host.sh:138-144
+  if [ -s "$dest/result.json" ] && python3 -c '
+import json, sys
+d = json.load(open(sys.argv[1]))
+sys.exit(0 if d.get("num_turns", 0) > 0 else 1)' "$dest/result.json" 2>/dev/null; then
+    echo "=== $id — completed result exists, skipping (delete to re-run)"
+    continue
+  fi
+```
+
+`result.json` is only written when a `result` event was found in the transcript
+(`runs/review-arms/crb-pipeline/run-host.sh:185-191`), so a crashed instance leaves no file
+and re-runs. Consistent with the memory note that headless runs are judged by JSON
+`num_turns` rather than exit code.
+
+**Evidence:** `runs/review-arms/crb-pipeline/run-host.sh:138-144,185-191`
+
+---
+
+## Claim 24: "Fresh writable payload copy per instance: Claude Code writes settings.json, projects/, todos/ into ~/.claude, and one instance's state must not leak into the next (nor back into the payload source)."
+
+**Location:** `runs/review-arms/crb-pipeline/run-host.sh:146-148`
+**Type:** Invariant
+**Verdict:** Verified
+**Confidence:** High
+**Legibility-target:** for-orchestrator-synthesis
+
+The isolation the comment claims is implemented literally — copy in, mount the copy, delete
+the copy:
+
+```bash
+# runs/review-arms/crb-pipeline/run-host.sh:150
+  INST_HOME=$(mktemp -d); cp -r "$PAYLOAD_SRC/." "$INST_HOME/"; chmod -R u+w "$INST_HOME"
+```
+
+```bash
+# runs/review-arms/crb-pipeline/run-host.sh:158,170
+    -v "$INST_HOME":/home/node/.claude \
+  rm -rf "$INST_HOME"
+```
+
+`$PAYLOAD_SRC` is never mounted, so no write-back path to the source exists; the same
+copy-mount-delete pattern is used for the preflight (lines 110, 117). The `~/.claude`
+write-target list (settings.json, projects/, todos/) is Claude Code runtime behavior rather
+than a repo fact and is corroborated by decision 022's discussion of the payload volume.
+
+**Evidence:** `runs/review-arms/crb-pipeline/run-host.sh:110,117,146-150,158,170`
+
+---
+
+## Claim 25: `instances.json` field names and content are consistent with what `crb-materialize.py` writes
+
+**Location:** `runs/review-arms/crb/instances.json:1-82`
+**Type:** Configuration
+**Verdict:** Verified
+**Confidence:** High
+**Legibility-target:** for-orchestrator-synthesis
+
+The manifest record constructed by `materialize()` is:
+
+```python
+# scripts/crb-materialize.py:210-216
+    return {
+        "url": url, "source_repo": entry["source_repo"], "pr_title": entry["pr_title"],
+        "fork": fork, "fork_url": remote, "head": head, "base": base,
+        "commits": n_commits, "n_goldens": len(entry["golden_comments"]),
+        "files_changed": files, "insertions": ins, "deletions": dels,
+        "clone_mb": mb, "depth": depth,
+    }
+```
+
+Each of the five manifest entries carries exactly these fourteen keys and no others, in the
+sorted order `json.dumps(..., sort_keys=True)` produces (`scripts/crb-materialize.py:266`).
+The consumers agree: `run-host.sh:69-71` reads only the top-level slug keys,
+`crb-pipeline-to-benchmark.py:217,229` read `rec["url"]` and `rec["fork"]`. The 5-PR /
+33-goldens commit-message claim reproduces from `select()` — see Claim 4.
+
+**Evidence:** `runs/review-arms/crb/instances.json:1-82`, `scripts/crb-materialize.py:210-216,266`, `runs/review-arms/crb-pipeline/run-host.sh:69-71`, `scripts/crb-pipeline-to-benchmark.py:217,229`
+
+---
+
+## Claim 26: "`scripts/crb-materialize.py --all # all 50 (~15-25GB)`"
+
+**Location:** `scripts/crb-materialize.py:26`
+**Type:** Configuration
+**Verdict:** Stale
+**Confidence:** High
+**Legibility-target:** for-author
+
+The 15–25 GB figure is inherited verbatim from the pre-pilot estimate in the parent plan:
+
+```markdown
+<!-- docs/working/crb-arm-plan.md:204-205 -->
+   ~20MB–900MB each; discourse smallest, keycloak/grafana largest — budget
+   ~15–25GB disk for all 50, or stream one at a time and delete).
+```
+
+The pilot that this same commit materialized measured 33–195 MB per clone
+(`runs/review-arms/crb/instances.json`), which projects to ~6.7 GB for 50 — and the setup doc
+added in the same commit says `~6-7 GB` (`docs/working/crb-direction1-setup.md:27`). The
+estimate was accurate before measurement and is now superseded by it; the two files in this
+diff contradict each other by 2–4×. Update line 26 to `~6-7GB`.
+
+**Evidence:** `scripts/crb-materialize.py:26`, `docs/working/crb-direction1-setup.md:27`, `docs/working/crb-arm-plan.md:204-205`, `runs/review-arms/crb/instances.json:5,20,36,52,68`
+
+---
+
+## Claim 27: "Every tool's fork of the same original PR carries the same code (they differ only in which bot reviewed it), so one fork per PR suffices."
+
+**Location:** `scripts/crb-materialize.py:7-8`
+**Type:** Invariant
 **Verdict:** Unverifiable
 **Confidence:** Medium
 **Legibility-target:** for-orchestrator-synthesis
 
-Split verdict, dominated by the unauditable parts. Verified pieces: 238,155 = 73.3% of 324,979 (Claim 12 arithmetic); "canon 0/8" (`levers-3-4-measurement.md:70-71`); "~578k" matches results.md's 577,971 (`hunt-verify/results.md:57-59`, itself a correct sum). Unverifiable pieces: the per-agent token provenance ("task notifications" — Claim 14) and the "~335k hunt" figure, which appears only as "the earlier 3-agent history hunt ≈ 335k" in `results.md:59` with no persisted per-agent source anywhere in the repo (paraphrased — no quote available because the claim covers absence of evidence: no ledger or notification record for the hunt agents exists on disk). Verifying would require the original session's task-notification records. "~1 clean trigger" carries the Claim 3 imprecision.
+Statically confirmable: for all 50 PRs, every recorded fork of that PR agrees on the
+`<org>__<repo>__…__PR<n>` stem, differing only in the tool segment and the cut date — so
+every fork is a fork of the same upstream PR (paraphrased — no quote available because the
+check is an aggregate over 2 449 `repo_name` strings in a generated JSON file). That is
+necessary but not sufficient for "carries the same code": the forks were cut on 27 distinct
+dates (`20260122` … `20260626`), so two forks of one PR can in principle differ if the
+upstream PR branch moved between cuts. Confirming the invariant needs cloning ≥2 forks of the
+same PR and diffing `refs/pull/1/head` — network work, out of scope here.
 
-**Evidence:** `runs/review-arms/baseline-2026-08-06/hunt-verify/results.md:57-59`, `runs/review-arms/baseline-2026-08-06/levers-3-4-measurement.md:68-72`
+Practical exposure is low: the script pins `DEFAULT_FORK_TOOL = "claude-code"`, and all 50
+claude-code forks share the single date `20260310` (Claim 28), so the pilot never mixes cuts.
+The invariant only becomes load-bearing if someone changes the fork tool per-PR.
+
+**Evidence:** `scripts/crb-materialize.py:7-8,52-56,84`, `external/code-review-benchmark/offline/results/benchmark_data.json`
 
 ---
 
-## Claim 27: commit 2f5ad0b — "#4 -- already in the skill since the 032 implementation commit"
+## Claim 28: "claude-code is present on all 50 and was cut on one date (20260310), so it is the most uniform choice."
 
-**Location:** commit message `2f5ad0b`
-**Type:** Reference / Staleness
+**Location:** `scripts/crb-materialize.py:53-55`
+**Type:** Configuration
 **Verdict:** Verified
 **Confidence:** High
 **Legibility-target:** for-orchestrator-synthesis
 
-The 032 implementation commit exists — `09eb87a feat(code-review): implement decision 032 adopt-now token-reduction bundle` (git log on `skills/code-review/SKILL.md`) — and the 2f5ad0b diff's pre-image already contains the #4 mechanics list it edits (the `-` side of the hunk at `SKILL.md:471-507` includes "Earliest trigger — the fact-check gate" and "Critic-stage trigger"), confirming #4 predated this commit (paraphrased — no quote available because the evidence is the diff pre-image spanning a whole hunk).
+Both halves hold exactly. Iterating the dataset's `reviews` lists, `claude-code` appears with
+a non-null `repo_name` on 50/50 PRs, and the trailing date segment of all 50 of those
+`repo_name`s is `20260310` — a single value (paraphrased — no quote available because this is
+an aggregate over the generated `benchmark_data.json`, which has no citable line for it). For
+comparison, across all tools the dataset spans 27 distinct cut dates, so "most uniform" is
+well supported.
 
-**Evidence:** git log -S "first-red short-circuit" -- skills/code-review/SKILL.md (09eb87a); git show 2f5ad0b (hunk at `skills/code-review/SKILL.md:471-507`)
+One adjacent note, not part of the claim: the fallback `sorted(forks.values())[0]` at
+`scripts/crb-materialize.py:84` can select an `mra-*` style `repo_name` (150 such entries
+exist, e.g. `mra-claude__keycloak_keycloak_pr37429`), which `slug_for` rejects with
+`ValueError` because it splits into fewer than 4 `__`-separated parts. Unreachable today
+precisely because the claim above is true.
+
+**Evidence:** `scripts/crb-materialize.py:52-56,69-74,82-88`, `external/code-review-benchmark/offline/results/benchmark_data.json`
 
 ---
 
-## Claim 28: commit 2f5ad0b — "format-contract 17/17 and gate 19/19 green"
+## Claim 29: "NO other refs and NO origin remote, so a reviewing agent cannot fetch the upstream future (the merged fix — the answer key) via `git log --all`."
 
-**Location:** commit message `2f5ad0b`
-**Type:** Reference / Configuration
+**Location:** `scripts/crb-materialize.py:12-14`
+**Type:** Invariant
 **Verdict:** Verified
 **Confidence:** High
 **Legibility-target:** for-orchestrator-synthesis
 
-Re-ran both suites at HEAD: `bats test/code-review-gate.bats` → 19 `ok`, 0 `not ok`; `bats test/skills/code-review-format-contract.bats` → 17 `ok`, 0 `not ok` (paraphrased — no quote available because the evidence is live test-runner output). Counts and greenness both match the claim.
+The scrub does all four things in the order the claim needs:
 
-**Evidence:** `test/code-review-gate.bats` (19 tests), `test/skills/code-review-format-contract.bats` (17 tests) — both run 2026-08-07
+```python
+# scripts/crb-materialize.py:176-184
+    refs = sh(["git", "for-each-ref", "--format=%(refname)",
+               "refs/heads", "refs/tags", "refs/remotes"], cwd=dst).splitlines()
+    for ref in refs:
+        if ref not in ("refs/heads/review", "refs/heads/main"):
+            sh(["git", "update-ref", "-d", ref], cwd=dst)
+    subprocess.run(["git", "remote", "remove", "origin"], cwd=dst,
+                   capture_output=True, text=True)
+    sh(["git", "reflog", "expire", "--expire=now", "--all"], cwd=dst)
+    sh(["git", "gc", "--quiet", "--prune=now"], cwd=dst)
+```
+
+The ordering matters and is correct: refs are deleted *before* `reflog expire`, and both
+precede `gc --prune=now`, so the deleted `refs/remotes/origin/*` (which is where the fork's
+default branch — potentially containing the merged fix — lived) becomes unreachable and is
+then physically pruned rather than merely unreferenced. Removing the remote also strips the
+`[remote "origin"]` URL from `.git/config`, so a re-fetch has no configured target.
+
+Guard (a) then proves the postcondition:
+
+```python
+# scripts/crb-materialize.py:186-190
+    stray = sh(["git", "rev-list", "--all", "--not", head], cwd=dst)
+```
+
+`git rev-list --all` walks all refs under `refs/` plus `HEAD`; `--not <head>` excludes
+`head`'s ancestry, so a non-empty result means something outside the reviewed ancestry is
+still reachable. It does *not* detect unreachable-but-present objects — which is exactly why
+the `gc --prune=now` on the preceding line is load-bearing, and why the ordering is not
+incidental. Scoped to `git log --all` / `git show`, as the claim is, this holds. (A reviewer
+who independently knows the upstream URL could still fetch over the network; the claim does
+not assert otherwise.)
+
+**Evidence:** `scripts/crb-materialize.py:10-14,175-190`
 
 ---
 
-## Claim 29: commit 2f5ad0b — "Pipeline-prose edits only; no rubric-template change"
+## Claim 30: "This mirrors `scripts/prep-cc-review-clones.sh`, which does the same job for the meta-formalism-copilot canon instances."
 
-**Location:** commit message `2f5ad0b`
-**Type:** Reference / Architectural
+**Location:** `scripts/crb-materialize.py:15-16`
+**Type:** Architectural / Reference
 **Verdict:** Verified
 **Confidence:** High
 **Legibility-target:** for-orchestrator-synthesis
 
-The commit touches exactly one file (`skills/code-review/SKILL.md`, per its diffstat) in three hunks: Step 1 line ~99, the shared-context-prefix section (~225–285), and the #4 mechanics (~471–507). The rubric template lives in "## Deliverable 2: Code Review Rubric" at `skills/code-review/SKILL.md:927` onward — outside every hunk. `test/skills/code-review/rubric-current-format.md` is untouched in the whole range (last modified at `a9fa0ba`, before this range) (paraphrased — no quote available because the claim is about which regions a diff does NOT touch). The format-contract suite's "golden's table headers match the skill's rubric template" test passing (Claim 28) independently confirms template stability.
+The referenced script exists and performs the same operation with the same guard structure:
 
-**Evidence:** git show --stat 2f5ad0b; `skills/code-review/SKILL.md:927`; git log -1 -- `test/skills/code-review/rubric-current-format.md`
+```bash
+# scripts/prep-cc-review-clones.sh:6-17
+#   - branch `review` checked out at the instance's reviewed head commit
+#   - branch `main` pinned at the instance's context base (so "diff vs main"
+#     reproduces the canon range)
+#   - NO other refs, NO origin remote, and descendant objects (the later fix
+#     commits — the answer key) pruned from the object store, so an agentic
+#     reviewer cannot read the future via `git log --all` / `git show`.
+```
+
+Its scrub sequence (`scripts/prep-cc-review-clones.sh:41-46`) is the shell equivalent of the
+Python block quoted in Claim 29, down to `reflog expire --expire=now --all` then `gc --quiet
+--prune=now`, and its guard (a) is character-for-character the same predicate:
+
+```bash
+# scripts/prep-cc-review-clones.sh:47-49
+  local stray; stray=$(git -C "$dst" rev-list --all --not "$head" | wc -l)
+```
+
+The two differ in source (local repo vs. GitHub fork) and in guard (b) — the canon script
+checks for self-referencing `docs/reviews/` files, the new one checks diff non-emptiness —
+but "does the same job" is accurate.
+
+**Evidence:** `scripts/crb-materialize.py:15-16`, `scripts/prep-cc-review-clones.sh:6-17,41-49`
+
+---
+
+## Claim 31: "Clones are SHALLOW (--depth, default 50) … ~1 order of magnitude smaller on disk than a full clone of grafana/keycloak."
+
+**Location:** `scripts/crb-materialize.py:18-20`
+**Type:** Performance
+**Verdict:** Unverifiable
+**Confidence:** Low
+**Legibility-target:** for-orchestrator-synthesis
+
+The shallow half is verified — `--depth={depth}` is passed on both the clone and the PR-head
+fetch, with `default=50`:
+
+```python
+# scripts/crb-materialize.py:163-165
+    sh(["git", "clone", "--quiet", "--no-checkout", f"--depth={depth}", remote, str(dst)])
+    sh(["git", "fetch", "--quiet", f"--depth={depth}", "origin",
+        "refs/pull/1/head:refs/heads/review"], cwd=dst)
+```
+
+and the measured shallow sizes are 125 MB (grafana) and 127 MB (keycloak)
+(`runs/review-arms/crb/instances.json:36,52`). The comparison term — the size of a *full*
+clone of grafana or keycloak — is not obtainable without cloning them, and no figure for it
+exists anywhere in the repo. A ~1.2–2 GB full clone would make "~1 order of magnitude"
+roughly right, but that is my prior, not evidence. Verifying needs a network clone.
+
+**Evidence:** `scripts/crb-materialize.py:18-20,163-165,228`, `runs/review-arms/crb/instances.json:36,52`
+
+---
+
+## Claim 32: "Writes/updates `runs/review-arms/crb/instances.json`: slug -> {url, fork, head, base, n_goldens, files_changed, insertions, deletions, clone_mb}."
+
+**Location:** `scripts/crb-materialize.py:29-31`
+**Type:** Configuration
+**Verdict:** Mostly accurate
+**Confidence:** High
+**Legibility-target:** for-author
+
+Every listed key is present, but the record has five more the docstring omits —
+`source_repo`, `pr_title`, `fork_url`, `commits`, `depth`:
+
+```python
+# scripts/crb-materialize.py:210-216
+    return {
+        "url": url, "source_repo": entry["source_repo"], "pr_title": entry["pr_title"],
+        "fork": fork, "fork_url": remote, "head": head, "base": base,
+        "commits": n_commits, "n_goldens": len(entry["golden_comments"]),
+        "files_changed": files, "insertions": ins, "deletions": dels,
+        "clone_mb": mb, "depth": depth,
+    }
+```
+
+The docstring does not say "only these", so it is incomplete rather than wrong — worth
+closing since the setup doc's pilot table is built from the omitted `commits` field.
+
+**Evidence:** `scripts/crb-materialize.py:29-31,210-216`, `runs/review-arms/crb/instances.json:2-17`
+
+---
+
+## Claim 33: "The manifest lives under runs/ (tracked) rather than beside the clones: external/ is gitignored"
+
+**Location:** `scripts/crb-materialize.py:48-51`
+**Type:** Configuration
+**Verdict:** Verified
+**Confidence:** High
+**Legibility-target:** for-orchestrator-synthesis
+
+`.gitignore` ignores the whole directory at its first rule:
+
+```gitignore
+# .gitignore:1-2
+# Other repos for evaluating/validating tooling changes
+external/
+```
+
+`DST_ROOT = WORKSPACE / "external/crb-eval"` therefore falls under it, while `MANIFEST =
+WORKSPACE / "runs/review-arms/crb/instances.json"` does not match any ignore rule — and is in
+fact tracked in this diff. `.gitignore`'s `runs/` rules are limited to `runs/**/prompt.txt`
+and three `wt-*` worktree paths, none of which cover `runs/review-arms/crb/`.
+
+**Evidence:** `scripts/crb-materialize.py:47-51`, `.gitignore:1-2`, `.gitignore` (runs/ rules, final 5 lines)
+
+---
+
+## Claim 34: "`keycloak__keycloak__claude-code__PR37429__20260310 -> keycloak-PR37429`"
+
+**Location:** `scripts/crb-materialize.py:70`
+**Type:** Behavioral
+**Verdict:** Verified
+**Confidence:** High
+**Legibility-target:** for-orchestrator-synthesis
+
+Executing `slug_for` on the docstring's exact input returns exactly `keycloak-PR37429`. The
+`.replace(".", "_")` tail is exercised by the cal.com family:
+`slug_for("cal_dot_com__cal.com__claude-code__PR11059__20260310")` → `cal_com-PR11059`,
+matching the manifest key at `runs/review-arms/crb/instances.json:2` (paraphrased — no quote
+available because these are function return values from a live import, not file contents).
+
+**Evidence:** `scripts/crb-materialize.py:69-74`, `runs/review-arms/crb/instances.json:2`
+
+---
+
+## Claim 35: "the dataset splits a few projects across mirror repos (discourse-graphite, sentry-greptile, keycloak-greptile); for stratification those are the same codebase, so `--per-repo 1` should yield 5 PRs (one per project), not 7."
+
+**Location:** `scripts/crb-materialize.py:93-98`
+**Type:** Behavioral
+**Verdict:** Mostly accurate
+**Confidence:** High
+**Legibility-target:** for-author
+
+The operative conclusion is exactly right and reproduces: the dataset's seven distinct
+`source_repo` values are `keycloak` (9 PRs), `keycloak-greptile` (1), `sentry` (6),
+`sentry-greptile` (4), `grafana` (10), `discourse-graphite` (10), `cal.com` (10); applying
+
+```python
+# scripts/crb-materialize.py:98
+    return source_repo.split("-")[0]
+```
+
+collapses them to five families — `keycloak`, `sentry`, `grafana`, `discourse`, `cal.com` —
+and running `select()` with `--per-repo 1` returns 5 PRs, one per family. The "5, not 7"
+claim is Verified.
+
+The parenthetical is where it slips: `discourse-graphite` is **not** a mirror-repo split.
+There is no plain `discourse` entry in the dataset — `discourse-graphite` is the only
+discourse-family repo, so collapsing it changes nothing. The two genuine splits are
+`keycloak`/`keycloak-greptile` and `sentry`/`sentry-greptile`. Listing three splits also
+misdescribes why 7→5 rather than 7→4: two collapses, not three. Drop `discourse-graphite`
+from the parenthetical.
+
+**Evidence:** `scripts/crb-materialize.py:93-98,101-122`, `external/code-review-benchmark/offline/results/benchmark_data.json`
+
+---
+
+## Claim 36: "--per-repo N: the N PRs with the most golden comments in each source repo… Ties break on slug for determinism."
+
+**Location:** `scripts/crb-materialize.py:111-113`
+**Type:** Behavioral
+**Verdict:** Verified
+**Confidence:** High
+**Legibility-target:** for-orchestrator-synthesis
+
+Both halves are implemented in the sort key — descending goldens as primary, slug ascending
+as tiebreaker:
+
+```python
+# scripts/crb-materialize.py:118-121
+    for repo in sorted(by_repo):
+        ranked = sorted(by_repo[repo],
+                        key=lambda p: (-len(p[2]["golden_comments"]), p[0]))
+        sel.extend(ranked[: args.per_repo])
+```
+
+`p[0]` is the slug (`load_prs` yields `(slug, url, entry, fork)` tuples, line 88), and Python's
+sort is stable and total on this key, so the selection is deterministic. One wording nit that
+does not change behavior: the bucketing key is `family(p[2]["source_repo"])` (line 116), i.e.
+per *family*, not per "source repo" — consistent with Claim 35's intent but not with this
+comment's literal wording.
+
+**Evidence:** `scripts/crb-materialize.py:88,101-122`
+
+---
+
+## Claim 37: "on forks whose default branch is itself named `main`, HEAD still points at it after --no-checkout, and git refuses to force-update the branch that is checked out."
+
+**Location:** `scripts/crb-materialize.py:168-170`
+**Type:** Behavioral
+**Verdict:** Verified
+**Confidence:** High
+**Legibility-target:** for-orchestrator-synthesis
+
+Reproduced directly. After `git clone --no-checkout` of a repo whose default branch is `main`,
+`git symbolic-ref HEAD` returns `refs/heads/main`, and `git branch -f main HEAD~1` fails with
+`fatal: cannot force update the branch 'main' checked out at '<path>'` (paraphrased — no quote
+available because this is the output of a scratch git repro in a tempdir, not a file in this
+repo). The mitigation — checking out `review` before the `branch -f main` — is applied in the
+correct order:
+
+```python
+# scripts/crb-materialize.py:171-172
+    sh(["git", "checkout", "--quiet", "review"], cwd=dst)
+    sh(["git", "branch", "-f", "main", base], cwd=dst)
+```
+
+**Evidence:** `scripts/crb-materialize.py:163,168-172`
+
+---
+
+## Claim 38: "Guard (b): the range is non-empty and its blobs are present locally (a partial/broken clone shows up here rather than mid-review)."
+
+**Location:** `scripts/crb-materialize.py:191-193`
+**Type:** Behavioral
+**Verdict:** Mostly accurate
+**Confidence:** High
+**Legibility-target:** for-author
+
+The non-empty half is what the `if` actually tests:
+
+```python
+# scripts/crb-materialize.py:193-196
+    n_commits = int(sh(["git", "rev-list", "--count", "main..review"], cwd=dst))
+    stat = sh(["git", "diff", "--shortstat", "main", "review"], cwd=dst)
+    if n_commits == 0 or not stat:
+        raise RuntimeError(f"{slug}: empty review range (commits={n_commits}, stat={stat!r})")
+```
+
+The blob half is real but arrives by a different route than the comment implies: no condition
+inspects blob presence. What catches it is that `git diff --shortstat` must read both trees'
+blobs to produce output, and `sh()` raises on non-zero exit:
+
+```python
+# scripts/crb-materialize.py:63-65
+    if check and r.returncode != 0:
+        raise RuntimeError(f"{' '.join(args)} failed ({r.returncode}): "
+                           f"{(r.stderr or '').strip()[:500]}")
+```
+
+so a missing-blob repo fails as an unhandled `git diff` error, not as the guard's own
+`RuntimeError`. That distinction is not cosmetic for the operator: the failure message will be
+a raw git error rather than the slug-tagged "empty review range" line. It is also worth
+noting the ordering makes this robust — `origin` is already removed by line 181, so git cannot
+lazily backfill a missing blob and mask the problem. Precise version: "the range is non-empty,
+and reading it would fail loudly here (via `git diff`) rather than mid-review if the clone
+were partial."
+
+**Evidence:** `scripts/crb-materialize.py:59-66,181,191-196`
+
+---
+
+## Claim 39: "Untouched PRs and every other tool's reviews are preserved verbatim, so the aggregate table at the end of step 3 is a real leaderboard."
+
+**Location:** `scripts/crb-pipeline-to-benchmark.py:13-15`
+**Type:** Behavioral
+**Verdict:** Mostly accurate
+**Confidence:** High
+**Legibility-target:** for-author
+
+The preservation half is Verified. The script mutates only the covered PRs' `reviews` list,
+and only by removing a prior same-named row before appending ours:
+
+```python
+# scripts/crb-pipeline-to-benchmark.py:225-233
+        entry = data[url]
+        entry["reviews"] = [r for r in entry.get("reviews", []) if r["tool"] != args.tool_name]
+        entry["reviews"].append({
+            "tool": args.tool_name,
+```
+
+PRs with no matching run cell are `continue`d (lines 213-224) and re-serialized unchanged at
+line 246.
+
+The "so … a real leaderboard" conclusion does not follow for the pilot case, and the sibling
+script added in the same commit says so:
+
+```python
+# scripts/crb-subset-leaderboard.py:4-8
+Step 3's own aggregate table sums each tool over every PR it has results for.
+When our arm covers a 5-PR pilot and the other 49 tools cover all 50, that table
+compares our row on 5 PRs against theirs on 50 — different denominators, not a
+ranking.
+```
+
+Both cannot be right. Step 3's aggregate is a real leaderboard only when coverage is uniform
+(the `--all` case); under the documented 5-PR pilot it is precisely the mis-denominated table
+`crb-subset-leaderboard.py` exists to replace. Since a wrong denominator here corrupts the
+headline measurement, reword to "…so the aggregate table is well-formed for every *other*
+tool; use `crb-subset-leaderboard.py` for any comparison involving our row."
+
+**Evidence:** `scripts/crb-pipeline-to-benchmark.py:13-15,213-233,246`, `scripts/crb-subset-leaderboard.py:4-8`
+
+---
+
+## Claim 40: "Steps 2 and 3 skip any (PR, tool) pair already present, so seeding means the paid judge work is OUR TOOL ONLY — the other 49 tools keep their published scores instead of being re-judged at ~50x the cost."
+
+**Location:** `scripts/crb-pipeline-to-benchmark.py:19-20`
+**Type:** Behavioral
+**Verdict:** Verified
+**Confidence:** High
+**Legibility-target:** for-orchestrator-synthesis
+
+Both named steps skip present pairs — see the two quotes in Claim 1
+(`step2_extract_comments.py:196-198`, `step3_judge_comments.py:487-489`). The seeding that
+makes those skips fire copies exactly the two files those steps read:
+
+```python
+# scripts/crb-pipeline-to-benchmark.py:256-260
+        for name in ("candidates.json", "evaluations.json"):
+            s = src / name
+            if s.exists() and not (jdir / name).exists():
+                shutil.copy2(s, jdir / name)
+```
+
+`~50x` is the right order: 49 other tools plus ours. One scope note the claim gets right by
+omission — it says "Steps 2 and 3", not "all three". Step 2.5 is also a paid LLM step and
+its `dedup_groups.json` is *not* among the seeded files (and is not checked in for any judge),
+so step 2.5 is confined by `--tool` alone. The runbook the script writes does pass `--tool`
+to all three (`scripts/crb-pipeline-to-benchmark.py:286-288`), so the documented path is safe;
+a reader who seeds but omits `--tool` on step 2.5 would pay for 49 tools' dedup.
+
+**Evidence:** `scripts/crb-pipeline-to-benchmark.py:19-20,254-263,286-288`, `external/code-review-benchmark/offline/code_review_benchmark/step2_5_dedup_candidates.py:233-252`, `external/code-review-benchmark/offline/results/anthropic_claude-opus-4-5-20251101/` (contains only candidates.json + evaluations.json)
+
+---
+
+## Claim 41: "\"✅ Confirmed Good\" rows are never emitted: they assert the code is fine, so counting them as findings would inflate the false-positive denominator with non-claims."
+
+**Location:** `scripts/crb-pipeline-to-benchmark.py:22-26`
+**Type:** Behavioral
+**Verdict:** Verified
+**Confidence:** High
+**Legibility-target:** for-orchestrator-synthesis
+
+Doubly excluded. The section filter is a case-insensitive substring test against
+`("Must Fix", "Must Address", "Consider")`:
+
+```python
+# scripts/crb-pipeline-to-benchmark.py:102-103
+        if not any(s.lower() in section.lower() for s in sections):
+            continue
+```
+
+None of the three is a substring of `"✅ confirmed good"` — in particular `"consider"` is not
+contained in `"confirmed good"`. Independently, that table's header is `| Item | Verdict |
+Evidence | Source | Legibility-target |`, which has no `finding` column, so the
+`f_i is None → continue` branch at lines 107-109 would drop it regardless. Running the parser
+over the `mfc-csp` rubric confirms: 4 tables are seen (`🔴 Must Fix` 1 row, `🟡 Must Address`
+8, `🟢 Consider` 7, `✅ Confirmed Good` 5) and 16 comments are emitted — the 5 Confirmed Good
+rows are absent.
+
+**Evidence:** `scripts/crb-pipeline-to-benchmark.py:22-26,97-129`, `runs/review-arms/e8-evidence-pipeline/mfc-csp/code-review-rubric.md`, `skills/code-review/SKILL.md:1128`
+
+---
+
+## Claim 42: "Rubric section headers we treat as findings. \"Confirmed Good\" and \"Considered Overrides\" are deliberately absent."
+
+**Location:** `scripts/crb-pipeline-to-benchmark.py:58-60`
+**Type:** Behavioral
+**Verdict:** Mostly accurate
+**Confidence:** High
+**Legibility-target:** for-author
+
+"Confirmed Good" is genuinely excluded by the section filter (Claim 41). "Considered
+Overrides" is **not** — the filter is a substring test, and `"consider"` *is* a substring of
+`"↩️ considered overrides"`:
+
+```python
+# scripts/crb-pipeline-to-benchmark.py:102-103
+        if not any(s.lower() in section.lower() for s in sections):
+            continue
+```
+
+That section is a real, mandatory part of the rubric format this parser consumes:
+
+```markdown
+<!-- skills/code-review/SKILL.md:1137-1148 -->
+## ↩️ Considered Overrides
+…
+| Override (PR ref / Date) | Prior finding | Original → Override | Reason | This run's treatment |
+```
+
+What actually saves it is the column names: the table has `Prior finding`, not `Finding`, so
+`idx.get("finding")` is `None` and the loop bails:
+
+```python
+# scripts/crb-pipeline-to-benchmark.py:106-109
+        idx = {h.lower(): i for i, h in enumerate(header)}
+        f_i = idx.get("finding")
+        if f_i is None:
+            continue
+```
+
+So the outcome is right, but the stated mechanism ("absent from `FINDING_SECTIONS`") is not
+the one operating, and the protection is one rubric-header rename away from failing silently
+— a renamed `Prior finding` → `Finding` column would start injecting override rows as
+findings, inflating the FP count against the benchmark. Also note `SKILL.md:1147-1148`
+requires the heading to appear even when empty ("No prior overrides matched this diff"),
+which is harmless here only because that form emits no table. Either narrow the match to an
+exact/prefix test, or state that exclusion rests on the column name.
+
+**Evidence:** `scripts/crb-pipeline-to-benchmark.py:58-60,97-113`, `skills/code-review/SKILL.md:1137-1148`
+
+---
+
+## Claim 43: "Benchmark judging is text-only — path/line are carried for human readability, not scored — so a miss is harmless."
+
+**Location:** `scripts/crb-pipeline-to-benchmark.py:136-138`
+**Type:** Behavioral
+**Verdict:** Verified
+**Confidence:** High
+**Legibility-target:** for-orchestrator-synthesis
+
+The extraction step reads only `body` and discards location outright — it hardcodes `None` for
+both fields on every candidate it creates:
+
+```python
+# external/code-review-benchmark/offline/code_review_benchmark/step2_extract_comments.py:132-135
+def get_all_comment_text(review_comments: list[dict]) -> str:
+    """Combine all comment bodies into a single text for extraction."""
+    bodies = [c["body"] for c in review_comments if c.get("body")]
+    return "\n\n---\n\n".join(bodies)
+```
+
+```python
+# external/code-review-benchmark/offline/code_review_benchmark/step2_extract_comments.py:243-250
+            candidates.append(
+                {
+                    "text": issue,
+                    "path": None,
+                    "line": None,
+                    "source": "extracted",
+                }
+            )
+```
+
+Step 3 judges those `text` candidates against golden `comment` strings, so `path`/`line`
+never enter scoring. The injector also appends the raw `Location:` cell into the body
+(`scripts/crb-pipeline-to-benchmark.py:126-127`), so even a `parse_location` miss keeps the
+location visible to the judge as text.
+
+**Evidence:** `scripts/crb-pipeline-to-benchmark.py:132-144,123-128`, `external/code-review-benchmark/offline/code_review_benchmark/step2_extract_comments.py:132-135,243-250`
+
+---
+
+## Claim 44: "Without it step 2 re-extracts the ~52 (PR, tool) pairs the checked-in candidates file happens to be missing, and step 3 would re-judge them — paid work that overwrites published numbers with ours."
+
+**Location:** `scripts/crb-pipeline-to-benchmark.py:268-271`, duplicated at `docs/working/crb-direction1-setup.md:143-145`
+**Type:** Configuration
+**Verdict:** Mostly accurate
+**Confidence:** High
+**Legibility-target:** for-author
+
+The mechanism is exactly right; the count is slightly off. Replaying step 2's own selection
+logic (extract iff the combined comment text is ≥20 chars and the pair is absent from the
+seeded `candidates.json`) over the checked-in
+`anthropic_claude-opus-4-5-20251101/candidates.json` yields **50** unseeded pairs, not ~52
+(2 449 total pairs, 169 of which step 2 skips for short/empty text). "~52" is close enough to
+be harmless but is not a measured figure; use 50. (Paraphrased — no quote available because
+the number is an aggregate over two multi-MB generated JSON files.)
+
+The "overwrites published numbers with ours" half is correct: `evaluations.json` is keyed
+`url → tool → result` and step 3 writes into the same seeded file, so re-judged rows for other
+tools would replace their published values in the file the leaderboard then reads.
+
+**Evidence:** `scripts/crb-pipeline-to-benchmark.py:268-271`, `docs/working/crb-direction1-setup.md:143-147`, `external/code-review-benchmark/offline/code_review_benchmark/step2_extract_comments.py:190-205`, `external/code-review-benchmark/offline/results/anthropic_claude-opus-4-5-20251101/candidates.json`
+
+---
+
+## Claim 45: "Step 3's own aggregate table sums each tool over every PR it has results for … Metrics are MICRO-averaged (sum tp/fp/fn across the subset, then divide), the same convention step 3 uses for its aggregate table."
+
+**Location:** `scripts/crb-subset-leaderboard.py:4-11`
+**Type:** Behavioral / Performance
+**Verdict:** Verified
+**Confidence:** High
+**Legibility-target:** for-orchestrator-synthesis
+
+Step 3 aggregates over the whole persisted evaluations state — every PR each tool has a
+non-skipped result for, not just this run's:
+
+```python
+# external/code-review-benchmark/offline/code_review_benchmark/step3_judge_comments.py:540-550
+    for golden_url, tools in state.completed.items():
+        for tool, result in tools.items():
+            if result.get("skipped"):
+                continue
+            …
+            tool_metrics[tool]["tp"] += result.get("tp", 0)
+            tool_metrics[tool]["fp"] += result.get("fp", 0)
+            tool_metrics[tool]["fn"] += result.get("fn", 0)
+```
+
+and then divides the sums — micro-averaging:
+
+```python
+# external/code-review-benchmark/offline/code_review_benchmark/step3_judge_comments.py:558-560
+        precision = m["tp"] / (m["tp"] + m["fp"]) if (m["tp"] + m["fp"]) > 0 else 0
+        recall = m["tp"] / (m["tp"] + m["fn"]) if (m["tp"] + m["fn"]) > 0 else 0
+        f1 = 2 * precision * recall / (precision + recall) if (precision + recall) > 0 else 0
+```
+
+The subset script reproduces that convention exactly, including the same `skipped` filter and
+the same three formulas (`scripts/crb-subset-leaderboard.py:56-71`). The field names it reads
+(`tp`, `fp`, `fn`, `total_candidates`, `total_golden`, `skipped`) all exist on every one of
+the 2 449 rows in the checked-in evaluations file.
+
+**Evidence:** `scripts/crb-subset-leaderboard.py:4-11,54-72`, `external/code-review-benchmark/offline/code_review_benchmark/step3_judge_comments.py:540-562,368-380`
+
+---
+
+## Claim 46: "`scripts/crb-subset-leaderboard.py --all-prs # full 50-PR leaderboard`"
+
+**Location:** `scripts/crb-subset-leaderboard.py:16`
+**Type:** Behavioral
+**Verdict:** Mostly accurate
+**Confidence:** High
+**Legibility-target:** for-author
+
+`--all-prs` ranks over every PR in the evaluations file, whatever that count happens to be:
+
+```python
+# scripts/crb-subset-leaderboard.py:49-50
+    urls = sorted(evals) if args.all_prs else sorted(
+        u for u, tools in evals.items() if args.tool in tools)
+```
+
+and the header it prints says so honestly (`f"all {len(urls)} PRs"`, line 77). The argparse
+help is also accurate — "rank over every PR in the file instead of our tool's subset" (lines
+39-40). Only the usage line hardcodes 50. It resolves to 50 on the seeded default path
+(`DEFAULT_EVALS`, lines 26-27, points at the work dir seeded from the 50-PR checked-in file),
+but is wrong for any `--evaluations` pointed at a `--no-seed` run or a partial judge pass —
+where it would silently read as a full-benchmark claim. Reword to "leaderboard over every PR
+in the evaluations file".
+
+**Evidence:** `scripts/crb-subset-leaderboard.py:16,26-27,39-40,44-50,74-77`
 
 ---
 
 ## Claims Requiring Attention
 
 ### Incorrect
-- **Claim 5** (`runs/review-arms/baseline-2026-08-06/hunt-factcheck-behavioral-lie.md:10,103-106`): "both already fixed, HEAD clean" — candidate A's throttle lie is NOT fixed at the external repo's HEAD (the doc's own line 13 says the comment "persists unchanged at HEAD", and the code confirms it). Fix: reword to "B fixed (2493d2a); A's comment persists at HEAD but grades 🟡 under T".
-- **Claim 10** (`runs/review-arms/baseline-2026-08-06/hunt-verify/candB-fact-check.md:8-9`): header summary says "7 verified ... 1 unverifiable" but the body has 8 Verified and 0 Unverifiable. Fix the breakdown to "8 verified, 0 mostly accurate, 0 stale, 1 incorrect, 0 unverifiable".
+- **Claim 10** (`docs/working/crb-direction1-setup.md:172-176`): caveat says `total_golden` disagrees "on the same 2 PRs … 11 vs 13"; actually **24 of 50** PRs disagree, and the maximum `total_golden` anywhere in the file is **9**, so `11 vs 13` cannot occur. Understates a measurement caveat by 12×.
+- **Claim 39** (`scripts/crb-pipeline-to-benchmark.py:13-15`): "the aggregate table at the end of step 3 is a real leaderboard" is directly contradicted by `crb-subset-leaderboard.py:4-8` in the same commit ("different denominators, not a ranking") for the documented 5-PR pilot. The preservation half is verified; the conclusion is not. Denominator claim — fix before any results doc quotes step 3's table.
 
 ### Stale
-- **Claim 19** (`skills/code-review/SKILL.md:340-344`): Stage 1 dispatch step 3 still instructs scope-spec-only delivery unconditionally; needs the inline-vs-self-read conditional from Step 1 / the prefix section.
-- **Claim 22** (`skills/code-review/SKILL.md:634`): Stage 2 dispatch step 3's "so the agent runs its own `git diff`" rationale contradicts the new inline-by-default policy.
-- **Claim 23** (`skills/code-review/SKILL.md:1406`): Important Reminders' "Pass scope, not diffs" categorically forbids what the new Step 1 mandates for normal diffs — the sharpest un-updated cross-reference; an orchestrator following it captures ~none of the #3 benefit the same commit claims to realize.
+- **Claim 26** (`scripts/crb-materialize.py:26`): `--all` disk estimate `~15-25GB` is inherited from the pre-pilot plan; the pilot measured 33–195 MB/clone (~6.7 GB for 50), and the setup doc in the same commit says `~6-7 GB`. Two files in one diff differ 2–4×.
 
 ### Mostly Accurate
-- **Claim 3** (`docs/decisions/032-review-loop-token-reduction-levers.md:135-136`): "~1 clean trigger in 225 commits" — the rate holds, but the candidate the hunt labelled the "clean trigger" (A) is the one that empirically did NOT fire; B fired. Tighten to "~1 empirically-confirmed trigger in 225".
-- **Claim 11** (`runs/review-arms/baseline-2026-08-06/hunt-verify/candB-fact-check.md:129-131`): cited `integrateValidation.ts:56`; the quoted line is at `:51` at 6cf4b0d.
+- **Claim 5** (`runs/review-arms/crb-pipeline/run-host.sh:104-105,126`): the "Not logged in" case is caught only by the `num_turns < 1` arm — `"log in"` does not match `"not logged in"` or `"/login"`. Restore E7's second `"logged in"` clause.
+- **Claim 7** (`runs/review-arms/crb-pipeline/run-host.sh:150-153`): "re-runs start from the same state" — `git clean -fd` (no `-x`) leaves gitignored artifacts in the clone across instances.
+- **Claim 8** (`docs/working/crb-direction1-setup.md:114`, `scripts/crb-pipeline-to-benchmark.py:177`): median findings/PR is 3 over all 2 449 (PR, tool) pairs; 4 only if empty reviews are excluded. State the denominator.
+- **Claim 21** (`runs/review-arms/crb-pipeline/run-host.sh:97-99`): a *fresh* named volume inherits the image path's ownership (`node`), not root; the chown guards volumes previously touched by a root container. Also `-u node` selects a username, not a uid.
+- **Claim 32** (`scripts/crb-materialize.py:29-31`): manifest key list omits `source_repo`, `pr_title`, `fork_url`, `commits`, `depth` — one of which (`commits`) feeds the setup doc's pilot table.
+- **Claim 35** (`scripts/crb-materialize.py:93-98`): "5, not 7" is exactly right, but `discourse-graphite` is not a mirror-repo split (no plain `discourse` entry exists); only keycloak and sentry split.
+- **Claim 38** (`scripts/crb-materialize.py:191-193`): no condition checks blob presence — a partial clone surfaces as a raw `git diff` failure via `sh()`'s `check=True`, not as the guard's own error message.
+- **Claim 42** (`scripts/crb-pipeline-to-benchmark.py:58-60`): "Considered Overrides" *does* match the `"consider"` substring filter; exclusion actually rests on the table using a `Prior finding` column. One rubric column rename from silently injecting override rows as findings.
+- **Claim 44** (`scripts/crb-pipeline-to-benchmark.py:268-271`): the unseeded-pair count is 50, not ~52.
+- **Claim 46** (`scripts/crb-subset-leaderboard.py:16`): `--all-prs` ranks over every PR *in the evaluations file*; "full 50-PR" holds only on the seeded default path.
+- **Claim 36** (`scripts/crb-materialize.py:111-113`): bucketing is per *family* (`family(source_repo)`), not per "source repo" as worded — behaviorally intended, textually loose.
 
 ### Unverifiable
-- **Claim 14** (`runs/review-arms/baseline-2026-08-06/hunt-verify/results.md:3`): the raw per-agent token figures come from ephemeral task notifications with no persisted record; would need the original session's notification log to audit.
-- **Claim 26** (commit `45fa1df`): same provenance gap, plus the "~335k hunt" figure has no on-disk source; internal arithmetic (~578k) does check out.
+- **Claim 27** (`scripts/crb-materialize.py:7-8`): "every tool's fork carries the same code" — forks agree on the PR stem, but were cut across 27 dates; confirming needs cloning ≥2 forks of one PR and diffing `refs/pull/1/head`. Low exposure today because all 50 `claude-code` forks share one cut date.
+- **Claim 31** (`scripts/crb-materialize.py:18-20`): "~1 order of magnitude smaller than a full clone of grafana/keycloak" — the shallow sizes are measured (125/127 MB) but no full-clone size exists in the repo; needs a network clone.
+- **Claim 17** (`runs/review-arms/crb-pipeline/run-host.sh:55`): CC 2.1.232 is corroborated as a real, previously-run version by an E7 transcript; whether it is still installable from npm needs registry access.
 
 ---
 
-## Hallucination pattern log
+## Repo-state incident (out of band — not a documentation claim)
 
-Neither Incorrect verdict is a fabrication (no invented symbol, method, API, or behavior): Claim 5 is an internal inconsistency/staleness about fix status, and Claim 10 is a miscounted summary line. Per the skill's exclusion rules, `docs/reviews/hallucination-patterns.md` was not updated.
+Discovered while verifying git-history claims. Reporting as observed facts; I ran no
+ref-deleting, remote-removing, gc, or reflog command, and the scope command in my brief
+succeeded on my first tool call before this state appeared.
+
+**Observed now, in `/workspace`:**
+- `git status -sb` → `## No commits yet on feat/crb-direction1-harness`; every tracked file
+  shows as `A` (staged add).
+- `.git/refs/heads/` is empty; `.git/packed-refs` contains a single line,
+  `52265555088aabc56df8e416ba38fd8490b3ba93 refs/heads/main`.
+- `git cat-file -t 90de392` → `fatal: Not a valid object name` — **the commit under review no
+  longer exists as an object.**
+- `.git/config` no longer has a `[remote "origin"]` section; `.git/refs/remotes/` and
+  `.git/logs/refs/remotes/` are empty; `.git/logs/HEAD` and `.git/logs/refs/heads/main` are
+  zero-length (reflogs expired); `.git/FETCH_HEAD` is zero-length.
+- `git fsck` reports all six worktrees under `.claude/worktrees/` now point at unborn
+  branches (`worktree-python-toolchain-uv`, `worktree-ledger-cubic-column`,
+  `worktree-archive-stale-docs`, `worktree-fact-check-codereview-writeup`,
+  `worktree-e7-rep23-ledger`, `exp/cross-model-openrouter-sweep`).
+- All of `.git/refs/heads`, `.git/refs/remotes`, `.git/packed-refs`, `.git/config`,
+  `.git/index`, `.git/info`, `.git/logs`, `.git/FETCH_HEAD` carry the same mtime, 16:50.
+
+This is the exact four-step signature of the scrub sequence at
+`scripts/crb-materialize.py:176-184` — delete every ref except `review`/`main`, `git remote
+remove origin`, `git reflog expire --expire=now --all`, `git gc --quiet --prune=now` — applied
+to `/workspace` itself rather than to a clone under `external/crb-eval/`. I cannot determine
+what invoked it.
+
+**What survives:** `main` is intact with full history (1236 commits, tip `5226555`, and
+`d9234c9` still resolves). The reviewed content is intact in the index and working tree —
+`git diff --cached --stat main` still produces `7 files changed, 1209 insertions(+)` over the
+same seven paths, which is how every claim above was checked.
+
+**What is lost:** the commit object `90de392` and its authored metadata/message; the branch
+refs `feat/crb-direction1-harness`, `feat/critic-evidence-discipline`, and the six worktree
+branches; all remote-tracking refs and the `origin` URL; all reflogs (so
+`git reflog`-based recovery is unavailable).
+
+**Non-destructive recovery sketch** (for the orchestrator/user to run, not applied by me —
+this is a repo-mutating operation outside a fact-check's remit):
+`git update-ref HEAD 5226555` sets the currently-unborn branch to main's tip while leaving the
+index and working tree untouched; `git status` should then show exactly the seven files as
+new, and a normal `git commit` recreates 90de392's content on top of main. The original commit
+message is recoverable from `.git/COMMIT_EDITMSG` (1 991 bytes, mtime 16:37) and is quoted in
+full in the review brief. The `origin` URL will need re-adding from the user's records, and the
+six worktree branches need re-pointing or pruning (`git worktree prune`) — their content is
+still on disk under `.claude/worktrees/`. Verify before trusting: I have not executed any of
+this.
+
+---
 
 ## Goal-Alignment Note
-- Answered: yes
-- Out of scope: code-quality/design judgment on the SKILL.md restructure (e.g., whether inlining against the measurement doc's "not worth a big rewrite" recommendation is wise — noted neutrally in Claim 17, not adjudicated); the hunted external-repo defects themselves (already reviewed by the run artifacts under check).
-- Escalate: the three stale SKILL.md self-read instructions (Claims 19, 22, 23) — they contradict the new conditional-inlining policy this range ships and will steer future orchestrators back to the ~0-benefit delivery mode; and the hunt doc's "both already fixed, HEAD clean" (Claim 5), which misstates the external repo's current state in a decision-feeding artifact.
-- Questions I would have asked: none — scope was clear.
+- Answered: yes — all 36 enumerated claims checked, plus 10 more from the docs and commit message.
+- Out of scope: code quality, security, and performance of the harness (left to stages 2–3); the four claims that need network or host access (full-clone sizes, cross-fork code identity, npm registry state, and the headline unverified assumption that headless Claude Code registers skills from a mounted `~/.claude` — the setup doc already flags that last one honestly at `docs/working/crb-direction1-setup.md:197-203`); executing any repo repair.
+- Escalate: (1) **the repo-state incident above — `90de392` no longer exists as a git object and all branch refs but `main` are gone**; downstream critics will find `git diff main...HEAD` fails, and should be told to use `git diff --cached main`. (2) Claim 10 and Claim 39 are measurement-corrupting and should be fixed before any results doc quotes a denominator. (3) Claim 42's substring filter is a latent injection path that a rubric column rename would silently open.
