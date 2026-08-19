@@ -1,329 +1,426 @@
-# Tech Debt Triage — CRB direction-1 harness
+# Tech Debt Triage: CRB direction-1 harness, cumulative fix work (59733d8..HEAD)
 
-Commit: 529ecd2
-Branch: `feat/crb-direction1-harness` (vs `main`)
-Scope: `git diff main...HEAD` — 7 files, +1209, all newly added
-Stage: 2 of 3 (advisory — informs but does not block merge)
+**Scope reviewed:** `git diff 59733d8..HEAD -- . ':!docs/reviews'` — commits cf6e7c9, 5bd0b09,
+46a5f17. 1,294 insertions / 102 deletions across 10 files.
+**Verification performed:** all three new bats suites run green (38/38); the corpus claims in
+`crb-cell-status.py` were re-measured independently (32 `result.json` files; stubs at 51 and 56
+chars; shortest real review 1,208 chars — all three confirmed); the A20 arm-lifetime evidence
+was re-counted from `git log`; the `EXIT`-trap-on-SIGINT claim was confirmed by execution.
 
----
-
-## 0. Framing: what is this code's expected lifetime?
-
-The brief asks me not to assume either "experiment code, so debt is free" or "new code, so
-production standards". Here is what the repo's own history says.
-
-**Finding: arms in this repo are single-use as *code*, multi-use as *evidence*.**
-
-Evidence I ran:
-
-1. **Arm directories are built and finished inside one day.** Across the 15 directories under
-   `runs/review-arms/`, 13 have an identical first-commit and last-commit date
-   (`git log --diff-filter=A` vs `git log -1` per directory). Only `e7-fable-3x` spans more
-   than a day of commits (11 commits, 2026-08-17 → 2026-08-18).
-2. **But arms *are* re-run.** E7 produced `e7-rep1-results-2026-08-15.md`,
-   `e7-rep2-results-2026-08-17.md`, `e7-rep3-results-2026-08-18.md` — three sweeps over four
-   days, with auth-fix commits (`9fab1b5`, `765fa6b`, `df46486`) landing *between* reps
-   because the runner broke mid-arm. So the runner's active window is days, not hours, and
-   in-sweep bugs demonstrably do get paid for in rework.
-3. **Every arm forks its own runner. None has ever shared a library.**
-   `e2/run-live.sh`, `e4-opus-k3/run-live.sh`, `e5-cc-builtin/run-host.sh` (66 lines),
-   `e6-ultra/run-host.sh` (49), `e7-fable-3x/run-host.sh` (181), `crb/run-cubic.sh` (126),
-   and now `crb-pipeline/run-host.sh` (237). `git diff --no-index` between the E7 and
-   CRB runners reports 201 insertions / 145 deletions — a fork with a shared skeleton,
-   which is exactly the established pattern.
-4. **No arm runner has ever carried a test.**
-   `rg -l 'prep-cc-review-clones|run-host|run-cubic|run-live' test/` returns nothing.
-   `test/scripts/` covers only durable utilities (`health-check`, `archive-working-docs`,
-   `skill-usage-report`, `failure-analysis`). Untested arm runners are the norm here, not a
-   deviation introduced by this branch.
-5. **"Zero results" is only half true.** The commit message says the arm is set up but not
-   run, but `docs/working/crb-direction1-setup.md:186-203` records what *was* executed at
-   $0: all 5 pilot clones materialized with both guards passing (and
-   `runs/review-arms/crb/instances.json` carries 5 real records with real SHAs and measured
-   `clone_mb`), the injector run against a real E8 rubric fixture, and the full
-   extract → dedup → judge chain run end-to-end against stub shims. The unverified surface is
-   narrow and *named*: skill registration inside the container, the real judge endpoint, and
-   real per-instance cost.
-
-**What this implies for triage.** Maintainability debt (duplication, missing abstraction,
-heredocs) has a near-zero carrying cost here, because there is no maintenance phase — the
-runner is written, run over a window of days, and frozen. That inverts the usual weighting:
-
-- Debt that can **burn a sweep** (wrong money, wrong condition, silently-mislabelled arm) is
-  the expensive class, and its cost is concentrated in a window that has not opened yet.
-- Debt that costs **future readers** is cheap for `runs/review-arms/` — but *not* cheap for
-  the three new files in `scripts/`, which sit in the durable directory alongside
-  `canon-to-crb.py`, `cross-model-review.py`, and `review-arms.py`, several of which have
-  bats coverage. 678 lines of arm-specific Python landing in the durable directory is itself
-  a classification choice with a real (if small) carry cost.
-
-I use that split throughout: `run-host.sh` is judged on sweep-safety, `scripts/crb-*.py` on
-sweep-safety *plus* a modest readability budget.
+**Standing:** advisory (Consider tier) except where marked. D1 is raised above advisory because it
+is a control introduced in this diff that fails during the operation the diff exists to enable.
 
 ---
 
-## 1. Preflight auth check regressed against its own prior art
+## Summary ranking
 
-**Severity:** Medium
-**Location:** `runs/review-arms/crb-pipeline/run-host.sh:126`
-**Nature:** Correctness regression against a sibling that was fixed the hard way
-**Cost of Deferral:** `+0 — inert until the sweep runs; then one whole sweep per bad credential`
-**Failure Cost:** `Med × Med — a silently unauthenticated sweep produces 50 empty cells and a wasted operator day, but no data corruption (num_turns=0 cells are detectable after the fact)`
-**Confidence:** High — verified against the sibling source
+| # | Debt Item | Carrying Cost | Cost of Deferral | Failure Cost | Fix Cost | Urgency | Recommendation |
+|---|-----------|:---:|:---:|:---:|:---:|:---:|---|
+| D1 | Corpus-pinned bats assertion is invalidated by the sweep it guards | High | +1 false test failure per cell run | Low × Med — a red suite mid-sweep trains the operator to ignore the suite that also guards containment | ~15 min | **Imminent — fires on cell 1** | Fix now |
+| D2 | `run-meta.json` is clobbered by a subset re-run, silently narrowing the attrition denominator | Medium | +0 until the first subset re-run, then step-change | Low × High — the published recall number loses the bias caveat this diff was written to add | ~30 min | On first subset re-run | Fix now |
+| D3 | A20's carry rationale rests on a miscounted statistic (10 of 15, not 13 of 15) | Low | +0 — inert | | Minutes | None | Fix opportunistically |
+| D4 | Measured constants duplicated across script comment, bats comment, and runbook | Low | +1 divergence risk per corpus change | | Hours (or ~15 min for the cheap form) | On next corpus change | Carry intentionally |
+| D5 | `attrition()` returns a `checked` flag no caller uses | Low | +0 — inert | | Minutes | None | Carry intentionally |
+| D6 | Two full `git gc --prune=now` per cell on 33–195 MB clones | Low | +0 — inert | | — | None | Carry intentionally — do not touch |
+
+### Recommended order
+
+D1, then D2, then stop. D1 and D2 are both single-file, test-covered, and land *before* money is
+spent; everything below them is cosmetic relative to a $50–2,000 sweep. D3 is a two-word edit to a
+rubric row and can ride along with whatever commit closes D1. D4–D6 are explicitly **not** worth
+doing before the sweep.
+
+---
+
+## D1 — The corpus pin in `crb-cell-status.bats` is invalidated by running the sweep
+
+**Severity:** High (above advisory — soundness contradiction: a control added in this diff fails
+during the operation this diff exists to enable)
+**Location:** `test/crb-cell-status.bats:152-178`; `.gitignore` (absence of a rule for
+`runs/review-arms/crb-pipeline/*/result.json`)
+**Confidence:** High — the glob path, the hard-coded assertion, and the write path were each
+checked directly; `git check-ignore` confirms the sweep's `result.json` files are not ignored.
 **Legibility-target:** for-author
 
-**Evidence** — the new check:
+**Evidence (verbatim, `test/crb-cell-status.bats:159-174`):**
 
-```python
-if d.get("num_turns", 0) < 1 or "log in" in r.lower():
-    sys.exit(f"  auth failed: {r[:200]!r}")
+```
+for p in sorted(glob.glob(os.path.join(root, "runs/review-arms/**/result.json"),
+                          recursive=True)):
+...
+  # 32 cells, of which exactly 3 are known-bad: one budget exhaustion and two
+  # quota stubs. Any other split means the predicate moved.
+  [[ "$output" == *"complete=29 incomplete=3"* ]]
 ```
 
-and the prior art it was forked from, `runs/review-arms/e7-fable-3x/run-host.sh:103`:
+**Evidence (verbatim, `run-host.sh:226` and `:294`):**
 
-```python
-sys.exit(0 if d.get("num_turns", 0) > 0 and "log in" not in r.lower() and "logged in" not in r.lower() else 1)
+```
+  dest="$OUT/$id"
+...
+  python3 - "$dest/transcript.jsonl" "$dest/result.json" "$dest/review.md" <<'EOF'
 ```
 
-E7 checks **both** `"log in"` and `"logged in"`. The new runner dropped the second. The
-documented failure string in its own comment block (`run-host.sh:105`) is
-`"Not logged in"` — and `"logged in"` does not contain the substring `"log in"`
-(`l-o-g-g-e-d-␣-i-n` vs `l-o-g-␣-i-n`). So the exact string the comment says it is guarding
-against is the one string this test does not match.
+with `OUT="$ROOT/runs/review-arms/crb-pipeline"` (`run-host.sh:54`).
 
-The `num_turns < 1` clause is a real backstop and E7's comment (`e7-fable-3x/run-host.sh:87-89`)
-records that a bad credential returns `num_turns=0`, so this is very likely still caught. But
-the branch that was added deliberately, after being "learned the hard way, 2026-08-14", was
-silently dropped in the fork.
+**Evidence (verbatim, shell):**
 
-### Carrying Cost: Low
-Inert while nobody runs the arm. The moment someone does, it is a coin-flip on whether the
-`num_turns` backstop alone holds. The whole point of the preflight is that it is the cheap
-guard in front of a $50–$2000 sweep.
+```
+$ git check-ignore -v runs/review-arms/crb-pipeline/grafana-PR79265/result.json
+NOT IGNORED
+```
+
+**Nature:** testing debt — a fixture corpus defined by a live glob but asserted with a frozen count.
+
+**Cost of Deferral:** `+1 false test failure per cell run` — the assertion breaks on the first
+completed cell and stays broken, drifting further with every cell.
+
+**Failure Cost:** `Low × Med` — no data is corrupted, but the operator learns during a paid sweep
+that `test/crb-*.bats` is red-by-design, and the same suite directory holds
+`crb-containment-reset.bats`, which is the non-vacuity pin on the containment guard. A suite the
+operator has been trained to ignore is a suite that will not be believed when it fires for real.
+
+### Carrying Cost: High
+
+The debt does not cost anything *today* — the suite is green right now, which is precisely why it
+is easy to miss. It costs the moment the branch is used for its purpose. The sweep writes
+`runs/review-arms/crb-pipeline/<slug>/result.json` for every cell, into the exact glob the test
+walks, and those files are tracked. A 5-PR pilot takes the count from `complete=29 incomplete=3`
+to something like `complete=34 incomplete=3`; `--all` takes it to ~79. Every one of those is a
+*correct* verdict from the predicate — the test fails for a reason that has nothing to do with the
+predicate moving, which is the failure mode the comment above the assertion explicitly disclaims
+("Any other split means the predicate moved").
+
+There is a second-order harm specific to this arm: a voided or budget-killed cell writes a
+`result.json` that the predicate correctly calls incomplete, so `incomplete` grows too, and the
+named-path assertions (`mfc-postfix/rep2`, etc.) keep passing while the counts drift. The test will
+therefore fail with a message that looks like the predicate regressed, during the window where the
+operator is least able to spend time on it.
 
 ### Fix Cost
-- **Scope:** localized — one boolean clause in one file
-- **Effort:** minutes
-- **Risk:** low — strictly widens an existing guard; cannot cause a false pass
-- **Incremental?** yes
+- **Scope:** localized — one bats file, one assertion plus the glob.
+- **Effort:** ~15 minutes.
+- **Risk:** low — the fix is to scope the corpus, not to change the predicate.
+- **Incremental?** yes.
+
+Cheapest form: exclude the arm under construction from the glob
+(`if "crb-pipeline" in p: continue`) and say why in the comment. Slightly better: assert on the
+*set of incomplete paths* rather than on `complete=N`, since the incomplete set is the load-bearing
+claim (the counts are only a proxy for it) and it is stable under corpus growth in a way the totals
+are not. Either is well under the "trivial fix, fix in place" bar.
 
 ### Urgency Triggers
-- Anyone runs `run-host.sh` for real. That is the intended next action per the commit message.
+- The first completed cell of any run, pilot or sweep. This is not a horizon — it is the next
+  command the branch is for.
 
 ### Recommendation
 
 **Recommendation:** Fix now
 
-Trivial fix (single file, one clause, well under 50 LOC) so it is fixed in place rather than
-routed through RPI. This is the one item where the fix cost is minutes and the failure cost is
-a whole sweep, which is the classic fix-now shape. It also restores parity with the sibling
-whose comment block this file inherited, so the code and its own documentation stop
-disagreeing.
+This is the one item where the carry argument does not apply. A20's reasoning is that refactor risk
+lands inside the sweep window while the benefit lands in a maintenance phase that will not occur —
+but here the *cost* lands inside the sweep window too, and the fix is fifteen minutes in a test
+file that cannot affect the sweep's behaviour. There is no version of the A20 tradeoff that favours
+carrying this.
 
 ---
 
-## 2. Doc/code contradictions shipped inside a single commit
+## D2 — `run-meta.json` is rewritten with the current invocation's argv, so a subset re-run erases the attrition denominator
 
-**Severity:** Medium
-**Location:** `scripts/crb-materialize.py:26`; `docs/working/crb-direction1-setup.md:27`, `:117-120`, `:172-176`; `scripts/crb-pipeline-to-benchmark.py:13-15` vs `scripts/crb-subset-leaderboard.py:4-8`
-**Nature:** Documentation drift — but drift that exists at birth, not from decay
-**Cost of Deferral:** `+1 contradicted claim per follow-on doc` — every results doc written from this runbook inherits the wrong numbers, and results docs are the durable artifact
-**Confidence:** High — the contradicting pairs are both in this diff
-**Legibility-target:** for-author
+**Severity:** Medium-High
+**Location:** `runs/review-arms/crb-pipeline/run-host.sh:160-220` (the `write_run_meta` function and
+its `EXIT` trap); `scripts/crb-subset-leaderboard.py:59`
+**Confidence:** High on the mechanism (both halves read directly and traced end to end);
+Medium on how often it bites, since it requires a subset invocation — which is documented in the
+script's own usage block.
+**Legibility-target:** for-orchestrator-synthesis
 
-**Evidence** — the disk estimate, `scripts/crb-materialize.py:26`:
-
-```
-  scripts/crb-materialize.py --all                      # all 50 (~15-25GB)
-```
-
-against `docs/working/crb-direction1-setup.md:27`, in the same commit:
+**Evidence (verbatim, `run-host.sh:163-166`):**
 
 ```
-scripts/crb-materialize.py --all           # all 50 (~6-7 GB)
+  python3 - "$OUT/run-meta.json" "$PAYLOAD_REF" "$PAYLOAD_SHA" "$MODEL" \
+           "$CC_VERSION" "$OUT" "${INSTANCES[*]}" <<'EOF' || true
+import json, os, sys
+meta_path, ref, sha, model, ccv, out, requested = sys.argv[1:8]
 ```
 
-The doc is right. `runs/review-arms/crb/instances.json` — also in this diff — records
-`clone_mb` for the 5 materialized pilot clones as 190 + 33 + 125 + 127 + 195 = 670 MB,
-i.e. ~6.7 GB extrapolated to 50. The script's `--all` help text overstates by 2–4×.
-
-**Evidence** — the leaderboard claim, `scripts/crb-pipeline-to-benchmark.py:13-15`:
+**Evidence (verbatim, `run-host.sh:206-210`):**
 
 ```
-      Untouched PRs and every other tool's reviews are preserved verbatim, so
-      the aggregate table at the end of step 3 is a real leaderboard.
+req = requested.split()
+json.dump({"arm": "crb-pipeline", "payload_ref": ref, "payload_commit": sha,
+           "model": model, "cc_version": ccv, "cells": cells,
+           "requested_instances": req,
+           "missing_cells": [s for s in req if s not in cells],
 ```
 
-against `scripts/crb-subset-leaderboard.py:4-8`, whose entire reason for existing is that
-this is false:
+**Evidence (verbatim, `scripts/crb-subset-leaderboard.py:57-59`):**
 
 ```
-Step 3's own aggregate table sums each tool over every PR it has results for.
-When our arm covers a 5-PR pilot and the other 49 tools cover all 50, that table
-compares our row on 5 PRs against theirs on 50 — different denominators, not a
-ranking.
+    cells = meta.get("cells") or {}
+    requested = meta.get("requested_instances") or sorted(cells)
+    voided = set(meta.get("voided_cells") or [])
 ```
 
-Stage 1 also placed the golden-denominator caveat (`crb-direction1-setup.md:172-176`,
-"`total_golden` 11 vs 13") and the "same judge pass" claim (`:117-120`, contradicted by the
-doc's own `--out runs/review-arms/crb/offline-work-50-ra` example at `:100`) in this cluster.
-I have not re-derived those two — Stage 1 owns them — but they belong to the same debt.
+**Evidence (verbatim, `run-host.sh:46` — subset invocation is the documented workflow):**
+
+```
+#   ... run-host.sh discourse-graphite-PR4 grafana-PR79265     # subset
+```
+
+**Nature:** structural — a provenance file with whole-sweep semantics is written with
+per-invocation scope, and the consumer has no way to tell the two apart.
+
+**Cost of Deferral:** `+0 until the first subset re-run` — then a step change, because from that
+point on every leaderboard the operator prints is missing the attrition warning entirely.
+
+**Failure Cost:** `Low × High` — probability is low-ish (needs a subset re-run before the
+leaderboard is generated) but severity is high and *silent*. The attrition warning exists because
+"failed cells drop out of the denominator — which biases the numbers below in our favour"
+(`crb-subset-leaderboard.py:78-81`). After a subset re-run, `requested_instances` shrinks to the
+one or two slugs just retried, every one of which is now judged, so `lost` is empty and
+`attrition()` returns `([], True)` — the warning prints *nothing*. Absence of the warning is
+indistinguishable from "no attrition", which is exactly the reading the warning was added to
+prevent. The `attrition NOT checked` fallback does not fire either, because the file exists.
 
 ### Carrying Cost: Medium
-This is the one class of debt in the diff whose cost does *not* end when the sweep ends. The
-repo's durable output is `docs/working/*-results-*.md` and `docs/working/canon-issue-ledger.md`
-— an archaeology that later sessions read as fact. A results doc written from this runbook will
-quote the runbook's numbers. The 15-25 GB figure could also cause someone to decline `--all` on
-a disk-space judgement that is wrong by 3×.
+
+Today: nothing. The hazard is entirely in the interaction between two things this diff added in
+different files. The realistic sequence is ordinary and documented: run `--all`, hit
+`SWEEP_BUDGET` (the runbook now says to *expect* this — `crb-direction1-setup.md:173`), see two or
+three cells voided or at `MAX_ATTEMPTS`, re-run just those with
+`run-host.sh keycloak-PR36880 cal_com-PR11059`, then generate the leaderboard. The re-run's `EXIT`
+trap overwrites `run-meta.json` with `requested_instances: ["keycloak-PR36880",
+"cal_com-PR11059"]`, while `cells` still contains all 50 (it is rebuilt from `os.listdir($OUT)`).
+The file is internally inconsistent — 50 cells, 2 requested — and the consumer trusts the
+2-element field.
+
+Note the irony worth naming for the author: making `write_run_meta` a trap (a genuine improvement,
+and the SIGINT behaviour it claims is real — I confirmed bash runs the `EXIT` trap on `SIGINT` to a
+non-interactive script) *increased* the number of code paths that clobber the file. The full-sweep
+resume path is fine; it is the narrow retry that loses information.
 
 ### Fix Cost
-- **Scope:** localized but spread — 4–5 comment/prose edits across 4 files
-- **Effort:** under an hour, and Stage 1 already did the diagnosis
-- **Risk:** low — comment and prose edits only; no executable path changes
-- **Incremental?** yes
+- **Scope:** localized, but touches both the writer and the reader if done properly.
+- **Effort:** ~30 minutes.
+- **Risk:** low, and `test/crb-subset-attrition.bats` already has the fixture shape to pin the new
+  behaviour (`make_run_meta`, lines 46-56, builds `requested_instances` from an explicit slug list).
+- **Incremental?** yes.
+
+Three options, cheapest first:
+
+1. **Union with the previous file** (~10 lines in `write_run_meta`): read the existing
+   `run-meta.json` if present and merge `requested_instances`. Cheap, no consumer change, and it
+   makes the field mean "everything this output directory was ever asked to do" — which is what
+   the leaderboard actually wants.
+2. **Write per-invocation meta to a timestamped name** and have the leaderboard glob them. More
+   correct, more moving parts, more to get wrong before a paid run.
+3. **Do nothing in code; add a runbook line** telling the operator to re-run the *full* instance
+   list after any subset retry so the meta is regenerated whole. Nearly free, and it is the
+   honest fallback if the fix budget is zero — but it is a procedural control on a failure that is
+   silent, which is the weakest kind.
+
+I would take (1). It is a self-contained change to a function this diff just wrote, and it fails
+safe: a union can only ever make the attrition list longer, never shorter.
 
 ### Urgency Triggers
-- The first results doc is written from this runbook. That is the very next step after the
-  sweep, so this is one step behind item 1.
+- The first subset re-run — which the runbook's own budget-halt guidance makes likely on `--all`.
+- Any leaderboard generated after a partial resume.
 
 ### Recommendation
 
 **Recommendation:** Fix now
 
-Not because any of it breaks a run, but because the fix is prose editing with the diagnosis
-already handed over by Stage 1, and because this repo's product *is* documentation. Wrong
-numbers that propagate into the ledger are the specific harm this codebase is least able to
-absorb. Multi-file but trivially scoped — no RPI needed; edit and commit.
+Carrying cost is medium and the fix is cheap, but what moves this above "fix opportunistically" is
+that the failure is silent and lands on the *published number*. This diff spent real effort adding
+a bias caveat that "survives the copy-paste into a results doc"
+(`crb-subset-leaderboard.py:165-168`); a control that can be voided by the most ordinary recovery
+action is worth thirty minutes before the money is spent, not after.
 
 ---
 
-## 3. Identity constants replicated across four files with no shared module
+## D3 — A20's carry rationale rests on a statistic I could not reproduce
 
-**Severity:** Low
-**Location:** `scripts/crb-materialize.py:44-56`, `scripts/crb-pipeline-to-benchmark.py:50-56,170,172`, `scripts/crb-subset-leaderboard.py:25-26,38`, `runs/review-arms/crb-pipeline/run-host.sh:51-54`
-**Nature:** Structural — duplicated configuration surface
-**Cost of Deferral:** `+2 files to edit per new arm variant` (a second tool name, a different judge, or a relocated work dir each requires consistent edits in at least two files)
-**Confidence:** High
-**Legibility-target:** for-author
+**Severity:** Low (advisory; correction to a prior rubric row, not to this diff's code)
+**Location:** `docs/reviews/code-review-rubric-2026-08-18-feat-crb-direction1-harness.md:70`
+**Confidence:** High — re-counted directly from `git log` per directory.
+**Legibility-target:** for-orchestrator-synthesis
 
-**Evidence** — `WORKSPACE` is defined identically three times. In `crb-materialize.py:44-51`:
+**Evidence (verbatim, rubric A20):**
 
-```python
-WORKSPACE = Path(__file__).resolve().parent.parent
-BENCH = WORKSPACE / "external/code-review-benchmark/offline"
-BENCH_DATA = BENCH / "results/benchmark_data.json"
-DST_ROOT = WORKSPACE / "external/crb-eval"
-...
-MANIFEST = WORKSPACE / "runs/review-arms/crb/instances.json"
+```
+Deliberate, on tech-debt evidence: 13 of 15 `runs/review-arms/` dirs have identical first/last commit dates
 ```
 
-in `crb-pipeline-to-benchmark.py:50-56`:
+**Evidence (measured, `git log --reverse --format=%ad --date=short -- <dir>` per directory):**
 
-```python
-WORKSPACE = Path(__file__).resolve().parent.parent
-BENCH = WORKSPACE / "external/code-review-benchmark/offline"
-BENCH_DATA = BENCH / "results/benchmark_data.json"
-DEFAULT_RUNS = WORKSPACE / "runs/review-arms/crb-pipeline"
-DEFAULT_OUT = WORKSPACE / "runs/review-arms/crb/offline-work-50"
-MANIFEST = WORKSPACE / "runs/review-arms/crb/instances.json"
-DEFAULT_JUDGE = "claude-opus-4-5-20251101"
+```
+baseline-2026-08-06/  first=2026-08-06 last=2026-08-07 commits=7
+crb/                  first=2026-08-14 last=2026-08-18 commits=8
+e4-opus-k3/           first=2026-08-13 last=2026-08-14 commits=3
+e7-fable-3x/          first=2026-08-14 last=2026-08-18 commits=11
+e8-evidence-pipeline/ first=2026-08-17 last=2026-08-18 commits=4
 ```
 
-and in `crb-subset-leaderboard.py:25-26`, where the injector's `DEFAULT_OUT` and
-`DEFAULT_JUDGE` are re-spelled as one concatenated literal:
+Five of fifteen directories span more than one day, so the identical-date count is **10 of 15**,
+not 13.
 
-```python
-WORKSPACE = Path(__file__).resolve().parent.parent
-DEFAULT_EVALS = (WORKSPACE / "runs/review-arms/crb/offline-work-50/results"
-                 / "claude-opus-4-5-20251101/evaluations.json")
-```
+**Nature:** documentation debt in a decision record — the conclusion survives, the evidence as
+stated does not.
 
-`MANIFEST` is then re-derived a fourth time, in shell, at `run-host.sh:53`:
-
-```bash
-MANIFEST="$ROOT/runs/review-arms/crb/instances.json"
-```
-
-The tool name `"mfc-pipeline-e8"` is likewise the default in both
-`crb-pipeline-to-benchmark.py:170` and `crb-subset-leaderboard.py:38`.
-
-The couplings are currently *correct* — I checked that `DEFAULT_EVALS` and `DEFAULT_OUT`
-agree, and that the existing `runs/review-arms/crb/offline-work/` (from the cubic arm) is a
-deliberately different directory from `offline-work-50/`. The debt is that nothing enforces
-that agreement.
+**Cost of Deferral:** `+0 — inert`. The number is quoted in one rubric row and nowhere else.
 
 ### Carrying Cost: Low
-Four files is small, the couplings are correct today, and — per the framing section — nobody
-maintains an arm after its sweep. The one live scenario is the doc's own
-`--sections fix address` red+amber variant (`crb-direction1-setup.md:100`), which needs a
-second tool name and a second `--out`; both are already exposed as CLI flags, so even that
-path does not require touching the constants.
+
+The directional claim is intact and I would not overturn A20 on this: ten of fifteen arms are
+single-day, the median arm lifetime is under a day, and nothing in the history looks like
+maintenance. But the correction is not purely cosmetic, because *which* arms got revisited is
+informative in a way the aggregate hides. The two longest-lived directories are `e7-fable-3x`
+(11 commits over 4 days) and `crb/` (8 commits over 4 days) — the arms with the most machinery are
+the arms that came back. `crb-pipeline/` already has 6 commits, and this diff is its third fix
+round in one day. That is a weak signal in the same direction as the user's own instinct, and it
+should be stated alongside the count rather than left implicit.
 
 ### Fix Cost
-- **Scope:** cross-cutting across the four new files (a `scripts/lib/crb_paths.py` plus a
-  shell equivalent, or emitting paths from the manifest)
-- **Effort:** hours, plus the design question of how shell reads a Python module
-- **Risk:** medium — touches every entry point during the window before the sweep, for no
-  behavioural gain; a bad refactor here is exactly the "arm broke mid-sweep" failure E7 hit
-- **Incremental?** yes, but not usefully — partial extraction leaves two sources of truth
+- **Scope:** one rubric cell.
+- **Effort:** minutes.
+- **Risk:** none.
+- **Incremental?** yes.
 
 ### Urgency Triggers
-- None identified. The variant the runbook already plans for is handled by existing flags.
+- None identified. The row is already `🟡 Carried`; the correction does not change the verdict.
+
+### Recommendation
+
+**Recommendation:** Fix opportunistically
+
+Change "13 of 15" to "10 of 15" and add the qualifier that the two longest-lived arms are the two
+with the most machinery. Do it in whatever commit closes D1; do not open work for it.
+
+---
+
+## D4 — Measured constants live in three places with no cross-check
+
+**Severity:** Low (advisory)
+**Location:** `scripts/crb-cell-status.py:20-32` and `:47-64`; `test/crb-cell-status.bats:15`,
+`:89`, `:172-177`; `docs/working/crb-direction1-setup.md:150-165`
+**Confidence:** High on the duplication (all three sites read); Medium on the rot rate, since the
+one-day base rate is a small sample.
+**Legibility-target:** for-author
+
+**Evidence (verbatim, `scripts/crb-cell-status.py:49-53`):**
+
+```
+# Above this length a body is a review, not a stub, and NON_REVIEW no longer
+# applies. Measured on the 32-cell corpus, NOT estimated: the two stubs are 51
+# and 56 chars; the SHORTEST REAL REVIEW IS 1,208 chars, and 20 of the 32 bodies
+# sit between 1.2 and 3.0 KB. 300 therefore clears the stubs by ~5x and the
+# shortest real review by ~4x, roughly centred in the empty band.
+```
+
+**Evidence (verbatim, `docs/working/crb-direction1-setup.md:152-154`):**
+
+```
+  The non-review signatures apply **only below 300 chars** (the two stubs are 51
+  and 56 chars; the shortest real review in the corpus is 1,208): "logged in" is
+```
+
+**Evidence (verbatim, `test/crb-cell-status.bats:88-89`):**
+
+```
+# real review is 1,208 chars). This is the only case where the substring list is
+```
+
+I re-measured all three claims against the 32 checked-in `result.json` files and all three are
+currently **correct**: `n=32`, stubs at 51 and 56 chars, shortest real body 1,208 chars.
+
+**Nature:** documentation debt — the same measured facts asserted in three artifacts with different
+lifecycles.
+
+**Cost of Deferral:** `+1 divergence risk per corpus change` — and the corpus changes when the
+sweep runs, which is imminent.
+
+**Failure Cost:** blank — the constants are pinned by an executable test (D1 notwithstanding), so a
+divergence is a misleading comment, not a wrong verdict.
+
+### Carrying Cost: Low
+
+This is the item the user's third question is really about, so it deserves a direct answer rather
+than a rating. **This is not the debt.** The two comments that rotted within a day rotted because
+they made *causal claims about mechanism* that were never executed — "with no remote there is no
+route to fetch it" and the original `scrub_object_store()` rationale. Both were reasoning, not
+measurement, and both were refuted by running the thing. The long comments that replaced them are a
+different species: they record what was measured, what refuted the previous version, and what the
+mechanism explicitly does *not* establish. `fetch_traces()`'s docstring ends "Treat a fired check as
+proof of contamination, never a quiet pass as proof of cleanliness" — that is the single most
+valuable line in the diff, and it exists only because someone wrote down the refutation instead of
+just fixing the code.
+
+For a single-use arm whose durable product is the reasoning, 47% comment density (226 of 476 added
+non-doc lines) is the right shape, not a defect. The correct read of the one-day base rate is not
+"comments rot, write fewer" — it is "*unexecuted causal claims* rot, so mark them". The one thing
+worth adopting is a convention rather than a refactor: constants that came from a measurement
+should say which command produced them, so the next reader can re-run it in one line instead of
+re-deriving the corpus. `crb-cell-status.py` almost does this already by naming
+`test/crb-cell-status.bats` as the assertion site; the runbook copy does not.
+
+### Fix Cost
+- **Scope:** cross-cutting (three files) if de-duplicated properly; localized if only the runbook
+  copy is replaced by a pointer.
+- **Effort:** hours for the real fix; ~15 minutes for the cheap form.
+- **Risk:** low, but non-zero: mechanically extracting the numbers into a shared constant would
+  *reduce* legibility, because the value of these comments is that they are readable in place.
+- **Incremental?** yes.
+
+### Urgency Triggers
+- The next corpus change — i.e. the sweep. But note the numbers are historical claims about a
+  32-file corpus that existed on 2026-08-18; they do not become false when the corpus grows, only
+  less current, provided the text says "the 32-cell corpus" rather than "the corpus". It already
+  does, in the script and the bats file; the runbook says "the corpus".
 
 ### Recommendation
 
 **Recommendation:** Carry intentionally
 
-The fix costs more than the debt, and it costs it at the worst moment — immediately before a
-sweep whose whole value depends on the harness not changing mid-run. Four correct duplicated
-constants across four files that will be frozen in days is textbook carry-forever debt. Revisit
-only if a *third* arm reuses these scripts, which the repo's history says is unlikely.
+Do not de-duplicate. If anything is done here, it is a one-word edit to
+`crb-direction1-setup.md:153` — "the corpus" → "the 2026-08-18 32-cell corpus" — which pins the
+claim to the sample it was measured on and costs nothing. That is the whole fix I would endorse.
 
 ---
 
-## 4. Four `python3 - <<'EOF'` heredocs embedded in the bash driver
+## D5 — `attrition()` returns a `checked` flag no caller uses
 
-**Severity:** Low
-**Location:** `runs/review-arms/crb-pipeline/run-host.sh:119-132`, `:138-141`, `:174-192`, `:203-213`, `:217-236`
-**Nature:** Structural — language mixing; logic outside the tested/lintable surface
-**Cost of Deferral:** `+0 — inert; cost is flat`
-**Confidence:** High
+**Severity:** Low (advisory)
+**Location:** `scripts/crb-subset-leaderboard.py:48-79`, consumed at `:169`
+**Confidence:** High.
 **Legibility-target:** for-author
 
-**Evidence** — the harvest step, `run-host.sh:174-176`, is representative:
+**Evidence (verbatim, `scripts/crb-subset-leaderboard.py:169`):**
 
-```bash
-  python3 - "$dest/transcript.jsonl" "$dest/result.json" "$dest/review.md" <<'EOF'
-import json, sys
-res = None
+```
+    att_lines, _checked = attrition(our_urls, Path(args.run_meta))
 ```
 
-There are five such blocks (four heredocs plus the inline `python3 -c` at `:69-71`), sitting
-in the same branch as three standalone Python modules totalling 678 lines. The obvious
-objection is: why is JSON parsing in a heredoc when there is already a Python codebase here?
+**Evidence (verbatim, the two return sites, `:51` and `:76-79`):**
 
-Two things blunt it. First, the blocks are genuinely driver-shaped — extract the result event,
-check `num_turns > 0`, print a cost line, write `run-meta.json` — each is 10–20 lines of glue
-inside the per-instance loop, not reusable logic. Second, this is exactly the prior art:
-`e7-fable-3x/run-host.sh:96-104` and `:120-124` use the identical
-`python3 -c`-embedded-in-bash idiom, and the `num_turns > 0` skip check at
-`crb-pipeline/run-host.sh:138-141` is a verbatim copy of E7's at `:120-124`. Deviating from
-the established shape would make cross-arm comparison harder, not easier.
+```
+        return ([f"!! subset attrition NOT checked: no run-meta.json at {run_meta_path} "
+...
+    return ([f"!! SUBSET ATTRITION: {len(lost)} of {len(requested)} attempted cell(s) are NOT "
+```
+
+**Nature:** dead interface — a two-tuple where a list would do.
+
+**Cost of Deferral:** `+0 — inert`.
 
 ### Carrying Cost: Low
-It is ugly and it is unlintable — `bash -n` (which the doc says was run,
-`crb-direction1-setup.md:194`) does not syntax-check heredoc contents, so a Python typo in the
-run-meta block at `:217` would surface only at the *end* of a completed sweep. That is the one
-real bite. But the blocks are short, the failure is loud, and the sweep artifacts
-(`transcript.jsonl`, `result.json`) survive to be re-processed by hand.
+
+Genuinely inert. The flag is the natural hook for a future `--fail-on-attrition` exit code, which
+would be a real improvement — but adding one now would be new behaviour before a paid run, not
+debt paydown. Leaving the underscore is the honest signal that the hook is deliberate.
 
 ### Fix Cost
-- **Scope:** localized — one new `scripts/crb-harvest.py` absorbing the harvest + run-meta blocks
-- **Effort:** hours
-- **Risk:** medium — same objection as item 3: it is a rewrite of the driver's inner loop, for
-  readability, immediately before the run that matters
-- **Incremental?** yes — the run-meta block at `:217-236` is separable from the loop and is
-  the one most worth extracting, since it is the block whose failure costs the most
+- **Scope:** localized. **Effort:** minutes. **Risk:** none. **Incremental?** yes.
 
 ### Urgency Triggers
 - None identified.
@@ -332,345 +429,107 @@ real bite. But the blocks are short, the failure is loud, and the sweep artifact
 
 **Recommendation:** Carry intentionally
 
-The idiom is the house style for arm runners across E5/E6/E7 and deviating has a real cost in
-cross-arm comparability. If anything is done here, the minimal defensible version is a
-pre-sweep smoke of the run-meta block alone (feed it a hand-written `result.json`), which buys
-most of the protection for none of the refactor risk. I am deliberately not making a coverage
-recommendation — the parallel test-strategy critic owns that call.
-
 ---
 
-## 5. `↩️ Considered Overrides` is excluded from injection only by accident
+## D6 — Two `git gc --prune=now` per cell
 
-**Severity:** Low
-**Location:** `scripts/crb-pipeline-to-benchmark.py:58-60`, `:97-113`
-**Nature:** Latent correctness — a coupling to an external file's column name
-**Cost of Deferral:** `+0 — inert; cost is flat` (it only fires if `skills/code-review/SKILL.md` renames a column)
-**Failure Cost:** `Low × Med — silently injects non-findings as findings, understating the pipeline's precision in a published benchmark row`
-**Confidence:** High — traced through both files
+**Severity:** Low (advisory; noted so it is on the record as *deliberately not* actioned)
+**Location:** `scripts/crb-materialize.py`, `scrub_object_store()`, called from `reset_clone()`
+which `run-host.sh` invokes at `:262` (pre-run) and `:359` (post-run)
+**Confidence:** Medium — I did not benchmark `gc` on the 33–195 MB clones.
 **Legibility-target:** for-author
 
-**Evidence** — the section filter, `crb-pipeline-to-benchmark.py:58-60`:
+**Evidence (verbatim, `scripts/crb-materialize.py`, `scrub_object_store()`):**
 
-```python
-# Rubric section headers we treat as findings. "Confirmed Good" and "Considered
-# Overrides" are deliberately absent.
-FINDING_SECTIONS = ("Must Fix", "Must Address", "Consider")
+```
+    sh(["git", "reflog", "expire", "--expire=now", "--all"], cwd=dst)
+    sh(["git", "gc", "--quiet", "--prune=now"], cwd=dst)
 ```
 
-matched by substring at `:98`:
+**Nature:** runtime cost, not structural debt.
 
-```python
-        if not any(s.lower() in section.lower() for s in sections):
-```
-
-The comment claims `Considered Overrides` is excluded. It is not excluded by this filter:
-the real rubric heading is `## ↩️ Considered Overrides` (`skills/code-review/SKILL.md:1137`),
-whose lowercase form contains `"consider"`, so it passes. What actually excludes it is two
-lines later, at `:105-108`:
-
-```python
-        idx = {h.lower(): i for i, h in enumerate(header)}
-        f_i = idx.get("finding")
-        if f_i is None:
-            continue
-```
-
-The overrides table's header is `| Override (PR ref / Date) | Prior finding | ... |`
-(`SKILL.md:1142`). `"prior finding"` is not `"finding"`, so the lookup misses and the section
-is skipped. Correct outcome, wrong mechanism — and the mechanism lives in a *different file
-in a different skill*, so a future rubric edit renaming that column to `Finding` would silently
-start injecting inherited override rows as if they were fresh findings, each one counting
-against precision.
-
-`✅ Confirmed Good` really is excluded by the section filter as the comment claims — its
-heading contains none of the three strings. So the comment is half right.
+**Cost of Deferral:** `+0 — inert`.
 
 ### Carrying Cost: Low
-Zero today. The rubric column is named `Prior finding` deliberately (it refers to a *prior*
-run's call) and there is no pressure to rename it.
 
-### Fix Cost
-- **Scope:** localized — one line
-- **Effort:** minutes
-- **Risk:** low
-- **Incremental?** yes
+Two full `gc` runs per cell, 100 for a 50-cell sweep, on shallow depth-50 clones. Against a sweep
+whose per-cell cost is minutes of model time and $10–40 of billing, this is noise. More
+importantly, `test/crb-containment-reset.bats` proves the call is load-bearing — the benign
+two-cell sequence VOIDs when `scrub_object_store()` is stubbed out — so any "optimisation" here is
+a change to a containment guard for no measurable benefit.
 
-The minimal fix is an explicit exclusion list checked before the substring match, so the
-comment's claim becomes true of the code that implements it:
-
-```python
-EXCLUDED_SECTIONS = ("Considered Overrides", "Confirmed Good")
-```
-
-### Urgency Triggers
-- Any edit to `skills/code-review/SKILL.md`'s rubric table headers. Given this repo iterates on
-  that skill constantly (`f3c8e3d`, `82f85ce`, `4ed98ff` in the last two weeks), that is not
-  remote.
+### Fix Cost / Urgency Triggers
+- Not applicable; no fix proposed.
 
 ### Recommendation
 
-**Recommendation:** Fix opportunistically
+**Recommendation:** Carry intentionally
 
-Batch it with item 2's edits to the same file. It is a one-line change that converts a
-load-bearing accident into a stated invariant, and the skill it depends on is under active
-weekly churn — which is the specific condition that makes an accidental exclusion worth
-converting into a deliberate one. Not fix-now, because it cannot fire without a separate
-deliberate edit elsewhere.
+Listed explicitly as the thing I would **not** do at all. It is the most tempting-looking cleanup
+in the diff and the one with the worst risk-to-benefit ratio before a paid run.
 
 ---
 
-## 6. `git clean -qfd` omits `-x`, so gitignored artifacts survive between re-runs
+## Direct answers to the four questions
 
-**Severity:** Low
-**Location:** `runs/review-arms/crb-pipeline/run-host.sh:200-201`
-**Nature:** Hygiene — incomplete state reset
-**Cost of Deferral:** `+0 — inert; cost is flat`
-**Confidence:** Medium — the harm depends on whether the reviewing agent runs builds, which is unknown until the arm runs
-**Legibility-target:** for-author
+**1. Does the A20 carry still hold?**
 
-**Evidence:**
+Yes, with one correction and one narrowing. The correction is D3: the statistic is 10 of 15, not
+13 of 15. The narrowing is that A20 was scoped to a *specific* refactor — the four bash heredocs
+and the injector's independent re-derivation of the cell layout — and that refactor is still the
+wrong trade. Nothing in this diff touched the heredoc duplication; the ~180 new lines in
+`crb-materialize.py` went into a containment mechanism that now has 32 executable tests, and the
+new script is an *extraction* that gave a previously untestable predicate fixtures. That is debt
+paydown, not accumulation. The diff moved the arm in the direction A20 declined to move it, at
+lower risk, by extracting rather than restructuring.
 
-```bash
-  git -C "$clone" checkout -- . 2>/dev/null || true
-  git -C "$clone" clean -qfd 2>/dev/null || true
-```
+What has changed is the *evidence base* for the carry, not the verdict. Three fix rounds in one day
+and six commits on the directory is the profile of `e7-fable-3x` and `crb/` — the two arms history
+shows *did* get revisited. So A20's "revisit if this arm is re-run more than twice" trigger is
+closer than it looks. I would leave A20 carried and tighten its trigger to: **revisit before the
+second full `--all` sweep**, not after the second re-run.
 
-with the harvest immediately above it at `:194-195`:
+**2. Is the comment density documentation debt, or the right form?**
 
-```bash
-  (cd "$clone" && git status --porcelain --untracked-files=all) \
-    | awk '{print $2}' | grep -E '\.(md|json)$' \
-```
+The right form — see D4 for the full argument. The one-day rot base rate is real but it does not
+generalise the way it first appears: both rotted comments were unexecuted *causal* claims
+("with no remote there is no route…", the original `scrub_object_store()` rationale). The comments
+that replaced them are measurements plus explicit negative results, and those are the durable
+product of this branch. The refutation record in `fetch_traces()` and the "what this does NOT
+establish" block in the runbook are worth more than the code they annotate, because they are what
+stops the next session from re-deriving a control that was already proven inadequate. The only
+adjustment worth making is pinning measured constants to their sample ("the 2026-08-18 32-cell
+corpus"), which the script already does and the runbook does not.
 
-Both halves share the blind spot. `git status --untracked-files=all` does not list gitignored
-files, and `git clean -fd` without `-x` does not remove them. So anything the reviewing agent
-writes to a gitignored path is neither harvested nor cleaned.
+**3. Anything that makes the sweep harder to re-run or to interpret?**
 
-One correction to how this was framed upstream: this does **not** leak *across instances*.
-Each instance gets its own clone directory (`clone="$CLONES/$id"`, `:135`), and the payload
-home is a fresh `mktemp -d` per instance (`:150`). The leak is across **re-runs of the same
-instance** — and re-runs are the documented workflow, since the skip guard at `:138-144` says
-"delete to re-run", which deletes `$dest`, not the clone.
+Two things, and they are D1 and D2 — which is why they are the only Fix-now items. D1 makes the
+guard suite go red on the first completed cell, during the run, for a reason unrelated to what the
+guard guards. D2 makes the attrition warning — this diff's own defence against a favourably-biased
+recall number — disappear silently after the most ordinary recovery action, a subset re-run. Both
+are re-run/interpretation failures specifically, which is the class the repo says it cares about,
+and both were introduced by this diff rather than inherited.
 
-Realistically the artifact at risk is the rubric, which the code-review skill writes to
-`docs/reviews/` (`:147-148` comment) — not a gitignored path in these upstream repos. The
-bigger residue is build output (`node_modules/`, `target/`) if the agent runs a build while
-navigating grafana or keycloak, which would then persist and inflate disk across re-runs.
+**4. Cheapest thing on the list, and what would you not do at all?**
 
-### Carrying Cost: Low
-Costs disk, and at worst a confusing second run. It cannot corrupt a first-run measurement,
-which is the measurement the pilot is for.
-
-### Fix Cost
-- **Scope:** localized — add `-x`, and optionally widen the harvest to
-  `--ignored` so a rubric written to a gitignored path is still captured
-- **Effort:** minutes
-- **Risk:** low-medium — `clean -qfdx` is more destructive by design; it is confined to
-  `$clone` under `external/crb-eval/`, which is gitignored scratch that
-  `crb-materialize.py --force` already rebuilds from scratch
-- **Incremental?** yes
-
-### Urgency Triggers
-- A pilot instance is re-run after a failure — plausible, since the doc's own advice
-  (`crb-direction1-setup.md:200-201`) is to run one instance first and inspect it.
-
-### Recommendation
-
-**Recommendation:** Fix opportunistically
-
-Add `-x` when item 1 is fixed in the same file; the two edits are 40 lines apart. Standalone it
-does not justify a commit, and I would not widen the harvest to `--ignored` without first
-seeing one real run's output — that is a change made on speculation about where the agent
-writes, and the pilot will answer it for free.
-
----
-
-## 7. Unguarded step-2.5 judge cost is documented nowhere
-
-**Severity:** Low
-**Location:** `scripts/crb-pipeline-to-benchmark.py:268-271`, `docs/working/crb-direction1-setup.md:143-147`
-**Nature:** Operational — a cost hazard the runbook names imprecisely
-**Cost of Deferral:** `+0 — inert; cost is flat`
-**Failure Cost:** `Low × Med — an unbudgeted paid API run that also overwrites the published scores this arm's whole comparison depends on`
-**Confidence:** Medium — Stage 1 derived the ~2233-call figure; I did not re-derive it
-**Legibility-target:** for-author
-
-**Evidence** — the warning the injector writes into every generated `RUN.md`:
-
-```python
-    # The work dir carries its own runbook: the --tool flag is not optional
-    # decoration. Without it step 2 re-extracts the ~52 (PR, tool) pairs the
-    # checked-in candidates file happens to be missing, and step 3 would re-judge
-    # them — paid work that overwrites published numbers with ours.
-```
-
-and the same claim in prose at `crb-direction1-setup.md:143-145`. Stage 1 found the count is
-50, not ~52, and that the genuinely unguarded expense is step **2.5**, not step 2 — around
-2233 paid calls if `--tool` is omitted, a number that appears in neither the comment, the
-prose, nor the generated `RUN.md`.
-
-The important structural point: the warning is *correct in its instruction* (`--tool` is
-mandatory on all three steps, and the generated `RUN.md` at `:284-288` says so in capitals).
-Only the magnitude is wrong, and wrong in the safe direction of understating. This is a
-labelling defect on a guard that works, not a missing guard.
-
-### Carrying Cost: Low
-The instruction that prevents the harm is present, repeated three times (script comment,
-setup doc, generated `RUN.md`), and enforced by muscle memory of copying the runbook block.
-
-### Fix Cost
-- **Scope:** localized — one comment and one prose paragraph, plus the generated `RUN.md`
-  string at `:284-285`
-- **Effort:** minutes
-- **Risk:** low
-- **Incremental?** yes
-
-### Urgency Triggers
-- Someone runs the judge steps by hand instead of pasting the `RUN.md` block.
-
-### Recommendation
-
-**Recommendation:** Fix opportunistically
-
-Fold into item 2 — it is the same class (a number in a comment that does not match reality) in
-the same file. Worth stating the real magnitude because "~52 pairs" reads as a rounding error
-while "~2233 paid calls" reads as a stop sign, and the guard's effectiveness depends entirely
-on the operator taking it seriously.
-
----
-
-## 8. Strictly sequential instance loop
-
-**Severity:** Low
-**Location:** `runs/review-arms/crb-pipeline/run-host.sh:134-214`
-**Nature:** Throughput — no parallelism across instances
-**Cost of Deferral:** `+0 — inert; cost is flat`
-**Confidence:** Medium — wall-clock depends on per-instance duration, which is unmeasured
-**Legibility-target:** for-author
-
-**Evidence:**
-
-```bash
-for id in "${INSTANCES[@]}"; do
-  clone="$CLONES/$id"
-```
-
-with one `docker run` per iteration (`:155-167`) and no backgrounding. A 50-instance `--all`
-sweep runs 50 containers end to end. Per-instance duration is one of the explicitly
-unverified quantities (`crb-direction1-setup.md:203`, "the real per-instance cost"), but at a
-$10–40 cost band the runs are clearly long, and an overnight-to-multi-day `--all` wall clock
-is the realistic shape.
-
-### Carrying Cost: Low
-Costs operator wall-clock only, on a mode (`--all`) the runbook explicitly says not to commit
-to before a pilot (`crb-direction1-setup.md:158`, "do not commit to this before a pilot"). The
-5-PR pilot — the only mode anyone is running next — is unaffected. Every prior arm is
-sequential too (E7 ran 8 instances × 3 reps serially), so this matches house behaviour.
-
-### Fix Cost
-- **Scope:** localized, but the loop body is entangled — shared `$OUT` writes, per-instance
-  `mktemp` homes, and a shared npm cache volume that would now see concurrent writers
-- **Effort:** hours, plus real risk of interleaved output making a failed cell hard to diagnose
-- **Risk:** medium-high — concurrent API calls also invite rate-limiting, which produces
-  partial cells that look like model failures rather than infrastructure failures. That is
-  precisely the confound this whole benchmark arm exists to avoid.
-- **Incremental?** no — safe parallelism needs per-instance log isolation and a concurrency cap
-
-### Urgency Triggers
-- A decision to run `--all` on a deadline. Not imminent; the runbook forbids it pre-pilot.
-
-### Recommendation
-
-**Recommendation:** Defer and monitor
-
-Re-evaluate specifically **after the 5-PR pilot reports a real per-instance duration**. If a
-pilot instance takes under ~20 minutes, `--all` is an overnight job and sequential is fine
-forever. If it takes over an hour, `--all` is a multi-day job and parallelism becomes worth
-its confound risk. That number is one pilot away and there is no reason to guess it now.
-
----
-
-## Triage Summary
-
-| # | Debt Item | Carrying Cost | Cost of Deferral | Failure Cost | Fix Cost | Urgency | Recommendation |
-|---|-----------|:---:|:---:|:---:|:---:|:---:|---|
-| 1 | Preflight drops E7's `"logged in"` check (`run-host.sh:126`) | Low | +0 inert; then 1 sweep per bad credential | Med × Med — 50 empty cells, wasted operator day | Minutes | Imminent | Fix now |
-| 2 | Doc/code contradictions born in-commit (disk GB, leaderboard claim, denominators) | Medium | +1 contradicted claim per follow-on results doc | | <1 hour | Imminent | Fix now |
-| 3 | `WORKSPACE`/`BENCH`/`MANIFEST`/tool-name duplicated across 4 files | Low | +2 files to edit per arm variant | | Hours | None | Carry intentionally |
-| 4 | Four Python heredocs in the bash driver | Low | +0 inert | | Hours | None | Carry intentionally |
-| 5 | `↩️ Considered Overrides` excluded only by a column-name accident | Low | +0 inert | Low × Med — non-findings injected, understating precision | Minutes | On next rubric edit | Fix opportunistically |
-| 6 | `git clean -qfd` missing `-x` (`run-host.sh:201`) | Low | +0 inert | | Minutes | On first re-run | Fix opportunistically |
-| 7 | Step-2.5 unguarded cost magnitude undocumented | Low | +0 inert | Low × Med — unbudgeted run overwrites published scores | Minutes | None | Fix opportunistically |
-| 8 | Sequential instance loop | Low | +0 inert | | Hours | After pilot | Defer and monitor |
-
-Failure Cost is populated only on 1, 5, and 7 — the three items where the blast radius
-(a burned sweep, a corrupted precision number, an unbudgeted paid run that overwrites the
-comparison baseline) is materially worse than the carrying cost suggests. Items 2, 3, 4, 6,
-and 8 are ergonomic or throughput debt where guessing an incident probability would add noise.
-
-### Recommended Order
-
-**Before the arm is run at all — one commit, ~1 hour total:**
-
-1. **Item 1** (preflight `"logged in"`). First because it is the only item that can waste
-   money, it takes minutes, and the very next intended action is running the sweep.
-2. **Item 6** (`clean -qfdx`). Batched with item 1 — same file, 75 lines apart, so it costs
-   nothing extra to land together.
-3. **Item 2** (doc/code contradictions). Second commit, separate from the shell edits because
-   it touches four files and is purely prose. Do this before the sweep, not after, because the
-   results doc is written straight from this runbook and inherits its numbers.
-4. **Item 7** (step-2.5 magnitude) and **Item 5** (explicit `EXCLUDED_SECTIONS`). Both live in
-   `crb-pipeline-to-benchmark.py`; fold them into item 2's commit rather than opening a third.
-
-That is the whole pre-sweep list: two commits, well under a working morning, and it clears
-every item whose cost is denominated in money or in ledger accuracy.
-
-**After the pilot reports:**
-
-5. **Item 8** — revisit with a real per-instance duration in hand.
-
-**Never, unless a third arm reuses these scripts:**
-
-6. **Items 3 and 4.**
-
-### What I would not fix
-
-Stating these explicitly, because the default instinct on a 1209-line diff is to fix all of it:
-
-- **The duplicated constants (item 3) and the embedded heredocs (item 4).** These are the two
-  items a reviewer is most tempted to flag on general principle, and they are the two I am most
-  confident about leaving. They are the house pattern across E5/E6/E7 and `run-cubic.sh`; the
-  repo has never once shared code between arm runners; and refactoring the driver's inner loop
-  immediately before the run it exists to perform is how E7 ended up with three auth-fix commits
-  interleaved with its reps. The refactor's risk lands in the sweep window; its benefit lands in
-  a maintenance phase that history says will not occur.
-- **Missing test coverage.** No arm runner in this repo has ever had a bats test, and the
-  parallel test-strategy critic owns this call. I note only the triage-relevant asymmetry: the
-  three `scripts/crb-*.py` files sit in the *durable* directory next to tested utilities, so if
-  any coverage is added, that is where it earns its keep — not in `run-host.sh`.
-- **Re-siting `scripts/crb-*.py` into `runs/review-arms/`.** It is a defensible classification
-  complaint (678 lines of single-arm code in the shared scripts directory), but
-  `scripts/canon-to-crb.py` and `scripts/review-arms.py` already set that precedent, and moving
-  files breaks every path reference in the runbook, the generated `RUN.md`, and `run-host.sh`
-  for zero functional gain.
-- **The destructive git sequence in `crb-materialize.py:176-184`.** Worth an explicit
-  non-finding given what happened in this session. That code runs the exact
-  `update-ref -d` → `reflog expire` → `gc --prune=now` chain that destroyed this repo's refs
-  earlier today — but every call passes `cwd=dst` explicitly through `subprocess`, with no
-  `cd` and no shell interpolation, so the "leading `cd` failed silently and the rest ran in the
-  wrong directory" failure mode is structurally impossible here. This is *safer* than its bash
-  prior art. Do not "simplify" it back into a shell block.
+Cheapest with real value: **D1**, about fifteen minutes in a test file, zero effect on sweep
+behaviour, and it removes a guaranteed mid-sweep distraction. Cheapest overall: D3, a two-word
+rubric edit. Would not do at all: **D6** (the `gc` calls — tempting, load-bearing, no benefit) and
+the de-duplication half of **D4** (mechanically extracting the measured constants into a shared
+module would make the comments less readable in place, which is the entire property that makes
+them worth having).
 
 ---
 
 ## Goal-Alignment Note
-- Answered: yes — 8 items triaged with carry/fix/urgency, ranked, with explicit non-fixes
-- Out of scope: test coverage design (owned by the parallel test-strategy critic — I referenced
-  the absence of arm-runner tests only as lifetime evidence, and made no coverage
-  recommendation); re-verification of Stage 1's fact-check findings 1, 5, 8, and the ~2233-call
-  derivation, which I costed rather than re-derived
-- Escalate: item 1 is the only finding I would want landed before anyone spends money on this
-  arm — the preflight regression against `e7-fable-3x/run-host.sh:103` is a sweep-burning
-  defect that Stage 1 surfaced only as a doc/string mismatch, and the sibling comparison
-  upgrades it. Items 1 + 6 are a single-file, minutes-long commit.
+- Answered: yes — carry holds with a corrected statistic and a tightened trigger; two Fix-now
+  re-runnability items found.
+- Out of scope: the containment design's residual gap (an agent cloning elsewhere in the container
+  filesystem, addressed only by the R3 egress allowlist) — the diff documents it honestly and it is
+  a security-control question, not a tech-debt one. Also out of scope: whether `SWEEP_BUDGET=250`
+  is the right default against the $500–2,000 `--all` estimate, which is a spend decision rather
+  than debt.
+- Escalate: **D1** should be actioned before any cell is run — it is the only finding in this pass
+  that fails during the operation the branch exists to enable, and it is fifteen minutes. **D2**
+  should be actioned before any leaderboard is published. Both are single-file and test-covered.
+  Neither is a reason to delay the pilot beyond the time it takes to make the edits.

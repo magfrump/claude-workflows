@@ -164,6 +164,15 @@ write_run_meta() {
            "$CC_VERSION" "$OUT" "${INSTANCES[*]}" <<'EOF' || true
 import json, os, sys
 meta_path, ref, sha, model, ccv, out, requested = sys.argv[1:8]
+# Carry forward what earlier invocations recorded, so requested_instances is the
+# union over the whole sweep rather than the last batch. Read before the file is
+# rewritten below.
+prior_requested = []
+if os.path.isfile(meta_path):
+    try:
+        prior_requested = json.load(open(meta_path)).get("requested_instances") or []
+    except Exception:
+        prior_requested = []
 cells = {}
 for name in sorted(os.listdir(out)):
     rp = os.path.join(out, name, "result.json")
@@ -199,14 +208,31 @@ for name in sorted(os.listdir(out)):
 total = sum(c["cost_usd"] or 0 for c in cells.values())
 retried = [n for n, c in cells.items() if c["attempts"] > 1]
 voided = [n for n, c in cells.items() if c["voided_containment"]]
-# requested_instances is what the sweep was ASKED to do. A slug that never got
-# far enough to write a result.json (missing clone, pre-run containment failure)
-# appears here and in missing_cells below, and is what lets the leaderboard tell
-# "reviewed 3 PRs" apart from "asked for 5, 2 disappeared".
-req = requested.split()
+# requested_instances is what the sweep was ASKED to do, ACCUMULATED across
+# invocations. A slug that never got far enough to write a result.json (missing
+# clone, pre-run containment failure) appears only here, and it is what lets the
+# leaderboard tell "reviewed 3 PRs" apart from "asked for 5, 2 disappeared".
+#
+# The union with the existing file is load-bearing, and three critics converged
+# on its absence. This value used to be just the CURRENT invocation's argv while
+# `cells` accumulated — so after a documented subset re-run (see the Usage block
+# at the top of this file) or a resume following a SWEEP_BUDGET halt, the
+# denominator shrank to the last batch and attrition reported nothing lost.
+# Absence of the warning is indistinguishable from no attrition, which would
+# silently void the bias caveat this whole mechanism exists to publish. Union
+# fails safe: it can only ever over-report what the sweep was asked to do.
+req = sorted(set(requested.split()) | set(prior_requested))
 json.dump({"arm": "crb-pipeline", "payload_ref": ref, "payload_commit": sha,
            "model": model, "cc_version": ccv, "cells": cells,
            "requested_instances": req,
+           # NOT "containment held" — only "no contamination was DETECTED".
+           # The guard catches in-place git fetches; it does not catch non-git
+           # retrieval (curl/WebFetch then commit), a nested clone, or a review
+           # already written from the answer key before any check runs. Named
+           # explicitly because a results doc reading `voided_cells: []` as an
+           # all-clear is the most likely way this artifact gets over-read.
+           "voided_cells_meaning": "cells where contamination was DETECTED; "
+                                   "an empty list is not proof of cleanliness",
            "missing_cells": [s for s in req if s not in cells],
            "retried_cells": retried, "voided_cells": voided,
            "total_cost_usd": round(total, 4)},
@@ -230,10 +256,17 @@ for id in "${INSTANCES[@]}"; do
   # either way; capture it so the re-run message says WHY.
   cell_status=""
   if [ -s "$dest/result.json" ]; then
-    if cell_status=$(python3 "$ROOT/scripts/crb-cell-status.py" "$dest/result.json" 2>&1); then
-      echo "=== $id — completed result exists, skipping (delete to re-run)"
-      skipped_ok=$((skipped_ok+1)); continue
-    fi
+    cell_status=$(python3 "$ROOT/scripts/crb-cell-status.py" "$dest/result.json" 2>&1)
+    case $? in
+      0) echo "=== $id — completed result exists, skipping (delete to re-run)"
+         skipped_ok=$((skipped_ok+1)); continue ;;
+      1) : ;;   # incomplete — fall through to the retry logic below
+      # Exit 2 is a usage error, NOT a verdict. Treating it as "incomplete"
+      # would re-pay $10-40 per cell for what is actually a broken invocation,
+      # silently, for the whole sweep. Stop instead.
+      *) echo "$id: crb-cell-status.py invocation error — $cell_status" >&2
+         exit 4 ;;
+    esac
   fi
   if [ -s "$dest/result.json" ]; then
     # `grep -c` prints 0 AND exits 1 on no match, so `|| echo 0` would append a
@@ -261,6 +294,10 @@ for id in "${INSTANCES[@]}"; do
   # anything a previous run left behind is undone here rather than reviewed.
   python3 "$ROOT/scripts/crb-materialize.py" --reset "$id" || {
     echo "$id: PRE-RUN containment check failed — skipping cell" >&2
+    echo "    If this says FETCH_HEAD present and/or 'invalid sha1 pointer' on a clone" >&2
+    echo "    that has never run a cell, it was materialized before 2026-08-19 and only" >&2
+    echo "    needs the one-shot baseline upgrade:" >&2
+    echo "      python3 scripts/crb-materialize.py --heal $id" >&2
     skipped_bad=$((skipped_bad+1)); continue; }
   # Fresh writable payload copy per instance: Claude Code writes settings.json,
   # projects/, todos/ into ~/.claude, and one instance's state must not leak

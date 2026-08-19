@@ -306,6 +306,82 @@ PY
   [[ "$output" == "TRACES: []" ]]
 }
 
+# ── CLI-level coverage. The mutation run found that `--reset` could be made a
+# COMPLETE no-op with all 38 tests green: every case above drives reset_clone()
+# via importlib, while run-host.sh calls only the CLI. These exercise the path
+# production actually uses.
+
+cli() { run python3 "$SCRIPT" "$@"; }
+
+# Drives main() with DST_ROOT and MANIFEST pointed at the fixture, so the CLI
+# dispatch is exercised end to end. $1 = extra argv. Prints RC and output.
+run_cli() {
+  run python3 - "$SCRIPT" "$CLONE" "$HEAD_SHA" "$BASE" "$@" <<'PY'
+import importlib.util, json, sys
+from pathlib import Path
+spec = importlib.util.spec_from_file_location("mat", sys.argv[1])
+m = importlib.util.module_from_spec(spec); spec.loader.exec_module(m)
+clone, head, base, extra = Path(sys.argv[2]), sys.argv[3], sys.argv[4], sys.argv[5:]
+m.DST_ROOT = clone.parent
+man = clone.parent / "manifest.json"
+man.write_text(json.dumps({clone.name: {"head": head, "base": base}}))
+m.MANIFEST = man
+# The slug must follow its mode flag directly: --reset takes nargs="+", so
+# `--reset --dry-run SLUG` leaves it with zero values and argparse errors.
+sys.argv = ["crb-materialize.py", extra[0], clone.name] + extra[1:]
+try:
+    m.main()
+    print("RC=0")
+except SystemExit as e:
+    print(f"RC={e.code}")
+PY
+}
+
+@test "the --reset CLI actually resets — not just the library function" {
+  git -C "$CLONE" commit -q --allow-empty -m "agent commit"
+  [ "$(git -C "$CLONE" rev-parse review)" != "$HEAD_SHA" ]
+  run_cli --reset
+  [[ "$output" == *"RC=0"* ]]
+  [[ "$output" == *"containment ok"* ]]
+  # The CLI, not reset_clone() directly, must have moved the ref back.
+  [ "$(git -C "$CLONE" rev-parse review)" = "$HEAD_SHA" ]
+}
+
+@test "the --reset CLI VOIDS on contamination" {
+  make_answer_key_repo
+  git -C "$CLONE" fetch -q "file://$UPSTREAM" 2>/dev/null || true
+  run_cli --reset
+  [[ "$output" != *"RC=0"* ]]
+  [[ "$output" == *"CONTAINMENT CHECK FAILED"* ]]
+}
+
+@test "--dry-run does NOT perform a destructive reset" {
+  git -C "$CLONE" commit -q --allow-empty -m "agent commit"
+  moved=$(git -C "$CLONE" rev-parse review)
+  run_cli --reset --dry-run
+  [[ "$output" == *"RC=0"* ]]
+  [[ "$output" == *"Nothing touched"* ]]
+  [[ "$output" != *"containment ok"* ]]
+  # Still moved: --dry-run must not have reset anything.
+  [ "$(git -C "$CLONE" rev-parse review)" = "$moved" ]
+}
+
+@test "--heal clears a pre-2026-08-19 clone's baseline artifacts" {
+  make_answer_key_repo
+  git -C "$CLONE" fetch -q "file://$UPSTREAM" 2>/dev/null || true
+  [ -f "$CLONE/.git/FETCH_HEAD" ]
+  run_cli --heal
+  [[ "$output" == *"RC=0"* ]]
+  [[ "$output" == *"healed"* ]]
+  [ ! -f "$CLONE/.git/FETCH_HEAD" ]
+}
+
+@test "--heal is offered as the remediation for a pre-2026-08-19 clone" {
+  run grep -c -- "--heal" "$BATS_TEST_DIRNAME/../runs/review-arms/crb-pipeline/run-host.sh"
+  [ "$status" -eq 0 ]
+  [ "$output" -ge 1 ]
+}
+
 @test "a tag pointing outside the reviewed ancestry still VOIDS the cell" {
   git -C "$CLONE" checkout -q --orphan sidecar
   git -C "$CLONE" rm -rqf . 2>/dev/null || true

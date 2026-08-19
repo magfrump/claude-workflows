@@ -87,20 +87,34 @@ def status(d):
     return True, f"complete — {len(r)} char body, subtype={subtype}"
 
 
+# Exit codes are a consumed contract — run-host.sh branches on them to decide
+# whether to re-pay $10-40 for a cell. 1 must mean "incomplete", and ONLY that.
+# `sys.exit("usage: ...")` also exits 1, so an invocation bug (wrong argc, or
+# `--help`, which was being read as a filename) was indistinguishable from the
+# verdict and read as "re-run this cell". Usage errors therefore exit 2, matching
+# argparse and this repo's own precedent in scripts/claude_config_audit.py.
+EXIT_COMPLETE, EXIT_INCOMPLETE, EXIT_USAGE = 0, 1, 2
+
+
 def main(argv):
-    if len(argv) != 2:
-        sys.exit("usage: crb-cell-status.py <result.json>")
+    if len(argv) != 2 or argv[1] in ("-h", "--help"):
+        print(f"usage: {argv[0]} <result.json>\n"
+              f"  exit {EXIT_COMPLETE} = complete (skip the cell)\n"
+              f"  exit {EXIT_INCOMPLETE} = incomplete (re-run the cell)\n"
+              f"  exit {EXIT_USAGE} = usage error (NOT a verdict)",
+              file=sys.stderr)
+        return EXIT_USAGE
     try:
         d = json.load(open(argv[1]))
     except Exception as e:
         print(f"unreadable result.json ({e})")
-        return 1
+        return EXIT_INCOMPLETE
     if not isinstance(d, dict):
         print("result.json is not an object")
-        return 1
+        return EXIT_INCOMPLETE
     ok, reason = status(d)
     print(reason)
-    return 0 if ok else 1
+    return EXIT_COMPLETE if ok else EXIT_INCOMPLETE
 
 
 if __name__ == "__main__":

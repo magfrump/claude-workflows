@@ -1,612 +1,627 @@
-# API Consistency Review — `feat/crb-direction1-harness` (pass 2, fix adjudication)
+# API Consistency Review — feat/crb-direction1-harness, commits cf6e7c9..46a5f17
 
-**Commit:** ed68ced
-**Scope:** `git diff 529ecd2..ed68ced` — 7 files (+445/−60). `529ecd2` and earlier are context
-only. This is the **fix pass** for the pass-1 review at `Commit: 529ecd2`.
+**Scope:** `git diff 59733d8..HEAD -- . ':!docs/reviews'` (cf6e7c9, 5bd0b09, 46a5f17)
 **Date:** 2026-08-18
-**Based on:** pass-1 `docs/reviews/api-consistency-review.md` (F1–F14) and the rubric at
-`docs/reviews/code-review-rubric-2026-08-18-feat-crb-direction1-harness.md` (A13, A14, A19, A22–A25).
-**Calibration:** research tooling, small expert user base, finite lifetime. Several pass-1
-Informational items are re-confirmed as "not closed" without being re-argued — for this audience
-they were advisory the first time and remain so.
+**Based on:** the k=3 code-fact-check from this pass (all five Incorrect findings were doc/comment
+mechanism errors, closed in 46a5f17). Per that report, `crb-materialize.py`'s module docstring,
+the `--verify`/`--reset` help text, and the `run-meta.json` field names were verified against
+implemented behavior; this review does not re-verify them.
+**Partial scope:** work outside these three commits is already committed and is context only.
+Every "missing" claim below was checked against `git log main..HEAD` before being written.
 
-> ⚠️ **No code fact-check report was produced for `ed68ced`.** The Stage-1 fact-check reports are
-> pinned to `529ecd2`. Documentation claims *added by this commit* are unverified except where I
-> read the code directly. All claims below rest on read-only inspection plus one read-only `bats`
-> run.
-
-**Line-number note:** all citations are against the **committed blob** at `ed68ced`
-(`git show ed68ced:<path>`). A concurrent agent has uncommitted edits to
-`runs/review-arms/crb-pipeline/run-host.sh` in the working tree; those are out of scope and their
-line numbers do not match this report (see Escalate).
-
-The consumer-facing surfaces reviewed: (a) three Python CLIs plus one env-var-driven shell
-surface, driven in sequence as one toolchain; (b) the inter-script manifest contract; (c) the
-vendored benchmark's `benchmark_data.json` record schema; (d) the rubric-markdown parsing contract;
-(e) the judge-directory naming chain; and, new in this commit, (f) the generated `judge.sh`
-executable as a second work-dir runbook.
+Surfaces under review: the `crb-materialize.py` CLI (`--reset` added), the new
+`scripts/crb-cell-status.py` CLI, the `crb-subset-leaderboard.py` CLI (`--run-meta` added),
+`crb_common.py`'s exported constants (`RUN_META` added), and the `run-meta.json` JSON contract
+(`requested_instances`, `missing_cells` added).
 
 ---
 
-## Verdict Table — pass-1 findings
+## Baseline Conventions
 
-The primary output of this pass.
+Surveyed: `scripts/crb-materialize.py`, `scripts/crb-pipeline-to-benchmark.py`,
+`scripts/crb-subset-leaderboard.py`, `scripts/crb_common.py`, `scripts/claude_config_audit.py`,
+`scripts/hermeticity-lint`, `scripts/review-arms.py`, `runs/review-arms/crb-pipeline/run-host.sh`.
 
-| Pass-1 finding | Severity (pass 1) | Verdict | One-line reason |
-|---|---|---|---|
-| F1 — `--tool-name` vs `--tool` | Inconsistent | **Closed on tolerance, not on documentation** | Alias added with the right `dest`; the module `Usage:` block and the setup-doc example still teach `--tool-name` (→ G1) |
-| F2 — judge parameterized upstream, hard-coded downstream | Inconsistent | **Closed** | `--out`/`--judge` added to the leaderboard; constructed path verified identical to what the injector writes; `--evaluations` still overrides both |
-| F3 — `--judge` bare vs provider-prefixed | Inconsistent | **Not closed; surface widened** | Untouched, and the new leaderboard `--judge` inherits the same ambiguity — though the two now agree by construction, so no new bug (→ G2) |
-| F4 — three names for "rehearse, write nothing" | Inconsistent | **Not closed** | `--stats` unchanged at `crb-pipeline-to-benchmark.py:208`; and the new `--verify` is a fourth non-writing mode in a group that means "what to materialize" (→ G3) |
-| F5 — three behaviours for an unknown instance | Inconsistent | **Not closed; a second silent-skip trigger added** | Pre-run containment failure `continue`s, so the sweep can now skip every cell for a second reason and still exit 0 (→ G4) |
-| F6 — relative `--out` resolves against CWD | Minor | **Not closed; widened to a second script** | The new leaderboard `--out` is also `Path(args.out)`, so two of three scripts now disagree with `canon-to-crb.py` (→ G5) |
-| F7 — `created_at` dropped from emitted comments | Minor | **Not closed** | `comments_from_rubric` and the `load_cell` fallback still emit 3 keys |
-| F8 — `source_provenance` extends a foreign schema | Informational | **Not closed** | Recommendation was one doc line in `crb-direction1-setup.md` §3; `source_provenance` appears nowhere in that file |
-| F9 — `sanitize_model` clones the vendored helper | Minor | **Regressed** | A second in-repo copy added at `crb-subset-leaderboard.py:34`; still unrenamed, still undocstringed (→ G6) |
-| F10 — `--per-repo 0` gives the wrong error | Minor | **Not closed** | The truthiness guard is unchanged; only the message text grew a `--verify` item |
-| F11 — `--all-prs` vs `--all` denominators | Minor | **Closed** | Usage line now reads "every PR in the evals file"; help text expanded to name the seeding precondition |
-| F12 — `--no-seed` is the only negative flag | Informational | **Not closed** | Untouched; recommendation was explicitly optional |
-| F13 — `BUDGET` vs `--max-usd`; `MODEL=opus` example | Informational | **Not closed; entrenched** | New `SWEEP_BUDGET` repeats the unit-less money name and is absent from the Usage header; `MODEL=opus` example unchanged (→ G7) |
-| F14 — single auth mode vs E7's two | Informational | **Not closed** | Error message at `:100` unchanged |
-
-**New surface reviewed fresh:** `--verify` (G3), `judge.sh` + `CRB_ALLOW_FOREIGN_ENDPOINT` (G8),
-`SWEEP_BUDGET` (G7), `--out`/`--judge` on the leaderboard (F2 close, G5), `normalize_section`,
-`verify_containment`, `test/crb-injector-sections.bats`.
-
----
-
-## Baseline Conventions (delta only)
-
-Pass 1's baseline still holds; two additions relevant to this commit:
-
-- **Shell env knobs** across `runs/review-arms/*/*.sh` are exactly eight: `BUDGET`, `CC_VERSION`,
-  `CUBIC_BIN`, `DRY_RUN`, `MODEL`, `PAYLOAD_REF`, `REPS`, and now `SWEEP_BUDGET` — all
-  `UPPER_SNAKE` with `${VAR:-default}`. Tool-scoped prefixes exist (`CUBIC_BIN`,
-  `CUBIC_LOG_LEVEL`), so a `CRB_` prefix has precedent in *shape* if not in name.
-- **No `--verify` CLI flag exists anywhere in `scripts/`.** Grepped `scripts/*.py`,
-  `scripts/*.sh`, `runs/review-arms/**/*.sh`: the only occurrences of the string are
-  `git rev-parse --verify` / `git show-ref --verify` internals in `review-arms.py:173` and
-  `self-improvement.sh:69,1674`. `--verify` on a repo-tooling CLI is first of its kind here.
+1. **Every CLI in `scripts/` is argparse-driven**, with `description=__doc__` and
+   `formatter_class=argparse.RawDescriptionHelpFormatter`
+   (`crb-materialize.py:443-444`, `crb-subset-leaderboard.py:85-86`,
+   `crb-pipeline-to-benchmark.py:183-184`, `review-arms.py:113-114`). Even the two
+   predicate-shaped tools follow it: `claude_config_audit.py:195-197` and
+   `hermeticity-lint:785`.
+2. **Flags are kebab-case, long-form only**: `--per-repo`, `--dry-run`, `--all-prs`,
+   `--tool-name`, `--no-seed`, `--run-meta`. No short flags anywhere in the `crb-*` family.
+3. **Exit-status convention.** `sys.exit("message")` is the error form (prints to stderr,
+   exit 1); argparse supplies exit 2 for usage errors for free. `claude_config_audit.py:237`
+   is the repo's precedent for exit-status-as-verdict:
+   `sys.exit(1 if sev["HIGH"] else 0)` — a *verdict* on 1, with usage errors landing on 2
+   because argparse handles them. `run-host.sh:404` and `scripts/confine-tests.sh:68,150,173`
+   likewise reserve exit 2 for "the harness itself could not proceed".
+4. **stdout/stderr discipline.** Machine-consumable or reportable output goes to stdout
+   (`crb-materialize.py:495` "containment ok", the leaderboard's table); diagnostics and
+   failures go to stderr with a `!!` marker (`crb-materialize.py:471,483,492`;
+   `crb-subset-leaderboard.py:52,80` `!! SUBSET ATTRITION:`).
+5. **Path/identity constants are centralized in `crb_common.py`** precisely to stop
+   hand-copying. Its own docstring (`crb_common.py:9-17`) states the rule: these values "are the
+   identity of the work dir the injector writes and the leaderboard reads, and a review-fix pass
+   hand-copied them into a second file, where they are held in agreement by a comment. So: one
+   definition, imported by both."
+6. **`run-meta.json` field naming.** The pre-existing keys are `arm`, `payload_ref`,
+   `payload_commit`, `model`, `cc_version`, `cells`, `retried_cells`, `voided_cells`,
+   `total_cost_usd` — snake_case, and the per-cell collections form a `<state>_cells` family.
+7. **Module-level function names** are domain-qualified: `verify_containment`, `load_prs`,
+   `resolve_base`, `comments_from_rubric`, `load_cell`, `normalize_section`. Bare-noun accessors
+   also exist (`family`, `dir_mb`, `attrition`), so noun-shaped names are not themselves a
+   deviation. `main()` is uniformly zero-arg and terminates via `sys.exit`.
+8. **Docstring `Usage:` blocks.** Every `crb-*` CLI carries one
+   (`crb-materialize.py:22`, `crb-subset-leaderboard.py:13`, `crb-pipeline-to-benchmark.py:32`),
+   and it is kept in step with the flag set — `--reset` was added to materialize's block in
+   this very diff.
 
 ---
 
 ## Name-Pattern Audit
 
-Every new public name introduced by `ed68ced`.
-
 | New name | Category | Closest existing | Precedent path | Verdict |
 |---|---|---|---|---|
-| `--tool` (injector alias) | CLI flag | `--tool` (leaderboard), `--tool` (vendored steps 2/2.5/3) | `scripts/crb-subset-leaderboard.py:51`, `external/code-review-benchmark/offline/code_review_benchmark/step2_extract_comments.py:168` | **Consistent** — closes F1's tolerance half |
-| `--verify SLUG ...` (materialize) | CLI flag | `--list`, `--dry-run`, `--force` (same file); no `--verify` anywhere in `scripts/` | none — searched `scripts/*.py`, `scripts/*.sh`, `runs/review-arms/**/*.sh` | New category; **placement** in the mutually-exclusive selector group is the issue → G3 |
-| `--out` (leaderboard) | CLI flag | `--out` (injector), `--out` (`canon-to-crb.py`) | `scripts/crb-pipeline-to-benchmark.py:187`, `scripts/canon-to-crb.py:178` | Name **consistent**; resolution semantics inherit the injector's CWD-relative form → G5 |
-| `--judge` (leaderboard) | CLI flag | `--judge` (injector), `--judge` (`review-arms.py`, `cross-model-review.py`) | `scripts/crb-pipeline-to-benchmark.py:193`, `scripts/review-arms.py:125` | Name **consistent**; value shape inherits F3 → G2 |
-| `SWEEP_BUDGET` | env var | `BUDGET`, `REPS`, `CC_VERSION`, `DRY_RUN` | `runs/review-arms/crb-pipeline/run-host.sh:61`, `runs/review-arms/e7-fable-3x/run-host.sh:47` | Shape **consistent** (`UPPER_SNAKE` + `${VAR:-default}`); unit-less money name repeats F13 and is missing from the Usage block → G7 |
-| `CRB_ALLOW_FOREIGN_ENDPOINT` | env var | `CUBIC_BIN`, `CUBIC_LOG_LEVEL`, `CLAUDE_CREDENTIALS`, `MARTIAN_*` | `runs/review-arms/crb/run-cubic.sh:37,101`, `runs/review-arms/e7-fable-3x/run-host.sh:63` | Prefix shape has precedent; **first `CRB_`-prefixed knob**, and it exists only inside a generated file → G8 |
-| `verify_containment(dst, slug, head)` | function | `materialize`, `slug_for`, `resolve_base`, `dir_mb`, `select` (same module) | `scripts/crb-materialize.py:72-164` | **Consistent** — verb-phrase module-level helper, raises like its neighbours |
-| `normalize_section(title)` | function | `md_tables`, `comments_from_rubric`, `parse_location`, `load_cell` | `scripts/crb-pipeline-to-benchmark.py:84-181` | **Consistent** — verb-phrase, docstring states input→output concretely |
-| `sanitize_model()` (leaderboard) | function | `sanitize_model` (injector), `sanitize_model_name` (vendored ×3) | `scripts/crb-pipeline-to-benchmark.py:80`, `external/…/step2_extract_comments.py:64` | **Inconsistent (regressed)** — 2nd in-repo copy of a helper pass-1 already flagged as a renamed clone → G6 |
-| `DEFAULT_OUT`, `DEFAULT_JUDGE` (leaderboard) | constant | identically-named constants in the injector | `scripts/crb-pipeline-to-benchmark.py:58,60` | Names **consistent**; the duplication is an architecture finding (see `architecture-review.md` A2) |
-| `judge.sh` (generated artifact) | artifact | `RUN.md` (same dir), `run-host.sh`, `run-cubic.sh` | `runs/review-arms/crb/run-cubic.sh`, `runs/review-arms/*/run-host.sh` | Name **consistent**; being a *second* runbook for the same steps is the issue → G8 |
-| `containment.json`-equivalent | artifact | `preflight.json`, `run-meta.json`, `result.json` | `runs/review-arms/crb-pipeline/run-host.sh` | _(not created — see `architecture-review.md` A1)_ |
-| `test/crb-injector-sections.bats`, `probe()` | test | `test/cross-model-review-stage1.bats`, `test/rubric-selection.bats` | `test/*.bats` (`# @category fast` on 20+ suites) | **Consistent** — `# @category fast` on line 2, `$BATS_TEST_TMPDIR` for scratch, no network |
+| `--reset SLUG ...` | CLI flag | `--verify SLUG ...`, `--slug`, `--all` | `scripts/crb-materialize.py:446-457` | Consistent — kebab-case, `nargs="+"`, same mutually-exclusive group, metavar matches `--verify` |
+| `--run-meta PATH` | CLI flag | `--evaluations`, `--out`, `--judge`, `--all-prs` | `scripts/crb-subset-leaderboard.py:87-97` | Consistent shape; but absent from the docstring `Usage:` block every sibling maintains — F7 |
+| `scripts/crb-cell-status.py` | script/CLI | `crb-materialize.py`, `crb-subset-leaderboard.py`, `crb-pipeline-to-benchmark.py`; predicate analog `claude_config_audit.py` | `scripts/crb-*.py`, `scripts/claude_config_audit.py` | Filename consistent (`crb-<noun-phrase>.py`); **invocation surface is not** — hand-rolled `argv` instead of argparse, and exit 1 means both "incomplete" and "you called me wrong" — F2 |
+| `<result.json>` positional | CLI arg | `paths` positional on `claude_config_audit.py`; `--slug`/`--evaluations` on the `crb-*` family | `scripts/claude_config_audit.py:196`, `scripts/crb-materialize.py:449` | Acceptable — a positional path has precedent for predicate scripts; noted, not a finding |
+| `RUN_META` | exported constant | `DEFAULT_OUT`, `MANIFEST`, `BENCH_DATA`, `DEFAULT_JUDGE`; and `DEFAULT_RUNS` | `scripts/crb_common.py:22-34`, `scripts/crb-pipeline-to-benchmark.py:63` | Naming consistent (SCREAMING_SNAKE, `Path`); composition is not — re-hardcodes the `runs/review-arms/crb-pipeline` string that `DEFAULT_RUNS` already holds — F6 |
+| `NON_REVIEW`, `STUB_MAX_LEN`, `MIN_REVIEW_LEN` | module constants | `DEFAULT_TOOL`, `FINDING_SECTIONS`, `SECTION_ALIASES` | `scripts/crb_common.py:33-34`, `scripts/crb-pipeline-to-benchmark.py` | Consistent — SCREAMING_SNAKE tunables at module top with rationale comments |
+| `requested_instances` | JSON field | `retried_cells`, `voided_cells`, `missing_cells`, `cells` | `runs/review-arms/crb-pipeline/run-host.sh:206-212` | Inconsistent — the only `*_instances` key in a file whose collections are all `*_cells` — F4 |
+| `missing_cells` | JSON field | `retried_cells`, `voided_cells` | `runs/review-arms/crb-pipeline/run-host.sh:210-211` | Name consistent; the field itself is written and read by nobody — F3 |
+| `attrition(urls, run_meta_path)` | function | `f1`, `verify_containment`, `load_cell` | `scripts/crb-subset-leaderboard.py:36`, `scripts/crb-materialize.py:168` | Consistent — bare-noun accessors have precedent (`family`, `dir_mb`) |
+| `fetch_traces(dst)` | function | `verify_containment`, `classify_strays`, `scrub_object_store`, `reset_clone` | `scripts/crb-materialize.py:168-315` | Consistent by convention (noun accessors exist), but the name reads as the imperative "fetch the traces" in a module about git fetching — F15 |
+| `classify_strays`, `scrub_object_store`, `reset_clone` | function | `verify_containment`, `resolve_base`, `load_prs` | `scripts/crb-materialize.py:91-168` | Consistent — verb_noun, domain-qualified |
+| `status(d)` | function | `verify_containment`, `load_cell`, `comments_from_rubric`, `normalize_section` | `scripts/crb-materialize.py:168`, `scripts/crb-pipeline-to-benchmark.py:113-164` | Inconsistent — the only undomain-qualified module-level name in the family; `cell_status` would match the filename — F16 |
+| `main(argv)` | function | `main()` in all four sibling CLIs | `scripts/crb-materialize.py:442`, `crb-subset-leaderboard.py:84`, `crb-pipeline-to-benchmark.py:182`, `review-arms.py:112` | Inconsistent — the only `main` taking argv and returning an int rather than terminating — F16 |
+| `write_run_meta()`, `META_WRITTEN` | bash function/var | `SWEEP_BUDGET`, `MAX_ATTEMPTS`, `PAYLOAD_SRC` (vars); no prior function in this script | `runs/review-arms/crb-pipeline/run-host.sh:51-72` | New category — first function in the script; SCREAMING_SNAKE var + snake_case function matches shell norms elsewhere in `scripts/lib/*.sh` |
 
 ---
 
 ## Findings
 
-#### G1 — F1 is closed as tolerance, not as consistency: the documented flow still teaches `--tool-name`
-
-**Severity:** Minor (down from pass-1's Inconsistent)
-**Location:** `scripts/crb-pipeline-to-benchmark.py:191`, `:35` (module `Usage:` block);
-`docs/working/crb-direction1-setup.md` §3 variant example
-**Move:** #2 (naming against the grain) / #3 (consumer contract)
-**Confidence:** High
-**Legibility-target:** the operator running the four stages back-to-back from the setup doc.
-
-Precedent: `--tool` used in `scripts/crb-subset-leaderboard.py:51` and
-`external/code-review-benchmark/offline/code_review_benchmark/step{2_extract_comments.py:168,2_5_dedup_candidates.py:224,3_judge_comments.py:388}`
-
-**Evidence** — the alias is correctly wired:
-
-```python
-    # --tool is the spelling used by crb-subset-leaderboard.py AND by all three
-    # vendored benchmark steps; --tool-name is kept as the original spelling so
-    # existing invocations keep working.
-    ap.add_argument("--tool-name", "--tool", dest="tool_name", default="mfc-pipeline-e8",
-                    help="tool name in benchmark_data.json (default mfc-pipeline-e8)")
-```
-
-The `dest="tool_name"` is right (without it argparse would derive `tool_name` from the first
-option string anyway, but stating it makes the binding explicit and survives a future reorder),
-and `--help` will render `--tool-name TOOL_NAME, --tool TOOL_NAME`, so both spellings are
-discoverable from the help output even though the `help=` string names neither.
-
-What did not change is which spelling the *documentation* teaches. The module's own `Usage:`
-block still reads `scripts/crb-pipeline-to-benchmark.py --tool-name mfc-pipeline-main --runs
-<dir>`, and the setup doc's red+amber variant example still passes `--tool-name
-mfc-pipeline-e8-redamber`. So a user reading either artifact still learns the outlier spelling and
-still meets the near-miss when they reach the three vendored steps — the alias saves them only if
-they guess `--tool` first. That is tolerance, not consistency, and it is the difference this
-finding was about: `--tool` is the cost-confinement lever (rubric A11: ~2233 paid calls if
-omitted at step 2.5), so the goal was one spelling in the operator's muscle memory, not two.
-
-**Recommendation:** Swap the option order to `ap.add_argument("--tool", "--tool-name",
-dest="tool_name", …)` so `--tool` becomes the primary in `--help`, and update the module `Usage:`
-block and the setup doc's variant example to `--tool`. Three lines; `--tool-name` keeps working.
-
----
-
-#### G2 — F3 is untouched and the new leaderboard `--judge` inherits the same value ambiguity
-
-**Severity:** Minor (down from Inconsistent — the two scripts now agree by construction, so the
-remaining cost is learnability only)
-**Location:** `scripts/crb-subset-leaderboard.py:31`, `:49`, `:58-59` vs
-`scripts/crb-pipeline-to-benchmark.py:60`, `:193`
-**Move:** #2 (naming — value convention) / #7 (asymmetry)
-**Confidence:** High
-**Legibility-target:** a user scoring a second judge for a judge-variance check.
-
-Precedent: provider-prefixed judge ids (`anthropic/claude-sonnet-4.5`) in `scripts/review-arms.py:125`
-and `scripts/cross-model-review.py:372`; `openai/gpt-4o-mini` as `MARTIAN_MODEL` default in
-`external/…/code_review_benchmark/step{2,2_5,3}*.py`
-
-**Evidence:**
-
-```python
-DEFAULT_JUDGE = "claude-opus-4-5-20251101"
-```
-
-```python
-    path = (Path(args.evaluations) if args.evaluations
-            else Path(args.out) / "results" / sanitize_model(args.judge) / "evaluations.json")
-```
-
-The bare-vs-prefixed question pass-1 raised is unchanged, and there is now a second flag carrying
-it. Checked for a new bug and found none: the injector names its destination
-`out / "results" / sanitize_model(args.judge)` and the leaderboard computes the identical
-expression from identical `sanitize_model` bodies, so whichever shape the user supplies, both
-scripts land on the same directory. The injector's `anthropic/`-prefixed fallback applies only to
-locating the *seed source* in the vendored tree, which is correct and unaffected.
-
-So the exposure is exactly what it was: a user who copies the shape their neighbours teach
-(`--judge anthropic/claude-opus-4-5-20251101`) gets a work dir named
-`anthropic_claude-opus-4-5-20251101`, which then has to match whatever they export as
-`MARTIAN_MODEL` — and `judge.sh` now defaults `MARTIAN_MODEL` to `{args.judge}` verbatim, which
-actually *helps*, because the generated script propagates whichever shape was used. Worth noting
-as a partial mitigation the commit did not claim.
-
-**Recommendation:** Unchanged from pass 1, now applied to both flags: strip a leading
-`<provider>/` on entry in one place, and say in both `--judge` help strings that the value is the
-bare `MARTIAN_MODEL` id.
-
----
-
-#### G3 — `--verify` is a fourth non-writing mode with a fourth name, placed in a mutually-exclusive group whose other members all mean "what to materialize"
-
-**Severity:** Minor
-**Location:** `scripts/crb-materialize.py:259-270`
-**Move:** #2 (naming against the grain) / #3 (consumer contract)
-**Confidence:** High
-**Legibility-target:** a reader of `--help` deciding which flag rehearses and which acts.
-
-Precedent: the group's existing members `--all` / `--per-repo N` / `--slug ...` / `--list` all
-answer "which PRs", in `scripts/crb-materialize.py:260-264`; the repo's rehearsal flag is
-`--dry-run` in `scripts/crb-materialize.py:270`, `scripts/review-arms.py:131`,
-`scripts/cross-model-review.py:388`
-
-**Evidence:**
-
-```python
-    g = ap.add_mutually_exclusive_group()
-    g.add_argument("--all", action="store_true", help="materialize all 50 PRs")
-    g.add_argument("--per-repo", type=int, metavar="N",
-                   help="N PRs per source repo, most-goldens-first (N=1 -> 5-PR pilot)")
-    g.add_argument("--slug", nargs="+", help="explicit slugs (see --list)")
-    g.add_argument("--list", action="store_true", help="list available PRs and exit")
-    g.add_argument("--verify", nargs="+", metavar="SLUG",
-                   help="re-assert answer-key containment on existing clone(s) and exit "
-                        "(used by run-host.sh before and after each review cell)")
-    ap.add_argument("--depth", type=int, default=50, help="shallow clone depth (default 50)")
-    ap.add_argument("--force", action="store_true", help="rebuild existing clones")
-    ap.add_argument("--dry-run", action="store_true", help="print the selection, clone nothing")
-```
-
-Two contract problems, both small:
-
-1. **Group semantics.** `--list` was already a mild stretch (it selects nothing, it prints), but
-   it at least operates on the same *dataset* the other three select from. `--verify` operates on
-   the **clone tree** (`DST_ROOT / slug`), never calls `load_prs()`, and returns before any
-   selection happens. A user reading `--help` sees five mutually-exclusive options and reasonably
-   infers all five are ways of naming PRs; only three are. `--verify` and `--list` are modes, not
-   selectors, and the group is doing double duty.
-2. **Silently ignored siblings.** `--depth`, `--force` and `--dry-run` are all accepted alongside
-   `--verify` and all silently do nothing, because the verify branch returns at `:295`. The
-   `--dry-run` case is the one that matters for consistency: `--dry-run` promises "clone nothing"
-   and `--verify --dry-run` does in fact write nothing, but for the unrelated reason that verify
-   never writes — so the flag's contract is satisfied by accident rather than honoured. Worse in
-   principle is `--force --verify`, where a user has asked for the destructive mode and is given
-   the read-only one with no warning.
-
-The underlying F4 problem is untouched: `--dry-run` (materialize), `DRY_RUN=1` (runner), `--stats`
-(injector, still at `:208`), and now `--verify` are four names in one chain for operations that
-write nothing. `--verify` is *not* the same concept as the other three — it asserts rather than
-rehearses, so a distinct name is right — but its arrival is a good moment to collapse `--stats`
-into `--dry-run`, which is a two-line change with an alias.
-
-**Recommendation:** Split the group: keep `--all`/`--per-repo`/`--slug` mutually exclusive as the
-selector, and make `--list`/`--verify` a second mutually-exclusive "mode" group. Reject
-`--force`/`--depth` alongside `--verify` with `ap.error("--verify is read-only; --force/--depth do
-not apply")`. Separately, rename `--stats` to `--dry-run` with `--stats` as an alias, closing F4.
-
----
-
-#### G4 — F5 is unclosed and the pre-run containment check adds a second way for a sweep to skip every cell and exit 0
+#### F1. `--dry-run` is accepted by, and silently ignored in, the destructive `--reset` mode
 
 **Severity:** Inconsistent
-**Location:** `runs/review-arms/crb-pipeline/run-host.sh:145`, `:177-178`, `:236-237`
-**Move:** #4 (error consistency) / #9 (safety semantics)
+**Location:** `scripts/crb-materialize.py:460-499`, esp. `461-465` and `518`
+**Move:** #9 (safety semantics) + #7 (asymmetry)
 **Confidence:** High
-**Legibility-target:** an operator wrapping the sweep in a shell `&&` chain, or reading only the
-exit status of an unattended run.
 
-**Evidence** — three `continue`-shaped outcomes now share one exit status:
-
-```bash
-  [ -d "$clone/.git" ] || { echo "$id: clone missing — run scripts/crb-materialize.py --slug $id" >&2; continue; }
-```
-
-```bash
-  python3 "$ROOT/scripts/crb-materialize.py" --verify "$id" || {
-    echo "$id: PRE-RUN containment check failed — skipping cell" >&2; continue; }
-```
-
-```bash
-  python3 "$ROOT/scripts/crb-materialize.py" --verify "$id" \
-    || echo "$id: POST-RUN containment check FAILED — treat this cell's result as void" >&2
-```
-
-against the sibling runner `runs/review-arms/e7-fable-3x/run-host.sh:115`, which hard-exits on the
-first of these conditions.
-
-**Is the pre-run `continue` a fourth behaviour for "this instance is not usable"?** Not a fourth
-*kind* — it is the same warn-and-continue shape as the existing clone-missing path in the same
-file, so internally `run-host.sh` is consistent with itself. But it is a second *trigger* for that
-shape, and it is a trigger that can fire for **every** instance at once: a containment break that
-persists (a remote re-added and left in place, which is precisely the failure guard (b) exists to
-catch) makes cell 1's post-run check fail, then cells 2..50's pre-run checks fail, and the sweep
-exits **0** having reviewed nothing and produced no `run-meta.json` totals worth reading. Pass-1's
-F5 said "a wrapper cannot distinguish 'reviewed 5 PRs' from 'reviewed 0 PRs because you typo'd the
-slugs'"; the fix commit added a second, more likely way to reach the same undistinguishable state.
-
-The post-run arm is separately inconsistent with itself: it names a consequence ("treat this
-cell's result as void") that the script does not implement — the cell's `result.json` remains and
-the resume predicate at `:150-159` will bank it as complete next sweep. That is the contract
-half of `architecture-review.md` A1; I do not duplicate the structural argument here.
-
-Worth crediting: the new `SWEEP_BUDGET` gate does introduce a distinct exit code (`exit 2`), which
-is exactly the right instinct — the runner now has a three-value exit vocabulary (0 = ran, 1 =
-preflight/manifest refusal, 2 = budget stop). It is undocumented in the header `Usage:` block.
-
-**Recommendation:** Track `skipped` and `ran` counters in the loop; `exit 3` (documented) if
-`ran == 0`, and `exit 4` if any post-run containment check failed. Add the exit-code table to the
-header comment alongside the `Usage:` lines. If a hard error on an unknown slug is still wanted
-(pass-1's recommendation, matching E7), do it in the `INSTANCES` resolution before the loop rather
-than per-cell.
-
----
-
-#### G5 — F6 is unclosed and now has two offenders: the new leaderboard `--out` is also CWD-relative
-
-**Severity:** Minor
-**Location:** `scripts/crb-subset-leaderboard.py:47`, `:58-59`; `scripts/crb-pipeline-to-benchmark.py:187`, `:215`
-**Move:** #3 (consumer contract) / #7 (asymmetry)
-**Confidence:** High
-**Legibility-target:** a user who copies the `--out` example from `canon-to-crb.py` or from
-`docs/working/crb-direction1-setup.md`.
-
-**Evidence** — the new flag repeats the pattern pass 1 flagged rather than the one it recommended:
+`--dry-run` is a top-level (non-grouped) flag documented as `"print the selection, clone
+nothing"`. `--reset` is the only *destructive-to-existing-state* mode in the script: it runs
+`git checkout --force`, `reset --hard`, `update-ref -d`, `clean -qfdx`, `reflog expire
+--expire=now`, and `gc --prune=now`. The verify/reset branch returns at line 499 and
+`args.dry_run` is first consulted at line 518, so the flag is unreachable from that path.
 
 ```python
-    ap.add_argument("--out", default=str(DEFAULT_OUT),
-                    help=f"benchmark work dir written by the injector (default {DEFAULT_OUT})")
-```
-
-```python
-    path = (Path(args.evaluations) if args.evaluations
-            else Path(args.out) / "results" / sanitize_model(args.judge) / "evaluations.json")
-```
-
-against `scripts/canon-to-crb.py:178-181`, this repo's other work-dir writer:
-
-```python
-    ap.add_argument("--out", default="runs/review-arms/crb/offline-work")
+    ap.add_argument("--dry-run", action="store_true", help="print the selection, clone nothing")
     args = ap.parse_args()
 
-    out = WORKSPACE / args.out
+    if args.verify or args.reset:
+        slugs = args.verify or args.reset
+        resetting = bool(args.reset)
 ```
 
-Three scripts now write or read a work dir under `runs/review-arms/crb/` behind a flag named
-`--out`; two resolve it against the CWD and one against `WORKSPACE`. The setup doc's own variant
-example (`--out runs/review-arms/crb/offline-work-50-ra`) is a workspace-relative path, so the
-documented off-default flow is wrong from any CWD but `/workspace` — and it is now wrong twice,
-once when injecting and once when ranking, with the second failure surfacing as
-`no evaluations at … — run step 3 first`, the exact misdiagnosis F2's fix was written to
-eliminate.
-
-The fix is the same one-line change pass 1 named, now needed in two places. `Path.__truediv__`
-leaves absolute values untouched, so the absolute defaults keep working.
-
-**Recommendation:** `out = WORKSPACE / args.out` in both scripts (and apply it to `--runs` and
-`--evaluations` for symmetry), matching `canon-to-crb.py:181`.
-
----
-
-#### G6 — F9 regressed: `sanitize_model` now has a second in-repo copy, still renamed from the vendored original and still without the docstring that explains why it must match
-
-**Severity:** Minor
-**Location:** `scripts/crb-subset-leaderboard.py:34-35`
-**Move:** #2 (naming against the grain)
-**Confidence:** High
-**Legibility-target:** a reader checking that our judge-directory naming really matches what the
-benchmark will compute.
-
-Precedent: `sanitize_model_name` used in
-`external/code-review-benchmark/offline/code_review_benchmark/step2_extract_comments.py:64`,
-`step2_5_dedup_candidates.py:82`, `step3_judge_comments.py:88`; the repo's own first copy at
-`scripts/crb-pipeline-to-benchmark.py:80`
-
-**Evidence:**
+and, 20 lines after that branch has already `return`ed:
 
 ```python
-def sanitize_model(model: str) -> str:
-    return model.strip().replace("/", "_")
+    if args.dry_run:
 ```
 
-character-identical to `scripts/crb-pipeline-to-benchmark.py:80-81`, which is in turn
-character-identical to the vendored:
+A cautious operator typing `crb-materialize.py --reset <slug> --dry-run` before an unattended
+$50–2000 sweep gets the full destructive reset with no warning — the exact opposite of what the
+flag advertises. `--force` and `--depth` are ignored on this path too, but they are inert rather
+than misleading.
 
-```python
-def sanitize_model_name(model: str) -> str:
-    """Sanitize model name for use as directory name."""
-    return model.strip().replace("/", "_")
-```
-
-Pass 1 rated one clone Minor and defensible ("importing from the vendored package would add a
-dependency the script otherwise avoids") with the ask being a rename and a one-line docstring.
-Neither happened, and a fifth copy of the body now exists — the second inside `scripts/`. The
-correctness argument for the whole judge-dir chain is "these functions all produce the same
-string"; there are now five of them, none of which says so, and two of which the repo owns and
-could keep honest with one assertion.
-
-This is a small finding held at Minor deliberately — nothing breaks today and every copy is four
-tokens. It is listed because the commit's own claim ledger cites tech-debt's lifetime evidence to
-defer the shared module, and this is the one place that reasoning produced *new* duplication
-rather than merely carrying old duplication. The structural framing is in
-`architecture-review.md` A2.
-
-**Recommendation:** Rename both in-repo copies to `sanitize_model_name` with a one-line docstring
-naming the vendored function they mirror, and add an assertion to
-`test/crb-injector-sections.bats` (which already loads these modules via `importlib`) that the two
-in-repo copies agree on `"anthropic/x"`.
+**Recommendation:** In the `args.verify or args.reset` branch, either honor `--dry-run` (print
+what `reset_clone` would undo — `classify_strays` and `git status --porcelain` already compute
+it, and `fetch_traces` is read-only) or `ap.error("--dry-run does not apply to --reset/--verify")`.
+The second is a two-line change and closes the trap.
 
 ---
 
-#### G7 — `SWEEP_BUDGET` matches the env-var shape but repeats `BUDGET`'s unit-less money name and is absent from the Usage block that documents its four siblings
-
-**Severity:** Minor
-**Location:** `runs/review-arms/crb-pipeline/run-host.sh:62-65`, `:44-48`
-**Move:** #2 (naming against the grain) / #1 (baseline)
-**Confidence:** High
-**Legibility-target:** an operator setting a ceiling before an unattended `--all` sweep.
-
-Precedent: spend cap named `--max-usd` in `scripts/review-arms.py:128` and
-`scripts/cross-model-review.py:374`; env-knob shape `UPPER_SNAKE` + `${VAR:-default}` in
-`runs/review-arms/e7-fable-3x/run-host.sh:47` (`REPS`), `runs/review-arms/crb/run-cubic.sh:37`
-(`CUBIC_BIN`)
-
-**Evidence:**
-
-```bash
-# Sweep-level ceiling. BUDGET caps ONE instance; without an aggregate the loop
-# will happily spend BUDGET x 50 unattended before run-meta.json first reports a
-# total. Checked after every cell, so the worst overshoot is one instance.
-SWEEP_BUDGET="${SWEEP_BUDGET:-75.00}"
-```
-
-against the Usage block four lines above it, which documents every *other* tunable:
-
-```bash
-#   ANTHROPIC_API_KEY=sk-ant-... bash runs/review-arms/crb-pipeline/run-host.sh
-#   ... run-host.sh discourse-graphite-PR4 grafana-PR79265     # subset
-#   MODEL=opus BUDGET=10 ... run-host.sh                       # cheaper sweep
-#   DRY_RUN=1 ... run-host.sh                                  # plan only, $0
-```
-
-Three small things. (a) The `UPPER_SNAKE`/`${VAR:-default}` shape and the "why" comment are
-exactly right and match every sibling arm — no complaint there. (b) The name repeats F13's issue:
-`SWEEP_BUDGET=250` is ambiguous between dollars and a token or turn count, where the repo's Python
-arms carry the unit (`--max-usd`). Adding a second unit-less money knob entrenches the deviation
-rather than leaving it a single legacy name. (c) It is the one env knob not advertised in the
-Usage block, and it is the one an operator most needs to know exists before an unattended `--all`
-run — the default of `$75` against a `BUDGET` of `$25` means a 50-instance sweep **stops after
-roughly three cells**, which will read as a bug rather than as a ceiling to anyone who has not
-read line 65.
-
-`MODEL=opus` in the same Usage block is unchanged; F13's second half is not closed either.
-
-**Recommendation:** Rename to `SWEEP_BUDGET_USD` with a fallback
-(`SWEEP_BUDGET_USD="${SWEEP_BUDGET_USD:-${SWEEP_BUDGET:-75.00}}"`), add a Usage line
-(`SWEEP_BUDGET_USD=400 ... run-host.sh   # full 50-PR sweep ceiling`), and change the `MODEL=opus`
-example to an exact pinned id.
-
----
-
-#### G8 — `judge.sh` is a second runbook for the same four steps, and it disagrees with `RUN.md`; its `CRB_ALLOW_FOREIGN_ENDPOINT` escape hatch is undocumented and prints a refusal it does not perform
+#### F2. `crb-cell-status.py` returns exit 1 for both "cell incomplete" and "you invoked me wrong", against the repo's own predicate precedent
 
 **Severity:** Inconsistent
-**Location:** `scripts/crb-pipeline-to-benchmark.py:305-330` (`RUN.md`) vs `:332-371` (`judge.sh`)
-**Move:** #7 (asymmetry) / #3 (consumer contract) / #4 (error consistency)
+**Location:** `scripts/crb-cell-status.py:90-107`; consumer at `runs/review-arms/crb-pipeline/run-host.sh:236-240`
+**Move:** #4 (error consistency) + #1 (baseline)
 **Confidence:** High
-**Legibility-target:** an operator opening the work dir and choosing which artifact to follow.
 
-**Evidence** — the two artifacts, generated four lines apart, differ on three contract points:
+Precedent: argparse-supplied usage exit 2 with verdict on exit 1, used in `scripts/claude_config_audit.py:195-237` and `scripts/hermeticity-lint:785`
 
-```python
-export PYTHONPATH=/workspace/external/code-review-benchmark/offline   # or: uv sync in offline/
-export MARTIAN_API_KEY="$ANTHROPIC_API_KEY"
-export MARTIAN_BASE_URL=https://api.anthropic.com/v1/
-```
-
-versus
+The script's whole contract is its exit status. But three distinct conditions collapse onto 1:
 
 ```python
-: "${{MARTIAN_BASE_URL:=https://api.anthropic.com/v1/}}"
-```
-```python
-export PYTHONPATH="${{PYTHONPATH:-{BENCH}}}"
-```
-```python
-case "$MARTIAN_BASE_URL" in
-  *api.anthropic.com*) ;;
-  *) echo "MARTIAN_BASE_URL is '$MARTIAN_BASE_URL', not an api.anthropic.com endpoint." >&2
-     echo "Refusing to send MARTIAN_API_KEY there. Set CRB_ALLOW_FOREIGN_ENDPOINT=1 to override." >&2
-     [ "${{CRB_ALLOW_FOREIGN_ENDPOINT:-}}" = "1" ] || exit 1 ;;
-esac
+def main(argv):
+    if len(argv) != 2:
+        sys.exit("usage: crb-cell-status.py <result.json>")
+    try:
+        d = json.load(open(argv[1]))
+    except Exception as e:
+        print(f"unreadable result.json ({e})")
+        return 1
 ```
 
-Three contract issues:
+`sys.exit("usage: ...")` exits 1 — indistinguishable from the "this cell is incomplete" verdict.
+The repo's other exit-status predicate, `claude_config_audit.py`, avoids this for free by using
+argparse: `sys.exit(1 if sev["HIGH"] else 0)` for the verdict, argparse's exit 2 for misuse. The
+same file is also the reason `--help` misbehaves here: `crb-cell-status.py --help` is treated as a
+filename, prints `unreadable result.json (...)` on **stdout**, and exits 1 — while every sibling
+CLI prints help. A missing script (wrong `$ROOT`) likewise surfaces as python's exit 2, which the
+consumer already treats as "incomplete".
 
-1. **Divergence risk, answered: yes.** `RUN.md` hardcodes `/workspace` (twice — also in the
-   leaderboard invocation) while `judge.sh` interpolates the computed `BENCH`/`WORKSPACE`;
-   `judge.sh` fails closed on a non-Anthropic endpoint while `RUN.md` can only assert the export;
-   `judge.sh` defaults `MARTIAN_MODEL` from `{args.judge}` while `RUN.md` writes it literally. The
-   setup doc handles this honestly — `judge.sh` is "Preferred", the manual block is "Equivalent by
-   hand (both footguns are on you)" — but they are *not* equivalent, and the file a reader opens
-   first is the `.md`. Two runbooks that drift is exactly the failure this arm's own rubric-parsing
-   finding (A15) was about, reproduced in the work-dir contract.
-2. **New env knob, documented only inside a generated file.**
-   `CRB_ALLOW_FOREIGN_ENDPOINT` appears nowhere in `docs/working/crb-direction1-setup.md` or in
-   any tracked script — only in the f-string that generates `judge.sh`. It is the first
-   `CRB_`-prefixed variable in the repo. The shape has precedent (`CUBIC_BIN`,
-   `CUBIC_LOG_LEVEL`), so the name is fine; its discoverability is not.
-3. **The refusal message fires even when the override is honoured.** With
-   `CRB_ALLOW_FOREIGN_ENDPOINT=1` set, the two `echo … >&2` lines still run — including
-   "Refusing to send MARTIAN_API_KEY there." — and then the script proceeds to do exactly that.
-   An error message that states the opposite of what happens is worse than none, and this one sits
-   on a credential-egress decision.
+The consumer is bash and cannot tell the difference:
 
-**Recommendation:** (a) Reduce `RUN.md` to a pointer at `judge.sh` plus a reference listing
-generated from the same interpolated variables, so `/workspace` cannot survive in one and not the
-other. (b) Move the override check above the messages: `if [ "${CRB_ALLOW_FOREIGN_ENDPOINT:-}" =
-"1" ]; then echo "… allowing non-Anthropic endpoint by CRB_ALLOW_FOREIGN_ENDPOINT=1" >&2; else
-<refuse>; fi`. (c) Add one line to the setup doc §4 naming the variable and what it disables.
+```bash
+    if cell_status=$(python3 "$ROOT/scripts/crb-cell-status.py" "$dest/result.json" 2>&1); then
+      echo "=== $id — completed result exists, skipping (delete to re-run)"
+```
+
+An invocation bug therefore reads as "re-run this cell" and re-pays $10–40, per cell, silently.
+That is the same false-incomplete direction the script's own docstring names as a cost risk.
+
+**Recommendation:** Switch to argparse with a positional `result` (matching
+`claude_config_audit.py:196`), which puts usage errors on exit 2 for free and gives `--help`. Then
+have `run-host.sh` treat exit 2 (and anything >1) as a harness error rather than an incomplete
+cell — `run-host.sh:404` already reserves 2 for exactly this meaning.
 
 ---
 
-#### G9 — F7 and F8 unchanged: emitted `review_comments` still drop `created_at`, and `source_provenance` is still undocumented
+#### F3. `missing_cells` is written by the producer and read by no consumer; the leaderboard re-derives it instead
 
-**Severity:** Minor (F7) / Informational (F8)
-**Location:** `scripts/crb-pipeline-to-benchmark.py:123-128`, `:160`, `:227-233`;
-`docs/working/crb-direction1-setup.md` §3
-**Move:** #7 (asymmetry) / #6 (versioning impact)
+**Severity:** Inconsistent
+**Location:** `runs/review-arms/crb-pipeline/run-host.sh:210`; consumer `scripts/crb-subset-leaderboard.py:56-70`
+**Move:** #3 (consumer contract) + #7 (asymmetry)
 **Confidence:** High
-**Legibility-target:** anyone diffing our injected rows against the benchmark's own rows.
 
-Precedent: `path`/`line`/`body`/`created_at` written together in
-`external/code-review-benchmark/offline/code_review_benchmark/step1_download_prs.py:135-140` and
-`scripts/canon-to-crb.py:127-132`
+The writer emits the field:
 
-**Evidence:** neither hunk appears in `git diff 529ecd2..ed68ced -- scripts/crb-pipeline-to-benchmark.py`;
-`rg -n "source_provenance" docs/working/crb-direction1-setup.md` returns no matches.
+```python
+           "requested_instances": req,
+           "missing_cells": [s for s in req if s not in cells],
+```
 
-Both were correctly rated low in pass 1 and neither is claimed by the fix commit, so this is a
-status row rather than a new argument. F7's one-line fix (`"created_at": None` in both
-`comments_from_rubric` and the `load_cell` fallback) is worth taking whenever that function is next
-open, because it is the only thing making our rows structurally distinguishable from every other
-tool's in a file this arm intends to publish a number from. F8's fix is one sentence of prose.
+The only reader in the repo never opens it, and computes the same set independently:
 
-The commit *did* substantially expand the setup doc's caveats section (§ caveats 2, 2b) with the
-golden-denominator correction and the dedup asymmetry — good work — which makes the omission of
-the one-line schema-extension note more conspicuous than it was, since the surrounding paragraph
-now reads as a complete "known deltas" list and is not one.
+```python
+    cells = meta.get("cells") or {}
+    requested = meta.get("requested_instances") or sorted(cells)
+    voided = set(meta.get("voided_cells") or [])
+...
+        elif slug not in cells:
+            why = "no cell produced (missing clone, or pre-run containment failure)"
+```
 
-**Recommendation:** Emit `"created_at": None` in both writers; add the `source_provenance`
-sentence to the caveats list next to caveats 2/2b rather than to §3, since that is where the
-"known deltas from the published rows" content now lives.
+Two definitions of the same set in two languages, with no test binding them. The test fixture
+already demonstrates the drift is unpoliced — `test/crb-subset-attrition.bats:57` writes
+`"missing_cells": []` while requesting slugs that have no cells, and the suite passes, because
+nothing reads it. `voided_cells` and `retried_cells` do not have this problem: both are read
+(`voided_cells` at leaderboard line 60) or are the only record of their state.
+
+The consumer impact is the reverse of the usual: a later provenance reader (the docstring at
+`crb_common.py:28-31` anticipates "anything reading provenance later") will reasonably trust
+`missing_cells`, and it has no test keeping it truthful.
+
+**Recommendation:** Pick one. Either delete `missing_cells` from the writer and let the reader
+derive it (fewest moving parts), or have `attrition()` read `meta.get("missing_cells")` and drop
+the `slug not in cells` re-derivation. Do not ship both.
 
 ---
 
-#### G10 — F10, F12, F14 remain open as advisories
+#### F4. `requested_instances` breaks the `*_cells` naming family inside `run-meta.json`
+
+**Severity:** Inconsistent
+**Location:** `runs/review-arms/crb-pipeline/run-host.sh:206-212`
+**Move:** #2 (naming against the grain)
+**Confidence:** High
+
+Precedent: `<state>_cells` used in `runs/review-arms/crb-pipeline/run-host.sh:210-211` (`missing_cells`, `retried_cells`, `voided_cells`) and the `cells` map at line 208
+
+Every other per-slug collection in this JSON object is `*_cells`, and the members of all of them
+are the same kind of thing — a slug:
+
+```python
+json.dump({"arm": "crb-pipeline", "payload_ref": ref, "payload_commit": sha,
+           "model": model, "cc_version": ccv, "cells": cells,
+           "requested_instances": req,
+           "missing_cells": [s for s in req if s not in cells],
+           "retried_cells": retried, "voided_cells": voided,
+```
+
+`requested_instances` is the odd one out, and the mismatch is not accidental: it tracks the
+*producer's* internal variable name (`INSTANCES` in `run-host.sh:78-84`) rather than the
+vocabulary of the file it is writing. The reader then has to translate — `attrition()` binds it to
+a variable called `requested` and describes its members as "attempted cell(s)" in the user-facing
+warning at line 66. This is the fourth name for one entity across the harness ("instance",
+"cell", "slug", "PR"); see F15.
+
+**Recommendation:** Rename to `requested_cells` to match its three siblings, keeping
+`meta.get("requested_instances")` as a fallback read for one release if any run-meta already
+exists on disk. If the distinction between "requested" and "ran" is meant to be carried by the
+noun, say so in a comment — right now nothing marks it as deliberate.
+
+---
+
+#### F5. The `run-meta.json` contract is declared nowhere it can be checked — only its path is shared
+
+**Severity:** Inconsistent
+**Location:** `scripts/crb_common.py:28-32`; writer `run-host.sh:160-220`; reader `scripts/crb-subset-leaderboard.py:40-70`
+**Move:** #3 (consumer contract)
+**Confidence:** High
+
+`crb_common.py` exists specifically to stop this shape. Its docstring is explicit:
+
+```python
+It does not hold for these four values. They are not a refactor: they are the
+identity of the work dir the injector writes and the leaderboard reads, and a
+review-fix pass hand-copied them into a second file, where they are held in
+agreement by a comment.
+...
+So: one definition, imported by both. No behaviour lives here.
+```
+
+`RUN_META` centralizes the *path*, but the eight key names that make the file useful are
+hand-agreed between a python heredoc embedded in bash and a python reader that imports nothing
+from it. The reader defends itself field-by-field with `.get(...) or <fallback>`:
+
+```python
+    cells = meta.get("cells") or {}
+    requested = meta.get("requested_instances") or sorted(cells)
+    voided = set(meta.get("voided_cells") or [])
+```
+
+Those fallbacks are what make a typo in the writer *silent*: misspell `requested_instances` and
+`requested` quietly falls back to `sorted(cells)`, which is exactly the pre-`--run-meta` behavior
+— the attrition check reports zero attrition and the harness's headline anti-bias control turns
+itself off with no message. `test/crb-subset-attrition.bats` constructs its own run-meta by hand
+(`:47-58`) rather than exercising the real writer, so no test would catch it.
+
+**Recommendation:** Move the key names into `crb_common.py` as a small frozen tuple or dict of
+required fields, have the reader assert them present (loudly, like the existing
+`attrition NOT checked` line) rather than `.get(...) or`, and have `run-host.sh`'s heredoc import
+`crb_common` for them — it already runs `python3` with the repo root available. Failing that, at
+minimum add a bats case that runs `write_run_meta` for real and asserts the reader accepts its
+output.
+
+---
+
+#### F6. `RUN_META` re-hardcodes the run-dir path that `DEFAULT_RUNS` already holds
+
+**Severity:** Minor
+**Location:** `scripts/crb_common.py:32`; `scripts/crb-pipeline-to-benchmark.py:63`; `runs/review-arms/crb-pipeline/run-host.sh:54`
+**Move:** #1 (baseline) + #3
+**Confidence:** High
+
+Precedent: `DEFAULT_RUNS = WORKSPACE / "runs/review-arms/crb-pipeline"` at `scripts/crb-pipeline-to-benchmark.py:63`, and the one-definition rule in `scripts/crb_common.py:9-17`
+
+```python
+RUN_META = WORKSPACE / "runs/review-arms/crb-pipeline/run-meta.json"
+```
+
+The literal `runs/review-arms/crb-pipeline` now appears in three files: here, in the injector's
+`DEFAULT_RUNS`, and as `OUT` in `run-host.sh:54`. The new constant was added to the shared module
+(right instinct) but did not compose with the existing constant for the same directory — which
+lives in a non-shared module. If the arm's output dir is ever repointed, two of the three move and
+one does not, and the failure is a leaderboard that silently reports "attrition NOT checked".
+
+**Recommendation:** Promote `DEFAULT_RUNS` into `crb_common.py`, define
+`RUN_META = DEFAULT_RUNS / "run-meta.json"`, and import `DEFAULT_RUNS` in the injector. Three
+lines, and it puts the new constant on the footing `crb_common.py`'s docstring describes.
+
+---
+
+#### F7. `--run-meta` is missing from the leaderboard's docstring `Usage:` block, which `--reset` was correctly added to in the same diff
+
+**Severity:** Minor
+**Location:** `scripts/crb-subset-leaderboard.py:13-19`
+**Move:** #3 (documentation drift)
+**Confidence:** High
+
+`crb-materialize.py:22-29` had its `Usage:` block updated for the new mode in this diff:
+
+```
+  scripts/crb-materialize.py --verify grafana-PR79265   # re-check containment
+  scripts/crb-materialize.py --reset  grafana-PR79265   # restore, then re-check
+```
+
+The leaderboard's was not:
+
+```
+Usage:
+  scripts/crb-subset-leaderboard.py                       # subset = our tool's PRs
+  scripts/crb-subset-leaderboard.py --tool mfc-pipeline-e8-redamber
+  scripts/crb-subset-leaderboard.py --all-prs             # every PR in the evals file
+  scripts/crb-subset-leaderboard.py --judge claude-sonnet-4-5-20250929
+  scripts/crb-subset-leaderboard.py --markdown > table.md
+```
+
+Because `description=__doc__`, this block *is* the `--help` output's preamble, so the flag whose
+absence turns off the attrition check is the one flag not shown by example. `docs/working/
+crb-direction1-setup.md:261-270` documents the behavior but not the flag.
+
+**Recommendation:** Add
+`scripts/crb-subset-leaderboard.py --run-meta <dir>/run-meta.json  # attrition vs. a non-default sweep`
+to the block.
+
+---
+
+#### F8. `crb-cell-status.py` sends failure reasons to stdout unmarked, against the `!!`-on-stderr convention its siblings use
+
+**Severity:** Minor
+**Location:** `scripts/crb-cell-status.py:94-105`
+**Move:** #4 (error consistency)
+**Confidence:** High
+
+Precedent: `  !! <slug>: <reason>` on stderr at `scripts/crb-materialize.py:471,483,492` and `!! SUBSET ATTRITION:` at `scripts/crb-subset-leaderboard.py:52,80`
+
+```python
+        print(f"unreadable result.json ({e})")
+...
+    ok, reason = status(d)
+    print(reason)
+    return 0 if ok else 1
+```
+
+Both the success reason and the failure reason go to stdout, unprefixed. Sibling scripts put
+failure diagnostics on stderr with a greppable `!!` marker. The current consumer merges the
+streams (`2>&1` at `run-host.sh:233`) so nothing breaks today, but the sweep's own logs become
+un-greppable for failures, and a second consumer that separates the streams gets the opposite of
+what the family convention implies.
+
+**Recommendation:** Print the complete reason to stdout (the consumer wants it in the log line
+either way) but prefix failure reasons with `!!`, or emit failures on stderr and keep the
+success line on stdout. Either matches the family; the current shape matches neither.
+
+---
+
+#### F9. `attrition()` computes a `checked` flag that its only caller discards
+
+**Severity:** Minor
+**Location:** `scripts/crb-subset-leaderboard.py:40-70, 169`
+**Move:** #7 (asymmetry)
+**Confidence:** High
+
+The function's contract is a 2-tuple, `(lines, checked)`, and the second element is the answer to
+"did the anti-bias control actually run?" — the single most important bit for a reader about to
+quote a recall number. The caller throws it away:
+
+```python
+    att_lines, _checked = attrition(our_urls, Path(args.run_meta))
+    for line in att_lines:
+        print(line, file=sys.stderr)
+```
+
+The consequence is that a run with no run-meta at all still exits 0 and still prints a ranking
+table. `docs/working/crb-direction1-setup.md:269-270` tells the reader to treat
+`attrition NOT checked` as "fix that before believing the table" — but nothing in the interface
+enforces it, and the warning is one line above a table that looks authoritative.
+
+**Recommendation:** Either drop the second tuple element (honest: the function returns lines) or
+use it — e.g. exit non-zero, or require `--allow-unchecked-attrition`, when `checked` is false
+and `--markdown` was requested. The markdown path is the one whose output gets pasted into a
+results doc.
+
+---
+
+#### F10. "no manifest entry" is reported when the entry exists but lacks `base`, a field only `--reset` needs
+
+**Severity:** Minor
+**Location:** `scripts/crb-materialize.py:480-487`
+**Move:** #4 (error consistency)
+**Confidence:** High
+
+```python
+            rec = manifest.get(slug) or {}
+            head, base = rec.get("head"), rec.get("base")
+            if not head or (resetting and not base):
+                print(f"  !! {slug}: no manifest entry — cannot pin the reviewed head, "
+                      f"so containment is unverifiable. Re-materialize this slug.",
+                      file=sys.stderr)
+```
+
+`--reset` added a second precondition (`base`) but reused the message written for the first. A
+manifest record that has `head` but not `base` — the shape produced by any clone materialized
+before `base` was recorded — reports "no manifest entry" and "cannot pin the reviewed head", both
+of which are false. This is the same failure class as prior finding A14: an error message that
+misdiagnoses its own cause. The remediation ("re-materialize this slug") happens to be right, so
+the impact is operator confusion during a sweep, not a wrong action.
+
+**Recommendation:** Split the branch and name the missing field, e.g.
+`f"  !! {slug}: manifest entry has no {'head' if not head else 'base'} — ..."`.
+
+---
+
+#### F11. `--verify`/`--reset` have no `--all` analog, unlike every other selection in the script
+
+**Severity:** Minor
+**Location:** `scripts/crb-materialize.py:445-457`
+**Move:** #7 (asymmetry)
+**Confidence:** Medium
+
+Materialization supports three selection shapes — `--all`, `--per-repo N`, `--slug ...` — and the
+mutually-exclusive group means `--reset` cannot combine with any of them; it carries its own
+operand list. So "reset every clone after an aborted sweep", the natural operator action when a
+50-cell run is interrupted, has no expression short of shelling out the slug list from
+`instances.json`. `run-host.sh` is unaffected (it resets per cell), so this is human-ergonomics
+only — but it is the mode a human reaches for after a `SWEEP BUDGET EXCEEDED` halt.
+
+**Recommendation:** Optional. Either accept a bare `--reset` (no operands, `nargs="*"`) meaning
+"every slug in the manifest with a clone on disk", or document the one-liner in
+`docs/working/crb-direction1-setup.md` next to the existing `--reset <slug>` example at line 29.
+
+---
+
+#### F12. `write_run_meta` swallows every failure with `|| true`
 
 **Severity:** Informational
-**Location:** `scripts/crb-materialize.py:306`; `scripts/crb-pipeline-to-benchmark.py:205-207`;
-`runs/review-arms/crb-pipeline/run-host.sh:100`
-**Move:** #4 (error consistency) / #2 (naming)
+**Location:** `runs/review-arms/crb-pipeline/run-host.sh:160-220`
+**Move:** #3 (consumer contract)
 **Confidence:** High
-**Legibility-target:** for-orchestrator-synthesis
 
-Precedent (F12, the only naming item here): affirmative `store_true` flags throughout —
-`--force` (`scripts/crb-materialize.py:269`, `scripts/prep-cc-review-clones.sh:30`),
-`--all-files`/`--include-plugins`/`--summary` (`scripts/claude_config_audit.py:197-199`)
-
-**Evidence** — F10's guard is unchanged apart from its message:
-
-```python
-    if not (args.all or args.per_repo or args.slug):
-        ap.error("pick one of --list / --per-repo N / --slug ... / --all / --verify SLUG ...")
+```bash
+  python3 - "$OUT/run-meta.json" "$PAYLOAD_REF" "$PAYLOAD_SHA" "$MODEL" \
+           "$CC_VERSION" "$OUT" "${INSTANCES[*]}" <<'EOF' || true
 ```
 
-`--per-repo 0` still tests as falsy and is still told to pick a selector it just picked. Note the
-message now advertises `--verify` while `args.verify` is deliberately absent from the truthiness
-test — correct, because the verify branch returns at `:295` before this line, but it does mean the
-error text lists an option that can never reach it.
+Moving the writer into an EXIT trap is the right fix for the reported bug (the budget halt used to
+produce no provenance at all), and `|| true` inside a trap is defensible — a failing trap can mask
+the real exit code. The cost is that the provenance file on which the leaderboard's attrition
+check depends can now fail to be written with no signal at all. The mitigation is real and
+deliberate: the reader's `attrition NOT checked` line (`crb-subset-leaderboard.py:51-55`) is
+exactly the downstream alarm for this. Recording it here so the pairing is visible rather than
+accidental.
 
-F12 (`--no-seed` as the only negative flag) and F14 (`ANTHROPIC_API_KEY`-only auth with a bare
-error message) are untouched. Both were rated Informational with explicitly optional
-recommendations in pass 1 and neither is claimed; for a harness with this lifetime and audience I
-would not spend the edit on either now.
+Related and worth one line of thought: `"${INSTANCES[*]}"` is space-joined and re-split with
+`.split()` in the heredoc. Every slug in `instances.json` matches `<repo>-PR<number>`, so this is
+safe today; it is a latent constraint on slug format that nothing states.
 
-**Recommendation:** F10 only, when the file is next open: test `args.per_repo is not None` and
-reject `< 1` with `--per-repo must be >= 1`. F12 and F14: no action.
+**Recommendation:** No change required. If you want a signal, `|| echo "run-meta write FAILED" >&2`
+instead of bare `|| true` keeps the trap safe and makes the failure visible.
+
+---
+
+#### F13. `--verify` is now unreferenced by any caller — but it should stay
+
+**Severity:** Informational
+**Location:** `scripts/crb-materialize.py:451-453`; docs at `docs/working/crb-direction1-setup.md:28`
+**Move:** #3 (consumer contract)
+**Confidence:** High
+
+Directly answering the orchestrator's question. Grep confirms `--verify` has no remaining
+programmatic consumer: `run-host.sh` now calls `--reset` at both the pre-run
+(`run-host.sh:262`) and post-run (`:359`) sites, and the only other reference is the
+setup doc's operator table. That is not dead code — it is the *read-only* form, and its help text
+and docstring already say so:
+
+```python
+    at creation. run-host.sh calls this via --reset, which resets first and
+    then asserts this; --verify is the read-only form for a human.
+```
+
+The surface is coherent because the two modes differ on a property an operator cares about before
+a $50–2000 sweep: whether running the command destroys evidence. Investigating a suspected
+contamination with `--reset` would erase what you are trying to look at. Keep it.
+
+The one thing that would make the pair unmistakable is naming the safety property in the mode
+list rather than only in the help strings — the `ap.error` at line 510-511 currently lists all
+five modes flat:
+
+```python
+        ap.error("pick one of --list / --per-repo N / --slug ... / --all / "
+                 "--verify SLUG ... / --reset SLUG ...")
+```
+
+**Recommendation:** Keep `--verify`. Consider annotating the two containment modes in that error
+string (`--verify SLUG ... (read-only) / --reset SLUG ... (destructive)`), which is where a
+confused operator lands.
+
+---
+
+#### F14. Four names for one entity across the harness: instance / cell / slug / PR
+
+**Severity:** Informational
+**Location:** `run-host.sh:78-84,206-213,433`; `crb-materialize.py:449-457`; `crb-subset-leaderboard.py:59-70`
+**Move:** #2 (naming against the grain)
+**Confidence:** High
+
+Precedent: all four terms are pre-existing on this branch — `INSTANCES` at `runs/review-arms/crb-pipeline/run-host.sh:78`, `Cells: $ran ran` at `:433`, `--slug` at `scripts/crb-materialize.py:449`, "PRs" throughout `scripts/crb-subset-leaderboard.py`
+
+This diff did not create the ambiguity, but `requested_instances` (F4) is the first place where
+two of the four terms sit in the same JSON object, and the reader's user-facing string translates
+between them mid-sentence: `f"{len(lost)} of {len(requested)} attempted cell(s)"` reads
+`requested_instances`. Since the report this produces is meant to be pasted into a results doc and
+read by someone deciding whether to spend $500–2000, the vocabulary is part of the interface.
+
+**Recommendation:** No code change needed for the sweep. Pick one term per layer and state the
+mapping once in `docs/working/crb-direction1-setup.md` — e.g. "a *slug* names a materialized
+clone; a *cell* is one review of one slug; a *PR* is the upstream artifact a slug points at;
+*instance* is the benchmark's word and is avoided elsewhere." F4's rename is the cheap first step.
+
+---
+
+#### F15. `fetch_traces()` reads as an imperative in a module about git fetching
+
+**Severity:** Informational
+**Location:** `scripts/crb-materialize.py:200-266`
+**Move:** #2 (naming against the grain)
+**Confidence:** Medium
+
+Precedent: noun-shaped accessors `family` (`scripts/crb-materialize.py:107`), `dir_mb` (`:156`), `attrition` (`scripts/crb-subset-leaderboard.py:40`); verb-shaped siblings `verify_containment` (`:168`), `classify_strays` (`:267`), `scrub_object_store` (`:289`), `reset_clone` (`:315`)
+
+The convention permits both shapes, so this is not a violation — but `fetch_traces` is
+specifically ambiguous here, because the module's subject matter is `git fetch` and its siblings
+in the same commit are all imperative. A reader scanning the four new functions sees three
+commands and one that looks like a fourth command ("fetch the traces") when it is in fact a query
+("traces of fetching"). The docstring resolves it immediately, so impact is a moment's
+double-take.
+
+**Recommendation:** Optional rename to `fetch_evidence`, `traces_of_fetch`, or `find_fetch_traces`.
+Low priority; do not churn the call sites during the sweep window.
+
+---
+
+#### F16. `status(d)` and `main(argv)` in `crb-cell-status.py` deviate from the family's function conventions
+
+**Severity:** Informational
+**Location:** `scripts/crb-cell-status.py:72, 90, 106-107`
+**Move:** #2 (naming against the grain)
+**Confidence:** High
+
+Precedent: domain-qualified module functions `verify_containment` (`scripts/crb-materialize.py:168`), `load_cell`/`comments_from_rubric` (`scripts/crb-pipeline-to-benchmark.py:113-164`); zero-arg `main()` terminating via `sys.exit` in `scripts/crb-materialize.py:442`, `crb-subset-leaderboard.py:84`, `crb-pipeline-to-benchmark.py:182`, `review-arms.py:112`
+
+```python
+def status(d):
+    """(complete: bool, reason: str)"""
+...
+def main(argv):
+...
+if __name__ == "__main__":
+    sys.exit(main(sys.argv))
+```
+
+`status` is the only unqualified module-level name in the `crb-*` family; if anything ever does
+`from crb_cell_status import status` (the file's own docstring frames it as an extracted, testable
+predicate, so import is the intended use), the name carries no domain. `main(argv)` returning an
+int is a fine pattern on its own but is the only one of five `main`s in `scripts/` shaped that
+way. Neither costs anything today.
+
+**Recommendation:** Rename `status` → `cell_status` (matches the filename and the bash variable
+`cell_status` at `run-host.sh:231`). Leave `main(argv)` alone unless F2's argparse change is made,
+in which case fold it into the family's zero-arg shape at the same time.
 
 ---
 
 ## What Looks Good
 
-- **F2 is closed properly, not cosmetically.** The leaderboard did not just gain flags — it gained
-  the *same* two flags as the injector, with the same names, the same defaults, and a derived path
-  that I verified is character-identical to the injector's `jdir`. `--evaluations` was correctly
-  kept as an explicit-path escape hatch with `default=None` so it only wins when supplied, and the
-  failure message now names all three ways to fix it (`--out/--judge/--evaluations`) instead of
-  misdiagnosing as "run step 3 first". That is the shape a two-stage flag contract should have.
-- **The `--tool` alias uses `dest=` explicitly.** Not required by argparse, but it pins the
-  attribute name against a future reorder of the option strings — the kind of small defensive
-  choice that keeps an alias from becoming a rename by accident.
-- **`judge.sh` converts two documentation-only contracts into enforced ones.** `--tool` on all
-  three steps and the `MARTIAN_BASE_URL` guard were previously operator memory under a ~2233-call
-  and a credential-egress exposure. Making them mechanical, with a named override rather than no
-  escape hatch, is the right trade even with G8's three defects.
-- **The `--all-prs` help text now carries its own precondition** ("that is all 50 only when the
-  file was seeded from the benchmark's checked-in results") rather than deferring to a usage
-  comment that contradicted it. F11 closed exactly as recommended, including the usage line.
-- **The `GOLDEN-DENOMINATOR SKEW` warning goes to stderr, not stdout.** It is emitted before the
-  `--markdown` branch, so a piped `> table.md` gets a clean table and the operator still sees the
-  caveat. Small thing, correct thing — and it puts a measurement caveat in the output path rather
-  than in a runbook nobody re-reads at write-up time.
-- **Judge seeding's error messages name the consequence and the deliberate escape.** "refusing to
-  continue: the judge run would score every tool (~50x cost). Pass `--no-seed` to do that
-  deliberately" tells the user what will happen, what it costs, and how to ask for it on purpose.
-  That is the house style (`sys.exit("message")` for hard user error) applied well.
-- **`normalize_section` is applied symmetrically.** Both the wanted set and the observed headings
-  go through the same function, so the contract cannot drift between the two sides of the
-  comparison — the mistake the substring version made.
-- **The new test suite follows the repo's contract-testing conventions.** `# @category fast` on
-  line 2 matching 20+ siblings, reuse of the drift-guarded golden at
-  `test/skills/code-review/rubric-current-format.md` rather than a new fixture, hermetic
-  (`$BATS_TEST_TMPDIR`, no network, no repo mutation), and no pytest introduced — which rubric
-  item C4 explicitly warned against. I ran it read-only: 8/8 pass, and I confirmed the
-  column-rename test is non-vacuous (the fixture really does contain `| Prior finding |` with a
-  data row under it).
+- **`--reset` is a textbook-consistent flag addition.** Kebab-case, `nargs="+"`, same `metavar="SLUG"`
+  as `--verify`, placed in the existing mutually-exclusive group, added to the docstring `Usage:`
+  block *and* to the `ap.error` mode list at `crb-materialize.py:510-511` (the `ap.error` mode list). Nothing about it
+  requires a consumer to learn a new convention.
+- **The mode-dispatch refactor is minimal and safe.** `slugs = args.verify or args.reset` +
+  `resetting = bool(args.reset)` works precisely because the mutually-exclusive group makes both
+  being set impossible — the two-line implementation is correct rather than lucky.
+- **`RUN_META` was put in `crb_common.py` rather than hand-copied into the leaderboard.** That is
+  the right instinct and the right file; F6 is about composing with `DEFAULT_RUNS`, not about the
+  placement.
+- **Extracting the resume predicate into a file with fixtures is a real interface improvement.**
+  The predicate used to be an inline `python3 -c` heredoc in bash with no test surface; it is now a
+  named, importable, 15-case-tested contract (`test/crb-cell-status.bats`). Capturing its reason
+  string and putting it in the re-run log line (`run-host.sh:251`) turns an opaque retry into a
+  diagnosable one.
+- **The attrition warning is repeated into the markdown body, not just stderr.** The reasoning at
+  `crb-subset-leaderboard.py:165-168` — "the markdown is what gets pasted into a results doc, and a
+  caveat that only ever existed on a terminal is a caveat that will not survive to the place the
+  number is quoted" — is exactly right, and applying the same treatment to the pre-existing skew
+  warning in the same change is good consistency work.
+- **The run-meta EXIT trap is a genuine contract fix.** Provenance now exists on the budget halt,
+  on Ctrl-C, and on a docker failure — the three paths where a spend decision most needs it. The
+  `META_WRITTEN` guard makes it idempotent against the explicit call at line 432.
+- **Backward compatibility of the JSON contract is clean.** `requested_instances` and
+  `missing_cells` are additive, and the reader falls back (`or sorted(cells)`) so an old run-meta
+  still ranks. No version bump needed; nothing was removed or retyped. (The fallback's silence is
+  F5's concern, not a compatibility one.)
 
 ---
 
@@ -614,55 +629,51 @@ reject `< 1` with `--per-repo must be >= 1`. F12 and F14: no action.
 
 | # | Finding | Severity | Location | Confidence |
 |---|---------|----------|----------|------------|
-| G4 | F5 unclosed; pre-run containment `continue` gives the sweep a second way to skip everything and exit 0; post-run message names a consequence the script does not implement | Inconsistent | `run-host.sh:145,177-178,236-237` | High |
-| G8 | `judge.sh` and `RUN.md` disagree; `CRB_ALLOW_FOREIGN_ENDPOINT` undocumented and its refusal message prints when the override is honoured | Inconsistent | `crb-pipeline-to-benchmark.py:305-371` | High |
-| G1 | F1 closed as tolerance only — `Usage:` block and setup doc still teach `--tool-name` | Minor | `crb-pipeline-to-benchmark.py:191,35` | High |
-| G2 | F3 untouched; new leaderboard `--judge` inherits the bare-vs-prefixed ambiguity (no new bug — the two agree by construction) | Minor | `crb-subset-leaderboard.py:31,49,58-59` | High |
-| G3 | `--verify` sits in the "what to materialize" mutually-exclusive group and silently ignores `--depth`/`--force`/`--dry-run`; F4's four-name problem unclosed | Minor | `crb-materialize.py:259-270` | High |
-| G5 | F6 widened — the new leaderboard `--out` is CWD-relative like the injector's, against `canon-to-crb.py`'s workspace-relative | Minor | `crb-subset-leaderboard.py:47,58-59` | High |
-| G6 | F9 regressed — second in-repo copy of `sanitize_model`, still renamed and undocstringed | Minor | `crb-subset-leaderboard.py:34-35` | High |
-| G7 | `SWEEP_BUDGET` repeats the unit-less money name and is the only env knob missing from the Usage block; its `$75` default stops a 50-PR sweep after ~3 cells | Minor | `run-host.sh:62-65,44-48` | High |
-| G9 | F7 (`created_at`) and F8 (`source_provenance` doc line) unchanged | Minor / Informational | `crb-pipeline-to-benchmark.py:123-128,227-233` | High |
-| G10 | F10, F12, F14 remain open as advisories | Informational | `crb-materialize.py:306`; `crb-pipeline-to-benchmark.py:205-207`; `run-host.sh:100` | High |
+| 1 | `--dry-run` accepted and silently ignored by the destructive `--reset` mode | Inconsistent | `scripts/crb-materialize.py:460-499` | High |
+| 2 | `crb-cell-status.py` exit 1 means both "incomplete" and "misinvoked"; `--help` is read as a path | Inconsistent | `scripts/crb-cell-status.py:90-107` | High |
+| 3 | `missing_cells` written by nobody's reader; leaderboard re-derives it | Inconsistent | `run-host.sh:210`, `crb-subset-leaderboard.py:56-70` | High |
+| 4 | `requested_instances` breaks the `*_cells` family in `run-meta.json` | Inconsistent | `run-host.sh:206-213` | High |
+| 5 | `run-meta.json` key contract declared nowhere checkable; reader's `.get(... ) or` hides typos | Inconsistent | `crb_common.py:28-32`, `crb-subset-leaderboard.py:56-60` | High |
+| 6 | `RUN_META` re-hardcodes the path `DEFAULT_RUNS` already holds | Minor | `crb_common.py:32`, `crb-pipeline-to-benchmark.py:63` | High |
+| 7 | `--run-meta` missing from the leaderboard's `Usage:` docstring | Minor | `crb-subset-leaderboard.py:13-19` | High |
+| 8 | Failure reasons on stdout, unmarked, against the `!!`-on-stderr convention | Minor | `scripts/crb-cell-status.py:94-105` | High |
+| 9 | `attrition()`'s `checked` flag computed and discarded | Minor | `crb-subset-leaderboard.py:40-70,169` | High |
+| 10 | "no manifest entry" reported when only `base` is missing | Minor | `crb-materialize.py:480-487` | High |
+| 11 | `--verify`/`--reset` have no `--all` analog | Minor | `crb-materialize.py:445-457` | Medium |
+| 12 | `write_run_meta` swallows all failures with `\|\| true` | Informational | `run-host.sh:160-220` | High |
+| 13 | `--verify` has no programmatic caller — keep it anyway (read-only form) | Informational | `crb-materialize.py:451-453` | High |
+| 14 | Four names for one entity: instance / cell / slug / PR | Informational | harness-wide | High |
+| 15 | `fetch_traces()` reads as an imperative in a fetch-centric module | Informational | `crb-materialize.py:200-266` | Medium |
+| 16 | `status(d)` unqualified; `main(argv)` unlike the family's four other `main`s | Informational | `scripts/crb-cell-status.py:72,90` | High |
 
 ---
 
 ## Overall Assessment
 
-The fix pass closed the two contract findings that mattered most and left the rest of the list
-approximately where it was. F2 — the only pass-1 finding with a money consequence on a plausible
-path — is closed cleanly and symmetrically, with the derived path verified identical to what the
-injector writes and the escape hatch preserved. F11 is closed as recommended. F1 is half closed:
-the tool now *accepts* `--tool`, but the module's `Usage:` block and the setup doc still teach
-`--tool-name`, so the operator's muscle memory still learns the outlier for the flag that gates
-~2233 paid calls. That is a three-line finish, not a redesign.
+The diff is broadly consistent with the conventions this harness has already established, and in
+two places it actively strengthens them: `RUN_META` went into the shared module rather than being
+hand-copied, and `--reset` was added with the same care (metavar, group membership, docstring
+`Usage:` line, `ap.error` mode list) that the existing flags show. The author clearly read the
+surrounding code. There is no breaking change here: the `run-meta.json` additions are additive and
+the reader tolerates their absence, so an old sweep's provenance still ranks.
 
-Nine of fourteen pass-1 findings are unchanged, which for this audience is largely fine — F12, F14
-and F8 were advisory the first time and should stay unspent. Three, though, moved the wrong way,
-and they share a cause: the new surface was written against the *new* code's local conventions
-rather than against the conventions the pass-1 review had just named. The leaderboard's `--out`
-copied the injector's CWD-relative resolution instead of `canon-to-crb.py`'s workspace-relative
-one (G5); its `sanitize_model` copied the injector's renamed clone instead of the vendored
-original (G6); `SWEEP_BUDGET` copied `BUDGET`'s unit-less name instead of `--max-usd`'s (G7). Each
-is one line. Together they are the same lesson pass 1's Overall Assessment drew — the surfaces are
-locally coherent and never read side by side as one user session — repeated inside the fix for
-that exact observation.
+The pattern in the amber findings is narrower than "didn't survey the conventions" — it is that the
+**new interfaces are missing their failure-mode consistency**, specifically the ability to tell
+"the thing under test failed" apart from "the check itself could not run". F2 (exit 1 means both
+incomplete and misinvoked), F5 (a mistyped key silently disables the attrition control), F9 (the
+`checked` flag discarded) and F1 (`--dry-run` silently inert on the destructive mode) are the same
+shape four times, and it is the shape this branch's own history keeps producing — A14 was an error
+message that misdiagnosed its cause, and `crb-cell-status.py`'s docstring names false-incomplete as
+a $10–40-per-cell cost. Each of the four is a small, local, in-place fix; none needs a redesign.
 
-The genuinely new contract concerns are G4 and G8, and both sit on the same theme: a control that
-*says* more than it *does*. The post-run containment check tells the operator to treat a cell as
-void and then leaves the cell where the resume predicate will bank it; `judge.sh` prints "Refusing
-to send MARTIAN_API_KEY there" and then sends it. Neither is a bug on the happy path, and both are
-in code that is otherwise a clear net improvement in fail-closed discipline — but a message that
-misstates the behaviour is worse than silence on a credential and worse than silence on a
-measurement invariant, and both are a few lines to align.
-
-Consumer impact before the first paid sweep: G4's mass-skip-exit-0 is the one an unattended run
-can actually meet, and G7's `$75` default is the one an operator will meet within the first hour
-and misread as a crash. Everything else is off-default exposure or advisory.
-
----
+For a sweep about to spend $50–2000 on 50 third-party repos, I would gate on F1, F2, and F5. F1 is
+two lines and closes a trap where the safety flag does the unsafe thing. F2 is an argparse swap that
+stops an invocation bug from reading as "re-pay for this cell". F5 is the one whose failure is
+invisible: if a key name drifts, the attrition check — the harness's headline defense against
+reporting a recall number biased in its own favour — turns itself off and prints a clean table. F3
+and F4 should be resolved together and are cheap. Everything from F6 down is fine to carry.
 
 ## Goal-Alignment Note
-- Answered: yes — closure verdicts for all fourteen pass-1 contract findings plus ten findings covering the new CLI, env-var, and generated-artifact surface
-- Out of scope: structural/dependency-direction critique of `verify_containment`, the `--verify` seam, the duplicated constants, and the `judge.sh`/`RUN.md` split — those are in `docs/reviews/architecture-review.md` at the same commit (A1–A9), and I have cross-referenced rather than duplicated the argument; correctness, security and performance of the new docker/git/`judge.sh` invocations (other critics); re-verification of Stage-1's `529ecd2` findings. No git-mutating verification was attempted per the safety constraint; the only execution was a read-only `bats test/crb-injector-sections.bats`.
-- Escalate: (1) **A concurrent agent has uncommitted edits to `runs/review-arms/crb-pipeline/run-host.sh`** (and to `docs/reviews/{performance,security}-review.md`) in the working tree — `SWEEP_BUDGET` reads `250.00` on disk versus `75.00` at `ed68ced`, and line numbers have shifted by ~60. This report is pinned to the committed blob. The orchestrator should decide whether pass-2 critics are permitted to modify production code mid-review, and re-check any finding whose line numbers matter. (2) **G4 is the one to action before an unattended sweep** — a persistent containment break makes all 50 cells skip and the script exit 0; pair it with `architecture-review.md` A1, which owns the other half. (3) G1, G5, G6, G7 are four one-line edits that should land in a single pass; they are the residue of pass 1's central observation and will otherwise be re-found by pass 3.
+- Answered: yes — all four judgement questions addressed (F13 on `--verify`'s place; F3/F4/F5 on the run-meta contract; F2/F8/F16 on `crb-cell-status.py`'s shape; F4/F7/F14 plus the audit table on cross-script naming)
+- Out of scope: the `docs/human-author/LLM Code Review.md` addition and the `docs/working/crb-direction1-setup.md` prose edits (no consumer-facing interface); the three new bats files were read for what they assert about the contracts but not reviewed as a test surface; the containment/security properties of `reset_clone`/`fetch_traces` (security-reviewer's lane — I only assessed their names and call signatures)
+- Escalate: F5 is the only finding whose failure mode is silent and whose blast radius is the headline number the sweep exists to produce — if only one thing is fixed before spending, make it that one. Separately, `test/crb-subset-attrition.bats:47-58` hand-builds its run-meta fixture rather than invoking `run-host.sh`'s `write_run_meta`, so no test binds the writer to the reader; that is a test-strategy gap the orchestrator may want routed to `test-strategy` rather than fixed here.

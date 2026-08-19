@@ -156,8 +156,18 @@ spec = importlib.util.spec_from_file_location("ccs", sys.argv[1])
 m = importlib.util.module_from_spec(spec); spec.loader.exec_module(m)
 root = sys.argv[2]
 complete, incomplete = [], []
+# EXCLUDE the live sweep's own output dir. The glob is dynamic but the counts
+# below are fixed, and run-host.sh writes runs/review-arms/crb-pipeline/<slug>/
+# result.json -- which is NOT gitignored. Without this filter the first paid cell
+# of the sweep turns this suite red, mid-sweep, with a message that reads as "the
+# predicate regressed" -- in the same directory as the containment guard's
+# non-vacuity pin. Found by the 2026-08-19 tech-debt and test-strategy critics,
+# who reproduced it with one synthetic cell file.
+LIVE = os.path.join(root, "runs/review-arms/crb-pipeline")
 for p in sorted(glob.glob(os.path.join(root, "runs/review-arms/**/result.json"),
                           recursive=True)):
+    if p.startswith(LIVE + os.sep):
+        continue
     try:
         d = json.load(open(p))
     except Exception:
@@ -175,4 +185,29 @@ PY
   [[ "$output" == *"mfc-hygiene/rep1"* ]]
   [[ "$output" == *"mfc-postfix/rep2"* ]]
   [[ "$output" == *"mfc-postfix/rep3"* ]]
+}
+
+# Mutation-caught gap: the suite had no fixture in the 300-1000 char band, so
+# reverting STUB_MAX_LEN to 1000 -- verbatim the defect all three k=3 replicates
+# caught -- left every test green. Reported by the 2026-08-19 test-strategy
+# critic's mutation run (30 mutations, 22 caught, 10 missed).
+@test "STUB_MAX_LEN cannot be raised back to 1000 unnoticed" {
+  # 700 chars: above the 300 cutoff, below a 1000 one. A real review this short
+  # does not exist in the corpus (minimum 1,208), so it must count as COMPLETE.
+  check "$(python3 -c '
+import json
+body = "The user must be logged in before this handler runs. " * 13
+assert 300 < len(body) < 1000, len(body)
+print(json.dumps({"subtype": "success", "is_error": False, "result": body}))')"
+  [ "$status" -eq 0 ]
+}
+
+# Exit codes are a consumed contract: run-host.sh re-pays $10-40 on exit 1.
+@test "a usage error exits 2, not 1 — it is not a verdict" {
+  run python3 "$SCRIPT"
+  [ "$status" -eq 2 ]
+  run python3 "$SCRIPT" --help
+  [ "$status" -eq 2 ]
+  run python3 "$SCRIPT" a b c
+  [ "$status" -eq 2 ]
 }

@@ -354,7 +354,12 @@ def reset_clone(dst: Path, slug: str, head: str, base: str):
                    "refs/heads", "refs/tags", "refs/remotes"], cwd=dst).splitlines():
         if ref not in ("refs/heads/review", "refs/heads/main"):
             sh(["git", "update-ref", "-d", ref], cwd=dst)
-    sh(["git", "clean", "-qfdx"], cwd=dst)
+    # -ff (not -f): a single -f SILENTLY SKIPS nested repositories, exits 0, and
+    # -q suppresses the warning. A `git clone <answer-key>` inside /repo would
+    # therefore survive across cells, invisible to FETCH_HEAD, to
+    # `fsck --no-reflogs` (different object store) and to `rev-list --all`.
+    # Found by execution, 2026-08-19 security review.
+    sh(["git", "clean", "-qffdx"], cwd=dst)
     # Restore the object-store baseline LAST: the commits just discarded are
     # unreachable now, and the next cell's fetch_traces() would read them as a
     # deleted fetched ref and void a clean cell.
@@ -452,17 +457,43 @@ def main():
                    help="re-assert answer-key containment on existing clone(s) and exit "
                         "(read-only)")
     g.add_argument("--reset", nargs="+", metavar="SLUG",
-                   help="restore clone(s) to the materialized state, then verify — "
-                        "undoes agent commits/edits, voids only on contamination "
+                   help="DESTRUCTIVE. Restore clone(s) to the materialized state, then "
+                        "verify — undoes agent commits/edits, voids only on contamination "
                         "(used by run-host.sh before and after each review cell)")
+    g.add_argument("--heal", nargs="+", metavar="SLUG",
+                   help="one-shot: bring clone(s) materialized before 2026-08-19 up to the "
+                        "current baseline (drops leftover FETCH_HEAD and the dangling "
+                        "refs/remotes/origin/HEAD), then verify. Run once after upgrading; "
+                        "see the note in main().")
     ap.add_argument("--depth", type=int, default=50, help="shallow clone depth (default 50)")
     ap.add_argument("--force", action="store_true", help="rebuild existing clones")
     ap.add_argument("--dry-run", action="store_true", help="print the selection, clone nothing")
     args = ap.parse_args()
 
-    if args.verify or args.reset:
-        slugs = args.verify or args.reset
+    if args.verify or args.reset or args.heal:
+        # --heal exists because 46a5f17 made fetch_traces() strict, and EVERY clone
+        # materialized before it carries the two signatures it now voids on:
+        # a leftover .git/FETCH_HEAD (written by materialize's own fetches) and a
+        # dangling refs/remotes/origin/HEAD (left by `update-ref -d`
+        # dereferencing the symref). Measured by the 2026-08-19 performance
+        # review: all 5 pilot clones fail the pre-run gate, so the sweep skips
+        # every cell and exits 3 at $0 spent.
+        #
+        # This is deliberately a SEPARATE, OPERATOR-RUN mode rather than an
+        # auto-heal inside reset_clone(): auto-healing would mean the per-cell
+        # gate silently repairs exactly the evidence it exists to detect. Run it
+        # once, then the strict gate is meaningful again.
+        slugs = args.verify or args.reset or args.heal
         resetting = bool(args.reset)
+        healing = bool(args.heal)
+        # --dry-run applies to these modes too. It used to be read only further
+        # down, so `--reset SLUG --dry-run` ran the full destructive reset while
+        # its own help text advertised "clone nothing".
+        if args.dry_run:
+            mode = "--heal" if healing else "--reset" if resetting else "--verify"
+            print(f"--dry-run: would run {mode} on {len(slugs)} clone(s): "
+                  f"{', '.join(slugs)}. Nothing touched.")
+            return
         manifest = json.loads(MANIFEST.read_text()) if MANIFEST.exists() else {}
         bad = []
         for slug in slugs:
@@ -486,7 +517,13 @@ def main():
                 bad.append(slug)
                 continue
             try:
-                note = reset_clone(dst, slug, head, base) if resetting else ""
+                if healing:
+                    scrub_object_store(dst)
+                    note = "healed to the current baseline"
+                elif resetting:
+                    note = reset_clone(dst, slug, head, base)
+                else:
+                    note = ""
                 n_commits, stat = verify_containment(dst, slug, head)
             except Exception as e:
                 print(f"  !! {slug}: CONTAINMENT CHECK FAILED — {e}", file=sys.stderr)
@@ -507,8 +544,12 @@ def main():
         print(f"\n{len(prs)} PRs, {sum(len(e['golden_comments']) for _, _, e, _ in prs)} goldens")
         return
     if not (args.all or args.per_repo or args.slug):
+        # DESTRUCTIVE modes are marked: --reset rewrites refs, index and worktree
+        # and expires reflogs; --force rebuilds a clone from scratch; --heal
+        # expires reflogs and drops FETCH_HEAD. --verify and --list are read-only.
         ap.error("pick one of --list / --per-repo N / --slug ... / --all / "
-                 "--verify SLUG ... / --reset SLUG ...")
+                 "--verify SLUG ... (read-only) / --reset SLUG ... (DESTRUCTIVE) / "
+                 "--heal SLUG ... (DESTRUCTIVE, one-shot)")
 
     sel = select(prs, args)
     print(f"Selected {len(sel)} PR(s), "

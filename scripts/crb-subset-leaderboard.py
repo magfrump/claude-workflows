@@ -56,7 +56,18 @@ def attrition(urls, run_meta_path: Path):
     meta = json.loads(run_meta_path.read_text())
     manifest = json.loads(MANIFEST.read_text()) if MANIFEST.exists() else {}
     cells = meta.get("cells") or {}
-    requested = meta.get("requested_instances") or sorted(cells)
+    # NO silent fallback to `sorted(cells)`. `cells` is by construction the set
+    # that produced output, so falling back to it makes attrition report zero
+    # loss for any schema mismatch — the check would turn itself off with no
+    # message, which is the one failure mode it cannot be allowed to have.
+    # Say so instead.
+    requested = meta.get("requested_instances")
+    if not requested:
+        return ([f"!! subset attrition NOT checked: {run_meta_path} has no "
+                 f"'requested_instances' field (schema mismatch, or written by a "
+                 f"pre-2026-08-19 sweep). The {len(urls)} PR(s) below are the ones "
+                 f"that were JUDGED, which is not necessarily the ones that were run."],
+                False)
     voided = set(meta.get("voided_cells") or [])
     judged = set(urls)
     lost = []

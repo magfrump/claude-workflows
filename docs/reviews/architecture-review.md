@@ -1,610 +1,253 @@
-# Architecture Review — `feat/crb-direction1-harness` (pass 2, fix adjudication)
+# Architecture Review — feat/crb-direction1-harness (iteration 2 of the review-fix loop)
 
-**Commit:** ed68ced
-**Scope:** `git diff 529ecd2..ed68ced` — 7 files (+445/−60). `529ecd2` and earlier are context
-only. This is the **fix pass** for the pass-1 review at `Commit: 529ecd2`.
+**Scope:** `git diff 59733d8..HEAD -- . ':!docs/reviews'` — commits cf6e7c9, 5bd0b09, 46a5f17; 10 files, +1294/−102
 **Date:** 2026-08-18
-**Based on:** pass-1 `docs/reviews/architecture-review.md` (findings 1–10), the rubric at
-`docs/reviews/code-review-rubric-2026-08-18-feat-crb-direction1-harness.md` (R1–R3, A1–A26,
-C1–C11), and the fix commit's own claim ledger.
-**Calibration:** research/experiment harness, small expert-user population, finite lifetime, run
-by hand a handful of times. A finding correct for a shared library may be noise here; I have
-deliberately down-ranked several.
+**Based on:** the orchestrator's fact-check summary for this pass (five Incorrect findings, all doc/comment mechanism errors, closed in 46a5f17). No `code-fact-check` report file for *this* scope was supplied; `docs/reviews/code-fact-check-report-r3.md` exists but predates 46a5f17.
+**Partial scope:** this is narrower than the branch. Work outside it is already committed and is context only. Every "missing" claim below was checked against `git log main..HEAD` / the current file contents, not against the diff alone.
 
-> ⚠️ **No code fact-check report was produced for `ed68ced`.** The Stage-1 fact-check reports in
-> `docs/reviews/` are pinned to `529ecd2`. Claims in comments/docstrings *added by this commit*
-> are therefore unverified except where I read the code directly. Everything below rests on
-> read-only inspection of the working tree; no git-mutating verification was attempted.
+⚠️ **No code fact-check report was provided for this exact diff.** The orchestrator's prose summary of the fact-check was used instead. Architectural claims in the new docstrings were spot-checked against code where load-bearing, but not systematically re-verified.
 
-**Trust-boundary cross-reference:** no-op. `docs/reviews/security-review.md` exists but is pinned
-to `529ecd2` and carries no Trust Boundary Map covering `ed68ced`; module-boundary findings below
-carry no `B*` labels.
+**Trust-boundary cross-reference:** ran the scan. `docs/reviews/security-review-*.md` matches four files, the most recent being `security-review-2026-07-31-r2.md` — a review of `exp/cross-model-openrouter-sweep`, whose Trust Boundary Map (B1–B5: OpenRouter egress, dry-run prompt files, judge prompts, committed findings) describes a different subsystem entirely. No security-reviewer output exists for the CRB harness. The cross-reference is therefore treated as a **no-op**; the module-boundary findings below carry no boundary labels. This is a gap worth escalating, not a clean bill: the harness's central invariant *is* a containment/trust property, and it has never been through `security-reviewer`.
 
----
+## Dependency Map
 
-## Verdict Table — pass-1 findings
-
-The primary output of this pass. Detail for anything not "closed" is in the Findings section.
-
-| Pass-1 finding | Severity (pass 1) | Verdict | One-line reason |
-|---|---|---|---|
-| 1 — containment asserted once, no seam | Structural | **Partially closed** | Seam built and called both sides; post-run verdict is advisory-only and is not recorded in the cell dir, as the recommendation required (→ A1) |
-| 2 — rubric markdown parsed by substring | Coupling | **Partially closed** | Consumer side anchored + guarded by a test; the producer (`skills/code-review/SKILL.md`) still carries no declaration (→ A3) |
-| 3 — leaderboard hand-copies injector defaults | Coupling | **Closed on harm, regressed on mechanism** | Runtime desync fixed by flags; the hand-copy went from one derived path to three duplicated constants + a duplicated function (→ A2) |
-| 4 — cell layout in bash heredocs | Coupling | **Not closed; marginally worse** | A fifth heredoc added; harvest grew in complexity while staying inline and unrunnable standalone (→ A4) |
-| 5 — two writers of `review_comments` | Coupling | **Not closed** | Deliberately deferred; untouched |
-| 6 — manifest has no schema marker / validating reader | Minor | **Partially closed** | Docstring key list synced to the writer; `--verify` adds a *third* consumer that reads the manifest unguarded and degrades silently (→ A5) |
-| 7 — arm split `crb/` vs `crb-pipeline/`; undeclared divergence from `prep-cc-review-clones.sh` | Minor | **Not closed; legibility regressed** | Split unexplained; "guard (b)" now means three different things across two files (→ A6) |
-| 8 — variant identity spread across `--sections`/`--tool-name`/`--out` | Minor | **Not closed (doc-only mitigation)** | Setup doc now explains the separate work dir; no coupling check in code |
-| 9 — lossy `slug` primary key | Informational | **Not closed (not claimed)** | Charset validation added for a different reason (A6/security); collision semantics unchanged |
-| 10 — undeclared cwd-relative `RESULTS_DIR`; `/workspace` hardcoded in the runbook | Informational | **Split verdict** | `judge.sh` encodes the cwd dependency mechanically and interpolates paths correctly; `RUN.md` still hardcodes `/workspace` twice — the two runbooks now disagree (→ A7) |
-
-**New surface reviewed fresh:** `verify_containment()` + `--verify` (A1, A2, A5), `judge.sh`
-(A7, A8), `SWEEP_BUDGET` (see api-consistency review), `normalize_section()` (A3),
-`test/crb-injector-sections.bats` (What Looks Good + A9).
-
----
-
-## Dependency Map (delta only)
-
-Pass 1 described a four-stage line coupled *only* through the filesystem: "no stage imports
-another." That is no longer true. This commit adds one process-level edge and one generated
-artifact:
+The arm is a four-stage pipeline. Dependencies should flow forward (each stage reads the previous stage's artifacts) and all four stages should depend on the shared identity module, never on each other's internals.
 
 ```
-scripts/crb-materialize.py
-  ├─ verify_containment(dst, slug, head)          [NEW public-ish function]
-  └─ --verify SLUG ...                            [NEW CLI mode, read-only, early-return]
-        ▲
-        │ exec (2x per cell: pre-run, post-run)   [NEW EDGE — runner depends on stage-1 CLI]
-        │
-runs/review-arms/crb-pipeline/run-host.sh
-        │ reads MANIFEST (keys) — unchanged
-        │
-scripts/crb-pipeline-to-benchmark.py
-  ├─ normalize_section()                          [NEW public function]
-  └─ writes  <out>/RUN.md      (prose runbook, pre-existing)
-     writes  <out>/judge.sh    [NEW generated executable, 0755, absolute host paths baked in]
-        │
-scripts/crb-subset-leaderboard.py
-  ├─ DEFAULT_OUT / DEFAULT_JUDGE                  [NEW — literal duplicates of the injector's]
-  └─ sanitize_model()                             [NEW — 2nd in-repo copy, 5th overall]
+stage 1  scripts/crb-materialize.py     ──writes──▶ external/crb-eval/<slug>/  (clones)
+                                        ──writes──▶ runs/review-arms/crb/instances.json  (MANIFEST)
+stage 2  runs/.../crb-pipeline/run-host.sh
+             ├─ calls  crb-materialize.py --reset       (pre-run and post-run)
+             ├─ calls  scripts/crb-cell-status.py       (resume predicate)   [new, extracted]
+             └─ writes $OUT/<slug>/{result.json, review.md, artifacts/, attempts.jsonl,
+                                     CONTAINMENT_FAILED}
+                       $OUT/run-meta.json                                    [now trap-written]
+stage 3  scripts/crb-pipeline-to-benchmark.py  reads run cells + MANIFEST → benchmark_data.json
+stage 4  scripts/crb-subset-leaderboard.py     reads evaluations
+             └─ NEW: also reads run-meta.json (stage 2) + MANIFEST (stage 1)   ◀── back-edge
+
+shared   scripts/crb_common.py  — imported by stages 3 and 4 only. Stages 1 and 2 do not
+                                  import it (stage 2 cannot: it is bash).
 ```
 
-Direction of the new edge is **downstream → upstream** in pipeline order (stage 2 calls stage 1),
-which is the correct direction and introduces no cycle: `crb-materialize.py` still knows nothing
-about the runner beyond one comment. The concern is not the direction but the *granularity* —
-the runner now depends on a whole CLI whose other modes clone, `shutil.rmtree`, and `git gc`
-(A2).
+Two structural facts frame everything below:
 
----
+1. **Stage 4 gained a back-edge over stage 3.** Before this diff, the leaderboard depended only on the benchmark's evaluations file. `attrition()` now reaches back past the injector to the run-host provenance file and the materializer's manifest, and reconstructs — by inference — outcomes that the injector observed directly and did not persist.
+2. **`crb_common.py` is shared by the Python stages but not by the bash stage.** `RUN_META` is a constant naming a file that only bash writes. The module's stated charter ("one definition, imported by both") is structurally unattainable for this particular constant.
+
+The direction of the containment work is the opposite and is good: logic moved *out* of `run-host.sh` heredocs and *into* importable, fixture-backed Python (`crb-cell-status.py`, four new functions in `crb-materialize.py`). That is the right way for this arm to pay down A20.
 
 ## Findings
 
-#### A1. The containment guard now has a seam and is called, but its post-run verdict is advisory prose with no artifact and no enforcement
+#### `run-meta.json` is a cross-module contract that no module defines, and both of its reader-side defenses fail open
 
-**Severity:** Coupling (down from pass-1's Structural — the seam exists and the pre-run arm is
-enforcing)
-**Location:** `runs/review-arms/crb-pipeline/run-host.sh:177-178`, `:236-237`;
-`scripts/crb-materialize.py:167-195`
-**Move:** #2 (responsibility boundaries) / #3 (module boundary)
+**Severity:** Structural
+**Location:** `runs/review-arms/crb-pipeline/run-host.sh:160-217`, `scripts/crb-subset-leaderboard.py:40-79`, `scripts/crb_common.py:28-32`
+**Move:** #1 (dependency direction), #2 (responsibility boundaries)
 **Confidence:** High
-**Legibility-target:** for-author
 
-**Evidence** — the two call sites are not symmetric:
+`run-meta.json` is now a real inter-stage contract — one bash writer, one Python reader, with a third module (`crb_common`) owning only its *path*. Its schema exists solely as a `json.dump` literal inside a heredoc, and the reader defends against schema mismatch by falling back rather than by failing:
 
-```bash
-  python3 "$ROOT/scripts/crb-materialize.py" --verify "$id" || {
-    echo "$id: PRE-RUN containment check failed — skipping cell" >&2; continue; }
+```python
+    requested = meta.get("requested_instances") or sorted(cells)
 ```
 
+`cells` is built by scanning `os.listdir(out)` for directories that contain a `result.json`. So on any run-meta that lacks `requested_instances` — one written by a pre-cf6e7c9 checkout, a hand-edited file, or a future schema rename — `requested` becomes, by construction, exactly the set of cells that *did* produce output. `attrition()` then iterates that set and reports zero attrition. The control silently reports "nothing was lost" precisely on the inputs it cannot parse.
+
+The second fail-open is on a **documented usage pattern**, not a hypothetical. `run-host.sh:45-48` advertises subset invocation (`... run-host.sh discourse-graphite-PR4 grafana-PR79265`), and `write_run_meta` records only the current invocation's instances:
+
 ```bash
-  python3 "$ROOT/scripts/crb-materialize.py" --verify "$id" \
-    || echo "$id: POST-RUN containment check FAILED — treat this cell's result as void" >&2
+  python3 - "$OUT/run-meta.json" "$PAYLOAD_REF" "$PAYLOAD_SHA" "$MODEL" \
+           "$CC_VERSION" "$OUT" "${INSTANCES[*]}" <<'EOF' || true
+```
+```python
+req = requested.split()
+json.dump({... "requested_instances": req,
+           "missing_cells": [s for s in req if s not in cells], ...
 ```
 
-The pre-run arm enforces. The post-run arm emits a sentence to a scrollback and then falls
-through to the per-cell summary and the sweep-budget gate as if nothing happened. Concretely,
-after a post-run failure:
+`cells` accumulates across invocations (it rescans `$OUT`), but `requested_instances` does not — it is overwritten on every run. A 50-PR sweep executed as several subset invocations, or resumed after the `SWEEP_BUDGET` halt the trap was added to survive, ends with `requested_instances` naming only the final batch. Attrition is then measured against 2 slugs instead of 50 and reports clean. The failure mode and the recovery mode collide: the very scenario the EXIT trap exists to serve (a partial sweep that halts and is resumed) is the scenario that empties the attrition denominator.
 
-- `$dest/result.json` is written and stays. The resume predicate
-  (`run-host.sh:150-159`) tests `num_turns > 0 AND NOT is_error AND subtype == "success"` —
-  containment is not part of it — so the **next** sweep prints
-  `completed result exists, skipping` and banks the void cell as good.
-- `run-meta.json` (unchanged by this commit) records model, payload ref and cost but carries no
-  containment field, so nothing in the sweep's provenance says the check ever ran, let alone
-  what it said.
-- The injector (`crb-pipeline-to-benchmark.py:load_cell`) reads `review.md` / `artifacts/` and has
-  no way to learn the cell was void.
+Both defects share one cause: the schema has no owner. Nothing declares its fields, nothing versions it, and the reader's compatibility shim is a bare `or`. Because this is the file that backs the "our recall is not selected for pipeline success" caveat on a $50–2000 sweep, a silent clean read here is the most expensive quiet failure in the diff.
 
-Pass 1's recommendation was explicit on this point: "*aborting the cell on failure. Record the
-verdict in the cell dir so provenance travels with the result.*" Half the recommendation landed.
-The half that did not is the half that survives the terminal session — and "the pilot's recall
-is suspiciously high" is still not a failure mode you can diagnose after the fact, because the
-only record that containment broke is a line of stderr that nobody keeps.
+**Recommendation:** Give the file an owning module — `scripts/crb-run-meta.py` with a `write(out, **provenance)` and a `read(path)` that raises on a missing `schema_version` or missing `requested_instances` — and have `run-host.sh` call it as a subprocess instead of carrying the writer inline. Make `requested_instances` accumulate (union with the existing file's value) rather than overwrite, and make `attrition()` refuse to report "clean" when the key is absent, exactly as it already refuses when the whole file is absent (`crb-subset-leaderboard.py:52-57` is the correct pattern — apply it one level deeper).
 
-There is also a mass-skip shape worth naming: a containment break that *persists* (e.g. a remote
-re-added and left in place) makes every subsequent cell's **pre-run** check fail, each one
-`continue`s, and the sweep exits 0 having reviewed nothing. That is the same exit-0-after-skipping
--everything hole the api-consistency review's F5 named, now with a second trigger.
-
-**Recommendation:** Write the verdict where the result lives — one `$dest/containment.json`
-(`{"pre": "ok", "post": "failed", "detail": "..."}`), have the resume predicate refuse to skip a
-cell whose `post` is not `ok`, and fold a `containment` roll-up into `run-meta.json`. If a
-post-run failure should not abort the sweep (reasonable — one bad cell shouldn't kill 49 good
-ones), then at minimum `mv "$dest" "$dest.void-$(date +%s)"` so the next run cannot inherit it.
-Separately, track a skip counter and exit non-zero if every requested instance was skipped.
-
----
-
-#### A2. Finding 3's harm is closed, but its mechanism was made worse: the fix commit added a second in-repo `sanitize_model` and two duplicated constants, held together by a comment
+#### The leaderboard reaches back over the injector to re-derive outcomes the injector observed and discarded
 
 **Severity:** Coupling
-**Location:** `scripts/crb-subset-leaderboard.py:30-35` vs `scripts/crb-pipeline-to-benchmark.py:57-60,80-81`
-**Move:** #7 (coupling surface)
+**Location:** `scripts/crb-subset-leaderboard.py:59-76`; the discarded knowledge is at `scripts/crb-pipeline-to-benchmark.py:233-248`
+**Move:** #4 (layer violations), #7 (coupling surface)
 **Confidence:** High
-**Legibility-target:** for-author
 
-**Evidence** — the leaderboard now holds its own copies:
-
-```python
-# Kept in sync with crb-pipeline-to-benchmark.py's defaults. --judge/--out
-# there change where evaluations land, so both are flags here too rather than
-# a hard-coded path that silently misses and reports "run step 3 first".
-DEFAULT_OUT = WORKSPACE / "runs/review-arms/crb/offline-work-50"
-DEFAULT_JUDGE = "claude-opus-4-5-20251101"
-
-
-def sanitize_model(model: str) -> str:
-    return model.strip().replace("/", "_")
-```
-
-against the injector, unchanged:
+`attrition()` explains each lost cell by re-deriving the reason from two upstream artifacts:
 
 ```python
-DEFAULT_OUT = WORKSPACE / "runs/review-arms/crb/offline-work-50"
-MANIFEST = WORKSPACE / "runs/review-arms/crb/instances.json"
-DEFAULT_JUDGE = "claude-opus-4-5-20251101"
+        if slug in voided:
+            why = "voided by a post-run containment failure"
+        elif slug not in cells:
+            why = "no cell produced (missing clone, or pre-run containment failure)"
+        elif not url:
+            why = f"not in {MANIFEST.name} — cannot map the slug to a PR"
+        else:
+            why = "ran, but has no judged row (no reviewable output, or not injected)"
 ```
 
-```python
-def sanitize_model(model: str) -> str:
-    return model.strip().replace("/", "_")
-```
+The disjunctions in the second and fourth branches are the tell: the leaderboard is guessing between causes it cannot distinguish. The injector *can* — it prints each one exactly, per cell, at `crb-pipeline-to-benchmark.py:235/239/242/247` (`not in MANIFEST`, `not in benchmark_data.json`, `cell voided`, `no reviewable output (prov)`) — and then throws the information away to stderr. So stage 4 has been coupled to stage 1's manifest schema and stage 2's provenance schema in order to reconstruct, lossily, something stage 3 already knew. Three modules now change together whenever an outcome category is added: run-host's `voided_cells`, the injector's skip branches, and this if/elif chain, with nothing forcing them to stay in agreement.
 
-**Assessed honestly, as asked:** the *runtime* failure pass-1 finding 3 described is genuinely
-gone. `--out`/`--judge` compose on both sides, the constructed path
-(`Path(args.out) / "results" / sanitize_model(args.judge) / "evaluations.json"`) is
-character-for-character what the injector writes to `jdir`, and `--evaluations` still short-
-circuits both. That is a real close, and the flag design is right.
+There is also a category the chain cannot express at all: a cell the injector rejected because `url not in data` (benchmark_data.json) lands in the catch-all "no reviewable output, or not injected", which reads to a human as a pipeline failure when it is a data-mapping failure.
 
-But the *mechanism* the finding named — "a hand-copied projection … nothing says its default is
-derived from another file's defaults" — is now larger, not smaller. Before: one derived path.
-After: two duplicated literals plus a duplicated four-token function, with a prose comment
-("Kept in sync with…") as the only linkage. A comment is documentation, not a mechanism; nothing
-fails if `DEFAULT_JUDGE` moves in one file, and the resulting breakage is the exact
-"no evaluations at … — run step 3 first" misdiagnosis this commit set out to eliminate.
+**Recommendation:** Have the injector write an `injection-report.json` next to the work dir (`{slug: {url, status, reason, n_comments}}`) — it already computes every field — and have `attrition()` read that plus the run-meta requested list, dropping the manifest dependency and the inference chain. That restores forward-only dependency flow and puts each reason where it was observed.
 
-**On the deferral of the shared `crb_*` module:** partially defensible. For rubric item C7 — the
-full module absorbing the manifest loader, the cell-layout names, and the benchmark review
-constructor (findings 4, 5, 6) — the tech-debt lifetime evidence is good and I would not overrule
-it inside a sweep window. But that argument does not cover the three constants *this commit
-chose to hand-copy*. A ~10-line `scripts/crb_paths.py` holding `WORKSPACE`, `DEFAULT_OUT`,
-`DEFAULT_JUDGE`, `sanitize_model` is not the C7 refactor; it is smaller than the comment that
-replaced it, touches two files, and is the one place where the fix commit supplied its own
-counter-evidence about drift.
-
-**Recommendation:** Either extract the four names into `scripts/crb_paths.py` and import from
-both, or — if even that is unwanted mid-sweep — add three assert lines to
-`test/crb-injector-sections.bats` (which already loads the injector as a module) that import both
-scripts and assert `DEFAULT_OUT`, `DEFAULT_JUDGE`, and `sanitize_model("a/b")` agree. Three lines
-turn the comment into a mechanism at zero refactor risk.
-
----
-
-#### A3. Finding 2's failure mode is closed and now tested; the contract is still declared on only one side
-
-**Severity:** Minor (down from Coupling)
-**Location:** `scripts/crb-pipeline-to-benchmark.py:63-78,114-121`; producer
-`skills/code-review/SKILL.md`; test `test/crb-injector-sections.bats`
-**Move:** #3 (module boundary)
-**Confidence:** High
-**Legibility-target:** for-author
-
-**Evidence:**
-
-```python
-def normalize_section(title: str) -> str:
-    """Rubric heading -> comparable key. Strips the emoji and punctuation the
-    template decorates headings with ("## 🔴 Must Fix" -> "must fix")."""
-    return re.sub(r"[^a-z ]", "", title.lower()).strip()
-```
-
-```python
-    wanted = {normalize_section(s) for s in sections}
-    for section, header, rows in md_tables(md):
-        if normalize_section(section) not in wanted:
-            continue
-```
-
-**Does the test constitute declaring the contract?** Partly, and more than I expected. The
-substring hole is genuinely gone — `normalize_section("↩️ Considered Overrides")` is
-`"considered overrides"`, which is not in the wanted set, so the exclusion no longer depends on a
-column name owned by another file. And
-`test/crb-injector-sections.bats:"renaming the Considered Overrides column to Finding is inert"`
-converts the original silent-injection scenario into a red test. I confirmed the fixture at
-`test/skills/code-review/rubric-current-format.md:47-48` really does contain
-`| Prior finding |` and one data row beneath it, so that test is non-vacuous, and the suite passes
-8/8.
-
-What is still missing is producer-side discoverability, which is what "declared" meant. Nothing
-in `skills/code-review/SKILL.md` says its rubric headings are a published interface. An author
-editing that template gets a CI failure (good) but no signal at the point of edit about *why*
-their cosmetic rename broke a benchmark harness — and the failure surfaces in a test file whose
-name (`crb-injector-sections`) does not obviously belong to them. The cheap half of pass-1's
-recommendation — a one-line `<!-- consumers: scripts/crb-pipeline-to-benchmark.py -->` next to the
-template — was not done and costs one line.
-
-`parse_location()` remains dead for two of the three target sections (pass-1 finding 2's second
-bullet); unaddressed and unclaimed, still harmless.
-
-**Recommendation:** Add the consumer comment to `skills/code-review/SKILL.md` next to the rubric
-table template, naming both `scripts/crb-pipeline-to-benchmark.py` and
-`test/crb-injector-sections.bats`. One line closes this finding.
-
----
-
-#### A4. Finding 4 is untouched and slightly worse: a fifth inline heredoc, and a harvest that grew logic while staying unrunnable standalone
+#### `crb_common.RUN_META` is not a single definition, and the same directory is now defined twice more
 
 **Severity:** Coupling
-**Location:** `runs/review-arms/crb-pipeline/run-host.sh:216-231`, `:246-263`
-**Move:** #2 (responsibility boundaries) / #7 (coupling surface)
+**Location:** `scripts/crb_common.py:28-32`; `scripts/crb-pipeline-to-benchmark.py:63`; `runs/review-arms/crb-pipeline/run-host.sh:54`
+**Move:** #2 (responsibility boundaries), #3 (module boundary)
 **Confidence:** High
-**Legibility-target:** for-author
 
-**Evidence** — the sweep-budget gate is a new sixth embedded Python program:
+`crb_common.py`'s docstring justifies its own existence on a specific ground: a value was "hand-copied into a second file, where [it is] held in agreement by a comment", so "one definition, imported by both". `RUN_META` does not satisfy that test. Its *writer* is bash and cannot import the module:
 
 ```bash
-  python3 - "$OUT" "$SWEEP_BUDGET" <<'EOF' || { echo "SWEEP BUDGET EXCEEDED — stopping. Raise SWEEP_BUDGET to continue." >&2; exit 2; }
-import json, os, sys
-out, cap = sys.argv[1], float(sys.argv[2])
-total = 0.0
-for name in os.listdir(out):
-    rp = os.path.join(out, name, "result.json")
+OUT="$ROOT/runs/review-arms/crb-pipeline"        # run-host.sh:54
+```
+```python
+RUN_META = WORKSPACE / "runs/review-arms/crb-pipeline/run-meta.json"   # crb_common.py:32
+DEFAULT_RUNS = WORKSPACE / "runs/review-arms/crb-pipeline"             # injector:63
 ```
 
-and the harvest gained three non-obvious behaviours while remaining inline:
+The path is now stated three times in three languages, held in agreement by nothing. Worse, the two Python statements are in a module and its *own importer*: the injector imports `crb_common` on the next line and still re-derives the same directory. `RUN_META` and `DEFAULT_RUNS` are the same fact.
+
+On the boundary question the answer is split. In *kind*, the boundary is holding — `RUN_META` is a path constant with no behaviour, which is what the docstring scopes the module to. In *effect*, it is the first constant admitted that the module cannot actually unify, which turns the docstring's justification into an unearned claim about it. The consequence is concrete: change `OUT` in `run-host.sh` and the leaderboard's `--run-meta` default silently points at a file nobody writes — at which point finding #1's fail-open path activates and attrition reports clean.
+
+**Recommendation:** Define `RUNS_DIR` in `crb_common` once, derive `RUN_META = RUNS_DIR / "run-meta.json"` and `DEFAULT_RUNS = RUNS_DIR` from it, and have `run-host.sh` obtain `OUT` from `python3 -c 'import crb_common; print(crb_common.RUNS_DIR)'` at startup rather than restating the literal. If that shell round-trip is judged too clever, keep the literal in bash but add a startup assertion that it equals the Python constant — that converts a silent divergence into a loud one.
+
+#### The post-run containment gate calls the mutating mode where its job is detection, leaving `--verify` unexercised
+
+**Severity:** Coupling
+**Location:** `runs/review-arms/crb-pipeline/run-host.sh:262`, `:359`; `scripts/crb-materialize.py:451-457`, `:489`
+**Move:** #5 (interface segregation), #8 (extension points)
+**Confidence:** Medium-High
+
+The API separation is right: `--verify` is read-only, `--reset` repairs-then-asserts, and `verify_containment`'s own docstring states the split ("`--verify` is the read-only form for a human"). The problem is that the pipeline calls the fused form at *both* gates:
 
 ```bash
-  (cd "$clone" && git status --porcelain=v1 -z --untracked-files=all) \
-    | tr '\0' '\n' | cut -c4- | grep -E '\.(md|json)$' \
+  python3 "$ROOT/scripts/crb-materialize.py" --reset "$id" || {     # pre-run, :262
+```
+```bash
+  if ! python3 "$ROOT/scripts/crb-materialize.py" --reset "$id"; then   # post-run, :359
 ```
 
-The budget gate is *re-derivable sweep state* — it walks `$OUT/*/result.json` and sums
-`total_cost_usd`, which is exactly the roll-up `run-meta.json` performs, computed a second time,
-inline, with no way to ask "what has this sweep spent?" without starting a sweep. That is
-finding 4's shape reproduced in a new place: pure JSON transforms of files on disk, needing
-neither docker nor bash, unavailable to the injector, and unexercisable without a live container.
-The `-z`/`cut -c4-`/`--no-dereference` harvest changes are all correct fixes (A16/A7) but they
-raise the amount of untested logic living in a heredoc rather than lowering it.
+Two consequences. First, the two gates are now the same operation run twice per cell, ~1.5 times more than needed: the pre-run reset already guarantees a clean start, so the post-run call's only remaining job is *detection* of what this cell did. Calling `--reset` there means the assertion (`verify_containment`) runs against a tree that `reset_clone` has just normalised, so on the benign path the post-run verify is tautological — its entire discriminating power comes from `reset_clone`'s three `raise RuntimeError` branches, and `verify_containment` at that point can only pass. Second, `--verify` is now called by no automated caller and by no test path that mirrors production, so the read-only assertion can rot without any suite going red — it is documented as "for a human", which in practice means "for nobody".
 
-Calibrated down from a stronger call because the fixes themselves are right and the alternative
-(three new script files mid-sweep) carries its own risk. This is a "the debt grew while you were
-paying other debt" note, not a blocker.
+On the direct question — should detection and repair be separable for a control whose job is to detect tampering: they *are* separable in the API, but only one-directionally (you can detect without repairing; you cannot repair without also asserting), and the pipeline uses only the fused direction. For a tamper-detection control that is the wrong default: the detecting call should not be the one holding the power to change the evidence.
 
-**Recommendation:** When the sweep window closes, lift the budget gate and the roll-up into one
-`scripts/crb-sweep-status.py <out-dir>` that both the loop and a human can run. Doing that alone
-also gives the operator the "how much have I spent" answer that currently requires finishing.
+**Recommendation:** Make the post-run gate `--verify` (pure detection → void on failure) and move the between-cells restoration to the pre-run `--reset` only, which already runs. That is one fewer mutation per cell, gives each gate one job, and puts `--verify` back on the exercised path. If a post-run reset is wanted for disk hygiene, run it *after* the verify verdict is recorded, not as the verdict.
 
----
+#### The void protocol has three encodings, three separate readers, and no module or test that asserts they agree
 
-#### A5. `--verify` makes the manifest a third-consumer contract and reads it unguarded, degrading silently to a vacuous check
+**Severity:** Coupling
+**Location:** `runs/review-arms/crb-pipeline/run-host.sh:359-372`; readers at `scripts/crb-pipeline-to-benchmark.py:241`, `scripts/crb-cell-status.py:65-79`, `scripts/crb-subset-leaderboard.py:60`
+**Move:** #2 (responsibility boundaries), #7 (coupling surface)
+**Confidence:** Medium-High
+
+Voiding a cell writes the fact in three places, and each downstream consumer reads a different one: the injector reads the `CONTAINMENT_FAILED` sentinel file, the resume predicate reads the rewritten `result.json`, and attrition reads `run-meta.json`'s `voided_cells`. Redundancy here is defensible — a void must be sticky — but nothing owns the protocol. In particular the rewrite is best-effort:
+
+```bash
+    python3 - "$dest/result.json" <<'EOF' || true
+...
+d["is_error"] = True
+d["subtype"] = "containment_failed"
+```
+
+and `crb-cell-status.py` — the module the diff *specifically extracted so this predicate would have fixtures* — cannot see the sentinel at all, because its interface takes a `result.json` path rather than a cell directory:
+
+```python
+    if len(argv) != 2:
+        sys.exit("usage: crb-cell-status.py <result.json>")
+```
+
+So the newly-testable predicate rejects a voided cell only *coincidentally*, via an `is_error` flag that an unrelated, `|| true`-guarded heredoc happened to write. `test/crb-cell-status.bats`'s 14 cases cover budget exhaustion, quota stubs, the length floor and malformed JSON, but none covers a containment-voided cell — the extraction moved the predicate to where it could be tested and then left this case untested, which is the one whose failure mode is "bank a contaminated cell and ship it".
+
+**Recommendation:** Change the predicate's interface to take the cell directory, check `CONTAINMENT_FAILED` first, and add a bats case asserting a voided cell is rejected by the sentinel alone (result.json untouched) — that makes the sticky-void property a property of the predicate rather than a side effect of the rewrite succeeding.
+
+#### `write_run_meta` became a function but not a mode — provenance is still not re-derivable
 
 **Severity:** Minor
-**Location:** `scripts/crb-materialize.py:273-295`, `:167-195`
-**Move:** #3 (module boundary)
+**Location:** `runs/review-arms/crb-pipeline/run-host.sh:159-218`, `:220`, `:432`
+**Move:** #8 (extension points)
 **Confidence:** High
-**Legibility-target:** for-author
 
-**Evidence:**
+The trap conversion is the right fix and closes the pre-mortem's hole. But the function is reachable only from inside a live invocation:
 
-```python
-        manifest = json.loads(MANIFEST.read_text()) if MANIFEST.exists() else {}
+```bash
+META_WRITTEN=""
+write_run_meta() {
+  if [ -n "$META_WRITTEN" ]; then return 0; fi
 ```
 
-```python
-                # Pin to the manifest's recorded head where we have it, so a
-                # clone whose `review` ref was moved fails instead of passing
-                # against its own new tip.
-                head = (manifest.get(slug) or {}).get("head")
-                n_commits, stat = verify_containment(dst, slug, head)
-```
+Everything it computes is derived from `$OUT` on disk plus five scalars, so there is no reason regeneration must ride along with a sweep. After a lost or truncated run-meta — the exact aftermath of the crash cases the trap was added for — the only way to get provenance back is to re-run cells that already cost money. This is A20's "harvest and run-meta are not re-runnable after a partial sweep" item, and the diff got within three lines of closing it.
 
-```python
-    if head is None:
-        head = sh(["git", "rev-parse", "review"], cwd=dst)
-```
+**Recommendation:** Add `RUN_META_ONLY=1` (or a `--meta-only` first argument) that runs the payload resolution, calls `write_run_meta`, and exits before the docker preflight. Cheap, and it also gives the run-meta writer a test seam it currently has none of.
 
-The comment states the reason the pinned head matters: an agent that moved the `review` ref must
-fail. The code then supplies the fallback that defeats exactly that, whenever the manifest is
-absent or lacks the slug — and does so **silently**, printing `containment ok` either way. Guard
-(a) becomes `git rev-list --all --not <current review tip>`, which cannot fail on commits the
-agent itself added to `review`.
-
-On the happy path this is unreachable: `run-host.sh:63` hard-exits without a manifest and derives
-`INSTANCES` from its keys. But it is precisely pass-1 finding 6's harm (a durable cross-stage
-contract with no validating reader) landing in the *new* code, and this is now the third consumer
-binding to a different subset of the manifest. A verification routine that can quietly weaken
-itself is the wrong kind of routine to be permissive.
-
-**Recommendation:** Make the fallback loud — `print(f"  !! {slug}: no manifest head; verifying
-against the clone's own review tip (weaker check)", file=sys.stderr)` — or refuse: require a
-manifest head unless an explicit `--unpinned` is passed. Sync this with finding 6's
-`load_manifest()` helper whenever that lands.
-
----
-
-#### A6. "Guard (b)" now names three different checks across two files, and the divergence from `prep-cc-review-clones.sh` is larger and still undeclared
+#### `attrition()` returns a flag nobody reads; `missing_cells` is written and never read
 
 **Severity:** Minor
-**Location:** `scripts/crb-materialize.py:167-195` vs `scripts/prep-cc-review-clones.sh:40-58`
-**Move:** #2 (responsibility boundaries)
+**Location:** `scripts/crb-subset-leaderboard.py:40`, `:169`; `runs/review-arms/crb-pipeline/run-host.sh:210`
+**Move:** #5 (interface segregation)
 **Confidence:** High
-**Legibility-target:** for-author
-
-**Evidence** — the new docstring re-letters the guards:
 
 ```python
-    Guard (a) nothing reachable outside the reviewed head's ancestry;
-    (b) no remote survives (a re-added remote is the route by which a reviewing
-        agent could fetch the merged upstream fix — the answer key);
-    (c) the review range is non-empty and the blobs its diff touches are present
-        locally, so a partial/broken clone fails here rather than mid-review.
+def attrition(urls, run_meta_path: Path):
+    """(lines, checked) — sweep cells that are NOT in the judged subset.
 ```
-
-`prep-cc-review-clones.sh` calls its guard (b) a **tree-contents check for `docs/reviews/`
-answer-key leakage**. Pre-fix `crb-materialize.py` called its guard (b) the **non-empty-range**
-check. Post-fix, guard (b) is **no remotes**, and the non-empty-range check has been renamed (c).
-So the shared vocabulary between the two scripts — which pass-1 finding 7 already flagged as
-undeclared divergence — now has one label with three referents, and a reader comparing the two
-files will silently mis-map them. The prior art's actual guard (b) is still absent, still
-unjustified.
-
-Pass-1 finding 7's other half (why the manifest lives in `crb/` while cells live in
-`crb-pipeline/`) is likewise unaddressed; the setup doc's new content covers the per-cell guards
-but not the directory split.
-
-Honest counterweight: the new guard (b) is a genuinely good addition. "No remote survives" is a
-sharper statement of the invariant than the ref-scrub alone, and the commit message reports it
-was proven non-vacuous by adding a remote. That is the right kind of verification.
-
-**Recommendation:** Rename the guards to what they check (`no_stray_refs`, `no_remotes`,
-`nonempty_range`) rather than letters, and add two sentences to the setup doc's stage table:
-which `prep-cc-review-clones.sh` guards were deliberately not carried over, and why `crb/` vs
-`crb-pipeline/`.
-
----
-
-#### A7. Two runbooks now describe the same four steps, and they disagree on portability and on the endpoint guard
-
-**Severity:** Minor
-**Location:** `scripts/crb-pipeline-to-benchmark.py:305-330` (`RUN.md`) vs `:332-371` (`judge.sh`)
-**Move:** #4 (layer violations) / #8 (extension points)
-**Confidence:** High
-**Legibility-target:** for-author
-
-**Evidence** — `RUN.md`, unchanged by this commit apart from the `--tool` cost note:
-
 ```python
-export PYTHONPATH=/workspace/external/code-review-benchmark/offline   # or: uv sync in offline/
-export MARTIAN_API_KEY="$ANTHROPIC_API_KEY"
-export MARTIAN_BASE_URL=https://api.anthropic.com/v1/
+    att_lines, _checked = attrition(our_urls, Path(args.run_meta))
 ```
 
-```python
-python3 /workspace/scripts/crb-subset-leaderboard.py \\
-```
+`checked` distinguishes "attrition was measured and was zero" from "attrition could not be measured" — the most decision-relevant bit in the function — and the sole caller discards it. Symmetrically, `missing_cells` is written into run-meta and read by nobody; `attrition()` recomputes the same set with more nuance. Two halves of one contract, each carrying a field the other side ignores.
 
-versus `judge.sh`, generated in the same function:
+**Recommendation:** Either consume `checked` (a non-zero exit, or an explicit "attrition: checked, none" line so a silent report is distinguishable from an unchecked one) or drop it from the signature. Same for `missing_cells`: read it or stop writing it.
 
-```python
-export PYTHONPATH="${{PYTHONPATH:-{BENCH}}}"
-```
-
-```python
-python3 {WORKSPACE}/scripts/crb-subset-leaderboard.py \\
-```
-
-`judge.sh` is the better artifact on every axis pass-1 finding 10 raised. It interpolates the
-computed `WORKSPACE`/`BENCH` instead of a literal `/workspace`; its `cd "$(dirname "$0")"`
-*mechanically encodes* the vendored benchmark's undeclared cwd-relative `RESULTS_DIR` convention
-rather than leaving it as a step a human must not skip; and its `case`-guard on
-`MARTIAN_BASE_URL` fails closed where `RUN.md` can only advise. So one of the two runbooks fixed
-finding 10 and the other still contains it.
-
-That is the divergence risk. Two files, same steps, generated side by side, one hardened and one
-not — and the setup doc now points at `judge.sh` as "preferred" while keeping the hand version as
-"equivalent by hand (both footguns are on you)", which is honest but leaves a wrong `/workspace`
-in the artifact a reader is most likely to open first (`RUN.md` is a `.md`; `judge.sh` is not).
-
-Neither runbook, incidentally, names the `RESULTS_DIR = Path("results")` dependency or the
-benchmark commit it was verified against — pass-1 finding 10's actual recommendation.
-
-**Recommendation:** Make `RUN.md` a thin pointer — "run `./judge.sh`; the commands it runs are
-below for reference" — generated from the same f-string variables so `/workspace` cannot survive,
-and add the one-line `RESULTS_DIR` note above the template. If the two must stay independent,
-derive both from one dict of interpolated values.
-
----
-
-#### A8. `judge.sh` is a machine-specific generated executable written into a tracked directory
+#### A20's deliberate carry is *more* defensible after this diff, with one item that should be un-carried
 
 **Severity:** Informational
-**Location:** `scripts/crb-pipeline-to-benchmark.py:368-371`; output path
-`runs/review-arms/crb/offline-work-50/judge.sh`
-**Move:** #3 (module boundary)
-**Confidence:** High
-**Legibility-target:** for-orchestrator-synthesis
+**Location:** `runs/review-arms/crb-pipeline/run-host.sh` (7 heredocs), `scripts/crb-materialize.py` (+212)
+**Move:** #2, #8
+**Confidence:** Medium
 
-**Evidence:**
+The +180 lines to `crb-materialize.py` do not weaken A20's reasoning; they strengthen it. A20 was carried on the argument that a refactor's risk lands inside the sweep window while its benefit lands in a maintenance phase that will not occur. This diff moved logic in the direction that argument endorses: the resume predicate left a heredoc and became a fixture-backed script, and the containment mechanism grew inside the module that already owned it (`crb-materialize.py`) rather than being smeared into new ones. Growth concentrated in the module with the best test coverage in the arm (17 bats cases) is not the growth A20 warned about.
 
-```python
-    judge_path = out / "judge.sh"
-    judge_path.write_text(judge_sh)
-    judge_path.chmod(0o755)
-```
-
-`.gitignore` has no entry covering `runs/review-arms/crb/offline-work-50/` (I checked: no `crb`
-or `offline-work` pattern exists). The generated script bakes in absolute host paths — `{BENCH}`
-and `{WORKSPACE}` resolve to `/workspace/...` on this machine — and the judge model id. So the
-work dir's contract now includes a checked-in, mode-0755, host-specific artifact alongside
-`RUN.md`, and re-running the injector on a different checkout produces a diff that is pure
-environment noise.
-
-This is genuinely minor for a finite-lifetime harness on one machine, and the artifact's value
-(the `MARTIAN_BASE_URL` fail-closed guard, `--tool` on all three steps) clearly exceeds the cost.
-Recorded so the choice is conscious.
-
-**Recommendation:** Either `.gitignore` the generated pair (`runs/review-arms/crb/offline-work-*/judge.sh`)
-or add a `# Generated — machine-specific paths; do not review the diff` header line making its
-churn expected. No action required before the pilot.
-
----
-
-#### A9. The new containment guard is placed inside the payload copy's lifetime, so a skipped cell leaks a temp dir
-
-**Severity:** Minor
-**Location:** `runs/review-arms/crb-pipeline/run-host.sh:168-178`, `:195`
-**Move:** #2 (responsibility boundaries)
-**Confidence:** High
-**Legibility-target:** for-author
-
-**Evidence** — order of operations in the cell body:
-
-```bash
-  INST_HOME=$(mktemp -d); cp -r "$PAYLOAD_SRC/." "$INST_HOME/"; chmod -R u+w "$INST_HOME"
-```
-
-```bash
-  python3 "$ROOT/scripts/crb-materialize.py" --verify "$id" || {
-    echo "$id: PRE-RUN containment check failed — skipping cell" >&2; continue; }
-```
-
-```bash
-  rm -rf "$INST_HOME"
-```
-
-`continue` jumps past the only `rm -rf "$INST_HOME"`, so every pre-run containment failure leaves
-a full copy of `skills/ workflows/ guides/ patterns/ CLAUDE.md` in `$TMPDIR` for the life of the
-session. The same `continue` also leaves an empty `$dest` behind (`mkdir -p "$dest"` runs earlier
-at `:158`). Both are cheap individually; the persistent-break scenario in A1 multiplies them by
-N.
-
-Structurally the point is placement: a cheap read-only precondition was inserted *after* the
-expensive resource acquisition it should gate. Moving it above `mkdir -p "$dest"` costs nothing
-and makes the guard a true precondition.
-
-**Recommendation:** Move the pre-run `--verify` call above `mkdir -p "$dest"` (line 163), before
-`INST_HOME` is created. Optionally add `trap 'rm -rf "$INST_HOME"' RETURN`-equivalent discipline
-if the loop body grows more early exits.
-
----
+The heredoc count in `run-host.sh` is still 7, and the cell-layout duplication A20 names — layout in bash, re-derived by the injector — is untouched by this diff and remains a reasonable carry inside the sweep window. The one item that should *not* stay carried is the run-meta re-runnability half (see the previous finding): the trap conversion already did the hard part, and finishing it is a three-line change with no sweep-window risk.
 
 ## What Looks Good
 
-- **The seam is real and it is called from both sides.** `verify_containment(dst, slug, head)`
-  raising `RuntimeError` and returning `(n_commits, stat)` fits both call sites cleanly:
-  `materialize()` consumes the return value to populate the manifest's `files_changed`/
-  `insertions`/`deletions`, and the `--verify` path consumes it for the human-readable
-  `containment ok — N commit(s), <stat>` line. One function, two consumers, no flag arguments
-  steering internal behaviour — that is a well-shaped extraction, and it removed fifteen lines of
-  welded logic from `materialize()` without changing its behaviour.
-- **Adding "no remote survives" as a guard is a better statement of the invariant than the
-  ref-scrub was.** The ref scrub proves what is *reachable now*; the remote check proves what is
-  *fetchable next*. Pass 1 asked for the guard to be re-assertable; the author additionally
-  sharpened what it asserts, and the commit message reports proving it non-vacuous by adding a
-  remote. That is the discipline this arm needs.
-- **`normalize_section()` is the right size of abstraction.** One regex, one docstring naming the
-  concrete input and output, applied symmetrically to both the wanted set and the observed
-  headings. It fixes the substring hole without inventing a schema.
-- **`test/crb-injector-sections.bats` follows the repo's conventions closely.** `# @category fast`
-  on line 2 matches 20+ sibling suites; it reuses the already-drift-guarded golden at
-  `test/skills/code-review/rubric-current-format.md` rather than minting a fixture (exactly what
-  rubric item C1 asked for); it is hermetic (no network, no repo mutation, `$BATS_TEST_TMPDIR` for
-  the sed output); and the `probe()` helper loading the injector via `importlib` is the cleanest
-  way to unit-test a `main()`-only CLI without introducing pytest — which rubric item C4
-  explicitly warned against. I ran it: 8/8 pass, and the rename test is non-vacuous against the
-  fixture.
-- **`judge.sh` turns two documentation-only controls into mechanical ones.** The
-  `MARTIAN_BASE_URL` `case` guard and `--tool` on all three steps were previously "things the
-  operator must remember" under a ~2233-paid-call and a credential-exfiltration exposure
-  respectively. Encoding them, with a named override (`CRB_ALLOW_FOREIGN_ENDPOINT=1`) rather than
-  no escape hatch, is the right trade.
-- **The resume predicate now means what its name means.** `num_turns > 0 AND NOT is_error AND
-  subtype == "success"`, plus the `prior result was incomplete/errored, re-running` line so the
-  operator sees the retry rather than inferring it. Small change, closes a real money hole.
-- **Judge seeding now fails closed** (`sys.exit` instead of `print`) with an error naming both the
-  cost consequence and the deliberate escape (`--no-seed`). The three-branch loop is correct on
-  the subtle case: a missing seed source with an already-present destination is *kept*, not
-  rejected.
-- **The doc corrections are unusually honest.** The golden-denominator caveat carries an explicit
-  `*(Corrected 2026-08-18: this caveat previously read … which understated the effect ~12×)*`
-  parenthetical, and caveat 2b names a bias running in *our own favour*. Recording a correction
-  and a self-flattering asymmetry in the same edit is the behaviour that makes the rest of the
-  numbers believable.
-
----
+- **The containment mechanism has one owner.** `verify_containment` / `fetch_traces` / `classify_strays` / `scrub_object_store` / `reset_clone` all live in `crb-materialize.py`, the module that establishes the invariant in the first place. On the direct question — is the invariant smeared across three modules — no: the *mechanism* is properly consolidated (this closes R2's "fifteen lines welded inside `materialize()`" properly, not cosmetically), and what `run-host.sh` and the injector hold is *policy* (skip vs. void) and *enforcement*, which correctly belong at the call sites. The seam that is genuinely unowned is the narrower void-protocol encoding, above.
+- **The extraction of `crb-cell-status.py` is the right module split.** A predicate that gates $10–40 of spend per cell, with a measured corpus behind every constant and a bats case per rule, is exactly the thing that should not live in a heredoc. The `STUB_MAX_LEN` comment recording *why the value was wrong before* — and that all three fact-check replicates caught it — is unusually good practice.
+- **`scrub_object_store` was made load-bearing rather than deleted.** Discovering that a check could not fire and responding by tightening the check (`--no-reflogs`) plus adding a non-vacuity test (`"scrub_object_store is load-bearing — benign sequence VOIDS without it"`) is the correct resolution; deleting the call would have removed the evidence that anything was wrong.
+- **Attrition is measured against `our_urls` even under `--all-prs`.** The comment states the reasoning exactly — the question is what happened to the cells we ran, not how the table is scoped — and this is the kind of scoping mistake that would otherwise silently disable the control under the flag most likely to be used for a write-up.
+- **The trap-based provenance write.** Recognising that the `SWEEP_BUDGET` halt was the *designed* outcome of an `--all` run and that it wrote no provenance is a good catch, and the `META_WRITTEN` idempotence guard makes the explicit call and the trap call safely coexist.
+- **Remote removal was reordered before ref pruning** in `materialize()`, with the dangling-symref mechanism documented and a bats case pinning it. That is a correct dependency-ordering fix, not a workaround.
 
 ## Summary Table
 
 | # | Finding | Severity | Location | Confidence |
 |---|---------|----------|----------|------------|
-| A1 | Post-run containment verdict is advisory-only; not recorded in the cell dir, not in the resume predicate, not in `run-meta.json` | Coupling | `run-host.sh:236-237`, `:150-159` | High |
-| A2 | Finding 3's harm closed but mechanism worsened — 2nd in-repo `sanitize_model` + duplicated `DEFAULT_OUT`/`DEFAULT_JUDGE` linked only by a comment | Coupling | `crb-subset-leaderboard.py:30-35` | High |
-| A3 | Rubric contract anchored and tested on the consumer side; producer `SKILL.md` still carries no declaration | Minor | `crb-pipeline-to-benchmark.py:63-78`; `skills/code-review/SKILL.md` | High |
-| A4 | Finding 4 untouched and marginally worse — a fifth inline heredoc (sweep-budget roll-up) not re-runnable standalone | Coupling | `run-host.sh:246-263` | High |
-| A5 | `--verify` reads the manifest unguarded and silently falls back to a vacuous self-referential head | Minor | `crb-materialize.py:273-295`, `:178-179` | High |
-| A6 | "Guard (b)" now names three different checks across two files; `prep-cc-review-clones.sh` divergence still undeclared | Minor | `crb-materialize.py:167-195` | High |
-| A7 | `judge.sh` and `RUN.md` describe the same steps and disagree — `/workspace` hardcoded and no endpoint guard in the latter | Minor | `crb-pipeline-to-benchmark.py:305-371` | High |
-| A8 | Generated 0755 `judge.sh` with absolute host paths lands in a tracked directory | Informational | `crb-pipeline-to-benchmark.py:368-371` | High |
-| A9 | Pre-run guard placed after `mktemp -d`, so a skipped cell leaks the payload copy and an empty `$dest` | Minor | `run-host.sh:168-178`, `:195` | High |
-
----
+| 1 | `run-meta.json` contract has no owning module; both reader defenses fail open (schema fallback; per-invocation overwrite) | Structural | `run-host.sh:160-217`, `crb-subset-leaderboard.py:59` | High |
+| 2 | Leaderboard reaches back over the injector and re-derives skip reasons the injector observed and discarded | Coupling | `crb-subset-leaderboard.py:59-76` | High |
+| 3 | `crb_common.RUN_META` is not single-definition; same dir stated 3× across bash/injector/common | Coupling | `crb_common.py:32`, `crb-pipeline-to-benchmark.py:63`, `run-host.sh:54` | High |
+| 4 | Post-run gate uses mutating `--reset` where detection is the job; `--verify` unexercised | Coupling | `run-host.sh:359`, `crb-materialize.py:451-457` | Medium-High |
+| 5 | Void protocol has 3 encodings, 3 readers, no owner; predicate structurally cannot see the sentinel and has no test for it | Coupling | `run-host.sh:359-372`, `crb-cell-status.py:65-79` | Medium-High |
+| 6 | `write_run_meta` is a function but not a mode — provenance not re-derivable after a lost run | Minor | `run-host.sh:159-218` | High |
+| 7 | `attrition()`'s `checked` flag discarded; `missing_cells` written and never read | Minor | `crb-subset-leaderboard.py:169`, `run-host.sh:210` | High |
+| 8 | A20's carry is more defensible after this diff; one sub-item should be un-carried | Informational | `run-host.sh`, `crb-materialize.py` | Medium |
 
 ## Overall Assessment
 
-The fix pass improves the system's structural integrity, and the single most important pass-1
-concern moved in the right direction: the answer-key invariant now has a callable seam, that seam
-is invoked around every cell, its guard set is *stronger* than what it replaced, and the extraction
-left `materialize()` cleaner than it found it. The seam's contract — raise on failure, return
-`(n_commits, stat)` — genuinely fits both call sites without steering flags. `--verify` as a CLI
-mode is a defensible addition to that module's role in the sense that verification is the natural
-inverse of materialization; my reservation is granularity, not concept (A2's cousin: the runner
-now execs a binary whose other modes `rmtree` and `git gc`, which in *this* repo, three commits
-after a ref-destruction incident, is worth one sentence of thought — a `scripts/crb-verify-clone.py`
-would carry the same seam with a fraction of the blast radius).
+This diff improves the arm's structural integrity on the axis that matters most for the sweep: the containment invariant now lives in one module, behind five named functions with seventeen bats cases, instead of inline in a bash loop. The `crb-cell-status.py` extraction is the same move applied to the resume predicate, and both are the right direction for the A20 carry rather than a violation of it. Nothing in the diff reverses a dependency, breaks a layer the arm actually maintains, or introduces a cycle.
 
-The honest disappointment is A1 and A2, which share a shape: the fix commit did the enforcing half
-and left the recording half. Containment is checked but the verdict evaporates; the leaderboard's
-defaults compose but the constants were copied. In both cases the pass-1 recommendation named the
-missing half explicitly. Neither is expensive — a `containment.json` per cell and a ten-line
-`crb_paths.py` (or three assertions in the bats suite that already loads these modules) would close
-both.
-
-On the deferred shared module: defensible for C7's full scope, not for what this commit actually
-did. The tech-debt lifetime evidence argues against *refactoring* inside the sweep window; it does
-not argue for *adding* a third `sanitize_model` and two duplicated constants, which is a net
-increase in the very projection surface finding 3 measured. Take the deferral, but do not let it
-launder new duplication.
-
-Nothing here needs restructuring and nothing blocks the pilot. Sequence: A1's `containment.json`
-before any paid sweep (it is the only finding whose absence corrupts results silently), A9 alongside
-it (one line move), A3 and A2's three-line assertion whenever the file is next open, and the rest
-after the sweep window closes.
-
----
+The one structural problem is on the *reporting* side, not the containment side, and it is the single most important concern: `run-meta.json` became a real inter-module contract in this diff without acquiring an owner, and the module that reads it defends against every schema mismatch by falling back to a value that reports "no attrition". Combined with `requested_instances` being overwritten per invocation, the attrition control — the thing standing between this sweep and a recall number silently selected for pipeline success — reports clean in exactly the two operational shapes most likely to occur: a subset invocation and a resumed sweep. That is fixable in place (findings 1 and 3 are a single afternoon: give the schema an owner, make `requested_instances` accumulate, refuse rather than fall back) and does not require restructuring. It should be fixed before money is spent, because unlike the containment controls, this one fails without saying anything.
 
 ## Goal-Alignment Note
-- Answered: yes — per-finding closure verdicts for pass-1 findings 1–10 plus nine findings on the new surface
-- Out of scope: correctness/security/performance of the new docker, git and `judge.sh` invocations (other critics); re-verification of Stage-1's `529ecd2` findings; the contract findings, which are in `docs/reviews/api-consistency-review.md` under the same commit; no git-mutating verification was attempted per the safety constraint, so all claims rest on read-only inspection plus one read-only `bats` run of `test/crb-injector-sections.bats`
-- Escalate: **A1 is the one to action before any paid sweep** — pass-1 finding 1 is only half closed, and the unclosed half (no per-cell containment record, containment absent from the resume predicate) means a void cell is silently re-banked as complete on the next sweep, which is the same silent-success failure mode the original Structural finding was about. Also escalate the **mass-skip exit-0** shape shared by A1 and the api-consistency review's F5 — a persistent containment break makes the sweep skip all 50 cells and exit 0. A2's three-line assertion and A9's one-line move are cheap enough to fold into the same edit.
+- Answered: yes — all five judgement questions addressed (seam coherence in "What Looks Good" + finding 5; `crb_common` boundary in finding 3; run-meta location in finding 1; `--reset` shape in finding 4; A20 in finding 8).
+- Out of scope: correctness of the containment *mechanism* itself (fact-check's domain, and reported closed); the egress-allowlist gap tracked as R3; test adequacy beyond the two structural gaps named in findings 5 and 6; everything under `docs/` in the diff.
+- Escalate: (a) **no `security-reviewer` output has ever been produced for this harness** — its central invariant is a trust-boundary property and the trust-boundary cross-reference was a forced no-op; consider running it before the sweep. (b) Finding 1 is blocking-worthy in my judgement: it silently disables the attrition caveat under two likely operating patterns, and the sweep's headline recall claim rests on that caveat.
