@@ -573,8 +573,15 @@ for id in "${INSTANCES[@]}"; do
   # CONNECTs to api.anthropic.com and nothing else. The key is still passed in —
   # the cell has to authenticate — but there is now nowhere else to send it, and
   # the merged upstream PR is not reachable. Proven by the egress preflight.
+  # BG_WAIT_CEILING=0: the pipeline backgrounds its replicate subagents, and in
+  # -p mode the default 600s ceiling kills them at end-of-turn before the
+  # orchestrator is re-invoked (2026-08-20 keycloak cell: 1 of 3 replicates, no
+  # rubric, recorded as success). --max-budget-usd stays the runaway guard; a
+  # wedged subagent that stops calling the API can still hang the cell — that
+  # failure mode needs a manual kill.
   docker run --rm -u node -w /repo \
     -e ANTHROPIC_API_KEY \
+    -e CLAUDE_CODE_PRINT_BG_WAIT_CEILING_MS=0 \
     --network "$EGRESS_NET" \
     -e HTTPS_PROXY="$PROXY_URL" -e HTTP_PROXY="$PROXY_URL" \
     -e https_proxy="$PROXY_URL" -e http_proxy="$PROXY_URL" \
