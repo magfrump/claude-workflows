@@ -1,6 +1,11 @@
 # Code Review Rubric
 
-**Scope:** commit `197eec6` on `feat/crb-direction1-harness` (16 files, +1676/−757) | **Reviewed:** 2026-08-19 | **Status: 🔴 DOES NOT PASS** — 4 red item(s) unresolved
+**Scope:** `197eec6` then its fix commits `1d8ea67`, `4624c5d`, `f91c4c3` on `feat/crb-direction1-harness` | **Reviewed:** 2026-08-19 (3 iterations) | **Status: 🟡 CONDITIONAL PASS** — 0 red; 6 amber carried with author notes
+
+> **⛔ Loop cap reached — decision: `escalate`, with the reds closed.** Three
+> iterations ran. All four reds and every red found in the fix rounds are closed
+> and pinned by executing tests. What remains is one **policy** question and a
+> class of residuals no static instrument can settle. See "Loop outcome" below.
 
 > **Why a `-r2` filename.** `code-review-rubric-2026-08-19-feat-crb-direction1-harness.md`
 > is the *prior* loop's rubric — the one that recorded the `escalate` decision at the
@@ -26,10 +31,10 @@ review. The two controls are sound and cheap. Every red below is a **seam**, not
 
 | # | Finding | Domain | Severity | Location | Legibility-target | Considered overrides | Status |
 |---|---|---|---|---|---|---|---|
-| R1 | **The `--snapshot` path reopens R1/R2 — host `git` against an untrusted `.git`, and it is the *expected first run*.** `scrub_object_store`'s docstring claims it only ever runs on a clone the script just built; the `--snapshot` CLI branch reaches it against any directory containing a `.git`, and `--force` guards only baseline overwrite. `git symbolic-ref -d` performs a ref transaction, so a container-written `reference-transaction` hook or `core.hooksPath` fires — the exact path the prior critic *executed* for R1 — and `verify_containment`'s `git diff --shortstat` adds the `.gitattributes` smudge-filter path. Because of R4, every one of the five existing clones lands on `run-host.sh:415-418`, which prints `--snapshot <id>` as the remedy. Second impact: `--snapshot` rewrites `baseline_sha256`, the value `restore_clone` checks, so a laundered baseline passes every later `--restore` permanently. **Fix:** delete `--snapshot`; point both remediation messages at `--slug <id> --force`, which reaches the scrub only on a tree the script just cloned. | Security | High | `scripts/crb-materialize.py:236-237`, `:511-533`; `runs/review-arms/crb-pipeline/run-host.sh:415-418` | for-author | — | 🔴 Unresolved |
-| R2 | **The audit's exit 2 ("could not check") is published as detected contamination.** `crb-audit-clone.sh` defines 0/1/2 and `test/crb-audit-clone.bats:133` pins *"usage errors exit 2, distinct from a void"* — but the sole consumer is a bare `if ! docker run`, so exit 2 **and docker's own 125/126/127** write `CONTAINMENT_FAILED`, rewrite `result.json` to `subtype: "containment_failed"`, and land the slug in `voided_cells`. That publishes "contamination was DETECTED" about a $10–40 cell that was never checked, and it is reachable: an agent that moves or removes `.git` produces exit 2. `run-host.sh` already maps exit 2 to `exit 4` correctly in two other places (cell-status `:380-388`, harvest `:478-481`). Five-line fix; also shrinks A9. | API-consistency | **Breaking** | `runs/review-arms/crb-pipeline/run-host.sh:493-509`; `scripts/crb-audit-clone.sh:23` | for-author | — | 🔴 Unresolved |
-| R3 | **The baseline is one contract with two halves, and only one half is protected.** The `.tar` gets atomic publish, a sha256 pin in the manifest, an internally-derived path, and a pre-run existence gate. The `.index.json` gets none of them: it is required ~110 lines later, *after* the paid cell, its path is hand-derived in the runner, and `baseline_files_indexed` is recorded but never compared — so a **stale index is never detected**. The index defines what "the pipeline wrote this" means, so drift silently corrupts the arm's output. Converged independently by architecture (F2) and api-consistency (F3). | Architecture (+ API-consistency F3) | **Structural** | `scripts/crb-materialize.py:248-320`; `runs/review-arms/crb-pipeline/run-host.sh:479` | for-author | — | 🔴 Unresolved |
-| R4 | **R6 is relocated, not dissolved — the sweep runs nothing as committed.** Verified against disk by two critics: `external/crb-eval/.baselines/` does not exist and none of the five manifest records carries `baseline_sha256`, so `run-host.sh:366` marks every instance `skipped_bad`, `ran=0`, and `:578-581` exits 3. That is R6's exact symptom with the remedy renamed `--heal` → `--snapshot`. It fails safe at $0, but `docs/decisions/034:69-70` states the opposite, and the remedy it names is R1's unsafe path. **This is the fourth mechanism error from the same region, inside the change meant to end that pattern.** Fix: make baseline migration a code path (a `--migrate` mode that re-clones), not an operator instruction, and correct 034. | Architecture (+ Fact-check Incorrect, Tech-debt D1, Test-strategy G11) | **Structural** | `docs/decisions/034-...:69-70`; `runs/review-arms/crb-pipeline/run-host.sh:366`, `:578-581` | for-author | — | 🔴 Unresolved |
+| R1 | **The `--snapshot` path reopens R1/R2 — host `git` against an untrusted `.git`, and it is the *expected first run*.** `scrub_object_store`'s docstring claims it only ever runs on a clone the script just built; the `--snapshot` CLI branch reaches it against any directory containing a `.git`, and `--force` guards only baseline overwrite. `git symbolic-ref -d` performs a ref transaction, so a container-written `reference-transaction` hook or `core.hooksPath` fires — the exact path the prior critic *executed* for R1 — and `verify_containment`'s `git diff --shortstat` adds the `.gitattributes` smudge-filter path. Because of R4, every one of the five existing clones lands on `run-host.sh:415-418`, which prints `--snapshot <id>` as the remedy. Second impact: `--snapshot` rewrites `baseline_sha256`, the value `restore_clone` checks, so a laundered baseline passes every later `--restore` permanently. **Fix:** delete `--snapshot`; point both remediation messages at `--slug <id> --force`, which reaches the scrub only on a tree the script just cloned. | Security | High | `scripts/crb-materialize.py:236-237`, `:511-533`; `runs/review-arms/crb-pipeline/run-host.sh:415-418` | for-author | — | ✅ **Fixed in `1d8ea67`** — `--snapshot` deleted, not guarded. Terminal security pass verified by enumeration: `scrub_object_store` now has exactly one caller (`materialize()`, on a tree cloned ~20 lines above); `verify_containment` has two (that tree, and a temp extract of a hash-verified tar); `--restore` runs no git at all. |
+| R2 | **The audit's exit 2 ("could not check") is published as detected contamination.** `crb-audit-clone.sh` defines 0/1/2 and `test/crb-audit-clone.bats:133` pins *"usage errors exit 2, distinct from a void"* — but the sole consumer is a bare `if ! docker run`, so exit 2 **and docker's own 125/126/127** write `CONTAINMENT_FAILED`, rewrite `result.json` to `subtype: "containment_failed"`, and land the slug in `voided_cells`. That publishes "contamination was DETECTED" about a $10–40 cell that was never checked, and it is reachable: an agent that moves or removes `.git` produces exit 2. `run-host.sh` already maps exit 2 to `exit 4` correctly in two other places (cell-status `:380-388`, harvest `:478-481`). Five-line fix; also shrinks A9. | API-consistency | **Breaking** | `runs/review-arms/crb-pipeline/run-host.sh:493-509`; `scripts/crb-audit-clone.sh:23` | for-author | — | ✅ **Fixed in `1d8ea67`, hardened in `f91c4c3`** — `audit_rc` branch covers the whole integer range; docker's 125/126/127 and the audit's 2 both abort with exit 4. Now pinned by an *executing* test (the `-gt 1`→`-gt 10` mutation that defeated the original grep pin fails it). |
+| R3 | **The baseline is one contract with two halves, and only one half is protected.** The `.tar` gets atomic publish, a sha256 pin in the manifest, an internally-derived path, and a pre-run existence gate. The `.index.json` gets none of them: it is required ~110 lines later, *after* the paid cell, its path is hand-derived in the runner, and `baseline_files_indexed` is recorded but never compared — so a **stale index is never detected**. The index defines what "the pipeline wrote this" means, so drift silently corrupts the arm's output. Converged independently by architecture (F2) and api-consistency (F3). | Architecture (+ API-consistency F3) | **Structural** | `scripts/crb-materialize.py:248-320`; `runs/review-arms/crb-pipeline/run-host.sh:479` | for-author | — | ✅ **Fixed in `1d8ea67`** — `baseline_index_sha256`, atomic publish, verified in `restore_clone` before the paid container; `baseline_paths()` is the single owner and a test asserts the runner does not restate the layout. |
+| R4 | **R6 is relocated, not dissolved — the sweep runs nothing as committed.** Verified against disk by two critics: `external/crb-eval/.baselines/` does not exist and none of the five manifest records carries `baseline_sha256`, so `run-host.sh:366` marks every instance `skipped_bad`, `ran=0`, and `:578-581` exits 3. That is R6's exact symptom with the remedy renamed `--heal` → `--snapshot`. It fails safe at $0, but `docs/decisions/034:69-70` states the opposite, and the remedy it names is R1's unsafe path. **This is the fourth mechanism error from the same region, inside the change meant to end that pattern.** Fix: make baseline migration a code path (a `--migrate` mode that re-clones), not an operator instruction, and correct 034. | Architecture (+ Fact-check Incorrect, Tech-debt D1, Test-strategy G11) | **Structural** | `docs/decisions/034-...:69-70`; `runs/review-arms/crb-pipeline/run-host.sh:366`, `:578-581` | for-author | — | ✅ **Fixed in `1d8ea67`** — 034 corrected to what is true (R6 moved, fails safe at $0, remedy is a rebuild). Re-verified against disk on the terminal pass. |
 
 **Root cause tying R1, R3 and R4 together**, named by the architecture critic: the baseline
 tar + index is a new persisted inter-module contract with **no single owner**. All four
@@ -120,6 +125,72 @@ contributed A1, A5, A8 and A11 here.
 `@anthropic-ai/claude-code` and `tinyproxy`, which is dependency-shaped, but no dependency
 *manifest* in the auto-selection table changed and `security-reviewer` covers the
 supply-chain surface. Recorded so the coverage limit is auditable.
+
+---
+
+## Loop outcome — 3 iterations, cap reached, decision `escalate`
+
+**Convergence: not reached, and the reason is worth stating precisely.** The loop needs two
+consecutive clean passes; it got zero. But the trajectory is not the previous loop's:
+
+| Iteration | Instrument | Found | Disposition |
+|---|---|---|---|
+| 1 | k=3 fact-check + 6 critics | 4 red, 14 amber | all 4 reds fixed in `1d8ea67` |
+| 2 | k=1 fact-check (loop pass) | 5 Incorrect, **3 of them introduced by iteration 1's fixes** | fixed in `4624c5d` |
+| 3 | k=3-equivalent fact-check + 5 critics, 45 mutations | 2 executed fail-opens, 1 mechanism error, 8/8 pins defeated | fixed in `f91c4c3` |
+
+**Six consecutive rounds in this code have had a fix round introduce a new mechanism error.**
+Iterations 1–3 continued that streak (R4's "R6 dissolves", the dead `exit 5`, the
+`--internal` glob, the `api-reachable` empty-observation fail-open). What changed at
+iteration 3 is the *instrument*, not the authoring: `test/crb-run-host-wiring.bats` runs the
+runner's own branches against a `docker` PATH shim, and the three mutations that had survived
+every prior suite now fail. Two earlier rounds deferred that harness as "a scope call bigger
+than this commit"; the terminal pass withdrew that call by execution, and withdrawing it is
+the single change most likely to end the streak — text pins cannot see wiring, and every one
+of the six errors was wiring.
+
+**Why `escalate` and not `abandon` or `split`:** nothing here is unresolved *code*. What is
+left is one policy question and one class of evidence this environment cannot produce.
+
+### The one decision that is genuinely the author's
+
+**Should a containment void halt the sweep?** `f91c4c3` implements halt (exit 7,
+`CONTINUE_ON_VOID=1` to override) as a fail-safe default, but two critics flagged it as a
+human call and it is not settled by evidence:
+
+- **Halt** treats a void as "the containment control was observed failing", which makes every
+  later cell's number suspect. Cost: a single contaminated cell ends a 50-cell overnight run.
+- **Continue** collects the remaining cells and adjudicates `voided_cells` at write-up.
+  Cost: spending $10–40 a cell into a sweep whose central claim is already in doubt.
+
+The default chosen is halt. Reverse it by exporting `CONTINUE_ON_VOID=1`, or say so and the
+default flips.
+
+### What no amount of further iteration can close here
+
+**Nothing docker-shaped has ever executed** — no image built, no network created, no proxy
+run. That is not a deferral, it is the environment: this session has no docker. Every
+control in this branch is therefore verified *structurally and by unit test*, and the
+allowlist's actual filtering behaviour is verified by `PREFLIGHT_ONLY=1` **on the host,
+before the first paid cell**. Two specific assumptions it will settle, and which a fourth
+iteration here could not: that Claude Code honours `HTTPS_PROXY`, and that docker honours
+`--internal` on a network the security pass showed can only be observed via
+`docker network inspect`.
+
+**Merge vs run, unchanged from both prior rubrics and now stronger:** the branch is safe to
+**merge** — no open finding describes broken behaviour in the committed path for a trusted
+input — and gated for **running** on `PREFLIGHT_ONLY=1` passing on a real docker host.
+
+### Recommended sequence before any paid cell
+
+1. `PREFLIGHT_ONLY=1 bash runs/review-arms/crb-pipeline/run-host.sh` — builds the images,
+   creates the network, runs the five egress legs and the auth/skill preflight. Costs one
+   billed auth turn. **If `HTTPS_PROXY` is not honoured this fails here, at one turn.**
+2. `python3 scripts/crb-materialize.py --slug keycloak-PR36880 --force` — the five existing
+   clones have no baseline; this rebuilds one (smallest diff) and baselines it.
+3. One cell: `bash runs/review-arms/crb-pipeline/run-host.sh keycloak-PR36880`, then read
+   `review.md` and `artifacts/` before committing to a sweep.
+4. Decide the halt-on-void question above before an unattended `--all`.
 
 ---
 
