@@ -9,9 +9,12 @@ runner used to pipe into a bash loop. Two reasons, in order of importance:
    where `core.fsmonitor` fires — one of five host-side code-execution paths the
    2026-08-19 review executed (rubric R1). Nothing in this file reads `.git`.
 2. **It was incomplete.** `--untracked-files=all` still honours `.gitignore`, so
-   a rubric written to a path the upstream repo ignores was invisible. Several
-   benchmark repos ignore `docs/`-adjacent paths; the code-review skill writes
-   its rubric under `docs/reviews/`.
+   a rubric written to a path the upstream repo ignores was invisible, and the
+   code-review skill writes its rubric under `docs/reviews/`. Measured on the
+   five materialized pilot clones: none ignores `docs/reviews/` specifically and
+   two ignore other `docs/`-adjacent paths — so this is a guard against a real
+   mechanism rather than an observed loss, and the earlier wording ("several
+   benchmark repos ignore `docs/`-adjacent paths") overstated the corpus.
 
 The comparison is against the baseline index written by
 `crb-materialize.py --snapshot` ({relpath: sha256} over the clone's .md/.json

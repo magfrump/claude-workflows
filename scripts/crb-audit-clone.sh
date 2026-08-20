@@ -9,18 +9,33 @@
 # config can only reach a disposable container is what makes it safe to inspect
 # at all. run-host.sh invokes it as:
 #
-#   docker run --rm --network none -v "$clone":/repo -v .../crb-audit-clone.sh:/audit.sh:ro \
-#     <image> bash /audit.sh /repo <head-sha>
+#   docker run --rm --network none -u node -v "$clone":/repo \
+#     -v .../crb-audit-clone.sh:/audit.sh:ro \
+#     --entrypoint bash <image> /audit.sh /repo <head-sha>
+#
+# (--entrypoint bash is not optional: the review image sets ENTRYPOINT
+# ["claude"], so `<image> bash /audit.sh` would pass "bash" as an argument to
+# claude. The earlier version of this comment omitted it and would not have run.)
 #
 # It is EVIDENCE, not prevention. Prevention is the egress allowlist the same
 # script sets up; this records whether anything reached past it. A quiet pass is
 # never proof of cleanliness — see docs/working/crb-direction1-setup.md.
 #
 # The clone is destroyed after this runs (disposable-clone design), so unlike
-# the reset it replaced this never has to distinguish "undo" from "void": every
-# stray is reported, and only contamination changes the exit code.
+# the reset it replaced this never has to distinguish "undo" from "void": strays
+# are counted rather than adjudicated, and only contamination changes the exit
+# code. (Foreign commits are counted in full but only the first is named, to keep
+# the trace readable when a fetch brought in many.)
 #
-# Exit: 0 = nothing detected · 1 = VOID (contamination) · 2 = could not check.
+# Exit: 0 = nothing detected · 1 = VOID · 2 = could not check (usage/no repo).
+#
+# The caller MUST distinguish all three — run-host.sh aborts the sweep on 2 and
+# on docker's own 125/126/127 rather than treating them as a void, because
+# publishing "contamination was DETECTED" about a $10-40 cell that was never
+# checked is worse than stopping. Note the one deliberate asymmetry: a `git fsck`
+# that ERRORS exits 1, not 2 — it is a check that could not certify the clone, and
+# failing closed is right, but it is reported inside the VOID trace text so the
+# distinction survives for a human reading the log.
 set -uo pipefail
 
 usage() { echo "usage: crb-audit-clone.sh <clone-dir> <expected-head-sha>" >&2; exit 2; }

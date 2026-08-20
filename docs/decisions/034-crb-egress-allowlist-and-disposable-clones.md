@@ -43,9 +43,12 @@ baseline index, so no host `git` remains anywhere in the cell path.
 runs on an `--internal` docker network whose only route out is a tinyproxy
 sidecar that `CONNECT`s to `api.anthropic.com` on 443 and nothing else. The CLI
 is baked into the review image rather than `npx`-installed per cell, so a
-running cell needs exactly one reachable host. A three-leg egress preflight —
-API reachable through the proxy, github refused *through* the proxy, github
-unroutable *without* it — must pass before any paid cell.
+running cell needs only one reachable host (it will *attempt* others — the
+autoupdater and telemetry endpoints listed in `devcontainer-config/egress/base.txt`
+— which the allowlist refuses). A five-leg egress preflight — the network really
+is `--internal`, the API is reachable through the proxy, github is refused
+through it over HTTPS and over plain HTTP, and github is unroutable without it —
+must pass before any paid cell. `PREFLIGHT_ONLY=1` runs exactly that and stops.
 
 ## Alternatives rejected
 
@@ -64,14 +67,29 @@ unroutable *without* it — must pass before any paid cell.
   cell pays a few seconds of tar extraction against a $10–40 review.
 - R3 (nested clone) and A8 (a voided cell leaving a permanently dead clone) are
   closed structurally rather than by a flag or a message.
-- The harvest became strictly more complete: `git status --untracked-files=all`
-  honours `.gitignore`, so a rubric written to an ignored path used to vanish.
-- `--reset` and `--heal` are gone; `--restore` and `--snapshot` replace them.
-  R6 (no existing clone could pass the pre-run gate) dissolves with them.
+- The harvest changed shape rather than strictly improving: it now sees files
+  under gitignored paths, which `git status --untracked-files=all` could not (a
+  rubric written to an ignored path used to vanish) — but it also stops copying
+  symlinked artifacts, which the old loop copied with `cp --no-dereference`, and
+  imposes 5 MB / 50 MB / 500-file caps the old loop had none of. "Strictly more
+  complete" was the original wording and it is refuted as a set relation.
+- `--reset` and `--heal` are gone; `--restore` replaces them. **R6 did not
+  dissolve — it moved.** Every clone materialized before this change lacks a
+  baseline, so `run-host.sh` skips all of them and exits 3, which is R6's exact
+  symptom. It fails safe at $0, and the remedy is a rebuild
+  (`--slug <id> --force`) rather than a repair, but "dissolves" was wrong and
+  the 2026-08-19 review caught it against disk. A pre-existing clone is
+  **re-cloned**, never baselined in place: the mode that did that in place
+  (`--snapshot`) was the last host-git-on-an-untrusted-`.git` path and was
+  deleted for reopening R1 — see the note in `crb-materialize.py`'s `main()`.
 - **Not verified here**: everything docker-shaped. This session has no docker,
   so the images, the network and the proxy have never run. The allowlist is
   verified on the host by its own preflight, at $0, before the first cell — a
   control whose only honest verification is execution.
 - Residual and unclosed: a low-bandwidth DNS side channel through docker's
-  embedded resolver, and training-data leakage, which no container control
-  touches.
+  embedded resolver (`run-host.sh` names it where spend is authorized, not only
+  here), and training-data leakage, which no container control touches.
+- The preflight's verdict logic lives in `scripts/crb-egress-verdict.sh` rather
+  than inline in the runner, because inline it was unpinnable: three separate
+  mutations that neutered the legs — including dropping `--internal` — left the
+  whole suite green.

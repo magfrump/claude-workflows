@@ -29,6 +29,7 @@
 setup_file() {
   export REPO_ROOT="$(cd "$BATS_TEST_DIRNAME/.." && pwd)"
   export SCRIPT="$REPO_ROOT/scripts/crb-materialize.py"
+  export AUDIT="$REPO_ROOT/scripts/crb-audit-clone.sh"
 }
 
 setup() {
@@ -200,4 +201,134 @@ sys.exit(r.returncode)
 PY
   [ "$status" -eq 0 ]
   [ "$(cat "$CLONE/f.txt")" = "change" ]
+}
+
+# ── scrub_object_store non-vacuity ──────────────────────────────────────────
+# The deleted crb-containment-reset.bats had a dedicated pin for this and it did
+# NOT carry over: `grep -rn scrub_object_store test/` returned zero hits, while
+# the 2026-08-19 fact-check reproduced by execution that the function is still
+# load-bearing, and the test-strategy pass showed its whole body could be
+# replaced with `return` leaving 37/37 green.
+#
+# What it is load-bearing FOR: materialize()'s own fetches leave `.git/FETCH_HEAD`
+# and unreachable objects behind, and crb-audit-clone.sh voids a cell on exactly
+# those two signals. Without the scrub, EVERY baseline carries them, EVERY cell
+# voids, and the audit's checks mean nothing. So both halves are asserted here:
+# the signals are present before, and absent after.
+
+@test "scrub_object_store is non-vacuous: it clears the signals the audit voids on" {
+  # Reproduce what materialize() leaves behind: an object whose ref is then gone
+  # (reads as unreachable under --no-reflogs) plus a FETCH_HEAD.
+  git -C "$CLONE" checkout -q -b tmp-fetched
+  echo fetched > "$CLONE/fetched.txt"
+  git -C "$CLONE" add fetched.txt; git -C "$CLONE" commit -qm "as if fetched"
+  git -C "$CLONE" checkout -q review
+  git -C "$CLONE" branch -qD tmp-fetched
+  printf '%s\tbranch\n' "$HEAD_SHA" > "$CLONE/.git/FETCH_HEAD"
+
+  # BEFORE: both signals present. Asserted, so this case cannot pass by the
+  # fixture quietly failing to set them up.
+  [ -e "$CLONE/.git/FETCH_HEAD" ]
+  run git -C "$CLONE" fsck --unreachable --no-reflogs --connectivity-only --no-progress
+  [[ "$output" == *"unreachable commit"* ]]
+
+  run python3 - "$SCRIPT" "$CLONE" <<'SCRUB'
+import importlib.util, sys
+from pathlib import Path
+spec = importlib.util.spec_from_file_location("mat", sys.argv[1])
+m = importlib.util.module_from_spec(spec); spec.loader.exec_module(m)
+m.scrub_object_store(Path(sys.argv[2]))
+SCRUB
+  [ "$status" -eq 0 ]
+
+  # AFTER: both gone. A no-op body fails here.
+  [ ! -e "$CLONE/.git/FETCH_HEAD" ]
+  run git -C "$CLONE" fsck --unreachable --no-reflogs --connectivity-only --no-progress
+  [[ "$output" != *"unreachable commit"* ]]
+}
+
+# The consequence, end to end: a baseline taken from a tree still carrying those
+# signals produces a clone the audit voids. This is what makes the coupling
+# visible — remove the scrub from materialize() and every cell voids as
+# contamination, which is indistinguishable from a contaminated sweep.
+@test "a baseline carrying fetch traces yields a clone the audit VOIDS" {
+  printf '%s\tbranch\n' "$HEAD_SHA" > "$CLONE/.git/FETCH_HEAD"
+  run_mat snapshot
+  [ "$status" -eq 0 ]
+  run_mat restore
+  [ "$status" -eq 0 ]
+  run bash "$AUDIT" "$CLONE" "$HEAD_SHA"
+  [ "$status" -eq 1 ]
+  [[ "$output" == *"FETCH_HEAD present"* ]]
+}
+
+# ── the baseline's OTHER half ───────────────────────────────────────────────
+# The baseline is one contract with two artifacts. Until the 2026-08-19 review,
+# only the tar was hash-pinned, atomically published and gated before the cell;
+# the index was written non-atomically, hashed by nothing, and first touched at
+# harvest time — i.e. AFTER the $10-40 review was paid. A stale index silently
+# changes which files count as "the pipeline wrote this", and nothing could see
+# it. These cases pin the fix on the half that used to be unprotected.
+
+@test "snapshot records a hash for the index as well as the tar" {
+  run_mat snapshot
+  [ "$status" -eq 0 ]
+  run python3 -c 'import json,sys; d=json.load(open(sys.argv[1]))["fixture"]; print(d["baseline_sha256"][:8], d["baseline_index_sha256"][:8])' "$WORK/manifest.json"
+  [ "$status" -eq 0 ]
+  [ -n "$output" ]
+}
+
+@test "a tampered index refuses to restore, before the cell is paid for" {
+  run_mat snapshot
+  printf '{"planted.md": "0000"}' > "$WORK/baselines/fixture.index.json"
+  run_mat restore
+  [ "$status" -ne 0 ]
+  [[ "$output" == *"INDEX sha256 mismatch"* ]]
+  [[ "$output" == *"refusing to restore"* ]]
+}
+
+@test "a missing index refuses to restore" {
+  run_mat snapshot
+  rm -f "$WORK/baselines/fixture.index.json"
+  run_mat restore
+  [ "$status" -ne 0 ]
+  [[ "$output" == *"no baseline index"* ]]
+}
+
+# A baseline written before the index was pinned must not silently restore: the
+# manifest field is absent, which is exactly the state a half-upgraded arm is in.
+@test "a manifest with no index hash refuses to restore" {
+  run_mat snapshot
+  python3 - "$WORK/manifest.json" <<'STRIP'
+import json, sys
+d = json.load(open(sys.argv[1])); d["fixture"].pop("baseline_index_sha256")
+json.dump(d, open(sys.argv[1], "w"))
+STRIP
+  run_mat restore
+  [ "$status" -ne 0 ]
+  [[ "$output" == *"baseline_index_sha256"* ]]
+}
+
+# One owner for the layout. run-host.sh used to spell `.baselines/$id.tar` and
+# `.baselines/$id.index.json` itself, in two places — the hand-copy failure
+# crb_common.py's docstring exists to prevent, reproduced in new code.
+@test "baseline_paths is the single definition of the layout, and the runner uses it" {
+  run python3 "$SCRIPT" --baseline-paths some-slug
+  [ "$status" -eq 0 ]
+  [[ "${lines[0]}" == *"/.baselines/some-slug.tar" ]]
+  [[ "${lines[1]}" == *"/.baselines/some-slug.index.json" ]]
+  grep -q -- '--baseline-paths' "$REPO_ROOT/runs/review-arms/crb-pipeline/run-host.sh"
+  run grep -nE '\.baselines/\$(id|slug)' "$REPO_ROOT/runs/review-arms/crb-pipeline/run-host.sh"
+  [ "$status" -ne 0 ]
+}
+
+# The mode that baselined an existing clone in place is gone: it was the last
+# host-git-against-an-untrusted-`.git` path, and the runner printed it as the
+# remedy on the path every pre-baseline clone takes.
+@test "there is no mode that baselines an existing clone in place" {
+  run python3 "$SCRIPT" --snapshot fixture
+  [ "$status" -ne 0 ]
+  [[ "$output" == *"unrecognized arguments"* || "$output" == *"invalid choice"* || "$output" == *"usage"* ]]
+  run grep -n -- '--snapshot' "$REPO_ROOT/runs/review-arms/crb-pipeline/run-host.sh"
+  [ "$status" -ne 0 ]
 }

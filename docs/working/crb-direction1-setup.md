@@ -24,10 +24,10 @@ result is a row in a 49-tool leaderboard we did not build.
 ```bash
 scripts/crb-materialize.py --list          # 50 PRs, 173 goldens
 scripts/crb-materialize.py --per-repo 1    # 5-PR pilot: one per upstream project
-scripts/crb-materialize.py --all           # all 50 (~6-7 GB)
+scripts/crb-materialize.py --all           # all 50 (~13 GB: clones + baselines)
 scripts/crb-materialize.py --verify   <slug> # re-check the BASELINE (read-only)
-scripts/crb-materialize.py --restore  <slug> # wipe + re-extract (what each cell does)
-scripts/crb-materialize.py --snapshot <slug> # baseline a clone made before 2026-08-19
+scripts/crb-materialize.py --restore <slug>  # wipe + re-extract (what each cell does)
+scripts/crb-materialize.py --slug <slug> --force  # rebuild a clone AND its baseline
 ```
 
 Clones the benchmark's fork of each PR (`claude-code`'s copy — any tool's fork
@@ -95,13 +95,29 @@ a whole sweep silently:
    is exactly the failure decision 022 was written for. It runs *inside* the
    restricted network, so it doubles as proof a real headless invocation still
    works through the proxy;
-3. **egress**, three legs, all of which must pass or the sweep exits 5 before
-   spending anything: `api.anthropic.com` reachable *through* the proxy;
-   `github.com` **refused** through the proxy (the filter works); `github.com`
-   **unroutable** with no proxy env (the network really is internal, so a
-   subprocess that ignores `HTTPS_PROXY` is still contained). Three legs because
-   each fails for a different reason, and a single test that passes for the
-   wrong reason is how this harness has gone wrong before.
+3. **egress**, five legs, all of which must pass or the sweep exits 5 before
+   spending anything: the network was really created `--internal`;
+   `api.anthropic.com` reachable *through* the proxy; `github.com` **refused**
+   through the proxy over HTTPS **and** over plain HTTP (`ConnectPort` scopes
+   CONNECT only, so the plain-HTTP path is a separate question and `http_proxy`
+   is exported to every cell); `github.com` **unroutable** with no proxy env, so
+   a subprocess that ignores `HTTPS_PROXY` is still contained. Separate legs
+   because each fails for a different reason — and note the ordering
+   dependency: the two refusal legs accept `000`, which a *dead proxy* also
+   returns, so they mean "the filter works" only once the reachability leg has
+   passed.
+
+   The verdict for each leg lives in `scripts/crb-egress-verdict.sh`, not inline
+   in the runner, and is pinned by `test/crb-egress-verdict.bats`. Inline it was
+   unpinnable: the 2026-08-19 test-strategy pass showed by mutation that
+   widening a leg to accept HTTP 200, neutering another, and **dropping
+   `--internal` from the network create** each left the whole suite green with
+   all the "ok" lines still printing.
+
+**`PREFLIGHT_ONLY=1` runs all of the above and stops.** That command is what
+makes "the control tests itself at $0 before the first paid cell" a claim you
+can cash rather than an assertion — `DRY_RUN=1` exits before the images are even
+built, so it cannot serve that purpose.
 
 Outputs land in `runs/review-arms/crb-pipeline/<slug>/`: `transcript.jsonl`
 (full stream), `result.json` (cost/turns), `review.md` (final text), and

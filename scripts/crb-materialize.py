@@ -39,7 +39,7 @@ Usage:
   scripts/crb-materialize.py --per-repo 1 --dry-run     # print, clone nothing
   scripts/crb-materialize.py --verify   grafana-PR79265 # re-check the baseline
   scripts/crb-materialize.py --restore  grafana-PR79265 # wipe + re-extract (per cell)
-  scripts/crb-materialize.py --snapshot grafana-PR79265 # baseline a pre-existing clone
+  scripts/crb-materialize.py --slug grafana-PR79265 --force  # rebuild + baseline
 
 Writes/updates runs/review-arms/crb/instances.json. Each record carries: url,
 source_repo, pr_title, fork, fork_url, head, base, commits, n_goldens,
@@ -193,8 +193,7 @@ def verify_containment(dst: Path, slug: str, head: str = None):
     """Assert the no-answer-key invariant on a clone. Returns (n_commits, stat).
 
     Runs ONLY on trees no container has touched: the freshly cloned tree inside
-    materialize(), the same tree under --snapshot, and a temp extract of the
-    baseline under --verify. It used to run per cell, against the clone the
+    materialize(), and a temp extract of the baseline under --verify. It used to run per cell, against the clone the
     review container had just written — that is the arrangement the 2026-08-19
     review broke out of (R1/R2), and it is why the per-cell check is now a wipe
     plus an audit inside a container instead.
@@ -290,12 +289,16 @@ def snapshot_baseline(dst: Path, slug: str) -> dict:
     ONLY EVER CALL THIS ON A CLONE NO CONTAINER HAS TOUCHED. The baseline is the
     definition of "clean" for every later cell, so snapshotting a used clone
     would launder whatever that cell left behind into the baseline itself.
-    materialize() calls it immediately after verify_containment(); the CLI mode
-    refuses to overwrite an existing baseline without --force for the same
-    reason.
+
+    That precondition is now established by CONSTRUCTION, not by this paragraph:
+    materialize() is the only caller, and it calls this on a tree it has just
+    cloned from the fork, immediately after verify_containment() passed. The CLI
+    mode that let an operator point this at an arbitrary existing clone
+    (--snapshot) was deleted on the 2026-08-19 security review — see the note in
+    main() for why a documented precondition was not good enough.
     """
     BASELINE_ROOT.mkdir(parents=True, exist_ok=True)
-    tar = BASELINE_ROOT / f"{slug}.tar"
+    tar, idx_path = baseline_paths(slug)
     part = BASELINE_ROOT / f"{slug}.tar.part"
     # `-C dst .` so the archive holds clone-relative paths: extraction then does
     # not depend on where the clone lived when it was made.
@@ -304,9 +307,11 @@ def snapshot_baseline(dst: Path, slug: str) -> dict:
     # none: it would restore a truncated repo and the cell would review nothing.
     part.replace(tar)
     index = artifact_index(dst)
-    (BASELINE_ROOT / f"{slug}.index.json").write_text(
-        json.dumps(index, indent=0, sort_keys=True) + "\n")
+    idx_part = BASELINE_ROOT / f"{slug}.index.json.part"
+    idx_part.write_text(json.dumps(index, indent=0, sort_keys=True) + "\n")
+    idx_part.replace(idx_path)
     digest = sha256_file(tar)
+    idx_digest = sha256_file(idx_path)
     print(f"  baseline: {tar.name} ({round(tar.stat().st_size / (1024 * 1024))} MB, "
           f"sha256 {digest[:12]}…), {len(index)} artifact path(s) indexed")
     return {
@@ -319,9 +324,28 @@ def snapshot_baseline(dst: Path, slug: str) -> dict:
         "baseline_tar": str(tar.relative_to(WORKSPACE)
                             if tar.is_relative_to(WORKSPACE) else tar),
         "baseline_sha256": digest,
+        # The index is the OTHER half of this contract and gets the same
+        # treatment: atomic publish and a hash in the manifest. It was previously
+        # written non-atomically, hashed by nothing, and first required ~110 lines
+        # into the cell — i.e. AFTER the $10-40 review was paid — so a stale or
+        # truncated index silently changed what "the pipeline wrote this" means
+        # and no check could see it. `baseline_files_indexed` was recorded and
+        # never compared, which is the same defect wearing a number.
+        "baseline_index_sha256": idx_digest,
         "baseline_mb": round(tar.stat().st_size / (1024 * 1024)),
         "baseline_files_indexed": len(index),
     }
+
+
+def baseline_paths(slug: str):
+    """(tar, index) for a slug. The ONE place this layout is defined.
+
+    `run-host.sh` used to spell `.baselines/$id.tar` and `.baselines/$id.index.json`
+    itself, in two places — the hand-copy failure `scripts/crb_common.py`'s
+    docstring exists to prevent, reproduced in new code. The runner now asks for
+    them via `--baseline-paths <slug>` instead of restating the layout.
+    """
+    return BASELINE_ROOT / f"{slug}.tar", BASELINE_ROOT / f"{slug}.index.json"
 
 
 def restore_clone(slug: str, rec: dict) -> str:
@@ -345,17 +369,37 @@ def restore_clone(slug: str, rec: dict) -> str:
     scripts/crb-audit-clone.sh, which runs on the outgoing clone inside a
     throwaway container and only has to record evidence, never repair.
     """
-    tar = BASELINE_ROOT / f"{slug}.tar"
+    tar, idx_unused = baseline_paths(slug)
     if not tar.is_file():
-        raise RuntimeError(f"no baseline at {tar} — run --snapshot {slug}")
+        raise RuntimeError(f"no baseline at {tar} — rebuild with "
+                           f"`--slug {slug} --force`")
     want = rec.get("baseline_sha256")
     if not want:
-        raise RuntimeError(f"manifest has no baseline_sha256 — run --snapshot {slug}")
+        raise RuntimeError(f"manifest has no baseline_sha256 — rebuild with "
+                           f"`--slug {slug} --force`")
     got = sha256_file(tar)
     if got != want:
         raise RuntimeError(
             f"baseline sha256 mismatch (manifest {want[:12]}…, file {got[:12]}…) — "
             f"refusing to restore. Re-materialize this slug.")
+    # Both halves, before the cell rather than after it. The index is what the
+    # harvest diffs against, so an index that does not match this tar makes every
+    # artifact decision wrong in a way nothing downstream can detect — and the
+    # cell is paid for by then.
+    idx_path = idx_unused
+    idx_want = rec.get("baseline_index_sha256")
+    if not idx_path.is_file():
+        raise RuntimeError(f"no baseline index at {idx_path} — rebuild with "
+                           f"`--slug {slug} --force`")
+    if not idx_want:
+        raise RuntimeError(
+            f"manifest has no baseline_index_sha256 (baseline predates the index "
+            f"pin) — rebuild with `--slug {slug} --force`")
+    idx_got = sha256_file(idx_path)
+    if idx_got != idx_want:
+        raise RuntimeError(
+            f"baseline INDEX sha256 mismatch (manifest {idx_want[:12]}…, file "
+            f"{idx_got[:12]}…) — refusing to restore. Re-materialize this slug.")
     dst = DST_ROOT / slug
     if dst.exists():
         shutil.rmtree(dst)
@@ -458,23 +502,42 @@ def main():
                    help="re-assert answer-key containment on the BASELINE of clone(s) "
                         "and exit (read-only; extracts to a temp dir, never touches the "
                         "work clone)")
+    g.add_argument("--baseline-paths", metavar="SLUG",
+                   help="print this slug's baseline tar and index paths, one per "
+                        "line, and exit. The runner's precondition check uses this "
+                        "instead of restating the .baselines/ layout in bash.")
     g.add_argument("--restore", nargs="+", metavar="SLUG",
                    help="DESTRUCTIVE. Wipe the work clone(s) and re-extract from the "
                         "hash-pinned baseline — the per-cell reset run-host.sh performs "
                         "before every review cell. No git runs against the old tree.")
-    g.add_argument("--snapshot", nargs="+", metavar="SLUG",
-                   help="build the baseline for clone(s) materialized before this "
-                        "existed. ONLY on a clone no container has run against; refuses "
-                        "to overwrite an existing baseline without --force.")
+    # There is deliberately NO mode that baselines an EXISTING clone. The one
+    # that existed (--snapshot) was the last place host `git` ran against a
+    # directory this script had not just created, and the 2026-08-19 security
+    # review found it reopened R1: `git symbolic-ref -d` performs a ref
+    # transaction, so a container-written `reference-transaction` hook or
+    # `core.hooksPath` fires, and `verify_containment`'s `git diff` adds the
+    # `.gitattributes` smudge-filter path. Its "pristine clone" precondition was
+    # prose only, and the runner printed it as the remedy on the path EVERY
+    # pre-baseline clone takes — so the unsafe path was the expected first run.
+    #
+    # A clone without a baseline is therefore re-materialized (`--slug <id>
+    # --force`), which throws the directory away and clones afresh from the
+    # fork. That costs a re-download and is the only form of the operation whose
+    # safety is established by construction rather than by a comment.
     ap.add_argument("--depth", type=int, default=50, help="shallow clone depth (default 50)")
     ap.add_argument("--force", action="store_true", help="rebuild existing clones")
     ap.add_argument("--dry-run", action="store_true", help="print the selection, clone nothing")
     args = ap.parse_args()
 
-    if args.verify or args.restore or args.snapshot:
-        slugs = args.verify or args.restore or args.snapshot
-        mode = ("--verify" if args.verify else
-                "--restore" if args.restore else "--snapshot")
+    if args.baseline_paths:
+        tar, idx = baseline_paths(args.baseline_paths)
+        print(tar)
+        print(idx)
+        return
+
+    if args.verify or args.restore:
+        slugs = args.verify or args.restore
+        mode = "--verify" if args.verify else "--restore"
         # --dry-run applies to these modes too. It used to be read only further
         # down, so `--reset SLUG --dry-run` (the mode --restore replaced) ran the
         # full destructive reset while its help text advertised "clone nothing".
@@ -487,7 +550,7 @@ def main():
         for slug in slugs:
             rec = manifest.get(slug) or {}
             head = rec.get("head")
-            # --verify and --snapshot run verify_containment, whose stray-commit
+            # --verify runs verify_containment, whose stray-commit
             # check is self-referential without a pinned head: compared against
             # the clone's OWN current `review` tip, a moved ref passes trivially.
             # A slug absent from the manifest therefore cannot be verified, and
@@ -508,29 +571,6 @@ def main():
             try:
                 if args.restore:
                     print(f"  {slug}: {restore_clone(slug, rec)}")
-                elif args.snapshot:
-                    dst = DST_ROOT / slug
-                    if not (dst / ".git").is_dir():
-                        raise RuntimeError(f"no clone at {dst}")
-                    # Refusing here is the only guard against laundering a used
-                    # clone into the baseline: once a baseline exists every cell
-                    # restores from it, so a second snapshot is legitimate only
-                    # after a deliberate re-materialize.
-                    if (BASELINE_ROOT / f"{slug}.tar").exists() and not args.force:
-                        raise RuntimeError(
-                            "a baseline already exists. Re-snapshotting is only correct "
-                            "on a clone NO container has run against — pass --force if "
-                            "that is true, or re-materialize with --slug --force.")
-                    # Clears materialize()'s own FETCH_HEAD and any dangling
-                    # origin/HEAD, so the baseline starts from the same state a
-                    # freshly materialized clone would.
-                    scrub_object_store(dst)
-                    n_commits, stat = verify_containment(dst, slug, head)
-                    print(f"  {slug}: containment ok — {n_commits} commit(s), {stat}")
-                    rec.update(snapshot_baseline(dst, slug))
-                    manifest[slug] = rec
-                    MANIFEST.write_text(
-                        json.dumps(manifest, indent=2, sort_keys=True) + "\n")
                 else:
                     # Verify the BASELINE, not the work clone: the work clone may
                     # have been mounted read-write into an agent container, and
@@ -540,7 +580,8 @@ def main():
                     # — and it is also the thing every cell actually starts from.
                     tar = BASELINE_ROOT / f"{slug}.tar"
                     if not tar.is_file():
-                        raise RuntimeError(f"no baseline at {tar} — run --snapshot {slug}")
+                        raise RuntimeError(f"no baseline at {tar} — rebuild with "
+                                           f"`--slug {slug} --force`")
                     want = rec.get("baseline_sha256")
                     got = sha256_file(tar)
                     if not want:
@@ -571,12 +612,11 @@ def main():
         return
     if not (args.all or args.per_repo or args.slug):
         # DESTRUCTIVE modes are marked: --restore deletes the work clone outright;
-        # --force rebuilds a clone from scratch. --verify, --snapshot and --list
-        # do not destroy anything (--snapshot refuses to overwrite a baseline
-        # without --force).
+        # --force rebuilds a clone from scratch. --verify and --list are read-only.
         ap.error("pick one of --list / --per-repo N / --slug ... / --all / "
                  "--verify SLUG ... (read-only) / --restore SLUG ... (DESTRUCTIVE: "
-                 "wipes the work clone) / --snapshot SLUG ... (writes a baseline)")
+                 "wipes the work clone). A clone with no baseline is rebuilt with "
+                 "--slug SLUG --force, not baselined in place.")
 
     sel = select(prs, args)
     print(f"Selected {len(sel)} PR(s), "

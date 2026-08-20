@@ -44,7 +44,14 @@
 #   the answer key — was one curl away, and a crafted file in a benchmark fork
 #   could exfiltrate ANTHROPIC_API_KEY (2026-08-18 rubric R3, 2026-08-19 R4).
 #   The allowlist makes retrieval PREVENTED rather than detected. The preflight
-#   below proves it by execution before any paid cell; it does not assume it.
+#   below proves it by execution before any paid cell; it does not assume it —
+#   run `PREFLIGHT_ONLY=1` to do exactly that and stop.
+#
+#   WHAT IT DOES NOT CLOSE, stated here rather than only in decision 034 because
+#   this is where spend is authorized: containers on $EGRESS_NET still reach
+#   docker's embedded DNS resolver, which is a low-bandwidth exfiltration and
+#   retrieval side channel. Leg 3 proves one internet host is unroutable; it
+#   proves nothing about the docker host itself or sibling containers.
 #
 #   DISPOSABLE CLONES. Each cell wipes its clone and re-extracts a hash-pinned
 #   baseline tar. No host process runs `git` against a `.git` the container had
@@ -64,6 +71,7 @@
 #   ... run-host.sh discourse-graphite-PR4 grafana-PR79265     # subset
 #   MODEL=opus BUDGET=10 ... run-host.sh                       # cheaper sweep
 #   DRY_RUN=1 ... run-host.sh                                  # plan only, $0
+#   PREFLIGHT_ONLY=1 ... run-host.sh    # build + prove the egress control, then stop
 set -euo pipefail
 cd "$(dirname "$0")/../../.."
 ROOT="$PWD"
@@ -89,6 +97,13 @@ SWEEP_BUDGET="${SWEEP_BUDGET:-250.00}"
 # cell from being re-paid indefinitely.
 MAX_ATTEMPTS="${MAX_ATTEMPTS:-2}"
 DRY_RUN="${DRY_RUN:-}"
+# Runs the images, the network, the proxy and all preflights — then stops,
+# before any paid cell. The design's central claim is that the egress control
+# "tests itself at $0 before the first paid cell"; until this existed there was
+# no way to CASH that claim: DRY_RUN exits before the images are even built, and
+# nothing else stopped after the preflights. A claim about a control needs a
+# command that demonstrates it.
+PREFLIGHT_ONLY="${PREFLIGHT_ONLY:-}"
 DOCKER_DIR="$ROOT/runs/review-arms/crb-pipeline/docker"
 REVIEW_IMAGE="crb-review:$CC_VERSION"
 PROXY_IMAGE="crb-egress-proxy:$(git -C "$ROOT" rev-parse --short HEAD)"
@@ -153,10 +168,13 @@ echo "  proxy:  $PROXY_IMAGE ($(grep -c '^[^#]' "$DOCKER_DIR/egress-allowlist") 
 # --internal means containers on it have NO route off this host. The proxy is
 # attached to it AND to the default bridge, so it is the only path out, and it
 # CONNECTs to api.anthropic.com alone.
+NET_CREATE_CMD=""
 setup_egress() {
   docker rm -f "$PROXY_NAME" >/dev/null 2>&1 || true
   docker network rm "$EGRESS_NET" >/dev/null 2>&1 || true
-  docker network create --internal --subnet "$EGRESS_SUBNET" "$EGRESS_NET" >/dev/null
+  # Captured so the preflight can assert the flag against the command that ran.
+  NET_CREATE_CMD="docker network create --internal --subnet $EGRESS_SUBNET $EGRESS_NET"
+  $NET_CREATE_CMD >/dev/null
   docker run -d --name "$PROXY_NAME" --network "$EGRESS_NET" \
     --restart no "$PROXY_IMAGE" >/dev/null
   # Second attachment AFTER creation: a container created on the internal
@@ -195,32 +213,33 @@ in_cell_net() {
 # different reasons — a single test passing for the wrong reason is how this
 # harness has gone wrong before.
 echo "=== egress preflight"
-# (1) positive: the API is reachable THROUGH the proxy. Any HTTP status proves
-# the tunnel; 401 is the expected answer to an unauthenticated GET, and we do
-# not send the key here.
-api_code=$(in_cell_net 'curl -s -o /dev/null -w "%{http_code}" --max-time 25 https://api.anthropic.com/v1/models || echo 000')
-[ "$api_code" != "000" ] || {
-  echo "  FAIL: api.anthropic.com unreachable through the proxy — every cell would fail" >&2
-  exit 5; }
-echo "  ok  api.anthropic.com reachable through the proxy (HTTP $api_code)"
-# (2) negative: a non-allowlisted host through the proxy must be REFUSED by the
-# filter. github.com specifically: it is where the answer key lives.
-gh_code=$(in_cell_net 'curl -s -o /dev/null -w "%{http_code}" --max-time 25 https://github.com/ || echo 000')
-case "$gh_code" in
-  403|000) echo "  ok  github.com refused through the proxy (HTTP $gh_code)" ;;
-  *) echo "  FAIL: github.com returned HTTP $gh_code through the proxy — the allowlist is NOT filtering." >&2
-     echo "        The answer key is reachable from a review cell; refusing to spend." >&2
-     exit 5 ;;
-esac
-# (3) negative: with the proxy env removed there must be no route at all, so a
-# cell that simply ignores HTTPS_PROXY (curl, git, a subprocess) is still
-# contained. Without this leg the control would be advisory.
-direct=$(docker run --rm --network "$EGRESS_NET" --entrypoint bash "$REVIEW_IMAGE" \
-  -c 'curl -s -o /dev/null -w "%{http_code}" --max-time 20 https://github.com/ || echo 000')
-[ "$direct" = "000" ] || {
-  echo "  FAIL: github.com returned HTTP $direct with NO proxy env — the network is not internal." >&2
-  exit 5; }
-echo "  ok  github.com unroutable without the proxy (network is --internal)"
+VERDICT="$ROOT/scripts/crb-egress-verdict.sh"
+# Every leg's PASS/FAIL rule lives in that script, where test/crb-egress-verdict.bats
+# pins it. This block only observes; it does not decide. Before the split, three
+# separate mutations that neutered these legs left the whole suite green.
+egress_leg() {  # <leg> <observed>
+  bash "$VERDICT" "$1" "$2" | sed 's/^/  /'
+  local rc=${PIPESTATUS[0]}
+  [ "$rc" -eq 0 ] || { echo "  (refusing to spend)" >&2; exit 5; }
+}
+
+# (0) the flag the whole story rests on — asserted against the command that was
+# actually run, not against the author's intention.
+egress_leg internal-net "$NET_CREATE_CMD"
+# (1) positive: the API is reachable THROUGH the proxy. Must be first — the
+# refusal legs accept "000", which a dead proxy also produces.
+egress_leg api-reachable "$(in_cell_net 'curl -s -o /dev/null -w "%{http_code}" --max-time 25 https://api.anthropic.com/v1/models || echo 000')"
+# (2) negative: a non-allowlisted host through the proxy must be refused.
+# github.com specifically: it is where the answer key lives.
+egress_leg filter-blocks "$(in_cell_net 'curl -s -o /dev/null -w "%{http_code}" --max-time 25 https://github.com/ || echo 000')"
+# (2b) the same over PLAIN HTTP. `ConnectPort 443` scopes the CONNECT method
+# only, so a `GET http://…` is an ordinary forward-proxy request that ConnectPort
+# never sees — and HTTP_PROXY/http_proxy are exported to every cell. The Filter
+# is what refuses it, and until this leg existed nothing exercised that path.
+egress_leg plain-http "$(in_cell_net 'curl -s -o /dev/null -w "%{http_code}" --max-time 25 http://github.com/ || echo 000')"
+# (3) negative: with the proxy env removed there must be no route at all.
+egress_leg no-direct-route "$(docker run --rm --network "$EGRESS_NET" --entrypoint bash "$REVIEW_IMAGE" \
+  -c 'curl -s -o /dev/null -w "%{http_code}" --max-time 20 https://github.com/ || echo 000')"
 
 # ── Preflight: auth AND skill registration, ON THE RESTRICTED NETWORK ───────
 # Two failure modes cost a whole sweep if unchecked:
@@ -261,6 +280,14 @@ if "code-review" not in r:
              f"built-in reviewer, not the pipeline. Model said: {r[:300]!r}")
 print("  preflight OK — auth good, code-review skill registered, egress constrained")
 EOF
+
+if [ -n "$PREFLIGHT_ONLY" ]; then
+  echo
+  echo "PREFLIGHT_ONLY=1 — images built, egress allowlist proven by execution,"
+  echo "auth and skill registration confirmed. No cell ran; only the preflight's"
+  echo "own auth turn was billed. Re-run without PREFLIGHT_ONLY to sweep."
+  exit 0
+fi
 
 # ── Sweep-level provenance: which payload actually ran (review-canon §3) ─────
 # A function, and trapped on EXIT, because it used to sit inline after the loop:
@@ -358,15 +385,64 @@ EOF
 # All three jobs, one handler.
 trap 'write_run_meta; teardown_egress; rm -rf "$PAYLOAD_SRC"' EXIT
 
+# Aggregate spend gate. BUDGET caps one instance; this caps the sweep, so an
+# unattended --all run cannot quietly spend BUDGET x N. Summed over ATTEMPTS
+# across all cells, so it survives both a resumed sweep and re-run cells.
+#
+# A FUNCTION called at the TOP of the loop body, not a step at the bottom: at the
+# bottom, every early `continue` (missing baseline, already-complete cell,
+# MAX_ATTEMPTS, failed restore) jumped straight past it, so a resume that was
+# already over the ceiling paid one more full $10-40 cell before noticing. The
+# check is cheap and reading it before deciding to spend is the whole point.
+sweep_spend_ok() {
+  python3 - "$OUT" "$SWEEP_BUDGET" <<'EOF'
+import json, os, sys
+out, cap = sys.argv[1], float(sys.argv[2])
+total = 0.0
+for name in sorted(os.listdir(out)):
+    ledger = os.path.join(out, name, "attempts.jsonl")
+    if os.path.isfile(ledger):
+        for line in open(ledger):
+            line = line.strip()
+            if not line:
+                continue
+            try:
+                total += json.loads(line).get("cost_usd") or 0
+            except Exception:
+                pass
+        continue
+    # Cell from a pre-ledger run: fall back to its final result.
+    rp = os.path.join(out, name, "result.json")
+    if os.path.isfile(rp):
+        try:
+            total += json.load(open(rp)).get("total_cost_usd") or 0
+        except Exception:
+            pass
+print(f"  sweep spend so far: ${total:.2f} / ${cap:.2f}")
+sys.exit(1 if total >= cap else 0)
+EOF
+}
+
 for id in "${INSTANCES[@]}"; do
+  sweep_spend_ok || { echo "SWEEP BUDGET EXCEEDED — stopping before this cell. Raise SWEEP_BUDGET to continue." >&2; exit 2; }
   clone="$CLONES/$id"
-  # The BASELINE, not the clone, is the precondition now: --restore below builds
-  # the clone from it, and a work clone left over from a previous cell is not
-  # evidence that this cell can run.
-  [ -f "$CLONES/.baselines/$id.tar" ] || {
-    echo "$id: no baseline — run scripts/crb-materialize.py --slug $id (or --snapshot $id" >&2
-    echo "    if the clone already exists and no container has run against it)" >&2
-    skipped_bad=$((skipped_bad+1)); continue; }
+  # The BASELINE, not the clone, is the precondition: --restore below builds the
+  # clone from it, and a work clone left over from a previous cell is not
+  # evidence that this cell can run. BOTH halves are required here, before the
+  # cell is paid for — the index used to be first touched at harvest time, i.e.
+  # after the $10-40 review.
+  #
+  # Paths come from crb-materialize.py rather than being spelled here: the
+  # .baselines/ layout has one owner, and this file restating it was the
+  # hand-copy failure crb_common.py's docstring exists to prevent.
+  mapfile -t _bl < <(python3 "$ROOT/scripts/crb-materialize.py" --baseline-paths "$id")
+  if [ ! -f "${_bl[0]:-/nonexistent}" ] || [ ! -f "${_bl[1]:-/nonexistent}" ]; then
+    echo "$id: no baseline — rebuild the clone and its baseline with:" >&2
+    echo "      python3 scripts/crb-materialize.py --slug $id --force" >&2
+    echo "    (there is deliberately no mode that baselines an existing clone in" >&2
+    echo "     place; that path ran host git against a container-writable .git)" >&2
+    skipped_bad=$((skipped_bad+1)); continue
+  fi
   dest="$OUT/$id"
   # "Complete" must mean PRODUCED A REVIEW. The rules, and the artifacts they
   # were measured against, live in scripts/crb-cell-status.py — extracted from
@@ -386,20 +462,32 @@ for id in "${INSTANCES[@]}"; do
          exit 4 ;;
     esac
   fi
+  # MAX_ATTEMPTS is checked OUTSIDE the result.json test, deliberately. Nested
+  # inside it (three review rounds running), it could not see the failure that
+  # matters most: a container that dies before emitting a `result` event writes
+  # NO result.json, so the guard never ran, the cell re-ran on every resume
+  # forever, and each attempt ledgered cost_usd 0 — invisible to SWEEP_BUDGET
+  # too. Every new precondition in this file (the sidecar, the --internal
+  # network, the baked image) fails in exactly that shape, so the hole got more
+  # reachable, not less. attempts.jsonl is the ledger either way, so it is the
+  # right thing to gate on.
+  #
+  # `grep -c` prints 0 AND exits 1 on no match, so `|| echo 0` would append a
+  # SECOND zero — `attempts` becomes "0\n0", the -ge test errors, and bash
+  # abandons the rest of this cell's loop body without running it.
+  attempts=0
+  if [ -f "$dest/attempts.jsonl" ]; then
+    attempts=$(grep -c . "$dest/attempts.jsonl" || true)
+    [ -n "$attempts" ] || attempts=0
+  fi
+  if [ "$attempts" -ge "$MAX_ATTEMPTS" ]; then
+    echo "=== $id — $attempts attempt(s) already made, at MAX_ATTEMPTS — skipping (delete $dest to reset)" >&2
+    skipped_bad=$((skipped_bad+1)); continue
+  fi
   if [ -s "$dest/result.json" ]; then
-    # `grep -c` prints 0 AND exits 1 on no match, so `|| echo 0` would append a
-    # SECOND zero — `attempts` becomes "0\n0", the -ge test errors, and bash
-    # abandons the rest of this cell's loop body without running it.
-    attempts=0
-    if [ -f "$dest/attempts.jsonl" ]; then
-      attempts=$(grep -c . "$dest/attempts.jsonl" || true)
-      [ -n "$attempts" ] || attempts=0
-    fi
-    if [ "$attempts" -ge "$MAX_ATTEMPTS" ]; then
-      echo "=== $id — $attempts failed attempt(s), at MAX_ATTEMPTS — skipping (delete $dest to reset)" >&2
-      skipped_bad=$((skipped_bad+1)); continue
-    fi
     echo "=== $id — prior result was incomplete/errored, re-running (attempt $((attempts+1))): $cell_status"
+  elif [ "$attempts" -gt 0 ]; then
+    echo "=== $id — $attempts prior attempt(s) produced no result event, re-running (attempt $((attempts+1)))"
   fi
   mkdir -p "$dest"
   echo "=== $id"
@@ -411,18 +499,30 @@ for id in "${INSTANCES[@]}"; do
   # reads the outgoing `.git` (2026-08-19 rubric R1/R2).
   # Run BEFORE the payload copy below, so a skipped cell leaks no temp dir.
   python3 "$ROOT/scripts/crb-materialize.py" --restore "$id" || {
-    echo "$id: RESTORE failed — skipping cell" >&2
-    echo "    A clone materialized before 2026-08-19 has no baseline yet. If no" >&2
-    echo "    container has ever run against it, build one once:" >&2
-    echo "      python3 scripts/crb-materialize.py --snapshot $id" >&2
+    echo "$id: RESTORE failed — skipping cell (nothing was paid for)" >&2
+    echo "    A baseline hash mismatch or a clone materialized before the" >&2
+    echo "    baseline pin both land here. Rebuild it:" >&2
+    echo "      python3 scripts/crb-materialize.py --slug $id --force" >&2
     skipped_bad=$((skipped_bad+1)); continue; }
+  # The proxy is `--restart no` and its liveness was proven once, at t=0. If it
+  # died since, every remaining cell would burn its budget failing to reach the
+  # API — and (until the retry fix above) re-run forever at cost_usd 0. One $0
+  # probe per cell is the cheapest possible insurance against that.
+  if ! in_cell_net 'curl -s -o /dev/null --max-time 15 https://api.anthropic.com/v1/models' >/dev/null 2>&1; then
+    echo "$id: egress proxy is not answering — the sweep cannot reach the API." >&2
+    echo "    Stopping rather than burning budget on cells that will all fail." >&2
+    exit 5
+  fi
+
   # Fresh writable payload copy per instance: Claude Code writes settings.json,
   # projects/, todos/ into ~/.claude, and one instance's state must not leak
   # into the next (nor back into the payload source).
   INST_HOME=$(mktemp -d); cp -r "$PAYLOAD_SRC/." "$INST_HOME/"; chmod -R u+w "$INST_HOME"
   # The clone is mounted read-write on purpose: the code-review skill writes its
-  # rubric to docs/reviews/ in the repo under review. Artifacts are harvested
-  # and the tree reset below, so re-runs start from the same state.
+  # rubric to docs/reviews/ in the repo under review. Nothing resets it
+  # afterwards — the NEXT cell's `--restore` above wipes and re-extracts it, so
+  # re-runs start from the same state. (This comment used to say "the tree reset
+  # below", which survived the deletion of the reset it referred to.)
   #
   t0=$(date +%s)
   # --network $EGRESS_NET: no route off this host except the proxy, which
@@ -476,7 +576,7 @@ EOF
   # honours .gitignore, so a rubric written under a path the upstream repo
   # ignores never appeared. Nothing below reads .git.
   python3 "$ROOT/scripts/crb-harvest-artifacts.py" \
-    "$clone" "$CLONES/.baselines/$id.index.json" "$dest/artifacts" || {
+    "$clone" "${_bl[1]}" "$dest/artifacts" || {
       echo "$id: HARVEST invocation failed — see above" >&2; exit 4; }
 
   # Post-run audit, INSIDE a throwaway container: read the outgoing clone for
@@ -490,10 +590,26 @@ EOF
   head_sha=$(python3 -c '
 import json, sys
 print(json.load(open(sys.argv[1]))[sys.argv[2]]["head"])' "$MANIFEST" "$id")
-  if ! docker run --rm --network none -u node \
+  # The audit publishes THREE states and they are not interchangeable: 0 clean,
+  # 1 VOID (contamination detected), anything else "could not check". A bare
+  # `if ! docker run` collapsed the last two into VOID, so an audit that never
+  # ran — a missing binary in the image, a docker daemon hiccup (125/126/127),
+  # or a `.git` the agent moved (exit 2) — was published in run-meta.json's
+  # voided_cells as DETECTED CONTAMINATION about a $10-40 cell. This file already
+  # gets that distinction right twice (crb-cell-status.py above, the harvest
+  # just now), both times by aborting the sweep rather than guessing.
+  audit_rc=0
+  docker run --rm --network none -u node \
         -v "$clone":/repo \
         -v "$ROOT/scripts/crb-audit-clone.sh":/audit.sh:ro \
-        --entrypoint bash "$REVIEW_IMAGE" /audit.sh /repo "$head_sha"; then
+        --entrypoint bash "$REVIEW_IMAGE" /audit.sh /repo "$head_sha" || audit_rc=$?
+  if [ "$audit_rc" -gt 1 ]; then
+    echo "$id: containment audit could not run (exit $audit_rc) — NOT a void." >&2
+    echo "    Refusing to guess: an unchecked cell must not be banked as clean," >&2
+    echo "    and must not be published as contaminated either. Stopping." >&2
+    exit 4
+  fi
+  if [ "$audit_rc" -eq 1 ]; then
     echo "$id: POST-RUN containment audit FAILED — voiding this cell" >&2
     : > "$dest/CONTAINMENT_FAILED"
     python3 - "$dest/result.json" <<'EOF' || true
@@ -538,35 +654,6 @@ with open(sys.argv[2], "a") as fh:
     fh.write(json.dumps(rec) + "\n")
 EOF
 
-  # Aggregate spend gate. BUDGET caps one instance; this caps the sweep, so an
-  # unattended --all run cannot quietly spend BUDGET x N. Summed over ATTEMPTS
-  # across all cells, so it survives both a resumed sweep and re-run cells.
-  python3 - "$OUT" "$SWEEP_BUDGET" <<'EOF' || { echo "SWEEP BUDGET EXCEEDED — stopping. Raise SWEEP_BUDGET to continue." >&2; exit 2; }
-import json, os, sys
-out, cap = sys.argv[1], float(sys.argv[2])
-total = 0.0
-for name in sorted(os.listdir(out)):
-    ledger = os.path.join(out, name, "attempts.jsonl")
-    if os.path.isfile(ledger):
-        for line in open(ledger):
-            line = line.strip()
-            if not line:
-                continue
-            try:
-                total += json.loads(line).get("cost_usd") or 0
-            except Exception:
-                pass
-        continue
-    # Cell from a pre-ledger run: fall back to its final result.
-    rp = os.path.join(out, name, "result.json")
-    if os.path.isfile(rp):
-        try:
-            total += json.load(open(rp)).get("total_cost_usd") or 0
-        except Exception:
-            pass
-print(f"  sweep spend so far: ${total:.2f} / ${cap:.2f}")
-sys.exit(1 if total >= cap else 0)
-EOF
 done
 
 write_run_meta
@@ -578,5 +665,20 @@ echo "Cells: $ran ran, $skipped_ok already complete, $skipped_bad skipped as unu
 if [ "$ran" -eq 0 ] && [ "$skipped_bad" -gt 0 ]; then
   echo "NO CELL RAN and $skipped_bad instance(s) were unusable — not a clean sweep." >&2
   exit 3
+fi
+# A void is a paid cell whose result cannot be used. Exiting 0 on a sweep that
+# voided anything reads as success to a caller and to anyone skimming, and the
+# cells that void are exactly the ones a results doc must account for.
+voided=$(python3 - "$OUT" <<'EOF' || echo 0
+import os, sys
+out = sys.argv[1]
+print(sum(1 for n in os.listdir(out)
+          if os.path.isfile(os.path.join(out, n, "CONTAINMENT_FAILED"))))
+EOF
+)
+if [ "${voided:-0}" -gt 0 ]; then
+  echo "$voided cell(s) VOIDED by the containment audit — see run-meta.json's voided_cells." >&2
+  echo "Those PRs leave the judged denominator; read the leaderboard's SUBSET ATTRITION line." >&2
+  exit 6
 fi
 echo "Next: scripts/crb-pipeline-to-benchmark.py  (inject as a benchmark tool, then judge)"

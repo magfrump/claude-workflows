@@ -107,13 +107,102 @@ PY' "$RUNNER"
   [ "$status" -ne 0 ]
 }
 
-@test "the egress preflight tests both directions and blocks the sweep" {
-  # Positive leg, filter leg, and route leg. Dropping any one leaves a control
-  # that can pass for the wrong reason.
-  grep -q 'api.anthropic.com reachable through the proxy' "$RUNNER"
-  grep -q 'github.com refused through the proxy' "$RUNNER"
-  grep -q 'github.com unroutable without the proxy' "$RUNNER"
-  # Each failure path must stop the sweep rather than warn.
-  n=$(grep -c 'exit 5' "$RUNNER")
-  [ "$n" -ge 3 ]
+@test "the egress preflight runs all five legs and blocks the sweep" {
+  # Verdicts live in scripts/crb-egress-verdict.sh (pinned by
+  # test/crb-egress-verdict.bats); this pins that every leg is actually invoked.
+  # Dropping any one leaves a control that can pass for the wrong reason — and
+  # the --internal leg exists because dropping that flag was invisible to every
+  # other leg, all of which go through the proxy by construction.
+  for leg in internal-net api-reachable filter-blocks plain-http no-direct-route; do
+    grep -q "egress_leg $leg" "$RUNNER"
+  done
+  # A failed leg must stop the sweep rather than warn.
+  grep -q 'exit 5' "$RUNNER"
+}
+
+# ── the runner's spend and verdict wiring ────────────────────────────────────
+# run-host.sh has no executing test (582 lines, all the money), so these are
+# structural pins on the three places the 2026-08-19 review found it deciding
+# something it should not. Each is written as the defect it must catch.
+
+@test "the audit's exit 2 is NOT treated as contamination" {
+  # A bare `if ! docker run` collapsed "could not check" (2) and docker's own
+  # 125/126/127 into VOID, publishing detected contamination about a $10-40 cell
+  # that was never checked.
+  # `^[^#]*` so the explanatory comment describing the old shape does not match.
+  run grep -nE '^[^#]*if ! docker run' "$RUNNER"
+  [ "$status" -ne 0 ]
+  grep -q 'audit_rc=0' "$RUNNER"
+  grep -q 'audit_rc" -gt 1' "$RUNNER"
+  grep -q 'audit_rc" -eq 1' "$RUNNER"
+  # And an unrunnable audit stops the sweep rather than guessing either way.
+  grep -A4 'audit_rc" -gt 1' "$RUNNER" | grep -q 'exit 4' 
+}
+
+@test "MAX_ATTEMPTS is checked outside the result.json test" {
+  # Nested inside it, the guard could not see a container that died before
+  # emitting a result event: no result.json meant no guard, so the cell re-ran
+  # on every resume forever while ledgering cost_usd 0.
+  run python3 - "$RUNNER" <<'CHECK'
+import re, sys
+src = open(sys.argv[1]).read()
+i_guard = src.index('MAX_ATTEMPTS"')
+# Walk back to the nearest enclosing `if [ -s "$dest/result.json" ]` and make
+# sure the guard is not inside one.
+head = src[:i_guard]
+last_open = head.rfind('if [ -s "$dest/result.json" ]')
+last_close = head.rfind('\n  fi\n')
+assert last_open == -1 or last_close > last_open, "MAX_ATTEMPTS guard is nested inside the result.json test"
+CHECK
+  [ "$status" -eq 0 ]
+}
+
+@test "the sweep budget is checked before a cell, not after it" {
+  # At the bottom of the loop every early `continue` jumped it, so a resume
+  # already over the ceiling paid one more full cell first.
+  grep -q 'sweep_spend_ok()' "$RUNNER"
+  run python3 - "$RUNNER" <<'CHECK'
+import sys
+src = open(sys.argv[1]).read()
+loop = src.index('for id in "${INSTANCES[@]}"; do')
+call = src.index('sweep_spend_ok ||')
+body = src[loop:call]
+# Nothing may `continue` between the top of the loop body and the gate.
+assert 'continue' not in body, "an early continue precedes the sweep-budget gate"
+CHECK
+  [ "$status" -eq 0 ]
+}
+
+@test "a sweep that voided any cell does not exit 0" {
+  grep -q 'CONTAINMENT_FAILED' "$RUNNER"
+  grep -q 'exit 6' "$RUNNER"
+}
+
+@test "PREFLIGHT_ONLY runs the controls and stops before any paid cell" {
+  grep -q 'PREFLIGHT_ONLY' "$RUNNER"
+  # It must stop AFTER the preflights and BEFORE the cell loop — DRY_RUN exits
+  # before the images are even built, which is why it could not serve this role.
+  run python3 - "$RUNNER" <<'CHECK'
+import sys
+src = open(sys.argv[1]).read()
+stop = src.index('PREFLIGHT_ONLY=1 — images built')
+assert src.index('=== egress preflight') < stop, "PREFLIGHT_ONLY stops before the egress preflight"
+assert src.index('=== preflight') < stop, "PREFLIGHT_ONLY stops before the auth preflight"
+assert stop < src.index('for id in "${INSTANCES[@]}"; do'), "PREFLIGHT_ONLY does not stop before the cell loop"
+CHECK
+  [ "$status" -eq 0 ]
+}
+
+@test "proxy liveness is probed per cell, not once at t=0" {
+  run python3 - "$RUNNER" <<'CHECK'
+import sys
+src = open(sys.argv[1]).read()
+loop = src.index('for id in "${INSTANCES[@]}"; do')
+# rindex, not index: the header comment quotes the same command line, and
+# searching forward from 0 finds that instead of the actual invocation.
+review = src.rindex('-p "/code-review main"')
+body = src[loop:review]
+assert 'in_cell_net' in body, "no in-loop egress probe before the paid container"
+CHECK
+  [ "$status" -eq 0 ]
 }
