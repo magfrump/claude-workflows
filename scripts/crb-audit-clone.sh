@@ -86,14 +86,17 @@ fi
 # this PR descends from the PR head too) — but a commit that does not descend
 # cannot be agent work on top of the review, so it is reported separately.
 strays=$(git rev-list --all --not "$HEAD_SHA" 2>/dev/null)
-n_strays=0; n_foreign=0
+n_strays=0; n_foreign=0; first_foreign=""
 for c in $strays; do
   n_strays=$((n_strays+1))
   if ! git merge-base --is-ancestor "$HEAD_SHA" "$c" >/dev/null 2>&1; then
     n_foreign=$((n_foreign+1))
-    [ "$n_foreign" -gt 1 ] || note "commit ${c:0:12} is reachable outside the reviewed head and does NOT descend from it"
+    [ "$n_foreign" -gt 1 ] || first_foreign=$c
   fi
 done
+# The count was tallied and then never printed, so "counted in full but only the
+# first is named" was true of the code and invisible in its output.
+[ "$n_foreign" -eq 0 ] || note "$n_foreign commit(s) reachable outside the reviewed head and NOT descended from it (first: ${first_foreign:0:12})"
 
 # 5. A nested repository is a clone of anything, including the answer key, that
 # no check above can see: different object store, so FETCH_HEAD, fsck and

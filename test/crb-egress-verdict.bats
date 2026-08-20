@@ -12,7 +12,11 @@
 # three mutations now fails a case below.
 #
 # The cases are written as the mutations they must catch, not as a restatement
-# of the implementation.
+# of the implementation. NOTE the limit found by the iteration-2 fact-check: a
+# case here mutates the STRING handed to the verdict script, which does not
+# prove the runner hands it a truthful one. Dropping `--internal` from the
+# runner's own `docker network create` survived every case in this file until
+# the last one below was added.
 #
 # Hermetic: pure argument-in / verdict-out. No docker, no network, no files.
 
@@ -126,6 +130,22 @@ verdict() { run bash "$VERDICT" "$@"; }
 
 # ── the runner actually uses it ──────────────────────────────────────────────
 # Extraction only helps if the runner stopped deciding for itself.
+
+# The mutation that survived the whole suite: the case above proves the verdict
+# script REJECTS a create-line without --internal, but the runner could still be
+# building one. This asserts the command the runner actually constructs and then
+# runs, which is the thing the leg is handed.
+@test "the runner's own network create really carries --internal" {
+  runner="$REPO_ROOT/runs/review-arms/crb-pipeline/run-host.sh"
+  run grep -E '^\s*NET_CREATE_CMD="docker network create' "$runner"
+  [ "$status" -eq 0 ]
+  [[ "$output" == *"--internal"* ]]
+  # ...and that the create is executed via that variable, so the asserted string
+  # is the command that runs rather than a decorative copy of it.
+  grep -qE '^\s*\$NET_CREATE_CMD >' "$runner"
+  # ...and that the leg is handed that same variable.
+  grep -q 'egress_leg internal-net "$NET_CREATE_CMD"' "$runner"
+}
 
 @test "run-host.sh delegates every leg to the verdict script" {
   runner="$REPO_ROOT/runs/review-arms/crb-pipeline/run-host.sh"

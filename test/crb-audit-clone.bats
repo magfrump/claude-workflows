@@ -106,7 +106,10 @@ audit() { run bash "$AUDIT" "$CLONE" "$HEAD_SHA"; }
   git -C "$CLONE" checkout -q review
   audit
   [ "$status" -eq 1 ]
-  [[ "$output" == *"does NOT descend from it"* ]]
+  [[ "$output" == *"NOT descended from it"* ]]
+  # The count is now reported, not merely tallied — it was computed into a
+  # variable nothing ever printed.
+  [[ "$output" == *"1 commit(s) reachable outside"* ]]
 }
 
 @test "a nested repository VOIDS" {

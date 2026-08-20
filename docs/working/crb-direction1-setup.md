@@ -115,9 +115,12 @@ a whole sweep silently:
    all the "ok" lines still printing.
 
 **`PREFLIGHT_ONLY=1` runs all of the above and stops.** That command is what
-makes "the control tests itself at $0 before the first paid cell" a claim you
-can cash rather than an assertion — `DRY_RUN=1` exits before the images are even
-built, so it cannot serve that purpose.
+makes "the control tests itself before the first paid cell" a claim you can cash
+rather than an assertion — `DRY_RUN=1` exits before the images are even built,
+so it cannot serve that purpose. It is **not quite $0**: the five egress legs are
+free, but the auth/skill-registration preflight is a real headless invocation and
+bills one turn. Call it one turn rather than zero; the runner's own output says
+so.
 
 Outputs land in `runs/review-arms/crb-pipeline/<slug>/`: `transcript.jsonl`
 (full stream), `result.json` (cost/turns), `review.md` (final text), and

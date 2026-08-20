@@ -3,9 +3,15 @@
 # Why an image instead of `npx -y @anthropic-ai/claude-code@VER` at run time:
 # the review container runs behind an egress allowlist, and installing at run
 # time would force `registry.npmjs.org` (plus its CDN) into that allowlist for
-# every paid cell. Baking the CLI means a running cell needs exactly ONE
-# reachable host, `api.anthropic.com`, which is what makes the allowlist a
-# meaningful control rather than a gesture.
+# every paid cell. Baking the CLI means a running cell NEEDS only one reachable
+# host, `api.anthropic.com`, which is what lets the allowlist hold a single
+# entry and be a meaningful control rather than a gesture.
+#
+# It will still ATTEMPT others — this repo's own devcontainer-config/egress/base.txt
+# lists claude.ai, console.anthropic.com, sentry.io, statsig.com and
+# registry.npmjs.org, and nothing here disables the autoupdater or telemetry. The
+# allowlist refuses them. "Needs one" is the claim; "contacts one" is not, and an
+# earlier version of this comment said the latter.
 #
 # Built once by run-host.sh with normal network, before the restricted network
 # is created. The CLI version is still pinned, so the arm is comparable to

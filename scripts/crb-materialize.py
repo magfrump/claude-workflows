@@ -299,7 +299,9 @@ def snapshot_baseline(dst: Path, slug: str) -> dict:
     """
     BASELINE_ROOT.mkdir(parents=True, exist_ok=True)
     tar, idx_path = baseline_paths(slug)
-    part = BASELINE_ROOT / f"{slug}.tar.part"
+    # Derived from the published names, not respelled: `.part` siblings were the
+    # last two places the layout was written out by hand.
+    part = tar.with_name(tar.name + ".part")
     # `-C dst .` so the archive holds clone-relative paths: extraction then does
     # not depend on where the clone lived when it was made.
     sh(["tar", "--create", "--file", str(part), "-C", str(dst), "."])
@@ -307,7 +309,7 @@ def snapshot_baseline(dst: Path, slug: str) -> dict:
     # none: it would restore a truncated repo and the cell would review nothing.
     part.replace(tar)
     index = artifact_index(dst)
-    idx_part = BASELINE_ROOT / f"{slug}.index.json.part"
+    idx_part = idx_path.with_name(idx_path.name + ".part")
     idx_part.write_text(json.dumps(index, indent=0, sort_keys=True) + "\n")
     idx_part.replace(idx_path)
     digest = sha256_file(tar)
@@ -578,7 +580,7 @@ def main():
                     # R1/R2). The baseline is hash-pinned and was built before any
                     # container existed, so a temp extract of it is safe to inspect
                     # — and it is also the thing every cell actually starts from.
-                    tar = BASELINE_ROOT / f"{slug}.tar"
+                    tar, _idx = baseline_paths(slug)
                     if not tar.is_file():
                         raise RuntimeError(f"no baseline at {tar} — rebuild with "
                                            f"`--slug {slug} --force`")

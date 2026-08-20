@@ -48,7 +48,8 @@ autoupdater and telemetry endpoints listed in `devcontainer-config/egress/base.t
 — which the allowlist refuses). A five-leg egress preflight — the network really
 is `--internal`, the API is reachable through the proxy, github is refused
 through it over HTTPS and over plain HTTP, and github is unroutable without it —
-must pass before any paid cell. `PREFLIGHT_ONLY=1` runs exactly that and stops.
+must pass before any paid cell. `PREFLIGHT_ONLY=1` runs those five legs plus the
+auth/skill preflight (which bills one turn, not zero) and then stops.
 
 ## Alternatives rejected
 
@@ -84,8 +85,11 @@ must pass before any paid cell. `PREFLIGHT_ONLY=1` runs exactly that and stops.
   deleted for reopening R1 — see the note in `crb-materialize.py`'s `main()`.
 - **Not verified here**: everything docker-shaped. This session has no docker,
   so the images, the network and the proxy have never run. The allowlist is
-  verified on the host by its own preflight, at $0, before the first cell — a
-  control whose only honest verification is execution.
+  verified on the host by its own preflight (`PREFLIGHT_ONLY=1`, one billed auth
+  turn) before the first cell — a control whose only honest verification is
+  execution. Note one residual gap the test suite cannot close: the `internal-net`
+  leg asserts the network-create command, but whether docker honours `--internal`
+  is itself only observable at runtime.
 - Residual and unclosed: a low-bandwidth DNS side channel through docker's
   embedded resolver (`run-host.sh` names it where spend is authorized, not only
   here), and training-data leakage, which no container control touches.

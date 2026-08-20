@@ -218,9 +218,19 @@ VERDICT="$ROOT/scripts/crb-egress-verdict.sh"
 # pins it. This block only observes; it does not decide. Before the split, three
 # separate mutations that neutered these legs left the whole suite green.
 egress_leg() {  # <leg> <observed>
-  bash "$VERDICT" "$1" "$2" | sed 's/^/  /'
-  local rc=${PIPESTATUS[0]}
-  [ "$rc" -eq 0 ] || { echo "  (refusing to spend)" >&2; exit 5; }
+  # Capture THEN print. The obvious form — `bash "$VERDICT" ... | sed` followed by
+  # a PIPESTATUS check — is broken under this file's `set -euo pipefail`: pipefail
+  # makes the pipeline return the verdict's nonzero status, errexit kills the
+  # shell at that line, and the PIPESTATUS check plus `exit 5` below it never run.
+  # The sweep still failed closed, but with status 1 and no explanation, so every
+  # doc promising "exits 5" was wrong. Found by execution on the 2026-08-19
+  # iteration-2 fact-check — a fix-round mechanism error of exactly the class this
+  # loop keeps producing, which is why the assignment is guarded with `|| rc=$?`
+  # rather than relying on a pipeline's exit status at all.
+  local out rc=0
+  out=$(bash "$VERDICT" "$1" "$2") || rc=$?
+  printf '%s\n' "$out" | sed 's/^/  /'
+  [ "$rc" -eq 0 ] || { echo "  (refusing to spend — egress leg '$1' failed)" >&2; exit 5; }
 }
 
 # (0) the flag the whole story rests on — asserted against the command that was
@@ -490,6 +500,10 @@ for id in "${INSTANCES[@]}"; do
     echo "=== $id — $attempts prior attempt(s) produced no result event, re-running (attempt $((attempts+1)))"
   fi
   mkdir -p "$dest"
+  # A void marker from an EARLIER sweep must not make this sweep exit 6: nothing
+  # else ever deletes it, so the status would be sticky forever once any cell had
+  # ever voided. This cell is about to be re-decided, so its old verdict goes.
+  rm -f "$dest/CONTAINMENT_FAILED"
   echo "=== $id"
   # Every cell starts from a WIPE, not a repair: the work clone is deleted and
   # re-extracted from a hash-pinned baseline built before any container existed.
@@ -569,6 +583,23 @@ if res is None:
 json.dump(res, open(sys.argv[2], "w"))
 open(sys.argv[3], "w").write(res.get("result") or "")
 EOF
+  # Ledger this attempt's spend IMMEDIATELY, before the audit and before any
+  # path that can leave the loop. result.json is overwritten by a retry, so
+  # summing result.json alone silently forgets every earlier paid attempt — and
+  # the audit's `exit 4` abort would additionally have dropped THIS attempt's
+  # spend on the floor, under-counting exactly the cell that just cost money.
+  python3 - "$dest/result.json" "$dest/attempts.jsonl" <<'EOF' || true
+import json, sys
+try:
+    d = json.load(open(sys.argv[1]))
+except Exception:
+    d = {}
+rec = {"cost_usd": d.get("total_cost_usd") or 0, "turns": d.get("num_turns"),
+       "is_error": bool(d.get("is_error")), "subtype": d.get("subtype")}
+with open(sys.argv[2], "a") as fh:
+    fh.write(json.dumps(rec) + "\n")
+EOF
+
   # Artifacts: diff the tree against the baseline index instead of asking git.
   # The old harvest ran `git -C "$clone" status` ON THE HOST as the FIRST
   # command after the container exited — which is exactly where core.fsmonitor
@@ -639,20 +670,6 @@ print(f"  cost=${d.get('total_cost_usd','?')} duration={sys.argv[2]}s "
       f"artifacts={n}")
 EOF
 
-  # Ledger this attempt's spend BEFORE the gate. result.json is overwritten by a
-  # retry, so summing result.json alone silently forgets every earlier paid
-  # attempt — the gate would then under-count exactly the cells costing most.
-  python3 - "$dest/result.json" "$dest/attempts.jsonl" <<'EOF' || true
-import json, sys
-try:
-    d = json.load(open(sys.argv[1]))
-except Exception:
-    d = {}
-rec = {"cost_usd": d.get("total_cost_usd") or 0, "turns": d.get("num_turns"),
-       "is_error": bool(d.get("is_error")), "subtype": d.get("subtype")}
-with open(sys.argv[2], "a") as fh:
-    fh.write(json.dumps(rec) + "\n")
-EOF
 
 done
 

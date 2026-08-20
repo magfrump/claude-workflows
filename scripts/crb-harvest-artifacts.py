@@ -16,8 +16,8 @@ runner used to pipe into a bash loop. Two reasons, in order of importance:
    mechanism rather than an observed loss, and the earlier wording ("several
    benchmark repos ignore `docs/`-adjacent paths") overstated the corpus.
 
-The comparison is against the baseline index written by
-`crb-materialize.py --snapshot` ({relpath: sha256} over the clone's .md/.json
+The comparison is against the baseline index written by `crb-materialize.py`
+when it materializes a clone ({relpath: sha256} over the clone's .md/.json
 files, .git excluded), so "wrote" means new-or-changed relative to the pristine
 tree the cell started from — which, with disposable clones, is exactly the tree
 it was given.
@@ -99,8 +99,8 @@ def main(argv):
         # Failing rather than treating "no baseline" as "everything is new":
         # that would copy every .md/.json in a 195 MB upstream repo into the
         # cell dir and report it as pipeline output.
-        print(f"no baseline index at {index_path} — run "
-              f"`crb-materialize.py --snapshot` for this slug", file=sys.stderr)
+        print(f"no baseline index at {index_path} — rebuild this slug with "
+              f"`crb-materialize.py --slug <slug> --force`", file=sys.stderr)
         return 2
     baseline = json.loads(index_path.read_text())
     dest.mkdir(parents=True, exist_ok=True)
