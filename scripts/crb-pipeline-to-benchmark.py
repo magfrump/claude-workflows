@@ -197,6 +197,46 @@ def load_cell(cell_dir: Path, source: str, sections=FINDING_SECTIONS):
     return [], "EMPTY"
 
 
+# The judge files the purge must cover. dedup_groups.json is included even
+# though seeding never copies it: step 2.5 writes it into the work dir, and a
+# stale group there maps the OLD candidate indices onto the NEW candidates.
+JUDGE_STATE_FILES = ("candidates.json", "dedup_groups.json", "evaluations.json")
+
+
+def purge_stale_judge_entries(jdir: Path, urls, tool: str):
+    """Drop (PR, tool) entries from any existing judge-state file in jdir.
+
+    Steps 2/2.5/3 are all skip-if-present, keyed on (PR url, tool). So when a
+    cell is re-run and its review re-injected, judge state from the PREVIOUS
+    review survives every re-run of judge.sh and is reported as the new
+    review's score. Observed 2026-08-20: the voided keycloak-PR36880 cell's
+    wrong-ref review (a Dependabot CI diff) stayed in evaluations.json as five
+    false positives after the cell was cleared and re-run against the real PR.
+    benchmark_data.json already gets this right (the old review entry is
+    replaced on inject); this extends the same invalidation to the judge dir.
+
+    Only the injected PRs' entries for OUR tool are touched — the other tools'
+    seeded results, which the seeding exists to preserve, are never modified.
+    Returns {filename: n_dropped} for files that were rewritten.
+    """
+    purged = {}
+    for name in JUDGE_STATE_FILES:
+        p = jdir / name
+        if not p.exists():
+            continue
+        d = json.loads(p.read_text())
+        dropped = 0
+        for url in urls:
+            entry = d.get(url)
+            if isinstance(entry, dict) and tool in entry:
+                del entry[tool]
+                dropped += 1
+        if dropped:
+            p.write_text(json.dumps(d, indent=2) + "\n")
+            purged[name] = dropped
+    return purged
+
+
 def main():
     ap = argparse.ArgumentParser(description=__doc__,
                                  formatter_class=argparse.RawDescriptionHelpFormatter)
@@ -245,6 +285,7 @@ def main():
 
     injected = 0
     total_comments = 0
+    injected_urls = []
     for cell in cells:
         slug = cell.name
         rec = manifest.get(slug)
@@ -274,6 +315,7 @@ def main():
         })
         injected += 1
         total_comments += len(comments)
+        injected_urls.append(url)
         print(f"  {slug:28} {len(comments):3} comment(s)  "
               f"[{len(entry['golden_comments'])} goldens]  {prov}")
 
@@ -313,6 +355,14 @@ def main():
         sys.exit(f"no checked-in results for judge {args.judge} at {src} — refusing to "
                  f"continue: the judge run would score every tool (~50x cost). Pass "
                  f"--no-seed to do that deliberately.")
+
+    # Invalidate stale judge state for the pairs we just (re-)injected — after
+    # seeding, so a freshly-seeded file is also covered, and regardless of
+    # --no-seed, which leaves pre-existing files in place.
+    purged = purge_stale_judge_entries(jdir, injected_urls, args.tool_name)
+    for name, n in purged.items():
+        print(f"Purged {n} stale {args.tool_name} entr{'y' if n == 1 else 'ies'} "
+              f"from {jdir/name} (will be re-extracted/re-judged)")
 
     # The work dir carries its own runbook: the --tool flag is not optional
     # decoration. Without it step 2 re-extracts the 50 (PR, tool) pairs the
