@@ -55,6 +55,22 @@ vary by an order of magnitude, so do not average the pilot naively into a
 
 ### 2. Run the pipeline (host, docker, ANTHROPIC_API_KEY)
 
+**Start here — `prepare-sweep.sh` does the preconditions in order:**
+
+```bash
+ANTHROPIC_API_KEY=sk-ant-... bash runs/review-arms/crb-pipeline/prepare-sweep.sh
+#   --dry-run       print the plan, touch nothing, $0
+#   --skip-rebuild  baselines already exist and you know it
+```
+
+It rebuilds any clone that has no baseline (a re-clone, not a repair — there is
+deliberately no mode that baselines an existing clone in place), then runs
+`PREFLIGHT_ONLY=1` to build the images and **prove** the egress allowlist by
+execution for one billed auth turn, then stops and tells you to run one cell by
+hand and read it. Use an **API key, not a subscription login**: under API
+billing `result.json`'s `total_cost_usd` is authoritative, which is what
+`run-meta.json` totals and `SWEEP_BUDGET` gates on.
+
 ```bash
 ANTHROPIC_API_KEY=sk-ant-... bash runs/review-arms/crb-pipeline/run-host.sh
 # subset:            ... run-host.sh discourse-graphite-PR4
@@ -234,30 +250,42 @@ Hooks and `scripts/` are not in the payload (E5/E7 also ran hookless).
 
 ```bash
 scripts/crb-pipeline-to-benchmark.py                    # tool: mfc-pipeline-e8
-scripts/crb-pipeline-to-benchmark.py --sections fix address \
-    --tool-name mfc-pipeline-e8-redamber --out runs/review-arms/crb/offline-work-50-ra
 ```
 
 Writes `runs/review-arms/crb/offline-work-50/results/benchmark_data.json`: the
 benchmark's own file with our tool appended to each covered PR's `reviews`, all
-49 other tools preserved. One review comment per rubric finding row (🔴/🟡/🟢);
-`✅ Confirmed Good` rows are never emitted (they assert the code is fine —
-counting them would inflate the FP denominator). No rubric artifact ⇒ fall back
-to the headless result text as one freeform comment; the benchmark's extraction
-step handles freeform markdown.
+49 other tools preserved. **One review comment per 🔴 Must Fix or 🟡 Must Address
+row.** `✅ Confirmed Good` and `Considered Overrides` are never emitted (they
+assert the code is fine, or that a finding was already waived — counting them
+would inflate the FP denominator with non-claims), and **🟢 Consider is excluded
+by decision** — see below. No rubric artifact ⇒ fall back to the headless result
+text as one freeform comment; the benchmark's extraction step handles freeform
+markdown.
 
 It also **seeds** `results/<judge>/{candidates.json,evaluations.json}` from the
 benchmark's checked-in results for that judge, and writes a `RUN.md` runbook.
 
-**Precision warning worth pre-registering:** the 49 benchmark tools post a
-median of **4** findings per PR; an E8 rubric carries ~**16** (1 red + 8 amber
-+ 7 green on `mfc-csp`). Every unmatched green counts as a false positive, so
-the all-sections row will look precision-poor by construction. Score
-`--sections fix address` as a second tool name (judging is per-tool, so this
-costs one extra judge sweep, not a new review sweep) and report both. Note it is
-a **separate** judge invocation over a separate work dir — the `--out` above —
-so the two variants land in different `evaluations.json` files and cannot appear
-in one leaderboard table; run `crb-subset-leaderboard.py` once per work dir.
+**🟢 Consider is excluded, by decision — state this in any results doc.**
+Decision log **#36** (2026-08-19), taken **before any judge run**, so no score
+existed to select on. The reasoning: 🟢 rows are advisory by the code-review
+SKILL's own tier definition ("Not required to pass review"), they are not
+blocking, and they will rarely correspond to a human PR comment — which is this
+benchmark's ground truth. The benchmark scores `precision = TP /
+total_candidates`, so every unmatched green is a false positive: the 49
+comparison tools post a median of **4** findings per PR while an E8 rubric
+carries ~**16** (1 red + 8 amber + 7 green on `mfc-csp`). Injecting greens would
+have taxed precision with rows that were never claims about defects.
+
+This **retires the earlier two-variant plan** (score all sections *and*
+`--sections fix address` as separate tool names, report both). Red+amber is now
+the arm's single scored form, and the `consider` alias is gone from
+`--sections`, so the exclusion cannot be undone by an invocation — only by
+revisiting the decision. `test/crb-injector-sections.bats` fails if it is.
+
+Report this alongside the two caveats that bias in the **opposite** direction
+(caveats 2 and 2b below: non-uniform golden denominators, and dedup active for
+our arm only). One scoring choice that helps us and two that hurt the
+comparison is the honest framing; naming only the ones that hurt would not be.
 
 ### 4. Judge and rank
 
@@ -379,7 +407,7 @@ API billing.
 
 **Verified in this session ($0):** materialization of all 5 pilot clones with
 both guards passing; the injector against a real E8 rubric fixture (16 findings
-parsed from `mfc-csp`, 9 with `--sections fix address`); the full
+parsed from `mfc-csp` before the 🟢 exclusion, 9 after it); the full
 extract → dedup → judge chain end-to-end with the offline stub shims; that a
 seeded judge dir plus `--tool` confines work to our arm; and that the
 subset-leaderboard reproduces a 49-tool ranking with our row inserted.

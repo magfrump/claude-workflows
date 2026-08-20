@@ -23,11 +23,17 @@ What it writes under --out (default runs/review-arms/crb/offline-work-50/):
       seeding means the paid judge work is OUR TOOL ONLY — the other 49 tools
       keep their published scores instead of being re-judged at ~50x the cost.
 
-Review comments come from the pipeline's rubric (one comment per 🔴/🟡/🟢 row —
-the unit a human reviewer would post inline), falling back to the headless
-result text when no rubric artifact was captured. "✅ Confirmed Good" rows are
-never emitted: they assert the code is fine, so counting them as findings would
-inflate the false-positive denominator with non-claims.
+Review comments come from the pipeline's rubric — one comment per 🔴 Must Fix or
+🟡 Must Address row, the unit a human reviewer would post inline — falling back
+to the headless result text when no rubric artifact was captured.
+
+Three rubric sections are never emitted, for two different reasons:
+  * "✅ Confirmed Good" and "Considered Overrides" assert the code is FINE or
+    that a finding was already waived, so counting them as findings would
+    inflate the false-positive denominator with non-claims;
+  * "🟢 Consider" is advisory by the SKILL's own tier definition and rarely
+    corresponds to a human PR comment (this benchmark's ground truth), so it is
+    excluded as a scoring decision — log #36, taken before any judge run.
 
 Usage:
   scripts/crb-pipeline-to-benchmark.py                       # all run cells
@@ -71,7 +77,17 @@ DEFAULT_RUNS = WORKSPACE / "runs/review-arms/crb-pipeline"
 # "Prior finding" rather than "Finding". A rename in skills/code-review/SKILL.md
 # would have started injecting already-waived findings as guaranteed false
 # positives. Anchor here so the exclusion is a property of this file.
-FINDING_SECTIONS = ("Must Fix", "Must Address", "Consider")
+#
+# 🟢 CONSIDER IS EXCLUDED — decision log #36 (2026-08-19), taken BEFORE any judge
+# run, so no score existed to select on. 🟢 rows are advisory by the SKILL's own
+# tier definition ("Not required to pass review") and rarely correspond to a
+# human PR comment, which is this benchmark's ground truth. Since the benchmark
+# scores precision as TP / total_candidates, every unmatched green would be a
+# false positive: the 49 comparison tools post a median of 4 findings per PR
+# while an E8 rubric carries ~16 (1 red + 8 amber + 7 green on mfc-csp).
+# Red+amber is therefore the arm's single scored form; the earlier plan to score
+# both variants and report them together is retired.
+FINDING_SECTIONS = ("Must Fix", "Must Address")
 
 
 def normalize_section(title: str) -> str:
@@ -106,8 +122,10 @@ def md_tables(md: str):
     if header and rows:
         yield section, header, rows
 
-
-SECTION_ALIASES = {"fix": "Must Fix", "address": "Must Address", "consider": "Consider"}
+# No "consider" alias: excluding 🟢 is the decision (log #36), not a default a
+# flag can undo. Leaving the alias in place would have made the exclusion look
+# like a preference and let a later invocation quietly re-inject advisory rows.
+SECTION_ALIASES = {"fix": "Must Fix", "address": "Must Address"}
 
 
 def comments_from_rubric(md: str, sections=FINDING_SECTIONS):
@@ -194,13 +212,12 @@ def main():
     ap.add_argument("--slug", nargs="+", help="only these instances")
     ap.add_argument("--source", choices=("auto", "rubric", "result"), default="auto",
                     help="where review comments come from (default auto: rubric, else result)")
-    # The benchmark's 49 tools post a median of 4 findings per PR; an E8 rubric
-    # carries ~16 (1 red + 8 amber + 7 green on mfc-csp). Every green counts
-    # against precision, so scoring red+amber as a second tool name isolates
-    # "what the pipeline says you must do" from its advisory tail.
+    # Narrowing further (e.g. red only) stays possible for a probe; widening to
+    # 🟢 does not, by design — see FINDING_SECTIONS and decision log #36.
     ap.add_argument("--sections", nargs="+", choices=sorted(SECTION_ALIASES),
                     default=sorted(SECTION_ALIASES),
-                    help="rubric sections to emit as findings (default: all three)")
+                    help="rubric sections to emit as findings (default: both — "
+                         "Must Fix + Must Address; 🟢 Consider is never emitted)")
     ap.add_argument("--no-seed", action="store_true",
                     help="do NOT copy the benchmark's checked-in candidates/evaluations "
                          "(every tool then gets re-judged — ~50x the judge cost)")
