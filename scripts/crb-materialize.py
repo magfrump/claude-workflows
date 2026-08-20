@@ -8,7 +8,8 @@ change as PR #1. Every tool's fork of the same original PR carries the same
 code (they differ only in which bot reviewed it), so one fork per PR suffices.
 
 For each selected PR this creates external/crb-eval/<slug>/ with:
-  - branch `review` at the PR head  (refs/pull/1/head on the fork)
+  - branch `review` at the PR head  (the fork's `pr-<n>` branch; NOT
+    refs/pull/1/head — Dependabot PRs can occupy the low numbers on a fork)
   - branch `main`   at the PR base  (merge-base of head and the fork default)
   - NO other refs and NO origin remote, so a reviewing agent cannot fetch the
     upstream future (the merged fix — the answer key) via `git log --all`.
@@ -431,8 +432,37 @@ def materialize(slug, url, entry, fork, depth, force):
     # the fork's default branch (which is the BASE — checking it out first would
     # just be thrown away).
     sh(["git", "clone", "--quiet", "--no-checkout", f"--depth={depth}", remote, str(dst)])
+    # The reviewed change is the fork's `pr-<upstream-number>` branch. Do NOT
+    # assume it is PR #1 on the fork: Dependabot is enabled on some benchmark
+    # forks and races the benchmark's own PR for the low numbers (on
+    # keycloak__keycloak__*__PR36880__* it opened 228 bump PRs at fork-creation
+    # time, so refs/pull/1/head was a minikube version bump, not the reviewed
+    # change — caught 2026-08-20 when the review didn't match the goldens).
+    # refs/heads/pr-<n> is what the benchmark pushed and is immune to that
+    # race; fall back to refs/pull/1/head only when the branch is absent, and
+    # say so, since that path re-inherits the Dependabot ambiguity.
+    m = re.search(r"/pull/(\d+)$", url)
+    if not m:
+        raise ValueError(f"{slug}: cannot derive PR number from url {url!r}")
+    pr_branch = f"refs/heads/pr-{m.group(1)}"
+    on_remote = sh(["git", "ls-remote", "origin", pr_branch, "refs/pull/1/head"],
+                   cwd=dst)
+    remote_refs = {line.split("\t")[1]: line.split("\t")[0]
+                   for line in on_remote.splitlines() if "\t" in line}
+    if pr_branch in remote_refs:
+        review_ref = pr_branch
+        if remote_refs.get("refs/pull/1/head") not in (None, remote_refs[pr_branch]):
+            print(f"{slug}: note — fork PR #1 ({remote_refs['refs/pull/1/head'][:12]}) "
+                  f"is NOT the reviewed change; using {pr_branch} "
+                  f"({remote_refs[pr_branch][:12]})")
+    elif "refs/pull/1/head" in remote_refs:
+        review_ref = "refs/pull/1/head"
+        print(f"{slug}: warning — fork has no {pr_branch}; falling back to "
+              f"refs/pull/1/head (verify it matches the goldens)")
+    else:
+        raise RuntimeError(f"{slug}: fork has neither {pr_branch} nor refs/pull/1/head")
     sh(["git", "fetch", "--quiet", f"--depth={depth}", "origin",
-        "refs/pull/1/head:refs/heads/review"], cwd=dst)
+        f"{review_ref}:refs/heads/review"], cwd=dst)
     head = sh(["git", "rev-parse", "review"], cwd=dst)
     base = resolve_base(dst, depth)
     # Check out `review` FIRST: on forks whose default branch is itself named
