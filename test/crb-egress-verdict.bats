@@ -55,10 +55,11 @@ verdict() { run bash "$VERDICT" "$@"; }
 }
 
 # An absent observation is not evidence. `api-reachable ""` used to print
-# `ok … (HTTP )` and exit 0 — the runner's `|| echo 000` covers a failing curl,
+# `ok … (HTTP )` and exit 0 — curl's own `%{http_code}` covers a failing curl,
 # not a docker run that never starts, and the two refusal legs are only
 # meaningful once this one has passed. So a dead proxy produced a fully green
-# preflight in front of paid cells.
+# preflight in front of paid cells. The doubled-token case ("000000", the
+# 2026-08-19 preflight defect) is pinned below for the same reason.
 @test "MUTATION: an empty or malformed observation FAILS every http leg" {
   for leg in api-reachable filter-blocks plain-http no-direct-route; do
     verdict "$leg" ""
@@ -68,6 +69,11 @@ verdict() { run bash "$VERDICT" "$@"; }
     [ "$status" -eq 1 ]
     verdict "$leg" "20"
     [ "$status" -eq 1 ]
+    # The observed defect: curl printed "000" and a `|| echo 000` fallback
+    # printed it again. Never read a doubled token as a status code.
+    verdict "$leg" "000000"
+    [ "$status" -eq 1 ]
+    [[ "$output" == *"not evidence"* ]]
   done
 }
 

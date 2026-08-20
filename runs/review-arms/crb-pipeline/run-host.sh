@@ -246,20 +246,29 @@ egress_leg() {  # <leg> <observed>
 # (0) the flag the whole story rests on — asserted against the command that was
 # actually run, not against the author's intention.
 egress_leg internal-net "$NET_CREATE_CMD"
+# Each probe ends `|| true`, NOT `|| echo 000`. `-w "%{http_code}"` writes the
+# code — "000" when there was no answer — whether or not curl exits 0, so the
+# fallback echo appended a SECOND token to a stream that already had one: a
+# connect-level refusal emitted "000000", which the verdict script correctly
+# refused as "not an HTTP status code" and the sweep exited 5 in front of a
+# working filter. Executed 2026-08-19 on the first real preflight, leg 2.
+# `|| true` only keeps the nonzero curl from propagating; an observation that is
+# empty (the container itself never ran) still fails closed in the verdict.
+#
 # (1) positive: the API is reachable THROUGH the proxy. Must be first — the
 # refusal legs accept "000", which a dead proxy also produces.
-egress_leg api-reachable "$(in_cell_net 'curl -s -o /dev/null -w "%{http_code}" --max-time 25 https://api.anthropic.com/v1/models || echo 000')"
+egress_leg api-reachable "$(in_cell_net 'curl -s -o /dev/null -w "%{http_code}" --max-time 25 https://api.anthropic.com/v1/models || true')"
 # (2) negative: a non-allowlisted host through the proxy must be refused.
 # github.com specifically: it is where the answer key lives.
-egress_leg filter-blocks "$(in_cell_net 'curl -s -o /dev/null -w "%{http_code}" --max-time 25 https://github.com/ || echo 000')"
+egress_leg filter-blocks "$(in_cell_net 'curl -s -o /dev/null -w "%{http_code}" --max-time 25 https://github.com/ || true')"
 # (2b) the same over PLAIN HTTP. `ConnectPort 443` scopes the CONNECT method
 # only, so a `GET http://…` is an ordinary forward-proxy request that ConnectPort
 # never sees — and HTTP_PROXY/http_proxy are exported to every cell. The Filter
 # is what refuses it, and until this leg existed nothing exercised that path.
-egress_leg plain-http "$(in_cell_net 'curl -s -o /dev/null -w "%{http_code}" --max-time 25 http://github.com/ || echo 000')"
+egress_leg plain-http "$(in_cell_net 'curl -s -o /dev/null -w "%{http_code}" --max-time 25 http://github.com/ || true')"
 # (3) negative: with the proxy env removed there must be no route at all.
 egress_leg no-direct-route "$(docker run --rm --network "$EGRESS_NET" --entrypoint bash "$REVIEW_IMAGE" \
-  -c 'curl -s -o /dev/null -w "%{http_code}" --max-time 20 https://github.com/ || echo 000')"
+  -c 'curl -s -o /dev/null -w "%{http_code}" --max-time 20 https://github.com/ || true')"
 
 # ── Preflight: auth AND skill registration, ON THE RESTRICTED NETWORK ───────
 # Two failure modes cost a whole sweep if unchecked:

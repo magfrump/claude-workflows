@@ -42,12 +42,15 @@ leg=$1; observed=$2
 
 # VALIDATE THE OBSERVATION BEFORE JUDGING IT. Executed finding, 2026-08-19
 # terminal security pass: `api-reachable ""` returned `ok … (HTTP )` and exit 0.
-# The runner's `|| echo 000` covers a failing *curl*; it does NOT cover a failing
-# *container* — a `docker run` that never starts leaves stdout empty. Since the
+# curl's own `-w "%{http_code}"` covers a failing *curl* (it prints "000"); it
+# does NOT cover a failing *container* — a `docker run` that never starts leaves
+# stdout empty. Since the
 # two refusal legs mean "the filter works" only GIVEN this leg passed, an empty
 # observation produced a fully green five-leg preflight in front of a dead proxy,
 # and then paid cells. An absent observation is not evidence of anything, so it
 # fails closed here rather than being pattern-matched into a verdict.
+# It earned its keep on the first real preflight (2026-08-19): a doubled token,
+# "000000", was refused here instead of being read as a 3-digit code.
 case "$leg" in
   api-reachable|filter-blocks|plain-http|no-direct-route)
     case "$observed" in

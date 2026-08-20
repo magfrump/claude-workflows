@@ -89,6 +89,11 @@ biggest unverified assumption in the chain.
   preflight OK — auth good, code-review skill registered, egress constrained
 ```
 
+`HTTP 403` is tinyproxy refusing by filter; **`HTTP 000` on those two legs is
+also a pass** — the same refusal seen at connect level, before any status line.
+The distinction between "refused" and "proxy is dead" is carried by leg 1, which
+runs first and accepts no `000`.
+
 Any leg failing exits **5** and spends nothing further. Do not work around it —
 a failing leg means a review cell could reach github.com, where the answer key
 lives, which invalidates the whole measurement.

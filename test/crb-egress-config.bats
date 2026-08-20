@@ -120,6 +120,21 @@ PY' "$RUNNER"
   grep -q 'exit 5' "$RUNNER"
 }
 
+# Executed defect, 2026-08-19, the first real preflight: leg 2 reported
+# `observation 000000 is not an HTTP status code` and the sweep exited 5 with the
+# filter working correctly. `-w "%{http_code}"` prints the code on failure TOO,
+# so `curl ... || echo 000` emitted the token twice and the verdict script —
+# rightly — refused to judge it. Every probe must emit exactly one token.
+@test "no egress probe appends a second status token to curl's own output" {
+  run grep -nE '%\{http_code\}.*\|\|[[:space:]]*echo' "$RUNNER"
+  [ "$status" -ne 0 ]
+  # And each probe still swallows curl's nonzero exit, so a refusal reaches the
+  # verdict as "000" rather than killing the runner.
+  local probes
+  probes=$(grep -cE "%\{http_code\}.*\|\|[[:space:]]*true" "$RUNNER")
+  [ "$probes" -eq 4 ]
+}
+
 # ── the runner's spend and verdict wiring ────────────────────────────────────
 # run-host.sh has no executing test (582 lines, all the money), so these are
 # structural pins on the three places the 2026-08-19 review found it deciding
