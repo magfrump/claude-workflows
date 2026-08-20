@@ -40,6 +40,24 @@ USAGE
 leg=$1; observed=$2
 [ -n "$leg" ] || usage
 
+# VALIDATE THE OBSERVATION BEFORE JUDGING IT. Executed finding, 2026-08-19
+# terminal security pass: `api-reachable ""` returned `ok … (HTTP )` and exit 0.
+# The runner's `|| echo 000` covers a failing *curl*; it does NOT cover a failing
+# *container* — a `docker run` that never starts leaves stdout empty. Since the
+# two refusal legs mean "the filter works" only GIVEN this leg passed, an empty
+# observation produced a fully green five-leg preflight in front of a dead proxy,
+# and then paid cells. An absent observation is not evidence of anything, so it
+# fails closed here rather than being pattern-matched into a verdict.
+case "$leg" in
+  api-reachable|filter-blocks|plain-http|no-direct-route)
+    case "$observed" in
+      [0-9][0-9][0-9]) ;;
+      *) echo "FAIL $leg: observation ${observed:-<empty>} is not an HTTP status code."
+         echo "     An absent or malformed observation is not evidence; refusing to spend."
+         exit 1 ;;
+    esac ;;
+esac
+
 case "$leg" in
   api-reachable)
     # Any HTTP status proves the tunnel; 401 is the expected answer to an
@@ -80,11 +98,17 @@ case "$leg" in
     # The single flag the whole containment story rests on. Without --internal
     # the network routes to the internet directly and every other leg still
     # passes, because they all go through the proxy by construction.
-    case "$observed" in
-      *--internal*)
+    # Whole-token match, not a substring. `*--internal*` also accepted
+    # `--internal=false` (which docker honours as FALSE) and
+    # `--subnet 10.0.0.0/24--internal-x`; both survived the entire suite until
+    # the 2026-08-19 terminal pass executed them. The flag is the single thing
+    # the containment story rests on, so it is matched as a standalone argument.
+    case " $observed " in
+      *" --internal "*)
         echo "ok  network created --internal" ;;
       *)
-        echo "FAIL internal-net: network was created WITHOUT --internal — containers would route directly."
+        echo "FAIL internal-net: network was NOT created with a bare --internal flag"
+        echo "     (observed: ${observed:-<empty>}) — containers would route directly."
         exit 1 ;;
     esac
     ;;

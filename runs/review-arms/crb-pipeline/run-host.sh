@@ -66,6 +66,16 @@
 #     authoritative billed spend, which is the point of using a key here)
 #   * clones from: scripts/crb-materialize.py --per-repo 1   (or --all)
 #
+# EXIT CODES (the only thing an unattended overnight run communicates):
+#   0  every requested cell either ran or was already complete
+#   1  bad invocation / missing prerequisite (no manifest, no key, no payload)
+#   2  SWEEP_BUDGET reached — resumable, raise it and re-run
+#   3  no cell ran AND something was unusable — not a clean sweep
+#   4  a check could not RUN (cell-status, harvest, or audit): refused to guess
+#   5  the egress allowlist could not be proven — nothing was spent
+#   6  the sweep finished but at least one cell is VOID
+#   7  halted mid-sweep on a void (CONTINUE_ON_VOID=1 to override)
+#
 # Usage:
 #   ANTHROPIC_API_KEY=sk-ant-... bash runs/review-arms/crb-pipeline/run-host.sh
 #   ... run-host.sh discourse-graphite-PR4 grafana-PR79265     # subset
@@ -205,7 +215,7 @@ in_cell_net() {
     --entrypoint bash "$REVIEW_IMAGE" -c "$1"
 }
 
-# ── Egress preflight: PROVE the allowlist, three ways ───────────────────────
+# ── Egress preflight: PROVE the allowlist, five ways ────────────────────────
 # This is the control that makes the arm's numbers meaningful (an agent that can
 # fetch the merged PR scores well for the wrong reason) and the one that keeps
 # ANTHROPIC_API_KEY out of a hostile fork's reach. So it is tested by execution
@@ -454,6 +464,17 @@ for id in "${INSTANCES[@]}"; do
     skipped_bad=$((skipped_bad+1)); continue
   fi
   dest="$OUT/$id"
+  # A VOID IS TERMINAL FOR THE CELL. Without this, the void's own bookkeeping
+  # (is_error=true) made crb-cell-status.py report "incomplete", the cell was
+  # re-run under MAX_ATTEMPTS, and a clean second audit erased the record — so a
+  # sweep that HAD observed contamination could finish with voided_cells: [] and
+  # exit 0. Re-running is also the wrong instinct: the clone is contaminated
+  # evidence, not a flaky test.
+  if [ -f "$dest/CONTAINMENT_FAILED" ]; then
+    echo "=== $id — previously VOIDED by the containment audit; not re-running." >&2
+    echo "    Adjudicate it, then delete $dest to retry deliberately." >&2
+    skipped_bad=$((skipped_bad+1)); continue
+  fi
   # "Complete" must mean PRODUCED A REVIEW. The rules, and the artifacts they
   # were measured against, live in scripts/crb-cell-status.py — extracted from
   # here so they have fixtures (test/crb-cell-status.bats). It prints its reason
@@ -564,7 +585,12 @@ for id in "${INSTANCES[@]}"; do
 
   # Harvest: the final result event (cost/turns) + the review text, and any
   # files the pipeline wrote into the repo (rubric, critic reports).
-  python3 - "$dest/transcript.jsonl" "$dest/result.json" "$dest/review.md" <<'EOF'
+  # `|| true` is load-bearing here and was missing: this is the only unguarded
+  # statement between the PAID container and the attempt ledger, so under
+  # `set -euo pipefail` a write failure on result.json/review.md killed the sweep
+  # after the money was spent and before it was recorded. Found by execution on
+  # the 2026-08-19 terminal fact-check.
+  python3 - "$dest/transcript.jsonl" "$dest/result.json" "$dest/review.md" <<'EOF' || true
 import json, sys
 res = None
 for line in open(sys.argv[1], errors="replace"):
@@ -643,6 +669,14 @@ print(json.load(open(sys.argv[1]))[sys.argv[2]]["head"])' "$MANIFEST" "$id")
   if [ "$audit_rc" -eq 1 ]; then
     echo "$id: POST-RUN containment audit FAILED — voiding this cell" >&2
     : > "$dest/CONTAINMENT_FAILED"
+    # And STOP, unless told otherwise. A void means the containment control was
+    # observed FAILING on real work; continuing pays $10-40 a cell into a sweep
+    # whose central claim is already in doubt. Note the asymmetry this fixes: the
+    # WEAKER signal ("could not check", above) already halted, while the stronger
+    # one did not. CONTINUE_ON_VOID=1 is the deliberate override for someone who
+    # wants the remaining cells anyway and will read voided_cells before quoting
+    # any number.
+
     python3 - "$dest/result.json" <<'EOF' || true
 import json, sys
 try:
@@ -653,6 +687,12 @@ d["is_error"] = True
 d["subtype"] = "containment_failed"
 json.dump(d, open(sys.argv[1], "w"))
 EOF
+    if [ -z "${CONTINUE_ON_VOID:-}" ]; then
+      echo "Halting the sweep: containment was observed failing on a paid cell." >&2
+      echo "Set CONTINUE_ON_VOID=1 to keep going and adjudicate voided_cells later." >&2
+      exit 7
+    fi
+    echo "  CONTINUE_ON_VOID=1 — continuing despite the void." >&2
   fi
   # The clone is left as the container wrote it; the NEXT cell's --restore wipes
   # it. Nothing on the host touches it in between, and a voided cell no longer

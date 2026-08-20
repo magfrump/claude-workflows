@@ -40,7 +40,35 @@ verdict() { run bash "$VERDICT" "$@"; }
 @test "MUTATION: dropping --internal from the network create FAILS" {
   verdict internal-net "docker network create --subnet 172.31.250.0/24 crb-inner"
   [ "$status" -eq 1 ]
-  [[ "$output" == *"WITHOUT --internal"* ]]
+  [[ "$output" == *"NOT created with a bare --internal flag"* ]]
+}
+
+# `--internal=false` is honoured by docker as FALSE and survived a substring
+# match — it passed the whole suite, including the pin added for this very flag,
+# until the terminal fact-check executed it. So did a subnet value with
+# `--internal` glued into it.
+@test "MUTATION: --internal=false and glued-on spellings FAIL" {
+  verdict internal-net "docker network create --internal=false --subnet 172.31.250.0/24 crb-inner"
+  [ "$status" -eq 1 ]
+  verdict internal-net "docker network create --subnet 10.0.0.0/24--internal-x crb-inner"
+  [ "$status" -eq 1 ]
+}
+
+# An absent observation is not evidence. `api-reachable ""` used to print
+# `ok … (HTTP )` and exit 0 — the runner's `|| echo 000` covers a failing curl,
+# not a docker run that never starts, and the two refusal legs are only
+# meaningful once this one has passed. So a dead proxy produced a fully green
+# preflight in front of paid cells.
+@test "MUTATION: an empty or malformed observation FAILS every http leg" {
+  for leg in api-reachable filter-blocks plain-http no-direct-route; do
+    verdict "$leg" ""
+    [ "$status" -eq 1 ]
+    [[ "$output" == *"not evidence"* ]]
+    verdict "$leg" "curl: (7) Failed to connect"
+    [ "$status" -eq 1 ]
+    verdict "$leg" "20"
+    [ "$status" -eq 1 ]
+  done
 }
 
 # ── leg 1: the API must be reachable through the proxy ───────────────────────

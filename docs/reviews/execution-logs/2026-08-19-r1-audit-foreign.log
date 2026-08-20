@@ -1,0 +1,6 @@
+UTC 2026-08-20T00:34:03Z
+cwd=/tmp/claude-1000/-workspace/b5dac707-d9e6-4214-b47b-22e9dc265bc8/scratchpad/repo  cmd: bash /workspace/scripts/crb-audit-clone.sh . d53fe61704aba856a4695efc159cee4e66af593a
+bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+CONTAINMENT VOID:
+  - 2 commit(s) reachable outside the reviewed head and NOT descended from it (first: e90993a0e529)
+exit=1
