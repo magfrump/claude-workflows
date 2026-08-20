@@ -190,6 +190,15 @@ Caveat: if the reported percentages also included the earlier csp smoke run
 
 ## Next steps — direction (1)
 
+> **2026-08-18: steps 1 and 3 below are built and dry-run green.** See
+> `docs/working/crb-direction1-setup.md` for the four-stage runbook
+> (`scripts/crb-materialize.py` → `runs/review-arms/crb-pipeline/run-host.sh` →
+> `scripts/crb-pipeline-to-benchmark.py` → benchmark steps 2/2.5/3 →
+> `scripts/crb-subset-leaderboard.py`). A 5-PR pilot is materialized; no paid
+> run has happened. Judge cost is bounded by seeding the checked-in
+> opus-4-5 results and passing `--tool`, so only our arm is judged (~$1.5 for a
+> 5-PR pilot, ~$13–22 for all 50) — cost item 2 below is unchanged.
+
 1. Script the materialization loop over the 50 PRs (one fork per original PR,
    any tool's copy — e.g. the `__claude__` forks; anonymous partial clones,
    ~20MB–900MB each; discourse smallest, keycloak/grafana largest — budget

@@ -1,0 +1,14 @@
+=== 2026-08-20T00:15:02Z mutation probe, cwd=/workspace ===
+--- MUT A: drop --internal from run-host.sh NET_CREATE_CMD ---
+not ok 183 only the three finding sections are emitted from the golden rubric
+MUT_A not-ok count: 1
+
+--- MUT B: filter-blocks accepts HTTP 200 (crb-egress-verdict.sh) ---
+not ok 6 MUTATION: accepting HTTP 200 from a non-allowlisted host FAILS
+MUT_B done
+
+--- MUT C: neuter no-direct-route (always pass) ---
+not ok 9 MUTATION: any answer at all without the proxy FAILS
+not ok 10 403 passes filter-blocks and FAILS no-direct-route
+MUT_C done
+--- restored; git status ---

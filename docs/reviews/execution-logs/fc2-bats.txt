@@ -1,0 +1,86 @@
+bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+1..36
+bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+ok 1 a clean clone verifies and needs no reset
+bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+ok 2 an agent commit on top of the reviewed head is reset, not voided
+bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+ok 3 the clone still verifies on the NEXT cell after an agent commit
+bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+ok 4 a staged edit to a tracked file is undone
+bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+ok 5 an unstaged edit and an untracked file are undone
+bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+ok 6 a gitignored file the review created is removed
+bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+ok 7 a branch the agent created is pruned
+bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+ok 8 main is restored if the agent deletes or moves it
+bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+ok 9 a re-added remote still VOIDS the cell
+bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+ok 10 a commit outside the reviewed ancestry still VOIDS the cell
+bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+ok 11 r1's exact attack: fetch by URL, delete the ref, commit on top — VOIDS
+bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+ok 12 a bare fetch by URL leaves FETCH_HEAD and VOIDS
+bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+ok 13 consecutive benign cells stay clean — reset restores the object baseline
+bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+ok 14 fetch-trace detection is quiet on a SHALLOW clone
+bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+ok 15 a tag pointing outside the reviewed ancestry still VOIDS the cell
+bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+ok 16 predicate script exists and is executable
+bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+ok 17 a real multi-KB review is complete
+bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+ok 18 a long review mentioning 'logged in' is complete (auth-domain PRs)
+bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+ok 19 a long review mentioning 'log in' is complete
+bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+ok 20 the short auth stub is rejected — by the length floor
+bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+ok 21 the short quota stub is rejected — by the length floor
+bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+ok 22 a mid-length auth stub is rejected by the substring rule
+bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+ok 23 a mid-length quota stub is rejected by the substring rule
+bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+ok 24 budget exhaustion is rejected even with a long body
+bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+ok 25 a non-success subtype is rejected
+bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+ok 26 num_turns == 0 does not by itself reject (8 e5 cells are real reviews)
+bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+ok 27 a body under the 200-char floor is rejected
+bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+ok 28 an empty or malformed result.json is rejected, not crashed on
+bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+ok 29 a JSON array (not an object) is rejected, not crashed on
+bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+ok 30 verdicts on all checked-in result.json files are unchanged
+bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+ok 31 no attrition warning when every attempted cell was judged
+bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+ok 32 cells that never reached the judge are named, with a reason
+bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+ok 33 a containment-voided cell is reported as voided, not as unjudged
+bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+ok 34 attrition is reported under --all-prs too (subset scope is not the question)
+bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+ok 35 attrition appears in the markdown body, not only on stderr
+bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+ok 36 a missing run-meta says attrition was NOT checked rather than staying silent

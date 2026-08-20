@@ -1,0 +1,15 @@
+UTC 2026-08-20T00:34:44Z
+cwd=/workspace  cmd: python3 (import crb-materialize, BASELINE_ROOT redirected, call snapshot_baseline)
+Traceback (most recent call last):
+  File "<stdin>", line 6, in <module>
+  File "crb-materialize.py", line 64, in <module>
+NameError: name '__file__' is not defined. Did you mean: '__name__'?
+exit=1
+  baseline: fixture.tar (0 MB, sha256 e1907b8d43dc…), 2 artifact path(s) indexed
+returned keys: ['baseline_files_indexed', 'baseline_index_sha256', 'baseline_mb', 'baseline_sha256', 'baseline_tar']
+files written: ['fixture.index.json', 'fixture.tar']
+index contents: {
+"a.json": "6a021504b02dc18c0b6bf8dfebdbdca579f0ab4d75eccb09ceeae89880a007ad",
+"b.md": "045d2d07c2db3b9e6cef022457ee89434045a508c2dadccf9abe182ad633c273"
+}
+exit=0

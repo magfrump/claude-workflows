@@ -1,0 +1,33 @@
+bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+patched
+BASE-SUITE ok 1 a clean clone verifies and needs no reset
+BASE-SUITE ok 2 an agent commit on top of the reviewed head is reset, not voided
+BASE-SUITE ok 3 the clone still verifies on the NEXT cell after an agent commit
+BASE-SUITE ok 4 a staged edit to a tracked file is undone
+BASE-SUITE ok 5 an unstaged edit and an untracked file are undone
+BASE-SUITE ok 6 a gitignored file the review created is removed
+BASE-SUITE ok 7 a branch the agent created is pruned
+BASE-SUITE ok 8 main is restored if the agent deletes or moves it
+BASE-SUITE ok 9 a re-added remote still VOIDS the cell
+BASE-SUITE ok 10 a commit outside the reviewed ancestry still VOIDS the cell
+BASE-SUITE ok 11 r1's exact attack: fetch by URL, delete the ref, commit on top — VOIDS
+BASE-SUITE ok 12 a bare fetch by URL leaves FETCH_HEAD and VOIDS
+BASE-SUITE ok 13 consecutive benign cells stay clean — reset restores the object baseline
+BASE-SUITE ok 14 fetch-trace detection is quiet on a SHALLOW clone
+BASE-SUITE ok 15 a tag pointing outside the reviewed ancestry still VOIDS the cell
+bats patched
+NOSCRUB ok 1 a clean clone verifies and needs no reset
+NOSCRUB ok 2 an agent commit on top of the reviewed head is reset, not voided
+NOSCRUB ok 3 the clone still verifies on the NEXT cell after an agent commit
+NOSCRUB ok 4 a staged edit to a tracked file is undone
+NOSCRUB ok 5 an unstaged edit and an untracked file are undone
+NOSCRUB ok 6 a gitignored file the review created is removed
+NOSCRUB ok 7 a branch the agent created is pruned
+NOSCRUB ok 8 main is restored if the agent deletes or moves it
+NOSCRUB ok 9 a re-added remote still VOIDS the cell
+NOSCRUB ok 10 a commit outside the reviewed ancestry still VOIDS the cell
+NOSCRUB ok 11 r1's exact attack: fetch by URL, delete the ref, commit on top — VOIDS
+NOSCRUB ok 12 a bare fetch by URL leaves FETCH_HEAD and VOIDS
+NOSCRUB ok 13 consecutive benign cells stay clean — reset restores the object baseline
+NOSCRUB ok 14 fetch-trace detection is quiet on a SHALLOW clone
+NOSCRUB ok 15 a tag pointing outside the reviewed ancestry still VOIDS the cell

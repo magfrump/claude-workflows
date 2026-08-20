@@ -1,0 +1,8 @@
+=== code-fact-check r1 environment probe
+2026-08-19T23:04:27Z
+cwd=/workspace
+--- command: command -v docker
+exit=1
+--- command: docker --version
+(eval):1: command not found: docker
+exit=127

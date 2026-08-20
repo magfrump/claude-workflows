@@ -1,0 +1,8 @@
+bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+=== mat-old.py
+OK: 1 agent commit(s) on top of the head, reset
+leaked.txt still present after reset: False
+   exit=0
+=== crb-materialize.py
+VOID: fixture: FETCH_HEAD present — something fetched into this clone; 1 unreachable commit(s) — a fetched ref that was deleted leaves exactly this — containment is broken
+   exit=1

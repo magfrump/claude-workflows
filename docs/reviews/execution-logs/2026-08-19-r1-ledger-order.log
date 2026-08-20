@@ -1,0 +1,5 @@
+UTC 2026-08-20T00:34:59Z
+cwd=/workspace  repro: unguarded heredoc python under set -euo pipefail (shape of run-host.sh:566-583)
+bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+container ran (PAID)
+exit=1

@@ -1,0 +1,76 @@
+2026-08-19T02:48:43Z
++(eval):2> git init -q src
++(eval):2> cd src
++(eval):2> git config user.email t@t
++(eval):2> git config user.name t
++(eval):3> echo a
++(eval):3> git add f
++(eval):3> git commit -qm base
++(eval):3> git branch -M main
++(eval):4> git checkout -qb pr
++(eval):4> echo b
++(eval):4> git commit -qam 'pr head'
++(eval):5> git checkout -q main
++(eval):5> echo 'ANSWER KEY: the upstream fix'
++(eval):5> git add fix.txt
++(eval):5> git commit -qm 'merged upstream fix'
++(eval):6> cd ..
++(eval):6> git clone -q --no-checkout '--depth=5' file:///workspace/cfcr1/src cl
++(eval):6> cd cl
++(eval):7> git fetch -q '--depth=5' origin pr:refs/heads/review
++(eval):7> git checkout -q review
++(eval):8> git merge-base review origin/HEAD
++(eval):8> git branch -f main b3b4fafb3180b67ec956c7cb25de95446a1c0a12
++(eval):9> git for-each-ref '--format=%(refname)' refs/heads refs/tags refs/remotes
++(eval):9> r=refs/heads/main
++(eval):9> [ refs/heads/main '=' refs/heads/review ']'
++(eval):9> [ refs/heads/main '=' refs/heads/main ']'
++(eval):9> r=refs/heads/review
++(eval):9> [ refs/heads/review '=' refs/heads/review ']'
++(eval):9> r=refs/remotes/origin/HEAD
++(eval):9> [ refs/remotes/origin/HEAD '=' refs/heads/review ']'
++(eval):9> [ refs/remotes/origin/HEAD '=' refs/heads/main ']'
++(eval):9> git update-ref -d refs/remotes/origin/HEAD
++(eval):9> r=refs/remotes/origin/main
++(eval):9> [ refs/remotes/origin/main '=' refs/heads/review ']'
++(eval):9> [ refs/remotes/origin/main '=' refs/heads/main ']'
++(eval):9> git update-ref -d refs/remotes/origin/main
++(eval):10> git remote remove origin
++(eval):10> git reflog expire '--expire=now' --all
++(eval):10> git gc -q '--prune=now'
++(eval):11> set +x
+--- clone state: remotes / refs / does the answer key exist? ---
++(eval):12> git remote
++(eval):12> git for-each-ref '--format=%(refname)'
+refs/heads/main
+refs/heads/review
++(eval):13> git log --all --oneline
+b3b4faf base
+d5f3f96 pr head
++(eval):14> ls '--color=tty'
+f
++(eval):15> set +x
+--- can an agent fetch the answer key with NO configured remote? ---
++(eval):16> git fetch file:///workspace/cfcr1/cl/../src main:refs/heads/upstream
+From file:///workspace/cfcr1/cl/../src
+ * [new branch]      main       -> upstream
++(eval):16> git show upstream:fix.txt
+ANSWER KEY: the upstream fix
++(eval):17> set +x
+--- does it survive as a DESCENDANT-ONLY commit (classify_strays blind spot)? ---
++(eval):18> git checkout -q review
++(eval):18> git checkout upstream -- fix.txt
++(eval):18> git update-ref -d refs/heads/upstream
++(eval):19> git add fix.txt
++(eval):19> git commit -qm 'agent commit carrying answer-key content'
++(eval):20> git reflog expire '--expire=now' --all
++(eval):20> git gc -q '--prune=now'
++(eval):21> git remote
++(eval):21> git log --oneline
+bf6fa02 agent commit carrying answer-key content
+d5f3f96 pr head
+b3b4faf base
++(eval):21> cat fix.txt
+ANSWER KEY: the upstream fix
++(eval):22> set +x
+2026-08-19T02:48:43Z

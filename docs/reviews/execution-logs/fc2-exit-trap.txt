@@ -1,0 +1,4 @@
+bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+budget       exit=0   run-meta written=YES
+sigint       exit=0   run-meta written=YES
+dockerfail   exit=0   run-meta written=YES

@@ -22,3 +22,6 @@ Keep `<short pattern>` short and normalized so future runs can grep for it (e.g.
 ## Patterns
 
 <!-- Append entries below this line. -->
+
+- **"shortest real review in the corpus is over 3 KB" claimed in crb-cell-status.py but the corpus minimum is 1,208 chars** — a docstring/constant comment cited a corpus statistic as the justification for `STUB_MAX_LEN = 1000` ("an order of magnitude clear of both"); recomputing over all 32 checked-in `runs/review-arms/**/result.json` gives a shortest real review of 1,208 characters, so the stated headroom (10×) is actually ~1.2×, and 15 real reviews sit under 2 KB. Same class as the entry below: a specific measured value quoted from a checked-in artifact set that does not contain it. First seen: 2026-08-19, report: docs/reviews/code-fact-check-report-r1.md.
+- **`total_golden` 11 vs 13 claimed in CRB evaluations.json but no PR has more than 9 goldens** — a doc caveat cited two specific denominator values as read out of `external/code-review-benchmark/offline/results/anthropic_claude-opus-4-5-20251101/evaluations.json`; neither value occurs in that file or in `benchmark_data.json` (max goldens per PR is 9), and the real disagreement spans 24 of 50 PRs with values 1–9, not 2 PRs. First seen: 2026-08-18, report: docs/reviews/code-fact-check-report-r3.md, docs/reviews/code-fact-check-report-r2.md.

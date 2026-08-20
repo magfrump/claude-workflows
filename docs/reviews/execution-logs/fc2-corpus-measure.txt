@@ -1,0 +1,39 @@
+# ran 2026-08-19 03:13:00.486123 UTC  cwd=/workspace
+files: 32
+(0, 'runs/review-arms/e7-fable-3x/mfc-hygiene/rep1/result.json', True, 'error_max_budget_usd', 1)
+(51, 'runs/review-arms/e7-fable-3x/mfc-postfix/rep3/result.json', False, 'success', 0)
+(56, 'runs/review-arms/e7-fable-3x/mfc-postfix/rep2/result.json', False, 'success', 0)
+(1208, 'runs/review-arms/e7-fable-3x/mfc-fscompat/rep1/result.json', False, 'success', 9)
+(1236, 'runs/review-arms/e7-fable-3x/mfc-hygiene/rep2/result.json', False, 'success', 11)
+(1246, 'runs/review-arms/e7-fable-3x/mfc-deploy/rep2/result.json', False, 'success', 7)
+(1261, 'runs/review-arms/e7-fable-3x/mfc-csp/rep1/result.json', False, 'success', 6)
+(1287, 'runs/review-arms/e7-fable-3x/mfc-secdeps/rep3/result.json', False, 'success', 10)
+(1289, 'runs/review-arms/e7-fable-3x/mfc-lean/rep2/result.json', False, 'success', 2)
+(1299, 'runs/review-arms/e7-fable-3x/mfc-postfix/rep1/result.json', False, 'success', 13)
+(1457, 'runs/review-arms/e7-fable-3x/mfc-fscompat/rep2/result.json', False, 'success', 6)
+(1486, 'runs/review-arms/e7-fable-3x/mfc-lean/rep1/result.json', False, 'success', 3)
+(1545, 'runs/review-arms/e7-fable-3x/mfc-csp/rep3/result.json', False, 'success', 4)
+(1633, 'runs/review-arms/e7-fable-3x/mfc-secdeps/rep1/result.json', False, 'success', 8)
+(1639, 'runs/review-arms/e7-fable-3x/mfc-fscompat/rep3/result.json', False, 'success', 9)
+(1704, 'runs/review-arms/e7-fable-3x/mfc-corpus/rep1/result.json', False, 'success', 5)
+(1792, 'runs/review-arms/e7-fable-3x/mfc-secdeps/rep2/result.json', False, 'success', 7)
+(1821, 'runs/review-arms/e7-fable-3x/mfc-lean/rep3/result.json', False, 'success', 13)
+(1842, 'runs/review-arms/e7-fable-3x/mfc-deploy/rep1/result.json', False, 'success', 4)
+(1845, 'runs/review-arms/e7-fable-3x/mfc-corpus/rep2/result.json', False, 'success', 2)
+(2315, 'runs/review-arms/e7-fable-3x/mfc-hygiene/rep3/result.json', False, 'success', 3)
+(2410, 'runs/review-arms/e7-fable-3x/mfc-corpus/rep3/result.json', False, 'success', 2)
+(2624, 'runs/review-arms/e7-fable-3x/mfc-csp/rep2/result.json', False, 'success', 2)
+(2733, 'runs/review-arms/e5-cc-builtin/mfc-postfix/result.json', False, 'success', 0)
+(2974, 'runs/review-arms/e7-fable-3x/mfc-deploy/rep3/result.json', False, 'success', 6)
+(3435, 'runs/review-arms/e5-cc-builtin/mfc-fscompat/result.json', False, 'success', 0)
+(3720, 'runs/review-arms/e5-cc-builtin/mfc-hygiene/result.json', False, 'success', 0)
+(3758, 'runs/review-arms/e5-cc-builtin/mfc-deploy/result.json', False, 'success', 0)
+(4381, 'runs/review-arms/e5-cc-builtin/mfc-secdeps/result.json', False, 'success', 0)
+(4651, 'runs/review-arms/e5-cc-builtin/mfc-csp/result.json', False, 'success', 0)
+(4918, 'runs/review-arms/e5-cc-builtin/mfc-lean/result.json', False, 'success', 0)
+(7121, 'runs/review-arms/e5-cc-builtin/mfc-corpus/result.json', False, 'success', 0)
+min real (excl stubs/errors): 1208
+1200<=n<=3000: 22
+1228.8<=n<=3072 (KiB): 21
+e5 count/min/max: 8 2733 7121 all turns==0: True
+300/56 = 5.357142857142857  1208/300 = 4.026666666666666

@@ -1,0 +1,9 @@
+code-fact-check r3 — state of the 5 existing pilot clones (read-only)
+command: for d in external/crb-eval/*; do test -e $d/.git/FETCH_HEAD; git -C $d fsck --unreachable --no-reflogs --connectivity-only; git -C $d remote; done
+cwd: /workspace   date: 2026-08-19T23:09:46Z
+cal_com-PR11059: FETCH_HEAD=present unreachable_commits=0 remotes=[]
+discourse-graphite-PR4: FETCH_HEAD=present unreachable_commits=0 remotes=[]
+grafana-PR79265: FETCH_HEAD=present unreachable_commits=0 remotes=[]
+keycloak-PR36880: FETCH_HEAD=present unreachable_commits=0 remotes=[]
+sentry-greptile-PR5: FETCH_HEAD=present unreachable_commits=0 remotes=[]
+exit: 0

@@ -1,0 +1,49 @@
+UTC 2026-08-20T00:29:22Z
+== harness: extract egress_leg verbatim from run-host.sh, run under set -euo pipefail ==
+--- extracted function ---
+egress_leg() {  # <leg> <observed>
+  # Capture THEN print. The obvious form — `bash "$VERDICT" ... | sed` followed by
+  # a PIPESTATUS check — is broken under this file's `set -euo pipefail`: pipefail
+  # makes the pipeline return the verdict's nonzero status, errexit kills the
+  # shell at that line, and the PIPESTATUS check plus `exit 5` below it never run.
+  # The sweep still failed closed, but with status 1 and no explanation, so every
+  # doc promising "exits 5" was wrong. Found by execution on the 2026-08-19
+  # iteration-2 fact-check — a fix-round mechanism error of exactly the class this
+  # loop keeps producing, which is why the assignment is guarded with `|| rc=$?`
+  # rather than relying on a pipeline's exit status at all.
+  local out rc=0
+  out=$(bash "$VERDICT" "$1" "$2") || rc=$?
+  printf '%s\n' "$out" | sed 's/^/  /'
+  [ "$rc" -eq 0 ] || { echo "  (refusing to spend — egress leg '$1' failed)" >&2; exit 5; }
+}
+--- PASSING leg (internal-net with --internal) ---
+bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+  ok  network created --internal
+AFTER-LEG-REACHED
+exit=0
+--- FAILING leg (internal-net without --internal) ---
+bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+  FAIL internal-net: network was created WITHOUT --internal — containers would route directly.
+  (refusing to spend — egress leg 'internal-net' failed)
+exit=5
+--- FAILING leg (no-direct-route observed 200) ---
+bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+  FAIL no-direct-route: reached a non-allowlisted host (HTTP 200) with NO proxy env — the network is not internal.
+  (refusing to spend — egress leg 'no-direct-route' failed)
+exit=5
+--- usage error (exit 2 from verdict) ---
+bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+usage: crb-egress-verdict.sh <leg> <observed>
+  legs:
+    api-reachable   <http_code>  api.anthropic.com THROUGH the proxy must answer
+    filter-blocks   <http_code>  a non-allowlisted host through the proxy must be refused
+    no-direct-route <http_code>  the same host with NO proxy must be unreachable
+    plain-http      <http_code>  a non-allowlisted host over plain HTTP must be refused
+    internal-net    <cmdline>    the network-create must actually be --internal
+  
+  (refusing to spend — egress leg 'bogus-leg' failed)
+exit=5

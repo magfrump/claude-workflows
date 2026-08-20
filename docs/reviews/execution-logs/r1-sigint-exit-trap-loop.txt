@@ -1,0 +1,18 @@
+2026-08-19T02:47:12Z
+== case A: SIGINT to bash only, child (sleep 20) guarded by '|| {...}' ==
+sent SIGINT to bash pid 919751
+--- d.out ---
+bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+cell 1 start
+cell 1 end
+cell 2 start
+cell 2 end
+cell 3 start
+STILL_RUNNING
+== case B: SIGINT to bash and to its sleep child ==
+bash=919867 sleep child=919869
+--- e.out ---
+bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+cell 1 start
+STILL_RUNNING
+2026-08-19T02:47:42Z

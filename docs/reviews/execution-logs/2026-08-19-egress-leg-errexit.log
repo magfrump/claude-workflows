@@ -1,0 +1,15 @@
+=== 2026-08-20T00:09:33Z cwd=/tmp/claude-1000/-workspace/b5dac707-d9e6-4214-b47b-22e9dc265bc8/scratchpad reproduction of run-host.sh egress_leg under set -euo pipefail ===
+set -euo pipefail
+VERDICT=/workspace/scripts/crb-egress-verdict.sh
+egress_leg() {  # <leg> <observed>
+  bash "$VERDICT" "$1" "$2" | sed 's/^/  /'
+  local rc=${PIPESTATUS[0]}
+  [ "$rc" -eq 0 ] || { echo "  (refusing to spend)" >&2; exit 5; }
+}
+egress_leg api-reachable 000
+echo "REACHED AFTER LEG"
+--- run ---
+bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+  FAIL api-reachable: api.anthropic.com unreachable through the proxy — every cell would fail
+EXIT=1

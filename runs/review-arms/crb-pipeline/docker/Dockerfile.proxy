@@ -1,0 +1,28 @@
+# Egress allowlist for the CRB direction-1 arm (R3 on the 2026-08-18 rubric).
+#
+# Own image rather than a third-party proxy image: the allowlist IS the control,
+# so its configuration must be reviewable in this repo and pinned to this
+# repo's commit rather than to whatever a public tag points at today.
+FROM debian:bookworm-slim
+
+RUN apt-get update \
+ && apt-get install -y --no-install-recommends tinyproxy ca-certificates \
+ && rm -rf /var/lib/apt/lists/*
+
+COPY tinyproxy.conf /etc/tinyproxy/tinyproxy.conf
+COPY egress-allowlist /etc/tinyproxy/filter
+
+# Fail closed at build time: an empty or commented-out filter file with
+# FilterDefaultDeny would still *start*, and would deny everything — which the
+# preflight's positive control catches — but a filter that silently matched
+# nothing while FilterDefaultDeny was mistyped would allow everything, and the
+# negative control is the only thing standing between that and a paid sweep.
+# Assert both halves here so the image cannot be built in that state.
+RUN grep -qE '^[[:space:]]*FilterDefaultDeny[[:space:]]+Yes' /etc/tinyproxy/tinyproxy.conf \
+ && grep -qE '^[[:space:]]*Filter[[:space:]]+"/etc/tinyproxy/filter"' /etc/tinyproxy/tinyproxy.conf \
+ && grep -qE '^[^#[:space:]]' /etc/tinyproxy/filter
+
+EXPOSE 3128
+# Foreground: docker owns the lifecycle, and `docker logs crb-proxy` is the
+# audit trail of what the sweep tried to reach.
+CMD ["tinyproxy", "-d", "-c", "/etc/tinyproxy/tinyproxy.conf"]
