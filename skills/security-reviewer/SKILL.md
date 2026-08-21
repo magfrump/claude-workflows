@@ -119,6 +119,27 @@ dangerous vulnerabilities happen when code on the trusted side of a boundary tre
 untrusted data as safe — and the diff may be adding, moving, or removing a boundary
 without making that explicit.
 
+Two classification rules govern every source you map:
+
+- **Trust is per-consequence, not per-source.** A source is classified toward a *sink
+  class*, never globally — the same value can be trusted for availability decisions and
+  untrusted for fetch/exec/deserialize/HTML sinks. A boundary map that stamps a source
+  "trusted" in general has chosen the wrong grain: name the sink class each
+  classification applies to. Measured driver: a benchmark review classified an
+  admin-configured feed URL as trusted-in-general, analyzed the `open()` injection
+  primitive for two sibling paths, and never applied it to the one call that fetched
+  that URL unguarded — the diff's only Critical (SSRF) went unformed
+  (`docs/working/fn-trace-skill-levers-2026-08-21.md`, lever 5).
+- **Runtime-mutable ⇒ compromise-reachable.** Any value changeable through the
+  application's own UI/API after deploy — site settings, DB-backed config, feature
+  parameters, admin-editable records — is reachable by whoever compromises a session
+  with that permission, including via the very vulnerabilities under review (the XSS
+  you just found steals exactly the admin session that edits the setting). Classify
+  such values **untrusted toward high-consequence sinks** (fetch, exec, deserialize,
+  raw SQL, HTML interpolation, path construction). Code constants and deploy-time-only
+  values may stay trusted; "an admin set it" is a likelihood note, never a
+  trust classification.
+
 ### 2. Find the implicit sanitization assumption
 
 Most injection vulnerabilities don't come from missing sanitization — they come from
@@ -280,6 +301,23 @@ A guardrail with untested bypass candidates may not appear in Endorsement Claims
 what would break a guard and then declining to check is the honest state to report — it is
 not grounds for a clean verdict.
 
+### 12. Sweep every call site of an engaged primitive
+
+The moment your analysis engages a **dangerous primitive** anywhere in the diff scope —
+`open`/URL fetch, process exec, deserialization, raw SQL, HTML interpolation, path
+join/traversal, `eval`-family — grep the scope for **all** occurrences of that primitive
+and disposition each one before moving on. Render the result as a table in the report
+(see "Primitive sweep" in the output format): every call site, the source label (`S1`…)
+feeding it, guarded/unguarded, and finding-or-cleared with a one-phrase reason.
+
+An analyzed primitive with an undisposed sibling call site is an **incomplete review by
+definition** — the analysis that would find the bug has already been paid for; only the
+enumeration is missing. Measured driver: the benchmark SSRF above was missed by a review
+that enumerated `Kernel#open` command-injection bypasses for two sibling call paths and
+skipped the third — the unguarded one (`docs/working/fn-trace-skill-levers-2026-08-21.md`,
+lever 5). The sweep converts that omission from a silent judgment lapse into a visible
+empty table row.
+
 ## Critical Finding Escalation
 
 Some findings are severe enough that they should **halt the review and be surfaced to a human
@@ -367,10 +405,27 @@ form `[source] → [transition point] → [destination]`. If the diff adds, move
 removes a boundary, append `(new)`, `(moved)`, or `(removed)` to the label so the
 delta is visible. Use one line per distinct boundary the diff touches.
 
-Below the diagram, add 1-3 sentences of prose summarizing what enters from outside,
+Below the diagram, add an **input-source classification table**: one row per distinct
+source feeding the changed code — request data, DB fields, runtime-mutable
+settings/config, environment, filesystem, third-party responses, message payloads —
+with a stable label (`S1`, `S2`, …), its mutability class (request-time /
+runtime-mutable / deploy-time / code-constant), and its trust classification **per sink
+class, with justification**, applying the two classification rules from move #1
+(per-consequence trust; runtime-mutable ⇒ compromise-reachable):
+
+```
+S1: request body            — request-time    — UNTRUSTED (all sinks)
+S2: SiteSetting.feed_url    — runtime-mutable — UNTRUSTED for fetch/exec/HTML sinks
+                                                 (admin-editable post-deploy);
+                                                 trusted for availability
+S3: RETRY_LIMIT constant    — code-constant   — trusted (all sinks)
+```
+
+Then add 1-3 sentences of prose summarizing what enters from outside,
 what crosses between trust levels, and what assumptions about trustworthiness the
-diff makes. This diagram is load-bearing for the rest of the review: every finding
-below must cross-reference one of these boundary labels.
+diff makes. The diagram and source table are load-bearing for the rest of the review:
+every finding below must cross-reference one of these boundary labels, and every
+dangerous-primitive call site in the Primitive sweep names the `S` label feeding it.
 
 ### Findings
 
@@ -456,6 +511,27 @@ Rules:
 When run standalone (no fact-check available to route to), `route: code-fact-check` entries
 remain in the report marked *pending execution verification* — they are still claims, not
 verdicts.
+
+### Primitive sweep
+
+Required whenever move #12 engaged: one table per dangerous primitive the analysis
+touched, enumerating **every** call site of that primitive in the diff scope — including
+the ones you cleared and the ones you did not analyze:
+
+```
+Primitive: Kernel#open (URL fetch / command injection)
+| Call site | Source | Guard | Disposition |
+|---|---|---|---|
+| `lib/topic_retriever.rb:14` | S1 embed_url | host allowlist | Finding 3 (redirect bypass) |
+| `jobs/poll_feed.rb:32`      | S2 feed_polling_url | none | Finding 5 (SSRF) |
+| `lib/disqus_import.thor:88` | S4 local path arg | `File.exist?` check | cleared — CLI-only, S4 deploy-time |
+```
+
+Every row's `Source` cell uses an `S` label from the input-source classification table.
+A row you cannot disposition ("not analyzed") is allowed but makes the review
+explicitly partial — say so in the Overall Assessment. If no dangerous primitive was
+engaged, state `Primitive sweep: no dangerous primitives in scope` so absence is
+auditable.
 
 ### Summary Table
 
