@@ -148,7 +148,15 @@ For every checkable claim:
      using git log if needed.
 
 3. **Assess accuracy.** Use one of these verdicts:
-   - **Verified** — Code behavior matches the claim. Evidence confirms it.
+   - **Verified** — Code behavior matches the claim. Evidence confirms it. The verdict
+     endorses exactly the property named in the claim's `Scope:` field — never the
+     surrounding construct. A claim whose natural reading is broader than what the
+     evidence establishes is Verified only for the narrow reading, with the residue named
+     in the `Scope:` field's does-not-establish clause (see "How to handle ambiguity");
+     an empty residue is itself an assertion that the broad reading was fully checked.
+     Downstream consumers treat a Verified as clearance of precisely the scoped property,
+     so a narrow Verified with an unstated residue actively suppresses scrutiny of the
+     adjacent defect — the worst failure this skill can produce.
    - **Mostly accurate** — Mechanism AND conclusion both right, merely imprecise or missing
      a qualifier. State what the precise version should be. Example: comment says "O(n)" but
      implementation is O(n log n), or comment says "returns null" but implementation returns
@@ -254,7 +262,10 @@ When a claim could be read multiple ways:
 
 - State the most natural reading
 - Check that reading
-- If the claim is only true under a narrow reading, flag that
+- If the claim is only true under a narrow reading, the `Scope:` field must carry the
+  split: the narrow reading in its covers clause, the broader residue in its
+  does-not-establish clause. A prose-only flag does not survive replicate merging or
+  rubric synthesis; the `Scope:` field does.
 
 Example: "This function is thread-safe" might mean the function itself uses no shared state
 (true) but it calls another function that does (making the claim misleading in context). Report
@@ -379,7 +390,15 @@ Required structure rules:
 - The per-claim `Scope` field is one sentence stating what the verdict covers AND what it
   does not establish (e.g., "covers the sanitizer's mapping table; does not establish that
   all persistence paths invoke the sanitizer"). It is distinct from the header-level
-  `**Scope:**` field, which describes the files checked.
+  `**Scope:**` field, which describes the files checked. The does-not-establish clause
+  must name the nearest properties a reasonable reader would assume the verdict covers
+  but the evidence does not reach — typically: semantics of arguments beyond the ones
+  checked, behavior when the verified condition is false, and sibling call sites not
+  read. Measured driver: two benchmark misses were Verified stamps on a narrow property
+  that downstream stages read as clearance of the whole construct (a postMessage
+  contract Verified on message *shape* while the targetOrigin argument was wrong; a
+  feature-flag guard cleared as NPE-safe while its false-branch consequence — the actual
+  bug — went unasked). See `docs/working/fn-trace-skill-levers-2026-08-21.md`, lever 2.
 - `Type` must be one of: Behavioral, Performance, Architectural, Invariant, Configuration,
   Error-handling, Reference, Staleness. Compound types are allowed when a claim genuinely spans categories
   (e.g., `Reference / Architectural`) — separate parts with ` / ` so each is a valid type.

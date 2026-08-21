@@ -915,10 +915,19 @@ report** (matched by `Commit:` line, per the stale-replicate guard) inconsistent
 an observation recorded only by a replicate whose verdict lost the severity contest still
 counts. To keep this from becoming four full re-reads at Stage 3, build the observation
 index once during the Stage-1 merge (file/symbol/directive touched per observation) and
-consult that index here. Rows that fail are
+consult that index here. For each static-backed row that survives, apply the
+**entailment test**: quote the backing claim's `Scope:` covers clause in the row's
+`Evidence` cell and confirm the property it names *entails* the row's assertion —
+coverage of the same lines is not entailment of the safety claim (a Verified on message
+shape does not entail "the sender/receiver contract works"; a Verified that a guard
+cannot throw does not entail the guard is correct). Rows that fail are
 dropped (ungrounded), narrowed to what their backing verdict's scope actually covers
 (provenance shortfall, rule 5), or moved to 🟡 Must Address as `Contested` (contradicted)
-per that section. Run this **before** writing either deliverable — it changes the rubric's contents,
+per that section. When a row is narrowed or dropped on scope grounds, the residue named
+by the backing claim's does-not-establish clause is a **coverage gap**, not discardable
+colour — list it in `### Coverage and Escalations` so the un-verified property stays
+visible instead of vanishing with the row. Run this **before** writing either
+deliverable — it changes the rubric's contents,
 so it cannot be a post-hoc pass over a published table.
 
 #### Soundness-contradiction cross-check (required before producing deliverables)
