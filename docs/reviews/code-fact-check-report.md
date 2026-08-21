@@ -5,8 +5,11 @@
 **Replication:** k=1 (loop pass, decision 031)
 **Scope:** commit `1d8ea67` on `feat/crb-direction1-harness` (11 files, +825/−172) — the *fix* commit answering `docs/reviews/code-review-rubric-2026-08-19-feat-crb-direction1-harness-r2.md`. Parent `197eec6` and the rest of the branch are context only.
 **Checked:** 2026-08-19
-**Total claims checked:** 30
-**Summary:** 18 verified, 5 mostly accurate, 2 stale, 5 incorrect, 0 unverifiable
+**Total claims checked:** 31
+**Summary:** 19 verified, 4 mostly accurate, 1 stale, 7 incorrect, 0 unverifiable
+<!-- Header corrected 2026-08-21: the original run wrote 30 / 18-5-2-5-0, but the
+     report body contains 31 claims verdicted 19-4-1-7-0 (counted from the
+     **Verdict:** lines). Count fix only; no claim content touched. -->
 
 **Hallucination-pattern log consulted:** `docs/reviews/hallucination-patterns.md` (2 entries — both "a specific measured value quoted from a checked-in artifact set that does not contain it"). Claim 29 below (`+23` test delta) is a near-neighbour of that class: a specific arithmetic figure quoted about a checked-in artifact set that does not yield it. It is a miscount, not a fabricated symbol, so it is reported here only and not appended to the log.
 

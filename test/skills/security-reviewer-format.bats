@@ -78,8 +78,10 @@ setup() {
 
 # --- Ending sections ---
 
-@test "report has What Looks Good section" {
-  assert_section_exists "What Looks Good"
+@test "report has Endorsement Claims section" {
+  # SKILL.md replaced free-form "What Looks Good" praise with atomic, falsifiable
+  # Endorsement Claims; accept either so pre-rename reports still validate.
+  assert_section_exists "Endorsement Claims" || assert_section_exists "What Looks Good"
 }
 
 @test "report has Summary Table section" {

@@ -1,5 +1,6 @@
 #!/usr/bin/env bats
 # @category fast
+# shellcheck disable=SC2154  # $stderr is assigned by bats' `run --separate-stderr`
 # Unit/e2e coverage for scripts/cross-model-review.py's Stage-1 context path
 # (decision 021), added by the 2026-07-31 review (rubric C4): the binary-crash
 # class shipped precisely because this surface had zero tests.
@@ -9,7 +10,8 @@
 setup_file() {
   # `run --separate-stderr` (stderr-only warning test) needs the 1.5.0 run flags
   bats_require_minimum_version 1.5.0
-  export REPO_ROOT="$(cd "$BATS_TEST_DIRNAME/.." && pwd)"
+  REPO_ROOT="$(cd "$BATS_TEST_DIRNAME/.." && pwd)"
+  export REPO_ROOT
   export SCRIPT="$REPO_ROOT/scripts/cross-model-review.py"
   export FIX="$BATS_FILE_TMPDIR/fixture-repo"
   mkdir -p "$FIX"
@@ -21,13 +23,15 @@ setup_file() {
   # sibling commit (context only)
   echo "sibling work" > "$FIX/sibling.txt"
   git -C "$FIX" add -A && git -C "$FIX" commit -qm sibling
-  export LEFT=$(git -C "$FIX" rev-parse --short HEAD)
+  LEFT=$(git -C "$FIX" rev-parse --short HEAD)
+  export LEFT
   # reviewed commit: text change + committed binary + oversize file
   echo "changed" >> "$FIX/a.txt"
   head -c 4096 /dev/urandom > "$FIX/blob.bin"
   python3 -c "print('x' * 70000)" > "$FIX/big.txt"
   git -C "$FIX" add -A && git -C "$FIX" commit -qm reviewed
-  export RIGHT=$(git -C "$FIX" rev-parse --short HEAD)
+  RIGHT=$(git -C "$FIX" rev-parse --short HEAD)
+  export RIGHT
 }
 
 run_dry() { # extra args...

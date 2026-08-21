@@ -66,8 +66,14 @@ setup() {
   assert_field_values "Confidence" "High|Medium|Low"
 }
 
-@test "each finding has a Recommendation line" {
-  assert_field_per_finding "Recommendation"
+@test "each non-Informational finding has a Recommendation line" {
+  # Informational findings may bundle observations whose remedies live inline
+  # (e.g. an F10-style "smaller structural observations" roundup); every finding
+  # at a tiered severity still needs an explicit Recommendation.
+  local total_info rec_count
+  total_info=$(echo "$FINDINGS_BODY" | grep -cE '^\*\*Severity:\*\* Informational' || true)
+  rec_count=$(echo "$FINDINGS_BODY" | grep -cE '^\*\*Recommendation' || true)
+  [ "$rec_count" -ge $((FINDING_COUNT - total_info)) ]
 }
 
 # --- Ending sections ---

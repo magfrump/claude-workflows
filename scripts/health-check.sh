@@ -386,17 +386,24 @@ check_shellcheck() {
     # matched against the absolute path, so when the checkout ITSELF sits under a
     # .claude/ dir — which is exactly where the worktrees above live — it excludes
     # every file in the repo, and the gate reports green having linted nothing.
+    # external/ holds vendored third-party checkouts (their lint findings are not
+    # ours to fix) and archive/ holds retired code kept for the record (the
+    # 2026-08-20 benchmark archival moved scripts there precisely to take them
+    # out of the live gates — run-tests.sh stopped collecting them; this gate
+    # must too).
     local shell_files=()
     while IFS= read -r -d '' f; do
         shell_files+=("$f")
     done < <(find "$REPO_ROOT" -type f \( -name '*.sh' -o -name '*.bash' \) \
-        -not -path "$REPO_ROOT/.git/*" -not -path "$REPO_ROOT/.claude/*" -print0)
+        -not -path "$REPO_ROOT/.git/*" -not -path "$REPO_ROOT/.claude/*" \
+        -not -path "$REPO_ROOT/external/*" -not -path "$REPO_ROOT/archive/*" -print0)
 
     # Also include .bats files — they're bash
     while IFS= read -r -d '' f; do
         shell_files+=("$f")
     done < <(find "$REPO_ROOT" -type f -name '*.bats' \
-        -not -path "$REPO_ROOT/.git/*" -not -path "$REPO_ROOT/.claude/*" -print0)
+        -not -path "$REPO_ROOT/.git/*" -not -path "$REPO_ROOT/.claude/*" \
+        -not -path "$REPO_ROOT/external/*" -not -path "$REPO_ROOT/archive/*" -print0)
 
     # A zero-file scan is a broken discovery, not a clean repo: this gate exists
     # in a repo that is mostly shell. Fail rather than pass vacuously.

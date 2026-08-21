@@ -63,7 +63,9 @@ setup() {
   assert_field_per_claim "Location"
   local locations bad
   locations=$(echo "$REPORT_CONTENT" | sed -n 's/^\*\*Location:\*\* //p')
-  bad=$(echo "$locations" | grep -vE '[a-zA-Z0-9_./-]+:[0-9]+' || true)
+  # SKILL.md: pure Reference claims may cite bare paths or external locators —
+  # commit-message claims legitimately cite "commit `<hash>` message, <part>".
+  bad=$(echo "$locations" | grep -viE 'commit .?[0-9a-f]{7,}' | grep -vE '[a-zA-Z0-9_./-]+:[0-9]+' || true)
   [ -z "$bad" ]
 }
 
@@ -72,13 +74,16 @@ setup() {
 }
 
 @test "claim types use only the allowed values" {
-  # Allow compound types like "Reference / Architectural" — each part must be valid
-  local allowed="Behavioral|Performance|Architectural|Invariant|Configuration|Reference|Staleness"
+  # Allow compound types like "Reference / Architectural" — each part must be valid.
+  # Error-handling joined the SKILL.md enum with the implicit-error-handling claim
+  # class; an optional parenthetical qualifier ("Behavioral (test-efficacy)") is
+  # allowed as long as the base type is from the enum.
+  local allowed="Behavioral|Performance|Architectural|Invariant|Configuration|Error-handling|Reference|Staleness"
   local values bad
   values=$(echo "$REPORT_CONTENT" | sed -n 's/^\*\*Type:\*\* //p')
   [ -n "$values" ] || skip "no Type values found"
   # Split compound types on " / " and validate each part
-  bad=$(echo "$values" | tr '/' '\n' | sed 's/^ *//;s/ *$//' | grep -viE "^(${allowed})$" || true)
+  bad=$(echo "$values" | tr '/' '\n' | sed 's/^ *//;s/ *$//' | grep -viE "^(${allowed})( \([^)]{1,60}\))?$" || true)
   [ -z "$bad" ]
 }
 

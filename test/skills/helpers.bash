@@ -65,6 +65,15 @@ load_generic_report() {
 # is scoped in load_report. Falls back to first-finding-to-EOF if no trailing
 # ## heading follows the findings.
 count_findings() {
+  # Preferred shape (current skills): a "## Findings" section whose findings are
+  # ###/#### headings — numbered or not (security-reviewer mandates unnumbered
+  # "#### [Finding title]"). Count headings inside that section.
+  FINDINGS_BODY=$(echo "$REPORT_CONTENT" | sed -nE '/^## Findings/,/^## [^#]/p' | sed '1d;$d')
+  if [ -n "$FINDINGS_BODY" ]; then
+    FINDING_COUNT=$(echo "$FINDINGS_BODY" | grep -cE '^#{3,4} ' || true)
+    return
+  fi
+  # Legacy shape: numbered finding headings with no "## Findings" wrapper.
   FINDING_COUNT=$(echo "$REPORT_CONTENT" | grep -cE '^#{3,4} [0-9]+\.' || true)
   # Extract from first finding to the next ## heading that isn't a finding
   FINDINGS_BODY=$(echo "$REPORT_CONTENT" | sed -nE '/^#{3,4} [0-9]+\./,/^## [^#]/p' | sed '$d')
@@ -138,7 +147,11 @@ assert_field_values() {
   fi
   values=$(echo "$body" | sed -n "s/^\\*\\*${field}:\\*\\* //p")
   [ -n "$values" ] || skip "no ${field} values found"
-  bad=$(echo "$values" | grep -viE "^(${allowed})$" || true)
+  # The enum value must lead the field; a trailing annotation is allowed — reports
+  # legitimately qualify, e.g. "High (executed)", "Minor *(carried)*", "High for
+  # the mechanism, Low for reachability". The base value must still be from the
+  # enum, and nothing may precede it.
+  bad=$(echo "$values" | grep -viE "^(${allowed})([ ,(*].*)?$" || true)
   [ -z "$bad" ]
 }
 
