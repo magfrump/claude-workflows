@@ -319,3 +319,73 @@ routes narrowed/dropped-row residue to Coverage and Escalations.
   correct) — covers clause matches a row asserting exactly that property; entailment
   holds; no over-fire. PASS.
 - Bats: code-fact-check format/edge suites + 5 code-review suites, 0 failures.
+
+### Lever 4 — implemented
+New Executable-Defect Channel (sibling to Soundness-Contradiction, same house shape:
+three-part trigger, run-verification-first, lift-only, terminal-🟡 without execution,
+excluded from escalation corroboration) + Stage-3 executable-defect cross-check +
+"Unverifiable is an evidence state, not a severity" mapping rule (blocking-grade
+failure mode → 🟡 Unverified-High-Risk). The two "only path" statements now enumerate
+both evidence-gated exits.
+- **DG4 replay:** trigger fires (deterministic parse error, `ruby -c` named,
+  mechanism quoted). Ruby absent in this sandbox too → unexecutable path → 🟡
+  `Unexecuted-Deterministic` naming the blocker. Was 🟢; now exports as a benchmark
+  comment. PASS.
+- **DG5 replay:** Unverifiable with a named crash-on-plausible-input failure mode →
+  🟡 `Unverified-High-Risk` via the mapping rule. PASS.
+- **Negative controls:** a test-strategy add-coverage finding names no deterministic
+  failure → no trigger, stays 🟢; sentry's W3C-spec-URL Unverifiable claims carry no
+  blocking-grade failure mode → stay 🟢. PASS.
+- Bats: new suite test/skills/code-review-executable-defect.bats (9 tests); two
+  soundness-crosscheck tests updated for the deliberate one-path → two-paths contract
+  change; 96 ok across all code-review suites.
+
+### Lever 5 — implemented
+security-reviewer move #1 gains per-consequence trust + runtime-mutable ⇒
+compromise-reachable classification rules; Trust Boundary Map gains the S-labeled
+source table; new move #12 (primitive sweep) + required Primitive sweep report
+section. Replay by construction — the skill's examples encode the DG1 case; negative
+control: untrusted classification scoped to high-consequence sinks only.
+
+### Lever 3 — implemented
+Fact-check behavioral-claim rule now defines end-to-end as the complete enclosing
+unit including lines after the last cited line, plus produced-value flow to first
+use; truncation-marker rule added to the evidence discipline (untagged truncated
+quote = untagged paraphrase). code-review goal preamble (shared prefix part 1) must
+carry the complete-unit reading rule so every replicate and critic inherits it.
+- **CC1 replay:** the refresh-block analysis (`:75-99`) sits inside getClient()
+  ending `:108`; the rule compels reading `:100-108`, where the stale
+  `credentialKey.access_token`/`instance_url` wiring is; the truncation marker makes
+  the old stop-at-:99 excerpt inadmissible without a `— read` continuation. PASS.
+- **SE2 replay:** the detector-owner quote (`:66-79`) sits inside update(); the
+  enclosing unit starts at `:60`, forcing `:64` (the `detector_type` wrong-key line)
+  into the read. PASS.
+- **Anti-noise:** rule binds only when verdicting/filing on code *inside* a unit;
+  whole-file or structural claims unaffected.
+
+### Lever 1 — implemented + replayed on real replicates
+Merge rewritten: most-severe-wins selects the verdict only; annotations merge by union
+into the `Replicate annotations` field (dedup on substance, one line per distinct
+residue); `## Escalations` aggregation (routing contract, embedded in critic prompts
+via shared-prefix part 6); dead-letter rule force-surfaces unrouted escalations as 🟡
+`Unrouted-Escalation` rows (terminal, non-corroborating).
+- **Acceptance replay** (subagent re-merged the surviving sentry + discourse replicate
+  reports under the new text; outputs in session scratchpad):
+  - A. Sentry preprod-analytics cluster: r3's placement note (the SE4 bug, verbatim)
+    + r1's independent corroboration both survive on the ×3-Verified cluster. PASS.
+  - B. All four r3 escalations (incl. "Analytics fires before authorization") land in
+    `## Escalations` with routing attribution. PASS.
+  - C. Discourse feed_polling_url cluster: all three URL-validation/scheme residues
+    survive (the DG1 SSRF driver). PASS.
+  - Counterfactual: old winner-takes-evidence merge drops every one of A/B/C items.
+  - D. Anti-noise: annotations field populated on ~55-70% of clusters (not "mostly
+    none" as the plan guessed) because replicates rarely word residues identically —
+    but entries are one-line and attributed; acceptance target revised to "one line
+    per distinct residue", now stated in the rule.
+- **7 wording ambiguities** surfaced by the replay, all fixed in text: same-verdict
+  tie-break (most-specific Scope, then lowest replicate number); finest-granularity
+  claim emission with `(compound)` verdict annotation; substance-dedup of identical
+  residues; escalation dedup with multi-replicate attribution; Out-of-scope bullets
+  naming a critic count as escalations, addressee-less entries go to `orchestrator`;
+  unbolded `Commit:` accepted on replicate reports (merged header stays parsed-bold);
+  severity-order compound interaction handled by the granularity rule.

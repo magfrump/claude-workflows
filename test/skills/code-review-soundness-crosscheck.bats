@@ -86,8 +86,10 @@ channel_flat() {
 @test "the owner-cap exception applies regardless of which critic filed the finding" {
   channel_flat | grep -qiE 'regardless of which critic filed' \
     || fail "the channel does not apply regardless of the filing critic"
-  channel_flat | grep -qiE 'one path by which a contextual-critic finding leaves 🟢' \
-    || fail "the channel is not named the sole exit from the contextual 🟢 cap"
+  # Since the Executable-Defect Channel (fn-trace lever 4), soundness is one of exactly
+  # two evidence-gated exits from the contextual 🟢 cap — the wording must stay exclusive.
+  channel_flat | grep -qiE 'evidence-gated paths by which a contextual-critic finding leaves 🟢' \
+    || fail "the channel is not named an evidence-gated exit from the contextual 🟢 cap"
 }
 
 @test "the advisory rule names the exception, and the escalation rule excludes the lift" {
@@ -95,7 +97,7 @@ channel_flat() {
     || fail "the 'Contextual critics are advisory' rule does not name the exception"
   # The Escalation Rule's contextual paragraph must exclude the lift from corroboration.
   echo "$SKILL_CONTENT" | sed -n '/^### Escalation Rule/,/^### Soundness-Contradiction Channel/p' \
-    | tr '\n' ' ' | grep -qiE 'lifted to 🟡 by the \[Soundness-Contradiction Channel\].*does not count as escalation corroboration' \
+    | tr '\n' ' ' | grep -qiE 'lifted to 🟡 by the \[Soundness-Contradiction Channel\].*do(es)? not count as escalation corroboration' \
     || fail "the Escalation Rule does not exclude Soundness lifts from corroboration"
 }
 

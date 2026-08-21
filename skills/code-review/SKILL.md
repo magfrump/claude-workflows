@@ -250,7 +250,17 @@ the canon, negligible). The shared block is, in this fixed
 order (omit a part only when it does not apply, but keep the order so the cached prefix stays
 stable):
 
-1. The goal preamble (what a review pass is).
+1. The goal preamble (what a review pass is). The preamble MUST include the
+   **complete-unit reading rule**: before verdicting a claim or filing a finding about
+   code inside a function or method, read the entire enclosing unit — signature to final
+   line, explicitly including the lines *after* the last line the finding cites — plus
+   the flow of any value the analyzed lines produce to its first point of use; and any
+   quoted excerpt that ends inside its enclosing unit must carry a truncation marker
+   naming the remainder (`excerpt ends :99; enclosing getClient() continues to :108 —
+   read`). Measured driver: two independent e8 cells filed analyses truncated one and
+   two lines short of the defect in the same function — the excerpt a finding needs is
+   not the unit the reviewer must read
+   (`docs/working/fn-trace-skill-levers-2026-08-21.md`, lever 3).
 2. The partial-scope labelling block, if the scope is partial (Step 1).
 3. `## What this PR is trying to accomplish` — the `<pr-intent>` captured in Step 2.
 4. `## Prior review findings (advisory …)` — `<prior-findings>` from Step 3, if any.
@@ -261,7 +271,11 @@ stable):
    commit mutates it: parts 1–4 are stable across the whole loop, so ordering them first keeps
    them a cache-warm common prefix across fix→re-review cycles.
 6. The Stage-1 merged fact-check summary (Stage 2 only; Incorrect/Stale/Mostly-Accurate rows
-   per the >200-line rule in Stage 2 step 5). Changes every pass, so it is last.
+   per the >200-line rule in Stage 2 step 5), **plus** the merged report's `## Escalations`
+   section in full and a one-line entry for each Verified claim whose `Replicate
+   annotations` or `Scope:` does-not-establish clause names a concrete risk (the caveat,
+   with `path:line`) — these are the under-calling guard's payload and must reach every
+   critic even when the summary is otherwise truncated. Changes every pass, so it is last.
 
 Agents still have repo access and may read further files on demand (e.g. a cross-file consumer not
 in the enclosing set); inlining the diff + enclosing files just means they don't re-fetch the
@@ -439,7 +453,10 @@ For each of the three replicate agents:
    another run's observations as this run's (the decision-25 rubric-selection failure
    class). Every later consumer of the replicate reports must match them by `Commit:`,
    never by glob alone. A replicate report with **no** `Commit:` line is treated as
-   stale (delete it too) — missing provenance is not a pass.
+   stale (delete it too) — missing provenance is not a pass. Match the line by field
+   name with or without bold on replicate reports (`Commit:` or `**Commit:**` both
+   satisfy it); only the **merged** report's header is a parsed contract requiring the
+   bolded form exactly (Gate 1h).
 5. Require the agent to tag every claim with a **Legibility-target** field
    (`for-author`, `for-orchestrator-synthesis`, or `for-automated-gate`) per
    the [legibility-target tagging](../../patterns/orchestrated-review.md#legibility-target-tagging)
@@ -488,29 +505,61 @@ Execution Rule 1 still stands).
    (decision 033):** one replicate may verdict a sentence as a single compound claim while
    another splits it into sub-claims (`7a`/`7b`); the compound clusters with each of its
    parts, and most-severe-wins (step 2) applies across the whole cluster — a sub-claim's
-   Incorrect beats the compound's Mostly accurate.
+   Incorrect beats the compound's Mostly accurate. **Emit at the finest granularity any
+   replicate used:** where any replicate split, the merged report carries one `## Claim`
+   per sub-claim, and a replicate that verdicted only the compound records its verdict
+   on each sub-claim row annotated `(compound)` — e.g. `r2=Verified (compound)`. This
+   keeps a sub-claim's severe verdict from swallowing a sibling sub-claim's clean one,
+   and Verdict stability counts sub-claim rows.
 2. **Take the most severe verdict any replicate assigned** to the cluster. Severity order,
    most severe first: `Incorrect (high confidence)` > `Incorrect (medium confidence)` >
    `Incorrect (low confidence)` >
    `Stale` > `Mostly Accurate` > `Unverifiable` > `Verified`. Majority vote is explicitly
    the wrong aggregator here: a defect one replicate *proves* Incorrect is Incorrect
    regardless of what the other two concluded, and the observed failure mode is
-   under-calling, not over-calling (state doc §1.1). Carry the evidence and reasoning from
-   the replicate that assigned the winning verdict.
+   under-calling, not over-calling (state doc §1.1). Carry the headline evidence and
+   reasoning from the replicate that assigned the winning verdict; when several
+   replicates tie on the winning verdict, carry the one with the most specific `Scope:`
+   line (the most concrete does-not-establish clause), breaking remaining ties by
+   lowest replicate number. But most-severe-wins
+   selects the **verdict only**, never which replicate's *annotations* survive:
+   **annotations merge by union** (step 3, `Replicate annotations` field). A scope
+   caveat, placement note, "does not establish X" disclaimer, or escalation note is
+   never dropped because its replicate lost the verdict contest, and never dropped
+   because the winning verdict is Verified — a Verified claim with a caveat is a
+   different object than a clean Verified. Measured driver: on the e8 benchmark cells,
+   the merge dropped a caveat two replicates attached to a Verified setting-consumer
+   claim ("does not establish the value is validated as a URL" — the missed Critical
+   SSRF) and dropped one replicate's placement note that had already stated a real bug
+   verbatim (analytics recorded before the feature-flag gate); both findings died in
+   this step (`docs/working/fn-trace-skill-levers-2026-08-21.md`, lever 1).
 3. **Record per-replicate verdicts on every merged claim, inside the standard schema.**
    The merged report keeps the code-fact-check report format exactly — `# Code Fact-Check
    Report` title, the five header fields, and per-claim `## Claim N:` sections with the
-   five mandatory bolded fields — so `test/skills/code-fact-check-format.bats` gates it
+   seven mandatory bolded fields — so `test/skills/code-fact-check-format.bats` gates it
    unchanged (a merged report with no `## Claim N:` sections makes that suite skip
    silently, which is a gate abdicating, not passing). On top of the standard schema:
    - `**Verdict:**` carries the plain winning verdict from the five-value enum
      (`Incorrect`, `Stale`, …) and `**Confidence:**` the winning replicate's confidence.
      The severity-order tokens in step 2 (`Incorrect (high confidence)` etc.) are ordering
      vocabulary for the merge decision only — never written into a `**Verdict:**` field.
-   - Each claim adds a sixth bolded field `**Replicate verdicts:**
+   - Each claim adds a bolded field `**Replicate verdicts:**
      r1=<verdict> · r2=<verdict> · r3=<verdict>` (`—` for a replicate that did not
      surface the claim; a claim surfaced by only one replicate keeps that replicate's
      verdict and its Replicate-verdicts line ends with ` · single-replicate detection`).
+   - Each claim adds a bolded field `**Replicate annotations:**` carrying, by union,
+     every scope caveat, placement note, disclaimer, and escalation note any replicate
+     attached to the claim — quoted verbatim or tightly, attributed by replicate
+     (`r1: "…" · r3: "…"`), with `none` when no replicate attached any. Identical or
+     paraphrase-equivalent annotations collapse to one entry attributed to all their
+     replicates (`r1+r3: "…"`) — dedup is on substance, and one line per *distinct*
+     residue is the noise ceiling. The winning
+     replicate's `Scope:` line becomes the merged claim's `Scope:`; where other
+     replicates' scope residues differ in substance, their does-not-establish clauses
+     join the annotations field rather than being overwritten. This field is the merge's
+     under-calling guard: the annotation union is *more* mechanical than
+     winner-takes-evidence, and it is where minority-detected details survive to reach
+     critic prompts and synthesis.
    - The header MUST carry, in addition to the five standard fields, a bolded
      `**Commit:** <reviewed HEAD short SHA>` line (≥7 chars) and a bolded
      `**Replication:** k=3` field (or `**Replication:** k=2 (one replicate failed)` on
@@ -518,7 +567,22 @@ Execution Rule 1 still stands).
      `scripts/self-improvement.sh` reads exactly these field names to detect stale
      reports and degraded replication — a merged report missing either is advisory-flagged
      as commit-unknown / single-sample even when the run was a genuine k=3.
-4. **Report the disagreement rate.** End the merged report with a `## Verdict stability`
+4. **Aggregate escalations into a `## Escalations` section.** Collect every replicate's
+   Goal-Alignment `Escalate:` items (anything other than the literal sentinel `nothing`),
+   every escalation-shaped note embedded in claim prose ("route to
+   security-reviewer", "needs a critic to assess X"), and every Goal-Alignment
+   `Out of scope:` bullet that names a critic or hands off a concrete risk ("these
+   belong to security-reviewer") into one list before the Verdict
+   stability section — each entry with its `path:line`, the replicate(s) that raised it,
+   and its addressee. The same escalation raised by multiple replicates merges to one
+   entry with multi-replicate attribution (else the dead-letter rule would force
+   duplicate rows). An entry naming no critic gets addressee `orchestrator` — the
+   dead-letter rule applies to it equally if nothing actions it. This section is a
+   **routing contract**, not
+   commentary: Stage 2 embeds it in critic prompts (shared-prefix part 6), and any entry
+   still unrouted when the run produces its rubric falls under the dead-letter rule
+   below.
+5. **Report the disagreement rate.** End the merged report with a `## Verdict stability`
    section: total clusters, clusters where all reporting replicates agreed, clusters where
    verdicts disagreed (list them with their per-replicate verdicts), and the resulting
    agreement rate. This turns the blocking channel's noise floor from an invisible coin
@@ -530,6 +594,24 @@ Everything downstream — the Fact-Check Gate, Stage 1.5 critic gating, critic p
 Confirmed-Good cross-check, and the severity mapping — consumes the **merged** report. The
 per-replicate reports stay on disk for audit and for the Confirmed-Good cross-check's
 observation scan.
+
+**Dead-letter rule (escalations must not outlive their addressee silently).** An
+`## Escalations` entry names a critic as its addressee. If, when the rubric is produced,
+that addressee never read it — Stage 2 skipped entirely (budget, gate, dispatch failure),
+the named critic gated off in Stage 1.5, or the pass short-circuited before dispatching
+it — the entry is force-surfaced in the rubric as a `## 🟡 Must Address` row: `Source:
+fact-check escalation (unrouted)`, `Severity: Unrouted-Escalation`, the entry's text and
+`path:line` as the finding, and the reason its addressee never ran in the author note.
+Like `Contested` rows, 🟡 is terminal for this mechanism — an unrouted escalation is
+never promoted to 🔴 and does not count as escalation-rule corroboration; it grants the
+author's attention, not blocking authority on top of a single replicate's say-so. The
+same applies to a caveat-bearing Verified claim whose annotation names a risk in a
+skipped critic's domain: surface the residue in `### Coverage and Escalations` (chat
+synthesis) so it is visible as unreviewed rather than silently cleared. Measured driver:
+in the e8 sentry cell, one replicate routed four escalations — one of them a real,
+already-diagnosed bug — "to security-reviewer / test-strategy", Stage 2 never ran, and
+the escalation channel was a dead letter (`docs/working/fn-trace-skill-levers-2026-08-21.md`,
+lever 1).
 
 After producing the merged report, emit the between-stage status banner per the format spec above (e.g., `Stage 1 (fact-check, k=3) complete: <counts, incl. verdict agreement rate> — <next action>`). Emit it before the Fact-Check Gate so the user sees stage progress even if the gate pauses for input.
 
@@ -942,6 +1024,18 @@ defeats or inverts the stated intent. Each qualifying finding is placed in (or m
 like the Confirmed-Good cross-check, it changes the rubric's contents, so it cannot be a
 post-hoc pass over a published table.
 
+#### Executable-defect cross-check (required before producing deliverables)
+
+Immediately after the soundness-contradiction cross-check, sweep every critic report —
+contextual critics included — for findings meeting the
+[Executable-Defect Channel](#executable-defect-channel) trigger: a deterministic failure
+asserted, a concrete sandbox-executable verification named, and the mechanism quoted
+with `path/to/file:line`. Run (or attempt) each named verification and place qualifying
+findings per that section. The runs are cheap by construction — single commands and
+single tests — so batch them; an unattempted verification on a qualifying finding is a
+skipped required check, not a judgment call. Like the other two cross-checks, this
+changes the rubric's contents and cannot be a post-hoc pass over a published table.
+
 #### Contrastive note (optional, capture during synthesis)
 
 Pick one finding the panel caught well, plus one likely-related issue you suspect was missed (sources: goal-alignment notes, escalations, or your own scan of the diff). State both in 1–2 lines, then propose one concrete prompt-refinement candidate — an added instruction, sharpened heuristic, or new check for a critic skill — that would have closed the gap on the next run. Skip if no genuine contrast is available; do not invent one. Capture only — no feedback pipeline consumes this yet.
@@ -1322,7 +1416,21 @@ Use this table to map individual critic severity levels to rubric tiers:
 |---|---|---|---|---|---|
 | 🔴 Must Fix | Critical, High | Critical | Breaking | Structural | Incorrect (high confidence), **behavioral** |
 | 🟡 Must Address | Medium | High, Medium | Inconsistent | Coupling | Incorrect (medium confidence), Stale, Mostly Accurate, **Incorrect (high) on a comment/doc only** |
-| 🟢 Consider | Low, Informational | Low, Informational | Minor, Informational | Minor, Informational | Unverifiable |
+| 🟢 Consider | Low, Informational | Low, Informational | Minor, Informational | Minor, Informational | Unverifiable (see below) |
+
+**Unverifiable is an evidence state, not a severity.** The 🟢 mapping for Unverifiable
+applies only when no replicate attached a blocking-grade failure mode to the claim. An
+Unverifiable claim whose stated failure mode is a crash, data loss, or security
+consequence on a plausible, named input maps to `## 🟡 Must Address` with `Severity:
+Unverified-High-Risk`, carrying the claim's "what would be needed to verify" line as
+the author note (and, where the claim meets the
+[Executable-Defect Channel](#executable-defect-channel) trigger, that channel's
+run-the-verification step applies first). Evidence-absence must not be read as low
+severity: on the e8 discourse cell, the fact-check's own unanimous top-risk claim (nil
+`i.content` crash silently aborting the whole poll job, verdict Unverifiable — no Ruby
+in the sandbox) was demoted to 🟢 by this mapping row and died there
+(`docs/working/fn-trace-skill-levers-2026-08-21.md`, lever 4). Terminal at 🟡 without
+execution or human confirmation, mirroring the channels below.
 
 **Fact-check red is scoped by subject (decision 031).** A fact-check `Incorrect (high
 confidence)` is 🔴 only when the *code behaves wrong* — the comment/doc accurately
@@ -1353,7 +1461,7 @@ appearing in all runs of that diff
 tier throws away the reliable quantity and keeps the unreliable one. Recording both costs
 one column and lets a later gate key on whichever proves sound.
 
-**Contextual critics are advisory:** Findings from `test-strategy`, `tech-debt-triage`, `dependency-upgrade`, and `ui-visual-review` go to 🟢 Consider tier regardless of their internal severity. They inform but never block merge. `architecture-review` is the exception: it is auto-selected like a contextual critic but uses its own severity-to-rubric mapping above and can produce blocking (🔴) findings. One further exception is evidence-gated rather than critic-gated: a contextual-critic finding that meets the [Soundness-Contradiction Channel](#soundness-contradiction-channel) trigger is lifted to 🟡 Must Address — the only path by which a contextual-critic finding leaves 🟢, and terminal at 🟡.
+**Contextual critics are advisory:** Findings from `test-strategy`, `tech-debt-triage`, `dependency-upgrade`, and `ui-visual-review` go to 🟢 Consider tier regardless of their internal severity. They inform but never block merge. `architecture-review` is the exception: it is auto-selected like a contextual critic but uses its own severity-to-rubric mapping above and can produce blocking (🔴) findings. Two further exceptions are evidence-gated rather than critic-gated: a contextual-critic finding that meets the [Soundness-Contradiction Channel](#soundness-contradiction-channel) trigger is lifted to 🟡 Must Address (terminal at 🟡), and one that meets the [Executable-Defect Channel](#executable-defect-channel) trigger is verified by execution — confirmed, it maps by native severity as if from a core critic; unexecutable, it lifts to 🟡 (terminal). These are the only paths by which a contextual-critic finding leaves 🟢.
 
 ### Mechanism visibility floor (triage-loss prevention)
 
@@ -1408,7 +1516,7 @@ The failure mode was true-but-unwanted — a real issue promoted to blocking aga
 author's judgment. That is why the corroboration required is executable or human, not
 another opinion.
 
-Contextual critics (test-strategy, tech-debt-triage, dependency-upgrade) do **not** count toward escalation. Their findings remain in 🟢 Consider regardless of overlap with other critics. If a contextual critic flags the same issue as a core critic, note the agreement in the finding's description for visibility, but do not escalate — contextual critics are advisory and must not gain blocking power through the escalation mechanism. A contextual-critic finding lifted to 🟡 by the [Soundness-Contradiction Channel](#soundness-contradiction-channel) is likewise excluded here: the lift is terminal at 🟡 and does not count as escalation corroboration.
+Contextual critics (test-strategy, tech-debt-triage, dependency-upgrade) do **not** count toward escalation. Their findings remain in 🟢 Consider regardless of overlap with other critics. If a contextual critic flags the same issue as a core critic, note the agreement in the finding's description for visibility, but do not escalate — contextual critics are advisory and must not gain blocking power through the escalation mechanism. A contextual-critic finding lifted to 🟡 by the [Soundness-Contradiction Channel](#soundness-contradiction-channel) or an unexecuted [Executable-Defect Channel](#executable-defect-channel) lift is likewise excluded here: those lifts are terminal at 🟡 and do not count as escalation corroboration. (An executable-defect finding whose verification *ran and confirmed* is different — the execution itself is admissible corroboration under this rule, which is why that path maps by native severity.)
 
 This rewards convergence — independent agreement across domains is the strongest signal that an issue is real and important. When escalating, place the finding in its new (higher) tier section in the rubric, not in its original tier.
 
@@ -1457,8 +1565,10 @@ human can re-verify in seconds, never from any critic's internal severity label.
 - Both quotes go in verbatim as the row's evidence, each with its `path/to/file:line`,
   so the author can adjudicate without re-deriving the contradiction.
 - This applies **regardless of which critic filed the finding** — contextual critics
-  included. It is the one path by which a contextual-critic finding leaves 🟢 Consider;
-  the advisory rule otherwise stands unchanged.
+  included. It is one of the two evidence-gated paths by which a contextual-critic
+  finding leaves 🟢 Consider (the other is the
+  [Executable-Defect Channel](#executable-defect-channel)); the advisory rule otherwise
+  stands unchanged.
 - **🟡 is the terminal tier for this channel.** A Contested-Soundness row is never
   promoted to 🔴 by this mechanism, and it does not count as corroboration under the
   [Escalation Rule](#escalation-rule) — the same bar the Confirmed-Good cross-check
@@ -1479,6 +1589,56 @@ rate before the condition-3 behavioural-only tightening above, 0 after it; md1
 `sim.ts:625-628` control was vacuous in that corpus and future falsifiers should not
 rely on it). The 🟡 cap stands until a **prospective** corpus of ≥10 correct lifts
 accumulates (decision 028's cap-raise precondition).
+
+### Executable-Defect Channel
+
+A contextual critic's finding of a *deterministic* failure can be proven cheaply — and
+the provenance rules alone would still file it advisory. On the e8 benchmark cells this
+demoted two real bugs the pipeline had found and correctly diagnosed: an invalid ERB
+template (`end if`) rated Critical by ui-visual-review, which proposed the one-command
+verification (`ruby -c`) itself, filed 🟢 because its sole critic is contextual; and a
+unanimously-flagged nil-crash risk (`i.content.scrub` on feed items with no content,
+named by all three fact-check replicates as the diff's highest-value unresolved risk)
+filed 🟢 because its verdict was Unverifiable
+(`docs/working/fn-trace-skill-levers-2026-08-21.md`, lever 4). Both died in the advisory
+bucket — 🟢 is ~70% never-actioned by this rubric's own calibration note. Like the
+Soundness-Contradiction Channel, this channel grants a lift only on evidence
+re-verifiable in seconds — here, evidence a *machine* verifies.
+
+**Trigger — all three parts must be present in the critic report itself:**
+
+1. the finding asserts a **deterministic** failure — a syntax/parse error, a guaranteed
+   exception on a **named, plausible** input or state, a violated type/contract that
+   cannot fail to fire — not a probabilistic, load-dependent, or configuration-remote
+   one;
+2. the report names a **concrete verification executable in the review sandbox**: a
+   single command with expected pass/fail semantics, an existing test, or a ≤10-line
+   reproduction; and
+3. the mechanism is quoted with `path/to/file:line`.
+
+**On a qualifying finding — run the verification first.** Execute the named check,
+capturing provenance exactly as fact-check's `executed` mode requires (command, cwd,
+exit code, timestamp, output captured under `docs/reviews/execution-logs/`). Then:
+
+- **Confirms the defect** → the finding now carries executed evidence — precisely the
+  non-correlated corroboration the [Escalation Rule](#escalation-rule) demands — so map
+  it through the Unified Severity Mapping **by its native severity as if filed by a
+  core critic** (a confirmed Critical/High is 🔴). `Source: Executable-defect channel
+  (found by <critic>, executed)`.
+- **Cannot be run** (missing interpreter, sandbox restriction, blocked dependency) →
+  lift to `## 🟡 Must Address` with `Severity: Unexecuted-Deterministic`, `Source:
+  Executable-defect channel (found by <critic>)`, naming the specific blocker and the
+  exact command a human should run. **🟡 is terminal on this path** — blocking
+  authority requires the execution or a human, and the row does not count as
+  escalation-rule corroboration.
+- **Refutes the finding** → no lift; record the refuting execution on the 🟢 row (or
+  drop it per evidence grounding) so the refutation is visible.
+
+**Precision guard.** "Might crash", "could be nil in some configurations", or any
+failure whose triggering input/state the report cannot name concretely does not qualify
+— that is ordinary severity-tier material. The channel's authority comes from the
+determinism plus the named verification, never from the critic's severity label. Lift
+only, never demote, per the Soundness channel's rule.
 
 ### Rubric Status Line
 

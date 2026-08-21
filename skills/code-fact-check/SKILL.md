@@ -127,8 +127,17 @@ For every checkable claim:
 
 2. **Search for evidence.** Use the appropriate tools:
 
-   - **Behavioral claims:** Read the implementation of the described function or code path.
-     Trace the logic. Check edge cases mentioned in the claim.
+   - **Behavioral claims:** Read the implementation of the described function or code path
+     — **the complete enclosing unit**, from its signature to its final line, explicitly
+     including the lines *after* the last line the claim cites, plus the flow of any value
+     the cited lines produce to its first point of use. Trace the logic. Check edge cases
+     mentioned in the claim. Bugs concentrate at the edges of the region you happened to
+     excerpt: on the e8 benchmark cells, two independent reviews verdicted on excerpts
+     that stopped one and two lines short of the defect in the same function (a refresh
+     block quoted to `:99` with the stale-token bug at `:101-108`; an `update()` quoted
+     from `:66` with the wrong-key bug at `:64`) — the excerpt that justified the claim
+     is not the unit you were required to read
+     (`docs/working/fn-trace-skill-levers-2026-08-21.md`, lever 3).
    - **Performance claims:** Analyze the algorithm. Count nested loops, check data structure
      operations, verify that claimed complexity matches the implementation. Note if the claim
      omits important qualifiers (amortized, average-case, worst-case).
@@ -207,6 +216,13 @@ For every checkable claim:
    The trailing `**Evidence:**` line still lists the file/line locations you
    consulted (for navigation), but it does not replace the in-prose quote-or-tag
    requirement.
+
+   **Truncation marker.** A quoted excerpt that ends inside its enclosing unit
+   (function, method, block) must end with an explicit marker naming the unread-or-read
+   status of the remainder: `(excerpt ends :99; enclosing getClient() continues to
+   :108 — read)`. A truncated quote with no marker is treated like an untagged
+   paraphrase — not allowed. The marker makes silent truncation auditable downstream;
+   the reading rule above makes `— read` the only value it should ever carry.
 
 ## Verification mode: static vs executed
 

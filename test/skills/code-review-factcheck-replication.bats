@@ -160,3 +160,28 @@ stage1_flat() {
   stage1_flat | grep -qiE 'never brief quality' \
     || fail "the uniformity-vs-quality clarification is missing"
 }
+
+@test "annotations merge by union and survive a lost verdict contest" {
+  stage1 | grep -qiE 'Replicate annotations:' \
+    || fail "merged claims do not carry a Replicate annotations field"
+  stage1_flat | grep -qiE 'annotations merge by union' \
+    || fail "the merge step does not declare annotation union"
+  stage1_flat | grep -qiE 'never dropped because its replicate lost the verdict contest' \
+    || fail "the merge step does not protect losing replicates' annotations"
+}
+
+@test "replicate escalations aggregate into an Escalations section" {
+  stage1 | grep -qiE '## Escalations' \
+    || fail "no Escalations section required in the merged report"
+  stage1_flat | grep -qiE 'routing contract' \
+    || fail "the Escalations section is not declared a routing contract"
+}
+
+@test "unrouted escalations are force-surfaced by the dead-letter rule" {
+  stage1_flat | grep -qiE 'Dead-letter rule' \
+    || fail "no dead-letter rule for unrouted escalations"
+  stage1_flat | grep -qiE 'Unrouted-Escalation' \
+    || fail "unrouted escalations do not land as tagged Must Address rows"
+  stage1_flat | grep -qiE '(🟡|Must Address).*terminal|terminal.*(🟡|Must Address)' \
+    || fail "the dead-letter lift is not declared terminal at Must Address"
+}
