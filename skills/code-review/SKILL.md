@@ -1036,6 +1036,87 @@ single tests — so batch them; an unattempted verification on a qualifying find
 skipped required check, not a judgment call. Like the other two cross-checks, this
 changes the rubric's contents and cannot be a post-hoc pass over a published table.
 
+#### Fragment-Composition cross-check (required before producing deliverables)
+
+Immediately after the executable-defect cross-check (so composition sees final fragment
+tiers), harvest every cited location
+from every report in the run — `Location:` headers, `Evidence` blocks, and `file:line`
+references in finding/claim body text alike (the Stage-1 observation index seeds this;
+critic-report citations are added on top). Cluster them: same file, line ranges
+overlapping or within ±15 lines — but **do not chain**: when transitive ±15-line links
+would grow a cluster beyond one enclosing unit (or ~50 lines), split it and pose the
+question per 🔴/🟡-fragment pair instead (measured: naive chaining turns a
+heavily-cited file into one whole-file mega-cluster — 69 citations spanning
+`database.go:15-166` in the calibration census — where a single forced question is
+unanswerable). A cluster **qualifies** when it spans **2+ distinct
+sources** (the merged fact-check counts as one source; each critic is one) **and**
+contains at least one 🔴 or 🟡 finding. For each qualifying cluster, answer one forced
+question and log the answer either way:
+
+> Is there a single root defect these fragments jointly describe that **no single
+> fragment states**? If yes, state it in **one sentence** naming the mechanism and the
+> fix. If no, record `distinct defects` with a one-clause reason.
+
+Measured driver: on the e8 grafana cell, the mechanism (fact-check), the consequence
+(security → rubric red), and the inconsistent sibling derivation (architecture, whose
+load-bearing quotes sat in Evidence blocks under unrelated `Location:` headers) were
+all detected — and the one-line root ("use `time.Now().UTC()` like the sibling call")
+was never stated by any stage
+(`docs/working/dd-synthesis-fragment-composition.md`; fn-trace GR1).
+
+**Entailment discipline (the false-composition guard).** Every clause of the composed
+sentence must be traceable to a fragment's own quoted evidence. If stating the root
+would require reading code beyond what the fragments quote, do **not** compose — log the
+cluster as `possible shared root — needs adjudication` and add it as a 🟢 Consider row
+instead. When each fragment already states its own mechanism and fix completely, the
+answer is `distinct defects` by construction — composition exists to state what only the
+conjunction implies, never to staple complete findings together.
+
+**On a "yes":**
+
+- Add **one** composed row in the tier equal to the **maximum of the fragment tiers** —
+  inherit-only, never a lift. `Source: Composition cross-check (fragments: <list>)`,
+  `Severity: Composed (inherits <max fragment severity>)`.
+- The row's evidence is the fragments' quotes **verbatim**, each with `path/to/file:line`,
+  so the author can re-verify the composition in seconds without re-deriving it.
+- Fragment rows are untouched: they keep their tiers, wording, and evidence, and gain a
+  cross-reference to the composed row (e.g., `Composed into X1`). Composition is
+  additive, never a merge-and-delete.
+- **Composition grants no authority.** A composed row never counts as corroboration
+  under the [Escalation Rule](#escalation-rule), never raises any fragment's tier, and a
+  cluster of contextual-critic-only fragments composes at 🟢. This is the boundary with
+  the retired convergence-escalation mechanism: that rule used correlated agreement to
+  *raise severity* and was retired on measured evidence; this check uses co-location to
+  *compose content* at unchanged severity. Severity continues to come only from the
+  evidence-gated channels the fragments already passed through.
+- Name the composition in the chat synthesis under **Cross-critic findings** (reference
+  the composed row; do not restate it) and under **Actionable guidance**.
+
+**Logging.** The rubric gains a `## 🧩 Composition check` section listing every
+qualifying cluster — file, line span, fragment IDs, and disposition (`composed → X1` /
+`distinct defects: <reason>` / `needs adjudication → C<n>`). If no cluster qualified,
+render the single line "No multi-source co-located clusters qualified." The heading must
+still appear so the check is auditable across runs and its precision is measurable.
+
+**Cost basis (measured, 2026-08-21):** ~10.7 qualifying clusters per pass on the
+3-cell calibration census → ~1,020 output tokens ≈ **0.10%** of a ~1M-token pass, with
+no agent round-trip and no new input reading (all reports are already in Stage-3
+context; composed evidence is restricted to already-quoted fragments by the entailment
+discipline). Hit rate on the census: 1 composed (the GR1 ground-truth miss) / 29
+distinct / 2 needs-adjudication, 0 false compositions
+(`docs/working/measure-fragment-composition-cost.md`).
+
+**Validation status:** retrospective only (GR1 positive replay + cal.com negative
+replay, `docs/working/dd-synthesis-fragment-composition.md`); per the decision-028
+precedent, no authority increase until a prospective corpus of ≥10 correct
+compositions accumulates. Live falsifiers (from the cost measurement): fewer than ~1
+true composition per 20 qualifying clusters over ≥10 live cells, more than 1-in-4
+composed rows failing the entailment discipline, or cluster volume ~5× the census
+making the section an attention tax — any of these retires or restructures the check.
+
+Like the cross-checks above, run this **before** writing either deliverable — it
+changes the rubric's contents.
+
 #### Contrastive note (optional, capture during synthesis)
 
 Pick one finding the panel caught well, plus one likely-related issue you suspect was missed (sources: goal-alignment notes, escalations, or your own scan of the diff). State both in 1–2 lines, then propose one concrete prompt-refinement candidate — an added instruction, sharpened heuristic, or new check for a critic skill — that would have closed the gap on the next run. Skip if no genuine contrast is available; do not invent one. Capture only — no feedback pipeline consumes this yet.
@@ -1289,6 +1370,21 @@ corroborating fact-check evidence). This section makes coverage limits auditable
 
 If no critics were skipped, replace the table with the single line: "All core critics ran;
 no skips applied." The heading must still appear so skips remain auditable across runs.
+
+---
+
+## 🧩 Composition check
+
+Multi-source co-located clusters found by the Fragment-Composition cross-check, with
+the forced question's disposition for each.
+
+| Cluster | File / lines | Fragments | Disposition |
+|---|---|---|---|
+| 1 | `store/database.go:80-110` | FC-6, R3, arch-4 | composed → X1 |
+
+If no cluster qualified, replace the table with the single line: "No multi-source
+co-located clusters qualified." The heading must still appear so the check is auditable
+across runs and its precision measurable.
 
 ---
 
@@ -1755,6 +1851,12 @@ The risk with any "log of decisions" is that nothing reads it, so it grows in st
   reported. Rationale and mechanics live in Stage 1's **Why three**, its loop-aware
   replication paragraph, and the merge steps — the single canonical statement.
 - **Paste skill file contents into agent prompts.** Sub-agents cannot read your filesystem.
+- **Co-located fragments get one composition question, at unchanged severity.** The
+  Fragment-Composition cross-check clusters all cited locations (headers, Evidence, and
+  body citations) across sources; a qualifying cluster's forced question is answered and
+  logged either way; a composed row inherits the max fragment tier, never lifts, and
+  never corroborates escalation. See
+  [Fragment-Composition cross-check](#fragment-composition-cross-check-required-before-producing-deliverables).
 - **Diff delivery is conditional (Step 1 / decision 032 #3).** Within the 25k-token shared-block
   budget: inline it once as the shared cacheable prefix of every agent prompt. Over budget:
   degrade — inline the diff only, then as a last resort pass scope, not diffs, so each agent

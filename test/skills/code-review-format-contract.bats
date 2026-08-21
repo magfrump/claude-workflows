@@ -17,9 +17,16 @@ load helpers
 
 FIXTURE="test/skills/code-review/rubric-current-format.md"
 
+# Latent gap fixed 2026-08-21: tests called fail() but no helper existed, so a failing
+# assertion died with status 127 instead of a readable message (still red, but opaque).
+fail() { echo "$1" >&2; return 1; }
+
 setup() {
   [ -f "$FIXTURE" ] || fail "Golden fixture missing at $FIXTURE"
   FIXTURE_CONTENT=$(tr -d '\r' < "$FIXTURE")
+  SKILL="skills/code-review/SKILL.md"
+  [ -f "$SKILL" ] || skip "code-review SKILL.md not found at $SKILL"
+  SKILL_CONTENT=$(tr -d '\r' < "$SKILL")
 }
 
 # Extract one "## <heading>" section, excluding the next heading line.
@@ -29,12 +36,28 @@ section() {
 
 # --- Sections the older suite already covers, re-asserted on the fixture ---
 
-@test "fixture has all eight rubric sections" {
+@test "fixture has all nine rubric sections" {
   local h
   for h in 'Must Fix' 'Must Address' 'Consider' 'Considered Overrides' \
-           'Confirmed Good' 'Unverified Findings' 'Skipped Core Critics'; do
+           'Confirmed Good' 'Unverified Findings' 'Skipped Core Critics' \
+           'Composition check'; do
     echo "$FIXTURE_CONTENT" | grep -qiE "^## .*$h" || fail "missing section: $h"
   done
+}
+
+@test "the Fragment-Composition cross-check is a required Stage-3 pass with capped authority" {
+  echo "$SKILL_CONTENT" | grep -qE '^#### Fragment-Composition cross-check \(required before producing deliverables\)' \
+    || fail "no required Fragment-Composition cross-check in Stage 3"
+  local flat
+  flat=$(echo "$SKILL_CONTENT" | sed -n '/^#### Fragment-Composition cross-check/,/^#### Contrastive note/p' | tr '\n' ' ' | tr -s ' ')
+  echo "$flat" | grep -qiE 'no single.{0,10}fragment states' \
+    || fail "the forced composition question is missing"
+  echo "$flat" | grep -qiE 'maximum of the fragment tiers.*inherit-only, never a lift' \
+    || fail "composed rows do not inherit max fragment tier / are liftable"
+  echo "$flat" | grep -qiE 'never counts as corroboration' \
+    || fail "composition is not excluded from escalation corroboration"
+  echo "$flat" | grep -qiE 'traceable to a fragment.s own quoted evidence' \
+    || fail "the entailment discipline (false-composition guard) is missing"
 }
 
 @test "fixture status line carries a verdict and an emoji" {

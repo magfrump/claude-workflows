@@ -85,5 +85,16 @@ corroborating fact-check evidence). This section makes coverage limits auditable
 
 ---
 
+## 🧩 Composition check
+
+Multi-source co-located clusters found by the Fragment-Composition cross-check, with
+the forced question's disposition for each.
+
+| Cluster | File / lines | Fragments | Disposition |
+|---|---|---|---|
+| 1 | `store/database.go:80-110` | FC-6, R3, arch-4 | composed → X1 |
+
+---
+
 To pass review: all 🔴 items must be resolved. All 🟡 items must be either fixed or
 carry an author note. 🟢 items are optional.
