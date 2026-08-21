@@ -63,6 +63,26 @@ The decision must be recorded in writing in one of: the latest review artifact (
 
 **Tracking convergence:** Note in the PR description or commit message whether the loop converged cleanly (and in how many iterations) or hit the iteration-4 gate. If the gate was hit, record which option (`escalate`, `split`, or `abandon`) was selected. This creates an audit trail for calibrating the threshold over time and for evaluating whether the cap prevents unbounded cycles in practice.
 
+## Fix-commit drift check (lite)
+
+Decision 031 chose `L=fix-drift`: after each fix batch (pr-prep Step 3c), run
+`scripts/lite-review.py --mode fix-drift` over the fix commits before starting the next
+full pass. The check is deliberately narrow — it reports **only** comment/doc drift the
+fix introduced (a comment now stale relative to the changed code, or a new comment making
+a claim the code doesn't satisfy). It is not a second reviewer: pre-existing issues,
+style, and code behavior belong to the full review passes.
+
+Why narrow: E1/E3 showed the recurring "fix introduces a defect" pattern was almost
+always prose drifting from the fix, which is exactly the fact-check-shaped class a
+diff-only lite call catches — and a full lite loop every round is not worth it, because
+lite's value decays once only structural/cross-file findings remain. Pay for it once, on
+each fix diff.
+
+Mechanics: the script is a headless `claude -p` call on the subscription (Haiku by
+default, custom system prompt, no tools, no CLAUDE.md discovery — ~10–15k tokens/call).
+It cannot use `--bare`, which disables OAuth; success is judged from the JSON envelope,
+not the exit code. Findings are fixed immediately in the same fix batch, not triaged.
+
 ## Divergence detection (stuck-loop signal)
 
 The hard cap catches *progress without convergence* — new findings keep appearing across iterations. It does not catch a different failure mode: **the same finding keeps re-appearing after you claimed to have fixed it.** That is a stuck loop, and it usually means the prior fix targeted a symptom rather than the underlying cause.

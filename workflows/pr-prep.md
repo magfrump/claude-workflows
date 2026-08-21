@@ -212,6 +212,14 @@ either fixed something silently or waived something silently.
 
 **c. Run tests.** After fixing findings, re-run the test suite. Fixes often surface latent bugs — a tightened assertion may expose a helper bug, a scoping fix may reveal a silent false pass. Fix test breakage as separate commits.
 
+**Fix-commit drift check (decision 031, L=fix-drift).** After fixes and tests, before the re-review pass, run the lite reviewer over just the fix commits:
+
+```bash
+python3 scripts/lite-review.py --repo . --range <last-review-commit>..HEAD --mode fix-drift
+```
+
+This is a single subscription-backed headless Haiku call (no API key, no OpenRouter account), gated to one finding class: comments/docs the fix made stale, or new comments making claims the code doesn't satisfy. E1/E3 showed this is the dominant "fix introduces a defect" mode, and catching it here costs ~10–15k tokens instead of the full pass it takes to rediscover. Fix any finding immediately as part of the fix batch; do not triage it through the tier table (it is by construction a comment/doc fix, which costs the same as an ack under 0R+0A). See `workflows/review-fix-loop.md` § Fix-commit drift check.
+
 **d. Re-review.** On the first iteration, run full review skills against the complete diff vs main. On iterations 2+, scope the re-review to reduce redundant work:
 
 1. **Diff only the fixes.** Use `git diff <last-review-commit>..HEAD` to isolate code changed since the last review iteration. Run review skills against this narrower diff — unchanged code has already been reviewed.

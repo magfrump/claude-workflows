@@ -18,7 +18,11 @@
   the old mapping landing 🟡 (Edge-runtime comment) and override-log (immutable 9b4e453
   claim). This confirms the two-pass claim: **under T, arm 2 terminates at 2 full passes**,
   matching arm 1 — the extra pass is eliminated. Validation cost 612k tokens
-  (`runs/review-arms/e3-loops/validate-T-arm2/`). K/C/L SKILL edits remain follow-up.
+  (`runs/review-arms/e3-loops/validate-T-arm2/`). **L implemented 2026-08-20**:
+  `scripts/lite-review.py --mode fix-drift` (subscription-backed headless `claude -p`,
+  not the OpenRouter harness — see `docs/decisions/log.md` same date) wired into pr-prep
+  Step 3 and `review-fix-loop.md` § Fix-commit drift check. K/C SKILL edits remain
+  follow-up.
 
 ## Context
 
