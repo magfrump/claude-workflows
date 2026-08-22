@@ -1,0 +1,19 @@
+# dotnet — NuGet package restore for .NET / C# projects (including Unity game code).
+#
+# The .NET SDK itself is baked into the image at BUILD time from
+# builds.dotnet.microsoft.com — a host deliberately NOT listed here, mirroring
+# rust.txt's omission of static.rust-lang.org: a pinned SDK never self-fetches at
+# runtime, and a different SDK version is a central-image rebuild, not a wider
+# allowlist. Runtime egress is only the package feed `dotnet restore` talks to.
+#
+# api.nuget.org serves both the v3 service index (api.nuget.org/v3/index.json,
+# the SDK's default feed) and the flat-container package downloads, so this one
+# domain is the whole requirement. A project that needs a private feed needs its
+# own profile, exactly like python.txt's stance on private indexes.
+#
+# UNITY NOTE. The Unity editor and its package manager (packages.unity.com) are
+# NOT covered: the editor runs on the HOST, outside cc-isolated, and UPM
+# resolution only happens inside the editor. What the agent runs in-container is
+# the editor-independent slice — plain C# class libraries and their test
+# projects via `dotnet build` / `dotnet test` — and those restore from NuGet.
+api.nuget.org

@@ -1,6 +1,6 @@
 # cc-isolated — usage guide
 
-Last verified: 2026-07-22
+Last verified: 2026-08-22
 Relevant paths: `devcontainer-config/cc-isolated.sh`, `devcontainer-config/egress/`, `devcontainer-config/Dockerfile`, `test/cc-isolated-functions.bats`
 
 `cc-isolated` launches an isolated Claude Code session inside a devcontainer for
@@ -55,6 +55,7 @@ GitHub IP ranges). Language toolchains are granted per project, **host-side only
 | `rust`  | `crates.io`, `index.crates.io`, `static.crates.io` | `Cargo.toml` |
 | `lean`  | `elan.lean-lang.org`, `releases.lean-lang.org` | `lean-toolchain` · `lakefile.lean` |
 | `android`| Google Maven (`dl.google.com`, `maven.google.com`), Maven Central, `services.gradle.org`, `plugins.gradle.org` | `gradlew` · `build.gradle[.kts]` · `settings.gradle[.kts]` |
+| `dotnet` | `api.nuget.org` | `ProjectSettings/ProjectVersion.txt` · `Packages/manifest.json` · top-level `*.sln` / `*.csproj` |
 | `llm`   | `openrouter.ai` | never — deliberate opt-in |
 | `vscode`| VS Code marketplace hosts | never (IDE-attach is unsupported) |
 
@@ -83,7 +84,7 @@ Supporting a new ecosystem is a real change, not a config toggle: it needs a new
 `egress/<name>.txt`, toolchain layers in the central `Dockerfile`, and a detection
 clause in `suggest_profiles()` (see decision log #18/#19 for the uv and Android
 precedents). The current registrable language toolchains are **Python, Rust, Lean,
-and Android**.
+Android, and .NET**.
 
 ## First session per project
 
@@ -176,6 +177,47 @@ Two failure modes worth recognizing on sight:
   (bump `RUST_VERSION` in `devcontainer.json`, re-install, re-bless), mirroring uv's
   `UV_PYTHON_DOWNLOADS=never` and the Android SDK's root-owned dir — not a wider
   allowlist.
+
+## .NET / Unity inside the container
+
+The image bakes a **pinned .NET SDK** (LTS, currently 10.0.400) root-owned at
+`/opt/dotnet`, on `PATH`, with telemetry opted out. After registering
+`--profile dotnet`:
+
+```bash
+cc-isolated --register ~/code/game --profile dotnet   # opens api.nuget.org
+cc-isolated ~/code/game
+# inside the container:
+dotnet build path/to/GameLogic.csproj
+dotnet test  path/to/GameLogic.Tests.csproj
+```
+
+**The Unity editor is out of scope by design.** It is GUI-bound, licensed, and
+runs on the HOST — play-mode tests, scene work, and UPM package resolution
+(`packages.unity.com`) all happen there. What the agent runs in-container is the
+editor-independent slice: plain C# class libraries (game rules, data models,
+algorithms) and their NUnit/xUnit test projects, restored from NuGet. Structuring
+game logic into such libraries — referenced from Unity via asmdefs or copied
+DLLs — is what makes a Unity project agent-testable at all.
+
+Failure modes worth recognizing on sight:
+
+- **`Unable to load the service index for source https://api.nuget.org/…` /
+  `Network is unreachable`** means the project was never registered with
+  `--profile dotnet`. Restore is a runtime step and needs the profile;
+  registration is host-side by design (an agent cannot grant itself NuGet).
+- **`dotnet workload install` fails**, or a build demands an SDK version other
+  than the baked one. The SDK dir is root-owned and its host
+  (`builds.dotnet.microsoft.com`) is build-time-only, deliberately absent from
+  `dotnet.txt` — mirroring rust's `static.rust-lang.org`. That is a central-image
+  rebuild (bump `DOTNET_SDK_VERSION` + both SHA-512 args in `devcontainer.json`,
+  re-install, re-bless), not a wider allowlist. Pin `global.json` to a
+  `rollForward` policy compatible with the baked SDK rather than an exact older
+  version.
+- **A `.csproj` that references `UnityEngine.dll` fails to build.** Unity
+  assemblies live in the host's editor installation, not in NuGet or the image.
+  Either keep agent-testable code Unity-free (the clean split), or vendor the
+  reference DLLs into the repo.
 
 ## The boundary self-probe
 

@@ -83,8 +83,8 @@ cc-isolated --list                                     # who has what
 
 Registering re-blesses (a project's egress *is* boundary config) and the next
 launch rebuilds that project's image. Available profiles are the files in
-`devcontainer-config/egress/`: `base`, `python`, `rust`, `lean`, `android`, `llm`,
-`vscode`.
+`devcontainer-config/egress/`: `base`, `python`, `rust`, `lean`, `android`,
+`dotnet`, `llm`, `vscode`.
 
 Two deliberate choices here:
 
@@ -160,6 +160,26 @@ Same shape as the Python failure modes: dependency resolution reaching
 build wanting an SDK component that isn't baked fails loudly (root-owned dir)
 rather than fetching it — that's a central-image rebuild
 (`ANDROID_PLATFORM`/`ANDROID_BUILD_TOOLS` in `devcontainer.json`), not a wider
+allowlist. Full workflow and troubleshooting: `guides/cc-isolated-usage.md`.
+
+## .NET / Unity projects
+
+The image bakes a **pinned .NET SDK** (LTS) root-owned at `/opt/dotnet` — same
+pattern again (decision log #38): toolchain unconditional in the shared base, the
+`dotnet` egress profile gates only the network (`api.nuget.org`). The Unity editor
+runs on the HOST; in-container work is editor-independent C# libraries and test
+projects (`dotnet build` / `dotnet test`).
+
+```bash
+cc-isolated --register ~/code/game --profile dotnet   # NuGet
+cc-isolated ~/code/game
+# inside: dotnet test path/to/GameLogic.Tests.csproj
+```
+
+Same failure-mode shape: NuGet restore is a *runtime* step that needs the profile;
+a build wanting a different SDK or a workload fails loudly (root-owned
+`DOTNET_ROOT`, SDK host absent from `dotnet.txt`) — that's a central-image rebuild
+(`DOTNET_SDK_VERSION` + both SHA-512 args in `devcontainer.json`), not a wider
 allowlist. Full workflow and troubleshooting: `guides/cc-isolated-usage.md`.
 
 ## Verifying the boundary

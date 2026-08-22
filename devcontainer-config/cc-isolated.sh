@@ -172,6 +172,14 @@ suggest_profiles() {
      [ -e "$ws/settings.gradle" ] || [ -e "$ws/settings.gradle.kts" ]; then
     s+=("android")
   fi
+  # .NET / Unity: a Unity project root (ProjectSettings/ProjectVersion.txt or
+  # Packages/manifest.json) or any top-level solution/project file. compgen -G
+  # is the glob test: it returns non-zero on no match without tripping set -e
+  # inside an `if` condition.
+  if [ -e "$ws/ProjectSettings/ProjectVersion.txt" ] || [ -e "$ws/Packages/manifest.json" ] || \
+     compgen -G "$ws/*.sln" >/dev/null || compgen -G "$ws/*.csproj" >/dev/null; then
+    s+=("dotnet")
+  fi
   if [ ${#s[@]} -gt 0 ]; then
     (IFS=,; echo "${s[*]}")
   fi

@@ -280,6 +280,57 @@ RUN case "$(dpkg --print-architecture)" in \
 ENV CARGO_HOME=/home/node/.cargo
 RUN mkdir -p /home/node/.cargo && chown node:node /home/node/.cargo
 
+# .NET SDK — pinned LTS, root-owned (decision log; fourth instance of the uv/
+# Android/rust pattern: #18, #19, #26).
+#
+# Motivating case: Unity C# projects. The Unity EDITOR stays on the host (it is
+# GUI-bound and licensed); what the agent runs in-container is the
+# editor-independent slice — plain C# game-logic libraries and their NUnit/xUnit
+# test projects via `dotnet build` / `dotnet test`, restoring from NuGet. The
+# `dotnet` egress profile opens api.nuget.org; this layer provides the toolchain
+# so the profile is not another "reach the registry, can't use it" gap.
+#
+# WHY A PINNED TARBALL, NOT apt: Debian bookworm ships no .NET, and Microsoft's
+# apt repo would add a new trusted origin plus an unpinned upgrade path. The
+# tarball is fetched at a pinned version and verified against per-arch SHA-512
+# hashes pinned as build ARGs — the Android layer's discipline (#19), and
+# stronger here than same-origin checksums: these hashes come from the
+# releases.json in the github.com/dotnet/core repo, a DIFFERENT origin than the
+# binary host, so a compromised builds.dotnet.microsoft.com cannot serve a
+# matching pair. A version bump must move both hashes in the same diff.
+#
+# ROOT-OWNED, IMMUTABLE TOOLCHAIN: installed under /opt/dotnet and chowned root.
+# `node` builds against it but cannot rewrite it; `dotnet workload install` and
+# SDK self-servicing fail loudly against the root-owned DOTNET_ROOT rather than
+# fetching (builds.dotnet.microsoft.com is build-time-only and absent from
+# dotnet.txt). A different SDK is a central-image rebuild, exactly like uv's
+# UV_PYTHON_DOWNLOADS=never, the root-owned Android SDK, and pinned rustup.
+# The writable side (NuGet cache, first-run sentinel) defaults to ~/.nuget and
+# ~/.dotnet in node's home — the cargo writable-cache split, no repointing needed.
+ARG DOTNET_SDK_VERSION=10.0.400
+ARG DOTNET_SDK_SHA512_AMD64=1033977dd837150e0814cf0c5d5b17ceb63925fda7ba2158b47258a4bd7c048cf82eac3bc1166f3146f53124a3f5fba09db1de1260d2ce96399860303b404b48
+ARG DOTNET_SDK_SHA512_ARM64=a1b45da58e5591fff909a6126ac6bfc1ef9c12bc72c0625f7815e83a82be1a902317ee96926cbbf81324a45c6abf2ed8102a216d0507879cc166159af78d1b77
+# Telemetry opt-out is boundary hygiene, not preference: the CLI would otherwise
+# try to phone home through a default-deny firewall on every invocation.
+ENV DOTNET_ROOT=/opt/dotnet \
+    DOTNET_CLI_TELEMETRY_OPTOUT=1 \
+    DOTNET_NOLOGO=1 \
+    PATH=$PATH:/opt/dotnet
+RUN case "$(dpkg --print-architecture)" in \
+      amd64) DOTNET_ARCH=x64;   DOTNET_SHA="$DOTNET_SDK_SHA512_AMD64" ;; \
+      arm64) DOTNET_ARCH=arm64; DOTNET_SHA="$DOTNET_SDK_SHA512_ARM64" ;; \
+      *) echo "dotnet: unsupported architecture $(dpkg --print-architecture)" >&2; exit 1 ;; \
+    esac && \
+    cd /tmp && \
+    wget -q "https://builds.dotnet.microsoft.com/dotnet/Sdk/${DOTNET_SDK_VERSION}/dotnet-sdk-${DOTNET_SDK_VERSION}-linux-${DOTNET_ARCH}.tar.gz" \
+      -O dotnet-sdk.tar.gz && \
+    echo "${DOTNET_SHA}  dotnet-sdk.tar.gz" | sha512sum -c - && \
+    mkdir -p /opt/dotnet && \
+    tar xzf dotnet-sdk.tar.gz -C /opt/dotnet && \
+    rm -f dotnet-sdk.tar.gz && \
+    chown -R root:root /opt/dotnet && \
+    /opt/dotnet/dotnet --version
+
 # Set up non-root user
 USER node
 

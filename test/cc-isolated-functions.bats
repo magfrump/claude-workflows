@@ -241,6 +241,21 @@ make_repo() {
   [ "$(suggest_profiles "$TEST_TMPDIR/proj")" = "android" ]
 }
 
+@test "suggest_profiles proposes dotnet for a Unity project root" {
+  make_repo "$TEST_TMPDIR/proj"
+  mkdir -p "$TEST_TMPDIR/proj/ProjectSettings"
+  touch "$TEST_TMPDIR/proj/ProjectSettings/ProjectVersion.txt"
+  [ "$(suggest_profiles "$TEST_TMPDIR/proj")" = "dotnet" ]
+  # Suggestion only — the repo's own contents must not grant it egress.
+  [ -z "$(project_profile "$TEST_TMPDIR/proj")" ]
+}
+
+@test "suggest_profiles proposes dotnet for a repo with a top-level csproj" {
+  make_repo "$TEST_TMPDIR/proj"
+  touch "$TEST_TMPDIR/proj/GameLogic.csproj"
+  [ "$(suggest_profiles "$TEST_TMPDIR/proj")" = "dotnet" ]
+}
+
 @test "suggest_profiles is silent for a plain repo" {
   make_repo "$TEST_TMPDIR/proj"
   [ -z "$(suggest_profiles "$TEST_TMPDIR/proj")" ]
@@ -301,6 +316,20 @@ firewall() {
   : > "$TEST_TMPDIR/profile"
   run firewall
   [[ "$output" != *"dl.google.com"* ]]
+}
+
+@test "a dotnet project gets NuGet on top of base, and only NuGet" {
+  echo 'dotnet' > "$TEST_TMPDIR/profile"
+  run firewall
+  [ "$status" -eq 0 ]
+  [[ "$output" == *"api.anthropic.com"* ]]
+  [[ "$output" == *"api.nuget.org"* ]]
+  # The SDK host is build-time-only, deliberately absent (rust.txt precedent).
+  [[ "$output" != *"builds.dotnet.microsoft.com"* ]]
+  # base-only projects must not inherit NuGet (H5).
+  : > "$TEST_TMPDIR/profile"
+  run firewall
+  [[ "$output" != *"api.nuget.org"* ]]
 }
 
 @test "an unknown profile is a hard failure, not a silently narrower allowlist" {
