@@ -17,7 +17,7 @@ Evaluate triggers top-to-bottom. Take the **first match**; if none match, defaul
 | # | Trigger condition | Activate | Notes |
 |---|-------------------|----------|-------|
 | 1 | **New/unfamiliar codebase**, or first session in a project with no `docs/thoughts/` | `codebase-onboarding.md` | e.g., "Help me understand this repo" · Output feeds into RPI research — don't redo what onboarding already learned. |
-| 2 | **Message bundles 2+ independent tasks** — a batch of end-user feedback, a bug list, a "few things:" enumeration, a numbered/bulleted list of asks, or any prompt that decomposes into tasks that don't share state | **Split first, then dispatch one subagent per item** (parallel Agent-tool dispatch; git-worktree isolation for any item that implements) | e.g., "3 things: the export button is broken, the header overlaps on mobile, and add a CSV option" · This is a **pre-pass, not a destination**: split the batch into items, then route *each item* back through this tree (an item may itself be RPI, a bug fix, or a DD decision). Independent items implement **in parallel via isolated git worktrees**, then merge back. Do NOT collapse a batch into one sequential pass — that's the default failure this row exists to prevent. The bar is low: if you can name 2+ items that share no files/state, fan out. See "Batch fan-out" below. |
+| 2 | **Message bundles 2+ independent tasks** — a batch of end-user feedback, a bug list, a "few things:" enumeration, a numbered/bulleted list of asks, or any prompt that decomposes into tasks that don't share state | `parallel-worktrees.md` — split first, then dispatch one subagent per item (parallel Agent-tool dispatch; git-worktree isolation for any item that implements) | e.g., "3 things: the export button is broken, the header overlaps on mobile, and add a CSV option" · This is a **pre-pass, not a destination**: split the batch into items, then route *each item* back through this tree (an item may itself be RPI, a bug fix, or a DD decision). Independent items implement **in parallel via isolated git worktrees**, then merge back. Do NOT collapse a batch into one sequential pass — that's the default failure this row exists to prevent. The bar is low: if you can name 2+ items that share no files/state, fan out. See "Batch fan-out" below. |
 | 3 | **Task involves a design choice** with 3+ viable approaches, or keywords: "which approach", "compare options/approaches", "evaluate/weigh alternatives", "X vs Y", "should we use X or Y", "pick/choose/decide between", "what are the options", "multiple approaches", "design choice/decision", "tradeoff", "trade-offs", "pros and cons", "library/tool selection", "architecture" | `divergent-design.md` | e.g., "Should we use Postgres or DynamoDB for this?" · **Takes precedence over open-ended brainstorming** whenever the creative task is a decision with 3+ tradeoff-bearing options: if you can name 3+ viable options that differ on a tradeoff axis, route to DD for its matrix presentation. Brainstorming stays correct only when the solution space is genuinely open-ended with no competing options yet. · Often invoked as a sub-procedure within RPI (RPI step 2 signals → DD → decision feeds back into plan). DD↔RPI is the most common composition. · Within DD: `matrix-analysis` to score candidates, `what-if-analysis` to stress-test top picks, `design-space-situating` if the framing feels off. |
 | 4 | **Goal is to explain, theorize, or generate hypotheses** rather than build — keywords: "why does", "what's causing", "competing theories", "explain this behavior", "hypothesize" | `divergent-design.md` (epistemic variant) | e.g., "Why is latency spiking only on Tuesdays?" · Uses DD's Epistemic Reasoning section: candidates are competing explanations, output is a ranked hypothesis list, not a decision record. |
 | 5 | **Task involves building a new skill, workflow, plugin, slash command, or other reusable tool**, or keywords: "create a skill", "make a slash command", "build a workflow", "scaffold a plugin", "I need a tool that" | **Tooling discovery pass** (see below), then `skill-creator` if nothing fits | e.g., "I want a skill for fact-checking PDFs" · Past sessions have reinvented tools that already shipped (notably `skill-creator` itself). Skip only when the user has confirmed no existing tool fits. |
@@ -44,6 +44,8 @@ These principles apply to **all** bug-fixing work, whether inside RPI or standal
 For worked examples of these defaults (hypothesis formation, the 3-hypothesis escape hatch, root-cause vs. symptom fixes), see `guides/debugging-examples.md`.
 
 ### Batch fan-out (decision-tree row 2)
+
+Full workflow doc: `workflows/parallel-worktrees.md` (dispatch details, merge-and-reconcile mechanics, failure modes). The summary below is the routing trigger; load the workflow when actually fanning out.
 
 When a single message bundles **2+ independent tasks** — the common case being a batch of end-user feedback — the default failure is to grind through them sequentially in the main agent. Don't. Fan out.
 
@@ -115,7 +117,7 @@ These skills activate based on the *type of question* being asked, not on what f
 
 Workflows are not isolated — they hand off to each other. The most common composition paths:
 
-- **Batch fan-out → per-item workflows**: A batch of independent tasks (row 2) is split first, then each item routes through the tree on its own — one item may become an RPI feature, another a standalone bug fix, another a DD decision. The fan-out is the pre-pass; the per-item workflow is the destination. Implementing items run in parallel git worktrees and merge into one `pr-prep` pass. Don't confuse this with task-decomposition: that fans out *research* for a single task; batch fan-out runs *implementation* for many.
+- **Batch fan-out → per-item workflows** (`workflows/parallel-worktrees.md`): A batch of independent tasks (row 2) is split first, then each item routes through the tree on its own — one item may become an RPI feature, another a standalone bug fix, another a DD decision. The fan-out is the pre-pass; the per-item workflow is the destination. Implementing items run in parallel git worktrees and merge into one `pr-prep` pass. Don't confuse this with task-decomposition: that fans out *research* for a single task; batch fan-out runs *implementation* for many.
 - **Codebase onboarding → RPI**: Onboarding's architecture map and conventions replace the broad exploration part of RPI research, letting you scope research to the specific task.
 - **RPI ↔ Divergent Design**: When RPI research surfaces 3+ viable approaches, invoke DD as a sub-procedure. DD's decision feeds back into the RPI plan. Carry RPI's constraints into DD's diagnosis step.
 - **RPI ↔ Spike**: When RPI hits a feasibility question that can't be answered by reading code, pause and spike it. The spike's RPI seed section is the handoff back — load it as input to RPI research.
@@ -226,13 +228,26 @@ The user is not at their desk, or has not specified. Maximize progress within sa
 - Requirements are ambiguous AND the wrong guess would waste significant effort
 - Anything irreversible not covered above
 
+Questions that do **not** meet the stop-and-wait bar go to the running questions doc (see below) instead of blocking or being silently dropped.
+
 Log all autonomous decisions in commit message bodies with a `Confidence` tag (high/medium/low) and a note about any choices not specified in the plan.
+
+### Running questions document
+
+During any autonomous or long-running work — /away mode, Ralph loops, `/loop` runs, overnight sessions — questions for the user that don't justify stopping must not evaporate. Maintain a running questions doc at `docs/working/questions.md` in the project:
+
+- **Append, don't block.** When a question arises, add a checkbox entry and keep working: `- [ ] YYYY-MM-DD <question> · context: <what you were doing> · interim: <what you chose in the meantime> · answer changes: <what you'd redo if the answer differs>`.
+- The **interim choice** goes in the entry AND in the commit body (`Confidence`/`Notes` lines), so the question and the provisional decision stay traceable to each other.
+- **Loop iterations**: reviewing and appending to this doc is part of each iteration's exit checklist — commit it with the iteration so the next iteration (and the user) sees it in `git log`.
+- **Surfacing**: when the user returns (switch to /active, or the end-of-run summary), list the open questions from this doc explicitly — don't make them go read it. Check off entries as the user answers them, recording the answer inline; move any answer with lasting significance to `docs/decisions/` or `docs/thoughts/`.
+- Only questions meeting the stop-and-wait bar above interrupt work; everything else accumulates here.
 
 ### Returning to /active
 
 When the user switches back to /active, respond with a summary:
 - What was committed (list commits with one-line descriptions)
 - What decisions were made autonomously and their confidence level
+- Open questions from `docs/working/questions.md` (listed explicitly, not just a pointer)
 - Anything flagged for review or requiring follow-up
 
 ### Autonomous Commit Format
