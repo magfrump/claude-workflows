@@ -65,7 +65,7 @@ A `UserPromptSubmit` hook (`hooks/batch-feedback-routing-reminder.sh`) escalates
 Triggered by row 5 of the decision tree. Before scaffolding a new skill, workflow, plugin, or slash command, run a discovery pass — past sessions reinvented tools that already shipped (notably `skill-creator` itself):
 
 1. **Local skills**: `ls ~/.claude/skills/` and grep matching `SKILL.md` files for the problem keywords
-2. **Plugin-shipped skills**: `find ~/.claude/plugins/cache -name SKILL.md` and grep
+2. **Plugin-shipped skills**: `rg --files ~/.claude/plugins/cache -g 'SKILL.md'` and grep (`find` is not sandbox-allowlisted; the cache dir is absent until a plugin is installed — tolerate that)
 3. **Local workflows**: `ls ~/.claude/workflows/`
 4. **Marketplace plugins** (not yet installed): `ls ~/.claude/plugins/marketplaces/*/` and grep their indexes
 
@@ -75,7 +75,7 @@ This gate fires before `skill-creator` regardless of how the task was entered (d
 
 ### Plugin-shipped skills
 
-Plugins under `~/.claude/plugins/cache/` ship skills that auto-trigger from their own descriptions, independent of the routing tables below. The ones most relevant to routine work:
+Plugins under `~/.claude/plugins/cache/` ship skills that auto-trigger from their own descriptions, independent of the routing tables below. Auto-trigger applies only to *installed* plugins: `claude plugin install <name>@claude-plugins-official` works inside the cc-isolated sandbox (the marketplace clone is local; no image change needed) but the install lives in the per-project `~/.claude` volume and takes effect at the next session start. If one of the plugins below isn't installed in the current project's volume, install it rather than reimplementing it. The ones most relevant to routine work:
 
 - `frontend-design:frontend-design` — *building* distinctive frontend interfaces. Pairs with `ui-visual-review` below (build → review).
 - `claude-md-management:claude-md-improver` — auditing and editing CLAUDE.md files (use this when the user asks to update, audit, or improve a CLAUDE.md, including this one).
