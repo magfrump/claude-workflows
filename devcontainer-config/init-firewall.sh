@@ -102,21 +102,50 @@ fi
 # legitimate resolver — is NOT closed by this; that needs a filtering resolver,
 # not an IP firewall. See docs/reviews/security-review-cc-isolated-egress-2026-08-29.md.)
 #
-# Fail OPEN if we cannot parse any resolver: bricking DNS bricks session start,
-# and this repo's boundary changes never trade availability for a partial hardening
-# (cf. the statsig NXDOMAIN incident). A warning marks the degraded case.
+# TRUST ASSUMPTION: this scoping is only as trustworthy as /etc/resolv.conf. The
+# file is Docker-managed and root-owned; `node` (which can re-run this script via
+# its NOPASSWD sudo, see Dockerfile) cannot write it. If that ever changes — an
+# agent-writable resolv.conf via a mount or a `--dns` value the agent influences —
+# a session could inject `nameserver <attacker_ip>` and get a *scoped* accept to
+# it, restoring the direct-exfil channel through the front door. Keep resolv.conf
+# root-owned and not agent-writable, or this control inverts.
+#
+# The octet alternation is a real 0–255 match, not a `[0-9]{1,3}` shape check: a
+# shape check passes `999.999.999.999`, which iptables then treats as a hostname,
+# fails to resolve, and exits non-zero — aborting the script under `set -e` AFTER
+# the flush but BEFORE the DROP policy, i.e. brick-OPEN. Rejecting out-of-range
+# octets here (and the `|| echo` guard on each add below) keeps a malformed entry
+# from ever reaching that window.
+#
+# `|| true` is load-bearing: under `set -euo pipefail` a bare `var="$(pipeline)"`
+# assignment propagates the pipeline's exit status to `set -e`, and grep exits 1
+# when it matches zero resolvers — which would abort the script HERE (after the
+# flush, before the DROP policy), the exact wide-open brick the fail-open branch
+# below exists to prevent. Swallowing the status makes an empty result reachable.
+octet='(25[0-5]|2[0-4][0-9]|1[0-9][0-9]|[1-9]?[0-9])'
 dns_resolvers="$(awk '/^[[:space:]]*nameserver/ {print $2}' /etc/resolv.conf 2>/dev/null \
-  | grep -E '^[0-9]{1,3}(\.[0-9]{1,3}){3}$' | sort -u)"
+  | grep -E "^${octet}(\.${octet}){3}$" | sort -u || true)"
 if [ -n "$dns_resolvers" ]; then
   while read -r ns; do
     echo "Allowing DNS to configured resolver $ns"
-    iptables -A OUTPUT -p udp -d "$ns" --dport 53 -j ACCEPT
-    iptables -A OUTPUT -p tcp -d "$ns" --dport 53 -j ACCEPT
+    # `|| echo` (not a bare call): a failed add must not abort the script in the
+    # post-flush/pre-DROP wide-open window — skipping a resolver fails CLOSED for
+    # that resolver, which is the safe direction; aborting fails OPEN for everything.
+    iptables -A OUTPUT -p udp -d "$ns" --dport 53 -j ACCEPT || echo "WARNING: could not add UDP DNS rule for $ns" >&2
+    iptables -A OUTPUT -p tcp -d "$ns" --dport 53 -j ACCEPT || echo "WARNING: could not add TCP DNS rule for $ns" >&2
   done < <(echo "$dns_resolvers")
 else
-  echo "WARNING: no IPv4 nameserver in /etc/resolv.conf — allowing DNS to any host (unscoped)" >&2
-  iptables -A OUTPUT -p udp --dport 53 -j ACCEPT
-  iptables -A OUTPUT -p tcp --dport 53 -j ACCEPT
+  # Fail OPEN but SCOPED, not wide: no parseable IPv4 resolver (IPv6-only resolv.conf,
+  # a --dns override, or a parse failure) must not brick session start, but it must
+  # also not re-grant the 0.0.0.0/0 DNS channel this change exists to remove. Scope
+  # the fallback to Docker's embedded resolver (127.0.0.11), which is the resolver in
+  # the overwhelming common case and is already reachable via the `-o lo` accept below
+  # regardless — so this preserves resolution for the standard Docker network without
+  # reopening arbitrary-host DNS. (IPv6 DNS is unfiltered here anyway: this script has
+  # no ip6tables rules — a pre-existing gap this line neither creates nor worsens.)
+  echo "WARNING: no IPv4 nameserver in /etc/resolv.conf — scoping DNS fallback to the Docker embedded resolver 127.0.0.11" >&2
+  iptables -A OUTPUT -p udp -d 127.0.0.11 --dport 53 -j ACCEPT || echo "WARNING: could not add UDP DNS fallback rule" >&2
+  iptables -A OUTPUT -p tcp -d 127.0.0.11 --dport 53 -j ACCEPT || echo "WARNING: could not add TCP DNS fallback rule" >&2
 fi
 # Allow inbound DNS responses
 iptables -A INPUT -p udp --sport 53 -j ACCEPT

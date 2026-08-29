@@ -1,858 +1,314 @@
 # Code Fact-Check Report
 
-**Repository:** `/workspace`
-**Commit:** 4624c5d
-**Also under review:** 1d8ea67 (this pass checks the two fix commits `c98343b..HEAD` together)
-**Replication:** k=1 — TERMINAL pass of a review-fix loop at its 3-iteration cap
-**Scope:** `git diff c98343b..HEAD -- scripts runs test docs/decisions docs/working` (13 files, +912/−201). Commit `197eec6` and everything earlier on the branch is context only, not under review.
-**Checked:** 2026-08-19
-**Total claims checked:** 28 (27 numbered; Claim 11 split into 11a/11b on verdict divergence)
-**Summary:** 23 verified, 3 mostly accurate, 1 stale, 1 incorrect, 0 unverifiable
+Commit: c44c33a
 
-**Hallucination-pattern log consulted:** `docs/reviews/hallucination-patterns.md` (2 entries, both "a specific measured value quoted from a checked-in artifact set that does not contain it"). This pass checks four such measured values in `4624c5d`'s commit message — the `440 (+1)` total, the `+26` correction to `1d8ea67`, the pre-existing-failure attribution, and the `--internal` mutation result. **All four were recomputed from the artifact set and all four hold** (Claims 22, 23, 24, 25). No entry appended: the one Incorrect verdict below is a dead-guarantee comment, not a fabricated symbol.
+**Repository:** /workspace (branch `harden/cc-isolated-egress`)
+**Scope:** commit c44c33a — `devcontainer-config/init-firewall.sh` (code) and `docs/reviews/security-review-cc-isolated-egress-2026-08-29.md` (review artifact, factual claims about the firewall mechanism)
+**Checked:** 2026-08-29
+**Total claims checked:** 11
+**Summary:** 9 verified, 0 mostly accurate, 0 stale, 2 incorrect, 0 unverifiable
 
----
-
-## Headline: is there a mechanism error number six?
-
-**Yes — one, and it is small.** The brief named five consecutive rounds in which a fix round credited a flag, call, or deletion with an effect it does not have, and asked whether `1d8ea67`+`4624c5d` produced a sixth. It did, at `run-host.sh:586-587`:
-
-> "Ledger this attempt's spend IMMEDIATELY, before the audit **and before any path that can leave the loop**."
-
-The ledger is genuinely before the audit and before the artifact harvest's `exit 4` — both verified. But the block *immediately above it* (`run-host.sh:567`, the result-extraction heredoc) is the one heredoc in the cell body with **no `|| true`**, so under this file's `set -euo pipefail` a nonzero exit there kills the sweep **after the container was paid for and before the attempt is ledgered**. Reproduced by execution (Claim 11b). It is the same shape as the prior five — an absolute guarantee asserted about a relocation that is only relative — but the exposure is one narrow failure mode (a write error on `result.json`/`review.md`) rather than a dead code path.
-
-**Everything else the two commits claim, verified — including all five things the iteration-2 fact-check called Incorrect.** `exit 5` is now reachable and a passing leg now continues (executed, Claim 8); the `--internal` mutation is now caught (executed, Claim 20 — suite goes red on exactly that case); `baseline_paths` really is the one definition now (exhaustive grep, Claim 18); the harvest's recommended remedy really does produce an index (executed, Claim 16); the Dockerfile's needs-vs-attempts distinction is exact (Claim 6).
-
-**Two things the orchestrator should see before authorizing spend:**
-
-1. **A different mutation of the same control still survives the suite** (Claim 14, executed). The `internal-net` verdict is a glob, `*--internal*`. Changing `run-host.sh`'s create to `docker network create --internal=false …` leaves **13/13 green in `crb-egress-verdict.bats` and 0 failures in `crb-egress-config.bats`**, and docker accepts `--internal=false` as "not internal". The brief asked for this explicitly; it is the answer. (Mutating the *subnet* instead is caught — `crb-egress-config.bats` case 16 goes red.)
-2. **One Stale comment from iteration 2 was not closed and `4624c5d` does not claim to have closed it**: `run-host.sh:208` still says "PROVE the allowlist, **three ways**" over five legs (Claim 7).
+Hallucination-pattern log (`docs/reviews/hallucination-patterns.md`) was read before checking. The two logged patterns both concern fabricated corpus/denominator statistics in the CRB benchmark; neither resembles any claim in this firewall change. No claim below matches a logged pattern.
 
 ---
 
-## Claim 1: "`PREFLIGHT_ONLY=1` runs those five legs plus the auth/skill preflight (which bills one turn, not zero) and then stops."
+## Claim 1: "Outbound DNS scoped to configured resolvers from /etc/resolv.conf, not 0.0.0.0/0"
 
-**Location:** `docs/decisions/034-crb-egress-allowlist-and-disposable-clones.md:51-52`
-**Type:** Behavioral / Configuration
+**Location:** `devcontainer-config/init-firewall.sh:94-100`
+**Type:** Behavioral
 **Verdict:** Verified
 **Confidence:** High
-**Verification mode:** static
-**Legibility-target:** for-orchestrator-synthesis
-**Scope:** Covers the leg inventory, the presence of a billed auth turn, and the stop point; does not establish the legs' runtime outcomes (no docker in this sandbox) or that the auth turn's cost is nonzero in dollars.
+**Legibility-target:** A maintainer reasoning about whether a compromised session can point a UDP socket at an attacker-controlled nameserver; the comment is the security rationale for the per-resolver scoping.
 
-This is the fix for iteration-2 Claim 1 ("runs exactly that and stops"). Five legs run, then the auth/skill preflight, then the stop:
+The `if` branch parses IPv4 nameservers and adds a `-d "$ns"` scoped ACCEPT for each, rather than a blanket `--dport 53` accept:
 
 ```bash
-# runs/review-arms/crb-pipeline/run-host.sh:238-252
-egress_leg internal-net "$NET_CREATE_CMD"
-egress_leg api-reachable "$(in_cell_net '...https://api.anthropic.com/v1/models || echo 000')"
-egress_leg filter-blocks "$(in_cell_net '...https://github.com/ || echo 000')"
-egress_leg plain-http "$(in_cell_net '...http://github.com/ || echo 000')"
-egress_leg no-direct-route "$(docker run --rm --network "$EGRESS_NET" ... || echo 000')"
+# devcontainer-config/init-firewall.sh:108-115
+dns_resolvers="$(awk '/^[[:space:]]*nameserver/ {print $2}' /etc/resolv.conf 2>/dev/null \
+  | grep -E '^[0-9]{1,3}(\.[0-9]{1,3}){3}$' | sort -u)"
+if [ -n "$dns_resolvers" ]; then
+  while read -r ns; do
+    echo "Allowing DNS to configured resolver $ns"
+    iptables -A OUTPUT -p udp -d "$ns" --dport 53 -j ACCEPT
+    iptables -A OUTPUT -p tcp -d "$ns" --dport 53 -j ACCEPT
+  done < <(echo "$dns_resolvers")
 ```
 
-The auth preflight is a real headless invocation, and the stop sits after it:
+When at least one IPv4 nameserver parses, the emitted rules are destination-scoped (`-d "$ns"`), so a socket aimed at `attacker_ip:53` is not matched by these ACCEPTs and falls through to the final REJECT (`init-firewall.sh:222`). The scoping claim holds for the non-degenerate case.
+
+**Evidence:** `devcontainer-config/init-firewall.sh:108-115`, `devcontainer-config/init-firewall.sh:222`
+
+---
+
+## Claim 2: "Fail OPEN if none parse" — the else branch re-adds a blanket DNS accept when no resolver parses
+
+**Location:** `devcontainer-config/init-firewall.sh:106-107, 116-120`
+**Type:** Behavioral
+**Verdict:** Incorrect
+**Confidence:** High
+**Legibility-target:** An operator relying on the stated invariant "bricking DNS bricks session start, and this repo's boundary changes never trade availability for a partial hardening" — i.e. the promise that a missing/empty resolver list degrades to open DNS rather than aborting.
+
+The comment and diff assert the degenerate case fails open by re-adding an unscoped accept:
 
 ```bash
-# runs/review-arms/crb-pipeline/run-host.sh:284-290
-if [ -n "$PREFLIGHT_ONLY" ]; then
-  ...
-  echo "auth and skill registration confirmed. No cell ran; only the preflight's"
-  echo "own auth turn was billed. Re-run without PREFLIGHT_ONLY to sweep."
+# devcontainer-config/init-firewall.sh:116-120
+else
+  echo "WARNING: no IPv4 nameserver in /etc/resolv.conf — allowing DNS to any host (unscoped)" >&2
+  iptables -A OUTPUT -p udp --dport 53 -j ACCEPT
+  iptables -A OUTPUT -p tcp --dport 53 -j ACCEPT
+fi
+```
+
+This `else` branch is **unreachable in exactly the cases it is written for.** The script runs under `set -euo pipefail`:
+
+```bash
+# devcontainer-config/init-firewall.sh:20
+set -euo pipefail  # Exit on error, undefined vars, and pipeline failures
+```
+
+The resolver list is built by a pipeline inside a command substitution assigned to a variable (`init-firewall.sh:108-109`, quoted in Claim 1). To reach the `else` branch, `dns_resolvers` must be empty — which requires `grep -E` to find zero IPv4 matches, so `grep` exits 1. With `pipefail` set, a nonzero exit from any pipeline stage makes the whole pipeline's status nonzero; a bare `var="$(pipeline)"` assignment then carries that nonzero status, and `set -e` aborts the script **at line 108** before the `if`/`else` is ever evaluated. The same happens if `/etc/resolv.conf` is absent (`awk` exits nonzero; `2>/dev/null` hides the message but not the exit code).
+
+I confirmed this empirically with the exact construct:
+
+```
+$ bash -c 'set -euo pipefail; x="$(printf "" | grep -E "foo" | sort -u)"; echo REACHED'
+$ echo $?
+1                     # "REACHED" never prints — abort at the assignment
+$ bash -c 'set -euo pipefail; x="$(awk "..." /nonexistent 2>/dev/null | grep -E "[0-9]" | sort -u)"; echo REACHED'
+1                     # same — abort at the assignment
+```
+
+So the actual behavior when no IPv4 resolver parses is **not** "allow DNS to any host"; it is an abort of the whole script. Worse, that abort lands *after* the iptables flush (`init-firewall.sh:74-80`) but *before* the default DROP policies are set (`init-firewall.sh:210-212`), where iptables default policy is still `ACCEPT` — so the failure mode is a fully-open firewall plus a broken session start, the opposite of the controlled "fail open (DNS only)" the comment claims. The claim "Fail OPEN if none parse" and the WARNING branch describe a code path that does not execute.
+
+**Evidence:** `devcontainer-config/init-firewall.sh:20`, `devcontainer-config/init-firewall.sh:108-120`, `devcontainer-config/init-firewall.sh:74-80`, `devcontainer-config/init-firewall.sh:210-212`
+
+---
+
+## Claim 3: "The per-resolver DNS ACCEPTs are added before the default `-P OUTPUT DROP` policy so they take effect"
+
+**Location:** `devcontainer-config/init-firewall.sh:108-120` relative to `:212`
+**Type:** Behavioral
+**Verdict:** Verified
+**Confidence:** High
+**Legibility-target:** A reader verifying the rules are actually in force and not shadowed by the DROP policy or the trailing REJECT.
+
+The DNS `-A OUTPUT` rules are appended at lines 113-114 / 118-119 (quoted in Claims 1 and 2), which precede the policy line:
+
+```bash
+# devcontainer-config/init-firewall.sh:210-212
+iptables -P INPUT DROP
+iptables -P FORWARD DROP
+iptables -P OUTPUT DROP
+```
+
+Because iptables evaluates chain rules in append order and a policy applies only when no rule matches, the DNS ACCEPTs (first entries in `OUTPUT`) are reached before the final `REJECT` at `:222` and before the `DROP` policy takes over. Filter rules persist across a policy change, so adding them while the policy is still the default `ACCEPT` does not affect their later effect. Ordering claim holds.
+
+**Evidence:** `devcontainer-config/init-firewall.sh:113-114`, `devcontainer-config/init-firewall.sh:210-212`, `devcontainer-config/init-firewall.sh:219-222`
+
+---
+
+## Claim 4: "SSH to allowlisted hosts (all of GitHub) still works — dst IPs are in the allowed-domains ipset, matched by the OUTPUT accept regardless of port"
+
+**Location:** `devcontainer-config/init-firewall.sh:123-132`
+**Type:** Behavioral / Architectural
+**Verdict:** Verified
+**Confidence:** High
+**Legibility-target:** A maintainer who removed the blanket `--dport 22` accept and needs assurance that `git+ssh` to GitHub is not collateral damage.
+
+The trailing OUTPUT accept matches on destination-set membership only, with no port qualifier:
+
+```bash
+# devcontainer-config/init-firewall.sh:218-219
+# Then allow only specific outbound traffic to allowed domains
+iptables -A OUTPUT -m set --match-set allowed-domains dst -j ACCEPT
+```
+
+GitHub's published ranges are unconditionally added to that ipset:
+
+```bash
+# devcontainer-config/init-firewall.sh:159-163
+    echo "Adding GitHub range $cidr"
+    ...
+    ipset add -exist allowed-domains "$cidr"
+```
+
+fed from `.web + .api + .git` of `api.github.com/meta`:
+
+```bash
+# devcontainer-config/init-firewall.sh:164
+done < <(echo "$gh_ranges" | jq -r '(.web + .api + .git)[]' | aggregate -q)
+```
+
+Tracing an outbound SSH SYN to a GitHub IP: OUTPUT policy is `DROP`, but the packet's destination is in `allowed-domains`, so the `-m set --match-set allowed-domains dst` rule accepts it *irrespective of TCP dport 22*. The mechanism the comment describes is exactly what the code does. One residual: "all of GitHub" depends on GitHub's SSH host IPs being present in the `.web/.api/.git` union of the meta feed — `github.com`'s git/SSH endpoints are published in that feed, so this is accurate in practice (paraphrased — no quote available because it depends on the live `api.github.com/meta` response, which is fetched at runtime and not in the repo).
+
+**Evidence:** `devcontainer-config/init-firewall.sh:140-164`, `devcontainer-config/init-firewall.sh:218-219`
+
+---
+
+## Claim 5: "The ESTABLISHED,RELATED accept covers the return path"
+
+**Location:** `devcontainer-config/init-firewall.sh:128-129`
+**Type:** Behavioral
+**Verdict:** Verified
+**Confidence:** High
+**Legibility-target:** A reader confirming that removing the explicit inbound-SSH-response rule (`-A INPUT ... --sport 22 --state ESTABLISHED`) does not break return traffic.
+
+Both directions have a stateful ESTABLISHED,RELATED accept:
+
+```bash
+# devcontainer-config/init-firewall.sh:214-216
+# First allow established connections for already approved traffic
+iptables -A INPUT -m state --state ESTABLISHED,RELATED -j ACCEPT
+iptables -A OUTPUT -m state --state ESTABLISHED,RELATED -j ACCEPT
+```
+
+Once the outbound SYN to a GitHub IP is accepted (Claim 4), the connection is tracked, and the generic INPUT ESTABLISHED,RELATED rule admits the responses — no port-specific inbound rule is needed. The removed `-A INPUT -p tcp --sport 22 -m state --state ESTABLISHED -j ACCEPT` was a subset of this rule. Claim holds.
+
+**Evidence:** `devcontainer-config/init-firewall.sh:214-216`
+
+---
+
+## Claim 6: "GitHub's IP ranges are added separately from api.github.com/meta … added for every project regardless of profile"
+
+**Location:** `devcontainer-config/init-firewall.sh:2-11` (header comment) and behavior at `:140-164`
+**Type:** Architectural
+**Verdict:** Verified
+**Confidence:** High
+**Legibility-target:** A reader distinguishing the composed profile allowlist (`base` + profiles) from the always-on GitHub CIDR block.
+
+`base.txt` states GitHub is not listed there but added from meta:
+
+```
+# devcontainer-config/egress/base.txt (lines 2-3)
+# GitHub's IP ranges are added separately from api.github.com/meta, not listed here.
+```
+
+and the GitHub-CIDR block in `init-firewall.sh:140-164` runs unconditionally in the firewall path — it is not guarded by any profile check (the only profile-driven code is `compose_domains`, `init-firewall.sh:30-51`, which composes the *domain* allowlist and does not gate the GitHub fetch). So GitHub CIDRs are added for every project regardless of `CC_EGRESS_PROFILE`. Claim holds.
+
+**Evidence:** `devcontainer-config/egress/base.txt:2-3`, `devcontainer-config/init-firewall.sh:140-164`, `devcontainer-config/init-firewall.sh:30-51`
+
+---
+
+## Claim 7 (companion doc): "the allowlist matches on destination IP, not SNI/Host … per-IP for all ports"
+
+**Location:** `docs/reviews/security-review-cc-isolated-egress-2026-08-29.md:24-27`
+**Type:** Architectural
+**Verdict:** Verified
+**Confidence:** High
+**Legibility-target:** A reader of the security review relying on the "load-bearing weakness" framing that drives the CDN/GFE-overreach findings.
+
+The doc claims the match is destination-IP, all-ports. The code's accept rule is `-m set --match-set allowed-domains dst` (`init-firewall.sh:219`, quoted in Claim 4) with no `--dport`/`--sport` and no L7/SNI inspection — pure destination-set membership. The ipset is `hash:net`:
+
+```bash
+# devcontainer-config/init-firewall.sh:138
+ipset create allowed-domains hash:net
+```
+
+so entries are IPs/CIDRs, confirming IP-only, all-ports matching. Doc claim holds.
+
+**Evidence:** `devcontainer-config/init-firewall.sh:138`, `devcontainer-config/init-firewall.sh:219`
+
+---
+
+## Claim 8 (companion doc): "GitHub CIDRs … added for every project regardless of profile"
+
+**Location:** `docs/reviews/security-review-cc-isolated-egress-2026-08-29.md:16-18`
+**Type:** Architectural
+**Verdict:** Verified
+**Confidence:** High
+**Legibility-target:** A reader assessing the "GitHub is the single widest always-on exfil surface" finding, which depends on GitHub being reachable even in a `base`-only project.
+
+Same evidence as Claim 6: the GitHub-CIDR block (`init-firewall.sh:140-164`) is unconditional and not profile-gated. Doc claim holds.
+
+**Evidence:** `devcontainer-config/init-firewall.sh:140-164`
+
+---
+
+## Claim 9 (companion doc): "host.docker.internal … dst-match opens every host port to the container, not just the model server"
+
+**Location:** `docs/reviews/security-review-cc-isolated-egress-2026-08-29.md:47`
+**Type:** Architectural
+**Verdict:** Verified
+**Confidence:** High
+**Legibility-target:** A reader weighing whether granting the `llm` profile exposes more than local Ollama.
+
+`host.docker.internal` is a domain in the `llm` profile, so it is resolved and its IP pinned into `allowed-domains` by the generic domain loop:
+
+```bash
+# devcontainer-config/init-firewall.sh:167-169
+for domain in $ALLOWED_DOMAINS; do
+    echo "Resolving $domain..."
+    ips=$(dig +noall +answer A "$domain" | awk '$4 == "A" {print $5}')
+```
+
+Once that IP is in the ipset, the `-m set --match-set allowed-domains dst` accept (Claim 4/7) admits *any* TCP/UDP port to it — there is no per-port restriction. The `llm.txt` profile documents exactly this ("the allowlist matches destination IP only, so this opens EVERY host port to the container"). Doc claim holds.
+
+**Evidence:** `devcontainer-config/init-firewall.sh:167-192`, `devcontainer-config/init-firewall.sh:219`, `devcontainer-config/egress/llm.txt` (host.docker.internal SCOPE CAVEAT block)
+
+---
+
+## Claim 10 (companion doc): "Scoped outbound DNS to /etc/resolv.conf resolvers, failing open (with a warning) if none parse so session start can never brick"
+
+**Location:** `docs/reviews/security-review-cc-isolated-egress-2026-08-29.md:84-86, 126`
+**Type:** Behavioral
+**Verdict:** Incorrect
+**Confidence:** High
+**Legibility-target:** A reviewer trusting the review's assurance that the DNS hardening cannot brick session start — the explicit availability guarantee the change is sold on.
+
+The doc restates the fail-open guarantee: "failing open (with a warning) if none parse so session start can never brick." This is the same claim refuted in Claim 2: under `set -euo pipefail` the `dns_resolvers` assignment (`init-firewall.sh:108-109`) aborts the script whenever the pipeline yields no match, so the fail-open `else` branch never runs and session start **would** brick (and, because the abort is post-flush/pre-DROP, leaves the firewall open). The review's "can never brick" is contradicted by the code it describes.
+
+**Evidence:** `devcontainer-config/init-firewall.sh:20`, `devcontainer-config/init-firewall.sh:108-120`, `devcontainer-config/init-firewall.sh:74-80`, `devcontainer-config/init-firewall.sh:210-212`
+
+---
+
+## Claim 11 (companion doc): "Both edits are inside the firewall-application path (after the --print-domains early exit) … the 52 test/cc-isolated-functions.bats tests are unaffected"
+
+**Location:** `docs/reviews/security-review-cc-isolated-egress-2026-08-29.md:126-131`
+**Type:** Reference / Architectural
+**Verdict:** Verified
+**Confidence:** High
+**Legibility-target:** A reviewer checking that the change did not silently alter the tested `compose_domains` surface.
+
+The `--print-domains` early exit is at `init-firewall.sh:56-59`:
+
+```bash
+# devcontainer-config/init-firewall.sh:56-59
+if [ "${1:-}" = "--print-domains" ]; then
+  compose_domains
   exit 0
 fi
 ```
 
-The doc now matches the runner's own output.
-
-**Evidence:** `docs/decisions/034-crb-egress-allowlist-and-disposable-clones.md:51-52`, `runs/review-arms/crb-pipeline/run-host.sh:238-252`, `runs/review-arms/crb-pipeline/run-host.sh:265-290`
-
----
-
-## Claim 2: "R6 did not dissolve — it moved. Every clone materialized before this change lacks a baseline, so `run-host.sh` skips all of them and exits 3, which is R6's exact symptom."
-
-**Location:** `docs/decisions/034-crb-egress-allowlist-and-disposable-clones.md:71-77`
-**Type:** Behavioral / Architectural
-**Verdict:** Verified
-**Confidence:** High
-**Verification mode:** executed
-**Legibility-target:** for-orchestrator-synthesis
-**Scope:** Covers the on-disk precondition state and the exit-3 branch as written; does not establish that the sweep would exit 3 in a live run (the exit is reached only after the docker preflights, which cannot run here).
-
-Executed against disk. The baseline directory does not exist and no manifest record carries the pin:
+Both edited regions — the DNS block (`:108-120`) and the SSH comment/removal (`:123-132`) — sit well after line 59, so the `--print-domains` path that the bats tests exercise never reaches them. The stated test count is exact:
 
 ```
-$ ls external/crb-eval/.baselines
-ls: cannot access 'external/crb-eval/.baselines': No such file or directory
-$ python3 -c "...json.load(open('runs/review-arms/crb/instances.json'))..."
-5 records; with baseline_sha256: 0
-with baseline_index_sha256: 0
+$ grep -c '^@test' test/cc-isolated-functions.bats
+52
 ```
 
-Every instance therefore fails the pre-cell precondition and is counted `skipped_bad`:
+Both the "after the early exit" and "52 tests" claims hold.
 
-```bash
-# runs/review-arms/crb-pipeline/run-host.sh:449-454
-  if [ ! -f "${_bl[0]:-/nonexistent}" ] || [ ! -f "${_bl[1]:-/nonexistent}" ]; then
-    echo "$id: no baseline — rebuild the clone and its baseline with:" >&2
-    ...
-    skipped_bad=$((skipped_bad+1)); continue
-  fi
-```
-
-which reaches the exit the decision names:
-
-```bash
-# runs/review-arms/crb-pipeline/run-host.sh:682-685
-if [ "$ran" -eq 0 ] && [ "$skipped_bad" -gt 0 ]; then
-  echo "NO CELL RAN and $skipped_bad instance(s) were unusable — not a clean sweep." >&2
-  exit 3
-fi
-```
-
-The remedy the decision names (`--slug <id> --force`) is the one that writes a baseline — see Claim 16.
-
-**Evidence:** `docs/decisions/034-crb-egress-allowlist-and-disposable-clones.md:71-77`, `runs/review-arms/crb-pipeline/run-host.sh:449-454`, `runs/review-arms/crb-pipeline/run-host.sh:682-685`, `runs/review-arms/crb/instances.json`, command run in `/workspace`, exit 0, 2026-08-20T00:33Z
-
----
-
-## Claim 3: "Note one residual gap the test suite cannot close: the `internal-net` leg asserts the network-create command, but whether docker honours `--internal` is itself only observable at runtime."
-
-**Location:** `docs/decisions/034-crb-egress-allowlist-and-disposable-clones.md:89-93`
-**Type:** Behavioral / Invariant
-**Verdict:** Verified
-**Confidence:** High
-**Verification mode:** static
-**Legibility-target:** for-orchestrator-synthesis
-**Scope:** Covers the two things the note asserts — that the leg's subject is the command string and that docker's honouring of the flag is unobservable here. It does not assert that the string assertion is *strict*; that separate question is Claim 14, where a surviving mutation is recorded.
-
-The leg's input is the literal command line, not a network state:
-
-```bash
-# scripts/crb-egress-verdict.sh:23-25 (usage contract)
-# `<observed>` is the curl `%{http_code}` for the http legs ..., or the literal
-# network-create command line for the `internal-net` leg.
-```
-
-and it is handed exactly the string the runner ran:
-
-```bash
-# runs/review-arms/crb-pipeline/run-host.sh:176-177, :238
-  NET_CREATE_CMD="docker network create --internal --subnet $EGRESS_SUBNET $EGRESS_NET"
-  $NET_CREATE_CMD >/dev/null
-egress_leg internal-net "$NET_CREATE_CMD"
-```
-
-No test in the repo starts a docker network (paraphrased — no quote available because the claim covers the absence of code: `grep -rn 'docker network' test/` returns only string assertions in `test/crb-egress-verdict.bats:36,41` and the two greps at `:138-148`, none of which invoke docker).
-
-**Evidence:** `docs/decisions/034-…:89-93`, `scripts/crb-egress-verdict.sh:23-25`, `runs/review-arms/crb-pipeline/run-host.sh:176-177`, `runs/review-arms/crb-pipeline/run-host.sh:238`
-
----
-
-## Claim 4: "**egress**, five legs, all of which must pass or the sweep exits 5 before spending anything"
-
-**Location:** `docs/working/crb-direction1-setup.md:98-99`
-**Type:** Behavioral / Error-handling
-**Verdict:** Verified
-**Confidence:** High
-**Verification mode:** executed
-**Legibility-target:** for-orchestrator-synthesis
-**Scope:** Covers the exit code and the fail-closed ordering (all five legs precede the paid auth preflight); does not establish the legs' runtime verdicts, which require docker.
-
-This is the fix for iteration-2 Claim 8 (`exit 5` was dead — the sweep died at status 1). Re-executed against the current `egress_leg` extracted verbatim from `run-host.sh:220-234` and run under the same `set -euo pipefail`:
-
-```
---- FAILING leg (internal-net without --internal) ---
-  FAIL internal-net: network was created WITHOUT --internal — containers would route directly.
-  (refusing to spend — egress leg 'internal-net' failed)
-exit=5
---- FAILING leg (no-direct-route observed 200) ---
-  FAIL no-direct-route: reached a non-allowlisted host (HTTP 200) with NO proxy env — the network is not internal.
-  (refusing to spend — egress leg 'no-direct-route' failed)
-exit=5
-```
-
-"Before spending anything" holds: all five `egress_leg` calls sit at `run-host.sh:238-252`, ahead of the auth preflight's `docker run` at `:265`, which is the first billed call in the file.
-
-**Evidence:** `docs/working/crb-direction1-setup.md:98-99`, `runs/review-arms/crb-pipeline/run-host.sh:220-252`, `docs/reviews/execution-logs/2026-08-19-r1-egress-leg.log` — cmd `bash <harness> <leg> <observed>`, cwd `/workspace`, exit 5 on both failing legs, 2026-08-20T00:29Z
-
----
-
-## Claim 5: "It is **not quite $0**: the five egress legs are free, but the auth/skill-registration preflight is a real headless invocation and bills one turn."
-
-**Location:** `docs/working/crb-direction1-setup.md:120-124`
-**Type:** Behavioral / Configuration
-**Verdict:** Verified
-**Confidence:** High
-**Verification mode:** static
-**Legibility-target:** for-orchestrator-synthesis
-**Scope:** Covers the claim that `PREFLIGHT_ONLY=1` bills and that the egress legs do not; does not establish the dollar amount of the billed turn, nor that the five legs are literally free of every cost (they start containers, which cost time, not API spend).
-
-The preflight is a real invocation with the key attached:
-
-```bash
-# runs/review-arms/crb-pipeline/run-host.sh:265-276
-preflight=$(docker run --rm -u node -e ANTHROPIC_API_KEY \
-  --network "$EGRESS_NET" \
-  ...
-    -p "List the names of your available skills, comma separated. Nothing else." \
-    --model "$MODEL" --output-format json 2>&1) || true
-```
-
-and its success predicate requires a turn to have happened:
-
-```python
-# runs/review-arms/crb-pipeline/run-host.sh:281-282
-if d.get("num_turns", 0) < 1 or "log in" in low or "logged in" in low:
-    sys.exit(f"  auth failed: {r[:200]!r}")
-```
-
-The five egress legs pass no `ANTHROPIC_API_KEY` and issue no `claude` invocation (paraphrased — no quote available because the claim covers the absence of code across `run-host.sh:238-252`: none of the five lines contains `-e ANTHROPIC_API_KEY`, and all four container legs use `--entrypoint bash`).
-
-**Evidence:** `docs/working/crb-direction1-setup.md:120-124`, `runs/review-arms/crb-pipeline/run-host.sh:238-252`, `runs/review-arms/crb-pipeline/run-host.sh:265-290`
-
----
-
-## Claim 6: "Baking the CLI means a running cell NEEDS only one reachable host … It will still ATTEMPT others — this repo's own `devcontainer-config/egress/base.txt` lists claude.ai, console.anthropic.com, sentry.io, statsig.com and registry.npmjs.org, and nothing here disables the autoupdater or telemetry."
-
-**Location:** `runs/review-arms/crb-pipeline/docker/Dockerfile.review:6-14`
-**Type:** Configuration
-**Verdict:** Verified
-**Confidence:** High
-**Verification mode:** static
-**Legibility-target:** for-orchestrator-synthesis
-**Scope:** Covers the host list, the absence of autoupdater/telemetry disabling in this Dockerfile, and the single-entry allowlist; does not establish which endpoints a running CLI actually contacts (requires docker).
-
-This is the fix for iteration-2 Claim 28 (the "exactly ONE reachable host" wording surviving here after being corrected in 034). The named list is exactly the file's contents besides `api.anthropic.com`:
-
-```
-# devcontainer-config/egress/base.txt:7-14
-api.anthropic.com
-claude.ai
-console.anthropic.com
-sentry.io
-statsig.com
-...
-registry.npmjs.org
-```
-
-The Dockerfile sets no autoupdater or telemetry variable (paraphrased — no quote available because the claim covers the absence of code: the file's only `ENV`-adjacent directives are `ARG NODE_TAG`, `ARG CC_VERSION`, and `LABEL crb.cc_version`; there is no `DISABLE_AUTOUPDATER`, `DISABLE_TELEMETRY`, or `CLAUDE_CODE_*` setting anywhere in `runs/review-arms/crb-pipeline/docker/`).
-
-"lets the allowlist hold a single entry" is exact — one non-comment line:
-
-```
-# runs/review-arms/crb-pipeline/docker/egress-allowlist:9
-^api\.anthropic\.com$
-```
-
-**Evidence:** `runs/review-arms/crb-pipeline/docker/Dockerfile.review:6-14`, `devcontainer-config/egress/base.txt:7-14`, `runs/review-arms/crb-pipeline/docker/egress-allowlist:9`
-
----
-
-## Claim 7: "Egress preflight: PROVE the allowlist, three ways"
-
-**Location:** `runs/review-arms/crb-pipeline/run-host.sh:208`
-**Type:** Configuration / Staleness
-**Verdict:** Stale
-**Confidence:** High
-**Verification mode:** static
-**Legibility-target:** for-author
-**Scope:** Covers the count in this section header only; every other statement of the leg count in the branch was updated and is correct.
-
-Carried unfixed from iteration-2 Claim 11. The header still says three:
-
-```bash
-# runs/review-arms/crb-pipeline/run-host.sh:208
-# ── Egress preflight: PROVE the allowlist, three ways ───────────────────────
-```
-
-but five legs follow it, at `run-host.sh:238-252` (quoted in Claim 1). `git log -S'PROVE the allowlist, three ways'` attributes the line to `197eec6`, which is context-only for this pass; `4624c5d`'s commit message does not claim to have fixed it, so this is an open carry rather than a refuted claim.
-
-**Evidence:** `runs/review-arms/crb-pipeline/run-host.sh:208`, `runs/review-arms/crb-pipeline/run-host.sh:238-252`
-
----
-
-## Claim 8: "the assignment is guarded with `|| rc=$?` rather than relying on a pipeline's exit status at all" (and, by implication, that `exit 5` now runs)
-
-**Location:** `runs/review-arms/crb-pipeline/run-host.sh:221-234`
-**Type:** Behavioral / Error-handling
-**Verdict:** Verified
-**Confidence:** High
-**Verification mode:** executed
-**Legibility-target:** for-orchestrator-synthesis
-**Scope:** Covers both directions — a failing leg reaches `exit 5` and a passing leg does not — for a directly-invoked leg under `set -euo pipefail`. Does not cover the case where the *observed* argument's own command substitution (`$(in_cell_net …)`) fails, which is a separate path (see the note below).
-
-The rewritten body:
-
-```bash
-# runs/review-arms/crb-pipeline/run-host.sh:231-234
-  local out rc=0
-  out=$(bash "$VERDICT" "$1" "$2") || rc=$?
-  printf '%s\n' "$out" | sed 's/^/  /'
-  [ "$rc" -eq 0 ] || { echo "  (refusing to spend — egress leg '$1' failed)" >&2; exit 5; }
-```
-
-`local out rc=0` is on its own line, so `local`'s own exit status cannot mask the substitution's — the `out=$(…)` assignment is a separate statement in a `||` list, where errexit is suppressed and `$?` is readable. Executed both directions:
-
-```
---- PASSING leg (internal-net with --internal) ---
-  ok  network created --internal
-AFTER-LEG-REACHED
-exit=0
---- FAILING leg (internal-net without --internal) ---
-  FAIL internal-net: network was created WITHOUT --internal — containers would route directly.
-  (refusing to spend — egress leg 'internal-net' failed)
-exit=5
-```
-
-One behaviour worth recording rather than verdicting: the verdict script's `exit 2` (usage error) also lands on `exit 5` here, since the guard tests `-eq 0` rather than `-eq 1` — executed, `bogus-leg` printed the usage block and exited 5. The comment claims nothing about exit 2, so this is a scope note, not a defect against a claim.
-
-**Evidence:** `runs/review-arms/crb-pipeline/run-host.sh:221-234`, `scripts/crb-egress-verdict.sh:26-42`, `docs/reviews/execution-logs/2026-08-19-r1-egress-leg.log` — cmd `bash <harness> <leg> <observed>`, cwd `/workspace`, exits 0 / 5 / 5 / 5, 2026-08-20T00:29Z
-
----
-
-## Claim 9: "A void marker from an EARLIER sweep must not make this sweep exit 6: **nothing else ever deletes it**, so the status would be sticky forever once any cell had ever voided. This cell is about to be re-decided, so its old verdict goes."
-
-**Location:** `runs/review-arms/crb-pipeline/run-host.sh:503-506`
-**Type:** Behavioral / Invariant
-**Verdict:** Verified
-**Confidence:** High
-**Verification mode:** static
-**Legibility-target:** for-orchestrator-synthesis
-**Scope:** Covers the uniqueness of the deleter, the stickiness the fix removes, and whether the deletion can defeat the `exit 6` count for a cell that is *not* re-decided. Does not cover the loss of the historical void record when a re-decided cell subsequently passes (noted below as a consequence, not a claim defect).
-
-"Nothing else ever deletes it" — a repo-wide grep finds exactly five references to the marker and only one removal, the new one:
-
-```
-runs/review-arms/crb-pipeline/run-host.sh:356   os.path.join(out, name, "CONTAINMENT_FAILED")),   # read (run-meta)
-runs/review-arms/crb-pipeline/run-host.sh:506   rm -f "$dest/CONTAINMENT_FAILED"                   # the only delete
-runs/review-arms/crb-pipeline/run-host.sh:645   : > "$dest/CONTAINMENT_FAILED"                     # write
-runs/review-arms/crb-pipeline/run-host.sh:693   if os.path.isfile(os.path.join(out, n, "CONTAINMENT_FAILED"))))  # read (exit 6)
-scripts/crb-pipeline-to-benchmark.py:242        if (cell / "CONTAINMENT_FAILED").exists():        # read (injector)
-```
-
-**The at-MAX_ATTEMPTS case the brief asked about does not defeat the count.** The MAX_ATTEMPTS `continue` fires at `:493-495`, eleven lines *before* the `rm -f` at `:506`:
-
-```bash
-# runs/review-arms/crb-pipeline/run-host.sh:493-495
-  if [ "$attempts" -ge "$MAX_ATTEMPTS" ]; then
-    echo "=== $id — $attempts attempt(s) already made, at MAX_ATTEMPTS — skipping ..." >&2
-    skipped_bad=$((skipped_bad+1)); continue
-  fi
-```
-
-so a cell skipped as at-MAX_ATTEMPTS keeps its marker and still trips `exit 6`. The same is true of the already-complete `continue` at `:465-466`, the missing-baseline `continue` at `:454`, and the failed-restore `continue` at `:520`. The only cell whose marker is removed is one that goes on to be re-audited in this sweep, and the audit re-writes the marker at `:645` when it voids again.
-
-Consequence, not a claim defect: if a previously-voided cell is re-run and passes, the fact that it once voided is no longer recoverable from `$OUT` — `write_run_meta` recomputes `voided_cells` from the markers on each invocation and carries forward only `requested_instances` (`run-host.sh:317-320`, `:359`). Nothing in the comment claims otherwise.
-
-**Evidence:** `runs/review-arms/crb-pipeline/run-host.sh:454`, `:465-466`, `:493-495`, `:503-506`, `:520`, `:645`, `:693`, `scripts/crb-pipeline-to-benchmark.py:242`
-
----
-
-## Claim 10: "Ledger this attempt's spend IMMEDIATELY, before the audit … the audit's `exit 4` abort would additionally have dropped THIS attempt's spend on the floor"
-
-**Location:** `runs/review-arms/crb-pipeline/run-host.sh:586-590`
-**Type:** Behavioral / Error-handling
-**Verdict:** Verified
-**Confidence:** High
-**Verification mode:** static
-**Legibility-target:** for-orchestrator-synthesis
-**Scope:** Covers the ledger's position relative to the audit, the artifact harvest, and the budget gate, and that it appends exactly once per attempt. The "before any path that can leave the loop" half is verdicted separately as Claim 11b.
-
-The ledger now sits at `:591`; the two `exit 4` paths that can leave the loop after money is spent both sit below it — the artifact harvest at `:609-611` and the audit at `:637-641`:
-
-```bash
-# runs/review-arms/crb-pipeline/run-host.sh:609-611
-  python3 "$ROOT/scripts/crb-harvest-artifacts.py" \
-    "$clone" "${_bl[1]}" "$dest/artifacts" || {
-      echo "$id: HARVEST invocation failed — see above" >&2; exit 4; }
-```
-
-```bash
-# runs/review-arms/crb-pipeline/run-host.sh:637-641
-  if [ "$audit_rc" -gt 1 ]; then
-    echo "$id: containment audit could not run (exit $audit_rc) — NOT a void." >&2
-    ...
-    exit 4
-  fi
-```
-
-**Exactly once per attempt**, not double-appended: `grep -n 'attempts.jsonl' run-host.sh` returns five hits and only one is an append — `:591` (the writer), `:490` (the `grep -c` read that computes `attempts`), `:339` and `:413` (read-only sums in `write_run_meta` and `sweep_spend_ok`), `:482` (a comment). The old bottom-of-loop copy was deleted, not duplicated (`git diff 1d8ea67..4624c5d` removes the `:673-686` block).
-
-The **budget-halt** path is also covered: `sweep_spend_ok` is called at the *top* of the loop body, so it can only fire before a cell is paid for, never between payment and ledgering:
-
-```bash
-# runs/review-arms/crb-pipeline/run-host.sh:436-437
-for id in "${INSTANCES[@]}"; do
-  sweep_spend_ok || { echo "SWEEP BUDGET EXCEEDED — stopping before this cell. ..." >&2; exit 2; }
-```
-
-**Evidence:** `runs/review-arms/crb-pipeline/run-host.sh:339`, `:413`, `:436-437`, `:490`, `:586-600`, `:609-611`, `:637-641`
-
----
-
-## Claim 11a: "before the audit"
-
-**Location:** `runs/review-arms/crb-pipeline/run-host.sh:586`
-**Type:** Behavioral
-**Verdict:** Verified
-**Confidence:** High
-**Verification mode:** static
-**Legibility-target:** for-orchestrator-synthesis
-**Scope:** Covers the ledger's ordering against the audit block only; see Claim 10 for the full ordering trace and Claim 11b for the second half of the same sentence.
-
-Ledger at `:591`, audit `docker run` at `:633`, audit's abort at `:637-641` — quoted in Claim 10.
-
-**Evidence:** `runs/review-arms/crb-pipeline/run-host.sh:591`, `:633`, `:637-641`
-
----
-
-## Claim 11b: "and before any path that can leave the loop"
-
-**Location:** `runs/review-arms/crb-pipeline/run-host.sh:586-587`
-**Type:** Behavioral / Error-handling
-**Verdict:** Incorrect
-**Confidence:** High
-**Verification mode:** executed
-**Legibility-target:** for-author
-**Scope:** Covers paths between the paid `docker run` at `:546` and the ledger at `:591`. Does not establish how often the surviving path fires in practice — the failure modes are write errors, not routine ones — nor anything about paths after the ledger, which Claim 10 verifies.
-
-Split from Claim 10 per the compound-claim rule: the two halves earn different verdicts, and this half asserts a mechanism the code refutes.
-
-One block sits between the paid container and the ledger, and it is the **only heredoc in the cell body without `|| true`**:
-
-```bash
-# runs/review-arms/crb-pipeline/run-host.sh:567  (no `|| true`)
-python3 - "$dest/transcript.jsonl" "$dest/result.json" "$dest/review.md" <<'EOF'
-...
-json.dump(res, open(sys.argv[2], "w"))
-open(sys.argv[3], "w").write(res.get("result") or "")
-EOF
-```
-
-compared with the ledger's own guarded form four lines later:
-
-```bash
-# runs/review-arms/crb-pipeline/run-host.sh:591
-python3 - "$dest/result.json" "$dest/attempts.jsonl" <<'EOF' || true
-```
-
-Under this file's `set -euo pipefail`, a nonzero exit at `:567` terminates the sweep before `:591` runs. Reproduced with the same shape:
-
-```
-container ran (PAID)
-exit=1
-```
-
-— "LEDGER APPENDED" never printed. The realistic triggers are narrow (`json.dump`/`write` failing on a full or read-only `$OUT`; `res.get("result")` returning a non-string), and `sys.exit(0)` already covers the common "no result event" case, so this is a small hole rather than a dead path. But a reader acting on "before **any** path that can leave the loop" — for instance, concluding that `attempts.jsonl` is a complete record of everything billed — is misled.
-
-Precise version: "before the audit, before the artifact harvest, and before every `exit 4`; the result-extraction block above is the one remaining unguarded statement between the paid container and this line."
-
-**Evidence:** `runs/review-arms/crb-pipeline/run-host.sh:546-559`, `:567-585`, `:591`, `docs/reviews/execution-logs/2026-08-19-r1-ledger-order.log` — cmd `bash <repro>.sh`, cwd `/workspace`, exit 1, 2026-08-20T00:34Z
-
----
-
-## Claim 12: "A FUNCTION called at the TOP of the loop body, not a step at the bottom: at the bottom, every early `continue` (missing baseline, already-complete cell, MAX_ATTEMPTS, failed restore) jumped straight past it"
-
-**Location:** `runs/review-arms/crb-pipeline/run-host.sh:402-406`
-**Type:** Behavioral / Architectural
-**Verdict:** Verified
-**Confidence:** High
-**Verification mode:** static
-**Legibility-target:** for-orchestrator-synthesis
-**Scope:** Covers the gate's position and the enumeration of the four early `continue`s; does not establish the arithmetic of the spend sum, which Claim 10 touches only for ordering.
-
-The call is the first statement of the loop body (`run-host.sh:436-437`, quoted in Claim 10), and the four named `continue`s all sit after it: missing baseline `:454`, already-complete `:466`, MAX_ATTEMPTS `:495`, failed restore `:520`. The enumeration is exact — those are the only four `continue` statements in the loop (paraphrased — no quote available because the claim covers a count over the whole loop body: `grep -c 'continue' run-host.sh` inside `:436-700` yields those four plus the three `continue`s inside embedded Python, which are not shell control flow).
-
-**Evidence:** `runs/review-arms/crb-pipeline/run-host.sh:400-406`, `:436-437`, `:454`, `:466`, `:495`, `:520`
-
----
-
-## Claim 13: "(Foreign commits are counted in full but only the first is named, to keep the trace readable when a fetch brought in many.)"
-
-**Location:** `scripts/crb-audit-clone.sh:27-28`
-**Type:** Behavioral
-**Verdict:** Verified
-**Confidence:** High
-**Verification mode:** executed
-**Legibility-target:** for-orchestrator-synthesis
-**Scope:** Covers the header comment's description of the output for the foreign-commit check; does not cover the other four checks' output shapes.
-
-Executed against a fixture with two orphan commits and a pinned head:
-
-```
-CONTAINMENT VOID:
-  - 2 commit(s) reachable outside the reviewed head and NOT descended from it (first: e90993a0e529)
-exit=1
-```
-
-Counted in full (2), first named only. The header comment now matches the output; before `4624c5d` the count was computed and discarded (iteration-2 Claim 31).
-
-**Evidence:** `scripts/crb-audit-clone.sh:27-28`, `scripts/crb-audit-clone.sh:88-99`, `docs/reviews/execution-logs/2026-08-19-r1-audit-foreign.log` — cmd `bash /workspace/scripts/crb-audit-clone.sh . <head-sha>`, cwd `<scratchpad>/repo`, exit 1, 2026-08-20T00:34Z
-
----
-
-## Claim 14: "`internal-net <cmdline>` the network-create must **actually** be `--internal`" / "Without `--internal` the network routes to the internet directly and every other leg still passes"
-
-**Location:** `scripts/crb-egress-verdict.sh:34`, `scripts/crb-egress-verdict.sh:80-89`
-**Type:** Behavioral / Invariant
-**Verdict:** Mostly accurate
-**Confidence:** Medium
-**Verification mode:** executed
-**Legibility-target:** for-author
-**Scope:** Covers what the `internal-net` matcher accepts and rejects, and what the two bats suites see. Does not establish docker's runtime behaviour for `--internal=false` (no docker here) — the mechanism gap is in the matcher, and the runtime consequence is inferred from docker's documented boolean-flag syntax.
-
-This is the *different mutation of the same control* the brief asked for. The matcher is a substring glob, not a flag parse:
-
-```bash
-# scripts/crb-egress-verdict.sh:84-89
-    case "$observed" in
-      *--internal*)
-        echo "ok  network created --internal" ;;
-      *)
-        echo "FAIL internal-net: network was created WITHOUT --internal — containers would route directly."
-        exit 1 ;;
-    esac
-```
-
-`--internal=false` contains `--internal`, so it passes the leg. Executed: with `run-host.sh:176` mutated to `docker network create --internal=false --subnet …`,
-
-```
-1..13
-ok 12 the runner's own network create really carries --internal
-... (13/13 ok)
-```
-
-and `test/crb-egress-config.bats` reported 0 failures. The new bats case at `test/crb-egress-verdict.bats:138-148` asserts `[[ "$output" == *"--internal"* ]]` against the runner's line, so it inherits the same substring weakness.
-
-The claim's *conclusion* is right — without the flag, containment is gone and no other leg notices — and the *ordinary* mutation is caught (Claim 20). What "actually" overstates is strictness: the check is `contains the token`, not `enables the flag`. Precise version: "the create command must contain `--internal`; a `--internal=false` spelling satisfies this check and is not distinguished."
-
-For contrast, the adjacent same-control mutation *is* caught: changing `EGRESS_SUBNET`'s default away from `tinyproxy.conf`'s `Allow 172.31.250.0/24` turns `crb-egress-config.bats` case 16 ("the proxy tunnels 443 only and serves only the pinned subnet") red.
-
-**Evidence:** `scripts/crb-egress-verdict.sh:34`, `scripts/crb-egress-verdict.sh:80-89`, `test/crb-egress-verdict.bats:138-148`, `runs/review-arms/crb-pipeline/docker/tinyproxy.conf:16`, `docs/reviews/execution-logs/2026-08-19-r1-internal-mutation.log` — cmds `bats test/crb-egress-verdict.bats`, `bats test/crb-egress-config.bats` under mutations A/B/C, cwd `/workspace`, exits 0 (B survives) / 1 (A and C caught), 2026-08-20T00:31Z
-
----
-
-## Claim 15: "The comparison is against the baseline index written by `crb-materialize.py` when it materializes a clone"
-
-**Location:** `scripts/crb-harvest-artifacts.py:19-20`
-**Type:** Architectural
-**Verdict:** Verified
-**Confidence:** High
-**Verification mode:** static
-**Legibility-target:** for-orchestrator-synthesis
-**Scope:** Covers where the index is written and that materialization is now the only writer; does not cover the index's contents beyond the `{relpath: sha256}` shape the same docstring describes.
-
-This is the fix for iteration-2 Claim 22 (the docstring named the deleted `--snapshot` mode). `snapshot_baseline` is now called from exactly one place, the tail of `materialize()`:
-
-```python
-# scripts/crb-materialize.py:485-490
-    # Snapshot LAST, and only after verify_containment has passed: the baseline
-    # is the definition of "clean" every later cell restores to, ...
-    rec.update(snapshot_baseline(dst, slug))
-```
-
-`grep -n 'snapshot_baseline' scripts/crb-materialize.py` returns exactly two lines — the `def` at `:286` and that call at `:490` (paraphrased — no quote available because the claim covers a call-site count, i.e. the absence of other callers).
-
-**Evidence:** `scripts/crb-harvest-artifacts.py:19-21`, `scripts/crb-materialize.py:286`, `scripts/crb-materialize.py:485-490`
-
----
-
-## Claim 16: "no baseline index at {index_path} — rebuild this slug with `crb-materialize.py --slug <slug> --force`"
-
-**Location:** `scripts/crb-harvest-artifacts.py:102-103`
-**Type:** Reference / Behavioral
-**Verdict:** Verified
-**Confidence:** High
-**Verification mode:** executed
-**Legibility-target:** for-orchestrator-synthesis
-**Scope:** Covers that the recommended mode reaches the code that writes the index, and that that code writes both halves atomically. Does not cover the network-dependent clone step of `materialize()`, which cannot run in this sandbox.
-
-The recommended flags reach `materialize(..., force)` — `--slug` is a `select()` mode (`crb-materialize.py:501`, `:623`) and `--force` is passed straight through (`:637`) — and `materialize()` ends at the `snapshot_baseline` call quoted in Claim 15. Executed the index-writing half directly, with `BASELINE_ROOT` redirected to a scratch dir:
-
-```
-files written: ['fixture.index.json', 'fixture.tar']
-index contents: {
-"a.json": "6a021504b02dc18c0b6bf8dfebdbdca579f0ab4d75eccb09ceeae89880a007ad",
-"b.md": "045d2d07c2db3b9e6cef022457ee89434045a508c2dadccf9abe182ad633c273"
-}
-```
-
-Both published names appear and no `.part` sibling is left behind, so the `.replace()` publish at `:305`/`:313` completes. The path the deleted `--snapshot` mode used is gone: `crb-materialize.py:515-527` documents that there is deliberately no in-place baseline mode.
-
-**Evidence:** `scripts/crb-harvest-artifacts.py:99-104`, `scripts/crb-materialize.py:299-315`, `scripts/crb-materialize.py:485-490`, `scripts/crb-materialize.py:515-527`, `scripts/crb-materialize.py:623-637`, `docs/reviews/execution-logs/2026-08-19-r1-baseline-index.log` — cmd `python3 -` (exec of `crb-materialize.py` with `BASELINE_ROOT` redirected, calling `snapshot_baseline`), cwd `/workspace`, exit 0, 2026-08-20T00:34Z
-
----
-
-## Claim 17: "Derived from the published names, not respelled: `.part` siblings were the last two places the layout was written out by hand."
-
-**Location:** `scripts/crb-materialize.py:302-304`
-**Type:** Architectural
-**Verdict:** Verified
-**Confidence:** High
-**Verification mode:** static
-**Legibility-target:** for-orchestrator-synthesis
-**Scope:** Covers the two `.part` derivations and the "last two" count as of `4624c5d`; the third hand-spelling the same commit removed (`--verify`'s tar path) is Claim 18's subject.
-
-Both `.part` names now derive from `baseline_paths()`' return values:
-
-```python
-# scripts/crb-materialize.py:301-313
-    tar, idx_path = baseline_paths(slug)
-    ...
-    part = tar.with_name(tar.name + ".part")
-    ...
-    idx_part = idx_path.with_name(idx_path.name + ".part")
-```
-
-`grep -n '\.tar\|index\.json\|\.part' scripts/crb-materialize.py` now returns only these two derivations, the `baseline_paths` return at `:350`, and two docstring mentions — no other literal spelling remains (paraphrased — no quote available because the claim covers the absence of further hand-spellings).
-
-**Evidence:** `scripts/crb-materialize.py:299-315`, `scripts/crb-materialize.py:350`
-
----
-
-## Claim 18: "(tar, index) for a slug. **The ONE place this layout is defined.**"
-
-**Location:** `scripts/crb-materialize.py:343`
-**Type:** Architectural / Invariant
-**Verdict:** Verified
-**Confidence:** High
-**Verification mode:** static
-**Legibility-target:** for-orchestrator-synthesis
-**Scope:** Covers every producer of a `.baselines/<slug>.{tar,index.json}` path in `scripts/` and `runs/`. Prose restatements in docstrings/comments and the assertion in `test/crb-disposable-clone.bats` are counted as pins/descriptions, not definitions.
-
-This is the fix for iteration-2 Claim 24, which was falsified by `crb-materialize.py:581` re-deriving the tar path by hand. That site now calls the accessor:
-
-```python
-# scripts/crb-materialize.py:583
-                    tar, _idx = baseline_paths(slug)
-```
-
-An exhaustive grep of `scripts`, `runs`, and `test` for `baseline_paths|BASELINE_ROOT|index\.json|\.tar` leaves four call sites (`:301`, `:374`, `:535`, `:583`), the single definition (`:350`), and the constant it composes (`:73`); the two `.part` siblings derive from the accessor's output (Claim 17). The runner no longer spells it either — it asks via `--baseline-paths` (`run-host.sh:448`), and `test/crb-disposable-clone.bats:315-322` pins both the output shape and the absence of `\.baselines/\$(id|slug)` in `run-host.sh`.
-
-**Evidence:** `scripts/crb-materialize.py:73`, `:301`, `:342-350`, `:374`, `:535`, `:583`, `runs/review-arms/crb-pipeline/run-host.sh:448`, `test/crb-disposable-clone.bats:315-322`
-
----
-
-## Claim 19: "The count is now reported, not merely tallied — it was computed into a variable nothing ever printed."
-
-**Location:** `test/crb-audit-clone.bats:110-112`
-**Type:** Behavioral
-**Verdict:** Verified
-**Confidence:** High
-**Verification mode:** executed
-**Legibility-target:** for-orchestrator-synthesis
-**Scope:** Covers the assertion the test makes and that it passes; does not establish that the case would catch every regression of the reporting line (it asserts a substring of the message, so a reworded message would fail it — which is the intent).
-
-The case now asserts the count text:
-
-```bash
-# test/crb-audit-clone.bats:108-113
-  [[ "$output" == *"NOT descended from it"* ]]
-  # The count is now reported, not merely tallied — it was computed into a
-  # variable nothing ever printed.
-  [[ "$output" == *"1 commit(s) reachable outside"* ]]
-```
-
-and passes in the full suite (`ok 107` in the run log). The "nothing ever printed" half is confirmed by the pre-fix code, which assigned `first_foreign` and never emitted `n_foreign` (`git diff 1d8ea67..4624c5d -- scripts/crb-audit-clone.sh`).
-
-**Evidence:** `test/crb-audit-clone.bats:106-113`, `scripts/crb-audit-clone.sh:88-99`, `docs/reviews/execution-logs/2026-08-19-r1-full-bats.log`
-
----
-
-## Claim 20: "Dropping `--internal` from the runner's own `docker network create` survived every case in this file until the last one below was added."
-
-**Location:** `test/crb-egress-verdict.bats:15-19`
-**Type:** Behavioral / Invariant
-**Verdict:** Verified
-**Confidence:** High
-**Verification mode:** executed
-**Legibility-target:** for-orchestrator-synthesis
-**Scope:** Covers the specific mutation named (dropping the flag) and this file's cases. Does not claim the pin is exhaustive — a different mutation of the same control survives, verdicted as Claim 14.
-
-Executed. Baseline: `bats test/crb-egress-verdict.bats` → `1..13`, 13 ok, exit 0. With `run-host.sh:176` mutated to `docker network create --subnet $EGRESS_SUBNET $EGRESS_NET`:
-
-```
-not ok 12 the runner's own network create really carries --internal
-# (in test file test/crb-egress-verdict.bats, line 142)
-#   `[[ "$output" == *"--internal"* ]]' failed
-exit=1
-```
-
-Case 12 is "the last one below" that the comment refers to (`test/crb-egress-verdict.bats:138`), and it is the only case that goes red — confirming both halves: the mutation is now caught, and it was caught by nothing else.
-
-**Evidence:** `test/crb-egress-verdict.bats:12-19`, `test/crb-egress-verdict.bats:134-148`, `runs/review-arms/crb-pipeline/run-host.sh:176`, `docs/reviews/execution-logs/2026-08-19-r1-internal-mutation.log` — cmd `bats test/crb-egress-verdict.bats`, cwd `/workspace`, exit 0 baseline / 1 mutated, 2026-08-20T00:31Z
-
----
-
-## Claim 21: "Verified by execution: a failing leg now exits 5 and prints why."
-
-**Location:** commit message `4624c5d`, item 1
-**Type:** Behavioral
-**Verdict:** Verified
-**Confidence:** High
-**Verification mode:** executed
-**Legibility-target:** for-orchestrator-synthesis
-**Scope:** Independently re-executed, not accepted on the commit message's word; covers both directions of the leg. Same execution as Claim 8.
-
-Reproduced: failing legs exit 5 and print `(refusing to spend — egress leg '<name>' failed)`; a passing leg returns 0 and the caller continues. Output quoted in Claims 4 and 8.
-
-**Evidence:** `docs/reviews/execution-logs/2026-08-19-r1-egress-leg.log`, `runs/review-arms/crb-pipeline/run-host.sh:221-234`
-
----
-
-## Claim 22: "Added a case that asserts the command the runner constructs, that it is executed via that variable, and that the leg is handed the same one; verified by applying the mutation."
-
-**Location:** commit message `4624c5d`, item 2
-**Type:** Behavioral
-**Verdict:** Verified
-**Confidence:** High
-**Verification mode:** executed
-**Legibility-target:** for-orchestrator-synthesis
-**Scope:** Covers the three assertions the case makes and the mutation result; the strictness of the first assertion is Claim 14.
-
-All three assertions are present:
-
-```bash
-# test/crb-egress-verdict.bats:139-147
-  run grep -E '^\s*NET_CREATE_CMD="docker network create' "$runner"
-  [ "$status" -eq 0 ]
-  [[ "$output" == *"--internal"* ]]
-  grep -qE '^\s*\$NET_CREATE_CMD >' "$runner"
-  grep -q 'egress_leg internal-net "$NET_CREATE_CMD"' "$runner"
-```
-
-and the mutation makes exactly this case fail (Claim 20's execution).
-
-**Evidence:** `test/crb-egress-verdict.bats:134-148`, `docs/reviews/execution-logs/2026-08-19-r1-internal-mutation.log`
-
----
-
-## Claim 23: "Tests: 440 (+1). The single failure is the pre-existing, unrelated Consider-sections case from an uncommitted local edit to `crb-pipeline-to-benchmark.py`."
-
-**Location:** commit message `4624c5d`, Tests paragraph
-**Type:** Configuration / Reference
-**Verdict:** Verified
-**Confidence:** High
-**Verification mode:** executed
-**Legibility-target:** for-orchestrator-synthesis
-**Scope:** Covers the total, the delta from `1d8ea67`, the identity of the single failure and its attribution to the uncommitted edit. Does not cover the correctness of the uncommitted edit itself, which is outside this scope.
-
-Executed `bats test/` in `/workspace`: plan `1..440`, 439 ok, one `not ok`:
-
-```
-not ok 184 only the three finding sections are emitted from the golden rubric
-```
-
-`git status --porcelain` shows exactly one tracked modification, `M scripts/crb-pipeline-to-benchmark.py` (+4/−3), and the failing case lives in `test/crb-injector-sections.bats:44`, whose subject is that script. Stashing the edit and re-running that suite gives `1..8`, 8 ok — including `ok 2 only the three finding sections are emitted from the golden rubric`. So at the committed tree the suite is 440/440, and the failure is caused by the uncommitted edit, exactly as claimed.
-
-Counting `@test` declarations in top-level `test/*.bats` at each SHA: `1d8ea67` → 439, `4624c5d` → 440. `+1` is exact.
-
-**Evidence:** `docs/reviews/execution-logs/2026-08-19-r1-full-bats.log` — cmd `bats test/`, cwd `/workspace`, exit 1 (439/440), 2026-08-20T00:32Z; `test/crb-injector-sections.bats:44`; `scripts/crb-pipeline-to-benchmark.py`
-
----
-
-## Claim 24: "Correction to `1d8ea67`'s own message: the test delta there was +26, not +23 — 'less the 3 replaced' double-counted a single replaced test."
-
-**Location:** commit message `4624c5d`, final paragraph
-**Type:** Configuration
-**Verdict:** Verified
-**Confidence:** High
-**Verification mode:** executed
-**Legibility-target:** for-orchestrator-synthesis
-**Scope:** Covers the arithmetic of the delta only; does not adjudicate the "double-counted a single replaced test" explanation of *why* `1d8ea67` got it wrong, which is a claim about the author's arithmetic rather than about the code.
-
-Counting `@test` declarations in top-level `test/*.bats` at each SHA (`git ls-tree` + `git show | grep -c '^@test'`):
-
-```
-c98343b: top-level test/*.bats @test = 413
-1d8ea67: top-level test/*.bats @test = 439
-4624c5d: top-level test/*.bats @test = 440
-```
-
-439 − 413 = **+26**. This matches the iteration-2 fact-check's own finding (its Claim 29, "the real net is +26 (413 → 439)"), recomputed here independently. The correction is right, and recording it in `4624c5d` rather than amending `1d8ea67` does preserve the SHA the iteration-2 verdicts point at.
-
-**Evidence:** `docs/reviews/execution-logs/2026-08-19-r1-full-bats.log`, commands run in `/workspace` at 2026-08-20T00:33Z; `docs/reviews/code-fact-check-report.md` (iteration-2 Claim 29)
-
----
-
-## Claim 25: "the attempt ledger now runs immediately after harvest rather than after the audit"
-
-**Location:** commit message `4624c5d`, drift-items paragraph
-**Type:** Behavioral
-**Verdict:** Mostly accurate
-**Confidence:** High
-**Verification mode:** static
-**Legibility-target:** for-author
-**Scope:** Covers which block the ledger now follows; the substantive half of the sentence ("so the new `exit 4` abort path cannot drop the spend of the cell that just cost money") is verified under Claim 10.
-
-The word "harvest" names two different blocks in this file. The ledger at `:591` follows the **result-extraction** block, whose own comment opens `# Harvest: the final result event (cost/turns) + the review text …` (`:565-566`) — so the sentence is defensible. But the file's other harvest, `crb-harvest-artifacts.py` at `:609`, runs **after** the ledger, not before it. A reader tracing "after harvest" to the artifact harvest would place the ledger one block too late.
-
-Precise version: "the attempt ledger now runs immediately after the result-extraction block — before the artifact harvest, before the audit, and before both `exit 4` paths."
-
-**Evidence:** `runs/review-arms/crb-pipeline/run-host.sh:565-567`, `:591`, `:609-611`
-
----
-
-## Claim 26: "Plus two drift items and **three** the fact-check rated Mostly Accurate"
-
-**Location:** commit message `4624c5d`, drift-items paragraph
-**Type:** Reference
-**Verdict:** Mostly accurate
-**Confidence:** High
-**Verification mode:** static
-**Legibility-target:** for-author
-**Scope:** Covers the count and classification of the iteration-2 verdicts this paragraph enumerates; does not affect whether the items were actually fixed (Claims 9, 10, 13, 15, 16, 18 verify that they were).
-
-The paragraph enumerates three items — `exit 6`'s stale markers, the unprinted foreign count, and the attempt-ledger move. Only the first two carried a **Mostly accurate** verdict in the iteration-2 report (its Claims 21 and 31). The third was filed under "Mostly Accurate" as an explicitly non-verdict entry: *"**Claim 20's scope note** … not a claim defect, but flagged for the orchestrator"*. Separately, two further Mostly-Accurate items (its Claims 1 and 9, the `PREFLIGHT_ONLY` `$0` wording) were fixed by this commit but are described in a different paragraph ("Also corrected: …"), so the message under-counts what it closed.
-
-Net effect: all five Mostly-Accurate items plus the scope note were addressed; only the label "three the fact-check rated Mostly Accurate" is imprecise. Precise version: "two Mostly-Accurate items plus a flagged scope note here, and two more Mostly-Accurate items in the paragraph below."
-
-**Evidence:** `docs/reviews/code-fact-check-report.md` ("Claims Requiring Attention → Mostly Accurate" section), commit message `4624c5d`
-
----
-
-## Claim 27: "Still not verified: everything docker-shaped, including whether docker honours `--internal`, which no test can observe."
-
-**Location:** commit message `4624c5d`, Confidence paragraph
-**Type:** Invariant
-**Verdict:** Verified
-**Confidence:** High
-**Verification mode:** executed
-**Legibility-target:** for-orchestrator-synthesis
-**Scope:** Covers the absence of docker in this sandbox and the absence of any test that starts a container; does not evaluate whether the limitation is acceptable, which is a reviewer question, not a fact-check one.
-
-`docker` is not on `PATH` in this sandbox and no bats case invokes it: every `docker` string under `test/` is inside a grep assertion or a fixture string (`test/crb-egress-verdict.bats:36`, `:41`, `:139`; `test/crb-egress-config.bats:72`, `:86`) — paraphrased — no quote available because the claim covers the absence of code across the whole `test/` tree. The full suite ran to completion (440 cases) without a docker daemon, which is itself evidence that nothing in it requires one.
-
-**Evidence:** `test/crb-egress-verdict.bats:36`, `:41`, `:139`, `test/crb-egress-config.bats:72`, `:86`, `docs/reviews/execution-logs/2026-08-19-r1-full-bats.log`
+**Evidence:** `devcontainer-config/init-firewall.sh:56-59`, `devcontainer-config/init-firewall.sh:108-132`, `test/cc-isolated-functions.bats` (52 `@test` blocks)
 
 ---
 
 ## Claims Requiring Attention
 
 ### Incorrect
-- **Claim 11b** (`runs/review-arms/crb-pipeline/run-host.sh:586-587`): "before **any** path that can leave the loop" — the result-extraction heredoc at `:567` is the one unguarded statement between the paid container and the ledger; under `set -euo pipefail` a nonzero exit there drops the attempt's spend. Reproduced by execution. **Fix:** append `|| true` to `:567`'s heredoc (matching `:591`), or reword to "before the audit, before the artifact harvest, and before both `exit 4` paths." **This is mechanism error number six** — the smallest of the six, but the same class.
+- **Claim 2** (`devcontainer-config/init-firewall.sh:106-120`): The DNS "fail OPEN if none parse" else-branch is unreachable — under `set -euo pipefail` the `dns_resolvers="$(… | grep … )"` assignment aborts the script (grep exits 1 on zero matches; pipefail propagates) before the `if`/`else` runs. Instead of allowing unscoped DNS, the no-resolver case aborts mid-configuration, after the flush but before the DROP policies, leaving the firewall fully open and session start broken. Fix: capture the resolver list without letting a zero-match grep abort the script (e.g. append `|| true` to the substitution, or split parse from filter so an empty result is a normal empty string).
+- **Claim 10** (`docs/reviews/security-review-cc-isolated-egress-2026-08-29.md:84-86,126`): The review's "failing open … so session start can never brick" repeats the same false guarantee; correct it to match whatever the code is fixed to do (as written, the code fails closed-by-abort, not open).
 
 ### Stale
-- **Claim 7** (`runs/review-arms/crb-pipeline/run-host.sh:208`): section header still says "PROVE the allowlist, **three ways**" over five legs. Carried unfixed from iteration-2 Claim 11; introduced by `197eec6` (context-only), and `4624c5d` does not claim to have closed it. One-word fix.
+- None.
 
 ### Mostly Accurate
-- **Claim 14** (`scripts/crb-egress-verdict.sh:34`, `:80-89`): "must **actually** be `--internal`" is a substring glob. `--internal=false` passes the leg **and** the new bats case — executed, 13/13 green and 0 failures in `crb-egress-config.bats`. Tighten to a word-boundary match that rejects `=false`, e.g. `*--internal[[:space:]]*|*--internal`, and add the mutation as a case.
-- **Claim 25** (commit message `4624c5d`): "immediately after harvest" is ambiguous between the result-extraction block (true) and `crb-harvest-artifacts.py` (false — that runs after the ledger).
-- **Claim 26** (commit message `4624c5d`): "three the fact-check rated Mostly Accurate" — two of the three enumerated carried that verdict; the third was an explicitly-flagged scope note, and two further Mostly-Accurate items are closed in the next paragraph.
+- None.
 
 ### Unverifiable
-None. Every claim in scope resolved statically or by execution. The docker-shaped claims (1, 3, 4, 5, 6, 27) were verdicted on their structural content only, with the runtime half named in each `Scope` field rather than left as a false Verified.
-
----
-
-## Hallucination-pattern log
-
-No entry appended. The single Incorrect verdict is an over-broad guarantee about statement ordering, not a fabricated symbol, method, API, or parameter — which is the log's stated admission criterion. Checked explicitly against the two logged patterns ("a specific measured value quoted from a checked-in artifact set that does not contain it"): the four measured values in `4624c5d`'s commit message (`440`, `+1`, `+26`, the single-failure attribution) were each recomputed from the artifact set and each held, so the pattern did not recur.
+- None. (Claim 4's "all of GitHub" sub-point depends on the live `api.github.com/meta` feed, but the accept *mechanism* is fully verified against the code; the practical reachability of GitHub SSH via those CIDRs is confirmed by the script's own `curl https://api.github.com/zen` verification at `:234`.)
 
 ---
 
 ## Goal-Alignment Note
-- **Answered:** yes — both fix commits fact-checked against the code that exercises them, with the nine claim families in the brief each traced by execution where executable; mechanism error number six found and named.
-- **Out of scope:** `197eec6` and everything earlier on the branch (context only, per the brief) — Claim 7 is reported because iteration 2 flagged it and it is still open, not as a new finding against these commits; the runtime behaviour of anything docker-shaped (no docker in this sandbox); the uncommitted local edit to `scripts/crb-pipeline-to-benchmark.py` (checked only far enough to confirm it causes the single test failure).
-- **Escalate:** (1) **Claim 11b** — the ledger comment's "before any path that can leave the loop" is refuted by the unguarded heredoc four lines above it; one-token fix (`|| true`), and it should be taken before the sweep because the loop's whole spend-accounting story rests on `attempts.jsonl` being complete. (2) **Claim 14** — `--internal=false` defeats containment and survives the entire suite, including the new pin `4624c5d` added; the brief asked for a surviving mutation of that control and this is it. Worth tightening the glob before a paid sweep, since `--internal` is the flag the containment story rests on. (3) **Claim 7** — the "three ways" header is still stale; cosmetic, but it is the last surviving instance of the count-drift the two commits otherwise cleaned up everywhere else.
+
+The change's two stated goals are (1) remove the blanket outbound-SSH accept without breaking GitHub SSH, and (2) scope outbound DNS to configured resolvers. Goal 1 is fully substantiated: the dst-match ipset rule (any port) plus the always-on GitHub CIDRs plus the ESTABLISHED,RELATED return path make GitHub SSH continue to work with no blanket `--dport 22` rule (Claims 4-6, 8). Goal 2 is substantiated **only on its happy path** (Claim 1): when at least one IPv4 resolver parses, DNS is genuinely scoped. The failure path that both the code comment and the security review advertise as the safety net — "fail open if none parse, so session start can never brick" — does not exist as described (Claims 2, 10): `set -euo pipefail` turns the no-resolver case into a mid-configuration abort that leaves the firewall open and breaks startup, which is both a correctness bug and a direct contradiction of the availability guarantee the review uses to justify the design. This is the one place where the documentation would actively mislead a reader (or a future security reviewer) about the boundary's behavior, so it is the finding to action before the change ships. All other checked claims — the IP-not-SNI matching weakness, the always-on GitHub surface, the host.docker.internal all-ports exposure, and the "edits after the --print-domains exit, 52 tests unaffected" scoping note — match the code exactly.

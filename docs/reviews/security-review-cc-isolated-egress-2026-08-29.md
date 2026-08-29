@@ -81,9 +81,17 @@ per-IP for *all ports*. This is documented as accepted risk in `android.txt` and
 
 2. **Unrestricted DNS to any resolver.** Direct UDP-to-attacker-NS exfil.
    **Fix (shipped, defense-in-depth):** scoped outbound 53 to the resolvers in
-   `/etc/resolv.conf`, failing open (with a warning) if none parse so session
-   start can never brick. This removes the *direct* "socket at `attacker_ip:53`"
-   path. It does **not** close recursive-forward DNS tunnelling (see below).
+   `/etc/resolv.conf` (validated to real 0–255-octet IPv4 addresses). When no
+   IPv4 resolver parses, the fallback is scoped to Docker's embedded resolver
+   `127.0.0.11` — **not** a blanket `0.0.0.0/0` accept — so the degraded path
+   does not re-grant the exact channel this fix removes, while still resolving in
+   the standard Docker case (session start can never brick). This removes the
+   *direct* "socket at `attacker_ip:53`" path. It does **not** close
+   recursive-forward DNS tunnelling (see below). Note the new dependency: DNS
+   scoping is only as trustworthy as `/etc/resolv.conf`, which must stay
+   root-owned and not agent-writable (a `node`-writable resolv.conf would let a
+   session inject `nameserver <attacker_ip>` and re-run the firewall via its
+   NOPASSWD sudo to get a *scoped* accept to it).
 
 ### High value / low patchability — SURFACED (need architecture, not a config edit)
 
@@ -122,7 +130,10 @@ per-IP for *all ports*. This is documented as accepted risk in `android.txt` and
 
 - `devcontainer-config/init-firewall.sh`:
   - Removed the blanket outbound-SSH accept (and its inbound-response companion).
-  - Scoped outbound DNS to `/etc/resolv.conf` resolvers, fail-open with warning.
+  - Scoped outbound DNS to `/etc/resolv.conf` resolvers (0–255-octet validated),
+    with a `127.0.0.11`-scoped (not `0.0.0.0/0`) fail-open fallback and non-fatal
+    per-resolver adds so a malformed entry cannot abort the script in the
+    post-flush/pre-DROP wide-open window.
 
 Both edits are inside the firewall-application path (after the `--print-domains`
 early exit), so `compose_domains` and the 52 `test/cc-isolated-functions.bats`
