@@ -409,7 +409,21 @@ main() {
   # (image-side, not agent-editable) script once, then re-probe.
   if ! probe_boundary "$ws"; then
     echo "Re-asserting firewall via baked init-firewall.sh, then re-probing …"
-    devcontainer exec "${dc[@]}" sudo /usr/local/bin/init-firewall.sh
+    # Check the status. init-firewall.sh fails CLOSED (its EXIT trap forces DROP
+    # policies on any incomplete run), so a container whose very first run died on a
+    # transient outage carries DROP with no accept rules — and cannot bootstrap
+    # again, because the script's own GitHub/DNS reads are then blocked. That state
+    # is safe but terminal, and it is invisible here unless the status is read: every
+    # probe_boundary check PASSES against a fully-DROP container (the canary is still
+    # hidden, egress is still denied), so the probe alone cannot distinguish "locked
+    # down correctly" from "bricked closed". Say so, and name the way out.
+    if ! devcontainer exec "${dc[@]}" sudo /usr/local/bin/init-firewall.sh; then
+      echo "ERROR: init-firewall.sh failed. It fails closed, so this container may now" >&2
+      echo "  have DROP policies with no accept rules and be unable to rebuild them." >&2
+      echo "  Recreate it (the ~/.claude volume and your repo are not affected):" >&2
+      echo "    devcontainer up --remove-existing-container ${dc[*]}" >&2
+      return 1
+    fi
     probe_boundary "$ws"
   fi
 

@@ -82,10 +82,15 @@ per-IP for *all ports*. This is documented as accepted risk in `android.txt` and
 2. **Unrestricted DNS to any resolver.** Direct UDP-to-attacker-NS exfil.
    **Fix (shipped, defense-in-depth):** scoped outbound 53 to the resolvers in
    `/etc/resolv.conf` (validated to real 0–255-octet IPv4 addresses). When no
-   IPv4 resolver parses, the fallback is scoped to Docker's embedded resolver
-   `127.0.0.11` — **not** a blanket `0.0.0.0/0` accept — so the degraded path
-   does not re-grant the exact channel this fix removes, while still resolving in
-   the standard Docker case (session start can never brick). This removes the
+   IPv4 resolver parses, **no IPv4 DNS accept is installed at all** — the degraded
+   path fails closed rather than re-granting the `0.0.0.0/0` channel this fix
+   removes. That is safe because the cases that reach it are covered elsewhere:
+   IPv6 DNS is unfiltered (the script installs no ip6tables rules), a loopback
+   resolver is admitted by `-o lo`, and a host-/24 resolver by the HOST_NETWORK
+   accept; what remains is a malformed resolv.conf, which should fail loudly.
+   **Note the hardening comes from deleting the old blanket accept, not from the
+   scoped rules** — where the resolver is loopback or in the host /24 those rules
+   are redundant with accepts that already exist. This removes the
    *direct* "socket at `attacker_ip:53`" path. It does **not** close
    recursive-forward DNS tunnelling (see below). Note the new dependency: DNS
    scoping is only as trustworthy as `/etc/resolv.conf`, which must stay
@@ -131,15 +136,58 @@ per-IP for *all ports*. This is documented as accepted risk in `android.txt` and
 - `devcontainer-config/init-firewall.sh`:
   - Removed the blanket outbound-SSH accept (and its inbound-response companion).
   - Scoped outbound DNS to `/etc/resolv.conf` resolvers (0–255-octet validated),
-    with a `127.0.0.11`-scoped (not `0.0.0.0/0`) fail-open fallback and non-fatal
-    per-resolver adds so a malformed entry cannot abort the script in the
-    post-flush/pre-DROP wide-open window.
+    failing **closed** (no IPv4 DNS accept) when none parse, with non-fatal
+    per-resolver adds. Parsing is factored into `compose_dns_resolvers` and exposed
+    through a `--print-resolvers <file>` inspection hook (an argument, never an
+    env var — see the comment there) so the logic is directly testable.
+  - **Restructured the run into two phases.** Phase A performs every network read
+    (the GitHub `/meta` fetch and one `dig` per allowlisted domain) *before* any
+    rule is touched, while the previous ruleset is still installed and permitting
+    exactly those destinations; phase B then rebuilds with no egress required. This
+    collapses the old flush→DROP window — during which a fresh container had empty
+    chains and a default-ACCEPT policy for as long as a `curl` and N `dig`s took —
+    to a few local calls, so the `DROP` policies now go up immediately after the
+    flush. A transient GitHub/DNS failure now exits *before* the flush, leaving the
+    working firewall untouched instead of half-building one.
+  - Added an `EXIT` trap keyed on a **completion sentinel** (not `$?`, which is 0
+    inside the trap when the shell is signalled) plus `INT TERM HUP` traps, so every
+    incomplete run — signals included — ends at `DROP` rather than wide open.
+  - `|| true` on the `curl`/`dig` command substitutions so their own error paths are
+    reachable rather than dead code, and bounded timeouts so a blocked SYN fails
+    fast instead of hitting the kernel's ~127s retry ceiling.
+  - `cc-isolated.sh` now checks the re-assert's exit status and prints the recovery
+    command; `probe_boundary` passes against a fully-DROP container, so the probe
+    alone cannot distinguish "locked down" from "bricked closed".
+  - New `test/init-firewall-rules.bats` (13 tests) runs the real script under PATH
+    stubs for `iptables`/`ipset`/`dig`/`curl`, asserting on the command sequence —
+    the region had zero coverage before, which is how three defects reached review.
 
-Both edits are inside the firewall-application path (after the `--print-domains`
-early exit), so `compose_domains` and the 52 `test/cc-isolated-functions.bats`
-tests are unaffected. Because `init-firewall.sh` is an enforcement file, the next
-`cc-isolated` launch will refuse until the human re-reviews and runs
-`cc-isolated --bless` — the intended human-in-the-loop gate for a boundary change.
+`compose_domains` and the existing 52 `test/cc-isolated-functions.bats` tests are
+unaffected (65/65 pass with the new suite). Because `init-firewall.sh` **and**
+`cc-isolated.sh` are enforcement files, the next `cc-isolated` launch will refuse
+until the human re-reviews and runs `cc-isolated --bless` — the intended
+human-in-the-loop gate for a boundary change.
+
+### Residual risks accepted in this change
+
+- **A fresh container can still be bricked closed.** If the very first run dies on a
+  transient GitHub/DNS failure, the trap leaves `DROP` with no accept rules, and the
+  script's own phase-A reads are then blocked, so it cannot rebuild. This is
+  fail-*closed* and therefore the safe direction, but it is terminal in place:
+  recovery is `devcontainer up --remove-existing-container`, which the launcher now
+  prints. Re-runs on an already-configured container are unaffected (phase A runs
+  under the live ruleset).
+- **IPv6 is entirely unfiltered.** The script installs no `ip6tables` rules at all,
+  so the *whole* allowlist — not just DNS — is unenforced over IPv6. Any IPv6-capable
+  destination is reachable regardless of profile. This is pre-existing and unchanged
+  by this work, but it is arguably the single largest hole in the boundary and was
+  independently flagged by all three fact-check replicates.
+- **`/etc/resolv.conf` integrity is assumed, not asserted.** DNS scoping is only as
+  trustworthy as that file; Docker writes it root-owned, but nothing in this repo
+  enforces or checks that.
+- **The inbound `-A INPUT -p udp --sport 53 -j ACCEPT` is broader than needed** and
+  redundant with the `ESTABLISHED,RELATED` accept; it bypasses the INPUT DROP policy
+  for any source port 53. Low severity, left alone as out of scope for this change.
 
 ## Recommended follow-ups (owner decision)
 
