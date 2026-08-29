@@ -90,14 +90,46 @@ else
 fi
 
 # First allow DNS and localhost before any restrictions
-# Allow outbound DNS
-iptables -A OUTPUT -p udp --dport 53 -j ACCEPT
+#
+# Outbound DNS is scoped to the container's CONFIGURED resolvers (from
+# /etc/resolv.conf), not to 0.0.0.0/0. A blanket `--dport 53 ACCEPT` lets a
+# compromised session point a UDP socket straight at an attacker-controlled
+# authoritative nameserver (attacker_ip:53) and stream data out in the query
+# names — a clean, high-bandwidth exfil channel that bypasses the whole
+# allowlist. Scoping to the real resolvers removes that direct path: the agent
+# must go through the embedded/host resolver, which only does name recursion.
+# (Recursive-forward DNS tunnelling — `<data>.attacker.com` resolved through the
+# legitimate resolver — is NOT closed by this; that needs a filtering resolver,
+# not an IP firewall. See docs/reviews/security-review-cc-isolated-egress-2026-08-29.md.)
+#
+# Fail OPEN if we cannot parse any resolver: bricking DNS bricks session start,
+# and this repo's boundary changes never trade availability for a partial hardening
+# (cf. the statsig NXDOMAIN incident). A warning marks the degraded case.
+dns_resolvers="$(awk '/^[[:space:]]*nameserver/ {print $2}' /etc/resolv.conf 2>/dev/null \
+  | grep -E '^[0-9]{1,3}(\.[0-9]{1,3}){3}$' | sort -u)"
+if [ -n "$dns_resolvers" ]; then
+  while read -r ns; do
+    echo "Allowing DNS to configured resolver $ns"
+    iptables -A OUTPUT -p udp -d "$ns" --dport 53 -j ACCEPT
+    iptables -A OUTPUT -p tcp -d "$ns" --dport 53 -j ACCEPT
+  done < <(echo "$dns_resolvers")
+else
+  echo "WARNING: no IPv4 nameserver in /etc/resolv.conf — allowing DNS to any host (unscoped)" >&2
+  iptables -A OUTPUT -p udp --dport 53 -j ACCEPT
+  iptables -A OUTPUT -p tcp --dport 53 -j ACCEPT
+fi
 # Allow inbound DNS responses
 iptables -A INPUT -p udp --sport 53 -j ACCEPT
-# Allow outbound SSH
-iptables -A OUTPUT -p tcp --dport 22 -j ACCEPT
-# Allow inbound SSH responses
-iptables -A INPUT -p tcp --sport 22 -m state --state ESTABLISHED -j ACCEPT
+# NOTE: no blanket outbound-SSH accept. A `--dport 22 -j ACCEPT` to 0.0.0.0/0 is
+# an unconditional tunnel out of the sandbox: an attacker runs C2/SSH on port 22
+# and the agent can `ssh -L`/`-D` arbitrary TCP through it, defeating the entire
+# default-deny allowlist. SSH to ALLOWLISTED hosts (all of GitHub, via the
+# api.github.com/meta CIDRs added below) still works — those destination IPs are
+# in the allowed-domains ipset, which the OUTPUT accept near the end matches on
+# dst regardless of port, and the ESTABLISHED,RELATED accept covers the return
+# path. A project that must reach a NON-GitHub SSH host adds that host to its
+# egress profile (a host-side --register + re-bless), exactly like any other
+# destination — SSH is not a silent exception to the boundary.
 # Allow localhost
 iptables -A INPUT -i lo -j ACCEPT
 iptables -A OUTPUT -o lo -j ACCEPT
