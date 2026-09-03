@@ -273,6 +273,37 @@ Run just the probe without starting a session:
 cc-isolated --probe-only ~/code/api
 ```
 
+## SNI filtering (tcp/443)
+
+The allowlist matches addresses, and CDN fronts put thousands of unrelated names
+behind one address. So `init-firewall.sh` also runs a small SNI-filtering proxy
+(`cc-sni-proxy.py`, stdlib Python, its own unprivileged uid) and redirects every
+tcp/443 connection the agent makes through it. The proxy reads the TLS
+ClientHello's server name, admits it only if it is an allowlisted name (or a
+subdomain of a GitHub zone), resolves that name itself, connects there, and
+splices bytes. Nothing is decrypted.
+
+**What it closes:** reaching a non-allowlisted name that happens to share an
+address with an allowlisted one (a Cloudflare neighbour of `api.anthropic.com`,
+writable `storage.googleapis.com` behind the same Google front as `dl.google.com`).
+
+**What it does not cover:**
+
+- Ports other than 443. GitHub SSH on 22 and a host model server on 11434 stay
+  address+port matched only.
+- A name under an allowlisted *zone* that an attacker can obtain. GitHub zones
+  don't hand those out; exact-name entries have no such residual.
+- Root inside the container. The firewall script's own fetch and probes run as
+  root and bypass the redirect; the agent runs as `node` and does not.
+
+**Debugging a blocked connection:** the proxy logs every decision to
+`/run/cc-sni-proxy/proxy.log` as `ALLOW`, `REJECT sni=... not in allowlist`, or
+`FAIL` (the name resolved to an address the ipset does not admit). A `curl` that
+fails instantly with an empty reply, while the same host is in your profile,
+usually means the name in the URL differs from the name in the profile (a CDN
+alias, an `--resolve` override, or an HTTP/2 connection being coalesced onto a
+different hostname). Add the exact name to the profile.
+
 ## Troubleshooting
 
 | Symptom | Cause / fix |
@@ -280,6 +311,7 @@ cc-isolated --probe-only ~/code/api
 | `devcontainer CLI not found` | `npm install -g @devcontainers/cli` on the host. |
 | `no blessed manifest` / `installed config changed` | Review `~/.config/claude-devcontainer/` by hand, then `cc-isolated --bless`. Re-run `install.sh` after any canonical-config change. |
 | `unknown egress profile 'x'` | Typo — valid profiles are the files in `devcontainer-config/egress/`. `--list` and the error message enumerate them. |
+| Connection closes immediately on a 443 host that is in your profile | SNI mismatch — see "SNI filtering" above and `/run/cc-sni-proxy/proxy.log`. |
 | `Network is unreachable` mid-session for a CDN host (e.g. openrouter.ai) | Resolve-at-start allowlist went stale behind rotating CDN IPs. Inside the container: `sudo /usr/local/bin/init-firewall.sh`. |
 | `docker`/probe fails only inside a Claude Code session | Expected — CC blocks AF_UNIX sockets. Run `cc-isolated` from a normal host terminal. |
 | Claude Code auto-update fails every launch in ONE project (`.last-update-result.json` shows `install_failed`; npm log shows `ENOTEMPTY … rename … .claude-code-XXXXXXXX`) | An earlier update was interrupted (e.g. session exited mid-update), leaving npm's retire-staging dir behind in that project's container. The staging name is derived from the path, so every later update collides with the same leftover. Inside the container: `rm -rf /usr/local/share/npm-global/lib/node_modules/@anthropic-ai/.claude-code-*`, then `claude update`. |

@@ -344,6 +344,7 @@ done < <(echo "$GH_CIDRS")
 # ready-made `hash:net,port` member, `<ip>,tcp:<port>` — one per (address, port)
 # pair the entry grants.
 RESOLVED_MEMBERS=""
+ANTHROPIC_PROBE_IP=""
 while read -r domain ports; do
     [ -n "$domain" ] || continue
     echo "Resolving $domain (tcp $ports)..."
@@ -374,6 +375,11 @@ while read -r domain ports; do
             exit 1
         fi
         echo "Resolved $ip for $domain"
+        # Remembered for the SNI-proxy negative probe at the end: an address that IS
+        # in the ipset, reached with a name that is NOT allowlisted, must fail.
+        if [ "$domain" = "api.anthropic.com" ] && [ -z "${ANTHROPIC_PROBE_IP:-}" ]; then
+            ANTHROPIC_PROBE_IP="$ip"
+        fi
         for port in $(echo "$ports" | tr ',' '\n'); do
             RESOLVED_MEMBERS="${RESOLVED_MEMBERS}${ip},tcp:${port}"$'\n'
         done
@@ -420,6 +426,31 @@ stop_dnsmasq() {
     fi
     pkill -x -U "$DNSMASQ_UID" dnsmasq 2>/dev/null || true
 }
+
+# --- SNI proxy preconditions (see the SNI PROXY block in phase B) ---------------
+# Same stance as dnsmasq: every "is the machinery there" check runs in phase A so a
+# missing piece aborts before the flush, leaving the live ruleset intact. Paths are
+# overridable for the unit tests only; in the image they are the root-owned
+# defaults. The proxy binary is executed directly (root-owned, 0555, hashed by the
+# launcher's manifest) rather than via a `python3` on PATH, so a PATH hijack by
+# `node` cannot substitute the interpreter.
+SNI_PROXY_BIN="${CC_SNI_PROXY_BIN:-/usr/local/bin/cc-sni-proxy.py}"
+SNI_RUN_DIR="${CC_SNI_RUN_DIR:-/run/cc-sni-proxy}"
+SNI_ALLOWLIST="$SNI_RUN_DIR/allowlist"
+SNI_PIDFILE="$SNI_RUN_DIR/proxy.pid"
+SNI_LOG="$SNI_RUN_DIR/proxy.log"
+SNI_PORT="${CC_SNI_PORT:-3443}"
+if [ ! -x "$SNI_PROXY_BIN" ]; then
+    echo "ERROR: SNI proxy $SNI_PROXY_BIN is missing or not executable (Dockerfile installs it)" >&2
+    exit 1
+fi
+# The proxy runs as its own unprivileged uid so the owner-match rules can tell its
+# egress apart from the agent's. Numeric, non-zero, and distinct from dnsmasq.
+CCPROXY_UID="$(id -u ccproxy 2>/dev/null || true)"
+if [[ ! "$CCPROXY_UID" =~ ^[0-9]+$ ]] || [ "$CCPROXY_UID" -eq 0 ] || [ "$CCPROXY_UID" = "$DNSMASQ_UID" ]; then
+    echo "ERROR: no distinct unprivileged 'ccproxy' user (got '${CCPROXY_UID:-none}')" >&2
+    exit 1
+fi
 
 # ===========================================================================
 # PHASE B — REBUILD. No network reads past this point.
@@ -771,6 +802,100 @@ iptables -P OUTPUT DROP
 iptables -A INPUT -m state --state ESTABLISHED,RELATED -j ACCEPT
 iptables -A OUTPUT -m state --state ESTABLISHED,RELATED -j ACCEPT
 
+# ===========================================================================
+# SNI PROXY — closes the shared-IP overreach of address matching (finding 5 of
+# docs/reviews/security-review-cc-isolated-egress-2026-08-29.md; decision log #41).
+#
+# THE HOLE. The ipset admits ADDRESSES. A CDN front puts thousands of unrelated
+# names behind one address, so "api.anthropic.com:443" also admits everything
+# else Cloudflare serves from that IP, and the android profile's Google Front End
+# addresses admit writable storage.googleapis.com. No address rule can tell those
+# apart; only the name the client asks for can — and for TLS that name travels in
+# the clear in the ClientHello's server_name (SNI).
+#
+# THE FIX. cc-sni-proxy.py (single-file, stdlib-only Python, root-owned in the
+# image) runs as its own unprivileged uid. nat OUTPUT REDIRECTs every tcp/443
+# connection that is not the proxy's own (and not root's — see below) to it. The
+# proxy reads the ClientHello, admits the connection only if the SNI is on the
+# allowlist written here, RESOLVES THE SNI NAME ITSELF and connects there, then
+# splices bytes. Nothing is decrypted: peek, then splice. Because the proxy
+# connects to what the NAME resolves to and never to the client's chosen address,
+# a forged SNI cannot steer a connection to an arbitrary IP; and because the
+# proxy's own egress still traverses the address+port ipset below, the IP layer
+# remains as defence in depth. Its name lookups go through the container resolver
+# (the filtering dnsmasq above), so an SNI that is not allowlisted for DNS is
+# doubly dead.
+#
+# SCOPE. Only tcp/443 is redirected. Other allowlisted ports (GitHub ssh on 22,
+# a host model server on 11434) are not TLS-to-a-CDN and stay address+port
+# matched. Root is exempt from the redirect exactly as it is for dnsmasq: this
+# script's own phase-A fetch and the root-run probes must work on a fresh
+# container before any proxy exists, and root is reachable only through this
+# root-owned script. The consequence is that the SNI check applies to the agent,
+# not to root — which is the boundary that matters.
+#
+# ALLOWLIST. Exact names from every profile entry admitted on 443, plus the
+# GitHub zones the CIDR ingest admits by address (`.github.com` etc. — a leading
+# dot means "the zone and every subdomain"). Entries not on 443 are omitted: a
+# name is only meaningful here on the port that is redirected.
+#
+# FAIL-CLOSED. If the proxy does not come up, this script exits non-zero and the
+# trap forces DROP — a REDIRECT to nothing would otherwise be a silent outage
+# that looks like "the network is down", and a missing REDIRECT would be the
+# old overreach back. Both are refused.
+#
+# RESIDUAL. Same shape as the resolver's: an attacker who can obtain a name under
+# an allowlisted ZONE (a github.com subdomain is not obtainable; a hosted
+# `<org>.ingest.sentry.io`-style name would be, were such a zone allowlisted —
+# base no longer carries one) still gets through by name. Exact-name entries have
+# no such residual.
+echo "Configuring SNI-filtering proxy..."
+mkdir -p "$SNI_RUN_DIR"
+chmod 0755 "$SNI_RUN_DIR"
+# The previous run left the allowlist read-only; replace it rather than open it.
+rm -f "$SNI_ALLOWLIST"
+{
+    echo "# Generated by init-firewall.sh on every firewall run. DO NOT EDIT."
+    echo "# Exact names, one per line; a leading dot means the zone and all subdomains."
+    while read -r domain ports; do
+        [ -n "$domain" ] || continue
+        case ",$ports," in *,443,*) echo "$domain" ;; esac
+    done < <(echo "$ALLOWED_ENTRIES")
+    # GitHub is admitted by CIDR (phase A) rather than by name; these are the zones
+    # git, gh and git-lfs actually contact over 443.
+    echo ".github.com"
+    echo ".githubusercontent.com"
+    echo ".githubassets.com"
+} > "$SNI_ALLOWLIST"
+chmod 0444 "$SNI_ALLOWLIST"
+# --daemon: forks, drops to --user, binds, and exits 0 only once LISTENING (a prior
+# instance named by the pidfile is terminated first, so re-runs are idempotent).
+# Any other status means "no proxy" → set -e → trap → DROP.
+if ! "$SNI_PROXY_BIN" --daemon --pidfile "$SNI_PIDFILE" --user ccproxy \
+        --listen "127.0.0.1:$SNI_PORT" --allowlist "$SNI_ALLOWLIST" --log "$SNI_LOG"; then
+    echo "ERROR: SNI proxy failed to start (see $SNI_LOG)" >&2
+    exit 1
+fi
+echo "SNI proxy running as uid $CCPROXY_UID on 127.0.0.1:$SNI_PORT, allowlist $SNI_ALLOWLIST"
+
+# nat: redirect tcp/443 to the proxy for every uid except the proxy's and root's.
+iptables -t nat -N CC_SNI
+iptables -t nat -A CC_SNI -m owner --uid-owner "$CCPROXY_UID" -j RETURN
+iptables -t nat -A CC_SNI -m owner --uid-owner 0 -j RETURN
+iptables -t nat -A CC_SNI -p tcp -j REDIRECT --to-ports "$SNI_PORT"
+iptables -t nat -A OUTPUT -p tcp --dport 443 -j CC_SNI
+
+# filter: belt-and-braces. A tcp/443 flow that somehow escaped the redirect (a
+# future rule-ordering slip, conntrack exhaustion) is refused unless it is the
+# proxy's or root's — the ipset accept below must never be reachable by the agent
+# for 443 directly.
+iptables -N CC_SNI_GUARD
+iptables -A CC_SNI_GUARD -m owner --uid-owner "$CCPROXY_UID" -j RETURN
+iptables -A CC_SNI_GUARD -m owner --uid-owner 0 -j RETURN
+iptables -A CC_SNI_GUARD -j REJECT --reject-with icmp-admin-prohibited
+iptables -A OUTPUT -p tcp --dport 443 -j CC_SNI_GUARD
+# ========================= end SNI PROXY block =============================
+
 # Then allow only specific outbound traffic to allowed domains — matched on
 # destination address AND destination port (`dst,dst` against the hash:net,port
 # set), so an admitted address is open only on the ports its entry named.
@@ -798,7 +923,26 @@ else
     echo "Firewall verification passed - able to reach https://api.github.com as expected"
 fi
 
-# The ruleset is complete and both probes passed. Only now does the EXIT trap stop
+# SNI proxy probes, run AS NODE so they traverse the redirect (root is exempt).
+# Positive: an allowlisted name through the proxy must work end to end.
+if ! runuser -u node -- curl --connect-timeout 5 --max-time 15 https://api.anthropic.com/ >/dev/null 2>&1; then
+    echo "ERROR: Firewall verification failed - node cannot reach https://api.anthropic.com through the SNI proxy (see $SNI_LOG)"
+    exit 1
+else
+    echo "Firewall verification passed - node reaches https://api.anthropic.com through the SNI proxy"
+fi
+# Negative: an address that IS in the ipset, asked for with a name that is NOT
+# allowlisted, must be refused — this is the one check that distinguishes the
+# SNI proxy from address matching alone.
+if runuser -u node -- curl --connect-timeout 5 --max-time 15 \
+        --resolve "not-allowlisted.invalid:443:$ANTHROPIC_PROBE_IP" https://not-allowlisted.invalid/ >/dev/null 2>&1; then
+    echo "ERROR: Firewall verification failed - a non-allowlisted SNI reached an allowlisted address"
+    exit 1
+else
+    echo "Firewall verification passed - non-allowlisted SNI refused as expected"
+fi
+
+# The ruleset is complete and all probes passed. Only now does the EXIT trap stop
 # forcing DROP — reaching this line is the sentinel's entire meaning, so it must be
 # the last statement in the script and must never be moved above a check.
 FIREWALL_COMPLETE=1

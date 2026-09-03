@@ -50,6 +50,11 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
 # asserted here rather than left to the package's postinst.
 RUN id -u dnsmasq >/dev/null 2>&1 || \
   useradd --system --no-create-home --home-dir /nonexistent --shell /usr/sbin/nologin dnsmasq
+# `ccproxy` runs cc-sni-proxy.py (see init-firewall.sh's SNI PROXY block): the
+# owner-match rules distinguish the proxy's egress from the agent's by uid, so the
+# uid must exist and must be neither root nor dnsmasq.
+RUN id -u ccproxy >/dev/null 2>&1 || \
+  useradd --system --no-create-home --home-dir /nonexistent --shell /usr/sbin/nologin ccproxy
 
 # Ensure default node user has access to /usr/local/share
 RUN mkdir -p /usr/local/share/npm-global && \
@@ -378,6 +383,10 @@ ARG CC_EGRESS_PROFILE=""
 
 COPY egress/ /usr/local/share/cc-egress/
 COPY init-firewall.sh /usr/local/bin/
+# SNI-filtering splice proxy started by init-firewall.sh. Stdlib-only Python so it
+# needs no pip and no network at build time; root-owned and 0555 like the firewall
+# script it belongs to (decision log #41).
+COPY cc-sni-proxy.py /usr/local/bin/
 COPY link-claude-home.sh /usr/local/bin/
 
 # The claude-workflows payload (skills, workflows, guides, patterns, hooks, and
@@ -398,6 +407,7 @@ USER root
 # i.e. a human. This is what keeps H5 (per-project egress) from becoming a
 # self-service escape hatch for the agent.
 RUN chmod +x /usr/local/bin/init-firewall.sh /usr/local/bin/link-claude-home.sh && \
+  chown root:root /usr/local/bin/cc-sni-proxy.py && chmod 0555 /usr/local/bin/cc-sni-proxy.py && \
   chown -R root:root /opt/claude-workflows && \
   find /opt/claude-workflows -type d -exec chmod 0555 {} + && \
   find /opt/claude-workflows -type f -exec chmod 0444 {} + && \

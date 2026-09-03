@@ -117,6 +117,12 @@ case "$url" in
     ;;
   *example.com*)       exit 7 ;;   # must be unreachable for the probe to pass
   *api.github.com/zen*) echo "keep it logically awesome" ;;
+  *api.anthropic.com*)
+    if [ -n "${FAIL_SNI_POSITIVE:-}" ]; then exit 7; fi ;;
+  *not-allowlisted.invalid*)
+    # The negative SNI probe must FAIL for the run to pass; PASS_SNI_NEGATIVE
+    # models a proxy that admitted a non-allowlisted name.
+    if [ -n "${PASS_SNI_NEGATIVE:-}" ]; then exit 0; fi; exit 7 ;;
   *) exit 7 ;;
 esac
 exit 0
@@ -136,7 +142,29 @@ STUB
   cat > "$STUB_DIR/id" <<'STUB'
 #!/usr/bin/env bash
 if [ "${1:-}" = "-u" ] && [ "${2:-}" = "dnsmasq" ]; then echo 999; exit 0; fi
+if [ "${1:-}" = "-u" ] && [ "${2:-}" = "ccproxy" ]; then echo "${CCPROXY_UID_STUB-998}"; exit 0; fi
 exec /usr/bin/id "$@"
+STUB
+
+  # --- SNI proxy stubs (decision log #41) ---------------------------------------
+  # The script executes the proxy binary directly (not via python3 on PATH), so
+  # the test points CC_SNI_PROXY_BIN at a stub that records its invocation and
+  # honours the --daemon contract: exit 0 = listening, anything else = no proxy.
+  export CC_SNI_RUN_DIR="$TEST_TMPDIR/cc-sni-proxy"
+  export CC_SNI_PROXY_BIN="$STUB_DIR/cc-sni-proxy"
+  cat > "$STUB_DIR/cc-sni-proxy" <<'STUB'
+#!/usr/bin/env bash
+echo "cc-sni-proxy $*" >> "$CMD_LOG"
+if [ -n "${FAIL_SNI:-}" ]; then echo "cc-sni-proxy: failed to start: stub" >&2; exit 1; fi
+exit 0
+STUB
+
+  # runuser -u <user> -- <cmd...>: log, then run the command (which is a stub too).
+  cat > "$STUB_DIR/runuser" <<'STUB'
+#!/usr/bin/env bash
+echo "runuser $*" >> "$CMD_LOG"
+while [ $# -gt 0 ]; do case "$1" in --) shift; break;; *) shift;; esac; done
+exec "$@"
 STUB
 
   # dnsmasq daemonises and writes its pidfile before the parent exits; the stub
@@ -412,7 +440,7 @@ first_line_matching() {
   local n_curl n_bounded
   n_curl=$(grep -c '^curl ' "$CMD_LOG")
   n_bounded=$(grep '^curl ' "$CMD_LOG" | grep -c -- '--max-time')
-  [ "$n_curl" -eq 3 ]
+  [ "$n_curl" -eq 5 ]   # meta fetch, 2 root probes, 2 node probes through the proxy
   [ "$n_bounded" -eq "$n_curl" ]
   grep '^curl ' "$CMD_LOG" | grep 'api.github.com/meta' | grep -q -- '--max-time'
   grep '^curl ' "$CMD_LOG" | grep 'example.com' | grep -q -- '--max-time'
@@ -673,4 +701,110 @@ STUB
   grep -q "iptables -w 5 -P INPUT DROP" "$CMD_LOG"
   grep -q "iptables -w 5 -P FORWARD DROP" "$CMD_LOG"
   grep -q "did not complete" "$out"
+}
+
+# --- the SNI proxy (decision log #41) ----------------------------------------
+
+@test "the SNI proxy is started as ccproxy with the generated allowlist, before the REDIRECT" {
+  run bash "$FW"
+  [ "$status" -eq 0 ]
+  grep -q "^cc-sni-proxy --daemon --pidfile $CC_SNI_RUN_DIR/proxy.pid --user ccproxy --listen 127.0.0.1:3443 --allowlist $CC_SNI_RUN_DIR/allowlist --log $CC_SNI_RUN_DIR/proxy.log$" "$CMD_LOG"
+  start=$(grep -n '^cc-sni-proxy ' "$CMD_LOG" | head -1 | cut -d: -f1)
+  redirect=$(grep -n 'REDIRECT --to-ports 3443' "$CMD_LOG" | head -1 | cut -d: -f1)
+  [ "$start" -lt "$redirect" ]
+  # exactly one start per run
+  run grep -c '^cc-sni-proxy ' "$CMD_LOG"
+  [ "$output" -eq 1 ]
+}
+
+@test "the SNI allowlist holds every 443 entry as an exact name plus the GitHub zones" {
+  run bash "$FW"
+  [ "$status" -eq 0 ]
+  local al="$CC_SNI_RUN_DIR/allowlist"
+  grep -qx 'api.anthropic.com' "$al"
+  grep -qx '.github.com' "$al"
+  grep -qx '.githubusercontent.com' "$al"
+  grep -qx '.githubassets.com' "$al"
+  # No port suffixes leak in, and no non-443 entry appears.
+  run grep -c ':' "$al"
+  [ "$output" -eq 0 ]
+}
+
+@test "an entry not on 443 is omitted from the SNI allowlist" {
+  local dir="$TEST_TMPDIR/egress"
+  mkdir -p "$dir"
+  printf 'api.anthropic.com\nmodels.example:11434\nboth.example:443,8443\n' > "$dir/base.txt"
+  CC_EGRESS_DIR="$dir" run bash "$FW"
+  [ "$status" -eq 0 ]
+  local al="$CC_SNI_RUN_DIR/allowlist"
+  run grep -c 'models.example' "$al"
+  [ "$output" -eq 0 ]
+  grep -qx 'both.example' "$al"
+}
+
+@test "tcp/443 is redirected to the proxy for every uid except ccproxy and root, in nat and filter" {
+  run bash "$FW"
+  [ "$status" -eq 0 ]
+  grep -q "^iptables -t nat -N CC_SNI$" "$CMD_LOG"
+  grep -q "^iptables -t nat -A CC_SNI -m owner --uid-owner 998 -j RETURN$" "$CMD_LOG"
+  grep -q "^iptables -t nat -A CC_SNI -m owner --uid-owner 0 -j RETURN$" "$CMD_LOG"
+  grep -q "^iptables -t nat -A CC_SNI -p tcp -j REDIRECT --to-ports 3443$" "$CMD_LOG"
+  grep -q "^iptables -t nat -A OUTPUT -p tcp --dport 443 -j CC_SNI$" "$CMD_LOG"
+  grep -q "^iptables -N CC_SNI_GUARD$" "$CMD_LOG"
+  grep -q "^iptables -A CC_SNI_GUARD -m owner --uid-owner 998 -j RETURN$" "$CMD_LOG"
+  grep -q "^iptables -A CC_SNI_GUARD -m owner --uid-owner 0 -j RETURN$" "$CMD_LOG"
+  grep -q "^iptables -A CC_SNI_GUARD -j REJECT --reject-with icmp-admin-prohibited$" "$CMD_LOG"
+  # The guard jump precedes the ipset accept, so the agent can never hit the
+  # address match for 443 directly.
+  guard=$(grep -n -- '-A OUTPUT -p tcp --dport 443 -j CC_SNI_GUARD' "$CMD_LOG" | cut -d: -f1)
+  accept=$(grep -n -- 'match-set allowed-domains dst,dst -j ACCEPT' "$CMD_LOG" | cut -d: -f1)
+  [ "$guard" -lt "$accept" ]
+}
+
+@test "a proxy that fails to start aborts the run and fails closed" {
+  FAIL_SNI=1 run bash "$FW"
+  [ "$status" -ne 0 ]
+  [[ "$output" == *"SNI proxy failed to start"* ]]
+  grep -q "iptables -w 5 -P OUTPUT DROP" "$CMD_LOG"
+  run grep -c 'REDIRECT --to-ports 3443' "$CMD_LOG"
+  [ "$output" -eq 0 ]
+}
+
+@test "a missing ccproxy user aborts before the flush" {
+  CCPROXY_UID_STUB="" run bash "$FW"
+  [ "$status" -ne 0 ]
+  [[ "$output" == *"ccproxy"* ]]
+  run grep -c -- "^iptables -F" "$CMD_LOG"
+  [ "$output" -eq 0 ]
+}
+
+@test "a ccproxy uid equal to the dnsmasq uid is refused" {
+  CCPROXY_UID_STUB=999 run bash "$FW"
+  [ "$status" -ne 0 ]
+  run grep -c -- "^iptables -F" "$CMD_LOG"
+  [ "$output" -eq 0 ]
+}
+
+@test "the SNI probes run as node through the proxy: allowlisted name passes, forged SNI must fail" {
+  run bash "$FW"
+  [ "$status" -eq 0 ]
+  grep -q "^runuser -u node -- curl .*https://api.anthropic.com/" "$CMD_LOG"
+  grep -q "^runuser -u node -- curl .*--resolve not-allowlisted.invalid:443:203.0.113.7 https://not-allowlisted.invalid/" "$CMD_LOG"
+  # Both probes come after the terminal REJECT, i.e. against the finished ruleset.
+  reject=$(grep -n -- '-A OUTPUT -j REJECT' "$CMD_LOG" | tail -1 | cut -d: -f1)
+  probe=$(grep -n '^runuser ' "$CMD_LOG" | head -1 | cut -d: -f1)
+  [ "$reject" -lt "$probe" ]
+}
+
+@test "a proxy that admits a non-allowlisted SNI fails verification and fails closed" {
+  PASS_SNI_NEGATIVE=1 run bash "$FW"
+  [ "$status" -ne 0 ]
+  [[ "$output" == *"non-allowlisted SNI reached"* ]]
+  grep -q "iptables -w 5 -P OUTPUT DROP" "$CMD_LOG"
+}
+
+@test "node failing to reach api.anthropic.com through the proxy fails verification" {
+  FAIL_SNI_POSITIVE=1 run bash "$FW"
+  [ "$status" -ne 0 ]
+  [[ "$output" == *"through the SNI proxy"* ]]
 }
