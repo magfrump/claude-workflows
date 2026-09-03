@@ -1,0 +1,144 @@
+=== cfc-sc-4: the proxy replays the ClientHello verbatim and holds no TLS key/cert ===
+cwd=/workspace  commit=abbd42d  date=2026-09-03T23:23:27Z  LC_ALL=C
+
+--- [A] no TLS-termination material anywhere in the proxy ---
+$ grep -niE 'ssl|tls_|certificate|\.pem|\.crt|private_key|SSLContext|wrap_socket' devcontainer-config/cc-sni-proxy.py
+8:     decrypted and no certificate is involved; this is a peek, not interception;
+39:TLS_HANDSHAKE = 22
+109:        if ctype != TLS_HANDSHAKE:
+(exit=0 — 1 means no match)
+$ python3 -c 'import ast,sys; print(sorted({n.names[0].name.split(".")[0] for n in ast.walk(ast.parse(open("devcontainer-config/cc-sni-proxy.py").read())) if isinstance(n, ast.Import)} | {n.module.split(".")[0] for n in ast.walk(...) if isinstance(n, ast.ImportFrom)}))'
+imports: ['argparse', 'asyncio', 'os', 'pwd', 're', 'signal', 'socket', 'struct', 'sys', 'time']
+
+--- [B] fragmentation byte-identity harness (new; extends the shipped Splice fixture) ---
+$ LC_ALL=C python3 /tmp/claude-1000/cfc/frag_test.py
+F1 one record, one write: client sent 70B, upstream received 70B, byte-identical=True
+F2 one record, two writes: client sent 70B, upstream received 70B, byte-identical=True
+F3 two records, one write: client sent 75B, upstream received 75B, byte-identical=True
+F4 two records, two writes (50ms): client sent 75B, upstream received 75B, byte-identical=True
+F5 two records + trailing app data: client sent 85B, upstream received 85B, byte-identical=True
+proxy log:
+2026-09-03T16:23:27 listening on 127.0.0.1:40861; 1 exact names, 0 zones
+2026-09-03T16:23:27 REJECT orig_dst=127.0.0.1:40861: 0 bytes read on a total of 5 expected bytes
+2026-09-03T16:23:27 ALLOW sni=localhost -> 127.0.0.1:43499 orig_dst=127.0.0.1:40861
+2026-09-03T16:23:28 ALLOW sni=localhost -> 127.0.0.1:43499 orig_dst=127.0.0.1:40861
+2026-09-03T16:23:29 ALLOW sni=localhost -> 127.0.0.1:43499 orig_dst=127.0.0.1:40861
+2026-09-03T16:23:31 ALLOW sni=localhost -> 127.0.0.1:43499 orig_dst=127.0.0.1:40861
+2026-09-03T16:23:32 ALLOW sni=localhost -> 127.0.0.1:43499 orig_dst=127.0.0.1:40861
+RESULT: all cases byte-identical
+exit=0
+
+--- [G] APPENDIX: the fragmentation harness, verbatim ---
+"""cfc-sc-4: does the proxy replay the client's ClientHello bytes VERBATIM upstream,
+and does it hold no TLS key/cert material? Fragmentation cases the existing
+test/test_cc_sni_proxy.py::Splice does not cover:
+  F1 one record, one write   (baseline, = the shipped test)
+  F2 one record split across TWO TCP writes (record header in write 1)
+  F3 the handshake message split across TWO TLS records, one write
+  F4 the handshake message split across TWO TLS records, two writes, 50ms apart
+  F5 two records + trailing application-data bytes appended in the same write
+The fake upstream records EXACTLY what it receives and echoes nothing, so the
+assertion is on the upstream's received prefix, not on an echo.
+"""
+import importlib.util, os, pathlib, socket, subprocess, sys, tempfile, threading, time
+
+PROXY = pathlib.Path("/workspace/devcontainer-config/cc-sni-proxy.py")
+spec = importlib.util.spec_from_file_location("cc_sni_proxy", PROXY)
+proxy = importlib.util.module_from_spec(spec); spec.loader.exec_module(proxy)
+
+
+def hs_bytes(sni):
+    name = sni.encode()
+    sn = b"\x00" + len(name).to_bytes(2, "big") + name
+    sn_list = len(sn).to_bytes(2, "big") + sn
+    exts = b"\x00\x00" + len(sn_list).to_bytes(2, "big") + sn_list
+    body = (b"\x03\x03" + b"\x11" * 32 + b"\x00" + b"\x00\x02\x13\x01" + b"\x01\x00"
+            + len(exts).to_bytes(2, "big") + exts)
+    return b"\x01" + len(body).to_bytes(3, "big") + body
+
+
+def rec(payload):
+    return b"\x16\x03\x01" + len(payload).to_bytes(2, "big") + payload
+
+
+def free_port():
+    s = socket.socket(); s.bind(("127.0.0.1", 0)); p = s.getsockname()[1]; s.close(); return p
+
+
+received, lock = [], threading.Lock()
+up_port, px_port = free_port(), free_port()
+up = socket.socket(); up.setsockopt(socket.SOL_SOCKET, socket.SO_REUSEADDR, 1)
+up.bind(("127.0.0.1", up_port)); up.listen(8); up.settimeout(0.2)
+stop = threading.Event()
+
+
+def acceptor():
+    while not stop.is_set():
+        try:
+            c, _ = up.accept()
+        except socket.timeout:
+            continue
+        def drain(c=c):
+            c.settimeout(1.0); buf = b""
+            try:
+                while True:
+                    d = c.recv(65536)
+                    if not d:
+                        break
+                    buf += d
+            except OSError:
+                pass
+            with lock:
+                received.append(buf)
+            c.close()
+        threading.Thread(target=drain, daemon=True).start()
+
+
+threading.Thread(target=acceptor, daemon=True).start()
+
+tmp = tempfile.mkdtemp()
+al = os.path.join(tmp, "allowlist")
+open(al, "w").write("localhost\n")
+pr = subprocess.Popen([sys.executable, str(PROXY), "--listen", f"127.0.0.1:{px_port}",
+                       "--allowlist", al, "--upstream-port", str(up_port)],
+                      stdout=subprocess.PIPE, stderr=subprocess.STDOUT, text=True)
+for _ in range(100):
+    try:
+        socket.create_connection(("127.0.0.1", px_port), timeout=0.2).close(); break
+    except OSError:
+        time.sleep(0.05)
+
+HS = hs_bytes("localhost")
+cases = {
+    "F1 one record, one write":            [rec(HS)],
+    "F2 one record, two writes":           [rec(HS)[:9], rec(HS)[9:]],
+    "F3 two records, one write":           [rec(HS[:20]) + rec(HS[20:])],
+    "F4 two records, two writes (50ms)":   [rec(HS[:20]), rec(HS[20:])],
+    "F5 two records + trailing app data":  [rec(HS[:20]) + rec(HS[20:]) + b"\x17\x03\x03\x00\x05hello"],
+}
+fails = 0
+for label, writes in cases.items():
+    with lock:
+        received.clear()
+    sent = b"".join(writes)
+    c = socket.create_connection(("127.0.0.1", px_port), timeout=5)
+    for i, w in enumerate(writes):
+        c.sendall(w)
+        if i + 1 < len(writes):
+            time.sleep(0.05)
+    time.sleep(0.6)
+    c.close()
+    time.sleep(0.6)
+    with lock:
+        got = received[0] if received else b""
+    ok = got == sent
+    fails += 0 if ok else 1
+    print(f"{label}: client sent {len(sent)}B, upstream received {len(got)}B, "
+          f"byte-identical={ok}")
+    if not ok:
+        print("   sent:", sent.hex()[:160]); print("   got :", got.hex()[:160])
+
+stop.set(); pr.terminate(); pr.wait(5); up.close()
+print("proxy log:"); print(pr.stdout.read().strip())
+print("RESULT:", "all cases byte-identical" if fails == 0 else f"{fails} case(s) DIVERGED")
+sys.exit(1 if fails else 0)

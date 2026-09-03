@@ -1,0 +1,98 @@
+=== cfc-sc-3: the dnsmasq uid's exemption grants no unscoped outbound port-53 reach ===
+cwd=/workspace  commit=abbd42d  date=2026-09-03T23:24:58Z  LC_ALL=C
+  (uid 999 = the dnsmasq stub uid from the bats setup(); 998 = ccproxy)
+
+--- [A] the two bats tests that pin the owner scoping ---
+1..2
+ok 1 the bridge gateway is admitted on udp/tcp 53 only, with no inbound counterpart
+ok 2 upstream port 53 is owner-scoped: only the dnsmasq uid and root, never everyone
+exit=0
+
+--- [B] EVERY emitted rule mentioning the dnsmasq uid (999), from a full stubbed run ---
+18:iptables -A OUTPUT -p udp -d 192.168.65.7 --dport 53 -m owner --uid-owner 999 -j ACCEPT
+19:iptables -A OUTPUT -p tcp -d 192.168.65.7 --dport 53 -m owner --uid-owner 999 -j ACCEPT
+25:iptables -t nat -A CC_DNS -m owner --uid-owner 999 -j RETURN
+32:iptables -A CC_DNS_GUARD -m owner --uid-owner 999 -j RETURN
+53:iptables -A OUTPUT -p udp -d 192.168.65.1 --dport 53 -m owner --uid-owner 999 -j ACCEPT
+54:iptables -A OUTPUT -p tcp -d 192.168.65.1 --dport 53 -m owner --uid-owner 999 -j ACCEPT
+
+--- [C] of those, which are ACCEPTs, and is each address-scoped (-d <ip>)? ---
+ADDRESS-SCOPED: iptables -A OUTPUT -p udp -d 192.168.65.7 --dport 53 -m owner --uid-owner 999 -j ACCEPT
+ADDRESS-SCOPED: iptables -A OUTPUT -p tcp -d 192.168.65.7 --dport 53 -m owner --uid-owner 999 -j ACCEPT
+ADDRESS-SCOPED: iptables -A OUTPUT -p udp -d 192.168.65.1 --dport 53 -m owner --uid-owner 999 -j ACCEPT
+ADDRESS-SCOPED: iptables -A OUTPUT -p tcp -d 192.168.65.1 --dport 53 -m owner --uid-owner 999 -j ACCEPT
+
+  count of ACCEPT rules for uid 999 WITHOUT a -d address scope:
+0
+  count of ACCEPT rules for uid 999 WITHOUT --dport 53:
+0
+
+--- [D] the addresses those accepts name, vs the parsed resolvers and the bridge gateway ---
+  parsed resolvers (--print-resolvers /etc/resolv.conf):
+    192.168.65.7
+  bridge gateway the run detected (from the 'ip route' stub, 'default via ...'):
+    192.168.65.1
+  addresses in uid-999 accepts:
+    -d 192.168.65.1
+    -d 192.168.65.7
+
+--- [E] the uid-999 RETURNs are exemptions from a REDIRECT/REJECT chain, not accepts ---
+25:iptables -t nat -A CC_DNS -m owner --uid-owner 999 -j RETURN
+32:iptables -A CC_DNS_GUARD -m owner --uid-owner 999 -j RETURN
+  the chains they sit in:
+24:iptables -t nat -N CC_DNS
+25:iptables -t nat -A CC_DNS -m owner --uid-owner 999 -j RETURN
+26:iptables -t nat -A CC_DNS -m owner --uid-owner 0 -j RETURN
+27:iptables -t nat -A CC_DNS -p udp -j REDIRECT --to-ports 53
+28:iptables -t nat -A CC_DNS -p tcp -j REDIRECT --to-ports 53
+29:iptables -t nat -I OUTPUT 1 -p tcp --dport 53 -j CC_DNS
+30:iptables -t nat -I OUTPUT 1 -p udp --dport 53 -j CC_DNS
+31:iptables -N CC_DNS_GUARD
+32:iptables -A CC_DNS_GUARD -m owner --uid-owner 999 -j RETURN
+33:iptables -A CC_DNS_GUARD -m owner --uid-owner 0 -j RETURN
+34:iptables -A CC_DNS_GUARD -j REJECT --reject-with icmp-admin-prohibited
+36:iptables -A OUTPUT -d 127.0.0.11 -j CC_DNS_GUARD
+37:iptables -A OUTPUT -p udp --dport 53 ! -d 127.0.0.1 -j CC_DNS_GUARD
+38:iptables -A OUTPUT -p tcp --dport 53 ! -d 127.0.0.1 -j CC_DNS_GUARD
+
+--- [F] source lines ---
+531	dns_resolvers="$(compose_dns_resolvers)"
+532	if [ -n "$dns_resolvers" ]; then
+533	  while read -r ns; do
+534	    echo "Allowing DNS to configured resolver $ns"
+535	    # `|| echo` (not a bare call): a failed add must not abort the script in the
+536	    # post-flush/pre-DROP wide-open window — skipping a resolver fails CLOSED for
+537	    # that resolver, which is the safe direction; aborting fails OPEN for everything.
+538	    # OWNER-SCOPED (FILTERING RESOLVER block below): only dnsmasq and root may talk
+539	    # to the upstream. Everything else is REDIRECTed to dnsmasq in nat OUTPUT
+540	    # before it gets here, and the CC_DNS_GUARD jumps reject whatever is not.
+541	    for owner in "$DNSMASQ_UID" 0; do
+542	      iptables -A OUTPUT -p udp -d "$ns" --dport 53 -m owner --uid-owner "$owner" -j ACCEPT || echo "WARNING: could not add UDP DNS rule for $ns (uid $owner)" >&2
+543	      iptables -A OUTPUT -p tcp -d "$ns" --dport 53 -m owner --uid-owner "$owner" -j ACCEPT || echo "WARNING: could not add TCP DNS rule for $ns (uid $owner)" >&2
+544	    done
+545	  done < <(echo "$dns_resolvers")
+680	# nat: steer every non-exempt port-53 flow to 127.0.0.1:53.
+681	iptables -t nat -N CC_DNS
+682	iptables -t nat -A CC_DNS -m owner --uid-owner "$DNSMASQ_UID" -j RETURN
+683	iptables -t nat -A CC_DNS -m owner --uid-owner 0 -j RETURN
+684	iptables -t nat -A CC_DNS -p udp -j REDIRECT --to-ports 53
+685	iptables -t nat -A CC_DNS -p tcp -j REDIRECT --to-ports 53
+686	iptables -t nat -I OUTPUT 1 -p tcp --dport 53 -j CC_DNS
+687	iptables -t nat -I OUTPUT 1 -p udp --dport 53 -j CC_DNS
+688	
+689	# filter: the guard chain. Jumped to (before the loopback accept) for the
+690	# embedded resolver on any port and for any port-53 flow not aimed at dnsmasq —
+691	# defence in depth behind the redirect, so a flow that somehow escaped nat
+692	# (conntrack exhaustion, a future rule ordering slip) is still refused.
+693	iptables -N CC_DNS_GUARD
+694	iptables -A CC_DNS_GUARD -m owner --uid-owner "$DNSMASQ_UID" -j RETURN
+695	iptables -A CC_DNS_GUARD -m owner --uid-owner 0 -j RETURN
+696	iptables -A CC_DNS_GUARD -j REJECT --reject-with icmp-admin-prohibited
+697	# ===================== end FILTERING RESOLVER block =========================
+785	# Owner-scoped like the resolver accepts above: only the filtering resolver (and
+786	# root, for this script's own phase-A reads) may talk to the gateway on 53.
+787	# Everyone else's port-53 traffic is redirected to dnsmasq by the CC_DNS chain.
+788	for uid in "$DNSMASQ_UID" 0; do
+789	    iptables -A OUTPUT -p udp -d "$HOST_IP" --dport 53 -m owner --uid-owner "$uid" -j ACCEPT
+790	    iptables -A OUTPUT -p tcp -d "$HOST_IP" --dport 53 -m owner --uid-owner "$uid" -j ACCEPT
+791	done

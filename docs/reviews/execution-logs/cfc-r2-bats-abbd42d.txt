@@ -1,0 +1,100 @@
+1..98
+ok 1 print-resolvers keeps valid IPv4 nameservers
+ok 2 print-resolvers rejects out-of-range octets rather than passing them to iptables
+ok 3 print-resolvers exits 0 on an IPv6-only resolv.conf (no set -e abort)
+ok 4 print-resolvers exits 0 when resolv.conf is missing entirely
+ok 5 inspection hooks never touch iptables
+ok 6 a successful run sets DROP policies and installs the terminal REJECT
+ok 7 the allowlist ipset is address+port, and the OUTPUT accept matches on both
+ok 8 GitHub CIDRs are admitted on tcp 443 and tcp 22 only
+ok 9 a port-less profile entry defaults to tcp 443
+ok 10 a profile entry with a port suffix is admitted on exactly those ports
+ok 11 the shipped llm profile scopes host.docker.internal to 11434, and only there
+ok 12 a malformed profile entry is a hard failure before any network read
+ok 13 the bridge gateway is admitted on udp/tcp 53 only, with no inbound counterpart
+ok 14 the flush-to-DROP window contains no network call
+ok 15 all three DROP policies are set before the flush, so the window is empty
+ok 16 every domain is resolved before the flush, not during the window
+ok 17 scoped DNS accepts are installed for the configured resolver
+ok 18 no blanket inbound source-port-53 accept is installed
+ok 19 every curl carries --max-time: the meta fetch and both verification probes
+ok 20 print-dnsmasq-conf has no default upstream and one server line per allowlisted domain
+ok 21 print-dnsmasq-conf strips a :port suffix from profile entries
+ok 22 print-dnsmasq-conf with no IPv4 resolver emits zero server lines (everything REFUSED)
+ok 23 print-dnsmasq-conf refuses a non-hostname entry rather than emitting it as config
+ok 24 inspection hooks (dnsmasq-conf included) never touch iptables or start a daemon
+ok 25 a full run writes the dnsmasq config and starts exactly one instance as the dnsmasq user
+ok 26 upstream port 53 is owner-scoped: only the dnsmasq uid and root, never everyone
+ok 27 the 127.0.0.11 bypass reject precedes the loopback accept
+ok 28 a re-run kills the previous dnsmasq by pidfile and does not double-start
+ok 29 a missing dnsmasq user aborts before the flush, leaving the live ruleset intact
+ok 30 no blanket outbound SSH accept is installed
+ok 31 an aborted run forces DROP policies rather than leaving the container open
+ok 32 a GitHub fetch failure aborts before the flush, leaving the live ruleset intact
+ok 33 failure to resolve the critical domain aborts and fails closed
+ok 34 the trap waits for the xtables lock and verifies the DROP it applied
+ok 35 the trap raises a distinct OPEN alarm when the DROP policy does not take
+ok 36 SIGTERM mid-resolution still ends at DROP (the sentinel, not $?, drives the trap)
+ok 37 the SNI proxy is started as ccproxy with the generated allowlist, before the REDIRECT
+ok 38 the SNI allowlist holds every 443 entry as an exact name plus the GitHub zones
+ok 39 an entry not on 443 is omitted from the SNI allowlist
+ok 40 tcp/443 is redirected to the proxy for every uid except ccproxy and root, in nat and filter
+ok 41 a proxy that fails to start aborts the run and fails closed
+ok 42 a missing ccproxy user aborts before the flush
+ok 43 a ccproxy uid equal to the dnsmasq uid is refused
+ok 44 the SNI probes run as node through the proxy: allowlisted name passes, forged SNI must fail
+ok 45 a proxy that admits a non-allowlisted SNI fails verification and fails closed
+ok 46 node failing to reach api.anthropic.com through the proxy fails verification
+ok 47 resolve_workspace returns the git toplevel for a path inside a repo
+ok 48 resolve_workspace fails loudly outside a git repo instead of guessing
+ok 49 resolve_workspace fails on a nonexistent directory
+ok 50 resolve_workspace defaults to $PWD when given no argument
+ok 51 project_id differs for same-basename repos at different paths
+ok 52 project_id is stable for the same path
+ok 53 ws_fingerprint differs between two different repos
+ok 54 ws_fingerprint is stable for the same repo
+ok 55 compute_manifest covers the config files and the egress profiles
+ok 56 compute_manifest fails when an enforcement file is missing
+ok 57 check_manifest fails with instructions when nothing is blessed
+ok 58 check_manifest passes after bless with unchanged files
+ok 59 check_manifest fails after the firewall script is tampered with
+ok 60 check_manifest fails when the launcher itself is tampered with
+ok 61 check_manifest fails when an egress profile gains a domain
+ok 62 check_manifest fails when an unblessed project profile appears
+ok 63 re-bless after a reviewed change makes check_manifest pass again
+ok 64 an unregistered project gets the base profile only
+ok 65 register_project records the profile and re-blesses
+ok 66 register_project rejects an unknown profile before writing anything
+ok 67 suggest_profiles proposes python for a python repo but never applies it
+ok 68 suggest_profiles proposes rust for a cargo repo but never applies it
+ok 69 suggest_profiles proposes android for a gradle repo (Kotlin DSL)
+ok 70 suggest_profiles proposes android for a repo with just the gradle wrapper
+ok 71 suggest_profiles proposes dotnet for a Unity project root
+ok 72 suggest_profiles proposes dotnet for a repo with a top-level csproj
+ok 73 suggest_profiles is silent for a plain repo
+ok 74 base profile alone yields the base allowlist and nothing else
+ok 75 a python project gets PyPI on top of base
+ok 76 one project's profile does not widen another's (H5)
+ok 77 profiles compose
+ok 78 an android project gets Google Maven, Maven Central, and Gradle on top of base
+ok 79 a dotnet project gets NuGet on top of base, and only NuGet
+ok 80 an unknown profile is a hard failure, not a silently narrower allowlist
+ok 81 a missing profile file degrades to base, not to empty
+ok 82 devcontainer.json anchors build.dockerfile to the config dir, not the repo
+ok 83 devcontainer.json anchors build.context to the config dir, not the repo
+ok 84 the launcher exports CC_CONFIG_DIR (else the build paths resolve to /)
+ok 85 Dockerfile copies the claude-home payload into the image
+ok 86 the payload is baked outside /home/node/.claude (a volume would shadow it)
+ok 87 the payload is root-owned and not writable by node
+ok 88 hook scripts in the payload stay executable
+ok 89 postStartCommand links the payload after the firewall, not before
+ok 90 install.sh stages the payload from the repo root
+ok 91 link-claude-home refuses to clobber a real file in the volume
+ok 92 link-claude-home links the payload and is idempotent
+ok 93 link-claude-home is a no-op when the payload is absent (non-cc-isolated host)
+ok 94 Gate 1h loads the review skill from the baked payload, not the branch
+ok 95 Gate 1h pins an explicit reviewer model
+ok 96 Gate 1h archives review artifacts before the worktree is torn down
+ok 97 Gate 1h fails closed on reviewer error and on an unparseable verdict
+ok 98 Gate 1h passes a per-run nonce the branch cannot know
+exit=0

@@ -1,0 +1,15 @@
+=== env probe ts=2026-09-03T15:48:33-07:00
+-- os:
+PRETTY_NAME="Debian GNU/Linux 12 (bookworm)"
+-- python3:
+Python 3.11.2
+-- runuser:
+-rwxr-xr-x 1 root root 72000 Nov 21  2024 /usr/sbin/runuser
+-- dnsmasq:
+dnsmasq absent
+-- id dnsmasq:
+id: 'dnsmasq': no such user
+-- id ccproxy:
+id: 'ccproxy': no such user
+-- ipset:
+/usr/sbin/ipset

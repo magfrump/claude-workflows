@@ -1,0 +1,9 @@
+cmd: LC_ALL=C python3 test/test_cc_sni_proxy.py
+cwd: /workspace
+2026-09-03T15:46:23-07:00
+.............
+----------------------------------------------------------------------
+Ran 13 tests in 0.128s
+
+OK
+exit: 0

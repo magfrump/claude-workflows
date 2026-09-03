@@ -1,0 +1,9 @@
+=== iptables availability ===
+iptables v1.8.9 (nf_tables): Could not fetch rule set generation id: Permission denied (you must be root)
+exit=0
+=== dnsmasq ===
+dnsmasq: NOT INSTALLED in this sandbox
+=== runuser ===
+/usr/sbin/runuser
+=== python3 ===
+Python 3.11.2

@@ -1,0 +1,72 @@
+=== cfc-sc-2: every allowed-domains member carries a tcp: proto prefix; UDP match is kernel-level (blocked) ===
+cwd=/workspace  commit=abbd42d  date=2026-09-03T23:21:34Z  LC_ALL=C
+
+--- [A] every 'ipset add' call site in init-firewall.sh ---
+15:#     ipset is `hash:net,port` and the OUTPUT accept matches `dst,dst`, so a
+107:# purpose: an entry that passes here is later interpolated into `ipset add`
+307:#     therefore contains only local iptables/ipset calls: it shrinks from
+342:# the ipset directly, because the ipset does not exist yet — it is created in
+483:ipset destroy allowed-domains 2>/dev/null || true
+710:# CIDRs go into the allowed-domains ipset on tcp 443 AND tcp 22, which the OUTPUT
+731:ipset create allowed-domains hash:net,port
+733:# Populate the ipset from what phase A already fetched and validated. Every value
+744:    ipset add -exist allowed-domains "$cidr,tcp:443"
+745:    ipset add -exist allowed-domains "$cidr,tcp:22"
+753:    ipset add -exist allowed-domains "$member"
+809:# THE HOLE. The ipset admits ADDRESSES. A CDN front puts thousands of unrelated
+824:# proxy's own egress still traverses the address+port ipset below, the IP layer
+890:# proxy's or root's — the ipset accept below must never be reachable by the agent
+
+--- [B] where RESOLVED_MEMBERS values are built ---
+341	# Resolve the composed allowlist. Collected into a variable rather than added to
+342	# the ipset directly, because the ipset does not exist yet — it is created in
+343	# phase B, after the flush destroys the old one. Each collected line is a
+344	# ready-made `hash:net,port` member, `<ip>,tcp:<port>` — one per (address, port)
+345	# pair the entry grants.
+346	RESOLVED_MEMBERS=""
+383	        for port in $(echo "$ports" | tr ',' '\n'); do
+384	            RESOLVED_MEMBERS="${RESOLVED_MEMBERS}${ip},tcp:${port}"$'\n'
+385	        done
+
+--- [C] the OUTPUT accept that consumes the set ---
+899	# Then allow only specific outbound traffic to allowed domains — matched on
+900	# destination address AND destination port (`dst,dst` against the hash:net,port
+901	# set), so an admitted address is open only on the ports its entry named.
+902	iptables -A OUTPUT -m set --match-set allowed-domains dst,dst -j ACCEPT
+903	
+904	# Explicitly REJECT all other outbound traffic for immediate feedback
+905	iptables -A OUTPUT -j REJECT --reject-with icmp-admin-prohibited
+
+--- [D] observed members from a full stubbed run (bats stub PATH, no root) ---
+$ LC_ALL=C bats -f 'the allowlist ipset is address\+port|GitHub CIDRs are admitted' test/init-firewall-rules.bats
+1..1
+ok 1 the allowlist ipset is address+port, and the OUTPUT accept matches on both
+1..1
+ok 1 GitHub CIDRs are admitted on tcp 443 and tcp 22 only
+
+--- [E] kernel-level blocker: cannot create an ipset or a netns in this sandbox ---
+$ ipset create t_cfc hash:net,port
+ipset v7.17: Kernel error received: Operation not permitted
+$ unshare -Ur --net true
+unshare: unshare failed: Operation not permitted
+$ id
+uid=1000(node) gid=1000(node) groups=1000(node)
+=> hash:net,port UDP-vs-tcp: matching semantics cannot be exercised here.
+
+--- [F] the full command sequence (see cfc-sc-8 [C]) confirms every member carries tcp: ---
+17:ipset destroy allowed-domains
+40:ipset create allowed-domains hash:net,port
+41:ipset add -exist allowed-domains 192.30.252.0/22,tcp:443
+42:ipset add -exist allowed-domains 192.30.252.0/22,tcp:22
+43:ipset add -exist allowed-domains 143.55.64.0/20,tcp:443
+44:ipset add -exist allowed-domains 143.55.64.0/20,tcp:22
+45:ipset add -exist allowed-domains 192.30.252.0/22,tcp:443
+46:ipset add -exist allowed-domains 192.30.252.0/22,tcp:22
+47:ipset add -exist allowed-domains 203.0.113.7,tcp:443
+48:ipset add -exist allowed-domains 203.0.113.7,tcp:443
+49:ipset add -exist allowed-domains 203.0.113.7,tcp:443
+50:ipset add -exist allowed-domains 203.0.113.7,tcp:443
+51:ipset add -exist allowed-domains 203.0.113.7,tcp:443
+
+members WITHOUT a 'tcp:' proto prefix:
+0

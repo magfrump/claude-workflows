@@ -1,0 +1,2 @@
+=== cmd: shellcheck -S warning devcontainer-config/init-firewall.sh ; cwd=/workspace ; ts=2026-09-03T15:45:23-07:00
+=== exit=0

@@ -1,0 +1,102 @@
+=== cfc-sc-5: pump() throughput, 512 MiB over loopback, one shared event loop ===
+cwd=/workspace  commit=abbd42d  date=2026-09-03T23:23:53Z  LC_ALL=C
+
+--- pump() under test (cc-sni-proxy.py:157-165) ---
+157	async def pump(reader, writer):
+158	    try:
+159	        while data := await reader.read(65536):
+160	            writer.write(data)
+161	            await writer.drain()
+162	        if writer.can_write_eof():
+163	            writer.write_eof()
+164	    except OSError:
+165	        pass
+
+$ LC_ALL=C python3 /tmp/claude-1000/cfc/pump_bench.py   (run 3x)
+-- run 1 --
+python      : 3.11.2 | Linux-6.18.35.2-microsoft-standard-WSL2-x86_64-with-glibc2.36
+cpu count   : 16
+bytes sent   : 536870912 (512 MiB)
+bytes at sink: 536870912  (equal=True)
+elapsed      : 0.661 s
+throughput   : 774.6 MiB/s = 6.50 Gbit/s
+per 64 KiB   : 80.7 us
+-- run 2 --
+python      : 3.11.2 | Linux-6.18.35.2-microsoft-standard-WSL2-x86_64-with-glibc2.36
+cpu count   : 16
+bytes sent   : 536870912 (512 MiB)
+bytes at sink: 536870912  (equal=True)
+elapsed      : 0.764 s
+throughput   : 670.2 MiB/s = 5.62 Gbit/s
+per 64 KiB   : 93.3 us
+-- run 3 --
+python      : 3.11.2 | Linux-6.18.35.2-microsoft-standard-WSL2-x86_64-with-glibc2.36
+cpu count   : 16
+bytes sent   : 536870912 (512 MiB)
+bytes at sink: 536870912  (equal=True)
+elapsed      : 0.698 s
+throughput   : 733.4 MiB/s = 6.15 Gbit/s
+per 64 KiB   : 85.2 us
+exit=0
+
+--- [G] APPENDIX: the benchmark harness, verbatim ---
+"""cfc-sc-5: reproduce the performance-reviewer's pump() throughput figure.
+Relay built from the SHIPPED pump() (imported, not copied) over loopback:
+writer -> relay(pump) -> sink, writer/relay/sink sharing one asyncio loop, as
+the submitted claim describes. 512 MiB total, 64 KiB chunks."""
+import asyncio, importlib.util, pathlib, platform, os, sys, time
+
+PROXY = pathlib.Path("/workspace/devcontainer-config/cc-sni-proxy.py")
+spec = importlib.util.spec_from_file_location("cc_sni_proxy", PROXY)
+proxy = importlib.util.module_from_spec(spec); spec.loader.exec_module(proxy)
+pump = proxy.pump                       # the exact body under test
+
+TOTAL = 512 * 1024 * 1024
+CHUNK = 64 * 1024
+BLOB = b"\xa5" * CHUNK
+
+
+async def main():
+    sink_bytes = 0
+    done = asyncio.Event()
+
+    async def sink(r, w):
+        nonlocal sink_bytes
+        while d := await r.read(CHUNK):
+            sink_bytes += len(d)
+        w.close()
+        done.set()
+
+    sink_srv = await asyncio.start_server(sink, "127.0.0.1", 0)
+    sink_port = sink_srv.sockets[0].getsockname()[1]
+
+    async def relay(r, w):
+        ur, uw = await asyncio.open_connection("127.0.0.1", sink_port)
+        await pump(r, uw)               # <-- the shipped pump()
+        uw.close()
+        w.close()
+
+    relay_srv = await asyncio.start_server(relay, "127.0.0.1", 0)
+    relay_port = relay_srv.sockets[0].getsockname()[1]
+
+    r, w = await asyncio.open_connection("127.0.0.1", relay_port)
+    t0 = time.perf_counter()
+    sent = 0
+    while sent < TOTAL:
+        w.write(BLOB)
+        await w.drain()
+        sent += CHUNK
+    w.close()
+    await done.wait()
+    dt = time.perf_counter() - t0
+    sink_srv.close(); relay_srv.close()
+    mib = sent / (1024 * 1024)
+    print(f"bytes sent   : {sent} ({mib:.0f} MiB)")
+    print(f"bytes at sink: {sink_bytes}  (equal={sink_bytes == sent})")
+    print(f"elapsed      : {dt:.3f} s")
+    print(f"throughput   : {mib/dt:.1f} MiB/s = {sent*8/dt/1e9:.2f} Gbit/s")
+    print(f"per 64 KiB   : {dt/(sent/CHUNK)*1e6:.1f} us")
+
+print("python      :", sys.version.split()[0], "|", platform.platform())
+print("cpu count   :", os.cpu_count())
+asyncio.run(main())

@@ -1,0 +1,14 @@
+cmd: CLAUDE_DEVC_CONFIG_DIR=/tmp/tmp.xLZGL7lUFU bash devcontainer-config/install.sh
+cwd: /workspace  commit: abbd42d  ts: 2026-09-03T23:21:45Z
+Canonical (repo):  /workspace/devcontainer-config
+Installed (host):  /tmp/tmp.xLZGL7lUFU
+
+=== Changes this install would make ===========================================
+===============================================================================
+
+Install this config and bless it? [y/N] exit: 1
+--- staged top-level:
+--- proxy present?
+ls: cannot access '/tmp/tmp.xLZGL7lUFU/cc-sni-proxy.py': No such file or directory
+--- Dockerfile COPY line:
+ugrep: warning: /tmp/tmp.xLZGL7lUFU/Dockerfile: No such file or directory

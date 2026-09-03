@@ -1,0 +1,4 @@
+cmd: shellcheck -S warning devcontainer-config/init-firewall.sh
+cwd: /workspace
+2026-09-03T15:46:23-07:00
+exit: 0

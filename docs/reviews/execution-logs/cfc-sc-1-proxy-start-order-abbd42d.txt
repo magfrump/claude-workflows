@@ -1,0 +1,138 @@
+=== cfc-sc-1: proxy started+ready-verified strictly before the CC_SNI REDIRECT ===
+cwd=/workspace  commit=abbd42d  date=2026-09-03T23:20:46Z  LC_ALL=C
+
+--- [A] bats: the two named order/fail-closed tests ---
+$ LC_ALL=C bats -f 'before the REDIRECT|fails to start aborts the run' test/init-firewall-rules.bats
+1..2
+ok 1 the SNI proxy is started as ccproxy with the generated allowlist, before the REDIRECT
+ok 2 a proxy that fails to start aborts the run and fails closed
+exit=0
+
+--- [B] static: file order of the start (874-878) vs the nat REDIRECT (882-886) ---
+871	# --daemon: forks, drops to --user, binds, and exits 0 only once LISTENING (a prior
+872	# instance named by the pidfile is terminated first, so re-runs are idempotent).
+873	# Any other status means "no proxy" → set -e → trap → DROP.
+874	if ! "$SNI_PROXY_BIN" --daemon --pidfile "$SNI_PIDFILE" --user ccproxy \
+875	        --listen "127.0.0.1:$SNI_PORT" --allowlist "$SNI_ALLOWLIST" --log "$SNI_LOG"; then
+876	    echo "ERROR: SNI proxy failed to start (see $SNI_LOG)" >&2
+877	    exit 1
+878	fi
+879	echo "SNI proxy running as uid $CCPROXY_UID on 127.0.0.1:$SNI_PORT, allowlist $SNI_ALLOWLIST"
+880	
+881	# nat: redirect tcp/443 to the proxy for every uid except the proxy's and root's.
+882	iptables -t nat -N CC_SNI
+883	iptables -t nat -A CC_SNI -m owner --uid-owner "$CCPROXY_UID" -j RETURN
+884	iptables -t nat -A CC_SNI -m owner --uid-owner 0 -j RETURN
+885	iptables -t nat -A CC_SNI -p tcp -j REDIRECT --to-ports "$SNI_PORT"
+886	iptables -t nat -A OUTPUT -p tcp --dport 443 -j CC_SNI
+
+--- [C] in-process daemonize() contract, real proxy (cwd=/workspace) ---
+--- [C1] success path: --daemon on free port 48497
+daemonize exit=0
+pidfile contents: 203952
+post-exit connect to listener: OK (it was already LISTENING when daemonize returned 0)
+proxy log:
+2026-09-03T16:21:05 listening on 127.0.0.1:48497; 1 exact names, 0 zones
+2026-09-03T16:21:05 REJECT orig_dst=127.0.0.1:48497: 0 bytes read on a total of 5 expected bytes
+--- [C2] failure path: bind the port first, then --daemon at the same port
+daemonize exit= 1
+stderr: cc-sni-proxy: failed to start: error: OSError(98, "error while attempting to bind on address ('127.0.0.1', 46499): address already in use")
+pidfile written: False
+--- [C3] readiness handshake source (cc-sni-proxy.py:199-256)
+199	async def serve(args, ready_fd=None):
+200	    allow = Allowlist.load(args.allowlist)
+201	    host, _, port = args.listen.rpartition(":")
+202	    server = await asyncio.start_server(
+203	        lambda r, w: handle(r, w, allow, args.upstream_port), host, int(port), reuse_address=True)
+204	    log(f"listening on {args.listen}; {len(allow.exact)} exact names, {len(allow.zones)} zones")
+205	    if ready_fd is not None:
+206	        os.write(ready_fd, b"ready")
+207	        os.close(ready_fd)
+208	    async with server:
+209	        await server.serve_forever()
+210	
+211	
+212	def stop_prior(pidfile):
+213	    """Kill the instance named by the pidfile, if it is one of us and alive."""
+214	    try:
+215	        with open(pidfile) as f:
+216	            pid = int(f.read().strip())
+217	        with open(f"/proc/{pid}/cmdline", "rb") as f:
+218	            is_ours = b"cc-sni-proxy" in f.read()
+219	    except (OSError, ValueError):
+220	        is_ours = False
+221	    if is_ours:
+222	        os.kill(pid, signal.SIGTERM)
+223	        for _ in range(30):
+224	            if not os.path.exists(f"/proc/{pid}"):
+225	                break
+226	            time.sleep(0.1)
+227	        else:
+228	            os.kill(pid, signal.SIGKILL)
+229	    try:
+230	        os.unlink(pidfile)
+231	    except OSError:
+232	        pass
+233	
+234	
+235	def daemonize(args):
+236	    """Fork, detach, drop to --user, bind, then report readiness to the caller.
+237	    Exit status is the contract init-firewall.sh relies on: 0 only once the
+238	    child is LISTENING; anything else means "no proxy", and the firewall must
+239	    then fail closed rather than install a REDIRECT to nothing."""
+240	    if os.geteuid() == 0 and not args.user:
+241	        sys.exit("cc-sni-proxy: refusing to run as root; pass --user")
+242	    stop_prior(args.pidfile)
+243	    log_fd = os.open(args.log, os.O_WRONLY | os.O_CREAT | os.O_TRUNC, 0o644)
+244	    r, w = os.pipe()
+245	    pid = os.fork()
+246	    if pid:
+247	        os.close(w)
+248	        os.close(log_fd)
+249	        msg = os.read(r, 4096)
+250	        if msg == b"ready":
+251	            with open(args.pidfile, "w") as f:
+252	                f.write(f"{pid}\n")
+253	            return 0
+254	        os.waitpid(pid, 0)
+255	        sys.stderr.write(f"cc-sni-proxy: failed to start: {msg.decode(errors='replace') or 'child exited'}\n")
+256	        return 1
+
+[note] the probe script ended with `pkill -f "cc-sni-proxy.py --daemon"` to reap the daemon; that pkill also signalled the wrapper shell, so the bash wrapper reported exit 144 AFTER every assertion above had already been printed. No assertion was skipped.
+
+--- [D2] the daemonize probe script, verbatim ---
+set -u
+T=$(mktemp -d)
+P=/workspace/devcontainer-config/cc-sni-proxy.py
+printf 'localhost\n' > "$T/al"
+PORT=$(python3 -c 'import socket;s=socket.socket();s.bind(("127.0.0.1",0));print(s.getsockname()[1]);s.close()')
+echo "--- [C1] success path: --daemon on free port $PORT"
+python3 "$P" --daemon --pidfile "$T/pid" --allowlist "$T/al" --listen "127.0.0.1:$PORT" --log "$T/log"
+echo "daemonize exit=$?"
+echo "pidfile contents: $(cat "$T/pid" 2>/dev/null)"
+python3 - "$PORT" <<'PY'
+import socket,sys
+s=socket.create_connection(("127.0.0.1",int(sys.argv[1])),timeout=2); s.close()
+print("post-exit connect to listener: OK (it was already LISTENING when daemonize returned 0)")
+PY
+echo "proxy log:"; cat "$T/log"
+echo "--- [C2] failure path: bind the port first, then --daemon at the same port"
+python3 - "$T" "$P" <<'PY'
+import socket, subprocess, sys, os
+tmp, proxy = sys.argv[1], sys.argv[2]
+s=socket.socket(); s.setsockopt(socket.SOL_SOCKET, socket.SO_REUSEADDR,1)
+s.bind(("127.0.0.1",0)); s.listen(1); port=s.getsockname()[1]
+pf=os.path.join(tmp,"pid2")
+r=subprocess.run([sys.executable, proxy, "--daemon", "--pidfile", pf,
+                  "--allowlist", os.path.join(tmp,"al"),
+                  "--listen", f"127.0.0.1:{port}", "--log", os.path.join(tmp,"log2")],
+                 capture_output=True, text=True)
+print("daemonize exit=", r.returncode)
+print("stderr:", r.stderr.strip())
+print("pidfile written:", os.path.exists(pf))
+s.close()
+PY
+echo "--- [C3] readiness handshake source (cc-sni-proxy.py:199-256)"
+awk 'NR>=199 && NR<=256 {printf "%d\t%s\n", NR, $0}' "$P"
+pkill -f "cc-sni-proxy.py --daemon" 2>/dev/null
+rm -rf "$T"
