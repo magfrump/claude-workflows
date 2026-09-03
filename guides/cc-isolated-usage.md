@@ -1,6 +1,6 @@
 # cc-isolated — usage guide
 
-Last verified: 2026-08-22
+Last verified: 2026-09-03
 Relevant paths: `devcontainer-config/cc-isolated.sh`, `devcontainer-config/egress/`, `devcontainer-config/Dockerfile`, `test/cc-isolated-functions.bats`
 
 `cc-isolated` launches an isolated Claude Code session inside a devcontainer for
@@ -50,7 +50,7 @@ GitHub IP ranges). Language toolchains are granted per project, **host-side only
 
 | Profile | Opens | Auto-suggested from repo contents |
 |---------|-------|-----------------------------------|
-| `base`  | Anthropic API/OAuth, `registry.npmjs.org`, GitHub ranges | always applied |
+| `base`  | Anthropic API/OAuth (`api.anthropic.com`, `claude.ai`, `console.anthropic.com`, `platform.claude.com`), `registry.npmjs.org`, GitHub ranges | always applied |
 | `python`| `pypi.org`, `files.pythonhosted.org` | `pyproject.toml` · `requirements.txt` · `setup.py` |
 | `rust`  | `crates.io`, `index.crates.io`, `static.crates.io` | `Cargo.toml` |
 | `lean`  | `elan.lean-lang.org`, `releases.lean-lang.org` | `lean-toolchain` · `lakefile.lean` |
@@ -93,9 +93,42 @@ that project's **own** named volume (`cc-<project-id>-claude-config`, mounted at
 `/home/node/.claude`) and survive rebuilds. Each project gets its own volume, so
 a compromised session in one project cannot read another's credentials.
 
-Git push auth: the container gets no host SSH keys by design. Use a fine-grained
-PAT scoped to the repos the agent works on (`gh auth login` inside the container,
-or `GH_TOKEN`) — never real host credentials.
+Git push auth: the container gets no host SSH keys by design, and no GitHub
+token unless you export one — see
+[Working with collaborators](#working-with-collaborators-github-credentials).
+
+## Working with collaborators: GitHub credentials
+
+GitHub is reachable from **every** session — `base` carries GitHub's published
+CIDRs because git needs them — and GitHub hosts arbitrary writable repos and
+gists. No firewall rule scopes that to "only my repos". What a credential
+decides is therefore not *whether* the agent can talk to GitHub, but *which
+repos it can push to or read privately*. Pick the narrowest tier that fits:
+
+- **No credentials (default).** Nothing is exported; `gh` and authenticated
+  `git push` fail. Commit inside the container, then push from the host with
+  your own keys. This is the right default for solo work and for public repos:
+  the agent gets the whole workflow except the one step that needs trust.
+- **Read-only PAT — for private fetches.** When the repo, or a dependency, is
+  private, export a fine-grained PAT with *Contents: read* on the named repos
+  only: `GH_TOKEN=github_pat_… cc-isolated ~/code/api`. `devcontainer.json`
+  passes it through opt-in, exactly like `OPENROUTER_API_KEY`, and it is empty
+  unless the host exports it. Still push from the host.
+- **Write PAT — only when the agent must push.** Fine-grained, *Contents: write*
+  on the named repos only, expiry measured in days, and **branch protection on
+  `main`** (require PRs, no force-push) so the token can open branches and PRs
+  but cannot rewrite history. Export it for that one session and revoke after.
+
+Be honest about what this buys. Scoping the token bounds *credential* misuse — a
+compromised session with a read-only PAT cannot push to your repos, and with a
+scoped write PAT cannot touch repos it was not named on. It does **not** close
+the network-level exfiltration channel: GitHub is writable for every session
+regardless of what you export, and a token the *attacker* supplies (injected
+through a prompt, a dependency, a fetched page) works just as well as one you
+did not. The real fix is a host-side git proxy that replaces the GitHub CIDRs
+with an authenticating endpoint restricted to named push targets — noted as
+future work in the 2026-08-29 egress security review (finding 3), not something
+a config edit can deliver.
 
 ## Python inside the container
 
