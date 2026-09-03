@@ -31,6 +31,7 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
   ipset \
   iproute2 \
   dnsutils \
+  dnsmasq-base \
   aggregate \
   jq \
   nano \
@@ -39,6 +40,16 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
   ripgrep \
   shellcheck \
   && apt-get clean && rm -rf /var/lib/apt/lists/*
+
+# dnsmasq-base (above) is the daemon binary WITHOUT the `dnsmasq` package's sysv/
+# systemd service wrapper: nothing in the container may auto-start a resolver —
+# init-firewall.sh starts exactly one instance, with a config it generates, on
+# every firewall run (decision log #39: the filtering resolver that closes
+# recursive-forward DNS tunnelling). The daemon drops to the unprivileged `dnsmasq`
+# user, and the firewall's owner-match rules key on that uid, so its existence is
+# asserted here rather than left to the package's postinst.
+RUN id -u dnsmasq >/dev/null 2>&1 || \
+  useradd --system --no-create-home --home-dir /nonexistent --shell /usr/sbin/nologin dnsmasq
 
 # Ensure default node user has access to /usr/local/share
 RUN mkdir -p /usr/local/share/npm-global && \
