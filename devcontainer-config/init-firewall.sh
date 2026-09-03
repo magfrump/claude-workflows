@@ -157,28 +157,51 @@ fi
 # last *completed* command's status (0), so a status-based guard silently no-ops and
 # leaves the container open — the exact failure the trap exists to prevent. Keying on
 # "did the script reach its end" instead makes every incomplete path fail closed,
-# whatever the status says. The paired `trap ... INT TERM HUP` below converts a signal
-# into a normal exit so the EXIT trap runs at all (bash skips it for untrapped
+# whatever the status says. The paired `trap ... INT TERM HUP QUIT` below converts a
+# signal into a normal exit so the EXIT trap runs at all (bash skips it for untrapped
 # signals).
 #
 # Setting DROP is safe even on a pre-flush abort with an intact firewall from a
 # previous run: the policy is already DROP there and the accept RULES are untouched,
 # so the container keeps working. It only bites on a genuinely half-built ruleset,
 # where closed is the only acceptable answer.
+#
+# The policy calls are VERIFIED, not trusted. `|| true` is still required (the trap
+# must never abort itself), but it also means the last line of defence can silently
+# not happen — realistically by losing the xtables lock to another iptables process
+# (`-w 5` waits for it rather than failing instantly). So the trap re-reads the live
+# policies with `iptables -S` afterwards and says which of two very different things
+# happened: the container is closed, or it may be OPEN and a human must act. The
+# "forced DROP" line is printed only AFTER the read-back confirms it, so the log never
+# claims a DROP that was not applied.
 FIREWALL_COMPLETE=0
 fail_closed_on_abort() {
+  local chain policies open=0
   if [ "${FIREWALL_COMPLETE:-0}" != "1" ]; then
-    echo "ERROR: init-firewall.sh did not complete — forcing DROP policies so the" >&2
-    echo "       container fails CLOSED (no egress), never wide open." >&2
-    iptables -P OUTPUT DROP || true
-    iptables -P INPUT DROP || true
-    iptables -P FORWARD DROP || true
+    echo "ERROR: init-firewall.sh did not complete." >&2
+    iptables -w 5 -P OUTPUT DROP || true
+    iptables -w 5 -P INPUT DROP || true
+    iptables -w 5 -P FORWARD DROP || true
+    policies="$(iptables -w 5 -S 2>/dev/null || true)"
+    for chain in OUTPUT INPUT FORWARD; do
+      if ! grep -q "^-P $chain DROP" <<< "$policies"; then
+        open=1
+        echo "ERROR: could not force DROP policy on $chain — container may be OPEN." >&2
+      fi
+    done
+    if [ "$open" = "1" ]; then
+      echo "       Verify with \`iptables -S\` and set the policies by hand, or recreate" >&2
+      echo "       the container. Do NOT start a session in this container as-is." >&2
+    else
+      echo "       Forced DROP policies (verified): the container fails CLOSED (no" >&2
+      echo "       egress), never wide open." >&2
+    fi
     echo "       If this container can no longer bootstrap, recreate it from the host:" >&2
     echo "         devcontainer up --remove-existing-container --workspace-folder <repo>" >&2
   fi
 }
 trap fail_closed_on_abort EXIT
-trap 'exit 143' INT TERM HUP
+trap 'exit 143' INT TERM HUP QUIT
 
 ALLOWED_DOMAINS="$(compose_domains)"
 if [ -z "$ALLOWED_DOMAINS" ]; then
@@ -296,7 +319,21 @@ done < <(echo "$ALLOWED_ENTRIES")
 # 1. Extract Docker DNS info BEFORE any flushing
 DOCKER_DNS_RULES=$(iptables-save -t nat | grep "127\.0\.0\.11" || true)
 
-# Flush existing rules and delete existing ipsets
+# Close the window BEFORE it opens: set the DROP policies first, then flush. Chain
+# policies survive `iptables -F` (a flush removes rules, not policies), so ordering
+# them ahead of the flush means there is no instant — not even the microseconds
+# between two local iptables calls — at which the chains are empty AND the policy is
+# ACCEPT. Phase A already did every network read, so nothing between here and the
+# finished ruleset needs egress. Previously these policies were set only at the very
+# end, leaving a fresh container fully open (empty chains, default-ACCEPT policy) for
+# as long as the GitHub fetch and the per-domain digs took — a window `node` could
+# re-enter on demand via its NOPASSWD sudo. Accept rules added below still take
+# effect: a policy applies only when no rule matches.
+iptables -P INPUT DROP
+iptables -P FORWARD DROP
+iptables -P OUTPUT DROP
+
+# Flush existing rules and delete existing ipsets (policies set above persist)
 iptables -F
 iptables -X
 iptables -t nat -F
@@ -304,17 +341,6 @@ iptables -t nat -X
 iptables -t mangle -F
 iptables -t mangle -X
 ipset destroy allowed-domains 2>/dev/null || true
-
-# Close the window IMMEDIATELY, before adding a single accept. Phase A already did
-# every network read, so nothing between here and the finished ruleset needs egress,
-# and the container is never both flushed and permissive. Previously these policies
-# were set only at the very end, leaving a fresh container fully open (empty chains,
-# default-ACCEPT policy) for as long as the GitHub fetch and the per-domain digs
-# took — a window `node` could re-enter on demand via its NOPASSWD sudo. Accept
-# rules added below still take effect: a policy applies only when no rule matches.
-iptables -P INPUT DROP
-iptables -P FORWARD DROP
-iptables -P OUTPUT DROP
 
 # 2. Selectively restore ONLY internal Docker DNS resolution
 if [ -n "$DOCKER_DNS_RULES" ]; then
@@ -396,8 +422,12 @@ else
   echo "         accept. Loopback/host-network/IPv6 resolution is unaffected (see comment);" >&2
   echo "         a non-loopback IPv4 resolver would fail to resolve. Fix resolv.conf." >&2
 fi
-# Allow inbound DNS responses
-iptables -A INPUT -p udp --sport 53 -j ACCEPT
+# NOTE: no inbound `--sport 53` accept. DNS replies to the scoped OUTPUT rules above
+# are already admitted by the `INPUT -m state --state ESTABLISHED,RELATED` accept near
+# the end, so a blanket `-A INPUT -p udp --sport 53 -j ACCEPT` added nothing
+# legitimate — and what it did add was an unsolicited-inbound path: any host that can
+# address the container and sets its source port to 53 walked straight through the
+# INPUT DROP policy, a one-way command channel to an already-compromised process.
 # NOTE: no blanket outbound-SSH accept. A `--dport 22 -j ACCEPT` to 0.0.0.0/0 is
 # an unconditional tunnel out of the sandbox: an attacker runs C2/SSH on port 22
 # and the agent can `ssh -L`/`-D` arbitrary TCP through it, defeating the entire
@@ -498,7 +528,9 @@ iptables -A OUTPUT -j REJECT --reject-with icmp-admin-prohibited
 
 echo "Firewall configuration complete"
 echo "Verifying firewall rules..."
-if curl --connect-timeout 5 https://example.com >/dev/null 2>&1; then
+# --max-time on both probes for the same reason as the phase-A fetch: a probe that
+# connects but then stalls would otherwise hang session start indefinitely.
+if curl --connect-timeout 5 --max-time 15 https://example.com >/dev/null 2>&1; then
     echo "ERROR: Firewall verification failed - was able to reach https://example.com"
     exit 1
 else
@@ -506,7 +538,7 @@ else
 fi
 
 # Verify GitHub API access
-if ! curl --connect-timeout 5 https://api.github.com/zen >/dev/null 2>&1; then
+if ! curl --connect-timeout 5 --max-time 15 https://api.github.com/zen >/dev/null 2>&1; then
     echo "ERROR: Firewall verification failed - unable to reach https://api.github.com"
     exit 1
 else
