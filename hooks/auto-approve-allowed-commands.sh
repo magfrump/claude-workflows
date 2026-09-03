@@ -55,9 +55,13 @@ extract_prefixes_from_file() {
     return 0
   fi
   debug "Reading prefixes from: $file"
+  # `|| true`: under `set -eo pipefail`, grep exits 1 when a file has no
+  # Bash(...) entries (e.g. a global settings.json with only a deny list),
+  # which aborted the whole loader before the project files were read.
   jq -r '.permissions.allow[]? // empty' "$file" 2>/dev/null \
     | grep -E '^Bash\(' \
-    | sed -E 's/^Bash\(//; s/(:\*)?\)$//'
+    | sed -E 's/^Bash\(//; s/(:\*)?\)$//' \
+    || true
 }
 
 # Find git root directory (project root)
