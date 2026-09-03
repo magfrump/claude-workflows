@@ -38,9 +38,35 @@ setup() {
   mkdir -p "$STUB_DIR"
 
   # Every stub logs "<name> <args...>" then returns 0 unless a FAIL_* knob is set.
+  #
+  # iptables additionally keeps a tiny policy model in $CMD_LOG.policies so that
+  # `-S` prints `-P <chain> <policy>` lines consistent with every prior `-P` call —
+  # that is what the fail-closed trap reads back to verify its own DROPs. FAIL_POLICY
+  # makes `-P` a silent no-op (exit 0, nothing recorded), modelling a lost xtables
+  # lock: the call "succeeds" but the policy stays ACCEPT.
   cat > "$STUB_DIR/iptables" <<'STUB'
 #!/usr/bin/env bash
 echo "iptables $*" >> "$CMD_LOG"
+POL="$CMD_LOG.policies"
+args=("$@")
+i=0
+while [ "$i" -lt "${#args[@]}" ]; do
+  case "${args[$i]}" in
+    -w) i=$((i+2)); continue ;;            # `-w <seconds>`: skip the lock wait
+    -P)
+      if [ -z "${FAIL_POLICY:-}" ]; then
+        echo "${args[$((i+1))]} ${args[$((i+2))]}" >> "$POL"
+      fi
+      exit 0 ;;
+    -S)
+      for chain in INPUT FORWARD OUTPUT; do
+        pol=$(grep "^$chain " "$POL" 2>/dev/null | tail -1 | cut -d' ' -f2)
+        echo "-P $chain ${pol:-ACCEPT}"
+      done
+      exit 0 ;;
+  esac
+  i=$((i+1))
+done
 exit 0
 STUB
 
@@ -63,10 +89,14 @@ echo "ip $*" >> "$CMD_LOG"
 exit 0
 STUB
 
+  # SLOW_DIG parks the first resolution for a long time (bounded, so a broken
+  # signal path fails the test rather than hanging it) — the signal test kills the
+  # script while it is stuck here.
   cat > "$STUB_DIR/dig" <<'STUB'
 #!/usr/bin/env bash
 echo "dig $*" >> "$CMD_LOG"
 if [ -n "${FAIL_DIG:-}" ]; then exit 9; fi
+if [ -n "${SLOW_DIG:-}" ]; then sleep 20; fi
 domain="${!#}"
 printf '%s.\t60\tIN\tA\t203.0.113.7\n' "$domain"
 exit 0
@@ -171,18 +201,34 @@ first_line_matching() {
   run bash "$FW"
   [ "$status" -eq 0 ]
 
-  local flush drop meta
+  local flush drop meta reject
   flush=$(first_line_matching "^iptables -F")
   drop=$(first_line_matching "^iptables -P OUTPUT DROP")
   meta=$(first_line_matching "api.github.com/meta")
-  [ -n "$flush" ] && [ -n "$drop" ] && [ -n "$meta" ]
+  reject=$(first_line_matching "^iptables -A OUTPUT -j REJECT")
+  [ -n "$flush" ] && [ -n "$drop" ] && [ -n "$meta" ] && [ -n "$reject" ]
 
   # The GitHub fetch precedes the flush ...
   [ "$meta" -lt "$flush" ]
-  # ... and DROP lands immediately after it, with no curl/dig in between.
-  [ "$drop" -gt "$flush" ]
-  run bash -c "sed -n '${flush},${drop}p' '$CMD_LOG' | grep -cE '^(curl|dig) '"
+  # ... DROP is already in force when the flush happens (policies survive -F) ...
+  [ "$drop" -lt "$flush" ]
+  # ... and nothing from the flush to the terminal REJECT touches the network.
+  run bash -c "sed -n '${flush},${reject}p' '$CMD_LOG' | grep -cE '^(curl|dig) '"
   [ "$output" -eq 0 ]
+}
+
+@test "all three DROP policies are set before the flush, so the window is empty" {
+  # REGRESSION (F1): policies were set after `-F`, leaving a fresh container with
+  # empty chains AND default-ACCEPT for the span of the flush calls.
+  run bash "$FW"
+  [ "$status" -eq 0 ]
+  local flush chain line
+  flush=$(first_line_matching "^iptables -F")
+  for chain in INPUT FORWARD OUTPUT; do
+    line=$(first_line_matching "^iptables -P $chain DROP")
+    [ -n "$line" ]
+    [ "$line" -lt "$flush" ]
+  done
 }
 
 @test "every domain is resolved before the flush, not during the window" {
@@ -209,6 +255,32 @@ first_line_matching() {
   [ "$output" -eq 0 ]
 }
 
+@test "no blanket inbound source-port-53 accept is installed" {
+  # REGRESSION (F6): `-A INPUT -p udp --sport 53 -j ACCEPT` from 0.0.0.0/0 let any
+  # packet with source port 53 through the INPUT DROP policy. Legitimate DNS replies
+  # are covered by the ESTABLISHED,RELATED accept, which must still be present.
+  run bash "$FW"
+  [ "$status" -eq 0 ]
+  run grep -c -- "--sport 53" "$CMD_LOG"
+  [ "$output" -eq 0 ]
+  grep -q -- "-A INPUT -m state --state ESTABLISHED,RELATED -j ACCEPT" "$CMD_LOG"
+}
+
+@test "every curl carries --max-time: the meta fetch and both verification probes" {
+  # REGRESSION (F5): the two end-of-script probes had only --connect-timeout, so a
+  # connection that opened and then stalled could hang session start indefinitely.
+  run bash "$FW"
+  [ "$status" -eq 0 ]
+  local n_curl n_bounded
+  n_curl=$(grep -c '^curl ' "$CMD_LOG")
+  n_bounded=$(grep '^curl ' "$CMD_LOG" | grep -c -- '--max-time')
+  [ "$n_curl" -eq 3 ]
+  [ "$n_bounded" -eq "$n_curl" ]
+  grep '^curl ' "$CMD_LOG" | grep 'api.github.com/meta' | grep -q -- '--max-time'
+  grep '^curl ' "$CMD_LOG" | grep 'example.com' | grep -q -- '--max-time'
+  grep '^curl ' "$CMD_LOG" | grep 'api.github.com/zen' | grep -q -- '--max-time'
+}
+
 @test "no blanket outbound SSH accept is installed" {
   # REGRESSION: `--dport 22 -j ACCEPT` to 0.0.0.0/0 was an unconditional tunnel out.
   run bash "$FW"
@@ -224,9 +296,9 @@ first_line_matching() {
   # with empty chains AND a default-ACCEPT policy — wide open.
   FAIL_META=1 run bash "$FW"
   [ "$status" -ne 0 ]
-  grep -q "iptables -P OUTPUT DROP" "$CMD_LOG"
-  grep -q "iptables -P INPUT DROP" "$CMD_LOG"
-  grep -q "iptables -P FORWARD DROP" "$CMD_LOG"
+  grep -q "iptables -w 5 -P OUTPUT DROP" "$CMD_LOG"
+  grep -q "iptables -w 5 -P INPUT DROP" "$CMD_LOG"
+  grep -q "iptables -w 5 -P FORWARD DROP" "$CMD_LOG"
 }
 
 @test "a GitHub fetch failure aborts before the flush, leaving the live ruleset intact" {
@@ -242,5 +314,59 @@ first_line_matching() {
   FAIL_DIG=1 run bash "$FW"
   [ "$status" -ne 0 ]
   [[ "$output" == *"api.anthropic.com"* ]]
-  grep -q "iptables -P OUTPUT DROP" "$CMD_LOG"
+  grep -q "iptables -w 5 -P OUTPUT DROP" "$CMD_LOG"
+}
+
+@test "the trap waits for the xtables lock and verifies the DROP it applied" {
+  # F7: `-w 5` on every trap call, then a `-S` read-back. On success the stub's
+  # policy model reports DROP and the trap must NOT raise the OPEN alarm.
+  FAIL_META=1 run bash "$FW"
+  [ "$status" -ne 0 ]
+  grep -q "iptables -w 5 -P OUTPUT DROP" "$CMD_LOG"
+  grep -q "iptables -w 5 -P INPUT DROP" "$CMD_LOG"
+  grep -q "iptables -w 5 -P FORWARD DROP" "$CMD_LOG"
+  grep -q "iptables -w 5 -S" "$CMD_LOG"
+  [[ "$output" == *"fails CLOSED"* ]]
+  [[ "$output" != *"may be OPEN"* ]]
+}
+
+@test "the trap raises a distinct OPEN alarm when the DROP policy does not take" {
+  # F7: with `|| true` a lost xtables lock is silent. The read-back must turn that
+  # into a loud, distinct message rather than a claim that DROP was applied.
+  FAIL_META=1 FAIL_POLICY=1 run bash "$FW"
+  [ "$status" -ne 0 ]
+  [[ "$output" == *"could not force DROP policy"* ]]
+  [[ "$output" == *"container may be OPEN"* ]]
+  [[ "$output" != *"fails CLOSED"* ]]
+}
+
+@test "SIGTERM mid-resolution still ends at DROP (the sentinel, not \$?, drives the trap)" {
+  # F2: bash skips the EXIT trap for untrapped signals, and `$?` is 0 inside the
+  # trap after a signal, so only the INT/TERM/HUP/QUIT -> exit 143 conversion plus
+  # the completion sentinel makes a killed run fail closed. This is the only
+  # regression guard for that mechanism.
+  #
+  # setsid: the script and the (sleeping) dig stub go into their own process group
+  # so the whole group can be signalled. bash defers a trap while a foreground child
+  # runs, so killing only the script's PID would wait out the stub's sleep.
+  local out="$TEST_TMPDIR/signal.out" pid i
+  SLOW_DIG=1 setsid bash "$FW" >"$out" 2>&1 </dev/null &
+  pid=$!
+  # Poll for the dig stub to have started (it logs before sleeping); ~10s ceiling.
+  for i in $(seq 1 100); do
+    grep -q '^dig ' "$CMD_LOG" 2>/dev/null && break
+    sleep 0.1
+  done
+  grep -q '^dig ' "$CMD_LOG"
+  # No rule was touched yet: the kill lands in phase A, before the flush.
+  run grep -c '^iptables' "$CMD_LOG"
+  [ "$output" -eq 0 ]
+
+  kill -TERM -- "-$pid"
+  wait "$pid" || true
+
+  grep -q "iptables -w 5 -P OUTPUT DROP" "$CMD_LOG"
+  grep -q "iptables -w 5 -P INPUT DROP" "$CMD_LOG"
+  grep -q "iptables -w 5 -P FORWARD DROP" "$CMD_LOG"
+  grep -q "did not complete" "$out"
 }
