@@ -161,7 +161,115 @@ first_line_matching() {
   grep -q "iptables -P INPUT DROP" "$CMD_LOG"
   grep -q "iptables -P FORWARD DROP" "$CMD_LOG"
   grep -q "iptables -A OUTPUT -j REJECT" "$CMD_LOG"
-  grep -q "match-set allowed-domains dst -j ACCEPT" "$CMD_LOG"
+  grep -q "match-set allowed-domains dst,dst -j ACCEPT" "$CMD_LOG"
+}
+
+# --- port-scoped allowlist (security review 2026-08-29, finding 5) ------------
+
+@test "the allowlist ipset is address+port, and the OUTPUT accept matches on both" {
+  # REGRESSION: a plain `hash:net` matched on `dst` alone, so any allowlisted
+  # address was reachable on every port.
+  run bash "$FW"
+  [ "$status" -eq 0 ]
+  grep -q "^ipset create allowed-domains hash:net,port$" "$CMD_LOG"
+  run grep -c -- "match-set allowed-domains dst -j ACCEPT" "$CMD_LOG"
+  [ "$output" -eq 0 ]
+  grep -q -- "-m set --match-set allowed-domains dst,dst -j ACCEPT" "$CMD_LOG"
+  # Every member added carries a proto:port; a bare address would be an ipset
+  # error on the real kernel and a silent any-port grant in intent.
+  run grep -E '^ipset add ' "$CMD_LOG"
+  [ -n "$output" ]
+  run grep -cvE '^ipset add -exist allowed-domains [0-9./]+,tcp:[0-9]+$' <<<"$output"
+  [ "$output" -eq 0 ]
+}
+
+@test "GitHub CIDRs are admitted on tcp 443 and tcp 22 only" {
+  run bash "$FW"
+  [ "$status" -eq 0 ]
+  grep -q "^ipset add -exist allowed-domains 192.30.252.0/22,tcp:443$" "$CMD_LOG"
+  grep -q "^ipset add -exist allowed-domains 192.30.252.0/22,tcp:22$" "$CMD_LOG"
+  grep -q "^ipset add -exist allowed-domains 143.55.64.0/20,tcp:443$" "$CMD_LOG"
+  grep -q "^ipset add -exist allowed-domains 143.55.64.0/20,tcp:22$" "$CMD_LOG"
+  # Distinct members: the stub's /meta lists one CIDR under two keys, and dedup is
+  # `-exist`'s job at add time, so count unique lines rather than raw adds.
+  run bash -c "grep -E '^ipset add -exist allowed-domains [0-9./]+/[0-9]+,tcp:' '$CMD_LOG' | sort -u | wc -l"
+  [ "$output" -eq 4 ]
+  run grep -cE '^ipset add -exist allowed-domains [0-9./]+/[0-9]+,tcp:' "$CMD_LOG"
+  cidr_adds="$output"
+  run grep -cE '^ipset add -exist allowed-domains [0-9./]+/[0-9]+,tcp:(443|22)$' "$CMD_LOG"
+  [ "$output" -eq "$cidr_adds" ]   # no CIDR admitted on any other port
+}
+
+@test "a port-less profile entry defaults to tcp 443" {
+  # The dig stub resolves everything to 203.0.113.7; base has only port-less entries.
+  run bash "$FW"
+  [ "$status" -eq 0 ]
+  grep -q "^ipset add -exist allowed-domains 203.0.113.7,tcp:443$" "$CMD_LOG"
+  run grep -E '^ipset add -exist allowed-domains 203\.0\.113\.7,' "$CMD_LOG"
+  [ -n "$output" ]
+  run grep -cvE '^ipset add -exist allowed-domains 203\.0\.113\.7,tcp:443$' <<<"$output"
+  [ "$output" -eq 0 ]
+}
+
+@test "a profile entry with a port suffix is admitted on exactly those ports" {
+  # Use a private profile dir so the assertion is about the grammar, not about
+  # what the shipped profiles happen to contain today.
+  local dir="$TEST_TMPDIR/egress"
+  mkdir -p "$dir"
+  printf 'api.anthropic.com\nmodels.example:11434,8080\n' > "$dir/base.txt"
+  CC_EGRESS_DIR="$dir" run bash "$FW"
+  [ "$status" -eq 0 ]
+  grep -q "models.example$" <(grep '^dig ' "$CMD_LOG")   # the port suffix is stripped for dig
+  grep -q "^ipset add -exist allowed-domains 203.0.113.7,tcp:11434$" "$CMD_LOG"
+  grep -q "^ipset add -exist allowed-domains 203.0.113.7,tcp:8080$" "$CMD_LOG"
+  grep -q "^ipset add -exist allowed-domains 203.0.113.7,tcp:443$" "$CMD_LOG"   # api.anthropic.com
+  run grep -c -- "allowed-domains 203.0.113.7,tcp:" "$CMD_LOG"
+  [ "$output" -eq 3 ]
+}
+
+@test "the shipped llm profile scopes host.docker.internal to 11434, and only there" {
+  echo 'llm' > "$CC_EGRESS_PROFILE_FILE"
+  run bash "$FW" --print-entries
+  [ "$status" -eq 0 ]
+  grep -qE $'^host\\.docker\\.internal\t11434$' <<<"$output"
+  grep -qE $'^openrouter\\.ai\t443$' <<<"$output"
+  [ ! -s "$CMD_LOG" ]   # an inspection hook, like the other two
+}
+
+@test "a malformed profile entry is a hard failure before any network read" {
+  local dir="$TEST_TMPDIR/egress"
+  mkdir -p "$dir"
+  for bad in 'models.example:0' 'models.example:65536' 'models.example:abc' \
+             'models.example:443,' 'bad_host:443' 'models.example:443 --extra'; do
+    : > "$CMD_LOG"
+    printf 'api.anthropic.com\n%s\n' "$bad" > "$dir/base.txt"
+    CC_EGRESS_DIR="$dir" run bash "$FW"
+    [ "$status" -ne 0 ]
+    [[ "$output" == *"malformed egress entry"* ]]
+    # Aborted before phase A (no curl/dig) and before the flush; fail-closed trap ran.
+    run grep -cE '^(curl|dig|iptables -F)' "$CMD_LOG"
+    [ "$output" -eq 0 ]
+    grep -q "iptables -P OUTPUT DROP" "$CMD_LOG"
+  done
+}
+
+# --- narrowed host-network accepts ------------------------------------------
+
+@test "the bridge gateway is admitted on udp/tcp 53 only, with no inbound counterpart" {
+  # REGRESSION: `-A INPUT -s <bridge>/24` / `-A OUTPUT -d <bridge>/24` admitted every
+  # port to and from every address on the bridge. The ip stub's gateway is
+  # 192.168.65.1.
+  run bash "$FW"
+  [ "$status" -eq 0 ]
+  grep -q "^iptables -A OUTPUT -p udp -d 192.168.65.1 --dport 53 -j ACCEPT$" "$CMD_LOG"
+  grep -q "^iptables -A OUTPUT -p tcp -d 192.168.65.1 --dport 53 -j ACCEPT$" "$CMD_LOG"
+  run grep -cE -- '-[sd] 192\.168\.65\.0/24' "$CMD_LOG"
+  [ "$output" -eq 0 ]
+  # No other rule names the gateway, and no INPUT accept keys on a source address at all.
+  run grep -cE -- '192\.168\.65\.1( |$)' "$CMD_LOG"
+  [ "$output" -eq 2 ]
+  run grep -cE -- '^iptables -A INPUT -s ' "$CMD_LOG"
+  [ "$output" -eq 0 ]
 }
 
 @test "the flush-to-DROP window contains no network call" {
