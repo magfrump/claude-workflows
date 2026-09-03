@@ -9,7 +9,14 @@
 # DISABLE_ERROR_REPORTING in devcontainer.json instead; the remaining telemetry
 # events ride api.anthropic.com, which is already irreducible.
 #
-# Format: one domain per line. Blank lines and #-comments ignored.
+# Format: one entry per line, `domain[:port[,port...]]`. Blank lines and #-comments
+# ignored. The optional suffix is a comma-separated list of TCP ports; when absent the
+# entry is admitted on tcp 443 only. The firewall matches destination address AND
+# port (a `hash:net,port` ipset), so name every port a host is legitimately used on —
+# e.g. `host.docker.internal:11434`, `some.git.host:22`, `mirror.example:443,8443` —
+# and nothing else on that host is reachable. UDP is not expressible; nothing here
+# needs it. init-firewall.sh rejects a line that does not parse, so a typo fails the
+# rebuild loudly rather than silently changing what is admitted.
 
 # Claude Code itself: API + feature flags + telemetry events (api.anthropic.com),
 # OAuth login (claude.ai, console.anthropic.com), OAuth token exchange/refresh

@@ -11,6 +11,15 @@
 #     CC_EGRESS_PROFILE build arg.
 #   - non-critical resolution failures warn-and-skip instead of hard-failing
 #     (statsig.anthropic.com went NXDOMAIN in 2026-07 and bricked session start).
+#   - the allowlist is PORT-SCOPED (security review 2026-08-29, finding 5). The
+#     ipset is `hash:net,port` and the OUTPUT accept matches `dst,dst`, so a
+#     destination is admitted only on the ports its profile entry names. Profile
+#     entries are `domain[:port[,port...]]` — TCP ports, default 443 when the
+#     suffix is absent — and GitHub's published CIDRs get tcp 443 + tcp 22. This
+#     does not close the IP-vs-SNI overreach itself (a CDN neighbour on the same IP
+#     and port is still reachable) but it removes every OTHER port on every
+#     admitted address: an allowlisted host no longer doubles as a wildcard for
+#     whatever else listens on it.
 #
 # Why the profile is baked at build time rather than read from the environment:
 # `node` has NOPASSWD sudo for exactly this script and nothing else, and sudo's
@@ -23,10 +32,13 @@ IFS=$'\n\t'       # Stricter word splitting
 EGRESS_DIR="${CC_EGRESS_DIR:-/usr/local/share/cc-egress}"
 PROFILE_FILE="${CC_EGRESS_PROFILE_FILE:-/etc/cc-egress-profile}"
 
-# Compose the domain list from `base` plus whatever profiles this image was built
-# with. Emits one domain per line, deduplicated. Unknown profile = hard failure:
-# a typo must not silently degrade to a narrower-than-intended allowlist that
-# then looks like a mysterious network outage.
+# Compose the allowlist from `base` plus whatever profiles this image was built
+# with. Emits one entry per line, deduplicated, exactly as written in the profile
+# files: `domain[:port[,port...]]` (see the header). The port suffix is parsed and
+# validated later by parse_entry, not here — this hook prints the raw composition
+# so a test can see precisely what a profile grants. Unknown profile = hard
+# failure: a typo must not silently degrade to a narrower-than-intended allowlist
+# that then looks like a mysterious network outage.
 compose_domains() {
   local profiles="base" extra p f
   local -a files=()
@@ -90,6 +102,48 @@ if [ "${1:-}" = "--print-resolvers" ]; then
   exit 0
 fi
 
+# Split one allowlist entry into `<domain> <comma-separated tcp ports>`, applying
+# the 443 default, or return 1 on a malformed entry. Validation is strict on
+# purpose: an entry that passes here is later interpolated into `ipset add`
+# arguments, and the domain half into a `dig` argument, so both halves are
+# constrained to their literal grammar (hostname labels; 1-65535 integers) and
+# nothing else. A profile file is root-owned boundary config, but "trusted" is not
+# a reason to hand its bytes to a command line unparsed.
+#
+# Only TCP ports are expressible. Nothing in any profile needs UDP today; when
+# something does, extend the grammar (e.g. `udp/1234`) rather than widening the
+# default. The `--print-entries` hook below exposes this parse for the unit tests.
+parse_entry() {
+  local entry="$1" domain ports port label
+  label='[A-Za-z0-9]([A-Za-z0-9-]*[A-Za-z0-9])?'
+  domain="${entry%%:*}"
+  if [ "$domain" = "$entry" ]; then
+    ports="443"
+  else
+    ports="${entry#*:}"
+  fi
+  [[ "$domain" =~ ^${label}(\.${label})*$ ]] || return 1
+  [[ "$ports" =~ ^[0-9]{1,5}(,[0-9]{1,5})*$ ]] || return 1
+  for port in $(echo "$ports" | tr ',' '\n'); do
+    # 10#: a leading zero would otherwise make bash read the number as octal.
+    [ "$((10#$port))" -ge 1 ] && [ "$((10#$port))" -le 65535 ] || return 1
+  done
+  # Tab-separated, because IFS is \n\t in this script: a space would not split
+  # under `read -r domain ports` at the consumer.
+  printf '%s\t%s\n' "$domain" "$ports"
+}
+
+if [ "${1:-}" = "--print-entries" ]; then
+  # Inspection hook: the composed allowlist after parsing — `domain<TAB>ports` per
+  # line, defaults applied. Exits non-zero on the first malformed entry (and, via
+  # set -e on the assignment, on an unknown profile exactly like --print-domains).
+  entries="$(compose_domains)"
+  while read -r entry; do
+    parse_entry "$entry" || { echo "ERROR: malformed egress entry '$entry'" >&2; exit 1; }
+  done < <(echo "$entries")
+  exit 0
+fi
+
 # FAIL CLOSED ON ANY INCOMPLETE RUN.
 #
 # Installed here — immediately after the --print-domains early exit, and BEFORE
@@ -131,6 +185,18 @@ if [ -z "$ALLOWED_DOMAINS" ]; then
   echo "ERROR: composed egress allowlist is empty" >&2
   exit 1
 fi
+# Parse every entry NOW, before any network read, so a malformed profile line is a
+# hard, immediate error rather than something discovered mid-rebuild. Same stance
+# as the unknown-profile check: boundary config that does not parse must not
+# silently narrow (or widen) the allowlist.
+ALLOWED_ENTRIES=""
+while read -r entry; do
+  parsed="$(parse_entry "$entry")" || {
+    echo "ERROR: malformed egress entry '$entry' (want domain[:port[,port...]])" >&2
+    exit 1
+  }
+  ALLOWED_ENTRIES="${ALLOWED_ENTRIES}${parsed}"$'\n'
+done < <(echo "$ALLOWED_DOMAINS")
 echo "Egress profiles: $(cat "$PROFILE_FILE" 2>/dev/null || echo '(base only)')"
 
 # ===========================================================================
@@ -183,10 +249,13 @@ done < <(echo "$GH_CIDRS")
 
 # Resolve the composed allowlist. Collected into a variable rather than added to
 # the ipset directly, because the ipset does not exist yet — it is created in
-# phase B, after the flush destroys the old one.
-RESOLVED_IPS=""
-for domain in $ALLOWED_DOMAINS; do
-    echo "Resolving $domain..."
+# phase B, after the flush destroys the old one. Each collected line is a
+# ready-made `hash:net,port` member, `<ip>,tcp:<port>` — one per (address, port)
+# pair the entry grants.
+RESOLVED_MEMBERS=""
+while read -r domain ports; do
+    [ -n "$domain" ] || continue
+    echo "Resolving $domain (tcp $ports)..."
     # `|| true` for the same reason as the GitHub fetch: a dig failure (e.g. exit 9,
     # no server reached) would otherwise abort here instead of reaching the
     # warn-and-skip below — the very handling the statsig incident added.
@@ -214,9 +283,11 @@ for domain in $ALLOWED_DOMAINS; do
             exit 1
         fi
         echo "Resolved $ip for $domain"
-        RESOLVED_IPS="${RESOLVED_IPS}${ip}"$'\n'
+        for port in $(echo "$ports" | tr ',' '\n'); do
+            RESOLVED_MEMBERS="${RESOLVED_MEMBERS}${ip},tcp:${port}"$'\n'
+        done
     done < <(echo "$ips")
-done
+done < <(echo "$ALLOWED_ENTRIES")
 
 # ===========================================================================
 # PHASE B — REBUILD. No network reads past this point.
@@ -265,11 +336,13 @@ fi
 # allowlist. Scoping to the real resolvers removes that direct path: the agent
 # must go through the embedded/host resolver, which only does name recursion.
 # PRECISION: the hardening here is the DELETION of the old blanket accept, not the
-# addition of these scoped rules — where the resolver is loopback or inside the host
-# /24, the `-o lo` and HOST_NETWORK accepts below already admit it and these rules
-# are redundant. They are load-bearing only for a resolver outside both. And the
-# effective outbound-53 scope is therefore resolvers ∪ loopback ∪ host /24, not
-# resolvers alone. IPv4 only: this script installs no ip6tables rules, so the whole
+# addition of these scoped rules — where the resolver is loopback or the bridge
+# gateway, the `-o lo` accept and the gateway-DNS accept below already admit it and
+# these rules are redundant. They are load-bearing only for a resolver that is
+# neither. The effective outbound-53 scope is therefore resolvers ∪ loopback ∪
+# gateway, not resolvers alone (it was resolvers ∪ loopback ∪ the whole host /24 on
+# every port until the host-network accept was narrowed; see below). IPv4 only:
+# this script installs no ip6tables rules, so the whole
 # allowlist — not just DNS — is unenforced for IPv6 (a pre-existing gap).
 # (Recursive-forward DNS tunnelling — `<data>.attacker.com` resolved through the
 # legitimate resolver — is NOT closed by this; that needs a filtering resolver,
@@ -315,7 +388,7 @@ else
   #     independent of anything here (and Docker's embedded resolver is DNAT'd off
   #     port 53 in nat OUTPUT before filter OUTPUT sees it, so a --dport 53 filter
   #     rule would not match that traffic regardless).
-  #   - a resolver inside the host /24: admitted by the HOST_NETWORK accept below.
+  #   - the bridge gateway as resolver: admitted by the gateway-DNS accept below.
   # What is left is a malformed resolv.conf naming a non-loopback IPv4 resolver we
   # could not parse — a broken configuration, which should fail loudly and closed
   # rather than be papered over by opening DNS to the world.
@@ -331,17 +404,22 @@ iptables -A INPUT -p udp --sport 53 -j ACCEPT
 # default-deny allowlist. SSH to ALLOWLISTED hosts still works — GitHub's SSH
 # endpoints sit inside the `.web + .api + .git` CIDRs phase A ingests from
 # api.github.com/meta (only those three keys, not every GitHub service), and those
-# destination IPs go into the allowed-domains ipset, which the OUTPUT accept near
-# the end matches on dst regardless of port; the ESTABLISHED,RELATED accept covers
-# the return path. A project that must reach a NON-GitHub SSH host adds that host to its
-# egress profile (a host-side --register + re-bless), exactly like any other
-# destination — SSH is not a silent exception to the boundary.
+# CIDRs go into the allowed-domains ipset on tcp 443 AND tcp 22, which the OUTPUT
+# accept near the end matches on dst address+port; the ESTABLISHED,RELATED accept
+# covers the return path. A project that must reach a NON-GitHub SSH host adds
+# `that.host:22` to its egress profile (a host-side --register + re-bless), exactly
+# like any other destination — SSH is not a silent exception to the boundary.
 # Allow localhost
 iptables -A INPUT -i lo -j ACCEPT
 iptables -A OUTPUT -o lo -j ACCEPT
 
-# Create ipset with CIDR support
-ipset create allowed-domains hash:net
+# Create the ipset. `hash:net,port` (not plain `hash:net`) so every member is an
+# (address-or-CIDR, proto:port) pair and the OUTPUT match below is on `dst,dst` —
+# destination address AND destination port. A plain hash:net admitted any port on
+# a matched address, which turned every allowlisted host into a wildcard for
+# whatever else listens on it (the `llm` profile's host.docker.internal exposed
+# every host port, not just the model server's).
+ipset create allowed-domains hash:net,port
 
 # Populate the ipset from what phase A already fetched and validated. Every value
 # here has passed its regex check, so these loops cannot abort on bad input; and
@@ -349,19 +427,22 @@ ipset create allowed-domains hash:net
 echo "Processing GitHub IPs..."
 while read -r cidr; do
     [ -n "$cidr" ] || continue
-    echo "Adding GitHub range $cidr"
+    echo "Adding GitHub range $cidr (tcp 443, 22)"
     # -exist: tolerate duplicates — under set -e a duplicate add would otherwise
     # kill the script mid-rebuild.
-    ipset add -exist allowed-domains "$cidr"
+    # 443 for HTTPS (api/web/git-over-https), 22 for git-over-SSH. Nothing else:
+    # these are the only ports git and gh use against GitHub.
+    ipset add -exist allowed-domains "$cidr,tcp:443"
+    ipset add -exist allowed-domains "$cidr,tcp:22"
 done < <(echo "$GH_CIDRS")
 
-while read -r ip; do
-    [ -n "$ip" ] || continue
-    echo "Adding $ip"
+while read -r member; do
+    [ -n "$member" ] || continue
+    echo "Adding $member"
     # -exist: domains sharing a CDN can resolve to identical IPs
     # (claude.ai / console.anthropic.com are both on Cloudflare).
-    ipset add -exist allowed-domains "$ip"
-done < <(echo "$RESOLVED_IPS")
+    ipset add -exist allowed-domains "$member"
+done < <(echo "$RESOLVED_MEMBERS")
 
 # Get host IP from default route
 HOST_IP=$(ip route | grep default | cut -d" " -f3)
@@ -369,13 +450,31 @@ if [ -z "$HOST_IP" ]; then
     echo "ERROR: Failed to detect host IP"
     exit 1
 fi
+echo "Bridge gateway detected as: $HOST_IP"
 
-HOST_NETWORK=$(echo "$HOST_IP" | sed "s/\.[0-9]*$/.0\/24/")
-echo "Host network detected as: $HOST_NETWORK"
-
-# Set up remaining iptables rules
-iptables -A INPUT -s "$HOST_NETWORK" -j ACCEPT
-iptables -A OUTPUT -d "$HOST_NETWORK" -j ACCEPT
+# Bridge-gateway DNS only. The upstream script accepted the whole bridge /24 in both
+# directions on every port (`-A INPUT -s <net>/24` / `-A OUTPUT -d <net>/24`), with
+# the stated purpose of keeping Docker-internal DNS and sidecar traffic working.
+# That was far wider than the purpose: any container on the same bridge — another
+# project's sandbox, a sidecar, anything the host happens to attach — was reachable
+# on every port, and could reach this container on every port, bypassing the
+# allowlist entirely. What the purpose actually needs is one thing: name resolution
+# via the gateway when Docker hands the container the gateway as its resolver.
+# Loopback resolvers (Docker's embedded 127.0.0.11) are covered by `-o lo`, and any
+# resolver named in /etc/resolv.conf already has its own scoped accept above, so
+# this rule is usually redundant with those — it is kept as belt-and-braces for the
+# gateway specifically, on udp/tcp 53 and nothing else. There is no inbound
+# counterpart: replies are ESTABLISHED,RELATED, which the INPUT accept below admits,
+# and nothing on the bridge needs to OPEN a connection into the sandbox.
+# Under Docker Desktop the host itself is not in the bridge /24 anyway (it sits at
+# the VM gateway, 192.168.65.x — see egress/llm.txt), so host-side services such as
+# a local model server were never admitted by the old rule and are admitted now
+# only by a port-scoped allowlist entry (`host.docker.internal:11434`). Under
+# Docker Engine on Linux, where the host IS the bridge gateway, that is the
+# behaviour change to be aware of: host ports other than 53 now need an allowlist
+# entry too, which is the point.
+iptables -A OUTPUT -p udp -d "$HOST_IP" --dport 53 -j ACCEPT
+iptables -A OUTPUT -p tcp -d "$HOST_IP" --dport 53 -j ACCEPT
 
 # Idempotent re-assert. The policies were already set immediately after the flush
 # (see there for why); setting a policy twice is a no-op, and keeping this here means
@@ -389,8 +488,10 @@ iptables -P OUTPUT DROP
 iptables -A INPUT -m state --state ESTABLISHED,RELATED -j ACCEPT
 iptables -A OUTPUT -m state --state ESTABLISHED,RELATED -j ACCEPT
 
-# Then allow only specific outbound traffic to allowed domains
-iptables -A OUTPUT -m set --match-set allowed-domains dst -j ACCEPT
+# Then allow only specific outbound traffic to allowed domains — matched on
+# destination address AND destination port (`dst,dst` against the hash:net,port
+# set), so an admitted address is open only on the ports its entry named.
+iptables -A OUTPUT -m set --match-set allowed-domains dst,dst -j ACCEPT
 
 # Explicitly REJECT all other outbound traffic for immediate feedback
 iptables -A OUTPUT -j REJECT --reject-with icmp-admin-prohibited

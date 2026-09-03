@@ -11,12 +11,15 @@
 # happens mid-experiment, restart the container to re-resolve — do not conclude the
 # model is unavailable. (Same failure mode applies to any CDN-fronted domain here.)
 openrouter.ai
-# host.docker.internal — local models served from the host (e.g. Ollama on 11434).
-# Under Docker Desktop the host is NOT inside the 172.17.0.0/24 bridge allowance
-# that init-firewall.sh grants; it lives at Docker Desktop's VM gateway
-# (192.168.65.254 at time of writing), which the REJECT rule otherwise blocks.
-# SCOPE CAVEAT: the allowlist matches destination IP only, so this opens EVERY
-# host port to the container, not just the model server's. Anything listening on
-# the host's Docker-facing interface becomes reachable from a session with this
-# profile. Tighten to a port-scoped iptables rule if that ever matters.
-host.docker.internal
+# host.docker.internal — local models served from the host (Ollama's default port,
+# 11434). Under Docker Desktop the host is NOT the bridge gateway that
+# init-firewall.sh admits for DNS; it lives at Docker Desktop's VM gateway
+# (192.168.65.254 at time of writing), which the REJECT rule otherwise blocks, so it
+# needs this explicit entry.
+# SCOPE: the `:11434` suffix is load-bearing. The allowlist matches destination IP
+# AND port, so this admits exactly the model server and nothing else listening on
+# the host's Docker-facing interface (an earlier, port-less form of this entry
+# opened every host port — see the security review of 2026-08-29, finding 5). A
+# server on a different port needs its own `host.docker.internal:<port>` line; do
+# not drop the suffix, which would silently fall back to 443.
+host.docker.internal:11434
