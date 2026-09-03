@@ -70,6 +70,15 @@
     "GIT_COMMITTER_NAME": "magfrump",
     "GIT_COMMITTER_EMAIL": "magfrump@gmail.com",
 
+    // Crash/error reporting off (security review 2026-08-29, finding 7): it was
+    // the only reason sentry.io sat in egress/base.txt as an always-open writable
+    // ingestion host. This flag disables crash reporting ONLY. Do NOT reach for
+    // DISABLE_TELEMETRY, DO_NOT_TRACK, or CLAUDE_CODE_DISABLE_NONESSENTIAL_TRAFFIC:
+    // each of those also disables feature-flag evaluation, which Remote Control
+    // depends on, and Remote Control is in daily use here. The remaining telemetry
+    // events go to api.anthropic.com, which is irreducible anyway.
+    "DISABLE_ERROR_REPORTING": "1",
+
     // Opt-in, and empty unless the host exports it. Only meaningful in a project
     // registered with the `llm` egress profile — without that, openrouter.ai is
     // firewalled and the key is inert.
@@ -80,7 +89,22 @@
     // Export it only for the session that needs it
     // (`OPENROUTER_API_KEY=... cc-isolated`), prefer a spend-capped key, and
     // revoke after. The long-term fix is a host-side key broker.
-    "OPENROUTER_API_KEY": "${localEnv:OPENROUTER_API_KEY}"
+    "OPENROUTER_API_KEY": "${localEnv:OPENROUTER_API_KEY}",
+
+    // Opt-in, and empty unless the host exports it. GitHub is reachable and
+    // writable from EVERY session (base egress carries GitHub's CIDRs; the VCS
+    // needs them), so this token never opens a channel — it only decides which
+    // repos the agent can push to and read privately. The default (unset) is the
+    // safe model: commit in the container, push from the host.
+    //
+    // Same credential warning as above: a token in the container is a token a
+    // compromised session can exfiltrate through GitHub itself. When you do
+    // export it, use a fine-grained PAT scoped to the named repos it needs,
+    // read-only unless the agent must push, with a short expiry — and keep branch
+    // protection on main so a write token still cannot rewrite history. Export
+    // it only for the session that needs it (`GH_TOKEN=... cc-isolated`). See
+    // guides/cc-isolated-usage.md → "Working with collaborators".
+    "GH_TOKEN": "${localEnv:GH_TOKEN}"
   },
 
   "workspaceMount": "source=${localWorkspaceFolder},target=/workspace,type=bind,consistency=delegated",

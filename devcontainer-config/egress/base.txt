@@ -1,14 +1,24 @@
 # base — always applied, for every project. Keep this list as small as CC can run on.
 # GitHub's IP ranges are added separately from api.github.com/meta, not listed here.
 #
+# Source of truth for the Claude Code hosts: code.claude.com/docs/en/network-config.
+# Re-check it when a host is added or dropped here. sentry.io and statsig.com were
+# removed 2026-09 (security review, finding 7): neither appears in the documented
+# requirements any more (statsig.anthropic.com went NXDOMAIN in 2026-07), and each
+# was an always-open writable ingestion endpoint. Error intake is switched off with
+# DISABLE_ERROR_REPORTING in devcontainer.json instead; the remaining telemetry
+# events ride api.anthropic.com, which is already irreducible.
+#
 # Format: one domain per line. Blank lines and #-comments ignored.
 
-# Claude Code itself: API, OAuth login, telemetry.
+# Claude Code itself: API + feature flags + telemetry events (api.anthropic.com),
+# OAuth login (claude.ai, console.anthropic.com), OAuth token exchange/refresh
+# (platform.claude.com — per the network-config docs; a missing entry surfaces as
+# a mid-session re-login once the access token expires).
 api.anthropic.com
 claude.ai
 console.anthropic.com
-sentry.io
-statsig.com
+platform.claude.com
 
 # Node toolchain — CC is an npm package and self-updates from here.
 registry.npmjs.org
