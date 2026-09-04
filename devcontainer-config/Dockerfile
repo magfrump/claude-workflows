@@ -404,6 +404,11 @@ COPY claude-home/ /opt/claude-workflows/
 
 USER root
 
+# The sudo grant is for a BARE invocation only (the trailing "" in sudoers means "no
+# arguments"), so the --print-* inspection hooks are not root-runnable, and env_reset
+# / !setenv are stated rather than inherited from the base image's defaults — every
+# CC_* test override in init-firewall.sh relies on `node` being unable to pass
+# environment through this grant.
 # /etc/cc-egress-profile is root-owned and world-read-only. `node` has NOPASSWD sudo
 # for init-firewall.sh and nothing else, so it can neither rewrite this file nor pass
 # a wider profile through sudo (env_reset strips the environment). Widening a
@@ -421,7 +426,7 @@ RUN chown root:root /usr/local/bin/init-firewall.sh /usr/local/bin/link-claude-h
   chmod 0444 /usr/local/share/cc-egress/*.txt && \
   printf '%s\n' "${CC_EGRESS_PROFILE}" > /etc/cc-egress-profile && \
   chmod 0444 /etc/cc-egress-profile && \
-  echo "node ALL=(root) NOPASSWD: /usr/local/bin/init-firewall.sh" > /etc/sudoers.d/node-firewall && \
+  printf '%s\n' 'Defaults:node env_reset, !setenv' 'node ALL=(root) NOPASSWD: /usr/local/bin/init-firewall.sh ""' > /etc/sudoers.d/node-firewall && \
   chmod 0440 /etc/sudoers.d/node-firewall
 
 USER node

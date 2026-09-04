@@ -939,16 +939,53 @@ STUB
   [ "$(stat -c '%a' "$CC_FIREWALL_LOCK")" = "600" ]
 }
 
-@test "the lock is taken after phase A: a held lock still lets phase A run" {
+@test "the lock covers both phases: a held lock stops the run before any network read" {
   mkdir -p "$(dirname "$CC_FIREWALL_LOCK")"
   exec 8>"$CC_FIREWALL_LOCK"
   flock -n 8
   CC_FIREWALL_LOCK_WAIT=1 run bash "$FW"
   [ "$status" -ne 0 ]
-  grep -q "^curl .*api.github.com/meta" "$CMD_LOG"     # phase A ran
-  run grep -c -- "^iptables -F" "$CMD_LOG"              # phase B did not
+  [[ "$output" == *"still in progress"* ]]
+  run grep -cE -- "^(curl|dig|iptables -F)" "$CMD_LOG"
   [ "$output" -eq 0 ]
+  grep -q "iptables -w 5 -P OUTPUT DROP" "$CMD_LOG"
   exec 8>&-
+}
+
+@test "a non-numeric lock wait aborts instead of being silently repaired" {
+  CC_FIREWALL_LOCK_WAIT=soon run bash "$FW"
+  [ "$status" -ne 0 ]
+  [[ "$output" == *"CC_FIREWALL_LOCK_WAIT must be"* ]]
+}
+
+@test "the lock is released before the verification probes" {
+  run bash "$FW"
+  [ "$status" -eq 0 ]
+  # No observable command for flock -u, so pin the order in source: `flock -u 9`
+  # precedes the first probe curl.
+  unlock=$(grep -n '^flock -u 9' "$FW" | head -1 | cut -d: -f1)
+  probe=$(grep -n 'https://example.com' "$FW" | grep -v '^.*#' | head -1 | cut -d: -f1)
+  [ -n "$unlock" ] && [ "$unlock" -lt "$probe" ]
+}
+
+@test "every boundary rule is asserted present before completion" {
+  run bash "$FW"
+  [ "$status" -eq 0 ]
+  grep -q "^iptables -t nat -C OUTPUT -p udp --dport 53 -j CC_DNS$" "$CMD_LOG"
+  grep -q "^iptables -t nat -C OUTPUT -p tcp --dport 53 -j CC_DNS$" "$CMD_LOG"
+  grep -q "^iptables -C OUTPUT -d 127.0.0.11 -j CC_DNS_GUARD$" "$CMD_LOG"
+  grep -q "^iptables -C OUTPUT -p tcp --dport 443 -j CC_SNI_GUARD$" "$CMD_LOG"
+}
+
+@test "a node-owned or world-writable profile directory aborts before the flush (R7)" {
+  # CC_EGRESS_OWNER_CHECK forces the invariant check on the relocated test dir,
+  # which is owned by the test user, not root.
+  CC_EGRESS_OWNER_CHECK=1 run bash "$FW"
+  [ "$status" -ne 0 ]
+  [[ "$output" == *"must be root-owned"* ]]
+  run grep -cE -- "^(curl|dig|iptables -F)" "$CMD_LOG"
+  [ "$output" -eq 0 ]
+  grep -q "iptables -w 5 -P OUTPUT DROP" "$CMD_LOG"
 }
 
 @test "a global IPv6 address with no usable v6 filter table aborts before the flush" {
@@ -962,6 +999,6 @@ STUB
 @test "a missing tcp/443 redirect rule fails verification even with a logged refusal" {
   NO_REDIRECT=1 run bash "$FW"
   [ "$status" -ne 0 ]
-  [[ "$output" == *"redirect to the SNI proxy is not installed"* ]]
+  [[ "$output" == *"expected rule missing: iptables -t nat -C OUTPUT -p tcp --dport 443 -j CC_SNI"* ]]
   grep -q "iptables -w 5 -P OUTPUT DROP" "$CMD_LOG"
 }

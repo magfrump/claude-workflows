@@ -45,8 +45,9 @@ manifest_path() {
 # Files whose integrity gates a container (re)build. All of them execute host-side
 # or define the boundary. Keep this list in step with install.sh's PAYLOAD: a file
 # that is installed but not hashed is a boundary artefact nobody blessed (the SNI
-# proxy shipped that way once). claude-home/ (the baked skills/hooks payload) is
-# the one PAYLOAD item still outside this list — see docs/working/questions.md. Paths are relative to config_dir. The per-project .profile
+# proxy shipped that way once; a bats test now pins PAYLOAD ⊆ this list).
+# claude-home/ — the baked skills/hooks payload, executable at 0555 inside the
+# image — is hashed file by file via a sorted walk. Paths are relative to config_dir. The per-project .profile
 # files are included deliberately: a project's egress profile IS boundary config, so
 # registering a new project re-blesses, and a profile file appearing by any other
 # route is caught at the next launch.
@@ -66,11 +67,13 @@ enforcement_files() {
     cd "$cfg" || return 0
     for f in egress/*.txt; do [ -e "$f" ] && echo "$f"; done | sort
     for f in projects/*.profile; do [ -e "$f" ] && echo "$f"; done | sort
+    [ -d claude-home ] && find claude-home -type f | LC_ALL=C sort
   )
 }
 
 compute_manifest() {
   local cfg f
+  local -a files=()
   cfg="$(config_dir)"
   while read -r f; do
     [ -n "$f" ] || continue
@@ -78,8 +81,11 @@ compute_manifest() {
       echo "ERROR: enforcement file missing: $f" >&2
       return 1
     fi
-    (cd "$cfg" && sha256sum "$f")
+    files+=("$f")
   done < <(enforcement_files)
+  # One sha256sum for the whole list (the claude-home walk is ~100 files; a fork
+  # per file made every launch pay for it).
+  (cd "$cfg" && sha256sum "${files[@]}")
 }
 
 bless_manifest() {

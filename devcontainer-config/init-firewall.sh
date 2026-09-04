@@ -299,13 +299,16 @@ fail_closed_on_abort() {
 trap fail_closed_on_abort EXIT
 trap 'exit 143' INT TERM HUP QUIT
 
-# The profile directory must be root-owned all the way up: directory WRITE
-# permission on a parent lets its owner rename or unlink a child regardless of the
-# child's own ownership, so a node-owned parent would let the agent swap the whole
-# profile tree and then run this script (its one sudo grant) to install its own
-# allowlist. Asserted on the image default only; CC_EGRESS_DIR is a test override
-# that `node` cannot pass through sudo env_reset.
-if [ -z "${CC_EGRESS_DIR:-}" ]; then
+# The profile directory AND its parent must be root-owned and not group/world-
+# writable: directory WRITE permission on a parent lets its owner rename or unlink
+# a child regardless of the child's own ownership, so a node-owned parent would let
+# the agent swap the whole profile tree and then run this script (its one sudo
+# grant) to install its own allowlist. (/usr/local and /usr are root by
+# construction of the base image and are not re-checked.) The assertion keys on
+# the INVARIANT — the directory is the image's baked one — not on whether a test
+# override is present; CC_EGRESS_OWNER_CHECK=1 lets the unit tests exercise it
+# against a relocated directory.
+if [ "$EGRESS_DIR" = "/usr/local/share/cc-egress" ] || [ -n "${CC_EGRESS_OWNER_CHECK:-}" ]; then
     for d in "$EGRESS_DIR" "$(dirname "$EGRESS_DIR")"; do
         if [ "$(stat -c '%u' "$d")" != "0" ] || [ -n "$(find "$d" -maxdepth 0 -perm /022)" ]; then
             echo "ERROR: $d must be root-owned and not group/world-writable (the egress profiles live under it)" >&2
@@ -332,6 +335,36 @@ while read -r entry; do
   ALLOWED_ENTRIES="${ALLOWED_ENTRIES}${parsed}"$'\n'
 done < <(echo "$ALLOWED_DOMAINS")
 echo "Egress profiles: $(cat "$PROFILE_FILE" 2>/dev/null || echo '(base only)')"
+
+# ONE RUN AT A TIME. `node` can start this script whenever it likes (NOPASSWD
+# sudo), including twice at once. Two interleaved runs can each pass their own
+# probes while one has flushed the other's half-built guard chains out from under
+# it, and the survivor then completes "successfully" with the DNS guards missing;
+# and a run whose phase-A reads overlap another's rebuild loses them to that
+# rebuild's brief blackout and aborts as if the network were down. So the lock
+# covers BOTH phases: a second invocation waits for the first to finish entirely,
+# then does its own reads against the finished ruleset. The wait is sized to the
+# longest legitimate hold (a 15 s meta fetch, up to 6 s per allowlisted name,
+# ~10 s of daemon starts) with margin; the verification probes at the end run
+# after the lock is released, so they never extend it. The lock lives in a 0700
+# root directory so `node` cannot open the file and hold the lock itself (flock
+# works on a read-only fd; a 0644 file in /run would let the agent veto every
+# re-assert). Taken after the trap, so a lock failure ends at DROP like any other
+# abort. CC_FIREWALL_LOCK / CC_FIREWALL_LOCK_WAIT exist for the unit tests only;
+# under sudo env_reset `node` cannot set them.
+FIREWALL_LOCK="${CC_FIREWALL_LOCK:-/run/cc-firewall/lock}"
+FIREWALL_LOCK_WAIT="${CC_FIREWALL_LOCK_WAIT:-300}"
+if [[ ! "$FIREWALL_LOCK_WAIT" =~ ^[0-9]+$ ]]; then
+    echo "ERROR: CC_FIREWALL_LOCK_WAIT must be a non-negative integer (got '$FIREWALL_LOCK_WAIT')" >&2
+    exit 1
+fi
+mkdir -p "$(dirname "$FIREWALL_LOCK")" && chmod 0700 "$(dirname "$FIREWALL_LOCK")"
+exec 9>"$FIREWALL_LOCK"
+chmod 0600 "$FIREWALL_LOCK"
+if ! flock -w "$FIREWALL_LOCK_WAIT" 9; then
+    echo "ERROR: could not take $FIREWALL_LOCK within ${FIREWALL_LOCK_WAIT}s — another init-firewall.sh run is still in progress" >&2
+    exit 1
+fi
 
 # ===========================================================================
 # PHASE A — RESOLVE EVERYTHING FIRST, WHILE THE OLD FIREWALL IS STILL UP.
@@ -519,30 +552,6 @@ fi
 # ===========================================================================
 # PHASE B — REBUILD. No network reads past this point.
 # ===========================================================================
-
-# ONE REBUILD AT A TIME. `node` can start this script whenever it likes (NOPASSWD
-# sudo), including twice at once. Two interleaved rebuilds can each pass their own
-# probes while one has flushed the other's half-built guard chains out from under
-# it, and the survivor then completes "successfully" with the DNS guards missing.
-# Serialise phase B on a root-owned lock. Phase A (network reads, no rule changes)
-# deliberately runs OUTSIDE the lock: concurrent phase-A runs are harmless, and
-# keeping the critical section to the ~sub-second rebuild means a waiting run is
-# never held for the length of a slow resolution. The lock lives in a 0700 root
-# directory so `node` cannot open the file and hold the lock itself (flock works on
-# a read-only fd, so a 0644 file in /run would let the agent veto every re-assert).
-# Taken after the trap, so a lock failure ends at DROP like any other abort.
-# CC_FIREWALL_LOCK / CC_FIREWALL_LOCK_WAIT exist for the unit tests only; under
-# sudo env_reset `node` cannot set them.
-FIREWALL_LOCK="${CC_FIREWALL_LOCK:-/run/cc-firewall/lock}"
-FIREWALL_LOCK_WAIT="${CC_FIREWALL_LOCK_WAIT:-120}"
-[[ "$FIREWALL_LOCK_WAIT" =~ ^[0-9]+$ ]] || FIREWALL_LOCK_WAIT=120
-mkdir -p "$(dirname "$FIREWALL_LOCK")" && chmod 0700 "$(dirname "$FIREWALL_LOCK")"
-exec 9>"$FIREWALL_LOCK"
-chmod 0600 "$FIREWALL_LOCK"
-if ! flock -w "$FIREWALL_LOCK_WAIT" 9; then
-    echo "ERROR: could not take $FIREWALL_LOCK within ${FIREWALL_LOCK_WAIT}s — another init-firewall.sh rebuild is still running" >&2
-    exit 1
-fi
 
 # 1. Extract Docker DNS info BEFORE any flushing
 DOCKER_DNS_RULES=$(iptables-save -t nat | grep "127\.0\.0\.11" || true)
@@ -781,7 +790,8 @@ chmod 0644 "$DNSMASQ_CONF"
 stop_dnsmasq
 # 9>&-: do NOT hand the firewall lock (fd 9, see the flock block) to the daemon —
 # a long-lived holder would make every later run wait out CC_FIREWALL_LOCK_WAIT and
-# fail closed. The proxy closes inherited fds itself; dnsmasq is not assumed to.
+# fail closed. Both daemon starts close it; the proxy also closes inherited fds
+# itself, dnsmasq is not assumed to.
 dnsmasq --conf-file="$DNSMASQ_CONF" --pid-file="$DNSMASQ_PIDFILE" 9>&-
 for _ in $(seq 1 30); do
     [ -s "$DNSMASQ_PIDFILE" ] && break
@@ -1023,6 +1033,27 @@ iptables -A OUTPUT -m set --match-set allowed-domains dst,dst -j ACCEPT
 # Explicitly REJECT all other outbound traffic for immediate feedback
 iptables -A OUTPUT -j REJECT --reject-with icmp-admin-prohibited
 
+# The ruleset is installed; release the lock so a waiting run proceeds while the
+# probes below (up to four 15 s curls) run against the finished boundary.
+flock -u 9
+
+# Every rule the boundary depends on must actually be present — not just the one
+# the SNI probe needs. `-C` queries what `-A` installed; drift between the two
+# literals is self-detecting (the run aborts into DROP).
+for rule in \
+    "-t nat -C OUTPUT -p tcp --dport 443 -j CC_SNI" \
+    "-t nat -C OUTPUT -p udp --dport 53 -j CC_DNS" \
+    "-t nat -C OUTPUT -p tcp --dport 53 -j CC_DNS" \
+    "-C OUTPUT -d 127.0.0.11 -j CC_DNS_GUARD" \
+    "-C OUTPUT -p tcp --dport 443 -j CC_SNI_GUARD"; do
+    # IFS is \n\t in this script, so split the fixed rule string on spaces explicitly.
+    IFS=' ' read -r -a rule_args <<< "$rule"
+    if ! iptables "${rule_args[@]}"; then
+        echo "ERROR: Firewall verification failed - expected rule missing: iptables $rule"
+        exit 1
+    fi
+done
+
 echo "Firewall configuration complete"
 echo "Verifying firewall rules..."
 # --max-time on both probes for the same reason as the phase-A fetch: a probe that
@@ -1069,12 +1100,8 @@ fi
 # runuser all fail the same way. The proxy must have SEEN and REFUSED the name.
 # ...and it must have seen it THROUGH THE REDIRECT: a direct connection to
 # 127.0.0.1:3443 (which `-o lo` permits) would log orig_dst=127.0.0.1:3443, so the
-# original-destination field is the discriminator, and the nat rule itself is
-# asserted as well — log evidence alone could be forged by anything on loopback.
-if ! iptables -t nat -C OUTPUT -p tcp --dport 443 -j CC_SNI; then
-    echo "ERROR: Firewall verification failed - the tcp/443 redirect to the SNI proxy is not installed"
-    exit 1
-fi
+# original-destination field is the discriminator (the nat rule itself was
+# asserted above) — log evidence alone could be forged by anything on loopback.
 if ! grep -q "REJECT sni=not-allowlisted.invalid orig_dst=$ANTHROPIC_PROBE_IP:443" "$SNI_LOG" 2>/dev/null; then
     echo "ERROR: Firewall verification failed - the SNI proxy did not log a redirected refusal for not-allowlisted.invalid (see $SNI_LOG)"
     exit 1

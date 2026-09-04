@@ -2,7 +2,7 @@
 
 Commit: abbd42d
 
-**Scope:** `bd41aef..abbd42d` on `main`, pass 1 of 2 — `devcontainer-config/` enforcement files (`init-firewall.sh`, `cc-sni-proxy.py`, `Dockerfile`, `devcontainer.json`, `egress/base.txt`, `egress/llm.txt`); tests and docs in the same range are sibling context, pass 2 pending | **Reviewed:** 2026-09-03 | **Status: 🟡 CONDITIONAL PASS** — 0 red open (6 pass-1 reds and 1 pass-2 Critical fixed; a further clean pass is still required under the 2-consecutive-clean rule), 9 amber item(s) awaiting resolution or justification
+**Scope:** `bd41aef..abbd42d` on `main`, pass 1 of 2 — `devcontainer-config/` enforcement files (`init-firewall.sh`, `cc-sni-proxy.py`, `Dockerfile`, `devcontainer.json`, `egress/base.txt`, `egress/llm.txt`); tests and docs in the same range are sibling context, pass 2 pending | **Reviewed:** 2026-09-03 | **Status: 🟡 CONDITIONAL PASS** — 0 red open (pass-1 reds, the pass-2 Critical and the pass-3 Structural all fixed; a further clean pass is still required under the 2-consecutive-clean rule), 8 amber item(s) awaiting resolution or justification
 
 Pipeline: fact-check k=3 (44 clusters, 82% agreement) → 5 critics in parallel (security, performance, api-consistency, architecture-review, tech-debt-triage) → Stage 2.5 submitted-claims fact-check (8 claims, 7 executed-Verified). Delivery mode: self-read. `dependency-upgrade` was not run: it evaluates version transitions and this diff adds a package rather than bumping one; security-reviewer's dependency move covered the addition.
 
@@ -155,6 +155,23 @@ Pipeline: fact-check k=1 loop pass (31 claims, 1 comment-only Incorrect, 0 behav
 | C16 | api r2 N1–N10 minor consistency items: duplicate regex (fixed via `HOST_RE`), lock-override annotation and numeric validation (fixed), lock message naming one cause (fixed), `IPv6:` status-line prefix, `GITHUB_DNS_ZONES` comment lagging its SNI consumer, `--print-dnsmasq-conf` warns where `--print-entries` fails, `9>&-` comment wording (fixed). | API consistency | Minor | various | 🟢 partly fixed; rest open |
 | C17 | Main-path `iptables`/`ipset` still take no `-w` (fail closed on lock contention via set -e). | Security | Low | `init-firewall.sh` | 🟢 Open — accepted |
 | C18 | perf r2: deferred proxy findings 1–4 unchanged by decision; IPv6 probe now in phase A (fixed). | Performance | — | — | 🟢 noted |
+
+---
+
+## Pass 3 (re-review of the second fix round, 2839e59..1434fc9 → fixed in the next commit)
+
+Pipeline: fact-check k=1 loop pass (18 claims, 0 Incorrect, 1 Stale comment fixed) → security, performance, api-consistency, architecture. Reports: `*-review-2026-09-03-egress-hardening-r3.md`. Security: all six r2 findings closed (the `-w` one accepted); five new findings, all Low. Architecture: one Structural still open (`claude-home/` unhashed) — closed below.
+
+| # | Finding | Domain | Severity | Status |
+|---|---|---|---|---|
+| A26 | Phase A ran outside the lock, so a run overlapping another's rebuild lost its network reads inside the winner's blackout and aborted with a misleading DNS error. | Performance (Medium) / Security (Low) / Architecture (Minor) | Medium | ✅ Fixed — lock covers both phases, wait default 300 s (sized to the longest hold), released before the probes; non-numeric wait aborts |
+| A27 | `claude-home/` (104 files, executable hooks at 0555) outside the bless manifest; the registry test excluded it via `-d` on a gitignored, install-generated dir and failed on a clean checkout; Dockerfile COPY ⊆ PAYLOAD direction untested. | Architecture | Structural / Coupling | ✅ Fixed — `enforcement_files()` hashes a sorted file walk of `claude-home/`; `compute_manifest` batches one `sha256sum`; test names its exclusions and checks COPY sources ⊆ PAYLOAD; new test proves a claude-home edit trips the manifest |
+| A28 | `CC_EGRESS_DIR`'s presence switched off the ownership assertion; the pass-2 Critical (R7) had no regression test. | API consistency (Inconsistent) / Architecture (Coupling) / Security (Low) | Inconsistent | ✅ Fixed — assertion keys on the invariant (the baked path) with an explicit `CC_EGRESS_OWNER_CHECK` test opt-in; R7 regression test added |
+| A29 | Completion asserted one of five boundary rules; guards and DNS redirects gated nothing. | Security | Low | ✅ Fixed — five `-C` assertions (array-split; the string form did not split under the script's IFS — caught by the negative test) |
+| A30 | Sudo grant named no arguments (hooks root-runnable, arbitrary-path read) and `env_reset` was inherited, not stated. | Security | Low | ✅ Fixed — sudoers: `Defaults:node env_reset, !setenv` and a bare-invocation-only grant (`""`) |
+| A31 | Proxy `daemonize()` readiness read had no timeout; a hung child parked the lock forever. | Performance | Low | ✅ Fixed — 30 s `select` timeout, child killed |
+| C19 | Minor consistency items (api r3 1–5, 7–11): `HOST_*` naming vs `HOST_IP`, third grammar in the proxy's `normalise_name` (legitimately different), `IP6_FILTER` naming, hook strictness asymmetry, unsuppressed `-C` stderr, log contract placement. Grammar rule now documented in `base.txt`; `9>&-` comment fixed; the rest logged. | API consistency | Minor | 🟢 partly fixed |
+| C20 | IPv6 posture is a point-in-time phase-A decision (an address appearing later is not re-checked); phase-B `ip6tables` calls take no `-w`; phase-A `ip6tables -w 5 -S` waits on the xtables lock outside the flock. | Security / Performance | Low / Info | 🟢 Open — accepted; noted in questions.md |
 
 ---
 

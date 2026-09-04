@@ -33,6 +33,7 @@ import asyncio
 import os
 import pwd
 import re
+import select
 import signal
 import socket
 import struct
@@ -45,6 +46,7 @@ CLIENT_HELLO = 1
 HELLO_MAX = 65536             # a ClientHello larger than this is not a ClientHello
 HELLO_TIMEOUT = 10.0
 CONNECT_TIMEOUT = 10.0
+READY_TIMEOUT = 30.0          # daemonize(): how long the parent waits for the child to bind
 LABEL = re.compile(r"^[a-z0-9]([a-z0-9-]*[a-z0-9])?$")
 
 
@@ -253,6 +255,14 @@ def daemonize(args):
     if pid:
         os.close(w)
         os.close(log_fd)
+        # Bounded wait: the caller holds the firewall lock while we start, so a
+        # child that hangs before signalling must not park it forever.
+        ready, _, _ = select.select([r], [], [], READY_TIMEOUT)
+        if not ready:
+            os.kill(pid, signal.SIGKILL)
+            os.waitpid(pid, 0)
+            sys.stderr.write(f"cc-sni-proxy: failed to start: no readiness signal within {READY_TIMEOUT:.0f}s\n")
+            return 1
         msg = os.read(r, 4096)
         if msg == b"ready":
             with open(args.pidfile, "w") as f:

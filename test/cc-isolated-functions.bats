@@ -498,12 +498,32 @@ firewall() {
   # lists are hand-maintained; this pins them together. Directories (egress,
   # claude-home) are covered by globs or deliberately excluded (see the comment
   # above enforcement_files).
-  local payload_line items item
+  local payload_line items item copied
   payload_line="$(grep -m1 '^PAYLOAD=(' "$CONFIG_SRC/install.sh")"
+  [[ "$payload_line" == *")" ]] || { echo "PAYLOAD spans lines; update this test"; return 1; }
   items="${payload_line#PAYLOAD=(}"; items="${items%)}"
+  run enforcement_files
   for item in $items; do
-    [ -d "$CONFIG_SRC/$item" ] && continue
-    run enforcement_files
+    case "$item" in
+      egress|claude-home) continue ;;   # covered by the glob / sorted walk below
+    esac
     echo "$output" | grep -qx "$item" || { echo "PAYLOAD item not hashed: $item"; return 1; }
   done
+  # The other direction F1 broke on: every Dockerfile COPY source must be in PAYLOAD.
+  while read -r copied; do
+    copied="${copied%/}"
+    case " $items " in *" $copied "*) ;; *) echo "Dockerfile COPYs $copied but PAYLOAD lacks it"; return 1 ;; esac
+  done < <(grep -E '^COPY ' "$CONFIG_SRC/Dockerfile" | awk '{print $2}')
+}
+
+@test "claude-home files are hashed file by file when present" {
+  mkdir -p "$CLAUDE_DEVC_CONFIG_DIR/claude-home/hooks"
+  echo 'echo hi' > "$CLAUDE_DEVC_CONFIG_DIR/claude-home/hooks/h.sh"
+  run compute_manifest
+  [ "$status" -eq 0 ]
+  echo "$output" | grep -q 'claude-home/hooks/h.sh'
+  bless_manifest >/dev/null
+  echo 'echo bye' > "$CLAUDE_DEVC_CONFIG_DIR/claude-home/hooks/h.sh"
+  run check_manifest
+  [ "$status" -ne 0 ]
 }
