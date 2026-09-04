@@ -56,9 +56,14 @@ RUN id -u dnsmasq >/dev/null 2>&1 || \
 RUN id -u ccproxy >/dev/null 2>&1 || \
   useradd --system --no-create-home --home-dir /nonexistent --shell /usr/sbin/nologin ccproxy
 
-# Ensure default node user has access to /usr/local/share
+# node needs a writable npm prefix — and ONLY that. Chowning all of /usr/local/share
+# (as this once did) made node the owner of the parent of /usr/local/share/cc-egress,
+# and directory write permission lets its owner rename or replace a child regardless
+# of the child's own ownership: the agent could have swapped the egress profile tree
+# and re-run the firewall to install its own allowlist (security review 2026-09-03
+# r2, finding 1). init-firewall.sh now asserts the profile tree is root-owned.
 RUN mkdir -p /usr/local/share/npm-global && \
-  chown -R node:node /usr/local/share
+  chown -R node:node /usr/local/share/npm-global
 
 ARG USERNAME=node
 
@@ -411,6 +416,7 @@ RUN chown root:root /usr/local/bin/init-firewall.sh /usr/local/bin/link-claude-h
   find /opt/claude-workflows -type d -exec chmod 0555 {} + && \
   find /opt/claude-workflows -type f -exec chmod 0444 {} + && \
   find /opt/claude-workflows -type f \( -name '*.sh' -o -name '*.py' \) -exec chmod 0555 {} + && \
+  chown -R root:root /usr/local/share/cc-egress && \
   chmod 0555 /usr/local/share/cc-egress && \
   chmod 0444 /usr/local/share/cc-egress/*.txt && \
   printf '%s\n' "${CC_EGRESS_PROFILE}" > /etc/cc-egress-profile && \

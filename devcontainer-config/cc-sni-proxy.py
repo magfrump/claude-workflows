@@ -155,6 +155,9 @@ def original_dst(sock):
 
 
 def log(msg):
+    """One line per decision. CONTRACT: init-firewall.sh's verification probe greps
+    this log for `REJECT sni=<name> orig_dst=<ip>:<port>` — keep that field order and
+    spelling stable, or change the probe in the same commit."""
     print(time.strftime("%Y-%m-%dT%H:%M:%S"), msg, flush=True)
 
 
@@ -189,7 +192,7 @@ async def handle(client_r, client_w, allow, upstream_port):
             up_r, up_w = await asyncio.wait_for(
                 asyncio.open_connection(ip, upstream_port), CONNECT_TIMEOUT)
         except (OSError, asyncio.TimeoutError) as e:
-            log(f"FAIL sni={sni} orig_dst={orig}: {e} (resolved address not in the ipset?)")
+            log(f"FAIL sni={sni} orig_dst={orig}: {e} (name unresolvable, or address not admitted by the ipset)")
             return
         log(f"ALLOW sni={sni} -> {ip}:{upstream_port} orig_dst={orig}")
         up_w.write(raw)

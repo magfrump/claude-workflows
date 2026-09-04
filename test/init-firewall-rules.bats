@@ -87,6 +87,8 @@ STUB
 #!/usr/bin/env bash
 echo "ip $*" >> "$CMD_LOG"
 [ "${1:-}" = "route" ] && echo "default via 192.168.65.1 dev eth0"
+# `ip -6 addr show scope global`: HAS_GLOBAL_V6 models a container with a routable v6 address.
+if [ "${1:-}" = "-6" ] && [ -n "${HAS_GLOBAL_V6:-}" ]; then echo "    inet6 2001:db8::2/64 scope global"; fi
 exit 0
 STUB
 
@@ -125,7 +127,9 @@ case "$url" in
     # SILENT_SNI_NEGATIVE models a curl that failed for some unrelated reason
     # (no redirect, dead proxy) — no log line is written.
     if [ -n "${PASS_SNI_NEGATIVE:-}" ]; then exit 0; fi
-    if [ -z "${SILENT_SNI_NEGATIVE:-}" ]; then
+    if [ -n "${FORGED_SNI_LOG:-}" ]; then
+      echo "2026-09-03T00:00:00 REJECT sni=not-allowlisted.invalid orig_dst=127.0.0.1:3443: not in allowlist" >> "$CC_SNI_RUN_DIR/proxy.log"
+    elif [ -z "${SILENT_SNI_NEGATIVE:-}" ]; then
       echo "2026-09-03T00:00:00 REJECT sni=not-allowlisted.invalid orig_dst=203.0.113.7:443: not in allowlist" >> "$CC_SNI_RUN_DIR/proxy.log"
     fi
     exit 7 ;;
@@ -203,7 +207,7 @@ STUB
   # The script pins its own PATH (root-owned dirs only) and exposes this override
   # so the stubs stay first; it also takes a root-owned lock, relocated here.
   export CC_FIREWALL_PATH="$STUB_DIR:$PATH"
-  export CC_FIREWALL_LOCK="$TEST_TMPDIR/firewall.lock"
+  export CC_FIREWALL_LOCK="$TEST_TMPDIR/cc-firewall/lock"
 }
 
 teardown() {
@@ -844,14 +848,19 @@ STUB
   grep -qx 'padded.example' "$CC_SNI_RUN_DIR/allowlist"
 }
 
-@test "a single-label entry gets a resolver line as well as an ipset member" {
+@test "a single-label entry is rejected by the shared grammar (it would be a TLD zone)" {
+  # REGRESSION: `server=/com/<ns>` would forward every .com name upstream and
+  # re-open recursive-forward tunnelling; parse_entry and compose_dnsmasq_conf
+  # share HOST_RE, which requires two labels.
   local dir="$TEST_TMPDIR/egress"
   mkdir -p "$dir"
-  printf 'api.anthropic.com\nlocalhost:11434\n' > "$dir/base.txt"
+  printf 'api.anthropic.com\ncom:443\n' > "$dir/base.txt"
+  CC_EGRESS_DIR="$dir" run bash "$FW"
+  [ "$status" -ne 0 ]
+  [[ "$output" == *"malformed egress entry"* ]]
   printf 'nameserver 127.0.0.11\n' > "$TEST_TMPDIR/rc"
   CC_EGRESS_DIR="$dir" run bash "$FW" --print-dnsmasq-conf "$TEST_TMPDIR/rc"
-  [ "$status" -eq 0 ]
-  [[ "$output" == *"server=/localhost/127.0.0.11"* ]]
+  [[ "$output" != *"server=/com/"* ]]
 }
 
 @test "IPv6 is default-denied: DROP policies, flush, loopback and established only" {
@@ -870,7 +879,7 @@ STUB
 @test "the negative SNI probe requires a logged refusal, not just a failed curl" {
   SILENT_SNI_NEGATIVE=1 run bash "$FW"
   [ "$status" -ne 0 ]
-  [[ "$output" == *"did not log a refusal"* ]]
+  [[ "$output" == *"did not log a redirected refusal"* ]]
   grep -q "iptables -w 5 -P OUTPUT DROP" "$CMD_LOG"
 }
 
@@ -879,6 +888,7 @@ STUB
   [ "$status" -eq 0 ]
   [ -e "$CC_FIREWALL_LOCK" ]
   # Hold the lock from outside; the script must not proceed past it.
+  mkdir -p "$(dirname "$CC_FIREWALL_LOCK")"
   exec 8>"$CC_FIREWALL_LOCK"
   flock -n 8
   : > "$CMD_LOG"
@@ -903,5 +913,46 @@ STUB
   [ "$status" -eq 0 ]
   [[ "$output" == *"no usable ip6tables filter table"* ]]
   run grep -c -- "^ip6tables -P" "$CMD_LOG"
+  [ "$output" -eq 0 ]
+}
+
+@test "the negative probe asserts the nat redirect rule, not just log evidence" {
+  run bash "$FW"
+  [ "$status" -eq 0 ]
+  grep -q "^iptables -t nat -C OUTPUT -p tcp --dport 443 -j CC_SNI$" "$CMD_LOG"
+}
+
+@test "a refusal logged from a direct loopback connection does not satisfy the probe" {
+  # FORGED_SNI_LOG makes the curl stub log the refusal with orig_dst=127.0.0.1:3443,
+  # which is what a connection that bypassed the redirect would produce.
+  FORGED_SNI_LOG=1 run bash "$FW"
+  [ "$status" -ne 0 ]
+  [[ "$output" == *"did not log a redirected refusal"* ]]
+}
+
+@test "the lock lives in a 0700 directory and is 0600" {
+  run bash "$FW"
+  [ "$status" -eq 0 ]
+  [ "$(stat -c '%a' "$(dirname "$CC_FIREWALL_LOCK")")" = "700" ]
+  [ "$(stat -c '%a' "$CC_FIREWALL_LOCK")" = "600" ]
+}
+
+@test "the lock is taken after phase A: a held lock still lets phase A run" {
+  mkdir -p "$(dirname "$CC_FIREWALL_LOCK")"
+  exec 8>"$CC_FIREWALL_LOCK"
+  flock -n 8
+  CC_FIREWALL_LOCK_WAIT=1 run bash "$FW"
+  [ "$status" -ne 0 ]
+  grep -q "^curl .*api.github.com/meta" "$CMD_LOG"     # phase A ran
+  run grep -c -- "^iptables -F" "$CMD_LOG"              # phase B did not
+  [ "$output" -eq 0 ]
+  exec 8>&-
+}
+
+@test "a global IPv6 address with no usable v6 filter table aborts before the flush" {
+  NO_IP6_TABLE=1 HAS_GLOBAL_V6=1 run bash "$FW"
+  [ "$status" -ne 0 ]
+  [[ "$output" == *"global IPv6 address but no usable ip6tables"* ]]
+  run grep -c -- "^iptables -F" "$CMD_LOG"
   [ "$output" -eq 0 ]
 }

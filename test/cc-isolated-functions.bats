@@ -492,3 +492,18 @@ firewall() {
   run grep -E 'parse_code_review_red "\$CR_NONCE"' scripts/self-improvement.sh
   [ "$status" -eq 0 ]
 }
+
+@test "every regular file in install.sh's PAYLOAD is hashed by enforcement_files" {
+  # REGRESSION: cc-sni-proxy.py shipped in neither list, then in only one. The two
+  # lists are hand-maintained; this pins them together. Directories (egress,
+  # claude-home) are covered by globs or deliberately excluded (see the comment
+  # above enforcement_files).
+  local payload_line items item
+  payload_line="$(grep -m1 '^PAYLOAD=(' "$CONFIG_SRC/install.sh")"
+  items="${payload_line#PAYLOAD=(}"; items="${items%)}"
+  for item in $items; do
+    [ -d "$CONFIG_SRC/$item" ] && continue
+    run enforcement_files
+    echo "$output" | grep -qx "$item" || { echo "PAYLOAD item not hashed: $item"; return 1; }
+  done
+}

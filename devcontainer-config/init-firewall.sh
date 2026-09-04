@@ -121,16 +121,23 @@ fi
 # Only TCP ports are expressible. Nothing in any profile needs UDP today; when
 # something does, extend the grammar (e.g. `udp/1234`) rather than widening the
 # default. The `--print-entries` hook below exposes this parse for the unit tests.
+# One hostname grammar, shared by parse_entry (ipset/SNI side) and
+# compose_dnsmasq_conf (resolver side) so the two consumers cannot disagree. Two
+# or more labels are REQUIRED: a single label is either a TLD — which as a dnsmasq
+# `server=/com/` line would forward every .com name upstream and re-open the
+# tunnel the resolver exists to close — or a bare host that no profile needs.
+HOST_LABEL='[A-Za-z0-9]([A-Za-z0-9-]*[A-Za-z0-9])?'
+HOST_RE="^${HOST_LABEL}(\.${HOST_LABEL})+\$"
+
 parse_entry() {
-  local entry="$1" domain ports port label
-  label='[A-Za-z0-9]([A-Za-z0-9-]*[A-Za-z0-9])?'
+  local entry="$1" domain ports port
   domain="${entry%%:*}"
   if [ "$domain" = "$entry" ]; then
     ports="443"
   else
     ports="${entry#*:}"
   fi
-  [[ "$domain" =~ ^${label}(\.${label})*$ ]] || return 1
+  [[ "$domain" =~ $HOST_RE ]] || return 1
   [[ "$ports" =~ ^[0-9]{1,5}(,[0-9]{1,5})*$ ]] || return 1
   local canon=""
   for port in $(echo "$ports" | tr ',' '\n'); do
@@ -209,9 +216,9 @@ compose_dnsmasq_conf() {
     # directive rather than a blocked destination.
     d="${d%%:*}"
     [ -n "$d" ] || continue
-    # Same label grammar as parse_entry (a single label is allowed there, so it must
-    # be allowed here too — otherwise an entry can be ipset-admitted yet unresolvable).
-    if [[ ! "$d" =~ ^[A-Za-z0-9]([A-Za-z0-9-]*[A-Za-z0-9])?(\.[A-Za-z0-9]([A-Za-z0-9-]*[A-Za-z0-9])?)*$ ]]; then
+    # HOST_RE is the same grammar parse_entry enforces, so anything that reached the
+    # ipset also gets a resolver line, and nothing single-label can become a zone.
+    if [[ ! "$d" =~ $HOST_RE ]]; then
       echo "WARNING: not a hostname, omitting from resolver allowlist (stays unresolvable): $d" >&2
       continue
     fi
@@ -292,19 +299,19 @@ fail_closed_on_abort() {
 trap fail_closed_on_abort EXIT
 trap 'exit 143' INT TERM HUP QUIT
 
-# ONE RUN AT A TIME. `node` can start this script whenever it likes (NOPASSWD sudo),
-# including twice at once. Two interleaved runs can each pass their own probes while
-# one of them has flushed the other's half-built guard chains out from under it —
-# the second run's `iptables -F` lands between the first run's guard-jump appends
-# and its `-o lo` accept, and the first run then completes "successfully" with the
-# DNS guards missing. Serialise on a root-owned lock so a second invocation waits
-# for the first to finish (or fails closed via the trap if it cannot get the lock).
-# The lock is taken AFTER the trap is installed so a lock failure also ends at DROP.
-FIREWALL_LOCK="${CC_FIREWALL_LOCK:-/run/cc-firewall.lock}"
-exec 9>"$FIREWALL_LOCK"
-if ! flock -w "${CC_FIREWALL_LOCK_WAIT:-120}" 9; then
-    echo "ERROR: another init-firewall.sh run is still holding $FIREWALL_LOCK" >&2
-    exit 1
+# The profile directory must be root-owned all the way up: directory WRITE
+# permission on a parent lets its owner rename or unlink a child regardless of the
+# child's own ownership, so a node-owned parent would let the agent swap the whole
+# profile tree and then run this script (its one sudo grant) to install its own
+# allowlist. Asserted on the image default only; CC_EGRESS_DIR is a test override
+# that `node` cannot pass through sudo env_reset.
+if [ -z "${CC_EGRESS_DIR:-}" ]; then
+    for d in "$EGRESS_DIR" "$(dirname "$EGRESS_DIR")"; do
+        if [ "$(stat -c '%u' "$d")" != "0" ] || [ -n "$(find "$d" -maxdepth 0 -perm /022)" ]; then
+            echo "ERROR: $d must be root-owned and not group/world-writable (the egress profiles live under it)" >&2
+            exit 1
+        fi
+    done
 fi
 
 ALLOWED_DOMAINS="$(compose_domains)"
@@ -490,9 +497,52 @@ if [[ ! "$CCPROXY_UID" =~ ^[0-9]+$ ]] || [ "$CCPROXY_UID" -eq 0 ] || [ "$CCPROXY
     exit 1
 fi
 
+# --- IPv6 preconditions (see the IPv6 block in phase B) -------------------------
+# Decide the IPv6 posture here, in phase A, like every other precondition. A usable
+# ip6tables filter table means phase B can default-deny IPv6. Debian ships ip6tables
+# with iptables, so the binary is always present, but some kernels (Docker
+# Desktop's, notably) have no IPv6 filter table; on those, a bare `ip6tables -P` in
+# phase B would abort into the fail-closed trap and leave the container with no
+# egress. Without a usable table nothing IPv6 can be filtered — which is only safe
+# if the container also has no global IPv6 address to use. With an address and no
+# filter, the whole allowlist has a bypass, so that combination is fatal.
+IP6_FILTER=0
+if command -v ip6tables >/dev/null 2>&1 && ip6tables -w 5 -S OUTPUT >/dev/null 2>&1; then
+    IP6_FILTER=1
+elif [ -n "$(ip -6 addr show scope global 2>/dev/null || true)" ]; then
+    echo "ERROR: this container has a global IPv6 address but no usable ip6tables filter" >&2
+    echo "       table — IPv6 egress could not be closed, so the allowlist would have a" >&2
+    echo "       bypass. Disable IPv6 for the container or enable the ip6_tables module." >&2
+    exit 1
+fi
+
 # ===========================================================================
 # PHASE B — REBUILD. No network reads past this point.
 # ===========================================================================
+
+# ONE REBUILD AT A TIME. `node` can start this script whenever it likes (NOPASSWD
+# sudo), including twice at once. Two interleaved rebuilds can each pass their own
+# probes while one has flushed the other's half-built guard chains out from under
+# it, and the survivor then completes "successfully" with the DNS guards missing.
+# Serialise phase B on a root-owned lock. Phase A (network reads, no rule changes)
+# deliberately runs OUTSIDE the lock: concurrent phase-A runs are harmless, and
+# keeping the critical section to the ~sub-second rebuild means a waiting run is
+# never held for the length of a slow resolution. The lock lives in a 0700 root
+# directory so `node` cannot open the file and hold the lock itself (flock works on
+# a read-only fd, so a 0644 file in /run would let the agent veto every re-assert).
+# Taken after the trap, so a lock failure ends at DROP like any other abort.
+# CC_FIREWALL_LOCK / CC_FIREWALL_LOCK_WAIT exist for the unit tests only; under
+# sudo env_reset `node` cannot set them.
+FIREWALL_LOCK="${CC_FIREWALL_LOCK:-/run/cc-firewall/lock}"
+FIREWALL_LOCK_WAIT="${CC_FIREWALL_LOCK_WAIT:-120}"
+[[ "$FIREWALL_LOCK_WAIT" =~ ^[0-9]+$ ]] || FIREWALL_LOCK_WAIT=120
+mkdir -p "$(dirname "$FIREWALL_LOCK")" && chmod 0700 "$(dirname "$FIREWALL_LOCK")"
+exec 9>"$FIREWALL_LOCK"
+chmod 0600 "$FIREWALL_LOCK"
+if ! flock -w "$FIREWALL_LOCK_WAIT" 9; then
+    echo "ERROR: could not take $FIREWALL_LOCK within ${FIREWALL_LOCK_WAIT}s — another init-firewall.sh rebuild is still running" >&2
+    exit 1
+fi
 
 # 1. Extract Docker DNS info BEFORE any flushing
 DOCKER_DNS_RULES=$(iptables-save -t nat | grep "127\.0\.0\.11" || true)
@@ -526,15 +576,10 @@ ipset destroy allowed-domains 2>/dev/null || true
 # of them (security review 2026-09-03, finding 1). Rather than duplicate the whole
 # allowlist for a family nothing here needs, IPv6 is closed outright: loopback and
 # already-established flows only. A container that genuinely needs IPv6 egress needs
-# an IPv6 allowlist designed for it, not this rule set relaxed.
-#
-# Guarded on a USABLE filter table, not on the binary: Debian ships ip6tables in
-# the same package as iptables, so the binary is always present, but some kernels
-# (Docker Desktop's, notably) have no IPv6 filter table at all, and there a bare
-# `ip6tables -P` would abort the run into the fail-closed trap and leave the
-# container with no egress. If the table is unusable there is nothing IPv6 to
-# filter on that kernel; this is reported loudly rather than treated as fatal.
-if command -v ip6tables >/dev/null 2>&1 && ip6tables -w 5 -S OUTPUT >/dev/null 2>&1; then
+# an IPv6 allowlist designed for it, not this rule set relaxed. IP6_FILTER was
+# decided in phase A: 1 = usable filter table; 0 = no table AND no global IPv6
+# address (the no-table-but-addressed case aborted before the flush).
+if [ "$IP6_FILTER" = "1" ]; then
     ip6tables -P INPUT DROP
     ip6tables -P FORWARD DROP
     ip6tables -P OUTPUT DROP
@@ -546,7 +591,7 @@ if command -v ip6tables >/dev/null 2>&1 && ip6tables -w 5 -S OUTPUT >/dev/null 2
     ip6tables -A OUTPUT -m state --state ESTABLISHED,RELATED -j ACCEPT
     echo "IPv6: default-deny installed (loopback and established flows only)"
 else
-    echo "WARNING: no usable ip6tables filter table — IPv6 egress is NOT filtered in this container" >&2
+    echo "WARNING: no usable ip6tables filter table and no global IPv6 address — IPv6 left unconfigured" >&2
 fi
 
 # 2. Selectively restore ONLY internal Docker DNS resolution
@@ -1015,8 +1060,16 @@ if runuser -u node -- curl --connect-timeout 5 --max-time 15 \
 fi
 # A failed curl alone is not proof: a missing redirect, a dead proxy, or a broken
 # runuser all fail the same way. The proxy must have SEEN and REFUSED the name.
-if ! grep -q "REJECT sni=not-allowlisted.invalid " "$SNI_LOG" 2>/dev/null; then
-    echo "ERROR: Firewall verification failed - the SNI proxy did not log a refusal for not-allowlisted.invalid (is the 443 redirect in place? see $SNI_LOG)"
+# ...and it must have seen it THROUGH THE REDIRECT: a direct connection to
+# 127.0.0.1:3443 (which `-o lo` permits) would log orig_dst=127.0.0.1:3443, so the
+# original-destination field is the discriminator, and the nat rule itself is
+# asserted as well — log evidence alone could be forged by anything on loopback.
+if ! iptables -t nat -C OUTPUT -p tcp --dport 443 -j CC_SNI; then
+    echo "ERROR: Firewall verification failed - the tcp/443 redirect to the SNI proxy is not installed"
+    exit 1
+fi
+if ! grep -q "REJECT sni=not-allowlisted.invalid orig_dst=$ANTHROPIC_PROBE_IP:443" "$SNI_LOG" 2>/dev/null; then
+    echo "ERROR: Firewall verification failed - the SNI proxy did not log a redirected refusal for not-allowlisted.invalid (see $SNI_LOG)"
     exit 1
 fi
 echo "Firewall verification passed - non-allowlisted SNI refused by the proxy (logged)"

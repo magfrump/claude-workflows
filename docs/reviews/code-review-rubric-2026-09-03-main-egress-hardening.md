@@ -2,7 +2,7 @@
 
 Commit: abbd42d
 
-**Scope:** `bd41aef..abbd42d` on `main`, pass 1 of 2 — `devcontainer-config/` enforcement files (`init-firewall.sh`, `cc-sni-proxy.py`, `Dockerfile`, `devcontainer.json`, `egress/base.txt`, `egress/llm.txt`); tests and docs in the same range are sibling context, pass 2 pending | **Reviewed:** 2026-09-03 | **Status: 🟡 CONDITIONAL PASS** — 0 red (6 fixed in the review-fix wave, re-review pending), 8 amber item(s) awaiting resolution or justification
+**Scope:** `bd41aef..abbd42d` on `main`, pass 1 of 2 — `devcontainer-config/` enforcement files (`init-firewall.sh`, `cc-sni-proxy.py`, `Dockerfile`, `devcontainer.json`, `egress/base.txt`, `egress/llm.txt`); tests and docs in the same range are sibling context, pass 2 pending | **Reviewed:** 2026-09-03 | **Status: 🟡 CONDITIONAL PASS** — 0 red open (6 pass-1 reds and 1 pass-2 Critical fixed; a further clean pass is still required under the 2-consecutive-clean rule), 9 amber item(s) awaiting resolution or justification
 
 Pipeline: fact-check k=3 (44 clusters, 82% agreement) → 5 critics in parallel (security, performance, api-consistency, architecture-review, tech-debt-triage) → Stage 2.5 submitted-claims fact-check (8 claims, 7 executed-Verified). Delivery mode: self-read. `dependency-upgrade` was not run: it evaluates version transitions and this diff adds a package rather than bumping one; security-reviewer's dependency move covered the addition.
 
@@ -133,6 +133,28 @@ the forced question's disposition for each.
 | 8 | `devcontainer.json:73-80` | FC-15, FC-16, A15 (GROWTHBOOK) | distinct defects |
 
 No cluster composed a root that no fragment stated.
+
+---
+
+## Pass 2 (re-review of the fix wave, commits b708266 + 2839e59 → fixed in the next commit)
+
+Pipeline: fact-check k=1 loop pass (31 claims, 1 comment-only Incorrect, 0 behavioral) → 4 critics in parallel (security, performance, api-consistency, architecture). Reports: `*-review-2026-09-03-egress-hardening-r2.md`. Prior-finding status tables in each report; all pass-1 reds verified closed by the critics.
+
+| # | Finding | Domain | Severity | Location | Status |
+|---|---|---|---|---|---|
+| R7 | `/usr/local/share` was `chown -R node:node` in the Dockerfile (pre-existing); directory write permission on the parent lets the agent rename/replace `cc-egress/` and re-run the firewall to install its own allowlist. Pass-1 security's "agent cannot rewrite" classification was wrong. | Security | Critical | `Dockerfile:59-61`, `:405-419`; `init-firewall.sh:40` | ✅ Fixed — only `npm-global` is node-owned now; `cc-egress` chowned root; the script asserts the profile dir and its parent are root-owned and not group/world-writable |
+| A17 | The R6 grammar change let a single-label entry (`com`) become a dnsmasq `server=/com/` zone, forwarding an entire TLD — re-opening the tunnel the resolver closes. | Security | Medium | `init-firewall.sh:209-217`, `:127-146` | ✅ Fixed — one shared `HOST_RE` (≥2 labels) for both grammars |
+| A18 | Negative-probe log evidence is forgeable over loopback (`-o lo` admits `node` to 127.0.0.1:3443 directly); the redirect rule itself was not asserted. | Security | Medium | `init-firewall.sh:1010-1022` | ✅ Fixed — grep is scoped to `orig_dst=<probe ip>:443` and `iptables -t nat -C … -j CC_SNI` is asserted |
+| A19 | `node` can hold the 0644 lock file (flock works on a read-only fd) and veto every re-assert. | Security | Medium | `init-firewall.sh:295-308` | ✅ Fixed — lock in a 0700 root dir, file 0600 |
+| A20 | IPv6 default-deny was best-effort: no usable filter table → warn and still complete, leaving a bypass on hosts with a global v6 address. | Security | Medium | `init-firewall.sh:523-550` | ✅ Fixed — posture decided in phase A; global v6 address + no filter table aborts before the flush; no address → warn |
+| A21 | Lock spanned phase A, so the critical section included every network read (≈111–207 s) against a 120 s wait; a healthy contended run would fail closed with a brick diagnosis. | Performance | Medium | `init-firewall.sh:295-308` | ✅ Fixed — lock taken at the start of phase B; wait validated numeric |
+| A22 | Registry mechanism unchanged: four hand-maintained copies of the enforcement-file list with no cross-check. | Architecture | Structural | `install.sh:25`, `cc-isolated.sh:45-70` | ✅ Fixed — bats test asserts every regular file in `PAYLOAD` is in `enforcement_files()` |
+| A23 | `claude-home/` (`/opt/claude-workflows`, executable hooks) remains outside the bless manifest while the comment implies coverage. | Architecture | Structural | `cc-isolated.sh:45-70` | 🟡 Open — decision needed (directory hashing); logged in questions.md; comment names the exclusion |
+| A24 | The negative probe made the firewall a parser of the proxy's log grammar and truncate-on-start semantics — undeclared contract. | Architecture | Coupling | `init-firewall.sh:1016-1022`, `cc-sni-proxy.py:183` | ✅ Addressed — contract declared in the proxy's `log()` docstring; accepted coupling |
+| A25 | `CC_FIREWALL_PATH` shares the "tests only" override convention but selects every root-executed binary. | Architecture / API | Coupling / Minor | `init-firewall.sh:31-38` | 🟡 Open (accepted) — unreachable via sudo env_reset (security r2 verified no SETENV); annotated |
+| C16 | api r2 N1–N10 minor consistency items: duplicate regex (fixed via `HOST_RE`), lock-override annotation and numeric validation (fixed), lock message naming one cause (fixed), `IPv6:` status-line prefix, `GITHUB_DNS_ZONES` comment lagging its SNI consumer, `--print-dnsmasq-conf` warns where `--print-entries` fails, `9>&-` comment wording (fixed). | API consistency | Minor | various | 🟢 partly fixed; rest open |
+| C17 | Main-path `iptables`/`ipset` still take no `-w` (fail closed on lock contention via set -e). | Security | Low | `init-firewall.sh` | 🟢 Open — accepted |
+| C18 | perf r2: deferred proxy findings 1–4 unchanged by decision; IPv6 probe now in phase A (fixed). | Performance | — | — | 🟢 noted |
 
 ---
 
