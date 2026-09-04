@@ -293,12 +293,17 @@ writable `storage.googleapis.com` behind the same Google front as `dl.google.com
   address+port matched only.
 - A name under an allowlisted *zone* that an attacker can obtain. GitHub zones
   don't hand those out; exact-name entries have no such residual.
-- Root inside the container. The firewall script's own fetch and probes run as
-  root and bypass the redirect; the agent runs as `node` and does not.
+- Root inside the container. The firewall script's own fetch and its two general
+  reachability probes run as root and bypass the redirect; its two SNI probes are
+  run as `node` on purpose so they do not. The agent runs as `node` and is always
+  subject to the redirect.
 
 **Debugging a blocked connection:** the proxy logs every decision to
-`/run/cc-sni-proxy/proxy.log` as `ALLOW`, `REJECT sni=... not in allowlist`, or
-`FAIL` (the name resolved to an address the ipset does not admit). A `curl` that
+`/run/cc-sni-proxy/proxy.log` as `ALLOW`, `REJECT` (either `sni=<name> … not in
+allowlist`, or without an `sni=` field when the bytes were not a parseable TLS
+ClientHello), or `FAIL` (the name could not be resolved — the filtering resolver
+refused it — or the address it resolved to could not be connected to, typically
+because the ipset does not admit it). A `curl` that
 fails instantly with an empty reply, while the same host is in your profile,
 usually means the name in the URL differs from the name in the profile (a CDN
 alias, an `--resolve` override, or an HTTP/2 connection being coalesced onto a

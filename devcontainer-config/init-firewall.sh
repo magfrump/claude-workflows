@@ -29,6 +29,14 @@
 set -euo pipefail  # Exit on error, undefined vars, and pipeline failures
 IFS=$'\n\t'       # Stricter word splitting
 
+# Root-owned helper resolution only. Everything this script runs as root — iptables,
+# ipset, dig, curl, runuser, dnsmasq, the proxy — is found via PATH, and `node`'s own
+# PATH includes the node-writable /usr/local/share/npm-global/bin. sudo's env_reset
+# and secure_path normally protect this, but nothing in the repo asserts that, so
+# the script pins PATH itself. CC_FIREWALL_PATH exists only so the unit tests can
+# put their stubs first; under sudo env_reset `node` cannot set it.
+export PATH="${CC_FIREWALL_PATH:-/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin}"
+
 EGRESS_DIR="${CC_EGRESS_DIR:-/usr/local/share/cc-egress}"
 PROFILE_FILE="${CC_EGRESS_PROFILE_FILE:-/etc/cc-egress-profile}"
 
@@ -124,13 +132,18 @@ parse_entry() {
   fi
   [[ "$domain" =~ ^${label}(\.${label})*$ ]] || return 1
   [[ "$ports" =~ ^[0-9]{1,5}(,[0-9]{1,5})*$ ]] || return 1
+  local canon=""
   for port in $(echo "$ports" | tr ',' '\n'); do
     # 10#: a leading zero would otherwise make bash read the number as octal.
     [ "$((10#$port))" -ge 1 ] && [ "$((10#$port))" -le 65535 ] || return 1
+    # Emit the CANONICAL number, not the raw string: every downstream consumer
+    # (ipset members, the SNI allowlist's `,443,` filter) compares ports textually,
+    # so `0443` must become `443` here or it silently matches nothing.
+    canon="${canon:+$canon,}$((10#$port))"
   done
   # Tab-separated, because IFS is \n\t in this script: a space would not split
   # under `read -r domain ports` at the consumer.
-  printf '%s\t%s\n' "$domain" "$ports"
+  printf '%s\t%s\n' "$domain" "$canon"
 }
 
 if [ "${1:-}" = "--print-entries" ]; then
@@ -196,7 +209,9 @@ compose_dnsmasq_conf() {
     # directive rather than a blocked destination.
     d="${d%%:*}"
     [ -n "$d" ] || continue
-    if [[ ! "$d" =~ ^[A-Za-z0-9]([A-Za-z0-9-]*[A-Za-z0-9])?(\.[A-Za-z0-9]([A-Za-z0-9-]*[A-Za-z0-9])?)+$ ]]; then
+    # Same label grammar as parse_entry (a single label is allowed there, so it must
+    # be allowed here too — otherwise an entry can be ipset-admitted yet unresolvable).
+    if [[ ! "$d" =~ ^[A-Za-z0-9]([A-Za-z0-9-]*[A-Za-z0-9])?(\.[A-Za-z0-9]([A-Za-z0-9-]*[A-Za-z0-9])?)*$ ]]; then
       echo "WARNING: not a hostname, omitting from resolver allowlist (stays unresolvable): $d" >&2
       continue
     fi
@@ -250,6 +265,12 @@ fail_closed_on_abort() {
     iptables -w 5 -P OUTPUT DROP || true
     iptables -w 5 -P INPUT DROP || true
     iptables -w 5 -P FORWARD DROP || true
+    # IPv6 too (best effort — see the IPv6 block in phase B for why it is enforced).
+    if command -v ip6tables >/dev/null 2>&1; then
+        ip6tables -w 5 -P OUTPUT DROP || true
+        ip6tables -w 5 -P INPUT DROP || true
+        ip6tables -w 5 -P FORWARD DROP || true
+    fi
     policies="$(iptables -w 5 -S 2>/dev/null || true)"
     for chain in OUTPUT INPUT FORWARD; do
       if ! grep -q "^-P $chain DROP" <<< "$policies"; then
@@ -270,6 +291,21 @@ fail_closed_on_abort() {
 }
 trap fail_closed_on_abort EXIT
 trap 'exit 143' INT TERM HUP QUIT
+
+# ONE RUN AT A TIME. `node` can start this script whenever it likes (NOPASSWD sudo),
+# including twice at once. Two interleaved runs can each pass their own probes while
+# one of them has flushed the other's half-built guard chains out from under it —
+# the second run's `iptables -F` lands between the first run's guard-jump appends
+# and its `-o lo` accept, and the first run then completes "successfully" with the
+# DNS guards missing. Serialise on a root-owned lock so a second invocation waits
+# for the first to finish (or fails closed via the trap if it cannot get the lock).
+# The lock is taken AFTER the trap is installed so a lock failure also ends at DROP.
+FIREWALL_LOCK="${CC_FIREWALL_LOCK:-/run/cc-firewall.lock}"
+exec 9>"$FIREWALL_LOCK"
+if ! flock -w "${CC_FIREWALL_LOCK_WAIT:-120}" 9; then
+    echo "ERROR: another init-firewall.sh run is still holding $FIREWALL_LOCK" >&2
+    exit 1
+fi
 
 ALLOWED_DOMAINS="$(compose_domains)"
 if [ -z "$ALLOWED_DOMAINS" ]; then
@@ -432,8 +468,10 @@ stop_dnsmasq() {
 # missing piece aborts before the flush, leaving the live ruleset intact. Paths are
 # overridable for the unit tests only; in the image they are the root-owned
 # defaults. The proxy binary is executed directly (root-owned, 0555, hashed by the
-# launcher's manifest) rather than via a `python3` on PATH, so a PATH hijack by
-# `node` cannot substitute the interpreter.
+# launcher's manifest) with a shebang pinned to /usr/bin/python3 — NOT `env python3`,
+# which would be a PATH lookup — and this script fixes its own PATH to root-owned
+# directories at the top (see CC_FIREWALL_PATH), so neither the interpreter nor any
+# helper this script runs as root can be substituted from a node-writable directory.
 SNI_PROXY_BIN="${CC_SNI_PROXY_BIN:-/usr/local/bin/cc-sni-proxy.py}"
 SNI_RUN_DIR="${CC_SNI_RUN_DIR:-/run/cc-sni-proxy}"
 SNI_ALLOWLIST="$SNI_RUN_DIR/allowlist"
@@ -482,6 +520,30 @@ iptables -t mangle -F
 iptables -t mangle -X
 ipset destroy allowed-domains 2>/dev/null || true
 
+# IPv6: DEFAULT-DENY, no allowlist. Every control in this script — the address+port
+# ipset, the filtering resolver's redirect, the SNI proxy's redirect, the guard
+# chains — is IPv4-only, so an unfiltered IPv6 path would be a single bypass for all
+# of them (security review 2026-09-03, finding 1). Rather than duplicate the whole
+# allowlist for a family nothing here needs, IPv6 is closed outright: loopback and
+# already-established flows only. A container that genuinely needs IPv6 egress needs
+# an IPv6 allowlist designed for it, not this rule set relaxed. If ip6tables is
+# absent the kernel has no IPv6 filter to configure and the check is skipped — that
+# is the one case this cannot close, and the probe at the end reports it.
+if command -v ip6tables >/dev/null 2>&1; then
+    ip6tables -P INPUT DROP
+    ip6tables -P FORWARD DROP
+    ip6tables -P OUTPUT DROP
+    ip6tables -F
+    ip6tables -X
+    ip6tables -A INPUT -i lo -j ACCEPT
+    ip6tables -A OUTPUT -o lo -j ACCEPT
+    ip6tables -A INPUT -m state --state ESTABLISHED,RELATED -j ACCEPT
+    ip6tables -A OUTPUT -m state --state ESTABLISHED,RELATED -j ACCEPT
+    echo "IPv6: default-deny installed (loopback and established flows only)"
+else
+    echo "WARNING: ip6tables not found — IPv6 egress is NOT filtered in this container" >&2
+fi
+
 # 2. Selectively restore ONLY internal Docker DNS resolution
 if [ -n "$DOCKER_DNS_RULES" ]; then
     echo "Restoring Docker DNS rules..."
@@ -508,8 +570,8 @@ fi
 # neither. The effective outbound-53 scope is therefore resolvers ∪ loopback ∪
 # gateway, not resolvers alone (it was resolvers ∪ loopback ∪ the whole host /24 on
 # every port until the host-network accept was narrowed; see below). IPv4 only:
-# this script installs no ip6tables rules, so the whole
-# allowlist — not just DNS — is unenforced for IPv6 (a pre-existing gap).
+# IPv6 is closed outright by the ip6tables default-deny block in phase B, so
+# nothing here needs an IPv6 counterpart.
 # (Recursive-forward DNS tunnelling — `<data>.attacker.com` resolved through the
 # legitimate resolver — is NOT closed by this scoping alone; it is closed by the
 # FILTERING RESOLVER block that follows, which is why these accepts are now
@@ -555,7 +617,10 @@ else
   #
   # Failing closed for IPv4 DNS is safe in every case that actually reaches this
   # branch, because the paths that matter are not on it:
-  #   - IPv6-only resolv.conf: this script installs no ip6tables rules at all, so
+  #   - IPv6-only resolv.conf: IPv6 is default-denied in phase B (no allowlist), so
+  #     such a resolver is unreachable and resolution fails closed — a container with
+  #     only an IPv6 resolver needs an IPv6 allowlist, which this script does not
+  #     provide. (The line below predates that block and describes the old state:)
   #     IPv6 DNS is unfiltered and resolution keeps working.
   #   - a loopback resolver: already admitted unconditionally by `-o lo` below,
   #     independent of anything here (and Docker's embedded resolver is DNAT'd off
@@ -646,7 +711,7 @@ fi
 # RESIDUAL. dnsmasq matches zones by suffix. An attacker who controls an
 # authoritative subdomain UNDER an allowlisted zone (a third-party delegation
 # inside a listed domain) can still tunnel through it. None of the base zones
-# (api.anthropic.com, claude.ai, console.anthropic.com, sentry.io, statsig.com,
+# (api.anthropic.com, claude.ai, console.anthropic.com, platform.claude.com,
 # registry.npmjs.org, github.com, githubusercontent.com) hand out delegations to
 # third parties; a profile that adds a zone which does (e.g. a bare CDN apex)
 # re-opens this, so keep entries as specific as the hostnames actually needed.
@@ -861,11 +926,13 @@ rm -f "$SNI_ALLOWLIST"
         [ -n "$domain" ] || continue
         case ",$ports," in *,443,*) echo "$domain" ;; esac
     done < <(echo "$ALLOWED_ENTRIES")
-    # GitHub is admitted by CIDR (phase A) rather than by name; these are the zones
-    # git, gh and git-lfs actually contact over 443.
-    echo ".github.com"
-    echo ".githubusercontent.com"
-    echo ".githubassets.com"
+    # GitHub is admitted by CIDR (phase A) rather than by name. The SNI zones are
+    # derived from the SAME list the filtering resolver serves (GITHUB_DNS_ZONES),
+    # so a name the proxy would admit is always one the resolver will answer for;
+    # the two lists cannot drift apart again.
+    for zone in $(echo "$GITHUB_DNS_ZONES" | tr ' ' '\n'); do
+        echo ".$zone"
+    done
 } > "$SNI_ALLOWLIST"
 chmod 0444 "$SNI_ALLOWLIST"
 # --daemon: forks, drops to --user, binds, and exits 0 only once LISTENING (a prior
@@ -938,9 +1005,14 @@ if runuser -u node -- curl --connect-timeout 5 --max-time 15 \
         --resolve "not-allowlisted.invalid:443:$ANTHROPIC_PROBE_IP" https://not-allowlisted.invalid/ >/dev/null 2>&1; then
     echo "ERROR: Firewall verification failed - a non-allowlisted SNI reached an allowlisted address"
     exit 1
-else
-    echo "Firewall verification passed - non-allowlisted SNI refused as expected"
 fi
+# A failed curl alone is not proof: a missing redirect, a dead proxy, or a broken
+# runuser all fail the same way. The proxy must have SEEN and REFUSED the name.
+if ! grep -q "REJECT sni=not-allowlisted.invalid " "$SNI_LOG" 2>/dev/null; then
+    echo "ERROR: Firewall verification failed - the SNI proxy did not log a refusal for not-allowlisted.invalid (is the 443 redirect in place? see $SNI_LOG)"
+    exit 1
+fi
+echo "Firewall verification passed - non-allowlisted SNI refused by the proxy (logged)"
 
 # The ruleset is complete and all probes passed. Only now does the EXIT trap stop
 # forcing DROP — reaching this line is the sentinel's entire meaning, so it must be

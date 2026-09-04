@@ -1,8 +1,9 @@
-#!/usr/bin/env python3
+#!/usr/bin/python3
 """cc-sni-proxy — SNI-filtering splice proxy for the cc-isolated egress boundary.
 
 init-firewall.sh REDIRECTs every outbound tcp/443 connection that is NOT made by
-this proxy's own uid to 127.0.0.1:<port>, where this process:
+this proxy's own uid or by root (root runs the firewall script itself and its
+probes) to 127.0.0.1:<port>, where this process:
 
   1. reads the TLS ClientHello and extracts the server_name (SNI) — nothing is
      decrypted and no certificate is involved; this is a peek, not interception;
@@ -17,12 +18,14 @@ client that says `api.anthropic.com` reaches whatever api.anthropic.com resolves
 to — and that address must ALSO be in the firewall's address+port ipset, which
 still applies to this process's egress (defence in depth, closing the
 "CDN neighbour on the same IP" overreach that IP matching alone cannot).
-Resolution uses the container's resolver (/etc/resolv.conf — Docker's embedded
-DNS today, a filtering dnsmasq once that lands) and is IPv4-only, matching the
-IPv4-only ipset. Non-443 ports are not redirected here and stay IP+port-matched.
+Resolution goes to the container's filtering dnsmasq — this process's port-53
+traffic is REDIRECTed there by the firewall, whatever /etc/resolv.conf says — and
+is IPv4-only, matching the IPv4-only ipset (IPv6 is default-denied outright). Non-443 ports are not redirected here and stay IP+port-matched.
 
 Single file, stdlib only (python3.11 ships in the node:22 base — no apt package,
-no pip), root-owned in the image and hashed by the launcher's trust manifest.
+no pip), root-owned 0555 in the image, listed in install.sh's payload and in the
+launcher's bless manifest (cc-isolated.sh enforcement_files) like every other
+enforcement file.
 """
 import argparse
 import asyncio

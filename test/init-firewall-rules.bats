@@ -120,9 +120,15 @@ case "$url" in
   *api.anthropic.com*)
     if [ -n "${FAIL_SNI_POSITIVE:-}" ]; then exit 7; fi ;;
   *not-allowlisted.invalid*)
-    # The negative SNI probe must FAIL for the run to pass; PASS_SNI_NEGATIVE
-    # models a proxy that admitted a non-allowlisted name.
-    if [ -n "${PASS_SNI_NEGATIVE:-}" ]; then exit 0; fi; exit 7 ;;
+    # The negative SNI probe must FAIL for the run to pass AND the proxy must have
+    # logged the refusal. PASS_SNI_NEGATIVE models a proxy that admitted the name;
+    # SILENT_SNI_NEGATIVE models a curl that failed for some unrelated reason
+    # (no redirect, dead proxy) — no log line is written.
+    if [ -n "${PASS_SNI_NEGATIVE:-}" ]; then exit 0; fi
+    if [ -z "${SILENT_SNI_NEGATIVE:-}" ]; then
+      echo "2026-09-03T00:00:00 REJECT sni=not-allowlisted.invalid orig_dst=203.0.113.7:443: not in allowlist" >> "$CC_SNI_RUN_DIR/proxy.log"
+    fi
+    exit 7 ;;
   *) exit 7 ;;
 esac
 exit 0
@@ -183,8 +189,19 @@ echo "pkill $*" >> "$CMD_LOG"
 exit 1
 STUB
 
+  # ip6tables: the IPv6 default-deny block issues a handful of calls; log them.
+  cat > "$STUB_DIR/ip6tables" <<'STUB'
+#!/usr/bin/env bash
+echo "ip6tables $*" >> "$CMD_LOG"
+exit 0
+STUB
+
   chmod +x "$STUB_DIR"/*
   export PATH="$STUB_DIR:$PATH"
+  # The script pins its own PATH (root-owned dirs only) and exposes this override
+  # so the stubs stay first; it also takes a root-owned lock, relocated here.
+  export CC_FIREWALL_PATH="$STUB_DIR:$PATH"
+  export CC_FIREWALL_LOCK="$TEST_TMPDIR/firewall.lock"
 }
 
 teardown() {
@@ -724,7 +741,9 @@ STUB
   grep -qx 'api.anthropic.com' "$al"
   grep -qx '.github.com' "$al"
   grep -qx '.githubusercontent.com' "$al"
-  grep -qx '.githubassets.com' "$al"
+  # Derived from GITHUB_DNS_ZONES, so no zone the resolver cannot answer for.
+  run grep -c 'githubassets' "$al"
+  [ "$output" -eq 0 ]
   # No port suffixes leak in, and no non-443 entry appears.
   run grep -c ':' "$al"
   [ "$output" -eq 0 ]
@@ -807,4 +826,72 @@ STUB
   FAIL_SNI_POSITIVE=1 run bash "$FW"
   [ "$status" -ne 0 ]
   [[ "$output" == *"through the SNI proxy"* ]]
+}
+
+# --- review-fix wave 2026-09-03 -----------------------------------------------
+
+@test "a zero-padded port is canonicalised before it reaches ipset and the SNI allowlist" {
+  local dir="$TEST_TMPDIR/egress"
+  mkdir -p "$dir"
+  printf 'api.anthropic.com\npadded.example:0443\n' > "$dir/base.txt"
+  CC_EGRESS_DIR="$dir" run bash "$FW"
+  [ "$status" -eq 0 ]
+  run grep -c -- 'tcp:0443' "$CMD_LOG"
+  [ "$output" -eq 0 ]
+  grep -q "^ipset add -exist allowed-domains 203.0.113.7,tcp:443$" "$CMD_LOG"
+  grep -qx 'padded.example' "$CC_SNI_RUN_DIR/allowlist"
+}
+
+@test "a single-label entry gets a resolver line as well as an ipset member" {
+  local dir="$TEST_TMPDIR/egress"
+  mkdir -p "$dir"
+  printf 'api.anthropic.com\nlocalhost:11434\n' > "$dir/base.txt"
+  printf 'nameserver 127.0.0.11\n' > "$TEST_TMPDIR/rc"
+  CC_EGRESS_DIR="$dir" run bash "$FW" --print-dnsmasq-conf "$TEST_TMPDIR/rc"
+  [ "$status" -eq 0 ]
+  [[ "$output" == *"server=/localhost/127.0.0.11"* ]]
+}
+
+@test "IPv6 is default-denied: DROP policies, flush, loopback and established only" {
+  run bash "$FW"
+  [ "$status" -eq 0 ]
+  grep -q "^ip6tables -P OUTPUT DROP$" "$CMD_LOG"
+  grep -q "^ip6tables -P INPUT DROP$" "$CMD_LOG"
+  grep -q "^ip6tables -F$" "$CMD_LOG"
+  grep -q "^ip6tables -A OUTPUT -o lo -j ACCEPT$" "$CMD_LOG"
+  grep -q "^ip6tables -A OUTPUT -m state --state ESTABLISHED,RELATED -j ACCEPT$" "$CMD_LOG"
+  # No IPv6 allowlist accept of any kind.
+  run grep -cE '^ip6tables -A OUTPUT (-p|-d|-m set)' "$CMD_LOG"
+  [ "$output" -eq 0 ]
+}
+
+@test "the negative SNI probe requires a logged refusal, not just a failed curl" {
+  SILENT_SNI_NEGATIVE=1 run bash "$FW"
+  [ "$status" -ne 0 ]
+  [[ "$output" == *"did not log a refusal"* ]]
+  grep -q "iptables -w 5 -P OUTPUT DROP" "$CMD_LOG"
+}
+
+@test "the run takes a lock so concurrent invocations serialise" {
+  run bash "$FW"
+  [ "$status" -eq 0 ]
+  [ -e "$CC_FIREWALL_LOCK" ]
+  # Hold the lock from outside; the script must not proceed past it.
+  exec 8>"$CC_FIREWALL_LOCK"
+  flock -n 8
+  : > "$CMD_LOG"
+  CC_FIREWALL_LOCK_WAIT=1 run bash "$FW"
+  [ "$status" -ne 0 ]
+  run grep -c -- "^iptables -F" "$CMD_LOG"
+  [ "$output" -eq 0 ]
+  exec 8>&-
+}
+
+@test "helpers resolve through the pinned PATH, not the caller's" {
+  # With the override unset the script must reset PATH to root-owned dirs; the
+  # stubs then vanish and the stub-logged run cannot proceed as before. Assert
+  # the pin exists rather than running unstubbed: the script must reference
+  # CC_FIREWALL_PATH with a root-only default and export PATH from it.
+  grep -q 'export PATH="${CC_FIREWALL_PATH:-/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin}"' "$FW"
+  grep -q '^#!/usr/bin/python3$' "$BATS_TEST_DIRNAME/../devcontainer-config/cc-sni-proxy.py"
 }

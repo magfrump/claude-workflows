@@ -43,7 +43,10 @@ manifest_path() {
 }
 
 # Files whose integrity gates a container (re)build. All of them execute host-side
-# or define the boundary. Paths are relative to config_dir. The per-project .profile
+# or define the boundary. Keep this list in step with install.sh's PAYLOAD: a file
+# that is installed but not hashed is a boundary artefact nobody blessed (the SNI
+# proxy shipped that way once). claude-home/ (the baked skills/hooks payload) is
+# the one PAYLOAD item still outside this list — see docs/working/questions.md. Paths are relative to config_dir. The per-project .profile
 # files are included deliberately: a project's egress profile IS boundary config, so
 # registering a new project re-blesses, and a profile file appearing by any other
 # route is caught at the next launch.
@@ -53,6 +56,8 @@ enforcement_files() {
   echo "devcontainer.json"
   echo "Dockerfile"
   echo "init-firewall.sh"
+  echo "cc-sni-proxy.py"
+  echo "link-claude-home.sh"
   echo "cc-isolated.sh"
   # Sorted globs so the manifest is order-stable. An empty projects/ dir is normal
   # (no project has widened its egress yet), hence the -e guard on each match.

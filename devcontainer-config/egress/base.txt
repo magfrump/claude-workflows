@@ -6,8 +6,9 @@
 # removed 2026-09 (security review, finding 7): neither appears in the documented
 # requirements any more (statsig.anthropic.com went NXDOMAIN in 2026-07), and each
 # was an always-open writable ingestion endpoint. Error intake is switched off with
-# DISABLE_ERROR_REPORTING in devcontainer.json instead; the remaining telemetry
-# events ride api.anthropic.com, which is already irreducible.
+# DISABLE_ERROR_REPORTING in devcontainer.json instead. Operational telemetry is
+# still attempted to a Datadog intake host that is not allowlisted (the firewall
+# rejects it); what still gets out rides api.anthropic.com, which is irreducible.
 #
 # Format: one entry per line, `domain[:port[,port...]]`. Blank lines and #-comments
 # ignored. The optional suffix is a comma-separated list of TCP ports; when absent the
@@ -20,8 +21,8 @@
 
 # Claude Code itself: API + feature flags + telemetry events (api.anthropic.com),
 # OAuth login (claude.ai, console.anthropic.com), OAuth token exchange/refresh
-# (platform.claude.com — per the network-config docs; a missing entry surfaces as
-# a mid-session re-login once the access token expires).
+# (platform.claude.com — per the network-config docs; the docs' stated symptom of
+# omitting it is a first-run connectivity-check failure).
 api.anthropic.com
 claude.ai
 console.anthropic.com

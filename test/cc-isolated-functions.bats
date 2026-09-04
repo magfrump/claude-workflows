@@ -26,6 +26,8 @@ setup() {
   echo 'FROM node:22'        > "$CLAUDE_DEVC_CONFIG_DIR/Dockerfile"
   echo '#!/bin/bash'         > "$CLAUDE_DEVC_CONFIG_DIR/init-firewall.sh"
   echo '#!/usr/bin/env bash' > "$CLAUDE_DEVC_CONFIG_DIR/cc-isolated.sh"
+  echo '#!/usr/bin/python3'   > "$CLAUDE_DEVC_CONFIG_DIR/cc-sni-proxy.py"
+  echo '#!/usr/bin/env bash' > "$CLAUDE_DEVC_CONFIG_DIR/link-claude-home.sh"
   echo 'api.anthropic.com'   > "$CLAUDE_DEVC_CONFIG_DIR/egress/base.txt"
   echo 'pypi.org'            > "$CLAUDE_DEVC_CONFIG_DIR/egress/python.txt"
 
@@ -121,6 +123,8 @@ make_repo() {
   [ "$status" -eq 0 ]
   echo "$output" | grep -q 'devcontainer.json'
   echo "$output" | grep -q 'cc-isolated.sh'
+  echo "$output" | grep -q 'cc-sni-proxy.py'
+  echo "$output" | grep -q 'link-claude-home.sh'
   echo "$output" | grep -q 'egress/base.txt'
 }
 

@@ -44,7 +44,7 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
 # dnsmasq-base (above) is the daemon binary WITHOUT the `dnsmasq` package's sysv/
 # systemd service wrapper: nothing in the container may auto-start a resolver —
 # init-firewall.sh starts exactly one instance, with a config it generates, on
-# every firewall run (decision log #39: the filtering resolver that closes
+# every firewall run (decision log #40: the filtering resolver that closes
 # recursive-forward DNS tunnelling). The daemon drops to the unprivileged `dnsmasq`
 # user, and the firewall's owner-match rules key on that uid, so its existence is
 # asserted here rather than left to the package's postinst.
@@ -384,8 +384,7 @@ ARG CC_EGRESS_PROFILE=""
 COPY egress/ /usr/local/share/cc-egress/
 COPY init-firewall.sh /usr/local/bin/
 # SNI-filtering splice proxy started by init-firewall.sh. Stdlib-only Python so it
-# needs no pip and no network at build time; root-owned and 0555 like the firewall
-# script it belongs to (decision log #41).
+# needs no pip and no network at build time; root-owned and 0555 (decision log #41).
 COPY cc-sni-proxy.py /usr/local/bin/
 COPY link-claude-home.sh /usr/local/bin/
 
@@ -406,8 +405,8 @@ USER root
 # project's egress therefore requires a host-side re-register + re-bless + rebuild —
 # i.e. a human. This is what keeps H5 (per-project egress) from becoming a
 # self-service escape hatch for the agent.
-RUN chmod +x /usr/local/bin/init-firewall.sh /usr/local/bin/link-claude-home.sh && \
-  chown root:root /usr/local/bin/cc-sni-proxy.py && chmod 0555 /usr/local/bin/cc-sni-proxy.py && \
+RUN chown root:root /usr/local/bin/init-firewall.sh /usr/local/bin/link-claude-home.sh /usr/local/bin/cc-sni-proxy.py && \
+  chmod 0555 /usr/local/bin/init-firewall.sh /usr/local/bin/link-claude-home.sh /usr/local/bin/cc-sni-proxy.py && \
   chown -R root:root /opt/claude-workflows && \
   find /opt/claude-workflows -type d -exec chmod 0555 {} + && \
   find /opt/claude-workflows -type f -exec chmod 0444 {} + && \

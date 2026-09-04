@@ -22,7 +22,7 @@ ASSUME_YES="${1:-}"
 
 # install.sh itself is not installed — it runs from the repo.
 # `claude-home` is assembled below from the repo root before the diff is shown.
-PAYLOAD=(devcontainer.json Dockerfile init-firewall.sh cc-isolated.sh link-claude-home.sh egress claude-home)
+PAYLOAD=(devcontainer.json Dockerfile init-firewall.sh cc-sni-proxy.py cc-isolated.sh link-claude-home.sh egress claude-home)
 
 REPO_ROOT="$(cd "$SRC/.." && pwd)"
 
