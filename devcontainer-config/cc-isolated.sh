@@ -46,8 +46,9 @@ manifest_path() {
 # or define the boundary. Keep this list in step with install.sh's PAYLOAD: a file
 # that is installed but not hashed is a boundary artefact nobody blessed (the SNI
 # proxy shipped that way once; a bats test now pins PAYLOAD ⊆ this list).
-# claude-home/ — the baked skills/hooks payload, executable at 0555 inside the
-# image — is hashed file by file via a sorted walk. Paths are relative to config_dir. The per-project .profile
+# claude-home/ — the baked skills/hooks payload (scripts 0555, the rest 0444 inside
+# the image) — is hashed file by file via a sorted walk; that includes the
+# .manifest install.sh writes, so re-running install.sh re-blesses by design. Paths are relative to config_dir. The per-project .profile
 # files are included deliberately: a project's egress profile IS boundary config, so
 # registering a new project re-blesses, and a profile file appearing by any other
 # route is caught at the next launch.
@@ -67,7 +68,7 @@ enforcement_files() {
     cd "$cfg" || return 0
     for f in egress/*.txt; do [ -e "$f" ] && echo "$f"; done | sort
     for f in projects/*.profile; do [ -e "$f" ] && echo "$f"; done | sort
-    [ -d claude-home ] && find claude-home -type f | LC_ALL=C sort
+    if [ -d claude-home ]; then find claude-home -type f | LC_ALL=C sort; fi
   )
 }
 

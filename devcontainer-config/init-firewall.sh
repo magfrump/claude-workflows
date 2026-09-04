@@ -343,17 +343,20 @@ echo "Egress profiles: $(cat "$PROFILE_FILE" 2>/dev/null || echo '(base only)')"
 # and a run whose phase-A reads overlap another's rebuild loses them to that
 # rebuild's brief blackout and aborts as if the network were down. So the lock
 # covers BOTH phases: a second invocation waits for the first to finish entirely,
-# then does its own reads against the finished ruleset. The wait is sized to the
-# longest legitimate hold (a 15 s meta fetch, up to 6 s per allowlisted name,
-# ~10 s of daemon starts) with margin; the verification probes at the end run
-# after the lock is released, so they never extend it. The lock lives in a 0700
+# then does its own reads against the finished ruleset. The lock is held through
+# the verification probes too, so no rebuild can start under them. The wait is
+# sized to the longest legitimate hold — a 15 s meta fetch, up to 6 s per
+# allowlisted name (~25 today), up to 39 s of daemon starts (the proxy's readiness
+# bound is 30 s), and four 15 s probes: ~270 s at today's largest allowlist —
+# with headroom for growth; a hold longer than the wait is a stuck run, not a slow
+# one. The lock lives in a 0700
 # root directory so `node` cannot open the file and hold the lock itself (flock
 # works on a read-only fd; a 0644 file in /run would let the agent veto every
 # re-assert). Taken after the trap, so a lock failure ends at DROP like any other
 # abort. CC_FIREWALL_LOCK / CC_FIREWALL_LOCK_WAIT exist for the unit tests only;
 # under sudo env_reset `node` cannot set them.
 FIREWALL_LOCK="${CC_FIREWALL_LOCK:-/run/cc-firewall/lock}"
-FIREWALL_LOCK_WAIT="${CC_FIREWALL_LOCK_WAIT:-300}"
+FIREWALL_LOCK_WAIT="${CC_FIREWALL_LOCK_WAIT:-600}"
 if [[ ! "$FIREWALL_LOCK_WAIT" =~ ^[0-9]+$ ]]; then
     echo "ERROR: CC_FIREWALL_LOCK_WAIT must be a non-negative integer (got '$FIREWALL_LOCK_WAIT')" >&2
     exit 1
@@ -1033,13 +1036,9 @@ iptables -A OUTPUT -m set --match-set allowed-domains dst,dst -j ACCEPT
 # Explicitly REJECT all other outbound traffic for immediate feedback
 iptables -A OUTPUT -j REJECT --reject-with icmp-admin-prohibited
 
-# The ruleset is installed; release the lock so a waiting run proceeds while the
-# probes below (up to four 15 s curls) run against the finished boundary.
-flock -u 9
-
 # Every rule the boundary depends on must actually be present — not just the one
-# the SNI probe needs. `-C` queries what `-A` installed; drift between the two
-# literals is self-detecting (the run aborts into DROP).
+# the SNI probe needs. `-C` queries what `-A`/`-I` installed; drift between the
+# two literals is self-detecting (the run aborts into DROP).
 for rule in \
     "-t nat -C OUTPUT -p tcp --dport 443 -j CC_SNI" \
     "-t nat -C OUTPUT -p udp --dport 53 -j CC_DNS" \
@@ -1108,6 +1107,9 @@ if ! grep -q "REJECT sni=not-allowlisted.invalid orig_dst=$ANTHROPIC_PROBE_IP:44
 fi
 echo "Firewall verification passed - non-allowlisted SNI refused by the proxy (logged)"
 
+# All probes passed against a boundary no concurrent run could have touched: the
+# lock is held to here, so a waiting run's rebuild cannot start under the probes.
+# (It is released implicitly at exit; the wait default is sized to include this.)
 # The ruleset is complete and all probes passed. Only now does the EXIT trap stop
 # forcing DROP — reaching this line is the sentinel's entire meaning, so it must be
 # the last statement in the script and must never be moved above a check.

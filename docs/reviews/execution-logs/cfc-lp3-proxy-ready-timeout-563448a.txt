@@ -1,0 +1,16 @@
+# cfc-lp3 proxy readiness timeout — cwd /workspace, LC_ALL=C, HEAD=563448a, 2026-09-03T18:53:21-07:00
+# Q: does daemonize()'s select() timeout path fire, kill the child, reap it, and return 1?
+# Harness: load cc-sni-proxy.py as a module, patch READY_TIMEOUT=2.0 and replace serve() with a coroutine that never signals.
+--- output ---
+cc-sni-proxy: failed to start: no readiness signal within 2s
+shipped READY_TIMEOUT = 30.0
+module has `select`: True
+daemonize rc=1 (expect 1), elapsed=2.01s (patched timeout 2.0s)
+pidfile written: False (expect False)
+no leftover children => SIGKILL+waitpid left no zombie
+EXIT=0
+--- suite ---
+----------------------------------------------------------------------
+Ran 13 tests in 0.126s
+
+OK

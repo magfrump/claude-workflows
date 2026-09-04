@@ -1,0 +1,3 @@
+# cfc-lp3 shellcheck — cwd /workspace, LC_ALL=C, HEAD=563448a, 2026-09-03T18:43:58-07:00
+$ shellcheck -S warning devcontainer-config/{init-firewall.sh,cc-isolated.sh,install.sh}
+EXIT=0

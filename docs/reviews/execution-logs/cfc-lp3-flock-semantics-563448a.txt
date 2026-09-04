@@ -1,0 +1,25 @@
+# cfc-lp3 flock/fd semantics — cwd /workspace, LC_ALL=C, HEAD=563448a, 2026-09-03T18:52:31-07:00
+# Q: does bash 'flock -u N' release the advisory lock while keeping fd N open?
+# Q: is a per-command '9>&-' redirection scoped to that command only?
+$ bash <<'SCRIPT'
+set -uo pipefail
+flock --version; L=$(mktemp); exec 9>"$L"
+flock -w 5 9                       # this shell takes the lock
+flock -n "$L" true                 # outsider, expect rc=1
+flock -u 9                         # release
+flock -n "$L" true                 # outsider, expect rc=0
+[ -e /proc/$$/fd/9 ]; echo hi >&9  # fd still open+writable?
+exec 9>"$L"; bash -c '[ -e /proc/self/fd/9 ]' 9>&-; [ -e /proc/$$/fd/9 ]
+SCRIPT
+--- output ---
+flock version: flock from util-linux 2.38.1
+bash version:  5.2.15(1)-release
+A1: this shell took the lock (rc=0)
+A2: outsider blocked while held (rc=1) [expected]
+A3: flock -u 9 rc=0
+A4: outsider acquired after -u [expected: lock released]
+A5: fd 9 STILL OPEN after flock -u [expected]
+A6: fd 9 still writable after flock -u
+B1: child does not see fd 9 (9>&- applied)
+B2: parent STILL has fd 9 after running a command with 9>&- [expected: per-command scope]
+EXIT=0

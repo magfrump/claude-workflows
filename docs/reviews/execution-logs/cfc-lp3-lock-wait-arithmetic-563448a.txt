@@ -1,0 +1,27 @@
+# cfc-lp3 lock-wait sizing — cwd /workspace, LC_ALL=C, HEAD=563448a, 2026-09-03T18:53:37-07:00
+# Q: is the 300 s default >= the worst-case hold for the largest shipped allowlist?
+$ CC_EGRESS_PROFILE_FILE=<all 7 profiles> bash devcontainer-config/init-firewall.sh --print-entries | wc -l
+rc=0
+N (distinct names dig'd in phase A, base + all 7 profiles) = 25
+--- bounded waits inside the lock, read from source ---
+/workspace/devcontainer-config/cc-sni-proxy.py:49:READY_TIMEOUT = 30.0          # daemonize(): how long the parent waits for the child to bind
+/workspace/devcontainer-config/cc-sni-proxy.py:232:        for _ in range(30):
+/workspace/devcontainer-config/init-firewall.sh:277:        ip6tables -w 5 -P OUTPUT DROP || true
+/workspace/devcontainer-config/init-firewall.sh:278:        ip6tables -w 5 -P INPUT DROP || true
+/workspace/devcontainer-config/init-firewall.sh:279:        ip6tables -w 5 -P FORWARD DROP || true
+/workspace/devcontainer-config/init-firewall.sh:396:gh_ranges=$(curl -s --connect-timeout 5 --max-time 15 https://api.github.com/meta || true)
+/workspace/devcontainer-config/init-firewall.sh:434:    ips=$(dig +time=3 +tries=2 +noall +answer A "$domain" | awk '$4 == "A" {print $5}' || true)
+/workspace/devcontainer-config/init-firewall.sh:495:            for _ in $(seq 1 30); do
+/workspace/devcontainer-config/init-firewall.sh:543:if command -v ip6tables >/dev/null 2>&1 && ip6tables -w 5 -S OUTPUT >/dev/null 2>&1; then
+/workspace/devcontainer-config/init-firewall.sh:796:for _ in $(seq 1 30); do
+--- arithmetic ---
+  curl api.github.com/meta (--max-time 15)        15.0s
+  25 digs x (+time=3 +tries=2 = 6 s)             150.0s
+  ip6tables -w 5 preconditions                     5.0s
+  stop_dnsmasq wait (30 x 0.1 s)                   3.0s
+  dnsmasq pidfile wait (30 x 0.1 s)                3.0s
+  proxy stop_prior wait (30 x 0.1 s)               3.0s
+  proxy READY_TIMEOUT                             30.0s
+  WORST-CASE HOLD                                209.0s   vs default wait 300 s -> margin 91s (30%)
+  the commit body itemises: 15 + 6N + ~10 (daemon starts). Actual daemon-start term = 39s, because the same commit added the 30 s proxy READY_TIMEOUT.
+  N at which the 300 s default is exhausted: 40.2 names

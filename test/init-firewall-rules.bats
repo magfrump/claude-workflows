@@ -50,6 +50,8 @@ setup() {
 echo "iptables $*" >> "$CMD_LOG"
 # NO_REDIRECT models a missing CC_SNI jump: `-C` (rule-exists check) reports absent.
 if [ -n "${NO_REDIRECT:-}" ] && [ "${1:-}" = "-t" ] && [ "${3:-}" = "-C" ]; then exit 1; fi
+# NO_RULE=<chain>: any `-C` naming that chain reports absent (filter or nat).
+if [ -n "${NO_RULE:-}" ] && printf '%s\n' "$@" | grep -qx -- '-C' && printf '%s\n' "$@" | grep -qx -- "$NO_RULE"; then exit 1; fi
 POL="$CMD_LOG.policies"
 args=("$@")
 i=0
@@ -958,14 +960,18 @@ STUB
   [[ "$output" == *"CC_FIREWALL_LOCK_WAIT must be"* ]]
 }
 
-@test "the lock is released before the verification probes" {
-  run bash "$FW"
-  [ "$status" -eq 0 ]
-  # No observable command for flock -u, so pin the order in source: `flock -u 9`
-  # precedes the first probe curl.
-  unlock=$(grep -n '^flock -u 9' "$FW" | head -1 | cut -d: -f1)
-  probe=$(grep -n 'https://example.com' "$FW" | grep -v '^.*#' | head -1 | cut -d: -f1)
-  [ -n "$unlock" ] && [ "$unlock" -lt "$probe" ]
+@test "the lock is held through the verification probes" {
+  run grep -c '^flock -u 9' "$FW"
+  [ "$output" -eq 0 ]
+}
+
+@test "a missing filter-table guard rule fails verification" {
+  NO_RULE=CC_SNI_GUARD run bash "$FW"
+  [ "$status" -ne 0 ]
+  [[ "$output" == *"expected rule missing: iptables -C OUTPUT -p tcp --dport 443 -j CC_SNI_GUARD"* ]]
+  NO_RULE=CC_DNS_GUARD run bash "$FW"
+  [ "$status" -ne 0 ]
+  [[ "$output" == *"CC_DNS_GUARD"* ]]
 }
 
 @test "every boundary rule is asserted present before completion" {

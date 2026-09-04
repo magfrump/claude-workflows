@@ -1,0 +1,17 @@
+# cfc-lp3 IFS array split — cwd /workspace, LC_ALL=C, HEAD=563448a, 2026-09-03T18:52:41-07:00
+# Q: does 'IFS=" " read -r -a arr <<< "$rule"' split on spaces under the script's global IFS=$'
+	' and set -euo pipefail, and is IFS restored?
+C0: IFS before -> 0000000  \n  \t
+C1: read rc=0 (does not trip set -e)
+C2: element count = 10
+C3: elements = [-t][nat][-C][OUTPUT][-p][tcp][--dport][443][-j][CC_SNI]
+C4: IFS after -> 0000000  \n  \t
+C5: WITHOUT the IFS prefix, element count = 1  (script IFS has no space) — confirms the commit note that the string form did not split
+EXIT=0
+# C6: are there tabs inside any of the five rule literals?
+for rule in \$
+    "-t nat -C OUTPUT -p tcp --dport 443 -j CC_SNI" \$
+    "-t nat -C OUTPUT -p udp --dport 53 -j CC_DNS" \$
+    "-t nat -C OUTPUT -p tcp --dport 53 -j CC_DNS" \$
+    "-C OUTPUT -d 127.0.0.11 -j CC_DNS_GUARD" \$
+    "-C OUTPUT -p tcp --dport 443 -j CC_SNI_GUARD"; do$

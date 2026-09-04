@@ -1,0 +1,22 @@
+# cfc-lp3 manifest walk — cwd /workspace, LC_ALL=C, HEAD=563448a, 2026-09-03T18:52:59-07:00
+# Q: enforcement_files() exit status when claude-home/ is absent; does any caller care?
+# Q: compute_manifest with an empty files array under set -u
+=== D: no claude-home/ ===
+D1: enforcement_files rc=1   (the [ -d claude-home ] && ... short-circuit is the subshell's last status)
+D2: lines emitted = 7
+D3: compute_manifest rc=0, lines=7  (process substitution discards D1)
+D4: bless/check round-trip ok
+=== E: with claude-home/ ===
+E1: enforcement_files rc=0 (zero when claude-home present)
+E2:   cc-isolated.sh
+E2:   egress/base.txt
+E2:   claude-home/.manifest
+E2:   claude-home/hooks/h.sh
+E3: dotfiles included by the walk: 1
+--- D5: does a BARE call abort under set -e (no claude-home)? ---
+D5 outer rc=1  (rc=1 and no D5 line => a bare call WOULD abort; no caller does one today)
+bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+--- F: empty array + sha256sum under set -u (bash 5.2.15(1)-release) ---
+e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855  -
+F1: rc=0 — no unbound-variable error; sha256sum with no operands reads STDIN (hashes empty input) rather than failing
+F2: reachable in practice? compute_manifest always emits the 6 fixed names and returns 1 if one is missing, so files[] cannot be empty.

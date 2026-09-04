@@ -1,0 +1,41 @@
+# cfc-lp3 sudoers — cwd /workspace, LC_ALL=C, HEAD=563448a, 2026-09-03T18:53:08-07:00
+# Q: is 'Defaults:node env_reset, !setenv' valid, and does 'init-firewall.sh ""' mean no arguments?
+visudo: /usr/sbin/visudo ; visudo version 1.9.13p3
+--- file under test (exactly the Dockerfile:429 printf output) ---
+Defaults:node env_reset, !setenv
+node ALL=(root) NOPASSWD: /usr/local/bin/init-firewall.sh ""
+--- visudo -c -f ---
+/tmp/tmp.fJr14OCrF8/node-firewall: parsed OK
+rc=0
+--- negative control ---
+/tmp/tmp.fJr14OCrF8/bad:1:25: syntax error
+Defaults:node env_reset,, !setenv
+                        ^
+rc=1
+--- sudoers(5) on the empty-string argument ---
+
+command ::= command name |
+            command name args |
+            command name regex |
+            command name '""' |
+            ALL
+.Ql ^
+and ends with
+.Ql $ .
+If the command line arguments consist of
+.Ql \&"" ,
+the command may only be run with
+.Em no
+arguments.
+.Pp
+The following exceptions apply to the above rules:
+.Bl -tag -width "sudoedit"
+.It \&""
+If the empty string
+.Ql \&""
+is the only command line argument in the
+.Em sudoers
+file entry it means that command is not allowed to be run with
+.Em any
+arguments.
+.It sudoedit
