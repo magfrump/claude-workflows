@@ -192,5 +192,19 @@ Pipeline: fact-check k=1 loop pass (21 claims, 0 Incorrect, 5 comment imprecisio
 
 ---
 
+## Pass 5 (re-review of the fourth fix round, f313de7..294a6c2 → fixed in the next commit)
+
+Pipeline: fact-check k=1 (23 claims, 0 Incorrect, 1 Stale comment) → security, architecture (api-consistency agent stalled and was stopped; its pass-4 items were already addressed). Architecture: no Structural finding open, second consecutive negative. Security: nothing above Low; ship pending the live-container check.
+
+| # | Finding | Domain | Severity | Status |
+|---|---|---|---|---|
+| A36 | Symlink handling regressed one axis: the `-L` branch preceded `-f`, so a symlinked top-level enforcement file (e.g. `devcontainer.json`) was hashed by target text only and a rewritten target left the manifest byte-identical. | Security | Low | ✅ Fixed — links hashed by target AND by content when they resolve; regression test |
+| A37 | `compute_manifest` read `enforcement_files` through a process substitution whose status is discarded by construction — the class behind R8, closed only at the instance. | Architecture | Coupling | ✅ Fixed — listing captured with status check; test |
+| A38 | Trap state encoded the cause (`LOCK_TIMED_OUT`), not the state: a signal during the silent `flock -w` still forced DROP over the holder's boundary. | Architecture | Coupling | ✅ Fixed — `LOCK_WAITING` covers the wait window; comment corrected (fact-check Stale) |
+| A39 | "presence only" caveat under-named the position invariants; nine rule literals ×2 in script + tests; `2>/dev/null` discards iptables' exit-1/2 distinction; one vacuous test assertion; the tcp/53 external-resolver guard was not asserted by the test. | Architecture / Security | Minor | 🟢 vacuous assertion removed and the missing guard assertion added; literal array and caveat wording logged as debt |
+| C24 | No `-C` literal has ever been parsed by a real iptables (the suite stubs it); live-container check remains the one qualifier on shipping. | Security | Low | 🟢 Open — tracked in questions.md |
+
+---
+
 To pass review: all 🔴 items must be resolved. All 🟡 items must be either fixed or
 carry an author note. 🟢 items are optional.

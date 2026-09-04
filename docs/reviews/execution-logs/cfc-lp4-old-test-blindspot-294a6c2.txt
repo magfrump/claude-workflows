@@ -1,0 +1,14 @@
+--- running the reconstructed OLD-code bats test ---
+1..1
+status=0
+lines=1
+73cb3858a687a8494ca3323053016282f3dad39d42cf62ca4e79dda2aac7d9ac  devcontainer.json
+73cb3858a687a8494ca3323053016282f3dad39d42cf62ca4e79dda2aac7d9ac  Dockerfile
+73cb3858a687a8494ca3323053016282f3dad39d42cf62ca4e79dda2aac7d9ac  init-firewall.sh
+73cb3858a687a8494ca3323053016282f3dad39d42cf62ca4e79dda2aac7d9ac  cc-sni-proxy.py
+73cb3858a687a8494ca3323053016282f3dad39d42cf62ca4e79dda2aac7d9ac  link-claude-home.sh
+73cb3858a687a8494ca3323053016282f3dad39d42cf62ca4e79dda2aac7d9ac  cc-isolated.sh
+87428fc522803d31065e7bce3cf03fe475096631e5e07bbd7a0fde60c4cf25c7  egress/base.txt
+91ee5e9f42ba3d34e414443b36a27b797a56a47aad6bb1e4c1769e69c77ce0ca  claude-home/payload.md
+ok 1 OLD compute_manifest under bats run, empty projects/
+BATS_EXIT=0

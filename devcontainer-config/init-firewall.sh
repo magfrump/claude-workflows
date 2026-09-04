@@ -271,11 +271,13 @@ fi
 # claims a DROP that was not applied.
 FIREWALL_COMPLETE=0
 LOCK_TIMED_OUT=0
+LOCK_WAITING=0
 fail_closed_on_abort() {
   local chain policies open=0
-  if [ "${LOCK_TIMED_OUT:-0}" = "1" ]; then
-    echo "ERROR: init-firewall.sh gave up waiting for the lock; the ruleset was left as the" >&2
-    echo "       concurrent run leaves it (not forced to DROP — this run changed nothing)." >&2
+  if [ "${LOCK_TIMED_OUT:-0}" = "1" ] || [ "${LOCK_WAITING:-0}" = "1" ]; then
+    echo "ERROR: init-firewall.sh never acquired the firewall lock (timed out, or interrupted" >&2
+    echo "       while waiting); the ruleset was left as the concurrent run leaves it — not" >&2
+    echo "       forced to DROP, because this run changed nothing." >&2
     return 0
   fi
   if [ "${FIREWALL_COMPLETE:-0}" != "1" ]; then
@@ -364,7 +366,10 @@ echo "Egress profiles: $(cat "$PROFILE_FILE" 2>/dev/null || echo '(base only)')"
 # one. The lock lives in a 0700
 # root directory so `node` cannot open the file and hold the lock itself (flock
 # works on a read-only fd; a 0644 file in /run would let the agent veto every
-# re-assert). Taken after the trap, so a lock failure ends at DROP like any other
+# re-assert). Taken after the trap; a run that never got the lock (timeout, or a
+# signal while waiting) reports and stands down WITHOUT forcing DROP — it changed
+# nothing and a holder is building the boundary — while every abort after the lock
+# is acquired ends at DROP like any other
 # abort. CC_FIREWALL_LOCK / CC_FIREWALL_LOCK_WAIT exist for the unit tests only;
 # under sudo env_reset `node` cannot set them.
 FIREWALL_LOCK="${CC_FIREWALL_LOCK:-/run/cc-firewall/lock}"
@@ -376,6 +381,7 @@ fi
 mkdir -p "$(dirname "$FIREWALL_LOCK")" && chmod 0700 "$(dirname "$FIREWALL_LOCK")"
 exec 9>"$FIREWALL_LOCK"
 chmod 0600 "$FIREWALL_LOCK"
+LOCK_WAITING=1
 if ! flock -w "$FIREWALL_LOCK_WAIT" 9; then
     echo "ERROR: could not take $FIREWALL_LOCK within ${FIREWALL_LOCK_WAIT}s — another init-firewall.sh run is still in progress" >&2
     # This run touched nothing; the holder is building (or has built) the boundary.
@@ -384,6 +390,7 @@ if ! flock -w "$FIREWALL_LOCK_WAIT" 9; then
     LOCK_TIMED_OUT=1
     exit 1
 fi
+LOCK_WAITING=0
 
 # ===========================================================================
 # PHASE A — RESOLVE EVERYTHING FIRST, WHILE THE OLD FIREWALL IS STILL UP.

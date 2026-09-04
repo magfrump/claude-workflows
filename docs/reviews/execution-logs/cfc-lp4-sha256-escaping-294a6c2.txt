@@ -1,0 +1,4 @@
+--- sha256sum on a backslash path ---
+\2d711642b726b04401627ca9fbac32f5c8530fb1903cc4db02258717921a4881  d/back\\slash.txt$
+--- printf form for the symlink branch ---
+34a04005bcaf206eec990bd9637d9fdb6725e0a0c0d4aebf003f17f4c956eb5c  d/li\nk$

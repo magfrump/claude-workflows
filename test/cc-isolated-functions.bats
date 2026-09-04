@@ -549,3 +549,23 @@ firewall() {
   run check_manifest
   [ "$status" -ne 0 ]
 }
+
+@test "a symlinked enforcement file is hashed by content as well as by target" {
+  # REGRESSION: hashing links by target text only meant a symlinked
+  # devcontainer.json whose target was rewritten left the manifest unchanged.
+  mv "$CLAUDE_DEVC_CONFIG_DIR/devcontainer.json" "$CLAUDE_DEVC_CONFIG_DIR/real.json"
+  ln -s real.json "$CLAUDE_DEVC_CONFIG_DIR/devcontainer.json"
+  bless_manifest >/dev/null
+  run check_manifest
+  [ "$status" -eq 0 ]
+  echo '{"name":"changed"}' > "$CLAUDE_DEVC_CONFIG_DIR/real.json"
+  run check_manifest
+  [ "$status" -ne 0 ]
+}
+
+@test "compute_manifest fails when enforcement_files fails" {
+  enforcement_files() { echo "devcontainer.json"; return 1; }
+  run compute_manifest
+  [ "$status" -ne 0 ]
+  [[ "$output" == *"enforcement_files failed"* ]]
+}

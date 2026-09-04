@@ -1,0 +1,34 @@
+--- loop literals, count=9 ---
+     1	-t nat -C OUTPUT -p tcp --dport 443 -j CC_SNI
+     2	-t nat -C OUTPUT -p udp --dport 53 -j CC_DNS
+     3	-t nat -C OUTPUT -p tcp --dport 53 -j CC_DNS
+     4	-C OUTPUT -d 127.0.0.11 -j CC_DNS_GUARD
+     5	-C OUTPUT -p udp --dport 53 ! -d 127.0.0.1 -j CC_DNS_GUARD
+     6	-C OUTPUT -p tcp --dport 53 ! -d 127.0.0.1 -j CC_DNS_GUARD
+     7	-C OUTPUT -p tcp --dport 443 -j CC_SNI_GUARD
+     8	-C OUTPUT -m set --match-set allowed-domains dst,dst -j ACCEPT
+     9	-C OUTPUT -j REJECT --reject-with icmp-admin-prohibited
+
+--- install commands touching OUTPUT ---
+832:iptables -t nat -I OUTPUT 1 -p tcp --dport 53 -j CC_DNS
+833:iptables -t nat -I OUTPUT 1 -p udp --dport 53 -j CC_DNS
+866:iptables -A OUTPUT -d 127.0.0.11 -j CC_DNS_GUARD
+867:iptables -A OUTPUT -p udp --dport 53 ! -d 127.0.0.1 -j CC_DNS_GUARD
+868:iptables -A OUTPUT -p tcp --dport 53 ! -d 127.0.0.1 -j CC_DNS_GUARD
+869:iptables -A OUTPUT -o lo -j ACCEPT
+949:iptables -A OUTPUT -m state --state ESTABLISHED,RELATED -j ACCEPT
+1034:iptables -t nat -A OUTPUT -p tcp --dport 443 -j CC_SNI
+1044:iptables -A OUTPUT -p tcp --dport 443 -j CC_SNI_GUARD
+1050:iptables -A OUTPUT -m set --match-set allowed-domains dst,dst -j ACCEPT
+1053:iptables -A OUTPUT -j REJECT --reject-with icmp-admin-prohibited
+
+MATCH(-A) : -t nat -C OUTPUT -p tcp --dport 443 -j CC_SNI
+MATCH(-I1): -t nat -C OUTPUT -p udp --dport 53 -j CC_DNS
+MATCH(-I1): -t nat -C OUTPUT -p tcp --dport 53 -j CC_DNS
+MATCH(-A) : -C OUTPUT -d 127.0.0.11 -j CC_DNS_GUARD
+MATCH(-A) : -C OUTPUT -p udp --dport 53 ! -d 127.0.0.1 -j CC_DNS_GUARD
+MATCH(-A) : -C OUTPUT -p tcp --dport 53 ! -d 127.0.0.1 -j CC_DNS_GUARD
+MATCH(-A) : -C OUTPUT -p tcp --dport 443 -j CC_SNI_GUARD
+MATCH(-A) : -C OUTPUT -m set --match-set allowed-domains dst,dst -j ACCEPT
+MATCH(-A) : -C OUTPUT -j REJECT --reject-with icmp-admin-prohibited
+exit=0

@@ -953,7 +953,6 @@ STUB
   # A lock timeout must NOT tear down the boundary the holder is building.
   run grep -c -- "-P OUTPUT DROP" "$CMD_LOG"
   [ "$output" -eq 0 ]
-  [[ "$output" != *"fails CLOSED"* ]]
   exec 8>&-
 }
 
@@ -984,6 +983,7 @@ STUB
   grep -q "^iptables -w 5 -t nat -C OUTPUT -p tcp --dport 53 -j CC_DNS$" "$CMD_LOG"
   grep -q "^iptables -w 5 -C OUTPUT -d 127.0.0.11 -j CC_DNS_GUARD$" "$CMD_LOG"
   grep -q "^iptables -w 5 -C OUTPUT -p udp --dport 53 ! -d 127.0.0.1 -j CC_DNS_GUARD$" "$CMD_LOG"
+  grep -q "^iptables -w 5 -C OUTPUT -p tcp --dport 53 ! -d 127.0.0.1 -j CC_DNS_GUARD$" "$CMD_LOG"
   grep -q "^iptables -w 5 -C OUTPUT -p tcp --dport 443 -j CC_SNI_GUARD$" "$CMD_LOG"
   grep -q "^iptables -w 5 -C OUTPUT -m set --match-set allowed-domains dst,dst -j ACCEPT$" "$CMD_LOG"
   grep -q "^iptables -w 5 -C OUTPUT -j REJECT --reject-with icmp-admin-prohibited$" "$CMD_LOG"

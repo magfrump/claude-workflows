@@ -1,0 +1,16 @@
+2026-09-03T19:52:34-07:00
+cwd=/workspace
+iptables: iptables v1.8.9 (nf_tables)
+--- iptables -w 5 -t nat -C OUTPUT -p tcp --dport 443 -j CC_SNI
+exit=4
+iptables v1.8.9 (nf_tables): Could not fetch rule set generation id: Permission denied (you must be root)
+--- iptables -w 5 -C OUTPUT -p udp --dport 53 ! -d 127.0.0.1 -j CC_DNS_GUARD
+exit=4
+iptables v1.8.9 (nf_tables): Could not fetch rule set generation id: Permission denied (you must be root)
+--- iptables -w 5 -C OUTPUT -m set --match-set allowed-domains dst,dst -j ACCEPT
+exit=1
+iptables v1.8.9 (nf_tables): Can't open socket to ipset.
+--- iptables -w 5 -C OUTPUT -j REJECT --reject-with icmp-admin-prohibited
+exit=4
+iptables v1.8.9 (nf_tables): Could not fetch rule set generation id: Permission denied (you must be root)
+(non-root: a parse failure prints "Bad argument"/"unknown option"; "Permission denied (you must be root)" means the arg vector parsed cleanly)

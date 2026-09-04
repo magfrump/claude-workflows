@@ -1,0 +1,61 @@
+===== enforcement_files =====
+devcontainer.json
+Dockerfile
+init-firewall.sh
+cc-sni-proxy.py
+link-claude-home.sh
+cc-isolated.sh
+egress/base.txt
+claude-home/realdir/inner.txt
+claude-home/skills/SKILL.md
+claude-home/skills/dangling
+claude-home/skills/dirlink
+claude-home/skills/good link.md
+efexit=0
+
+===== compute_manifest (run 1) =====
+exit=0
+73cb3858a687a8494ca3323053016282f3dad39d42cf62ca4e79dda2aac7d9ac  Dockerfile
+73cb3858a687a8494ca3323053016282f3dad39d42cf62ca4e79dda2aac7d9ac  cc-isolated.sh
+73cb3858a687a8494ca3323053016282f3dad39d42cf62ca4e79dda2aac7d9ac  cc-sni-proxy.py
+8e54b0ca18020275e4aef1ca0eb5e197e066c065c1864817652a8a39c55402cd  claude-home/realdir/inner.txt
+91ee5e9f42ba3d34e414443b36a27b797a56a47aad6bb1e4c1769e69c77ce0ca  claude-home/skills/SKILL.md
+81400175ee7c369247134c7bfeae173d6acce1e04dbaf42f80b49ca5183c2f7e  claude-home/skills/dangling
+089fe46b301a4e2d7e998cbd1630487897caa467fbdf1fe3c863063ead378322  claude-home/skills/dirlink
+0e95f5a3666031d6fac42bc6ca698b40b61648f4974c8ec355181ed4888c5c26  claude-home/skills/good link.md
+73cb3858a687a8494ca3323053016282f3dad39d42cf62ca4e79dda2aac7d9ac  devcontainer.json
+87428fc522803d31065e7bce3cf03fe475096631e5e07bbd7a0fde60c4cf25c7  egress/base.txt
+73cb3858a687a8494ca3323053016282f3dad39d42cf62ca4e79dda2aac7d9ac  init-firewall.sh
+73cb3858a687a8494ca3323053016282f3dad39d42cf62ca4e79dda2aac7d9ac  link-claude-home.sh
+--stderr--
+
+===== compute_manifest (run 2) — stability =====
+exit=0
+STABLE: run1 == run2
+
+===== byte format check: field separator on link lines =====
+6:81400175ee7c369247134c7bfeae173d6acce1e04dbaf42f80b49ca5183c2f7e  claude-home/skills/dangling$
+7:089fe46b301a4e2d7e998cbd1630487897caa467fbdf1fe3c863063ead378322  claude-home/skills/dirlink$
+8:0e95f5a3666031d6fac42bc6ca698b40b61648f4974c8ec355181ed4888c5c26  claude-home/skills/good link.md$
+
+===== contents of a dir-symlink target walked? =====
+1
+(claude-home/realdir/inner.txt is reached as a REAL path, not through the link:)
+4:8e54b0ca18020275e4aef1ca0eb5e197e066c065c1864817652a8a39c55402cd  claude-home/realdir/inner.txt
+
+===== repoint the dangling link -> manifest changes? =====
+CHANGED (good):
+--- /tmp/m1.txt	2026-09-03 19:47:59.047859482 -0700
++++ /tmp/m3.txt	2026-09-03 19:47:59.073799878 -0700
+@@ -3,7 +3,7 @@
+ 73cb3858a687a8494ca3323053016282f3dad39d42cf62ca4e79dda2aac7d9ac  cc-sni-proxy.py
+ 8e54b0ca18020275e4aef1ca0eb5e197e066c065c1864817652a8a39c55402cd  claude-home/realdir/inner.txt
+ 91ee5e9f42ba3d34e414443b36a27b797a56a47aad6bb1e4c1769e69c77ce0ca  claude-home/skills/SKILL.md
+-81400175ee7c369247134c7bfeae173d6acce1e04dbaf42f80b49ca5183c2f7e  claude-home/skills/dangling
++0ec7303069be8581eb5581b2c313c20da180925e1b4cccc6522ce6c89a76b780  claude-home/skills/dangling
+ 089fe46b301a4e2d7e998cbd1630487897caa467fbdf1fe3c863063ead378322  claude-home/skills/dirlink
+ 0e95f5a3666031d6fac42bc6ca698b40b61648f4974c8ec355181ed4888c5c26  claude-home/skills/good link.md
+ 73cb3858a687a8494ca3323053016282f3dad39d42cf62ca4e79dda2aac7d9ac  devcontainer.json
+
+===== sha256sum of a real file: verify same 2-space format =====
+87428fc522803d31065e7bce3cf03fe475096631e5e07bbd7a0fde60c4cf25c7  egress/base.txt$

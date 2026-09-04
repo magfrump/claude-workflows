@@ -81,26 +81,36 @@ compute_manifest() {
   local cfg f
   local -a files=()
   cfg="$(config_dir)"
-  local -a links=()
+  local -a links=() listing
+  # Capture the listing FIRST so its exit status is checked: a process substitution
+  # discards the producer's status by construction, which is how a failing glob
+  # loop once truncated the list silently.
+  local listing
+  listing="$(enforcement_files)" || { echo "ERROR: enforcement_files failed" >&2; return 1; }
   while read -r f; do
     [ -n "$f" ] || continue
+    # A symlink is recorded by its target text (a repoint changes the manifest)
+    # AND, when it resolves to a regular file, by that file's content — a link to
+    # a rewritten file must not stay byte-identical either.
     if [ -L "$cfg/$f" ]; then
       links+=("$f")
+      [ -f "$cfg/$f" ] && files+=("$f")
     elif [ ! -f "$cfg/$f" ]; then
       echo "ERROR: enforcement file missing: $f" >&2
       return 1
     else
       files+=("$f")
     fi
-  done < <(enforcement_files)
+  done <<< "$listing"
   [ "${#files[@]}" -gt 0 ] || { echo "ERROR: enforcement file list is empty" >&2; return 1; }
-  # One sha256sum for the whole list (the claude-home walk is ~100 files; a fork
-  # per file made every launch pay for it). Symlinks are hashed by their target
-  # text, in sha256sum's own output format, so a repoint changes the manifest.
+  # One sha256sum for all regular (or link-resolved) files — the claude-home walk
+  # is ~100 files and a fork per file made every launch pay for it. Symlink
+  # targets are emitted in sha256sum's own two-space format under a `link:` prefix
+  # on the path, so the two kinds of line cannot collide.
   (
     cd "$cfg" && sha256sum "${files[@]}"
     for f in "${links[@]}"; do
-      printf '%s  %s\n' "$(printf '%s' "$(readlink "$f")" | sha256sum | cut -d' ' -f1)" "$f"
+      printf '%s  link:%s\n' "$(printf '%s' "$(readlink "$f")" | sha256sum | cut -d' ' -f1)" "$f"
     done
   ) | LC_ALL=C sort -k2
 }

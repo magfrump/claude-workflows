@@ -1,0 +1,42 @@
+===== mode=empty =====
+exit=0
+devcontainer.json
+Dockerfile
+init-firewall.sh
+cc-sni-proxy.py
+link-claude-home.sh
+cc-isolated.sh
+egress/base.txt
+claude-home/skills/SKILL.md
+claude-home walk present: 1
+===== mode=none =====
+exit=0
+devcontainer.json
+Dockerfile
+init-firewall.sh
+cc-sni-proxy.py
+link-claude-home.sh
+cc-isolated.sh
+egress/base.txt
+claude-home/skills/SKILL.md
+claude-home walk present: 1
+===== mode=profile =====
+exit=0
+devcontainer.json
+Dockerfile
+init-firewall.sh
+cc-sni-proxy.py
+link-claude-home.sh
+cc-isolated.sh
+egress/base.txt
+projects/foo.profile
+claude-home/skills/SKILL.md
+claude-home walk present: 1
+
+===== OLD FORM reproduction (mode=empty) =====
+exit=1
+devcontainer.json
+egress/base.txt
+OLD claude-home walk present: 0
+
+bash version: 5.2.15(1)-release

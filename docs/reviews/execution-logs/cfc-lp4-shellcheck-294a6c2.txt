@@ -1,0 +1,10 @@
+2026-09-03T19:51:04-07:00
+cwd=/workspace
+== devcontainer-config/cc-isolated.sh ==
+exit=0
+== devcontainer-config/init-firewall.sh ==
+exit=0
+== devcontainer-config/link-claude-home.sh ==
+exit=0
+== devcontainer-config/install.sh ==
+exit=0

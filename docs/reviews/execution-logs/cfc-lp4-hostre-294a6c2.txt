@@ -1,0 +1,19 @@
+2026-09-03T19:51:44-07:00
+cwd=/workspace
+REJECT  'com'
+REJECT  'localhost'
+ACCEPT  'a.b'
+ACCEPT  'api.anthropic.com'
+ACCEPT  'host.docker.internal'
+REJECT  'a'
+REJECT  'a.'
+REJECT  '.a'
+ACCEPT  'a-b.c'
+REJECT  '-a.b'
+--- via the script's own parse_entry (--print-entries path, direct call) ---
+REJECT  com
+OK      a.b                            -> a.b	443
+OK      api.anthropic.com              -> api.anthropic.com	443
+OK      mirror.example:443,8443        -> mirror.example	443,8443
+REJECT  host:22
+EXIT=0

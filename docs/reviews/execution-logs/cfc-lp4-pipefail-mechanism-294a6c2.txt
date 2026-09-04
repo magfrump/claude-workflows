@@ -1,0 +1,8 @@
+--- flags: -e
+REACHED_WALK
+exit=0
+--- flags: -eo pipefail
+exit=1
+--- flags: -u
+REACHED_WALK
+exit=0

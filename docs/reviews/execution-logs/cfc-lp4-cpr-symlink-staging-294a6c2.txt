@@ -1,0 +1,15 @@
+2026-09-03T19:54:30-07:00
+cwd=/workspace
+=== GNU cp -r preserves symlinks (incl. dangling) ===
+total 4
+lrwxrwxrwx 1 node node 8 Sep  3 19:54 dang -> /nowhere
+lrwxrwxrwx 1 node node 4 Sep  3 19:54 link -> real
+-rw-r--r-- 1 node node 2 Sep  3 19:54 real
+
+=== the tracked symlink install.sh stages into claude-home/workflows ===
+120000 53e3ac66de163f41f3cac571b46894dda438c282 0	workflows/workflows
+/home/magfrump/claude-workflows/workflows
+lrwxrwxrwx 1 node node 41 Mar 25 11:47 workflows/workflows -> /home/magfrump/claude-workflows/workflows
+
+=== install.sh CLAUDE_HOME_SRC includes workflows ===
+42:CLAUDE_HOME_SRC=(CLAUDE.md skills workflows guides patterns hooks scripts)

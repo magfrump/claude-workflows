@@ -1,0 +1,28 @@
+bash: 5.2.15(1)-release
+--- idiom: ${#arr[@]} on empty array under set -u ---
+empty branch reached, no unbound error
+exit=0
+--- and expansion "${a[@]}" on empty array under set -u ---
+[] ok
+exit=0
+
+--- compute_manifest with ALL top-level files as symlinks (files=() empty) ---
+ERROR: enforcement file list is empty
+exit=1
+
+--- bless_manifest entry count vs actual lines ---
+Blessed /tmp/tmp.rsYdU852Vm/manifest.sha256 (10 entries):
+73cb3858a687a8494ca3323053016282f3dad39d42cf62ca4e79dda2aac7d9ac  Dockerfile
+73cb3858a687a8494ca3323053016282f3dad39d42cf62ca4e79dda2aac7d9ac  cc-isolated.sh
+73cb3858a687a8494ca3323053016282f3dad39d42cf62ca4e79dda2aac7d9ac  cc-sni-proxy.py
+91ee5e9f42ba3d34e414443b36a27b797a56a47aad6bb1e4c1769e69c77ce0ca  claude-home/h.md
+d1a8ad2a69a29cade69fff625fb39bda83d1b14fcfe42838a470f92f7dcbb772  claude-home/link.md
+73cb3858a687a8494ca3323053016282f3dad39d42cf62ca4e79dda2aac7d9ac  devcontainer.json
+87428fc522803d31065e7bce3cf03fe475096631e5e07bbd7a0fde60c4cf25c7  egress/base.txt
+0263829989b6fd954f72baaf2fc64bc2e2f01d692d4de72986ea808f6e99813f  egress/python.txt
+73cb3858a687a8494ca3323053016282f3dad39d42cf62ca4e79dda2aac7d9ac  init-firewall.sh
+73cb3858a687a8494ca3323053016282f3dad39d42cf62ca4e79dda2aac7d9ac  link-claude-home.sh
+--- header line vs real wc -l ---
+Blessed /tmp/tmp.rsYdU852Vm/manifest.sha256 (10 entries):
+actual manifest lines: 10
+manifest entries (non-empty): 10
