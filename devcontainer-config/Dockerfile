@@ -106,8 +106,8 @@ RUN ARCH=$(dpkg --print-architecture) && \
 # it rather than trusting the TLS channel alone (git-delta above does not, but that
 # predates this decision — don't skip a free check just to match an older layer).
 #
-# Installed to /usr/local/bin, which is root-owned. Unlike /usr/local/share (chowned
-# to node above for npm), `node` cannot rewrite the toolchain binary it runs.
+# Installed to /usr/local/bin, which is root-owned (as is /usr/local/share — only
+# npm-global beneath it is node's), so `node` cannot rewrite the toolchain binary it runs.
 ARG UV_VERSION=0.11.28
 RUN case "$(dpkg --print-architecture)" in \
     amd64) UV_TARGET=x86_64-unknown-linux-gnu ;; \

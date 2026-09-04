@@ -48,6 +48,8 @@ setup() {
   cat > "$STUB_DIR/iptables" <<'STUB'
 #!/usr/bin/env bash
 echo "iptables $*" >> "$CMD_LOG"
+# NO_REDIRECT models a missing CC_SNI jump: `-C` (rule-exists check) reports absent.
+if [ -n "${NO_REDIRECT:-}" ] && [ "${1:-}" = "-t" ] && [ "${3:-}" = "-C" ]; then exit 1; fi
 POL="$CMD_LOG.policies"
 args=("$@")
 i=0
@@ -955,4 +957,11 @@ STUB
   [[ "$output" == *"global IPv6 address but no usable ip6tables"* ]]
   run grep -c -- "^iptables -F" "$CMD_LOG"
   [ "$output" -eq 0 ]
+}
+
+@test "a missing tcp/443 redirect rule fails verification even with a logged refusal" {
+  NO_REDIRECT=1 run bash "$FW"
+  [ "$status" -ne 0 ]
+  [[ "$output" == *"redirect to the SNI proxy is not installed"* ]]
+  grep -q "iptables -w 5 -P OUTPUT DROP" "$CMD_LOG"
 }

@@ -1050,6 +1050,13 @@ if ! runuser -u node -- curl --connect-timeout 5 --max-time 15 https://api.anthr
 else
     echo "Firewall verification passed - node reaches https://api.anthropic.com through the SNI proxy"
 fi
+# The negative probe needs the address phase A remembered; api.anthropic.com is in
+# base and its resolution failure is fatal, so this cannot be empty — asserted anyway
+# so the guarantee is stated rather than incidental.
+if [ -z "$ANTHROPIC_PROBE_IP" ]; then
+    echo "ERROR: Firewall verification failed - no api.anthropic.com address recorded for the SNI probe"
+    exit 1
+fi
 # Negative: an address that IS in the ipset, asked for with a name that is NOT
 # allowlisted, must be refused — this is the one check that distinguishes the
 # SNI proxy from address matching alone.

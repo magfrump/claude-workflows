@@ -1,0 +1,413 @@
+1..411
+ok 1 AGENTS.md and GEMINI.md content is in sync (ignoring headers and @./workflows/ prefix)
+ok 2 creates log with header when absent and appends row
+ok 3 uses default window of 3 when value is non-numeric
+ok 4 skips tasks without a hypothesis and warns
+ok 5 only approved tasks are logged
+ok 6 appends without glomming when existing log lacks trailing newline
+ok 7 pipe characters in hypothesis text are escaped
+ok 8 evaluator and requires columns are populated when task has them
+ok 9 user-evaluator with no requires emits empty requires cell
+ok 10 hypothesis_source column is populated when task carries it
+ok 11 planner-source hypothesis is logged with planner in Source cell
+ok 12 missing hypothesis_source leaves the cell empty (legacy task)
+ok 13 project allow entries are honored when the global settings.json has only a deny list
+ok 14 project allow entries are honored when the global settings.json has no permissions key at all
+ok 15 a command outside every allow list still falls through to the normal prompt
+ok 16 a pipeline is allowed only when every component is allow-listed
+ok 17 resolve_workspace returns the git toplevel for a path inside a repo
+ok 18 resolve_workspace fails loudly outside a git repo instead of guessing
+ok 19 resolve_workspace fails on a nonexistent directory
+ok 20 resolve_workspace defaults to $PWD when given no argument
+ok 21 project_id differs for same-basename repos at different paths
+ok 22 project_id is stable for the same path
+ok 23 ws_fingerprint differs between two different repos
+ok 24 ws_fingerprint is stable for the same repo
+ok 25 compute_manifest covers the config files and the egress profiles
+ok 26 compute_manifest fails when an enforcement file is missing
+ok 27 check_manifest fails with instructions when nothing is blessed
+ok 28 check_manifest passes after bless with unchanged files
+ok 29 check_manifest fails after the firewall script is tampered with
+ok 30 check_manifest fails when the launcher itself is tampered with
+ok 31 check_manifest fails when an egress profile gains a domain
+ok 32 check_manifest fails when an unblessed project profile appears
+ok 33 re-bless after a reviewed change makes check_manifest pass again
+ok 34 an unregistered project gets the base profile only
+ok 35 register_project records the profile and re-blesses
+ok 36 register_project rejects an unknown profile before writing anything
+ok 37 suggest_profiles proposes python for a python repo but never applies it
+ok 38 suggest_profiles proposes rust for a cargo repo but never applies it
+ok 39 suggest_profiles proposes android for a gradle repo (Kotlin DSL)
+ok 40 suggest_profiles proposes android for a repo with just the gradle wrapper
+ok 41 suggest_profiles proposes dotnet for a Unity project root
+ok 42 suggest_profiles proposes dotnet for a repo with a top-level csproj
+ok 43 suggest_profiles is silent for a plain repo
+ok 44 base profile alone yields the base allowlist and nothing else
+ok 45 a python project gets PyPI on top of base
+ok 46 one project's profile does not widen another's (H5)
+ok 47 profiles compose
+ok 48 an android project gets Google Maven, Maven Central, and Gradle on top of base
+ok 49 a dotnet project gets NuGet on top of base, and only NuGet
+ok 50 an unknown profile is a hard failure, not a silently narrower allowlist
+ok 51 a missing profile file degrades to base, not to empty
+ok 52 devcontainer.json anchors build.dockerfile to the config dir, not the repo
+ok 53 devcontainer.json anchors build.context to the config dir, not the repo
+ok 54 the launcher exports CC_CONFIG_DIR (else the build paths resolve to /)
+ok 55 Dockerfile copies the claude-home payload into the image
+ok 56 the payload is baked outside /home/node/.claude (a volume would shadow it)
+ok 57 the payload is root-owned and not writable by node
+ok 58 hook scripts in the payload stay executable
+ok 59 postStartCommand links the payload after the firewall, not before
+ok 60 install.sh stages the payload from the repo root
+ok 61 link-claude-home refuses to clobber a real file in the volume
+ok 62 link-claude-home links the payload and is idempotent
+ok 63 link-claude-home is a no-op when the payload is absent (non-cc-isolated host)
+ok 64 Gate 1h loads the review skill from the baked payload, not the branch
+ok 65 Gate 1h pins an explicit reviewer model
+ok 66 Gate 1h archives review artifacts before the worktree is torn down
+ok 67 Gate 1h fails closed on reviewer error and on an unparseable verdict
+ok 68 Gate 1h passes a per-run nonce the branch cannot know
+ok 69 every regular file in install.sh's PAYLOAD is hashed by enforcement_files
+ok 70 claude_headless_flags always requests acceptEdits
+ok 71 claude_headless_flags emits nothing else when given no directories
+ok 72 claude_headless_flags adds --add-dir for an existing directory
+ok 73 claude_headless_flags adds one --add-dir per existing directory
+ok 74 claude_headless_flags drops a non-existent directory
+ok 75 claude_headless_flags drops an empty directory argument
+ok 76 claude_headless_flags tolerates a directory path containing spaces
+ok 77 the code-review gate passes CR_FLAGS to claude -p
+ok 78 the code-review gate builds CR_FLAGS from claude_headless_flags
+ok 79 the code-review gate adds the baked payload root, reaching skills/ and patterns/
+ok 80 the worktree-fallback review path clears CR_ADD_DIR
+ok 81 every file-writing claude -p invocation carries headless flags
+ok 82 the stdout-only invocations are still flag-free, keeping the allowlist honest
+ok 83 parse_code_review_red extracts the count from a clean nonced sentinel
+ok 84 parse_code_review_red handles zero
+ok 85 parse_code_review_red tolerates extra whitespace
+ok 86 an unnonced sentinel is ignored (branch content cannot forge a verdict)
+ok 87 a sentinel bearing the wrong nonce is ignored
+ok 88 a trailing forged sentinel cannot override the real one
+ok 89 conflicting nonced sentinels are unparseable, not a coin flip
+ok 90 duplicate identical sentinels are fine
+ok 91 parse_code_review_red emits nothing when called without a nonce
+ok 92 parse_code_review_red emits nothing when no sentinel is present
+ok 93 code_review_gate_verdict passes on zero red findings
+ok 94 code_review_gate_verdict fails on one or more red findings
+ok 95 code_review_gate_verdict fails closed on a non-integer count
+ok 96 count_rubric_red counts Must Fix rows only
+ok 97 count_rubric_red ignores the empty-state placeholder row
+ok 98 count_rubric_red does not count amber rows that follow
+ok 99 count_rubric_red emits nothing when the rubric is absent
+ok 100 count_rubric_red matches the golden rubric's red count
+ok 101 count_rubric_red is insensitive to column count
+ok 102 0% overlap is below default 70% threshold
+ok 103 exact 70% overlap meets 70% threshold
+ok 104 100% overlap is above 70% threshold
+ok 105 empty overlap returns below (graceful)
+ok 106 empty threshold returns below (graceful)
+ok 107 missing arguments returns below (graceful)
+ok 108 non-numeric overlap returns below (graceful)
+ok 109 non-numeric threshold returns below (graceful)
+ok 110 stage-1 dry-run survives a committed binary file (no UnicodeDecodeError crash)
+ok 111 oversize files are listed under FILES NOT INLINED, not inlined
+ok 112 sibling section carries the context-only label and the sibling content
+ok 113 section delimiters carry the nonce; unnonced lookalikes are not boundaries
+ok 114 keyless dry-run makes no network calls and prints no bogus $0.00 projection
+ok 115 diff-only dry-run prompt is unchanged by the stage-1 additions (prompt sha stable)
+ok 116 split_range: two-dot, three-dot, and open ranges parse as documented
+ok 117 live diff-only run warns on stderr only; stdout status lines stay clean
+ok 118 dry-run diff-only prints no recall-probe warning (early return precedes it)
+ok 119 live --context-base run prints no recall-probe warning
+ok 120 aggregate inline budget spills overflow into FILES NOT INLINED
+ok 121 unpriced models fail the cost guard closed (non-dry-run refuses to send)
+ok 122 explicit markdown links to content directories resolve to existing files
+ok 123 no test file can spawn a network-capable binary without a stub or opt-out
+ok 124 the gate actually scanned this repo's suites (a zero-file scan is not a pass)
+ok 125 check_convergence_threshold is a function
+ok 126 validate_task_json is a function
+ok 127 init_round_log is a function
+ok 128 update_round_log is a function
+ok 129 record_gate is a function
+ok 130 finalize_round_log is a function
+ok 131 print_round_summary is a function
+ok 132 parse_si_input is a function
+ok 133 generate_morning_summary is a function
+ok 134 all 9 expected functions are present
+ok 135 every guide in guides/ is linked from guides/README.md
+ok 136 bash: flags an unstubbed direct invocation
+ok 137 bash: ignores binary names in comments and echo strings
+ok 138 bash: accepts the PATH-shim stub
+ok 139 bash: accepts an opt-out that carries a reason
+ok 140 bash: rejects a bare opt-out with no reason
+ok 141 bash: follows call sites transitively through sourced repo scripts
+ok 142 bash: follows a bats `load` into a shared helper under test/lib
+ok 143 bash: follows a load from a nested suite dir (../lib/…)
+ok 144 bash: resolves a load relative to the loading suite, not a listed dir
+ok 145 bash: follows a script that is assigned to a variable and run later
+ok 146 bash: follows a script EXECUTED in command position
+ok 147 bash: does NOT follow a script that is only named in a message
+ok 148 bash: sees the binary behind a wrapper (if / timeout / env)
+ok 149 bash: sees the binary behind bats' `run !` negative assertion
+ok 150 bash: follows a script run behind `run !` (the house idiom)
+ok 151 bash: resolves an extension-less load whose path is built from a variable
+ok 152 bash: sees a binary inside a `bash -c` string
+ok 153 bash: a binary named in a trailing comment is not a call site
+ok 154 bash: the matcher does not backtrack exponentially on flag runs
+ok 155 bash: a stub merely DEFINED in a helper does not stub anything
+ok 156 bash: a PATH tweak in a sourced PRODUCT script is not a test stub
+ok 157 bash: a stub in a loaded test helper counts as a stub
+ok 158 bash: a ${#arr} length op does not hide a spawn later on the line
+ok 159 bash: a `}` inside a string in an UNUSED helper does not leak a stub
+ok 160 bash: a `}` inside a string in a CALLED stub is still credited
+ok 161 bash: a `)` in a string inside $(...) does not hide a later spawn
+ok 162 python: flags a subprocess spawn of a network binary
+ok 163 python: flags a multi-line spawn call
+ok 164 python: ignores binary names in prose and unrelated strings
+ok 165 python: follows the reach transitively through a local import
+ok 166 python: sees a spawn whose argument string carries an unbalanced paren
+ok 167 python: accepts a PATH shim only when a stub for the binary is created
+ok 168 python: a bare read of os.environ[PATH] is not a stub
+ok 169 python: accepts a patched subprocess
+ok 170 python: patching something merely NAMED like subprocess is not a stub
+ok 171 python: follows `from pkg import mod` into pkg/mod.py
+ok 172 python: follows an explicit relative import (`from . import helper`)
+ok 173 python: honours the LEVEL of a relative import (`from ..mod import x`)
+ok 174 python: follows a parenthesized, multi-line import list
+ok 175 python: follows every module of a multi-module `import a, b`
+ok 176 python: an unbalanced paren in a TRAILING comment does not hide the spawn
+ok 177 python: honors the file-level pytestmark as an opt-out
+ok 178 python: a per-test @pytest.mark.network does not exempt the whole file
+ok 179 python: a root-level .venv is excluded, not linted
+ok 180 a language with no test files is reported UNCHECKED, never a silent pass
+ok 181 anchor: the closure of round-log-functions.bats reaches self-improvement.sh
+ok 182 anchor: self-improvement.sh itself is still seen as a claude call site
+ok 183 anchor: si-morning-summary.sh is still seen as a claude call site
+ok 184 anchor: round-log-functions.bats's stub is recognized, so the tree is green
+ok 185 print-resolvers keeps valid IPv4 nameservers
+ok 186 print-resolvers rejects out-of-range octets rather than passing them to iptables
+ok 187 print-resolvers exits 0 on an IPv6-only resolv.conf (no set -e abort)
+ok 188 print-resolvers exits 0 when resolv.conf is missing entirely
+ok 189 inspection hooks never touch iptables
+ok 190 a successful run sets DROP policies and installs the terminal REJECT
+ok 191 the allowlist ipset is address+port, and the OUTPUT accept matches on both
+ok 192 GitHub CIDRs are admitted on tcp 443 and tcp 22 only
+ok 193 a port-less profile entry defaults to tcp 443
+ok 194 a profile entry with a port suffix is admitted on exactly those ports
+ok 195 the shipped llm profile scopes host.docker.internal to 11434, and only there
+ok 196 a malformed profile entry is a hard failure before any network read
+ok 197 the bridge gateway is admitted on udp/tcp 53 only, with no inbound counterpart
+ok 198 the flush-to-DROP window contains no network call
+ok 199 all three DROP policies are set before the flush, so the window is empty
+ok 200 every domain is resolved before the flush, not during the window
+ok 201 scoped DNS accepts are installed for the configured resolver
+ok 202 no blanket inbound source-port-53 accept is installed
+ok 203 every curl carries --max-time: the meta fetch and both verification probes
+ok 204 print-dnsmasq-conf has no default upstream and one server line per allowlisted domain
+ok 205 print-dnsmasq-conf strips a :port suffix from profile entries
+ok 206 print-dnsmasq-conf with no IPv4 resolver emits zero server lines (everything REFUSED)
+ok 207 print-dnsmasq-conf refuses a non-hostname entry rather than emitting it as config
+ok 208 inspection hooks (dnsmasq-conf included) never touch iptables or start a daemon
+ok 209 a full run writes the dnsmasq config and starts exactly one instance as the dnsmasq user
+ok 210 upstream port 53 is owner-scoped: only the dnsmasq uid and root, never everyone
+ok 211 the 127.0.0.11 bypass reject precedes the loopback accept
+ok 212 a re-run kills the previous dnsmasq by pidfile and does not double-start
+ok 213 a missing dnsmasq user aborts before the flush, leaving the live ruleset intact
+ok 214 no blanket outbound SSH accept is installed
+ok 215 an aborted run forces DROP policies rather than leaving the container open
+ok 216 a GitHub fetch failure aborts before the flush, leaving the live ruleset intact
+ok 217 failure to resolve the critical domain aborts and fails closed
+ok 218 the trap waits for the xtables lock and verifies the DROP it applied
+ok 219 the trap raises a distinct OPEN alarm when the DROP policy does not take
+ok 220 SIGTERM mid-resolution still ends at DROP (the sentinel, not $?, drives the trap)
+ok 221 the SNI proxy is started as ccproxy with the generated allowlist, before the REDIRECT
+ok 222 the SNI allowlist holds every 443 entry as an exact name plus the GitHub zones
+ok 223 an entry not on 443 is omitted from the SNI allowlist
+ok 224 tcp/443 is redirected to the proxy for every uid except ccproxy and root, in nat and filter
+ok 225 a proxy that fails to start aborts the run and fails closed
+ok 226 a missing ccproxy user aborts before the flush
+ok 227 a ccproxy uid equal to the dnsmasq uid is refused
+ok 228 the SNI probes run as node through the proxy: allowlisted name passes, forged SNI must fail
+ok 229 a proxy that admits a non-allowlisted SNI fails verification and fails closed
+ok 230 node failing to reach api.anthropic.com through the proxy fails verification
+ok 231 a zero-padded port is canonicalised before it reaches ipset and the SNI allowlist
+ok 232 a single-label entry is rejected by the shared grammar (it would be a TLD zone)
+ok 233 IPv6 is default-denied: DROP policies, flush, loopback and established only
+ok 234 the negative SNI probe requires a logged refusal, not just a failed curl
+ok 235 the run takes a lock so concurrent invocations serialise
+ok 236 helpers resolve through the pinned PATH, not the caller's
+ok 237 a kernel without an IPv6 filter table warns and continues instead of failing closed
+ok 238 the negative probe asserts the nat redirect rule, not just log evidence
+ok 239 a refusal logged from a direct loopback connection does not satisfy the probe
+ok 240 the lock lives in a 0700 directory and is 0600
+ok 241 the lock is taken after phase A: a held lock still lets phase A run
+ok 242 a global IPv6 address with no usable v6 filter table aborts before the flush
+ok 243 the 238,155-token panel figure agrees across results.md, 032, and log row 34
+ok 244 the ~73% saving figure agrees across all four documents
+ok 245 the primary record's percentage follows from its own addends
+ok 246 the 0/8 canon tally agrees across the measurement docs and decisions
+ok 247 the 225-commit trigger denominator agrees across SKILL, 032, and log
+ok 248 fresh volume with no settings.json gets every wired hook and deny rule
+ok 249 merge is idempotent across repeated container starts
+ok 250 unrelated settings keys, foreign hooks, and user permissions survive the merge
+ok 251 {{CLAUDE_DIR}} is substituted and _comment is stripped
+ok 252 an unparseable settings.json is refused, not overwritten
+ok 253 CC_SKIP_HOOK_WIRING=1 leaves settings.json untouched
+ok 254 every command in wiring.json points at a hook that exists
+ok 255 wiring.json declares only known hook event names
+ok 256 wiring.json declares only known permission modes
+ok 257 the deny rules the guard hook's HARD tier depends on are wired
+ok 258 no rejections in scope emits placeholder
+ok 259 single gate with multiple files renders sub-counts
+ok 260 multiple gates each get their own grouped line
+ok 261 file with 3+ rejections triggers maintenance signal
+ok 262 file with only 2 rejections produces no maintenance signal
+ok 263 maintenance signal triggers when file spans multiple gates
+ok 264 missing tasks file falls back to unknown
+ok 265 empty files_touched falls back to unknown
+ok 266 rejections across multiple rounds aggregate into one cluster set
+ok 267 same task rejected in two rounds counts once per (gate, file)
+ok 268 uses basename of first file in files_touched as primary
+ok 269 header is always emitted even when there are rejections
+ok 270 progressive-disclosure: open user rows collapse into a counted <details> block, all reachable
+ok 271 discoverability-on-creation: a precondition-MET script row appears under Ready, before the collapsed wall
+ok 272 feedback-continuity: numbered total equals _count_matured_deferred for a mixed log
+ok 273 collapse-not-delete: a precondition-UNMET script row is collapsed, not promoted to Ready
+ok 274 zero open rows emits the no-op line and no group headers
+ok 275 missing hypothesis log degrades gracefully
+ok 276 _evaluate_script_preconditions exit code: 0 when MET, 1 when UNMET
+ok 277 returns [] for empty input
+ok 278 returns [] for prose without bullets
+ok 279 returns [] for bullets without hypothesis sub-bullets
+ok 280 single bullet with hypothesis yields one pair
+ok 281 multiple priorities with hypotheses are all captured
+ok 282 mixed bullets — only those with hypothesis sub-bullets are emitted
+ok 283 hypothesis continuation lines are joined
+ok 284 Hypothesis: capitalisation is accepted
+ok 285 quotes and special chars in text are preserved as JSON strings
+ok 286 reads from $SI_PRIORITIES when no argument is given
+ok 287 all pivot workflows exist and have '## When to pivot' sections
+ok 288 pivot references are bidirectionally consistent (asymmetries are warnings)
+ok 289 resolves skill from SKILL.md-dir layout
+ok 290 resolves skill from flat skills/foo.md layout
+ok 291 resolves workflow target
+ok 292 resolves multiple targets and dedupes
+ok 293 returns empty for tasks with no skill/workflow paths
+ok 294 returns empty when tasks file is missing
+ok 295 falls back to archive when current tasks file is absent
+ok 296 counts skill invocations via skill_tool
+ok 297 ignores file_read entries for skill targets
+ok 298 workflow targets count file_read entries (fallback channel)
+ok 299 sums across multiple targets
+ok 300 returns 0 when log is missing
+ok 301 returns 0 for empty target list
+ok 302 metric_logged passes when field is present on a matching entry
+ok 303 metric_logged fails when no matching entry has the field
+ok 304 metric_logged scopes to the named target
+ok 305 _days_since_round returns elapsed days from round timestamp
+ok 306 _days_since_round echoes -1 when report missing
+ok 307 _days_since_round uses NOW_EPOCH override for determinism
+ok 308 preconditions met → ready-for-verdict recommendation
+ok 309 preconditions unmet → INCONCLUSIVE recommendation
+ok 310 no requires declared → ready-now recommendation
+ok 311 unresolvable target → switch-evaluator recommendation
+ok 312 unknown requires key is surfaced and forces INCONCLUSIVE
+ok 313 all three precondition kinds can combine and all must pass
+ok 314 combined preconditions report each check separately when one fails
+ok 315 init_round_log creates valid JSON
+ok 316 init_round_log sets round number
+ok 317 init_round_log sets timestamp in ISO 8601 format
+ok 318 init_round_log includes all expected top-level keys
+ok 319 init_round_log sets outcome to incomplete
+ok 320 init_round_log initializes object fields as empty objects
+ok 321 update_round_log sets a string field
+ok 322 update_round_log preserves other fields
+ok 323 update_round_log sets a nested object value
+ok 324 update_round_log produces valid JSON after multiple updates
+ok 325 record_gate records a single gate result
+ok 326 record_gate records multiple gates for the same task
+ok 327 record_gate records gates for different tasks
+ok 328 record_gate preserves existing round log fields
+ok 329 finalize_round_log creates per-round report file
+ok 330 finalize_round_log per-round report contains correct data
+ok 331 finalize_round_log appends entry to round-history.json
+ok 332 finalize_round_log appends multiple rounds to history
+ok 333 finalize_round_log removes the temp round log file
+ok 334 cleanup removes ROUND_LOG_FILE when it exists
+ok 335 cleanup is safe when ROUND_LOG_FILE is empty
+ok 336 cleanup is safe when ROUND_LOG_FILE points to nonexistent file
+ok 337 round-history.json is valid JSON # skip round-history.json not present
+ok 338 round-history.json is a JSON array # skip round-history.json not present
+ok 339 every entry has required field: round # skip round-history.json not present
+ok 340 every entry has required field: timestamp # skip round-history.json not present
+ok 341 every entry has required field: validation # skip round-history.json not present
+ok 342 every entry has required field: outcome # skip round-history.json not present
+ok 343 round field is a number in every entry # skip round-history.json not present
+ok 344 timestamp field is a string in every entry # skip round-history.json not present
+ok 345 validation field is an object in every entry # skip round-history.json not present
+ok 346 outcome field is a string in every entry # skip round-history.json not present
+ok 347 picks this run's rubric over an older one carried in-tree
+ok 348 an alphabetically-earlier stale rubric with the same date is not selected
+ok 349 matches a commit recorded as a short SHA
+ok 350 matches a commit range encoded only in the filename
+ok 351 falls back to the date when the rubric never names the commit
+ok 352 a commit match outranks a date match
+ok 353 a longer hex string that merely starts with the short SHA still matches
+ok 354 a different commit sharing no prefix does not match
+ok 355 emits nothing when no rubric matches this run
+ok 356 emits nothing when two candidates tie
+ok 357 emits nothing for an empty archive directory
+ok 358 emits nothing for a directory that does not exist
+ok 359 emits nothing when neither a commit nor a date is known
+ok 360 ignores non-rubric review artifacts in the same archive
+ok 361 the selected rubric is the one count_rubric_red reads
+ok 362 the gate selects the rubric by content, not by ls order
+ok 363 the ls | head -1 selector is gone
+ok 364 guide exists and contains machine-readable drift markers
+ok 365 prefixes the guide claims allowed exist in live permissions.allow # skip settings file has no permissions.allow array
+ok 366 prefixes the guide claims removed have no broad allow entry # skip settings file has no permissions.allow array
+ok 367 no round reports: file is left alone (or absent stays absent)
+ok 368 no round reports: pre-existing file is unchanged
+ok 369 reports exist but no rejections: file unchanged
+ok 370 single rejection: block prepended at top
+ok 371 rejection reason: only the first line is included
+ok 372 spans many rounds: only the 3 most recent are included
+ok 373 multiple rejections in same round: all included
+ok 374 block annotates each entry with its round number
+ok 375 idempotent: running twice produces same content
+ok 376 replaces prior Recent rejections block: does not stack
+ok 377 comment block does not pollute parsed sections
+ok 378 file created from scratch when missing but rejections exist
+ok 379 tap_failing_names extracts only failing test names, sorted+unique
+ok 380 tap_failing_names strips the TAP # directive from the name
+ok 381 tap_failing_names emits nothing for an all-green suite
+ok 382 tap_failing_names dedupes a name that fails in two worktree orderings
+ok 383 tap_new_failures: failure already in baseline is NOT new
+ok 384 tap_new_failures: failure absent from baseline IS new
+ok 385 tap_new_failures: baseline failure ignored, new failure surfaced together
+ok 386 tap_new_failures: empty baseline file means every failure is new
+ok 387 tap_new_failures: missing baseline file means every failure is new
+ok 388 tap_new_failures: green suite produces no new failures even with empty baseline
+ok 389 tap_new_failures: task that FIXED a baseline failure introduces nothing new
+ok 390 valid task passes validation
+ok 391 task missing id is rejected
+ok 392 glob pattern in files_touched is rejected
+ok 393 non-existent parent directory in files_touched is rejected
+ok 394 valid evaluator=script passes
+ok 395 invalid evaluator value is rejected
+ok 396 missing evaluator is a lint warning, not a rejection
+ok 397 valid requires object with all three keys passes
+ok 398 requires with unknown key is rejected
+ok 399 requires.invocations as non-integer is rejected
+ok 400 requires as non-object is rejected
+ok 401 valid hypothesis_source=user passes
+ok 402 valid hypothesis_source=planner passes
+ok 403 invalid hypothesis_source value is rejected
+ok 404 missing hypothesis_source is a lint warning, not a rejection
+ok 405 convention workflows each contain '## When to use'
+ok 406 convention workflows each contain numbered process step headers
+ok 407 convention workflows have at least 3 process steps
+ok 408 untrack removes the targeted pair and leaves the others in order
+ok 409 untrack draining the last tracked pair leaves both arrays empty under set -u
+ok 410 untrack is safe to call when the arrays are already empty (set -u guard)
+ok 411 untrack of an untracked pair is a no-op (no accidental drops)
+BATS_EXIT=0

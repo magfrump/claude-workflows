@@ -1,0 +1,11 @@
+a mode=755 perm/022=[]
+b mode=775 perm/022=[/tmp/tmp.WKjBAIWQfn/b]
+c mode=757 perm/022=[/tmp/tmp.WKjBAIWQfn/c]
+e mode=700 perm/022=[]
+which find: /usr/bin/find
+stat: /usr/bin/stat
+find (GNU findutils) 4.9.0
+=== ip -6 addr show scope global (cwd /workspace, LC_ALL=C) ===
+exit=0
+0
+2026-09-03T18:14:18-07:00
