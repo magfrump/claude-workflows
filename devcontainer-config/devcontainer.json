@@ -73,8 +73,9 @@
     // Crash/error reporting off (security review 2026-08-29, finding 7): it was
     // the only reason sentry.io sat in egress/base.txt as an always-open writable
     // ingestion host. This flag disables crash reporting ONLY. Do NOT reach for
-    // DISABLE_TELEMETRY, DO_NOT_TRACK, DISABLE_GROWTHBOOK, or
-    // CLAUDE_CODE_DISABLE_NONESSENTIAL_TRAFFIC: each of those also disables
+    // DISABLE_TELEMETRY, DO_NOT_TRACK, CLAUDE_CODE_DISABLE_NONESSENTIAL_TRAFFIC, or
+    // DISABLE_GROWTHBOOK (the four named by code.claude.com/docs/en/remote-control,
+    // "Requirements"): each of those also disables
     // feature-flag evaluation, which Remote Control depends on, and Remote Control
     // is in daily use here. Operational telemetry is therefore still ATTEMPTED, to a
     // Datadog intake host the docs list; that host is not allowlisted, so the

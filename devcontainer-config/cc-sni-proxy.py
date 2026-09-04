@@ -2,8 +2,9 @@
 """cc-sni-proxy — SNI-filtering splice proxy for the cc-isolated egress boundary.
 
 init-firewall.sh REDIRECTs every outbound tcp/443 connection that is NOT made by
-this proxy's own uid or by root (root runs the firewall script itself and its
-probes) to 127.0.0.1:<port>, where this process:
+this proxy's own uid or by root (root runs the firewall script itself and its two
+general reachability probes; its two SNI probes run as `node` on purpose) to
+127.0.0.1:<port>, where this process:
 
   1. reads the TLS ClientHello and extracts the server_name (SNI) — nothing is
      decrypted and no certificate is involved; this is a peek, not interception;

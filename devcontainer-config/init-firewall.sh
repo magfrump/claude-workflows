@@ -526,10 +526,15 @@ ipset destroy allowed-domains 2>/dev/null || true
 # of them (security review 2026-09-03, finding 1). Rather than duplicate the whole
 # allowlist for a family nothing here needs, IPv6 is closed outright: loopback and
 # already-established flows only. A container that genuinely needs IPv6 egress needs
-# an IPv6 allowlist designed for it, not this rule set relaxed. If ip6tables is
-# absent the kernel has no IPv6 filter to configure and the check is skipped — that
-# is the one case this cannot close, and the probe at the end reports it.
-if command -v ip6tables >/dev/null 2>&1; then
+# an IPv6 allowlist designed for it, not this rule set relaxed.
+#
+# Guarded on a USABLE filter table, not on the binary: Debian ships ip6tables in
+# the same package as iptables, so the binary is always present, but some kernels
+# (Docker Desktop's, notably) have no IPv6 filter table at all, and there a bare
+# `ip6tables -P` would abort the run into the fail-closed trap and leave the
+# container with no egress. If the table is unusable there is nothing IPv6 to
+# filter on that kernel; this is reported loudly rather than treated as fatal.
+if command -v ip6tables >/dev/null 2>&1 && ip6tables -w 5 -S OUTPUT >/dev/null 2>&1; then
     ip6tables -P INPUT DROP
     ip6tables -P FORWARD DROP
     ip6tables -P OUTPUT DROP
@@ -541,7 +546,7 @@ if command -v ip6tables >/dev/null 2>&1; then
     ip6tables -A OUTPUT -m state --state ESTABLISHED,RELATED -j ACCEPT
     echo "IPv6: default-deny installed (loopback and established flows only)"
 else
-    echo "WARNING: ip6tables not found — IPv6 egress is NOT filtered in this container" >&2
+    echo "WARNING: no usable ip6tables filter table — IPv6 egress is NOT filtered in this container" >&2
 fi
 
 # 2. Selectively restore ONLY internal Docker DNS resolution
@@ -620,8 +625,7 @@ else
   #   - IPv6-only resolv.conf: IPv6 is default-denied in phase B (no allowlist), so
   #     such a resolver is unreachable and resolution fails closed — a container with
   #     only an IPv6 resolver needs an IPv6 allowlist, which this script does not
-  #     provide. (The line below predates that block and describes the old state:)
-  #     IPv6 DNS is unfiltered and resolution keeps working.
+  #     provide.
   #   - a loopback resolver: already admitted unconditionally by `-o lo` below,
   #     independent of anything here (and Docker's embedded resolver is DNAT'd off
   #     port 53 in nat OUTPUT before filter OUTPUT sees it, so a --dport 53 filter
@@ -631,7 +635,7 @@ else
   # could not parse — a broken configuration, which should fail loudly and closed
   # rather than be papered over by opening DNS to the world.
   echo "WARNING: no parseable IPv4 nameserver in /etc/resolv.conf — installing NO IPv4 DNS" >&2
-  echo "         accept. Loopback/host-network/IPv6 resolution is unaffected (see comment);" >&2
+  echo "         accept. Loopback and bridge-gateway resolution are unaffected (see comment);" >&2
   echo "         a non-loopback IPv4 resolver would fail to resolve. Fix resolv.conf." >&2
 fi
 
@@ -715,8 +719,8 @@ fi
 # registry.npmjs.org, github.com, githubusercontent.com) hand out delegations to
 # third parties; a profile that adds a zone which does (e.g. a bare CDN apex)
 # re-opens this, so keep entries as specific as the hostnames actually needed.
-# Bandwidth is further bounded by the upstream's caching. IPv6 remains
-# unfiltered end to end (pre-existing).
+# Bandwidth is further bounded by the upstream's caching. IPv6 is default-denied
+# in phase B, so there is no IPv6 path around this resolver.
 # ===========================================================================
 echo "Configuring filtering resolver (dnsmasq)..."
 mkdir -p "$(dirname "$DNSMASQ_CONF")"
@@ -730,7 +734,10 @@ chmod 0644 "$DNSMASQ_CONF"
 # --conf-file REPLACES the packaged /etc/dnsmasq.conf, so nothing but the file
 # generated above (which drops to `user=dnsmasq` after binding) is ever read.
 stop_dnsmasq
-dnsmasq --conf-file="$DNSMASQ_CONF" --pid-file="$DNSMASQ_PIDFILE"
+# 9>&-: do NOT hand the firewall lock (fd 9, see the flock block) to the daemon —
+# a long-lived holder would make every later run wait out CC_FIREWALL_LOCK_WAIT and
+# fail closed. The proxy closes inherited fds itself; dnsmasq is not assumed to.
+dnsmasq --conf-file="$DNSMASQ_CONF" --pid-file="$DNSMASQ_PIDFILE" 9>&-
 for _ in $(seq 1 30); do
     [ -s "$DNSMASQ_PIDFILE" ] && break
     sleep 0.1
@@ -939,7 +946,7 @@ chmod 0444 "$SNI_ALLOWLIST"
 # instance named by the pidfile is terminated first, so re-runs are idempotent).
 # Any other status means "no proxy" → set -e → trap → DROP.
 if ! "$SNI_PROXY_BIN" --daemon --pidfile "$SNI_PIDFILE" --user ccproxy \
-        --listen "127.0.0.1:$SNI_PORT" --allowlist "$SNI_ALLOWLIST" --log "$SNI_LOG"; then
+        --listen "127.0.0.1:$SNI_PORT" --allowlist "$SNI_ALLOWLIST" --log "$SNI_LOG" 9>&-; then
     echo "ERROR: SNI proxy failed to start (see $SNI_LOG)" >&2
     exit 1
 fi

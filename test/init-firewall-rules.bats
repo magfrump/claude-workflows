@@ -193,6 +193,8 @@ STUB
   cat > "$STUB_DIR/ip6tables" <<'STUB'
 #!/usr/bin/env bash
 echo "ip6tables $*" >> "$CMD_LOG"
+# NO_IP6_TABLE models a kernel with the binary but no IPv6 filter table.
+if [ -n "${NO_IP6_TABLE:-}" ]; then exit 3; fi
 exit 0
 STUB
 
@@ -894,4 +896,12 @@ STUB
   # CC_FIREWALL_PATH with a root-only default and export PATH from it.
   grep -q 'export PATH="${CC_FIREWALL_PATH:-/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin}"' "$FW"
   grep -q '^#!/usr/bin/python3$' "$BATS_TEST_DIRNAME/../devcontainer-config/cc-sni-proxy.py"
+}
+
+@test "a kernel without an IPv6 filter table warns and continues instead of failing closed" {
+  NO_IP6_TABLE=1 run bash "$FW"
+  [ "$status" -eq 0 ]
+  [[ "$output" == *"no usable ip6tables filter table"* ]]
+  run grep -c -- "^ip6tables -P" "$CMD_LOG"
+  [ "$output" -eq 0 ]
 }

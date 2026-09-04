@@ -1,0 +1,9 @@
+=== cwd: /workspace
+=== date: 2026-09-04T00:17:49Z
+=== cmd: CC_EGRESS_DIR=devcontainer-config/egress CC_EGRESS_PROFILE_FILE=/dev/null bash devcontainer-config/init-firewall.sh --print-entries
+api.anthropic.com^I443
+claude.ai^I443
+console.anthropic.com^I443
+platform.claude.com^I443
+registry.npmjs.org^I443
+=== exit: 

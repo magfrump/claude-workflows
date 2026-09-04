@@ -1,0 +1,11 @@
+=== cwd: /workspace
+=== date: 2026-09-04T00:26:55Z
+--- dnsmasq availability in this sandbox
+dnsmasq: NOT PRESENT (cannot execute the fd-inheritance check against the real daemon)
+
+--- flock availability / version
+/usr/bin/flock
+flock from util-linux 2.38.1
+
+--- /run ownership in this sandbox (not the container)
+drwxr-xr-x 1 root root 4096 Aug  4 18:32 /run

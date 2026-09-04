@@ -1,0 +1,20 @@
+=== cwd: /workspace
+=== date: 2026-09-04T00:26:27Z
+--- A: does a naive inherited-fd child keep the lock alive after the script exits?
+bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+script holds lock, spawned child 277316
+LOCK STILL HELD by the inherited-fd child
+
+--- B: does bash 'exec 9>' leak fd 9 across exec into a child?
+l-wx------ 1 node node 64 Sep  3 17:26 9 -> /workspace/.tmp-cfc/fdtest.lock
+
+--- C: cc-sni-proxy.py child fd-closing loop
+267:    # Close every other inherited fd: the caller's stdout is the devcontainer
+268-    # postStartCommand pipe, and a daemon holding it open would hang the launch.
+269-    for fd in os.listdir("/proc/self/fd"):
+270-        fd = int(fd)
+271-        if fd > 2 and fd != w:
+272-            try:
+273-                os.close(fd)
+274-            except OSError:
+275-                pass

@@ -1,0 +1,16 @@
+=== extracted from cfc-lp1-bats-b708266.txt (full-suite run, exit 0, 404/404) ===
+190:ok 186 print-resolvers exits 0 on an IPv6-only resolv.conf (no set -e abort)
+221:ok 217 the trap waits for the xtables lock and verifies the DROP it applied
+225:ok 221 the SNI allowlist holds every 443 entry as an exact name plus the GitHub zones
+226:ok 222 an entry not on 443 is omitted from the SNI allowlist
+234:ok 230 a zero-padded port is canonicalised before it reaches ipset and the SNI allowlist
+235:ok 231 a single-label entry gets a resolver line as well as an ipset member
+236:ok 232 IPv6 is default-denied: DROP policies, flush, loopback and established only
+237:ok 233 the negative SNI probe requires a logged refusal, not just a failed curl
+238:ok 234 the run takes a lock so concurrent invocations serialise
+239:ok 235 helpers resolve through the pinned PATH, not the caller's
+267:ok 263 progressive-disclosure: open user rows collapse into a counted <details> block, all reachable
+367:ok 363 single rejection: block prepended at top
+371:ok 367 block annotates each entry with its round number
+373:ok 369 replaces prior Recent rejections block: does not stack
+374:ok 370 comment block does not pollute parsed sections

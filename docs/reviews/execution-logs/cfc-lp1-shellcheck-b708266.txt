@@ -1,0 +1,4 @@
+=== cwd: /workspace
+=== date: 2026-09-04T00:17:31Z
+=== cmd: shellcheck -S warning devcontainer-config/init-firewall.sh devcontainer-config/cc-isolated.sh devcontainer-config/install.sh
+=== exit: 0
