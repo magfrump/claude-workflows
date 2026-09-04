@@ -37,7 +37,12 @@ IFS=$'\n\t'       # Stricter word splitting
 # put their stubs first; under sudo env_reset `node` cannot set it.
 export PATH="${CC_FIREWALL_PATH:-/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin}"
 
-EGRESS_DIR="${CC_EGRESS_DIR:-/usr/local/share/cc-egress}"
+# CC_EGRESS_DIR / CC_EGRESS_PROFILE_FILE, like every CC_* variable in this file, exist
+# for the unit tests only: the script runs via sudo (NOPASSWD, env_reset, no SETENV),
+# which strips them, so `node` cannot relocate anything. EGRESS_DIR_DEFAULT is the
+# image's baked path — the ownership assertion below keys on it.
+EGRESS_DIR_DEFAULT=/usr/local/share/cc-egress
+EGRESS_DIR="${CC_EGRESS_DIR:-$EGRESS_DIR_DEFAULT}"
 PROFILE_FILE="${CC_EGRESS_PROFILE_FILE:-/etc/cc-egress-profile}"
 
 # Compose the allowlist from `base` plus whatever profiles this image was built
@@ -265,8 +270,14 @@ fi
 # "forced DROP" line is printed only AFTER the read-back confirms it, so the log never
 # claims a DROP that was not applied.
 FIREWALL_COMPLETE=0
+LOCK_TIMED_OUT=0
 fail_closed_on_abort() {
   local chain policies open=0
+  if [ "${LOCK_TIMED_OUT:-0}" = "1" ]; then
+    echo "ERROR: init-firewall.sh gave up waiting for the lock; the ruleset was left as the" >&2
+    echo "       concurrent run leaves it (not forced to DROP — this run changed nothing)." >&2
+    return 0
+  fi
   if [ "${FIREWALL_COMPLETE:-0}" != "1" ]; then
     echo "ERROR: init-firewall.sh did not complete." >&2
     iptables -w 5 -P OUTPUT DROP || true
@@ -306,9 +317,10 @@ trap 'exit 143' INT TERM HUP QUIT
 # grant) to install its own allowlist. (/usr/local and /usr are root by
 # construction of the base image and are not re-checked.) The assertion keys on
 # the INVARIANT — the directory is the image's baked one — not on whether a test
-# override is present; CC_EGRESS_OWNER_CHECK=1 lets the unit tests exercise it
-# against a relocated directory.
-if [ "$EGRESS_DIR" = "/usr/local/share/cc-egress" ] || [ -n "${CC_EGRESS_OWNER_CHECK:-}" ]; then
+# override is present. CC_EGRESS_OWNER_CHECK=1 is a test-only OPT-IN that forces
+# the check on a relocated directory; it can only add a check, never remove one,
+# and env_reset strips it under sudo like every other CC_* variable.
+if [ "$EGRESS_DIR" = "$EGRESS_DIR_DEFAULT" ] || [ "${CC_EGRESS_OWNER_CHECK:-}" = "1" ]; then
     for d in "$EGRESS_DIR" "$(dirname "$EGRESS_DIR")"; do
         if [ "$(stat -c '%u' "$d")" != "0" ] || [ -n "$(find "$d" -maxdepth 0 -perm /022)" ]; then
             echo "ERROR: $d must be root-owned and not group/world-writable (the egress profiles live under it)" >&2
@@ -366,6 +378,10 @@ exec 9>"$FIREWALL_LOCK"
 chmod 0600 "$FIREWALL_LOCK"
 if ! flock -w "$FIREWALL_LOCK_WAIT" 9; then
     echo "ERROR: could not take $FIREWALL_LOCK within ${FIREWALL_LOCK_WAIT}s — another init-firewall.sh run is still in progress" >&2
+    # This run touched nothing; the holder is building (or has built) the boundary.
+    # Forcing DROP here would tear down THAT run's work, so the trap is told to
+    # report and stand down instead of failing closed.
+    LOCK_TIMED_OUT=1
     exit 1
 fi
 
@@ -1036,25 +1052,30 @@ iptables -A OUTPUT -m set --match-set allowed-domains dst,dst -j ACCEPT
 # Explicitly REJECT all other outbound traffic for immediate feedback
 iptables -A OUTPUT -j REJECT --reject-with icmp-admin-prohibited
 
-# Every rule the boundary depends on must actually be present — not just the one
-# the SNI probe needs. `-C` queries what `-A`/`-I` installed; drift between the
-# two literals is self-detecting (the run aborts into DROP).
+
+echo "Firewall configuration complete"
+echo "Verifying firewall rules..."
+# The load-bearing rules must actually be present (presence only — the position of
+# the two `-I OUTPUT 1` DNS redirects is by construction, not re-checked). `-C`
+# queries what `-A`/`-I` installed; drift between the two literals is
+# self-detecting (the run aborts into DROP).
 for rule in \
     "-t nat -C OUTPUT -p tcp --dport 443 -j CC_SNI" \
     "-t nat -C OUTPUT -p udp --dport 53 -j CC_DNS" \
     "-t nat -C OUTPUT -p tcp --dport 53 -j CC_DNS" \
     "-C OUTPUT -d 127.0.0.11 -j CC_DNS_GUARD" \
-    "-C OUTPUT -p tcp --dport 443 -j CC_SNI_GUARD"; do
+    "-C OUTPUT -p udp --dport 53 ! -d 127.0.0.1 -j CC_DNS_GUARD" \
+    "-C OUTPUT -p tcp --dport 53 ! -d 127.0.0.1 -j CC_DNS_GUARD" \
+    "-C OUTPUT -p tcp --dport 443 -j CC_SNI_GUARD" \
+    "-C OUTPUT -m set --match-set allowed-domains dst,dst -j ACCEPT" \
+    "-C OUTPUT -j REJECT --reject-with icmp-admin-prohibited"; do
     # IFS is \n\t in this script, so split the fixed rule string on spaces explicitly.
     IFS=' ' read -r -a rule_args <<< "$rule"
-    if ! iptables "${rule_args[@]}"; then
+    if ! iptables -w 5 "${rule_args[@]}" 2>/dev/null; then
         echo "ERROR: Firewall verification failed - expected rule missing: iptables $rule"
         exit 1
     fi
 done
-
-echo "Firewall configuration complete"
-echo "Verifying firewall rules..."
 # --max-time on both probes for the same reason as the phase-A fetch: a probe that
 # connects but then stalls would otherwise hang session start indefinitely.
 if curl --connect-timeout 5 --max-time 15 https://example.com >/dev/null 2>&1; then

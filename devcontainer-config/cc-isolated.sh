@@ -66,9 +66,14 @@ enforcement_files() {
   local f
   (
     cd "$cfg" || return 0
-    for f in egress/*.txt; do [ -e "$f" ] && echo "$f"; done | sort
-    for f in projects/*.profile; do [ -e "$f" ] && echo "$f"; done | sort
-    if [ -d claude-home ]; then find claude-home -type f | LC_ALL=C sort; fi
+    # `[ ! -e ] ||` rather than `[ -e ] &&`: under set -e + pipefail the latter's
+    # false status on an empty glob killed this subshell before the walk below.
+    for f in egress/*.txt; do [ ! -e "$f" ] || echo "$f"; done | LC_ALL=C sort
+    for f in projects/*.profile; do [ ! -e "$f" ] || echo "$f"; done | LC_ALL=C sort
+    # Regular files AND symlinks: install.sh's cp -r preserves links, the Dockerfile
+    # COPYs them, so a repointed link would otherwise change the served payload
+    # without changing the manifest (symlinks are hashed by their target text).
+    if [ -d claude-home ]; then find claude-home \( -type f -o -type l \) | LC_ALL=C sort; fi
   )
 }
 
@@ -76,23 +81,34 @@ compute_manifest() {
   local cfg f
   local -a files=()
   cfg="$(config_dir)"
+  local -a links=()
   while read -r f; do
     [ -n "$f" ] || continue
-    if [ ! -f "$cfg/$f" ]; then
+    if [ -L "$cfg/$f" ]; then
+      links+=("$f")
+    elif [ ! -f "$cfg/$f" ]; then
       echo "ERROR: enforcement file missing: $f" >&2
       return 1
+    else
+      files+=("$f")
     fi
-    files+=("$f")
   done < <(enforcement_files)
+  [ "${#files[@]}" -gt 0 ] || { echo "ERROR: enforcement file list is empty" >&2; return 1; }
   # One sha256sum for the whole list (the claude-home walk is ~100 files; a fork
-  # per file made every launch pay for it).
-  (cd "$cfg" && sha256sum "${files[@]}")
+  # per file made every launch pay for it). Symlinks are hashed by their target
+  # text, in sha256sum's own output format, so a repoint changes the manifest.
+  (
+    cd "$cfg" && sha256sum "${files[@]}"
+    for f in "${links[@]}"; do
+      printf '%s  %s\n' "$(printf '%s' "$(readlink "$f")" | sha256sum | cut -d' ' -f1)" "$f"
+    done
+  ) | LC_ALL=C sort -k2
 }
 
 bless_manifest() {
   mkdir -p "$(config_dir)"
   compute_manifest > "$(manifest_path)"
-  echo "Blessed $(manifest_path):"
+  echo "Blessed $(manifest_path) ($(wc -l < "$(manifest_path)") entries):"
   cat "$(manifest_path)"
 }
 

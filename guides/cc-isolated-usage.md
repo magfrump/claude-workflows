@@ -273,6 +273,9 @@ Run just the probe without starting a session:
 cc-isolated --probe-only ~/code/api
 ```
 
+Profile entries are `domain[:port[,port...]]`; a domain needs two or more labels (a
+bare `com` would become a whole-TLD resolver zone and is rejected).
+
 ## SNI filtering (tcp/443)
 
 The allowlist matches addresses, and CDN fronts put thousands of unrelated names

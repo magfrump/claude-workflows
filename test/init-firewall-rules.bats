@@ -49,7 +49,7 @@ setup() {
 #!/usr/bin/env bash
 echo "iptables $*" >> "$CMD_LOG"
 # NO_REDIRECT models a missing CC_SNI jump: `-C` (rule-exists check) reports absent.
-if [ -n "${NO_REDIRECT:-}" ] && [ "${1:-}" = "-t" ] && [ "${3:-}" = "-C" ]; then exit 1; fi
+if [ -n "${NO_REDIRECT:-}" ] && printf '%s\n' "$@" | grep -qx -- '-C' && printf '%s\n' "$@" | grep -qx -- 'CC_SNI'; then exit 1; fi
 # NO_RULE=<chain>: any `-C` naming that chain reports absent (filter or nat).
 if [ -n "${NO_RULE:-}" ] && printf '%s\n' "$@" | grep -qx -- '-C' && printf '%s\n' "$@" | grep -qx -- "$NO_RULE"; then exit 1; fi
 POL="$CMD_LOG.policies"
@@ -785,8 +785,8 @@ STUB
   grep -q "^iptables -A CC_SNI_GUARD -j REJECT --reject-with icmp-admin-prohibited$" "$CMD_LOG"
   # The guard jump precedes the ipset accept, so the agent can never hit the
   # address match for 443 directly.
-  guard=$(grep -n -- '-A OUTPUT -p tcp --dport 443 -j CC_SNI_GUARD' "$CMD_LOG" | cut -d: -f1)
-  accept=$(grep -n -- 'match-set allowed-domains dst,dst -j ACCEPT' "$CMD_LOG" | cut -d: -f1)
+  guard=$(grep -n -- '-A OUTPUT -p tcp --dport 443 -j CC_SNI_GUARD' "$CMD_LOG" | head -1 | cut -d: -f1)
+  accept=$(grep -n -- '-A OUTPUT -m set --match-set allowed-domains dst,dst -j ACCEPT' "$CMD_LOG" | head -1 | cut -d: -f1)
   [ "$guard" -lt "$accept" ]
 }
 
@@ -923,7 +923,7 @@ STUB
 @test "the negative probe asserts the nat redirect rule, not just log evidence" {
   run bash "$FW"
   [ "$status" -eq 0 ]
-  grep -q "^iptables -t nat -C OUTPUT -p tcp --dport 443 -j CC_SNI$" "$CMD_LOG"
+  grep -q "^iptables -w 5 -t nat -C OUTPUT -p tcp --dport 443 -j CC_SNI$" "$CMD_LOG"
 }
 
 @test "a refusal logged from a direct loopback connection does not satisfy the probe" {
@@ -950,7 +950,10 @@ STUB
   [[ "$output" == *"still in progress"* ]]
   run grep -cE -- "^(curl|dig|iptables -F)" "$CMD_LOG"
   [ "$output" -eq 0 ]
-  grep -q "iptables -w 5 -P OUTPUT DROP" "$CMD_LOG"
+  # A lock timeout must NOT tear down the boundary the holder is building.
+  run grep -c -- "-P OUTPUT DROP" "$CMD_LOG"
+  [ "$output" -eq 0 ]
+  [[ "$output" != *"fails CLOSED"* ]]
   exec 8>&-
 }
 
@@ -977,10 +980,13 @@ STUB
 @test "every boundary rule is asserted present before completion" {
   run bash "$FW"
   [ "$status" -eq 0 ]
-  grep -q "^iptables -t nat -C OUTPUT -p udp --dport 53 -j CC_DNS$" "$CMD_LOG"
-  grep -q "^iptables -t nat -C OUTPUT -p tcp --dport 53 -j CC_DNS$" "$CMD_LOG"
-  grep -q "^iptables -C OUTPUT -d 127.0.0.11 -j CC_DNS_GUARD$" "$CMD_LOG"
-  grep -q "^iptables -C OUTPUT -p tcp --dport 443 -j CC_SNI_GUARD$" "$CMD_LOG"
+  grep -q "^iptables -w 5 -t nat -C OUTPUT -p udp --dport 53 -j CC_DNS$" "$CMD_LOG"
+  grep -q "^iptables -w 5 -t nat -C OUTPUT -p tcp --dport 53 -j CC_DNS$" "$CMD_LOG"
+  grep -q "^iptables -w 5 -C OUTPUT -d 127.0.0.11 -j CC_DNS_GUARD$" "$CMD_LOG"
+  grep -q "^iptables -w 5 -C OUTPUT -p udp --dport 53 ! -d 127.0.0.1 -j CC_DNS_GUARD$" "$CMD_LOG"
+  grep -q "^iptables -w 5 -C OUTPUT -p tcp --dport 443 -j CC_SNI_GUARD$" "$CMD_LOG"
+  grep -q "^iptables -w 5 -C OUTPUT -m set --match-set allowed-domains dst,dst -j ACCEPT$" "$CMD_LOG"
+  grep -q "^iptables -w 5 -C OUTPUT -j REJECT --reject-with icmp-admin-prohibited$" "$CMD_LOG"
 }
 
 @test "a node-owned or world-writable profile directory aborts before the flush (R7)" {
@@ -1006,5 +1012,6 @@ STUB
   NO_REDIRECT=1 run bash "$FW"
   [ "$status" -ne 0 ]
   [[ "$output" == *"expected rule missing: iptables -t nat -C OUTPUT -p tcp --dport 443 -j CC_SNI"* ]]
+  # the nat CC_DNS jumps are also asserted (same knob does not fire for them)
   grep -q "iptables -w 5 -P OUTPUT DROP" "$CMD_LOG"
 }

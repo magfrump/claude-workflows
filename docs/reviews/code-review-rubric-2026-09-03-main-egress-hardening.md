@@ -175,5 +175,22 @@ Pipeline: fact-check k=1 loop pass (18 claims, 0 Incorrect, 1 Stale comment fixe
 
 ---
 
+## Pass 4 (re-review of the third fix round, 1434fc9..f313de7 → fixed in the next commit)
+
+Pipeline: fact-check k=1 loop pass (21 claims, 0 Incorrect, 5 comment imprecisions fixed) → security, performance, api-consistency, architecture. Reports: `*-review-2026-09-03-egress-hardening-r4.md`. Architecture: no Structural finding open. Security: all Low; would ship pending the live-container check. Performance: one Low. Api-consistency: one Breaking (below).
+
+| # | Finding | Domain | Severity | Status |
+|---|---|---|---|---|
+| R8 | `enforcement_files()` dropped the whole `claude-home/` walk when `projects/` was empty — the fresh-install state — because the glob loop's false `[ -e ] &&` status killed the subshell under `set -e`+`pipefail`; the bats test could not see it because `run` disables errexit. Measured 0 vs 103 hashed lines. | API consistency | Breaking | ✅ Fixed — `[ ! -e ] ||` in both globs; new test runs `compute_manifest` through a real `bash -euo pipefail` with an empty `projects/` |
+| A32 | The walk was `-type f`, so symlinks in the payload were installed and COPYed but never blessed; one exists today — the repo tracks `workflows/workflows` as an absolute symlink into the maintainer's home, dangling in any other checkout. | Security (Low) / Architecture (Coupling) | Low / Coupling | ✅ Fixed — symlinks included in the walk and hashed by target text; repoint trips the manifest (test). Removing the tracked symlink is logged as a question, not done here |
+| A33 | Lock timeout fired the fail-closed trap and would DROP the boundary the concurrent holder had just built. | Security | Low | ✅ Fixed — a timed-out waiter reports and stands down without forcing DROP (it changed nothing) |
+| A34 | `-C` loop asserted 5 of the load-bearing OUTPUT rules, claimed "every rule", took no `-w`, left iptables stderr unsuppressed, and sat above the "Verifying" banner. | Security / API consistency / Architecture | Low / Minor | ✅ Fixed — nine rules (adds both external-resolver guards, the ipset accept, the terminal REJECT), `-w 5`, stderr quiet, comment scoped to presence only |
+| A35 | `CC_EGRESS_OWNER_CHECK` undeclared and `-n`-truthy; baked path literal duplicated at two sites. | API consistency | Inconsistent | ✅ Fixed — `EGRESS_DIR_DEFAULT` constant; `= "1"`; annotated as a test-only opt-in |
+| C21 | `FIREWALL_LOCK_WAIT` 600 s is hard-coded against an N-linear hold (exhausts at N≈80–90; today N=25). | Performance | Low | 🟢 Open — accepted with the comment's arithmetic; revisit if profiles grow |
+| C22 | `-C` cannot verify the position of the two `-I OUTPUT 1` redirects; presence only. | Architecture | Coupling | 🟢 Open — accepted, stated in the comment |
+| C23 | Misc: bless printout now labelled with an entry count; guide states the two-label rule; unnamed pre-phase-A region; `awk` COPY parse fragile to flags; log contract at producer only; silent up-to-10-min launcher wait under contention. | API / Architecture | Minor / Info | 🟢 partly fixed, rest logged |
+
+---
+
 To pass review: all 🔴 items must be resolved. All 🟡 items must be either fixed or
 carry an author note. 🟢 items are optional.

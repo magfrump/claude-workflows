@@ -527,3 +527,25 @@ firewall() {
   run check_manifest
   [ "$status" -ne 0 ]
 }
+
+@test "compute_manifest covers claude-home even when projects/ is empty, under errexit" {
+  # REGRESSION: an empty projects/ glob made the enforcement_files subshell exit 1
+  # under set -e + pipefail before the claude-home walk — the fresh-install state
+  # blessed none of the baked payload. Run through a real errexit shell, not `run`.
+  mkdir -p "$CLAUDE_DEVC_CONFIG_DIR/projects" "$CLAUDE_DEVC_CONFIG_DIR/claude-home/skills"
+  echo 'x' > "$CLAUDE_DEVC_CONFIG_DIR/claude-home/skills/s.md"
+  out="$(bash -euo pipefail -c 'source "$1"; compute_manifest' _ "$CONFIG_SRC/cc-isolated.sh")"
+  echo "$out" | grep -q 'claude-home/skills/s.md'
+}
+
+@test "a symlink in claude-home is blessed by its target and a repoint trips the manifest" {
+  mkdir -p "$CLAUDE_DEVC_CONFIG_DIR/claude-home"
+  ln -s /nonexistent/a "$CLAUDE_DEVC_CONFIG_DIR/claude-home/link"
+  run compute_manifest
+  [ "$status" -eq 0 ]
+  echo "$output" | grep -q 'claude-home/link'
+  bless_manifest >/dev/null
+  ln -sfn /nonexistent/b "$CLAUDE_DEVC_CONFIG_DIR/claude-home/link"
+  run check_manifest
+  [ "$status" -ne 0 ]
+}
