@@ -1,6 +1,6 @@
 # cc-isolated — usage guide
 
-Last verified: 2026-09-03
+Last verified: 2026-09-09
 Relevant paths: `devcontainer-config/cc-isolated.sh`, `devcontainer-config/egress/`, `devcontainer-config/Dockerfile`, `test/cc-isolated-functions.bats`
 
 `cc-isolated` launches an isolated Claude Code session inside a devcontainer for
@@ -280,7 +280,7 @@ bare `com` would become a whole-TLD resolver zone and is rejected).
 
 The allowlist matches addresses, and CDN fronts put thousands of unrelated names
 behind one address. So `init-firewall.sh` also runs a small SNI-filtering proxy
-(`cc-sni-proxy.py`, stdlib Python, its own unprivileged uid) and redirects every
+(`cc-sni-proxy.py`, stdlib Python, its own unprivileged uid) and steers every
 tcp/443 connection the agent makes through it. The proxy reads the TLS
 ClientHello's server name, admits it only if it is an allowlisted name (or a
 subdomain of a GitHub zone), resolves that name itself, connects there, and
@@ -297,9 +297,26 @@ writable `storage.googleapis.com` behind the same Google front as `dl.google.com
 - A name under an allowlisted *zone* that an attacker can obtain. GitHub zones
   don't hand those out; exact-name entries have no such residual.
 - Root inside the container. The firewall script's own fetch and its two general
-  reachability probes run as root and bypass the redirect; its two SNI probes are
+  reachability probes run as root and bypass the steering; its two SNI probes are
   run as `node` on purpose so they do not. The agent runs as `node` and is always
-  subject to the redirect.
+  subject to the steering.
+
+Both the proxy and the filtering resolver bind the container's **own** address, not
+`127.0.0.1`, and the nat rules DNAT there. That detail is load-bearing rather than
+stylistic: an iptables `REDIRECT` on the OUTPUT chain hardcodes `127.0.0.1`, and such
+packets are matched by the rule and then discarded by the kernel before reaching any
+socket — which on 2026-09-09 left every session with no DNS and no HTTPS while every
+root-run boundary probe passed. If you are reading the rules and wondering why they
+are not the more obvious `REDIRECT`, that is why; see decision log #44.
+
+The same rules also carry three `OUTPUT -d <container-address> --dport {53/udp,53/tcp,
+3443/tcp} -j ACCEPT` entries that look redundant next to the `-o lo -j ACCEPT` above
+them. They are not. A packet the nat table rewrote to a local address is *not* matched
+by `-o lo`: the LOCAL_OUT hook point fixes the out-device before any chain runs, and
+the nat hook's re-route updates the route cache but not the state the filter chain is
+matching against — so filter still sees the original destination's device. Without the
+destination-scoped accepts, every steered packet reaches the terminal REJECT. Do not
+"simplify" them away.
 
 **Debugging a blocked connection:** the proxy logs every decision to
 `/run/cc-sni-proxy/proxy.log` as `ALLOW`, `REJECT` (either `sni=<name> … not in

@@ -1,10 +1,18 @@
 #!/usr/bin/python3
 """cc-sni-proxy — SNI-filtering splice proxy for the cc-isolated egress boundary.
 
-init-firewall.sh REDIRECTs every outbound tcp/443 connection that is NOT made by
+init-firewall.sh DNATs every outbound tcp/443 connection that is NOT made by
 this proxy's own uid or by root (root runs the firewall script itself and its two
 general reachability probes; its two SNI probes run as `node` on purpose) to
-127.0.0.1:<port>, where this process:
+<container-address>:<port>, where this process:
+
+The target is the container's OWN bridge-facing address, not 127.0.0.1, and the
+distinction is load-bearing: an iptables `REDIRECT` on LOCAL_OUT hardcodes 127.0.0.1,
+and such packets are matched by the rule and then discarded by the kernel before
+reaching any socket (measured 2026-09-09 — see the steering-address precondition in
+init-firewall.sh and docs/working/dd-cc-isolated-loopback-redirect.md). `--listen`
+is therefore always passed explicitly by the firewall script; the 127.0.0.1 default
+below is a convenience for the Python unit tests' loopback splice cases only.
 
   1. reads the TLS ClientHello and extracts the server_name (SNI) — nothing is
      decrypted and no certificate is involved; this is a peek, not interception;
@@ -20,8 +28,8 @@ to — and that address must ALSO be in the firewall's address+port ipset, which
 still applies to this process's egress (defence in depth, closing the
 "CDN neighbour on the same IP" overreach that IP matching alone cannot).
 Resolution goes to the container's filtering dnsmasq — this process's port-53
-traffic is REDIRECTed there by the firewall, whatever /etc/resolv.conf says — and
-is IPv4-only, matching the IPv4-only ipset (IPv6 is default-denied outright). Non-443 ports are not redirected here and stay IP+port-matched.
+traffic is DNATed there by the firewall, whatever /etc/resolv.conf says — and
+is IPv4-only, matching the IPv4-only ipset (IPv6 is default-denied outright). Non-443 ports are not steered here and stay IP+port-matched.
 
 Single file, stdlib only (python3.11 ships in the node:22 base — no apt package,
 no pip), root-owned 0555 in the image, listed in install.sh's payload and in the

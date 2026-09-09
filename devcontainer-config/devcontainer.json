@@ -46,6 +46,14 @@
   "runArgs": [
     "--cap-add=NET_ADMIN",
     "--cap-add=NET_RAW"
+    // NOTE: this boundary deliberately requires NO sysctl. The nat chains in
+    // init-firewall.sh DNAT to the container's own address rather than REDIRECTing
+    // to 127.0.0.1, so nothing here depends on `route_localnet` or any other kernel
+    // knob that can only be set at container-creation time. That is a real
+    // operational property, not an accident: boundary changes need a REBUILD, never
+    // a container recreate. A `--sysctl net.ipv4.conf.all.route_localnet=1` was tried
+    // on 2026-09-09 to rescue the loopback REDIRECT and did not work (see
+    // docs/working/dd-cc-isolated-loopback-redirect.md) — do not re-add it.
   ],
 
   "remoteUser": "node",

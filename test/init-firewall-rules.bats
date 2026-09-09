@@ -48,6 +48,18 @@ setup() {
   cat > "$STUB_DIR/iptables" <<'STUB'
 #!/usr/bin/env bash
 echo "iptables $*" >> "$CMD_LOG"
+# ARGV VALIDATION. This stub used to accept any argv, so a rule that real iptables
+# refuses passed all 74 tests and failed at container start instead (2026-09-09:
+# `! -d A ! -d B` -> "multiple -d flags not allowed", which bricked the boundary).
+# Full grammar is out of scope, but a repeated single-value selector is exactly the
+# class that bit us and is cheap to catch.
+for _f in -s -d -p -i -o --dport --sport; do
+  _n=0; for _a in "$@"; do [ "$_a" = "$_f" ] && _n=$((_n+1)); done
+  if [ "$_n" -gt 1 ]; then
+    echo "iptables: multiple $_f flags not allowed" >&2
+    exit 2
+  fi
+done
 # NO_REDIRECT models a missing CC_SNI jump: `-C` (rule-exists check) reports absent.
 if [ -n "${NO_REDIRECT:-}" ] && printf '%s\n' "$@" | grep -qx -- '-C' && printf '%s\n' "$@" | grep -qx -- 'CC_SNI'; then exit 1; fi
 # NO_RULE=<chain>: any `-C` naming that chain reports absent (filter or nat).
@@ -91,6 +103,19 @@ STUB
 #!/usr/bin/env bash
 echo "ip $*" >> "$CMD_LOG"
 [ "${1:-}" = "route" ] && echo "default via 192.168.65.1 dev eth0"
+# `ip -4 route get <gw>`: the source address the kernel would choose for an off-box
+# destination, i.e. the container's own address — the one both daemons bind and both
+# nat chains DNAT to. NO_CONTAINER_IP models a container with no derivable IPv4 source;
+# BAD_CONTAINER_IP models a malformed one reaching the octet grammar;
+# CONTAINER_IP_OVERRIDE models a container that came up on a different address, which
+# is what proves the emitted rules track the derived value instead of a literal.
+if [ "${1:-}" = "-4" ] && [ "${2:-}" = "route" ] && [ "${3:-}" = "get" ]; then
+  if [ -n "${BAD_CONTAINER_IP:-}" ]; then
+    echo "192.168.65.1 via 192.168.65.1 dev eth0 src 999.999.999.999 uid 0"
+  elif [ -z "${NO_CONTAINER_IP:-}" ]; then
+    echo "192.168.65.1 via 192.168.65.1 dev eth0 src ${CONTAINER_IP_OVERRIDE:-172.17.0.2} uid 0"
+  fi
+fi
 # `ip -6 addr show scope global`: HAS_GLOBAL_V6 models a container with a routable v6 address.
 if [ "${1:-}" = "-6" ] && [ -n "${HAS_GLOBAL_V6:-}" ]; then echo "    inet6 2001:db8::2/64 scope global"; fi
 exit 0
@@ -380,9 +405,12 @@ first_line_matching() {
   grep -q "^iptables -A OUTPUT -p udp -d 192.168.65.1 --dport 53 -m owner --uid-owner 0 -j ACCEPT$" "$CMD_LOG"
   run grep -cE -- '-[sd] 192\.168\.65\.0/24' "$CMD_LOG"
   [ "$output" -eq 0 ]
-  # No other rule names the gateway (2 uids x udp/tcp), and no INPUT accept keys on a source address at all.
+  # No other RULE names the gateway (2 uids x udp/tcp). The 5th hit is phase A's
+  # `ip -4 route get <gw>`, which derives the container's own address and issues no rule.
   run grep -cE -- '192\.168\.65\.1( |$)' "$CMD_LOG"
-  [ "$output" -eq 4 ]
+  [ "$output" -eq 5 ]
+  run grep -cE -- '^ip -4 route get 192\.168\.65\.1$' "$CMD_LOG"
+  [ "$output" -eq 1 ]
   run grep -cE -- '^iptables -A INPUT -s ' "$CMD_LOG"
   [ "$output" -eq 0 ]
 }
@@ -557,13 +585,15 @@ first_line_matching() {
 @test "upstream port 53 is owner-scoped: only the dnsmasq uid and root, never everyone" {
   run bash "$FW"
   [ "$status" -eq 0 ]
-  # nat: every non-exempt flow is REDIRECTed to dnsmasq, inserted AHEAD of the
-  # restored Docker DNAT so 127.0.0.11:53 cannot be claimed by the embedded resolver first.
+  # nat: every non-exempt flow is DNATed to dnsmasq at the container's own address
+  # (NOT a REDIRECT to 127.0.0.1 — the kernel discards those, see decision log), inserted
+  # AHEAD of the restored Docker DNAT so 127.0.0.11:53 cannot be claimed by the embedded
+  # resolver first.
   grep -q "iptables -t nat -N CC_DNS" "$CMD_LOG"
   grep -q "iptables -t nat -A CC_DNS -m owner --uid-owner 999 -j RETURN" "$CMD_LOG"
   grep -q "iptables -t nat -A CC_DNS -m owner --uid-owner 0 -j RETURN" "$CMD_LOG"
-  grep -q "iptables -t nat -A CC_DNS -p udp -j REDIRECT --to-ports 53" "$CMD_LOG"
-  grep -q "iptables -t nat -A CC_DNS -p tcp -j REDIRECT --to-ports 53" "$CMD_LOG"
+  grep -q "iptables -t nat -A CC_DNS -p udp -j DNAT --to-destination 172.17.0.2:53" "$CMD_LOG"
+  grep -q "iptables -t nat -A CC_DNS -p tcp -j DNAT --to-destination 172.17.0.2:53" "$CMD_LOG"
   grep -q "iptables -t nat -I OUTPUT 1 -p udp --dport 53 -j CC_DNS" "$CMD_LOG"
   grep -q "iptables -t nat -I OUTPUT 1 -p tcp --dport 53 -j CC_DNS" "$CMD_LOG"
   # filter: any scoped resolver accept carries an owner match; none is unscoped.
@@ -587,8 +617,8 @@ first_line_matching() {
   [ "$status" -eq 0 ]
   local guard lo udp53 tcp53
   guard=$(first_line_matching "^iptables -A OUTPUT -d 127.0.0.11 -j CC_DNS_GUARD$")
-  udp53=$(first_line_matching "^iptables -A OUTPUT -p udp --dport 53 ! -d 127.0.0.1 -j CC_DNS_GUARD$")
-  tcp53=$(first_line_matching "^iptables -A OUTPUT -p tcp --dport 53 ! -d 127.0.0.1 -j CC_DNS_GUARD$")
+  udp53=$(first_line_matching "^iptables -A OUTPUT -p udp --dport 53 -j CC_DNS_GUARD$")
+  tcp53=$(first_line_matching "^iptables -A OUTPUT -p tcp --dport 53 -j CC_DNS_GUARD$")
   lo=$(first_line_matching "^iptables -A OUTPUT -o lo -j ACCEPT$")
   [ -n "$guard" ] && [ -n "$udp53" ] && [ -n "$tcp53" ] && [ -n "$lo" ]
   [ "$guard" -lt "$lo" ]
@@ -732,13 +762,13 @@ STUB
 
 # --- the SNI proxy (decision log #41) ----------------------------------------
 
-@test "the SNI proxy is started as ccproxy with the generated allowlist, before the REDIRECT" {
+@test "the SNI proxy is started as ccproxy with the generated allowlist, before the steering" {
   run bash "$FW"
   [ "$status" -eq 0 ]
-  grep -q "^cc-sni-proxy --daemon --pidfile $CC_SNI_RUN_DIR/proxy.pid --user ccproxy --listen 127.0.0.1:3443 --allowlist $CC_SNI_RUN_DIR/allowlist --log $CC_SNI_RUN_DIR/proxy.log$" "$CMD_LOG"
+  grep -q "^cc-sni-proxy --daemon --pidfile $CC_SNI_RUN_DIR/proxy.pid --user ccproxy --listen 172.17.0.2:3443 --allowlist $CC_SNI_RUN_DIR/allowlist --log $CC_SNI_RUN_DIR/proxy.log$" "$CMD_LOG"
   start=$(grep -n '^cc-sni-proxy ' "$CMD_LOG" | head -1 | cut -d: -f1)
-  redirect=$(grep -n 'REDIRECT --to-ports 3443' "$CMD_LOG" | head -1 | cut -d: -f1)
-  [ "$start" -lt "$redirect" ]
+  steer=$(grep -n 'CC_SNI -p tcp -j DNAT --to-destination 172.17.0.2:3443' "$CMD_LOG" | head -1 | cut -d: -f1)
+  [ -n "$start" ] && [ -n "$steer" ] && [ "$start" -lt "$steer" ]
   # exactly one start per run
   run grep -c '^cc-sni-proxy ' "$CMD_LOG"
   [ "$output" -eq 1 ]
@@ -777,7 +807,7 @@ STUB
   grep -q "^iptables -t nat -N CC_SNI$" "$CMD_LOG"
   grep -q "^iptables -t nat -A CC_SNI -m owner --uid-owner 998 -j RETURN$" "$CMD_LOG"
   grep -q "^iptables -t nat -A CC_SNI -m owner --uid-owner 0 -j RETURN$" "$CMD_LOG"
-  grep -q "^iptables -t nat -A CC_SNI -p tcp -j REDIRECT --to-ports 3443$" "$CMD_LOG"
+  grep -q "^iptables -t nat -A CC_SNI -p tcp -j DNAT --to-destination 172.17.0.2:3443$" "$CMD_LOG"
   grep -q "^iptables -t nat -A OUTPUT -p tcp --dport 443 -j CC_SNI$" "$CMD_LOG"
   grep -q "^iptables -N CC_SNI_GUARD$" "$CMD_LOG"
   grep -q "^iptables -A CC_SNI_GUARD -m owner --uid-owner 998 -j RETURN$" "$CMD_LOG"
@@ -795,7 +825,7 @@ STUB
   [ "$status" -ne 0 ]
   [[ "$output" == *"SNI proxy failed to start"* ]]
   grep -q "iptables -w 5 -P OUTPUT DROP" "$CMD_LOG"
-  run grep -c 'REDIRECT --to-ports 3443' "$CMD_LOG"
+  run grep -c 'DNAT --to-destination 172.17.0.2:3443' "$CMD_LOG"
   [ "$output" -eq 0 ]
 }
 
@@ -982,8 +1012,8 @@ STUB
   grep -q "^iptables -w 5 -t nat -C OUTPUT -p udp --dport 53 -j CC_DNS$" "$CMD_LOG"
   grep -q "^iptables -w 5 -t nat -C OUTPUT -p tcp --dport 53 -j CC_DNS$" "$CMD_LOG"
   grep -q "^iptables -w 5 -C OUTPUT -d 127.0.0.11 -j CC_DNS_GUARD$" "$CMD_LOG"
-  grep -q "^iptables -w 5 -C OUTPUT -p udp --dport 53 ! -d 127.0.0.1 -j CC_DNS_GUARD$" "$CMD_LOG"
-  grep -q "^iptables -w 5 -C OUTPUT -p tcp --dport 53 ! -d 127.0.0.1 -j CC_DNS_GUARD$" "$CMD_LOG"
+  grep -q "^iptables -w 5 -C OUTPUT -p udp --dport 53 -j CC_DNS_GUARD$" "$CMD_LOG"
+  grep -q "^iptables -w 5 -C OUTPUT -p tcp --dport 53 -j CC_DNS_GUARD$" "$CMD_LOG"
   grep -q "^iptables -w 5 -C OUTPUT -p tcp --dport 443 -j CC_SNI_GUARD$" "$CMD_LOG"
   grep -q "^iptables -w 5 -C OUTPUT -m set --match-set allowed-domains dst,dst -j ACCEPT$" "$CMD_LOG"
   grep -q "^iptables -w 5 -C OUTPUT -j REJECT --reject-with icmp-admin-prohibited$" "$CMD_LOG"
@@ -1014,4 +1044,173 @@ STUB
   [[ "$output" == *"expected rule missing: iptables -t nat -C OUTPUT -p tcp --dport 443 -j CC_SNI"* ]]
   # the nat CC_DNS jumps are also asserted (same knob does not fire for them)
   grep -q "iptables -w 5 -P OUTPUT DROP" "$CMD_LOG"
+}
+
+# --- route_localnet precondition + martian guard (decision log #43) ------------
+# Regression guard for the 2026-09-09 incident: both nat REDIRECTs target
+# 127.0.0.1, which the kernel discards as a martian unless route_localnet=1. The
+# rules install and MATCH packets either way, so nothing downstream of the redirect
+# can detect it — only an explicit assertion can.
+
+@test "the martian guard drops non-loopback traffic to 127/8 before the established accept" {
+  run bash "$FW"
+  [ "$status" -eq 0 ]
+  grep -q -- "iptables -A INPUT ! -i lo -d 127.0.0.0/8 -j DROP" "$CMD_LOG"
+  # Anchored to `^iptables `: the IPv6 block issues an identical-looking
+  # `ip6tables -A INPUT -m state --state ESTABLISHED,RELATED` earlier in the run,
+  # and an unanchored pattern matches that instead and inverts the comparison.
+  guard=$(first_line_matching '^iptables -A INPUT ! -i lo -d 127.0.0.0/8 -j DROP')
+  est=$(first_line_matching '^iptables -A INPUT -m state --state ESTABLISHED,RELATED')
+  [ -n "$guard" ] && [ -n "$est" ] && [ "$guard" -lt "$est" ]
+}
+
+@test "a missing martian guard fails verification and fails closed" {
+  NO_RULE='127.0.0.0/8' run bash "$FW"
+  [ "$status" -ne 0 ]
+  [[ "$output" == *"expected rule missing"* ]]
+  grep -q "iptables -w 5 -P OUTPUT DROP" "$CMD_LOG"
+}
+
+# --- steering address (decision log #44) ---------------------------------------
+# The 2026-09-09 incident: both nat chains used `REDIRECT`, which on LOCAL_OUT
+# hardcodes 127.0.0.1, and the kernel discarded the rewritten packets before they
+# reached any socket — rules matching, counters incrementing, traffic gone. The fix
+# is to steer to the container's OWN address. These tests guard the two properties
+# that makes true: one address everywhere, and never a loopback one.
+
+@test "both nat chains steer to the container's own address, never to loopback" {
+  run bash "$FW"
+  [ "$status" -eq 0 ]
+  grep -q "^iptables -t nat -A CC_DNS -p udp -j DNAT --to-destination 172.17.0.2:53$" "$CMD_LOG"
+  grep -q "^iptables -t nat -A CC_DNS -p tcp -j DNAT --to-destination 172.17.0.2:53$" "$CMD_LOG"
+  grep -q "^iptables -t nat -A CC_SNI -p tcp -j DNAT --to-destination 172.17.0.2:3443$" "$CMD_LOG"
+  # No REDIRECT target survives anywhere, and nothing steers into 127/8.
+  run grep -c -- 'REDIRECT' "$CMD_LOG"
+  [ "$output" -eq 0 ]
+  run grep -cE -- '--to-destination 127\.' "$CMD_LOG"
+  [ "$output" -eq 0 ]
+}
+
+@test "the steering address is derived at run time, not baked" {
+  run bash "$FW"
+  [ "$status" -eq 0 ]
+  # It comes from `ip -4 route get <gateway>`, so a renumbered container follows.
+  grep -q "^ip -4 route get 192.168.65.1$" "$CMD_LOG"
+  run grep -c -- 'ip -4 route get' "$CMD_LOG"
+  [ "$output" -eq 1 ]
+}
+
+@test "one address serves the DNAT targets, the dnsmasq bind and the proxy bind" {
+  run bash "$FW"
+  [ "$status" -eq 0 ]
+  grep -q 'listen-address=127.0.0.1,172.17.0.2' "$CC_DNSMASQ_CONF"
+  grep -q -- '--listen 172.17.0.2:3443' "$CMD_LOG"
+  grep -q -- '--to-destination 172.17.0.2:53' "$CMD_LOG"
+  grep -q -- '--to-destination 172.17.0.2:3443' "$CMD_LOG"
+}
+
+@test "a container with no derivable IPv4 source address aborts before the flush" {
+  NO_CONTAINER_IP=1 run bash "$FW"
+  [ "$status" -ne 0 ]
+  [[ "$output" == *"could not derive this container's own IPv4 address"* ]]
+  run grep -c -- "^iptables -F" "$CMD_LOG"
+  [ "$output" -eq 0 ]
+}
+
+@test "a malformed steering address is rejected by the octet grammar, before the flush" {
+  BAD_CONTAINER_IP=1 run bash "$FW"
+  [ "$status" -ne 0 ]
+  [[ "$output" == *"could not derive this container's own IPv4 address"* ]]
+  run grep -c -- "^iptables -F" "$CMD_LOG"
+  [ "$output" -eq 0 ]
+}
+
+@test "the DNS guard jumps exempt the steering address, or they reject the steered traffic" {
+  run bash "$FW"
+  [ "$status" -eq 0 ]
+  # Under DNAT the steered packet carries -d <container-ip> with dport still 53, so a
+  # guard that only exempts 127.0.0.1 would REJECT exactly what the steering creates.
+  # Both addresses dnsmasq binds are RETURNed at the head of the guard chain. This is
+  # NOT expressible as `! -d A ! -d B` on the jump — iptables allows one -d per rule.
+  grep -q -- "^iptables -A CC_DNS_GUARD -p udp --dport 53 -d 127.0.0.1 -j RETURN$" "$CMD_LOG"
+  grep -q -- "^iptables -A CC_DNS_GUARD -p udp --dport 53 -d 172.17.0.2 -j RETURN$" "$CMD_LOG"
+  grep -q -- "^iptables -A CC_DNS_GUARD -p tcp --dport 53 -d 172.17.0.2 -j RETURN$" "$CMD_LOG"
+  # ...and they precede the REJECT, or they would never be consulted.
+  local ret rej
+  ret=$(first_line_matching "^iptables -A CC_DNS_GUARD -p udp --dport 53 -d 172.17.0.2 -j RETURN$")
+  rej=$(first_line_matching "^iptables -A CC_DNS_GUARD -j REJECT")
+  [ -n "$ret" ] && [ -n "$rej" ] && [ "$ret" -lt "$rej" ]
+}
+
+@test "the daemons' ports are dropped on non-loopback interfaces, before the established accept" {
+  run bash "$FW"
+  [ "$status" -eq 0 ]
+  local est u53 t53 sni
+  u53=$(first_line_matching '^iptables -A INPUT ! -i lo -p udp --dport 53 -j DROP$')
+  t53=$(first_line_matching '^iptables -A INPUT ! -i lo -p tcp --dport 53 -j DROP$')
+  sni=$(first_line_matching '^iptables -A INPUT ! -i lo -p tcp --dport 3443 -j DROP$')
+  est=$(first_line_matching '^iptables -A INPUT -m state --state ESTABLISHED,RELATED')
+  [ -n "$u53" ] && [ -n "$t53" ] && [ -n "$sni" ] && [ -n "$est" ]
+  [ "$u53" -lt "$est" ] && [ "$t53" -lt "$est" ] && [ "$sni" -lt "$est" ]
+}
+
+@test "a missing daemon-port drop fails verification and fails closed" {
+  NO_RULE='3443' run bash "$FW"
+  [ "$status" -ne 0 ]
+  [[ "$output" == *"expected rule missing"* ]]
+  grep -q "iptables -w 5 -P OUTPUT DROP" "$CMD_LOG"
+}
+
+@test "the steered destinations are accepted on address, not on -o lo" {
+  run bash "$FW"
+  [ "$status" -eq 0 ]
+  # REGRESSION (2026-09-09, measured on a live container): `-o lo` does NOT match a
+  # packet that nat OUTPUT rewrote to a local address. LOCAL_OUT captures the
+  # out-device once, before any chain in the hook point runs; nat's
+  # ip_route_me_harder() updates skb_dst but not the nf_hook_state filter is handed,
+  # so filter still sees the ORIGINAL destination's device. Every steered packet fell
+  # past `-o lo` into the terminal REJECT. The accept must therefore be written on the
+  # destination address, which survives the rewrite.
+  grep -q -- "^iptables -A OUTPUT -d 172.17.0.2 -p udp --dport 53 -j ACCEPT$" "$CMD_LOG"
+  grep -q -- "^iptables -A OUTPUT -d 172.17.0.2 -p tcp --dport 53 -j ACCEPT$" "$CMD_LOG"
+  grep -q -- "^iptables -A OUTPUT -d 172.17.0.2 -p tcp --dport 3443 -j ACCEPT$" "$CMD_LOG"
+}
+
+@test "the steering accepts precede the terminal REJECT, or the steered traffic dies there" {
+  run bash "$FW"
+  [ "$status" -eq 0 ]
+  local dns sni rej
+  dns=$(first_line_matching "^iptables -A OUTPUT -d 172.17.0.2 -p udp --dport 53 -j ACCEPT$")
+  sni=$(first_line_matching "^iptables -A OUTPUT -d 172.17.0.2 -p tcp --dport 3443 -j ACCEPT$")
+  rej=$(first_line_matching "^iptables -A OUTPUT -j REJECT")
+  [ -n "$dns" ] && [ -n "$sni" ] && [ -n "$rej" ]
+  [ "$dns" -lt "$rej" ] && [ "$sni" -lt "$rej" ]
+}
+
+@test "the steering accepts use the derived address, so they track the DNAT target" {
+  # An accept for a different address than the DNAT writes is the same outage with
+  # more rules, so pin them to the one derived value rather than to a literal.
+  CONTAINER_IP_OVERRIDE=172.18.0.9 run bash "$FW"
+  [ "$status" -eq 0 ]
+  grep -q -- "^iptables -A OUTPUT -d 172.18.0.9 -p udp --dport 53 -j ACCEPT$" "$CMD_LOG"
+  grep -q -- "^iptables -A OUTPUT -d 172.18.0.9 -p tcp --dport 3443 -j ACCEPT$" "$CMD_LOG"
+  ! grep -q -- "^iptables -A OUTPUT -d 172.17.0.2 -p udp --dport 53 -j ACCEPT$" "$CMD_LOG"
+}
+
+@test "the steering accepts are asserted present before completion" {
+  run bash "$FW"
+  [ "$status" -eq 0 ]
+  grep -q "^iptables -w 5 -C OUTPUT -d 172.17.0.2 -p udp --dport 53 -j ACCEPT$" "$CMD_LOG"
+  grep -q "^iptables -w 5 -C OUTPUT -d 172.17.0.2 -p tcp --dport 53 -j ACCEPT$" "$CMD_LOG"
+  grep -q "^iptables -w 5 -C OUTPUT -d 172.17.0.2 -p tcp --dport 3443 -j ACCEPT$" "$CMD_LOG"
+}
+
+@test "the iptables stub rejects a duplicate selector, so invalid rules cannot pass" {
+  # Guards the guard: without this, `! -d A ! -d B` (a syntax error real iptables
+  # refuses) passed the whole suite and failed at container start instead.
+  run "$STUB_DIR/iptables" -A OUTPUT -p udp --dport 53 ! -d 127.0.0.1 ! -d 172.17.0.2 -j CC_DNS_GUARD
+  [ "$status" -ne 0 ]
+  [[ "$output" == *"multiple -d flags not allowed"* ]]
+  run "$STUB_DIR/iptables" -A OUTPUT -p udp --dport 53 -d 127.0.0.1 -j CC_DNS_GUARD
+  [ "$status" -eq 0 ]
 }
