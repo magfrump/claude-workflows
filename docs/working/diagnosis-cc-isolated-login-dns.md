@@ -1,6 +1,6 @@
 # Diagnosis — cc-isolated session cannot log in (`getaddrinfo` on platform.claude.com)
 
-Status: **resolved** · Started and closed 2026-09-09 · Outcome: decision log #44 (H5 mechanism refuted, H6 confirmed)
+Status: **resolved and verified live** · Started and closed 2026-09-09 · Outcome: decision log #44 (H5 mechanism refuted, H6 confirmed)
 (#43 was a refuted attempt; see the DD at `dd-cc-isolated-loopback-redirect.md` for the design pass)
 
 ## Reproduction
@@ -143,6 +143,9 @@ Status: **resolved** · Started and closed 2026-09-09 · Outcome: decision log #
     `OUTPUT -d "$CONTAINER_IP" --dport {53/udp,53/tcp,$SNI_PORT/tcp} -j ACCEPT` rules, scoped to the
     steering endpoints rather than a blanket `-d "$CONTAINER_IP"` so the accept does not also expose
     anything else bound on that address.
+  · **verified live 2026-09-09**: with the destination-scoped accepts in place the container
+    comes up, `init-firewall.sh` completes, and a session reaches the Anthropic API. The
+    original reported symptom (`getaddrinfo` at `/login`) is gone.
   · **why Probe 1 missed it**: Probe 1 ran with `iptables -F` and `-P OUTPUT ACCEPT`. It validated
     the nat layer and, by construction, nothing downstream of it — including the guard chain the same
     change was restructuring. A pre-implementation probe has to run against the assembled ruleset.

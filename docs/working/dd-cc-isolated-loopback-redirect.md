@@ -358,6 +358,25 @@ One consequence worth writing down: the *negative* case changes cosmetically. To
 
 ## 6. Live-container checklist — the bless gate
 
+> ### STATUS — 2026-09-09: boundary VERIFIED LIVE, gate partially discharged
+>
+> A container built from the fixed script comes up, `init-firewall.sh` completes, and a
+> session reaches the Anthropic API. That single fact discharges three probes, because
+> the script's own end-of-run verification asserts them and fails closed without them:
+>
+> | Probe | Status | What discharged it |
+> |---|---|---|
+> | **1** — DNAT to a local address delivers | ✅ satisfied | The `node`-run positive SNI probe reaches `api.anthropic.com`, which needs both the udp/53 and the tcp/443 steering to work end to end. Supersedes the flawed pre-implementation run (which flushed the filter table — see the note under Probe 1). |
+> | **2** — `SO_ORIGINAL_DST` intact under DNAT | ✅ satisfied | The negative probe greps for `REJECT sni=not-allowlisted.invalid orig_dst=$ANTHROPIC_PROBE_IP:443` — the **pre-NAT** address, which only conntrack can supply. Reaching `FIREWALL_COMPLETE=1` proves the grep matched. |
+> | **6** — boots with no sysctl at all | ✅ satisfied | `devcontainer.json` carries no `--sysctl`; the container came up anyway. |
+> | **3** — daemons unreachable off-box | ⬜ outstanding | The three `INPUT ! -i lo` drops are asserted *present*, but their effect has never been probed from the host or a second container. Presence ≠ effect — that distinction is the whole incident. |
+> | **4** — hardcoded-resolver bypass refused | ⬜ outstanding | Not exercised by the boot run. |
+> | **5** — address recomputed across restart | ⬜ outstanding | One boot cannot show this; needs a stop/start that renumbers the container. |
+>
+> Probes 3, 4 and 5 are **not** blockers on the fix — they check properties the design
+> claims, not the outage it repaired — but leaving them unrun is the same debt that
+> produced this incident, so they are tracked rather than closed.
+
 This is the whole lesson of the incident: decisions 40 and 41 both shipped with the phrase *"needs a live-container check … before bless"*, and that check never ran. **Probe 1 runs before implementation, not after.** It is the discriminator between Continue and Reverse in §4's decision rule, and it takes about ten minutes.
 
 Run everything as root inside the container unless a line says otherwise. Root is exempt from both chains, so **every functional probe must go through `runuser -u node --`** — a root-run probe proves nothing, which is exactly how the boundary looked healthy while the agent had no network.

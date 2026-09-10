@@ -1237,10 +1237,15 @@ fi
 # A failed curl alone is not proof: a missing redirect, a dead proxy, or a broken
 # runuser all fail the same way. The proxy must have SEEN and REFUSED the name.
 # ...and it must have seen it THROUGH THE STEERING: a direct connection to
-# $CONTAINER_IP:$SNI_PORT (which `-o lo` permits) would log that as the orig_dst
-# instead of the pre-NAT address, so the
-# original-destination field is the discriminator (the nat rule itself was
-# asserted above) — log evidence alone could be forged by anything on loopback.
+# $CONTAINER_IP:$SNI_PORT (which the destination-scoped accept above permits, and
+# which any process on this container can make) would log that as the orig_dst
+# instead of the pre-NAT address, so the original-destination field is the
+# discriminator (the nat rule itself was asserted above) — log evidence alone could
+# be forged by anything that can reach the proxy socket.
+#
+# This grep is also what verifies SO_ORIGINAL_DST still works under DNAT rather than
+# REDIRECT: it demands the PRE-NAT address, which only conntrack can supply. A boot
+# that reaches this line has proven it.
 if ! grep -q "REJECT sni=not-allowlisted.invalid orig_dst=$ANTHROPIC_PROBE_IP:443" "$SNI_LOG" 2>/dev/null; then
     echo "ERROR: Firewall verification failed - the SNI proxy did not log a redirected refusal for not-allowlisted.invalid (see $SNI_LOG)"
     exit 1
