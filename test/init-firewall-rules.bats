@@ -1214,3 +1214,53 @@ STUB
   run "$STUB_DIR/iptables" -A OUTPUT -p udp --dport 53 -d 127.0.0.1 -j CC_DNS_GUARD
   [ "$status" -eq 0 ]
 }
+
+# --- completion marker (read by the launcher's self-probe; decision log #45) ---
+
+@test "a completed run leaves the completion marker, with the container address" {
+  export CC_FIREWALL_MARKER="$TEST_TMPDIR/complete"
+  run bash "$FW"
+  [ "$status" -eq 0 ]
+  [ -f "$CC_FIREWALL_MARKER" ]
+  grep -q '^completed=' "$CC_FIREWALL_MARKER"
+  grep -q '^container_ip=172\.17\.0\.2$' "$CC_FIREWALL_MARKER"
+}
+
+@test "an aborted run removes a marker left by an earlier run (bricked-closed is visible)" {
+  export CC_FIREWALL_MARKER="$TEST_TMPDIR/complete"
+  echo 'completed=earlier' > "$CC_FIREWALL_MARKER"
+  FAIL_META=1 run bash "$FW"
+  [ "$status" -ne 0 ]
+  [ ! -f "$CC_FIREWALL_MARKER" ]
+  grep -q "iptables -w 5 -P OUTPUT DROP" "$CMD_LOG"
+}
+
+@test "the marker is removed before the flush, not only at exit" {
+  # A run that dies between the flush and the sentinel must not leave the
+  # previous run's marker vouching for a half-built ruleset. The stub logs `rm`
+  # nowhere, so assert on ordering by making the run fail AFTER the flush and
+  # checking the marker is gone; then check the script text orders the rm ahead
+  # of the flush (the trap alone would also remove it, so this pins the position).
+  export CC_FIREWALL_MARKER="$TEST_TMPDIR/complete"
+  echo 'completed=earlier' > "$CC_FIREWALL_MARKER"
+  NO_RULE=CC_SNI_GUARD run bash "$FW"
+  [ "$status" -ne 0 ]
+  [ ! -f "$CC_FIREWALL_MARKER" ]
+  local rm_line flush_line
+  rm_line=$(grep -n '^rm -f "\$FIREWALL_MARKER"' "$FW" | head -1 | cut -d: -f1)
+  flush_line=$(grep -n '^iptables -F$' "$FW" | head -1 | cut -d: -f1)
+  [ -n "$rm_line" ] && [ -n "$flush_line" ] && [ "$rm_line" -lt "$flush_line" ]
+}
+
+@test "a run that never took the lock leaves the holder's marker alone" {
+  export CC_FIREWALL_MARKER="$TEST_TMPDIR/complete"
+  export CC_FIREWALL_LOCK="$TEST_TMPDIR/lock" CC_FIREWALL_LOCK_WAIT=1
+  echo 'completed=holder' > "$CC_FIREWALL_MARKER"
+  exec 8>"$CC_FIREWALL_LOCK"; flock 8
+  run bash "$FW"
+  exec 8>&-
+  [ "$status" -ne 0 ]
+  [[ "$output" == *"never acquired the firewall lock"* ]]
+  [ -f "$CC_FIREWALL_MARKER" ]
+  grep -q '^completed=holder$' "$CC_FIREWALL_MARKER"
+}

@@ -17,7 +17,9 @@
     "in the same commit as a linker run, or prune by hand.",
     "",
     "Every hook here is non-blocking EXCEPT guard-trusted-writes.py (denies writes to",
-    "trusted-policy paths) and auto-approve-allowed-commands.sh (grants permission).",
+    "trusted-policy paths), auto-approve-allowed-commands.sh (grants permission) and",
+    "live-verify-gate.sh (blocks a `git commit` of a cc-isolated enforcement file whose",
+    "message has no Live-verified: trailer — decision log #45).",
     "Those two sit on the permission path — see decision 023 for why they are on by",
     "default and how to opt out (CC_SKIP_HOOK_WIRING=1).",
     "",
@@ -60,6 +62,10 @@
           {
             "type": "command",
             "command": "bash {{CLAUDE_DIR}}/hooks/auto-approve-allowed-commands.sh"
+          },
+          {
+            "type": "command",
+            "command": "bash {{CLAUDE_DIR}}/hooks/live-verify-gate.sh"
           }
         ]
       },

@@ -9,8 +9,9 @@
 #   cc-isolated --register ~/code/api --profile python
 #                                        # widen that project's egress, then re-bless
 #   cc-isolated --bless                  # re-bless the installed config after YOU reviewed it
-#   cc-isolated --probe-only [WS]        # run the boundary self-probe and exit
-#   cc-isolated --list                   # show registered projects and their egress
+#   cc-isolated --probe-only [WS]        # (re)build WS from the blessed config, run the
+#                                        # boundary self-probe, record it verified live
+#   cc-isolated --list                   # registered projects, blessed config, verified?
 #
 # WHY THE CONFIG LIVES OUTSIDE THE REPO (decision 016, H2). Under decision 015 the
 # boundary config was committed inside each repo, which meant it was bind-mounted
@@ -27,6 +28,20 @@
 # the probe asserts in-container that /workspace really is the repo you asked for.
 #
 # Plant the canary once on the host:  touch ~/.ssh/canary
+#
+# BLESSED IS NOT VERIFIED. A bless hashes the installed config; it says nothing about
+# whether a container built from that config actually works. Two boundary changes
+# (decision log #40, #41) shipped with "needs a live-container check before bless" in
+# their commit messages and were blessed without one; the bats suites cannot see a
+# kernel, so four review passes could not catch it either, and sessions had no DNS
+# for six days while every root-run probe passed (#44). So the launcher now keeps a
+# second file next to the manifest — verified-live.sha256 — which is written ONLY by
+# a passing self-probe against a container whose image bakes the hash of the manifest
+# being blessed (CC_CONFIG_HASH build arg -> /etc/cc-config-hash). A launch on an
+# unverified config says so, rebuilds the container so the probe exercises the new
+# config rather than an old image, and refuses to start a session unless the baked
+# firewall script reached its completion marker. See guides/devcontainer-setup.md,
+# "Changing the boundary".
 
 set -euo pipefail
 
@@ -40,6 +55,43 @@ projects_dir() {
 
 manifest_path() {
   echo "$(config_dir)/manifest.sha256"
+}
+
+verified_path() {
+  echo "$(config_dir)/verified-live.sha256"
+}
+
+# Identity of the blessed config: a hash over the manifest itself (which already
+# hashes every enforcement file). Baked into the image as /etc/cc-config-hash and
+# recorded in verified-live.sha256, so "which config is this container running" and
+# "which config passed a live probe" are the same 16 hex characters as `--list` shows.
+blessed_hash() {
+  local m
+  m="$(manifest_path)"
+  [ -f "$m" ] || return 1
+  sha256sum < "$m" | cut -c1-16
+}
+
+# The hash a passing self-probe recorded, or empty.
+verified_hash() {
+  local v
+  v="$(verified_path)"
+  [ -f "$v" ] && tr -d '[:space:]' < "$v" || true
+}
+
+# 0 iff the blessed config has passed a live self-probe.
+is_verified_live() {
+  local b v
+  b="$(blessed_hash)" || return 1
+  v="$(verified_hash)"
+  [ -n "$v" ] && [ "$v" = "$b" ]
+}
+
+# Called by probe_boundary on a full pass. The probe has by then asserted that the
+# container's baked hash equals the blessed one, so the receipt names a config that
+# a real container was built from and booted with the firewall complete.
+record_verified_live() {
+  blessed_hash > "$(verified_path)"
 }
 
 # Files whose integrity gates a container (re)build. All of them execute host-side
@@ -120,6 +172,15 @@ bless_manifest() {
   compute_manifest > "$(manifest_path)"
   echo "Blessed $(manifest_path) ($(wc -l < "$(manifest_path)") entries):"
   cat "$(manifest_path)"
+  echo
+  echo "Blessed config: $(blessed_hash)"
+  if is_verified_live; then
+    echo "Verified live:  yes (this exact config has passed a live self-probe before)"
+  else
+    echo "Verified live:  NO — a bless is a review, not a test. Nothing has run this config."
+    echo "  Next: cc-isolated --probe-only <repo>   # rebuilds from it and probes as node"
+    echo "  Commits that change the boundary carry a 'Live-verified:' trailer naming this hash."
+  fi
 }
 
 # Returns 0 if the installed config matches the blessed manifest.
@@ -251,7 +312,17 @@ register_project() {
 }
 
 list_projects() {
-  local pd f pid
+  local pd f pid b
+  if b="$(blessed_hash)"; then
+    if is_verified_live; then
+      echo "Blessed config $b — verified live: yes"
+    else
+      echo "Blessed config $b — verified live: NO (run: cc-isolated --probe-only <repo>)"
+    fi
+  else
+    echo "No blessed config (run devcontainer-config/install.sh)."
+  fi
+  echo
   pd="$(projects_dir)"
   if [ ! -d "$pd" ] || [ -z "$(ls -A "$pd" 2>/dev/null)" ]; then
     echo "No projects registered (all run with the base egress profile)."
@@ -264,6 +335,13 @@ list_projects() {
   done
   echo
   echo "Project-ids are sha256 prefixes of the repo's absolute path."
+}
+
+# 0 iff the running container's baked config hash equals the blessed one.
+container_config_matches() {
+  local have
+  have="$(devcontainer exec "$@" cat /etc/cc-config-hash 2>/dev/null | tr -d '[:space:]' || true)"
+  [ -n "${CC_CONFIG_HASH:-}" ] && [ "$have" = "$CC_CONFIG_HASH" ]
 }
 
 # In-container boundary self-probe. Must pass before claude starts.
@@ -353,11 +431,40 @@ probe_boundary() {
     failures=$((failures + 1))
   fi
 
+  # Config identity: the image must have been built from the config that is blessed
+  # NOW. `devcontainer up` reuses an existing container and never rebuilds, so after
+  # a re-bless the running container is silently the OLD boundary until someone
+  # passes --remove-existing-container; main() does that when this check fails.
+  local want_hash="${CC_CONFIG_HASH:-}" have_hash
+  have_hash="$(devcontainer exec "${dc[@]}" cat /etc/cc-config-hash 2>/dev/null | tr -d '[:space:]' || true)"
+  if [ -z "$want_hash" ] || [ "$have_hash" != "$want_hash" ]; then
+    echo "PROBE FAIL (config identity): this container was built from config '${have_hash:-<none>}'," >&2
+    echo "  but the blessed config is '${want_hash:-<none>}'. The boundary it runs is not the one" >&2
+    echo "  you blessed. Rebuild with:" >&2
+    echo "    devcontainer up --remove-existing-container ${dc[*]}" >&2
+    failures=$((failures + 1))
+  fi
+
+  # Firewall completion: the baked init-firewall.sh must have reached its sentinel on
+  # its LAST run. It fails closed, and a closed container passes every egress check
+  # above while `node` has no DNS and no HTTPS — the 2026-09-09 outage looked exactly
+  # like a healthy boundary from here. The marker is root-only and removed before
+  # every flush, so it vouches for the current ruleset, not an earlier one.
+  if ! devcontainer exec "${dc[@]}" test -f /run/cc-firewall/complete; then
+    echo "PROBE FAIL (firewall): init-firewall.sh did not complete on this container." >&2
+    echo "  It fails CLOSED, so egress looks denied — but node has no network either." >&2
+    echo "  Read its output (devcontainer up / postStartCommand log), or re-run it inside:" >&2
+    echo "    sudo /usr/local/bin/init-firewall.sh" >&2
+    failures=$((failures + 1))
+  fi
+
   if [ "$failures" -gt 0 ]; then
     echo "Boundary self-probe FAILED ($failures) — not starting Claude Code." >&2
     return 1
   fi
-  echo "Boundary self-probe passed (canary invisible · egress default-deny · workspace identity · volume not shared · image from central Dockerfile)."
+  record_verified_live
+  echo "Boundary self-probe passed (canary invisible · egress default-deny · workspace identity · volume not shared · image from central Dockerfile · config $want_hash · firewall complete)."
+  echo "Recorded config $want_hash as verified live in $(verified_path)."
 }
 
 usage() {
@@ -430,17 +537,39 @@ main() {
 
   check_manifest
 
+  # Baked into the image (devcontainer.json build arg) and compared by the probe.
+  CC_CONFIG_HASH="$(blessed_hash)"
+  export CC_CONFIG_HASH
+
   local dc=(--workspace-folder "$ws"
             --override-config "$(config_dir)/devcontainer.json"
             --id-label "cc-project=$pid")
 
+  if ! is_verified_live; then
+    echo "NOTE: blessed config $CC_CONFIG_HASH has NOT been verified in a live container."
+    echo "      This run is that verification: the container is rebuilt from it, and the"
+    echo "      self-probe must pass (including the node-run firewall probes) before anything"
+    echo "      starts. A pass records the hash in $(verified_path)."
+  fi
+
+  echo "Project: $ws  (id $pid, egress base${eff_profile:+,$eff_profile}, config $CC_CONFIG_HASH)"
   if [ "$action" = "probe" ]; then
+    # --probe-only is the verification command, so it always rebuilds: probing a
+    # container left over from an earlier config would verify the wrong boundary.
+    devcontainer up --remove-existing-container "${dc[@]}"
     probe_boundary "$ws"
     exit 0
   fi
 
-  echo "Project: $ws  (id $pid, egress base${eff_profile:+,$eff_profile})"
   devcontainer up "${dc[@]}"
+
+  # `devcontainer up` never rebuilds an existing container. If the config was
+  # re-blessed since this one was built, it is running the previous boundary;
+  # recreate it (the ~/.claude volume and the repo are unaffected).
+  if ! container_config_matches "${dc[@]}"; then
+    echo "Blessed config changed since this container was built — rebuilding it."
+    devcontainer up --remove-existing-container "${dc[@]}"
+  fi
 
   # `devcontainer up` on an already-running container skips postStartCommand, so a
   # failed earlier start can leave the firewall unenforced. Re-assert the baked

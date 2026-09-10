@@ -1,6 +1,6 @@
 # Devcontainer setup — isolated Claude Code sessions (decisions 015, 016)
 
-Last verified: 2026-07-14
+Last verified: 2026-09-09
 Relevant paths: `devcontainer-config/`, `test/cc-isolated-functions.bats`, `.devcontainer/` (legacy), `scripts/devcontainer-session.sh` (legacy)
 
 Every CC project on this host runs inside a devcontainer, launched by one
@@ -184,7 +184,7 @@ allowlist. Full workflow and troubleshooting: `guides/cc-isolated-usage.md`.
 
 ## Verifying the boundary
 
-The launcher probes five things at every start and refuses to exec `claude` if any
+The launcher probes seven things at every start and refuses to exec `claude` if any
 fail:
 
 - **Image provenance:** the running image was built from the central Dockerfile —
@@ -200,6 +200,16 @@ fail:
   project's container.
 - **H6 (volume not shared):** `/home/node/.claude` is stamped with this project's id;
   a mismatch means two projects are sharing one credential volume.
+- **Config identity:** the image's baked `/etc/cc-config-hash` is the hash of the
+  manifest blessed *now*. A container built before a re-bless is the old boundary;
+  the launcher recreates it.
+- **Firewall complete:** `/run/cc-firewall/complete` exists — the baked
+  `init-firewall.sh` reached its sentinel on its last run, node-run probes included.
+  Without this check a fail-closed container is indistinguishable from a healthy one:
+  every egress check passes and `node` has no network (2026-09-09).
+
+A full pass records the blessed hash in `~/.config/claude-devcontainer/verified-live.sha256`.
+That file, not the manifest, is what "verified" means here — see the next section.
 
 Do these by hand for the decision-015 Continue trigger:
 
@@ -211,6 +221,91 @@ Do these by hand for the decision-015 Continue trigger:
   Now run `./devcontainer-config/install.sh`: it must show your edit in the diff and
   wait for approval. That is the gate. (Revert with git afterwards.)
 - **Tests:** `bats test/` green inside the container.
+
+## Changing the boundary — the verification loop
+
+This section exists because the same debt produced two outages. Decisions #40 and
+#41 (filtering resolver, SNI proxy) each shipped with *"needs a live-container
+check before bless"* in the commit message, were blessed without one, and passed
+four review passes — all run in a sandbox with no kernel, so each re-read the
+command sequence and none could touch the assumption. Sessions had no DNS or HTTPS
+for six days while every root-run probe reported a healthy boundary (#43 refuted,
+#44). The fix to the process is mechanical, not advisory:
+
+- **Runtime half — the receipt.** A bless hashes files. It is a *review*, not a
+  test. The launcher bakes the blessed hash into the image and writes
+  `verified-live.sha256` only when a self-probe passes against a container that
+  carries that hash and whose `init-firewall.sh` reached its completion marker.
+  `cc-isolated --list` shows the blessed hash and whether it has ever passed.
+- **Repo half — the trailer.** `hooks/live-verify-gate.sh` (PreToolUse on Bash)
+  blocks a `git commit` that includes any manifest-hashed file under
+  `devcontainer-config/` unless the message carries a `Live-verified:` trailer.
+  Either the hash `--list` shows after a passing probe, or `Live-verified: no — <why,
+  and what will run it>`. The gate does not judge the answer; it refuses to let the
+  question go unasked. `git log --grep 'Live-verified: no'` lists the outstanding debt.
+
+### What each layer can and cannot prove
+
+| Layer | Proves | Cannot see |
+|---|---|---|
+| `bats test/init-firewall-rules.bats`, `test/cc-isolated-functions.bats`, `shellcheck` | The **command sequence**: which `iptables`/`ipset`/`dnsmasq` calls are issued, in what order, with which literals; that malformed input aborts before the flush; that the trap forces DROP. The `iptables` stub rejects repeated single-value selectors, nothing more. | **Any kernel behaviour.** Whether a rule matches a packet, whether a DNAT delivers, which device the filter chain sees, whether a daemon is reachable from the bridge. The 2026-09-09 bug shipped with 68 green tests. |
+| `init-firewall.sh`'s own end-of-run probes (inside the container, at every start) | That the assembled ruleset lets `node` — not root — resolve and reach `api.anthropic.com` through the steering, and that a forged SNI against an admitted address is refused *through the DNAT* (the `orig_dst` grep). Fails closed otherwise. | Properties the design *claims* beyond the boot path: off-box unreachability, hardcoded-resolver bypass, address recomputation after a restart. |
+| The launcher's self-probe + receipt | That a container built from the config blessed *now* booted with the firewall complete, and which hash that was. | Anything the firewall probes did not exercise. |
+| The DD's manual probe set (`docs/working/dd-cc-isolated-loopback-redirect.md` §6, probes 3–5) | The claimed properties above, from the host and a second container. | — (this is the last layer) |
+
+### The sequence, every time an enforcement file changes
+
+Enforcement files are what `enforcement_files()` in `cc-isolated.sh` hashes:
+`Dockerfile`, `devcontainer.json`, `init-firewall.sh`, `cc-sni-proxy.py`,
+`link-claude-home.sh`, `cc-isolated.sh`, everything under `egress/`, and the
+staged `claude-home/`.
+
+1. **Unit layer, in the editing session.** `bats test/init-firewall-rules.bats
+   test/cc-isolated-functions.bats test/hooks/live-verify-gate.bats`, `shellcheck
+   -S warning` on every touched script, `python3 -m unittest test/test_cc_sni_proxy.py`
+   if the proxy changed. Green here means the *sequence* is right. Nothing more.
+2. **Pre-implementation probe for steering or bind changes.** If the change touches
+   a nat rule, a bind address, a guard chain, or an accept that steered traffic
+   depends on, run the relevant §6 probe on a live container *before* writing the
+   rule into the script, and run it **against the assembled ruleset**, never a
+   flushed one. Probe 1 of the 2026-09-09 DD passed with the filter table cleared
+   and missed the second half of the outage because of it. Every functional probe
+   runs as `node` via `runuser -u node --`; root is exempt from the steering and a
+   root-run probe proves nothing.
+3. **Install and bless, on the host.** `./devcontainer-config/install.sh` — read the
+   diff it shows; that is the human review gate. It ends with *"Blessed, NOT
+   verified"*. Believe it.
+4. **Verify live.** `cc-isolated --probe-only <repo>`. This always recreates the
+   container from the blessed config (so it cannot verify a leftover) and writes the
+   receipt on a pass. Do it on **more than one project** when the change is central —
+   one config, one blast radius. Then start a session and do the one thing the
+   probes cannot: `/login` (or a request) as the user the boundary is for.
+5. **Run the claimed-property probes when the design claims something new.** DD §6
+   probes 3 (daemons unreachable from host and bridge), 4 (hardcoded resolver still
+   steered), 5 (address recomputed across a renumbering restart). Record outcomes in
+   the DD or diagnosis doc with `tested:` / `learned:`. These are outstanding for
+   #44 as of 2026-09-09; the receipt does not cover them and does not claim to.
+6. **Commit with the trailer.** `Live-verified: <hash from cc-isolated --list>` when
+   step 4 passed; `Live-verified: no — <reason>; <what will run it>` when it could
+   not (a sandbox session with no Docker is the usual reason). The hook refuses the
+   commit without one. A `no` is a debt entry, and the next host session's first job
+   is to clear it: run step 4, then amend or follow up with the hash.
+7. **Before the decision-log row says "verified"**, the row cites the hash. A row
+   that says "needs a live check" without a `questions.md` entry naming who runs it
+   and when is the pattern this section exists to end.
+
+### Reading a failure
+
+- `PROBE FAIL (firewall)` — the baked script aborted and failed closed. The container
+  is safe and useless. The `ERROR:` line in the `devcontainer up` output names the
+  step; re-run `sudo /usr/local/bin/init-firewall.sh` inside to see it again. If the
+  script's own phase-A reads are now blocked (DROP with no accepts), recreate.
+- `PROBE FAIL (config identity)` — the container predates the bless. The launcher
+  recreates it on a normal launch; `--probe-only` always does.
+- Probes pass, `/login` fails with `getaddrinfo` — the class #44 belongs to *should*
+  now be caught by the firewall-complete check. If it is not, a host is missing from
+  `egress/base.txt`; remember the SNI allowlist is exact-name, so a subdomain of a
+  listed host resolves and is then rejected (`/run/cc-sni-proxy/proxy.log`).
 
 ## Migrating from the 015 per-repo launcher
 
@@ -256,14 +351,16 @@ Do not maintain both. Two copies of `init-firewall.sh` is exactly the drift deci
   (openrouter.ai is on Cloudflare) can go stale mid-session; rerun
   `sudo /usr/local/bin/init-firewall.sh` inside the container if a previously working
   host starts timing out.
-- **Image lifecycle:** `CLAUDE_CODE_VERSION=latest` is baked at build time. Rebuild
-  (`devcontainer up --remove-existing-container …` after an install + bless) when CC
-  falls behind; staleness >1 version for >2 weeks is a decision-015 Revisit trigger.
-  The egress profile is the *last* layer in the Dockerfile, so projects on different
+- **Image lifecycle:** `CLAUDE_CODE_VERSION=latest` is baked at build time. A
+  re-bless changes the baked config hash, so the next launch of each project
+  recreates its container automatically; to pick up a newer CC *without* a config
+  change, `devcontainer up --remove-existing-container …` by hand. Staleness >1
+  version for >2 weeks is a decision-015 Revisit trigger. The egress profile and the
+  config hash are the *last* layer in the Dockerfile, so projects on different
   profiles still share every heavy layer.
 - **One config, one blast radius:** a bad edit to the central config breaks every
-  project at once. After changing it, smoke-test with
-  `cc-isolated --probe-only <repo>` on more than one project before relying on it.
+  project at once. After changing it, verify with `cc-isolated --probe-only <repo>`
+  on more than one project before relying on it — see "Changing the boundary".
 - **SI loop / cron (H5, unverified):** overnight runs need reworking to
   `devcontainer exec` non-interactively. Do not rely on overnight isolation until this
   is proven — decision 015 lists it as a Revisit trigger.

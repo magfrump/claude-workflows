@@ -20,14 +20,38 @@
 # needs it. init-firewall.sh rejects a line that does not parse, so a typo fails the
 # rebuild loudly rather than silently changing what is admitted.
 
-# Claude Code itself: API + feature flags + telemetry events (api.anthropic.com),
-# OAuth login (claude.ai, console.anthropic.com), OAuth token exchange/refresh
-# (platform.claude.com — per the network-config docs; the docs' stated symptom of
-# omitting it is a first-run connectivity-check failure).
+# EXACT NAMES ONLY. The SNI proxy admits a 443 name only if it equals an entry
+# here (GitHub's zones are the one derived exception), so a SUBDOMAIN of an entry
+# resolves through dnsmasq (which is zone-based) and is then REJECTED by the proxy
+# with `not in allowlist` in /run/cc-sni-proxy/proxy.log. If a client starts using
+# `foo.claude.ai` it must be listed as `foo.claude.ai`; listing `claude.ai` does not
+# cover it. This asymmetry is the most likely source of the next quiet outage.
+#
+# Claude Code itself, per code.claude.com/docs/en/network-config (re-checked
+# 2026-09-09 — from a sandbox with no egress, via search summaries of the page;
+# confirm against the page itself when one of these hosts next misbehaves):
+#   api.anthropic.com       API, feature flags, telemetry events
+#   claude.ai               OAuth login for claude.ai accounts
+#   claude.com              docs list it alongside claude.ai (added 2026-09-09)
+#   platform.claude.com     OAuth token exchange/refresh/revocation for BOTH account
+#                           kinds; omitting it fails the first-run connectivity check
+#   downloads.claude.ai     native installer/auto-updater and plugin executables.
+#                           CC here is npm-installed (registry.npmjs.org) but plugin
+#                           binaries still come from here (added 2026-09-09)
+#   mcp-proxy.anthropic.com claude.ai-hosted MCP connectors (added 2026-09-09)
+#   code.claude.com         the docs themselves; the claude-code-guide agent and
+#                           WebFetch read them (added 2026-09-09)
+#   console.anthropic.com   NO LONGER in the documented list (2026-09). Kept until
+#                           one `/login` has been verified live without it — remove
+#                           it then. Tracked in docs/working/questions.md.
 api.anthropic.com
 claude.ai
-console.anthropic.com
+claude.com
 platform.claude.com
+downloads.claude.ai
+mcp-proxy.anthropic.com
+code.claude.com
+console.anthropic.com
 
 # Node toolchain — CC is an npm package and self-updates from here.
 registry.npmjs.org

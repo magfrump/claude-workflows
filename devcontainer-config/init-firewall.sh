@@ -280,6 +280,13 @@ fail_closed_on_abort() {
     echo "       forced to DROP, because this run changed nothing." >&2
     return 0
   fi
+  if [ "${FIREWALL_COMPLETE:-0}" = "1" ]; then
+    # The one place the marker is written: after the sentinel, never before a check.
+    printf 'completed=%s\ncontainer_ip=%s\n' "$(date -u +%Y-%m-%dT%H:%M:%SZ)" "${CONTAINER_IP:-}" \
+      > "${FIREWALL_MARKER:-/run/cc-firewall/complete}" || true
+    return 0
+  fi
+  rm -f "${FIREWALL_MARKER:-/run/cc-firewall/complete}" || true
   if [ "${FIREWALL_COMPLETE:-0}" != "1" ]; then
     echo "ERROR: init-firewall.sh did not complete." >&2
     iptables -w 5 -P OUTPUT DROP || true
@@ -374,6 +381,15 @@ echo "Egress profiles: $(cat "$PROFILE_FILE" 2>/dev/null || echo '(base only)')"
 # under sudo env_reset `node` cannot set them.
 FIREWALL_LOCK="${CC_FIREWALL_LOCK:-/run/cc-firewall/lock}"
 FIREWALL_LOCK_WAIT="${CC_FIREWALL_LOCK_WAIT:-600}"
+# Completion marker, read by the launcher's self-probe (cc-isolated.sh). It exists
+# only while the LAST run of this script reached FIREWALL_COMPLETE=1: it is removed
+# before the flush and re-created by the EXIT trap on completion, so a bricked-closed
+# container (DROP policies, no accepts — which every egress probe mistakes for a
+# healthy boundary) is distinguishable from a verified one. /run/cc-firewall is root
+# 0700, so `node` can neither forge nor remove it. It lives beside the lock (so the
+# unit suite, which relocates the lock, relocates it too); CC_FIREWALL_MARKER is a
+# unit-test override like the two above.
+FIREWALL_MARKER="${CC_FIREWALL_MARKER:-$(dirname "$FIREWALL_LOCK")/complete}"
 if [[ ! "$FIREWALL_LOCK_WAIT" =~ ^[0-9]+$ ]]; then
     echo "ERROR: CC_FIREWALL_LOCK_WAIT must be a non-negative integer (got '$FIREWALL_LOCK_WAIT')" >&2
     exit 1
@@ -641,6 +657,10 @@ iptables -P FORWARD DROP
 iptables -P OUTPUT DROP
 
 # Flush existing rules and delete existing ipsets (policies set above persist)
+# The previous run's completion marker is void from here: the ruleset it vouched for
+# is about to be flushed, and only the trap re-creates it, on completion.
+rm -f "$FIREWALL_MARKER"
+
 iptables -F
 iptables -X
 iptables -t nat -F

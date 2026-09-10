@@ -109,8 +109,11 @@ echo
 CLAUDE_DEVC_CONFIG_DIR="$DEST" "$DEST/cc-isolated.sh" --bless
 
 echo
-echo "Done. Next steps:"
+echo "Done. Blessed, NOT verified: a bless is a review of files, not a test of a container."
+echo "Next steps:"
 echo "  touch ~/.ssh/canary                    # once, if you haven't — strengthens the H1 probe"
+echo "  cc-isolated --probe-only <repo>        # REQUIRED after any boundary change: rebuilds from"
+echo "                                         # this config and records it verified live on a pass"
 echo "  cc-isolated                            # session for the repo containing \$PWD"
 echo "  cc-isolated --register <repo> --profile python   # widen a project's egress"
 case ":$PATH:" in

@@ -569,3 +569,162 @@ firewall() {
   [ "$status" -ne 0 ]
   [[ "$output" == *"enforcement_files failed"* ]]
 }
+
+# --- blessed ≠ verified: the live-verification receipt (decision log #45) ---
+#
+# A bless hashes files; it cannot know whether a container built from them works
+# (two boundary changes shipped blessed-but-unverified and cost a six-day outage,
+# #44). The launcher therefore bakes the blessed hash into the image, and only a
+# passing self-probe against a container carrying THAT hash writes the receipt.
+
+# A devcontainer stub that answers the in-container reads probe_boundary makes.
+# STUB_IMAGE_HASH → /etc/cc-config-hash; STUB_FP → the workspace fingerprint;
+# STUB_FW_MISSING=1 → the firewall completion marker is absent. Every call is
+# logged to $DC_LOG so main()'s rebuild decision can be asserted.
+smart_devcontainer_stub() {
+  export DC_LOG="$TEST_TMPDIR/dc.log"
+  cat > "$TEST_TMPDIR/bin/devcontainer" <<'STUB'
+#!/usr/bin/env bash
+echo "devcontainer $*" >> "$DC_LOG"
+case "$*" in
+  *cc-config-hash*)        printf '%s\n' "${STUB_IMAGE_HASH:-}" ;;
+  *rev-parse*)             printf '%s' "${STUB_FP:-}" ;;
+  *cc-firewall/complete*)  [ -z "${STUB_FW_MISSING:-}" ] ;;
+  *)                       exit 0 ;;
+esac
+STUB
+  chmod +x "$TEST_TMPDIR/bin/devcontainer"
+}
+
+@test "blessed_hash needs a manifest, is stable, and changes when the boundary changes" {
+  run blessed_hash
+  [ "$status" -ne 0 ]
+  bless_manifest >/dev/null
+  local h1 h2 h3
+  h1="$(blessed_hash)"; h2="$(blessed_hash)"
+  [ "$h1" = "$h2" ]
+  [ "${#h1}" -eq 16 ]
+  echo 'more.example' >> "$CLAUDE_DEVC_CONFIG_DIR/egress/base.txt"
+  bless_manifest >/dev/null
+  h3="$(blessed_hash)"
+  [ "$h3" != "$h1" ]
+}
+
+@test "a fresh bless is NOT verified live, and says so" {
+  run bless_manifest
+  [ "$status" -eq 0 ]
+  [[ "$output" == *"Verified live:  NO"* ]]
+  [[ "$output" == *"--probe-only"* ]]
+  [[ "$output" == *"Live-verified:"* ]]
+  run is_verified_live
+  [ "$status" -ne 0 ]
+  [ ! -f "$(verified_path)" ]
+}
+
+@test "the receipt names the blessed hash and is void once the boundary changes" {
+  bless_manifest >/dev/null
+  record_verified_live
+  [ "$(cat "$(verified_path)")" = "$(blessed_hash)" ]
+  run is_verified_live
+  [ "$status" -eq 0 ]
+  run bless_manifest            # same content re-blessed: still verified
+  [[ "$output" == *"Verified live:  yes"* ]]
+  echo 'more.example' >> "$CLAUDE_DEVC_CONFIG_DIR/egress/base.txt"
+  bless_manifest >/dev/null
+  run is_verified_live
+  [ "$status" -ne 0 ]
+}
+
+@test "--list reports the blessed hash and its verification state" {
+  bless_manifest >/dev/null
+  run list_projects
+  [[ "$output" == *"Blessed config $(blessed_hash) — verified live: NO"* ]]
+  record_verified_live
+  run list_projects
+  [[ "$output" == *"verified live: yes"* ]]
+}
+
+@test "devcontainer.json passes CC_CONFIG_HASH as a build arg and the Dockerfile bakes it last" {
+  run grep -c '"CC_CONFIG_HASH": "${localEnv:CC_CONFIG_HASH}"' "$CONFIG_SRC/devcontainer.json"
+  [ "$output" -eq 1 ]
+  grep -q '^ARG CC_CONFIG_HASH=""' "$CONFIG_SRC/Dockerfile"
+  grep -q '"${CC_CONFIG_HASH}" > /etc/cc-config-hash' "$CONFIG_SRC/Dockerfile"
+  # The ARG must sit in the per-project tail (after CC_EGRESS_PROFILE) so every
+  # shared layer stays shared across blesses.
+  local a b
+  a=$(grep -n '^ARG CC_EGRESS_PROFILE' "$CONFIG_SRC/Dockerfile" | cut -d: -f1)
+  b=$(grep -n '^ARG CC_CONFIG_HASH' "$CONFIG_SRC/Dockerfile" | cut -d: -f1)
+  [ "$a" -lt "$b" ]
+  grep -Eq '^\s*export .*CC_CONFIG_HASH|CC_CONFIG_HASH="\$\(blessed_hash\)"' "$CONFIG_SRC/cc-isolated.sh"
+}
+
+@test "probe_boundary passes and writes the receipt when the container carries the blessed hash" {
+  make_repo "$TEST_TMPDIR/proj"
+  bless_manifest >/dev/null
+  smart_devcontainer_stub
+  export CC_CONFIG_HASH="$(blessed_hash)" STUB_IMAGE_HASH="$(blessed_hash)" STUB_FP="$(ws_fingerprint "$TEST_TMPDIR/proj")"
+  run probe_boundary "$TEST_TMPDIR/proj" "$TEST_TMPDIR/nohome"
+  [ "$status" -eq 0 ]
+  [[ "$output" == *"firewall complete"* ]]
+  [ "$(cat "$(verified_path)")" = "$(blessed_hash)" ]
+}
+
+@test "probe_boundary fails on a container built from another config, and writes no receipt" {
+  make_repo "$TEST_TMPDIR/proj"
+  bless_manifest >/dev/null
+  smart_devcontainer_stub
+  export CC_CONFIG_HASH="$(blessed_hash)" STUB_IMAGE_HASH="0000000000000000" STUB_FP="$(ws_fingerprint "$TEST_TMPDIR/proj")"
+  run probe_boundary "$TEST_TMPDIR/proj" "$TEST_TMPDIR/nohome"
+  [ "$status" -ne 0 ]
+  [[ "$output" == *"PROBE FAIL (config identity)"* ]]
+  [[ "$output" == *"--remove-existing-container"* ]]
+  [ ! -f "$(verified_path)" ]
+}
+
+@test "probe_boundary fails when init-firewall.sh never completed (closed ≠ verified)" {
+  make_repo "$TEST_TMPDIR/proj"
+  bless_manifest >/dev/null
+  smart_devcontainer_stub
+  export CC_CONFIG_HASH="$(blessed_hash)" STUB_IMAGE_HASH="$(blessed_hash)" STUB_FP="$(ws_fingerprint "$TEST_TMPDIR/proj")" STUB_FW_MISSING=1
+  run probe_boundary "$TEST_TMPDIR/proj" "$TEST_TMPDIR/nohome"
+  [ "$status" -ne 0 ]
+  [[ "$output" == *"PROBE FAIL (firewall)"* ]]
+  [ ! -f "$(verified_path)" ]
+}
+
+@test "a launch rebuilds a container whose baked config is not the blessed one" {
+  make_repo "$TEST_TMPDIR/proj"
+  bless_manifest >/dev/null
+  smart_devcontainer_stub
+  # First `cat /etc/cc-config-hash` answers with a stale hash; the stub cannot
+  # change state, so the launch's later reads also see it and the probe fails —
+  # what is asserted is the rebuild decision, not the session start.
+  export STUB_IMAGE_HASH="0000000000000000" STUB_FP="$(ws_fingerprint "$TEST_TMPDIR/proj")"
+  run bash "$CONFIG_SRC/cc-isolated.sh" "$TEST_TMPDIR/proj"
+  [[ "$output" == *"has NOT been verified in a live container"* ]]
+  [[ "$output" == *"Blessed config changed since this container was built"* ]]
+  grep -q '^devcontainer up --remove-existing-container ' "$DC_LOG"
+}
+
+@test "a launch on a matching, verified container does not rebuild" {
+  make_repo "$TEST_TMPDIR/proj"
+  bless_manifest >/dev/null
+  smart_devcontainer_stub
+  export STUB_IMAGE_HASH="$(blessed_hash)" STUB_FP="$(ws_fingerprint "$TEST_TMPDIR/proj")"
+  run bash "$CONFIG_SRC/cc-isolated.sh" "$TEST_TMPDIR/proj"
+  [ "$status" -eq 0 ]
+  ! grep -q -- '--remove-existing-container' "$DC_LOG"
+  grep -q '^devcontainer exec .* claude$' "$DC_LOG"
+  [ "$(cat "$(verified_path)")" = "$(blessed_hash)" ]
+}
+
+@test "--probe-only always rebuilds before probing" {
+  make_repo "$TEST_TMPDIR/proj"
+  bless_manifest >/dev/null
+  smart_devcontainer_stub
+  export STUB_IMAGE_HASH="$(blessed_hash)" STUB_FP="$(ws_fingerprint "$TEST_TMPDIR/proj")"
+  run bash "$CONFIG_SRC/cc-isolated.sh" --probe-only "$TEST_TMPDIR/proj"
+  [ "$status" -eq 0 ]
+  grep -q '^devcontainer up --remove-existing-container ' "$DC_LOG"
+  ! grep -q ' claude$' "$DC_LOG"
+}

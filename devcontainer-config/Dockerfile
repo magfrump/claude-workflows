@@ -385,6 +385,12 @@ RUN npm install -g @anthropic-ai/claude-code@${CLAUDE_CODE_VERSION}
 # images (decision 016, S2: N projects must not mean N full builds — only this
 # final layer is rebuilt when a project's egress profile differs).
 ARG CC_EGRESS_PROFILE=""
+# Identity of the blessed config this image was built from (sha256 prefix of the
+# trust manifest, exported by cc-isolated.sh). Read back by the launcher's self-probe:
+# a container whose hash is not the currently blessed one is rebuilt, and a passing
+# probe records this hash as "verified live". Varies with every bless, so it must
+# stay in this per-project tail with the profile.
+ARG CC_CONFIG_HASH=""
 
 COPY egress/ /usr/local/share/cc-egress/
 COPY init-firewall.sh /usr/local/bin/
@@ -426,6 +432,8 @@ RUN chown root:root /usr/local/bin/init-firewall.sh /usr/local/bin/link-claude-h
   chmod 0444 /usr/local/share/cc-egress/*.txt && \
   printf '%s\n' "${CC_EGRESS_PROFILE}" > /etc/cc-egress-profile && \
   chmod 0444 /etc/cc-egress-profile && \
+  printf '%s\n' "${CC_CONFIG_HASH}" > /etc/cc-config-hash && \
+  chmod 0444 /etc/cc-config-hash && \
   printf '%s\n' 'Defaults:node env_reset, !setenv' 'node ALL=(root) NOPASSWD: /usr/local/bin/init-firewall.sh ""' > /etc/sudoers.d/node-firewall && \
   chmod 0440 /etc/sudoers.d/node-firewall
 

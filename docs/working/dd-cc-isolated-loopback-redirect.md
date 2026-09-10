@@ -376,6 +376,16 @@ One consequence worth writing down: the *negative* case changes cosmetically. To
 > Probes 3, 4 and 5 are **not** blockers on the fix — they check properties the design
 > claims, not the outage it repaired — but leaving them unrun is the same debt that
 > produced this incident, so they are tracked rather than closed.
+>
+> **2026-09-09, later:** the process gap this section opens with is now mechanical
+> (decision log #45): the launcher records a config as verified live only after a
+> container *built from that exact config* boots with `init-firewall.sh` complete, and
+> a commit touching an enforcement file is refused without a `Live-verified:` trailer.
+> That receipt covers what the boot path exercises — probes 1, 2 and 6 — and nothing
+> more. Probes 3–5 stay manual and stay open; the guide's "Changing the boundary"
+> section (`guides/devcontainer-setup.md`) names them as step 5 of the loop and points
+> here for the commands. Run each as `node` where the line says so, against the
+> assembled ruleset, and record `tested:` / `learned:` under the probe.
 
 This is the whole lesson of the incident: decisions 40 and 41 both shipped with the phrase *"needs a live-container check … before bless"*, and that check never ran. **Probe 1 runs before implementation, not after.** It is the discriminator between Continue and Reverse in §4's decision rule, and it takes about ten minutes.
 

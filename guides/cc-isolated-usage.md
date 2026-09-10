@@ -1,7 +1,7 @@
 # cc-isolated — usage guide
 
 Last verified: 2026-09-09
-Relevant paths: `devcontainer-config/cc-isolated.sh`, `devcontainer-config/egress/`, `devcontainer-config/Dockerfile`, `test/cc-isolated-functions.bats`
+Relevant paths: `devcontainer-config/cc-isolated.sh`, `devcontainer-config/egress/`, `devcontainer-config/Dockerfile`, `test/cc-isolated-functions.bats`, `hooks/live-verify-gate.sh`
 
 `cc-isolated` launches an isolated Claude Code session inside a devcontainer for
 **any** git repo on this host, from one central host-side config (decision 016).
@@ -19,10 +19,11 @@ is already done.
 ```bash
 cc-isolated                       # session for the git repo containing $PWD
 cc-isolated ~/code/other-project  # session for an explicit repo
-cc-isolated --list                # show registered projects and their egress
+cc-isolated --list                # blessed config hash + verified-live status, registered projects
 cc-isolated --register ~/code/api --profile python   # widen egress, then re-bless
 cc-isolated --bless               # re-bless the installed config after YOU reviewed it
-cc-isolated --probe-only [REPO]   # run the boundary self-probe and exit
+cc-isolated --probe-only [REPO]   # REBUILD REPO's container from the blessed config, run the
+                                  # self-probe, record the config verified live on a pass
 cc-isolated --help                # usage header
 ```
 
@@ -35,11 +36,18 @@ directory is a hard error (it refuses rather than guessing another repo).
 2. Read the project's egress profile **from host-side registration only** — never
    from the repo.
 3. Check the installed config against the blessed trust manifest (refuses if
-   anything host-side rewrote the boundary).
+   anything host-side rewrote the boundary), and derive the **blessed config hash**
+   from it. If no live probe has recorded that hash yet, say so: this launch is the
+   verification.
 4. `devcontainer up --override-config … --id-label cc-project=<id>` — bind-mounts
-   the repo at `/workspace`. First run builds the image (~minutes).
-5. Run the **boundary self-probe** (five checks; see below).
-6. `exec devcontainer exec … claude`.
+   the repo at `/workspace`. First run builds the image (~minutes). The hash is a
+   build arg, baked to `/etc/cc-config-hash`.
+5. If the running container's baked hash is not the blessed one (you re-blessed
+   since it was built), recreate it with `--remove-existing-container`. `devcontainer
+   up` alone never rebuilds.
+6. Run the **boundary self-probe** (seven checks; see below). A full pass writes the
+   hash to `verified-live.sha256` next to the manifest.
+7. `exec devcontainer exec … claude`.
 
 Target repos get **zero** new files — nothing is committed into them.
 
@@ -50,7 +58,7 @@ GitHub IP ranges). Language toolchains are granted per project, **host-side only
 
 | Profile | Opens | Auto-suggested from repo contents |
 |---------|-------|-----------------------------------|
-| `base`  | Anthropic API/OAuth (`api.anthropic.com`, `claude.ai`, `console.anthropic.com`, `platform.claude.com`), `registry.npmjs.org`, GitHub ranges | always applied |
+| `base`  | Claude Code's documented hosts (`api.anthropic.com`, `claude.ai`, `claude.com`, `platform.claude.com`, `downloads.claude.ai`, `mcp-proxy.anthropic.com`, `code.claude.com`; `console.anthropic.com` kept pending one verified login without it), `registry.npmjs.org`, GitHub ranges | always applied |
 | `python`| `pypi.org`, `files.pythonhosted.org` | `pyproject.toml` · `requirements.txt` · `setup.py` |
 | `rust`  | `crates.io`, `index.crates.io`, `static.crates.io` | `Cargo.toml` |
 | `lean`  | `elan.lean-lang.org`, `releases.lean-lang.org` | `lean-toolchain` · `lakefile.lean` |
@@ -74,8 +82,9 @@ Two rules that are load-bearing for the security model:
   outbound channel — anything the agent can put in a prompt leaves the boundary.
   Grant it deliberately or not at all.
 
-Registering re-blesses the manifest (a project's egress *is* boundary config) and
-the next launch rebuilds that project's image.
+Registering re-blesses the manifest (a project's egress *is* boundary config), which
+changes the blessed hash, so the next launch of **every** project recreates its
+container from the new config (step 5 above) and re-verifies it.
 
 ### What is NOT covered
 
@@ -254,7 +263,7 @@ Failure modes worth recognizing on sight:
 
 ## The boundary self-probe
 
-Every launch refuses to `exec claude` unless all five pass:
+Every launch refuses to `exec claude` unless all seven pass:
 
 - **Image provenance** — built from the central Dockerfile (`/usr/local/share/cc-egress/`
   present, `/etc/cc-egress-profile` matches the registered profile). Catches the
@@ -266,15 +275,40 @@ Every launch refuses to `exec claude` unless all five pass:
   `--id-label` alias attaching you to another project's container.
 - **H6 (volume not shared)** — `/home/node/.claude` is stamped with this project's
   id; a mismatch means two projects share one credential volume.
+- **Config identity** — `/etc/cc-config-hash` in the image equals the hash of the
+  manifest that is blessed *now*. Catches a container built before a re-bless, which
+  is silently the old boundary (the launcher recreates it rather than failing).
+- **Firewall complete** — `/run/cc-firewall/complete` exists, meaning the baked
+  `init-firewall.sh` reached its sentinel on its last run, *including its node-run
+  probes* (`dig` and `curl https://api.anthropic.com` as `node`, through the steering).
+  The script fails closed, and a closed container passes every egress check while
+  `node` has no DNS and no HTTPS — that is exactly what the 2026-09-09 outage looked
+  like from the old five-check probe. The marker is root-only and is removed before
+  every flush, so it vouches for the current ruleset.
 
-Run just the probe without starting a session:
+**Blessed is not verified.** `--bless` (and `install.sh`, which blesses) hashes
+files; it cannot know whether a container built from them works. Only a passing
+self-probe against a container whose baked hash *is* the blessed hash writes
+`~/.config/claude-devcontainer/verified-live.sha256`. `cc-isolated --list` shows
+both. Run the verification explicitly after any boundary change — it always rebuilds
+first, so it can never verify a leftover container:
 
 ```bash
 cc-isolated --probe-only ~/code/api
 ```
 
+The repo-side half of the same gate is `hooks/live-verify-gate.sh`: a `git commit`
+that includes any manifest-hashed file under `devcontainer-config/` is blocked unless
+its message carries a `Live-verified:` trailer — the hash `--list` shows after a
+passing probe, or `Live-verified: no — <reason>`. The full loop is in
+[`devcontainer-setup.md`](devcontainer-setup.md) → "Changing the boundary".
+
 Profile entries are `domain[:port[,port...]]`; a domain needs two or more labels (a
-bare `com` would become a whole-TLD resolver zone and is rejected).
+bare `com` would become a whole-TLD resolver zone and is rejected). **Entries are
+exact names for 443.** The resolver admits a zone (so `foo.claude.ai` resolves when
+`claude.ai` is listed) but the SNI proxy admits only the literal entry (so the
+connection is then rejected). List every name a client actually uses; a subdomain
+is not covered by its parent.
 
 ## SNI filtering (tcp/443)
 
@@ -336,7 +370,11 @@ different hostname). Add the exact name to the profile.
 | `devcontainer CLI not found` | `npm install -g @devcontainers/cli` on the host. |
 | `no blessed manifest` / `installed config changed` | Review `~/.config/claude-devcontainer/` by hand, then `cc-isolated --bless`. Re-run `install.sh` after any canonical-config change. |
 | `unknown egress profile 'x'` | Typo — valid profiles are the files in `devcontainer-config/egress/`. `--list` and the error message enumerate them. |
-| Connection closes immediately on a 443 host that is in your profile | SNI mismatch — see "SNI filtering" above and `/run/cc-sni-proxy/proxy.log`. |
+| Connection closes immediately on a 443 host that is in your profile | SNI mismatch — see "SNI filtering" above and `/run/cc-sni-proxy/proxy.log`. A *subdomain* of a listed name is the common case: the resolver admits the zone, the proxy admits only the exact entry. Add the exact name. |
+| `NOTE: blessed config … has NOT been verified in a live container` at launch | Expected after `install.sh`, `--bless` or `--register`. The launch rebuilds and verifies; if it fails, read the `PROBE FAIL` line. `cc-isolated --list` shows whether the current config has ever passed. |
+| `Blessed config changed since this container was built — rebuilding` | Expected once per project after a re-bless. The container is recreated (repo and `~/.claude` volume are unaffected). |
+| `PROBE FAIL (firewall): init-firewall.sh did not complete` | The baked firewall script aborted and failed closed: egress is denied *and* `node` has no DNS/HTTPS. Read the `devcontainer up` output for the `ERROR:` line, or run `sudo /usr/local/bin/init-firewall.sh` inside to see it. If it cannot bootstrap any more, recreate: `devcontainer up --remove-existing-container …`. |
+| `OAuth error: getaddrinfo …` at `/login`, launch probe passed | Historically the steering-to-loopback bug (decision log #44); the firewall-complete check now catches that class at launch. If it recurs with the check passing, suspect a host missing from `egress/base.txt` — including a subdomain of a listed name. |
 | `Network is unreachable` mid-session for a CDN host (e.g. openrouter.ai) | Resolve-at-start allowlist went stale behind rotating CDN IPs. Inside the container: `sudo /usr/local/bin/init-firewall.sh`. |
 | `docker`/probe fails only inside a Claude Code session | Expected — CC blocks AF_UNIX sockets. Run `cc-isolated` from a normal host terminal. |
 | Claude Code auto-update fails every launch in ONE project (`.last-update-result.json` shows `install_failed`; npm log shows `ENOTEMPTY … rename … .claude-code-XXXXXXXX`) | An earlier update was interrupted (e.g. session exited mid-update), leaving npm's retire-staging dir behind in that project's container. The staging name is derived from the path, so every later update collides with the same leftover. Inside the container: `rm -rf /usr/local/share/npm-global/lib/node_modules/@anthropic-ai/.claude-code-*`, then `claude update`. |
