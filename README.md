@@ -11,7 +11,7 @@ git clone <repo-url> ~/claude-workflows
 mkdir -p ~/.claude ~/.claude/hooks
 
 # Entry point + content directories (symlinks: repo edits are live immediately)
-ln -s ~/claude-workflows/CLAUDE.md ~/.claude/CLAUDE.md
+ln -s ~/claude-workflows/global-instructions/CLAUDE.md ~/.claude/CLAUDE.md
 ln -s ~/claude-workflows/workflows ~/.claude/workflows
 ln -s ~/claude-workflows/skills    ~/.claude/skills
 ln -s ~/claude-workflows/patterns  ~/.claude/patterns
@@ -121,7 +121,7 @@ machine, they must be recreated by hand:
 ## Contents
 
 ### Entry points (one per tool ecosystem)
-- `CLAUDE.md` — Claude Code global instructions. References workflows, plus guidance on session hygiene.
+- `global-instructions/CLAUDE.md` — Claude Code global instructions. References workflows, plus guidance on session hygiene. It sits in its own directory rather than the repo root so that a session working in *this* repo does not load it twice — once from `~/.claude` and once as the project's own instructions.
 - `AGENTS.md` — Cross-tool entry point (Copilot, Cursor, Cline, etc). References workflows with `@` file syntax.
 - `GEMINI.md` — Antigravity / Gemini CLI global instructions.
 
@@ -165,7 +165,7 @@ Bats suites under `test/` cover hooks (`test/hooks/`), skill contracts (`test/sk
    - `guides/` for human-facing reference
    - `patterns/` for shared structural patterns that multiple workflows instantiate
    - `templates/` for reusable config snippets
-2. Add a reference in the entry point files (`CLAUDE.md`, `AGENTS.md`, `GEMINI.md`) so agents know it exists
+2. Add a reference in the entry point files (`global-instructions/CLAUDE.md`, `AGENTS.md`, `GEMINI.md`) so agents know it exists
 3. Commit and push
 
 ## Skills

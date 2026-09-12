@@ -4,7 +4,7 @@ How to adopt workflows, skills, and conventions from this repo in other projects
 
 ## A) Full workflow section
 
-Copy the **Workflow & Skill Activation** section from `CLAUDE.md` into your target project's `CLAUDE.md`. This includes the workflow decision tree, debugging defaults, skill routing table, and composition notes.
+Copy the **Workflow & Skill Activation** section from `global-instructions/CLAUDE.md` into your target project's `CLAUDE.md`. This includes the workflow decision tree, debugging defaults, skill routing table, and composition notes.
 
 **Dependencies:** Copy the `workflows/` and `skills/` directories in full, or selectively (see option B). Any workflow referenced in the decision tree that isn't present will silently fail to activate.
 
@@ -31,7 +31,7 @@ Create these directories in your project root:
 - `docs/reviews/` — Outputs from review skills (fact-checks, critic critiques, verification rubrics). Versioned alongside the content they review.
 - `docs/decisions/` — Architecture decision records (`NNN-title.md`) and a `log.md` for lightweight entries.
 
-Add corresponding sections to your `CLAUDE.md` (see "Review Artifacts" and "Shared Thoughts" in this repo's `CLAUDE.md` for the exact text).
+Add corresponding sections to your `CLAUDE.md` (see "Review Artifacts" and "Shared Thoughts" in this repo's `global-instructions/CLAUDE.md` for the exact text).
 
 ## What to skip
 

@@ -39,13 +39,18 @@ REPO_ROOT="$(cd "$SRC/.." && pwd)"
 # `scripts` is staged for one reason: hooks/log-usage.sh sources
 # ../scripts/lib/skill-paths.sh relative to its own path, so a payload with
 # hooks but no scripts leaves that hook dead on arrival (decision 023).
-CLAUDE_HOME_SRC=(CLAUDE.md skills workflows guides patterns hooks scripts)
+# The global instructions file is sourced from global-instructions/ rather than
+# the repo root: at the root, a session working in THIS repo loads it twice —
+# once as the linked ~/.claude copy and once as the project's own instructions
+# (prompt audit 2026-09-11, F1). Entries are staged under their basename, so
+# the payload layout (and link-claude-home.sh) is unchanged.
+CLAUDE_HOME_SRC=(global-instructions/CLAUDE.md skills workflows guides patterns hooks scripts)
 STAGE="$SRC/claude-home"
 rm -rf "$STAGE"
 mkdir -p "$STAGE"
 for item in "${CLAUDE_HOME_SRC[@]}"; do
   if [ -e "$REPO_ROOT/$item" ]; then
-    cp -r "$REPO_ROOT/$item" "$STAGE/$item"
+    cp -r "$REPO_ROOT/$item" "$STAGE/$(basename "$item")"
   else
     echo "WARNING: $REPO_ROOT/$item not found — omitted from the image payload." >&2
   fi

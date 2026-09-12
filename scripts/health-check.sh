@@ -26,6 +26,13 @@
 set -euo pipefail
 
 REPO_ROOT="$(cd "$(dirname "$0")/.." && pwd)"
+
+# The global instructions file lives under global-instructions/ rather than the
+# repo root: at the root, Claude Code loads it a second time as this project's
+# own instructions on top of the ~/.claude copy the image links (prompt audit
+# 2026-09-11, F1). devcontainer-config/install.sh stages it to the payload root,
+# so the installed layout is unchanged — only the source path moved.
+GLOBAL_MD="global-instructions/CLAUDE.md"
 FAIL=0
 
 # shellcheck source=lib/log-format.sh
@@ -193,7 +200,7 @@ extract_workflows() {
 
 check_workflow_crossrefs() {
     section "Workflow cross-references"
-    for mdfile in CLAUDE.md AGENTS.md GEMINI.md; do
+    for mdfile in "$GLOBAL_MD" AGENTS.md GEMINI.md; do
         local path="$REPO_ROOT/$mdfile"
         [[ -f "$path" ]] || { warn "$mdfile not found, skipping"; continue; }
 
@@ -225,7 +232,7 @@ check_md_consistency() {
     local -a files=()
     local -A workflow_sets=()
 
-    for mdfile in CLAUDE.md AGENTS.md GEMINI.md; do
+    for mdfile in "$GLOBAL_MD" AGENTS.md GEMINI.md; do
         local path="$REPO_ROOT/$mdfile"
         [[ -f "$path" ]] || continue
         files+=("$mdfile")
@@ -858,7 +865,7 @@ check_md_semantic_divergence() {
     local -A line_count=()
 
     local mdfile path
-    for mdfile in CLAUDE.md AGENTS.md GEMINI.md; do
+    for mdfile in "$GLOBAL_MD" AGENTS.md GEMINI.md; do
         path="$REPO_ROOT/$mdfile"
         if [[ ! -f "$path" ]]; then
             warn "$mdfile not found, skipping"
@@ -934,20 +941,20 @@ Workflow & Skill Activation"
 Skills"
 
     local sibling only_claude only_sibling
-    if [[ -n "${h2_set[CLAUDE.md]+x}" ]]; then
+    if [[ -n "${h2_set[$GLOBAL_MD]+x}" ]]; then
         for sibling in AGENTS.md GEMINI.md; do
             [[ -n "${h2_set[$sibling]+x}" ]] || continue
-            only_claude="$(comm -23 <(printf '%s\n' "${h2_set[CLAUDE.md]}") <(printf '%s\n' "${h2_set[$sibling]}") | grep -v '^$' || true)"
-            only_sibling="$(comm -13 <(printf '%s\n' "${h2_set[CLAUDE.md]}") <(printf '%s\n' "${h2_set[$sibling]}") | grep -v '^$' || true)"
+            only_claude="$(comm -23 <(printf '%s\n' "${h2_set[$GLOBAL_MD]}") <(printf '%s\n' "${h2_set[$sibling]}") | grep -v '^$' || true)"
+            only_sibling="$(comm -13 <(printf '%s\n' "${h2_set[$GLOBAL_MD]}") <(printf '%s\n' "${h2_set[$sibling]}") | grep -v '^$' || true)"
             # Filter out intentionally-divergent section names.
             only_claude="$(grep -vxF "$expected_claude_only" <<< "$only_claude" | grep -v '^$' || true)"
             only_sibling="$(grep -vxF "$expected_sibling_only" <<< "$only_sibling" | grep -v '^$' || true)"
             if [[ -n "$only_claude" ]]; then
-                warn "H2 sections in CLAUDE.md not in $sibling: $(echo "$only_claude" | tr '\n' '|' | sed 's/|/, /g; s/, $//')"
+                warn "H2 sections in $GLOBAL_MD not in $sibling: $(echo "$only_claude" | tr '\n' '|' | sed 's/|/, /g; s/, $//')"
                 divergence=$((divergence + 1))
             fi
             if [[ -n "$only_sibling" ]]; then
-                warn "H2 sections in $sibling not in CLAUDE.md: $(echo "$only_sibling" | tr '\n' '|' | sed 's/|/, /g; s/, $//')"
+                warn "H2 sections in $sibling not in $GLOBAL_MD: $(echo "$only_sibling" | tr '\n' '|' | sed 's/|/, /g; s/, $//')"
                 divergence=$((divergence + 1))
             fi
         done
@@ -955,17 +962,17 @@ Skills"
 
     # 3) Skill references: CLAUDE.md vs each sibling — highest-signal diff
     #    because it points to specific skills whose mention hasn't propagated.
-    if [[ -n "${skill_set[CLAUDE.md]+x}" ]]; then
+    if [[ -n "${skill_set[$GLOBAL_MD]+x}" ]]; then
         for sibling in AGENTS.md GEMINI.md; do
             [[ -n "${skill_set[$sibling]+x}" ]] || continue
-            only_claude="$(comm -23 <(printf '%s\n' "${skill_set[CLAUDE.md]}") <(printf '%s\n' "${skill_set[$sibling]}") | grep -v '^$' || true)"
-            only_sibling="$(comm -13 <(printf '%s\n' "${skill_set[CLAUDE.md]}") <(printf '%s\n' "${skill_set[$sibling]}") | grep -v '^$' || true)"
+            only_claude="$(comm -23 <(printf '%s\n' "${skill_set[$GLOBAL_MD]}") <(printf '%s\n' "${skill_set[$sibling]}") | grep -v '^$' || true)"
+            only_sibling="$(comm -13 <(printf '%s\n' "${skill_set[$GLOBAL_MD]}") <(printf '%s\n' "${skill_set[$sibling]}") | grep -v '^$' || true)"
             if [[ -n "$only_claude" ]]; then
-                warn "Skills referenced in CLAUDE.md but not $sibling: $(echo "$only_claude" | tr '\n' ' ' | sed 's/ $//')"
+                warn "Skills referenced in $GLOBAL_MD but not $sibling: $(echo "$only_claude" | tr '\n' ' ' | sed 's/ $//')"
                 divergence=$((divergence + 1))
             fi
             if [[ -n "$only_sibling" ]]; then
-                warn "Skills referenced in $sibling but not CLAUDE.md: $(echo "$only_sibling" | tr '\n' ' ' | sed 's/ $//')"
+                warn "Skills referenced in $sibling but not $GLOBAL_MD: $(echo "$only_sibling" | tr '\n' ' ' | sed 's/ $//')"
                 divergence=$((divergence + 1))
             fi
         done
@@ -976,7 +983,7 @@ Skills"
         pass "No semantic divergence detected across MD files"
     else
         bold "  $divergence divergence signal(s) detected"
-        warn "AGENTS.md and GEMINI.md are not read by Claude Code — content updates in CLAUDE.md may drift silently"
+        warn "AGENTS.md and GEMINI.md are not read by Claude Code — content updates in $GLOBAL_MD may drift silently"
     fi
 }
 
