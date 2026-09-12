@@ -100,7 +100,10 @@ fi
 
 if [ "$ASSUME_YES" != "--yes" ]; then
   printf 'Install this config and bless it? [y/N] '
-  read -r reply
+  # `|| reply=""` so a closed/EOF stdin (piped or non-tty run) falls through to
+  # the abort case below instead of dying on `read`'s non-zero exit under
+  # `set -e`, which killed the script before it could say why.
+  read -r reply || reply=""
   case "$reply" in
     [yY]|[yY][eE][sS]) ;;
     *) echo "Aborted. Nothing was changed."; exit 1 ;;

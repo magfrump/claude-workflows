@@ -473,13 +473,17 @@ fake_install_repo() {
 
 @test "install.sh assembles the payload when every source is present" {
   # Complement of the two above: proves the guard is not firing wholesale.
-  # Stdin is closed, so the run stops at the bless prompt — reaching that prompt
-  # is the marker that assembly got all the way past the guard.
+  # Stdin is closed, so the run declines at the bless prompt — reaching that
+  # prompt is the marker that assembly got all the way past the guard.
   root=$(fake_install_repo)
   run env CLAUDE_DEVC_CONFIG_DIR="$BATS_TEST_TMPDIR/nodest" \
       bash "$root/devcontainer-config/install.sh" </dev/null
   [[ "$output" != *'payload source(s) not found'* ]]
   [[ "$output" == *'bless it?'* ]]
+  # An EOF stdin must decline *and say so*: before `read -r reply || reply=""`,
+  # errexit killed the script at the prompt and this line never printed.
+  [ "$status" -eq 1 ]
+  [[ "$output" == *'Aborted. Nothing was changed.'* ]]
   [ -e "$root/devcontainer-config/claude-home/CLAUDE.md" ]
   [ -d "$root/devcontainer-config/claude-home/skills" ]
 }
