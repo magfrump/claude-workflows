@@ -429,6 +429,61 @@ firewall() {
   [ "$status" -eq 0 ]
 }
 
+# Helper: a throwaway repo tree holding a copy of install.sh plus the payload
+# sources, so the assembly loop can run for real without touching this repo.
+# `omit` names one CLAUDE_HOME_SRC entry to leave absent.
+fake_install_repo() {
+  local omit="${1:-}" root="$BATS_TEST_TMPDIR/fakerepo" item
+  rm -rf "$root"
+  mkdir -p "$root/devcontainer-config"
+  cp "$CONFIG_SRC/install.sh" "$root/devcontainer-config/install.sh"
+  for item in global-instructions/CLAUDE.md skills workflows guides patterns hooks scripts; do
+    [ "$item" = "$omit" ] && continue
+    case "$item" in
+      */*) mkdir -p "$root/$(dirname "$item")"; printf 'stub\n' > "$root/$item" ;;
+      *)   mkdir -p "$root/$item" ;;
+    esac
+  done
+  printf '%s\n' "$root"
+}
+
+@test "install.sh aborts when a payload source is missing" {
+  # Silent-and-total: a payload assembled without one of its seven sources
+  # ships an image whose sessions quietly lack that part of the process
+  # (questions.md 2026-09-12, A13). It must die before the bless prompt.
+  root=$(fake_install_repo global-instructions/CLAUDE.md)
+  run env CLAUDE_DEVC_CONFIG_DIR="$BATS_TEST_TMPDIR/nodest" \
+      bash "$root/devcontainer-config/install.sh" </dev/null
+  [ "$status" -eq 1 ]
+  [[ "$output" == *'payload source(s) not found'* ]]
+  [[ "$output" == *'global-instructions/CLAUDE.md'* ]]
+  # It must not have got as far as offering to install an incomplete payload.
+  [[ "$output" != *'Aborted'* ]]
+}
+
+@test "install.sh names every missing payload source, not just the first" {
+  root=$(fake_install_repo)
+  rm -rf "$root/global-instructions" "$root/patterns"
+  run env CLAUDE_DEVC_CONFIG_DIR="$BATS_TEST_TMPDIR/nodest" \
+      bash "$root/devcontainer-config/install.sh" </dev/null
+  [ "$status" -eq 1 ]
+  [[ "$output" == *'global-instructions/CLAUDE.md'* ]]
+  [[ "$output" == *'patterns'* ]]
+}
+
+@test "install.sh assembles the payload when every source is present" {
+  # Complement of the two above: proves the guard is not firing wholesale.
+  # Stdin is closed, so the run stops at the bless prompt — reaching that prompt
+  # is the marker that assembly got all the way past the guard.
+  root=$(fake_install_repo)
+  run env CLAUDE_DEVC_CONFIG_DIR="$BATS_TEST_TMPDIR/nodest" \
+      bash "$root/devcontainer-config/install.sh" </dev/null
+  [[ "$output" != *'payload source(s) not found'* ]]
+  [[ "$output" == *'bless it?'* ]]
+  [ -e "$root/devcontainer-config/claude-home/CLAUDE.md" ]
+  [ -d "$root/devcontainer-config/claude-home/skills" ]
+}
+
 @test "link-claude-home refuses to clobber a real file in the volume" {
   src="$BATS_TEST_TMPDIR/payload"; dst="$BATS_TEST_TMPDIR/dest"
   mkdir -p "$src/skills" "$dst"

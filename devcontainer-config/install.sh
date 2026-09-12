@@ -48,13 +48,26 @@ CLAUDE_HOME_SRC=(global-instructions/CLAUDE.md skills workflows guides patterns 
 STAGE="$SRC/claude-home"
 rm -rf "$STAGE"
 mkdir -p "$STAGE"
+# None of the seven entries is optional, and a missing one is silent-and-total:
+# the image ships without that part of the process and no session notices. So
+# this is fatal, not a warning — a warning here scrolls off above the payload
+# diff and the [y/N] prompt, which is where the human is actually looking.
+# All misses are collected before exiting so a reorganization is reported once
+# rather than one rerun per renamed path.
+missing=()
 for item in "${CLAUDE_HOME_SRC[@]}"; do
   if [ -e "$REPO_ROOT/$item" ]; then
     cp -r "$REPO_ROOT/$item" "$STAGE/$(basename "$item")"
   else
-    echo "WARNING: $REPO_ROOT/$item not found — omitted from the image payload." >&2
+    missing+=("$item")
   fi
 done
+if [ "${#missing[@]}" -gt 0 ]; then
+  echo "ERROR: payload source(s) not found under $REPO_ROOT: ${missing[*]}" >&2
+  echo "       The image payload would be incomplete. Fix the path, or edit" >&2
+  echo "       CLAUDE_HOME_SRC in this script. Nothing was installed." >&2
+  exit 1
+fi
 # Provenance stamp: lets a session (and health-check) tell which commit's process
 # it is running, and detect that the image predates the repo it is editing.
 {
