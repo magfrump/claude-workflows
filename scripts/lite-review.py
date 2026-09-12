@@ -21,9 +21,14 @@ Backend notes (why the flags are what they are):
   CLAUDE.md auto-discovery). Measured overhead ~7.5k tokens vs ~33k default.
 - Success is judged from the JSON envelope (is_error, num_turns), not the
   exit code - headless exit codes are unreliable for this.
-- The FINDINGS grammar and regex are copied from cross-model-review.py so
-  output stays comparable with the E2/E3 lite-arm artifacts; if that harness
-  is retired, this file is the surviving owner of the grammar.
+- This file OWNS the FINDINGS grammar and its regex (decision log 48). The
+  grammar originated in cross-model-review.py and the two were byte-identical
+  when ownership moved here, so output stays comparable with the E2/E3
+  lite-arm artifacts; cross-model-review.py is now the copy, and it is the
+  OpenRouter benchmark harness, out of scope for this repo. Changing the
+  grammar here breaks that comparability - test/lite-review-grammar.bats
+  pins the shape, and any change to it needs a matching note in the decision
+  log.
 """
 import argparse
 import json
