@@ -104,10 +104,21 @@ else
   else
     # Merge semantics, per event key (hooks) and per mode (permissions):
     #   (existing - ours) + ours
-    # Array subtraction is deep equality, so re-running is exactly idempotent:
-    # our entries are removed and re-appended, and everything we did not author
-    # is preserved in place. `_comment` is dropped so documentation never lands
-    # in settings.
+    # Re-running is exactly idempotent: our entries are removed and re-appended,
+    # and everything we did not author is preserved in place. `_comment` is
+    # dropped so documentation never lands in settings.
+    #
+    # For hooks, "ours" is identified by PROVENANCE (every command in the group
+    # runs something under $DEST/hooks/), not by deep equality against the
+    # current wiring. Deep equality only removes a group that is byte-identical
+    # to what we are about to write, so the first time a group GAINS or LOSES a
+    # hook the previous version does not match, survives the subtraction, and is
+    # left beside the new one — the event ends up with two groups on the same
+    # matcher and every hook they share fires twice. That is not hypothetical:
+    # it is what wiring live-verify-gate.sh into the existing Bash group does to
+    # every settings.json written before 2d679ce. Provenance subtraction removes
+    # the stale group and still leaves foreign groups alone, because a foreign
+    # group runs a command from somewhere other than our payload.
     #
     # permissions.deny is merged for the same reason the hooks are, and it is
     # not optional decoration: guard-trusted-writes.py deliberately DEFERS on
@@ -125,7 +136,13 @@ else
           | .hooks //= {}
           | reduce (($wiring.hooks // {}) | keys_unsorted[]) as $ev (
               .;
-              .hooks[$ev] = (((.hooks[$ev] // []) - $wiring.hooks[$ev]) + $wiring.hooks[$ev])
+              .hooks[$ev] = (((.hooks[$ev] // [])
+                              | map(select(((.hooks // []) | length) > 0
+                                           and ((.hooks // [])
+                                                | all((.command // "")
+                                                      | contains($dir + "/hooks/")))
+                                           | not)))
+                             + $wiring.hooks[$ev])
             )
           | .permissions //= {}
           | reduce (($wiring.permissions // {}) | keys_unsorted[]) as $mode (

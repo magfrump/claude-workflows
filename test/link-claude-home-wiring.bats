@@ -17,6 +17,10 @@
 #   7. Every command in wiring.json points at a hook that actually exists
 #   8. The deny rules the guard hook's HARD tier depends on are actually wired —
 #      without them that tier is a no-op for Edit/Write (amendment B)
+#   9. Every declared command arrives in settings.json BY NAME, not merely in
+#      matching quantity — a hook can be declared and still not be installed
+#  10. A settings.json holding an older version of one of our groups is replaced,
+#      not duplicated (finding A7, 2026-09-12 review)
 #
 # Exercises the repo's copies, not the installed ones, so the suite is hermetic.
 
@@ -151,6 +155,69 @@ EOF
   done < <(jq -r '[.hooks[][].hooks[].command] | .[]' "$WIRING" \
             | sed -E 's#.*/hooks/##')
   [ "$missing" -eq 0 ]
+}
+
+@test "every declared hook command arrives in settings.json by name" {
+  # The count assertions above would pass if a declared hook were dropped and an
+  # unrelated one duplicated. This is finding A7's gap stated as a property:
+  # declared ⇒ installed, per command, not per total. It is also the only shape
+  # of A7 a hermetic suite can hold — whether the RUNNING container has the hook
+  # depends on the image it was built from, which no bats test can reach.
+  bash "$LINKER"
+  local missing=0 cmd
+  while IFS= read -r cmd; do
+    [ "$(jq --arg c "$cmd" '[.hooks[][]?.hooks[]? | select(.command == $c)] | length' \
+         "$DEST/settings.json")" -eq 1 ] || { echo "not installed: $cmd"; missing=1; }
+  done < <(jq -r --arg dir "$DEST" \
+            '[.hooks[][].hooks[].command] | .[] | gsub("\\{\\{CLAUDE_DIR\\}\\}"; $dir)' "$WIRING")
+  [ "$missing" -eq 0 ]
+}
+
+@test "a stale version of one of our groups is replaced, not duplicated" {
+  # Finding A7's second half. The fixture is this repo's own live settings.json
+  # as of 2026-09-12: a PreToolUse/Bash group carrying auto-approve but not
+  # live-verify-gate, written by a container start that predates 2d679ce.
+  # Under deep-equality subtraction the old group did not match the new one, so
+  # the merge left BOTH and auto-approve fired twice.
+  cat > "$DEST/settings.json" <<EOF
+{
+  "hooks": {
+    "PreToolUse": [
+      { "matcher": "Bash",
+        "hooks": [ { "type": "command", "command": "bash $DEST/hooks/auto-approve-allowed-commands.sh" } ] }
+    ]
+  }
+}
+EOF
+  run bash "$LINKER"
+  [ "$status" -eq 0 ]
+  # Exactly the declared set, with nothing left over from the older group.
+  [ "$(settings_count)" -eq "$(wired_count)" ]
+  [ "$(jq '[.hooks.PreToolUse[] | select(.matcher == "Bash")] | length' "$DEST/settings.json")" -eq 1 ]
+  [ "$(jq --arg d "$DEST" \
+       '[.hooks.PreToolUse[].hooks[] | select(.command == "bash \($d)/hooks/auto-approve-allowed-commands.sh")] | length' \
+       "$DEST/settings.json")" -eq 1 ]
+}
+
+@test "a foreign group is kept even when it shares an event with ours" {
+  # The guard on the fix above: provenance subtraction must remove only groups
+  # whose every command runs out of our payload. A group that runs the user's
+  # own script is theirs, whatever matcher it carries.
+  cat > "$DEST/settings.json" <<'EOF'
+{
+  "hooks": {
+    "PreToolUse": [
+      { "matcher": "Bash", "hooks": [ { "type": "command", "command": "bash /user/own.sh" } ] }
+    ]
+  }
+}
+EOF
+  bash "$LINKER"
+  [ "$(jq '[.hooks.PreToolUse[].hooks[] | select(.command == "bash /user/own.sh")] | length' \
+       "$DEST/settings.json")" -eq 1 ]
+  bash "$LINKER"
+  [ "$(jq '[.hooks.PreToolUse[].hooks[] | select(.command == "bash /user/own.sh")] | length' \
+       "$DEST/settings.json")" -eq 1 ]
 }
 
 @test "wiring.json declares only known hook event names" {
