@@ -1,0 +1,19 @@
+# install.sh EOF-stdin old-vs-new reproduction, 2026-09-12
+cwd: /workspace (variants extracted under /tmp/claude-1000/-workspace/069518a5-919f-46b0-ba81-1e00bce5effa/scratchpad/iv)
+===== old =====
+bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+Canonical (repo):  /tmp/claude-1000/-workspace/069518a5-919f-46b0-ba81-1e00bce5effa/scratchpad/iv/old/devcontainer-config
+Installed (host):  /tmp/claude-1000/-workspace/069518a5-919f-46b0-ba81-1e00bce5effa/scratchpad/iv/old-nodest
+
+First install — /tmp/claude-1000/-workspace/069518a5-919f-46b0-ba81-1e00bce5effa/scratchpad/iv/old-nodest does not exist yet.
+
+Install this config and bless it? [y/N] 
+===== new =====
+bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+Canonical (repo):  /tmp/claude-1000/-workspace/069518a5-919f-46b0-ba81-1e00bce5effa/scratchpad/iv/new/devcontainer-config
+Installed (host):  /tmp/claude-1000/-workspace/069518a5-919f-46b0-ba81-1e00bce5effa/scratchpad/iv/new-nodest
+
+First install — /tmp/claude-1000/-workspace/069518a5-919f-46b0-ba81-1e00bce5effa/scratchpad/iv/new-nodest does not exist yet.
+
+Install this config and bless it? [y/N] Aborted. Nothing was changed.
+

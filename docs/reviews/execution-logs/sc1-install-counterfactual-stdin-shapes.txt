@@ -1,0 +1,47 @@
+bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+=== variant: /tmp/claude-1000/-workspace/069518a5-919f-46b0-ba81-1e00bce5effa/scratchpad/sc1/install-counterfactual.sh
+=== date: 2026-09-12T19:38:48Z
+--- shape: printf 'y' (no newline)
+exit: 0
+aborted_line_count: 0
+past_prompt_linked_count: 1
+  cc-isolated                            # session for the repo containing $PWD
+  cc-isolated --register <repo> --profile python   # widen a project's egress
+
+WARNING: /tmp/claude-1000/-workspace/069518a5-919f-46b0-ba81-1e00bce5effa/scratchpad/sc1/bin is not on your PATH — add it, or call /tmp/claude-1000/-workspace/069518a5-919f-46b0-ba81-1e00bce5effa/scratchpad/sc1/dest/cc-isolated.sh directly.
+
+--- shape: printf 'y\n'
+exit: 0
+aborted_line_count: 0
+past_prompt_linked_count: 1
+  cc-isolated                            # session for the repo containing $PWD
+  cc-isolated --register <repo> --profile python   # widen a project's egress
+
+WARNING: /tmp/claude-1000/-workspace/069518a5-919f-46b0-ba81-1e00bce5effa/scratchpad/sc1/bin is not on your PATH — add it, or call /tmp/claude-1000/-workspace/069518a5-919f-46b0-ba81-1e00bce5effa/scratchpad/sc1/dest/cc-isolated.sh directly.
+
+--- shape: printf ' y\n'
+exit: 0
+aborted_line_count: 0
+past_prompt_linked_count: 1
+  cc-isolated                            # session for the repo containing $PWD
+  cc-isolated --register <repo> --profile python   # widen a project's egress
+
+WARNING: /tmp/claude-1000/-workspace/069518a5-919f-46b0-ba81-1e00bce5effa/scratchpad/sc1/bin is not on your PATH — add it, or call /tmp/claude-1000/-workspace/069518a5-919f-46b0-ba81-1e00bce5effa/scratchpad/sc1/dest/cc-isolated.sh directly.
+
+--- shape: printf 'yes please\n'
+exit: 1
+aborted_line_count: 1
+past_prompt_linked_count: 0
+(none — installed config already matches the repo)
+===============================================================================
+
+Install this config and bless it? [y/N] Aborted. Nothing was changed.
+
+--- shape: </dev/null
+exit: 1
+aborted_line_count: 1
+past_prompt_linked_count: 0
+(none — installed config already matches the repo)
+===============================================================================
+
+Install this config and bless it? [y/N] Aborted. Nothing was changed.

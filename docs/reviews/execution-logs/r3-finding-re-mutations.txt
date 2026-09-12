@@ -1,0 +1,9 @@
+# FINDING_RE mutation testing vs test/lite-review-grammar.bats — 2026-09-12
+cwd for each run: $S/mut (clean `git archive HEAD` extract with one regex mutation applied)
+
+A: drop the (?:...(?P<lines>...))? line-range group        -> CAUGHT (test 2 fails)
+D: accept '- ' bullet rows in addition to '1. ' rows       -> NOT caught (7/7 pass)
+E: widen severity enum with a new 'Blocker' level          -> NOT caught (7/7 pass)
+F: make the description optional ((?P<desc>.*) not .+)     -> NOT caught (7/7 pass)
+
+Unmutated baseline: 7/7 pass, exit 0 (see r3-lite-review-grammar.txt).

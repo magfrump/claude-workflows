@@ -1,0 +1,13 @@
+2026-09-12T12:19:29-07:00
+cwd=/workspace
+regex pattern identical: True | flags identical: True
+--- 'lowercase none'
+  lite : ([], False)
+  cross: ([], True)
+--- 'space before colon'
+  lite : ([], True)
+  cross: ([{'path': 'a.py', 'lines': '1', 'sev': 'High', 'domain': 'd', 'title': 'T', 'desc': 'D', 'basename': 'a.py', 'line_start': 1, 'line_end': 1}], True)
+--- 'substring only'
+  lite : ([], True)
+  cross: ([], False)
+EXIT=0

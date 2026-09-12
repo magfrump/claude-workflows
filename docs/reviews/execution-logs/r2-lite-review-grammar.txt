@@ -1,0 +1,25 @@
+2026-09-12T12:16:05-07:00
+cwd=/workspace
+bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+1..7
+bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+ok 1 FINDINGS: NONE parses as a clean review, not as a parse failure
+bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+ok 2 a well-formed row keeps every field, and the line range is separate from the path
+bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+ok 3 severity is matched case-insensitively and normalized to capitalized
+bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+ok 4 a row without a line range parses with an empty lines field
+bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+ok 5 prose before the FINDINGS header is ignored, not parsed as rows
+bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+ok 6 output with no FINDINGS block at all reports a parse failure
+bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+ok 7 a FINDINGS block with only malformed rows yields no rows but still parses
+EXIT=0

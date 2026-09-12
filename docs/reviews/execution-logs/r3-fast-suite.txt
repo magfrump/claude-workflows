@@ -1,0 +1,1354 @@
+bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+WARNING: no @category tag in /workspace/test/link-claude-home-wiring.bats — skipping
+Note: skipping 26 report-dependent suite(s) (*-format/*-eval) — no generated reports under test/skills/*/output/.
+      Run test/skills/generate-reports.bash to exercise them.
+
+=== Running fast tests ===
+  agents-gemini-sync.bats
+  append-approved-hypotheses.bats
+  auto-approve-allowed-commands.bats
+  cc-isolated-functions.bats
+  claude-headless-flags.bats
+  code-review-gate.bats
+  convergence-detection.bats
+  cross-model-review-stage1.bats
+  cross-reference-integrity.bats
+  fixture-hermeticity.bats
+  function-inventory.bats
+  guide-index-sync.bats
+  hermeticity-lint.bats
+  claude-config-audit.bats
+  live-verify-gate.bats
+  init-firewall-rules.bats
+  lever-measurement-drift.bats
+  lite-review-grammar.bats
+  morning-summary-clusters.bats
+  parse-si-priority-hypotheses.bats
+  pivot-consistency.bats
+  precondition-gate.bats
+  round-report-schema.bats
+  rubric-selection.bats
+  sandbox-tool-map-drift.bats
+  skill-paths.bats
+  si-input-rejected-history.bats
+  code-fact-check-edge-cases.bats
+  code-review-assurance-contract.bats
+  code-review-context-delivery.bats
+  code-review-executable-defect.bats
+  code-review-factcheck-replication.bats
+  code-review-format-contract.bats
+  code-review-soundness-crosscheck.bats
+  dimensions.bats
+  divergent-design-router.bats
+  fact-check-edge-cases.bats
+  frontmatter-fields.bats
+  dimensions.bats
+  test-baseline-gate.bats
+  validate-task-json.bats
+  workflow-required-sections.bats
+
+bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+1..623
+bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+ok 1 AGENTS.md and GEMINI.md content is in sync (ignoring headers and @./workflows/ prefix)
+bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+ok 2 creates log with header when absent and appends row
+bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+ok 3 uses default window of 3 when value is non-numeric
+bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+ok 4 skips tasks without a hypothesis and warns
+bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+ok 5 only approved tasks are logged
+bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+ok 6 appends without glomming when existing log lacks trailing newline
+bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+ok 7 pipe characters in hypothesis text are escaped
+bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+ok 8 evaluator and requires columns are populated when task has them
+bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+ok 9 user-evaluator with no requires emits empty requires cell
+bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+ok 10 hypothesis_source column is populated when task carries it
+bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+ok 11 planner-source hypothesis is logged with planner in Source cell
+bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+ok 12 missing hypothesis_source leaves the cell empty (legacy task)
+bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+ok 13 project allow entries are honored when the global settings.json has only a deny list
+bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+ok 14 project allow entries are honored when the global settings.json has no permissions key at all
+bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+ok 15 a command outside every allow list still falls through to the normal prompt
+bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+ok 16 a pipeline is allowed only when every component is allow-listed
+bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+ok 17 resolve_workspace returns the git toplevel for a path inside a repo
+bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+ok 18 resolve_workspace fails loudly outside a git repo instead of guessing
+bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+ok 19 resolve_workspace fails on a nonexistent directory
+bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+ok 20 resolve_workspace defaults to $PWD when given no argument
+bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+ok 21 project_id differs for same-basename repos at different paths
+bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+ok 22 project_id is stable for the same path
+bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+ok 23 ws_fingerprint differs between two different repos
+bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+ok 24 ws_fingerprint is stable for the same repo
+bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+ok 25 compute_manifest covers the config files and the egress profiles
+bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+ok 26 compute_manifest fails when an enforcement file is missing
+bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+ok 27 check_manifest fails with instructions when nothing is blessed
+bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+ok 28 check_manifest passes after bless with unchanged files
+bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+ok 29 check_manifest fails after the firewall script is tampered with
+bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+ok 30 check_manifest fails when the launcher itself is tampered with
+bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+ok 31 check_manifest fails when an egress profile gains a domain
+bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+ok 32 check_manifest fails when an unblessed project profile appears
+bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+ok 33 re-bless after a reviewed change makes check_manifest pass again
+bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+ok 34 an unregistered project gets the base profile only
+bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+ok 35 register_project records the profile and re-blesses
+bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+ok 36 register_project rejects an unknown profile before writing anything
+bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+ok 37 suggest_profiles proposes python for a python repo but never applies it
+bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+ok 38 suggest_profiles proposes rust for a cargo repo but never applies it
+bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+ok 39 suggest_profiles proposes android for a gradle repo (Kotlin DSL)
+bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+ok 40 suggest_profiles proposes android for a repo with just the gradle wrapper
+bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+ok 41 suggest_profiles proposes dotnet for a Unity project root
+bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+ok 42 suggest_profiles proposes dotnet for a repo with a top-level csproj
+bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+ok 43 suggest_profiles is silent for a plain repo
+bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+ok 44 base profile alone yields the base allowlist and nothing else
+bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+ok 45 a python project gets PyPI on top of base
+bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+ok 46 one project's profile does not widen another's (H5)
+bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+ok 47 profiles compose
+bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+ok 48 an android project gets Google Maven, Maven Central, and Gradle on top of base
+bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+ok 49 a dotnet project gets NuGet on top of base, and only NuGet
+bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+ok 50 an unknown profile is a hard failure, not a silently narrower allowlist
+bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+ok 51 a missing profile file degrades to base, not to empty
+bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+ok 52 devcontainer.json anchors build.dockerfile to the config dir, not the repo
+bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+ok 53 devcontainer.json anchors build.context to the config dir, not the repo
+bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+ok 54 the launcher exports CC_CONFIG_DIR (else the build paths resolve to /)
+bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+ok 55 Dockerfile copies the claude-home payload into the image
+bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+ok 56 the payload is baked outside /home/node/.claude (a volume would shadow it)
+bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+ok 57 the payload is root-owned and not writable by node
+bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+ok 58 hook scripts in the payload stay executable
+bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+ok 59 postStartCommand links the payload after the firewall, not before
+bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+ok 60 install.sh stages the payload from the repo root
+bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+ok 61 install.sh aborts when a payload source is missing
+bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+ok 62 install.sh names every missing payload source, not just the first
+bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+ok 63 install.sh assembles the payload when every source is present
+bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+ok 64 link-claude-home refuses to clobber a real file in the volume
+bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+ok 65 link-claude-home links the payload and is idempotent
+bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+ok 66 link-claude-home is a no-op when the payload is absent (non-cc-isolated host)
+bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+ok 67 Gate 1h loads the review skill from the baked payload, not the branch
+bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+ok 68 Gate 1h pins an explicit reviewer model
+bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+ok 69 Gate 1h archives review artifacts before the worktree is torn down
+bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+ok 70 Gate 1h fails closed on reviewer error and on an unparseable verdict
+bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+ok 71 Gate 1h passes a per-run nonce the branch cannot know
+bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+ok 72 every regular file in install.sh's PAYLOAD is hashed by enforcement_files
+bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+ok 73 claude-home files are hashed file by file when present
+bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+ok 74 compute_manifest covers claude-home even when projects/ is empty, under errexit
+bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+ok 75 a symlink in claude-home is blessed by its target and a repoint trips the manifest
+bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+ok 76 a symlinked enforcement file is hashed by content as well as by target
+bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+ok 77 compute_manifest fails when enforcement_files fails
+bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+ok 78 blessed_hash needs a manifest, is stable, and changes when the boundary changes
+bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+ok 79 a fresh bless is NOT verified live, and says so
+bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+ok 80 the receipt names the blessed hash and is void once the boundary changes
+bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+ok 81 --list reports the blessed hash and its verification state
+bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+ok 82 devcontainer.json passes CC_CONFIG_HASH as a build arg and the Dockerfile bakes it last
+bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+ok 83 probe_boundary passes and writes the receipt when the container carries the blessed hash
+bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+ok 84 probe_boundary fails on a container built from another config, and writes no receipt
+bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+ok 85 probe_boundary fails when init-firewall.sh never completed (closed ≠ verified)
+bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+ok 86 a launch rebuilds a container whose baked config is not the blessed one
+bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+ok 87 a launch on a matching, verified container does not rebuild
+bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+ok 88 --probe-only always rebuilds before probing
+bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+ok 89 claude_headless_flags always requests acceptEdits
+ok 90 claude_headless_flags emits nothing else when given no directories
+ok 91 claude_headless_flags adds --add-dir for an existing directory
+ok 92 claude_headless_flags adds one --add-dir per existing directory
+ok 93 claude_headless_flags drops a non-existent directory
+ok 94 claude_headless_flags drops an empty directory argument
+ok 95 claude_headless_flags tolerates a directory path containing spaces
+ok 96 the code-review gate passes CR_FLAGS to claude -p
+ok 97 the code-review gate builds CR_FLAGS from claude_headless_flags
+ok 98 the code-review gate adds the baked payload root, reaching skills/ and patterns/
+ok 99 the worktree-fallback review path clears CR_ADD_DIR
+ok 100 every file-writing claude -p invocation carries headless flags
+ok 101 the stdout-only invocations are still flag-free, keeping the allowlist honest
+bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+ok 102 parse_code_review_red extracts the count from a clean nonced sentinel
+ok 103 parse_code_review_red handles zero
+ok 104 parse_code_review_red tolerates extra whitespace
+ok 105 an unnonced sentinel is ignored (branch content cannot forge a verdict)
+ok 106 a sentinel bearing the wrong nonce is ignored
+ok 107 a trailing forged sentinel cannot override the real one
+ok 108 conflicting nonced sentinels are unparseable, not a coin flip
+ok 109 duplicate identical sentinels are fine
+ok 110 parse_code_review_red emits nothing when called without a nonce
+ok 111 parse_code_review_red emits nothing when no sentinel is present
+ok 112 code_review_gate_verdict passes on zero red findings
+ok 113 code_review_gate_verdict fails on one or more red findings
+ok 114 code_review_gate_verdict fails closed on a non-integer count
+ok 115 count_rubric_red counts Must Fix rows only
+ok 116 count_rubric_red ignores the empty-state placeholder row
+ok 117 count_rubric_red does not count amber rows that follow
+ok 118 count_rubric_red emits nothing when the rubric is absent
+ok 119 count_rubric_red matches the golden rubric's red count
+ok 120 count_rubric_red is insensitive to column count
+bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+ok 121 0% overlap is below default 70% threshold
+bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+ok 122 exact 70% overlap meets 70% threshold
+bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+ok 123 100% overlap is above 70% threshold
+bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+ok 124 empty overlap returns below (graceful)
+bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+ok 125 empty threshold returns below (graceful)
+bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+ok 126 missing arguments returns below (graceful)
+bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+ok 127 non-numeric overlap returns below (graceful)
+bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+ok 128 non-numeric threshold returns below (graceful)
+bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+ok 129 stage-1 dry-run survives a committed binary file (no UnicodeDecodeError crash)
+bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+ok 130 oversize files are listed under FILES NOT INLINED, not inlined
+bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+ok 131 sibling section carries the context-only label and the sibling content
+bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+ok 132 section delimiters carry the nonce; unnonced lookalikes are not boundaries
+bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+ok 133 keyless dry-run makes no network calls and prints no bogus $0.00 projection
+bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+ok 134 diff-only dry-run prompt is unchanged by the stage-1 additions (prompt sha stable)
+bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+ok 135 split_range: two-dot, three-dot, and open ranges parse as documented
+bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+ok 136 live diff-only run warns on stderr only; stdout status lines stay clean
+bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+ok 137 dry-run diff-only prints no recall-probe warning (early return precedes it)
+bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+ok 138 live --context-base run prints no recall-probe warning
+bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+ok 139 aggregate inline budget spills overflow into FILES NOT INLINED
+bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+ok 140 unpriced models fail the cost guard closed (non-dry-run refuses to send)
+bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+ok 141 explicit markdown links to content directories resolve to existing files
+bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+ok 142 no test file can spawn a network-capable binary without a stub or opt-out
+bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+ok 143 the gate actually scanned this repo's suites (a zero-file scan is not a pass)
+bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+ok 144 check_convergence_threshold is a function
+bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+ok 145 validate_task_json is a function
+bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+ok 146 init_round_log is a function
+bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+ok 147 update_round_log is a function
+bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+ok 148 record_gate is a function
+bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+ok 149 finalize_round_log is a function
+bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+ok 150 print_round_summary is a function
+bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+ok 151 parse_si_input is a function
+bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+ok 152 generate_morning_summary is a function
+bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+ok 153 all 9 expected functions are present
+bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+ok 154 every guide in guides/ is linked from guides/README.md
+bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+ok 155 bash: flags an unstubbed direct invocation
+bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+ok 156 bash: ignores binary names in comments and echo strings
+bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+ok 157 bash: accepts the PATH-shim stub
+bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+ok 158 bash: accepts an opt-out that carries a reason
+bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+ok 159 bash: rejects a bare opt-out with no reason
+bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+ok 160 bash: follows call sites transitively through sourced repo scripts
+bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+ok 161 bash: follows a bats `load` into a shared helper under test/lib
+bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+ok 162 bash: follows a load from a nested suite dir (../lib/…)
+bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+ok 163 bash: resolves a load relative to the loading suite, not a listed dir
+bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+ok 164 bash: follows a script that is assigned to a variable and run later
+bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+ok 165 bash: follows a script EXECUTED in command position
+bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+ok 166 bash: does NOT follow a script that is only named in a message
+bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+ok 167 bash: sees the binary behind a wrapper (if / timeout / env)
+bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+ok 168 bash: sees the binary behind bats' `run !` negative assertion
+bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+ok 169 bash: follows a script run behind `run !` (the house idiom)
+bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+ok 170 bash: resolves an extension-less load whose path is built from a variable
+bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+ok 171 bash: sees a binary inside a `bash -c` string
+bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+ok 172 bash: a binary named in a trailing comment is not a call site
+bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+ok 173 bash: the matcher does not backtrack exponentially on flag runs
+bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+ok 174 bash: a stub merely DEFINED in a helper does not stub anything
+bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+ok 175 bash: a PATH tweak in a sourced PRODUCT script is not a test stub
+bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+ok 176 bash: a stub in a loaded test helper counts as a stub
+bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+ok 177 bash: a ${#arr} length op does not hide a spawn later on the line
+bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+ok 178 bash: a `}` inside a string in an UNUSED helper does not leak a stub
+bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+ok 179 bash: a `}` inside a string in a CALLED stub is still credited
+bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+ok 180 bash: a `)` in a string inside $(...) does not hide a later spawn
+bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+ok 181 python: flags a subprocess spawn of a network binary
+bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+ok 182 python: flags a multi-line spawn call
+bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+ok 183 python: ignores binary names in prose and unrelated strings
+bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+ok 184 python: follows the reach transitively through a local import
+bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+ok 185 python: sees a spawn whose argument string carries an unbalanced paren
+bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+ok 186 python: accepts a PATH shim only when a stub for the binary is created
+bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+ok 187 python: a bare read of os.environ[PATH] is not a stub
+bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+ok 188 python: accepts a patched subprocess
+bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+ok 189 python: patching something merely NAMED like subprocess is not a stub
+bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+ok 190 python: follows `from pkg import mod` into pkg/mod.py
+bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+ok 191 python: follows an explicit relative import (`from . import helper`)
+bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+ok 192 python: honours the LEVEL of a relative import (`from ..mod import x`)
+bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+ok 193 python: follows a parenthesized, multi-line import list
+bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+ok 194 python: follows every module of a multi-module `import a, b`
+bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+ok 195 python: an unbalanced paren in a TRAILING comment does not hide the spawn
+bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+ok 196 python: honors the file-level pytestmark as an opt-out
+bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+ok 197 python: a per-test @pytest.mark.network does not exempt the whole file
+bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+ok 198 python: a root-level .venv is excluded, not linted
+bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+ok 199 a language with no test files is reported UNCHECKED, never a silent pass
+bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+ok 200 anchor: the closure of round-log-functions.bats reaches self-improvement.sh
+bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+ok 201 anchor: self-improvement.sh itself is still seen as a claude call site
+bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+ok 202 anchor: si-morning-summary.sh is still seen as a claude call site
+bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+ok 203 anchor: round-log-functions.bats's stub is recognized, so the tree is green
+bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+ok 204 HIGH finding in settings.json → exit 2 with findings on stderr
+ok 205 clean policy file → silent exit 0, auditor was invoked
+ok 206 auditor crash without HIGH banner → silent exit 0 (no false alarm)
+ok 207 gate accepts CLAUDE.md, .claude/ files, skills markdown, .mdc rules
+ok 208 gate skips ordinary source files, even inside skills dirs
+ok 209 non-edit tool (Bash) → silent exit 0, auditor not invoked
+ok 210 malformed payload → silent exit 0
+ok 211 missing file_path / nonexistent file → silent exit 0
+ok 212 missing auditor script → silent exit 0
+ok 213 CLAUDE_CONFIG_AUDIT_DISABLE=1 → silent exit 0, auditor not invoked
+ok 214 the auditor ships in this repo
+ok 215 with no env override the hook resolves the in-repo auditor
+ok 216 real auditor: bypassPermissions directive in settings.json → exit 2
+ok 217 real auditor: hidden bidi override in CLAUDE.md → exit 2
+ok 218 real auditor: benign settings.json → silent exit 0
+bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+ok 219 blocks a commit of an enforcement file with no Live-verified trailer
+ok 220 passes when the -m message carries the trailer
+ok 221 passes when the trailer is an explicit 'no' with a reason
+ok 222 reads the trailer from a -F message file
+ok 223 blocks when the -F message file lacks the trailer
+ok 224 ignores commits that touch no enforcement file
+ok 225 counts unstaged tracked changes when -a is given
+ok 226 every manifest-hashed file is in the enforcement set
+ok 227 ignores non-commit git commands and non-git commands
+ok 228 leaves an --amend --no-edit alone
+ok 229 malformed input, missing command, and the disable switch all exit 0
+bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+ok 230 print-resolvers keeps valid IPv4 nameservers
+bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+ok 231 print-resolvers rejects out-of-range octets rather than passing them to iptables
+bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+ok 232 print-resolvers exits 0 on an IPv6-only resolv.conf (no set -e abort)
+bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+ok 233 print-resolvers exits 0 when resolv.conf is missing entirely
+bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+ok 234 inspection hooks never touch iptables
+bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+ok 235 a successful run sets DROP policies and installs the terminal REJECT
+bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+ok 236 the allowlist ipset is address+port, and the OUTPUT accept matches on both
+bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+ok 237 GitHub CIDRs are admitted on tcp 443 and tcp 22 only
+bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+ok 238 a port-less profile entry defaults to tcp 443
+bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+ok 239 a profile entry with a port suffix is admitted on exactly those ports
+bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+ok 240 the shipped llm profile scopes host.docker.internal to 11434, and only there
+bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+ok 241 a malformed profile entry is a hard failure before any network read
+bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+ok 242 the bridge gateway is admitted on udp/tcp 53 only, with no inbound counterpart
+bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+ok 243 the flush-to-DROP window contains no network call
+bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+ok 244 all three DROP policies are set before the flush, so the window is empty
+bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+ok 245 every domain is resolved before the flush, not during the window
+bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+ok 246 scoped DNS accepts are installed for the configured resolver
+bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+ok 247 no blanket inbound source-port-53 accept is installed
+bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+ok 248 every curl carries --max-time: the meta fetch and both verification probes
+bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+ok 249 print-dnsmasq-conf has no default upstream and one server line per allowlisted domain
+bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+ok 250 print-dnsmasq-conf strips a :port suffix from profile entries
+bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+ok 251 print-dnsmasq-conf with no IPv4 resolver emits zero server lines (everything REFUSED)
+bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+ok 252 print-dnsmasq-conf refuses a non-hostname entry rather than emitting it as config
+bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+ok 253 inspection hooks (dnsmasq-conf included) never touch iptables or start a daemon
+bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+ok 254 a full run writes the dnsmasq config and starts exactly one instance as the dnsmasq user
+bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+ok 255 upstream port 53 is owner-scoped: only the dnsmasq uid and root, never everyone
+bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+ok 256 the 127.0.0.11 bypass reject precedes the loopback accept
+bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+ok 257 a re-run kills the previous dnsmasq by pidfile and does not double-start
+bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+ok 258 a missing dnsmasq user aborts before the flush, leaving the live ruleset intact
+bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+ok 259 no blanket outbound SSH accept is installed
+bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+ok 260 an aborted run forces DROP policies rather than leaving the container open
+bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+ok 261 a GitHub fetch failure aborts before the flush, leaving the live ruleset intact
+bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+ok 262 failure to resolve the critical domain aborts and fails closed
+bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+ok 263 the trap waits for the xtables lock and verifies the DROP it applied
+bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+ok 264 the trap raises a distinct OPEN alarm when the DROP policy does not take
+bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+ok 265 SIGTERM mid-resolution still ends at DROP (the sentinel, not $?, drives the trap)
+bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+ok 266 the SNI proxy is started as ccproxy with the generated allowlist, before the steering
+bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+ok 267 the SNI allowlist holds every 443 entry as an exact name plus the GitHub zones
+bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+ok 268 an entry not on 443 is omitted from the SNI allowlist
+bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+ok 269 tcp/443 is redirected to the proxy for every uid except ccproxy and root, in nat and filter
+bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+ok 270 a proxy that fails to start aborts the run and fails closed
+bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+ok 271 a missing ccproxy user aborts before the flush
+bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+ok 272 a ccproxy uid equal to the dnsmasq uid is refused
+bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+ok 273 the SNI probes run as node through the proxy: allowlisted name passes, forged SNI must fail
+bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+ok 274 a proxy that admits a non-allowlisted SNI fails verification and fails closed
+bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+ok 275 node failing to reach api.anthropic.com through the proxy fails verification
+bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+ok 276 a zero-padded port is canonicalised before it reaches ipset and the SNI allowlist
+bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+ok 277 a single-label entry is rejected by the shared grammar (it would be a TLD zone)
+bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+ok 278 IPv6 is default-denied: DROP policies, flush, loopback and established only
+bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+ok 279 the negative SNI probe requires a logged refusal, not just a failed curl
+bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+ok 280 the run takes a lock so concurrent invocations serialise
+bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+ok 281 helpers resolve through the pinned PATH, not the caller's
+bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+ok 282 a kernel without an IPv6 filter table warns and continues instead of failing closed
+bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+ok 283 the negative probe asserts the nat redirect rule, not just log evidence
+bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+ok 284 a refusal logged from a direct loopback connection does not satisfy the probe
+bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+ok 285 the lock lives in a 0700 directory and is 0600
+bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+ok 286 the lock covers both phases: a held lock stops the run before any network read
+bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+ok 287 a non-numeric lock wait aborts instead of being silently repaired
+bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+ok 288 the lock is held through the verification probes
+bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+ok 289 a missing filter-table guard rule fails verification
+bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+ok 290 every boundary rule is asserted present before completion
+bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+ok 291 a node-owned or world-writable profile directory aborts before the flush (R7)
+bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+ok 292 a global IPv6 address with no usable v6 filter table aborts before the flush
+bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+ok 293 a missing tcp/443 redirect rule fails verification even with a logged refusal
+bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+ok 294 the martian guard drops non-loopback traffic to 127/8 before the established accept
+bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+ok 295 a missing martian guard fails verification and fails closed
+bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+ok 296 both nat chains steer to the container's own address, never to loopback
+bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+ok 297 the steering address is derived at run time, not baked
+bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+ok 298 one address serves the DNAT targets, the dnsmasq bind and the proxy bind
+bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+ok 299 a container with no derivable IPv4 source address aborts before the flush
+bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+ok 300 a malformed steering address is rejected by the octet grammar, before the flush
+bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+ok 301 the DNS guard jumps exempt the steering address, or they reject the steered traffic
+bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+ok 302 the daemons' ports are dropped on non-loopback interfaces, before the established accept
+bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+ok 303 a missing daemon-port drop fails verification and fails closed
+bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+ok 304 the steered destinations are accepted on address, not on -o lo
+bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+ok 305 the steering accepts precede the terminal REJECT, or the steered traffic dies there
+bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+ok 306 the steering accepts use the derived address, so they track the DNAT target
+bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+ok 307 the steering accepts are asserted present before completion
+bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+ok 308 the iptables stub rejects a duplicate selector, so invalid rules cannot pass
+bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+ok 309 a completed run leaves the completion marker, with the container address
+bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+ok 310 an aborted run removes a marker left by an earlier run (bricked-closed is visible)
+bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+ok 311 the marker is removed before the flush, not only at exit
+bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+ok 312 a run that never took the lock leaves the holder's marker alone
+bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+ok 313 the 238,155-token panel figure agrees across results.md, 032, and log row 34
+bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+ok 314 the ~73% saving figure agrees across all four documents
+bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+ok 315 the primary record's percentage follows from its own addends
+bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+ok 316 the 0/8 canon tally agrees across the measurement docs and decisions
+bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+ok 317 the 225-commit trigger denominator agrees across SKILL, 032, and log
+bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+ok 318 FINDINGS: NONE parses as a clean review, not as a parse failure
+bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+ok 319 a well-formed row keeps every field, and the line range is separate from the path
+bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+ok 320 severity is matched case-insensitively and normalized to capitalized
+bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+ok 321 a row without a line range parses with an empty lines field
+bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+ok 322 prose before the FINDINGS header is ignored, not parsed as rows
+bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+ok 323 output with no FINDINGS block at all reports a parse failure
+bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+ok 324 a FINDINGS block with only malformed rows yields no rows but still parses
+bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+ok 325 no rejections in scope emits placeholder
+bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+ok 326 single gate with multiple files renders sub-counts
+bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+ok 327 multiple gates each get their own grouped line
+bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+ok 328 file with 3+ rejections triggers maintenance signal
+bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+ok 329 file with only 2 rejections produces no maintenance signal
+bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+ok 330 maintenance signal triggers when file spans multiple gates
+bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+ok 331 missing tasks file falls back to unknown
+bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+ok 332 empty files_touched falls back to unknown
+bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+ok 333 rejections across multiple rounds aggregate into one cluster set
+bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+ok 334 same task rejected in two rounds counts once per (gate, file)
+bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+ok 335 uses basename of first file in files_touched as primary
+bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+ok 336 header is always emitted even when there are rejections
+bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+ok 337 progressive-disclosure: open user rows collapse into a counted <details> block, all reachable
+bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+ok 338 discoverability-on-creation: a precondition-MET script row appears under Ready, before the collapsed wall
+bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+ok 339 feedback-continuity: numbered total equals _count_matured_deferred for a mixed log
+bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+ok 340 collapse-not-delete: a precondition-UNMET script row is collapsed, not promoted to Ready
+bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+ok 341 zero open rows emits the no-op line and no group headers
+bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+ok 342 missing hypothesis log degrades gracefully
+bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+ok 343 _evaluate_script_preconditions exit code: 0 when MET, 1 when UNMET
+bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+ok 344 returns [] for empty input
+bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+ok 345 returns [] for prose without bullets
+bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+ok 346 returns [] for bullets without hypothesis sub-bullets
+bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+ok 347 single bullet with hypothesis yields one pair
+bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+ok 348 multiple priorities with hypotheses are all captured
+bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+ok 349 mixed bullets — only those with hypothesis sub-bullets are emitted
+bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+ok 350 hypothesis continuation lines are joined
+bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+ok 351 Hypothesis: capitalisation is accepted
+bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+ok 352 quotes and special chars in text are preserved as JSON strings
+bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+ok 353 reads from $SI_PRIORITIES when no argument is given
+bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+ok 354 all pivot workflows exist and have '## When to pivot' sections
+bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+ok 355 pivot references are bidirectionally consistent (asymmetries are warnings)
+bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+ok 356 resolves skill from SKILL.md-dir layout
+bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+ok 357 resolves skill from flat skills/foo.md layout
+bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+ok 358 resolves workflow target
+bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+ok 359 resolves multiple targets and dedupes
+bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+ok 360 returns empty for tasks with no skill/workflow paths
+bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+ok 361 returns empty when tasks file is missing
+bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+ok 362 falls back to archive when current tasks file is absent
+bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+ok 363 counts skill invocations via skill_tool
+bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+ok 364 ignores file_read entries for skill targets
+bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+ok 365 workflow targets count file_read entries (fallback channel)
+bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+ok 366 sums across multiple targets
+bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+ok 367 returns 0 when log is missing
+bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+ok 368 returns 0 for empty target list
+bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+ok 369 metric_logged passes when field is present on a matching entry
+bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+ok 370 metric_logged fails when no matching entry has the field
+bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+ok 371 metric_logged scopes to the named target
+bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+ok 372 _days_since_round returns elapsed days from round timestamp
+bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+ok 373 _days_since_round echoes -1 when report missing
+bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+ok 374 _days_since_round uses NOW_EPOCH override for determinism
+bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+ok 375 preconditions met → ready-for-verdict recommendation
+bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+ok 376 preconditions unmet → INCONCLUSIVE recommendation
+bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+ok 377 no requires declared → ready-now recommendation
+bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+ok 378 unresolvable target → switch-evaluator recommendation
+bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+ok 379 unknown requires key is surfaced and forces INCONCLUSIVE
+bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+ok 380 all three precondition kinds can combine and all must pass
+bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+ok 381 combined preconditions report each check separately when one fails
+bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+ok 382 round-history.json is valid JSON # skip round-history.json not present
+bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+ok 383 round-history.json is a JSON array # skip round-history.json not present
+bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+ok 384 every entry has required field: round # skip round-history.json not present
+bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+ok 385 every entry has required field: timestamp # skip round-history.json not present
+bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+ok 386 every entry has required field: validation # skip round-history.json not present
+bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+ok 387 every entry has required field: outcome # skip round-history.json not present
+bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+ok 388 round field is a number in every entry # skip round-history.json not present
+bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+ok 389 timestamp field is a string in every entry # skip round-history.json not present
+bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+ok 390 validation field is an object in every entry # skip round-history.json not present
+bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+ok 391 outcome field is a string in every entry # skip round-history.json not present
+bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+ok 392 picks this run's rubric over an older one carried in-tree
+ok 393 an alphabetically-earlier stale rubric with the same date is not selected
+ok 394 matches a commit recorded as a short SHA
+ok 395 matches a commit range encoded only in the filename
+ok 396 falls back to the date when the rubric never names the commit
+ok 397 a commit match outranks a date match
+ok 398 a longer hex string that merely starts with the short SHA still matches
+ok 399 a different commit sharing no prefix does not match
+ok 400 emits nothing when no rubric matches this run
+ok 401 emits nothing when two candidates tie
+ok 402 emits nothing for an empty archive directory
+ok 403 emits nothing for a directory that does not exist
+ok 404 emits nothing when neither a commit nor a date is known
+ok 405 ignores non-rubric review artifacts in the same archive
+ok 406 the selected rubric is the one count_rubric_red reads
+ok 407 the gate selects the rubric by content, not by ls order
+ok 408 the ls | head -1 selector is gone
+bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+ok 409 guide exists and contains machine-readable drift markers
+bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+ok 410 prefixes the guide claims allowed exist in live permissions.allow # skip settings file has no permissions.allow array
+bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+ok 411 prefixes the guide claims removed have no broad allow entry # skip settings file has no permissions.allow array
+bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+ok 412 extract_skill_name: flat layout returns name without .md
+bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+ok 413 extract_skill_name: dir layout returns parent dir name
+bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+ok 414 extract_skill_name: SKILL.md directly under skills/ matches flat-layout rule
+bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+ok 415 extract_skill_name: relative path with skills/ prefix works
+bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+ok 416 extract_skill_name: nested file (references/) is not a skill
+bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+ok 417 extract_skill_name: README.md inside a skill dir is not a skill
+bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+ok 418 extract_skill_name: path without skills/ segment returns empty
+bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+ok 419 extract_skill_name: deeply nested skills/foo/bar/baz.md is not a skill
+bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+ok 420 extract_skill_name: last /skills/ segment wins
+bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+ok 421 extract_workflow_name: direct file
+bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+ok 422 extract_workflow_name: relative path
+bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+ok 423 extract_workflow_name: nested file is not a workflow
+bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+ok 424 extract_workflow_name: non-md file is not a workflow
+bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+ok 425 extract_workflow_name: path without workflows/ returns empty
+bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+ok 426 extract_command_name: direct file
+bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+ok 427 extract_command_name: nested file is not a command
+bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+ok 428 classify_skill_path: skill flat
+bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+ok 429 classify_skill_path: skill dir
+bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+ok 430 classify_skill_path: workflow
+bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+ok 431 classify_skill_path: command
+bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+ok 432 classify_skill_path: skill wins over workflow when path contains both
+bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+ok 433 classify_skill_path: non-classifiable path returns empty
+bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+ok 434 no round reports: file is left alone (or absent stays absent)
+bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+ok 435 no round reports: pre-existing file is unchanged
+bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+ok 436 reports exist but no rejections: file unchanged
+bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+ok 437 single rejection: block prepended at top
+bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+ok 438 rejection reason: only the first line is included
+bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+ok 439 spans many rounds: only the 3 most recent are included
+bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+ok 440 multiple rejections in same round: all included
+bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+ok 441 block annotates each entry with its round number
+bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+ok 442 idempotent: running twice produces same content
+bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+ok 443 replaces prior Recent rejections block: does not stack
+bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+ok 444 comment block does not pollute parsed sections
+bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+ok 445 file created from scratch when missing but rejections exist
+bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+ok 446 tc-c8.1 empty: report has zero claims # skip No report for tc-c8.1-empty.js — run generate-reports.bash first
+bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+ok 447 tc-c8.1 empty: no hallucinated claim sections # skip No report for tc-c8.1-empty.js — run generate-reports.bash first
+bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+ok 448 tc-c8.1 empty: no verdict fields present # skip No report for tc-c8.1-empty.js — run generate-reports.bash first
+bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+ok 449 tc-c8.1 empty: output indicates graceful handling # skip No report for tc-c8.1-empty.js — run generate-reports.bash first
+bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+ok 450 tc-c8.1 empty: no critique language # skip No report for tc-c8.1-empty.js — run generate-reports.bash first
+bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+ok 451 tc-c8.1 empty: no cross-skill verdict leakage # skip No report for tc-c8.1-empty.js — run generate-reports.bash first
+bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+ok 452 tc-c8.2 no-comments: report has zero claims # skip No report for tc-c8.2-no-comments.js — run generate-reports.bash first
+bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+ok 453 tc-c8.2 no-comments: no hallucinated claim sections # skip No report for tc-c8.2-no-comments.js — run generate-reports.bash first
+bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+ok 454 tc-c8.2 no-comments: no verdict fields present # skip No report for tc-c8.2-no-comments.js — run generate-reports.bash first
+bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+ok 455 tc-c8.2 no-comments: output indicates graceful handling # skip No report for tc-c8.2-no-comments.js — run generate-reports.bash first
+bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+ok 456 tc-c8.2 no-comments: no critique language # skip No report for tc-c8.2-no-comments.js — run generate-reports.bash first
+bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+ok 457 tc-c8.2 no-comments: no cross-skill verdict leakage # skip No report for tc-c8.2-no-comments.js — run generate-reports.bash first
+bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+ok 458 tc-c8.3 binary: report has zero claims # skip No report for tc-c8.3-binary-content.js — run generate-reports.bash first
+bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+ok 459 tc-c8.3 binary: no hallucinated claim sections # skip No report for tc-c8.3-binary-content.js — run generate-reports.bash first
+bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+ok 460 tc-c8.3 binary: no verdict fields present # skip No report for tc-c8.3-binary-content.js — run generate-reports.bash first
+bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+ok 461 tc-c8.3 binary: output indicates graceful handling # skip No report for tc-c8.3-binary-content.js — run generate-reports.bash first
+bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+ok 462 tc-c8.3 binary: no critique language # skip No report for tc-c8.3-binary-content.js — run generate-reports.bash first
+bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+ok 463 tc-c8.3 binary: no cross-skill verdict leakage # skip No report for tc-c8.3-binary-content.js — run generate-reports.bash first
+bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+ok 464 tc-c8.4 extremely-short: report has zero claims # skip No report for tc-c8.4-extremely-short.js — run generate-reports.bash first
+bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+ok 465 tc-c8.4 extremely-short: no hallucinated claim sections # skip No report for tc-c8.4-extremely-short.js — run generate-reports.bash first
+bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+ok 466 tc-c8.4 extremely-short: no verdict fields present # skip No report for tc-c8.4-extremely-short.js — run generate-reports.bash first
+bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+ok 467 tc-c8.4 extremely-short: output indicates graceful handling # skip No report for tc-c8.4-extremely-short.js — run generate-reports.bash first
+bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+ok 468 tc-c8.4 extremely-short: no critique language # skip No report for tc-c8.4-extremely-short.js — run generate-reports.bash first
+bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+ok 469 tc-c8.4 extremely-short: no cross-skill verdict leakage # skip No report for tc-c8.4-extremely-short.js — run generate-reports.bash first
+bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+ok 470 the skill has a Confirmed-Good claim section
+bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+ok 471 the rubric template's Confirmed Good table carries an Evidence column
+bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+ok 472 Confirmed Good evidence reuses the Evidence-grounding format, not a second one
+bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+ok 473 an ungrounded Confirmed Good row is dropped, not filed as an Unverified Finding
+bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+ok 474 universally quantified confirmations require an enumeration, not one instance
+bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+ok 475 Stage 3 runs a Confirmed-Good cross-check before the deliverables
+bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+ok 476 the cross-check reads the fact-check report, including incidental observations
+bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+ok 477 a contradicted confirmation is neither silently dropped nor silently promoted
+bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+ok 478 the contested-confirmation channel does not feed the escalation rule
+bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+ok 479 Important Reminders carries the Confirmed-Good contract
+bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+ok 480 the passing status line carries the single-sample label
+bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+ok 481 the chat synthesis carries the label when the run is clean
+bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+ok 482 the label cites the replicate-disagreement evidence behind it
+bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+ok 483 the hedging stays proportionate — a standing label, not a paragraph everywhere
+bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+ok 484 the label is not attached to a failing verdict
+bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+ok 485 Step 1 declares diff delivery as conditional
+bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+ok 486 inline shared-context section inlines the unified diff as a shared-block part
+bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+ok 487 every 'runs its own git diff' instruction carries a conditionality marker nearby
+bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+ok 488 every 'pass scope, not diffs' instruction carries a conditionality marker nearby
+bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+ok 489 Stage-1 replicate dispatch step references the conditional delivery rule
+bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+ok 490 Stage-2 critic dispatch step references the conditional delivery rule
+bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+ok 491 size guard names the numeric shared-block budget
+bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+ok 492 degrade ladder inlines the diff alone before falling back to full self-read
+bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+ok 493 per-file churn rule is explicitly excluded from the delivery gate
+bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+ok 494 mutable diff/enclosing part sits second-to-last in the shared block (part 5 of 6)
+bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+ok 495 the Executable-Defect Channel section exists
+bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+ok 496 the trigger requires determinism, a named sandbox verification, and a quoted mechanism
+bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+ok 497 the verification is run first with executed-mode provenance
+bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+ok 498 confirmed findings map by native severity; unexecutable ones lift to terminal amber
+bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+ok 499 a refuted finding is never lifted
+bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+ok 500 the precision guard excludes unnamed-trigger failures
+bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+ok 501 Stage 3 carries the executable-defect cross-check as a required pre-deliverable pass
+bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+ok 502 Unverifiable is declared an evidence state, not a severity
+bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+ok 503 both contextual-critic exit paths are named and exclusive
+bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+ok 504 Stage 1 runs the fact-check as three replicates
+bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+ok 505 replicate prompts are byte-identical except the output path
+bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+ok 506 replicates write per-replicate report paths and the merged report is canonical
+bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+ok 507 the merge aggregator is most-severe-wins, not majority
+bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+ok 508 the severity order is stated and runs Incorrect-high first, Verified last
+bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+ok 509 every merged claim records per-replicate verdicts
+bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+ok 510 the merged report ends with a Verdict stability section reporting the agreement rate
+bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+ok 511 the k-reduction falsifier is stated (>=90% agreement on >=20 claims -> k=2)
+bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+ok 512 fewer than two substantive replicates blocks the merge
+bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+ok 513 the Confirmed-Good cross-check scans the per-replicate reports too
+bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+ok 514 the merged-report header mandates the fields Gate 1h parses
+bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+ok 515 the section-extraction end anchors exist (no silent extract-to-EOF)
+bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+ok 516 replication is loop-aware: k=1 on loop passes per decision 031, k=3 standalone
+bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+ok 517 a rich shared brief is required and shared verbatim across replicates
+bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+ok 518 annotations merge by union and survive a lost verdict contest
+bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+ok 519 replicate escalations aggregate into an Escalations section
+bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+ok 520 unrouted escalations are force-surfaced by the dead-letter rule
+bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+ok 521 fixture has all nine rubric sections
+bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+ok 522 the Fragment-Composition cross-check is a required Stage-3 pass with capped authority
+bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+ok 523 fixture status line carries a verdict and an emoji
+bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+ok 524 Unverified Findings section is present and auditable
+bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+ok 525 Unverified Findings table records why each finding is unverified
+bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+ok 526 Must Fix table has a Severity column
+bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+ok 527 Must Address table has a Severity column
+bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+ok 528 Consider table has a Severity column
+bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+ok 529 severity values are critic-native levels, not rubric tier emoji
+bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+ok 530 Confirmed Good table has an Evidence column
+bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+ok 531 every Confirmed Good row cites evidence
+bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+ok 532 a contested confirmation lands in Must Address, not Confirmed Good
+bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+ok 533 every finding row carries a Status value
+bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+ok 534 Consider rows use the green status vocabulary
+bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+ok 535 Must Fix rows cite a location
+bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+ok 536 golden's table headers match the skill's rubric template
+bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+ok 537 golden's section headings match the skill's rubric template
+bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+ok 538 fixture does not contain draft-review verdict vocabulary
+bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+ok 539 the Soundness-Contradiction Channel section exists
+bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+ok 540 the trigger requires verbatim quotes on both sides, each with file:line
+bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+ok 541 the precision guard bars opinion-only lifts
+bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+ok 542 a qualifying finding lands in Must Address with the fixed vocabulary
+bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+ok 543 🟡 is terminal: never promoted to 🔴, excluded from escalation corroboration
+bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+ok 544 the owner-cap exception applies regardless of which critic filed the finding
+bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+ok 545 the advisory rule names the exception, and the escalation rule excludes the lift
+bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+ok 546 Stage 3 runs the soundness cross-check before producing deliverables
+bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+ok 547 the lift is named in the chat synthesis
+bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+ok 548 the validation falsifier and the cap-lift bar are stated
+bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+ok 549 the section-extraction end anchor exists (no silent extract-to-EOF)
+bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+ok 550 report contains inversion language (What Survives the Inversion)
+bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+ok 551 report contains boring-explanation language (The Boring Explanation)
+bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+ok 552 report contains revealed-preference language (Revealed vs. Stated)
+bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+ok 553 report contains analogy language (Cross-domain Analogy)
+bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+ok 554 report contains contingent-assumptions language
+bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+ok 555 report contains market-signal language (What the Market Says)
+bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+ok 556 report contains sub-claim decomposition language
+bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+ok 557 report covers all Cowen semantic dimensions
+bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+ok 558 skill has required frontmatter fields (name, description, when/trigger)
+bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+ok 559 skill identifies itself as a router in its title
+bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+ok 560 skill points at the divergent-design workflow file
+bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+ok 561 the workflow file it routes to actually exists
+bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+ok 562 skill states the 3+ tradeoff-bearing options trigger test
+bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+ok 563 skill defines the brainstorming-supersession boundary
+bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+ok 564 skill is a thin stub, not a re-implementation of the workflow
+bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+ok 565 skill does not restate the full diverge/diagnose/match/decide process inline
+bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+ok 566 tc-7.1 empty: report has zero claims # skip No report for tc-7.1-empty.md — run generate-reports.bash first
+bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+ok 567 tc-7.1 empty: no hallucinated claim sections # skip No report for tc-7.1-empty.md — run generate-reports.bash first
+bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+ok 568 tc-7.1 empty: no verdict fields present # skip No report for tc-7.1-empty.md — run generate-reports.bash first
+bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+ok 569 tc-7.1 empty: output indicates graceful handling # skip No report for tc-7.1-empty.md — run generate-reports.bash first
+bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+ok 570 tc-7.1 empty: no critique language # skip No report for tc-7.1-empty.md — run generate-reports.bash first
+bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+ok 571 tc-7.2 no-claims: report has zero claims # skip No report for tc-7.2-no-claims.md — run generate-reports.bash first
+bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+ok 572 tc-7.2 no-claims: no hallucinated claim sections # skip No report for tc-7.2-no-claims.md — run generate-reports.bash first
+bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+ok 573 tc-7.2 no-claims: no verdict fields present # skip No report for tc-7.2-no-claims.md — run generate-reports.bash first
+bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+ok 574 tc-7.2 no-claims: output indicates graceful handling # skip No report for tc-7.2-no-claims.md — run generate-reports.bash first
+bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+ok 575 tc-7.2 no-claims: no critique language # skip No report for tc-7.2-no-claims.md — run generate-reports.bash first
+bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+ok 576 tc-7.3 binary: report has zero claims # skip No report for tc-7.3-binary-content.md — run generate-reports.bash first
+bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+ok 577 tc-7.3 binary: no hallucinated claim sections # skip No report for tc-7.3-binary-content.md — run generate-reports.bash first
+bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+ok 578 tc-7.3 binary: no verdict fields present # skip No report for tc-7.3-binary-content.md — run generate-reports.bash first
+bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+ok 579 tc-7.3 binary: output indicates graceful handling # skip No report for tc-7.3-binary-content.md — run generate-reports.bash first
+bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+ok 580 tc-7.3 binary: no critique language # skip No report for tc-7.3-binary-content.md — run generate-reports.bash first
+bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+ok 581 tc-7.4 extremely-short: report has zero claims # skip No report for tc-7.4-extremely-short.md — run generate-reports.bash first
+bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+ok 582 tc-7.4 extremely-short: no hallucinated claim sections # skip No report for tc-7.4-extremely-short.md — run generate-reports.bash first
+bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+ok 583 tc-7.4 extremely-short: no verdict fields present # skip No report for tc-7.4-extremely-short.md — run generate-reports.bash first
+bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+ok 584 tc-7.4 extremely-short: output indicates graceful handling # skip No report for tc-7.4-extremely-short.md — run generate-reports.bash first
+bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+ok 585 tc-7.4 extremely-short: no critique language # skip No report for tc-7.4-extremely-short.md — run generate-reports.bash first
+bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+ok 586 all skills have required frontmatter fields
+bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+ok 587 report contains mechanism language (The Goal vs. the Mechanism) # skip No report found at docs/reviews/yglesias-critique.md — generate one first
+bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+ok 588 report contains lever language (The Boring Lever) # skip No report found at docs/reviews/yglesias-critique.md — generate one first
+bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+ok 589 report contains money/cost language (Follow the Money) # skip No report found at docs/reviews/yglesias-critique.md — generate one first
+bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+ok 590 report contains scale language (The Scale Test) # skip No report found at docs/reviews/yglesias-critique.md — generate one first
+bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+ok 591 report contains adoption language (Political Survival) # skip No report found at docs/reviews/yglesias-critique.md — generate one first
+bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+ok 592 report contains cost-disease language (The Cost Disease Check) # skip No report found at docs/reviews/yglesias-critique.md — generate one first
+bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+ok 593 report contains org-chart language (The Org Chart) # skip No report found at docs/reviews/yglesias-critique.md — generate one first
+bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+ok 594 report covers all Yglesias semantic dimensions # skip No report found at docs/reviews/yglesias-critique.md — generate one first
+bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+ok 595 tap_failing_names extracts only failing test names, sorted+unique
+ok 596 tap_failing_names strips the TAP # directive from the name
+ok 597 tap_failing_names emits nothing for an all-green suite
+ok 598 tap_failing_names dedupes a name that fails in two worktree orderings
+ok 599 tap_new_failures: failure already in baseline is NOT new
+ok 600 tap_new_failures: failure absent from baseline IS new
+ok 601 tap_new_failures: baseline failure ignored, new failure surfaced together
+ok 602 tap_new_failures: empty baseline file means every failure is new
+ok 603 tap_new_failures: missing baseline file means every failure is new
+ok 604 tap_new_failures: green suite produces no new failures even with empty baseline
+ok 605 tap_new_failures: task that FIXED a baseline failure introduces nothing new
+bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+ok 606 valid task passes validation
+bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+ok 607 task missing id is rejected
+bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+ok 608 glob pattern in files_touched is rejected
+bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+ok 609 non-existent parent directory in files_touched is rejected
+bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+ok 610 valid evaluator=script passes
+bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+ok 611 invalid evaluator value is rejected
+bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+ok 612 missing evaluator is a lint warning, not a rejection
+bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+ok 613 valid requires object with all three keys passes
+bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+ok 614 requires with unknown key is rejected
+bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+ok 615 requires.invocations as non-integer is rejected
+bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+ok 616 requires as non-object is rejected
+bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+ok 617 valid hypothesis_source=user passes
+bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+ok 618 valid hypothesis_source=planner passes
+bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+ok 619 invalid hypothesis_source value is rejected
+bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+ok 620 missing hypothesis_source is a lint warning, not a rejection
+bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+ok 621 convention workflows each contain '## When to use'
+bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+ok 622 convention workflows each contain numbered process step headers
+bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+ok 623 convention workflows have at least 3 process steps
+
+The following warnings were encountered during tests:
+BW02: Using flags on `run` requires at least BATS_VERSION=1.5.0. Use `bats_require_minimum_version 1.5.0` to fix this message.
+      (from function `bats_warn_minimum_guaranteed_version' in file /usr/lib/bats-core/warnings.bash, line 32,
+       from function `run' in file /usr/lib/bats-core/test_functions.bash, line 227,
+       in test file test/cc-isolated-functions.bats, line 794)
+BW02: Using flags on `run` requires at least BATS_VERSION=1.5.0. Use `bats_require_minimum_version 1.5.0` to fix this message.
+      (from function `bats_warn_minimum_guaranteed_version' in file /usr/lib/bats-core/warnings.bash, line 32,
+       from function `run' in file /usr/lib/bats-core/test_functions.bash, line 227,
+       in test file test/skills/code-review-assurance-contract.bats, line 165)
+BW02: Using flags on `run` requires at least BATS_VERSION=1.5.0. Use `bats_require_minimum_version 1.5.0` to fix this message.
+      (from function `bats_warn_minimum_guaranteed_version' in file /usr/lib/bats-core/warnings.bash, line 32,
+       from function `run' in file /usr/lib/bats-core/test_functions.bash, line 227,
+       in test file test/skills/code-review-assurance-contract.bats, line 166)

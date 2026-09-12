@@ -1,820 +1,749 @@
 # Code Fact-Check Report
 
-Commit: 0661353
+Commit: 435f46a
 
-**Repository:** `/workspace` (claude-workflows)
-**Scope:** `git diff -M -C 2d679ce..HEAD` (4 commits: `4d41add`, `c56be81`, `59ca38f`, `0661353`) plus the four commit messages. 27 files; the bulk is two pure moves (`CLAUDE.md` → `global-instructions/CLAUDE.md`, 97% similarity; ~680 lines lifted from `skills/code-review/SKILL.md` into `skills/code-review/references/*.md`), both re-derived below rather than re-read as new.
+**Repository:** /workspace
+**Scope:** `git diff 3a94fdc~1..HEAD` — commits `3a94fdc`, `8980861`, `435f46a`; files `devcontainer-config/install.sh`, `docs/decisions/log.md`, `docs/working/questions.md`, `scripts/cross-model-review.py`, `scripts/lite-review.py`, `test/cc-isolated-functions.bats`, `test/lite-review-grammar.bats`, plus the three commit messages
 **Checked:** 2026-09-12
-**Total claims checked:** 29
-**Summary:** 20 verified, 5 mostly accurate, 1 stale, 1 incorrect, 2 unverifiable
+**Total claims checked:** 17 (16 numbered, Claim 4 split into 4a/4b)
+**Summary:** 12 verified, 3 mostly accurate, 0 stale, 1 incorrect, 1 unverifiable
 
-Hallucination-pattern log read (`docs/reviews/hallucination-patterns.md`, 2 entries). Claim 18 matches the logged class *"a specific measured value quoted from a checked-in artifact set that does not contain it"* — flagged inline and appended to the log.
-
-Execution artifacts for this run:
-- `docs/reviews/execution-logs/r2-verification-commands-2026-09-12.txt`
-- `docs/reviews/execution-logs/r2-health-check-head-2026-09-12.txt`
-- `docs/reviews/execution-logs/r2-health-check-base-2026-09-12.txt`
+Hallucination-pattern log read (`docs/reviews/hallucination-patterns.md`). Three of its four
+entries are the same class — *a specific measured value quoted from a checked-in artifact set
+that does not contain it*. Every numeric claim in this diff was compared against that pattern
+and executed where possible; see Claims 8, 13, 14, 15.
 
 ---
 
-## Claim 1: "Entries are staged under their basename, so the payload layout (and link-claude-home.sh) is unchanged."
+## Claim 1: "`|| reply=\"\"` so a closed/EOF stdin (piped or non-tty run) falls through to the abort case below instead of dying on `read`'s non-zero exit under `set -e`, which killed the script before it could say why."
 
-**Location:** `devcontainer-config/install.sh:46-47`
-**Type:** Behavioral / Architectural
+**Location:** `devcontainer-config/install.sh:103-105`
+**Type:** Behavioral / Error-handling
 **Verdict:** Verified
 **Confidence:** High
 **Verification mode:** executed
-**Scope:** Covers the staging of the seven current `CLAUDE_HOME_SRC` entries into `$STAGE` and the names `link-claude-home.sh` looks for at the payload root; does not establish that a *future* entry whose basename collides with another entry would stage safely (the loop would silently overwrite), and does not establish anything about the host-side symlink created by the README recipe (see Claim 8).
+**Scope:** Covers the EOF/closed-stdin path through the `if [ "$ASSUME_YES" != "--yes" ]` block and the `case` that follows, for both the pre-fix and post-fix install.sh; does not establish behavior for a non-empty reply, for `--yes`, or for a `read` failure other than EOF (e.g. a signal-interrupted read).
 
-The staging loop now takes the basename of each entry:
-
-```bash
-# devcontainer-config/install.sh:50-58
-CLAUDE_HOME_SRC=(global-instructions/CLAUDE.md skills workflows guides patterns hooks scripts)
-STAGE="$SRC/claude-home"
-rm -rf "$STAGE"
-mkdir -p "$STAGE"
-for item in "${CLAUDE_HOME_SRC[@]}"; do
-  if [ -e "$REPO_ROOT/$item" ]; then
-    cp -r "$REPO_ROOT/$item" "$STAGE/$(basename "$item")"
-```
-
-(excerpt ends :56; the enclosing `for` loop continues to :60 with the `else`/WARNING branch — read.)
-
-Six of the seven entries are bare names, so `basename` is the identity function on them; only the first entry's path is collapsed. The consumer looks for exactly those seven names at the payload root:
+The script runs under errexit:
 
 ```bash
-# devcontainer-config/link-claude-home.sh:44
-ENTRIES=(skills workflows guides patterns hooks scripts CLAUDE.md)
+# devcontainer-config/install.sh:16
+set -euo pipefail
 ```
 
-Executed simulation of the changed line against one file entry and one directory entry (the shape the `c56be81` message claims was simulated):
+The complete enclosing block, signature to final line:
 
-- Command: `for item in global-instructions/CLAUDE.md skills; do cp -r "$S/repo/$item" "$S/stage/$(basename "$item")"; done` then `ls -R "$S/stage"`
-- cwd: `/tmp/claude-1000/-workspace/47023ae0-7b83-4d1e-a319-0b30f011dfea/scratchpad/sim`
-- Exit code: 0 · Timestamp: 2026-09-12
-- Result: `stage/CLAUDE.md`, `stage/skills/a.md`, `stage/skills/sub/b.md` — the file lands at the payload root under its basename and the directory entry keeps its subtree.
+```bash
+# devcontainer-config/install.sh:101-110
+if [ "$ASSUME_YES" != "--yes" ]; then
+  printf 'Install this config and bless it? [y/N] '
+  # `|| reply=""` so a closed/EOF stdin (piped or non-tty run) falls through to
+  # the abort case below instead of dying on `read`'s non-zero exit under
+  # `set -e`, which killed the script before it could say why.
+  read -r reply || reply=""
+  case "$reply" in
+    [yY]|[yY][eE][sS]) ;;
+    *) echo "Aborted. Nothing was changed."; exit 1 ;;
+  esac
+fi
+```
 
-**Evidence:** `devcontainer-config/install.sh:41-60`, `devcontainer-config/link-claude-home.sh:44-62`, `devcontainer-config/Dockerfile:409`, `docs/reviews/execution-logs/r2-verification-commands-2026-09-12.txt`
+The empty `reply` falls to the `*)` arm, which prints the abort line and exits 1 (excerpt ends
+`:110` at `fi`; the enclosing `if` block is complete — read; execution continues at
+`mkdir -p "$DEST" "$BIN_DIR"` on `:112`, reached only when the `[yY]` arm is taken).
+
+Executed against the pre-fix script to confirm the "killed the script before it could say why"
+half. Command:
+`bash scratchpad/oldrepo.sh <tmpdir>` (stages `git show 8980861~1:devcontainer-config/install.sh`
+into a fake repo tree and runs it with `</dev/null`), cwd `/workspace`, exit code 1, at
+2026-09-12T12:21:07-07:00. Output ends at the prompt with no abort line:
+
+```
+Install this config and bless it? [y/N] EXIT=1
+```
+
+The post-fix path was executed as part of Claim 14 (bats test 4 asserts the `Aborted.` line and
+passes).
+
+**Evidence:** `devcontainer-config/install.sh:16`, `devcontainer-config/install.sh:101-110`, `docs/reviews/execution-logs/r2-old-install-behavior.txt`, `docs/reviews/execution-logs/r2-install-sh-tests.txt`
 
 ---
 
-## Claim 2: "at the root, a session working in THIS repo loads it twice — once as the linked ~/.claude copy and once as the project's own instructions (prompt audit 2026-09-11, F1)"
+## Claim 2: log row 48's citations — the pre-flight WARNING shipped in `cb5351d`, the grammar-copy text at `lite-review.py:24-26`, and the linked decisions 030/031 and log 37
 
-**Location:** `devcontainer-config/install.sh:43-45`
-**Type:** Behavioral / Architectural
+**Location:** `docs/decisions/log.md:69`
+**Type:** Reference
 **Verdict:** Verified
 **Confidence:** High
 **Verification mode:** static
-**Scope:** Covers the double-load mechanism for a Claude Code session whose project root is this repo and whose `~/.claude/CLAUDE.md` resolves to the same content; does not establish the token figure (Claim 7), and does not establish behavior for tools other than Claude Code (`AGENTS.md`/`GEMINI.md` are separate files and are not affected).
+**Scope:** Covers the existence and content of the four cited artifacts (`cb5351d`, `lite-review.py:24-26` at the parent commit, `030`, `031`, log 37); does not establish that the WARNING's behavior is correct, nor that the judge pin resolves on OpenRouter (untestable here — no funded OpenRouter account).
 
-The container path that produces the first copy is explicit:
+`cb5351d` exists and is the commit that added the pre-flight warning:
 
-```bash
-# devcontainer-config/link-claude-home.sh:44-62 (excerpt: :44 and :50-52; the
-# enclosing for loop continues to :62 — read)
-ENTRIES=(skills workflows guides patterns hooks scripts CLAUDE.md)
-...
-  if [ -L "$target" ]; then
-    ln -sfn "$SRC/$name" "$target"        # refresh (image may have moved)
+```
+# git log -1 --format="%h %s" cb5351d
+cb5351d fix(cross-model-review): warn pre-flight on an unpriced judge; title the reference files
 ```
 
-so `~/.claude/CLAUDE.md` exists in every session. The second copy is the project-instructions load, which is a property of the harness rather than of any file in the repo (paraphrased — no quote available because the claim is about how the session's system context is assembled, not about a code path in this repo). It is directly observable in this very session: the assembled context for this run carries the instructions file twice, once labelled as the user's global `~/.claude/CLAUDE.md` and once as "`/workspace/CLAUDE.md` (project instructions, checked into the codebase)" — both copies still the pre-move text, because the linked payload predates the rebuild. `CLAUDE.md` no longer exists at the repo root after this change (`ls CLAUDE.md` → `No such file or directory`), so the second load is removed once the image is rebuilt.
-
-**Evidence:** `devcontainer-config/link-claude-home.sh:44-62`, `devcontainer-config/install.sh:41-50`, `global-instructions/CLAUDE.md:1`
-
----
-
-## Claim 3: "devcontainer-config/install.sh stages it to the payload root, so the installed layout is unchanged — only the source path moved."
-
-**Location:** `scripts/health-check.sh:30-34`
-**Type:** Architectural
-**Verdict:** Verified
-**Confidence:** High
-**Verification mode:** static
-**Scope:** Covers the payload root's layout (`/opt/claude-workflows/CLAUDE.md` inside the image) and the `GLOBAL_MD` indirection in this script; does not establish that every bare `CLAUDE.md` string left in this file's own comments was updated (they were not — see the note below), and does not establish the state of an already-installed host config until `install.sh` is re-run.
-
-The variable and its three consumer loops:
-
-```bash
-# scripts/health-check.sh:35
-GLOBAL_MD="global-instructions/CLAUDE.md"
-```
-
-```bash
-# scripts/health-check.sh:203, :235, :868 (one per loop)
-    for mdfile in "$GLOBAL_MD" AGENTS.md GEMINI.md; do
-```
-
-and the two associative-array lookups that key off it, `${h2_set[$GLOBAL_MD]+x}` at `:944` and `${skill_set[$GLOBAL_MD]+x}` at `:965`. Executed confirmation that the indirection resolves: the run at HEAD reports `global-instructions/CLAUDE.md: 283 lines, 8 H2 + 15 H3 sections, 17 skill ref(s)` rather than skipping the file (`docs/reviews/execution-logs/r2-health-check-head-2026-09-12.txt`).
-
-Residual, not part of the claim: seven comment lines in this script still say `CLAUDE.md` where they mean the global instructions file (`:13`, `:14`, `:25`, `:187`, `:192`, `:843-844`, `:922-925`, `:963`). They are documentation only and do not affect behaviour.
-
-**Evidence:** `scripts/health-check.sh:29-35`, `scripts/health-check.sh:200-205`, `scripts/health-check.sh:232-237`, `scripts/health-check.sh:865-870`, `scripts/health-check.sh:944-978`, `docs/reviews/execution-logs/r2-health-check-head-2026-09-12.txt`
-
----
-
-## Claim 4a: "Pinned on purpose: changing the judge breaks score comparability with earlier runs."
-
-**Location:** `scripts/cross-model-review.py:372-373`
-**Type:** Behavioral
-**Verdict:** Verified
-**Confidence:** Medium
-**Verification mode:** static
-**Scope:** Covers the rationale's internal consistency with the harness's own stated comparability discipline; does not establish the magnitude of any score shift between judges, and does not establish that any existing run artifact records which judge produced it.
-
-The file already treats prompt/judge identity as the comparability axis, in the same voice:
+and it introduced exactly the WARNING row 48 describes:
 
 ```python
-# scripts/cross-model-review.py:35-38
-    only as a deliberate recall probe or for comparability with pre-021
-    measurements (live diff-only runs print a warning to stderr). Files larger
+# git show cb5351d, added hunk
+        if pricing and pricing.get(args.judge, (0, 0)) == (0, 0):
+            print(f"WARNING: no pricing for judge {args.judge} — unknown or unpriced model id. "
 ```
 
-and
+The `lite-review.py:24-26` citation is exact for the state row 48 was written against: the
+`435f46a` hunk header is `@@ -21,9 +21,14 @@` with three context lines, so the removed
+copy-description occupied old lines 24, 25 and 26 (paraphrased — no quote available because the
+claim is about line *numbering* in a prior revision, which is a property of the diff header
+rather than of any quotable line).
 
-```python
-# scripts/cross-model-review.py:37-38 (continuation)
-    Without --context-base the prompt is byte-identical to the pre-021 harness, so
-    historical numbers stay comparable.
+Both linked decision records exist:
+
+```
+# ls
+docs/decisions/030-lightweight-review-path.md
+docs/decisions/031-review-loop-tier-and-factcheck-policy.md
 ```
 
-The comment is consistent with that discipline: stage-2 matching is performed by the judge model, so a judge swap changes the matching function that produces the overlap scores.
+Log 37 exists at `docs/decisions/log.md:59` and itself states `Wired into pr-prep Step 3 /
+review-fix-loop.md`.
 
-**Evidence:** `scripts/cross-model-review.py:11-38`, `scripts/cross-model-review.py:369-378`
+**Evidence:** `docs/decisions/log.md:59`, `docs/decisions/log.md:69`, `docs/decisions/030-lightweight-review-path.md`, `docs/decisions/031-review-loop-tier-and-factcheck-policy.md`, `scripts/cross-model-review.py:378`
 
 ---
 
-## Claim 4b: The judge default `anthropic/claude-sonnet-5` is a real OpenRouter model id.
+## Claim 3: "a Sonnet 5 pass is `--model claude-sonnet-5`, not new code" / "a flag, not a build"
 
-**Location:** `scripts/cross-model-review.py:374`
-**Type:** Configuration / Reference
-**Verdict:** Unverifiable
-**Confidence:** High (in the blocker)
-**Verification mode:** static
-**Scope:** Covers only whether the slug can be checked from this sandbox and whether it is *shaped* like the harness's other ids; does not establish that OpenRouter serves a model under this name, and does not establish that the previous pin `anthropic/claude-sonnet-4.5` was itself still live.
-
-```python
-# scripts/cross-model-review.py:374
-    ap.add_argument("--judge", default="anthropic/claude-sonnet-5", help="pinned judge model for stage-2 matching")
-```
-
-Blocker: verifying an OpenRouter slug requires reaching `openrouter.ai`, and this sandbox has no egress. The commit message and the audit's F10 row both state the same limitation, so the claim is honestly labelled at both sites.
-
-On shape, the slug is consistent with the harness's own conventions: the docstring example uses the same `anthropic/claude-<tier>-<version>` form (`--models anthropic/claude-opus-4.5 openai/gpt-5.2 google/gemini-3-pro`, `scripts/cross-model-review.py:69`), and the sibling sweep script pins bare-major ids of the same generation (`MODELS = ["moonshotai/kimi-k3", "openai/gpt-5.6-sol", "google/gemini-3.1-pro-preview"]`, `scripts/dd-cross-model-sweep.py:30`). Shape consistency is not existence.
-
-**Evidence:** `scripts/cross-model-review.py:69`, `scripts/cross-model-review.py:374`, `scripts/dd-cross-model-sweep.py:30`
-
----
-
-## Claim 5: "It sits in its own directory rather than the repo root so that a session working in *this* repo does not load it twice — once from `~/.claude` and once as the project's own instructions."
-
-**Location:** `README.md:124`
-**Type:** Architectural
-**Verdict:** Verified
-**Confidence:** High
-**Verification mode:** static
-**Scope:** Same mechanism as Claim 2; covers the stated reason for the directory. Does not establish that the README's own host-setup recipe still works for a reader who already ran the old one (it does not — the pre-existing symlink dangles until re-run).
-
-The setup recipe was updated in step with the move:
-
-```bash
-# README.md:14
-ln -s ~/claude-workflows/global-instructions/CLAUDE.md ~/.claude/CLAUDE.md
-```
-
-and the contents index and contribution step both point at the new path (`README.md:124`, `README.md:168`).
-
-**Evidence:** `README.md:11-20`, `README.md:121-126`, `README.md:165-170`
-
----
-
-## Claim 6: "`devcontainer-config/install.sh` stages payload entries under their basename, so the image payload and `link-claude-home.sh` are unchanged — `~/.claude/CLAUDE.md` still resolves to the same content."
-
-**Location:** `docs/decisions/log.md:68` (row 47)
-**Type:** Architectural
+**Location:** `docs/decisions/log.md:69`, `docs/working/questions.md:11`
+**Type:** Behavioral / Configuration
 **Verdict:** Verified
 **Confidence:** High
 **Verification mode:** executed
-**Scope:** Covers the in-container `~/.claude/CLAUDE.md` symlink target and the payload names; "the same content" means the same *file*, not byte-identical text — commit `4d41add` also deleted four lines from that file (F6), so the installed bytes do change, for an unrelated reason. Does not establish the host-native `~/.claude/CLAUDE.md` case (Claim 8).
+**Scope:** Covers that `--model` is plumbed unvalidated to the `claude` CLI and that the literal string `claude-sonnet-5` resolves to a real first-party model on this machine; does not establish that a full lite-review run under that model produces parseable FINDINGS output, nor that the id remains valid on a host with different CLI/auth state.
 
-Same evidence as Claim 1: `install.sh:56` stages by basename, `link-claude-home.sh:44` looks for `CLAUDE.md` at the payload root, and the Dockerfile copies the stage wholesale:
+The plumbing is end-to-end and unvalidated — `argparse` takes any string and it reaches the
+subprocess argv directly:
 
-```dockerfile
-# devcontainer-config/Dockerfile:409
-COPY claude-home/ /opt/claude-workflows/
+```python
+# scripts/lite-review.py:141
+    ap.add_argument("--model", default=DEFAULT_MODEL)
 ```
 
-Executed simulation as recorded under Claim 1 (exit 0, 2026-09-12).
+```python
+# scripts/lite-review.py:160
+    env = run_claude(prompt, args.model, args.timeout)
+```
 
-**Evidence:** `devcontainer-config/install.sh:50-60`, `devcontainer-config/link-claude-home.sh:44-62`, `devcontainer-config/Dockerfile:400-429`, `docs/reviews/execution-logs/r2-verification-commands-2026-09-12.txt`
+```python
+# scripts/lite-review.py:113-126
+    with tempfile.TemporaryDirectory(prefix="lite-review-") as empty_cwd:
+        proc = subprocess.run(
+            [
+                "claude", "-p",
+                "--model", model,
+                "--output-format", "json",
+                ...
+```
+
+(excerpt ends `:126`; the enclosing `run_claude` continues to `:132` — read: the remainder
+decodes `proc.stdout` as JSON and `sys.exit`s with the raw output when decoding fails, so an
+invalid model id would surface as a non-JSON exit rather than a validation error.)
+
+There is no `choices=` constraint and no allowlist check on the value, so the gap the brief asks
+about — "a flag exists" vs "this specific value works" — was closed by execution. Command:
+`claude -p --model claude-sonnet-5 --output-format json --tools "" --no-session-persistence <<< "say hi"`,
+cwd `/workspace`, exit code 0, at 2026-09-12T12:19:29-07:00. The envelope reports
+`"canonicalModel":"claude-sonnet-5"`, `"provider":"firstParty"`, `"is_error":false`,
+`"num_turns":1` — the two fields `lite-review.py` judges success by. The id resolves.
+
+**Evidence:** `scripts/lite-review.py:113-132`, `scripts/lite-review.py:141`, `scripts/lite-review.py:160`, `docs/reviews/execution-logs/r2-claude-sonnet-5-resolve.txt`
 
 ---
 
-## Claim 7: "about 8K tokens of byte-identical duplication per request"
+## Claim 4a: log row 49 — "The two regexes were byte-identical at the moment ownership moved"
 
-**Location:** `docs/decisions/log.md:68` (row 47); same figure in `c56be81`'s message
-**Type:** Performance / Configuration
+**Location:** `docs/decisions/log.md:70`
+**Type:** Invariant
 **Verdict:** Verified
-**Confidence:** Medium
+**Confidence:** High
 **Verification mode:** executed
-**Scope:** Covers the order of magnitude of the second copy's size under standard byte-per-token heuristics; does not establish an exact tokenizer count (no tokenizer is available offline here), and does not establish the per-request cost after prompt caching.
+**Scope:** Covers `FINDING_RE`'s compiled pattern string and flags in the two files at `435f46a`; does not establish that the two files' *parsers* agree (they do not — see Claim 4b) or that the two prompts elicit the same output.
 
-- Command: `wc -c -w -l *.md`
-- cwd: `/workspace/global-instructions`
-- Exit code: 0 · Timestamp: 2026-09-12
-- Output: `283  4433 30343 CLAUDE.md` (283 lines, 4,433 words, 30,343 bytes)
+The two compiled objects are identical in both pattern and flags. Command:
+`python3` inline script loading both modules by path and comparing
+`FINDING_RE.pattern` / `FINDING_RE.flags`, cwd `/workspace`, exit code 0, at
+2026-09-12T12:19:29-07:00:
 
-30,343 bytes at the usual ~4 bytes/token heuristic is ≈ 7,600 tokens; 4,433 words at ~1.3 tokens/word is ≈ 5,800–7,700. "About 8K" is the right order and is stated as an approximation. Note the figure is stated for the file's pre-change size; `4d41add` removed four lines from it in the same PR, which moves the number by well under the stated precision.
+```
+regex pattern identical: True | flags identical: True
+```
 
-**Evidence:** `global-instructions/CLAUDE.md` (283 lines), `docs/reviews/execution-logs/r2-verification-commands-2026-09-12.txt`
+The source text is likewise identical apart from the surrounding blank line:
+
+```python
+# scripts/lite-review.py:73-78 and scripts/cross-model-review.py:139-144 (identical)
+FINDING_RE = re.compile(
+    r"^\s*\d+\.\s*(?P<path>[^|:]+?)(?::(?P<lines>[\d\-, ]+))?\s*\|"
+    r"\s*(?P<sev>Critical|High|Medium|Low|Informational)\s*\|"
+    r"\s*(?P<domain>[^|]+)\|\s*(?P<title>[^|]+)\|\s*(?P<desc>.+)$",
+    re.IGNORECASE,
+)
+```
+
+The two prompt templates' format lines also agree (`FINDINGS:` / the numbered row /
+`(or the single line "FINDINGS: NONE"). Nothing after the list.`) at
+`scripts/lite-review.py:51-54` and `scripts/cross-model-review.py:121-124`.
+
+**Evidence:** `scripts/lite-review.py:73-78`, `scripts/cross-model-review.py:139-144`, `scripts/lite-review.py:51-54`, `scripts/cross-model-review.py:121-124`, `docs/reviews/execution-logs/r2-parser-divergence.txt`
 
 ---
 
-## Claim 8: "Takes effect for existing containers at the next `install.sh` + rebuild; a session started before that still sees both copies."
+## Claim 4b: "This file OWNS the FINDINGS **grammar** and its regex" / "the two were byte-identical when ownership moved here"
 
-**Location:** `docs/decisions/log.md:68` (row 47); same sentence in `c56be81`'s message
-**Type:** Behavioral
+**Location:** `scripts/lite-review.py:24-31`, restated at `docs/decisions/log.md:70`
+**Type:** Architectural / Invariant
 **Verdict:** Mostly accurate
 **Confidence:** High
-**Verification mode:** static
-**Scope:** Covers the cc-isolated container path, where the claim is exactly right; does *not* cover the host-native installation the README documents, where the effect is immediate and is a breakage rather than a deferred improvement. Does not establish how many such host installs exist.
+**Verification mode:** executed
+**Scope:** Covers what constitutes "the grammar" beyond `FINDING_RE` — the block-header detection, the `FINDINGS: NONE` short-circuit, and the `parse_ok` contract — across both files; does not establish which behavior is the intended one, nor whether the divergence predates this diff (it does; this diff did not create it).
 
-For containers the claim holds: the payload is baked at image build time and only re-linked at container start —
-
-```bash
-# devcontainer-config/link-claude-home.sh:39-40
-SRC="${CC_WORKFLOWS_DIR:-/opt/claude-workflows}"
-DEST="${CLAUDE_CONFIG_DIR:-$HOME/.claude}"
-```
-
-— so nothing changes until `install.sh` restages and the image is rebuilt.
-
-The unstated half: the README's host recipe creates `~/.claude/CLAUDE.md` as a symlink into the repo working tree, where a `git pull` of this change takes effect immediately:
-
-```bash
-# README.md:14 (post-change form)
-ln -s ~/claude-workflows/global-instructions/CLAUDE.md ~/.claude/CLAUDE.md
-```
-
-A host that ran the *old* recipe has `~/.claude/CLAUDE.md -> ~/claude-workflows/CLAUDE.md`, and that target no longer exists (`ls CLAUDE.md` → `No such file or directory`). On such a host the global instructions silently vanish at pull time rather than at rebuild time, and the fix is to re-run the `ln -s`. Neither the decision row nor the commit message says so. The precise version would add: "on a host-native install the old symlink dangles at pull time and must be recreated."
-
-**Evidence:** `README.md:11-20`, `README.md:118-122`, `devcontainer-config/link-claude-home.sh:39-62`, `docs/decisions/log.md:68`
-
----
-
-## Claim 9: "F2 — `Task tool` → `Agent tool` | **applied** (`skills/draft-review/SKILL.md`)"
-
-**Location:** `docs/reviews/prompt-audit-2026-09-11.md:560`
-**Type:** Staleness / Reference
-**Verdict:** Verified
-**Confidence:** High
-**Verification mode:** static
-**Scope:** Covers the single occurrence the audit's F2 entry cited, in `skills/draft-review/SKILL.md`; does not establish that no other file in the repo says "Task tool" (two do — see Claim 10).
-
-The line the audit quoted as F2's evidence is gone and replaced:
-
-```markdown
-# skills/draft-review/SKILL.md:190
-Dispatch each critique to a sub-agent via the Agent tool.
-```
-
-A repo-wide grep for `Task tool` across `*.md`/`*.sh`/`*.py`/`*.bats`, excluding `archive/`, `external/`, `runs/`, `node_modules/` and `docs/`, returns zero hits under `skills/`.
-
-**Evidence:** `skills/draft-review/SKILL.md:187-191`, `docs/reviews/prompt-audit-2026-09-11.md:78-81`
-
----
-
-## Claim 10: "This also kills the last surviving \"Task tool\" reference, a regression against skill-format-audit Finding 7."
-
-**Location:** commit `4d41add` message, paragraph 1
-**Type:** Architectural / Reference
-**Verdict:** Mostly accurate
-**Confidence:** High
-**Verification mode:** static
-**Scope:** Covers occurrences of the literal string "Task tool" in live (non-`docs/`, non-`archive/`) prompt surface; does not establish anything about `Task`-as-a-word used in other senses (e.g. asyncio `Task` in review artifacts).
-
-Two live occurrences survive outside `skills/`:
-
-```markdown
-# patterns/orchestrated-review.md:31
-**Terminology note**: Use "sub-agent" consistently for the parallel execution mechanism, regardless of whether the underlying implementation uses the Task tool, Agent tool, or manual sequential processing.
-```
-
-```markdown
-# guides/skill-format-audit.md:156
-## Finding 7: draft-review.md References `Task` Tool Instead of `Agent` Tool
-```
-
-Both are defensible — the first deliberately names both spellings, the second is the audit record that raised Finding 7 — but neither is `docs/`, so "the last surviving reference" is true only under the narrower reading the audit itself used: the last occurrence *in a skill*. The audit's own F2 entry states that narrower scope correctly ("now the only surviving occurrence in the skill", `docs/reviews/prompt-audit-2026-09-11.md:80`); the commit message drops the qualifier. Precise version: "the last surviving `Task tool` reference in a skill."
-
-**Evidence:** `patterns/orchestrated-review.md:31`, `guides/skill-format-audit.md:148-167`, `docs/reviews/prompt-audit-2026-09-11.md:80`
-
----
-
-## Claim 11: "F3 ... **applied** (draft-review, code-review, matrix-analysis; the restatements at the Stage-2 headers are now one plain sentence)"
-
-**Location:** `docs/reviews/prompt-audit-2026-09-11.md:561`
-**Type:** Architectural
-**Verdict:** Verified
-**Confidence:** High
-**Verification mode:** static
-**Scope:** Covers the three named skills' "Mandatory Execution Rules" blocks and their Stage-2 header restatements; does not establish that no other skill in the repo carries a similar pressure block (F3's scope was these three).
-
-All three headings changed from `## Mandatory Execution Rules` to `## Execution rules`, and the numbered MUST/absolute list is replaced by contract prose that carries the reason. In `skills/matrix-analysis/SKILL.md`:
-
-```markdown
-# skills/matrix-analysis/SKILL.md:34-36
-Dispatch every evaluation to a sub-agent via the Agent tool. Scoring items yourself defeats
-the point of the matrix: the comparison is only worth reading if each cell came from an
-independent pass.
-```
-
-The Stage-2 restatements are single sentences: `skills/draft-review/SKILL.md:190` (quoted under Claim 9), and in `skills/code-review/SKILL.md` the diff removes `**DO NOT write critiques yourself. You MUST dispatch each critique to a sub-agent via the Agent tool.** This is non-negotiable.` (paraphrased — no quote available because the line is a deletion and no longer exists in the post-change file; it is visible as `-` in `git diff -M -C 2d679ce..HEAD -- skills/code-review/SKILL.md`).
-
-**Evidence:** `skills/draft-review/SKILL.md:49-61`, `skills/matrix-analysis/SKILL.md:34-46`, `skills/code-review/SKILL.md` (diff hunk at the former `## Mandatory Execution Rules`)
-
----
-
-## Claim 12: "F4 ... inheriting sites updated (`guides/sub-agent-briefing.md` including the worked example at :29 and the \"word cap\" rationale at :36, the `guides/README.md` index line, `workflows/task-decomposition.md`, `guides/task-decomposition-examples.md`, `skills/matrix-analysis/SKILL.md`)"
-
-**Location:** `docs/reviews/prompt-audit-2026-09-11.md:562`
-**Type:** Architectural
-**Verdict:** Verified
-**Confidence:** High
-**Verification mode:** static
-**Scope:** Covers completeness of the named site list against a repo-wide search for the retired numeric cap, excluding `archive/`, `external/`, `runs/`, `node_modules/` and `docs/`; does not establish that the replacement wording is *effective*, and does not cover other word caps in the repo that F4 never targeted (`skills/fact-check/SKILL.md`'s ≤25-word citation span is an evidence-span rule, not a sub-agent output cap, and correctly went untouched).
-
-The convention itself was rewritten:
-
-```markdown
-# patterns/orchestrated-review.md:131-135
-#### Default output shape
-
-Every dispatched sub-agent should be told what shape its output takes. The default convention:
-
-> `Lead with conclusions; prose only where the structured output can't carry the point.`
-```
-
-A repo-wide grep for `300 words|<300|word cap|word limit|under [0-9]+ words|[0-9]+-word` over `*.md`/`*.sh`/`*.py`/`*.bats`, excluding the directories above, returns no live site still carrying the retired cap — every remaining hit is inside `docs/` (the audit doc quoting the removed text) or is the unrelated fact-check citation-span rule. The two line references check out against the pre-change file: `guides/sub-agent-briefing.md:29` was the worked example's `> **Output:** ... Total length under 300 words.` and `:36` was `- Word cap forces the sub-agent to summarize, not paste code.` (paraphrased — no quote available because both are pre-change lines that no longer exist; they appear as `-` lines in the diff hunks `@@ -26,14 +26,14 @@`).
-
-The cross-reference in `workflows/task-decomposition.md` was retargeted to the renamed anchor and resolves (see Claim 19).
-
-**Evidence:** `patterns/orchestrated-review.md:128-143`, `guides/sub-agent-briefing.md:14`, `guides/sub-agent-briefing.md:29`, `guides/sub-agent-briefing.md:36`, `guides/README.md:51`, `workflows/task-decomposition.md:113`, `workflows/task-decomposition.md:121`, `guides/task-decomposition-examples.md:32-38`, `skills/matrix-analysis/SKILL.md:220-224`
-
----
-
-## Claim 13: "F6 ... **partially applied** — the two paragraphs restating decision-tree row 2 are cut from the always-loaded instructions file. The hook cross-reference paragraph stays until F5 is decided."
-
-**Location:** `docs/reviews/prompt-audit-2026-09-11.md:563`
-**Type:** Architectural
-**Verdict:** Verified
-**Confidence:** High
-**Verification mode:** static
-**Scope:** Covers exactly which paragraphs were removed from and retained in `global-instructions/CLAUDE.md`; does not establish that the removal has the intended effect on routing behaviour (behavioral, requires model calls).
-
-The rename hunk removes exactly two paragraphs and nothing else (`similarity index 97%`, a single `@@ -47,10 +47,4 @@` hunk): the "When a single message bundles **2+ independent tasks**…" paragraph and the "**Recognize a batch.**…" paragraph (paraphrased — no quote available because both are deletions and no longer exist in the post-change file; they are the two `-` paragraphs in `git diff -M -C 2d679ce..HEAD -- 'global-instructions/*' 'CLAUDE*'`).
-
-The hook cross-reference survives:
-
-```markdown
-# global-instructions/CLAUDE.md:59
-A `UserPromptSubmit` hook (`hooks/batch-feedback-routing-reminder.sh`) escalates this row from skimmable prose to a harness-injected, non-blocking reminder when it detects multi-item phrasing — the same escalation pattern as the divergent-design routing reminder.
-```
-
-**Evidence:** `global-instructions/CLAUDE.md:45-60`, `docs/reviews/prompt-audit-2026-09-11.md:563`
-
----
-
-## Claim 14: "F9 — \"The research must be thorough\" | **applied**"
-
-**Location:** `docs/reviews/prompt-audit-2026-09-11.md:564`
-**Type:** Staleness
-**Verdict:** Verified
-**Confidence:** High
-**Verification mode:** static
-**Scope:** Covers removal of the exact sentence from `workflows/research-plan-implement.md` and its absence elsewhere outside `docs/`; does not establish that the remaining two sentences carry the same instruction weight.
-
-The surviving text drops the exhortation and keeps the two operative sentences:
-
-```markdown
-# workflows/research-plan-implement.md:82
-Read the actual implementations, not just signatures. If the research is wrong, everything downstream will be wrong.
-```
-
-A repo-wide grep for `must be thorough` over `*.md`, excluding `archive/`, `external/`, `runs/` and `docs/`, returns zero hits.
-
-**Evidence:** `workflows/research-plan-implement.md:79-83`, `docs/reviews/prompt-audit-2026-09-11.md:143-148`
-
----
-
-## Claim 15: "F10 — judge pin | **applied** — `anthropic/claude-sonnet-5`, with the comparability-break comment."
-
-**Location:** `docs/reviews/prompt-audit-2026-09-11.md:565`
-**Type:** Configuration
-**Verdict:** Verified
-**Confidence:** High
-**Verification mode:** static
-**Scope:** Covers that the default was changed and the comment added at the cited site; does not establish that the slug is live (Claim 4b) and does not establish that any other pinned id in the harness was re-baselined (none was — `scripts/cross-model-review.py:69`'s docstring example still names `anthropic/claude-opus-4.5`, which is an illustrative `--models` example, not a pin).
+`FINDING_RE` is byte-identical (Claim 4a) and the prompt format lines agree, but the rest of the
+grammar — everything in `parse_findings` other than the row regex — has already diverged in three
+observable ways. The two implementations, read complete:
 
 ```python
-# scripts/cross-model-review.py:372-374
-    # Pinned on purpose: changing the judge breaks score comparability with earlier runs.
-    # Re-baseline deliberately and note the cutover in the run log when you move it.
-    ap.add_argument("--judge", default="anthropic/claude-sonnet-5", help="pinned judge model for stage-2 matching")
+# scripts/lite-review.py:86-108 (complete function)
+def parse_findings(text):
+    """Parse the FINDINGS block; returns (findings, parse_ok)."""
+    if re.search(r"FINDINGS:\s*NONE", text):
+        return [], True
+    rows = []
+    in_block = False
+    for line in text.splitlines():
+        if line.strip().startswith("FINDINGS:"):
+            in_block = True
+            continue
+        ...
+    return rows, bool(rows) or "FINDINGS" in text
 ```
 
-The row also self-labels the egress limitation, which matches this sandbox's actual constraint.
+```python
+# scripts/cross-model-review.py:300-322 (complete function)
+def parse_findings(text):
+    """Parse the FINDINGS block; returns (findings, parse_ok)."""
+    if re.search(r"FINDINGS:\s*NONE", text, re.IGNORECASE):
+        return [], True
+    ...
+        if re.match(r"\s*FINDINGS\s*:", line):
+    ...
+    return rows, in_block or bool(rows)
+```
 
-**Evidence:** `scripts/cross-model-review.py:369-378`, `docs/reviews/prompt-audit-2026-09-11.md:565`
+Executed differential. Command: `python3` inline script loading both modules and calling both
+`parse_findings` on three inputs, cwd `/workspace`, exit code 0, at 2026-09-12T12:19:29-07:00:
+
+```
+--- 'lowercase none'          ("findings: none")
+  lite : ([], False)          cross: ([], True)
+--- 'space before colon'      ("FINDINGS :\n1. a.py:1 | High | d | T | D")
+  lite : ([], True)           cross: ([{...one row...}], True)
+--- 'substring only'          ("I cannot emit FINDINGS for this diff.")
+  lite : ([], True)           cross: ([], False)
+```
+
+The third case is the operationally significant one: `lite-review.py`'s `parse_ok` returns True
+for any text containing the substring `FINDINGS` anywhere, including a refusal that never emitted
+a block — the exact "no rows read as clean" hazard `test/lite-review-grammar.bats:80-87` says the
+grammar must prevent. The header's claim is true of the regex and of the on-the-wire row format;
+it is imprecise about "the grammar" as a whole. The precise version: *the two `FINDING_RE`
+definitions were byte-identical when ownership moved; the surrounding parsers already differ in
+`FINDINGS: NONE` case-sensitivity, block-header tolerance, and `parse_ok` semantics.*
+
+**Evidence:** `scripts/lite-review.py:24-31`, `scripts/lite-review.py:86-108`, `scripts/cross-model-review.py:300-322`, `docs/decisions/log.md:70`, `docs/reviews/execution-logs/r2-parser-divergence.txt`
 
 ---
 
-## Claim 16: "F1 ... **applied** ... `install.sh` now stages payload entries under their basename, so the image layout and `link-claude-home.sh` are unchanged; `health-check.sh` reads the path from `GLOBAL_MD`. Decision log row 47."
+## Claim 5: "test/lite-review-grammar.bats pins the shape" (lite-review.py header) / "pins the shape with 7 contract tests over `parse_findings`" (log row 49)
 
-**Location:** `docs/reviews/prompt-audit-2026-09-11.md:566`
+**Location:** `scripts/lite-review.py:30-31`, `docs/decisions/log.md:70`, `test/lite-review-grammar.bats:6-10`
+**Type:** Behavioral / Architectural
+**Verdict:** Mostly accurate
+**Confidence:** High
+**Verification mode:** executed
+**Scope:** Covers what the 7 tests constrain and what a contract-altering `FINDING_RE` edit can change while still passing; does not establish that the untested regions matter in practice, nor that any specific future edit is likely.
+
+The suite exists, has exactly 7 tests, and passes. Command: `bats test/lite-review-grammar.bats`,
+cwd `/workspace`, exit code 0, at 2026-09-12T12:16:00-07:00 — `1..7`, all `ok`.
+
+It constrains `parse_findings`' *behavior*, and through it several regex properties: field
+decomposition (`"path"`/`"lines"` split, `"severity"`, `"domain"`, `"title"`, `"description"`),
+case-insensitive severity matching with `.capitalize()` normalization, the optional line range,
+block-header detection, and the parse-failure distinction. No test reads `FINDING_RE` itself
+(paraphrased — no quote available because the claim covers the *absence* of a reference: `grep -n
+FINDING_RE test/lite-review-grammar.bats` returns nothing).
+
+Mutation probe: two contract-altering edits to `FINDING_RE` both pass all 7 tests. Command:
+`bats test/lite-review-grammar.bats` in a copied tree whose `scripts/lite-review.py` had the
+severity alternation widened to include `Blocker` and the line-range class narrowed from
+`[\d\-, ]+` to `[\d\-]+`, cwd
+`/tmp/claude-1000/-workspace/069518a5-919f-46b0-ba81-1e00bce5effa/scratchpad/mut`, exit code 0,
+at 2026-09-12T12:19:46-07:00 — `1..7`, all `ok`. The second mutation silently drops
+comma-separated line lists (`1. a.py:12, 40 | ...`), which the shipped grammar admits.
+
+Precise version: the suite pins `parse_findings`' behavior on seven sampled inputs, which is
+what protects the caller contract; it does not pin the regex, so the severity vocabulary and the
+line-range character class can change without a red test. Prompt/regex drift is also unpinned —
+no test asserts `PROMPT_FULL`'s format line matches `FINDING_RE`.
+
+**Evidence:** `test/lite-review-grammar.bats:1-97`, `scripts/lite-review.py:73-78`, `docs/reviews/execution-logs/r2-lite-review-grammar.txt`, `docs/reviews/execution-logs/r2-mutation-probe.txt`
+
+---
+
+## Claim 6: "the exit status alone does not discriminate (both old and new behavior exit 1), so the message is the assertion that has teeth"
+
+**Location:** `docs/working/questions.md:7`
+**Type:** Behavioral
+**Verdict:** Verified
+**Confidence:** High
+**Verification mode:** executed
+**Scope:** Covers the exit status and stdout of `install.sh` on a closed stdin at `8980861~1` and at `HEAD`; does not establish anything about other non-interactive callers (e.g. `--yes`) or about stderr content.
+
+Pre-fix run: exit 1, output ends at the prompt with no abort line (command, cwd, timestamp and
+captured output in Claim 1). Post-fix: the shipped test asserts both `[ "$status" -eq 1 ]` and
+the `Aborted. Nothing was changed.` line and passes (Claim 14). A minimal synthetic pair
+confirmed the same shape independently. Command:
+`bash t.sh </dev/null` (old form) and `bash t2.sh </dev/null` (new form), cwd
+`/tmp/claude-1000/-workspace/069518a5-919f-46b0-ba81-1e00bce5effa/scratchpad`, exit codes 1 and 1,
+at 2026-09-12T12:15-07:00:
+
+```
+OLD:  prompt? [y/N]   status=1
+NEW:  prompt? [y/N] Aborted.
+        status=1
+```
+
+Both exit 1; only the new form prints. The claim's mechanism and conclusion both hold.
+
+**Evidence:** `docs/working/questions.md:7`, `devcontainer-config/install.sh:101-110`, `docs/reviews/execution-logs/r2-old-install-behavior.txt`
+
+---
+
+## Claim 7: "The only consumers of the pin are the benchmark harness `scripts/cross-model-review.py` and the archival `scripts/dd-cross-model-sweep.py`"
+
+**Location:** `docs/working/questions.md:11`
 **Type:** Architectural
-**Verdict:** Verified
-**Confidence:** High
-**Verification mode:** executed
-**Scope:** Covers each of the four sub-assertions (move, basename staging, `GLOBAL_MD`, row 47 exists); inherits Claim 8's residue on the host-native symlink, which this row also omits.
-
-Move: `git diff -M -C` reports `rename from CLAUDE.md` / `rename to global-instructions/CLAUDE.md`, similarity 97%. Basename staging: Claim 1 (executed). `GLOBAL_MD`: Claim 3. Row 47: `docs/decisions/log.md:68` exists and is the only line added to that file in this range.
-
-**Evidence:** `docs/decisions/log.md:68`, `devcontainer-config/install.sh:50-60`, `scripts/health-check.sh:35`, `docs/reviews/execution-logs/r2-verification-commands-2026-09-12.txt`
-
----
-
-## Claim 17: "`references/rubric.md` (515 lines ...), `references/chat-synthesis.md` (126), `references/override-log.md` (52). SKILL.md 1,909 → 1,256 lines"
-
-**Location:** `docs/reviews/prompt-audit-2026-09-11.md:569`; same figures in `59ca38f`'s message
-**Type:** Configuration
-**Verdict:** Verified
-**Confidence:** High
-**Verification mode:** executed
-**Scope:** Covers the four line counts and the contents attributed to `rubric.md`; does not establish that the split reduced *loaded* tokens at runtime (that depends on whether the model follows the links — see Claim 29).
-
-- Command: `wc -l skills/code-review/SKILL.md skills/code-review/references/*.md` and `git show 2d679ce:skills/code-review/SKILL.md | wc -l`
-- cwd: `/workspace` · Exit code: 0 · Timestamp: 2026-09-12
-- Output: `1256 SKILL.md`, `515 references/rubric.md`, `126 references/chat-synthesis.md`, `52 references/override-log.md`; baseline `1909`.
-
-All four figures and the before/after pair are exact. The contents attributed to `rubric.md` are all present as headings in it: `## Deliverable 2: Code Review Rubric` (:5, the template), the tier sections `## 🔴 Must Fix` / `## 🟡 Must Address` / `## 🟢 Consider` (:36, :47, :58), `### Evidence grounding` (:151), `### Unified Severity Mapping` (:261), `### Escalation Rule` (:335), `### Soundness-Contradiction Channel` (:373), `### Executable-Defect Channel` (:443), `### Rubric Status Line` (:493).
-
-**Evidence:** `skills/code-review/SKILL.md`, `skills/code-review/references/rubric.md:5-509`, `skills/code-review/references/chat-synthesis.md`, `skills/code-review/references/override-log.md`, `docs/reviews/execution-logs/r2-verification-commands-2026-09-12.txt`
-
----
-
-## Claim 18: "All 85 tests across the code-review suites pass" / "All 85 tests pass."
-
-**Location:** commit `59ca38f` message, paragraph 4; `docs/reviews/prompt-audit-2026-09-11.md:569`
-**Type:** Configuration / Reference
 **Verdict:** Incorrect
 **Confidence:** High
-**Verification mode:** executed
-**Scope:** Covers the *count* only. The "pass" half of the claim is true and independently verified below; what is refuted is the denominator 85, which corresponds to no grouping of these suites. Does not establish anything about the orchestrator evals in `test/skills/` that need model calls (the commit correctly says those were not run).
+**Verification mode:** static
+**Scope:** Covers which `.py`/`.sh` files contain the literal pin `anthropic/claude-sonnet-5`; does not establish the conclusion the sentence draws from the enumeration ("neither on the production path"), which holds independently — none of the three real consumers is on the live review path.
 
-- Command: `bats test/skills/code-review-*.bats` and `bats --count` per file
-- cwd: `/workspace` · Exit code: 0 · Timestamp: 2026-09-12
-- Output: 97 `ok`, 0 `not ok`.
+Enumerated rather than sampled. `grep -rn "anthropic/claude-sonnet-5" --include="*.py" --include="*.sh"`
+finds three code sites, not two:
 
-Per file: `code-review-assurance-contract.bats` 15, `code-review-context-delivery.bats` 10, `code-review-executable-defect.bats` 9, `code-review-factcheck-replication.bats` 17, `code-review-format-contract.bats` 18, `code-review-format.bats` 17, `code-review-soundness-crosscheck.bats` 11 — **97** total, confirmed independently by `grep -c '^@test'` over the same seven files. The four suites this commit modified total **53**. No subset of these seven files sums to 85 (dropping 12 from 97 is not achievable by any combination of file sizes). The counts are identical at the pre-change commit `2d679ce`, so the figure was not simply stale.
-
-Matches the prior logged pattern class: *"a specific measured value quoted from a checked-in artifact set that does not contain it"* — the same shape as `"shortest real review in the corpus is over 3 KB"` (first seen 2026-08-19) and `total_golden 11 vs 13` (first seen 2026-08-18).
-
-The precise version is either "all 97 tests across the code-review suites pass" or, if the intent was the modified suites only, "all 53 tests in the four modified suites pass."
-
-**Evidence:** `test/skills/code-review-assurance-contract.bats`, `test/skills/code-review-context-delivery.bats`, `test/skills/code-review-executable-defect.bats`, `test/skills/code-review-factcheck-replication.bats`, `test/skills/code-review-format-contract.bats`, `test/skills/code-review-format.bats`, `test/skills/code-review-soundness-crosscheck.bats`, `docs/reviews/execution-logs/r2-verification-commands-2026-09-12.txt`
-
----
-
-## Claim 19: "Every anchor that crossed the split was rewritten programmatically (none left unresolved), including workflows/pr-prep.md's link to the capture format."
-
-**Location:** commit `59ca38f` message, paragraph 3; restated as "every crossing anchor rewritten" at `docs/reviews/prompt-audit-2026-09-11.md:569`
-**Type:** Reference
-**Verdict:** Verified
-**Confidence:** High
-**Verification mode:** executed
-**Scope:** Covers every intra-repo `](...#anchor)` link in `skills/code-review/SKILL.md`, the three `references/*.md`, and the external referrers `workflows/pr-prep.md`, `workflows/codebase-onboarding.md`, `patterns/orchestrated-review.md`, `README.md`, `AGENTS.md`, `GEMINI.md`, `global-instructions/CLAUDE.md`. Does not establish that the *link text* accompanying each anchor is still accurate (one is not — Claim 20), and does not check anchors inside `docs/`, `archive/`, `external/` or `runs/`.
-
-- Command: a GitHub-slug anchor resolver (lowercase, strip punctuation, spaces→hyphens) over the eleven files above, resolving each relative target and asserting the slug exists as a heading in the target file
-- cwd: `/workspace` · Exit code: 0 · Timestamp: 2026-09-12
-- Output: `checked 54 bad 0` (a broader sweep over all of `skills/code-review`, `workflows/`, `patterns/`, `guides/` and the entry-point files returned the same: 0 unresolved).
-
-The `pr-prep.md` link named in the message is among them:
-
-```markdown
-# workflows/pr-prep.md:183
-[`skills/code-review/SKILL.md`](../skills/code-review/references/override-log.md#capture-format) — Date, PR
+```python
+# scripts/cross-model-review.py:378
+    ap.add_argument("--judge", default="anthropic/claude-sonnet-5", help="pinned judge model for stage-2 matching")
 ```
 
-and `### Capture format` exists at `skills/code-review/references/override-log.md:9`. The `codebase-onboarding.md` referrer still points into `SKILL.md#between-stage-status-banner`, whose heading remained resident, and resolves.
+```python
+# archive/benchmark/scripts/review-arms.py:69,73
+    "base": {"model": "anthropic/claude-sonnet-5", "replicates": 1, "consensus": None,
+    "k3": {"model": "anthropic/claude-sonnet-5", "replicates": 3, "consensus": 2,
+```
 
-**Evidence:** `workflows/pr-prep.md:183`, `workflows/codebase-onboarding.md:120`, `skills/code-review/references/override-log.md:9`, `skills/code-review/SKILL.md:86-91`, `docs/reviews/execution-logs/r2-verification-commands-2026-09-12.txt`
+Two errors in one sentence. (a) `archive/benchmark/scripts/review-arms.py` is an unnamed third
+consumer — two sites — and it is a wrapper *over* the harness, so it would follow the harness to
+the fork:
+
+```python
+# archive/benchmark/scripts/review-arms.py:2
+"""Named lightweight-review arm set (decision 030) over cross-model-review.py.
+```
+
+(b) `scripts/dd-cross-model-sweep.py` is **not** a consumer of the pin at all. It contains no
+`anthropic/` slug and no judge concept; its model list is:
+
+```python
+# scripts/dd-cross-model-sweep.py:30
+MODELS = ["moonshotai/kimi-k3", "openai/gpt-5.6-sol", "google/gemini-3.1-pro-preview"]
+```
+
+A reader acting on this enumeration — to retire the pin, re-slug it, or check what breaks if
+`anthropic/claude-sonnet-5` is wrong — would edit a file that never references it and miss the
+one that references it twice. The conclusion ("neither on the production path") survives: all
+three sites are benchmark/archive, none is reached by `lite-review.py`. Log row 48's
+parallel sentence is *not* affected — it says the two scripts "stay frozen and are not to be run
+from here", which is a directive about the scripts, not a claim about the pin.
+
+**Evidence:** `docs/working/questions.md:11`, `scripts/cross-model-review.py:378`, `archive/benchmark/scripts/review-arms.py:2`, `archive/benchmark/scripts/review-arms.py:69`, `archive/benchmark/scripts/review-arms.py:73`, `scripts/dd-cross-model-sweep.py:30`
 
 ---
 
-## Claim 20: The override-log capture format is in `skills/code-review/SKILL.md`.
+## Claim 8: "the production diff-only review already runs on the Claude subscription via `scripts/lite-review.py` (decision log 37, wired into `workflows/pr-prep.md` Step 3 and `workflows/review-fix-loop.md`)"
 
-**Location:** `workflows/pr-prep.md:183` (the link's display text)
-**Type:** Reference / Staleness
-**Verdict:** Stale
+**Location:** `docs/working/questions.md:11`
+**Type:** Architectural / Reference
+**Verdict:** Verified
 **Confidence:** High
 **Verification mode:** static
-**Scope:** Covers the visible link label only; the href beside it was correctly updated and resolves (Claim 19). Does not establish that any other link label in the repo drifted — the anchor sweep checked targets, not labels.
+**Scope:** Covers that `lite-review.py` is invoked from both named workflow files and that the pr-prep invocation sits inside the numbered step 3; does **not** establish that the `--mode full` review is wired anywhere — both workflow call sites invoke `--mode fix-drift` only, and `--mode full` appears in no workflow, so "the production diff-only review" is wired in its fix-drift form alone, with full-mode reachable only as a manual CLI entry point.
 
-```markdown
-# workflows/pr-prep.md:180-183
-before the fix commit lands. Append to `docs/reviews/override-log.md` using the format in
-[`skills/code-review/SKILL.md`](../skills/code-review/references/override-log.md#capture-format) — Date, PR
+Both files invoke it. In `pr-prep.md` the invocation sits under the heading `#### 3. Review-fix
+loop` (`workflows/pr-prep.md:148`), inside the `c. Run tests` → drift-check subsection:
+
+```bash
+# workflows/pr-prep.md:218
+python3 scripts/lite-review.py --repo . --range <last-review-commit>..HEAD --mode fix-drift
 ```
 
-The label says `skills/code-review/SKILL.md`; that file no longer contains the capture format. `SKILL.md`'s own Override-Log section now defers:
-
-```markdown
-# skills/code-review/SKILL.md:1186-1188
-capture format, the append procedure, and why the log is not write-only are in
-**[references/override-log.md](references/override-log.md)**.
+```
+# workflows/review-fix-loop.md:69
+`scripts/lite-review.py --mode fix-drift` over the fix commits before starting the next
 ```
 
-A reader who follows the label rather than clicking (the common case when this workflow text is pasted into a sub-agent prompt, which strips nothing but is read linearly) is sent to the wrong file. The label should read `skills/code-review/references/override-log.md`.
+The subscription half is stated by the script itself and matches its argv (Claim 3): it calls
+`claude -p` and deliberately omits `--bare`:
 
-**Evidence:** `workflows/pr-prep.md:178-185`, `skills/code-review/SKILL.md:1182-1189`, `skills/code-review/references/override-log.md:5-22`
+```python
+# scripts/lite-review.py:17-19
+- NOT --bare: --bare restricts auth to ANTHROPIC_API_KEY and never reads
+  OAuth, which defeats the whole point (subscription auth). Instead the call
+  minimizes context with --system-prompt (replaces the default harness
+```
+
+Log 37 corroborates the wiring in the same words (`docs/decisions/log.md:59`: "Wired into
+pr-prep Step 3 / review-fix-loop.md"). `--mode full` is the argparse default
+(`scripts/lite-review.py:140`) but appears in no workflow file (paraphrased — no quote available
+because the claim covers the absence of a call site: `grep -rn "mode full" workflows/` returns
+nothing).
+
+**Evidence:** `docs/working/questions.md:11`, `workflows/pr-prep.md:148`, `workflows/pr-prep.md:218`, `workflows/review-fix-loop.md:69`, `scripts/lite-review.py:17-19`, `scripts/lite-review.py:140`, `docs/decisions/log.md:59`
 
 ---
 
-## Claim 21a: "Still over the 500-line ceiling."
+## Claim 9: "churn across 19 links at 17 sites for a saving that lands on one path"
 
-**Location:** commit `59ca38f` message, paragraph 5; `docs/reviews/prompt-audit-2026-09-11.md:569`
+**Location:** `docs/working/questions.md:9`
 **Type:** Configuration
+**Verdict:** Mostly accurate
+**Confidence:** Medium
+**Verification mode:** static
+**Scope:** Covers the link count reproduced by A10's own stated method (links into `references/` from `skills/code-review/SKILL.md`) at `435f46a`; does not establish the count at the moment A10 was written, nor the "saving lands on one path" half, which is an architecture judgement rather than a checkable figure.
+
+Compared against the logged hallucination pattern *"a specific measured value quoted from a
+checked-in artifact set that does not contain it"* (first seen 2026-08-18) — this is the same
+shape, so it was recounted rather than accepted. The figure is a restatement of A10, whose method
+is stated in the source:
+
+```
+# docs/reviews/architecture-review-2026-09-12.md:35
+edge set is denser: SKILL.md carries **19 links into `references/`** from 17 distinct sites
+```
+
+Reproducing that method today gives 21, not 19 (paraphrased — no quote available because the
+claim is a count: `grep -o "references/[a-z-]*\.md[^)\" ]*" skills/code-review/SKILL.md | wc -l`
+→ 21, over 21 distinct lines). The magnitude and the conclusion it supports (re-cutting the split
+is real churn across ~20 call sites) are unaffected; the precise version is *21 links from 21
+sites as of `435f46a`*, or the figure should be attributed as A10's snapshot. Note that the
+narrower reading — links carrying a `rubric.md#` anchor — gives 11, so the sentence is only true
+under A10's broader "links into `references/`" reading.
+
+**Evidence:** `docs/working/questions.md:9`, `docs/reviews/architecture-review-2026-09-12.md:35`, `docs/reviews/code-review-rubric-2026-09-12-main-prompt-audit.md:30`, `skills/code-review/SKILL.md`
+
+---
+
+## Claim 10: "The FINDINGS grammar is DEFINED by scripts/lite-review.py (decision log 48); this is the copy. It was byte-identical when ownership moved."
+
+**Location:** `scripts/cross-model-review.py:135-138`
+**Type:** Architectural / Reference
 **Verdict:** Verified
 **Confidence:** High
 **Verification mode:** executed
-**Scope:** Covers that a 500-line file guideline exists in this repo and that `SKILL.md` exceeds it; does not establish that the guideline was ever intended to bind skill files specifically (it is stated for implementation files in the RPI workflow).
+**Scope:** Covers the comment's referent — the `FINDING_RE` definition it is attached to — and the existence of decision log row 48; does not establish that `cross-model-review.py`'s `parse_findings` is a copy of lite-review's (it is not — see Claim 4b), and the comment does not claim it is.
 
-The ceiling is stated as repo policy:
+The comment sits immediately above `FINDING_RE`, so "this" resolves to the regex, which is
+byte-identical (Claim 4a, executed):
 
-```markdown
-# workflows/research-plan-implement.md:439
-**File size discipline**: Keep individual files under **500 lines**. If an implementation step would push a file past this threshold, split it before continuing.
+```python
+# scripts/cross-model-review.py:135-140
+# The FINDINGS grammar is DEFINED by scripts/lite-review.py (decision log 48);
+# this is the copy. It was byte-identical when ownership moved. If this harness
+# moves to the SWRBench fork, keep it in step with the owner deliberately or
+# state in the fork that the two have diverged - do not silently re-fork it.
+FINDING_RE = re.compile(
+    r"^\s*\d+\.\s*(?P<path>[^|:]+?)(?::(?P<lines>[\d\-, ]+))?\s*\|"
 ```
 
-`wc -l skills/code-review/SKILL.md` → 1256 (exit 0, 2026-09-12), so the skill is 2.5× the ceiling even after the split.
+(excerpt ends `:140`; the enclosing `re.compile(...)` call continues to `:145` — read: the
+remaining pattern fragments and the `re.IGNORECASE` flag were included in the executed
+comparison.) Decision log row 48 exists at `docs/decisions/log.md:69` and asserts the same
+ownership. The trailing sentences are forward-looking instructions to the fork, not checkable
+claims.
 
-**Evidence:** `workflows/research-plan-implement.md:439`, `workflows/research-plan-implement.md:451`, `skills/code-review/SKILL.md`, `docs/reviews/execution-logs/r2-verification-commands-2026-09-12.txt`
+**Evidence:** `scripts/cross-model-review.py:135-145`, `scripts/lite-review.py:73-78`, `docs/decisions/log.md:69`, `docs/reviews/execution-logs/r2-parser-divergence.txt`
 
 ---
 
-## Claim 21b: "The next candidates are Stage 1's dispatch template (~240 lines) and Stage 3's synthesis procedure (~160), both currently pipeline-resident."
+## Claim 11: "Changing the grammar here breaks that comparability" / "output stays comparable with the E2/E3 lite-arm artifacts"
 
-**Location:** commit `59ca38f` message, paragraph 5; abbreviated at `docs/reviews/prompt-audit-2026-09-11.md:569`
-**Type:** Configuration
+**Location:** `scripts/lite-review.py:26-30`
+**Type:** Invariant
 **Verdict:** Unverifiable
 **Confidence:** Medium
 **Verification mode:** static
-**Scope:** Covers whether the two named spans can be measured against the current file. The Stage 3 figure checks out exactly; the Stage 1 figure names a unit the file does not delimit, so it cannot be confirmed or refuted without knowing which span the author meant. Does not establish whether either span is a good extraction candidate — that is a design judgment, out of scope.
+**Scope:** Covers the attempt to trace the E2/E3 lite-arm artifacts to a producer whose output shape depends on this regex; does not establish that the claim is false — only that the artifact set needed to confirm or refute it was not identifiable in-repo within this pass.
 
-Stage 3 measures as claimed: the section runs from `### Stage 3: Synthesize and Produce Outputs` at `skills/code-review/SKILL.md:973` to the next `##`-level heading, `## Deliverable 1: Chat Synthesis` at `:1132` — 159 lines, matching "~160".
+The comparability claim is about historical benchmark artifacts, not about code in this repo. The
+`runs/review-arms/` and `runs/cross-model/` trees contain artifacts produced by the OpenRouter
+harness (paraphrased — no quote available because the claim concerns which *producer* wrote a
+directory of checked-in JSON, which is not recorded in the files themselves in a form this pass
+could quote). Confirming that a regex change would break comparison against the E2/E3 lite arm
+specifically requires the E2/E3 experiment definition and its arm-to-script mapping, which lives
+in the benchmark material scoped out of this repo (memory: SWRBench work is a separate fork).
+What would be needed: the E2/E3 arm manifest naming which script produced the lite-arm rows, plus
+the rows themselves, to re-parse under a mutated regex and observe the delta.
 
-Stage 1 has no sub-unit named "dispatch template". `### Stage 1: Code Fact-Check (k=3 replicated)` spans `:382` to `### Stage 1.5: Critic gating` at `:684` — 302 lines. Its only internal heading is `#### Merging replicate verdicts (most-severe-wins)` at `:500`, so the pre-merge dispatch prose is 118 lines. There are no fenced blocks anywhere in `:382-683` (`grep -n '^```'` over the file returns only `:100`, `:102`, `:901`, `:908`, `:1157`, `:1174`). Neither 118 nor 302 is "~240", and no other heading-delimited span in the section measures 240 lines. What would be needed: the author naming the line range they measured.
-
-**Evidence:** `skills/code-review/SKILL.md:382`, `skills/code-review/SKILL.md:500`, `skills/code-review/SKILL.md:684`, `skills/code-review/SKILL.md:973`, `skills/code-review/SKILL.md:1132`
-
----
-
-## Claim 22: "health-check failures are identical to the pre-change baseline (four, all pre-existing)"
-
-**Location:** commit `c56be81` message, "Verified:" paragraph; restated as "health-check failures are unchanged from baseline" in commit `59ca38f`
-**Type:** Behavioral / Configuration
-**Verdict:** Mostly accurate
-**Confidence:** High
-**Verification mode:** executed
-**Scope:** Covers the set and count of `fail` lines emitted by `scripts/health-check.sh` at HEAD versus `2d679ce`. The "identical to the pre-change baseline / all pre-existing" half is confirmed; the count "four" is refuted — there are six. Does not establish that the four shellcheck failures are harmless, and does not cover the script's `warn` lines (2 divergence signals at HEAD, also pre-existing).
-
-- Command: `bash scripts/health-check.sh` at HEAD (`/workspace`) and at `2d679ce` (a worktree), exit 1 in both cases
-- Timestamps: 2026-09-12 · Outputs captured to `docs/reviews/execution-logs/r2-health-check-head-2026-09-12.txt` and `…-base-2026-09-12.txt`
-
-HEAD emits **six** `✗` lines, not four:
-
-```
-  ✗ In global-instructions/CLAUDE.md but not AGENTS.md: parallel-worktrees.md
-  ✗ In global-instructions/CLAUDE.md but not GEMINI.md: parallel-worktrees.md
-  ✗ .apir5-probe2.sh
-  ✗ test/auto-approve-allowed-commands.bats
-  ✗ test/init-firewall-rules.bats
-  ✗ test/cc-isolated-functions.bats
-```
-
-The last four are the shellcheck section — presumably the "four" the message counted. The first two come from `check_md_consistency`, which calls `fail`, not `warn`:
-
-```bash
-# scripts/health-check.sh:265-270
-            if [[ -n "$only_in_ref" ]]; then
-                fail "In ${files[0]} but not $mdfile: $only_in_ref"
-            fi
-```
-
-All six are pre-existing: the baseline run reproduces every one (with `CLAUDE.md` in place of `global-instructions/CLAUDE.md` in the first two labels). The baseline run also showed a seventh, `✗ BATS tests failed` from `test/hooks/log-usage.bats:1`; that is a **worktree artifact, not a baseline difference** — executed control: the same test also fails in a detached worktree checked out at HEAD (`bats test/hooks/log-usage.bats` in `$scratchpad/headwt` → `not ok 1 skill invocation is logged with all fields`) while passing in `/workspace` at HEAD. So the in-place failure sets are genuinely identical.
-
-Precise version: "health-check failures are identical to the pre-change baseline (six, all pre-existing — four shellcheck, two MD-consistency)."
-
-**Evidence:** `scripts/health-check.sh:262-272`, `docs/reviews/execution-logs/r2-health-check-head-2026-09-12.txt`, `docs/reviews/execution-logs/r2-health-check-base-2026-09-12.txt`
+**Evidence:** `scripts/lite-review.py:26-30`, `docs/decisions/log.md:70`
 
 ---
 
-## Claim 23: "agents-gemini-sync, cross-reference-integrity, guide-index-sync and link-claude-home-wiring all pass"
+## Claim 12: "An EOF stdin must decline *and say so*: before `read -r reply || reply=\"\"`, errexit killed the script at the prompt and this line never printed."
 
-**Location:** commit `c56be81` message, "Verified:" paragraph
+**Location:** `test/cc-isolated-functions.bats:483-484`
 **Type:** Behavioral
 **Verdict:** Verified
 **Confidence:** High
 **Verification mode:** executed
-**Scope:** Covers the four named bats suites at HEAD; does not establish that these four are the *right* suites to have run for this change, and does not cover suites that need model calls.
+**Scope:** Covers the truth of the historical statement about the pre-fix script and the discriminating power of the `Aborted. Nothing was changed.` assertion the comment introduces; does **not** establish that the assertion on the next line, `[ "$status" -eq 1 ]`, discriminates — it does not, and the comment sits directly above it, so a reader could take the status check as the new teeth.
 
-- Command: `bats test/agents-gemini-sync.bats test/cross-reference-integrity.bats test/guide-index-sync.bats test/link-claude-home-wiring.bats`
-- cwd: `/workspace` · Exit code: 0 · Timestamp: 2026-09-12
-- Output: 13 `ok`, 0 `not ok`, including `ok 10 every command in wiring.json points at a hook that exists` and `ok 13 the deny rules the guard hook's HARD tier depends on are wired`.
-
-**Evidence:** `test/agents-gemini-sync.bats`, `test/cross-reference-integrity.bats`, `test/guide-index-sync.bats`, `test/link-claude-home-wiring.bats`, `docs/reviews/execution-logs/r2-verification-commands-2026-09-12.txt`
-
----
-
-## Claim 24: "the basename staging was simulated against a file entry and a directory entry"
-
-**Location:** commit `c56be81` message, "Verified:" paragraph
-**Type:** Behavioral
-**Verdict:** Verified
-**Confidence:** Medium
-**Verification mode:** executed
-**Scope:** Covers that the described simulation, when re-run now, produces the layout the change depends on. It does not and cannot establish that the author actually ran it at the time — that is a claim about an unrecorded past action, and no captured output exists in the repo. Confidence is Medium for that reason, not because the behaviour is in doubt.
-
-Re-derived in full under Claim 1: a file entry (`global-instructions/CLAUDE.md`) stages to `stage/CLAUDE.md` and a directory entry (`skills/`, containing a nested subdirectory) stages to `stage/skills/` with its subtree intact. Exit 0, 2026-09-12.
-
-**Evidence:** `devcontainer-config/install.sh:54-60`, `docs/reviews/execution-logs/r2-verification-commands-2026-09-12.txt`
-
----
-
-## Claim 25: "install.sh is not in enforcement_files(), so no Live-verified trailer is required."
-
-**Location:** commit `c56be81` message, `Notes:` line
-**Type:** Architectural
-**Verdict:** Verified
-**Confidence:** High
-**Verification mode:** static
-**Scope:** Covers both halves — `install.sh` is absent from `enforcement_files()`, and the commit-blocking hook's pattern does not match it. Does not establish that the change is *inconsequential* to the trust manifest: `install.sh` writes `claude-home/`, whose files `enforcement_files()` does hash, so this change alters the manifest at the next install even though the commit itself is ungated.
-
-`enforcement_files()` enumerates six literal names plus three globs, and `install.sh` is not among them:
+The comment's factual content — errexit killed the script at the prompt and the abort line never
+printed — was confirmed by running the pre-fix script (Claim 1: exit 1, output ends at
+`Install this config and bless it? [y/N] ` with no abort line). The complete assertion block it
+annotates:
 
 ```bash
-# devcontainer-config/cc-isolated.sh:107-129
-enforcement_files() {
-  local cfg
-  cfg="$(config_dir)"
-  echo "devcontainer.json"
-  echo "Dockerfile"
-  echo "init-firewall.sh"
-  echo "cc-sni-proxy.py"
-  echo "link-claude-home.sh"
-  echo "cc-isolated.sh"
+# test/cc-isolated-functions.bats:474-490 (complete @test body)
+@test "install.sh assembles the payload when every source is present" {
+  # Complement of the two above: proves the guard is not firing wholesale.
+  # Stdin is closed, so the run declines at the bless prompt — reaching that
+  # prompt is the marker that assembly got all the way past the guard.
+  root=$(fake_install_repo)
+  run env CLAUDE_DEVC_CONFIG_DIR="$BATS_TEST_TMPDIR/nodest" \
+      bash "$root/devcontainer-config/install.sh" </dev/null
+  [[ "$output" != *'payload source(s) not found'* ]]
+  [[ "$output" == *'bless it?'* ]]
+  # An EOF stdin must decline *and say so*: before `read -r reply || reply=""`,
+  # errexit killed the script at the prompt and this line never printed.
+  [ "$status" -eq 1 ]
+  [[ "$output" == *'Aborted. Nothing was changed.'* ]]
+  [ -e "$root/devcontainer-config/claude-home/CLAUDE.md" ]
+  [ -d "$root/devcontainer-config/claude-home/skills" ]
+}
 ```
 
-(excerpt ends :115; the enclosing function continues to :130 with the `egress/*.txt`, `projects/*.profile` and `claude-home` walks — read. None of the three adds `install.sh`; `install.sh` is also explicitly not installed, per `devcontainer-config/install.sh:24-25`.)
+(the `@test` body is complete — read; the two trailing filesystem assertions pass under both old
+and new behavior because the payload is staged before the prompt, which is what the pre-existing
+"reaching that prompt is the marker" comment describes.)
 
-The gate hook keys on the same set, as a repo-path regex:
+Of the two assertions the comment introduces, only the second discriminates: the pre-fix run also
+exited 1, so `[ "$status" -eq 1 ]` would have passed against the old code. The comment's wording
+("this line never printed") is true of the output assertion, and the commit message for `8980861`
+makes the same point explicitly — so the claim is accurate; the placement is the residue noted in
+`Scope`.
 
-```bash
-# hooks/live-verify-gate.sh:57
-enforcement='^devcontainer-config/(Dockerfile|devcontainer\.json|init-firewall\.sh|cc-sni-proxy\.py|link-claude-home\.sh|cc-isolated\.sh|egress/)'
-```
-
-`devcontainer-config/install.sh` does not match, so the hook does not block, and no trailer is required.
-
-**Evidence:** `devcontainer-config/cc-isolated.sh:107-130`, `devcontainer-config/install.sh:22-25`, `hooks/live-verify-gate.sh:55-58`
+**Evidence:** `test/cc-isolated-functions.bats:474-490`, `devcontainer-config/install.sh:101-110`, `docs/reviews/execution-logs/r2-old-install-behavior.txt`, `docs/reviews/execution-logs/r2-install-sh-tests.txt`
 
 ---
 
-## Claim 26: "The skill's content surface spans SKILL.md plus its references/ files ... Read in document order so section-extraction end anchors still follow their sections."
+## Claim 13: "nothing but this file holds the shape in place once the harness leaves" / "Keyless and offline throughout: parse_findings() is pure, so no `claude` call."
 
-**Location:** `test/skills/code-review-assurance-contract.bats:27-30`; identical comment at `test/skills/code-review-executable-defect.bats:23-26`, `test/skills/code-review-format-contract.bats:29-32`, `test/skills/code-review-soundness-crosscheck.bats:27-30`
-**Type:** Behavioral
+**Location:** `test/lite-review-grammar.bats:6-12`
+**Type:** Architectural / Behavioral
 **Verdict:** Verified
 **Confidence:** High
 **Verification mode:** executed
-**Scope:** Covers (a) that the concatenation order matches the order in which the three stub sections appear in `SKILL.md`, and (b) that the section-extraction helpers still terminate on a following heading rather than running to EOF. Does not establish that the concatenation is the *complete* content surface a real run loads (a run also follows links into `patterns/orchestrated-review.md`, which none of these suites concatenates).
+**Scope:** Covers that no other test file exercises this grammar and that the suite ran to completion with no API key in the environment and no network call; does not establish that the shape it holds is complete (Claim 5 shows it is not) nor that `lite-review.py`'s module-level import is free of side effects beyond the constants and function definitions read.
 
-The concatenation is `SKILL.md`, then chat-synthesis, rubric, override-log:
+No other test touches the grammar: `grep -rln "parse_findings\|FINDING_RE\|FINDINGS" test/` returns
+`test/lite-review-grammar.bats`, `test/skills/helpers.bash` and
+`test/skills/architecture-review-format.bats`, and the latter two match on an unrelated symbol —
+the skills' report-section heading, not this parser:
 
 ```bash
-# test/skills/code-review-assurance-contract.bats:31-34
-  SKILL_CONTENT=$(cat "$SKILL" \
-    "$SKILL_DIR/references/chat-synthesis.md" \
-    "$SKILL_DIR/references/rubric.md" \
-    "$SKILL_DIR/references/override-log.md" | tr -d '\r')
+# test/skills/helpers.bash:71
+  FINDINGS_BODY=$(echo "$REPORT_CONTENT" | sed -nE '/^## Findings/,/^## [^#]/p' | sed '1d;$d')
 ```
 
-(excerpt ends :34; the enclosing `setup()` closes at :35 in this file, and at :36 in `code-review-executable-defect.bats` where a `FLAT=` line follows — read.)
+Purity: `parse_findings` performs no I/O (complete function quoted at Claim 4b), and the module's
+only executable top level is imports and constants — the entry point is guarded:
 
-That is document order by the position of the corresponding stubs in `SKILL.md`: `## Deliverable 1: Chat Synthesis` at `:1132`, `## Deliverable 2: Code Review Rubric` at `:1142`, `## Override-Log` at `:1182`. (The `## Reference files` index at `:86-91` lists them in a different order — rubric, chat-synthesis, override-log — but that index is not what the extraction order has to track.)
+```python
+# scripts/lite-review.py:208-209
+if __name__ == "__main__":
+    sys.exit(main())
+```
 
-Executed confirmation of the end-anchor property: the whole seven-suite run passes, including the test written for exactly this hazard — `ok 97 the section-extraction end anchor exists (no silent extract-to-EOF)` (exit 0, 2026-09-12).
+Executed keyless: `env | grep -c ANTHROPIC_API_KEY` → 0, and the suite passed. Command:
+`bats test/lite-review-grammar.bats`, cwd `/workspace`, exit code 0, at
+2026-09-12T12:16:00-07:00 — `1..7`, all `ok`.
 
-**Evidence:** `test/skills/code-review-assurance-contract.bats:22-35`, `test/skills/code-review-executable-defect.bats:18-36`, `test/skills/code-review-format-contract.bats:25-36`, `test/skills/code-review-soundness-crosscheck.bats:22-35`, `skills/code-review/SKILL.md:1132`, `skills/code-review/SKILL.md:1142`, `skills/code-review/SKILL.md:1182`, `docs/reviews/execution-logs/r2-verification-commands-2026-09-12.txt`
+**Evidence:** `test/lite-review-grammar.bats:1-12`, `test/skills/helpers.bash:71`, `scripts/lite-review.py:86-108`, `scripts/lite-review.py:208-209`, `docs/reviews/execution-logs/r2-lite-review-grammar.txt`
 
 ---
 
-## Claim 27: "The rubric template moved into the skill's references/ dir 2026-09-11 (prompt audit F8); the golden fixture is still compared against it."
+## Claim 14: commit `8980861` — "All 5 install.sh tests pass"
 
-**Location:** `test/skills/code-review-format-contract.bats:183-185`
+**Location:** commit message `8980861`
 **Type:** Behavioral
 **Verdict:** Verified
 **Confidence:** High
 **Verification mode:** executed
-**Scope:** Covers that `SKILL_MD` points at the file that now holds the template and that the golden-sync tests pass against it; does not establish that the golden fixture itself is still the right fixture for the current rubric semantics.
+**Scope:** Covers the count and pass state of the bats tests whose names contain `install.sh` at `435f46a` (HEAD), on this machine; does not establish the state at `8980861` itself, nor that five is the complete set of tests exercising `install.sh` behavior indirectly.
 
-```bash
-# test/skills/code-review-format-contract.bats:183-185
-# The rubric template moved into the skill's references/ dir 2026-09-11
-# (prompt audit F8); the golden fixture is still compared against it.
-SKILL_MD="skills/code-review/references/rubric.md"
+Command: `bats -f "install.sh" test/cc-isolated-functions.bats`, cwd `/workspace`, exit code 0, at
+2026-09-12T12:16:17-07:00. Exactly five tests, all passing:
+
+```
+1..5
+ok 1 install.sh stages the payload from the repo root
+ok 2 install.sh aborts when a payload source is missing
+ok 3 install.sh names every missing payload source, not just the first
+ok 4 install.sh assembles the payload when every source is present
+ok 5 every regular file in install.sh's PAYLOAD is hashed by enforcement_files
 ```
 
-The template is indeed there — `## Deliverable 2: Code Review Rubric` at `skills/code-review/references/rubric.md:5`, with the fenced `# Code Review Rubric` template body opening at `:29-30`. The 18 tests in this suite pass (exit 0, 2026-09-12).
+Compared against the logged hallucination pattern *"'All 85 tests across the code-review suites
+pass' claimed in commit 59ca38f … but the suites hold 97"* (first seen 2026-09-12) — same class
+(a test-count denominator in a commit message). Recounted; this one holds.
 
-**Evidence:** `test/skills/code-review-format-contract.bats:178-190`, `skills/code-review/references/rubric.md:5-30`, `docs/reviews/execution-logs/r2-verification-commands-2026-09-12.txt`
+The accompanying sentence "verified both behaviors directly before writing it" is a claim about
+the author's process, not about code — not checkable here; the *behaviors* it refers to were
+independently confirmed under Claims 1 and 6.
+
+**Evidence:** `test/cc-isolated-functions.bats:420-490`, `docs/reviews/execution-logs/r2-install-sh-tests.txt`
 
 ---
 
-## Claim 28: "Reference file for skills/code-review/SKILL.md. Extracted from the skill body 2026-09-11 (prompt audit F8) ... Edit here, not in the skill."
+## Claim 15: commit `435f46a` — "Fast suite: 623 passed, 0 failed" and "7 contract tests over parse_findings, keyless and offline since the parser is pure"
 
-**Location:** `skills/code-review/references/rubric.md:1-3`; identical header at `references/chat-synthesis.md:1-3` and `references/override-log.md:1-3`
-**Type:** Architectural
+**Location:** commit message `435f46a`
+**Type:** Behavioral
 **Verdict:** Verified
 **Confidence:** High
 **Verification mode:** executed
-**Scope:** Covers that the three files' bodies are the extracted originals rather than rewrites, and that no duplicate copy of the moved text remains in `SKILL.md` (so "edit here" is unambiguous). Does not establish that all three are actually *read* at their claimed stages at runtime.
+**Scope:** Covers the fast-category suite's total and failure count and the new file's test count at `435f46a` on this machine; does not establish the slow-category suite's state (not run) nor that 623 was the count at the moment the message was written.
 
-Line-by-line comparison of each reference body (header comment stripped) against the corresponding section of `git show 2d679ce:skills/code-review/SKILL.md`:
+Command: `scripts/run-tests.sh --fast`, cwd `/workspace`, exit code 0, at
+2026-09-12T12:16:40-07:00. The TAP plan is `1..623`; `grep -cE "^(ok|not ok) "` → 623 and
+`grep -c "^not ok"` → 0. The new file is included in that run (`grep -c lite-review-grammar` → 1
+on the captured log) and contributes exactly 7 (Claim 13). Both numeric claims reproduce exactly.
 
-- `rubric.md`: 502 body lines, **one** non-trivial difference — `[Deliverable 1](#deliverable-1-chat-synthesis)` became `[Deliverable 1](../SKILL.md#deliverable-1-chat-synthesis)`. Otherwise byte-identical.
-- `chat-synthesis.md`: 122 body lines, **two** differences, both link-depth fixes — `../../patterns/orchestrated-review.md` → `../../../patterns/…`, and `[The single-sample label](#the-single-sample-label)` → `(rubric.md#the-single-sample-label)`.
-- `override-log.md`: 48 body lines, **zero** content differences (trailing blank lines only).
+Compared against the same logged hallucination pattern as Claim 14; both denominators verified
+rather than accepted.
 
-All three rewritten links resolve (Claim 19). `SKILL.md` retains no copy of the moved bodies — its three stubs are 3–7 lines each and defer (`skills/code-review/SKILL.md:1134-1139`, `:1144-1150`, `:1184-1188`).
+The "keyless and offline" half is verified under Claim 13; "pins the shape" is verdicted
+separately at Claim 5 (Mostly accurate).
 
-**Evidence:** `skills/code-review/references/rubric.md:1-3`, `skills/code-review/references/chat-synthesis.md:1-3`, `skills/code-review/references/override-log.md:1-3`, `skills/code-review/SKILL.md:1132-1189`
+**Evidence:** `scripts/run-tests.sh`, `test/lite-review-grammar.bats:1-97`, `docs/reviews/execution-logs/r2-fast-suite.txt`, `docs/reviews/execution-logs/r2-lite-review-grammar.txt`
 
 ---
 
-## Claim 29: "Required structure, the coverage-and-escalations block, the considered-overrides block, the single-sample label and the next-action line are specified in **references/chat-synthesis.md**."
+## Claim 16: commit `435f46a` — "questions.md now has no open entries"
 
-**Location:** `skills/code-review/SKILL.md:1134-1136`; the commit-message bullet "references/chat-synthesis.md (126): chat deliverable structure, coverage and escalation blocks, single-sample label, next-action derivation" makes the same attribution
-**Type:** Reference
-**Verdict:** Mostly accurate
+**Location:** commit message `435f46a`
+**Type:** Configuration
+**Verdict:** Verified
 **Confidence:** High
-**Verification mode:** static
-**Scope:** Covers the five items the stub attributes to `chat-synthesis.md`; four are defined there outright, the fifth (single-sample label) is *used* there but *defined* in `rubric.md`. Does not establish the accuracy of the `Deliverable 2` stub's attributions (those all check out — Claim 17).
+**Verification mode:** executed
+**Scope:** Covers unchecked checkbox entries (`- [ ]`) in `docs/working/questions.md` at `435f46a`; does not establish that every closed entry's answer is correct (Claim 7 shows one is not), nor that no open question exists elsewhere in `docs/working/`.
 
-Four of the five are headings or blocks in the file: `### Structure the chat synthesis as:` (:9), `### Considered overrides` (:13), `### Coverage and Escalations` (:26), `#### Next-action derivation` (:86).
+Command: `grep -c "^- \[ \]" docs/working/questions.md`, cwd `/workspace`, exit code 1 (grep's
+no-match status), at 2026-09-12T12:20-07:00, output `0`. All eight entries are `- [x]`
+(`docs/working/questions.md:6-13`).
 
-The fifth is a cross-reference, not a specification:
-
-```markdown
-# skills/code-review/references/chat-synthesis.md:78-80
-This is the same standing label the rubric status line carries (see
-[The single-sample label](rubric.md#the-single-sample-label)) and it is the whole of the hedging —
-```
-
-The defining section `#### The single-sample label` lives at `skills/code-review/references/rubric.md:499`. `chat-synthesis.md` does fix the label's exact text and placement for the chat deliverable (`:77` gives the verbatim line and `:74-75` its position relative to `Recommended next action:`), so a reader following the stub is not sent to the wrong place — but the rationale and the canonical definition are one hop further. Precise version: "…and the placement of the single-sample label (defined in `references/rubric.md`)".
-
-**Evidence:** `skills/code-review/SKILL.md:1132-1139`, `skills/code-review/references/chat-synthesis.md:5-90`, `skills/code-review/references/rubric.md:493-509`
+**Evidence:** `docs/working/questions.md:6-13`
 
 ---
 
 ## Claims Requiring Attention
 
 ### Incorrect
-- **Claim 18** (commit `59ca38f` message; `docs/reviews/prompt-audit-2026-09-11.md:569`): "All 85 tests across the code-review suites pass" — the seven `test/skills/code-review-*.bats` suites contain **97** tests (all passing); the four suites this commit modified contain **53**. 85 matches no grouping, and the counts were identical before the change. Replace with 97 (or 53 if the modified suites were meant).
+- **Claim 7** (`docs/working/questions.md:11`): the pin's consumer enumeration is wrong in both directions — `scripts/dd-cross-model-sweep.py` does not reference `anthropic/claude-sonnet-5` at all (its `MODELS` list is kimi/gpt/gemini, no judge), and `archive/benchmark/scripts/review-arms.py:69,73` is an unnamed third consumer. Fix: replace "the archival `scripts/dd-cross-model-sweep.py`" with "the archived arm-set wrapper `archive/benchmark/scripts/review-arms.py`", or reword to "the only OpenRouter callers", which is what the surrounding argument actually needs. The conclusion ("neither on the production path") is unaffected.
 
 ### Stale
-- **Claim 20** (`workflows/pr-prep.md:183`): the link *label* still reads `` `skills/code-review/SKILL.md` `` while the href correctly points at `references/override-log.md#capture-format`. Update the label to `skills/code-review/references/override-log.md`.
+- None.
 
 ### Mostly Accurate
-- **Claim 8** (`docs/decisions/log.md:68`; commit `c56be81` message): "takes effect at the next install.sh + rebuild" is true for containers but silent on host-native installs, where the old `~/.claude/CLAUDE.md` symlink dangles at `git pull` time and must be recreated. Add that sentence.
-- **Claim 10** (commit `4d41add` message): "the last surviving `Task tool` reference" — two live occurrences remain outside `skills/` (`patterns/orchestrated-review.md:31`, `guides/skill-format-audit.md:156`). The audit's own F2 row scopes it correctly ("in the skill"); the commit message dropped the qualifier.
-- **Claim 22** (commit `c56be81` message; echoed in `59ca38f`): "(four, all pre-existing)" undercounts — `scripts/health-check.sh` emits **six** `fail` lines at HEAD (four shellcheck + two MD-consistency). "All pre-existing" and "identical to the baseline" are both confirmed; only the count is wrong.
-- **Claim 29** (`skills/code-review/SKILL.md:1136`; commit `59ca38f` message): the single-sample label is *used* in `references/chat-synthesis.md` but *defined* in `references/rubric.md:499`.
+- **Claim 4b** (`scripts/lite-review.py:24-31`, `docs/decisions/log.md:70`): "the two were byte-identical" is true of `FINDING_RE` but not of the grammar as a whole — the two `parse_findings` already differ on `FINDINGS: NONE` case-sensitivity, `FINDINGS :` block-header tolerance, and `parse_ok` semantics (lite returns `parse_ok=True` for any text containing the substring `FINDINGS`, including a refusal that emitted no block). Tighten to "the two `FINDING_RE` definitions were byte-identical; the surrounding parsers already differ."
+- **Claim 5** (`scripts/lite-review.py:30-31`, `docs/decisions/log.md:70`): "pins the shape" overstates — the suite pins `parse_findings`' behavior on seven sampled inputs and never reads `FINDING_RE`; a demonstrated mutation (severity set widened, line-range class narrowed to drop comma lists) passes all 7. Tighten to "pins the parser's behavior" and, if the regex is meant to be held, add a test that asserts on `FINDING_RE` or on a comma-separated line range.
+- **Claim 9** (`docs/working/questions.md:9`): "19 links at 17 sites" is A10's 2026-09-12 snapshot; the same method gives 21 links from 21 sites at `435f46a`. Attribute the figure to A10 or restate it.
 
 ### Unverifiable
-- **Claim 4b** (`scripts/cross-model-review.py:374`): whether `anthropic/claude-sonnet-5` is a live OpenRouter slug cannot be checked — this sandbox has no egress. Both the commit message and audit row F10 already flag it. Needed: one `GET https://openrouter.ai/api/v1/models` from a networked host before the next cross-model run.
-- **Claim 21b** (commit `59ca38f` message): "Stage 1's dispatch template (~240 lines)" names no unit the file delimits — Stage 1 is 302 lines (`:382-683`) and its pre-merge dispatch prose is 118 (`:382-499`). Stage 3's "~160" is exact (159). Needed: the line range the author measured.
+- **Claim 11** (`scripts/lite-review.py:26-30`): the E2/E3 lite-arm comparability invariant needs the E2/E3 arm manifest (which script produced the lite-arm rows) plus those rows, to re-parse under a mutated regex and observe the delta. That material is benchmark-side and scoped to the SWRBench fork.
+
+### Routing note
+None of the Incorrect or Mostly-accurate findings lands on an immutable already-merged commit
+message: Claim 7 is in `docs/working/questions.md` (editable), Claims 4b/5 are in
+`scripts/lite-review.py`, `docs/decisions/log.md` and `test/lite-review-grammar.bats` (editable),
+Claim 9 is in `docs/working/questions.md` (editable). The commit-message claims checked here
+(Claims 14, 15, 16) all verified, so no override-log routing is required. Note that `435f46a`'s
+message repeats the Claim 5 wording ("pins the shape") and `docs/decisions/log.md:70` repeats it
+in a mutable file — fixing the log row is sufficient; the commit message stays as shipped.
+
+### Legibility targets
+- Claim 1 — for-author
+- Claim 2 — for-orchestrator-synthesis
+- Claim 3 — for-author
+- Claim 4a — for-automated-gate
+- Claim 4b — for-author
+- Claim 5 — for-author
+- Claim 6 — for-orchestrator-synthesis
+- Claim 7 — for-author
+- Claim 8 — for-orchestrator-synthesis
+- Claim 9 — for-author
+- Claim 10 — for-orchestrator-synthesis
+- Claim 11 — for-orchestrator-synthesis
+- Claim 12 — for-author
+- Claim 13 — for-automated-gate
+- Claim 14 — for-automated-gate
+- Claim 15 — for-automated-gate
+- Claim 16 — for-automated-gate
 
 ---
 
 ## Goal-Alignment Note
 
-**Answered.** All ten items in the shared brief were checked against the code that exercises them rather than the file the claim sits in: the install/link/Dockerfile chain for the basename change (1, 2, 3, 6, 16, 24), `enforcement_files()` *and* the gate hook regex for the trailer claim (25), a slug-resolving anchor sweep over the skill, its references and all external referrers for the split (19, 20), a re-derivation of the health-check baseline including a worktree control that isolated a false extra failure (22), an independent test-count audit that refutes the "85" figure (18), a repo-wide sweep confirming no live site still carries the retired word cap (12), and a line-by-line diff of every moved block against its pre-move original (28). Four claims were verified by execution with captured output; the rest are static reads of complete enclosing units.
+**Answered.** The user's goal — review the last three commits on main before the work is
+considered settled — is served by this pass on the fact-check dimension. Every claim the brief
+named was checked; eleven verified (six by execution), three tightened, one refuted, one left
+Unverifiable with the specific missing artifact named. The one refutation (Claim 7) is a
+documentation error inside a closed question entry, not a code defect: the argument that closed
+Q6 survives it, because all three real consumers of the pin are benchmark/archive code and none
+is on the production review path. The grammar-ownership move (`435f46a`) is sound at the level it
+claims — `FINDING_RE` is byte-identical and the test suite is real, keyless and green — but two
+of its supporting claims overstate: "the grammar" is broader than the regex and the two files'
+parsers have already diverged, and the new suite pins the parser's behavior rather than the
+regex.
 
-**Out of scope.** Whether the split actually reduces loaded tokens at runtime, whether the reworded F3/F4/F6 prose changes model behaviour, and whether the orchestrator evals in `test/skills/` still pass — all need model calls, which the commit messages themselves correctly flag as unexercised. Design judgments (is `rubric.md` the right cut line? is 500 lines the right ceiling for a skill?) belong to the sibling critics, not here.
+**Out of scope.** Whether the parser divergence between `lite-review.py` and
+`cross-model-review.py` *should* be reconciled, whether the `parse_ok` substring check is a bug,
+and whether the missing regex-level test is worth adding — all code-quality judgements belonging
+to `api-consistency-reviewer` / `architecture-review` / `test-strategy`, not to this pass. Also
+out of scope: whether `anthropic/claude-sonnet-5` resolves on OpenRouter (untestable — no funded
+account), which row 48 deliberately leaves unverified.
 
-**Escalate.** One item, for the orchestrator: **Claim 18's "85"** appears in two places — a commit message (immutable) and `docs/reviews/prompt-audit-2026-09-11.md:569` (editable). The audit doc is the one a future pass will read as the record of what was verified, so the fix belongs there. The same paragraph's other figures (1,909 → 1,256; 515/126/52) are all exact, which makes the wrong one easy to trust by association — that is the specific risk worth surfacing. It is also the third instance in this project's log of a *specific measured value quoted as if read off a checked-in artifact set that does not contain it*; the pattern has now recurred across three unrelated review passes, which is a calibration signal about how measured counts get into commit prose here, not just a one-off typo.
+**Escalate.** One item for the orchestrator: Claim 4b's executed differential shows
+`lite-review.py`'s `parse_findings` returns `parse_ok=True` for model output that contains the
+word `FINDINGS` but emitted no block — the exact failure mode
+`test/lite-review-grammar.bats:80-87` exists to detect, and the live review path is the consumer.
+That is a behavioral divergence a critic should look at on its merits; this pass records only
+that the header's identity claim does not cover it.
 
-**Questions I would have asked.** (1) Was the 85 read off a filtered `bats` run (e.g. a `--filter` or a partial file list) that is worth recording alongside the number? (2) Does any host-native install of this repo exist, or is cc-isolated the only deployment — that determines whether Claim 8's residue is a real breakage or a documentation-only gap.
+**Questions I would have asked.** (1) Was `scripts/dd-cross-model-sweep.py` named in Q6 because
+it calls OpenRouter, rather than because it uses the pin? If so, the sentence needs "OpenRouter
+callers", not "consumers of the pin", and `archive/benchmark/scripts/review-arms.py` should
+still be listed. (2) Is the E2/E3 lite-arm comparability invariant meant to bind
+`parse_findings` as well as `FINDING_RE`? The answer determines whether Claim 4b's divergence is
+a latent comparability break or an intended difference.

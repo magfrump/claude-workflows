@@ -1,0 +1,21 @@
+2026-09-12T12:16:17-07:00
+cwd=/workspace
+bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+1..5
+bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+ok 1 install.sh stages the payload from the repo root
+bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+ok 2 install.sh aborts when a payload source is missing
+bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+ok 3 install.sh names every missing payload source, not just the first
+bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+ok 4 install.sh assembles the payload when every source is present
+bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+ok 5 every regular file in install.sh's PAYLOAD is hashed by enforcement_files
+EXIT=0

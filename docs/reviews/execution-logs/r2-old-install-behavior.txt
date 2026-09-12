@@ -1,0 +1,11 @@
+2026-09-12T12:21:07-07:00
+cwd=/workspace
+script: scratchpad/oldrepo.sh (stages install.sh from 8980861~1 = pre-fix, runs it with stdin closed)
+bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+Canonical (repo):  /tmp/claude-1000/-workspace/069518a5-919f-46b0-ba81-1e00bce5effa/scratchpad/oldrepo/devcontainer-config
+Installed (host):  /tmp/claude-1000/-workspace/069518a5-919f-46b0-ba81-1e00bce5effa/scratchpad/oldrepo/nodest
+
+First install — /tmp/claude-1000/-workspace/069518a5-919f-46b0-ba81-1e00bce5effa/scratchpad/oldrepo/nodest does not exist yet.
+
+Install this config and bless it? [y/N] EXIT=1

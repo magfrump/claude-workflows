@@ -1,0 +1,22 @@
+=== current FINDING_RE ===
+^\s*\d+\.\s*(?P<path>[^|:]+?)(?::(?P<lines>[\d\-, ]+))?\s*\|\s*(?P<sev>Critical|High|Medium|Low|Informational)\s*\|\s*(?P<domain>[^|]+)\|\s*(?P<title>[^|]+)\|\s*(?P<desc>.+)$
+
+--- N1 unknown severity (Blocker)
+    input: 'FINDINGS:\n1. a.py:1 | Blocker | security | T | D'
+    current regex   -> rows=0 parse_ok=True  (recommended test asserts 0 rows -> PASSES)
+    mutation (severity alternation widened with Blocker) -> rows=1  (recommended test -> FAILS (mutation caught))
+
+--- N2 empty description
+    input: 'FINDINGS:\n1. a.py:1 | High | security | Title |'
+    current regex   -> rows=0 parse_ok=True  (recommended test asserts 0 rows -> PASSES)
+    mutation (desc group widened from .+ to .*) -> rows=1  (recommended test -> FAILS (mutation caught))
+
+--- N3 '- ' bullet row
+    input: 'FINDINGS:\n- a.py:1 | High | security | T | D'
+    current regex   -> rows=0 parse_ok=True  (recommended test asserts 0 rows -> PASSES)
+    mutation (row prefix widened to accept '- ') -> rows=1  (recommended test -> FAILS (mutation caught))
+
+--- P1 comma-separated range (recommended positive test)
+    input: 'FINDINGS:\n1. a.py:10,14-16 | High | security | T | D'
+    current regex -> rows=1 lines=10,14-16 path=a.py
+    narrowing mutation ([\d\-, ]+ -> [\d\-]+) -> rows=0 (caught)
