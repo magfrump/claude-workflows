@@ -446,6 +446,16 @@ def main():
                 print(f"  {m}: ~${per_call:.3f}/call")
         elif args.models:
             print(f"no pricing available for: {', '.join(unpriced) or 'any model'} — no $ projection")
+        # The judge is pinned, not passed in --models, so the unpriced guard above
+        # never sees it: a bad or unpriced judge id used to surface only as a
+        # stage-2 API error, after stage 1 had already been paid for. Surface it
+        # pre-flight. This warns rather than aborts because the judge is consulted
+        # only when stage-2 matching runs, and that is not knowable here — see
+        # docs/working/questions.md for the hard-abort alternative.
+        if pricing and pricing.get(args.judge, (0, 0)) == (0, 0):
+            print(f"WARNING: no pricing for judge {args.judge} — unknown or unpriced model id. "
+                  f"Stage-2 matching will fail at call time if the id is wrong, and its cost is "
+                  f"not in the projection above.", file=sys.stderr)
         if args.dry_run:
             with open(os.path.join(args.out, "prompt.txt"), "w") as fh:
                 fh.write(prompt)

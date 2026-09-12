@@ -1,6 +1,8 @@
-<!-- Reference file for skills/code-review/SKILL.md. Extracted from the skill body
-     2026-09-11 (prompt audit F8) so it loads when the orchestrator reaches the
-     stage that needs it, not on every trigger. Edit here, not in the skill. -->
+# Code Review Rubric Format
+
+Reference for the `code-review` skill. Load this file when you begin tiering findings —
+Stage 1.5 and Stage 2.5 consult the severity mapping, and Stage 3 needs the template.
+Extracted from the skill body 2026-09-11 (prompt audit F8). Edit here, not in the skill.
 
 ## Deliverable 2: Code Review Rubric
 

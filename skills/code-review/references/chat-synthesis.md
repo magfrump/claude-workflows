@@ -1,6 +1,8 @@
-<!-- Reference file for skills/code-review/SKILL.md. Extracted from the skill body
-     2026-09-11 (prompt audit F8) so it loads when the orchestrator reaches the
-     stage that needs it, not on every trigger. Edit here, not in the skill. -->
+# Chat Synthesis Format
+
+Reference for the `code-review` skill. Load this file at Stage 3, before writing the chat
+deliverable. Extracted from the skill body 2026-09-11 (prompt audit F8). Edit here, not in
+the skill.
 
 ## Deliverable 1: Chat Synthesis
 

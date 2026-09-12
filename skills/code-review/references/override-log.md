@@ -1,6 +1,8 @@
-<!-- Reference file for skills/code-review/SKILL.md. Extracted from the skill body
-     2026-09-11 (prompt audit F8) so it loads when the orchestrator reaches the
-     stage that needs it, not on every trigger. Edit here, not in the skill. -->
+# Override-Log Format
+
+Reference for the `code-review` skill. Load this file at Step 3.5 (reading the log) and
+after the run (appending to it). Extracted from the skill body 2026-09-11 (prompt audit
+F8). Edit here, not in the skill.
 
 ## Override-Log
 
