@@ -90,6 +90,13 @@ Ordered by confidence, highest first.
 | **Why obsolete** | Provenance is explicit: `git log -S'These rules are absolute'` dates the block to `ca10c6f` (2026-03-17, "Add fact-checking and draft review skills from claude-cowork") and `a127298` / `ee1c4e8` (2026-03-20/23) — written for a generation that under-followed system instructions. On the target model, blanket emphasis stops carrying information once several instructions each claim to be critical, and an anxious prompt produces a cautious, hedging model. The *substance* is load-bearing and stays: the orchestrator-not-analyst contract, the stage ordering, and the honest-gap rule are all things only the author knows. What goes is the volume and the second statement of rule 1. |
 | **Action** | `rewrite` — state the contract plainly with its reason; delete the restatement at `code-review:788` / `draft-review:197` since rule 1 already says it (F2's tool-name fix rides along). |
 
+*Scope note (added 2026-09-12).* `skills/ui-visual-review/SKILL.md` carried a fourth block under
+the same heading and is deliberately **not** in F3's location list. It is a critic, not an
+orchestrator: its five rules are distinct domain guidance rather than one contract inflated into
+MUST-rules, and it carries none of the markers above — no absolute-rules preamble, no
+`MUST`/`No exceptions.`, no later restatement. Its heading was renamed to `## Execution rules`
+for consistency on 2026-09-12; the rule body stands. Recorded in `docs/reviews/override-log.md`.
+
 ### F4 — The `<300 words` sub-agent output cap · **High** · `rewrite`
 
 | | |

@@ -55,7 +55,7 @@ Guiding principle: **users should never have to guess** whether they can scroll,
 
 ---
 
-## Mandatory Execution Rules
+## Execution rules
 
 1. **Project-local guidelines are your primary authority.** Before anything else, check
    for a project-local UI guidelines document (e.g., `docs/UI_LAYOUT_GUIDELINES.md`). If
