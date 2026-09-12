@@ -180,7 +180,7 @@ For each finding: confirm it's real by reading the code, then fix. Commit in coh
 
 **Every finding you decline to fix is an override, and the row gets written in this step**,
 before the fix commit lands. Append to `docs/reviews/override-log.md` using the format in
-[`skills/code-review/SKILL.md`](../skills/code-review/SKILL.md#capture-format) — Date, PR
+[`skills/code-review/SKILL.md`](../skills/code-review/references/override-log.md#capture-format) — Date, PR
 ref, Finding (with `path:line` and the surfacing critic), Original verdict, Override
 verdict, Reason.
 

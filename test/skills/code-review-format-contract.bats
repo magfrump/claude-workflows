@@ -24,9 +24,17 @@ fail() { echo "$1" >&2; return 1; }
 setup() {
   [ -f "$FIXTURE" ] || fail "Golden fixture missing at $FIXTURE"
   FIXTURE_CONTENT=$(tr -d '\r' < "$FIXTURE")
-  SKILL="skills/code-review/SKILL.md"
+  SKILL_DIR="skills/code-review"
+  SKILL="$SKILL_DIR/SKILL.md"
   [ -f "$SKILL" ] || skip "code-review SKILL.md not found at $SKILL"
-  SKILL_CONTENT=$(tr -d '\r' < "$SKILL")
+  # The skill's content surface spans SKILL.md plus its references/ files: the
+  # deliverable templates, rubric semantics and override-log format were extracted
+  # 2026-09-11 (prompt audit F8) so they load at the stage that needs them. Read in
+  # document order so section-extraction end anchors still follow their sections.
+  SKILL_CONTENT=$(cat "$SKILL" \
+    "$SKILL_DIR/references/chat-synthesis.md" \
+    "$SKILL_DIR/references/rubric.md" \
+    "$SKILL_DIR/references/override-log.md" | tr -d '\r')
 }
 
 # Extract one "## <heading>" section, excluding the next heading line.
@@ -172,7 +180,9 @@ section() {
 # template embedded in skills/code-review/SKILL.md and require the golden to match it, so
 # the mirroring either happens or the suite goes red.
 
-SKILL_MD="skills/code-review/SKILL.md"
+# The rubric template moved into the skill's references/ dir 2026-09-11
+# (prompt audit F8); the golden fixture is still compared against it.
+SKILL_MD="skills/code-review/references/rubric.md"
 
 # Emit the fenced markdown rubric template from the skill.
 skill_template() {
