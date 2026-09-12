@@ -29,13 +29,13 @@ This research is included in every sub-agent briefing so they don't re-investiga
 ### Step 3 — Dispatch sub-agents with focused briefings
 
 **Sub-agent A (auth service):**
-> "We're migrating from identity API v1 to v2. v2 uses JWTs (claims: sub, org_id, roles[]) validated locally instead of opaque tokens validated via introspection. Examine `src/auth/middleware.ts` and `src/auth/token-validator.ts`. Answer: (1) Where does token introspection happen today? (2) What fields from the introspection response are used downstream? (3) Are there tests covering auth failure cases? Report in under 300 words."
+> "We're migrating from identity API v1 to v2. v2 uses JWTs (claims: sub, org_id, roles[]) validated locally instead of opaque tokens validated via introspection. Examine `src/auth/middleware.ts` and `src/auth/token-validator.ts`. Answer: (1) Where does token introspection happen today? (2) What fields from the introspection response are used downstream? (3) Are there tests covering auth failure cases? Report conclusions first."
 
 **Sub-agent B (billing service):**
-> "We're migrating from identity API v1 to v2. The user-lookup endpoint changes from `/v1/users/{id}` to `/v2/users/{id}` and now requires `org_id` as a query parameter. Examine `src/billing/invoice-service.ts` and `src/billing/user-resolver.ts`. Answer: (1) Which v1 user-lookup fields does billing actually use? (2) Where does it get the user ID from? (3) Does it have access to `org_id` in its current call chain? Report in under 200 words."
+> "We're migrating from identity API v1 to v2. The user-lookup endpoint changes from `/v1/users/{id}` to `/v2/users/{id}` and now requires `org_id` as a query parameter. Examine `src/billing/invoice-service.ts` and `src/billing/user-resolver.ts`. Answer: (1) Which v1 user-lookup fields does billing actually use? (2) Where does it get the user ID from? (3) Does it have access to `org_id` in its current call chain? Report conclusions first."
 
 **Sub-agent C (notifications service):**
-> "We're migrating from identity API v1 to v2. Same endpoint change as billing (see above). Examine `src/notifications/` directory. Answer: (1) How does it resolve user contact info (email, phone)? (2) Does it cache identity responses? If so, what's the TTL and invalidation strategy? (3) Does it batch user lookups or call per-notification? Report in under 200 words."
+> "We're migrating from identity API v1 to v2. Same endpoint change as billing (see above). Examine `src/notifications/` directory. Answer: (1) How does it resolve user contact info (email, phone)? (2) Does it cache identity responses? If so, what's the TTL and invalidation strategy? (3) Does it batch user lookups or call per-notification? Report conclusions first."
 
 **What makes these briefings work:**
 - Each states the goal and the relevant v2 context (the sub-agent has zero prior knowledge)

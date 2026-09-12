@@ -128,21 +128,19 @@ Rules:
 
 When this bullet is present, the orchestrator scans the entries across sub-agents during synthesis. A single decision is informational and may not need surfacing. A pattern of decisions trending the same way (e.g., every critic narrowing scope, every critic preferring the higher severity rung on borderline calls) is a drift signal worth surfacing to the user, attributed to the sub-agents that raised it.
 
-#### Default output cap
+#### Default output shape
 
-Every dispatched sub-agent should have an output cap stated in its dispatch instructions. The recommended default convention is:
+Every dispatched sub-agent should be told what shape its output takes. The default convention:
 
-> `<300 words summary; structured output may extend.`
+> `Lead with conclusions; prose only where the structured output can't carry the point.`
 
 What this means:
 
-- **Prose** (narrative findings, recommendations, explanations) fits within ~300 words. Sub-agents that exceed this are usually padding or doing the orchestrator's synthesis work.
-- **Structured output** (rubrics, decision matrices, tables, code-review reports with required fields) may extend beyond the cap when the structure itself is the deliverable. The cap applies to the prose around the structure, not the structure.
-- The **Goal-Alignment Note** above is bounded separately by its bullet-form structure (three required, up to two optional) and does not count against the cap.
+- **Prose** (narrative findings, recommendations, explanations) states the conclusion first and stops there. The orchestrator reads every sub-agent's output during synthesis, so a buried lede costs the whole pass; re-deriving context the orchestrator already has costs it twice.
+- **Structured output** (rubrics, decision matrices, tables, code-review reports with required fields) is the deliverable wherever the shape is defined — prefer it to prose rather than wrapping it in prose.
+- The **Goal-Alignment Note** above is bounded by its bullet-form structure (three required, up to two optional).
 
-Why a cap: the orchestrator must read every sub-agent's output during synthesis. A bounded prose budget keeps synthesis cost predictable and pushes sub-agents to surface conclusions rather than buried-lede analysis.
-
-Workflows whose domain genuinely needs more prose should override the default explicitly in the dispatch instructions and state why (e.g., "report in under 600 words because architectural narratives need room"). Workflows that don't specify a cap inherit this default.
+Where a dispatch genuinely needs a hard shape — a three-column table, one sentence per function, a fixed set of fields — state the shape. A structural requirement is a format instruction and belongs in the dispatch; a word count is not, and clamping prose length on a hard question buys scannability by starving the analysis.
 
 #### Context curation
 

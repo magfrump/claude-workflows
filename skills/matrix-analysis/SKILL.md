@@ -31,24 +31,19 @@ Produce two deliverables: a freeform chat synthesis and a structured matrix docu
 
 ---
 
-## Mandatory Execution Rules
+## Execution rules
 
-These rules are absolute. Do not deviate from them under any circumstances.
+Dispatch every evaluation to a sub-agent via the Agent tool. Scoring items yourself defeats
+the point of the matrix: the comparison is only worth reading if each cell came from an
+independent pass.
 
-1. You MUST use the Agent tool to spawn sub-agents for ALL evaluation work. You MUST NOT
-   score or evaluate items yourself. You are the orchestrator, not an evaluator. If you find
-   yourself writing assessments of how well an item meets a criterion, STOP — you are doing
-   a sub-agent's job.
+The stages are sequential because each one consumes the previous one's output. Finish Stage 1
+(setup) before dispatching Stage 2 (evaluation), and collect every evaluation result before
+Stage 3 (synthesis). Produce neither deliverable until every sub-agent you dispatched has
+reported.
 
-2. You MUST complete Stage 1 (setup) before starting Stage 2 (evaluation).
-
-3. You MUST receive results from ALL evaluation sub-agents before starting Stage 3 (synthesis).
-
-4. You MUST NOT produce the matrix document or chat synthesis until you have received
-   results from every sub-agent you dispatched. No exceptions.
-
-5. If a sub-agent fails or returns empty, note this honestly in the synthesis. Do not fill in
-   the gap yourself.
+If a sub-agent fails or returns empty, say so in the synthesis rather than filling the gap
+yourself — a silent gap reads as coverage the matrix never had.
 
 ---
 
@@ -222,12 +217,11 @@ For each criterion sub-agent, include in the prompt:
 [One sentence: what most separates the strongest from the weakest on this criterion?]
 ```
 
-   **Output cap:** Apply the canonical sub-agent convention — `<300 words summary;
-   structured output may extend.` (see `patterns/orchestrated-review.md` §"Default output
-   cap"). The per-item rating blocks, ranking, and key differentiator above are structured
-   output and may extend; the `Rationale` fields are prose and share the 300-word budget across
-   all items. Rationales padded beyond 2-3 sentences each force the orchestrator to re-read
-   filler during synthesis.
+   **Output shape:** Apply the canonical sub-agent convention (see
+   `patterns/orchestrated-review.md` §"Default output shape"). The per-item rating blocks,
+   ranking, and key differentiator are the deliverable. Each `Rationale` is prose: name the
+   evidence that decided the score and stop. Rationales that restate the criterion or hedge
+   across alternatives force the orchestrator to re-read filler during synthesis.
 
 8. **Instruction to be fair and evidence-based.** The sub-agent evaluates based on evidence,
    not assumptions. If it cannot determine a rating for an item on this criterion, it says

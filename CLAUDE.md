@@ -47,10 +47,6 @@ For worked examples of these defaults (hypothesis formation, the 3-hypothesis es
 
 Full workflow doc: `workflows/parallel-worktrees.md` (dispatch details, merge-and-reconcile mechanics, failure modes). The summary below is the routing trigger; load the workflow when actually fanning out.
 
-When a single message bundles **2+ independent tasks** — the common case being a batch of end-user feedback — the default failure is to grind through them sequentially in the main agent. Don't. Fan out.
-
-**Recognize a batch.** Any of these is enough: a numbered or bulleted list of asks; an enumeration phrasing ("a few things", "couple of bugs", "here's the feedback", "the following issues"); or several distinct imperatives in one message ("fix X, add Y, and change Z"). The bar is deliberately low — when in doubt whether two asks are independent, treat them as independent and fan out; merging back N small worktrees is cheap, re-running a sequential pass is not.
-
 **The procedure:**
 
 1. **Split.** Restate the batch as an explicit numbered task list (this is also the user's confirmation that you parsed their feedback correctly). Group any items that genuinely share files or state into one unit — those go to a single subagent so they don't collide.

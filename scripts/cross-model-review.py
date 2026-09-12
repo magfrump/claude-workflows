@@ -369,7 +369,9 @@ def main():
     ap.add_argument("--range", dest="rev_range", help="git diff range, e.g. 'abc~1..abc'")
     ap.add_argument("--models", nargs="+", default=[], help="OpenRouter model ids")
     ap.add_argument("--replicates", type=int, default=2)
-    ap.add_argument("--judge", default="anthropic/claude-sonnet-4.5", help="pinned judge model for stage-2 matching")
+    # Pinned on purpose: changing the judge breaks score comparability with earlier runs.
+    # Re-baseline deliberately and note the cutover in the run log when you move it.
+    ap.add_argument("--judge", default="anthropic/claude-sonnet-5", help="pinned judge model for stage-2 matching")
     ap.add_argument("--slack", type=int, default=5, help="line-overlap slack for stage-1 matching")
     ap.add_argument("--max-usd", type=float, default=5.00, help="abort if projected spend exceeds this")
     ap.add_argument("--out", required=True, help="output directory")

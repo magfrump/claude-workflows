@@ -56,32 +56,25 @@ Produce two deliverables: a freeform chat summary and a structured code review r
 
 ---
 
-## Mandatory Execution Rules
+## Execution rules
 
-These rules are absolute. Do not deviate from them under any circumstances.
+Dispatch every fact-check and critique to a sub-agent via the Agent tool. Writing analytical
+observations about the code yourself defeats the point of the orchestration: the synthesis is
+only worth reading if the findings came from independent passes.
 
-1. You MUST use the Agent tool to spawn sub-agents for ALL fact-checking and critique work.
-   You MUST NOT write fact-checks or critiques yourself. You are the orchestrator, not an
-   analyst. If you find yourself writing analytical observations about the code, STOP — you
-   are doing a sub-agent's job.
+The stages are sequential because each one consumes the previous one's output. Finish Stage 1
+(code fact-check) and read its results before dispatching Stage 2 (critics); collect every
+critic result before Stage 2.5 (endorsement-claim verification, when it applies) and merge its
+verdicts before Stage 3 (synthesis and rubric). Produce neither deliverable until every
+sub-agent you dispatched has reported.
 
-2. You MUST complete Stage 1 (code fact-check) and receive its results before starting
-   Stage 2 (critics).
+If a sub-agent fails or returns empty, say so in the synthesis rather than filling the gap
+yourself — a silent gap reads as coverage the review never had.
 
-3. You MUST complete Stage 2 (critics) and receive ALL critic results before starting
-   Stage 2.5 (endorsement-claim verification, when it applies) or Stage 3 (synthesis and
-   rubric). When Stage 2.5 runs, you MUST receive and merge its verdicts before Stage 3.
-
-4. You MUST NOT produce the code review rubric or chat synthesis until you have received
-   results from every sub-agent you dispatched. No exceptions.
-
-5. If a sub-agent fails or returns empty, note this honestly in the synthesis. Do not fill
-   in the gap yourself.
-
-6. You MUST read `docs/reviews/override-log.md` during Step 3.5 of "Before You Begin" and
-   surface every matching row in both deliverables. The "no prior overrides matched this
-   diff" sentinel is not optional — emit it explicitly when the scan returns nothing so
-   the log cannot become write-only. See [Override-Log](#override-log) for capture format.
+Read `docs/reviews/override-log.md` during Step 3.5 of "Before You Begin" and surface every
+matching row in both deliverables. When the scan returns nothing, emit the "no prior overrides
+matched this diff" sentinel explicitly — without it the log becomes write-only and nobody can
+tell a clean scan from a skipped one. See [Override-Log](#override-log) for capture format.
 
 ---
 
@@ -785,7 +778,7 @@ Chain mode adds one round-trip of latency to Stage 2 (the downstream critic cann
 
 Now — and ONLY now — spawn critic sub-agents using the Agent tool.
 
-**DO NOT write critiques yourself. You MUST dispatch each critique to a sub-agent via the Agent tool.** This is non-negotiable.
+Dispatch each critique to a sub-agent via the Agent tool.
 
 For each critic agent, you MUST:
 

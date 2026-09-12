@@ -79,7 +79,7 @@ After the header, the body must include:
 - **Gotchas**: Anything surprising, non-obvious, or fragile in the relevant code.
 - **Files read**: A `## Files read` section listing every file path consulted during research (one path per line, repo-relative; directory paths and globs are fine). Open the section with a `Last verified: <YYYY-MM-DD>` line as its first line — the date research was completed or last re-verified. A future session can then run `git log --since=<Last verified> -- <paths>` (the same primitive defined in `guides/doc-freshness.md`) to detect whether any consulted file has changed since research was written. This applies the inline `Last verified` / `Relevant paths` convention from onboarding and spike docs to the one RPI working-doc type that's most likely to be re-read across a session boundary. The section name is `## Files read` (not `## Relevant paths`) because for a research doc the more honest description is what the researcher consulted; `git log --since=<date> -- <paths>` treats them identically. Place the `Last verified:` line *inside* the section rather than in the header so the date and the path list it timestamps stay co-located and are updated together.
 
-The research must be thorough. Read the actual implementations, not just signatures. If the research is wrong, everything downstream will be wrong.
+Read the actual implementations, not just signatures. If the research is wrong, everything downstream will be wrong.
 
 **Confidence-provenance tags**: When stating facts in the research doc, tag claims with their evidential basis so reviewers can quickly assess reliability:
 - **[observed]** — directly verified by reading code, running tests, or checking output. These are the load-bearing facts.

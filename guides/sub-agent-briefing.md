@@ -11,7 +11,7 @@ Every sub-agent prompt should contain:
 1. **Goal preamble** — one sentence stating why the work matters and how the output will be used. This lets the sub-agent make judgment calls instead of mechanically following instructions.
 2. **Exact paths** — files, directories, or commands to examine. Don't make the sub-agent search for them.
 3. **Specific questions** — numbered, falsifiable questions, not open-ended prompts like "how does this work?"
-4. **Output cap** — explicit length limit ("under 200 words", "table only, no prose"). Without one, expect a wall of text.
+4. **Output shape** — the form the answer takes ("table only, no prose", "one sentence per function", "conclusions first"). Without one, the sub-agent guesses at what you can act on.
 5. **Output destination** — where to write findings (specific file path, or section heading within an existing doc). If the sub-agent should report inline, say so.
 
 ## Worked example — well-formed prompt
@@ -26,14 +26,14 @@ Every sub-agent prompt should contain:
 > 3. What happens on auth failure — exception, error response, both?
 > 4. Are there bypass paths (e.g., for health checks or webhooks)?
 >
-> **Output:** Write findings to the **Auth** section of `docs/working/research-api-endpoint.md`. Keep each answer to 2–3 sentences. Cite specific file:line locations. Total length under 300 words.
+> **Output:** Write findings to the **Auth** section of `docs/working/research-api-endpoint.md`. Keep each answer to 2–3 sentences. Cite specific file:line locations. Lead with the conclusion for each.
 >
 > **Do not:** modify any code, propose design changes, or investigate non-auth subsystems.
 
 Why this works:
 - Goal preamble lets the sub-agent recognize when something it sees is structurally relevant vs. a red herring.
 - Numbered questions are falsifiable — each has a definite answer to look for.
-- Word cap forces the sub-agent to summarize, not paste code.
+- The stated shape (2–3 sentences per answer, conclusion first) forces the sub-agent to summarize, not paste code.
 - Output destination keeps the artifact in a known location for synthesis.
 - Explicit "do not" prevents scope creep, which is the most common failure mode of capable sub-agents.
 
@@ -59,14 +59,14 @@ Each anti-pattern below shows a broken prompt and the specific failure mode it p
 
 **Fix:** Numbered, specific questions. "Where are tokens validated?" beats "explain the auth system." If you genuinely need a high-level summary, ask for one explicitly: "Produce a 5-bullet overview, then answer questions 1–3."
 
-### 3. Missing output cap
+### 3. Missing output shape
 
 **Bad:**
 > "Examine `src/auth/tokens.go` and explain what each function does."
 
-**Why it fails:** The sub-agent has no signal for when to stop. Expect a wall of text re-deriving information you can read yourself. You then have to re-read the sub-agent's output to extract the parts that matter — the sub-agent's effort becomes a tax on yours.
+**Why it fails:** The sub-agent has no signal for what you can act on, so it re-derives information you can read yourself. You then have to re-read its output to extract the parts that matter — the sub-agent's effort becomes a tax on yours.
 
-**Fix:** State the cap. "Under 200 words." "One sentence per function." "Table with three columns." Whatever shape you can act on quickly.
+**Fix:** State the shape. "One sentence per function." "Table with three columns." "Conclusions first, evidence only where contested." Whatever you can act on quickly.
 
 ### 4. Full-file paste
 
@@ -93,7 +93,7 @@ Before dispatching a sub-agent, verify the prompt has:
 - [ ] **Goal preamble** — one sentence on why and how the output gets used
 - [ ] **Exact paths** — files, directories, or commands named explicitly
 - [ ] **Specific questions** — numbered, with definite answers
-- [ ] **Output cap** — word count, sentence count, or structural format
+- [ ] **Output shape** — structural format, or "conclusions first"
 - [ ] **Output destination** — file path or "report inline"
 - [ ] **Do-not list** (optional) — scope guardrails for capable sub-agents prone to drift
 

@@ -46,26 +46,19 @@ Produce two deliverables: a freeform chat summary and a structured verification 
 
 ---
 
-## Mandatory Execution Rules
+## Execution rules
 
-These rules are absolute. Do not deviate from them under any circumstances.
+Dispatch every fact-check and critique to a sub-agent via the Agent tool. Writing analytical
+observations about the draft's claims yourself defeats the point of the orchestration: the
+synthesis is only worth reading if the findings came from independent passes.
 
-1. You MUST use the Agent tool to spawn sub-agents for ALL fact-checking and critique work.
-   You MUST NOT write fact-checks or critiques yourself. You are the orchestrator, not an
-   analyst. If you find yourself writing analytical observations about the draft's claims or
-   arguments, STOP — you are doing a sub-agent's job.
+The stages are sequential because each one consumes the previous one's output. Finish Stage 1
+(fact-check) and read its results before dispatching Stage 2 (critics); collect every critic
+result before Stage 3 (synthesis and rubric). Produce neither deliverable until every
+sub-agent you dispatched has reported.
 
-2. You MUST complete Stage 1 (fact-check) and receive its results before starting Stage 2
-   (critics).
-
-3. You MUST complete Stage 2 (critics) and receive ALL critic results before starting Stage 3
-   (synthesis and rubric).
-
-4. You MUST NOT produce the verification rubric or chat synthesis until you have received
-   results from every sub-agent you dispatched. No exceptions.
-
-5. If a sub-agent fails or returns empty, note this honestly in the synthesis. Do not fill in
-   the gap yourself.
+If a sub-agent fails or returns empty, say so in the synthesis rather than filling the gap
+yourself — a silent gap reads as coverage the review never had.
 
 ---
 
@@ -194,7 +187,7 @@ If the user passed `--no-gate` or explicitly said to run without stopping, skip 
 
 Now — and ONLY now — spawn critic sub-agents using the Agent tool.
 
-**DO NOT write critiques yourself. You MUST dispatch each critique to a sub-agent via the Task tool.** This is non-negotiable.
+Dispatch each critique to a sub-agent via the Agent tool.
 
 **Default:** 1 instance of each selected critic agent.
 **Ensemble mode:** spawn N instances of each selected critic, where N matches the user's request.

@@ -110,7 +110,7 @@ The same preamble wraps the other sub-investigations in the running example — 
 
 **Example — cross-cutting pattern search (Current task / Success criterion):**
 > Current task: Find all places rate limiting is applied in this codebase. For each, note: which library, what limits, whether it's per-user or global. The routing middleware is in `src/server/router.go` — start there.
-> Success criterion: Findings in the "Rate limiting" section of `docs/working/research-api-endpoint.md`, under 200 words, with a Goal-Alignment Note appended.
+> Success criterion: Findings in the "Rate limiting" section of `docs/working/research-api-endpoint.md`, conclusions first, with a Goal-Alignment Note appended.
 
 **Example — dependency analysis (Current task / Success criterion):**
 > Current task: Read `package.json` and `src/pdf/generator.ts`. We're evaluating whether to replace the PDF library. Answer: What API surface do we actually use? How coupled is our code to this specific library? Are there test fixtures that depend on exact output?
@@ -118,7 +118,7 @@ The same preamble wraps the other sub-investigations in the running example — 
 
 **End-to-end example — parallel dispatch and recompose:** Continuing the API endpoint decomposition from step 1, after researching the shared routing/middleware dependency, dispatch three sub-agents in parallel by issuing three Agent tool calls in a single response — one for auth, one for rate limiting, one for the resource data model. Each prompt scopes its investigation tightly: the auth sub-agent examines `src/auth/` and reports token validation, where middleware is applied, and failure behavior; the rate-limiting sub-agent searches the codebase for existing rate-limit usage and reports library, configured limits, and whether keys are per-user or global; the data-model sub-agent reads the resource schema and reports field shapes and validation rules. All three return findings concurrently. In the recompose step, the main agent reads each report, checks for conflicts at shared interfaces (e.g., does the auth sub-agent's user-identity field match the rate-limiting sub-agent's rate-limit key?), resolves any conflicts against the actual code, and folds the reconciled findings into the unified research doc's Scope / What exists / Invariants / Gotchas sections — not preserved as three separate per-area appendices.
 
-Common briefing mistakes: omitting file paths in the Current task (sub-agent wastes time searching), writing a Success criterion that names neither an artifact nor a path (sub-agent invents an output shape synthesis can't consume), and not capping output length. The pattern's [default output cap](../patterns/orchestrated-review.md#default-output-cap) — `<300 words summary; structured output may extend.` — applies unless the dispatch overrides it explicitly.
+Common briefing mistakes: omitting file paths in the Current task (sub-agent wastes time searching), writing a Success criterion that names neither an artifact nor a path (sub-agent invents an output shape synthesis can't consume), and leaving the output shape unstated. The pattern's [default output shape](../patterns/orchestrated-review.md#default-output-shape) applies unless the dispatch names a different one.
 
 #### Recommended output scaffold
 
