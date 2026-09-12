@@ -510,6 +510,6 @@ Carry this label, verbatim and once, wherever a clean or passing verdict is emit
 
 It appears in exactly two places, and never more than once in each: appended to the
 `✅ PASSES REVIEW` status line above, and in the chat synthesis when the run is clean
-(see [Deliverable 1](../SKILL.md#deliverable-1-chat-synthesis)). Do not expand it into a paragraph,
+(see [Deliverable 1](chat-synthesis.md#deliverable-1-chat-synthesis)). Do not expand it into a paragraph,
 do not repeat it per section, and do not attach it to a 🔴 or 🟡 verdict — those are not
 being consumed as assurance, and hedging them dilutes the label where it matters.

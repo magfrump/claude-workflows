@@ -421,7 +421,10 @@ firewall() {
   run grep -E 'CLAUDE_HOME_SRC=' "$CONFIG_SRC/install.sh"
   [ "$status" -eq 0 ]
   [[ "$output" == *'skills'* ]]
-  [[ "$output" == *'CLAUDE.md'* ]]
+  # The full path, not a bare 'CLAUDE.md' substring: the bare form matches both
+  # spellings, so it stayed green across the 2026-09-11 move it was meant to
+  # cover (code review 2026-09-12, C6).
+  [[ "$output" == *'global-instructions/CLAUDE.md'* ]]
   run grep -E 'PAYLOAD=.*claude-home' "$CONFIG_SRC/install.sh"
   [ "$status" -eq 0 ]
 }

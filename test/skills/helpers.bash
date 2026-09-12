@@ -164,3 +164,35 @@ assert_claims_sequential() {
     prev=$n
   done <<< "$numbers"
 }
+
+# Load the code-review skill's full CONTENT SURFACE: SKILL.md plus its references/
+# files. The deliverable templates, rubric semantics and override-log format were
+# extracted out of the skill body 2026-09-11 (prompt audit F8) so they load at the
+# stage that needs them, which means any assertion about "the skill" must read all
+# four files.
+#
+# The cat order is DOCUMENT order and it is load-bearing: several suites bound sed
+# ranges with end anchors that exist only in a reference file (e.g.
+# /^### Rubric Status Line/ in references/rubric.md), so a different order silently
+# changes what those ranges capture.
+#
+# Two cautions for callers, both real bugs found by review on 2026-09-12:
+#   - An open-ended range over SKILL_CONTENT ("/^## Heading/,$p") runs past SKILL.md
+#     into the references. Anchor on "$SKILL" when the section is last in SKILL.md.
+#   - The concatenation contains three duplicated "## " headings (a pointer stub in
+#     SKILL.md plus the real section in a reference), so a range keyed on one of
+#     those headings can capture the stub instead of the section.
+#
+# Sets SKILL_DIR, SKILL and SKILL_CONTENT. Args: $1 = repo root (default: cwd).
+load_code_review_skill() {
+  local root="${1:-.}"
+  # shellcheck disable=SC2034  # consumed by the suites that load this helper
+  SKILL_DIR="$root/skills/code-review"
+  SKILL="$SKILL_DIR/SKILL.md"
+  [ -f "$SKILL" ] || skip "code-review SKILL.md not found at $SKILL"
+  # shellcheck disable=SC2034  # consumed by the suites that load this helper
+  SKILL_CONTENT=$(cat "$SKILL" \
+    "$SKILL_DIR/references/chat-synthesis.md" \
+    "$SKILL_DIR/references/rubric.md" \
+    "$SKILL_DIR/references/override-log.md" | tr -d '\r')
+}

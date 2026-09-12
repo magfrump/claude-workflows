@@ -24,17 +24,7 @@ fail() { echo "$1" >&2; return 1; }
 setup() {
   [ -f "$FIXTURE" ] || fail "Golden fixture missing at $FIXTURE"
   FIXTURE_CONTENT=$(tr -d '\r' < "$FIXTURE")
-  SKILL_DIR="skills/code-review"
-  SKILL="$SKILL_DIR/SKILL.md"
-  [ -f "$SKILL" ] || skip "code-review SKILL.md not found at $SKILL"
-  # The skill's content surface spans SKILL.md plus its references/ files: the
-  # deliverable templates, rubric semantics and override-log format were extracted
-  # 2026-09-11 (prompt audit F8) so they load at the stage that needs them. Read in
-  # document order so section-extraction end anchors still follow their sections.
-  SKILL_CONTENT=$(cat "$SKILL" \
-    "$SKILL_DIR/references/chat-synthesis.md" \
-    "$SKILL_DIR/references/rubric.md" \
-    "$SKILL_DIR/references/override-log.md" | tr -d '\r')
+  load_code_review_skill .
 }
 
 # Extract one "## <heading>" section, excluding the next heading line.
@@ -180,16 +170,17 @@ section() {
 # template embedded in skills/code-review/SKILL.md and require the golden to match it, so
 # the mirroring either happens or the suite goes red.
 
-# The rubric template moved into the skill's references/ dir 2026-09-11
-# (prompt audit F8); the golden fixture is still compared against it.
-SKILL_MD="skills/code-review/references/rubric.md"
+# The golden fixture is compared against the rubric template, which moved out of
+# SKILL.md into the skill's references/ dir 2026-09-11 (prompt audit F8). Named
+# RUBRIC_MD, not SKILL_MD, so it is not mistaken for the $SKILL set in setup().
+RUBRIC_MD="skills/code-review/references/rubric.md"
 
 # Emit the fenced markdown rubric template from the skill.
 skill_template() {
   awk '/\*\*Use this exact format/ { f = 1 }
        f && /^```markdown/         { c = 1; next }
        c && /^```$/                { exit }
-       c' "$SKILL_MD"
+       c' "$RUBRIC_MD"
 }
 
 # Emit each table header row (a "|" line immediately followed by a "|---" separator).
@@ -201,19 +192,19 @@ table_headers() {
 }
 
 @test "golden's table headers match the skill's rubric template" {
-  [ -f "$SKILL_MD" ] || skip "not running from repo root"
+  [ -f "$RUBRIC_MD" ] || skip "not running from repo root"
   local from_skill from_golden
   from_skill=$(skill_template | table_headers)
   from_golden=$(echo "$FIXTURE_CONTENT" | table_headers)
-  [ -n "$from_skill" ] || fail "could not extract the rubric template from $SKILL_MD"
+  [ -n "$from_skill" ] || fail "could not extract the rubric template from $RUBRIC_MD"
   if [ "$from_skill" != "$from_golden" ]; then
     printf 'template headers:\n%s\n\ngolden headers:\n%s\n' "$from_skill" "$from_golden" >&2
-    fail "golden is out of sync with the rubric template in $SKILL_MD"
+    fail "golden is out of sync with the rubric template in $RUBRIC_MD"
   fi
 }
 
 @test "golden's section headings match the skill's rubric template" {
-  [ -f "$SKILL_MD" ] || skip "not running from repo root"
+  [ -f "$RUBRIC_MD" ] || skip "not running from repo root"
   local from_skill from_golden
   from_skill=$(skill_template | grep -E '^## ')
   from_golden=$(echo "$FIXTURE_CONTENT" | grep -E '^## ')

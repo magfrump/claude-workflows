@@ -234,7 +234,11 @@ check_md_consistency() {
 
     for mdfile in "$GLOBAL_MD" AGENTS.md GEMINI.md; do
         local path="$REPO_ROOT/$mdfile"
-        [[ -f "$path" ]] || continue
+        # All three are tracked files. A missing one used to `continue` silently,
+        # which degraded this check to an AGENTS-vs-GEMINI comparison that
+        # agents-gemini-sync.bats already guarantees — and still printed a pass.
+        # Fail instead, so a rename is loud (code review 2026-09-12, A12).
+        [[ -f "$path" ]] || { fail "$mdfile not found — MD consistency cannot be checked"; continue; }
         files+=("$mdfile")
         workflow_sets["$mdfile"]="$(extract_workflows "$path" | tr '\n' '|')"
     done
