@@ -21,14 +21,26 @@ Backend notes (why the flags are what they are):
   CLAUDE.md auto-discovery). Measured overhead ~7.5k tokens vs ~33k default.
 - Success is judged from the JSON envelope (is_error, num_turns), not the
   exit code - headless exit codes are unreliable for this.
-- This file OWNS the FINDINGS grammar and its regex (decision log 48). The
-  grammar originated in cross-model-review.py and the two were byte-identical
-  when ownership moved here, so output stays comparable with the E2/E3
-  lite-arm artifacts; cross-model-review.py is now the copy, and it is the
-  OpenRouter benchmark harness, out of scope for this repo. Changing the
-  grammar here breaks that comparability - test/lite-review-grammar.bats
-  pins the shape, and any change to it needs a matching note in the decision
-  log.
+- This file OWNS the FINDINGS *accept spec* - FINDING_RE (decision log 48).
+  It originated in cross-model-review.py and the two were byte-identical when
+  ownership moved here; cross-model-review.py is now the copy, and it is the
+  OpenRouter benchmark harness, out of scope for this repo.
+  test/lite-review-grammar.bats pins the accept spec, and any change to it
+  needs a matching note in the decision log.
+  Be precise about what that ownership does NOT cover (2026-09-12 review):
+    * The *emit spec* - the format block the model actually reads - is
+      duplicated verbatim in PROMPT_FULL and PROMPT_FIX_DRIFT below and in
+      two harness templates. Nothing ties those copies to FINDING_RE, so
+      editing one desyncs silently with no test failure.
+    * The *record schema* was never shared. We emit severity/title/description;
+      the harness and every on-disk E2/E3 lite-arm artifact carry sev/desc/
+      line_start, and archive/benchmark/scripts/canon-to-crb.py binds to those.
+      Comparability with those artifacts therefore holds at the line grammar,
+      not at the record.
+    * parse_findings itself has already diverged from the harness copy in four
+      ways (FINDINGS: NONE case-sensitivity, block detection, parse_ok
+      derivation, row keys). A fork that diffs only the regex will find it
+      identical and be wrong about all four.
 """
 import argparse
 import json

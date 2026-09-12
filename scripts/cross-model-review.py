@@ -132,10 +132,14 @@ JUDGE_PROMPT = """Two code-review findings are below. Answer YES if they describ
 Finding A: {a}
 Finding B: {b}"""
 
-# The FINDINGS grammar is DEFINED by scripts/lite-review.py (decision log 48);
-# this is the copy. It was byte-identical when ownership moved. If this harness
-# moves to the SWRBench fork, keep it in step with the owner deliberately or
-# state in the fork that the two have diverged - do not silently re-fork it.
+# The FINDINGS accept spec (this regex) is DEFINED by scripts/lite-review.py
+# (decision log 48); this is the copy, byte-identical when ownership moved. Only
+# the regex is shared: the two parse_findings bodies already differ in four ways,
+# and the record schema was never shared at all (we emit sev/desc/line_start, the
+# owner emits severity/title/description). If this harness moves to the SWRBench
+# fork, keep THE REGEX in step with the owner deliberately or state in the fork
+# that the two have diverged - and do not assume a matching regex means matching
+# parse behavior. See the owner's header for the full list.
 FINDING_RE = re.compile(
     r"^\s*\d+\.\s*(?P<path>[^|:]+?)(?::(?P<lines>[\d\-, ]+))?\s*\|"
     r"\s*(?P<sev>Critical|High|Medium|Low|Informational)\s*\|"

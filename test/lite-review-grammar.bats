@@ -95,3 +95,47 @@ FINDINGS:
   [ "${lines[0]}" = "True" ]
   [ "${lines[1]}" = "[]" ]
 }
+
+# --- Negative pins (added 2026-09-12 after the review) ---------------------
+# The seven tests above pin the accept spec against *narrowing*: mutate
+# FINDING_RE to accept less and one of them goes red. They said nothing about
+# *widening*, and mutation testing during the review found four widenings that
+# kept all seven green — each with a real downstream consumer (a severity value
+# outside the five has no row in the rubric's mapping and is dropped at
+# synthesis; a row that loses its description carries no finding).
+# These assert the shapes the grammar must keep REJECTING.
+
+@test "a severity outside the five-value enum is not accepted" {
+  run parse 'FINDINGS:
+1. a.py:1 | Blocker | security | T | D'
+  [ "$status" -eq 0 ]
+  [ "${lines[1]}" = "[]" ]
+}
+
+@test "a row with nothing after the final pipe is not accepted" {
+  # Note the line ends AT the pipe: `.+` requires at least one character, so
+  # widening it to `.*` is what this pin catches. A row with a trailing space
+  # does match (the space satisfies `.+` and strips to an empty description) —
+  # that is a separate gap, recorded as a 🟢 in the 2026-09-12 rubric.
+  run parse 'FINDINGS:
+1. a.py:1 | High | security | Some title |'
+  [ "$status" -eq 0 ]
+  [ "${lines[1]}" = "[]" ]
+}
+
+@test "a bullet-prefixed row is not accepted in place of a numbered one" {
+  run parse 'FINDINGS:
+- a.py:1 | High | security | T | D'
+  [ "$status" -eq 0 ]
+  [ "${lines[1]}" = "[]" ]
+}
+
+@test "a comma-separated line list survives in the lines field" {
+  # Positive pin guarding the line-range character class: narrowing
+  # [\d\-, ]+ to [\d\-]+ keeps every other test green while silently
+  # dropping rows like this one.
+  run parse 'FINDINGS:
+1. a.py:12,15,20 | Medium | correctness | T | D'
+  [ "$status" -eq 0 ]
+  [[ "${lines[1]}" == *'"lines": "12,15,20"'* ]]
+}
