@@ -155,7 +155,7 @@ Hold every matched row as `<considered-overrides>` for Stage 3. Each entry MUST 
 
 If the override log is empty or contains no rows that match the current diff, record the negative result explicitly (`No prior overrides matched this diff.`) — the absence statement is part of the contract that prevents the log from being write-only.
 
-This step is **read-only with respect to the log** during the run. New overrides — produced when a human reviews this run's output and downgrades or upgrades a finding — are appended to `docs/reviews/override-log.md` as a follow-up step (see [Capturing new overrides](references/override-log.md#capturing-new-overrides) below), not during dispatch.
+This step is **read-only with respect to the log** during the run. New overrides — produced when a human reviews this run's output and downgrades or upgrades a finding — are appended to `docs/reviews/override-log.md` as a follow-up step (see [Capturing new overrides](references/override-log.md#capturing-new-overrides)), not during dispatch.
 
 ### Step 4: Known critic roles
 
@@ -738,7 +738,7 @@ If *any* corroborating evidence exists — even a single Accurate fact-check cla
 
 #### Logging skipped critics
 
-For every core critic you skip, you MUST record it in the rubric under the `## ⏭️ Skipped Core Critics` section (see Deliverable 2 below) with the critic name, the skip reason, and the specific signal observed (e.g., `git diff --stat` output excerpt or the fact-check finding cited). Also reference skips in the chat synthesis scope summary so the user sees coverage limits before reading findings.
+For every core critic you skip, you MUST record it in the rubric under the `## ⏭️ Skipped Core Critics` section (see [the rubric template](references/rubric.md)) with the critic name, the skip reason, and the specific signal observed (e.g., `git diff --stat` output excerpt or the fact-check finding cited). Also reference skips in the chat synthesis scope summary so the user sees coverage limits before reading findings.
 
 If `--all-critics` was passed, skip this step entirely; all core critics run.
 
@@ -942,7 +942,7 @@ verdicts into synthesis.
    this dispatch must not silently degrade either). Supply the collected list under a
    `## Submitted claims` heading — each entry with the submitting critic's name, the claim
    text, and its location — and instruct the agent to verdict them per its "Submitted
-   claims" section: same verdicts, same evidence discipline, same mandatory-execution rule
+   claims" section: same verdicts, same evidence discipline, the same orchestrator-not-analyst rule
    (most routed endorsements are executable guarantees, so expect `executed`-mode
    verdicts). Instruct it to save the report as
    `docs/reviews/code-fact-check-submitted-claims.md` with a `Commit: <current HEAD short
@@ -954,7 +954,7 @@ verdicts into synthesis.
    (including `Verification mode` and `Scope`) and the submitting critic's name, so every
    downstream consumer — the Confirmed-Good cross-check, the Unified Severity Mapping —
    reads one artifact. This is mechanical collation like the Stage-1 merge; you add no
-   verdicts of your own (Mandatory Execution Rule 1 still stands).
+   verdicts of your own — the orchestrator-not-analyst rule in "Execution rules" still stands.
 5. **Feed back into synthesis.** A submitted claim verdicted `Verified` — with its
    verification mode and `Scope:` line — is admissible backing for a ✅ row per provenance
    rule 5 of [Confirmed Good is a claim, not an output](references/rubric.md#confirmed-good-is-a-claim-not-an-output).
@@ -989,7 +989,7 @@ Before writing the chat synthesis, scan the **Goal-Alignment Note** appended by 
 
 If a sub-agent omitted the note entirely, treat that as a `partial` entry with reason "missing goal-alignment note" so the gap is still surfaced.
 
-The collected items feed the `### Coverage and Escalations` section of the chat synthesis below. They do not modify the rubric — coverage is a chat-synthesis concern.
+The collected items feed the `### Coverage and Escalations` section of the chat synthesis (see [references/chat-synthesis.md](references/chat-synthesis.md)). They do not modify the rubric — coverage is a chat-synthesis concern.
 
 #### Confirmed-Good cross-check (required before producing deliverables)
 

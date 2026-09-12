@@ -1172,8 +1172,13 @@ line and a 'Notes:' line recording any judgement calls made without human input.
         # --- Gate 1d: Critical file protection ---
         if [ -z "$REJECT_REASON" ]; then
             for FILE in $DELETED_FILES; do
+                # The CLAUDE.md arm is basename-keyed (`*/CLAUDE.md` as well as the bare
+                # name) because the file has moved once already — it lives at
+                # global-instructions/ since 2026-09-11 — and a path-keyed arm
+                # silently stops protecting it the next time it moves. Code
+                # review 2026-09-12, R1.
                 case "$FILE" in
-                    scripts/self-improvement.sh|docs/evaluation-rubric.md|CLAUDE.md)
+                    scripts/self-improvement.sh|docs/evaluation-rubric.md|CLAUDE.md|*/CLAUDE.md)
                         REJECT_REASON="deleted critical file: $FILE"
                         record_gate "$TASK_ID" "critical_files" "fail"
                         break

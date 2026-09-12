@@ -8,6 +8,7 @@ When facing non-trivial tasks, check `workflows/` for applicable process docs be
 
 - **research-plan-implement.md** — The default development loop. Research the codebase, write a plan, get human review, implement. Use for any non-trivial feature or bug fix.
 - **divergent-design.md** — Structured brainstorming for architectural, library, or design decisions. Use when the first idea is probably not the best idea.
+- **parallel-worktrees.md** — Batch fan-out: when one message bundles 2+ independent tasks, split them, route each item on its own, and implement independent items in parallel git worktrees before merging back. Use when a request decomposes into tasks that share no files or state.
 - **task-decomposition.md** — Breaking large tasks into independent sub-investigations. Use when a task touches multiple subsystems.
 - **pr-prep.md** — Packaging work for async review across timezones. Use before opening any PR.
 - **spike.md** — Quick timeboxed exploration of a library, approach, or proof-of-concept. Use when the question is "can this work?" not "build this."

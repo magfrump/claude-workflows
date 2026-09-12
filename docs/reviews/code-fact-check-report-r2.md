@@ -1,697 +1,820 @@
 # Code Fact-Check Report
 
-Commit: abbd42d
-**Repository:** /workspace (local-only, solo)
-**Scope:** `git diff bd41aef..HEAD -- devcontainer-config/` — `init-firewall.sh`, `cc-sni-proxy.py`, `Dockerfile`, `devcontainer.json`, `egress/base.txt`, `egress/llm.txt`; plus claims in the range's commit messages, `docs/decisions/log.md` rows 39–41, and `guides/cc-isolated-usage.md`
-**Checked:** 2026-09-03
-**Total claims checked:** 31
-**Summary:** 20 verified, 6 mostly accurate, 2 stale, 1 incorrect, 2 unverifiable
+Commit: 0661353
 
-Hallucination pattern log (`docs/reviews/hallucination-patterns.md`) was read before checking. Its two logged patterns are both "a measured corpus statistic quoted from a checked-in artifact set that does not contain it". Claims 26–29 below (test counts asserted in commit messages and decision rows) are the same shape, so each was counted mechanically rather than accepted; all four hold.
+**Repository:** `/workspace` (claude-workflows)
+**Scope:** `git diff -M -C 2d679ce..HEAD` (4 commits: `4d41add`, `c56be81`, `59ca38f`, `0661353`) plus the four commit messages. 27 files; the bulk is two pure moves (`CLAUDE.md` → `global-instructions/CLAUDE.md`, 97% similarity; ~680 lines lifted from `skills/code-review/SKILL.md` into `skills/code-review/references/*.md`), both re-derived below rather than re-read as new.
+**Checked:** 2026-09-12
+**Total claims checked:** 29
+**Summary:** 20 verified, 5 mostly accurate, 1 stale, 1 incorrect, 2 unverifiable
+
+Hallucination-pattern log read (`docs/reviews/hallucination-patterns.md`, 2 entries). Claim 18 matches the logged class *"a specific measured value quoted from a checked-in artifact set that does not contain it"* — flagged inline and appended to the log.
+
+Execution artifacts for this run:
+- `docs/reviews/execution-logs/r2-verification-commands-2026-09-12.txt`
+- `docs/reviews/execution-logs/r2-health-check-head-2026-09-12.txt`
+- `docs/reviews/execution-logs/r2-health-check-base-2026-09-12.txt`
 
 ---
 
-## Claim 1: "dnsmasq-base (above) is the daemon binary WITHOUT the `dnsmasq` package's sysv/systemd service wrapper: nothing in the container may auto-start a resolver"
+## Claim 1: "Entries are staged under their basename, so the payload layout (and link-claude-home.sh) is unchanged."
 
-**Location:** `devcontainer-config/Dockerfile:44-46`
-**Type:** Configuration / Behavioral
+**Location:** `devcontainer-config/install.sh:46-47`
+**Type:** Behavioral / Architectural
 **Verdict:** Verified
-**Confidence:** Medium
-**Verification mode:** static
-**Scope:** Covers the Debian packaging split (`dnsmasq-base` = `/usr/sbin/dnsmasq` binary; `dnsmasq` = the init/service wrapper) and the fact that only `dnsmasq-base` is installed. Does not establish that no *other* installed package auto-starts a resolver, and does not establish that `dnsmasq-base`'s postinst creates the `dnsmasq` user (the Dockerfile does not rely on it — see Claim 2).
-**Legibility-target:** for-orchestrator-synthesis
+**Confidence:** High
+**Verification mode:** executed
+**Scope:** Covers the staging of the seven current `CLAUDE_HOME_SRC` entries into `$STAGE` and the names `link-claude-home.sh` looks for at the payload root; does not establish that a *future* entry whose basename collides with another entry would stage safely (the loop would silently overwrite), and does not establish anything about the host-side symlink created by the README recipe (see Claim 8).
 
-The apt block installs `dnsmasq-base` and not `dnsmasq` (`devcontainer-config/Dockerfile:34`, within the `RUN apt-get install` list at `:20-43`). On Debian bookworm `dnsmasq-base` ships the daemon binary only; the `dnsmasq` package is the one that ships `/etc/init.d/dnsmasq` and the systemd unit. The container is confirmed to have no `dnsmasq` binary installed *in this review sandbox* (`docs/reviews/execution-logs/cfc-r2-env-abbd42d.txt`), which is a different image than the one the Dockerfile builds, so the packaging split itself could not be executed here — hence Medium confidence, from Debian packaging documentation rather than a run.
+The staging loop now takes the basename of each entry:
 
-**Evidence:** `devcontainer-config/Dockerfile:34`, `devcontainer-config/Dockerfile:44-46`, `docs/reviews/execution-logs/cfc-r2-env-abbd42d.txt`
+```bash
+# devcontainer-config/install.sh:50-58
+CLAUDE_HOME_SRC=(global-instructions/CLAUDE.md skills workflows guides patterns hooks scripts)
+STAGE="$SRC/claude-home"
+rm -rf "$STAGE"
+mkdir -p "$STAGE"
+for item in "${CLAUDE_HOME_SRC[@]}"; do
+  if [ -e "$REPO_ROOT/$item" ]; then
+    cp -r "$REPO_ROOT/$item" "$STAGE/$(basename "$item")"
+```
+
+(excerpt ends :56; the enclosing `for` loop continues to :60 with the `else`/WARNING branch — read.)
+
+Six of the seven entries are bare names, so `basename` is the identity function on them; only the first entry's path is collapsed. The consumer looks for exactly those seven names at the payload root:
+
+```bash
+# devcontainer-config/link-claude-home.sh:44
+ENTRIES=(skills workflows guides patterns hooks scripts CLAUDE.md)
+```
+
+Executed simulation of the changed line against one file entry and one directory entry (the shape the `c56be81` message claims was simulated):
+
+- Command: `for item in global-instructions/CLAUDE.md skills; do cp -r "$S/repo/$item" "$S/stage/$(basename "$item")"; done` then `ls -R "$S/stage"`
+- cwd: `/tmp/claude-1000/-workspace/47023ae0-7b83-4d1e-a319-0b30f011dfea/scratchpad/sim`
+- Exit code: 0 · Timestamp: 2026-09-12
+- Result: `stage/CLAUDE.md`, `stage/skills/a.md`, `stage/skills/sub/b.md` — the file lands at the payload root under its basename and the directory entry keeps its subtree.
+
+**Evidence:** `devcontainer-config/install.sh:41-60`, `devcontainer-config/link-claude-home.sh:44-62`, `devcontainer-config/Dockerfile:409`, `docs/reviews/execution-logs/r2-verification-commands-2026-09-12.txt`
 
 ---
 
-## Claim 2: "The daemon drops to the unprivileged `dnsmasq` user, and the firewall's owner-match rules key on that uid, so its existence is asserted here rather than left to the package's postinst."
+## Claim 2: "at the root, a session working in THIS repo loads it twice — once as the linked ~/.claude copy and once as the project's own instructions (prompt audit 2026-09-11, F1)"
 
-**Location:** `devcontainer-config/Dockerfile:48-50`
+**Location:** `devcontainer-config/install.sh:43-45`
+**Type:** Behavioral / Architectural
+**Verdict:** Verified
+**Confidence:** High
+**Verification mode:** static
+**Scope:** Covers the double-load mechanism for a Claude Code session whose project root is this repo and whose `~/.claude/CLAUDE.md` resolves to the same content; does not establish the token figure (Claim 7), and does not establish behavior for tools other than Claude Code (`AGENTS.md`/`GEMINI.md` are separate files and are not affected).
+
+The container path that produces the first copy is explicit:
+
+```bash
+# devcontainer-config/link-claude-home.sh:44-62 (excerpt: :44 and :50-52; the
+# enclosing for loop continues to :62 — read)
+ENTRIES=(skills workflows guides patterns hooks scripts CLAUDE.md)
+...
+  if [ -L "$target" ]; then
+    ln -sfn "$SRC/$name" "$target"        # refresh (image may have moved)
+```
+
+so `~/.claude/CLAUDE.md` exists in every session. The second copy is the project-instructions load, which is a property of the harness rather than of any file in the repo (paraphrased — no quote available because the claim is about how the session's system context is assembled, not about a code path in this repo). It is directly observable in this very session: the assembled context for this run carries the instructions file twice, once labelled as the user's global `~/.claude/CLAUDE.md` and once as "`/workspace/CLAUDE.md` (project instructions, checked into the codebase)" — both copies still the pre-move text, because the linked payload predates the rebuild. `CLAUDE.md` no longer exists at the repo root after this change (`ls CLAUDE.md` → `No such file or directory`), so the second load is removed once the image is rebuilt.
+
+**Evidence:** `devcontainer-config/link-claude-home.sh:44-62`, `devcontainer-config/install.sh:41-50`, `global-instructions/CLAUDE.md:1`
+
+---
+
+## Claim 3: "devcontainer-config/install.sh stages it to the payload root, so the installed layout is unchanged — only the source path moved."
+
+**Location:** `scripts/health-check.sh:30-34`
 **Type:** Architectural
 **Verdict:** Verified
 **Confidence:** High
 **Verification mode:** static
-**Scope:** Covers the existence assertion in the image and the fact that `init-firewall.sh` reads the uid and uses it in `-m owner --uid-owner` rules. Does not establish that the uid is stable across rebuilds (`useradd --system` picks the next free id).
-**Legibility-target:** for-orchestrator-synthesis
+**Scope:** Covers the payload root's layout (`/opt/claude-workflows/CLAUDE.md` inside the image) and the `GLOBAL_MD` indirection in this script; does not establish that every bare `CLAUDE.md` string left in this file's own comments was updated (they were not — see the note below), and does not establish the state of an already-installed host config until `install.sh` is re-run.
 
-The Dockerfile creates the user idempotently (`RUN id -u dnsmasq >/dev/null 2>&1 || useradd --system ...`, `devcontainer-config/Dockerfile:51-52`). `init-firewall.sh` resolves it to a number in phase A and refuses 0 or a non-numeric result — `DNSMASQ_UID="$(id -u dnsmasq 2>/dev/null || true)"` (`devcontainer-config/init-firewall.sh:403`) followed by the guard at `:404-407`. The uid is then used in owner matches at `:541-544`, `:682-683`, `:694-695`, and `:788-790`. The generated config carries `user=dnsmasq` (`:185`), confirmed by executing `--print-dnsmasq-conf` (`docs/reviews/execution-logs/cfc-r2-print-hooks-abbd42d.txt`).
+The variable and its three consumer loops:
 
-**Evidence:** `devcontainer-config/Dockerfile:51-52`, `devcontainer-config/init-firewall.sh:403-407`, `devcontainer-config/init-firewall.sh:682-683`, `devcontainer-config/init-firewall.sh:185`
-
----
-
-## Claim 3: "init-firewall.sh REDIRECTs every outbound tcp/443 connection that is NOT made by this proxy's own uid to 127.0.0.1:<port>"
-
-**Location:** `devcontainer-config/cc-sni-proxy.py:4-5`
-**Type:** Behavioral
-**Verdict:** Mostly accurate
-**Confidence:** High
-**Verification mode:** static
-**Scope:** Covers the nat REDIRECT of tcp/443 and the `ccproxy` exemption. Does not establish anything about udp/443 (QUIC) or IPv6, and omits the second exemption.
-**Legibility-target:** for-author
-
-Root is also exempt, which this docstring does not say (the file's own module docstring is the first thing a reader meets). The chain RETURNs for two uids, not one:
-
+```bash
+# scripts/health-check.sh:35
+GLOBAL_MD="global-instructions/CLAUDE.md"
 ```
-iptables -t nat -A CC_SNI -m owner --uid-owner "$CCPROXY_UID" -j RETURN
-iptables -t nat -A CC_SNI -m owner --uid-owner 0 -j RETURN
+
+```bash
+# scripts/health-check.sh:203, :235, :868 (one per loop)
+    for mdfile in "$GLOBAL_MD" AGENTS.md GEMINI.md; do
 ```
-(`devcontainer-config/init-firewall.sh:883-884`; excerpt ends `:884`, enclosing SNI PROXY block continues to `:897` — read.)
 
-The precise version: "…that is NOT made by this proxy's own uid or by root". `init-firewall.sh:830-835` states the root exemption explicitly, so the two files disagree only in this docstring. The rest is accurate: the jump is `-A OUTPUT -p tcp --dport 443 -j CC_SNI` (`:886`) and nothing earlier in nat OUTPUT matches tcp/443 — the only prior insertions are the two port-53 rules at `:686-687` and the restored Docker 127.0.0.11:53 DNAT rules at `:490`.
+and the two associative-array lookups that key off it, `${h2_set[$GLOBAL_MD]+x}` at `:944` and `${skill_set[$GLOBAL_MD]+x}` at `:965`. Executed confirmation that the indirection resolves: the run at HEAD reports `global-instructions/CLAUDE.md: 283 lines, 8 H2 + 15 H3 sections, 17 skill ref(s)` rather than skipping the file (`docs/reviews/execution-logs/r2-health-check-head-2026-09-12.txt`).
 
-**Evidence:** `devcontainer-config/init-firewall.sh:883-886`, `devcontainer-config/init-firewall.sh:830-835`, `devcontainer-config/init-firewall.sh:686-687`
+Residual, not part of the claim: seven comment lines in this script still say `CLAUDE.md` where they mean the global instructions file (`:13`, `:14`, `:25`, `:187`, `:192`, `:843-844`, `:922-925`, `:963`). They are documentation only and do not affect behaviour.
 
----
-
-## Claim 4: "Step 3 is why a forged SNI cannot steer a connection: the original destination (SO_ORIGINAL_DST) is read for the log line only and is never connected to."
-
-**Location:** `devcontainer-config/cc-sni-proxy.py:14-16`
-**Type:** Behavioral / Invariant
-**Verdict:** Verified
-**Confidence:** High
-**Verification mode:** static
-**Scope:** Covers the claim that the upstream address comes from resolving the SNI and that `original_dst()`'s return value reaches only `log()`. Does not establish that the resolved address is itself trustworthy (it is whatever the container resolver returns), nor that the ipset second check actually fires (kernel-level, not exercised here).
-**Legibility-target:** for-orchestrator-synthesis
-
-`handle()` was read end to end (`devcontainer-config/cc-sni-proxy.py:168-196`). `orig` is bound once at `:169` and thereafter appears only inside f-strings passed to `log()` at `:176`, `:179`, `:188`, `:190`. The upstream address is derived solely from the SNI:
-
-```
-infos = await asyncio.get_running_loop().getaddrinfo(
-    sni, upstream_port, family=socket.AF_INET, type=socket.SOCK_STREAM)
-ip = infos[0][4][0]
-up_r, up_w = await asyncio.wait_for(
-    asyncio.open_connection(ip, upstream_port), CONNECT_TIMEOUT)
-```
-(`devcontainer-config/cc-sni-proxy.py:182-186`; excerpt ends `:186`, enclosing `handle()` continues to `:196` — read: the remainder logs, replays `raw` upstream, splices via `pump()`, and closes both writers in `finally`.)
-
-`original_dst()` itself (`:145-150`) only unpacks and formats; it has no side effect on connection setup. `upstream_port` defaults to 443 (`:297`) and is a documented test seam, so the port is not taken from the original destination either. Grepping the file confirms `orig` has no other consumer.
-
-**Evidence:** `devcontainer-config/cc-sni-proxy.py:169`, `devcontainer-config/cc-sni-proxy.py:176-190`, `devcontainer-config/cc-sni-proxy.py:145-150`
+**Evidence:** `scripts/health-check.sh:29-35`, `scripts/health-check.sh:200-205`, `scripts/health-check.sh:232-237`, `scripts/health-check.sh:865-870`, `scripts/health-check.sh:944-978`, `docs/reviews/execution-logs/r2-health-check-head-2026-09-12.txt`
 
 ---
 
-## Claim 5: "Resolution uses the container's resolver (/etc/resolv.conf — Docker's embedded DNS today, a filtering dnsmasq once that lands)"
+## Claim 4a: "Pinned on purpose: changing the judge breaks score comparability with earlier runs."
 
-**Location:** `devcontainer-config/cc-sni-proxy.py:20-21`
-**Type:** Staleness
-**Verdict:** Stale
-**Confidence:** High
-**Verification mode:** static
-**Scope:** Covers the "once that lands" future tense only. The substantive claim (resolution goes through the container resolver) is correct and is checked in Claim 6.
-**Legibility-target:** for-author
-
-The filtering dnsmasq landed in the same commit range — `d598bda`, merged as `1dbdabd`, two commits before the proxy commit `aa8dffc` that introduced this file. At HEAD the resolver is unconditional: `init-firewall.sh:656-678` writes the config and starts the daemon on every run, and `:686-687` redirects port 53 for every uid except dnsmasq and root — which includes `ccproxy`. What the docstring should say now: "the filtering dnsmasq that `init-firewall.sh` starts (Docker's embedded DNS is only its upstream)".
-
-**Evidence:** `devcontainer-config/init-firewall.sh:656-678`, `devcontainer-config/init-firewall.sh:686-687`, `git log bd41aef..HEAD --no-merges`
-
----
-
-## Claim 6: "…and is IPv4-only, matching the IPv4-only ipset. Non-443 ports are not redirected here and stay IP+port-matched."
-
-**Location:** `devcontainer-config/cc-sni-proxy.py:21-22`
-**Type:** Behavioral
-**Verdict:** Verified
-**Confidence:** High
-**Verification mode:** static
-**Scope:** Covers the AF_INET restriction in the proxy and the tcp/443-only redirect. Does not establish that IPv6 egress is *blocked* — it is unfiltered end to end, which `init-firewall.sh:510-512` states separately.
-**Legibility-target:** for-orchestrator-synthesis
-
-`getaddrinfo(..., family=socket.AF_INET, ...)` (`devcontainer-config/cc-sni-proxy.py:183`). The ipset is created as `hash:net,port` and populated only with dotted-quad IPv4 members validated by `^[0-9]{1,3}\.[0-9]{1,3}\.[0-9]{1,3}\.[0-9]{1,3}$` (`init-firewall.sh:731`, `:373`, `:384`). Only tcp/443 is jumped into `CC_SNI` (`init-firewall.sh:886`); GitHub's tcp 22 members (`:744-745`) and `host.docker.internal:11434` reach the ipset accept at `:902` directly.
-
-**Evidence:** `devcontainer-config/cc-sni-proxy.py:183`, `devcontainer-config/init-firewall.sh:731`, `devcontainer-config/init-firewall.sh:744-745`, `devcontainer-config/init-firewall.sh:886`
-
----
-
-## Claim 7: "Single file, stdlib only (python3.11 ships in the node:22 base — no apt package, no pip)"
-
-**Location:** `devcontainer-config/cc-sni-proxy.py:24-25`
-**Type:** Configuration
-**Verdict:** Verified
-**Confidence:** High
-**Verification mode:** executed
-**Scope:** Covers "python3.11 is present without an apt or pip install" and "the file imports only stdlib modules". Does not establish that no *future* import would need a package.
-**Legibility-target:** for-orchestrator-synthesis
-
-`FROM node:22` (`devcontainer-config/Dockerfile:11`) and the apt block (`:20-43`) installs no `python3`. Executed in this image (built from the same Dockerfile): `python3 -V` → `Python 3.11.2` — see `docs/reviews/execution-logs/cfc-r2-env-abbd42d.txt`. The Dockerfile independently asserts the same fact at `:88-89` ("The node:22 (bookworm) base ships python3.11 but no pip"). Every import in the file (`argparse, asyncio, os, pwd, re, signal, socket, struct, sys, time`, `devcontainer-config/cc-sni-proxy.py:27-36`) is stdlib, and the 13-test suite runs clean under bare `python3` (`docs/reviews/execution-logs/cfc-r2-pytests-abbd42d.txt`).
-
-**Evidence:** `devcontainer-config/Dockerfile:11`, `devcontainer-config/Dockerfile:88-89`, `devcontainer-config/cc-sni-proxy.py:27-36`, `docs/reviews/execution-logs/cfc-r2-env-abbd42d.txt`
-
----
-
-## Claim 8: "SO_ORIGINAL_DST = 80          # linux/netfilter_ipv4.h; not exposed by the socket module"
-
-**Location:** `devcontainer-config/cc-sni-proxy.py:38`
-**Type:** Configuration
-**Verdict:** Verified
-**Confidence:** High
-**Verification mode:** static
-**Scope:** Covers the constant's value and its absence from `socket`. Does not establish that the `getsockopt` call succeeds under the container's kernel (untested — `original_dst()` returns `"unknown"` on failure).
-**Legibility-target:** for-orchestrator-synthesis
-
-`SO_ORIGINAL_DST` is 80 in `linux/netfilter_ipv4.h`, and CPython's `socket` module exposes no such name. The unpack format `"!2xH4s8x"` over a 16-byte buffer matches `struct sockaddr_in` (2-byte family skipped, 2-byte port, 4-byte addr, 8-byte pad) — `devcontainer-config/cc-sni-proxy.py:147`. Failure is caught and degraded to the string `"unknown"` (`:149-150`), so a wrong constant would surface as a degraded log line rather than a broken connection.
-
-**Evidence:** `devcontainer-config/cc-sni-proxy.py:38`, `devcontainer-config/cc-sni-proxy.py:145-150`
-
----
-
-## Claim 9: "`name` lines match exactly; `.zone` lines match the zone and every subdomain of it. Blank lines and #-comments are ignored."
-
-**Location:** `devcontainer-config/cc-sni-proxy.py:123-124`
-**Type:** Behavioral
-**Verdict:** Verified
-**Confidence:** High
-**Verification mode:** executed
-**Scope:** Covers exact-match, zone+subdomain match, comment/blank stripping, and case-insensitivity on both sides. Does not establish behaviour for a line that is a bare `.` (it becomes the empty string after `lstrip(".")`, and `allows()` would then accept any name ending in `.`; no such line is ever generated by `init-firewall.sh`).
-**Legibility-target:** for-orchestrator-synthesis
-
-`Allowlist.load()` strips `#`-comments and whitespace, lower-cases, skips empties, and routes leading-dot lines into `zones` with the dots stripped:
-
-```
-line = line.split("#", 1)[0].strip().lower()
-if not line:
-    continue
-(al.zones if line.startswith(".") else al.exact).add(line.lstrip("."))
-```
-(`devcontainer-config/cc-sni-proxy.py:134-137`; excerpt ends `:137`, enclosing `load()` continues to `:138` — `return al`.)
-
-`allows()` is `name in self.exact or any(name == z or name.endswith("." + z) for z in self.zones)` (`:141-142`), i.e. a `.zone` entry admits the apex *and* subdomains, as claimed. The incoming SNI is lower-cased and trailing-dot-stripped in `normalise_name()` (`:58`), so both sides are normalised. Executed: the 13-test Python suite (which includes allowlist cases) passes — `docs/reviews/execution-logs/cfc-r2-pytests-abbd42d.txt`.
-
-**Evidence:** `devcontainer-config/cc-sni-proxy.py:134-142`, `devcontainer-config/cc-sni-proxy.py:58`, `docs/reviews/execution-logs/cfc-r2-pytests-abbd42d.txt`
-
----
-
-## Claim 10: "Exit status is the contract init-firewall.sh relies on: 0 only once the child is LISTENING; anything else means \"no proxy\"…"
-
-**Location:** `devcontainer-config/cc-sni-proxy.py:237-239`
-**Type:** Behavioral / Error-handling
-**Verdict:** Verified
-**Confidence:** High
-**Verification mode:** static
-**Scope:** Covers "the parent returns 0 only after the child has bound and started serving". Does not establish that the child stays alive afterwards (a crash after `ready` is not signalled to the parent), and does not cover the `--daemon`-less path, which never returns until the server stops.
-**Legibility-target:** for-orchestrator-synthesis
-
-The readiness token is written from inside `serve()` *after* `asyncio.start_server` has returned, i.e. after the listening socket exists:
-
-```
-server = await asyncio.start_server(
-    lambda r, w: handle(r, w, allow, args.upstream_port), host, int(port), reuse_address=True)
-log(f"listening on {args.listen}; ...")
-if ready_fd is not None:
-    os.write(ready_fd, b"ready")
-```
-(`devcontainer-config/cc-sni-proxy.py:202-206`; excerpt ends `:206`, enclosing `serve()` continues to `:209` — `os.close(ready_fd)` then `server.serve_forever()`.)
-
-The parent returns 0 only on that exact token, and 1 on anything else including a short read from a dead child (`:249-256`). Any exception in the child — including `pwd.getpwnam` / `setuid` failure — is written back as `error: …` and the child exits 1 (`:280-285`). Consumer side: `init-firewall.sh:874-878` treats a non-zero status as fatal under `set -e`, reaching the fail-closed trap.
-
-**Evidence:** `devcontainer-config/cc-sni-proxy.py:202-209`, `devcontainer-config/cc-sni-proxy.py:249-256`, `devcontainer-config/cc-sni-proxy.py:280-285`, `devcontainer-config/init-firewall.sh:874-878`
-
----
-
-## Claim 11: "Close every other inherited fd: the caller's stdout is the devcontainer postStartCommand pipe, and a daemon holding it open would hang the launch."
-
-**Location:** `devcontainer-config/cc-sni-proxy.py:264-265`
-**Type:** Behavioral
-**Verdict:** Verified
-**Confidence:** High
-**Verification mode:** static
-**Scope:** Covers that every inherited fd above 2 other than the readiness pipe is closed, and that fds 0/1/2 are redirected rather than left pointing at the caller's pipes. Does not establish the claim's *motivation* (that the postStartCommand pipe would hang the launch) — that is a runtime property of the devcontainer CLI, not checkable here.
-**Legibility-target:** for-orchestrator-synthesis
-
-The child redirects 0 from `/dev/null` and 1/2 onto the log fd before the sweep (`devcontainer-config/cc-sni-proxy.py:260-262`), so the inherited stdout/stderr descriptions are dropped, then:
-
-```
-for fd in os.listdir("/proc/self/fd"):
-    fd = int(fd)
-    if fd > 2 and fd != w:
-        try:
-            os.close(fd)
-        except OSError:
-            pass
-```
-(`:266-272`; excerpt ends `:272`, enclosing `daemonize()` continues to `:286` — read: the privilege drop, `asyncio.run(serve(...))`, the error report back through `w`, and `os._exit`.)
-
-`os.listdir` materialises the list before returning, so closing the just-used directory fd mid-loop is harmless; `log_fd` (>2) is closed here but survives as the dup targets 1 and 2. `w` is deliberately skipped and is closed inside `serve()` at `:207`.
-
-**Evidence:** `devcontainer-config/cc-sni-proxy.py:260-272`, `devcontainer-config/cc-sni-proxy.py:207`
-
----
-
-## Claim 12: "This flag disables crash reporting ONLY. Do NOT reach for DISABLE_TELEMETRY, DO_NOT_TRACK, or CLAUDE_CODE_DISABLE_NONESSENTIAL_TRAFFIC: each of those also disables feature-flag evaluation, which Remote Control depends on."
-
-**Location:** `devcontainer-config/devcontainer.json:73-79`
-**Type:** Reference / Configuration
-**Verdict:** Verified
-**Confidence:** High
-**Verification mode:** executed (WebFetch of the cited docs)
-**Scope:** Covers the three named variables breaking Remote Control via feature-flag evaluation, and `DISABLE_ERROR_REPORTING` not being among them. Does not establish that `DISABLE_ERROR_REPORTING` is *sufficient* to stop every non-`api.anthropic.com` egress, and the list is not exhaustive — the docs name a fourth variable, `DISABLE_GROWTHBOOK`, with the same effect.
-**Legibility-target:** for-orchestrator-synthesis
-
-`https://code.claude.com/docs/en/remote-control.md` states verbatim: "**Feature-flag evaluation**: [`DISABLE_TELEMETRY`, `DO_NOT_TRACK`, `CLAUDE_CODE_DISABLE_NONESSENTIAL_TRAFFIC`, and `DISABLE_GROWTHBOOK`] each disable the feature-flag evaluation that Remote Control availability depends on." The same page has a dedicated failure mode, "Remote Control requires feature-flag evaluation", naming those four and not `DISABLE_ERROR_REPORTING`. `https://code.claude.com/docs/en/network-config.md` scopes `DISABLE_ERROR_REPORTING` to the `browser-intake-us5-datadoghq.com` host — "Operational error reports … Optional: disable with `DISABLE_ERROR_REPORTING` or `DISABLE_TELEMETRY`" — which matches "crash reporting ONLY". Adding `DISABLE_GROWTHBOOK` to the do-not-set list would make the comment complete.
-
-**Evidence:** `devcontainer-config/devcontainer.json:73-80`, WebFetch `https://code.claude.com/docs/en/remote-control.md` (2026-09-03), WebFetch `https://code.claude.com/docs/en/network-config.md` (2026-09-03)
-
----
-
-## Claim 13: "sentry.io and statsig.com were removed 2026-09 …: neither appears in the documented requirements any more"
-
-**Location:** `devcontainer-config/egress/base.txt:5-7`
-**Type:** Reference
-**Verdict:** Verified
-**Confidence:** High
-**Verification mode:** executed (WebFetch of the cited docs)
-**Scope:** Covers the absence of `sentry.io` and `statsig.com` from the network-config requirements table. Does not establish that Claude Code makes no attempt to reach them at runtime — the commit message for `b04090c` flags that as unverified, and it remains so.
-**Legibility-target:** for-orchestrator-synthesis
-
-The "Network access requirements" table at `https://code.claude.com/docs/en/network-config.md` (fetched 2026-09-03) lists `api.anthropic.com`, `claude.ai`, `claude.com`, `platform.claude.com`, `mcp-proxy.anthropic.com`, `downloads.claude.ai`, `storage.googleapis.com`, `registry.npmjs.org`, `bridge.claudeusercontent.com`, `*.frame.claudeusercontent.com`, `raw.githubusercontent.com`, `http-intake.logs.us5.datadoghq.com`, `browser-intake-us5-datadoghq.com`, `formulae.brew.sh`, and `code.claude.com`. Neither `sentry.io` nor `statsig.com` appears. Both are gone from the file (`devcontainer-config/egress/base.txt:25-28`), confirmed by executing `--print-entries`, which emits exactly five base entries (`docs/reviews/execution-logs/cfc-r2-print-hooks-abbd42d.txt`).
-
-Note for the author, not a defect in the claim: error/telemetry intake has moved to two Datadog hosts that base.txt does not carry either, which is consistent with `DISABLE_ERROR_REPORTING` being set — but `console.anthropic.com` is *also* no longer in the documented table (the docs now name `platform.claude.com` for Console authentication), so base.txt carries one host the source-of-truth page no longer lists.
-
-**Evidence:** `devcontainer-config/egress/base.txt:5-10`, `devcontainer-config/egress/base.txt:25-28`, WebFetch `https://code.claude.com/docs/en/network-config.md` (2026-09-03), `docs/reviews/execution-logs/cfc-r2-print-hooks-abbd42d.txt`
-
----
-
-## Claim 14: "OAuth token exchange/refresh (platform.claude.com — per the network-config docs; a missing entry surfaces as a mid-session re-login once the access token expires)"
-
-**Location:** `devcontainer-config/egress/base.txt:22-24`
-**Type:** Reference
-**Verdict:** Mostly accurate
-**Confidence:** High
-**Verification mode:** executed (WebFetch of the cited docs)
-**Scope:** Covers the documented purpose of `platform.claude.com`. Does not establish the stated *symptom* of omitting it — the docs describe a first-run connectivity-check failure, not specifically a mid-session re-login.
-**Legibility-target:** for-author
-
-The docs say verbatim: "`platform.claude.com` | Anthropic Console account authentication. OAuth token exchange, refresh, and revocation also go to this host for claude.ai accounts, so both Console and claude.ai sign-ins require it". The mechanism half of the claim is exactly right. The consequence half is the comment's own inference; the docs' stated failure mode is "The first-run setup connectivity check points here when it can't reach `api.anthropic.com` or `platform.claude.com`". Precise version: drop the parenthetical or mark it as inference.
-
-**Evidence:** `devcontainer-config/egress/base.txt:21-28`, WebFetch `https://code.claude.com/docs/en/network-config.md` (2026-09-03)
-
----
-
-## Claim 15: "SCOPE: the `:11434` suffix is load-bearing. … this admits exactly the model server and nothing else listening on the host's Docker-facing interface … do not drop the suffix, which would silently fall back to 443."
-
-**Location:** `devcontainer-config/egress/llm.txt:19-24`
-**Type:** Behavioral / Configuration
-**Verdict:** Verified
-**Confidence:** High
-**Verification mode:** executed
-**Scope:** Covers the parse (suffix → tcp 11434 only; no suffix → tcp 443) and the `dst,dst` ipset match. Does not establish that the *host* is unreachable on other ports by some other path (e.g. an entry in another profile, or the bridge-gateway:53 accept).
-**Legibility-target:** for-orchestrator-synthesis
-
-Executed `--print-entries` with the `llm` profile yields `host.docker.internal	11434` and every other entry at `443` — `docs/reviews/execution-logs/cfc-r2-print-hooks-abbd42d.txt`. The default is applied in `parse_entry` (`devcontainer-config/init-firewall.sh:119-124`), members are emitted as `<ip>,tcp:<port>` (`:384`), the set is `hash:net,port` (`:731`), and the accept matches `dst,dst` (`:902`).
-
-**Evidence:** `devcontainer-config/init-firewall.sh:119-124`, `devcontainer-config/init-firewall.sh:384`, `devcontainer-config/init-firewall.sh:731`, `devcontainer-config/init-firewall.sh:902`, `docs/reviews/execution-logs/cfc-r2-print-hooks-abbd42d.txt`
-
----
-
-## Claim 16: "both halves are constrained to their literal grammar (hostname labels; 1-65535 integers)… `10#`: a leading zero would otherwise make bash read the number as octal… Tab-separated, because IFS is \\n\\t in this script: a space would not split under `read -r domain ports` at the consumer."
-
-**Location:** `devcontainer-config/init-firewall.sh:108-111`, `:128`, `:131-132`
-**Type:** Behavioral / Invariant
-**Verdict:** Verified
-**Confidence:** High
-**Verification mode:** executed
-**Scope:** Covers the domain/port validation, the octal note, and the tab-vs-space split under the script's `IFS`. Does not establish canonical-form normalisation: `port:0443` passes validation (10#0443 = 443) and is then interpolated *verbatim* as `tcp:0443` into `ipset add` at `:384` — the raw string, not the `10#` value, is what reaches the command line.
-**Legibility-target:** for-orchestrator-synthesis
-
-`parse_entry` (`devcontainer-config/init-firewall.sh:116-134`, read in full) anchors the domain against a label grammar (`:118`, `:125`), anchors the port list against `^[0-9]{1,5}(,[0-9]{1,5})*$` (`:126`), and range-checks each port via `10#` (`:127-130`). Executed negatives, all exit 1 with the intended message: `bad name:99999`, `ok.example:70000` — `docs/reviews/execution-logs/cfc-r2-hook-negatives-abbd42d.txt`.
-
-The `IFS` claim is correct and load-bearing. `IFS=$'\n\t'` (`:30`) means the consumers `while read -r domain ports` (`:348`, `:860`) split on tab only; a space-separated `printf` would put `443` into `$domain`. Every comma split in the file is done through `tr ',' '\n'` under the same `IFS` — `:54`, `:127`, `:191`, `:383` — which is the only form that works with newline in `IFS`.
-
-**Evidence:** `devcontainer-config/init-firewall.sh:29-30`, `devcontainer-config/init-firewall.sh:116-134`, `devcontainer-config/init-firewall.sh:348`, `devcontainer-config/init-firewall.sh:383-384`, `docs/reviews/execution-logs/cfc-r2-hook-negatives-abbd42d.txt`
-
----
-
-## Claim 17: "A `server=/github.com/...` line covers github.com AND every subdomain (api., codeload., ssh., pkg., ...); likewise githubusercontent.com covers objects./raw./media./github-cloud. — the hosts git, gh and git-lfs actually contact. Anything else on GitHub (ghcr.io, github.dev) is not in the CIDR ingest either, so it stays unresolved AND unroutable."
-
-**Location:** `devcontainer-config/init-firewall.sh:147-154`
+**Location:** `scripts/cross-model-review.py:372-373`
 **Type:** Behavioral
 **Verdict:** Verified
 **Confidence:** Medium
 **Verification mode:** static
-**Scope:** Covers dnsmasq's documented suffix-matching semantics for `server=/domain/addr` and the fact that `GITHUB_DNS_ZONES` contains exactly those two zones. Does not establish that the CIDR ingest excludes `ghcr.io`/`github.dev` (that depends on GitHub's live `/meta` response, not on this repo) and dnsmasq is not installed in this sandbox, so the matching was not executed.
-**Legibility-target:** for-orchestrator-synthesis
+**Scope:** Covers the rationale's internal consistency with the harness's own stated comparability discipline; does not establish the magnitude of any score shift between judges, and does not establish that any existing run artifact records which judge produced it.
 
-`GITHUB_DNS_ZONES="github.com githubusercontent.com"` (`devcontainer-config/init-firewall.sh:154`), consumed at `:191` and emitted one `server=/<zone>/<ns>` per upstream at `:205`. Executed `--print-dnsmasq-conf` shows exactly `server=/github.com/…` and `server=/githubusercontent.com/…` appended after the profile domains (`docs/reviews/execution-logs/cfc-r2-print-hooks-abbd42d.txt`). dnsmasq's documented behaviour for `server=/<domain>/<ip>` is to route the domain *and all its subdomains* to that server; this is the semantics the claim relies on and it is not exercisable here (`command -v dnsmasq` → not installed, `docs/reviews/execution-logs/cfc-r2-env-abbd42d.txt`) — hence Medium confidence.
+The file already treats prompt/judge identity as the comparability axis, in the same voice:
 
-**Evidence:** `devcontainer-config/init-firewall.sh:154`, `devcontainer-config/init-firewall.sh:191`, `devcontainer-config/init-firewall.sh:205`, `docs/reviews/execution-logs/cfc-r2-print-hooks-abbd42d.txt`, `docs/reviews/execution-logs/cfc-r2-env-abbd42d.txt`
+```python
+# scripts/cross-model-review.py:35-38
+    only as a deliberate recall probe or for comparability with pre-021
+    measurements (live diff-only runs print a warning to stderr). Files larger
+```
+
+and
+
+```python
+# scripts/cross-model-review.py:37-38 (continuation)
+    Without --context-base the prompt is byte-identical to the pre-021 harness, so
+    historical numbers stay comparable.
+```
+
+The comment is consistent with that discipline: stage-2 matching is performed by the judge model, so a judge swap changes the matching function that produces the overlap scores.
+
+**Evidence:** `scripts/cross-model-review.py:11-38`, `scripts/cross-model-review.py:369-378`
 
 ---
 
-## Claim 18a: "The load-bearing property is what is ABSENT: there is no bare `server=` line and `no-resolv` stops dnsmasq reading /etc/resolv.conf, so the daemon has no default upstream at all. … With NO upstream … the config has zero server lines"
+## Claim 4b: The judge default `anthropic/claude-sonnet-5` is a real OpenRouter model id.
 
-**Location:** `devcontainer-config/init-firewall.sh:161-173`
+**Location:** `scripts/cross-model-review.py:374`
+**Type:** Configuration / Reference
+**Verdict:** Unverifiable
+**Confidence:** High (in the blocker)
+**Verification mode:** static
+**Scope:** Covers only whether the slug can be checked from this sandbox and whether it is *shaped* like the harness's other ids; does not establish that OpenRouter serves a model under this name, and does not establish that the previous pin `anthropic/claude-sonnet-4.5` was itself still live.
+
+```python
+# scripts/cross-model-review.py:374
+    ap.add_argument("--judge", default="anthropic/claude-sonnet-5", help="pinned judge model for stage-2 matching")
+```
+
+Blocker: verifying an OpenRouter slug requires reaching `openrouter.ai`, and this sandbox has no egress. The commit message and the audit's F10 row both state the same limitation, so the claim is honestly labelled at both sites.
+
+On shape, the slug is consistent with the harness's own conventions: the docstring example uses the same `anthropic/claude-<tier>-<version>` form (`--models anthropic/claude-opus-4.5 openai/gpt-5.2 google/gemini-3-pro`, `scripts/cross-model-review.py:69`), and the sibling sweep script pins bare-major ids of the same generation (`MODELS = ["moonshotai/kimi-k3", "openai/gpt-5.6-sol", "google/gemini-3.1-pro-preview"]`, `scripts/dd-cross-model-sweep.py:30`). Shape consistency is not existence.
+
+**Evidence:** `scripts/cross-model-review.py:69`, `scripts/cross-model-review.py:374`, `scripts/dd-cross-model-sweep.py:30`
+
+---
+
+## Claim 5: "It sits in its own directory rather than the repo root so that a session working in *this* repo does not load it twice — once from `~/.claude` and once as the project's own instructions."
+
+**Location:** `README.md:124`
+**Type:** Architectural
+**Verdict:** Verified
+**Confidence:** High
+**Verification mode:** static
+**Scope:** Same mechanism as Claim 2; covers the stated reason for the directory. Does not establish that the README's own host-setup recipe still works for a reader who already ran the old one (it does not — the pre-existing symlink dangles until re-run).
+
+The setup recipe was updated in step with the move:
+
+```bash
+# README.md:14
+ln -s ~/claude-workflows/global-instructions/CLAUDE.md ~/.claude/CLAUDE.md
+```
+
+and the contents index and contribution step both point at the new path (`README.md:124`, `README.md:168`).
+
+**Evidence:** `README.md:11-20`, `README.md:121-126`, `README.md:165-170`
+
+---
+
+## Claim 6: "`devcontainer-config/install.sh` stages payload entries under their basename, so the image payload and `link-claude-home.sh` are unchanged — `~/.claude/CLAUDE.md` still resolves to the same content."
+
+**Location:** `docs/decisions/log.md:68` (row 47)
+**Type:** Architectural
+**Verdict:** Verified
+**Confidence:** High
+**Verification mode:** executed
+**Scope:** Covers the in-container `~/.claude/CLAUDE.md` symlink target and the payload names; "the same content" means the same *file*, not byte-identical text — commit `4d41add` also deleted four lines from that file (F6), so the installed bytes do change, for an unrelated reason. Does not establish the host-native `~/.claude/CLAUDE.md` case (Claim 8).
+
+Same evidence as Claim 1: `install.sh:56` stages by basename, `link-claude-home.sh:44` looks for `CLAUDE.md` at the payload root, and the Dockerfile copies the stage wholesale:
+
+```dockerfile
+# devcontainer-config/Dockerfile:409
+COPY claude-home/ /opt/claude-workflows/
+```
+
+Executed simulation as recorded under Claim 1 (exit 0, 2026-09-12).
+
+**Evidence:** `devcontainer-config/install.sh:50-60`, `devcontainer-config/link-claude-home.sh:44-62`, `devcontainer-config/Dockerfile:400-429`, `docs/reviews/execution-logs/r2-verification-commands-2026-09-12.txt`
+
+---
+
+## Claim 7: "about 8K tokens of byte-identical duplication per request"
+
+**Location:** `docs/decisions/log.md:68` (row 47); same figure in `c56be81`'s message
+**Type:** Performance / Configuration
+**Verdict:** Verified
+**Confidence:** Medium
+**Verification mode:** executed
+**Scope:** Covers the order of magnitude of the second copy's size under standard byte-per-token heuristics; does not establish an exact tokenizer count (no tokenizer is available offline here), and does not establish the per-request cost after prompt caching.
+
+- Command: `wc -c -w -l *.md`
+- cwd: `/workspace/global-instructions`
+- Exit code: 0 · Timestamp: 2026-09-12
+- Output: `283  4433 30343 CLAUDE.md` (283 lines, 4,433 words, 30,343 bytes)
+
+30,343 bytes at the usual ~4 bytes/token heuristic is ≈ 7,600 tokens; 4,433 words at ~1.3 tokens/word is ≈ 5,800–7,700. "About 8K" is the right order and is stated as an approximation. Note the figure is stated for the file's pre-change size; `4d41add` removed four lines from it in the same PR, which moves the number by well under the stated precision.
+
+**Evidence:** `global-instructions/CLAUDE.md` (283 lines), `docs/reviews/execution-logs/r2-verification-commands-2026-09-12.txt`
+
+---
+
+## Claim 8: "Takes effect for existing containers at the next `install.sh` + rebuild; a session started before that still sees both copies."
+
+**Location:** `docs/decisions/log.md:68` (row 47); same sentence in `c56be81`'s message
+**Type:** Behavioral
+**Verdict:** Mostly accurate
+**Confidence:** High
+**Verification mode:** static
+**Scope:** Covers the cc-isolated container path, where the claim is exactly right; does *not* cover the host-native installation the README documents, where the effect is immediate and is a breakage rather than a deferred improvement. Does not establish how many such host installs exist.
+
+For containers the claim holds: the payload is baked at image build time and only re-linked at container start —
+
+```bash
+# devcontainer-config/link-claude-home.sh:39-40
+SRC="${CC_WORKFLOWS_DIR:-/opt/claude-workflows}"
+DEST="${CLAUDE_CONFIG_DIR:-$HOME/.claude}"
+```
+
+— so nothing changes until `install.sh` restages and the image is rebuilt.
+
+The unstated half: the README's host recipe creates `~/.claude/CLAUDE.md` as a symlink into the repo working tree, where a `git pull` of this change takes effect immediately:
+
+```bash
+# README.md:14 (post-change form)
+ln -s ~/claude-workflows/global-instructions/CLAUDE.md ~/.claude/CLAUDE.md
+```
+
+A host that ran the *old* recipe has `~/.claude/CLAUDE.md -> ~/claude-workflows/CLAUDE.md`, and that target no longer exists (`ls CLAUDE.md` → `No such file or directory`). On such a host the global instructions silently vanish at pull time rather than at rebuild time, and the fix is to re-run the `ln -s`. Neither the decision row nor the commit message says so. The precise version would add: "on a host-native install the old symlink dangles at pull time and must be recreated."
+
+**Evidence:** `README.md:11-20`, `README.md:118-122`, `devcontainer-config/link-claude-home.sh:39-62`, `docs/decisions/log.md:68`
+
+---
+
+## Claim 9: "F2 — `Task tool` → `Agent tool` | **applied** (`skills/draft-review/SKILL.md`)"
+
+**Location:** `docs/reviews/prompt-audit-2026-09-11.md:560`
+**Type:** Staleness / Reference
+**Verdict:** Verified
+**Confidence:** High
+**Verification mode:** static
+**Scope:** Covers the single occurrence the audit's F2 entry cited, in `skills/draft-review/SKILL.md`; does not establish that no other file in the repo says "Task tool" (two do — see Claim 10).
+
+The line the audit quoted as F2's evidence is gone and replaced:
+
+```markdown
+# skills/draft-review/SKILL.md:190
+Dispatch each critique to a sub-agent via the Agent tool.
+```
+
+A repo-wide grep for `Task tool` across `*.md`/`*.sh`/`*.py`/`*.bats`, excluding `archive/`, `external/`, `runs/`, `node_modules/` and `docs/`, returns zero hits under `skills/`.
+
+**Evidence:** `skills/draft-review/SKILL.md:187-191`, `docs/reviews/prompt-audit-2026-09-11.md:78-81`
+
+---
+
+## Claim 10: "This also kills the last surviving \"Task tool\" reference, a regression against skill-format-audit Finding 7."
+
+**Location:** commit `4d41add` message, paragraph 1
+**Type:** Architectural / Reference
+**Verdict:** Mostly accurate
+**Confidence:** High
+**Verification mode:** static
+**Scope:** Covers occurrences of the literal string "Task tool" in live (non-`docs/`, non-`archive/`) prompt surface; does not establish anything about `Task`-as-a-word used in other senses (e.g. asyncio `Task` in review artifacts).
+
+Two live occurrences survive outside `skills/`:
+
+```markdown
+# patterns/orchestrated-review.md:31
+**Terminology note**: Use "sub-agent" consistently for the parallel execution mechanism, regardless of whether the underlying implementation uses the Task tool, Agent tool, or manual sequential processing.
+```
+
+```markdown
+# guides/skill-format-audit.md:156
+## Finding 7: draft-review.md References `Task` Tool Instead of `Agent` Tool
+```
+
+Both are defensible — the first deliberately names both spellings, the second is the audit record that raised Finding 7 — but neither is `docs/`, so "the last surviving reference" is true only under the narrower reading the audit itself used: the last occurrence *in a skill*. The audit's own F2 entry states that narrower scope correctly ("now the only surviving occurrence in the skill", `docs/reviews/prompt-audit-2026-09-11.md:80`); the commit message drops the qualifier. Precise version: "the last surviving `Task tool` reference in a skill."
+
+**Evidence:** `patterns/orchestrated-review.md:31`, `guides/skill-format-audit.md:148-167`, `docs/reviews/prompt-audit-2026-09-11.md:80`
+
+---
+
+## Claim 11: "F3 ... **applied** (draft-review, code-review, matrix-analysis; the restatements at the Stage-2 headers are now one plain sentence)"
+
+**Location:** `docs/reviews/prompt-audit-2026-09-11.md:561`
+**Type:** Architectural
+**Verdict:** Verified
+**Confidence:** High
+**Verification mode:** static
+**Scope:** Covers the three named skills' "Mandatory Execution Rules" blocks and their Stage-2 header restatements; does not establish that no other skill in the repo carries a similar pressure block (F3's scope was these three).
+
+All three headings changed from `## Mandatory Execution Rules` to `## Execution rules`, and the numbered MUST/absolute list is replaced by contract prose that carries the reason. In `skills/matrix-analysis/SKILL.md`:
+
+```markdown
+# skills/matrix-analysis/SKILL.md:34-36
+Dispatch every evaluation to a sub-agent via the Agent tool. Scoring items yourself defeats
+the point of the matrix: the comparison is only worth reading if each cell came from an
+independent pass.
+```
+
+The Stage-2 restatements are single sentences: `skills/draft-review/SKILL.md:190` (quoted under Claim 9), and in `skills/code-review/SKILL.md` the diff removes `**DO NOT write critiques yourself. You MUST dispatch each critique to a sub-agent via the Agent tool.** This is non-negotiable.` (paraphrased — no quote available because the line is a deletion and no longer exists in the post-change file; it is visible as `-` in `git diff -M -C 2d679ce..HEAD -- skills/code-review/SKILL.md`).
+
+**Evidence:** `skills/draft-review/SKILL.md:49-61`, `skills/matrix-analysis/SKILL.md:34-46`, `skills/code-review/SKILL.md` (diff hunk at the former `## Mandatory Execution Rules`)
+
+---
+
+## Claim 12: "F4 ... inheriting sites updated (`guides/sub-agent-briefing.md` including the worked example at :29 and the \"word cap\" rationale at :36, the `guides/README.md` index line, `workflows/task-decomposition.md`, `guides/task-decomposition-examples.md`, `skills/matrix-analysis/SKILL.md`)"
+
+**Location:** `docs/reviews/prompt-audit-2026-09-11.md:562`
+**Type:** Architectural
+**Verdict:** Verified
+**Confidence:** High
+**Verification mode:** static
+**Scope:** Covers completeness of the named site list against a repo-wide search for the retired numeric cap, excluding `archive/`, `external/`, `runs/`, `node_modules/` and `docs/`; does not establish that the replacement wording is *effective*, and does not cover other word caps in the repo that F4 never targeted (`skills/fact-check/SKILL.md`'s ≤25-word citation span is an evidence-span rule, not a sub-agent output cap, and correctly went untouched).
+
+The convention itself was rewritten:
+
+```markdown
+# patterns/orchestrated-review.md:131-135
+#### Default output shape
+
+Every dispatched sub-agent should be told what shape its output takes. The default convention:
+
+> `Lead with conclusions; prose only where the structured output can't carry the point.`
+```
+
+A repo-wide grep for `300 words|<300|word cap|word limit|under [0-9]+ words|[0-9]+-word` over `*.md`/`*.sh`/`*.py`/`*.bats`, excluding the directories above, returns no live site still carrying the retired cap — every remaining hit is inside `docs/` (the audit doc quoting the removed text) or is the unrelated fact-check citation-span rule. The two line references check out against the pre-change file: `guides/sub-agent-briefing.md:29` was the worked example's `> **Output:** ... Total length under 300 words.` and `:36` was `- Word cap forces the sub-agent to summarize, not paste code.` (paraphrased — no quote available because both are pre-change lines that no longer exist; they appear as `-` lines in the diff hunks `@@ -26,14 +26,14 @@`).
+
+The cross-reference in `workflows/task-decomposition.md` was retargeted to the renamed anchor and resolves (see Claim 19).
+
+**Evidence:** `patterns/orchestrated-review.md:128-143`, `guides/sub-agent-briefing.md:14`, `guides/sub-agent-briefing.md:29`, `guides/sub-agent-briefing.md:36`, `guides/README.md:51`, `workflows/task-decomposition.md:113`, `workflows/task-decomposition.md:121`, `guides/task-decomposition-examples.md:32-38`, `skills/matrix-analysis/SKILL.md:220-224`
+
+---
+
+## Claim 13: "F6 ... **partially applied** — the two paragraphs restating decision-tree row 2 are cut from the always-loaded instructions file. The hook cross-reference paragraph stays until F5 is decided."
+
+**Location:** `docs/reviews/prompt-audit-2026-09-11.md:563`
+**Type:** Architectural
+**Verdict:** Verified
+**Confidence:** High
+**Verification mode:** static
+**Scope:** Covers exactly which paragraphs were removed from and retained in `global-instructions/CLAUDE.md`; does not establish that the removal has the intended effect on routing behaviour (behavioral, requires model calls).
+
+The rename hunk removes exactly two paragraphs and nothing else (`similarity index 97%`, a single `@@ -47,10 +47,4 @@` hunk): the "When a single message bundles **2+ independent tasks**…" paragraph and the "**Recognize a batch.**…" paragraph (paraphrased — no quote available because both are deletions and no longer exist in the post-change file; they are the two `-` paragraphs in `git diff -M -C 2d679ce..HEAD -- 'global-instructions/*' 'CLAUDE*'`).
+
+The hook cross-reference survives:
+
+```markdown
+# global-instructions/CLAUDE.md:59
+A `UserPromptSubmit` hook (`hooks/batch-feedback-routing-reminder.sh`) escalates this row from skimmable prose to a harness-injected, non-blocking reminder when it detects multi-item phrasing — the same escalation pattern as the divergent-design routing reminder.
+```
+
+**Evidence:** `global-instructions/CLAUDE.md:45-60`, `docs/reviews/prompt-audit-2026-09-11.md:563`
+
+---
+
+## Claim 14: "F9 — \"The research must be thorough\" | **applied**"
+
+**Location:** `docs/reviews/prompt-audit-2026-09-11.md:564`
+**Type:** Staleness
+**Verdict:** Verified
+**Confidence:** High
+**Verification mode:** static
+**Scope:** Covers removal of the exact sentence from `workflows/research-plan-implement.md` and its absence elsewhere outside `docs/`; does not establish that the remaining two sentences carry the same instruction weight.
+
+The surviving text drops the exhortation and keeps the two operative sentences:
+
+```markdown
+# workflows/research-plan-implement.md:82
+Read the actual implementations, not just signatures. If the research is wrong, everything downstream will be wrong.
+```
+
+A repo-wide grep for `must be thorough` over `*.md`, excluding `archive/`, `external/`, `runs/` and `docs/`, returns zero hits.
+
+**Evidence:** `workflows/research-plan-implement.md:79-83`, `docs/reviews/prompt-audit-2026-09-11.md:143-148`
+
+---
+
+## Claim 15: "F10 — judge pin | **applied** — `anthropic/claude-sonnet-5`, with the comparability-break comment."
+
+**Location:** `docs/reviews/prompt-audit-2026-09-11.md:565`
+**Type:** Configuration
+**Verdict:** Verified
+**Confidence:** High
+**Verification mode:** static
+**Scope:** Covers that the default was changed and the comment added at the cited site; does not establish that the slug is live (Claim 4b) and does not establish that any other pinned id in the harness was re-baselined (none was — `scripts/cross-model-review.py:69`'s docstring example still names `anthropic/claude-opus-4.5`, which is an illustrative `--models` example, not a pin).
+
+```python
+# scripts/cross-model-review.py:372-374
+    # Pinned on purpose: changing the judge breaks score comparability with earlier runs.
+    # Re-baseline deliberately and note the cutover in the run log when you move it.
+    ap.add_argument("--judge", default="anthropic/claude-sonnet-5", help="pinned judge model for stage-2 matching")
+```
+
+The row also self-labels the egress limitation, which matches this sandbox's actual constraint.
+
+**Evidence:** `scripts/cross-model-review.py:369-378`, `docs/reviews/prompt-audit-2026-09-11.md:565`
+
+---
+
+## Claim 16: "F1 ... **applied** ... `install.sh` now stages payload entries under their basename, so the image layout and `link-claude-home.sh` are unchanged; `health-check.sh` reads the path from `GLOBAL_MD`. Decision log row 47."
+
+**Location:** `docs/reviews/prompt-audit-2026-09-11.md:566`
+**Type:** Architectural
+**Verdict:** Verified
+**Confidence:** High
+**Verification mode:** executed
+**Scope:** Covers each of the four sub-assertions (move, basename staging, `GLOBAL_MD`, row 47 exists); inherits Claim 8's residue on the host-native symlink, which this row also omits.
+
+Move: `git diff -M -C` reports `rename from CLAUDE.md` / `rename to global-instructions/CLAUDE.md`, similarity 97%. Basename staging: Claim 1 (executed). `GLOBAL_MD`: Claim 3. Row 47: `docs/decisions/log.md:68` exists and is the only line added to that file in this range.
+
+**Evidence:** `docs/decisions/log.md:68`, `devcontainer-config/install.sh:50-60`, `scripts/health-check.sh:35`, `docs/reviews/execution-logs/r2-verification-commands-2026-09-12.txt`
+
+---
+
+## Claim 17: "`references/rubric.md` (515 lines ...), `references/chat-synthesis.md` (126), `references/override-log.md` (52). SKILL.md 1,909 → 1,256 lines"
+
+**Location:** `docs/reviews/prompt-audit-2026-09-11.md:569`; same figures in `59ca38f`'s message
 **Type:** Configuration
 **Verdict:** Verified
 **Confidence:** High
 **Verification mode:** executed
-**Scope:** Covers the generated config's shape in both the with-upstream and no-upstream cases. Does not establish dnsmasq's runtime response to a name with no matching `server=` line — that is Claim 18b.
-**Legibility-target:** for-orchestrator-synthesis
+**Scope:** Covers the four line counts and the contents attributed to `rubric.md`; does not establish that the split reduced *loaded* tokens at runtime (that depends on whether the model follows the links — see Claim 29).
 
-`compose_dnsmasq_conf` (`devcontainer-config/init-firewall.sh:174-208`, read in full) emits a fixed preamble containing `no-resolv` and never a bare `server=`; every `server=` it writes is of the form `server=/$d/$ns` (`:205`). Executed with the `llm` profile and a synthetic resolv.conf: the output is the preamble plus nine `server=/<domain>/127.0.0.11` lines and nothing else. Executed with an empty resolv.conf: the early return at `:186-189` fires and the output is the preamble plus `# NO UPSTREAM: …` — zero `server=` lines. Both in `docs/reviews/execution-logs/cfc-r2-print-hooks-abbd42d.txt`.
+- Command: `wc -l skills/code-review/SKILL.md skills/code-review/references/*.md` and `git show 2d679ce:skills/code-review/SKILL.md | wc -l`
+- cwd: `/workspace` · Exit code: 0 · Timestamp: 2026-09-12
+- Output: `1256 SKILL.md`, `515 references/rubric.md`, `126 references/chat-synthesis.md`, `52 references/override-log.md`; baseline `1909`.
 
-**Evidence:** `devcontainer-config/init-firewall.sh:174-208`, `docs/reviews/execution-logs/cfc-r2-print-hooks-abbd42d.txt`
+All four figures and the before/after pair are exact. The contents attributed to `rubric.md` are all present as headings in it: `## Deliverable 2: Code Review Rubric` (:5, the template), the tier sections `## 🔴 Must Fix` / `## 🟡 Must Address` / `## 🟢 Consider` (:36, :47, :58), `### Evidence grounding` (:151), `### Unified Severity Mapping` (:261), `### Escalation Rule` (:335), `### Soundness-Contradiction Channel` (:373), `### Executable-Defect Channel` (:443), `### Rubric Status Line` (:493).
+
+**Evidence:** `skills/code-review/SKILL.md`, `skills/code-review/references/rubric.md:5-509`, `skills/code-review/references/chat-synthesis.md`, `skills/code-review/references/override-log.md`, `docs/reviews/execution-logs/r2-verification-commands-2026-09-12.txt`
 
 ---
 
-## Claim 18b: "A name that matches no `server=/<domain>/` line has nowhere to go and dnsmasq answers REFUSED — it is never forwarded"
+## Claim 18: "All 85 tests across the code-review suites pass" / "All 85 tests pass."
 
-**Location:** `devcontainer-config/init-firewall.sh:163-165`
-**Type:** Behavioral
+**Location:** commit `59ca38f` message, paragraph 4; `docs/reviews/prompt-audit-2026-09-11.md:569`
+**Type:** Configuration / Reference
+**Verdict:** Incorrect
+**Confidence:** High
+**Verification mode:** executed
+**Scope:** Covers the *count* only. The "pass" half of the claim is true and independently verified below; what is refuted is the denominator 85, which corresponds to no grouping of these suites. Does not establish anything about the orchestrator evals in `test/skills/` that need model calls (the commit correctly says those were not run).
+
+- Command: `bats test/skills/code-review-*.bats` and `bats --count` per file
+- cwd: `/workspace` · Exit code: 0 · Timestamp: 2026-09-12
+- Output: 97 `ok`, 0 `not ok`.
+
+Per file: `code-review-assurance-contract.bats` 15, `code-review-context-delivery.bats` 10, `code-review-executable-defect.bats` 9, `code-review-factcheck-replication.bats` 17, `code-review-format-contract.bats` 18, `code-review-format.bats` 17, `code-review-soundness-crosscheck.bats` 11 — **97** total, confirmed independently by `grep -c '^@test'` over the same seven files. The four suites this commit modified total **53**. No subset of these seven files sums to 85 (dropping 12 from 97 is not achievable by any combination of file sizes). The counts are identical at the pre-change commit `2d679ce`, so the figure was not simply stale.
+
+Matches the prior logged pattern class: *"a specific measured value quoted from a checked-in artifact set that does not contain it"* — the same shape as `"shortest real review in the corpus is over 3 KB"` (first seen 2026-08-19) and `total_golden 11 vs 13` (first seen 2026-08-18).
+
+The precise version is either "all 97 tests across the code-review suites pass" or, if the intent was the modified suites only, "all 53 tests in the four modified suites pass."
+
+**Evidence:** `test/skills/code-review-assurance-contract.bats`, `test/skills/code-review-context-delivery.bats`, `test/skills/code-review-executable-defect.bats`, `test/skills/code-review-factcheck-replication.bats`, `test/skills/code-review-format-contract.bats`, `test/skills/code-review-format.bats`, `test/skills/code-review-soundness-crosscheck.bats`, `docs/reviews/execution-logs/r2-verification-commands-2026-09-12.txt`
+
+---
+
+## Claim 19: "Every anchor that crossed the split was rewritten programmatically (none left unresolved), including workflows/pr-prep.md's link to the capture format."
+
+**Location:** commit `59ca38f` message, paragraph 3; restated as "every crossing anchor rewritten" at `docs/reviews/prompt-audit-2026-09-11.md:569`
+**Type:** Reference
+**Verdict:** Verified
+**Confidence:** High
+**Verification mode:** executed
+**Scope:** Covers every intra-repo `](...#anchor)` link in `skills/code-review/SKILL.md`, the three `references/*.md`, and the external referrers `workflows/pr-prep.md`, `workflows/codebase-onboarding.md`, `patterns/orchestrated-review.md`, `README.md`, `AGENTS.md`, `GEMINI.md`, `global-instructions/CLAUDE.md`. Does not establish that the *link text* accompanying each anchor is still accurate (one is not — Claim 20), and does not check anchors inside `docs/`, `archive/`, `external/` or `runs/`.
+
+- Command: a GitHub-slug anchor resolver (lowercase, strip punctuation, spaces→hyphens) over the eleven files above, resolving each relative target and asserting the slug exists as a heading in the target file
+- cwd: `/workspace` · Exit code: 0 · Timestamp: 2026-09-12
+- Output: `checked 54 bad 0` (a broader sweep over all of `skills/code-review`, `workflows/`, `patterns/`, `guides/` and the entry-point files returned the same: 0 unresolved).
+
+The `pr-prep.md` link named in the message is among them:
+
+```markdown
+# workflows/pr-prep.md:183
+[`skills/code-review/SKILL.md`](../skills/code-review/references/override-log.md#capture-format) — Date, PR
+```
+
+and `### Capture format` exists at `skills/code-review/references/override-log.md:9`. The `codebase-onboarding.md` referrer still points into `SKILL.md#between-stage-status-banner`, whose heading remained resident, and resolves.
+
+**Evidence:** `workflows/pr-prep.md:183`, `workflows/codebase-onboarding.md:120`, `skills/code-review/references/override-log.md:9`, `skills/code-review/SKILL.md:86-91`, `docs/reviews/execution-logs/r2-verification-commands-2026-09-12.txt`
+
+---
+
+## Claim 20: The override-log capture format is in `skills/code-review/SKILL.md`.
+
+**Location:** `workflows/pr-prep.md:183` (the link's display text)
+**Type:** Reference / Staleness
+**Verdict:** Stale
+**Confidence:** High
+**Verification mode:** static
+**Scope:** Covers the visible link label only; the href beside it was correctly updated and resolves (Claim 19). Does not establish that any other link label in the repo drifted — the anchor sweep checked targets, not labels.
+
+```markdown
+# workflows/pr-prep.md:180-183
+before the fix commit lands. Append to `docs/reviews/override-log.md` using the format in
+[`skills/code-review/SKILL.md`](../skills/code-review/references/override-log.md#capture-format) — Date, PR
+```
+
+The label says `skills/code-review/SKILL.md`; that file no longer contains the capture format. `SKILL.md`'s own Override-Log section now defers:
+
+```markdown
+# skills/code-review/SKILL.md:1186-1188
+capture format, the append procedure, and why the log is not write-only are in
+**[references/override-log.md](references/override-log.md)**.
+```
+
+A reader who follows the label rather than clicking (the common case when this workflow text is pasted into a sub-agent prompt, which strips nothing but is read linearly) is sent to the wrong file. The label should read `skills/code-review/references/override-log.md`.
+
+**Evidence:** `workflows/pr-prep.md:178-185`, `skills/code-review/SKILL.md:1182-1189`, `skills/code-review/references/override-log.md:5-22`
+
+---
+
+## Claim 21a: "Still over the 500-line ceiling."
+
+**Location:** commit `59ca38f` message, paragraph 5; `docs/reviews/prompt-audit-2026-09-11.md:569`
+**Type:** Configuration
+**Verdict:** Verified
+**Confidence:** High
+**Verification mode:** executed
+**Scope:** Covers that a 500-line file guideline exists in this repo and that `SKILL.md` exceeds it; does not establish that the guideline was ever intended to bind skill files specifically (it is stated for implementation files in the RPI workflow).
+
+The ceiling is stated as repo policy:
+
+```markdown
+# workflows/research-plan-implement.md:439
+**File size discipline**: Keep individual files under **500 lines**. If an implementation step would push a file past this threshold, split it before continuing.
+```
+
+`wc -l skills/code-review/SKILL.md` → 1256 (exit 0, 2026-09-12), so the skill is 2.5× the ceiling even after the split.
+
+**Evidence:** `workflows/research-plan-implement.md:439`, `workflows/research-plan-implement.md:451`, `skills/code-review/SKILL.md`, `docs/reviews/execution-logs/r2-verification-commands-2026-09-12.txt`
+
+---
+
+## Claim 21b: "The next candidates are Stage 1's dispatch template (~240 lines) and Stage 3's synthesis procedure (~160), both currently pipeline-resident."
+
+**Location:** commit `59ca38f` message, paragraph 5; abbreviated at `docs/reviews/prompt-audit-2026-09-11.md:569`
+**Type:** Configuration
 **Verdict:** Unverifiable
 **Confidence:** Medium
 **Verification mode:** static
-**Scope:** Covers nothing beyond "the config gives dnsmasq no route for such a name" (established in 18a). Does not establish the specific RCODE returned. The security property that matters — *not forwarded* — follows from 18a; only the "REFUSED" wording is unverified.
-**Legibility-target:** for-orchestrator-synthesis
+**Scope:** Covers whether the two named spans can be measured against the current file. The Stage 3 figure checks out exactly; the Stage 1 figure names a unit the file does not delimit, so it cannot be confirmed or refuted without knowing which span the author meant. Does not establish whether either span is a good extraction candidate — that is a design judgment, out of scope.
 
-Blocker: `dnsmasq` is not installed in the review sandbox (`command -v dnsmasq` → nothing, `docs/reviews/execution-logs/cfc-r2-env-abbd42d.txt`), and there is no Docker or root available to install or run one. Verifying would need a live container built from `devcontainer-config/Dockerfile` and a `dig @127.0.0.1 not-allowlisted.example` against the generated config, checking the RCODE. The commit message for `d598bda` independently flags "dnsmasq REFUSED-with-no-servers behaviour" as asserted from documentation and needing a live check, and `docs/working/questions.md` carries it — so the gap is already tracked, not newly discovered here.
+Stage 3 measures as claimed: the section runs from `### Stage 3: Synthesize and Produce Outputs` at `skills/code-review/SKILL.md:973` to the next `##`-level heading, `## Deliverable 1: Chat Synthesis` at `:1132` — 159 lines, matching "~160".
 
-**Evidence:** `devcontainer-config/init-firewall.sh:161-173`, `docs/reviews/execution-logs/cfc-r2-env-abbd42d.txt`, `git log bd41aef..HEAD --no-merges` (d598bda Notes)
+Stage 1 has no sub-unit named "dispatch template". `### Stage 1: Code Fact-Check (k=3 replicated)` spans `:382` to `### Stage 1.5: Critic gating` at `:684` — 302 lines. Its only internal heading is `#### Merging replicate verdicts (most-severe-wins)` at `:500`, so the pre-merge dispatch prose is 118 lines. There are no fenced blocks anywhere in `:382-683` (`grep -n '^```'` over the file returns only `:100`, `:102`, `:901`, `:908`, `:1157`, `:1174`). Neither 118 nor 302 is "~240", and no other heading-delimited span in the section measures 240 lines. What would be needed: the author naming the line range they measured.
+
+**Evidence:** `skills/code-review/SKILL.md:382`, `skills/code-review/SKILL.md:500`, `skills/code-review/SKILL.md:684`, `skills/code-review/SKILL.md:973`, `skills/code-review/SKILL.md:1132`
 
 ---
 
-## Claim 19: "Profile entries may carry a `:port` suffix …; the resolver only wants the name. Then refuse anything that is not a plain hostname: a `/` or `#` here would be read by dnsmasq as config syntax"
+## Claim 22: "health-check failures are identical to the pre-change baseline (four, all pre-existing)"
 
-**Location:** `devcontainer-config/init-firewall.sh:192-196`
+**Location:** commit `c56be81` message, "Verified:" paragraph; restated as "health-check failures are unchanged from baseline" in commit `59ca38f`
+**Type:** Behavioral / Configuration
+**Verdict:** Mostly accurate
+**Confidence:** High
+**Verification mode:** executed
+**Scope:** Covers the set and count of `fail` lines emitted by `scripts/health-check.sh` at HEAD versus `2d679ce`. The "identical to the pre-change baseline / all pre-existing" half is confirmed; the count "four" is refuted — there are six. Does not establish that the four shellcheck failures are harmless, and does not cover the script's `warn` lines (2 divergence signals at HEAD, also pre-existing).
+
+- Command: `bash scripts/health-check.sh` at HEAD (`/workspace`) and at `2d679ce` (a worktree), exit 1 in both cases
+- Timestamps: 2026-09-12 · Outputs captured to `docs/reviews/execution-logs/r2-health-check-head-2026-09-12.txt` and `…-base-2026-09-12.txt`
+
+HEAD emits **six** `✗` lines, not four:
+
+```
+  ✗ In global-instructions/CLAUDE.md but not AGENTS.md: parallel-worktrees.md
+  ✗ In global-instructions/CLAUDE.md but not GEMINI.md: parallel-worktrees.md
+  ✗ .apir5-probe2.sh
+  ✗ test/auto-approve-allowed-commands.bats
+  ✗ test/init-firewall-rules.bats
+  ✗ test/cc-isolated-functions.bats
+```
+
+The last four are the shellcheck section — presumably the "four" the message counted. The first two come from `check_md_consistency`, which calls `fail`, not `warn`:
+
+```bash
+# scripts/health-check.sh:265-270
+            if [[ -n "$only_in_ref" ]]; then
+                fail "In ${files[0]} but not $mdfile: $only_in_ref"
+            fi
+```
+
+All six are pre-existing: the baseline run reproduces every one (with `CLAUDE.md` in place of `global-instructions/CLAUDE.md` in the first two labels). The baseline run also showed a seventh, `✗ BATS tests failed` from `test/hooks/log-usage.bats:1`; that is a **worktree artifact, not a baseline difference** — executed control: the same test also fails in a detached worktree checked out at HEAD (`bats test/hooks/log-usage.bats` in `$scratchpad/headwt` → `not ok 1 skill invocation is logged with all fields`) while passing in `/workspace` at HEAD. So the in-place failure sets are genuinely identical.
+
+Precise version: "health-check failures are identical to the pre-change baseline (six, all pre-existing — four shellcheck, two MD-consistency)."
+
+**Evidence:** `scripts/health-check.sh:262-272`, `docs/reviews/execution-logs/r2-health-check-head-2026-09-12.txt`, `docs/reviews/execution-logs/r2-health-check-base-2026-09-12.txt`
+
+---
+
+## Claim 23: "agents-gemini-sync, cross-reference-integrity, guide-index-sync and link-claude-home-wiring all pass"
+
+**Location:** commit `c56be81` message, "Verified:" paragraph
 **Type:** Behavioral
 **Verdict:** Verified
 **Confidence:** High
 **Verification mode:** executed
-**Scope:** Covers the ordering (strip `:port`, then hostname-check) and the warn-and-omit path. Does not establish that the omitted name is unreachable at the *IP* layer — it is omitted from DNS only; the ipset is populated independently in phase A.
-**Legibility-target:** for-orchestrator-synthesis
+**Scope:** Covers the four named bats suites at HEAD; does not establish that these four are the *right* suites to have run for this change, and does not cover suites that need model calls.
 
-The strip precedes the regex:
+- Command: `bats test/agents-gemini-sync.bats test/cross-reference-integrity.bats test/guide-index-sync.bats test/link-claude-home-wiring.bats`
+- cwd: `/workspace` · Exit code: 0 · Timestamp: 2026-09-12
+- Output: 13 `ok`, 0 `not ok`, including `ok 10 every command in wiring.json points at a hook that exists` and `ok 13 the deny rules the guard hook's HARD tier depends on are wired`.
 
-```
-d="${d%%:*}"
-[ -n "$d" ] || continue
-if [[ ! "$d" =~ ^[A-Za-z0-9]([A-Za-z0-9-]*[A-Za-z0-9])?(\.[A-Za-z0-9]([A-Za-z0-9-]*[A-Za-z0-9])?)+$ ]]; then
-  echo "WARNING: not a hostname, omitting from resolver allowlist (stays unresolvable): $d" >&2
-  continue
-fi
-```
-(`devcontainer-config/init-firewall.sh:197-202`; excerpt ends `:202`, enclosing `compose_dnsmasq_conf()` continues to `:208` — read: the inner `while read -r ns` loop that emits one `server=` line per upstream.)
-
-Executed both halves: `host.docker.internal:11434` emits `server=/host.docker.internal/…` with no port, and a profile line `evil/line#x` produces the WARNING and no config line, exit 0 — `docs/reviews/execution-logs/cfc-r2-print-hooks-abbd42d.txt`, `docs/reviews/execution-logs/cfc-r2-hook-negatives-abbd42d.txt`.
-
-**Evidence:** `devcontainer-config/init-firewall.sh:197-208`, `docs/reviews/execution-logs/cfc-r2-hook-negatives-abbd42d.txt`
+**Evidence:** `test/agents-gemini-sync.bats`, `test/cross-reference-integrity.bats`, `test/guide-index-sync.bats`, `test/link-claude-home-wiring.bats`, `docs/reviews/execution-logs/r2-verification-commands-2026-09-12.txt`
 
 ---
 
-## Claim 20: "The policy calls are VERIFIED, not trusted. … the trap re-reads the live policies with `iptables -S` afterwards and says which of two very different things happened … The \"forced DROP\" line is printed only AFTER the read-back confirms it, so the log never claims a DROP that was not applied."
+## Claim 24: "the basename staging was simulated against a file entry and a directory entry"
 
-**Location:** `devcontainer-config/init-firewall.sh:237-244`
-**Type:** Error-handling / Invariant
-**Verdict:** Verified
-**Confidence:** High
-**Verification mode:** executed (via the bats suite's `FAIL_POLICY` stub)
-**Scope:** Covers the read-back, the per-chain OPEN alarm, and the message ordering for all three chains. Does not establish real netfilter behaviour (the bats stub models policies; no privileged container was available).
-**Legibility-target:** for-orchestrator-synthesis
-
-`fail_closed_on_abort()` was read in full (`devcontainer-config/init-firewall.sh:246-270`). The three `-P … DROP || true` calls (`:250-252`) are followed by `policies="$(iptables -w 5 -S 2>/dev/null || true)"` (`:253`) and a per-chain `grep -q "^-P $chain DROP"` (`:254-259`) that sets `open=1` and prints the "may be OPEN" line for any chain that did not take. The "Forced DROP policies (verified)" line sits in the `else` of `if [ "$open" = "1" ]` (`:260-266`), so it cannot print unless every chain read back as DROP. Both `|| true`s are present and the trap has no path that can itself abort. Executed: the suite's OPEN-alarm test under `FAIL_POLICY` and the `-w 5` abort-path tests pass (98/98, `docs/reviews/execution-logs/cfc-r2-bats-abbd42d.txt`).
-
-**Evidence:** `devcontainer-config/init-firewall.sh:246-270`, `docs/reviews/execution-logs/cfc-r2-bats-abbd42d.txt`
-
----
-
-## Claim 21: "Chain policies survive `iptables -F` (a flush removes rules, not policies), so ordering them ahead of the flush means there is no instant … at which the chains are empty AND the policy is ACCEPT."
-
-**Location:** `devcontainer-config/init-firewall.sh:465-471`
-**Type:** Behavioral / Invariant
-**Verdict:** Verified
-**Confidence:** High
-**Verification mode:** static
-**Scope:** Covers the source ordering (three `-P … DROP` before any `-F`) and the documented iptables semantics that `-F` does not reset policies. Does not establish kernel behaviour under the container's nf_tables backend — no privileged container was available (`iptables -S` here returns "you must be root", `docs/reviews/execution-logs/cfc-r2-env-abbd42d.txt`).
-**Legibility-target:** for-orchestrator-synthesis
-
-```
-iptables -P INPUT DROP
-iptables -P FORWARD DROP
-iptables -P OUTPUT DROP
-
-# Flush existing rules and delete existing ipsets (policies set above persist)
-iptables -F
-```
-(`devcontainer-config/init-firewall.sh:472-477`; excerpt ends `:477`, the flush block continues to `:483` — `-X`, `-t nat -F/-X`, `-t mangle -F/-X`, `ipset destroy`.)
-
-`iptables -F` is documented to flush *rules*; only `-P` changes a built-in chain's policy. The idempotent re-assert at `:797-799` is a no-op as the comment at `:793-796` claims. A bats test asserts the ordering ("DROP precedes the flush and no network call between the flush and the terminal REJECT") and passes.
-
-**Evidence:** `devcontainer-config/init-firewall.sh:472-483`, `devcontainer-config/init-firewall.sh:793-799`, `docs/reviews/execution-logs/cfc-r2-bats-abbd42d.txt`
-
----
-
-## Claim 22: "a loopback resolver: already admitted unconditionally by `-o lo` below … (and Docker's embedded resolver is DNAT'd off port 53 in nat OUTPUT before filter OUTPUT sees it, so a --dport 53 filter rule would not match that traffic regardless)"
-
-**Location:** `devcontainer-config/init-firewall.sh:560-563`, and the paired guard rationale at `:626-635`
+**Location:** commit `c56be81` message, "Verified:" paragraph
 **Type:** Behavioral
 **Verdict:** Verified
-**Confidence:** High
-**Verification mode:** static
-**Scope:** Covers the netfilter traversal order for locally generated packets (nat OUTPUT before filter OUTPUT) and the resulting need for an all-ports match on 127.0.0.11. Does not establish that Docker's DNAT is present on every runtime — the restore at `:486-493` is conditional on the pre-flush capture being non-empty.
-**Legibility-target:** for-orchestrator-synthesis
-
-For locally generated packets the traversal is raw OUTPUT → conntrack → mangle OUTPUT → nat OUTPUT → filter OUTPUT, so a DNAT in nat OUTPUT has already rewritten the destination port by the time a `--dport 53` filter rule is evaluated. The code acts on exactly that: the guard jump is on the address with no port match at all —
-
-```
-iptables -A OUTPUT -d 127.0.0.11 -j CC_DNS_GUARD
-iptables -A OUTPUT -p udp --dport 53 ! -d 127.0.0.1 -j CC_DNS_GUARD
-iptables -A OUTPUT -p tcp --dport 53 ! -d 127.0.0.1 -j CC_DNS_GUARD
-iptables -A OUTPUT -o lo -j ACCEPT
-```
-(`devcontainer-config/init-firewall.sh:720-723`; this is the end of the loopback-accept group, which begins at `:716`.)
-
-The three guard jumps precede the `-o lo` accept, as the comment at `:717-719` and `:631-635` both claim, and `CC_DNS_GUARD` RETURNs for the dnsmasq uid and root before rejecting (`:693-696`).
-
-**Evidence:** `devcontainer-config/init-firewall.sh:716-723`, `devcontainer-config/init-firewall.sh:693-696`, `devcontainer-config/init-firewall.sh:626-635`
-
----
-
-## Claim 23: "The nat rules are INSERTED at position 1, ahead of the `-d 127.0.0.11 -j DOCKER_OUTPUT` jump restored above: were they appended, a node query to 127.0.0.11:53 would be DNAT'd to the embedded resolver before the redirect could claim it."
-
-**Location:** `devcontainer-config/init-firewall.sh:637-641`
-**Type:** Behavioral / Invariant
-**Verdict:** Verified
-**Confidence:** High
-**Verification mode:** static
-**Scope:** Covers the relative order of the `CC_DNS` jumps and the restored Docker DNAT rules in nat OUTPUT. Does not establish the order *between* the two `CC_DNS` jumps (udp is inserted second, so it ends up first) — immaterial, as they match disjoint protocols.
-**Legibility-target:** for-orchestrator-synthesis
-
-The Docker rules are captured pre-flush and replayed with `xargs -L 1 iptables -t nat`, i.e. with whatever verb `iptables-save` emitted — `-A` (append):
-
-```
-DOCKER_DNS_RULES=$(iptables-save -t nat | grep "127\.0\.0\.11" || true)
-```
-(`devcontainer-config/init-firewall.sh:460`) and `echo "$DOCKER_DNS_RULES" | xargs -L 1 iptables -t nat` (`:490`, inside the `if` block `:486-493`). That runs at `:490`, *before* the `CC_DNS` block at `:681-687`, which uses `-I OUTPUT 1`:
-
-```
-iptables -t nat -I OUTPUT 1 -p tcp --dport 53 -j CC_DNS
-iptables -t nat -I OUTPUT 1 -p udp --dport 53 -j CC_DNS
-```
-(`:686-687`; excerpt ends `:687`, the FILTERING RESOLVER block continues to `:697`.)
-
-An insert at position 1 after the appends therefore lands ahead of them, as claimed. `CC_SNI`'s jump uses `-A` (`:886`), which is correct there because nothing else in nat OUTPUT matches tcp/443.
-
-**Evidence:** `devcontainer-config/init-firewall.sh:460`, `devcontainer-config/init-firewall.sh:486-493`, `devcontainer-config/init-firewall.sh:686-687`
-
----
-
-## Claim 24: "Idempotent restart: kill by pidfile, then start exactly one instance." / "--daemon: … (a prior instance named by the pidfile is terminated first, so re-runs are idempotent)"
-
-**Location:** `devcontainer-config/init-firewall.sh:661`, `devcontainer-config/init-firewall.sh:871-872`
-**Type:** Invariant
-**Verdict:** Verified
-**Confidence:** High
-**Verification mode:** executed (bats)
-**Scope:** Covers both daemons' restart paths *and* the iptables/ipset objects a re-run recreates — the load-bearing part of the idempotency claim. Does not establish behaviour when a prior instance exists with no pidfile and a pid that is not `dnsmasq`/`cc-sni-proxy` (dnsmasq additionally sweeps by uid; the proxy does not).
-**Legibility-target:** for-orchestrator-synthesis
-
-Daemon side. `stop_dnsmasq` (`devcontainer-config/init-firewall.sh:413-428`, read in full) validates the pidfile's pid against `/proc/$pid/comm == dnsmasq` before killing, escalates to `-9` after 3s, removes the pidfile, then sweeps `pkill -x -U "$DNSMASQ_UID" dnsmasq`. It is called immediately before the single `dnsmasq --conf-file=…` invocation (`:667-668`). The proxy's `stop_prior` (`devcontainer-config/cc-sni-proxy.py:212-232`) does the same shape, validating `/proc/{pid}/cmdline` contains `cc-sni-proxy`, and is called first in `daemonize` (`:242`).
-
-Chain/ipset side — this is where a second run would have bricked the container if the objects survived, so it was traced explicitly. All four chains created without `-N … || true` (`CC_DNS`, `CC_SNI` in nat at `:681`, `:882`; `CC_DNS_GUARD`, `CC_SNI_GUARD` in filter at `:693`, `:892`) are deleted by the phase-B flush before they are recreated: `iptables -F; iptables -X` clears the filter table's user chains and `iptables -t nat -F; iptables -t nat -X` the nat table's (`:477-480`). `-X` with no argument deletes every non-builtin chain in that table, and the preceding `-F` removes the rules that would otherwise hold references. The ipset is likewise destroyed before `ipset create` (`:483`, `:731`). So a second `-N` cannot fail with "chain already exists" and cannot trip the fail-closed trap.
-
-Executed: bats tests "a re-run kills the previous dnsmasq by pidfile and does not double-start" (`test/init-firewall-rules.bats:576`) and "the SNI proxy is started as ccproxy … exactly one start per run" (`:708`) pass in the 98/98 run — `docs/reviews/execution-logs/cfc-r2-bats-abbd42d.txt`. The stub-based suite does not model "chain already exists" as an error, so the chain half of this verdict rests on the static trace above plus documented `iptables -X` semantics, not on the tests.
-
-**Evidence:** `devcontainer-config/init-firewall.sh:413-428`, `devcontainer-config/init-firewall.sh:667-668`, `devcontainer-config/init-firewall.sh:477-483`, `devcontainer-config/init-firewall.sh:681`, `devcontainer-config/init-firewall.sh:693`, `devcontainer-config/init-firewall.sh:882`, `devcontainer-config/init-firewall.sh:892`, `devcontainer-config/cc-sni-proxy.py:212-242`, `docs/reviews/execution-logs/cfc-r2-bats-abbd42d.txt`
-
----
-
-## Claim 25: "The proxy reads the ClientHello, admits the connection only if the SNI is on the allowlist written here, RESOLVES THE SNI NAME ITSELF and connects there … Its name lookups go through the container resolver (the filtering dnsmasq above), so an SNI that is not allowlisted for DNS is doubly dead."
-
-**Location:** `devcontainer-config/init-firewall.sh:818-827`
-**Type:** Behavioral / Architectural
-**Verdict:** Verified
-**Confidence:** High
-**Verification mode:** static
-**Scope:** Covers the proxy's resolve-the-SNI behaviour and the fact that `ccproxy` is *not* exempt from the DNS redirect, so its lookups do traverse dnsmasq. Does not establish that the proxy's own egress is actually constrained by the ipset at the kernel level (untested — no privileged container).
-**Legibility-target:** for-orchestrator-synthesis
-
-The resolve-and-connect path is Claim 4. The "doubly dead" half turns on `ccproxy` being absent from the `CC_DNS` exemption list, which it is: the chain RETURNs only for `$DNSMASQ_UID` and `0` (`devcontainer-config/init-firewall.sh:682-683`), while the SNI chain separately RETURNs for `$CCPROXY_UID` and `0` (`:883-884`). So a `getaddrinfo` from the proxy is redirected to dnsmasq at 127.0.0.1:53 like any other non-exempt uid, and a name with no `server=` line gets no answer (Claim 18a/18b).
-
-**Evidence:** `devcontainer-config/init-firewall.sh:682-683`, `devcontainer-config/init-firewall.sh:883-884`, `devcontainer-config/cc-sni-proxy.py:182-186`
-
----
-
-## Claim 26: "GitHub is admitted by CIDR (phase A) rather than by name; these are the zones git, gh and git-lfs actually contact over 443." (immediately above `.github.com` / `.githubusercontent.com` / `.githubassets.com`)
-
-**Location:** `devcontainer-config/init-firewall.sh:864-868`
-**Type:** Behavioral / Architectural
-**Verdict:** Incorrect
 **Confidence:** Medium
 **Verification mode:** executed
-**Scope:** Covers the third zone, `.githubassets.com`. The claim is accurate for `.github.com` and `.githubusercontent.com`; the verdict is carried entirely by the third entry, per the compound-claim rule (most-severe part wins).
-**Legibility-target:** for-author
+**Scope:** Covers that the described simulation, when re-run now, produces the layout the change depends on. It does not and cannot establish that the author actually ran it at the time — that is a claim about an unrecorded past action, and no captured output exists in the repo. Confidence is Medium for that reason, not because the behaviour is in doubt.
 
-`.githubassets.com` is written into the SNI allowlist —
+Re-derived in full under Claim 1: a file entry (`global-instructions/CLAUDE.md`) stages to `stage/CLAUDE.md` and a directory entry (`skills/`, containing a nested subdirectory) stages to `stage/skills/` with its subtree intact. Exit 0, 2026-09-12.
 
-```
-echo ".github.com"
-echo ".githubusercontent.com"
-echo ".githubassets.com"
-} > "$SNI_ALLOWLIST"
-```
-(`devcontainer-config/init-firewall.sh:866-869`; excerpt ends `:869`, the SNI block continues to `:897`.)
-
-— but `githubassets.com` is absent from `GITHUB_DNS_ZONES`, which is exactly `"github.com githubusercontent.com"` (`:154`). Executed `--print-dnsmasq-conf` confirms the generated resolver config carries `server=/github.com/…` and `server=/githubusercontent.com/…` and no `githubassets` line (`docs/reviews/execution-logs/cfc-r2-print-hooks-abbd42d.txt`). Under this design a name with no `server=` line is never forwarded, so no client using the container resolver can obtain an address for `*.githubassets.com` and the SNI entry can never be reached. The file's *own* companion comment at `:150-153` lists only `github.com` and `githubusercontent.com` as "the hosts git, gh and git-lfs actually contact", so the two comments disagree.
-
-Separately, `githubassets.com` is GitHub's web-UI asset CDN; `git`, `gh` and `git-lfs` contact `github.com`, `codeload.github.com`, `objects.githubusercontent.com` and friends, not it — hence Medium rather than High confidence on that half (it rests on knowledge of GitHub's hosts, not on repo evidence). The repo-internal half — the entry is inert because the resolver refuses the name — is fully established. Not a fabrication (`githubassets.com` is a real host), so no hallucination-log entry.
-
-Precise version: either drop `.githubassets.com` from the SNI allowlist, or add `githubassets.com` to `GITHUB_DNS_ZONES` and correct the "git, gh and git-lfs" attribution to name the web UI. `test/init-firewall-rules.bats:727` asserts the current (inert) entry, so it would need updating either way.
-
-**Evidence:** `devcontainer-config/init-firewall.sh:154`, `devcontainer-config/init-firewall.sh:864-869`, `devcontainer-config/init-firewall.sh:150-153`, `test/init-firewall-rules.bats:727`, `docs/reviews/execution-logs/cfc-r2-print-hooks-abbd42d.txt`
+**Evidence:** `devcontainer-config/install.sh:54-60`, `docs/reviews/execution-logs/r2-verification-commands-2026-09-12.txt`
 
 ---
 
-## Claim 27: "SNI proxy probes, run AS NODE so they traverse the redirect (root is exempt)." / "Negative: an address that IS in the ipset, asked for with a name that is NOT allowlisted, must be refused"
+## Claim 25: "install.sh is not in enforcement_files(), so no Live-verified trailer is required."
 
-**Location:** `devcontainer-config/init-firewall.sh:926-936`
-**Type:** Behavioral / Error-handling
-**Verdict:** Mostly accurate
+**Location:** commit `c56be81` message, `Notes:` line
+**Type:** Architectural
+**Verdict:** Verified
 **Confidence:** High
-**Verification mode:** executed (partial)
-**Scope:** Covers that both probes run as `node` via `runuser`, that `runuser` exists in the image, and that `ANTHROPIC_PROBE_IP` is non-empty on every path that reaches the probe. Does not establish that the negative probe *fails for the intended reason* — a curl that errors for any other cause also lands in the else branch and prints "verification passed".
-**Legibility-target:** for-author
+**Verification mode:** static
+**Scope:** Covers both halves — `install.sh` is absent from `enforcement_files()`, and the commit-blocking hook's pattern does not match it. Does not establish that the change is *inconsequential* to the trust manifest: `install.sh` writes `claude-home/`, whose files `enforcement_files()` does hash, so this change alters the manifest at the next install even though the commit itself is ungated.
 
-`ANTHROPIC_PROBE_IP` is initialised to `""` (`devcontainer-config/init-firewall.sh:347`) and set to the first A record of `api.anthropic.com` inside the resolve loop (`:380-382`). `api.anthropic.com` is unconditionally in `base.txt` (`devcontainer-config/egress/base.txt:25`, confirmed by the executed `--print-entries`), and a failure to resolve it is fatal at `:364-367`, so by the time control reaches `:937` the variable is always a validated dotted quad. Multiple A records are handled by the `-z` guard — the first is kept. `runuser` is present at `/usr/sbin/runuser` in this image (`docs/reviews/execution-logs/cfc-r2-env-abbd42d.txt`), and the script runs as root so `/usr/sbin` is on `PATH`.
+`enforcement_files()` enumerates six literal names plus three globs, and `install.sh` is not among them:
 
-The imprecision: the negative probe's success condition is "curl exited non-zero", not "the proxy rejected the SNI". Any unrelated curl failure — a `--resolve` parse error, a transient DNS problem, the proxy being wedged — produces the same "Firewall verification passed - non-allowlisted SNI refused as expected" line at `:942`. The positive probe at `:928` bounds this in practice (it must succeed through the same proxy), which is why this is Mostly accurate and not Incorrect. Precise version would grep `$SNI_LOG` for a `REJECT sni=not-allowlisted.invalid` line rather than relying on curl's exit status alone.
+```bash
+# devcontainer-config/cc-isolated.sh:107-129
+enforcement_files() {
+  local cfg
+  cfg="$(config_dir)"
+  echo "devcontainer.json"
+  echo "Dockerfile"
+  echo "init-firewall.sh"
+  echo "cc-sni-proxy.py"
+  echo "link-claude-home.sh"
+  echo "cc-isolated.sh"
+```
 
-**Evidence:** `devcontainer-config/init-firewall.sh:347`, `devcontainer-config/init-firewall.sh:364-367`, `devcontainer-config/init-firewall.sh:380-382`, `devcontainer-config/init-firewall.sh:926-943`, `docs/reviews/execution-logs/cfc-r2-env-abbd42d.txt`, `docs/reviews/execution-logs/cfc-r2-print-hooks-abbd42d.txt`
+(excerpt ends :115; the enclosing function continues to :130 with the `egress/*.txt`, `projects/*.profile` and `claude-home` walks — read. None of the three adds `install.sh`; `install.sh` is also explicitly not installed, per `devcontainer-config/install.sh:24-25`.)
+
+The gate hook keys on the same set, as a repo-path regex:
+
+```bash
+# hooks/live-verify-gate.sh:57
+enforcement='^devcontainer-config/(Dockerfile|devcontainer\.json|init-firewall\.sh|cc-sni-proxy\.py|link-claude-home\.sh|cc-isolated\.sh|egress/)'
+```
+
+`devcontainer-config/install.sh` does not match, so the hook does not block, and no trailer is required.
+
+**Evidence:** `devcontainer-config/cc-isolated.sh:107-130`, `devcontainer-config/install.sh:22-25`, `hooks/live-verify-gate.sh:55-58`
 
 ---
 
-## Claim 28: "The blanket `INPUT -s <bridge>/24` / `OUTPUT -d <bridge>/24` accepts are replaced by `OUTPUT -d <gateway> --dport 53` (udp+tcp) with no inbound counterpart (replies are ESTABLISHED,RELATED)." / row 41: "TCP only" (nat `CC_SNI` on tcp/443)
+## Claim 26: "The skill's content surface spans SKILL.md plus its references/ files ... Read in document order so section-extraction end anchors still follow their sections."
 
-**Location:** `docs/decisions/log.md:57` (row 39), `docs/decisions/log.md:61` (row 41)
+**Location:** `test/skills/code-review-assurance-contract.bats:27-30`; identical comment at `test/skills/code-review-executable-defect.bats:23-26`, `test/skills/code-review-format-contract.bats:29-32`, `test/skills/code-review-soundness-crosscheck.bats:27-30`
 **Type:** Behavioral
 **Verdict:** Verified
 **Confidence:** High
-**Verification mode:** static
-**Scope:** Covers the absence of any bridge-/24 rule and of any inbound counterpart to the gateway:53 accept, and the tcp-only scope of the SNI redirect. Does not establish that no *other* inbound path exists (the `-i lo` accept at `:716` and the ESTABLISHED,RELATED accept at `:802` remain).
-**Legibility-target:** for-orchestrator-synthesis
+**Verification mode:** executed
+**Scope:** Covers (a) that the concatenation order matches the order in which the three stub sections appear in `SKILL.md`, and (b) that the section-extraction helpers still terminate on a following heading rather than running to EOF. Does not establish that the concatenation is the *complete* content surface a real run loads (a run also follows links into `patterns/orchestrated-review.md`, which none of these suites concatenates).
 
-Grepping the resulting file, the only `$HOST_IP` rules are the four owner-scoped gateway:53 accepts:
+The concatenation is `SKILL.md`, then chat-synthesis, rubric, override-log:
 
+```bash
+# test/skills/code-review-assurance-contract.bats:31-34
+  SKILL_CONTENT=$(cat "$SKILL" \
+    "$SKILL_DIR/references/chat-synthesis.md" \
+    "$SKILL_DIR/references/rubric.md" \
+    "$SKILL_DIR/references/override-log.md" | tr -d '\r')
 ```
-for uid in "$DNSMASQ_UID" 0; do
-    iptables -A OUTPUT -p udp -d "$HOST_IP" --dport 53 -m owner --uid-owner "$uid" -j ACCEPT
-    iptables -A OUTPUT -p tcp -d "$HOST_IP" --dport 53 -m owner --uid-owner "$uid" -j ACCEPT
-done
-```
-(`devcontainer-config/init-firewall.sh:788-791`; excerpt is the complete loop, followed at `:793-799` by the idempotent policy re-assert.)
 
-There is no `-A INPUT -s` rule anywhere except `-i lo` (`:716`) and the ESTABLISHED,RELATED accept (`:802`), and no `/24` appears in the file at all. The removed `--sport 53` inbound accept is documented as deliberately absent at `:698-703`. The SNI redirect is `-p tcp --dport 443` only (`:886`), and `CC_SNI`'s REDIRECT rule is `-p tcp` (`:885`).
+(excerpt ends :34; the enclosing `setup()` closes at :35 in this file, and at :36 in `code-review-executable-defect.bats` where a `FLAT=` line follows — read.)
 
-**Evidence:** `devcontainer-config/init-firewall.sh:788-791`, `devcontainer-config/init-firewall.sh:698-703`, `devcontainer-config/init-firewall.sh:885-886`
+That is document order by the position of the corresponding stubs in `SKILL.md`: `## Deliverable 1: Chat Synthesis` at `:1132`, `## Deliverable 2: Code Review Rubric` at `:1142`, `## Override-Log` at `:1182`. (The `## Reference files` index at `:86-91` lists them in a different order — rubric, chat-synthesis, override-log — but that index is not what the extraction order has to track.)
+
+Executed confirmation of the end-anchor property: the whole seven-suite run passes, including the test written for exactly this hazard — `ok 97 the section-extraction end anchor exists (no silent extract-to-EOF)` (exit 0, 2026-09-12).
+
+**Evidence:** `test/skills/code-review-assurance-contract.bats:22-35`, `test/skills/code-review-executable-defect.bats:18-36`, `test/skills/code-review-format-contract.bats:25-36`, `test/skills/code-review-soundness-crosscheck.bats:22-35`, `skills/code-review/SKILL.md:1132`, `skills/code-review/SKILL.md:1142`, `skills/code-review/SKILL.md:1182`, `docs/reviews/execution-logs/r2-verification-commands-2026-09-12.txt`
 
 ---
 
-## Claim 29: row 39 "Guarded by 7 new bats tests"; row 40 "verified by 10 new command-sequence bats tests"; row 41 "Guarded by 10 bats tests + 13 Python unit tests"
+## Claim 27: "The rubric template moved into the skill's references/ dir 2026-09-11 (prompt audit F8); the golden fixture is still compared against it."
 
-**Location:** `docs/decisions/log.md:57`, `docs/decisions/log.md:62`, `docs/decisions/log.md:61`
-**Type:** Configuration / Reference
+**Location:** `test/skills/code-review-format-contract.bats:183-185`
+**Type:** Behavioral
 **Verdict:** Verified
 **Confidence:** High
 **Verification mode:** executed
-**Scope:** Covers the counts of tests added by each commit and, for row 41, the count present at HEAD. Does not establish that those tests exercise real kernel behaviour — they drive stubbed `iptables`/`ipset`/`dig`/`dnsmasq` binaries, as the commit messages themselves say.
-**Legibility-target:** for-orchestrator-synthesis
+**Scope:** Covers that `SKILL_MD` points at the file that now holds the template and that the golden-sync tests pass against it; does not establish that the golden fixture itself is still the right fixture for the current rubric semantics.
 
-Counted mechanically (this claim shape matches both logged hallucination patterns, so it was not taken on trust):
+```bash
+# test/skills/code-review-format-contract.bats:183-185
+# The rubric template moved into the skill's references/ dir 2026-09-11
+# (prompt audit F8); the golden fixture is still compared against it.
+SKILL_MD="skills/code-review/references/rubric.md"
+```
 
-- `git show f1443c5 -- test/init-firewall-rules.bats | grep -c '^+@test'` → 7 (row 39).
-- `git show d598bda -- test/init-firewall-rules.bats | grep -c '^+@test'` → 10 (row 40).
-- `git show aa8dffc -- test/init-firewall-rules.bats | grep -c '^+@test'` → 10, and `git show aa8dffc -- test/test_cc_sni_proxy.py | grep -c '^+    def test_'` → 13 (row 41). The 10 SNI tests are all present at HEAD (`test/init-firewall-rules.bats:708,720,733,745,764,773,781,788,799,806`) and the Python suite reports "Ran 13 tests … OK" (`docs/reviews/execution-logs/cfc-r2-pytests-abbd42d.txt`).
+The template is indeed there — `## Deliverable 2: Code Review Rubric` at `skills/code-review/references/rubric.md:5`, with the fenced `# Code Review Rubric` template body opening at `:29-30`. The 18 tests in this suite pass (exit 0, 2026-09-12).
 
-**Evidence:** `test/init-firewall-rules.bats:708-812`, `docs/reviews/execution-logs/cfc-r2-pytests-abbd42d.txt`, `docs/reviews/execution-logs/cfc-r2-bats-abbd42d.txt`
+**Evidence:** `test/skills/code-review-format-contract.bats:178-190`, `skills/code-review/references/rubric.md:5-30`, `docs/reviews/execution-logs/r2-verification-commands-2026-09-12.txt`
 
 ---
 
-## Claim 30: "the proxy logs every decision to `/run/cc-sni-proxy/proxy.log` as `ALLOW`, `REJECT sni=... not in allowlist`, or `FAIL` (the name resolved to an address the ipset does not admit)." / "Root inside the container. The firewall script's own fetch and probes run as root and bypass the redirect"
+## Claim 28: "Reference file for skills/code-review/SKILL.md. Extracted from the skill body 2026-09-11 (prompt audit F8) ... Edit here, not in the skill."
 
-**Location:** `guides/cc-isolated-usage.md:296-302`
-**Type:** Behavioral / Reference
+**Location:** `skills/code-review/references/rubric.md:1-3`; identical header at `references/chat-synthesis.md:1-3` and `references/override-log.md:1-3`
+**Type:** Architectural
+**Verdict:** Verified
+**Confidence:** High
+**Verification mode:** executed
+**Scope:** Covers that the three files' bodies are the extracted originals rather than rewrites, and that no duplicate copy of the moved text remains in `SKILL.md` (so "edit here" is unambiguous). Does not establish that all three are actually *read* at their claimed stages at runtime.
+
+Line-by-line comparison of each reference body (header comment stripped) against the corresponding section of `git show 2d679ce:skills/code-review/SKILL.md`:
+
+- `rubric.md`: 502 body lines, **one** non-trivial difference — `[Deliverable 1](#deliverable-1-chat-synthesis)` became `[Deliverable 1](../SKILL.md#deliverable-1-chat-synthesis)`. Otherwise byte-identical.
+- `chat-synthesis.md`: 122 body lines, **two** differences, both link-depth fixes — `../../patterns/orchestrated-review.md` → `../../../patterns/…`, and `[The single-sample label](#the-single-sample-label)` → `(rubric.md#the-single-sample-label)`.
+- `override-log.md`: 48 body lines, **zero** content differences (trailing blank lines only).
+
+All three rewritten links resolve (Claim 19). `SKILL.md` retains no copy of the moved bodies — its three stubs are 3–7 lines each and defer (`skills/code-review/SKILL.md:1134-1139`, `:1144-1150`, `:1184-1188`).
+
+**Evidence:** `skills/code-review/references/rubric.md:1-3`, `skills/code-review/references/chat-synthesis.md:1-3`, `skills/code-review/references/override-log.md:1-3`, `skills/code-review/SKILL.md:1132-1189`
+
+---
+
+## Claim 29: "Required structure, the coverage-and-escalations block, the considered-overrides block, the single-sample label and the next-action line are specified in **references/chat-synthesis.md**."
+
+**Location:** `skills/code-review/SKILL.md:1134-1136`; the commit-message bullet "references/chat-synthesis.md (126): chat deliverable structure, coverage and escalation blocks, single-sample label, next-action derivation" makes the same attribution
+**Type:** Reference
 **Verdict:** Mostly accurate
 **Confidence:** High
 **Verification mode:** static
-**Scope:** Covers the log path and the three-verb vocabulary. Does not establish the log's contents at runtime. Two imprecisions below.
-**Legibility-target:** for-author
+**Scope:** Covers the five items the stub attributes to `chat-synthesis.md`; four are defined there outright, the fifth (single-sample label) is *used* there but *defined* in `rubric.md`. Does not establish the accuracy of the `Deliverable 2` stub's attributions (those all check out — Claim 17).
 
-The path is right: `SNI_LOG="$SNI_RUN_DIR/proxy.log"` with `SNI_RUN_DIR="${CC_SNI_RUN_DIR:-/run/cc-sni-proxy}"` (`devcontainer-config/init-firewall.sh:438`, `:441`), passed as `--log "$SNI_LOG"` (`:875`), and the daemon dups fds 1 and 2 onto it (`devcontainer-config/cc-sni-proxy.py:243`, `:262`). The verbs match `log()` calls at `cc-sni-proxy.py:176`, `:179`, `:188`, `:190`, and `REJECT sni={sni} orig_dst={orig}: not in allowlist` (`:179`) matches the guide's elided form.
+Four of the five are headings or blocks in the file: `### Structure the chat synthesis as:` (:9), `### Considered overrides` (:13), `### Coverage and Escalations` (:26), `#### Next-action derivation` (:86).
 
-Two corrections:
+The fifth is a cross-reference, not a specification:
 
-1. `FAIL` is not specific to an ipset denial. It is the handler for `(OSError, asyncio.TimeoutError)` around *both* `getaddrinfo` and `open_connection` (`cc-sni-proxy.py:187-188`), so a DNS refusal from the filtering resolver produces `FAIL` too — the code's own message hedges with a question mark ("resolved address not in the ipset?"); the guide states it as fact. Precise version: "FAIL (the name could not be resolved, or the resolved address could not be connected to — typically the ipset)".
-2. "probes run as root" is wrong for the two probes that matter here. The SNI probes are deliberately run as `node`: `runuser -u node -- curl …` at `devcontainer-config/init-firewall.sh:928` and `:937`, with the comment at `:926` saying so explicitly. Only the `example.com` and `api.github.com` probes (`:911`, `:919`) run as root. The list item's headline point — root bypasses the redirect, the agent does not — is correct; the supporting detail is not.
+```markdown
+# skills/code-review/references/chat-synthesis.md:78-80
+This is the same standing label the rubric status line carries (see
+[The single-sample label](rubric.md#the-single-sample-label)) and it is the whole of the hedging —
+```
 
-**Evidence:** `devcontainer-config/init-firewall.sh:438-441`, `devcontainer-config/init-firewall.sh:875`, `devcontainer-config/init-firewall.sh:911-937`, `devcontainer-config/cc-sni-proxy.py:176-190`
+The defining section `#### The single-sample label` lives at `skills/code-review/references/rubric.md:499`. `chat-synthesis.md` does fix the label's exact text and placement for the chat deliverable (`:77` gives the verbatim line and `:74-75` its position relative to `Recommended next action:`), so a reader following the stub is not sent to the wrong place — but the rationale and the canonical definition are one hop further. Precise version: "…and the placement of the single-sample label (defined in `references/rubric.md`)".
 
----
-
-## Claim 31: "98/98 bats + 13/13 python unit tests; shellcheck clean" (aa8dffc) · "77/77 pass" (b04090c) · "75/75 across both suites" and "docs/decisions/log.md: row 39 records the decision" (d598bda) · "88/88 bats pass" (1dbdabd)
-
-**Location:** commit messages in `bd41aef..HEAD` (`aa8dffc`, `b04090c`, `d598bda`, `1dbdabd`)
-**Type:** Configuration / Staleness
-**Verdict:** Stale
-**Confidence:** High
-**Verification mode:** executed
-**Scope:** Covers the four test-count assertions (all correct) and the decision-row reference in `d598bda` (superseded). The verdict is carried by the row-number reference; the counts alone would be Verified.
-**Legibility-target:** for-author
-
-Counts, all confirmed:
-
-- `aa8dffc`: executed `LC_ALL=C bats test/init-firewall-rules.bats test/cc-isolated-functions.bats` → `1..98`, 98 `ok`, 0 `not ok`, exit 0; `LC_ALL=C python3 test/test_cc_sni_proxy.py` → "Ran 13 tests … OK", exit 0; `LC_ALL=C shellcheck -S warning devcontainer-config/init-firewall.sh` → no output, exit 0. Logs: `docs/reviews/execution-logs/cfc-r2-bats-abbd42d.txt`, `…/cfc-r2-pytests-abbd42d.txt`, `…/cfc-r2-shellcheck-abbd42d.txt`.
-- `b04090c` "77/77": the five suites the message names sum to exactly 77 `@test` blocks at that commit (cc-isolated-functions 52 + guide-index-sync 1 + init-firewall-rules 13 + link-claude-home-wiring 10 + cross-reference-integrity 1).
-- `d598bda` "75/75" and `1dbdabd` "88/88" are consistent with the same per-commit `@test` counts (46 + 52 = 98 at HEAD, less the 10 SNI tests added by `aa8dffc` = 88 at the merge).
-
-The stale part: `d598bda`'s body says "docs/decisions/log.md: row 39 records the decision", but at HEAD the filtering-resolver decision is row **40** (`docs/decisions/log.md:62`); row 39 is port scoping (`:57`). This is self-corrected in the merge commit that brought the branch in — `1dbdabd`'s body says "renumbered the branch's decision-log row to #40 (#39 was taken by port scoping)" — so the record is complete in `git log`, and the branch commit message is immutable. Flagged for the log, not for action.
-
-**Evidence:** `docs/reviews/execution-logs/cfc-r2-bats-abbd42d.txt`, `docs/reviews/execution-logs/cfc-r2-pytests-abbd42d.txt`, `docs/reviews/execution-logs/cfc-r2-shellcheck-abbd42d.txt`, `docs/decisions/log.md:57`, `docs/decisions/log.md:62`
+**Evidence:** `skills/code-review/SKILL.md:1132-1139`, `skills/code-review/references/chat-synthesis.md:5-90`, `skills/code-review/references/rubric.md:493-509`
 
 ---
 
 ## Claims Requiring Attention
 
 ### Incorrect
-- **Claim 26** (`devcontainer-config/init-firewall.sh:864-868`): `.githubassets.com` is written into the SNI allowlist but is absent from `GITHUB_DNS_ZONES`, so the filtering resolver never answers for it and the entry is unreachable; the comment also attributes it to `git`/`gh`/`git-lfs`, which contact `github.com` and `githubusercontent.com` (as the file's own comment at `:150-153` says). Fix by dropping the entry or adding the zone to `GITHUB_DNS_ZONES`; `test/init-firewall-rules.bats:727` pins the current form.
+- **Claim 18** (commit `59ca38f` message; `docs/reviews/prompt-audit-2026-09-11.md:569`): "All 85 tests across the code-review suites pass" — the seven `test/skills/code-review-*.bats` suites contain **97** tests (all passing); the four suites this commit modified contain **53**. 85 matches no grouping, and the counts were identical before the change. Replace with 97 (or 53 if the modified suites were meant).
 
 ### Stale
-- **Claim 5** (`devcontainer-config/cc-sni-proxy.py:20-21`): "a filtering dnsmasq once that lands" — it landed two commits earlier in the same range and is unconditional at HEAD.
-- **Claim 31** (`d598bda` commit message): "row 39 records the decision" — the row is 40 at HEAD; already self-corrected by the merge commit `1dbdabd`, so no action.
+- **Claim 20** (`workflows/pr-prep.md:183`): the link *label* still reads `` `skills/code-review/SKILL.md` `` while the href correctly points at `references/override-log.md#capture-format`. Update the label to `skills/code-review/references/override-log.md`.
 
 ### Mostly Accurate
-- **Claim 3** (`devcontainer-config/cc-sni-proxy.py:4-5`): the module docstring omits root's exemption from the 443 redirect; `init-firewall.sh:830-835` has it right.
-- **Claim 12** (`devcontainer-config/devcontainer.json:73-79`): correct on all three named variables, but the docs name a fourth with the same effect, `DISABLE_GROWTHBOOK`, which the do-not-set list should include.
-- **Claim 14** (`devcontainer-config/egress/base.txt:22-24`): the documented purpose of `platform.claude.com` is verified; the "mid-session re-login" symptom is the comment's own inference, not in the cited page.
-- **Claim 27** (`devcontainer-config/init-firewall.sh:934-943`): the negative SNI probe's pass condition is "curl exited non-zero", so any unrelated curl failure also prints "verification passed"; greping `$SNI_LOG` for the `REJECT` line would make it a real check.
-- **Claim 30** (`guides/cc-isolated-usage.md:296-302`): `FAIL` also covers a DNS refusal, not only an ipset denial; and the SNI probes run as `node` via `runuser`, not as root.
+- **Claim 8** (`docs/decisions/log.md:68`; commit `c56be81` message): "takes effect at the next install.sh + rebuild" is true for containers but silent on host-native installs, where the old `~/.claude/CLAUDE.md` symlink dangles at `git pull` time and must be recreated. Add that sentence.
+- **Claim 10** (commit `4d41add` message): "the last surviving `Task tool` reference" — two live occurrences remain outside `skills/` (`patterns/orchestrated-review.md:31`, `guides/skill-format-audit.md:156`). The audit's own F2 row scopes it correctly ("in the skill"); the commit message dropped the qualifier.
+- **Claim 22** (commit `c56be81` message; echoed in `59ca38f`): "(four, all pre-existing)" undercounts — `scripts/health-check.sh` emits **six** `fail` lines at HEAD (four shellcheck + two MD-consistency). "All pre-existing" and "identical to the baseline" are both confirmed; only the count is wrong.
+- **Claim 29** (`skills/code-review/SKILL.md:1136`; commit `59ca38f` message): the single-sample label is *used* in `references/chat-synthesis.md` but *defined* in `references/rubric.md:499`.
 
 ### Unverifiable
-- **Claim 18b** (`devcontainer-config/init-firewall.sh:163-165`): dnsmasq's REFUSED response to a name with no `server=` line. Blocker: `dnsmasq` is not installed in the review sandbox and there is no Docker/root to run one; needs a live container built from `devcontainer-config/Dockerfile` plus a `dig @127.0.0.1` RCODE check. The security-relevant half ("never forwarded") is established by Claim 18a. Already tracked in `docs/working/questions.md` and in `d598bda`'s Notes.
+- **Claim 4b** (`scripts/cross-model-review.py:374`): whether `anthropic/claude-sonnet-5` is a live OpenRouter slug cannot be checked — this sandbox has no egress. Both the commit message and audit row F10 already flag it. Needed: one `GET https://openrouter.ai/api/v1/models` from a networked host before the next cross-model run.
+- **Claim 21b** (commit `59ca38f` message): "Stage 1's dispatch template (~240 lines)" names no unit the file delimits — Stage 1 is 302 lines (`:382-683`) and its pre-merge dispatch prose is 118 (`:382-499`). Stage 3's "~160" is exact (159). Needed: the line range the author measured.
 
 ---
 
 ## Goal-Alignment Note
-- Answered: yes — all 15 briefed claim areas checked; the two claims flagged as load-bearing (chain idempotency across re-runs, resolve-the-SNI) both hold.
-- Out of scope: `test/init-firewall-rules.bats`, `test/test_cc_sni_proxy.py`, `docs/working/questions.md` treated as context only, per the brief; code quality, architecture and security judgement left to the sibling critics.
-- Escalate: (a) `.githubassets.com` (Claim 26) is a one-line fix but touches a pinned bats assertion — route it as a real change, not a comment edit. (b) The negative SNI probe's exit-status-only pass condition (Claim 27) is a verification-strength issue rather than a documentation issue; the security critic should decide whether a false-pass there matters given the positive probe runs first. (c) `console.anthropic.com` remains in `base.txt` although the page base.txt names as its source of truth no longer lists it (noted under Claim 13) — a profile-content question for the author, not a claim defect. (d) Claim 18b is the only claim in this pass whose subject could not be executed; it is the same live-container gap the commit messages already flag.
+
+**Answered.** All ten items in the shared brief were checked against the code that exercises them rather than the file the claim sits in: the install/link/Dockerfile chain for the basename change (1, 2, 3, 6, 16, 24), `enforcement_files()` *and* the gate hook regex for the trailer claim (25), a slug-resolving anchor sweep over the skill, its references and all external referrers for the split (19, 20), a re-derivation of the health-check baseline including a worktree control that isolated a false extra failure (22), an independent test-count audit that refutes the "85" figure (18), a repo-wide sweep confirming no live site still carries the retired word cap (12), and a line-by-line diff of every moved block against its pre-move original (28). Four claims were verified by execution with captured output; the rest are static reads of complete enclosing units.
+
+**Out of scope.** Whether the split actually reduces loaded tokens at runtime, whether the reworded F3/F4/F6 prose changes model behaviour, and whether the orchestrator evals in `test/skills/` still pass — all need model calls, which the commit messages themselves correctly flag as unexercised. Design judgments (is `rubric.md` the right cut line? is 500 lines the right ceiling for a skill?) belong to the sibling critics, not here.
+
+**Escalate.** One item, for the orchestrator: **Claim 18's "85"** appears in two places — a commit message (immutable) and `docs/reviews/prompt-audit-2026-09-11.md:569` (editable). The audit doc is the one a future pass will read as the record of what was verified, so the fix belongs there. The same paragraph's other figures (1,909 → 1,256; 515/126/52) are all exact, which makes the wrong one easy to trust by association — that is the specific risk worth surfacing. It is also the third instance in this project's log of a *specific measured value quoted as if read off a checked-in artifact set that does not contain it*; the pattern has now recurred across three unrelated review passes, which is a calibration signal about how measured counts get into commit prose here, not just a one-off typo.
+
+**Questions I would have asked.** (1) Was the 85 read off a filtered `bats` run (e.g. a `--filter` or a partial file list) that is worth recording alongside the number? (2) Does any host-native install of this repo exist, or is cc-isolated the only deployment — that determines whether Claim 8's residue is a real breakage or a documentation-only gap.

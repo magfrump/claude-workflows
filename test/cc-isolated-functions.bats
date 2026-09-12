@@ -662,7 +662,10 @@ STUB
   make_repo "$TEST_TMPDIR/proj"
   bless_manifest >/dev/null
   smart_devcontainer_stub
-  export CC_CONFIG_HASH="$(blessed_hash)" STUB_IMAGE_HASH="$(blessed_hash)" STUB_FP="$(ws_fingerprint "$TEST_TMPDIR/proj")"
+  CC_CONFIG_HASH="$(blessed_hash)"
+  STUB_IMAGE_HASH="$(blessed_hash)"
+  STUB_FP="$(ws_fingerprint "$TEST_TMPDIR/proj")"
+  export CC_CONFIG_HASH STUB_IMAGE_HASH STUB_FP
   run probe_boundary "$TEST_TMPDIR/proj" "$TEST_TMPDIR/nohome"
   [ "$status" -eq 0 ]
   [[ "$output" == *"firewall complete"* ]]
@@ -673,7 +676,10 @@ STUB
   make_repo "$TEST_TMPDIR/proj"
   bless_manifest >/dev/null
   smart_devcontainer_stub
-  export CC_CONFIG_HASH="$(blessed_hash)" STUB_IMAGE_HASH="0000000000000000" STUB_FP="$(ws_fingerprint "$TEST_TMPDIR/proj")"
+  CC_CONFIG_HASH="$(blessed_hash)"
+  STUB_IMAGE_HASH="0000000000000000"
+  STUB_FP="$(ws_fingerprint "$TEST_TMPDIR/proj")"
+  export CC_CONFIG_HASH STUB_IMAGE_HASH STUB_FP
   run probe_boundary "$TEST_TMPDIR/proj" "$TEST_TMPDIR/nohome"
   [ "$status" -ne 0 ]
   [[ "$output" == *"PROBE FAIL (config identity)"* ]]
@@ -685,7 +691,11 @@ STUB
   make_repo "$TEST_TMPDIR/proj"
   bless_manifest >/dev/null
   smart_devcontainer_stub
-  export CC_CONFIG_HASH="$(blessed_hash)" STUB_IMAGE_HASH="$(blessed_hash)" STUB_FP="$(ws_fingerprint "$TEST_TMPDIR/proj")" STUB_FW_MISSING=1
+  CC_CONFIG_HASH="$(blessed_hash)"
+  STUB_IMAGE_HASH="$(blessed_hash)"
+  STUB_FP="$(ws_fingerprint "$TEST_TMPDIR/proj")"
+  STUB_FW_MISSING=1
+  export CC_CONFIG_HASH STUB_IMAGE_HASH STUB_FP STUB_FW_MISSING
   run probe_boundary "$TEST_TMPDIR/proj" "$TEST_TMPDIR/nohome"
   [ "$status" -ne 0 ]
   [[ "$output" == *"PROBE FAIL (firewall)"* ]]
@@ -699,7 +709,9 @@ STUB
   # First `cat /etc/cc-config-hash` answers with a stale hash; the stub cannot
   # change state, so the launch's later reads also see it and the probe fails —
   # what is asserted is the rebuild decision, not the session start.
-  export STUB_IMAGE_HASH="0000000000000000" STUB_FP="$(ws_fingerprint "$TEST_TMPDIR/proj")"
+  STUB_IMAGE_HASH="0000000000000000"
+  STUB_FP="$(ws_fingerprint "$TEST_TMPDIR/proj")"
+  export STUB_IMAGE_HASH STUB_FP
   run bash "$CONFIG_SRC/cc-isolated.sh" "$TEST_TMPDIR/proj"
   [[ "$output" == *"has NOT been verified in a live container"* ]]
   [[ "$output" == *"Blessed config changed since this container was built"* ]]
@@ -710,10 +722,14 @@ STUB
   make_repo "$TEST_TMPDIR/proj"
   bless_manifest >/dev/null
   smart_devcontainer_stub
-  export STUB_IMAGE_HASH="$(blessed_hash)" STUB_FP="$(ws_fingerprint "$TEST_TMPDIR/proj")"
+  STUB_IMAGE_HASH="$(blessed_hash)"
+  STUB_FP="$(ws_fingerprint "$TEST_TMPDIR/proj")"
+  export STUB_IMAGE_HASH STUB_FP
   run bash "$CONFIG_SRC/cc-isolated.sh" "$TEST_TMPDIR/proj"
   [ "$status" -eq 0 ]
-  ! grep -q -- '--remove-existing-container' "$DC_LOG"
+  # `run !`, not a bare `!`: a leading `!` on a non-final command does not fail a
+  # bats test, so the bare form asserted nothing (SC2314).
+  run ! grep -q -- '--remove-existing-container' "$DC_LOG"
   grep -q '^devcontainer exec .* claude$' "$DC_LOG"
   [ "$(cat "$(verified_path)")" = "$(blessed_hash)" ]
 }
@@ -722,7 +738,9 @@ STUB
   make_repo "$TEST_TMPDIR/proj"
   bless_manifest >/dev/null
   smart_devcontainer_stub
-  export STUB_IMAGE_HASH="$(blessed_hash)" STUB_FP="$(ws_fingerprint "$TEST_TMPDIR/proj")"
+  STUB_IMAGE_HASH="$(blessed_hash)"
+  STUB_FP="$(ws_fingerprint "$TEST_TMPDIR/proj")"
+  export STUB_IMAGE_HASH STUB_FP
   run bash "$CONFIG_SRC/cc-isolated.sh" --probe-only "$TEST_TMPDIR/proj"
   [ "$status" -eq 0 ]
   grep -q '^devcontainer up --remove-existing-container ' "$DC_LOG"

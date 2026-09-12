@@ -1,0 +1,43 @@
+bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+1..13
+bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+ok 1 AGENTS.md and GEMINI.md content is in sync (ignoring headers and @./workflows/ prefix)
+bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+ok 2 explicit markdown links to content directories resolve to existing files
+bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+ok 3 every guide in guides/ is linked from guides/README.md
+bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+ok 4 fresh volume with no settings.json gets every wired hook and deny rule
+bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+ok 5 merge is idempotent across repeated container starts
+bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+ok 6 unrelated settings keys, foreign hooks, and user permissions survive the merge
+bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+ok 7 {{CLAUDE_DIR}} is substituted and _comment is stripped
+bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+ok 8 an unparseable settings.json is refused, not overwritten
+bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+ok 9 CC_SKIP_HOOK_WIRING=1 leaves settings.json untouched
+bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+ok 10 every command in wiring.json points at a hook that exists
+bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+ok 11 wiring.json declares only known hook event names
+bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+ok 12 wiring.json declares only known permission modes
+bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+ok 13 the deny rules the guard hook's HARD tier depends on are wired

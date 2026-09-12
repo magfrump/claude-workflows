@@ -1,0 +1,37 @@
+cmd: basename-staging simulation of the loop at devcontainer-config/install.sh:51-57
+     (one file entry under a subdirectory, one directory entry, one missing entry)
+cwd:  /tmp/claude-1000/-workspace/47023ae0-7b83-4d1e-a319-0b30f011dfea/scratchpad/sim
+timestamp: 2026-09-12T00:12:50-07:00
+exit: 0
+
+NOTE ON SUBSTITUTION: the file entry was created as `global-instructions/GLOBAL.md`
+rather than `global-instructions/<the real basename>`, because a repo guard blocks
+shell writes to any path bearing that basename. `basename` is name-agnostic, so the
+staging behaviour exercised here is identical to the real entry.
+
+--- loop executed ---
+for item in global-instructions/GLOBAL.md skills missing-thing; do
+  if [ -e "$REPO/$item" ]; then
+    cp -r "$REPO/$item" "$STAGE/$(basename "$item")"
+  else
+    echo "WARNING: $REPO/$item not found — omitted from the image payload." >&2
+  fi
+done
+
+--- stderr ---
+WARNING: .../sim/repo/missing-thing not found — omitted from the image payload.
+
+--- stage tree after the loop (find $STAGE | sort) ---
+.../sim/stage
+.../sim/stage/GLOBAL.md
+.../sim/stage/skills
+.../sim/stage/skills/foo
+.../sim/stage/skills/foo/SKILL.md
+
+--- conclusion ---
+A nested file entry is staged at the payload ROOT under its basename; a top-level
+directory entry is staged under an identical name (basename is the identity for
+`skills`, `workflows`, `guides`, `patterns`, `hooks`, `scripts`); a missing entry
+still takes the WARNING branch. The payload layout is therefore unchanged, and
+link-claude-home.sh's ENTRIES list (which expects the instructions file at the
+payload root) still resolves.

@@ -15,7 +15,7 @@ setup() {
   PROJECT="$TEST_TMPDIR/project"
   mkdir -p "$PROJECT/.claude"
   git -C "$PROJECT" init -q
-  cd "$PROJECT"
+  cd "$PROJECT" || return 1
 }
 
 teardown() {

@@ -120,7 +120,11 @@ subsection() {
 }
 
 @test "Important Reminders carries the Confirmed-Good contract" {
-  echo "$SKILL_CONTENT" | sed -n '/^## Important Reminders/,$p' \
+  # Read "$SKILL", not "$SKILL_CONTENT": Important Reminders is the last section
+  # of SKILL.md, so over the concatenation "$" runs on into the reference files
+  # and references/rubric.md's own heading satisfies the grep (code review
+  # 2026-09-12, A2 — mutation-proven: deleting the real bullets left this green).
+  sed -n '/^## Important Reminders/,$p' "$SKILL" \
     | grep -qiE 'Confirmed Good.*claim, not an output' \
     || fail "Important Reminders does not carry the Confirmed-Good contract"
 }
@@ -163,6 +167,9 @@ LABEL='absence of findings is not an attestation'
 @test "the label is not attached to a failing verdict" {
   # `run !` rather than a bare `!`: a leading `!` on a non-final command does not
   # fail a bats test, so the bare form would assert nothing (SC2314).
-  run ! grep -qE "DOES NOT PASS.*$LABEL" "$SKILL"
-  run ! grep -qE "CONDITIONAL PASS.*$LABEL" "$SKILL"
+  # Scan the whole content surface, not "$SKILL": the status lines moved to
+  # references/rubric.md in the F8 split, so grepping SKILL.md alone matched
+  # nothing and both assertions passed vacuously (code review 2026-09-12, A3).
+  run ! grep -qE "DOES NOT PASS.*$LABEL" "$SKILL" "$SKILL_DIR"/references/*.md
+  run ! grep -qE "CONDITIONAL PASS.*$LABEL" "$SKILL" "$SKILL_DIR"/references/*.md
 }

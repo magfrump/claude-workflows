@@ -1,0 +1,55 @@
+# r2 verification commands, 2026-09-12, cwd /workspace
+
+$ bats --count test/skills/code-review-*.bats  (per file)
+15 test/skills/code-review-assurance-contract.bats
+10 test/skills/code-review-context-delivery.bats
+9 test/skills/code-review-executable-defect.bats
+17 test/skills/code-review-factcheck-replication.bats
+18 test/skills/code-review-format-contract.bats
+17 test/skills/code-review-format.bats
+11 test/skills/code-review-soundness-crosscheck.bats
+TOTAL @test across the 7 suites: 97
+
+$ bats test/skills/code-review-*.bats -> all pass
+97
+not-ok count: 0
+
+$ bats test/agents-gemini-sync.bats test/cross-reference-integrity.bats test/guide-index-sync.bats test/link-claude-home-wiring.bats
+ok 1 AGENTS.md and GEMINI.md content is in sync (ignoring headers and @./workflows/ prefix)
+ok 2 explicit markdown links to content directories resolve to existing files
+ok 3 every guide in guides/ is linked from guides/README.md
+ok 4 fresh volume with no settings.json gets every wired hook and deny rule
+ok 5 merge is idempotent across repeated container starts
+ok 6 unrelated settings keys, foreign hooks, and user permissions survive the merge
+ok 7 {{CLAUDE_DIR}} is substituted and _comment is stripped
+ok 8 an unparseable settings.json is refused, not overwritten
+ok 9 CC_SKIP_HOOK_WIRING=1 leaves settings.json untouched
+ok 10 every command in wiring.json points at a hook that exists
+ok 11 wiring.json declares only known hook event names
+ok 12 wiring.json declares only known permission modes
+ok 13 the deny rules the guard hook's HARD tier depends on are wired
+exit=0
+
+$ basename-staging simulation (file entry + directory entry)
+/tmp/claude-1000/-workspace/47023ae0-7b83-4d1e-a319-0b30f011dfea/scratchpad/sim/stage:
+CLAUDE.md
+skills
+
+/tmp/claude-1000/-workspace/47023ae0-7b83-4d1e-a319-0b30f011dfea/scratchpad/sim/stage/skills:
+a.md
+sub
+
+/tmp/claude-1000/-workspace/47023ae0-7b83-4d1e-a319-0b30f011dfea/scratchpad/sim/stage/skills/sub:
+b.md
+
+$ python3 anchor resolver over skills/code-review, workflows, patterns, guides, README, global-instructions
+checked anchor links touching skills/code-review: 51
+total bad: 0
+
+$ wc -l skill + references
+  1256 skills/code-review/SKILL.md
+   126 skills/code-review/references/chat-synthesis.md
+    52 skills/code-review/references/override-log.md
+   515 skills/code-review/references/rubric.md
+  1949 total
+baseline SKILL.md: 1909

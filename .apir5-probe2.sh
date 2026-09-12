@@ -54,7 +54,7 @@ head -8 "$T/chk.err"
 
 echo
 echo "=== --print-entries through the real entrypoint ==="
-cd /workspace/devcontainer-config
+cd /workspace/devcontainer-config || exit 1
 CC_EGRESS_DIR=/workspace/devcontainer-config/egress CC_EGRESS_PROFILE_FILE=/dev/null bash ./init-firewall.sh --print-entries > "$T/pe.out" 2> "$T/pe.err"
 echo "base-only exit=$? lines=$(wc -l < "$T/pe.out")"
 cat "$T/pe.out" | cat -A | head -8

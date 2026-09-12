@@ -198,7 +198,12 @@ def main():
     ap.add_argument("--include-plugins", action="store_true")
     ap.add_argument("--summary", action="store_true", help="aggregated counts only")
     args = ap.parse_args()
-    roots = args.paths or [".claude", str(Path.home()/".claude"), "CLAUDE.md"]
+    # Both spellings of the instructions file: consumer projects keep it at the
+    # repo root, this repo keeps it under global-instructions/ so Claude Code
+    # does not load it twice. A missing root is skipped silently by
+    # iter_targets, so listing both costs nothing and losing one is invisible.
+    roots = args.paths or [".claude", str(Path.home()/".claude"), "CLAUDE.md",
+                           "global-instructions/CLAUDE.md"]
     policy_only = not args.all_files
 
     cat = Counter(); sev = Counter(); per_file = Counter(); scanned = 0

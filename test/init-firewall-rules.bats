@@ -738,11 +738,11 @@ STUB
   # setsid: the script and the (sleeping) dig stub go into their own process group
   # so the whole group can be signalled. bash defers a trap while a foreground child
   # runs, so killing only the script's PID would wait out the stub's sleep.
-  local out="$TEST_TMPDIR/signal.out" pid i
+  local out="$TEST_TMPDIR/signal.out" pid
   SLOW_DIG=1 setsid bash "$FW" >"$out" 2>&1 </dev/null &
   pid=$!
   # Poll for the dig stub to have started (it logs before sleeping); ~10s ceiling.
-  for i in $(seq 1 100); do
+  for _ in $(seq 1 100); do
     grep -q '^dig ' "$CMD_LOG" 2>/dev/null && break
     sleep 0.1
   done

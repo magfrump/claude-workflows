@@ -1,0 +1,7 @@
+bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+Canonical (repo):  /workspace/devcontainer-config
+Installed (host):  /tmp/claude-1000/-workspace/47023ae0-7b83-4d1e-a319-0b30f011dfea/scratchpad/fakedest
+
+First install — /tmp/claude-1000/-workspace/47023ae0-7b83-4d1e-a319-0b30f011dfea/scratchpad/fakedest does not exist yet.
+
+Install this config and bless it? [y/N] Aborted. Nothing was changed.

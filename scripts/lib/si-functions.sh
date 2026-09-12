@@ -588,7 +588,7 @@ parse_code_review_red() {
 # enforcing an unvalidated mechanism).
 #
 # Counts rows in the "## 🔴 Must Fix" section only, matching the rubric format
-# in skills/code-review/SKILL.md: `| R1 | ... |`. Placeholder rows (`| — |`) do
+# in skills/code-review/references/rubric.md: `| R1 | ... |`. Placeholder rows (`| — |`) do
 # not count. Prints nothing when no rubric is present or it has no Must Fix
 # section, which the caller treats as "no cross-check available".
 # Args: $1 = path to the rubric file.

@@ -1,0 +1,53 @@
+code-fact-check r1 — execution provenance
+Repo: /workspace   Commit under review: 0661353 (range 2d679ce..HEAD)
+All commands run with cwd=/workspace unless noted.
+
+1) 2026-09-12T07:08:28Z  cwd=/workspace  exit=0
+   bats test/skills/code-review-assurance-contract.bats \
+        test/skills/code-review-executable-defect.bats \
+        test/skills/code-review-format-contract.bats \
+        test/skills/code-review-soundness-crosscheck.bats
+   -> r1-four-modified-suites.txt  (53 ok, 0 not ok)
+
+2) 2026-09-12T07:08Z  cwd=/workspace  exit=0
+   bats test/skills/code-review-*.bats   (all seven suites)
+   -> r1-code-review-suites.txt  (97 ok, 0 not ok, 0 skip)
+
+3) 2026-09-12T07:08:34Z  cwd=/workspace  exit=1
+   bash scripts/health-check.sh
+   -> r1-health-check-head.txt  (6 "✗" lines)
+
+4) 2026-09-12T07:09:14Z  cwd=<scratchpad>/base (detached worktree @ 2d679ce)  exit=1
+   bash scripts/health-check.sh
+   -> r1-health-check-baseline.txt  (7 "✗" lines)
+
+5) 2026-09-12T07:09Z  cwd=<scratchpad>/headwt (detached worktree @ HEAD)  exit=1
+   bash scripts/health-check.sh
+   -> r1-health-check-head-worktree.txt  (7 "✗" lines — same set as #4)
+   Purpose: show the extra "BATS tests failed" line in #4 is a worktree artifact,
+   not a baseline-vs-HEAD difference.
+
+6) 2026-09-12T07:11:08Z  cwd=/workspace  exit=1 (deliberate "n" at the install prompt)
+   printf 'n\n' | CLAUDE_DEVC_CONFIG_DIR=<scratchpad>/fakedest \
+     CLAUDE_DEVC_BIN_DIR=<scratchpad>/fakebin bash devcontainer-config/install.sh
+   -> r1-install-sim.txt
+   Post-condition inspected: devcontainer-config/claude-home/ contains the global
+   instructions file at the payload root as a regular file, byte-identical to
+   global-instructions/, plus guides/ hooks/ patterns/ scripts/ skills/ workflows/
+   and .manifest; no global-instructions/ subdirectory was created.
+
+7) 2026-09-12T07:12:37Z  cwd=/workspace  exit=0
+   bats test/cross-reference-integrity.bats test/agents-gemini-sync.bats \
+        test/guide-index-sync.bats test/link-claude-home-wiring.bats \
+        test/cc-isolated-functions.bats
+   -> r1-misc-suites.txt  (82 ok, 0 not ok)
+
+8) 2026-09-12T07:13Z  cwd=/workspace  exit=0
+   python3 <scratchpad>/anchors.py  (markdown anchor resolver over all .md files
+   outside archive/ external/ runs/ node_modules/ devcontainer-config/claude-home/,
+   restricted to links whose source or target is under skills/code-review/)
+   -> stdout: "checked anchor links touching skills/code-review: 51 / total bad: 0"
+
+9) 2026-09-12T07:13Z  cwd=/workspace  exit=0
+   python3 -c "<subset-sum over the seven code-review bats suite counts + code-review-gate>"
+   -> "subsets summing to 85: []"; all seven skills suites total 97.

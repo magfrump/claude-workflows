@@ -1,0 +1,805 @@
+bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+Repo Health Check
+=================
+
+── Skill YAML frontmatter ──
+  ✓ claude-api
+  ✓ ai-personas-critique
+  ✓ api-consistency-reviewer
+  ✓ architecture-review
+  ✓ arithmetic-eval
+  ✓ business-plan-critique-market-sizing
+  ✓ business-plan-critique-moat
+  ✓ business-plan-critique-unit-economics
+  ✓ code-fact-check
+  ✓ code-review
+  ✓ cowen-critique
+  ✓ dependency-upgrade
+  ✓ design-space-situating
+  ✓ divergent-design
+  ✓ draft-review
+  ✓ fact-check
+  ✓ matrix-analysis
+  ✓ performance-reviewer
+  ✓ pre-mortem
+  ✓ security-reviewer
+  ✓ self-eval
+  ✓ tech-debt-triage
+  ✓ test-strategy
+  ✓ ui-visual-review
+  ✓ what-if-analysis
+  ✓ yglesias-critique
+  ✓ 26 skill(s) checked
+
+── Workflow cross-references ──
+  ✓ global-instructions/CLAUDE.md: all workflow references resolve
+  ✓ AGENTS.md: all workflow references resolve
+  ✓ GEMINI.md: all workflow references resolve
+
+── MD file consistency (workflows) ──
+  ✗ In global-instructions/CLAUDE.md but not AGENTS.md: parallel-worktrees.md
+  ✗ In global-instructions/CLAUDE.md but not GEMINI.md: parallel-worktrees.md
+
+── Fixture ↔ expected-verdicts coverage ──
+  ✓ code-fact-check: all fixtures have verdicts and vice versa
+  ✓ fact-check: all fixtures have verdicts and vice versa
+  ✓ ui-visual-review: all fixtures have verdicts and vice versa
+
+── BATS tests ──
+  ⚠ No report outputs found — skipping eval/format BATS (run generate-reports.bash first)
+bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+1..199
+bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+ok 1 tc-c8.1 empty: report has zero claims # skip No report for tc-c8.1-empty.js — run generate-reports.bash first
+bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+ok 2 tc-c8.1 empty: no hallucinated claim sections # skip No report for tc-c8.1-empty.js — run generate-reports.bash first
+bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+ok 3 tc-c8.1 empty: no verdict fields present # skip No report for tc-c8.1-empty.js — run generate-reports.bash first
+bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+ok 4 tc-c8.1 empty: output indicates graceful handling # skip No report for tc-c8.1-empty.js — run generate-reports.bash first
+bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+ok 5 tc-c8.1 empty: no critique language # skip No report for tc-c8.1-empty.js — run generate-reports.bash first
+bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+ok 6 tc-c8.1 empty: no cross-skill verdict leakage # skip No report for tc-c8.1-empty.js — run generate-reports.bash first
+bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+ok 7 tc-c8.2 no-comments: report has zero claims # skip No report for tc-c8.2-no-comments.js — run generate-reports.bash first
+bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+ok 8 tc-c8.2 no-comments: no hallucinated claim sections # skip No report for tc-c8.2-no-comments.js — run generate-reports.bash first
+bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+ok 9 tc-c8.2 no-comments: no verdict fields present # skip No report for tc-c8.2-no-comments.js — run generate-reports.bash first
+bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+ok 10 tc-c8.2 no-comments: output indicates graceful handling # skip No report for tc-c8.2-no-comments.js — run generate-reports.bash first
+bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+ok 11 tc-c8.2 no-comments: no critique language # skip No report for tc-c8.2-no-comments.js — run generate-reports.bash first
+bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+ok 12 tc-c8.2 no-comments: no cross-skill verdict leakage # skip No report for tc-c8.2-no-comments.js — run generate-reports.bash first
+bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+ok 13 tc-c8.3 binary: report has zero claims # skip No report for tc-c8.3-binary-content.js — run generate-reports.bash first
+bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+ok 14 tc-c8.3 binary: no hallucinated claim sections # skip No report for tc-c8.3-binary-content.js — run generate-reports.bash first
+bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+ok 15 tc-c8.3 binary: no verdict fields present # skip No report for tc-c8.3-binary-content.js — run generate-reports.bash first
+bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+ok 16 tc-c8.3 binary: output indicates graceful handling # skip No report for tc-c8.3-binary-content.js — run generate-reports.bash first
+bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+ok 17 tc-c8.3 binary: no critique language # skip No report for tc-c8.3-binary-content.js — run generate-reports.bash first
+bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+ok 18 tc-c8.3 binary: no cross-skill verdict leakage # skip No report for tc-c8.3-binary-content.js — run generate-reports.bash first
+bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+ok 19 tc-c8.4 extremely-short: report has zero claims # skip No report for tc-c8.4-extremely-short.js — run generate-reports.bash first
+bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+ok 20 tc-c8.4 extremely-short: no hallucinated claim sections # skip No report for tc-c8.4-extremely-short.js — run generate-reports.bash first
+bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+ok 21 tc-c8.4 extremely-short: no verdict fields present # skip No report for tc-c8.4-extremely-short.js — run generate-reports.bash first
+bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+ok 22 tc-c8.4 extremely-short: output indicates graceful handling # skip No report for tc-c8.4-extremely-short.js — run generate-reports.bash first
+bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+ok 23 tc-c8.4 extremely-short: no critique language # skip No report for tc-c8.4-extremely-short.js — run generate-reports.bash first
+bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+ok 24 tc-c8.4 extremely-short: no cross-skill verdict leakage # skip No report for tc-c8.4-extremely-short.js — run generate-reports.bash first
+bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+ok 25 the skill has a Confirmed-Good claim section
+bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+ok 26 the rubric template's Confirmed Good table carries an Evidence column
+bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+ok 27 Confirmed Good evidence reuses the Evidence-grounding format, not a second one
+bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+ok 28 an ungrounded Confirmed Good row is dropped, not filed as an Unverified Finding
+bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+ok 29 universally quantified confirmations require an enumeration, not one instance
+bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+ok 30 Stage 3 runs a Confirmed-Good cross-check before the deliverables
+bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+ok 31 the cross-check reads the fact-check report, including incidental observations
+bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+ok 32 a contradicted confirmation is neither silently dropped nor silently promoted
+bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+ok 33 the contested-confirmation channel does not feed the escalation rule
+bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+ok 34 Important Reminders carries the Confirmed-Good contract
+bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+ok 35 the passing status line carries the single-sample label
+bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+ok 36 the chat synthesis carries the label when the run is clean
+bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+ok 37 the label cites the replicate-disagreement evidence behind it
+bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+ok 38 the hedging stays proportionate — a standing label, not a paragraph everywhere
+bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+ok 39 the label is not attached to a failing verdict
+bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+ok 40 Step 1 declares diff delivery as conditional
+bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+ok 41 inline shared-context section inlines the unified diff as a shared-block part
+bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+ok 42 every 'runs its own git diff' instruction carries a conditionality marker nearby
+bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+ok 43 every 'pass scope, not diffs' instruction carries a conditionality marker nearby
+bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+ok 44 Stage-1 replicate dispatch step references the conditional delivery rule
+bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+ok 45 Stage-2 critic dispatch step references the conditional delivery rule
+bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+ok 46 size guard names the numeric shared-block budget
+bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+ok 47 degrade ladder inlines the diff alone before falling back to full self-read
+bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+ok 48 per-file churn rule is explicitly excluded from the delivery gate
+bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+ok 49 mutable diff/enclosing part sits second-to-last in the shared block (part 5 of 6)
+bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+ok 50 the Executable-Defect Channel section exists
+bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+ok 51 the trigger requires determinism, a named sandbox verification, and a quoted mechanism
+bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+ok 52 the verification is run first with executed-mode provenance
+bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+ok 53 confirmed findings map by native severity; unexecutable ones lift to terminal amber
+bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+ok 54 a refuted finding is never lifted
+bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+ok 55 the precision guard excludes unnamed-trigger failures
+bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+ok 56 Stage 3 carries the executable-defect cross-check as a required pre-deliverable pass
+bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+ok 57 Unverifiable is declared an evidence state, not a severity
+bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+ok 58 both contextual-critic exit paths are named and exclusive
+bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+ok 59 Stage 1 runs the fact-check as three replicates
+bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+ok 60 replicate prompts are byte-identical except the output path
+bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+ok 61 replicates write per-replicate report paths and the merged report is canonical
+bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+ok 62 the merge aggregator is most-severe-wins, not majority
+bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+ok 63 the severity order is stated and runs Incorrect-high first, Verified last
+bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+ok 64 every merged claim records per-replicate verdicts
+bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+ok 65 the merged report ends with a Verdict stability section reporting the agreement rate
+bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+ok 66 the k-reduction falsifier is stated (>=90% agreement on >=20 claims -> k=2)
+bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+ok 67 fewer than two substantive replicates blocks the merge
+bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+ok 68 the Confirmed-Good cross-check scans the per-replicate reports too
+bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+ok 69 the merged-report header mandates the fields Gate 1h parses
+bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+ok 70 the section-extraction end anchors exist (no silent extract-to-EOF)
+bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+ok 71 replication is loop-aware: k=1 on loop passes per decision 031, k=3 standalone
+bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+ok 72 a rich shared brief is required and shared verbatim across replicates
+bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+ok 73 annotations merge by union and survive a lost verdict contest
+bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+ok 74 replicate escalations aggregate into an Escalations section
+bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+ok 75 unrouted escalations are force-surfaced by the dead-letter rule
+bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+ok 76 fixture has all nine rubric sections
+bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+ok 77 the Fragment-Composition cross-check is a required Stage-3 pass with capped authority
+bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+ok 78 fixture status line carries a verdict and an emoji
+bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+ok 79 Unverified Findings section is present and auditable
+bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+ok 80 Unverified Findings table records why each finding is unverified
+bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+ok 81 Must Fix table has a Severity column
+bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+ok 82 Must Address table has a Severity column
+bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+ok 83 Consider table has a Severity column
+bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+ok 84 severity values are critic-native levels, not rubric tier emoji
+bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+ok 85 Confirmed Good table has an Evidence column
+bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+ok 86 every Confirmed Good row cites evidence
+bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+ok 87 a contested confirmation lands in Must Address, not Confirmed Good
+bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+ok 88 every finding row carries a Status value
+bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+ok 89 Consider rows use the green status vocabulary
+bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+ok 90 Must Fix rows cite a location
+bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+ok 91 golden's table headers match the skill's rubric template
+bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+ok 92 golden's section headings match the skill's rubric template
+bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+ok 93 fixture does not contain draft-review verdict vocabulary
+bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+ok 94 the Soundness-Contradiction Channel section exists
+bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+ok 95 the trigger requires verbatim quotes on both sides, each with file:line
+bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+ok 96 the precision guard bars opinion-only lifts
+bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+ok 97 a qualifying finding lands in Must Address with the fixed vocabulary
+bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+ok 98 🟡 is terminal: never promoted to 🔴, excluded from escalation corroboration
+bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+ok 99 the owner-cap exception applies regardless of which critic filed the finding
+bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+ok 100 the advisory rule names the exception, and the escalation rule excludes the lift
+bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+ok 101 Stage 3 runs the soundness cross-check before producing deliverables
+bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+ok 102 the lift is named in the chat synthesis
+bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+ok 103 the validation falsifier and the cap-lift bar are stated
+bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+ok 104 the section-extraction end anchor exists (no silent extract-to-EOF)
+bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+ok 105 skill has required frontmatter fields (name, description, when/trigger)
+bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+ok 106 skill identifies itself as a router in its title
+bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+ok 107 skill points at the divergent-design workflow file
+bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+ok 108 the workflow file it routes to actually exists
+bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+ok 109 skill states the 3+ tradeoff-bearing options trigger test
+bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+ok 110 skill defines the brainstorming-supersession boundary
+bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+ok 111 skill is a thin stub, not a re-implementation of the workflow
+bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+ok 112 skill does not restate the full diverge/diagnose/match/decide process inline
+bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+ok 113 tc-7.1 empty: report has zero claims # skip No report for tc-7.1-empty.md — run generate-reports.bash first
+bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+ok 114 tc-7.1 empty: no hallucinated claim sections # skip No report for tc-7.1-empty.md — run generate-reports.bash first
+bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+ok 115 tc-7.1 empty: no verdict fields present # skip No report for tc-7.1-empty.md — run generate-reports.bash first
+bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+ok 116 tc-7.1 empty: output indicates graceful handling # skip No report for tc-7.1-empty.md — run generate-reports.bash first
+bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+ok 117 tc-7.1 empty: no critique language # skip No report for tc-7.1-empty.md — run generate-reports.bash first
+bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+ok 118 tc-7.2 no-claims: report has zero claims # skip No report for tc-7.2-no-claims.md — run generate-reports.bash first
+bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+ok 119 tc-7.2 no-claims: no hallucinated claim sections # skip No report for tc-7.2-no-claims.md — run generate-reports.bash first
+bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+ok 120 tc-7.2 no-claims: no verdict fields present # skip No report for tc-7.2-no-claims.md — run generate-reports.bash first
+bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+ok 121 tc-7.2 no-claims: output indicates graceful handling # skip No report for tc-7.2-no-claims.md — run generate-reports.bash first
+bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+ok 122 tc-7.2 no-claims: no critique language # skip No report for tc-7.2-no-claims.md — run generate-reports.bash first
+bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+ok 123 tc-7.3 binary: report has zero claims # skip No report for tc-7.3-binary-content.md — run generate-reports.bash first
+bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+ok 124 tc-7.3 binary: no hallucinated claim sections # skip No report for tc-7.3-binary-content.md — run generate-reports.bash first
+bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+ok 125 tc-7.3 binary: no verdict fields present # skip No report for tc-7.3-binary-content.md — run generate-reports.bash first
+bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+ok 126 tc-7.3 binary: output indicates graceful handling # skip No report for tc-7.3-binary-content.md — run generate-reports.bash first
+bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+ok 127 tc-7.3 binary: no critique language # skip No report for tc-7.3-binary-content.md — run generate-reports.bash first
+bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+ok 128 tc-7.4 extremely-short: report has zero claims # skip No report for tc-7.4-extremely-short.md — run generate-reports.bash first
+bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+ok 129 tc-7.4 extremely-short: no hallucinated claim sections # skip No report for tc-7.4-extremely-short.md — run generate-reports.bash first
+bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+ok 130 tc-7.4 extremely-short: no verdict fields present # skip No report for tc-7.4-extremely-short.md — run generate-reports.bash first
+bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+ok 131 tc-7.4 extremely-short: output indicates graceful handling # skip No report for tc-7.4-extremely-short.md — run generate-reports.bash first
+bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+ok 132 tc-7.4 extremely-short: no critique language # skip No report for tc-7.4-extremely-short.md — run generate-reports.bash first
+bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+ok 133 all skills have required frontmatter fields
+bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+ok 134 HIGH finding in settings.json → exit 2 with findings on stderr
+ok 135 clean policy file → silent exit 0, auditor was invoked
+ok 136 auditor crash without HIGH banner → silent exit 0 (no false alarm)
+ok 137 gate accepts CLAUDE.md, .claude/ files, skills markdown, .mdc rules
+ok 138 gate skips ordinary source files, even inside skills dirs
+ok 139 non-edit tool (Bash) → silent exit 0, auditor not invoked
+ok 140 malformed payload → silent exit 0
+ok 141 missing file_path / nonexistent file → silent exit 0
+ok 142 missing auditor script → silent exit 0
+ok 143 CLAUDE_CONFIG_AUDIT_DISABLE=1 → silent exit 0, auditor not invoked
+ok 144 the auditor ships in this repo
+ok 145 with no env override the hook resolves the in-repo auditor
+ok 146 real auditor: bypassPermissions directive in settings.json → exit 2
+ok 147 real auditor: hidden bidi override in CLAUDE.md → exit 2
+ok 148 real auditor: benign settings.json → silent exit 0
+bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+ok 149 blocks a commit of an enforcement file with no Live-verified trailer
+ok 150 passes when the -m message carries the trailer
+ok 151 passes when the trailer is an explicit 'no' with a reason
+ok 152 reads the trailer from a -F message file
+ok 153 blocks when the -F message file lacks the trailer
+ok 154 ignores commits that touch no enforcement file
+ok 155 counts unstaged tracked changes when -a is given
+ok 156 every manifest-hashed file is in the enforcement set
+ok 157 ignores non-commit git commands and non-git commands
+ok 158 leaves an --amend --no-edit alone
+ok 159 malformed input, missing command, and the disable switch all exit 0
+bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+ok 160 skill completion emits skill_completed event
+bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+ok 161 skill completion captures duration_ms when supplied
+bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+ok 162 skill completion captures total_tokens when supplied
+bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+ok 163 missing duration and tokens are omitted, not zeroed
+bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+ok 164 skill completion with no skill name does not log
+bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+ok 165 agent completion uses subagent_type when no frontmatter
+bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+ok 166 agent completion prefers frontmatter name over subagent_type
+bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+ok 167 Bash completion is silently ignored
+bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+ok 168 Read completion is silently ignored
+bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+ok 169 hook exits 0 on malformed JSON
+bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+ok 170 hook exits 0 on empty input
+bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+ok 171 hook produces no stdout
+bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+ok 172 each logged line is valid JSON
+bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+ok 173 post-event name matches pre-event name for the same skill
+bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+ok 174 skill invocation is logged with all fields
+bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+ok 175 skill with no args omits args field
+bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+ok 176 skill with empty name does not log
+bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+ok 177 skill with missing skill field does not log
+bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+ok 178 reading a workflow file is logged
+bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+ok 179 workflow name is extracted from basename without .md
+bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+ok 180 project-local workflow files are also logged
+bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+ok 181 agent with skill frontmatter in prompt is logged as agent_skill
+bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+ok 182 agent with no skill frontmatter logs as agent with subagent_type
+bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+ok 183 agent with frontmatter but no name field falls back to agent log
+bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+ok 184 agent extracts first frontmatter name only
+bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+ok 185 reading a non-workflow file does not log
+bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+ok 186 reading a skill file is logged with extracted skill name
+bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+ok 187 reading a file with 'workflows' in name but not in a workflows dir does not log
+bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+ok 188 unrecognized tool input does not log
+bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+ok 189 each logged line is valid JSON
+bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+ok 190 hook produces no stdout (never interferes with tool permission)
+bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+ok 191 hook exits 0 on malformed JSON input
+bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+ok 192 hook exits 0 on empty input
+bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+ok 193 hook creates log directory if missing
+bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+ok 194 multiple invocations append to the same log file
+bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+ok 195 skill tool invocation tags via=skill_tool
+bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+ok 196 reading a SKILL.md tags via=file_read
+bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+ok 197 reading a workflow file tags via=file_read
+bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+ok 198 agent dispatch tags via=agent_dispatch
+bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+ok 199 via field absent for legacy callers writing without it
+
+The following warnings were encountered during tests:
+BW02: Using flags on `run` requires at least BATS_VERSION=1.5.0. Use `bats_require_minimum_version 1.5.0` to fix this message.
+      (from function `bats_warn_minimum_guaranteed_version' in file /usr/lib/bats-core/warnings.bash, line 32,
+       from function `run' in file /usr/lib/bats-core/test_functions.bash, line 227,
+       in test file test/skills/code-review-assurance-contract.bats, line 166)
+BW02: Using flags on `run` requires at least BATS_VERSION=1.5.0. Use `bats_require_minimum_version 1.5.0` to fix this message.
+      (from function `bats_warn_minimum_guaranteed_version' in file /usr/lib/bats-core/warnings.bash, line 32,
+       from function `run' in file /usr/lib/bats-core/test_functions.bash, line 227,
+       in test file test/skills/code-review-assurance-contract.bats, line 167)
+  ✓ Non-eval BATS tests passed
+
+── shellcheck ──
+  ✓ docs/working/archive/2026-08-06-verify-dd-routing-reminder.sh
+  ✓ docs/working/archive/2026-08-06-verify-batch-feedback-reminder.sh
+  ✓ runs/review-arms/e7-fable-3x/run-host.sh
+  ✓ runs/review-arms/e7-fable-3x/debug-auth-host.sh
+  ✓ runs/review-arms/e5-cc-builtin/run-host.sh
+  ✓ runs/review-arms/e4-opus-k3/run-live.sh
+  ✓ runs/review-arms/crb/run-cubic.sh
+  ✓ runs/review-arms/e6-ultra/run-host.sh
+  ✓ runs/review-arms/e2/run-live.sh
+  ✓ test/lib/hermetic-env.bash
+  ✓ test/skills/fact-check/expected-verdicts.bash
+  ✓ test/skills/helpers.bash
+  ✓ test/skills/critic-dimensions.bash
+  ✓ test/skills/eval-helpers.bash
+  ✓ test/skills/code-fact-check/expected-verdicts.bash
+  ✓ test/skills/generate-reports.bash
+  ✓ test/skills/ui-visual-review/expected-verdicts.bash
+  ✓ devcontainer-config/cc-isolated.sh
+  ✓ devcontainer-config/link-claude-home.sh
+  ✓ devcontainer-config/init-firewall.sh
+  ✓ devcontainer-config/claude-home/hooks/claude-config-audit.sh
+  ✓ devcontainer-config/claude-home/hooks/auto-approve-allowed-commands.sh
+  ✓ devcontainer-config/claude-home/hooks/dd-routing-reminder.sh
+  ✓ devcontainer-config/claude-home/hooks/log-usage.sh
+  ✓ devcontainer-config/claude-home/hooks/batch-feedback-routing-reminder.sh
+  ✓ devcontainer-config/claude-home/hooks/lib/usage-common.sh
+  ✓ devcontainer-config/claude-home/hooks/log-usage-post.sh
+  ✓ devcontainer-config/claude-home/scripts/skill-usage-report.sh
+  ✓ devcontainer-config/claude-home/scripts/archive-working-docs.sh
+  ✓ devcontainer-config/claude-home/scripts/flag-removal-candidates.sh
+  ✓ devcontainer-config/claude-home/scripts/health-check.sh
+  ✓ devcontainer-config/claude-home/scripts/confine-tests.sh
+  ✓ devcontainer-config/claude-home/scripts/failure-analysis.sh
+  ✓ devcontainer-config/claude-home/scripts/lib/preflight.sh
+  ✓ devcontainer-config/claude-home/scripts/lib/si-morning-summary.sh
+  ✓ devcontainer-config/claude-home/scripts/lib/skill-paths.sh
+  ✓ devcontainer-config/claude-home/scripts/lib/md-utils.sh
+  ✓ devcontainer-config/claude-home/scripts/lib/json-utils.sh
+  ✓ devcontainer-config/claude-home/scripts/lib/si-input.sh
+  ✓ devcontainer-config/claude-home/scripts/lib/log-format.sh
+  ✓ devcontainer-config/claude-home/scripts/lib/si-functions.sh
+  ✓ devcontainer-config/claude-home/scripts/run-tests.sh
+  ✓ devcontainer-config/claude-home/scripts/self-improvement.sh
+  ✓ devcontainer-config/install.sh
+
+In /workspace/.apir5-probe2.sh line 57:
+cd /workspace/devcontainer-config
+^-- SC2164 (warning): Use 'cd ... || exit' or 'cd ... || return' in case cd fails.
+
+Did you mean: 
+cd /workspace/devcontainer-config || exit
+
+For more information:
+  https://www.shellcheck.net/wiki/SC2164 -- Use 'cd ... || exit' or 'cd ... |...
+  ✗ .apir5-probe2.sh
+  ✓ hooks/claude-config-audit.sh
+  ✓ hooks/auto-approve-allowed-commands.sh
+  ✓ hooks/dd-routing-reminder.sh
+  ✓ hooks/log-usage.sh
+  ✓ hooks/batch-feedback-routing-reminder.sh
+  ✓ hooks/lib/usage-common.sh
+  ✓ hooks/log-usage-post.sh
+  ✓ hooks/live-verify-gate.sh
+  ✓ .apir5-probe.sh
+  ✓ scripts/skill-usage-report.sh
+  ✓ scripts/archive-working-docs.sh
+  ✓ scripts/flag-removal-candidates.sh
+  ✓ scripts/health-check.sh
+  ✓ scripts/confine-tests.sh
+  ✓ scripts/failure-analysis.sh
+  ✓ scripts/lib/preflight.sh
+  ✓ scripts/lib/si-morning-summary.sh
+  ✓ scripts/lib/skill-paths.sh
+  ✓ scripts/lib/md-utils.sh
+  ✓ scripts/lib/json-utils.sh
+  ✓ scripts/lib/si-input.sh
+  ✓ scripts/lib/log-format.sh
+  ✓ scripts/lib/si-functions.sh
+  ✓ scripts/run-tests.sh
+  ✓ scripts/self-improvement.sh
+  ✓ test/test-baseline-gate.bats
+  ✓ test/round-report-schema.bats
+
+In /workspace/test/auto-approve-allowed-commands.bats line 18:
+  cd "$PROJECT"
+  ^-----------^ SC2164 (warning): Use 'cd ... || exit' or 'cd ... || return' in case cd fails.
+
+Did you mean: 
+  cd "$PROJECT" || exit
+
+For more information:
+  https://www.shellcheck.net/wiki/SC2164 -- Use 'cd ... || exit' or 'cd ... |...
+  ✗ test/auto-approve-allowed-commands.bats
+  ✓ test/function-inventory.bats
+  ✓ test/guide-index-sync.bats
+
+In /workspace/test/init-firewall-rules.bats line 745:
+  for i in $(seq 1 100); do
+  ^-^ SC2034 (warning): i appears unused. Verify use (or export if used externally).
+
+For more information:
+  https://www.shellcheck.net/wiki/SC2034 -- i appears unused. Verify use (or ...
+  ✗ test/init-firewall-rules.bats
+  ✓ test/hermeticity-lint.bats
+  ✓ test/rubric-selection.bats
+  ✓ test/lever-measurement-drift.bats
+  ✓ test/workflow-required-sections.bats
+  ✓ test/parse-si-priority-hypotheses.bats
+  ✓ test/cross-reference-integrity.bats
+  ✓ test/sandbox-tool-map-drift.bats
+  ✓ test/code-review-gate.bats
+  ✓ test/convergence-detection.bats
+  ✓ test/agents-gemini-sync.bats
+  ✓ test/cross-model-review-stage1.bats
+  ✓ test/si-input-rejected-history.bats
+
+In /workspace/test/cc-isolated-functions.bats line 665:
+  export CC_CONFIG_HASH="$(blessed_hash)" STUB_IMAGE_HASH="$(blessed_hash)" STUB_FP="$(ws_fingerprint "$TEST_TMPDIR/proj")"
+         ^------------^ SC2155 (warning): Declare and assign separately to avoid masking return values.
+                                          ^-------------^ SC2155 (warning): Declare and assign separately to avoid masking return values.
+                                                                            ^-----^ SC2155 (warning): Declare and assign separately to avoid masking return values.
+
+
+In /workspace/test/cc-isolated-functions.bats line 676:
+  export CC_CONFIG_HASH="$(blessed_hash)" STUB_IMAGE_HASH="0000000000000000" STUB_FP="$(ws_fingerprint "$TEST_TMPDIR/proj")"
+         ^------------^ SC2155 (warning): Declare and assign separately to avoid masking return values.
+                                                                             ^-----^ SC2155 (warning): Declare and assign separately to avoid masking return values.
+
+
+In /workspace/test/cc-isolated-functions.bats line 688:
+  export CC_CONFIG_HASH="$(blessed_hash)" STUB_IMAGE_HASH="$(blessed_hash)" STUB_FP="$(ws_fingerprint "$TEST_TMPDIR/proj")" STUB_FW_MISSING=1
+         ^------------^ SC2155 (warning): Declare and assign separately to avoid masking return values.
+                                          ^-------------^ SC2155 (warning): Declare and assign separately to avoid masking return values.
+                                                                            ^-----^ SC2155 (warning): Declare and assign separately to avoid masking return values.
+
+
+In /workspace/test/cc-isolated-functions.bats line 702:
+  export STUB_IMAGE_HASH="0000000000000000" STUB_FP="$(ws_fingerprint "$TEST_TMPDIR/proj")"
+                                            ^-----^ SC2155 (warning): Declare and assign separately to avoid masking return values.
+
+
+In /workspace/test/cc-isolated-functions.bats line 713:
+  export STUB_IMAGE_HASH="$(blessed_hash)" STUB_FP="$(ws_fingerprint "$TEST_TMPDIR/proj")"
+         ^-------------^ SC2155 (warning): Declare and assign separately to avoid masking return values.
+                                           ^-----^ SC2155 (warning): Declare and assign separately to avoid masking return values.
+
+
+In /workspace/test/cc-isolated-functions.bats line 716:
+  ! grep -q -- '--remove-existing-container' "$DC_LOG"
+  ^-- SC2314 (error): In Bats, ! does not cause a test failure. Use 'run ! ' (on Bats >= 1.5.0) instead.
+
+Did you mean: 
+  run ! grep -q -- '--remove-existing-container' "$DC_LOG"
+
+
+In /workspace/test/cc-isolated-functions.bats line 725:
+  export STUB_IMAGE_HASH="$(blessed_hash)" STUB_FP="$(ws_fingerprint "$TEST_TMPDIR/proj")"
+         ^-------------^ SC2155 (warning): Declare and assign separately to avoid masking return values.
+                                           ^-----^ SC2155 (warning): Declare and assign separately to avoid masking return values.
+
+For more information:
+  https://www.shellcheck.net/wiki/SC2314 -- In Bats, ! does not cause a test ...
+  https://www.shellcheck.net/wiki/SC2155 -- Declare and assign separately to ...
+  ✗ test/cc-isolated-functions.bats
+  ✓ test/link-claude-home-wiring.bats
+  ✓ test/pivot-consistency.bats
+  ✓ test/precondition-gate.bats
+  ✓ test/append-approved-hypotheses.bats
+  ✓ test/skills/fact-check-eval.bats
+  ✓ test/skills/business-plan-critique-moat-format.bats
+  ✓ test/skills/code-review-executable-defect.bats
+  ✓ test/skills/test-strategy-format.bats
+  ✓ test/skills/ai-personas-critique-format.bats
+  ✓ test/skills/what-if-analysis-format.bats
+  ✓ test/skills/ui-visual-review-format.bats
+  ✓ test/skills/code-review-context-delivery.bats
+  ✓ test/skills/code-review-format.bats
+  ✓ test/skills/code-fact-check-edge-cases.bats
+  ✓ test/skills/code-fact-check-eval.bats
+  ✓ test/skills/design-space-situating-format.bats
+  ✓ test/skills/business-plan-critique-unit-economics-format.bats
+  ✓ test/skills/dependency-upgrade-format.bats
+  ✓ test/skills/self-eval-format.bats
+  ✓ test/skills/frontmatter-fields.bats
+  ✓ test/skills/performance-reviewer-format.bats
+  ✓ test/skills/yglesias-critique-format.bats
+  ✓ test/skills/tech-debt-triage-format.bats
+  ✓ test/skills/code-fact-check-format.bats
+  ✓ test/skills/code-review-assurance-contract.bats
+  ✓ test/skills/divergent-design-router.bats
+  ✓ test/skills/code-review-factcheck-replication.bats
+  ✓ test/skills/arithmetic-eval-format.bats
+  ✓ test/skills/code-review-format-contract.bats
+  ✓ test/skills/matrix-analysis-format.bats
+  ✓ test/skills/code-review-soundness-crosscheck.bats
+  ✓ test/skills/security-reviewer-format.bats
+  ✓ test/skills/api-consistency-reviewer-format.bats
+  ✓ test/skills/architecture-review-format.bats
+  ✓ test/skills/business-plan-critique-market-sizing-format.bats
+  ✓ test/skills/fact-check-edge-cases.bats
+  ✓ test/skills/cowen-critique/dimensions.bats
+  ✓ test/skills/pre-mortem-format.bats
+  ✓ test/skills/cowen-critique-format.bats
+  ✓ test/skills/draft-review-format.bats
+  ✓ test/skills/fact-check-format.bats
+  ✓ test/skills/yglesias-critique/dimensions.bats
+  ✓ test/validate-task-json.bats
+  ✓ test/worktree-cleanup-functions.bats
+  ✓ test/hooks/live-verify-gate.bats
+  ✓ test/hooks/log-usage.bats
+  ✓ test/hooks/log-usage-post.bats
+  ✓ test/hooks/claude-config-audit.bats
+  ✓ test/fixture-hermeticity.bats
+  ✓ test/morning-summary-clusters.bats
+  ✓ test/claude-headless-flags.bats
+  ✓ test/round-log-functions.bats
+  ✓ test/scripts/health-check.bats
+  ✓ test/scripts/skill-paths.bats
+  ✓ test/scripts/utility-smoke.bats
+  ✓ test/scripts/failure-analysis.bats
+  ✓ test/scripts/skill-usage-report.bats
+  ✓ test/scripts/self-improvement-smoke.bats
+  ✓ test/scripts/archive-working-docs.bats
+
+── Workflow value-justification ──
+  ✓ branch-strategy.md: value-justification present
+  ✓ codebase-onboarding.md: value-justification present
+  ✓ divergent-design.md: value-justification present
+  ✓ parallel-worktrees.md: value-justification present
+  ✓ pr-prep.md: value-justification present
+  ✓ research-plan-implement.md: value-justification present
+  ✓ review-fix-loop.md: value-justification present
+  ✓ spike.md: value-justification present
+  ✓ task-decomposition.md: value-justification present
+  ✓ user-testing-workflow.md: value-justification present
+  ✓ 10 workflow(s) checked — all have value-justification
+
+── Hook script permissions ──
+  ✓ auto-approve-allowed-commands.sh is executable
+  ✓ batch-feedback-routing-reminder.sh is executable
+  ✓ claude-config-audit.sh is executable
+  ✓ dd-routing-reminder.sh is executable
+  ✓ live-verify-gate.sh is executable
+  ✓ log-usage-post.sh is executable
+  ✓ log-usage.sh is executable
+  ✓ 7 hook(s) checked
+
+── Hook wiring (live settings.json) ──
+  ⚠ not wired: bash /home/node/.claude/hooks/live-verify-gate.sh
+  ✓ permissions.deny present (11 rule(s))
+
+── Skill test-fixture coverage ──
+  ⚠ claude-api: no test fixtures found
+  ⚠ ai-personas-critique: no test fixtures found
+  ⚠ api-consistency-reviewer: no test fixtures found
+  ⚠ architecture-review: no test fixtures found
+  ⚠ arithmetic-eval: no test fixtures found
+  ⚠ business-plan-critique-market-sizing: no test fixtures found
+  ⚠ business-plan-critique-moat: no test fixtures found
+  ⚠ business-plan-critique-unit-economics: no test fixtures found
+  ✓ code-fact-check: has test fixtures
+  ⚠ code-review: no test fixtures found
+  ⚠ cowen-critique: no test fixtures found
+  ⚠ dependency-upgrade: no test fixtures found
+  ⚠ design-space-situating: no test fixtures found
+  ⚠ divergent-design: no test fixtures found
+  ⚠ draft-review: no test fixtures found
+  ✓ fact-check: has test fixtures
+  ⚠ matrix-analysis: no test fixtures found
+  ⚠ performance-reviewer: no test fixtures found
+  ⚠ pre-mortem: no test fixtures found
+  ⚠ security-reviewer: no test fixtures found
+  ⚠ self-eval: no test fixtures found
+  ⚠ tech-debt-triage: no test fixtures found
+  ⚠ test-strategy: no test fixtures found
+  ✓ ui-visual-review: has test fixtures
+  ⚠ what-if-analysis: no test fixtures found
+  ⚠ yglesias-critique: no test fixtures found
+
+  Coverage: 3/26 skills have test fixtures (23 without)
+  ⚠ Skills lacking fixtures: claude-api ai-personas-critique api-consistency-reviewer architecture-review arithmetic-eval business-plan-critique-market-sizing business-plan-critique-moat business-plan-critique-unit-economics code-review cowen-critique dependency-upgrade design-space-situating divergent-design draft-review matrix-analysis performance-reviewer pre-mortem security-reviewer self-eval tech-debt-triage test-strategy what-if-analysis yglesias-critique
+
+── Feature integration (si-functions.sh) ──
+  ✓ find_task_lineage: called from sibling helper in si-functions.sh
+  ✓ prepend_lineage_to_plan: called from sibling helper in si-functions.sh
+  ✓ remove_worktree_and_branch: called from entry point
+  ✓ validate_task_json: called from entry point
+  ✓ check_convergence_threshold: called from entry point
+  ✓ print_gate_stats: called from entry point
+  ✓ append_approved_hypotheses: called from entry point
+  ✓ tap_failing_names: called from entry point
+  ✓ tap_new_failures: called from entry point
+  ✓ parse_code_review_red: called from entry point
+  ✓ count_rubric_red: called from entry point
+  ✓ code_review_gate_verdict: called from entry point
+
+  Feature integration: 12/12 functions called from entry points
+  ✓ All si-functions.sh functions are called from at least one entry point
+
+── Document freshness (spikes + onboarding) ──
+  ✓ docs/spikes/invocation-logger-hook-point.md: fresh (no changes to tracked paths since 2026-06-24)
+  ⚠ docs/spikes/staleness-heuristic.md: STALE — 4 commit(s) to tracked paths since 2026-06-24
+
+  Freshness: 2 checked, 1 fresh, 1 stale, 0 missing fields
+
+── Persona freshness (last-sampled within ~6 months) ──
+  ✓ ai-personas-critique: fresh (132 days since 2026-05-03)
+  ✓ cowen-critique: fresh (132 days since 2026-05-03)
+  ✓ yglesias-critique: fresh (132 days since 2026-05-03)
+
+  Persona freshness: 3 checked, 3 fresh, 0 stale, 0 invalid
+
+── MD file semantic divergence ──
+  global-instructions/CLAUDE.md: 283 lines, 8 H2 + 15 H3 sections, 17 skill ref(s)
+  AGENTS.md: 69 lines, 5 H2 + 0 H3 sections, 17 skill ref(s)
+  GEMINI.md: 69 lines, 5 H2 + 0 H3 sections, 17 skill ref(s)
+  ✓ AGENTS.md and GEMINI.md have identical section structure
+  ⚠ H2 sections in global-instructions/CLAUDE.md not in AGENTS.md: Tool Preferences (sandbox-aware)
+  ⚠ H2 sections in global-instructions/CLAUDE.md not in GEMINI.md: Tool Preferences (sandbox-aware)
+
+  2 divergence signal(s) detected
+  ⚠ AGENTS.md and GEMINI.md are not read by Claude Code — content updates in global-instructions/CLAUDE.md may drift silently
+
+Some checks failed.

@@ -1,0 +1,230 @@
+bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+1..97
+bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+ok 1 the skill has a Confirmed-Good claim section
+bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+ok 2 the rubric template's Confirmed Good table carries an Evidence column
+bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+ok 3 Confirmed Good evidence reuses the Evidence-grounding format, not a second one
+bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+ok 4 an ungrounded Confirmed Good row is dropped, not filed as an Unverified Finding
+bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+ok 5 universally quantified confirmations require an enumeration, not one instance
+bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+ok 6 Stage 3 runs a Confirmed-Good cross-check before the deliverables
+bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+ok 7 the cross-check reads the fact-check report, including incidental observations
+bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+ok 8 a contradicted confirmation is neither silently dropped nor silently promoted
+bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+ok 9 the contested-confirmation channel does not feed the escalation rule
+bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+ok 10 Important Reminders carries the Confirmed-Good contract
+bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+ok 11 the passing status line carries the single-sample label
+bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+ok 12 the chat synthesis carries the label when the run is clean
+bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+ok 13 the label cites the replicate-disagreement evidence behind it
+bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+ok 14 the hedging stays proportionate — a standing label, not a paragraph everywhere
+bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+ok 15 the label is not attached to a failing verdict
+bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+ok 16 the Executable-Defect Channel section exists
+bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+ok 17 the trigger requires determinism, a named sandbox verification, and a quoted mechanism
+bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+ok 18 the verification is run first with executed-mode provenance
+bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+ok 19 confirmed findings map by native severity; unexecutable ones lift to terminal amber
+bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+ok 20 a refuted finding is never lifted
+bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+ok 21 the precision guard excludes unnamed-trigger failures
+bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+ok 22 Stage 3 carries the executable-defect cross-check as a required pre-deliverable pass
+bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+ok 23 Unverifiable is declared an evidence state, not a severity
+bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+ok 24 both contextual-critic exit paths are named and exclusive
+bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+ok 25 fixture has all nine rubric sections
+bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+ok 26 the Fragment-Composition cross-check is a required Stage-3 pass with capped authority
+bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+ok 27 fixture status line carries a verdict and an emoji
+bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+ok 28 Unverified Findings section is present and auditable
+bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+ok 29 Unverified Findings table records why each finding is unverified
+bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+ok 30 Must Fix table has a Severity column
+bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+ok 31 Must Address table has a Severity column
+bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+ok 32 Consider table has a Severity column
+bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+ok 33 severity values are critic-native levels, not rubric tier emoji
+bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+ok 34 Confirmed Good table has an Evidence column
+bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+ok 35 every Confirmed Good row cites evidence
+bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+ok 36 a contested confirmation lands in Must Address, not Confirmed Good
+bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+ok 37 every finding row carries a Status value
+bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+ok 38 Consider rows use the green status vocabulary
+bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+ok 39 Must Fix rows cite a location
+bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+ok 40 golden's table headers match the skill's rubric template
+bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+ok 41 golden's section headings match the skill's rubric template
+bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+ok 42 fixture does not contain draft-review verdict vocabulary
+bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+ok 43 the Soundness-Contradiction Channel section exists
+bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+ok 44 the trigger requires verbatim quotes on both sides, each with file:line
+bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+ok 45 the precision guard bars opinion-only lifts
+bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+ok 46 a qualifying finding lands in Must Address with the fixed vocabulary
+bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+ok 47 🟡 is terminal: never promoted to 🔴, excluded from escalation corroboration
+bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+ok 48 the owner-cap exception applies regardless of which critic filed the finding
+bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+ok 49 the advisory rule names the exception, and the escalation rule excludes the lift
+bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+ok 50 Stage 3 runs the soundness cross-check before producing deliverables
+bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+ok 51 the lift is named in the chat synthesis
+bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+ok 52 the validation falsifier and the cap-lift bar are stated
+bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+ok 53 the section-extraction end anchor exists (no silent extract-to-EOF)
+bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+ok 54 report has a title header
+bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+ok 55 report has a Scope field
+bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+ok 56 report has a Reviewed date field
+bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+ok 57 report has a Status field with a known status value
+bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+ok 58 report has Must Fix section
+bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+ok 59 report has Must Address section
+bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+ok 60 report has Consider section
+bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+ok 61 report has Confirmed Good section
+bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+ok 62 report has Considered Overrides section
+bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+ok 63 report has Skipped Core Critics section
+bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+ok 64 status uses one of the allowed values
+bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+ok 65 status line carries an emoji indicator
+bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+ok 66 Must Fix section contains a table or (None)
+bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+ok 67 Must Address section contains a table or (None)
+bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+ok 68 Considered Overrides section contains a table or the empty-state sentinel
+bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+ok 69 Skipped Core Critics section contains a table or the empty-state sentinel
+bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+ok 70 report does not contain draft-review verdict vocabulary
+bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+ok 71 Step 1 declares diff delivery as conditional
+bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+ok 72 inline shared-context section inlines the unified diff as a shared-block part
+bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+ok 73 every 'runs its own git diff' instruction carries a conditionality marker nearby
+bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+ok 74 every 'pass scope, not diffs' instruction carries a conditionality marker nearby
+bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+ok 75 Stage-1 replicate dispatch step references the conditional delivery rule
+bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+ok 76 Stage-2 critic dispatch step references the conditional delivery rule
+bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+ok 77 size guard names the numeric shared-block budget
+bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+ok 78 degrade ladder inlines the diff alone before falling back to full self-read
+bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+ok 79 per-file churn rule is explicitly excluded from the delivery gate
+bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+ok 80 mutable diff/enclosing part sits second-to-last in the shared block (part 5 of 6)
+bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+ok 81 Stage 1 runs the fact-check as three replicates
+bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+ok 82 replicate prompts are byte-identical except the output path
+bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+ok 83 replicates write per-replicate report paths and the merged report is canonical
+bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+ok 84 the merge aggregator is most-severe-wins, not majority
+bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+ok 85 the severity order is stated and runs Incorrect-high first, Verified last
+bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+ok 86 every merged claim records per-replicate verdicts
+bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+ok 87 the merged report ends with a Verdict stability section reporting the agreement rate
+bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+ok 88 the k-reduction falsifier is stated (>=90% agreement on >=20 claims -> k=2)
+bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+ok 89 fewer than two substantive replicates blocks the merge
+bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+ok 90 the Confirmed-Good cross-check scans the per-replicate reports too
+bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+ok 91 the merged-report header mandates the fields Gate 1h parses
+bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+ok 92 the section-extraction end anchors exist (no silent extract-to-EOF)
+bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+ok 93 replication is loop-aware: k=1 on loop passes per decision 031, k=3 standalone
+bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+ok 94 a rich shared brief is required and shared verbatim across replicates
+bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+ok 95 annotations merge by union and survive a lost verdict contest
+bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+ok 96 replicate escalations aggregate into an Escalations section
+bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+ok 97 unrouted escalations are force-surfaced by the dead-letter rule
+
+The following warnings were encountered during tests:
+BW02: Using flags on `run` requires at least BATS_VERSION=1.5.0. Use `bats_require_minimum_version 1.5.0` to fix this message.
+      (from function `bats_warn_minimum_guaranteed_version' in file /usr/lib/bats-core/warnings.bash, line 32,
+       from function `run' in file /usr/lib/bats-core/test_functions.bash, line 227,
+       in test file test/skills/code-review-assurance-contract.bats, line 166)
+BW02: Using flags on `run` requires at least BATS_VERSION=1.5.0. Use `bats_require_minimum_version 1.5.0` to fix this message.
+      (from function `bats_warn_minimum_guaranteed_version' in file /usr/lib/bats-core/warnings.bash, line 32,
+       from function `run' in file /usr/lib/bats-core/test_functions.bash, line 227,
+       in test file test/skills/code-review-assurance-contract.bats, line 167)

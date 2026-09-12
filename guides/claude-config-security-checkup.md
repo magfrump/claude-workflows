@@ -58,7 +58,9 @@ payload copy at `~/.claude/scripts/claude_config_audit.py`, falling back to
 Run the auditor over everything it considers policy:
 
 ```sh
-# Default roots: ./.claude, ~/.claude, ./CLAUDE.md
+# Default roots: ./.claude, ~/.claude, ./CLAUDE.md, ./global-instructions/CLAUDE.md
+# (both spellings: consumer projects keep the instructions file at the repo
+#  root, this repo keeps it under global-instructions/)
 python3 ~/.claude/scripts/claude_config_audit.py
 
 # Explicit roots — this repo IS ~/.claude's backing store, so sweep both:
