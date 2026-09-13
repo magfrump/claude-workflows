@@ -206,7 +206,11 @@ fail:
 - **Firewall complete:** `/run/cc-firewall/complete` exists — the baked
   `init-firewall.sh` reached its sentinel on its last run, node-run probes included.
   Without this check a fail-closed container is indistinguishable from a healthy one:
-  every egress check passes and `node` has no network (2026-09-09).
+  every egress check passes and `node` has no network (2026-09-09). The probe stats
+  the marker as `node`, so it is 0644 in a root **0711** directory; `node` still
+  cannot forge or remove it (no write bit on the directory) nor open the 0600 lock
+  beside it. Under the 0700 this replaced, every healthy container failed this check
+  (2026-09-12).
 
 A full pass records the blessed hash in `~/.config/claude-devcontainer/verified-live.sha256`.
 That file, not the manifest, is what "verified" means here — see the next section.

@@ -964,10 +964,14 @@ STUB
   [[ "$output" == *"did not log a redirected refusal"* ]]
 }
 
-@test "the lock lives in a 0700 directory and is 0600" {
+@test "the lock lives in a 0711 directory and is 0600" {
+  # 0711, not 0700. The launcher probes the completion marker in this directory as
+  # `node`; a 0700 dir makes that stat fail EACCES on a perfectly healthy container.
+  # The security property is carried by the missing w bit (node cannot add or remove
+  # entries) and by the lock's own 0600, not by denying traversal.
   run bash "$FW"
   [ "$status" -eq 0 ]
-  [ "$(stat -c '%a' "$(dirname "$CC_FIREWALL_LOCK")")" = "700" ]
+  [ "$(stat -c '%a' "$(dirname "$CC_FIREWALL_LOCK")")" = "711" ]
   [ "$(stat -c '%a' "$CC_FIREWALL_LOCK")" = "600" ]
 }
 
@@ -1224,6 +1228,33 @@ STUB
   [ -f "$CC_FIREWALL_MARKER" ]
   grep -q '^completed=' "$CC_FIREWALL_MARKER"
   grep -q '^container_ip=172\.17\.0\.2$' "$CC_FIREWALL_MARKER"
+}
+
+@test "the marker is readable by a non-root user (the probe reads it as node)" {
+  # Regression: the marker defaulted into a 0700 root directory while cc-isolated.sh
+  # probes it with a bare `test -f` as `node` (remoteUser), whose sudo grant is a bare
+  # init-firewall.sh only — so every healthy container reported PROBE FAIL (firewall).
+  # Every other marker test relocates CC_FIREWALL_MARKER into a dir the test user owns,
+  # which is why the modes went unchecked. Here the marker takes its real default
+  # position beside the lock, and both modes are asserted.
+  export CC_FIREWALL_LOCK="$TEST_TMPDIR/realrun/lock"
+  run bash "$FW"
+  [ "$status" -eq 0 ]
+  [ -f "$TEST_TMPDIR/realrun/complete" ]
+  [ "$(stat -c '%a' "$TEST_TMPDIR/realrun")" = "711" ]
+  [ "$(stat -c '%a' "$TEST_TMPDIR/realrun/complete")" = "644" ]
+}
+
+@test "a marker left 0600 by an earlier run is re-opened to 0644" {
+  # `>` onto an existing file keeps its mode, so a marker first created under a tight
+  # umask would stay unreadable to node for the life of the container.
+  export CC_FIREWALL_LOCK="$TEST_TMPDIR/realrun/lock"
+  mkdir -p "$TEST_TMPDIR/realrun"
+  : > "$TEST_TMPDIR/realrun/complete"
+  chmod 0600 "$TEST_TMPDIR/realrun/complete"
+  run bash "$FW"
+  [ "$status" -eq 0 ]
+  [ "$(stat -c '%a' "$TEST_TMPDIR/realrun/complete")" = "644" ]
 }
 
 @test "an aborted run removes a marker left by an earlier run (bricked-closed is visible)" {

@@ -284,6 +284,9 @@ fail_closed_on_abort() {
     # The one place the marker is written: after the sentinel, never before a check.
     printf 'completed=%s\ncontainer_ip=%s\n' "$(date -u +%Y-%m-%dT%H:%M:%SZ)" "${CONTAINER_IP:-}" \
       > "${FIREWALL_MARKER:-/run/cc-firewall/complete}" || true
+    # Explicit, not umask-dependent: the probe reads this as `node`, and `>` onto
+    # an existing file keeps whatever mode the first (possibly umask 077) run set.
+    chmod 0644 "${FIREWALL_MARKER:-/run/cc-firewall/complete}" 2>/dev/null || true
     return 0
   fi
   rm -f "${FIREWALL_MARKER:-/run/cc-firewall/complete}" || true
@@ -386,7 +389,8 @@ FIREWALL_LOCK_WAIT="${CC_FIREWALL_LOCK_WAIT:-600}"
 # before the flush and re-created by the EXIT trap on completion, so a bricked-closed
 # container (DROP policies, no accepts — which every egress probe mistakes for a
 # healthy boundary) is distinguishable from a verified one. /run/cc-firewall is root
-# 0700, so `node` can neither forge nor remove it. It lives beside the lock (so the
+# 0711 and this file is 0644, so `node` can read the marker but can neither forge
+# nor remove it (no write bit on the dir). It lives beside the lock (so the
 # unit suite, which relocates the lock, relocates it too); CC_FIREWALL_MARKER is a
 # unit-test override like the two above.
 FIREWALL_MARKER="${CC_FIREWALL_MARKER:-$(dirname "$FIREWALL_LOCK")/complete}"
@@ -394,7 +398,15 @@ if [[ ! "$FIREWALL_LOCK_WAIT" =~ ^[0-9]+$ ]]; then
     echo "ERROR: CC_FIREWALL_LOCK_WAIT must be a non-negative integer (got '$FIREWALL_LOCK_WAIT')" >&2
     exit 1
 fi
-mkdir -p "$(dirname "$FIREWALL_LOCK")" && chmod 0700 "$(dirname "$FIREWALL_LOCK")"
+# 0711, not 0700: the launcher's self-probe runs `test -f .../complete` as `node`
+# (devcontainer exec uses remoteUser), and node's sudo grant is a bare
+# init-firewall.sh only — so it cannot borrow root to read it. Under 0700 that
+# stat fails EACCES on every HEALTHY container, which is the false "PROBE FAIL
+# (firewall)" this replaces. --x lets node traverse to a name it already knows;
+# with no r it still cannot list the directory, and with no w it can neither
+# create nor remove entries, so the marker stays unforgeable and unremovable by
+# node. The lock beside it keeps mode 0600 root, so traversal exposes nothing.
+mkdir -p "$(dirname "$FIREWALL_LOCK")" && chmod 0711 "$(dirname "$FIREWALL_LOCK")"
 exec 9>"$FIREWALL_LOCK"
 chmod 0600 "$FIREWALL_LOCK"
 LOCK_WAITING=1

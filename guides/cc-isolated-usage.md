@@ -283,8 +283,10 @@ Every launch refuses to `exec claude` unless all seven pass:
   probes* (`dig` and `curl https://api.anthropic.com` as `node`, through the steering).
   The script fails closed, and a closed container passes every egress check while
   `node` has no DNS and no HTTPS — that is exactly what the 2026-09-09 outage looked
-  like from the old five-check probe. The marker is root-only and is removed before
-  every flush, so it vouches for the current ruleset.
+  like from the old five-check probe. The marker is root-written and is removed before
+  every flush, so it vouches for the current ruleset. It is world-readable (0644) in a
+  root 0711 directory: the probe reads it as `node`, and the missing write bit on the
+  directory — not a denial of traversal — is what stops `node` forging or removing it.
 
 **Blessed is not verified.** `--bless` (and `install.sh`, which blesses) hashes
 files; it cannot know whether a container built from them works. Only a passing
