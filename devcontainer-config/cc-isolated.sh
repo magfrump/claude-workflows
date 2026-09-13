@@ -262,7 +262,9 @@ suggest_profiles() {
   if [ -e "$ws/Cargo.toml" ]; then
     s+=("rust")
   fi
-  if [ -e "$ws/lean-toolchain" ] || [ -e "$ws/lakefile.lean" ]; then
+  # Lean: `lakefile.toml` is the current Lake manifest format and `lakefile.lean` the
+  # older one; `lean-toolchain` catches a project that has one but no lakefile yet.
+  if [ -e "$ws/lean-toolchain" ] || [ -e "$ws/lakefile.lean" ] || [ -e "$ws/lakefile.toml" ]; then
     s+=("lean")
   fi
   # Gradle/Android: the wrapper (gradlew) or any Gradle build script. Groovy and

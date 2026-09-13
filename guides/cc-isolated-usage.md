@@ -61,7 +61,7 @@ GitHub IP ranges). Language toolchains are granted per project, **host-side only
 | `base`  | Claude Code's documented hosts (`api.anthropic.com`, `claude.ai`, `claude.com`, `platform.claude.com`, `downloads.claude.ai`, `mcp-proxy.anthropic.com`, `code.claude.com`; `console.anthropic.com` kept pending one verified login without it), `registry.npmjs.org`, GitHub ranges | always applied |
 | `python`| `pypi.org`, `files.pythonhosted.org` | `pyproject.toml` · `requirements.txt` · `setup.py` |
 | `rust`  | `crates.io`, `index.crates.io`, `static.crates.io` | `Cargo.toml` |
-| `lean`  | `elan.lean-lang.org`, `releases.lean-lang.org` | `lean-toolchain` · `lakefile.lean` |
+| `lean`  | `elan.lean-lang.org`, Lean release host, mathlib olean cache, `reservoir.lean-lang.org` | `lean-toolchain` · `lakefile.toml` · `lakefile.lean` |
 | `android`| Google Maven (`dl.google.com`, `maven.google.com`), Maven Central, `services.gradle.org`, `plugins.gradle.org` | `gradlew` · `build.gradle[.kts]` · `settings.gradle[.kts]` |
 | `dotnet` | `api.nuget.org` | `ProjectSettings/ProjectVersion.txt` · `Packages/manifest.json` · top-level `*.sln` / `*.csproj` |
 | `llm`   | `openrouter.ai` | never — deliberate opt-in |
@@ -260,6 +260,54 @@ Failure modes worth recognizing on sight:
   assemblies live in the host's editor installation, not in NuGet or the image.
   Either keep agent-testable code Unity-free (the clean split), or vendor the
   reference DLLs into the repo.
+
+## Lean / mathlib inside the container
+
+The image bakes **elan** (the Lean toolchain manager) at `/home/node/.elan`, on
+`PATH`. After registering `--profile lean`:
+
+```bash
+cc-isolated --register ~/code/proofs --profile lean
+cc-isolated ~/code/proofs
+# inside the container:
+lake exe cache get     # download mathlib's precompiled oleans (minutes, not hours)
+lake build
+```
+
+**Lean is the one toolchain that is not pinned root-owned**, and the reason is
+structural rather than an oversight: a Lean project pins its exact compiler in its
+own `lean-toolchain` file, mathlib moves that pin every few weeks, and two repos on
+one image routinely want different ones. So elan's toolchain store (`ELAN_HOME`) is
+node-writable, and a repo whose pin is not baked into the image fetches it at
+runtime. Everything the other layers protect is unchanged: `/opt/{rustup,cargo,dotnet}`,
+`/usr/local/bin`, `/usr/local/share/cc-egress` and `/etc/cc-egress-profile` stay
+root-owned, so this widens what a session can install for *itself*, not the boundary.
+
+To pay that download at build time instead, set `LEAN_TOOLCHAINS` in
+`devcontainer.json` to the pins your repos use (space-separated; the first becomes the
+default), re-install and re-bless. Build time is not subject to `init-firewall.sh`, so
+a baked pin needs no egress at all.
+
+**`lake exe cache get` is not optional in practice.** Without the cache host in the
+profile a mathlib-dependent repo compiles the whole library from source — hours per
+repo, per clone, every time `.lake` is cleaned.
+
+Failure modes worth recognizing on sight:
+
+- **`elan` hangs or times out resolving a toolchain.** Either the project was never
+  registered with `--profile lean`, or the release hostname in `egress/lean.txt` is
+  the wrong one. That file ships two candidates (`release.` and `releases.`
+  `lean-lang.org`) precisely because it was authored without egress to confirm which
+  elan uses; the SNI proxy matches names **exactly**, so a near-miss is rejected
+  rather than redirected. Watch one fetch succeed, then delete the loser.
+- **`lake exe cache get` downloads nothing, and `lake build` starts compiling
+  `Mathlib.Init`.** The cache host is missing or wrong. Confirm it against
+  `Cache/Requests.lean` in a mathlib4 checkout on the host — it has moved before —
+  then correct `egress/lean.txt`, re-install, re-bless.
+- **`lake` cannot resolve a dependency required by bare name.** That path goes through
+  Reservoir, not GitHub; `reservoir.lean-lang.org` is in the profile for it. Git
+  `require`s (what mathlib itself uses) resolve to GitHub, which every session already
+  reaches.
 
 ## The boundary self-probe
 

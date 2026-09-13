@@ -1,3 +1,53 @@
-# lean — elan toolchain manager + Lean releases.
+# lean — elan toolchain manager, Lean releases, and the mathlib build cache.
+#
+# The elan BINARY is baked into the image (decision log #51), but unlike the rust and
+# .NET layers the toolchain server is NOT build-time-only: a Lean project pins its
+# compiler in its own `lean-toolchain` file, so a repo whose pin is not baked into
+# LEAN_TOOLCHAINS fetches it at runtime. That is why the release host is listed here.
+#
+# UNVERIFIED HOSTNAMES. This profile was written from a sandbox with no egress; the
+# two entries flagged VERIFY below could not be confirmed against the live services.
+# init-firewall.sh warns-and-skips a name that fails to resolve (only `base` domains
+# are critical), so a wrong entry here degrades to "stays blocked", not to a wider
+# allowlist or a failed container start — but it does mean a first Lean session may
+# fail on a host that is simply missing. Confirm and prune on the host; tracked in
+# docs/working/questions.md.
+
+# elan's installer/self-update host.
 elan.lean-lang.org
+
+# Toolchain downloads. VERIFY: current elan resolves releases and assets from
+# `release.lean-lang.org` (singular) per its changelog; `releases.lean-lang.org`
+# (plural) is what this profile has carried, unexercised, since decision 016. Both are
+# listed until one is confirmed live, because the SNI proxy admits a 443 name only on
+# an EXACT match against this file — a subdomain or a near-miss is rejected, and that
+# asymmetry is the likeliest cause of a quiet "elan just hangs" outage. Delete the
+# wrong one once a real toolchain fetch has been watched succeed.
+# Older elan (pre-4.x) resolves toolchains from GitHub releases instead, which `base`
+# already admits by CIDR, so the fetch can succeed even if both names here are wrong.
+release.lean-lang.org
 releases.lean-lang.org
+
+# mathlib's precompiled-olean cache — what `lake exe cache get` downloads. Without it
+# a mathlib-dependent repo compiles the whole library from source (hours per repo,
+# per clone) instead of downloading it (minutes), so this entry is the difference
+# between the profile being usable and being technically correct.
+#
+# VERIFY: mathlib's cache client (`Cache/Requests.lean`) is the source of truth for
+# this hostname and it has moved before. Check it in a mathlib4 checkout on the host —
+# `rg -o 'https://[^"]*' Cache/Requests.lean` — before relying on this line.
+#
+# ACCEPTED RISK, stated in the same terms as android.txt's: this is an Azure Blob
+# Storage endpoint, i.e. a writable object store fronted by shared infrastructure. The
+# SNI proxy pins the admitted 443 name to exactly this one, so a session cannot reach
+# a different storage account over the same IPs; what remains is that the mathlib
+# cache bucket itself is a general object store, and writing to it needs a SAS token
+# the container does not have. Narrower than the GFE surface `android` already grants.
+lakecache.blob.core.windows.net
+
+# Reservoir — Lake's package index, used when a lakefile `require`s a package by bare
+# name rather than by git URL. mathlib's own dependencies (batteries, aesop, Qq,
+# proofwidgets, importGraph, plausible, LeanSearchClient, Cli) are git requires that
+# resolve to GitHub, which `base` admits by CIDR, so this is only needed by projects
+# that use the index. Drop it if none of yours do.
+reservoir.lean-lang.org

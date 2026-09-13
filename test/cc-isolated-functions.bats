@@ -231,6 +231,26 @@ make_repo() {
   [ -z "$(project_profile "$TEST_TMPDIR/proj")" ]
 }
 
+@test "suggest_profiles proposes lean for a repo with the toolchain pin" {
+  make_repo "$TEST_TMPDIR/proj"
+  touch "$TEST_TMPDIR/proj/lean-toolchain"
+  [ "$(suggest_profiles "$TEST_TMPDIR/proj")" = "lean" ]
+  # Suggestion only — the repo's own toolchain pin must not grant it egress.
+  [ -z "$(project_profile "$TEST_TMPDIR/proj")" ]
+}
+
+@test "suggest_profiles proposes lean for a lakefile.toml repo (current Lake format)" {
+  make_repo "$TEST_TMPDIR/proj"
+  touch "$TEST_TMPDIR/proj/lakefile.toml"
+  [ "$(suggest_profiles "$TEST_TMPDIR/proj")" = "lean" ]
+}
+
+@test "suggest_profiles proposes lean for a lakefile.lean repo (older Lake format)" {
+  make_repo "$TEST_TMPDIR/proj"
+  touch "$TEST_TMPDIR/proj/lakefile.lean"
+  [ "$(suggest_profiles "$TEST_TMPDIR/proj")" = "lean" ]
+}
+
 @test "suggest_profiles proposes android for a gradle repo (Kotlin DSL)" {
   make_repo "$TEST_TMPDIR/proj"
   touch "$TEST_TMPDIR/proj/build.gradle.kts"

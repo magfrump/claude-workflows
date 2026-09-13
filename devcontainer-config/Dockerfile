@@ -379,6 +379,70 @@ RUN sh -c "$(wget -O- https://github.com/deluan/zsh-in-docker/releases/download/
 # Install Claude
 RUN npm install -g @anthropic-ai/claude-code@${CLAUDE_CODE_VERSION}
 
+# Lean 4 toolchain — elan, with a node-writable toolchain store (decision log #51;
+# fifth instance of the uv / Android / rust / .NET pattern: #18, #19, #21, #26).
+#
+# WHY IT IS HERE AT ALL: decision 016 shipped a `lean` egress profile and
+# suggest_profiles() has always detected `lean-toolchain`, but the image had no
+# lean/lake — a Lean project could reach the toolchain server and still not build.
+# Exactly the "reach the registry, can't use it" gap that motivated uv (#18).
+#
+# WHY ELAN, AND WHY THE IMMUTABLE-TOOLCHAIN STANCE DOES NOT HOLD HERE. The four
+# layers above bake a pinned compiler root-owned under /opt or /usr/local, so `node`
+# runs the toolchain but cannot rewrite it. Lean cannot follow that: a Lean project
+# pins its exact compiler in its own `lean-toolchain` file, mathlib moves that pin
+# every few weeks, and two repos on the same image routinely want different ones. A
+# single root-owned Lean would therefore fail on most repos rather than serve them.
+# elan exists precisely to read that file and fetch the toolchain it names, so the
+# store it writes into (ELAN_HOME) must be node-writable.
+#
+# WHAT THAT DOES AND DOES NOT COST. It means a session can install another Lean
+# toolchain, and can overwrite the lean/lake proxies in its own ELAN_HOME. It does
+# NOT widen the boundary: elan can only fetch from what egress/lean.txt admits, and
+# "an allowlisted host can serve code that later executes in the container" is
+# already true of cargo, npm, NuGet and Gradle — every one of those runs downloaded
+# build scripts. What stays out of reach is everything the other layers protect:
+# /opt/{rustup,cargo,dotnet}, /usr/local/bin, /usr/local/share/cc-egress and
+# /etc/cc-egress-profile are all still root-owned. So this is a narrower deviation
+# than it first reads as: the Lean toolchain store joins ~/.cargo and ~/.nuget on
+# the writable-cache side of the split, and nothing crosses to the immutable side.
+#
+# WHICH TOOLCHAINS ARE BAKED. None by default: elan-init runs with
+# `--default-toolchain none`, so a build of this image never depends on whatever
+# Lean happens to be current, and nothing drifts between rebuilds. Set
+# LEAN_TOOLCHAINS to the pins your repos actually use (space-separated, e.g.
+# "leanprover/lean4:v4.15.0 leanprover/lean4:v4.16.0") to bake them at BUILD time —
+# build time is not subject to init-firewall.sh, so a baked pin needs no egress and
+# no first-run download. The FIRST entry becomes the default toolchain. A repo
+# pinned to something not baked fetches it at runtime through the `lean` profile;
+# that is the deliberate difference from the Android SDK's fail-loudly stance, and
+# the reason releases.lean-lang.org is in the profile rather than build-time-only.
+#
+# elan is fetched from its GitHub release at a pinned version, like git-delta and
+# shfmt above. The per-arch SHA-256 is NOT pinned here, for the same reason the
+# rustup layer's is not: the authoring environment has no egress and cannot obtain
+# the two digests. Pin them as build ARGs at the next host-side version bump — this
+# layer, unlike rustup's, installs into a node-writable tree, so the pin is worth
+# more here than there. Tracked in docs/working/questions.md.
+ARG ELAN_VERSION=v3.1.1
+ARG LEAN_TOOLCHAINS=""
+ENV ELAN_HOME=/home/node/.elan \
+    PATH=/home/node/.elan/bin:$PATH
+RUN case "$(dpkg --print-architecture)" in \
+      amd64) ELAN_TARGET=x86_64-unknown-linux-gnu ;; \
+      arm64) ELAN_TARGET=aarch64-unknown-linux-gnu ;; \
+      *) echo "elan: unsupported architecture $(dpkg --print-architecture)" >&2; exit 1 ;; \
+    esac && \
+    cd /tmp && \
+    wget -q "https://github.com/leanprover/elan/releases/download/${ELAN_VERSION}/elan-${ELAN_TARGET}.tar.gz" \
+      -O elan.tar.gz && \
+    tar xzf elan.tar.gz && \
+    ./elan-init -y --no-modify-path --default-toolchain none && \
+    rm -f elan.tar.gz elan-init && \
+    for tc in ${LEAN_TOOLCHAINS}; do elan toolchain install "$tc"; done && \
+    if [ -n "${LEAN_TOOLCHAINS}" ]; then elan default $(echo ${LEAN_TOOLCHAINS} | cut -d' ' -f1); fi && \
+    elan --version
+
 # --- Everything below is per-project. Keep it LAST. -------------------------
 # CC_EGRESS_PROFILE is the only build arg that varies between projects, so
 # declaring it here means every layer above is shared across all projects'

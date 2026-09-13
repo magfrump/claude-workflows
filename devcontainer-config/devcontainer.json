@@ -39,6 +39,12 @@
       "DOTNET_SDK_VERSION": "10.0.400",
       "DOTNET_SDK_SHA512_AMD64": "1033977dd837150e0814cf0c5d5b17ceb63925fda7ba2158b47258a4bd7c048cf82eac3bc1166f3146f53124a3f5fba09db1de1260d2ce96399860303b404b48",
       "DOTNET_SDK_SHA512_ARM64": "a1b45da58e5591fff909a6126ac6bfc1ef9c12bc72c0625f7815e83a82be1a902317ee96926cbbf81324a45c6abf2ed8102a216d0507879cc166159af78d1b77",
+      "ELAN_VERSION": "v3.1.1",
+      // Lean toolchains baked at build time, space-separated (first = default).
+      // Empty means elan installs no toolchain and every Lean repo fetches its own
+      // `lean-toolchain` pin at runtime through the `lean` egress profile. Fill this
+      // with the pins your repos actually use to make that a build-time cost instead.
+      "LEAN_TOOLCHAINS": "",
       "CC_EGRESS_PROFILE": "${localEnv:CC_EGRESS_PROFILE}",
       // Hash of the blessed manifest, exported by the launcher; baked to
       // /etc/cc-config-hash so the self-probe can tell WHICH config this container
