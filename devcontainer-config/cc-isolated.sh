@@ -7,7 +7,8 @@
 #   cc-isolated                          # session for the git repo containing $PWD
 #   cc-isolated ~/code/other-project     # session for an explicit repo
 #   cc-isolated --register ~/code/api --profile python
-#                                        # widen that project's egress, then re-bless
+#                                        # SET that project's egress profile (REPLACES any
+#                                        # previous grant, never adds to it), then re-bless
 #   cc-isolated --bless                  # re-bless the installed config after YOU reviewed it
 #   cc-isolated --probe-only [WS]        # (re)build WS from the blessed config, run the
 #                                        # boundary self-probe, record it verified live
@@ -287,7 +288,7 @@ suggest_profiles() {
 }
 
 register_project() {
-  local ws="$1" profiles="$2" p pid
+  local ws="$1" profiles="$2" p pid prev
   pid="$(project_id "$ws")"
   # Validate every named profile against the canonical egress/ dir before writing,
   # so a typo is caught here rather than at container start.
@@ -301,11 +302,31 @@ register_project() {
       return 1
     fi
   done
+  # --profile SETS the grant; it does not add to it. That is deliberate — a boundary
+  # you can only ever widen is not a boundary, and hand-editing files under
+  # projects/ would be the only way to narrow one. What is NOT acceptable is doing
+  # it silently: re-registering to add `lean` to a project that already had `dotnet`
+  # drops `dotnet`, and the symptom lands much later as a network outage inside the
+  # container with nothing pointing back here. So read the previous grant first and
+  # print the transition, not just the result.
+  prev="$(project_profile "$ws")"
   mkdir -p "$(projects_dir)"
   printf '%s\n' "$profiles" > "$(projects_dir)/$pid.profile"
   echo "Registered $ws"
   echo "  project-id: $pid"
-  echo "  egress:     base${profiles:+,$profiles}"
+  if [ "$prev" = "$profiles" ]; then
+    echo "  egress:     base${profiles:+,$profiles} (unchanged)"
+  else
+    echo "  egress:     base${prev:+,$prev}  ->  base${profiles:+,$profiles}"
+    # Name what was dropped explicitly. "base,dotnet -> base,lean" is only legible
+    # if you were already looking for the difference.
+    for p in $(echo "$prev" | tr ',' ' '); do
+      case ",$profiles," in
+        *",$p,"*) ;;
+        *) echo "  NOTE:       '$p' was granted before and is NOT in the new profile." ;;
+      esac
+    done
+  fi
   echo
   echo "Re-blessing (the profile file is boundary config, so it joins the manifest)…"
   bless_manifest
@@ -337,6 +358,31 @@ list_projects() {
   done
   echo
   echo "Project-ids are sha256 prefixes of the repo's absolute path."
+}
+
+# The rebuild instruction printed by every "this container is not the one you
+# blessed" error. $1 = workspace, $2.. = the devcontainer CLI args.
+#
+# WHY THIS IS NOT A BARE `devcontainer up` STRING. devcontainer.json reads BOTH
+# CC_EGRESS_PROFILE and CC_CONFIG_HASH through `${localEnv:...}`, and main() is the
+# only thing that exports them. A bare `devcontainer up --remove-existing-container`
+# copied out of an error message and run from your own shell therefore resolves both
+# to the EMPTY string: the rebuild succeeds, looks correct, and bakes
+# /etc/cc-egress-profile empty (base-only egress) plus an empty /etc/cc-config-hash.
+# That is a silently NARROWER boundary, so nothing fails closed and nothing warns —
+# it surfaces days later as "my lean/python/dotnet profile stopped working". Measured
+# on 2026-09-15: a re-registered `lean` profile had no effect for exactly this reason
+# (the proxy came up with base's 9 names instead of base+lean's 14).
+#
+# So: name the launcher first, because it is the path that cannot get this wrong, and
+# if the by-hand form is used at all, emit it WITH the assignments already filled in.
+rebuild_hint() {
+  local ws="$1"
+  shift
+  echo "    cc-isolated '$ws'        # the supported path: rebuilds, re-probes, re-launches" >&2
+  echo "  or by hand — BOTH assignments are required, devcontainer.json reads them via localEnv:" >&2
+  echo "    CC_EGRESS_PROFILE='${CC_EGRESS_PROFILE:-}' CC_CONFIG_HASH='${CC_CONFIG_HASH:-}' \\" >&2
+  echo "      devcontainer up --remove-existing-container $*" >&2
 }
 
 # 0 iff the running container's baked config hash equals the blessed one.
@@ -429,7 +475,7 @@ probe_boundary() {
     echo "  Dockerfile at $(config_dir) (missing /usr/local/share/cc-egress, or its baked" >&2
     echo "  egress profile is not '${want_profile:-<base only>}'). Refusing: the boundary in this image is" >&2
     echo "  not the one you blessed. Rebuild with:" >&2
-    echo "    devcontainer up --remove-existing-container ${dc[*]}" >&2
+    rebuild_hint "$ws" "${dc[@]}"
     failures=$((failures + 1))
   fi
 
@@ -443,7 +489,7 @@ probe_boundary() {
     echo "PROBE FAIL (config identity): this container was built from config '${have_hash:-<none>}'," >&2
     echo "  but the blessed config is '${want_hash:-<none>}'. The boundary it runs is not the one" >&2
     echo "  you blessed. Rebuild with:" >&2
-    echo "    devcontainer up --remove-existing-container ${dc[*]}" >&2
+    rebuild_hint "$ws" "${dc[@]}"
     failures=$((failures + 1))
   fi
 
@@ -470,7 +516,11 @@ probe_boundary() {
 }
 
 usage() {
-  sed -n '2,28p' "${BASH_SOURCE[0]}"
+  # Line range: the header block above, down to the last line of the "WHY THE
+  # WORKSPACE IS AN ARGUMENT" paragraph. Adding a line to that block means moving
+  # this bound with it — test/cc-isolated-functions.bats asserts the last line is
+  # still included, so a stale bound fails there rather than silently truncating.
+  sed -n '2,29p' "${BASH_SOURCE[0]}"
 }
 
 main() {
@@ -590,7 +640,7 @@ main() {
       echo "ERROR: init-firewall.sh failed. It fails closed, so this container may now" >&2
       echo "  have DROP policies with no accept rules and be unable to rebuild them." >&2
       echo "  Recreate it (the ~/.claude volume and your repo are not affected):" >&2
-      echo "    devcontainer up --remove-existing-container ${dc[*]}" >&2
+      rebuild_hint "$ws" "${dc[@]}"
       return 1
     fi
     probe_boundary "$ws"

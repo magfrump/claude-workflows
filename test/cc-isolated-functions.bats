@@ -215,6 +215,76 @@ make_repo() {
   [ -z "$(project_profile "$TEST_TMPDIR/proj")" ]
 }
 
+# --- --profile REPLACES the grant, and must say so -----------------------------
+# Regression: re-registering a project to add `lean` silently dropped the `dotnet`
+# it already had, and the only symptom was a container whose egress was narrower
+# than expected — hours later, with nothing pointing back at the registration.
+
+@test "register_project prints the profile transition, not just the result" {
+  echo 'release.lean-lang.org' > "$CLAUDE_DEVC_CONFIG_DIR/egress/lean.txt"
+  make_repo "$TEST_TMPDIR/proj"
+  register_project "$TEST_TMPDIR/proj" "python" >/dev/null
+  run register_project "$TEST_TMPDIR/proj" "lean"
+  [ "$status" -eq 0 ]
+  [[ "$output" == *"base,python"*"->"*"base,lean"* ]]
+}
+
+@test "register_project names a profile the replacement drops" {
+  echo 'release.lean-lang.org' > "$CLAUDE_DEVC_CONFIG_DIR/egress/lean.txt"
+  make_repo "$TEST_TMPDIR/proj"
+  register_project "$TEST_TMPDIR/proj" "python,lean" >/dev/null
+  run register_project "$TEST_TMPDIR/proj" "lean"
+  [ "$status" -eq 0 ]
+  # The dropped one is named; the retained one is not reported as dropped.
+  [[ "$output" == *"'python' was granted before and is NOT in the new profile"* ]]
+  [[ "$output" != *"'lean' was granted before"* ]]
+}
+
+@test "register_project says so when the profile is unchanged" {
+  make_repo "$TEST_TMPDIR/proj"
+  register_project "$TEST_TMPDIR/proj" "python" >/dev/null
+  run register_project "$TEST_TMPDIR/proj" "python"
+  [ "$status" -eq 0 ]
+  [[ "$output" == *"(unchanged)"* ]]
+  [[ "$output" != *"NOT in the new profile"* ]]
+}
+
+# --- the by-hand rebuild command must carry the localEnv inputs -----------------
+# Regression (2026-09-15): the printed remediation was a bare `devcontainer up
+# --remove-existing-container ...`. devcontainer.json reads CC_EGRESS_PROFILE and
+# CC_CONFIG_HASH via ${localEnv:...}, which only main() exports, so running that
+# command from a normal shell rebuilt the image with an EMPTY egress profile —
+# base-only egress, no error, and a re-registered profile that never took effect.
+
+@test "rebuild_hint carries both localEnv assignments into the by-hand command" {
+  # Set as ordinary variables rather than a `VAR=x run ...` prefix: an assignment
+  # prefixed onto a *function* call persists in the shell afterwards, which would
+  # leak into the next assertion in this file.
+  CC_EGRESS_PROFILE="lean"
+  CC_CONFIG_HASH="deadbeef"
+  run rebuild_hint "$TEST_TMPDIR/proj" --workspace-folder "$TEST_TMPDIR/proj"
+  [ "$status" -eq 0 ]
+  [[ "$output" == *"CC_EGRESS_PROFILE='lean'"* ]]
+  [[ "$output" == *"CC_CONFIG_HASH='deadbeef'"* ]]
+  [[ "$output" == *"devcontainer up --remove-existing-container"* ]]
+}
+
+@test "rebuild_hint names the launcher before the by-hand form" {
+  run rebuild_hint "$TEST_TMPDIR/proj" --workspace-folder "$TEST_TMPDIR/proj"
+  [ "$status" -eq 0 ]
+  # The supported path must come first: the by-hand form is the one that can be
+  # run wrong, so it must never be the first thing a reader copies.
+  [[ "$(echo "$output" | head -1)" == *"cc-isolated"* ]]
+}
+
+@test "usage prints the whole header block, including its last line" {
+  run usage
+  [ "$status" -eq 0 ]
+  # Guards the hardcoded sed line range in usage() against header edits.
+  [[ "$output" == *"REPLACES any"* ]]
+  [[ "$output" == *"really is the repo you asked for"* ]]
+}
+
 @test "suggest_profiles proposes python for a python repo but never applies it" {
   make_repo "$TEST_TMPDIR/proj"
   touch "$TEST_TMPDIR/proj/pyproject.toml"
