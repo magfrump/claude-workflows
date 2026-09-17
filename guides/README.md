@@ -20,7 +20,7 @@ Reference documents for specific processes and conventions. Unlike workflows (st
 
 - **[subtraction-checklist.md](subtraction-checklist.md)** — Manual review process for identifying removal candidates using hypothesis logs, complexity warnings, and usage reports. Use after merging an implementation branch in the self-improvement loop.
 
-- **[validation-gates.md](validation-gates.md)** — Reference for all 7 validation gates (commit count, diff size, file scope, critical file protection, BATS tests, shellcheck, self-eval) that run before merging to main. Use when debugging a branch rejection or preparing a task for the self-improvement loop.
+- **[validation-gates.md](validation-gates.md)** — Reference for all 8 validation gates (commit count, diff size, file scope, critical file protection, BATS tests, shellcheck, self-eval, multi-critic code review) that run before merging to main. Use when debugging a branch rejection or preparing a task for the self-improvement loop.
 
 - **[skill-trigger-guide.md](skill-trigger-guide.md)** — Maps common task types (code review, security audit, writing review, tech debt assessment, etc.) to the appropriate skill(s). Use when unsure which skill to invoke, or to understand how skills overlap and differ from workflows.
 

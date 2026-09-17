@@ -2,9 +2,9 @@
 
 The self-improvement loop validates every implementation branch before merging to main. A single bad merge poisons subsequent rounds (later branches fork from main), so validation is the highest-leverage quality control.
 
-This guide documents all 7 gates in execution order. Gates run sequentially — the first failure rejects the branch and skips remaining gates.
+This guide documents all 8 gates in execution order. Gates run sequentially — the first failure rejects the branch and skips remaining gates.
 
-**Source:** `scripts/self-improvement.sh` lines 456–639
+**Source:** `scripts/self-improvement.sh` — the validation block, findable by searching the script for `--- Gate 1a` (the gates are delimited by `--- Gate 1x: ... ---` comment banners).
 **Design rationale:** `docs/decisions/005-validation-step-self-improvement.md`
 
 ---
@@ -20,6 +20,7 @@ This guide documents all 7 gates in execution order. Gates run sequentially — 
 | 1e | BATS tests | 1 (Structural) | Deterministic | Yes (no test dir or no bats) |
 | 1f | Shellcheck | 1 (Structural) | Deterministic | Yes (no .sh files or no shellcheck) |
 | 1g | Self-eval | 3 (LLM) | Claude-driven | Yes (no skills/workflows changed) |
+| 1h | Multi-critic code review | 3 (LLM) | Claude-driven | Yes (no `claude` binary on PATH) |
 
 Gates record results via `record_gate()` to the round's JSON log file, which is persisted to `docs/working/round-N-report.json` and appended to `docs/working/round-history.json`.
 
@@ -102,7 +103,7 @@ REJECTED: files outside declared scope:
 
 ## Gate 1d: Critical file protection
 
-**What it checks:** None of these files were deleted: `scripts/self-improvement.sh`, `docs/evaluation-rubric.md`, `CLAUDE.md`.
+**What it checks:** None of these files were deleted: `scripts/self-improvement.sh`, `docs/evaluation-rubric.md`, or any file whose *basename* is `CLAUDE.md` (the match is `CLAUDE.md|*/CLAUDE.md`, so it protects the file wherever it lives — it sits at `global-instructions/CLAUDE.md` since 2026-09-11, and was at the repo root before that).
 
 **Rationale:** These are bootstrap files. Deleting them breaks the loop itself or removes the quality criteria it depends on. Modifications are allowed — only deletion triggers rejection.
 
@@ -113,6 +114,7 @@ REJECTED: files outside declared scope:
 | Pattern | Cause | Fix |
 |---------|-------|-----|
 | Agent renamed a critical file | Attempted to reorganize repo structure | Rename via a two-step approach: add new file first, then update references, keeping the original |
+| Agent moved `CLAUDE.md` to a new directory | Repo reorganization | The basename-keyed match follows `CLAUDE.md` across directories, so a *move* still reads as a delete of the old path — add the new copy first, then remove the old one in a separate task |
 | `git mv` on critical file | Move counts as delete + add | Same as rename — keep the original path |
 
 ---
@@ -198,6 +200,52 @@ The `scripts/self-improvement.sh` script itself was the target of shellcheck val
 
 ---
 
+## Gate 1h: Multi-critic code review
+
+**What it checks:** The repo's own `skills/code-review` orchestrator is run headless against the branch diff (`git diff main...HEAD`), and the branch is rejected if the review reports any **red / Must-Fix** rubric rows. Amber and green rows are advisory — they are recorded but never block.
+
+**Rationale:** Gates 1a–1f check surface mechanics (size, scope, shellcheck, bats) and 1g checks skill/workflow prose. None of them look at design-level defects, and 1g only fires on `.md` files under `skills/` or `workflows/` — so a task that changed only shell or config code reached main with no independent review at all. `pr-prep` step 3 calls the multi-critic pass "required, not optional" for human-driven work; this gate is how the loop dogfoods that rule (decision 020). The per-task implementation agent already self-reviews inside its own RPI → review-fix prompt, so 1h is the *independent reviewer* pass — the author/reviewer split `pr-prep` models.
+
+**Fail messages:**
+
+- `code-review: N red (Must-Fix) finding(s)` — the review found blocking defects.
+- `code-review: reviewer exited N (no verdict)` — the reviewer process crashed.
+- `code-review: no parseable verdict (nonced sentinel absent or conflicting)` — the reviewer ran but produced no usable verdict line.
+
+**Recording states:** pass / fail / skip. It skips only when no `claude` binary is on `PATH` — an environment hole rather than a branch-induced one, logged loudly to `docs/working/validation-round-N.log` so a silent PATH problem cannot disable the gate for a whole round.
+
+**How the verdict is read:** the gate asks the review to end with a single sentinel line, `CODE_REVIEW_RED[<nonce>]: <count>`, parsed by `parse_code_review_red()` and judged by `code_review_gate_verdict()` (both in `scripts/lib/si-functions.sh`, unit-tested in `test/code-review-gate.bats`). Rationale for a sentinel rather than parsing the rubric: `code-review` is an interactive orchestrator whose output format is not a stable contract. The nonce is regenerated per run from `/dev/urandom` and is not derived from anything in the repo, so branch content cannot forge the verdict line.
+
+**Fail-closed stance.** Decision 020 originally specified that unparseable output would *skip*; the shipped gate **fails closed** instead, on both a non-zero reviewer exit and a missing/conflicting sentinel. A crashing reviewer is indistinguishable from a reviewer a hostile branch induced to crash, and "no verdict" must not read as "approved". Rejection costs one re-run.
+
+**Two hardening details worth knowing when a rejection looks odd:**
+
+- **Model pinning.** The gate runs at `SI_CODE_REVIEW_MODEL` (default `opus`) and instructs the orchestrator to dispatch every critic sub-agent at that model explicitly. Measured 2026-07-29: on validated defects, haiku and sonnet generalists recovered 0/6 blocking defects while opus recovered 3/6, and haiku's only findings were false positives. A weak reviewer's "no findings" is a false attestation, which is exactly what this gate consumes — so it must never inherit a session default.
+- **Skill source.** The review skill is read from the image-baked, root-owned payload at `/opt/claude-workflows/skills/code-review/SKILL.md` (decision 022), not from the worktree — the worktree *is* the branch under review, so pointing the reviewer at its copy would let a branch rewrite the critics that judge it. On a non-`cc-isolated` host the gate falls back to the branch copy and prints a `NOTE: ... (untrusted)` line.
+
+**Advisory cross-checks** (recorded in the round report's gate detail, never blocking):
+
+- `rubric_sentinel_agree` — does the red-row count in the rubric the reviewer wrote match the number it reported? A `no` prints a NOTE. It stays advisory because the disagreement rate is unmeasured.
+- `fact_check_replication` — whether the merged fact-check report carries a `**Replication:** k=3` field and a `Commit:` line matching the reviewed commit. Values `stale`, `commit-unknown`, or an absent field mean the review's stage-1 evidence may not describe the commit under review.
+
+**Debugging a rejection:**
+
+1. **Read the rubric, not the count.** The gate archives every review artifact to `docs/working/reviews/round-N/<task_id>/` *before* the worktree is torn down (a rejected worktree is deleted with `git worktree remove --force`, which takes uncommitted files with it). That directory is the only surviving evidence — start there.
+2. **Check gate detail in the round report:** `docs/working/round-N-report.json` under `.validation.<task_id>.code_review` carries `{red_findings, model, rubric_red, rubric_sentinel_agree, fact_check_replication}`.
+3. **Distinguish a real red from a no-verdict.** `N red (Must-Fix) finding(s)` means the critics found something; the other two fail messages mean the gate never got an answer — re-run before rewriting the task.
+4. **Reproduce locally:** check out the branch and run the `code-review` skill against `git diff main...HEAD` yourself. Fix the Must-Fix rows, not the amber ones — only red blocks.
+
+**Common failure patterns:**
+
+| Pattern | Cause | Fix |
+|---------|-------|-----|
+| One red row from a security or API critic | The task changed a trust boundary or a public interface without addressing it | Fix the finding in the task branch; if the concern is out of scope, split it into a follow-up task and narrow the diff |
+| `reviewer exited N (no verdict)` | Reviewer crash, timeout, or auth failure in the headless session | Environment problem, not a branch problem — check the `claude` binary and credentials, then re-run the round |
+| `no parseable verdict` | The orchestrator paused at the fact-check gate, or trailed text after the sentinel | Re-run; the prompt already says "do NOT pause at the fact-check gate" and "nothing after it", so this is usually a transient formatting miss |
+| Gate recorded `skip` for every task | No `claude` binary on `PATH` in the run environment | Fix `PATH`; a whole round validated without this gate has had no independent review |
+
+---
+
 ## Verdict and cleanup
 
 After all gates run, the branch receives a verdict:
@@ -213,7 +261,7 @@ If all tasks in a round are rejected, the round logs `outcome: "all_rejected"` a
 
 1. **Check the validation log:** `docs/working/validation-round-N.log` has one line per task with the verdict and reason.
 2. **Check the round report:** `docs/working/round-N-report.json` has structured gate-by-gate results under `.validation.<task_id>`.
-3. **Identify which gate failed:** Gates run in order (1a→1g). The first failure is the rejection reason. Earlier gates that show "pass" are confirmed clean.
+3. **Identify which gate failed:** Gates run in order (1a→1h). The first failure is the rejection reason. Earlier gates that show "pass" are confirmed clean.
 4. **Fix the root cause** using the patterns above, then re-run.
 
 ---
@@ -226,4 +274,5 @@ Before running the self-improvement loop, verify:
 - [ ] Task scope is narrow enough to stay under 500 lines changed
 - [ ] If the task modifies `.sh` files, they pass `shellcheck` locally
 - [ ] If the task modifies skills/workflows, they have clear triggers and don't overlap with existing ones
-- [ ] Critical files (`scripts/self-improvement.sh`, `docs/evaluation-rubric.md`, `CLAUDE.md`) are not being deleted
+- [ ] Critical files (`scripts/self-improvement.sh`, `docs/evaluation-rubric.md`, and any `CLAUDE.md` — matched by basename, currently `global-instructions/CLAUDE.md`) are not being deleted
+- [ ] The branch would survive a `skills/code-review` pass with zero red / Must-Fix rubric rows (Gate 1h) — run `code-review` locally on a comparable diff if the change touches security, performance, or public interfaces
