@@ -5,8 +5,15 @@
 #
 # Moves all non-permanent files from docs/working/ into docs/working/archive/
 # with an optional prefix (defaults to date, e.g. "2026-03-25"). Permanent
-# files (hypothesis-log.md, incident-journal.md, tasks.json, feature-ideas.md)
-# are left in place — they accumulate across runs.
+# files (hypothesis-log.md, hypothesis-backlog.md, incident-journal.md,
+# tasks.json, feature-ideas.md, test-strategy-fact-check-skills.md,
+# completed-tasks.md, problem-history.json, round-history.json) are left in
+# place — they accumulate across runs. The last three are cross-run memory for
+# scripts/self-improvement.sh: it reads completed-tasks.md when generating
+# ideas (so archiving it makes the next run re-propose finished work),
+# problem-history.json for convergence detection, and round-history.json for
+# prior-round verdicts. All three are re-created empty when absent, so
+# archiving them is silent amnesia rather than a visible error.
 #
 # Options:
 #   -n, --dry-run   Show what would be moved without moving anything
@@ -42,6 +49,10 @@ PERMANENT=(
   tasks.json
   feature-ideas.md
   test-strategy-fact-check-skills.md
+  # Cross-run memory for scripts/self-improvement.sh — see header comment.
+  completed-tasks.md
+  problem-history.json
+  round-history.json
 )
 
 is_permanent() {
