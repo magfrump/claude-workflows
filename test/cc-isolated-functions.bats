@@ -260,6 +260,7 @@ make_repo() {
   # Set as ordinary variables rather than a `VAR=x run ...` prefix: an assignment
   # prefixed onto a *function* call persists in the shell afterwards, which would
   # leak into the next assertion in this file.
+  # shellcheck disable=SC2034  # read as a global by rebuild_hint, not by this file
   CC_EGRESS_PROFILE="lean"
   CC_CONFIG_HASH="deadbeef"
   run rebuild_hint "$TEST_TMPDIR/proj" --workspace-folder "$TEST_TMPDIR/proj"

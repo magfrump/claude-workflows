@@ -379,19 +379,24 @@ first_line_matching() {
   echo 'scholar' > "$CC_EGRESS_PROFILE_FILE"
   run bash "$FW" --print-entries
   [ "$status" -eq 0 ]
-  grep -qE $'^api\\.openalex\\.org\t443$' <<<"$output"
-  grep -qE $'^export\\.arxiv\\.org\t443$' <<<"$output"
+  # Saved before the first `run !` below: `run` overwrites $output, so every
+  # assertion in this test reads the saved copy rather than $output itself.
+  local admitted=$output
+  grep -qE $'^api\\.openalex\\.org\t443$' <<<"$admitted"
+  grep -qE $'^export\\.arxiv\\.org\t443$' <<<"$admitted"
   # The exact-name rule: the parent zone does NOT stand in for the harvest subdomain,
   # so both are listed deliberately. If one is ever dropped, this fails loudly.
-  grep -qE $'^arxiv\\.org\t443$' <<<"$output"
+  grep -qE $'^arxiv\\.org\t443$' <<<"$admitted"
+  # `run !`, not a bare `!`: a leading `!` on a non-final command cannot fail a
+  # bats test (SC2314), which left all three negative assertions below vacuous.
   # Commented out in the profile on purpose (no API, CAPTCHA interstitial, terms
   # forbid scraping) — a `#`-prefixed line must not become an admitted name.
-  ! grep -qE 'scholar\.google\.com' <<<"$output"
+  run ! grep -qE 'scholar\.google\.com' <<<"$admitted"
   # doi.org is deliberately absent: resolution is a redirect to a publisher host that
   # stays blocked, so admitting the resolver buys nothing and widens the boundary.
-  ! grep -qE '^doi\.org' <<<"$output"
+  run ! grep -qE '^doi\.org' <<<"$admitted"
   # No port suffixes anywhere in this profile — every entry is plain 443.
-  ! grep -vE $'\t443$' <<<"$output"
+  run ! grep -vE $'\t443$' <<<"$admitted"
   [ ! -s "$CMD_LOG" ]   # an inspection hook, like the other two
 }
 
