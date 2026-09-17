@@ -3,7 +3,12 @@
 Date: 2026-03-23
 Time spent: ~10 minutes (design exercise, no throwaway code needed)
 
-**Last verified:** 2026-06-24
+**Last verified:** 2026-09-17 — re-checked against the five commits to the tracked
+paths since 2026-06-24 (`3255f9b`, `c56be81`, `848c5d8`, `03668e4`, `93f9ca3`).
+All five are path-churn and check-scoping changes; none touched the heuristic.
+`scripts/health-check.sh` still implements exactly the two-part rule below
+(`Last verified` + `git log --since` over `Relevant paths`), and
+`guides/doc-freshness.md` still documents it. The spike's answer stands unchanged.
 **Relevant paths:** guides/doc-freshness.md, scripts/health-check.sh
 
 ## Answer

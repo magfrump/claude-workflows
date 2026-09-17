@@ -19,6 +19,9 @@
 #
 # Usage: bats test/skills/code-review-assurance-contract.bats
 
+# Required before `run !` (used at :165-166); without it bats emits BW02 on every run.
+bats_require_minimum_version 1.5.0
+
 load helpers
 
 setup() {
