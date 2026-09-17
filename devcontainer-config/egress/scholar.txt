@@ -1,0 +1,63 @@
+# scholar — academic literature search and open-access full-text retrieval.
+#
+# Grant this deliberately; it is never auto-suggested (no file in a repo means "this
+# project does literature review", and `suggest_profiles()` reads the repo, which is
+# exactly the authority the isolation withholds). It is narrower than `llm` — these
+# are read-oriented public APIs, not a general prompt channel — but a GET with a query
+# string is still an outbound channel, so treat it as a grant, not a default.
+#
+# EXACT NAMES, 443. As everywhere else: the resolver admits a zone, the SNI proxy
+# admits only the literal entry. `arxiv.org` does NOT cover `export.arxiv.org`; both
+# are listed below because both are used.
+#
+# WHAT THIS PROFILE DOES NOT GET YOU — read this before believing a "paper not
+# available" result:
+#   - Publisher full text. Unpaywall/Crossref hand back a URL on a publisher or
+#     repository host (sciencedirect, springer, an institutional repository, an S3
+#     bucket). None of those are listed, and the SNI proxy rejects them. Open-access
+#     PDFs work here only when the *content* lives on a host below: arXiv, PubMed
+#     Central, Europe PMC, bioRxiv/medRxiv, OpenReview.
+#   - doi.org resolution. A DOI resolver hop is a redirect to a publisher host, so
+#     it fails at the second hop even if the first is admitted; doi.org is therefore
+#     not listed. Resolve DOIs through the metadata APIs (Crossref, OpenAlex) instead.
+#   - Google Scholar. `scholar.google.com` has no API, serves an interstitial CAPTCHA
+#     to non-browser clients, and its terms prohibit scraping. Listing it would open a
+#     Google front in exchange for HTML that reliably is not results. It is left
+#     commented out below: uncomment, re-bless and rebuild if you want to try it
+#     anyway, and expect a CAPTCHA page rather than a network error.
+#   - Rate limits. arXiv asks for one request per three seconds on a single
+#     connection (info.arxiv.org/help/api/tou.html); Crossref and Unpaywall want a
+#     contact email in the query for the "polite" pool. The firewall enforces none of
+#     this — being allowlisted is not being welcome.
+
+# Discovery / metadata. All public, all no-key-required at the base tier.
+api.openalex.org
+api.crossref.org
+api.semanticscholar.org
+api.unpaywall.org
+
+# arXiv. `export.arxiv.org` is the host arXiv sets aside for programmatic access —
+# the Atom API (`/api/query`), OAI-PMH, and PDFs (`/pdf/<id>`) all live there, and it
+# is the one to use. `arxiv.org` itself is listed because abs/pdf links found in
+# metadata point at it and rewriting every one of them is not worth a silent failure.
+export.arxiv.org
+arxiv.org
+
+# Biomedical: NCBI E-utilities (esearch/efetch/esummary), PMC's open-access full text,
+# and Europe PMC's REST service (which lives under www.ebi.ac.uk, not europepmc.org —
+# `https://www.ebi.ac.uk/europepmc/webservices/rest/...`).
+eutils.ncbi.nlm.nih.gov
+pmc.ncbi.nlm.nih.gov
+www.ebi.ac.uk
+
+# Preprints and open peer review. biorxiv/medRxiv expose their metadata API on
+# api.biorxiv.org and serve content from the www hosts. OpenReview's current API is
+# v2 (`api2.`); v1 is listed because older clients and older venues still use it.
+api.biorxiv.org
+www.biorxiv.org
+www.medrxiv.org
+api2.openreview.net
+api.openreview.net
+
+# Deliberately commented out — see the Google Scholar note above.
+#scholar.google.com

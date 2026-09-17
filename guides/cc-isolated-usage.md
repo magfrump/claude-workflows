@@ -65,6 +65,7 @@ GitHub IP ranges). Language toolchains are granted per project, **host-side only
 | `android`| Google Maven (`dl.google.com`, `maven.google.com`), Maven Central, `services.gradle.org`, `plugins.gradle.org` | `gradlew` · `build.gradle[.kts]` · `settings.gradle[.kts]` |
 | `dotnet` | `api.nuget.org` | `ProjectSettings/ProjectVersion.txt` · `Packages/manifest.json` · top-level `*.sln` / `*.csproj` |
 | `llm`   | `openrouter.ai` | never — deliberate opt-in |
+| `scholar`| Literature APIs (OpenAlex, Crossref, Semantic Scholar, Unpaywall) and open-access full-text hosts (arXiv, PMC / Europe PMC, bioRxiv/medRxiv, OpenReview) | never — deliberate opt-in |
 | `vscode`| VS Code marketplace hosts | never (IDE-attach is unsupported) |
 
 Profiles compose — but `--profile` **sets** the whole grant, it does not add to it:
@@ -100,6 +101,36 @@ Supporting a new ecosystem is a real change, not a config toggle: it needs a new
 clause in `suggest_profiles()` (see decision log #18/#19 for the uv and Android
 precedents). The current registrable language toolchains are **Python, Rust, Lean,
 Android, and .NET**.
+
+### Why `WebSearch` works everywhere and `WebFetch` almost nowhere
+
+This surprises people, and it is not a policy choice — it falls out of *where each
+tool's HTTP request originates*:
+
+- **`WebSearch` is executed server-side.** The only socket the container opens is to
+  `api.anthropic.com`, which `base` admits for every project. So search works in
+  every project, including base-only ones, and no amount of egress tightening will
+  break it.
+- **`WebFetch` fetches from the container.** It is an ordinary outbound request to
+  the URL you name, so it is subject to the allowlist and the SNI proxy exactly like
+  `curl`. It works for `code.claude.com` (listed in `base`, which is why the docs are
+  readable) and for whatever a granted profile adds — and fails for everything else.
+  Redirects are the sharp edge: a fetch of an admitted host that 302s to a
+  non-admitted one fails at the second hop.
+
+The practical rule inside the boundary: **search freely, fetch only what your profile
+lists**, and treat a `WebFetch` failure as "not in my allowlist", not as "the site is
+down". `curl` and `pdftotext` are the better tools for admitted hosts anyway, since
+they give you the bytes rather than a summary.
+
+**This is orthogonal to web taint.** `hooks/web-taint-mark.py` marks a session that
+has ingested web content (via either tool) so `guard-trusted-writes.py` can gate
+writes to trusted-policy files afterwards. That is a *content-provenance* control
+inside the session; the egress allowlist is a *reachability* control at the network
+boundary. They compose but neither implements the other — taint does not widen or
+narrow what is reachable, and the allowlist does not care what a response says.
+Granting `scholar` therefore means: the container can reach those hosts, and any
+session that reads a paper is thereafter taint-marked like any other web read.
 
 ## First session per project
 
@@ -314,6 +345,61 @@ Failure modes worth recognizing on sight:
   Reservoir, not GitHub; `reservoir.lean-lang.org` is in the profile for it. Git
   `require`s (what mathlib itself uses) resolve to GitHub, which every session already
   reaches.
+
+## Literature search inside the container
+
+`scholar` is the one profile that is not a language toolchain: it grants the
+academic metadata APIs and the open-access hosts that actually serve full text, and
+the image bakes `pdftotext` (poppler-utils) so a downloaded paper can be read
+without any further install.
+
+```bash
+cc-isolated --register ~/code/lit-review --profile scholar
+cc-isolated ~/code/lit-review
+# inside the container:
+curl -s 'https://api.openalex.org/works?search=sparse+autoencoder&per_page=5' | jq '.results[].title'
+curl -sL https://export.arxiv.org/pdf/2509.20645 -o paper.pdf
+pdftotext -layout paper.pdf - | head -40
+```
+
+`curl`/`wget` are the right tools here rather than `WebFetch` — see the note below on
+why `WebFetch` is unreliable inside the boundary.
+
+**What is reachable, and what only looks reachable.** Metadata is the easy half
+(OpenAlex, Crossref, Semantic Scholar, Unpaywall); full text is the half that
+disappoints. A paper is readable here only when its *bytes* live on a listed host —
+arXiv, PubMed Central, Europe PMC, bioRxiv/medRxiv, OpenReview. Unpaywall will
+cheerfully return a PDF URL on `sciencedirect.com` or an institutional repository,
+and the SNI proxy rejects it. `doi.org` is deliberately not listed: a DOI resolves by
+redirecting to a publisher host, so admitting the resolver buys a hop to a host that
+is still blocked. Resolve identifiers through Crossref/OpenAlex instead.
+
+**Google Scholar is commented out in `egress/scholar.txt`, on purpose.** It has no
+API, serves a CAPTCHA interstitial to non-browser clients, and its terms forbid
+scraping — listing it opens a Google front in exchange for HTML that reliably is not
+results. Uncomment, re-install, re-bless and rebuild if you want to try anyway;
+expect a CAPTCHA page rather than a network error, which is a *different* failure
+from the ones in the table below.
+
+**`pdftotext` does not OCR.** A born-digital paper (everything on arXiv) extracts
+cleanly; a scanned page extracts to nothing at all, which looks like a silent parse
+failure rather than an error. No OCR stack is baked in — adding one is a
+central-image change.
+
+**Being allowlisted is not being welcome.** arXiv asks for one request per three
+seconds on a single connection; Crossref and Unpaywall want a contact email in the
+query string for their "polite" pools. The firewall enforces none of that, and a
+harvest loop that ignores it gets the *host's* rate limiter, not ours.
+
+Failure modes worth recognizing on sight:
+
+- **Connection closes instantly on a host you believe is listed.** The usual cause is
+  the exact-name rule: `arxiv.org` does not cover `export.arxiv.org` (both are listed
+  for that reason), and Europe PMC's REST service lives under `www.ebi.ac.uk`, not
+  `europepmc.org`. Check `/run/cc-sni-proxy/proxy.log`.
+- **A metadata query works and every full-text link 000s out.** Expected: the links
+  point at publisher hosts. Filter results to the OA hosts above, or fetch the arXiv
+  or PMC version of the same paper.
 
 ## The boundary self-probe
 

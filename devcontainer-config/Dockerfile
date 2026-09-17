@@ -176,6 +176,25 @@ RUN case "$(dpkg --print-architecture)" in \
     rm -f /tmp/shfmt && \
     shfmt --version
 
+# PDF text extraction — poppler-utils (`pdftotext`, `pdfinfo`), for the `scholar`
+# egress profile's other half.
+#
+# WHY IN THE IMAGE, NOT pip: parsing a downloaded paper must not itself need egress.
+# `uv pip install pymupdf` would make PDF reading depend on the `python` profile and
+# on PyPI being up, and would re-download per project; one apt package in the shared
+# base layer costs ~20MB once and works with base-only egress. Same reasoning as the
+# baked Android SDK (#19) and uv (#18): toolchains ship in the image, the egress
+# profile gates only the network.
+#
+# WHAT IT DOES AND DOESN'T DO: `pdftotext -layout paper.pdf -` is the workhorse and
+# handles born-digital papers (everything on arXiv/PMC) well. It does NOT OCR — a
+# scanned page comes out empty, which reads as "the parse failed" rather than as an
+# error. No OCR stack (tesseract + its language data) is baked in; if a project needs
+# one, that is a central-image change, not a per-project install.
+RUN apt-get update && apt-get install -y --no-install-recommends \
+    poppler-utils \
+  && apt-get clean && rm -rf /var/lib/apt/lists/*
+
 # Android toolchain — JDK 17 + a baked SDK (decision log #19).
 #
 # Unconditional, in the shared base image, exactly like uv above: a toolchain is
