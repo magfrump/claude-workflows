@@ -23,6 +23,7 @@
 #  11. Document freshness: flag stale spikes and onboarding docs (soft warning)
 #  12. Persona freshness: flag persona critique skills last sampled >~6 months ago
 #  13. MD file semantic divergence: diff CLAUDE.md/AGENTS.md/GEMINI.md (soft warning)
+#  14. Running-questions doc: entry grammar, unique ids, index freshness (gate)
 set -euo pipefail
 
 REPO_ROOT="$(cd "$(dirname "$0")/.." && pwd)"
@@ -993,6 +994,22 @@ Skills"
 
 # ── Run all checks ─────────────────────────────────────────────────────────
 
+# ── 14. Running-questions structure ────────────────────────────────────────
+# The running-questions doc is where autonomous work parks anything that needs
+# the user, so an entry that drops out of the index is an ask that silently
+# stops being asked. scripts/questions.sh check validates the entry grammar,
+# id uniqueness and index freshness; this wires it in as a gate.
+check_questions_doc() {
+    section "Running questions"
+    local out
+    if out="$("$REPO_ROOT/scripts/questions.sh" check 2>&1)"; then
+        echo "$out"
+    else
+        echo "$out"
+        fail "questions doc: structure or index problems (see above)"
+    fi
+}
+
 main() {
     bold "Repo Health Check"
     bold "================="
@@ -1011,6 +1028,7 @@ main() {
     check_doc_freshness
     check_persona_freshness
     check_md_semantic_divergence
+    check_questions_doc
 
     echo
     if [[ $FAIL -eq 0 ]]; then

@@ -1,26 +1,160 @@
 # Running questions
 
-Questions raised during autonomous work that did not justify stopping. Answer inline,
-check the box, and move anything with lasting significance to `docs/decisions/`.
+Questions raised during autonomous work that did not justify stopping.
 
-- [x] 2026-09-12 Should a missing `install.sh` payload source be **fatal** rather than warn-and-continue? **Answered 2026-09-12: yes, fatal.** None of the seven `CLAUDE_HOME_SRC` entries is optional, and the warning scrolled off above the payload diff and the `[y/N]` prompt — the one gate the human actually reads. The loop now collects every miss and exits 1 once (a reorganization is reported in full rather than one rerun per renamed path). Three cases landed in `test/cc-isolated-functions.bats` (next to the existing `install.sh` assertions, not `link-claude-home-wiring.bats`): one missing source, several missing sources, and the all-present complement. Original entry: · context: code review 2026-09-12 A13 — a payload with no global instructions file is currently assembled, blessed and linked at exit 0, and the failure is silent-and-total; it got likelier when the source path became a directory deep · interim: left as warn-and-continue, unchanged · answer changes: if fatal, `install.sh:51-57` gets an `exit 1` and `test/link-claude-home-wiring.bats` gains a missing-source case (test-strategy's T3).
-- [x] 2026-09-12 Should `install.sh`'s bless prompt survive a closed stdin? **Answered 2026-09-12: yes — shipped as the one-line `read -r reply || reply=""`.** An EOF stdin now falls through to the existing abort case, so a piped or non-tty run still exits 1 but prints `Aborted. Nothing was changed.` first instead of dying silently at the prompt under errexit. The all-present test in `test/cc-isolated-functions.bats` now asserts on that line; the exit status alone does not discriminate (both old and new behavior exit 1), so the message is the assertion that has teeth. Original entry: · Should `install.sh`'s bless prompt survive a closed stdin? · context: noticed while writing the A13 tests — under `set -e`, `read -r reply` at EOF kills the script before the `Aborted. Nothing was changed.` line prints, so a piped or non-tty run exits 1 with no explanation · interim: left alone; non-interactive callers are expected to pass `--yes` · answer changes: `read -r reply || reply=""`, one line, and the all-present test can assert on `Aborted` instead of the prompt text.
-- [x] 2026-09-12 Was the surviving `## Mandatory Execution Rules` block at `skills/ui-visual-review/SKILL.md:58` left out of audit finding F3 deliberately? **Answered 2026-09-12: correctly out of scope on substance — heading renamed for consistency, rule body exempt.** It is a critic, not an orchestrator: the five rules are distinct domain guidance rather than one contract inflated into MUST-rules, and the block carries none of F3's three markers (no absolute-rules preamble, no `MUST`/`No exceptions.`, no restatement 600 lines later; rule 5 is explicitly self-calibrating). The plain-contract rewrite would have flattened five separate rules for no gain. Heading renamed to `## Execution rules` — nothing bound it (no `#mandatory-execution-rules` anchors, no test assertions, and api-consistency's Finding 2 dangling references were already closed in `3255f9b`). Exemption recorded in `docs/reviews/override-log.md` and as a scope note under F3, so test-strategy's T9 third case can encode a decision. **Note for any regression test:** assert on the *heading*, not the substring — `mandatory-execution rule` in `skills/code-fact-check/SKILL.md:330` is an unrelated and load-bearing concept (an executable claim must be run before it can be Verified). Original entry: · context: F3 covered the three orchestrators (draft-review, code-review, matrix-analysis); api-consistency and test-strategy both flagged this fourth one · interim: left untouched — F3's scope named three files · answer changes: if unintentional, it gets the same plain-contract rewrite.
-- [x] 2026-09-12 Re-cut the reference split — `severity.md` (read at Stage 1.5/2.5) vs `rubric.md` (template, read at Stage 3)? **Won't fix, 2026-09-12 (user's call).** A10's finding stands on the facts — the cut line is not respected and the deferral saves nothing outside a fact-check short-circuit — but the cost is real churn across 19 links at 17 sites for a saving that only lands on one path, and the split as shipped is not wrong, only mis-described. Re-open only if the token cost of the Stage-1.5/2.5 reads becomes a measured problem; if so the fix is the second F8 pass below. Original entry: · Re-cut the reference split — `severity.md` (read at Stage 1.5/2.5) vs `rubric.md` (template, read at Stage 3)? · context: code review A10 — architecture found the stated cut line ("run a stage" vs "write a deliverable") is not respected: severity semantics moved out but are consulted by the running pipeline from 19 links across 17 sites, so the deferral saves nothing except on a fact-check short-circuit · interim: split left as shipped · answer changes: a second F8 pass moves the severity sections into their own reference file.
-- [x] 2026-09-12 Should the `.bats` `SKILL_CONTENT` concat idiom move into `test/skills/helpers.bash`? **Done 2026-09-12** — `load_code_review_skill()` now owns it and the four suites call it; the three narrow-definition suites were left alone (they bind only SKILL.md-resident anchors, which test-strategy verified). Original entry: · context: code review A9 — the block is copy-pasted byte-identically into four suites, its `cat` order is load-bearing but enforced only by a comment, and three sibling suites still use the one-file definition · interim: four copies left in place · answer changes: one helper function, four call sites, and a comment in the three suites saying why they keep the narrow definition.
-- [x] 2026-09-12 Confirm `anthropic/claude-sonnet-5` resolves on OpenRouter before the next cross-model run. **Answered 2026-09-12: moot by scope — this repo should not be calling OpenRouter at all.** The diff-only headless review already runs on the Claude subscription via `scripts/lite-review.py` (decision log 37, wired into `workflows/pr-prep.md` Step 3 and `workflows/review-fix-loop.md`); a Sonnet 5 pass there is `--model claude-sonnet-5`, a flag, not a build. The consumers of the pin are the benchmark harness `scripts/cross-model-review.py` (its `--judge` default, `:378`) and `archive/benchmark/scripts/review-arms.py` (`:69,73`), a wrapper that loads the harness as a module and would follow it to the fork; neither is on the production path, and benchmark work belongs in the SWRBench fork. (`scripts/dd-cross-model-sweep.py` is an OpenRouter script but *not* a consumer of this pin — its `MODELS` list at `:30` is Kimi/GPT/Gemini with no judge concept. The 2026-09-12 code review caught this enumeration as Incorrect, unanimously across three fact-check replicates; the original wording named that file and omitted `review-arms.py`.) The pin is therefore left unverified and the harness is not to be run from here — see the new grammar-ownership entry below, which blocks actually moving it out. Original entry: · Confirm `anthropic/claude-sonnet-5` resolves on OpenRouter before the next cross-model run · context: audit F10 re-baselined the judge pin; this sandbox has no egress so all three fact-check replicates left it unverifiable · interim: pin shipped unverified, flagged at both sites · answer changes: nothing if it resolves; if not, the pin needs the correct slug and `main()`'s unpriced-model guard should be extended to cover `--judge` (code review C1).
-- [x] 2026-09-12 Should an unpriced/unknown `--judge` id **abort** `cross-model-review.py` pre-flight, the way an unpriced `--models` entry does? **Answered 2026-09-12: moot by scope, same reasoning as the judge-pin question above.** The pre-flight WARNING shipped in `cb5351d` stands as the final state: hardening a cost guard on a harness this repo is not to run would be work spent on the wrong side of the fork boundary. If the harness moves to the SWRBench fork, this question moves with it and is re-opened there against a funded account that can actually test the abort path. Original entry: · Should an unpriced/unknown `--judge` id **abort** `cross-model-review.py` pre-flight, the way an unpriced `--models` entry does? · context: code review C1 — the judge is pinned rather than passed in `--models`, so the fail-closed cost guard never sees it and a bad slug surfaces only as a stage-2 API error, after stage 1 has been paid for · interim: it now prints a pre-flight WARNING naming the judge, because the judge is consulted only when stage-2 matching runs and that is not knowable at guard time · answer changes: if it should abort, the `unpriced` list gains `args.judge` and the stage1-only path needs an explicit opt-out flag.
-- [x] 2026-09-12 Make `lite-review.py` the definition of the FINDINGS grammar rather than a copy of it, before `cross-model-review.py` leaves this repo. **Done 2026-09-12 — resolved rather than left pending, so the harness can move whenever you want it to.** `lite-review.py`'s header now states ownership outright (and that the two were byte-identical at the moment ownership moved, which is what preserves E2/E3 lite-arm comparability); `cross-model-review.py`'s `FINDING_RE` carries a comment naming itself the copy and telling the fork not to silently re-fork it; and `test/lite-review-grammar.bats` pins the shape with 7 contract tests over `parse_findings` — keyless and offline, since the parser is pure. Original entry: · Make `lite-review.py` the definition of the FINDINGS grammar rather than a copy of it, before `cross-model-review.py` leaves this repo · context: closing the two OpenRouter questions above scoped the benchmark harness out of this repo, but `scripts/lite-review.py:24-26` documents its grammar and regex as copied from `cross-model-review.py` and names itself only the *surviving* owner "if that harness is retired" — moving the harness out without promoting the grammar first leaves the live path's output format defined by a file in another repo · interim: both files unchanged; the copy is still byte-compatible, so nothing is broken today · answer changes: if promoted, `lite-review.py` gets the grammar as a documented contract with its own test, and `cross-model-review.py`'s header is reworded to point at it as the source before the move.
-- [ ] 2026-09-12 Decide the four review findings that need your call, from `docs/reviews/code-review-rubric-2026-09-12-main-questions-closeout.md` **Progress: R1 decided 2026-09-12 — [3] commit-time regex, recorded as `docs/decisions/035-install-sh-gating.md` (DD working doc: `docs/working/dd-install-sh-gating.md`); it lands with the A7 fix, which is still open. A7, A5/X1 and A6 still need your call.** · context: the 2026-09-12 review over `3a94fdc~1..HEAD` left one red and three ambers that are behavior or environment decisions rather than corrections — **R1** `install.sh` is host-executed and agent-writable while sitting outside `PAYLOAD`, `enforcement_files()` and the live-verify regex (pre-existing; the fix is architectural); **A7** `live-verify-gate.sh` is declared in `hooks/wiring.json` but absent from the live settings, and settings.json is deny-listed to me; **A5/X1** `parse_findings` reports a model refusal as a clean review, and the composed root is that no invariant requires a line inside the block to be a row or the NONE sentinel; **A6** `FINDING_RE` backtracks catastrophically on a solid whitespace run (16k chars → 877 s measured) · interim: all four left as-is; the documentation and test-gap findings from the same review were fixed autonomously · answer changes: A5 and A6 want one fix, not two — the proposed one-liners pull in opposite directions, so they need deciding together.
-- [ ] 2026-09-12 Which host does elan actually fetch toolchains from — `release.lean-lang.org` or `releases.lean-lang.org`? · context: decision log 51 added the Lean toolchain to the image; elan's changelog (via search summaries, this sandbox has no egress) says releases and assets come from `release.` singular, while `egress/lean.txt` has carried `releases.` plural, unexercised, since decision 016 · interim: both are listed, because a name that fails to resolve warns-and-skips rather than failing the container, and the SNI proxy matches exactly so a near-miss would be silently rejected · answer changes: delete the loser from `egress/lean.txt` once a real toolchain fetch has been watched succeed; if pre-4.x elan is kept, note that it resolves via GitHub (already admitted by CIDR) and neither name is load-bearing.
-- [ ] 2026-09-12 What is the current mathlib olean cache hostname? · context: same change — `lake exe cache get` is the difference between minutes and hours per repo, and `lakecache.blob.core.windows.net` is my best knowledge of the host but could not be confirmed from here; it has moved before · interim: that host is listed with a VERIFY comment and an accepted-risk note (Azure blob storage, pinned to the exact SNI name by the proxy) · answer changes: correct `egress/lean.txt` against `Cache/Requests.lean` in a mathlib4 checkout on the host (`rg -o 'https://[^"]*' Cache/Requests.lean`), then re-install and re-bless.
-- [ ] 2026-09-12 Pin the per-arch SHA-256 of the elan release as build ARGs · context: the new Dockerfile layer fetches elan from its GitHub release without a checksum, following the rustup layer's documented deferral (the authoring environment cannot reach the host to obtain the digests) · interim: version-pinned, unverified — bounded by running at build time, but this layer installs into a node-writable tree, so the pin is worth more here than in the rustup layer · answer changes: add `ELAN_SHA256_AMD64`/`ELAN_SHA256_ARM64` ARGs and a `sha256sum -c` at the next host-side `ELAN_VERSION` bump, matching the shfmt and .NET layers.
-- [x] 2026-09-12 Is `ELAN_VERSION=v3.1.1` the version to ship? **ANSWERED 2026-09-15: no — `v4.2.4`, taken from the GitHub release list on the host. Bumped in `devcontainer.json`; a live `elan toolchain install` succeeded in-container on 2026-09-15, so the 4.x line is confirmed working. This also settles the elan major version that the release-host question below turns on (4.0.0+ resolves releases and assets from `release.lean-lang.org`).** · context: pinned from memory because the release list is unreachable from here; a newer 4.x is likely current and is the line that resolves toolchains via `release.lean-lang.org` rather than GitHub · interim: v3.1.1, which fails loudly (wget 404) at build time if wrong rather than silently degrading · answer changes: bump `ELAN_VERSION` in `devcontainer.json`, and re-check the release-host question above, which the elan major version decides.
-- [ ] 2026-09-15 Should `--profile` stay replace-only, or grow `--add-profile`/`--remove-profile`? · context: `register_project` overwrites the stored grant, so re-registering a project to add `lean` silently dropped the `dotnet` it already had; found while trying to get the `lean` profile into a live container · interim: kept replace (a grant you can only widen is not a grant) and made it loud instead — the transition and any dropped profile are printed, `--list` already showed the current grant, and the line-10 comment no longer says "widen" · answer changes: if you find yourself re-typing the full list often, add the two additive flags rather than changing what `--profile` means.
-- [ ] 2026-09-17 Confirm the three `scholar` hostnames that no search summary covered — `pmc.ncbi.nlm.nih.gov`, `api.biorxiv.org`, `www.medrxiv.org` · context: `egress/scholar.txt` (decision log 52) was authored from a sandbox with no egress; the other nine names (OpenAlex, Crossref, Semantic Scholar, Unpaywall, export.arxiv.org/arxiv.org, eutils, www.ebi.ac.uk, api2/api.openreview.net) came from search summaries of the providers' own API docs, but PMC's current OA host and the bioRxiv/medRxiv API split did not · interim: all three listed; a name that does not resolve warns-and-skips at container start, so a wrong entry degrades to "stays blocked", never to a wider allowlist · answer changes: delete or correct the losers in `egress/scholar.txt`, re-install, re-bless. One `curl -sI` per host from inside a `--profile scholar` container settles all three.
-- [ ] 2026-09-17 Does `scholar` need a companion escape hatch for publisher-hosted OA PDFs? · context: the profile's honest limit is that Unpaywall/Crossref routinely return full-text URLs on hosts the SNI proxy rejects (publisher domains, institutional repositories, S3 buckets), so a literature-review session gets metadata for everything and bytes for the arXiv/PMC/bioRxiv subset only · interim: no escape hatch — documented as a failure mode in `guides/cc-isolated-usage.md` rather than widened, since the alternative is a per-paper, per-publisher allowlist churn that nobody will maintain · answer changes: if this bites in practice, the shapes are (a) a narrow `scholar-extra` profile listing the two or three publishers you actually read, or (b) fetching those PDFs on the host and dropping them into the workspace, which needs no boundary change at all.
-- [ ] 2026-09-17 `workflows/research-plan-implement.md` — the documented default — was opened **0 times in 49 days** (2749 logged events, 20+ projects) while `divergent-design` was opened 15 times. Is RPI being followed without the doc being read, or not followed? · context: `docs/working/triage-2026-09-17-backlog.md` §2.2; `hooks/log-usage.sh:61-63` logs a `workflow` event on any Read under `*/workflows/*`, so the claim is precisely "the doc is not opened", not "the process is not followed" · interim: nothing changed; H-01 left TRACKING rather than expired, now with its first real evidence attached · answer changes: if the routing table in the core instruction set is carrying the process, RPI's doc is redundant detail and should shrink or merge; if the process is genuinely unused, that is a much larger subtraction and it bears on the §4 decision.
-- [ ] 2026-09-17 `docs/thoughts/failure-patterns.md`: backfill from the 104 eligible `fix(...)` commits, or delete the file? · context: 0 entries since 2026-05-18 despite `workflows/pr-prep.md` Step 0 saying "do not skip this step" — the third instance of "promoted to core instructions executes, left in a workflow doc does not" · interim: left as-is, routed to you as a one-bit call · answer changes: backfill is an agent task of a few hours; delete also removes the read-side grep from RPI research.
-- [ ] 2026-09-17 Delete the 12 registered worktrees / 231 MB under `.claude/worktrees/`? · context: found during the triage; branch deletion needs your approval regardless of how mechanical it looks · interim: nothing deleted, nothing merged-checked · answer changes: if yes, each branch gets a merged-state check first and anything unmerged is reported rather than removed.
-- [ ] 2026-09-17 Is `asks` (triage §3.3) the right unit, or does it undercount one hard judgment against several easy ones? · context: today's 5 asks range from a one-bit call to a four-part review decision · interim: counting items, not weight, because assigning weight is itself a judgment and therefore itself an ask · answer changes: entries carry a coarse S/M/L and the alarm threshold becomes a sum.
-- [ ] 2026-09-17 Should DROP items be deleted or archived? · context: `docs/working/incident-journal.md` is dormant-because-unfed rather than wrong — deleting it loses a schema someone designed · interim: propose deletion, do not delete · answer changes: if archive, DROP needs a destination and the route stops being free.
+**To answer:** write `Q-0NN: <your answer>` anywhere — a reply, a file, a commit.
+The ID is the whole handle; you never have to restate the question. Answers move
+the entry to `questions-archive.md`, so this file only ever holds what is still open.
+
+**Needs** is the route — who or what actually discharges the item, from
+`docs/working/triage-2026-09-17-backlog.md` §3.1:
+
+| Route | Meaning |
+|---|---|
+| `you: judgment` | Needs your taste or authority. The only real attention spend. |
+| `you: terminal` | Needs your machine, not your mind. Collected into one paste below. |
+| `agent` | Mechanical. Should not be here long. |
+| `trigger` | Not a question yet — a condition being watched. Costs you nothing. |
+| `deferred` | Scheduled behind an event that has not happened. |
+
+Maintained by `scripts/questions.sh` (`check` · `index` · `archive` · `next-id` · `open`).
+The index below is generated — edit entries, not the table.
+
+## Index
+
+<!-- index:start -->
+| ID | Needs | Question | Opened |
+|---|---|---|---|
+| [Q-009](#q-009--live-verify-gate-not-installed) | you: judgment | Review finding A7 — `live-verify-gate.sh` is declared but not installed, so no `devcontainer-config/` cha... | 2026-09-12 |
+| [Q-020](#q-020--asks-unit-weighting) | you: judgment | Is `asks` (triage §3.3) the right unit, or does it undercount one hard judgment against several easy ones? | 2026-09-17 |
+| [Q-021](#q-021--drop-delete-or-archive) | you: judgment | Should DROP items be deleted or archived? | 2026-09-17 |
+| [Q-022](#q-022--lite-review-findings-invariant) | you: judgment | Review findings A5 + A6 + X1 — `parse_findings` has no invariant that a line inside the FINDINGS block is... | 2026-09-17 |
+| [Q-011](#q-011--mathlib-cache-host) | you: terminal | What is the current mathlib olean cache hostname? (`lake exe cache get` is minutes vs hours per repo.) | 2026-09-12 |
+| [Q-019](#q-019--worktree-cleanup) | you: terminal | Reclaim the 231 MB under `.claude/worktrees/` — you approved deleting the merged ones, but the sandbox bl... | 2026-09-17 |
+| [Q-012](#q-012--elan-sha256-pins) | deferred | Pin the per-arch SHA-256 of the elan release as build ARGs | 2026-09-12 |
+| [Q-014](#q-014--profile-replace-only) | trigger | Should `--profile` stay replace-only, or grow `--add-profile`/`--remove-profile`? | 2026-09-15 |
+| [Q-016](#q-016--scholar-oa-escape-hatch) | trigger | Does `scholar` need a companion escape hatch for publisher-hosted OA PDFs? | 2026-09-17 |
+<!-- index:end -->
+
+## Open
+
+### Q-009 · live-verify-gate-not-installed
+**Needs:** you: judgment · **Opened:** 2026-09-12 · **Status:** OPEN
+
+Review finding A7 — `live-verify-gate.sh` is declared but not installed, so no `devcontainer-config/` change is actually gated. Install it, drop the declaration, or leave the gap open?
+
+- **Why it's yours:** the fix edits the live `settings.json`, which is deny-listed to me. You are the only one who can make it, and whether to run a PreToolUse gate on every Bash call is a working-comfort call, not a correctness one.
+- **Read:** `docs/reviews/code-review-rubric-2026-09-12-main-questions-closeout.md` (finding A7, row 28) · `hooks/wiring.json:62-72` · `hooks/live-verify-gate.sh` · `docs/decisions/035-install-sh-gating.md`
+- **Blocks:** R1's fix. Decision 035 chose option [3], the commit-time regex, and it lands *with* A7 — so R1 is decided but cannot ship until this is.
+
+| Option | What it means | Cost to you | If it's wrong |
+|---|---|---|---|
+| **[1] Install it** | Add the `wiring.json:62-72` entry to live settings; 11 existing bats tests already cover the script's behaviour | One edit; then a gate runs on Bash calls touching `devcontainer-config/` | A gate you find noisy — reversible by deleting the entry |
+| **[2] Drop the declaration** | Delete it from `wiring.json`; accept that `devcontainer-config/` changes are ungated | None | R1's chosen fix loses its enforcement half, and 035 needs revisiting |
+| **[3] Leave as-is** | Declared but not installed | None now | The current state: eleven tests pass, nothing is enforced, and the declaration reads as protection that does not exist |
+
+- **Interim:** [3], unchanged since 2026-09-12 — not a choice, just the absence of one.
+- **If the answer differs:** [1] also closes the "nothing tests that it is installed" gap the review named; that test is worth adding either way if the declaration stays.
+
+### Q-022 · lite-review-findings-invariant
+**Needs:** you: judgment · **Opened:** 2026-09-17 · **Status:** OPEN
+
+Review findings A5 + A6 + X1 — `parse_findings` has no invariant that a line inside the FINDINGS block is either a well-formed row or the `NONE` sentinel. Add one, or patch the two symptoms separately?
+
+- **Why it's yours:** the two obvious one-liners pull in opposite directions, so this cannot be fixed one finding at a time. Which way it resolves is a call about how much a clean review is allowed to mean.
+- **Read:** `docs/reviews/code-review-rubric-2026-09-12-main-questions-closeout.md` (rows 26, 27, 36 — A5, A6, X1) · `scripts/lite-review.py:86-108,196` · `test/lite-review-grammar.bats:94-95`
+- **The two symptoms, one root:** A5 — a model refusal (`"I cannot emit FINDINGS for this diff."`) parses as `parse_ok=True`, 0 rows, so `main()` prints `FINDINGS: NONE`, exit 0, and the review-fix loop reads it as a clean pass. A6 — `FINDING_RE` backtracks catastrophically on a solid whitespace run inside the block: 16,000 chars took **877 s** measured, ~7.9× per doubling, a hang rather than a slow parse. X1 — both exist because unmatched lines are silently skipped.
+
+| Option | What it means | Consequence |
+|---|---|---|
+| **[1] Reject the block** *(closes all three)* | A line inside FINDINGS that matches neither a row nor the sentinel makes the parse fail | A refusal stops reading as clean; prose never reaches the regex, so A6's input is gone too. Strictest, and the only one X1 endorses. |
+| **[2] Performance's one-liner** | `if "\|" not in line: continue` | Fixes A6 by skipping non-row lines *more* silently — which makes A5 worse. |
+| **[3] Security's one-liner** | Reject unparseable lines | Fixes A5; leaves the regex reachable by anything containing a pipe. |
+| **[4] Leave it** | Tests 6/7 currently pin the present behaviour as normative | The hang is unreachable on this cold, single-call, self-fed path today — which is why it is Medium and not High. |
+
+- **Interim:** [4]. The path no attacker supplies and no caller feeds cold input to, so nothing is burning.
+- **If the answer differs:** [1] needs tests 6/7 in `test/lite-review-grammar.bats` re-pinned, since they currently assert the behaviour it removes.
+- **Note:** this was bundled with A7 in a single entry until 2026-09-17; splitting it is why it now has its own ID.
+
+### Q-011 · mathlib-cache-host
+**Needs:** you: terminal · **Opened:** 2026-09-12 · **Status:** OPEN
+
+What is the current mathlib olean cache hostname? (`lake exe cache get` is minutes vs hours per repo.)
+
+- **Attempt 2026-09-17 — inconclusive, my fault not yours.** The probe returned `Cache/Requests.lean: No such file or directory`. The command needs a **mathlib4 checkout** as its working directory; I gave it without saying so, and it ran against a container that has Lean installed but no mathlib source tree. Not evidence about the hostname either way.
+- **Read:** `devcontainer-config/egress/lean.txt` (the `lakecache.blob.core.windows.net` entry and its ACCEPTED RISK note)
+- **The paste**, once you are somewhere with a mathlib4 clone:
+
+```bash
+git clone --depth 1 https://github.com/leanprover-community/mathlib4 /tmp/mathlib4 2>/dev/null
+rg -o 'https://[^"]*' /tmp/mathlib4/Cache/Requests.lean
+```
+
+- **Interim:** `lakecache.blob.core.windows.net` stays listed, carrying its VERIFY comment. A wrong entry degrades to "stays blocked", never to a wider allowlist, so the cost of being wrong is a slow first build rather than an exposure.
+- **If the answer differs:** correct `egress/lean.txt`, re-install, re-bless.
+
+### Q-012 · elan-sha256-pins
+**Needs:** deferred · **Opened:** 2026-09-12 · **Status:** OPEN
+
+Pin the per-arch SHA-256 of the elan release as build ARGs
+
+- **Context:** the new Dockerfile layer fetches elan from its GitHub release without a checksum, following the rustup layer's documented deferral (the authoring environment cannot reach the host to obtain the digests)
+- **Interim:** version-pinned, unverified — bounded by running at build time, but this layer installs into a node-writable tree, so the pin is worth more here than in the rustup layer
+- **If the answer differs:** add `ELAN_SHA256_AMD64`/`ELAN_SHA256_ARM64` ARGs and a `sha256sum -c` at the next host-side `ELAN_VERSION` bump, matching the shfmt and .NET layers.
+
+### Q-014 · profile-replace-only
+**Needs:** trigger · **Opened:** 2026-09-15 · **Status:** OPEN
+
+Should `--profile` stay replace-only, or grow `--add-profile`/`--remove-profile`?
+
+- **Context:** `register_project` overwrites the stored grant, so re-registering a project to add `lean` silently dropped the `dotnet` it already had; found while trying to get the `lean` profile into a live container
+- **Interim:** kept replace (a grant you can only widen is not a grant) and made it loud instead — the transition and any dropped profile are printed, `--list` already showed the current grant, and the line-10 comment no longer says "widen"
+- **If the answer differs:** if you find yourself re-typing the full list often, add the two additive flags rather than changing what `--profile` means.
+
+### Q-016 · scholar-oa-escape-hatch
+**Needs:** trigger · **Opened:** 2026-09-17 · **Status:** OPEN
+
+Does `scholar` need a companion escape hatch for publisher-hosted OA PDFs?
+
+- **Context:** the profile's honest limit is that Unpaywall/Crossref routinely return full-text URLs on hosts the SNI proxy rejects (publisher domains, institutional repositories, S3 buckets), so a literature-review session gets metadata for everything and bytes for the arXiv/PMC/bioRxiv subset only
+- **Interim:** no escape hatch — documented as a failure mode in `guides/cc-isolated-usage.md` rather than widened, since the alternative is a per-paper, per-publisher allowlist churn that nobody will maintain
+- **If the answer differs:** if this bites in practice, the shapes are (a) a narrow `scholar-extra` profile listing the two or three publishers you actually read, or (b) fetching those PDFs on the host and dropping them into the workspace, which needs no boundary change at all.
+
+### Q-019 · worktree-cleanup
+**Needs:** you: terminal · **Opened:** 2026-09-17 · **Status:** OPEN
+
+Reclaim the 231 MB under `.claude/worktrees/` — you approved deleting the merged ones, but the sandbox blocks me from doing it.
+
+- **Answered in part 2026-09-17:** "Do delete worktrees whose work is merged." Acted on as far as I can: merged status is established below. `git worktree remove` and `git branch -d` are both refused by the permission classifier, so the deletion itself is yours.
+- **Merged, safe to delete (5):** `worktree-agent-a009cad5cfce1c436`, `-a08e604dfe89c164a`, `-a4a18886714e71f87`, `-a6de5e054c0c183fc`, `-ad3ea139c0500baba` — each is an ancestor of `main`.
+- **Not verifiable (6):** `archive-stale-docs`, `cross-model-review-sweep`, `e7-rep23-ledger`, `fact-check-codereview-writeup`, `ledger-cubic-column`, `python-toolchain-uv`. Their branch refs no longer exist (`HEAD` reads `0000000`), so "is it merged" cannot be answered — these are orphaned registrations, not work. Their large `git status` counts are an artifact of the unresolvable HEAD, not uncommitted changes.
+- **The paste:**
+
+```bash
+cd /workspace
+for b in a009cad5cfce1c436 a08e604dfe89c164a a4a18886714e71f87 a6de5e054c0c183fc ad3ea139c0500baba; do
+  git worktree remove --force ".claude/worktrees/agent-$b" && git branch -d "worktree-agent-$b"
+done
+git worktree prune          # clears the 6 orphaned registrations
+du -sh .claude/worktrees    # expect well under 231M
+```
+
+- **If the answer differs:** if you want the 6 orphans kept, drop the `prune` line — but nothing references them and their branches are already gone.
+
+### Q-020 · asks-unit-weighting
+**Needs:** you: judgment · **Opened:** 2026-09-17 · **Status:** OPEN
+
+Is `asks` (triage §3.3) the right unit, or does it undercount one hard judgment against several easy ones?
+
+- **Context:** today's 5 asks range from a one-bit call to a four-part review decision
+- **Interim:** counting items, not weight, because assigning weight is itself a judgment and therefore itself an ask
+- **If the answer differs:** entries carry a coarse S/M/L and the alarm threshold becomes a sum.
+
+### Q-021 · drop-delete-or-archive
+**Needs:** you: judgment · **Opened:** 2026-09-17 · **Status:** OPEN
+
+Should DROP items be deleted or archived?
+
+- **Context:** `docs/working/incident-journal.md` is dormant-because-unfed rather than wrong — deleting it loses a schema someone designed
+- **Interim:** propose deletion, do not delete
+- **If the answer differs:** if archive, DROP needs a destination and the route stops being free.

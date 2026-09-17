@@ -230,12 +230,31 @@ Log all autonomous decisions in commit message bodies with a `Confidence` tag (h
 
 ### Running questions document
 
-During any autonomous or long-running work — /away mode, Ralph loops, `/loop` runs, overnight sessions — questions for the user that don't justify stopping must not evaporate. Maintain a running questions doc at `docs/working/questions.md` in the project:
+During any autonomous or long-running work — /away mode, Ralph loops, `/loop` runs, overnight sessions — questions for the user that don't justify stopping must not evaporate. Maintain a running questions doc at `docs/working/questions.md`, with answered entries in `docs/working/questions-archive.md`.
 
-- **Append, don't block.** When a question arises, add a checkbox entry and keep working: `- [ ] YYYY-MM-DD <question> · context: <what you were doing> · interim: <what you chose in the meantime> · answer changes: <what you'd redo if the answer differs>`.
+**Every entry has a stable ID and a name**, so the user can answer with `Q-014: [2]` and never restate the question, and so two entries are never confused while reading. Get the next ID from `scripts/questions.sh next-id`; the grammar is:
+
+```
+### Q-NNN · <short-slug>
+**Needs:** <route> · **Opened:** YYYY-MM-DD · **Status:** OPEN
+
+<the question in one line>
+
+- **Why it's yours:** <what only the user can decide — omit if obvious>
+- **Read:** <links to the docs, findings or code that bear on it>
+- **Options:** <the decision space, numbered [1] [2] [3], with cost and consequence per option>
+- **Interim:** <what was chosen in the meantime>
+- **If the answer differs:** <what gets redone>
+```
+
+- **Route, don't rank.** `Needs:` is one of `you: judgment` (taste or authority — the only real attention spend), `you: terminal` (their machine, not their mind — collect these into ONE paste, never ask them separately), `agent` (mechanical), `trigger` (a watched condition, not a question yet), `deferred` (waiting on an event). Rationale and evidence: `docs/working/triage-2026-09-17-backlog.md` §3. **Before routing to `you: judgment`, check the item actually needs a human** — most don't, and an unrouted queue consumes the whole attention budget regardless of what is in it.
+- **Present the decision space, not just the question.** An ask without its options, its links and its interim choice makes the user reconstruct the context you already have. Enumerate the options so they can answer with a number.
+- **Never route a number from an instrument with a known under-counting history** to `you: judgment` without re-validating it first — the ask presumes the number is real (see `Q-017` in the archive).
+- **Append, don't block.** Add the entry and keep working.
 - The **interim choice** goes in the entry AND in the commit body (`Confidence`/`Notes` lines), so the question and the provisional decision stay traceable to each other.
+- **Maintenance is scripted, not remembered**: `scripts/questions.sh index` regenerates the index, `archive` moves answered entries out so the live file stays short, `check` validates and is gated by `scripts/health-check.sh`. Run `index` after editing entries.
 - **Loop iterations**: reviewing and appending to this doc is part of each iteration's exit checklist — commit it with the iteration so the next iteration (and the user) sees it in `git log`.
-- **Surfacing**: when the user returns (switch to /active, or the end-of-run summary), list the open questions from this doc explicitly — don't make them go read it. Check off entries as the user answers them, recording the answer inline; move any answer with lasting significance to `docs/decisions/` or `docs/thoughts/`.
+- **Surfacing**: when the user returns (switch to /active, or the end-of-run summary), list the open `you: judgment` entries by ID and name — don't make them go read it. Record answers inline, set `Status: ANSWERED`, run `archive`, and move anything with lasting significance to `docs/decisions/` or `docs/thoughts/`.
 - Only questions meeting the stop-and-wait bar above interrupt work; everything else accumulates here.
 
 ### Returning to /active

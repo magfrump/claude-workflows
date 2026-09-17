@@ -46,12 +46,20 @@ arxiv.org
 # Biomedical: NCBI E-utilities (esearch/efetch/esummary), PMC's open-access full text,
 # and Europe PMC's REST service (which lives under www.ebi.ac.uk, not europepmc.org —
 # `https://www.ebi.ac.uk/europepmc/webservices/rest/...`).
+#
+# VERIFIED 2026-09-17 on the host (questions.md Q-015): pmc.ncbi.nlm.nih.gov returns
+# 200 — but that is the HOST, not the article pages, which serve a reCAPTCHA
+# interstitial ("Checking your browser") rather than a body. The entry is correct and
+# worth keeping; the expectation it invites is not. **eutils is the only PMC route
+# here that actually yields full text.** Do not read a green probe on this name as
+# "PMC articles are fetchable".
 eutils.ncbi.nlm.nih.gov
 pmc.ncbi.nlm.nih.gov
 www.ebi.ac.uk
 
 # Preprints and open peer review. biorxiv/medRxiv expose their metadata API on
-# api.biorxiv.org and serve content from the www hosts. OpenReview's current API is
+# api.biorxiv.org and serve content from the www hosts. VERIFIED 2026-09-17 on the
+# host (questions.md Q-015): api.biorxiv.org and www.medrxiv.org both return 200. OpenReview's current API is
 # v2 (`api2.`); v1 is listed because older clients and older venues still use it.
 api.biorxiv.org
 www.biorxiv.org

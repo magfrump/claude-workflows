@@ -5,8 +5,9 @@
 # compiler in its own `lean-toolchain` file, so a repo whose pin is not baked into
 # LEAN_TOOLCHAINS fetches it at runtime. That is why the release host is listed here.
 #
-# UNVERIFIED HOSTNAMES. This profile was written from a sandbox with no egress; the
-# two entries flagged VERIFY below could not be confirmed against the live services.
+# ONE UNVERIFIED HOSTNAME. This profile was written from a sandbox with no egress.
+# The toolchain hosts were confirmed on the host on 2026-09-17 (see below); the
+# mathlib cache name flagged VERIFY below is the one entry still unconfirmed.
 # init-firewall.sh warns-and-skips a name that fails to resolve (only `base` domains
 # are critical), so a wrong entry here degrades to "stays blocked", not to a wider
 # allowlist or a failed container start — but it does mean a first Lean session may
@@ -16,13 +17,14 @@
 # elan's installer/self-update host.
 elan.lean-lang.org
 
-# Toolchain downloads. VERIFY: current elan resolves releases and assets from
-# `release.lean-lang.org` (singular) per its changelog; `releases.lean-lang.org`
-# (plural) is what this profile has carried, unexercised, since decision 016. Both are
-# listed until one is confirmed live, because the SNI proxy admits a 443 name only on
-# an EXACT match against this file — a subdomain or a near-miss is rejected, and that
-# asymmetry is the likeliest cause of a quiet "elan just hangs" outage. Delete the
-# wrong one once a real toolchain fetch has been watched succeed.
+# Toolchain downloads. VERIFIED 2026-09-17 on the host (questions.md Q-010): BOTH
+# names resolve — `release.lean-lang.org` returns 200, `releases.lean-lang.org`
+# returns 302. So neither is the "wrong one" this comment used to ask you to delete.
+# `release.` (singular) is canonical for the 4.x line that ships (ELAN_VERSION
+# v4.2.4); the plural name redirects to it. Both stay listed deliberately: the SNI
+# proxy admits a 443 name only on an EXACT match against this file, so a redirect
+# target must itself be listed or the hop dies — which is the likeliest cause of a
+# quiet "elan just hangs" outage.
 # Older elan (pre-4.x) resolves toolchains from GitHub releases instead, which `base`
 # already admits by CIDR, so the fetch can succeed even if both names here are wrong.
 release.lean-lang.org

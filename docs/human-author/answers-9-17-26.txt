@@ -1,0 +1,49 @@
+# Q3 — mathlib olean cache hostname (in a mathlib4 checkout)
+rg -o 'https://[^"]*' Cache/Requests.lean
+
+$ docker exec -u node 874acdea76c9336ce1a5cd7a77b8f7ad9c12ce5353c5df07a809
+5215bbeb2ca1 rg -o 'https://[^"]*' Cache/Requests.lean
+Cache/Requests.lean: No such file or directory (os error 2)
+
+I'm not confident this is the correct environment for this command; I do think Lean is working in the 
+
+
+# Q5 + Q2 — inside a `--profile scholar` container
+for h in pmc.ncbi.nlm.nih.gov api.biorxiv.org www.medrxiv.org \
+         release.lean-lang.org releases.lean-lang.org; do
+  printf '%s: ' "$h"; curl -sI --max-time 8 "https://$h/" | head -1 || echo UNREACHABLE
+done
+
+! for h in pmc.ncbi.nlm.nih.gov api.biorxiv.org www.medrxiv.org \
+           release.lean-lang.org releases.lean-lang.org; do
+    printf '%s: ' "$h"; curl -sI --max-time 8 "https://$h/" | head -1 || echo UNREACHABLE
+  done
+pmc.ncbi.nlm.nih.gov: HTTP/2 200
+api.biorxiv.org: HTTP/2 200
+www.medrxiv.org: HTTP/2 200
+release.lean-lang.org: HTTP/2 200
+releases.lean-lang.org: HTTP/2 302
+
+response transcript:
+```
+Useful — and one of those needs care, because a 200 on the PMC root doesn't settle whether article pages are fetchable. Re-testing that specific claim, since if the captcha has lifted the worklist changes again.
+
+  Ran 1 shell command
+
+Confirmed — both measurements are true and compatible, and my worklist wording holds: the host returns 200, but article pages serve a reCAPTCHA interstitial (21 KB, 167 chars of text, "Checking your browser"). eutils remains the only route that yields bodies. No change needed there.
+
+Two of your probes add something though. Checking whether the Lean one matters, since that's outside what I'd tested.
+
+  Ran 1 shell command
+
+Your PMC probe and mine agree — the distinction is host vs. article page, and the worklist already words it that way ("200 but reCAPTCHA wall"). No change needed.
+
+The Lean finding is real but not a blocker today: elan, lake and lean are already installed at ~/.elan/bin, and verify-local.sh needs
+```
+
+failure-patterns.md: backfill from 104 eligible commits
+
+The RPI failure may be a failure of the hook measurement system, where some setups like creating a subagent with skill text in its context doesn't trigger any hooks to record uses [conf: low]
+This hook measurement issue occurred many times [conf: high], enough that I lost faith in the measurements, even if fixes were implemented later.
+
+Do delete worktrees whose work is merged.
