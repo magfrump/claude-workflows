@@ -180,6 +180,21 @@ real. That belongs in the route criteria.
 - **Interim:** left as-is, routed to you as a one-bit call
 - **If the answer differs:** backfill is an agent task of a few hours; delete also removes the read-side grep from RPI research.
 
-**Answered 2026-09-17: backfill.** From the 104 eligible `fix(...)` commits, not
-delete. The read-side (RPI research greps this file by symptom keyword) is the
+**Answered 2026-09-17: backfill. Done.** 164 entries (FP-008..FP-171) harvested
+from the 105 eligible `fix(...)` commits; commits naming several distinct root
+causes got one entry each. Numbering starts at FP-008 because FP-007 is the
+schema example in the file's own prose.
+
+Two things the backfill produced beyond the entries. First, a first pass gave
+almost every entry its own `cause:` token — 154 distinct over 164 entries, which
+defeats the schema's point, since a category that appears once is a label rather
+than an index. Collapsed to **23 causes and 16 fix shapes**, with the
+specificity left in `symptom:` where the grep-able detail belongs.
+
+Second, the distribution is itself a finding: `fail-open` (25),
+`guard-misses-subject` (17) and `vacuous-assertion` (16) are **58 of 164** — more
+than a third — and they are one failure wearing three hats, *a check that reports
+success without having established it*. The most-repeated concrete shape is a
+bare `! grep` or unanchored pattern in a bats test, now fixed three times in
+three different files (FP-060, FP-156, FP-168). The read-side (RPI research greps this file by symptom keyword) is the
 half that has never been exercised, and it cannot be until entries exist.
