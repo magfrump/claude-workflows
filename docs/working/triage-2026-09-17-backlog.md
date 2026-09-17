@@ -167,6 +167,25 @@ RPI is row 6 of the decision tree and its documented **default**. Nothing opened
 it in 49 days. Meanwhile divergent-design — which H-04 already recorded the user
 calling *"the number one best piece of prompting I use"* — is 15 of the 22.
 
+> **Correction, 2026-09-17 (same day).** The user reports that hook measurement
+> has a history of silent under-counting — some setups, notably a subagent given
+> skill text already in its context, fire no hooks at all [their confidence: low
+> on that mechanism specifically; **high** that the problem recurred often enough
+> to lose faith in the numbers, including after fixes shipped]. **So this finding
+> is withdrawn as evidence.** 0 reads is equally consistent with the doc being
+> unused and with the instrument not seeing it, and the data cannot separate
+> them. The 15:0 contrast goes with it: divergent-design's 15 is a lower bound
+> from the same instrument, not a comparable measurement. Recorded as `Q-017` in
+> `questions-archive.md`.
+>
+> The part that survives is a **triage** lesson, not an RPI one, and it is a real
+> gap in §3.2: routing a number to USER-JUDGMENT presumes the number is real. An
+> instrument with a known under-counting history should not generate attention
+> asks until it is re-validated. That criterion is now in the running-questions
+> protocol in the core instruction set. It is also a fourth misroute — this one
+> caught by the user rather than by the artifact, which is exactly the case §3.2
+> does not cover.
+
 This does **not** expire H-01; it gives it its first real evidence, and the
 direction is against it. The honest statement is narrow and defensible: *the RPI
 document is not being opened*, not *RPI is not being followed* — the routing
@@ -185,7 +204,7 @@ doc does not**) showing up a third time, now with a 15:0 ratio on it.
 | **DROP / trigger** | **6** | HC1's per-skill lines, HC2, Q6, Q7, L2 · (+Q2 → batched into USER-TERMINAL) |
 | **CONDITIONAL** (blocked behind D3) | **3** | D1, D2, Q4 |
 
-**Nineteen items, roughly thirty printed lines, `asks` = 5** — at the router's
+**Nineteen items, roughly thirty printed lines, `asks` = 5** (L3 later withdrawn — see §2.2 — leaving 4) — at the router's
 own alarm threshold, and three of the five only became visible *because* the
 AGENT route was attempted rather than asserted. Two items were fixed outright.
 

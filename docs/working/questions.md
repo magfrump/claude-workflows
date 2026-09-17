@@ -25,7 +25,7 @@ The index below is generated — edit entries, not the table.
 <!-- index:start -->
 | ID | Needs | Question | Opened |
 |---|---|---|---|
-| [Q-009](#q-009--live-verify-gate-not-installed) | you: judgment | Review finding A7 — `live-verify-gate.sh` is declared but not installed, so no `devcontainer-config/` cha... | 2026-09-12 |
+| [Q-009](#q-009--live-verify-gate-not-installed) | you: judgment | Review finding A7 said `live-verify-gate.sh` is declared but not installed — **it is now demonstrably ins... | 2026-09-12 |
 | [Q-020](#q-020--asks-unit-weighting) | you: judgment | Is `asks` (triage §3.3) the right unit, or does it undercount one hard judgment against several easy ones? | 2026-09-17 |
 | [Q-021](#q-021--drop-delete-or-archive) | you: judgment | Should DROP items be deleted or archived? | 2026-09-17 |
 | [Q-022](#q-022--lite-review-findings-invariant) | you: judgment | Review findings A5 + A6 + X1 — `parse_findings` has no invariant that a line inside the FINDINGS block is... | 2026-09-17 |
@@ -41,20 +41,22 @@ The index below is generated — edit entries, not the table.
 ### Q-009 · live-verify-gate-not-installed
 **Needs:** you: judgment · **Opened:** 2026-09-12 · **Status:** OPEN
 
-Review finding A7 — `live-verify-gate.sh` is declared but not installed, so no `devcontainer-config/` change is actually gated. Install it, drop the declaration, or leave the gap open?
+Review finding A7 said `live-verify-gate.sh` is declared but not installed — **it is now demonstrably installed**, so what remains is whether to keep it and whether to test that it stays installed.
 
-- **Why it's yours:** the fix edits the live `settings.json`, which is deny-listed to me. You are the only one who can make it, and whether to run a PreToolUse gate on every Bash call is a working-comfort call, not a correctness one.
-- **Read:** `docs/reviews/code-review-rubric-2026-09-12-main-questions-closeout.md` (finding A7, row 28) · `hooks/wiring.json:62-72` · `hooks/live-verify-gate.sh` · `docs/decisions/035-install-sh-gating.md`
-- **Blocks:** R1's fix. Decision 035 chose option [3], the commit-time regex, and it lands *with* A7 — so R1 is decided but cannot ship until this is.
+- **New evidence 2026-09-17, unplanned:** the gate blocked a commit of mine in this session. It fired as a `PreToolUse:Bash` hook error from the installed copy of `live-verify-gate.sh`, on a commit touching `devcontainer-config/egress/`, demanded a `Live-verified:` trailer, and refused the commit until it got one. **That is stronger evidence than reading the settings file** — the finding's claim ("every `devcontainer-config/` change is currently committable with no live-verification question asked") is false as of today. A7 is stale on its central fact.
+- **Why it's still yours:** two things the evidence does not settle. (a) The gate is correct but coarse — it blocked a **comment-only** diff that added and removed no hostname, so the admitted set was byte-identical and no probe was possible or useful. (b) The finding's *other* half stands: eleven bats tests exercise the script and **nothing tests that it is installed**, so it can silently fall out again exactly as it apparently fell in.
+- **Read:** `docs/reviews/code-review-rubric-2026-09-12-main-questions-closeout.md` (finding A7, row 28) · `hooks/wiring.json:62-72` · `hooks/live-verify-gate.sh` · `docs/decisions/035-install-sh-gating.md` · this session's blocked commit, now `e96912d`, and its trailer
 
 | Option | What it means | Cost to you | If it's wrong |
 |---|---|---|---|
-| **[1] Install it** | Add the `wiring.json:62-72` entry to live settings; 11 existing bats tests already cover the script's behaviour | One edit; then a gate runs on Bash calls touching `devcontainer-config/` | A gate you find noisy — reversible by deleting the entry |
-| **[2] Drop the declaration** | Delete it from `wiring.json`; accept that `devcontainer-config/` changes are ungated | None | R1's chosen fix loses its enforcement half, and 035 needs revisiting |
-| **[3] Leave as-is** | Declared but not installed | None now | The current state: eleven tests pass, nothing is enforced, and the declaration reads as protection that does not exist |
+| **[1] Add the installed-ness test, leave behaviour alone** | A test asserts the live settings carry the `wiring.json:62-72` entry, so a silent uninstall fails the suite | None — I can write it if you say go | Nothing; this is the cheap half and closes the half of A7 that is still true |
+| **[2] [1] plus narrow the trigger** | Skip the gate when a `devcontainer-config/` diff changes only comments | One review of the narrowing rule | A comment that *is* load-bearing (an allowlist entry commented out) would slip — so the rule must be "no change to any non-comment line", not "no change to hostnames" |
+| **[3] Leave entirely as-is** | Gate installed, untested, coarse | None | It falls out again and nothing notices — the original A7 state, re-entered silently |
 
-- **Interim:** [3], unchanged since 2026-09-12 — not a choice, just the absence of one.
-- **If the answer differs:** [1] also closes the "nothing tests that it is installed" gap the review named; that test is worth adding either way if the declaration stays.
+- **Blocks:** R1's fix. Decision 035 chose option [3], the commit-time regex, and named A7 a prerequisite — which is now satisfied in fact, if not in test.
+- **Interim:** [3]. The gate works today; nothing is burning.
+- **If the answer differs:** [1] is a small test against the live settings file, which is deny-listed to me for *writing* — confirm whether a test may *read* it, or the assertion has to run host-side.
+- **Note:** re-scoped 2026-09-17 from "install it" to "keep and test it" after the gate fired. The original three options are in `git log -p` for `e96912d`.
 
 ### Q-022 · lite-review-findings-invariant
 **Needs:** you: judgment · **Opened:** 2026-09-17 · **Status:** OPEN
