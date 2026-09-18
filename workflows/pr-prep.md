@@ -263,7 +263,7 @@ non-decisive work between fixes.
    ## Recommended action (ship-with-issues / split-PR / pause for redesign)
    ```
 
-The user can override the ceiling and say "continue" — but the default is to stop. See `workflows/review-fix-loop.md` § Convergence ceiling for extended discussion.
+This is a hard cap, not a soft ceiling: iteration 4 cannot begin until a written decision selecting `escalate`, `split`, or `abandon` is recorded (in the review artifact, a commit message, or the PR's "Areas of uncertainty" section). A bare "continue" is not a valid decision; only a human reviewer's explicit authorization under `escalate` permits further iterations. See `workflows/review-fix-loop.md` § Iteration 4: cap-exceeded decision gate.
 
 **Tracking:** Record the loop's outcome in the PR description so reviewers and future calibration have a consistent signal. This is symmetric across both exit paths:
 
