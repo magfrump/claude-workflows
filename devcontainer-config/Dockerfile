@@ -438,23 +438,27 @@ RUN npm install -g @anthropic-ai/claude-code@${CLAUDE_CODE_VERSION}
 # the reason releases.lean-lang.org is in the profile rather than build-time-only.
 #
 # elan is fetched from its GitHub release at a pinned version, like git-delta and
-# shfmt above. The per-arch SHA-256 is NOT pinned here, for the same reason the
-# rustup layer's is not: the authoring environment has no egress and cannot obtain
-# the two digests. Pin them as build ARGs at the next host-side version bump — this
-# layer, unlike rustup's, installs into a node-writable tree, so the pin is worth
-# more here than there. Tracked in docs/working/questions.md.
-ARG ELAN_VERSION=v3.1.1
+# shfmt above, and verified against per-arch SHA-256 digests pinned as build ARGs
+# (shfmt's discipline: the release publishes no checksum asset to `-c` against).
+# This layer installs into a node-writable tree, so an unverified binary here would
+# be worse than in rustup's root-owned one. A version bump MUST move both digests in
+# the same diff — they are also passed from devcontainer.json, next to ELAN_VERSION.
+# Digests collected on the host 2026-09-18 (questions.md Q-012).
+ARG ELAN_VERSION=v4.2.4
+ARG ELAN_SHA256_AMD64=42b94d4244e8353142c456ec0e4ca6528fd898a6c604d4059f494e706e431f63
+ARG ELAN_SHA256_ARM64=05febd124d84ebf994b2e7479922a5650b1e950c17ae3bd1ddd776b65bb72bf9
 ARG LEAN_TOOLCHAINS=""
 ENV ELAN_HOME=/home/node/.elan \
     PATH=/home/node/.elan/bin:$PATH
 RUN case "$(dpkg --print-architecture)" in \
-      amd64) ELAN_TARGET=x86_64-unknown-linux-gnu ;; \
-      arm64) ELAN_TARGET=aarch64-unknown-linux-gnu ;; \
+      amd64) ELAN_TARGET=x86_64-unknown-linux-gnu; ELAN_SHA="$ELAN_SHA256_AMD64" ;; \
+      arm64) ELAN_TARGET=aarch64-unknown-linux-gnu; ELAN_SHA="$ELAN_SHA256_ARM64" ;; \
       *) echo "elan: unsupported architecture $(dpkg --print-architecture)" >&2; exit 1 ;; \
     esac && \
     cd /tmp && \
     wget -q "https://github.com/leanprover/elan/releases/download/${ELAN_VERSION}/elan-${ELAN_TARGET}.tar.gz" \
       -O elan.tar.gz && \
+    echo "${ELAN_SHA}  elan.tar.gz" | sha256sum -c - && \
     tar xzf elan.tar.gz && \
     ./elan-init -y --no-modify-path --default-toolchain none && \
     rm -f elan.tar.gz elan-init && \

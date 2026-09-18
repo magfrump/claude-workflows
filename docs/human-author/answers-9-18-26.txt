@@ -1,0 +1,161 @@
+Q-011:
+
+$ head -80 "$M/Cache/Requests.lean"
+/-
+Copyright (c) 2023 Arthur Paulino. All rights reserved.
+Released under Apache 2.0 license as described in the file LICENSE.
+Authors: Arthur Paulino, Marcelo Lynch
+-/
+
+import Cache.Hashing
+import Cache.Infra
+import Lake.Load.Manifest
+
+namespace Cache.Requests
+
+open System (FilePath)
+
+/--
+Resolved repository identity for cache lookups.
+-/
+structure RepoInfo where
+  repo : String
+  deriving Repr, BEq
+
+/--
+Helper function to extract repository name from a git remote URL
+-/
+def extractRepoFromUrl (url : String) : Option String := do
+  let url := url.dropSuffix ".git"
+  let pos ← url.revFind? (· == '/')
+  let pos ← (url.sliceTo pos).revFind? (fun c => c == '/' || c == ':')
+  return url.sliceFrom (String.Slice.Pos.ofSliceTo pos).next! |>.copy
+
+/-- Spot check if a URL is valid for a git remote -/
+def isRemoteURL (url : String) : Bool :=
+  "https://".isPrefixOf url || "http://".isPrefixOf url || "git@github.com:".isPrefixOf url
+
+/--
+Helper function to get repository from a remote name
+-/
+def getRepoFromRemote (mathlibDepPath : FilePath) (remoteName : String) (errorContext : String) : IO (Option String) := do
+  -- If the remote is already a valid URL, attempt to extract the repo from it. This happens with `gh pr checkout`
+  if isRemoteURL remoteName then
+    repoFromURL remoteName
+  else
+  -- If not, we use `git remote get-url` to find the URL of the remote. This assumes the remote has a
+  -- standard name like `origin` or `upstream` or it errors out.
+  let out ← IO.Process.output
+    {cmd := "git", args := #["remote", "get-url", remoteName], cwd := mathlibDepPath}
+  -- If `git remote get-url` fails then return none.
+  let output := out.stdout.trimAscii
+  unless out.exitCode == 0 do
+    IO.println s!"\
+      Warning: failed to run Git to determine Mathlib's repository from {remoteName} remote\n\
+      {errorContext}\n\
+      Continuing to fetch the cache from {MATHLIBREPO}."
+    return none
+  -- Finally attempt to extract the repository from the remote URL returned by `git remote get-url`
+  repoFromURL output.copy
+where repoFromURL (url : String) : IO (Option String) := do
+    if let some repo := extractRepoFromUrl url then
+      return some repo
+    else
+      IO.println s!"\
+        Warning: Failed to extract repository from remote URL: {url}.\n\
+        {errorContext}\n\
+        Continuing to fetch the cache from {MATHLIBREPO}."
+      return none
+
+/--
+Finds the remote name that points to `leanprover-community/mathlib4` repository.
+Returns the remote name and prints warnings if the setup doesn't follow conventions.
+-/
+def findMathlibRemote (mathlibDepPath : FilePath) : IO String := do
+  let remotesInfo ← IO.Process.output
+    {cmd := "git", args := #["remote", "-v"], cwd := mathlibDepPath}
+
+  unless remotesInfo.exitCode == 0 do
+    throw <| IO.userError s!"\
+      Failed to run Git to list remotes (exit code: {remotesInfo.exitCode}).\n\
+      Ensure Git is installed.\n\
+      Stdout:\n{remotesInfo.stdout.trimAscii}\nStderr:\n{remotesInfo.stderr.trimAscii}\n"
+
+
+$ rg -n -A8 'defaultContainersForRepo|CACHE_FROM|CACHE_GET_URL|def .*[Cc]ontainer' "$M"/Cache/*.lean | head -60
+verifier/lean-project/.lake/packages/mathlib/Cache/Warning.lean:47:2. `--cache-from` was passed and widens the lookup chain beyond `defaultContainersForRepo` for the resolved repo
+verifier/lean-project/.lake/packages/mathlib/Cache/Warning.lean-48-3. `--repo` was passed and does not match the git remote (`detectedRepo?`)
+verifier/lean-project/.lake/packages/mathlib/Cache/Warning.lean-49-
+verifier/lean-project/.lake/packages/mathlib/Cache/Warning.lean-50-`detectedRepo?` is the repo reported by the git remote (from `resolveRepo`,
+verifier/lean-project/.lake/packages/mathlib/Cache/Warning.lean-51-probed once per command); it is `none` if it could not be determined.
+verifier/lean-project/.lake/packages/mathlib/Cache/Warning.lean-52-
+verifier/lean-project/.lake/packages/mathlib/Cache/Warning.lean-53-Otherwise returns `false` (default lookup chain, no warning needed).
+verifier/lean-project/.lake/packages/mathlib/Cache/Warning.lean-54--/
+verifier/lean-project/.lake/packages/mathlib/Cache/Warning.lean-55-def shouldWarnNonDefaultScope (repoExplicit? detectedRepo? : Option String)
+--
+verifier/lean-project/.lake/packages/mathlib/Cache/Warning.lean:70:    let defaultContainers := defaultContainersForRepo resolvedRepo
+verifier/lean-project/.lake/packages/mathlib/Cache/Warning.lean-71-    unless cliOverride == defaultContainers do
+verifier/lean-project/.lake/packages/mathlib/Cache/Warning.lean-72-      return true
+verifier/lean-project/.lake/packages/mathlib/Cache/Warning.lean-73-  | none => pure ()
+verifier/lean-project/.lake/packages/mathlib/Cache/Warning.lean-74-
+verifier/lean-project/.lake/packages/mathlib/Cache/Warning.lean-75-  -- Condition 3: --repo was explicitly passed AND does not match the git remote.
+verifier/lean-project/.lake/packages/mathlib/Cache/Warning.lean-76-  -- Only fires when the user explicitly overrode --repo; defaulting to MATHLIBREPO
+verifier/lean-project/.lake/packages/mathlib/Cache/Warning.lean-77-  -- from a fork checkout is normal and does not warn.
+verifier/lean-project/.lake/packages/mathlib/Cache/Warning.lean-78-  match repoExplicit?, detectedRepo? with
+--
+verifier/lean-project/.lake/packages/mathlib/Cache/Warning.lean:141:    let defaultContainers := defaultContainersForRepo resolvedRepo
+verifier/lean-project/.lake/packages/mathlib/Cache/Warning.lean-142-    if cliOverride != defaultContainers then
+verifier/lean-project/.lake/packages/mathlib/Cache/Warning.lean-143-      let overrideStr := ", ".intercalate (cliOverride.map Container.name)
+verifier/lean-project/.lake/packages/mathlib/Cache/Warning.lean-144-      return s!"--cache-from={overrideStr} (explicit container override)"
+verifier/lean-project/.lake/packages/mathlib/Cache/Warning.lean-145-
+verifier/lean-project/.lake/packages/mathlib/Cache/Warning.lean-146-  -- Condition 3: --repo was explicitly passed AND doesn't match the git remote
+verifier/lean-project/.lake/packages/mathlib/Cache/Warning.lean-147-  match repoExplicit?, detectedRepo? with
+verifier/lean-project/.lake/packages/mathlib/Cache/Warning.lean-148-  | some explicitRepo, some detected =>
+verifier/lean-project/.lake/packages/mathlib/Cache/Warning.lean-149-    if explicitRepo != detected then
+--
+verifier/lean-project/.lake/packages/mathlib/Cache/Query.lean:86:def probeContainerForSHA (container : Container) (repo sha : String) :
+verifier/lean-project/.lake/packages/mathlib/Cache/Query.lean-87-    IO Bool := do
+verifier/lean-project/.lake/packages/mathlib/Cache/Query.lean-88-  let url := markerURL container repo sha
+verifier/lean-project/.lake/packages/mathlib/Cache/Query.lean-89-  -- Discard the response body to the platform null device (`NUL` on Windows),
+verifier/lean-project/.lake/packages/mathlib/Cache/Query.lean-90-  -- so curl reports a write error only on a genuine failure, not on every probe.
+verifier/lean-project/.lake/packages/mathlib/Cache/Query.lean-91-  let out ← IO.Process.output
+verifier/lean-project/.lake/packages/mathlib/Cache/Query.lean-92-    {cmd := (← IO.getCurl),
+verifier/lean-project/.lake/packages/mathlib/Cache/Query.lean-93-     args := #["-s", "-o", IO.nullDevice, "-w", "%{http_code}", "-I", url],
+verifier/lean-project/.lake/packages/mathlib/Cache/Query.lean-94-     cwd := "."}
+--
+verifier/lean-project/.lake/packages/mathlib/Cache/Main.lean:96:* MATHLIB_CACHE_GET_URL   Download from this single URL, bypassing the containers
+verifier/lean-project/.lake/packages/mathlib/Cache/Main.lean-97-* MATHLIB_CACHE_PUT_URL   Upload to this single URL, bypassing the containers
+verifier/lean-project/.lake/packages/mathlib/Cache/Main.lean:98:* MATHLIB_CACHE_FROM      Comma-separated container list for reads, same shape as
+verifier/lean-project/.lake/packages/mathlib/Cache/Main.lean-99-                          --cache-from. Used by CI to widen reads per job;
+verifier/lean-project/.lake/packages/mathlib/Cache/Main.lean-100-                          --cache-from takes precedence when both are set.
+verifier/lean-project/.lake/packages/mathlib/Cache/Main.lean-101-
+verifier/lean-project/.lake/packages/mathlib/Cache/Main.lean-102-See Cache/README.md for more details.
+verifier/lean-project/.lake/packages/mathlib/Cache/Main.lean-103-"
+verifier/lean-project/.lake/packages/mathlib/Cache/Main.lean-104-
+verifier/lean-project/.lake/packages/mathlib/Cache/Main.lean-105-/-- Commands which (potentially) call `curl` for downloading files -/
+verifier/lean-project/.lake/packages/mathlib/Cache/Main.lean-106-def curlArgs : List String :=
+--
+verifier/lean-project/.lake/packages/mathlib/Cache/Marker.lean:33:def markerURL (container : Container) (repo sha : String) : String :=
+verifier/lean-project/.lake/packages/mathlib/Cache/Marker.lean-34-  s!"{container.azureURL}/m/{normalizeRepo repo}/{sha}"
+verifier/lean-project/.lake/packages/mathlib/Cache/Marker.lean-35-
+verifier/lean-project/.lake/packages/mathlib/Cache/Marker.lean-36-/--
+verifier/lean-project/.lake/packages/mathlib/Cache/Marker.lean-37-Upload a tiny marker blob to `/m/{repo}/{sha}` in the given container. The
+verifier/lean-project/.lake/packages/mathlib/Cache/Marker.lean-38-blob content is the SHA itself, as a debugging aid; existence is the
+verifier/lean-project/.lake/packages/mathlib/Cache/Marker.lean-39-signal.
+verifier/lean-project/.lake/packages/mathlib/Cache/Marker.lean-40-
+
+Q-012:
+$ V=v4.2.4
+for t in x86_64-unknown-linux-gnu aarch64-unknown-linux-gnu; do
+  printf '%s  ' "$t"
+  curl -sL "https://github.com/leanprover/elan/releases/download/$V/elan-$t.tar.gz" | sha256sum | cut -d' ' -f1
+done
+x86_64-unknown-linux-gnu  42b94d4244e8353142c456ec0e4ca6528fd898a6c604d4059f494e706e431f63
+aarch64-unknown-linux-gnu  05febd124d84ebf994b2e7479922a5650b1e950c17ae3bd1ddd776b65bb72bf9
+
+Q-019:
+$ git worktree list                     # expect: only the main checkout                                                                                
+rm -rf .claude/worktrees/*            # the 14 orphaned directories
+du -sh .claude/worktrees              # expect ~0
+/home/magfrump/claude-workflows  788d46a [main]
+4.0K    .claude/worktrees

@@ -40,6 +40,8 @@
       "DOTNET_SDK_SHA512_AMD64": "1033977dd837150e0814cf0c5d5b17ceb63925fda7ba2158b47258a4bd7c048cf82eac3bc1166f3146f53124a3f5fba09db1de1260d2ce96399860303b404b48",
       "DOTNET_SDK_SHA512_ARM64": "a1b45da58e5591fff909a6126ac6bfc1ef9c12bc72c0625f7815e83a82be1a902317ee96926cbbf81324a45c6abf2ed8102a216d0507879cc166159af78d1b77",
       "ELAN_VERSION": "v4.2.4",
+      "ELAN_SHA256_AMD64": "42b94d4244e8353142c456ec0e4ca6528fd898a6c604d4059f494e706e431f63",
+      "ELAN_SHA256_ARM64": "05febd124d84ebf994b2e7479922a5650b1e950c17ae3bd1ddd776b65bb72bf9",
       // Lean toolchains baked at build time, space-separated (first = default).
       // Empty means elan installs no toolchain and every Lean repo fetches its own
       // `lean-toolchain` pin at runtime through the `lean` egress profile. Fill this

@@ -19,12 +19,14 @@ full. IDs are stable forever: `Q-014` means the same thing here as it did there.
 | [Q-008](#q-008--findings-grammar-ownership) | Make `lite-review.py` the definition of the FINDINGS grammar rather than a copy of it, before `cross-model-... | 2026-09-12 |
 | [Q-009](#q-009--live-verify-gate-not-installed) | The installed-ness pin is a new test in `test/hooks/live-verify-gate.bats` that reads | 2026-09-12 |
 | [Q-010](#q-010--elan-release-host) | Which host does elan actually fetch toolchains from — `release.lean-lang.org` or `releases.lean-lang.org`? | 2026-09-12 |
+| [Q-012](#q-012--elan-sha256-pins) | Pin the per-arch SHA-256 of the elan release as build ARGs | 2026-09-12 |
 | [Q-013](#q-013--elan-version-to-ship) | Is `ELAN_VERSION=v3.1.1` the version to ship? **ANSWERED 2026-09-15: no — `v4.2.4`, taken from the GitHub... | 2026-09-12 |
 | [Q-014](#q-014--profile-replace-only) | Should `--profile` stay replace-only, or grow `--add-profile`/`--remove-profile`? | 2026-09-15 |
 | [Q-015](#q-015--scholar-hostnames) | Confirm the three `scholar` hostnames that no search summary covered — `pmc.ncbi.nlm.nih.gov`, `api.biorx... | 2026-09-17 |
 | [Q-016](#q-016--scholar-oa-escape-hatch) | Does `scholar` need a companion escape hatch for publisher-hosted OA PDFs? | 2026-09-17 |
 | [Q-017](#q-017--rpi-doc-zero-reads) | `workflows/research-plan-implement.md` — the documented default — was opened **0 times in 49 days** (27... | 2026-09-17 |
 | [Q-018](#q-018--failure-patterns-backfill) | `docs/thoughts/failure-patterns.md`: backfill from the 104 eligible `fix(...)` commits, or delete the file? | 2026-09-17 |
+| [Q-019](#q-019--worktree-cleanup) | Reclaim the 231 MB under `.claude/worktrees/` — the git half is done, the disk half is a plain `rm -rf` I... | 2026-09-17 |
 | [Q-020](#q-020--asks-unit-weighting) | Is `asks` (triage §3.3) the right unit, or does it undercount one hard judgment against several easy ones? | 2026-09-17 |
 | [Q-021](#q-021--drop-delete-or-archive) | Should DROP items be deleted or archived? | 2026-09-17 |
 | [Q-022](#q-022--lite-review-findings-invariant) | ~nothing.** Read as: A5 is not a defect worth a fix — a clean lite review's only | 2026-09-17 |
@@ -363,4 +365,49 @@ mechanism as gone.
 - **Context:** `docs/working/incident-journal.md` is dormant-because-unfed rather than wrong — deleting it loses a schema someone designed
 - **Interim:** propose deletion, do not delete
 - **If the answer differs:** if archive, DROP needs a destination and the route stops being free.
+
+### Q-012 · elan-sha256-pins
+**Needs:** you: terminal · **Opened:** 2026-09-12 · **Status:** ANSWERED
+
+Pin the per-arch SHA-256 of the elan release as build ARGs
+**Answered 2026-09-18 (`docs/human-author/answers-9-18-26.txt`):** v4.2.4 digests are `42b94d42…31f63` (x86_64) and `05febd12…72bf9` (aarch64). Both are real assets, not error pages: the two differ, and a GitHub 404 body would hash the same for both targets. Applied: `ELAN_SHA256_AMD64` / `ELAN_SHA256_ARM64` build ARGs plus a `sha256sum -c` in the elan layer (shfmt's shape), passed from `devcontainer.json` next to `ELAN_VERSION` so a bump moves all three together. The Dockerfile's stale `ELAN_VERSION=v3.1.1` fallback moved to `v4.2.4` as well; leaving it would make a build without the devcontainer args fail the new check. Takes effect at the next `install.sh` → rebuild. If the digests were wrong, that build fails at the checksum step; it does not install anything unverified.
+
+- **Answering "I don't see what action" (2026-09-17):** my entry was wrong to imply a container. No Lean, no egress profile and no container are involved — the two files are ordinary GitHub release assets, so **any machine with plain internet** produces the digests, including the host you are reading this on. The reason it is yours at all is only that this authoring environment has no egress; that is the whole blocker. Route corrected from `deferred` to `you: terminal`.
+- **Context:** the Dockerfile's elan layer fetches `elan-<target>.tar.gz` from the GitHub release with no checksum, following the rustup layer's documented deferral. `ELAN_VERSION` ships as `v4.2.4` (`devcontainer-config/devcontainer.json:42`; the `Dockerfile:446` default is a stale fallback).
+- **The paste:**
+
+```bash
+V=v4.2.4
+for t in x86_64-unknown-linux-gnu aarch64-unknown-linux-gnu; do
+  printf '%s  ' "$t"
+  curl -sL "https://github.com/leanprover/elan/releases/download/$V/elan-$t.tar.gz" | sha256sum | cut -d' ' -f1
+done
+```
+
+- **What I do with it:** add `ELAN_SHA256_AMD64` / `ELAN_SHA256_ARM64` build ARGs and a `sha256sum -c` to the elan layer, matching the shfmt and .NET layers (`devcontainer-config/Dockerfile:165-176` is the shape).
+- **Interim:** version-pinned, unverified — bounded by running at build time, but this layer installs into a node-writable tree, so the pin is worth more here than in the rustup layer.
+- **If the answer differs:** if you would rather not run it, this stays as-is until the next `ELAN_VERSION` bump, which is the natural moment to collect both digests anyway.
+
+
+### Q-019 · worktree-cleanup
+**Needs:** you: terminal · **Opened:** 2026-09-17 · **Status:** ANSWERED
+
+Reclaim the 231 MB under `.claude/worktrees/` — the git half is done, the disk half is a plain `rm -rf` I am not allowed to run.
+**Answered 2026-09-18 (`docs/human-author/answers-9-18-26.txt`):** done, and I observed the result. Your run showed the host clone listing only its main checkout (`788d46a [main]`) and `du -sh .claude/worktrees` at `4.0K`. I checked in-container this session too: `git worktree list` shows only `/workspace`, and `du` reports `4.0K`. All 14 directories are gone, including the three owned by the host clone. Nothing was kept as a reference checkout.
+
+- **Your run worked; my paste was incomplete (2026-09-17).** `git worktree list` now shows only `/workspace` and `.git/worktrees/` is gone entirely, so the `remove`/`prune` half succeeded — the registrations are all cleared. `du` still reports 231 MB because **`git worktree prune` deletes registrations, not directories**: what is left under `.claude/worktrees/` is 14 ordinary directories that git no longer knows about. That is my omission, not a failure of yours.
+- **Nothing unique is in them, checked this session.** Against `main`'s tree, the files each directory holds that `main` does not are all *historical* paths (old `docs/working/` drafts, `scripts/review-arms.py` and friends now under `archive/benchmark/`) — i.e. stale bases, recoverable from `git log`. No directory holds work that exists only there.
+- **One wrinkle:** three of them — `agent-a4569e6741d6f71c8`, `agent-ae5933c7c8f651ef7`, `agent-af8ebf915c7a1c66d` — carry a `.git` file pointing at `/home/magfrump/claude-workflows/.git`, not `/workspace/.git`. They belong to the **host** clone, so if that clone still lists them, remove them there with git rather than by hand.
+- **The paste** (run where `.claude/worktrees` lives):
+
+```bash
+cd /path/to/claude-workflows          # the host clone
+git worktree list                     # expect: only the main checkout
+rm -rf .claude/worktrees/*            # the 14 orphaned directories
+du -sh .claude/worktrees              # expect ~0
+```
+
+- **Interim:** the 231 MB stays. It is inert — no registration, no ref, nothing reads it — so this is disk, not risk.
+- **If the answer differs:** if you would rather keep a couple as reference checkouts, keep `agent-af8ebf915c7a1c66d` (the widest set of historical paths of the fourteen) and delete the rest, which are older checkouts of the same tree at various points.
+
 

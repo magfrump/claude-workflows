@@ -35,9 +35,13 @@ releases.lean-lang.org
 # per clone) instead of downloading it (minutes), so this entry is the difference
 # between the profile being usable and being technically correct.
 #
-# VERIFY: mathlib's cache client (`Cache/Requests.lean`) is the source of truth for
-# this hostname and it has moved before. Check it in a mathlib4 checkout on the host —
-# `rg -o 'https://[^"]*' Cache/Requests.lean` — before relying on this line.
+# VERIFY: mathlib's cache client (`Cache/*.lean`) is the source of truth for this
+# hostname and it has moved before. As of 2026-09-18 it is confirmed to be an Azure
+# Blob endpoint (`Cache/Marker.lean` builds URLs from `container.azureURL`), but the
+# storage-account name is not yet observed. It is assembled at runtime, so grepping
+# Requests.lean for URLs finds nothing. Check it on the host with
+# `rg -n 'blob\.core\.windows\.net|azureURL|def defaultContainersForRepo' -A6 Cache/*.lean`
+# (questions.md Q-011).
 #
 # ACCEPTED RISK, stated in the same terms as android.txt's: this is an Azure Blob
 # Storage endpoint, i.e. a writable object store fronted by shared infrastructure. The
