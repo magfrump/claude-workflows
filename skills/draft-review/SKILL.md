@@ -133,6 +133,30 @@ After each between-stage handoff (end of Stage 1, end of Stage 2), emit a single
 
 **Scope:** Emit the banner *only* between stages. Do **not** emit a banner after Stage 3 — Stage 3's chat synthesis is itself the user-facing output, and a "Stage 3 complete" banner would duplicate or compete with it.
 
+### Dispatch goal preamble
+
+Every Stage 1 and Stage 2 dispatch opens with the three-line goal preamble from
+[`patterns/orchestrated-review.md`](../../patterns/orchestrated-review.md#goal-preamble), above
+the pasted skill content. `fact-check` and `ai-personas-critique` skip their standalone
+goal-capture block only when this preamble is present. For example:
+
+```
+User goal: Get a fact-checked, multi-perspective review of "<draft title>" before publishing.
+Current task: Fact-check every checkable claim in the draft below.
+Success criterion: A fact-check report saved to docs/reviews/fact-check-report.md, structured per the fact-check skill.
+```
+
+- **User goal** — the user's request for this review, verbatim where they stated one. Identical
+  across every sub-agent in the run.
+- **Current task** — this sub-agent's assignment (fact-check the draft; critique it through
+  the `<skill-name>` lens).
+- **Success criterion** — the artifact and the exact output path assigned to this instance
+  (including the `-<i>` suffix in ensemble mode).
+
+Omit the optional Current-task sub-bullets unless you actually have the facts. Everything else
+(draft text, draft intent, fact-check results, Goal-Alignment Note requirement) goes in the
+role-specific content below the preamble.
+
 ### Stage 1: Fact-Check
 
 Spawn fact-check sub-agent(s) using the Agent tool.
@@ -141,11 +165,16 @@ Spawn fact-check sub-agent(s) using the Agent tool.
 **Ensemble mode:** If the user requests it (e.g., "run 3 of each", "ensemble mode"), spawn that many independent instances in parallel instead.
 
 For each fact-check agent, you MUST:
-1. Read the full contents of `skills/fact-check/SKILL.md`
-2. Paste those contents directly into the Agent tool prompt (sub-agents cannot read your files)
-3. Include the full draft text in the prompt
-4. Instruct the agent to save its report as `docs/reviews/fact-check-report.md`
-5. Require the agent to append a **Goal-Alignment Note** at the end of its report and chat
+1. Begin the prompt with the [goal preamble](../../patterns/orchestrated-review.md#goal-preamble)
+   (see [Dispatch goal preamble](#dispatch-goal-preamble) above). Without it, the sub-agent runs
+   its standalone goal-capture block and tries to ask the user a clarifying question.
+2. Read the full contents of `skills/fact-check/SKILL.md`
+3. Paste those contents directly into the Agent tool prompt (sub-agents cannot read your files)
+4. Include the full draft text in the prompt
+5. Instruct the agent to save its report as `docs/reviews/fact-check-report.md`. In ensemble
+   mode, give each instance its own path — `docs/reviews/fact-check-report-<i>.md` for
+   instance `i` = 1..N — so parallel instances do not overwrite each other.
+6. Require the agent to append a **Goal-Alignment Note** at the end of its report and chat
    summary using the canonical form from
    [`patterns/orchestrated-review.md`](../../patterns/orchestrated-review.md):
 
@@ -161,11 +190,11 @@ For each fact-check agent, you MUST:
    optional — include it only when scope was genuinely ambiguous and the agent had to
    make a non-trivial guess about what to fact-check (e.g., whether a quoted passage
    should be checked for accuracy of its source, or only paraphrased).
-6. Launch via the Agent tool with `subagent_type: "general-purpose"`
+7. Launch via the Agent tool with `subagent_type: "general-purpose"`
 
 **CHECKPOINT:** Wait for ALL fact-check agent(s) to return results. Count the results. Do you have the expected number? If yes, proceed. If not, STOP and tell the user something went wrong.
 
-If running ensemble: briefly synthesize the fact-check consensus before proceeding (which claims agents agree on, which they disagree on). This consensus summary is what you pass to the critic agents.
+If running ensemble: read every `docs/reviews/fact-check-report-<i>.md` and briefly synthesize the fact-check consensus before proceeding (which claims agents agree on, which they disagree on). This consensus summary is what you pass to the critic agents.
 
 After receiving substantive results, emit the between-stage status banner per the format spec above (e.g., `Stage 1 (fact-check) complete: <counts> — <next action>`). Emit it before the Fact-Check Gate so the user sees stage progress even if the gate pauses for input.
 
@@ -193,18 +222,27 @@ Dispatch each critique to a sub-agent via the Agent tool.
 **Ensemble mode:** spawn N instances of each selected critic, where N matches the user's request.
 
 For each critic agent instance, you MUST:
-1. Read the full contents of that critic's skill file (e.g., `skills/cowen-critique/SKILL.md`)
-2. Paste those contents directly into the Agent tool prompt
-3. Include the full draft text
-4. Include the draft intent captured in "Before You Begin" Step 3, prepended under a
+1. Begin the prompt with the goal preamble (see [Dispatch goal preamble](#dispatch-goal-preamble))
+2. Read the full contents of that critic's skill file (e.g., `skills/cowen-critique/SKILL.md`)
+3. Paste those contents directly into the Agent tool prompt. For `ai-personas-critique`, also
+   paste the full contents of `skills/ai-personas-critique/personas.md` — its Step 1 reads the
+   persona catalog from that sibling file, and the sub-agent cannot read it itself.
+4. Include the full draft text
+5. Include the draft intent captured in "Before You Begin" Step 3, prepended under a
    `## What this draft is trying to accomplish` heading so the critic can scope feedback to
    stated intent
-5. Include the fact-check results (consensus summary if ensemble, or the single agent's findings)
-6. Instruct the agent to save its critique as `docs/reviews/<skill-name>.md` — use the
+6. Include the fact-check results (consensus summary if ensemble, or the single agent's findings)
+7. Include a `Critics running in parallel:` line listing the other critic skills selected for
+   this run (or `none`). `ai-personas-critique` uses it for its `Personas in parallel:` header
+   and its pipeline de-duplication step (e.g., skipping the Incentive Analyst when
+   `cowen-critique` is running).
+8. Instruct the agent to save its critique as `docs/reviews/<skill-name>.md` — use the
    critic's skill filename without doubling the `-critique` suffix (e.g., `cowen-critique.md`,
-   not `cowen-critique-critique.md`). The agent decides what goes in the file based on its own
+   not `cowen-critique-critique.md`). In ensemble mode, give each instance its own path —
+   `docs/reviews/<skill-name>-<i>.md` for instance `i` = 1..N (e.g., `cowen-critique-2.md`).
+   The agent decides what goes in the file based on its own
    skill instructions — do not prescribe the format.
-7. Require the agent to append a **Goal-Alignment Note** at the end of its critique and chat
+9. Require the agent to append a **Goal-Alignment Note** at the end of its critique and chat
    summary using the canonical form from
    [`patterns/orchestrated-review.md`](../../patterns/orchestrated-review.md):
 
@@ -220,7 +258,7 @@ For each critic agent instance, you MUST:
    optional — include it only when scope was genuinely ambiguous and the critic had to
    make a non-trivial guess about what to evaluate (e.g., which audience the draft
    targets, or whether to critique style or only argument structure).
-8. Launch via the Agent tool with `subagent_type: "general-purpose"`
+10. Launch via the Agent tool with `subagent_type: "general-purpose"`
 
 **Launch ALL critic agents simultaneously** in a single message with multiple Agent tool calls. They must not see each other's output.
 
@@ -276,7 +314,7 @@ Present this directly in the chat. It must be self-contained — assume the user
 
 ### Analyzing convergence (ensemble mode)
 
-If running multiple instances per agent type, the convergence patterns are the signal:
+If running multiple instances per agent type, the convergence patterns are the signal. Read each instance's own report — `docs/reviews/fact-check-report-<i>.md` and `docs/reviews/<skill-name>-<i>.md` — and number instances by that `<i>` (e.g., "cowen-critique #2" is `cowen-critique-2.md`):
 
 *Within the same agent type:* Use these thresholds when reporting convergence. State the numeric ratio (e.g., "3/3 agents") rather than a qualitative phrase like "most agree" — the threshold table determines the confidence tier, not the synthesizer's impression.
 
@@ -452,7 +490,7 @@ carry an author note. 🟢 items are optional.
 
 The **Confidence** column in the 🔴 Must Fix, 🟡 Must Address, and ✅ Verified tables records how sure the fact-check was about the verdict that produced the row. Populate it by copying the value **verbatim** from the corresponding fact-check verdict's `**Confidence:**` line (one of `High` / `Medium` / `Low`; see `skills/fact-check/SKILL.md`). In ensemble mode, copy the consensus confidence the same way you derive the consensus verdict.
 
-- **Never invent a confidence value.** If a row has no corresponding fact-check `**Confidence:**` line, render the cell as `—`. This is the normal case for 🟡 Must Address rows sourced from structural critic findings (`Both critics`, `Imprecise claim` from a critic, etc.) rather than from a fact-check verdict — critics emit no `**Confidence:**` line, so those rows always show `—`.
+- **Never invent a confidence value.** If a row has no corresponding fact-check `**Confidence:**` line, render the cell as `—`. This is the normal case for 🟡 Must Address rows sourced from structural critic findings (`Both critics`, `Imprecise claim` from a critic, etc.) rather than from a fact-check verdict, so those rows always show `—`. Most critics emit no `**Confidence:**` line; `business-plan-critique-moat` does (one per lens assessment), but that is the critic's confidence in its own lens verdict, not a fact-check confidence — do not copy it into this column.
 - A row whose source fact-check verdict exists but omits the `**Confidence:**` line also renders `—` — copy what is there, never backfill a guess.
 
 The 🟢 Consider tier has no Confidence column: its rows come from critics, which carry no fact-check confidence.
@@ -499,6 +537,8 @@ docs/reviews/
 ├── fact-check-report.md
 ├── <skill-name>.md              (one per critic used, e.g., cowen-critique.md)
 ```
+
+In ensemble mode, each instance writes its own suffixed file instead — `fact-check-report-<i>.md` and `<skill-name>-<i>.md` for `i` = 1..N.
 
 If `docs/reviews/` doesn't exist, create it. If prior review artifacts exist there from an earlier run, overwrite them — the rubric is designed for re-runs with updated status tracking.
 
