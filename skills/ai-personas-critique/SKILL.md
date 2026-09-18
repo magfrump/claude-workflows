@@ -261,7 +261,7 @@ This skill complements the fixed-voice critics:
 - **Cowen-critique** provides deep economic reasoning with consistent cognitive moves (boring
   explanation, market signals, cross-domain analogies). It always applies the same 9 moves.
 - **Yglesias-critique** provides deep policy analysis with consistent cognitive moves (mechanism
-  demolition, money tracing, election-cycle survival). It always applies the same 9 moves.
+  demolition, money tracing, election-cycle survival). It always applies the same 8 moves.
 - **This skill** provides breadth: 3-4 perspectives chosen specifically for the proposal at hand.
   It surfaces concerns from angles (security, ethics, scaling, regulation, end-user experience)
   that neither Cowen nor Yglesias would naturally reach.

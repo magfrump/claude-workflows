@@ -557,7 +557,7 @@ At the end, include a summary section:
 ```
 ## Claims Requiring Author Attention
 
-[List only the claims rated Mostly Accurate, Disputed, Inaccurate, or Unverified — each entry
+[List only the claims rated Mostly Accurate, Disputed, Inaccurate, Unverified, or Secondary-only — each entry
 references its claim ID (e.g., "**C3** — …") with a one-line explanation of what needs fixing
 or sourcing. This is the actionable checklist.]
 ```
