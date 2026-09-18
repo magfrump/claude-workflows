@@ -19,6 +19,14 @@ setup() {
   export WORKFLOWS_DIR="$TEST_DIR/workflows"
   export GUIDES_DIR="$TEST_DIR/guides"
   mkdir -p "$SKILLS_DIR" "$WORKFLOWS_DIR" "$GUIDES_DIR"
+
+  # The script sources si-morning-summary.sh, which can invoke `claude`.
+  # Stub it so no test can reach the real CLI (convention enforced by
+  # test/fixture-hermeticity.bats; same shim as test/round-log-functions.bats).
+  mkdir -p "$TEST_DIR/bin"
+  printf '#!/usr/bin/env bash\nexit 0\n' > "$TEST_DIR/bin/claude"
+  chmod +x "$TEST_DIR/bin/claude"
+  PATH="$TEST_DIR/bin:$PATH"
 }
 
 teardown() {
