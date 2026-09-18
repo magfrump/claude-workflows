@@ -25,6 +25,10 @@ REPO_ROOT="$(cd "$(dirname "$0")/.." && pwd)"
 
 # shellcheck source=lib/log-format.sh
 source "$REPO_ROOT/scripts/lib/log-format.sh"
+# For _locate_log_col (header-name column lookup). Sourcing only defines
+# functions; it has no top-level side effects.
+# shellcheck source=lib/si-morning-summary.sh
+source "$REPO_ROOT/scripts/lib/si-morning-summary.sh"
 
 # --- Parse options ---
 WITH_USAGE=0
@@ -41,6 +45,7 @@ done
 
 # --- Configurable paths (env-var overrides for testing) ---
 HYPOTHESIS_LOG="${HYPOTHESIS_LOG_FILE:-${REPO_ROOT}/docs/working/hypothesis-log.md}"
+ROUND_HISTORY="${ROUND_HISTORY_FILE:-${REPO_ROOT}/docs/working/round-history.json}"
 SKILLS_DIR="${SKILLS_DIR:-${REPO_ROOT}/skills}"
 WORKFLOWS_DIR="${WORKFLOWS_DIR:-${REPO_ROOT}/workflows}"
 GUIDES_DIR="${GUIDES_DIR:-${REPO_ROOT}/guides}"
@@ -53,9 +58,10 @@ fi
 
 # --- Auto-detect round from round-history.json if not provided ---
 if [ -z "$ROUND" ]; then
-  round_history="${REPO_ROOT}/docs/working/round-history.json"
-  if [ -f "$round_history" ] && command -v jq >/dev/null 2>&1; then
-    ROUND=$(jq -r '.rounds | keys | map(tonumber) | max // empty' "$round_history" 2>/dev/null || true)
+  # round-history.json is a JSON array of round objects (self-improvement.sh
+  # initialises it to [] and appends each finalized round log).
+  if [ -f "$ROUND_HISTORY" ] && command -v jq >/dev/null 2>&1; then
+    ROUND=$(jq -r 'map(.round) | max // empty' "$ROUND_HISTORY" 2>/dev/null || true)
   fi
   if [ -z "$ROUND" ]; then
     ROUND="?"
@@ -64,33 +70,50 @@ fi
 
 # --- Parse hypothesis log for REFUTED and INCONCLUSIVE-EXPIRED entries ---
 # Each line is a markdown table row; extract task ID, outcome, and evidence.
+# Columns are located by header name, not position: the schema has grown
+# (decision 012 added Evaluator + Requires, then Source), and a positional
+# read silently took Evaluator as Outcome. Fallbacks are the legacy 8-column
+# positions (awk field indices; field 1 is the empty text before the first |).
 declare -a candidate_tasks=()
 declare -A candidate_outcome=()
 declare -A candidate_evidence=()
 declare -A candidate_hypothesis=()
 
-while IFS='|' read -r _ _round task_id hypothesis _window _checked outcome _status_date evidence _; do
-  # Trim whitespace from fields
-  task_id="${task_id#"${task_id%%[![:space:]]*}"}"
-  task_id="${task_id%"${task_id##*[![:space:]]}"}"
-  outcome="${outcome#"${outcome%%[![:space:]]*}"}"
-  outcome="${outcome%"${outcome##*[![:space:]]}"}"
-  evidence="${evidence#"${evidence%%[![:space:]]*}"}"
-  evidence="${evidence%"${evidence##*[![:space:]]}"}"
-  hypothesis="${hypothesis#"${hypothesis%%[![:space:]]*}"}"
-  hypothesis="${hypothesis%"${hypothesis##*[![:space:]]}"}"
+tid_col=$(_locate_log_col "$HYPOTHESIS_LOG" "Task ID")
+hyp_col=$(_locate_log_col "$HYPOTHESIS_LOG" "Hypothesis")
+outcome_col=$(_locate_log_col "$HYPOTHESIS_LOG" "Outcome")
+evidence_col=$(_locate_log_col "$HYPOTHESIS_LOG" "Evidence")
+[[ "$tid_col" -gt 0 ]] || tid_col=3
+[[ "$hyp_col" -gt 0 ]] || hyp_col=4
+[[ "$outcome_col" -gt 0 ]] || outcome_col=7
+[[ "$evidence_col" -gt 0 ]] || evidence_col=9
 
-  # Skip non-matching rows
-  case "$outcome" in
-    REFUTED|INCONCLUSIVE-EXPIRED) ;;
-    *) continue ;;
-  esac
-
+# Emit "task_id<US>outcome<US>hypothesis<US>evidence" (US = \x1f) for
+# flagged rows. Escaped pipes (\|, as append_approved_hypotheses writes them
+# in hypothesis text) are masked before splitting so they don't shift columns.
+while IFS=$'\x1f' read -r task_id outcome hypothesis evidence; do
+  [ -n "$task_id" ] || continue
   candidate_tasks+=("$task_id")
   candidate_outcome["$task_id"]="$outcome"
   candidate_evidence["$task_id"]="$evidence"
   candidate_hypothesis["$task_id"]="$hypothesis"
-done < "$HYPOTHESIS_LOG"
+done < <(awk -F'|' -v tc="$tid_col" -v hc="$hyp_col" -v oc="$outcome_col" -v ec="$evidence_col" '
+    function field(i,   v) {
+        v = $i
+        gsub(/^[ \t]+|[ \t]+$/, "", v)
+        gsub(/\036/, "\\|", v)
+        return v
+    }
+    /^\|/ {
+        # Assigning $0 re-splits the masked line on FS.
+        line = $0
+        gsub(/\\\|/, "\036", line)
+        $0 = line
+        outcome = field(oc)
+        if (outcome != "REFUTED" && outcome != "INCONCLUSIVE-EXPIRED") next
+        printf "%s\037%s\037%s\037%s\n", field(tc), outcome, field(hc), field(ec)
+    }
+' "$HYPOTHESIS_LOG")
 
 # --- Map task IDs to files they likely created/modified ---
 # Search for task IDs in git log commit messages to find affected files.
@@ -102,9 +125,12 @@ for task_id in "${candidate_tasks[@]}"; do
   # Convert task ID to glob-friendly pattern (e.g., "strict-complexity-budget" -> "*strict*complexity*")
   for dir in "$SKILLS_DIR" "$WORKFLOWS_DIR" "$GUIDES_DIR"; do
     if [ -d "$dir" ]; then
-      for f in "$dir"/*.md; do
+      # Flat files (<dir>/<name>.md) plus directory-layout skills
+      # (<dir>/<name>/SKILL.md), matched on the directory name.
+      for f in "$dir"/*.md "$dir"/*/SKILL.md; do
         [ -f "$f" ] || continue
         basename_f="${f##*/}"
+        [ "$basename_f" = "SKILL.md" ] && { basename_f="${f%/SKILL.md}"; basename_f="${basename_f##*/}"; }
         # Check if the task ID appears as a substring in the filename
         if [[ "$basename_f" == *"${task_id}"* ]]; then
           files="${files:+${files}, }${f#"${REPO_ROOT}/"}"

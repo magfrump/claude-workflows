@@ -40,6 +40,36 @@ add_event() {
     "$ts" "$event" "$name" "$project" >> "$TEST_LOG"
 }
 
+# --- Skill layouts ---
+
+@test "enumerates directory-layout skills (skills/<name>/SKILL.md) as never-invoked" {
+  mkdir -p "$TEST_SKILLS/dir-layout-skill/references"
+  touch "$TEST_SKILLS/dir-layout-skill/SKILL.md"
+  # Non-SKILL.md files under a skill dir, and dirs without SKILL.md, are not skills.
+  touch "$TEST_SKILLS/dir-layout-skill/references/notes.md"
+  mkdir -p "$TEST_SKILLS/not-a-skill"
+  touch "$TEST_SKILLS/not-a-skill/README.md"
+
+  output=$(bash "$SCRIPT")
+
+  echo "$output" | grep -qE '^  dir-layout-skill +\(skill\)'
+  echo "$output" | grep -qE '^  fact-check +\(skill\)'
+  [[ "$output" != *"not-a-skill"* ]]
+  [[ "$output" != *"notes"* ]]
+}
+
+@test "directory-layout skill with usage is not listed as never-invoked" {
+  mkdir -p "$TEST_SKILLS/dir-layout-skill"
+  touch "$TEST_SKILLS/dir-layout-skill/SKILL.md"
+  add_event "skill" "dir-layout-skill"
+
+  output=$(bash "$SCRIPT")
+
+  echo "$output" | grep -q "dir-layout-skill"
+  never_section="${output#*Never invoked:}"
+  [[ "$never_section" != *"dir-layout-skill"* ]]
+}
+
 # --- Basic output ---
 
 @test "reports skill frequency and recency" {
