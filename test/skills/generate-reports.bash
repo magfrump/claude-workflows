@@ -101,7 +101,8 @@ generate_one() {
 
   if [ -s "$report_path" ]; then
     local claim_count
-    claim_count=$(grep -cE '^## Claim [0-9]+' "$report_path" || true)
+    # code-fact-check heads claims "## Claim N"; fact-check heads "## Verdict for CN:".
+    claim_count=$(grep -cE '^## (Claim [0-9]+|Verdict for C[0-9]+)' "$report_path" || true)
     echo "  Done: $claim_count claims in report"
   else
     echo "  WARNING: empty report generated"

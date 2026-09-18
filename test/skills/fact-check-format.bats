@@ -7,8 +7,31 @@
 
 load helpers
 
+# skills/fact-check/SKILL.md "Output format": every verdict is headed
+# '## Verdict for C<N>: "<quote>"', and C<N> must appear in "## Claims identified".
+VERDICT_HEADING_RE='^## Verdict for C[0-9]+'
+
 setup() {
-  load_report "docs/reviews/fact-check-report.md"
+  # A report still using the pre-spec '## Claim N' headings would otherwise count
+  # zero claims and skip every test; SKILL.md rejects any other heading scheme.
+  local report="${REPORT_PATH:-docs/reviews/fact-check-report.md}"
+  if [ -f "$report" ] && grep -qE '^## Claim [0-9]+' "$report"; then
+    echo "$report uses '## Claim N' headings; fact-check SKILL.md requires '## Verdict for C<N>:'"
+    return 1
+  fi
+  load_report "docs/reviews/fact-check-report.md" "$VERDICT_HEADING_RE"
+}
+
+# Claim IDs (numbers only) from the verdict headings, in document order.
+verdict_ids() {
+  echo "$REPORT_CONTENT" | grep -oE "$VERDICT_HEADING_RE" | grep -oE '[0-9]+$'
+}
+
+# Claim IDs (numbers only) listed in the "## Claims identified" section, in order.
+# Entries are "- **C<N>** ..." per the SKILL.md template.
+identified_ids() {
+  echo "$REPORT_CONTENT" | sed -n '/^## Claims identified/,/^## /p' \
+    | grep -oE '^- \*\*C[0-9]+\*\*' | grep -oE '[0-9]+'
 }
 
 # --- Header section ---
@@ -26,7 +49,7 @@ setup() {
 }
 
 @test "Total claims checked header matches counted claim sections" {
-  # The header field must agree with the actual number of ## Claim N sections.
+  # The header field must agree with the actual number of ## Verdict for C<N> sections.
   local header_count
   header_count=$(echo "$REPORT_CONTENT" | sed -n 's/^\*\*Total claims checked:\*\* *\([0-9][0-9]*\).*/\1/p' | head -1)
   [ -n "$header_count" ] || skip "Total claims checked header not numeric"
@@ -39,9 +62,14 @@ setup() {
 
 # --- Claim sections ---
 
-@test "claims are numbered sequentially starting at 1" {
-  first_claim=$(echo "$REPORT_CONTENT" | grep -m1 -oE '^## Claim [0-9]+' | grep -oE '[0-9]+')
-  [ "$first_claim" = "1" ]
+@test "verdict IDs are C1..CN with no gaps or duplicates" {
+  # SKILL.md: IDs are assigned in Pass 1 and a claim found in Pass 2 takes the next
+  # unused ID, so the ID set is 1..N. Layout follows draft order, so an appended ID
+  # may render out of numeric order — compare as a sorted set, not a sequence.
+  local got want
+  got=$(verdict_ids | sort -n | tr '\n' ' ')
+  want=$(seq 1 "$CLAIM_COUNT" | tr '\n' ' ')
+  [ "$got" = "$want" ]
 }
 
 @test "each claim section has a Verdict line" {
@@ -105,10 +133,22 @@ setup() {
   [ -z "$bad" ]
 }
 
-# --- Ordering ---
+# --- Claim ID integrity (SKILL.md "Self-check: claim ID integrity") ---
 
-@test "claims are ordered sequentially" {
-  assert_claims_sequential
+@test "Claims identified section precedes the first verdict" {
+  local listed first_verdict
+  listed=$(echo "$REPORT_CONTENT" | grep -nE '^## Claims identified' | head -1 | cut -d: -f1)
+  first_verdict=$(echo "$REPORT_CONTENT" | grep -nE "$VERDICT_HEADING_RE" | head -1 | cut -d: -f1)
+  [ -n "$listed" ]
+  [ "$listed" -lt "$first_verdict" ]
+}
+
+@test "every identified claim has exactly one verdict and vice versa" {
+  local listed verdicts
+  listed=$(identified_ids | sort -n | tr '\n' ' ')
+  verdicts=$(verdict_ids | sort -n | tr '\n' ' ')
+  [ -n "$listed" ]
+  [ "$listed" = "$verdicts" ]
 }
 
 # --- No critique leakage ---
