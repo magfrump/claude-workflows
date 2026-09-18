@@ -15,6 +15,8 @@ set -euo pipefail
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 # shellcheck source=lib/preflight.sh
 source "$SCRIPT_DIR/lib/preflight.sh"
+# shellcheck source=lib/skill-paths.sh
+source "$SCRIPT_DIR/lib/skill-paths.sh"
 require_command jq
 
 # Parse options
@@ -35,12 +37,17 @@ WORKFLOWS_DIR="${WORKFLOWS_DIR:-$(cd "$(dirname "$0")/.." && pwd)/workflows}"
 
 # --- Collect known skills and workflows ---
 
+# Skills live in two layouts: skills/<name>.md (flat / legacy) and
+# skills/<name>/SKILL.md (directory layout). extract_skill_name resolves both
+# and ignores other files under a skill directory.
 known_skills=()
 if [ -d "$SKILLS_DIR" ]; then
-  for f in "$SKILLS_DIR"/*.md; do
+  for f in "$SKILLS_DIR"/*.md "$SKILLS_DIR"/*/SKILL.md; do
     [ -f "$f" ] || continue
-    name="${f##*/}"
-    name="${name%.md}"
+    # Classify the path relative to SKILLS_DIR so the helper sees skills/…
+    # regardless of what the directory is actually called (e.g. a test tmpdir).
+    name=$(extract_skill_name "skills/${f#"$SKILLS_DIR"/}")
+    [ -n "$name" ] || continue
     known_skills+=("skill:$name")
   done
 fi
