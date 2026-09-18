@@ -8,6 +8,16 @@
 #
 # No arguments or options. Exits 0 if all checks pass, non-zero otherwise.
 #
+# Environment:
+#   HEALTH_CHECK_SKILLS_DIR  Directory scanned for skill files (checks 1, 3, 9).
+#                            Defaults to "$REPO_ROOT/skills". Test-only seam:
+#                            test/scripts/health-check.bats points it at a
+#                            copy under $BATS_TEST_TMPDIR so its broken-skill
+#                            fixtures are never written into the real skills/
+#                            (which every consuming project links and loads).
+#                            The directory's basename must be "skills" —
+#                            extract_skill_name keys on the /skills/ path part.
+#
 # Checks:
 #   1. Skill YAML frontmatter parses correctly (name + description present)
 #   2. Workflow cross-references in CLAUDE.md/AGENTS.md/GEMINI.md resolve
@@ -27,6 +37,7 @@
 set -euo pipefail
 
 REPO_ROOT="$(cd "$(dirname "$0")/.." && pwd)"
+SKILLS_DIR="${HEALTH_CHECK_SKILLS_DIR:-$REPO_ROOT/skills}"
 
 # The global instructions file lives under global-instructions/ rather than the
 # repo root: at the root, Claude Code loads it a second time as this project's
@@ -54,7 +65,7 @@ section() { echo; bold "── $* ──"; }
 # picks up; the flat form is legacy and not auto-registered. Glob both so
 # migrations don't silently drop skills from validation.
 discover_skill_files() {
-    local skills_dir="$REPO_ROOT/skills"
+    local skills_dir="$SKILLS_DIR"
     [[ -d "$skills_dir" ]] || return 0
     local f
     for f in "$skills_dir"/*.md; do

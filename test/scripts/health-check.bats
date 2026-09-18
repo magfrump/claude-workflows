@@ -89,29 +89,48 @@ setup() {
 }
 
 # ── Negative tests: broken skill files ──────────────────────────────────────
+#
+# Hermetic: each test copies the real skills/ into $BATS_TEST_TMPDIR/skills,
+# injects its broken fixture there, and points health-check.sh at the copy via
+# HEALTH_CHECK_SKILLS_DIR. Nothing is written under the real repo, so an
+# interrupted run cannot leave a fixture in skills/ (where every consuming
+# project would load it as a skill) and concurrent runs cannot race on it.
+# The copy is complete so the only difference from the real tree is the
+# fixture, and each assertion greps for the message naming that fixture, so
+# the failure is attributable to it alone.
 
-SKILLS_DIR="$(cd "$(dirname "$BATS_TEST_FILENAME")/../.." && pwd)/skills"
+REAL_SKILLS_DIR="$(cd "$(dirname "$BATS_TEST_FILENAME")/../.." && pwd)/skills"
+
+# Copy skills/ to an isolated tree and print its path. The basename must stay
+# "skills": skill names are derived from the /skills/ path component.
+_isolated_skills_dir() {
+  local dir="$BATS_TEST_TMPDIR/skills"
+  cp -R "$REAL_SKILLS_DIR" "$dir"
+  printf '%s' "$dir"
+}
 
 @test "detects skill file with no YAML frontmatter" {
-  local tmp_skill="$SKILLS_DIR/_test_no_frontmatter.md"
-  printf '# A skill file with no YAML frontmatter\n\nJust plain markdown.\n' > "$tmp_skill"
+  local skills_dir
+  skills_dir="$(_isolated_skills_dir)"
+  printf '# A skill file with no YAML frontmatter\n\nJust plain markdown.\n' \
+    > "$skills_dir/_test_no_frontmatter.md"
 
-  run bash "$SCRIPT"
-  rm -f "$tmp_skill"
+  HEALTH_CHECK_SKILLS_DIR="$skills_dir" run bash "$SCRIPT"
 
   echo "$output"
   [ "$status" -ne 0 ]
-  echo "$output" | grep -q "no YAML frontmatter found"
+  echo "$output" | grep -q "_test_no_frontmatter: no YAML frontmatter found"
 }
 
 @test "detects skill file with missing description field" {
-  local tmp_skill="$SKILLS_DIR/_test_missing_desc.md"
-  printf -- '---\nname: test-broken-skill\n---\n\nBody text.\n' > "$tmp_skill"
+  local skills_dir
+  skills_dir="$(_isolated_skills_dir)"
+  printf -- '---\nname: test-broken-skill\n---\n\nBody text.\n' \
+    > "$skills_dir/_test_missing_desc.md"
 
-  run bash "$SCRIPT"
-  rm -f "$tmp_skill"
+  HEALTH_CHECK_SKILLS_DIR="$skills_dir" run bash "$SCRIPT"
 
   echo "$output"
   [ "$status" -ne 0 ]
-  echo "$output" | grep -q "missing 'description' field"
+  echo "$output" | grep -q "_test_missing_desc: missing 'description' field"
 }
