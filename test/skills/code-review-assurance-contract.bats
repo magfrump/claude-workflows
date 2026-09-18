@@ -168,3 +168,26 @@ LABEL='absence of findings is not an attestation'
   run ! grep -qE "DOES NOT PASS.*$LABEL" "$SKILL" "$SKILL_DIR"/references/*.md
   run ! grep -qE "CONDITIONAL PASS.*$LABEL" "$SKILL" "$SKILL_DIR"/references/*.md
 }
+
+# ---------------------------------------------------------------
+# Who acts — open rows partitioned by route, not only by severity
+# (docs/working/triage-2026-09-17-backlog.md §3.1). Same enforcement
+# rationale as the header: prose that nothing checks does not execute.
+# ---------------------------------------------------------------
+
+@test "the chat synthesis partitions open rows by who acts" {
+  local s
+  s=$(echo "$SKILL_CONTENT" | sed -n '/^\*\*Who acts (required/,/^\*\*Recommended next action/p')
+  [ -n "$s" ] || fail "no 'Who acts' requirement in the chat-synthesis spec"
+  for route in 'you: judgment' 'you: terminal' 'agent'; do
+    echo "$s" | grep -qF "\`$route\`" || fail "route '$route' missing from the Who acts spec"
+  done
+}
+
+@test "Who acts routes ambiguity toward the user, never toward the agent" {
+  local s
+  s=$(echo "$SKILL_CONTENT" | sed -n '/^\*\*Who acts (required/,/^\*\*Recommended next action/p')
+  # Join lines: the rule's sentence wraps in the spec.
+  echo "$s" | tr '\n' ' ' | grep -qiE 'when unsure[^.]*`you: judgment`' \
+    || fail "the conservative-direction rule is missing: unsure must route to you: judgment"
+}

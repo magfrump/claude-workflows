@@ -68,6 +68,44 @@ Worked example:
 >   *(api-consistency-reviewer.)* The critic treated it as production and flagged a
 >   breaking change in `flags.ts:42`; mark this as 🟢 Consider if it's sandbox-only.
 
+**Who acts (required when the rubric has any 🔴 or 🟡 row):** Severity says how bad a
+finding is; it does not say who has to deal with it, and a reader who needs that answer has to
+read every row to get it. Close the synthesis with the open rubric rows partitioned by the
+resource that discharges them, using the same route names as the running-questions protocol
+in the global instructions:
+
+- **`you: judgment`** — the fix changes behaviour, a threat model, a contract or a design
+  boundary the user would hold an opinion about, *or* two findings' fixes pull in opposite
+  directions (a composed `X` row is the usual sign). List each by rubric ID with one line
+  naming the choice, not the defect.
+- **`you: terminal`** — needs the user's machine rather than their mind (a networked host,
+  host-side credentials, an observation the sandbox cannot make). Collect every such item into
+  **one** copy-pasteable block.
+- **`agent`** — mechanical: doc or comment corrections, stale pointers, missing tests for an
+  already-agreed contract, dedupe. Give the IDs on one line and a count; do not restate them.
+
+Route conservatively in one direction only: when unsure whether a fix is mechanical, it is
+`you: judgment`. Misrouting an agent item to the user costs one line of reading; misrouting a
+judgment item to an agent lets a behaviour change through unasked. This section is derived
+from the rubric and adds no rubric column; the rubric rows remain the record.
+
+> ### Who acts
+>
+> **you: judgment (3)** — R1 gate `install.sh` like its siblings or accept the exposure ·
+> X1 reject-or-skip unmatched lines in the FINDINGS block (decides A5 and A6 together) ·
+> A7 install the live-verify hook here or on the host
+>
+> **you: terminal (1)** — C2
+> ```bash
+> curl -s https://openrouter.ai/api/v1/models | jq -r '.data[].id' | grep claude-sonnet-5
+> ```
+>
+> **agent (14)** — A1–A4, A8–A14, C1, C3, C5
+
+Measured on the 2026-09-12 rubrics this partition held 5 of 20 and 4 of 26 open rows as
+`you: judgment` (`docs/working/triage-2026-09-17-backlog.md` explains the method). If a run puts
+most rows under `you: judgment`, say so — the partition is not buying anything on that diff.
+
 **Recommended next action (required final line):** End the chat synthesis with this exact line so the user always sees a concrete next step:
 
 > Recommended next action: [merge | fix red items then re-review | split PR | escalate to /pre-mortem | block on architectural review].
