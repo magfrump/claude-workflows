@@ -627,10 +627,10 @@ count_rubric_red() {
     local f=${1:-}
     [ -r "$f" ] || return 0
     awk '
-        /^##[[:space:]]*🔴/ { inred = 1; next }
+        /^##[[:space:]]*🔴/ { inred = 1; seen = 1; next }
         /^##[[:space:]]/    { inred = 0 }
         inred && /^\|[[:space:]]*R[0-9]+[[:space:]]*\|/ { n++ }
-        END { if (seen || n) print n + 0; else print n + 0 }
+        END { if (seen) print n + 0 }
     ' "$f"
 }
 

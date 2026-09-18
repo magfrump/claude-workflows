@@ -137,6 +137,16 @@ setup() {
   [ -z "$result" ]
 }
 
+@test "count_rubric_red emits nothing when the file has no Must Fix section" {
+  # A readable file that is not a rubric (or a rubric in a drifted format) is
+  # "no cross-check available", not "zero reds" — a 0 here makes the caller
+  # log a false rubric/sentinel disagreement whenever the sentinel is > 0.
+  f="$BATS_TEST_TMPDIR/nored.md"
+  printf '# Some other review\n## 🟡 Must Address\n| A1 | b |\n' > "$f"
+  result=$(count_rubric_red "$f")
+  [ -z "$result" ]
+}
+
 # The synthetic rubrics above are minimal by design, so they would keep passing
 # even if the real rubric format drifted away from what the parser expects.
 # This one runs the parser against the golden rubric that
