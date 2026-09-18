@@ -333,6 +333,11 @@ require_command jq
 CONVERGENCE_THRESHOLD=${CONVERGENCE_THRESHOLD:-80}  # percent overlap to trigger convergence
 HISTORY_FILE="$REPO_DIR/docs/working/problem-history.json"
 
+# Worktrees fork from main and approved branches merge into HEAD, so the run
+# only makes sense on a clean main. Checked before the first write below so a
+# refused run leaves nothing behind. See require_clean_main().
+(cd "$REPO_DIR" && require_clean_main) || exit 1
+
 mkdir -p "$WORKING_DIR"
 touch "$WORKING_DIR/completed-tasks.md"
 
@@ -1657,9 +1662,11 @@ SOLVED_EOF
 Run git status to see conflicted files.
 Resolve each conflict by preserving the intent of both sides.
 Then git add the resolved files and git commit to complete the merge."
-            # Verify the merge actually completed
-            # Check for unresolved conflicts (unmerged files)
-            if ! git diff --name-only --diff-filter=U | grep -q .; then
+            # Verify the merge actually completed: the branch must be reachable
+            # from HEAD. "No unmerged paths" alone also matches a merge git
+            # refused outright, and a resolution staged but never committed —
+            # see merge_landed().
+            if merge_landed "$BRANCH" && ! git diff --name-only --diff-filter=U | grep -q .; then
                 MERGE_STATUS="conflict_resolved"
             else
                 MERGE_STATUS="conflict_unresolved"

@@ -153,6 +153,37 @@ remove_worktree_and_branch() {
     git branch "$delete_mode" "$br" 2>/dev/null || true
 }
 
+# --- Merge safety ---
+# Refuse to start a run unless HEAD is `main` with no uncommitted changes to
+# tracked files. Task worktrees branch from `main` but approved branches merge
+# into whatever HEAD is, so a run started elsewhere lands its merges on the
+# wrong branch; and a dirty tree makes `git merge` refuse outright, which the
+# merge step used to misread as a resolved conflict (see merge_landed).
+# Untracked files are allowed — the loop itself writes untracked docs/working/
+# artifacts. Returns 0 when safe, 1 (with a reason on stderr) otherwise.
+require_clean_main() {
+    local head
+    head=$(git symbolic-ref --quiet --short HEAD 2>/dev/null || echo "")
+    if [ "$head" != "main" ]; then
+        echo "Error: run from main (HEAD is '${head:-detached}'); task branches fork from main and merge into HEAD." >&2
+        return 1
+    fi
+    if ! git diff --quiet || ! git diff --cached --quiet; then
+        echo "Error: uncommitted changes to tracked files; commit or stash them first (git merge refuses into a dirty tree)." >&2
+        return 1
+    fi
+}
+
+# True iff branch $1 is reachable from HEAD, i.e. its merge actually landed.
+# Checking for leftover unmerged paths is NOT equivalent: when git refuses a
+# merge (dirty tree, untracked file in the way) it exits non-zero, writes no
+# MERGE_HEAD, and leaves zero unmerged paths — which reads as "resolved" while
+# the branch never reached main. Same for a resolver that staged its fixes but
+# never committed. Args: $1 = branch name.
+merge_landed() {
+    git merge-base --is-ancestor "$1" HEAD 2>/dev/null
+}
+
 # --- Task JSON schema validation ---
 # Validates each task in a tasks JSON file against the expected schema.
 # Outputs a filtered JSON array (valid tasks only) to stdout.
