@@ -29,6 +29,12 @@ The index below is generated — edit entries, not the table.
 | [Q-024](#q-024--draft-review-market-sizing) | you: judgment | `business-plan-critique-market-sizing` says draft-review typically invokes it, but draft-review never selec... | 2026-09-18 |
 | [Q-025](#q-025--lite-review-install-path) | you: judgment | pr-prep and review-fix-loop tell agents to run `scripts/lite-review.py`, which does not exist in projects t... | 2026-09-18 |
 | [Q-026](#q-026--guard-project-claude-dir) | you: judgment | `hooks/guard-trusted-writes.py` treats any `.claude/settings*.json` or `.claude/hooks/**` as HARD and defer... | 2026-09-18 |
+| [Q-028](#q-028--onboarding-trigger-never-clears) | you: judgment | Decision-tree row 1 fires onboarding when a project has "no `docs/thoughts/`", but onboarding only writes `... | 2026-09-18 |
+| [Q-029](#q-029--perf-cold-path-severity) | you: judgment | performance-reviewer gives two defaults for an algorithmic (macro) problem on a cold path: the hot-path gat... | 2026-09-18 |
+| [Q-030](#q-030--arch-review-stale-security-input) | you: judgment | architecture-review reads "the most recent" `docs/reviews/security-review-*.md` for trust boundaries and ne... | 2026-09-18 |
+| [Q-031](#q-031--draft-review-unmapped-verdicts) | you: judgment | draft-review's rubric tier rules place Inaccurate, Mostly Accurate, Unverified and Accurate, but fact-check... | 2026-09-18 |
+| [Q-032](#q-032--self-eval-rubric-outside-repo) | you: judgment | self-eval requires `docs/evaluation-rubric.md`, which exists only in this repo; `link-claude-home.sh` doesn... | 2026-09-18 |
+| [Q-033](#q-033--claude-api-flat-file) | you: judgment | `skills/claude-api.md` is a flat file, so the harness never loads it as a skill (skills load from `skills/<... | 2026-09-18 |
 | [Q-011](#q-011--mathlib-cache-host) | you: terminal | What is the current mathlib olean cache hostname? (`lake exe cache get` is minutes vs hours per repo.) | 2026-09-12 |
 <!-- index:end -->
 
@@ -112,4 +118,86 @@ pr-prep and review-fix-loop tell agents to run `scripts/lite-review.py`, which d
 | **[3] Accept, like row 53** | Record as accepted risk | none | A tainted session can widen its own allow list |
 
 - **Interim:** unchanged.
+
+### Q-028 · onboarding-trigger-never-clears
+**Needs:** you: judgment · **Opened:** 2026-09-18 · **Status:** OPEN
+
+Decision-tree row 1 fires onboarding when a project has "no `docs/thoughts/`", but onboarding only writes `docs/working/onboarding-{project}.md` and never creates `docs/thoughts/`. So row 1 fires again every session in an onboarded project. Which side changes?
+
+- **Read:** `global-instructions/CLAUDE.md:19` (row 1), `workflows/codebase-onboarding.md:18` ("Not a trigger: from-scratch projects") and step 12 (orientation doc)
+
+| Option | What it means | Cost to you | If it's wrong |
+|---|---|---|---|
+| **[1] Key row 1 on the orientation doc** | Trigger is "no `docs/working/onboarding-*.md`" | none | Projects onboarded by hand (no doc) get re-onboarded once |
+| **[2] Onboarding creates `docs/thoughts/`** | Step 12 also seeds a thoughts file | One more file per onboarded project | Empty thoughts dirs that nobody updates |
+
+- **Interim:** unchanged. The row keeps over-firing; in practice agents skip it when the repo is already familiar.
+
+### Q-029 · perf-cold-path-severity
+**Needs:** you: judgment · **Opened:** 2026-09-18 · **Status:** OPEN
+
+performance-reviewer gives two defaults for an algorithmic (macro) problem on a cold path: the hot-path gate says "Low or Informational"; the calibration matrix says "Medium". Under code-review's mapping, Medium is 🟡 Must Address and Low is 🟢 Consider, so the same finding either blocks or doesn't. Which wins?
+
+- **Read:** `skills/performance-reviewer/SKILL.md:46` (gate) vs `:280` (Macro × Cold row), `skills/code-review/references/rubric.md:270-271`
+
+| Option | What it means | Cost to you | If it's wrong |
+|---|---|---|---|
+| **[1] Macro × Cold → Low** | Matrix follows the gate; cold-path N+1s become Consider | none | A cold path that runs at scale (a nightly batch) slips through as optional |
+| **[2] Keep Medium; narrow the gate** | Gate only blocks escalation to Critical/High; micro issues stay Low | More Must-Address rows on startup/migration code | Review noise on code that runs once |
+
+- **Interim:** unchanged; agents get whichever paragraph they weigh more.
+
+### Q-030 · arch-review-stale-security-input
+**Needs:** you: judgment · **Opened:** 2026-09-18 · **Status:** OPEN
+
+architecture-review reads "the most recent" `docs/reviews/security-review-*.md` for trust boundaries and never checks its `Commit:` line, so a security review of an older diff or another branch is treated as authoritative. Gate it?
+
+- **Read:** `skills/architecture-review/SKILL.md:191-209`, `skills/security-reviewer/SKILL.md:554` (writes `Commit: <hash>`). `docs/reviews/` here holds 10+ security reviews from different branches.
+
+| Option | What it means | Cost to you | If it's wrong |
+|---|---|---|---|
+| **[1] Require a matching commit** | Use the file only if its `Commit:` is HEAD or the review base; otherwise skip the step | none | Standalone arch reviews lose the trust-boundary input more often |
+| **[2] Use it, label its commit** | Any recent file is used; the finding cites the commit it came from | You judge staleness when reading findings | A stale boundary still shapes the finding |
+
+- **Interim:** unchanged.
+
+### Q-031 · draft-review-unmapped-verdicts
+**Needs:** you: judgment · **Opened:** 2026-09-18 · **Status:** OPEN
+
+draft-review's rubric tier rules place Inaccurate, Mostly Accurate, Unverified and Accurate, but fact-check also emits `Disputed` and `Secondary-only`, which have no tier. Where do they go?
+
+- **Read:** `skills/draft-review/SKILL.md:460-480` (tier rules), `skills/fact-check/SKILL.md:163,172` (verdict definitions)
+
+| Option | What it means | Cost to you | If it's wrong |
+|---|---|---|---|
+| **[1] Both → 🟡 Amber** | Disputed and Secondary-only need justification, like Unverified | none | A secondary-only claim that is actually wrong isn't flagged red |
+| **[2] Disputed 🟡, Secondary-only 🔴** | Only-secondary sourcing must be fixed before publishing | More red rows on essays citing news coverage | Red becomes noisy and you start ignoring it |
+
+- **Interim:** unchanged; the orchestrating agent picks a tier ad hoc.
+
+### Q-032 · self-eval-rubric-outside-repo
+**Needs:** you: judgment · **Opened:** 2026-09-18 · **Status:** OPEN
+
+self-eval requires `docs/evaluation-rubric.md`, which exists only in this repo; `link-claude-home.sh` doesn't install `docs/`, and `guides/cross-project-setup.md` calls self-eval "standalone". In another project it has no rubric. Ship it or scope it?
+
+- **Read:** `skills/self-eval/SKILL.md:50`, `devcontainer-config/link-claude-home.sh:47`
+
+| Option | What it means | Cost to you | If it's wrong |
+|---|---|---|---|
+| **[1] Ship the rubric with the skill** | Move it to `skills/self-eval/references/` | One copy must stay canonical (the SI loop reads `docs/`) | Two copies drift if both are kept |
+| **[2] Declare self-eval repo-only** | Skill stops with a clear message when the rubric is missing; the guide stops calling it standalone | none | You lose self-eval in other projects |
+
+- **Interim:** unchanged.
+
+### Q-033 · claude-api-flat-file
+**Needs:** you: judgment · **Opened:** 2026-09-18 · **Status:** OPEN
+
+`skills/claude-api.md` is a flat file, so the harness never loads it as a skill (skills load from `skills/<name>/SKILL.md`), and its body is four lines with none of the reference material its description promises. Archive or build?
+
+| Option | What it means | Cost to you | If it's wrong |
+|---|---|---|---|
+| **[1] Archive it** | Move to `archive/` per the archive-don't-delete rule | none | You wanted the supplement and it's gone from view |
+| **[2] Make it a real skill** | `skills/claude-api/SKILL.md` with real content | Content to write and keep current against the bundled skill | It shadows or conflicts with the bundled `claude-api` skill |
+
+- **Interim:** unchanged; it is inert.
 
