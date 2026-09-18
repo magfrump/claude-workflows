@@ -588,4 +588,4 @@ With the chosen framing record in hand, run standard process steps 1-4. The fram
 
 ### Worked example
 
-See [`docs/working/feature-ideas-round-1.md`](../docs/working/feature-ideas-round-1.md) for a worked Diamond 1: nine candidate framings of "what's missing from the workflow repo," a diagnosis matrix of each framing's success criterion and implied solution space, and the chosen framing record that fed into Diamond 2's candidate generation in [`docs/working/feature-ideas.md`](../docs/working/feature-ideas.md).
+No worked example ships with this repo. The Diamond 1 record this section used to cite (`docs/working/feature-ideas-round-1.md`) is a gitignored per-round output of `scripts/self-improvement.sh` and was never committed; use the "Output: chosen framing record" template above as the reference shape.

@@ -321,7 +321,7 @@ When you deviate, say so and explain your reasoning.
 
 Every verdict carries an explicit **provenance tag** describing how the evidence behind it was
 obtained. This vocabulary is shared with the [Epistemic Reasoning variant of the divergent-design
-workflow](../workflows/divergent-design.md#variant-epistemic-reasoning-hypothesis-generation) so a
+workflow](../../workflows/divergent-design.md#variant-epistemic-reasoning-hypothesis-generation) so a
 fact-check report and a DD evidence matrix can be read against each other without translation.
 
 - **[observed]** — Directly verified against a concrete artifact: file path with line number,
