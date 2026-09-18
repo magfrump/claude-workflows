@@ -21,6 +21,18 @@
 #
 #   # Testing with custom permissions
 #   echo '{"tool_input":{"command":"ls | grep foo"}}' | auto-approve-allowed-commands.sh --permissions '["Bash(ls:*)", "Bash(grep:*)"]'
+#
+# ACCEPTED RISK (2026-09-18, decision log row 53): approval is prefix-matching
+# over the commands the extraction filter finds, and the filter does not descend
+# into every construct bash can execute. Reproduced bypasses — each gets
+# "allow" when only the outer command is allow-listed:
+#   echo $((1 + $(cmd)))     arithmetic expansion is not searched for $(...)
+#   cat <<EOF / $(cmd) / EOF heredoc bodies are not searched
+#   PATH=/x ls, LD_PRELOAD=  assignment prefixes are dropped before matching
+#   ls > ~/.bashrc           redirect targets are not checked
+# Closing these one at a time does not converge, so they are accepted: this
+# hook is a convenience layer, and permissions.deny plus the sandbox are the
+# boundary. Parse FAILURES do fail closed (see main).
 
 set -euo pipefail
 
