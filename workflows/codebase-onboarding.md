@@ -138,7 +138,7 @@ between-stage banner spec in
 
 **Scope:** Emit this banner *only* between step 2 and step 3. Do **not** emit
 equivalent banners after later steps — the orientation doc produced in step
-7 is itself the user-facing synthesis output, and a "step N complete" banner
+12 is itself the user-facing synthesis output, and a "step N complete" banner
 would duplicate or compete with it (mirrors code-review's "no banner after
 Stage 3" rule).
 
@@ -484,16 +484,16 @@ See also "When to pivot" above for RPI and DD handoff guidance.
 
 These are concrete triggers that indicate the onboarding doc needs a refresh. Check for them before relying on an existing doc, especially at the start of a new session.
 
-1. **Major dependency upgrade.** A framework or runtime version bump (e.g., React 18→19, Python 3.11→3.12, Rails major version) can change conventions, entry points, and key abstractions. Check `git log --oneline --all -- '*lock*' 'package.json' 'requirements*.txt' '*.gemspec' 'go.mod'` for dependency changes since `Last verified`.
+1. **Major dependency upgrade.** A framework or runtime version bump (e.g., React 18→19, Python 3.11→3.12, Rails major version) can change conventions, entry points, and key abstractions. Check `git log --oneline --all --since="<Last verified>" -- '*lock*' 'package.json' 'requirements*.txt' '*.gemspec' 'go.mod'` for dependency changes since `Last verified`.
 2. **New subsystem added.** A new top-level directory, service, or module that didn't exist when the doc was written means the Architecture Map is incomplete. Check `git log --oneline --diff-filter=A --since="<Last verified date>" -- <Relevant paths>` for newly added files in structural locations.
-3. **High churn since last update.** If >30% of files under tracked `Relevant paths` have been modified since `Last verified`, the doc likely has stale descriptions. Check with `git diff --stat <last-verified-commit>..HEAD -- <Relevant paths>` and compare against total file count.
+3. **High churn since last update.** If >30% of files under tracked `Relevant paths` have been modified since `Last verified`, the doc likely has stale descriptions. Check with `git diff --stat <last-verified-commit>..HEAD -- <Relevant paths>` and compare against total file count. The doc stores a date, not a commit — derive the commit with `git rev-list -1 --before="<Last verified>" HEAD` (the last commit before that date).
 4. **Doc age with active development.** If `Last verified` is >30 days old and the repo has had active commits in that period, refresh even if no single trigger above fires — accumulated small changes can silently invalidate the mental model.
 
 When a signal fires, decide whether a **full re-run** or a **lightweight refresh** is appropriate (see below). Update `Last verified` to today's date after either type of refresh, and note which signal triggered it in the commit message (e.g., `docs: refresh onboarding — new subsystem added`).
 
 ### Lightweight refresh
 
-When staleness signals fire but changes are **incremental** — no new subsystems, no major dependency upgrades, no architectural shifts — a targeted refresh is proportionate. A full 8-step re-run is overkill when the existing orientation doc is fundamentally sound and just needs updating in the areas that changed.
+When staleness signals fire but changes are **incremental** — no new subsystems, no major dependency upgrades, no architectural shifts — a targeted refresh is proportionate. A full 13-step re-run is overkill when the existing orientation doc is fundamentally sound and just needs updating in the areas that changed.
 
 **When to use lightweight refresh (all must be true):**
 - Staleness signal #3 (high churn) or #4 (doc age) fired, but NOT #1 (major dependency upgrade) or #2 (new subsystem)
