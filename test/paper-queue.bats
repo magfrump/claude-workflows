@@ -123,7 +123,7 @@ pq() {
     pq add "$(printf 'id\twith\ttab')"
     [[ "$output" == *"already queued"* ]]
 
-    pq done "$(printf 'id\twith\ttab')"
+    pq "done" "$(printf 'id\twith\ttab')"
     [ "$status" -eq 0 ]
     [[ "$output" == *"fulfilled:"* ]]
     run grep -ac $'\tfulfilled\t' "$PAPER_QUEUE"
@@ -135,7 +135,7 @@ pq() {
 @test "list shows only open rows" {
     pq add 10.1111/open-one "first"
     pq add 10.2222/soon-done "second"
-    pq done 10.2222/soon-done
+    pq "done" 10.2222/soon-done
 
     pq list
     [ "$status" -eq 0 ]
@@ -153,7 +153,7 @@ pq() {
 
 @test "list says so when nothing is open" {
     pq add 10.1234/abc
-    pq done 10.1234/abc
+    pq "done" 10.1234/abc
     pq list
     [ "$status" -eq 0 ]
     [[ "$output" == *"no open requests"* ]]
@@ -163,7 +163,7 @@ pq() {
 
 @test "done flips the status to fulfilled" {
     pq add 10.1234/abc "note"
-    pq done 10.1234/abc
+    pq "done" 10.1234/abc
     [ "$status" -eq 0 ]
     [[ "$output" == *"fulfilled: 10.1234/abc"* ]]
 
@@ -176,7 +176,7 @@ pq() {
 @test "done preserves the other rows and the header" {
     pq add 10.1111/one
     pq add 10.2222/two
-    pq done 10.1111/one
+    pq "done" 10.1111/one
 
     run wc -l < "$PAPER_QUEUE"
     [ "$output" -eq 3 ]
@@ -188,7 +188,7 @@ pq() {
 
 @test "done on an unknown identifier is a no-op with a message" {
     pq add 10.1111/one
-    pq done 10.9999/never-queued
+    pq "done" 10.9999/never-queued
     [ "$status" -eq 0 ]
     [[ "$output" == *"not queued: 10.9999/never-queued"* ]]
 
@@ -197,14 +197,14 @@ pq() {
 }
 
 @test "done on a missing queue file is a no-op with a message" {
-    pq done 10.1234/abc
+    pq "done" 10.1234/abc
     [ "$status" -eq 0 ]
     [[ "$output" == *"not queued:"* ]]
     [ ! -f "$PAPER_QUEUE" ]
 }
 
 @test "done rejects a call with no identifier" {
-    pq done
+    pq "done"
     [ "$status" -eq 1 ]
     [[ "$output" == *"needs an identifier"* ]]
 }
@@ -215,7 +215,7 @@ pq() {
     pq add 10.1111/one
     pq add 10.2222/two
     pq add 10.3333/three
-    pq done 10.2222/two
+    pq "done" 10.2222/two
 
     pq status
     [ "$status" -eq 0 ]
@@ -225,7 +225,7 @@ pq() {
 
 @test "status reports zero counts on an empty queue" {
     pq add 10.1111/one
-    pq done 10.1111/one
+    pq "done" 10.1111/one
     pq status
     [[ "$output" == *"open: 0"* ]]
     [[ "$output" == *"fulfilled: 1"* ]]
@@ -263,7 +263,7 @@ pq() {
 @test "status does not report a file for an already fulfilled request" {
     pq add 10.1234/abc
     touch "$PAPERS/10.1234-abc.pdf"
-    pq done 10.1234/abc
+    pq "done" 10.1234/abc
 
     pq status
     [[ "$output" == *"fulfilled: 1"* ]]
