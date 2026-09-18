@@ -107,6 +107,20 @@ def parse_findings(text):
             continue
         if not in_block:
             continue
+        # Every well-formed row carries four pipes, so a line without one cannot
+        # match — and must not be handed to the regex. FINDING_RE backtracks
+        # catastrophically on a numbered line followed by a long whitespace run
+        # (`\s*` and `[^|:]+?` overlap on spaces): measured 0.32 s at 1 kB,
+        # 2.3 s at 2 kB, ~7.3x per doubling, so prose of a few kB is a hang
+        # rather than a slow parse (review finding A6, 2026-09-12).
+        #
+        # Q-022 chose this over rejecting the whole block. A clean lite review
+        # only ever means "proceed to the full review", so a model refusal that
+        # parses as 0 rows costs nothing downstream; a new parse-failure
+        # condition would cost the review-fix loop the tokens lite review exists
+        # to save.
+        if "|" not in line:
+            continue
         m = FINDING_RE.match(line)
         if m:
             rows.append({

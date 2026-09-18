@@ -139,3 +139,47 @@ FINDINGS:
   [ "$status" -eq 0 ]
   [[ "${lines[1]}" == *'"lines": "12,15,20"'* ]]
 }
+
+# --- Time bound (added 2026-09-17, Q-022 / finding A6) ---------------------
+# FINDING_RE's `\s*` and `[^|:]+?` overlap on spaces, so a numbered line
+# followed by a long whitespace run backtracks exponentially: 0.32 s at 1 kB,
+# 2.3 s at 2 kB, ~7.3x per doubling, i.e. a hang rather than a slow parse at
+# the size a chatty model reaches. parse_findings skips any line without a
+# pipe, which is what keeps that input away from the regex. Q-022 chose the
+# skip over rejecting the block, so the pin here is a TIME bound — the output
+# shape for prose inside the block is unchanged and still pinned by the
+# "only malformed rows" test above.
+
+parse_timed() {
+  timeout 20 python3 - "$REPO_ROOT/scripts/lite-review.py" "$1" <<'PY'
+import importlib.util, json, sys
+spec = importlib.util.spec_from_file_location("lite_review", sys.argv[1])
+mod = importlib.util.module_from_spec(spec)
+spec.loader.exec_module(mod)
+rows, ok = mod.parse_findings(sys.argv[2])
+print(ok)
+print(json.dumps(rows))
+PY
+}
+
+@test "a numbered line with a long whitespace run parses promptly, not exponentially" {
+  local ws
+  ws="$(printf '%8000s' '')"
+  run parse_timed "FINDINGS:
+1. $ws"
+  [ "$status" -eq 0 ]          # 124 would be the timeout, i.e. the hang
+  [ "${lines[0]}" = "True" ]
+  [ "${lines[1]}" = "[]" ]
+}
+
+@test "skipping pipe-less lines does not change which rows survive" {
+  run parse 'FINDINGS:
+This is a sentence of prose with no delimiter at all.
+1. a.py:1 | High | security | T | D
+2. b.py — no pipes here either
+3. c.py:2 | Low | docs | T2 | D2'
+  [ "$status" -eq 0 ]
+  [[ "${lines[1]}" == *'"title": "T"'* ]]
+  [[ "${lines[1]}" == *'"title": "T2"'* ]]
+  [[ "${lines[1]}" != *'prose'* ]]
+}
