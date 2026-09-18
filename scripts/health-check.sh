@@ -593,13 +593,16 @@ check_skill_fixture_coverage() {
         local skill_name
         skill_name="$(skill_name_from_path "$skill")"
 
+        # No per-skill lines: missing fixtures is a standing property of the
+        # repo, not an event, so printing one warning per skill buried the
+        # other checks (24 of 29 warnings; see
+        # docs/working/triage-2026-09-17-backlog.md §1.1). The summary below
+        # carries the same facts in two lines.
         local fixture_dir="$REPO_ROOT/test/skills/$skill_name/fixtures"
         if [[ -d "$fixture_dir" ]] && ls "$fixture_dir"/* &>/dev/null 2>&1; then
             covered=$((covered + 1))
-            pass "$skill_name: has test fixtures"
         else
             uncovered_skills+=("$skill_name")
-            warn "$skill_name: no test fixtures found"
         fi
     done < <(discover_skill_files)
 
