@@ -68,7 +68,8 @@ git log --oneline --since="2026-03-23" -- workflows/ skills/
 | Shared thoughts | Yes | Living docs that accumulate assumptions |
 | Review artifacts | Yes | Long-lived; stale reviews mislead future sessions |
 | Decision records | No | Superseded by new decisions, not verified |
-| RPI working docs | No | Disposable per-task; overwritten, not maintained |
+| RPI research docs | Yes | `## Files read` opens with `Last verified:`; re-read across session boundaries (see `workflows/research-plan-implement.md`) |
+| Other RPI working docs (plan, checkpoint, handoff) | No | Disposable per-task; derived from the research doc and regenerated, not maintained |
 
 ## When to check freshness
 
