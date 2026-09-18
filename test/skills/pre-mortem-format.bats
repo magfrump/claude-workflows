@@ -2,8 +2,9 @@
 # @category fast
 # Validates the output format of pre-mortem reports.
 #
-# Note: No example report is committed — tests will skip via load_generic_report
-# if REPORT_PATH (or the default path) does not exist.
+# Default target: docs/reviews/pre-mortem.md (committed 2026-08-18, after the
+# spec's last output-format change on 2026-07-21). Tests skip via
+# load_generic_report if REPORT_PATH (or the default path) does not exist.
 #
 # Usage: Set REPORT_PATH to a generated report, then run:
 #   REPORT_PATH=docs/reviews/pre-mortem.md bats test/skills/pre-mortem-format.bats
@@ -65,11 +66,19 @@ setup() {
   echo "$REPORT_CONTENT" | grep -qiE '\*\*(Mitigation|Revisit trigger):\*\*'
 }
 
+# The vocabulary word must LEAD the value; a trailing annotation is allowed.
+# SKILL.md ("Calibrate severity and plausibility honestly") defines the labels
+# with glosses — "Likely (>50%)", "High (significant cost, slow recovery)" — while
+# its output template shows the bare word, so both forms are spec. The committed
+# reports written after the spec (2026-08-18) use "Likely (>50%) — <rationale>";
+# the annotation rule is the same one assert_field_values applies repo-wide
+# (helpers.bash). Anything else — an off-vocabulary word such as bare "Unlikely",
+# or text before the word — still fails.
 @test "Plausibility values use only the allowed vocabulary" {
   local values bad
   values=$(echo "$REPORT_CONTENT" | sed -n 's/^[*-]* *\*\*Plausibility:\*\* //p')
   [ -n "$values" ] || skip "no Plausibility values found"
-  bad=$(echo "$values" | grep -viE '^(Likely|Plausible|Unlikely-but-catastrophic)$' || true)
+  bad=$(echo "$values" | grep -viE '^(Likely|Plausible|Unlikely-but-catastrophic)([ ,(*].*)?$' || true)
   [ -z "$bad" ]
 }
 
@@ -77,7 +86,7 @@ setup() {
   local values bad
   values=$(echo "$REPORT_CONTENT" | sed -n 's/^[*-]* *\*\*Severity:\*\* //p')
   [ -n "$values" ] || skip "no Severity values found"
-  bad=$(echo "$values" | grep -viE '^(Low|Medium|High|Catastrophic)$' || true)
+  bad=$(echo "$values" | grep -viE '^(Low|Medium|High|Catastrophic)([ ,(*].*)?$' || true)
   [ -z "$bad" ]
 }
 
