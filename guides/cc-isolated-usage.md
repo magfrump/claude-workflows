@@ -1,7 +1,7 @@
 # cc-isolated — usage guide
 
-Last verified: 2026-09-09
-Relevant paths: `devcontainer-config/cc-isolated.sh`, `devcontainer-config/egress/`, `devcontainer-config/Dockerfile`, `test/cc-isolated-functions.bats`, `hooks/live-verify-gate.sh`
+Last verified: 2026-09-17
+Relevant paths: `devcontainer-config/cc-isolated.sh`, `devcontainer-config/egress/`, `devcontainer-config/Dockerfile`, `test/cc-isolated-functions.bats`, `hooks/live-verify-gate.sh`, `scripts/paper-queue.sh`, `test/paper-queue.bats`
 
 `cc-isolated` launches an isolated Claude Code session inside a devcontainer for
 **any** git repo on this host, from one central host-side config (decision 016).
@@ -399,7 +399,33 @@ Failure modes worth recognizing on sight:
   `europepmc.org`. Check `/run/cc-sni-proxy/proxy.log`.
 - **A metadata query works and every full-text link 000s out.** Expected: the links
   point at publisher hosts. Filter results to the OA hosts above, or fetch the arXiv
-  or PMC version of the same paper.
+  or PMC version of the same paper. When neither exists, queue the paper rather than
+  dropping it — see below.
+
+**The escape hatch is a queue, not a wider allowlist.** A session that wants a paper
+it cannot fetch records the request instead of losing it:
+
+```bash
+~/.claude/scripts/paper-queue.sh add 10.1016/j.neuron.2024.01.007 "cited by the review, no preprint"
+~/.claude/scripts/paper-queue.sh add https://www.sciencedirect.com/science/article/pii/S0896627324000012
+~/.claude/scripts/paper-queue.sh list     # what is still outstanding
+~/.claude/scripts/paper-queue.sh status   # counts, plus any request whose PDF has arrived
+```
+
+The queue is a five-column TSV at `papers/requests.tsv` in the project (override with
+`$PAPER_QUEUE`), created on the first `add` and idempotent on the identifier, so a
+loop that rediscovers the same DOI does not pile up duplicates. On the **host**, the
+human works the list: fetch each PDF however they normally would — browser session,
+institutional proxy, interlibrary loan — drop it into the project's `papers/`
+directory named after the identifier's slug (`10.1016-j.neuron.2024.01.007.pdf`), and
+run `~/.claude/scripts/paper-queue.sh done <identifier>`. `status` notices a dropped-in file on
+its own by matching that slug, so a forgotten `done` shows up as a nudge rather than
+as a lost paper. Next session, `pdftotext` reads it like any other local PDF.
+
+This is deliberately a workaround and not a fix: the boundary is **not** widened for
+it. One human retrieval step covers the whole tail at once — institutional proxies,
+CAPTCHA interstitials, paywalls that are inconsistent per article — where each new
+allowlist entry would buy exactly one publisher and leave a permanent hole behind.
 
 ## The boundary self-probe
 
