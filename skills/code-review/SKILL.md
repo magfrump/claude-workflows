@@ -19,7 +19,7 @@ when: User requests a full code review or PR review
 
 ## Dependencies
 
-Orchestrates the sub-skills below. Ensure they exist in `skills/` before use.
+Orchestrates the sub-skills below. Each entry `<name>.md` refers to the skill at `skills/<name>/SKILL.md`; ensure they exist before use.
 
 **Required (always run):**
 - `code-fact-check.md` — verifies factual claims in code comments, docs, and commit messages,
@@ -145,7 +145,7 @@ If the diff touches files that appear in a prior `docs/reviews/*.md` report from
 
 ### Step 3.5: Scan the override log for prior decisions matching the current diff
 
-Read `docs/reviews/override-log.md` in full **before** rendering any findings. (Create the file if it does not yet exist using the skeleton in `docs/reviews/override-log.md` — the first override row landing in this run is itself capture, not just consumption.) For each row in the log's entry table, decide whether it applies to the current diff by checking, in order:
+Read `docs/reviews/override-log.md` in full **before** rendering any findings. (Create the file if it does not yet exist using the format in [`references/override-log.md` § Capture format](references/override-log.md#capture-format) — the first override row landing in this run is itself capture, not just consumption.) For each row in the log's entry table, decide whether it applies to the current diff by checking, in order:
 
 1. **Location match.** The `Finding` cell records a `path/to/file:line` location. If the file is in the current diff and the line is within ±20 lines of a changed hunk, the entry is a candidate.
 2. **Category match.** If no location match, but the finding's category (security/auth, performance, API consistency, lint-style Nit, etc.) overlaps a critic that is about to run AND a file in the same subsystem is touched, the entry is a candidate.
@@ -159,7 +159,7 @@ This step is **read-only with respect to the log** during the run. New overrides
 
 ### Step 4: Known critic roles
 
-The orchestrator uses a fixed taxonomy of skills. Do not scan `skills/*.md` at runtime — use the lists below. (If a listed file doesn't exist, skip it and note the gap in your plan summary. If the user references a skill not listed here, they can include it via `--include`.)
+The orchestrator uses a fixed taxonomy of skills. Do not scan `skills/*.md` at runtime — use the lists below. Each entry `<name>.md` refers to the skill at `skills/<name>/SKILL.md`. (If a listed skill's `SKILL.md` doesn't exist, skip it and note the gap in your plan summary. If the user references a skill not listed here, they can include it via `--include`.)
 
 **Orchestrators (skip — not reviewers):**
 - `code-review.md` — that's you
@@ -685,7 +685,7 @@ and write the rubric with only the confirmed red(s); mark the skipped critics in
 
 After the Fact-Check Gate (and only if the user did NOT pass `--all-critics`), narrow the core-critic set down before launching Stage 2. This stage applies two gating signals, ordered by when their input becomes available:
 
-- **First gate — diff-shape.** Already partially applied: Step 4 used the diff to select
+- **First gate — diff-shape.** Already partially applied: Step 5 used the diff to select
   contextual critics pre-Stage-1. Now extend the same diff-shape logic to the core
   critics via the skip table below — `git diff --stat` and spot-checked diff content are
   the inputs.
@@ -696,7 +696,7 @@ After the Fact-Check Gate (and only if the user did NOT pass `--all-critics`), n
 
 The default is **run all core critics** — skipping is conservative. The cost of running an extra critic is small; the cost of a missed finding is large. If you are uncertain whether a signal applies, do not skip.
 
-**Boring version:** consult fact-check to optionally *downgrade* critics. Do not re-derive the critic set from scratch — the set entering Stage 1.5 is whatever survived Step 4 selection + user overrides, and Stage 1.5 only narrows it further. Stage 1.5 never *promotes* a critic.
+**Boring version:** consult fact-check to optionally *downgrade* critics. Do not re-derive the critic set from scratch — the set entering Stage 1.5 is whatever survived Step 5 selection + user overrides, and Stage 1.5 only narrows it further. Stage 1.5 never *promotes* a critic.
 
 This section runs silently — emit no status banner. The Stage 1 banner already fired before the Fact-Check Gate, and the Stage 2 banner fires after critics return.
 
@@ -812,7 +812,7 @@ For each critic agent, you MUST:
 5. Include the fact-check results. If the fact-check report is longer than 200 lines, include
    only the findings rated Incorrect, Stale, or Mostly Accurate — skip Verified claims to
    save context budget.
-6. Instruct the agent to save its critique as `docs/reviews/{critic-name}-review.md`
+6. Instruct the agent to save its critique as `docs/reviews/{critic-name}-review-{date}.md`
 7. Require the agent to tag every finding with a **Legibility-target** field
    (`for-author`, `for-orchestrator-synthesis`, or `for-automated-gate`) per
    the [legibility-target tagging](../../patterns/orchestrated-review.md#legibility-target-tagging)
@@ -904,7 +904,7 @@ Current task: Run security design review on the diff between the current branch 
   - Branch: feat/auth-token-storage
   - Position in initiative: Step 2 of 4 in the auth-compliance epic; sibling branch feat/session-cleanup waiting on this review.
   - Blocked on: nothing
-Success criterion: A markdown report saved to docs/reviews/security-review.md, structured per the security-reviewer skill.
+Success criterion: A markdown report saved to docs/reviews/security-review-<date>.md, structured per the security-reviewer skill.
 ```
 
 If any of those facts isn't on hand, omit the corresponding sub-bullet rather than guessing — the fields exist to anchor the critic in real project context, not to be filled for completeness. Do not add other content to the preamble; everything else (scope spec, PR intent, fact-check excerpt, output path, tagging requirements) goes in the role-specific content below it.
@@ -1162,14 +1162,14 @@ docs/reviews/
 ├── code-fact-check-report-r2.md   (replicate)
 ├── code-fact-check-report-r3.md   (replicate)
 ├── code-fact-check-submitted-claims.md  (Stage 2.5 — if critics routed endorsement claims)
-├── security-review.md
-├── performance-review.md
-├── api-consistency-review.md
-├── architecture-review.md         (if triggered)
-├── test-strategy-review.md        (if triggered)
-├── tech-debt-triage-review.md     (if triggered)
-├── dependency-upgrade-review.md   (if triggered)
-├── ui-visual-review.md            (if triggered)
+├── security-review-<date>.md
+├── performance-review-<date>.md
+├── api-consistency-review-<date>.md
+├── architecture-review-<date>.md         (if triggered)
+├── test-strategy-review-<date>.md        (if triggered)
+├── tech-debt-triage-review-<date>.md     (if triggered)
+├── dependency-upgrade-review-<date>.md   (if triggered)
+├── ui-visual-review-<date>.md            (if triggered)
 ├── override-log.md                (append-only across runs — see "Capturing new overrides")
 ```
 
