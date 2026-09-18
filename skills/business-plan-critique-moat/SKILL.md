@@ -237,7 +237,8 @@ roadmap.
 ### Network Effect Assessment
 If network effects are claimed, classify as strong or weak forms. Address cold-start, density
 requirements, and replicability by an incumbent with distribution. If no network effect is
-claimed, skip this section — don't manufacture one.
+claimed, keep this heading, set `**Verdict:** Not Claimed`, and say so in one line — don't
+manufacture one.
 
 ### Competitive Response Assessment
 Pick 2-3 best-positioned competitors. Write the 1-paragraph version of their response strategy.

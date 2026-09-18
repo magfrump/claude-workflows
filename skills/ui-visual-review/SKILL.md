@@ -103,7 +103,7 @@ If the user points to a specific problem (e.g., "the sidebar disappears on small
 
 Two modes. The mode determines which checklist items to run.
 
-**Mechanical review (default)** — Runs checklist items 1–5 and 8 only. Objective layout bug checks with clear right/wrong answers. Default when triggered by the code-review orchestrator or reviewing a specific diff. No web search unless genuinely uncertain about a CSS property. Fast and low-noise.
+**Mechanical review (default)** — Runs checklist items 1–5 and 8, plus the content-triggered items 9–11 when their content is present (see each item's trigger); skips items 6–7. Objective layout bug checks with clear right/wrong answers. Default when triggered by the code-review orchestrator or reviewing a specific diff. No web search unless genuinely uncertain about a CSS property. Fast and low-noise.
 
 **Full audit** — Runs all checklist items, including affordance review (item 6) and responsive/cross-browser checks (item 7). Use when the user explicitly asks for a "UI audit", "review the UI", "check accessibility", or "audit the CSS". Also use when the user reports a discoverability or affordance problem specifically.
 
