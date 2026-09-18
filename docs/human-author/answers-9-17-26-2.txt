@@ -1,0 +1,49 @@
+Q-009:
+Option 2 seems good and easy
+
+Q-022:
+Lite review attestation means ~nothing, as the action on clean review is to proceed to a full review. If the lite review mechanism is broken, proceeding to a full review is still an appropriate next step.
+[1] creates a new condition that review-fix-loop needs to handle, but the only purpose of lite review is to save tokens in a review-fix-loop.
+
+Q-011:
+$ docker exec -u node 874acdea76c9336ce1a5cd7a77b8f7ad9c12ce5353c5df07a8095215bbeb2ca1 rg -o 'https://[^"]*' verifier/lean-project/.lake/packages/mathlib/Cache/Requests.lean
+https://
+https://github.com/leanprover-community/mathlib4.git`.
+
+I don't think this actually answers the question you want it to, though. Guess as to actually helpful text:
+```
+/--
+Compute the trust-ordered list of container base URLs to try when downloading
+files for a given GitHub repo.
+
+Precedence (most specific wins):
+1. `MATHLIB_CACHE_GET_URL` env var: a single anonymous URL that bypasses the
+   container logic entirely.
+2. `--cache-from` CLI override (via `cacheFromOverride`).
+3. `MATHLIB_CACHE_FROM` env var (same comma-separated shape as `--cache-from`):
+   how CI widens the lookup chain to match its write target without touching
+   each `cache get` call. The (repo, branch) → chain mapping lives in CI config,
+   not here.
+4. `defaultContainersForRepo repo`: the repo-level fallback when nothing
+   overrides it.
+-/
+```
+
+Q-012:
+IIUC this requires some action in a container with lean egress, but I don't see what action
+
+Q-014:
+replace-only is fine, if egress is constantly changing we have other problems
+
+Q-016:
+Fine to use a workaround that accumulates papers for human retrieval, since that fully covers proxies, CAPTCHA, inconsistent paywalls, etc.
+
+Q-019:
+ran the delete; du still returned 231M
+Also the /workspace directory is part of the container, not relevant for me running commands usually
+
+Q-020:
+This example is a big improvement, I'm happy with the pattern so far and would like it in the global instructions.
+
+Q-021:
+Archive is usually preferred over delete.

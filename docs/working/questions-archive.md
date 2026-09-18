@@ -17,11 +17,17 @@ full. IDs are stable forever: `Q-014` means the same thing here as it did there.
 | [Q-006](#q-006--openrouter-sonnet5-judge-pin) | Confirm `anthropic/claude-sonnet-5` resolves on OpenRouter before the next cross-model run. **Answered 2026... | 2026-09-12 |
 | [Q-007](#q-007--cross-model-judge-unpriced-abort) | Should an unpriced/unknown `--judge` id **abort** `cross-model-review.py` pre-flight, the way an unpriced `... | 2026-09-12 |
 | [Q-008](#q-008--findings-grammar-ownership) | Make `lite-review.py` the definition of the FINDINGS grammar rather than a copy of it, before `cross-model-... | 2026-09-12 |
+| [Q-009](#q-009--live-verify-gate-not-installed) | The installed-ness pin is a new test in `test/hooks/live-verify-gate.bats` that reads | 2026-09-12 |
 | [Q-010](#q-010--elan-release-host) | Which host does elan actually fetch toolchains from — `release.lean-lang.org` or `releases.lean-lang.org`? | 2026-09-12 |
 | [Q-013](#q-013--elan-version-to-ship) | Is `ELAN_VERSION=v3.1.1` the version to ship? **ANSWERED 2026-09-15: no — `v4.2.4`, taken from the GitHub... | 2026-09-12 |
+| [Q-014](#q-014--profile-replace-only) | Should `--profile` stay replace-only, or grow `--add-profile`/`--remove-profile`? | 2026-09-15 |
 | [Q-015](#q-015--scholar-hostnames) | Confirm the three `scholar` hostnames that no search summary covered — `pmc.ncbi.nlm.nih.gov`, `api.biorx... | 2026-09-17 |
+| [Q-016](#q-016--scholar-oa-escape-hatch) | Does `scholar` need a companion escape hatch for publisher-hosted OA PDFs? | 2026-09-17 |
 | [Q-017](#q-017--rpi-doc-zero-reads) | `workflows/research-plan-implement.md` — the documented default — was opened **0 times in 49 days** (27... | 2026-09-17 |
 | [Q-018](#q-018--failure-patterns-backfill) | `docs/thoughts/failure-patterns.md`: backfill from the 104 eligible `fix(...)` commits, or delete the file? | 2026-09-17 |
+| [Q-020](#q-020--asks-unit-weighting) | Is `asks` (triage §3.3) the right unit, or does it undercount one hard judgment against several easy ones? | 2026-09-17 |
+| [Q-021](#q-021--drop-delete-or-archive) | Should DROP items be deleted or archived? | 2026-09-17 |
+| [Q-022](#q-022--lite-review-findings-invariant) | ~nothing.** Read as: A5 is not a defect worth a fix — a clean lite review's only | 2026-09-17 |
 <!-- index:end -->
 
 ## Answered
@@ -198,3 +204,163 @@ success without having established it*. The most-repeated concrete shape is a
 bare `! grep` or unanchored pattern in a bats test, now fixed three times in
 three different files (FP-060, FP-156, FP-168). The read-side (RPI research greps this file by symptom keyword) is the
 half that has never been exercised, and it cannot be until entries exist.
+### Q-009 · live-verify-gate-not-installed
+**Needs:** you: judgment · **Opened:** 2026-09-12 · **Status:** ANSWERED
+
+**Answered 2026-09-17: [2] — "option 2 seems good and easy". Both halves shipped.**
+The installed-ness pin is a new test in `test/hooks/live-verify-gate.bats` that reads
+the live `${CLAUDE_CONFIG_DIR:-$HOME/.claude}/settings.json`, resolves the expected
+command out of `hooks/wiring.json` the same way `scripts/health-check.sh`'s
+`check_hook_wiring` does, and asserts it by exact name — so a silent uninstall turns
+the suite red instead of leaving a warning nobody reads. It ran (did not skip) in this
+container, which is a second, independent confirmation that the gate is installed.
+The narrowing is `comment_only_diff()` in `hooks/live-verify-gate.sh`: the gate now
+exits 0 when every added and removed line across the touched enforcement files is
+blank or a comment (`#` or `//`). Per your caveat the rule is **"no change to any
+non-comment line"**, never "no change to hostnames" — commenting out a live allowlist
+entry removes a non-comment line and is still gated — and a rename, mode change, file
+addition or deletion, a binary diff, or an empty/failed diff all fall through to the
+gate rather than through the shortcut. Seven narrowing cases were added alongside;
+suite is 19/19 green, `shellcheck` clean, `test/link-claude-home-wiring.bats` 13/13
+still green. Original entry:
+
+Review finding A7 said `live-verify-gate.sh` is declared but not installed — **it is now demonstrably installed**, so what remains is whether to keep it and whether to test that it stays installed.
+
+- **New evidence 2026-09-17, unplanned:** the gate blocked a commit of mine in this session. It fired as a `PreToolUse:Bash` hook error from the installed copy of `live-verify-gate.sh`, on a commit touching `devcontainer-config/egress/`, demanded a `Live-verified:` trailer, and refused the commit until it got one. **That is stronger evidence than reading the settings file** — the finding's claim ("every `devcontainer-config/` change is currently committable with no live-verification question asked") is false as of today. A7 is stale on its central fact.
+- **Why it's still yours:** two things the evidence does not settle. (a) The gate is correct but coarse — it blocked a **comment-only** diff that added and removed no hostname, so the admitted set was byte-identical and no probe was possible or useful. (b) The finding's *other* half stands: eleven bats tests exercise the script and **nothing tests that it is installed**, so it can silently fall out again exactly as it apparently fell in.
+- **Read:** `docs/reviews/code-review-rubric-2026-09-12-main-questions-closeout.md` (finding A7, row 28) · `hooks/wiring.json:62-72` · `hooks/live-verify-gate.sh` · `docs/decisions/035-install-sh-gating.md` · this session's blocked commit, now `e96912d`, and its trailer
+
+| Option | What it means | Cost to you | If it's wrong |
+|---|---|---|---|
+| **[1] Add the installed-ness test, leave behaviour alone** | A test asserts the live settings carry the `wiring.json:62-72` entry, so a silent uninstall fails the suite | None — I can write it if you say go | Nothing; this is the cheap half and closes the half of A7 that is still true |
+| **[2] [1] plus narrow the trigger** | Skip the gate when a `devcontainer-config/` diff changes only comments | One review of the narrowing rule | A comment that *is* load-bearing (an allowlist entry commented out) would slip — so the rule must be "no change to any non-comment line", not "no change to hostnames" |
+| **[3] Leave entirely as-is** | Gate installed, untested, coarse | None | It falls out again and nothing notices — the original A7 state, re-entered silently |
+
+- **Blocks:** R1's fix. Decision 035 chose option [3], the commit-time regex, and named A7 a prerequisite — which is now satisfied in fact, if not in test.
+- **Interim:** [3]. The gate works today; nothing is burning.
+- **If the answer differs:** [1] is a small test against the live settings file, which is deny-listed to me for *writing* — confirm whether a test may *read* it, or the assertion has to run host-side.
+- **Note:** re-scoped 2026-09-17 from "install it" to "keep and test it" after the gate fired. The original three options are in `git log -p` for `e96912d`.
+
+
+### Q-022 · lite-review-findings-invariant
+**Needs:** you: judgment · **Opened:** 2026-09-17 · **Status:** ANSWERED
+
+**Answered 2026-09-17: [2], on your reasoning that a lite-review attestation means
+~nothing.** Read as: A5 is not a defect worth a fix — a clean lite review's only
+consequence is "proceed to the full review", which is also the right next step when
+the lite review is broken, so a refusal parsing as 0 rows costs nothing downstream.
+[1] was rejected for the reason you gave: it adds a failure condition the review-fix
+loop must handle, and that loop is the only thing lite review exists to make cheaper.
+That leaves A6, which is a real hang regardless of who supplies the input, and [2]
+closes it: `parse_findings` now skips any line inside the block that contains no `|`
+(`scripts/lite-review.py:109-123`). Measured before the fix, a numbered line followed
+by a whitespace run took 0.32 s at 1 kB and 2.3 s at 2 kB, ~7.3x per doubling — the
+original A6 number reproduces. Two tests added to `test/lite-review-grammar.bats`: a
+20-second time bound on an 8 kB whitespace run (which would have taken minutes), and
+a pin that skipping pipe-less lines changes no row that used to survive. Suite 13/13
+green; tests 6 and 7 keep their current meaning, which [1] would have required
+re-pinning. X1's "no invariant" stands as a known, accepted gap. Original entry:
+
+Review findings A5 + A6 + X1 — `parse_findings` has no invariant that a line inside the FINDINGS block is either a well-formed row or the `NONE` sentinel. Add one, or patch the two symptoms separately?
+
+- **Why it's yours:** the two obvious one-liners pull in opposite directions, so this cannot be fixed one finding at a time. Which way it resolves is a call about how much a clean review is allowed to mean.
+- **Read:** `docs/reviews/code-review-rubric-2026-09-12-main-questions-closeout.md` (rows 26, 27, 36 — A5, A6, X1) · `scripts/lite-review.py:86-108,196` · `test/lite-review-grammar.bats:94-95`
+- **The two symptoms, one root:** A5 — a model refusal (`"I cannot emit FINDINGS for this diff."`) parses as `parse_ok=True`, 0 rows, so `main()` prints `FINDINGS: NONE`, exit 0, and the review-fix loop reads it as a clean pass. A6 — `FINDING_RE` backtracks catastrophically on a solid whitespace run inside the block: 16,000 chars took **877 s** measured, ~7.9× per doubling, a hang rather than a slow parse. X1 — both exist because unmatched lines are silently skipped.
+
+| Option | What it means | Consequence |
+|---|---|---|
+| **[1] Reject the block** *(closes all three)* | A line inside FINDINGS that matches neither a row nor the sentinel makes the parse fail | A refusal stops reading as clean; prose never reaches the regex, so A6's input is gone too. Strictest, and the only one X1 endorses. |
+| **[2] Performance's one-liner** | `if "\|" not in line: continue` | Fixes A6 by skipping non-row lines *more* silently — which makes A5 worse. |
+| **[3] Security's one-liner** | Reject unparseable lines | Fixes A5; leaves the regex reachable by anything containing a pipe. |
+| **[4] Leave it** | Tests 6/7 currently pin the present behaviour as normative | The hang is unreachable on this cold, single-call, self-fed path today — which is why it is Medium and not High. |
+
+- **Interim:** [4]. The path no attacker supplies and no caller feeds cold input to, so nothing is burning.
+- **If the answer differs:** [1] needs tests 6/7 in `test/lite-review-grammar.bats` re-pinned, since they currently assert the behaviour it removes.
+- **Note:** this was bundled with A7 in a single entry until 2026-09-17; splitting it is why it now has its own ID.
+
+
+### Q-014 · profile-replace-only
+**Needs:** trigger · **Opened:** 2026-09-15 · **Status:** ANSWERED
+
+Should `--profile` stay replace-only, or grow `--add-profile`/`--remove-profile`?
+**Answered 2026-09-17: replace-only stands — "if egress is constantly changing we
+have other problems".** No code change; the interim below is now the decision. The
+loud transition print stays, since it is what makes a dropped profile visible at the
+moment it happens.
+
+- **Context:** `register_project` overwrites the stored grant, so re-registering a project to add `lean` silently dropped the `dotnet` it already had; found while trying to get the `lean` profile into a live container
+- **Interim:** kept replace (a grant you can only widen is not a grant) and made it loud instead — the transition and any dropped profile are printed, `--list` already showed the current grant, and the line-10 comment no longer says "widen"
+- **If the answer differs:** if you find yourself re-typing the full list often, add the two additive flags rather than changing what `--profile` means.
+
+
+### Q-016 · scholar-oa-escape-hatch
+**Needs:** trigger · **Opened:** 2026-09-17 · **Status:** ANSWERED
+
+Does `scholar` need a companion escape hatch for publisher-hosted OA PDFs?
+**Answered 2026-09-17: yes, shape (b) — "fine to use a workaround that accumulates
+papers for human retrieval, since that fully covers proxies, CAPTCHA, inconsistent
+paywalls, etc."** Built as `scripts/paper-queue.sh` (`add` · `list` · `done` ·
+`status`), which is reachable in any wired container as
+`~/.claude/scripts/paper-queue.sh` because `link-claude-home.sh` links `scripts/`.
+A session that hits a rejected host records the identifier and keeps going; the
+queue is a five-column TSV at `papers/requests.tsv` (override `$PAPER_QUEUE`),
+idempotent on the identifier so a loop that rediscovers the same DOI does not pile
+up duplicates; `status` detects a PDF the human has dropped into `papers/` by
+matching the identifier's slug, so a forgotten `done` surfaces as a nudge rather
+than as a lost paper. 26 tests in `test/paper-queue.bats`, green; `shellcheck`
+clean; hermeticity gates green. Shape (a) — a `scholar-extra` profile — was **not**
+built and the boundary is unchanged: your reasoning is exactly why, since one human
+retrieval step covers the whole tail at once where each allowlist entry buys one
+publisher and leaves a permanent hole. `guides/cc-isolated-usage.md`'s scholar
+section now documents the queue in place of the dead end.
+
+- **Context:** the profile's honest limit is that Unpaywall/Crossref routinely return full-text URLs on hosts the SNI proxy rejects (publisher domains, institutional repositories, S3 buckets), so a literature-review session gets metadata for everything and bytes for the arXiv/PMC/bioRxiv subset only
+- **Interim:** no escape hatch — documented as a failure mode in `guides/cc-isolated-usage.md` rather than widened, since the alternative is a per-paper, per-publisher allowlist churn that nobody will maintain
+- **If the answer differs:** if this bites in practice, the shapes are (a) a narrow `scholar-extra` profile listing the two or three publishers you actually read, or (b) fetching those PDFs on the host and dropping them into the workspace, which needs no boundary change at all.
+
+
+### Q-020 · asks-unit-weighting
+**Needs:** you: judgment · **Opened:** 2026-09-17 · **Status:** ANSWERED
+
+Is `asks` (triage §3.3) the right unit, or does it undercount one hard judgment against several easy ones?
+**Answered 2026-09-17: the unit stands, and the presentation is promoted.** You
+answered the larger question rather than the unit one — "this example is a big
+improvement, I'm happy with the pattern so far and would like it in the global
+instructions" — so `asks` keeps counting items (no S/M/L weighting, which would be a
+judgment to assign and therefore itself an ask), and the decision-card format that
+makes the count mean something is now in `global-instructions/CLAUDE.md`: the four-column options
+table (**Option · What it means · Cost to you · If it's wrong**) is stated as the
+format rather than a suggestion, with the `you: terminal` one-paste variant, the
+one-line answering protocol, and a new rule that an entry whose options split along
+two independent axes is two entries (which is what made Q-009 and Q-022 answerable at
+all). Re-open the unit question only if a cycle's alarm fires on five trivial items,
+or stays silent through one crushing one.
+
+- **Context:** today's 5 asks range from a one-bit call to a four-part review decision
+- **Interim:** counting items, not weight, because assigning weight is itself a judgment and therefore itself an ask
+- **If the answer differs:** entries carry a coarse S/M/L and the alarm threshold becomes a sum.
+
+
+### Q-021 · drop-delete-or-archive
+**Needs:** you: judgment · **Opened:** 2026-09-17 · **Status:** ANSWERED
+
+Should DROP items be deleted or archived?
+**Answered 2026-09-17: archive — "archive is usually preferred over delete".**
+The route is rewritten in `docs/working/triage-2026-09-17-backlog.md` §3.1: it is
+named ARCHIVE, its destination is `archive/docs/YYYY-MM-DD-<name>.md` in the tracked top-level
+`archive/` tree — **not** `docs/working/archive/`, which is gitignored and would
+have made this answer a delete in disguise, and §3.2's recoverability bullet
+now says the artifact stays in the tree rather than only in history. As the card
+predicted, the route stops being free: it costs one move commit per item instead of
+one line of your reading, which is the price of the asymmetry (a needless archive
+costs a `git mv`; a needless delete costs whoever next wants the schema an
+archaeology dig). Applied to L2, the first item it governs: the incident journal is
+now `archive/docs/2026-09-17-incident-journal.md`, dropped from
+`archive-working-docs.sh`'s PERMANENT list, and `guides/skill-recovery.md` step 4
+tells its next writer to copy the archived file back rather than treating the
+mechanism as gone.
+
+- **Context:** `docs/working/incident-journal.md` is dormant-because-unfed rather than wrong — deleting it loses a schema someone designed
+- **Interim:** propose deletion, do not delete
+- **If the answer differs:** if archive, DROP needs a destination and the route stops being free.
+
