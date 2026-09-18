@@ -4,7 +4,7 @@ How to write a skill from scratch and register it. For copying existing skills i
 
 ## 1. Frontmatter
 
-Every skill file lives in `skills/` and starts with YAML frontmatter:
+Every skill is a directory `skills/<name>/` whose entry point is `skills/<name>/SKILL.md` (supporting files such as `references/` or `personas.md` sit alongside it). `SKILL.md` starts with YAML frontmatter:
 
 ```yaml
 ---
@@ -57,7 +57,12 @@ Create `test/skills/{skill-name}/` with:
 - `eval-criteria.md` — describes what good output looks like for this skill.
 - `fixtures/tc-{N}.{variant}.{ext}` — test inputs exercising different cases (e.g., `tc-1.1-clean.py`, `tc-2.1-vulnerable.py`).
 
-Run the skill against each fixture and compare output to eval criteria. This is manual today — there is no automated test harness.
+Two automated layers exist under `test/skills/`:
+
+- **Format contracts** — `{skill-name}-format.bats` suites validate the structure of a generated report (set `REPORT_PATH` and run `bats test/skills/{skill-name}-format.bats`). Add one for any skill with a fixed output format.
+- **Report generation** — `test/skills/generate-reports.bash <skill> [fixture-prefix]` runs `claude -p` against each fixture and writes `test/skills/<skill>/output/*.report.md`; the `*-eval.bats` suites then score those reports against `expected-verdicts.bash` (today wired for `fact-check` and `code-fact-check`).
+
+Judging output against `eval-criteria.md` beyond what those suites assert is still manual.
 
 ## When to create a workflow vs. a skill
 
@@ -65,7 +70,7 @@ Run the skill against each fixture and compare output to eval criteria. This is 
 
 **Workflows** (`workflows/*.md`) are multi-step processes orchestrated by the human or by Claude following explicit decision gates. They use `value-justification` frontmatter, have "When to use" / "When to pivot" sections, and compose horizontally — RPI invokes DD as a sub-procedure, spike results feed back into RPI, etc. The human decides when to enter a workflow and often when to proceed past checkpoints.
 
-**Skills** (`skills/*.md`) are single-pass, agent-invocable tools. They use `name` / `description` / `when` frontmatter, activate based on code context (diff touches auth → `security-reviewer`) or explicit request, and produce a self-contained output (a review, a critique, a fact-check report). Skills compose hierarchically — `code-review` dispatches `security-reviewer`, `performance-reviewer`, and others in parallel.
+**Skills** (`skills/<name>/SKILL.md`) are single-pass, agent-invocable tools. They use `name` / `description` / `when` frontmatter, activate based on code context (diff touches auth → `security-reviewer`) or explicit request, and produce a self-contained output (a review, a critique, a fact-check report). Skills compose hierarchically — `code-review` dispatches `security-reviewer`, `performance-reviewer`, and others in parallel.
 
 In short: workflows describe *how to work*; skills describe *what to analyze*.
 
@@ -133,6 +138,13 @@ The table below captures the current state of all workflows and skills, noting w
 | `cowen-critique` | **Strong** | Single-pass persona critique. |
 | `yglesias-critique` | **Strong** | Single-pass persona critique. |
 | `ai-personas-critique` | **Strong** | Multi-persona critique, single artifact. |
+| `business-plan-critique-moat` | **Strong** | Single-pass lens critique of business-plan-shaped drafts. |
+| `business-plan-critique-unit-economics` | **Strong** | Same pattern as `business-plan-critique-moat`. |
+| `business-plan-critique-market-sizing` | **Strong** | Same pattern as `business-plan-critique-moat`. |
+| `pre-mortem` | **Strong** | Single-pass retrospective failure narratives. |
+| `design-space-situating` | **Strong** | Single-pass situating record for a decision. |
+| `arithmetic-eval` | **Strong** | Utility tool — runs calculations in python3 rather than producing a review. |
+| `divergent-design` | **Adequate** | Thin router into `workflows/divergent-design.md`; the process lives in the workflow. |
 
 ### Evaluating this section's usefulness
 

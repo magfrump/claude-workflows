@@ -12,9 +12,9 @@ Copy the **Workflow & Skill Activation** section from this repo's global instruc
 
 ## B) Individual skills with dependencies
 
-Each skill in `skills/` is a self-contained prompt file. To adopt one:
+Each skill in `skills/` is a self-contained directory (`skills/<name>/SKILL.md` plus any supporting files such as `references/` or `personas.md`). To adopt one:
 
-1. Copy the skill `.md` file into your target project's `skills/` directory.
+1. Copy (or symlink) the whole skill directory `skills/<name>/` into your target project's `skills/` directory — copying only `SKILL.md` drops its `references/` and other supporting files.
 2. Check the skill for cross-references — some skills invoke others (e.g., `code-review` may call `code-fact-check`, `security-reviewer`, `ui-visual-review`). Copy those too.
 3. Add a routing entry to your `CLAUDE.md` skill table so it activates on the right triggers.
 4. If the skill writes output to `docs/reviews/`, create that directory.
