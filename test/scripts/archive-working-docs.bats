@@ -78,6 +78,33 @@ teardown() {
   [ ! -f docs/working/archive/pfx-questions-archive.md ]
 }
 
+@test "graduated working docs are permanent" {
+  echo "dd" > "$TEST_DIR/docs/working/dd-cc-isolated-loopback-redirect.md"
+  echo "tri" > "$TEST_DIR/docs/working/triage-2026-09-17-backlog.md"
+
+  cd "$TEST_DIR"
+  run bash "$SCRIPT" "pfx"
+  [ "$status" -eq 0 ]
+  [ -f docs/working/dd-cc-isolated-loopback-redirect.md ]
+  [ -f docs/working/triage-2026-09-17-backlog.md ]
+}
+
+@test "warns before archiving a file a tracked doc still cites" {
+  # 1c9d1af archived docs that guides and CLAUDE.md still cited; archive/ is
+  # gitignored, so those references dangled in every fresh clone.
+  cd "$TEST_DIR"
+  export GIT_CONFIG_GLOBAL=/dev/null GIT_CONFIG_NOSYSTEM=1
+  git init -q
+  echo "see docs/working/plan-foo.md" > README.md
+  git add README.md
+
+  run bash "$SCRIPT" --dry-run "pfx"
+  [ "$status" -eq 0 ]
+  [[ "$output" == *"warn  plan-foo.md is still cited by: README.md"* ]]
+  # An uncited file gets no warning.
+  [[ "$output" != *"warn  summary-bar.md"* ]]
+}
+
 @test "dry-run shows planned moves but does not move files" {
   cd "$TEST_DIR"
   run bash "$SCRIPT" --dry-run "dry-pfx"

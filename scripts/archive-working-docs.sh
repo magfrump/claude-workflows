@@ -7,7 +7,9 @@
 # with an optional prefix (defaults to date, e.g. "2026-03-25"). Permanent
 # files (hypothesis-log.md, hypothesis-backlog.md, tasks.json, feature-ideas.md, test-strategy-fact-check-skills.md,
 # completed-tasks.md, problem-history.json, round-history.json, questions.md,
-# questions-archive.md) are left in place — they accumulate across runs.
+# questions-archive.md, and the "graduated" docs listed in PERMANENT) are left
+# in place — they accumulate across runs or are cited by live files. Any other
+# file still cited by a tracked file gets a warning before it is moved.
 # completed-tasks.md, problem-history.json and round-history.json are
 # cross-run memory for scripts/self-improvement.sh: it reads completed-tasks.md when generating
 # ideas (so archiving it makes the next run re-propose finished work),
@@ -60,7 +62,31 @@ PERMANENT=(
   # prunes answered entries, so neither file needs this script's help.
   questions.md
   questions-archive.md
+  # Graduated working docs. A docs/working/ file graduates here once a live
+  # instruction, skill, guide, script, config, test, or decision record depends
+  # on it — archive/ is gitignored, so archiving it would dangle that reference
+  # in every fresh clone. Citations from docs/reviews/ or retired archive/ code
+  # do not count. Added 2026-09-18 after 1c9d1af archived all of these while
+  # they were still cited; the loop below warns before this can recur.
+  dd-cc-isolated-loopback-redirect.md     # guides/devcontainer-setup.md §6 probes, firewall/proxy config
+  triage-2026-09-17-backlog.md            # global CLAUDE.md, questions.sh, health-check.sh
+  fn-trace-skill-levers-2026-08-21.md     # code-review, code-fact-check, security-reviewer skills
+  dd-synthesis-fragment-composition.md    # skills/code-review/SKILL.md
+  measure-fragment-composition-cost.md    # skills/code-review/SKILL.md
+  dd-cc-isolated-repo-split.md            # decision 036
+  dd-install-sh-gating.md                 # decision 035
+  diagnosis-cc-isolated-login-dns.md      # decision log
+  crb-direction1-setup.md                 # decision log
+  review-canon.md                         # decision log
 )
+
+# Tracked files outside docs/working/ and archive/ that cite docs/working/$1,
+# comma-joined (first three). Empty outside a git checkout.
+cited_by() {
+  git rev-parse --is-inside-work-tree >/dev/null 2>&1 || return 0
+  git grep -l -F "docs/working/$1" -- . ':!docs/working/**' ':!archive/**' 2>/dev/null \
+    | head -3 | paste -sd, - || true
+}
 
 is_permanent() {
   local name="$1"
@@ -88,6 +114,10 @@ for f in "$WORKING_DIR"/*; do
   fi
 
   dest="$ARCHIVE_DIR/${PREFIX}-${name}"
+  cites="$(cited_by "$name")"
+  if [ -n "$cites" ]; then
+    echo "  warn  $name is still cited by: $cites — add it to PERMANENT if it has graduated" >&2
+  fi
   if $DRY_RUN; then
     echo "  move  $name -> archive/${PREFIX}-${name}"
   else
