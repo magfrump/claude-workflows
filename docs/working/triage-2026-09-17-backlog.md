@@ -86,7 +86,7 @@ single most likely way an automated router does damage.
 | # | Signal | Route |
 |---|---|---|
 | L1 | `docs/thoughts/failure-patterns.md` — **0 entries** against **104** `fix(...)` commits on `main` since the file was created (2026-05-18), despite `workflows/pr-prep.md` Step 0 saying "do not skip this step" | **USER-JUDGMENT (one bit):** backfill or delete |
-| L2 | `docs/working/incident-journal.md` — **0 entries** against its own "≥3 entries within 3 rounds" criterion | **DROP.** Its input is Tier-3 skill recovery during loop rounds; with the loop dormant it has had no possible input. Delete or mark dormant. |
+| L2 | `docs/working/incident-journal.md` — **0 entries** against its own "≥3 entries within 3 rounds" criterion | **ARCHIVE** (routed DROP in this pass; see §3.1's 2026-09-17 amendment). Its input is Tier-3 skill recovery during loop rounds; with the loop dormant it has had no possible input — unfed, not wrong, so it moves to `archive/docs/` rather than being deleted. |
 | L3 | `docs/working/hypothesis-backlog.md` — H-01 and H-07 `TRACKING`, last checked **2026-05-12** (128 days) | **AGENT: expire them.** Both rest on `usage.jsonl` telemetry, and H-05's own retirement rationale in the same file already establishes that this telemetry cannot answer value questions. The conclusion is written down; nobody applied it to its siblings. |
 | L4 | 14 directories / **231 MB** under `.claude/worktrees/`, 12 registered in `git worktree list` | **AGENT**, after a merged-state check |
 
@@ -242,9 +242,27 @@ Four routes:
   "questions" when they are three `curl -sI` and one `rg`.
 - **AGENT** — mechanical, no judgment. Never shown as an ask; shown afterwards
   as a count of what was done, with a diff.
-- **DROP** — no consumer, or an unmet trigger. Shown **once**, as a proposal to
-  delete, then gone. A trigger is not a question and must not sit in a question
-  queue.
+- **ARCHIVE** (named DROP in the first pass) — no consumer, or an unmet
+  trigger. Shown **once**, as a proposal, then gone from the live surface. A
+  trigger is not a question and must not sit in a question queue.
+
+  **Amendment 2026-09-17 (Q-021): the disposal is a move, not a delete.**
+  Archive is the default; deletion needs its own reason. What the route
+  proposes is therefore a path under the tracked top-level `archive/` tree —
+  `archive/docs/YYYY-MM-DD-<name>.md` for a document — and the proposal line
+  names that path. **Not** `docs/working/archive/`, which is gitignored: that
+  directory is scratch for self-improvement-run output, so moving something
+  there is a delete wearing an archive's clothes, which is precisely the
+  disposal this answer rejects. The reasoning: a dormant-because-unfed
+  artifact (L2's incident journal is the case that raised this) is not wrong,
+  it is unfed, and deleting it discards a schema someone designed along with
+  the evidence of what it was for. The cost of being wrong is asymmetric —
+  a needless archive costs one `git mv`, a needless delete costs a `git log`
+  archaeology dig by whoever next wants the schema.
+
+  This makes the route **not quite free**: it now costs one move commit per
+  item rather than one line of the user's reading. That is the price accepted
+  for the asymmetry, and it is still the cheapest of the five routes.
 
 ### 3.2 What makes a route trustworthy enough to act on without re-deriving it
 
@@ -256,7 +274,9 @@ misroutes being asymmetric and cheap**:
   the user would hold an opinion about routes to USER-JUDGMENT**, regardless of
   how mechanical it looks.
 - AGENT → USER-JUDGMENT wastes one line of their reading. Acceptable.
-- DROP → anything is recoverable: the deletion is a commit.
+- ARCHIVE → anything is recoverable: the move is a commit, and since Q-021
+  the artifact is still in the tree at its archived path rather than only in
+  history.
 - §1.3's rule is the hard constraint: **never close an item by inference when the
   item's own closure criterion names an observation.** That is the failure mode
   that produces a wrong allowlist entry rather than a wasted minute.
@@ -368,14 +388,19 @@ Done this session: HC3, HC4 (§2.1). Remaining, in order:
 
 ## 6. Open questions this raised
 
-- [ ] 2026-09-17 Is `asks` (§3.3) the right unit, or does it undercount a *hard*
-      judgment call against several easy ones? · context: today's 2 asks are one
-      four-part review decision and one strategic decision — very different
-      sizes · interim: counting items, not weight, because weight needs a
-      judgment to assign and that is itself an ask · answer changes: if weight
-      matters, entries carry a coarse S/M/L and the alarm threshold becomes a sum.
-- [ ] 2026-09-17 Should DROP items be deleted or archived? · context: L2
-      (incident journal) is dormant-because-unfed, not wrong — deleting it loses
-      a schema someone designed · interim: propose deletion, do not delete,
-      pending §2's user pass · answer changes: if archive, DROP needs a
-      destination and the route stops being free.
+- [x] 2026-09-17 Is `asks` (§3.3) the right unit, or does it undercount a *hard*
+      judgment call against several easy ones? · **Answered 2026-09-17 (Q-020):
+      the unit stands — count items, not weight.** What the answer actually
+      settled is larger than the unit: the decision-card presentation these
+      entries now carry ("this example is a big improvement... would like it in
+      the global instructions") is promoted into the global instruction set, so
+      the per-item format is fixed and the count over it means the same thing
+      every cycle. No S/M/L weighting is added; re-open only if a cycle's alarm
+      fires on five trivial items or stays silent through one crushing one.
+- [x] 2026-09-17 Should DROP items be deleted or archived? · **Answered
+      2026-09-17 (Q-021): archive — "archive is usually preferred over
+      delete".** §3.1's route is rewritten accordingly: the destination is
+      `archive/docs/YYYY-MM-DD-<name>.md` in the tracked archive tree (not
+      `docs/working/archive/`, which is gitignored), and the route now costs one
+      move commit instead of nothing. L2 (the incident journal) is the first
+      item it applies to and is archived rather than deleted.

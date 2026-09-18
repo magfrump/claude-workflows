@@ -90,7 +90,8 @@ An artifact flagged by multiple sources is a stronger candidate:
 - Over complexity budget **but** actively used — trim, don't remove
 
 Also check:
-- `docs/working/incident-journal.md` — has the artifact caused failures?
+- `archive/docs/2026-09-17-incident-journal.md` (archived; recreated at
+  `docs/working/incident-journal.md` on its next entry) — has the artifact caused failures?
 - `guides/skill-recovery.md` — has the artifact needed repeated recovery?
 
 ### Step 4: Write proposals

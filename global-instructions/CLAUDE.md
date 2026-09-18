@@ -242,13 +242,38 @@ During any autonomous or long-running work — /away mode, Ralph loops, `/loop` 
 
 - **Why it's yours:** <what only the user can decide — omit if obvious>
 - **Read:** <links to the docs, findings or code that bear on it>
-- **Options:** <the decision space, numbered [1] [2] [3], with cost and consequence per option>
-- **Interim:** <what was chosen in the meantime>
+
+| Option | What it means | Cost to you | If it's wrong |
+|---|---|---|---|
+| **[1] <name>** | <what changes> | <their cost, in their time> | <the consequence they eat> |
+| **[2] <name>** | ... | ... | ... |
+
+- **Blocks:** <what is waiting on this — omit if nothing is>
+- **Interim:** <what was chosen in the meantime, and why nothing is burning>
 - **If the answer differs:** <what gets redone>
 ```
 
+**The options table is the format, not a suggestion** — confirmed 2026-09-17
+(Q-020), which is also why the whole pattern is here rather than in a workflow
+doc. Prose options make the user re-derive a comparison you have already done;
+the four columns force the two things an ask usually omits — *what it costs
+them* and *what they eat if they pick wrong*. Two options earn a table as
+readily as four. Omit it only when the question has no option space (a fact
+only they can supply), and then the entry is a `you: terminal` paste instead.
+
+A `you: terminal` entry carries **one copy-pasteable block** in place of the
+table: the whole command, runnable as-is, with the interim line saying what
+holds until it runs. Several terminal entries collect into a single paste,
+never asked one at a time.
+
+**Answering costs one line.** The user writes `Q-NNN: <answer>` anywhere — a
+reply, a file, a commit — and the ID is the whole handle, so they never restate
+the question. Honour that: a bare `[2]` is a complete instruction, and
+everything needed to act on it must already be in the entry.
+
 - **Route, don't rank.** `Needs:` is one of `you: judgment` (taste or authority — the only real attention spend), `you: terminal` (their machine, not their mind — collect these into ONE paste, never ask them separately), `agent` (mechanical), `trigger` (a watched condition, not a question yet), `deferred` (waiting on an event). Rationale and evidence: `docs/working/triage-2026-09-17-backlog.md` §3. **Before routing to `you: judgment`, check the item actually needs a human** — most don't, and an unrouted queue consumes the whole attention budget regardless of what is in it.
 - **Present the decision space, not just the question.** An ask without its options, its links and its interim choice makes the user reconstruct the context you already have. Enumerate the options so they can answer with a number.
+- **One judgment per entry.** If an entry's options split along two independent axes, it is two entries — split it and give each its own ID. Q-009 and Q-022 were one entry until the split; neither was answerable until it happened, and both were answered the day it did.
 - **Never route a number from an instrument with a known under-counting history** to `you: judgment` without re-validating it first — the ask presumes the number is real (see `Q-017` in the archive).
 - **Append, don't block.** Add the entry and keep working.
 - The **interim choice** goes in the entry AND in the commit body (`Confidence`/`Notes` lines), so the question and the provisional decision stay traceable to each other.
