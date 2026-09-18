@@ -21,10 +21,11 @@ load_edge_report() {
   load_eval_report "$SKILL" "$1"
 }
 
-# Assert the report contains no ## Claim sections (no hallucinated claims).
+# Assert the report contains no verdict sections (no hallucinated claims).
+# fact-check heads each verdict '## Verdict for C<N>:' (skills/fact-check/SKILL.md).
 assert_no_claim_sections() {
   local sections
-  sections=$(echo "$REPORT_CONTENT" | grep -cE '^## Claim [0-9]+' || true)
+  sections=$(echo "$REPORT_CONTENT" | grep -cE "$(claim_heading_re "$SKILL")" || true)
   if [ "$sections" -gt 0 ]; then
     echo "Expected zero claim sections, found $sections"
     return 1

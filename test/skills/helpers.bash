@@ -9,24 +9,32 @@
 
 # Call in setup() to load a claim-based report and precompute common values.
 # Args: $1 = default report path
+#       $2 = optional ERE matching a claim heading line (default '^## Claim [0-9]+',
+#            the code-fact-check shape). fact-check reports head each verdict
+#            '## Verdict for C<N>: "..."' per skills/fact-check/SKILL.md, so its
+#            suite passes '^## Verdict for C[0-9]+'.
+# Sets CLAIM_HEADING_RE for the helpers below.
 load_report() {
   REPORT="${REPORT_PATH:-$1}"
+  CLAIM_HEADING_RE="${2:-^## Claim [0-9]+}"
   if [ ! -f "$REPORT" ]; then
     skip "No report found at $REPORT — generate one first"
   fi
   REPORT_CONTENT=$(tr -d '\r' < "$REPORT")
-  CLAIM_COUNT=$(echo "$REPORT_CONTENT" | grep -cE '^## Claim [0-9]+' || true)
+  CLAIM_COUNT=$(echo "$REPORT_CONTENT" | grep -cE "$CLAIM_HEADING_RE" || true)
   if [ "$CLAIM_COUNT" -eq 0 ]; then
     skip "Report has no claims"
   fi
-  # Extract only the claims sections (from first claim to the summary/attention
-  # section) so field-counting helpers aren't thrown off by metadata fields that
-  # share the same name (e.g. **Confidence:** in a report header).
-  CLAIMS_BODY=$(echo "$REPORT_CONTENT" | sed -n '/^## Claim [0-9]/,/^## [^C]/p' | sed '$d')
-  if [ -z "$CLAIMS_BODY" ]; then
-    # Fallback: claims run to end of file (no trailing non-Claim ## heading).
-    CLAIMS_BODY=$(echo "$REPORT_CONTENT" | sed -n '/^## Claim [0-9]/,$p')
-  fi
+  # Extract only the claims sections (from the first claim heading up to the first
+  # later ## heading that is not itself a claim heading) so field-counting helpers
+  # aren't thrown off by metadata fields that share the same name (e.g.
+  # **Confidence:** in a report header). Runs to end of file when no such heading
+  # follows the claims.
+  CLAIMS_BODY=$(echo "$REPORT_CONTENT" | awk -v re="$CLAIM_HEADING_RE" '
+    $0 ~ re { inclaims = 1; print; next }
+    inclaims && /^## / { exit }
+    inclaims { print }
+  ')
   # shellcheck disable=SC2034  # Used by test files that source this helper
   ATTENTION_SECTION=$(echo "$REPORT_CONTENT" | sed -n '/^## Claims Requiring/,$p')
 }
@@ -153,16 +161,6 @@ assert_field_values() {
   # enum, and nothing may precede it.
   bad=$(echo "$values" | grep -viE "^(${allowed})([ ,(*].*)?$" || true)
   [ -z "$bad" ]
-}
-
-# Assert claim numbers are sequential (1, 2, 3, ...).
-assert_claims_sequential() {
-  local numbers prev=0 n
-  numbers=$(echo "$REPORT_CONTENT" | grep -oE '^## Claim [0-9]+' | grep -oE '[0-9]+')
-  while IFS= read -r n; do
-    [ "$n" -eq $((prev + 1)) ]
-    prev=$n
-  done <<< "$numbers"
 }
 
 # Load the code-review skill's full CONTENT SURFACE: SKILL.md plus its references/

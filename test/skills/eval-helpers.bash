@@ -16,6 +16,17 @@ load_expected_verdicts() {
   source "$verdicts_file"
 }
 
+# ERE matching one claim heading in a skill's report. Each skill's SKILL.md fixes
+# the shape: fact-check heads verdicts '## Verdict for C<N>: "..."'; code-fact-check
+# heads claims '## Claim <N>' (sub-claims '## Claim <N>a').
+# Args: $1 = skill name
+claim_heading_re() {
+  case "$1" in
+    fact-check) echo '^## Verdict for C[0-9]+' ;;
+    *) echo '^## Claim [0-9]+' ;;
+  esac
+}
+
 # Load a generated report for a given fixture.
 # Sets: REPORT_CONTENT, CLAIM_COUNT, REPORT_PATH
 # Skips the test if the report hasn't been generated yet.
@@ -36,7 +47,7 @@ load_eval_report() {
   fi
 
   REPORT_CONTENT="$(cat "$REPORT_PATH")"
-  CLAIM_COUNT=$(echo "$REPORT_CONTENT" | grep -cE '^## Claim [0-9]+' || true)
+  CLAIM_COUNT=$(echo "$REPORT_CONTENT" | grep -cE "$(claim_heading_re "$skill")" || true)
 }
 
 # All-in-one: load report + run all checks for a fixture.
