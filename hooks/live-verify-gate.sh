@@ -19,8 +19,20 @@
 # unasked, which is exactly how the debt accrued. `git log --grep 'Live-verified: no'`
 # then lists the outstanding debt.
 #
+# NARROWING (Q-009). The gate fired on a diff that only rewrote comments: the
+# admitted set was byte-identical, so no probe was possible and none would have
+# said anything. So a change confined to comment and blank lines is let through.
+# The rule is deliberately "no change to any NON-COMMENT line", never "no change
+# to hostnames": commenting OUT a live allowlist entry deletes a non-comment
+# line, changes what the container may reach, and must still be gated. Anything
+# the shortcut cannot read as pure comment text — a rename, a mode change, a new
+# or deleted enforcement file, a binary blob, or a diff that came back empty
+# because the command failed — falls through to the gate, which is the safe
+# direction.
+#
 # Behavior:
 #   - not a `git commit`, no enforcement file staged, trailer present → exit 0
+#   - enforcement file staged, its diff touches only comment/blank lines → exit 0
 #   - enforcement file staged, no trailer                              → exit 2 (blocks;
 #     stderr is fed back to the model)
 #   - jq/git missing, malformed input, `--amend --no-edit`             → exit 0
@@ -48,7 +60,9 @@ printf '%s' "$cmd" | grep -Eq -- '--amend' && printf '%s' "$cmd" | grep -Eq -- '
 
 # Files this commit would carry: the index, plus tracked modifications when -a/--all.
 files="$(git diff --cached --name-only 2>/dev/null)" || exit 0
+commit_all=0
 if printf '%s' "$cmd" | grep -Eq -- '(^|[[:space:]])(-a|--all|-[a-zA-Z]*a[a-zA-Z]*)([[:space:]]|$)'; then
+  commit_all=1
   files="$files"$'\n'"$(git diff --name-only 2>/dev/null)"
 fi
 
@@ -57,6 +71,49 @@ fi
 enforcement='^devcontainer-config/(Dockerfile|devcontainer\.json|init-firewall\.sh|cc-sni-proxy\.py|link-claude-home\.sh|cc-isolated\.sh|egress/)'
 touched="$(printf '%s\n' "$files" | grep -E "$enforcement" | sort -u)"
 [ -n "$touched" ] || exit 0
+
+# The comment-only escape (Q-009). Read the same diff the commit would carry —
+# the index, plus the worktree when -a/--all widened `files` above — restricted
+# to the enforcement files, and let it through only if every added and removed
+# line is blank or a comment. `#` covers the Dockerfile, the shell scripts, the
+# python and the egress/*.txt lists; `//` covers the jsonc devcontainer.json.
+comment_only_diff() {
+  local diff_text line body stripped content=0 touched_files=()
+  mapfile -t touched_files <<< "$touched"
+  [ "${#touched_files[@]}" -gt 0 ] || return 1
+
+  diff_text="$(git diff --cached -U0 --no-color -- "${touched_files[@]}" 2>/dev/null)" || return 1
+  if [ "$commit_all" = "1" ]; then
+    diff_text="$diff_text"$'\n'"$(git diff -U0 --no-color -- "${touched_files[@]}" 2>/dev/null)"
+  fi
+
+  # A rename, a mode change, an added or deleted enforcement file, or a binary
+  # blob is substantive whatever its text says — the file's presence, path or
+  # permissions are themselves part of the boundary. Keep gating.
+  grep -Eq '^(new file mode|deleted file mode|old mode|new mode|rename from|similarity index|Binary files)' <<< "$diff_text" && return 1
+
+  while IFS= read -r line; do
+    case "$line" in
+      '+++'*|'---'*) continue ;;   # file headers, not content
+      '+'*|'-'*) ;;
+      *) continue ;;               # @@, `diff --git`, `index`, context
+    esac
+    content=1
+    body="${line#?}"
+    stripped="${body#"${body%%[![:space:]]*}"}"
+    case "$stripped" in
+      '') continue ;;              # blank or whitespace-only
+      '#'*|'//'*) continue ;;      # comment
+    esac
+    return 1                       # a real line changed
+  done <<< "$diff_text"
+
+  # No +/- content at all means the diff was empty or the command failed. Never
+  # let that read as "comment-only"; fall through to the gate.
+  [ "$content" = 1 ]
+}
+
+if comment_only_diff; then exit 0; fi
 
 has_trailer() {
   grep -Eq "(^|[[:space:]\"'])Live-verified:" <<< "$1"
