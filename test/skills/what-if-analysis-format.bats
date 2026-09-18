@@ -14,6 +14,23 @@ setup() {
   load_generic_report "${REPORT_PATH:-docs/reviews/what-if-analysis.md}"
 }
 
+# Print one section: from a "##"/"###" heading matching $1 (ERE) up to the next
+# heading at the same or a higher level. skills/what-if-analysis/SKILL.md lists the
+# sections under its own ### headings without fixing the report's level, and
+# reports nest subsections (e.g. "### Must address before proceeding") inside them.
+section_body() {
+  echo "$REPORT_CONTENT" | awk -v title="$1" '
+    match($0, /^#+ /) {
+      level = RLENGTH - 1
+      if (inside && level <= start) exit
+      if (!inside && level >= 2 && level <= 3 && substr($0, RLENGTH + 1) ~ ("^" title)) {
+        inside = 1; start = level
+      }
+    }
+    inside { print }
+  '
+}
+
 # --- Header section ---
 
 @test "report has a title header with What-If Analysis" {
@@ -28,14 +45,6 @@ setup() {
   echo "$REPORT_CONTENT" | grep -qE '\*\*Date:\*\*'
 }
 
-@test "report has a Mode field" {
-  echo "$REPORT_CONTENT" | grep -qE '\*\*Mode:\*\*'
-}
-
-@test "Mode field uses an allowed value" {
-  echo "$REPORT_CONTENT" | grep -qiE '\*\*Mode:\*\*.*\b(Consequence|Pre-?mortem|Full)\b'
-}
-
 @test "report names upstream critiques used (or 'none')" {
   echo "$REPORT_CONTENT" | grep -qiE '\*\*Upstream critiques:\*\*'
 }
@@ -44,10 +53,6 @@ setup() {
 
 @test "report has an Assumptions Examined section" {
   assert_heading_exists "Assumptions Examined"
-}
-
-@test "report has a Pre-Mortem Scenarios or Failure Modes section" {
-  assert_heading_exists "(Pre-?Mortem Scenarios|Failure Modes)"
 }
 
 @test "report has a Consequence Chains section (second-order effects)" {
@@ -82,16 +87,6 @@ setup() {
   assert_heading_exists "(Recommendations|Overall Assessment)"
 }
 
-# --- Per-scenario fields (Pre-Mortem Scenarios) ---
-
-@test "pre-mortem scenarios include Plausibility values" {
-  echo "$REPORT_CONTENT" | grep -qiE '\*\*Plausibility:\*\*.*\b(Likely|Plausible|Unlikely-but-catastrophic|Unlikely)\b'
-}
-
-@test "pre-mortem scenarios include Severity values" {
-  echo "$REPORT_CONTENT" | grep -qiE '\*\*Severity:\*\*.*\b(Low|Medium|High|Catastrophic)\b'
-}
-
 # --- Per-assumption fields ---
 
 @test "assumptions include an If wrong field" {
@@ -101,21 +96,16 @@ setup() {
 # --- Findings tagging ---
 
 @test "findings summary uses the prescribed tag taxonomy" {
-  local summary
-  summary=$(echo "$REPORT_CONTENT" | sed -n '/^### Findings Summary/,/^## /p')
-  echo "$summary" | grep -qE '\[(UNEXAMINED ASSUMPTION|NOVEL FAILURE MODE|SECOND-ORDER EFFECT|HIDDEN COUPLING|REVERSIBILITY CLIFF|SUCCESS COST|PRIOR CONSIDERATION|NOVEL)\]'
+  # The six tags SKILL.md "Findings Summary" defines. [NOVEL] is an Assumptions
+  # Examined tag and [NOVEL FAILURE MODE] belonged to the pre-mortem half that
+  # moved to the pre-mortem skill (2aad1e1); neither counts here.
+  section_body "Findings Summary" | grep -qE '\[(UNEXAMINED ASSUMPTION|SECOND-ORDER EFFECT|HIDDEN COUPLING|REVERSIBILITY CLIFF|SUCCESS COST|PRIOR CONSIDERATION)\]'
 }
 
 # --- Recommendations structure ---
 
 @test "recommendations distinguish blockers from acknowledged risks" {
-  local section
-  section=$(echo "$REPORT_CONTENT" | sed -n '/^## Recommendations/,/^## /p')
-  # Fallback: section may run to end of file
-  if [ -z "$section" ]; then
-    section=$(echo "$REPORT_CONTENT" | sed -n '/^## Recommendations/,$p')
-  fi
-  echo "$section" | grep -qiE '(must address|worth mitigating|acknowledged risks?|no.*must address)'
+  section_body "Recommendations" | grep -qiE '(must address|worth mitigating|acknowledged risks?)'
 }
 
 # --- No leakage from sibling skills ---
