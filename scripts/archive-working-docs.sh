@@ -7,8 +7,9 @@
 # with an optional prefix (defaults to date, e.g. "2026-03-25"). Permanent
 # files (hypothesis-log.md, hypothesis-backlog.md, tasks.json, feature-ideas.md, test-strategy-fact-check-skills.md,
 # completed-tasks.md, problem-history.json, round-history.json, questions.md,
-# questions-archive.md) are left in place — they accumulate across runs. The last three are cross-run memory for
-# scripts/self-improvement.sh: it reads completed-tasks.md when generating
+# questions-archive.md) are left in place — they accumulate across runs.
+# completed-tasks.md, problem-history.json and round-history.json are
+# cross-run memory for scripts/self-improvement.sh: it reads completed-tasks.md when generating
 # ideas (so archiving it makes the next run re-propose finished work),
 # problem-history.json for convergence detection, and round-history.json for
 # prior-round verdicts. All three are re-created empty when absent, so

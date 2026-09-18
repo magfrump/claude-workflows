@@ -167,8 +167,11 @@ main() {
 
   # Extract commands using built-in parser (NUL-delimited for multi-line command support)
   NUL_DELIM=true
-  # FAIL CLOSED on a parse failure. mapfile's own status is always 0, so the
-  # parser's status has to be read from the process substitution via `wait $!`
+  # FAIL CLOSED on a parse failure — and ONLY on a parse failure: constructs
+  # that parse but that the extraction filter does not descend into (arithmetic
+  # expansion, heredoc bodies, VAR= prefixes, redirect targets) are still
+  # approved on the strength of the outer command (known gap, not fixed here).
+  # mapfile's own status is always 0, so the parser's status has to be read from the process substitution via `wait $!`
   # (bash >= 4.4; older bash makes `wait` fail, which also falls through).
   # Without this, an unparseable command extracted to an empty list and hit the
   # "no commands found, allowing" branch below — and bash still runs every line
