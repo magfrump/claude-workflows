@@ -101,6 +101,8 @@ working hook. Both are fixed here, and both were invisible while nothing was wir
   already-merged `settings.json`. Bump and prune in the same pass.
 - **`docs/working/wire-batch-feedback-reminder.md` is superseded** for cc-isolated. It
   remains the procedure for a bare host install with no devcontainer.
+  *(2026-09-18: the wire docs were archived; the bare-host procedure now lives in
+  `guides/bare-host-hook-wiring.md`, built on `hooks/wiring.json`.)*
 - **Usage telemetry starts flowing for the first time.** Any longitudinal read of
   `skill-usage-report.sh` should treat 2026-07-30 as the start of the series, not a change
   in behavior — prior emptiness measured an unwired hook, not unused skills.
@@ -168,4 +170,5 @@ Notable consequences:
   rule — the rule is belt-and-braces that makes the failure legible (denied, not `EACCES`).
 - **`docs/working/wire-security-hooks.md`'s "Related settings hardening" section is
   superseded for cc-isolated**, the same way this decision superseded the batch-reminder
-  wiring doc. It remains the procedure for a bare host.
+  wiring doc. It remains the procedure for a bare host. *(2026-09-18: now
+  `guides/bare-host-hook-wiring.md` §3.)*

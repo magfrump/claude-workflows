@@ -30,7 +30,6 @@ The index below is generated — edit entries, not the table.
 | [Q-025](#q-025--lite-review-install-path) | you: judgment | pr-prep and review-fix-loop tell agents to run `scripts/lite-review.py`, which does not exist in projects t... | 2026-09-18 |
 | [Q-026](#q-026--guard-project-claude-dir) | you: judgment | `hooks/guard-trusted-writes.py` treats any `.claude/settings*.json` or `.claude/hooks/**` as HARD and defer... | 2026-09-18 |
 | [Q-011](#q-011--mathlib-cache-host) | you: terminal | What is the current mathlib olean cache hostname? (`lake exe cache get` is minutes vs hours per repo.) | 2026-09-12 |
-| [Q-027](#q-027--readme-wire-docs) | agent | `README.md` (lines 27-149) and `guides/claude-config-security-checkup.md:47` point at `docs/working/wire-*.... | 2026-09-18 |
 <!-- index:end -->
 
 ## Open
@@ -113,11 +112,4 @@ pr-prep and review-fix-loop tell agents to run `scripts/lite-review.py`, which d
 | **[3] Accept, like row 53** | Record as accepted risk | none | A tainted session can widen its own allow list |
 
 - **Interim:** unchanged.
-
-### Q-027 · readme-wire-docs
-**Needs:** agent · **Opened:** 2026-09-18 · **Status:** OPEN
-
-`README.md` (lines 27-149) and `guides/claude-config-security-checkup.md:47` point at `docs/working/wire-*.md`, archived 2026-08-06 (9b0f583). Repoint them at `hooks/wiring.json` (decision 023) and move the bare-host and WSL2 notes somewhere tracked.
-
-- **Interim:** links dangle in fresh clones. Not restored on 2026-09-18, because the wire docs predate `hooks/wiring.json` and would reintroduce stale steps.
 

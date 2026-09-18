@@ -24,22 +24,20 @@ for h in log-usage.sh log-usage-post.sh dd-routing-reminder.sh \
 done
 
 # Security + permission hooks (deliberate COPIES, not symlinks — see
-# docs/working/wire-security-hooks.md for why; re-copy after repo changes)
+# guides/bare-host-hook-wiring.md for why; re-copy after repo changes)
 cp ~/claude-workflows/hooks/guard-trusted-writes.py \
    ~/claude-workflows/hooks/web-taint-mark.py \
-   ~/claude-workflows/hooks/auto-approve-allowed-commands.sh ~/.claude/hooks/
+   ~/claude-workflows/hooks/auto-approve-allowed-commands.sh \
+   ~/claude-workflows/hooks/live-verify-gate.sh ~/.claude/hooks/
 ```
 
 Hooks are inert until wired into `~/.claude/settings.json` (guarded,
-not repo-tracked). The wiring docs hold the exact JSON to paste:
-
-- `docs/working/wire-security-hooks.md` — guard-trusted-writes (PreToolUse,
-  matcher must include `Bash`) + web-taint-mark (PostToolUse), plus the
-  2026-07-09 permissions/sandbox hardening applied alongside them
-- `docs/working/wire-claude-config-audit.md` — post-edit security audit of
-  trusted-policy files
-- `docs/working/wire-batch-feedback-reminder.md` — batch fan-out routing
-  reminder (dd-routing-reminder follows the same pattern)
+not repo-tracked). `hooks/wiring.json` is the canonical wiring (hooks plus the
+`permissions.deny` rules the guard depends on); the devcontainer merges it
+automatically, and on a bare host you merge it by hand —
+see [`guides/bare-host-hook-wiring.md`](guides/bare-host-hook-wiring.md) for the
+procedure, the settings hardening `wiring.json` does not carry, the WSL2
+prerequisite, and verification steps.
 
 ### Gemini CLI (Linux/macOS)
 
@@ -111,12 +109,12 @@ machine, they must be recreated by hand:
 
 | File | Role | Notes |
 |---|---|---|
-| `~/.claude/settings.json` | Permissions allow/deny lists, hook wiring, sandbox config | Guarded and deliberately not repo-tracked; changes are recorded prose-style in the `docs/working/wire-*.md` docs |
+| `~/.claude/settings.json` | Permissions allow/deny lists, hook wiring, sandbox config | Guarded and deliberately not repo-tracked; the hook wiring and deny rules come from `hooks/wiring.json`, and the remaining manual hardening is recorded in `guides/bare-host-hook-wiring.md` |
 | ~~`~/private_reviews/claude_config_audit.py`~~ | Trusted-policy security auditor run by `claude-config-audit.sh` | **Now tracked at `scripts/claude_config_audit.py`** (decision 023 amendment A) — the image payload is root-owned `0555`, which keeps a policy-file attacker away from the scanner more firmly than the old location did. The `~/private_reviews/` path is still honored as a fallback for bare-host installs; see `guides/claude-config-security-checkup.md` |
 | `~/.claude/hooks/guard-trusted-writes.py`, `web-taint-mark.py`, `auto-approve-allowed-commands.sh` | Deployed copies of the repo's security/permission hooks | Copies by design; re-copy deliberately after repo changes |
 | `/tmp/cc-web-taint/` | Runtime session-taint markers (0700) | Created on demand; cleared on reboot, which is fine — taint is per-session |
 | `~/.claude/logs/usage.jsonl` | Output of the usage-logging hooks | Created on demand |
-| `C:\Program Files\ClaudeCode\managed-settings.json` (`{}`) + `managed-settings.d\` | WSL2 only: mount points bwrap needs for the Bash sandbox | Create as Windows admin, or **every** Bash call fails at sandbox setup; see `docs/working/wire-security-hooks.md` |
+| `C:\Program Files\ClaudeCode\managed-settings.json` (`{}`) + `managed-settings.d\` | WSL2 only: mount points bwrap needs for the Bash sandbox | Create as Windows admin, or **every** Bash call fails at sandbox setup; see `guides/bare-host-hook-wiring.md` |
 
 ## Contents
 
@@ -146,7 +144,7 @@ machine, they must be recreated by hand:
 ### Hooks (Claude Code hooks; wiring under "Setup" above)
 - `hooks/log-usage.sh` / `hooks/log-usage-post.sh` — Log skill/agent invocations and workflow file reads to `~/.claude/logs/usage.jsonl` (shared code in `hooks/lib/`)
 - `hooks/dd-routing-reminder.sh` — `UserPromptSubmit` hook nudging explicit comparison/decision prompts toward the divergent-design workflow (non-blocking)
-- `hooks/batch-feedback-routing-reminder.sh` — `UserPromptSubmit` hook nudging multi-item prompts (batches of feedback) toward parallel-subagent fan-out per decision-tree row 2 (non-blocking); wiring instructions in `docs/working/wire-batch-feedback-reminder.md`
+- `hooks/batch-feedback-routing-reminder.sh` — `UserPromptSubmit` hook nudging multi-item prompts (batches of feedback) toward parallel-subagent fan-out per decision-tree row 2 (non-blocking); wired from `hooks/wiring.json` (bare host: `guides/bare-host-hook-wiring.md`)
 - `hooks/claude-config-audit.sh` — `PostToolUse` security audit of edited trusted-policy files via the external auditor (see `guides/claude-config-security-checkup.md`)
 - `hooks/guard-trusted-writes.py` — `PreToolUse` gate on writes to trusted-policy files: hard-deny on Bash write primitives targeting protected config paths, ask on soft policy paths when the session is web-tainted
 - `hooks/web-taint-mark.py` — `PostToolUse` marker that records the session ingested web content, feeding the guard's taint check

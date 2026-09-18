@@ -30,6 +30,7 @@ full. IDs are stable forever: `Q-014` means the same thing here as it did there.
 | [Q-020](#q-020--asks-unit-weighting) | Is `asks` (triage §3.3) the right unit, or does it undercount one hard judgment against several easy ones? | 2026-09-17 |
 | [Q-021](#q-021--drop-delete-or-archive) | Should DROP items be deleted or archived? | 2026-09-17 |
 | [Q-022](#q-022--lite-review-findings-invariant) | ~nothing.** Read as: A5 is not a defect worth a fix — a clean lite review's only | 2026-09-17 |
+| [Q-027](#q-027--readme-wire-docs) | `README.md` (lines 27-149) and `guides/claude-config-security-checkup.md:47` point at `docs/working/wire-*.... | 2026-09-18 |
 <!-- index:end -->
 
 ## Answered
@@ -409,5 +410,15 @@ du -sh .claude/worktrees              # expect ~0
 
 - **Interim:** the 231 MB stays. It is inert — no registration, no ref, nothing reads it — so this is disk, not risk.
 - **If the answer differs:** if you would rather keep a couple as reference checkouts, keep `agent-af8ebf915c7a1c66d` (the widest set of historical paths of the fourteen) and delete the rest, which are older checkouts of the same tree at various points.
+
+
+### Q-027 · readme-wire-docs
+**Needs:** agent · **Opened:** 2026-09-18 · **Status:** ANSWERED
+
+**Done 2026-09-18.** New tracked guide `guides/bare-host-hook-wiring.md` holds what the three wire docs carried and `hooks/wiring.json` does not: symlink-vs-copy install rules, a `jq` one-liner that prints `wiring.json` resolved for hand-merging, the manual hardening (allow-list pruning, sandbox block, WSL2 prerequisite, auditor location), verify steps (run as printed; the audit step needed a `${TMPDIR:-/tmp}` fix), and accepted gaps. README, the checkup guide and decision 023's two "remains the procedure" bullets now point there. Also fixed on the way: the README's bare-host install never installed `live-verify-gate.sh`, which `wiring.json` wires — a hand-merged setup would error on every Bash call. Original entry:
+
+`README.md` (lines 27-149) and `guides/claude-config-security-checkup.md:47` point at `docs/working/wire-*.md`, archived 2026-08-06 (9b0f583). Repoint them at `hooks/wiring.json` (decision 023) and move the bare-host and WSL2 notes somewhere tracked.
+
+- **Interim:** links dangle in fresh clones. Not restored on 2026-09-18, because the wire docs predate `hooks/wiring.json` and would reintroduce stale steps.
 
 
