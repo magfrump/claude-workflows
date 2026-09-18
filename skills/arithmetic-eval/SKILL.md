@@ -48,7 +48,7 @@ OPS = {ast.Add:operator.add, ast.Sub:operator.sub, ast.Mult:operator.mul,
        ast.Mod:operator.mod, ast.Pow:operator.pow,
        ast.USub:operator.neg, ast.UAdd:operator.pos}
 MAX_BITS = 100000   # ~30k digits; the ONLY size cap — bounds the result, so a
-                    # small-base big-exponent like 2**5000 is fine but 2**100000 isn't
+                    # small-base big-exponent like 2**5000 is fine but 2**100000 is not
 def ck(x):   # every intermediate: reject complex, non-finite, and oversized ints
     if isinstance(x, complex): raise ValueError("complex result not supported")
     if isinstance(x, float) and not math.isfinite(x): raise ValueError("non-finite result (overflow or nan)")
@@ -64,7 +64,7 @@ def ev(n):
     if isinstance(n, ast.BinOp) and type(n.op) in OPS:
         l, r = ev(n.left), ev(n.right)   # each child evaluated exactly once
         if isinstance(n.op, ast.Pow):
-            # Predict result size BEFORE computing so a huge int power can't be
+            # Predict result size BEFORE computing so a huge int power cannot be
             # materialized (ck() catches everything else, incl. float overflow).
             if isinstance(l, int) and isinstance(r, int) and r > 0 \
                and l not in (0, 1, -1) and r * l.bit_length() > MAX_BITS:

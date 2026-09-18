@@ -163,6 +163,30 @@ setup() {
   echo "$SKILL_CONTENT" | grep -qE 'python3 -c'
 }
 
+@test "Mode 1 documented bash block actually runs and prints the documented result" {
+  # The grep checks above never execute the block, so a stray apostrophe inside
+  # the single-quoted `python3 -c '...'` program (which closes the shell quote)
+  # went unnoticed. Extract the first ```bash fence under "## Mode 1", run it
+  # exactly as documented, and compare against its own `# →` expected line.
+  command -v python3 >/dev/null || skip "python3 not available"
+  local block="$BATS_TEST_TMPDIR/mode1.sh"
+  awk '/^## Mode 1/ { m=1; next }
+       m && /^## / { exit }
+       m && /^```bash$/ { f=1; next }
+       f && /^```$/ { exit }
+       f { print }' <<< "$SKILL_CONTENT" > "$block"
+  [ -s "$block" ]
+  grep -qF "<<'EXPREOF'" "$block"
+  grep -qxF '3600 / 0.003 * 1000' "$block"
+  # --separate-stderr: host noise (e.g. setlocale warnings) must not pollute $output.
+  run --separate-stderr bash "$block"
+  echo "stdout: $output"; echo "stderr: $stderr"
+  [ "$status" -eq 0 ]
+  [ "$output" = "[arithmetic-eval] 3600 / 0.003 * 1000 -> 1200000000.0" ]
+  # The block's own documented expected line must match what it prints.
+  grep -qF "# → $output" "$block"
+}
+
 @test "skill has at least one Mode 2 worked example" {
   # Scientific example uses a throwaway mktemp dir + gated script.py (not a fixed /tmp path).
   echo "$SKILL_CONTENT" | grep -qE 'mktemp -d'
