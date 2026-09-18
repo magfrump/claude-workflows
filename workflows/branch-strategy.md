@@ -117,7 +117,7 @@ git checkout main && git pull
 git checkout dev
 git merge main --no-edit
 
-# Delete merged feature branches
+# Delete merged feature branches (needs user approval per Operating Modes)
 git branch -d feat/landed-feature
 git push origin --delete feat/landed-feature
 ```
@@ -271,7 +271,8 @@ grep -n -A8 '<path>' docs/working/integration-conflicts.md    # why it was resol
 ```
 
 `git show` returns the resolved code but not the reasoning; the rationale log
-([`docs/working/integration-conflicts.md`](../docs/working/integration-conflicts.md)) records *why* —
+(`docs/working/integration-conflicts.md` in the project — absent until the first refresh creates it,
+so an empty grep on a first refresh just means there's no prior rationale) records *why* —
 which side was authoritative, what was intentionally dropped, and what would make the resolution go
 stale. Read both, then **re-verify every hunk against the current content of both sides before
 accepting it.** Prior resolutions go stale: a PR may have been revised after the last refresh, a branch
@@ -280,14 +281,24 @@ changes or resurrects reverted ones. Treat the old resolution as a hint, re-deri
 two *current* sides, and confirm the result reflects both.
 
 **Then record the rationale.** After resolving each conflict, append an entry to the rationale log so
-the *next* refresh can recover your reasoning — not just your resulting code. Use the template in
-[`docs/working/integration-conflicts.md`](../docs/working/integration-conflicts.md); keep the `path:`
-line intact so the grep above finds it on the next build:
+the *next* refresh can recover your reasoning — not just your resulting code. If
+`docs/working/integration-conflicts.md` doesn't exist yet, create it (a one-line
+`# Integration-conflict rationale log` heading is enough). Add one entry per resolved conflict, newest
+first, using this template; keep the `path:` line intact and on its own line so the grep above finds
+it on the next build:
 
-> ### \<YYYY-MM-DD> · dev-refresh-\<YYYY-MM-DD>
-> - **path:** `<path>`  ·  **PR:** #\<n> `<headRef>`  ·  **region:** \<what conflicted>
-> - **resolution:** \<what the hunk became>  ·  **rationale:** \<why this side / what was dropped>
-> - **staleness signal:** \<what change to either side would make this resolution wrong>
+```markdown
+### <YYYY-MM-DD> · dev-refresh-<YYYY-MM-DD>
+
+- **path:** `<path>`
+- **PR:** #<n> `<headRef>`
+- **region:** <function / section / line span that conflicted>
+- **ours / theirs:** <one line each: what each side changed>
+- **resolution:** <what the merged hunk ended up as>
+- **rationale:** <why — which side was authoritative, what was intentionally dropped or kept>
+- **staleness signal:** <what change to either side would make this resolution wrong>
+- **origin:** replayed-from-prior | first-principles (no prior reference — step 5)
+```
 
 The log entry is the durable complement to `git show`: the resolved code lives in the branch, the
 reasoning behind it lives in the log. Without it, every refresh re-derives the same reasoning from
@@ -332,7 +343,9 @@ approval is not a bare "OK to swap `dev`?" — the prompt that asks for it must 
 action cannot be cleanly undone, its **error-recoverability** content is load-bearing (checklist §3,
 "Using this pattern"): the prompt must name the point of no return explicitly. A conforming prompt:
 
-> Integration refresh `dev-refresh-<YYYY-MM-DD>` is built and green. Promoting it means force-pushing
+> Integration refresh `dev-refresh-<YYYY-MM-DD>` is built and green: it merges the \<n> open PRs
+> (#\<a>, #\<b>, …) onto current `main`, and each conflict it resolved has an entry in
+> `docs/working/integration-conflicts.md`. Promoting it means force-pushing
 > over the shared `dev`, which moves the branch every teammate has checked out and discards the
 > resolution currently on `dev`. Pick one:
 >   - **Promote now (force-push `dev`)** → I run `git push --force-with-lease origin dev` pointing
@@ -345,10 +358,11 @@ action cannot be cleanly undone, its **error-recoverability** content is load-be
 > tip, and the previous `dev` history survives only in local reflogs. Capture the current tip
 > (`git rev-parse origin/dev`) first if you want a recovery point.
 
-The prompt carries all three checklist properties: the three named options are the **signifier**; each
-option's "→ I run… / nothing is pushed" clause is the **conceptual model**; and the closing "cannot be
-cleanly undone… capture the current tip first" sentence is the load-bearing **error-recoverability**
-content naming the point of no return. The human picking **Promote now** is the explicit approval the
+The prompt carries all four checklist properties: the opening sentence restating what the refresh
+contains and where its resolutions are logged is the **context continuity**; the three named options
+are the **signifier**; each option's "→ I run… / nothing is pushed" clause is the **conceptual model**;
+and the closing "cannot be cleanly undone… capture the current tip first" sentence is the load-bearing
+**error-recoverability** content naming the point of no return. The human picking **Promote now** is the explicit approval the
 Operating Modes gate requires — the prompt is how that approval is solicited, not a relaxation of the
 gate.
 
@@ -368,8 +382,8 @@ Each rule below exists because the naive version of this procedure has burned so
   audit exactly how each conflict was resolved instead of trusting an in-place mutation.
 - **Rationale outlives code.** `git show <previous-integration-branch>:<path>` recovers *what* a hunk
   resolved to, never *why*. The next refresh then either blind-applies a now-stale resolution or
-  re-derives reasoning that was already done. Recording each resolution's rationale in
-  [`docs/working/integration-conflicts.md`](../docs/working/integration-conflicts.md) — and grepping
+  re-derives reasoning that was already done. Recording each resolution's rationale in the project's
+  `docs/working/integration-conflicts.md` (created on first use) — and grepping
   it before resolving — makes the *intent* recoverable: authoritative side, intentionally dropped
   changes, and the staleness signal that says when to distrust it. The code reference and the
   rationale log are complements, keyed on the same `<path>`.
@@ -378,11 +392,11 @@ Each rule below exists because the naive version of this procedure has burned so
 - [ ] All open PRs were enumerated from `gh pr list` (not from the local branch list)
 - [ ] The refresh was built on a fresh, date-stamped branch off `main`; the previous integration branch is untouched and available for reference
 - [ ] Each open PR head was merged in; conflicts were resolved by re-verifying each hunk against both current sides, using the prior integration branch only as a reference
-- [ ] Before resolving each conflict, `docs/working/integration-conflicts.md` was grepped for the path's prior rationale; after resolving, a new entry (path, resolution, why, staleness signal) was appended
+- [ ] Before resolving each conflict, `docs/working/integration-conflicts.md` was grepped for the path's prior rationale; after resolving, a new entry (path, resolution, why, staleness signal, origin) was appended (creating the file if absent)
 - [ ] PRs absent from the previous integration branch were folded in and resolved from first principles (their rationale entries marked `origin: first-principles`)
 - [ ] Build, lint, and tests pass on the fresh branch
 - [ ] The fresh branch was pushed as its own ref for inspection; the shared `dev` was **not** force-pushed without explicit human approval
-- [ ] If promotion over the shared `dev` was requested, the approval prompt satisfied the [requesting-user-input checklist](../patterns/requesting-user-input.md#the-checklist) — it named the available actions (signifier), stated what force-pushing `dev` would change (conceptual model), and made the irreversibility load-bearing: that the force-push cannot be cleanly undone and how to capture a recovery point first (error recoverability)
+- [ ] If promotion over the shared `dev` was requested, the approval prompt satisfied the [requesting-user-input checklist](../patterns/requesting-user-input.md#the-checklist) — it named the available actions (signifier), stated what force-pushing `dev` would change (conceptual model), and made the irreversibility load-bearing: that the force-push cannot be cleanly undone and how to capture a recovery point first (error recoverability), and restated which PRs the refresh integrates on top of which `main` (context continuity)
 
 ## Stale-branch triage (advisory)
 
@@ -399,7 +413,7 @@ For each branch past the 7-day mark, answer three questions:
 Pick one of three outcomes:
 
 - **Action** — Rebase onto main and either merge into dev or open the PR now. Activity resets the implicit clock. Use this when all three answers are yes.
-- **Defer** — Close the PR (if open), delete the branch, and capture the work as an issue or note so it isn't lost. Use this when "still relevant?" or "still owner?" is no. Deferring is not failure; it's freeing the branch list for the work you're actually doing.
+- **Defer** — Close the PR (if open), delete the branch (with user approval — branch deletion is gated per Operating Modes), and capture the work as an issue or note so it isn't lost. Use this when "still relevant?" or "still owner?" is no. Deferring is not failure; it's freeing the branch list for the work you're actually doing.
 - **Mark watching** — Explicitly accept "do nothing this week." Refresh the date stamp with an empty commit so the branch's stalled state is documented as intentional, not forgotten:
   ```bash
   git commit --allow-empty -m "chore: still watching feat/my-feature"
@@ -416,7 +430,7 @@ The point of the third outcome is that "I checked and the right answer is to wai
 | Integrate feature for testing | `git checkout dev && git merge feat/name --no-edit` |
 | Open PR | Push feature branch, PR targets main |
 | After PRs merge to main | `git checkout dev && git merge main --no-edit` |
-| Delete merged branch | `git branch -d feat/name && git push origin --delete feat/name` |
+| Delete merged branch (user approval required) | `git branch -d feat/name && git push origin --delete feat/name` |
 | Check dev divergence | `git log --oneline main..dev \| wc -l` |
 | Check branch subset | `git merge-base --is-ancestor feat/a feat/b` |
 | Reset dev (lightweight, gated force-push) | Delete dev, create from main, re-merge active features |
@@ -424,6 +438,6 @@ The point of the third outcome is that "I checked and the right answer is to wai
 | List open PRs to integrate | `gh pr list --state open --json number,headRefName,baseRefName,title` |
 | Reference a prior conflict resolution | `git show <previous-integration-branch>:<path>` (the resolved *code* — reference only, re-verify each hunk) |
 | Recover *why* a hunk was resolved before | `grep -n -A8 '<path>' docs/working/integration-conflicts.md` (the *rationale* — pairs with `git show`) |
-| Record a conflict resolution's rationale | Append an entry to `docs/working/integration-conflicts.md` (path, resolution, why, staleness signal) |
+| Record a conflict resolution's rationale | Append an entry to `docs/working/integration-conflicts.md` (path, resolution, why, staleness signal, origin — template in refresh step 4; create the file if absent) |
 | List feature branches by age | `git for-each-ref --sort=-committerdate refs/heads/feat/* --format='%(committerdate:relative) %(refname:short)'` |
 | Keep a paused branch parked | `git commit --allow-empty -m "chore: still watching feat/name"` |
