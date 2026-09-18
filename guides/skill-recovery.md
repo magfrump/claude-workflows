@@ -29,7 +29,7 @@ If you know which skill failed, start here before scanning the full pipeline tab
 | Failing skill | Substitute | How to invoke |
 |---|---|---|
 | security-reviewer | code-review (security dispatch) | Run `code-review` and set its dispatch list to `security-reviewer` only. The orchestrator re-runs the same critic prompt in a fresh context. |
-| fact-check | code-fact-check | Different pipeline (prose vs. code) but identical cognitive moves. If your input is prose, `code-fact-check` still verifies factual claims — it just skips code-specific heuristics. |
+| fact-check | *(none — skip to Tier 3)* | `code-fact-check` is not a substitute: it verifies claims against the codebase, not against the world via web search, so it cannot check a prose draft's factual claims. Critics can proceed without a fact-check report (see the prose pipeline table below). |
 | cowen-critique | yglesias-critique | Same pipeline role, different analytical lens. Both accept draft + optional fact-check report. |
 | performance-reviewer | code-review (performance dispatch) | Run `code-review` and set its dispatch list to `performance-reviewer` only. Same pattern as the security-reviewer substitution above. |
 

@@ -13,6 +13,10 @@ Is this a brand-new or unfamiliar codebase?
   YES → codebase-onboarding
   NO  ↓
 
+Does the message bundle 2+ independent tasks (bug list, feedback batch, "a few things:")?
+  YES → parallel-worktrees (split, then route each item back through this tree)
+  NO  ↓
+
 Does the task involve a design choice with 3+ viable approaches?
   YES → divergent-design
   NO  ↓
@@ -39,7 +43,7 @@ Planning, running, or analyzing a usability test?
 
 High-throughput multi-branch development with async review?
   YES → branch-strategy
-  NO  → Just do it (no workflow needed)
+  NO  → research-plan-implement (the default)
 ```
 
 ### Debugging defaults (not a separate workflow)
@@ -76,12 +80,23 @@ Debugging is not a standalone workflow — CLAUDE.md's "Debugging defaults" sect
 
 **Rule of thumb:** If the task naturally splits into independent questions that different agents could answer in parallel, use task-decomposition. If the research needs to build a single coherent picture before planning, use research-plan-implement.
 
+### Parallel-worktrees vs Task-decomposition (for fanning out)
+
+| Factor | [parallel-worktrees](../workflows/parallel-worktrees.md) | [task-decomposition](../workflows/task-decomposition.md) |
+|---|---|---|
+| Input | *N* independent tasks in one message | *One* task spanning several subsystems |
+| What fans out | Implementation — one subagent per item, each in its own git worktree | Research — sub-agents investigate; implementation stays sequential |
+| Routing | Pre-pass: each item goes back through the tree on its own | Layered on top of RPI |
+
+**Rule of thumb:** Ask "do these share files or an order?" Yes → task-decomposition or RPI. No → parallel-worktrees.
+
 ## Workflow Reference
 
 | Workflow | One-line summary |
 |---|---|
 | [research-plan-implement](../workflows/research-plan-implement.md) | Default loop: research → plan → review → implement |
 | [divergent-design](../workflows/divergent-design.md) | Structured brainstorming for decisions with multiple options |
+| [parallel-worktrees](../workflows/parallel-worktrees.md) | Split a batch of independent tasks and implement them in parallel git worktrees |
 | [task-decomposition](../workflows/task-decomposition.md) | Split large tasks into parallel sub-investigations |
 | [spike](../workflows/spike.md) | Timeboxed feasibility exploration on a throwaway branch |
 | [codebase-onboarding](../workflows/codebase-onboarding.md) | Structured orientation for unfamiliar codebases |
