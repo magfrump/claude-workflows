@@ -1,5 +1,6 @@
 #!/usr/bin/env bats
 # @category fast
+# shellcheck disable=SC2154  # $stderr is assigned by bats' `run --separate-stderr`
 # Validates the structure of the arithmetic-eval SKILL.md itself.
 #
 # Judgment call: arithmetic-eval is a *utility* skill — it does not produce a
