@@ -18,6 +18,9 @@
 
 load lib/hermetic-env
 
+# `run !` (used for negative assertions below) needs bats >= 1.5.
+bats_require_minimum_version 1.5.0
+
 # These tests capture command-substitution output; pin the locale so bash's
 # setlocale warning cannot leak into a captured value.
 pin_hermetic_locale
@@ -163,6 +166,8 @@ teardown() {
   for var in PROBLEMS_JSON OVERLAP_RESULT SOLVED_PROBLEMS_JSON; do
     count=$(grep -c "^ *${var}=.*claude -p " "$SI_SCRIPT" || true)
     [ "$count" -eq 1 ]
-    ! grep -q "^ *${var}=.*claude -p .*_FLAGS\[@\]}" "$SI_SCRIPT"
+    # `run !`, not a bare `!`: a leading `!` never trips errexit, so inside a
+    # loop it only counted on the last pass (same defect class as da4811b).
+    run ! grep -q "^ *${var}=.*claude -p .*_FLAGS\[@\]}" "$SI_SCRIPT"
   done
 }
