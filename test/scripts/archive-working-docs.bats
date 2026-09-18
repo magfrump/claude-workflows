@@ -60,6 +60,24 @@ teardown() {
   [[ "$output" == *"keep  tasks.json"* ]]
 }
 
+@test "running-questions docs are permanent" {
+  # questions.md is the live queue the global instructions name by path, and
+  # health-check gate 14 fails when it is absent. Archiving it drops still-OPEN
+  # entries out of the queue; archiving questions-archive.md moves the answered
+  # history into the gitignored archive/, out of version control.
+  echo "# Running questions" > "$TEST_DIR/docs/working/questions.md"
+  echo "# Answered questions" > "$TEST_DIR/docs/working/questions-archive.md"
+
+  cd "$TEST_DIR"
+  run bash "$SCRIPT" "pfx"
+  [ "$status" -eq 0 ]
+
+  [ -f docs/working/questions.md ]
+  [ -f docs/working/questions-archive.md ]
+  [ ! -f docs/working/archive/pfx-questions.md ]
+  [ ! -f docs/working/archive/pfx-questions-archive.md ]
+}
+
 @test "dry-run shows planned moves but does not move files" {
   cd "$TEST_DIR"
   run bash "$SCRIPT" --dry-run "dry-pfx"

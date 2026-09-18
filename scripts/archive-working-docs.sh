@@ -6,8 +6,8 @@
 # Moves all non-permanent files from docs/working/ into docs/working/archive/
 # with an optional prefix (defaults to date, e.g. "2026-03-25"). Permanent
 # files (hypothesis-log.md, hypothesis-backlog.md, tasks.json, feature-ideas.md, test-strategy-fact-check-skills.md,
-# completed-tasks.md, problem-history.json, round-history.json) are left in
-# place — they accumulate across runs. The last three are cross-run memory for
+# completed-tasks.md, problem-history.json, round-history.json, questions.md,
+# questions-archive.md) are left in place — they accumulate across runs. The last three are cross-run memory for
 # scripts/self-improvement.sh: it reads completed-tasks.md when generating
 # ideas (so archiving it makes the next run re-propose finished work),
 # problem-history.json for convergence detection, and round-history.json for
@@ -51,6 +51,14 @@ PERMANENT=(
   completed-tasks.md
   problem-history.json
   round-history.json
+  # The running-questions doc (global-instructions/CLAUDE.md, "Running
+  # questions document"). questions.md is the live queue — archiving it drops
+  # OPEN entries and turns health-check gate 14 red; questions-archive.md is the
+  # answered history, and archive/ is gitignored, so moving it there takes that
+  # history out of version control. `scripts/questions.sh archive` already
+  # prunes answered entries, so neither file needs this script's help.
+  questions.md
+  questions-archive.md
 )
 
 is_permanent() {
