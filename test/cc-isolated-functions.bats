@@ -10,6 +10,8 @@
 #
 # Usage: bats test/cc-isolated-functions.bats
 
+bats_require_minimum_version 1.5.0
+
 setup() {
   CONFIG_SRC="$BATS_TEST_DIRNAME/../devcontainer-config"
 
