@@ -401,6 +401,8 @@ Issues in the top-right quadrant are your priority. Top-left are important but r
 
 ### Findings Report Structure
 
+Save the report as `docs/working/testing-findings-{topic}.md` — this is "the findings doc" that the RPI and DD pivots above carry forward.
+
 1. **Executive summary** (≤5 sentences: what we tested, top 3 findings, recommended action)
 2. **Method** (participants, tasks, metrics — keep brief)
 3. **SUS score + interpretation** (number, grade, comparison to prior rounds if any)

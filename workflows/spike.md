@@ -29,7 +29,29 @@ grep -i -E "keyword1|keyword2|keyword3" docs/thoughts/spike-graveyard.md
 
 Surface every match to the user before proceeding. A match doesn't always mean the spike is wasted — conditions may have changed (new library version, different constraints, the prior spike was scoped differently) — but the prior abandonment reason should inform the current question. If the prior reason still applies, abandon before starting; if not, note in step 2 why this attempt is different.
 
-If `docs/thoughts/spike-graveyard.md` doesn't exist yet, create it with the header from `workflows/spike.md`'s reference (see step 5 for the append format). An empty graveyard is fine — it just means no spike has been abandoned in this repo yet.
+If `docs/thoughts/spike-graveyard.md` doesn't exist yet, create it with this header (see step 5 for the append format):
+
+```markdown
+# Spike Graveyard
+
+This file records spikes that were abandoned, refuted, or otherwise did not lead to proceeding with the tested approach. It exists so future spikes can grep it before scoping — to avoid re-investigating the same dead ends.
+
+Each entry is a single line in the format:
+
+    <date> | <question> | <abandonment reason> | <branch>
+
+- **date**: YYYY-MM-DD
+- **question**: the spike's original one-sentence question
+- **abandonment reason**: a one-clause summary of why the approach was abandoned
+- **branch**: the spike branch name — a pointer for git archaeology even after the branch is deleted
+
+Last verified: [date]
+Relevant paths: [paths]
+
+---
+```
+
+An empty graveyard is fine — it just means no spike has been abandoned in this repo yet.
 
 **Done when...**
 - [ ] `docs/thoughts/spike-graveyard.md` has been grepped for keywords from the candidate spike question
