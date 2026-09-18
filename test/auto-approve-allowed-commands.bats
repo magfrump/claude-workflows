@@ -66,3 +66,34 @@ run_hook() {
   run run_hook 'bats test/foo.bats | python3 -c "pass"'
   [[ "$output" != *'"permissionDecision":"allow"'* ]]
 }
+
+# --- Parse failures fail closed ---
+# bash runs a multi-line script one complete command at a time, so the lines
+# before a syntax error still execute. An input the parser cannot read must
+# fall through to the normal prompt, never be allowed as "no commands found".
+
+@test "a command the parser cannot read falls through instead of being allowed" {
+  echo '{"permissions":{"deny":[]}}' > "$HOME/.claude/settings.json"
+  echo '{"permissions":{"allow":["Bash(ls:*)"]}}' > "$PROJECT/.claude/settings.json"
+
+  run run_hook $'touch should-not-run\nls ('
+  [ "$status" -eq 0 ]
+  [[ "$output" != *'"permissionDecision":"allow"'* ]]
+}
+
+@test "an unparseable bash -c inner script falls through instead of being allowed" {
+  echo '{"permissions":{"deny":[]}}' > "$HOME/.claude/settings.json"
+  echo '{"permissions":{"allow":["Bash(ls:*)"]}}' > "$PROJECT/.claude/settings.json"
+
+  run run_hook $'bash -c "touch should-not-run\nls ("'
+  [ "$status" -eq 0 ]
+  [[ "$output" != *'"permissionDecision":"allow"'* ]]
+}
+
+@test "a parseable allow-listed command is still allowed after the fail-closed change" {
+  echo '{"permissions":{"deny":[]}}' > "$HOME/.claude/settings.json"
+  echo '{"permissions":{"allow":["Bash(ls:*)"]}}' > "$PROJECT/.claude/settings.json"
+
+  run run_hook $'ls -la\nls /tmp'
+  [[ "$output" == *'"permissionDecision":"allow"'* ]]
+}

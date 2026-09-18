@@ -167,11 +167,18 @@ main() {
 
   # Extract commands using built-in parser (NUL-delimited for multi-line command support)
   NUL_DELIM=true
-  mapfile -d '' extracted_commands < <(extract_commands_from_string "$command") || {
+  # FAIL CLOSED on a parse failure. mapfile's own status is always 0, so the
+  # parser's status has to be read from the process substitution via `wait $!`
+  # (bash >= 4.4; older bash makes `wait` fail, which also falls through).
+  # Without this, an unparseable command extracted to an empty list and hit the
+  # "no commands found, allowing" branch below — and bash still runs every line
+  # before the syntax error. Capturing with $(...) instead would strip the NULs.
+  mapfile -d '' extracted_commands < <(extract_commands_from_string "$command")
+  if ! wait $!; then
     debug "Command parsing failed"
     debug "Falling through to normal permission check"
     exit 0
-  }
+  fi
   debug "Extracted ${#extracted_commands[@]} commands:"
   for cmd in "${extracted_commands[@]}"; do
     debug "  - $cmd"
@@ -500,8 +507,9 @@ extract_commands_from_string() {
 
     if [[ -n "$inner" ]]; then
       debug "Found shell -c, recursing into: $inner"
-      # Recursively extract commands from the inner script
-      extract_commands_from_string "$inner"
+      # Recursively extract commands from the inner script; an inner parse
+      # failure must fail the whole extraction, not vanish (see main).
+      extract_commands_from_string "$inner" || return 1
     else
       # Output the command with appropriate delimiter
       if $NUL_DELIM; then
