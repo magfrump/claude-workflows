@@ -9,7 +9,7 @@
 # No arguments or options. Exits 0 if all checks pass, non-zero otherwise.
 #
 # Environment:
-#   HEALTH_CHECK_SKILLS_DIR  Directory scanned for skill files (checks 1, 3, 9).
+#   HEALTH_CHECK_SKILLS_DIR  Directory scanned for skill files (checks 1, 9, 12, 13).
 #                            Defaults to "$REPO_ROOT/skills". Test-only seam:
 #                            test/scripts/health-check.bats points it at a
 #                            copy under $BATS_TEST_TMPDIR so its broken-skill

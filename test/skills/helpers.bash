@@ -25,14 +25,14 @@ load_report() {
   if [ "$CLAIM_COUNT" -eq 0 ]; then
     skip "Report has no claims"
   fi
-  # Extract only the claims sections (from the first claim heading up to the first
-  # later ## heading that is not itself a claim heading) so field-counting helpers
-  # aren't thrown off by metadata fields that share the same name (e.g.
-  # **Confidence:** in a report header). Runs to end of file when no such heading
-  # follows the claims.
+  # Extract only the claims sections (each claim heading up to the next ## heading
+  # that is not itself a claim heading) so field-counting helpers aren't thrown
+  # off by metadata fields that share the same name (e.g. **Confidence:** in a
+  # report header). Capture resumes at every later claim heading, because
+  # code-fact-check puts more claims after a `## Submitted Claims` heading.
   CLAIMS_BODY=$(echo "$REPORT_CONTENT" | awk -v re="$CLAIM_HEADING_RE" '
     $0 ~ re { inclaims = 1; print; next }
-    inclaims && /^## / { exit }
+    /^## / { inclaims = 0 }
     inclaims { print }
   ')
   # shellcheck disable=SC2034  # Used by test files that source this helper
