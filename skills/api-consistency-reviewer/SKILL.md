@@ -331,6 +331,9 @@ rather than eyeballing. Inconsistent rows get expanded into Findings below.
 
 ### Findings
 
+If the review surfaces no findings, keep this section and write the single line
+`No findings.` under it in place of finding entries.
+
 For each finding, use this structure:
 
 ```
@@ -411,8 +414,9 @@ pattern that establishes the convention.
 - Focus on consumer impact, not aesthetic preference. A convention that's consistently ugly
   is better than a beautiful exception.
 - Distinguish between "the codebase has an established pattern and this deviates" versus
-  "the codebase has no pattern and this is establishing one." The latter is not a finding
-  but is worth noting so the author can be deliberate about it.
+  "the codebase has no pattern and this is establishing one." The latter is still reported
+  as a finding, with a `No existing precedent in ...` line and its severity downgraded one
+  tier per the precedent rule in move #2, so the author can be deliberate about it.
 - Do not recommend breaking existing conventions to match a "better" standard. Consistency
   with the existing codebase trumps objective best practices unless the team is actively
   migrating.

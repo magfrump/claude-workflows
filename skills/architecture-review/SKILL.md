@@ -418,6 +418,9 @@ depend on which? Which direction do dependencies flow? This frames the rest of t
 
 ### Findings
 
+If the review surfaces no findings, keep this section and write the single line
+`No findings.` under it in place of finding entries.
+
 For each finding, use this structure:
 
 ```

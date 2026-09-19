@@ -40,9 +40,9 @@ here must be mirrored there in the same commit.
 Issues that must be resolved before merge. Draft cannot pass review with any red items
 unresolved.
 
-| # | Finding | Domain | Severity | Location | Legibility-target | Considered overrides | Status |
-|---|---|---|---|---|---|---|---|
-| R1 | [Description] | [Security/Performance/etc.] | Critical | `path/to/file:42` | for-author | — _or_ `#123 Won't-Fix (override departed from — see chat)` | 🔴 Unresolved |
+| # | Finding | Domain | Severity | Source | Location | Legibility-target | Considered overrides | Status |
+|---|---|---|---|---|---|---|---|---|
+| R1 | [Description] | [Security/Performance/etc.] | Critical | [Source, e.g., "security-reviewer", "Executable-defect channel", "Fact-check"] | `path/to/file:42` | for-author | — _or_ `#123 Won't-Fix (override departed from — see chat)` | 🔴 Unresolved |
 
 ---
 
@@ -370,7 +370,7 @@ another opinion.
 
 Contextual critics (test-strategy, tech-debt-triage, dependency-upgrade) do **not** count toward escalation. Their findings remain in 🟢 Consider regardless of overlap with other critics. If a contextual critic flags the same issue as a core critic, note the agreement in the finding's description for visibility, but do not escalate — contextual critics are advisory and must not gain blocking power through the escalation mechanism. A contextual-critic finding lifted to 🟡 by the [Soundness-Contradiction Channel](#soundness-contradiction-channel) or an unexecuted [Executable-Defect Channel](#executable-defect-channel) lift is likewise excluded here: those lifts are terminal at 🟡 and do not count as escalation corroboration. (An executable-defect finding whose verification *ran and confirmed* is different — the execution itself is admissible corroboration under this rule, which is why that path maps by native severity.)
 
-This rewards convergence — independent agreement across domains is the strongest signal that an issue is real and important. When escalating, place the finding in its new (higher) tier section in the rubric, not in its original tier.
+When escalating, place the finding in its new (higher) tier section in the rubric, not in its original tier.
 
 ### Soundness-Contradiction Channel
 

@@ -85,6 +85,13 @@ section() {
   section 'Must Fix' | grep -qE '^\|[^|]*#[^|]*\|.*\|[[:space:]]*Severity[[:space:]]*\|'
 }
 
+@test "Must Fix table has a Source column" {
+  # Executable-defect, Soundness and Composition cross-check rows, and refuted
+  # endorsements, can land in Must Fix carrying a Source: value (rubric.md,
+  # SKILL.md Stage 2.5); the column must exist to hold it, as in Must Address.
+  section 'Must Fix' | grep -qE '^\|[^|]*#[^|]*\|.*\|[[:space:]]*Source[[:space:]]*\|'
+}
+
 @test "Must Address table has a Severity column" {
   section 'Must Address' | grep -qE '^\|[^|]*#[^|]*\|.*\|[[:space:]]*Severity[[:space:]]*\|'
 }

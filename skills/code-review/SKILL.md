@@ -476,10 +476,12 @@ For each of the three replicate agents:
 
    ```markdown
    ## Goal-Alignment Note
-   - Answered: [yes / partial / no — one phrase]
+   - Success criterion (restated verbatim): [paste the Success criterion line from the goal preamble exactly as given — do not paraphrase]
+   - Answered: [yes / partial / no — one phrase on what was / wasn't addressed]
    - Out of scope: [what was set aside and why, or "none"]
    - Escalate: [what the orchestrator should action separately, or "nothing"]
    - Questions I would have asked: [1-3 short questions, only if scope was unclear; otherwise omit this bullet]
+   - Decisions I made: [1-3 short lines naming silent judgment calls between equally plausible interpretations; otherwise omit this bullet]
    ```
 
    One short bullet per line. No padding. The "Questions I would have asked" bullet is
@@ -850,10 +852,12 @@ For each critic agent, you MUST:
 
    ```markdown
    ## Goal-Alignment Note
-   - Answered: [yes / partial / no — one phrase]
+   - Success criterion (restated verbatim): [paste the Success criterion line from the goal preamble exactly as given — do not paraphrase]
+   - Answered: [yes / partial / no — one phrase on what was / wasn't addressed]
    - Out of scope: [what was set aside and why, or "none"]
    - Escalate: [what the orchestrator should action separately, or "nothing"]
    - Questions I would have asked: [1-3 short questions, only if scope was unclear; otherwise omit this bullet]
+   - Decisions I made: [1-3 short lines naming silent judgment calls between equally plausible interpretations; otherwise omit this bullet]
    ```
 
    One short bullet per line. No padding. The "Questions I would have asked" bullet is
@@ -944,7 +948,11 @@ verdicts into synthesis.
    text, and its location — and instruct the agent to verdict them per its "Submitted
    claims" section: same verdicts, same evidence discipline, the same orchestrator-not-analyst rule
    (most routed endorsements are executable guarantees, so expect `executed`-mode
-   verdicts). Instruct it to save the report as
+   verdicts). Instruct it to verdict **only** the submitted list — no fresh harvesting of
+   claims from the diff, which Stage 1 already covered — and to number its claims from
+   the canonical merged report's last claim number + 1 (pass that number in the prompt),
+   so the step-4 append continues the report's sequential numbering instead of restarting
+   at 1. Instruct it to save the report as
    `docs/reviews/code-fact-check-submitted-claims.md` with a `Commit: <current HEAD short
    SHA>` line. k=1 is deliberate here, not a degradation: these claims were authored by a
    named critic rather than sampled from prose, so Stage 1's verdict-stability rationale

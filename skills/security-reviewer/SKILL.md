@@ -429,6 +429,9 @@ dangerous-primitive call site in the Primitive sweep names the `S` label feeding
 
 ### Findings
 
+If the review surfaces no findings, keep this section and write the single line
+`No findings.` under it in place of finding entries.
+
 **Anchoring rule:** Every finding must reference a boundary from the Trust Boundary
 Map by its label (e.g., `B1`). Findings must not float unanchored. If a finding
 genuinely does not involve a trust boundary crossing (rare — e.g., a purely

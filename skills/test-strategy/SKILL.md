@@ -95,7 +95,7 @@ Categories to enumerate:
 For each gap, record one line in this exact form:
 
 ```
-- path/to/file.ext:LINE-LINE — <one-clause description of the path> — not covered
+- **G1** — path/to/file.ext:LINE-LINE — <one-clause description of the path> — not covered
 ```
 
 The `LINE-LINE` must point at concrete lines in the diff (or in the file, post-change). The
@@ -178,9 +178,9 @@ codebase.
 
 Output the gap list from Analysis step 3, verbatim, before any recommendations. This section is
 mandatory — if empty or vague, the test plan is incomplete. Each entry must be in the form
-`path/file.ext:LINE-LINE — <specific path> — not covered`.
+`- **G1** — path/file.ext:LINE-LINE — <specific path> — not covered`.
 
-Number the entries (`G1`, `G2`, ...) so recommendations below can reference them.
+Number the entries (`**G1**`, `**G2**`, ...) so recommendations below can reference them.
 
 ## Recommended Tests
 
