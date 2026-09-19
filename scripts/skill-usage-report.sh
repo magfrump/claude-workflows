@@ -97,8 +97,20 @@ fi
 # Use unit separator (\x1f) as internal key delimiter to avoid issues with
 # names containing colons or other common characters
 SEP=$'\x1f'
-usage_data=$(jq -r --arg pf "$PROJECT_FILTER" \
-  'select(.event and .name and (if $pf != "" then .project == $pf else true end)) | [.event, .name, .ts, .project] | @tsv' "$USAGE_LOG" \
+
+# Every jq pass reads the log with -R + `fromjson?`: plain `jq` stops at the
+# first unparseable line, and under pipefail + set -e one truncated line (a hook
+# killed mid-write) aborted the whole report with no output — which
+# flag-removal-candidates.sh then read as "no removal candidates". Bad lines
+# are skipped and counted on stderr instead. `objects` drops valid non-object
+# JSON (a bare number would otherwise fail `.event` the same way).
+bad_lines=$(jq -R 'try (fromjson | if type == "object" then empty else 1 end) catch 1' "$USAGE_LOG" | wc -l)
+if [ "$bad_lines" -gt 0 ]; then
+  echo "WARNING: skipped $bad_lines malformed line(s) in $USAGE_LOG" >&2
+fi
+
+usage_data=$(jq -rR --arg pf "$PROJECT_FILTER" \
+  'fromjson? | objects | select(.event and .name and (if $pf != "" then .project == $pf else true end)) | [.event, .name, .ts, .project] | @tsv' "$USAGE_LOG" \
   | awk -F'\t' -v sep="$SEP" '{
       key = $1 sep $2
       count[key]++
@@ -130,8 +142,8 @@ if [ -n "$usage_data" ]; then
   # Avoids the `sort | head -1` pattern, which raises SIGPIPE (head closes the
   # pipe before sort finishes writing) and, under `pipefail` + `set -e`, aborts
   # the whole script before any output is printed.
-  read -r earliest latest < <(jq -rs --arg pf "$PROJECT_FILTER" \
-    '[ .[] | select(.event and .name and .ts and (if $pf != "" then .project == $pf else true end)) | .ts ]
+  read -r earliest latest < <(jq -rRn --arg pf "$PROJECT_FILTER" \
+    '[ inputs | fromjson? | objects | select(.event and .name and .ts and (if $pf != "" then .project == $pf else true end)) | .ts ]
      | sort
      | if length > 0 then "\(.[0]) \(.[-1])" else "" end' "$USAGE_LOG")
   if [ -n "$earliest" ] && [ -n "$latest" ]; then
@@ -162,8 +174,8 @@ if [ -n "$usage_data" ]; then
   if [ -n "${wf_total[*]+x}" ]; then
     while IFS=$'\t' read -r wf_name branch_count; do
       wf_branches["$wf_name"]=$branch_count
-    done < <(jq -r --arg pf "$PROJECT_FILTER" \
-      'select(.event == "workflow" and .name and (if $pf != "" then .project == $pf else true end)) | [.name, .branch] | @tsv' "$USAGE_LOG" \
+    done < <(jq -rR --arg pf "$PROJECT_FILTER" \
+      'fromjson? | objects | select(.event == "workflow" and .name and (if $pf != "" then .project == $pf else true end)) | [.name, .branch] | @tsv' "$USAGE_LOG" \
       | sort -u | awk -F'\t' '{ count[$1]++ } END { for (k in count) printf "%s\t%d\n", k, count[k] }')
   fi
 fi
@@ -196,6 +208,9 @@ if [ "$MARKDOWN" -eq 1 ]; then
   if [ -n "$usage_data" ]; then
     while IFS=$'\t' read -r count event name last_ts projects; do
       echo "| $name | $event | $count | $last_ts | $projects |"
+      # Sub-agent dispatches of a skill are logged as agent_skill; they are
+      # still uses of that skill, so they clear its "never invoked" entry.
+      [ "$event" = "agent_skill" ] && event=skill
       seen["$event:$name"]=1
     done <<< "$usage_data"
   fi
@@ -222,7 +237,9 @@ if [ "$MARKDOWN" -eq 1 ]; then
   echo "## Workflow Completion Rates"
   echo ""
 
-  if [ ${#wf_total[@]} -gt 0 ]; then
+  # ${wf_total[*]+x}, not ${#wf_total[@]}: the latter is "unbound" under
+  # set -u when no workflow was ever read (see the branch-count pass above).
+  if [ -n "${wf_total[*]+x}" ]; then
     echo "| Workflow | Reads | Unique Branches | Reads/Branch |"
     echo "|----------|------:|----------------:|-------------:|"
     for wf in $(echo "${!wf_total[@]}" | tr ' ' '\n' | sort); do
@@ -255,6 +272,9 @@ else
   if [ -n "$usage_data" ]; then
     while IFS=$'\t' read -r count event name last_ts projects; do
       printf "%-30s %-10s %8d  %-20s  %s\n" "$name" "$event" "$count" "$last_ts" "$projects"
+      # Sub-agent dispatches of a skill are logged as agent_skill; they are
+      # still uses of that skill, so they clear its "never invoked" entry.
+      [ "$event" = "agent_skill" ] && event=skill
       seen["$event:$name"]=1
     done <<< "$usage_data"
   fi

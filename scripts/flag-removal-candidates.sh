@@ -147,7 +147,9 @@ for task_id in "${candidate_tasks[@]}"; do
       | head -5 \
       || true)
     if [ -n "$git_files" ]; then
-      files=$(echo "$git_files" | paste -sd', ' -)
+      # paste -d cycles through its delimiter list (', ' gave "a,b c,d"),
+      # so join with a single comma and space it afterwards.
+      files=$(echo "$git_files" | paste -sd, - | sed 's/,/, /g')
     fi
   fi
 
@@ -160,7 +162,12 @@ if [ "$WITH_USAGE" -eq 1 ]; then
   usage_script="${REPO_ROOT}/scripts/skill-usage-report.sh"
   if [ -f "$usage_script" ]; then
     # Capture the "Never invoked" section from usage report
-    usage_output=$(bash "$usage_script" 2>/dev/null || true)
+    # A failed report used to be swallowed here and read as "nothing is
+    # unused"; say so instead of silently dropping the usage signal.
+    if ! usage_output=$(bash "$usage_script" 2>/dev/null); then
+      echo "WARNING: $usage_script failed; usage data omitted from candidates" >&2
+      usage_output=""
+    fi
     in_never_section=0
     while IFS= read -r line; do
       if [[ "$line" == "Never invoked:"* ]]; then

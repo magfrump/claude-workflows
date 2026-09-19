@@ -122,6 +122,33 @@ add_event() {
   echo "$output" | grep -q "draft-review"
 }
 
+@test "a skill used only via sub-agent dispatch is not listed as never-invoked" {
+  add_event "agent_skill" "fact-check" "2026-03-23T10:00:00Z"
+
+  output=$(bash "$SCRIPT")
+
+  echo "$output" | grep -q "agent_skill"
+  ! echo "$output" | grep -qE "^ +fact-check +\(skill\)"
+}
+
+@test "a malformed log line is skipped with a warning, not fatal" {
+  add_event "skill" "fact-check" "2026-03-23T10:00:00Z"
+  printf '{"ts":"2026-03-23T11:00:00Z","event":"sk\n' >> "$TEST_LOG"
+  printf '42\n' >> "$TEST_LOG"
+  add_event "skill" "code-review" "2026-03-23T12:00:00Z"
+
+  run bash "$SCRIPT"
+  [ "$status" -eq 0 ]
+  echo "$output" | grep -q "WARNING: skipped 2 malformed line"
+  echo "$output" | grep -qE "^fact-check +skill +1"
+  echo "$output" | grep -qE "^code-review +skill +1"
+
+  # The date-range pass slurps the log; it must survive the same lines.
+  run bash "$SCRIPT" --markdown
+  [ "$status" -eq 0 ]
+  echo "$output" | grep -q "2026-03-23T10:00:00Z to 2026-03-23T12:00:00Z"
+}
+
 @test "lists never-invoked workflows" {
   add_event "workflow" "spike" "2026-03-23T10:00:00Z"
   # research-plan-implement is known but not in the log
