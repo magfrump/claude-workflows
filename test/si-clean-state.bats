@@ -88,6 +88,7 @@ setup() {
   [ "$status" -ne 0 ]
   echo resolved > f && git add f
 
+  # shellcheck disable=SC2034  # read by the sourced cleanup()
   RUN_MERGING=""
   cleanup
 
