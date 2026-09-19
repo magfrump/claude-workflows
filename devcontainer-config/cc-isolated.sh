@@ -443,17 +443,25 @@ probe_boundary() {
 
   # H6: this project's ~/.claude volume must not be shared with another project.
   # First run stamps the volume; later runs assert the stamp matches.
-  # shellcheck disable=SC2016  # $CC_PROJECT_ID must expand in the CONTAINER (from containerEnv)
+  # The expected id is the HOST's $pid, passed as a positional arg ($1 in the
+  # CONTAINER) the way H1/provenance pass theirs. It used to be the container's own
+  # $CC_PROJECT_ID, which made the check self-referential: an empty or wrong
+  # containerEnv stamped/compared "" = "" (or wrong = wrong) and passed (audit
+  # 2026-09-18, D2). The container's CC_PROJECT_ID must also equal it, since the
+  # volume name is derived from the same localEnv value.
+  # shellcheck disable=SC2016  # single-quoted on purpose: $1 expands in the CONTAINER
   if ! devcontainer exec "${dc[@]}" bash -c '
       m=/home/node/.claude/.cc-project-id
+      [ -n "$1" ] && [ "${CC_PROJECT_ID:-}" = "$1" ] || exit 1
       if [ -f "$m" ]; then
-        [ "$(cat "$m")" = "$CC_PROJECT_ID" ]
+        [ "$(cat "$m")" = "$1" ]
       else
-        printf "%s" "$CC_PROJECT_ID" > "$m"
+        printf "%s" "$1" > "$m"
       fi
-  '; then
-    echo "PROBE FAIL (H6): /home/node/.claude belongs to a DIFFERENT project —" >&2
-    echo "  this container is sharing a credential/memory volume across projects." >&2
+  ' _ "$pid"; then
+    echo "PROBE FAIL (H6): /home/node/.claude belongs to a DIFFERENT project (or the" >&2
+    echo "  container's CC_PROJECT_ID is not '$pid') — this container may be sharing a" >&2
+    echo "  credential/memory volume across projects." >&2
     failures=$((failures + 1))
   fi
 

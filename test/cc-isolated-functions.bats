@@ -803,10 +803,72 @@ case "$*" in
   *cc-config-hash*)        printf '%s\n' "${STUB_IMAGE_HASH:-}" ;;
   *rev-parse*)             printf '%s' "${STUB_FP:-}" ;;
   *cc-firewall/complete*)  [ -z "${STUB_FW_MISSING:-}" ] ;;
+  *cc-project-id*)
+    # H6 emulation (opt-in via STUB_CLAUDE_DIR): really run the probe's script,
+    # with /home/node/.claude redirected to a test dir and the container's
+    # CC_PROJECT_ID set from STUB_CTR_PID, so the check's logic is exercised.
+    [ -n "${STUB_CLAUDE_DIR:-}" ] || exit 0
+    while [ $# -gt 0 ] && [ "$1" != bash ]; do shift; done
+    shift 2; script="$1"; shift
+    CC_PROJECT_ID="${STUB_CTR_PID:-}" \
+      bash -c "${script//\/home\/node\/.claude/$STUB_CLAUDE_DIR}" "$@" ;;
   *)                       exit 0 ;;
 esac
 STUB
   chmod +x "$TEST_TMPDIR/bin/devcontainer"
+}
+
+# Run probe_boundary against a stubbed container whose ~/.claude volume lives in
+# $STUB_CLAUDE_DIR and whose containerEnv CC_PROJECT_ID is $1 (may be empty).
+h6_probe() {
+  [ -d "$TEST_TMPDIR/proj/.git" ] || make_repo "$TEST_TMPDIR/proj"
+  bless_manifest >/dev/null
+  smart_devcontainer_stub
+  CC_CONFIG_HASH="$(blessed_hash)"
+  STUB_IMAGE_HASH="$(blessed_hash)"
+  STUB_FP="$(ws_fingerprint "$TEST_TMPDIR/proj")"
+  STUB_CLAUDE_DIR="$TEST_TMPDIR/claudevol"
+  STUB_CTR_PID="$1"
+  mkdir -p "$STUB_CLAUDE_DIR"
+  export CC_CONFIG_HASH STUB_IMAGE_HASH STUB_FP STUB_CLAUDE_DIR STUB_CTR_PID
+}
+
+# Regression (audit 2026-09-18, D2): H6 compared the volume stamp against the
+# container's OWN $CC_PROJECT_ID, so an empty or wrong containerEnv agreed with
+# itself and passed.
+
+@test "H6 passes and stamps the host's project id on a correct container" {
+  make_repo "$TEST_TMPDIR/proj"
+  h6_probe "$(project_id "$TEST_TMPDIR/proj")"
+  run probe_boundary "$TEST_TMPDIR/proj" "$TEST_TMPDIR/nohome"
+  [ "$status" -eq 0 ]
+  [ "$(cat "$STUB_CLAUDE_DIR/.cc-project-id")" = "$(project_id "$TEST_TMPDIR/proj")" ]
+}
+
+@test "H6 fails when the container's CC_PROJECT_ID is empty (no empty stamp)" {
+  h6_probe ""
+  run probe_boundary "$TEST_TMPDIR/proj" "$TEST_TMPDIR/nohome"
+  [ "$status" -ne 0 ]
+  [[ "$output" == *"PROBE FAIL (H6)"* ]]
+  [ ! -e "$STUB_CLAUDE_DIR/.cc-project-id" ]
+  [ ! -f "$(verified_path)" ]
+}
+
+@test "H6 fails on a volume stamped for another project even if the container agrees with it" {
+  h6_probe "otherproject0000"
+  printf '%s' "otherproject0000" > "$STUB_CLAUDE_DIR/.cc-project-id"
+  run probe_boundary "$TEST_TMPDIR/proj" "$TEST_TMPDIR/nohome"
+  [ "$status" -ne 0 ]
+  [[ "$output" == *"PROBE FAIL (H6)"* ]]
+}
+
+@test "H6 fails on an empty stamp left by an earlier empty-env run" {
+  make_repo "$TEST_TMPDIR/proj"
+  h6_probe "$(project_id "$TEST_TMPDIR/proj")"
+  : > "$STUB_CLAUDE_DIR/.cc-project-id"
+  run probe_boundary "$TEST_TMPDIR/proj" "$TEST_TMPDIR/nohome"
+  [ "$status" -ne 0 ]
+  [[ "$output" == *"PROBE FAIL (H6)"* ]]
 }
 
 @test "blessed_hash needs a manifest, is stable, and changes when the boundary changes" {
