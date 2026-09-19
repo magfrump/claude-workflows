@@ -50,7 +50,7 @@ case "$prompt" in
   *"Run the code-review skill"*)
     printf '%s: 0\n' "$(printf '%s' "$prompt" | grep -oE 'CODE_REVIEW_RED\[[0-9a-f]+\]' | head -1)" ;;
   *"There are merge conflicts"*) exit "${STUB_RESOLVER_RC:-1}" ;;
-  *"diagnosed problems and a list of approved"*) echo "[]" ;;
+  *"diagnosed problems and a list of merged"*) echo "[]" ;;
 esac
 exit 0
 STUB
@@ -97,6 +97,23 @@ run_si() {
   [ "$status" -ne 0 ]
   run grep -E '^\| 1 \| b \|' "$WD/hypothesis-log.md"
   [ "$status" -ne 0 ]
+}
+
+@test "a run refused on a dirty tree leaves the user's in-progress merge alone" {
+  # The EXIT trap is armed before the clean-main preflight, so it fires on a
+  # refusal too; it must only abort a merge this run started.
+  git -C "$REPO" switch -qc other
+  echo theirs > "$REPO/shared.txt" && git -C "$REPO" commit -qam theirs
+  git -C "$REPO" switch -q main
+  echo ours > "$REPO/shared.txt" && git -C "$REPO" commit -qam ours
+  run git -C "$REPO" merge other --no-edit
+  [ "$status" -ne 0 ]
+  echo resolved-by-user > "$REPO/shared.txt" && git -C "$REPO" add shared.txt
+
+  run_si
+  [ "$status" -ne 0 ]
+  git -C "$REPO" rev-parse -q --verify MERGE_HEAD
+  [ "$(cat "$REPO/shared.txt")" = "resolved-by-user" ]
 }
 
 @test "A3: a branch kept by an earlier run survives and its task is skipped" {

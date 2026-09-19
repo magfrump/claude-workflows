@@ -111,6 +111,18 @@ SKILL="~/.claude/skills/foo/SKILL.md"
   assert_decision deny
 }
 
+@test ">& FILE (stdout+stderr to a file) to settings.json is denied" {
+  guard "$(bash_payload "echo x >& $SETTINGS")"
+  assert_decision deny
+  guard "$(bash_payload "echo x 1>&$SETTINGS")"
+  assert_decision deny
+}
+
+@test ">&- (close stdout) on a read of settings.json is not a write" {
+  guard "$(bash_payload "cat $SETTINGS >&-")"
+  assert_defer
+}
+
 @test "a HARD-path deny holds in an untainted session too" {
   guard "$(bash_payload "echo x > $SETTINGS" never-tainted)"
   assert_decision deny

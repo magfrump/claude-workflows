@@ -58,15 +58,24 @@ RUN_BRANCHES=()
 # an orphan that keeps editing (and committing into) a deleted directory.
 RUN_PIDS=()
 CLEANUP_DONE=""
+# Set only while this run has a `git merge` of its own in flight, so cleanup
+# never aborts a merge the user had in progress when the run was refused.
+RUN_MERGING=""
 cleanup() {
     # Run once: the INT/TERM/HUP traps exit, which fires EXIT again.
     [ -z "$CLEANUP_DONE" ] || return 0
     CLEANUP_DONE=1
+    # A second INT/TERM/HUP while blocked in `wait` below would run `exit`
+    # inside this trap and cut cleanup short for good (CLEANUP_DONE is set).
+    trap '' INT TERM HUP
     if [ -n "$ROUND_LOG_FILE" ] && [ -f "$ROUND_LOG_FILE" ]; then
         rm -f "$ROUND_LOG_FILE"
     fi
-    # Stop implementers BEFORE removing their worktrees. pkill -P reaches the
-    # `claude` child of each subshell; kill reaches the subshell itself.
+    # Stop implementers BEFORE removing their worktrees. bash usually execs
+    # the subshell's last command, so the tracked PID is often `claude` itself
+    # (kill) and pkill -P reaches its direct children; if the subshell did not
+    # exec, kill stops the subshell and pkill -P its `claude`. Deeper
+    # descendants (a tool shell's own children) depend on claude exiting them.
     local p
     for p in "${RUN_PIDS[@]:-}"; do
         [ -n "$p" ] || continue
@@ -79,8 +88,9 @@ cleanup() {
     done
     RUN_PIDS=()
     # A crash (or signal) mid-merge would otherwise leave main wedged with
-    # MERGE_HEAD and conflict markers in the working tree.
-    if [ -d "${REPO_DIR:-}" ] && git -C "$REPO_DIR" rev-parse -q --verify MERGE_HEAD >/dev/null 2>&1; then
+    # MERGE_HEAD and conflict markers in the working tree. Only when the merge
+    # is ours: a refused run (dirty tree) must not discard the user's own merge.
+    if [ -n "$RUN_MERGING" ] && [ -d "${REPO_DIR:-}" ] && git -C "$REPO_DIR" rev-parse -q --verify MERGE_HEAD >/dev/null 2>&1; then
         git -C "$REPO_DIR" merge --abort 2>/dev/null || true
     fi
     # Force-remove any worktrees this run created that are still around.
@@ -342,18 +352,21 @@ select_run_rubric() {
 # Is a changed path covered by the task's declared files_touched list? Whole-
 # path match: the old `grep -qF` substring test let `a.sh` pass on a declared
 # `scripts/a.sh.bak`, or `foo.md` on `docs/foo.md`. A declared entry ending in
-# `/` is a directory and covers everything beneath it (planners occasionally
-# declare e.g. `test/skills/schemas/`).
+# `/` (or naming a directory without one, e.g. `skills/foo`) covers
+# everything beneath it; a leading `./` is ignored.
 # Args: $1 = changed path, $2 = declared paths, one per line.
 # Returns: 0 if in scope, 1 otherwise.
 file_in_declared_scope() {
     local file=$1 declared=$2 entry
     while IFS= read -r entry; do
+        # The task schema accepts `./x` and directory entries with or without
+        # a trailing slash; normalise both, then match the path exactly or as
+        # something beneath the entry.
+        entry=${entry#./}
+        entry=${entry%/}
         [ -n "$entry" ] || continue
         [ "$file" = "$entry" ] && return 0
-        case "$entry" in
-            */) [[ "$file" == "$entry"* ]] && return 0 ;;
-        esac
+        [[ "$file" == "$entry/"* ]] && return 0
     done <<< "$declared"
     return 1
 }
@@ -1696,54 +1709,6 @@ The bracketed token is a per-run identifier — reproduce it exactly. Count only
     echo "Approved tasks: $APPROVED_TASKS"
 
     # -------------------------------------------------------
-    # Step 4b: Update problem history with solved problems only
-    # -------------------------------------------------------
-    # Use Claude to identify which diagnosed problems were addressed by the
-    # approved tasks. Only those go into problem-history.json — unsolved
-    # problems should recur in future rounds without triggering convergence.
-    # Note: PROBLEMS_JSON and PROBLEM_COUNT were set in step 1b (problem extraction).
-    echo "Updating problem history (solved problems only)..."
-    TASK_DESCS=$(jq -r '.[] | "\(.id): \(.description)"' "$TASKS_FILE" 2>/dev/null) || true
-    _SOLVED_PROMPT="You are given a list of diagnosed problems and a list of approved task IDs.
-
-DIAGNOSED PROBLEMS (from this round's divergent design):
-${PROBLEMS_JSON}
-
-APPROVED TASK IDS:
-${APPROVED_TASKS}
-
-TASK DESCRIPTIONS (from docs/working/tasks-round-${ROUND}.json):
-${TASK_DESCS}
-
-FEATURE IDEAS FILE: docs/working/feature-ideas-round-${ROUND}.md
-
-"
-    read -r -d '' _SOLVED_BODY <<'SOLVED_EOF' || true
-Determine which of the diagnosed problems are addressed by at least one approved task.
-A problem is 'addressed' if an approved task was designed to solve it (check the match/prune table or tradeoff matrix in the feature ideas file if needed).
-
-Output ONLY a JSON array of the problem strings that were addressed. Include only problems from the DIAGNOSED PROBLEMS list above, using their exact text. If no problems were addressed, output: []
-SOLVED_EOF
-    _SOLVED_PROMPT+="$_SOLVED_BODY"
-    SOLVED_PROBLEMS_JSON=$(claude -p "$_SOLVED_PROMPT" 2>/dev/null | sed 's/^[[:space:]]*//' | grep -E '^\[' | head -1) || true
-
-    # Validate JSON; fall back to empty array
-    if ! echo "$SOLVED_PROBLEMS_JSON" | jq empty 2>/dev/null; then
-        echo "  Warning: could not determine solved problems, storing none"
-        SOLVED_PROBLEMS_JSON="[]"
-    fi
-
-    SOLVED_COUNT=$(echo "$SOLVED_PROBLEMS_JSON" | jq 'length')
-    echo "  $SOLVED_COUNT of $PROBLEM_COUNT problems addressed by approved tasks"
-
-    if [ "$SOLVED_COUNT" -gt 0 ]; then
-        jq --argjson problems "$SOLVED_PROBLEMS_JSON" \
-           --arg round "$ROUND" \
-           '. + {($round): $problems}' "$HISTORY_FILE" > "${HISTORY_FILE}.tmp" \
-           && mv "${HISTORY_FILE}.tmp" "$HISTORY_FILE"
-    fi
-
-    # -------------------------------------------------------
     # Step 5: Merge approved features
     # -------------------------------------------------------
     echo "Merging approved features..."
@@ -1762,6 +1727,7 @@ SOLVED_EOF
 
         echo "  Merging: $BRANCH"
         MERGE_STATUS="clean"
+        RUN_MERGING=1
         git merge "$BRANCH" --no-edit || {
             echo "  Conflict in $BRANCH, attempting auto-resolve..."
             # Hand conflicts to Claude for resolution. Resolving a conflict
@@ -1812,6 +1778,10 @@ Then git add the resolved files and git commit to complete the merge." || RESOLV
             fi
         }
 
+        # Settled: merged, resolved, aborted, or halted with main left for the
+        # user (the break above skips this, so the trap still aborts that one).
+        RUN_MERGING=""
+
         # Record merge outcome
         jq_update_inplace "$ROUND_LOG_FILE" --arg tid "$TASK_ID" --arg s "$MERGE_STATUS" \
             '.merges[$tid] = $s'
@@ -1834,6 +1804,57 @@ Then git add the resolved files and git commit to complete the merge." || RESOLV
         fi
     done
 
+    # -------------------------------------------------------
+    # Step 4b: Update problem history with solved problems only
+    # -------------------------------------------------------
+    # Runs after the merge step and reads MERGED_TASKS: an approved task that
+    # never landed (conflict_unresolved, or halted) did not solve anything, and
+    # counting it would feed convergence a problem that is still open.
+    # Use Claude to identify which diagnosed problems were addressed by the
+    # merged tasks. Only those go into problem-history.json — unsolved
+    # problems should recur in future rounds without triggering convergence.
+    # Note: PROBLEMS_JSON and PROBLEM_COUNT were set in step 1b (problem extraction).
+    echo "Updating problem history (solved problems only)..."
+    TASK_DESCS=$(jq -r '.[] | "\(.id): \(.description)"' "$TASKS_FILE" 2>/dev/null) || true
+    _SOLVED_PROMPT="You are given a list of diagnosed problems and a list of merged task IDs.
+
+DIAGNOSED PROBLEMS (from this round's divergent design):
+${PROBLEMS_JSON}
+
+MERGED TASK IDS:
+${MERGED_TASKS}
+
+TASK DESCRIPTIONS (from docs/working/tasks-round-${ROUND}.json):
+${TASK_DESCS}
+
+FEATURE IDEAS FILE: docs/working/feature-ideas-round-${ROUND}.md
+
+"
+    read -r -d '' _SOLVED_BODY <<'SOLVED_EOF' || true
+Determine which of the diagnosed problems are addressed by at least one merged task.
+A problem is 'addressed' if a merged task was designed to solve it (check the match/prune table or tradeoff matrix in the feature ideas file if needed).
+
+Output ONLY a JSON array of the problem strings that were addressed. Include only problems from the DIAGNOSED PROBLEMS list above, using their exact text. If no problems were addressed, output: []
+SOLVED_EOF
+    _SOLVED_PROMPT+="$_SOLVED_BODY"
+    SOLVED_PROBLEMS_JSON=$(claude -p "$_SOLVED_PROMPT" 2>/dev/null | sed 's/^[[:space:]]*//' | grep -E '^\[' | head -1) || true
+
+    # Validate JSON; fall back to empty array
+    if ! echo "$SOLVED_PROBLEMS_JSON" | jq empty 2>/dev/null; then
+        echo "  Warning: could not determine solved problems, storing none"
+        SOLVED_PROBLEMS_JSON="[]"
+    fi
+
+    SOLVED_COUNT=$(echo "$SOLVED_PROBLEMS_JSON" | jq 'length')
+    echo "  $SOLVED_COUNT of $PROBLEM_COUNT problems addressed by merged tasks"
+
+    if [ "$SOLVED_COUNT" -gt 0 ]; then
+        jq --argjson problems "$SOLVED_PROBLEMS_JSON" \
+           --arg round "$ROUND" \
+           '. + {($round): $problems}' "$HISTORY_FILE" > "${HISTORY_FILE}.tmp" \
+           && mv "${HISTORY_FILE}.tmp" "$HISTORY_FILE"
+    fi
+
     # Print human-readable round summary after merges
     print_round_summary "$ROUND" "$WORKING_DIR/validation-round-$ROUND.log"
 
@@ -1849,7 +1870,7 @@ Then git add the resolved files and git commit to complete the merge." || RESOLV
     # instead of it living only in per-round JSON reports.
     FP_LIB="$REPO_DIR/docs/thoughts/failure-patterns.md"
     FIX_RETROS=""
-    for TASK_ID in $APPROVED_TASKS; do
+    for TASK_ID in $MERGED_TASKS; do
         TIP_SHA="${BRANCH_TIP_SHAS[$TASK_ID]:-}"
         [ -n "$TIP_SHA" ] || continue
         SUBJ=$(git log -1 --format=%s "$TIP_SHA" 2>/dev/null || echo "")

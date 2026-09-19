@@ -97,7 +97,7 @@ REJECTED: files outside declared scope:
 2. **Restructure the implementation** — keep the helper logic inside the skill file itself rather than factoring it out.
 3. **Use `docs/working/`** — put auxiliary outputs there (always allowed), then promote them in a later task.
 
-**Key insight:** Gate 1c uses `grep -qF` (fixed-string match), so declaring `docs/reviews/` in `files_touched` matches any file path containing that string. But declaring `skills/self-evaluation.md` requires an exact filename match — `skills/self-eval.md` would not match.
+**Key insight:** Gate 1c matches whole paths (`file_in_declared_scope`): a declared file covers exactly that path, and a declared directory — `docs/reviews/` or `docs/reviews`, with or without a leading `./` — covers everything beneath it. It is not a substring test: declaring `skills/self-evaluation.md` does not cover `skills/self-eval.md`, and declaring `README.md` does not cover `skills/foo/README.md`.
 
 ---
 

@@ -12,6 +12,8 @@
 #   A3 — a leftover branch/dir from an earlier run was tracked before the
 #        (failing) `worktree add`, so this run's trap deleted it.
 #   A8 — the file-scope gate matched substrings, not whole paths.
+#   Review — cleanup aborted a merge the user had in progress when the run
+#        was merely refused (dirty tree); it now aborts only its own merge.
 #
 # End-to-end coverage of the same fixes (driving the real main loop with a
 # stubbed claude) lives in test/scripts/self-improvement-clean-state.bats.
@@ -64,18 +66,33 @@ setup() {
 
 # --- cleanup: merge state (A1) ---
 
-@test "cleanup aborts a merge left in progress on main" {
+@test "cleanup aborts a merge this run left in progress on main" {
   git switch -qc other && echo other > f && git commit -qam other
   git switch -q main && echo mine > f && git commit -qam mine
   run git merge other --no-edit
   [ "$status" -ne 0 ]
   git rev-parse -q --verify MERGE_HEAD
 
+  RUN_MERGING=1
   cleanup
 
   run git rev-parse -q --verify MERGE_HEAD
   [ "$status" -ne 0 ]
   [ -z "$(git status --porcelain --untracked-files=no)" ]
+}
+
+@test "cleanup leaves alone a merge this run did not start" {
+  git switch -qc other && echo other > f && git commit -qam other
+  git switch -q main && echo mine > f && git commit -qam mine
+  run git merge other --no-edit
+  [ "$status" -ne 0 ]
+  echo resolved > f && git add f
+
+  RUN_MERGING=""
+  cleanup
+
+  git rev-parse -q --verify MERGE_HEAD
+  [ "$(cat f)" = "resolved" ]
 }
 
 @test "cleanup keeps an approved (branch-untracked) branch but removes its worktree" {
@@ -183,6 +200,17 @@ setup() {
   run file_in_declared_scope "test/skills/schemas/x.json" "test/skills/schemas/"
   [ "$status" -eq 0 ]
   run file_in_declared_scope "test/skills/schemasX/x.json" "test/skills/schemas/"
+  [ "$status" -eq 1 ]
+}
+
+@test "file_in_declared_scope treats a slash-less or ./ directory entry as a directory" {
+  run file_in_declared_scope "skills/foo/SKILL.md" "skills/foo"
+  [ "$status" -eq 0 ]
+  run file_in_declared_scope "skills/foo/SKILL.md" "./skills/foo/"
+  [ "$status" -eq 0 ]
+  run file_in_declared_scope "scripts/a.sh" "./scripts/a.sh"
+  [ "$status" -eq 0 ]
+  run file_in_declared_scope "skills/foobar/SKILL.md" "skills/foo"
   [ "$status" -eq 1 ]
 }
 
