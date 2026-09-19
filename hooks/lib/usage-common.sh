@@ -51,11 +51,11 @@ init_usage_hook() {
     # log_completion helpers. shellcheck can't see across source boundaries.
     # shellcheck disable=SC2034
     TS=$(date -u +"%Y-%m-%dT%H:%M:%SZ")
-    # shellcheck disable=SC2034
     # Test git's status, not basename's: `basename ""` succeeds with empty
     # output, so the old `basename "$(git …)" || echo` fallback never fired and
     # every event logged outside a repo got an empty project.
     local top
+    # shellcheck disable=SC2034
     if top=$(git rev-parse --show-toplevel 2>/dev/null) && [ -n "$top" ]; then
         PROJECT=${top##*/}
     else

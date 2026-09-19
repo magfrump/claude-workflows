@@ -70,8 +70,13 @@ taint() {  # mark session $1 as web-tainted via the real PostToolUse hook
   jq -n -c --arg s "$1" '{"session_id":$s,"tool_name":"WebFetch"}' | python3 "$MARK"
 }
 
+# The tilde is deliberately literal: these are command TEXT the hook must
+# recognise as a protected path, not paths for this shell to expand.
+# shellcheck disable=SC2088
 SETTINGS="~/.claude/settings.json"
+# shellcheck disable=SC2088
 HOOKFILE="~/.claude/hooks/foo.sh"
+# shellcheck disable=SC2088
 SKILL="~/.claude/skills/foo/SKILL.md"
 
 # --- HARD path via Bash: deny ---
