@@ -1,4 +1,5 @@
 #!/usr/bin/env bats
+# @category slow
 # Tests for the settings-wiring merge in devcontainer-config/link-claude-home.sh
 # (decision 023, and amendment B which added the permissions block).
 #

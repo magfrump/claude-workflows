@@ -1,4 +1,5 @@
 #!/usr/bin/env bats
+# @category slow
 # Tests for scripts/flag-removal-candidates.sh
 #
 # Central use cases:

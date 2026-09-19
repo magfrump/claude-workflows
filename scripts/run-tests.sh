@@ -43,15 +43,17 @@ done
 # Collect .bats files matching the requested category.
 collect_tests() {
   local wanted="$1"
-  local files=()
+  local files=() untagged=()
 
   while IFS= read -r -d '' file; do
     # Extract the @category tag from the file (first match only)
     local tag
     tag=$(grep -m1 '^# @category ' "$file" 2>/dev/null | sed 's/^# @category //' || true)
 
+    # An untagged suite used to be skipped with a warning, which left two
+    # suites unrun by every runner. Collect them and fail below instead.
     if [[ -z "$tag" ]]; then
-      echo "WARNING: no @category tag in $file — skipping" >&2
+      untagged+=("$file")
       continue
     fi
 
@@ -60,10 +62,15 @@ collect_tests() {
     fi
   done < <(find "$TEST_DIR" -name '*.bats' -print0 | sort -z)
 
+  if [[ ${#untagged[@]} -gt 0 ]]; then
+    printf 'ERROR: no "# @category fast|slow" tag in %s\n' "${untagged[@]}" >&2
+    return 1
+  fi
+
   printf '%s\n' "${files[@]}"
 }
 
-matched=$(collect_tests "$category")
+matched=$(collect_tests "$category") || exit 1
 
 if [[ -z "$matched" ]]; then
   echo "No test files matched category: $category" >&2
