@@ -133,15 +133,22 @@ Finding A: {a}
 Finding B: {b}"""
 
 # The FINDINGS accept spec (this regex) is DEFINED by scripts/lite-review.py
-# (decision log 48); this is the copy, byte-identical when ownership moved. Only
-# the regex is shared: the two parse_findings bodies already differ in four ways,
+# (decision log 48); this is the copy. It was byte-identical when ownership moved,
+# drifted when the owner fixed catastrophic backtracking (A6 / B2, decision log
+# 54), and was re-synced to the owner's current regex on 2026-09-18 — byte-
+# identical again as of that date, along with the owner's skip of pipe-less
+# lines in parse_findings (Q-022). Only the regex is shared: the two parse_findings bodies already differ in four ways,
 # and the record schema was never shared at all (we emit sev/desc/line_start, the
 # owner emits severity/title/description). If this harness moves to the SWRBench
 # fork, keep THE REGEX in step with the owner deliberately or state in the fork
 # that the two have diverged - and do not assume a matching regex means matching
 # parse behavior. See the owner's header for the full list.
+# Owner's note (lite-review.py): the path must not start with whitespace, or the
+# leading `\s*` and the path split a whitespace run in O(n) ways and a numbered
+# line of spaces followed by pipes backtracks cubically. `|(?<=\s)` keeps the
+# empty-after-strip path row shape (`1.  | High | ...`) the old regex accepted.
 FINDING_RE = re.compile(
-    r"^\s*\d+\.\s*(?P<path>[^|:]+?)(?::(?P<lines>[\d\-, ]+))?\s*\|"
+    r"^\s*\d+\.\s*(?P<path>[^|:\s][^|:]*?|(?<=\s))(?::(?P<lines>[\d\-, ]+))?\s*\|"
     r"\s*(?P<sev>Critical|High|Medium|Low|Informational)\s*\|"
     r"\s*(?P<domain>[^|]+)\|\s*(?P<title>[^|]+)\|\s*(?P<desc>.+)$",
     re.IGNORECASE,
@@ -301,17 +308,27 @@ def fetch_pricing(key):
         return {}
 
 
+# Header tolerance: models often wrap the header in markdown emphasis or a
+# heading marker (`**FINDINGS:**`, `## FINDINGS:`); those still open the block.
+FINDINGS_HEADER_RE = re.compile(r"^[\s*_#>`]*FINDINGS[\s*_`]*:", re.IGNORECASE)
+FINDINGS_NONE_RE = re.compile(r"FINDINGS[\s*_`]*:[\s*_`]*NONE", re.IGNORECASE)
+
+
 def parse_findings(text):
     """Parse the FINDINGS block; returns (findings, parse_ok)."""
-    if re.search(r"FINDINGS:\s*NONE", text, re.IGNORECASE):
+    if FINDINGS_NONE_RE.search(text):
         return [], True
     rows = []
     in_block = False
     for line in text.splitlines():
-        if re.match(r"\s*FINDINGS\s*:", line):
+        if FINDINGS_HEADER_RE.match(line):
             in_block = True
             continue
         if not in_block:
+            continue
+        # Ported from lite-review.py (Q-022): every well-formed row carries four
+        # pipes, so a pipe-less line cannot match and is not handed to the regex.
+        if "|" not in line:
             continue
         m = FINDING_RE.match(line)
         if m:
@@ -554,6 +571,14 @@ def main():
         print(f"\n({len(errored)} errored runs excluded from overlap: "
               f"{sorted({r['model'] + ' ' + r['error'] for r in errored})})")
     runs = [r for r in runs if not r.get("error")]
+    # Unparseable runs are absent too: parse_findings returned no rows because it
+    # found no FINDINGS block, not because the model found nothing. Scoring them
+    # as empty lists would make two unparseable replicates agree perfectly (J=1.0).
+    unparsed = [r for r in runs if r.get("parse_ok") is False]
+    if unparsed:
+        print(f"\n({len(unparsed)} unparseable runs (parse_ok=false) excluded from overlap: "
+              f"{sorted({r['model'] + ' r' + str(r['replicate']) for r in unparsed})})")
+    runs = [r for r in runs if r.get("parse_ok") is not False]
     by_key = {(r["model"], r["replicate"]): r["findings"] for r in runs}
     models = sorted({r["model"] for r in runs})
     reps = sorted({r["replicate"] for r in runs})
@@ -595,7 +620,9 @@ def main():
         if runs_m:
             abstain[m] = round(sum(1 for r in runs_m if not r["findings"]) / len(runs_m), 3)
 
-    results = {"judge": args.judge if key else "stage1-only", "abstain": abstain, "self": {}, "cross": {}}
+    results = {"judge": args.judge if key else "stage1-only", "abstain": abstain,
+               "excluded": {"errored": len(errored), "unparseable": len(unparsed)},
+               "self": {}, "cross": {}}
     for m in models:
         pairs = [pair_j((m, a), (m, b)) for a, b in itertools.combinations(reps, 2) if (m, a) in by_key and (m, b) in by_key]
         if pairs:
