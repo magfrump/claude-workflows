@@ -20,7 +20,7 @@
     "trusted-policy paths), auto-approve-allowed-commands.sh (grants permission) and",
     "live-verify-gate.sh (blocks a `git commit` of a cc-isolated enforcement file whose",
     "message has no Live-verified: trailer — decision log #45).",
-    "Those two sit on the permission path — see decision 023 for why they are on by",
+    "Those three sit on the permission path — see decision 023 for why they are on by",
     "default and how to opt out (CC_SKIP_HOOK_WIRING=1).",
     "",
     "The permissions.deny block is not decoration: guard-trusted-writes.py DEFERS on its",

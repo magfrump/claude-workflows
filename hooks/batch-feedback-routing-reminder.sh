@@ -61,7 +61,10 @@ numbered=$(printf '%s\n' "$PROMPT" | grep -cE '^[[:space:]]*[0-9]+[.)][[:space:]
 [[ "$numbered" -ge 2 ]] && emit
 
 # (b) Bullet list: >=2 lines beginning with '-', '*', or '•' and a space.
-bullets=$(printf '%s\n' "$PROMPT" | grep -cE '^[[:space:]]*([-*•])[[:space:]]')
+# Alternation, not a bracket expression: in the C locale (what grep falls back
+# to when LC_ALL names an uninstalled locale) '•' is three bytes and `[-*•]`
+# matches none of them as a unit.
+bullets=$(printf '%s\n' "$PROMPT" | grep -cE '^[[:space:]]*(-|\*|•)[[:space:]]')
 [[ "$bullets" -ge 2 ]] && emit
 
 # (c) Explicit multi-item enumeration phrasings (case-insensitive). Each is
