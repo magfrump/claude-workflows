@@ -267,9 +267,50 @@ make_repo() {
   CC_CONFIG_HASH="deadbeef"
   run rebuild_hint "$TEST_TMPDIR/proj" --workspace-folder "$TEST_TMPDIR/proj"
   [ "$status" -eq 0 ]
-  [[ "$output" == *"CC_EGRESS_PROFILE='lean'"* ]]
-  [[ "$output" == *"CC_CONFIG_HASH='deadbeef'"* ]]
+  [[ "$output" == *"CC_EGRESS_PROFILE=lean"* ]]
+  [[ "$output" == *"CC_CONFIG_HASH=deadbeef"* ]]
   [[ "$output" == *"devcontainer up --remove-existing-container"* ]]
+}
+
+# Regression (audit 2026-09-18, D3): the by-hand form carried only
+# CC_EGRESS_PROFILE and CC_CONFIG_HASH, but devcontainer.json also reads
+# CC_PROJECT_ID (the volume names), CC_PROJECT_NAME and CC_CONFIG_DIR (the build
+# context) — and printed the args unquoted. Run the printed command for real
+# against a recording stub and check what devcontainer would have seen.
+@test "rebuild_hint's by-hand command, when run, sets every launcher-set localEnv var and keeps args intact" {
+  local ws="$TEST_TMPDIR/my proj \$HOME"
+  # shellcheck disable=SC2034  # read as globals by rebuild_hint
+  CC_PROJECT_ID="abc123"; CC_PROJECT_NAME="my proj \$HOME"
+  # shellcheck disable=SC2034
+  CC_CONFIG_DIR="$CLAUDE_DEVC_CONFIG_DIR"; CC_EGRESS_PROFILE="lean,python"; CC_CONFIG_HASH="deadbeef"
+  run rebuild_hint "$ws" --workspace-folder "$ws" --id-label "cc-project=abc123"
+  [ "$status" -eq 0 ]
+  # Every ${localEnv:X} devcontainer.json reads, minus the ones the user supplies
+  # themselves (TZ has a default; the two credentials are opt-in and never printed).
+  local var vars
+  vars=$(grep -o '\${localEnv:[A-Z_]*' "$CONFIG_SRC/devcontainer.json" | sed 's/.*://' | sort -u \
+         | grep -vxE 'TZ|OPENROUTER_API_KEY|GH_TOKEN')
+  [ -n "$vars" ]
+  # Recording stub: dumps its env and argv, one arg per line.
+  cat > "$TEST_TMPDIR/bin/devcontainer" <<'STUB'
+#!/usr/bin/env bash
+env > "$REC_DIR/env"
+printf '%s\n' "$@" > "$REC_DIR/args"
+STUB
+  chmod +x "$TEST_TMPDIR/bin/devcontainer"
+  # The by-hand command is everything after the "or by hand" line.
+  local cmd
+  cmd=$(printf '%s\n' "$output" | sed '1,/or by hand/d')
+  env -i PATH="$PATH" REC_DIR="$TEST_TMPDIR" bash -c "$cmd"
+  for var in $vars; do
+    grep -qx "$var=.\+" "$TEST_TMPDIR/env" || { echo "unset in by-hand command: $var"; false; }
+  done
+  grep -qx "CC_PROJECT_NAME=my proj \\\$HOME" "$TEST_TMPDIR/env"
+  grep -qx "CC_EGRESS_PROFILE=lean,python" "$TEST_TMPDIR/env"
+  [ "$(sed -n 4p "$TEST_TMPDIR/args")" = "$ws" ]
+  [ "$(sed -n 1p "$TEST_TMPDIR/args")" = "up" ]
+  # The launcher line quotes the workspace too.
+  [[ "$(echo "$output" | head -1)" == *"cc-isolated $(printf '%q' "$ws")"* ]]
 }
 
 @test "rebuild_hint names the launcher before the by-hand form" {

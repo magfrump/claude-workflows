@@ -363,26 +363,36 @@ list_projects() {
 # The rebuild instruction printed by every "this container is not the one you
 # blessed" error. $1 = workspace, $2.. = the devcontainer CLI args.
 #
-# WHY THIS IS NOT A BARE `devcontainer up` STRING. devcontainer.json reads BOTH
-# CC_EGRESS_PROFILE and CC_CONFIG_HASH through `${localEnv:...}`, and main() is the
-# only thing that exports them. A bare `devcontainer up --remove-existing-container`
-# copied out of an error message and run from your own shell therefore resolves both
-# to the EMPTY string: the rebuild succeeds, looks correct, and bakes
-# /etc/cc-egress-profile empty (base-only egress) plus an empty /etc/cc-config-hash.
-# That is a silently NARROWER boundary, so nothing fails closed and nothing warns —
-# it surfaces days later as "my lean/python/dotnet profile stopped working". Measured
-# on 2026-09-15: a re-registered `lean` profile had no effect for exactly this reason
-# (the proxy came up with base's 9 names instead of base+lean's 14).
+# WHY THIS IS NOT A BARE `devcontainer up` STRING. devcontainer.json reads
+# CC_PROJECT_ID, CC_PROJECT_NAME, CC_CONFIG_DIR, CC_EGRESS_PROFILE and CC_CONFIG_HASH
+# through `${localEnv:...}`, and main() is the only thing that sets them. A bare
+# `devcontainer up --remove-existing-container` copied out of an error message and
+# run from your own shell therefore resolves them all to the EMPTY string: an empty
+# CC_EGRESS_PROFILE/CC_CONFIG_HASH bakes base-only egress and an empty
+# /etc/cc-config-hash (a silently NARROWER boundary — nothing fails closed, nothing
+# warns; measured 2026-09-15: a re-registered `lean` profile had no effect for
+# exactly this reason, base's 9 names instead of base+lean's 14); an empty
+# CC_PROJECT_ID mounts the SHARED `cc--claude-config` volume; an empty CC_CONFIG_DIR
+# points the build at /Dockerfile.
+#
+# The remaining localEnv reads are not emitted on purpose: TZ has a default in
+# devcontainer.json, and OPENROUTER_API_KEY / GH_TOKEN are opt-in credentials the
+# user exports themselves — printing them would put secrets on the terminal.
 #
 # So: name the launcher first, because it is the path that cannot get this wrong, and
-# if the by-hand form is used at all, emit it WITH the assignments already filled in.
+# if the by-hand form is used at all, emit it with EVERY launcher-set assignment
+# already filled in. Values and args are shell-quoted (printf %q) so a workspace path
+# with spaces or metacharacters copies out as one word, never as shell source.
 rebuild_hint() {
-  local ws="$1"
+  local ws="$1" var assigns=""
   shift
-  echo "    cc-isolated '$ws'        # the supported path: rebuilds, re-probes, re-launches" >&2
-  echo "  or by hand — BOTH assignments are required, devcontainer.json reads them via localEnv:" >&2
-  echo "    CC_EGRESS_PROFILE='${CC_EGRESS_PROFILE:-}' CC_CONFIG_HASH='${CC_CONFIG_HASH:-}' \\" >&2
-  echo "      devcontainer up --remove-existing-container $*" >&2
+  echo "    cc-isolated $(printf '%q' "$ws")        # the supported path: rebuilds, re-probes, re-launches" >&2
+  echo "  or by hand — ALL of these assignments are required, devcontainer.json reads them via localEnv:" >&2
+  for var in CC_PROJECT_ID CC_PROJECT_NAME CC_CONFIG_DIR CC_EGRESS_PROFILE CC_CONFIG_HASH; do
+    assigns+="$var=$(printf '%q' "${!var:-}") "
+  done
+  echo "    ${assigns}\\" >&2
+  echo "      devcontainer up --remove-existing-container$(printf ' %q' "$@")" >&2
 }
 
 # 0 iff the running container's baked config hash equals the blessed one.
