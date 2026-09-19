@@ -39,6 +39,16 @@ The index below is generated — edit entries, not the table.
 | [Q-035](#q-035--guard-bash-claude-md-overblock) | you: judgment | In Bash, `guard-trusted-writes.py` hard-denies any command that has a write primitive AND mentions `CLAUDE.... | 2026-09-18 |
 | [Q-036](#q-036--si-review-archive-untracked) | you: judgment | `self-improvement.sh` copies each task's code-review rubric into `docs/working/reviews/round-N/<task>/` in ... | 2026-09-18 |
 | [Q-037](#q-037--si-survivors-parser-dead) | you: judgment | The self-improvement loop feeds round N+1 a list of surviving ideas that were never tried, but it only pars... | 2026-09-18 |
+| [Q-038](#q-038--dd-path-c-no-consumer) | you: judgment | DD's Path C (tradeoff unclear, nobody present) says the round claim surfaces the unresolved choice to you t... | 2026-09-18 |
+| [Q-039](#q-039--fact-check-abstract-floor) | you: judgment | fact-check contradicts itself on whether abstract-only sources can support a Medium confidence. One rule do... | 2026-09-18 |
+| [Q-040](#q-040--dd-misframing-hook) | you: judgment | When DD's constraints contradict, DD sends you into its Double Diamond variant, while design-space-situatin... | 2026-09-18 |
+| [Q-041](#q-041--code-review-merge-rule-gap) | you: judgment | The code-review next-action ladder has no rule for 0 🔴 with 3+ 🟡 where at most 2 lack author notes, w... | 2026-09-18 |
+| [Q-042](#q-042--code-review-contextual-severity) | you: judgment | The executable-defect channel maps a confirmed contextual-critic finding "as if filed by a core critic", bu... | 2026-09-18 |
+| [Q-043](#q-043--code-review-arch-skip-blocks) | you: judgment | When code-review auto-selects architecture-review but the critic's own scope check skips ("implementation-o... | 2026-09-18 |
+| [Q-044](#q-044--override-log-immutable-rows) | you: judgment | For an Incorrect fact-check about an already-merged commit message, rubric.md tells the orchestrator to wri... | 2026-09-18 |
+| [Q-045](#q-045--sni-proxy-domain-fronting) | you: judgment | The SNI proxy checks only the ClientHello SNI and splices the encrypted stream, so a client can send an all... | 2026-09-18 |
+| [Q-046](#q-046--failure-analysis-fix-or-delete) | you: judgment | `scripts/failure-analysis.sh` computes its re-attempt pass rate against its own definition (it counts attem... | 2026-09-18 |
+| [Q-047](#q-047--hypothesis-log-run-id) | you: judgment | Hypothesis-log rows record only a round number, and round numbers restart every self-improvement run, so th... | 2026-09-18 |
 | [Q-011](#q-011--mathlib-cache-host) | you: terminal | What is the current mathlib olean cache hostname? (`lake exe cache get` is minutes vs hours per repo.) | 2026-09-12 |
 <!-- index:end -->
 
@@ -269,3 +279,145 @@ The self-improvement loop feeds round N+1 a list of surviving ideas that were ne
 
 - **Interim:** unchanged; the carry-over is silently empty, as it has been for at least 10 rounds.
 
+### Q-038 · dd-path-c-no-consumer
+**Needs:** you: judgment · **Opened:** 2026-09-18 · **Status:** OPEN
+
+DD's Path C (tradeoff unclear, nobody present) says the round claim surfaces the unresolved choice to you through the morning summary, but decision 012 says nothing consumes round claims yet. The overnight choice is silently taken on the tentative pick. Where should it go?
+
+- **Why it's yours:** option 1 is a feature build; option 2 adds entries to the queue you read.
+- **Read:** `workflows/divergent-design.md` Path C (~:328); `docs/decisions/012-hypothesis-grammar-for-user-surfaced-evaluation.md:106` ("producer-only … not yet wired up"). Nothing under `scripts/` reads the `## Hypothesis: this round's claim` section.
+
+| Option | What it means | Cost to you | If it's wrong |
+|---|---|---|---|
+| **[1] Build the consumer** | Morning summary reads round claims and lists unresolved Path-C choices | none now; a feature to build and review later | A consumer for a path that fires rarely |
+| **[2] Path C also files a questions.md entry** | The round claim stays as the machine copy; the choice reaches you through this file | One entry per unclear overnight decision | More entries in the queue |
+| **[3] Leave it, fix the text** | DD stops claiming the choice reaches you | none | Overnight tradeoffs keep being decided without you |
+
+- **Interim:** unchanged. Path C records the tentative pick and its axis of disagreement in the decision record only.
+
+### Q-039 · fact-check-abstract-floor
+**Needs:** you: judgment · **Opened:** 2026-09-18 · **Status:** OPEN
+
+fact-check contradicts itself on whether abstract-only sources can support a Medium confidence. One rule downgrades every all-`[abstract]` verdict by a tier; other passages and two worked examples keep Medium. Which applies?
+
+- **Read:** `skills/fact-check/SKILL.md:413-415` (the downgrade applies to every tier) vs `:177-180`, `:289` (deep-read is required for High only), `:375-376` (`[abstract]` is "sufficient for many Medium-confidence verdicts"), and examples `:440-441` (Medium on `[abstract]` only). Example `:442` also uses `Low` as a *verdict*, which is not one of the six verdicts. Fix that whichever option you pick.
+
+| Option | What it means | Cost to you | If it's wrong |
+|---|---|---|---|
+| **[1] The deep-read floor applies to High only** | Drop the Medium→Low step from `:413-415`; the examples stand | none | Summary-only evidence keeps Medium ratings |
+| **[2] The floor applies to every tier** | Keep `:413`; fix `:375` and re-rate examples `:440-442` | none | More Low/Unverified verdicts in draft-review rubrics |
+
+- **Interim:** unchanged; agents get whichever paragraph they weigh.
+
+### Q-040 · dd-misframing-hook
+**Needs:** you: judgment · **Opened:** 2026-09-18 · **Status:** OPEN
+
+When DD's constraints contradict, DD sends you into its Double Diamond variant, while design-space-situating says to pause DD and run it instead. DD never mentions DSS. Which one owns misframing?
+
+- **Read:** `workflows/divergent-design.md:~537` (misframing signal (c) → Double Diamond); `skills/design-space-situating/SKILL.md:38,~351` (the "Misframing signal from DD" trigger). Related: DD's step-3 gate requires 3-5 survivors, but `:198` expects "≤2 candidates survive" and gives no path for it.
+
+| Option | What it means | Cost to you | If it's wrong |
+|---|---|---|---|
+| **[1] DSS is DD's misframing hook** | DD step 2(c)/3 call DSS; relax the 3-5 gate when DSS reframes | none | A heavier procedure for a signal that the Double Diamond already handles |
+| **[2] The Double Diamond owns it** | DSS's trigger says "suggest DD's Double Diamond variant" instead | none | DSS loses its main automatic entry point |
+
+- **Interim:** unchanged.
+
+### Q-041 · code-review-merge-rule-gap
+**Needs:** you: judgment · **Opened:** 2026-09-18 · **Status:** OPEN
+
+The code-review next-action ladder has no rule for 0 🔴 with 3+ 🟡 where at most 2 lack author notes, which is normal after a review-fix iteration. Its required final line can't be derived. Does "merge" count every amber, or only unannotated ones?
+
+- **Read:** `skills/code-review/references/chat-synthesis.md:146-152` (rule 4 needs >2 *un-noted* ambers; rule 5 needs ≤2 ambers *in total*).
+
+| Option | What it means | Cost to you | If it's wrong |
+|---|---|---|---|
+| **[1] Rule 5 counts unannotated ambers** | "0 🔴 AND ≤2 🟡 open without author notes" → merge | none | Heavily annotated reviews merge without a re-review |
+| **[2] Rule 4 counts every amber** | ">2 🟡 total" → fix and re-review | More re-review rounds | Author notes stop being enough to reach merge |
+
+- **Interim:** unchanged.
+
+### Q-042 · code-review-contextual-severity
+**Needs:** you: judgment · **Opened:** 2026-09-18 · **Status:** OPEN
+
+The executable-defect channel maps a confirmed contextual-critic finding "as if filed by a core critic", but the severity table has columns only for the core critics. ui-visual's Critical/Major/Minor, test-strategy's Priority, and the critics with no per-finding scale (tech-debt-triage, dependency-upgrade) have no tier. What tier does each map to?
+
+- **Read:** `skills/code-review/references/rubric.md:267-271` (mapping table), `:476-478` (channel rule); `skills/ui-visual-review/SKILL.md:382`.
+
+| Option | What it means | Cost to you | If it's wrong |
+|---|---|---|---|
+| **[1] Explicit contextual row** | ui Critical→🔴, Major→🟡, else 🟢; test-strategy P1→🟡; scale-less critics→🟡 | none | A confirmed ui Major that breaks the layout only reaches 🟡 |
+| **[2] Every confirmed executable defect is 🔴** | Execution proof overrides the native scale | none | Cosmetic but reproducible defects block the merge |
+
+- **Interim:** unchanged; agents pick a core critic's column.
+
+### Q-043 · code-review-arch-skip-blocks
+**Needs:** you: judgment · **Opened:** 2026-09-18 · **Status:** OPEN
+
+When code-review auto-selects architecture-review but the critic's own scope check skips ("implementation-only"), next-action rule 1(a) says "block on architectural review", overriding an otherwise clean rubric. Intended?
+
+- **Read:** `skills/architecture-review/SKILL.md:107-142` (skip note); `skills/code-review/references/chat-synthesis.md:128-133` (rule 1(a)).
+
+| Option | What it means | Cost to you | If it's wrong |
+|---|---|---|---|
+| **[1] A saved skip note satisfies 1(a)** | 1(a) fires only when the critic was excluded or failed | none | A wrongly-skipping critic hides a real structural issue |
+| **[2] Keep the override, name the disagreement** | The synthesis states that the orchestrator and the critic disagree | A block to clear by hand each time | Clean diffs keep getting blocked |
+
+- **Interim:** unchanged.
+
+### Q-044 · override-log-immutable-rows
+**Needs:** you: judgment · **Opened:** 2026-09-18 · **Status:** OPEN
+
+For an Incorrect fact-check about an already-merged commit message, rubric.md tells the orchestrator to write an "accepted-immutable" row to `docs/reviews/override-log.md` mid-run. But the log is read-only during a run, and its required verdict fields have no valid value for such a row. May the orchestrator auto-append?
+
+- **Read:** `skills/code-review/references/rubric.md:296-300`; `skills/code-review/SKILL.md:158`; `skills/code-review/references/override-log.md:20-37`.
+
+| Option | What it means | Cost to you | If it's wrong |
+|---|---|---|---|
+| **[1] Yes, with a new verdict value** | Add `Accepted-immutable` to the override verdicts; the orchestrator may append only that kind | none | The log mixes human and machine rows |
+| **[2] No — a rubric note instead** | Immutable findings go to a rubric "Accepted immutable" note, not the log | none | No cross-run record that the commit message is wrong |
+
+- **Interim:** unchanged; the finding currently has nowhere valid to go.
+
+### Q-045 · sni-proxy-domain-fronting
+**Needs:** you: judgment · **Opened:** 2026-09-18 · **Status:** OPEN
+
+The SNI proxy checks only the ClientHello SNI and splices the encrypted stream, so a client can send an allowlisted SNI with a different HTTP `Host` and reach another tenant on a CDN that routes by Host. The docs say exact-name entries have "no such residual". Accept and document it, or test the front ends first?
+
+- **Why it's yours:** it is the egress-confinement threat model; closing it would need TLS interception, which the design rules out.
+- **Read:** `devcontainer-config/cc-sni-proxy.py:19-29`; the SNI PROXY block's RESIDUAL text in `devcontainer-config/init-firewall.sh`. Reasoning only: the sandbox has no egress to test any CDN.
+
+| Option | What it means | Cost to you | If it's wrong |
+|---|---|---|---|
+| **[1] Document the residual** | Correct the "no such residual" claim and name domain fronting | none | The android/lean profiles may allow fronting to arbitrary tenants |
+| **[2] Test first, then decide on the profiles** | Run `curl --connect-to` with a mismatched Host through the android and lean front ends on the host | ~10 min at your terminal | none — the answer then decides whether those entries stay |
+
+- **Interim:** unchanged; the docs still over-claim.
+
+### Q-046 · failure-analysis-fix-or-delete
+**Needs:** you: judgment · **Opened:** 2026-09-18 · **Status:** OPEN
+
+`scripts/failure-analysis.sh` computes its re-attempt pass rate against its own definition (it counts attempts after approvals and null verdicts, and orders by a round number that restarts every run): it reports 16%, where the documented definition gives 39%. It also has no callers apart from its test, though the header says it is "for use in DD preambles". Fix or delete?
+
+- **Read:** `scripts/failure-analysis.sh:95-130`; there are 59 null-verdict entries in the archived `round-*-report.json`.
+
+| Option | What it means | Cost to you | If it's wrong |
+|---|---|---|---|
+| **[1] Fix the semantics** | Count only attempts after a rejection, skip null verdicts, order by timestamp | none | Maintaining a script nothing calls |
+| **[2] Delete it and its test** | Remove the script | none | Re-deriving it if a DD preamble ever wants the number |
+
+- **Interim:** unchanged; nothing consumes the wrong number.
+
+### Q-047 · hypothesis-log-run-id
+**Needs:** you: judgment · **Opened:** 2026-09-18 · **Status:** OPEN
+
+Hypothesis-log rows record only a round number, and round numbers restart every self-improvement run, so the morning summary can't tell which run a row belongs to. This run's fix makes lookups scan newest-first (first archive containing the task id), which is right for current rows and wrong for a reused task id. Add a run id or date column?
+
+- **Read:** `scripts/lib/si-morning-summary.sh` `_resolve_hypothesis_target`, `_days_since_round`; `docs/working/hypothesis-log.md` header.
+
+| Option | What it means | Cost to you | If it's wrong |
+|---|---|---|---|
+| **[1] Add a Run column** | The loop writes the run's date prefix; lookups use it | none | Old rows stay ambiguous (newest-first fallback) |
+| **[2] Keep newest-first** | No schema change | none | A reused task id resolves to the wrong run |
+
+- **Interim:** newest-first scan (si4/scripts).
