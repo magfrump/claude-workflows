@@ -10,6 +10,35 @@ load helpers
 setup() {
   load_generic_report "docs/reviews/architecture-review.md"
   count_findings
+  # SKILL.md "Scope Check": an out-of-scope diff gets a brief skip note titled
+  # "# Architecture Review — Skipped" in place of the full critique. Tests named
+  # "skip note: ..." validate that note; every other test validates a full critique,
+  # so each set skips when the report is the other kind.
+  IS_SKIP_NOTE=0
+  if echo "$REPORT_CONTENT" | head -5 | grep -qE '^# Architecture Review — Skipped'; then
+    IS_SKIP_NOTE=1
+  fi
+  case "$BATS_TEST_DESCRIPTION" in
+    "skip note: "*) [ "$IS_SKIP_NOTE" -eq 1 ] || skip "report is a full critique, not a skip note" ;;
+    *) [ "$IS_SKIP_NOTE" -eq 0 ] || skip "report is a Scope Check skip note, not a full critique" ;;
+  esac
+}
+
+# --- Skip note (Scope Check) ---
+
+@test "skip note: has a Reason field" {
+  echo "$REPORT_CONTENT" | grep -qE '^\*\*Reason:\*\*'
+}
+
+@test "skip note: has a Files reviewed for scope field" {
+  echo "$REPORT_CONTENT" | grep -qE '^\*\*Files reviewed for scope:\*\*'
+}
+
+@test "skip note: evaluates all four trigger categories" {
+  local cat
+  for cat in "Module structure" "Public APIs" "Data models" "Cross-cutting concerns"; do
+    echo "$REPORT_CONTENT" | grep -qE "^- ${cat}: " || { echo "missing trigger category: $cat"; return 1; }
+  done
 }
 
 # --- Header section ---
