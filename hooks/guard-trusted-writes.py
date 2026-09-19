@@ -69,7 +69,9 @@ def classify_path(fp: str) -> str:
 
 # ── write-intent detection for the BASH tool ───────────────────────────────
 WRITE_PRIMITIVE = re.compile(
-    r">>?(?!&|\s*/dev/null\b)"                     # >, >>, 1>, 2>, &> to a file (not 2>&1, >&2, 2>/dev/null)
+    # >, >>, 1>, 2>, &> and >&FILE to a file. Only a digit or `-` after `>&`
+    # is an fd duplicate/close (2>&1, >&2, >&-); `>& word` writes to `word`.
+    r">>?(?!&\s*(?:\d|-)|\s*/dev/null\b)"
     r"|\btee\b|\bsed\b[^\n|;&]*\s-\w*i\w*\b"       # tee, sed -i
     r"|\bdd\b[^\n]*\bof=|\btruncate\b"             # dd of=, truncate
     r"|\b(cp|mv|install|rsync)\b"                  # copy/move/install (dest ambiguous)

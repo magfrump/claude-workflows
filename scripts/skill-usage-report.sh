@@ -104,7 +104,8 @@ SEP=$'\x1f'
 # flag-removal-candidates.sh then read as "no removal candidates". Bad lines
 # are skipped and counted on stderr instead. `objects` drops valid non-object
 # JSON (a bare number would otherwise fail `.event` the same way).
-bad_lines=$(jq -R 'try (fromjson | if type == "object" then empty else 1 end) catch 1' "$USAGE_LOG" | wc -l)
+# Blank lines are skipped, not counted: jq 1.6 rejects `"" | fromjson`.
+bad_lines=$(jq -R 'select(test("\\S")) | try (fromjson | if type == "object" then empty else 1 end) catch 1' "$USAGE_LOG" | wc -l)
 if [ "$bad_lines" -gt 0 ]; then
   echo "WARNING: skipped $bad_lines malformed line(s) in $USAGE_LOG" >&2
 fi

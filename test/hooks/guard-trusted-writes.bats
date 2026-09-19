@@ -70,8 +70,13 @@ taint() {  # mark session $1 as web-tainted via the real PostToolUse hook
   jq -n -c --arg s "$1" '{"session_id":$s,"tool_name":"WebFetch"}' | python3 "$MARK"
 }
 
+# The tilde is deliberately literal: these are command TEXT the hook must
+# recognise as a protected path, not paths for this shell to expand.
+# shellcheck disable=SC2088
 SETTINGS="~/.claude/settings.json"
+# shellcheck disable=SC2088
 HOOKFILE="~/.claude/hooks/foo.sh"
+# shellcheck disable=SC2088
 SKILL="~/.claude/skills/foo/SKILL.md"
 
 # --- HARD path via Bash: deny ---
@@ -104,6 +109,18 @@ SKILL="~/.claude/skills/foo/SKILL.md"
 @test "&> to settings.json is denied (B1 bypass)" {
   guard "$(bash_payload "echo x &> $SETTINGS")"
   assert_decision deny
+}
+
+@test ">& FILE (stdout+stderr to a file) to settings.json is denied" {
+  guard "$(bash_payload "echo x >& $SETTINGS")"
+  assert_decision deny
+  guard "$(bash_payload "echo x 1>&$SETTINGS")"
+  assert_decision deny
+}
+
+@test ">&- (close stdout) on a read of settings.json is not a write" {
+  guard "$(bash_payload "cat $SETTINGS >&-")"
+  assert_defer
 }
 
 @test "a HARD-path deny holds in an untainted session too" {
