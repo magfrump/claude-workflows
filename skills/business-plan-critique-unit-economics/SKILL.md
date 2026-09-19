@@ -94,7 +94,7 @@ LTV is the most aggressively engineered number in early-stage plans: it stacks t
 
 Pressure-test the inputs:
 
-- **Churn rate basis.** Is quoted churn monthly, annual, gross, or net? Customer churn or revenue churn? 5% monthly customer churn implies 46% annual gross retention — a 2-year average lifetime, not the 10-year lifetime the model may assume.
+- **Churn rate basis.** Is quoted churn monthly, annual, gross, or net? Customer churn or revenue churn? 5% monthly customer churn implies ~54% annual gross retention (0.95¹² — i.e. ~46% of customers lost each year) — a 2-year average lifetime, not the 10-year lifetime the model may assume.
 - **Cohort age.** Has the cohort lived long enough to observe its actual churn curve? Many "low churn" claims come from cohorts under 12 months old, before the post-honeymoon churn step. Annualizing a 6-month figure is doing a lot of work.
 - **Expansion assumptions.** Net-revenue retention >100% (NRR via upsell, seat expansion, usage growth) is real but earned. If LTV bakes in 120% NRR before a track record, ask what *structural* mechanism drives expansion — usage scaling with customer growth, seats tied to adoption. "We'll upsell them" is a hope, not a structure.
 - **Gross-margin input.** LTV is *gross-margin-weighted* lifetime revenue, not revenue. Computing LTV on top-line revenue overstates it by 1/GM. If the plan reports an LTV/CAC ratio, confirm the LTV is margin-weighted (lens #3 feeds this).
@@ -120,7 +120,7 @@ Payback period (months to recover CAC from gross-margin-weighted revenue) is the
 
 Moves:
 
-- **CAC payback math.** Payback ≈ CAC / (monthly revenue × contribution margin). A 24-month payback on a $50K CAC funds $50K per customer for two years before recovery. At 10 new customers per month, that's $1M of working-capital tied up in unrecovered CAC at any given time — before growth.
+- **CAC payback math.** Payback ≈ CAC / (monthly revenue × contribution margin). A 24-month payback on a $50K CAC funds $50K per customer for two years before recovery. At 10 new customers per month, that's ~$6M of working capital tied up in unrecovered CAC at steady state (24 monthly cohorts, each on average half recovered: 10 × $50K × 24 × ½) — before growth.
 - **Growth-rate × payback interaction.** Faster growth means more new customers in unrecovered CAC simultaneously. A 12-month payback at 100% YoY growth is dramatically more capital-intensive than a 12-month payback at flat growth. Does the plan size the funding ask against this interaction, or a static-state model?
 - **Industry benchmarks.** SaaS rule of thumb: 12-month payback for healthy, 18-24 for acceptable, >24 for problematic absent unusually low churn. Consumer subscription typically faster (<6 months). Marketplaces vary with take rate. Situate the plan's payback against the relevant comp set, not an absolute target.
 - **What payback ignores.** Payback doesn't capture lifetime profitability — a 6-month payback with 7-month average lifetime is worse than an 18-month payback with 5-year lifetime. Use payback for capital efficiency; use LTV/CAC for long-term value. Plans leaning on one and ignoring the other are usually hiding something in the other.

@@ -303,16 +303,18 @@ This is fundamentally a **navigation-mode decision** (compose vs. emerge) wearin
 
 #### Dimensional placements
 
-| Dimension | Parametric | Sculpted | Most load-bearing for us? |
+A binary fork has one placement per option, so each Placement cell names both; the Rationale cell carries how load-bearing the dimension is for this decision.
+
+| # | Dimension | Placement | Rationale |
 |---|---|---|---|
-| 1. Locus | Centralized | Mixed | Medium — scales with set size |
-| 2. Time | Backward + process | Forward + snapshot | High — roadmap implies process |
-| 3. Search/Compose/Emerge | Compose | Emerge | **Highest** — depends on brief fixity |
-| 4. Modeling target | Structure | Receiver | High — pieces split structure-vs-receiver |
-| 5. Reversibility | Cheap, flat | Cheap → cliff at retopo | **Highest** — playtest revisions guaranteed |
-| 6. Formality | Formal/computable | Tacit/craft | **Highest** — team budget is the gate |
-| 7. Social structure | Expert-led | Expert-led or community | Low unless modding is real |
-| 8. Legibility | Machine + peer | Peer + stakeholder | Medium — translation layers matter |
+| 1 | Locus of authority | Parametric: Centralized · Sculpted: Mixed | Medium — the parametric file bottlenecks as the set grows |
+| 2 | Orientation in time | Parametric: Backward + Process · Sculpted: Forward + Snapshot | High — the expansion roadmap implies process |
+| 3 | Search / Compose / Emerge | Parametric: Compose · Sculpted: Emerge | **Highest** — turns on how fixed the concept brief really is |
+| 4 | Modeling target | Parametric: Structure · Sculpted: Receiver | High — tokens need structure-first, heroes receiver-first; Context has no owner either way |
+| 5 | Reversibility | Parametric: Cheap, gradient flat · Sculpted: Cheap → Expensive after retopology | **Highest** — playtest revisions are guaranteed |
+| 6 | Formality | Parametric: Formal · Sculpted: Tacit (style guide as partial bridge) | **Highest** — the team's formality budget is the gate |
+| 7 | Social structure | Parametric: Expert-led · Sculpted: Expert-led, opens to Community | Low unless modding is a real goal |
+| 8 | Legibility | Parametric: Machine + Peer · Sculpted: Peer + Stakeholder (via render) | Medium — translation layers must be designed in |
 
 #### Tensions surfaced
 
@@ -323,14 +325,14 @@ This is fundamentally a **navigation-mode decision** (compose vs. emerge) wearin
 
 #### Hand-off
 
-This frame produces sharp candidates for divergent-design:
+This record is input to **DD's diagnosis step (step 2)**. It generates no candidates; it hands DD the constraints to make testable:
 
-1. **Pure parametric.** All 58 pieces parametric. Pre-pruned by tension #1 if no programmer-modeler is available.
-2. **Pure sculpt.** All 58 pieces sculpted with shared style guide. Pre-pruned by tension #2 if post-launch iteration is on the roadmap.
-3. **Split (parametric tokens + sculpted heroes).** Tokens parametric for fit; heroes sculpted for character. Requires explicit interface design (the "inter-stack interface" surfaced in tension #4).
-4. **Hybrid pipeline (sculpt → retopo → parametric blockout).** Sculpt for exploration, then re-author parametrically for downstream control. Requires highest team capability and is the most expensive option.
+- **Formality budget (#6):** name who maintains parametric definitions after the initial author leaves; if no one, any all-parametric candidate fails a hard constraint.
+- **Iteration roadmap (#2, #5):** state whether post-launch expansions and playtest revisions are planned; if so, any candidate that crosses the retopology cliff early carries the reversibility cost as a named risk.
+- **Brief fixity (#3):** state whether the hero concepts are fixed or still being discovered — this decides compose vs. emerge.
+- **Set heterogeneity (#4):** the precise tokens and the expressive heroes pull in opposite directions, so DD's diverge step should not assume a single-stack answer, and any mixed answer must name its inter-stack interface.
 
-The situating placements pre-prune candidates 1 and 2 against specific tensions, so DD's diagnosis step starts from a much sharper compatibility matrix than without this frame.
+With these constraints explicit, DD's compatibility matrix (step 3) starts sharper than it would from the bare tooling question.
 
 ### How to apply this to a different 3D decision
 
