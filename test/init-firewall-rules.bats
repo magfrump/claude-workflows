@@ -1353,3 +1353,14 @@ STUB
   [ "$output" -eq 0 ]
   grep -q -- "-d 192.168.65.1 --dport 53" "$CMD_LOG"
 }
+
+@test "the fail-closed trap points at the launcher, never a bare devcontainer up" {
+  # Regression (audit 2026-09-18, D4): the trap told the user to run a bare
+  # `devcontainer up --remove-existing-container`, which drops the launcher's
+  # localEnv inputs and rebuilds with base-only egress and an empty config hash
+  # (see rebuild_hint in cc-isolated.sh).
+  FAIL_META=1 run bash "$FW"
+  [ "$status" -ne 0 ]
+  [[ "$output" == *"cc-isolated --probe-only"* ]]
+  [[ "$output" != *"devcontainer up"* ]]
+}
