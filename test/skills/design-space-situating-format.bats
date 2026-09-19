@@ -219,6 +219,7 @@ setup() {
 @test "record is a frame, not a recommendation — does not pick a candidate" {
   # Situating records should not contain decision-output language from DD or matrix-analysis.
   run ! grep -qiE '^## Recommendation' <<< "$REPORT_CONTENT"
-  run ! grep -qiE '^## Decision' <<< "$REPORT_CONTENT"
+  # Only DD's decision-record headings; the required "## Decision under situating" must pass.
+  run ! grep -qiE '^## Decision( and rationale)?[[:space:]]*$' <<< "$REPORT_CONTENT"
   ! echo "$REPORT_CONTENT" | grep -qiE '^## Chosen Candidate'
 }
