@@ -146,6 +146,25 @@ agent_input() {
   [ "$(head -1 "$TEST_LOG" | jq -r '.name')" = "fact-check" ]
 }
 
+@test "a --- rule later in a prompt is not frontmatter" {
+  prompt="$(printf '%s\n' 'Please review.' '' '---' '' 'Context below' 'name: alice')"
+  agent_input "$prompt" | bash "$HOOK"
+
+  [ -s "$TEST_LOG" ]
+  line=$(head -1 "$TEST_LOG")
+  [ "$(echo "$line" | jq -r '.event')" = "agent" ]
+  [ "$(echo "$line" | jq -r '.name')" = "general-purpose" ]
+}
+
+@test "project falls back to the directory name outside a git repo" {
+  dir=$(mktemp -d)
+  mkdir "$dir/not-a-repo"
+  (cd "$dir/not-a-repo" && GIT_CEILING_DIRECTORIES="$dir" skill_input "spike" | bash "$HOOK")
+  rm -rf "$dir"
+
+  [ "$(head -1 "$TEST_LOG" | jq -r '.project')" = "not-a-repo" ]
+}
+
 # --- Non-matching reads are ignored ---
 
 @test "reading a non-workflow file does not log" {

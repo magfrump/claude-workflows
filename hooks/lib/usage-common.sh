@@ -52,7 +52,15 @@ init_usage_hook() {
     # shellcheck disable=SC2034
     TS=$(date -u +"%Y-%m-%dT%H:%M:%SZ")
     # shellcheck disable=SC2034
-    PROJECT=$(basename "$(git rev-parse --show-toplevel 2>/dev/null)" 2>/dev/null || echo "${PWD##*/}")
+    # Test git's status, not basename's: `basename ""` succeeds with empty
+    # output, so the old `basename "$(git …)" || echo` fallback never fired and
+    # every event logged outside a repo got an empty project.
+    local top
+    if top=$(git rev-parse --show-toplevel 2>/dev/null) && [ -n "$top" ]; then
+        PROJECT=${top##*/}
+    else
+        PROJECT=${PWD##*/}
+    fi
     # shellcheck disable=SC2034
     BRANCH=$(git branch --show-current 2>/dev/null || echo "unknown")
 }
@@ -63,6 +71,10 @@ init_usage_hook() {
 extract_agent_name_from_prompt() {
     local prompt="$1"
     [ -z "$prompt" ] && return 0
-    printf '%s' "$prompt" \
-        | sed -n '/^---$/,/^---$/{/^name: */{ s/^name: *//; p; q; }}'
+    # Only a block that opens on line 1 is frontmatter; a `---` rule later in
+    # the prompt followed by any `name:` line must not count.
+    printf '%s\n' "$prompt" \
+        | awk 'NR == 1 && $0 != "---" { exit }
+               NR > 1 && $0 == "---" { exit }
+               NR > 1 && /^name: */ { sub(/^name: */, ""); print; exit }'
 }
