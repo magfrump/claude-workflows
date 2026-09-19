@@ -221,7 +221,20 @@ def _heredocs(text: str) -> tuple[str, list[str]]:
             if parsed:
                 strip_tabs, delim, quoted, end = parsed
                 head = re.split(r"[;&|(]", text[line_start:i])[-1].split()
-                is_script = any(os.path.basename(w) in _HEREDOC_SHELLS for w in head)
+                nl = text.find("\n", end)
+                rest = text[end : n if nl == -1 else nl]
+                around = text[line_start:i] + " " + rest
+                # Live (scanned as code) when a shell reads the body: a shell word
+                # before `<<`, the body piped onward (`<<EOT | bash`), read via
+                # /dev/stdin (`source /dev/stdin <<EOT`), or written to a file a
+                # later line may run (`cat > "$t/s" <<EOT`). Over-reporting here is
+                # the pre-heredoc-aware behaviour; under-reporting is a fail-open.
+                is_script = (
+                    any(os.path.basename(w) in _HEREDOC_SHELLS for w in head)
+                    or "|" in rest
+                    or "/dev/stdin" in around
+                    or re.search(r">(?!&)", around) is not None
+                )
                 pending.append((strip_tabs, delim, quoted, is_script))
                 i = end
                 continue

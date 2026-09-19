@@ -101,6 +101,21 @@ lint() {
   [[ "$output" == *"heredoc-shell.bats: can spawn \`curl\`"* ]]
 }
 
+@test "bash: a heredoc piped to a shell, read via /dev/stdin, or written to a file stays code" {
+  # Regression (2026-09-18 review F1): liveness was decided only from the words
+  # before `<<`, so these three bodies were blanked as data and their call went
+  # unflagged — the pre-heredoc-aware lint flagged all three.
+  local fx
+  for form in "cat <<'EOT' | bash" "source /dev/stdin <<'EOT'" "cat > \"\$T/s\" <<'EOT'"; do
+    fx="$FAKE/test/heredoc-live.bats"
+    printf '#!/usr/bin/env bats\n' > "$fx"
+    printf '@test "live" {\n  %s\ncurl x\nEOT\n}\n' "$form" >> "$fx"
+    run lint --lang bash
+    [ "$status" -eq 1 ] || { echo "not flagged: $form"; false; }
+    [[ "$output" == *"heredoc-live.bats: can spawn \`curl\`"* ]]
+  done
+}
+
 @test "bash: an unmatched backtick is literal and does not drop the rest of the file" {
   local fx="$FAKE/test/backtick.bats"
   printf '#!/usr/bin/env bats\n' > "$fx"

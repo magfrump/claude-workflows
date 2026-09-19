@@ -202,3 +202,13 @@ merge_validations() {
   [ "$SI_PRIORITIES" = "- p1" ]
   [ -z "$SI_CONTEXT" ]
 }
+
+@test "parse_si_input keeps a heading that carries a trailing inline comment" {
+  # Regression (2026-09-18 review F2): the `*-->` skip ran before heading
+  # detection, so this heading was dropped and its body joined Feedback.
+  printf '## Feedback\nfb line\n## Off-limits <!-- topics to avoid -->\nskills/code-review\n## Priorities\n- p1 <!-- why --> now\n' > "$INPUT_FILE"
+  parse_si_input "$INPUT_FILE" 2>/dev/null
+  [ "$SI_FEEDBACK" = "fb line" ]
+  [ "$SI_OFF_LIMITS" = "skills/code-review" ]
+  [ "$SI_PRIORITIES" = "- p1  now" ]
+}

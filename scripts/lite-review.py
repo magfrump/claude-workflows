@@ -38,7 +38,8 @@ Backend notes (why the flags are what they are):
       Comparability with those artifacts therefore holds at the line grammar,
       not at the record.
     * parse_findings itself has already diverged from the harness copy in four
-      ways (FINDINGS: NONE case-sensitivity, block detection, parse_ok
+      ways (FINDINGS: NONE case-sensitivity, block detection — the harness
+      also accepts markdown-wrapped headers like `**FINDINGS:**` — parse_ok
       derivation, row keys). A fork that diffs only the regex will find it
       identical and be wrong about all four.
 """

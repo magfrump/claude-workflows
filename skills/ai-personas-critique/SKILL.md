@@ -146,10 +146,12 @@ For each selected persona, produce a focused critique section. Each section must
 
    ```markdown
    #### Goal-Alignment Note
+   - Success criterion (restated verbatim): [paste the Success criterion line from the goal preamble exactly as given — do not paraphrase]
    - Answered: [yes / partial / no — one phrase]
    - Out of scope: [what was set aside and why, or "none"]
    - Escalate: [what the synthesis step should action separately, or "nothing"]
    - Questions I would have asked: [1-3 short questions, only if scope was unclear; otherwise omit this bullet]
+   - Decisions I made: [1-3 short lines naming silent judgment calls between equally plausible interpretations; otherwise omit this bullet]
    ```
 
    One short bullet per line. No padding. Include the "Questions I would have asked" bullet only
@@ -221,10 +223,12 @@ Success criterion: A 100-200 word critique grounded in proposal specifics, with 
 **Test/mitigation:** [What would address this concern]
 
 #### Goal-Alignment Note
+- Success criterion (restated verbatim): [paste the Success criterion line from the goal preamble exactly as given — do not paraphrase]
 - Answered: [yes / partial / no — one phrase]
 - Out of scope: [what was set aside and why, or "none"]
 - Escalate: [what the synthesis step should action separately, or "nothing"]
 - Questions I would have asked: [optional — omit unless scope was unclear]
+- Decisions I made: [1-3 short lines naming silent judgment calls between equally plausible interpretations; otherwise omit this bullet]
 
 [Repeat the persona section, including its preamble and Goal-Alignment Note, for each persona]
 

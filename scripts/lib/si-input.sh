@@ -64,10 +64,17 @@ parse_si_input() {
             [[ "${line#*<!--}" != *'-->'* ]] && in_comment=1
             continue
         fi
-        [[ "$line" == *'-->' ]] && continue
+        [[ "$line" == *'-->' && "$line" != *'<!--'* ]] && continue
+        # Drop complete inline comments, so `## Off-limits <!-- note -->` is
+        # still the Off-limits heading rather than a skipped line whose body
+        # then lands in the previous section.
+        while [[ "$line" == *'<!--'*'-->'* ]]; do
+            local _pre="${line%%<!--*}" _rest="${line#*<!--}"
+            line="${_pre}${_rest#*-->}"
+        done
 
         # Detect section headings
-        if [[ "$line" =~ ^##[[:space:]]+(.*) ]]; then
+        if [[ "$line" =~ ^##[[:space:]]+(.*[^[:space:]])[[:space:]]*$ ]]; then
             # Save previous section
             _save_si_section "$current_section" "$section_text"
             # Start new section
