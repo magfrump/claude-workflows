@@ -221,6 +221,8 @@ include a `**Confidence:**` line valued `High`, `Medium`, or `Low`, reflecting h
 you can land the verdict given the evidence in the draft (and fact-check report, if provided).
 Place both fields at the top of the section, before prose.
 
+Headings shown as `###` here only for readability. **In your output document, render each as `## ` (level-2).**
+
 ### Moat Type Assessment
 Name the moat the plan claims (or implies). Map it to a durable moat archetype, or call out that
 no archetype fits. State what would need to be true for the claimed moat to compound.
