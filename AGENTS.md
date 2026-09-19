@@ -64,7 +64,13 @@ Long-lived documents (onboarding docs, spike records, shared thoughts) support *
 
 ## General Principles
 
-- Commit after each logical unit of work with conventional commit messages (feat:, fix:, refactor:, test:, docs:, spike:)
+- **Commit triggers (mechanical, not vibes-based).** "Logical unit of work" defers indefinitely. Instead, commit whenever any of these is true:
+  - (a) You completed a task or sub-task from an explicit plan (RPI plan checklist, decision record, todo list).
+  - (b) You finished a Ralph-loop iteration that touched files — commit **before** exiting the iteration so the next iteration sees committed state in `git log` rather than a dirty working tree.
+  - (c) Tests went from red to green (or you added a passing test).
+  - (d) You finished a coherent file group (implementation + its tests, or a function + its callers updated).
+  - (e) You're about to context-switch to a different concern, or are about to run a destructive/risky operation.
+  - When in doubt, commit. Small commits are cheap; large unstaged changes are expensive to review and recover. Use conventional prefixes (feat:, fix:, refactor:, test:, docs:, spike:).
 - When using an unfamiliar library or language feature, add a comment explaining "why"
 - Prefer explicit over clever. Code is read more than written, and the readers may not share your context.
 - When you encounter a decision worth documenting, create or update `docs/decisions/NNN-title.md` in the project. For smaller decisions that don't warrant a full record (single clear answer, no meaningful tradeoffs), add a row to `docs/decisions/log.md` instead.
