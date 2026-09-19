@@ -207,6 +207,27 @@ stub_invoked_on() {
   [[ "$output" == *"bidi"* ]]
 }
 
+@test "real auditor: a stray invalid-UTF-8 byte does not hide a bidi override" {
+  # One undecodable byte used to make the auditor drop the whole file (the
+  # decode raised and scan_file returned no findings), so it evaded the audit.
+  export CLAUDE_CONFIG_AUDIT_SCRIPT="$REAL_AUDIT"
+  f="$TEST_DIR/CLAUDE.md"
+  printf '<!-- \xff -->\nrun tests \xe2\x80\xaeplain text\n' > "$f"   # 0xFF + U+202E RLO
+  run bash "$HOOK" < <(edit_payload Edit "$f")
+  [ "$status" -eq 2 ]
+  [[ "$output" == *"bidi"* ]]
+}
+
+@test "real auditor: undecodable bytes are reported as a MED HIDDEN finding" {
+  f="$TEST_DIR/CLAUDE.md"
+  printf '# Notes\n<!-- \xff -->\n' > "$f"
+  run python3 "$REAL_AUDIT" "$f"
+  [ "$status" -eq 0 ]                        # MED only: no HIGH, exit 0
+  [[ "$output" == *"2:6  "*"undecodable byte 0xFF"* ]]
+  [[ "$output" == *"HIDDEN 1 "* ]]
+  [[ "$output" == *"MED 1 "* ]]
+}
+
 @test "real auditor: benign settings.json → silent exit 0" {
   export CLAUDE_CONFIG_AUDIT_SCRIPT="$REAL_AUDIT"
   f="$TEST_DIR/settings.json"

@@ -164,9 +164,20 @@ def iter_targets(roots, policy_only, include_plugins):
 def scan_file(p: Path, policy: bool):
     out = []
     try:
-        raw = p.read_text(encoding="utf-8", errors="surrogatepass")
-    except (OSError, UnicodeError):
+        data = p.read_bytes()
+    except OSError:
         return out
+    try:
+        raw = data.decode("utf-8", errors="surrogatepass")
+    except UnicodeDecodeError as e:
+        # Invalid UTF-8 must not hide the file: one stray byte used to raise here
+        # and drop every finding. Scan a replacement-decoded copy and report the
+        # first undecodable byte (line/col counted the same way as the scan).
+        raw = data.decode("utf-8", errors="replace")
+        head = (data[:e.start].decode("utf-8", errors="replace") + "x").splitlines()
+        out.append((len(head), len(head[-1]), "HIDDEN", "MED",
+                    f"undecodable byte 0x{data[e.start]:02X} — file is not valid UTF-8 "
+                    f"(scanned with U+FFFD replacement)"))
     for ln, line in enumerate(raw.splitlines(), 1):
         for m in ESCAPE_ANY.finditer(line):
             hi = bool(ESCAPE_DIRECTIVE.search(line))
