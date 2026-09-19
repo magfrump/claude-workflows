@@ -97,8 +97,12 @@ def main():
         data = json.load(sys.stdin)
     except Exception:
         defer()
+    if not isinstance(data, dict):  # valid JSON but not an object ([] / "x"): no opinion
+        defer()
     tool = data.get("tool_name", "")
     ti = data.get("tool_input", {}) or {}
+    if not isinstance(ti, dict):    # e.g. tool_input as a bare string: no opinion
+        defer()
     sid = re.sub(r"[^A-Za-z0-9_-]", "", str(data.get("session_id", "")))
     tainted = bool(sid) and (TAINT_DIR / sid).exists()
 
