@@ -46,8 +46,26 @@ parse_si_input() {
     # Strips HTML comments and leading/trailing blank lines.
     local current_section=""
     local section_text=""
+    # Set while inside a multi-line <!-- ... --> comment, so its middle lines
+    # are dropped too (skipping only the opening and closing lines leaked them
+    # into SI_FEEDBACK / SI_PRIORITIES). Checked before heading detection: a
+    # `## ...` line inside a comment is comment text, not a section.
+    local in_comment=0
 
     while IFS= read -r line || [[ -n "$line" ]]; do
+        if (( in_comment )); then
+            [[ "$line" == *'-->'* ]] && in_comment=0
+            continue
+        fi
+
+        # Skip HTML comments: an opening line (leading whitespace allowed)
+        # whose comment does not close on the same line starts a block.
+        if [[ "$line" =~ ^[[:space:]]*'<!--' ]]; then
+            [[ "${line#*<!--}" != *'-->'* ]] && in_comment=1
+            continue
+        fi
+        [[ "$line" == *'-->' ]] && continue
+
         # Detect section headings
         if [[ "$line" =~ ^##[[:space:]]+(.*) ]]; then
             # Save previous section
@@ -57,10 +75,6 @@ parse_si_input() {
             section_text=""
             continue
         fi
-
-        # Skip HTML comments
-        [[ "$line" =~ ^\s*\<!-- ]] && continue
-        [[ "$line" =~ ^.*--\>$ ]] && continue
 
         # Skip the top-level heading
         [[ "$line" =~ ^#[[:space:]] ]] && continue

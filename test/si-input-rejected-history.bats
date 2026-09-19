@@ -194,3 +194,11 @@ merge_validations() {
   [ -f "$INPUT_FILE" ]
   grep -q 'task-fresh' "$INPUT_FILE"
 }
+
+@test "parse_si_input drops the middle lines of a multi-line HTML comment" {
+  printf '# SI Input\n\n## Feedback\n\nreal feedback\n<!--\nhidden middle line\n## Context\n-->\nmore feedback\n\n## Priorities\n\n  <!-- indented opener\n  hidden prio\n  -->\n- p1\n<!-- one-liner -->\n' > "$INPUT_FILE"
+  parse_si_input "$INPUT_FILE" 2>/dev/null
+  [ "$SI_FEEDBACK" = "$(printf 'real feedback\nmore feedback')" ]
+  [ "$SI_PRIORITIES" = "- p1" ]
+  [ -z "$SI_CONTEXT" ]
+}
