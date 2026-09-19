@@ -53,9 +53,35 @@ set -euo pipefail
 ROUND_LOG_FILE=""
 RUN_WORKTREES=()
 RUN_BRANCHES=()
+# PIDs of the background implementer subshells still running. Global so the
+# trap can stop them: removing a worktree out from under a live `claude` leaves
+# an orphan that keeps editing (and committing into) a deleted directory.
+RUN_PIDS=()
+CLEANUP_DONE=""
 cleanup() {
+    # Run once: the INT/TERM/HUP traps exit, which fires EXIT again.
+    [ -z "$CLEANUP_DONE" ] || return 0
+    CLEANUP_DONE=1
     if [ -n "$ROUND_LOG_FILE" ] && [ -f "$ROUND_LOG_FILE" ]; then
         rm -f "$ROUND_LOG_FILE"
+    fi
+    # Stop implementers BEFORE removing their worktrees. pkill -P reaches the
+    # `claude` child of each subshell; kill reaches the subshell itself.
+    local p
+    for p in "${RUN_PIDS[@]:-}"; do
+        [ -n "$p" ] || continue
+        pkill -TERM -P "$p" 2>/dev/null || true
+        kill "$p" 2>/dev/null || true
+    done
+    for p in "${RUN_PIDS[@]:-}"; do
+        [ -n "$p" ] || continue
+        wait "$p" 2>/dev/null || true
+    done
+    RUN_PIDS=()
+    # A crash (or signal) mid-merge would otherwise leave main wedged with
+    # MERGE_HEAD and conflict markers in the working tree.
+    if [ -d "${REPO_DIR:-}" ] && git -C "$REPO_DIR" rev-parse -q --verify MERGE_HEAD >/dev/null 2>&1; then
+        git -C "$REPO_DIR" merge --abort 2>/dev/null || true
     fi
     # Force-remove any worktrees this run created that are still around.
     # Run inside the main repo so `git worktree` commands target it (we may
@@ -65,14 +91,14 @@ cleanup() {
             [ -d "$wt" ] || continue
             git -C "$REPO_DIR" worktree remove --force "$wt" 2>/dev/null || true
         done
-        for br in "${RUN_BRANCHES[@]}"; do
+        for br in "${RUN_BRANCHES[@]:-}"; do
+            [ -n "$br" ] || continue
             git -C "$REPO_DIR" show-ref --verify --quiet "refs/heads/$br" || continue
             git -C "$REPO_DIR" branch -D "$br" 2>/dev/null || true
         done
         git -C "$REPO_DIR" worktree prune 2>/dev/null || true
     fi
 }
-trap cleanup EXIT ERR
 
 # Drop a worktree dir and branch from the run-tracking arrays. Called after a
 # worktree/branch has been deliberately disposed of (deleted, or intentionally
@@ -90,6 +116,42 @@ untrack_worktree_and_branch() {
     done
     RUN_WORKTREES=("${new_wt[@]}")
     RUN_BRANCHES=("${new_br[@]}")
+}
+
+# Drop only a branch from RUN_BRANCHES, leaving its worktree tracked. Used at
+# approval time: from then on a crash must keep the approved branch (the work
+# survives for a manual merge) while its worktree dir can still be removed.
+# Args: $1 = branch name.
+untrack_branch() {
+    local br=$1 i
+    local new_br=()
+    for i in "${RUN_BRANCHES[@]:-}"; do
+        [ -n "$i" ] && [ "$i" != "$br" ] && new_br+=("$i")
+    done
+    RUN_BRANCHES=("${new_br[@]}")
+}
+
+# Create a task worktree on a new branch off main and register both for the
+# EXIT trap. Refuses (returns 1, with a warning) when the branch or dir already
+# exists: those are an earlier run's leftovers — e.g. an approved branch kept
+# as conflict_unresolved for manual merge — and tracking them would let this
+# run's trap force-delete that work. Tracking happens only after a successful
+# add, so everything tracked was created by this run.
+# Args: $1 = worktree dir, $2 = branch name. Runs git in the current directory.
+create_task_worktree() {
+    local wt=$1 br=$2
+    if git show-ref --verify --quiet "refs/heads/$br" || [ -e "$wt" ]; then
+        echo "Warning: $br or $wt already exists (earlier run?) — skipping task, leaving it intact" >&2
+        return 1
+    fi
+    if ! git worktree add "$wt" -b "$br" main 2>/dev/null; then
+        echo "Warning: could not create worktree $wt, skipping" >&2
+        # Neither existed before the add, so any partial leftovers are ours.
+        remove_worktree_and_branch "$wt" "$br" -D
+        return 1
+    fi
+    RUN_WORKTREES+=("$wt")
+    RUN_BRANCHES+=("$br")
 }
 
 # Initialize a round log object as a temp file; sets ROUND_LOG_FILE
@@ -276,10 +338,41 @@ select_run_rubric() {
     printf '%s\n' "$best"
 }
 
+# --- File-scope gate match ---
+# Is a changed path covered by the task's declared files_touched list? Whole-
+# path match: the old `grep -qF` substring test let `a.sh` pass on a declared
+# `scripts/a.sh.bak`, or `foo.md` on `docs/foo.md`. A declared entry ending in
+# `/` is a directory and covers everything beneath it (planners occasionally
+# declare e.g. `test/skills/schemas/`).
+# Args: $1 = changed path, $2 = declared paths, one per line.
+# Returns: 0 if in scope, 1 otherwise.
+file_in_declared_scope() {
+    local file=$1 declared=$2 entry
+    while IFS= read -r entry; do
+        [ -n "$entry" ] || continue
+        [ "$file" = "$entry" ] && return 0
+        case "$entry" in
+            */) [[ "$file" == "$entry"* ]] && return 0 ;;
+        esac
+    done <<< "$declared"
+    return 1
+}
+
 # --- Main execution guard ---
 # Allows sourcing this file for its functions (e.g., in tests) without
 # running the top-level loop.
 if [[ "${BASH_SOURCE[0]}" == "${0}" ]]; then
+
+# Traps are installed only when run as a script: a sourcing bats test that
+# inherits them loses its own EXIT/ERR handlers, and a failing test then
+# vanishes from the TAP output. EXIT only, not ERR: under `set -e` every ERR
+# is immediately followed by the exit (same firing conditions), so ERR just
+# ran cleanup twice. The signal traps turn INT/TERM/HUP into an ordinary exit
+# so EXIT → cleanup runs deterministically, including while blocked in `wait`.
+trap cleanup EXIT
+trap 'exit 130' INT
+trap 'exit 143' TERM
+trap 'exit 129' HUP
 
 # Parse arguments
 SEED_FILE=""
@@ -421,7 +514,10 @@ TEST_BASELINE_FILE="$WORKING_DIR/test-baseline.txt"
 : > "$TEST_BASELINE_FILE"
 if [ -d "$REPO_ROOT/test" ] && command -v bats &>/dev/null; then
     (cd "$REPO_ROOT" && bats test/ 2>&1) | tap_failing_names > "$TEST_BASELINE_FILE" || true
-    BASELINE_COUNT=$(grep -c . "$TEST_BASELINE_FILE" 2>/dev/null || echo 0)
+    # grep -c already prints 0 on no match (exit 1); `|| echo 0` inside the
+    # substitution appended a second 0, giving "0\n0".
+    BASELINE_COUNT=$(grep -c . "$TEST_BASELINE_FILE" 2>/dev/null) || true
+    BASELINE_COUNT=${BASELINE_COUNT:-0}
     if [ "$BASELINE_COUNT" -gt 0 ]; then
         echo "############################################################" >&2
         echo "WARNING: $BASELINE_COUNT test(s) ALREADY FAIL on the base commit." >&2
@@ -449,15 +545,19 @@ for ROUND in $(seq 1 $MAX_ROUNDS); do
         PREV_TASKS_FILE="$WORKING_DIR/tasks-round-$PREV.json"
         PREV_IDEAS_FILE="$WORKING_DIR/feature-ideas-round-$PREV.md"
 
-        # Categorize prior-round tasks by validation verdict
+        # Categorize prior-round tasks by validation verdict. Read this run's
+        # per-round report, not round-history.json: history accumulates across
+        # runs while round numbers restart at 1, so `select(.round == N)`
+        # matched several runs' entries and yielded a multi-line verdict.
+        PREV_REPORT="$WORKING_DIR/round-$PREV-report.json"
         APPROVED_LIST=""
         REJECTED_LIST=""
         if [ -f "$PREV_TASKS_FILE" ]; then
             while IFS= read -r TID; do
                 [ -z "$TID" ] && continue
-                VERDICT=$(jq -r --arg r "$PREV" --arg tid "$TID" \
-                    '.[] | select(.round == ($r | tonumber)) | .validation[$tid].verdict // "unknown"' \
-                    "$ROUND_HISTORY" 2>/dev/null) || VERDICT="unknown"
+                VERDICT=$(jq -r --arg tid "$TID" \
+                    '.validation[$tid].verdict // "unknown"' \
+                    "$PREV_REPORT" 2>/dev/null) || VERDICT="unknown"
 
                 TDESC=$(jq -r --arg tid "$TID" '.[] | select(.id==$tid) | .description' "$PREV_TASKS_FILE" 2>/dev/null) || TDESC=""
 
@@ -465,9 +565,9 @@ for ROUND in $(seq 1 $MAX_ROUNDS); do
                     APPROVED_LIST="${APPROVED_LIST}
   - ${TID}: ${TDESC}"
                 elif [ "$VERDICT" = "rejected" ]; then
-                    FAIL_GATE=$(jq -r --arg r "$PREV" --arg tid "$TID" \
-                        '[.[] | select(.round == ($r | tonumber)) | .validation[$tid] | to_entries[] | select(.value == "fail") | .key] | join(", ")' \
-                        "$ROUND_HISTORY" 2>/dev/null) || FAIL_GATE="unknown"
+                    FAIL_GATE=$(jq -r --arg tid "$TID" \
+                        '[.validation[$tid] | to_entries[] | select(.value == "fail") | .key] | join(", ")' \
+                        "$PREV_REPORT" 2>/dev/null) || FAIL_GATE="unknown"
                     REJECTED_LIST="${REJECTED_LIST}
   - ${TID} (failed: ${FAIL_GATE}): ${TDESC}"
                 fi
@@ -581,6 +681,9 @@ ${SEED_CONTENT}
     fi
 
     echo "Generating ideas (round $ROUND)..."
+    # The ideas file is gitignored and outlives the run; a leftover from an
+    # earlier run would pass the "did claude write it" check below.
+    rm -f "$WORKING_DIR/feature-ideas-round-$ROUND.md"
     # Writes docs/working/feature-ideas-round-$ROUND.md; reads only the repo's
     # own workflows/ under cwd. See claude_headless_flags().
     mapfile -t IDEAS_FLAGS < <(claude_headless_flags)
@@ -662,7 +765,10 @@ DD content above is unchanged."
     fi
 
     # Count ideas from the ideas file (lines starting with a numbered list pattern)
-    IDEA_COUNT=$(grep -cE '^\s*[0-9]+\.' "$IDEAS_FILE" 2>/dev/null || echo 0)
+    # Not `|| echo 0` inside $(): grep -c prints 0 itself on no match, and the
+    # resulting "0\n0" is invalid JSON for --argjson below (aborts the run).
+    IDEA_COUNT=$(grep -cE '^\s*[0-9]+\.' "$IDEAS_FILE" 2>/dev/null) || true
+    IDEA_COUNT=${IDEA_COUNT:-0}
     IDEAS_JSON=$(jq -n --argjson count "$IDEA_COUNT" --arg file "feature-ideas-round-$ROUND.md" \
         '{generated: true, count: $count, file: $file}')
     update_round_log '.ideas' "$IDEAS_JSON"
@@ -765,6 +871,10 @@ CONVERGENCE_EOF
             echo "Convergence detected: ${OVERLAP_RESULT}% of problems overlap with prior rounds (threshold: ${CONVERGENCE_THRESHOLD}%)."
             echo "Stopping before round $ROUND implementation ($((ROUND - 1)) rounds completed)."
             echo "[round-$ROUND] CONVERGED: ${OVERLAP_RESULT}% problem overlap" >> "$WORKING_DIR/validation-round-$ROUND.log"
+            # Finalize like every other early exit, so the round still gets a
+            # report and a round-history entry.
+            update_round_log '.outcome' '"converged"'
+            finalize_round_log "$ROUND"
             break
         elif [ -n "$OVERLAP_RESULT" ]; then
             echo "  Overlap: ${OVERLAP_RESULT}% (threshold: ${CONVERGENCE_THRESHOLD}%), continuing."
@@ -808,6 +918,8 @@ ${SI_PRIORITY_HYPOTHESES_JSON}"
     # Writes docs/working/tasks-round-$ROUND.json; reads only under cwd.
     # See claude_headless_flags().
     mapfile -t TASKS_FLAGS < <(claude_headless_flags)
+    # Same stale-file hazard as the ideas file above.
+    rm -f "$WORKING_DIR/tasks-round-$ROUND.json"
     claude -p "${TASKS_FLAGS[@]}" "Read docs/working/feature-ideas-round-$ROUND.md.
 
 For each surviving idea from the tradeoff matrix, assess whether it can be
@@ -969,28 +1081,16 @@ Hypothesis_source guidance (decision 012 pillar 3):
     # Step 3: Implement in parallel worktrees
     # -------------------------------------------------------
     echo "Launching parallel implementation..."
-    PIDS=()
+    # RUN_PIDS (not a loop-local array) so cleanup() can stop these on a signal.
+    RUN_PIDS=()
     LAUNCHED_TASKS=""
     for TASK_ID in $TASK_IDS; do
         DESC=$(jq -r ".[] | select(.id==\"$TASK_ID\") | .description" "$TASKS_FILE")
         FILES_TOUCHED=$(jq -r ".[] | select(.id==\"$TASK_ID\") | .files_touched[]" "$TASKS_FILE" | paste -sd', ')
         WT_DIR="$WORKTREE_BASE-$TASK_ID"
 
-        # Track the intended worktree dir and branch BEFORE attempting the add.
-        # A partial `worktree add` (e.g. the branch already exists from a prior
-        # crashed run, or the dir is half-registered) would otherwise orphan
-        # those artifacts: the old post-add appends were skipped by the
-        # `continue` below, leaving the leftovers invisible to both the explicit
-        # cleanup and the EXIT trap. The trap is idempotent — it guards on dir
-        # existence and `show-ref` — so registering a name that never got
-        # created is harmless.
-        RUN_WORKTREES+=("$WT_DIR")
-        RUN_BRANCHES+=("feat/r${ROUND}-${TASK_ID}")
-
-        git worktree add "$WT_DIR" -b "feat/r${ROUND}-${TASK_ID}" main 2>/dev/null || {
-            echo "Warning: could not create worktree for $TASK_ID, skipping"
-            continue
-        }
+        TASK_BRANCH="feat/r${ROUND}-${TASK_ID}"
+        create_task_worktree "$WT_DIR" "$TASK_BRANCH" || continue
 
         LAUNCHED_TASKS="${LAUNCHED_TASKS:+$LAUNCHED_TASKS }$TASK_ID"
 
@@ -1086,13 +1186,16 @@ You are acting in /away mode, so every commit body MUST follow this repo's
 Autonomous Commit Format (see CLAUDE.md): include a 'Confidence: high|medium|low'
 line and a 'Notes:' line recording any judgement calls made without human input."
         ) &
-        PIDS+=($!)
+        RUN_PIDS+=($!)
     done
 
-    # Wait for all parallel tasks to finish
-    echo "Waiting for ${#PIDS[@]} tasks to complete..."
-    for PID in "${PIDS[@]}"; do
+    # Wait for all parallel tasks to finish. Drop each PID once reaped so the
+    # trap never signals a recycled PID belonging to an unrelated process.
+    echo "Waiting for ${#RUN_PIDS[@]} tasks to complete..."
+    for PID_IDX in "${!RUN_PIDS[@]}"; do
+        PID=${RUN_PIDS[$PID_IDX]}
         wait "$PID" || echo "Warning: task $PID exited with non-zero status"
+        unset "RUN_PIDS[$PID_IDX]"
     done
     echo "All tasks complete."
 
@@ -1162,7 +1265,7 @@ line and a 'Notes:' line recording any judgement calls made without human input.
                     # the implement prompt below.
                     docs/working/*|docs/decisions/*|docs/reviews/*|docs/thoughts/*) continue ;;
                 esac
-                if ! echo "$DECLARED_FILES" | grep -qF "$FILE"; then
+                if ! file_in_declared_scope "$FILE" "$DECLARED_FILES"; then
                     SCOPE_VIOLATIONS="${SCOPE_VIOLATIONS}  ${FILE}\n"
                 fi
             done
@@ -1577,6 +1680,10 @@ The bracketed token is a per-run identifier — reproduce it exactly. Count only
             echo "[$TASK_ID] APPROVED" >> "$WORKING_DIR/validation-round-$ROUND.log"
             record_gate "$TASK_ID" "verdict" "approved"
             APPROVED_TASKS="${APPROVED_TASKS:+$APPROVED_TASKS }$TASK_ID"
+            # Approved work must survive a crash before it merges: stop the
+            # trap from force-deleting this branch (its worktree dir may still
+            # be removed). The merge step deletes it once it has landed.
+            untrack_branch "$BRANCH"
         fi
     done
 
@@ -1641,6 +1748,10 @@ SOLVED_EOF
     # -------------------------------------------------------
     echo "Merging approved features..."
     declare -A BRANCH_TIP_SHAS=()
+    # Tasks whose branch actually landed on main. Approved is not merged: a
+    # conflict_unresolved task, or one skipped by the halt below, must not be
+    # logged as completed work.
+    MERGED_TASKS=""
     for TASK_ID in $APPROVED_TASKS; do
         BRANCH="feat/r${ROUND}-${TASK_ID}"
         WT_DIR="$WORKTREE_BASE-$TASK_ID"
@@ -1658,10 +1769,17 @@ SOLVED_EOF
             # acceptEdits (see claude_headless_flags()); everything it touches
             # is in the current repo, so no --add-dir.
             mapfile -t MERGE_FLAGS < <(claude_headless_flags)
+            # Capture the status: `set -e` still applies inside this `|| { }`
+            # block, so a failing resolver would abort the run with main
+            # mid-merge. The check below decides the outcome either way.
+            RESOLVER_STATUS=0
             claude -p "${MERGE_FLAGS[@]}" "There are merge conflicts in the current repo.
 Run git status to see conflicted files.
 Resolve each conflict by preserving the intent of both sides.
-Then git add the resolved files and git commit to complete the merge."
+Then git add the resolved files and git commit to complete the merge." || RESOLVER_STATUS=$?
+            if [ "$RESOLVER_STATUS" -ne 0 ]; then
+                echo "  Warning: conflict resolver exited $RESOLVER_STATUS for $BRANCH"
+            fi
             # Verify the merge actually completed: the branch must be reachable
             # from HEAD. "No unmerged paths" alone also matches a merge git
             # refused outright, and a resolution staged but never committed —
@@ -1712,6 +1830,7 @@ Then git add the resolved files and git commit to complete the merge."
             # pair so the EXIT trap doesn't redundantly re-remove it (Gap 3).
             remove_worktree_and_branch "$WT_DIR" "$BRANCH" -d
             untrack_worktree_and_branch "$WT_DIR" "$BRANCH"
+            MERGED_TASKS="${MERGED_TASKS:+$MERGED_TASKS }$TASK_ID"
         fi
     done
 
@@ -1766,12 +1885,12 @@ Retro docs:${FIX_RETROS}" 2>/dev/null || true
         fi
     fi
 
-    # Append approved-task hypotheses to the log. Outcome columns stay empty;
+    # Append merged tasks' hypotheses to the log. Outcome columns stay empty;
     # the morning summary surfaces matured rows as deferred questions for the
     # user to evaluate (the loop never auto-grades them — see Decision 010).
-    echo "Logging hypotheses for approved tasks..."
+    echo "Logging hypotheses for merged tasks..."
     append_approved_hypotheses "$ROUND" "$TASKS_FILE" \
-        "$WORKING_DIR/hypothesis-log.md" "$APPROVED_TASKS"
+        "$WORKING_DIR/hypothesis-log.md" "$MERGED_TASKS"
 
     # -------------------------------------------------------
     # Step 6: Update completed tasks log
@@ -1781,7 +1900,7 @@ Retro docs:${FIX_RETROS}" 2>/dev/null || true
         echo ""
         echo "## Round $ROUND"
         echo ""
-        for TASK_ID in $APPROVED_TASKS; do
+        for TASK_ID in $MERGED_TASKS; do
             SUMMARY=""
             TIP_SHA="${BRANCH_TIP_SHAS[$TASK_ID]:-}"
             if [ -n "$TIP_SHA" ]; then

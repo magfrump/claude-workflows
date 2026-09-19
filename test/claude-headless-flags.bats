@@ -45,14 +45,11 @@ setup() {
   # shellcheck source=../scripts/self-improvement.sh
   source "$SI_SCRIPT"
 
-  # NOTE on failure output: sourcing leaks the script's `set -euo pipefail`
-  # and its `trap cleanup EXIT ERR` into the test shell, which pre-empts bats'
-  # own ERR trap. A failing assertion therefore aborts the shell before bats
-  # prints its "not ok" line, and the regression surfaces as a non-zero exit
-  # plus "Executed N instead of expected M" rather than a named test. Do NOT
-  # "fix" this with `set +e` — that disables the ERR trap bats uses to detect
-  # failure at all, and every test starts passing. Same tradeoff as
-  # test/round-log-functions.bats, which also sources this script.
+  # NOTE: sourcing leaks the script's `set -euo pipefail` into the test shell.
+  # Its cleanup/signal traps are installed only when run as a script (they
+  # used to leak too, pre-empting bats' own EXIT/ERR traps so a failing test
+  # surfaced only as "Executed N instead of expected M"). Do NOT add `set +e`
+  # — bats relies on errexit to detect a failing assertion at all.
 }
 
 teardown() {
