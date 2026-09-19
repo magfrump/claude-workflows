@@ -232,10 +232,12 @@ For each criterion sub-agent, include in the prompt:
 
    ```markdown
    ## Goal-Alignment Note
-   - Answered: [yes / partial / no — one phrase]
+   - Success criterion (restated verbatim): [paste the Success criterion line from the goal preamble exactly as given — do not paraphrase]
+   - Answered: [yes / partial / no — one phrase on what was / wasn't addressed]
    - Out of scope: [what was set aside and why, or "none"]
    - Escalate: [what the orchestrator should action separately, or "nothing"]
    - Questions I would have asked: [1-3 short questions, only if scope was unclear; otherwise omit this bullet]
+   - Decisions I made: [1-3 short lines naming silent judgment calls between equally plausible interpretations; otherwise omit this bullet]
    ```
 
    One short bullet per line. No padding. The "Questions I would have asked" bullet is optional
@@ -403,8 +405,10 @@ Save the matrix document to `docs/reviews/matrix-analysis.md` in the project roo
 run, overwrite it.
 
 When run as a sub-procedure of another workflow (e.g. divergent-design), the caller specifies
-the output path and whether the chat synthesis is suppressed; follow the caller's instructions
-over the defaults here.
+the output path and whether the chat synthesis and the Recommendation (in chat and in the
+document) are suppressed; follow the caller's instructions over the defaults here. When the
+Recommendation is suppressed, keep the document's `## Recommendation` heading with the single
+line `Deferred to <caller> — see its decision record.` so the record's shape is unchanged.
 
 At the end of your chat synthesis, link to the document.
 

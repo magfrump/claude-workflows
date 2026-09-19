@@ -120,7 +120,7 @@ Payback period (months to recover CAC from gross-margin-weighted revenue) is the
 
 Moves:
 
-- **CAC payback math.** Payback ≈ CAC / (monthly revenue × contribution margin). A 24-month payback on a $50K CAC funds $50K per customer for two years before recovery. At 10 new customers per month, that's ~$6M of working capital tied up in unrecovered CAC at steady state (24 monthly cohorts, each on average half recovered: 10 × $50K × 24 × ½) — before growth.
+- **CAC payback math.** Payback ≈ CAC / (monthly revenue × contribution margin). A 24-month payback on a $50K CAC funds $50K per customer for two years before recovery. At 10 new customers per month, that's ~$6.25M of working capital tied up in unrecovered CAC at steady state (24 monthly cohorts of $500K, on average just over half still unrecovered) — before growth.
 - **Growth-rate × payback interaction.** Faster growth means more new customers in unrecovered CAC simultaneously. A 12-month payback at 100% YoY growth is dramatically more capital-intensive than a 12-month payback at flat growth. Does the plan size the funding ask against this interaction, or a static-state model?
 - **Industry benchmarks.** SaaS rule of thumb: 12-month payback for healthy, 18-24 for acceptable, >24 for problematic absent unusually low churn. Consumer subscription typically faster (<6 months). Marketplaces vary with take rate. Situate the plan's payback against the relevant comp set, not an absolute target.
 - **What payback ignores.** Payback doesn't capture lifetime profitability — a 6-month payback with 7-month average lifetime is worse than an 18-month payback with 5-year lifetime. Use payback for capital efficiency; use LTV/CAC for long-term value. Plans leaning on one and ignoring the other are usually hiding something in the other.
@@ -191,10 +191,12 @@ When dispatched by an orchestrator, append a Goal-Alignment Note at the end of y
 
 ```markdown
 ## Goal-Alignment Note
-- Answered: [yes / partial / no — one phrase]
+- Success criterion (restated verbatim): [paste the Success criterion line from the goal preamble exactly as given — do not paraphrase]
+- Answered: [yes / partial / no — one phrase on what was / wasn't addressed]
 - Out of scope: [what was set aside and why, or "none"]
 - Escalate: [what the orchestrator should action separately, or "nothing"]
 - Questions I would have asked: [1-3 short questions, only if scope was unclear; otherwise omit this bullet]
+- Decisions I made: [1-3 short lines naming silent judgment calls between equally plausible interpretations; otherwise omit this bullet]
 ```
 
 Use the **Out of scope** line to flag moat/distribution or market-sizing weaknesses you noticed but did not critique (those belong to sibling skills). The **Escalate** line surfaces a finding crossing into another critic's territory — a CAC argument depending on a distribution claim the moat critic should re-examine, or a churn assumption depending on a fact-check claim the orchestrator should re-examine.

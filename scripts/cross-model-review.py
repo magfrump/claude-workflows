@@ -137,7 +137,10 @@ Finding B: {b}"""
 # drifted when the owner fixed catastrophic backtracking (A6 / B2, decision log
 # 54), and was re-synced to the owner's current regex on 2026-09-18 — byte-
 # identical again as of that date, along with the owner's skip of pipe-less
-# lines in parse_findings (Q-022). Only the regex is shared: the two parse_findings bodies already differ in four ways,
+# lines in parse_findings (Q-022). Only the regex is shared: the two parse_findings bodies differ in
+# four ways (see the owner's header) — and since 2026-09-18 this copy's block detection and NONE
+# match also accept markdown-wrapped headers (`**FINDINGS:**`, `## FINDINGS:`), which the
+# owner does not, so a run can parse here where lite-review would parse zero rows,
 # and the record schema was never shared at all (we emit sev/desc/line_start, the
 # owner emits severity/title/description). If this harness moves to the SWRBench
 # fork, keep THE REGEX in step with the owner deliberately or state in the fork
