@@ -87,6 +87,12 @@ def _cmdsubs(text: str) -> tuple[str, list[str]]:
     """
     out, bodies, i, n = [], [], 0, len(text)
     while i < n:
+        if text[i] == "\\" and i + 1 < n:
+            # An escaped char is literal: `\`` and `\$(` open no substitution.
+            # Pairing an escaped backtick misaligned every later pair.
+            out.append(text[i : i + 2])
+            i += 2
+            continue
         if text.startswith("$(", i):
             # Match the closing ) with quote awareness: a ) inside a string
             # literal — `$(echo "done :)" && curl x)` — must NOT close the
@@ -117,7 +123,12 @@ def _cmdsubs(text: str) -> tuple[str, list[str]]:
         elif text[i] == "`":
             j = text.find("`", i + 1)
             if j == -1:
-                break
+                # An unmatched backtick is literal — `echo 'press the \` key'`.
+                # Breaking here dropped the REST OF THE FILE from the scan (a
+                # fail-open: every command after it went unseen).
+                out.append(text[i])
+                i += 1
+                continue
             bodies.append(text[i + 1 : j])
             out.append(";")
             i = j + 1
@@ -125,6 +136,128 @@ def _cmdsubs(text: str) -> tuple[str, list[str]]:
             out.append(text[i])
             i += 1
     return "".join(out), bodies
+
+
+# Commands whose heredoc stdin is shell SOURCE, not data: `bash <<EOF … EOF`
+# runs its body, so that body is scanned as code rather than skipped.
+_HEREDOC_SHELLS = {"bash", "sh", "zsh", "dash", "ksh"}
+_HEREDOC_WORD_END = " \t\n;&|()<>"
+
+
+def _heredoc_word(text: str, j: int):
+    """Parse the delimiter after a `<<` that ends at text[j].
+
+    Returns (strip_tabs, delimiter, quoted, end) or None when this `<<` does not
+    open a heredoc. Any quoting (`'EOF'`, `"EOF"`, `\\EOF`) makes the body
+    literal, as in the shell. An unquoted delimiter must start like a name, so
+    arithmetic `$((1<<2))` is not read as a heredoc.
+    """
+    n = len(text)
+    strip_tabs = j < n and text[j] == "-"
+    k = j + 1 if strip_tabs else j
+    while k < n and text[k] in " \t":
+        k += 1
+    word, quoted = "", False
+    while k < n and text[k] not in _HEREDOC_WORD_END:
+        ch = text[k]
+        if ch in "'\"":
+            e = text.find(ch, k + 1)
+            if e == -1:
+                return None
+            word += text[k + 1 : e]
+            quoted, k = True, e + 1
+            continue
+        if ch == "\\" and k + 1 < n:
+            word += text[k + 1]
+            quoted, k = True, k + 2
+            continue
+        word += ch
+        k += 1
+    if not word or (not quoted and not re.match(r"[A-Za-z_]", word)):
+        return None
+    return strip_tabs, word, quoted, k
+
+
+def _heredocs(text: str) -> tuple[str, list[str]]:
+    """Blank heredoc bodies out of shell source; return (text, live bodies).
+
+    A heredoc body is data. Tokenized as code, an apostrophe in it (`it's`)
+    opened a quote that swallowed every later command in the file — a fail-open.
+    Bodies are blanked in place (newlines kept, so length and line numbers are
+    unchanged) through their terminator line. What stays live is returned for
+    separate scanning: the `$( )` / backtick substitutions of an UNQUOTED body
+    (the shell expands those), or the whole body when a shell reads it as its
+    script (`bash <<EOF`). A heredoc whose terminator never appears is left as
+    code, so a misread `<<` can only over-report, never hide the rest of a file.
+    """
+    chars = list(text)
+    live: list[str] = []
+    n, i, q = len(text), 0, None
+    pending: list[tuple[bool, str, bool, bool]] = []
+    line_start = 0
+    while i < n:
+        c = text[i]
+        if q:
+            if c == "\\" and q == '"' and i + 1 < n:
+                i += 2
+                continue
+            if c == q:
+                q = None
+            i += 1
+            continue
+        if c in "'\"":
+            q = c
+            i += 1
+            continue
+        if c == "\\" and i + 1 < n:
+            i += 2
+            continue
+        if c == "#" and (i == 0 or text[i - 1] in " \t\n;&|()"):
+            nl = text.find("\n", i)
+            i = n if nl == -1 else nl
+            continue
+        if text.startswith("<<", i) and not text.startswith("<<<", i) and (i == 0 or text[i - 1] != "<"):
+            parsed = _heredoc_word(text, i + 2)
+            if parsed:
+                strip_tabs, delim, quoted, end = parsed
+                head = re.split(r"[;&|(]", text[line_start:i])[-1].split()
+                is_script = any(os.path.basename(w) in _HEREDOC_SHELLS for w in head)
+                pending.append((strip_tabs, delim, quoted, is_script))
+                i = end
+                continue
+            i += 2
+            continue
+        if c == "\n":
+            start = i + 1
+            for strip_tabs, delim, quoted, is_script in pending:
+                pos, term = start, None
+                while pos < n:
+                    nl = text.find("\n", pos)
+                    stop = n if nl == -1 else nl
+                    line = text[pos:stop].rstrip("\r")
+                    if (line.lstrip("\t") if strip_tabs else line) == delim:
+                        term = (pos, stop)
+                        break
+                    pos = stop + 1
+                if term is None:
+                    break  # unterminated: leave the rest as code
+                body = text[start : term[0]]
+                if is_script:
+                    live.append(body)
+                elif not quoted:
+                    live.extend(_cmdsubs(body)[1])
+                for k in range(start, term[1]):
+                    if chars[k] != "\n":
+                        chars[k] = " "
+                start = term[1]
+            pending = []
+            if start > i + 1:
+                i = start  # the newline ending the last terminator line
+                line_start = start + 1
+                continue
+            line_start = i + 1
+        i += 1
+    return "".join(chars), live
 
 
 def _segments(text: str, depth: int = 0) -> list[list[tuple[str, bool]]]:
@@ -137,7 +270,9 @@ def _segments(text: str, depth: int = 0) -> list[list[tuple[str, bool]]]:
     """
     if depth > 4:  # runaway nesting; bail rather than recurse forever
         return []
+    text, heredoc_live = _heredocs(text)
     body, subs = _cmdsubs(text)
+    subs += heredoc_live
     segs: list[list[tuple[str, bool]]] = []
     cur: list[tuple[str, bool]] = []
     tok, quoted, quote, i, n = "", False, None, 0, len(body)

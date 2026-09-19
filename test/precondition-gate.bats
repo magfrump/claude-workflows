@@ -104,6 +104,25 @@ log_invocation() {
   [ "$output" = "skill:foo" ]
 }
 
+# A round number recurs across SI runs, so several archived copies can exist.
+@test "archive fallback prefers the newest archived copy" {
+  echo '[{"id":"t","description":"x","files_touched":["skills/old/SKILL.md"],"independent":true}]' \
+    > "$WORKING_DIR/archive/2026-01-01-tasks-round-7.json"
+  echo '[{"id":"t","description":"x","files_touched":["skills/new/SKILL.md"],"independent":true}]' \
+    > "$WORKING_DIR/archive/2026-03-01-tasks-round-7.json"
+  run _resolve_hypothesis_target 7 t "$WORKING_DIR"
+  [ "$output" = "skill:new" ]
+}
+
+@test "archive fallback skips a newer copy that lacks the task id" {
+  echo '[{"id":"t","description":"x","files_touched":["skills/mine/SKILL.md"],"independent":true}]' \
+    > "$WORKING_DIR/archive/2026-01-01-tasks-round-7.json"
+  echo '[{"id":"other","description":"x","files_touched":["skills/theirs/SKILL.md"],"independent":true}]' \
+    > "$WORKING_DIR/archive/2026-03-01-tasks-round-7.json"
+  run _resolve_hypothesis_target 7 t "$WORKING_DIR"
+  [ "$output" = "skill:mine" ]
+}
+
 # --- _count_invocations ---
 
 @test "counts skill invocations via skill_tool" {
@@ -192,6 +211,26 @@ log_invocation() {
   export NOW_EPOCH
   run _days_since_round 1 "$WORKING_DIR"
   [ "$output" = "5" ]
+}
+
+@test "_days_since_round prefers the newest archived report without a task id" {
+  echo '{"round":4,"timestamp":"1970-01-01T00:00:00Z"}' > "$WORKING_DIR/archive/2026-01-01-round-4-report.json"
+  echo '{"round":4,"timestamp":"1970-01-03T00:00:00Z"}' > "$WORKING_DIR/archive/2026-03-01-round-4-report.json"
+  NOW_EPOCH=$((10 * 86400)); export NOW_EPOCH
+  run _days_since_round 4 "$WORKING_DIR"
+  [ "$output" = "8" ]
+}
+
+@test "_days_since_round uses the report from the same archived run as the task" {
+  echo '[{"id":"t","description":"x","files_touched":[],"independent":true}]' \
+    > "$WORKING_DIR/archive/2026-01-01-tasks-round-4.json"
+  echo '[{"id":"other","description":"x","files_touched":[],"independent":true}]' \
+    > "$WORKING_DIR/archive/2026-03-01-tasks-round-4.json"
+  echo '{"round":4,"timestamp":"1970-01-01T00:00:00Z"}' > "$WORKING_DIR/archive/2026-01-01-round-4-report.json"
+  echo '{"round":4,"timestamp":"1970-01-03T00:00:00Z"}' > "$WORKING_DIR/archive/2026-03-01-round-4-report.json"
+  NOW_EPOCH=$((10 * 86400)); export NOW_EPOCH
+  run _days_since_round 4 "$WORKING_DIR" t
+  [ "$output" = "10" ]
 }
 
 # --- _evaluate_script_preconditions ---

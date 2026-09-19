@@ -355,3 +355,34 @@ log_inv() {
   run _evaluate_script_preconditions 1 s1 "invocations=5" "$WORKING_DIR"
   [ "$status" -eq 1 ]
 }
+
+# ---------------------------------------------------------------------------
+# Window gate locates the Window column by header. The live schema puts Source
+# between Hypothesis and Window, so a fixed field offset read Source instead,
+# the gate never fired, and every open row counted as matured.
+# ---------------------------------------------------------------------------
+
+@test "window gate: a not-yet-matured row (round 8 + window 5 > 10) is not counted" {
+  write_hyp_header
+  echo "| 8 | young | not yet matured hyp | planner | 5 | user |  |  |  |  |  |" >> "$HYP_LOG"
+  echo "| 1 | old | matured hyp | planner | 2 | user |  |  |  |  |  |" >> "$HYP_LOG"
+  run _count_matured_deferred "$HYP_LOG" 10
+  [ "$status" -eq 0 ]
+  [ "$output" = "1" ]
+  run _summary_deferred_evaluation "$HYP_LOG" 10 "$WORKING_DIR"
+  [ "$status" -eq 0 ]
+  [[ "$output" == *"old"* ]]
+  [[ "$output" != *"young"* ]]
+}
+
+@test "window gate: legacy header without Source still gates on column 5" {
+  {
+    echo "| Round | Task ID | Hypothesis | Window | Checked at Round | Outcome | Status Date | Evidence |"
+    echo "|-|-|-|-|-|-|-|-|"
+    echo "| 8 | young | legacy hyp | 5 |  |  |  |  |"
+  } > "$HYP_LOG"
+  run _count_matured_deferred "$HYP_LOG" 10
+  [ "$output" = "0" ]
+  run _count_matured_deferred "$HYP_LOG" 13
+  [ "$output" = "1" ]
+}

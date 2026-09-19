@@ -22,9 +22,10 @@ model and saves raw markdown + usage metadata, nothing more.
 import json, os, sys, time, urllib.request
 
 API = "https://openrouter.ai/api/v1/chat/completions"
-KEY = os.environ.get("OPENROUTER_API_KEY") or sys.exit("OPENROUTER_API_KEY not set")
+# Usage before the key check, so running it bare shows how to call it.
 if len(sys.argv) < 3:
     sys.exit("usage: dd-cross-model-sweep.py <prompt-file> <out-dir>")
+KEY = os.environ.get("OPENROUTER_API_KEY") or sys.exit("OPENROUTER_API_KEY not set")
 PROMPT_PATH = sys.argv[1]
 OUT_DIR = sys.argv[2]
 MODELS = ["moonshotai/kimi-k3", "openai/gpt-5.6-sol", "google/gemini-3.1-pro-preview"]
@@ -46,6 +47,7 @@ def call(model):
     with urllib.request.urlopen(req, timeout=1800) as r:
         return json.load(r)
 
+failed = []
 for model in MODELS:
     slug = model.replace("/", "_")
     ok = False
@@ -74,3 +76,9 @@ for model in MODELS:
             time.sleep(5)
     if not ok:
         print(f"{model}: FAILED after 2 attempts", flush=True)
+        failed.append(model)
+
+# A sweep with a missing arm is not a successful sweep: exit non-zero so a
+# caller (or `&&` chain) cannot mistake "every model failed" for done.
+if failed:
+    sys.exit(f"{len(failed)}/{len(MODELS)} models failed: {', '.join(failed)}")

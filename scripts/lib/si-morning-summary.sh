@@ -158,7 +158,7 @@ EOF
 # would surface as questions for the same (log, current_round): rows that are
 # open (empty Outcome), not Scope=internal-si, and whose maturity window has
 # elapsed. It deliberately reuses _row_is_open_deferred plus the same column-
-# location calls and Outcome-column fallback (7) as _summary_deferred_evaluation,
+# location calls and Outcome/Window fallbacks (7/5) as _summary_deferred_evaluation,
 # so the action block's N is equal to the question count below it by construction
 # (the feedback-continuity property — the top block must not claim a different
 # count than the section it points to). Echoes 0 when the log is missing.
@@ -168,15 +168,17 @@ _count_matured_deferred() {
 
     [ -f "$hypothesis_log" ] || { echo 0; return; }
 
-    local scope_col outcome_col
+    local scope_col outcome_col window_col
     scope_col=$(_locate_scope_col "$hypothesis_log")
     outcome_col=$(_locate_log_col "$hypothesis_log" "Outcome")
+    window_col=$(_locate_log_col "$hypothesis_log" "Window")
     [[ "$outcome_col" -gt 0 ]] || outcome_col=7
+    [[ "$window_col" -gt 0 ]] || window_col=5
 
     local count=0
     local line
     while IFS= read -r line; do
-        _row_is_open_deferred "$line" "$current_round" "$scope_col" "$outcome_col" || continue
+        _row_is_open_deferred "$line" "$current_round" "$scope_col" "$outcome_col" "$window_col" || continue
         count=$((count + 1))
     done < "$hypothesis_log"
     echo "$count"
@@ -963,15 +965,19 @@ _summary_deferred_evaluation() {
         return
     fi
 
-    local scope_col outcome_col evaluator_col requires_col source_col
+    local scope_col outcome_col evaluator_col requires_col source_col window_col
     scope_col=$(_locate_scope_col "$hypothesis_log")
     outcome_col=$(_locate_log_col "$hypothesis_log" "Outcome")
+    window_col=$(_locate_log_col "$hypothesis_log" "Window")
     evaluator_col=$(_locate_log_col "$hypothesis_log" "Evaluator")
     requires_col=$(_locate_log_col "$hypothesis_log" "Requires")
     source_col=$(_locate_log_col "$hypothesis_log" "Source")
     # Pre-decision-012 logs put Outcome at column 7. Fall back so older
     # in-tree logs keep parsing until they are migrated.
     [[ "$outcome_col" -gt 0 ]] || outcome_col=7
+    # Pre-Source-column logs put Window at column 5 (the position the row
+    # filter hard-coded before it located Window by header).
+    [[ "$window_col" -gt 0 ]] || window_col=5
 
     # Pre-aggregate the usage log once. Downstream precondition checks
     # (_count_invocations / _check_metric_logged) read from the resulting
@@ -995,7 +1001,7 @@ _summary_deferred_evaluation() {
     local ready_count=0 deferred_count=0
     local -a fields
     while IFS= read -r line; do
-        _row_is_open_deferred "$line" "$current_round" "$scope_col" "$outcome_col" || continue
+        _row_is_open_deferred "$line" "$current_round" "$scope_col" "$outcome_col" "$window_col" || continue
 
         _split_row_fields "$line" fields
         local round task_id hypothesis evaluator requires hyp_src
@@ -1090,17 +1096,8 @@ _resolve_hypothesis_target() {
     local round="$1" tid="$2" working_dir="$3"
     [ -z "$working_dir" ] && return 0
 
-    # Try current-round file first, then archived copies. The archive prefix is
-    # date-stamped, so glob and take the most recent.
-    local tasks_file=""
-    local candidate
-    for candidate in "$working_dir/tasks-round-$round.json" \
-                     "$working_dir"/archive/*tasks-round-"$round".json; do
-        if [ -f "$candidate" ]; then
-            tasks_file="$candidate"
-            break
-        fi
-    done
+    local tasks_file
+    tasks_file=$(_find_tasks_file "$round" "$tid" "$working_dir")
     [ -f "$tasks_file" ] || return 0
 
     # Path classification is shared with hooks/log-usage.sh via skill-paths.sh
@@ -1117,6 +1114,48 @@ _resolve_hypothesis_target() {
             skill:*|workflow:*) printf '%s\n' "$classified" ;;
         esac
     done | sort -u
+}
+
+# --- Internal: list archived copies of a round file, newest first ---
+# Archived names carry a date-stamped prefix (archive-working-docs.sh writes
+# archive/<PREFIX>-<name>), and a round number recurs across SI runs, so one
+# round can have several archived copies. Glob expansion is lexically sorted
+# (oldest date first), so reverse it to put the most recent copy first.
+# Args: $1 = archive dir, $2 = un-prefixed file name (e.g. tasks-round-3.json)
+# Output: matching paths, one per line, newest first
+_archived_newest_first() {
+    local archive_dir="$1" name="$2"
+    local -a matches=()
+    local f
+    for f in "$archive_dir"/*"$name"; do
+        [ -f "$f" ] && matches+=("$f")
+    done
+    local i
+    for (( i = ${#matches[@]} - 1; i >= 0; i-- )); do
+        printf '%s\n' "${matches[$i]}"
+    done
+}
+
+# --- Internal: locate the tasks file a hypothesis row refers to ---
+# Tries the current-round file first, then archived copies newest-first, and
+# returns the first one that actually contains task id $2 (a recurring round
+# number means an archived copy may belong to a different run). With an
+# empty id, returns the first existing candidate in the same order.
+# Args: $1 = round, $2 = task id (may be empty), $3 = working_dir
+# Output: the tasks file path, or nothing when none matches
+_find_tasks_file() {
+    local round="$1" tid="$2" working_dir="$3"
+    local candidate
+    while IFS= read -r candidate; do
+        [ -f "$candidate" ] || continue
+        if [ -z "$tid" ] || jq -e --arg id "$tid" \
+                'any(.[]?; .id == $id)' "$candidate" >/dev/null 2>&1; then
+            printf '%s\n' "$candidate"
+            return 0
+        fi
+    done < <(printf '%s\n' "$working_dir/tasks-round-$round.json"
+             _archived_newest_first "$working_dir/archive" "tasks-round-$round.json")
+    return 0
 }
 
 # --- Internal: pre-aggregate the usage log into lookup tables ---
@@ -1251,20 +1290,36 @@ _check_metric_logged() {
 # elapsed since now. Echoes -1 if the round report is missing or has no
 # timestamp (caller treats -1 as "unresolvable"). NOW_EPOCH can be set in
 # tests to make the function deterministic.
+# Args: $1 = round, $2 = working_dir, $3 = task id (optional). With a task
+# id whose tasks file was found in the archive, the archived report carrying
+# the same date prefix is preferred, so the timestamp belongs to the same run
+# as the task; otherwise current reports win, then archived ones newest-first.
 _days_since_round() {
-    local round="$1" working_dir="$2"
+    local round="$1" working_dir="$2" tid="${3:-}"
     [ -z "$working_dir" ] && { echo -1; return; }
 
     local report=""
     local candidate
-    for candidate in "$working_dir/rounds/round-$round-report.json" \
-                     "$working_dir/round-$round-report.json" \
-                     "$working_dir"/archive/*round-"$round"-report.json; do
-        if [ -f "$candidate" ]; then
-            report="$candidate"
-            break
+    if [ -n "$tid" ]; then
+        local tasks_file
+        tasks_file=$(_find_tasks_file "$round" "$tid" "$working_dir")
+        if [[ "$tasks_file" == "$working_dir/archive/"* ]]; then
+            local base="${tasks_file##*/}"
+            local prefix="${base%"tasks-round-$round.json"}"
+            candidate="$working_dir/archive/${prefix}round-$round-report.json"
+            [ -f "$candidate" ] && report="$candidate"
         fi
-    done
+    fi
+    if [ -z "$report" ]; then
+        while IFS= read -r candidate; do
+            if [ -f "$candidate" ]; then
+                report="$candidate"
+                break
+            fi
+        done < <(printf '%s\n' "$working_dir/rounds/round-$round-report.json" \
+                                "$working_dir/round-$round-report.json"
+                 _archived_newest_first "$working_dir/archive" "round-$round-report.json")
+    fi
     [ -f "$report" ] || { echo -1; return; }
 
     local round_ts
@@ -1357,7 +1412,7 @@ _evaluate_script_preconditions() {
 
     if [ -n "$req_days" ]; then
         local elapsed
-        elapsed=$(_days_since_round "$round" "$working_dir")
+        elapsed=$(_days_since_round "$round" "$working_dir" "$tid")
         if [ "$elapsed" -lt 0 ]; then
             all_met=0
             checks="${checks}   - days_elapsed≥${req_days}: UNRESOLVABLE (no round timestamp)"$'\n'
@@ -1456,13 +1511,16 @@ _locate_scope_col() {
 #     both Round and Window parse as integers)
 #
 # Returns 1 otherwise. current_round=0 disables the round-window check
-# so legacy callers behave unchanged. outcome_col defaults to 7 to keep
-# the function callable from older code paths that don't supply it.
+# so legacy callers behave unchanged. outcome_col defaults to 7 and
+# window_col to 5 (the pre-Source-column layout) to keep the function
+# callable from older code paths that don't supply them. Callers should
+# locate Window by header: in the live schema it sits after Source.
 _row_is_open_deferred() {
     local line="$1"
     local current_round="${2:-0}"
     local scope_col="${3:-0}"
     local outcome_col="${4:-7}"
+    local window_col="${5:-5}"
 
     [[ "$line" != \|* ]] && return 1
     [[ "$line" =~ ^\|[[:space:]]*(Round|----) ]] && return 1
@@ -1473,7 +1531,7 @@ _row_is_open_deferred() {
     local round task_id window outcome
     round="${fields[1]:-}"
     task_id="${fields[2]:-}"
-    window="${fields[4]:-}"
+    window=$(_pick_col fields "$window_col")
     outcome=$(_pick_col fields "$outcome_col")
 
     [[ -z "$task_id" ]] && return 1

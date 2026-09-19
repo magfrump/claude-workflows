@@ -50,6 +50,70 @@ lint() {
   [ "$status" -eq 0 ]
 }
 
+@test "bash: an apostrophe in an unquoted heredoc body does not hide later commands" {
+  local fx="$FAKE/test/heredoc.bats"
+  printf '#!/usr/bin/env bats\n' > "$fx"
+  printf '@test "heredoc then call" {\n' >> "$fx"
+  printf '  cat <<EOT\n' >> "$fx"
+  printf "it's data\n" >> "$fx"
+  printf 'EOT\n' >> "$fx"
+  printf '  curl http://example.invalid\n' >> "$fx"
+  printf '}\n' >> "$fx"
+
+  run lint --lang bash
+  [ "$status" -eq 1 ]
+  [[ "$output" == *"can spawn \`curl\`"* ]]
+}
+
+@test "bash: heredoc bodies are data, but live substitutions and shell stdin are code" {
+  # Plain body text is not a command; a quoted delimiter makes $( ) literal.
+  # The `$(` is spliced in via %s so this file's own source holds no literal
+  # substitution naming the binary (the lint reads $( ) even in single quotes).
+  local d='$'
+  local fx="$FAKE/test/heredoc-data.bats"
+  printf '#!/usr/bin/env bats\n' > "$fx"
+  printf '@test "data" {\n' >> "$fx"
+  printf '  cat <<EOT\n' >> "$fx"
+  printf 'curl is mentioned here\n' >> "$fx"
+  printf 'EOT\n' >> "$fx"
+  printf "  cat <<'EOT'\n" >> "$fx"
+  printf '%s(curl x)\n' "$d" >> "$fx"
+  printf 'EOT\n' >> "$fx"
+  printf '}\n' >> "$fx"
+  run lint --lang bash
+  [ "$status" -eq 0 ]
+
+  # An unquoted body's $( ) runs.
+  local fx2="$FAKE/test/heredoc-sub.bats"
+  printf '#!/usr/bin/env bats\n' > "$fx2"
+  printf '@test "sub" {\n  cat <<EOT\n%s(curl x)\nEOT\n}\n' "$d" >> "$fx2"
+  run lint --lang bash
+  [ "$status" -eq 1 ]
+  [[ "$output" == *"heredoc-sub.bats: can spawn \`curl\`"* ]]
+  rm "$fx2"
+
+  # A shell reading the heredoc runs its body.
+  local fx3="$FAKE/test/heredoc-shell.bats"
+  printf '#!/usr/bin/env bats\n' > "$fx3"
+  printf "@test \"shell\" {\n  bash <<'EOT'\ncurl x\nEOT\n}\n" >> "$fx3"
+  run lint --lang bash
+  [ "$status" -eq 1 ]
+  [[ "$output" == *"heredoc-shell.bats: can spawn \`curl\`"* ]]
+}
+
+@test "bash: an unmatched backtick is literal and does not drop the rest of the file" {
+  local fx="$FAKE/test/backtick.bats"
+  printf '#!/usr/bin/env bats\n' > "$fx"
+  printf '@test "backtick then call" {\n' >> "$fx"
+  printf "  echo 'press the \` key'\n" >> "$fx"
+  printf '  curl http://example.invalid\n' >> "$fx"
+  printf '}\n' >> "$fx"
+
+  run lint --lang bash
+  [ "$status" -eq 1 ]
+  [[ "$output" == *"can spawn \`curl\`"* ]]
+}
+
 @test "bash: accepts the PATH-shim stub" {
   local fx="$FAKE/test/stubbed.bats"
   printf '#!/usr/bin/env bats\n' > "$fx"
