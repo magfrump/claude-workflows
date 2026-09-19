@@ -308,8 +308,10 @@ staged `claude-home/`.
   recreates it on a normal launch; `--probe-only` always does.
 - Probes pass, `/login` fails with `getaddrinfo` — the class #44 belongs to *should*
   now be caught by the firewall-complete check. If it is not, a host is missing from
-  `egress/base.txt`; remember the SNI allowlist is exact-name, so a subdomain of a
-  listed host resolves and is then rejected (`/run/cc-sni-proxy/proxy.log`).
+  `egress/base.txt`; remember the SNI allowlist is exact-name (except `.zone`
+  entries), so a subdomain of a listed host resolves and is then rejected
+  (`/run/cc-sni-proxy/proxy.log`). A name under no listed domain is refused by the
+  resolver instead, which does not log — it surfaces as `EAI_AGAIN`/`getaddrinfo`.
 
 ## Migrating from the 015 per-repo launcher
 

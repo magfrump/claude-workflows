@@ -58,7 +58,7 @@ GitHub IP ranges). Language toolchains are granted per project, **host-side only
 
 | Profile | Opens | Auto-suggested from repo contents |
 |---------|-------|-----------------------------------|
-| `base`  | Claude Code's documented hosts (`api.anthropic.com`, `claude.ai`, `claude.com`, `platform.claude.com`, `downloads.claude.ai`, `mcp-proxy.anthropic.com`, `code.claude.com`; `console.anthropic.com` kept pending one verified login without it), `registry.npmjs.org`, GitHub ranges | always applied |
+| `base`  | Claude Code's documented hosts (`api.anthropic.com`, `claude.ai`, `claude.com`, `platform.claude.com`, `downloads.claude.ai`, `mcp-proxy.anthropic.com`, `code.claude.com`; `console.anthropic.com` kept pending one verified login without it; the zone `.frame.claudeusercontent.com` for Artifact reads), `registry.npmjs.org`, GitHub ranges | always applied |
 | `python`| `pypi.org`, `files.pythonhosted.org` | `pyproject.toml` · `requirements.txt` · `setup.py` |
 | `rust`  | `crates.io`, `index.crates.io`, `static.crates.io` | `Cargo.toml` |
 | `lean`  | `elan.lean-lang.org`, Lean release host, mathlib olean cache, `reservoir.lean-lang.org` | `lean-toolchain` · `lakefile.toml` · `lakefile.lean` |
@@ -476,7 +476,11 @@ bare `com` would become a whole-TLD resolver zone and is rejected). **Entries ar
 exact names for 443.** The resolver admits a zone (so `foo.claude.ai` resolves when
 `claude.ai` is listed) but the SNI proxy admits only the literal entry (so the
 connection is then rejected). List every name a client actually uses; a subdomain
-is not covered by its parent.
+is not covered by its parent. The one exception is a **zone entry**, `.zone[:ports]`
+(leading dot, three or more labels), which admits the zone and every name under it
+at all three layers — for per-object subdomains no list can enumerate. `base`
+carries one, `.frame.claudeusercontent.com` (decision log #55); each new one needs
+its residual written beside it.
 
 ## SNI filtering (tcp/443)
 
@@ -543,6 +547,7 @@ different hostname). Add the exact name to the profile.
 | `Blessed config changed since this container was built — rebuilding` | Expected once per project after a re-bless. The container is recreated (repo and `~/.claude` volume are unaffected). |
 | `PROBE FAIL (firewall): init-firewall.sh did not complete` | The baked firewall script aborted and failed closed: egress is denied *and* `node` has no DNS/HTTPS. Read the `devcontainer up` output for the `ERROR:` line, or run `sudo /usr/local/bin/init-firewall.sh` inside to see it. If it cannot bootstrap any more, recreate: `devcontainer up --remove-existing-container …`. |
 | `OAuth error: getaddrinfo …` at `/login`, launch probe passed | Historically the steering-to-loopback bug (decision log #44); the firewall-complete check now catches that class at launch. If it recurs with the check passing, suspect a host missing from `egress/base.txt` — including a subdomain of a listed name. |
+| Artifact tool: `EAI_AGAIN … <uuid>.frame.claudeusercontent.com`, or an "update" publishes a second artifact | The container predates decision log #55 (the `.frame.claudeusercontent.com` zone in `base`). Re-install, re-bless, `--probe-only`. Resolver refusals are not logged, so this shows as a DNS error, not a proxy REJECT. |
 | `Network is unreachable` mid-session for a CDN host (e.g. openrouter.ai) | Resolve-at-start allowlist went stale behind rotating CDN IPs. Inside the container: `sudo /usr/local/bin/init-firewall.sh`. |
 | `docker`/probe fails only inside a Claude Code session | Expected — CC blocks AF_UNIX sockets. Run `cc-isolated` from a normal host terminal. |
 | Claude Code auto-update fails every launch in ONE project (`.last-update-result.json` shows `install_failed`; npm log shows `ENOTEMPTY … rename … .claude-code-XXXXXXXX`) | An earlier update was interrupted (e.g. session exited mid-update), leaving npm's retire-staging dir behind in that project's container. The staging name is derived from the path, so every later update collides with the same leftover. Inside the container: `rm -rf /usr/local/share/npm-global/lib/node_modules/@anthropic-ai/.claude-code-*`, then `claude update`. |

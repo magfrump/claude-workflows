@@ -20,12 +20,19 @@
 # needs it. init-firewall.sh rejects a line that does not parse, so a typo fails the
 # rebuild loudly rather than silently changing what is admitted.
 
-# EXACT NAMES ONLY. The SNI proxy admits a 443 name only if it equals an entry
-# here (GitHub's zones are the one derived exception), so a SUBDOMAIN of an entry
-# resolves through dnsmasq (which is zone-based) and is then REJECTED by the proxy
-# with `not in allowlist` in /run/cc-sni-proxy/proxy.log. If a client starts using
-# `foo.claude.ai` it must be listed as `foo.claude.ai`; listing `claude.ai` does not
-# cover it. This asymmetry is the most likely source of the next quiet outage.
+# EXACT NAMES BY DEFAULT. The SNI proxy admits a 443 name only if it equals an
+# entry here, so a SUBDOMAIN of an entry resolves through dnsmasq (which is
+# zone-based) and is then REJECTED by the proxy with `not in allowlist` in
+# /run/cc-sni-proxy/proxy.log. If a client starts using `foo.claude.ai` it must be
+# listed as `foo.claude.ai`; listing `claude.ai` does not cover it. This asymmetry
+# is the most likely source of the next quiet outage.
+#
+# ZONE ENTRIES, `.zone[:ports]` (leading dot, three or more labels), admit the zone
+# and every name under it. Use one ONLY for per-object subdomains no list can
+# enumerate; each is a residual (anyone who can get a name under it can receive
+# traffic) and needs its reason written next to it. When a subdomain failure shows
+# up as `EAI_AGAIN` / `getaddrinfo` rather than a proxy REJECT, it is the resolver
+# refusing the name, and the resolver does not log.
 #
 # Claude Code itself, per code.claude.com/docs/en/network-config (re-checked
 # 2026-09-09 — from a sandbox with no egress, via search summaries of the page;
@@ -44,6 +51,18 @@
 #   console.anthropic.com   NO LONGER in the documented list (2026-09). Kept until
 #                           one `/login` has been verified live without it — remove
 #                           it then. Tracked in docs/working/questions.md.
+#   .frame.claudeusercontent.com
+#                           ZONE. The Artifact tool reads a published artifact's
+#                           content from `<artifact-uuid>.frame.claudeusercontent.com`,
+#                           and must read before it can update one it did not publish
+#                           in the current session. Without this, reads fail with
+#                           EAI_AGAIN and cross-session updates silently become new
+#                           artifacts (added 2026-09-19; listed in the docs as
+#                           `*.frame.claudeusercontent.com` since at least 2026-09-03).
+#                           Residual accepted: the tool already writes artifacts via
+#                           api.anthropic.com, so reading them opens no new sink.
+#                           `bridge.claudeusercontent.com` (also in the docs) is NOT
+#                           added: nothing here has been seen to need it.
 api.anthropic.com
 claude.ai
 claude.com
@@ -52,6 +71,7 @@ downloads.claude.ai
 mcp-proxy.anthropic.com
 code.claude.com
 console.anthropic.com
+.frame.claudeusercontent.com
 
 # Node toolchain — CC is an npm package and self-updates from here.
 registry.npmjs.org

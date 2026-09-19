@@ -133,6 +133,14 @@ fi
 # tunnel the resolver exists to close — or a bare host that no profile needs.
 HOST_LABEL='[A-Za-z0-9]([A-Za-z0-9-]*[A-Za-z0-9])?'
 HOST_RE="^${HOST_LABEL}(\.${HOST_LABEL})+\$"
+# ZONE entries: `.zone` admits the zone and every name under it, for a client that
+# contacts per-object subdomains no list can enumerate (Claude Code's Artifact tool
+# reads `<artifact-uuid>.frame.claudeusercontent.com`). The leading dot is the SNI
+# proxy's own zone syntax, so the entry passes through to its allowlist unchanged.
+# THREE or more labels are required: a two-label zone is a whole registrable domain
+# (`.claudeusercontent.com` would admit every host its owner ever serves), and the
+# point of a zone entry is one delegated sub-tree, never a site.
+ZONE_RE="^\.${HOST_LABEL}(\.${HOST_LABEL}){2,}\$"
 
 parse_entry() {
   local entry="$1" domain ports port
@@ -142,7 +150,7 @@ parse_entry() {
   else
     ports="${entry#*:}"
   fi
-  [[ "$domain" =~ $HOST_RE ]] || return 1
+  [[ "$domain" =~ $HOST_RE ]] || [[ "$domain" =~ $ZONE_RE ]] || return 1
   [[ "$ports" =~ ^[0-9]{1,5}(,[0-9]{1,5})*$ ]] || return 1
   local canon=""
   for port in $(echo "$ports" | tr ',' '\n'); do
@@ -220,6 +228,9 @@ compose_dnsmasq_conf() {
     # profiles are root-owned but this is the one place a stray line becomes a
     # directive rather than a blocked destination.
     d="${d%%:*}"
+    # A `.zone` entry needs no special form here: `server=/<zone>/` already covers
+    # the zone and every name under it. Only the leading dot is dropped.
+    d="${d#.}"
     [ -n "$d" ] || continue
     # HOST_RE is the same grammar parse_entry enforces, so anything that reached the
     # ipset also gets a resolver line, and nothing single-label can become a zone.
@@ -484,6 +495,18 @@ ANTHROPIC_PROBE_IP=""
 while read -r domain ports; do
     [ -n "$domain" ] || continue
     echo "Resolving $domain (tcp $ports)..."
+    # A `.zone` entry's names cannot be enumerated here, but the ipset must still
+    # hold the addresses they reach (the SNI proxy's own egress is address-matched).
+    # So resolve a CANARY name under the zone: a zone served by a wildcard record
+    # (the per-object pattern zone entries exist for) answers it from the same
+    # pool as every real name. The zone apex is resolved too, in case the pool is
+    # published there. If the pool later moves, the proxy logs `FAIL sni=...
+    # address not admitted by the ipset` — the same staleness every exact name
+    # already has between firewall runs — and a re-run re-resolves.
+    lookups="$domain"
+    case "$domain" in
+        .*) lookups="${domain#.}"$'\n'"cc-isolated-canary${domain}" ;;
+    esac
     # `|| true` for the same reason as the GitHub fetch: a dig failure (e.g. exit 9,
     # no server reached) would otherwise abort here instead of reaching the
     # warn-and-skip below — the very handling the statsig incident added.
@@ -491,7 +514,11 @@ while read -r domain ports; do
     # on failure a domain is skipped and stays blocked, which reads as a mysterious
     # outage, so allow 2 tries x 3s rather than a single 2s attempt a merely-slow
     # resolver would lose.
-    ips=$(dig +time=3 +tries=2 +noall +answer A "$domain" | awk '$4 == "A" {print $5}' || true)
+    ips=""
+    while read -r name; do
+        ips="${ips}$(dig +time=3 +tries=2 +noall +answer A "$name" | awk '$4 == "A" {print $5}' || true)"$'\n'
+    done < <(echo "$lookups")
+    ips="$(echo "$ips" | awk 'NF' | sort -u)"
     if [ -z "$ips" ]; then
         # A dead domain must not brick session start (statsig.anthropic.com went
         # NXDOMAIN in 2026-07 and did exactly that). Failing closed is safe here —
@@ -1132,10 +1159,11 @@ iptables -A OUTPUT -m state --state ESTABLISHED,RELATED -j ACCEPT
 # root-owned script. The consequence is that the SNI check applies to the agent,
 # not to root — which is the boundary that matters.
 #
-# ALLOWLIST. Exact names from every profile entry admitted on 443, plus the
-# GitHub zones the CIDR ingest admits by address (`.github.com` etc. — a leading
-# dot means "the zone and every subdomain"). Entries not on 443 are omitted: a
-# name is only meaningful here on the port that is steered.
+# ALLOWLIST. Every profile entry admitted on 443, as written — an exact name, or a
+# `.zone` entry (see ZONE_RE) — plus the GitHub zones the CIDR ingest admits by
+# address (`.github.com` etc. — a leading dot means "the zone and every
+# subdomain"). Entries not on 443 are omitted: a name is only meaningful here on
+# the port that is steered.
 #
 # FAIL-CLOSED. If the proxy does not come up, this script exits non-zero and the
 # trap forces DROP — steering to nothing would otherwise be a silent outage
@@ -1144,9 +1172,12 @@ iptables -A OUTPUT -m state --state ESTABLISHED,RELATED -j ACCEPT
 #
 # RESIDUAL. Same shape as the resolver's: an attacker who can obtain a name under
 # an allowlisted ZONE (a github.com subdomain is not obtainable; a hosted
-# `<org>.ingest.sentry.io`-style name would be, were such a zone allowlisted —
-# base no longer carries one) still gets through by name. Exact-name entries have
-# no such residual.
+# `<org>.ingest.sentry.io`-style name would be, were such a zone allowlisted)
+# still gets through by name. Exact-name entries have no such residual. Base's
+# one zone, `.frame.claudeusercontent.com`, does carry it: any artifact published
+# to claude.ai gets a name there. That is accepted because the channel is not new
+# — the Artifact tool already PUBLISHES through api.anthropic.com, so reading
+# a frame adds no destination the agent could not already write to.
 echo "Configuring SNI-filtering proxy..."
 mkdir -p "$SNI_RUN_DIR"
 chmod 0755 "$SNI_RUN_DIR"

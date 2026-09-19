@@ -554,7 +554,8 @@ first_line_matching() {
   [[ "$output" == *"listen-address=127.0.0.1"* ]]
   local d
   while read -r d; do
-    [[ "$output" == *"server=/$d/127.0.0.11"* ]]
+    # A `.zone` entry's resolver line is the bare zone (server=/ covers subdomains).
+    [[ "$output" == *"server=/${d#.}/127.0.0.11"* ]]
   done < <(bash "$FW" --print-domains)
   # GitHub arrives by CIDR, not by profile, so its zones must be added explicitly.
   [[ "$output" == *"server=/github.com/127.0.0.11"* ]]
@@ -823,6 +824,71 @@ STUB
   # No port suffixes leak in, and no non-443 entry appears.
   run grep -c ':' "$al"
   [ "$output" -eq 0 ]
+}
+
+# --- zone entries (`.zone`, decision log #55) ---------------------------------
+
+@test "a .zone entry parses with its dot kept; two-label and malformed zones are refused" {
+  local dir="$TEST_TMPDIR/egress"
+  mkdir -p "$dir"
+  printf 'api.anthropic.com\n.objects.cdn.example\n.objects2.cdn.example:8443\n' > "$dir/base.txt"
+  CC_EGRESS_DIR="$dir" run bash "$FW" --print-entries
+  [ "$status" -eq 0 ]
+  grep -qE $'^\\.objects\\.cdn\\.example\t443$' <<<"$output"
+  grep -qE $'^\\.objects2\\.cdn\\.example\t8443$' <<<"$output"
+  # A two-label zone is a whole registrable domain; `..x`, a bare `.`, a
+  # wildcard, and a single-label zone are not zones at all.
+  for bad in '.cdn.example' '.example' '..objects.cdn.example' '.' \
+             '*.objects.cdn.example' '.objects.cdn.example.' '.-bad.cdn.example'; do
+    printf 'api.anthropic.com\n%s\n' "$bad" > "$dir/base.txt"
+    CC_EGRESS_DIR="$dir" run bash "$FW" --print-entries
+    [ "$status" -ne 0 ]
+    [[ "$output" == *"malformed egress entry"* ]]
+  done
+}
+
+@test "a two-label zone aborts a full run before any network read" {
+  local dir="$TEST_TMPDIR/egress"
+  mkdir -p "$dir"
+  printf 'api.anthropic.com\n.cdn.example\n' > "$dir/base.txt"
+  CC_EGRESS_DIR="$dir" run bash "$FW"
+  [ "$status" -ne 0 ]
+  [[ "$output" == *"malformed egress entry"* ]]
+  run grep -cE '^(curl|dig|iptables -F)' "$CMD_LOG"
+  [ "$output" -eq 0 ]
+}
+
+@test "a .zone entry reaches all three layers: resolver zone, SNI zone, ipset by canary" {
+  local dir="$TEST_TMPDIR/egress"
+  mkdir -p "$dir"
+  printf 'api.anthropic.com\n.objects.cdn.example\n' > "$dir/base.txt"
+  CC_EGRESS_DIR="$dir" run bash "$FW"
+  [ "$status" -eq 0 ]
+  # Resolver: one server line for the bare zone (covers every subdomain), no dot.
+  grep -q '^server=/objects.cdn.example/' "$CC_DNSMASQ_CONF"
+  run grep -c 'server=/\.' "$CC_DNSMASQ_CONF"
+  [ "$output" -eq 0 ]
+  # SNI proxy: the entry keeps its leading dot — the proxy's own zone syntax.
+  grep -qx '.objects.cdn.example' "$CC_SNI_RUN_DIR/allowlist"
+  run grep -cx 'objects.cdn.example' "$CC_SNI_RUN_DIR/allowlist"
+  [ "$output" -eq 0 ]
+  # ipset: resolved via the apex and a canary label, never the dotted string.
+  grep -qE '^dig .* objects\.cdn\.example$' "$CMD_LOG"
+  grep -qE '^dig .* cc-isolated-canary\.objects\.cdn\.example$' "$CMD_LOG"
+  run grep -cE '^dig .* \.objects' "$CMD_LOG"
+  [ "$output" -eq 0 ]
+  grep -q '^ipset add -exist allowed-domains 203.0.113.7,tcp:443$' "$CMD_LOG"
+}
+
+@test "the shipped base admits the artifact frame zone on 443, and not its parent" {
+  run bash "$FW" --print-entries
+  [ "$status" -eq 0 ]
+  local admitted=$output
+  grep -qE $'^\\.frame\\.claudeusercontent\\.com\t443$' <<<"$admitted"
+  run ! grep -qE '^\.?claudeusercontent\.com' <<<"$admitted"
+  # The only zone in base: every other entry stays an exact name.
+  run grep -c '^\.' <<<"$admitted"
+  [ "$output" -eq 1 ]
 }
 
 @test "an entry not on 443 is omitted from the SNI allowlist" {
