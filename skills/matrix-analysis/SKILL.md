@@ -402,6 +402,10 @@ Save the matrix document to `docs/reviews/matrix-analysis.md` in the project roo
 `docs/reviews/` if it doesn't exist. If a prior matrix analysis exists there from an earlier
 run, overwrite it.
 
+When run as a sub-procedure of another workflow (e.g. divergent-design), the caller specifies
+the output path and whether the chat synthesis is suppressed; follow the caller's instructions
+over the defaults here.
+
 At the end of your chat synthesis, link to the document.
 
 ---
