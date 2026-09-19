@@ -35,6 +35,10 @@ The index below is generated — edit entries, not the table.
 | [Q-031](#q-031--draft-review-unmapped-verdicts) | you: judgment | draft-review's rubric tier rules place Inaccurate, Mostly Accurate, Unverified and Accurate, but fact-check... | 2026-09-18 |
 | [Q-032](#q-032--self-eval-rubric-outside-repo) | you: judgment | self-eval requires `docs/evaluation-rubric.md`, which exists only in this repo; `link-claude-home.sh` doesn... | 2026-09-18 |
 | [Q-033](#q-033--claude-api-flat-file) | you: judgment | `skills/claude-api.md` is a flat file, so the harness never loads it as a skill (skills load from `skills/<... | 2026-09-18 |
+| [Q-034](#q-034--agents-gemini-debug-defaults) | you: judgment | AGENTS.md:17 and GEMINI.md:17 send readers to "global-instructions/CLAUDE.md's Debugging defaults section",... | 2026-09-18 |
+| [Q-035](#q-035--guard-bash-claude-md-overblock) | you: judgment | In Bash, `guard-trusted-writes.py` hard-denies any command that has a write primitive AND mentions `CLAUDE.... | 2026-09-18 |
+| [Q-036](#q-036--si-review-archive-untracked) | you: judgment | `self-improvement.sh` copies each task's code-review rubric into `docs/working/reviews/round-N/<task>/` in ... | 2026-09-18 |
+| [Q-037](#q-037--si-survivors-parser-dead) | you: judgment | The self-improvement loop feeds round N+1 a list of surviving ideas that were never tried, but it only pars... | 2026-09-18 |
 | [Q-011](#q-011--mathlib-cache-host) | you: terminal | What is the current mathlib olean cache hostname? (`lake exe cache get` is minutes vs hours per repo.) | 2026-09-12 |
 <!-- index:end -->
 
@@ -74,6 +78,7 @@ Should `health-check.sh` gate 5 run all bats suites, not just `test/skills/` and
 | **[3] Leave it** | Only fix the misleading comment | none | A red suite sits unnoticed, as the format suites did until 2026-09-18 |
 
 - **Interim:** unchanged; the full suite was run by hand in the 2026-09-18 improvement run.
+- **Update (third 2026-09-18 run):** before ca04b98, `run-tests.sh` silently skipped untagged suites, and `link-claude-home-wiring.bats` was one of them, so [2] did not actually cover it. Both untagged suites are now tagged, and an untagged suite fails the runner. [2] now means what it says.
 
 ### Q-024 · draft-review-market-sizing
 **Needs:** you: judgment · **Opened:** 2026-09-18 · **Status:** OPEN
@@ -102,6 +107,7 @@ pr-prep and review-fix-loop tell agents to run `scripts/lite-review.py`, which d
 | **[2] Mark the step optional** | "If available" wording; skip when absent | none | Fix-drift checks silently stop outside this repo |
 
 - **Interim:** unchanged; the command works only inside this repo.
+- **Same class:** `global-instructions/CLAUDE.md` (the running-questions section) has every project run `scripts/questions.sh next-id|index|archive|check`, "gated by `scripts/health-check.sh`", but both exist only here. The installed copy doesn't help either: `questions.sh:44-46` resolves `docs/working/` from the script's own location, not `$PWD`. Under [1], `questions.sh` would also need to default to `$PWD/docs/working/`. Under [2], the section would say that outside this repo the file is kept by hand to the grammar.
 
 ### Q-026 · guard-project-claude-dir
 **Needs:** you: judgment · **Opened:** 2026-09-18 · **Status:** OPEN
@@ -200,4 +206,66 @@ self-eval requires `docs/evaluation-rubric.md`, which exists only in this repo; 
 | **[2] Make it a real skill** | `skills/claude-api/SKILL.md` with real content | Content to write and keep current against the bundled skill | It shadows or conflicts with the bundled `claude-api` skill |
 
 - **Interim:** unchanged; it is inert.
+
+### Q-034 · agents-gemini-debug-defaults
+**Needs:** you: judgment · **Opened:** 2026-09-18 · **Status:** OPEN
+
+AGENTS.md:17 and GEMINI.md:17 send readers to "global-instructions/CLAUDE.md's Debugging defaults section", but the README's AGENTS and Gemini setups never install that file, so the debugging loop can't be reached there. How should those tools get it?
+
+- **Read:** `AGENTS.md:17`, `GEMINI.md:17`, `README.md:44-52,82-87` (setup links). AGENTS.md:24 (`skills/`) and :63 (`guides/doc-freshness.md`) also point at directories the AGENTS setup never links.
+
+| Option | What it means | Cost to you | If it's wrong |
+|---|---|---|---|
+| **[1] Inline a short Debugging defaults section** | AGENTS.md and GEMINI.md carry the loop themselves; the sync test keeps them identical | A third copy to keep in step with global-instructions | Copies drift, as the commit rule did until this run |
+| **[2] Link more in the README setups** | Add `global-instructions` (and `skills`, `guides`, `patterns` for AGENTS) to the link steps | A longer setup | Tools that don't follow file references still never see it |
+| **[3] Point at the clone path** | Reference `~/claude-workflows/global-instructions/CLAUDE.md` | none | Breaks wherever the repo is cloned elsewhere |
+
+- **Interim:** unchanged; non-Claude tools get the pointer, not the loop.
+
+### Q-035 · guard-bash-claude-md-overblock
+**Needs:** you: judgment · **Opened:** 2026-09-18 · **Status:** OPEN
+
+In Bash, `guard-trusted-writes.py` hard-denies any command that has a write primitive AND mentions `CLAUDE.md` anywhere, even in a heredoc body, a comment or a quoted argument, and whether or not the session is tainted. The docstring says project CLAUDE.md is SOFT. Narrow it?
+
+- **Why it's yours:** it is a security hook, and the extra blocking is the price of catching disguised writes. The 2026-09-12 security review endorsed "hard for Bash" for `global-instructions/CLAUDE.md`.
+- **Read:** `hooks/guard-trusted-writes.py:10,16` (docstring) vs `:78-80` (`HARD_FRAG`). Observed in this run: a `cat > $SCRATCH/msg <<EOF` commit message that mentioned the file was denied, and so were `rg -n install CLAUDE.md` (`install` counts as a write) and `wc -l CLAUDE.md > out`. Edit/Write on the same file gets `ask` only when tainted, so Bash and the file tools disagree.
+- **Related:** Q-026 (project `.claude/` gets *less* protection than intended; this entry is the opposite direction).
+
+| Option | What it means | Cost to you | If it's wrong |
+|---|---|---|---|
+| **[1] Narrow HARD to the global file** | HARD only for `~/`, `$HOME/`, `.claude/CLAUDE.md`; bare `CLAUDE.md` becomes SOFT (ask when tainted) | none | A disguised Bash write to a project CLAUDE.md in a tainted session gets an ask, not a deny |
+| **[2] Keep it, fix the docstring** | The over-block is intended; the docs say so | Agents keep routing around it with Write + `git commit -F` | Agents learn to avoid Bash for anything that mentions the file |
+| **[3] [1], and drop `install` as a write primitive** | Also stops read-only commands containing the word from matching | none | `install -m … src ~/.claude/…` is no longer caught by the keyword (the path check still applies to `>`) |
+
+- **Interim:** unchanged. The workaround is to write the file with the Write tool and commit with `git commit -F`.
+
+### Q-036 · si-review-archive-untracked
+**Needs:** you: judgment · **Opened:** 2026-09-18 · **Status:** OPEN
+
+`self-improvement.sh` copies each task's code-review rubric into `docs/working/reviews/round-N/<task>/` in the main tree, but that path is neither gitignored nor committed, so every run leaves untracked files behind. Commit or ignore?
+
+- **Why it's yours:** the comment at `scripts/self-improvement.sh:~1405-1414` says the archive exists to build a review corpus for calibration, so ignoring it throws away what it was added for, and committing it grows the repo on every run.
+- **Read:** `scripts/self-improvement.sh:1414-1443`; `require_clean_main` ignores untracked files, so this doesn't block the next run.
+
+| Option | What it means | Cost to you | If it's wrong |
+|---|---|---|---|
+| **[1] Commit it after each round** | The loop commits the archive with the round's other outputs | Repo grows by a few rubrics per task | Noise in `git log` if the corpus is never used |
+| **[2] Gitignore it** | The archive stays local and out of `git status` | none | The corpus is lost with the checkout |
+
+- **Interim:** unchanged; the directory accumulates untracked.
+
+### Q-037 · si-survivors-parser-dead
+**Needs:** you: judgment · **Opened:** 2026-09-18 · **Status:** OPEN
+
+The self-improvement loop feeds round N+1 a list of surviving ideas that were never tried, but it only parses a `### Survivors` heading that divergent-design no longer produces, so the list is always empty. Revive, adapt or delete?
+
+- **Read:** `scripts/self-improvement.sh:~500-510`. None of the 10 most recent archived `feature-ideas-round-*.md` has the heading; the latest writes `**Survivors for the tradeoff matrix:** #1, #2…`.
+
+| Option | What it means | Cost to you | If it's wrong |
+|---|---|---|---|
+| **[1] Require the heading in the prompt** | The idea-generation prompt asks for `### Survivors` | none | The model drifts from the format again and it goes silently empty |
+| **[2] Parse the current format** | Match the `Survivors for the tradeoff matrix` line | none | Breaks the next time divergent-design's output changes |
+| **[3] Delete the feature** | Remove the carry-over block | none | Later rounds re-propose ideas that were never tried, as they do today |
+
+- **Interim:** unchanged; the carry-over is silently empty, as it has been for at least 10 rounds.
 
