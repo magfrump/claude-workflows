@@ -40,12 +40,10 @@ setup() {
   # shellcheck source=../scripts/self-improvement.sh
   source "$SI_SCRIPT"
 
-  # NOTE on failure output: sourcing leaks the script's `set -euo pipefail` and its
-  # `trap cleanup EXIT ERR` into the test shell, pre-empting bats' own ERR trap. A
-  # failing assertion can therefore surface as "Executed N instead of expected M"
-  # rather than a named failure. Do NOT "fix" this with `set +e` — that disables the
-  # ERR trap bats uses to detect failure at all, and every test starts passing.
-  # Same tradeoff as test/claude-headless-flags.bats.
+  # NOTE: sourcing leaks the script's `set -euo pipefail` into the test shell;
+  # its traps are installed only when run as a script. Do NOT add `set +e` —
+  # bats relies on errexit to detect a failing assertion at all. Same note as
+  # test/claude-headless-flags.bats.
 }
 
 teardown() {
