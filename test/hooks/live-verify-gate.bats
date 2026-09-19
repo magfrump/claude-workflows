@@ -161,6 +161,18 @@ Live-verified: no — sandbox has no Docker; run cc-isolated --probe-only after 
   [ "$status" -eq 2 ]
 }
 
+@test "removing a --flag line alongside a comment edit still blocks" {
+  # Inside a hunk, a removed `--…` line starts with `---` and an added `++…`
+  # line with `+++`; only the file headers before the first @@ may be skipped.
+  printf '# note\n--allow-all\n' > devcontainer-config/egress/base.txt
+  git add devcontainer-config/egress/base.txt
+  git -c commit.gpgsign=false commit -qm seed
+  printf '# note, edited\n' > devcontainer-config/egress/base.txt
+  git add devcontainer-config/egress/base.txt
+  run bash "$HOOK" <<< "$(payload 'git commit -m "chore: tidy"')"
+  [ "$status" -eq 2 ]
+}
+
 @test "a pure whitespace or blank-line change passes" {
   printf '\n\n' >> devcontainer-config/egress/base.txt
   git add devcontainer-config/egress/base.txt

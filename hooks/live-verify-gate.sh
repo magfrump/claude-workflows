@@ -78,7 +78,7 @@ touched="$(printf '%s\n' "$files" | grep -E "$enforcement" | sort -u)"
 # line is blank or a comment. `#` covers the Dockerfile, the shell scripts, the
 # python and the egress/*.txt lists; `//` covers the jsonc devcontainer.json.
 comment_only_diff() {
-  local diff_text line body stripped content=0 touched_files=()
+  local diff_text line body stripped content=0 in_header=0 touched_files=()
   mapfile -t touched_files <<< "$touched"
   [ "${#touched_files[@]}" -gt 0 ] || return 1
 
@@ -93,10 +93,20 @@ comment_only_diff() {
   grep -Eq '^(new file mode|deleted file mode|old mode|new mode|rename from|similarity index|Binary files)' <<< "$diff_text" && return 1
 
   while IFS= read -r line; do
+    # `---`/`+++` are file headers only between `diff --git` and the first
+    # `@@`; inside a hunk they are a removed `--…` or added `++…` line, and
+    # skipping those let a real change (e.g. dropping a `--flag` line) pass as
+    # comment-only whenever a comment was edited alongside it.
     case "$line" in
-      '+++'*|'---'*) continue ;;   # file headers, not content
+      'diff --git '*) in_header=1; continue ;;
+      '@@'*) in_header=0; continue ;;
+    esac
+    if [ "$in_header" = 1 ]; then
+      continue                     # `index`, `---`, `+++` file headers
+    fi
+    case "$line" in
       '+'*|'-'*) ;;
-      *) continue ;;               # @@, `diff --git`, `index`, context
+      *) continue ;;               # context
     esac
     content=1
     body="${line#?}"
