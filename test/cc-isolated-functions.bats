@@ -581,6 +581,64 @@ fake_install_repo() {
   [ -d "$root/devcontainer-config/claude-home/skills" ]
 }
 
+# Helper: fill the fake repo's devcontainer-config with every non-assembled
+# PAYLOAD item, and mirror it into an existing install dir so the review diff
+# runs. Prints the install dir.
+fake_payload_and_dest() {
+  local root="$1" dest="$BATS_TEST_TMPDIR/installed" f
+  local cfg="$root/devcontainer-config"
+  for f in devcontainer.json Dockerfile init-firewall.sh cc-sni-proxy.py cc-isolated.sh link-claude-home.sh; do
+    printf 'stub %s\n' "$f" > "$cfg/$f"
+  done
+  mkdir -p "$cfg/egress"
+  printf 'api.anthropic.com\n' > "$cfg/egress/base.txt"
+  rm -rf "$dest"; mkdir -p "$dest"
+  for f in devcontainer.json Dockerfile init-firewall.sh cc-sni-proxy.py cc-isolated.sh link-claude-home.sh egress; do
+    cp -r "$cfg/$f" "$dest/$f"
+  done
+  printf '%s\n' "$dest"
+}
+
+@test "install.sh review diff shows the CONTENT of a new file inside a payload dir" {
+  # Regression (audit 2026-09-18, D1): `diff -ru` printed only
+  # "Only in .../egress: newprof.txt", so the reviewer approved a new egress
+  # profile whose hostnames they never saw.
+  root=$(fake_install_repo)
+  dest=$(fake_payload_and_dest "$root")
+  printf 'evil.example.com\n' > "$root/devcontainer-config/egress/newprof.txt"
+  run env CLAUDE_DEVC_CONFIG_DIR="$dest" \
+      bash "$root/devcontainer-config/install.sh" </dev/null
+  [[ "$output" == *'+evil.example.com'* ]]
+  [[ "$output" == *'bless it?'* ]]
+}
+
+@test "install.sh review diff shows a new top-level payload item, not nothing" {
+  # Regression (D1): a PAYLOAD item absent from the install dir made diff exit 2
+  # with its only output on the discarded stderr — the item was invisible.
+  # claude-home is such an item on the first install after it was added.
+  root=$(fake_install_repo)
+  dest=$(fake_payload_and_dest "$root")
+  printf 'hidden-hook-body\n' > "$root/hooks/new-hook.sh"
+  run env CLAUDE_DEVC_CONFIG_DIR="$dest" \
+      bash "$root/devcontainer-config/install.sh" </dev/null
+  [[ "$output" == *'+hidden-hook-body'* ]]
+  [[ "$output" != *'(none'* ]]
+}
+
+@test "install.sh aborts before the prompt when the review diff itself fails" {
+  # A diff that errors (here: a payload item that is a file on one side and a
+  # directory on the other) cannot be reviewed, so it must not reach [y/N].
+  # Stdin stays closed so even the pre-fix code declines rather than installing.
+  root=$(fake_install_repo)
+  dest=$(fake_payload_and_dest "$root")
+  rm -rf "$dest/egress"; printf 'not a dir\n' > "$dest/egress"
+  run env CLAUDE_DEVC_CONFIG_DIR="$dest" \
+      bash "$root/devcontainer-config/install.sh" </dev/null
+  [ "$status" -eq 1 ]
+  [[ "$output" == *"could not diff payload item 'egress'"* ]]
+  [[ "$output" != *'bless it?'* ]]
+}
+
 @test "link-claude-home refuses to clobber a real file in the volume" {
   src="$BATS_TEST_TMPDIR/payload"; dst="$BATS_TEST_TMPDIR/dest"
   mkdir -p "$src/skills" "$dst"

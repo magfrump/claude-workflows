@@ -84,9 +84,22 @@ if [ -d "$DEST" ]; then
   echo "=== Changes this install would make ==========================================="
   changed=0
   for item in "${PAYLOAD[@]}"; do
-    if ! diff -ru "$DEST/$item" "$SRC/$item" 2>/dev/null; then
-      changed=1
-    fi
+    # -N (treat an absent file as empty) is what makes NEW content visible: without
+    # it, a new file inside a payload dir showed only as "Only in src/egress: x.txt"
+    # and a new top-level item printed nothing at all (the error went to the
+    # swallowed stderr), so the human approved content they never saw. stderr is
+    # not discarded, and exit status >1 ("trouble") aborts rather than counting as
+    # a change: this diff is the review gate, so a diff that could not be shown
+    # must never reach the [y/N] prompt.
+    rc=0
+    diff -ruN "$DEST/$item" "$SRC/$item" || rc=$?
+    case "$rc" in
+      0) ;;
+      1) changed=1 ;;
+      *) echo "ERROR: could not diff payload item '$item' (diff exit $rc)." >&2
+         echo "       The review diff is incomplete, so nothing was installed." >&2
+         exit 1 ;;
+    esac
   done
   if [ "$changed" -eq 0 ]; then
     echo "(none — installed config already matches the repo)"
