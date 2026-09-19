@@ -23,6 +23,10 @@ setup() {
   # A fake *installed* config dir, standing in for ~/.config/claude-devcontainer.
   # Note this is deliberately NOT inside any repo — that's the whole point of 016.
   export CLAUDE_DEVC_CONFIG_DIR="$TEST_TMPDIR/config"
+  # Every install.sh test must link into a throwaway bin dir. Closed stdin
+  # alone is not enough: a regression test run against pre-fix code once
+  # reached the install step and relinked the real ~/.local/bin/cc-isolated.
+  export CLAUDE_DEVC_BIN_DIR="$TEST_TMPDIR/bin"
   mkdir -p "$CLAUDE_DEVC_CONFIG_DIR/egress"
   echo '{"name":"x"}'        > "$CLAUDE_DEVC_CONFIG_DIR/devcontainer.json"
   echo 'FROM node:22'        > "$CLAUDE_DEVC_CONFIG_DIR/Dockerfile"
