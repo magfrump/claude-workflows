@@ -104,7 +104,16 @@ STUB
   cat > "$STUB_DIR/ip" <<'STUB'
 #!/usr/bin/env bash
 echo "ip $*" >> "$CMD_LOG"
-[ "${1:-}" = "route" ] && echo "default via 192.168.65.1 dev eth0"
+# `ip route`: NO_DEFAULT_ROUTE models a container with no default route (only a
+# link route); TWO_DEFAULT_ROUTES models a second default (e.g. a metric-ordered
+# backup), which must not turn HOST_IP into a newline-joined pair.
+if [ "${1:-}" = "route" ]; then
+  echo "172.17.0.0/16 dev eth0 proto kernel scope link src 172.17.0.2"
+  if [ -z "${NO_DEFAULT_ROUTE:-}" ]; then
+    echo "default via 192.168.65.1 dev eth0"
+    [ -n "${TWO_DEFAULT_ROUTES:-}" ] && echo "default via 10.9.9.1 dev eth1 metric 200"
+  fi
+fi
 # `ip -4 route get <gw>`: the source address the kernel would choose for an off-box
 # destination, i.e. the container's own address — the one both daemons bind and both
 # nat chains DNAT to. NO_CONTAINER_IP models a container with no derivable IPv4 source;
@@ -1321,4 +1330,26 @@ STUB
   [[ "$output" == *"never acquired the firewall lock"* ]]
   [ -f "$CC_FIREWALL_MARKER" ]
   grep -q '^completed=holder$' "$CC_FIREWALL_MARKER"
+}
+
+# --- gateway detection (audit 2026-09-18, D5) ---------------------------------
+# `ip route | grep default | cut` exited under pipefail (grep found nothing) before
+# the friendly error branch could run, and with two default routes produced a
+# newline-joined HOST_IP that later reached iptables as a single -d argument.
+
+@test "no default route reaches the gateway error branch, before the flush" {
+  NO_DEFAULT_ROUTE=1 run bash "$FW"
+  [ "$status" -ne 0 ]
+  [[ "$output" == *"Failed to detect the bridge gateway"* ]]
+  run grep -c -- "^iptables -F" "$CMD_LOG"
+  [ "$output" -eq 0 ]
+}
+
+@test "two default routes yield the first gateway only, never a newline-joined pair" {
+  TWO_DEFAULT_ROUTES=1 run bash "$FW"
+  [ "$status" -eq 0 ]
+  [[ "$output" == *"Bridge gateway detected as: 192.168.65.1"* ]]
+  run grep -c -- "10.9.9.1" "$CMD_LOG"
+  [ "$output" -eq 0 ]
+  grep -q -- "-d 192.168.65.1 --dport 53" "$CMD_LOG"
 }

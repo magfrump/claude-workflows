@@ -608,7 +608,11 @@ fi
 # Docker renumbers the container on every create, so nothing may be baked (the address
 # is recomputed on every run). `ip route get` is a routing-table query, not a packet,
 # so it is safe here in phase A alongside every other precondition.
-HOST_IP=$(ip route | grep default | cut -d" " -f3)
+# awk, not `grep default | cut`: with no default route grep exits 1 and pipefail
+# killed the script before the error branch below could say why; with two default
+# routes the grep form joined both gateways with a newline. First default wins;
+# `|| true` keeps a failed pipeline on the path to that error branch.
+HOST_IP=$(ip route | awk '$1=="default" {print $3; exit}' || true)
 if [ -z "$HOST_IP" ]; then
     echo "ERROR: Failed to detect the bridge gateway from the default route" >&2
     exit 1
