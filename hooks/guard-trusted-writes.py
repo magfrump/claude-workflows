@@ -69,7 +69,7 @@ def classify_path(fp: str) -> str:
 
 # ── write-intent detection for the BASH tool ───────────────────────────────
 WRITE_PRIMITIVE = re.compile(
-    r"(?<![0-9&])>>?(?![&])"                       # > or >> to a file (not 2>&1, >&2)
+    r">>?(?!&|\s*/dev/null\b)"                     # >, >>, 1>, 2>, &> to a file (not 2>&1, >&2, 2>/dev/null)
     r"|\btee\b|\bsed\b[^\n|;&]*\s-\w*i\w*\b"       # tee, sed -i
     r"|\bdd\b[^\n]*\bof=|\btruncate\b"             # dd of=, truncate
     r"|\b(cp|mv|install|rsync)\b"                  # copy/move/install (dest ambiguous)
@@ -97,8 +97,12 @@ def main():
         data = json.load(sys.stdin)
     except Exception:
         defer()
+    if not isinstance(data, dict):  # valid JSON but not an object ([] / "x"): no opinion
+        defer()
     tool = data.get("tool_name", "")
     ti = data.get("tool_input", {}) or {}
+    if not isinstance(ti, dict):    # e.g. tool_input as a bare string: no opinion
+        defer()
     sid = re.sub(r"[^A-Za-z0-9_-]", "", str(data.get("session_id", "")))
     tainted = bool(sid) and (TAINT_DIR / sid).exists()
 
