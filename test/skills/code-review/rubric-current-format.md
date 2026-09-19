@@ -81,7 +81,7 @@ corroborating fact-check evidence). This section makes coverage limits auditable
 
 | Critic | Reason | Signal |
 |---|---|---|
-| ui-visual-review | No rendering code in diff | `git diff --stat` shows no `.tsx`/`.css` changes |
+| performance-reviewer | Diff is copy-only with no logic changes | `git diff --stat` shows only `docs/*.md` changes |
 
 ---
 
