@@ -110,9 +110,9 @@ When this bullet is present, the orchestrator surfaces the questions during synt
 
 #### Decisions I made (optional)
 
-The fifth bullet defeats the *committed* silent-guess failure mode, distinct from what the fourth bullet handles. When a sub-agent encounters two equally plausible interpretations and *picks one* to deliver its assignment, the choice is invisible to the orchestrator unless the sub-agent surfaces it. Listing 1-3 such decisions lets the synthesis step detect **value drift**: patterns where multiple sub-agents consistently picked the same side of a defensible split, in a direction that diverges from the orchestration's intent.
+The sixth bullet defeats the *committed* silent-guess failure mode, distinct from what the fifth bullet handles. When a sub-agent encounters two equally plausible interpretations and *picks one* to deliver its assignment, the choice is invisible to the orchestrator unless the sub-agent surfaces it. Listing 1-3 such decisions lets the synthesis step detect **value drift**: patterns where multiple sub-agents consistently picked the same side of a defensible split, in a direction that diverges from the orchestration's intent.
 
-Distinction from the fourth bullet:
+Distinction from the fifth bullet:
 
 - **Questions I would have asked** — the sub-agent did *not* commit; it would have asked first if it could. Surfaced for clarification.
 - **Decisions I made** — the sub-agent *did* commit; it picked one of several defensible interpretations to deliver. Surfaced for verification and drift detection.
@@ -138,7 +138,7 @@ What this means:
 
 - **Prose** (narrative findings, recommendations, explanations) states the conclusion first and stops there. The orchestrator reads every sub-agent's output during synthesis, so a buried lede costs the whole pass; re-deriving context the orchestrator already has costs it twice.
 - **Structured output** (rubrics, decision matrices, tables, code-review reports with required fields) is the deliverable wherever the shape is defined — prefer it to prose rather than wrapping it in prose.
-- The **Goal-Alignment Note** above is bounded by its bullet-form structure (three required, up to two optional).
+- The **Goal-Alignment Note** above is bounded by its bullet-form structure (four required, up to two optional).
 
 Where a dispatch genuinely needs a hard shape — a three-column table, one sentence per function, a fixed set of fields — state the shape. A structural requirement is a format instruction and belongs in the dispatch; a word count is not, and clamping prose length on a hard question buys scannability by starving the analysis.
 

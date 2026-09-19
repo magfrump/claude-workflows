@@ -180,10 +180,12 @@ For each fact-check agent, you MUST:
 
    ```markdown
    ## Goal-Alignment Note
-   - Answered: [yes / partial / no — one phrase]
+   - Success criterion (restated verbatim): [paste the Success criterion line from the goal preamble exactly as given — do not paraphrase]
+   - Answered: [yes / partial / no — one phrase on what was / wasn't addressed]
    - Out of scope: [what was set aside and why, or "none"]
    - Escalate: [what the orchestrator should action separately, or "nothing"]
    - Questions I would have asked: [1-3 short questions, only if scope was unclear; otherwise omit this bullet]
+   - Decisions I made: [1-3 short lines naming silent judgment calls between equally plausible interpretations; otherwise omit this bullet]
    ```
 
    One short bullet per line. No padding. The "Questions I would have asked" bullet is
@@ -248,10 +250,12 @@ For each critic agent instance, you MUST:
 
    ```markdown
    ## Goal-Alignment Note
-   - Answered: [yes / partial / no — one phrase]
+   - Success criterion (restated verbatim): [paste the Success criterion line from the goal preamble exactly as given — do not paraphrase]
+   - Answered: [yes / partial / no — one phrase on what was / wasn't addressed]
    - Out of scope: [what was set aside and why, or "none"]
    - Escalate: [what the orchestrator should action separately, or "nothing"]
    - Questions I would have asked: [1-3 short questions, only if scope was unclear; otherwise omit this bullet]
+   - Decisions I made: [1-3 short lines naming silent judgment calls between equally plausible interpretations; otherwise omit this bullet]
    ```
 
    One short bullet per line. No padding. The "Questions I would have asked" bullet is
