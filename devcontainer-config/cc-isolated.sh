@@ -363,26 +363,36 @@ list_projects() {
 # The rebuild instruction printed by every "this container is not the one you
 # blessed" error. $1 = workspace, $2.. = the devcontainer CLI args.
 #
-# WHY THIS IS NOT A BARE `devcontainer up` STRING. devcontainer.json reads BOTH
-# CC_EGRESS_PROFILE and CC_CONFIG_HASH through `${localEnv:...}`, and main() is the
-# only thing that exports them. A bare `devcontainer up --remove-existing-container`
-# copied out of an error message and run from your own shell therefore resolves both
-# to the EMPTY string: the rebuild succeeds, looks correct, and bakes
-# /etc/cc-egress-profile empty (base-only egress) plus an empty /etc/cc-config-hash.
-# That is a silently NARROWER boundary, so nothing fails closed and nothing warns —
-# it surfaces days later as "my lean/python/dotnet profile stopped working". Measured
-# on 2026-09-15: a re-registered `lean` profile had no effect for exactly this reason
-# (the proxy came up with base's 9 names instead of base+lean's 14).
+# WHY THIS IS NOT A BARE `devcontainer up` STRING. devcontainer.json reads
+# CC_PROJECT_ID, CC_PROJECT_NAME, CC_CONFIG_DIR, CC_EGRESS_PROFILE and CC_CONFIG_HASH
+# through `${localEnv:...}`, and main() is the only thing that sets them. A bare
+# `devcontainer up --remove-existing-container` copied out of an error message and
+# run from your own shell therefore resolves them all to the EMPTY string: an empty
+# CC_EGRESS_PROFILE/CC_CONFIG_HASH bakes base-only egress and an empty
+# /etc/cc-config-hash (a silently NARROWER boundary — nothing fails closed, nothing
+# warns; measured 2026-09-15: a re-registered `lean` profile had no effect for
+# exactly this reason, base's 9 names instead of base+lean's 14); an empty
+# CC_PROJECT_ID mounts the SHARED `cc--claude-config` volume; an empty CC_CONFIG_DIR
+# points the build at /Dockerfile.
+#
+# The remaining localEnv reads are not emitted on purpose: TZ has a default in
+# devcontainer.json, and OPENROUTER_API_KEY / GH_TOKEN are opt-in credentials the
+# user exports themselves — printing them would put secrets on the terminal.
 #
 # So: name the launcher first, because it is the path that cannot get this wrong, and
-# if the by-hand form is used at all, emit it WITH the assignments already filled in.
+# if the by-hand form is used at all, emit it with EVERY launcher-set assignment
+# already filled in. Values and args are shell-quoted (printf %q) so a workspace path
+# with spaces or metacharacters copies out as one word, never as shell source.
 rebuild_hint() {
-  local ws="$1"
+  local ws="$1" var assigns=""
   shift
-  echo "    cc-isolated '$ws'        # the supported path: rebuilds, re-probes, re-launches" >&2
-  echo "  or by hand — BOTH assignments are required, devcontainer.json reads them via localEnv:" >&2
-  echo "    CC_EGRESS_PROFILE='${CC_EGRESS_PROFILE:-}' CC_CONFIG_HASH='${CC_CONFIG_HASH:-}' \\" >&2
-  echo "      devcontainer up --remove-existing-container $*" >&2
+  echo "    cc-isolated $(printf '%q' "$ws")        # the supported path: rebuilds, re-probes, re-launches" >&2
+  echo "  or by hand — ALL of these assignments are required, devcontainer.json reads them via localEnv:" >&2
+  for var in CC_PROJECT_ID CC_PROJECT_NAME CC_CONFIG_DIR CC_EGRESS_PROFILE CC_CONFIG_HASH; do
+    assigns+="$var=$(printf '%q' "${!var:-}") "
+  done
+  echo "    ${assigns}\\" >&2
+  echo "      devcontainer up --remove-existing-container$(printf ' %q' "$@")" >&2
 }
 
 # 0 iff the running container's baked config hash equals the blessed one.
@@ -443,17 +453,25 @@ probe_boundary() {
 
   # H6: this project's ~/.claude volume must not be shared with another project.
   # First run stamps the volume; later runs assert the stamp matches.
-  # shellcheck disable=SC2016  # $CC_PROJECT_ID must expand in the CONTAINER (from containerEnv)
+  # The expected id is the HOST's $pid, passed as a positional arg ($1 in the
+  # CONTAINER) the way H1/provenance pass theirs. It used to be the container's own
+  # $CC_PROJECT_ID, which made the check self-referential: an empty or wrong
+  # containerEnv stamped/compared "" = "" (or wrong = wrong) and passed (audit
+  # 2026-09-18, D2). The container's CC_PROJECT_ID must also equal it, since the
+  # volume name is derived from the same localEnv value.
+  # shellcheck disable=SC2016  # single-quoted on purpose: $1 expands in the CONTAINER
   if ! devcontainer exec "${dc[@]}" bash -c '
       m=/home/node/.claude/.cc-project-id
+      [ -n "$1" ] && [ "${CC_PROJECT_ID:-}" = "$1" ] || exit 1
       if [ -f "$m" ]; then
-        [ "$(cat "$m")" = "$CC_PROJECT_ID" ]
+        [ "$(cat "$m")" = "$1" ]
       else
-        printf "%s" "$CC_PROJECT_ID" > "$m"
+        printf "%s" "$1" > "$m"
       fi
-  '; then
-    echo "PROBE FAIL (H6): /home/node/.claude belongs to a DIFFERENT project —" >&2
-    echo "  this container is sharing a credential/memory volume across projects." >&2
+  ' _ "$pid"; then
+    echo "PROBE FAIL (H6): /home/node/.claude belongs to a DIFFERENT project (or the" >&2
+    echo "  container's CC_PROJECT_ID is not '$pid') — this container may be sharing a" >&2
+    echo "  credential/memory volume across projects." >&2
     failures=$((failures + 1))
   fi
 
@@ -532,7 +550,14 @@ main() {
       --probe-only) action="probe"; shift ;;
       --register)   action="register"; shift ;;
       --list)       action="list"; shift ;;
-      --profile)    profiles="${2:-}"; shift 2 ;;
+      --profile)
+        # A bare trailing --profile used to die silently in `shift 2` under set -e.
+        if [ $# -lt 2 ]; then
+          echo "ERROR: --profile needs a value, e.g. --profile python (comma-separate several)." >&2
+          usage >&2
+          exit 1
+        fi
+        profiles="$2"; shift 2 ;;
       --help|-h)    usage; exit 0 ;;
       --)           shift; break ;;
       -*)           echo "ERROR: unknown flag: $1" >&2; usage >&2; exit 1 ;;

@@ -23,6 +23,10 @@ setup() {
   # A fake *installed* config dir, standing in for ~/.config/claude-devcontainer.
   # Note this is deliberately NOT inside any repo — that's the whole point of 016.
   export CLAUDE_DEVC_CONFIG_DIR="$TEST_TMPDIR/config"
+  # Every install.sh test must link into a throwaway bin dir. Closed stdin
+  # alone is not enough: a regression test run against pre-fix code once
+  # reached the install step and relinked the real ~/.local/bin/cc-isolated.
+  export CLAUDE_DEVC_BIN_DIR="$TEST_TMPDIR/bin"
   mkdir -p "$CLAUDE_DEVC_CONFIG_DIR/egress"
   echo '{"name":"x"}'        > "$CLAUDE_DEVC_CONFIG_DIR/devcontainer.json"
   echo 'FROM node:22'        > "$CLAUDE_DEVC_CONFIG_DIR/Dockerfile"
@@ -267,9 +271,66 @@ make_repo() {
   CC_CONFIG_HASH="deadbeef"
   run rebuild_hint "$TEST_TMPDIR/proj" --workspace-folder "$TEST_TMPDIR/proj"
   [ "$status" -eq 0 ]
-  [[ "$output" == *"CC_EGRESS_PROFILE='lean'"* ]]
-  [[ "$output" == *"CC_CONFIG_HASH='deadbeef'"* ]]
+  [[ "$output" == *"CC_EGRESS_PROFILE=lean"* ]]
+  [[ "$output" == *"CC_CONFIG_HASH=deadbeef"* ]]
   [[ "$output" == *"devcontainer up --remove-existing-container"* ]]
+}
+
+# Regression (audit 2026-09-18, D3): the by-hand form carried only
+# CC_EGRESS_PROFILE and CC_CONFIG_HASH, but devcontainer.json also reads
+# CC_PROJECT_ID (the volume names), CC_PROJECT_NAME and CC_CONFIG_DIR (the build
+# context) — and printed the args unquoted. Run the printed command for real
+# against a recording stub and check what devcontainer would have seen.
+@test "rebuild_hint's by-hand command, when run, sets every launcher-set localEnv var and keeps args intact" {
+  local ws="$TEST_TMPDIR/my proj \$HOME"
+  # All five are read as globals by rebuild_hint, not by this file.
+  # shellcheck disable=SC2034
+  CC_PROJECT_ID="abc123"
+  # shellcheck disable=SC2034
+  CC_PROJECT_NAME="my proj \$HOME"
+  # shellcheck disable=SC2034
+  CC_CONFIG_DIR="$CLAUDE_DEVC_CONFIG_DIR"
+  # shellcheck disable=SC2034
+  CC_EGRESS_PROFILE="lean,python"
+  # shellcheck disable=SC2034
+  CC_CONFIG_HASH="deadbeef"
+  run rebuild_hint "$ws" --workspace-folder "$ws" --id-label "cc-project=abc123"
+  [ "$status" -eq 0 ]
+  # Every ${localEnv:X} devcontainer.json reads, minus the ones the user supplies
+  # themselves (TZ has a default; the two credentials are opt-in and never printed).
+  local var vars
+  vars=$(grep -o '\${localEnv:[A-Z_]*' "$CONFIG_SRC/devcontainer.json" | sed 's/.*://' | sort -u \
+         | grep -vxE 'TZ|OPENROUTER_API_KEY|GH_TOKEN')
+  [ -n "$vars" ]
+  # Recording stub: dumps its env and argv, one arg per line.
+  cat > "$TEST_TMPDIR/bin/devcontainer" <<'STUB'
+#!/usr/bin/env bash
+env > "$REC_DIR/env"
+printf '%s\n' "$@" > "$REC_DIR/args"
+STUB
+  chmod +x "$TEST_TMPDIR/bin/devcontainer"
+  # The by-hand command is everything after the "or by hand" line.
+  local cmd
+  cmd=$(printf '%s\n' "$output" | sed '1,/or by hand/d')
+  env -i PATH="$PATH" REC_DIR="$TEST_TMPDIR" bash -c "$cmd"
+  for var in $vars; do
+    grep -qx "$var=.\+" "$TEST_TMPDIR/env" || { echo "unset in by-hand command: $var"; false; }
+  done
+  grep -qx "CC_PROJECT_NAME=my proj \\\$HOME" "$TEST_TMPDIR/env"
+  grep -qx "CC_EGRESS_PROFILE=lean,python" "$TEST_TMPDIR/env"
+  [ "$(sed -n 4p "$TEST_TMPDIR/args")" = "$ws" ]
+  [ "$(sed -n 1p "$TEST_TMPDIR/args")" = "up" ]
+  # The launcher line quotes the workspace too.
+  [[ "$(echo "$output" | head -1)" == *"cc-isolated $(printf '%q' "$ws")"* ]]
+}
+
+@test "--profile with no value is a usage error, not a silent exit" {
+  # Regression (audit 2026-09-18): `shift 2` under set -e exited 1 with no output.
+  make_repo "$TEST_TMPDIR/proj"
+  run bash "$CONFIG_SRC/cc-isolated.sh" --register "$TEST_TMPDIR/proj" --profile
+  [ "$status" -eq 1 ]
+  [[ "$output" == *"--profile needs a value"* ]]
+  [ -z "$(project_profile "$TEST_TMPDIR/proj")" ]
 }
 
 @test "rebuild_hint names the launcher before the by-hand form" {
@@ -581,6 +642,64 @@ fake_install_repo() {
   [ -d "$root/devcontainer-config/claude-home/skills" ]
 }
 
+# Helper: fill the fake repo's devcontainer-config with every non-assembled
+# PAYLOAD item, and mirror it into an existing install dir so the review diff
+# runs. Prints the install dir.
+fake_payload_and_dest() {
+  local root="$1" dest="$BATS_TEST_TMPDIR/installed" f
+  local cfg="$root/devcontainer-config"
+  for f in devcontainer.json Dockerfile init-firewall.sh cc-sni-proxy.py cc-isolated.sh link-claude-home.sh; do
+    printf 'stub %s\n' "$f" > "$cfg/$f"
+  done
+  mkdir -p "$cfg/egress"
+  printf 'api.anthropic.com\n' > "$cfg/egress/base.txt"
+  rm -rf "$dest"; mkdir -p "$dest"
+  for f in devcontainer.json Dockerfile init-firewall.sh cc-sni-proxy.py cc-isolated.sh link-claude-home.sh egress; do
+    cp -r "$cfg/$f" "$dest/$f"
+  done
+  printf '%s\n' "$dest"
+}
+
+@test "install.sh review diff shows the CONTENT of a new file inside a payload dir" {
+  # Regression (audit 2026-09-18, D1): `diff -ru` printed only
+  # "Only in .../egress: newprof.txt", so the reviewer approved a new egress
+  # profile whose hostnames they never saw.
+  root=$(fake_install_repo)
+  dest=$(fake_payload_and_dest "$root")
+  printf 'evil.example.com\n' > "$root/devcontainer-config/egress/newprof.txt"
+  run env CLAUDE_DEVC_CONFIG_DIR="$dest" \
+      bash "$root/devcontainer-config/install.sh" </dev/null
+  [[ "$output" == *'+evil.example.com'* ]]
+  [[ "$output" == *'bless it?'* ]]
+}
+
+@test "install.sh review diff shows a new top-level payload item, not nothing" {
+  # Regression (D1): a PAYLOAD item absent from the install dir made diff exit 2
+  # with its only output on the discarded stderr — the item was invisible.
+  # claude-home is such an item on the first install after it was added.
+  root=$(fake_install_repo)
+  dest=$(fake_payload_and_dest "$root")
+  printf 'hidden-hook-body\n' > "$root/hooks/new-hook.sh"
+  run env CLAUDE_DEVC_CONFIG_DIR="$dest" \
+      bash "$root/devcontainer-config/install.sh" </dev/null
+  [[ "$output" == *'+hidden-hook-body'* ]]
+  [[ "$output" != *'(none'* ]]
+}
+
+@test "install.sh aborts before the prompt when the review diff itself fails" {
+  # A diff that errors (here: a payload item that is a file on one side and a
+  # directory on the other) cannot be reviewed, so it must not reach [y/N].
+  # Stdin stays closed so even the pre-fix code declines rather than installing.
+  root=$(fake_install_repo)
+  dest=$(fake_payload_and_dest "$root")
+  rm -rf "$dest/egress"; printf 'not a dir\n' > "$dest/egress"
+  run env CLAUDE_DEVC_CONFIG_DIR="$dest" \
+      bash "$root/devcontainer-config/install.sh" </dev/null
+  [ "$status" -eq 1 ]
+  [[ "$output" == *"could not diff payload item 'egress'"* ]]
+  [[ "$output" != *'bless it?'* ]]
+}
+
 @test "link-claude-home refuses to clobber a real file in the volume" {
   src="$BATS_TEST_TMPDIR/payload"; dst="$BATS_TEST_TMPDIR/dest"
   mkdir -p "$src/skills" "$dst"
@@ -745,10 +864,72 @@ case "$*" in
   *cc-config-hash*)        printf '%s\n' "${STUB_IMAGE_HASH:-}" ;;
   *rev-parse*)             printf '%s' "${STUB_FP:-}" ;;
   *cc-firewall/complete*)  [ -z "${STUB_FW_MISSING:-}" ] ;;
+  *cc-project-id*)
+    # H6 emulation (opt-in via STUB_CLAUDE_DIR): really run the probe's script,
+    # with /home/node/.claude redirected to a test dir and the container's
+    # CC_PROJECT_ID set from STUB_CTR_PID, so the check's logic is exercised.
+    [ -n "${STUB_CLAUDE_DIR:-}" ] || exit 0
+    while [ $# -gt 0 ] && [ "$1" != bash ]; do shift; done
+    shift 2; script="$1"; shift
+    CC_PROJECT_ID="${STUB_CTR_PID:-}" \
+      bash -c "${script//\/home\/node\/.claude/$STUB_CLAUDE_DIR}" "$@" ;;
   *)                       exit 0 ;;
 esac
 STUB
   chmod +x "$TEST_TMPDIR/bin/devcontainer"
+}
+
+# Run probe_boundary against a stubbed container whose ~/.claude volume lives in
+# $STUB_CLAUDE_DIR and whose containerEnv CC_PROJECT_ID is $1 (may be empty).
+h6_probe() {
+  [ -d "$TEST_TMPDIR/proj/.git" ] || make_repo "$TEST_TMPDIR/proj"
+  bless_manifest >/dev/null
+  smart_devcontainer_stub
+  CC_CONFIG_HASH="$(blessed_hash)"
+  STUB_IMAGE_HASH="$(blessed_hash)"
+  STUB_FP="$(ws_fingerprint "$TEST_TMPDIR/proj")"
+  STUB_CLAUDE_DIR="$TEST_TMPDIR/claudevol"
+  STUB_CTR_PID="$1"
+  mkdir -p "$STUB_CLAUDE_DIR"
+  export CC_CONFIG_HASH STUB_IMAGE_HASH STUB_FP STUB_CLAUDE_DIR STUB_CTR_PID
+}
+
+# Regression (audit 2026-09-18, D2): H6 compared the volume stamp against the
+# container's OWN $CC_PROJECT_ID, so an empty or wrong containerEnv agreed with
+# itself and passed.
+
+@test "H6 passes and stamps the host's project id on a correct container" {
+  make_repo "$TEST_TMPDIR/proj"
+  h6_probe "$(project_id "$TEST_TMPDIR/proj")"
+  run probe_boundary "$TEST_TMPDIR/proj" "$TEST_TMPDIR/nohome"
+  [ "$status" -eq 0 ]
+  [ "$(cat "$STUB_CLAUDE_DIR/.cc-project-id")" = "$(project_id "$TEST_TMPDIR/proj")" ]
+}
+
+@test "H6 fails when the container's CC_PROJECT_ID is empty (no empty stamp)" {
+  h6_probe ""
+  run probe_boundary "$TEST_TMPDIR/proj" "$TEST_TMPDIR/nohome"
+  [ "$status" -ne 0 ]
+  [[ "$output" == *"PROBE FAIL (H6)"* ]]
+  [ ! -e "$STUB_CLAUDE_DIR/.cc-project-id" ]
+  [ ! -f "$(verified_path)" ]
+}
+
+@test "H6 fails on a volume stamped for another project even if the container agrees with it" {
+  h6_probe "otherproject0000"
+  printf '%s' "otherproject0000" > "$STUB_CLAUDE_DIR/.cc-project-id"
+  run probe_boundary "$TEST_TMPDIR/proj" "$TEST_TMPDIR/nohome"
+  [ "$status" -ne 0 ]
+  [[ "$output" == *"PROBE FAIL (H6)"* ]]
+}
+
+@test "H6 fails on an empty stamp left by an earlier empty-env run" {
+  make_repo "$TEST_TMPDIR/proj"
+  h6_probe "$(project_id "$TEST_TMPDIR/proj")"
+  : > "$STUB_CLAUDE_DIR/.cc-project-id"
+  run probe_boundary "$TEST_TMPDIR/proj" "$TEST_TMPDIR/nohome"
+  [ "$status" -ne 0 ]
+  [[ "$output" == *"PROBE FAIL (H6)"* ]]
 }
 
 @test "blessed_hash needs a manifest, is stable, and changes when the boundary changes" {

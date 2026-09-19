@@ -315,8 +315,14 @@ fail_closed_on_abort() {
       echo "       Forced DROP policies (verified): the container fails CLOSED (no" >&2
       echo "       egress), never wide open." >&2
     fi
-    echo "       If this container can no longer bootstrap, recreate it from the host:" >&2
-    echo "         devcontainer up --remove-existing-container --workspace-folder <repo>" >&2
+    # Not a bare `devcontainer up --remove-existing-container`: run from a normal
+    # shell it drops the launcher's localEnv inputs and rebuilds with base-only
+    # egress and an empty config hash (see rebuild_hint in cc-isolated.sh).
+    # --probe-only always rebuilds from the blessed config and re-probes.
+    echo "       If this container can no longer bootstrap, recreate it from the HOST" >&2
+    echo "       with the launcher (the ~/.claude volume and the repo are unaffected):" >&2
+    echo "         cc-isolated --probe-only <repo>    # rebuilds from the blessed config, re-probes" >&2
+    echo "         cc-isolated <repo>                 # then start the session" >&2
   fi
 }
 trap fail_closed_on_abort EXIT
@@ -608,7 +614,11 @@ fi
 # Docker renumbers the container on every create, so nothing may be baked (the address
 # is recomputed on every run). `ip route get` is a routing-table query, not a packet,
 # so it is safe here in phase A alongside every other precondition.
-HOST_IP=$(ip route | grep default | cut -d" " -f3)
+# awk, not `grep default | cut`: with no default route grep exits 1 and pipefail
+# killed the script before the error branch below could say why; with two default
+# routes the grep form joined both gateways with a newline. First default wins;
+# `|| true` keeps a failed pipeline on the path to that error branch.
+HOST_IP=$(ip route | awk '$1=="default" {print $3; exit}' || true)
 if [ -z "$HOST_IP" ]; then
     echo "ERROR: Failed to detect the bridge gateway from the default route" >&2
     exit 1
