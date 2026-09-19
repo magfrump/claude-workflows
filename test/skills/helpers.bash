@@ -91,6 +91,15 @@ count_findings() {
   fi
 }
 
+# Reviewer skills (security, performance, api-consistency, architecture, ui-visual)
+# allow a no-findings report: their Findings template says to keep the section and
+# write the single line "No findings." in place of finding entries. Pass when there is
+# at least one finding, or when the Findings section carries that marker.
+assert_findings_or_none_stated() {
+  [ "$FINDING_COUNT" -gt 0 ] && return 0
+  echo "$REPORT_CONTENT" | sed -nE '/^## Findings/,/^## [^#]/p' | grep -qxE 'No findings\.'
+}
+
 # Assert that every finding has a given field.
 # Counts only within FINDINGS_BODY (set by count_findings) to avoid
 # false matches from report-level metadata sharing the same field name.

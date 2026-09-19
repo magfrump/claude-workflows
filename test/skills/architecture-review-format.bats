@@ -67,8 +67,8 @@ setup() {
   assert_section_exists "Findings"
 }
 
-@test "report has at least one finding" {
-  [ "$FINDING_COUNT" -gt 0 ]
+@test "report has at least one finding or states none" {
+  assert_findings_or_none_stated
 }
 
 @test "each finding has a Severity line" {
