@@ -279,10 +279,17 @@ make_repo() {
 # against a recording stub and check what devcontainer would have seen.
 @test "rebuild_hint's by-hand command, when run, sets every launcher-set localEnv var and keeps args intact" {
   local ws="$TEST_TMPDIR/my proj \$HOME"
-  # shellcheck disable=SC2034  # read as globals by rebuild_hint
-  CC_PROJECT_ID="abc123"; CC_PROJECT_NAME="my proj \$HOME"
+  # All five are read as globals by rebuild_hint, not by this file.
   # shellcheck disable=SC2034
-  CC_CONFIG_DIR="$CLAUDE_DEVC_CONFIG_DIR"; CC_EGRESS_PROFILE="lean,python"; CC_CONFIG_HASH="deadbeef"
+  CC_PROJECT_ID="abc123"
+  # shellcheck disable=SC2034
+  CC_PROJECT_NAME="my proj \$HOME"
+  # shellcheck disable=SC2034
+  CC_CONFIG_DIR="$CLAUDE_DEVC_CONFIG_DIR"
+  # shellcheck disable=SC2034
+  CC_EGRESS_PROFILE="lean,python"
+  # shellcheck disable=SC2034
+  CC_CONFIG_HASH="deadbeef"
   run rebuild_hint "$ws" --workspace-folder "$ws" --id-label "cc-project=abc123"
   [ "$status" -eq 0 ]
   # Every ${localEnv:X} devcontainer.json reads, minus the ones the user supplies
