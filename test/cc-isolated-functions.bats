@@ -313,6 +313,15 @@ STUB
   [[ "$(echo "$output" | head -1)" == *"cc-isolated $(printf '%q' "$ws")"* ]]
 }
 
+@test "--profile with no value is a usage error, not a silent exit" {
+  # Regression (audit 2026-09-18): `shift 2` under set -e exited 1 with no output.
+  make_repo "$TEST_TMPDIR/proj"
+  run bash "$CONFIG_SRC/cc-isolated.sh" --register "$TEST_TMPDIR/proj" --profile
+  [ "$status" -eq 1 ]
+  [[ "$output" == *"--profile needs a value"* ]]
+  [ -z "$(project_profile "$TEST_TMPDIR/proj")" ]
+}
+
 @test "rebuild_hint names the launcher before the by-hand form" {
   run rebuild_hint "$TEST_TMPDIR/proj" --workspace-folder "$TEST_TMPDIR/proj"
   [ "$status" -eq 0 ]

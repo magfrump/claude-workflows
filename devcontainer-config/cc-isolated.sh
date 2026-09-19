@@ -550,7 +550,14 @@ main() {
       --probe-only) action="probe"; shift ;;
       --register)   action="register"; shift ;;
       --list)       action="list"; shift ;;
-      --profile)    profiles="${2:-}"; shift 2 ;;
+      --profile)
+        # A bare trailing --profile used to die silently in `shift 2` under set -e.
+        if [ $# -lt 2 ]; then
+          echo "ERROR: --profile needs a value, e.g. --profile python (comma-separate several)." >&2
+          usage >&2
+          exit 1
+        fi
+        profiles="$2"; shift 2 ;;
       --help|-h)    usage; exit 0 ;;
       --)           shift; break ;;
       -*)           echo "ERROR: unknown flag: $1" >&2; usage >&2; exit 1 ;;
