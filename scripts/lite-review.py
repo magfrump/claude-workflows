@@ -82,8 +82,16 @@ FINDINGS:
 === FIX COMMIT DIFF ({label}) ===
 {diff}"""
 
+# The path must not start with whitespace: when it could, the leading `\s*` and
+# the path split a whitespace run between them in O(n) ways, each retried against
+# the trailing `\s*\|`, so a numbered line of spaces followed by pipes backtracked
+# cubically (~10 s at 3 kB, review B2 2026-09-18 — the pipe-less skip in
+# parse_findings does not cover it). `|(?<=\s)` keeps the one row shape the old
+# `[^|:]+?` accepted with an empty-after-strip path (`1.  | High | ...`): an empty
+# path is allowed only after whitespace, exactly as before. Accept set unchanged
+# (1M-case fuzz against the old regex: 0 differences); decision log 54.
 FINDING_RE = re.compile(
-    r"^\s*\d+\.\s*(?P<path>[^|:]+?)(?::(?P<lines>[\d\-, ]+))?\s*\|"
+    r"^\s*\d+\.\s*(?P<path>[^|:\s][^|:]*?|(?<=\s))(?::(?P<lines>[\d\-, ]+))?\s*\|"
     r"\s*(?P<sev>Critical|High|Medium|Low|Informational)\s*\|"
     r"\s*(?P<domain>[^|]+)\|\s*(?P<title>[^|]+)\|\s*(?P<desc>.+)$",
     re.IGNORECASE,
@@ -108,11 +116,13 @@ def parse_findings(text):
         if not in_block:
             continue
         # Every well-formed row carries four pipes, so a line without one cannot
-        # match — and must not be handed to the regex. FINDING_RE backtracks
-        # catastrophically on a numbered line followed by a long whitespace run
-        # (`\s*` and `[^|:]+?` overlap on spaces): measured 0.32 s at 1 kB,
-        # 2.3 s at 2 kB, ~7.3x per doubling, so prose of a few kB is a hang
-        # rather than a slow parse (review finding A6, 2026-09-12).
+        # match — and need not be handed to the regex. The skip was added when
+        # FINDING_RE backtracked catastrophically on a numbered line followed by
+        # a long whitespace run (`\s*` and `[^|:]+?` overlapped on spaces):
+        # measured 0.32 s at 1 kB, 2.3 s at 2 kB, ~7.3x per doubling (review
+        # finding A6, 2026-09-12). It did not cover the same run with pipes
+        # after it; the regex itself is now anchored (B2, 2026-09-18, see the
+        # comment on FINDING_RE) and the skip stays as a cheap pre-filter.
         #
         # Q-022 chose this over rejecting the whole block. A clean lite review
         # only ever means "proceed to the full review", so a model refusal that

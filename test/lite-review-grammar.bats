@@ -141,14 +141,20 @@ FINDINGS:
 }
 
 # --- Time bound (added 2026-09-17, Q-022 / finding A6) ---------------------
-# FINDING_RE's `\s*` and `[^|:]+?` overlap on spaces, so a numbered line
-# followed by a long whitespace run backtracks exponentially: 0.32 s at 1 kB,
+# FINDING_RE's `\s*` and `[^|:]+?` overlapped on spaces, so a numbered line
+# followed by a long whitespace run backtracked exponentially: 0.32 s at 1 kB,
 # 2.3 s at 2 kB, ~7.3x per doubling, i.e. a hang rather than a slow parse at
 # the size a chatty model reaches. parse_findings skips any line without a
 # pipe, which is what keeps that input away from the regex. Q-022 chose the
 # skip over rejecting the block, so the pin here is a TIME bound — the output
 # shape for prose inside the block is unchanged and still pinned by the
 # "only malformed rows" test above.
+#
+# The skip never covered the same run followed by pipes, which reached the
+# regex and still took ~10 s at 3 kB (review B2, 2026-09-18). FINDING_RE now
+# forbids a leading space in the path, removing the overlap; the second time
+# test below pins that input, and the empty-path test pins that the fix left
+# the accept spec unchanged (decision log 54).
 
 parse_timed() {
   timeout 20 python3 - "$REPO_ROOT/scripts/lite-review.py" "$1" <<'PY'
@@ -170,6 +176,30 @@ PY
   [ "$status" -eq 0 ]          # 124 would be the timeout, i.e. the hang
   [ "${lines[0]}" = "True" ]
   [ "${lines[1]}" = "[]" ]
+}
+
+@test "a numbered line with a long whitespace run then pipes parses promptly" {
+  # Pipe-bearing, so parse_findings' skip does not apply and the regex sees it.
+  # Before B2: ~10 s at 3 kB and roughly cubic, so 8 kB blows the 20 s bound.
+  local ws
+  ws="$(printf '%8000s' '')"
+  run parse_timed "FINDINGS:
+1.$ws| x | y
+2. a$ws| High | d |"
+  [ "$status" -eq 0 ]          # 124 would be the timeout, i.e. the hang
+  [ "${lines[0]}" = "True" ]
+  [ "${lines[1]}" = "[]" ]
+}
+
+@test "a row with a whitespace-only path still parses with an empty path" {
+  # Not a shape worth wanting, but the pre-B2 regex accepted it (the lazy path
+  # could take the spaces). Pinned so the ReDoS fix is provably not a grammar
+  # change; dropping it is a deliberate accept-spec change with a log note.
+  run parse 'FINDINGS:
+1.  | High | security | T | D'
+  [ "$status" -eq 0 ]
+  [[ "${lines[1]}" == *'"path": ""'* ]]
+  [[ "${lines[1]}" == *'"title": "T"'* ]]
 }
 
 @test "skipping pipe-less lines does not change which rows survive" {
