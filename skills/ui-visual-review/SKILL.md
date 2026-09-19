@@ -342,7 +342,10 @@ For each issue found, provide:
 
 ## Step 5: Produce the Report
 
-Output your review as a Markdown document at `docs/reviews/ui-visual-review.md`.
+When run standalone, output your review as a Markdown document at `docs/reviews/ui-visual-review.md`.
+
+When run via an orchestrator, the orchestrator specifies the output path — follow its
+instructions.
 
 The **Keyboard Navigation** subsection (see below) is **required** in every report — even when the diff introduces no focusable elements. In that case, state so explicitly rather than omitting the section.
 
