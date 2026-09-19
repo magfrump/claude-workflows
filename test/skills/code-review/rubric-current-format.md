@@ -9,9 +9,9 @@
 Issues that must be resolved before merge. Draft cannot pass review with any red items
 unresolved.
 
-| # | Finding | Domain | Severity | Location | Legibility-target | Considered overrides | Status |
-|---|---|---|---|---|---|---|---|
-| R1 | Token comparison uses `==`, allowing a timing side channel on the session secret. | Security | Critical | `src/auth/session.ts:42` | for-author | — | 🔴 Unresolved |
+| # | Finding | Domain | Severity | Source | Location | Legibility-target | Considered overrides | Status |
+|---|---|---|---|---|---|---|---|---|
+| R1 | Token comparison uses `==`, allowing a timing side channel on the session secret. | Security | Critical | security-reviewer | `src/auth/session.ts:42` | for-author | — | 🔴 Unresolved |
 
 ---
 

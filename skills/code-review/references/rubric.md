@@ -40,9 +40,9 @@ here must be mirrored there in the same commit.
 Issues that must be resolved before merge. Draft cannot pass review with any red items
 unresolved.
 
-| # | Finding | Domain | Severity | Location | Legibility-target | Considered overrides | Status |
-|---|---|---|---|---|---|---|---|
-| R1 | [Description] | [Security/Performance/etc.] | Critical | `path/to/file:42` | for-author | — _or_ `#123 Won't-Fix (override departed from — see chat)` | 🔴 Unresolved |
+| # | Finding | Domain | Severity | Source | Location | Legibility-target | Considered overrides | Status |
+|---|---|---|---|---|---|---|---|---|
+| R1 | [Description] | [Security/Performance/etc.] | Critical | [Source, e.g., "security-reviewer", "Executable-defect channel", "Fact-check"] | `path/to/file:42` | for-author | — _or_ `#123 Won't-Fix (override departed from — see chat)` | 🔴 Unresolved |
 
 ---
 
