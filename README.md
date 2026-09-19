@@ -133,6 +133,7 @@ machine, they must be recreated by hand:
 - `workflows/user-testing-workflow.md` — Planning, running, and interpreting usability tests (HCI-grounded, small-team adapted)
 - `workflows/codebase-onboarding.md` — Structured orientation for unfamiliar codebases
 - `workflows/review-fix-loop.md` — The review → fix → retest → re-review sub-procedure embedded in pr-prep
+- `workflows/parallel-worktrees.md` — Batch fan-out: split 2+ independent tasks, implement each in an isolated git worktree in parallel, merge back
 
 ### Patterns (shared structural patterns across workflows)
 - `patterns/orchestrated-review.md` — The decompose → parallel dispatch → synthesize → gate pattern, instantiated by task decomposition, divergent design, and PR prep
@@ -148,6 +149,7 @@ machine, they must be recreated by hand:
 - `hooks/claude-config-audit.sh` — `PostToolUse` security audit of edited trusted-policy files via the external auditor (see `guides/claude-config-security-checkup.md`)
 - `hooks/guard-trusted-writes.py` — `PreToolUse` gate on writes to trusted-policy files: hard-deny on Bash write primitives targeting protected config paths, ask on soft policy paths when the session is web-tainted
 - `hooks/web-taint-mark.py` — `PostToolUse` marker that records the session ingested web content, feeding the guard's taint check
+- `hooks/live-verify-gate.sh` — `PreToolUse` Bash gate that blocks a `git commit` touching a cc-isolated enforcement file unless the message carries a `Live-verified:` trailer
 - `hooks/auto-approve-allowed-commands.sh` — `PreToolUse` Bash hook that auto-approves piped/compound commands when every component matches an allowlisted prefix (Claude Code's native prefix matching doesn't handle pipes); depends on `shfmt` + `jq`
 
 ### Tests

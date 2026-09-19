@@ -144,7 +144,7 @@ Where a dispatch genuinely needs a hard shape — a three-column table, one sent
 
 #### Context curation
 
-Every dispatch prompt is curated by the orchestrator. The point of curation is **drift prevention**, not byte-savings — context budget is rarely the binding constraint, but unfiltered upstream material reliably pulls a sub-agent off its assigned slice (re-litigating decisions already made upstream, critiquing material outside its scope, or anchoring on the previous agent's framing instead of the orchestrator's question). The 200-line fact-check excerpt rule in `skills/code-review.md` is the prototype: paste only the findings rated Incorrect / Stale / Mostly Accurate so the critic stays focused on what's actually contestable. Workflows that follow this pattern should curate every dispatch the same way and cite this section.
+Every dispatch prompt is curated by the orchestrator. The point of curation is **drift prevention**, not byte-savings — context budget is rarely the binding constraint, but unfiltered upstream material reliably pulls a sub-agent off its assigned slice (re-litigating decisions already made upstream, critiquing material outside its scope, or anchoring on the previous agent's framing instead of the orchestrator's question). The 200-line fact-check excerpt rule in `skills/code-review/SKILL.md` (Stage 2) is the prototype: paste only the findings rated Incorrect / Stale / Mostly Accurate so the critic stays focused on what's actually contestable. Workflows that follow this pattern should curate every dispatch the same way and cite this section.
 
 Apply the same shape at every dispatch site:
 
