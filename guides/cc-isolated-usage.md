@@ -476,9 +476,12 @@ bare `com` would become a whole-TLD resolver zone and is rejected). **Entries ar
 exact names for 443.** The resolver admits a zone (so `foo.claude.ai` resolves when
 `claude.ai` is listed) but the SNI proxy admits only the literal entry (so the
 connection is then rejected). List every name a client actually uses; a subdomain
-is not covered by its parent. The one exception is a **zone entry**, `.zone[:ports]`
-(leading dot, three or more labels), which admits the zone and every name under it
-at all three layers — for per-object subdomains no list can enumerate. `base`
+is not covered by its parent. The one exception is a **zone entry**, `.zone`
+(leading dot, three or more labels, tcp 443 only), which admits the zone and every
+name under it at all three layers — only for per-object subdomains the operator
+assigns and no list can enumerate. The three-label rule does not catch a
+multi-tenant apex such as `.s3.amazonaws.com`; never zone a namespace users can
+claim. `base`
 carries one, `.frame.claudeusercontent.com` (decision log #55); each new one needs
 its residual written beside it.
 

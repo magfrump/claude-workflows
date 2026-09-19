@@ -27,10 +27,12 @@
 # listed as `foo.claude.ai`; listing `claude.ai` does not cover it. This asymmetry
 # is the most likely source of the next quiet outage.
 #
-# ZONE ENTRIES, `.zone[:ports]` (leading dot, three or more labels), admit the zone
-# and every name under it. Use one ONLY for per-object subdomains no list can
-# enumerate; each is a residual (anyone who can get a name under it can receive
-# traffic) and needs its reason written next to it. When a subdomain failure shows
+# ZONE ENTRIES, `.zone` (leading dot, three or more labels, tcp 443 only), admit
+# the zone and every name under it. Use one ONLY for per-object subdomains the
+# operator ASSIGNS and no list can enumerate. Never use one where users can claim
+# names (`.s3.amazonaws.com`, a public-suffix apex): the three-label rule does not
+# catch those. Each zone is a residual (anyone who can get a name under it can
+# receive traffic) and needs its reason written next to it. When a subdomain failure shows
 # up as `EAI_AGAIN` / `getaddrinfo` rather than a proxy REJECT, it is the resolver
 # refusing the name, and the resolver does not log.
 #
@@ -59,8 +61,11 @@
 #                           EAI_AGAIN and cross-session updates silently become new
 #                           artifacts (added 2026-09-19; listed in the docs as
 #                           `*.frame.claudeusercontent.com` since at least 2026-09-03).
-#                           Residual accepted: the tool already writes artifacts via
-#                           api.anthropic.com, so reading them opens no new sink.
+#                           Residual accepted: any published artifact, including an
+#                           attacker's, is reachable under this name. That is no
+#                           wider than the attacker-editable hosts base already
+#                           admits (api.anthropic.com, GitHub gists/raw). Unverified:
+#                           whether the frame origin accepts writes.
 #                           `bridge.claudeusercontent.com` (also in the docs) is NOT
 #                           added: nothing here has been seen to need it.
 api.anthropic.com

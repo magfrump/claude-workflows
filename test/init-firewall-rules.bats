@@ -828,18 +828,21 @@ STUB
 
 # --- zone entries (`.zone`, decision log #55) ---------------------------------
 
-@test "a .zone entry parses with its dot kept; two-label and malformed zones are refused" {
+@test "a .zone entry parses with its dot kept; two-label, malformed and non-443 zones are refused" {
   local dir="$TEST_TMPDIR/egress"
   mkdir -p "$dir"
-  printf 'api.anthropic.com\n.objects.cdn.example\n.objects2.cdn.example:8443\n' > "$dir/base.txt"
+  printf 'api.anthropic.com\n.objects.cdn.example\n.objects2.cdn.example:443\n' > "$dir/base.txt"
   CC_EGRESS_DIR="$dir" run bash "$FW" --print-entries
   [ "$status" -eq 0 ]
   grep -qE $'^\\.objects\\.cdn\\.example\t443$' <<<"$output"
-  grep -qE $'^\\.objects2\\.cdn\\.example\t8443$' <<<"$output"
+  grep -qE $'^\\.objects2\\.cdn\\.example\t443$' <<<"$output"
   # A two-label zone is a whole registrable domain; `..x`, a bare `.`, a
-  # wildcard, and a single-label zone are not zones at all.
+  # wildcard, and a single-label zone are not zones at all. Off 443 the SNI
+  # proxy never sees the traffic, so a zone there is refused ( `:0443` too).
   for bad in '.cdn.example' '.example' '..objects.cdn.example' '.' \
-             '*.objects.cdn.example' '.objects.cdn.example.' '.-bad.cdn.example'; do
+             '*.objects.cdn.example' '.objects.cdn.example.' '.-bad.cdn.example' \
+             '.objects.cdn.example:8443' '.objects.cdn.example:443,8443' \
+             '.objects.cdn.example:0443' '.objects.cdn.example:22'; do
     printf 'api.anthropic.com\n%s\n' "$bad" > "$dir/base.txt"
     CC_EGRESS_DIR="$dir" run bash "$FW" --print-entries
     [ "$status" -ne 0 ]
@@ -872,12 +875,28 @@ STUB
   grep -qx '.objects.cdn.example' "$CC_SNI_RUN_DIR/allowlist"
   run grep -cx 'objects.cdn.example' "$CC_SNI_RUN_DIR/allowlist"
   [ "$output" -eq 0 ]
-  # ipset: resolved via the apex and a canary label, never the dotted string.
+  # ipset: resolved via the apex and a random canary label, never the dotted string.
   grep -qE '^dig .* objects\.cdn\.example$' "$CMD_LOG"
-  grep -qE '^dig .* cc-isolated-canary\.objects\.cdn\.example$' "$CMD_LOG"
+  grep -qE '^dig .* cc-[0-9a-f]{16}\.objects\.cdn\.example$' "$CMD_LOG"
   run grep -cE '^dig .* \.objects' "$CMD_LOG"
   [ "$output" -eq 0 ]
   grep -q '^ipset add -exist allowed-domains 203.0.113.7,tcp:443$' "$CMD_LOG"
+}
+
+@test "the zone canary label differs between runs (a fixed label could be registered)" {
+  local dir="$TEST_TMPDIR/egress"
+  mkdir -p "$dir"
+  printf 'api.anthropic.com\n.objects.cdn.example\n' > "$dir/base.txt"
+  CC_EGRESS_DIR="$dir" run bash "$FW"
+  [ "$status" -eq 0 ]
+  local first
+  first=$(grep -oE 'cc-[0-9a-f]{16}\.objects' "$CMD_LOG" | head -1)
+  [ -n "$first" ]
+  : > "$CMD_LOG"
+  CC_EGRESS_DIR="$dir" run bash "$FW"
+  [ "$status" -eq 0 ]
+  run grep -c -- "$first" "$CMD_LOG"
+  [ "$output" -eq 0 ]
 }
 
 @test "the shipped base admits the artifact frame zone on 443, and not its parent" {

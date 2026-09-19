@@ -137,9 +137,17 @@ HOST_RE="^${HOST_LABEL}(\.${HOST_LABEL})+\$"
 # contacts per-object subdomains no list can enumerate (Claude Code's Artifact tool
 # reads `<artifact-uuid>.frame.claudeusercontent.com`). The leading dot is the SNI
 # proxy's own zone syntax, so the entry passes through to its allowlist unchanged.
-# THREE or more labels are required: a two-label zone is a whole registrable domain
-# (`.claudeusercontent.com` would admit every host its owner ever serves), and the
-# point of a zone entry is one delegated sub-tree, never a site.
+# THREE or more labels are required. That refuses the commonest mistake, a
+# two-label registrable domain (`.claudeusercontent.com`), and nothing more: it
+# does NOT stop a public-suffix apex (`.example.co.uk`) or a multi-tenant one
+# (`.s3.amazonaws.com`, `.blob.core.windows.net`), where anyone can claim a name.
+# Those are author error the grammar cannot see. A zone is only for names the
+# operator ASSIGNS (like artifact UUIDs), never names users can pick; write that
+# reason next to the entry.
+#
+# Zones are 443-ONLY. Only tcp/443 goes through the SNI proxy; on any other port
+# a zone would be enforced by nothing but two DNS answers taken at firewall time,
+# which is weaker than any exact name. parse_entry refuses it.
 ZONE_RE="^\.${HOST_LABEL}(\.${HOST_LABEL}){2,}\$"
 
 parse_entry() {
@@ -152,6 +160,9 @@ parse_entry() {
   fi
   [[ "$domain" =~ $HOST_RE ]] || [[ "$domain" =~ $ZONE_RE ]] || return 1
   [[ "$ports" =~ ^[0-9]{1,5}(,[0-9]{1,5})*$ ]] || return 1
+  # Zones: 443 only (see ZONE_RE). Checked on the RAW suffix before canonicalising,
+  # so `:0443` is refused too rather than slipping through as 443.
+  if [[ "$domain" == .* ]] && [ "$ports" != "443" ]; then return 1; fi
   local canon=""
   for port in $(echo "$ports" | tr ',' '\n'); do
     # 10#: a leading zero would otherwise make bash read the number as octal.
@@ -232,8 +243,11 @@ compose_dnsmasq_conf() {
     # the zone and every name under it. Only the leading dot is dropped.
     d="${d#.}"
     [ -n "$d" ] || continue
-    # HOST_RE is the same grammar parse_entry enforces, so anything that reached the
-    # ipset also gets a resolver line, and nothing single-label can become a zone.
+    # HOST_RE is parse_entry's exact-name grammar, so nothing single-label can become
+    # a zone here. Zone entries (dot stripped above) are checked only against
+    # HOST_RE, not ZONE_RE's three-label rule: that rule is enforced by parse_entry,
+    # which a full run executes before this config is written. The inspection hook
+    # alone does not, which is why it only prints.
     if [[ ! "$d" =~ $HOST_RE ]]; then
       echo "WARNING: not a hostname, omitting from resolver allowlist (stays unresolvable): $d" >&2
       continue
@@ -500,12 +514,15 @@ while read -r domain ports; do
     # So resolve a CANARY name under the zone: a zone served by a wildcard record
     # (the per-object pattern zone entries exist for) answers it from the same
     # pool as every real name. The zone apex is resolved too, in case the pool is
-    # published there. If the pool later moves, the proxy logs `FAIL sni=...
+    # published there. The canary label is RANDOM per run: a fixed, published label
+    # is a name someone could register under a zone whose labels are claimable, and
+    # would then choose which address enters the ipset. If the pool later moves, the proxy logs `FAIL sni=...
     # address not admitted by the ipset` — the same staleness every exact name
     # already has between firewall runs — and a re-run re-resolves.
     lookups="$domain"
     case "$domain" in
-        .*) lookups="${domain#.}"$'\n'"cc-isolated-canary${domain}" ;;
+        .*) canary="cc-$(od -An -N8 -tx1 /dev/urandom | tr -d ' \n')"
+            lookups="${domain#.}"$'\n'"${canary}${domain}" ;;
     esac
     # `|| true` for the same reason as the GitHub fetch: a dig failure (e.g. exit 9,
     # no server reached) would otherwise abort here instead of reaching the
@@ -914,10 +931,12 @@ fi
 #
 # RESIDUAL. dnsmasq matches zones by suffix. An attacker who controls an
 # authoritative subdomain UNDER an allowlisted zone (a third-party delegation
-# inside a listed domain) can still tunnel through it. None of the base zones
-# (api.anthropic.com, claude.ai, console.anthropic.com, platform.claude.com,
-# registry.npmjs.org, github.com, githubusercontent.com) hand out delegations to
-# third parties; a profile that adds a zone which does (e.g. a bare CDN apex)
+# inside a listed domain) can still tunnel through it. Every base entry is a
+# resolver zone this way (see egress/base.txt; plus github.com and
+# githubusercontent.com), and none is known to hand out delegations to third
+# parties. That includes frame.claudeusercontent.com, whose per-artifact names
+# are assigned by Anthropic, though its authority was NOT checked from here (no
+# egress). A profile that adds a zone which does (e.g. a bare CDN apex)
 # re-opens this, so keep entries as specific as the hostnames actually needed.
 # Bandwidth is further bounded by the upstream's caching. IPv6 is default-denied
 # in phase B, so there is no IPv6 path around this resolver.
@@ -1174,10 +1193,14 @@ iptables -A OUTPUT -m state --state ESTABLISHED,RELATED -j ACCEPT
 # an allowlisted ZONE (a github.com subdomain is not obtainable; a hosted
 # `<org>.ingest.sentry.io`-style name would be, were such a zone allowlisted)
 # still gets through by name. Exact-name entries have no such residual. Base's
-# one zone, `.frame.claudeusercontent.com`, does carry it: any artifact published
-# to claude.ai gets a name there. That is accepted because the channel is not new
-# — the Artifact tool already PUBLISHES through api.anthropic.com, so reading
-# a frame adds no destination the agent could not already write to.
+# one zone, `.frame.claudeusercontent.com`, does carry it: any published artifact
+# gets a name there, so an attacker-published artifact is an allowlisted host
+# serving content the attacker controls (payloads, polled instructions). Accepted
+# because neither direction is new. Egress: base already carries attacker-reachable
+# sinks (api.anthropic.com; GitHub gists and raw content). Ingress: GitHub
+# raw/gist content is already attacker-editable and allowlisted. What was NOT
+# verified: whether the frame origin accepts writes (e.g. an artifact's data or
+# file capabilities) — if it does, that is one more sink of the same class.
 echo "Configuring SNI-filtering proxy..."
 mkdir -p "$SNI_RUN_DIR"
 chmod 0755 "$SNI_RUN_DIR"
