@@ -1,0 +1,64 @@
+Q-023:
+Run fast first and block on red, then run slow.
+If slow is minutes, that's acceptable as a merge-block, but we should consider whether we can reduce run time without reducing coverage.
+
+Q-024:
+Is it a logical claim that market sizing isn't listed and can't be retrieved? If so, fix. This is what sounds like the case.
+Or is it an empirical claim that market sizing has never been selected as a critic? If so, no action; all business plan skills have been used only sparingly.
+
+Q-025:
+There is not currently such a script, nor even a folder `~/.claude/scripts`. I believe the script previously existed using an OpenRouter key, and was removed because OpenRouter keys were not present for any repos.
+What I had hoped for was a re-implementation of the lite review using `claude -p --bare`.
+Either this step needs to be re-implemented, or the text should be removed entirely, not just listed as optional.
+pr-prep, review-fix-loop, and code-review also have substantial overlap, and in some cases have lagged behind current usage (e.g. current products are non-collaborative and therefore skip the PR to github to merge flow)
+the skills/workflows should get updated (while preserving the via-github-PR path as I expect collaborative projects to come up again in the future)
+
+Q-026: [1]
+
+Q-028:
+Make the trigger either; `docs/thoughts` doesn't stay empty even if onboarding doesn't create it.
+
+Q-029: [1]
+
+Q-030: [2]
+
+Q-031: [1]
+
+Q-032: [2]
+
+Q-033: [1]
+
+Q-034: [2]
+
+Q-035:
+I'm inclined to [1], but if comments or read-only commands containing "install" are common and annoying, we can consider other options.
+
+Q-036: [2]
+
+Q-037: [3]
+
+Q-038:
+[2], and look for other references to morning-summary.md that should be redirected to questions.md
+
+Q-039:
+My reading is that abstract-only reads can output High confidence (e.g. the claim is quoted directly from the abstract) but then gets demoted by the rule, unless a deep-read is used. That means this describes two possible paths for handling a strong abstract confirmation: read deeply, or demote to medium, without giving guidance on which path to take.
+
+Q-040:
+Design space situation is distinct from double diamond, and more constrained in when it should fire.
+Basically [2] for now; if the *double diamond* also fails, return to DSS would be my instinct.
+
+Q-041:
+As long as the notes include either a discoverable TODO or a revisit trigger, they should be fine to merge.
+Please check that the description of "must address" specfies this so that yellow findings don't get lost in the code base.
+
+Q-042: [1]
+
+Q-043: [1]
+
+Q-044: [1]
+
+Q-045: [2]
+
+Q-046: [2]
+
+Q-047: [1]
