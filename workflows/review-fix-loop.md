@@ -40,7 +40,7 @@ Iteration N of 3
 
 Exit the loop at the end of any iteration where:
 
-1. **Clean convergence.** No Must Fix items remain and every Must Address item is resolved or acknowledged with a discoverable TODO or a concrete revisit trigger (the [qualifying author note](../skills/code-review/references/rubric.md#-must-address)). Proceed to Phase 2 of pr-prep.
+1. **Clean convergence.** No Must Fix items remain and every Must Address item is resolved or acknowledged with a discoverable TODO or a concrete revisit trigger (the [qualifying author note](../skills/code-review/references/rubric.md#qualifying-author-note)). Proceed to Phase 2 of pr-prep.
 2. **Ship with documented known issues.** No Must Fix items remain, but Must Address or Consider items persist. Document the remaining findings in the PR description's "Areas of uncertainty" section (the merge commit message on pr-prep's local-merge path) and proceed to Phase 2. The human reviewer sees the known issues and can make a judgment call about whether they block merge.
 
 If neither condition holds at the end of iteration 3, you have hit the cap. Do not begin iteration 4 implicitly — proceed to the gate below.

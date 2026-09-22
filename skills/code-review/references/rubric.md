@@ -153,9 +153,26 @@ across runs and its precision measurable.
 ---
 
 To pass review: all 🔴 items must be resolved. All 🟡 items must be either fixed or
-carry a qualifying author note (a discoverable TODO or a concrete revisit trigger — see
-the 🟡 Must Address heading). 🟢 items are optional.
+carry a [qualifying author note](#qualifying-author-note). 🟢 items are optional.
 ```
+
+### Qualifying author note
+
+A 🟡 Must Address row closes by a fix or by a **qualifying author note**. (The template
+above repeats this definition so it reaches the emitted rubric; this heading is the
+linkable copy, since headings inside the template's code fence get no anchor.) A
+qualifying note does not just explain the finding — it records where the deferred work
+will be found again, so a yellow finding cannot get lost in the codebase. It is one of:
+
+- **(a) A discoverable TODO** — a `TODO` comment in code at the finding's site, or a
+  tracked follow-up entry (issue, `docs/working/questions.md` entry, or similar) the note
+  links to.
+- **(b) A concrete revisit trigger** — a named, observable condition under which the
+  finding must be reopened (e.g. "if this handler starts accepting user uploads", "if
+  p99 > 200ms").
+
+A note with neither ("known, acceptable for now") is not qualifying; the row stays open
+for [next-action derivation](chat-synthesis.md#next-action-derivation).
 
 **Legibility-target column:** Carry forward the tag each critic placed on the source finding (see [taxonomy](../../../patterns/orchestrated-review.md#legibility-target-tagging)). Typical mapping: 🔴 / 🟡 / 🟢 rows are `for-author`; ✅ rows are `for-orchestrator-synthesis`. `for-automated-gate` findings (e.g., the security-reviewer HALT-ESCALATE pattern) live in the escalation block above the rubric, not in these tables — they reference the source critique once instead of being duplicated as a row.
 
