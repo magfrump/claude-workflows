@@ -25,18 +25,30 @@
 #   deferred        scheduled behind an event that has not happened
 #
 # Usage:
-#   scripts/questions.sh check      validate both files (exit 1 on problems)
-#   scripts/questions.sh index      regenerate the index tables in place
-#   scripts/questions.sh archive    move ANSWERED entries to the archive, reindex
-#   scripts/questions.sh next-id    print the next free Q-NNN
-#   scripts/questions.sh open       list open questions, one per line (ID, route, slug)
-#   scripts/questions.sh init       create empty live/archive files if absent
+#   ~/.claude/scripts/questions.sh check      validate both files (exit 1 on problems)
+#   ~/.claude/scripts/questions.sh index      regenerate the index tables in place
+#   ~/.claude/scripts/questions.sh archive    move ANSWERED entries to the archive, reindex
+#   ~/.claude/scripts/questions.sh next-id    print the next free Q-NNN
+#   ~/.claude/scripts/questions.sh open       list open questions, one per line (ID, route, slug)
+#   ~/.claude/scripts/questions.sh init       create empty live/archive files if absent
+#   (In claude-workflows, scripts/questions.sh is the same file.)
 #
 # Which files: the docs/working/ of the git repo you run it FROM (the toplevel
 # of $PWD; $PWD itself outside a git repo), not of the repo the script lives
 # in. Installed as ~/.claude/scripts/questions.sh, it serves every project;
 # run from this repo, it resolves to this repo's docs/working/ as before.
 # QUESTIONS_LIVE / QUESTIONS_ARCHIVE override either path.
+#
+# Every command except `init` needs both files to exist and fails, pointing at
+# `init`, when they don't: a project without a questions doc is the normal case
+# now that the script runs in every repo, and reporting "Q-001" or "0 archived"
+# there would be a success claim about files that were never read.
+#
+# Writes never go through a symlink. Because the script runs inside arbitrary
+# cloned repos, docs/working/ and its files are attacker-authored input: a
+# planted symlink would otherwise turn `archive`, `index` or `init` into an
+# append/overwrite/create of any file the user can write (security review
+# 2026-09-21, finding 2). See assert_write_target.
 
 set -euo pipefail
 
@@ -52,9 +64,74 @@ export LC_ALL=C
 # script is installed once (~/.claude/scripts, via link-claude-home.sh or the
 # README symlink) and used from every project, and resolving next to itself sent
 # every project's questions into claude-workflows' own doc (Q-025).
+# The command name every message tells the user to run. The canonical spelling
+# is the installed path, the one the global instructions use.
+# shellcheck disable=SC2088  # a display string, deliberately not expanded
+QS_CMD='~/.claude/scripts/questions.sh'
+
+die() { echo "  ✗ questions.sh: $*" >&2; exit 1; }
+
+# Inside .git/ there is no toplevel, so the $PWD fallback below would create
+# .git/docs/working/ — a questions doc nobody would ever find.
+if [[ "$(git -C "$PWD" rev-parse --is-inside-git-dir 2>/dev/null || true)" == "true" ]]; then
+    die "\$PWD ($PWD) is inside a .git directory; run from the working tree instead"
+fi
+
 PROJECT_ROOT="$(git -C "$PWD" rev-parse --show-toplevel 2>/dev/null || pwd)"
 LIVE="${QUESTIONS_LIVE:-$PROJECT_ROOT/docs/working/questions.md}"
 ARCHIVE="${QUESTIONS_ARCHIVE:-$PROJECT_ROOT/docs/working/questions-archive.md}"
+
+# --- Refuse a write destination that is, or resolves through, a symlink ---
+# Checked for the file itself (-L is true for a dangling link too, which -e
+# misses — that gap is how `init` used to create files at a link's target) and
+# for its directory. A default path must also resolve inside $PROJECT_ROOT,
+# which catches a symlinked ancestor such as docs/ -> /elsewhere. An explicit
+# QUESTIONS_LIVE/QUESTIONS_ARCHIVE is the operator's choice, so it is exempt
+# from the containment check but not from the symlink check.
+assert_write_target() {
+    local file="$1" overridden="$2" dir root resolved
+    dir="$(dirname "$file")"
+    [[ -L "$file" ]] && die "refusing to write: $file is a symlink"
+    [[ -L "$dir" ]] && die "refusing to write: directory $dir is a symlink"
+    if [[ -z "$overridden" ]]; then
+        root="$(realpath -m -- "$PROJECT_ROOT")"
+        resolved="$(realpath -m -- "$file")"
+        [[ "$resolved" == "$root"/* ]] \
+            || die "refusing to write: $file resolves to $resolved, outside $root"
+    fi
+    return 0
+}
+
+assert_write_targets() {
+    assert_write_target "$LIVE" "${QUESTIONS_LIVE:-}"
+    assert_write_target "$ARCHIVE" "${QUESTIONS_ARCHIVE:-}"
+}
+
+# --- Atomically replace $target with the output of "$@" ---
+# The temp file comes from mktemp in the target's own directory (O_EXCL, so a
+# pre-planted name cannot redirect it — unlike the fixed `questions.md.tmp`
+# this replaced), takes the target's mode, and is renamed over the target only
+# after the symlink checks pass again immediately before the rename.
+replace_with() {
+    local target="$1" tmp; shift
+    tmp="$(mktemp "$(dirname "$target")/.questions.XXXXXX")"
+    if ! "$@" > "$tmp"; then rm -f "$tmp"; return 1; fi
+    chmod --reference="$target" "$tmp" 2>/dev/null || true
+    if [[ -L "$target" || -L "$(dirname "$target")" ]]; then
+        rm -f "$tmp"; die "refusing to write: $target became a symlink"
+    fi
+    mv -f -- "$tmp" "$target"
+}
+
+# Every command but `init` reads both files; missing ones mean the project has
+# no questions doc, which is an error to report, not an empty result.
+require_files() {
+    local missing=0 file
+    for file in "$LIVE" "$ARCHIVE"; do
+        [[ -f "$file" ]] || { echo "  ✗ missing: $file" >&2; missing=1; }
+    done
+    [[ $missing -eq 0 ]] || die "no questions doc here — run \`$QS_CMD init\` first"
+}
 
 INDEX_START='<!-- index:start -->'
 INDEX_END='<!-- index:end -->'
@@ -195,7 +272,7 @@ cmd_check() {
             # archive. This is what keeps the live file compact by construction
             # rather than by anyone remembering to move things.
             if [[ "$file" == "$LIVE" && "$status" == "ANSWERED" ]]; then
-                echo "  ⚠ $id is ANSWERED but still in questions.md — run: scripts/questions.sh archive" >&2
+                echo "  ⚠ $id is ANSWERED but still in questions.md — run: $QS_CMD archive" >&2
             fi
             if [[ "$file" == "$ARCHIVE" && "$status" == "OPEN" ]]; then
                 echo "  ✗ $id is OPEN but lives in the archive" >&2; rc=1
@@ -211,11 +288,14 @@ cmd_check() {
         want_ids="$(parse_entries "$file" | cut -f1 | sort)"
         have_ids="$(sed -n "/$INDEX_START/,/$INDEX_END/p" "$file" | grep -ao 'Q-[0-9]\{3\}' | sort -u || true)"
         if [[ "$want_ids" != "$have_ids" ]]; then
-            echo "  ✗ $(basename "$file"): index is stale — run: scripts/questions.sh index" >&2
+            echo "  ✗ $(basename "$file"): index is stale — run: $QS_CMD index" >&2
             rc=1
         fi
     done
 
+    if [[ ! -f "$LIVE" || ! -f "$ARCHIVE" ]]; then
+        echo "  ✗ no questions doc here — run \`$QS_CMD init\` first" >&2
+    fi
     [[ $rc -eq 0 ]] && echo "  ✓ questions: structure valid, indexes current"
     return $rc
 }
@@ -226,6 +306,8 @@ render_index() {
     [[ -f "$file" ]] || return 0
     grep -aqF "$INDEX_START" "$file" || { echo "  ✗ $(basename "$file"): no $INDEX_START marker" >&2; return 1; }
 
+    # The table is scratch data awk reads back, never renamed anywhere, so the
+    # system temp dir is fine for it; the file rewrite goes via replace_with.
     tmp="$(mktemp)"
     {
         if [[ "$kind" == "live" ]]; then
@@ -249,42 +331,55 @@ render_index() {
         fi
     } > "$tmp"
 
-    awk -v start="$INDEX_START" -v end="$INDEX_END" -v tbl="$tmp" '
+    replace_with "$file" awk -v start="$INDEX_START" -v end="$INDEX_END" -v tbl="$tmp" '
         index($0, start) { print; while ((getline l < tbl) > 0) print l; skip = 1; next }
         index($0, end)   { skip = 0 }
         !skip
-    ' "$file" > "$tmp.out"
-    mv "$tmp.out" "$file"
+    ' "$file" || { rm -f "$tmp"; return 1; }
     rm -f "$tmp"
 }
 
 cmd_index() {
+    require_files
+    assert_write_targets
     render_index "$LIVE" live
     render_index "$ARCHIVE" archive
     echo "  ✓ indexes regenerated"
 }
 
+# Archive plus one entry, blank-line terminated — the new archive content.
+archive_with_entry() {
+    cat -- "$ARCHIVE"
+    extract_entry "$LIVE" "$1"
+    echo
+}
+
+live_without_entry() {
+    awk -v want="$1" '
+        /^### Q-[0-9]+ / {
+            line = $0; sub(/^### /, "", line)
+            split(line, parts, " · ")
+            dropping = (parts[1] == want)
+        }
+        /^## / && !/^### / { dropping = 0 }
+        !dropping
+    ' "$LIVE"
+}
+
 cmd_archive() {
     local moved=0 id status
+    require_files
+    assert_write_targets
     while IFS=$'\t' read -r id _ _ status _ _; do
         [[ "$status" == "ANSWERED" ]] || continue
 
         # Append to the archive before removing from the live file, so an
         # interrupted run duplicates an entry (which `check` reports) rather
         # than losing one.
-        extract_entry "$LIVE" "$id" >> "$ARCHIVE"
-        echo >> "$ARCHIVE"
-
-        awk -v want="$id" '
-            /^### Q-[0-9]+ / {
-                line = $0; sub(/^### /, "", line)
-                split(line, parts, " · ")
-                dropping = (parts[1] == want)
-            }
-            /^## / && !/^### / { dropping = 0 }
-            !dropping
-        ' "$LIVE" > "$LIVE.tmp"
-        mv "$LIVE.tmp" "$LIVE"
+        # Both writes rebuild the file and rename it into place rather than
+        # appending with >>, which would follow a symlink.
+        replace_with "$ARCHIVE" archive_with_entry "$id"
+        replace_with "$LIVE" live_without_entry "$id"
 
         moved=$((moved + 1))
         echo "  → archived $id"
@@ -296,6 +391,7 @@ cmd_archive() {
 
 cmd_next_id() {
     local max
+    require_files
     max="$( { parse_entries "$LIVE"; parse_entries "$ARCHIVE"; } \
         | cut -f1 | sed 's/^Q-//' | sort -n | tail -1 )"
     # 10# forces base 10: IDs are zero-padded, and bash reads a leading zero as
@@ -305,6 +401,7 @@ cmd_next_id() {
 }
 
 cmd_open() {
+    require_files
     parse_entries "$LIVE" | route_rank | sort -t$'\t' -k1,1 -k2,2 | cut -f2- \
         | while IFS=$'\t' read -r id route _ _ slug _; do
             printf '%s  %-14s  %s\n' "$id" "$route" "$slug"
@@ -315,7 +412,10 @@ cmd_open() {
 # commands need, so a project that has never had a questions doc can start one
 # without copying this repo's. Never touches a file that exists.
 cmd_init() {
-    local file title section
+    local file title section override
+    # Before mkdir -p too: a symlinked docs/ would otherwise make mkdir create
+    # directories at the link's target.
+    assert_write_targets
     for file in "$LIVE" "$ARCHIVE"; do
         [[ -e "$file" ]] && { echo "  = exists: $file"; continue; }
         if [[ "$file" == "$LIVE" ]]; then
@@ -324,8 +424,16 @@ cmd_init() {
             title="Running questions — archive"; section="Answered"
         fi
         mkdir -p "$(dirname "$file")"
-        printf '# %s\n\n## Index\n\n%s\n%s\n\n## %s\n' \
-            "$title" "$INDEX_START" "$INDEX_END" "$section" > "$file"
+        # Re-check now the directory exists, then create with noclobber, whose
+        # O_EXCL open fails rather than following anything that appeared at the
+        # path in between.
+        override="${QUESTIONS_ARCHIVE:-}"
+        [[ "$file" == "$LIVE" ]] && override="${QUESTIONS_LIVE:-}"
+        assert_write_target "$file" "$override"
+        ( set -o noclobber
+          printf '# %s\n\n## Index\n\n%s\n%s\n\n## %s\n' \
+              "$title" "$INDEX_START" "$INDEX_END" "$section" > "$file" ) \
+            || die "could not create $file"
         echo "  + created: $file"
     done
 }
