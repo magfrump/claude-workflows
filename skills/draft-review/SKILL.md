@@ -511,6 +511,8 @@ The 🟢 Consider tier has no Confidence column: its rows come from critics, whi
 **🟡 AMBER — Must Address:**
 - Factual claims rated Mostly Accurate (imprecise, needs tightening or justification)
 - Factual claims rated Unverified (needs a source or justification)
+- Factual claims rated Disputed (reliable sources disagree — acknowledge the disagreement or pick a side with justification)
+- Attributed quotes rated Secondary-only (wording attested only in secondary citations — cite the secondary source, soften the attribution, or find the primary)
 - Structural issues flagged by multiple critic types independently
 - In ensemble mode: structural issues flagged consistently within one critic type (all instances)
 
