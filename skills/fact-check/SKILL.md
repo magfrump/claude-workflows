@@ -176,8 +176,9 @@ For every claim ID:
    and briefly say which criterion applies and why.
 5. **State the scrutiny depth** for each source relied on — `[abstract]`, `[deep-read]`,
    or `[inferred]` — using the criteria in [Scrutiny Tags](#scrutiny-tags). Scrutiny is part
-   of calibration, not a footnote: a High confidence verdict generally requires at least
-   one `[deep-read]` source (see [Scrutiny and confidence aggregation](#scrutiny-and-confidence-aggregation)).
+   of calibration, not a footnote: a High confidence verdict requires at least one
+   `[deep-read]` source, and a verdict resting only on `[abstract]` reads caps at Medium (see
+   [Scrutiny and confidence aggregation](#scrutiny-and-confidence-aggregation)).
 6. **Cite your sources.** Name the source (organization, publication, dataset) and year. If you found
    a URL, include it.
 
@@ -372,15 +373,15 @@ sources actually used:
 - **[abstract]** — Only the summary, abstract, search-result snippet, headline, executive
   summary, or table-of-contents-level material was read. Common for web-search verifications
   where the answer is visible in the snippet, or for academic papers where only the abstract
-  was consulted. Sufficient for many Medium-confidence verdicts; usually not sufficient on its
-  own for High.
+  was consulted. Supports at most Medium: a verdict whose sources are all `[abstract]` caps at
+  Medium, and High always requires at least one `[deep-read]`.
 - **[deep-read]** — The full source artifact was opened and the relevant section read in
   context: the section of the law text, the relevant chapter of the report, the function
   body and surrounding code, the full dataset row including footnotes, the transcript passage
   with surrounding turns, the speech in full. Code reads are `[deep-read]` by definition (see
-  [Code-Based Claims](#code-based-claims)). One `[deep-read]` of a primary source is the
-  baseline scrutiny depth for any `[observed]` verdict; reaching High confidence additionally
-  requires a second independent primary source per the [derivation rule](#derivation-rule).
+  [Code-Based Claims](#code-based-claims)). At least one `[deep-read]` is required for High
+  confidence, which additionally requires a second independent primary source per the
+  [derivation rule](#derivation-rule).
 - **[inferred]** — The source named or implied by the claim was *not* read; instead, the
   fact-checker located evidence in a *different but related* artifact and inferred what the
   named source must say. Examples: a peer review of a paper that summarizes its findings;
@@ -410,9 +411,13 @@ The [derivation rule](#derivation-rule) sets the **floor**: confidence is comput
 from the count and type of cited sources. Scrutiny modulates that floor — it cannot lift it,
 but it can require a downgrade. In practice:
 
-- **At least one cited source per verdict must be `[deep-read]`.** If every cited source is
-  `[abstract]` or scrutiny `[inferred]`, downgrade by one tier (High → Medium, Medium → Low,
-  Low → Unverified with provenance `[assumed]`).
+- **High requires at least one `[deep-read]` source.** If no cited source is `[deep-read]`
+  and at least one is `[abstract]`, the verdict **caps at Medium**: a High derived from the
+  source count becomes Medium; Medium and Low stand as derived. There is no Medium → Low step
+  for `[abstract]` reads.
+- **If every cited source is scrutiny `[inferred]`** (nothing was read directly, not even an
+  abstract), downgrade by one tier (High → Medium, Medium → Low, Low → Unverified with
+  provenance `[assumed]`).
 - **An `[abstract]`-only read of a primary source** can count toward the derivation rule's
   primary-source count only when the abstract itself contains the specific number, quote, or
   claim being checked — not when the rating rests on the assumption that the body confirms
@@ -425,8 +430,22 @@ but it can require a downgrade. In practice:
   requires the *count* of independent primary sources, regardless of how deeply any single one
   was read. State in the verdict what a second independent primary source would resolve.
 
+**Deep-read or accept the Medium cap?** An `[abstract]`-only read can already carry the exact
+number or quote being checked, so the cap is a choice, not a defect. Deep-read when any of these
+holds; otherwise accept Medium and note the cap in the verdict explanation:
+
+- The claim is `[load-bearing]` for the draft's argument (see Pass 2's processing order) and
+  the evidence could reach High — ≥2 independent primary sources exist.
+- The verdict would otherwise be **Inaccurate** or **Disputed**. A correction or a dispute
+  asks the author to change the draft, so confirm it against the full source, not a summary.
+- The abstract's wording is hedged, rounded, or scoped differently from the claim (a range
+  vs. a point figure, a subgroup vs. the whole population).
+
+`[peripheral]` claims whose abstract states the figure or quote plainly can take the Medium
+cap without a deep-read.
+
 When confidence and scrutiny appear in tension (e.g., High confidence drawn from two
-primary sources both read only at `[abstract]` depth), apply the downgrade in the report and
+primary sources both read only at `[abstract]` depth), apply the Medium cap in the report and
 justify the call in the verdict explanation. Audit-ability matters more than the rating: a
 reader should be able to recompute the tier from the Sources line and see how scrutiny
 modulated the result.
@@ -439,7 +458,7 @@ modulated the result.
 | Accurate | Medium | `[observed]` | `[deep-read]` | Single primary source: Section 11406 of the IRA read in full. No second independent primary located; a CMS implementation rule or Treasury enforcement memo would lift this to High. |
 | Accurate | Medium | `[inferred]` | `[abstract]` | Three reputable news outlets (≥2 secondary) summarize the same study and agree; only their summaries (not the study itself) were consulted. Convergent secondaries satisfy the "≥2 secondary" path for Medium, but surface-level — `[deep-read]` of the study would lift to High once it counts as a second primary. |
 | Mostly accurate | Medium | `[observed]` | `[abstract]` | NCSL right-to-work-laws table viewed on the NCSL summary page (1 primary, `[abstract]`); the underlying state-by-state PDF was not opened. The aggregate count is visible in the summary but state-level breakdown was not verified. |
-| Low | Low | `[inferred]` | `[abstract]` | Single secondary source: a Vox explainer summarizing what a Treasury report supposedly says. No primary located, no convergent second secondary — derivation rule places this at Low until a primary or a second independent secondary is added. |
+| Accurate | Low | `[inferred]` | `[abstract]` | Single secondary source: a Vox explainer summarizing what a Treasury report supposedly says. No primary located, no convergent second secondary — derivation rule places this at Low until a primary or a second independent secondary is added. |
 | Unverified | Low | `[assumed]` | `[inferred]` | A press release referenced an internal report with the relevant figure; the report itself was paywalled and could not be retrieved. The figure is inferred from the press release's framing. |
 
 ## Citation Requirement
@@ -531,8 +550,8 @@ omitted.
 [2-4 sentences explaining what the evidence shows and why you reached this verdict. For
 provenance `[inferred]` verdicts, write out the inferential chain. For provenance
 `[assumed]` verdicts, state what specific evidence would move the claim to `[inferred]` or
-`[observed]`. When confidence appears in tension with scrutiny (e.g., High confidence on
-`[abstract]`-only reads), justify the call here.]
+`[observed]`. When an `[abstract]`-only verdict was capped at Medium, say so here and name
+what a `[deep-read]` would resolve.]
 
 **Sources:** [named sources with years]
 **Citation:** [exactly one of: URL with anchor | "verbatim ≤25-word span" | [source: title, page/timestamp]]
