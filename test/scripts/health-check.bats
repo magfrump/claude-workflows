@@ -12,6 +12,12 @@
 
 SCRIPT="$(cd "$(dirname "$BATS_TEST_FILENAME")/../.." && pwd)/scripts/health-check.sh"
 
+# Recursion guard (Q-023): health-check.sh gate 5 runs every bats suite,
+# including this one, so a health-check launched from here must not run gate 5
+# again. Exported so every `run bash "$SCRIPT"` below inherits it. Gate 5's own
+# ordering is tested further down with a stub runner.
+export HEALTH_CHECK_SKIP_BATS=1
+
 # Deterministic cache path shared across all tests in this file.
 _HC_CACHE_DIR="/tmp/bats-hc-cache.$$"
 
@@ -133,4 +139,74 @@ _isolated_skills_dir() {
   echo "$output"
   [ "$status" -ne 0 ]
   echo "$output" | grep -q "_test_missing_desc: missing 'description' field"
+}
+
+# ── Gate 5: fast-then-slow ordering (Q-023) ────────────────────────────────
+#
+# Sources health-check.sh (main only runs when executed) and calls check_bats
+# against a stub runner via the HEALTH_CHECK_RUN_TESTS seam, so these tests
+# never run the real suites. The stub logs each invocation's flag and the
+# HEALTH_CHECK_SKIP_BATS it saw, and exits with STUB_FAST_RC / STUB_SLOW_RC.
+
+_stub_runner() {
+  local stub="$BATS_TEST_TMPDIR/run-tests-stub.sh"
+  cat > "$stub" <<'STUB'
+#!/usr/bin/env bash
+printf '%s skip=%s\n' "$1" "${HEALTH_CHECK_SKIP_BATS:-unset}" >> "$STUB_LOG"
+case "$1" in
+  --fast) exit "${STUB_FAST_RC:-0}" ;;
+  --slow) exit "${STUB_SLOW_RC:-0}" ;;
+esac
+exit 99
+STUB
+  chmod +x "$stub"
+  printf '%s' "$stub"
+}
+
+# Run check_bats with the stub; prints FAIL=<n> last. Gate-5 guard unset here.
+_run_check_bats() {
+  local stub
+  stub="$(_stub_runner)"
+  export STUB_LOG="$BATS_TEST_TMPDIR/stub.log"
+  : > "$STUB_LOG"
+  run env -u HEALTH_CHECK_SKIP_BATS HEALTH_CHECK_RUN_TESTS="$stub" \
+    bash -c 'source "$1"; check_bats; echo "FAIL=$FAIL"' _ "$SCRIPT"
+}
+
+@test "gate 5: runs fast then slow when both are green" {
+  STUB_FAST_RC=0 STUB_SLOW_RC=0 _run_check_bats
+  echo "$output"; cat "$STUB_LOG"
+  [ "$status" -eq 0 ]
+  [[ "$output" == *"FAIL=0"* ]]
+  [ "$(cat "$STUB_LOG")" = "$(printf -- '--fast skip=1\n--slow skip=1')" ]
+}
+
+@test "gate 5: red fast blocks slow and fails the gate" {
+  STUB_FAST_RC=1 STUB_SLOW_RC=0 _run_check_bats
+  echo "$output"; cat "$STUB_LOG"
+  [[ "$output" == *"FAIL=1"* ]]
+  [[ "$output" == *"slow suites not run"* ]]
+  [ "$(cat "$STUB_LOG")" = "--fast skip=1" ]
+}
+
+@test "gate 5: red slow after green fast fails the gate" {
+  STUB_FAST_RC=0 STUB_SLOW_RC=1 _run_check_bats
+  echo "$output"; cat "$STUB_LOG"
+  [[ "$output" == *"FAIL=1"* ]]
+  [[ "$output" == *"Slow BATS suites failed"* ]]
+  [ "$(wc -l < "$STUB_LOG")" -eq 2 ]
+}
+
+@test "gate 5: HEALTH_CHECK_SKIP_BATS=1 skips the runner with a warning, not a pass" {
+  local stub
+  stub="$(_stub_runner)"
+  export STUB_LOG="$BATS_TEST_TMPDIR/stub.log"
+  : > "$STUB_LOG"
+  run env HEALTH_CHECK_SKIP_BATS=1 HEALTH_CHECK_RUN_TESTS="$stub" \
+    bash -c 'source "$1"; check_bats; echo "FAIL=$FAIL"' _ "$SCRIPT"
+  echo "$output"
+  [[ "$output" == *"FAIL=0"* ]]
+  [[ "$output" == *"BATS gate skipped"* ]]
+  [[ "$output" != *"passed"* ]]
+  [ ! -s "$STUB_LOG" ]
 }
