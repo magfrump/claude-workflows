@@ -1,286 +1,138 @@
-# Code Fact-Check Report
+Commit: 654c0ed
 
-**Commit:** 435f46a
-**Repository:** /workspace
-**Scope:** Submitted-claims verification pass (Stage 2.5) over the diff `3a94fdc~1..HEAD` — four endorsement claims routed by `security-reviewer` (SC1, SC2) and `api-consistency-reviewer` (SC3, SC4). No harvested claims in this report; see `docs/reviews/code-fact-check-report.md` for those.
-**Checked:** 2026-09-12
-**Total claims checked:** 6 (four submitted claims; SC1 and SC3 each split into two sub-claims on verdict divergence)
-**Summary:** 4 verified, 1 mostly accurate, 0 stale, 1 incorrect, 0 unverifiable
+# Code Fact-Check Report — Submitted Claims
 
-Hallucination-pattern log consulted before checking (`docs/reviews/hallucination-patterns.md`, four entries, all of the "specific measured value quoted from an artifact set that does not contain it" or "file-to-symbol association asserted without grepping the file" class). SC2 is the nearest relative — a universally quantified file-to-symbol claim submitted on read-static evidence from two call sites — so it was checked by full enumeration rather than by re-reading the cited lines. It did not recur as a fabrication.
+**Repository:** /workspace (claude-workflows)
+**Scope:** `git -C /workspace diff e8d5fa1..answers-2026-09-20` at HEAD 654c0ed. Only the submitted claims were verdicted; Stage 1 did the harvesting.
+**Checked:** 2026-09-21
+**Total claims checked:** 3 (numbered 25–27)
+**Summary:** 1 verified, 2 mostly accurate, 0 stale, 0 incorrect, 0 unverifiable
+
+Probe scripts and outputs are in `/tmp/claude-1000/-workspace/104b63ce-e414-465c-a24f-dda1e4116218/scratchpad/sub/`. They were not added to the repo. Every probe used a throwaway HOME, taint dir and project dir under that scratchpad. No real dotfiles were read for writing or touched.
 
 ---
 
 ## Submitted Claims
 
-## Claim 1a: "The `install.sh` bless prompt fails closed on every stdin shape except a literal `y`/`yes`"
+## Claim 25: "SI_RUN_ID is validated with the same regex both where it is written (scripts/self-improvement.sh) and where archive-working-docs.sh reads it back, and neither accepts `/`, so archive names cannot escape `archive/`."
 
 **Submitted by:** security-reviewer
-**Location:** `devcontainer-config/install.sh:101-111`
-**Type:** Behavioral / Error-handling
+**Location:** `scripts/self-improvement.sh:458-463`, `scripts/archive-working-docs.sh:43-49,58`; related reader `scripts/lib/si-morning-summary.sh:1017,1159-1190,1330-1346`
+**Type:** Behavioral / security
 **Verdict:** Mostly accurate
 **Confidence:** High
 **Verification mode:** executed
-**Scope:** Covers the five stdin shapes the critic enumerated, executed against the real `devcontainer-config/install.sh` (not a replica); does not establish behavior on the `--yes` path at `:101` (never exercised — `ASSUME_YES` skips the whole block), behavior on an interactive tty, or behavior of the `cc-isolated.sh --bless` step at `:130` beyond its exit status in this fixture.
+**Scope:** Covers the regex at both sites, the `dest=` construction in archive-working-docs.sh, and the Run-cell read paths in si-morning-summary.sh. It does not cover the explicit CLI `PREFIX` argument of archive-working-docs.sh. That argument is unvalidated and was just as unvalidated at e8d5fa1 (`*) PREFIX="$arg"`), so it is outside this claim.
+**Legibility-target:** the security-reviewer's "What Looks Good" endorsement of SI_RUN_ID sanitization
 
-Re-run against the **real** script through the `fake_install_repo` fixture pattern from `test/cc-isolated-functions.bats:435-448` (extended so the seven `PAYLOAD` items at `devcontainer-config/install.sh:25` exist and the blessed path can complete). All five shapes reproduced the critic's replica results exactly (`docs/reviews/execution-logs/sc1-install-real-stdin-shapes.txt`):
+**The part about the write path is correct.** Both sites use the identical literal `^[A-Za-z0-9._-]+$` (self-improvement.sh:459, archive-working-docs.sh:45). The writer exits 1 on a mismatch before `printf '%s\n' "$SI_RUN_ID" > .../si-run-id.txt` (:463). The reader falls back to the date when the id doesn't match, and then builds `dest="$ARCHIVE_DIR/${PREFIX}-${name}"` (:58).
 
-```
---- shape: printf 'y' (no newline)   exit: 1   aborted_line_count: 1
---- shape: printf 'y\n'              exit: 0   past_prompt_linked_count: 1
---- shape: printf ' y\n'             exit: 0   past_prompt_linked_count: 1
---- shape: printf 'yes please\n'     exit: 1   aborted_line_count: 1
---- shape: </dev/null                exit: 1   aborted_line_count: 1
-```
+Executed: `bash sub/runid-regex-probe.txt` (cwd scratchpad, bash from the container, locale C/C.UTF-8; en_US.UTF-8 is not installed and falls back to C). Output is in `runid-regex-probe.out.txt`:
+- Rejected: `../x`, `a/b`, `a\nb`, `a\r`, `é`, fullwidth `ａ`, `~`, empty, `a b`.
+- Accepted: `..`, `.`, `-rf`, `2026-09-21`.
 
-The imprecision is in "a literal `y`/`yes`". The accepting arm is a case-insensitive glob pair, not a literal, and `read` strips the leading blank before the `case` sees it — `devcontainer-config/install.sh:106-110`:
+`..` is accepted, but it can't traverse, because the name always gets `-${name}` appended.
 
-```sh
-  read -r reply || reply=""
-  case "$reply" in
-    [yY]|[yY][eE][sS]) ;;
-    *) echo "Aborted. Nothing was changed."; exit 1 ;;
-  esac
-```
+Executed: `bash sub/archive-runid-probe.txt`, which runs the real `scripts/archive-working-docs.sh` in throwaway dirs with a planted `si-run-id.txt`. Output is in `archive-runid-probe.out.txt`:
+- id `..` → `docs/working/archive/..-plan-foo.md`. The file stays inside `archive/`.
+- id `../../evil` → rejected. The script fell back to the date prefix (`2026-09-22-…` under TZ=UTC).
+- id `ok-run` → `archive/ok-run-plan-foo.md`.
 
-The precise version: *the prompt fails closed on every stdin shape whose first line does not word-split to `y` or `yes` case-insensitively* — which admits `Y`, `YES`, `yEs`, and any of those with surrounding whitespace (the executed ` y\n` shape blesses, as the critic's own evidence recorded). The fail-closed conclusion and the mechanism are both right; only the acceptance set is stated more narrowly than the code implements, which understates rather than overstates the guard.
+All three exited 0.
 
-**Evidence:** `devcontainer-config/install.sh:101-111`, `test/cc-isolated-functions.bats:435-448`, `docs/reviews/execution-logs/sc1-install-real-stdin-shapes.txt`
-**Provenance:** `bash /tmp/claude-1000/-workspace/069518a5-919f-46b0-ba81-1e00bce5effa/scratchpad/sc1/run.sh .../install-real.sh` (a copy of the tracked `devcontainer-config/install.sh`, byte-identical), cwd `/workspace`, driver exit 0, per-shape exit codes as quoted, 2026-09-12T19:38:40Z.
+**Why the verdict is only "mostly accurate".** The other reader builds paths from the hypothesis-log **Run cell** without any validation. `row_run=$(_pick_col fields "$run_col")` (si-morning-summary.sh:1017) goes unchanged into:
+- `_find_tasks_file` → `"$working_dir/archive/${run}-tasks-round-$round.json"` (:1181)
+- `_days_since_round` → `"$working_dir/archive/${run}-round-$round-report.json"` (:1337)
+
+Read `_find_tasks_file` whole (:1170-1190) and `_days_since_round` (:1329-1370). Both use the path only for `[ -f ]` and `jq` reads. Nothing writes to it.
+
+Executed: `bash sub/morning-run-cell-probe.txt`, which sources the real lib and plants `outside/x-tasks-round-3.json` outside `archive/`. Output is in `morning-run-cell-probe.out.txt`. With a Run cell of `../../outside/x`, `_find_tasks_file` returned `.../w/archive/../../outside/x-tasks-round-3.json`, and `_resolve_hypothesis_target` then reported `skill:foo` from that out-of-tree file.
+
+So archive **names** can't escape `archive/`, as the claim says. The morning summary, though, can be pointed at files outside `archive/` for **reading** by editing the Run cell in `hypothesis-log.md`. The loop itself fills that cell from the validated `$SI_RUN_ID` (self-improvement.sh:1874). The exposure is read-only and needs the repo-tracked log to be edited. That is low severity. The simple fix is to apply the same regex to `row_run`, or drop it when it doesn't match.
+
+Side note: `si-run-id.txt` is not in archive-working-docs.sh's `PERMANENT` list, so an archive run moves it too (`archive/<id>-si-run-id.txt` in both probe outputs). `_live_run_matches` then treats a missing file as "matches" (:1152). That looks intended, but it isn't written down.
+
+**Evidence:** `scripts/self-improvement.sh:458-463`, `scripts/archive-working-docs.sh:43-49,58`, `scripts/lib/si-morning-summary.sh:1017,1150-1190,1329-1346`, probe outputs `runid-regex-probe.out.txt`, `archive-runid-probe.out.txt`, `morning-run-cell-probe.out.txt`
 
 ---
 
-## Claim 1b: "The assignment in `read -r reply || reply=\"\"` is load-bearing rather than cosmetic — the counterfactual `read -r reply || true` blesses on `printf 'y'`, whereas `|| reply=\"\"` discards it and aborts"
+## Claim 26: "Project `.claude/` paths (settings*.json, hooks/**) now get an 'ask' through the file tools in tainted sessions, where before they got no gate."
 
 **Submitted by:** security-reviewer
-**Location:** `devcontainer-config/install.sh:103-106`
-**Type:** Behavioral / Error-handling
+**Location:** `hooks/guard-trusted-writes.py:80-109` (classify_path), `:172-184` (main file-tool branch); baseline `git show e8d5fa1:hooks/guard-trusted-writes.py:41-68,124-136`
+**Type:** Behavioral / security
 **Verdict:** Verified
 **Confidence:** High
 **Verification mode:** executed
-**Scope:** Covers the `printf 'y'` (partial read at EOF) discrimination between `|| reply=""` and `|| true`, executed on the real script; does not establish that `|| true` diverges on any other shape (it does not — see below), nor that no third spelling (e.g. `read -r reply || :`) would behave differently, nor anything about the `--yes` path.
+**Scope:** Covers the Write tool on project and global `.claude/{settings.json, settings.local.json, hooks/x.sh, CLAUDE.md, notes.md}`, in tainted and clean sessions, for both hook versions, with `CLAUDE_CONFIG_DIR` unset. Edit and MultiEdit take the same branch (:172) and were read, not run. "No gate" here means that neither the hook nor the `hooks/wiring.json` deny rules gated these paths. Claude Code's own built-in permission prompts and any user allow rules are outside this claim and were not assessed.
+**Legibility-target:** the security-reviewer's endorsement of the Q-026 tier change
 
-Confirmed. The counterfactual copy (identical to HEAD except `read -r reply || true` at `:106`) blesses on the newline-less `y` where the real script aborts (`docs/reviews/execution-logs/sc1-install-counterfactual-stdin-shapes.txt`):
+**Before (e8d5fa1).** classify_path matched any `.claude` segment followed by `hooks`, any `settings*.json` under a `.claude` segment, and any `claude.md` under `.claude` as **hard**, whether global or project (old :49-56). main then `defer()`ed on hard (old :129-132). That left the path to the deny rules. But `hooks/wiring.json:120-127` names only `{{CLAUDE_DIR}}/…` and `~/CLAUDE.md`, so a project `.claude/settings.json` fell through both the hook and the deny list.
 
-```
---- shape: printf 'y' (no newline)   exit: 0   aborted_line_count: 0   past_prompt_linked_count: 1
-```
+**After.** Hard now applies only to paths relative to `GLOBAL_DIRS` (:56-78, :88-95). A project `.claude/` path falls through to `if ".claude" in low: return "soft"` (:107-108). That returns `ask` when the session is tainted (:181-183).
 
-against the real script's `exit: 1 / aborted_line_count: 1` for the same shape, quoted in Claim 1a. That is the only shape on which the two variants diverge: `y\n`, ` y\n`, `yes please\n` and `</dev/null` produce identical exit codes and identical `Aborted`/`Linked` markers under both spellings (`docs/reviews/execution-logs/sc1-install-counterfactual-stdin-shapes.txt`, all five shape blocks). Notably `</dev/null` aborts under `|| true` as well, because `read` assigns the empty remainder before returning non-zero — so the property the assignment actually buys is *discarding a partial read*, not *defining the variable*.
+Executed: `bash sub/guard-project-claude-probe.txt` (fake HOME, `CC_WEB_TAINT_DIR` with session `sess1` marked tainted, `CLAUDE_CONFIG_DIR` unset). Output is in `guard-project-claude-probe.out.txt`:
 
-This is a substantive property of the chosen fix that is recorded nowhere else: the commit message for 8980861 and the comment at `devcontainer-config/install.sh:103-105` both motivate the change by errexit ("dying on `read`'s non-zero exit under `set -e`"), and the test at `test/cc-isolated-functions.bats:474-489` closes stdin with `</dev/null`, which — as measured above — is exactly the shape on which the two spellings do **not** differ. The bless-on-partial-read discrimination is untested.
+| path | old tainted | new tainted | new clean |
+|---|---|---|---|
+| project `.claude/settings.json` | defer (no output) | **ask** | defer |
+| project `.claude/settings.local.json` | defer | **ask** | defer |
+| project `.claude/hooks/x.sh` | defer | **ask** | defer |
+| project `.claude/CLAUDE.md` | defer | **ask** | defer |
+| project `.claude/notes.md` | ask | ask | defer |
+| global `.claude/settings.json`, `hooks/x.sh`, `CLAUDE.md` | defer | defer | defer |
 
-**Evidence:** `devcontainer-config/install.sh:103-106`, `test/cc-isolated-functions.bats:474-489`, `docs/reviews/execution-logs/sc1-install-counterfactual-stdin-shapes.txt`, `docs/reviews/execution-logs/sc1-install-real-stdin-shapes.txt`
-**Provenance:** same driver as Claim 1a with the mutated copy `.../scratchpad/sc1/install-counterfactual.sh`, cwd `/workspace`, driver exit 0, 2026-09-12T19:38:48Z.
+The claim is accurate, including the qualifier "in tainted sessions". Clean sessions still defer, and global HARD paths still defer to the deny rules and never ask. The old behaviour was therefore "hook defers, and no deny rule matches". It was not an ask or a deny.
 
----
-
-## Claim 2: "No call site in the diff scope constructs a shell string; every external process is launched argv-form (no `shell=True`, list literals only)"
-
-**Submitted by:** security-reviewer
-**Location:** `scripts/lite-review.py:83,114-126`
-**Type:** Invariant / Architectural
-**Verdict:** Verified
-**Confidence:** High
-**Verification mode:** static
-**Scope:** Covers every process-launch site in the seven files of `3a94fdc~1..HEAD`, established by enumeration of `subprocess.*`, `os.system`, `os.popen`, `Popen`, `shlex` and `eval` across those files — not by re-reading the two cited lines; does not establish that the *arguments* passed are validated or trusted (`args.rev_range` and `args.repo` reach `git` unvalidated, which argv-form makes non-injectable but not semantically safe), and does not cover `devcontainer-config/install.sh`, which is a shell script whose every line is a shell command by construction and to which the argv/shell-string distinction does not apply.
-
-Enumeration over `scripts/lite-review.py` (grep for `subprocess.|os.system|os.popen|os.exec|shell=|popen|Popen|shlex|eval(|check_output|check_call`) returns exactly two hits, both `subprocess.run`, both list-form, neither carrying `shell=`:
-
-```python
-# scripts/lite-review.py:81-83
-def sh(args, cwd=None):
-    # argv-exec, never shell strings (decision 018)
-    return subprocess.run(args, cwd=cwd, capture_output=True, text=True, check=True).stdout
-```
-
-```python
-# scripts/lite-review.py:114-126
-        proc = subprocess.run(
-            [
-                "claude", "-p",
-                "--model", model,
-                "--output-format", "json",
-                "--system-prompt", SYSTEM_PROMPT,
-                "--tools", "",
-                "--no-session-persistence",
-            ],
-            input=prompt,
-            cwd=empty_cwd,  # empty non-repo dir: no CLAUDE.md auto-discovery
-            capture_output=True, text=True, timeout=timeout_s,
-        )
-```
-
-Both have exactly one caller each, and both callers pass list literals — `diff = sh(["git", "diff", args.rev_range], cwd=args.repo)` (`scripts/lite-review.py:149`) and `env = run_claude(prompt, args.model, args.timeout)` (`scripts/lite-review.py:160`). The only other `os.` uses in the file are `os.makedirs`/`os.path.join` at `scripts/lite-review.py:187-190`, which launch nothing.
-
-The second Python file in the diff scope, `scripts/cross-model-review.py`, has one launch site with the same shape and three call sites that all build argv lists by concatenation onto a list literal:
-
-```python
-# scripts/cross-model-review.py:147-149
-def sh(args, cwd=None):
-    # argv-exec, never shell strings (decision 018)
-    return subprocess.run(args, cwd=cwd, capture_output=True, text=True, check=True).stdout
-```
-
-```python
-# scripts/cross-model-review.py:204
-    gitq = ["git", "-C", repo, "-c", "core.quotepath=off"]
-```
-
-with `sh(gitq + ["diff", ...])`, `sh(gitq + ["show", f"{right}:{path}"])`, `sh(gitq + ["cat-file", "-s", f"{right}:{path}"])` at `scripts/cross-model-review.py:206,217,221,231`; the remaining `subprocess.` hits at `:222,232` are `except subprocess.CalledProcessError` handlers, not launches. The two `.bats` files in the diff scope launch `python3` and `bash` only through bats' own `run`/direct-invocation forms with separate arguments (paraphrased — no quote available because the assertion is about the absence of shell-string construction across `test/lite-review-grammar.bats:21-31` and `test/cc-isolated-functions.bats:435-489`, i.e. a negative grep result rather than a snippet). The remaining three diff-scope files are Markdown.
-
-**Evidence:** `scripts/lite-review.py:81-83,114-126,149,160,187-190`, `scripts/cross-model-review.py:147-149,204-231`, `test/lite-review-grammar.bats:21-31`, `test/cc-isolated-functions.bats:435-489`
+**Evidence:** `hooks/guard-trusted-writes.py:56-109,172-184`, `git show e8d5fa1:hooks/guard-trusted-writes.py` lines 41-68 and 124-136, `hooks/wiring.json:120-127`, `guard-project-claude-probe.out.txt`
 
 ---
 
-## Claim 3a: "The three negative tests recommended in Finding 4 fail against the current `FINDING_RE`"
+## Claim 27: "The new hook adds only ~1–2 ms per call over the pre-diff hook on ~20 ms python startup."
 
-**Submitted by:** api-consistency-reviewer
-**Location:** `docs/reviews/api-consistency-review-2026-09-12-questions-closeout.md` Finding 4 recommendation; `scripts/lite-review.py:73-78`
-**Type:** Behavioral
-**Verdict:** Incorrect
-**Confidence:** High
+**Submitted by:** performance-reviewer
+**Location:** `hooks/guard-trusted-writes.py:56-69` (`_global_dirs()` evaluated at import as `GLOBAL_DIRS`)
+**Type:** Performance
+**Verdict:** Mostly accurate
+**Confidence:** Medium
 **Verification mode:** executed
-**Scope:** Covers the outcome of the three recommended assertions (each "asserting **zero rows**") when run against `FINDING_RE` as it stands at 435f46a; does not establish anything about the *value* of those tests — that half of the claim is Claim 3b, which is Verified.
+**Scope:** Per-invocation wall time of the whole hook subprocess. Two payloads: a Write to a project `.claude/settings.json` in a tainted session, and a Bash `echo hi > out.txt`. Tested with `CLAUDE_CONFIG_DIR` unset and set. This is one 16-core WSL2 host with load around 2–3, Python 3.11.2. The fake HOME is shallow, so `resolve()` had no symlinks to follow. Deep or network-mounted HOME paths were not tested.
+**Legibility-target:** the performance-reviewer's "What Looks Good" endorsement of hook overhead
 
-Under the natural reading in a testing context — the test fails, i.e. goes red — this is refuted. All three recommended inputs yield **zero rows** against the current regex, which is exactly what the recommended assertions require, so all three would pass green the moment they were added (`docs/reviews/execution-logs/sc3-finding4-negative-tests.txt`):
+Executed: `python3 sub/guard-bench.py.txt 150` (cwd scratchpad). It runs old and new interleaved, N=150 each, with a hermetic HOME and taint dir. Output is in `guard-bench.out.txt`:
 
-```
---- N1 unknown severity (Blocker)
-    current regex   -> rows=0 parse_ok=True  (recommended test asserts 0 rows -> PASSES)
---- N2 empty description
-    current regex   -> rows=0 parse_ok=True  (recommended test asserts 0 rows -> PASSES)
---- N3 '- ' bullet row
-    current regex   -> rows=0 parse_ok=True  (recommended test asserts 0 rows -> PASSES)
-```
+| case | old median | new median | delta |
+|---|---|---|---|
+| no CLAUDE_CONFIG_DIR, Write project settings | 17.62 ms | 17.98 ms | +0.36 ms |
+| no CLAUDE_CONFIG_DIR, Bash echo | 17.09 ms | 16.92 ms | −0.17 ms |
+| CLAUDE_CONFIG_DIR set, Write project settings | 17.92 ms | 18.16 ms | +0.24 ms |
+| CLAUDE_CONFIG_DIR set, Bash echo | 18.64 ms | 18.44 ms | −0.19 ms |
 
-That is the correct and intended state for a regression pin: a negative test that went red against unmutated code would be reporting a live defect, not pinning a contract. The recommendation itself is consistent with this — it asks for tests "each asserting **zero rows**", and Finding 4's own argument is that the suite currently lacks rejection assertions, not that the regex currently accepts these rows.
+- The `_global_dirs()` body costs about 34 µs per call in-process.
+- Bare `python3 -c pass` takes a median of 6.41 ms.
+- The p10–p90 spread (about 15–25 ms) is far wider than any delta.
 
-The precise version of the submitted sentence is *the three recommended inputs fail to match the current `FINDING_RE`* (they are rejected), which is what Claim 3b verdicts. As submitted, the sentence asserts a red test suite at HEAD; a reader acting on it — adding the three tests and expecting to see them fail before fixing something — would be misled about the state of the code.
+The claim's direction holds: the overhead is negligible. It overstates the size, though. The measured delta is ≤0.4 ms and inside the noise, not about 1–2 ms. A whole hook call is about 17–18 ms, and bare interpreter startup is about 6 ms, not about 20 ms. As an upper bound the claim is safe. The two figures should be corrected to "<0.5 ms, noise-level, on ~17 ms per call".
 
-**Evidence:** `scripts/lite-review.py:73-78`, `docs/reviews/api-consistency-review-2026-09-12-questions-closeout.md:288-292` (the recommendation text), `docs/reviews/execution-logs/sc3-finding4-negative-tests.txt`
-**Provenance:** `python3 /tmp/claude-1000/-workspace/069518a5-919f-46b0-ba81-1e00bce5effa/scratchpad/sc3_probe.py`, cwd `/workspace`, exit 0, 2026-09-12T19:39Z. The probe loads the tracked `scripts/lite-review.py` unmodified and swaps `FINDING_RE` in-memory for the mutant arms.
-
----
-
-## Claim 3b: "...i.e. they would actually catch the widening mutations they are meant to catch"
-
-**Submitted by:** api-consistency-reviewer
-**Location:** `test/lite-review-grammar.bats`; `scripts/lite-review.py:73-78`
-**Type:** Behavioral
-**Verdict:** Verified
-**Confidence:** High
-**Verification mode:** executed
-**Scope:** Covers the three recommended negative tests against the one widening mutation each names (`Blocker` added to the severity alternation; `(?P<desc>.+)` widened to `.*`; the row prefix widened to accept `- `), plus the recommended positive comma-range test against the `[\d\-, ]+` narrowing; does not establish that these four tests catch the other two of the five widenings Fact-check Claim 7 found surviving the existing suite (the path group swallowing `:` is untested here), nor that the tests as literally spelled in Finding 4 are syntactically well-formed bats.
-
-Each recommended input flips from 0 rows to 1 row under its targeted mutation, so each assertion goes red exactly when the contract is widened (`docs/reviews/execution-logs/sc3-finding4-negative-tests.txt`):
-
-```
---- N1 unknown severity (Blocker)
-    mutation (severity alternation widened with Blocker) -> rows=1  (recommended test -> FAILS (mutation caught))
---- N2 empty description
-    mutation (desc group widened from .+ to .*) -> rows=1  (recommended test -> FAILS (mutation caught))
---- N3 '- ' bullet row
-    mutation (row prefix widened to accept '- ') -> rows=1  (recommended test -> FAILS (mutation caught))
-```
-
-The fourth recommended test (positive, comma-separated range) also discriminates:
-
-```
---- P1 comma-separated range (recommended positive test)
-    current regex -> rows=1 lines=10,14-16 path=a.py
-    narrowing mutation ([\d\-, ]+ -> [\d\-]+) -> rows=0 (caught)
-```
-
-so `a.py:10,14-16` both survives the current grammar with its range intact and disappears under the narrowing Finding 4 names. The mutation arms operate on the live pattern string from `scripts/lite-review.py:73-78`:
-
-```python
-FINDING_RE = re.compile(
-    r"^\s*\d+\.\s*(?P<path>[^|:]+?)(?::(?P<lines>[\d\-, ]+))?\s*\|"
-    r"\s*(?P<sev>Critical|High|Medium|Low|Informational)\s*\|"
-    r"\s*(?P<domain>[^|]+)\|\s*(?P<title>[^|]+)\|\s*(?P<desc>.+)$",
-    re.IGNORECASE,
-)
-```
-
-**Evidence:** `scripts/lite-review.py:73-78`, `test/lite-review-grammar.bats:33-97`, `docs/reviews/execution-logs/sc3-finding4-negative-tests.txt`
-**Provenance:** same command, cwd and timestamp as Claim 3a.
-
----
-
-## Claim 4: "Changing `scripts/lite-review.py:103` (the `parse_ok` derivation, currently `return rows, bool(rows) or \"FINDINGS\" in text`) to `in_block or bool(rows)` leaves all seven existing tests in `test/lite-review-grammar.bats` green"
-
-**Submitted by:** api-consistency-reviewer
-**Location:** `scripts/lite-review.py:108` (the submitted `:103` is off by five; the `return` is at `:108`)
-**Type:** Behavioral
-**Verdict:** Verified
-**Confidence:** High
-**Verification mode:** executed
-**Scope:** Covers the seven tests in `test/lite-review-grammar.bats` under the one-line substitution, executed on a scratch copy, plus the end-to-end refusal question for the single input the orchestrator named; does not establish that the change is safe for the wired callers' other inputs, and specifically does **not** establish that it fixes the refusal-reads-as-clean class in general — see the second refusal probed below, which still reads clean.
-
-All seven pass under the mutation, identically to HEAD (`docs/reviews/execution-logs/sc4-parse-ok-mutation-suite.txt`): `1..7` with `ok 1` through `ok 7` and exit 0 for the baseline run of `test/lite-review-grammar.bats` at HEAD, and `1..7` with `ok 1` through `ok 7` and exit 0 for the scratch copy whose parser line reads `    return rows, in_block or bool(rows)`. The submitted location is one line-number slip: `scripts/lite-review.py:103` is a dict field inside the row append; the derivation is at `:108`:
-
-```python
-# scripts/lite-review.py:108
-    return rows, bool(rows) or "FINDINGS" in text
-```
-
-**Second-order (end-to-end) result, as asked.** With `run_claude` stubbed to return a success envelope whose `result` is the refusal the security critic named, `main()` at HEAD prints `FINDINGS: NONE` and returns 0; under `in_block or bool(rows)` it returns 2 (`docs/reviews/execution-logs/sc4-refusal-end-to-end.txt`):
-
-```
-=== HEAD  (bool(rows) or "FINDINGS" in text)
-  input : 'I cannot emit FINDINGS for this diff.'
-  rc    : 0
-  stdout: 'lite-review [fix-drift]: FINDINGS: NONE (12 out-tokens)'
-=== COPY  (in_block or bool(rows))
-  input : 'I cannot emit FINDINGS for this diff.'
-  rc    : 2
-  stdout: 'lite-review: PARSE FAILURE - raw output:\nI cannot emit FINDINGS for this diff.'
-```
-
-So for that input the fix does work end to end, exit code included — the wired callers at `workflows/pr-prep.md:218` and `workflows/review-fix-loop.md:69` would see a non-zero exit instead of a green fix-drift pass.
-
-It does not close the class. A refusal whose first line *starts* the block sets `in_block = True` at `scripts/lite-review.py:93-94`, and both variants then report clean:
-
-```
-=== COPY  (in_block or bool(rows))
-  input : 'FINDINGS: I cannot review this diff.'
-  rc    : 0
-  stdout: 'lite-review [fix-drift]: FINDINGS: NONE (12 out-tokens)'
-```
-
-The residual gap is that `parse_ok` remains a block-presence signal, while `main()`'s `if not findings:` arm at `scripts/lite-review.py:196-199` treats block-present-and-empty as `FINDINGS: NONE` without requiring the `NONE` sentinel that `parse_findings` already recognizes at `scripts/lite-review.py:88`. Closing the class end to end needs the empty-block arm to distinguish "sentinel seen" from "block seen, nothing parsed" — a second change, not this one.
-
-**Evidence:** `scripts/lite-review.py:88,93-94,108,193-199`, `test/lite-review-grammar.bats:33-97`, `docs/reviews/execution-logs/sc4-parse-ok-mutation-suite.txt`, `docs/reviews/execution-logs/sc4-refusal-end-to-end.txt`
-**Provenance:** (1) `bats test/lite-review-grammar.bats` and `bats /tmp/claude-1000/-workspace/069518a5-919f-46b0-ba81-1e00bce5effa/scratchpad/sc4/repo/test/lite-review-grammar.bats`, cwd `/workspace`, both exit 0, 2026-09-12T19:40:10Z. (2) `python3 /tmp/claude-1000/-workspace/069518a5-919f-46b0-ba81-1e00bce5effa/scratchpad/sc4_e2e.py`, cwd `/workspace`, exit 0, 2026-09-12T19:40:28Z. The mutation lives only in the scratch copy; `/workspace/scripts/lite-review.py` was never modified.
+**Evidence:** `hooks/guard-trusted-writes.py:56-78`, `guard-bench.py.txt`, `guard-bench.out.txt`
 
 ---
 
 ## Claims Requiring Attention
 
-### Incorrect
-- **Claim 3a** (`scripts/lite-review.py:73-78`): the three negative tests recommended in Finding 4 **pass** (0 rows) against the current `FINDING_RE`, not fail. The intended and true statement is that the three *inputs* fail to match; the tests go red only under the widening mutations (Claim 3b).
-
 ### Mostly Accurate
-- **Claim 1a** (`devcontainer-config/install.sh:101-111`): "a literal `y`/`yes`" understates the accepting arm — `[yY]|[yY][eE][sS]` accepts `Y`/`YES`/`yEs`, and `read` strips surrounding whitespace, so ` y\n` blesses. Tighten to "any reply that word-splits to `y` or `yes`, case-insensitively".
-
-### Unverifiable
-- None. Every executable guarantee in the submitted set was run.
-
-### Unrecorded substantive properties surfaced while verifying
-- **Claim 1b**: the partial-read discrimination (`printf 'y'` with no newline: `|| true` blesses, `|| reply=""` aborts) is the only shape on which the two spellings differ, and `</dev/null` — the shape the test at `test/cc-isolated-functions.bats:474-489` uses — is not one of them. Neither commit 8980861's message nor the comment at `devcontainer-config/install.sh:103-105` records it; no test covers it.
-- **Claim 4**: `in_block or bool(rows)` fixes the named refusal end to end but not the class — a refusal beginning `FINDINGS:` still exits 0 as a clean fix-drift pass.
-
-No entries were appended to `docs/reviews/hallucination-patterns.md`: the single Incorrect verdict (Claim 3a) is a directional misstatement about a test outcome, not a fabricated symbol, API, or behavior.
+- **Claim 25** (`scripts/lib/si-morning-summary.sh:1017,1181,1337`): the writer and the archive reader are both correct, but the morning summary builds read paths from the unvalidated hypothesis-log Run cell. A cell like `../../x` makes it read files outside `archive/`. Apply the same `^[A-Za-z0-9._-]+$` check to `row_run`.
+- **Claim 27** (`hooks/guard-trusted-writes.py:56-69`): the overhead is overstated. It measures ≤0.4 ms (noise), and a hook call is about 17 ms, not about 20 ms.
 
 ---
 
 ## Goal-Alignment Note
 
-**Answered.** The user's goal was a review of the last three commits on main before the work is considered settled; this pass verdicts the four endorsement claims the critics routed rather than self-certifying, so the orchestrator's rubric carries no self-certified positives for `3a94fdc~1..HEAD`. Five of the six entries rest on execution rather than reading, per the mandatory-execution rule: SC1 was re-run against the **real** `devcontainer-config/install.sh` through the `fake_install_repo` fixture pattern (the critic's stated Not-verified on the replica is now closed), SC3 and SC4 were run as mutation probes and a full suite run.
-
-**Out of scope for this pass.** Whether Finding 4's tests should be added, whether Finding 5's one-line change should ship, and the blocking severity of the refusal-reads-as-clean behavior — those are the critics' and the orchestrator's calls. I report only that the recommended tests do discriminate (3b), that the proposed fix keeps the suite green and repairs the named input but not the class (4), and that one submitted sentence is wrong as written (3a).
-
-**Escalate.** Two items for the orchestrator's rubric. (1) Claim 1b's partial-read property is load-bearing, real, and recorded nowhere — the commit message, the code comment, and the one test that covers this fix all rest on the EOF shape, on which the buggy and fixed spellings behave identically. If the working-tree fix is meant to be durable, this wants either a comment line or a second test case (`printf 'y'`, no newline) that fails against `|| true`. (2) Claim 4's end-to-end residue: adopting `in_block or bool(rows)` closes the `"I cannot emit FINDINGS…"` input but leaves `"FINDINGS: I cannot review this diff."` exiting 0 as a clean pass, so "E1 is closed" would overstate what the one-liner buys.
-
-**Questions I would have asked.** Was the `--yes` path at `devcontainer-config/install.sh:101` intended to be covered by SC1's fail-closed endorsement? It was excluded here (the block is skipped wholesale when `ASSUME_YES = --yes`), and it is the one prompt-adjacent path with no test at all.
+- **Answered:** all three submitted claims, verdicted with executed hermetic probes (numbered 25–27, one `## Submitted Claims` section, report saved at the requested path, first line `Commit: 654c0ed`). No other repo file was modified. Probe scripts use `.txt` names and live in the scratchpad.
+- **Out of scope:**
+  - The unvalidated CLI `PREFIX` argument of archive-working-docs.sh. It predates the diff.
+  - Claude Code's built-in permission prompts for project `.claude/` edits (Claim 26's "no gate" is judged at the hook and deny-rule layer only).
+  - Symlink and `..` variants of the HARD-path classification, which Stage-1 Claim 1 already covers.
+- **Escalate (orchestrator):**
+  - The **installed** hook `/home/node/.claude/hooks/guard-trusted-writes.py` is byte-identical to the e8d5fa1 (pre-diff) version (`diff -q` silent). This session's own probe command was denied by it: a heredoc that merely contained paths was classified HARD under the old bare-`CLAUDE.md`/`.claude/settings` Bash rules. So the Q-026/Q-035 behaviour verified here is not what is running live until the hook is redeployed. That is worth a line in the review so nobody assumes it already is.
+  - For the security-reviewer: the Run-cell read-path finding (Claim 25) is a new, low-severity amber candidate.

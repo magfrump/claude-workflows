@@ -1,0 +1,26 @@
+HOME=/home/node
+lrwxrwxrwx  1 node node     31 Sep 20 13:27 CLAUDE.md -> /opt/claude-workflows/CLAUDE.md
+lrwxrwxrwx  1 node node     27 Sep 20 13:27 hooks -> /opt/claude-workflows/hooks
+-rw-r--r--  1 node node   2790 Sep 20 13:27 settings.json
+/opt/claude-workflows/hooks
+Edit   /home/node/.claude/hooks/guard-trusted-writes.py                       NEW=defer OLD=defer
+Edit   /home/node/.claude/x/../hooks/guard-trusted-writes.py                  NEW="permissionDecision": "ask" OLD="permissionDecision": "ask"
+Edit   /home/node/.claude/./hooks/guard-trusted-writes.py                     NEW=defer OLD=defer
+Edit   /home/node/.claude//hooks/guard-trusted-writes.py                      NEW=defer OLD=defer
+Edit   /home/node/.claude/CLAUDE.md                                           NEW=defer OLD=defer
+Edit   /home/node/.claude/x/../CLAUDE.md                                      NEW="permissionDecision": "ask" OLD=defer
+Edit   /home/node/.claude/settings.json                                       NEW=defer OLD=defer
+Edit   /home/node/.claude/x/../settings.json                                  NEW=defer OLD=defer
+Edit   /opt/claude-workflows/hooks/guard-trusted-writes.py                    NEW=defer OLD=defer
+Edit   /tmp/claude-1000/-workspace/104b63ce-e414-465c-a24f-dda1e4116218/scratchpad/cfc_proj/.claude/hooks/guard-trusted-writes.py NEW="permissionDecision": "ask" OLD=defer
+Edit   /tmp/claude-1000/-workspace/104b63ce-e414-465c-a24f-dda1e4116218/scratchpad/cfc_proj/.claude/settings.json NEW=defer OLD=defer
+Edit   /tmp/claude-1000/-workspace/104b63ce-e414-465c-a24f-dda1e4116218/scratchpad/cfc_proj/.claude/CLAUDE.md NEW="permissionDecision": "ask" OLD=defer
+Edit   /workspace/.claude/settings.json                                       NEW="permissionDecision": "ask" OLD=defer
+Edit   /workspace/.claude/hooks/x.py                                          NEW="permissionDecision": "ask" OLD=defer
+Edit   /workspace/CLAUDE.md                                                   NEW="permissionDecision": "ask" OLD="permissionDecision": "ask"
+--- untainted
+untainted project settings -> defer
+--- relative CLAUDE_CONFIG_DIR
+cwd=scratch [PosixPath('/home/node/.claude'), PosixPath('/home/node/.claude'), PosixPath('cfc_cfg'), PosixPath('/tmp/claude-1000/-workspace/104b63ce-e414-465c-a24f-dda1e4116218/scratchpad/cfc_cfg')] hard
+cwd=/tmp [PosixPath('/home/node/.claude'), PosixPath('/home/node/.claude'), PosixPath('cfc_cfg'), PosixPath('/tmp/cfc_cfg')] none
+abs cfg: home settings hard cfg settings hard cfg hooks hard

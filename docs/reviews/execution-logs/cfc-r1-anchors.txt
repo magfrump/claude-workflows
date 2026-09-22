@@ -1,0 +1,3 @@
+MISSING ANCHOR workflows/pr-prep.md: (../skills/code-review/references/rubric.md#-must-address)
+MISSING ANCHOR workflows/review-fix-loop.md: (../skills/code-review/references/rubric.md#-must-address)
+broken=2

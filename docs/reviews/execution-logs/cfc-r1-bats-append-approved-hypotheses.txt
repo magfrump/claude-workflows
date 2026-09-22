@@ -1,0 +1,38 @@
+bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+1..15
+bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+ok 1 creates log with header when absent and appends row
+bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+ok 2 uses default window of 3 when value is non-numeric
+bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+ok 3 skips tasks without a hypothesis and warns
+bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+ok 4 only approved tasks are logged
+bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+ok 5 appends without glomming when existing log lacks trailing newline
+bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+ok 6 pipe characters in hypothesis text are escaped
+bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+ok 7 evaluator and requires columns are populated when task has them
+bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+ok 8 user-evaluator with no requires emits empty requires cell
+bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+ok 9 hypothesis_source column is populated when task carries it
+bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+ok 10 planner-source hypothesis is logged with planner in Source cell
+bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+ok 11 missing hypothesis_source leaves the cell empty (legacy task)
+bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+ok 12 new log header ends with a Run column and rows carry the run id
+bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+ok 13 omitted run id leaves the Run cell empty
+bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+ok 14 log with a pre-Run header is migrated in place, old rows untouched
+bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+ok 15 migration is idempotent: a second append does not add a second Run column

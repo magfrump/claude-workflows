@@ -1,0 +1,80 @@
+bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+1..36
+bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+ok 1 resolves skill from SKILL.md-dir layout
+bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+ok 2 resolves skill from flat skills/foo.md layout
+bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+ok 3 resolves workflow target
+bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+ok 4 resolves multiple targets and dedupes
+bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+ok 5 returns empty for tasks with no skill/workflow paths
+bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+ok 6 returns empty when tasks file is missing
+bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+ok 7 falls back to archive when current tasks file is absent
+bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+ok 8 archive fallback prefers the newest archived copy
+bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+ok 9 archive fallback skips a newer copy that lacks the task id
+bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+ok 10 counts skill invocations via skill_tool
+bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+ok 11 ignores file_read entries for skill targets
+bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+ok 12 workflow targets count file_read entries (fallback channel)
+bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+ok 13 sums across multiple targets
+bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+ok 14 returns 0 when log is missing
+bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+ok 15 returns 0 for empty target list
+bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+ok 16 metric_logged passes when field is present on a matching entry
+bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+ok 17 metric_logged fails when no matching entry has the field
+bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+ok 18 metric_logged scopes to the named target
+bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+ok 19 _days_since_round returns elapsed days from round timestamp
+bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+ok 20 _days_since_round echoes -1 when report missing
+bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+ok 21 _days_since_round uses NOW_EPOCH override for determinism
+bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+ok 22 _days_since_round prefers the newest archived report without a task id
+bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+ok 23 _days_since_round uses the report from the same archived run as the task
+bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+ok 24 preconditions met → ready-for-verdict recommendation
+bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+ok 25 preconditions unmet → INCONCLUSIVE recommendation
+bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+ok 26 no requires declared → ready-now recommendation
+bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+ok 27 unresolvable target → switch-evaluator recommendation
+bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+ok 28 unknown requires key is surfaced and forces INCONCLUSIVE
+bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+ok 29 all three precondition kinds can combine and all must pass
+bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+ok 30 combined preconditions report each check separately when one fails
+bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+ok 31 _find_tasks_file with a run id prefers that run's archive over a newer one
+bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+ok 32 _find_tasks_file with a run id uses the live file when the live run matches
+bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+ok 33 _find_tasks_file skips the live file of a different run when the row's run is archived
+bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+ok 34 _find_tasks_file falls back to newest-first when the row's run has no copy
+bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+ok 35 _days_since_round with a run id uses that run's archived report
+bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+ok 36 _days_since_round with a run id ignores a live report from a different run

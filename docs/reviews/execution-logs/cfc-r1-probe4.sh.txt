@@ -1,0 +1,41 @@
+#!/usr/bin/env bash
+# code-fact-check probe: hypothesis-log migration, questions.sh resolution, SI_RUN_ID regex
+set -u
+S=/tmp/claude-1000/-workspace/104b63ce-e414-465c-a24f-dda1e4116218/scratchpad/cfc4
+rm -rf "$S"; mkdir -p "$S"; cd "$S"
+source /workspace/scripts/lib/si-functions.sh >/dev/null 2>&1 || true
+echo "=== migration: old header"
+cat > old.md <<'EOF'
+# Hypothesis Log
+
+| Round | Task ID | Hypothesis | Source | Window | Evaluator | Requires | Checked at Round | Outcome | Status Date | Evidence |
+|-------|---------|------------|--------|--------|-----------|----------|------------------|---------|-------------|----------|
+| 1 | t1 | h one | planner | 2 | script | | 3 | | | |
+| 2 | t2 | h two | user | 1 | user | | 3 | CONFIRMED | 2026-09-01 | e |
+EOF
+chmod 644 old.md; cp old.md old.orig
+_migrate_hypothesis_log_run_column old.md
+diff old.orig old.md; stat -c '%a' old.md
+echo "=== migration: already migrated (second call)"
+cp old.md mig1; _migrate_hypothesis_log_run_column old.md; cmp mig1 old.md && echo "unchanged"
+echo "=== migration: no header"
+printf '# nothing\n\nprose\n' > nohdr.md; chmod 644 nohdr.md; ino1=$(stat -c %i nohdr.md)
+_migrate_hypothesis_log_run_column nohdr.md; echo "mode=$(stat -c '%a' nohdr.md) inode_changed=$([ "$ino1" != "$(stat -c %i nohdr.md)" ] && echo yes || echo no)"; cat nohdr.md
+echo "=== append with run id onto old log"
+cp old.orig app.md
+printf '[{"id":"t9","hypothesis":"h nine","hypothesis_window":2,"evaluator":"script"}]' > tasks.json
+append_approved_hypotheses 4 tasks.json app.md "t9" "2026-09-21"
+tail -3 app.md
+echo "=== questions.sh resolution"
+QS=/workspace/scripts/questions.sh
+mkdir -p nogit/sub && cd nogit/sub && (unset QUESTIONS_LIVE QUESTIONS_ARCHIVE; bash $QS init); ls -R "$S/nogit" | head; cd "$S"
+git init -q repo && mkdir -p repo/a/b && cd repo/a/b && (unset QUESTIONS_LIVE QUESTIONS_ARCHIVE; bash $QS init); ls "$S/repo/docs/working"; cd "$S"
+echo "--- inside .git dir"
+cd repo/.git && (unset QUESTIONS_LIVE QUESTIONS_ARCHIVE; bash $QS init 2>&1); ls "$S/repo/.git/docs/working" 2>&1; cd "$S"
+echo "--- dangling symlink live file"
+git init -q repo2 && mkdir -p repo2/docs/working && ln -s "$S/elsewhere-target.md" repo2/docs/working/questions.md
+cd repo2 && (unset QUESTIONS_LIVE QUESTIONS_ARCHIVE; bash $QS init); ls -la "$S/elsewhere-target.md" 2>&1; cd "$S"
+echo "=== SI_RUN_ID regex (bash =~)"
+for v in 2026-09-21 run.2 .. . a/b 'a b' 'x;y' 'é' $'a\nb' '' '-rf'; do
+  if [[ "$v" =~ ^[A-Za-z0-9._-]+$ ]]; then r=accept; else r=reject; fi; printf '%q -> %s\n' "$v" "$r"; done
+echo "locale: LC_ALL=${LC_ALL:-} LANG=${LANG:-}"

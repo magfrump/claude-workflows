@@ -1,0 +1,58 @@
+=== migration: old header
+3,4c3,4
+< | Round | Task ID | Hypothesis | Source | Window | Evaluator | Requires | Checked at Round | Outcome | Status Date | Evidence |
+< |-------|---------|------------|--------|--------|-----------|----------|------------------|---------|-------------|----------|
+---
+> | Round | Task ID | Hypothesis | Source | Window | Evaluator | Requires | Checked at Round | Outcome | Status Date | Evidence | Run |
+> |-------|---------|------------|--------|--------|-----------|----------|------------------|---------|-------------|----------|-----|
+600
+=== migration: already migrated (second call)
+unchanged
+=== migration: no header
+mode=600 inode_changed=yes
+# nothing
+
+prose
+=== append with run id onto old log
+| 1 | t1 | h one | planner | 2 | script | | 3 | | | |
+| 2 | t2 | h two | user | 1 | user | | 3 | CONFIRMED | 2026-09-01 | e |
+| 4 | t9 | h nine |  | 2 | script |  | 6 | | | | 2026-09-21 |
+=== questions.sh resolution
+  + created: /tmp/claude-1000/-workspace/104b63ce-e414-465c-a24f-dda1e4116218/scratchpad/cfc4/nogit/sub/docs/working/questions.md
+  + created: /tmp/claude-1000/-workspace/104b63ce-e414-465c-a24f-dda1e4116218/scratchpad/cfc4/nogit/sub/docs/working/questions-archive.md
+/tmp/claude-1000/-workspace/104b63ce-e414-465c-a24f-dda1e4116218/scratchpad/cfc4/nogit:
+sub
+
+/tmp/claude-1000/-workspace/104b63ce-e414-465c-a24f-dda1e4116218/scratchpad/cfc4/nogit/sub:
+docs
+
+/tmp/claude-1000/-workspace/104b63ce-e414-465c-a24f-dda1e4116218/scratchpad/cfc4/nogit/sub/docs:
+working
+
+/tmp/claude-1000/-workspace/104b63ce-e414-465c-a24f-dda1e4116218/scratchpad/cfc4/nogit/sub/docs/working:
+  + created: /tmp/claude-1000/-workspace/104b63ce-e414-465c-a24f-dda1e4116218/scratchpad/cfc4/repo/docs/working/questions.md
+  + created: /tmp/claude-1000/-workspace/104b63ce-e414-465c-a24f-dda1e4116218/scratchpad/cfc4/repo/docs/working/questions-archive.md
+questions-archive.md
+questions.md
+--- inside .git dir
+  + created: /tmp/claude-1000/-workspace/104b63ce-e414-465c-a24f-dda1e4116218/scratchpad/cfc4/repo/.git/docs/working/questions.md
+  + created: /tmp/claude-1000/-workspace/104b63ce-e414-465c-a24f-dda1e4116218/scratchpad/cfc4/repo/.git/docs/working/questions-archive.md
+questions-archive.md
+questions.md
+--- dangling symlink live file
+  + created: /tmp/claude-1000/-workspace/104b63ce-e414-465c-a24f-dda1e4116218/scratchpad/cfc4/repo2/docs/working/questions.md
+  + created: /tmp/claude-1000/-workspace/104b63ce-e414-465c-a24f-dda1e4116218/scratchpad/cfc4/repo2/docs/working/questions-archive.md
+-rw-r--r-- 1 node node 80 Sep 21 19:31 /tmp/claude-1000/-workspace/104b63ce-e414-465c-a24f-dda1e4116218/scratchpad/cfc4/elsewhere-target.md
+=== SI_RUN_ID regex (bash =~)
+2026-09-21 -> accept
+run.2 -> accept
+.. -> accept
+. -> accept
+a/b -> reject
+a\ b -> reject
+x\;y -> reject
+$'\303\251' -> reject
+$'a\nb' -> reject
+'' -> reject
+-rf -> accept
+locale: LC_ALL=en_US.UTF-8 LANG=en_US.UTF-8

@@ -1,0 +1,44 @@
+bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+1..18
+bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+ok 1 check passes on a well-formed pair of files
+bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+ok 2 check rejects an invalid route
+bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+ok 3 check rejects a duplicate id
+bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+ok 4 check rejects a malformed entry heading
+bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+ok 5 check rejects a bad Opened date
+bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+ok 6 check rejects an OPEN entry living in the archive
+bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+ok 7 check reports a stale index rather than trusting it
+bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+ok 8 check fails on invalid UTF-8 instead of passing vacuously
+bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+ok 9 index lists every entry and orders the user's items first
+bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+ok 10 index is idempotent
+bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+ok 11 index writes valid UTF-8 when a summary is truncated mid-character
+bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+ok 12 archive moves ANSWERED entries out of the live file
+bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+ok 13 archive leaves OPEN entries in place
+bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+ok 14 next-id returns one past the highest id across both files
+bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+ok 15 next-id reads zero-padded ids as decimal, not octal
+bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+ok 16 open lists only live entries, most costly route first
+bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+ok 17 without overrides, files resolve from the git toplevel of $PWD
+bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+ok 18 init creates both files with index markers, and never clobbers

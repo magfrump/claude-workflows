@@ -1,0 +1,30 @@
+bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+1..11
+bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+ok 1 archivable files are moved to archive with correct prefix
+bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+ok 2 permanent files are preserved and not moved
+bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+ok 3 running-questions docs are permanent
+bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+ok 4 graduated working docs are permanent
+bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+ok 5 warns before archiving a file a tracked doc still cites
+bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+ok 6 dry-run shows planned moves but does not move files
+bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+ok 7 exits cleanly with no archive when only permanent files exist
+bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+ok 8 custom prefix is correctly applied to archived filenames
+bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+ok 9 default prefix is the run id recorded in si-run-id.txt
+bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+ok 10 an explicit prefix overrides si-run-id.txt
+bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+ok 11 an unusable si-run-id.txt falls back to today's date

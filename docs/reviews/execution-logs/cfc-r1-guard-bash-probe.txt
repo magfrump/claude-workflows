@@ -1,0 +1,147 @@
+# cmd: python3 /tmp/claude-1000/-workspace/104b63ce-e414-465c-a24f-dda1e4116218/scratchpad/probe_guard.py (new, HEAD 654c0ed) vs same probe against git show e8d5fa1:hooks/guard-trusted-writes.py; cwd=/tmp/claude-1000/-workspace/104b63ce-e414-465c-a24f-dda1e4116218/scratchpad; exit=0; run 2026-09-21T19:27-07:00
+## NEW
+HOME /home/node GLOBAL_DIRS [PosixPath('/home/node/.claude'), PosixPath('/home/node/.claude'), PosixPath('/home/node/.claude'), PosixPath('/home/node/.claude')]
+'echo x > "$HOME"/CLAUDE.md' -> soft
+"echo x > '$HOME'/CLAUDE.md" -> soft
+'echo x > ~//CLAUDE.md' -> soft
+'echo x > ~/./CLAUDE.md' -> soft
+'echo x > $HOME/.claude/../CLAUDE.md' -> soft
+'echo x > ${HOME:-}/CLAUDE.md' -> soft
+'echo x > ${HOME}/CLAUDE.md' -> hard
+'echo x > $HOME/CLAUDE.md' -> hard
+'echo x > ~/CLAUDE.md' -> hard
+'echo x > /home/node/CLAUDE.md' -> hard
+'echo x > /home/node//CLAUDE.md' -> soft
+'echo x > /home/node/./CLAUDE.md' -> soft
+'echo x > ~/claude.md' -> hard
+'echo x > CLAUDE.md' -> soft
+'cd ~ && echo x > CLAUDE.md' -> soft
+'echo x > $HOME/x/../CLAUDE.md' -> soft
+'echo x > "${HOME}/CLAUDE.md"' -> hard
+'echo x > ~"/CLAUDE.md"' -> soft
+'echo x > ~/"CLAUDE.md"' -> soft
+'echo x > $HOME/CLAUDE.m[d]' -> None
+'echo x > $HOME/CLAUDE.m?' -> None
+'echo x > $HOME/CLAUDE*' -> None
+'echo x > ~root/CLAUDE.md' -> soft
+'echo x > "$HOME/CLAUDE.md"' -> hard
+"echo x > $HOME/''CLAUDE.md" -> soft
+'echo x > /home/../home/node/CLAUDE.md' -> hard
+'echo x > global-instructions/CLAUDE.md' -> hard
+'echo x > ./global-instructions//CLAUDE.md' -> soft
+'echo x > global-instructions/./CLAUDE.md' -> soft
+'echo x > .claude/settings.json' -> hard
+'echo x > .claude//settings.json' -> None
+'echo x > .claude/./hooks/a' -> None
+'echo x > $HOME/.claude/CLAUDE.md' -> hard
+'echo x > ~/.claude//CLAUDE.md' -> soft
+'echo x > ~/.claude/./CLAUDE.md' -> soft
+'echo x > $CLAUDE_CONFIG_DIR/CLAUDE.md' -> soft
+'echo x > $CLAUDE_CONFIG_DIR/settings.json' -> None
+'echo x > $CLAUDE_CONFIG_DIR/hooks/a' -> None
+'D=~; echo x > $D/CLAUDE.md' -> soft
+'echo x > ~/.claude/Hooks/a' -> hard
+'echo x > "$HOME/.claude"/hooks/a' -> None
+'echo x > ~/.claude/"hooks"/a' -> None
+'echo x > ~/.claude/hook\\s/a' -> None
+'echo x > $HOME/Claude.md' -> hard
+'echo x > ~/.claude/CLAUDE.local.md' -> soft
+'git commit -m "edit CLAUDE.md" > /dev/null' -> None
+--- file tools
+~/.claude/hooks/x -> hard
+~/.claude/./hooks/x -> hard
+~/.claude//settings.json -> hard
+~/.claude/settings.local.json -> hard
+~/.claude/x/../settings.json -> hard
+~/CLAUDE.md -> hard
+~//CLAUDE.md -> hard
+~/./CLAUDE.md -> hard
+~/.claude/../CLAUDE.md -> hard
+~/.claude/CLAUDE.md -> hard
+~/.claude/Hooks/x -> soft
+~/.claude/SETTINGS.json -> hard
+~/.claude/hooks -> hard
+~/.claude/sub/settings.json -> soft
+~/.claude/skills/x/SKILL.md -> soft
+/workspace/.claude/settings.json -> soft
+/workspace/.claude/hooks/x.py -> soft
+/workspace/CLAUDE.md -> soft
+relative/.claude/hooks/x -> soft
+.claude/hooks/x -> soft
+~/.claude -> soft
+~/.claude/ -> soft
+~/.claude/managed-settings.json -> hard
+/etc/claude-code/managed-settings.json -> hard
+## OLD (e8d5fa1)
+HOME /home/node
+'echo x > "$HOME"/CLAUDE.md' -> hard
+"echo x > '$HOME'/CLAUDE.md" -> hard
+'echo x > ~//CLAUDE.md' -> hard
+'echo x > ~/./CLAUDE.md' -> hard
+'echo x > $HOME/.claude/../CLAUDE.md' -> hard
+'echo x > ${HOME:-}/CLAUDE.md' -> hard
+'echo x > ${HOME}/CLAUDE.md' -> hard
+'echo x > $HOME/CLAUDE.md' -> hard
+'echo x > ~/CLAUDE.md' -> hard
+'echo x > /home/node/CLAUDE.md' -> hard
+'echo x > /home/node//CLAUDE.md' -> hard
+'echo x > /home/node/./CLAUDE.md' -> hard
+'echo x > ~/claude.md' -> hard
+'echo x > CLAUDE.md' -> hard
+'cd ~ && echo x > CLAUDE.md' -> hard
+'echo x > $HOME/x/../CLAUDE.md' -> hard
+'echo x > "${HOME}/CLAUDE.md"' -> hard
+'echo x > ~"/CLAUDE.md"' -> hard
+'echo x > ~/"CLAUDE.md"' -> hard
+'echo x > $HOME/CLAUDE.m[d]' -> None
+'echo x > $HOME/CLAUDE.m?' -> None
+'echo x > $HOME/CLAUDE*' -> None
+'echo x > ~root/CLAUDE.md' -> hard
+'echo x > "$HOME/CLAUDE.md"' -> hard
+"echo x > $HOME/''CLAUDE.md" -> hard
+'echo x > /home/../home/node/CLAUDE.md' -> hard
+'echo x > global-instructions/CLAUDE.md' -> hard
+'echo x > ./global-instructions//CLAUDE.md' -> hard
+'echo x > global-instructions/./CLAUDE.md' -> hard
+'echo x > .claude/settings.json' -> hard
+'echo x > .claude//settings.json' -> None
+'echo x > .claude/./hooks/a' -> None
+'echo x > $HOME/.claude/CLAUDE.md' -> hard
+'echo x > ~/.claude//CLAUDE.md' -> hard
+'echo x > ~/.claude/./CLAUDE.md' -> hard
+'echo x > $CLAUDE_CONFIG_DIR/CLAUDE.md' -> hard
+'echo x > $CLAUDE_CONFIG_DIR/settings.json' -> None
+'echo x > $CLAUDE_CONFIG_DIR/hooks/a' -> None
+'D=~; echo x > $D/CLAUDE.md' -> hard
+'echo x > ~/.claude/Hooks/a' -> hard
+'echo x > "$HOME/.claude"/hooks/a' -> None
+'echo x > ~/.claude/"hooks"/a' -> None
+'echo x > ~/.claude/hook\\s/a' -> None
+'echo x > $HOME/Claude.md' -> hard
+'echo x > ~/.claude/CLAUDE.local.md' -> None
+'git commit -m "edit CLAUDE.md" > /dev/null' -> None
+--- file tools
+~/.claude/hooks/x -> hard
+~/.claude/./hooks/x -> hard
+~/.claude//settings.json -> hard
+~/.claude/settings.local.json -> hard
+~/.claude/x/../settings.json -> hard
+~/CLAUDE.md -> hard
+~//CLAUDE.md -> hard
+~/./CLAUDE.md -> hard
+~/.claude/../CLAUDE.md -> hard
+~/.claude/CLAUDE.md -> hard
+~/.claude/Hooks/x -> soft
+~/.claude/SETTINGS.json -> hard
+~/.claude/hooks -> hard
+~/.claude/sub/settings.json -> hard
+~/.claude/skills/x/SKILL.md -> soft
+/workspace/.claude/settings.json -> hard
+/workspace/.claude/hooks/x.py -> hard
+/workspace/CLAUDE.md -> soft
+relative/.claude/hooks/x -> hard
+.claude/hooks/x -> hard
+~/.claude -> soft
+~/.claude/ -> soft
+~/.claude/managed-settings.json -> hard
+/etc/claude-code/managed-settings.json -> hard

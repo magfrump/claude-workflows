@@ -1,0 +1,52 @@
+bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+1..22
+bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+ok 1 no rejections in scope emits placeholder
+bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+ok 2 single gate with multiple files renders sub-counts
+bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+ok 3 multiple gates each get their own grouped line
+bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+ok 4 file with 3+ rejections triggers maintenance signal
+bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+ok 5 file with only 2 rejections produces no maintenance signal
+bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+ok 6 maintenance signal triggers when file spans multiple gates
+bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+ok 7 missing tasks file falls back to unknown
+bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+ok 8 empty files_touched falls back to unknown
+bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+ok 9 rejections across multiple rounds aggregate into one cluster set
+bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+ok 10 same task rejected in two rounds counts once per (gate, file)
+bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+ok 11 uses basename of first file in files_touched as primary
+bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+ok 12 header is always emitted even when there are rejections
+bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+ok 13 progressive-disclosure: open user rows collapse into a counted <details> block, all reachable
+bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+ok 14 discoverability-on-creation: a precondition-MET script row appears under Ready, before the collapsed wall
+bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+ok 15 feedback-continuity: numbered total equals _count_matured_deferred for a mixed log
+bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+ok 16 collapse-not-delete: a precondition-UNMET script row is collapsed, not promoted to Ready
+bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+ok 17 zero open rows emits the no-op line and no group headers
+bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+ok 18 missing hypothesis log degrades gracefully
+bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+ok 19 _evaluate_script_preconditions exit code: 0 when MET, 1 when UNMET
+bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+ok 20 window gate: a not-yet-matured row (round 8 + window 5 > 10) is not counted
+bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+ok 21 window gate: legacy header without Source still gates on column 5
+bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+ok 22 deferred evaluation resolves a script row within its Run
