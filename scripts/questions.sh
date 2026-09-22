@@ -30,6 +30,13 @@
 #   scripts/questions.sh archive    move ANSWERED entries to the archive, reindex
 #   scripts/questions.sh next-id    print the next free Q-NNN
 #   scripts/questions.sh open       list open questions, one per line (ID, route, slug)
+#   scripts/questions.sh init       create empty live/archive files if absent
+#
+# Which files: the docs/working/ of the git repo you run it FROM (the toplevel
+# of $PWD; $PWD itself outside a git repo), not of the repo the script lives
+# in. Installed as ~/.claude/scripts/questions.sh, it serves every project;
+# run from this repo, it resolves to this repo's docs/working/ as before.
+# QUESTIONS_LIVE / QUESTIONS_ARCHIVE override either path.
 
 set -euo pipefail
 
@@ -41,9 +48,13 @@ set -euo pipefail
 # `check` additionally verifies UTF-8 validity so a corrupt file is loud.
 export LC_ALL=C
 
-REPO_ROOT="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
-LIVE="${QUESTIONS_LIVE:-$REPO_ROOT/docs/working/questions.md}"
-ARCHIVE="${QUESTIONS_ARCHIVE:-$REPO_ROOT/docs/working/questions-archive.md}"
+# Resolve from the caller's project, not from the script's own location: the
+# script is installed once (~/.claude/scripts, via link-claude-home.sh or the
+# README symlink) and used from every project, and resolving next to itself sent
+# every project's questions into claude-workflows' own doc (Q-025).
+PROJECT_ROOT="$(git -C "$PWD" rev-parse --show-toplevel 2>/dev/null || pwd)"
+LIVE="${QUESTIONS_LIVE:-$PROJECT_ROOT/docs/working/questions.md}"
+ARCHIVE="${QUESTIONS_ARCHIVE:-$PROJECT_ROOT/docs/working/questions-archive.md}"
 
 INDEX_START='<!-- index:start -->'
 INDEX_END='<!-- index:end -->'
@@ -300,7 +311,27 @@ cmd_open() {
         done
 }
 
+# Create whichever of the two files is missing, with the index markers the other
+# commands need, so a project that has never had a questions doc can start one
+# without copying this repo's. Never touches a file that exists.
+cmd_init() {
+    local file title section
+    for file in "$LIVE" "$ARCHIVE"; do
+        [[ -e "$file" ]] && { echo "  = exists: $file"; continue; }
+        if [[ "$file" == "$LIVE" ]]; then
+            title="Running questions"; section="Open"
+        else
+            title="Running questions — archive"; section="Answered"
+        fi
+        mkdir -p "$(dirname "$file")"
+        printf '# %s\n\n## Index\n\n%s\n%s\n\n## %s\n' \
+            "$title" "$INDEX_START" "$INDEX_END" "$section" > "$file"
+        echo "  + created: $file"
+    done
+}
+
 case "${1:-}" in
+    init)    cmd_init ;;
     check)   cmd_check ;;
     index)   cmd_index ;;
     archive) cmd_archive ;;

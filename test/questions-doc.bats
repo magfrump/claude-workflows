@@ -226,3 +226,41 @@ EOF
     [[ "${lines[0]}" == *"you: judgment"* ]]
     [[ "$output" != *"Q-002"* ]]
 }
+
+# --- path resolution (Q-025) ---
+# The script is installed once as ~/.claude/scripts/questions.sh and used from
+# every project, so with no override it must read the docs/working/ of the git
+# repo it is run FROM — not the repo it lives in. Mutation: restoring the old
+# script-relative REPO_ROOT makes the first test read this repo's doc (a large
+# Q-NNN) instead of the fixture project's, and fail.
+
+@test "without overrides, files resolve from the git toplevel of \$PWD" {
+    unset QUESTIONS_LIVE QUESTIONS_ARCHIVE
+    local proj="$BATS_TEST_TMPDIR/proj"
+    mkdir -p "$proj/docs/working" "$proj/nested/dir"
+    git -C "$proj" init -q
+    cp "$BATS_TEST_TMPDIR/questions.md" "$proj/docs/working/questions.md"
+    cp "$BATS_TEST_TMPDIR/questions-archive.md" "$proj/docs/working/questions-archive.md"
+    cd "$proj/nested/dir"
+    run --separate-stderr bash "$QS" next-id
+    [ "$status" -eq 0 ]
+    [ "$output" = "Q-004" ]
+}
+
+@test "init creates both files with index markers, and never clobbers" {
+    unset QUESTIONS_LIVE QUESTIONS_ARCHIVE
+    local proj="$BATS_TEST_TMPDIR/fresh"
+    mkdir -p "$proj"
+    git -C "$proj" init -q
+    cd "$proj"
+    run --separate-stderr bash "$QS" init
+    [ "$status" -eq 0 ]
+    grep -qx '<!-- index:start -->' docs/working/questions.md
+    grep -qx '<!-- index:end -->' docs/working/questions-archive.md
+    run --separate-stderr bash "$QS" check
+    [ "$status" -eq 0 ]
+    echo "sentinel" >> docs/working/questions.md
+    run --separate-stderr bash "$QS" init
+    [ "$status" -eq 0 ]
+    grep -qx 'sentinel' docs/working/questions.md
+}

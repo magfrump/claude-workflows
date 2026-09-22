@@ -14,8 +14,13 @@ Two modes:
                     showed costs a full pass to rediscover
 
 Backend notes (why the flags are what they are):
-- NOT --bare: --bare restricts auth to ANTHROPIC_API_KEY and never reads
-  OAuth, which defeats the whole point (subscription auth). Instead the call
+- NOT --bare, although `claude -p --bare` is the obvious spelling of "a
+  minimal headless call" (and the one asked for in Q-025): --bare restricts
+  auth to ANTHROPIC_API_KEY and never reads the subscription OAuth
+  credentials. Verified 2026-08-15 - a --bare call on a subscription-only
+  machine prints "Not logged in" and still exits 0, so it fails silently.
+  Using it would reintroduce the API-key dependency that retired the old
+  OpenRouter version. Instead the call
   minimizes context with --system-prompt (replaces the default harness
   prompt), --tools "" (no tool schemas), and an empty non-repo cwd (no
   CLAUDE.md auto-discovery). Measured overhead ~7.5k tokens vs ~33k default.

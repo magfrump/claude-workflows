@@ -40,10 +40,13 @@ mkdir -p "$DEST"
 
 # Directories are linked wholesale; CLAUDE.md is a single file.
 #
-# `scripts` is here only because hooks/log-usage.sh sources
+# `scripts` is here for two reasons. (1) hooks/log-usage.sh sources
 # ../scripts/lib/skill-paths.sh relative to its own resolved path — without it
-# that hook aborts on every Skill/Read/Agent call. Linking the dir keeps the
-# relative source working from $SRC/hooks/.
+# that hook aborts on every Skill/Read/Agent call; linking the dir keeps the
+# relative source working from $SRC/hooks/. (2) Workflows and the global
+# instructions call helpers by their installed path, ~/.claude/scripts/ —
+# lite-review.py (pr-prep's fix-drift check) and questions.sh (the
+# running-questions doc) — so those must resolve in every project (Q-025).
 ENTRIES=(skills workflows guides patterns hooks scripts CLAUDE.md)
 
 linked=0 skipped=0
