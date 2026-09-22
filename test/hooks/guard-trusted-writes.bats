@@ -201,6 +201,100 @@ SKILL="~/.claude/skills/foo/SKILL.md"
   assert_defer
 }
 
+# --- Q-026: a project's own .claude/ is SOFT, not HARD-and-deferred ---
+# The deny rules name only the global config dir, so a deferred project path
+# had no gate at all. It now asks in a tainted session.
+
+@test "Write to a project .claude/settings.local.json asks when tainted" {
+  taint sess1
+  guard "$(file_payload Write "/proj/.claude/settings.local.json" sess1)"
+  assert_decision ask
+}
+
+@test "Write to a project .claude/settings.local.json defers when untainted" {
+  guard "$(file_payload Write "/proj/.claude/settings.local.json" sess1)"
+  assert_defer
+}
+
+@test "Edit to a project .claude/hooks file asks when tainted" {
+  taint sess1
+  guard "$(file_payload Edit "/proj/.claude/hooks/foo.sh" sess1)"
+  assert_decision ask
+}
+
+@test "Write to the global ~/.claude/settings.local.json still defers when tainted" {
+  taint sess1
+  # shellcheck disable=SC2088
+  guard "$(file_payload Write "~/.claude/settings.local.json" sess1)"
+  assert_defer
+}
+
+@test "Write to the global dir via an absolute HOME path still defers when tainted" {
+  taint sess1
+  guard "$(file_payload Write "$HOME/.claude/hooks/foo.sh" sess1)"
+  assert_defer
+}
+
+@test "CLAUDE_CONFIG_DIR is the global dir when set" {
+  taint sess1
+  # Without CLAUDE_CONFIG_DIR this path is a project .claude/ (SOFT -> ask);
+  # naming it as the config dir makes it HARD (defer to the deny rules).
+  guard "$(file_payload Write "$TEST_TMPDIR/alt/.claude/settings.json" sess1)"
+  assert_decision ask
+  CLAUDE_CONFIG_DIR="$TEST_TMPDIR/alt/.claude" guard "$(file_payload Write "$TEST_TMPDIR/alt/.claude/settings.json" sess1)"
+  assert_defer
+}
+
+# --- Q-035: Bash CLAUDE.md is HARD only when qualified as the global file ---
+
+@test "a heredoc commit message naming a bare CLAUDE.md is not denied (untainted)" {
+  guard "$(bash_payload $'cat > "$TMPDIR/msg" <<EOF\ndocs: update CLAUDE.md routing\nEOF')"
+  assert_defer
+}
+
+@test "a heredoc naming a bare CLAUDE.md asks, not denies, when tainted" {
+  taint sess1
+  guard "$(bash_payload $'cat > "$TMPDIR/msg" <<EOF\ndocs: update CLAUDE.md routing\nEOF' sess1)"
+  assert_decision ask
+}
+
+@test "read-only commands on a project CLAUDE.md are not denied" {
+  guard "$(bash_payload "rg -n install CLAUDE.md")"
+  assert_defer
+  guard "$(bash_payload "wc -l CLAUDE.md > out")"
+  assert_defer
+}
+
+@test "a Bash write to a project CLAUDE.md asks when tainted" {
+  taint sess1
+  guard "$(bash_payload "echo x >> CLAUDE.md" sess1)"
+  assert_decision ask
+}
+
+@test "a Bash write to the global ~/.claude/CLAUDE.md is still denied" {
+  guard "$(bash_payload "echo x >> ~/.claude/CLAUDE.md")"
+  assert_decision deny
+}
+
+@test "a Bash write to ~/CLAUDE.md, \$HOME/CLAUDE.md or \${HOME}/CLAUDE.md is denied" {
+  guard "$(bash_payload "echo x > ~/CLAUDE.md")"
+  assert_decision deny
+  guard "$(bash_payload 'echo x > $HOME/CLAUDE.md')"
+  assert_decision deny
+  guard "$(bash_payload 'echo x > ${HOME}/CLAUDE.md')"
+  assert_decision deny
+}
+
+@test "a Bash write to the literal home path CLAUDE.md is denied" {
+  guard "$(bash_payload "echo x > $HOME/CLAUDE.md")"
+  assert_decision deny
+}
+
+@test "a Bash write to global-instructions/CLAUDE.md stays denied (2026-09-12 review)" {
+  guard "$(bash_payload "cp /tmp/x global-instructions/CLAUDE.md")"
+  assert_decision deny
+}
+
 # --- Malformed input: silent exit 0 ---
 
 @test "non-JSON stdin defers" {

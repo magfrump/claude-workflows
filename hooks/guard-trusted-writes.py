@@ -7,14 +7,28 @@ files without review, across BOTH the file tools and Bash (which the v1 hook and
 sandbox-write-deny were the only things covering — and the sandbox is currently down).
 
 Two tiers of policy path:
-  HARD  = ~/.claude/hooks/**, ~/.claude/settings*.json, ~/.claude/CLAUDE.md, ~/CLAUDE.md
+  HARD  = the GLOBAL config dir only: ~/.claude/hooks/**, ~/.claude/settings*.json,
+          ~/.claude/CLAUDE.md, ~/CLAUDE.md (the config dir is $CLAUDE_CONFIG_DIR when set,
+          else ~/.claude — the same {{CLAUDE_DIR}} hooks/wiring.json substitutes).
           These are also covered by your Edit/Write DENY rules. Critical: a hook that
           returns "ask" SILENTLY OVERRIDES permissions.deny (Claude Code issue #39344,
           precedence deny > defer > ask > allow). So this hook must NEVER "ask" on a
           HARD path — it DEFERS (lets the deny rule block the file tools) and, for the
           Bash path that deny rules don't cover, returns "deny" outright.
-  SOFT  = skills / memories / commands / agents / project CLAUDE.md|AGENTS.md / *.mdc
+  SOFT  = skills / memories / commands / agents / project CLAUDE.md|AGENTS.md / *.mdc,
+          and a PROJECT's own .claude/ (settings*.json, hooks/**; Q-026). The deny
+          rules name only the global dir, so deferring on a project .claude/ path would
+          leave it with no gate at all; it is SOFT instead.
           Legitimately edited. Gated to "ask" only when the session is web-tainted.
+
+Bash is classified by command TEXT, so it can't resolve a relative path:
+  HARD  = any `.claude/hooks`, `.claude/settings`, `.claude/CLAUDE.md` fragment (global
+          or project — the text doesn't say which), managed-settings, and CLAUDE.md
+          only when qualified as global: `~/`, `$HOME/`, `${HOME}/`, the literal home
+          path, or `global-instructions/CLAUDE.md` (this repo's source of the global
+          file; hard for Bash per the 2026-09-12 security review).
+  SOFT  = a bare/project `CLAUDE.md` (Q-035) — matching the Edit/Write tier, so a
+          heredoc or commit message that merely names the file is no longer denied.
 
 Decisions: emit JSON only for ask/deny. For "no opinion", exit 0 with NO output — the
 documented, version-independent defer (avoids the headless tool_deferred semantics of
@@ -38,21 +52,48 @@ def defer():                      # no opinion -> normal flow (deny rules still 
 
 # ── path classification for the FILE tools ──────────────────────────────────
 HOME = Path.home()
+
+def _global_dirs():
+    """The global config dir(s), as given and resolved. HARD applies only here."""
+    dirs = [HOME / ".claude"]
+    cfg = os.environ.get("CLAUDE_CONFIG_DIR")
+    if cfg:
+        dirs.append(Path(os.path.expanduser(cfg)))
+    out = []
+    for d in dirs:
+        out.append(d)
+        try: out.append(d.resolve())
+        except Exception: pass
+    return out
+
+GLOBAL_DIRS = _global_dirs()
+
+def _global_rel(cand: Path):
+    """Path of `cand` relative to a global config dir, or None if outside all of them."""
+    for g in GLOBAL_DIRS:
+        try:
+            return cand.relative_to(g)
+        except ValueError:
+            continue
+    return None
+
 def classify_path(fp: str) -> str:
     p = Path(os.path.expanduser(str(fp)))
     try: rp = p.resolve()
     except Exception: rp = p
     for cand in (p, rp):
-        parts = cand.parts
         name = cand.name.lower()
-        low = {seg.lower() for seg in parts}
-        claude_idx = next((i for i, s in enumerate(parts) if s == ".claude"), None)
-        # HARD
-        if claude_idx is not None and claude_idx + 1 < len(parts) and parts[claude_idx + 1] == "hooks":
-            return "hard"
-        if name.startswith("settings") and cand.suffix == ".json" and ".claude" in low:
-            return "hard"
-        if name == "claude.md" and (".claude" in low or cand.parent == HOME):
+        # HARD: only the global config dir (what permissions.deny covers). A project's
+        # own .claude/ falls through to SOFT below (Q-026).
+        rel = _global_rel(cand)
+        if rel is not None and rel.parts:
+            if rel.parts[0] == "hooks":
+                return "hard"
+            if len(rel.parts) == 1 and name.startswith("settings") and cand.suffix == ".json":
+                return "hard"
+            if len(rel.parts) == 1 and name == "claude.md":
+                return "hard"
+        if name == "claude.md" and cand.parent == HOME:
             return "hard"
         if name in ("managed-settings.json",):
             return "hard"
@@ -77,11 +118,18 @@ WRITE_PRIMITIVE = re.compile(
     r"|\b(cp|mv|install|rsync)\b"                  # copy/move/install (dest ambiguous)
     r"|\b(python[0-9.]*|node|perl|ruby)\b[^\n]*\s-[ce]\b"  # inline interpreters
 )
+# CLAUDE.md is HARD in Bash only when the text qualifies it as the global file
+# (Q-035); a bare/project CLAUDE.md is SOFT, like the Edit/Write tier.
+_GLOBAL_PREFIXES = [r"~", r"\$HOME", r"\$\{HOME\}", r"global-instructions"]
+if str(HOME).rstrip("/"):         # HOME="/" would make this prefix empty and match any "/CLAUDE.md"
+    _GLOBAL_PREFIXES.append(re.escape(str(HOME).rstrip("/")))
 HARD_FRAG = re.compile(
-    r"\.claude/hooks(/|\b)|\.claude/settings|\.claude/CLAUDE\.md"
-    r"|managed-settings|(^|[\s\"'=~/])CLAUDE\.md", re.I)
+    r"\.claude/hooks(/|\b)|\.claude/settings|\.claude/CLAUDE\.md|managed-settings"
+    r"|(?:" + "|".join(_GLOBAL_PREFIXES) + r")/CLAUDE\.md",
+    re.I)
 SOFT_FRAG = re.compile(
-    r"\.claude/(skills|memories|commands|agents)|(^|[\s\"'=/])AGENTS\.md|\.mdc(\b|$)", re.I)
+    r"\.claude/(skills|memories|commands|agents)"
+    r"|(^|[\s\"'=/])(AGENTS|CLAUDE|CLAUDE\.local)\.md|\.mdc(\b|$)", re.I)
 
 def bash_targets(cmd: str):
     has_write = bool(WRITE_PRIMITIVE.search(cmd))
@@ -114,7 +162,7 @@ def main():
         if tier == "hard":
             # deny rules don't cover Bash-mediated writes; block outright.
             # "deny" wins over any auto-approve hook's "allow" (deny > ... > allow).
-            emit("deny", "Bash write to a protected policy file (~/.claude hooks/settings/CLAUDE.md). "
+            emit("deny", "Bash write to a protected policy file (.claude hooks/settings, global CLAUDE.md). "
                          "Edit it directly with review, not via a shell write.")
         if tier == "soft" and tainted:
             emit("ask", "This session fetched web content and this Bash command writes to a "
