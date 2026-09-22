@@ -380,7 +380,7 @@ For an Incorrect fact-check about an already-merged commit message, rubric.md te
 - **Interim:** unchanged; the finding currently has nowhere valid to go.
 
 ### Q-045 · sni-proxy-domain-fronting
-**Needs:** you: judgment · **Opened:** 2026-09-18 · **Status:** OPEN
+**Needs:** you: terminal · **Opened:** 2026-09-18 · **Status:** OPEN
 
 The SNI proxy checks only the ClientHello SNI and splices the encrypted stream, so a client can send an allowlisted SNI with a different HTTP `Host` and reach another tenant on a CDN that routes by Host. The docs say exact-name entries have "no such residual". Accept and document it, or test the front ends first?
 
@@ -393,6 +393,18 @@ The SNI proxy checks only the ClientHello SNI and splices the encrypted stream, 
 | **[2] Test first, then decide on the profiles** | Run `curl --connect-to` with a mismatched Host through the android and lean front ends on the host | ~10 min at your terminal | none — the answer then decides whether those entries stay |
 
 - **Interim:** unchanged; the docs still over-claim.
+- **Answered 2026-09-20: [2], test first.** Rerouted to `you: terminal`. Run this on the **host** (the sandbox has no egress). For each allowlisted android/lean name it sends that name as SNI with the `Host` header of a tenant on a large CDN, and prints the fronted response next to the tenant's own response. **Fronting works for a pair when the two lines carry the same title** (or the same non-error status and server). A 421, 403, 404 or a different title means the front end refuses. Paste the whole output back.
+
+```bash
+b=$(mktemp); probe() { r=$(curl -sS -m 10 -o "$b" -w '%{http_code} %header{server}' "$@" 2>&1); t=$(grep -o -i -m1 '<title>[^<]*' "$b" | head -c 50); echo "$r $t"; }
+for sni in dl.google.com maven.google.com repo.maven.apache.org repo1.maven.org services.gradle.org plugins.gradle.org elan.lean-lang.org release.lean-lang.org releases.lean-lang.org reservoir.lean-lang.org lakecache.blob.core.windows.net; do
+  for tgt in www.google.com www.python.org www.cloudflare.com github.com azureopendatastorage.blob.core.windows.net; do
+    printf '%-32s Host:%-44s fronted=[%s] direct=[%s]\n' "$sni" "$tgt" "$(probe -H "Host: $tgt" "https://$sni/")" "$(probe "https://$tgt/")"
+  done
+done; rm -f "$b"
+```
+
+- **What I do with it:** every front end refuses → the docs name domain fronting as a residual that the tested profiles do not carry (with the test date). Any pair succeeds → that profile's entry gets an ACCEPTED RISK note or is removed, which is your call on the evidence, and the "no such residual" line is corrected either way.
 
 ### Q-046 · failure-analysis-fix-or-delete
 **Needs:** you: judgment · **Opened:** 2026-09-18 · **Status:** OPEN
