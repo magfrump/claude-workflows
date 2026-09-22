@@ -43,7 +43,7 @@ git diff main...HEAD
 
 If the user provides explicit scope, use that. For each changed file, read enough surrounding context to understand call frequency, data sizes, and whether the code is hot path or cold setup path — performance in a request handler matters differently than in a one-time migration script.
 
-**Hot-path gate for severity escalation.** Before classifying an algorithmic concern as Critical or High, confirm the path is actually hot — a request handler, a loop body called per-item at scale, or a high-frequency event callback. Code in cold paths (application startup, one-time configuration, CLI argument parsing, migration scripts) should default to Low or Informational unless the cold path blocks a latency-sensitive operation. In each finding, explicitly state path temperature (hot or cold) and the evidence, so downstream reviewers can verify.
+**Hot-path gate for severity escalation.** Before classifying an algorithmic concern as Critical or High, confirm the path is actually hot — a request handler, a loop body called per-item at scale, or a high-frequency event callback. Code in cold paths (application startup, one-time configuration, CLI argument parsing, migration scripts) should default to Low or Informational unless the cold path blocks a latency-sensitive operation or runs over large data (e.g. a nightly batch over a full table), in which case escalate as for a hot path. In each finding, explicitly state path temperature (hot or cold) and the evidence, so downstream reviewers can verify.
 
 ## Baseline Requirement
 
@@ -280,7 +280,7 @@ Before assigning a severity, classify the finding along two axes and use their c
 | Classification × Path | Default severity                                                |
 |-----------------------|-----------------------------------------------------------------|
 | Macro × Hot           | **High** (escalate to Critical when unbounded / DoS-enabling)   |
-| Macro × Cold          | Low (matches the hot-path gate; escalate when the cold path blocks a latency-sensitive operation or runs over large data, e.g. a nightly batch) |
+| Macro × Cold          | Low (same exceptions as the hot-path gate: escalate when the cold path blocks a latency-sensitive operation or runs over large data, e.g. a nightly batch) |
 | Micro × Hot           | Low–Medium (escalate when constant factor is large or call frequency extreme) |
 | Micro × Cold          | **Informational**                                               |
 
