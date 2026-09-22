@@ -446,3 +446,16 @@ log_inv() {
   [[ "$output" == *"Target(s): skill:mine"* ]]
   [[ "$output" != *"skill:reused"* ]]
 }
+
+# --- _project_state_open_hypotheses: escaped pipes (N4) ---
+
+@test "open hypotheses: a hypothesis with an escaped pipe is counted and shown whole" {
+  printf '# Hypothesis Log\n\n| Round | Task ID | Hypothesis | Source | Window | Evaluator | Requires | Checked at Round | Outcome | Status Date | Evidence | Run |\n|-|-|-|-|-|-|-|-|-|-|-|-|\n| 1 | t-plain | plain hyp | planner | 1 | user |  | 2 |  |  |  | r1 |\n| 1 | t-pipe | a \\| b stays one cell | user | 1 | user |  | 2 |  |  |  | r1 |\n| 1 | t-done | closed | user | 1 | user |  | 2 | CONFIRMED |  |  | r1 |\n' > "$HYP_LOG"
+  run _project_state_open_hypotheses "$HYP_LOG"
+  [ "$status" -eq 0 ]
+  echo "$output"
+  [[ "$output" == *"Open hypotheses: 2"* ]]
+  [[ "$output" == *"**t-pipe** (round 1): a | b stays one cell"* ]]
+  [[ "$output" == *"**t-plain** (round 1): plain hyp *[planner-authored"* ]]
+  [[ "$output" != *"t-done"* ]]
+}

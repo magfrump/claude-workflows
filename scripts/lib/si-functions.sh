@@ -478,7 +478,7 @@ si_default_run_id() {
 # Header columns expected (created if file is absent):
 #   Round | Task ID | Hypothesis | Source | Window | Evaluator | Requires | Checked at Round | Outcome | Status Date | Evidence | Run
 #
-# Run (Q-047) is the self-improvement run's id (si_default_run_id below, or
+# Run (Q-047) is the self-improvement run's id (si_default_run_id above, or
 # SI_RUN_ID) — the same prefix archive-working-docs.sh gives that run's
 # archived files — because
 # round numbers restart every run and cannot identify one on their own. It is
@@ -563,15 +563,21 @@ HEADER
 _migrate_hypothesis_log_run_column() {
     local log_file="$1"
     [ -f "$log_file" ] || return 0
-    # Exit 0 = header has a Run cell, 2 = no header row at all, 1 = migrate.
+    # Exit 0 = header has a Run cell, 3 = no header row at all, 1 = migrate.
+    # 3, not 2: awk itself exits 2 on a runtime error (e.g. an unreadable
+    # file), and that must fail the call rather than read as "no header".
     # Exact-cell match, so "Checked at Round" never counts as "Run".
     local state=0
     awk -F'|' '/^\|/ && / Round / {
             hdr = 1
             for (i = 1; i <= NF; i++) { c = $i; gsub(/^[ \t]+|[ \t]+$/, "", c); if (c == "Run") found = 1 }
             exit
-        } END { if (!hdr) exit 2; exit !found }' "$log_file" || state=$?
-    [ "$state" -eq 1 ] || return 0
+        } END { if (!hdr) exit 3; exit !found }' "$log_file" || state=$?
+    case "$state" in
+        0|3) return 0 ;;
+        1) ;;
+        *) return "$state" ;;
+    esac
     local tmp
     tmp=$(mktemp "${log_file}.XXXXXX") || return 1
     local rc=0

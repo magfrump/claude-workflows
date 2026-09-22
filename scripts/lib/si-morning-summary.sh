@@ -399,11 +399,17 @@ _project_state_open_hypotheses() {
     # doesn't contain the column — keeps legacy logs readable.
     [[ "$outcome_col" -gt 0 ]] || outcome_col=7
 
-    # Emit "task_id|round|hypothesis|source" for rows whose Outcome is empty.
+    # Emit "task_id<US>round<US>hypothesis<US>source" for rows whose Outcome
+    # is empty. The writer escapes a pipe inside a cell as `\|`; swap those for
+    # \036 before awk splits the row (assigning $0 re-splits it), then restore
+    # them as a plain `|` for display. Fields are joined with \037 (Unit
+    # Separator), not `|`, so a restored pipe cannot split the row again in the
+    # reader below; not a tab, because `read` collapses runs of whitespace IFS.
     local rows
     rows=$(awk -F'|' -v oc="$outcome_col" -v sc="$source_col" '
         /^\|/ {
             if ($0 ~ /^\|[ \t]*(Round|----)/) next
+            line = $0; gsub(/\\\|/, "\036", line); $0 = line
             round = $2; tid = $3; hyp = $4; outcome = $(oc)
             src = (sc > 0) ? $(sc) : ""
             gsub(/^[ \t]+|[ \t]+$/, "", round)
@@ -412,7 +418,8 @@ _project_state_open_hypotheses() {
             gsub(/^[ \t]+|[ \t]+$/, "", outcome)
             gsub(/^[ \t]+|[ \t]+$/, "", src)
             if (outcome == "" && tid != "") {
-                printf "%s|%s|%s|%s\n", tid, round, hyp, src
+                gsub(/\036/, "|", hyp)
+                printf "%s\037%s\037%s\037%s\n", tid, round, hyp, src
             }
         }
     ' "$hypothesis_log")
@@ -426,7 +433,7 @@ _project_state_open_hypotheses() {
     fi
 
     echo ""
-    while IFS='|' read -r tid round hyp src; do
+    while IFS=$'\037' read -r tid round hyp src; do
         [ -z "$tid" ] && continue
         # Trim hypothesis to first sentence or 80 chars, whichever comes first.
         local short="${hyp%%.*}"
@@ -1522,18 +1529,21 @@ _split_row_fields() {
     # Locals carry a _srf_ prefix so they cannot shadow the caller's array
     # name through the nameref (e.g. a caller array named "f" or "raw").
     local _srf_line="$1"
-    local -n out_ref="$2"
+    local -n _srf_out="$2"
     local -a _srf_raw
-    local _srf_sep=$'\x1e'  # ASCII Record Separator: never present in a log row
+    # ASCII Record Separator as a placeholder for `\|`. Assumed, not checked,
+    # to be absent from log rows: the writer never emits it, and a row that did
+    # contain one would have that byte turned into `\|`.
+    local _srf_sep=$'\x1e'
     _srf_line="${_srf_line//\\|/$_srf_sep}"
     IFS='|' read -ra _srf_raw <<< "$_srf_line"
-    out_ref=()
+    _srf_out=()
     local _srf_f _srf_t
     for _srf_f in "${_srf_raw[@]}"; do
         _srf_f="${_srf_f//$_srf_sep/\\|}"
         _srf_t="${_srf_f#"${_srf_f%%[![:space:]]*}"}"
         _srf_t="${_srf_t%"${_srf_t##*[![:space:]]}"}"
-        out_ref+=("$_srf_t")
+        _srf_out+=("$_srf_t")
     done
 }
 

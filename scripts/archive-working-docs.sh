@@ -47,6 +47,12 @@ if [ -z "$PREFIX" ] && [ -f "$WORKING_DIR/si-run-id.txt" ]; then
   fi
 fi
 PREFIX="${PREFIX:-$(date +%Y-%m-%d)}"
+# The prefix becomes part of a path, and the morning summary reads it back as a
+# Run id; hold an explicit prefix to the same charset as the recorded one.
+if ! [[ "$PREFIX" =~ ^[A-Za-z0-9._-]+$ ]]; then
+  echo "Error: prefix '$PREFIX' must match [A-Za-z0-9._-]+" >&2
+  exit 1
+fi
 ARCHIVE_DIR="$WORKING_DIR/archive"
 
 if [ ! -d "$WORKING_DIR" ]; then
@@ -128,6 +134,12 @@ for f in "$WORKING_DIR"/*; do
   cites="$(cited_by "$name")"
   if [ -n "$cites" ]; then
     echo "  warn  $name is still cited by: $cites — add it to PERMANENT if it has graduated" >&2
+  fi
+  if [ -e "$dest" ]; then
+    # Two archives under one prefix (a date-only fallback run twice in a day)
+    # must not overwrite the first run's copy.
+    echo "  skip  $name: archive/${PREFIX}-${name} already exists" >&2
+    continue
   fi
   if $DRY_RUN; then
     echo "  move  $name -> archive/${PREFIX}-${name}"

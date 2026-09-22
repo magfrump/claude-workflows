@@ -202,3 +202,22 @@ teardown() {
   [ "$(cat docs/working/archive/2026-01-02-010203-tasks-round-1.json)" = "first run" ]
   [ "$(cat docs/working/archive/2026-01-02-235959-tasks-round-1.json)" = "second run" ]
 }
+
+@test "an explicit prefix outside [A-Za-z0-9._-] is refused and nothing moves" {
+  cd "$TEST_DIR" || return 1
+  run bash "$SCRIPT" "../../escape"
+  [ "$status" -ne 0 ]
+  [[ "$output" == *"must match"* ]]
+  [ -f docs/working/plan-foo.md ]
+}
+
+@test "archiving twice under one prefix does not overwrite the first copy" {
+  cd "$TEST_DIR" || return 1
+  bash "$SCRIPT" "same-day"
+  echo "second run" > docs/working/plan-foo.md
+  run bash "$SCRIPT" "same-day"
+  [ "$status" -eq 0 ]
+  [ "$(cat docs/working/archive/same-day-plan-foo.md)" = "plan content" ]
+  # The second copy stays in place rather than being lost.
+  [ "$(cat docs/working/plan-foo.md)" = "second run" ]
+}
