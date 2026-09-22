@@ -1,0 +1,16 @@
+bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+== project .claude symlinked to ~/.claude (HOME=T/h1)
+Write  clean  /proj/.claude/settings.json                                  -> deny
+        reason: This write reaches a protected policy file (settings.json: .claude hooks/settings or global CLAUDE.md) through a symlink or resolved path that permissions.deny does not name. Edit it at its ~/.claude path, with review.
+Write  clean  /proj/.claude/hooks/foo.sh                                   -> deny
+        reason: This write reaches a protected policy file (foo.sh: .claude hooks/settings or global CLAUDE.md) through a symlink or resolved path that permissions.deny does not name. Edit it at its ~/.claude path, with review.
+Write  clean  /proj/.claude/CLAUDE.md                                      -> deny
+        reason: This write reaches a protected policy file (CLAUDE.md: .claude hooks/settings or global CLAUDE.md) through a symlink or resolved path that permissions.deny does not name. Edit it at its ~/.claude path, with review.
+Write  clean  /proj/.claude/skills/x.md                                    -> DEFER
+== README bare-host layout (HOME=T/h3; repo at T/h3/claude-workflows)
+Edit   clean  /h3/claude-workflows/global-instructions/CLAUDE.md           -> deny
+        reason: This write reaches a protected policy file (CLAUDE.md: .claude hooks/settings or global CLAUDE.md) through a symlink or resolved path that permissions.deny does not name. Edit it at its ~/.claude path, with review.
+Edit   clean  /h3/claude-workflows/hooks/log-usage.sh                      -> DEFER
+Edit   clean  /h3/claude-workflows/hooks/guard-trusted-writes.py           -> DEFER
+Edit   clean  /h3/.claude/CLAUDE.md                                        -> DEFER
+Edit   clean  /h3/.claude/hooks/log-usage.sh                               -> DEFER

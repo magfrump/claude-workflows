@@ -1,0 +1,44 @@
+#!/usr/bin/env bash
+# Probes S1/S2: every path the hook classifies hard/hard-resolved, across layouts,
+# tools (Edit/Write/MultiEdit), path keys (file_path/path), taint states.
+# Hermetic: fake HOME, fake payload, scratch taint dir; tests the REPO copy of the hook.
+set -u
+SP=/tmp/claude-1000/-workspace/104b63ce-e414-465c-a24f-dda1e4116218/scratchpad/subm
+HOOK=/workspace/hooks/guard-trusted-writes.py
+R=$SP/layouts; rm -rf "$R"; mkdir -p "$R"
+mk_install() { # $1=home  $2=payload
+  mkdir -p "$2/hooks" "$1/.claude"; echo '# global' > "$2/CLAUDE.md"; echo x > "$2/hooks/foo.sh"
+  ln -s "$2/hooks" "$1/.claude/hooks"; ln -s "$2/CLAUDE.md" "$1/.claude/CLAUDE.md"
+  echo '{}' > "$1/.claude/settings.json"; echo '# home' > "$1/CLAUDE.md"
+}
+run_layout() { # $1=name  $2=home  $3=payload  $4=cfgmode(unset|set:<dir>)  $5=cwd
+  local name=$1 H=$2 P=$3 mode=$4 cwd=$5
+  mkdir -p "$R/$name/taint"; : > "$R/$name/taint/tainted"
+  mkdir -p "$H/proj"; [ -e "$H/proj/.claude" ] || ln -s "$H/.claude" "$H/proj/.claude"
+  python3 $SP/paths.py "$H" "$P" > "$R/$name/paths.json"
+  ( cd "$cwd"
+    if [ "$mode" = unset ]; then
+      env -u CLAUDE_CONFIG_DIR HOME="$H" CC_WEB_TAINT_DIR="$R/$name/taint" python3 $SP/harness.py $HOOK "$R/$name/paths.json"
+    else
+      env CLAUDE_CONFIG_DIR="${mode#set:}" HOME="$H" CC_WEB_TAINT_DIR="$R/$name/taint" python3 $SP/harness.py $HOOK "$R/$name/paths.json"
+    fi ) > "$R/$name/result.json"
+  echo "layout=$name rc=$?"
+}
+# L1 installed layout, CLAUDE_CONFIG_DIR unset
+mk_install $R/L1/home $R/L1/opt/cw; run_layout L1 $R/L1/home $R/L1/opt/cw unset $R/L1/home
+# L2 same, CLAUDE_CONFIG_DIR set explicitly to ~/.claude
+mk_install $R/L2/home $R/L2/opt/cw; run_layout L2 $R/L2/home $R/L2/opt/cw set:$R/L2/home/.claude $R/L2/home
+# L3 config dir itself a symlink: ~/.claude -> ~/realcfg (entries inside link to payload)
+mkdir -p $R/L3/home/realcfg; ln -s $R/L3/home/realcfg $R/L3/home/.claude
+mkdir -p $R/L3/opt/cw/hooks; echo g > $R/L3/opt/cw/CLAUDE.md; echo x > $R/L3/opt/cw/hooks/foo.sh
+ln -s $R/L3/opt/cw/hooks $R/L3/home/realcfg/hooks; ln -s $R/L3/opt/cw/CLAUDE.md $R/L3/home/realcfg/CLAUDE.md
+echo '{}' > $R/L3/home/realcfg/settings.json
+run_layout L3 $R/L3/home $R/L3/opt/cw unset $R/L3/home
+# L4 symlinked HOME: HOME=homelink -> homereal
+mk_install $R/L4/homereal $R/L4/opt/cw; ln -s $R/L4/homereal $R/L4/homelink
+run_layout L4 $R/L4/homelink $R/L4/opt/cw unset $R/L4/homereal
+# L5 plain (non-symlinked) config dir, no payload links
+mkdir -p $R/L5/home/.claude/hooks $R/L5/opt/cw; echo '{}' > $R/L5/home/.claude/settings.json
+echo x > $R/L5/home/.claude/hooks/foo.sh; echo g > $R/L5/home/.claude/CLAUDE.md
+run_layout L5 $R/L5/home $R/L5/opt/cw unset $R/L5/home
+python3 $SP/summarize.py $R

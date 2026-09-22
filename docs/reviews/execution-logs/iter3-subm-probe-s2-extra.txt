@@ -1,0 +1,34 @@
+bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+== L4 (HOME=homelink -> homereal): resolved-home spellings via CLI
+tainted /tmp/claude-1000/-workspace/104b63ce-e414-465c-a24f-dda1e4116218/scratchpad/subm/layouts/L4/homereal/CLAUDE.md -> {"hookSpecificOutput": {"hookEventName": "PreToolUse", "permissionDecision": "deny", "permissionDecisionReason": "This write reaches a protected policy file (CLAUDE.md: .claude hooks/settings or global CLAUDE.md) through a symlink or resolved path that permissions.deny does not name. Edit it at its ~/.claude path, with review."}}
+ [rc=0]
+clean /tmp/claude-1000/-workspace/104b63ce-e414-465c-a24f-dda1e4116218/scratchpad/subm/layouts/L4/homereal/CLAUDE.md -> {"hookSpecificOutput": {"hookEventName": "PreToolUse", "permissionDecision": "deny", "permissionDecisionReason": "This write reaches a protected policy file (CLAUDE.md: .claude hooks/settings or global CLAUDE.md) through a symlink or resolved path that permissions.deny does not name. Edit it at its ~/.claude path, with review."}}
+ [rc=0]
+tainted /tmp/claude-1000/-workspace/104b63ce-e414-465c-a24f-dda1e4116218/scratchpad/subm/layouts/L4/homereal/.claude/CLAUDE.md -> {"hookSpecificOutput": {"hookEventName": "PreToolUse", "permissionDecision": "deny", "permissionDecisionReason": "This write reaches a protected policy file (CLAUDE.md: .claude hooks/settings or global CLAUDE.md) through a symlink or resolved path that permissions.deny does not name. Edit it at its ~/.claude path, with review."}}
+ [rc=0]
+clean /tmp/claude-1000/-workspace/104b63ce-e414-465c-a24f-dda1e4116218/scratchpad/subm/layouts/L4/homereal/.claude/CLAUDE.md -> {"hookSpecificOutput": {"hookEventName": "PreToolUse", "permissionDecision": "deny", "permissionDecisionReason": "This write reaches a protected policy file (CLAUDE.md: .claude hooks/settings or global CLAUDE.md) through a symlink or resolved path that permissions.deny does not name. Edit it at its ~/.claude path, with review."}}
+ [rc=0]
+tainted /tmp/claude-1000/-workspace/104b63ce-e414-465c-a24f-dda1e4116218/scratchpad/subm/layouts/L4/homereal/.claude/settings.json -> {"hookSpecificOutput": {"hookEventName": "PreToolUse", "permissionDecision": "deny", "permissionDecisionReason": "This write reaches a protected policy file (settings.json: .claude hooks/settings or global CLAUDE.md) through a symlink or resolved path that permissions.deny does not name. Edit it at its ~/.claude path, with review."}}
+ [rc=0]
+clean /tmp/claude-1000/-workspace/104b63ce-e414-465c-a24f-dda1e4116218/scratchpad/subm/layouts/L4/homereal/.claude/settings.json -> {"hookSpecificOutput": {"hookEventName": "PreToolUse", "permissionDecision": "deny", "permissionDecisionReason": "This write reaches a protected policy file (settings.json: .claude hooks/settings or global CLAUDE.md) through a symlink or resolved path that permissions.deny does not name. Edit it at its ~/.claude path, with review."}}
+ [rc=0]
+tainted /tmp/claude-1000/-workspace/104b63ce-e414-465c-a24f-dda1e4116218/scratchpad/subm/layouts/L4/homereal/.claude/settings.brandnew.json -> {"hookSpecificOutput": {"hookEventName": "PreToolUse", "permissionDecision": "deny", "permissionDecisionReason": "This write reaches a protected policy file (settings.brandnew.json: .claude hooks/settings or global CLAUDE.md) through a symlink or resolved path that permissions.deny does not name. Edit it at its ~/.claude path, with review."}}
+ [rc=0]
+clean /tmp/claude-1000/-workspace/104b63ce-e414-465c-a24f-dda1e4116218/scratchpad/subm/layouts/L4/homereal/.claude/settings.brandnew.json -> {"hookSpecificOutput": {"hookEventName": "PreToolUse", "permissionDecision": "deny", "permissionDecisionReason": "This write reaches a protected policy file (settings.brandnew.json: .claude hooks/settings or global CLAUDE.md) through a symlink or resolved path that permissions.deny does not name. Edit it at its ~/.claude path, with review."}}
+ [rc=0]
+tainted /tmp/claude-1000/-workspace/104b63ce-e414-465c-a24f-dda1e4116218/scratchpad/subm/layouts/L4/homereal/.claude/hooks/foo.sh -> {"hookSpecificOutput": {"hookEventName": "PreToolUse", "permissionDecision": "deny", "permissionDecisionReason": "This write reaches a protected policy file (foo.sh: .claude hooks/settings or global CLAUDE.md) through a symlink or resolved path that permissions.deny does not name. Edit it at its ~/.claude path, with review."}}
+ [rc=0]
+clean /tmp/claude-1000/-workspace/104b63ce-e414-465c-a24f-dda1e4116218/scratchpad/subm/layouts/L4/homereal/.claude/hooks/foo.sh -> {"hookSpecificOutput": {"hookEventName": "PreToolUse", "permissionDecision": "deny", "permissionDecisionReason": "This write reaches a protected policy file (foo.sh: .claude hooks/settings or global CLAUDE.md) through a symlink or resolved path that permissions.deny does not name. Edit it at its ~/.claude path, with review."}}
+ [rc=0]
+== L1 lexical HARD via CLI (expect empty output = defer)
+tainted /tmp/claude-1000/-workspace/104b63ce-e414-465c-a24f-dda1e4116218/scratchpad/subm/layouts/L1/home/.claude/settings.json ->  [rc=0]
+clean /tmp/claude-1000/-workspace/104b63ce-e414-465c-a24f-dda1e4116218/scratchpad/subm/layouts/L1/home/.claude/settings.json ->  [rc=0]
+tainted /tmp/claude-1000/-workspace/104b63ce-e414-465c-a24f-dda1e4116218/scratchpad/subm/layouts/L1/home/.claude/hooks/foo.sh ->  [rc=0]
+clean /tmp/claude-1000/-workspace/104b63ce-e414-465c-a24f-dda1e4116218/scratchpad/subm/layouts/L1/home/.claude/hooks/foo.sh ->  [rc=0]
+tainted /tmp/claude-1000/-workspace/104b63ce-e414-465c-a24f-dda1e4116218/scratchpad/subm/layouts/L1/home/CLAUDE.md ->  [rc=0]
+clean /tmp/claude-1000/-workspace/104b63ce-e414-465c-a24f-dda1e4116218/scratchpad/subm/layouts/L1/home/CLAUDE.md ->  [rc=0]
+== per-file link inside CONFIG_DIR/hooks (L5: plain hooks dir) -> elsewhere
+tainted /tmp/claude-1000/-workspace/104b63ce-e414-465c-a24f-dda1e4116218/scratchpad/subm/layouts/L5/elsewhere/target.sh ->  [rc=0]
+clean /tmp/claude-1000/-workspace/104b63ce-e414-465c-a24f-dda1e4116218/scratchpad/subm/layouts/L5/elsewhere/target.sh ->  [rc=0]
+tainted /tmp/claude-1000/-workspace/104b63ce-e414-465c-a24f-dda1e4116218/scratchpad/subm/layouts/L5/home/.claude/hooks/linked.sh ->  [rc=0]
+clean /tmp/claude-1000/-workspace/104b63ce-e414-465c-a24f-dda1e4116218/scratchpad/subm/layouts/L5/home/.claude/hooks/linked.sh ->  [rc=0]

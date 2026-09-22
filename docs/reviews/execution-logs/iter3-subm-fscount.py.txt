@@ -1,0 +1,32 @@
+# Count filesystem syscalls-at-the-Python-level made by a hook version, per invocation.
+# argv[1]=hook file, argv[2]=json list of paths. Wraps os.stat/lstat/readlink/scandir/
+# listdir/open/access and os.path.realpath BEFORE the module is exec'd, so both the
+# module-level (import) phase and main() are counted. Also counts Path.resolve/glob calls.
+import sys, os, io, json, importlib.util, contextlib, pathlib, posixpath
+from collections import Counter
+C = Counter(); phase = ["import"]
+def wrap(mod, name):
+    orig = getattr(mod, name)
+    def w(*a, **k):
+        C[(phase[0], f"{mod.__name__}.{name}")] += 1
+        return orig(*a, **k)
+    setattr(mod, name, w)
+for n in ("stat", "lstat", "readlink", "scandir", "listdir", "access"):
+    wrap(os, n)
+wrap(posixpath, "realpath"); os.path.realpath = posixpath.realpath
+for n in ("resolve", "glob", "exists"):
+    wrap(pathlib.Path, n)
+pathlib.Path.__name__ = "Path"
+hook, pf = sys.argv[1], sys.argv[2]
+spec = importlib.util.spec_from_file_location("g", hook)
+g = importlib.util.module_from_spec(spec); spec.loader.exec_module(g)
+res = {"import": {k[1]: v for k, v in C.items() if k[0] == "import"}, "per_path": {}}
+for fp in json.load(open(pf)):
+    C.clear(); phase[0] = "main"
+    sys.stdin = io.StringIO(json.dumps({"session_id": "clean", "tool_name": "Edit",
+                                        "tool_input": {"file_path": fp}}))
+    with contextlib.redirect_stdout(io.StringIO()):
+        try: g.main()
+        except SystemExit: pass
+    res["per_path"][fp] = dict(sorted((k[1], v) for k, v in C.items()))
+print(json.dumps(res, sort_keys=True))

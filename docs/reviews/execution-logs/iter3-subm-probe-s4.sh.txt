@@ -1,0 +1,27 @@
+#!/usr/bin/env bash
+# S4: filesystem calls per invocation, pre-fix (2d93589) vs post-fix (a577546 == HEAD for
+# this file) hook, in the L1 installed layout built by probe-s1s2.sh.txt, same path list.
+set -u
+SP=/tmp/claude-1000/-workspace/104b63ce-e414-465c-a24f-dda1e4116218/scratchpad/subm
+R=$SP/layouts
+git -C /workspace show 2d93589:hooks/guard-trusted-writes.py > $SP/hook-2d93589.py
+git -C /workspace show a577546:hooks/guard-trusted-writes.py > $SP/hook-a577546.py
+cmp $SP/hook-a577546.py /workspace/hooks/guard-trusted-writes.py && echo "a577546 copy == working tree"
+for v in 2d93589 a577546; do
+  ( cd $R/L1/home && env -u CLAUDE_CONFIG_DIR HOME=$R/L1/home CC_WEB_TAINT_DIR=$R/L1/taint \
+      python3 $SP/fscount.py $SP/hook-$v.py $R/L1/paths.json ) > $SP/fscount-$v.json
+  echo "$v rc=$?"
+done
+python3 - $SP <<'PY'
+import json, sys
+sp = sys.argv[1]
+a = json.load(open(sp + "/fscount-2d93589.json")); b = json.load(open(sp + "/fscount-a577546.json"))
+print("import phase 2d93589:", a["import"]); print("import phase a577546:", b["import"])
+diff = 0
+for fp in a["per_path"]:
+    if a["per_path"][fp] != b["per_path"][fp]:
+        diff += 1; print("DIFF", fp, a["per_path"][fp], b["per_path"][fp])
+print("paths compared:", len(a["per_path"]), "paths with differing call counts:", diff)
+mx = max(b["per_path"].values(), key=lambda d: sum(d.values()))
+print("example per-path counts (a577546):", list(b["per_path"].items())[:3])
+PY

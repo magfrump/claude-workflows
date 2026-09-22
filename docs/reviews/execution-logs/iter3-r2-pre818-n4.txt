@@ -1,0 +1,20 @@
+bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+1..2
+bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+ok 1 _split_row_fields keeps an escaped pipe inside its cell
+bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+not ok 2 open hypotheses: a hypothesis with an escaped pipe is counted and shown whole
+# (in test file test/morning-summary-clusters.bats, line 457)
+#   `[[ "$output" == *"Open hypotheses: 2"* ]]' failed
+#
+# ### Open Hypotheses
+#
+# Open hypotheses: 1
+#
+# - **t-plain** (round 1): plain hyp *[planner-authored — review framing]*

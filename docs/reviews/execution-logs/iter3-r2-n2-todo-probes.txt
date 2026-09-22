@@ -1,0 +1,19 @@
+bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+clean  DEFER  <- cd; echo x > CLAUDE.md
+sess1  ask    <- cd; echo x > CLAUDE.md
+clean  DEFER  <- echo x > /home/$USER/CLAUDE.md
+sess1  ask    <- echo x > /home/$USER/CLAUDE.md
+clean  DEFER  <- echo x > ~/.clau*/settings.json
+sess1  DEFER  <- echo x > ~/.clau*/settings.json
+clean  DEFER  <- echo x > ~/.cl""aude/settings.json
+sess1  DEFER  <- echo x > ~/.cl""aude/settings.json
+clean  DEFER  <- echo x > ~/.claude/"settings".json
+sess1  DEFER  <- echo x > ~/.claude/"settings".json
+clean  DEFER  <- echo x > /opt/claude-workflows/hooks/a.py
+sess1  DEFER  <- echo x > /opt/claude-workflows/hooks/a.py
+clean  DEFER  <- cp -r dir/. ~/.claude/
+sess1  DEFER  <- cp -r dir/. ~/.claude/
+clean  DEFER  <- rsync -a dir/ ~/.claude/
+sess1  DEFER  <- rsync -a dir/ ~/.claude/
+clean  DEFER  <- cd ~/.claude && cp /tmp/p/* .
+sess1  DEFER  <- cd ~/.claude && cp /tmp/p/* .

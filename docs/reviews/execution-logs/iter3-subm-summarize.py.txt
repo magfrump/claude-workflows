@@ -1,0 +1,17 @@
+import json, sys, glob
+R = sys.argv[1]; bad = 0; tot = {}
+for f in sorted(glob.glob(R + "/*/result.json")):
+    L = f.split("/")[-2]
+    for row in json.load(open(f)):
+        cls = row["cls"]; tot[cls] = tot.get(cls, 0) + 1
+        decs = {k: v for k, v in row.items() if "/" in k}
+        if cls == "hard" and set(decs.values()) != {"defer"}:
+            bad += 1; print("VIOLATION hard not defer", L, row)
+        if cls == "hard-resolved" and set(decs.values()) != {"deny"}:
+            bad += 1; print("VIOLATION hard-resolved not deny", L, row)
+        if cls in ("hard", "hard-resolved") and "ask" in decs.values():
+            bad += 1; print("VIOLATION ask on HARD", L, row)
+        vals = sorted(set(decs.values()))
+        print(f"{L:3} {cls:13} {','.join(vals):20} {row['fp']}")
+print("class totals (path x layout):", tot)
+print("violations:", bad)

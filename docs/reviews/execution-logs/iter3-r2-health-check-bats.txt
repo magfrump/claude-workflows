@@ -1,0 +1,43 @@
+bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+1..17
+bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+ok 1 health-check exits 0 on this repo
+bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+ok 2 output contains Repo Health Check title
+bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+ok 3 output contains Skill YAML frontmatter section
+bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+ok 4 output contains Workflow cross-references section
+bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+ok 5 output contains MD file consistency section
+bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+ok 6 output contains Fixture expected-verdicts section
+bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+ok 7 output contains BATS tests section
+bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+ok 8 output contains shellcheck section
+bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+ok 9 output contains Workflow value-justification section
+bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+ok 10 output contains Hook script permissions section
+bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+ok 11 output ends with All checks passed
+bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+ok 12 detects skill file with no YAML frontmatter
+bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+ok 13 detects skill file with missing description field
+bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+ok 14 gate 5: runs fast then slow when both are green
+bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+ok 15 gate 5: red fast blocks slow and fails the gate
+bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+ok 16 gate 5: red slow after green fast fails the gate
+bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+ok 17 gate 5: HEALTH_CHECK_SKIP_BATS=1 skips the runner with a warning, not a pass
+elapsed 63s exit 0

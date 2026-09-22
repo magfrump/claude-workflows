@@ -1,0 +1,11 @@
+bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+deny   <- cat > /tmp/msg <<'EOF'
+fix CLAUDE.md wording since HEAD~1
+EOF
+DEFER  <- git commit -m "fix CLAUDE.md since HEAD~1"
+deny   <- echo x > /workspace/.claude/wt-abc/hooks/pre.sh
+DEFER  <- echo x > proj/hooks/a.sh
+deny   <- echo x > proj/SETTINGS.json # .CLAUDE
+deny   <- sed -i s/a/b/ CLAUDE.md ~/notes
+DEFER  <- echo x > CLAUDE.md
+deny   <- dd if=/dev/zero of=~/.claude/hooks/x

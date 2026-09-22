@@ -1,0 +1,30 @@
+# Runs inside a layout env. argv[1]=hook path, argv[2]=json file of paths. Prints JSON results.
+# Loads the hook as a module (module-level code reads HOME / CLAUDE_CONFIG_DIR from env),
+# then for every path calls classify_path and drives the real main() with a payload on stdin.
+import sys, os, io, json, importlib.util, contextlib
+hook, pathsfile = sys.argv[1], sys.argv[2]
+spec = importlib.util.spec_from_file_location("g", hook)
+g = importlib.util.module_from_spec(spec); spec.loader.exec_module(g)
+paths = json.load(open(pathsfile))
+out = []
+for fp in paths:
+    cls = g.classify_path(fp)
+    row = {"fp": fp, "cls": cls}
+    for tool in ("Edit", "Write", "MultiEdit"):
+        for key in ("file_path", "path"):
+            if key == "path" and tool != "MultiEdit":
+                continue
+            for sid in ("tainted", "clean"):
+                payload = {"session_id": sid, "tool_name": tool, "tool_input": {key: fp}}
+                sys.stdin = io.StringIO(json.dumps(payload))
+                buf = io.StringIO()
+                with contextlib.redirect_stdout(buf):
+                    try:
+                        g.main()
+                    except SystemExit:
+                        pass
+                s = buf.getvalue().strip()
+                dec = json.loads(s)["hookSpecificOutput"]["permissionDecision"] if s else "defer"
+                row[f"{tool}/{key}/{sid}"] = dec
+    out.append(row)
+print(json.dumps(out))

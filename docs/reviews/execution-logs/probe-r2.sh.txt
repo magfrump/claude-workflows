@@ -1,0 +1,60 @@
+set -u
+G=/workspace/hooks/guard-trusted-writes.py
+T=$(mktemp -d -p /tmp/claude-1000/-workspace/104b63ce-e414-465c-a24f-dda1e4116218/scratchpad)
+C=.cla""ude
+export CC_WEB_TAINT_DIR=$T/taint; mkdir -p $CC_WEB_TAINT_DIR; touch $CC_WEB_TAINT_DIR/sess1
+setup_layout() { # $1 = home
+  H=$1; P=$T/opt-$(basename $H)/claude-workflows
+  mkdir -p $P/hooks $H/$C; echo g > $P/CLAUDE.md; echo x > $P/hooks/foo.sh
+  ln -s $P/hooks $H/$C/hooks; ln -s $P/CLAUDE.md $H/$C/CLAUDE.md; echo '{}' > $H/$C/settings.json
+}
+probe() { # tool path sid [env...]
+  local tool=$1 f=$2 s=$3; shift 3
+  out=$(jq -nc --arg t "$tool" --arg f "$f" --arg s "$s" '{session_id:$s,tool_name:$t,tool_input:{file_path:$f}}' | env "$@" python3 $G 2>&1)
+  d=$(jq -r '.hookSpecificOutput.permissionDecision' <<<"$out" 2>/dev/null); [ -z "$out" ] && d=DEFER
+  printf '%-9s %-6s %-72s -> %s\n' "$tool" "$s" "${f#$T}" "$d"
+}
+H=$T/home; setup_layout $H; P=$T/opt-home/claude-workflows
+E="HOME=$H"
+echo "T=$T"
+echo "== default layout, CLAUDE_CONFIG_DIR unset"
+for s in clean sess1; do
+for f in "$H/$C/settings.json" "$H/$C/settings.foo.json" "$H/$C//settings.json" "$H/$C/./hooks/x" \
+  "$H/$C/x/../settings.json" "$H/$C/hooks/../CLAUDE.md" "$H/CLAUDE.md" "$H//CLAUDE.md" "$H/x/../CLAUDE.md" \
+  "$H/$C/SETTINGS.JSON" "$H/$C/HOOKS/x.sh" "$H/$C/claude.md" "$H/claude.md" \
+  "$P/CLAUDE.md" "$P/hooks/foo.sh" "$P/hooks/new.sh" "$P/README.md" "$H/$C/hooks" "$H/$C/settingsX.json" "$H/$C/sub/settings.json" "$H/$C/projects/x/CLAUDE.md" "$H/$C/managed-settings.json"; do
+  probe Write "$f" $s -u CLAUDE_CONFIG_DIR $E
+done; done
+echo "== MultiEdit"
+probe MultiEdit "$H/$C/settings.json" sess1 -u CLAUDE_CONFIG_DIR $E
+probe MultiEdit "$P/CLAUDE.md" clean -u CLAUDE_CONFIG_DIR $E
+echo "== tilde forms"
+probe Write "~/$C/settings.json" clean -u CLAUDE_CONFIG_DIR $E
+probe Write "~/CLAUDE.md" clean -u CLAUDE_CONFIG_DIR $E
+echo "== symlinked HOME (HOME=linkhome -> realhome)"
+RH=$T/realhome; setup_layout $RH; ln -s $RH $T/linkhome
+probe Write "$T/linkhome/$C/settings.json" clean -u CLAUDE_CONFIG_DIR HOME=$T/linkhome
+probe Write "$RH/$C/settings.json" clean -u CLAUDE_CONFIG_DIR HOME=$T/linkhome
+probe Write "$RH/CLAUDE.md" clean -u CLAUDE_CONFIG_DIR HOME=$T/linkhome
+probe Write "$RH/CLAUDE.md" sess1 -u CLAUDE_CONFIG_DIR HOME=$T/linkhome
+probe Write "$T/linkhome/CLAUDE.md" clean -u CLAUDE_CONFIG_DIR HOME=$T/linkhome
+echo "== CLAUDE_CONFIG_DIR = symlink (cfglink -> realcfg)"
+mkdir -p $T/realcfg; ln -s $T/realcfg $T/cfglink
+probe Write "$T/cfglink/settings.json" clean CLAUDE_CONFIG_DIR=$T/cfglink $E
+probe Write "$T/realcfg/settings.json" clean CLAUDE_CONFIG_DIR=$T/cfglink $E
+probe Write "$H/$C/settings.json" clean CLAUDE_CONFIG_DIR=$T/cfglink $E
+probe Write "$H/$C/settings.json" sess1 CLAUDE_CONFIG_DIR=$T/cfglink $E
+echo "== CLAUDE_CONFIG_DIR relative (cwd=T)"
+cd $T; mkdir -p relcfg
+probe Write "$T/relcfg/settings.json" clean CLAUDE_CONFIG_DIR=relcfg $E
+probe Write "relcfg/settings.json" clean CLAUDE_CONFIG_DIR=relcfg $E
+echo "== project .claude symlinked to ~/.claude"
+mkdir -p $T/proj; ln -s $H/$C $T/proj/$C
+for f in settings.json hooks/foo.sh CLAUDE.md skills/x.md; do probe Write "$T/proj/$C/$f" clean -u CLAUDE_CONFIG_DIR $E; done
+echo "== host-like layout: hooks and CLAUDE.md link into a git checkout (T/repo)"
+H2=$T/home2; mkdir -p $H2/$C $T/repo/hooks $T/repo/global-instructions; echo x> $T/repo/hooks/a.py; echo g > $T/repo/global-instructions/CLAUDE.md
+ln -s $T/repo/hooks $H2/$C/hooks; ln -s $T/repo/global-instructions/CLAUDE.md $H2/$C/CLAUDE.md
+probe Edit "$T/repo/hooks/a.py" clean -u CLAUDE_CONFIG_DIR HOME=$H2
+probe Edit "$T/repo/global-instructions/CLAUDE.md" clean -u CLAUDE_CONFIG_DIR HOME=$H2
+probe Edit "$T/repo/hooks/new_test.py" clean -u CLAUDE_CONFIG_DIR HOME=$H2
+probe Edit "$T/repo/CLAUDE.md" clean -u CLAUDE_CONFIG_DIR HOME=$H2

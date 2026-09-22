@@ -1,0 +1,230 @@
+bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+1..105
+bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+ok 1 creates log with header when absent and appends row
+bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+ok 2 uses default window of 3 when value is non-numeric
+bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+ok 3 skips tasks without a hypothesis and warns
+bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+ok 4 only approved tasks are logged
+bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+ok 5 appends without glomming when existing log lacks trailing newline
+bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+ok 6 pipe characters in hypothesis text are escaped
+bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+ok 7 evaluator and requires columns are populated when task has them
+bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+ok 8 user-evaluator with no requires emits empty requires cell
+bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+ok 9 hypothesis_source column is populated when task carries it
+bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+ok 10 planner-source hypothesis is logged with planner in Source cell
+bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+ok 11 missing hypothesis_source leaves the cell empty (legacy task)
+bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+ok 12 new log header ends with a Run column and rows carry the run id
+bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+ok 13 omitted run id leaves the Run cell empty
+bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+ok 14 log with a pre-Run header is migrated in place, old rows untouched
+bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+ok 15 migration is idempotent: a second append does not add a second Run column
+bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+ok 16 migration preserves the log's file mode and inode
+bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+ok 17 migration is a true no-op when the header already has a Run cell
+bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+ok 18 migration is a true no-op when no header row is found
+bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+ok 19 si_default_run_id is date plus time of day and passes the run-id charset
+bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+ok 20 si_default_run_id differs for two runs started on the same day
+bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+ok 21 no rejections in scope emits placeholder
+bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+ok 22 single gate with multiple files renders sub-counts
+bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+ok 23 multiple gates each get their own grouped line
+bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+ok 24 file with 3+ rejections triggers maintenance signal
+bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+ok 25 file with only 2 rejections produces no maintenance signal
+bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+ok 26 maintenance signal triggers when file spans multiple gates
+bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+ok 27 missing tasks file falls back to unknown
+bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+ok 28 empty files_touched falls back to unknown
+bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+ok 29 rejections across multiple rounds aggregate into one cluster set
+bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+ok 30 same task rejected in two rounds counts once per (gate, file)
+bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+ok 31 uses basename of first file in files_touched as primary
+bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+ok 32 header is always emitted even when there are rejections
+bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+ok 33 progressive-disclosure: open user rows collapse into a counted <details> block, all reachable
+bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+ok 34 discoverability-on-creation: a precondition-MET script row appears under Ready, before the collapsed wall
+bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+ok 35 feedback-continuity: numbered total equals _count_matured_deferred for a mixed log
+bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+ok 36 collapse-not-delete: a precondition-UNMET script row is collapsed, not promoted to Ready
+bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+ok 37 zero open rows emits the no-op line and no group headers
+bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+ok 38 missing hypothesis log degrades gracefully
+bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+ok 39 _evaluate_script_preconditions exit code: 0 when MET, 1 when UNMET
+bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+ok 40 window gate: a not-yet-matured row (round 8 + window 5 > 10) is not counted
+bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+ok 41 window gate: legacy header without Source still gates on column 5
+bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+ok 42 deferred evaluation resolves a script row within its Run
+bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+ok 43 _split_row_fields keeps an escaped pipe inside its cell
+bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+ok 44 deferred evaluation reads the right Run cell for a hypothesis containing a pipe
+bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+ok 45 open hypotheses: a hypothesis with an escaped pipe is counted and shown whole
+bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+ok 46 archivable files are moved to archive with correct prefix
+bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+ok 47 permanent files are preserved and not moved
+bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+ok 48 running-questions docs are permanent
+bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+ok 49 graduated working docs are permanent
+bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+ok 50 warns before archiving a file a tracked doc still cites
+bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+ok 51 dry-run shows planned moves but does not move files
+bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+ok 52 exits cleanly with no archive when only permanent files exist
+bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+ok 53 custom prefix is correctly applied to archived filenames
+bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+ok 54 default prefix is the run id recorded in si-run-id.txt
+bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+ok 55 an explicit prefix overrides si-run-id.txt
+bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+ok 56 an unusable si-run-id.txt falls back to today's date
+bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+ok 57 two same-day runs with timestamped ids archive side by side
+bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+ok 58 an explicit prefix outside [A-Za-z0-9._-] is refused and nothing moves
+bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+ok 59 archiving twice under one prefix does not overwrite the first copy
+bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+ok 60 resolves skill from SKILL.md-dir layout
+bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+ok 61 resolves skill from flat skills/foo.md layout
+bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+ok 62 resolves workflow target
+bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+ok 63 resolves multiple targets and dedupes
+bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+ok 64 returns empty for tasks with no skill/workflow paths
+bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+ok 65 returns empty when tasks file is missing
+bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+ok 66 falls back to archive when current tasks file is absent
+bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+ok 67 archive fallback prefers the newest archived copy
+bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+ok 68 archive fallback skips a newer copy that lacks the task id
+bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+ok 69 counts skill invocations via skill_tool
+bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+ok 70 ignores file_read entries for skill targets
+bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+ok 71 workflow targets count file_read entries (fallback channel)
+bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+ok 72 sums across multiple targets
+bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+ok 73 returns 0 when log is missing
+bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+ok 74 returns 0 for empty target list
+bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+ok 75 metric_logged passes when field is present on a matching entry
+bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+ok 76 metric_logged fails when no matching entry has the field
+bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+ok 77 metric_logged scopes to the named target
+bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+ok 78 _days_since_round returns elapsed days from round timestamp
+bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+ok 79 _days_since_round echoes -1 when report missing
+bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+ok 80 _days_since_round uses NOW_EPOCH override for determinism
+bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+ok 81 _days_since_round prefers the newest archived report without a task id
+bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+ok 82 _days_since_round uses the report from the same archived run as the task
+bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+ok 83 preconditions met → ready-for-verdict recommendation
+bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+ok 84 preconditions unmet → INCONCLUSIVE recommendation
+bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+ok 85 no requires declared → ready-now recommendation
+bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+ok 86 unresolvable target → switch-evaluator recommendation
+bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+ok 87 unknown requires key is surfaced and forces INCONCLUSIVE
+bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+ok 88 all three precondition kinds can combine and all must pass
+bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+ok 89 combined preconditions report each check separately when one fails
+bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+ok 90 _find_tasks_file with a run id prefers that run's archive over a newer one
+bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+ok 91 _find_tasks_file with a run id uses the live file when the live run matches
+bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+ok 92 _find_tasks_file skips the live file of a different run when the row's run is archived
+bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+ok 93 _find_tasks_file falls back to newest-first when the row's run has no copy
+bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+ok 94 _days_since_round with a run id uses that run's archived report
+bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+ok 95 _days_since_round with a run id ignores a live report from a different run
+bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+ok 96 _live_run_matches: empty run matches; missing or empty si-run-id.txt does not
+bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+ok 97 _days_since_round does not take the live report as the row's run once si-run-id.txt is archived
+bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+ok 98 _find_tasks_file ignores a Run cell that would leave archive/ and falls back newest-first
+bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+ok 99 _days_since_round ignores a Run cell that would leave archive/
+bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+ok 100 flags REFUTED and INCONCLUSIVE-EXPIRED rows in the current 11-column log
+bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+ok 101 an escaped pipe in hypothesis text does not shift the Outcome column
+bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+ok 102 still reads the legacy 8-column log
+bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+ok 103 auto-detects the latest round from the round-history array
+bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+ok 104 round falls back to ? when round-history is an empty array
+bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+ok 105 maps a flagged task ID to a directory-layout skill

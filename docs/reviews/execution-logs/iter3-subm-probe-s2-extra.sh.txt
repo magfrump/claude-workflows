@@ -1,0 +1,28 @@
+#!/usr/bin/env bash
+# Extra S1/S2 probes through the real CLI (python3 hook < payload): L4 resolved-home
+# spellings, and a per-file link inside CONFIG_DIR/hooks/ (critic's not-verified item).
+set -u
+SP=/tmp/claude-1000/-workspace/104b63ce-e414-465c-a24f-dda1e4116218/scratchpad/subm
+HOOK=/workspace/hooks/guard-trusted-writes.py
+R=$SP/layouts
+T=$SP/taint-extra; rm -rf $T; mkdir -p $T; : > $T/tainted
+cli() { # $1=HOME $2=tool $3=path $4=sid
+  printf '{"session_id":"%s","tool_name":"%s","tool_input":{"file_path":"%s"}}' "$4" "$2" "$3" \
+    | env -u CLAUDE_CONFIG_DIR HOME="$1" CC_WEB_TAINT_DIR=$T python3 $HOOK
+  echo " [rc=$?]"
+}
+echo "== L4 (HOME=homelink -> homereal): resolved-home spellings via CLI"
+for f in $R/L4/homereal/CLAUDE.md $R/L4/homereal/.claude/CLAUDE.md $R/L4/homereal/.claude/settings.json \
+         $R/L4/homereal/.claude/settings.brandnew.json $R/L4/homereal/.claude/hooks/foo.sh; do
+  for s in tainted clean; do echo -n "$s $f -> "; cli $R/L4/homelink Edit "$f" $s; done
+done
+echo "== L1 lexical HARD via CLI (expect empty output = defer)"
+for f in $R/L1/home/.claude/settings.json $R/L1/home/.claude/hooks/foo.sh $R/L1/home/CLAUDE.md; do
+  for s in tainted clean; do echo -n "$s $f -> "; cli $R/L1/home Write "$f" $s; done
+done
+echo "== per-file link inside CONFIG_DIR/hooks (L5: plain hooks dir) -> elsewhere"
+mkdir -p $R/L5/elsewhere; echo y > $R/L5/elsewhere/target.sh
+ln -sf $R/L5/elsewhere/target.sh $R/L5/home/.claude/hooks/linked.sh
+for f in $R/L5/elsewhere/target.sh $R/L5/home/.claude/hooks/linked.sh; do
+  for s in tainted clean; do echo -n "$s $f -> "; cli $R/L5/home Edit "$f" $s; done
+done

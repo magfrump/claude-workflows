@@ -1,0 +1,8 @@
+bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+CLAUDE_CONFIG_DIR=/home/node/.claude HOME=/home/node
+/opt/claude-workflows/CLAUDE.md -> deny
+/home/node/.claude/CLAUDE.md -> DEFER
+/home/node/.claude/HOOKS/x -> DEFER
+/opt/claude-workflows/hooks/guard-trusted-writes.py -> deny
+/home/node/.claude/hooks/x -> DEFER
+/home/node/.claude/settings.json -> DEFER

@@ -1,0 +1,12 @@
+bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+1000
+awk: cannot open /tmp/claude-1000/-workspace/104b63ce-e414-465c-a24f-dda1e4116218/scratchpad/tmp.lxxTyovLnp/unreadable.md (Permission denied)
+unreadable rc=2
+no-header rc=0
+has-run rc=0
+migrate rc=0
+| Round | Task ID | Run |
+|-|-|-----|
+--- set -e caller (append_approved_hypotheses) on unreadable log:
+awk: cannot open /tmp/claude-1000/-workspace/104b63ce-e414-465c-a24f-dda1e4116218/scratchpad/tmp.lxxTyovLnp/unreadable.md (Permission denied)
+subshell rc=2

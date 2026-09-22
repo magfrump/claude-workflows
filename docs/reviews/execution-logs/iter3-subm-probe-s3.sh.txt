@@ -1,0 +1,27 @@
+#!/usr/bin/env bash
+# S3: explicit prefix validation in scripts/archive-working-docs.sh. Hermetic: runs a
+# copy of the script inside a scratch dir (not a git checkout) with a fake docs/working.
+set -u
+SP=/tmp/claude-1000/-workspace/104b63ce-e414-465c-a24f-dda1e4116218/scratchpad/subm
+W=$SP/s3; rm -rf $W; mkdir -p $W
+cp /workspace/scripts/archive-working-docs.sh $W/archive.sh
+probe() { # $1=label, rest = args
+  local label=$1; shift
+  rm -rf $W/t; mkdir -p $W/t/docs/working; echo x > $W/t/docs/working/a.md
+  ( cd $W/t && bash $W/archive.sh "$@" ) > $W/out 2>&1; local rc=$?
+  local made; made=$( [ -d $W/t/docs/working/archive ] && echo "archive-dir-created" || echo "no-archive-dir")
+  local left; left=$(cd $W/t && find . -type f | sort | tr '\n' ' ')
+  printf '%-28s rc=%s %s files: %s\n    out: %s\n' "$label" "$rc" "$made" "$left" "$(tr '\n' '|' < $W/out)"
+}
+probe 'slash a/b' 'a/b'
+probe 'dotdot-slash ../x' '../x'
+probe 'space "a b"' 'a b'
+probe 'newline' $'a\nb'
+probe 'glob a*' 'a*'
+probe 'semicolon a;b' 'a;b'
+probe 'unicode é' 'é'
+probe 'empty ""' ''
+probe 'dot .' '.'
+probe 'dotdot ..' '..'
+probe 'valid run-1' 'run-1'
+probe 'dry-run + a/b' -n 'a/b'

@@ -1,0 +1,22 @@
+import sys, json
+H, P = sys.argv[1], sys.argv[2]
+C = H + "/.claude"
+base = [C+"/CLAUDE.md", C+"/hooks/foo.sh", C+"/hooks/new.sh", C+"/hooks/a/b/c.py", C+"/hooks",
+        C+"/settings.json", C+"/settings.local.json", C+"/settings.foo.json", C+"/settingsX.json",
+        H+"/CLAUDE.md", P+"/CLAUDE.md", P+"/hooks/foo.sh", P+"/hooks/new.sh", P+"/hooks"]
+paths = []
+for b in base:
+    paths.append(b)
+    if "/.claude/" in b:
+        paths.append(b.replace("/.claude/", "/.claude/x/../", 1))
+        paths.append(b.replace("/.claude/", "/.claude//", 1))
+        paths.append(b.replace("/.claude/", "/.claude/./", 1))
+    if b.startswith(H):
+        paths.append(b.replace(H, "~", 1))
+    # case variants: must NOT classify HARD (included to confirm routing)
+    paths.append(b.replace("CLAUDE.md", "claude.md").replace("settings", "SETTINGS").replace("hooks", "HOOKS"))
+paths += [H+"/proj/.claude/CLAUDE.md", H+"/proj/.claude/hooks/foo.sh", H+"/proj/.claude/settings.json",
+          H+"/proj/.claude/settings.new.json", H+"/proj/.claude/x/../hooks/foo.sh",
+          "hooks/foo.sh", ".claude/settings.json", "CLAUDE.md", ".claude/hooks/foo.sh",
+          H+"/proj/CLAUDE.md", C+"/skills/x.md", C+"/hooks/../skills/x.md"]
+print(json.dumps(sorted(set(paths))))

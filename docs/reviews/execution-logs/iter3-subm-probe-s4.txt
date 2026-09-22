@@ -1,0 +1,8 @@
+bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+a577546 copy == working tree
+2d93589 rc=0
+a577546 rc=0
+import phase 2d93589: {'Path.glob': 1, 'Path.resolve': 6, 'os.lstat': 86, 'os.readlink': 2, 'os.scandir': 1, 'os.stat': 7, 'posixpath.realpath': 6}
+import phase a577546: {'Path.glob': 1, 'Path.resolve': 6, 'os.lstat': 86, 'os.readlink': 2, 'os.scandir': 1, 'os.stat': 7, 'posixpath.realpath': 6}
+paths compared: 77 paths with differing call counts: 0
+example per-path counts (a577546): [('.claude/hooks/foo.sh', {'Path.exists': 1, 'Path.resolve': 1, 'os.lstat': 14, 'os.readlink': 1, 'os.stat': 2, 'posixpath.realpath': 1}), ('.claude/settings.json', {'Path.exists': 1, 'Path.resolve': 1, 'os.lstat': 2, 'os.stat': 2, 'posixpath.realpath': 1}), ('/tmp/claude-1000/-workspace/104b63ce-e414-465c-a24f-dda1e4116218/scratchpad/subm/layouts/L1/home/.claude/./CLAUDE.md', {'Path.exists': 1, 'Path.resolve': 1, 'os.lstat': 22, 'os.readlink': 1, 'os.stat': 2, 'posixpath.realpath': 1})]

@@ -1,0 +1,21 @@
+set -u
+G=/workspace/hooks/guard-trusted-writes.py
+T=$(mktemp -d -p /tmp/claude-1000/-workspace/104b63ce-e414-465c-a24f-dda1e4116218/scratchpad)
+C=.cla""ude
+export CC_WEB_TAINT_DIR=$T/taint; mkdir -p $CC_WEB_TAINT_DIR; touch $CC_WEB_TAINT_DIR/sess1
+probe() { local tool=$1 f=$2 s=$3; shift 3
+  out=$(jq -nc --arg t "$tool" --arg f "$f" --arg s "$s" '{session_id:$s,tool_name:$t,tool_input:{file_path:$f}}' | env -u CLAUDE_CONFIG_DIR "$@" python3 $G 2>&1)
+  d=$(jq -r '.hookSpecificOutput.permissionDecision' <<<"$out" 2>/dev/null); [ -z "$out" ] && d=DEFER
+  printf '%-6s %-6s %-60s -> %s\n' "$tool" "$s" "${f#$T}" "$d"
+  [ "$d" = deny ] && echo "        reason: $(jq -r .hookSpecificOutput.permissionDecisionReason <<<"$out")"; true; }
+echo "== project .claude symlinked to ~/.claude (HOME=T/h1)"
+H=$T/h1; mkdir -p $H/$C $T/proj; echo '{}' > $H/$C/settings.json; ln -s $H/$C $T/proj/$C
+for f in settings.json hooks/foo.sh CLAUDE.md skills/x.md; do probe Write "$T/proj/$C/$f" clean HOME=$H; done
+echo "== README bare-host layout (HOME=T/h3; repo at T/h3/claude-workflows)"
+H=$T/h3; R=$H/claude-workflows; mkdir -p $H/$C/hooks $R/hooks $R/global-instructions
+echo g > $R/global-instructions/CLAUDE.md; echo x > $R/hooks/log-usage.sh; cp $G $R/hooks/
+ln -s $R/global-instructions/CLAUDE.md $H/$C/CLAUDE.md
+ln -s $R/hooks/log-usage.sh $H/$C/hooks/log-usage.sh
+cp $R/hooks/guard-trusted-writes.py $H/$C/hooks/
+for f in "$R/global-instructions/CLAUDE.md" "$R/hooks/log-usage.sh" "$R/hooks/guard-trusted-writes.py" "$H/$C/CLAUDE.md" "$H/$C/hooks/log-usage.sh"; do
+  probe Edit "$f" clean HOME=$H; done

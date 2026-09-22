@@ -1,0 +1,89 @@
+bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+1..39
+bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+ok 1 no rejections in scope emits placeholder
+bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+ok 2 single gate with multiple files renders sub-counts
+bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+ok 3 multiple gates each get their own grouped line
+bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+ok 4 file with 3+ rejections triggers maintenance signal
+bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+ok 5 file with only 2 rejections produces no maintenance signal
+bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+ok 6 maintenance signal triggers when file spans multiple gates
+bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+ok 7 missing tasks file falls back to unknown
+bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+ok 8 empty files_touched falls back to unknown
+bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+ok 9 rejections across multiple rounds aggregate into one cluster set
+bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+ok 10 same task rejected in two rounds counts once per (gate, file)
+bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+ok 11 uses basename of first file in files_touched as primary
+bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+ok 12 header is always emitted even when there are rejections
+bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+ok 13 progressive-disclosure: open user rows collapse into a counted <details> block, all reachable
+bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+ok 14 discoverability-on-creation: a precondition-MET script row appears under Ready, before the collapsed wall
+bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+ok 15 feedback-continuity: numbered total equals _count_matured_deferred for a mixed log
+bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+ok 16 collapse-not-delete: a precondition-UNMET script row is collapsed, not promoted to Ready
+bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+ok 17 zero open rows emits the no-op line and no group headers
+bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+ok 18 missing hypothesis log degrades gracefully
+bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+ok 19 _evaluate_script_preconditions exit code: 0 when MET, 1 when UNMET
+bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+ok 20 window gate: a not-yet-matured row (round 8 + window 5 > 10) is not counted
+bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+ok 21 window gate: legacy header without Source still gates on column 5
+bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+ok 22 deferred evaluation resolves a script row within its Run
+bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+ok 23 _split_row_fields keeps an escaped pipe inside its cell
+bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+ok 24 deferred evaluation reads the right Run cell for a hypothesis containing a pipe
+bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+ok 25 open hypotheses: a hypothesis with an escaped pipe is counted and shown whole
+bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+ok 26 archivable files are moved to archive with correct prefix
+bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+ok 27 permanent files are preserved and not moved
+bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+ok 28 running-questions docs are permanent
+bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+ok 29 graduated working docs are permanent
+bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+ok 30 warns before archiving a file a tracked doc still cites
+bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+ok 31 dry-run shows planned moves but does not move files
+bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+ok 32 exits cleanly with no archive when only permanent files exist
+bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+ok 33 custom prefix is correctly applied to archived filenames
+bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+ok 34 default prefix is the run id recorded in si-run-id.txt
+bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+ok 35 an explicit prefix overrides si-run-id.txt
+bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+ok 36 an unusable si-run-id.txt falls back to today's date
+bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+ok 37 two same-day runs with timestamped ids archive side by side
+bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+ok 38 an explicit prefix outside [A-Za-z0-9._-] is refused and nothing moves
+bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+ok 39 archiving twice under one prefix does not overwrite the first copy

@@ -1,0 +1,13 @@
+bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+== project .claude symlinked to ~/.claude (HOME=T/h1)
+Write  clean  /proj/.claude/settings.json                                  -> DEFER
+Write  clean  /proj/.claude/hooks/foo.sh                                   -> DEFER
+Write  clean  /proj/.claude/CLAUDE.md                                      -> DEFER
+Write  clean  /proj/.claude/skills/x.md                                    -> DEFER
+== README bare-host layout (HOME=T/h3; repo at T/h3/claude-workflows)
+cp: cannot stat '/tmp/claude-1000/-workspace/104b63ce-e414-465c-a24f-dda1e4116218/scratchpad/tmp.UOIRl8x5AF/h3/claude-workflows/hooks/guard-trusted-writes.py': No such file or directory
+Edit   clean  /h3/claude-workflows/global-instructions/CLAUDE.md           -> DEFER
+Edit   clean  /h3/claude-workflows/hooks/log-usage.sh                      -> DEFER
+Edit   clean  /h3/claude-workflows/hooks/guard-trusted-writes.py           -> DEFER
+Edit   clean  /h3/.claude/CLAUDE.md                                        -> DEFER
+Edit   clean  /h3/.claude/hooks/log-usage.sh                               -> DEFER

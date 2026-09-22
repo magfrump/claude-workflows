@@ -1,0 +1,77 @@
+bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+T=/tmp/claude-1000/-workspace/104b63ce-e414-465c-a24f-dda1e4116218/scratchpad/tmp.NsGv3Diypa
+== default layout, CLAUDE_CONFIG_DIR unset
+Write     clean  /home/.claude/settings.json                                              -> DEFER
+Write     clean  /home/.claude/settings.foo.json                                          -> DEFER
+Write     clean  /home/.claude//settings.json                                             -> DEFER
+Write     clean  /home/.claude/./hooks/x                                                  -> DEFER
+Write     clean  /home/.claude/x/../settings.json                                         -> DEFER
+Write     clean  /home/.claude/hooks/../CLAUDE.md                                         -> DEFER
+Write     clean  /home/CLAUDE.md                                                          -> DEFER
+Write     clean  /home//CLAUDE.md                                                         -> DEFER
+Write     clean  /home/x/../CLAUDE.md                                                     -> DEFER
+Write     clean  /home/.claude/SETTINGS.JSON                                              -> DEFER
+Write     clean  /home/.claude/HOOKS/x.sh                                                 -> DEFER
+Write     clean  /home/.claude/claude.md                                                  -> DEFER
+Write     clean  /home/claude.md                                                          -> DEFER
+Write     clean  /opt-home/claude-workflows/CLAUDE.md                                     -> deny
+Write     clean  /opt-home/claude-workflows/hooks/foo.sh                                  -> deny
+Write     clean  /opt-home/claude-workflows/hooks/new.sh                                  -> deny
+Write     clean  /opt-home/claude-workflows/README.md                                     -> DEFER
+Write     clean  /home/.claude/hooks                                                      -> DEFER
+Write     clean  /home/.claude/settingsX.json                                             -> DEFER
+Write     clean  /home/.claude/sub/settings.json                                          -> DEFER
+Write     clean  /home/.claude/projects/x/CLAUDE.md                                       -> DEFER
+Write     clean  /home/.claude/managed-settings.json                                      -> DEFER
+Write     sess1  /home/.claude/settings.json                                              -> DEFER
+Write     sess1  /home/.claude/settings.foo.json                                          -> DEFER
+Write     sess1  /home/.claude//settings.json                                             -> DEFER
+Write     sess1  /home/.claude/./hooks/x                                                  -> DEFER
+Write     sess1  /home/.claude/x/../settings.json                                         -> DEFER
+Write     sess1  /home/.claude/hooks/../CLAUDE.md                                         -> DEFER
+Write     sess1  /home/CLAUDE.md                                                          -> DEFER
+Write     sess1  /home//CLAUDE.md                                                         -> DEFER
+Write     sess1  /home/x/../CLAUDE.md                                                     -> DEFER
+Write     sess1  /home/.claude/SETTINGS.JSON                                              -> ask
+Write     sess1  /home/.claude/HOOKS/x.sh                                                 -> ask
+Write     sess1  /home/.claude/claude.md                                                  -> ask
+Write     sess1  /home/claude.md                                                          -> ask
+Write     sess1  /opt-home/claude-workflows/CLAUDE.md                                     -> deny
+Write     sess1  /opt-home/claude-workflows/hooks/foo.sh                                  -> deny
+Write     sess1  /opt-home/claude-workflows/hooks/new.sh                                  -> deny
+Write     sess1  /opt-home/claude-workflows/README.md                                     -> DEFER
+Write     sess1  /home/.claude/hooks                                                      -> DEFER
+Write     sess1  /home/.claude/settingsX.json                                             -> DEFER
+Write     sess1  /home/.claude/sub/settings.json                                          -> ask
+Write     sess1  /home/.claude/projects/x/CLAUDE.md                                       -> ask
+Write     sess1  /home/.claude/managed-settings.json                                      -> ask
+== MultiEdit
+MultiEdit sess1  /home/.claude/settings.json                                              -> DEFER
+MultiEdit clean  /opt-home/claude-workflows/CLAUDE.md                                     -> deny
+== tilde forms
+Write     clean  ~/.claude/settings.json                                                  -> DEFER
+Write     clean  ~/CLAUDE.md                                                              -> DEFER
+== symlinked HOME (HOME=linkhome -> realhome)
+Write     clean  /linkhome/.claude/settings.json                                          -> DEFER
+Write     clean  /realhome/.claude/settings.json                                          -> deny
+Write     clean  /realhome/CLAUDE.md                                                      -> deny
+Write     sess1  /realhome/CLAUDE.md                                                      -> deny
+Write     clean  /linkhome/CLAUDE.md                                                      -> DEFER
+== CLAUDE_CONFIG_DIR = symlink (cfglink -> realcfg)
+Write     clean  /cfglink/settings.json                                                   -> DEFER
+Write     clean  /realcfg/settings.json                                                   -> deny
+Write     clean  /realhome/.claude/settings.json                                          -> DEFER
+Write     sess1  /realhome/.claude/settings.json                                          -> ask
+== CLAUDE_CONFIG_DIR relative (cwd=T)
+Write     clean  /relcfg/settings.json                                                    -> DEFER
+Write     clean  relcfg/settings.json                                                     -> deny
+== project .claude symlinked to ~/.claude
+Write     clean  /proj/.claude/settings.json                                              -> DEFER
+Write     clean  /proj/.claude/hooks/foo.sh                                               -> DEFER
+Write     clean  /proj/.claude/CLAUDE.md                                                  -> DEFER
+Write     clean  /proj/.claude/skills/x.md                                                -> DEFER
+== host-like layout: hooks and CLAUDE.md link into a git checkout (T/repo)
+Edit      clean  /repo/hooks/a.py                                                         -> deny
+Edit      clean  /repo/global-instructions/CLAUDE.md                                      -> deny
+Edit      clean  /repo/hooks/new_test.py                                                  -> deny
+Edit      clean  /repo/CLAUDE.md                                                          -> DEFER
