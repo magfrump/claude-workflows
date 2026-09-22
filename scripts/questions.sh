@@ -286,7 +286,8 @@ cmd_check() {
         [[ -f "$file" ]] || continue
         local want_ids have_ids
         want_ids="$(parse_entries "$file" | cut -f1 | sort)"
-        have_ids="$(sed -n "/$INDEX_START/,/$INDEX_END/p" "$file" | grep -ao 'Q-[0-9]\{3\}' | sort -u || true)"
+        # First column only: a summary may itself mention another entry's ID.
+        have_ids="$(sed -n "/$INDEX_START/,/$INDEX_END/p" "$file" | grep -ao '^| \[Q-[0-9]\{3\}\]' | grep -ao 'Q-[0-9]\{3\}' | sort -u || true)"
         if [[ "$want_ids" != "$have_ids" ]]; then
             echo "  ✗ $(basename "$file"): index is stale — run: $QS_CMD index" >&2
             rc=1

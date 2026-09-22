@@ -148,6 +148,15 @@ EOF
     [ "$judgment_line" -lt "$trigger_line" ]
 }
 
+@test "check accepts a fresh index whose summary mentions another entry's id" {
+    # The summary column can quote an id (e.g. "follow-up to Q-002"); only the
+    # first column counts as an index entry.
+    sed -i 's/^Should the first thing happen?$/Follow-up to Q-002: should the first thing happen?/' "$QUESTIONS_LIVE"
+    bash "$QS" index
+    run bash "$QS" check
+    [ "$status" -eq 0 ]
+}
+
 @test "index is idempotent" {
     bash "$QS" index
     first="$(cat "$QUESTIONS_LIVE")"
