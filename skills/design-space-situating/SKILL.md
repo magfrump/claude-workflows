@@ -8,16 +8,16 @@ description: >
   the user asks "what kind of decision is this", "situate this decision", "where does
   this sit in the design space", "frame this before we choose", "frame this before we
   diverge", "what kind of problem is this", or "are we even framing this right". Also
-  trigger proactively as a sub-procedure when divergent-design surfaces contradictory
-  constraints that no candidate can satisfy, when DD's compatibility matrix has no green
-  cell, or when RPI research turns up a decision touching authority, time, reversibility,
-  formality, social structure, or legibility in ways the user has not named. Contradictory
-  constraints almost always signal a misframed problem rather than a genuine tradeoff —
-  run this skill before treating it as a tradeoff. The output record becomes input to
-  DD's diagnosis step (problem statement) or RPI's plan step (decision framing); it is a
-  frame, not a decision. Lean toward invoking this skill when in doubt — a 5-minute
-  framing pass routinely saves hours of misdirected design work.
-when: User wants to frame a design decision before choosing, or DD/RPI surfaces a misframing signal
+  trigger as an escalation from divergent-design: when DD's Double Diamond (Purpose-First)
+  variant has been run and still fails to produce a coherent framing (every candidate
+  framing leaves out a hard concern, or the chosen framing reproduces the same
+  contradictory hard constraints). Contradictory constraints or an empty compatibility
+  matrix inside DD go to DD's own Double Diamond variant first, not here. Also trigger when
+  RPI research turns up a decision touching authority, time, reversibility, formality,
+  social structure, or legibility in ways the user has not named. The output record becomes
+  input to DD's diagnosis step (problem statement), a re-run of the Double Diamond's
+  framing step, or RPI's plan step (decision framing); it is a frame, not a decision.
+when: User wants to frame a design decision before choosing, DD's Double Diamond variant failed to produce a coherent framing, or RPI surfaces an unnamed design-space default
 ---
 
 > On bad output, see guides/skill-recovery.md
@@ -35,7 +35,7 @@ Dimensions come from a cross-disciplinary survey of design techniques (visual, s
 ## When to use
 
 - **Explicit request.** "Situate this decision", "what kind of decision is this", "where does this fit in the design space", "frame this before we diverge".
-- **Misframing signal from DD.** When divergent-design's compatibility matrix (step 3) shows constraints no candidate satisfies, or constraints actively contradict each other (e.g., "needs formal verification" + "must support rapid iteration"), pause and run this skill. Contradictory constraints often signal a misframed decision — placing it on the dimensions can reveal which axis the user assumed a position on without choosing it.
+- **Misframing that DD's Double Diamond could not resolve.** When divergent-design's constraints contradict each other or its compatibility matrix (step 3) has no coherent survivor, suggest DD's [Double Diamond (Purpose-First) variant](../../workflows/divergent-design.md#variant-double-diamond-purpose-first) first; it owns misframing inside DD. Run this skill only if the Double Diamond also fails to produce a coherent framing: every candidate framing leaves out a hard concern, or the chosen framing reproduces the same contradiction (e.g., "needs formal verification" + "must support rapid iteration"). Placing the decision on the dimensions can then reveal which axis every framing assumed a position on without choosing it.
 - **Implicit defaults in RPI.** When RPI research surfaces a decision touching social structure, temporal commitment, or legibility in ways the user hasn't named, situate before planning so the plan reflects what the decision actually is.
 
 ---
@@ -350,7 +350,7 @@ The most useful surprise this skill produces, for 3D decisions specifically, is 
 
 ## Composition with other workflows
 
-- **From DD (misframing trigger):** When DD step 3 (compatibility matrix) shows no candidate satisfies the constraints, or constraints contradict each other, pause DD and run this skill. The situating record either resolves the contradiction (one constraint was a default, not a chosen position) or confirms it as a genuine tradeoff. First case: return to DD with the corrected problem statement; second: the situating paragraph becomes part of the decision's documented framing.
+- **From DD (misframing escalation):** A misframing signal in DD (contradictory constraints in step 2, or no coherent survivor in step 3) goes to DD's Double Diamond variant first. If Diamond 1 fails to produce a coherent framing, run this skill. The situating record either resolves the contradiction (one constraint was a default, not a chosen position) or confirms it as a genuine tradeoff. First case: return to Diamond 1 (step 1a) or DD step 2 with the corrected problem statement; second: the situating paragraph becomes part of the decision's documented framing.
 - **To DD:** A situating record produced before DD seeds DD's diagnosis step (step 2). Hard constraints are now visible, and the placements pre-prune candidates that contradict the named placements (e.g., placement "expert-led" → DD need not generate "wiki" candidates).
 - **To RPI:** A situating record produced during RPI research becomes part of the plan's framing. The plan cites the record instead of re-deriving the constraints.
 - **From standalone:** A user may invoke this skill on its own when a decision feels unclear. The output is still a frame, not a decision — name what comes next (DD, RPI, or direct implementation) at the end of the record.
