@@ -7,28 +7,35 @@ files without review, across BOTH the file tools and Bash (which the v1 hook and
 sandbox-write-deny were the only things covering — and the sandbox is currently down).
 
 Two tiers of policy path:
-  HARD  = the GLOBAL config dir only: ~/.claude/hooks/**, ~/.claude/settings*.json,
-          ~/.claude/CLAUDE.md, ~/CLAUDE.md (the config dir is $CLAUDE_CONFIG_DIR when set,
-          else ~/.claude — the same {{CLAUDE_DIR}} hooks/wiring.json substitutes).
-          These are also covered by your Edit/Write DENY rules. Critical: a hook that
-          returns "ask" SILENTLY OVERRIDES permissions.deny (Claude Code issue #39344,
-          precedence deny > defer > ask > allow). So this hook must NEVER "ask" on a
-          HARD path — it DEFERS (lets the deny rule block the file tools) and, for the
-          Bash path that deny rules don't cover, returns "deny" outright.
+  HARD  = exactly what permissions.deny covers (hooks/wiring.json): {{CLAUDE_DIR}}/hooks/**,
+          {{CLAUDE_DIR}}/settings*.json, {{CLAUDE_DIR}}/CLAUDE.md, ~/CLAUDE.md. {{CLAUDE_DIR}}
+          is ONE dir, computed as the linker does (config_dir() below:
+          ${CLAUDE_CONFIG_DIR:-$HOME/.claude}); when CLAUDE_CONFIG_DIR points elsewhere,
+          ~/.claude is not HARD. A path is HARD if its lexical form, its normpath (`..`
+          folded), or its resolve() lands there — including a resolve() onto the target
+          of a symlinked global entry (installed layout: hooks and CLAUDE.md link into
+          /opt/claude-workflows). Critical: a hook that returns "ask" SILENTLY OVERRIDES
+          permissions.deny (Claude Code issue #39344, precedence deny > defer > ask >
+          allow). So this hook must NEVER "ask" on a HARD path — it DEFERS (lets the
+          deny rule block the file tools) and, for the Bash path that deny rules don't
+          cover, returns "deny" outright.
   SOFT  = skills / memories / commands / agents / project CLAUDE.md|AGENTS.md / *.mdc,
-          and a PROJECT's own .claude/ (settings*.json, hooks/**; Q-026). The deny
-          rules name only the global dir, so deferring on a project .claude/ path would
-          leave it with no gate at all; it is SOFT instead.
+          a PROJECT's own .claude/ (settings*.json, hooks/**; Q-026), and
+          managed-settings.json. No deny rule names these, so deferring would leave
+          them with no gate at all; they are SOFT instead.
           Legitimately edited. Gated to "ask" only when the session is web-tainted.
 
-Bash is classified by command TEXT, so it can't resolve a relative path:
-  HARD  = any `.claude/hooks`, `.claude/settings`, `.claude/CLAUDE.md` fragment (global
-          or project — the text doesn't say which), managed-settings, and CLAUDE.md
-          only when qualified as global: `~/`, `$HOME/`, `${HOME}/`, the literal home
-          path, or `global-instructions/CLAUDE.md` (this repo's source of the global
-          file; hard for Bash per the 2026-09-12 security review).
-  SOFT  = a bare/project `CLAUDE.md` (Q-035) — matching the Edit/Write tier, so a
-          heredoc or commit message that merely names the file is no longer denied.
+Bash is classified by command TEXT, so it can't resolve a path, and the shell can spell
+one many ways. The global tier is therefore decided by CO-OCCURRENCE in the text:
+  HARD  = any `.claude/hooks`, `.claude/settings`, managed-settings fragment; OR a
+          CLAUDE.md mention (any case) together with ANY home/global indicator anywhere
+          in the command (`~`, `$HOME`, `${HOME…`, the literal home path, `.claude`,
+          `global-instructions`, `CLAUDE_CONFIG_DIR`, the literal config dir); OR a
+          settings*.json / hooks mention together with `.claude` / the config dir.
+          Conservative: a heredoc that names ~/.claude/CLAUDE.md in prose is denied.
+  SOFT  = a CLAUDE.md with no home/global indicator anywhere (Q-035) — matching the
+          Edit/Write tier, so a heredoc or commit message that merely names a project
+          CLAUDE.md is no longer denied.
 
 Decisions: emit JSON only for ask/deny. For "no opinion", exit 0 with NO output — the
 documented, version-independent defer (avoids the headless tool_deferred semantics of
@@ -53,23 +60,40 @@ def defer():                      # no opinion -> normal flow (deny rules still 
 # ── path classification for the FILE tools ──────────────────────────────────
 HOME = Path.home()
 
-def _global_dirs():
-    """The global config dir(s), as given and resolved. HARD applies only here."""
-    dirs = [HOME / ".claude"]
-    cfg = os.environ.get("CLAUDE_CONFIG_DIR")
-    if cfg:
-        dirs.append(Path(os.path.expanduser(cfg)))
-    out = []
-    for d in dirs:
-        out.append(d)
-        try: out.append(d.resolve())
-        except Exception: pass
-    return out
+def config_dir() -> Path:
+    """The ONE global config dir: exactly what the linker substitutes as {{CLAUDE_DIR}}.
 
-GLOBAL_DIRS = _global_dirs()
+    devcontainer-config/link-claude-home.sh uses DEST="${CLAUDE_CONFIG_DIR:-$HOME/.claude}":
+    an empty value falls back, `~` is NOT expanded, and there is no second dir. So
+    ~/.claude is NOT global when CLAUDE_CONFIG_DIR points elsewhere (it falls to SOFT,
+    since no deny rule covers it). A relative value is anchored at the hook's cwd so it
+    can't match from anywhere.
+    """
+    cfg = os.environ.get("CLAUDE_CONFIG_DIR")
+    return Path(os.path.abspath(cfg)) if cfg else HOME / ".claude"
+
+def _safe_resolve(p: Path) -> Path:
+    try: return p.resolve()
+    except Exception: return p
+
+CONFIG_DIR = config_dir()
+# The dir both as written and resolved (it may itself be a symlink).
+GLOBAL_DIRS = [CONFIG_DIR, _safe_resolve(CONFIG_DIR)]
+# Where the deny-covered entries actually live. In the installed layout
+# ~/.claude/hooks and ~/.claude/CLAUDE.md are symlinks into /opt/claude-workflows,
+# so resolve() leaves GLOBAL_DIRS; these catch a candidate that resolves onto a
+# link target (R4).
+_HARD_FILE_TARGETS = {_safe_resolve(CONFIG_DIR / "CLAUDE.md"), _safe_resolve(HOME / "CLAUDE.md")}
+try:
+    _settings_names = {q.name for q in CONFIG_DIR.glob("settings*.json")}
+except Exception:
+    _settings_names = set()
+for _n in {"settings.json", "settings.local.json"} | _settings_names:
+    _HARD_FILE_TARGETS.add(_safe_resolve(CONFIG_DIR / _n))
+_HARD_DIR_TARGETS = {_safe_resolve(CONFIG_DIR / "hooks")}
 
 def _global_rel(cand: Path):
-    """Path of `cand` relative to a global config dir, or None if outside all of them."""
+    """Path of `cand` relative to the global config dir, or None if outside it."""
     for g in GLOBAL_DIRS:
         try:
             return cand.relative_to(g)
@@ -77,38 +101,58 @@ def _global_rel(cand: Path):
             continue
     return None
 
+def _is_hard(cand: Path) -> bool:
+    """HARD == exactly what permissions.deny covers (hooks/wiring.json):
+    {{CLAUDE_DIR}}/settings*.json, {{CLAUDE_DIR}}/hooks/**, {{CLAUDE_DIR}}/CLAUDE.md,
+    ~/CLAUDE.md."""
+    rel = _global_rel(cand)
+    if rel is not None and rel.parts:
+        first = rel.parts[0].lower()
+        if first == "hooks":
+            return True
+        if len(rel.parts) == 1 and first.startswith("settings") and first.endswith(".json"):
+            return True
+        if len(rel.parts) == 1 and first == "claude.md":
+            return True
+    if cand.name.lower() == "claude.md" and cand.parent == HOME:
+        return True
+    return False
+
 def classify_path(fp: str) -> str:
     p = Path(os.path.expanduser(str(fp)))
-    try: rp = p.resolve()
-    except Exception: rp = p
-    for cand in (p, rp):
-        name = cand.name.lower()
-        # HARD: only the global config dir (what permissions.deny covers). A project's
-        # own .claude/ falls through to SOFT below (Q-026).
-        rel = _global_rel(cand)
-        if rel is not None and rel.parts:
-            if rel.parts[0] == "hooks":
-                return "hard"
-            if len(rel.parts) == 1 and name.startswith("settings") and cand.suffix == ".json":
-                return "hard"
-            if len(rel.parts) == 1 and name == "claude.md":
-                return "hard"
-        if name == "claude.md" and cand.parent == HOME:
+    # pathlib already collapses `//` and `/./`; normpath also folds `..` lexically,
+    # so `~/.claude/x/../CLAUDE.md` is seen as `~/.claude/CLAUDE.md` (R4).
+    norm = Path(os.path.normpath(str(p)))
+    rp = _safe_resolve(p)
+    cands = (p, norm, rp)
+    # HARD first, on EVERY candidate: a HARD path must never reach the "ask" below
+    # (an ask overrides permissions.deny, #39344).
+    for cand in cands:
+        if _is_hard(cand):
             return "hard"
-        if name in ("managed-settings.json",):
-            return "hard"
-    for cand in (p, rp):
+    if rp in _HARD_FILE_TARGETS or any(rp == d or d in rp.parents for d in _HARD_DIR_TARGETS):
+        return "hard"
+    # SOFT. A project's own .claude/ (settings, hooks) lands here (Q-026), and so does
+    # managed-settings.json: no deny rule names it, so deferring would leave it ungated.
+    for cand in cands:
         low = {seg.lower() for seg in cand.parts}
         name = cand.name.lower()
         if low & {"skills", "memories", "commands", "agents"} and cand.suffix.lower() in (".md", ".txt", ""):
             return "soft"
-        if name in ("claude.md", "agents.md", "claude.local.md") or cand.suffix.lower() == ".mdc":
+        if name in ("claude.md", "agents.md", "claude.local.md", "managed-settings.json") \
+                or cand.suffix.lower() == ".mdc":
             return "soft"
         if ".claude" in low:
             return "soft"
     return "none"
 
 # ── write-intent detection for the BASH tool ───────────────────────────────
+# TODO(A8): write primitives not recognised here (predates Q-035; code-review
+# 2026-09-21 A8): `ln -sf`, `curl -o`, `wget -O`, `tar -C` / `tar -x`,
+# `unzip -d`, `sponge`, `python3 script.py` (non-inline interpreters),
+# `git checkout` / `git restore` over a tracked policy file, and
+# `git config --global`. A command that writes only through these gets no
+# opinion from this hook.
 WRITE_PRIMITIVE = re.compile(
     # >, >>, 1>, 2>, &> and >&FILE to a file. Only a digit or `-` after `>&`
     # is an fd duplicate/close (2>&1, >&2, >&-); `>& word` writes to `word`.
@@ -118,15 +162,27 @@ WRITE_PRIMITIVE = re.compile(
     r"|\b(cp|mv|install|rsync)\b"                  # copy/move/install (dest ambiguous)
     r"|\b(python[0-9.]*|node|perl|ruby)\b[^\n]*\s-[ce]\b"  # inline interpreters
 )
-# CLAUDE.md is HARD in Bash only when the text qualifies it as the global file
-# (Q-035); a bare/project CLAUDE.md is SOFT, like the Edit/Write tier.
-_GLOBAL_PREFIXES = [r"~", r"\$HOME", r"\$\{HOME\}", r"global-instructions"]
-if str(HOME).rstrip("/"):         # HOME="/" would make this prefix empty and match any "/CLAUDE.md"
-    _GLOBAL_PREFIXES.append(re.escape(str(HOME).rstrip("/")))
-HARD_FRAG = re.compile(
-    r"\.claude/hooks(/|\b)|\.claude/settings|\.claude/CLAUDE\.md|managed-settings"
-    r"|(?:" + "|".join(_GLOBAL_PREFIXES) + r")/CLAUDE\.md",
-    re.I)
+
+# Bash is classified by command TEXT, which the shell can spell many ways
+# ("$HOME"/CLAUDE.md, ~//CLAUDE.md, H=~; ... $H/CLAUDE.md, cd ~/.claude && ...).
+# So the global tier is decided by CO-OCCURRENCE, not by an exact path spelling:
+# a home/global indicator ANYWHERE in the command, together with a policy-file
+# name, is HARD (R1, A10). Deliberately conservative.
+_HOME_INDICATORS = [r"~", r"\$HOME\b", r"\$\{[!#]?HOME\b", r"\.claude\b",
+                    r"global-instructions", r"CLAUDE_CONFIG_DIR"]
+# `.claude` / the config dir is the indicator for settings/hooks: `~` alone plus
+# the word "hooks" is too weak a signal to deny on.
+_CFG_INDICATORS = [r"\.claude\b", r"CLAUDE_CONFIG_DIR"]
+for _lit in {str(HOME).rstrip("/"), str(CONFIG_DIR).rstrip("/")}:
+    if _lit:                      # HOME="/" would make this empty and match everything
+        _HOME_INDICATORS.append(re.escape(_lit))
+if str(CONFIG_DIR).rstrip("/"):
+    _CFG_INDICATORS.append(re.escape(str(CONFIG_DIR).rstrip("/")))
+HOME_INDICATOR = re.compile("|".join(_HOME_INDICATORS), re.I)
+CFG_INDICATOR = re.compile("|".join(_CFG_INDICATORS), re.I)
+CLAUDE_MD = re.compile(r"claude\.md", re.I)
+SETTINGS_OR_HOOKS = re.compile(r"settings[\w.-]*\.json|\bhooks\b", re.I)
+HARD_FRAG = re.compile(r"\.claude/hooks(/|\b)|\.claude/settings|managed-settings", re.I)
 SOFT_FRAG = re.compile(
     r"\.claude/(skills|memories|commands|agents)"
     r"|(^|[\s\"'=/])(AGENTS|CLAUDE|CLAUDE\.local)\.md|\.mdc(\b|$)", re.I)
@@ -137,6 +193,13 @@ def bash_targets(cmd: str):
         return None
     if HARD_FRAG.search(cmd):
         return "hard"
+    # R1 / Q-035: CLAUDE.md plus any home/global indicator -> the global file may be meant.
+    if CLAUDE_MD.search(cmd) and HOME_INDICATOR.search(cmd):
+        return "hard"
+    # A10: settings*.json / hooks plus the config dir named anywhere.
+    if SETTINGS_OR_HOOKS.search(cmd) and CFG_INDICATOR.search(cmd):
+        return "hard"
+    # Only a CLAUDE.md with NO home/global indicator anywhere reaches SOFT (Q-035).
     if SOFT_FRAG.search(cmd):
         return "soft"
     return None
