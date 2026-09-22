@@ -4,7 +4,7 @@ value-justification: "Replaces open-ended review-comment-fix cycles with a struc
 
 # Review → Fix → Revalidate Loop
 
-This document is reference material for the review-fix loop step in [pr-prep](pr-prep.md). See pr-prep Step 3 for the procedure itself.
+This document owns the review-fix loop's control rules: the iteration cap and its exit conditions, the fix-drift check, and the two re-fire filters (divergence detection and re-flagged settled decisions). [pr-prep Step 3](pr-prep.md#3-review-fix-loop) owns the step sequence of each iteration (generate → triage and fix → test → re-review → exit) and when override-log rows are written. The code-review skill owns the tier definitions ([rubric](../skills/code-review/references/rubric.md)), the override-log format and verdicts ([override-log reference](../skills/code-review/references/override-log.md)), and `--loop-pass`. Each rule is stated in one place; the others link to it.
 
 ## Loop dynamics
 
@@ -40,8 +40,8 @@ Iteration N of 3
 
 Exit the loop at the end of any iteration where:
 
-1. **Clean convergence.** No Must Fix items remain and Must Address items are resolved or explicitly acknowledged. Proceed to Phase 2 of pr-prep.
-2. **Ship with documented known issues.** No Must Fix items remain, but Must Address or Consider items persist. Document the remaining findings in the PR description's "Areas of uncertainty" section and proceed to Phase 2. The human reviewer sees the known issues and can make a judgment call about whether they block merge.
+1. **Clean convergence.** No Must Fix items remain and every Must Address item is resolved or acknowledged with a discoverable TODO or a concrete revisit trigger (the [qualifying author note](../skills/code-review/references/rubric.md#-must-address)). Proceed to Phase 2 of pr-prep.
+2. **Ship with documented known issues.** No Must Fix items remain, but Must Address or Consider items persist. Document the remaining findings in the PR description's "Areas of uncertainty" section (the merge commit message on pr-prep's local-merge path) and proceed to Phase 2. The human reviewer sees the known issues and can make a judgment call about whether they block merge.
 
 If neither condition holds at the end of iteration 3, you have hit the cap. Do not begin iteration 4 implicitly — proceed to the gate below.
 
@@ -49,7 +49,17 @@ If neither condition holds at the end of iteration 3, you have hit the cap. Do n
 
 When iteration 3 ends without an exit condition met, the loop is paused at the cap. **No further fix work, re-review, or test run may proceed** until a written decision is recorded selecting one of:
 
-- **`escalate`** — Hand the loop off to a human reviewer. Present the iteration summary (counts, fixes per iteration, remaining findings, assessment of why convergence failed). The human reviewer may authorize additional iterations; only their explicit authorization permits iteration 4 to begin, and a new `Iteration 4 of N` header must reflect the revised bound they granted.
+- **`escalate`** — Hand the loop off to a human reviewer. Present the iteration summary in this template, so escalations stay consistent and complete:
+
+  ```markdown
+  ## Iterations (N completed)
+  ## Remaining Must Fix
+  ## Remaining Must Address
+  ## Convergence diagnosis (one sentence)
+  ## Recommended action (ship-with-issues / split-PR / pause for redesign)
+  ```
+
+  The human reviewer may authorize additional iterations; only their explicit authorization permits iteration 4 to begin, and a new `Iteration 4 of N` header must reflect the revised bound they granted.
 - **`split`** — Break the change into smaller pieces that can each converge inside their own 3-iteration budget. Close this loop, open per-piece branches, and start a new loop (with a fresh counter) on each piece. The current PR is either closed or repurposed as the integration branch.
 - **`abandon`** — Revert or shelve the change. The chosen approach is not converging, and continuing to patch will compound debt. Record what was learned so a future attempt does not repeat the same path.
 
@@ -66,8 +76,9 @@ The decision must be recorded in writing in one of: the latest review artifact (
 ## Fix-commit drift check (lite)
 
 Decision 031 chose `L=fix-drift`: after each fix batch (pr-prep Step 3c), run
-`scripts/lite-review.py --mode fix-drift` over the fix commits before starting the next
-full pass. The check is deliberately narrow — it reports **only** comment/doc drift the
+`~/.claude/scripts/lite-review.py --repo . --range <last-review-commit>..HEAD --mode fix-drift`
+over the fix commits before starting the next full pass (`--range` is required; in
+claude-workflows itself the script is `scripts/lite-review.py`). The check is deliberately narrow — it reports **only** comment/doc drift the
 fix introduced (a comment now stale relative to the changed code, or a new comment making
 a claim the code doesn't satisfy). It is not a second reviewer: pre-existing issues,
 style, and code behavior belong to the full review passes.
@@ -80,8 +91,11 @@ each fix diff.
 
 Mechanics: the script is a headless `claude -p` call on the subscription (Haiku by
 default, custom system prompt, no tools, no CLAUDE.md discovery — ~10–15k tokens/call).
-It cannot use `--bare`, which disables OAuth; success is judged from the JSON envelope,
-not the exit code. Findings are fixed immediately in the same fix batch, not triaged.
+It cannot use `--bare`: that flag reads only `ANTHROPIC_API_KEY` and ignores the
+subscription login, so on a subscription-only machine it prints "Not logged in" and exits 0
+(see the script's docstring). Success is judged from the JSON envelope, not the exit code.
+Findings are fixed immediately in the same fix batch, not triaged. The script is installed
+at `~/.claude/scripts/` by both install routes (README and the devcontainer linker).
 
 ## Divergence detection (stuck-loop signal)
 
@@ -140,7 +154,7 @@ Before triaging an iteration N review's findings into Must Fix / Must Address / 
 - **Same location**: same file, same line ±5, AND/OR
 - **Same category and substantively the same claim**: e.g., both are "missing null check on `user.email`" or both are "log statement leaks PII at `auth.ts:42`".
 
-A row counts as a match only if its **Override verdict** is `Won't-Fix` (regardless of whether the row's `PR ref` is this PR or a prior one). Other override verdicts — `Defer`, promotions to `🔴 Must-Fix`, etc. — do not trigger this filter; only the explicit decision to *not* fix carries forward as noise-suppression.
+A row counts as a match only if its **Override verdict** is `Won't-Fix` or `Accepted-immutable` (regardless of whether the row's `PR ref` is this PR or a prior one). `Accepted-immutable` rows are the ones code-review writes itself for a claim in history no commit can edit, and they are settled the same way; the verdict vocabulary is owned by the [override-log reference](../skills/code-review/references/override-log.md#capture-format). Other override verdicts — `Defer`, promotions to `🔴 Must-Fix`, etc. — do not trigger this filter; only a decision to *not* fix carries forward as noise-suppression.
 
 The match criteria deliberately reuse the location heuristic (same file, line ±5) from Divergence detection, so authors learn one rule.
 
@@ -179,7 +193,7 @@ If a finding could match both (a prior iteration's fix attempt *and* an override
 
 ## Anti-patterns
 
-These supplement the guidance in pr-prep Step 3 (which covers verifying findings and the iteration cap):
+These supplement the guidance in pr-prep Step 3 (which covers verifying findings) and the hard cap above:
 
 - **Fixing Consider items before Must Fix items.** Tier order exists for a reason — fixing a style issue in code that has a correctness bug is wasted work.
 - **Skipping the test run between fix and re-review.** The test run is where you catch issues the review didn't anticipate. Skipping it means the re-review may pass on code that doesn't actually work.
@@ -188,7 +202,7 @@ These supplement the guidance in pr-prep Step 3 (which covers verifying findings
 
 This loop complements Research → Plan → Implement. RPI produces an implementation with a human-reviewed plan; the review-fix loop adds automated code review and iterates on findings. Together they cover the full path from "understand the problem" to "PR ready for human review."
 
-The loop is embedded in pr-prep as a required step (Phase 1, step 3). It should not be run as a standalone workflow — use pr-prep, which sequences it within a two-phase process: content (gate checks → draft PR → review-fix loop) then packaging (commit cleanup → CI/annotation → description).
+The loop is embedded in pr-prep as a required step (Phase 1, step 3). It should not be run as a standalone workflow — use pr-prep, which sequences it within a two-phase process: content (gate checks → draft PR on the GitHub path → review-fix loop) then packaging (commit cleanup → checks/annotation → description, which is the merge commit message on the local-merge path).
 
 ## Artifacts
 

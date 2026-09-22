@@ -17,6 +17,12 @@ ln -s ~/claude-workflows/skills    ~/.claude/skills
 ln -s ~/claude-workflows/patterns  ~/.claude/patterns
 ln -s ~/claude-workflows/guides    ~/.claude/guides
 
+# Helper scripts the workflows call by installed path — e.g.
+# ~/.claude/scripts/lite-review.py (pr-prep's fix-drift check) and
+# ~/.claude/scripts/questions.sh (the running-questions doc). The devcontainer
+# links this too (devcontainer-config/link-claude-home.sh).
+ln -s ~/claude-workflows/scripts   ~/.claude/scripts
+
 # Logging and routing hooks (symlinks, same convention)
 for h in log-usage.sh log-usage-post.sh dd-routing-reminder.sh \
          batch-feedback-routing-reminder.sh claude-config-audit.sh; do

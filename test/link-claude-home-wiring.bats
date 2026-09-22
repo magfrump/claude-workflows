@@ -252,3 +252,18 @@ EOF
     }
   done
 }
+
+# Q-025: workflows and the global instructions call helpers by their installed
+# path. Both install routes must make those paths resolve: the devcontainer
+# linker (exercised here against the real scripts/ dir) and the README's
+# bare-host symlink block. Mutation: dropping `scripts` from ENTRIES, or the
+# README's `ln -s .../scripts` line, fails this test.
+@test "installed ~/.claude/scripts/{lite-review.py,questions.sh} resolve after install" {
+  rmdir "$SRC/scripts"
+  ln -s "$(cd "$REPO_ROOT/scripts" && pwd)" "$SRC/scripts"
+  run bash "$LINKER"
+  [ "$status" -eq 0 ]
+  [ -f "$DEST/scripts/lite-review.py" ]
+  [ -f "$DEST/scripts/questions.sh" ]
+  grep -qE '^ln -s ~/claude-workflows/scripts +~/.claude/scripts$' "$REPO_ROOT/README.md"
+}

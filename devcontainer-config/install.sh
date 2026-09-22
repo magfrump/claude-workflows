@@ -36,9 +36,11 @@ REPO_ROOT="$(cd "$SRC/.." && pwd)"
 # from the repo — and, being inside $SRC, it shows up in the diff below, which
 # is the human's review gate. Do not hand-edit devcontainer-config/claude-home.
 #
-# `scripts` is staged for one reason: hooks/log-usage.sh sources
+# `scripts` is staged for two reasons: hooks/log-usage.sh sources
 # ../scripts/lib/skill-paths.sh relative to its own path, so a payload with
-# hooks but no scripts leaves that hook dead on arrival (decision 023).
+# hooks but no scripts leaves that hook dead on arrival (decision 023); and
+# workflows call ~/.claude/scripts/lite-review.py and questions.sh by their
+# installed path (Q-025).
 # The global instructions file is sourced from global-instructions/ rather than
 # the repo root: at the root, a session working in THIS repo loads it twice —
 # once as the linked ~/.claude copy and once as the project's own instructions

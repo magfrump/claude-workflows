@@ -7,13 +7,27 @@ value-justification: "Replaces manual pre-review cleanup with structured self-re
 *The self-review and cleanup steps follow the [orchestrated review pattern](../patterns/orchestrated-review.md), with commits/files as the units of review.*
 
 ## When to use
-Before opening any pull request, especially when the reviewer is in a different timezone or unfamiliar with the libraries used.
+Before a branch lands — merged locally in a solo project, or through a pull request when someone else reviews it (especially a reviewer in a different timezone or unfamiliar with the libraries used).
 
 ## Process
 
-The process has two phases: **content** (is the code right?) and **packaging** (is the PR presentable?). Complete Phase 1 before starting Phase 2 — packaging work gets thrown away if content issues force a split or architectural rethink.
+The process has two phases: **content** (is the code right?) and **packaging** (is the change presentable?). Complete Phase 1 before starting Phase 2 — packaging work gets thrown away if content issues force a split or architectural rethink.
 
 See [decision 007](../docs/decisions/007-two-phase-pr-prep.md) for why this ordering was chosen.
+
+### Delivery path: local merge or GitHub PR
+
+Pick the path before Step 0. The question is **does anyone other than you review or merge this branch, or does the project rely on CI that only runs on push?**
+
+- **No → local merge (the default for solo, non-collaborative projects).** Nothing is pushed and no PR is opened. The review still runs in full. Only the delivery changes:
+  - **Skip Step 2** (draft PR). Run CI-equivalent checks locally in Step 5a.
+  - **Read "PR description" as "merge commit message"** everywhere in this doc. Step 6's template becomes the body of the `--no-ff` merge commit, and "Areas of uncertainty", convergence summaries and similar notes go there. Anything that would have been a PR comment (Step 5b) goes into the review artifact instead.
+  - **Commit the review artifacts on the branch** (`docs/reviews/`, override-log rows) before merging, so they land with the change.
+  - **Merge locally**: `git checkout main && git merge --no-ff <branch> -F <message-file>`. Merging into `main` follows the Operating Modes in the global instructions: in /active mode, ask first.
+  - Step 4 rebases onto local `main` rather than `origin/main`. In Step 7, "CI on main" means re-running the checks on `main` after the merge.
+- **Yes → GitHub PR (the collaborative path).** Follow every step as written: push, open a draft PR, and publish the description on the PR.
+
+Everything else, including the review-fix loop, is identical on both paths.
 
 ### Step 0: Environment scan (automated)
 
@@ -134,6 +148,8 @@ fi
 
 #### 2. Open draft PR
 
+*GitHub-PR path only; skipped on the local-merge path (see Delivery path above).*
+
 Push the branch and open a draft PR. This serves two purposes:
 - CI starts running in parallel with your review-fix work (saves waiting at step 5a)
 - Reviewers in other timezones get async visibility into in-progress work
@@ -166,12 +182,12 @@ Run review skills and iterate until clean. This is required, not optional.
 
   `<state forwarded>` tersely names the load-bearing approach and the surviving constraints/invariants/decisions the diff must honor (and, if the RPI loop was itself entered from an upstream workflow, the originating decision record or spike/findings doc) — not a generic "see the plan." This is the *continuity* counterpart to the drift notes above: drift records what **diverged** from the plan; the carried-from line records what **crossed the seam intact**, so the reviewer sees the originating decisions without re-deriving them and can confirm the diff still honors them. The literal `← carried from` token is the grep audit handle (consistent with the `Failure-pattern grep:` and header `(cite: ...)` self-auditing conventions). The line is **conditional, never a placeholder**: standalone work has no plan doc and omits the line entirely — do not write `← carried from: none` (same rule as the Problem-framing line in `research-plan-implement.md`).
 
-**b. Triage and fix.** Read each review artifact. Before sorting findings into the tier table below, scan each finding against `docs/reviews/override-log.md`. Findings that match a settled `Won't-Fix` row (this PR or an earlier one — same location, or same category and substantively the same claim) are surfaced under a separate **Re-flagged settled decisions** subsection in the review artifact and do **not** enter the tier triage. See `workflows/review-fix-loop.md` § Re-flagged settled decisions for the match criteria and the deliberate-promotion escape hatch (how to route a finding back into triage when the prior Won't-Fix no longer applies). This prefilter runs before the tier triage, but it does **not** override the Divergence detection check below — the two handle different re-fires: divergence detection *investigates* a re-fire the prior iteration tried to fix, whereas this filter *skips* a re-fire a human already settled as Won't-Fix. If a finding matches both (it was actively fix-attempted last iteration *and* carries a Won't-Fix row), divergence detection wins — see `workflows/review-fix-loop.md` § Re-flagged settled decisions. Only when neither applies does a finding enter the tier triage. Then work through the remaining findings in tier order:
+**b. Triage and fix.** Read each review artifact. First apply the two re-fire checks owned by [review-fix-loop.md](review-fix-loop.md): a finding that re-fires after a fix attempt goes to [Divergence detection](review-fix-loop.md#divergence-detection-stuck-loop-signal); a finding that matches a settled override-log row goes under **Re-flagged settled decisions** and skips triage ([match rules and precedence](review-fix-loop.md#re-flagged-settled-decisions-override-log-filter)). Work through the remaining findings in tier order. The tier definitions are owned by the [code-review rubric](../skills/code-review/references/rubric.md); this table only says what to do with each tier in the fix pass:
 
 | Tier | Meaning | Action | If you do NOT fix it |
 |------|---------|--------|----------------------|
 | Must Fix | Correctness bugs, false passes, wrong behavior | Fix before proceeding | **Override-log row required** |
-| Must Address | Fragility, inconsistency, misleading tests | Fix or explicitly acknowledge | **Override-log row required** |
+| Must Address | Fragility, inconsistency, misleading tests | Fix, or acknowledge with a discoverable TODO or a concrete revisit trigger ([qualifying author note](../skills/code-review/references/rubric.md#-must-address)) | **Override-log row required** |
 | Consider | Style, duplication, future-proofing | Fix if cheap, otherwise note for later | **Override-log row required** |
 
 For each finding: confirm it's real by reading the code, then fix. Commit in coherent batches referencing finding IDs (e.g., `fix: Address code review findings A2-A5`).
@@ -184,9 +200,12 @@ before the fix commit lands. Append to `docs/reviews/override-log.md` using the 
 ref, Finding (with `path:line` and the surfacing critic), Original verdict, Override
 verdict, Reason.
 
-This covers all three not-fixing outcomes the table above already sanctions: "explicitly
-acknowledge" (Must Address), "note for later" (Consider), and the scope-drift deferral
-below. It also covers a Must Fix you waive, which should be rare enough to feel wrong.
+This covers all three not-fixing outcomes the table above already sanctions: an
+acknowledged Must Address (whose row's `Reason` carries the TODO location or the revisit
+trigger), "note for later" (Consider), and the scope-drift deferral below. It also covers
+a Must Fix you waive, which should be rare enough to feel wrong. The only rows a
+code-review run writes on its own are `Accepted-immutable` ones; the format reference
+covers them, and you do not add rows for them.
 
 **Why the capture instruction lives here rather than in the code-review skill.** It used
 to live only in `code-review`, scheduled for "inside the same skill run" — but the skill's
@@ -207,7 +226,7 @@ Two practical notes:
   artifacts agree about what happened.
 
 **Completion check for this step:** the count of findings you declined to fix equals the
-count of new rows in `docs/reviews/override-log.md`. If those numbers differ, you have
+count of new rows in `docs/reviews/override-log.md` (not counting `[auto: code-review]` rows). If those numbers differ, you have
 either fixed something silently or waived something silently.
 
 **c. Run tests.** After fixing findings, re-run the test suite. Fixes often surface latent bugs — a tightened assertion may expose a helper bug, a scoping fix may reveal a silent false pass. Fix test breakage as separate commits.
@@ -215,10 +234,10 @@ either fixed something silently or waived something silently.
 **Fix-commit drift check (decision 031, L=fix-drift).** After fixes and tests, before the re-review pass, run the lite reviewer over just the fix commits:
 
 ```bash
-python3 scripts/lite-review.py --repo . --range <last-review-commit>..HEAD --mode fix-drift
+~/.claude/scripts/lite-review.py --repo . --range <last-review-commit>..HEAD --mode fix-drift
 ```
 
-This is a single subscription-backed headless Haiku call (no API key, no OpenRouter account), gated to one finding class: comments/docs the fix made stale, or new comments making claims the code doesn't satisfy. E1/E3 showed this is the dominant "fix introduces a defect" mode, and catching it here costs ~10–15k tokens instead of the full pass it takes to rediscover. Fix any finding immediately as part of the fix batch; do not triage it through the tier table (it is by construction a comment/doc fix, which costs the same as an ack under 0R+0A). See `workflows/review-fix-loop.md` § Fix-commit drift check.
+(In claude-workflows itself, `scripts/lite-review.py` is the same file.) Fix any finding immediately as part of the fix batch; do not triage it through the tier table. What the check reports, why it is this narrow, and how the call is made are in [review-fix-loop.md § Fix-commit drift check](review-fix-loop.md#fix-commit-drift-check-lite).
 
 **d. Re-review.** On the first iteration, run full review skills against the complete diff vs main. On iterations 2+, scope the re-review to reduce redundant work:
 
@@ -230,17 +249,9 @@ If a fix touched code broadly enough that the narrower diff covers most of the P
 
 **First-red short-circuit on intermediate passes (decision 032 #4).** Pass `--loop-pass` to
 `/code-review` on any pass you expect to be followed by a fix — i.e., every pass except the one
-you run to *confirm* the branch is clean. With `--loop-pass`, the review stops as soon as a
-behavioral 🔴 is confirmed, since a fix and another full pass are coming regardless; ambers are
-not gathered on a short-circuited pass. Calibrate expectations per the 2026-08-06 measurement
-(SKILL "First-red short-circuit" mechanics): the big saving (~73% of a pass, the whole critic
-panel skipped) happens only on the rare fact-check-visible behavioral red; a red surfaced by the
-critic panel itself saves ~0, because the panel is one parallel wave already in flight. This is
-a loop-safety valve, not a steady cost reducer. Run
-the final, expected-clean confirmation pass **without** `--loop-pass` so the full panel runs and
-the 0R+0A amber inventory is complete. This never risks recall: a behavioral red cannot merge —
-it is caught by construction on the terminal full-panel pass — the short-circuit only defers
-non-decisive work between fixes.
+you run to *confirm* the branch is clean — and run that final confirmation pass **without** it,
+so the full panel runs and the amber inventory is complete. The mechanics, the measured savings
+and why recall is not at risk are owned by code-review's SKILL.md ("First-red short-circuit").
 
 **Scope drift.** If a re-review finding would expand the PR beyond the scope set in step 1 (size, files touched, stated intent), the default is to file a follow-up issue and decline the change in this PR. Comply only when the finding is a hard blocker for merge (correctness bug or unsafe state). When triggered, log a `follow-up issue filed: <id/title>` line in the review artifact so the deferral is visible to the reviewer.
 
@@ -248,41 +259,24 @@ non-decisive work between fixes.
 
 **Tracking iteration scope:** Note in the review artifact whether each iteration used full or incremental scope, and how many prior findings were verified as resolved vs. still-open. This supports evaluating whether incremental re-review reduces review output length and duplicate findings over time.
 
-**e. Exit or repeat (3-iteration maximum).** Exit when no Must Fix items remain and Must Address items are resolved or explicitly acknowledged. Repeat if new findings appear. Each loop should be strictly smaller than the last.
+**e. Exit or repeat (hard cap: 3 iterations).** Exit when no Must Fix items remain and every Must Address item is resolved or acknowledged with a discoverable TODO or a concrete revisit trigger. Otherwise repeat; each loop should be strictly smaller than the last. The exit conditions, the per-iteration header, the iteration-4 `escalate | split | abandon` gate and the escalation template are owned by [review-fix-loop.md § Hard cap](review-fix-loop.md#hard-cap-3-iterations). Do not begin a fourth iteration without that gate's written decision.
 
-**After 3 iterations**, if new findings are still appearing, **stop**. This mirrors the 3-hypothesis escape hatch in the debugging defaults — unbounded iteration has diminishing returns. Choose one of two exit paths:
+**Tracking:** Record the loop's outcome in the PR description (the merge commit message on the local-merge path):
 
-1. **Ship with documented known issues.** If no Must Fix items remain but Must Address or Consider items persist, document them in the PR description's "Areas of uncertainty" section and proceed to Phase 2. The reviewer sees the known issues and can make a judgment call.
-2. **Escalate to human review.** If Must Fix items remain, or if you're unsure whether remaining findings are safe to ship, stop and present the user with: iteration count, summary of fixes per iteration, remaining findings, and your assessment of why the loop isn't converging (e.g., fixes revealing deeper issues, change too large for incremental review, review criteria shifting). Use this template so escalation summaries stay consistent and complete:
-
-   ```markdown
-   ## Iterations (N completed)
-   ## Remaining Must Fix
-   ## Remaining Must Address
-   ## Convergence diagnosis (one sentence)
-   ## Recommended action (ship-with-issues / split-PR / pause for redesign)
-   ```
-
-This is a hard cap, not a soft ceiling: iteration 4 cannot begin until a written decision selecting `escalate`, `split`, or `abandon` is recorded (in the review artifact, a commit message, or the PR's "Areas of uncertainty" section). A bare "continue" is not a valid decision; only a human reviewer's explicit authorization under `escalate` permits further iterations. See `workflows/review-fix-loop.md` § Iteration 4: cap-exceeded decision gate.
-
-**Tracking:** Record the loop's outcome in the PR description so reviewers and future calibration have a consistent signal. This is symmetric across both exit paths:
-
-- **Converged cleanly** (exited before the 3-iteration ceiling): add a one-line summary to the PR description in the form `Review converged in N iterations; M Must Fix resolved, K Must Address acknowledged.` This gives reviewers a calibration signal for the common case — they can see at a glance how much the loop actually caught.
-- **Ceiling hit at 3 iterations:** follow the escalation paths above (ship-with-known-issues or escalate to human review), capturing iteration count, per-iteration fix summary, remaining findings, and assessment of why the loop didn't converge.
-
-Both forms feed the same audit trail for calibrating the 3-iteration threshold over time.
+- **Converged cleanly:** `Review converged in N iterations; M Must Fix resolved, K Must Address acknowledged.`
+- **Cap reached:** the known issues or the escalation summary, per review-fix-loop.md.
 
 **Completion criteria:**
 - [ ] Every declined finding has a matching row in `docs/reviews/override-log.md` (counts equal)
 - [ ] Review artifacts exist in `docs/reviews/` for each review skill run
 - [ ] No Must Fix findings remain open
-- [ ] All Must Address findings are resolved or explicitly acknowledged in the PR description
+- [ ] All Must Address findings are resolved or acknowledged with a discoverable TODO or a concrete revisit trigger, and listed in the PR description
 - [ ] Final review loop introduced no new Must Fix or Must Address findings
 - [ ] Diff's files-touched match the plan's declared scope; if not, drift is flagged to the human for explicit acknowledgment
 - [ ] Loop outcome noted in PR description: convergence summary (`Review converged in N iterations; M Must Fix resolved, K Must Address acknowledged.`) if converged cleanly, or escalation summary if ceiling hit at 3
 - [ ] If ceiling hit: remaining findings documented in PR description, or escalated to human review
 - [ ] If a plan doc exists (work arrived via RPI), the Plan-drift check restated the forwarded state as a `← carried from RPI: <state forwarded>` line in the PR's Workflow provenance field; if the work is standalone (no plan doc), the line is correctly omitted (no `← carried from: none` placeholder)
-- [ ] Review artifacts committed to the branch (see [PR Review Doc Inclusion guide](../guides/pr-review-doc-inclusion.md))
+- [ ] Review artifacts committed to the branch (see [PR Review Doc Inclusion guide](../guides/pr-review-doc-inclusion.md)); on the local-merge path this is what carries them into `main`
 
 ### Phase 2: Packaging
 
@@ -442,7 +436,7 @@ Decisions referenced: [list of NNN decision IDs whose invariants this PR touches
 
 For UI changes, capture before/after screenshots or a short recording and include them in the description. The reviewer may not be able to run the UI locally — visual evidence eliminates a round-trip.
 
-**c. Description gate (micro-check).** Before publishing the description (marking the draft PR ready for review, or opening the PR if no draft was made), answer these three questions about the description as written:
+**c. Description gate (micro-check).** Before publishing the description (marking the draft PR ready for review, opening the PR if no draft was made, or, on the local-merge path, running the merge), answer these three questions about the description as written:
 
 1. **Why, not just what.** Does the description explain *why* this change exists — the problem it solves or the motivation behind it — and not only enumerate what files/lines changed?
 2. **Specific tests.** Does the description list the specific tests added or run (by name, file, or scenario), rather than vague phrases like "tested locally" or "all tests pass"?
@@ -484,7 +478,7 @@ After the PR merges, there are follow-up tasks that are easy to forget in the mo
 
 **Checklist — act on what applies, skip the rest:**
 
-- [ ] **Verify CI passes on main.** Check that the merge commit's CI run is green. Rebased PRs can still break main if another PR landed between your last push and merge (semantic conflicts, flaky tests exposed by new code paths). A quick check catches these before they compound.
+- [ ] **Verify CI passes on main.** Check that the merge commit's CI run is green (local-merge path: re-run the project's checks on `main`). Rebased PRs can still break main if another PR landed between your last push and merge (semantic conflicts, flaky tests exposed by new code paths). A quick check catches these before they compound.
 - [ ] **Monitor for regressions in the first hour.** If the project has observability (error tracking, latency dashboards, log alerts), glance at them within an hour of merge. Not all bugs show up in tests — some only appear under real traffic or data patterns. Scale monitoring effort to the risk: a config change needs less watching than a new auth flow.
 - [ ] **Update affected documentation.** If the PR changed user-facing behavior, CLI flags, config options, or API contracts, verify that READMEs, onboarding docs, decision records, and `docs/thoughts/` entries still reflect reality. Documentation that contradicts the code is worse than no documentation.
 - [ ] **Remove feature flags if the feature shipped fully.** If the feature was gated behind a flag during development and is now fully rolled out, remove the flag and its branching logic. Leftover flags accumulate as dead code and confuse future readers.

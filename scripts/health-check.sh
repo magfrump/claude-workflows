@@ -1016,7 +1016,12 @@ Skills"
 check_questions_doc() {
     section "Running questions"
     local out
-    if out="$("$REPO_ROOT/scripts/questions.sh" check 2>&1)"; then
+    # questions.sh resolves docs/working/ from the caller's $PWD (so the
+    # installed copy serves any project); pin it to this repo's files so the
+    # gate checks the same doc wherever health-check is launched from.
+    if out="$(QUESTIONS_LIVE="${QUESTIONS_LIVE:-$REPO_ROOT/docs/working/questions.md}" \
+              QUESTIONS_ARCHIVE="${QUESTIONS_ARCHIVE:-$REPO_ROOT/docs/working/questions-archive.md}" \
+              "$REPO_ROOT/scripts/questions.sh" check 2>&1)"; then
         echo "$out"
     else
         echo "$out"

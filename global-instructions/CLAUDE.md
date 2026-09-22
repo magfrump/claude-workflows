@@ -232,7 +232,7 @@ Log all autonomous decisions in commit message bodies with a `Confidence` tag (h
 
 During any autonomous or long-running work — /away mode, Ralph loops, `/loop` runs, overnight sessions — questions for the user that don't justify stopping must not evaporate. Maintain a running questions doc at `docs/working/questions.md`, with answered entries in `docs/working/questions-archive.md`.
 
-**Every entry has a stable ID and a name**, so the user can answer with `Q-014: [2]` and never restate the question, and so two entries are never confused while reading. Get the next ID from `scripts/questions.sh next-id`; the grammar is:
+**Every entry has a stable ID and a name**, so the user can answer with `Q-014: [2]` and never restate the question, and so two entries are never confused while reading. Get the next ID from `~/.claude/scripts/questions.sh next-id`; the grammar is:
 
 ```
 ### Q-NNN · <short-slug>
@@ -278,7 +278,7 @@ everything needed to act on it must already be in the entry.
 - **Never close an entry by inference when its own closure criterion names an observation.** "Delete the wrong host once a fetch has been *watched* succeed" is not discharged by a fetch that succeeded against a list holding both hosts. Read the entry's criterion before closing it; if it asks to see something, it stays open until someone has seen it. This is the one misroute that widens exposure instead of wasting a minute (triage §1.3).
 - **Append, don't block.** Add the entry and keep working.
 - The **interim choice** goes in the entry AND in the commit body (`Confidence`/`Notes` lines), so the question and the provisional decision stay traceable to each other.
-- **Maintenance is scripted, not remembered**: `scripts/questions.sh index` regenerates the index, `archive` moves answered entries out so the live file stays short, `check` validates and is gated by `scripts/health-check.sh`. Run `index` after editing entries.
+- **Maintenance is scripted, not remembered**: `~/.claude/scripts/questions.sh` acts on the `docs/working/` of the repo you run it from. `init` creates the two files if the project has none, `index` regenerates the index, `archive` moves answered entries out so the live file stays short, and `check` validates. Run `index` after editing entries and `check` before committing them. `check` is a gate only in claude-workflows itself (`scripts/health-check.sh`); elsewhere nothing runs it for you.
 - **Loop iterations**: reviewing and appending to this doc is part of each iteration's exit checklist — commit it with the iteration so the next iteration (and the user) sees it in `git log`.
 - **Surfacing**: when the user returns (switch to /active, or the end-of-run summary), list the open `you: judgment` entries by ID and name — don't make them go read it. Record answers inline, set `Status: ANSWERED`, run `archive`, and move anything with lasting significance to `docs/decisions/` or `docs/thoughts/`.
 - Only questions meeting the stop-and-wait bar above interrupt work; everything else accumulates here.
