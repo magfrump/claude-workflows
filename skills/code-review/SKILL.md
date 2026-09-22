@@ -155,7 +155,7 @@ Hold every matched row as `<considered-overrides>` for Stage 3. Each entry MUST 
 
 If the override log is empty or contains no rows that match the current diff, record the negative result explicitly (`No prior overrides matched this diff.`) — the absence statement is part of the contract that prevents the log from being write-only.
 
-This step is **read-only with respect to the log** during the run. New overrides — produced when a human reviews this run's output and downgrades or upgrades a finding — are appended to `docs/reviews/override-log.md` as a follow-up step (see [Capturing new overrides](references/override-log.md#capturing-new-overrides)), not during dispatch.
+This step is **read-only with respect to the log** during the run, with one exception: the orchestrator may append an `Accepted-immutable` row for a fact-check Incorrect about an already-merged commit message or other artifact no new commit can edit (see the immutable-history exception in [references/rubric.md](references/rubric.md#unified-severity-mapping)). That is the only row kind a run may write, and it is marked as machine-written per the [capture format](references/override-log.md#capture-format). All other new overrides — produced when a human reviews this run's output and downgrades or upgrades a finding — are appended to `docs/reviews/override-log.md` as a follow-up step (see [Capturing new overrides](references/override-log.md#capturing-new-overrides)), not during dispatch.
 
 ### Step 4: Known critic roles
 
@@ -1227,7 +1227,7 @@ capture format, the append procedure, and why the log is not write-only are in
   `code-review-rubric-<date>-<branch-slug>.md`. A new date or branch means a new file —
   never overwrite a prior review's rubric, since it is the only durable record of what the
   pipeline surfaced and whether each finding was fixed or waived.
-- **Contextual critics are advisory.** Their findings go to Consider tier and never block merge — with one evidence-gated exception: the Soundness-Contradiction Channel lifts a qualifying finding to 🟡, terminal there.
+- **Contextual critics are advisory.** Their findings go to Consider tier and never block merge — with evidence-gated exceptions: the Soundness-Contradiction Channel lifts a qualifying finding to 🟡, terminal there; and a finding confirmed by the Executable-Defect Channel maps through the contextual-critic row of the Unified Severity Mapping (ui-visual Critical→🔴, Major→🟡; test-strategy P1→🟡; tech-debt-triage/dependency-upgrade→🟡).
 - **Fact-check report size management.** If the report exceeds 200 lines, paste only the
   "Claims Requiring Attention" summary (Incorrect, Stale, Mostly Accurate) into critic prompts.
 - **The override log is append-only and must be read on every run.** Step 3.5 reads

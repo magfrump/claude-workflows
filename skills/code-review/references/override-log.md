@@ -17,9 +17,20 @@ Each override is one row in the table at the bottom of `docs/reviews/override-lo
 | `Date` | yes | `2026-05-12` (ISO date when the override was applied) |
 | `PR ref` | yes | `#482` (GitHub PR), `a1b2c3d` (short SHA), or `feat/auth-tokens` (branch) |
 | `Finding` | yes | `Missing null check in auth.ts:42 (security-reviewer)` — include `path:line` and the surfacing critic so future runs can match by location, category, and source |
-| `Original verdict` | yes | One of `🔴 Must-Fix`, `🟡 Must-Address`, `🟢 Consider`, `Nit` |
-| `Override verdict` | yes | One of `Won't-Fix`, `Defer`, `🟡 Must-Address`, `🔴 Must-Fix` (or comparable shorthand using the same vocabulary as Original) |
+| `Original verdict` | yes | One of `🔴 Must-Fix`, `🟡 Must-Address`, `🟢 Consider`, `Nit`, or — for an `Accepted-immutable` row only — `Fact-check Incorrect` (the finding never received a tier) |
+| `Override verdict` | yes | One of `Won't-Fix`, `Defer`, `🟡 Must-Address`, `🔴 Must-Fix`, `Accepted-immutable` (or comparable shorthand using the same vocabulary as Original) |
 | `Reason` | yes | One short sentence on the human's rationale (`"test-only path"`, `"deprecated module, removal scheduled in #501"`, `"team style; verbose form preferred here"`). If longer than ~30 words, link to a PR comment or `docs/decisions/NNN-*.md` instead of expanding the cell. |
+
+**`Accepted-immutable` rows (machine-written).** A fact-check Incorrect about a claim in an
+already-merged commit message, or any artifact no new commit can edit, is not tiered (see the
+immutable-history exception in [rubric.md](rubric.md#unified-severity-mapping)). The
+orchestrator records it by appending a row with `Override verdict: Accepted-immutable`
+**during the run** — the only row kind a run may write without a human decision. Such rows
+are distinguishable from human overrides: the `Reason` cell starts with `[auto: code-review]`
+followed by the immutable artifact (e.g. `[auto: code-review] merged commit a1b2c3d message
+misstates the retry count; cannot be edited`), and `PR ref` names the run's PR/branch. Treat
+an `Accepted-immutable` row like a settled `Won't-Fix` in Step 3.5 matching (do not re-raise
+the same immutable claim), and never write any other verdict value automatically.
 
 Rows are kept in reverse-chronological order (most recent at the top of the table) so that the freshest context is easiest to scan.
 
@@ -28,7 +39,9 @@ Rows are kept in reverse-chronological order (most recent at the top of the tabl
 When a human review of this run's output produces a verdict change relative to the rubric — typically a Must-Fix → Won't-Fix or a Nit → Must-Fix promotion — append a row to `docs/reviews/override-log.md` immediately. The append happens:
 
 1. **Inside the same skill run** when the orchestrator records the human's verdict
-   in chat (e.g., the user says "this one is fine, skip it" or "actually promote that").
+   in chat (e.g., the user says "this one is fine, skip it" or "actually promote that"),
+   or — without a human verdict — when it appends an `Accepted-immutable` row (see
+   above; that is the only automatic kind).
 2. **From the review-fix loop** in `workflows/pr-prep.md` when the loop terminates
    with unresolved findings that the human explicitly waived.
 3. **Manually by the author** if the override is reached outside a structured run
