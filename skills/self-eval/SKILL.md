@@ -47,6 +47,12 @@ Note the type — some dimensions apply differently to skills vs. workflows (see
 
 ## Step 2: Read the Rubric
 
+**Repo-only.** The rubric lives only in the claude-workflows repo; it is not installed into
+other projects. If `docs/evaluation-rubric.md` does not exist in the current project, stop
+before scoring and tell the user: "self-eval needs `docs/evaluation-rubric.md`, which exists
+only in the claude-workflows repo. Run self-eval from that repo." Do not substitute a
+remembered or improvised rubric.
+
 Read `docs/evaluation-rubric.md` in full — authoritative source for dimension definitions and scoring criteria. Do not rely on a cached or hardcoded version — the rubric may have been updated since this skill was written.
 
 Extract the 9 dimensions and their scoring guidance. Note the skills-vs-workflows table.

@@ -280,7 +280,7 @@ Before assigning a severity, classify the finding along two axes and use their c
 | Classification × Path | Default severity                                                |
 |-----------------------|-----------------------------------------------------------------|
 | Macro × Hot           | **High** (escalate to Critical when unbounded / DoS-enabling)   |
-| Macro × Cold          | Medium (algorithmic problems still bite when the cold path runs) |
+| Macro × Cold          | Low (matches the hot-path gate; escalate when the cold path blocks a latency-sensitive operation or runs over large data, e.g. a nightly batch) |
 | Micro × Hot           | Low–Medium (escalate when constant factor is large or call frequency extreme) |
 | Micro × Cold          | **Informational**                                               |
 

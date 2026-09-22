@@ -209,8 +209,15 @@ ls docs/reviews/security-review-*.md 2>/dev/null
 If one or more matching files exist, read the most recent and locate its **Trust
 Boundary Map** section. Extract the boundary labels (`B1`, `B2`, …), their `[source]
 → [transition point] → [destination]` lines, and any `(new)`, `(moved)`, or
-`(removed)` deltas. If no file matches, skip the rest of this section and proceed
-with cognitive move #3 unchanged.
+`(removed)` deltas. Also record the file's path and its `Commit:` metadata line
+(security-reviewer writes `Commit: <hash>` at the top); if the line is absent,
+record the commit as `unknown`. If no file matches, skip the rest of this section
+and proceed with cognitive move #3 unchanged.
+
+The most recent file is used even when its `Commit:` is not the commit under
+review — it may come from an older diff or another branch. Do not gate on the
+match; instead label it, so the reader can judge staleness (see "Cite the source
+commit" below).
 
 ### How to use the Trust Boundary Map
 
@@ -220,6 +227,11 @@ When the map exists, apply these constraints to module-boundary findings:
   with a labeled trust boundary must reference the label (e.g., "this widened
   public surface sits on `B1` from the security review") so a downstream reader
   can correlate the two reviews.
+- **Cite the source commit.** Every finding that uses the map must cite the
+  security review it came from and that review's `Commit:` line, e.g. "`B1` from
+  `docs/reviews/security-review-2026-09-12.md` (Commit: `a1b2c3d`)". When that
+  commit is not HEAD or the review base (or is `unknown`), add "— security review
+  predates this diff; boundary may be stale" so the reader weighs it accordingly.
 - **Do not contradict boundary placement.** If the security review identifies the
   trust boundary at a specific transition point, architecture-review must not
   recommend a structural change that implicitly places the boundary elsewhere
