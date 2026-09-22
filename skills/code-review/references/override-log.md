@@ -42,8 +42,8 @@ When a human review of this run's output produces a verdict change relative to t
    in chat (e.g., the user says "this one is fine, skip it" or "actually promote that"),
    or — without a human verdict — when it appends an `Accepted-immutable` row (see
    above; that is the only automatic kind).
-2. **From the review-fix loop** in `workflows/pr-prep.md` when the loop terminates
-   with unresolved findings that the human explicitly waived.
+2. **From the review-fix loop** in `workflows/pr-prep.md` Step 3b, during the fix
+   pass, for each finding the author declines to fix (before the fix commit lands).
 3. **Manually by the author** if the override is reached outside a structured run
    (e.g., during PR review on GitHub) — the author writes the row themselves.
 
