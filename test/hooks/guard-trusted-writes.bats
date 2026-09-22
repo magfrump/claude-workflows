@@ -31,6 +31,9 @@ setup() {
   export HOME="$TEST_TMPDIR/home"
   mkdir -p "$HOME"
   export CC_WEB_TAINT_DIR="$TEST_TMPDIR/taint"
+  # The config dir defaults to $HOME/.claude; an inherited CLAUDE_CONFIG_DIR
+  # (the sandbox sets one) would make the temp ~/.claude non-global.
+  unset CLAUDE_CONFIG_DIR
 }
 
 teardown() {
@@ -293,6 +296,164 @@ SKILL="~/.claude/skills/foo/SKILL.md"
 @test "a Bash write to global-instructions/CLAUDE.md stays denied (2026-09-12 review)" {
   guard "$(bash_payload "cp /tmp/x global-instructions/CLAUDE.md")"
   assert_decision deny
+}
+
+# --- R1: every spelling of the global CLAUDE.md is denied (co-occurrence) ---
+# Each of these returned no opinion (untainted) or ask (tainted) at 4c7a2bb.
+
+@test "R1: quoted, doubled-slash, dot-segment and quoted-name spellings are denied" {
+  local c
+  for c in \
+    'echo x > "$HOME"/CLAUDE.md' \
+    'echo x > ~//CLAUDE.md' \
+    'echo x > ~/./CLAUDE.md' \
+    'echo x > ~/"CLAUDE.md"' \
+    'echo x > ${HOME:-}/CLAUDE.md' \
+    'echo x > ${HOME:-/root}/CLAUDE.md' \
+    'echo x > $HOME/x/../CLAUDE.md' \
+    'echo x > ~/.claude//CLAUDE.md' \
+    'echo x > ~/.claude/./CLAUDE.md' \
+    'mv /tmp/x "$HOME/.claude"/CLAUDE.md' \
+    'H=~; echo x > $H/CLAUDE.md' \
+    'cd ~/.claude && mv x CLAUDE.md' \
+    'cd "$CLAUDE_CONFIG_DIR" && cp x claude.md'; do
+    guard "$(bash_payload "$c")"
+    [ "$(jq -r '.hookSpecificOutput.permissionDecision' <<<"$output")" = deny ] \
+      || { echo "not denied: $c -> $output"; return 1; }
+  done
+}
+
+@test "R1: the literal home path with a doubled slash is denied" {
+  guard "$(bash_payload "echo x > $HOME//CLAUDE.md")"
+  assert_decision deny
+}
+
+@test "R1: the global spellings are denied in a tainted session too (not ask)" {
+  taint sess1
+  guard "$(bash_payload 'echo x > "$HOME"/CLAUDE.md' sess1)"
+  assert_decision deny
+}
+
+@test "R1: a heredoc whose prose names ~/.claude/CLAUDE.md is denied (accepted cost)" {
+  guard "$(bash_payload $'cat > "$TMPDIR/msg" <<EOF\ndocs: update ~/.claude/CLAUDE.md\nEOF')"
+  assert_decision deny
+}
+
+@test "R1: a bare CLAUDE.md with no home indicator stays SOFT" {
+  guard "$(bash_payload 'cp /tmp/x docs/CLAUDE.md')"
+  assert_defer
+  taint sess1
+  guard "$(bash_payload 'cp /tmp/x docs/CLAUDE.md' sess1)"
+  assert_decision ask
+}
+
+# --- A10: settings/hooks spellings the literal fragment missed ---
+
+@test "A10: settings/hooks spellings with .claude anywhere are denied" {
+  local c
+  for c in \
+    'echo x > ~/.claude//settings.json' \
+    'echo x > ~/.claude/./settings.json' \
+    'echo x > ~/".claude"/settings.json' \
+    'cd ~/.claude && echo x > settings.json' \
+    'cd ~/.claude && cp x hooks/foo.sh'; do
+    guard "$(bash_payload "$c")"
+    [ "$(jq -r '.hookSpecificOutput.permissionDecision' <<<"$output")" = deny ] \
+      || { echo "not denied: $c -> $output"; return 1; }
+  done
+}
+
+# --- R3: HARD is exactly the linker's single {{CLAUDE_DIR}} ---
+
+@test "R3: with CLAUDE_CONFIG_DIR elsewhere, ~/.claude is SOFT (asks when tainted)" {
+  taint sess1
+  export CLAUDE_CONFIG_DIR="$TEST_TMPDIR/alt"
+  guard "$(file_payload Write "$HOME/.claude/settings.json" sess1)"
+  assert_decision ask
+  guard "$(file_payload Edit "$HOME/.claude/hooks/foo.sh" sess1)"
+  assert_decision ask
+  guard "$(file_payload Write "$TEST_TMPDIR/alt/settings.json" sess1)"
+  assert_defer
+  # ~/CLAUDE.md is named by its own deny rule, independent of the config dir.
+  guard "$(file_payload Write "$HOME/CLAUDE.md" sess1)"
+  assert_defer
+}
+
+@test "R3: an empty CLAUDE_CONFIG_DIR falls back to ~/.claude, as the linker does" {
+  taint sess1
+  CLAUDE_CONFIG_DIR="" guard "$(file_payload Write "$HOME/.claude/settings.json" sess1)"
+  assert_defer
+}
+
+@test "R3: a '~' in CLAUDE_CONFIG_DIR is not expanded (the linker doesn't)" {
+  taint sess1
+  # shellcheck disable=SC2088
+  CLAUDE_CONFIG_DIR="~/.claude" guard "$(file_payload Write "$HOME/.claude/settings.json" sess1)"
+  assert_decision ask
+}
+
+@test "R3: managed-settings.json is SOFT for file tools (no deny rule covers it)" {
+  taint sess1
+  guard "$(file_payload Write "/etc/claude-code/managed-settings.json" sess1)"
+  assert_decision ask
+}
+
+# --- R4: never ask on a global path, in the installed symlink layout ---
+# ~/.claude/hooks and ~/.claude/CLAUDE.md are symlinks into a payload dir, as
+# link-claude-home.sh installs them from /opt/claude-workflows.
+
+install_layout() {
+  PAYLOAD="$TEST_TMPDIR/opt/claude-workflows"
+  mkdir -p "$PAYLOAD/hooks" "$HOME/.claude"
+  echo '# global' > "$PAYLOAD/CLAUDE.md"
+  echo 'x' > "$PAYLOAD/hooks/foo.sh"
+  ln -s "$PAYLOAD/hooks" "$HOME/.claude/hooks"
+  ln -s "$PAYLOAD/CLAUDE.md" "$HOME/.claude/CLAUDE.md"
+  echo '{}' > "$HOME/.claude/settings.json"
+}
+
+@test "R4: symlinked global CLAUDE.md and hooks defer when tainted" {
+  install_layout
+  taint sess1
+  local f
+  for f in \
+    "$HOME/.claude/CLAUDE.md" \
+    "$HOME/.claude/hooks/foo.sh" \
+    "$HOME/.claude/hooks/new.sh" \
+    "$HOME/.claude/x/../CLAUDE.md" \
+    "$HOME/.claude/x/../hooks/foo.sh" \
+    "$HOME/.claude//CLAUDE.md"; do
+    guard "$(file_payload Edit "$f" sess1)"
+    [ "$status" -eq 0 ] && [ -z "$output" ] || { echo "not deferred: $f -> $output"; return 1; }
+  done
+}
+
+@test "R4: the MultiEdit tool and the path key defer on a '..' global path" {
+  install_layout
+  taint sess1
+  guard "$(jq -n -c --arg f "$HOME/.claude/x/../CLAUDE.md" \
+    '{"session_id":"sess1","tool_name":"MultiEdit","tool_input":{"path":$f}}')"
+  assert_defer
+}
+
+@test "R4: a project .claude symlinked to ~/.claude defers on its hooks, CLAUDE.md, settings" {
+  install_layout
+  taint sess1
+  mkdir -p "$TEST_TMPDIR/proj"
+  ln -s "$HOME/.claude" "$TEST_TMPDIR/proj/.claude"
+  local f
+  for f in hooks/foo.sh hooks/new.sh CLAUDE.md settings.json; do
+    guard "$(file_payload Write "$TEST_TMPDIR/proj/.claude/$f" sess1)"
+    [ "$status" -eq 0 ] && [ -z "$output" ] || { echo "not deferred: $f -> $output"; return 1; }
+  done
+}
+
+@test "R4: a real (non-symlinked) project .claude still asks when tainted" {
+  install_layout
+  taint sess1
+  mkdir -p "$TEST_TMPDIR/proj/.claude/hooks"
+  guard "$(file_payload Write "$TEST_TMPDIR/proj/.claude/hooks/foo.sh" sess1)"
+  assert_decision ask
 }
 
 # --- Malformed input: silent exit 0 ---
