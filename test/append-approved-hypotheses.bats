@@ -151,3 +151,38 @@ write_tasks() {
   [ "$(grep -c ' Run |' "$LOG")" -eq 1 ]
   [ "$(grep -o '| Run |' "$LOG" | wc -l)" -eq 1 ]
 }
+
+# --- R5: migration keeps the log's inode and mode; no-op paths do not write ---
+
+@test "migration preserves the log's file mode and inode" {
+  printf '# Hypothesis Log\n\n| Round | Task ID | Hypothesis | Source | Window | Evaluator | Requires | Checked at Round | Outcome | Status Date | Evidence |\n|-|-|-|-|-|-|-|-|-|-|-|\n' > "$LOG"
+  chmod 0644 "$LOG"
+  local inode_before
+  inode_before=$(stat -c %i "$LOG")
+  _migrate_hypothesis_log_run_column "$LOG"
+  grep -qE '^\| Round \|.*\| Evidence \| Run \|$' "$LOG"
+  [ "$(stat -c %a "$LOG")" = "644" ]
+  [ "$(stat -c %i "$LOG")" = "$inode_before" ]
+  # No temp file is left behind.
+  [ "$(find "$TEST_TMPDIR" -name 'hypothesis-log.md.*' | wc -l)" -eq 0 ]
+}
+
+@test "migration is a true no-op when the header already has a Run cell" {
+  printf '| Round | Task ID | Run |\n|-|-|-|\n' > "$LOG"
+  chmod 0644 "$LOG"
+  touch -d '2000-01-01 00:00:00' "$LOG"
+  local before
+  before=$(stat -c '%i %Y %a' "$LOG")
+  _migrate_hypothesis_log_run_column "$LOG"
+  [ "$(stat -c '%i %Y %a' "$LOG")" = "$before" ]
+}
+
+@test "migration is a true no-op when no header row is found" {
+  printf '# Hypothesis Log\n\nno table yet\n' > "$LOG"
+  chmod 0644 "$LOG"
+  touch -d '2000-01-01 00:00:00' "$LOG"
+  local before
+  before=$(stat -c '%i %Y %a' "$LOG")
+  _migrate_hypothesis_log_run_column "$LOG"
+  [ "$(stat -c '%i %Y %a' "$LOG")" = "$before" ]
+}

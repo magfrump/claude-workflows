@@ -542,20 +542,26 @@ HEADER
 # --- Add the Run column to a hypothesis log whose header predates it ---
 # Appends " Run |" to the header row (the first pipe row containing " Round ")
 # and "-----|" to the separator row right after it. Data rows are untouched.
-# No-op when the header already has a Run cell or no header is found.
+# True no-op (the file is not opened for writing) when the header already has
+# a Run cell or no header is found. A real migration rewrites the file in
+# place (temp file, then `cat tmp > file`), so the log keeps its inode and
+# mode — mktemp's 0600 plus `mv` would replace both on a git-tracked file.
 # Args: $1 = hypothesis log path
 _migrate_hypothesis_log_run_column() {
     local log_file="$1"
     [ -f "$log_file" ] || return 0
+    # Exit 0 = header has a Run cell, 2 = no header row at all, 1 = migrate.
     # Exact-cell match, so "Checked at Round" never counts as "Run".
-    if awk -F'|' '/^\|/ && / Round / {
+    local state=0
+    awk -F'|' '/^\|/ && / Round / {
+            hdr = 1
             for (i = 1; i <= NF; i++) { c = $i; gsub(/^[ \t]+|[ \t]+$/, "", c); if (c == "Run") found = 1 }
             exit
-        } END { exit !found }' "$log_file"; then
-        return 0
-    fi
+        } END { if (!hdr) exit 2; exit !found }' "$log_file" || state=$?
+    [ "$state" -eq 1 ] || return 0
     local tmp
     tmp=$(mktemp "${log_file}.XXXXXX") || return 1
+    local rc=0
     awk '
         !done_hdr && /^\|/ && / Round / {
             sub(/[ \t]*$/, ""); print $0 " Run |"; done_hdr = 1; want_sep = 1; next
@@ -564,7 +570,9 @@ _migrate_hypothesis_log_run_column() {
             sub(/[ \t]*$/, ""); print $0 "-----|"; want_sep = 0; next
         }
         { want_sep = 0; print }
-    ' "$log_file" > "$tmp" && mv "$tmp" "$log_file"
+    ' "$log_file" > "$tmp" && cat "$tmp" > "$log_file" || rc=$?
+    rm -f "$tmp"
+    return "$rc"
 }
 
 # --- Test-gate baseline helpers (failure-isolation) ---
