@@ -27,6 +27,7 @@ value-justification: "Replaces ad-hoc architectural debates with structured mult
 - **← From systematic debugging** (CLAUDE.md's Debugging defaults): When debugging surfaces a design-level root cause with 3+ viable fix approaches, invoke DD directly — don't route through RPI first. The debugging session's root-cause analysis and failed hypotheses become hard constraints in DD's diagnosis step (step 2): the root cause defines what must be solved, and the failed hypotheses document approaches already ruled out (pre-pruning step 3 candidates). This shortcut applies when the bug is understood but the *fix* is a design decision. If the root cause is still uncertain, stay in debugging or escalate to RPI research.
 - **→ RPI**: After DD produces a decision, return to RPI's plan step with the decision doc as input. Reference it from the plan; don't duplicate the rationale.
 - **→ Spike**: If DD candidates require feasibility validation, run a timeboxed spike on the uncertain option before finalizing the decision. The spike's findings update DD's tradeoff matrix.
+- **→ Double Diamond, then design-space-situating (misframing)**: Contradictory hard constraints in step 2, or a step-3 field with no coherent survivor, route to this workflow's own [Double Diamond variant](#variant-double-diamond-purpose-first). Escalate to the `design-space-situating` skill only if the Double Diamond also fails to produce a coherent framing (see 3a).
 
 ## Process
 
@@ -167,6 +168,13 @@ Key:
 
 For approaches that score well overall but have one fixable weakness, briefly sketch how to fix it (1-2 sentences). Discard anything with ⚠ on a hard constraint or mostly ✗ across the board.
 
+#### When fewer than 3 survive
+
+Step 4 expects 3-5 survivors, but pruning can leave fewer. Do not loosen a hard constraint to pad the field back to 3. First re-run the step-1 generation health check: a thin field is often a search gap, and a missing region can be filled with new candidates scored against the same matrix. If the field is still thin, take one of these paths:
+
+- **1-2 survivors, each ✓ or ~ on every hard constraint**: proceed to step 4 with them. The field is thin but coherent. If one dominates, resolve down Path A. If two remain close, resolve down Path B or C with two options. Skip the optional `matrix-analysis` calibration; it is not worth three sub-agents for two rows. Record the short field in the Pruned candidates section so a reader can see the prune was deliberate.
+- **0 survivors, or survivors that each fail a different hard constraint**: this is a misframing signal, not a thin field. No approach satisfies the constraints together, which is trigger (c) of the [Double Diamond (Purpose-First) variant](#variant-double-diamond-purpose-first). Stop Diamond 2, run Diamond 1 (sections 1a-3a), and re-enter DD step 1 with the chosen framing record. If Diamond 1 also fails to produce a coherent framing, escalate to `design-space-situating` (see 3a).
+
 #### Console output (compact)
 
 Per the **Output discipline** convention above, write the full compatibility matrix and the fix sketches for surviving approaches to the working doc. To the console, emit only the surviving-candidate count and the surviving IDs — the set that becomes the step-4 scorecard:
@@ -179,7 +187,7 @@ Per the **Output discipline** convention above, write the full compatibility mat
 - [ ] A compatibility matrix exists with every approach scored against every constraint
 - [ ] All approaches with ⚠ on a hard constraint or mostly ✗ are discarded
 - [ ] Fixable weaknesses in surviving approaches have a 1-2 sentence sketch of the fix
-- [ ] 3-5 approaches survive for detailed comparison
+- [ ] 3-5 approaches survive for detailed comparison, OR fewer survived and the **When fewer than 3 survive** path was followed (a coherent 1-2 proceeds to step 4, or a misframing signal routes to the Double Diamond variant)
 - [ ] Full compatibility matrix was written to the working doc; the console received only the surviving-candidate count plus the surviving IDs
 
 ### 4. Tradeoff matrix and decision
@@ -541,7 +549,7 @@ Enter the purpose diamond when any of the following hold:
 
 - **(a) Stakeholders disagree on the goal** — different parties describe the problem in incompatible terms (e.g., "this is a performance issue" vs. "this is an API design issue"). Solving any one framing won't satisfy the others, so the framing must be settled before solutions are generated.
 - **(b) Prior attempt failed because it solved the wrong problem** — a previous DD or implementation pass produced a working solution that didn't address the underlying need. The failure mode is "we built it, it works, but the original pain remains." Re-running standard DD without re-framing will likely repeat the miss.
-- **(c) Diagnose keeps surfacing contradictory constraints** — when running standard DD step 2, the constraint list contains pairs no approach can satisfy simultaneously (e.g., "must support all legacy data" + "must remove all legacy code paths"). Contradictory hard constraints usually signal that two distinct problems are being conflated under one DD.
+- **(c) Diagnose keeps surfacing contradictory constraints** — when running standard DD step 2, the constraint list contains pairs no approach can satisfy simultaneously (e.g., "must support all legacy data" + "must remove all legacy code paths"). Contradictory hard constraints usually signal that two distinct problems are being conflated under one DD. The same trigger fires when step 3 leaves no coherent survivor (see step 3, **When fewer than 3 survive**).
 
 ### When to skip Diamond 1
 
@@ -580,6 +588,8 @@ This step makes anchoring visible. If two framings have nearly identical success
 #### 3a. Converge — choose one framing
 
 Select the framing that best explains the symptoms that triggered this DD, has a success criterion stakeholders can agree on (or articulate disagreement against), and leaves out the fewest hard concerns. If two framings tie and the choice is unclear, **stop and consult the user** rather than picking silently — the same gate as step 4 of standard DD.
+
+**If Diamond 1 fails, escalate to `design-space-situating`.** The Double Diamond owns misframing inside DD: contradictory constraints and an empty or incoherent step-3 field come here first. It can fail. Every candidate framing may leave out a hard concern from the triggering situation. Or the chosen framing may reproduce the same contradictory hard constraints when Diamond 2 reaches step 2. When either happens, run the [`design-space-situating`](../skills/design-space-situating/SKILL.md) skill on the decision. Its eight dimensions can show which axis the framings all assumed a position on without choosing it. Then either return to 1a with the corrected problem statement, or record the contradiction as a genuine tradeoff in the decision's framing. Do not invoke `design-space-situating` before Diamond 1 has been tried; it is the escalation, not the first response.
 
 #### Output: chosen framing record
 

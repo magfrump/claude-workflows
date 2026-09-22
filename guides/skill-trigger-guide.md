@@ -104,7 +104,7 @@ Standalone skills for evaluating decisions and plans rather than code or drafts.
 
 - **`divergent-design`** — Thin router into `workflows/divergent-design.md` (diverge → diagnose → match → decide). Use when a task resolves to choosing among 3+ tradeoff-bearing approaches.
 
-- **`design-space-situating`** — Places a decision on eight design-space dimensions and surfaces misframing. Use before choosing, or when no candidate fits the brief.
+- **`design-space-situating`** — Places a decision on eight design-space dimensions and surfaces misframing. Use before choosing, or as an escalation when DD's Double Diamond variant fails to produce a coherent framing. (When no DD candidate fits the brief, run DD's Double Diamond first.)
 
 - **`what-if-analysis`** — Prospective consequence analysis: load-bearing assumptions, second-order effects, hidden couplings, reversibility. Use for "what could go wrong with this?"
 

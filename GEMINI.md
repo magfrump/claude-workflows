@@ -31,7 +31,7 @@ Skills are focused, single-purpose process docs in `skills/`. Unlike workflows (
 | Reviewing a draft document, blog post, or written argument | `draft-review` | Coordinates fact-check + persona critiques (`cowen-critique`, `yglesias-critique`, `ai-personas-critique`). |
 | Verifying factual claims in code, comments, docs, or written content | `fact-check` / `code-fact-check` | When claims need source-backed verification. |
 | Evaluating tradeoffs across many options | `matrix-analysis` / `what-if-analysis` | Sub-procedures for divergent-design when the option space is wide. |
-| **Framing a decision** before choosing — explicit request, or DD constraints contradict each other | `design-space-situating` | Places the decision on eight design-space dimensions and surfaces misframing. Output feeds DD's diagnosis or RPI's plan. |
+| **Framing a decision** before choosing — explicit request, or DD's Double Diamond variant failed to produce a coherent framing (contradictory DD constraints go to the Double Diamond first) | `design-space-situating` | Places the decision on eight design-space dimensions and surfaces misframing. Output feeds DD's diagnosis or RPI's plan. |
 | Triaging tech debt, planning a dependency upgrade, or scoping test strategy | `tech-debt-triage`, `dependency-upgrade`, `test-strategy` | Use when the corresponding planning question comes up. |
 
 Other skills in `skills/` cover architecture review, performance review, API consistency, arithmetic eval, and self-eval. Browse the directory when a task wants a focused checklist rather than a full workflow.
