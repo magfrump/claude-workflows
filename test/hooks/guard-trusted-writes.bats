@@ -12,7 +12,8 @@
 #   3. A SOFT policy path is gated to "ask" only in a web-tainted session;
 #      untainted it is a silent defer.
 #   4. The file tools on a HARD path defer (never "ask" — an ask would override
-#      permissions.deny, Claude Code #39344).
+#      permissions.deny, Claude Code #39344). A path that is HARD only after
+#      resolve() is named by no deny rule, so the hook denies it itself (N1).
 #   5. Malformed or non-object input is a silent exit 0, never a traceback.
 #
 # "Defer" is the hook's documented no-opinion signal: exit 0 with NO output.
@@ -436,14 +437,71 @@ install_layout() {
   assert_defer
 }
 
-@test "R4: a project .claude symlinked to ~/.claude defers on its hooks, CLAUDE.md, settings" {
+# N1: a path that is HARD only after resolve() is not named by any deny rule,
+# so a defer would leave it ungated. The hook denies it itself, tainted or not.
+@test "N1: a project .claude symlinked to ~/.claude is denied on its hooks, CLAUDE.md, settings" {
   install_layout
-  taint sess1
   mkdir -p "$TEST_TMPDIR/proj"
   ln -s "$HOME/.claude" "$TEST_TMPDIR/proj/.claude"
+  local f s
+  for s in clean sess1; do
+    [ "$s" = sess1 ] && taint sess1
+    for f in hooks/foo.sh hooks/new.sh CLAUDE.md settings.json; do
+      guard "$(file_payload Write "$TEST_TMPDIR/proj/.claude/$f" "$s")"
+      [ "$status" -eq 0 ] && [ "$(jq -r '.hookSpecificOutput.permissionDecision' <<<"$output")" = deny ] \
+        || { echo "not denied ($s): $f -> $output"; return 1; }
+    done
+  done
+}
+
+@test "N1: the payload CLAUDE.md and hooks by their real path are denied (resolve-only HARD)" {
+  install_layout
+  local f s
+  for s in clean sess1; do
+    [ "$s" = sess1 ] && taint sess1
+    for f in "$PAYLOAD/CLAUDE.md" "$PAYLOAD/hooks/foo.sh" "$PAYLOAD/hooks/new.sh" \
+             "$PAYLOAD/x/../CLAUDE.md"; do
+      guard "$(file_payload Edit "$f" "$s")"
+      [ "$status" -eq 0 ] && [ "$(jq -r '.hookSpecificOutput.permissionDecision' <<<"$output")" = deny ] \
+        || { echo "not denied ($s): $f -> $output"; return 1; }
+    done
+  done
+}
+
+@test "N1: a symlinked config dir addressed by its resolved path is denied" {
+  mkdir -p "$TEST_TMPDIR/real-cfg"
+  ln -s "$TEST_TMPDIR/real-cfg" "$HOME/.claude"
+  guard "$(file_payload Write "$TEST_TMPDIR/real-cfg/settings.json")"
+  assert_decision deny
+  # ...while the spelling the deny rule names still defers.
+  guard "$(file_payload Write "$HOME/.claude/settings.json")"
+  assert_defer
+}
+
+@test "N1: case variants are not HARD (deny rules are case-sensitive): SOFT, ask when tainted" {
+  install_layout
   local f
-  for f in hooks/foo.sh hooks/new.sh CLAUDE.md settings.json; do
-    guard "$(file_payload Write "$TEST_TMPDIR/proj/.claude/$f" sess1)"
+  for f in "$HOME/.claude/HOOKS/x.sh" "$HOME/.claude/SETTINGS.JSON" \
+           "$HOME/.claude/Settings.json" "$HOME/.claude/claude.md"; do
+    guard "$(file_payload Write "$f")"
+    [ "$status" -eq 0 ] && [ -z "$output" ] || { echo "untainted not deferred: $f -> $output"; return 1; }
+  done
+  taint sess1
+  for f in "$HOME/.claude/HOOKS/x.sh" "$HOME/.claude/SETTINGS.JSON" \
+           "$HOME/.claude/Settings.json" "$HOME/.claude/claude.md"; do
+    guard "$(file_payload Write "$f" sess1)"
+    [ "$status" -eq 0 ] && [ "$(jq -r '.hookSpecificOutput.permissionDecision' <<<"$output")" = ask ] \
+      || { echo "tainted not ask: $f -> $output"; return 1; }
+  done
+}
+
+@test "N1: a lexical global path still defers, tainted, in the symlink layout" {
+  install_layout
+  taint sess1
+  local f
+  for f in "$HOME/.claude/settings.json" "$HOME/.claude/settings.local.json" \
+           "$HOME/.claude/hooks/foo.sh" "$HOME/.claude/CLAUDE.md" "$HOME/CLAUDE.md"; do
+    guard "$(file_payload Write "$f" sess1)"
     [ "$status" -eq 0 ] && [ -z "$output" ] || { echo "not deferred: $f -> $output"; return 1; }
   done
 }

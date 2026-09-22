@@ -11,14 +11,21 @@ Two tiers of policy path:
           {{CLAUDE_DIR}}/settings*.json, {{CLAUDE_DIR}}/CLAUDE.md, ~/CLAUDE.md. {{CLAUDE_DIR}}
           is ONE dir, computed as the linker does (config_dir() below:
           ${CLAUDE_CONFIG_DIR:-$HOME/.claude}); when CLAUDE_CONFIG_DIR points elsewhere,
-          ~/.claude is not HARD. A path is HARD if its lexical form, its normpath (`..`
-          folded), or its resolve() lands there — including a resolve() onto the target
-          of a symlinked global entry (installed layout: hooks and CLAUDE.md link into
-          /opt/claude-workflows). Critical: a hook that returns "ask" SILENTLY OVERRIDES
-          permissions.deny (Claude Code issue #39344, precedence deny > defer > ask >
-          allow). So this hook must NEVER "ask" on a HARD path — it DEFERS (lets the
-          deny rule block the file tools) and, for the Bash path that deny rules don't
-          cover, returns "deny" outright.
+          ~/.claude is not HARD. Matching is case-sensitive, like the deny rules and
+          like Linux paths: ~/.claude/HOOKS/x is not the hooks dir (it falls to SOFT).
+          Critical: a hook that returns "ask" SILENTLY OVERRIDES permissions.deny
+          (Claude Code issue #39344, precedence deny > defer > ask > allow). So this
+          hook must NEVER "ask" on a HARD path. For the file tools HARD splits in two:
+            covered  = the path AS GIVEN (lexical, or normpath with `..` folded) names a
+                       HARD entry under the config dir as the deny rules spell it. A
+                       deny rule names that string, so the hook DEFERS to it.
+            resolved = the path is HARD only after resolve() (or only under the config
+                       dir's resolved form): e.g. the payload CLAUDE.md addressed by
+                       its real /opt path (installed layout: hooks and CLAUDE.md link
+                       into /opt/claude-workflows), or a project .claude symlinked to
+                       ~/.claude. No deny rule names that string, so a defer would be
+                       no gate at all; the hook returns "deny" itself.
+          For Bash, which deny rules don't cover at all, HARD is "deny" outright.
   SOFT  = skills / memories / commands / agents / project CLAUDE.md|AGENTS.md / *.mdc,
           a PROJECT's own .claude/ (settings*.json, hooks/**; Q-026), and
           managed-settings.json. No deny rule names these, so deferring would leave
@@ -61,13 +68,15 @@ def defer():                      # no opinion -> normal flow (deny rules still 
 HOME = Path.home()
 
 def config_dir() -> Path:
-    """The ONE global config dir: exactly what the linker substitutes as {{CLAUDE_DIR}}.
+    """The ONE global config dir: what the linker substitutes as {{CLAUDE_DIR}}.
 
     devcontainer-config/link-claude-home.sh uses DEST="${CLAUDE_CONFIG_DIR:-$HOME/.claude}":
     an empty value falls back, `~` is NOT expanded, and there is no second dir. So
     ~/.claude is NOT global when CLAUDE_CONFIG_DIR points elsewhere (it falls to SOFT,
-    since no deny rule covers it). A relative value is anchored at the hook's cwd so it
-    can't match from anywhere.
+    since no deny rule covers it). This matches the linker for an unset, empty or
+    absolute value. It DIFFERS for a relative value (including one that starts with a
+    literal `~`): the linker substitutes the string as written, while this hook anchors
+    it at the hook's own cwd with abspath(), so it can't match from anywhere.
     """
     cfg = os.environ.get("CLAUDE_CONFIG_DIR")
     return Path(os.path.abspath(cfg)) if cfg else HOME / ".claude"
@@ -92,33 +101,39 @@ for _n in {"settings.json", "settings.local.json"} | _settings_names:
     _HARD_FILE_TARGETS.add(_safe_resolve(CONFIG_DIR / _n))
 _HARD_DIR_TARGETS = {_safe_resolve(CONFIG_DIR / "hooks")}
 
-def _global_rel(cand: Path):
-    """Path of `cand` relative to the global config dir, or None if outside it."""
-    for g in GLOBAL_DIRS:
+def _rel_under(cand: Path, dirs):
+    """Path of `cand` relative to the first of `dirs` that contains it, or None."""
+    for g in dirs:
         try:
             return cand.relative_to(g)
         except ValueError:
             continue
     return None
 
-def _is_hard(cand: Path) -> bool:
+def _is_hard(cand: Path, dirs) -> bool:
     """HARD == exactly what permissions.deny covers (hooks/wiring.json):
     {{CLAUDE_DIR}}/settings*.json, {{CLAUDE_DIR}}/hooks/**, {{CLAUDE_DIR}}/CLAUDE.md,
-    ~/CLAUDE.md."""
-    rel = _global_rel(cand)
+    ~/CLAUDE.md, with {{CLAUDE_DIR}} taken as each of `dirs`.
+
+    Case-SENSITIVE, like the deny rules (N1): lowercasing here made
+    ~/.claude/HOOKS/x and ~/.claude/SETTINGS.JSON "HARD", so the hook deferred onto
+    a rule that does not name them and they got no gate at all."""
+    rel = _rel_under(cand, dirs)
     if rel is not None and rel.parts:
-        first = rel.parts[0].lower()
+        first = rel.parts[0]
         if first == "hooks":
             return True
         if len(rel.parts) == 1 and first.startswith("settings") and first.endswith(".json"):
             return True
-        if len(rel.parts) == 1 and first == "claude.md":
+        if len(rel.parts) == 1 and first == "CLAUDE.md":
             return True
-    if cand.name.lower() == "claude.md" and cand.parent == HOME:
+    if cand.name == "CLAUDE.md" and cand.parent == HOME:
         return True
     return False
 
 def classify_path(fp: str) -> str:
+    """"hard" (a deny rule names this string: defer), "hard-resolved" (HARD only
+    after resolve(), no deny rule names it: deny), "soft", or "none"."""
     p = Path(os.path.expanduser(str(fp)))
     # pathlib already collapses `//` and `/./`; normpath also folds `..` lexically,
     # so `~/.claude/x/../CLAUDE.md` is seen as `~/.claude/CLAUDE.md` (R4).
@@ -127,13 +142,20 @@ def classify_path(fp: str) -> str:
     cands = (p, norm, rp)
     # HARD first, on EVERY candidate: a HARD path must never reach the "ask" below
     # (an ask overrides permissions.deny, #39344).
-    for cand in cands:
-        if _is_hard(cand):
+    # (a) As given, under the config dir as the deny rules spell it: covered.
+    for cand in (p, norm):
+        if _is_hard(cand, [CONFIG_DIR]):
             return "hard"
+    # (b) Only via the config dir's resolved form, only after resolve(), or onto the
+    # target of a symlinked global entry (R4): no deny rule names this string.
+    for cand in cands:
+        if _is_hard(cand, GLOBAL_DIRS):
+            return "hard-resolved"
     if rp in _HARD_FILE_TARGETS or any(rp == d or d in rp.parents for d in _HARD_DIR_TARGETS):
-        return "hard"
+        return "hard-resolved"
     # SOFT. A project's own .claude/ (settings, hooks) lands here (Q-026), and so does
     # managed-settings.json: no deny rule names it, so deferring would leave it ungated.
+    # Case-folded on purpose: SOFT only ever asks, so over-matching is safe.
     for cand in cands:
         low = {seg.lower() for seg in cand.parts}
         name = cand.name.lower()
@@ -147,6 +169,19 @@ def classify_path(fp: str) -> str:
     return "none"
 
 # ── write-intent detection for the BASH tool ───────────────────────────────
+# TODO(N2): command TEXT that writes a global policy file but carries no
+# indicator token the co-occurrence rules below look for, so it gets no
+# opinion (pre-existing; code-review 2026-09-21 iteration 2, N2):
+#   - a bare `cd; echo x > CLAUDE.md` (cd to home with no `~`);
+#   - `/home/$USER/CLAUDE.md`;
+#   - a globbed or quoted `.claude` name: `~/.clau*/settings.json`,
+#     `~/.cl""aude/...`, `D=.cl; ~/${D}aude/...`, `~/.claude/"settings".json`,
+#     `hoo"ks"`;
+#   - `/opt/claude-workflows/hooks/...` (the payload, by its real path);
+#   - whole-tree copies into the config dir: `cp -r dir/. ~/.claude/`,
+#     `rsync -a dir/ ~/.claude/`, `cd ~/.claude && cp /tmp/p/* .`. These
+#     replace settings.json (hook wiring + deny list) with no gate, even tainted.
+# Security's suggested direction: write primitive + CFG_INDICATOR -> HARD.
 # TODO(A8): write primitives not recognised here (predates Q-035; code-review
 # 2026-09-21 A8): `ln -sf`, `curl -o`, `wget -O`, `tar -C` / `tar -x`,
 # `unzip -d`, `sponge`, `python3 script.py` (non-inline interpreters),
@@ -239,8 +274,15 @@ def main():
         tier = classify_path(fp)
         if tier == "hard":
             # DO NOT "ask": that would override your permissions.deny (#39344).
-            # Defer and let the deny rule block it.
+            # Defer and let the deny rule, which names this path, block it.
             defer()
+        if tier == "hard-resolved":
+            # No deny rule names this spelling, so a defer would be no gate at all,
+            # and an ask is wrong for a HARD target. Deny outright.
+            emit("deny", f"This write reaches a protected policy file ({Path(fp).name}: "
+                         ".claude hooks/settings or global CLAUDE.md) through a symlink or "
+                         "resolved path that permissions.deny does not name. Edit it at its "
+                         "~/.claude path, with review.")
         if tier == "soft" and tainted:
             emit("ask", f"This session fetched web content and this write targets a trusted-policy "
                         f"file ({Path(fp).name}). Review it for injected instructions before allowing.")
