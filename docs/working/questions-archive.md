@@ -30,6 +30,7 @@ full. IDs are stable forever: `Q-014` means the same thing here as it did there.
 | [Q-020](#q-020--asks-unit-weighting) | Is `asks` (triage §3.3) the right unit, or does it undercount one hard judgment against several easy ones? | 2026-09-17 |
 | [Q-021](#q-021--drop-delete-or-archive) | Should DROP items be deleted or archived? | 2026-09-17 |
 | [Q-022](#q-022--lite-review-findings-invariant) | ~nothing.** Read as: A5 is not a defect worth a fix — a clean lite review's only | 2026-09-17 |
+| [Q-023](#q-023--health-check-bats-scope) | Should `health-check.sh` gate 5 run all bats suites, not just `test/skills/` and `test/hooks/`? | 2026-09-18 |
 | [Q-024](#q-024--draft-review-market-sizing) | `business-plan-critique-market-sizing` says draft-review typically invokes it, but draft-review never selec... | 2026-09-18 |
 | [Q-025](#q-025--lite-review-install-path) | pr-prep and review-fix-loop tell agents to run `scripts/lite-review.py`, which does not exist in projects t... | 2026-09-18 |
 | [Q-026](#q-026--guard-project-claude-dir) | `hooks/guard-trusted-writes.py` treats any `.claude/settings*.json` or `.claude/hooks/**` as HARD and defer... | 2026-09-18 |
@@ -825,4 +826,24 @@ Hypothesis-log rows record only a round number, and round numbers restart every 
 | **[2] Keep newest-first** | No schema change | none | A reused task id resolves to the wrong run |
 
 - **Interim:** newest-first scan (si4/scripts).
+
+### Q-023 · health-check-bats-scope
+**Needs:** you: judgment · **Opened:** 2026-09-18 · **Status:** ANSWERED
+
+**Answered 2026-09-20: fast first, block on red, then slow. Done.** Gate 5 runs `run-tests.sh --fast`; red fails the gate without running slow; green runs `--slow`. A `HEALTH_CHECK_SKIP_BATS` guard stops `health-check.bats` recursing (0ccbdb8). Runtime: fast ~103s, slow was ~441s, of which `health-check.bats` was 405s because its shared-output cache keyed on `$$` and never hit. It is now keyed on `BATS_FILE_TMPDIR`, so that file takes 42s and slow ~78s, with the same coverage (bd07c4e). Full gate ~3 min. `bats --jobs` isn't available (no GNU parallel), so parallelism is the next lever if it needs to be faster.
+
+Should `health-check.sh` gate 5 run all bats suites, not just `test/skills/` and `test/hooks/`?
+
+- **Why it's yours:** trades health-check runtime against coverage. A green health-check says nothing about 40 suites, including `link-claude-home-wiring.bats`, which a health-check comment claims hard-gates the wiring invariants.
+- **Read:** `scripts/health-check.sh:336` (`check_bats`), `scripts/run-tests.sh --fast|--slow|--all`
+
+| Option | What it means | Cost to you | If it's wrong |
+|---|---|---|---|
+| **[1] Call `run-tests.sh --fast`** | Gate covers every `@category fast` suite | health-check slows by the fast-suite time | A slow-only regression still slips past |
+| **[2] Call `run-tests.sh --all`** | Gate covers everything | health-check takes several minutes | You stop running it because it's slow |
+| **[3] Leave it** | Only fix the misleading comment | none | A red suite sits unnoticed, as the format suites did until 2026-09-18 |
+
+- **Interim:** unchanged; the full suite was run by hand in the 2026-09-18 improvement run.
+- **Update (third 2026-09-18 run):** before ca04b98, `run-tests.sh` silently skipped untagged suites, and `link-claude-home-wiring.bats` was one of them, so [2] did not actually cover it. Both untagged suites are now tagged, and an untagged suite fails the runner. [2] now means what it says.
+
 
