@@ -1512,18 +1512,28 @@ _evaluate_script_preconditions() {
 # leading/trailing whitespace. Indexing matches awk's `-F'|'` convention:
 # fields[0] is the empty string before the leading "|", so awk's $N maps
 # to fields[N-1] when N>=1.
+# Only UNESCAPED pipes delimit cells: append_approved_hypotheses writes a `|`
+# inside the hypothesis as `\|`, so splitting on every pipe shifted all later
+# cells for such a row (an old row read its Evidence value as Run; a new row
+# lost its run id). `\|` is swapped for a sentinel before the split and
+# restored afterwards, so the cell keeps its escaped (markdown-safe) text.
 # Args: $1 = row, $2 = array variable name (nameref)
 _split_row_fields() {
-    local line="$1"
+    # Locals carry a _srf_ prefix so they cannot shadow the caller's array
+    # name through the nameref (e.g. a caller array named "f" or "raw").
+    local _srf_line="$1"
     local -n out_ref="$2"
-    local -a raw
-    IFS='|' read -ra raw <<< "$line"
+    local -a _srf_raw
+    local _srf_sep=$'\x1e'  # ASCII Record Separator: never present in a log row
+    _srf_line="${_srf_line//\\|/$_srf_sep}"
+    IFS='|' read -ra _srf_raw <<< "$_srf_line"
     out_ref=()
-    local f trimmed
-    for f in "${raw[@]}"; do
-        trimmed="${f#"${f%%[![:space:]]*}"}"
-        trimmed="${trimmed%"${trimmed##*[![:space:]]}"}"
-        out_ref+=("$trimmed")
+    local _srf_f _srf_t
+    for _srf_f in "${_srf_raw[@]}"; do
+        _srf_f="${_srf_f//$_srf_sep/\\|}"
+        _srf_t="${_srf_f#"${_srf_f%%[![:space:]]*}"}"
+        _srf_t="${_srf_t%"${_srf_t##*[![:space:]]}"}"
+        out_ref+=("$_srf_t")
     done
 }
 
