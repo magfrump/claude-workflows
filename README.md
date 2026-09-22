@@ -49,7 +49,11 @@ ln -s ~/claude-workflows/workflows  ~/.gemini/workflows
 ln -s ~/claude-workflows/skills     ~/.gemini/skills
 ln -s ~/claude-workflows/patterns   ~/.gemini/patterns
 ln -s ~/claude-workflows/guides     ~/.gemini/guides
+ln -s ~/claude-workflows/global-instructions ~/.gemini/global-instructions
 ```
+
+`global-instructions` is linked because GEMINI.md points into
+`global-instructions/CLAUDE.md` for the Debugging defaults loop.
 
 ### Antigravity (built-in agent panel)
 
@@ -62,7 +66,7 @@ The agent panel reads `~/.gemini/GEMINI.md` and the directories alongside it. Wh
   $base = "$env:USERPROFILE\.gemini"
   $src  = '\\wsl.localhost\Ubuntu\home\<you>\claude-workflows'   # adjust distro + user
   New-Item -ItemType Directory -Path $base -Force | Out-Null
-  foreach ($n in 'GEMINI.md','workflows','skills','patterns','guides') {
+  foreach ($n in 'GEMINI.md','workflows','skills','patterns','guides','global-instructions') {
       $link = Join-Path $base $n
       if (Test-Path -LiteralPath $link) {
           $i = Get-Item -LiteralPath $link -Force
@@ -84,7 +88,17 @@ git clone <repo-url> ~/claude-workflows
 # In each project:
 ln -s ~/claude-workflows/AGENTS.md /path/to/project/AGENTS.md
 ln -s ~/claude-workflows/workflows /path/to/project/workflows
+ln -s ~/claude-workflows/skills    /path/to/project/skills
+ln -s ~/claude-workflows/patterns  /path/to/project/patterns
+ln -s ~/claude-workflows/guides    /path/to/project/guides
+ln -s ~/claude-workflows/global-instructions /path/to/project/global-instructions
 ```
+
+AGENTS.md references files in all of these (for example the Debugging defaults
+in `global-instructions/CLAUDE.md`, the skills table, and
+`guides/doc-freshness.md`), so link them all. If a project already has its own
+directory with one of these names, skip that link and point the tool at the
+repo copy instead.
 
 Or, for tools that support user-level rules (Cursor user rules, Continue global rules), point them at the repo's workflow files directly.
 
