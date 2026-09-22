@@ -25,11 +25,29 @@ The index below is generated — edit entries, not the table.
 <!-- index:start -->
 | ID | Needs | Question | Opened |
 |---|---|---|---|
+| [Q-048](#q-048--guard-cooccurrence-overblock) | you: judgment | Closing the review's bypasses of Q-035 needed a broader Bash rule: a write that names `CLAUDE.md`, `setting... | 2026-09-21 |
 | [Q-011](#q-011--mathlib-cache-host) | you: terminal | What is the current mathlib olean cache hostname? (`lake exe cache get` is minutes vs hours per repo.) | 2026-09-12 |
 | [Q-045](#q-045--sni-proxy-domain-fronting) | you: terminal | The SNI proxy checks only the ClientHello SNI and splices the encrypted stream, so a client can send an all... | 2026-09-18 |
 <!-- index:end -->
 
 ## Open
+
+### Q-048 · guard-cooccurrence-overblock
+**Needs:** you: judgment · **Opened:** 2026-09-21 · **Status:** OPEN
+
+Closing the review's bypasses of Q-035 needed a broader Bash rule: a write that names `CLAUDE.md`, `settings*.json` or `hooks` is denied whenever the command also contains `~`, `$HOME`, `.claude`, `global-instructions` or the config dir anywhere. That also denies `git commit` with `HEAD~1` in a CLAUDE.md-mentioning message, and any Bash write into an agent worktree's `hooks/` (`/workspace/.claude/wt-*/hooks/…`). Keep it, or narrow it?
+
+- **Why it's yours:** Q-035 asked to reconsider if the over-block got annoying. This trades catching disguised global writes for false denies.
+- **Read:** `hooks/guard-trusted-writes.py` (c5a7c96), `docs/reviews/code-review-rubric-2026-09-21-answers-2026-09-20.md` R1/A10
+
+| Option | What it means | Cost to you | If it's wrong |
+|---|---|---|---|
+| **[1] Keep the co-occurrence rule** | Any indicator anywhere in the command → deny | Agents route those edits through Edit/Write and `git commit -F` | Occasional false denies in worktrees and commit messages |
+| **[2] Exempt `.claude/wt-*` and `.claude/worktrees/`** | Worktree paths don't count as the `.claude` indicator | none | A worktree path used to smuggle a global write is missed |
+| **[3] Narrow to path-position matches** | Only an indicator in the same shell word as the target counts | none | `H=~; … $H/CLAUDE.md`-style indirection gets through again |
+
+- **Interim:** [1]. It is the fail-closed choice, and only takes effect once the hook is redeployed.
+- **If the answer differs:** edit `_HOME_INDICATORS` / `_CFG_INDICATORS` and add tests for the exempted shape.
 
 ### Q-011 · mathlib-cache-host
 **Needs:** you: terminal · **Opened:** 2026-09-12 · **Status:** OPEN
