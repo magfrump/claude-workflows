@@ -39,7 +39,8 @@
 #   docs/working/round-N-report.json        Structured log per round
 #   docs/working/round-history.json         Cumulative round history
 #   docs/working/completed-tasks.md         Running list of approved work
-#   docs/working/hypothesis-log.md          Hypothesis tracking table
+#   docs/working/hypothesis-log.md          Hypothesis tracking table (Run column = SI_RUN_ID)
+#   docs/working/si-run-id.txt              This run's id (date prefix; archive prefix)
 
 set -euo pipefail
 
@@ -446,6 +447,20 @@ HISTORY_FILE="$REPO_DIR/docs/working/problem-history.json"
 
 mkdir -p "$WORKING_DIR"
 touch "$WORKING_DIR/completed-tasks.md"
+
+# Run identifier (Q-047). Round numbers restart every run, so hypothesis-log
+# rows carry this id in their Run column to say which run they belong to. It
+# is the date prefix archive-working-docs.sh gives this run's files when they
+# are archived — that script reads si-run-id.txt for its default prefix, so the
+# two agree even when the archive happens on a later day. Override with
+# SI_RUN_ID (e.g. a second run on the same day) — it becomes a file-name
+# prefix and a markdown cell, so only [A-Za-z0-9._-] is accepted.
+SI_RUN_ID="${SI_RUN_ID:-$(date +%F)}"
+if [[ ! "$SI_RUN_ID" =~ ^[A-Za-z0-9._-]+$ ]]; then
+    echo "Error: SI_RUN_ID must match [A-Za-z0-9._-]+ (got: $SI_RUN_ID)" >&2
+    exit 1
+fi
+printf '%s\n' "$SI_RUN_ID" > "$WORKING_DIR/si-run-id.txt"
 
 # The sandbox write-allowlist covers the project and scratchpad, not bare /tmp.
 # mktemp honours $TMPDIR but falls back to /tmp when it is unset, which may be
@@ -1856,7 +1871,7 @@ Retro docs:${FIX_RETROS}" 2>/dev/null || true
     # user to evaluate (the loop never auto-grades them — see Decision 010).
     echo "Logging hypotheses for merged tasks..."
     append_approved_hypotheses "$ROUND" "$TASKS_FILE" \
-        "$WORKING_DIR/hypothesis-log.md" "$MERGED_TASKS"
+        "$WORKING_DIR/hypothesis-log.md" "$MERGED_TASKS" "$SI_RUN_ID"
 
     # -------------------------------------------------------
     # Step 6: Update completed tasks log

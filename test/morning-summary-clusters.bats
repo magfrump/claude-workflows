@@ -386,3 +386,28 @@ log_inv() {
   run _count_matured_deferred "$HYP_LOG" 13
   [ "$output" = "1" ]
 }
+
+# ---------------------------------------------------------------------------
+# Q-047: the deferred-evaluation pass reads the Run column (when present) and
+# resolves each row's tasks file within that run, so a task id reused by a
+# later run does not steal the row.
+# ---------------------------------------------------------------------------
+
+@test "deferred evaluation resolves a script row within its Run" {
+  mkdir -p "$WORKING_DIR/archive"
+  echo '[{"id":"s1","description":"x","files_touched":["skills/mine/SKILL.md"],"independent":true}]' \
+    > "$WORKING_DIR/archive/2026-01-01-tasks-round-1.json"
+  echo '[{"id":"s1","description":"x","files_touched":["skills/reused/SKILL.md"],"independent":true}]' \
+    > "$WORKING_DIR/archive/2026-03-01-tasks-round-1.json"
+  {
+    echo "# Hypothesis Log"
+    echo ""
+    echo "| Round | Task ID | Hypothesis | Source | Window | Evaluator | Requires | Checked at Round | Outcome | Status Date | Evidence | Run |"
+    echo "|-|-|-|-|-|-|-|-|-|-|-|-|"
+    echo "| 1 | s1 | it helps |  | 2 | script | invocations=1 |  |  |  |  | 2026-01-01 |"
+  } > "$HYP_LOG"
+  run _summary_deferred_evaluation "$HYP_LOG" 10 "$WORKING_DIR"
+  [ "$status" -eq 0 ]
+  [[ "$output" == *"Target(s): skill:mine"* ]]
+  [[ "$output" != *"skill:reused"* ]]
+}

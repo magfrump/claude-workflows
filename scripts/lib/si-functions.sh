@@ -464,7 +464,15 @@ print_gate_stats() {
 # columns are left empty — the user fills them in via the morning summary.
 #
 # Header columns expected (created if file is absent):
-#   Round | Task ID | Hypothesis | Source | Window | Evaluator | Requires | Checked at Round | Outcome | Status Date | Evidence
+#   Round | Task ID | Hypothesis | Source | Window | Evaluator | Requires | Checked at Round | Outcome | Status Date | Evidence | Run
+#
+# Run (Q-047) is the self-improvement run's id — its date prefix, the same
+# prefix archive-working-docs.sh gives that run's archived files — because
+# round numbers restart every run and cannot identify one on their own. It is
+# the LAST column so positional readers of Round/Task ID/Hypothesis keep
+# working, and a log whose header predates it is migrated in place (header and
+# separator gain the column; old rows keep an absent cell, which readers treat
+# as "unknown run" and resolve newest-first).
 #
 # Why approved-only: rejected tasks never landed, so their hypotheses describe
 # code that doesn't exist. Logging them would clutter the open-hypothesis list
@@ -474,8 +482,9 @@ print_gate_stats() {
 #       $2 = tasks JSON file path
 #       $3 = hypothesis log path
 #       $4 = space-separated list of approved task IDs
+#       $5 = run id (optional; written to the Run column, empty when omitted)
 append_approved_hypotheses() {
-    local round="$1" tasks_file="$2" log_file="$3" approved_ids="$4"
+    local round="$1" tasks_file="$2" log_file="$3" approved_ids="$4" run_id="${5:-}"
     [ -f "$tasks_file" ] || return 0
     [ -n "$approved_ids" ] || return 0
 
@@ -485,9 +494,11 @@ append_approved_hypotheses() {
 
 Tracks falsifiable predictions made at task creation time and their outcomes.
 
-| Round | Task ID | Hypothesis | Source | Window | Evaluator | Requires | Checked at Round | Outcome | Status Date | Evidence |
-|-------|---------|------------|--------|--------|-----------|----------|------------------|---------|-------------|----------|
+| Round | Task ID | Hypothesis | Source | Window | Evaluator | Requires | Checked at Round | Outcome | Status Date | Evidence | Run |
+|-------|---------|------------|--------|--------|-----------|----------|------------------|---------|-------------|----------|-----|
 HEADER
+    else
+        _migrate_hypothesis_log_run_column "$log_file"
     fi
 
     # Guarantee a trailing newline so the first appended row doesn't glom onto
@@ -523,9 +534,37 @@ HEADER
         # Escape pipe chars so they don't break the markdown table.
         hyp="${hyp//|/\\|}"
 
-        printf '| %s | %s | %s | %s | %s | %s | %s | %d | | | |\n' \
-            "$round" "$tid" "$hyp" "$hyp_source" "$window" "$evaluator" "$requires" "$((round + window))" >> "$log_file"
+        printf '| %s | %s | %s | %s | %s | %s | %s | %d | | | | %s |\n' \
+            "$round" "$tid" "$hyp" "$hyp_source" "$window" "$evaluator" "$requires" "$((round + window))" "$run_id" >> "$log_file"
     done
+}
+
+# --- Add the Run column to a hypothesis log whose header predates it ---
+# Appends " Run |" to the header row (the first pipe row containing " Round ")
+# and "-----|" to the separator row right after it. Data rows are untouched.
+# No-op when the header already has a Run cell or no header is found.
+# Args: $1 = hypothesis log path
+_migrate_hypothesis_log_run_column() {
+    local log_file="$1"
+    [ -f "$log_file" ] || return 0
+    # Exact-cell match, so "Checked at Round" never counts as "Run".
+    if awk -F'|' '/^\|/ && / Round / {
+            for (i = 1; i <= NF; i++) { c = $i; gsub(/^[ \t]+|[ \t]+$/, "", c); if (c == "Run") found = 1 }
+            exit
+        } END { exit !found }' "$log_file"; then
+        return 0
+    fi
+    local tmp
+    tmp=$(mktemp "${log_file}.XXXXXX") || return 1
+    awk '
+        !done_hdr && /^\|/ && / Round / {
+            sub(/[ \t]*$/, ""); print $0 " Run |"; done_hdr = 1; want_sep = 1; next
+        }
+        want_sep && /^\|[-:| \t]+$/ {
+            sub(/[ \t]*$/, ""); print $0 "-----|"; want_sep = 0; next
+        }
+        { want_sep = 0; print }
+    ' "$log_file" > "$tmp" && mv "$tmp" "$log_file"
 }
 
 # --- Test-gate baseline helpers (failure-isolation) ---

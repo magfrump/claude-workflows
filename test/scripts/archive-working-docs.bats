@@ -158,3 +158,30 @@ teardown() {
   # Output should reference the custom prefix
   [[ "$output" == *"prefix 'v3-release'"* ]]
 }
+
+# Q-047: the loop records its run id; archiving defaults to it so archived
+# files carry the same id as that run's hypothesis-log Run cells.
+@test "default prefix is the run id recorded in si-run-id.txt" {
+  echo "2026-01-02" > "$TEST_DIR/docs/working/si-run-id.txt"
+  cd "$TEST_DIR"
+  run bash "$SCRIPT"
+  [ "$status" -eq 0 ]
+  [ -f docs/working/archive/2026-01-02-plan-foo.md ]
+  [ -f docs/working/archive/2026-01-02-si-run-id.txt ]
+}
+
+@test "an explicit prefix overrides si-run-id.txt" {
+  echo "2026-01-02" > "$TEST_DIR/docs/working/si-run-id.txt"
+  cd "$TEST_DIR"
+  run bash "$SCRIPT" "explicit"
+  [ "$status" -eq 0 ]
+  [ -f docs/working/archive/explicit-plan-foo.md ]
+}
+
+@test "an unusable si-run-id.txt falls back to today's date" {
+  echo "../../evil" > "$TEST_DIR/docs/working/si-run-id.txt"
+  cd "$TEST_DIR"
+  run bash "$SCRIPT"
+  [ "$status" -eq 0 ]
+  [ -f "docs/working/archive/$(date +%Y-%m-%d)-plan-foo.md" ]
+}
