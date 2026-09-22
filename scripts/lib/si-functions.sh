@@ -458,6 +458,18 @@ print_gate_stats() {
     echo ""
 }
 
+# --- Default self-improvement run id (Q-047) ---
+# Date plus time of day (YYYY-MM-DD-HHMMSS), so two runs started on the same
+# day get distinct ids. The id is both the hypothesis-log Run cell and the
+# archive-working-docs.sh file-name prefix; with a date-only id, a second
+# same-day run shared the first's prefix and its archive `mv` overwrote the
+# first run's archived files. Zero-padded fields keep ids lexically sortable
+# in start order, which _archived_newest_first relies on. Nothing parses the
+# id as a date — it is an opaque [A-Za-z0-9._-]+ token.
+si_default_run_id() {
+    date +%F-%H%M%S
+}
+
 # --- Append approved-task hypotheses to hypothesis-log.md ---
 # Reads tasks-round-N.json, picks rows whose IDs appear in the approved list,
 # and appends one markdown table row per task to hypothesis-log.md. Outcome
@@ -466,8 +478,9 @@ print_gate_stats() {
 # Header columns expected (created if file is absent):
 #   Round | Task ID | Hypothesis | Source | Window | Evaluator | Requires | Checked at Round | Outcome | Status Date | Evidence | Run
 #
-# Run (Q-047) is the self-improvement run's id — its date prefix, the same
-# prefix archive-working-docs.sh gives that run's archived files — because
+# Run (Q-047) is the self-improvement run's id (si_default_run_id below, or
+# SI_RUN_ID) — the same prefix archive-working-docs.sh gives that run's
+# archived files — because
 # round numbers restart every run and cannot identify one on their own. It is
 # the LAST column so positional readers of Round/Task ID/Hypothesis keep
 # working, and a log whose header predates it is migrated in place (header and
@@ -542,20 +555,26 @@ HEADER
 # --- Add the Run column to a hypothesis log whose header predates it ---
 # Appends " Run |" to the header row (the first pipe row containing " Round ")
 # and "-----|" to the separator row right after it. Data rows are untouched.
-# No-op when the header already has a Run cell or no header is found.
+# True no-op (the file is not opened for writing) when the header already has
+# a Run cell or no header is found. A real migration rewrites the file in
+# place (temp file, then `cat tmp > file`), so the log keeps its inode and
+# mode — mktemp's 0600 plus `mv` would replace both on a git-tracked file.
 # Args: $1 = hypothesis log path
 _migrate_hypothesis_log_run_column() {
     local log_file="$1"
     [ -f "$log_file" ] || return 0
+    # Exit 0 = header has a Run cell, 2 = no header row at all, 1 = migrate.
     # Exact-cell match, so "Checked at Round" never counts as "Run".
-    if awk -F'|' '/^\|/ && / Round / {
+    local state=0
+    awk -F'|' '/^\|/ && / Round / {
+            hdr = 1
             for (i = 1; i <= NF; i++) { c = $i; gsub(/^[ \t]+|[ \t]+$/, "", c); if (c == "Run") found = 1 }
             exit
-        } END { exit !found }' "$log_file"; then
-        return 0
-    fi
+        } END { if (!hdr) exit 2; exit !found }' "$log_file" || state=$?
+    [ "$state" -eq 1 ] || return 0
     local tmp
     tmp=$(mktemp "${log_file}.XXXXXX") || return 1
+    local rc=0
     awk '
         !done_hdr && /^\|/ && / Round / {
             sub(/[ \t]*$/, ""); print $0 " Run |"; done_hdr = 1; want_sep = 1; next
@@ -564,7 +583,9 @@ _migrate_hypothesis_log_run_column() {
             sub(/[ \t]*$/, ""); print $0 "-----|"; want_sep = 0; next
         }
         { want_sep = 0; print }
-    ' "$log_file" > "$tmp" && mv "$tmp" "$log_file"
+    ' "$log_file" > "$tmp" && cat "$tmp" > "$log_file" || rc=$?
+    rm -f "$tmp"
+    return "$rc"
 }
 
 # --- Test-gate baseline helpers (failure-isolation) ---

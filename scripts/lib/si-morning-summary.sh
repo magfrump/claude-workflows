@@ -1015,6 +1015,7 @@ _summary_deferred_evaluation() {
         requires=$(_pick_col fields "$requires_col")
         hyp_src=$(_pick_col fields "$source_col")
         row_run=$(_pick_col fields "$run_col")
+        _valid_run_id "$row_run" || row_run=""
 
         local hyp_tag=""
         if [ "$hyp_src" = "planner" ]; then
@@ -1141,18 +1142,34 @@ _archived_newest_first() {
     done
 }
 
+# --- Internal: is a Run cell usable as an archive file-name prefix? ---
+# The Run cell is read back from the tracked hypothesis log, so it is
+# untrusted: `archive/${run}-tasks-round-N.json` with a run of
+# `../../outside/x` would read a file outside archive/. Accept only the
+# charset self-improvement.sh and archive-working-docs.sh enforce on the
+# writer side (no `/`, so the id can never leave archive/ — it is always
+# glued to a "-<name>" suffix). Callers treat an invalid id as absent, i.e.
+# fall back to the newest-first scan.
+# Args: $1 = run id
+_valid_run_id() {
+    [[ "$1" =~ ^[A-Za-z0-9._-]+$ ]]
+}
+
 # --- Internal: is the live (un-archived) working dir from run $2? ---
 # The loop writes its run id to si-run-id.txt at start (Q-047). True when the
-# run id is empty, the file is absent (runs predating the Run column), or the
-# ids match — i.e. whenever the live files could belong to that run.
+# row has no run id (a pre-Run row, which may belong to any run) or when the
+# recorded id equals it. When si-run-id.txt is absent or empty — archived
+# with the rest of the run, or never written — nothing ties the live files to
+# the row's run, so this is false; callers still reach the live files through
+# their newest-first fallback, just not ahead of the row's own archived copy.
 # Args: $1 = working_dir, $2 = run id (may be empty)
 _live_run_matches() {
     local working_dir="$1" run="$2"
     [ -z "$run" ] && return 0
-    [ -f "$working_dir/si-run-id.txt" ] || return 0
+    [ -f "$working_dir/si-run-id.txt" ] || return 1
     local live
     live=$(head -n1 "$working_dir/si-run-id.txt" 2>/dev/null)
-    [ -z "$live" ] || [ "$live" = "$run" ]
+    [ -n "$live" ] && [ "$live" = "$run" ]
 }
 
 # --- Internal: locate the tasks file a hypothesis row refers to ---
@@ -1169,6 +1186,7 @@ _live_run_matches() {
 # Output: the tasks file path, or nothing when none matches
 _find_tasks_file() {
     local round="$1" tid="$2" working_dir="$3" run="${4:-}"
+    _valid_run_id "$run" || run=""
     local candidate
     while IFS= read -r candidate; do
         [ -f "$candidate" ] || continue
@@ -1329,6 +1347,7 @@ _check_metric_logged() {
 _days_since_round() {
     local round="$1" working_dir="$2" tid="${3:-}" run="${4:-}"
     [ -z "$working_dir" ] && { echo -1; return; }
+    _valid_run_id "$run" || run=""
 
     local report=""
     local candidate
@@ -1493,18 +1512,28 @@ _evaluate_script_preconditions() {
 # leading/trailing whitespace. Indexing matches awk's `-F'|'` convention:
 # fields[0] is the empty string before the leading "|", so awk's $N maps
 # to fields[N-1] when N>=1.
+# Only UNESCAPED pipes delimit cells: append_approved_hypotheses writes a `|`
+# inside the hypothesis as `\|`, so splitting on every pipe shifted all later
+# cells for such a row (an old row read its Evidence value as Run; a new row
+# lost its run id). `\|` is swapped for a sentinel before the split and
+# restored afterwards, so the cell keeps its escaped (markdown-safe) text.
 # Args: $1 = row, $2 = array variable name (nameref)
 _split_row_fields() {
-    local line="$1"
+    # Locals carry a _srf_ prefix so they cannot shadow the caller's array
+    # name through the nameref (e.g. a caller array named "f" or "raw").
+    local _srf_line="$1"
     local -n out_ref="$2"
-    local -a raw
-    IFS='|' read -ra raw <<< "$line"
+    local -a _srf_raw
+    local _srf_sep=$'\x1e'  # ASCII Record Separator: never present in a log row
+    _srf_line="${_srf_line//\\|/$_srf_sep}"
+    IFS='|' read -ra _srf_raw <<< "$_srf_line"
     out_ref=()
-    local f trimmed
-    for f in "${raw[@]}"; do
-        trimmed="${f#"${f%%[![:space:]]*}"}"
-        trimmed="${trimmed%"${trimmed##*[![:space:]]}"}"
-        out_ref+=("$trimmed")
+    local _srf_f _srf_t
+    for _srf_f in "${_srf_raw[@]}"; do
+        _srf_f="${_srf_f//$_srf_sep/\\|}"
+        _srf_t="${_srf_f#"${_srf_f%%[![:space:]]*}"}"
+        _srf_t="${_srf_t%"${_srf_t##*[![:space:]]}"}"
+        out_ref+=("$_srf_t")
     done
 }
 

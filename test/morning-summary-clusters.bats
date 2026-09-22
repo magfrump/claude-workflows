@@ -411,3 +411,38 @@ log_inv() {
   [[ "$output" == *"Target(s): skill:mine"* ]]
   [[ "$output" != *"skill:reused"* ]]
 }
+
+# ---------------------------------------------------------------------------
+# A12: rows split on UNESCAPED pipes only. The writer escapes a `|` in the
+# hypothesis as `\|`; splitting on it shifted every later cell, so the Run
+# (and Evaluator/Requires) cells were read from the wrong column.
+# ---------------------------------------------------------------------------
+
+@test "_split_row_fields keeps an escaped pipe inside its cell" {
+  local -a f
+  _split_row_fields '| 1 | s1 | a \| b |  | 2 | script | invocations=1 |  |  |  | ev | 2026-01-01-000000 |' f
+  [ "${f[3]}" = 'a \| b' ]
+  [ "${f[6]}" = "script" ]
+  [ "${f[11]}" = "ev" ]
+  [ "${f[12]}" = "2026-01-01-000000" ]
+}
+
+@test "deferred evaluation reads the right Run cell for a hypothesis containing a pipe" {
+  mkdir -p "$WORKING_DIR/archive"
+  echo '[{"id":"s1","description":"x","files_touched":["skills/mine/SKILL.md"],"independent":true}]' \
+    > "$WORKING_DIR/archive/2026-01-01-000000-tasks-round-1.json"
+  echo '[{"id":"s1","description":"x","files_touched":["skills/reused/SKILL.md"],"independent":true}]' \
+    > "$WORKING_DIR/archive/2026-03-01-000000-tasks-round-1.json"
+  {
+    echo "# Hypothesis Log"
+    echo ""
+    echo "| Round | Task ID | Hypothesis | Source | Window | Evaluator | Requires | Checked at Round | Outcome | Status Date | Evidence | Run |"
+    echo "|-|-|-|-|-|-|-|-|-|-|-|-|"
+    echo '| 1 | s1 | x \| y helps |  | 2 | script | invocations=1 |  |  |  |  | 2026-01-01-000000 |'
+  } > "$HYP_LOG"
+  run _summary_deferred_evaluation "$HYP_LOG" 10 "$WORKING_DIR"
+  [ "$status" -eq 0 ]
+  [[ "$output" == *'"x \| y helps"'* ]]
+  [[ "$output" == *"Target(s): skill:mine"* ]]
+  [[ "$output" != *"skill:reused"* ]]
+}

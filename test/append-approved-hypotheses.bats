@@ -151,3 +151,57 @@ write_tasks() {
   [ "$(grep -c ' Run |' "$LOG")" -eq 1 ]
   [ "$(grep -o '| Run |' "$LOG" | wc -l)" -eq 1 ]
 }
+
+# --- R5: migration keeps the log's inode and mode; no-op paths do not write ---
+
+@test "migration preserves the log's file mode and inode" {
+  printf '# Hypothesis Log\n\n| Round | Task ID | Hypothesis | Source | Window | Evaluator | Requires | Checked at Round | Outcome | Status Date | Evidence |\n|-|-|-|-|-|-|-|-|-|-|-|\n' > "$LOG"
+  chmod 0644 "$LOG"
+  local inode_before
+  inode_before=$(stat -c %i "$LOG")
+  _migrate_hypothesis_log_run_column "$LOG"
+  grep -qE '^\| Round \|.*\| Evidence \| Run \|$' "$LOG"
+  [ "$(stat -c %a "$LOG")" = "644" ]
+  [ "$(stat -c %i "$LOG")" = "$inode_before" ]
+  # No temp file is left behind.
+  [ "$(find "$TEST_TMPDIR" -name 'hypothesis-log.md.*' | wc -l)" -eq 0 ]
+}
+
+@test "migration is a true no-op when the header already has a Run cell" {
+  printf '| Round | Task ID | Run |\n|-|-|-|\n' > "$LOG"
+  chmod 0644 "$LOG"
+  touch -d '2000-01-01 00:00:00' "$LOG"
+  local before
+  before=$(stat -c '%i %Y %a' "$LOG")
+  _migrate_hypothesis_log_run_column "$LOG"
+  [ "$(stat -c '%i %Y %a' "$LOG")" = "$before" ]
+}
+
+@test "migration is a true no-op when no header row is found" {
+  printf '# Hypothesis Log\n\nno table yet\n' > "$LOG"
+  chmod 0644 "$LOG"
+  touch -d '2000-01-01 00:00:00' "$LOG"
+  local before
+  before=$(stat -c '%i %Y %a' "$LOG")
+  _migrate_hypothesis_log_run_column "$LOG"
+  [ "$(stat -c '%i %Y %a' "$LOG")" = "$before" ]
+}
+
+# --- A6(a): the default run id is unique per run, not per day ---
+
+@test "si_default_run_id is date plus time of day and passes the run-id charset" {
+  local id
+  id=$(si_default_run_id)
+  [[ "$id" =~ ^[0-9]{4}-[0-9]{2}-[0-9]{2}-[0-9]{6}$ ]]
+  [[ "$id" =~ ^[A-Za-z0-9._-]+$ ]]
+}
+
+@test "si_default_run_id differs for two runs started on the same day" {
+  date() { [ "$1" = "+%F-%H%M%S" ] && echo "2026-09-21-${FAKE_TIME}"; }
+  local a b
+  a=$(FAKE_TIME=010203 si_default_run_id)
+  b=$(FAKE_TIME=235959 si_default_run_id)
+  [ "$a" = "2026-09-21-010203" ]
+  [ "$b" = "2026-09-21-235959" ]
+  [ "$a" != "$b" ]
+}

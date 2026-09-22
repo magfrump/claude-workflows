@@ -5,7 +5,7 @@
 #
 # Moves all non-permanent files from docs/working/ into docs/working/archive/
 # with an optional prefix (defaults to the run id in docs/working/si-run-id.txt,
-# else today's date, e.g. "2026-03-25"). Permanent
+# e.g. "2026-03-25-031500", else today's date, e.g. "2026-03-25"). Permanent
 # files (hypothesis-log.md, hypothesis-backlog.md, tasks.json, feature-ideas.md, test-strategy-fact-check-skills.md,
 # completed-tasks.md, problem-history.json, round-history.json, questions.md,
 # questions-archive.md, and the "graduated" docs listed in PERMANENT) are left
