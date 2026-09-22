@@ -26,12 +26,31 @@ The index below is generated — edit entries, not the table.
 | ID | Needs | Question | Opened |
 |---|---|---|---|
 | [Q-048](#q-048--guard-cooccurrence-overblock) | you: judgment | Closing the review's bypasses of Q-035 needed a broader Bash rule, applied only to commands that contain a ... | 2026-09-21 |
+| [Q-050](#q-050--guard-resolved-path-policy) | you: judgment | When a file-tool edit reaches a protected global file through its real path rather than through `~/.claude/... | 2026-09-21 |
 | [Q-011](#q-011--mathlib-cache-host) | you: terminal | What is the current mathlib olean cache hostname? (`lake exe cache get` is minutes vs hours per repo.) | 2026-09-12 |
 | [Q-045](#q-045--sni-proxy-domain-fronting) | you: terminal | The SNI proxy checks only the ClientHello SNI and splices the encrypted stream, so a client can send an all... | 2026-09-18 |
 | [Q-049](#q-049--deny-rule-absolute-path-form) | you: terminal | Do the live deny rules match at all? `link-claude-home.sh` writes them as `Edit(/home/node/.claude/settings... | 2026-09-21 |
 <!-- index:end -->
 
 ## Open
+
+### Q-050 · guard-resolved-path-policy
+**Needs:** you: judgment · **Opened:** 2026-09-21 · **Status:** OPEN
+
+When a file-tool edit reaches a protected global file through its real path rather than through `~/.claude/…`, what should the guard hook do? On a bare-host install, `~/.claude/CLAUDE.md` links to your checkout's `global-instructions/CLAUDE.md`. Since a577546, Edit/Write on that checkout file is **denied**, with no approve option. Hook scripts linked one at a time get **no gate at all** at their checkout path (N12). The devcontainer is unaffected, because its targets are the read-only `/opt` payload.
+
+- **Why it's yours:** it trades your ability to edit the global instructions in this repo on the host against how strongly the installed copy is protected.
+- **Read:** `docs/reviews/code-review-rubric-2026-09-21-answers-2026-09-20-iter3.md` (R6, N12, and the iteration-4 gate at the end), `hooks/guard-trusted-writes.py:95-155`
+- **Related:** Q-049. If deny rules turn out not to match, the "let the hook deny everything itself" redesign also applies.
+
+| Option | What it means | Cost to you | If it's wrong |
+|---|---|---|---|
+| **[1] Ask on real-path edits** | Real-path edits of protected files (the checkout CLAUDE.md and hook scripts) get an approve/deny prompt, whether or not the session is tainted. No deny rule names these paths, so the ask overrides nothing. | One prompt per edit to the global instructions or a hook in this repo | A prompt you approve by reflex |
+| **[2] Deny (current branch)** | Keep a577546, document it, test it, and give hook scripts the same deny | You edit global instructions only outside Claude, or with the hook disabled | Blocks legitimate repo maintenance on the host |
+| **[3] Defer, as before this branch** | No gate on real-path edits | none | A tainted session rewrites your global instructions through the checkout path |
+
+- **Interim:** the branch holds [2]. It is not merged, so nothing on the host has changed. The review-fix loop is paused at its 3-iteration cap with decision `escalate`.
+- **If the answer differs:** one change to the `hard-resolved` outcome in `classify_path`, plus tests, then a fourth review iteration that you authorize.
 
 ### Q-049 · deny-rule-absolute-path-form
 **Needs:** you: terminal · **Opened:** 2026-09-21 · **Status:** OPEN
@@ -42,22 +61,25 @@ Do the live deny rules match at all? `link-claude-home.sh` writes them as `Edit(
 - **The paste** (on the host; it uses your subscription for two tiny headless calls). For each rule form it grants Write, denies the target, asks Claude to write it, and reports whether the file appeared:
 
 ```bash
-for form in single double; do
+for form in control single double; do
   d=$(mktemp -d); t=$(mktemp -d)/target.txt; mkdir -p "$d/.claude"
-  [ $form = single ] && r="$t" || r="/$t"
-  printf '{"permissions":{"allow":["Write"],"deny":["Write(%s)"]}}\n' "$r" > "$d/.claude/settings.json"
-  (cd "$d" && claude -p "Use the Write tool to create the file $t containing: hi" --output-format json >/dev/null 2>&1)
-  [ -e "$t" ] && echo "$form-slash rule: NOT enforced (file written)" || echo "$form-slash rule: enforced"
+  case $form in control) deny='' ;; single) deny="\"Write($t)\"" ;; double) deny="\"Write(/$t)\"" ;; esac
+  printf '{"permissions":{"allow":["Write"],"deny":[%s]}}\n' "$deny" > "$d/.claude/settings.json"
+  out=$(cd "$d" && claude -p "Use the Write tool to create the file $t containing: hi" --output-format json 2>&1)
+  turns=$(printf '%s' "$out" | jq -r '.num_turns // 0' 2>/dev/null); turns=${turns:-0}
+  if [ -e "$t" ]; then r="file written"; elif [ "$turns" -ge 2 ]; then r="not written (claude ran $turns turns)"; else r="INCONCLUSIVE, claude did not run: $(printf '%s' "$out" | head -c 150)"; fi
+  echo "$form: $r"
 done
 ```
 
+- **How to read it:** `control` has no deny rule and must say "file written". If it doesn't, the other two lines prove nothing (the project settings weren't trusted, or Write needed a prompt), so paste the output back as is. With a good control: `single: not written` means a single leading `/` works; `single: file written` with `double: not written` means only `//` is absolute.
 - **What I do with it:** if single-slash is enforced, N3 is closed as a non-issue. If only double-slash is enforced, `link-claude-home.sh` emits `//` for absolute dirs, a test pins it, and you re-install and re-bless. In either case I'd also consider having the hook return `deny` itself for HARD paths instead of deferring, since that holds whether or not the rules match.
 - **Interim:** unchanged. The devcontainer's `/opt` payload is read-only, which bounds the hooks and CLAUDE.md exposure there. `~/.claude/settings*.json` is not bounded that way.
 
 ### Q-048 · guard-cooccurrence-overblock
 **Needs:** you: judgment · **Opened:** 2026-09-21 · **Status:** OPEN
 
-Closing the review's bypasses of Q-035 needed a broader Bash rule, applied only to commands that contain a write (`>`, `tee`, `cp`, `mv`, `install`, an inline interpreter…). If the command names `CLAUDE.md`, it is denied when it also contains, anywhere, `~`, `$HOME`/`${HOME…}`, the home path, `.claude`, `global-instructions` or the config dir. If it names `settings*.json` or `hooks`, it is denied when it also contains `.claude` or the config dir. False denies: a heredoc that writes a message file mentioning `CLAUDE.md` next to `HEAD~1`, and any Bash write into an agent worktree's `hooks/` (`/workspace/.claude/wt-*/hooks/…`). Keep it, or narrow it?
+Closing the review's bypasses of Q-035 needed a broader Bash rule, applied only to commands that contain a write (`>`, `tee`, `cp`, `mv`, `install`, an inline interpreter…). The literal fragments `.claude/hooks`, `.claude/settings`, `.claude/CLAUDE.md` and `managed-settings` are denied on their own. Beyond those: if the command names `CLAUDE.md`, it is denied when it also contains, anywhere, `~`, `$HOME`/`${HOME…}`, the home path, `.claude`, `global-instructions` or the config dir. If it names `settings*.json` or `hooks`, it is denied when it also contains `.claude`, `CLAUDE_CONFIG_DIR` or the literal config dir. False denies: a heredoc that writes a message file mentioning `CLAUDE.md` next to `HEAD~1`, and any Bash write into an agent worktree's `hooks/` (`/workspace/.claude/wt-*/hooks/…`). Keep it, or narrow it?
 
 - **Why it's yours:** Q-035 asked to reconsider if the over-block got annoying. This trades catching disguised global writes for false denies.
 - **Read:** `hooks/guard-trusted-writes.py` (c5a7c96), `docs/reviews/code-review-rubric-2026-09-21-answers-2026-09-20.md` R1/A10

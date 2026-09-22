@@ -148,3 +148,28 @@ To pass review, every 🔴 item must be resolved, and every 🟡 item must be fi
 - Critics: security 265k, performance 227k, api-consistency 285k, architecture 244k, tech-debt 244k, test-strategy 264k.
 - Submitted-claims pass: 227k.
 - Total ≈ 2.90M, excluding the orchestrator.
+
+---
+
+## Iteration-4 gate — decision: `escalate`
+
+Recorded 2026-09-21 by the orchestrating session. Iteration 3 ended with 1 🔴 and 10 🟡, so neither exit condition holds. No further fix or re-review runs until the user authorizes it.
+
+One exception, noted here so it is visible: two 🟡 items were text in `docs/working/questions.md` that the user is about to act on, and they were corrected after this rubric was written. N14: the Q-049 paste now has a `control` run and reports INCONCLUSIVE when `claude` doesn't run, checked with a stand-in that always fails. N6: the Q-048 rule description now includes the standalone fragments and `CLAUDE_CONFIG_DIR`. Neither change is re-reviewed.
+
+## Iterations (3 completed)
+- 1: full diff `e8d5fa1..` — 5 🔴, 13 🟡. All 🔴 fixed; A7 and A8 deferred with override rows.
+- 2: `f023357..` — 0 🔴, 11 🟡. Fixed N1, N4–N10 and the A6 remainder; N2 and N3 deferred (N3 is Q-049).
+- 3: `2d93589..` — 1 🔴 (R6, new, caused by the N1 fix), 10 🟡.
+
+## Remaining Must Fix
+- R6: the resolve-only HARD tier (a577546) denies Edit/Write on a bare host's checkout `global-instructions/CLAUDE.md`, because `~/.claude/CLAUDE.md` links to it. That is a policy choice, filed as Q-050.
+
+## Remaining Must Address
+N5 (questions.sh comment still overclaims for `docs -> .git`), N11 (case-insensitive filesystems), N12 (per-file linked hook scripts get no gate on a bare host; decided together with R6 in Q-050), N13 (`normpath` vs symlink `..`), N15 (the deny message points at a denied path), N16 (HARD set is hand-copied, with no contract test against wiring.json), N17 (stale facts in override rows), N18 (six small comment and doc precision fixes). N6 and N14 are corrected but not re-reviewed.
+
+## Convergence diagnosis
+Every fix to the guard hook's path tiers moves the boundary between "a deny rule covers this" and "no rule does". That boundary can't be pinned down until Q-049 shows how deny rules actually match, so each iteration trades one edge for another.
+
+## Recommended action
+Pause the hook for a redesign; everything else ships with its issues. Answer Q-049 (host check) and Q-050 (policy) first. The likely redesign is the one security has proposed twice: the hook returns `deny` itself for every protected path instead of deferring to deny rules. That closes N11, N13 and the `..` part of N3, and removes the dependence on how rules match. The non-hook work on this branch (the 23 answered questions, questions.sh, the SI scripts, the docs) has no open 🔴 and could merge separately from the hook commits if you'd rather not wait.
