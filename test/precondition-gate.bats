@@ -357,3 +357,55 @@ log_invocation() {
   run _days_since_round 4 "$WORKING_DIR" "" 2026-05-05
   [ "$output" = "2" ]
 }
+
+# --- A6(b): an archived/missing si-run-id.txt does not make every run match ---
+
+@test "_live_run_matches: empty run matches; missing or empty si-run-id.txt does not" {
+  run _live_run_matches "$WORKING_DIR" ""
+  [ "$status" -eq 0 ]
+  run _live_run_matches "$WORKING_DIR" 2026-01-01-000000
+  [ "$status" -eq 1 ]
+  : > "$WORKING_DIR/si-run-id.txt"
+  run _live_run_matches "$WORKING_DIR" 2026-01-01-000000
+  [ "$status" -eq 1 ]
+  echo "2026-01-01-000000" > "$WORKING_DIR/si-run-id.txt"
+  run _live_run_matches "$WORKING_DIR" 2026-01-01-000000
+  [ "$status" -eq 0 ]
+  run _live_run_matches "$WORKING_DIR" 2026-01-01-000001
+  [ "$status" -eq 1 ]
+}
+
+@test "_days_since_round does not take the live report as the row's run once si-run-id.txt is archived" {
+  # si-run-id.txt is gone (archived). The live report belongs to some other
+  # run; the task's own archived tasks file points at its paired report.
+  write_round_report 4 "1970-01-09T00:00:00Z"
+  echo '[{"id":"t","description":"x","files_touched":["skills/foo/SKILL.md"],"independent":true}]' \
+    > "$WORKING_DIR/archive/2026-01-01-000000-tasks-round-4.json"
+  echo '{"round":4,"timestamp":"1970-01-01T00:00:00Z"}' \
+    > "$WORKING_DIR/archive/2026-01-01-000000-round-4-report.json"
+  NOW_EPOCH=$((10 * 86400)); export NOW_EPOCH
+  # Row run id with no archived copy of its own (e.g. renamed on archive).
+  run _days_since_round 4 "$WORKING_DIR" t 2026-02-02-000000
+  [ "$output" = "10" ]
+}
+
+# --- A6(c): the Run cell is validated before it builds archive paths ---
+
+@test "_find_tasks_file ignores a Run cell that would leave archive/ and falls back newest-first" {
+  mkdir -p "$TEST_TMPDIR/outside"
+  echo '[{"id":"t","description":"x","files_touched":["skills/evil/SKILL.md"],"independent":true}]' \
+    > "$TEST_TMPDIR/outside/x-tasks-round-7.json"
+  echo '[{"id":"t","description":"x","files_touched":["skills/good/SKILL.md"],"independent":true}]' \
+    > "$WORKING_DIR/archive/2026-03-01-tasks-round-7.json"
+  run _resolve_hypothesis_target 7 t "$WORKING_DIR" "../../outside/x"
+  [ "$output" = "skill:good" ]
+}
+
+@test "_days_since_round ignores a Run cell that would leave archive/" {
+  mkdir -p "$TEST_TMPDIR/outside"
+  echo '{"round":4,"timestamp":"1970-01-01T00:00:00Z"}' > "$TEST_TMPDIR/outside/x-round-4-report.json"
+  write_round_report 4 "1970-01-09T00:00:00Z"
+  NOW_EPOCH=$((10 * 86400)); export NOW_EPOCH
+  run _days_since_round 4 "$WORKING_DIR" "" "../../outside/x"
+  [ "$output" = "2" ]
+}
