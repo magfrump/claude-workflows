@@ -186,3 +186,22 @@ write_tasks() {
   _migrate_hypothesis_log_run_column "$LOG"
   [ "$(stat -c '%i %Y %a' "$LOG")" = "$before" ]
 }
+
+# --- A6(a): the default run id is unique per run, not per day ---
+
+@test "si_default_run_id is date plus time of day and passes the run-id charset" {
+  local id
+  id=$(si_default_run_id)
+  [[ "$id" =~ ^[0-9]{4}-[0-9]{2}-[0-9]{2}-[0-9]{6}$ ]]
+  [[ "$id" =~ ^[A-Za-z0-9._-]+$ ]]
+}
+
+@test "si_default_run_id differs for two runs started on the same day" {
+  date() { [ "$1" = "+%F-%H%M%S" ] && echo "2026-09-21-${FAKE_TIME}"; }
+  local a b
+  a=$(FAKE_TIME=010203 si_default_run_id)
+  b=$(FAKE_TIME=235959 si_default_run_id)
+  [ "$a" = "2026-09-21-010203" ]
+  [ "$b" = "2026-09-21-235959" ]
+  [ "$a" != "$b" ]
+}

@@ -458,6 +458,18 @@ print_gate_stats() {
     echo ""
 }
 
+# --- Default self-improvement run id (Q-047) ---
+# Date plus time of day (YYYY-MM-DD-HHMMSS), so two runs started on the same
+# day get distinct ids. The id is both the hypothesis-log Run cell and the
+# archive-working-docs.sh file-name prefix; with a date-only id, a second
+# same-day run shared the first's prefix and its archive `mv` overwrote the
+# first run's archived files. Zero-padded fields keep ids lexically sortable
+# in start order, which _archived_newest_first relies on. Nothing parses the
+# id as a date — it is an opaque [A-Za-z0-9._-]+ token.
+si_default_run_id() {
+    date +%F-%H%M%S
+}
+
 # --- Append approved-task hypotheses to hypothesis-log.md ---
 # Reads tasks-round-N.json, picks rows whose IDs appear in the approved list,
 # and appends one markdown table row per task to hypothesis-log.md. Outcome
@@ -466,8 +478,9 @@ print_gate_stats() {
 # Header columns expected (created if file is absent):
 #   Round | Task ID | Hypothesis | Source | Window | Evaluator | Requires | Checked at Round | Outcome | Status Date | Evidence | Run
 #
-# Run (Q-047) is the self-improvement run's id — its date prefix, the same
-# prefix archive-working-docs.sh gives that run's archived files — because
+# Run (Q-047) is the self-improvement run's id (si_default_run_id below, or
+# SI_RUN_ID) — the same prefix archive-working-docs.sh gives that run's
+# archived files — because
 # round numbers restart every run and cannot identify one on their own. It is
 # the LAST column so positional readers of Round/Task ID/Hypothesis keep
 # working, and a log whose header predates it is migrated in place (header and

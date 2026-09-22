@@ -185,3 +185,20 @@ teardown() {
   [ "$status" -eq 0 ]
   [ -f "docs/working/archive/$(date +%Y-%m-%d)-plan-foo.md" ]
 }
+
+# A6(a): the default run id carries the start time, so two same-day runs get
+# distinct archive prefixes and the second archive does not overwrite the
+# first run's files. The prefix is exactly the run id (= the Run cell).
+@test "two same-day runs with timestamped ids archive side by side" {
+  cd "$TEST_DIR"
+  echo "2026-01-02-010203" > docs/working/si-run-id.txt
+  echo "first run" > docs/working/tasks-round-1.json
+  run bash "$SCRIPT"
+  [ "$status" -eq 0 ]
+  echo "2026-01-02-235959" > docs/working/si-run-id.txt
+  echo "second run" > docs/working/tasks-round-1.json
+  run bash "$SCRIPT"
+  [ "$status" -eq 0 ]
+  [ "$(cat docs/working/archive/2026-01-02-010203-tasks-round-1.json)" = "first run" ]
+  [ "$(cat docs/working/archive/2026-01-02-235959-tasks-round-1.json)" = "second run" ]
+}
