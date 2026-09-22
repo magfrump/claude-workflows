@@ -153,7 +153,8 @@ across runs and its precision measurable.
 ---
 
 To pass review: all 🔴 items must be resolved. All 🟡 items must be either fixed or
-carry a [qualifying author note](#qualifying-author-note). 🟢 items are optional.
+carry a qualifying author note (a discoverable TODO or a concrete revisit trigger; see
+"Qualifying author note" in `skills/code-review/references/rubric.md`). 🟢 items are optional.
 ```
 
 ### Qualifying author note

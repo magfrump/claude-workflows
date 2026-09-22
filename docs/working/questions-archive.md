@@ -830,7 +830,7 @@ Hypothesis-log rows record only a round number, and round numbers restart every 
 ### Q-023 · health-check-bats-scope
 **Needs:** you: judgment · **Opened:** 2026-09-18 · **Status:** ANSWERED
 
-**Answered 2026-09-20: fast first, block on red, then slow. Done.** Gate 5 runs `run-tests.sh --fast`; red fails the gate without running slow; green runs `--slow`. A `HEALTH_CHECK_SKIP_BATS` guard stops `health-check.bats` recursing (0ccbdb8). Runtime: fast ~103s, slow was ~441s, of which `health-check.bats` was 405s because its shared-output cache keyed on `$$` and never hit. It is now keyed on `BATS_FILE_TMPDIR`, so that file takes 42s and slow ~78s, with the same coverage (bd07c4e). Full gate ~3 min. `bats --jobs` isn't available (no GNU parallel), so parallelism is the next lever if it needs to be faster.
+**Answered 2026-09-20: fast first, block on red, then slow. Done.** Gate 5 runs `run-tests.sh --fast`; red fails the gate without running slow; green runs `--slow`. A `HEALTH_CHECK_SKIP_BATS` guard stops `health-check.bats` recursing (0ccbdb8). Runtime: fast ~103s, slow was ~441s, of which `health-check.bats` was 405s because its shared-output cache keyed on `$$` and never hit. It is now keyed on `BATS_FILE_TMPDIR`, so that file takes 42–60s depending on load and slow ~80–100s, with the same coverage (bd07c4e). Full health check measured 216s on the merged tip. `bats --jobs` isn't available (no GNU parallel), so parallelism is the next lever if it needs to be faster.
 
 Should `health-check.sh` gate 5 run all bats suites, not just `test/skills/` and `test/hooks/`?
 

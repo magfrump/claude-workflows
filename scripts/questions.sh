@@ -44,7 +44,11 @@
 # now that the script runs in every repo, and reporting "Q-001" or "0 archived"
 # there would be a success claim about files that were never read.
 #
-# Writes never go through a symlink. Because the script runs inside arbitrary
+# Writes never go through a symlinked questions file or docs/working/ dir,
+# and, for the default paths, never land outside the git toplevel (an
+# ancestor symlink such as a symlinked docs/ is caught by that check, not by
+# the per-file one). Explicit QUESTIONS_LIVE/ARCHIVE paths get only the
+# symlink checks. Because the script runs inside arbitrary
 # cloned repos, docs/working/ and its files are attacker-authored input: a
 # planted symlink would otherwise turn `archive`, `index` or `init` into an
 # append/overwrite/create of any file the user can write (security review

@@ -35,7 +35,7 @@ The index below is generated — edit entries, not the table.
 ### Q-048 · guard-cooccurrence-overblock
 **Needs:** you: judgment · **Opened:** 2026-09-21 · **Status:** OPEN
 
-Closing the review's bypasses of Q-035 needed a broader Bash rule: a write that names `CLAUDE.md`, `settings*.json` or `hooks` is denied whenever the command also contains `~`, `$HOME`, `.claude`, `global-instructions` or the config dir anywhere. That also denies `git commit` with `HEAD~1` in a CLAUDE.md-mentioning message, and any Bash write into an agent worktree's `hooks/` (`/workspace/.claude/wt-*/hooks/…`). Keep it, or narrow it?
+Closing the review's bypasses of Q-035 needed a broader Bash rule, applied only to commands that contain a write (`>`, `tee`, `cp`, `mv`, `install`, an inline interpreter…). If the command names `CLAUDE.md`, it is denied when it also contains, anywhere, `~`, `$HOME`/`${HOME…}`, the home path, `.claude`, `global-instructions` or the config dir. If it names `settings*.json` or `hooks`, it is denied when it also contains `.claude` or the config dir. False denies: a heredoc that writes a message file mentioning `CLAUDE.md` next to `HEAD~1`, and any Bash write into an agent worktree's `hooks/` (`/workspace/.claude/wt-*/hooks/…`). Keep it, or narrow it?
 
 - **Why it's yours:** Q-035 asked to reconsider if the over-block got annoying. This trades catching disguised global writes for false denies.
 - **Read:** `hooks/guard-trusted-writes.py` (c5a7c96), `docs/reviews/code-review-rubric-2026-09-21-answers-2026-09-20.md` R1/A10
