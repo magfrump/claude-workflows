@@ -102,7 +102,12 @@ channel_flat() {
     || fail "no contextual-critic mapping row"
   echo "$SKILL_CONTENT" | grep -qE '^\| 🔴 Must Fix \| Critical \| — \| — \|' \
     || fail "ui-visual Critical does not map to red (or test-strategy/scale-less critics gained a red path)"
-  echo "$SKILL_CONTENT" | grep -qE '^\| 🟡 Must Address \| Major \| P1 \| any confirmed finding \|' \
-    || fail "ui Major / test-strategy P1 / scale-less critics do not map to amber"
+  echo "$SKILL_CONTENT" | grep -qE '^\| 🟡 Must Address \| Major \| high \| any confirmed finding \|' \
+    || fail "ui Major / test-strategy high / scale-less critics do not map to amber"
+  # test-strategy emits Priority: high/medium/low (skills/test-strategy/SKILL.md), not P1/P2.
+  echo "$SKILL_CONTENT" | grep -qE '^\| 🟢 Consider \| Minor and below \| medium, low \| — \|' \
+    || fail "test-strategy medium/low do not map to green"
+  ! echo "$FLAT" | grep -qE 'test-strategy P[12]' \
+    || fail "a test-strategy P1/P2 mapping survives; test-strategy has no P-scale"
 }
 

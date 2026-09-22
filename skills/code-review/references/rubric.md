@@ -153,9 +153,26 @@ across runs and its precision measurable.
 ---
 
 To pass review: all 🔴 items must be resolved. All 🟡 items must be either fixed or
-carry a qualifying author note (a discoverable TODO or a concrete revisit trigger — see
-the 🟡 Must Address heading). 🟢 items are optional.
+carry a [qualifying author note](#qualifying-author-note). 🟢 items are optional.
 ```
+
+### Qualifying author note
+
+A 🟡 Must Address row closes by a fix or by a **qualifying author note**. (The template
+above repeats this definition so it reaches the emitted rubric; this heading is the
+linkable copy, since headings inside the template's code fence get no anchor.) A
+qualifying note does not just explain the finding — it records where the deferred work
+will be found again, so a yellow finding cannot get lost in the codebase. It is one of:
+
+- **(a) A discoverable TODO** — a `TODO` comment in code at the finding's site, or a
+  tracked follow-up entry (issue, `docs/working/questions.md` entry, or similar) the note
+  links to.
+- **(b) A concrete revisit trigger** — a named, observable condition under which the
+  finding must be reopened (e.g. "if this handler starts accepting user uploads", "if
+  p99 > 200ms").
+
+A note with neither ("known, acceptable for now") is not qualifying; the row stays open
+for [next-action derivation](chat-synthesis.md#next-action-derivation).
 
 **Legibility-target column:** Carry forward the tag each critic placed on the source finding (see [taxonomy](../../../patterns/orchestrated-review.md#legibility-target-tagging)). Typical mapping: 🔴 / 🟡 / 🟢 rows are `for-author`; ✅ rows are `for-orchestrator-synthesis`. `for-automated-gate` findings (e.g., the security-reviewer HALT-ESCALATE pattern) live in the escalation block above the rubric, not in these tables — they reference the source critique once instead of being duplicated as a row.
 
@@ -287,8 +304,8 @@ map it by this row — not by borrowing a core critic's column:
 | Rubric Tier | ui-visual-review | test-strategy | tech-debt-triage, dependency-upgrade (no per-finding scale) |
 |---|---|---|---|
 | 🔴 Must Fix | Critical | — | — |
-| 🟡 Must Address | Major | P1 | any confirmed finding |
-| 🟢 Consider | Minor and below | P2 and below | — |
+| 🟡 Must Address | Major | high | any confirmed finding |
+| 🟢 Consider | Minor and below | medium, low | — |
 
 test-strategy and the scale-less critics have no 🔴 path: a confirmed defect they surface
 reaches 🟡 at most, where it must be fixed or carry a qualifying author note.
@@ -337,7 +354,7 @@ appearing in all runs of that diff
 tier throws away the reliable quantity and keeps the unreliable one. Recording both costs
 one column and lets a later gate key on whichever proves sound.
 
-**Contextual critics are advisory:** Findings from `test-strategy`, `tech-debt-triage`, `dependency-upgrade`, and `ui-visual-review` go to 🟢 Consider tier regardless of their internal severity. They inform but never block merge. `architecture-review` is the exception: it is auto-selected like a contextual critic but uses its own severity-to-rubric mapping above and can produce blocking (🔴) findings. Two further exceptions are evidence-gated rather than critic-gated: a contextual-critic finding that meets the [Soundness-Contradiction Channel](#soundness-contradiction-channel) trigger is lifted to 🟡 Must Address (terminal at 🟡), and one that meets the [Executable-Defect Channel](#executable-defect-channel) trigger is verified by execution — confirmed, it maps by its native severity through the [contextual-critic row](#unified-severity-mapping) (ui-visual Critical→🔴, Major→🟡; test-strategy P1→🟡; scale-less critics→🟡); unexecutable, it lifts to 🟡 (terminal). These are the only paths by which a contextual-critic finding leaves 🟢.
+**Contextual critics are advisory:** Findings from `test-strategy`, `tech-debt-triage`, `dependency-upgrade`, and `ui-visual-review` go to 🟢 Consider tier regardless of their internal severity. They inform but never block merge. `architecture-review` is the exception: it is auto-selected like a contextual critic but uses its own severity-to-rubric mapping above and can produce blocking (🔴) findings. Two further exceptions are evidence-gated rather than critic-gated: a contextual-critic finding that meets the [Soundness-Contradiction Channel](#soundness-contradiction-channel) trigger is lifted to 🟡 Must Address (terminal at 🟡), and one that meets the [Executable-Defect Channel](#executable-defect-channel) trigger is verified by execution — confirmed, it maps by its native severity through the [contextual-critic row](#unified-severity-mapping) (ui-visual Critical→🔴, Major→🟡; test-strategy high→🟡; scale-less critics→🟡); unexecutable, it lifts to 🟡 (terminal). These are the only paths by which a contextual-critic finding leaves 🟢.
 
 ### Mechanism visibility floor (triage-loss prevention)
 
@@ -501,7 +518,7 @@ exit code, timestamp, output captured under `docs/reviews/execution-logs/`). The
   it through the Unified Severity Mapping **by its native severity** — a core critic's
   column for core critics (a confirmed Critical/High is 🔴), the
   [contextual-critic row](#unified-severity-mapping) for contextual critics (ui-visual
-  Critical→🔴, Major→🟡, else 🟢; test-strategy P1→🟡, else 🟢; tech-debt-triage and
+  Critical→🔴, Major→🟡, else 🟢; test-strategy high→🟡, else 🟢; tech-debt-triage and
   dependency-upgrade→🟡). `Source: Executable-defect channel
   (found by <critic>, executed)`.
 - **Cannot be run** (missing interpreter, sandbox restriction, blocked dependency) →

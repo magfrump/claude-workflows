@@ -187,7 +187,7 @@ Run review skills and iterate until clean. This is required, not optional.
 | Tier | Meaning | Action | If you do NOT fix it |
 |------|---------|--------|----------------------|
 | Must Fix | Correctness bugs, false passes, wrong behavior | Fix before proceeding | **Override-log row required** |
-| Must Address | Fragility, inconsistency, misleading tests | Fix, or acknowledge with a discoverable TODO or a concrete revisit trigger ([qualifying author note](../skills/code-review/references/rubric.md#-must-address)) | **Override-log row required** |
+| Must Address | Fragility, inconsistency, misleading tests | Fix, or acknowledge with a discoverable TODO or a concrete revisit trigger ([qualifying author note](../skills/code-review/references/rubric.md#qualifying-author-note)) | **Override-log row required** |
 | Consider | Style, duplication, future-proofing | Fix if cheap, otherwise note for later | **Override-log row required** |
 
 For each finding: confirm it's real by reading the code, then fix. Commit in coherent batches referencing finding IDs (e.g., `fix: Address code review findings A2-A5`).
