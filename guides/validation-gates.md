@@ -230,7 +230,7 @@ The `scripts/self-improvement.sh` script itself was the target of shellcheck val
 
 **Debugging a rejection:**
 
-1. **Read the rubric, not the count.** The gate archives every review artifact to `docs/working/reviews/round-N/<task_id>/` *before* the worktree is torn down (a rejected worktree is deleted with `git worktree remove --force`, which takes uncommitted files with it). That directory is the only surviving evidence — start there.
+1. **Read the rubric, not the count.** The gate archives every review artifact to `docs/working/reviews/round-N/<task_id>/` *before* the worktree is torn down (a rejected worktree is deleted with `git worktree remove --force`, which takes uncommitted files with it). That directory is the only surviving evidence — start there. It is gitignored (a local-only corpus, Q-036), so it exists only in the checkout that ran the loop.
 2. **Check gate detail in the round report:** `docs/working/round-N-report.json` under `.validation.<task_id>.code_review` carries `{red_findings, model, rubric_red, rubric_sentinel_agree, fact_check_replication}`.
 3. **Distinguish a real red from a no-verdict.** `N red (Must-Fix) finding(s)` means the critics found something; the other two fail messages mean the gate never got an answer — re-run before rewriting the task.
 4. **Reproduce locally:** check out the branch and run the `code-review` skill against `git diff main...HEAD` yourself. Fix the Must-Fix rows, not the amber ones — only red blocks.

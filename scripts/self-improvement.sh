@@ -1527,6 +1527,11 @@ Count only the automated assessment scores (Testability investment, Trigger clar
         # away, leaving one integer. That is why the repo has no pre-triage
         # review corpus to calibrate against (see docs/working/
         # experiment-results-code-review-2026-07-29.md, Result 6).
+        # The corpus is LOCAL-ONLY: docs/working/reviews/round-*/ is
+        # gitignored (Q-036, answered 2026-09-20), so it survives across runs
+        # in this checkout but is never committed and is lost with the clone.
+        # Copy it somewhere durable before discarding a checkout you calibrate
+        # against.
         CR_ARCHIVE="$WORKING_DIR/reviews/round-$ROUND/$TASK_ID"
         # Identity of *this* review, used to pick this run's rubric out of an
         # archive that also holds rubrics committed on earlier branches.
