@@ -105,6 +105,8 @@ The round claim covers the round taken as a unit, not any single task — e.g., 
 
 This pillar is **producer-only**: it specifies the planner's output grammar so future rounds emit structured input. The round-claim evaluator that consumes it lives outside this decision and is not yet wired up — until it lands, round claims accumulate in `feature-ideas-round-N.md` files but are not auto-validated; the only validation is whether the four field labels appear in the appended section. Consequently, schema drift between round and per-task grammar would only surface when the evaluator is written, not when the planner emits a malformed section. Keep the field names synchronized with the per-task schema in `scripts/self-improvement.sh`.
 
+> **Note (2026-09-21, Q-038):** Because nothing consumes round claims, the morning summary does not surface them — including the `planner` tag described for `hypothesis_source` above, which the summary applies only to per-task rows in `hypothesis-log.md`. Divergent-design's Path C once said its unresolved overnight choice reached the user through the round claim and the morning summary; it did not. Path C now files a `you: judgment` entry in `docs/working/questions.md` as the user-facing copy and keeps the round claim as the machine copy (`workflows/divergent-design.md` step 4, Path C). The morning summary remains the channel for per-task hypothesis evaluation; `questions.md` is the channel for decisions waiting on the user.
+
 ## What was added relative to decision 010
 
 - Hypothesis schema gains `evaluator`, `requires`, `evaluation_window` fields
