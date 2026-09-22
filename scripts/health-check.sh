@@ -17,13 +17,20 @@
 #                            (which every consuming project links and loads).
 #                            The directory's basename must be "skills" —
 #                            extract_skill_name keys on the /skills/ path part.
+#   HEALTH_CHECK_SKIP_BATS   When 1, check 5 is skipped with a warning. Set by
+#                            check 5 itself for the runner it launches, so the
+#                            health-check.bats suite cannot recurse into the
+#                            full suite; test/scripts/health-check.bats also
+#                            sets it for its own runs.
+#   HEALTH_CHECK_RUN_TESTS   Test-only seam: the runner check 5 invokes.
+#                            Defaults to "$REPO_ROOT/scripts/run-tests.sh".
 #
 # Checks:
 #   1. Skill YAML frontmatter parses correctly (name + description present)
 #   2. Workflow cross-references in CLAUDE.md/AGENTS.md/GEMINI.md resolve
 #   3. CLAUDE.md/AGENTS.md/GEMINI.md reference the same workflows and skills
 #   4. All test fixtures have corresponding expected-verdicts entries
-#   5. BATS tests pass (when report outputs exist)
+#   5. BATS tests pass: run-tests.sh --fast, then --slow only if fast is green
 #   6. shellcheck passes on all .sh/.bash files
 #   7. Workflow value-justification frontmatter is present
 #   8. Hook scripts in hooks/ are executable, and are wired into the live
@@ -36,7 +43,7 @@
 #  14. Running-questions doc: entry grammar, unique ids, index freshness (gate)
 set -euo pipefail
 
-REPO_ROOT="$(cd "$(dirname "$0")/.." && pwd)"
+REPO_ROOT="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
 SKILLS_DIR="${HEALTH_CHECK_SKILLS_DIR:-$REPO_ROOT/skills}"
 
 # The global instructions file lives under global-instructions/ rather than the
@@ -334,58 +341,52 @@ check_fixture_verdicts() {
 }
 
 # ── 5. BATS tests ──────────────────────────────────────────────────────────
+#
+# Runs every tagged suite through scripts/run-tests.sh, fast first and slow
+# second (Q-023). The fast set is a blocking pre-gate: if it is red, the slow
+# set is not run at all, so a broken tree fails in the fast-suite time rather
+# than after the multi-minute slow set. The gate fails if either set is red.
+#
+# Before Q-023 this gate ran only test/skills/ and test/hooks/, so a green
+# health-check said nothing about the ~40 suites under test/ and test/scripts/
+# (link-claude-home-wiring.bats among them). Report gating (*-format/*-eval
+# need generated reports) is owned by run-tests.sh, so it is not repeated here.
+#
+# Recursion guard: test/scripts/health-check.bats is a slow suite that runs
+# this script. Without a guard, gate 5 -> run-tests --slow -> health-check.bats
+# -> health-check.sh -> gate 5 -> ... never terminates. The runner is invoked
+# with HEALTH_CHECK_SKIP_BATS=1 in its environment, and a health-check that
+# sees that variable skips this gate (with a warning, never a pass).
+#
+# HEALTH_CHECK_RUN_TESTS is a test-only seam naming the runner, so
+# test/scripts/health-check.bats can check the fast-then-slow ordering with a
+# stub instead of re-running the real suites.
 
 check_bats() {
     section "BATS tests"
+
+    if [[ "${HEALTH_CHECK_SKIP_BATS:-}" == 1 ]]; then
+        warn "HEALTH_CHECK_SKIP_BATS=1 — BATS gate skipped (nested run; the outer run gates the suites)"
+        return
+    fi
 
     if ! command -v bats &>/dev/null; then
         warn "bats not installed, skipping"
         return
     fi
 
-    local bats_files=()
-    for f in "$REPO_ROOT"/test/skills/*.bats "$REPO_ROOT"/test/hooks/*.bats; do
-        [[ -f "$f" ]] && bats_files+=("$f")
-    done
+    local runner="${HEALTH_CHECK_RUN_TESTS:-$REPO_ROOT/scripts/run-tests.sh}"
 
-    if [[ ${#bats_files[@]} -eq 0 ]]; then
-        warn "No .bats files found"
+    if ! HEALTH_CHECK_SKIP_BATS=1 "$runner" --fast; then
+        fail "Fast BATS suites failed — slow suites not run (fix fast first)"
         return
     fi
+    pass "Fast BATS suites passed"
 
-    # Eval bats require generated report outputs; check if any exist
-    local has_reports=false
-    for output_dir in "$REPO_ROOT"/test/skills/*/output/; do
-        if [[ -d "$output_dir" ]] && ls "$output_dir"/*.md &>/dev/null 2>&1; then
-            has_reports=true
-            break
-        fi
-    done
-
-    if ! $has_reports; then
-        warn "No report outputs found — skipping eval/format BATS (run generate-reports.bash first)"
-        # Still run non-eval bats if any exist
-        local non_eval=()
-        for f in "${bats_files[@]}"; do
-            case "$(basename "$f")" in
-                *-eval.bats|*-format.bats) ;;
-                *) non_eval+=("$f") ;;
-            esac
-        done
-        if [[ ${#non_eval[@]} -gt 0 ]]; then
-            if bats "${non_eval[@]}"; then
-                pass "Non-eval BATS tests passed"
-            else
-                fail "BATS tests failed"
-            fi
-        fi
-        return
-    fi
-
-    if bats "${bats_files[@]}"; then
-        pass "All BATS tests passed (${#bats_files[@]} file(s))"
+    if HEALTH_CHECK_SKIP_BATS=1 "$runner" --slow; then
+        pass "Slow BATS suites passed"
     else
-        fail "BATS tests failed"
+        fail "Slow BATS suites failed"
     fi
 }
 
@@ -531,7 +532,8 @@ check_hook_permissions() {
 # change), not a defect in the repo, and the fix is install.sh + bless +
 # rebuild on the host rather than an edit here. The repo-side invariants —
 # every wiring command points at a real hook, the deny rules the guard depends
-# on are declared — are hard-gated by test/link-claude-home-wiring.bats.
+# on are declared — are hard-gated by test/link-claude-home-wiring.bats, which
+# check 5 runs (it is a slow suite, run once the fast suites are green).
 
 check_hook_wiring() {
     section "Hook wiring (live settings.json)"
@@ -1053,4 +1055,7 @@ main() {
     exit "$FAIL"
 }
 
-main "$@"
+# Run only when executed, so tests can source this file and call one check.
+if [[ "${BASH_SOURCE[0]}" == "$0" ]]; then
+    main "$@"
+fi
