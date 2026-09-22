@@ -304,8 +304,8 @@ map it by this row — not by borrowing a core critic's column:
 | Rubric Tier | ui-visual-review | test-strategy | tech-debt-triage, dependency-upgrade (no per-finding scale) |
 |---|---|---|---|
 | 🔴 Must Fix | Critical | — | — |
-| 🟡 Must Address | Major | P1 | any confirmed finding |
-| 🟢 Consider | Minor and below | P2 and below | — |
+| 🟡 Must Address | Major | high | any confirmed finding |
+| 🟢 Consider | Minor and below | medium, low | — |
 
 test-strategy and the scale-less critics have no 🔴 path: a confirmed defect they surface
 reaches 🟡 at most, where it must be fixed or carry a qualifying author note.
@@ -354,7 +354,7 @@ appearing in all runs of that diff
 tier throws away the reliable quantity and keeps the unreliable one. Recording both costs
 one column and lets a later gate key on whichever proves sound.
 
-**Contextual critics are advisory:** Findings from `test-strategy`, `tech-debt-triage`, `dependency-upgrade`, and `ui-visual-review` go to 🟢 Consider tier regardless of their internal severity. They inform but never block merge. `architecture-review` is the exception: it is auto-selected like a contextual critic but uses its own severity-to-rubric mapping above and can produce blocking (🔴) findings. Two further exceptions are evidence-gated rather than critic-gated: a contextual-critic finding that meets the [Soundness-Contradiction Channel](#soundness-contradiction-channel) trigger is lifted to 🟡 Must Address (terminal at 🟡), and one that meets the [Executable-Defect Channel](#executable-defect-channel) trigger is verified by execution — confirmed, it maps by its native severity through the [contextual-critic row](#unified-severity-mapping) (ui-visual Critical→🔴, Major→🟡; test-strategy P1→🟡; scale-less critics→🟡); unexecutable, it lifts to 🟡 (terminal). These are the only paths by which a contextual-critic finding leaves 🟢.
+**Contextual critics are advisory:** Findings from `test-strategy`, `tech-debt-triage`, `dependency-upgrade`, and `ui-visual-review` go to 🟢 Consider tier regardless of their internal severity. They inform but never block merge. `architecture-review` is the exception: it is auto-selected like a contextual critic but uses its own severity-to-rubric mapping above and can produce blocking (🔴) findings. Two further exceptions are evidence-gated rather than critic-gated: a contextual-critic finding that meets the [Soundness-Contradiction Channel](#soundness-contradiction-channel) trigger is lifted to 🟡 Must Address (terminal at 🟡), and one that meets the [Executable-Defect Channel](#executable-defect-channel) trigger is verified by execution — confirmed, it maps by its native severity through the [contextual-critic row](#unified-severity-mapping) (ui-visual Critical→🔴, Major→🟡; test-strategy high→🟡; scale-less critics→🟡); unexecutable, it lifts to 🟡 (terminal). These are the only paths by which a contextual-critic finding leaves 🟢.
 
 ### Mechanism visibility floor (triage-loss prevention)
 
@@ -518,7 +518,7 @@ exit code, timestamp, output captured under `docs/reviews/execution-logs/`). The
   it through the Unified Severity Mapping **by its native severity** — a core critic's
   column for core critics (a confirmed Critical/High is 🔴), the
   [contextual-critic row](#unified-severity-mapping) for contextual critics (ui-visual
-  Critical→🔴, Major→🟡, else 🟢; test-strategy P1→🟡, else 🟢; tech-debt-triage and
+  Critical→🔴, Major→🟡, else 🟢; test-strategy high→🟡, else 🟢; tech-debt-triage and
   dependency-upgrade→🟡). `Source: Executable-defect channel
   (found by <critic>, executed)`.
 - **Cannot be run** (missing interpreter, sandbox restriction, blocked dependency) →
