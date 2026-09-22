@@ -128,9 +128,12 @@ Choose exactly one bracketed value. The choice is **mechanically derived from th
 Evaluate the rules top-to-bottom; the first matching rule wins. Inputs are the rubric the synthesis just produced (counts of 🔴 / 🟡 rows and which critics ran, including the `## ⏭️ Skipped Core Critics` section) and the diff size from `git diff --stat`.
 
 1. **block on architectural review** — Either: (a) Step 5 auto-selected
-   `architecture-review` but it did not produce a report this run (excluded via
-   `--exclude architecture-review`, failed, or otherwise skipped), or
+   `architecture-review` but it was excluded (via `--exclude architecture-review`)
+   or failed (no report and no saved skip note), or
    (b) architecture-review ran and produced ≥1 🔴 Structural finding.
+   A saved architecture-review **skip note** (the critic's own scope check
+   concluded the diff is implementation-only and wrote its skip note) counts as
+   the critic having run: it satisfies 1(a) and does not trigger this rule.
    Architectural questions are a wider conversation than a line-fix — rerun with
    architecture-review enabled, or address the structural finding in a separate
    design pass before any other action.
@@ -144,23 +147,36 @@ Evaluate the rules top-to-bottom; the first matching rule wins. Inputs are the r
    because the failure mode is likely architectural rather than a sum of
    independent defects.
 4. **fix red items then re-review** — ≥1 🔴 item exists (and rules 1–3 did not
-   match), OR 0 🔴 but >2 🟡 items are open without author notes resolving them.
+   match), OR 0 🔴 but >2 🟡 items are open without a qualifying author note.
    The label covers the general non-merge fix path; amber-heavy reviews land
    here because resolving the load through inline notes alone is impractical.
-5. **merge** — 0 🔴 items AND ≤2 🟡 items. Rubric status is either
-   ✅ PASSES REVIEW or a low-friction 🟡 CONDITIONAL PASS where amber items can
-   be resolved with inline author notes during merge prep.
+5. **merge** — 0 🔴 items AND ≤2 🟡 items open without a qualifying author note.
+   Rubric status is either ✅ PASSES REVIEW or a low-friction 🟡 CONDITIONAL PASS
+   where the remaining amber items can be resolved with qualifying author notes
+   during merge prep.
+
+**Qualifying author note.** An amber counts as resolved for rules 4 and 5 only when
+it is fixed or its author note records either a **discoverable TODO** (a `TODO`
+comment in code at the finding's site, or a tracked follow-up entry the note links
+to) or a **concrete revisit trigger** (a named, observable condition under which the
+finding must be reopened). A note with neither leaves the amber open — see the
+🟡 Must Address definition in the [rubric template](rubric.md#deliverable-2-code-review-rubric). Rules 4 and 5 are
+exhaustive for 0 🔴: with *n* = ambers open without a qualifying note, *n* > 2 is
+rule 4 and *n* ≤ 2 is rule 5, so every clean-of-red rubric derives a final line.
 
 **Worked examples:**
 
 - 0 🔴, 0 🟡 → rule 5 → `Recommended next action: merge.`
 - 0 🔴, 1 🟡 → rule 5 → `Recommended next action: merge.`
-- 0 🔴, 4 🟡 → rule 4 (>2 amber, no red) → `Recommended next action: fix red items then re-review.`
+- 0 🔴, 4 🟡 all without notes → rule 4 (>2 un-noted amber, no red) → `Recommended next action: fix red items then re-review.`
+- 0 🔴, 5 🟡, 4 with notes naming a TODO or revisit trigger → rule 5 (1 open amber) → `Recommended next action: merge.`
+- 0 🔴, 3 🟡 with notes saying only "acceptable for now" → rule 4 (notes not qualifying, 3 open) → `Recommended next action: fix red items then re-review.`
 - 2 🔴 both in security, 200-line diff → rule 4 → `Recommended next action: fix red items then re-review.`
 - 1 🔴 in security, 800-line diff → rule 2 → `Recommended next action: split PR.`
 - 1 🔴 security + 1 🔴 performance + 1 🔴 api-consistency, 300-line diff → rule 3 (3 domains) → `Recommended next action: escalate to /pre-mortem.`
 - 4 🔴 all in security, 200-line diff → rule 3 (≥3 reds total) → `Recommended next action: escalate to /pre-mortem.`
 - 1 🔴 from architecture-review tagged Structural → rule 1 → `Recommended next action: block on architectural review.`
 - Diff adds a new module; architecture-review excluded via `--exclude` → rule 1 → `Recommended next action: block on architectural review.`
+- architecture-review auto-selected, saved a skip note ("implementation-only"), 0 🔴, 1 🟡 → rule 1 does not fire → rule 5 → `Recommended next action: merge.`
 
 **How to use legibility-target tags during synthesis:** Findings tagged `for-author` are the primary content of the chat synthesis and the rubric's 🔴 / 🟡 / 🟢 tiers. Findings tagged `for-orchestrator-synthesis` feed your reasoning — coverage maps, convergence detection, "what got reviewed" — but do not get repeated verbatim in the chat output. Findings tagged `for-automated-gate` drive the rubric status line and any escalation blocks; they are referenced once (not duplicated as prose bullets) and link to the source critique. If a critic tagged everything `for-author`, note that in your synthesis as a calibration gap rather than treating it as signal.

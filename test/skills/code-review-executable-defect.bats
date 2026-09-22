@@ -56,8 +56,10 @@ channel_flat() {
 }
 
 @test "confirmed findings map by native severity; unexecutable ones lift to terminal amber" {
-  channel_flat | grep -qiE 'native severity as if filed by a core critic' \
+  channel_flat | grep -qiE 'by its native severity' \
     || fail "a confirmed defect does not map by native severity"
+  channel_flat | grep -qiE 'contextual-critic row' \
+    || fail "a confirmed contextual-critic defect does not map through the contextual-critic row"
   channel_flat | grep -qiE 'Unexecuted-Deterministic' \
     || fail "no Unexecuted-Deterministic severity tag for the blocked-execution path"
   channel_flat | grep -qiE '🟡 is terminal on this path' \
@@ -93,3 +95,14 @@ channel_flat() {
   echo "$FLAT" | grep -qiE 'the only paths by which a contextual-critic finding leaves' \
     || fail "the advisory rule does not enumerate its exit paths exclusively"
 }
+
+@test "the severity mapping has an explicit contextual-critic row (Q-042)" {
+  # A confirmed contextual-critic defect must not borrow a core critic's column.
+  echo "$FLAT" | grep -qE 'Contextual-critic row' \
+    || fail "no contextual-critic mapping row"
+  echo "$SKILL_CONTENT" | grep -qE '^\| 🔴 Must Fix \| Critical \| — \| — \|' \
+    || fail "ui-visual Critical does not map to red (or test-strategy/scale-less critics gained a red path)"
+  echo "$SKILL_CONTENT" | grep -qE '^\| 🟡 Must Address \| Major \| P1 \| any confirmed finding \|' \
+    || fail "ui Major / test-strategy P1 / scale-less critics do not map to amber"
+}
+

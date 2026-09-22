@@ -191,3 +191,47 @@ LABEL='absence of findings is not an attestation'
   echo "$s" | tr '\n' ' ' | grep -qiE 'when unsure[^.]*`you: judgment`' \
     || fail "the conservative-direction rule is missing: unsure must route to you: judgment"
 }
+
+# ---------------------------------------------------------------
+# Next-action derivation — every 0🔴 rubric derives a final line (Q-041, Q-043)
+# ---------------------------------------------------------------
+
+derivation_flat() {
+  echo "$SKILL_CONTENT" | sed -n '/^#### Next-action derivation/,/^\*\*Worked examples/p' | tr '\n' ' ' | tr -s ' '
+}
+
+@test "rules 4 and 5 both count ambers open without a qualifying note (exhaustive for 0 red)" {
+  local s
+  s=$(derivation_flat)
+  [ -n "$s" ] || fail "no Next-action derivation section"
+  echo "$s" | grep -qE '0 🔴 but >2 🟡 items are open without a qualifying author note' \
+    || fail "rule 4 does not count un-qualified ambers"
+  echo "$s" | grep -qE '0 🔴 items AND ≤2 🟡 items open without a qualifying author note' \
+    || fail "rule 5 counts every amber, leaving 0🔴 + 3+ noted ambers underivable"
+  echo "$s" | grep -qiE 'discoverable TODO' || fail "qualifying note does not require a discoverable TODO option"
+  echo "$s" | grep -qiE 'revisit trigger' || fail "qualifying note does not allow a revisit trigger"
+}
+
+@test "the Must Address tier requires a discoverable TODO or revisit trigger to acknowledge" {
+  echo "$SKILL_CONTENT" | sed -n '/^## 🟡 Must Address/,/^| #/p' | tr '\n' ' ' \
+    | grep -qiE 'discoverable TODO.*revisit trigger' \
+    || fail "the 🟡 Must Address definition does not require a TODO or revisit trigger"
+}
+
+@test "an architecture-review skip note satisfies rule 1(a)" {
+  derivation_flat | grep -qiE 'skip note.*satisfies 1\(a\) and does not trigger this rule' \
+    || fail "a saved architecture-review skip note still triggers the architectural block"
+}
+
+# ---------------------------------------------------------------
+# Accepted-immutable override rows (Q-044)
+# ---------------------------------------------------------------
+
+@test "Accepted-immutable is a valid override verdict and is marked machine-written" {
+  echo "$SKILL_CONTENT" | grep -E '^\| `Override verdict`' | grep -qF 'Accepted-immutable' \
+    || fail "Accepted-immutable is not a valid Override verdict value"
+  echo "$SKILL_CONTENT" | grep -qF '[auto: code-review]' \
+    || fail "machine-written rows have no distinguishing marker"
+  grep -qE 'read-only with respect to the log\*\* during the run, with one exception.*Accepted-immutable' "$SKILL" \
+    || fail "SKILL.md Step 3.5 does not permit the Accepted-immutable append"
+}
