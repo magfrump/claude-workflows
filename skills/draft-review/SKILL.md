@@ -7,7 +7,8 @@ description: >
   agents in parallel → synthesis into a freeform chat summary plus a structured verification
   rubric with red/amber/green status tracking. Auto-selects from available critics
   (`cowen-critique`, `yglesias-critique`, `ai-personas-critique`, `business-plan-critique-moat`,
-  `business-plan-critique-unit-economics`) based on draft topic. Supports ensemble mode for
+  `business-plan-critique-unit-economics`, `business-plan-critique-market-sizing`) based on
+  draft topic. Supports ensemble mode for
   higher confidence through convergence analysis. Use this skill whenever the user wants a
   thorough review of a draft that combines fact-checking with substantive critique. Trigger
   phrases: "review this draft", "give me feedback on this", "fact-check and critique this",
@@ -30,6 +31,7 @@ Orchestrates sub-skills. Skills live at `skills/<name>/SKILL.md`. Ensure they ex
 - `ai-personas-critique` — ensemble of orthogonal AI personas; surfaces concerns single critics miss
 - `business-plan-critique-moat` — moat, distribution, competitive response (business-plan-shaped drafts)
 - `business-plan-critique-unit-economics` — CAC, LTV, contribution margin, payback (business-plan-shaped drafts)
+- `business-plan-critique-market-sizing` — TAM/SAM/SOM derivation, segment definition, capturable share, market timing (business-plan-shaped drafts)
 
 **Not applicable (skip):**
 - `code-fact-check`, `security-reviewer`, `performance-reviewer`, `api-consistency-reviewer`,
@@ -87,7 +89,7 @@ Otherwise, auto-select per the table below. Per the Selection Disposition above,
 | Essay, op-ed, blog post, policy piece, primer, or any argument-shaped prose | `cowen-critique` |
 | Draft proposes any mechanism, action, intervention, or policy — author wants something to happen | `yglesias-critique` |
 | Multi-domain proposal, or user asks "what am I missing", "diverse critiques", "stress-test from multiple angles" | `ai-personas-critique` |
-| Business-plan-shaped draft: founder pitch, investor deck narrative, GTM strategy doc, fundraising memo, product strategy brief | `business-plan-critique-moat` AND `business-plan-critique-unit-economics` (run both — they cover complementary failure modes) |
+| Business-plan-shaped draft: founder pitch, investor deck narrative, GTM strategy doc, fundraising memo, product strategy brief | `business-plan-critique-moat`, `business-plan-critique-unit-economics`, AND `business-plan-critique-market-sizing` (run all three — they cover complementary failure modes) |
 
 Multiple rows can match — invoke all matching critics. If the bar for a critic is unclear, include it. The bar for exclusion is "obviously inapplicable" (e.g., business-plan critics on a poem), not "topic doesn't match exactly."
 

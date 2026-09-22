@@ -25,7 +25,7 @@ Which skill to invoke for a given task. Skills are agent-invocable prompts that 
 | Intellectual critique of argument | `cowen-critique` | `draft-review` (dispatches critics automatically) |
 | Policy / pragmatism critique | `yglesias-critique` | `draft-review` (dispatches critics automatically) |
 | Multi-perspective critique of a proposal | `ai-personas-critique` | `draft-review` (dispatches critics automatically) |
-| Business plan / pitch critique | `business-plan-critique-moat`, `business-plan-critique-unit-economics`, `business-plan-critique-market-sizing` | `draft-review` (dispatches moat and unit-economics automatically) |
+| Business plan / pitch critique | `business-plan-critique-moat`, `business-plan-critique-unit-economics`, `business-plan-critique-market-sizing` | `draft-review` (dispatches all three automatically) |
 | Architecture / module-boundary review | `architecture-review` | `code-review` (auto-triggers on structural changes) |
 | Stress-test a plan ("what could go wrong?") | `what-if-analysis` | `pre-mortem` (if framed as "it already failed — why?") |
 | Failure narratives before shipping | `pre-mortem` | `what-if-analysis` (prospective consequence map) |
@@ -42,7 +42,7 @@ These skills dispatch work to sub-agents and synthesize results. **Use one orche
 
 - **`code-review`** — Full code review pipeline. Stage 1: `code-fact-check`. Stage 2: three core critics (`security-reviewer`, `performance-reviewer`, `api-consistency-reviewer`) plus auto-selected contextual critics. Stage 3: synthesis. Use for PR reviews or any "review this code" request.
 
-- **`draft-review`** — Full writing review pipeline. Stage 1: `fact-check`. Stage 2: auto-selects from a fixed list of known critics (`cowen-critique`, `yglesias-critique`, `ai-personas-critique`, `business-plan-critique-moat`, `business-plan-critique-unit-economics`) declared in its Dependencies block — it does not scan for new critics, so a new critic must be added to that list. Stage 3: synthesis. Use for "review this draft" or "give me feedback on this writing."
+- **`draft-review`** — Full writing review pipeline. Stage 1: `fact-check`. Stage 2: auto-selects from a fixed list of known critics (`cowen-critique`, `yglesias-critique`, `ai-personas-critique`, `business-plan-critique-moat`, `business-plan-critique-unit-economics`, `business-plan-critique-market-sizing`) declared in its Dependencies block — it does not scan for new critics, so a new critic must be added to that list. Stage 3: synthesis. Use for "review this draft" or "give me feedback on this writing."
 
 - **`matrix-analysis`** — Structured comparison of N items across M criteria. Dispatches one sub-agent per criterion, compiles into comparison matrix. Use for "compare X vs Y vs Z" or any multi-option evaluation.
 
@@ -80,7 +80,7 @@ Invoked by `draft-review`. Can also be invoked standalone for focused critique.
 
 - **`business-plan-critique-unit-economics`** — CAC, LTV, contribution margin, payback period, gross-margin trajectory. Best for: pitches, financial models, fundraising memos.
 
-- **`business-plan-critique-market-sizing`** — TAM derivation, SAM realism, SOM achievability, market timing. Best for: pitches and market-entry analyses. Not in `draft-review`'s known-critic list — invoke standalone or name it explicitly.
+- **`business-plan-critique-market-sizing`** — TAM derivation, SAM realism, SOM achievability, market timing. Best for: pitches and market-entry analyses. `draft-review` runs it on business-plan-shaped drafts alongside moat and unit-economics.
 
 **When to use which:** `cowen-critique` for general argument quality. `yglesias-critique` for policy or economics pieces. `ai-personas-critique` when a single fixed voice feels too narrow. The `business-plan-critique-*` skills for business-plan-shaped drafts. `draft-review` runs the applicable ones.
 
