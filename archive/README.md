@@ -24,3 +24,10 @@ and why it was archived and what replaced it. Single documents live under
   its next writer to copy this file back to `docs/working/incident-journal.md`
   rather than starting over, which is the whole reason it was archived instead
   of deleted.
+- `docs/2026-09-21-claude-api.md` — a flat-file "supplement" to the bundled
+  `claude-api` skill, formerly `skills/claude-api.md`. Archived by Q-033: as a
+  flat file the harness never loaded it as a skill (skills load from
+  `skills/<name>/SKILL.md`), and its body carried none of the reference
+  material its description promised. The bundled `claude-api` skill covers the
+  topic; if a real supplement is wanted, build it as
+  `skills/<name>/SKILL.md` under a name that does not shadow the bundled one.

@@ -176,7 +176,7 @@ To verify that this guide stays in sync with the actual skills directory, run:
 
 ```bash
 # Every skill in skills/ must appear in this guide
-# (skills live at skills/<name>/SKILL.md; flat files like skills/claude-api.md are not loaded as skills)
+# (skills live at skills/<name>/SKILL.md; flat files under skills/ are not loaded as skills)
 for skill in skills/*/SKILL.md; do
   name=$(basename "$(dirname "$skill")")
   if ! grep -q "$name" guides/skill-trigger-guide.md; then
