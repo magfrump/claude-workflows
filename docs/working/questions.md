@@ -25,12 +25,34 @@ The index below is generated — edit entries, not the table.
 <!-- index:start -->
 | ID | Needs | Question | Opened |
 |---|---|---|---|
-| [Q-048](#q-048--guard-cooccurrence-overblock) | you: judgment | Closing the review's bypasses of Q-035 needed a broader Bash rule: a write that names `CLAUDE.md`, `setting... | 2026-09-21 |
+| [Q-048](#q-048--guard-cooccurrence-overblock) | you: judgment | Closing the review's bypasses of Q-035 needed a broader Bash rule, applied only to commands that contain a ... | 2026-09-21 |
 | [Q-011](#q-011--mathlib-cache-host) | you: terminal | What is the current mathlib olean cache hostname? (`lake exe cache get` is minutes vs hours per repo.) | 2026-09-12 |
 | [Q-045](#q-045--sni-proxy-domain-fronting) | you: terminal | The SNI proxy checks only the ClientHello SNI and splices the encrypted stream, so a client can send an all... | 2026-09-18 |
+| [Q-049](#q-049--deny-rule-absolute-path-form) | you: terminal | Do the live deny rules match at all? `link-claude-home.sh` writes them as `Edit(/home/node/.claude/settings... | 2026-09-21 |
 <!-- index:end -->
 
 ## Open
+
+### Q-049 · deny-rule-absolute-path-form
+**Needs:** you: terminal · **Opened:** 2026-09-21 · **Status:** OPEN
+
+Do the live deny rules match at all? `link-claude-home.sh` writes them as `Edit(/home/node/.claude/settings*.json)`, with one leading slash. If Claude Code reads `/path` as relative to the settings file and needs `//path` for an absolute path (which is my recollection of its docs, unverified because the sandbox has no egress), every global-dir deny rule matches nothing. `guard-trusted-writes.py` then defers to rules that aren't there, so file-tool edits to global settings, hooks and CLAUDE.md get no gate. This predates this branch. The 2026-09-21 iteration-2 review raised it as N3.
+
+- **Read:** `hooks/wiring.json` deny block, `devcontainer-config/link-claude-home.sh:137` (the `{{CLAUDE_DIR}}` substitution), `~/.claude/settings.json` (live rules)
+- **The paste** (on the host; it uses your subscription for two tiny headless calls). For each rule form it grants Write, denies the target, asks Claude to write it, and reports whether the file appeared:
+
+```bash
+for form in single double; do
+  d=$(mktemp -d); t=$(mktemp -d)/target.txt; mkdir -p "$d/.claude"
+  [ $form = single ] && r="$t" || r="/$t"
+  printf '{"permissions":{"allow":["Write"],"deny":["Write(%s)"]}}\n' "$r" > "$d/.claude/settings.json"
+  (cd "$d" && claude -p "Use the Write tool to create the file $t containing: hi" --output-format json >/dev/null 2>&1)
+  [ -e "$t" ] && echo "$form-slash rule: NOT enforced (file written)" || echo "$form-slash rule: enforced"
+done
+```
+
+- **What I do with it:** if single-slash is enforced, N3 is closed as a non-issue. If only double-slash is enforced, `link-claude-home.sh` emits `//` for absolute dirs, a test pins it, and you re-install and re-bless. In either case I'd also consider having the hook return `deny` itself for HARD paths instead of deferring, since that holds whether or not the rules match.
+- **Interim:** unchanged. The devcontainer's `/opt` payload is read-only, which bounds the hooks and CLAUDE.md exposure there. `~/.claude/settings*.json` is not bounded that way.
 
 ### Q-048 · guard-cooccurrence-overblock
 **Needs:** you: judgment · **Opened:** 2026-09-21 · **Status:** OPEN
