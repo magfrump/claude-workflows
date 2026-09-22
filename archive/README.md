@@ -24,3 +24,6 @@ and why it was archived and what replaced it. Single documents live under
   its next writer to copy this file back to `docs/working/incident-journal.md`
   rather than starting over, which is the whole reason it was archived instead
   of deleted.
+- `failure-analysis/` — `scripts/failure-analysis.sh` and its test, archived
+  2026-09-21 (Q-046): no callers, and its re-attempt pass rate disagreed with
+  the documented definition. Its README records the fix if it is ever revived.

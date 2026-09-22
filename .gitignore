@@ -8,6 +8,10 @@ test/skills/code-fact-check/output/
 # Process artifacts from self-improvement rounds (kept locally for reference)
 docs/working/archive/
 
+# Self-improvement code-review rubric archive: a local-only calibration corpus
+# (Q-036). scripts/self-improvement.sh writes it; it is never committed.
+docs/working/reviews/round-*/
+
 # Generated per-round and per-task working docs (reduce git status noise)
 docs/working/*.json
 docs/working/*.log

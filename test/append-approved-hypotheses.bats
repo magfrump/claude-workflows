@@ -117,3 +117,37 @@ write_tasks() {
   append_approved_hypotheses 1 "$TASKS" "$LOG" "task-old"
   grep -qE '^\| 1 \| task-old \| legacy \|  \| 1 \|' "$LOG"
 }
+
+# --- Q-047: Run column (which self-improvement run a row belongs to) ---
+
+@test "new log header ends with a Run column and rows carry the run id" {
+  write_tasks '[{"id":"task-r","description":"x","files_touched":["a"],"independent":true,"hypothesis":"ran","hypothesis_window":1}]'
+  append_approved_hypotheses 2 "$TASKS" "$LOG" "task-r" "2026-09-21"
+  grep -qE '^\| Round \|.*\| Evidence \| Run \|$' "$LOG"
+  grep -qE '^\|-+\|.*\|-+\|-+\|$' "$LOG"
+  grep -qE '^\| 2 \| task-r \| ran \|.*\| 2026-09-21 \|$' "$LOG"
+}
+
+@test "omitted run id leaves the Run cell empty" {
+  write_tasks '[{"id":"task-n","description":"x","files_touched":["a"],"independent":true,"hypothesis":"norun","hypothesis_window":1}]'
+  append_approved_hypotheses 1 "$TASKS" "$LOG" "task-n"
+  grep -qE '^\| 1 \| task-n \| norun \|.*\|  \|$' "$LOG"
+}
+
+@test "log with a pre-Run header is migrated in place, old rows untouched" {
+  printf '# Hypothesis Log\n\n| Round | Task ID | Hypothesis | Source | Window | Evaluator | Requires | Checked at Round | Outcome | Status Date | Evidence |\n|-|-|-|-|-|-|-|-|-|-|-|\n| 1 | old | old hyp |  | 1 | user |  | 2 | | | |\n' > "$LOG"
+  write_tasks '[{"id":"task-m","description":"x","files_touched":["a"],"independent":true,"hypothesis":"migrated","hypothesis_window":1}]'
+  append_approved_hypotheses 3 "$TASKS" "$LOG" "task-m" "2026-09-21"
+  grep -qE '^\| Round \|.*\| Evidence \| Run \|$' "$LOG"
+  grep -qxF '|-|-|-|-|-|-|-|-|-|-|-|-----|' "$LOG"
+  grep -qxF '| 1 | old | old hyp |  | 1 | user |  | 2 | | | |' "$LOG"
+  grep -qE '^\| 3 \| task-m \| migrated \|.*\| 2026-09-21 \|$' "$LOG"
+}
+
+@test "migration is idempotent: a second append does not add a second Run column" {
+  write_tasks '[{"id":"task-a","description":"x","files_touched":["a"],"independent":true,"hypothesis":"one","hypothesis_window":1},{"id":"task-b","description":"x","files_touched":["a"],"independent":true,"hypothesis":"two","hypothesis_window":1}]'
+  append_approved_hypotheses 1 "$TASKS" "$LOG" "task-a" "r1"
+  append_approved_hypotheses 2 "$TASKS" "$LOG" "task-b" "r1"
+  [ "$(grep -c ' Run |' "$LOG")" -eq 1 ]
+  [ "$(grep -o '| Run |' "$LOG" | wc -l)" -eq 1 ]
+}

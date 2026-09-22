@@ -965,8 +965,11 @@ _summary_deferred_evaluation() {
         return
     fi
 
-    local scope_col outcome_col evaluator_col requires_col source_col window_col
+    local scope_col outcome_col evaluator_col requires_col source_col window_col run_col
     scope_col=$(_locate_scope_col "$hypothesis_log")
+    # Run (Q-047) is the last column and absent from pre-2026-09 logs; rows
+    # without it resolve their tasks file newest-first.
+    run_col=$(_locate_log_col "$hypothesis_log" "Run")
     outcome_col=$(_locate_log_col "$hypothesis_log" "Outcome")
     window_col=$(_locate_log_col "$hypothesis_log" "Window")
     evaluator_col=$(_locate_log_col "$hypothesis_log" "Evaluator")
@@ -1004,13 +1007,14 @@ _summary_deferred_evaluation() {
         _row_is_open_deferred "$line" "$current_round" "$scope_col" "$outcome_col" "$window_col" || continue
 
         _split_row_fields "$line" fields
-        local round task_id hypothesis evaluator requires hyp_src
+        local round task_id hypothesis evaluator requires hyp_src row_run
         round="${fields[1]:-}"
         task_id="${fields[2]:-}"
         hypothesis="${fields[3]:-}"
         evaluator=$(_pick_col fields "$evaluator_col")
         requires=$(_pick_col fields "$requires_col")
         hyp_src=$(_pick_col fields "$source_col")
+        row_run=$(_pick_col fields "$run_col")
 
         local hyp_tag=""
         if [ "$hyp_src" = "planner" ]; then
@@ -1023,7 +1027,7 @@ _summary_deferred_evaluation() {
             # a subshell via $(...); the pre-aggregated lookup tables are global
             # and fork into it, so the fast path is preserved.
             local report rc
-            report=$(_evaluate_script_preconditions "$round" "$task_id" "$requires" "$working_dir")
+            report=$(_evaluate_script_preconditions "$round" "$task_id" "$requires" "$working_dir" "$row_run")
             rc=$?
             if [ "$rc" -eq 0 ]; then
                 ready_count=$((ready_count + 1))
@@ -1088,16 +1092,17 @@ _summary_deferred_evaluation() {
 # the leading-prefix form. Used to keep the skills/workflows path-classification
 # rules in one place.
 # --- Internal: extract skill/workflow targets from a task's files_touched ---
-# Args: $1 = round, $2 = task_id, $3 = working_dir
+# Args: $1 = round, $2 = task_id, $3 = working_dir,
+#       $4 = run id from the row's Run column (optional; see _find_tasks_file)
 # Output: zero or more lines of "skill:NAME" or "workflow:NAME" (deduped)
 # Side effect: none. Empty output means the target is unresolvable from this
 # task's files_touched (no skill/workflow paths, or task file missing).
 _resolve_hypothesis_target() {
-    local round="$1" tid="$2" working_dir="$3"
+    local round="$1" tid="$2" working_dir="$3" run="${4:-}"
     [ -z "$working_dir" ] && return 0
 
     local tasks_file
-    tasks_file=$(_find_tasks_file "$round" "$tid" "$working_dir")
+    tasks_file=$(_find_tasks_file "$round" "$tid" "$working_dir" "$run")
     [ -f "$tasks_file" ] || return 0
 
     # Path classification is shared with hooks/log-usage.sh via skill-paths.sh
@@ -1136,15 +1141,34 @@ _archived_newest_first() {
     done
 }
 
+# --- Internal: is the live (un-archived) working dir from run $2? ---
+# The loop writes its run id to si-run-id.txt at start (Q-047). True when the
+# run id is empty, the file is absent (runs predating the Run column), or the
+# ids match — i.e. whenever the live files could belong to that run.
+# Args: $1 = working_dir, $2 = run id (may be empty)
+_live_run_matches() {
+    local working_dir="$1" run="$2"
+    [ -z "$run" ] && return 0
+    [ -f "$working_dir/si-run-id.txt" ] || return 0
+    local live
+    live=$(head -n1 "$working_dir/si-run-id.txt" 2>/dev/null)
+    [ -z "$live" ] || [ "$live" = "$run" ]
+}
+
 # --- Internal: locate the tasks file a hypothesis row refers to ---
-# Tries the current-round file first, then archived copies newest-first, and
-# returns the first one that actually contains task id $2 (a recurring round
-# number means an archived copy may belong to a different run). With an
-# empty id, returns the first existing candidate in the same order.
-# Args: $1 = round, $2 = task id (may be empty), $3 = working_dir
+# With a run id (the row's Run column, Q-047), tries that run's archived copy
+# (archive/<run>-tasks-round-N.json) first, then the live file when the live
+# working dir belongs to that run. Rows without a Run column (written before
+# it existed), or whose run has no copy left, fall back to the newest-first
+# scan: the current-round file, then archived copies newest-first. In every
+# case the first candidate that actually contains task id $2 wins (a
+# recurring round number means an archived copy may belong to a different
+# run). With an empty id, returns the first existing candidate.
+# Args: $1 = round, $2 = task id (may be empty), $3 = working_dir,
+#       $4 = run id (optional)
 # Output: the tasks file path, or nothing when none matches
 _find_tasks_file() {
-    local round="$1" tid="$2" working_dir="$3"
+    local round="$1" tid="$2" working_dir="$3" run="${4:-}"
     local candidate
     while IFS= read -r candidate; do
         [ -f "$candidate" ] || continue
@@ -1153,7 +1177,12 @@ _find_tasks_file() {
             printf '%s\n' "$candidate"
             return 0
         fi
-    done < <(printf '%s\n' "$working_dir/tasks-round-$round.json"
+    done < <(if [ -n "$run" ]; then
+                 printf '%s\n' "$working_dir/archive/${run}-tasks-round-$round.json"
+                 _live_run_matches "$working_dir" "$run" \
+                     && printf '%s\n' "$working_dir/tasks-round-$round.json"
+             fi
+             printf '%s\n' "$working_dir/tasks-round-$round.json"
              _archived_newest_first "$working_dir/archive" "tasks-round-$round.json")
     return 0
 }
@@ -1294,13 +1323,28 @@ _check_metric_logged() {
 # id whose tasks file was found in the archive, the archived report carrying
 # the same date prefix is preferred, so the timestamp belongs to the same run
 # as the task; otherwise current reports win, then archived ones newest-first.
+# $4 = run id from the row's Run column (optional, Q-047). When given, that
+# run's archived report, or the live report when the live working dir is that
+# run, is used before any of the above.
 _days_since_round() {
-    local round="$1" working_dir="$2" tid="${3:-}"
+    local round="$1" working_dir="$2" tid="${3:-}" run="${4:-}"
     [ -z "$working_dir" ] && { echo -1; return; }
 
     local report=""
     local candidate
-    if [ -n "$tid" ]; then
+    if [ -n "$run" ]; then
+        while IFS= read -r candidate; do
+            if [ -f "$candidate" ]; then
+                report="$candidate"
+                break
+            fi
+        done < <(printf '%s\n' "$working_dir/archive/${run}-round-$round-report.json"
+                 if _live_run_matches "$working_dir" "$run"; then
+                     printf '%s\n' "$working_dir/rounds/round-$round-report.json" \
+                                    "$working_dir/round-$round-report.json"
+                 fi)
+    fi
+    if [ -z "$report" ] && [ -n "$tid" ]; then
         local tasks_file
         tasks_file=$(_find_tasks_file "$round" "$tid" "$working_dir")
         if [[ "$tasks_file" == "$working_dir/archive/"* ]]; then
@@ -1334,7 +1378,8 @@ _days_since_round() {
 
 # --- Internal: run the precondition gate for a script-evaluator hypothesis ---
 # Args: $1 = round, $2 = task_id, $3 = requires-flattened string
-#       (key=val;key=val), $4 = working_dir
+#       (key=val;key=val), $4 = working_dir,
+#       $5 = run id from the row's Run column (optional, Q-047)
 # Output: a multi-line report block emitted to stdout, indented to fit under
 # the row header in _summary_deferred_evaluation. The script never writes to
 # the hypothesis log — the user reviews this report and decides the outcome.
@@ -1345,12 +1390,12 @@ _days_since_round() {
 # The exit code is purely additive — every output string this function printed
 # before is unchanged, so callers that only inspect stdout are unaffected.
 _evaluate_script_preconditions() {
-    local round="$1" tid="$2" requires_str="$3" working_dir="$4"
+    local round="$1" tid="$2" requires_str="$3" working_dir="$4" run="${5:-}"
     echo "   Evaluator: script"
 
     # Resolve target from the task's files_touched. Empty target = unresolvable.
     local targets
-    targets=$(_resolve_hypothesis_target "$round" "$tid" "$working_dir")
+    targets=$(_resolve_hypothesis_target "$round" "$tid" "$working_dir" "$run")
     if [ -z "$targets" ]; then
         echo "   Target: unresolvable (no skill/workflow in files_touched)"
         echo "   → Recommendation: switch evaluator to \"user\" or restate the hypothesis"
@@ -1412,7 +1457,7 @@ _evaluate_script_preconditions() {
 
     if [ -n "$req_days" ]; then
         local elapsed
-        elapsed=$(_days_since_round "$round" "$working_dir" "$tid")
+        elapsed=$(_days_since_round "$round" "$working_dir" "$tid" "$run")
         if [ "$elapsed" -lt 0 ]; then
             all_met=0
             checks="${checks}   - days_elapsed≥${req_days}: UNRESOLVABLE (no round timestamp)"$'\n'

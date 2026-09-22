@@ -4,7 +4,8 @@
 # Usage: scripts/archive-working-docs.sh [-n|--dry-run] [PREFIX]
 #
 # Moves all non-permanent files from docs/working/ into docs/working/archive/
-# with an optional prefix (defaults to date, e.g. "2026-03-25"). Permanent
+# with an optional prefix (defaults to the run id in docs/working/si-run-id.txt,
+# else today's date, e.g. "2026-03-25"). Permanent
 # files (hypothesis-log.md, hypothesis-backlog.md, tasks.json, feature-ideas.md, test-strategy-fact-check-skills.md,
 # completed-tasks.md, problem-history.json, round-history.json, questions.md,
 # questions-archive.md, and the "graduated" docs listed in PERMANENT) are left
@@ -33,9 +34,19 @@ for arg in "$@"; do
   esac
 done
 
-PREFIX="${PREFIX:-$(date +%Y-%m-%d)}"
-
 WORKING_DIR="docs/working"
+
+# Default prefix: the run id the self-improvement loop recorded at run start
+# (si-run-id.txt, Q-047), so archived files carry the same id as that run's
+# hypothesis-log Run cells even when archiving happens on a later day. Falls
+# back to today's date when the file is absent or its content is unusable.
+if [ -z "$PREFIX" ] && [ -f "$WORKING_DIR/si-run-id.txt" ]; then
+  RUN_ID=$(head -n1 "$WORKING_DIR/si-run-id.txt")
+  if [[ "$RUN_ID" =~ ^[A-Za-z0-9._-]+$ ]]; then
+    PREFIX="$RUN_ID"
+  fi
+fi
+PREFIX="${PREFIX:-$(date +%Y-%m-%d)}"
 ARCHIVE_DIR="$WORKING_DIR/archive"
 
 if [ ! -d "$WORKING_DIR" ]; then

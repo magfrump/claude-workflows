@@ -39,7 +39,8 @@
 #   docs/working/round-N-report.json        Structured log per round
 #   docs/working/round-history.json         Cumulative round history
 #   docs/working/completed-tasks.md         Running list of approved work
-#   docs/working/hypothesis-log.md          Hypothesis tracking table
+#   docs/working/hypothesis-log.md          Hypothesis tracking table (Run column = SI_RUN_ID)
+#   docs/working/si-run-id.txt              This run's id (date prefix; archive prefix)
 
 set -euo pipefail
 
@@ -447,6 +448,20 @@ HISTORY_FILE="$REPO_DIR/docs/working/problem-history.json"
 mkdir -p "$WORKING_DIR"
 touch "$WORKING_DIR/completed-tasks.md"
 
+# Run identifier (Q-047). Round numbers restart every run, so hypothesis-log
+# rows carry this id in their Run column to say which run they belong to. It
+# is the date prefix archive-working-docs.sh gives this run's files when they
+# are archived — that script reads si-run-id.txt for its default prefix, so the
+# two agree even when the archive happens on a later day. Override with
+# SI_RUN_ID (e.g. a second run on the same day) — it becomes a file-name
+# prefix and a markdown cell, so only [A-Za-z0-9._-] is accepted.
+SI_RUN_ID="${SI_RUN_ID:-$(date +%F)}"
+if [[ ! "$SI_RUN_ID" =~ ^[A-Za-z0-9._-]+$ ]]; then
+    echo "Error: SI_RUN_ID must match [A-Za-z0-9._-]+ (got: $SI_RUN_ID)" >&2
+    exit 1
+fi
+printf '%s\n' "$SI_RUN_ID" > "$WORKING_DIR/si-run-id.txt"
+
 # The sandbox write-allowlist covers the project and scratchpad, not bare /tmp.
 # mktemp honours $TMPDIR but falls back to /tmp when it is unset, which may be
 # unwritable under the hardened sandbox. Fire the fallback when $TMPDIR is unset
@@ -556,7 +571,6 @@ for ROUND in $(seq 1 $MAX_ROUNDS); do
     if [ "$ROUND" -gt 1 ]; then
         PREV=$((ROUND - 1))
         PREV_TASKS_FILE="$WORKING_DIR/tasks-round-$PREV.json"
-        PREV_IDEAS_FILE="$WORKING_DIR/feature-ideas-round-$PREV.md"
 
         # Categorize prior-round tasks by validation verdict. Read this run's
         # per-round report, not round-history.json: history accumulates across
@@ -588,60 +602,6 @@ for ROUND in $(seq 1 $MAX_ROUNDS); do
             done < <(jq -r '.[].id' "$PREV_TASKS_FILE" 2>/dev/null)
         fi
 
-        # --- DD Output Format Contract: Survivors Section ---
-        # Parses the "### Survivors" heading from the DD output file
-        # (docs/working/feature-ideas-round-N.md).
-        #
-        # Expected DD output structure (from divergent-design.md step 4):
-        #   ### Survivors
-        #   - **#1 Some Idea Name** — one-line description
-        #   - **#2 Another Idea** — one-line description
-        #   ### <next heading>
-        #
-        # Extraction logic:
-        #   1. sed grabs lines between "### Survivors" and the next "### " heading
-        #   2. grep filters to lines matching: ^- \*\*#[0-9]
-        #   3. For each line, the name is extracted by stripping the "- **#N " prefix
-        #      and the "**..." suffix, then converted to kebab-case for fuzzy matching
-        #      against existing task IDs.
-        #
-        # If the DD output changes the Survivors heading level, numbering format
-        # (e.g., "#1" prefix), or bullet style, this extraction will silently
-        # return no results — causing all survivors to be treated as unattempted.
-        # ---
-        UNATTEMPTED=""
-        if [ -f "$PREV_IDEAS_FILE" ] && [ -f "$PREV_TASKS_FILE" ]; then
-            TASK_IDS_LIST=$(jq -r '.[].id' "$PREV_TASKS_FILE" 2>/dev/null) || TASK_IDS_LIST=""
-
-            # Extract lines between "### Survivors" and the next "###" heading
-            SURVIVOR_LINES=$(sed -n '/^### Survivors$/,/^### /{/^### Survivors$/d;/^### /d;p}' "$PREV_IDEAS_FILE" \
-                | grep -E '^\- \*\*#[0-9]' || true)
-
-            while IFS= read -r LINE; do
-                [ -z "$LINE" ] && continue
-                # Extract the name part: "- **#N Name** — desc" → "Name"
-                SURVIVOR_NAME=$(echo "$LINE" | sed 's/^- \*\*#[0-9]* //' | sed 's/\*\*.*//')
-                # Convert to kebab-case for matching against task IDs
-                SURVIVOR_KEBAB=$(echo "$SURVIVOR_NAME" | tr '[:upper:]' '[:lower:]' | sed 's/[[:space:]]/-/g' | sed 's/[^a-z0-9-]//g')
-                [ -z "$SURVIVOR_KEBAB" ] && continue
-
-                # Check if any task ID contains this kebab name (or vice versa)
-                MATCHED=false
-                while IFS= read -r EXISTING_TID; do
-                    [ -z "$EXISTING_TID" ] && continue
-                    if [[ "$EXISTING_TID" == *"$SURVIVOR_KEBAB"* ]] || [[ "$SURVIVOR_KEBAB" == *"$EXISTING_TID"* ]]; then
-                        MATCHED=true
-                        break
-                    fi
-                done <<< "$TASK_IDS_LIST"
-
-                if [ "$MATCHED" = false ]; then
-                    UNATTEMPTED="${UNATTEMPTED}
-  - ${LINE#- }"
-                fi
-            done <<< "$SURVIVOR_LINES"
-        fi
-
         # Assemble context block — only include sections that have content
         PRIOR_CONTEXT=""
         CONTEXT_SECTIONS=""
@@ -655,11 +615,6 @@ APPROVED (already implemented, do not re-propose):${APPROVED_LIST}
 REJECTED (failed validation — consider re-proposing with improvements):${REJECTED_LIST}
 "
         fi
-        if [ -n "$UNATTEMPTED" ]; then
-            CONTEXT_SECTIONS="${CONTEXT_SECTIONS}
-UNATTEMPTED SURVIVORS (validated but never implemented — strong candidates):${UNATTEMPTED}
-"
-        fi
         if [ -n "$CONTEXT_SECTIONS" ]; then
             PRIOR_CONTEXT="
 ## Prior round ($PREV) results — use this to guide your ideas
@@ -668,9 +623,9 @@ Note: This covers only the most recent round. See docs/working/completed-tasks.m
 for the complete history of all approved work across all rounds.
 ${CONTEXT_SECTIONS}
 Focus on: (1) re-attempting rejected ideas with fixes for their failure reasons,
-(2) proposing unattempted survivors, or (3) identifying genuinely new problems.
-Re-attempts and unattempted survivors count as valid ideas — do not dismiss them
-as 'already proposed'. Only ideas listed as APPROVED are off-limits."
+or (2) identifying genuinely new problems. Re-attempts count as valid ideas — do
+not dismiss them as 'already proposed'. Only ideas listed as APPROVED are
+off-limits."
         fi
     fi
 
@@ -719,7 +674,7 @@ constraint is verifiable.
 If you cannot generate at least 3 genuinely new and valuable ideas that
 are not already completed or in progress, write only the word DONE on the
 first line of your output and stop. Note: re-attempts of rejected ideas
-and previously unattempted survivors count as genuinely new ideas.
+count as genuinely new ideas.
 
 Otherwise, write the full divergent design output to
 docs/working/feature-ideas-round-$ROUND.md.
@@ -1527,6 +1482,11 @@ Count only the automated assessment scores (Testability investment, Trigger clar
         # away, leaving one integer. That is why the repo has no pre-triage
         # review corpus to calibrate against (see docs/working/
         # experiment-results-code-review-2026-07-29.md, Result 6).
+        # The corpus is LOCAL-ONLY: docs/working/reviews/round-*/ is
+        # gitignored (Q-036, answered 2026-09-20), so it survives across runs
+        # in this checkout but is never committed and is lost with the clone.
+        # Copy it somewhere durable before discarding a checkout you calibrate
+        # against.
         CR_ARCHIVE="$WORKING_DIR/reviews/round-$ROUND/$TASK_ID"
         # Identity of *this* review, used to pick this run's rubric out of an
         # archive that also holds rubrics committed on earlier branches.
@@ -1911,7 +1871,7 @@ Retro docs:${FIX_RETROS}" 2>/dev/null || true
     # user to evaluate (the loop never auto-grades them — see Decision 010).
     echo "Logging hypotheses for merged tasks..."
     append_approved_hypotheses "$ROUND" "$TASKS_FILE" \
-        "$WORKING_DIR/hypothesis-log.md" "$MERGED_TASKS"
+        "$WORKING_DIR/hypothesis-log.md" "$MERGED_TASKS" "$SI_RUN_ID"
 
     # -------------------------------------------------------
     # Step 6: Update completed tasks log

@@ -298,3 +298,62 @@ log_invocation() {
   [[ "$output" == *"days_elapsed≥7: MET"* ]]
   [[ "$output" == *"INCONCLUSIVE"* ]]
 }
+
+# --- Q-047: Run column steers lookups to the row's own run ---
+
+@test "_find_tasks_file with a run id prefers that run's archive over a newer one" {
+  echo '[{"id":"t","description":"x","files_touched":["skills/mine/SKILL.md"],"independent":true}]' \
+    > "$WORKING_DIR/archive/2026-01-01-tasks-round-7.json"
+  echo '[{"id":"t","description":"x","files_touched":["skills/reused/SKILL.md"],"independent":true}]' \
+    > "$WORKING_DIR/archive/2026-03-01-tasks-round-7.json"
+  run _resolve_hypothesis_target 7 t "$WORKING_DIR" 2026-01-01
+  [ "$output" = "skill:mine" ]
+  # Without a run id (a pre-Run row) the newest copy still wins.
+  run _resolve_hypothesis_target 7 t "$WORKING_DIR"
+  [ "$output" = "skill:reused" ]
+}
+
+@test "_find_tasks_file with a run id uses the live file when the live run matches" {
+  echo "2026-05-05" > "$WORKING_DIR/si-run-id.txt"
+  write_tasks 7 '[{"id":"t","description":"x","files_touched":["skills/live/SKILL.md"],"independent":true}]'
+  echo '[{"id":"t","description":"x","files_touched":["skills/old/SKILL.md"],"independent":true}]' \
+    > "$WORKING_DIR/archive/2026-01-01-tasks-round-7.json"
+  run _resolve_hypothesis_target 7 t "$WORKING_DIR" 2026-05-05
+  [ "$output" = "skill:live" ]
+}
+
+@test "_find_tasks_file skips the live file of a different run when the row's run is archived" {
+  echo "2026-05-05" > "$WORKING_DIR/si-run-id.txt"
+  write_tasks 7 '[{"id":"t","description":"x","files_touched":["skills/live/SKILL.md"],"independent":true}]'
+  echo '[{"id":"t","description":"x","files_touched":["skills/old/SKILL.md"],"independent":true}]' \
+    > "$WORKING_DIR/archive/2026-01-01-tasks-round-7.json"
+  run _resolve_hypothesis_target 7 t "$WORKING_DIR" 2026-01-01
+  [ "$output" = "skill:old" ]
+}
+
+@test "_find_tasks_file falls back to newest-first when the row's run has no copy" {
+  echo '[{"id":"t","description":"x","files_touched":["skills/new/SKILL.md"],"independent":true}]' \
+    > "$WORKING_DIR/archive/2026-03-01-tasks-round-7.json"
+  run _resolve_hypothesis_target 7 t "$WORKING_DIR" 2025-12-31
+  [ "$output" = "skill:new" ]
+}
+
+@test "_days_since_round with a run id uses that run's archived report" {
+  echo '{"round":4,"timestamp":"1970-01-01T00:00:00Z"}' > "$WORKING_DIR/archive/2026-01-01-round-4-report.json"
+  echo '{"round":4,"timestamp":"1970-01-03T00:00:00Z"}' > "$WORKING_DIR/archive/2026-03-01-round-4-report.json"
+  NOW_EPOCH=$((10 * 86400)); export NOW_EPOCH
+  run _days_since_round 4 "$WORKING_DIR" "" 2026-01-01
+  [ "$output" = "10" ]
+}
+
+@test "_days_since_round with a run id ignores a live report from a different run" {
+  echo "2026-05-05" > "$WORKING_DIR/si-run-id.txt"
+  write_round_report 4 "1970-01-09T00:00:00Z"
+  echo '{"round":4,"timestamp":"1970-01-01T00:00:00Z"}' > "$WORKING_DIR/archive/2026-01-01-round-4-report.json"
+  NOW_EPOCH=$((10 * 86400)); export NOW_EPOCH
+  run _days_since_round 4 "$WORKING_DIR" "" 2026-01-01
+  [ "$output" = "10" ]
+  # 1970-01-09 is epoch day 8, so the live run's report is 2 days old.
+  run _days_since_round 4 "$WORKING_DIR" "" 2026-05-05
+  [ "$output" = "2" ]
+}

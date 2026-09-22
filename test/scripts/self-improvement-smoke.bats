@@ -60,9 +60,6 @@ setup() {
 | 1 | Add Logging | ✓ | ✗ |
 | 2 | Retry Logic | ✗ | ✓ |
 
-### Survivors
-- **#1 Add Logging** — structured JSON logging for all scripts
-- **#2 Retry Logic** — exponential backoff for flaky operations
 IDEAS
 
   # --- Fixture: tasks JSON (Claude-generated task list) ---
