@@ -19,7 +19,9 @@ Each skill in `skills/` is a self-contained directory (`skills/<name>/SKILL.md` 
 3. Add a routing entry to your `CLAUDE.md` skill table so it activates on the right triggers.
 4. If the skill writes output to `docs/reviews/`, create that directory.
 
-**Standalone skills** (no sub-skill dependencies): `fact-check`, `self-eval`, `security-reviewer`, `ui-visual-review`, `cowen-critique`, `yglesias-critique`.
+**Standalone skills** (no sub-skill dependencies): `fact-check`, `security-reviewer`, `ui-visual-review`, `cowen-critique`, `yglesias-critique`.
+
+**Repo-only skills** (not usable in other projects): `self-eval` — it scores against `docs/evaluation-rubric.md`, which exists only in this repo, and stops with a message when the rubric is missing.
 
 **Skills with dependencies**: `code-review` → `code-fact-check` + optionally `security-reviewer`, `ui-visual-review`. `draft-review` → `fact-check` + persona critics.
 
