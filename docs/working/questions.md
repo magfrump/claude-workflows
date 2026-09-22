@@ -58,7 +58,7 @@ When a file-tool edit reaches a protected global file through its real path rath
 Do the live deny rules match at all? `link-claude-home.sh` writes them as `Edit(/home/node/.claude/settings*.json)`, with one leading slash. If Claude Code reads `/path` as relative to the settings file and needs `//path` for an absolute path (which is my recollection of its docs, unverified because the sandbox has no egress), every global-dir deny rule matches nothing. `guard-trusted-writes.py` then defers to rules that aren't there, so file-tool edits to global settings, hooks and CLAUDE.md get no gate. This predates this branch. The 2026-09-21 iteration-2 review raised it as N3.
 
 - **Read:** `hooks/wiring.json` deny block, `devcontainer-config/link-claude-home.sh:137` (the `{{CLAUDE_DIR}}` substitution), `~/.claude/settings.json` (live rules)
-- **The paste** (on the host; it uses your subscription for two tiny headless calls). For each rule form it grants Write, denies the target, asks Claude to write it, and reports whether the file appeared:
+- **The paste** (on the host; it uses your subscription for three tiny headless calls). For each run it grants Write, denies the target (none for `control`), asks Claude to write it, and reports whether the file appeared:
 
 ```bash
 for form in control single double; do
