@@ -18,8 +18,11 @@ SCRIPT="$(cd "$(dirname "$BATS_TEST_FILENAME")/../.." && pwd)/scripts/health-che
 # ordering is tested further down with a stub runner.
 export HEALTH_CHECK_SKIP_BATS=1
 
-# Deterministic cache path shared across all tests in this file.
-_HC_CACHE_DIR="/tmp/bats-hc-cache.$$"
+# Cache shared across all tests in this file. It must be BATS_FILE_TMPDIR, not
+# a path built from $$: bats runs each test in its own process, so `$$` differs
+# between setup_file and every test. The old "/tmp/bats-hc-cache.$$" never hit,
+# and every test re-ran the full health check (~18s each, ~400s per file).
+_HC_CACHE_DIR="$BATS_FILE_TMPDIR/hc-cache"
 
 _run_and_cache() {
   mkdir -p "$_HC_CACHE_DIR"
