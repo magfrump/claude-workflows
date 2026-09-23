@@ -83,6 +83,14 @@ reworded, so the next person keeping the two in step has one exception to carry.
 unchanged: an agent that edits `install.sh` and a human who blesses without reading still lose, and
 `install.sh` remains outside the manifest and the config hash by design.
 
+**Note, 2026-09-23 ([decision 037](037-bare-host-copy-install.md)).** install.sh now also
+writes the host's `~/.claude` (the global CLAUDE.md, skills, workflows, guides, patterns,
+hooks and scripts) whenever a human at a terminal answers y to its second target. That
+widens what an unreviewed edit to install.sh can reach: from the devcontainer boundary to
+the live policy files of every bare-host session. So this decision's pending regex
+matters more now. Until it lands, every install.sh commit still carries a
+`Live-verified:` trailer by hand.
+
 ## Revisit triggers
 
 How to read: each entry is a concrete, observable condition that should prompt re-evaluating this decision.
