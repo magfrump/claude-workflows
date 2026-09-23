@@ -2,7 +2,7 @@
 
 - **Goal**: Replace the README's bare-host symlink install of the global files into `~/.claude` with copies that `devcontainer-config/install.sh` makes only after a human has read the diff and answered y.
 - **Project state**: implements the Q-050 answer on `ans/copy-install` · follows the 2026-09-21 answers branch, whose guard redesign is paused at its review cap · not blocked; plan approved with shape D (cite: docs/decisions/037-bare-host-copy-install.md)
-- **Task status**: in-progress (plan revised to the 2026-09-23 answers Q-054..Q-057; reviews next)
+- **Task status**: in-progress (plan revised to the 2026-09-23 answers; pre-mortem and architecture review folded in; tests next)
 
 Research: [research-copy-install-bare-host.md](research-copy-install-bare-host.md)
 
@@ -37,21 +37,34 @@ One installer and one run offer every install target, each gated by its own show
 4. **refactor: argument parsing and function extraction, no behavior change.**
    - Replace `ASSUME_YES="${1:-}"` with a loop accepting `--yes` and `-h`/`--help`. Anything else prints usage to stderr and exits 2, before assembly.
      - This changes behavior only for invalid input. Today a typo like `--yse` silently means "no".
-   - Extract `assemble <stage-dir>` (current `:49-79`: fatal on a missing source, writes `.manifest`) and `review_diff <dest> <src> <item...>` (current `:85-114`). The devcontainer flow is otherwise unchanged.
+   - Extract `assemble <stage-dir>` (current `:49-79`: fatal on a missing source, writes `.manifest`) and `review_diff <dest> <src> <item...>` (current `:85-114`).
+     - `review_diff` reports "changed" through its return status (0 = no change, 1 = changed) instead of a global. It still exits the script on diff trouble.
+   - Wrap the devcontainer flow in `install_devcontainer`, called from a short main sequence (architecture review #1). The devcontainer flow is otherwise unchanged.
+   - `usage()` states the CLI contract: the targets in order, the skip rules, and exit codes 0/1/2 (architecture review #4).
    - `test/cc-isolated-functions.bats` passes unmodified.
 5. **feat: host `~/.claude` target in the default run.**
+   - **Structure** (architecture review #1–#3):
+     - a new function `install_claude_home`, called after `install_devcontainer` in the main sequence;
+     - the host entry names are computed once as the `basename` of each `CLAUDE_HOME_SRC` item, never a restated list;
+     - the host review is a print-and-count pre-pass followed by the shared `review_diff`.
+   - **Destination**: `${CLAUDE_HOME_DIR:-${CLAUDE_CONFIG_DIR:-$HOME/.claude}}`. The review's first line names which variable chose it (pre-mortem #5).
    - **Per-target decline.** Declining the devcontainer target prints `Aborted. Nothing was changed. (devcontainer config)`, records the decline and continues to the host target. The final exit status is 1 if any target was declined.
      - Diff trouble and missing sources stay fatal for the whole run.
      - The devcontainer install, `--bless` and bin link run exactly as today when the answer is y.
    - **Skip rules**, checked first, before any read of the host destination or any staging:
      - `--yes` → `Skipped host target (~/.claude): it never installs with --yes …`
      - `[ -t 0 ]` false → `Skipped host target (~/.claude): it needs an interactive terminal …`
+     - `CLAUDECODE` set (it is set in the Claude Code Bash tool environment) → `Skipped host target: running inside a Claude Code session …` (pre-mortem #4)
      - A skip does not change the exit status.
-   - **Destination guard.** Refuse if the destination resolves inside the repo checkout (`pwd -P` prefix check). This catches `~/.claude` itself being a symlink into the checkout.
+   - **Destination guards.** Refuse (exit 1, nothing written) when:
+     - the destination resolves inside the repo checkout (`pwd -P` prefix check), which catches `~/.claude` itself being a symlink into the checkout;
+     - `$DEST/.claude-workflows-backup` is a symlink or resolves inside the checkout (pre-mortem #3);
+     - any `$DEST/.cw-new.*` leftover is a symlink (pre-mortem #3).
+   - **Dirty warning.** If the stage manifest says `dirty=yes`, print a prominent `WARNING: the checkout has uncommitted changes; they are included in this install` line above the prompt. The pre-mortem's optional second prompt is not adopted; see Risks.
    - **Stage** with `assemble` into `mktemp -d "${TMPDIR:-/tmp}/cw-host-stage.XXXXXX"`, with an EXIT trap that removes it. The stage never goes into `$SRC/claude-home`.
    - **Symlink-aware review**, for each of the seven entry names:
      - If `$DEST/<name>` is a symlink: print `REPLACE symlink <dest> -> <target> with a copy` and count it as a change.
-     - If it is a real directory: `find -type l` inside it (per-file hook links) prints one `REPLACE symlink` line per link, each counted as a change. Every regular file or link inside it that the stage lacks prints as `MOVE to backup (not in the repo): <path>`, with a one-line warning above the list.
+     - If it is a real directory: `find -type l` inside it (per-file hook links) prints one `REPLACE symlink` line per link, each counted as a change. Every regular file or link inside it that the stage lacks prints as `MOVE to backup (not in the repo): <path>`, with a one-line warning above the list. For a foreign file under `hooks/` whose basename appears in `$DEST/settings.json` or `settings.local.json`, the line also says `WIRED in settings: moving it breaks that hook` (pre-mortem #2).
      - Then `diff -ruN "$DEST/<name>" "$STAGE/<name>"`: exit 1 counts as a change, exit >1 aborts before the prompt.
      - `(none — ~/.claude already matches the repo)` only when nothing above fired.
    - **Prompt**: `Install these files into <dest>? [y/N]`. EOF means no.
@@ -60,14 +73,14 @@ One installer and one run offer every install target, each gated by its own show
      2. Create `$DEST/.claude-workflows-backup/<UTC stamp>/`. If that directory exists, append `.$$` to the stamp.
      3. For each entry that exists or is a link, `mv "$DEST/<name>" "$BACKUP/<name>"`, with no trailing slash, so a link moves as a link.
      4. `mv "$DEST/.cw-new.<name>" "$DEST/<name>"`, after checking that nothing is at `$DEST/<name>`.
-   - **Provenance**: `rm -f` then `cp` the stage `.manifest` to `$DEST/.claude-workflows-manifest`. The `rm` stops a planted symlink from redirecting the write.
+   - **Provenance**: `rm -f`, then `cp` the stage `.manifest` to `$DEST/.claude-workflows-manifest`. The `rm` stops a planted symlink from redirecting the write. Then append `installed_by=host-tty`, `installed_parent=<parent process command name>` and `installed_at=<stamp>` (additive keys, architecture review #5; pre-mortem #4).
    - **Wiring reminder**: computed before the swap. If `$DEST/hooks/wiring.json` is missing or differs from the stage's copy, print a loud reminder to redo `guides/bare-host-hook-wiring.md` §2.
    - Print the backup path.
    - Never call `--bless`, and never create the devcontainer config dir or the bin link from this target.
    - Rewrite the header comment (`:1-14`). install.sh now also writes the host `~/.claude`, and its own edits are not inert (035 H5).
    - Commit trailer: `Live-verified: no — <host run in step 9>` (decision 035).
 6. **docs: README and guides.**
-   - README Linux/macOS block: replace the `mkdir`/`ln -s`/`cp` lines with `./devcontainer-config/install.sh` and a description of the two prompts. Add a "migrating from the symlink install" paragraph: the review shows each replaced link, and the old links land in `.claude-workflows-backup/`.
+   - README Linux/macOS block: replace the `mkdir`/`ln -s`/`cp` lines with `./devcontainer-config/install.sh` and a description of the two prompts. Add a "migrating from the symlink install" paragraph: the review shows each replaced link, and the old links land in `.claude-workflows-backup/`. Close Claude Code sessions first, and check any `WIRED` lines before answering y.
    - Remove the Gemini CLI and Antigravity install blocks. The file list keeps `GEMINI.md`, with a note that no install recipe ships.
    - "Configuration outside this repo" table: the hook-copies row now says installed by `install.sh`.
    - Line 193: drop "(symlinked to `~/.claude/skills` …)".
@@ -151,6 +164,13 @@ Not generated by the `test-strategy` skill. Manual test specification with hand-
 | T17 | host decline, pty n,n (G17) | exit 1; host `Aborted`; dest unchanged; stage removed | integration | output |
 | T18 | first install into a missing dest (G1) | dest created with all seven entries, the manifest and no backup dir contents | integration | listing |
 | T19 | devcontainer y still installs, then host offered (G8, G17) | pty y,n: devcontainer installed (stub bless ran), host prompt shown and declined, exit 1 | integration | output |
+| T20 | wired foreign hook (G13; pre-mortem #2) | foreign `hooks/mine.sh` named in a scratch `settings.json` → review line carries `WIRED in settings` | integration | output |
+| T21 | planted backup-dir symlink (G4; pre-mortem #3) | `.claude-workflows-backup` → a dir in the fake repo: exit 1, no entry moved, fake repo checksums unchanged | integration | output + checksums |
+| T22 | `CLAUDECODE=1` inside a pty (G2; pre-mortem #4) | host target skipped with the Claude Code message; dest unchanged | integration | output |
+| T23 | dirty checkout (pre-mortem #4) | fake repo is a git repo with an uncommitted change → review shows the dirty WARNING | integration | output |
+| T24 | `CLAUDE_CONFIG_DIR` honoured (G6; pre-mortem #5) | `CLAUDE_HOME_DIR` unset and `CLAUDE_CONFIG_DIR` set → install lands there and the review names the variable | integration | listing |
+
+The pty tests unset `CLAUDECODE` for the child: this suite itself runs under Claude Code, where the variable is set. That is the T22 rule working as intended.
 
 Existing regression (G8): `test/cc-isolated-functions.bats` passes unmodified.
 
@@ -166,15 +186,28 @@ Required: more than 5 steps, and a trust boundary (host file I/O into policy dir
 | A host install clobbers `settings.json`, memory or credentials | T7; structural: only the seven named entries are touched |
 | A copied `log-usage.sh` fails every tool call because `hooks/lib` wasn't copied | T9; structural: whole-dir copies |
 | Under D, an existing non-interactive devcontainer run now touches `~/.claude` or the real HOME | T1, T3; structural: the skip rules run before any read or stage of the host dest; `cc-isolated-functions.bats` unmodified |
-| A test writes the real `~/.claude` or relinks the real `~/.local/bin/cc-isolated` | T8; `setup()` pins HOME and every `*_DIR` |
+| A test writes the real `~/.claude` or relinks the real `~/.local/bin/cc-isolated` | T8; `setup()` pins HOME, `CLAUDE_CONFIG_DIR` and every `*_DIR` |
+| A foreign hook wired in `settings.json` is moved to the backup and fails open (pre-mortem #2) | T20; the `WIRED` line in the review |
+| The backup dir is a planted symlink and the old entries land in the checkout (pre-mortem #3) | T21; the backup-dir guard |
+| The install goes to `~/.claude` while Claude Code reads `$CLAUDE_CONFIG_DIR` (pre-mortem #5) | T24; destination precedence |
+| A payload entry added to `CLAUDE_HOME_SRC` never reaches the host (architecture review #2) | structural: host names derived by `basename`; T6 compares every entry |
 
 Round-1 triggers:
-- `/pre-mortem`: **triggered** (the host installer is the bless gate for policy files under `~/.claude`). Output: `docs/reviews/pre-mortem-copy-install.md` (step 2).
-- `/architecture-review`: **triggered** (files span `devcontainer-config/`, `test/`, `guides/`, `docs/decisions/` and the README). Output: `docs/reviews/architecture-review-copy-install.md` (step 2).
+- `/pre-mortem`: **triggered and run.** Output: `docs/reviews/pre-mortem-copy-install.md`. Folded in:
+  - #2 → WIRED line and T20;
+  - #3 → backup-dir guard and T21;
+  - #4 → `CLAUDECODE` skip, `installed_by` provenance, dirty warning, T22/T23;
+  - #5 → `CLAUDE_CONFIG_DIR` precedence and T24;
+  - the mid-swap note → the README migration paragraph.
+  - #1 (quiet drift) is acknowledged via decision 037's revisit trigger.
+- `/architecture-review`: **triggered and run.** Output: `docs/reviews/architecture-review-copy-install.md`. Findings #1–#5 folded into steps 4–5. #6 is covered by step 7.
 
 ## Risks
 
 - **The TTY barrier does not stop a determined agent.** Verified 2026-09-23 in this session: the Bash tool gives commands no TTY (`[ -t 0 ]`, `[ -t 1 ]` and `[ -t 2 ]` are all false, `tty` prints "not a tty", and fd 0 is `/dev/null`). A piped `y` is therefore refused. But util-linux `script` is installed, and `script -qec ./devcontainer-config/install.sh /dev/null <<<$'n\ny\n'` gives the child a pty. That is exactly how this plan's own tests drive the y path. The TTY check stops the accidental case (an agent running the installer as part of a routine) and makes the deliberate case conspicuous. It does not stop an agent that sets out to bless its own edit. The backstops are the sandbox `denyWrite ~/.claude` for Bash (manual hardening, guide §3) and `permissions.deny` for the Bash tool's direct writes. A host without that sandbox setting has no hard barrier.
+- **The `CLAUDECODE` skip is the same kind of barrier as the TTY check.** An agent can `env -u CLAUDECODE`. Needing both a faked pty and an unset variable makes the deliberate case conspicuous in a transcript; it does not make it impossible.
+- **Dirty stage: warning only.** The pre-mortem suggested an optional second confirmation for a dirty checkout. Not adopted: it adds a ritual prompt, and the diff already shows the content. Revisit if a dirty install is ever regretted.
+- **Mid-swap window.** Between the moves, a running session can briefly find no hook file. The README asks the user to close Claude Code sessions before installing.
 - **D changes what an existing command does.** A plain run now asks a second question. Non-interactive runs are unchanged except for one extra skip line.
 - **Exit status under D**: 1 if any target was declined. A human who declines the devcontainer target and accepts `~/.claude` gets exit 1. That matches "declined = 1" today, and no caller depends on it.
 - **035's regex has not landed.** install.sh commits carry `Live-verified: no — …` trailers anyway.
