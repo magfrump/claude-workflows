@@ -1,0 +1,257 @@
+Q-050:
+[2] is intended. This repo's copy is the only global instruction file that should be editable, and the symlink connection should be deprecated in favor of edits getting checked in and propagated by copying after a human bless via install.sh
+
+Q-049:
+$ for form in control single double; do
+  d=$(mktemp -d); t=$(mktemp -d)/target.txt; mkdir -p "$d/.claude"
+  case $form in control) deny='' ;; single) deny="\"Write($t)\"" ;; double) deny="\"Write(/$t)\"" ;; esac
+  printf '{"permissions":{"allow":["Write"],"deny":[%s]}}\n' "$deny" > "$d/.claude/settings.json"
+  out=$(cd "$d" && claude -p "Use the Write tool to create the file $t containing: hi" --output-format json 2>&1)
+  turns=$(printf '%s' "$out" | jq -r '.num_turns // 0' 2>/dev/null); turns=${turns:-0}
+  if [ -e "$t" ]; then r="file written"; elif [ "$turns" -ge 2 ]; then r="not written (claude ran $turns turns)"; else r="INCONCLUSIVE, claude did not run: $(printf '%s' "$out" | head -c 150)"; fi
+  echo "$form: $r"
+done
+control: INCONCLUSIVE, claude did not run: Ignoring 1 permissions.allow entry from .claude/settings.json: this workspace has not been trusted. Run Claude Code interactively here once and accept
+single: INCONCLUSIVE, claude did not run: Ignoring 1 permissions.allow entry from .claude/settings.json: this workspace has not been trusted. Run Claude Code interactively here once and accept
+double: INCONCLUSIVE, claude did not run: Ignoring 1 permissions.allow entry from .claude/settings.json: this workspace has not been trusted. Run Claude Code interactively here once and accept
+
+Q-048: [2]
+
+Q-011:
+$ rg -n 'blob\.core\.windows\.net|azureURL|def defaultContainersForRepo' -A6 "$M"/Cache/*.lean
+verifier/lean-project/.lake/packages/mathlib/Cache/Test.lean
+143:def test_Container_azureURL : IO Unit := do
+144:  IO.println "Container.azureURL:"
+145-  assertEq "master URL"
+146:    "https://lakecache.blob.core.windows.net/mathlib4-master"
+147:    Container.master.azureURL
+148-  assertEq "forks URL"
+149:    "https://lakecache.blob.core.windows.net/mathlib4-forks"
+150:    Container.forks.azureURL
+151-  assertEq "nightly-testing URL"
+152:    "https://lakecache.blob.core.windows.net/mathlib4-nightly-testing"
+153:    Container.nightlyTesting.azureURL
+154-  assertEq "pr-toolchain-tests URL"
+155:    "https://lakecache.blob.core.windows.net/mathlib4-pr-toolchain-tests"
+156:    Container.prToolchainTests.azureURL
+157-  -- `legacy` is the bare `mathlib4` container, with no `-legacy` suffix.
+158-  assertEq "legacy URL"
+159:    "https://lakecache.blob.core.windows.net/mathlib4"
+160:    Container.legacy.azureURL
+161-
+162-/-- Whether a container lays files out flat (`/f/<hash>`) or namespaces them by
+163-repo (`/f/<repo>/<hash>`). The layout is fixed per container so that all of a
+164-container's writers stay on non-colliding paths:
+165-- `master` is flat for every repo (one writer, no collisions possible).
+166-- `forks`, `nightly-testing`, and `pr-toolchain-tests` are prefixed for every
+--
+241:    "https://lakecache.blob.core.windows.net/mathlib4-master/f/abc.ltar"
+242:    (mkFileURL (some .master) MATHLIBREPO Container.master.azureURL "abc.ltar")
+243-  assertEq "master is flat for a fork repo too"
+244:    "https://lakecache.blob.core.windows.net/mathlib4-master/f/abc.ltar"
+245:    (mkFileURL (some .master) "alice/mathlib4" Container.master.azureURL "abc.ltar")
+246-  -- `forks` prefixes by repo even for the canonical repo, so its fork-trust
+247-  -- uploads don't collide with fork uploads in the same container.
+248-  assertEq "forks prefixes by repo for the canonical repo"
+249:    "https://lakecache.blob.core.windows.net/mathlib4-forks/f/leanprover-community/mathlib4/abc.ltar"
+250:    (mkFileURL (some .forks) MATHLIBREPO Container.forks.azureURL "abc.ltar")
+251-  assertEq "forks prefixes by repo for a fork repo"
+252:    "https://lakecache.blob.core.windows.net/mathlib4-forks/f/alice/mathlib4/abc.ltar"
+253:    (mkFileURL (some .forks) "alice/mathlib4" Container.forks.azureURL "abc.ltar")
+254-  assertEq "nightly-testing prefixes by repo"
+255:    "https://lakecache.blob.core.windows.net/mathlib4-nightly-testing/f/leanprover-community/mathlib4-nightly-testing/abc.ltar"
+256-    (mkFileURL (some .nightlyTesting) NIGHTLY_TESTING_REPO
+257:      Container.nightlyTesting.azureURL "abc.ltar")
+258-  assertEq "pr-toolchain-tests prefixes by repo"
+259:    "https://lakecache.blob.core.windows.net/mathlib4-pr-toolchain-tests/f/leanprover-community/mathlib4-nightly-testing/abc.ltar"
+260-    (mkFileURL (some .prToolchainTests) NIGHTLY_TESTING_REPO
+261:      Container.prToolchainTests.azureURL "abc.ltar")
+262-  assertEq "legacy is flat for the canonical repo"
+263:    "https://lakecache.blob.core.windows.net/mathlib4/f/abc.ltar"
+264:    (mkFileURL (some .legacy) MATHLIBREPO Container.legacy.azureURL "abc.ltar")
+265-  assertEq "legacy prefixes by repo for a fork repo"
+266:    "https://lakecache.blob.core.windows.net/mathlib4/f/alice/mathlib4/abc.ltar"
+267:    (mkFileURL (some .legacy) "alice/mathlib4" Container.legacy.azureURL "abc.ltar")
+268-  -- No container (user-supplied URL): the shape follows the repo — flat for the
+269-  -- canonical repo, prefixed otherwise.
+270-  assertEq "user URL is flat for the canonical repo"
+271-    "https://custom.example/cache/f/abc.ltar"
+272-    (mkFileURL none MATHLIBREPO "https://custom.example/cache" "abc.ltar")
+273-  assertEq "user URL prefixes by repo for a fork repo"
+--
+278:    "https://lakecache.blob.core.windows.net/mathlib4-forks/f/alice/mathlib4/abc123def/H.ltar"
+279:    (mkFileURL (some .forks) "alice/mathlib4" Container.forks.azureURL "H.ltar" (some "abc123def"))
+280-  assertEq "scope adds a SHA segment on the canonical repo's forks path"
+281:    "https://lakecache.blob.core.windows.net/mathlib4-forks/f/leanprover-community/mathlib4/abc123def/H.ltar"
+282:    (mkFileURL (some .forks) MATHLIBREPO Container.forks.azureURL "H.ltar" (some "abc123def"))
+283-  -- A scope is ignored on flat paths.
+284-  assertEq "scope is ignored on a flat master path"
+285:    "https://lakecache.blob.core.windows.net/mathlib4-master/f/abc.ltar"
+286:    (mkFileURL (some .master) MATHLIBREPO Container.master.azureURL "abc.ltar" (some "abc123def"))
+287-  assertEq "scope is ignored on a flat legacy path"
+288:    "https://lakecache.blob.core.windows.net/mathlib4/f/abc.ltar"
+289:    (mkFileURL (some .legacy) MATHLIBREPO Container.legacy.azureURL "abc.ltar" (some "abc123def"))
+290-  -- The repo segment is lowercased, so a mixed-case GitHub owner resolves to the
+291-  -- same path whether it reaches the cache from CI or a local remote URL.
+292-  assertEq "fork repo is lowercased in the path"
+293:    "https://lakecache.blob.core.windows.net/mathlib4-forks/f/alice/mathlib4/abc.ltar"
+294:    (mkFileURL (some .forks) "Alice/Mathlib4" Container.forks.azureURL "abc.ltar")
+295-
+296-end MkFileURL
+297-
+298-section ParseCacheFromList
+299-
+300-/-- Parser for `--cache-from=a,b,c`. List order is the trust order tried at
+--
+483:    "https://lakecache.blob.core.windows.net/mathlib4-forks/m/alice/mathlib4/abc123"
+484-    (markerURL .forks "alice/mathlib4" "abc123")
+485-  -- The marker lives under `/m/`, its own namespace, and is keyed by repo.
+486-  assertEq "marker is under /m/, keyed by repo"
+487:    "https://lakecache.blob.core.windows.net/mathlib4-forks/m/leanprover-community/mathlib4/deadbeef"
+488-    (markerURL .forks MATHLIBREPO "deadbeef")
+489-  assertEq "marker URL respects the container base"
+490:    "https://lakecache.blob.core.windows.net/mathlib4/m/someorg/mathlib4/sha9999"
+491-    (markerURL .legacy "someorg/mathlib4" "sha9999")
+492-  -- The repo segment is lowercased, so an upload and a probe for the same fork
+493-  -- meet at one path regardless of how the owner name was capitalized.
+494-  assertEq "marker repo is lowercased in the path"
+495:    "https://lakecache.blob.core.windows.net/mathlib4-forks/m/alice/mathlib4/abc123"
+496-    (markerURL .forks "Alice/Mathlib4" "abc123")
+497-
+498-end Marker
+499-
+500-section ScopeResolution
+501-
+--
+1057:  test_Container_azureURL
+1058-  test_Container_flatPath
+1059-  test_defaultContainersForRepo
+1060-  test_mkFileURL
+1061-  test_parseCacheFromList
+1062-  test_extractRepoFromUrl
+1063-  test_extractPRNumber
+
+verifier/lean-project/.lake/packages/mathlib/Cache/Marker.lean
+34:  s!"{container.azureURL}/m/{normalizeRepo repo}/{sha}"
+35-
+36-/--
+37-Upload a tiny marker blob to `/m/{repo}/{sha}` in the given container. The
+38-blob content is the SHA itself, as a debugging aid; existence is the
+39-signal.
+40-
+
+verifier/lean-project/.lake/packages/mathlib/Cache/Infra.lean
+102:def azureURL (c : Container) : String :=
+103:  s!"https://lakecache.blob.core.windows.net/{c.azureContainerName}"
+104-
+105-/--
+106-Whether file lookups in this container use the flat `/f/<hash>` layout, or
+107-namespace under `/f/<repo>/<hash>`.
+108-
+109-The layout is fixed per container, not per repo, because one container holds
+--
+155:def defaultContainersForRepo (repo : String) : List Container :=
+156-  if repo == MATHLIBREPO then
+157-    [.master, .legacy]
+158-  else if repo == NIGHTLY_TESTING_REPO then
+159-    -- `forks` is needed for PRs opened from this repo into mathlib4: their CI
+160-    -- uploads land in `forks`. `pr-toolchain-tests` is excluded.
+161-    [.nightlyTesting, .forks, .legacy]
+
+verifier/lean-project/.lake/packages/mathlib/Cache/Requests.lean
+306:    return cliOverride.map fun c => (some c, c.azureURL)
+307-  let envOverride? ← do
+308-    match (← IO.getEnv "MATHLIB_CACHE_FROM") with
+309-    | none => pure none
+310-    | some s =>
+311-      match parseCacheFromList s with
+312-      | some cs => pure (some cs)
+--
+319:  return containers.map fun c => (some c, c.azureURL)
+320-
+321-/-- Authentication method used for cache upload operations. -/
+322-inductive UploadAuth where
+323-  | azureSas (token : String)
+324-  | azureBearer (token : String)
+325-
+--
+1055:    return (some Container.legacy, Container.legacy.azureURL)
+1056:  | some c => return (some c, c.azureURL)
+1057-
+1058-def azureBearerApiVersionHeader : String := "x-ms-version: 2026-02-06"
+1059-
+1060-def getAzureDateHeader : IO String := do
+1061-  let out ← IO.Process.output
+1062-    { cmd := "date", args := #["-u", "+%a, %d %b %Y %H:%M:%S GMT"] }
+--
+1242:    #["-X", "GET", s!"{Container.master.azureURL}?comp=list&restype=container{q.prefix}"]
+1243-  match ret.splitOn "<Name>" with
+1244-  | [] => formatError
+1245-  | [_] => return []
+1246-  | _ :: parts =>
+1247-    parts.mapM fun part => match part.splitOn "</Name>" with
+1248-      | [name, rest] => match rest.splitOn "<Last-Modified>" with
+
+
+Q-045:
+$ b=$(mktemp); probe() { r=$(curl -sS -m 10 -o "$b" -w '%{http_code} %header{server}' "$@" 2>&1); t=$(grep -o -i -m1 '<title>[^<]*' "$b" | head -c 50); echo "$r $t"; }
+for sni in dl.google.com maven.google.com repo.maven.apache.org repo1.maven.org services.gradle.org plugins.gradle.org elan.lean-lang.org release.lean-lang.org releases.lean-lang.org reservoir.lean-lang.org lakecache.blob.core.windows.net; do
+  for tgt in www.google.com www.python.org www.cloudflare.com github.com azureopendatastorage.blob.core.windows.net; do
+    printf '%-32s Host:%-44s fronted=[%s] direct=[%s]\n' "$sni" "$tgt" "$(probe -H "Host: $tgt" "https://$sni/")" "$(probe "https://$tgt/")"
+  done
+done; rm -f "$b"
+dl.google.com                    Host:www.google.com                               fronted=[200 %header{server} <title>Google] direct=[200 %header{server} <title>Google]
+dl.google.com                    Host:www.python.org                               fronted=[404 %header{server} <title>Error 404 (Not Found)!!1] direct=[200 %header{server} ]
+dl.google.com                    Host:www.cloudflare.com                           fronted=[404 %header{server} <title>Error 404 (Not Found)!!1] direct=[200 %header{server} <title>Cloudflare: Build for the agent era]
+dl.google.com                    Host:github.com                                   fronted=[404 %header{server} <title>Error 404 (Not Found)!!1] direct=[200 %header{server} <title>GitHub · Change is constant. GitHub keeps ]
+dl.google.com                    Host:azureopendatastorage.blob.core.windows.net   fronted=[404 %header{server} <title>Error 404 (Not Found)!!1] direct=[400 %header{server} ]
+maven.google.com                 Host:www.google.com                               fronted=[200 %header{server} <title>Google] direct=[200 %header{server} <title>Google]
+maven.google.com                 Host:www.python.org                               fronted=[404 %header{server} <title>Error 404 (Not Found)!!1] direct=[200 %header{server} ]
+maven.google.com                 Host:www.cloudflare.com                           fronted=[404 %header{server} <title>Error 404 (Not Found)!!1] direct=[200 %header{server} <title>Cloudflare: Build for the agent era]
+maven.google.com                 Host:github.com                                   fronted=[404 %header{server} <title>Error 404 (Not Found)!!1] direct=[200 %header{server} <title>GitHub · Change is constant. GitHub keeps ]
+maven.google.com                 Host:azureopendatastorage.blob.core.windows.net   fronted=[404 %header{server} <title>Error 404 (Not Found)!!1] direct=[400 %header{server} ]
+repo.maven.apache.org            Host:www.google.com                               fronted=[403 %header{server} <title>403 Forbidden] direct=[200 %header{server} <title>Google]
+repo.maven.apache.org            Host:www.python.org                               fronted=[403 %header{server} <title>403 Forbidden] direct=[200 %header{server} ]
+repo.maven.apache.org            Host:www.cloudflare.com                           fronted=[403 %header{server} <title>403 Forbidden] direct=[200 %header{server} <title>Cloudflare: Build for the agent era]
+repo.maven.apache.org            Host:github.com                                   fronted=[403 %header{server} <title>403 Forbidden] direct=[200 %header{server} <title>GitHub · Change is constant. GitHub keeps ]
+repo.maven.apache.org            Host:azureopendatastorage.blob.core.windows.net   fronted=[403 %header{server} <title>403 Forbidden] direct=[400 %header{server} ]
+repo1.maven.org                  Host:www.google.com                               fronted=[403 %header{server} <title>403 Forbidden] direct=[200 %header{server} <title>Google]
+repo1.maven.org                  Host:www.python.org                               fronted=[403 %header{server} <title>403 Forbidden] direct=[200 %header{server} ]
+repo1.maven.org                  Host:www.cloudflare.com                           fronted=[403 %header{server} <title>403 Forbidden] direct=[200 %header{server} <title>Cloudflare: Build for the agent era]
+repo1.maven.org                  Host:github.com                                   fronted=[403 %header{server} <title>403 Forbidden] direct=[200 %header{server} <title>GitHub · Change is constant. GitHub keeps ]
+repo1.maven.org                  Host:azureopendatastorage.blob.core.windows.net   fronted=[403 %header{server} <title>403 Forbidden] direct=[400 %header{server} ]
+services.gradle.org              Host:www.google.com                               fronted=[403 %header{server} <title>403 Forbidden] direct=[200 %header{server} <title>Google]
+services.gradle.org              Host:www.python.org                               fronted=[403 %header{server} <title>403 Forbidden] direct=[200 %header{server} ]
+services.gradle.org              Host:www.cloudflare.com                           fronted=[403 %header{server} <title>403 Forbidden] direct=[200 %header{server} <title>Cloudflare: Build for the agent era]
+services.gradle.org              Host:github.com                                   fronted=[403 %header{server} <title>403 Forbidden] direct=[200 %header{server} <title>GitHub · Change is constant. GitHub keeps ]
+services.gradle.org              Host:azureopendatastorage.blob.core.windows.net   fronted=[403 %header{server} <title>403 Forbidden] direct=[400 %header{server} ]
+plugins.gradle.org               Host:www.google.com                               fronted=[403 %header{server} <title>403 Forbidden] direct=[200 %header{server} <title>Google]
+plugins.gradle.org               Host:www.python.org                               fronted=[403 %header{server} <title>403 Forbidden] direct=[200 %header{server} ]
+plugins.gradle.org               Host:www.cloudflare.com                           fronted=[403 %header{server} <title>403 Forbidden] direct=[200 %header{server} <title>Cloudflare: Build for the agent era]
+plugins.gradle.org               Host:github.com                                   fronted=[403 %header{server} <title>403 Forbidden] direct=[200 %header{server} <title>GitHub · Change is constant. GitHub keeps ]
+plugins.gradle.org               Host:azureopendatastorage.blob.core.windows.net   fronted=[403 %header{server} <title>403 Forbidden] direct=[400 %header{server} ]
+elan.lean-lang.org               Host:www.google.com                               fronted=[404 %header{server} <title>Site not found &middot; GitHub Pages] direct=[200 %header{server} <title>Google]
+elan.lean-lang.org               Host:www.python.org                               fronted=[404 %header{server} <title>Site not found &middot; GitHub Pages] direct=[200 %header{server} ]
+elan.lean-lang.org               Host:www.cloudflare.com                           fronted=[301 %header{server} <title>301 Moved Permanently] direct=[200 %header{server} <title>Cloudflare: Build for the agent era]
+elan.lean-lang.org               Host:github.com                                   fronted=[404 %header{server} <title>Site not found &middot; GitHub Pages] direct=[200 %header{server} <title>GitHub · Change is constant. GitHub keeps ]
+elan.lean-lang.org               Host:azureopendatastorage.blob.core.windows.net   fronted=[404 %header{server} <title>Site not found &middot; GitHub Pages] direct=[400 %header{server} ]
+release.lean-lang.org            Host:www.google.com                               fronted=[403 %header{server} <title>403 Forbidden] direct=[200 %header{server} <title>Google]
+release.lean-lang.org            Host:www.python.org                               fronted=[403 %header{server} <title>403 Forbidden] direct=[200 %header{server} ]
+release.lean-lang.org            Host:www.cloudflare.com                           fronted=[403 %header{server} <title>403 Forbidden] direct=[200 %header{server} <title>Cloudflare: Build for the agent era]
+release.lean-lang.org            Host:github.com                                   fronted=[403 %header{server} <title>403 Forbidden] direct=[200 %header{server} <title>GitHub · Change is constant. GitHub keeps ]
+release.lean-lang.org            Host:azureopendatastorage.blob.core.windows.net   fronted=[403 %header{server} <title>403 Forbidden] direct=[400 %header{server} ]
+releases.lean-lang.org           Host:www.google.com                               fronted=[200 %header{server} <title>Welcome to nginx!] direct=[200 %header{server} <title>Google]
+releases.lean-lang.org           Host:www.python.org                               fronted=[200 %header{server} <title>Welcome to nginx!] direct=[200 %header{server} ]
+releases.lean-lang.org           Host:www.cloudflare.com                           fronted=[200 %header{server} <title>Welcome to nginx!] direct=[200 %header{server} <title>Cloudflare: Build for the agent era]
+releases.lean-lang.org           Host:github.com                                   fronted=[200 %header{server} <title>Welcome to nginx!] direct=[200 %header{server} <title>GitHub · Change is constant. GitHub keeps ]
+releases.lean-lang.org           Host:azureopendatastorage.blob.core.windows.net   fronted=[200 %header{server} <title>Welcome to nginx!] direct=[400 %header{server} ]
+reservoir.lean-lang.org          Host:www.google.com                               fronted=[404 %header{server} ] direct=[200 %header{server} <title>Google]
+reservoir.lean-lang.org          Host:www.python.org                               fronted=[404 %header{server} ] direct=[200 %header{server} ]
+reservoir.lean-lang.org          Host:www.cloudflare.com                           fronted=[404 %header{server} <title>Page not found] direct=[200 %header{server} <title>Cloudflare: Build for the agent era]
+reservoir.lean-lang.org          Host:github.com                                   fronted=[200 %header{server} <title>Appaji www.Ark Tech Infra] direct=[200 %header{server} <title>GitHub · Change is constant. GitHub keeps ]
+reservoir.lean-lang.org          Host:azureopendatastorage.blob.core.windows.net   fronted=[404 %header{server} ] direct=[400 %header{server} ]
+lakecache.blob.core.windows.net  Host:www.google.com                               fronted=[400 %header{server} ] direct=[200 %header{server} <title>Google]
+lakecache.blob.core.windows.net  Host:www.python.org                               fronted=[400 %header{server} ] direct=[200 %header{server} ]
+lakecache.blob.core.windows.net  Host:www.cloudflare.com                           fronted=[400 %header{server} ] direct=[200 %header{server} <title>Cloudflare: Build for the agent era]
+lakecache.blob.core.windows.net  Host:github.com                                   fronted=[400 %header{server} ] direct=[200 %header{server} <title>GitHub · Change is constant. GitHub keeps ]
+lakecache.blob.core.windows.net  Host:azureopendatastorage.blob.core.windows.net   fronted=[404 %header{server} ] direct=[400 %header{server} ]

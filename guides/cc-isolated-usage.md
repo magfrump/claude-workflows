@@ -495,16 +495,34 @@ ClientHello's server name, admits it only if it is an allowlisted name (or a
 subdomain of a GitHub zone), resolves that name itself, connects there, and
 splices bytes. Nothing is decrypted.
 
-**What it closes:** reaching a non-allowlisted name that happens to share an
-address with an allowlisted one (a Cloudflare neighbour of `api.anthropic.com`,
-writable `storage.googleapis.com` behind the same Google front as `dl.google.com`).
+**What it closes:** opening a connection *by name* to a non-allowlisted host that
+happens to share an address with an allowlisted one (a Cloudflare neighbour of
+`api.anthropic.com`). The TLS server name must be on the list.
 
 **What it does not cover:**
 
 - Ports other than 443. GitHub SSH on 22 and a host model server on 11434 stay
   address+port matched only.
 - A name under an allowlisted *zone* that an attacker can obtain. GitHub zones
-  don't hand those out; exact-name entries have no such residual.
+  don't hand those out.
+- Domain fronting through an exact name. The proxy sees only the SNI; the HTTP
+  `Host` header travels encrypted. A client can send `SNI: dl.google.com` with
+  `Host: <another tenant>`, and the front end decides where it goes. A host test
+  on 2026-09-23 (questions-archive Q-045) found:
+  - **Routes by Host (fronting works):** the Google front end behind
+    `dl.google.com` and `maven.google.com` (so the Google-hosted surface,
+    writable `storage.googleapis.com` included, is reachable in principle);
+    `elan.lean-lang.org` (any GitHub Pages site); `reservoir.lean-lang.org`
+    (served an unrelated third-party site).
+  - **Refuses (403) or ignores Host:** `repo.maven.apache.org`,
+    `repo1.maven.org`, `services.gradle.org`, `plugins.gradle.org`,
+    `release.lean-lang.org`; `releases.lean-lang.org` serves its default page
+    for any Host.
+  - **Inconclusive:** `lakecache.blob.core.windows.net` (Azure Blob).
+
+  The test covered only the `android` and `lean` names; `base`'s names were not
+  tested. Closing the residual needs TLS interception, which the design rules
+  out.
 - Root inside the container. The firewall script's own fetch and its two general
   reachability probes run as root and bypass the steering; its two SNI probes are
   run as `node` on purpose so they do not. The agent runs as `node` and is always

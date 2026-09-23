@@ -1192,9 +1192,18 @@ iptables -A OUTPUT -m state --state ESTABLISHED,RELATED -j ACCEPT
 # RESIDUAL. Same shape as the resolver's: an attacker who can obtain a name under
 # an allowlisted ZONE (a github.com subdomain is not obtainable; a hosted
 # `<org>.ingest.sentry.io`-style name would be, were such a zone allowlisted)
-# still gets through by name. Exact-name entries have no such residual. Base's
-# one zone, `.frame.claudeusercontent.com`, does carry it: any published artifact
-# gets a name there, so an attacker-published artifact is an allowlisted host
+# still gets through by name. Exact names carry a different residual, DOMAIN
+# FRONTING: the proxy reads only the ClientHello SNI and splices the encrypted
+# stream, so a client can send an allowlisted SNI with another tenant's HTTP Host.
+# Whether that reaches the other tenant is up to the front end behind the name.
+# Host test 2026-09-23 (questions-archive Q-045): the Google front end
+# (dl.google.com, maven.google.com) served www.google.com; elan.lean-lang.org
+# routes by Host across GitHub Pages; reservoir.lean-lang.org served an unrelated
+# third-party site. The Maven Central, Gradle and release.lean-lang.org front ends
+# refused (403); releases.lean-lang.org ignores Host; lakecache (Azure Blob) was
+# inconclusive. Closing it needs TLS interception, which this design rules out.
+# Base's one zone, `.frame.claudeusercontent.com`, carries the zone residual: any
+# published artifact gets a name there, so an attacker-published artifact is an allowlisted host
 # serving content the attacker controls (payloads, polled instructions). Accepted
 # because neither direction is new. Egress: base already carries attacker-reachable
 # sinks (api.anthropic.com; GitHub gists and raw content). Ingress: GitHub

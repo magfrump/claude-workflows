@@ -19,6 +19,7 @@ full. IDs are stable forever: `Q-014` means the same thing here as it did there.
 | [Q-008](#q-008--findings-grammar-ownership) | Make `lite-review.py` the definition of the FINDINGS grammar rather than a copy of it, before `cross-model-... | 2026-09-12 |
 | [Q-009](#q-009--live-verify-gate-not-installed) | The installed-ness pin is a new test in `test/hooks/live-verify-gate.bats` that reads | 2026-09-12 |
 | [Q-010](#q-010--elan-release-host) | Which host does elan actually fetch toolchains from — `release.lean-lang.org` or `releases.lean-lang.org`? | 2026-09-12 |
+| [Q-011](#q-011--mathlib-cache-host) | What is the current mathlib olean cache hostname? (`lake exe cache get` is minutes vs hours per repo.) | 2026-09-12 |
 | [Q-012](#q-012--elan-sha256-pins) | Pin the per-arch SHA-256 of the elan release as build ARGs | 2026-09-12 |
 | [Q-013](#q-013--elan-version-to-ship) | Is `ELAN_VERSION=v3.1.1` the version to ship? **ANSWERED 2026-09-15: no — `v4.2.4`, taken from the GitHub... | 2026-09-12 |
 | [Q-014](#q-014--profile-replace-only) | Should `--profile` stay replace-only, or grow `--add-profile`/`--remove-profile`? | 2026-09-15 |
@@ -52,8 +53,11 @@ full. IDs are stable forever: `Q-014` means the same thing here as it did there.
 | [Q-042](#q-042--code-review-contextual-severity) | The executable-defect channel maps a confirmed contextual-critic finding "as if filed by a core critic", bu... | 2026-09-18 |
 | [Q-043](#q-043--code-review-arch-skip-blocks) | When code-review auto-selects architecture-review but the critic's own scope check skips ("implementation-o... | 2026-09-18 |
 | [Q-044](#q-044--override-log-immutable-rows) | For an Incorrect fact-check about an already-merged commit message, rubric.md tells the orchestrator to wri... | 2026-09-18 |
+| [Q-045](#q-045--sni-proxy-domain-fronting) | The SNI proxy checks only the ClientHello SNI and splices the encrypted stream, so a client can send an all... | 2026-09-18 |
 | [Q-046](#q-046--failure-analysis-fix-or-delete) | `scripts/failure-analysis.sh` computes its re-attempt pass rate against its own definition (it counts attem... | 2026-09-18 |
 | [Q-047](#q-047--hypothesis-log-run-id) | Hypothesis-log rows record only a round number, and round numbers restart every self-improvement run, so th... | 2026-09-18 |
+| [Q-048](#q-048--guard-cooccurrence-overblock) | Closing the review's bypasses of Q-035 needed a broader Bash rule, applied only to commands that contain a ... | 2026-09-21 |
+| [Q-050](#q-050--guard-resolved-path-policy) | When a file-tool edit reaches a protected global file through its real path rather than through `~/.claude/... | 2026-09-21 |
 <!-- index:end -->
 
 ## Answered
@@ -845,5 +849,134 @@ Should `health-check.sh` gate 5 run all bats suites, not just `test/skills/` and
 
 - **Interim:** unchanged; the full suite was run by hand in the 2026-09-18 improvement run.
 - **Update (third 2026-09-18 run):** before ca04b98, `run-tests.sh` silently skipped untagged suites, and `link-claude-home-wiring.bats` was one of them, so [2] did not actually cover it. Both untagged suites are now tagged, and an untagged suite fails the runner. [2] now means what it says.
+
+
+### Q-050 · guard-resolved-path-policy
+**Needs:** you: judgment · **Opened:** 2026-09-21 · **Status:** ANSWERED
+
+When a file-tool edit reaches a protected global file through its real path rather than through `~/.claude/…`, what should the guard hook do? On a bare-host install, `~/.claude/CLAUDE.md` links to your checkout's `global-instructions/CLAUDE.md`. Since a577546, Edit/Write on that checkout file is **denied**, with no approve option. Hook scripts linked one at a time get **no gate at all** at their checkout path (N12). The devcontainer is unaffected, because its targets are the read-only `/opt` payload.
+
+- **Why it's yours:** it trades your ability to edit the global instructions in this repo on the host against how strongly the installed copy is protected.
+- **Read:** `docs/reviews/code-review-rubric-2026-09-21-answers-2026-09-20-iter3.md` (R6, N12, and the iteration-4 gate at the end), `hooks/guard-trusted-writes.py:95-155`
+- **Related:** Q-049. If deny rules turn out not to match, the "let the hook deny everything itself" redesign also applies.
+
+| Option | What it means | Cost to you | If it's wrong |
+|---|---|---|---|
+| **[1] Ask on real-path edits** | Real-path edits of protected files (the checkout CLAUDE.md and hook scripts) get an approve/deny prompt, whether or not the session is tainted. No deny rule names these paths, so the ask overrides nothing. | One prompt per edit to the global instructions or a hook in this repo | A prompt you approve by reflex |
+| **[2] Deny (current branch)** | Keep a577546, document it, test it, and give hook scripts the same deny | You edit global instructions only outside Claude, or with the hook disabled | Blocks legitimate repo maintenance on the host |
+| **[3] Defer, as before this branch** | No gate on real-path edits | none | A tainted session rewrites your global instructions through the checkout path |
+
+- **Interim:** the branch holds [2]. It is not merged, so nothing on the host has changed. The review-fix loop is paused at its 3-iteration cap with decision `escalate`.
+- **If the answer differs:** one change to the `hard-resolved` outcome in `classify_path`, plus tests, then a fourth review iteration that you authorize.
+
+**Answered 2026-09-23: [2] is intended**, with this direction: "This repo's copy is the only global instruction file that should be editable, and the symlink connection should be deprecated in favor of edits getting checked in and propagated by copying after a human bless via install.sh."
+Taken as two pieces of work. (a) Keep a577546's deny and extend it to per-file-symlinked hook scripts (N12), with tests and a note in `guides/bare-host-hook-wiring.md`, on branch `ans/guard-q048-q050`. (b) Replace the bare-host symlink install with copies that you bless through `install.sh`. Once `~/.claude` holds copies, the checkout files are no longer the live files, the deny stops firing on them, and the repo copy becomes the single editable source you described. (b) goes through RPI: a research doc and a plan, which you approve before any code changes.
+
+
+### Q-048 · guard-cooccurrence-overblock
+**Needs:** you: judgment · **Opened:** 2026-09-21 · **Status:** ANSWERED
+
+Closing the review's bypasses of Q-035 needed a broader Bash rule, applied only to commands that contain a write (`>`, `tee`, `cp`, `mv`, `install`, an inline interpreter…). The literal fragments `.claude/hooks`, `.claude/settings`, `.claude/CLAUDE.md` and `managed-settings` are denied on their own. Beyond those: if the command names `CLAUDE.md`, it is denied when it also contains, anywhere, `~`, `$HOME`/`${HOME…}`, the home path, `.claude`, `global-instructions` or the config dir. If it names `settings*.json` or `hooks`, it is denied when it also contains `.claude`, `CLAUDE_CONFIG_DIR` or the literal config dir. False denies: a heredoc that writes a message file mentioning `CLAUDE.md` next to `HEAD~1`, and any Bash write into an agent worktree's `hooks/` (`/workspace/.claude/wt-*/hooks/…`). Keep it, or narrow it?
+
+- **Why it's yours:** Q-035 asked to reconsider if the over-block got annoying. This trades catching disguised global writes for false denies.
+- **Read:** `hooks/guard-trusted-writes.py` (c5a7c96), `docs/reviews/code-review-rubric-2026-09-21-answers-2026-09-20.md` R1/A10
+
+| Option | What it means | Cost to you | If it's wrong |
+|---|---|---|---|
+| **[1] Keep the co-occurrence rule** | Any indicator anywhere in the command → deny | Agents route those edits through Edit/Write and `git commit -F` | Occasional false denies in worktrees and commit messages |
+| **[2] Exempt `.claude/wt-*` and `.claude/worktrees/`** | Worktree paths don't count as the `.claude` indicator | none | A worktree path used to smuggle a global write is missed |
+| **[3] Narrow to path-position matches** | Only an indicator in the same shell word as the target counts | none | `H=~; … $H/CLAUDE.md`-style indirection gets through again |
+
+- **Interim:** [1]. It is the fail-closed choice, and only takes effect once the hook is redeployed.
+- **If the answer differs:** edit `_HOME_INDICATORS` / `_CFG_INDICATORS` and add tests for the exempted shape.
+
+**Answered 2026-09-23: [2], exempt `.claude/wt-*` and `.claude/worktrees/`.** Implemented on branch `ans/guard-q048-q050`, with tests. The exemption does not cover a worktree segment followed by `..`, or a worktree under the home config dir. Two more false denies the same day fall outside [2]: a read-only `rg` whose regex contained `ln -s` next to `global-instructions/CLAUDE.md`, and a `python3` heredoc that edited this questions file because its text mentioned `.claude` and `hooks`.
+
+
+### Q-011 · mathlib-cache-host
+**Needs:** you: terminal · **Opened:** 2026-09-12 · **Status:** ANSWERED
+
+What is the current mathlib olean cache hostname? (`lake exe cache get` is minutes vs hours per repo.)
+
+- **Attempt 2026-09-17 — your run was against the right file, and the answer is that the question's shape is wrong.** `rg -o 'https://[^"]*' .../mathlib/Cache/Requests.lean` returned exactly two strings: a bare `https://` and `https://github.com/leanprover-community/mathlib4.git`. A bare prefix means the cache URL is **assembled at runtime**, not written down as a constant — which is also what your sketched docstring describes (`MATHLIB_CACHE_GET_URL` → `--cache-from` → `MATHLIB_CACHE_FROM` → `defaultContainersForRepo repo`). So there may be no single hostname to list: the host comes from a per-repo container list, and an allowlist entry has to name whatever `defaultContainersForRepo` resolves to for mathlib4.
+- **Attempt 2026-09-18: half answered, and the entry stays open.** Your paste (`docs/human-author/answers-9-18-26.txt`) settles which *kind* of host it is. `Cache/Marker.lean:34` builds URLs as `s!"{container.azureURL}/m/{normalizeRepo repo}/{sha}"`, so every container is an **Azure Blob** endpoint, not ghcr.io or another registry, and the registry branch of "What I do with it" is ruled out. It does not show the storage-account hostname. `head -60` cut the output off before the definitions of `defaultContainersForRepo` and `azureURL`, where that literal lives. I could guess `lakecache` from the old code, but the VERIFY comment asks for the name to be *seen*, so I am not closing on a guess. Also worth checking: "widens the lookup chain" suggests several containers. An Azure container is a path under one account, so they probably share one host. If they span accounts, the allowlist needs each account.
+- **Read:** `devcontainer-config/egress/lean.txt` (the `lakecache.blob.core.windows.net` entry and its ACCEPTED RISK note)
+- **The paste**, narrowed to the one missing literal:
+
+```bash
+M=verifier/lean-project/.lake/packages/mathlib     # any mathlib4 checkout works
+rg -n 'blob\.core\.windows\.net|azureURL|def defaultContainersForRepo' -A6 "$M"/Cache/*.lean
+```
+
+- **What I do with it:** if every hostname it prints is `lakecache.blob.core.windows.net`, the VERIFY comment is discharged and the entry stays as it is. If it prints another account, `egress/lean.txt` swaps to it (or lists each one). The ACCEPTED RISK note holds either way, since every candidate is Azure Blob.
+- **Interim:** `lakecache.blob.core.windows.net` stays listed, carrying its VERIFY comment. A wrong entry degrades to "stays blocked", never to a wider allowlist, so the cost of being wrong is a slow first build rather than an exposure.
+- **If the answer differs:** correct `egress/lean.txt`, re-install, re-bless.
+
+**Answered 2026-09-23 (`docs/human-author/answers-9-23-26.txt`): `lakecache.blob.core.windows.net`, one account.**
+`Cache/Infra.lean:102-103` defines `azureURL c = "https://lakecache.blob.core.windows.net/{c.azureContainerName}"`,
+so all five containers (master, forks, nightly-testing, pr-toolchain-tests,
+legacy) are paths under that one storage account, and the "several accounts"
+worry does not apply. `defaultContainersForRepo` (`:155-161`) gives mathlib4
+`[.master, .legacy]`. Every hostname the rg printed is `lakecache`. The entry in
+`egress/lean.txt` stays; its VERIFY comment now records the observation and the
+re-check command. Its ACCEPTED RISK note now calls the cross-account fronting
+question inconclusive (Q-045, followed up in Q-053).
+
+
+### Q-045 · sni-proxy-domain-fronting
+**Needs:** you: terminal · **Opened:** 2026-09-18 · **Status:** ANSWERED
+
+The SNI proxy checks only the ClientHello SNI and splices the encrypted stream, so a client can send an allowlisted SNI with a different HTTP `Host` and reach another tenant on a CDN that routes by Host. The docs say exact-name entries have "no such residual". Accept and document it, or test the front ends first?
+
+- **Why it's yours:** it is the egress-confinement threat model; closing it would need TLS interception, which the design rules out.
+- **Read:** `devcontainer-config/cc-sni-proxy.py:19-29`; the SNI PROXY block's RESIDUAL text in `devcontainer-config/init-firewall.sh`. Reasoning only: the sandbox has no egress to test any CDN.
+
+| Option | What it means | Cost to you | If it's wrong |
+|---|---|---|---|
+| **[1] Document the residual** | Correct the "no such residual" claim and name domain fronting | none | The android/lean profiles may allow fronting to arbitrary tenants |
+| **[2] Test first, then decide on the profiles** | Run `curl --connect-to` with a mismatched Host through the android and lean front ends on the host | ~10 min at your terminal | none — the answer then decides whether those entries stay |
+
+- **Interim:** unchanged; the docs still over-claim.
+- **Answered 2026-09-20: [2], test first.** Rerouted to `you: terminal`. Run this on the **host** (the sandbox has no egress). For each allowlisted android/lean name it sends that name as SNI with the `Host` header of a tenant on a large CDN, and prints the fronted response next to the tenant's own response. **Fronting works for a pair when the two lines carry the same title** (or the same non-error status and server). A 421, 403, 404 or a different title means the front end refuses. Paste the whole output back.
+
+```bash
+b=$(mktemp); probe() { r=$(curl -sS -m 10 -o "$b" -w '%{http_code} %header{server}' "$@" 2>&1); t=$(grep -o -i -m1 '<title>[^<]*' "$b" | head -c 50); echo "$r $t"; }
+for sni in dl.google.com maven.google.com repo.maven.apache.org repo1.maven.org services.gradle.org plugins.gradle.org elan.lean-lang.org release.lean-lang.org releases.lean-lang.org reservoir.lean-lang.org lakecache.blob.core.windows.net; do
+  for tgt in www.google.com www.python.org www.cloudflare.com github.com azureopendatastorage.blob.core.windows.net; do
+    printf '%-32s Host:%-44s fronted=[%s] direct=[%s]\n' "$sni" "$tgt" "$(probe -H "Host: $tgt" "https://$sni/")" "$(probe "https://$tgt/")"
+  done
+done; rm -f "$b"
+```
+
+- **What I do with it:** every front end refuses → the docs name domain fronting as a residual that the tested profiles do not carry (with the test date). Any pair succeeds → that profile's entry gets an ACCEPTED RISK note or is removed, which is your call on the evidence, and the "no such residual" line is corrected either way.
+
+**Answered 2026-09-23 (test output in `docs/human-author/answers-9-23-26.txt`): fronting works through four of the eleven names.**
+Reading: a pair fronts when the fronted response matches the target's own
+response, or when an error page shows the front end routed by Host to another
+tenant. The `%header{server}` column printed literally (that curl predates
+`%header{}`), so only the status and title count.
+
+| SNI | Result | Evidence |
+|---|---|---|
+| `dl.google.com`, `maven.google.com` | **fronts to Google-hosted tenants** | Host www.google.com → `200 Google`, same as direct; non-Google hosts → Google's own 404 |
+| `elan.lean-lang.org` | **fronts to GitHub Pages sites** | every non-Pages Host → "Site not found · GitHub Pages": routing is by Host |
+| `reservoir.lean-lang.org` | **fronts to other tenants on its platform** | Host github.com → `200 "Appaji www.Ark Tech Infra"`, an unrelated third-party site |
+| `repo.maven.apache.org`, `repo1.maven.org`, `services.gradle.org`, `plugins.gradle.org`, `release.lean-lang.org` | refuses | 403 for every target |
+| `releases.lean-lang.org` | ignores Host | nginx default page for every target |
+| `lakecache.blob.core.windows.net` | inconclusive | 400 for non-Azure hosts; for the other Azure account, 404 vs 400 direct. The responses differ, but neither shows a routing decision |
+
+Five targets were tried. "Refuses" means the front end rejected a mismatched
+SNI/Host for all five, not that it would for every tenant.
+`storage.googleapis.com` was not probed; it is inferred reachable because the
+Google front end served another Google property.
+
+**Done (agent):** the "exact-name entries have no such residual" claim is
+corrected in `init-firewall.sh` (the SNI proxy RESIDUAL comment) and in
+`guides/cc-isolated-usage.md`, which also no longer says the proxy closes
+`storage.googleapis.com` behind `dl.google.com`. `egress/android.txt` and
+`egress/lean.txt` state the result beside each entry. All four edits are
+comment or doc only, so the admitted set is unchanged. Per this entry's "What
+I do with it", keeping or removing the fronting entries is your call: Q-051
+(lean) and Q-052 (android). The Azure probe is Q-053.
 
 
