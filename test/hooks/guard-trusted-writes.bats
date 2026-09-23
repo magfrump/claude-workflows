@@ -548,8 +548,7 @@ assert_all_deny() {  # each arg is a command that must be denied
   for c in \
     "echo x > $REPO/.claude/wt-foo/hooks/x.sh" \
     "cp /tmp/a $REPO/.claude/wt-foo/hooks/x.py" \
-    "sed -i s/a/b/ $REPO/.claude/wt-foo/settings.json" \
-    "cd $REPO/.claude/wt-foo && bats test/hooks/x.bats > out.txt"; do
+    "sed -i s/a/b/ $REPO/.claude/wt-foo/settings.json"; do
     guard "$(bash_payload "$c")"
     [ "$status" -eq 0 ] && [ -z "$output" ] || { echo "not deferred: $c -> $output"; return 1; }
   done
@@ -699,6 +698,76 @@ assert_all_deny() {  # each arg is a command that must be denied
   export CLAUDE_CONFIG_DIR="$TEST_TMPDIR/.claude/wt-cfg"
   guard "$(bash_payload "echo x > $TEST_TMPDIR/.claude/wt-cfg/settings.json")"
   assert_decision deny
+}
+
+# --- Q-048 whole-command gate (2026-09-23) ---
+# The per-word check can't see a later word that moves off the worktree (`cd ..`,
+# `../x`) or a step that swaps the root after the hook ran (`rm`/`mv` + `ln -s`).
+# So no worktree occurrence is exempt when the WHOLE command has a `..`
+# component, a cd/pushd/popd, an ln/mv/rm, an expansion (`$`, backtick), a
+# program that runs other text (sh -c, eval, xargs, interpreters), or a policy
+# name (settings*.json, hooks, CLAUDE.md) outside the exempt worktree words.
+
+@test "Q-048 gate: cd into a worktree then '..' reaches the parent project's .claude: denied" {
+  worktree_layout
+  local wt="$REPO/.claude/wt-foo"
+  assert_all_deny \
+    "cd $wt && cd .. && echo x > settings.json" \
+    "cd $wt && cd .. && echo x > hooks/x.sh" \
+    "cd $wt; cd ../; cp /tmp/a settings.local.json" \
+    "cd $wt && echo x > ../settings.json" \
+    "cd $wt && echo x > ../hooks/x.sh" \
+    "pushd $wt && echo x > .\"\"./settings.json" \
+    "cd $wt && bats test/hooks/x.bats > out.txt"
+}
+
+@test "Q-048 gate: the cd/'..' routes are denied in a tainted session too (were deferred)" {
+  worktree_layout
+  taint sess1
+  guard "$(bash_payload "cd $REPO/.claude/wt-foo && cd .. && echo x > settings.json" sess1)"
+  assert_decision deny
+  guard "$(bash_payload "cd $REPO/.claude/wt-foo && echo x > ../settings.json" sess1)"
+  assert_decision deny
+}
+
+@test "Q-048 gate: replacing a worktree root in the same command is not exempt (time of check)" {
+  worktree_layout
+  mkdir -p "$HOME/.claude"
+  local wt="$REPO/.claude/wt-foo"
+  # $(cd;pwd) is literal command text here, not for this shell to run.
+  # shellcheck disable=SC2016
+  assert_all_deny \
+    "rm -rf $wt && ln -s \"\$(cd;pwd)\" $wt && echo x > $wt/CLAUDE.md" \
+    "mv $wt $TEST_TMPDIR/x && ln -s ~/.cla?de $wt && echo > $wt/settings.json" \
+    "rm -rf $wt && ln -s /tmp/x $wt && echo x > $wt/settings.json" \
+    "rm -rf $wt && ln -s /tmp/x $wt && echo x > $wt/hooks/evil.sh" \
+    "/bin/rm -r $wt; /bin/ln -s /tmp/x $wt; cp /tmp/a $wt/settings.json"
+}
+
+@test "Q-048 gate: a worktree root whose parent is derived by the command is not exempt" {
+  worktree_layout
+  local wt="$REPO/.claude/wt-foo"
+  assert_all_deny \
+    "echo x > \$(dirname $wt)/settings.json" \
+    "cp /tmp/a \`dirname $wt\`/hooks/x.sh" \
+    "echo $wt | sed 's,/[^/]*\$,,' | xargs -I% cp /tmp/a %/settings.json" \
+    "python3 -c 'import os,sys; os.rename(sys.argv[1], \"/tmp/y\")' $wt; cp /tmp/a $wt/settings.json" \
+    "sh -c 'l\"\"n -s /tmp/x $wt'; echo x > $wt/settings.json" \
+    "cp /tmp/a $wt/x; cp /tmp/b settings.json"
+}
+
+@test "Q-048 gate: a plain absolute worktree write is still exempt; look-alike words don't trip the gate" {
+  worktree_layout
+  local wt="$REPO/.claude/wt-foo" c
+  for c in \
+    "echo x > $wt/hooks/x.sh" \
+    "cp /tmp/a $wt/test/y.bats" \
+    "cp /x/rmdata/a $wt/hooks/x.sh" \
+    "echo --cdn > $wt/hooks/x.sh" \
+    "cp /srv/cd-tools/a $wt/settings.json"; do
+    guard "$(bash_payload "$c")"
+    [ "$status" -eq 0 ] && [ -z "$output" ] || { echo "not deferred: $c -> $output"; return 1; }
+  done
 }
 
 # --- Q-050 [2]: resolve-only HARD is denied, including per-file hook links ---
