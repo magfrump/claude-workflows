@@ -2,7 +2,7 @@
 
 - **Goal**: Replace the README's bare-host symlink install of the global files into `~/.claude` with copies that `devcontainer-config/install.sh` makes only after a human has read the diff and answered y.
 - **Project state**: implements the Q-050 answer on `ans/copy-install` · follows the 2026-09-21 answers branch, whose guard redesign is paused at its review cap · not blocked; plan approved with shape D (cite: docs/decisions/037-bare-host-copy-install.md)
-- **Task status**: in-progress (plan revised to the 2026-09-23 answers; pre-mortem and architecture review folded in; tests next)
+- **Task status**: in-progress (steps 1–8 implemented and verified on `ans/copy-install`; step 9, the host run, is the user's)
 
 Research: [research-copy-install-bare-host.md](research-copy-install-bare-host.md)
 
@@ -118,7 +118,16 @@ Steps 1 and 2 are docs. Step 3 writes the failing tests. Step 4 is a pure refact
 | 9 | host time ~10 min |
 
 Estimated context cost: Research ~60k (done), Implementation ~90k, Review ~45k.
-Actual context cost (post-implementation): __
+Actual context cost (post-implementation): plan revision ~40k, Implementation ~75k, Review ~20k. These are estimates of new material read and written. The session counter shows ~350k cumulative, because it includes the ~60k standing context re-sent on every turn. Within budget; no pause triggered.
+
+## Implementation notes and deviations (written back 2026-09-23)
+
+- **Existing test edited (deviation).** `test/link-claude-home-wiring.bats` test 14 grepped the README for the old `ln -s ~/claude-workflows/scripts ~/.claude/scripts` line. That is exactly what Q-050 retires. Its intent (the bare-host install makes `~/.claude/scripts` resolve) is kept by re-pointing the assertion: `scripts` must be in `CLAUDE_HOME_SRC`, and the README must point at `./devcontainer-config/install.sh`. The behavior itself is covered by `test/install-host.bats` T9. `test/cc-isolated-functions.bats` is unmodified, as planned.
+- **Stage layout.** The host stage is `$HOST_TMP/payload` inside the `mktemp -d` dir, not the mktemp dir itself. `assemble` does `rm -rf` + `mkdir -p` on its argument, which would have reset mktemp's 0700 mode.
+- **Extra guards** beyond the step 5 list: a dangling-symlink destination, and a destination that exists but is not a directory, are both refused.
+- **`installed_parent=`** records the parent process's command name. Under a `script` pty wrapper it reads `script` (seen in the tests), which leaves an audit trace for the agent-bypass case the TTY rule cannot stop.
+- **Tests**: 24 (T1–T24), not 19, after the review fold-in. The suite is tagged `@category slow`.
+- **install.sh is 464 lines**, under the 500 guideline.
 
 ## Test specification
 

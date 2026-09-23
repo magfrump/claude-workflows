@@ -60,6 +60,9 @@ Order: `1 → 2 → 3 → 4 → 5 → [6, 7] → 8 → 9`.
 - `docs/decisions/035-install-sh-gating.md`: Consequences note (step 7)
 - `docs/reviews/pre-mortem-copy-install.md`, `docs/reviews/architecture-review-copy-install.md`: step 2
 
+## Status (2026-09-23)
+Steps 1–8 are done and committed on `ans/copy-install`. Deviations are in the plan's "Implementation notes and deviations". Remaining: step 9, the user's host run.
+
 ## Open questions
 - settings.json merge automation: follow-up after Q-049.
 - macOS behavior of the host target is untested.
