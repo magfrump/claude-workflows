@@ -1,15 +1,24 @@
 #!/usr/bin/env bash
-# install.sh — copy the canonical devcontainer config from this repo to the host
-# config dir the launcher actually reads, then bless it (decision 016).
+# install.sh — copy this repo's blessed-by-review files to the two places on the
+# HOST that read them, each after its own review diff and its own y/N:
+#   1. the devcontainer config the cc-isolated launcher reads, then bless it
+#      (decision 016);
+#   2. the global Claude Code files in ~/.claude for bare-host sessions
+#      (decision 037): CLAUDE.md, skills, workflows, guides, patterns, hooks,
+#      scripts.
 #
 # Run from the HOST:  ./devcontainer-config/install.sh
 #
-# WHY A COPY RATHER THAN A SYMLINK INTO THE REPO. This directory is inside a repo
-# that agent sessions bind-mount read-write — an agent CAN edit these files. That is
-# fine, and deliberate: edits here are inert. Only the INSTALLED copy at
-# ~/.config/claude-devcontainer/ is ever read by the launcher, it is in no bind
-# mount, and getting an edit from here to there requires a human running this script
-# and approving the diff below. Symlinking would hand the agent the boundary.
+# WHY COPIES RATHER THAN SYMLINKS INTO THE REPO. This repo is bind-mounted
+# read-write into agent sessions, and on a bare host the agent works in it
+# directly, so an agent CAN edit these files. Those edits are inert until a human
+# runs this script and approves the diff: only the INSTALLED copies are ever read.
+# Symlinking would hand the agent the boundary.
+#
+# The exception is this script itself, which is NOT inert: it runs on the host
+# from the repo and decides which diff the human reads and what gets written, now
+# including ~/.claude. An edit to it is covered by nothing but the commit-time
+# Live-verified gate (decision 035). Review changes to it as boundary changes.
 #
 # So: read the diff. It is the rebuild gate.
 
@@ -19,14 +28,25 @@ usage() {
   cat <<'EOF'
 Usage: devcontainer-config/install.sh [--yes]
 
-Installs the devcontainer config into ~/.config/claude-devcontainer (or
-$CLAUDE_DEVC_CONFIG_DIR) after showing a review diff and asking y/N, then
-blesses it.
+Offers two install targets in turn. Each one shows a review diff and asks y/N:
+  1. devcontainer config -> $CLAUDE_DEVC_CONFIG_DIR
+     (default ~/.config/claude-devcontainer); then blessed, and
+     cc-isolated linked into $CLAUDE_DEVC_BIN_DIR (default ~/.local/bin).
+  2. host Claude Code files -> $CLAUDE_HOME_DIR, else $CLAUDE_CONFIG_DIR,
+     else ~/.claude. Replaced entries, including old symlinks and files the
+     repo lacks, are moved to <dest>/.claude-workflows-backup/<UTC stamp>/.
+     settings.json is never written; hook wiring stays a manual merge.
 
-  --yes       answer y without asking
+Target 2 is SKIPPED, with a message and no effect on the exit status, when
+--yes is given, when stdin is not a terminal, or when running inside a
+Claude Code session (CLAUDECODE set). It only installs for a human at a
+terminal who read the diff.
+
+  --yes       answer y for target 1 without asking (target 2 is skipped)
   -h, --help  show this help
 
-Exit status: 0 installed; 1 declined, or an error; 2 bad arguments.
+Exit status: 0 no target declined; 1 a target was declined, or an error;
+2 bad arguments.
 EOF
 }
 
@@ -169,8 +189,12 @@ install_devcontainer() {
 
   if [ "$ASSUME_YES" != "--yes" ]; then
     if ! confirm 'Install this config and bless it?'; then
-      echo "Aborted. Nothing was changed."
-      exit 1
+      # Decision 037: a decline ends this target, not the run; the host target
+      # is still offered. The line keeps its old wording, and the run still
+      # exits 1 because something was declined.
+      echo "Aborted. Nothing was changed. (devcontainer config)"
+      DECLINED=1
+      return 0
     fi
   fi
 
@@ -208,4 +232,233 @@ install_devcontainer() {
   esac
 }
 
+# --- Target: host ~/.claude (decision 037) ------------------------------------
+# Bless here means: a human at a terminal read this review and typed y. No hash
+# receipt is checked afterwards (Claude Code reads ~/.claude directly), so the
+# skip rules below are the whole of the "human" requirement.
+#
+# The replace is done move-aside, never `rm -rf` + `cp -r` in place: with the
+# README's old symlink install, `cp -r stage/skills ~/.claude/skills` writes INTO
+# the checkout through the link, and `rm -rf ~/.claude/skills/` (trailing slash)
+# empties the checkout. And `diff` follows symlinks, so a migration from links
+# to copies would review as "(none)". Hence the explicit REPLACE lines below.
+
+# The seven entry names, derived from CLAUDE_HOME_SRC so the host can never
+# install a subset of the payload (FP-066).
+CLAUDE_HOME_NAMES=()
+for _item in "${CLAUDE_HOME_SRC[@]}"; do CLAUDE_HOME_NAMES+=("$(basename "$_item")"); done
+unset _item
+
+HOST_TMP=""
+trap 'if [ -n "$HOST_TMP" ]; then rm -rf "$HOST_TMP"; fi' EXIT
+
+# resolve_phys <path>: the physical path of <path>, or of its nearest existing
+# ancestor with the rest appended.
+resolve_phys() {
+  local p="$1" tail=""
+  while [ ! -d "$p" ]; do
+    tail="/$(basename "$p")$tail"
+    p="$(dirname "$p")"
+  done
+  echo "$(cd "$p" && pwd -P)$tail"
+}
+
+inside_repo() {
+  local root
+  root="$(cd "$REPO_ROOT" && pwd -P)"
+  case "$1/" in "$root/"*) return 0 ;; esac
+  return 1
+}
+
+host_refuse() {
+  echo "ERROR: $1" >&2
+  echo "       Nothing was installed into the host target." >&2
+  exit 1
+}
+
+install_claude_home() {
+  local dest label
+  if [ -n "${CLAUDE_HOME_DIR:-}" ]; then dest="$CLAUDE_HOME_DIR"; label='$CLAUDE_HOME_DIR'
+  elif [ -n "${CLAUDE_CONFIG_DIR:-}" ]; then dest="$CLAUDE_CONFIG_DIR"; label='$CLAUDE_CONFIG_DIR'
+  else dest="$HOME/.claude"; label='the default, ~/.claude'
+  fi
+
+  echo
+  # Skip rules come first: before this target reads or stages anything, so
+  # every non-interactive run (scripts, tests, --yes) is unchanged apart from
+  # this one line. A skip is not a decline and does not change the exit status.
+  # Neither check stops an agent that sets out to fake a terminal (`script`
+  # gives it a pty; `env -u` drops CLAUDECODE). They stop the accidental run and
+  # make the deliberate one conspicuous. See decision 037.
+  if [ "$ASSUME_YES" = "--yes" ]; then
+    echo "Skipped host target (~/.claude): it never installs with --yes. Run install.sh without --yes at a terminal to review and install it."
+    return 0
+  fi
+  if [ -n "${CLAUDECODE:-}" ]; then
+    echo "Skipped host target (~/.claude): running inside a Claude Code session (CLAUDECODE is set). Run install.sh from your own terminal."
+    return 0
+  fi
+  if [ ! -t 0 ]; then
+    echo "Skipped host target (~/.claude): it needs an interactive terminal (stdin is not a TTY). Run install.sh from your own terminal."
+    return 0
+  fi
+
+  echo "=== Host target: global Claude Code files ======================================"
+  echo "Destination: $dest  (chosen by $label)"
+
+  # Guards: nothing below may write through a link into the checkout.
+  if [ -L "$dest" ] && [ ! -d "$dest" ]; then
+    host_refuse "$dest is a dangling symlink ($(readlink "$dest")). Remove it or point it at a real directory."
+  fi
+  if [ -e "$dest" ] && [ ! -d "$dest" ]; then
+    host_refuse "$dest exists and is not a directory."
+  fi
+  if inside_repo "$(resolve_phys "$dest")"; then
+    host_refuse "$dest resolves inside the repo checkout ($REPO_ROOT). Installing there would edit the repo, not install a copy."
+  fi
+  local bkroot="$dest/.claude-workflows-backup"
+  if [ -L "$bkroot" ]; then
+    host_refuse "$bkroot is a symlink ($(readlink "$bkroot")); the backup must be a real directory. Remove the link."
+  fi
+  if [ -d "$bkroot" ] && inside_repo "$(resolve_phys "$bkroot")"; then
+    host_refuse "$bkroot resolves inside the repo checkout."
+  fi
+  local name
+  for name in "${CLAUDE_HOME_NAMES[@]}"; do
+    if [ -L "$dest/.cw-new.$name" ]; then
+      host_refuse "$dest/.cw-new.$name is a symlink left from elsewhere; remove it and rerun."
+    fi
+  done
+
+  HOST_TMP="$(mktemp -d "${TMPDIR:-/tmp}/cw-host-stage.XXXXXX")"
+  local stage="$HOST_TMP/payload"
+  assemble "$stage"
+  echo "Canonical (repo):  $REPO_ROOT"
+  if grep -q '^dirty=yes$' "$stage/.manifest"; then
+    echo "WARNING: the checkout has uncommitted changes; they are included in this install."
+  fi
+  echo
+
+  # Pre-pass: what the content diff cannot show.
+  local changed=0 link f rel line warned=0
+  echo "=== Changes this install would make ==========================================="
+  for name in "${CLAUDE_HOME_NAMES[@]}"; do
+    if [ -L "$dest/$name" ]; then
+      echo "REPLACE symlink $dest/$name -> $(readlink "$dest/$name") with a copy"
+      changed=1
+    elif [ -d "$dest/$name" ]; then
+      while IFS= read -r -d '' link; do
+        echo "REPLACE symlink $link -> $(readlink "$link") with a copy"
+        changed=1
+      done < <(find "$dest/$name" -type l -print0 | sort -z)
+      while IFS= read -r -d '' f; do
+        rel="${f#"$dest/$name"/}"
+        if [ -e "$stage/$name/$rel" ] || [ -L "$stage/$name/$rel" ]; then continue; fi
+        if [ "$warned" -eq 0 ]; then
+          echo "WARNING: not in the repo; these will be MOVED to the backup (Q-057):"
+          warned=1
+        fi
+        line="MOVE to backup (not in the repo): $f"
+        if [ "$name" = hooks ] && grep -qsF "hooks/$(basename "$f")" "$dest/settings.json" "$dest/settings.local.json"; then
+          line="$line  <-- WIRED in settings: moving it breaks that hook"
+        fi
+        echo "$line"
+        changed=1
+      done < <(find "$dest/$name" \( -type f -o -type l \) -print0 | sort -z)
+    fi
+  done
+  # Content diff: the same review_diff the devcontainer target uses. Through a
+  # symlinked entry it compares the link's target (the checkout) with the stage.
+  if ! review_diff "$dest" "$stage" "${CLAUDE_HOME_NAMES[@]}"; then
+    changed=1
+  fi
+  if [ "$changed" -eq 0 ]; then
+    echo "(none — the destination already matches the repo)"
+  fi
+  echo "==============================================================================="
+  echo
+
+  local wiring_changed=0
+  if ! cmp -s "$dest/hooks/wiring.json" "$stage/hooks/wiring.json"; then
+    wiring_changed=1
+  fi
+
+  if ! confirm "Install these files into $dest?"; then
+    echo "Aborted. Nothing was changed. (host ~/.claude)"
+    DECLINED=1
+    return 0
+  fi
+
+  # 1. Copy every entry beside its target. Any failure: undo and stop before a
+  #    single live entry is touched.
+  local ok=1
+  mkdir -p "$dest" 2>/dev/null || ok=0
+  if [ "$ok" -eq 1 ]; then
+    for name in "${CLAUDE_HOME_NAMES[@]}"; do
+      rm -rf "$dest/.cw-new.$name"
+      if ! cp -R "$stage/$name" "$dest/.cw-new.$name"; then ok=0; break; fi
+    done
+  fi
+  if [ "$ok" -eq 0 ]; then
+    for name in "${CLAUDE_HOME_NAMES[@]}"; do rm -rf "$dest/.cw-new.$name" 2>/dev/null || true; done
+    echo "ERROR: could not copy the new files into $dest; nothing was replaced." >&2
+    exit 1
+  fi
+
+  # 2. Move whatever is there now (link or real, never with a trailing slash)
+  #    into a fresh backup dir.
+  local stamp backup="" any=0
+  stamp="$(date -u +%Y%m%dT%H%M%SZ)"
+  for name in "${CLAUDE_HOME_NAMES[@]}"; do
+    if [ -e "$dest/$name" ] || [ -L "$dest/$name" ]; then any=1; fi
+  done
+  if [ "$any" -eq 1 ]; then
+    backup="$bkroot/$stamp"
+    if [ -e "$backup" ]; then backup="$backup.$$"; fi
+    if ! mkdir -p "$backup"; then
+      for name in "${CLAUDE_HOME_NAMES[@]}"; do rm -rf "$dest/.cw-new.$name"; done
+      echo "ERROR: could not create $backup; nothing was replaced." >&2
+      exit 1
+    fi
+    for name in "${CLAUDE_HOME_NAMES[@]}"; do
+      if [ -e "$dest/$name" ] || [ -L "$dest/$name" ]; then
+        mv "$dest/$name" "$backup/$name"
+      fi
+    done
+  fi
+
+  # 3. Swap the new copies in.
+  for name in "${CLAUDE_HOME_NAMES[@]}"; do
+    if [ -e "$dest/$name" ] || [ -L "$dest/$name" ]; then
+      echo "ERROR: $dest/$name reappeared during the install; the new copy is left at $dest/.cw-new.$name." >&2
+      exit 1
+    fi
+    mv "$dest/.cw-new.$name" "$dest/$name"
+  done
+
+  # Provenance, in link-claude-home's format plus additive keys. `rm -f` first so
+  # a planted symlink cannot redirect the write.
+  rm -f "$dest/.claude-workflows-manifest"
+  cp "$stage/.manifest" "$dest/.claude-workflows-manifest"
+  {
+    echo "installed_by=host-tty"
+    echo "installed_parent=$(ps -o comm= -p "$PPID" 2>/dev/null | tr -d ' ' || echo unknown)"
+    echo "installed_at=$stamp"
+  } >> "$dest/.claude-workflows-manifest"
+
+  echo "Installed into $dest."
+  if [ -n "$backup" ]; then
+    echo "Previous entries moved to $backup (delete it when satisfied)."
+  fi
+  if [ "$wiring_changed" -eq 1 ]; then
+    echo
+    echo "REMINDER: hooks/wiring.json changed (or was not installed before). Copying the"
+    echo "hooks does not wire them. Redo guides/bare-host-hook-wiring.md §2 to merge it"
+    echo "into $dest/settings.json."
+  fi
+}
+
+DECLINED=0
 install_devcontainer
+install_claude_home
+exit "$DECLINED"
