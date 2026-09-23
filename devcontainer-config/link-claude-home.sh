@@ -150,8 +150,13 @@ else
           | .permissions //= {}
           | reduce (($wiring.permissions // {}) | keys_unsorted[]) as $mode (
               .;
+              # Also drop the legacy single-slash form of each rule, e.g.
+              # Edit(/home/node/.claude/settings*.json). A single leading
+              # slash is relative to the settings file, so those rules
+              # matched nothing (Q-049). wiring.json now emits //abs.
               .permissions[$mode] =
-                (((.permissions[$mode] // []) - $wiring.permissions[$mode])
+                (((.permissions[$mode] // []) - $wiring.permissions[$mode]
+                  - ($wiring.permissions[$mode] | map(sub("\\(//"; "(/"))))
                  + $wiring.permissions[$mode])
             )
         ' "$SETTINGS" > "$tmp" 2>/dev/null && [ -s "$tmp" ]; then

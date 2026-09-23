@@ -57,6 +57,7 @@ full. IDs are stable forever: `Q-014` means the same thing here as it did there.
 | [Q-046](#q-046--failure-analysis-fix-or-delete) | `scripts/failure-analysis.sh` computes its re-attempt pass rate against its own definition (it counts attem... | 2026-09-18 |
 | [Q-047](#q-047--hypothesis-log-run-id) | Hypothesis-log rows record only a round number, and round numbers restart every self-improvement run, so th... | 2026-09-18 |
 | [Q-048](#q-048--guard-cooccurrence-overblock) | Closing the review's bypasses of Q-035 needed a broader Bash rule, applied only to commands that contain a ... | 2026-09-21 |
+| [Q-049](#q-049--deny-rule-absolute-path-form) | Do the live deny rules match at all? `link-claude-home.sh` writes them as `Edit(/home/node/.claude/settings... | 2026-09-21 |
 | [Q-050](#q-050--guard-resolved-path-policy) | When a file-tool edit reaches a protected global file through its real path rather than through `~/.claude/... | 2026-09-21 |
 | [Q-051](#q-051--lean-fronting-entries) | Two `lean` names front to tenants nobody listed (Q-045): `elan.lean-lang.org` reaches any GitHub Pages site... | 2026-09-23 |
 | [Q-052](#q-052--android-google-fronting) | `dl.google.com` and `maven.google.com` front to Google-hosted tenants (Q-045: Host www.google.com got Googl... | 2026-09-23 |
@@ -1119,5 +1120,64 @@ When a directory the install owns (for example `~/.claude/skills`) holds files t
 - **Interim:** [1], and the diff lists every file it would move.
 
 **Answered 2026-09-23: [1].** Foreign files in install-owned directories move to `.claude-workflows-backup/<stamp>/`, and the diff lists each one.
+
+
+### Q-049 · deny-rule-absolute-path-form
+**Needs:** you: terminal · **Opened:** 2026-09-21 · **Status:** ANSWERED
+
+Do the live deny rules match at all? `link-claude-home.sh` writes them as `Edit(/home/node/.claude/settings*.json)`, with one leading slash. If Claude Code reads `/path` as relative to the settings file and needs `//path` for an absolute path (which is my recollection of its docs, unverified because the sandbox has no egress), every global-dir deny rule matches nothing. `guard-trusted-writes.py` then defers to rules that aren't there, so file-tool edits to global settings, hooks and CLAUDE.md get no gate. This predates this branch. The 2026-09-21 iteration-2 review raised it as N3.
+
+- **Read:** `hooks/wiring.json` deny block, `devcontainer-config/link-claude-home.sh:137` (the `{{CLAUDE_DIR}}` substitution), `~/.claude/settings.json` (live rules)
+- **Run 1 (2026-09-23): INCONCLUSIVE.** Untrusted project settings dropped the `allow` rule.
+- **Run 2 (2026-09-23): `control`, `single` and `double` all wrote the file.** The control worked, so `--settings` loaded and the allow applied. But neither `Write(/abs)` nor `Write(//abs)` stopped a Write. There are two readings, and this run can't tell them apart: (a) `Write(<path>)` is not a path-matched rule, and file paths are matched only by `Edit(<path>)`, which is also the form the live rules use; or (b) deny rules from `--settings` are not applied. Run 2 therefore tested the wrong form. It says nothing yet about the live `Edit(...)` rules.
+- **Run 3 paste** (on the host; five tiny headless calls). `denyall` denies Write outright, which proves deny rules from `--settings` apply at all. `edit1`/`edit2` are the live form, with one and two leading slashes:
+
+```bash
+for form in control denyall edit1 edit2 edithome; do
+  d=$(mktemp -d); td=$(mktemp -d); t=$td/target.txt
+  case $form in
+    control) deny='' ;;
+    denyall) deny='"Write"' ;;
+    edit1) deny="\"Edit($t)\"" ;;
+    edit2) deny="\"Edit(/$t)\"" ;;
+    edithome) td=$(mktemp -d "$HOME/.q049.XXXXXX"); t=$td/target.txt; deny="\"Edit(~/${td#$HOME/}/target.txt)\"" ;;
+  esac
+  printf '{"permissions":{"allow":["Write"],"deny":[%s]}}\n' "$deny" > "$d/s.json"
+  out=$(cd "$d" && claude -p "Use the Write tool to create the file $t containing: hi" --settings "$d/s.json" --add-dir "$td" --output-format json 2>"$d/err")
+  turns=$(printf '%s' "$out" | jq -r '.num_turns // 0' 2>/dev/null); turns=${turns:-0}
+  if [ -e "$t" ]; then r="file written"; elif [ "$turns" -ge 2 ]; then r="not written (claude ran $turns turns)"; else r="INCONCLUSIVE, claude did not run: $(head -c 200 "$d/err")"; fi
+  echo "$form: $r"
+  case $form in edithome) rm -rf "$td" ;; esac
+done
+```
+
+- **How to read it:** `control` must say "file written" and `denyall` "not written". Otherwise the run proves nothing, so paste it back. With those two good:
+  - `edit1: not written` → the live single-slash rules work. N3 is closed.
+  - `edit1: file written`, `edit2: not written` → only `//` is absolute, so the live rules match nothing today.
+  - `edit1` and `edit2` both "file written" → no absolute form works in `--settings`. `edithome` (the `~/` form) is the fallback to try.
+- **What I do with it:** single-slash works → close N3. Otherwise `link-claude-home.sh` emits the form that works, a test pins it, and you re-install and re-bless. **Whatever the result, I recommend the guard redesign the review proposed:** the hook returns `deny` itself for HARD paths instead of deferring to rules. Run 2 already shows how easily a rule can silently match nothing.
+- **Interim:** unchanged. The devcontainer's `/opt` payload is read-only, which bounds the hooks and CLAUDE.md exposure there. `~/.claude/settings*.json` is not bounded that way.
+
+**Answered 2026-09-23, run 3: single-slash rules match nothing; `//abs` and `~/rel` work.**
+
+| Run | File | Reading |
+|---|---|---|
+| `control` (no deny) | written | allow applied |
+| `denyall` (`Write`) | not written | deny rules from `--settings` are applied |
+| `edit1` `Edit(/abs)` | **written** | single slash is not absolute: the live form matched nothing |
+| `edit2` `Edit(//abs)` | not written | double slash is absolute |
+| `edithome` `Edit(~/rel)` | not written | `~/` works |
+
+The three "INCONCLUSIVE, claude did not run" labels are a bug in my classifier, not in the run. stderr was empty, so claude started cleanly. A denied Write evidently ends in fewer than two `num_turns`, and my rule read that as "did not run". The signal is the file: it appeared exactly where no rule, or a single-slash rule, stood.
+
+**Consequence.** Every `{{CLAUDE_DIR}}` deny rule `link-claude-home.sh` has merged was a no-op: settings, hooks, `CLAUDE.md`, and `Read(.credentials.json)`. That means guard-trusted-writes' HARD tier, which defers to these rules for the file tools, gave no gate there (review N3, confirmed).
+
+**Done (agent):**
+- `hooks/wiring.json` now writes its config-dir rules as `/{{CLAUDE_DIR}}`, so they resolve to `//abs`.
+- `link-claude-home.sh` prunes the legacy single-slash forms on merge.
+- `test/link-claude-home-wiring.bats` asserts the `//` form, including the credentials rule, and adds a pruning test. The pruning test fails against the old linker. 159/159 pass across that file and `test/hooks/`.
+- **Takes effect** after install, re-bless and a container start.
+- **Bare host:** a hand-merged `~/.claude/settings.json` still holds the single-slash rules. Re-merge with the guide's `jq` one-liner (it reads the fixed `wiring.json`), or edit the slashes by hand.
+- The guard redesign, where the hook returns `deny` itself for HARD paths, is still recommended: this bug went unnoticed for weeks.
 
 

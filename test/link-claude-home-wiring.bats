@@ -240,17 +240,37 @@ EOF
   # would override permissions.deny — Claude Code issue #39344), so if these
   # rules go missing the guard silently stops protecting those paths via the
   # file tools and nothing else in the suite notices. Decision 023 amendment B.
+  # Absolute paths need a DOUBLE leading slash: in a permission rule /path is
+  # relative to the settings file, so Edit(/abs) matched nothing (host test,
+  # Q-049). $DEST is absolute, so /$DEST gives //abs.
   bash "$LINKER"
   local rule
-  for rule in "Edit($DEST/settings*.json)" "Write($DEST/settings*.json)" \
-              "Edit($DEST/hooks/**)" "Write($DEST/hooks/**)" \
-              "Edit($DEST/CLAUDE.md)" "Write($DEST/CLAUDE.md)" \
+  for rule in "Edit(/$DEST/settings*.json)" "Write(/$DEST/settings*.json)" \
+              "Edit(/$DEST/hooks/**)" "Write(/$DEST/hooks/**)" \
+              "Edit(/$DEST/CLAUDE.md)" "Write(/$DEST/CLAUDE.md)" \
+              "Read(/$DEST/.credentials.json)" \
               "Edit(~/CLAUDE.md)" "Write(~/CLAUDE.md)"; do
     [ "$(jq --arg r "$rule" '[.permissions.deny[] | select(. == $r)] | length' "$DEST/settings.json")" -eq 1 ] || {
       echo "missing deny rule: $rule"
       return 1
     }
   done
+}
+
+@test "legacy single-slash deny rules are pruned; the user's own rules survive" {
+  # Settings merged before the Q-049 fix hold Edit(/abs) rules that match
+  # nothing. The merge must drop them, not leave them beside the // form.
+  mkdir -p "$DEST"
+  jq -n --arg d "$DEST" '{permissions: {deny: [
+      "Edit(\($d)/settings*.json)", "Read(\($d)/.credentials.json)",
+      "Edit(/user/own/rule)", "Bash(rm -rf /)"]}}' > "$DEST/settings.json"
+  bash "$LINKER"
+  local deny
+  deny=$(jq -c '.permissions.deny' "$DEST/settings.json")
+  [ "$(jq --arg r "Edit($DEST/settings*.json)" '[.[] | select(. == $r)] | length' <<<"$deny")" -eq 0 ]
+  [ "$(jq --arg r "Read($DEST/.credentials.json)" '[.[] | select(. == $r)] | length' <<<"$deny")" -eq 0 ]
+  [ "$(jq --arg r "Edit(/$DEST/settings*.json)" '[.[] | select(. == $r)] | length' <<<"$deny")" -eq 1 ]
+  [ "$(jq '[.[] | select(. == "Edit(/user/own/rule)" or . == "Bash(rm -rf /)")] | length' <<<"$deny")" -eq 2 ]
 }
 
 # Q-025: workflows and the global instructions call helpers by their installed

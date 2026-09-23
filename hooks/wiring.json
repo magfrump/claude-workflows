@@ -11,6 +11,12 @@
     "$HOME/.claude) at merge time — do not hardcode $HOME here: the token has to survive",
     "a config dir that is not ~/.claude.",
     "",
+    "Permission rules write it as /{{CLAUDE_DIR}}, so an absolute dir becomes //path.",
+    "In a permission rule, /path is relative to the settings file; only //path is",
+    "absolute. Host test 2026-09-23 (questions-archive Q-049): Edit(/abs) did not block",
+    "a Write, while Edit(//abs) and Edit(~/rel) did. The single-slash rules this file",
+    "used to emit matched nothing. link-claude-home.sh prunes those legacy forms.",
+    "",
     "Merging is by exact match on each entry, so re-running the linker is idempotent and",
     "never touches entries this file did not put there. That also means any edit to an",
     "entry below strands the previous version in an already-merged settings.json: bump it",
@@ -113,16 +119,16 @@
 
   "permissions": {
     "deny": [
-      "Read({{CLAUDE_DIR}}/.credentials.json)",
+      "Read(/{{CLAUDE_DIR}}/.credentials.json)",
       "Read(~/.config/gcloud/**)",
       "Read(~/.npmrc)",
 
-      "Edit({{CLAUDE_DIR}}/settings*.json)",
-      "Write({{CLAUDE_DIR}}/settings*.json)",
-      "Edit({{CLAUDE_DIR}}/hooks/**)",
-      "Write({{CLAUDE_DIR}}/hooks/**)",
-      "Edit({{CLAUDE_DIR}}/CLAUDE.md)",
-      "Write({{CLAUDE_DIR}}/CLAUDE.md)",
+      "Edit(/{{CLAUDE_DIR}}/settings*.json)",
+      "Write(/{{CLAUDE_DIR}}/settings*.json)",
+      "Edit(/{{CLAUDE_DIR}}/hooks/**)",
+      "Write(/{{CLAUDE_DIR}}/hooks/**)",
+      "Edit(/{{CLAUDE_DIR}}/CLAUDE.md)",
+      "Write(/{{CLAUDE_DIR}}/CLAUDE.md)",
       "Edit(~/CLAUDE.md)",
       "Write(~/CLAUDE.md)"
     ]
