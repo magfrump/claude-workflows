@@ -27,6 +27,10 @@ The index below is generated — edit entries, not the table.
 |---|---|---|---|
 | [Q-051](#q-051--lean-fronting-entries) | you: judgment | Two `lean` names front to tenants nobody listed (Q-045): `elan.lean-lang.org` reaches any GitHub Pages site... | 2026-09-23 |
 | [Q-052](#q-052--android-google-fronting) | you: judgment | `dl.google.com` and `maven.google.com` front to Google-hosted tenants (Q-045: Host www.google.com got Googl... | 2026-09-23 |
+| [Q-054](#q-054--copy-install-approach) | you: judgment | Approve the plan that replaces the bare-host symlink install with blessed copies (your Q-050 direction), an... | 2026-09-23 |
+| [Q-055](#q-055--gemini-install-target) | you: judgment | Do you still use Gemini (CLI or Antigravity)? The README symlinks six entries into `~/.gemini`, and the cop... | 2026-09-23 |
+| [Q-056](#q-056--host-install-tty-only) | you: judgment | Should the host install targets refuse `--yes` and require an interactive terminal? The agent runs on the s... | 2026-09-23 |
+| [Q-057](#q-057--host-install-foreign-files) | you: judgment | When a directory the install owns (for example `~/.claude/skills`) holds files the repo does not have, shou... | 2026-09-23 |
 | [Q-049](#q-049--deny-rule-absolute-path-form) | you: terminal | Do the live deny rules match at all? `link-claude-home.sh` writes them as `Edit(/home/node/.claude/settings... | 2026-09-21 |
 | [Q-053](#q-053--azure-blob-fronting-probe) | you: terminal | Does the Azure Blob front end behind `lakecache.blob.core.windows.net` route a different storage account's ... | 2026-09-23 |
 <!-- index:end -->
@@ -115,3 +119,60 @@ echo "3 fronted          : $(show -H "Host: $B" "https://$A$p2")"
 - **How to read it:** line 1 must show an `<EnumerationResults` listing and `[200]`. Line 2 must as well; if it doesn't, the container name is wrong and the run proves nothing, so paste it back. If line 3 matches line 2 (a `mnist` listing), fronting works across accounts. If line 3 is an error (`ResourceNotFound`, `InvalidQueryParameterValue`, 400 or 404), the front end stays within the SNI's account.
 - **What I do with it:** refuses → the lakecache ACCEPTED RISK note is confirmed as written, with the date. Fronts → a new judgment entry on keeping lakecache, which is the entry that makes the lean profile usable at all.
 - **Interim:** lakecache stays listed; `lean.txt` calls it inconclusive.
+
+### Q-054 · copy-install-approach
+**Needs:** you: judgment · **Opened:** 2026-09-23 · **Status:** OPEN
+
+Approve the plan that replaces the bare-host symlink install with blessed copies (your Q-050 direction), and pick how `install.sh` exposes the host targets.
+
+- **Why it's yours:** RPI's plan gate. No code is written until you approve. The shape is a design choice that the non-interactive run left tentative (Path C, 70%).
+- **Read:** on branch `ans/copy-install-plan` (05f92e5): `docs/working/plan-copy-install-bare-host.md` (7 steps), `research-copy-install-bare-host.md` (the DD matrix), `checkpoint-copy-install-bare-host.md`
+- **Common to every option:** existing symlinks show in the diff as `REPLACE symlink … with a copy` and are moved to `.claude-workflows-backup/<stamp>/`, never deleted. `hooks/` and `scripts/` are copied whole. `settings.json` is not touched; a reminder prints when `wiring.json` changed. Three hazards confirmed in scratch drove this design: `diff -ruN` through a symlink shows nothing, `cp -r` onto a directory symlink writes into the checkout, and `rm -rf link/` empties the checkout.
+
+| Option | What it means | Cost to you | If it's wrong |
+|---|---|---|---|
+| **[1] Target flags, one per run (A)** | `install.sh --claude-home` / `--gemini`; a plain run is unchanged | Remember the flag | Forgetting it leaves `~/.claude` stale, with no error |
+| **[2] Plain run offers every target (D)** | One run, a separate y/N per target | A longer run each time | An existing command changes what it does |
+| **[3] Separate host-install script (B)** | A new script beside `install.sh` | A second script, which needs its own commit gate (decision 035) | Two installers drift apart |
+| **[4] Not yet** | Revise the plan; say what to change | none | none |
+
+- **Interim:** nothing implemented. Both `/pre-mortem` and `/architecture-review` fire for this plan and have not run. I run them before implementation unless you say to skip them.
+- **If the answer differs:** [2] or [3] changes steps 2-4 of the plan, not the tests' intent.
+
+### Q-055 · gemini-install-target
+**Needs:** you: judgment · **Opened:** 2026-09-23 · **Status:** OPEN
+
+Do you still use Gemini (CLI or Antigravity)? The README symlinks six entries into `~/.gemini`, and the copy-install plan has a step for them.
+
+| Option | What it means | Cost to you | If it's wrong |
+|---|---|---|---|
+| **[1] Yes, copy them too** | Plan step 4 stays; `~/.gemini` gets the same blessed copy | none | none |
+| **[2] No, drop Gemini** | Step 4 is dropped and the README's Gemini block is removed | none | Re-adding it later is one plan step |
+
+- **Interim:** step 4 is planned but can be dropped. Copying to Windows through `/mnt/c/Users/<you>/.gemini` is untested.
+
+### Q-056 · host-install-tty-only
+**Needs:** you: judgment · **Opened:** 2026-09-23 · **Status:** OPEN
+
+Should the host install targets refuse `--yes` and require an interactive terminal? The agent runs on the same host as `~/.claude` and could run the installer itself.
+
+- **Why it's yours:** it trades convenience against the one property that makes "bless" mean a human read the diff.
+
+| Option | What it means | Cost to you | If it's wrong |
+|---|---|---|---|
+| **[1] Refuse `--yes`, require a TTY (planned)** | The host targets run only interactively | No scripted installs | Claude Code's Bash tool may have a TTY after all [untested], so this check alone wouldn't stop an agent |
+| **[2] Allow `--yes`, as the devcontainer path does** | Same behavior as today's install | none | An agent can bless its own edit into `~/.claude` |
+
+- **Interim:** [1] is in the plan. A test step checks whether the Bash tool has a TTY before relying on it.
+
+### Q-057 · host-install-foreign-files
+**Needs:** you: judgment · **Opened:** 2026-09-23 · **Status:** OPEN
+
+When a directory the install owns (for example `~/.claude/skills`) holds files the repo does not have, should the install move them to the backup, or leave them in place?
+
+| Option | What it means | Cost to you | If it's wrong |
+|---|---|---|---|
+| **[1] Move them to the backup (planned)** | `~/.claude/skills` matches the repo exactly after install; extras sit in `.claude-workflows-backup/<stamp>/` | Hand-installed skills disappear until you restore them | A skill you added outside the repo stops loading |
+| **[2] Leave them** | The install adds and overwrites repo files only | none | Files deleted from the repo live on in `~/.claude` |
+
+- **Interim:** [1], and the diff lists every file it would move.
