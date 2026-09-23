@@ -1,0 +1,187 @@
+bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+1..24
+bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+not ok 1 T1 plain run with closed stdin: devcontainer declines as today, host skipped, dest untouched
+# (in test file test/install-host.bats, line 120)
+#   `[[ "$output" == *'Skipped host target'*'interactive terminal'* ]]' failed
+bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+not ok 2 T2 piped answers without a TTY never reach the host target
+# (in test file test/install-host.bats, line 129)
+#   `[[ "$output" == *'Skipped host target'*'interactive terminal'* ]]' failed
+bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+not ok 3 T3 --yes without a TTY installs the devcontainer target and skips the host
+# (in test file test/install-host.bats, line 142)
+#   `[[ "$output" == *'Skipped host target'*'--yes'* ]]' failed
+# bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+# Canonical (repo):  /tmp/claude-1000/-workspace/d516ca2c-2abb-4732-a34a-041aa98280c8/scratchpad/fc/tmp/bats-run-fhblDR/test/3/repo/devcontainer-config
+# Installed (host):  /tmp/claude-1000/-workspace/d516ca2c-2abb-4732-a34a-041aa98280c8/scratchpad/fc/tmp/bats-run-fhblDR/test/3/home/.config/claude-devcontainer
+#
+# First install — /tmp/claude-1000/-workspace/d516ca2c-2abb-4732-a34a-041aa98280c8/scratchpad/fc/tmp/bats-run-fhblDR/test/3/home/.config/claude-devcontainer does not exist yet.
+#
+# Linked /tmp/claude-1000/-workspace/d516ca2c-2abb-4732-a34a-041aa98280c8/scratchpad/fc/tmp/bats-run-fhblDR/test/3/home/.local/bin/cc-isolated -> /tmp/claude-1000/-workspace/d516ca2c-2abb-4732-a34a-041aa98280c8/scratchpad/fc/tmp/bats-run-fhblDR/test/3/home/.config/claude-devcontainer/cc-isolated.sh
+#
+# bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+# BLESS-STUB --bless
+#
+# Done. Blessed, NOT verified: a bless is a review of files, not a test of a container.
+# Next steps:
+#   touch ~/.ssh/canary                    # once, if you haven't — strengthens the H1 probe
+#   cc-isolated --probe-only <repo>        # REQUIRED after any boundary change: rebuilds from
+#                                          # this config and records it verified live on a pass
+#   cc-isolated                            # session for the repo containing $PWD
+#   cc-isolated --register <repo> --profile python   # widen a project's egress
+#
+# WARNING: /tmp/claude-1000/-workspace/d516ca2c-2abb-4732-a34a-041aa98280c8/scratchpad/fc/tmp/bats-run-fhblDR/test/3/home/.local/bin is not on your PATH — add it, or call /tmp/claude-1000/-workspace/d516ca2c-2abb-4732-a34a-041aa98280c8/scratchpad/fc/tmp/bats-run-fhblDR/test/3/home/.config/claude-devcontainer/cc-isolated.sh directly.
+bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+not ok 4 T4 --yes inside a pty still skips the host target
+# (in test file test/install-host.bats, line 152)
+#   `[[ "$output" == *'Skipped host target'*'--yes'* ]]' failed
+# bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+# bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+# bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+# Canonical (repo):  /tmp/claude-1000/-workspace/d516ca2c-2abb-4732-a34a-041aa98280c8/scratchpad/fc/tmp/bats-run-fhblDR/test/4/repo/devcontainer-config
+# Installed (host):  /tmp/claude-1000/-workspace/d516ca2c-2abb-4732-a34a-041aa98280c8/scratchpad/fc/tmp/bats-run-fhblDR/test/4/home/.config/claude-devcontainer
+#
+# First install — /tmp/claude-1000/-workspace/d516ca2c-2abb-4732-a34a-041aa98280c8/scratchpad/fc/tmp/bats-run-fhblDR/test/4/home/.config/claude-devcontainer does not exist yet.
+#
+# Linked /tmp/claude-1000/-workspace/d516ca2c-2abb-4732-a34a-041aa98280c8/scratchpad/fc/tmp/bats-run-fhblDR/test/4/home/.local/bin/cc-isolated -> /tmp/claude-1000/-workspace/d516ca2c-2abb-4732-a34a-041aa98280c8/scratchpad/fc/tmp/bats-run-fhblDR/test/4/home/.config/claude-devcontainer/cc-isolated.sh
+#
+# bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+# BLESS-STUB --bless
+#
+# Done. Blessed, NOT verified: a bless is a review of files, not a test of a container.
+# Next steps:
+#   touch ~/.ssh/canary                    # once, if you haven't — strengthens the H1 probe
+#   cc-isolated --probe-only <repo>        # REQUIRED after any boundary change: rebuilds from
+#                                          # this config and records it verified live on a pass
+#   cc-isolated                            # session for the repo containing $PWD
+#   cc-isolated --register <repo> --profile python   # widen a project's egress
+#
+# WARNING: /tmp/claude-1000/-workspace/d516ca2c-2abb-4732-a34a-041aa98280c8/scratchpad/fc/tmp/bats-run-fhblDR/test/4/home/.local/bin is not on your PATH — add it, or call /tmp/claude-1000/-workspace/d516ca2c-2abb-4732-a34a-041aa98280c8/scratchpad/fc/tmp/bats-run-fhblDR/test/4/home/.config/claude-devcontainer/cc-isolated.sh directly.
+bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+not ok 5 T5 migration review names every symlink it will replace, before the prompt
+# (in test file test/install-host.bats, line 163)
+#   `[[ "$output" == *"REPLACE symlink $CLAUDE_HOME_DIR/$n -> "* ]]' failed
+# bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+# n
+# n
+# bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+# bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+# Canonical (repo):  /tmp/claude-1000/-workspace/d516ca2c-2abb-4732-a34a-041aa98280c8/scratchpad/fc/tmp/bats-run-fhblDR/test/5/repo/devcontainer-config
+# Installed (host):  /tmp/claude-1000/-workspace/d516ca2c-2abb-4732-a34a-041aa98280c8/scratchpad/fc/tmp/bats-run-fhblDR/test/5/home/.config/claude-devcontainer
+#
+# First install — /tmp/claude-1000/-workspace/d516ca2c-2abb-4732-a34a-041aa98280c8/scratchpad/fc/tmp/bats-run-fhblDR/test/5/home/.config/claude-devcontainer does not exist yet.
+#
+# Install this config and bless it? [y/N] Aborted. Nothing was changed.
+bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+not ok 6 T6 migration y path: real copies in place, checkout untouched, links backed up as links
+# (in test file test/install-host.bats, line 183)
+#   `[ ! -L "$CLAUDE_HOME_DIR/$n" ]' failed
+# bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+# n
+# y
+# bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+# bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+# Canonical (repo):  /tmp/claude-1000/-workspace/d516ca2c-2abb-4732-a34a-041aa98280c8/scratchpad/fc/tmp/bats-run-fhblDR/test/6/repo/devcontainer-config
+# Installed (host):  /tmp/claude-1000/-workspace/d516ca2c-2abb-4732-a34a-041aa98280c8/scratchpad/fc/tmp/bats-run-fhblDR/test/6/home/.config/claude-devcontainer
+#
+# First install — /tmp/claude-1000/-workspace/d516ca2c-2abb-4732-a34a-041aa98280c8/scratchpad/fc/tmp/bats-run-fhblDR/test/6/home/.config/claude-devcontainer does not exist yet.
+#
+# Install this config and bless it? [y/N] Aborted. Nothing was changed.
+bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+not ok 7 T7 user state in the destination is byte-identical after an install
+# (in test file test/install-host.bats, line 205)
+#   `[ -d "$CLAUDE_HOME_DIR/skills" ] && [ ! -L "$CLAUDE_HOME_DIR/skills" ]   # the install ran' failed
+bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+not ok 8 T8 hermeticity: a host install writes nothing outside the host destination
+# (in test file test/install-host.bats, line 213)
+#   `[ -d "$CLAUDE_HOME_DIR/skills" ] && [ ! -L "$CLAUDE_HOME_DIR/skills" ]' failed
+bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+not ok 9 T9 installed hooks still find lib/ and ../scripts (log-usage smoke test)
+# (in test file test/install-host.bats, line 227)
+#   `[ -f "$CLAUDE_HOME_DIR/hooks/lib/usage-common.sh" ]' failed
+bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+not ok 10 T10 the provenance manifest names the commit, the source and the installer
+# (in test file test/install-host.bats, line 240)
+#   `grep -q "^commit=$(git -C "$ROOT" rev-parse HEAD)$" "$m"' failed with status 2
+# grep: /tmp/claude-1000/-workspace/d516ca2c-2abb-4732-a34a-041aa98280c8/scratchpad/fc/tmp/bats-run-fhblDR/test/10/home/.claude/.claude-workflows-manifest: No such file or directory
+bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+not ok 11 T11 wiring reminder: on first install, not when unchanged, again when wiring.json changes
+# (in test file test/install-host.bats, line 248)
+#   `[[ "$output" == *'bare-host-hook-wiring.md'* ]]' failed
+bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+not ok 12 T12 a review diff that fails aborts before the host prompt
+# (in test file test/install-host.bats, line 265)
+#   `[[ "$output" == *'could not diff'* ]]' failed
+# bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+# n
+# y
+# bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+# bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+# Canonical (repo):  /tmp/claude-1000/-workspace/d516ca2c-2abb-4732-a34a-041aa98280c8/scratchpad/fc/tmp/bats-run-fhblDR/test/12/repo/devcontainer-config
+# Installed (host):  /tmp/claude-1000/-workspace/d516ca2c-2abb-4732-a34a-041aa98280c8/scratchpad/fc/tmp/bats-run-fhblDR/test/12/home/.config/claude-devcontainer
+#
+# First install — /tmp/claude-1000/-workspace/d516ca2c-2abb-4732-a34a-041aa98280c8/scratchpad/fc/tmp/bats-run-fhblDR/test/12/home/.config/claude-devcontainer does not exist yet.
+#
+# Install this config and bless it? [y/N] Aborted. Nothing was changed.
+bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+not ok 13 T13 a foreign file in an owned dir is listed, then moved to the backup
+# (in test file test/install-host.bats, line 276)
+#   `[[ "$output" == *"MOVE to backup (not in the repo): $CLAUDE_HOME_DIR/skills/mine/SKILL.md"* ]]' failed
+# bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+# n
+# y
+# bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+# bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+# Canonical (repo):  /tmp/claude-1000/-workspace/d516ca2c-2abb-4732-a34a-041aa98280c8/scratchpad/fc/tmp/bats-run-fhblDR/test/13/repo/devcontainer-config
+# Installed (host):  /tmp/claude-1000/-workspace/d516ca2c-2abb-4732-a34a-041aa98280c8/scratchpad/fc/tmp/bats-run-fhblDR/test/13/home/.config/claude-devcontainer
+#
+# First install — /tmp/claude-1000/-workspace/d516ca2c-2abb-4732-a34a-041aa98280c8/scratchpad/fc/tmp/bats-run-fhblDR/test/13/home/.config/claude-devcontainer does not exist yet.
+#
+# Install this config and bless it? [y/N] Aborted. Nothing was changed.
+bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+not ok 14 T14 a destination that resolves inside the checkout is refused
+# (in test file test/install-host.bats, line 289)
+#   `[[ "$output" == *'inside the repo checkout'* ]]' failed
+# bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+# n
+# y
+# bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+# bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+# Canonical (repo):  /tmp/claude-1000/-workspace/d516ca2c-2abb-4732-a34a-041aa98280c8/scratchpad/fc/tmp/bats-run-fhblDR/test/14/repo/devcontainer-config
+# Installed (host):  /tmp/claude-1000/-workspace/d516ca2c-2abb-4732-a34a-041aa98280c8/scratchpad/fc/tmp/bats-run-fhblDR/test/14/home/.config/claude-devcontainer
+#
+# First install — /tmp/claude-1000/-workspace/d516ca2c-2abb-4732-a34a-041aa98280c8/scratchpad/fc/tmp/bats-run-fhblDR/test/14/home/.config/claude-devcontainer does not exist yet.
+#
+# Install this config and bless it? [y/N] Aborted. Nothing was changed.
+bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+not ok 15 T15 an unknown flag prints usage and exits 2 before assembling anything
+# (in test file test/install-host.bats, line 296)
+#   `[ "$status" -eq 2 ]' failed
+bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+not ok 16 T16 a copy failure swaps nothing and leaves no backup
+# (in test file test/install-host.bats, line 309)
+#   `[[ "$output" == *'nothing was replaced'* ]]   # it got past the prompt and failed safely' failed
+# bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+# n
+# y
+# bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+# bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+# Canonical (repo):  /tmp/claude-1000/-workspace/d516ca2c-2abb-4732-a34a-041aa98280c8/scratchpad/fc/tmp/bats-run-fhblDR/test/16/repo/devcontainer-config
+# Installed (host):  /tmp/claude-1000/-workspace/d516ca2c-2abb-4732-a34a-041aa98280c8/scratchpad/fc/tmp/bats-run-fhblDR/test/16/home/.config/claude-devcontainer
+#
+# First install — /tmp/claude-1000/-workspace/d516ca2c-2abb-4732-a34a-041aa98280c8/scratchpad/fc/tmp/bats-run-fhblDR/test/16/home/.config/claude-devcontainer does not exist yet.
+#
+# Install this config and bless it? [y/N] Aborted. Nothing was changed.
+bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+not ok 17 T17 declining the host prompt changes nothing and cleans the stage
+# (in test file test/install-host.bats, line 320)
+#   `[[ "$output" == *'Aborted. Nothing was changed. (host'* ]]' failed
+bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+Terminated

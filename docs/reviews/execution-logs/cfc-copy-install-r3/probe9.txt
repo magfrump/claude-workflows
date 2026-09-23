@@ -1,0 +1,22 @@
+
+######## P9 top-level CLAUDE.md dangling ########
+=== Changes this install would make ===========================================
+REPLACE symlink /tmp/claude-1000/-workspace/d516ca2c-2abb-4732-a34a-041aa98280c8/scratchpad/cfc-r3/probe/p9/home/.claude/CLAUDE.md -> /tmp/claude-1000/-workspace/d516ca2c-2abb-4732-a34a-041aa98280c8/scratchpad/cfc-r3/probe/p9/old-checkout/global-instructions/CLAUDE.md with a copy
+===============================================================================
+
+Install these files into /tmp/claude-1000/-workspace/d516ca2c-2abb-4732-a34a-041aa98280c8/scratchpad/cfc-r3/probe/p9/home/.claude? [y/N] Installed into /tmp/claude-1000/-workspace/d516ca2c-2abb-4732-a34a-041aa98280c8/scratchpad/cfc-r3/probe/p9/home/.claude.
+Previous entries moved to /tmp/claude-1000/-workspace/d516ca2c-2abb-4732-a34a-041aa98280c8/scratchpad/cfc-r3/probe/p9/home/.claude/.claude-workflows-backup/20260923T233418Z (delete it when satisfied).
+
+REMINDER: hooks/wiring.json changed (or was not installed before). Copying the
+hooks does not wire them. Redo guides/bare-host-hook-wiring.md §2 to merge it
+into /tmp/claude-1000/-workspace/d516ca2c-2abb-4732-a34a-041aa98280c8/scratchpad/cfc-r3/probe/p9/home/.claude/settings.json.
+[exit=1]
+.claude-workflows-backup
+.claude-workflows-manifest
+CLAUDE.md
+guides
+hooks
+patterns
+scripts
+skills
+workflows

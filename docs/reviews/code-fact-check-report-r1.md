@@ -1,758 +1,607 @@
-Commit: 654c0ed
+Commit: d0fdd04
 
 # Code Fact-Check Report
 
-**Repository:** /workspace (claude-workflows)
-**Scope:** `git diff e8d5fa1..answers-2026-09-20` (HEAD 654c0ed; 32 commits, 50 files). Code first (`hooks/guard-trusted-writes.py`, `scripts/questions.sh`, `scripts/self-improvement.sh`, `scripts/archive-working-docs.sh`, `scripts/lib/si-*.sh`, `scripts/health-check.sh`, `scripts/lite-review.py`, `devcontainer-config/*.sh`), then skill/workflow/global docs and commit messages in range.
-**Checked:** 2026-09-21
-**Total claims checked:** 33
-**Summary:** 21 verified, 4 mostly accurate, 0 stale, 6 incorrect, 2 unverifiable
+**Repository:** /workspace/.claude/wt-copyinstall (branch `ans/copy-install`)
+**Scope:** diff `712c626..d0fdd04`: README.md, devcontainer-config/install.sh (read whole, 464 lines), docs/decisions/035 and 037, guides/README.md, guides/bare-host-hook-wiring.md, test/install-host.bats, test/link-claude-home-wiring.bats, plus the commit messages of the 9 commits. The docs/working and pre-mortem/architecture artifacts were used as context only.
+**Checked:** 2026-09-23
+**Total claims checked:** 24
+**Summary:** 19 verified, 3 mostly accurate, 0 stale, 1 incorrect, 1 unverifiable
 
-Hallucination-pattern log (`docs/reviews/hallucination-patterns.md`) was read first. Its four entries are all "a specific value quoted from an artifact that does not contain it". Claim 22 matches that class; see "Hallucination-log candidate" at the end.
+Execution provenance for every `executed` claim: raw output is in
+`docs/reviews/execution-logs/cfc-copy-install-r1-d0fdd04/` (the directory also holds a few
+older scratch files, such as `demo.txt` and `new.txt`, that this report does not cite). All
+runs were hermetic. HOME, CLAUDE_HOME_DIR, CLAUDE_DEVC_CONFIG_DIR, CLAUDE_DEVC_BIN_DIR and
+TMPDIR all pointed into a temp dir, CLAUDECODE was unset for the child, and install.sh ran
+as a copy inside a throwaway git repo (`exp.sh`'s `fake_repo`, which mirrors the bats
+`fake_repo`). Nothing touched the real `~/.claude`, `~/.config` or `~/.local`. Runs:
 
-Execution logs for every `executed` claim are under `docs/reviews/execution-logs/cfc-r1-*` (probe scripts are saved next to their outputs). All probes ran with cwd `/workspace` unless stated, as user `node` with HOME=/home/node. In this container `~/.claude/hooks` → `/opt/claude-workflows/hooks` and `~/.claude/CLAUDE.md` → `/opt/claude-workflows/CLAUDE.md` are symlinks, created by `devcontainer-config/link-claude-home.sh`. That layout is load-bearing for Claim 4.
+| Log | Command | cwd | Exit | UTC start |
+|---|---|---|---|---|
+| `bats-head.txt` | `env -u CLAUDECODE bats test/install-host.bats` | worktree | 0 | 2026-09-23T23:30:43Z |
+| `bats-old.txt` | same, on `git archive dcf4a6d` (install.sh == 712c626's) | `$scratch/fc/old` | 1 | 23:31:07Z |
+| `suites-summary.txt` + per-suite `*.bats.txt`, `hooks-suite.txt` | `run-suites.sh` | worktree | 0 each | 23:32:04Z |
+| `run-tests-fast.txt` | `run-fast.sh` (`scripts/run-tests.sh --fast`) | worktree | 0 | 23:32:41Z |
+| `exp-E1-E5-E6-E7.txt` | `bash exp.sh E1; E5; E6; E7` | `$scratch/fc` | 0 | 23:34:50Z |
+| `exp-E2-E4.txt` | `bash exp.sh E2; E3; E3b; E3c; E4` | `$scratch/fc` | 0 | 23:34:57Z |
+| `exp-E8-E9.txt` | `bash exp.sh E8; E9` | `$scratch/fc` | 0 | 23:35:53Z |
 
-Every claim carries a **Legibility-target** tag (`for-author` / `for-orchestrator-synthesis` / `for-automated-gate`).
+(`$scratch` = `/tmp/claude-1000/-workspace/d516ca2c-2abb-4732-a34a-041aa98280c8/scratchpad`.
+`exp.sh`, `run-suites.sh` and `run-fast.sh` are copied into the log directory.)
 
----
-
-## Claim 1: "`archive/failure-analysis/`: it sources `$SCRIPT_DIR/lib/preflight.sh`, which does not exist here … no callers"
-
-**Location:** `archive/failure-analysis/README.md:24-26`
-**Type:** Reference / Staleness
-**Verdict:** Verified
-**Confidence:** High
-**Verification mode:** static
-**Scope:** Covers that the archived script sources a lib path that is missing under `archive/failure-analysis/scripts/`, and that no live file references `failure-analysis`. Does not cover whether the archived bats suite still passes after being copied back.
-**Legibility-target:** for-orchestrator-synthesis
-
-`archive/failure-analysis/scripts/failure-analysis.sh:19,25`: `SCRIPT_DIR="$(cd "$(dirname "$0")" && pwd)"` … `source "$SCRIPT_DIR/lib/preflight.sh"`. `archive/failure-analysis/scripts/lib` does not exist, and `scripts/lib/preflight.sh` does. Paraphrased — no quote available because the claim is about absence: a repo-wide `grep -rln failure-analysis` over md/sh/py/bats, excluding `archive/`, `docs/reviews/execution-logs` and the questions docs, returned no hits.
-
-**Evidence:** `archive/failure-analysis/scripts/failure-analysis.sh:19-25`, `scripts/lib/preflight.sh`
-
----
-
-## Claim 2: "Workflows and the global instructions call helpers by their installed path, ~/.claude/scripts/ — lite-review.py … and questions.sh … so those must resolve in every project"
-
-**Location:** `devcontainer-config/link-claude-home.sh:43-48` (same claim at `devcontainer-config/install.sh:39-43`, `README.md:20-24`)
-**Type:** Architectural / Reference
-**Verdict:** Verified
-**Confidence:** High
-**Verification mode:** executed
-**Scope:** Covers that the named callers use the installed path, and that the linker makes `$DEST/scripts/{lite-review.py,questions.sh}` resolve. Does not cover a bare host that skips the README `ln -s` line, or a `CLAUDE_CONFIG_DIR` other than `~/.claude`. The docs hard-code `~/.claude/scripts`, while the linker installs to `${CLAUDE_CONFIG_DIR:-$HOME/.claude}` (`link-claude-home.sh:36`).
-**Legibility-target:** for-orchestrator-synthesis
-
-The callers use the installed path: `workflows/pr-prep.md:237` `~/.claude/scripts/lite-review.py --repo . --range <last-review-commit>..HEAD --mode fix-drift`, `workflows/review-fix-loop.md:79` (same command), and `global-instructions/CLAUDE.md:235` `Get the next ID from \`~/.claude/scripts/questions.sh next-id\``. The linker's list includes scripts: `ENTRIES=(skills workflows guides patterns hooks scripts CLAUDE.md)` (`link-claude-home.sh:50`). Executed: `bats test/link-claude-home-wiring.bats` exited 0 with 14/14 ok, including `installed ~/.claude/scripts/{lite-review.py,questions.sh} resolve after install`. Run at 2026-09-21T19:30:54-07:00.
-
-**Evidence:** `workflows/pr-prep.md:237`, `workflows/review-fix-loop.md:79`, `global-instructions/CLAUDE.md:235`, `devcontainer-config/link-claude-home.sh:36,50`, `docs/reviews/execution-logs/cfc-r1-bats-link-claude-home-wiring.txt`
+Hallucination-pattern log: `docs/reviews/hallucination-patterns.md` was read. No logged
+pattern matches any claim below.
 
 ---
 
-## Claim 3: "`~/.claude/scripts/questions.sh` acts on the `docs/working/` of the repo you run it from … `check` is a gate only in claude-workflows itself (`scripts/health-check.sh`)"
+## Claim 1: "It is skipped with `--yes`, from a script with no TTY, and inside a Claude Code session."
 
-**Location:** `global-instructions/CLAUDE.md:281`
+**Location:** `README.md:22-23`
 **Type:** Behavioral
 **Verdict:** Verified
 **Confidence:** High
 **Verification mode:** executed
-**Scope:** Covers `$PWD`-toplevel resolution and that health-check pins and gates `check`. Does not cover the edge cases in Claims 18-19: running from inside a `.git` directory, and a dangling symlink during `init`.
-**Legibility-target:** for-author
+**Scope:** Covers the three skip triggers (`--yes`, non-TTY stdin, CLAUDECODE set), each tested with a pty where relevant. Does not establish that a TTY or CLAUDECODE check distinguishes a human from an agent (Claim 2).
+**Legibility-target:** for-orchestrator-synthesis
 
-`scripts/questions.sh:55` `PROJECT_ROOT="$(git -C "$PWD" rev-parse --show-toplevel 2>/dev/null || pwd)"`. `scripts/health-check.sh:1024-1026` runs `"$REPO_ROOT/scripts/questions.sh" check` with `QUESTIONS_LIVE`/`QUESTIONS_ARCHIVE` pinned to `$REPO_ROOT/docs/working/...`, and calls `fail` on non-zero. `bats test/questions-doc.bats` exited 0 with 18/18 ok, including `without overrides, files resolve from the git toplevel of $PWD`.
+The three checks run first in `install_claude_home`, before any read:
 
-**Evidence:** `scripts/questions.sh:55-57`, `scripts/health-check.sh:1015-1032`, `docs/reviews/execution-logs/cfc-r1-bats-questions-doc.txt`
-
----
-
-## Claim 4: "HARD = the GLOBAL config dir only … (the config dir is $CLAUDE_CONFIG_DIR when set, else ~/.claude — the same {{CLAUDE_DIR}} hooks/wiring.json substitutes)"
-
-**Location:** `hooks/guard-trusted-writes.py:10-12`
-**Type:** Configuration / Behavioral
-**Verdict:** Incorrect
-**Confidence:** High
-**Verification mode:** executed
-**Scope:** Covers which directories `_global_dirs()` treats as HARD and how that compares with the linker's `{{CLAUDE_DIR}}`. Does not establish how Claude Code itself interprets a relative or tilde `CLAUDE_CONFIG_DIR`.
-**Legibility-target:** for-author
-
-The code does not pick one dir; `~/.claude` is always HARD:
-
-```python
-# hooks/guard-trusted-writes.py:56-67
-def _global_dirs():
-    """The global config dir(s), as given and resolved. HARD applies only here."""
-    dirs = [HOME / ".claude"]
-    cfg = os.environ.get("CLAUDE_CONFIG_DIR")
-    if cfg:
-        dirs.append(Path(os.path.expanduser(cfg)))
-    out = []
-    for d in dirs:
-        out.append(d)
-        try: out.append(d.resolve())
-        except Exception: pass
-    return out
+```bash
+# devcontainer-config/install.sh:293-304
+  if [ "$ASSUME_YES" = "--yes" ]; then
+    echo "Skipped host target (~/.claude): it never installs with --yes. ..."
+    return 0
+  fi
+  if [ -n "${CLAUDECODE:-}" ]; then
+    ...
+    return 0
+  fi
+  if [ ! -t 0 ]; then
+    ...
+    return 0
+  fi
 ```
 
-The linker substitutes a single dir with no tilde expansion: `DEST="${CLAUDE_CONFIG_DIR:-$HOME/.claude}"` (`link-claude-home.sh:36`) and `gsub("\\{\\{CLAUDE_DIR\\}\\}"; $dir)` with `--arg dir "$DEST"` (`:135-137`). Three consequences, from the executed probe:
-- **`~/.claude` stays HARD when the variable is set.** With `CLAUDE_CONFIG_DIR=<abs cfg>`, `classify_path("$HOME/.claude/settings.json")` returns `hard`, so the hook defers. The deny rules are then written for `<cfg>/settings*.json` only (`hooks/wiring.json:120-125`), so that path has no gate at all. This is the situation the docstring's SOFT rationale (`:19-21`) says it avoids.
-- **Tilde is handled differently.** The hook `expanduser`s `CLAUDE_CONFIG_DIR='~/cc'`; the linker's `$DEST` would be a literal `~/cc` relative directory.
-- **A relative value depends on the hook's cwd.** With `CLAUDE_CONFIG_DIR=cfc_cfg`, the same absolute file is `hard` when the hook runs from the scratch dir and `none` when it runs from `/tmp`.
+(excerpt ends :304; enclosing `install_claude_home()` continues to :459 — read.)
+T1–T4 and T22 pass at HEAD (`bats-head.txt`). T4 is `--yes` in a pty and T22 is CLAUDECODE=1
+in a pty. E1 reproduces the non-TTY and `--yes` skip lines (`exp-E1-E5-E6-E7.txt`).
 
-**Evidence:** `hooks/guard-trusted-writes.py:56-78`, `devcontainer-config/link-claude-home.sh:36,135-137`, `hooks/wiring.json:114-128`, `docs/reviews/execution-logs/cfc-r1-guard-filetools.txt` (cmd `bash cfc-r1-probe3.sh.txt`, cwd scratchpad, exit 0, 2026-09-21T19:28:31-07:00)
+**Evidence:** `devcontainer-config/install.sh:293-304`; `test/install-host.bats` T1–T4, T22; `bats-head.txt`; `exp-E1-E5-E6-E7.txt`
 
 ---
 
-## Claim 5: "this hook must NEVER "ask" on a HARD path — it DEFERS (lets the deny rule block the file tools)"
+## Claim 2: "The `~/.claude` target only installs for a human at a terminal." (also install.sh --help: "It only installs for a human at a terminal who read the diff.")
 
-**Location:** `hooks/guard-trusted-writes.py:15-17` (restated in code at `:177-180`)
+**Location:** `README.md:21-22`, `devcontainer-config/install.sh:42-43`
 **Type:** Invariant
 **Verdict:** Incorrect
 **Confidence:** High
 **Verification mode:** executed
-**Scope:** Covers file-tool (Edit/Write) decisions for paths that name a global HARD file, in the installed layout where `~/.claude/hooks` and `~/.claude/CLAUDE.md` are symlinks. Does not establish whether Claude Code's deny-rule matcher normalises `..` or follows symlinks. If it does, the hook's "ask" overrides that deny (the #39344 premise); if it does not, the file has only the ask gate when tainted, and no gate when untainted.
+**Scope:** Covers whether a non-human process can clear the skip rules and install. Does not establish whether the host's sandbox `denyWrite ~/.claude` would stop such a run on the user's machine (Claim 17).
 **Legibility-target:** for-author
 
-`classify_path` tries the unresolved path `p` and then `rp = p.resolve()`, checking each against `GLOBAL_DIRS` (`:80-99`):
-
-```python
-# hooks/guard-trusted-writes.py:88-95
-        rel = _global_rel(cand)
-        if rel is not None and rel.parts:
-            if rel.parts[0] == "hooks":
-                return "hard"
-            if len(rel.parts) == 1 and name.startswith("settings") and cand.suffix == ".json":
-                return "hard"
-            if len(rel.parts) == 1 and name == "claude.md":
-                return "hard"
-```
-
-(excerpt ends :95; enclosing `classify_path` continues to :109 — read)
-
-- A `..` segment breaks the unresolved check: `rel.parts` becomes `('x','..','CLAUDE.md')`.
-- `resolve()` follows the installed symlinks out of `~/.claude` into `/opt/claude-workflows/`, which is not in `GLOBAL_DIRS`.
-- The path then falls through to the `".claude" in low → "soft"` branch (`:107-108`).
-
-Executed decisions (tainted session, NEW = HEAD, OLD = e8d5fa1):
-- `Edit ~/.claude/x/../CLAUDE.md` → NEW **ask**, OLD defer (regression)
-- `Edit <proj>/.claude/CLAUDE.md` where `<proj>/.claude -> ~/.claude` → NEW **ask**, OLD defer (regression)
-- `Edit <proj>/.claude/hooks/guard-trusted-writes.py` (same symlink) → NEW **ask**, OLD defer (regression)
-- `Edit ~/.claude/x/../hooks/guard-trusted-writes.py` → **ask** on both versions (pre-existing)
-
-`settings.json` is a real file here, so its `..` and symlink variants still defer. The plain spellings `~/.claude/hooks/...`, `~/.claude/./hooks/...` and `~/.claude//hooks/...` defer correctly.
-
-**Evidence:** `hooks/guard-trusted-writes.py:80-109,172-184`, `docs/reviews/execution-logs/cfc-r1-guard-filetools.txt`, `docs/reviews/execution-logs/cfc-r1-probe3.sh.txt`
-
----
-
-## Claim 6: "SOFT = … a PROJECT's own .claude/ (settings*.json, hooks/**; Q-026) … Gated to "ask" only when the session is web-tainted."
-
-**Location:** `hooks/guard-trusted-writes.py:18-22`
-**Type:** Behavioral
-**Verdict:** Verified
-**Confidence:** High
-**Verification mode:** executed
-**Scope:** Covers real (non-symlinked) project `.claude/settings.json` and `.claude/hooks/*` under file tools, tainted and untainted. Does not cover a project `.claude/` that is a symlink to the global dir; see Claim 5.
-**Legibility-target:** for-orchestrator-synthesis
-
-`:107-108` `if ".claude" in low: return "soft"`, and `:181-184` asks only `if tier == "soft" and tainted`. Probe results:
-- `/workspace/.claude/settings.json` (tainted) → ask; untainted → defer
-- `/workspace/.claude/hooks/x.py` (tainted) → ask
-
-`bats test/hooks/guard-trusted-writes.bats` exited 0 with 40/40 ok (2026-09-21T19:29:04-07:00).
-
-**Evidence:** `hooks/guard-trusted-writes.py:100-109,181-184`, `docs/reviews/execution-logs/cfc-r1-guard-filetools.txt`, `docs/reviews/execution-logs/cfc-r1-bats-guard.txt`
-
----
-
-## Claim 7a: "Bash … HARD = … CLAUDE.md only when qualified as global: `~/`, `$HOME/`, `${HOME}/`, the literal home path, or `global-instructions/CLAUDE.md`"
-
-**Location:** `hooks/guard-trusted-writes.py:24-29`
-**Type:** Behavioral
-**Verdict:** Verified
-**Confidence:** High
-**Verification mode:** executed
-**Scope:** Covers exactly the five listed textual prefixes followed immediately by `/CLAUDE.md`. Does not establish that every shell spelling of the global file is HARD (Claim 7b).
-**Legibility-target:** for-orchestrator-synthesis
-
-```python
-# hooks/guard-trusted-writes.py:123-129
-_GLOBAL_PREFIXES = [r"~", r"\$HOME", r"\$\{HOME\}", r"global-instructions"]
-if str(HOME).rstrip("/"):         # HOME="/" would make this prefix empty and match any "/CLAUDE.md"
-    _GLOBAL_PREFIXES.append(re.escape(str(HOME).rstrip("/")))
-HARD_FRAG = re.compile(
-    r"\.claude/hooks(/|\b)|\.claude/settings|\.claude/CLAUDE\.md|managed-settings"
-    r"|(?:" + "|".join(_GLOBAL_PREFIXES) + r")/CLAUDE\.md",
-    re.I)
-```
-
-These classify `hard`: `~/CLAUDE.md`, `$HOME/CLAUDE.md`, `${HOME}/CLAUDE.md`, `"$HOME/CLAUDE.md"`, `"${HOME}/CLAUDE.md"`, `/home/node/CLAUDE.md`, `global-instructions/CLAUDE.md` and `$HOME/.claude/CLAUDE.md`.
-
-**Evidence:** `hooks/guard-trusted-writes.py:121-142`, `docs/reviews/execution-logs/cfc-r1-guard-bash-probe.txt`
-
----
-
-## Claim 7b: "SOFT = a bare/project `CLAUDE.md` (Q-035)" / "for the Bash path that deny rules don't cover, returns "deny" outright"
-
-**Location:** `hooks/guard-trusted-writes.py:16-17,30-31`
-**Type:** Behavioral / Invariant
-**Verdict:** Incorrect
-**Confidence:** High
-**Verification mode:** executed
-**Scope:** Covers Bash classification of shell spellings that name the global `~/CLAUDE.md` or `~/.claude/CLAUDE.md` but not in one of the literal forms from 7a. Does not cover indirection that no text matcher can see (`D=~; … $D/CLAUDE.md`, `cd ~ && … CLAUDE.md`), which is the accepted residual class.
-**Legibility-target:** for-author
-
-The docstring splits CLAUDE.md into two cases: global-qualified → HARD (deny), bare/project → SOFT. In practice, many shell-equivalent spellings of the *global* files now land in SOFT. SOFT means ask only when tainted, and when untainted the hook emits nothing, so there is no gate. The regex needs the prefix immediately before `/CLAUDE\.md` (`:128`), so any quote, doubled slash, `./`, `..` or `${HOME:-}` in between defeats it. The SOFT regex then matches the `/CLAUDE.md` tail (`:131-132` `(^|[\s\"'=/])(AGENTS|CLAUDE|CLAUDE\.local)\.md`).
-
-These were HARD at e8d5fa1 and are **soft** at HEAD:
-- `"$HOME"/CLAUDE.md`, `'$HOME'/CLAUDE.md`, `${HOME:-}/CLAUDE.md`
-- `~//CLAUDE.md`, `~/./CLAUDE.md`, `~"/CLAUDE.md"`, `~/"CLAUDE.md"`
-- `$HOME/.claude/../CLAUDE.md`, `$HOME/x/../CLAUDE.md`, `$HOME/''CLAUDE.md`
-- `/home/node//CLAUDE.md`, `/home/node/./CLAUDE.md`
-- `~/.claude//CLAUDE.md` and `~/.claude/./CLAUDE.md` (the global config's own CLAUDE.md)
-- `./global-instructions//CLAUDE.md`, `global-instructions/./CLAUDE.md`
-- `$CLAUDE_CONFIG_DIR/CLAUDE.md`
-
-End-to-end hook run: `echo x > ~//CLAUDE.md` gives **ask** when tainted and **defer** (no gate) when untainted. The `.claude/settings` and `.claude/hooks` fragments have the same `//` and `./` gap (`.claude//settings.json` → None), but that gap already existed at e8d5fa1.
-
-**Evidence:** `hooks/guard-trusted-writes.py:121-142,159-170`, `docs/reviews/execution-logs/cfc-r1-guard-bash-probe.txt` (NEW vs OLD columns), `docs/reviews/execution-logs/cfc-r1-probe_guard.py`
-
----
-
-## Claim 8: "HOME="/" would make this prefix empty and match any "/CLAUDE.md""
-
-**Location:** `hooks/guard-trusted-writes.py:124`
-**Type:** Behavioral
-**Verdict:** Verified
-**Confidence:** High
-**Verification mode:** executed
-**Scope:** Covers that the guard skips the empty literal-home prefix and that an unguarded empty alternative would match any `/CLAUDE.md`. Does not cover what HOME="/" does to the tilde/`$HOME` prefixes, which are textual and unaffected.
-**Legibility-target:** for-orchestrator-synthesis
-
-With `HOME=/`, `_GLOBAL_PREFIXES` was `['~', '\\$HOME', '\\$\\{HOME\\}', 'global-instructions']`, with no literal-home entry, and `bash_targets('echo x > /tmp/CLAUDE.md')` returned `soft`. Rebuilding the regex with an empty alternative appended matched the same command (`unguarded match: True`). End-to-end under `HOME=/`, `echo x > ~/CLAUDE.md` is still denied.
-
-**Evidence:** `hooks/guard-trusted-writes.py:123-129`, `docs/reviews/execution-logs/cfc-r1-guard-filetools.txt` (HOME=/ lines; inline python run 2026-09-21T19:27-07:00, exit 0)
-
----
-
-## Claim 9: "Default prefix: the run id the self-improvement loop recorded at run start (si-run-id.txt, Q-047) … Falls back to today's date when the file is absent or its content is unusable."
-
-**Location:** `scripts/archive-working-docs.sh:7-8,39-42`
-**Type:** Behavioral
-**Verdict:** Verified
-**Confidence:** High
-**Verification mode:** executed
-**Scope:** Covers the default-prefix branch when no positional PREFIX is given. Does not cover positional PREFIX validation (none exists; pre-existing), or whether `si-run-id.txt` still belongs to the run being archived (see Claim 20).
-**Legibility-target:** for-orchestrator-synthesis
+The guard is a TTY check plus a CLAUDECODE check (`install.sh:297`, `:301`: `if [ -n "${CLAUDECODE:-}" ]; then` / `if [ ! -t 0 ]; then`). Both can be defeated from an agent's Bash tool. E5, run from this agent session with no TTY (`[outside: not-tty]`), printed `stdin-is-tty` and `CLAUDECODE=unset` under `script -qec 'env -u CLAUDECODE bash -c …' /dev/null`. The hermetic suite is itself the proof. Every y-path test (T6, T7, T9, T10, T11, T13, T18, T24) was run from inside an agent session through `run_pty`, and each one installed:
 
 ```bash
-# scripts/archive-working-docs.sh:43-49
-if [ -z "$PREFIX" ] && [ -f "$WORKING_DIR/si-run-id.txt" ]; then
-  RUN_ID=$(head -n1 "$WORKING_DIR/si-run-id.txt")
-  if [[ "$RUN_ID" =~ ^[A-Za-z0-9._-]+$ ]]; then
-    PREFIX="$RUN_ID"
-  fi
-fi
-PREFIX="${PREFIX:-$(date +%Y-%m-%d)}"
-```
-
-The prefix is used only as `"$ARCHIVE_DIR/${PREFIX}-${name}"`, so the class excludes `/` and path traversal is not possible. `bats test/scripts/archive-working-docs.bats` exited 0 with 11/11 ok.
-
-**Evidence:** `scripts/archive-working-docs.sh:37-49,127`, `docs/reviews/execution-logs/cfc-r1-bats-archive-working-docs.txt`
-
----
-
-## Claim 10: "Runs every tagged suite through scripts/run-tests.sh, fast first and slow second (Q-023). The fast set is a blocking pre-gate … Before Q-023 this gate ran only test/skills/ and test/hooks/ … the ~40 suites under test/ and test/scripts/ … Report gating … is owned by run-tests.sh … Recursion guard"
-
-**Location:** `scripts/health-check.sh:344-363` (also header `:20-26`, `:535-536`, commit 0ccbdb8)
-**Type:** Behavioral
-**Verdict:** Verified
-**Confidence:** High
-**Verification mode:** executed
-**Scope:** Covers the gate's ordering, blocking, skip-guard and seam against a stub runner, plus the static facts: suite count, report gating living in run-tests.sh, and health-check.bats and link-claude-home-wiring.bats being tagged slow. Does not cover a full real-suite run of gate 5 (not executed: too long, and a background bats timing loop is running).
-**Legibility-target:** for-orchestrator-synthesis
-
-`:378-390` runs `HEALTH_CHECK_SKIP_BATS=1 "$runner" --fast`; on failure it calls `fail "Fast BATS suites failed — slow suites not run (fix fast first)"` and returns, otherwise it runs `--slow`. `:370-373` skips with a warning when `HEALTH_CHECK_SKIP_BATS == 1`. Supporting static facts:
-- 44 `.bats` files sit under `test/*.bats` and `test/scripts/*.bats`, which fits "~40".
-- The report-gating block is at `scripts/run-tests.sh:80-116`.
-- `test/scripts/health-check.bats` and `test/link-claude-home-wiring.bats` both begin `# @category slow`.
-- `test/scripts/health-check.bats:19` `export HEALTH_CHECK_SKIP_BATS=1`.
-
-`bats test/scripts/health-check.bats` exited 0 with 17/17 ok, including the four `gate 5:` tests (fast then slow; red fast blocks slow; red slow fails; SKIP=1 warns and does not pass). Finished 2026-09-21T19:39:04-07:00.
-
-**Evidence:** `scripts/health-check.sh:344-391,535-536`, `scripts/run-tests.sh:80-128`, `test/scripts/health-check.bats:19,176-210`, `docs/reviews/execution-logs/cfc-r1-bats-health-check.txt`
-
----
-
-## Claim 11: "Run … is the LAST column so positional readers … keep working, and a log whose header predates it is migrated in place (header and separator gain the column; old rows keep an absent cell, which readers treat as "unknown run" and resolve newest-first)."
-
-**Location:** `scripts/lib/si-functions.sh:469-475`
-**Type:** Behavioral / Architectural
-**Verdict:** Verified
-**Confidence:** High
-**Verification mode:** executed
-**Scope:** Covers the writer's column order, header migration, and the morning-summary reader's handling of a missing Run cell (`_pick_col` → empty → newest-first scan). Does not cover rows whose hypothesis contains an escaped `\|`. `_split_row_fields` splits on raw `|` (`si-morning-summary.sh:1501`), which shifts every positional pick right; for an old row that has a user-filled Evidence cell, `_pick_col` for Run would read that Evidence text as a run id. That is a pre-existing class, now also reaching Run.
-**Legibility-target:** for-orchestrator-synthesis
-
-The writer appends the run id last: `printf '| %s | … | %d | | | | %s |\n' … "$((round + window))" "$run_id"` (`si-functions.sh:537-538`). `_pick_col` returns `"${arr_ref[$((col-1))]:-}"` (`si-morning-summary.sh:1519`), and `_find_tasks_file` with an empty `run` skips the run-specific candidates (`:1180-1186`). Probe: after appending with run `2026-09-21` onto an old-header log, the old rows keep 11 cells and the new row ends `| | | | 2026-09-21 |`. `append-approved-hypotheses.bats` (15/15), `precondition-gate.bats` (36/36) and `morning-summary-clusters.bats` (22/22) all exited 0.
-
-**Evidence:** `scripts/lib/si-functions.sh:469-540`, `scripts/lib/si-morning-summary.sh:968-1017,1497-1541`, `docs/reviews/execution-logs/cfc-r1-si-questions-probe.txt`, `docs/reviews/execution-logs/cfc-r1-bats-append-approved-hypotheses.txt`, `…-precondition-gate.txt`, `…-morning-summary-clusters.txt`
-
----
-
-## Claim 12: "Data rows are untouched. No-op when the header already has a Run cell or no header is found. … Exact-cell match, so "Checked at Round" never counts as "Run"."
-
-**Location:** `scripts/lib/si-functions.sh:543-550`
-**Type:** Behavioral
-**Verdict:** Mostly accurate
-**Confidence:** High
-**Verification mode:** executed
-**Scope:** Covers the content effect of migration in three cases (old header, already migrated, no header) and the exact-cell check. Does not establish anything about concurrent writers.
-**Legibility-target:** for-author
-
-Accurate parts:
-- The exact-cell test is `gsub(/^[ \t]+|[ \t]+$/, "", c); if (c == "Run") found = 1` (`:551`), so "Checked at Round" cannot match.
-- On an old log, `diff` shows only the header and separator lines changed.
-- A second call leaves the file byte-identical (the early `return 0`).
-
-The imprecise part is "no-op … when no header is found". The presence check exits non-zero with no header, so the function goes on to rewrite the file: `tmp=$(mktemp "${log_file}.XXXXXX")` … `> "$tmp" && mv "$tmp" "$log_file"` (`:557-567`). The content comes out identical, but the file is replaced: the inode changes and the mode becomes 0600, the `mktemp` default. The probe shows `mode=600 inode_changed=yes` for the no-header case. A real migration also drops the mode from 644 to 600. Precise version: "content-preserving when no header is found; the file is always rewritten with mode 0600 unless a Run cell already exists."
-
-**Evidence:** `scripts/lib/si-functions.sh:541-568`, `docs/reviews/execution-logs/cfc-r1-si-questions-probe.txt` (cmd `bash cfc-r1-probe4.sh.txt`, cwd scratchpad/cfc4, exit 0, 2026-09-21T19:31:18-07:00)
-
----
-
-## Claim 13: "True when the run id is empty, the file is absent (runs predating the Run column), or the ids match"
-
-**Location:** `scripts/lib/si-morning-summary.sh:1145-1148`
-**Type:** Behavioral
-**Verdict:** Mostly accurate
-**Confidence:** High
-**Verification mode:** static
-**Scope:** Covers the three listed conditions and one unlisted one. Does not cover callers.
-**Legibility-target:** for-author
-
-```bash
-# scripts/lib/si-morning-summary.sh:1149-1156
-_live_run_matches() {
-    local working_dir="$1" run="$2"
-    [ -z "$run" ] && return 0
-    [ -f "$working_dir/si-run-id.txt" ] || return 0
-    local live
-    live=$(head -n1 "$working_dir/si-run-id.txt" 2>/dev/null)
-    [ -z "$live" ] || [ "$live" = "$run" ]
+# test/install-host.bats:104-108 (run_pty)
+run_pty() {
+  local input="$1"; shift
+  run bash -c 'set -o pipefail; printf "%b" "$1" | env -u CLAUDECODE script -qec "$2" /dev/null | tr -d "\r"' \
+      _ "$input" "$*"
 }
 ```
 
-It also returns true when the file exists but its first line is empty (`[ -z "$live" ]`). The comment should list that fourth case.
+The code comment and decision 037 both state the real property correctly. install.sh:290-292 says "Neither check stops an agent that sets out to fake a terminal … They stop the accidental run", and 037 says "The check stops accidents, not intent." The README and `--help` state it as an absolute, and that contradicts both. A reader relying on "only a human can install" would not add the sandbox backstop.
 
-**Evidence:** `scripts/lib/si-morning-summary.sh:1145-1156`
+**Evidence:** `README.md:21-22`; `devcontainer-config/install.sh:42-43`, `:290-304`; `docs/decisions/037-bare-host-copy-install.md:50`; `test/install-host.bats:104-108`; `exp-E1-E5-E6-E7.txt` (E5); `bats-head.txt`
 
 ---
 
-## Claim 14: "With a run id … tries that run's archived copy … first, then the live file when the live working dir belongs to that run. Rows without a Run column … or whose run has no copy left, fall back to the newest-first scan … In every case the first candidate that actually contains task id $2 wins"
+## Claim 3: "Its `~/.claude` review lists every symlink it will replace … and every file in those directories that the repo doesn't have (`MOVE to backup`). Check any line marked `WIRED in settings` … Everything replaced, including the old links, is moved to `~/.claude/.claude-workflows-backup/<UTC stamp>/`. … Your `settings.json`, memory, projects and logs are never touched." (same content as commit 6793b79's "lists every symlink it will replace (top-level and per-file), every foreign file it will move (flagging hooks wired in settings)")
 
-**Location:** `scripts/lib/si-morning-summary.sh:1158-1169`
+**Location:** `README.md:26-33`
 **Type:** Behavioral
 **Verdict:** Verified
 **Confidence:** High
 **Verification mode:** executed
-**Scope:** Covers candidate order and the contains-tid filter. Does not establish that the fallback cannot pick another run's file. It can, and the comment says so implicitly: the fallback always includes the live file and newest-first archives.
+**Scope:** Covers the top-level REPLACE lines, per-file REPLACE lines inside real directories (links into the checkout, links elsewhere, dangling links), MOVE lines for foreign files including a foreign skill dir, the WIRED flag for a foreign top-level hook, and byte-identity of settings, settings.local, projects, memory, logs and .credentials. Does not establish: that foreign *empty* directories are listed (the pre-pass finds only `-type f -o -type l`, so an empty foreign dir moves without a line); WIRED detection for foreign files in hooks subdirectories (it matches `hooks/$(basename "$f")`, so `hooks/lib/x.sh` is looked up as `hooks/x.sh`); or that the stamp dir is always exactly `<UTC stamp>` (a same-second rerun gets `<stamp>.<pid>`, Claim 12).
 **Legibility-target:** for-orchestrator-synthesis
 
+The pre-pass:
+
 ```bash
-# scripts/lib/si-morning-summary.sh:1180-1186
-    done < <(if [ -n "$run" ]; then
-                 printf '%s\n' "$working_dir/archive/${run}-tasks-round-$round.json"
-                 _live_run_matches "$working_dir" "$run" \
-                     && printf '%s\n' "$working_dir/tasks-round-$round.json"
-             fi
-             printf '%s\n' "$working_dir/tasks-round-$round.json"
-             _archived_newest_first "$working_dir/archive" "tasks-round-$round.json")
+# devcontainer-config/install.sh:345-369
+  for name in "${CLAUDE_HOME_NAMES[@]}"; do
+    if [ -L "$dest/$name" ]; then
+      echo "REPLACE symlink $dest/$name -> $(readlink "$dest/$name") with a copy"
+      changed=1
+    elif [ -d "$dest/$name" ]; then
+      while IFS= read -r -d '' link; do
+        echo "REPLACE symlink $link -> $(readlink "$link") with a copy"
+        ...
+      done < <(find "$dest/$name" -type l -print0 | sort -z)
+      while IFS= read -r -d '' f; do
+        rel="${f#"$dest/$name"/}"
+        if [ -e "$stage/$name/$rel" ] || [ -L "$stage/$name/$rel" ]; then continue; fi
+        ...
+        line="MOVE to backup (not in the repo): $f"
+        if [ "$name" = hooks ] && grep -qsF "hooks/$(basename "$f")" "$dest/settings.json" "$dest/settings.local.json"; then
+          line="$line  <-- WIRED in settings: moving it breaks that hook"
+        fi
+        ...
+      done < <(find "$dest/$name" \( -type f -o -type l \) -print0 | sort -z)
+    fi
+  done
 ```
 
-(excerpt ends :1186; enclosing `_find_tasks_file` continues to :1188 — read). The loop body returns the first candidate that `-f` exists and contains the tid. `precondition-gate.bats` covers run-scoped lookups, live-run mismatch and fallback: 36/36 ok.
+T5 (REPLACE for all six top-level links and the per-file `hooks/h.sh`), T6 (links backed up as links, checkout unchanged), T7 (user state byte-identical), T13 (foreign skill dir moved) and T20 (WIRED) pass. E3 (`exp-E2-E4.txt`) shows a per-file hook link to a non-checkout file producing both a REPLACE line and a content diff (`-echo DIFFERENT` / `+exit 0`), and a foreign `skills/mine/SKILL.md` producing a MOVE line. E3c shows dangling top-level links (moved checkout) producing REPLACE lines and a full additive diff instead of an abort.
 
-**Evidence:** `scripts/lib/si-morning-summary.sh:1158-1188`, `docs/reviews/execution-logs/cfc-r1-bats-precondition-gate.txt`
+**Evidence:** `devcontainer-config/install.sh:345-378`, `:423-427`; `bats-head.txt` (T5, T6, T7, T13, T20); `exp-E2-E4.txt` (E3, E3c)
 
 ---
 
-## Claim 15: "NOT --bare, although `claude -p --bare` is the obvious spelling … (and the one asked for in Q-025)"
+## Claim 4: "Exit status: 0 no target declined; 1 a target was declined, or an error; 2 bad arguments." and "Target 2 is SKIPPED, with a message and no effect on the exit status"
 
-**Location:** `scripts/lite-review.py:17-18`
+**Location:** `devcontainer-config/install.sh:40-49`
+**Type:** Behavioral
+**Verdict:** Verified
+**Confidence:** High
+**Verification mode:** executed
+**Scope:** Covers exit 0 (`--yes`, host skipped), exit 1 (devcontainer decline, host decline, host refusal, a mid-install mv failure) and exit 2 (unknown argument). Does not establish the exit status when `cc-isolated.sh --bless` fails (not exercised, since it is a stub).
+**Legibility-target:** for-orchestrator-synthesis
+
+`install.sh:461-464` reads `DECLINED=0` / `install_devcontainer` / `install_claude_home` / `exit "$DECLINED"`. The skip branches `return 0` without setting DECLINED (Claim 1 quote). T3 (`--yes`, exit 0), T15 (exit 2), T17 and T19 (exit 1) and T14/T21 (refusal, exit 1) pass. E9 (`exp-E8-E9.txt`) prints `INSTALL_EXIT=1` after a mid-install failure.
+
+**Evidence:** `devcontainer-config/install.sh:40-49`, `:461-464`; `bats-head.txt`; `exp-E8-E9.txt`
+
+---
+
+## Claim 5: "The line keeps its old wording, and the run still exits 1 because something was declined."
+
+**Location:** `devcontainer-config/install.sh:192-195`
+**Type:** Behavioral
+**Verdict:** Mostly accurate
+**Confidence:** High
+**Verification mode:** executed
+**Scope:** Covers the text of the devcontainer decline line and the final exit status. Does not establish whether any external consumer matches the whole line exactly (none found in `test/`; T1 matches it as a substring).
+**Legibility-target:** for-author
+
+The old line was `*) echo "Aborted. Nothing was changed."; exit 1 ;;` (`git show 712c626:devcontainer-config/install.sh`, line 124). The new one is:
+
+```bash
+# devcontainer-config/install.sh:195
+      echo "Aborted. Nothing was changed. (devcontainer config)"
+```
+
+E1 prints `Aborted. Nothing was changed. (devcontainer config)` for NEW and `Aborted. Nothing was changed.` for OLD. The old wording survives as a prefix, but it is not the same line. The exit-1 half is correct (E1 NEW closed: `[exit=1]`). A precise version: "the line keeps its old wording as a prefix."
+
+**Evidence:** `devcontainer-config/install.sh:192-197`; `712c626:devcontainer-config/install.sh:124`; `exp-E1-E5-E6-E7.txt` (E1)
+
+---
+
+## Claim 6: "`diff` follows symlinks, so a migration from links to copies would review as "(none)". Hence the explicit REPLACE lines below." (with "`cp -r stage/skills ~/.claude/skills` writes INTO the checkout through the link")
+
+**Location:** `devcontainer-config/install.sh:240-244`
+**Type:** Behavioral
+**Verdict:** Verified
+**Confidence:** High
+**Verification mode:** executed
+**Scope:** Covers diff output through a per-file link into the checkout (empty) and through a link elsewhere (shows content). The cp/rm hazards were verified experimentally in the research doc, not re-run here. Does not establish that the installer never runs `cp` or `rm -rf` through a link (see Claim 9 for the guards).
+**Legibility-target:** for-orchestrator-synthesis
+
+In E3b a per-file `hooks/h.sh` link into the checkout produced a `REPLACE symlink …/hooks/h.sh` line and no `h.sh` hunk in the diff: only the files absent from the destination appear (`exp-E2-E4.txt`). In E3 the same link pointed at a different file, and a hunk appeared. The install path never calls `cp -r` onto a live name. It copies to `.cw-new.$name` and renames: `if ! cp -R "$stage/$name" "$dest/.cw-new.$name"; then ok=0; break; fi` (`install.sh:399`), then `mv "$dest/.cw-new.$name" "$dest/$name"` (`:436`).
+
+**Evidence:** `devcontainer-config/install.sh:240-244`, `:399`, `:436`; `exp-E2-E4.txt` (E3, E3b)
+
+---
+
+## Claim 7: "The seven entry names, derived from CLAUDE_HOME_SRC so the host can never install a subset of the payload (FP-066)."
+
+**Location:** `devcontainer-config/install.sh:246-250`
+**Type:** Architectural / Reference
+**Verdict:** Verified
+**Confidence:** High
+**Verification mode:** static
+**Scope:** Covers the derivation, and that FP-066 exists in the failure-pattern library. Does not establish that FP-066's recorded symptom (a container session missing repo skills) is the same failure as a host subset install. It is analogous, not identical.
+**Legibility-target:** for-orchestrator-synthesis
+
+```bash
+# devcontainer-config/install.sh:248-250
+CLAUDE_HOME_NAMES=()
+for _item in "${CLAUDE_HOME_SRC[@]}"; do CLAUDE_HOME_NAMES+=("$(basename "$_item")"); done
+unset _item
+```
+
+Every host loop iterates `CLAUDE_HOME_NAMES`, and `assemble` exits on a missing source (`:115-119`). `docs/thoughts/failure-patterns.md:208` has `**FP-066** 2026-07-29 symptom:repo-skills-never-registered-in-any-container-session`.
+
+**Evidence:** `devcontainer-config/install.sh:93`, `:248-250`, `:108-120`; `docs/thoughts/failure-patterns.md:208`
+
+---
+
+## Claim 8: "Skip rules come first: before this target reads or stages anything, so every non-interactive run (scripts, tests, --yes) is unchanged apart from this one line." (also 037: "every existing non-interactive devcontainer run is unchanged apart from one extra line" / "scripted callers see one extra line, not a new behavior"; and commit 6793b79: "Non-interactive devcontainer runs are otherwise unchanged")
+
+**Location:** `devcontainer-config/install.sh:287-289`; `docs/decisions/037-bare-host-copy-install.md:33`, `:52`
+**Type:** Behavioral
+**Verdict:** Mostly accurate
+**Confidence:** High
+**Verification mode:** executed
+**Scope:** Covers the output and exit status of `</dev/null` and `--yes </dev/null` runs, old against new. Does not establish anything about runs with invalid arguments (Claim 21).
+**Legibility-target:** for-author
+
+The skip does come before any read or stage (Claim 1 quote). But the non-interactive output differs by more than one line. `install_claude_home` prints a blank line before the skip (`install.sh:286`: `  echo`), and the devcontainer decline line gained a suffix (Claim 5). E1 old vs new, `</dev/null`:
+
+```
+OLD: Install this config and bless it? [y/N] Aborted. Nothing was changed.
+NEW: Install this config and bless it? [y/N] Aborted. Nothing was changed. (devcontainer config)
+     <blank>
+     Skipped host target (~/.claude): it needs an interactive terminal (stdin is not a TTY). ...
+```
+
+Exit status is unchanged (1 and 0). A precise version: "a blank line plus one skip line, and the decline line gains a ' (devcontainer config)' suffix."
+
+**Evidence:** `devcontainer-config/install.sh:286-304`, `:195`; `exp-E1-E5-E6-E7.txt` (E1)
+
+---
+
+## Claim 9: "Neither check stops an agent that sets out to fake a terminal (`script` gives it a pty; `env -u` drops CLAUDECODE)." (037: "In this session the Bash tool has no TTY … util-linux `script` can wrap the installer in a pty")
+
+**Location:** `devcontainer-config/install.sh:290-292`; `docs/decisions/037-bare-host-copy-install.md:50`
+**Type:** Behavioral
+**Verdict:** Verified
+**Confidence:** High
+**Verification mode:** executed
+**Scope:** Covers util-linux `script` on this Linux sandbox. Does not establish availability on macOS (BSD `script` takes different arguments) or 037's specific "fd 0 is /dev/null" observation (only `[ -t 0 ]` was checked).
+**Legibility-target:** for-orchestrator-synthesis
+
+E5, run with `CLAUDECODE=1` set around the wrapper, printed `stdin-is-tty` and `CLAUDECODE=unset` inside `script -qec 'env -u CLAUDECODE bash -c …' /dev/null`, and `[outside: not-tty]` for the agent's own Bash tool.
+
+**Evidence:** `devcontainer-config/install.sh:290-292`; `exp-E1-E5-E6-E7.txt` (E5)
+
+---
+
+## Claim 10: "Guards: nothing below may write through a link into the checkout." (commit 6793b79: "Refuses a destination, backup dir or .cw-new.* leftover that is a symlink into (or resolves inside) the checkout.")
+
+**Location:** `devcontainer-config/install.sh:309-331`
+**Type:** Invariant
+**Verdict:** Verified
+**Confidence:** High
+**Verification mode:** executed
+**Scope:** Covers a destination that is a symlink into the checkout, a dangling-link destination, a symlinked backup root, a backup root resolving inside the checkout, and `.cw-new.*` symlinks. Does not establish any refusal or notice for a destination that is a symlink to a non-checkout directory. That case is followed silently: E2 installed through `~/.claude -> elsewhere` into the target, and the review's `Destination:` line did not mention the link. It also does not establish that `.cw-new.*` real directories are preserved (they are `rm -rf`'d, `:398`).
+**Legibility-target:** for-orchestrator-synthesis
+
+```bash
+# devcontainer-config/install.sh:310-331
+  if [ -L "$dest" ] && [ ! -d "$dest" ]; then
+    host_refuse "$dest is a dangling symlink ..."
+  fi
+  if [ -e "$dest" ] && [ ! -d "$dest" ]; then
+    host_refuse "$dest exists and is not a directory."
+  fi
+  if inside_repo "$(resolve_phys "$dest")"; then
+    host_refuse "$dest resolves inside the repo checkout ..."
+  fi
+  local bkroot="$dest/.claude-workflows-backup"
+  if [ -L "$bkroot" ]; then
+    host_refuse "$bkroot is a symlink ..."
+  fi
+  if [ -d "$bkroot" ] && inside_repo "$(resolve_phys "$bkroot")"; then
+    host_refuse "$bkroot resolves inside the repo checkout."
+  fi
+  local name
+  for name in "${CLAUDE_HOME_NAMES[@]}"; do
+    if [ -L "$dest/.cw-new.$name" ]; then
+      host_refuse "$dest/.cw-new.$name is a symlink left from elsewhere; remove it and rerun."
+    fi
+  done
+```
+
+T14 (destination symlink into the checkout) and T21 (planted backup symlink) pass with the checkout snapshot unchanged. A pre-planted `$bkroot/<stamp>` is also safe (paraphrased — no quote available because this is inferred from the two branches at `:417-418`, not run). An existing target makes `[ -e ]` true, so the `.$$` suffix is taken. A dangling one makes `mkdir -p` fail, which removes the `.cw-new.*` copies and exits.
+
+**Evidence:** `devcontainer-config/install.sh:255-277`, `:309-331`, `:416-422`; `bats-head.txt` (T14, T21); `exp-E2-E4.txt` (E2)
+
+---
+
+## Claim 11: "Content diff: the same review_diff the devcontainer target uses. Through a symlinked entry it compares the link's target (the checkout) with the stage."
+
+**Location:** `devcontainer-config/install.sh:370-374`
+**Type:** Behavioral
+**Verdict:** Verified
+**Confidence:** High
+**Verification mode:** executed
+**Scope:** Covers per-file links (E3, E3b) and dangling top-level links (E3c: they diff as absent, so the change shows as additions and does not abort). "(the checkout)" is the typical target, not the only one: a link elsewhere compares that target. Does not establish behavior for a link to an unreadable target (would be diff exit 2 and an abort, per `:149-151`).
+**Legibility-target:** for-orchestrator-synthesis
+
+`if ! review_diff "$dest" "$stage" "${CLAUDE_HOME_NAMES[@]}"; then` (`install.sh:372`) calls the same function as `install_devcontainer` (`:180`). The outputs are in Claims 3 and 6.
+
+**Evidence:** `devcontainer-config/install.sh:133-155`, `:370-374`; `exp-E2-E4.txt`
+
+---
+
+## Claim 12: "Installs by copying to .cw-new.<name>, moving the old entries (links as links) to .claude-workflows-backup/<UTC stamp>/, then swapping in. A copy failure undoes itself before touching a live entry." (code: "1. Copy every entry beside its target. Any failure: undo and stop before a single live entry is touched.")
+
+**Location:** `devcontainer-config/install.sh:392-437` (commit 6793b79)
+**Type:** Error-handling
+**Verdict:** Verified
+**Confidence:** High
+**Verification mode:** executed
+**Scope:** Covers the step-1 copy-failure undo (T16), links moved as links (T6), and sequential same-second reruns (E7: the second run used `<stamp>.415425`). **Does not establish any recovery for a failure in step 2 or 3.** E4/E9 made `hooks` non-renamable. `CLAUDE.md, skills, workflows, guides, patterns` had already moved to the backup, the run died on the raw `mv: cannot move … Permission denied` with exit 1, and the destination was left without CLAUDE.md or skills and with all seven `.cw-new.*` directories beside it. No line names the backup dir or says how to finish or roll back. The claim is only about copy failures, so this residue is not a contradiction. Concurrent runs are also not covered: two runs in the same second can both pass `[ -e "$backup" ]` before either `mkdir -p` (not run).
+**Legibility-target:** for-orchestrator-synthesis (the step-2/3 residue is a for-author item for the critics)
+
+```bash
+# devcontainer-config/install.sh:394-437
+  local ok=1
+  mkdir -p "$dest" 2>/dev/null || ok=0
+  if [ "$ok" -eq 1 ]; then
+    for name in "${CLAUDE_HOME_NAMES[@]}"; do
+      rm -rf "$dest/.cw-new.$name"
+      if ! cp -R "$stage/$name" "$dest/.cw-new.$name"; then ok=0; break; fi
+    done
+  fi
+  if [ "$ok" -eq 0 ]; then
+    for name in "${CLAUDE_HOME_NAMES[@]}"; do rm -rf "$dest/.cw-new.$name" 2>/dev/null || true; done
+    echo "ERROR: could not copy the new files into $dest; nothing was replaced." >&2
+    exit 1
+  fi
+  ...
+    for name in "${CLAUDE_HOME_NAMES[@]}"; do
+      if [ -e "$dest/$name" ] || [ -L "$dest/$name" ]; then
+        mv "$dest/$name" "$backup/$name"
+      fi
+    done
+  fi
+  # 3. Swap the new copies in.
+  for name in "${CLAUDE_HOME_NAMES[@]}"; do
+    if [ -e "$dest/$name" ] || [ -L "$dest/$name" ]; then
+      echo "ERROR: $dest/$name reappeared during the install; the new copy is left at $dest/.cw-new.$name." >&2
+      exit 1
+    fi
+    mv "$dest/.cw-new.$name" "$dest/$name"
+  done
+```
+
+E4 left behind (`exp-E2-E4.txt`): dest `hooks scripts .cw-new.{all seven} .claude-workflows-backup`, and a backup holding `CLAUDE.md guides patterns skills workflows`.
+
+**Evidence:** `devcontainer-config/install.sh:392-437`; `bats-head.txt` (T6, T16); `exp-E1-E5-E6-E7.txt` (E7); `exp-E2-E4.txt` (E4); `exp-E8-E9.txt` (E9)
+
+---
+
+## Claim 13: "Writes .claude-workflows-manifest (rm -f first) with installed_by, installed_parent and installed_at appended" (commit 6793b79 notes: "installed_parent records "script" when the installer ran under a pty wrapper"); code: "`rm -f` first so a planted symlink cannot redirect the write."
+
+**Location:** `devcontainer-config/install.sh:439-447`
+**Type:** Behavioral
+**Verdict:** Verified
+**Confidence:** High
+**Verification mode:** executed
+**Scope:** Covers the manifest keys, the symlink-replacement guarantee, and `installed_parent=script` when run as `script -qec "bash install.sh"`. Does not establish that `installed_parent` is `script` under other wrappings. A wrapper that interposes a shell (`script -c "sh -c 'bash install.sh; …'"`) or `setsid` would record something else, so it is an audit trace, not a proof. `installed_by=host-tty` is a constant and asserts nothing measured.
+**Legibility-target:** for-orchestrator-synthesis
+
+```bash
+# devcontainer-config/install.sh:441-447
+  rm -f "$dest/.claude-workflows-manifest"
+  cp "$stage/.manifest" "$dest/.claude-workflows-manifest"
+  {
+    echo "installed_by=host-tty"
+    echo "installed_parent=$(ps -o comm= -p "$PPID" 2>/dev/null | tr -d ' ' || echo unknown)"
+    echo "installed_at=$stamp"
+  } >> "$dest/.claude-workflows-manifest"
+```
+
+E6 manifest: `commit=… dirty=no assembled_from=… installed_by=host-tty installed_parent=script installed_at=20260923T233450Z`. T6 plants a symlinked manifest and asserts `[ ! -L … ]` afterwards. T10 asserts the commit, source and installer keys.
+
+**Evidence:** `devcontainer-config/install.sh:439-447`; `bats-head.txt` (T6, T10); `exp-E1-E5-E6-E7.txt` (E6)
+
+---
+
+## Claim 14: "Destination: $CLAUDE_HOME_DIR, else $CLAUDE_CONFIG_DIR, else ~/.claude; the review names which variable chose it." (README: "`~/.claude` (or `$CLAUDE_CONFIG_DIR` if you set it)")
+
+**Location:** `devcontainer-config/install.sh:281-284`, `:307`; `README.md:19`
+**Type:** Configuration
+**Verdict:** Verified
+**Confidence:** High
+**Verification mode:** executed
+**Scope:** Covers the precedence and the `Destination: … (chosen by …)` line. The README omits `CLAUDE_HOME_DIR` precedence, which is harmless for users who don't set it. Does not establish that Claude Code itself reads `$CLAUDE_CONFIG_DIR` as its config root.
+**Legibility-target:** for-orchestrator-synthesis
+
+`if [ -n "${CLAUDE_HOME_DIR:-}" ]; then dest="$CLAUDE_HOME_DIR"; label='$CLAUDE_HOME_DIR'` / `elif [ -n "${CLAUDE_CONFIG_DIR:-}" ]; …` (`install.sh:281-282`). T24 passes (CLAUDE_CONFIG_DIR chooses the destination, and HOME/.claude stays absent).
+
+**Evidence:** `devcontainer-config/install.sh:281-284`, `:307`; `bats-head.txt` (T24)
+
+---
+
+## Claim 15: "Until it lands, every install.sh commit still carries a `Live-verified:` trailer by hand."
+
+**Location:** `docs/decisions/035-install-sh-gating.md:86-92`
 **Type:** Reference
 **Verdict:** Verified
 **Confidence:** High
 **Verification mode:** static
-**Scope:** Covers that the user's Q-025 answer asked for `--bare`. Does not cover the runtime claim in Claim 16.
+**Scope:** Covers the two commits in this range that touch install.sh (1514518, 6793b79). Does not establish anything about commits outside the range, or whether either trailer's host check has been done (both say `Live-verified: no`).
 **Legibility-target:** for-orchestrator-synthesis
 
-`git show e8d5fa1` (the user's answers commit) adds: "What I had hoped for was a re-implementation of the lite review using `claude -p --bare`."
+1514518: `Live-verified: no — run ./devcontainer-config/install.sh on the host and confirm the devcontainer diff, prompt and bless behave as before (plan step 9)`. 6793b79: `Live-verified: no — on the host run ./devcontainer-config/install.sh, read the ~/.claude review …` (from `git log --format=%B 712c626..d0fdd04`).
 
-**Evidence:** commit `e8d5fa1` (answers diff, line 23 of `git show`), `docs/working/questions-archive.md:464-480`
-
----
-
-## Claim 16: "Verified 2026-08-15 - a --bare call on a subscription-only machine prints "Not logged in" and still exits 0"
-
-**Location:** `scripts/lite-review.py:19-21` (repeated at `workflows/review-fix-loop.md:93-95`)
-**Type:** Behavioral
-**Verdict:** Unverifiable
-**Confidence:** Medium
-**Verification mode:** static
-**Scope:** Covers nothing beyond noting that the claim is consistent with project memory. Does not establish current CLI behaviour.
-**Legibility-target:** for-orchestrator-synthesis
-
-This is an executable guarantee about the external `claude` CLI's auth behaviour. It was not run: it would need a subscription-only headless invocation, which would use the user's credentials and quota, and the sandbox has no egress. Paraphrased — no quote available because the evidence lives outside the repo: the user's memory note "CC --bare blocks all subscription auth" says the same thing. Blocker: execution required, blocked by the credentials and network policy.
-
-**Evidence:** `scripts/lite-review.py:17-24`
+**Evidence:** `docs/decisions/035-install-sh-gating.md:86-92`; commits 1514518, 6793b79
 
 ---
 
-## Claim 17: "Which files: the docs/working/ of the git repo you run it FROM (the toplevel of $PWD; $PWD itself outside a git repo) … QUESTIONS_LIVE / QUESTIONS_ARCHIVE override either path."
+## Claim 16: "Provenance is `~/.claude/.claude-workflows-manifest`, in the same format link-claude-home writes."
 
-**Location:** `scripts/questions.sh:35-39`
-**Type:** Behavioral
-**Verdict:** Verified
-**Confidence:** High
-**Verification mode:** executed
-**Scope:** Covers nested subdirectories of a git repo, non-git dirs, and the overrides. Does not cover a `$PWD` inside a `.git` directory: `rev-parse --show-toplevel` fails there, so the `|| pwd` fallback writes to `.git/docs/working/`, a location git never tracks.
-**Legibility-target:** for-author
-
-`:55` `PROJECT_ROOT="$(git -C "$PWD" rev-parse --show-toplevel 2>/dev/null || pwd)"` and `:56-57` `LIVE="${QUESTIONS_LIVE:-$PROJECT_ROOT/docs/working/questions.md}"`. Probe results:
-- `init` from `repo/a/b` created `repo/docs/working/*`
-- `init` from non-git `nogit/sub` created `nogit/sub/docs/working/*`
-- `init` from `repo/.git` created `repo/.git/docs/working/*`
-
-**Evidence:** `scripts/questions.sh:35-57`, `docs/reviews/execution-logs/cfc-r1-si-questions-probe.txt`
-
----
-
-## Claim 18: "Never touches a file that exists."
-
-**Location:** `scripts/questions.sh:316` (`cmd_init`)
-**Type:** Invariant
-**Verdict:** Mostly accurate
-**Confidence:** High
-**Verification mode:** executed
-**Scope:** Covers regular existing files (not clobbered) and a dangling symlink at the live path. Does not cover races.
-**Legibility-target:** for-author
-
-The guard is `[[ -e "$file" ]] && { echo "  = exists: $file"; continue; }` (`:320`), and the write is `printf … > "$file"` (`:328`). `-e` is false for a dangling symlink, so `init` writes *through* it. The probe shows the target outside the project being created: `elsewhere-target.md`, 80 bytes. Regular files are left alone; the bats `never clobbers` test passes. Precise version: "never overwrites an existing file; a dangling symlink is followed and its target created."
-
-**Evidence:** `scripts/questions.sh:314-332`, `docs/reviews/execution-logs/cfc-r1-si-questions-probe.txt`, `docs/reviews/execution-logs/cfc-r1-bats-questions-doc.txt`
-
----
-
-## Claim 19: "it becomes a file-name prefix and a markdown cell, so only [A-Za-z0-9._-] is accepted."
-
-**Location:** `scripts/self-improvement.sh:456-457`
-**Type:** Invariant
-**Verdict:** Verified
-**Confidence:** High
-**Verification mode:** executed
-**Scope:** Covers the regex's accept/reject behaviour for bash `=~`. Does not establish that every accepted value is sensible: `.`, `..` and leading `-` (e.g. `-rf`) are accepted. That is harmless as a `${PREFIX}-name` file-name prefix, but not what "a date prefix" suggests.
-**Legibility-target:** for-orchestrator-synthesis
-
-`:458-462`:
-
-```bash
-SI_RUN_ID="${SI_RUN_ID:-$(date +%F)}"
-if [[ ! "$SI_RUN_ID" =~ ^[A-Za-z0-9._-]+$ ]]; then
-    echo "Error: SI_RUN_ID must match [A-Za-z0-9._-]+ (got: $SI_RUN_ID)" >&2
-    exit 1
-fi
-```
-
-- Accepted: `2026-09-21`, `run.2`, `..`, `.`, `-rf`
-- Rejected: `a/b`, `a b`, `x;y`, `é`, `a\nb`, the empty string
-
-**Evidence:** `scripts/self-improvement.sh:451-463`, `docs/reviews/execution-logs/cfc-r1-si-questions-probe.txt`
-
----
-
-## Claim 20: "archive-working-docs.sh reads si-run-id.txt for its default prefix, so the two agree even when the archive happens on a later day."
-
-**Location:** `scripts/self-improvement.sh:453-455`
+**Location:** `docs/decisions/037-bare-host-copy-install.md:38`
 **Type:** Architectural
 **Verdict:** Verified
+**Confidence:** High
+**Verification mode:** static
+**Scope:** Covers the file name and base keys. The host version adds three keys (`installed_by/parent/at`). Does not establish that any consumer (health-check) tolerates the extra keys.
+**Legibility-target:** for-orchestrator-synthesis
+
+`devcontainer-config/link-claude-home.sh:70-71`: `if [ -f "$SRC/.manifest" ]; then` / `cp -f "$SRC/.manifest" "$DEST/.claude-workflows-manifest" 2>/dev/null || true`. The host target copies the same `assemble`-written `.manifest` to the same name (`install.sh:442`), then appends (Claim 13).
+
+**Evidence:** `devcontainer-config/link-claude-home.sh:70-71`; `devcontainer-config/install.sh:121-127`, `:441-447`
+
+---
+
+## Claim 17: "The check stops accidents, not intent. The backstop is sandbox `denyWrite ~/.claude` (guide §3)."
+
+**Location:** `docs/decisions/037-bare-host-copy-install.md:50`
+**Type:** Invariant
+**Verdict:** Unverifiable
 **Confidence:** Medium
 **Verification mode:** static
-**Scope:** Covers the reader/writer pairing (same path, same regex). Does not establish agreement when (a) archiving is given an explicit PREFIX, (b) a later SI run has already overwritten `si-run-id.txt`, or (c) archive-working-docs is run from outside the repo root (it uses the relative `docs/working`).
+**Scope:** Covers only that guide §3 recommends `denyWrite` on `~/.claude`. Does not establish: that the user's host has it set; that it applies to an installer launched via `script` from the sandboxed Bash tool (it should, as a child of the sandboxed process, but this was not run); or that an agent can't reach install.sh unsandboxed (`dangerouslyDisableSandbox`, excluded commands). The "first part" ("stops accidents, not intent") is established by Claim 9.
 **Legibility-target:** for-orchestrator-synthesis
 
-The writer is `printf '%s\n' "$SI_RUN_ID" > "$WORKING_DIR/si-run-id.txt"` (`self-improvement.sh:463`, with `WORKING_DIR` under `$REPO_DIR/docs/working`). The reader is `archive-working-docs.sh:43-47`, quoted in Claim 9. Both use the same `^[A-Za-z0-9._-]+$` check.
+`guides/bare-host-hook-wiring.md:74-76`: "`denyWrite` to `~/.claude`, `~/CLAUDE.md` and the auditor script. … Bash sees `~/.claude` as read-only." Execution required: a sandboxed agent Bash call on the user's host running `script -qec 'env -u CLAUDECODE ./devcontainer-config/install.sh' /dev/null` against a canary CLAUDE_CONFIG_DIR under `~/.claude`. That is blocked here because it would need the host's settings.json sandbox block and the real `~/.claude`.
 
-**Evidence:** `scripts/self-improvement.sh:463`, `scripts/archive-working-docs.sh:37-49`
+**Evidence:** `docs/decisions/037-bare-host-copy-install.md:50`; `guides/bare-host-hook-wiring.md:74-76`
 
 ---
 
-## Claim 21: "The corpus is LOCAL-ONLY: docs/working/reviews/round-*/ is gitignored (Q-036 …)"
+## Claim 18: "The installer copies the whole `hooks/` directory (including `hooks/lib/`) and the whole `scripts/` directory, so hooks that find their helpers by their own path (`log-usage.sh` → `lib/usage-common.sh` and `../scripts/lib/`; `claude-config-audit.sh` → `../scripts/claude_config_audit.py`) keep working."
 
-**Location:** `scripts/self-improvement.sh:1485-1489` (and `.gitignore:11-13`)
-**Type:** Configuration
+**Location:** `guides/bare-host-hook-wiring.md:16-21`
+**Type:** Architectural / Behavioral
 **Verdict:** Verified
 **Confidence:** High
 **Verification mode:** executed
-**Scope:** Covers the ignore rule matching the archive path written at `:1490`. Does not cover files already tracked before the rule.
+**Scope:** Covers log-usage.sh end to end (T9 with the real hooks/ and scripts/) and the static paths of claude-config-audit.sh. Does not establish a run of claude-config-audit.sh from the installed copy. "Every hook is a copy" holds because the repo's payload dirs contain no symlinks today (`find skills workflows guides patterns hooks scripts -type l` returned nothing). `cp -r` would copy a future in-repo symlink as a link.
 **Legibility-target:** for-orchestrator-synthesis
 
-`git check-ignore -v docs/working/reviews/round-3/x/y.md` → `.gitignore:13:docs/working/reviews/round-*/`. The writer is `CR_ARCHIVE="$WORKING_DIR/reviews/round-$ROUND/$TASK_ID"` (`:1490`).
+`hooks/log-usage.sh:11`: `source "$(dirname "$(readlink -f "${BASH_SOURCE[0]}")")/lib/usage-common.sh"`, and `:14`: `…/../scripts/lib/skill-paths.sh"`. `hooks/claude-config-audit.sh:47-48`: `HOOK_DIR=$(dirname "$(readlink -f "${BASH_SOURCE[0]}")")` / `AUDIT_SCRIPT="$HOOK_DIR/../scripts/claude_config_audit.py"`. T9 passes: the installed `log-usage.sh` exits 0 and writes `"smoke"` to the hermetic usage log.
 
-**Evidence:** `.gitignore:11-13`, `scripts/self-improvement.sh:1485-1490` (command run inline, cwd /workspace, exit 0, 2026-09-21T19:36-07:00; output reproduced above)
+**Evidence:** `guides/bare-host-hook-wiring.md:16-21`; `hooks/log-usage.sh:11-14`; `hooks/claude-config-audit.sh:43-49`; `bats-head.txt` (T9)
 
 ---
 
-## Claim 22: "test-strategy … P1 → 🟡 Must Address; P2 and below → 🟢" (contextual-critic row)
+## Claim 19: "`install.sh` does not write `settings.json`, but it prints a `REMINDER` pointing here whenever the installed `hooks/wiring.json` is missing or differs from the repo's."
 
-**Location:** `skills/code-review/references/rubric.md:288-294` (repeated at `rubric.md:340`, `rubric.md:504`, `skills/code-review/SKILL.md:1230`, commit d659fa9)
-**Type:** Reference / Configuration
-**Verdict:** Incorrect
+**Location:** `guides/bare-host-hook-wiring.md:61-63`
+**Type:** Behavioral
+**Verdict:** Verified
 **Confidence:** High
-**Verification mode:** static
-**Scope:** Covers whether test-strategy emits a P1/P2 scale. Does not assess which tier its real values should map to.
-**Legibility-target:** for-author
+**Verification mode:** executed
+**Scope:** Covers the missing, unchanged and changed cases after a y. Does not establish a reminder when the user declines (none is printed) or whether the reminder names the correct §2 anchor text.
+**Legibility-target:** for-orchestrator-synthesis
 
-test-strategy has no P-scale. Its recommended-test template is `**Priority:** [high / medium / low]` (`skills/test-strategy/SKILL.md:196`), and `grep '\bP[0-3]\b' skills/test-strategy/` returns nothing. The rubric row reads `| 🟡 Must Address | Major | P1 | any confirmed finding |` (`rubric.md:290`). So a confirmed test-strategy finding with `Priority: high` has no defined tier. The label came from the Q-042 option text (`questions-archive.md`, Q-042 option [1]), and that same question states test-strategy uses "Priority". Fix: key the row on `Priority: high`, and `medium/low` for 🟢.
+`if ! cmp -s "$dest/hooks/wiring.json" "$stage/hooks/wiring.json"; then` / `wiring_changed=1` (`install.sh:382-383`). The REMINDER is printed at `:453-458`. No path in the function writes `settings.json` (it is only read by `grep` at `:362`). T7 (settings byte-identical) and T11 pass.
 
-**Evidence:** `skills/code-review/references/rubric.md:282-294,340,504`, `skills/code-review/SKILL.md:1230`, `skills/test-strategy/SKILL.md:196`, `docs/working/questions-archive.md` (Q-042)
+**Evidence:** `devcontainer-config/install.sh:381-384`, `:453-458`; `bats-head.txt` (T7, T11)
 
 ---
 
-## Claim 23: "also record the file's path and its `Commit:` metadata line (security-reviewer writes `Commit: <hash>` at the top)"
+## Claim 20: "`claude-config-audit.sh` looks for the auditor at `CLAUDE_CONFIG_AUDIT_SCRIPT`, then `<hook dir>/../scripts/`, then `~/private_reviews/`. … With the `install.sh` copy, the second of those is `~/.claude/scripts/claude_config_audit.py`"
 
-**Location:** `skills/architecture-review/SKILL.md:212-213`
-**Type:** Reference
+**Location:** `guides/bare-host-hook-wiring.md:82-85`
+**Type:** Configuration
 **Verdict:** Verified
 **Confidence:** High
 **Verification mode:** static
-**Scope:** Covers what security-reviewer's instructions say it writes. Does not cover whether existing `docs/reviews/security-review-*.md` files carry the line.
+**Scope:** Covers the resolution order. Does not establish the "If it finds none, the hook does nothing" branch (not re-read past `:49`).
 **Legibility-target:** for-orchestrator-synthesis
 
-`skills/security-reviewer/SKILL.md:557`: "save your critique as `docs/reviews/security-review-{date}.md` … with a `Commit: <hash>` metadata line at the top". The same instruction appears at `:48`.
+`hooks/claude-config-audit.sh:43-49`: `if [[ -n "${CLAUDE_CONFIG_AUDIT_SCRIPT:-}" ]]; then` … `AUDIT_SCRIPT="$HOOK_DIR/../scripts/claude_config_audit.py"` / `[[ -f "$AUDIT_SCRIPT" ]] || AUDIT_SCRIPT="$HOME/private_reviews/claude_config_audit.py"`. With the hook copied to `~/.claude/hooks`, `readlink -f` resolves to itself, so `HOOK_DIR/..` is `~/.claude`.
 
-**Evidence:** `skills/security-reviewer/SKILL.md:48,557`
+**Evidence:** `hooks/claude-config-audit.sh:43-49`; `guides/bare-host-hook-wiring.md:82-87`
 
 ---
 
-## Claim 24: "Factual claims rated Disputed … Attributed quotes rated Secondary-only" (new 🟡 rows)
+## Claim 21: "exit 2 for an unknown argument is the only observable change, and only for invalid input."
 
-**Location:** `skills/draft-review/SKILL.md:514-515`
-**Type:** Reference
-**Verdict:** Verified
-**Confidence:** High
-**Verification mode:** static
-**Scope:** Covers that both verdict names exist in fact-check's scale. Does not cover the rest of draft-review's tier table.
-**Legibility-target:** for-orchestrator-synthesis
-
-`skills/fact-check/SKILL.md:163` defines `**Disputed** — Evidence exists on both sides…` and `:172` defines `**Secondary-only** — Used for attributed quotes…`.
-
-**Evidence:** `skills/fact-check/SKILL.md:163-175`, `skills/draft-review/SKILL.md:511-518`
-
----
-
-## Claim 25: "a High confidence verdict requires at least one `[deep-read]` source, and a verdict resting only on `[abstract]` reads caps at Medium"
-
-**Location:** `skills/fact-check/SKILL.md:179-181` (also `:376-377`, `:414-420`, `:448`, `:553`)
-**Type:** Invariant (doc-internal consistency)
-**Verdict:** Verified
-**Confidence:** High
-**Verification mode:** static
-**Scope:** Covers consistency across the five restatements and the worked-example table rows. Does not establish anything about the fact-check runtime.
-**Legibility-target:** for-orchestrator-synthesis
-
-- `:414-417` "If no cited source is `[deep-read]` and at least one is `[abstract]`, the verdict **caps at Medium** … There is no Medium → Low step for `[abstract]` reads."
-- `:376-377` "a verdict whose sources are all `[abstract]` caps at Medium".
-- `:418-420` keeps the one-tier downgrade only for all-`[inferred]` scrutiny.
-- Every `[abstract]` row in the calibration table (`:459-461`) is Medium or Low.
-- A grep for "downgrade" finds no remaining text that applies a Medium→Low step to `[abstract]`.
-
-**Evidence:** `skills/fact-check/SKILL.md:177-181,373-377,410-450,455-462,550-554`
-
----
-
-## Claim 26: "Macro × Cold | Low (matches the hot-path gate; escalate when the cold path blocks a latency-sensitive operation or runs over large data, e.g. a nightly batch)"
-
-**Location:** `skills/performance-reviewer/SKILL.md:283`
-**Type:** Reference / Configuration
+**Location:** commit 1514518 (message body); `devcontainer-config/install.sh:53-61`
+**Type:** Behavioral
 **Verdict:** Mostly accurate
 **Confidence:** High
-**Verification mode:** static
-**Scope:** Covers agreement between the table row and the hot-path gate paragraph. Does not assess whether Low is the right default.
+**Verification mode:** executed
+**Scope:** Covers argument handling old vs new, and line-by-line equivalence of the refactored devcontainer flow at 1514518 (`git diff 712c626 1514518`: the diff, prompt, copy, chmod, link and bless code is moved into functions unchanged). Does not establish anything about the later 6793b79 changes (Claims 5 and 8).
 **Legibility-target:** for-author
 
-The gate is `:46`: "Code in cold paths … should default to Low or Informational unless the cold path blocks a latency-sensitive operation." The default (Low) and the latency-sensitive escalation match. The row adds a second escalation trigger that the gate does not have: "or runs over large data, e.g. a nightly batch". Either add that trigger to the gate paragraph or drop "matches" for that clause.
+The old code was `ASSUME_YES="${1:-}"`, so any argument other than `--yes` fell through to the normal prompting run. The new loop:
 
-**Evidence:** `skills/performance-reviewer/SKILL.md:46,276,283`
+```bash
+# devcontainer-config/install.sh:54-61
+while [ $# -gt 0 ]; do
+  case "$1" in
+    --yes) ASSUME_YES="--yes" ;;
+    -h|--help) usage; exit 0 ;;
+    *) echo "install.sh: unknown argument: $1" >&2; usage >&2; exit 2 ;;
+  esac
+  shift
+done
+```
 
----
+`-h/--help` is a second observable change. E8: OLD `-h` assembled the payload and started the review (`Canonical (repo): …`). NEW `-h` prints `Usage:` and exits 0 having done nothing. Also, `--yes extra` used to install (OLD `[exit=0] devc installed? yes`) and now exits 2 (NEW `[exit=2] devc installed? no`). That one is covered by "unknown argument". A precise version: "unknown arguments exit 2, and -h/--help print usage; both only for arguments the old script ignored."
 
-## Claim 27: "[qualifying author note](../skills/code-review/references/rubric.md#-must-address)"
-
-**Location:** `workflows/pr-prep.md:190`, `workflows/review-fix-loop.md:43`
-**Type:** Reference
-**Verdict:** Incorrect
-**Confidence:** High
-**Verification mode:** executed
-**Scope:** Covers every relative link and anchor in the 38 non-questions `.md` files the range changed. Only these two failed. Does not cover links inside `docs/working/questions*.md`.
-**Legibility-target:** for-automated-gate
-
-In `rubric.md`, the heading `## 🟡 Must Address` (`:49`) sits inside the fenced ```` ```markdown ```` template block that opens at `:31` and closes at `:158`. It renders as code, not a heading, so no `#-must-address` anchor exists. The nearest real anchor for that definition is `#deliverable-2-code-review-rubric` (`:7`), which `chat-synthesis.md` already uses correctly. The anchor checker (`cfc-r1-anchors.py`) reported `broken=2`, exactly these two links, and resolved every other cross-reference named in the brief. That includes `review-fix-loop.md#divergence-detection-stuck-loop-signal`, `#re-flagged-settled-decisions-override-log-filter`, `#hard-cap-3-iterations`, `#fix-commit-drift-check-lite`, `pr-prep.md#3-review-fix-loop`, `override-log.md#capture-format`, `#capturing-new-overrides`, `rubric.md#unified-severity-mapping`, `#executable-defect-channel` and `chat-synthesis.md#next-action-derivation`.
-
-**Evidence:** `skills/code-review/references/rubric.md:7,31,49,158`, `workflows/pr-prep.md:190`, `workflows/review-fix-loop.md:43`, `docs/reviews/execution-logs/cfc-r1-anchors.txt` (cmd `python3 cfc-r1-anchors.py <changed .md files>`, cwd /workspace, exit 0, 2026-09-21T19:34:32-07:00)
+**Evidence:** `devcontainer-config/install.sh:53-61`; `712c626:devcontainer-config/install.sh` (`ASSUME_YES="${1:-}"`); `exp-E8-E9.txt` (E8)
 
 ---
 
-## Claim 28: "Chat-synthesis rules 4 and 5 are exhaustive for 0 🔴 … a saved architecture-review skip note … counts as the critic having run"
+## Claim 22: "Declining the devcontainer target now continues to the host target; the run still exits 1 when anything was declined."
 
-**Location:** `skills/code-review/references/chat-synthesis.md:130-136,159-165`
-**Type:** Reference / Invariant
-**Verdict:** Verified
-**Confidence:** High
-**Verification mode:** static
-**Scope:** Covers the n>2 / n≤2 partition and that architecture-review defines a saved skip note. Does not cover rules 1-3 firing on 0 🔴 (1(a) still can, by design).
-**Legibility-target:** for-orchestrator-synthesis
-
-Rule 4 fires when "0 🔴 but >2 🟡 items are open without a qualifying author note", and rule 5 when "0 🔴 items AND ≤2 🟡 items open without a qualifying author note". Together they cover every count. `skills/architecture-review/SKILL.md:84` says "skip the review and emit a short skip note", and `:142` says "Save the skip note to the same path the full critique would have used."
-
-**Evidence:** `skills/code-review/references/chat-synthesis.md:128-180`, `skills/architecture-review/SKILL.md:84,142`
-
----
-
-## Commit-message claims
-
-## Claim 29a: "Global paths are unchanged." / "HARD now applies only under the global config dir … matching wiring.json's {{CLAUDE_DIR}}"
-
-**Location:** commit `4c7a2bb` message (Q-026 paragraph)
+**Location:** commit 6793b79; `devcontainer-config/install.sh:190-198`, `:461-464`
 **Type:** Behavioral
-**Verdict:** Incorrect
-**Confidence:** High
-**Verification mode:** executed
-**Scope:** Covers file-tool and Bash decisions for global-file spellings, old vs new. The message is immutable history, so per rubric.md's immutable-history exception this is an `Accepted-immutable` candidate, not a tier.
-**Legibility-target:** for-orchestrator-synthesis
-
-The probes found these global-path decisions changed at 4c7a2bb:
-- File tools: `~/.claude/x/../CLAUDE.md` went from defer to ask (Claim 5), and a symlinked project `.claude` pointing at the global hooks and CLAUDE.md went from defer to ask (Claim 5).
-- `~/.claude/sub/settings.json` went from `hard` to `soft`.
-- Bash: `~/.claude//CLAUDE.md`, `"$HOME"/CLAUDE.md`, `~//CLAUDE.md` and more went from deny to soft (Claim 7b).
-- "Matching wiring.json" is inaccurate (Claim 4).
-
-**Evidence:** `docs/reviews/execution-logs/cfc-r1-guard-filetools.txt`, `docs/reviews/execution-logs/cfc-r1-guard-bash-probe.txt`
-
----
-
-## Claim 29b: "Tests: 14 new cases in test/hooks/guard-trusted-writes.bats (40/40 pass)"
-
-**Location:** commit `4c7a2bb` message
-**Type:** Configuration
 **Verdict:** Verified
 **Confidence:** High
 **Verification mode:** executed
-**Scope:** Covers the count at 4c7a2bb vs its parent, and passing at HEAD, where the file is identical. Does not cover the claimed `scripts/run-tests.sh --fast passes` at that commit (not re-run).
+**Scope:** Covers devcontainer-n then host-n (exit 1), devcontainer-y then host-n (exit 1), and devcontainer-n then host-y (DECLINED stays 1, so exit 1: static from `:196` and `:464`). Does not establish the n/y exit status under test (T6 does not assert status).
 **Legibility-target:** for-orchestrator-synthesis
 
-`git show 4c7a2bb~1:test/hooks/guard-trusted-writes.bats | grep -c '^@test'` gives 26, and at `4c7a2bb` it gives 40 (14 new, all listed by `git diff`). At HEAD, `bats test/hooks/guard-trusted-writes.bats` gives 40/40 ok, exit 0.
+`echo "Aborted. Nothing was changed. (devcontainer config)"` / `DECLINED=1` / `return 0` (`install.sh:195-197`). T5 and T17 (`n\nn\n`) reach the host prompt. T17 and T19 assert `status -eq 1`.
 
-**Evidence:** `test/hooks/guard-trusted-writes.bats`, `docs/reviews/execution-logs/cfc-r1-bats-guard.txt`
+**Evidence:** `devcontainer-config/install.sh:190-198`, `:386-390`, `:461-464`; `bats-head.txt` (T5, T17, T19)
 
 ---
 
-## Claim 30a: "test/skills: 656/656" (test count)
+## Claim 23: "All 24 fail against the current install.sh (T7 and T16 were tightened so they cannot pass when nothing is installed)."
 
-**Location:** commit `d659fa9` message
-**Type:** Configuration
-**Verdict:** Verified
-**Confidence:** High
-**Verification mode:** executed
-**Scope:** Covers the test count. The pass status is Claim 30b.
-**Legibility-target:** for-orchestrator-synthesis
-
-`bats --count test/skills/*.bats` gives 656. The raw `^@test` grep gives 672 at both d659fa9 and HEAD. The 16 extra lines are `@test` text inside non-test contexts that bats does not count.
-
-**Evidence:** inline command, cwd /workspace, exit 0, 2026-09-21T19:36-07:00, output `656`
-
----
-
-## Claim 30b: "test/skills: 656/656 pass"
-
-**Location:** commit `d659fa9` message
+**Location:** commit dcf4a6d
 **Type:** Behavioral
-**Verdict:** Unverifiable
-**Confidence:** Low
-**Verification mode:** static
-**Scope:** Nothing established. Execution is required.
-**Legibility-target:** for-orchestrator-synthesis
-
-Not executed. Running all 656 skill tests alongside the user's background bats timing loop would skew that loop and take a long time. Blocker: execution required, deferred to avoid interfering with the running timing loop.
-
-**Evidence:** `test/skills/*.bats`
-
----
-
-## Claim 31: "Tests: header/row/migration/idempotence, run-scoped lookups, live-run mismatch, fallback, days-since by run, an end-to-end deferred-evaluation row, and the archive default prefix."
-
-**Location:** commit `a45f4a9` message
-**Type:** Reference / Behavioral
 **Verdict:** Verified
 **Confidence:** High
 **Verification mode:** executed
-**Scope:** Covers that the named suites exist in the diff and pass at HEAD. Does not cover whether each test would catch a regression (no mutation testing).
+**Scope:** Covers dcf4a6d's tree, whose install.sh is byte-identical to 712c626's (`diff` printed `same`). Does not establish why each test fails (for example, T15 fails on exit status, not on a host-target assertion).
 **Legibility-target:** for-orchestrator-synthesis
 
-All four suites exited 0 at HEAD:
-- `append-approved-hypotheses.bats`: 15/15
-- `precondition-gate.bats`: 36/36
-- `morning-summary-clusters.bats`: 22/22
-- `archive-working-docs.bats`: 11/11
+`bats-old.txt`: `not ok 1` through `not ok 24`, exit=1. T7 and T16 carry the tightening guards `[ -d "$CLAUDE_HOME_DIR/skills" ] && [ ! -L "$CLAUDE_HOME_DIR/skills" ]   # the install ran` and `[[ "$output" == *'nothing was replaced'* ]]` (`test/install-host.bats`, T7 and T16 bodies).
 
-The diff adds 34+59+25+27 lines to these files (per `git show --stat`). Paraphrased — no quote available because the claim spans four test files; the per-suite outputs are in the logs.
+**Evidence:** `test/install-host.bats` (T7, T16); `bats-old.txt`
 
-**Evidence:** `docs/reviews/execution-logs/cfc-r1-bats-append-approved-hypotheses.txt`, `…-precondition-gate.txt`, `…-morning-summary-clusters.txt`, `…-archive-working-docs.txt`
+---
+
+## Claim 24: "test/install-host.bats 24/24 · test/cc-isolated-functions.bats 90/90 (unmodified) · test/link-claude-home-wiring.bats 14/14 · test/hooks/*.bats 144/144 (6 files) · guide-index-sync, cross-reference-integrity, fixture-hermeticity pass · scripts/run-tests.sh --fast: 864 ok, 0 not ok"
+
+**Location:** commit d0fdd04 (also 1514518's and 6793b79's "90/90" and "24/24")
+**Type:** Behavioral
+**Verdict:** Verified
+**Confidence:** High
+**Verification mode:** executed
+**Scope:** Covers every listed number at HEAD d0fdd04 in this Linux sandbox. Does not establish the counts at the intermediate commits 1514518 and 6793b79, or macOS behavior.
+**Legibility-target:** for-orchestrator-synthesis
+
+The runs gave: install-host 24 ok and 0 not ok (`bats-head.txt`); cc-isolated-functions 90/0, link-claude-home-wiring 14/0, guide-index-sync 1/0, cross-reference-integrity 1/0, fixture-hermeticity 2/0, test/hooks 144/0 across 6 files (`suites-summary.txt`); run-tests.sh --fast 864/0, exit 0 (`run-tests-fast.txt`). `git diff 712c626..d0fdd04 --stat -- test/cc-isolated-functions.bats` is empty, so that file is unmodified.
+
+**Evidence:** `bats-head.txt`; `suites-summary.txt`; `run-tests-fast.txt`
 
 ---
 
 ## Claims Requiring Attention
 
 ### Incorrect
-- **Claim 4** (`hooks/guard-trusted-writes.py:10-12`): the global set is always `~/.claude` **plus** `$CLAUDE_CONFIG_DIR`, not one or the other. With the variable set, `~/.claude/settings*.json` is HARD→defer while the deny rules cover only `$CLAUDE_CONFIG_DIR`, so that path has no gate. Tilde and relative-path handling also differ from the linker.
-- **Claim 5** (`hooks/guard-trusted-writes.py:15-17`): the hook *does* ask on HARD targets. In the installed layout, `resolve()` follows the `~/.claude/{hooks,CLAUDE.md}` symlinks into `/opt/claude-workflows`, outside `GLOBAL_DIRS`, so `~/.claude/x/../CLAUDE.md` and a project `.claude` symlinked to `~/.claude` (hooks, CLAUDE.md) now get **ask**. Before this change they deferred.
-- **Claim 7b** (`hooks/guard-trusted-writes.py:16-17,30-31`): the global CLAUDE.md files are denied in Bash only in the exact literal forms. `"$HOME"/CLAUDE.md`, `~//CLAUDE.md`, `~/./CLAUDE.md`, `${HOME:-}/CLAUDE.md`, `~/"CLAUDE.md"`, `$HOME/x/../CLAUDE.md`, `~/.claude//CLAUDE.md` and `~/.claude/./CLAUDE.md` are now SOFT (untainted → no gate). All were HARD at e8d5fa1. These are beyond the accepted `cd ~ && … CLAUDE.md` residual.
-- **Claim 22** (`skills/code-review/references/rubric.md:290`, plus `:340`, `:504`, `SKILL.md:1230`): the "test-strategy P1/P2" scale does not exist. test-strategy emits `Priority: high/medium/low`.
-- **Claim 27** (`workflows/pr-prep.md:190`, `workflows/review-fix-loop.md:43`): the anchor `rubric.md#-must-address` does not exist because the heading is inside a code fence. Use `#deliverable-2-code-review-rubric`.
-- **Claim 29a** (commit 4c7a2bb): "Global paths are unchanged" and "matching wiring.json" are refuted by Claims 4, 5 and 7b. The message is immutable history: record it as `Accepted-immutable`.
-
-### Stale
-- (none)
+- **Claim 2** (`README.md:21-22`, `devcontainer-config/install.sh:42-43`): "only installs for a human at a terminal" is false. An agent's Bash tool clears both checks with `env -u CLAUDECODE script -qec … /dev/null`, and this branch's own test suite does it. Reword to match install.sh:290-292 and 037 ("stops the accidental run, not a deliberate one; the backstop is sandbox denyWrite ~/.claude").
 
 ### Mostly Accurate
-- **Claim 12** (`scripts/lib/si-functions.sh:543-545`): with no header the "no-op" still rewrites the file (new inode, mode 0600), and a real migration also leaves mode 0600.
-- **Claim 13** (`scripts/lib/si-morning-summary.sh:1145-1148`): `_live_run_matches` is also true when `si-run-id.txt` exists but its first line is empty.
-- **Claim 18** (`scripts/questions.sh:316`): `init` follows a dangling symlink and creates its target, which may be outside the project.
-- **Claim 26** (`skills/performance-reviewer/SKILL.md:283`): the "runs over large data / nightly batch" escalation is not part of the hot-path gate it claims to match.
-- Scope residues worth a line, not verdicted separately: Claim 17 (`questions.sh` run from inside `.git/` writes `.git/docs/working/`), Claim 19 (`SI_RUN_ID` accepts `.`, `..`, `-rf`) and Claim 11 (escaped `\|` in a hypothesis shifts the Run pick onto Evidence).
+- **Claim 5** (`devcontainer-config/install.sh:192-195`): the decline line keeps its old wording only as a prefix. It now ends with " (devcontainer config)".
+- **Claim 8** (`devcontainer-config/install.sh:287-289`, `docs/decisions/037-bare-host-copy-install.md:33,52`, commit 6793b79): non-interactive output changes by a blank line plus the skip line, and the decline line is reworded. It is not "one extra line".
+- **Claim 21** (commit 1514518): `-h/--help` is a second observable change. It used to run the installer and now prints usage and exits 0.
 
 ### Unverifiable
-- **Claim 16** (`scripts/lite-review.py:19-21`): the `--bare` "Not logged in, exit 0" behaviour needs a live subscription-only `claude -p --bare` run. Blocked by credentials and network.
-- **Claim 30b** (commit d659fa9): "656/656 pass" needs a full `test/skills` run. Deferred so the background timing loop is not disturbed.
+- **Claim 17** (`docs/decisions/037-bare-host-copy-install.md:50`): that sandbox `denyWrite ~/.claude` backstops a `script`-wrapped agent run needs a sandboxed agent run on the user's host against a canary dir.
 
----
-
-## Hallucination-log candidate (not appended)
-
-Claim 22 qualifies under this skill's "After you finish" rule: a scale value is referenced that the named component does not expose. It belongs to the same class as the existing log entries (a value attributed to an artifact that does not contain it). The orchestrator's rules for this run forbid modifying any file other than this report, so it was **not** appended. Proposed entry:
-
-`- **"test-strategy P1/P2" severity claimed in code-review rubric but test-strategy emits Priority high/medium/low** — the Q-042 contextual-critic row keys test-strategy on P1/P2; skills/test-strategy/SKILL.md:196 defines only "Priority: [high / medium / low]" and contains no P-scale. First seen: 2026-09-21, report: docs/reviews/code-fact-check-report-r1.md.`
-
-The only files written besides this report are new captured-output logs and probe scripts under `docs/reviews/execution-logs/cfc-r1-*`, which the skill's executed-provenance rule requires. No existing file was modified.
-
----
+### Residues on Verified claims (the verdict holds for the scoped property; the adjacent behavior is unguarded)
+- **Claim 12**: a failure after the first move-aside (step 2/3) leaves the destination partial. The first 1–6 entries are in the backup, the rest are live, and the `.cw-new.*` copies sit beside them. The only message is the raw `mv` error, with no backup path and no recovery instruction (E4/E9, exit 1). Concurrent same-second runs can share a stamp dir (static).
+- **Claim 10**: a destination that is a symlink to a non-checkout directory is written through silently, and the review does not say the destination is a link (E2).
+- **Claim 3**: foreign empty directories move without a MOVE line. WIRED detection uses the basename only, so a nested foreign `hooks/lib/x.sh` is checked as `hooks/x.sh`.
 
 ## Goal-Alignment Note
-
-- **Answered:** All seven focus areas in the brief were checked.
-  1. The guard-hook tier docstring was checked by importing the module and running old-vs-new probes over about 45 Bash spellings and about 25 file-tool paths, including the symlinked-project, relative/tilde `CLAUDE_CONFIG_DIR` and HOME=/ cases.
-  2. The HOME="/" comment was checked (Verified).
-  3. The `{{CLAUDE_DIR}}` equivalence was checked (Incorrect).
-  4. `questions.sh` resolution and `init` were checked, including the non-git, `.git`-dir and dangling-symlink cases, along with the installed-path claims in the global instructions, README and linker.
-  5. `SI_RUN_ID` validation and the archive-prefix pairing, the migration comments, and the morning-summary absent-Run handling were checked.
-  6. Gate 5 fast-then-slow was checked, with health-check.bats run end to end (17/17), plus the test-count claims in 4c7a2bb, d659fa9 and a45f4a9.
-  7. The fact-check Medium cap, the performance-reviewer "matching the gate" claim, the code-review reference changes, and every pr-prep / review-fix-loop cross-reference were checked by an anchor resolver.
-- **Out of scope:** The large `questions.md` → `questions-archive.md` move was not audited line by line, apart from Q-025 and Q-042. The DD / design-space-situating wording edits and `docs/decisions/012` were read but hold no executable claims. I did not run a full real-suite gate 5, or `test/skills` in full, to avoid disturbing the background bats timing loop.
-- **Escalate:** Claims 5 and 7b are security-relevant regressions for the security-reviewer. HARD global files now get ask, or no gate, through `..` / symlink paths (file tools) and through quoted or normalised spellings (Bash). Claim 4's "`~/.claude` HARD but ungated when `CLAUDE_CONFIG_DIR` points elsewhere" is a design question for the author. One process note for the orchestrator: the live installed hook (the older copy under `/opt/claude-workflows`) denied several of my probe commands because they contained `.claude/settings` or `CLAUDE.md` next to a redirect. I moved those probes into script files; no probe was lost.
+- Success criterion (restated verbatim): a markdown report saved at the output path your task names, structured per your skill, beginning with a `Commit: d0fdd04` line.
+- Answered: yes. All eight brief claim groups are verdicted, seven of them by hermetic execution.
+- Out of scope: macOS behavior (BSD `script`, `sort -z`); the host's live sandbox settings; code-quality judgments on the residues (left to the critics).
+- Escalate: Claim 2 (README and `--help` overstate the TTY guard as human-only), and Claim 12's residue (no recovery message for a mid-swap failure on the user's live `~/.claude`), before the plan-step-9 host run.

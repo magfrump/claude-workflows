@@ -1,0 +1,5 @@
+head install-host exit=0
+dcf4a6d install-host exit=1
+head lchw exit=0
+head ccif exit=0
+done

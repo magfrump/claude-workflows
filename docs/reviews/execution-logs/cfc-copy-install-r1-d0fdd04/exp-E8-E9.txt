@@ -1,0 +1,18 @@
+==== E8
+##### OLD -h
+Canonical (repo):  /tmp/claude-1000/-workspace/d516ca2c-2abb-4732-a34a-041aa98280c8/scratchpad/fc/exp/E8-OLD/repo/devcontainer-config
+Installed (host):  /tmp/claude-1000/-workspace/d516ca2c-2abb-4732-a34a-041aa98280c8/scratchpad/fc/exp/E8-OLD/home/.config/claude-devcontainer
+
+[exit=141]
+##### OLD --yes extra
+[exit=0] devc installed? yes
+##### NEW -h
+Usage: devcontainer-config/install.sh [--yes]
+
+Offers two install targets in turn. Each one shows a review diff and asks y/N:
+[exit=0]
+##### NEW --yes extra
+[exit=2] devc installed? no
+==== E9
+Install these files into /tmp/claude-1000/-workspace/d516ca2c-2abb-4732-a34a-041aa98280c8/scratchpad/fc/exp/E9/home/.claude? [y/N] mv: cannot move '/tmp/claude-1000/-workspace/d516ca2c-2abb-4732-a34a-041aa98280c8/scratchpad/fc/exp/E9/home/.claude/hooks' to '/tmp/claude-1000/-workspace/d516ca2c-2abb-4732-a34a-041aa98280c8/scratchpad/fc/exp/E9/home/.claude/.claude-workflows-backup/20260923T233553Z/hooks': Permission denied
+INSTALL_EXIT=1

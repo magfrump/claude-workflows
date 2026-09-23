@@ -1,0 +1,36 @@
+bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+1..14
+bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+ok 1 fresh volume with no settings.json gets every wired hook and deny rule
+bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+ok 2 merge is idempotent across repeated container starts
+bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+ok 3 unrelated settings keys, foreign hooks, and user permissions survive the merge
+bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+ok 4 {{CLAUDE_DIR}} is substituted and _comment is stripped
+bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+ok 5 an unparseable settings.json is refused, not overwritten
+bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+ok 6 CC_SKIP_HOOK_WIRING=1 leaves settings.json untouched
+bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+ok 7 every command in wiring.json points at a hook that exists
+bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+ok 8 every declared hook command arrives in settings.json by name
+bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+ok 9 a stale version of one of our groups is replaced, not duplicated
+bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+ok 10 a foreign group is kept even when it shares an event with ours
+bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+ok 11 wiring.json declares only known hook event names
+bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+ok 12 wiring.json declares only known permission modes
+bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+ok 13 the deny rules the guard hook's HARD tier depends on are wired
+bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+ok 14 installed ~/.claude/scripts/{lite-review.py,questions.sh} resolve after install
