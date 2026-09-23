@@ -63,7 +63,9 @@ tainted session or not: `global-instructions/CLAUDE.md` behind a linked
 `~/.claude/CLAUDE.md`, and every `hooks/<name>` linked one file at a time into
 `~/.claude/hooks/`. No deny rule names the checkout path, so deferring would leave it
 with no gate at all. A hook deny has no approve option, so make these edits outside
-Claude, in your own editor or shell (Q-050). Hooks installed as copies are not
+Claude, in your own editor or shell (Q-050). Bash writes to that checkout path
+(`echo x > <checkout>/hooks/<name>`, `cp`) are NOT gated by this hook, only
+Edit/Write are: a pre-existing gap, alongside the N2/A8 ones in the hook's TODOs. Hooks installed as copies are not
 affected. The planned copy-based install (edits are committed, then copied into
 `~/.claude` by `install.sh` after you approve them) removes this: no checkout file
 will be a live global file.
