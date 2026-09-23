@@ -22,9 +22,13 @@ Two tiers of policy path:
             resolved = the path is HARD only after resolve() (or only under the config
                        dir's resolved form): e.g. the payload CLAUDE.md addressed by
                        its real /opt path (installed layout: hooks and CLAUDE.md link
-                       into /opt/claude-workflows), or a project .claude symlinked to
-                       ~/.claude. No deny rule names that string, so a defer would be
-                       no gate at all; the hook returns "deny" itself.
+                       into /opt/claude-workflows), a bare host's checkout
+                       global-instructions/CLAUDE.md or a hook script linked one file at
+                       a time into a real ~/.claude/hooks/ (N12), or a project .claude
+                       symlinked to ~/.claude. No deny rule names that string, so a defer
+                       would be no gate at all; the hook returns "deny" itself, and a
+                       deny cannot be approved (Q-050 [2]: such files are edited outside
+                       Claude). A regular-file COPY in ~/.claude leaves its source ungated.
           For Bash, which deny rules don't cover at all, HARD is "deny" outright.
   SOFT  = skills / memories / commands / agents / project CLAUDE.md|AGENTS.md / *.mdc,
           a PROJECT's own .claude/ (settings*.json, hooks/**; Q-026), and
@@ -40,6 +44,10 @@ one many ways. The global tier is therefore decided by CO-OCCURRENCE in the text
           `global-instructions`, `CLAUDE_CONFIG_DIR`, the literal config dir); OR a
           settings*.json / hooks mention together with `.claude` / the config dir.
           Conservative: a heredoc that names ~/.claude/CLAUDE.md in prose is denied.
+          Exception (Q-048 [2]): an agent worktree path (`.claude/wt-<name>`,
+          `.claude/worktrees/<name>`) is not a `.claude` indicator, unless its shell
+          word holds `..` or an expandable character, sits directly under the home
+          dir, or overlaps the config dir (_neutralize_worktrees).
   SOFT  = a CLAUDE.md with no home/global indicator anywhere (Q-035) — matching the
           Edit/Write tier, so a heredoc or commit message that merely names a project
           CLAUDE.md is no longer denied.
@@ -100,6 +108,17 @@ except Exception:
 for _n in {"settings.json", "settings.local.json"} | _settings_names:
     _HARD_FILE_TARGETS.add(_safe_resolve(CONFIG_DIR / _n))
 _HARD_DIR_TARGETS = {_safe_resolve(CONFIG_DIR / "hooks")}
+# N12 / Q-050: on a bare host ~/.claude/hooks is a REAL dir whose entries can be
+# per-file symlinks into the checkout (README setup). Resolving only the directory
+# misses them, so resolve each entry: a checkout file that IS a live hook is HARD
+# (resolved tier -> deny). A regular-file copy resolves into the config dir itself,
+# which leaves its checkout original ungated, as intended.
+try:
+    for _e in (CONFIG_DIR / "hooks").iterdir():
+        _t = _safe_resolve(_e)
+        (_HARD_DIR_TARGETS if _t.is_dir() else _HARD_FILE_TARGETS).add(_t)
+except Exception:
+    pass
 
 def _rel_under(cand: Path, dirs):
     """Path of `cand` relative to the first of `dirs` that contains it, or None."""
@@ -222,10 +241,59 @@ SOFT_FRAG = re.compile(
     r"\.claude/(skills|memories|commands|agents)"
     r"|(^|[\s\"'=/])(AGENTS|CLAUDE|CLAUDE\.local)\.md|\.mdc(\b|$)", re.I)
 
+# Q-048 [2]: an agent worktree (`.claude/wt-<name>`, `.claude/worktrees/<name>`)
+# is a checkout, not the config dir, so its `.claude` is not an indicator. Only the
+# exact shape is exempt. Any of these keeps the occurrence as an indicator:
+#   - a `..` component, or a shell-expandable character ($ ` ~ \ * ? [ {), anywhere
+#     in the shell word, since the shell could turn it back into the config dir;
+#   - a prefix that is the home dir itself (`~/.claude/wt-x`, `$HOME/...`, the
+#     literal home path);
+#   - a worktree path that equals, contains or lies inside the config dir.
+# Every other `.claude` in the command still counts.
+_WT_SEG = re.compile(
+    r"\.claude/(?:wt-[A-Za-z0-9_.-]*|worktrees/[A-Za-z0-9_-][A-Za-z0-9_.-]*)"
+    r"(?=/|[\s\"'`;|&<>()]|$)")
+# Word boundaries for the check. `=` is NOT a boundary: `a=/../x` is one path, so
+# the whole word is checked, and an assignment's value (after the first `=`) is
+# additionally checked on its own for the home / config-dir tests.
+_WORD_DELIM = set(" \t\n\"'`;|&<>()")
+_WT_UNSAFE = re.compile(r"[$`~\\*?\[{]|(^|[/=])\.\.(/|=|$)")
+
+def _within(a: str, b: str) -> bool:
+    return a == b or a.startswith(b.rstrip("/") + "/")
+
+def _is_home_or_cfg(path_prefix: str, seg: str) -> bool:
+    if path_prefix and os.path.normpath(path_prefix) == os.path.normpath(str(HOME)):
+        return True
+    full = os.path.normpath(path_prefix + seg)
+    return full.startswith("/") and any(_within(full, str(g)) or _within(str(g), full)
+                                        for g in GLOBAL_DIRS)
+
+def _neutralize_worktrees(cmd: str) -> str:
+    out, last = [], 0
+    for m in _WT_SEG.finditer(cmd):
+        s = m.start()
+        while s > 0 and cmd[s - 1] not in _WORD_DELIM:
+            s -= 1
+        e = m.end()
+        while e < len(cmd) and cmd[e] not in _WORD_DELIM:
+            e += 1
+        prefix, suffix = cmd[s:m.start()], cmd[m.end():e]
+        if _WT_UNSAFE.search(prefix) or _WT_UNSAFE.search(suffix):
+            continue
+        if any(_is_home_or_cfg(p, m.group(0)) for p in {prefix, prefix.split("=", 1)[-1]}):
+            continue
+        out.append(cmd[last:m.start()])
+        out.append("AGENT_WORKTREE")
+        last = m.end()
+    out.append(cmd[last:])
+    return "".join(out)
+
 def bash_targets(cmd: str):
     has_write = bool(WRITE_PRIMITIVE.search(cmd))
     if not has_write:
         return None
+    cmd = _neutralize_worktrees(cmd)
     if HARD_FRAG.search(cmd):
         return "hard"
     # R1 / Q-035: CLAUDE.md plus any home/global indicator -> the global file may be meant.
@@ -261,7 +329,10 @@ def main():
             # deny rules don't cover Bash-mediated writes; block outright.
             # "deny" wins over any auto-approve hook's "allow" (deny > ... > allow).
             emit("deny", "Bash write to a protected policy file (.claude hooks/settings, global CLAUDE.md). "
-                         "Edit it directly with review, not via a shell write.")
+                         "Claude cannot write these: make the change outside Claude, in your own "
+                         "editor or shell, and review it there. If the command only mentions such a "
+                         "path in prose (a heredoc or message), write that text with the Write tool "
+                         "and pass the file instead.")
         if tier == "soft" and tainted:
             emit("ask", "This session fetched web content and this Bash command writes to a "
                         "trusted-policy file. Review it for injected content before allowing.")
@@ -279,10 +350,11 @@ def main():
         if tier == "hard-resolved":
             # No deny rule names this spelling, so a defer would be no gate at all,
             # and an ask is wrong for a HARD target. Deny outright.
-            emit("deny", f"This write reaches a protected policy file ({Path(fp).name}: "
-                         ".claude hooks/settings or global CLAUDE.md) through a symlink or "
-                         "resolved path that permissions.deny does not name. Edit it at its "
-                         "~/.claude path, with review.")
+            # N15: do not point at the config-dir spelling: permissions.deny blocks it.
+            emit("deny", f"This path is a live protected policy file ({Path(fp).name}: a global "
+                         "hook, settings or CLAUDE.md, reached here by its real path or through a "
+                         "symlink), so Claude's file tools cannot edit it. Make the change outside "
+                         "Claude, in your own editor or shell, and review it there.")
         if tier == "soft" and tainted:
             emit("ask", f"This session fetched web content and this write targets a trusted-policy "
                         f"file ({Path(fp).name}). Review it for injected instructions before allowing.")
