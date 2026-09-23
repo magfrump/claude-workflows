@@ -516,43 +516,147 @@ install_layout() {
 
 # --- Q-048 [2]: agent worktree paths are not the `.claude` indicator ---
 # `.claude/wt-*` and `.claude/worktrees/<name>` are agent worktrees (checkouts),
-# not the config dir. Only those exact shapes are exempt: a `..` after them,
-# a home/config-dir prefix, or any other `.claude` in the command still counts.
+# not the config dir. Only an unquoted, unexpanded ABSOLUTE path to a worktree
+# that exists at hook time as a real git worktree dir is exempt: a `..`, a
+# quote, a relative spelling, a symlinked or missing root, a home/config-dir
+# root, or any other `.claude` in the command still counts.
+
+# A real git repo with two real agent worktrees under its .claude/, outside
+# HOME. Sets REPO.
+worktree_layout() {
+  REPO="$TEST_TMPDIR/repo"
+  mkdir -p "$REPO"
+  git -C "$REPO" init -q
+  git -C "$REPO" -c user.name=t -c user.email=t@t commit -q --allow-empty -m init
+  git -C "$REPO" worktree add -q "$REPO/.claude/wt-foo" -b wt-foo
+  git -C "$REPO" worktree add -q "$REPO/.claude/worktrees/foo" -b wt-foo2
+  [ -f "$REPO/.claude/wt-foo/.git" ] && [ -f "$REPO/.claude/worktrees/foo/.git" ]
+}
+
+assert_all_deny() {  # each arg is a command that must be denied
+  local c
+  for c in "$@"; do
+    guard "$(bash_payload "$c")"
+    [ "$(jq -r '.hookSpecificOutput.permissionDecision' <<<"$output")" = deny ] \
+      || { echo "not denied: $c -> $output"; return 1; }
+  done
+}
 
 @test "Q-048: a Bash write into a .claude/wt-* worktree's hooks/ is not denied" {
+  worktree_layout
   local c
   for c in \
-    'echo x > /srv/repo/.claude/wt-foo/hooks/x.sh' \
-    'cp /tmp/a "/srv/repo/.claude/wt-foo/hooks/x.py"' \
-    'sed -i s/a/b/ /srv/repo/.claude/wt-foo/settings.json' \
-    'cd /srv/repo/.claude/wt-foo && bats test/hooks/x.bats > out.txt'; do
+    "echo x > $REPO/.claude/wt-foo/hooks/x.sh" \
+    "cp /tmp/a $REPO/.claude/wt-foo/hooks/x.py" \
+    "sed -i s/a/b/ $REPO/.claude/wt-foo/settings.json" \
+    "cd $REPO/.claude/wt-foo && bats test/hooks/x.bats > out.txt"; do
     guard "$(bash_payload "$c")"
     [ "$status" -eq 0 ] && [ -z "$output" ] || { echo "not deferred: $c -> $output"; return 1; }
   done
 }
 
 @test "Q-048: a Bash write into a .claude/worktrees/<name> worktree's hooks/ is not denied" {
-  guard "$(bash_payload 'cp /tmp/a /srv/repo/.claude/worktrees/foo/hooks/x.py')"
-  assert_defer
-  guard "$(bash_payload 'echo x >> .claude/worktrees/foo/hooks/x.sh')"
+  worktree_layout
+  guard "$(bash_payload "cp /tmp/a $REPO/.claude/worktrees/foo/hooks/x.py")"
   assert_defer
 }
 
 @test "Q-048: a worktree CLAUDE.md write is SOFT (defer; ask when tainted), not denied" {
-  guard "$(bash_payload 'echo x >> /srv/repo/.claude/wt-foo/CLAUDE.md')"
+  worktree_layout
+  guard "$(bash_payload "echo x >> $REPO/.claude/wt-foo/CLAUDE.md")"
   assert_defer
   taint sess1
-  guard "$(bash_payload 'echo x >> /srv/repo/.claude/wt-foo/CLAUDE.md' sess1)"
+  guard "$(bash_payload "echo x >> $REPO/.claude/wt-foo/CLAUDE.md" sess1)"
   assert_decision ask
 }
 
+@test "Q-048: a relative worktree path is not exempt (no cwd at hook time)" {
+  worktree_layout
+  assert_all_deny \
+    'echo x >> .claude/worktrees/foo/hooks/x.sh' \
+    "cd $REPO && echo x > .claude/wt-foo/settings.json"
+}
+
+@test "Q-048: a worktree path that does not exist, or is not a git worktree, is not exempt" {
+  worktree_layout
+  mkdir -p "$REPO/.claude/wt-plain"
+  assert_all_deny \
+    "echo x > $REPO/.claude/wt-missing/hooks/x.sh" \
+    "echo x > $REPO/.claude/wt-plain/settings.json" \
+    'echo x > /srv/repo/.claude/wt-foo/hooks/x.sh'
+}
+
+@test "Q-048 bypass: quote-split '..' after a worktree segment is denied" {
+  worktree_layout
+  mkdir -p "$HOME/.claude/wt-x"
+  local lh="$HOME"
+  assert_all_deny \
+    'cd ~ && echo x > .claude/wt-x"/.."/settings.json' \
+    "cd ~ && echo x > .claude/wt-x'/..'/settings.json" \
+    'cd ~ && echo x > .claude/wt-x"/../hooks/"evil.sh' \
+    'cd ~ && echo x > .claude/wt-x/."".//settings.json' \
+    'cd ~ && echo x > .claude/wt-x/.""./settings.json' \
+    'mkdir -p "$HOME"/.claude/wt-y && echo {} > "$HOME"/.claude/wt-y"/../"settings.local.json' \
+    "echo x > '$lh'/.claude/wt-x'/..'/hooks/evil.sh" \
+    "echo x > \"$lh\"/.claude/wt-x\"/..\"/settings.json" \
+    'echo x > ".claude/wt-z"/../settings.json' \
+    "echo x > $REPO/.claude/wt-foo\"/..\"/settings.json" \
+    "echo x > $REPO/.claude/wt-foo'/../../..'$HOME/.claude/settings.json"
+}
+
+@test "Q-048 bypass: a quote before /.claude or a second '=' does not exempt a home worktree" {
+  mkdir -p "$HOME/.claude/wt-x"
+  local lh="$HOME"
+  assert_all_deny \
+    'echo x > "$HOME"/.claude/wt-x/settings.json' \
+    "echo x > \"$lh\"/.claude/wt-x/settings.json" \
+    "echo x > a=b=$lh/.claude/wt-x/settings.json" \
+    'echo x > "$HOME"/.claude/wt-x/hooks/x.sh'
+}
+
+@test "Q-048 bypass: a quoted parent of a wt-shaped CLAUDE_CONFIG_DIR is denied" {
+  mkdir -p "$TEST_TMPDIR/srv/repo/.claude/wt-cfg"
+  export CLAUDE_CONFIG_DIR="$TEST_TMPDIR/srv/repo/.claude/wt-cfg"
+  assert_all_deny \
+    "echo x > \"$TEST_TMPDIR/srv/repo\"/.claude/wt-cfg/settings.json" \
+    "echo x > $TEST_TMPDIR/srv/repo/.claude/wt-cfg/settings.json"
+}
+
+@test "Q-048 bypass: a symlinked worktree dir is not exempt" {
+  worktree_layout
+  ln -s "$HOME/.claude" "$REPO/.claude/wt-link"
+  ln -s "$REPO/.claude/wt-foo" "$REPO/.claude/wt-alias"
+  mkdir -p "$HOME/.claude"
+  assert_all_deny \
+    'cd ~ && ln -s . .claude/wt-q && echo PWNED > .claude/wt-q/settings.json' \
+    "echo x > $REPO/.claude/wt-link/settings.json" \
+    "echo x > $REPO/.claude/wt-alias/settings.json"
+}
+
+@test "Q-048: a real worktree inside the config dir is not exempt" {
+  worktree_layout
+  git -C "$REPO" worktree add -q "$HOME/.claude/wt-home" -b wt-home
+  [ -f "$HOME/.claude/wt-home/.git" ]
+  assert_all_deny \
+    "echo x > $HOME/.claude/wt-home/settings.json" \
+    "echo x > $HOME/.claude/wt-home/hooks/x.sh"
+}
+
+@test "Q-048: a symlink inside a worktree that leads out of it is not exempt" {
+  worktree_layout
+  mkdir -p "$HOME/.claude"
+  ln -s "$HOME/.claude" "$REPO/.claude/wt-foo/cfg"
+  assert_all_deny "echo x > $REPO/.claude/wt-foo/cfg/settings.json"
+}
+
 @test "Q-048: a '..' after a worktree segment is still denied" {
+  worktree_layout
   local c
   for c in \
-    'echo x > /srv/repo/.claude/wt-foo/../hooks/x.sh' \
-    'echo x > /srv/repo/.claude/wt-foo/sub/../../settings.json' \
-    'cp /tmp/a /srv/repo/.claude/worktrees/foo/../../.claude/hooks/x' \
-    'cd /srv/repo/.claude/worktrees/.. && cp /tmp/a hooks/x' \
+    "echo x > $REPO/.claude/wt-foo/../hooks/x.sh" \
+    "echo x > $REPO/.claude/wt-foo/sub/../../settings.json" \
+    "cp /tmp/a $REPO/.claude/worktrees/foo/../../.claude/hooks/x" \
+    "cd $REPO/.claude/worktrees/.. && cp /tmp/a hooks/x" \
     'echo x > .claude/wt-foo/../CLAUDE.md'; do
     guard "$(bash_payload "$c")"
     [ "$(jq -r '.hookSpecificOutput.permissionDecision' <<<"$output")" = deny ] \
@@ -577,13 +681,14 @@ install_layout() {
 }
 
 @test "Q-048: a worktree path does not mask a real .claude indicator elsewhere" {
+  worktree_layout
   local c
   for c in \
-    'cp /srv/repo/.claude/wt-foo/hooks/a ~/.claude/hooks/a' \
-    'cp /srv/repo/.claude/wt-foo/settings.json ~/.claude/' \
-    'cd ~/.claude && cp /srv/repo/.claude/wt-foo/hooks/a hooks/a' \
-    'cp /srv/repo/.claude/wt-foo/x /srv/repo/.claude/wt-foo/.claude/hooks/x' \
-    'echo x > /srv/repo/.claude/wt-foo/CLAUDE.md; echo y > ~/CLAUDE.md'; do
+    "cp $REPO/.claude/wt-foo/hooks/a ~/.claude/hooks/a" \
+    "cp $REPO/.claude/wt-foo/settings.json ~/.claude/" \
+    "cd ~/.claude && cp $REPO/.claude/wt-foo/hooks/a hooks/a" \
+    "cp $REPO/.claude/wt-foo/x $REPO/.claude/wt-foo/.claude/hooks/x" \
+    "echo x > $REPO/.claude/wt-foo/CLAUDE.md; echo y > ~/CLAUDE.md"; do
     guard "$(bash_payload "$c")"
     [ "$(jq -r '.hookSpecificOutput.permissionDecision' <<<"$output")" = deny ] \
       || { echo "not denied: $c -> $output"; return 1; }
