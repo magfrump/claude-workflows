@@ -28,7 +28,9 @@ Two tiers of policy path:
                        symlinked to ~/.claude. No deny rule names that string, so a defer
                        would be no gate at all; the hook returns "deny" itself, and a
                        deny cannot be approved (Q-050 [2]: such files are edited outside
-                       Claude). A regular-file COPY in ~/.claude leaves its source ungated.
+                       Claude). A regular-file COPY in ~/.claude leaves its source out of
+                       the HARD tier: a copied hook's source is ungated, a copied
+                       CLAUDE.md's source is SOFT (ask when tainted).
           For Bash, which deny rules don't cover at all, HARD is "deny" outright.
   SOFT  = skills / memories / commands / agents / project CLAUDE.md|AGENTS.md / *.mdc,
           a PROJECT's own .claude/ (settings*.json, hooks/**; Q-026), and
@@ -45,9 +47,13 @@ one many ways. The global tier is therefore decided by CO-OCCURRENCE in the text
           settings*.json / hooks mention together with `.claude` / the config dir.
           Conservative: a heredoc that names ~/.claude/CLAUDE.md in prose is denied.
           Exception (Q-048 [2]): an agent worktree path (`.claude/wt-<name>`,
-          `.claude/worktrees/<name>`) is not a `.claude` indicator, unless its shell
-          word holds `..` or an expandable character, sits directly under the home
-          dir, or overlaps the config dir (_neutralize_worktrees).
+          `.claude/worktrees/<name>`) is not a `.claude` indicator ONLY when its
+          whole shell word is an absolute path with no quote, expandable character
+          or `..`, and its worktree root exists at hook time as a real,
+          unsymlinked git worktree (a `.git` file) clear of the config dir,
+          ~/.claude and HOME (_neutralize_worktrees). So a relative worktree path
+          (`cd … && … .claude/wt-x/…`) is NOT exempt, and neither is a worktree the
+          same command creates or symlinks: it does not exist when the hook runs.
   SOFT  = a CLAUDE.md with no home/global indicator anywhere (Q-035) — matching the
           Edit/Write tier, so a heredoc or commit message that merely names a project
           CLAUDE.md is no longer denied.
@@ -112,7 +118,8 @@ _HARD_DIR_TARGETS = {_safe_resolve(CONFIG_DIR / "hooks")}
 # per-file symlinks into the checkout (README setup). Resolving only the directory
 # misses them, so resolve each entry: a checkout file that IS a live hook is HARD
 # (resolved tier -> deny). A regular-file copy resolves into the config dir itself,
-# which leaves its checkout original ungated, as intended.
+# which leaves its checkout original out of the HARD tier, as intended (a
+# CLAUDE.md original still falls to SOFT and asks when tainted).
 try:
     for _e in (CONFIG_DIR / "hooks").iterdir():
         _t = _safe_resolve(_e)
@@ -242,32 +249,64 @@ SOFT_FRAG = re.compile(
     r"|(^|[\s\"'=/])(AGENTS|CLAUDE|CLAUDE\.local)\.md|\.mdc(\b|$)", re.I)
 
 # Q-048 [2]: an agent worktree (`.claude/wt-<name>`, `.claude/worktrees/<name>`)
-# is a checkout, not the config dir, so its `.claude` is not an indicator. Only the
-# exact shape is exempt. Any of these keeps the occurrence as an indicator:
-#   - a `..` component, or a shell-expandable character ($ ` ~ \ * ? [ {), anywhere
-#     in the shell word, since the shell could turn it back into the config dir;
-#   - a prefix that is the home dir itself (`~/.claude/wt-x`, `$HOME/...`, the
-#     literal home path);
-#   - a worktree path that equals, contains or lies inside the config dir.
+# is a checkout, not the config dir, so its `.claude` is not an indicator. The
+# check is on what exists at hook time, not on spelling alone, because the shell
+# rewrites spellings (quote concatenation `wt-x"/.."`, `$HOME`, `a=b=/...`) and a
+# name can be a symlink. An occurrence is exempt ONLY when ALL of these hold:
+#   - its whole shell word holds no quote, no expandable character
+#     ($ ` ~ \ * ? [ {) and no `..` component. Quotes are part of the word, not
+#     word ends: the shell concatenates `.claude/wt-x"/.."/settings.json` into
+#     one path;
+#   - the word is an ABSOLUTE path. A relative one (`cd ~ && .claude/wt-x/...`)
+#     depends on a cwd the hook cannot see, so it is never exempt;
+#   - its worktree root exists NOW as a real directory (not a symlink, and no
+#     symlinked ancestor: realpath == normpath) holding a `.git` FILE, i.e. a git
+#     worktree. A worktree created or symlinked by the same command does not
+#     exist yet, so it is not exempt;
+#   - that root neither equals, contains nor lies inside the config dir (as
+#     written or resolved) or ~/.claude, and does not contain HOME;
+#   - the word, resolved, stays inside the root (a symlink inside the worktree
+#     that leads out of it is not exempt; one created by the same command is a
+#     residual).
 # Every other `.claude` in the command still counts.
 _WT_SEG = re.compile(
     r"\.claude/(?:wt-[A-Za-z0-9_.-]*|worktrees/[A-Za-z0-9_-][A-Za-z0-9_.-]*)"
     r"(?=/|[\s\"'`;|&<>()]|$)")
-# Word boundaries for the check. `=` is NOT a boundary: `a=/../x` is one path, so
-# the whole word is checked, and an assignment's value (after the first `=`) is
-# additionally checked on its own for the home / config-dir tests.
-_WORD_DELIM = set(" \t\n\"'`;|&<>()")
-_WT_UNSAFE = re.compile(r"[$`~\\*?\[{]|(^|[/=])\.\.(/|=|$)")
+# Word boundaries for the check. Quotes and `=` are NOT boundaries: the shell
+# joins `"a"/b` and `a=/x` into one word, so the whole of it is checked.
+_WORD_DELIM = set(" \t\n;|&<>()")
+_WT_UNSAFE = re.compile(r"[\"'$`~\\*?\[{]|(^|/)\.\.(/|$)")
 
 def _within(a: str, b: str) -> bool:
     return a == b or a.startswith(b.rstrip("/") + "/")
 
-def _is_home_or_cfg(path_prefix: str, seg: str) -> bool:
-    if path_prefix and os.path.normpath(path_prefix) == os.path.normpath(str(HOME)):
-        return True
-    full = os.path.normpath(path_prefix + seg)
-    return full.startswith("/") and any(_within(full, str(g)) or _within(str(g), full)
-                                        for g in GLOBAL_DIRS)
+def _real_worktree_root(root: str) -> bool:
+    """True when `root` is, right now, a real (unsymlinked) git worktree dir that
+    is clear of the config dir, ~/.claude and HOME."""
+    try:
+        if os.path.islink(root) or not os.path.isdir(root):
+            return False
+        if os.path.realpath(root) != root:
+            return False
+        git = os.path.join(root, ".git")
+        if os.path.islink(git) or not os.path.isfile(git):
+            return False
+    except OSError:
+        return False
+    protected = {str(g) for g in GLOBAL_DIRS}
+    protected |= {str(HOME / ".claude"), os.path.realpath(str(HOME / ".claude"))}
+    if any(_within(root, p) or _within(p, root) for p in protected):
+        return False
+    home = {str(HOME), os.path.realpath(str(HOME))}
+    return not any(_within(h, root) for h in home)
+
+def _exempt_worktree(word: str, root: str) -> bool:
+    if _WT_UNSAFE.search(word) or not word.startswith("/"):
+        return False
+    root = os.path.normpath(root)
+    if not _real_worktree_root(root):
+        return False
+    return _within(os.path.realpath(word), root)
 
 def _neutralize_worktrees(cmd: str) -> str:
     out, last = [], 0
@@ -278,10 +317,7 @@ def _neutralize_worktrees(cmd: str) -> str:
         e = m.end()
         while e < len(cmd) and cmd[e] not in _WORD_DELIM:
             e += 1
-        prefix, suffix = cmd[s:m.start()], cmd[m.end():e]
-        if _WT_UNSAFE.search(prefix) or _WT_UNSAFE.search(suffix):
-            continue
-        if any(_is_home_or_cfg(p, m.group(0)) for p in {prefix, prefix.split("=", 1)[-1]}):
+        if not _exempt_worktree(cmd[s:e], cmd[s:m.end()]):
             continue
         out.append(cmd[last:m.start()])
         out.append("AGENT_WORKTREE")
