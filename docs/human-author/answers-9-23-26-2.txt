@@ -1,0 +1,38 @@
+Q-049:
+$ for form in control single double; do
+  d=$(mktemp -d); td=$(mktemp -d); t=$td/target.txt
+  case $form in control) deny='' ;; single) deny="\"Write($t)\"" ;; double) deny="\"Write(/$t)\"" ;; esac
+  printf '{"permissions":{"allow":["Write"],"deny":[%s]}}\n' "$deny" > "$d/s.json"
+  out=$(cd "$d" && claude -p "Use the Write tool to create the file $t containing: hi" --settings "$d/s.json" --add-dir "$td" --output-format json 2>"$d/err")
+  turns=$(printf '%s' "$out" | jq -r '.num_turns // 0' 2>/dev/null); turns=${turns:-0}
+  if [ -e "$t" ]; then r="file written"; elif [ "$turns" -ge 2 ]; then r="not written (claude ran $turns turns)"; else r="INCONCLUSIVE, claude did not run: $(head -c 200 "$d/err")"; fi
+  echo "$form: $r"
+done
+control: file written
+single: file written
+double: file written
+
+Q-051: [1]
+
+Q-052: [1]
+
+Q-053:
+$ A=lakecache.blob.core.windows.net; B=azureopendatastorage.blob.core.windows.net 
+p1='/mathlib4-master?restype=container&comp=list&maxresults=1'   # lakecache's own public listing (Cache/Requests.lean:1242)
+p2='/mnist?restype=container&comp=list&maxresults=1'             # a public Azure Open Datasets container
+show() { curl -sS -m 10 -w ' [%{http_code}]' "$@" 2>&1 | tr -d '\n' | head -c 220; echo; }
+echo "1 lakecache direct : $(show "https://$A$p1")"
+echo "2 other acct direct: $(show "https://$B$p2")"
+echo "3 fronted          : $(show -H "Host: $B" "https://$A$p2")"
+1 lakecache direct : <?xml version="1.0" encoding="utf-8"?><Error><Code>ResourceNotFound</Code><Message>The specified resource does not exist.RequestId:0d09efc0-c01e-000a-279a-4bf492000000Time:2026-09-23T20:32:06.3655218Z</Message></Error
+2 other acct direct: <?xml version="1.0" encoding="utf-8"?><EnumerationResults ContainerName="https://azureopendatastorage.blob.core.windows.net/mnist"><MaxResults>1</MaxResults><Blobs><Blob><Name>processed/dataset_filter=all/merged.csv</
+3 fronted          : <?xml version="1.0" encoding="utf-8"?><Error><Code>AccountNotFound</Code><Message>The specified account does not exist.RequestId:6c9f48f6-501e-0027-409a-4b47e1000000Time:2026-09-23T20:32:07.2262748Z</Message></Error>
+
+Q-054:
+I think [2] is preferable; I *will* forget to add flags to install.sh, and it already replaces some files in place instead of symlinks.
+
+Q-055: [2]
+
+Q-056: [1]
+
+Q-057: [1]

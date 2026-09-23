@@ -459,7 +459,7 @@ firewall() {
   run firewall
   [ "$status" -eq 0 ]
   [[ "$output" == *"pypi.org"* ]]
-  [[ "$output" == *"elan.lean-lang.org"* ]]
+  [[ "$output" == *"release.lean-lang.org"* ]]
 }
 
 @test "an android project gets Google Maven, Maven Central, and Gradle on top of base" {

@@ -61,7 +61,7 @@ GitHub IP ranges). Language toolchains are granted per project, **host-side only
 | `base`  | Claude Code's documented hosts (`api.anthropic.com`, `claude.ai`, `claude.com`, `platform.claude.com`, `downloads.claude.ai`, `mcp-proxy.anthropic.com`, `code.claude.com`; `console.anthropic.com` kept pending one verified login without it; the zone `.frame.claudeusercontent.com` for Artifact reads), `registry.npmjs.org`, GitHub ranges | always applied |
 | `python`| `pypi.org`, `files.pythonhosted.org` | `pyproject.toml` · `requirements.txt` · `setup.py` |
 | `rust`  | `crates.io`, `index.crates.io`, `static.crates.io` | `Cargo.toml` |
-| `lean`  | `elan.lean-lang.org`, Lean release host, mathlib olean cache, `reservoir.lean-lang.org` | `lean-toolchain` · `lakefile.toml` · `lakefile.lean` |
+| `lean`  | Lean release hosts, mathlib olean cache | `lean-toolchain` · `lakefile.toml` · `lakefile.lean` |
 | `android`| Google Maven (`dl.google.com`, `maven.google.com`), Maven Central, `services.gradle.org`, `plugins.gradle.org` | `gradlew` · `build.gradle[.kts]` · `settings.gradle[.kts]` |
 | `dotnet` | `api.nuget.org` | `ProjectSettings/ProjectVersion.txt` · `Packages/manifest.json` · top-level `*.sln` / `*.csproj` |
 | `llm`   | `openrouter.ai` | never — deliberate opt-in |
@@ -342,9 +342,10 @@ Failure modes worth recognizing on sight:
   `Cache/Requests.lean` in a mathlib4 checkout on the host — it has moved before —
   then correct `egress/lean.txt`, re-install, re-bless.
 - **`lake` cannot resolve a dependency required by bare name.** That path goes through
-  Reservoir, not GitHub; `reservoir.lean-lang.org` is in the profile for it. Git
-  `require`s (what mathlib itself uses) resolve to GitHub, which every session already
-  reaches.
+  Reservoir, not GitHub. `reservoir.lean-lang.org` was removed from the profile on
+  2026-09-23 because its front end allows domain fronting (Q-051). Switch the require to
+  a git URL. Git `require`s (what mathlib itself uses) resolve to GitHub, which every
+  session already reaches.
 
 ## Literature search inside the container
 
@@ -513,12 +514,15 @@ happens to share an address with an allowlisted one (a Cloudflare neighbour of
     `dl.google.com` and `maven.google.com` (so the Google-hosted surface,
     writable `storage.googleapis.com` included, is reachable in principle);
     `elan.lean-lang.org` (any GitHub Pages site); `reservoir.lean-lang.org`
-    (served an unrelated third-party site).
+    (served an unrelated third-party site). The two lean names were removed from
+    the profile on 2026-09-23 (Q-051); the Google names stay under an accepted
+    risk (Q-052).
   - **Refuses (403) or ignores Host:** `repo.maven.apache.org`,
     `repo1.maven.org`, `services.gradle.org`, `plugins.gradle.org`,
     `release.lean-lang.org`; `releases.lean-lang.org` serves its default page
     for any Host.
-  - **Inconclusive:** `lakecache.blob.core.windows.net` (Azure Blob).
+  - **Refuses a different account:** `lakecache.blob.core.windows.net` returned
+    `AccountNotFound` for another storage account's Host (Q-053).
 
   The test covered only the `android` and `lean` names; `base`'s names were not
   tested. Closing the residual needs TLS interception, which the design rules

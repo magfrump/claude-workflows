@@ -11,16 +11,23 @@
 # resolve (only `base` domains are critical), so a wrong entry degrades to "stays
 # blocked", not to a wider allowlist or a failed container start.
 #
-# DOMAIN FRONTING (host test 2026-09-23, questions-archive Q-045). The SNI proxy
-# checks only the TLS server name, so the front end behind each name decides where a
-# mismatched HTTP Host goes. elan.lean-lang.org routes by Host across GitHub Pages,
-# and reservoir.lean-lang.org served an unrelated third-party site. Both are open
-# channels to tenants the allowlist never named. release. refused (403), releases.
-# ignores Host, and lakecache was inconclusive. Whether to keep the two open entries
-# is an open question in docs/working/questions.md.
-
-# elan's installer/self-update host.
-elan.lean-lang.org
+# DOMAIN FRONTING (host tests 2026-09-23, questions-archive Q-045 and Q-053). The SNI
+# proxy checks only the TLS server name, so the front end behind each name decides
+# where a mismatched HTTP Host goes. release. refused (403), releases. ignores Host,
+# and lakecache refused a different account (see its entry).
+#
+# REMOVED 2026-09-23 (Q-051 [1]), because both front ends route by Host to tenants
+# the allowlist never named:
+#   elan.lean-lang.org       elan's installer/self-update host; routes across
+#                            GitHub Pages. elan is baked into the image, and
+#                            toolchains come from release. below.
+#   reservoir.lean-lang.org  Lake's package index; served an unrelated third-party
+#                            site. Needed only for a lakefile `require` by bare
+#                            package name. mathlib's dependencies are git requires
+#                            that resolve to GitHub, which `base` admits.
+# Symptom if one is needed after all: `elan self update` or a bare-name `require`
+# fails with a connection error in-container. Restoring the line re-opens the
+# channel, so write an ACCEPTED RISK note beside it.
 
 # Toolchain downloads. VERIFIED 2026-09-17 on the host (questions.md Q-010): BOTH
 # names resolve — `release.lean-lang.org` returns 200, `releases.lean-lang.org`
@@ -52,15 +59,13 @@ releases.lean-lang.org
 # Storage endpoint, i.e. a writable object store fronted by shared infrastructure. The
 # SNI proxy pins the admitted 443 SNI to exactly this name. Whether the Azure front
 # end also refuses a different account's Host behind it was INCONCLUSIVE in the
-# 2026-09-23 test (a different error, 404 vs 400, not a match); a follow-up probe is
-# in docs/working/questions.md. What remains either way is that the mathlib
+# follow-up probe (2026-09-23, Q-053): SNI lakecache with Host
+# azureopendatastorage.blob.core.windows.net returned `AccountNotFound`, while the
+# same request direct to that account listed its container. The front end looked up
+# the Host's account and refused it, so this account at least is not reachable
+# through this name. Inferred, not tested: the lookup may be scoped to the storage
+# cluster serving lakecache, so an account on that same cluster might resolve. That
+# is a much narrower residual than a CDN front. What remains is that the mathlib
 # cache bucket itself is a general object store, and writing to it needs a SAS token
 # the container does not have. Narrower than the GFE surface `android` already grants.
 lakecache.blob.core.windows.net
-
-# Reservoir — Lake's package index, used when a lakefile `require`s a package by bare
-# name rather than by git URL. mathlib's own dependencies (batteries, aesop, Qq,
-# proofwidgets, importGraph, plausible, LeanSearchClient, Cli) are git requires that
-# resolve to GitHub, which `base` admits by CIDR, so this is only needed by projects
-# that use the index. Drop it if none of yours do.
-reservoir.lean-lang.org

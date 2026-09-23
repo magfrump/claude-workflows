@@ -25,14 +25,7 @@ The index below is generated — edit entries, not the table.
 <!-- index:start -->
 | ID | Needs | Question | Opened |
 |---|---|---|---|
-| [Q-051](#q-051--lean-fronting-entries) | you: judgment | Two `lean` names front to tenants nobody listed (Q-045): `elan.lean-lang.org` reaches any GitHub Pages site... | 2026-09-23 |
-| [Q-052](#q-052--android-google-fronting) | you: judgment | `dl.google.com` and `maven.google.com` front to Google-hosted tenants (Q-045: Host www.google.com got Googl... | 2026-09-23 |
-| [Q-054](#q-054--copy-install-approach) | you: judgment | Approve the plan that replaces the bare-host symlink install with blessed copies (your Q-050 direction), an... | 2026-09-23 |
-| [Q-055](#q-055--gemini-install-target) | you: judgment | Do you still use Gemini (CLI or Antigravity)? The README symlinks six entries into `~/.gemini`, and the cop... | 2026-09-23 |
-| [Q-056](#q-056--host-install-tty-only) | you: judgment | Should the host install targets refuse `--yes` and require an interactive terminal? The agent runs on the s... | 2026-09-23 |
-| [Q-057](#q-057--host-install-foreign-files) | you: judgment | When a directory the install owns (for example `~/.claude/skills`) holds files the repo does not have, shou... | 2026-09-23 |
 | [Q-049](#q-049--deny-rule-absolute-path-form) | you: terminal | Do the live deny rules match at all? `link-claude-home.sh` writes them as `Edit(/home/node/.claude/settings... | 2026-09-21 |
-| [Q-053](#q-053--azure-blob-fronting-probe) | you: terminal | Does the Azure Blob front end behind `lakecache.blob.core.windows.net` route a different storage account's ... | 2026-09-23 |
 <!-- index:end -->
 
 ## Open
@@ -43,136 +36,33 @@ The index below is generated — edit entries, not the table.
 Do the live deny rules match at all? `link-claude-home.sh` writes them as `Edit(/home/node/.claude/settings*.json)`, with one leading slash. If Claude Code reads `/path` as relative to the settings file and needs `//path` for an absolute path (which is my recollection of its docs, unverified because the sandbox has no egress), every global-dir deny rule matches nothing. `guard-trusted-writes.py` then defers to rules that aren't there, so file-tool edits to global settings, hooks and CLAUDE.md get no gate. This predates this branch. The 2026-09-21 iteration-2 review raised it as N3.
 
 - **Read:** `hooks/wiring.json` deny block, `devcontainer-config/link-claude-home.sh:137` (the `{{CLAUDE_DIR}}` substitution), `~/.claude/settings.json` (live rules)
-- **2026-09-23 run: INCONCLUSIVE.** Every line read `Ignoring 1 permissions.allow entry from .claude/settings.json: this workspace has not been trusted`. A project `.claude/settings.json` in a fresh temp dir is untrusted, so its `allow` was dropped. The error text was also merged into stdout (`2>&1`), which broke the `jq` parse. The revised paste passes the rules with `--settings <file>`, a CLI flag source that needs no workspace trust. It grants the target dir with `--add-dir` and keeps stderr separate.
-- **The paste** (on the host; three tiny headless calls on your subscription):
+- **Run 1 (2026-09-23): INCONCLUSIVE.** Untrusted project settings dropped the `allow` rule.
+- **Run 2 (2026-09-23): `control`, `single` and `double` all wrote the file.** The control worked, so `--settings` loaded and the allow applied. But neither `Write(/abs)` nor `Write(//abs)` stopped a Write. There are two readings, and this run can't tell them apart: (a) `Write(<path>)` is not a path-matched rule, and file paths are matched only by `Edit(<path>)`, which is also the form the live rules use; or (b) deny rules from `--settings` are not applied. Run 2 therefore tested the wrong form. It says nothing yet about the live `Edit(...)` rules.
+- **Run 3 paste** (on the host; five tiny headless calls). `denyall` denies Write outright, which proves deny rules from `--settings` apply at all. `edit1`/`edit2` are the live form, with one and two leading slashes:
 
 ```bash
-for form in control single double; do
+for form in control denyall edit1 edit2 edithome; do
   d=$(mktemp -d); td=$(mktemp -d); t=$td/target.txt
-  case $form in control) deny='' ;; single) deny="\"Write($t)\"" ;; double) deny="\"Write(/$t)\"" ;; esac
+  case $form in
+    control) deny='' ;;
+    denyall) deny='"Write"' ;;
+    edit1) deny="\"Edit($t)\"" ;;
+    edit2) deny="\"Edit(/$t)\"" ;;
+    edithome) td=$(mktemp -d "$HOME/.q049.XXXXXX"); t=$td/target.txt; deny="\"Edit(~/${td#$HOME/}/target.txt)\"" ;;
+  esac
   printf '{"permissions":{"allow":["Write"],"deny":[%s]}}\n' "$deny" > "$d/s.json"
   out=$(cd "$d" && claude -p "Use the Write tool to create the file $t containing: hi" --settings "$d/s.json" --add-dir "$td" --output-format json 2>"$d/err")
   turns=$(printf '%s' "$out" | jq -r '.num_turns // 0' 2>/dev/null); turns=${turns:-0}
   if [ -e "$t" ]; then r="file written"; elif [ "$turns" -ge 2 ]; then r="not written (claude ran $turns turns)"; else r="INCONCLUSIVE, claude did not run: $(head -c 200 "$d/err")"; fi
   echo "$form: $r"
+  case $form in edithome) rm -rf "$td" ;; esac
 done
 ```
 
-- **Assumption this run rests on:** that a path in a `--settings` file is parsed the same way as one in `~/.claude/settings.json`. If Claude Code reads `/path` relative to the settings file, neither file sits at `/`, so the single-slash form misses in both and the result carries over.
-
-- **How to read it:** `control` has no deny rule and must say "file written". If it doesn't, the other two lines prove nothing (the project settings weren't trusted, or Write needed a prompt), so paste the output back as is. With a good control: `single: not written` means a single leading `/` works; `single: file written` with `double: not written` means only `//` is absolute.
-- **What I do with it:** if single-slash is enforced, N3 is closed as a non-issue. If only double-slash is enforced, `link-claude-home.sh` emits `//` for absolute dirs, a test pins it, and you re-install and re-bless. In either case I'd also consider having the hook return `deny` itself for HARD paths instead of deferring, since that holds whether or not the rules match.
+- **How to read it:** `control` must say "file written" and `denyall` "not written". Otherwise the run proves nothing, so paste it back. With those two good:
+  - `edit1: not written` → the live single-slash rules work. N3 is closed.
+  - `edit1: file written`, `edit2: not written` → only `//` is absolute, so the live rules match nothing today.
+  - `edit1` and `edit2` both "file written" → no absolute form works in `--settings`. `edithome` (the `~/` form) is the fallback to try.
+- **What I do with it:** single-slash works → close N3. Otherwise `link-claude-home.sh` emits the form that works, a test pins it, and you re-install and re-bless. **Whatever the result, I recommend the guard redesign the review proposed:** the hook returns `deny` itself for HARD paths instead of deferring to rules. Run 2 already shows how easily a rule can silently match nothing.
 - **Interim:** unchanged. The devcontainer's `/opt` payload is read-only, which bounds the hooks and CLAUDE.md exposure there. `~/.claude/settings*.json` is not bounded that way.
 
-### Q-051 · lean-fronting-entries
-**Needs:** you: judgment · **Opened:** 2026-09-23 · **Status:** OPEN
-
-Two `lean` names front to tenants nobody listed (Q-045): `elan.lean-lang.org` reaches any GitHub Pages site, and `reservoir.lean-lang.org` reached an unrelated third-party site. Keep them or drop them?
-
-- **Why it's yours:** Q-045 left keeping or dropping a fronting entry to your judgment on the evidence.
-- **Read:** `devcontainer-config/egress/lean.txt` (the header's DOMAIN FRONTING note and each entry's comment); Q-045's table in the archive
-- **What each is for:** elan is baked into the image (log #51), and toolchains come from `release.lean-lang.org`, which refuses fronting. So `elan.` serves only elan's installer and self-update [inferred from lean.txt's comments, not tested]. `reservoir.` serves only a lakefile `require` by bare package name; mathlib's dependencies are git requires that resolve through GitHub.
-
-| Option | What it means | Cost to you | If it's wrong |
-|---|---|---|---|
-| **[1] Drop both** | Remove both lines from `lean.txt`, then install and re-bless | One install + bless | A bare-name `require`, or an elan self-update, fails loudly in-container until the line is restored |
-| **[2] Drop `elan.`, keep `reservoir.`** | Keep the index for bare-name requires, with an ACCEPTED RISK note | One install + bless | A session can reach any tenant on reservoir's hosting platform, possibly one that runs server code |
-| **[3] Keep both, accept the risk** | Only the ACCEPTED RISK notes change (comments, no re-bless) | none | Two open channels stay in the lean profile |
-
-- **Interim:** both stay listed, with the residual written beside them. The profile is opt-in (`--profile lean`), so only lean sessions carry it.
-- **If the answer differs:** a one-line removal per entry, then `install.sh` and a re-bless. The live-verify gate will ask for a trailer, because removing a line is a non-comment change.
-
-### Q-052 · android-google-fronting
-**Needs:** you: judgment · **Opened:** 2026-09-23 · **Status:** OPEN
-
-`dl.google.com` and `maven.google.com` front to Google-hosted tenants (Q-045: Host www.google.com got Google's home page), which probably includes writable `storage.googleapis.com`. Both are Google's Maven host (`google()`), which Android builds need. Accept the residual, or drop Google Maven from the profile?
-
-- **Why it's yours:** it trades the egress threat model against a working Android profile. `android.txt` accepted "the whole GFE surface" when the firewall matched only IPs. The SNI proxy was expected to narrow that, and it does not.
-- **Read:** `devcontainer-config/egress/android.txt` (ACCEPTED RISK block)
-
-| Option | What it means | Cost to you | If it's wrong |
-|---|---|---|---|
-| **[1] Accept and keep** | The ACCEPTED RISK note, updated today, stands | none | An android session has an outbound channel to any Google-hosted service |
-| **[2] Drop both names** | `google()` artifacts must come from the Gradle cache baked in at image build | Android builds that resolve new Google artifacts fail until an image rebuild | The profile works only for projects whose Google dependencies are baked in |
-
-- **Interim:** [1]. Only the comment changed. The profile is opt-in.
-- **If the answer differs:** remove the two lines, install, re-bless (live-verify trailer).
-
-### Q-053 · azure-blob-fronting-probe
-**Needs:** you: terminal · **Opened:** 2026-09-23 · **Status:** OPEN
-
-Does the Azure Blob front end behind `lakecache.blob.core.windows.net` route a different storage account's `Host`? Q-045's root-path probe was inconclusive because it compared two error pages. This probe compares real container listings. An attacker's own storage account with a SAS token would be a write sink, so the answer matters more here than for a read-only mirror.
-
-- **Read:** `devcontainer-config/egress/lean.txt` (lakecache ACCEPTED RISK note); Q-045 in the archive
-- **The paste** (on the host):
-
-```bash
-A=lakecache.blob.core.windows.net; B=azureopendatastorage.blob.core.windows.net
-p1='/mathlib4-master?restype=container&comp=list&maxresults=1'   # lakecache's own public listing (Cache/Requests.lean:1242)
-p2='/mnist?restype=container&comp=list&maxresults=1'             # a public Azure Open Datasets container
-show() { curl -sS -m 10 -w ' [%{http_code}]' "$@" 2>&1 | tr -d '\n' | head -c 220; echo; }
-echo "1 lakecache direct : $(show "https://$A$p1")"
-echo "2 other acct direct: $(show "https://$B$p2")"
-echo "3 fronted          : $(show -H "Host: $B" "https://$A$p2")"
-```
-
-- **How to read it:** line 1 must show an `<EnumerationResults` listing and `[200]`. Line 2 must as well; if it doesn't, the container name is wrong and the run proves nothing, so paste it back. If line 3 matches line 2 (a `mnist` listing), fronting works across accounts. If line 3 is an error (`ResourceNotFound`, `InvalidQueryParameterValue`, 400 or 404), the front end stays within the SNI's account.
-- **What I do with it:** refuses → the lakecache ACCEPTED RISK note is confirmed as written, with the date. Fronts → a new judgment entry on keeping lakecache, which is the entry that makes the lean profile usable at all.
-- **Interim:** lakecache stays listed; `lean.txt` calls it inconclusive.
-
-### Q-054 · copy-install-approach
-**Needs:** you: judgment · **Opened:** 2026-09-23 · **Status:** OPEN
-
-Approve the plan that replaces the bare-host symlink install with blessed copies (your Q-050 direction), and pick how `install.sh` exposes the host targets.
-
-- **Why it's yours:** RPI's plan gate. No code is written until you approve. The shape is a design choice that the non-interactive run left tentative (Path C, 70%).
-- **Read:** on branch `ans/copy-install-plan` (05f92e5): `docs/working/plan-copy-install-bare-host.md` (7 steps), `research-copy-install-bare-host.md` (the DD matrix), `checkpoint-copy-install-bare-host.md`
-- **Common to every option:** existing symlinks show in the diff as `REPLACE symlink … with a copy` and are moved to `.claude-workflows-backup/<stamp>/`, never deleted. `hooks/` and `scripts/` are copied whole. `settings.json` is not touched; a reminder prints when `wiring.json` changed. Three hazards confirmed in scratch drove this design: `diff -ruN` through a symlink shows nothing, `cp -r` onto a directory symlink writes into the checkout, and `rm -rf link/` empties the checkout.
-
-| Option | What it means | Cost to you | If it's wrong |
-|---|---|---|---|
-| **[1] Target flags, one per run (A)** | `install.sh --claude-home` / `--gemini`; a plain run is unchanged | Remember the flag | Forgetting it leaves `~/.claude` stale, with no error |
-| **[2] Plain run offers every target (D)** | One run, a separate y/N per target | A longer run each time | An existing command changes what it does |
-| **[3] Separate host-install script (B)** | A new script beside `install.sh` | A second script, which needs its own commit gate (decision 035) | Two installers drift apart |
-| **[4] Not yet** | Revise the plan; say what to change | none | none |
-
-- **Interim:** nothing implemented. Both `/pre-mortem` and `/architecture-review` fire for this plan and have not run. I run them before implementation unless you say to skip them.
-- **If the answer differs:** [2] or [3] changes steps 2-4 of the plan, not the tests' intent.
-
-### Q-055 · gemini-install-target
-**Needs:** you: judgment · **Opened:** 2026-09-23 · **Status:** OPEN
-
-Do you still use Gemini (CLI or Antigravity)? The README symlinks six entries into `~/.gemini`, and the copy-install plan has a step for them.
-
-| Option | What it means | Cost to you | If it's wrong |
-|---|---|---|---|
-| **[1] Yes, copy them too** | Plan step 4 stays; `~/.gemini` gets the same blessed copy | none | none |
-| **[2] No, drop Gemini** | Step 4 is dropped and the README's Gemini block is removed | none | Re-adding it later is one plan step |
-
-- **Interim:** step 4 is planned but can be dropped. Copying to Windows through `/mnt/c/Users/<you>/.gemini` is untested.
-
-### Q-056 · host-install-tty-only
-**Needs:** you: judgment · **Opened:** 2026-09-23 · **Status:** OPEN
-
-Should the host install targets refuse `--yes` and require an interactive terminal? The agent runs on the same host as `~/.claude` and could run the installer itself.
-
-- **Why it's yours:** it trades convenience against the one property that makes "bless" mean a human read the diff.
-
-| Option | What it means | Cost to you | If it's wrong |
-|---|---|---|---|
-| **[1] Refuse `--yes`, require a TTY (planned)** | The host targets run only interactively | No scripted installs | Claude Code's Bash tool may have a TTY after all [untested], so this check alone wouldn't stop an agent |
-| **[2] Allow `--yes`, as the devcontainer path does** | Same behavior as today's install | none | An agent can bless its own edit into `~/.claude` |
-
-- **Interim:** [1] is in the plan. A test step checks whether the Bash tool has a TTY before relying on it.
-
-### Q-057 · host-install-foreign-files
-**Needs:** you: judgment · **Opened:** 2026-09-23 · **Status:** OPEN
-
-When a directory the install owns (for example `~/.claude/skills`) holds files the repo does not have, should the install move them to the backup, or leave them in place?
-
-| Option | What it means | Cost to you | If it's wrong |
-|---|---|---|---|
-| **[1] Move them to the backup (planned)** | `~/.claude/skills` matches the repo exactly after install; extras sit in `.claude-workflows-backup/<stamp>/` | Hand-installed skills disappear until you restore them | A skill you added outside the repo stops loading |
-| **[2] Leave them** | The install adds and overwrites repo files only | none | Files deleted from the repo live on in `~/.claude` |
-
-- **Interim:** [1], and the diff lists every file it would move.

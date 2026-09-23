@@ -1200,8 +1200,8 @@ iptables -A OUTPUT -m state --state ESTABLISHED,RELATED -j ACCEPT
 # (dl.google.com, maven.google.com) served www.google.com; elan.lean-lang.org
 # routes by Host across GitHub Pages; reservoir.lean-lang.org served an unrelated
 # third-party site. The Maven Central, Gradle and release.lean-lang.org front ends
-# refused (403); releases.lean-lang.org ignores Host; lakecache (Azure Blob) was
-# inconclusive. Closing it needs TLS interception, which this design rules out.
+# refused (403); releases.lean-lang.org ignores Host; lakecache (Azure Blob)
+# refused another account (Q-053). The two lean names were removed (Q-051). Closing it needs TLS interception, which this design rules out.
 # Base's one zone, `.frame.claudeusercontent.com`, carries the zone residual: any
 # published artifact gets a name there, so an attacker-published artifact is an allowlisted host
 # serving content the attacker controls (payloads, polled instructions). Accepted

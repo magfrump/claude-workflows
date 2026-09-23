@@ -58,6 +58,13 @@ full. IDs are stable forever: `Q-014` means the same thing here as it did there.
 | [Q-047](#q-047--hypothesis-log-run-id) | Hypothesis-log rows record only a round number, and round numbers restart every self-improvement run, so th... | 2026-09-18 |
 | [Q-048](#q-048--guard-cooccurrence-overblock) | Closing the review's bypasses of Q-035 needed a broader Bash rule, applied only to commands that contain a ... | 2026-09-21 |
 | [Q-050](#q-050--guard-resolved-path-policy) | When a file-tool edit reaches a protected global file through its real path rather than through `~/.claude/... | 2026-09-21 |
+| [Q-051](#q-051--lean-fronting-entries) | Two `lean` names front to tenants nobody listed (Q-045): `elan.lean-lang.org` reaches any GitHub Pages site... | 2026-09-23 |
+| [Q-052](#q-052--android-google-fronting) | `dl.google.com` and `maven.google.com` front to Google-hosted tenants (Q-045: Host www.google.com got Googl... | 2026-09-23 |
+| [Q-053](#q-053--azure-blob-fronting-probe) | Does the Azure Blob front end behind `lakecache.blob.core.windows.net` route a different storage account's ... | 2026-09-23 |
+| [Q-054](#q-054--copy-install-approach) | Approve the plan that replaces the bare-host symlink install with blessed copies (your Q-050 direction), an... | 2026-09-23 |
+| [Q-055](#q-055--gemini-install-target) | Do you still use Gemini (CLI or Antigravity)? The README symlinks six entries into `~/.gemini`, and the cop... | 2026-09-23 |
+| [Q-056](#q-056--host-install-tty-only) | Should the host install targets refuse `--yes` and require an interactive terminal? The agent runs on the s... | 2026-09-23 |
+| [Q-057](#q-057--host-install-foreign-files) | When a directory the install owns (for example `~/.claude/skills`) holds files the repo does not have, shou... | 2026-09-23 |
 <!-- index:end -->
 
 ## Answered
@@ -978,5 +985,139 @@ corrected in `init-firewall.sh` (the SNI proxy RESIDUAL comment) and in
 comment or doc only, so the admitted set is unchanged. Per this entry's "What
 I do with it", keeping or removing the fronting entries is your call: Q-051
 (lean) and Q-052 (android). The Azure probe is Q-053.
+
+
+### Q-051 · lean-fronting-entries
+**Needs:** you: judgment · **Opened:** 2026-09-23 · **Status:** ANSWERED
+
+Two `lean` names front to tenants nobody listed (Q-045): `elan.lean-lang.org` reaches any GitHub Pages site, and `reservoir.lean-lang.org` reached an unrelated third-party site. Keep them or drop them?
+
+- **Why it's yours:** Q-045 left keeping or dropping a fronting entry to your judgment on the evidence.
+- **Read:** `devcontainer-config/egress/lean.txt` (the header's DOMAIN FRONTING note and each entry's comment); Q-045's table in the archive
+- **What each is for:** elan is baked into the image (log #51), and toolchains come from `release.lean-lang.org`, which refuses fronting. So `elan.` serves only elan's installer and self-update [inferred from lean.txt's comments, not tested]. `reservoir.` serves only a lakefile `require` by bare package name; mathlib's dependencies are git requires that resolve through GitHub.
+
+| Option | What it means | Cost to you | If it's wrong |
+|---|---|---|---|
+| **[1] Drop both** | Remove both lines from `lean.txt`, then install and re-bless | One install + bless | A bare-name `require`, or an elan self-update, fails loudly in-container until the line is restored |
+| **[2] Drop `elan.`, keep `reservoir.`** | Keep the index for bare-name requires, with an ACCEPTED RISK note | One install + bless | A session can reach any tenant on reservoir's hosting platform, possibly one that runs server code |
+| **[3] Keep both, accept the risk** | Only the ACCEPTED RISK notes change (comments, no re-bless) | none | Two open channels stay in the lean profile |
+
+- **Interim:** both stay listed, with the residual written beside them. The profile is opt-in (`--profile lean`), so only lean sessions carry it.
+- **If the answer differs:** a one-line removal per entry, then `install.sh` and a re-bless. The live-verify gate will ask for a trailer, because removing a line is a non-comment change.
+
+**Answered 2026-09-23: [1], drop both.** `elan.lean-lang.org` and `reservoir.lean-lang.org` are removed from `egress/lean.txt`. The header records why, and the symptom to expect if one turns out to be needed. `guides/cc-isolated-usage.md` now tells a bare-name `require` to use a git URL. `test/cc-isolated-functions.bats` "profiles compose" now asserts `release.lean-lang.org` (90/90 pass). It takes effect after `install.sh` + re-bless + `cc-isolated --probe-only`; the commit carries `Live-verified: no`.
+
+
+### Q-052 · android-google-fronting
+**Needs:** you: judgment · **Opened:** 2026-09-23 · **Status:** ANSWERED
+
+`dl.google.com` and `maven.google.com` front to Google-hosted tenants (Q-045: Host www.google.com got Google's home page), which probably includes writable `storage.googleapis.com`. Both are Google's Maven host (`google()`), which Android builds need. Accept the residual, or drop Google Maven from the profile?
+
+- **Why it's yours:** it trades the egress threat model against a working Android profile. `android.txt` accepted "the whole GFE surface" when the firewall matched only IPs. The SNI proxy was expected to narrow that, and it does not.
+- **Read:** `devcontainer-config/egress/android.txt` (ACCEPTED RISK block)
+
+| Option | What it means | Cost to you | If it's wrong |
+|---|---|---|---|
+| **[1] Accept and keep** | The ACCEPTED RISK note, updated today, stands | none | An android session has an outbound channel to any Google-hosted service |
+| **[2] Drop both names** | `google()` artifacts must come from the Gradle cache baked in at image build | Android builds that resolve new Google artifacts fail until an image rebuild | The profile works only for projects whose Google dependencies are baked in |
+
+- **Interim:** [1]. Only the comment changed. The profile is opt-in.
+- **If the answer differs:** remove the two lines, install, re-bless (live-verify trailer).
+
+**Answered 2026-09-23: [1], accept and keep.** `egress/android.txt`'s ACCEPTED RISK note records the decision.
+
+
+### Q-053 · azure-blob-fronting-probe
+**Needs:** you: terminal · **Opened:** 2026-09-23 · **Status:** ANSWERED
+
+Does the Azure Blob front end behind `lakecache.blob.core.windows.net` route a different storage account's `Host`? Q-045's root-path probe was inconclusive because it compared two error pages. This probe compares real container listings. An attacker's own storage account with a SAS token would be a write sink, so the answer matters more here than for a read-only mirror.
+
+- **Read:** `devcontainer-config/egress/lean.txt` (lakecache ACCEPTED RISK note); Q-045 in the archive
+- **The paste** (on the host):
+
+```bash
+A=lakecache.blob.core.windows.net; B=azureopendatastorage.blob.core.windows.net
+p1='/mathlib4-master?restype=container&comp=list&maxresults=1'   # lakecache's own public listing (Cache/Requests.lean:1242)
+p2='/mnist?restype=container&comp=list&maxresults=1'             # a public Azure Open Datasets container
+show() { curl -sS -m 10 -w ' [%{http_code}]' "$@" 2>&1 | tr -d '\n' | head -c 220; echo; }
+echo "1 lakecache direct : $(show "https://$A$p1")"
+echo "2 other acct direct: $(show "https://$B$p2")"
+echo "3 fronted          : $(show -H "Host: $B" "https://$A$p2")"
+```
+
+- **How to read it:** line 1 must show an `<EnumerationResults` listing and `[200]`. Line 2 must as well; if it doesn't, the container name is wrong and the run proves nothing, so paste it back. If line 3 matches line 2 (a `mnist` listing), fronting works across accounts. If line 3 is an error (`ResourceNotFound`, `InvalidQueryParameterValue`, 400 or 404), the front end stays within the SNI's account.
+- **What I do with it:** refuses → the lakecache ACCEPTED RISK note is confirmed as written, with the date. Fronts → a new judgment entry on keeping lakecache, which is the entry that makes the lean profile usable at all.
+- **Interim:** lakecache stays listed; `lean.txt` calls it inconclusive.
+
+**Answered 2026-09-23 (`docs/human-author/answers-9-23-26-2.txt`): the front end refused this account.** Line 3 returned `AccountNotFound`, while line 2 (the same request direct) listed `mnist`. So SNI lakecache does not reach `azureopendatastorage`. The error code means the front end looked up the Host's account and did not find it. That suggests the lookup is scoped to the storage cluster serving lakecache, so an account on that same cluster might resolve [inferred, not tested]. That residual is far narrower than a CDN front, and the lakecache note records it as accepted. Line 1 (the lakecache control) returned `ResourceNotFound`, so that container listing is not public under that name. It does not affect the reading, because line 2 is the control that mattered. No new judgment entry is needed, since the probe did not show fronting.
+
+
+### Q-054 · copy-install-approach
+**Needs:** you: judgment · **Opened:** 2026-09-23 · **Status:** ANSWERED
+
+Approve the plan that replaces the bare-host symlink install with blessed copies (your Q-050 direction), and pick how `install.sh` exposes the host targets.
+
+- **Why it's yours:** RPI's plan gate. No code is written until you approve. The shape is a design choice that the non-interactive run left tentative (Path C, 70%).
+- **Read:** on branch `ans/copy-install-plan` (05f92e5): `docs/working/plan-copy-install-bare-host.md` (7 steps), `research-copy-install-bare-host.md` (the DD matrix), `checkpoint-copy-install-bare-host.md`
+- **Common to every option:** existing symlinks show in the diff as `REPLACE symlink … with a copy` and are moved to `.claude-workflows-backup/<stamp>/`, never deleted. `hooks/` and `scripts/` are copied whole. `settings.json` is not touched; a reminder prints when `wiring.json` changed. Three hazards confirmed in scratch drove this design: `diff -ruN` through a symlink shows nothing, `cp -r` onto a directory symlink writes into the checkout, and `rm -rf link/` empties the checkout.
+
+| Option | What it means | Cost to you | If it's wrong |
+|---|---|---|---|
+| **[1] Target flags, one per run (A)** | `install.sh --claude-home` / `--gemini`; a plain run is unchanged | Remember the flag | Forgetting it leaves `~/.claude` stale, with no error |
+| **[2] Plain run offers every target (D)** | One run, a separate y/N per target | A longer run each time | An existing command changes what it does |
+| **[3] Separate host-install script (B)** | A new script beside `install.sh` | A second script, which needs its own commit gate (decision 035) | Two installers drift apart |
+| **[4] Not yet** | Revise the plan; say what to change | none | none |
+
+- **Interim:** nothing implemented. Both `/pre-mortem` and `/architecture-review` fire for this plan and have not run. I run them before implementation unless you say to skip them.
+- **If the answer differs:** [2] or [3] changes steps 2-4 of the plan, not the tests' intent.
+
+**Answered 2026-09-23: [2], a plain run offers every target.** Reason given: "I *will* forget to add flags to install.sh, and it already replaces some files in place instead of symlinks." Taken as plan approval with shape D in place of A. The plan is revised to D before implementation, and `/pre-mortem` and `/architecture-review` run on the revised plan.
+
+
+### Q-055 · gemini-install-target
+**Needs:** you: judgment · **Opened:** 2026-09-23 · **Status:** ANSWERED
+
+Do you still use Gemini (CLI or Antigravity)? The README symlinks six entries into `~/.gemini`, and the copy-install plan has a step for them.
+
+| Option | What it means | Cost to you | If it's wrong |
+|---|---|---|---|
+| **[1] Yes, copy them too** | Plan step 4 stays; `~/.gemini` gets the same blessed copy | none | none |
+| **[2] No, drop Gemini** | Step 4 is dropped and the README's Gemini block is removed | none | Re-adding it later is one plan step |
+
+- **Interim:** step 4 is planned but can be dropped. Copying to Windows through `/mnt/c/Users/<you>/.gemini` is untested.
+
+**Answered 2026-09-23: [2], drop Gemini.** Plan step 4 is dropped. The README's Gemini block is removed as part of the README step.
+
+
+### Q-056 · host-install-tty-only
+**Needs:** you: judgment · **Opened:** 2026-09-23 · **Status:** ANSWERED
+
+Should the host install targets refuse `--yes` and require an interactive terminal? The agent runs on the same host as `~/.claude` and could run the installer itself.
+
+- **Why it's yours:** it trades convenience against the one property that makes "bless" mean a human read the diff.
+
+| Option | What it means | Cost to you | If it's wrong |
+|---|---|---|---|
+| **[1] Refuse `--yes`, require a TTY (planned)** | The host targets run only interactively | No scripted installs | Claude Code's Bash tool may have a TTY after all [untested], so this check alone wouldn't stop an agent |
+| **[2] Allow `--yes`, as the devcontainer path does** | Same behavior as today's install | none | An agent can bless its own edit into `~/.claude` |
+
+- **Interim:** [1] is in the plan. A test step checks whether the Bash tool has a TTY before relying on it.
+
+**Answered 2026-09-23: [1].** Host targets refuse `--yes` and require a TTY. The plan's test step checks whether Claude Code's Bash tool has a TTY before relying on that.
+
+
+### Q-057 · host-install-foreign-files
+**Needs:** you: judgment · **Opened:** 2026-09-23 · **Status:** ANSWERED
+
+When a directory the install owns (for example `~/.claude/skills`) holds files the repo does not have, should the install move them to the backup, or leave them in place?
+
+| Option | What it means | Cost to you | If it's wrong |
+|---|---|---|---|
+| **[1] Move them to the backup (planned)** | `~/.claude/skills` matches the repo exactly after install; extras sit in `.claude-workflows-backup/<stamp>/` | Hand-installed skills disappear until you restore them | A skill you added outside the repo stops loading |
+| **[2] Leave them** | The install adds and overwrites repo files only | none | Files deleted from the repo live on in `~/.claude` |
+
+- **Interim:** [1], and the diff lists every file it would move.
+
+**Answered 2026-09-23: [1].** Foreign files in install-owned directories move to `.claude-workflows-backup/<stamp>/`, and the diff lists each one.
 
 
