@@ -514,6 +514,393 @@ install_layout() {
   assert_decision ask
 }
 
+# --- Q-048 [2] withdrawn: agent worktree paths count as `.claude` like any other ---
+# The worktree exemption was tried and withdrawn (2026-09-23) after three review
+# passes each found bypasses. A `.claude/wt-*` or `.claude/worktrees/<name>` path
+# is an ordinary `.claude` indicator, so a worktree Bash write that names a policy
+# file is denied. Every bypass pinned in passes 1-3 stays here as a deny test.
+
+# A real git repo with two real agent worktrees under its .claude/, outside
+# HOME. Sets REPO.
+worktree_layout() {
+  REPO="$TEST_TMPDIR/repo"
+  mkdir -p "$REPO"
+  git -C "$REPO" init -q
+  git -C "$REPO" -c user.name=t -c user.email=t@t commit -q --allow-empty -m init
+  git -C "$REPO" worktree add -q "$REPO/.claude/wt-foo" -b wt-foo
+  git -C "$REPO" worktree add -q "$REPO/.claude/worktrees/foo" -b wt-foo2
+  [ -f "$REPO/.claude/wt-foo/.git" ] && [ -f "$REPO/.claude/worktrees/foo/.git" ]
+}
+
+assert_all_deny() {  # each arg is a command that must be denied
+  local c
+  for c in "$@"; do
+    guard "$(bash_payload "$c")"
+    [ "$(jq -r '.hookSpecificOutput.permissionDecision' <<<"$output")" = deny ] \
+      || { echo "not denied: $c -> $output"; return 1; }
+  done
+}
+
+@test "Q-048 withdrawn: a Bash write into a real .claude/wt-* worktree's hooks/ or settings is denied" {
+  worktree_layout
+  assert_all_deny \
+    "echo x > $REPO/.claude/wt-foo/hooks/x.sh" \
+    "cp /tmp/a $REPO/.claude/wt-foo/hooks/x.py" \
+    "sed -i s/a/b/ $REPO/.claude/wt-foo/settings.json"
+}
+
+@test "Q-048 withdrawn: a Bash write into a real .claude/worktrees/<name> worktree's hooks/ is denied" {
+  worktree_layout
+  guard "$(bash_payload "cp /tmp/a $REPO/.claude/worktrees/foo/hooks/x.py")"
+  assert_decision deny
+}
+
+@test "Q-048 withdrawn: a worktree CLAUDE.md Bash write is denied (.claude is a home indicator)" {
+  worktree_layout
+  guard "$(bash_payload "echo x >> $REPO/.claude/wt-foo/CLAUDE.md")"
+  assert_decision deny
+  taint sess1
+  guard "$(bash_payload "echo x >> $REPO/.claude/wt-foo/CLAUDE.md" sess1)"
+  assert_decision deny
+}
+
+@test "Q-048: a relative worktree path is not exempt (no cwd at hook time)" {
+  worktree_layout
+  assert_all_deny \
+    'echo x >> .claude/worktrees/foo/hooks/x.sh' \
+    "cd $REPO && echo x > .claude/wt-foo/settings.json"
+}
+
+@test "Q-048: a worktree path that does not exist, or is not a git worktree, is not exempt" {
+  worktree_layout
+  mkdir -p "$REPO/.claude/wt-plain"
+  assert_all_deny \
+    "echo x > $REPO/.claude/wt-missing/hooks/x.sh" \
+    "echo x > $REPO/.claude/wt-plain/settings.json" \
+    'echo x > /srv/repo/.claude/wt-foo/hooks/x.sh'
+}
+
+@test "Q-048 bypass: quote-split '..' after a worktree segment is denied" {
+  worktree_layout
+  mkdir -p "$HOME/.claude/wt-x"
+  local lh="$HOME"
+  assert_all_deny \
+    'cd ~ && echo x > .claude/wt-x"/.."/settings.json' \
+    "cd ~ && echo x > .claude/wt-x'/..'/settings.json" \
+    'cd ~ && echo x > .claude/wt-x"/../hooks/"evil.sh' \
+    'cd ~ && echo x > .claude/wt-x/."".//settings.json' \
+    'cd ~ && echo x > .claude/wt-x/.""./settings.json' \
+    'mkdir -p "$HOME"/.claude/wt-y && echo {} > "$HOME"/.claude/wt-y"/../"settings.local.json' \
+    "echo x > '$lh'/.claude/wt-x'/..'/hooks/evil.sh" \
+    "echo x > \"$lh\"/.claude/wt-x\"/..\"/settings.json" \
+    'echo x > ".claude/wt-z"/../settings.json' \
+    "echo x > $REPO/.claude/wt-foo\"/..\"/settings.json" \
+    "echo x > $REPO/.claude/wt-foo'/../../..'$HOME/.claude/settings.json"
+}
+
+@test "Q-048 bypass: a quote before /.claude or a second '=' does not exempt a home worktree" {
+  mkdir -p "$HOME/.claude/wt-x"
+  local lh="$HOME"
+  assert_all_deny \
+    'echo x > "$HOME"/.claude/wt-x/settings.json' \
+    "echo x > \"$lh\"/.claude/wt-x/settings.json" \
+    "echo x > a=b=$lh/.claude/wt-x/settings.json" \
+    'echo x > "$HOME"/.claude/wt-x/hooks/x.sh'
+}
+
+@test "Q-048 bypass: a quoted parent of a wt-shaped CLAUDE_CONFIG_DIR is denied" {
+  mkdir -p "$TEST_TMPDIR/srv/repo/.claude/wt-cfg"
+  export CLAUDE_CONFIG_DIR="$TEST_TMPDIR/srv/repo/.claude/wt-cfg"
+  assert_all_deny \
+    "echo x > \"$TEST_TMPDIR/srv/repo\"/.claude/wt-cfg/settings.json" \
+    "echo x > $TEST_TMPDIR/srv/repo/.claude/wt-cfg/settings.json"
+}
+
+@test "Q-048 bypass: a symlinked worktree dir is not exempt" {
+  worktree_layout
+  ln -s "$HOME/.claude" "$REPO/.claude/wt-link"
+  ln -s "$REPO/.claude/wt-foo" "$REPO/.claude/wt-alias"
+  mkdir -p "$HOME/.claude"
+  assert_all_deny \
+    'cd ~ && ln -s . .claude/wt-q && echo PWNED > .claude/wt-q/settings.json' \
+    "echo x > $REPO/.claude/wt-link/settings.json" \
+    "echo x > $REPO/.claude/wt-alias/settings.json"
+}
+
+@test "Q-048: a real worktree inside the config dir is not exempt" {
+  worktree_layout
+  git -C "$REPO" worktree add -q "$HOME/.claude/wt-home" -b wt-home
+  [ -f "$HOME/.claude/wt-home/.git" ]
+  assert_all_deny \
+    "echo x > $HOME/.claude/wt-home/settings.json" \
+    "echo x > $HOME/.claude/wt-home/hooks/x.sh"
+}
+
+@test "Q-048: a symlink inside a worktree that leads out of it is not exempt" {
+  worktree_layout
+  mkdir -p "$HOME/.claude"
+  ln -s "$HOME/.claude" "$REPO/.claude/wt-foo/cfg"
+  assert_all_deny "echo x > $REPO/.claude/wt-foo/cfg/settings.json"
+}
+
+@test "Q-048: a '..' after a worktree segment is still denied" {
+  worktree_layout
+  local c
+  for c in \
+    "echo x > $REPO/.claude/wt-foo/../hooks/x.sh" \
+    "echo x > $REPO/.claude/wt-foo/sub/../../settings.json" \
+    "cp /tmp/a $REPO/.claude/worktrees/foo/../../.claude/hooks/x" \
+    "cd $REPO/.claude/worktrees/.. && cp /tmp/a hooks/x" \
+    'echo x > .claude/wt-foo/../CLAUDE.md'; do
+    guard "$(bash_payload "$c")"
+    [ "$(jq -r '.hookSpecificOutput.permissionDecision' <<<"$output")" = deny ] \
+      || { echo "not denied: $c -> $output"; return 1; }
+  done
+}
+
+@test "Q-048: a worktree path under ~, \$HOME or the literal home config dir is still denied" {
+  local c
+  for c in \
+    'echo x > ~/.claude/wt-foo/hooks/x.sh' \
+    'echo x > $HOME/.claude/wt-foo/hooks/x.sh' \
+    'echo x > ${HOME}/.claude/worktrees/foo/hooks/x.sh' \
+    "echo x > $HOME/.claude/wt-foo/hooks/x.sh" \
+    "echo x > $HOME/.claude/wt-foo/../hooks/x.sh" \
+    "echo x > $HOME//.claude/wt-foo/CLAUDE.md" \
+    'echo x > /a/../.claude/wt-foo/hooks/x.sh'; do
+    guard "$(bash_payload "$c")"
+    [ "$(jq -r '.hookSpecificOutput.permissionDecision' <<<"$output")" = deny ] \
+      || { echo "not denied: $c -> $output"; return 1; }
+  done
+}
+
+@test "Q-048: a worktree path does not mask a real .claude indicator elsewhere" {
+  worktree_layout
+  local c
+  for c in \
+    "cp $REPO/.claude/wt-foo/hooks/a ~/.claude/hooks/a" \
+    "cp $REPO/.claude/wt-foo/settings.json ~/.claude/" \
+    "cd ~/.claude && cp $REPO/.claude/wt-foo/hooks/a hooks/a" \
+    "cp $REPO/.claude/wt-foo/x $REPO/.claude/wt-foo/.claude/hooks/x" \
+    "echo x > $REPO/.claude/wt-foo/CLAUDE.md; echo y > ~/CLAUDE.md"; do
+    guard "$(bash_payload "$c")"
+    [ "$(jq -r '.hookSpecificOutput.permissionDecision' <<<"$output")" = deny ] \
+      || { echo "not denied: $c -> $output"; return 1; }
+  done
+}
+
+@test "Q-048: CLAUDE_CONFIG_DIR set to a wt-shaped dir is not exempt" {
+  export CLAUDE_CONFIG_DIR="$TEST_TMPDIR/.claude/wt-cfg"
+  guard "$(bash_payload "echo x > $TEST_TMPDIR/.claude/wt-cfg/settings.json")"
+  assert_decision deny
+}
+
+# --- Q-048 pass-2/pass-3 routes (kept as deny tests after the withdrawal) ---
+# Routes out of a worktree through a later word (`cd ..`, `../x`), a same-command
+# root swap, a command-derived parent, `-t..`, brace expansion, `env -C`, or a
+# link-creating tool. The exemption these defeated is gone; they must stay denied.
+
+@test "Q-048 gate: cd into a worktree then '..' reaches the parent project's .claude: denied" {
+  worktree_layout
+  local wt="$REPO/.claude/wt-foo"
+  assert_all_deny \
+    "cd $wt && cd .. && echo x > settings.json" \
+    "cd $wt && cd .. && echo x > hooks/x.sh" \
+    "cd $wt; cd ../; cp /tmp/a settings.local.json" \
+    "cd $wt && echo x > ../settings.json" \
+    "cd $wt && echo x > ../hooks/x.sh" \
+    "pushd $wt && echo x > .\"\"./settings.json" \
+    "cd $wt && bats test/hooks/x.bats > out.txt"
+}
+
+@test "Q-048 gate: the cd/'..' routes are denied in a tainted session too (were deferred)" {
+  worktree_layout
+  taint sess1
+  guard "$(bash_payload "cd $REPO/.claude/wt-foo && cd .. && echo x > settings.json" sess1)"
+  assert_decision deny
+  guard "$(bash_payload "cd $REPO/.claude/wt-foo && echo x > ../settings.json" sess1)"
+  assert_decision deny
+}
+
+@test "Q-048 gate: replacing a worktree root in the same command is not exempt (time of check)" {
+  worktree_layout
+  mkdir -p "$HOME/.claude"
+  local wt="$REPO/.claude/wt-foo"
+  # $(cd;pwd) is literal command text here, not for this shell to run.
+  # shellcheck disable=SC2016
+  assert_all_deny \
+    "rm -rf $wt && ln -s \"\$(cd;pwd)\" $wt && echo x > $wt/CLAUDE.md" \
+    "mv $wt $TEST_TMPDIR/x && ln -s ~/.cla?de $wt && echo > $wt/settings.json" \
+    "rm -rf $wt && ln -s /tmp/x $wt && echo x > $wt/settings.json" \
+    "rm -rf $wt && ln -s /tmp/x $wt && echo x > $wt/hooks/evil.sh" \
+    "/bin/rm -r $wt; /bin/ln -s /tmp/x $wt; cp /tmp/a $wt/settings.json"
+}
+
+@test "Q-048 gate: a worktree root whose parent is derived by the command is not exempt" {
+  worktree_layout
+  local wt="$REPO/.claude/wt-foo"
+  assert_all_deny \
+    "echo x > \$(dirname $wt)/settings.json" \
+    "cp /tmp/a \`dirname $wt\`/hooks/x.sh" \
+    "echo $wt | sed 's,/[^/]*\$,,' | xargs -I% cp /tmp/a %/settings.json" \
+    "python3 -c 'import os,sys; os.rename(sys.argv[1], \"/tmp/y\")' $wt; cp /tmp/a $wt/settings.json" \
+    "sh -c 'l\"\"n -s /tmp/x $wt'; echo x > $wt/settings.json" \
+    "cp /tmp/a $wt/x; cp /tmp/b settings.json"
+}
+
+@test "Q-048 withdrawn: plain absolute worktree policy writes are denied, look-alike words or not" {
+  worktree_layout
+  local wt="$REPO/.claude/wt-foo"
+  assert_all_deny \
+    "echo x > $wt/hooks/x.sh" \
+    "cp /x/rmdata/a $wt/hooks/x.sh" \
+    "echo --cdn > $wt/hooks/x.sh" \
+    "cp /srv/cd-tools/a $wt/settings.json"
+}
+
+@test "Q-048 withdrawn: a worktree write naming no policy file is not denied" {
+  worktree_layout
+  guard "$(bash_payload "cp /tmp/a $REPO/.claude/wt-foo/test/y.bats")"
+  assert_defer
+}
+
+@test "Q-048 pass 3: -t.., brace-built '..', env -C and link-creating tools are denied" {
+  worktree_layout
+  local wt="$REPO/.claude/wt-foo"
+  assert_all_deny \
+    "echo EVIL > $wt/settings.json && env -C $wt cp $wt/settings.json -t.." \
+    "mkdir -p $wt/hooks && echo EVIL > $wt/hooks/x.sh && env -C $wt cp -r $wt/hooks -t.." \
+    "echo EVIL > $wt/settings.json && install -t.. $wt/settings.json" \
+    "cp $wt/settings.json -t.." \
+    "env -C $wt cp $wt/settings.json .{,.}" \
+    "find $wt -delete && cp -P /tmp/lnkdir $wt && echo PWN > $wt/settings.json" \
+    "cp -P /tmp/lnkfile $wt/settings.json && echo PWN > $wt/settings.json" \
+    "git -C $wt checkout -q evil && echo PWN > $wt/hooks/evil.sh" \
+    "tar -xf /tmp/e.tar -C $wt && echo PWN > $wt/settings.json" \
+    "cp -rs /tmp/c $wt/c && echo PWN > $wt/c/settings.json"
+}
+
+# --- Q-050 [2]: resolve-only HARD is denied, including per-file hook links ---
+# The README's bare-host layout: ~/.claude/CLAUDE.md links to the checkout's
+# global-instructions/CLAUDE.md, and ~/.claude/hooks/ is a REAL dir holding
+# some hooks as per-file symlinks into the checkout and others as copies (N12).
+
+bare_host_layout() {
+  CHECKOUT="$TEST_TMPDIR/claude-workflows"
+  mkdir -p "$CHECKOUT/global-instructions" "$CHECKOUT/hooks" "$HOME/.claude/hooks"
+  echo '# global' > "$CHECKOUT/global-instructions/CLAUDE.md"
+  echo 'x' > "$CHECKOUT/hooks/linked.sh"
+  echo 'x' > "$CHECKOUT/hooks/copied.py"
+  echo 'x' > "$CHECKOUT/hooks/unwired.sh"
+  ln -s "$CHECKOUT/global-instructions/CLAUDE.md" "$HOME/.claude/CLAUDE.md"
+  ln -s "$CHECKOUT/hooks/linked.sh" "$HOME/.claude/hooks/linked.sh"
+  cp "$CHECKOUT/hooks/copied.py" "$HOME/.claude/hooks/copied.py"
+}
+
+@test "Q-050: the checkout CLAUDE.md behind a symlinked ~/.claude/CLAUDE.md is denied" {
+  bare_host_layout
+  local s
+  for s in clean sess1; do
+    [ "$s" = sess1 ] && taint sess1
+    guard "$(file_payload Edit "$CHECKOUT/global-instructions/CLAUDE.md" "$s")"
+    assert_decision deny
+  done
+}
+
+@test "Q-050 / N12: a per-file symlinked hook's checkout target is denied" {
+  bare_host_layout
+  local s t
+  for s in clean sess1; do
+    [ "$s" = sess1 ] && taint sess1
+    for t in Edit Write MultiEdit; do
+      guard "$(file_payload "$t" "$CHECKOUT/hooks/linked.sh" "$s")"
+      [ "$status" -eq 0 ] && [ "$(jq -r '.hookSpecificOutput.permissionDecision' <<<"$output")" = deny ] \
+        || { echo "not denied ($s, $t) -> $output"; return 1; }
+    done
+  done
+  guard "$(file_payload Edit "$CHECKOUT/x/../hooks/linked.sh")"
+  assert_decision deny
+}
+
+@test "Q-050: a repo hook file with no link into ~/.claude/hooks is not denied" {
+  bare_host_layout
+  guard "$(file_payload Edit "$CHECKOUT/hooks/unwired.sh")"
+  assert_defer
+  # A copy installed into ~/.claude/hooks does not tie the checkout file to it.
+  guard "$(file_payload Edit "$CHECKOUT/hooks/copied.py")"
+  assert_defer
+  taint sess1
+  guard "$(file_payload Edit "$CHECKOUT/hooks/copied.py" sess1)"
+  assert_defer
+}
+
+@test "Q-050: with a regular-file ~/.claude/CLAUDE.md copy, the checkout file is not denied" {
+  bare_host_layout
+  rm "$HOME/.claude/CLAUDE.md"
+  cp "$CHECKOUT/global-instructions/CLAUDE.md" "$HOME/.claude/CLAUDE.md"
+  guard "$(file_payload Edit "$CHECKOUT/global-instructions/CLAUDE.md")"
+  assert_defer
+  # It is still a CLAUDE.md, so a tainted session gets the SOFT ask.
+  taint sess1
+  guard "$(file_payload Edit "$CHECKOUT/global-instructions/CLAUDE.md" sess1)"
+  assert_decision ask
+}
+
+@test "N15: the resolved-path deny reason does not send the user to a denied path" {
+  bare_host_layout
+  guard "$(file_payload Edit "$CHECKOUT/hooks/linked.sh")"
+  assert_decision deny
+  local reason
+  reason=$(jq -r '.hookSpecificOutput.permissionDecisionReason' <<<"$output")
+  [[ "$reason" != *"~/.claude path"* ]] || { echo "$reason"; return 1; }
+  [[ "$reason" == *"outside Claude"* ]] || { echo "$reason"; return 1; }
+  guard "$(bash_payload "echo x > $SETTINGS")"
+  reason=$(jq -r '.hookSpecificOutput.permissionDecisionReason' <<<"$output")
+  [[ "$reason" == *"outside Claude"* ]] || { echo "$reason"; return 1; }
+}
+
+@test "A5: the file-tool deny reason says Bash is not the way round it" {
+  bare_host_layout
+  guard "$(file_payload Edit "$CHECKOUT/hooks/linked.sh")"
+  assert_decision deny
+  local reason
+  reason=$(jq -r '.hookSpecificOutput.permissionDecisionReason' <<<"$output")
+  [[ "$reason" == *"Bash"* ]] || { echo "$reason"; return 1; }
+  [[ "$reason" == *"outside Claude"* ]] || { echo "$reason"; return 1; }
+}
+
+@test "A1/A2: the Bash deny reason fits project files and only suggests prose files" {
+  # The same text fires for a project's own .claude/settings.json, which
+  # Edit/Write can change, so it must not say Claude can't write it at all.
+  guard "$(bash_payload "echo x > .claude/settings.json")"
+  assert_decision deny
+  local reason
+  reason=$(jq -r '.hookSpecificOutput.permissionDecisionReason' <<<"$output")
+  [[ "$reason" != *"Claude cannot write these"* ]] || { echo "$reason"; return 1; }
+  [[ "$reason" == *"Edit or Write"* ]] || { echo "$reason"; return 1; }
+  [[ "$reason" == *"outside Claude"* ]] || { echo "$reason"; return 1; }
+  # A2: the file advice is for prose passed as data, never a file to run.
+  [[ "$reason" == *"git commit -F"* && "$reason" == *"--body-file"* ]] || { echo "$reason"; return 1; }
+  [[ "$reason" != *"pass the file instead"* ]] || { echo "$reason"; return 1; }
+  [[ "$reason" != *"script"* && "$reason" != *" run "* ]] || { echo "$reason"; return 1; }
+}
+
+@test "C1: an unreadable ~/.claude/hooks entry does not stop the linked-hook scan" {
+  [ "$(id -u)" -ne 0 ] || skip "root reads through chmod 000"
+  bare_host_layout
+  # Links into a mode-000 dir make is_dir() raise PermissionError. Several of
+  # them, so directory order almost surely puts one before linked.sh.
+  mkdir -p "$TEST_TMPDIR/locked/sub"
+  local i
+  for i in 0 1 2 3 4 5 6 7 8 9 a b c d e f; do
+    ln -s "$TEST_TMPDIR/locked/sub" "$HOME/.claude/hooks/$i-bad"
+  done
+  chmod 000 "$TEST_TMPDIR/locked"
+  guard "$(file_payload Edit "$CHECKOUT/hooks/linked.sh")"
+  chmod 755 "$TEST_TMPDIR/locked"
+  assert_decision deny
+}
+
 # --- Malformed input: silent exit 0 ---
 
 @test "non-JSON stdin defers" {

@@ -1,0 +1,3 @@
+timestamp: 2026-09-23T23:32:25.109123Z
+new=deny   old=deny   echo x > /tmp/claude-1000/-workspace/d516ca2c-2abb-4732-a34a-041aa98280c8/scratchpad/review/tmpmjzmwo58/srv/repo/.claude/wt-cfg/settings.json
+new=defer  old=deny   echo x > "/tmp/claude-1000/-workspace/d516ca2c-2abb-4732-a34a-041aa98280c8/scratchpad/review/tmpmjzmwo58/srv/repo"/.claude/wt-cfg/settings.json

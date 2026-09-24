@@ -1,0 +1,10 @@
+bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+# e2e 2026-09-23T23:48:23Z HOME=/tmp/claude-1000/-workspace/d516ca2c-2abb-4732-a34a-041aa98280c8/scratchpad/gfc-rr-r1/e2e-dSD0/home cwd=/tmp/claude-1000/-workspace/d516ca2c-2abb-4732-a34a-041aa98280c8/scratchpad/gfc-rr-r1/e2e-dSD0
+CMD: cd /tmp/claude-1000/-workspace/d516ca2c-2abb-4732-a34a-041aa98280c8/scratchpad/gfc-rr-r1/e2e-dSD0/repo/.claude/wt-foo && cd .. && echo '{"hooks":"PWNED"}' > settings.json
+  hook decision: defer (no output)
+  run: bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+  project settings now: {"hooks":"PWNED"}
+CMD: rm -rf /tmp/claude-1000/-workspace/d516ca2c-2abb-4732-a34a-041aa98280c8/scratchpad/gfc-rr-r1/e2e-dSD0/repo/.claude/wt-foo && ln -s "$(cd;pwd)" /tmp/claude-1000/-workspace/d516ca2c-2abb-4732-a34a-041aa98280c8/scratchpad/gfc-rr-r1/e2e-dSD0/repo/.claude/wt-foo && echo PWNED > /tmp/claude-1000/-workspace/d516ca2c-2abb-4732-a34a-041aa98280c8/scratchpad/gfc-rr-r1/e2e-dSD0/repo/.claude/wt-foo/CLAUDE.md
+  hook decision: defer (no output)
+  run: bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+  ~/CLAUDE.md now: PWNED

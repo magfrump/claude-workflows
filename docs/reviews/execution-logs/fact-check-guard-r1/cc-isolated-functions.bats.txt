@@ -1,0 +1,159 @@
+bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+1..90
+bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+ok 1 resolve_workspace returns the git toplevel for a path inside a repo
+bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+ok 2 resolve_workspace fails loudly outside a git repo instead of guessing
+bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+ok 3 resolve_workspace fails on a nonexistent directory
+bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+ok 4 resolve_workspace defaults to $PWD when given no argument
+bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+ok 5 project_id differs for same-basename repos at different paths
+bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+ok 6 project_id is stable for the same path
+bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+ok 7 ws_fingerprint differs between two different repos
+bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+ok 8 ws_fingerprint is stable for the same repo
+bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+ok 9 compute_manifest covers the config files and the egress profiles
+bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+ok 10 compute_manifest fails when an enforcement file is missing
+bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+ok 11 check_manifest fails with instructions when nothing is blessed
+bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+ok 12 check_manifest passes after bless with unchanged files
+bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+ok 13 check_manifest fails after the firewall script is tampered with
+bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+ok 14 check_manifest fails when the launcher itself is tampered with
+bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+ok 15 check_manifest fails when an egress profile gains a domain
+bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+ok 16 check_manifest fails when an unblessed project profile appears
+bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+ok 17 re-bless after a reviewed change makes check_manifest pass again
+bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+ok 18 an unregistered project gets the base profile only
+bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+ok 19 register_project records the profile and re-blesses
+bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+ok 20 register_project rejects an unknown profile before writing anything
+bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+ok 21 register_project prints the profile transition, not just the result
+bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+ok 22 register_project names a profile the replacement drops
+bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+ok 23 register_project says so when the profile is unchanged
+bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+ok 24 rebuild_hint carries both localEnv assignments into the by-hand command
+bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+ok 25 rebuild_hint's by-hand command, when run, sets every launcher-set localEnv var and keeps args intact
+bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+ok 26 --profile with no value is a usage error, not a silent exit
+bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+ok 27 rebuild_hint names the launcher before the by-hand form
+bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+ok 28 usage prints the whole header block, including its last line
+bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+ok 29 suggest_profiles proposes python for a python repo but never applies it
+bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+ok 30 suggest_profiles proposes rust for a cargo repo but never applies it
+bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+ok 31 suggest_profiles proposes lean for a repo with the toolchain pin
+bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+ok 32 suggest_profiles proposes lean for a lakefile.toml repo (current Lake format)
+bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+ok 33 suggest_profiles proposes lean for a lakefile.lean repo (older Lake format)
+bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+ok 34 suggest_profiles proposes android for a gradle repo (Kotlin DSL)
+bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+ok 35 suggest_profiles proposes android for a repo with just the gradle wrapper
+bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+ok 36 suggest_profiles proposes dotnet for a Unity project root
+bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+ok 37 suggest_profiles proposes dotnet for a repo with a top-level csproj
+bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+ok 38 suggest_profiles is silent for a plain repo
+bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+ok 39 base profile alone yields the base allowlist and nothing else
+bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+ok 40 a python project gets PyPI on top of base
+bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+ok 41 one project's profile does not widen another's (H5)
+bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+ok 42 profiles compose
+bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+ok 43 an android project gets Google Maven, Maven Central, and Gradle on top of base
+bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+ok 44 a dotnet project gets NuGet on top of base, and only NuGet
+bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+ok 45 an unknown profile is a hard failure, not a silently narrower allowlist
+bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+ok 46 a missing profile file degrades to base, not to empty
+bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+ok 47 devcontainer.json anchors build.dockerfile to the config dir, not the repo
+bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+ok 48 devcontainer.json anchors build.context to the config dir, not the repo
+bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+ok 49 the launcher exports CC_CONFIG_DIR (else the build paths resolve to /)
+bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+ok 50 Dockerfile copies the claude-home payload into the image
+bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+ok 51 the payload is baked outside /home/node/.claude (a volume would shadow it)
+bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+ok 52 the payload is root-owned and not writable by node
+bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+ok 53 hook scripts in the payload stay executable
+bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+ok 54 postStartCommand links the payload after the firewall, not before
+bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+ok 55 install.sh stages the payload from the repo root
+bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+ok 56 install.sh aborts when a payload source is missing
+bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+ok 57 install.sh names every missing payload source, not just the first
+bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+ok 58 install.sh assembles the payload when every source is present
+bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+ok 59 install.sh review diff shows the CONTENT of a new file inside a payload dir
+bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+ok 60 install.sh review diff shows a new top-level payload item, not nothing
+bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+ok 61 install.sh aborts before the prompt when the review diff itself fails
+bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+ok 62 link-claude-home refuses to clobber a real file in the volume
+bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+ok 63 link-claude-home links the payload and is idempotent
+bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+ok 64 link-claude-home is a no-op when the payload is absent (non-cc-isolated host)
+bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+ok 65 Gate 1h loads the review skill from the baked payload, not the branch
+bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+ok 66 Gate 1h pins an explicit reviewer model
+bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+ok 67 Gate 1h archives review artifacts before the worktree is torn down
+bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+ok 68 Gate 1h fails closed on reviewer error and on an unparseable verdict
+bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+ok 69 Gate 1h passes a per-run nonce the branch cannot know
+bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+ok 70 every regular file in install.sh's PAYLOAD is hashed by enforcement_files
+bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+ok 71 claude-home files are hashed file by file when present
+bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+ok 72 compute_manifest covers claude-home even when projects/ is empty, under errexit
+bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+ok 73 a symlink in claude-home is blessed by its target and a repoint trips the manifest
+bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+ok 74 a symlinked enforcement file is hashed by content as well as by target
+bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+ok 75 compute_manifest fails when enforcement_files fails
+bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)

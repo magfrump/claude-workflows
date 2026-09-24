@@ -56,6 +56,21 @@ overrides `permissions.deny` (Claude Code issue #39344). Wire the hook without t
 rules and that tier does nothing for Edit/Write (decision 023 amendment B). The guard's
 matcher must include `Bash`, or its Bash write-detection branch never runs.
 
+**Checkout copies of symlinked global files can't be edited with Claude's file tools.** The exception to that defer
+is a protected file reached by its real path. While a global file is symlinked into
+`~/.claude`, the guard **denies** Claude's file tools on its checkout copy, in a
+tainted session or not: `global-instructions/CLAUDE.md` behind a linked
+`~/.claude/CLAUDE.md`, and every `hooks/<name>` linked one file at a time into
+`~/.claude/hooks/`. No deny rule names the checkout path, so deferring would leave it
+with no gate at all. A hook deny has no approve option, so make these edits outside
+Claude, in your own editor or shell (Q-050). Bash writes that name the checkout
+`global-instructions/CLAUDE.md` are denied too. Bash writes to a linked hook's
+checkout path (`echo x > <checkout>/hooks/<name>`, `cp`) are NOT gated by this hook,
+only Edit/Write are: a pre-existing gap, alongside the N2/A8 ones in the hook's TODOs. Hooks installed as copies are not
+affected. The planned copy-based install (edits are committed, then copied into
+`~/.claude` by `install.sh` after you approve them) removes this: no checkout file
+will be a live global file.
+
 When you pull a change to `wiring.json`, redo the merge and remove the entries it
 replaced. Your hand-merged copy will not notice the change on its own.
 
