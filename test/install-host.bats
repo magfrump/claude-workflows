@@ -884,6 +884,31 @@ installed_then_changed() {
   done
 }
 
+@test "T57 without perl the install is refused at startup (vis needs it)" {
+  fake_repo
+  p=$(path_without perl)
+  run env -u CLAUDECODE PATH="$p" bash "$INSTALL" --yes </dev/null
+  echo "$output"
+  [ "$status" -eq 1 ]
+  [[ "$output" == *'perl'* ]]
+  [[ "$output" != *'BLESS-STUB'* ]]
+  [ ! -e "$ROOT/devcontainer-config/claude-home" ]
+}
+
+@test "T58 a vis failure is diff trouble: it aborts before the prompt, never reads as an empty diff" {
+  fake_repo
+  run env -u CLAUDECODE bash "$INSTALL" --yes </dev/null
+  [ "$status" -eq 0 ]
+  printf '{"changed":1}\n' > "$ROOT/devcontainer-config/devcontainer.json"; commit_all dc
+  printf '#!/bin/bash\ncat >/dev/null\nexit 1\n' > "$STUB/perl"; chmod +x "$STUB/perl"
+  run env -u CLAUDECODE bash "$INSTALL" </dev/null
+  echo "$output"
+  [ "$status" -eq 1 ]
+  [[ "$output" == *'could not show the review'* ]]
+  [[ "$output" != *'bless it?'* ]]
+  [ "$(cat "$CLAUDE_DEVC_CONFIG_DIR/devcontainer.json")" = 'stub devcontainer.json' ]
+}
+
 @test "T24 with CLAUDE_HOME_DIR unset, CLAUDE_CONFIG_DIR chooses the destination" {
   need_script; fake_repo
   run_pty 'n\ny\n' env -u CLAUDE_HOME_DIR CLAUDE_CONFIG_DIR="$S/cfgdir" bash "$INSTALL"

@@ -62,6 +62,8 @@ Claude Code session (CLAUDECODE set). That stops accidental runs,
 not a determined agent: a pty wrapper and `env -u CLAUDECODE` get past it.
 The hard barrier is a sandbox that denies agents write access to ~/.claude.
 
+Needs git, perl (the review's control-byte filter) and pgrep; refuses without them.
+
   --yes       answer y for target 1 without asking (target 2 is skipped)
   -h, --help  show this help
 
@@ -233,8 +235,16 @@ review_diff() {
     # a change: this diff is the review gate, so a diff that could not be shown
     # must never reach the [y/N] prompt.
     # vis (A4): a raw \r or CSI sequence in a file could hide `+` lines.
-    rc=0
-    diff -ruN "$dest/$item" "$src/$item" 2>&1 | vis || rc=${PIPESTATUS[0]}
+    # A vis failure is trouble too: its output is the review, so a failed vis
+    # over a differing item read as an empty diff that still reached [y/N].
+    local st
+    diff -ruN "$dest/$item" "$src/$item" 2>&1 | vis && st=(0 0) || st=("${PIPESTATUS[@]}")
+    rc="${st[0]}"
+    if [ "${st[1]}" -ne 0 ]; then
+      echo "ERROR: could not show the review of payload item '$item' (vis exit ${st[1]})." >&2
+      echo "       The review diff is incomplete, so nothing was installed." >&2
+      exit 1
+    fi
     case "$rc" in
       0) ;;
       1) changed=1 ;;
@@ -870,6 +880,13 @@ main() {
   CLAUDE_HOME_NAMES=()
   local item
   for item in "${CLAUDE_HOME_SRC[@]}"; do CLAUDE_HOME_NAMES+=("$(basename "$item")"); done
+
+  # vis (perl) filters every review line; without it the review cannot be shown.
+  if ! command -v perl >/dev/null 2>&1; then
+    echo "ERROR: perl is not installed. install.sh needs it to show the review safely" >&2
+    echo "       (vis). Install perl and rerun. Nothing was staged or installed." >&2
+    exit 1
+  fi
 
   agent_gate "Nothing was staged or installed."
 
