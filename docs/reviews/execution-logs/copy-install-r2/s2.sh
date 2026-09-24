@@ -6,7 +6,7 @@ OUT=$SP/fc/logs
 mkdir -p "$OUT"
 export TMPDIR=$SP/fc/tmp; mkdir -p "$TMPDIR"
 unset CLAUDECODE CLAUDE_CONFIG_DIR
-cd "$W"
+cd "$W" || exit
 date -u +%FT%TZ > "$OUT/ts-start"
 bats test/install-host.bats > "$OUT/install-host-head.log" 2>&1; echo "exit=$?" >> "$OUT/install-host-head.log"
 bats test/cc-isolated-functions.bats > "$OUT/cc-isolated.log" 2>&1; echo "exit=$?" >> "$OUT/cc-isolated.log"

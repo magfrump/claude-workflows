@@ -868,7 +868,7 @@ installed_then_changed() {
   [[ "$output" == *'Install these files'* ]]      # the review and prompt ran
   [[ "$output" == *'777 claude'* ]]
   [ "$(snap "$CLAUDE_HOME_DIR")" = "$before" ]
-  ! compgen -G "$CLAUDE_HOME_DIR/.cw-new.*" >/dev/null
+  run ! compgen -G "$CLAUDE_HOME_DIR/.cw-new.*"
   [ ! -e "$CLAUDE_HOME_DIR/.claude-workflows-lock" ]
 }
 
