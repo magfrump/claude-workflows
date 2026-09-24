@@ -900,6 +900,13 @@ Closing the review's bypasses of Q-035 needed a broader Bash rule, applied only 
 
 **Answered 2026-09-23: [2], exempt `.claude/wt-*` and `.claude/worktrees/`.** Implemented on branch `ans/guard-q048-q050`, with tests. The exemption does not cover a worktree segment followed by `..`, or a worktree under the home config dir. Two more false denies the same day fall outside [2]: a read-only `rg` whose regex contained `ln -s` next to `global-instructions/CLAUDE.md`, and a `python3` heredoc that edited this questions file because its text mentioned `.claude` and `hooks`.
 
+**Withdrawn 2026-09-23 (user decision, review loop cap).** Three review passes on `ans/guard-q048-q050` each found new ways past the text-matched exemption into a `.claude` config dir:
+- pass 1: quote-split `..`, and a symlinked `wt-*`;
+- pass 2: `cd ..` / `../`, and same-command root swaps;
+- pass 3: `-t..`, `.{,.}`, `env -C`, `cp -P`, `git checkout`, `tar -x`, `find -delete`.
+
+The user chose fix-first, then the whole-command gate, then dropping the exemption. Commit 3e9e448 restores 970e525's Bash tier for worktree paths and keeps every bypass as a deny test. So the Q-048 false denies stand: in a worktree, agents write policy-named files with Edit/Write. Rubric: `docs/reviews/code-review-rubric-2026-09-23-ans-guard-q048-q050.md` on that branch. A real fix belongs to the file-identity guard redesign, not to more text matching.
+
 
 ### Q-011 · mathlib-cache-host
 **Needs:** you: terminal · **Opened:** 2026-09-12 · **Status:** ANSWERED
