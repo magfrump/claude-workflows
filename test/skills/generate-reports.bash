@@ -76,6 +76,12 @@ case "$FIXTURE_MODE" in
     ;;
 esac
 
+# --strict-mcp-config on every run: without it the account's claude.ai MCP
+# connectors (e.g. Claude Docs create/update/delete) are exposed even under
+# --tools "", in sub-agents too — a write-capable, outward-facing tool the
+# no-Write rule above assumes is absent. Not --bare: it breaks subscription
+# auth (FP-097).
+#
 # "none" is explicit so a runner that forgets FIXTURE_TOOLS still errors above;
 # claude -p reads --tools "" as "no tools".
 TOOLS_ARG="$FIXTURE_TOOLS"
@@ -125,6 +131,7 @@ generate_one() {
     (cd "$temp_dir" && printf '%s' "$prompt" \
       | claude -p \
         --system-prompt-file "$SKILL_FILE" \
+        --strict-mcp-config \
         --tools "$TOOLS_ARG" \
         $model_flag \
         ${CLAUDE_FLAGS:-} \
@@ -138,6 +145,7 @@ generate_one() {
     printf '%s\n\n%s' "$prompt" "$fixture_content" \
       | claude -p \
         --system-prompt-file "$SKILL_FILE" \
+        --strict-mcp-config \
         --tools "$TOOLS_ARG" \
         $model_flag \
         ${CLAUDE_FLAGS:-} \

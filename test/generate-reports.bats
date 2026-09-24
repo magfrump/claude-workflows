@@ -94,6 +94,19 @@ EOF
   [ -f "$TEST_TMPDIR/test/skills/demo/output/tc-9-sql-injection.py.report.md" ]
 }
 
+@test "every mode passes --strict-mcp-config, so account MCP connectors stay out" {
+  # Without it, claude.ai connectors (write-capable Claude Docs tools) are
+  # exposed even under --tools "" and in sub-agents.
+  local mode
+  for mode in inline repo; do
+    rm -rf "$CALLS"/* "$TEST_TMPDIR/test/skills/demo" "$TEST_TMPDIR/skills/demo"
+    make_skill demo "$mode" "Read"
+    run bash "$GEN" demo
+    [ "$status" -eq 0 ]
+    grep -q -- '--strict-mcp-config' "$CALLS/0" || { echo "mode $mode: no --strict-mcp-config"; cat "$CALLS/0"; return 1; }
+  done
+}
+
 @test "fixture prefix selects a subset" {
   make_skill demo inline "WebSearch"
   echo other > "$TEST_TMPDIR/test/skills/demo/fixtures/tc-2-other.txt"
