@@ -1,4 +1,5 @@
-# Shared helpers for fact-check and code-fact-check eval BATS tests.
+# Shared helpers for skill eval BATS tests (fact-check, code-fact-check, and
+# every skill with a fixture set under test/skills/<skill>/fixtures/).
 # Load with: load eval-helpers
 
 # Load expected verdicts for a skill. Must be called before eval_fixture.
@@ -80,6 +81,9 @@ eval_fixture() {
       verdict_match)
         assert_verdict "$expected_verdict"
         ;;
+      severity_match)
+        assert_severity "$expected_verdict"
+        ;;
       cites_pattern:*)
         local pattern="${check#cites_pattern:}"
         assert_report_matches "$pattern"
@@ -142,6 +146,24 @@ assert_verdict() {
 
   if [ "$found" = false ]; then
     echo "Expected verdict matching /${allowed}/, got: $(echo "$verdicts" | tr '\n' ', ')"
+    return 1
+  fi
+}
+
+# Assert at least one finding carries a severity from the allowed set. Reviewer
+# skills tag each finding "**Severity:** <tier>", sometimes with a trailing
+# qualifier ("High (executed)"), so only the leading word is compared.
+# Args: $1 = pipe-separated allowed severities (e.g., "Critical|High")
+assert_severity() {
+  local allowed="$1"
+  [ "$allowed" = "Any" ] && return 0
+
+  local severities
+  severities=$(echo "$REPORT_CONTENT" | sed -n 's/^\*\*Severity:\*\* //p' | tr -d '\r')
+  [ -n "$severities" ] || { echo "No **Severity:** lines found in report"; return 1; }
+
+  if ! echo "$severities" | grep -qiE "^(${allowed})([^[:alpha:]]|$)"; then
+    echo "Expected a severity matching /${allowed}/, got: $(echo "$severities" | tr '\n' ', ')"
     return 1
   fi
 }

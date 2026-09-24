@@ -1,17 +1,25 @@
 #!/usr/bin/env bash
-# Generate fact-check reports by running claude -p against evaluation fixtures.
+# Generate skill reports by running claude -p against evaluation fixtures.
 #
 # Usage:
 #   ./generate-reports.bash fact-check                    # all fact-check fixtures
 #   ./generate-reports.bash fact-check tc-2.4-inaccurate  # single fixture (prefix match)
 #   ./generate-reports.bash code-fact-check               # all code-fact-check fixtures
+#   ./generate-reports.bash <skill>                       # any skill with a runner.bash
 #
 # Output:
 #   test/skills/<skill>/output/<fixture>.report.md   — the generated report
 #
-# Cheat prevention: --tools restricts available tools (no Read for fact-check,
-# no Write for either). The model cannot access expected-verdicts.bash or
-# eval-criteria.md because Read is not in the allowed tool set.
+# Per-skill configuration lives in test/skills/<skill>/runner.bash, which sets:
+#   FIXTURE_TOOLS   — the --tools allowlist for claude -p
+#   FIXTURE_MODE    — "inline" (fixture content appended to the prompt) or
+#                     "repo" (fixture copied into a throwaway git repo that
+#                     becomes claude's working directory)
+#   fixture_prompt  — a function; given the fixture filename, prints the prompt
+#
+# Cheat prevention: the tool allowlist never includes Write, and in "repo" mode
+# the working directory holds only the fixture, so the model cannot reach
+# expected-verdicts.bash or eval-criteria.md. "inline" skills should omit Read.
 #
 # Environment:
 #   CLAUDE_MODEL   — model to use (default: inherits from claude config)
@@ -20,29 +28,47 @@
 set -euo pipefail
 
 SCRIPT_DIR="$(cd "$(dirname "$0")" && pwd)"
-SKILL="${1:?Usage: generate-reports.bash <fact-check|code-fact-check> [fixture-prefix]}"
+SKILL="${1:?Usage: generate-reports.bash <skill> [fixture-prefix]}"
 FIXTURE_PREFIX="${2:-}"
 
 SKILL_FILE="$SCRIPT_DIR/../../skills/${SKILL}/SKILL.md"
 FIXTURE_DIR="$SCRIPT_DIR/${SKILL}/fixtures"
 OUTPUT_DIR="$SCRIPT_DIR/${SKILL}/output"
+RUNNER_FILE="$SCRIPT_DIR/${SKILL}/runner.bash"
 
 if [ ! -f "$SKILL_FILE" ]; then
   echo "Error: skill file not found: $SKILL_FILE" >&2
   exit 1
 fi
+if [ ! -f "$RUNNER_FILE" ]; then
+  echo "Error: no runner for $SKILL: $RUNNER_FILE" >&2
+  exit 1
+fi
+
+FIXTURE_TOOLS=""
+FIXTURE_MODE=""
+# shellcheck source=/dev/null  # Path is per-skill
+source "$RUNNER_FILE"
+
+if [ -z "$FIXTURE_TOOLS" ] || ! declare -F fixture_prompt >/dev/null; then
+  echo "Error: $RUNNER_FILE must set FIXTURE_TOOLS and define fixture_prompt" >&2
+  exit 1
+fi
+case ",$FIXTURE_TOOLS," in
+  *,Write,*|*,Edit,*)
+    echo "Error: $RUNNER_FILE: FIXTURE_TOOLS must not include Write or Edit" >&2
+    exit 1
+    ;;
+esac
+case "$FIXTURE_MODE" in
+  inline|repo) ;;
+  *)
+    echo "Error: $RUNNER_FILE: FIXTURE_MODE must be inline or repo, got '$FIXTURE_MODE'" >&2
+    exit 1
+    ;;
+esac
 
 mkdir -p "$OUTPUT_DIR"
-
-# Tool restrictions per skill:
-# - fact-check: only WebSearch/WebFetch (no Read = no cheating, no Write = output to stdout)
-# - code-fact-check: only Read/Grep/Glob (needs file access, runs in isolated temp dir)
-# Restricting tools also prevents the model from using Write, forcing the report to stdout.
-if [ "$SKILL" = "code-fact-check" ]; then
-  ALLOWED_TOOLS="Read,Grep,Glob"
-else
-  ALLOWED_TOOLS="WebSearch,WebFetch"
-fi
 
 generate_one() {
   local fixture_path="$1"
@@ -57,53 +83,54 @@ generate_one() {
     model_flag="--model $CLAUDE_MODEL"
   fi
 
-  if [ "$SKILL" = "code-fact-check" ]; then
-    # Code fact-check needs the fixture as a file in a minimal repo context.
-    # Create a temp directory with just the fixture, so the model can read it
-    # without having access to eval criteria or expected verdicts.
+  local prompt
+  prompt="$(fixture_prompt "$fixture_name")"
+
+  if [ "$FIXTURE_MODE" = "repo" ]; then
+    # The fixture as a file in a minimal repo, so the model can read it without
+    # access to the eval criteria or expected verdicts.
     local temp_dir
     temp_dir=$(mktemp -d)
     # shellcheck disable=SC2064  # Intentional: expand $temp_dir now at trap-set time
     trap "rm -rf '$temp_dir'" RETURN
 
     cp "$fixture_path" "$temp_dir/"
-    # Initialize a bare git repo so the skill's scoping logic doesn't fail
+    # Initialize a git repo so skills that scope by git diff/log don't fail
     git -C "$temp_dir" init -q
     git -C "$temp_dir" add .
-    git -C "$temp_dir" commit -q -m "fixture" --allow-empty
+    git -C "$temp_dir" -c user.name=fixture -c user.email=fixture@localhost \
+      commit -q -m "fixture" --allow-empty
 
     # Pipe prompt via stdin to avoid shell argument parsing issues
     # shellcheck disable=SC2086
-    (cd "$temp_dir" && printf '%s' "Code fact-check the file ${fixture_name}. Check all claims in comments and docstrings against actual code behavior. Scope: ${fixture_name}" \
+    (cd "$temp_dir" && printf '%s' "$prompt" \
       | claude -p \
         --system-prompt-file "$SKILL_FILE" \
-        --tools "$ALLOWED_TOOLS" \
+        --tools "$FIXTURE_TOOLS" \
         $model_flag \
         ${CLAUDE_FLAGS:-} \
     ) > "$report_path" 2>/dev/null || true
   else
-    # Fact-check: pass fixture content in the prompt so the model doesn't need
-    # file access to the fixtures directory.
     local fixture_content
     fixture_content="$(cat "$fixture_path")"
 
-    # --tools: restrict to web search only (no file read = no cheating, no write = report to stdout)
     # Pipe prompt via stdin to avoid multiline shell argument issues
     # shellcheck disable=SC2086
-    printf '%s\n\n%s' "Fact-check the following draft:" "$fixture_content" \
+    printf '%s\n\n%s' "$prompt" "$fixture_content" \
       | claude -p \
         --system-prompt-file "$SKILL_FILE" \
-        --tools "$ALLOWED_TOOLS" \
+        --tools "$FIXTURE_TOOLS" \
         $model_flag \
         ${CLAUDE_FLAGS:-} \
       > "$report_path" 2>/dev/null || true
   fi
 
   if [ -s "$report_path" ]; then
-    local claim_count
+    local claim_count finding_count
     # code-fact-check heads claims "## Claim N"; fact-check heads "## Verdict for CN:".
     claim_count=$(grep -cE '^## (Claim [0-9]+|Verdict for C[0-9]+)' "$report_path" || true)
-    echo "  Done: $claim_count claims in report"
+    finding_count=$(grep -cE '^\*\*Severity:\*\*' "$report_path" || true)
+    echo "  Done: $claim_count claims, $finding_count severity-tagged findings in report"
   else
     echo "  WARNING: empty report generated"
   fi

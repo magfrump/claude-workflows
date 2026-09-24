@@ -2,8 +2,7 @@
 external/
 
 # Generated eval reports (model-dependent, not committed)
-test/skills/fact-check/output/
-test/skills/code-fact-check/output/
+test/skills/*/output/
 
 # Process artifacts from self-improvement rounds (kept locally for reference)
 docs/working/archive/
