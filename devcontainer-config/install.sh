@@ -37,7 +37,8 @@ Offers two install targets in turn. Each one shows a review diff and asks y/N:
      CLAUDE_CONFIG_DIR (which Claude Code, link-claude-home and health-check
      read); set it only to install somewhere else. Replaced entries, including
      old symlinks and files the repo lacks, are moved to
-     <dest>/.claude-workflows-backup/<UTC stamp>/; the newest 3 are kept.
+     <dest>/.claude-workflows-backup/<UTC stamp>/. The backups of the last 3
+     installs are kept; the current run's is never removed.
      settings.json is never written; hook wiring stays a manual merge.
 
 Both targets install COMMITTED content: uncommitted changes under the payload
@@ -602,14 +603,29 @@ install_claude_home() {
   echo "Installed into $dest."
   if [ -n "$backup" ]; then
     echo "Previous entries moved to $backup (delete it when satisfied)."
-    # A6: keep the newest 3 stamped backups; nothing else prunes them.
-    local old pruned=0
+    # A6: keep this run's backup plus the 2 most recent earlier ones. Reached
+    # only after a complete swap, so a failed or rolled-back run prunes nothing.
+    # Fact-check claim 22: ordering by NAME once deleted this run's backup, the
+    # only copy of what it replaced, when earlier names sorted later (a clock
+    # that ran ahead). So: this run's backup is never a candidate; the others
+    # are ordered by the epoch each completed install wrote into its own backup
+    # (.install-stamp); a directory without that stamp was not made by a
+    # completed install and is never removed.
+    printf 'installed_epoch=%s\n' "$(date -u +%s)" > "$backup/.install-stamp"
+    local old d e pruned=0
     while IFS= read -r old; do
-      if [ -d "$bkroot/$old" ] && [ ! -L "$bkroot/$old" ]; then
-        rm -rf "${bkroot:?}/$old"; pruned=$((pruned + 1))
-      fi
-    done < <(find "$bkroot" -mindepth 1 -maxdepth 1 -name '[0-9]*T*Z*' -printf '%f\n' | LC_ALL=C sort | head -n -3)
-    echo "Backups are capped at the newest 3 in $bkroot ($pruned older removed)."
+      rm -rf "${bkroot:?}/$old"; pruned=$((pruned + 1))
+    done < <(
+      for d in "$bkroot"/*/; do
+        d="${d%/}"
+        case "$d" in *$'\n'*) continue ;; esac
+        if [ "$d" = "$backup" ] || [ -L "$d" ] || [ -L "$d/.install-stamp" ]; then continue; fi
+        [ -f "$d/.install-stamp" ] || continue
+        e="$(sed -n 's/^installed_epoch=\([0-9][0-9]*\)$/\1/p' "$d/.install-stamp")"
+        [ -n "$e" ] || continue
+        printf '%s\t%s\n' "$e" "${d##*/}"
+      done | LC_ALL=C sort -t "$(printf '\t')" -k1,1nr -k2,2r | tail -n +3 | cut -f2)
+    echo "Backups: this one plus the 2 most recent earlier installs' are kept in $bkroot ($pruned older removed)."
   fi
   if [ "$wiring_changed" -eq 1 ]; then
     echo

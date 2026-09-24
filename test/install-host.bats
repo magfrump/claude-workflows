@@ -603,7 +603,7 @@ installed_then_changed() {
   [ ! -e "$CLAUDE_HOME_DIR/.claude-workflows-backup" ]
 }
 
-@test "T38 backups are capped at the newest 3, and the install says so (review A6)" {
+@test "T38 backups are capped at the last 3 installs, and the install says so (review A6)" {
   need_script; fake_repo; symlink_install
   for i in 1 2 3 4; do
     printf 'change %s\n' "$i" >> "$ROOT/workflows/w.md"; commit_all "c$i"
@@ -613,7 +613,7 @@ installed_then_changed() {
   done
   echo "$output"
   [ "$(find "$CLAUDE_HOME_DIR/.claude-workflows-backup" -mindepth 1 -maxdepth 1 | wc -l)" -eq 3 ]
-  [[ "$output" == *'newest 3'* ]]
+  [[ "$output" == *'2 most recent earlier'*'kept'* ]]
   # The oldest (the symlink-install backup) is the one pruned.
   [ -z "$(find "$CLAUDE_HOME_DIR/.claude-workflows-backup" -type l)" ]
 }
@@ -627,6 +627,26 @@ installed_then_changed() {
   [[ "$output" == *'inside the repo checkout'* ]]
   [ "$(snap "$ROOT")" = "$repo_before" ]
   [ ! -e "$S/nx" ]
+}
+
+@test "T41 pruning keeps this run's backup and unstamped dirs, and orders by install stamp, not name (fact-check claim 22)" {
+  need_script; fake_repo
+  mkdir -p "$CLAUDE_HOME_DIR"; printf 'my own instructions\n' > "$CLAUDE_HOME_DIR/CLAUDE.md"
+  bk="$CLAUDE_HOME_DIR/.claude-workflows-backup"
+  # Three earlier installs whose names sort after today's stamp (a clock that
+  # once ran ahead), stamped out of name order, plus a dir no install made.
+  mkdir -p "$bk/20990101T000000Z" "$bk/20990102T000000Z" "$bk/20990103T000000Z" "$bk/20000101T000000Z"
+  printf 'installed_epoch=4102444900\n' > "$bk/20990101T000000Z/.install-stamp"
+  printf 'installed_epoch=4102444700\n' > "$bk/20990102T000000Z/.install-stamp"
+  printf 'installed_epoch=4102444800\n' > "$bk/20990103T000000Z/.install-stamp"
+  run_pty 'n\ny\n' bash "$INSTALL"
+  echo "$output"
+  cur=$(sed -n 's/^Previous entries moved to \(.*\) (delete it when satisfied)\.$/\1/p' <<<"$output")
+  [ -n "$cur" ]
+  [ "$(cat "$cur/CLAUDE.md")" = 'my own instructions' ]
+  [ -d "$bk/20990101T000000Z" ] && [ -d "$bk/20990103T000000Z" ]
+  [ ! -e "$bk/20990102T000000Z" ]          # the oldest by stamp, not by name
+  [ -d "$bk/20000101T000000Z" ]            # no stamp: not made by an install
 }
 
 @test "T24 with CLAUDE_HOME_DIR unset, CLAUDE_CONFIG_DIR chooses the destination" {

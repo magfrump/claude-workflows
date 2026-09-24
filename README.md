@@ -34,7 +34,8 @@ that the repo doesn't have (`MOVE to backup`, `MOVE link … to backup`). Check 
 line marked `WIRED in settings` before you answer y: that hook is referenced from
 your `settings.json` and will stop running. Each of the seven entries it
 replaces, old links included, is moved to
-`~/.claude/.claude-workflows-backup/<UTC stamp>/`; the newest 3 backups are kept.
+`~/.claude/.claude-workflows-backup/<UTC stamp>/`. The backups of the last 3
+installs are kept (the current run's is never removed).
 Delete them when you're satisfied. Your `settings.json`, memory, projects and
 logs are never touched.
 

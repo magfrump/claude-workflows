@@ -140,7 +140,7 @@ From `docs/reviews/code-review-rubric-2026-09-23-ans-copy-install.md`; one commi
 - **R5:** foreign links print `MOVE link … to backup (not in the repo)` with WIRED on that line; WIRED matches the full `hooks/<path>`. T33.
 - **A4:** review output passes through `vis()` (control bytes made visible). T34.
 - **A7/A8:** an absent entry prints `ADD <dest>/<name> (new, N file(s)):` and its paths; existing entries are diffed as a link-free copy (`cp -H`, inner links dropped), so a dangling link is a MOVE line, not a failed review. T35, T36.
-- **A6:** a no-change review prints `(none …)` and skips prompt, swap and backup; backups capped at the newest 3; `claude_config_audit.py` skips `.claude-workflows-backup`. T37, T38, one claude-config-audit test.
+- **A6:** a no-change review prints `(none …)` and skips prompt, swap and backup; backups capped at the last 3 installs' (fact-check fix: ordered by each install's own `.install-stamp`, the current run's never pruned, unstamped dirs never touched, T41); `claude_config_audit.py` skips `.claude-workflows-backup`. T37, T38, one claude-config-audit test.
 - **A3:** `resolve_phys` resolves `..` in a missing tail. T39.
 - **A1/A2/A5/A9/A10:** README, `--help`, comments and decision 037 corrected; `installed_by=host-tty` dropped. T10 (updated), T40.
 - Test-quality fix found on the way: a non-final `! cmd` never fails a bats test; the new tests use `[ -z "$(…)" ]`.
