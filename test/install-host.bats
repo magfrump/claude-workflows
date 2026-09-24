@@ -603,6 +603,17 @@ installed_then_changed() {
   [ -z "$(find "$CLAUDE_HOME_DIR/.claude-workflows-backup" -type l)" ]
 }
 
+@test "T39 a destination whose unresolved tail climbs back into the checkout is refused (review A3)" {
+  need_script; fake_repo
+  repo_before=$(snap "$ROOT")
+  run_pty 'n\ny\n' env CLAUDE_HOME_DIR="$S/nx/../repo" bash "$INSTALL"
+  echo "$output"
+  [ "$status" -eq 1 ]
+  [[ "$output" == *'inside the repo checkout'* ]]
+  [ "$(snap "$ROOT")" = "$repo_before" ]
+  [ ! -e "$S/nx" ]
+}
+
 @test "T24 with CLAUDE_HOME_DIR unset, CLAUDE_CONFIG_DIR chooses the destination" {
   need_script; fake_repo
   run_pty 'n\ny\n' env -u CLAUDE_HOME_DIR CLAUDE_CONFIG_DIR="$S/cfgdir" bash "$INSTALL"

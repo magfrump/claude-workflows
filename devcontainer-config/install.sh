@@ -281,15 +281,23 @@ install_devcontainer() {
 # empties the checkout. And `diff` follows symlinks, so a migration from links
 # to copies would review as "(none)". Hence the explicit REPLACE lines below.
 
-# resolve_phys <path>: the physical path of <path>, or of its nearest existing
-# ancestor with the rest appended.
+# resolve_phys <path>: where <path> lands once mkdir -p creates it. Walks the
+# components: an existing dir is resolved physically (links followed), a
+# missing one is appended as text, and `..` drops the last component. So
+# <outside>/nx/../<repo> with nx missing resolves to <repo> (review A3).
 resolve_phys() {
-  local p="$1" tail=""
-  while [ ! -d "$p" ]; do
-    tail="/$(basename "$p")$tail"
-    p="$(dirname "$p")"
+  local p="$1" cur="/" comp parts
+  case "$p" in /*) ;; *) p="$PWD/$p" ;; esac
+  IFS=/ read -ra parts <<< "$p"
+  for comp in "${parts[@]}"; do
+    case "$comp" in
+      ''|.) ;;
+      ..) cur="$(dirname "$cur")" ;;
+      *) if [ -d "${cur%/}/$comp" ]; then cur="$(cd "${cur%/}/$comp" && pwd -P)"
+         else cur="${cur%/}/$comp"; fi ;;
+    esac
   done
-  echo "$(cd "$p" && pwd -P)$tail"
+  echo "$cur"
 }
 
 inside_repo() {
