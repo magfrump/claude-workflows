@@ -50,19 +50,9 @@ Exit status: 0 no target declined; 1 a target was declined, or an error;
 EOF
 }
 
-ASSUME_YES=""
-while [ $# -gt 0 ]; do
-  case "$1" in
-    --yes) ASSUME_YES="--yes" ;;
-    -h|--help) usage; exit 0 ;;
-    *) echo "install.sh: unknown argument: $1" >&2; usage >&2; exit 2 ;;
-  esac
-  shift
-done
-
+# Top level holds only constants and function definitions; everything that runs
+# is in main(), called from the last line (review R3). See main() for why.
 SRC="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
-DEST="${CLAUDE_DEVC_CONFIG_DIR:-$HOME/.config/claude-devcontainer}"
-BIN_DIR="${CLAUDE_DEVC_BIN_DIR:-$HOME/.local/bin}"
 
 # install.sh itself is not installed — it runs from the repo.
 # `claude-home` is assembled below from the repo root before the diff is shown.
@@ -290,15 +280,6 @@ install_devcontainer() {
 # empties the checkout. And `diff` follows symlinks, so a migration from links
 # to copies would review as "(none)". Hence the explicit REPLACE lines below.
 
-# The seven entry names, derived from CLAUDE_HOME_SRC so the host can never
-# install a subset of the payload (FP-066).
-CLAUDE_HOME_NAMES=()
-for _item in "${CLAUDE_HOME_SRC[@]}"; do CLAUDE_HOME_NAMES+=("$(basename "$_item")"); done
-unset _item
-
-HOST_TMP=""
-trap 'if [ -n "$HOST_TMP" ]; then rm -rf "$HOST_TMP"; fi' EXIT
-
 # resolve_phys <path>: the physical path of <path>, or of its nearest existing
 # ancestor with the rest appended.
 resolve_phys() {
@@ -525,7 +506,38 @@ install_claude_home() {
   fi
 }
 
-DECLINED=0
-install_devcontainer
-install_claude_home
-exit "$DECLINED"
+# main: everything that runs. WHY A FUNCTION: bash reads a script file as it
+# goes, so a top-level line after a prompt is read only once the prompt returns,
+# and an in-place rewrite of this file while [y/N] waits would run new code
+# (review R3). A function body is parsed whole before it runs, and the last line
+# `main "$@"; exit $?` is one line, so nothing after it is ever read.
+main() {
+  ASSUME_YES=""
+  while [ $# -gt 0 ]; do
+    case "$1" in
+      --yes) ASSUME_YES="--yes" ;;
+      -h|--help) usage; exit 0 ;;
+      *) echo "install.sh: unknown argument: $1" >&2; usage >&2; exit 2 ;;
+    esac
+    shift
+  done
+
+  DEST="${CLAUDE_DEVC_CONFIG_DIR:-$HOME/.config/claude-devcontainer}"
+  BIN_DIR="${CLAUDE_DEVC_BIN_DIR:-$HOME/.local/bin}"
+
+  # The seven entry names, derived from CLAUDE_HOME_SRC so the host can never
+  # install a subset of the payload (FP-066).
+  CLAUDE_HOME_NAMES=()
+  local item
+  for item in "${CLAUDE_HOME_SRC[@]}"; do CLAUDE_HOME_NAMES+=("$(basename "$item")"); done
+
+  HOST_TMP=""
+  trap 'if [ -n "$HOST_TMP" ]; then rm -rf "$HOST_TMP"; fi' EXIT
+
+  DECLINED=0
+  install_devcontainer
+  install_claude_home
+  return "$DECLINED"
+}
+
+main "$@"; exit $?

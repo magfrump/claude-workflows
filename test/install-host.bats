@@ -460,6 +460,24 @@ no_host_stage_left() {
   ! compgen -G "$CLAUDE_HOME_DIR/.cw-new.*" >/dev/null
 }
 
+@test "T29 rewriting install.sh while it waits at a prompt runs no new code (review R3)" {
+  need_script; fake_repo
+  # Insert a command right after the top-level line that calls into the first
+  # prompt: bash resumes reading the file there once that call returns.
+  L=$(grep -n -m1 -E '^(install_devcontainer$|main "\$@")' "$INSTALL" | cut -d: -f1)
+  [ -n "$L" ]
+  export INJECT_L="$L" INJECT_F="$INSTALL" PWN="$S/pwned"
+  feed='for _i in $(seq 200); do [ -e "$(dirname "$INJECT_F")/claude-home/.manifest" ] && break; sleep 0.1; done
+    sleep 2
+    { head -n "$INJECT_L" "$INJECT_F"; echo "touch \"$PWN\""; tail -n +"$((INJECT_L + 1))" "$INJECT_F"; } > "$INJECT_F.new"
+    cat "$INJECT_F.new" > "$INJECT_F"
+    printf "n\nn\n"'
+  run_pty_feed "$feed" bash "$INSTALL"
+  echo "$output"
+  [[ "$output" == *'Aborted. Nothing was changed. (devcontainer'* ]]
+  [ ! -e "$S/pwned" ]
+}
+
 @test "T24 with CLAUDE_HOME_DIR unset, CLAUDE_CONFIG_DIR chooses the destination" {
   need_script; fake_repo
   run_pty 'n\ny\n' env -u CLAUDE_HOME_DIR CLAUDE_CONFIG_DIR="$S/cfgdir" bash "$INSTALL"
