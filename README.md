@@ -20,6 +20,8 @@ don't use the devcontainer. The second copies `global-instructions/CLAUDE.md`,
 both; only `install.sh` reads it, so set it only to install somewhere else. They
 are **copies, not symlinks**: an edit to the checkout, by you or by an agent, does
 nothing until you rerun `install.sh`, read the diff and answer y (decision 037).
+An entry `~/.claude` doesn't have yet is listed file by file, with its content
+shown only when it is 200 lines or fewer.
 Both targets install only **committed** content (the devcontainer config's
 files as well as those seven): uncommitted changes under those paths are listed
 as NOT included, and git-ignored files are never copied. The

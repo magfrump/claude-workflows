@@ -578,7 +578,7 @@ installed_then_changed() {
   [ -L "$bk/hooks/dead.sh" ]
 }
 
-@test "T36 an entry the destination lacks is listed with a file count, not diffed (review A7)" {
+@test "T36 an entry the destination lacks is listed with a file count (review A7)" {
   need_script; fake_repo
   run_pty 'n\nn\n' bash "$INSTALL"
   echo "$output"
@@ -586,8 +586,6 @@ installed_then_changed() {
   [[ "$output" == *"ADD $d/hooks (new, 3 file(s)):"* ]]
   [[ "$output" == *'    hooks/lib/x.sh'* ]]
   [[ "$output" == *"ADD $d/CLAUDE.md (new, 1 file(s)):"* ]]
-  [[ "$output" != *'+skill a'* ]]
-  [[ "$output" != *'+global instructions'* ]]
 }
 
 @test "T37 when nothing changed: (none), no prompt, no swap, no backup (review A6)" {
@@ -737,6 +735,18 @@ installed_then_changed() {
   echo "$output" | cat -v
   [[ "$output" == *'NOT included'*'31mred.md'* ]]
   [ "$(printf '%s' "$output" | LC_ALL=C grep -c $'\xc2\x9b')" -eq 0 ]
+}
+
+@test "T49 a small new entry's content is shown; a large one says it is omitted (fact-check claim 3)" {
+  need_script; fake_repo
+  seq 1 300 | sed 's/^/line /' > "$ROOT/workflows/big.md"; commit_all big
+  run_pty 'n\nn\n' bash "$INSTALL"
+  echo "$output"
+  d="$CLAUDE_HOME_DIR"
+  [[ "$output" == *"ADD $d/CLAUDE.md (new, 1 file(s)):"*'+global instructions'* ]]
+  [[ "$output" == *"ADD $d/hooks (new, 3 file(s)):"*'+exit 0'* ]]
+  [[ "$output" == *"ADD $d/workflows (new, 2 file(s)):"*'content not shown: 301 lines'* ]]
+  [[ "$output" != *'+line 150'* ]]
 }
 
 @test "T24 with CLAUDE_HOME_DIR unset, CLAUDE_CONFIG_DIR chooses the destination" {

@@ -1,6 +1,7 @@
 #!/usr/bin/env bash
 # install.sh — copy this repo's blessed-by-review files to the two places on the
-# HOST that read them, each after its own review diff and its own y/N:
+# HOST that read them, each after its own review and its own y/N (a diff; a new
+# ~/.claude entry is listed file by file, with its content if <= 200 lines):
 #   1. the devcontainer config the cc-isolated launcher reads, then bless it
 #      (decision 016);
 #   2. the global Claude Code files in ~/.claude for bare-host sessions
@@ -558,19 +559,32 @@ install_claude_home() {
       done < <(find "$dest/$name" \( -type f -o -type l \) -print0 | LC_ALL=C sort -z)
     fi
   done
-  # Content diff. An entry the destination lacks is listed, not diffed (A7: a
-  # first install printed ~32k lines, scrolling the lines above away). An
-  # existing entry is diffed as a link-free copy under $HOST_TMP/installed: a
+  # Content diff. An entry the destination lacks is listed file by file (A7: a
+  # first install diffed in full printed ~32k lines, scrolling the lines above
+  # away), and its content is shown too when it is at most ADD_MAX_LINES lines;
+  # past that the review says the content was left out and where to read it
+  # (fact-check claim 3). The limit shows a new CLAUDE.md or a small hooks dir
+  # whole and keeps a first install's skills tree to a file list.
+  # An existing entry is diffed as a link-free copy under $HOST_TMP/installed: a
   # top-level link is followed (cp -H), so the link's target is compared;
   # links inside are dropped, since the lines above already name each one, so
   # a dangling link cannot abort the review (A8).
-  local view="$HOST_TMP/installed" diffnames=() n
+  local view="$HOST_TMP/installed" diffnames=() n lines src
+  local ADD_MAX_LINES=200
   mkdir -p "$view"
   for name in "${CLAUDE_HOME_NAMES[@]}"; do
     if [ ! -e "$dest/$name" ]; then
       n="$(find "$stage/$name" -type f | grep -c '' || true)"
       echo "ADD $dest/$name (new, $n file(s)):" | vis
       (cd "$stage" && find "$name" -type f | LC_ALL=C sort) | sed 's/^/    /' | vis
+      lines="$(find "$stage/$name" -type f -exec cat {} + | wc -l)"
+      if [ "$lines" -le "$ADD_MAX_LINES" ]; then
+        review_diff "$view" "$stage" "$name" || true   # $view/$name is absent: all "+" lines
+      else
+        for src in "${CLAUDE_HOME_SRC[@]}"; do [ "$(basename "$src")" = "$name" ] && break; done
+        echo "    (content not shown: $lines lines, over the $ADD_MAX_LINES-line limit for a new entry;" \
+             "it is $src at commit ${STAGED_COMMIT:0:12})" | vis
+      fi
       changed=1
       continue
     fi
