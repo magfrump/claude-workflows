@@ -27,7 +27,7 @@ files as well as those seven): uncommitted changes under those paths are listed
 as NOT included, and git-ignored files are never copied. The
 `~/.claude` target is skipped with `--yes`, from a script with no TTY, and inside
 a Claude Code session. That stops accidental runs, not a determined agent (a pty
-wrapper gets past it); the hard barrier is a sandbox that denies agents write
+wrapper and unsetting `CLAUDECODE` get past it); the hard barrier is a sandbox that denies agents write
 access to `~/.claude`. `install.sh --help` has the details.
 
 **Migrating from the old symlink install.** Close your Claude Code sessions, then

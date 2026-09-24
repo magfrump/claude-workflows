@@ -125,9 +125,9 @@ Actual context cost (post-implementation): plan revision ~40k, Implementation ~7
 - **Existing test edited (deviation).** `test/link-claude-home-wiring.bats` test 14 grepped the README for the old `ln -s ~/claude-workflows/scripts ~/.claude/scripts` line. That is exactly what Q-050 retires. Its intent (the bare-host install makes `~/.claude/scripts` resolve) is kept by re-pointing the assertion: `scripts` must be in `CLAUDE_HOME_SRC`, and the README must point at `./devcontainer-config/install.sh`. The behavior itself is covered by `test/install-host.bats` T9. `test/cc-isolated-functions.bats` is unmodified, as planned.
 - **Stage layout.** The host stage is `$HOST_TMP/payload` inside the `mktemp -d` dir, not the mktemp dir itself. `assemble` does `rm -rf` + `mkdir -p` on its argument, which would have reset mktemp's 0700 mode.
 - **Extra guards** beyond the step 5 list: a dangling-symlink destination, and a destination that exists but is not a directory, are both refused.
-- **`installed_parent=`** records the parent process's command name. Under a `script` pty wrapper it reads `script` (seen in the tests), which leaves an audit trace for the agent-bypass case the TTY rule cannot stop.
+- **`installed_parent=`** records the parent process's command name. It is best-effort: under a pty wrapper it names the wrapper (`script`, seen in the tests) or the shell the wrapper ran, so it is a hint, not an audit trace or evidence of a human (review A2 retracted the audit-trace reading).
 - **Tests**: 24 (T1–T24), not 19, after the review fold-in. The suite is tagged `@category slow`.
-- **install.sh is 464 lines**, under the 500 guideline. (Superseded by the review fixes below: 656.)
+- **install.sh is 464 lines**, under the 500 guideline. (Superseded by the review fixes below: 656, then 808 after the fact-check fixes.)
 
 ## Review fixes (2026-09-23)
 
@@ -228,15 +228,25 @@ Round-1 triggers:
   - #1 (quiet drift) is acknowledged via decision 037's revisit trigger.
 - `/architecture-review`: **triggered and run.** Output: `docs/reviews/architecture-review-copy-install.md`. Findings #1–#5 folded into steps 4–5. #6 is covered by step 7.
 
+## Fact-check fixes (2026-09-23)
+
+From the confirmation pass `docs/reviews/code-fact-check-report.md` (commit 44c10f5); one commit per fix, each test-first.
+- **Claim 22 (data loss):** pruning never removes this run's backup or an unstamped dir, and orders the rest by the `installed_epoch` each completed install writes to `.install-stamp`. T41.
+- **Claim 17:** `MODE <path>: old -> new` lines; mode-only changes are no longer "(none)"; modes are the commit's (`tar.umask=022`, `tar -xp`, `cp -Rp`). T42.
+- **Claim 14:** the R2 hash covers the provenance manifest, installed from its hash-checked copy. T43.
+- **Claim 4 (user decision C1):** target 1 stages every PAYLOAD item from HEAD into a private temp dir; uncommitted changes under `devcontainer-config/` are in the same NOT-included warning. T44, T45.
+- **Claim 11b:** destinations with a control character are refused before either target runs. T46.
+- **Claims 6, 9, 3:** `vis()` escapes raw C1 bytes outside UTF-8 sequences (perl); the dirty listing is `core.quotePath=true` and goes through `vis`; a new host entry shows its content when it totals <= 200 lines, else says it was left out. T47, T48, T49.
+
 ## Risks
 
 - **The TTY barrier does not stop a determined agent.** Verified 2026-09-23 in this session: the Bash tool gives commands no TTY (`[ -t 0 ]`, `[ -t 1 ]` and `[ -t 2 ]` are all false, `tty` prints "not a tty", and fd 0 is `/dev/null`). A piped `y` is therefore refused. But util-linux `script` is installed, and `script -qec ./devcontainer-config/install.sh /dev/null <<<$'n\ny\n'` gives the child a pty. That is exactly how this plan's own tests drive the y path. The TTY check stops the accidental case (an agent running the installer as part of a routine) and makes the deliberate case conspicuous. It does not stop an agent that sets out to bless its own edit. The backstops are the sandbox `denyWrite ~/.claude` for Bash (manual hardening, guide §3) and `permissions.deny` for the Bash tool's direct writes. A host without that sandbox setting has no hard barrier.
 - **The `CLAUDECODE` skip is the same kind of barrier as the TTY check.** An agent can `env -u CLAUDECODE`. Needing both a faked pty and an unset variable makes the deliberate case conspicuous in a transcript; it does not make it impossible.
 - **Dirty stage** (superseded by review fix C1): uncommitted content is no longer installed at all; it is listed as NOT included.
-- **install.sh is 656 lines after the review fixes, over the 500 guideline** (tech-debt C11). Not split in this pass: a second file would be another host-run, agent-writable script, and decision 035's gate covers only install.sh. Splitting needs 035's trailer rule extended first.
+- **install.sh is 808 lines after the review and fact-check fixes, over the 500 guideline** (tech-debt C11). Not split in this pass: a second file would be another host-run, agent-writable script, and decision 035's gate covers only install.sh. Splitting needs 035's trailer rule extended first.
 - **GNU tools assumed** by the review fixes: `find -printf`, `head -n -3`, GNU `sed` `\xHH`, `diff`/`sort -z`; and `perl` for `vis()` (fact-check fix for raw C1 bytes). The bare host is WSL Linux; macOS is untested.
 - **Mid-swap window.** Between the moves, a running session can briefly find no hook file. The README asks the user to close Claude Code sessions before installing.
-- **D changes what an existing command does.** A plain run now asks a second question. Non-interactive runs are unchanged except for one extra skip line.
+- **D changes what an existing command does.** A plain run now asks a second question. The host target adds two lines to non-interactive runs (a blank line and the skip line); the committed-content fixes also changed target 1's output (the NOT-included warning, review diffs of the staged commit).
 - **Exit status under D**: 1 if any target was declined. A human who declines the devcontainer target and accepts `~/.claude` gets exit 1. That matches "declined = 1" today, and no caller depends on it.
 - **035's regex has not landed.** install.sh commits carry `Live-verified: no — …` trailers anyway.
 - **Q-049 unresolved.** The copied hooks may be wired to deny rules that match nothing. This plan leaves that as it is and does not automate the merge.
