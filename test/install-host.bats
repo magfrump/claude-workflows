@@ -719,6 +719,16 @@ installed_then_changed() {
   [ "$(snap "$ROOT")" = "$repo_before" ]
 }
 
+@test "T47 a raw 8-bit C1 byte is made visible; valid UTF-8 is left alone (fact-check claim 6)" {
+  need_script; fake_repo; symlink_install
+  printf 'a\23331mX\nem \342\200\224 dash\n' > "$ROOT/hooks/c1.sh"; commit_all c1
+  run_pty 'n\nn\n' bash "$INSTALL"
+  echo "$output" | cat -v
+  [ "$(printf '%s' "$output" | LC_ALL=C grep -c $'\x9b')" -eq 0 ]
+  [[ "$output" == *'+a?31mX'* ]]
+  [[ "$output" == *$'+em \342\200\224 dash'* ]]
+}
+
 @test "T24 with CLAUDE_HOME_DIR unset, CLAUDE_CONFIG_DIR chooses the destination" {
   need_script; fake_repo
   run_pty 'n\ny\n' env -u CLAUDE_HOME_DIR CLAUDE_CONFIG_DIR="$S/cfgdir" bash "$INSTALL"

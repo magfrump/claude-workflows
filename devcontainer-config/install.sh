@@ -96,9 +96,19 @@ CLAUDE_HOME_SRC=(global-instructions/CLAUDE.md skills workflows guides patterns 
 
 # vis: filter that makes control bytes visible (all but newline and tab), so a
 # crafted file name or file line cannot rewrite the review on the terminal (A4).
+#
+# Raw 8-bit C1 bytes (0x80-0x9f; 0x9b is CSI on an 8-bit terminal) are made
+# visible too, but only outside a well-formed UTF-8 sequence: every em dash is
+# e2 80 94, so escaping those bytes everywhere would garble the review (fact-check
+# claim 6). That needs "keep a match or replace it", which sed cannot express;
+# perl can. LC_ALL=C: byte semantics, and no locale warning from perl.
 vis() {
-  LC_ALL=C sed -e 's/\x1b/^[/g' -e 's/\r/^M/g' \
-    -e 's/[\x01-\x08\x0b\x0c\x0e-\x1a\x1c-\x1f\x7f]/?/g' -e 's/\xc2[\x80-\x9f]/?/g'
+  LC_ALL=C perl -pe '
+    s/\x1b/^[/g; s/\r/^M/g;
+    s/[\x01-\x08\x0b\x0c\x0e-\x1a\x1c-\x1f\x7f]/?/g;
+    s/\xc2[\x80-\x9f]/?/g;
+    s/([\xc2-\xdf][\x80-\xbf]|[\xe0-\xef][\x80-\xbf]{2}|[\xf0-\xf4][\x80-\xbf]{3})|[\x80-\x9f]/defined $1 ? $1 : "?"/ge;
+  '
 }
 
 # head_commit: print HEAD's commit id; exit the script if there is none.

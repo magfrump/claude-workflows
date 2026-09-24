@@ -234,7 +234,7 @@ Round-1 triggers:
 - **The `CLAUDECODE` skip is the same kind of barrier as the TTY check.** An agent can `env -u CLAUDECODE`. Needing both a faked pty and an unset variable makes the deliberate case conspicuous in a transcript; it does not make it impossible.
 - **Dirty stage** (superseded by review fix C1): uncommitted content is no longer installed at all; it is listed as NOT included.
 - **install.sh is 656 lines after the review fixes, over the 500 guideline** (tech-debt C11). Not split in this pass: a second file would be another host-run, agent-writable script, and decision 035's gate covers only install.sh. Splitting needs 035's trailer rule extended first.
-- **GNU tools assumed** by the review fixes: `find -printf`, `head -n -3`, GNU `sed` `\xHH`, `diff`/`sort -z`. The bare host is WSL Linux; macOS is untested.
+- **GNU tools assumed** by the review fixes: `find -printf`, `head -n -3`, GNU `sed` `\xHH`, `diff`/`sort -z`; and `perl` for `vis()` (fact-check fix for raw C1 bytes). The bare host is WSL Linux; macOS is untested.
 - **Mid-swap window.** Between the moves, a running session can briefly find no hook file. The README asks the user to close Claude Code sessions before installing.
 - **D changes what an existing command does.** A plain run now asks a second question. Non-interactive runs are unchanged except for one extra skip line.
 - **Exit status under D**: 1 if any target was declined. A human who declines the devcontainer target and accepts `~/.claude` gets exit 1. That matches "declined = 1" today, and no caller depends on it.
