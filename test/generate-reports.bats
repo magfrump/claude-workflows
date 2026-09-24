@@ -131,6 +131,20 @@ EOF
   [[ "$output" == *"1 severity-tagged findings"* ]]
 }
 
+@test "FIXTURE_TRANSCRIPT=1: a non-JSON line in the stream does not lose the report" {
+  make_skill demo inline "Read"
+  echo 'FIXTURE_TRANSCRIPT=1' >> "$TEST_TMPDIR/test/skills/demo/runner.bash"
+  # Wrap the stub so it prints a stray warning line first.
+  mv "$TEST_TMPDIR/bin/claude" "$TEST_TMPDIR/bin/claude-real"
+  printf '#!/usr/bin/env bash\necho "Warning: stray stdout line"\nexec "%s" "$@"\n' \
+    "$TEST_TMPDIR/bin/claude-real" > "$TEST_TMPDIR/bin/claude"
+  chmod +x "$TEST_TMPDIR/bin/claude"
+  run bash "$GEN" demo
+  [ "$status" -eq 0 ]
+  diff <(printf '# Report\n\n**Severity:** High\n') \
+    "$TEST_TMPDIR/test/skills/demo/output/tc-1-thing.txt.report.md"
+}
+
 @test "transcript off: no stream-json flags, and a stale sidecar is removed" {
   make_skill demo inline "Read"
   local out="$TEST_TMPDIR/test/skills/demo/output"

@@ -215,7 +215,9 @@ generate_one() {
   if [ "$FIXTURE_TRANSCRIPT" = 1 ]; then
     # The report is what the model finally said: the result event's text. A
     # run that died before emitting one leaves an empty report (warned below).
-    jq -r 'select(.type == "result") | .result // empty' "$transcript_path" \
+    # -R + fromjson? parses line by line and skips non-JSON lines (a stray
+    # warning on stdout), which would otherwise abort jq and lose the report.
+    jq -rR 'fromjson? | select(.type == "result") | .result // empty' "$transcript_path" \
       > "$report_path" 2>/dev/null || : > "$report_path"
   fi
 

@@ -67,3 +67,12 @@ teardown() {
   [ "$status" -ne 0 ]
   [[ "$output" == *"FIXTURE_TRANSCRIPT=1"* ]]
 }
+
+@test "a non-JSON line in the transcript does not blind the checks" {
+  # e.g. a CLI warning printed to stdout mid-stream
+  sed -i '2i Warning: something printed to stdout' "$T"
+  run assert_tool_called Read 'divergent-design'
+  [ "$status" -eq 0 ]
+  run assert_subagents_min 2
+  [ "$status" -eq 0 ]
+}

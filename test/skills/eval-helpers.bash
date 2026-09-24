@@ -333,8 +333,9 @@ eval_transcript_path() {
 # tool, at any depth (sub-agents' calls included).
 # Args: $1 = transcript path, $2 = tool name
 transcript_tool_inputs() {
-  jq -r --arg n "$2" \
-    'select(.type == "assistant") | .message.content[]?
+  # -R + fromjson?: skip non-JSON lines instead of aborting on the first one.
+  jq -rR --arg n "$2" \
+    'fromjson? | select(.type == "assistant") | .message.content[]?
      | select(.type == "tool_use" and .name == $n) | .input | tostring' "$1"
 }
 
@@ -360,7 +361,7 @@ assert_tool_called() {
 assert_subagents_min() {
   local min="$1" t n
   t="$(eval_transcript_path)" || { echo "$t"; return 1; }
-  n=$(jq -r 'select(.type == "assistant" and .parent_tool_use_id == null)
+  n=$(jq -rR 'fromjson? | select(.type == "assistant" and .parent_tool_use_id == null)
        | .message.content[]? | select(.type == "tool_use" and .name == "Agent")
        | .name' "$t" | grep -c . || true)
   if [ "$n" -lt "$min" ]; then
