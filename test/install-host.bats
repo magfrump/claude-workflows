@@ -703,6 +703,22 @@ installed_then_changed() {
   [ ! -e "$CLAUDE_DEVC_CONFIG_DIR" ]
 }
 
+@test "T46 a destination containing a newline is refused before anything runs (fact-check claim 11b)" {
+  need_script; fake_repo
+  repo_before=$(snap "$ROOT")
+  # Once mkdir -p makes "nl<LF>", this path lands in the checkout; the first-line
+  # split in resolve_phys saw only ".../out/nl" and let it through.
+  export CLAUDE_HOME_DIR="$S/out/nl"$'\n'"/../../repo"
+  run_pty 'n\ny\n' bash "$INSTALL"
+  echo "$output"
+  [ "$status" -eq 1 ]
+  [[ "$output" == *'control character'* ]]
+  [[ "$output" != *'[y/N]'* ]]
+  [ ! -e "$S/out" ]
+  [ ! -e "$ROOT/devcontainer-config/claude-home" ]
+  [ "$(snap "$ROOT")" = "$repo_before" ]
+}
+
 @test "T24 with CLAUDE_HOME_DIR unset, CLAUDE_CONFIG_DIR chooses the destination" {
   need_script; fake_repo
   run_pty 'n\ny\n' env -u CLAUDE_HOME_DIR CLAUDE_CONFIG_DIR="$S/cfgdir" bash "$INSTALL"

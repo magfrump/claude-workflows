@@ -44,6 +44,7 @@ Offers two install targets in turn. Each one shows a review diff and asks y/N:
 Both targets install COMMITTED content (HEAD, via git archive): every
 devcontainer-config/ PAYLOAD item and the seven ~/.claude sources. Uncommitted
 changes under those paths are listed as NOT included; commit and rerun.
+A destination path holding a newline or other control character is refused.
 
 Target 2 is SKIPPED, with a message and no effect on the exit status, when
 --yes is given, when stdin is not a terminal, or when running inside a
@@ -355,6 +356,8 @@ install_devcontainer() {
 # components: an existing dir is resolved physically (links followed), a
 # missing one is appended as text, and `..` drops the last component. So
 # <outside>/nx/../<repo> with nx missing resolves to <repo> (review A3).
+# `read` splits only the first line; main refuses any destination holding a
+# newline or other control character before this runs (claim 11b).
 resolve_phys() {
   local p="$1" cur="/" comp parts
   case "$p" in /*) ;; *) p="$PWD/$p" ;; esac
@@ -443,11 +446,7 @@ host_rollback() {
 }
 
 install_claude_home() {
-  local dest label
-  if [ -n "${CLAUDE_HOME_DIR:-}" ]; then dest="$CLAUDE_HOME_DIR"; label='$CLAUDE_HOME_DIR'
-  elif [ -n "${CLAUDE_CONFIG_DIR:-}" ]; then dest="$CLAUDE_CONFIG_DIR"; label='$CLAUDE_CONFIG_DIR'
-  else dest="$HOME/.claude"; label='the default, ~/.claude'
-  fi
+  local dest="$HOST_DEST" label="$HOST_LABEL"
 
   echo
   # Skip rules come first: before this target reads or stages anything, so
@@ -718,6 +717,15 @@ install_claude_home() {
   fi
 }
 
+# has_ctrl <string>: true if it holds a control character: C0 (newline and
+# tab included), DEL, or a UTF-8-encoded C1.
+has_ctrl() {
+  # $(...) drops trailing newlines, but tr removes those too, so any control
+  # byte makes the two strings differ.
+  [ "$(printf '%s' "$1" | LC_ALL=C tr -d '\001-\037\177')" != "$1" ] && return 0
+  printf '%s' "$1" | LC_ALL=C grep -q $'\xc2[\x80-\x9f]'
+}
+
 # main: everything that runs. WHY A FUNCTION: bash reads a script file as it
 # goes, so a top-level line after a prompt is read only once the prompt returns,
 # and an in-place rewrite of this file while [y/N] waits would run new code
@@ -736,6 +744,24 @@ main() {
 
   DEST="${CLAUDE_DEVC_CONFIG_DIR:-$HOME/.config/claude-devcontainer}"
   BIN_DIR="${CLAUDE_DEVC_BIN_DIR:-$HOME/.local/bin}"
+  if [ -n "${CLAUDE_HOME_DIR:-}" ]; then HOST_DEST="$CLAUDE_HOME_DIR"; HOST_LABEL='$CLAUDE_HOME_DIR'
+  elif [ -n "${CLAUDE_CONFIG_DIR:-}" ]; then HOST_DEST="$CLAUDE_CONFIG_DIR"; HOST_LABEL='$CLAUDE_CONFIG_DIR'
+  else HOST_DEST="$HOME/.claude"; HOST_LABEL='the default, ~/.claude'
+  fi
+
+  # Fact-check claim 11b: a newline in a destination defeated the in-repo guard
+  # (resolve_phys splits on the first line only), and every listing below is
+  # line-based. No real destination needs a control character, so refuse any
+  # before either target runs.
+  local d
+  for d in "$DEST" "$BIN_DIR" "$HOST_DEST"; do
+    if has_ctrl "$d"; then
+      echo "ERROR: a destination contains a newline or other control character: $(printf '%q' "$d")" >&2
+      echo "       (from CLAUDE_DEVC_CONFIG_DIR, CLAUDE_DEVC_BIN_DIR, CLAUDE_HOME_DIR, CLAUDE_CONFIG_DIR" >&2
+      echo "       or HOME). install.sh refuses it. Nothing was installed." >&2
+      exit 1
+    fi
+  done
 
   # The seven entry names, derived from CLAUDE_HOME_SRC so the host can never
   # install a subset of the payload (FP-066).
