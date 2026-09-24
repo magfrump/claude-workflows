@@ -478,6 +478,51 @@ no_host_stage_left() {
   [ ! -e "$S/pwned" ]
 }
 
+# A destination that already holds a copy install, and a committed repo change
+# so the next y has something to replace.
+installed_then_changed() {
+  run_pty 'n\ny\n' bash "$INSTALL"
+  [ -d "$CLAUDE_HOME_DIR/scripts" ] && [ ! -L "$CLAUDE_HOME_DIR/scripts" ]
+  printf 'changed\n' >> "$ROOT/workflows/w.md"; commit_all change
+}
+
+@test "T30 a move-aside failure rolls every entry back and says so (review R4)" {
+  need_script; [ "$(id -u)" -ne 0 ] || skip "root ignores the directory permission this relies on"
+  fake_repo; installed_then_changed
+  # Moving a directory to a new parent needs write permission on it ('..').
+  # scripts is the last entry, so six have already moved when it fails.
+  chmod a-w "$CLAUDE_HOME_DIR/scripts"
+  before=$(snap "$CLAUDE_HOME_DIR")
+  run_pty 'n\ny\n' bash "$INSTALL"
+  echo "$output"
+  chmod u+w "$CLAUDE_HOME_DIR/scripts"
+  [ "$status" -eq 1 ]
+  [[ "$output" == *'rolled back'* ]]
+  [[ "$output" == *'.claude-workflows-backup'* ]]
+  [ "$(snap "$CLAUDE_HOME_DIR")" = "$before" ]
+  ! compgen -G "$CLAUDE_HOME_DIR/.cw-new.*" >/dev/null
+  [ ! -e "$CLAUDE_HOME_DIR/.claude-workflows-lock" ]
+}
+
+@test "T31 a held install lock is refused, named, and left alone (review R4)" {
+  need_script; fake_repo; installed_then_changed
+  mkdir "$CLAUDE_HOME_DIR/.claude-workflows-lock"
+  before=$(snap "$CLAUDE_HOME_DIR")
+  run_pty 'n\ny\n' bash "$INSTALL"
+  echo "$output"
+  [ "$status" -eq 1 ]
+  [[ "$output" == *"$CLAUDE_HOME_DIR/.claude-workflows-lock"* ]]
+  [ "$(snap "$CLAUDE_HOME_DIR")" = "$before" ]
+}
+
+@test "T32 a successful install releases its lock" {
+  need_script; fake_repo; installed_then_changed
+  run_pty 'n\ny\n' bash "$INSTALL"
+  [ "$status" -eq 1 ]   # the devcontainer target was declined
+  grep -q changed "$CLAUDE_HOME_DIR/workflows/w.md"
+  [ ! -e "$CLAUDE_HOME_DIR/.claude-workflows-lock" ]
+}
+
 @test "T24 with CLAUDE_HOME_DIR unset, CLAUDE_CONFIG_DIR chooses the destination" {
   need_script; fake_repo
   run_pty 'n\ny\n' env -u CLAUDE_HOME_DIR CLAUDE_CONFIG_DIR="$S/cfgdir" bash "$INSTALL"

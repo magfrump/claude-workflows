@@ -317,6 +317,38 @@ host_refuse() {
   exit 1
 }
 
+lock_msg() {
+  echo "another install holds $1/.claude-workflows-lock, or one was killed. If no install.sh is running, remove that directory and rerun."
+}
+
+# host_cleanup: main's EXIT trap. Removes the stage and releases the lock, if
+# this run took it.
+host_cleanup() {
+  if [ -n "$HOST_TMP" ]; then rm -rf "$HOST_TMP"; fi
+  if [ -n "$HOST_LOCK" ]; then rmdir "$HOST_LOCK" 2>/dev/null || true; fi
+}
+
+# host_rollback: undo a partial swap in install_claude_home (R4), using its
+# locals dest, backup, bkroot, moved and swapped. Then report and exit 1.
+host_rollback() {
+  local n left=()
+  for n in "${swapped[@]}"; do rm -rf "${dest:?}/$n"; done
+  for n in "${moved[@]}"; do
+    if [ -e "$dest/$n" ] || [ -L "$dest/$n" ] || ! mv "$backup/$n" "$dest/$n"; then left+=("$n"); fi
+  done
+  for n in "${CLAUDE_HOME_NAMES[@]}"; do rm -rf "$dest/.cw-new.$n"; done
+  if [ "${#left[@]}" -eq 0 ]; then
+    echo "ERROR: the install failed part-way and was rolled back: every entry was moved back" >&2
+    echo "       from ${backup:-(no backup was needed)}. $dest is as it was before this run." >&2
+    if [ -n "$backup" ]; then rmdir "$backup" "$bkroot" 2>/dev/null || true; fi
+  else
+    echo "ERROR: the install failed part-way and the rollback is INCOMPLETE." >&2
+    echo "       $dest is missing: ${left[*]}. They are in $backup." >&2
+    echo "       Move each back by hand: mv \"$backup/<name>\" \"$dest/<name>\"" >&2
+  fi
+  exit 1
+}
+
 install_claude_home() {
   local dest label
   if [ -n "${CLAUDE_HOME_DIR:-}" ]; then dest="$CLAUDE_HOME_DIR"; label='$CLAUDE_HOME_DIR'
@@ -370,6 +402,9 @@ install_claude_home() {
       host_refuse "$dest/.cw-new.$name is a symlink left from elsewhere; remove it and rerun."
     fi
   done
+  if [ -e "$dest/.claude-workflows-lock" ] || [ -L "$dest/.claude-workflows-lock" ]; then
+    host_refuse "$(lock_msg "$dest")"
+  fi
 
   HOST_TMP="$(mktemp -d "${TMPDIR:-/tmp}/cw-host-stage.XXXXXX")"
   local stage="$HOST_TMP/payload"
@@ -431,10 +466,22 @@ install_claude_home() {
     return 0
   fi
 
-  # 1. Copy every entry beside its target. Any failure: undo and stop before a
-  #    single live entry is touched.
+  # One install at a time (R4): two concurrent swaps left none of the seven
+  # entries. The lock is released by main's EXIT trap on every path.
   local ok=1
   mkdir -p "$dest" 2>/dev/null || ok=0
+  if [ "$ok" -eq 1 ]; then
+    if mkdir "$dest/.claude-workflows-lock" 2>/dev/null; then
+      HOST_LOCK="$dest/.claude-workflows-lock"
+    elif [ -e "$dest/.claude-workflows-lock" ]; then
+      host_refuse "$(lock_msg "$dest")"
+    else
+      ok=0   # unwritable destination: reported by the copy step below
+    fi
+  fi
+
+  # 1. Copy every entry beside its target. Any failure: undo and stop before a
+  #    single live entry is touched.
   if [ "$ok" -eq 1 ]; then
     for name in "${CLAUDE_HOME_NAMES[@]}"; do
       rm -rf "$dest/.cw-new.$name"
@@ -454,8 +501,10 @@ install_claude_home() {
   fi
 
   # 2. Move whatever is there now (link or real, never with a trailing slash)
-  #    into a fresh backup dir.
-  local stamp backup="" any=0
+  #    into a fresh backup dir. 3. Swap the new copies in. Steps 2-3 are one
+  #    transaction (R4): any failure runs host_rollback, which reads the
+  #    moved/swapped lists below (bash locals are visible to called functions).
+  local stamp backup="" any=0 moved=() swapped=()
   stamp="$(date -u +%Y%m%dT%H%M%SZ)"
   for name in "${CLAUDE_HOME_NAMES[@]}"; do
     if [ -e "$dest/$name" ] || [ -L "$dest/$name" ]; then any=1; fi
@@ -468,21 +517,23 @@ install_claude_home() {
       echo "ERROR: could not create $backup; nothing was replaced." >&2
       exit 1
     fi
-    for name in "${CLAUDE_HOME_NAMES[@]}"; do
-      if [ -e "$dest/$name" ] || [ -L "$dest/$name" ]; then
-        mv "$dest/$name" "$backup/$name"
-      fi
-    done
   fi
-
-  # 3. Swap the new copies in.
+  trap '' INT TERM HUP   # a Ctrl-C mid-swap would skip the rollback
   for name in "${CLAUDE_HOME_NAMES[@]}"; do
     if [ -e "$dest/$name" ] || [ -L "$dest/$name" ]; then
-      echo "ERROR: $dest/$name reappeared during the install; the new copy is left at $dest/.cw-new.$name." >&2
-      exit 1
+      mv "$dest/$name" "$backup/$name" || host_rollback
+      moved+=("$name")
     fi
-    mv "$dest/.cw-new.$name" "$dest/$name"
   done
+  for name in "${CLAUDE_HOME_NAMES[@]}"; do
+    if [ -e "$dest/$name" ] || [ -L "$dest/$name" ]; then
+      echo "ERROR: $dest/$name reappeared during the install." >&2
+      host_rollback
+    fi
+    mv "$dest/.cw-new.$name" "$dest/$name" || host_rollback
+    swapped+=("$name")
+  done
+  trap - INT TERM HUP
 
   # Provenance, in link-claude-home's format plus additive keys. `rm -f` first so
   # a planted symlink cannot redirect the write.
@@ -531,8 +582,8 @@ main() {
   local item
   for item in "${CLAUDE_HOME_SRC[@]}"; do CLAUDE_HOME_NAMES+=("$(basename "$item")"); done
 
-  HOST_TMP=""
-  trap 'if [ -n "$HOST_TMP" ]; then rm -rf "$HOST_TMP"; fi' EXIT
+  HOST_TMP="" HOST_LOCK=""
+  trap host_cleanup EXIT
 
   DECLINED=0
   install_devcontainer
