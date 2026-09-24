@@ -30,9 +30,9 @@ The user's reason: "I *will* forget to add flags to install.sh, and it already r
 Sub-decisions, all from the user's 2026-09-23 answers:
 - **Host target never installs non-interactively (Q-056 [1]).**
   - It is skipped, with a message, when `--yes` is given or stdin is not a TTY.
-  - The skip happens before it reads or stages anything, so every existing non-interactive devcontainer run is unchanged apart from one extra line.
+  - The skip happens before it reads or stages anything, so every existing non-interactive devcontainer run is unchanged apart from two extra lines (a blank line and the skip line).
   - A skip is not a decline and does not change the exit status.
-- **Foreign files move to the backup (Q-057 [1]).** A file inside an install-owned directory that the repo lacks is listed in the review and moved to `.claude-workflows-backup/<stamp>/`. Everything the install replaces goes there too, including the old symlinks, as symlinks.
+- **Foreign files move to the backup (Q-057 [1]).** A file inside an install-owned directory that the repo lacks is listed in the review and moved to `.claude-workflows-backup/<stamp>/`. Each of the seven entries the install replaces goes there too, including the old symlinks, as symlinks. (Review fixes 2026-09-23: the newest 3 backups are kept; a run with nothing to change makes none.)
 - **Gemini is dropped (Q-055 [2]).** The README's `~/.gemini` and Antigravity recipes are removed, not converted.
 - **`settings.json` stays a manual merge.** It holds host-private hardening, Q-049 is open, and the only correct merger is link-claude-home's provenance jq (FP-161). The installer prints a reminder when `hooks/wiring.json` changed.
 - **"Bless" on a bare host means a human at a terminal who read the review and typed y.** No hash receipt is checked, because Claude Code reads `~/.claude` directly. Provenance is `~/.claude/.claude-workflows-manifest`, in the same format link-claude-home writes.
@@ -49,7 +49,7 @@ How to read: each entry is `[candidate-ID]: one-line reason for discard`. Future
 
 - How to read: *Failure-driven* mitigation. An agent running the installer on the same host is the new failure category that no devcontainer bless faces. It produced the `--yes` and TTY skip rules. The residual is stated rather than hidden. In this session the Bash tool has no TTY (verified 2026-09-23: fd 0 is `/dev/null` and `tty` prints "not a tty"). But util-linux `script` can wrap the installer in a pty, which is how the tests drive it. The check stops accidents, not intent. The backstop is sandbox `denyWrite ~/.claude` (guide §3).
 - How to read: *Push to extreme* mitigation. Replacing a symlinked entry through the naive `rm -rf` + `cp -r` pair either writes into the checkout or empties it (verified in scratch). So the host target copies to `.cw-new.<name>`, moves the old entry (link or dir, never with a trailing slash) to the backup, and only then moves the new copy into place.
-- How to read: *Invert the thesis* mitigation. For A, "don't change what an existing command does" was the tiebreaker. D honours most of it by skipping the host target before touching anything on every non-interactive run. So scripted callers see one extra line, not a new behavior.
+- How to read: *Invert the thesis* mitigation. For A, "don't change what an existing command does" was the tiebreaker. D honours most of it by skipping the host target before touching anything on every non-interactive run. So scripted callers see two extra lines (a blank line and the skip line), not a new behavior.
 
 ## Consequences
 

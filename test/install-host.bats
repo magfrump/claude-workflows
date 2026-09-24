@@ -259,7 +259,22 @@ no_host_stage_left() {
   m="$CLAUDE_HOME_DIR/.claude-workflows-manifest"
   grep -q "^commit=$(git -C "$ROOT" rev-parse HEAD)$" "$m"
   grep -q "^assembled_from=$ROOT$" "$m"
-  grep -q '^installed_by=host-tty$' "$m"
+  # installed_by=host-tty claimed a property the code does not establish (A2).
+  [ -z "$(grep '^installed_by=' "$m")" ]
+  grep -q '^installed_parent=' "$m"
+}
+
+@test "T40 --help and README state the skip rule's limits and CLAUDE_HOME_DIR (review A1, A5)" {
+  fake_repo
+  run bash "$INSTALL" --help
+  [ "$status" -eq 0 ]
+  [[ "$output" != *'only installs for a human'* ]]
+  [[ "$output" == *'not a determined agent'* ]]
+  [[ "$output" == *'CLAUDE_HOME_DIR'*'install.sh only'*'CLAUDE_CONFIG_DIR'* ]]
+  readme="$BATS_TEST_DIRNAME/../README.md"
+  [ -z "$(grep 'only installs for a human' "$readme")" ]
+  grep -q 'not a determined agent' "$readme"
+  grep -q 'CLAUDE_HOME_DIR' "$readme"
 }
 
 @test "T11 wiring reminder: on first install, not when unchanged, again when wiring.json changes" {
@@ -456,7 +471,7 @@ no_host_stage_left() {
   [ "$status" -eq 1 ]
   [[ "$output" == *'stage changed after review'* ]]
   [ "$(snap "$CLAUDE_HOME_DIR")" = "$before" ]
-  ! grep -rqs TAMPERED "$CLAUDE_HOME_DIR"
+  [ -z "$(grep -rls TAMPERED "$CLAUDE_HOME_DIR")" ]
   ! compgen -G "$CLAUDE_HOME_DIR/.cw-new.*" >/dev/null
 }
 
@@ -500,7 +515,7 @@ installed_then_changed() {
   [[ "$output" == *'rolled back'* ]]
   [[ "$output" == *'.claude-workflows-backup'* ]]
   [ "$(snap "$CLAUDE_HOME_DIR")" = "$before" ]
-  ! compgen -G "$CLAUDE_HOME_DIR/.cw-new.*" >/dev/null
+  [ -z "$(compgen -G "$CLAUDE_HOME_DIR/.cw-new.*")" ]
   [ ! -e "$CLAUDE_HOME_DIR/.claude-workflows-lock" ]
 }
 
@@ -536,7 +551,7 @@ installed_then_changed() {
   line=$(grep -F "$d/hooks/theirs.sh" <<<"$output" | head -1)
   [[ "$line" == "MOVE link $d/hooks/theirs.sh -> $S/theirs-target.sh to backup (not in the repo)"*'WIRED in settings'* ]]
   grep -F "$d/hooks/sub/y.sh" <<<"$output" | grep -q 'WIRED'
-  ! grep -F "$d/hooks/sub/x.sh" <<<"$output" | grep -q 'WIRED'
+  [ -z "$(grep -F "$d/hooks/sub/x.sh" <<<"$output" | grep 'WIRED')" ]
   # A repo-backed link is still a REPLACE.
   [[ "$output" == *"REPLACE symlink $d/hooks/h.sh -> "* ]]
 }

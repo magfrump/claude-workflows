@@ -33,14 +33,21 @@ Offers two install targets in turn. Each one shows a review diff and asks y/N:
      (default ~/.config/claude-devcontainer); then blessed, and
      cc-isolated linked into $CLAUDE_DEVC_BIN_DIR (default ~/.local/bin).
   2. host Claude Code files -> $CLAUDE_HOME_DIR, else $CLAUDE_CONFIG_DIR,
-     else ~/.claude. Replaced entries, including old symlinks and files the
-     repo lacks, are moved to <dest>/.claude-workflows-backup/<UTC stamp>/.
+     else ~/.claude. CLAUDE_HOME_DIR is read by install.sh only and outranks
+     CLAUDE_CONFIG_DIR (which Claude Code, link-claude-home and health-check
+     read); set it only to install somewhere else. Replaced entries, including
+     old symlinks and files the repo lacks, are moved to
+     <dest>/.claude-workflows-backup/<UTC stamp>/; the newest 3 are kept.
      settings.json is never written; hook wiring stays a manual merge.
+
+Both targets install COMMITTED content: uncommitted changes under the payload
+paths are listed as NOT included.
 
 Target 2 is SKIPPED, with a message and no effect on the exit status, when
 --yes is given, when stdin is not a terminal, or when running inside a
-Claude Code session (CLAUDECODE set). It only installs for a human at a
-terminal who read the diff.
+Claude Code session (CLAUDECODE set). That stops accidental runs,
+not a determined agent: a pty wrapper and `env -u CLAUDECODE` get past it.
+The hard barrier is a sandbox that denies agents write access to ~/.claude.
 
   --yes       answer y for target 1 without asking (target 2 is skipped)
   -h, --help  show this help
@@ -228,8 +235,8 @@ install_devcontainer() {
   if [ "$ASSUME_YES" != "--yes" ]; then
     if ! confirm 'Install this config and bless it?'; then
       # Decision 037: a decline ends this target, not the run; the host target
-      # is still offered. The line keeps its old wording, and the run still
-      # exits 1 because something was declined.
+      # is still offered. The line gained " (devcontainer config)", and the run
+      # still exits 1 because something was declined.
       echo "Aborted. Nothing was changed. (devcontainer config)"
       DECLINED=1
       return 0
@@ -368,7 +375,7 @@ install_claude_home() {
   echo
   # Skip rules come first: before this target reads or stages anything, so
   # every non-interactive run (scripts, tests, --yes) is unchanged apart from
-  # this one line. A skip is not a decline and does not change the exit status.
+  # a blank line and the skip line. A skip is not a decline and does not change the exit status.
   # Neither check stops an agent that sets out to fake a terminal (`script`
   # gives it a pty; `env -u` drops CLAUDECODE). They stop the accidental run and
   # make the deliberate one conspicuous. See decision 037.
@@ -465,7 +472,7 @@ install_claude_home() {
   # Content diff. An entry the destination lacks is listed, not diffed (A7: a
   # first install printed ~32k lines, scrolling the lines above away). An
   # existing entry is diffed as a link-free copy under $HOST_TMP/installed: a
-  # top-level link is followed (cp -H), so its checkout content is compared;
+  # top-level link is followed (cp -H), so the link's target is compared;
   # links inside are dropped, since the lines above already name each one, so
   # a dangling link cannot abort the review (A8).
   local view="$HOST_TMP/installed" diffnames=() n
@@ -585,8 +592,9 @@ install_claude_home() {
   # a planted symlink cannot redirect the write.
   rm -f "$dest/.claude-workflows-manifest"
   cp "$stage/.manifest" "$dest/.claude-workflows-manifest"
+  # installed_parent is best-effort: under a pty wrapper it names whatever shell
+  # the wrapper ran (bash, sh), so it is a hint, not evidence of a human (A2).
   {
-    echo "installed_by=host-tty"
     echo "installed_parent=$(ps -o comm= -p "$PPID" 2>/dev/null | tr -d ' ' || echo unknown)"
     echo "installed_at=$stamp"
   } >> "$dest/.claude-workflows-manifest"

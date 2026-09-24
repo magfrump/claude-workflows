@@ -16,23 +16,27 @@ cd ~/claude-workflows
 own `[y/N]`. The first is the `cc-isolated` devcontainer config: decline it if you
 don't use the devcontainer. The second copies `global-instructions/CLAUDE.md`,
 `skills`, `workflows`, `guides`, `patterns`, `hooks` and `scripts` into
-`~/.claude` (or `$CLAUDE_CONFIG_DIR` if you set it). They are **copies, not
-symlinks**: an edit to the checkout, by you or by an agent, does nothing until you
-rerun `install.sh`, read the diff and answer y (decision 037). Only **committed**
-content is installed: uncommitted changes under those paths are listed as NOT
-included, and git-ignored files are never copied. The `~/.claude`
-target only installs for a human at a terminal. It is skipped with `--yes`, from a
-script with no TTY, and inside a Claude Code session. `install.sh --help` has the
-details.
+`~/.claude` (or `$CLAUDE_CONFIG_DIR` if you set it). `$CLAUDE_HOME_DIR` outranks
+both; only `install.sh` reads it, so set it only to install somewhere else. They
+are **copies, not symlinks**: an edit to the checkout, by you or by an agent, does
+nothing until you rerun `install.sh`, read the diff and answer y (decision 037).
+Only **committed** content is installed: uncommitted changes under those paths
+are listed as NOT included, and git-ignored files are never copied. The
+`~/.claude` target is skipped with `--yes`, from a script with no TTY, and inside
+a Claude Code session. That stops accidental runs, not a determined agent (a pty
+wrapper gets past it); the hard barrier is a sandbox that denies agents write
+access to `~/.claude`. `install.sh --help` has the details.
 
 **Migrating from the old symlink install.** Close your Claude Code sessions, then
 run `install.sh`. Its `~/.claude` review lists every symlink it will replace
-(`REPLACE symlink … with a copy`) and every file or link in those directories that
-the repo doesn't have (`MOVE to backup`, `MOVE link … to backup`). Check any line marked `WIRED in settings` before you
-answer y: that hook is referenced from your `settings.json` and will stop running.
-Everything replaced, including the old links, is moved to
-`~/.claude/.claude-workflows-backup/<UTC stamp>/`. Delete that directory when you're
-satisfied. Your `settings.json`, memory, projects and logs are never touched.
+(`REPLACE symlink … with a copy`) and every file or link in those directories
+that the repo doesn't have (`MOVE to backup`, `MOVE link … to backup`). Check any
+line marked `WIRED in settings` before you answer y: that hook is referenced from
+your `settings.json` and will stop running. Each of the seven entries it
+replaces, old links included, is moved to
+`~/.claude/.claude-workflows-backup/<UTC stamp>/`; the newest 3 backups are kept.
+Delete them when you're satisfied. Your `settings.json`, memory, projects and
+logs are never touched.
 
 Hooks are inert until wired into `~/.claude/settings.json` (guarded,
 not repo-tracked). `hooks/wiring.json` is the canonical wiring (hooks plus the
