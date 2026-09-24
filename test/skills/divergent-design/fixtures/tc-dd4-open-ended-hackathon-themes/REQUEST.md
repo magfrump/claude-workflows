@@ -1,0 +1,1 @@
+We're running our first internal hackathon next month for about 60 engineers, designers and support staff. We don't have a theme yet and nobody has proposed one. Can you help us come up with some ideas for themes or challenge prompts that would get people from different teams working together? We're wide open. Anything goes at this point.

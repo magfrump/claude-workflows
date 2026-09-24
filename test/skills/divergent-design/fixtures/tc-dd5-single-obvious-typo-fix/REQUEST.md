@@ -1,0 +1,1 @@
+One of our API error messages reads "Unable to recieve payment confirmation". A reviewer asked whether we should change it to "Unable to receive payment confirmation" or leave it as it is. Which should we do?
