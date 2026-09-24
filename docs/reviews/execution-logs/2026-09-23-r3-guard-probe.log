@@ -1,0 +1,48 @@
+timestamp: 2026-09-23T23:31:49.740511Z
+HOME = /tmp/claude-1000/-workspace/d516ca2c-2abb-4732-a34a-041aa98280c8/scratchpad/review/tmp_tt1tgi6/home
+
+### Claim 1: word/quote/= edge cases (Bash)
+new=defer    old=defer     cd ~ && echo x > .claude/wt-a/f
+new=defer    old=deny      cd ~ && echo x > .claude/wt-a/hooks/x
+new=defer    old=deny      cd ~ && echo x > .claude/wt-a/settings.json
+new=defer    old=deny      cd ~ && echo x > .claude/worktrees/x/settings.json
+new=defer    old=deny      cd ~ && echo '{}' > .claude/wt-x'/..'/settings.json
+new=defer    old=deny      cd ~ && echo '{}' > .claude/wt-x/.""./settings.json
+new=defer    old=deny      echo '{}' > "$HOME"/.claude/wt-x"/../"settings.json
+new=defer    old=deny      echo x > "$HOME"/.claude/wt-x/settings.json
+new=defer    old=deny      echo x > "/tmp/claude-1000/-workspace/d516ca2c-2abb-4732-a34a-041aa98280c8/scratchpad/review/tmp_tt1tgi6/home"/.claude/wt-x/settings.json
+new=defer    old=deny      echo x > a=b=/tmp/claude-1000/-workspace/d516ca2c-2abb-4732-a34a-041aa98280c8/scratchpad/review/tmp_tt1tgi6/home/.claude/wt-x/settings.json
+new=deny     old=deny      dd of=/tmp/claude-1000/-workspace/d516ca2c-2abb-4732-a34a-041aa98280c8/scratchpad/review/tmp_tt1tgi6/home/.claude/wt-x/settings.json
+new=deny     old=deny      echo x > a=/../.claude/wt-x/hooks/x
+new=deny     old=deny      echo x > /srv/repo/.claude/wt-foo/global-instructions/CLAUDE.md
+new=defer    old=deny      echo x > /srv/repo/.claude/wt-foo/hooks/x.sh
+new=defer    old=deny      echo x > /srv/foo.claude/wt-x/hooks/x
+
+### Claim 1: live shell effect of the quoted-'..' spelling (temp HOME only)
+guard(new)=defer  cmd: cd ~ && echo '{"bypass":1}' > .claude/wt-x'/..'/settings.json
+  bash rc = 0 bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+guard(new)=defer  cmd: mkdir -p "$HOME"/.claude/wt-y && echo '{"bypass":2}' > "$HOME"/.claude/wt-y"/../"settings.local.json
+  bash rc = 0 bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+  /tmp/claude-1000/-workspace/d516ca2c-2abb-4732-a34a-041aa98280c8/scratchpad/review/tmp_tt1tgi6/home/.claude/settings.json -> {"bypass":1}
+  /tmp/claude-1000/-workspace/d516ca2c-2abb-4732-a34a-041aa98280c8/scratchpad/review/tmp_tt1tgi6/home/.claude/settings.local.json -> {"bypass":2}
+
+### HOME == worktree parent layout (HOME=/workspace-like)
+new=deny     old=deny      echo x > /tmp/claude-1000/-workspace/d516ca2c-2abb-4732-a34a-041aa98280c8/scratchpad/review/tmp_tt1tgi6/ws/.claude/wt-guard/hooks/x.sh
+new=defer    old=deny      echo x > .claude/wt-guard/hooks/x.sh
+new=defer    old=deny      cd /tmp/claude-1000/-workspace/d516ca2c-2abb-4732-a34a-041aa98280c8/scratchpad/review/tmp_tt1tgi6/ws && echo x > .claude/wt-guard/settings.json
+
+### Claim 3: N12 loop edge cases (Edit)
+new=deny     old=defer     Edit /tmp/claude-1000/-workspace/d516ca2c-2abb-4732-a34a-041aa98280c8/scratchpad/review/tmp_tt1tgi6/co/hooks/lib/util.py
+new=deny     old=defer     Edit /tmp/claude-1000/-workspace/d516ca2c-2abb-4732-a34a-041aa98280c8/scratchpad/review/tmp_tt1tgi6/co/hooks/lib/new.py
+new=deny     old=defer     Edit /tmp/claude-1000/-workspace/d516ca2c-2abb-4732-a34a-041aa98280c8/scratchpad/review/tmp_tt1tgi6/co/hooks/gone.sh
+new=deny     old=defer     Edit /tmp/claude-1000/-workspace/d516ca2c-2abb-4732-a34a-041aa98280c8/scratchpad/review/tmp_tt1tgi6/co/hooks/a.sh
+new=defer    old=defer     Edit /tmp/claude-1000/-workspace/d516ca2c-2abb-4732-a34a-041aa98280c8/scratchpad/review/tmp_tt1tgi6/co/README.md
+new=deny     old=deny      Edit /tmp/claude-1000/-workspace/d516ca2c-2abb-4732-a34a-041aa98280c8/scratchpad/review/tmp_tt1tgi6/opt/cw/hooks/g.py (hooks is a dir symlink)
+new=deny     old=deny      Edit /tmp/claude-1000/-workspace/d516ca2c-2abb-4732-a34a-041aa98280c8/scratchpad/review/tmp_tt1tgi6/opt/cw/hooks/new.py (hooks is a dir symlink)
+new=deny     old=defer     Edit README with hooks/root -> checkout root
+
+### Claim 6: the Bash deny's advice (Write a file, pass it)
+Write tmp msg: defer
+git commit -F: defer
+gh pr create --body-file: defer
+heredoc form denied: deny

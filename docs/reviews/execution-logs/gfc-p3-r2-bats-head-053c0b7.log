@@ -1,0 +1,91 @@
+bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+1..83
+bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+ok 1 plain > to settings.json is denied
+ok 2 >> to settings.json is denied
+ok 3 1> to settings.json is denied (B1 bypass)
+ok 4 1> with no space to settings.json is denied (B1 bypass)
+ok 5 2> to a hooks file is denied (B1 bypass)
+ok 6 &> to settings.json is denied (B1 bypass)
+ok 7 >& FILE (stdout+stderr to a file) to settings.json is denied
+ok 8 >&- (close stdout) on a read of settings.json is not a write
+ok 9 a HARD-path deny holds in an untainted session too
+ok 10 2>&1 on a read of settings.json is not a write
+ok 11 >&2 on a read of settings.json is not a write
+ok 12 2>/dev/null on a read of settings.json is not a write
+ok 13 2>/dev/null on a listing of the hooks dir is not a write
+ok 14 a /dev/null redirect does not mask a later real write
+ok 15 SOFT path write in a tainted session asks
+ok 16 SOFT path write in an untainted session defers
+ok 17 fd-prefixed SOFT path write in a tainted session asks
+ok 18 Write to HARD settings.json defers (never ask; deny rules own it)
+ok 19 Edit to a HARD hooks file defers even when tainted
+ok 20 Write to a SOFT skill file asks when tainted
+ok 21 Write to a SOFT skill file defers when untainted
+ok 22 Write to a project .claude/settings.local.json asks when tainted
+ok 23 Write to a project .claude/settings.local.json defers when untainted
+ok 24 Edit to a project .claude/hooks file asks when tainted
+ok 25 Write to the global ~/.claude/settings.local.json still defers when tainted
+ok 26 Write to the global dir via an absolute HOME path still defers when tainted
+ok 27 CLAUDE_CONFIG_DIR is the global dir when set
+ok 28 a heredoc commit message naming a bare CLAUDE.md is not denied (untainted)
+ok 29 a heredoc naming a bare CLAUDE.md asks, not denies, when tainted
+ok 30 read-only commands on a project CLAUDE.md are not denied
+ok 31 a Bash write to a project CLAUDE.md asks when tainted
+ok 32 a Bash write to the global ~/.claude/CLAUDE.md is still denied
+ok 33 a Bash write to ~/CLAUDE.md, $HOME/CLAUDE.md or ${HOME}/CLAUDE.md is denied
+ok 34 a Bash write to the literal home path CLAUDE.md is denied
+ok 35 a Bash write to global-instructions/CLAUDE.md stays denied (2026-09-12 review)
+ok 36 R1: quoted, doubled-slash, dot-segment and quoted-name spellings are denied
+ok 37 R1: the literal home path with a doubled slash is denied
+ok 38 R1: the global spellings are denied in a tainted session too (not ask)
+ok 39 R1: a heredoc whose prose names ~/.claude/CLAUDE.md is denied (accepted cost)
+ok 40 R1: a bare CLAUDE.md with no home indicator stays SOFT
+ok 41 A10: settings/hooks spellings with .claude anywhere are denied
+ok 42 R3: with CLAUDE_CONFIG_DIR elsewhere, ~/.claude is SOFT (asks when tainted)
+ok 43 R3: an empty CLAUDE_CONFIG_DIR falls back to ~/.claude, as the linker does
+ok 44 R3: a '~' in CLAUDE_CONFIG_DIR is not expanded (the linker doesn't)
+ok 45 R3: managed-settings.json is SOFT for file tools (no deny rule covers it)
+ok 46 R4: symlinked global CLAUDE.md and hooks defer when tainted
+ok 47 R4: the MultiEdit tool and the path key defer on a '..' global path
+ok 48 N1: a project .claude symlinked to ~/.claude is denied on its hooks, CLAUDE.md, settings
+ok 49 N1: the payload CLAUDE.md and hooks by their real path are denied (resolve-only HARD)
+ok 50 N1: a symlinked config dir addressed by its resolved path is denied
+ok 51 N1: case variants are not HARD (deny rules are case-sensitive): SOFT, ask when tainted
+ok 52 N1: a lexical global path still defers, tainted, in the symlink layout
+ok 53 R4: a real (non-symlinked) project .claude still asks when tainted
+ok 54 Q-048: a Bash write into a .claude/wt-* worktree's hooks/ is not denied
+ok 55 Q-048: a Bash write into a .claude/worktrees/<name> worktree's hooks/ is not denied
+ok 56 Q-048: a worktree CLAUDE.md write is SOFT (defer; ask when tainted), not denied
+ok 57 Q-048: a relative worktree path is not exempt (no cwd at hook time)
+ok 58 Q-048: a worktree path that does not exist, or is not a git worktree, is not exempt
+ok 59 Q-048 bypass: quote-split '..' after a worktree segment is denied
+ok 60 Q-048 bypass: a quote before /.claude or a second '=' does not exempt a home worktree
+ok 61 Q-048 bypass: a quoted parent of a wt-shaped CLAUDE_CONFIG_DIR is denied
+ok 62 Q-048 bypass: a symlinked worktree dir is not exempt
+ok 63 Q-048: a real worktree inside the config dir is not exempt
+ok 64 Q-048: a symlink inside a worktree that leads out of it is not exempt
+ok 65 Q-048: a '..' after a worktree segment is still denied
+ok 66 Q-048: a worktree path under ~, $HOME or the literal home config dir is still denied
+ok 67 Q-048: a worktree path does not mask a real .claude indicator elsewhere
+ok 68 Q-048: CLAUDE_CONFIG_DIR set to a wt-shaped dir is not exempt
+ok 69 Q-048 gate: cd into a worktree then '..' reaches the parent project's .claude: denied
+ok 70 Q-048 gate: the cd/'..' routes are denied in a tainted session too (were deferred)
+ok 71 Q-048 gate: replacing a worktree root in the same command is not exempt (time of check)
+ok 72 Q-048 gate: a worktree root whose parent is derived by the command is not exempt
+ok 73 Q-048 gate: a plain absolute worktree write is still exempt; look-alike words don't trip the gate
+ok 74 Q-050: the checkout CLAUDE.md behind a symlinked ~/.claude/CLAUDE.md is denied
+ok 75 Q-050 / N12: a per-file symlinked hook's checkout target is denied
+ok 76 Q-050: a repo hook file with no link into ~/.claude/hooks is not denied
+ok 77 Q-050: with a regular-file ~/.claude/CLAUDE.md copy, the checkout file is not denied
+ok 78 N15: the resolved-path deny reason does not send the user to a denied path
+ok 79 non-JSON stdin defers
+ok 80 JSON array stdin defers
+ok 81 JSON string stdin defers
+ok 82 non-object tool_input defers
+ok 83 null tool_input defers

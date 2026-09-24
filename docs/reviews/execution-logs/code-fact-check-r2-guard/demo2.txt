@@ -1,0 +1,8 @@
+2026-09-23T16:32:34-07:00
+bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+command: cd ~ && ln -s . .claude/wt-q && echo PWNED > .claude/wt-q/settings.json
+new guard output: []
+old guard decision: [deny]
+shell exit=0
+settings.json now: PWNED
+exit=0

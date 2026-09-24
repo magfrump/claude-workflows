@@ -1,0 +1,4 @@
+bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+guard output: [{"hookSpecificOutput": {"hookEventName": "PreToolUse", "permissionDecision": "deny", "permissionDecisionReason": "Bash write to a protected policy file (.claude hooks/settings, global CLAUDE.md). Claude cannot write these: make the change outside Claude, in your own editor or shell, and review it there. If the command only mentions such a path in prose (a heredoc or message), write that text with the Write tool and pass the file instead."}}]
+settings.json: PWNED
+-rw-r--r-- 1 node node 13 Sep 23 16:32 /tmp/tmp.CImO0YBd5k/home/.claude/hooks/h

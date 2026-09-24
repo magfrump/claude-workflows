@@ -1,0 +1,7 @@
+=== probe2 2026-09-23T23:32:04.836331Z
+deny     | x=/../.claude/wt-x/hooks/y; cp a "$x"
+deny     | cp a x=/../.claude/wt-x/hooks/y
+defer    | git commit -F /tmp/msg.txt
+deny     | echo x > .claude/wt-x/.claude/hooks/y
+tainted Write defer    | /tmp/msg.txt
+tainted Write defer    | /srv/repo/docs/working/notes.md

@@ -1,0 +1,22 @@
+bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+P1   new=defer  old=defer  cd ~ && echo x > .claude/wt-a/f
+P2   new=defer  old=deny   cd ~ && echo x > .claude/wt-a/hooks/x
+P3   new=defer  old=deny   cd ~ && echo x > .claude/worktrees/x/settings.json
+P4   new=defer  old=deny   echo x > ~/".claude/wt-a"/../settings.json
+P5   new=defer  old=deny   echo x > ~/'.claude/wt-a'/../settings.json
+P6   new=defer  old=deny   cd ~ && echo x > ".claude/wt-a"/../settings.json
+P7   new=defer  old=deny   cd ~ && cp /tmp/h ".claude/wt-a"/../hooks/h
+P8   new=deny   old=deny   cd ~ && echo x > ".claude/wt-a"/../CLAUDE.md
+P9   new=deny   old=deny   echo x > ~/.claude/wt-a/../settings.json
+P10  new=defer  old=defer  a=/../x/.claude/wt-a/f; echo x > $a
+P11  new=defer  old=deny   x=b=/tmp/.claude/wt-a/hooks/y; cp /tmp/q $x
+P12  new=deny   old=deny   echo x > /tmp/tmp.gy4MtRmspe/home/.claude/wt-a/hooks/x
+P13  new=defer  old=deny   echo x > /srv/.claude/wt-.claude/hooks/x
+P14  new=defer  old=deny   echo x > /srv/r/.claude/wt-a/hooks/x
+P15  new=defer  old=defer  git commit -F /tmp/msg.txt
+P16 Write /tmp/msg.txt -> (empty=defer)
+P17 Edit co/hooks/lib/a.sh -> deny
+P17 Edit nonexistent/x.sh -> deny
+P17 Edit co/nested.sh -> defer
+P17 Edit co/other/b -> defer
+P18 Edit opt/hooks/g.py (hooks->opt) -> deny

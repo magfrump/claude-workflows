@@ -1,0 +1,34 @@
+# probe run 2026-09-23T23:46:38.849150Z  cwd=/tmp/claude-1000/-workspace/d516ca2c-2abb-4732-a34a-041aa98280c8/scratchpad/gfc-rr-r1  T=/tmp/claude-1000/-workspace/d516ca2c-2abb-4732-a34a-041aa98280c8/scratchpad/gfc-rr-r1/probe-eyp54z5_
+HEAD=defer  BASE=deny   | abs wt hooks write (should exempt) | echo x > /tmp/claude-1000/-workspace/d516ca2c-2abb-4732-a34a-041aa98280c8/scratchpad/gfc-rr-r1/probe-eyp54z5_/repo/.claude/wt-foo/hooks/x.sh
+HEAD=defer  BASE=deny   | abs wt // doubled | echo x > /tmp/claude-1000/-workspace/d516ca2c-2abb-4732-a34a-041aa98280c8/scratchpad/gfc-rr-r1/probe-eyp54z5_/repo//.claude/wt-foo/hooks/x.sh
+HEAD=defer  BASE=defer  | abs wt trailing /.  | cp /tmp/a /tmp/claude-1000/-workspace/d516ca2c-2abb-4732-a34a-041aa98280c8/scratchpad/gfc-rr-r1/probe-eyp54z5_/repo/.claude/wt-foo/.
+HEAD=defer  BASE=deny   | abs wt /./ inside | echo x > /tmp/claude-1000/-workspace/d516ca2c-2abb-4732-a34a-041aa98280c8/scratchpad/gfc-rr-r1/probe-eyp54z5_/repo/.claude/wt-foo/./hooks/x.sh
+HEAD=deny   BASE=deny   | leading // root | echo x > //tmp/claude-1000/-workspace/d516ca2c-2abb-4732-a34a-041aa98280c8/scratchpad/gfc-rr-r1/probe-eyp54z5_/repo/.claude/wt-foo/hooks/x.sh
+HEAD=deny   BASE=deny   | dd of= wt | dd if=/dev/zero of=/tmp/claude-1000/-workspace/d516ca2c-2abb-4732-a34a-041aa98280c8/scratchpad/gfc-rr-r1/probe-eyp54z5_/repo/.claude/wt-foo/settings.json
+HEAD=deny   BASE=deny   | --opt= wt | cp --target-directory=/tmp/claude-1000/-workspace/d516ca2c-2abb-4732-a34a-041aa98280c8/scratchpad/gfc-rr-r1/probe-eyp54z5_/repo/.claude/wt-foo/hooks /tmp/a
+HEAD=deny   BASE=deny   | glob in wt word | echo x > /tmp/claude-1000/-workspace/d516ca2c-2abb-4732-a34a-041aa98280c8/scratchpad/gfc-rr-r1/probe-eyp54z5_/repo/.claude/wt-foo/hooks/*.sh
+HEAD=defer  BASE=deny   | basename-derived .claude (N2 class) | D=$(basename $(dirname /tmp/claude-1000/-workspace/d516ca2c-2abb-4732-a34a-041aa98280c8/scratchpad/gfc-rr-r1/probe-eyp54z5_/repo/.claude/wt-foo)); echo x > $(cd;pwd)/$D/settings.json
+HEAD=defer  BASE=deny   | TOCTOU replace root with symlink to home (CLAUDE.md) | rm -rf /tmp/claude-1000/-workspace/d516ca2c-2abb-4732-a34a-041aa98280c8/scratchpad/gfc-rr-r1/probe-eyp54z5_/repo/.claude/wt-foo && ln -s "$(cd;pwd)" /tmp/claude-1000/-workspace/d516ca2c-2abb-4732-a34a-041aa98280c8/scratchpad/gfc-rr-r1/probe-eyp54z5_/repo/.claude/wt-foo && echo x > /tmp/claude-1000/-workspace/d516ca2c-2abb-4732-a34a-041aa98280c8/scratchpad/gfc-rr-r1/probe-eyp54z5_/repo/.claude/wt-foo/CLAUDE.md
+HEAD=deny   BASE=deny   | TOCTOU replace root, ~ named | rm -rf /tmp/claude-1000/-workspace/d516ca2c-2abb-4732-a34a-041aa98280c8/scratchpad/gfc-rr-r1/probe-eyp54z5_/repo/.claude/wt-foo && ln -s ~ /tmp/claude-1000/-workspace/d516ca2c-2abb-4732-a34a-041aa98280c8/scratchpad/gfc-rr-r1/probe-eyp54z5_/repo/.claude/wt-foo && echo x > /tmp/claude-1000/-workspace/d516ca2c-2abb-4732-a34a-041aa98280c8/scratchpad/gfc-rr-r1/probe-eyp54z5_/repo/.claude/wt-foo/CLAUDE.md
+HEAD=defer  BASE=deny   | same-cmd symlink inside wt via $(cd;pwd) to home CLAUDE.md | ln -s "$(cd;pwd)" /tmp/claude-1000/-workspace/d516ca2c-2abb-4732-a34a-041aa98280c8/scratchpad/gfc-rr-r1/probe-eyp54z5_/repo/.claude/wt-foo/h && echo x > /tmp/claude-1000/-workspace/d516ca2c-2abb-4732-a34a-041aa98280c8/scratchpad/gfc-rr-r1/probe-eyp54z5_/repo/.claude/wt-foo/h/CLAUDE.md
+HEAD=deny   BASE=deny   | same-cmd symlink inside wt to home, then .claude/settings | ln -s ~ /tmp/claude-1000/-workspace/d516ca2c-2abb-4732-a34a-041aa98280c8/scratchpad/gfc-rr-r1/probe-eyp54z5_/repo/.claude/wt-foo/h && echo x > /tmp/claude-1000/-workspace/d516ca2c-2abb-4732-a34a-041aa98280c8/scratchpad/gfc-rr-r1/probe-eyp54z5_/repo/.claude/wt-foo/h/.claude/settings.json
+HEAD=defer  BASE=deny   | cd wt then cd .. relative settings | cd /tmp/claude-1000/-workspace/d516ca2c-2abb-4732-a34a-041aa98280c8/scratchpad/gfc-rr-r1/probe-eyp54z5_/repo/.claude/wt-foo && cd .. && echo x > settings.json
+HEAD=defer  BASE=deny   | cd wt; bare cd; CLAUDE.md (N2 class) | cd /tmp/claude-1000/-workspace/d516ca2c-2abb-4732-a34a-041aa98280c8/scratchpad/gfc-rr-r1/probe-eyp54z5_/repo/.claude/wt-foo; cd; echo x > CLAUDE.md
+HEAD=deny   BASE=deny   | wt path + ~/.claude elsewhere | cp /tmp/claude-1000/-workspace/d516ca2c-2abb-4732-a34a-041aa98280c8/scratchpad/gfc-rr-r1/probe-eyp54z5_/repo/.claude/wt-foo/settings.json ~/.claude/
+HEAD=defer  BASE=defer  | 0b: bash write to linked hook's checkout path | echo x > /tmp/claude-1000/-workspace/d516ca2c-2abb-4732-a34a-041aa98280c8/scratchpad/gfc-rr-r1/probe-eyp54z5_/checkout/hooks/linked.sh
+HEAD=defer  BASE=defer  | 0b: bash write to linked lib dir file | cp /tmp/a /tmp/claude-1000/-workspace/d516ca2c-2abb-4732-a34a-041aa98280c8/scratchpad/gfc-rr-r1/probe-eyp54z5_/checkout/hooks/lib/util.sh
+HEAD=deny   BASE=deny   | 0b: bash write to checkout global CLAUDE.md | echo x > /tmp/claude-1000/-workspace/d516ca2c-2abb-4732-a34a-041aa98280c8/scratchpad/gfc-rr-r1/probe-eyp54z5_/checkout/global-instructions/CLAUDE.md
+HEAD=deny   BASE=defer  | N12 edit linked hook | /tmp/claude-1000/-workspace/d516ca2c-2abb-4732-a34a-041aa98280c8/scratchpad/gfc-rr-r1/probe-eyp54z5_/checkout/hooks/linked.sh
+HEAD=deny   BASE=defer  | N12 edit file in linked dir hooks/lib | /tmp/claude-1000/-workspace/d516ca2c-2abb-4732-a34a-041aa98280c8/scratchpad/gfc-rr-r1/probe-eyp54z5_/checkout/hooks/lib/util.sh
+HEAD=deny   BASE=defer  | N12 edit dangling target | /tmp/claude-1000/-workspace/d516ca2c-2abb-4732-a34a-041aa98280c8/scratchpad/gfc-rr-r1/probe-eyp54z5_/checkout/hooks/gone.sh
+HEAD=defer  BASE=defer  | N12 edit other checkout hook (unlinked) | /tmp/claude-1000/-workspace/d516ca2c-2abb-4732-a34a-041aa98280c8/scratchpad/gfc-rr-r1/probe-eyp54z5_/checkout/hooks/other.sh
+HEAD=defer  BASE=defer  | Write tool to a temp prose file (N15 advice) | /tmp/claude-1000/-workspace/d516ca2c-2abb-4732-a34a-041aa98280c8/scratchpad/gfc-rr-r1/probe-eyp54z5_/msg.txt
+HEAD=defer  BASE=defer  | Bash using the prose file (N15 advice) | git commit -F /tmp/claude-1000/-workspace/d516ca2c-2abb-4732-a34a-041aa98280c8/scratchpad/gfc-rr-r1/probe-eyp54z5_/msg.txt
+-- tainted --
+HEAD=defer  | tainted 0b: bash write to linked hook's checkout path
+HEAD=defer  | tainted 0b: bash write to linked lib dir file
+HEAD=deny   | tainted 0b: bash write to checkout global CLAUDE.md
+HEAD=deny   | tainted N12 edit linked hook
+HEAD=deny   | tainted N12 edit file in linked dir hooks/lib
+HEAD=deny   | tainted N12 edit dangling target
+HEAD=defer  | tainted N12 edit other checkout hook (unlinked)
