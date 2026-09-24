@@ -304,12 +304,34 @@ install_devcontainer() {
   for item in "${PAYLOAD[@]}"; do
     [ "$item" = claude-home ] || dc_paths+=("$(basename "$SRC")/$item")
   done
+  # The mirror is rebuilt in the agent-writable checkout. A symlink at
+  # claude-home, or at any directory between the repo root and it, would send
+  # the rebuild's writes wherever it points (~/.claude, say), so refuse one.
+  local p="$REPO_ROOT" comp
+  local -a comps
+  IFS=/ read -ra comps <<< "${SRC#"$REPO_ROOT"/}/claude-home"
+  for comp in "${comps[@]}"; do
+    p="$p/$comp"
+    if [ -L "$p" ]; then
+      echo "ERROR: $p is a symlink ($(readlink "$p")). install.sh rebuilds" >&2
+      echo "       devcontainer-config/claude-home in the checkout and never writes through a" >&2
+      echo "       link there. Remove the link (rm, no trailing slash) and rerun. Nothing was installed." >&2
+      exit 1
+    fi
+  done
   DC_TMP="$(mktemp -d "${TMPDIR:-/tmp}/cw-devc-stage.XXXXXX")"
   local stage="$DC_TMP/config"
   assemble "$stage/claude-home" "${dc_paths[@]}"
   extract_commit "$STAGED_COMMIT" "$stage" "${dc_paths[@]}"
+  # No-follow rebuild: rm of a path without a trailing slash removes a link
+  # itself, never its target; mkdir fails rather than follow anything that
+  # appeared since, so the copy lands in a directory this run just created.
   rm -rf "$SRC/claude-home"
-  cp -Rp "$stage/claude-home" "$SRC/claude-home"
+  if ! mkdir "$SRC/claude-home"; then
+    echo "ERROR: could not recreate $SRC/claude-home (something reappeared there). Nothing was installed." >&2
+    exit 1
+  fi
+  cp -Rp "$stage/claude-home/." "$SRC/claude-home/"
 
   echo "Canonical (repo):  $SRC at commit ${STAGED_COMMIT:0:12} (staged in $stage)"
   echo "Installed (host):  $DEST"

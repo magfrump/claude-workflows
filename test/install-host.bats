@@ -909,6 +909,32 @@ installed_then_changed() {
   [ "$(cat "$CLAUDE_DEVC_CONFIG_DIR/devcontainer.json")" = 'stub devcontainer.json' ]
 }
 
+@test "T59 a symlink planted at devcontainer-config/claude-home is refused, its target untouched" {
+  fake_repo
+  mkdir -p "$S/elsewhere"; printf 'keep\n' > "$S/elsewhere/sentinel"
+  ln -s "$S/elsewhere" "$ROOT/devcontainer-config/claude-home"
+  run env -u CLAUDECODE bash "$INSTALL" --yes </dev/null
+  echo "$output"
+  [ "$status" -eq 1 ]
+  [[ "$output" == *'claude-home'*'symlink'* ]]
+  [[ "$output" != *'BLESS-STUB'* ]]
+  [ -L "$ROOT/devcontainer-config/claude-home" ]
+  [ "$(ls -A "$S/elsewhere")" = sentinel ]
+  [ "$(cat "$S/elsewhere/sentinel")" = keep ]
+}
+
+@test "T60 a symlinked directory above claude-home inside the repo is refused" {
+  fake_repo
+  mv "$ROOT/devcontainer-config" "$S/realdc"
+  ln -s "$S/realdc" "$ROOT/devcontainer-config"
+  run env -u CLAUDECODE bash "$INSTALL" --yes </dev/null
+  echo "$output"
+  [ "$status" -eq 1 ]
+  [[ "$output" == *'symlink'* ]]
+  [[ "$output" != *'BLESS-STUB'* ]]
+  [ ! -e "$S/realdc/claude-home" ]
+}
+
 @test "T24 with CLAUDE_HOME_DIR unset, CLAUDE_CONFIG_DIR chooses the destination" {
   need_script; fake_repo
   run_pty 'n\ny\n' env -u CLAUDE_HOME_DIR CLAUDE_CONFIG_DIR="$S/cfgdir" bash "$INSTALL"
