@@ -1,0 +1,41 @@
+From dde15a8ccb0e96514053e006b289911e3d209cfa Mon Sep 17 00:00:00 2001
+From: Dana Okafor <dana@example.org>
+Date: Tue, 15 Sep 2026 10:42:17 -0700
+Subject: [PATCH] fix(inventory): stop caching stock levels with a negative TTL
+
+Items whose restock date was already in the past produced a negative TTL,
+which Redis rejects, so every lookup for them missed the cache.
+---
+ inventory/infrastructure/redis_stock_cache.py | 9 ++++++---
+ 1 file changed, 6 insertions(+), 3 deletions(-)
+
+diff --git a/inventory/infrastructure/redis_stock_cache.py b/inventory/infrastructure/redis_stock_cache.py
+index f4f80c6..d3d9e48 100644
+--- a/inventory/infrastructure/redis_stock_cache.py
++++ b/inventory/infrastructure/redis_stock_cache.py
+@@ -3,6 +3,9 @@ from datetime import datetime, timezone
+ from inventory.application.ports import StockCache
+ from inventory.domain.stock import StockLevel
+ 
++_MIN_TTL_SECONDS = 30
++_MAX_TTL_SECONDS = 3600
++
+ 
+ class RedisStockCache(StockCache):
+     def __init__(self, redis_client) -> None:
+@@ -20,9 +23,9 @@ class RedisStockCache(StockCache):
+ 
+     def _ttl_for(self, level: StockLevel) -> int:
+         if level.restock_at is None:
+-            return 3600
+-        remaining = level.restock_at - datetime.now(timezone.utc)
+-        return int(remaining.total_seconds())
++            return _MAX_TTL_SECONDS
++        remaining = (level.restock_at - datetime.now(timezone.utc)).total_seconds()
++        return max(_MIN_TTL_SECONDS, min(_MAX_TTL_SECONDS, int(remaining)))
+ 
+     def _key(self, sku: str) -> str:
+         return f"stock:{sku}"
+-- 
+2.39.5
+
