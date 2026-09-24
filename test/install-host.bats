@@ -729,6 +729,16 @@ installed_then_changed() {
   [[ "$output" == *$'+em \342\200\224 dash'* ]]
 }
 
+@test "T48 the uncommitted-changes listing never prints a control byte raw, even with core.quotePath=false (fact-check claim 9)" {
+  fake_repo
+  git -C "$ROOT" config core.quotePath false
+  printf 'x\n' > "$ROOT/skills/a/evil"$'\xc2\x9b'"31mred.md"
+  run env -u CLAUDECODE bash "$INSTALL" </dev/null
+  echo "$output" | cat -v
+  [[ "$output" == *'NOT included'*'31mred.md'* ]]
+  [ "$(printf '%s' "$output" | LC_ALL=C grep -c $'\xc2\x9b')" -eq 0 ]
+}
+
 @test "T24 with CLAUDE_HOME_DIR unset, CLAUDE_CONFIG_DIR chooses the destination" {
   need_script; fake_repo
   run_pty 'n\ny\n' env -u CLAUDE_HOME_DIR CLAUDE_CONFIG_DIR="$S/cfgdir" bash "$INSTALL"

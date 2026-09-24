@@ -184,15 +184,18 @@ assemble() {
   commit="$(head_commit)" || exit 1
   STAGED_COMMIT="$commit"
   extract_commit "$commit" "$stage" "${CLAUDE_HOME_SRC[@]}"
-  # Porcelain paths are repo-relative and C-quoted, so control bytes cannot
-  # reach the terminal from here. Ignored files are not listed: never staged.
-  dirty="$(git -C "$REPO_ROOT" status --porcelain --untracked-files=all -- "${CLAUDE_HOME_SRC[@]}" "$@")"
-  home_dirty="$(git -C "$REPO_ROOT" status --porcelain --untracked-files=all -- "${CLAUDE_HOME_SRC[@]}")"
+  # Porcelain paths are repo-relative. core.quotePath=true makes git C-quote
+  # every control or non-ASCII byte in them whatever the user's config (with
+  # quotePath=false it printed U+009B raw: fact-check claim 9), so each entry
+  # is one line; the listing also goes through vis. Ignored files are not
+  # listed: never staged.
+  dirty="$(git -C "$REPO_ROOT" -c core.quotePath=true status --porcelain --untracked-files=all -- "${CLAUDE_HOME_SRC[@]}" "$@")"
+  home_dirty="$(git -C "$REPO_ROOT" -c core.quotePath=true status --porcelain --untracked-files=all -- "${CLAUDE_HOME_SRC[@]}")"
   if [ -n "$dirty" ]; then
     echo "WARNING: the checkout has uncommitted changes under the payload paths. They are"
     echo "         NOT included: this install stages commit ${commit:0:12} only. Commit them"
     echo "         and rerun to include them."
-    printf '%s\n' "$dirty" | sed 's/^/           /'
+    printf '%s\n' "$dirty" | sed 's/^/           /' | vis
   fi
   # Provenance stamp: lets a session (and health-check) tell which commit's process
   # it is running, and detect that the image predates the repo it is editing.
