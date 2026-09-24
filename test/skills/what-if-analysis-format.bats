@@ -34,7 +34,9 @@ section_body() {
 # --- Header section ---
 
 @test "report has a title header with What-If Analysis" {
-  assert_title_matches '^# .*What.?If Analysis' 10
+  # 12, not 5: SKILL.md puts the 3-line no-upstream-critique note, and the
+  # Prior Art Check's "nothing found" note, above the title.
+  assert_title_matches '^# .*What.?If Analysis' 12
 }
 
 @test "report has a Proposal field" {
