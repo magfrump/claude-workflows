@@ -575,6 +575,34 @@ installed_then_changed() {
   [[ "$output" != *'+global instructions'* ]]
 }
 
+@test "T37 when nothing changed: (none), no prompt, no swap, no backup (review A6)" {
+  need_script; fake_repo
+  run_pty 'n\ny\n' bash "$INSTALL"
+  [ -d "$CLAUDE_HOME_DIR/skills" ]
+  before=$(snap "$CLAUDE_HOME_DIR")
+  run_pty 'n\ny\n' bash "$INSTALL"
+  echo "$output"
+  [[ "$output" == *'(none'* ]]
+  [[ "$output" != *'Install these files'* ]]
+  [ "$(snap "$CLAUDE_HOME_DIR")" = "$before" ]
+  [ ! -e "$CLAUDE_HOME_DIR/.claude-workflows-backup" ]
+}
+
+@test "T38 backups are capped at the newest 3, and the install says so (review A6)" {
+  need_script; fake_repo; symlink_install
+  for i in 1 2 3 4; do
+    printf 'change %s\n' "$i" >> "$ROOT/workflows/w.md"; commit_all "c$i"
+    run_pty 'n\ny\n' bash "$INSTALL"
+    grep -q "change $i" "$CLAUDE_HOME_DIR/workflows/w.md"
+    sleep 1   # distinct second-resolution stamps
+  done
+  echo "$output"
+  [ "$(find "$CLAUDE_HOME_DIR/.claude-workflows-backup" -mindepth 1 -maxdepth 1 | wc -l)" -eq 3 ]
+  [[ "$output" == *'newest 3'* ]]
+  # The oldest (the symlink-install backup) is the one pruned.
+  [ -z "$(find "$CLAUDE_HOME_DIR/.claude-workflows-backup" -type l)" ]
+}
+
 @test "T24 with CLAUDE_HOME_DIR unset, CLAUDE_CONFIG_DIR chooses the destination" {
   need_script; fake_repo
   run_pty 'n\ny\n' env -u CLAUDE_HOME_DIR CLAUDE_CONFIG_DIR="$S/cfgdir" bash "$INSTALL"

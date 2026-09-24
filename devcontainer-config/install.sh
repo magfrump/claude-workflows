@@ -487,6 +487,11 @@ install_claude_home() {
   fi
   echo "==============================================================================="
   echo
+  # A6: nothing to do means no prompt, no swap and no 2.4 MB backup.
+  if [ "$changed" -eq 0 ]; then
+    echo "Nothing to install into $dest."
+    return 0
+  fi
 
   local wiring_changed=0
   if ! cmp -s "$dest/hooks/wiring.json" "$stage/hooks/wiring.json"; then
@@ -581,6 +586,14 @@ install_claude_home() {
   echo "Installed into $dest."
   if [ -n "$backup" ]; then
     echo "Previous entries moved to $backup (delete it when satisfied)."
+    # A6: keep the newest 3 stamped backups; nothing else prunes them.
+    local old pruned=0
+    while IFS= read -r old; do
+      if [ -d "$bkroot/$old" ] && [ ! -L "$bkroot/$old" ]; then
+        rm -rf "${bkroot:?}/$old"; pruned=$((pruned + 1))
+      fi
+    done < <(find "$bkroot" -mindepth 1 -maxdepth 1 -name '[0-9]*T*Z*' -printf '%f\n' | LC_ALL=C sort | head -n -3)
+    echo "Backups are capped at the newest 3 in $bkroot ($pruned older removed)."
   fi
   if [ "$wiring_changed" -eq 1 ]; then
     echo
