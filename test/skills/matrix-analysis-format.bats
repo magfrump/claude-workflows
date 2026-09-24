@@ -8,7 +8,7 @@
 load helpers
 
 setup() {
-  load_generic_report "docs/reviews/matrix-analysis.md"
+  load_generic_report "${REPORT_PATH:-docs/reviews/matrix-analysis.md}"
 }
 
 # --- Header section ---

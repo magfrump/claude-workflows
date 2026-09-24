@@ -8,7 +8,7 @@
 load helpers
 
 setup() {
-  load_generic_report "docs/reviews/verification-rubric.md"
+  load_generic_report "${REPORT_PATH:-docs/reviews/verification-rubric.md}"
 }
 
 # --- Header section ---
