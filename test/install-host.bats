@@ -834,6 +834,18 @@ installed_then_changed() {
   [[ "$output" == *'docker not found'*'treated as none running'* ]]
 }
 
+@test "T64 a docker warning on stderr with no containers listed is not a running container (Q-058)" {
+  # Regression: the container list was read with 2>&1, so any stderr noise (a
+  # locale warning from the shell, a CLI deprecation notice) refused every install.
+  fake_repo
+  stub_docker 'echo "WARNING: some docker CLI notice" >&2; exit 0'
+  run env -u CLAUDECODE bash "$INSTALL" --yes </dev/null
+  echo "$output"
+  [ "$status" -eq 0 ]
+  [[ "$output" != *'an agent is running'* ]]
+  [[ "$output" == *'BLESS-STUB --bless'* ]]
+}
+
 @test "T53 without pgrep the install is refused, not waved through (Q-058)" {
   fake_repo
   p=$(path_without pgrep)

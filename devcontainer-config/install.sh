@@ -834,7 +834,7 @@ CLAUDE_PROC_RE='(^|/)claude(\.exe)?( |$)|/@anthropic-ai/claude-code/'
 # agent_gate <what is refused>: exit 1, naming each agent found and how to
 # stop it, when a Claude Code process or a cc-isolated container runs.
 agent_gate() {
-  local what="$1" procs rc=0 ctrs err
+  local what="$1" procs rc=0 ctrs err errf
   if ! command -v pgrep >/dev/null 2>&1; then
     echo "ERROR: pgrep is not installed, so install.sh cannot check that no Claude Code" >&2
     echo "       session is running (Q-058). Install procps and rerun. $what" >&2
@@ -850,11 +850,19 @@ agent_gate() {
   ctrs=""
   if ! command -v docker >/dev/null 2>&1; then
     echo "NOTE: docker not found: cc-isolated containers not checked, treated as none running."
-  elif ! ctrs="$(timeout 20 docker ps --filter label=cc-project \
-                   --format '{{.Names}} cc-project={{.Label "cc-project"}}' 2>&1)"; then
-    err="$(printf '%s\n' "$ctrs" | head -n 1)"
-    echo "NOTE: docker is unreachable ($err): cc-isolated containers not checked, treated as none running." | vis
-    ctrs=""
+  else
+    # Only stdout is the container list. stderr carries warnings (a locale
+    # warning, a docker CLI deprecation notice) that must not read as a running
+    # container, so it is kept apart and shown only when the call fails.
+    errf="$(mktemp "${TMPDIR:-/tmp}/cw-docker-err.XXXXXX")"
+    if ! ctrs="$(timeout 20 docker ps --filter label=cc-project \
+                   --format '{{.Names}} cc-project={{.Label "cc-project"}}' 2>"$errf")"; then
+      err="$(head -n 1 "$errf" 2>/dev/null)"
+      echo "NOTE: docker is unreachable ($err): cc-isolated containers not checked, treated as none running." | vis
+      ctrs=""
+    fi
+    rm -f "$errf"
+    ctrs="$(printf '%s\n' "$ctrs" | awk 'NF')"
   fi
   if [ -z "$procs" ] && [ -z "$ctrs" ]; then return 0; fi
   {
