@@ -973,6 +973,19 @@ installed_then_changed() {
   [[ "$output" == *'+exit 0'* ]]
 }
 
+@test "T63 decision 037 records the Q-058 trust model and its accepted residuals; the plan's Risks cite it" {
+  d="$BATS_TEST_DIRNAME/../docs/decisions/037-bare-host-copy-install.md"
+  plan="$BATS_TEST_DIRNAME/../docs/working/plan-copy-install-bare-host.md"
+  grep -q '^## Trust model (Q-058)' "$d"
+  sec=$(sed -n '/^## Trust model (Q-058)/,/^## /p' "$d")
+  [[ "$sec" == *"user's uid"* ]]
+  [[ "$sec" == *'code-review-rubric-2026-09-23-ans-copy-install-final.md'* ]]
+  for residual in 'TAB' '.git/config' 'another host' 'renamed'; do
+    [[ "$sec" == *"$residual"* ]]
+  done
+  sed -n '/^## Risks/,/^## /p' "$plan" | grep -q 'Q-058'
+}
+
 @test "T24 with CLAUDE_HOME_DIR unset, CLAUDE_CONFIG_DIR chooses the destination" {
   need_script; fake_repo
   run_pty 'n\ny\n' env -u CLAUDE_HOME_DIR CLAUDE_CONFIG_DIR="$S/cfgdir" bash "$INSTALL"

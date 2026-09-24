@@ -57,8 +57,27 @@ How to read: each entry is `[candidate-ID]: one-line reason for discard`. Future
 
 **Harder.** install.sh now writes a second host destination, so an agent edit to it has a wider blast radius. That raises the stakes of 035's still-pending regex. Every plain run asks a second question. The settings merge is still manual, and a changed `wiring.json` is only announced, not applied. Hand-installed skills in `~/.claude/skills` move to the backup on the first install.
 
+## Trust model (Q-058)
+
+The user answered Q-058 [2] on 2026-09-23: no agent may run during an install.
+
+**What the installer is.** `install.sh` runs as the user's uid, from the checkout. So does every Claude Code session on the host. A cc-isolated container runs as another uid, but it writes the checkout, `.git` included, through its bind mount. The stage in `$TMPDIR`, the checkout, its `.git` and (on a bare host) `~/.claude` are all writable by whatever else runs as the user's uid.
+
+**The guarantee.** "What you reviewed is what is installed" holds only when no agent runs from the start of the install to the end of the swap. The hash check (R2) catches a stage edited while the prompt waits. It cannot catch an agent that rewrites the commit, the checkout's `.git` or the installer itself before the stage is built.
+
+**How it is enforced.** `install.sh` refuses to run while an agent can run, and names each agent with how to stop it. It checks at startup, before either target stages anything, and again after each y, before that target writes:
+- a Claude Code process of the user's uid: `pgrep -u <uid> -af` for a command line that runs `claude` (argv0 `claude` or `…/claude`, the native binary) or the npm package (`node …/bin/claude`, `…/@anthropic-ai/claude-code/…`). Without `pgrep` the install is refused.
+- a running cc-isolated container: `docker ps --filter label=cc-project` (cc-isolated's `--id-label`). If docker is missing or unreachable, one line says so and no container is assumed.
+
+**Residuals accepted.**
+- File or directory names holding a TAB or newline: a TAB in a backup directory's name can mis-prune, and a relative `CLAUDE_HOME_DIR` from a working directory whose name holds a newline gets past the in-repo guard (fact-check final Claims 4 and 6; rubric A4, A5, parked). Both need a crafted name, which needs an agent, which the gate refuses.
+- git obeys the checkout's `.git/config` (hooks paths, `core.fsmonitor`, filters) when `install.sh` runs `git archive` and `git status`. Any git command the user runs in the checkout has the same exposure; it is not specific to the installer.
+- A process the probe misses: an agent on another host or in another container runtime writing the checkout (a network or shared mount), a renamed or wrapped binary whose command line does not end in `claude`, one running under another uid, or a docker the user's uid cannot reach.
+
+Review record: [code-review-rubric-2026-09-23-ans-copy-install-final.md](../reviews/code-review-rubric-2026-09-23-ans-copy-install-final.md).
+
 ## Revisit triggers
 
 How to read: each entry is a concrete, observable condition that should prompt re-evaluating this decision. Future readers can grep this section when their context changes to see whether earlier decisions still apply.
 
-`if Q-049 is resolved → reconsider automating the settings.json merge from the host target.` `if any host ~/.claude install is traced to an agent session (backup stamp with no human at the terminal) → the TTY rule has failed in practice; move the host install off the agent-writable repo or require a sandbox denyWrite check before install.` `if 035's regex lands → confirm devcontainer-config/install.sh is covered, and drop the manual Live-verified trailers.` `if the user reports ~/.claude going stale again → the two-prompt run is being declined by reflex; consider H (a SessionStart staleness warning).` `if Gemini or Antigravity comes back into use → add it as a third target in the same run, not as a flag.`
+`if Q-049 is resolved → reconsider automating the settings.json merge from the host target.` `if any host ~/.claude install is traced to an agent session (backup stamp with no human at the terminal) → the TTY rule has failed in practice; move the host install off the agent-writable repo or require a sandbox denyWrite check before install.` `if 035's regex lands → confirm devcontainer-config/install.sh is covered, and drop the manual Live-verified trailers.` `if the user reports ~/.claude going stale again → the two-prompt run is being declined by reflex; consider H (a SessionStart staleness warning).` `if Gemini or Antigravity comes back into use → add it as a third target in the same run, not as a flag.` `if Claude Code's process shape changes (argv0 no longer claude or .../claude, and not the npm package path) or cc-isolated stops labelling containers cc-project → the Q-058 probe goes blind; update CLAUDE_PROC_RE or the docker filter.`
