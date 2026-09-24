@@ -317,6 +317,19 @@ inside_repo() {
   return 1
 }
 
+# payload_hash <dir> <prefix>: one hash over the listing (path, type, mode, link
+# target) and the file contents of <dir>/<prefix><name> for every entry name.
+# The same payload hashes the same whether it sits in the stage (prefix "") or
+# in the .cw-new.* copies (prefix ".cw-new."), which is what R2's check needs.
+payload_hash() {
+  local dir="$1" pfx="$2" name
+  for name in "${CLAUDE_HOME_NAMES[@]}"; do
+    echo "== $name"
+    find "$dir/$pfx$name" -printf '%P\t%y\t%m\t%l\n' | LC_ALL=C sort
+    find "$dir/$pfx$name" -type f -print0 | LC_ALL=C sort -z | xargs -0 -r sha256sum | cut -d' ' -f1
+  done | sha256sum | cut -d' ' -f1
+}
+
 host_refuse() {
   echo "ERROR: $1" >&2
   echo "       Nothing was installed into the host target." >&2
@@ -380,6 +393,10 @@ install_claude_home() {
   HOST_TMP="$(mktemp -d "${TMPDIR:-/tmp}/cw-host-stage.XXXXXX")"
   local stage="$HOST_TMP/payload"
   assemble "$stage"
+  # R2: the stage sits in a same-uid temp dir while [y/N] waits. Hash it before
+  # the review; after the y, the copies made under $dest must hash the same.
+  local reviewed_hash
+  reviewed_hash="$(payload_hash "$stage" "")"
   echo "Canonical (repo):  $REPO_ROOT (commit $(sed -n 's/^commit=//p' "$stage/.manifest"))"
   echo
 
@@ -446,6 +463,12 @@ install_claude_home() {
   if [ "$ok" -eq 0 ]; then
     for name in "${CLAUDE_HOME_NAMES[@]}"; do rm -rf "$dest/.cw-new.$name" 2>/dev/null || true; done
     echo "ERROR: could not copy the new files into $dest; nothing was replaced." >&2
+    exit 1
+  fi
+  if [ "$(payload_hash "$dest" .cw-new.)" != "$reviewed_hash" ]; then
+    for name in "${CLAUDE_HOME_NAMES[@]}"; do rm -rf "$dest/.cw-new.$name"; done
+    echo "ERROR: stage changed after review: the files copied for install differ from" >&2
+    echo "       the ones the review showed. Nothing was replaced. Rerun install.sh." >&2
     exit 1
   fi
 

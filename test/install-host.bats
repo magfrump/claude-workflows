@@ -113,6 +113,20 @@ run_pty() {
       _ "$input" "$*"
 }
 
+# Like run_pty, but stdin comes from the shell snippet $1, so a test can act
+# while install.sh waits at a prompt (e.g. tamper with the stage, then answer).
+run_pty_feed() {
+  local feed="$1"; shift
+  run bash -c 'set -o pipefail; { eval "$1"; } | env -u CLAUDECODE script -qec "$2" /dev/null | tr -d "\r"' \
+      _ "$feed" "$*"
+}
+
+# Feed snippet: answer n to the devcontainer target, wait (max ~20 s) for the
+# host stage, give the review time to finish, run $TAMPER, then answer y.
+FEED_TAMPER='printf "n\n"
+  for _i in $(seq 200); do compgen -G "$TMPDIR/cw-host-stage.*/payload/.manifest" >/dev/null && break; sleep 0.1; done
+  sleep 2; eval "$TAMPER"; printf "y\n"'
+
 no_host_stage_left() {
   ! compgen -G "$TMPDIR/cw-host-stage.*" >/dev/null
 }
@@ -431,6 +445,19 @@ no_host_stage_left() {
   [[ "$output" != *'[y/N]'* ]]
   [ "$(snap "$CLAUDE_HOME_DIR")" = "$before" ]
   [ ! -L "$CLAUDE_HOME_DIR/hooks/guard.sh" ]
+}
+
+@test "T28 a stage edited while the prompt waits is not installed (review R2)" {
+  need_script; fake_repo; symlink_install
+  before=$(snap "$CLAUDE_HOME_DIR")
+  export TAMPER='for f in "$TMPDIR"/cw-host-stage.*/payload/hooks/h.sh; do printf "echo TAMPERED\n" >> "$f"; done'
+  run_pty_feed "$FEED_TAMPER" bash "$INSTALL"
+  echo "$output"
+  [ "$status" -eq 1 ]
+  [[ "$output" == *'stage changed after review'* ]]
+  [ "$(snap "$CLAUDE_HOME_DIR")" = "$before" ]
+  ! grep -rqs TAMPERED "$CLAUDE_HOME_DIR"
+  ! compgen -G "$CLAUDE_HOME_DIR/.cw-new.*" >/dev/null
 }
 
 @test "T24 with CLAUDE_HOME_DIR unset, CLAUDE_CONFIG_DIR chooses the destination" {
