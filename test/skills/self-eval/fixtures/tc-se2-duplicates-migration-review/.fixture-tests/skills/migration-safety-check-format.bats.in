@@ -1,0 +1,10 @@
+#!/usr/bin/env bats
+# Validates the output format of migration-safety-check reports.
+
+@test "report has at least one finding with a severity" {
+  grep -qE '^\*\*Severity:\*\* (Critical|High|Medium|Low)' "$REPORT_PATH"
+}
+
+@test "report has a Recommended rollout section" {
+  grep -q 'Recommended rollout' "$REPORT_PATH"
+}

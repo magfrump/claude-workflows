@@ -1,0 +1,11 @@
+#!/usr/bin/env bats
+# Validates the output format of api-changelog-diff reports.
+
+@test "report has Breaking and Non-breaking sections" {
+  grep -q '^## Breaking' "$REPORT_PATH"
+  grep -q '^## Non-breaking' "$REPORT_PATH"
+}
+
+@test "every change cites a JSON pointer" {
+  ! grep -E '^- ' "$REPORT_PATH" | grep -vq '#/'
+}

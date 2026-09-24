@@ -1,0 +1,10 @@
+#!/usr/bin/env bats
+# Evaluates api-changelog-diff against planted spec changes.
+
+@test "removed required field is classified breaking" {
+  grep -A5 '^## Breaking' "$BATS_TEST_DIRNAME/api-changelog-diff/output/removed-field.report.md" | grep -q 'customer_id'
+}
+
+@test "new optional field is classified non-breaking" {
+  grep -A5 '^## Non-breaking' "$BATS_TEST_DIRNAME/api-changelog-diff/output/optional-field.report.md" | grep -q 'nickname'
+}
