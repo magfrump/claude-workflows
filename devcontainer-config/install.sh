@@ -337,7 +337,7 @@ install_devcontainer() {
   for comp in "${comps[@]}"; do
     p="$p/$comp"
     if [ -L "$p" ]; then
-      echo "ERROR: $p is a symlink ($(readlink "$p")). install.sh rebuilds" >&2
+      echo "ERROR: $p is a symlink ($(readlink "$p")). install.sh rebuilds" | vis >&2
       echo "       devcontainer-config/claude-home in the checkout and never writes through a" >&2
       echo "       link there. Remove the link (rm, no trailing slash) and rerun. Nothing was installed." >&2
       exit 1
@@ -827,8 +827,10 @@ install_claude_home() {
 # A Claude Code process is one of this uid's processes whose command line runs
 # `claude` (the native binary, argv0 "claude" or ".../claude") or the npm
 # package (`node .../bin/claude`, `.../@anthropic-ai/claude-code/...`). pgrep
-# never lists itself; this script's own command line does not match, and $$ is
-# dropped in case the checkout's path ends in /claude.
+# never lists itself and this script's own command line does not match; $$ is
+# dropped only as a belt-and-braces guard. A command line with a `.../claude`
+# argument (`vim ./claude`, `tail -f /var/log/claude`) also matches: the install
+# is refused, and the message names the process.
 CLAUDE_PROC_RE='(^|/)claude(\.exe)?( |$)|/@anthropic-ai/claude-code/'
 
 # agent_gate <what is refused>: exit 1, naming each agent found and how to

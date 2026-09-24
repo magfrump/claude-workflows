@@ -61,11 +61,11 @@ How to read: each entry is `[candidate-ID]: one-line reason for discard`. Future
 
 The user answered Q-058 [2] on 2026-09-23: no agent may run during an install.
 
-**What the installer is.** `install.sh` runs as the user's uid, from the checkout. So does every Claude Code session on the host. A cc-isolated container runs as another uid, but it writes the checkout, `.git` included, through its bind mount. The stage in `$TMPDIR`, the checkout, its `.git` and (on a bare host) `~/.claude` are all writable by whatever else runs as the user's uid.
+**What the installer is.** `install.sh` runs as the user's uid, from the checkout. So does every Claude Code session on the host. A cc-isolated container writes the checkout, `.git` included, through its bind mount, whatever uid it runs as. The stage in `$TMPDIR`, the checkout, its `.git` and (on a bare host) `~/.claude` are all writable by whatever else runs as the user's uid.
 
 **The guarantee.** "What you reviewed is what is installed" holds only when no agent runs from the start of the install to the end of the swap. The hash check (R2) catches a stage edited while the prompt waits. It cannot catch an agent that rewrites the commit, the checkout's `.git` or the installer itself before the stage is built.
 
-**How it is enforced.** `install.sh` refuses to run while an agent can run, and names each agent with how to stop it. It checks at startup, before either target stages anything, and again after each y, before that target writes:
+**How it is enforced.** `install.sh` refuses to run while an agent can run, and names each agent with how to stop it. It checks at startup, before either target stages anything, and again after each y, before that target writes to its destination. (The devcontainer target rebuilds its `claude-home` mirror inside the checkout before its prompt; that is a staging copy, not an install.)
 - a Claude Code process of the user's uid: `pgrep -u <uid> -af` for a command line that runs `claude` (argv0 `claude` or `…/claude`, the native binary) or the npm package (`node …/bin/claude`, `…/@anthropic-ai/claude-code/…`). Without `pgrep` the install is refused.
 - a running cc-isolated container: `docker ps --filter label=cc-project` (cc-isolated's `--id-label`). If docker is missing or unreachable, one line says so and no container is assumed.
 

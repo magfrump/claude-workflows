@@ -1,0 +1,5 @@
+devcontainer-config/devcontainer.json:71:  "remoteUser": "node",
+83:PAYLOAD=(devcontainer.json Dockerfile init-firewall.sh cc-sni-proxy.py cc-isolated.sh link-claude-home.sh egress claude-home)
+files: 123
+files holding NUL:
+(end)

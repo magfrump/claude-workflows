@@ -1,0 +1,11 @@
+bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+spawned 1562562 1562563 1562564; all install.sh processes:
+1562562 bash /tmp/claude-1000/-workspace/d516ca2c-2abb-4732-a34a-041aa98280c8/scratchpad/cfc-q058/co/claude/devcontainer-config/install.sh
+1562563 bash /tmp/claude-1000/-workspace/d516ca2c-2abb-4732-a34a-041aa98280c8/scratchpad/cfc-q058/co/claude/devcontainer-config/install.sh
+1562564 bash ./devcontainer-config/install.sh
+matches of CLAUDE_PROC_RE among them:
+(end)
+Terminated
