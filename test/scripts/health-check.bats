@@ -77,6 +77,13 @@ setup() {
   echo "$HC_OUTPUT" | grep -q "expected-verdicts"
 }
 
+@test "directory (tree-mode) fixture sets pass the fixture ↔ verdict check" {
+  # self-eval and divergent-design keep one directory per fixture. The check
+  # once tested keys with -f only, so every directory key read as missing.
+  echo "$HC_OUTPUT" | grep -q "self-eval: all fixtures have verdicts and vice versa"
+  echo "$HC_OUTPUT" | grep -q "divergent-design: all fixtures have verdicts and vice versa"
+}
+
 @test "output contains BATS tests section" {
   echo "$HC_OUTPUT" | grep -q "BATS tests"
 }

@@ -57,6 +57,7 @@ set -euo pipefail
 
 SCRIPT_DIR="$(cd "$(dirname "$0")" && pwd)"
 # Repo root, for runners' fixture_base to copy live files from.
+# shellcheck disable=SC2034  # Used by the sourced runner.bash files
 REPO_ROOT="$(cd "$SCRIPT_DIR/../.." && pwd)"
 SKILL="${1:?Usage: generate-reports.bash <skill> [fixture-prefix]}"
 FIXTURE_PREFIX="${2:-}"

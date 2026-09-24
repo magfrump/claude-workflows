@@ -108,7 +108,7 @@ EOF
   # exposed even under --tools "" and in sub-agents.
   local mode
   for mode in inline repo tree; do
-    rm -rf "$CALLS"/* "$TEST_TMPDIR/test/skills/demo" "$TEST_TMPDIR/skills/demo"
+    rm -rf "${CALLS:?}"/* "$TEST_TMPDIR/test/skills/demo" "$TEST_TMPDIR/skills/demo"
     if [ "$mode" = tree ]; then make_tree_skill demo; else make_skill demo "$mode" "Read"; fi
     run bash "$GEN" demo
     [ "$status" -eq 0 ]
@@ -213,7 +213,7 @@ EOF
   [ "$status" -eq 0 ]
   [ "$(ls "$CALLS" | wc -l)" -eq 1 ]
 
-  rm -rf "$CALLS"/*
+  rm -rf "${CALLS:?}"/*
   make_skill other repo "Read"
   mkdir "$TEST_TMPDIR/test/skills/other/fixtures/tc-5-a-dir"
   run bash "$GEN" other

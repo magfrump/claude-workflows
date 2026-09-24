@@ -311,8 +311,10 @@ check_fixture_verdicts() {
         fi
 
         local all_ok=true
+        # A fixture is a file, or a directory for tree-mode runners
+        # (test/skills/generate-reports.bash: self-eval, divergent-design).
         for fixture in "$skill_dir"/fixtures/*; do
-            [[ -f "$fixture" ]] || continue
+            [[ -f "$fixture" || -d "$fixture" ]] || continue
             local fixture_name
             fixture_name="$(basename "$fixture")"
 
@@ -328,7 +330,7 @@ check_fixture_verdicts() {
         verdict_keys="$(grep -oP 'EXPECTED_VERDICT\["\K[^"]+' "$verdicts_file" | sort -u)"
         while IFS= read -r key; do
             [[ -z "$key" ]] && continue
-            if [[ ! -f "$skill_dir/fixtures/$key" ]]; then
+            if [[ ! -e "$skill_dir/fixtures/$key" ]]; then
                 fail "$skill_name: expected-verdicts references $key but fixture does not exist"
                 all_ok=false
             fi
