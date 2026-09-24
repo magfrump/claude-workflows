@@ -278,8 +278,9 @@ no_host_stage_left() {
 @test "T9 installed hooks still find lib/ and ../scripts (log-usage smoke test)" {
   need_script; fake_repo
   rm -rf "$ROOT/hooks" "$ROOT/scripts"
-  cp -R "$CONFIG_SRC/../hooks" "$ROOT/hooks"
-  cp -R "$CONFIG_SRC/../scripts" "$ROOT/scripts"
+  # The committed hooks and scripts: a `cp -R` of the tree also took ignored
+  # __pycache__/*.pyc, which the NUL-byte check (T61) rightly refuses.
+  git -C "$CONFIG_SRC/.." archive HEAD hooks scripts | tar -xf - -C "$ROOT"
   commit_all real-hooks
   run_pty 'n\ny\n' bash "$INSTALL"
   [ -f "$CLAUDE_HOME_DIR/hooks/lib/usage-common.sh" ]
@@ -900,7 +901,10 @@ installed_then_changed() {
   run env -u CLAUDECODE bash "$INSTALL" --yes </dev/null
   [ "$status" -eq 0 ]
   printf '{"changed":1}\n' > "$ROOT/devcontainer-config/devcontainer.json"; commit_all dc
-  printf '#!/bin/bash\ncat >/dev/null\nexit 1\n' > "$STUB/perl"; chmod +x "$STUB/perl"
+  # Only vis (`perl -pe`) fails; the payload's NUL scan still runs real perl.
+  printf '#!/bin/bash\ncase "$1" in -pe) cat >/dev/null; exit 1 ;; esac\nexec %s "$@"\n' \
+    "$(command -v perl)" > "$STUB/perl"
+  chmod +x "$STUB/perl"
   run env -u CLAUDECODE bash "$INSTALL" </dev/null
   echo "$output"
   [ "$status" -eq 1 ]
@@ -933,6 +937,40 @@ installed_then_changed() {
   [[ "$output" == *'symlink'* ]]
   [[ "$output" != *'BLESS-STUB'* ]]
   [ ! -e "$S/realdc/claude-home" ]
+}
+
+@test "T61 a committed payload file holding a NUL byte is refused and listed before any prompt" {
+  need_script; fake_repo; symlink_install
+  printf 'looks\0binary\n' > "$ROOT/hooks/blob.bin"
+  printf 'dc\0bin\n' > "$ROOT/devcontainer-config/egress/x.bin"; commit_all bin
+  before=$(snap "$CLAUDE_HOME_DIR")
+  run_pty 'y\ny\n' bash "$INSTALL"
+  echo "$output"
+  [ "$status" -eq 1 ]
+  [[ "$output" == *'NUL'*'hooks/blob.bin'* ]]
+  [[ "$output" != *'Binary files'* ]]
+  [[ "$output" != *'[y/N]'* ]]
+  [ ! -e "$CLAUDE_DEVC_CONFIG_DIR" ]
+  [ "$(snap "$CLAUDE_HOME_DIR")" = "$before" ]
+  # The devcontainer payload is checked the same way.
+  git -C "$ROOT" rm -q hooks/blob.bin; commit_all rm
+  run env -u CLAUDECODE bash "$INSTALL" --yes </dev/null
+  echo "$output"
+  [ "$status" -eq 1 ]
+  [[ "$output" == *'NUL'*'egress/x.bin'* ]]
+  [[ "$output" != *'BLESS-STUB'* ]]
+}
+
+@test "T62 an installed file holding a NUL byte is reviewed as text, not 'Binary files differ'" {
+  need_script; fake_repo
+  run_pty 'n\ny\n' bash "$INSTALL"
+  [ -f "$CLAUDE_HOME_DIR/hooks/h.sh" ]
+  printf 'bad\0byte\n' > "$CLAUDE_HOME_DIR/hooks/h.sh"
+  run_pty 'n\nn\n' bash "$INSTALL"
+  echo "$output"
+  [[ "$output" != *'Binary files'* ]]
+  [[ "$output" == *'-bad?byte'* ]]
+  [[ "$output" == *'+exit 0'* ]]
 }
 
 @test "T24 with CLAUDE_HOME_DIR unset, CLAUDE_CONFIG_DIR chooses the destination" {

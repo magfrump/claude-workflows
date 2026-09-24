@@ -45,7 +45,8 @@ Offers two install targets in turn. Each one shows a review diff and asks y/N:
 Both targets install COMMITTED content (HEAD, via git archive): every
 devcontainer-config/ PAYLOAD item and the seven ~/.claude sources. Uncommitted
 changes under those paths are listed as NOT included; commit and rerun.
-A destination path holding a newline or other control character is refused.
+A destination path holding a newline or other control character is refused,
+and so is a payload file holding a NUL byte (a binary the diff cannot show).
 
 NO AGENT MAY RUN DURING THE INSTALL (Q-058). install.sh refuses, before it
 stages anything and again after each y, while any agent can run:
@@ -106,7 +107,8 @@ REPO_ROOT="$(cd "$SRC/.." && pwd)"
 # the payload layout (and link-claude-home.sh) is unchanged.
 CLAUDE_HOME_SRC=(global-instructions/CLAUDE.md skills workflows guides patterns hooks scripts)
 
-# vis: filter that makes control bytes visible (all but newline and tab), so a
+# vis: filter that makes control bytes visible (all but newline and tab; NUL
+# included), so a
 # crafted file name or file line cannot rewrite the review on the terminal (A4).
 #
 # Raw 8-bit C1 bytes (0x80-0x9f; 0x9b is CSI on an 8-bit terminal) are made
@@ -117,7 +119,7 @@ CLAUDE_HOME_SRC=(global-instructions/CLAUDE.md skills workflows guides patterns 
 vis() {
   LC_ALL=C perl -pe '
     s/\x1b/^[/g; s/\r/^M/g;
-    s/[\x01-\x08\x0b\x0c\x0e-\x1a\x1c-\x1f\x7f]/?/g;
+    s/[\x00-\x08\x0b\x0c\x0e-\x1a\x1c-\x1f\x7f]/?/g;
     s/\xc2[\x80-\x9f]/?/g;
     s/([\xc2-\xdf][\x80-\xbf]|[\xe0-\xef][\x80-\xbf]{2}|[\xf0-\xf4][\x80-\xbf]{3})|[\x80-\x9f]/defined $1 ? $1 : "?"/ge;
   '
@@ -174,6 +176,25 @@ extract_commit() {
     echo "ERROR: the committed payload contains symlinks, which install.sh never installs:" >&2
     printf '%s\n' "$links" | sed 's/^/         /' | vis >&2
     echo "       Replace them with real files and commit. Nothing was installed." >&2
+    exit 1
+  fi
+  # No NUL bytes. diff reports such a file as "Binary files ... differ" and
+  # shows none of its content, so it would install unreviewed. The payload is
+  # text today (checked 2026-09-23: no committed payload file holds a NUL), so
+  # there is no allowlist; add one here, documented, if a binary is ever needed.
+  local nul
+  if ! nul="$(cd "$dir" && find . -type f -print0 | LC_ALL=C sort -z | LC_ALL=C perl -0ne '
+        chomp; open(my $f, "<:raw", $_) or die "$_: $!\n";
+        my $c = do { local $/; <$f> };
+        print substr($_, 2), "\n" if defined $c && index($c, "\0") >= 0;')"; then
+    echo "ERROR: could not scan the staged payload for NUL bytes. Nothing was installed." >&2
+    exit 1
+  fi
+  if [ -n "$nul" ]; then
+    echo "ERROR: the committed payload holds files with NUL bytes (binary), which the review" >&2
+    echo "       diff cannot show and install.sh therefore never installs:" >&2
+    printf '%s\n' "$nul" | sed 's/^/         /' | vis >&2
+    echo "       Remove them from the payload paths and commit. Nothing was installed." >&2
     exit 1
   fi
 }
@@ -238,7 +259,10 @@ review_diff() {
     # A vis failure is trouble too: its output is the review, so a failed vis
     # over a differing item read as an empty diff that still reached [y/N].
     local st
-    diff -ruN "$dest/$item" "$src/$item" 2>&1 | vis && st=(0 0) || st=("${PIPESTATUS[@]}")
+    # -a: a file with a NUL byte (only ever on the destination side; the stage
+    # has none, see extract_commit) is diffed as text, with vis showing each
+    # NUL as "?", rather than as "Binary files differ" with no content.
+    diff -ruNa "$dest/$item" "$src/$item" 2>&1 | vis && st=(0 0) || st=("${PIPESTATUS[@]}")
     rc="${st[0]}"
     if [ "${st[1]}" -ne 0 ]; then
       echo "ERROR: could not show the review of payload item '$item' (vis exit ${st[1]})." >&2
