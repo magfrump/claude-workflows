@@ -859,6 +859,48 @@ bare_host_layout() {
   [[ "$reason" == *"outside Claude"* ]] || { echo "$reason"; return 1; }
 }
 
+@test "A5: the file-tool deny reason says Bash is not the way round it" {
+  bare_host_layout
+  guard "$(file_payload Edit "$CHECKOUT/hooks/linked.sh")"
+  assert_decision deny
+  local reason
+  reason=$(jq -r '.hookSpecificOutput.permissionDecisionReason' <<<"$output")
+  [[ "$reason" == *"Bash"* ]] || { echo "$reason"; return 1; }
+  [[ "$reason" == *"outside Claude"* ]] || { echo "$reason"; return 1; }
+}
+
+@test "A1/A2: the Bash deny reason fits project files and only suggests prose files" {
+  # The same text fires for a project's own .claude/settings.json, which
+  # Edit/Write can change, so it must not say Claude can't write it at all.
+  guard "$(bash_payload "echo x > .claude/settings.json")"
+  assert_decision deny
+  local reason
+  reason=$(jq -r '.hookSpecificOutput.permissionDecisionReason' <<<"$output")
+  [[ "$reason" != *"Claude cannot write these"* ]] || { echo "$reason"; return 1; }
+  [[ "$reason" == *"Edit or Write"* ]] || { echo "$reason"; return 1; }
+  [[ "$reason" == *"outside Claude"* ]] || { echo "$reason"; return 1; }
+  # A2: the file advice is for prose passed as data, never a file to run.
+  [[ "$reason" == *"git commit -F"* && "$reason" == *"--body-file"* ]] || { echo "$reason"; return 1; }
+  [[ "$reason" != *"pass the file instead"* ]] || { echo "$reason"; return 1; }
+  [[ "$reason" != *"script"* && "$reason" != *" run "* ]] || { echo "$reason"; return 1; }
+}
+
+@test "C1: an unreadable ~/.claude/hooks entry does not stop the linked-hook scan" {
+  [ "$(id -u)" -ne 0 ] || skip "root reads through chmod 000"
+  bare_host_layout
+  # Links into a mode-000 dir make is_dir() raise PermissionError. Several of
+  # them, so directory order almost surely puts one before linked.sh.
+  mkdir -p "$TEST_TMPDIR/locked/sub"
+  local i
+  for i in 0 1 2 3 4 5 6 7 8 9 a b c d e f; do
+    ln -s "$TEST_TMPDIR/locked/sub" "$HOME/.claude/hooks/$i-bad"
+  done
+  chmod 000 "$TEST_TMPDIR/locked"
+  guard "$(file_payload Edit "$CHECKOUT/hooks/linked.sh")"
+  chmod 755 "$TEST_TMPDIR/locked"
+  assert_decision deny
+}
+
 # --- Malformed input: silent exit 0 ---
 
 @test "non-JSON stdin defers" {

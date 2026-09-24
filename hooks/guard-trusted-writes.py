@@ -50,12 +50,15 @@ one many ways. The global tier is therefore decided by CO-OCCURRENCE in the text
           (`.claude/wt-*`, `.claude/worktrees/*`) was tried and withdrawn after
           three review passes each found bypasses (quote-split `..`, `cd ..`/`../`,
           same-command swaps, `-t..`, brace expansion, `env -C`, link-creating
-          tools; docs/reviews/code-fact-check-report*-pass{1,2,3}-*.md), so a
-          worktree Bash write that mentions `.claude` plus a policy name is denied
-          and agents there use Edit/Write or absolute paths.
+          tools; docs/reviews/code-review-rubric-2026-09-23-ans-guard-q048-q050.md),
+          so a worktree Bash write that mentions `.claude` plus a policy name is
+          denied and agents there use Edit/Write, or absolute paths without a
+          policy file name.
           Not gated here: Bash writes to a linked hook's CHECKOUT path (e.g.
-          `echo x > <checkout>/hooks/<name>` on a bare host) get no opinion; only
-          Edit/Write are denied there (N12). Pre-existing, alongside N2/A8.
+          `echo x > <checkout>/hooks/<name>` on a bare host) get no opinion when
+          the command has no `.claude` / config-dir indicator (a checkout under a
+          `.claude/` dir is denied by the rules above); only Edit/Write are
+          always denied there (N12). Pre-existing, alongside N2/A8.
   SOFT  = a CLAUDE.md with no home/global indicator anywhere (Q-035) — matching the
           Edit/Write tier, so a heredoc or commit message that merely names a project
           CLAUDE.md is no longer denied.
@@ -122,12 +125,18 @@ _HARD_DIR_TARGETS = {_safe_resolve(CONFIG_DIR / "hooks")}
 # (resolved tier -> deny). A regular-file copy resolves into the config dir itself,
 # which leaves its checkout original out of the HARD tier, as intended (a
 # CLAUDE.md original still falls to SOFT and asks when tainted).
+# The `try` is per entry (C1): one unreadable entry (is_dir() raising
+# PermissionError) must not stop the scan and leave the entries after it editable.
 try:
-    for _e in (CONFIG_DIR / "hooks").iterdir():
-        _t = _safe_resolve(_e)
-        (_HARD_DIR_TARGETS if _t.is_dir() else _HARD_FILE_TARGETS).add(_t)
+    _hook_entries = list((CONFIG_DIR / "hooks").iterdir())
 except Exception:
-    pass
+    _hook_entries = []
+for _e in _hook_entries:
+    _t = _safe_resolve(_e)
+    try:
+        (_HARD_DIR_TARGETS if _t.is_dir() else _HARD_FILE_TARGETS).add(_t)
+    except Exception:
+        _HARD_FILE_TARGETS.add(_t)   # unknown kind: still guard the exact target
 
 def _rel_under(cand: Path, dirs):
     """Path of `cand` relative to the first of `dirs` that contains it, or None."""
@@ -288,11 +297,17 @@ def main():
         if tier == "hard":
             # deny rules don't cover Bash-mediated writes; block outright.
             # "deny" wins over any auto-approve hook's "allow" (deny > ... > allow).
-            emit("deny", "Bash write to a protected policy file (.claude hooks/settings, global CLAUDE.md). "
-                         "Claude cannot write these: make the change outside Claude, in your own "
-                         "editor or shell, and review it there. If the command only mentions such a "
-                         "path in prose (a heredoc or message), write that text with the Write tool "
-                         "and pass the file instead.")
+            # One text for every target (A1): command text can't tell a project's
+            # own .claude/ from the global one, so the reason must be true for both.
+            # A2: the only file it suggests writing is prose passed as data.
+            emit("deny", "Bash write that names a protected policy file (.claude hooks or settings, "
+                         "or a CLAUDE.md next to a home or .claude reference). Bash can't write these. "
+                         "For a project's or worktree's own .claude/ files or CLAUDE.md, use the Edit "
+                         "or Write tool. For global ones (~/.claude, ~/CLAUDE.md), make the change "
+                         "outside Claude, in your own editor or shell, and review it there. If the "
+                         "path only appears in prose, such as a commit message or PR body, put that "
+                         "prose in a file with the Write tool and pass it with `git commit -F <file>` "
+                         "or `--body-file <file>`.")
         if tier == "soft" and tainted:
             emit("ask", "This session fetched web content and this Bash command writes to a "
                         "trusted-policy file. Review it for injected content before allowing.")
@@ -313,8 +328,9 @@ def main():
             # N15: do not point at the config-dir spelling: permissions.deny blocks it.
             emit("deny", f"This path is a live protected policy file ({Path(fp).name}: a global "
                          "hook, settings or CLAUDE.md, reached here by its real path or through a "
-                         "symlink), so Claude's file tools cannot edit it. Make the change outside "
-                         "Claude, in your own editor or shell, and review it there.")
+                         "symlink), so Claude's file tools cannot edit it. Don't use Bash for it "
+                         "either: make the change outside Claude, in your own editor or shell, "
+                         "and review it there.")
         if tier == "soft" and tainted:
             emit("ask", f"This session fetched web content and this write targets a trusted-policy "
                         f"file ({Path(fp).name}). Review it for injected instructions before allowing.")
