@@ -31,7 +31,7 @@ KEY_CHECK["tc-ma2-one-ci-provider-dominates.md"]="subagents_min:3;;cites_pattern
 
 EXPECTED_VERDICT["tc-ma3-numeric-scale-requested.md"]="numeric 1-5 cells"
 CLAIM_ACCURACY["tc-ma3-numeric-scale-requested.md"]="flaw"  # The user asked for 1-5 scores; SKILL.md Step 2: "If the user requests numeric scoring ... use that scale instead"
-KEY_CHECK["tc-ma3-numeric-scale-requested.md"]="subagents_min:3;;cites_pattern:\|[ *]*(beacon|siren|klaxon)[ *]*\|[ *]*[1-5]( ?/ ?5)?[ *]*(\||[ -]);;no_pattern:\|[ *]*(strong|adequate|weak)[ *]*\|"
+KEY_CHECK["tc-ma3-numeric-scale-requested.md"]="subagents_min:3;;cites_pattern:\|[ *]*(beacon|siren|klaxon)[ *]*\|[ *]*[1-5]( ?/ ?5)?[ *]*(\||[ -]);;no_pattern:\|[ *]*(strong|adequate|weak)[ *]*\|;;format_check"
 
 # --- Negative: a genuine tie must not be called ---
 

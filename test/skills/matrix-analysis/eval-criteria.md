@@ -13,9 +13,8 @@ from the transcript), and each plants one thing the matrix must get right.
 | tc-ma3-numeric-scale-requested.md | 3 | the user asks for 1-5 scores "not words" | ≥3 dispatches; numeric item cells; no Strong/Adequate/Weak cells |
 | tc-ma4-mirrored-tie-no-priority.md | 3 | (negative) Lumen wins latency and tuning, Harrow is 2.6x cheaper, and the user has not ranked cost against speed | ≥3 dispatches; a conditional recommendation ("if cost matters most, Harrow"); no "is the clear winner" claim |
 
-tc-ma1, tc-ma2 and tc-ma4 also run `format_check` (matrix-analysis-format.bats,
-which now honors `REPORT_PATH`). tc-ma3 skips it: the format suite's rating check
-is written for `++/+/-` symbols.
+All four also run `format_check` (matrix-analysis-format.bats, which now honors
+`REPORT_PATH`). Its rating check accepts numeric cells, so tc-ma3 runs it too.
 
 ## Notes
 
