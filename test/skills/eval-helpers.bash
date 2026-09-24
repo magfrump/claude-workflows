@@ -87,9 +87,15 @@ eval_fixture() {
       no_severity:*)
         assert_no_severity "${check#no_severity:}"
         ;;
+      no_verdict:*)
+        assert_no_verdict "${check#no_verdict:}"
+        ;;
       cites_pattern:*)
         local pattern="${check#cites_pattern:}"
         assert_report_matches "$pattern"
+        ;;
+      no_pattern:*)
+        assert_report_not_matches "${check#no_pattern:}"
         ;;
       no_critique)
         assert_no_critique
@@ -184,11 +190,39 @@ assert_no_severity() {
   fi
 }
 
+# Assert no **Verdict:** line carries a value from the given set — the
+# false-positive check for sound fixtures in skills that grade lenses
+# (business-plan-critique-moat's Durable/Plausible/Weak/Absent). A report with
+# no **Verdict:** lines passes. Only the leading word(s) are compared, as in
+# assert_no_severity.
+# Args: $1 = pipe-separated forbidden verdicts (e.g., "Weak|Absent")
+assert_no_verdict() {
+  local forbidden="$1" hits
+  hits=$(echo "$REPORT_CONTENT" | sed -n 's/^\*\*Verdict:\*\* //p' | tr -d '\r' \
+    | grep -iE "^(${forbidden})([^[:alpha:]]|$)" || true)
+  if [ -n "$hits" ]; then
+    echo "Expected no verdict matching /${forbidden}/, got: $(echo "$hits" | tr '\n' ', ')"
+    return 1
+  fi
+}
+
 # Assert the report body matches a case-insensitive pattern.
 assert_report_matches() {
   local pattern="$1"
   if ! echo "$REPORT_CONTENT" | grep -qiE "$pattern"; then
     echo "Report does not match pattern: $pattern"
+    return 1
+  fi
+}
+
+# Assert the report body does not match a case-insensitive pattern — e.g. a
+# stub draft's report must not carry the full critique's section headings, and a
+# complete short draft's report must not carry the stub-skip line.
+assert_report_not_matches() {
+  local pattern="$1" hits
+  hits=$(echo "$REPORT_CONTENT" | grep -iE "$pattern" || true)
+  if [ -n "$hits" ]; then
+    echo "Report matches forbidden pattern /${pattern}/: $(echo "$hits" | head -3)"
     return 1
   fi
 }
