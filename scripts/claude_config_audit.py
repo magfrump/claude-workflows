@@ -126,7 +126,8 @@ SEMANTIC = [(re.compile(p, re.I), why) for p, why in [
 # ---------- traversal -------------------------------------------------------
 SKIP_DIRS = {".git", "node_modules", "dist", "build", "vendor", ".venv", "venv",
              "env", "target", ".next", "out", "coverage", "__pycache__",
-             ".cache", ".pytest_cache", "file-history"}
+             ".cache", ".pytest_cache", "file-history",
+             ".claude-workflows-backup"}  # install.sh's old copies (review A6)
 PLUGIN_DIRS = {"plugins", "marketplace"}
 SKIP_FILES = {"package-lock.json", "yarn.lock", "pnpm-lock.yaml", "cargo.lock"}
 TEXT_EXTS = {".md", ".txt", ".json", ".yaml", ".yml", ".toml", ".sh", ".py",

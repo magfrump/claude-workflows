@@ -1,480 +1,483 @@
+Commit: 9ae6e46
+
 # Code Fact-Check Report
 
-**Commit:** 3e9e448
-**Replication:** k=1 (confirmation pass after the review-fix loop cap)
+**Commit:** 9ae6e46
+**Replication:** k=1 (final confirmation pass)
+**Repository:** claude-workflows, worktree `/workspace/.claude/wt-copyinstall`, branch `ans/copy-install`
+**Scope:** `712c626..9ae6e46`, focused on the 9 fix commits `44c10f5..9ae6e46` that answer `docs/reviews/code-fact-check-report-pass2-44c10f5.md`: `devcontainer-config/install.sh` (all 808 lines read), `README.md`, `docs/decisions/037-bare-host-copy-install.md`, `docs/working/plan-copy-install-bare-host.md`, the fix-commit messages, `test/install-host.bats` (T41–T49), `test/cc-isolated-functions.bats`
+**Checked:** 2026-09-23 (execution timestamps are UTC, 2026-09-24T01:42Z–01:47Z)
+**Total claims checked:** 21
+**Summary:** 12 verified, 3 mostly accurate, 3 stale, 3 incorrect, 0 unverifiable
 
-**Repository:** `/workspace/.claude/wt-guard` (branch `ans/guard-q048-q050`)
-**Scope:** net diff `970e525..3e9e448`: `hooks/guard-trusted-writes.py` (whole file read, 326 lines), `test/hooks/guard-trusted-writes.bats` (+345), `guides/bare-host-hook-wiring.md` (+14), and the commit message of 3e9e448. Also consulted: `hooks/wiring.json`, `README.md` bare-host setup, `hooks/log-usage.sh`, `hooks/log-usage-post.sh`, `docs/reviews/hallucination-patterns.md` (no logged pattern matches any claim below).
-**Checked:** 2026-09-23
-**Total claims checked:** 19
-**Summary:** 11 verified, 4 mostly accurate, 0 stale, 2 incorrect, 2 unverifiable
+Execution provenance. `$CFC` = `/tmp/claude-1000/-workspace/d516ca2c-2abb-4732-a34a-041aa98280c8/scratchpad/cfc-final3`. Each probe is a script `$CFC/<probe>.sh` that sources `$CFC/lib.sh`. The harness pins HOME, CLAUDE_HOME_DIR, CLAUDE_DEVC_CONFIG_DIR, CLAUDE_DEVC_BIN_DIR, TMPDIR and GIT_CONFIG_GLOBAL under `$CFC/run/<probe>/`, unsets CLAUDECODE and CLAUDE_CONFIG_DIR, and runs a copy of the 9ae6e46 `install.sh` in a throwaway git repo whose payload is committed. The y path runs under `script -qec … /dev/null`. No real `~/.claude`, `~/.config` or `~/.local` was touched. Every probe was run as `bash $CFC/<probe>.sh > $CFC/logs/<probe>.txt`, cwd `/workspace`, and exited 0. The logs are in the session scratchpad and are not committed. `setlocale: LC_ALL` warnings are environment noise.
 
-Execution provenance (all runs: cwd `/workspace/.claude/wt-guard`, temp `HOME` under the scratchpad, `CLAUDE_CONFIG_DIR` unset, never the real `~/.claude`). `$S` = `/tmp/claude-1000/-workspace/d516ca2c-2abb-4732-a34a-041aa98280c8/scratchpad/gfc-final`.
+The hallucination pattern log (`docs/reviews/hallucination-patterns.md`) was read first. No claim below matches a logged pattern or is a fabrication, so nothing was appended.
 
-| Run | Command | Exit | Timestamp (UTC) | Output |
-|---|---|---|---|---|
-| E1 | `bash $S/run-bats.sh` (part 1: `bats test/hooks/guard-trusted-writes.bats` at HEAD) | 0 (85/85 ok) | 2026-09-24T00:14:56Z | `$S/bats-head.log` |
-| E2 | `bash $S/run-bats.sh` (part 2: HEAD bats file against the `970e525` hook, `$S/oldtree/`) | 1 (83/85; only tests 77 N12 and 80 N15 fail) | 2026-09-24T00:15:10Z | `$S/bats-old-hook.log` |
-| E3 | `python3 $S/probe.py` (N12 edges, Bash to checkout paths, N15 messages) | 0 | 2026-09-24T00:15:59Z | `$S/probe.log` |
-| E4 | `python3 $S/probe2.py` (hooks/lib and scripts/lib sourced by a linked hook) | 0 | 2026-09-24T00:16:46Z | `$S/probe2.log` |
-| E5 | `python3 $S/probe3.py` (N15 Bash-message remedies) | 0 | 2026-09-24T00:17:36Z | `$S/probe3.log` |
-
-(Timestamps come from the sandbox clock, which reads 2026-09-24 UTC while the session date is 2026-09-23.)
+Rubric rows the fixes closed (claims 3, 4, 6, 9, 11b, 14, 17, 22, 24, 27, 2 of pass 2) are re-checked only where the fix itself is the subject. They are not re-reported as open unless a residue is shown below.
 
 ---
 
-## Claim 1: "Symlinked global files can't be edited from Claude."
+## Claim 1: "An entry `~/.claude` doesn't have yet is listed file by file, with its content shown only when it is 200 lines or fewer."
 
-**Location:** `guides/bare-host-hook-wiring.md:59`
-**Type:** Behavioral
-**Verdict:** Mostly accurate
-**Confidence:** High
-**Verification mode:** executed
-**Legibility-target:** for-author
-**Scope:** Covers the heading's reach against the README bare-host layout; does not establish anything about the devcontainer layout, where hooks is a whole-directory link.
-
-The body below the heading narrows it to `global-instructions/CLAUDE.md` and per-file hook links, and for those the heading holds (Claim 2). As a standalone statement it reads broader than what the code does. On the README layout a linked hook executes checkout code the guard does not tie to it. `hooks/log-usage.sh:11` resolves its own link and sources a sibling from the checkout:
-
-```bash
-# hooks/log-usage.sh:11
-source "$(dirname "$(readlink -f "${BASH_SOURCE[0]}")")/lib/usage-common.sh"
-```
-
-E4 ran Edit against those sourced files in a README-shaped layout (`log-usage.sh` linked per file):
-
-```
-[Edit checkout hooks/log-usage.sh] deny
-[Edit checkout hooks/lib/usage-common.sh] defer
-[Edit checkout scripts/lib/skill-paths.sh] defer
-```
-
-The heading also covers the README's directory links (`README.md:15-24`: `ln -s ~/claude-workflows/skills ~/.claude/skills` and similar). Those are editable from Claude by design (SOFT). (paraphrased — no quote available because this is the SOFT branch of `classify_path`, `hooks/guard-trusted-writes.py:187-196`, applied to a path that the README layout makes live.) Precise version: "Global CLAUDE.md and per-file-linked hooks can't be edited from Claude through their checkout paths; code those hooks source (`hooks/lib/`, `scripts/lib/`) still can."
-
-**Evidence:** `guides/bare-host-hook-wiring.md:59-64`, `hooks/log-usage.sh:11,14`, `hooks/log-usage-post.sh:20`, `README.md:13-30`, `$S/probe2.log`
-
----
-
-## Claim 2: "the guard **denies** Claude's file tools on its checkout copy, in a tainted session or not: `global-instructions/CLAUDE.md` behind a linked `~/.claude/CLAUDE.md`, and every `hooks/<name>` linked one file at a time into `~/.claude/hooks/`"
-
-**Location:** `guides/bare-host-hook-wiring.md:60-64`
+**Location:** `README.md:23-24` (also `devcontainer-config/install.sh:3-4`, `:562-567`)
 **Type:** Behavioral
 **Verdict:** Verified
 **Confidence:** High
 **Verification mode:** executed
 **Legibility-target:** for-orchestrator-synthesis
-**Scope:** Covers Edit/Write/MultiEdit on the checkout CLAUDE.md and on top-level per-file hook links, clean and tainted. It does not establish coverage of a link nested inside a real subdirectory of `~/.claude/hooks/`, which defers (E3), or of files a linked hook sources (Claim 1).
+**Scope:** Covers a new entry's file listing, the content shown for an entry of at most 200 lines, and the omission message above 200. It does not establish that the limit bounds screen output: the count is `wc -l` over the concatenated files, so one very long line counts as one line.
 
-E3 output:
+The code counts and branches as documented:
 
+```bash
+# devcontainer-config/install.sh:580-586
+      lines="$(find "$stage/$name" -type f -exec cat {} + | wc -l)"
+      if [ "$lines" -le "$ADD_MAX_LINES" ]; then
+        review_diff "$view" "$stage" "$name" || true   # $view/$name is absent: all "+" lines
+      else
+        for src in "${CLAUDE_HOME_SRC[@]}"; do [ "$(basename "$src")" = "$name" ] && break; done
+        echo "    (content not shown: $lines lines, over the $ADD_MAX_LINES-line limit for a new entry;" \
+             "it is $src at commit ${STAGED_COMMIT:0:12})" | vis
 ```
-[per-file link target] deny
-[checkout CLAUDE.md] deny
-[checkout CLAUDE.md tainted] deny
-```
+(excerpt ends :586; enclosing `install_claude_home()` continues to :745 — read)
 
-The bats test `Q-050 / N12: a per-file symlinked hook's checkout target is denied` loops `clean`/`sess1` × `Edit Write MultiEdit` and passes in E1. It fails against the 970e525 hook in E2 (test 77), so the per-file part is new behaviour. The CLAUDE.md part already held at 970e525: E3 shows `[old checkout CLAUDE.md] deny`.
+On a first install (`pA`), each one-line entry printed its file list and then `+global instructions`, `+skill a` and so on. A 250-line CLAUDE.md (`pF` F4) printed `(content not shown: 250 lines, over the 200-line limit for a new entry; it is global-instructions/CLAUDE.md at commit f62077b53b42)`.
 
-**Evidence:** `test/hooks/guard-trusted-writes.bats` (Q-050 section), `hooks/guard-trusted-writes.py:125-130,182-183,310-317`, `$S/probe.log`, `$S/bats-head.log`, `$S/bats-old-hook.log`
+**Evidence:** `devcontainer-config/install.sh:562-590`, `README.md:23-24`; commands `bash $CFC/pA.sh` (2026-09-24T01:42:51Z, exit 0) and `bash $CFC/pF.sh` (01:45:44Z, exit 0); output `$CFC/logs/pA.txt`, `$CFC/logs/pF.txt`
 
 ---
 
-## Claim 3: "No deny rule names the checkout path, so deferring would leave it with no gate at all."
+## Claim 2: "Both targets install only **committed** content (the devcontainer config's files as well as those seven): uncommitted changes under those paths are listed as NOT included"
 
-**Location:** `guides/bare-host-hook-wiring.md:64-65`
+**Location:** `README.md:25-28` (also `devcontainer-config/install.sh:45-47`, `:279-283`; commit 942d5de)
+**Type:** Behavioral
+**Verdict:** Verified
+**Confidence:** High
+**Verification mode:** executed
+**Legibility-target:** for-orchestrator-synthesis
+**Scope:** Covers unstaged, staged-only and untracked changes under both targets' payload paths, a detached HEAD and a depth-1 shallow clone. It does not establish content fidelity for a submodule path (Claim 11). It does not cover `install.sh` itself, which runs from the tree, as its header says.
+
+Target 1 now stages every PAYLOAD item from `STAGED_COMMIT` into a private temp dir:
+
+```bash
+# devcontainer-config/install.sh:288-293
+  DC_TMP="$(mktemp -d "${TMPDIR:-/tmp}/cw-devc-stage.XXXXXX")"
+  local stage="$DC_TMP/config"
+  assemble "$stage/claude-home" "${dc_paths[@]}"
+  extract_commit "$STAGED_COMMIT" "$stage" "${dc_paths[@]}"
+  rm -rf "$SRC/claude-home"
+  cp -Rp "$stage/claude-home" "$SRC/claude-home"
+```
+
+`pF` F1 made an unstaged edit to `devcontainer.json`, a staged-only edit to `egress/base.txt`, an untracked `egress/new.txt` and an untracked `skills/a/extra.md`, then ran `--yes`. All four were listed under `WARNING: … They are NOT included`, and none was installed: `installed devcontainer.json: stub devcontainer.json`, and `base.txt` held only `api.anthropic.com`. A detached HEAD (F5) installed with `commit=` equal to `git rev-parse HEAD`. A shallow clone (F6) installed with exit 0.
+
+**Evidence:** `devcontainer-config/install.sh:278-293`, `:180-210`; `bash $CFC/pF.sh` (2026-09-24T01:45:44Z, exit 0), output `$CFC/logs/pF.txt`
+
+---
+
+## Claim 3: "That stops accidental runs, not a determined agent (a pty wrapper and unsetting `CLAUDECODE` get past it)"
+
+**Location:** `README.md:28-30`
+**Type:** Behavioral
+**Verdict:** Verified
+**Confidence:** High
+**Verification mode:** executed
+**Legibility-target:** for-orchestrator-synthesis
+**Scope:** Covers the pass-2 claim 2 wording fix: both measures are needed and together they reach the y prompt from inside this Claude Code session. It does not establish anything about a sandbox that denies `~/.claude` writes.
+
+The two checks are `[ -n "${CLAUDECODE:-}" ]` (`devcontainer-config/install.sh:476`) and `[ ! -t 0 ]` (`:480`). Every y-path probe in this pass ran from inside a Claude Code session as `env -u CLAUDECODE script -qec "$INSTALL" /dev/null` (`$CFC/lib.sh`, `run_pty`), and it reached `Install these files into …? [y/N]` and installed (`pA`).
+
+**Evidence:** `devcontainer-config/install.sh:472-483`, `README.md:28-30`; `bash $CFC/pA.sh` (2026-09-24T01:42:51Z, exit 0), output `$CFC/logs/pA.txt`
+
+---
+
+## Claim 4: "The backups of the last 3 installs are kept (the current run's is never removed)." / "this run's backup is never a candidate … a directory without that stamp … is never removed."
+
+**Location:** `README.md:40-41` (also `devcontainer-config/install.sh:41-42`, `:715-736`; `docs/decisions/037-bare-host-copy-install.md:35`; commit 354b3fd)
+**Type:** Invariant
+**Verdict:** Incorrect
+**Confidence:** High
+**Verification mode:** executed
+**Legibility-target:** for-author
+**Scope:** Covers the prune loop with ordinary names, which works, and with a backup-dir name containing a TAB, which breaks both "never" guarantees. It does not establish how likely such a name is. It needs a same-uid write into `.claude-workflows-backup/`, and anyone who can do that could also delete the backup directly.
+
+The candidate list is tab-separated, and names are filtered for newlines only:
+
+```bash
+# devcontainer-config/install.sh:728-736
+      for d in "$bkroot"/*/; do
+        d="${d%/}"
+        case "$d" in *$'\n'*) continue ;; esac
+        if [ "$d" = "$backup" ] || [ -L "$d" ] || [ -L "$d/.install-stamp" ]; then continue; fi
+        [ -f "$d/.install-stamp" ] || continue
+        e="$(sed -n 's/^installed_epoch=\([0-9][0-9]*\)$/\1/p' "$d/.install-stamp")"
+        [ -n "$e" ] || continue
+        printf '%s\t%s\n' "$e" "${d##*/}"
+      done | LC_ALL=C sort -t "$(printf '\t')" -k1,1nr -k2,2r | tail -n +3 | cut -f2)
+```
+
+A stamped dir named `A<TAB>B` is emitted as `e<TAB>A<TAB>B`. `cut -f2` yields `A`, and `rm -rf "$bkroot/A"` removes a different directory.
+- `pB`: an unstamped dir `zz` was deleted through a stamped low-epoch dir `zz<TAB>victim` (before: `zz$`, `zz^Ivictim$`; after: only `zz^Ivictim$`). The ordinary cases behaved correctly: this run's backup was kept, as were the two highest-epoch earlier ones, even though their names (`29990101…`) sort after it.
+- `pB2`: stamped dirs named `<UTC stamp for each of the next 60 s><TAB>x` were planted. This run's backup was deleted right after it was announced: `CURRENT BACKUP …/20260924T014338Z IS GONE`, with `Backups: … (61 older removed)`. The planted dirs themselves survive, so the "removed" count is also wrong.
+
+Fix shape: skip names containing a tab (as newlines are skipped), or carry names NUL-delimited.
+
+**Evidence:** `devcontainer-config/install.sh:715-737`; `bash $CFC/pB.sh` (2026-09-24T01:43:18Z, exit 0) and `bash $CFC/pB2.sh` (01:43:38Z, exit 0), output `$CFC/logs/pB.txt`, `$CFC/logs/pB2.txt`
+
+---
+
+## Claim 5: "A destination path holding a newline or other control character is refused." / has_ctrl: "C0 (newline and tab included), DEL, or a UTF-8-encoded C1"
+
+**Location:** `devcontainer-config/install.sh:48` (also `:747-754`, `:779-791`; commit 780d045)
+**Type:** Behavioral
+**Verdict:** Verified
+**Confidence:** High
+**Verification mode:** executed
+**Legibility-target:** for-orchestrator-synthesis
+**Scope:** Covers the literal strings in DEST, BIN_DIR and the host destination, from all four variables and HOME, including under `--yes`. It does not establish that the resolved path is control-free, because a relative destination inherits `$PWD` (Claim 6). A raw single byte 0x80–0x9f is accepted, as commit 780d045's note says.
+
+```bash
+# devcontainer-config/install.sh:752-753
+  [ "$(printf '%s' "$1" | LC_ALL=C tr -d '\001-\037\177')" != "$1" ] && return 0
+  printf '%s' "$1" | LC_ALL=C grep -q $'\xc2[\x80-\x9f]'
+```
+
+In `pC`, each of the following exited 1 with a `%q`-quoted `ERROR: a destination contains a newline or other control character`: a newline in CLAUDE_HOME_DIR, a tab in CLAUDE_DEVC_CONFIG_DIR, DEL in CLAUDE_DEVC_BIN_DIR, `c2 9b` in CLAUDE_HOME_DIR, a trailing newline alone, and a newline in CLAUDE_CONFIG_DIR. Each run had `--yes` and nothing was installed (`devc-exists=no`). An em dash and a raw 0x9b passed the check.
+
+**Evidence:** `devcontainer-config/install.sh:747-754`, `:779-791`; `bash $CFC/pC.sh` (2026-09-24T01:43:52Z, exit 0), output `$CFC/logs/pC.txt`
+
+---
+
+## Claim 6: "`read` splits only the first line; main refuses any destination holding a newline or other control character before this runs (claim 11b)."
+
+**Location:** `devcontainer-config/install.sh:373-374`
+**Type:** Invariant
+**Verdict:** Incorrect
+**Confidence:** High
+**Verification mode:** executed
+**Legibility-target:** for-author
+**Scope:** Covers a relative destination resolved against a `$PWD` that contains a newline. This is a residue of pass-2 claim 11b. It does not establish how likely the trigger is: the human must run from a cwd whose name holds a newline, and the prompt shows the relative `Destination:` line.
+
+`resolve_phys` prefixes `$PWD` to a relative path before the first-line split, and `main` checks only the destination string:
+
+```bash
+# devcontainer-config/install.sh:376-378
+  local p="$1" cur="/" comp parts
+  case "$p" in /*) ;; *) p="$PWD/$p" ;; esac
+  IFS=/ read -ra parts <<< "$p"
+```
+
+In `pG`, the cwd was `$'…/run/pG/nl\n'` and CLAUDE_HOME_DIR was `../repo/inside` (no control character, so `has_ctrl` passes it). The guard resolved only `…/nl`. The run printed `Installed into ../repo/inside.`, and the repo's `git status` then showed `?? inside/`, which held all seven entries and the manifest. Controls: the absolute path to the same place, and `../repo/inside3` from a normal cwd, were both refused with `resolves inside the repo checkout`.
+
+Fix shape: also refuse control characters in `$PWD` when the destination is relative, or resolve relative paths with `cd -P` before `read`.
+
+**Evidence:** `devcontainer-config/install.sh:369-395`, `:495`; `bash $CFC/pG.sh` (2026-09-24T01:46:32Z, exit 0), output `$CFC/logs/pG.txt`
+
+---
+
+## Claim 7: vis "makes control bytes visible (all but newline and tab)"; raw C1 bytes are escaped "only outside a well-formed UTF-8 sequence"
+
+**Location:** `devcontainer-config/install.sh:98-113` (commit 1592d6b)
+**Type:** Behavioral
+**Verdict:** Mostly accurate
+**Confidence:** High
+**Verification mode:** executed
+**Legibility-target:** for-author
+**Scope:** Covers the fix for pass-2 claim 6: raw 0x9b and UTF-8 `c2 9b` become `?`, and an em dash survives. It does not establish the two absolute words: NUL passes through, and the "well-formed" pattern also keeps malformed sequences.
+
+```perl
+# devcontainer-config/install.sh:109-111
+    s/[\x01-\x08\x0b\x0c\x0e-\x1a\x1c-\x1f\x7f]/?/g;
+    s/\xc2[\x80-\x9f]/?/g;
+    s/([\xc2-\xdf][\x80-\xbf]|[\xe0-\xef][\x80-\xbf]{2}|[\xf0-\xf4][\x80-\xbf]{3})|[\x80-\x9f]/defined $1 ? $1 : "?"/ge;
+```
+
+In `pD`, `61 9b 62` became `61 3f 62`, `c2 9b` became `?`, ESC became `^[`, CR became `^M`, a tab was kept, and `e2 80 94` was kept. The following passed through unchanged:
+- `00` (NUL; the class starts at `\x01`)
+- the overlong `e0 80 9b`, the surrogate `ed a0 9b`, and the above-U+10FFFF `f4 90 80 9b`, all malformed UTF-8 that keep a raw 0x9b
+
+The precise wording is: "all but NUL, newline and tab", and "outside a byte pattern shaped like UTF-8". The practical effect is small. Paths cannot hold NUL, a file with NUL diffs as binary, and a UTF-8 terminal renders the malformed sequences as replacement characters.
+
+**Evidence:** `devcontainer-config/install.sh:98-113`; `bash $CFC/pD.sh` (2026-09-24T01:44:46Z, exit 0), output `$CFC/logs/pD.txt`
+
+---
+
+## Claim 8: "Modes are the commit's … tar.umask=022 … tar -p keeps them" and mode_diff prints "a MODE line for each regular file present in both trees whose permission bits differ … Returns 1 when any mode differs."
+
+**Location:** `devcontainer-config/install.sh:146-150`, `:240-262` (commit b01aadb)
+**Type:** Behavioral
+**Verdict:** Verified
+**Confidence:** High
+**Verification mode:** executed
+**Legibility-target:** for-orchestrator-synthesis
+**Scope:** Covers extraction modes, the host MODE line, the installed mode and the no-op check after a mode-only commit. It does not establish mode reporting for directories or destination-only empty dirs, which the commit note excludes. On target 1, `chmod +x` on cc-isolated.sh and init-firewall.sh (`:336`) makes a MODE line appear on every run if either is committed 644. The fixture shows this: `init-firewall.sh: 755 -> 644`. The real repo commits both 100755, so it does not arise there.
+
+In `pA`, a first install produced 644 for `hooks/h.sh` and CLAUDE.md, and 755 for `cc-isolated.sh` and `init-firewall.sh`. The fixture's hook stub was committed 644, so 644 is correct for it. After `chmod +x hooks/lib/x.sh` was committed, the host review printed only `MODE …/.claude/hooks/lib/x.sh: 644 -> 755`, the install ran, and `stat` showed 755. The next run printed `(none — the destination already matches the repo)` and `Nothing to install`.
+
+**Evidence:** `devcontainer-config/install.sh:146-150`, `:240-262`, `:600`, `:646`; `bash $CFC/pA.sh` (2026-09-24T01:42:51Z, exit 0), output `$CFC/logs/pA.txt`; `git ls-files -s devcontainer-config` (`$CFC/q1.sh`)
+
+---
+
+## Claim 9: "Symlink refusal now also covers target 1's items" (942d5de note); "No symlinks (review R1)"
+
+**Location:** `devcontainer-config/install.sh:158-167`
+**Type:** Behavioral
+**Verdict:** Verified
+**Confidence:** High
+**Verification mode:** executed
+**Legibility-target:** for-orchestrator-synthesis
+**Scope:** Covers a committed symlink under `devcontainer-config/egress` with `--yes`. It does not re-test R1 on the claude-home paths, which pass 2 verified and which this pass leaves unchanged.
+
+`pF` F2 committed `egress/link.txt -> base.txt`. The `--yes` run printed `ERROR: the committed payload contains symlinks, which install.sh never installs:` followed by `egress/link.txt`, exited 1, and left the installed `egress/` unchanged (`before=[base.txt ] after=[base.txt ]`).
+
+**Evidence:** `devcontainer-config/install.sh:158-167`; `bash $CFC/pF.sh` (2026-09-24T01:45:44Z, exit 0), output `$CFC/logs/pF.txt`
+
+---
+
+## Claim 10: "core.quotePath=true makes git C-quote every control or non-ASCII byte … so each entry is one line; the listing also goes through vis."
+
+**Location:** `devcontainer-config/install.sh:188-199` (commit d91e8de)
+**Type:** Behavioral
+**Verdict:** Verified
+**Confidence:** High
+**Verification mode:** executed
+**Legibility-target:** for-orchestrator-synthesis
+**Scope:** Covers the WARNING listing for both status calls. It does not establish anything about other git output.
+
+```bash
+# devcontainer-config/install.sh:193, :199
+  dirty="$(git -C "$REPO_ROOT" -c core.quotePath=true status --porcelain --untracked-files=all -- "${CLAUDE_HOME_SRC[@]}" "$@")"
+    printf '%s\n' "$dirty" | sed 's/^/           /' | vis
+```
+
+T48, which sets `core.quotePath=false` and a U+009B file name, fails on 44c10f5 and passes on 9ae6e46 (Claim 19). `pF` F1 shows the listing format.
+
+**Evidence:** `devcontainer-config/install.sh:188-200`; `bash $CFC/redgreen.sh` (2026-09-24T01:44:18Z, exit 0), output `$CFC/logs/redgreen.txt`
+
+---
+
+## Claim 11: "dirty=no always: the payload is exactly the commit's content."
+
+**Location:** `devcontainer-config/install.sh:203`
+**Type:** Invariant
+**Verdict:** Mostly accurate
+**Confidence:** High
+**Verification mode:** executed
+**Legibility-target:** for-author
+**Scope:** Covers ordinary blobs and a submodule gitlink. It does not re-test `export-ignore`/`export-subst` attributes, which pass 2 (claim 7) found with the same effect.
+
+`extract_commit` checks existence with `git cat-file -e "$commit:$item"` (`:137`), which a gitlink satisfies, and `git archive` writes a submodule as an empty directory. In `pH`, `skills/sub` was committed as mode `160000`. The `--yes` run exited 0 with no ERROR or payload WARNING, and the installed `claude-home/skills/sub` was empty: `[]`. The precise version is: "exactly the commit's blobs; a submodule arrives empty and export attributes apply". Neither case arises in today's repo.
+
+**Evidence:** `devcontainer-config/install.sh:124-168`, `:201-209`; `bash $CFC/pH.sh` (2026-09-24T01:47:21Z, exit 0), output `$CFC/logs/pH.txt`
+
+---
+
+## Claim 12: "the manifest's uncommitted_excluded still counts the seven only" (942d5de note)
+
+**Location:** `devcontainer-config/install.sh:207`
+**Type:** Behavioral
+**Verdict:** Verified
+**Confidence:** High
+**Verification mode:** executed
+**Legibility-target:** for-orchestrator-synthesis
+**Scope:** Covers the count when devcontainer-config and claude-home paths are both dirty. It does not establish that the count is meaningful in the target-1 manifest, where the WARNING lists more entries than it counts.
+
+`home_dirty` is taken over `"${CLAUDE_HOME_SRC[@]}"` only (`:194`), and `:207` counts its lines. In `pF` F1, four entries were listed (three under `devcontainer-config/`, one under `skills/`), and the installed manifest read `uncommitted_excluded=1`.
+
+**Evidence:** `devcontainer-config/install.sh:193-207`; `bash $CFC/pF.sh` (2026-09-24T01:45:44Z, exit 0), output `$CFC/logs/pF.txt`
+
+---
+
+## Claim 13: "this diff is the review gate, so a diff that could not be shown must never reach the [y/N] prompt."
+
+**Location:** `devcontainer-config/install.sh:219-237` (with the perl `vis()` of commit 1592d6b)
+**Type:** Error-handling
+**Verdict:** Incorrect
+**Confidence:** High
+**Verification mode:** executed
+**Legibility-target:** for-author
+**Scope:** Covers the case where the display filter, not diff, fails. perl missing from PATH is the new failure mode introduced by the fix for pass-2 claim 6. It does not establish that any real host lacks perl: Debian, Ubuntu and WSL ship perl-base, and macOS ships perl. The `diff` exit >1 branch still aborts as written.
+
+```bash
+# devcontainer-config/install.sh:227-231
+    rc=0
+    diff -ruN "$dest/$item" "$src/$item" 2>&1 | vis || rc=${PIPESTATUS[0]}
+    case "$rc" in
+      0) ;;
+      1) changed=1 ;;
+```
+
+Only diff's status is inspected. When `vis` fails, the diff text is lost, but diff's exit 1 still counts as "changed". In `pD`, the run used a PATH that had every tool except perl. The host review between the `===` rules consisted only of seven lines of `install.sh: line 107: perl: command not found`: the MODE, MOVE, ADD and diff lines were all gone. It still reached `Install these files into …? [y/N]`. A y would have installed content the human never saw. Fix shape: check `${PIPESTATUS[1]}` (and the other `| vis` sites), or test for perl in `main` before either target.
+
+**Evidence:** `devcontainer-config/install.sh:106-113`, `:215-238`; `bash $CFC/pD.sh` (2026-09-24T01:44:46Z, exit 0), output `$CFC/logs/pD.txt`
+
+---
+
+## Claim 14: payload_hash covers "the provenance manifest's bytes … so its commit= stamp cannot be forged at the prompt either (fact-check claim 14)."
+
+**Location:** `devcontainer-config/install.sh:397-415`, `:649-663`, `:705-710` (commit 979428a)
+**Type:** Invariant
+**Verdict:** Verified
+**Confidence:** High
+**Verification mode:** executed
+**Legibility-target:** for-orchestrator-synthesis
+**Scope:** Covers writes made to the host stage's manifest, a file mode, or file content while the host prompt waits. It does not cover a write landing between the hash (`:521`) and the review display, which commit 979428a's note discloses. It also does not cover target 1, which has no hash (Claim 18).
+
+In `pE`, each tamper was applied at the host prompt: `sed … commit=FORGED` on the stage's `.manifest`, `chmod 755` on the stage's CLAUDE.md, and `echo evil >>` on a skill. Each printed `ERROR: stage changed after review … Nothing was replaced.` and exited 1. The installed manifest kept the real commit, the mode stayed 644, and `evil` was absent. No `.cw-new.*` or lock was left behind.
+
+**Evidence:** `devcontainer-config/install.sh:397-421`, `:518-521`, `:640-663`; `bash $CFC/pE.sh` (2026-09-24T01:45:19Z, exit 0), output `$CFC/logs/pE.txt`
+
+---
+
+## Claim 15: "rm_new_copies replaces the four cleanup loops so every failure path also removes .cw-new.manifest" (979428a)
+
+**Location:** `devcontainer-config/install.sh:417-421`
+**Type:** Error-handling
+**Verdict:** Verified
+**Confidence:** High
+**Verification mode:** static
+**Legibility-target:** for-orchestrator-synthesis
+**Scope:** Covers the four pre-rename failure paths and `host_rollback`. It does not establish cleanup after a `set -e` failure in the post-swap manifest append or rename (`:705-710`), where the seven entries are already installed.
+
+```bash
+# devcontainer-config/install.sh:418-421
+rm_new_copies() {
+  local n
+  for n in "${CLAUDE_HOME_NAMES[@]}" manifest; do rm -rf "${1:?}/.cw-new.$n" 2>/dev/null || true; done
+}
+```
+
+It is called at `:449` (`host_rollback`), `:654` (copy failure), `:659` (hash mismatch) and `:678` (backup mkdir failure). `pE` shows the hash-mismatch path leaves no `.cw-new.*` behind.
+
+**Evidence:** `devcontainer-config/install.sh:417-421`, `:449`, `:653-663`, `:677-681`
+
+---
+
+## Claim 16a: "every non-interactive run (scripts, tests, --yes) is unchanged apart from a blank line and the skip line" / "every existing non-interactive devcontainer run is unchanged apart from two extra lines"
+
+**Location:** `devcontainer-config/install.sh:466-468` (also `docs/decisions/037-bare-host-copy-install.md:33`)
+**Type:** Behavioral
+**Verdict:** Mostly accurate
+**Confidence:** High
+**Verification mode:** executed
+**Legibility-target:** for-author
+**Scope:** True for the host target's own contribution. As a statement about the run it is false, because target 1 changed under C1 and claim 4: `pF` F1 shows it installing committed content only and printing the NOT-included WARNING under `--yes`, and `pC` shows a control-character path now exiting 1. Pass-2 claim 13 carried over. 9ae6e46 updated the plan's Risks but not these two lines.
+
+The skip lines return before any staging (`:472-483`). The precise wording is: "the host target adds only a blank line and the skip line; target 1's own output and behavior changed with committed-only staging (see Risks)".
+
+**Evidence:** `devcontainer-config/install.sh:465-483`; `docs/decisions/037-bare-host-copy-install.md:33`; `$CFC/logs/pF.txt`, `$CFC/logs/pC.txt`
+
+---
+
+## Claim 16b: "The devcontainer target is unchanged for non-interactive runs. A plain run with closed stdin, or with `--yes`, still does exactly what it does today for the devcontainer config."
+
+**Location:** `docs/working/plan-copy-install-bare-host.md:16`
+**Type:** Behavioral
+**Verdict:** Stale
+**Confidence:** High
+**Verification mode:** executed
+**Legibility-target:** for-author
+**Scope:** Covers the plan's Revision section as a description of the current code. It does not dispute that the line was true when the user's answers were recorded.
+
+After 942d5de and 780d045, a `--yes` run does not install an uncommitted `devcontainer.json` or egress edit (`pF` F1). It refuses committed symlinks (F2), refuses control-character destinations (`pC`), and needs a readable HEAD (`devcontainer-config/install.sh:117-121`). The line should point to the Risks entry that now records this.
+
+**Evidence:** `docs/working/plan-copy-install-bare-host.md:16`, `:250`; `$CFC/logs/pF.txt`, `$CFC/logs/pC.txt`
+
+---
+
+## Claim 17: "**GNU tools assumed** by the review fixes: `find -printf`, `head -n -3`, GNU `sed` `\xHH`, `diff`/`sort -z`; and `perl` for `vis()`"
+
+**Location:** `docs/working/plan-copy-install-bare-host.md:247`
+**Type:** Staleness
+**Verdict:** Stale
+**Confidence:** High
+**Verification mode:** static
+**Legibility-target:** for-author
+**Scope:** Covers the tool list against the 808-line install.sh. It does not audit macOS compatibility.
+
+`head -n -3` was replaced by `tail -n +3` in the prune (`devcontainer-config/install.sh:736`). The sed `\xHH` expressions were replaced by perl (`:107-112`). Neither appears in the script (paraphrased — no quote available because the claim is about absence: install.sh's `sed` calls are only `:161`, `:164`, `:199`, `:522`, `:579`, `:733`, none with `\x`, and there is no `head`). The list omits GNU-only `xargs -r` (`:410`). The precise list is: `find -printf`, `sort -z`, `xargs -r`, `diff`, and `perl`.
+
+**Evidence:** `docs/working/plan-copy-install-bare-host.md:247`; `devcontainer-config/install.sh:107-112`, `:161`, `:410`, `:736`
+
+---
+
+## Claim 18: "The devcontainer stage in `$SRC/claude-home` keeps its old exposure; its bless hashes the installed files."
+
+**Location:** `docs/working/plan-copy-install-bare-host.md:254`
+**Type:** Staleness
+**Verdict:** Stale
+**Confidence:** High
+**Verification mode:** executed
+**Legibility-target:** for-author
+**Scope:** Covers where target 1 stages and whether a write made while its prompt waits is installed. It does not establish what the real `cc-isolated.sh --bless` hashes; the fixture uses a stub.
+
+Since 942d5de, target 1 stages the whole payload in `$DC_TMP/config` (`devcontainer-config/install.sh:288-289`). `$SRC/claude-home` is only a mirror. The exposure itself remains and now covers every PAYLOAD item. In `pF` F3, `EVIL.example.com` was appended to the staged `egress/base.txt` while the target-1 prompt waited. After y, the installed `base.txt` ended with `EVIL.example.com`, and the stub printed `BLESS-STUB --bless`. The line should name `$DC_TMP` and say that the exposure covers the egress lists and the firewall.
+
+**Evidence:** `docs/working/plan-copy-install-bare-host.md:254`; `devcontainer-config/install.sh:288-342`; `bash $CFC/pF.sh` (2026-09-24T01:45:44Z, exit 0), output `$CFC/logs/pF.txt`
+
+---
+
+## Claim 19: "one commit per fix, each test-first", with each fix commit stating that its test "failed before" (T41–T49)
+
+**Location:** `docs/working/plan-copy-install-bare-host.md:231-239` (commit bodies 354b3fd, b01aadb, 979428a, 942d5de, 780d045, 1592d6b, d91e8de, 06aa56b)
+**Type:** Reference
+**Verdict:** Verified
+**Confidence:** High
+**Verification mode:** executed
+**Legibility-target:** for-orchestrator-synthesis
+**Scope:** Covers each new test failing against 44c10f5's install.sh and passing against 9ae6e46's, using 9ae6e46's tests. It does not establish that each test fails for the specific defect named rather than for another pre-fix difference.
+
+The 9ae6e46 tree was extracted with 44c10f5's `install.sh` substituted, and `bats --filter 'T4[1-9] '` printed `not ok` for all nine (T41–T49). The same tests with 9ae6e46's install.sh printed `ok` for all nine.
+
+**Evidence:** `bash $CFC/redgreen.sh` (cwd `/workspace`, 2026-09-24T01:44:18Z, exit 0), output `$CFC/logs/redgreen.txt`
+
+---
+
+## Claim 20: Test counts: install-host, cc-isolated-functions, link-claude-home-wiring, hooks (brief: 40/40, 92/92, 14/14, 145/145)
+
+**Location:** `test/install-host.bats:1`, `test/cc-isolated-functions.bats:1`, `test/link-claude-home-wiring.bats:1`, `test/hooks/`
 **Type:** Configuration
 **Verdict:** Verified
 **Confidence:** High
-**Verification mode:** static
-**Legibility-target:** for-orchestrator-synthesis
-**Scope:** Covers the deny list the repo ships in `hooks/wiring.json`. It does not establish what extra rules a user added by hand when merging it.
-
-```json
-// hooks/wiring.json:120-127
-"Edit({{CLAUDE_DIR}}/settings*.json)", "Write({{CLAUDE_DIR}}/settings*.json)",
-"Edit({{CLAUDE_DIR}}/hooks/**)",       "Write({{CLAUDE_DIR}}/hooks/**)",
-"Edit({{CLAUDE_DIR}}/CLAUDE.md)",      "Write({{CLAUDE_DIR}}/CLAUDE.md)",
-"Edit(~/CLAUDE.md)",                   "Write(~/CLAUDE.md)"
-```
-
-(Quoted lines reflowed two per row; the content is verbatim.) Every rule is anchored at `{{CLAUDE_DIR}}` or `~/CLAUDE.md`, and none names a checkout path such as `~/claude-workflows/...`.
-
-**Evidence:** `hooks/wiring.json:115-129`
-
----
-
-## Claim 4: "A hook deny has no approve option"
-
-**Location:** `guides/bare-host-hook-wiring.md:65` (same claim at `hooks/guard-trusted-writes.py:29-30`)
-**Type:** Behavioral
-**Verdict:** Unverifiable
-**Confidence:** Medium
-**Verification mode:** static
-**Legibility-target:** for-orchestrator-synthesis
-**Scope:** Covers only that the hook emits `permissionDecision: "deny"` (`hooks/guard-trusted-writes.py:310-317`). It does not establish how the Claude Code UI presents a hook deny.
-
-The hook side is confirmed: it emits `deny` (E3). Whether the harness offers the user no override is Claude Code runtime behaviour outside the codebase. To verify, trigger the resolved-tier deny in an interactive session and observe the prompt.
-
-**Evidence:** `hooks/guard-trusted-writes.py:73-78,310-317`, `$S/probe.log`
-
----
-
-## Claim 5: "Bash writes to that checkout path (`echo x > <checkout>/hooks/<name>`, `cp`) are NOT gated by this hook, only Edit/Write are: a pre-existing gap, alongside the N2/A8 ones in the hook's TODOs."
-
-**Location:** `guides/bare-host-hook-wiring.md:66-68`
-**Type:** Behavioral
-**Verdict:** Mostly accurate
-**Confidence:** High
-**Verification mode:** executed
-**Legibility-target:** for-author
-**Scope:** Covers Bash writes to a linked hook's checkout path and to the checkout CLAUDE.md. It does not establish other Bash write routes that N2/A8 already list.
-
-The antecedent of "that checkout path" is the whole paragraph, which names both `global-instructions/CLAUDE.md` and linked hooks. For the CLAUDE.md, Bash writes ARE denied: `global-instructions` is a home indicator (`hooks/guard-trusted-writes.py:234-235`), and a `claude.md` mention plus any indicator makes the command HARD:
-
-```python
-# hooks/guard-trusted-writes.py:259-261
-    # R1 / Q-035: CLAUDE.md plus any home/global indicator -> the global file may be meant.
-    if CLAUDE_MD.search(cmd) and HOME_INDICATOR.search(cmd):
-        return "hard"
-```
-
-For hook checkout paths, the claim holds only when the command text carries no `.claude` or config-dir literal. A checkout that lives under a `.claude` dir, as this worktree does, is denied. E3 output:
-
-```
-[bash echo > checkout hook] defer
-[bash cp -> checkout hook] defer
-[bash echo > checkout hook tainted] defer
-[bash echo > checkout CLAUDE.md] deny
-[bash cp -> checkout CLAUDE.md] deny
-[bash checkout under /x/.claude/wt/hooks] deny
-```
-
-"Pre-existing" holds. The Bash tier is unchanged from 970e525 except for the message text: the only Bash-side hunk is `@@ -261,7 +289,10 @@`, the emit string. The N2/A8 TODOs exist at `hooks/guard-trusted-writes.py:200-218`. Precise version: "Bash writes to a linked hook's checkout path (…) are not gated … (Bash writes to the checkout CLAUDE.md are denied)."
-
-**Evidence:** `guides/bare-host-hook-wiring.md:66-68`, `hooks/guard-trusted-writes.py:200-218,234-268`, `$S/probe.log`
-
----
-
-## Claim 6: "Hooks installed as copies are not affected."
-
-**Location:** `guides/bare-host-hook-wiring.md:68-69`
-**Type:** Behavioral
-**Verdict:** Verified
-**Confidence:** High
 **Verification mode:** executed
 **Legibility-target:** for-orchestrator-synthesis
-**Scope:** Covers Edit on the checkout source of a hook copied into `~/.claude/hooks/`, clean and tainted. It does not establish Edit on the copy itself, which is covered HARD and defers to the deny rule by design.
+**Scope:** Covers these four suites at 9ae6e46. It does not cover `scripts/run-tests.sh --fast`. No fix commit in `44c10f5..9ae6e46` states a count. The brief's 40/40 is pass 2's figure at 44c10f5; T41–T49 have been added since.
 
-E3: `[copied hook source] defer`, `[copied hook source tainted] defer`. The bats test `Q-050: a repo hook file with no link into ~/.claude/hooks is not denied` asserts `assert_defer` for `copied.py` clean and tainted, and passes in E1.
+At 9ae6e46 (`bats --tap`, TMPDIR under `$CFC`, 01:42:38Z–01:43:51Z, every suite exit 0), the results were: install-host **49/49** (`grep -c '^@test'` = 49), cc-isolated-functions **92/92**, link-claude-home-wiring **14/14**, `test/hooks/*.bats` **145/145**, with 0 `not ok`.
 
-**Evidence:** `hooks/guard-trusted-writes.py:125-130`, `test/hooks/guard-trusted-writes.bats` (Q-050 section), `$S/probe.log`, `$S/bats-head.log`
-
----
-
-## Claim 7: "The planned copy-based install (edits are committed, then copied into `~/.claude` by `install.sh` after you approve them) removes this: no checkout file will be a live global file."
-
-**Location:** `guides/bare-host-hook-wiring.md:69-71`
-**Type:** Reference / Behavioral
-**Verdict:** Unverifiable
-**Confidence:** Medium
-**Verification mode:** static
-**Legibility-target:** for-orchestrator-synthesis
-**Scope:** Covers only the conditional mechanism (copies do not tie the checkout to the live file; Claim 6). It does not establish that `install.sh` exists or will behave as described, since the claim is about future work.
-
-No `install.sh` exists at 3e9e448. (paraphrased — no quote available because the claim concerns an absent file.) The plan is referenced by commit `e80fa0b` ("docs(questions): file Q-054 to Q-057 from the copy-install plan"). The consequence follows from Claim 6 if every global file becomes a copy. The claim becomes checkable once `install.sh` lands.
-
-**Evidence:** `guides/bare-host-hook-wiring.md:69-71`, commit `e80fa0b`
-
----
-
-## Claim 8: resolved tier docstring — "… a bare host's checkout global-instructions/CLAUDE.md or a hook script linked one file at a time into a real ~/.claude/hooks/ (N12) … the hook returns "deny" itself … A regular-file COPY in ~/.claude leaves its source out of the HARD tier: a copied hook's source is ungated, a copied CLAUDE.md's source is SOFT (ask when tainted)."
-
-**Location:** `hooks/guard-trusted-writes.py:22-33`
-**Type:** Behavioral
-**Verdict:** Verified
-**Confidence:** High
-**Verification mode:** executed
-**Legibility-target:** for-orchestrator-synthesis
-**Scope:** Covers the four named cases (linked CLAUDE.md, per-file hook link, copied hook, copied CLAUDE.md). It does not establish nested links or sourced libraries (Claims 1 and 11).
-
-E3 shows deny for the linked CLAUDE.md and the per-file hook link, and defer for the copied hook clean and tainted. For the copied CLAUDE.md, the bats test `Q-050: with a regular-file ~/.claude/CLAUDE.md copy, the checkout file is not denied` asserts `assert_defer` clean and `assert_decision ask` tainted, and passes in E1. The SOFT outcome comes from the filename rule:
-
-```python
-# hooks/guard-trusted-writes.py:192-194
-        if name in ("claude.md", "agents.md", "claude.local.md", "managed-settings.json") \
-                or cand.suffix.lower() == ".mdc":
-            return "soft"
-```
-
-**Evidence:** `hooks/guard-trusted-writes.py:22-33,162-197`, `$S/probe.log`, `$S/bats-head.log`
-
----
-
-## Claim 9a: "No worktree exemption: Q-048 [2]'s exemption for agent worktrees (`.claude/wt-*`, `.claude/worktrees/*`) was tried and withdrawn … so a worktree Bash write that mentions `.claude` plus a policy name is denied"
-
-**Location:** `hooks/guard-trusted-writes.py:49-54`
-**Type:** Behavioral / Staleness
-**Verdict:** Verified
-**Confidence:** High
-**Verification mode:** executed
-**Legibility-target:** for-orchestrator-synthesis
-**Scope:** Covers the absence of any worktree code path and Bash-tier behaviour identical to 970e525 on every Q-048 test. It does not establish coverage of Bash routes that were already ungated at 970e525 (N2/A8).
-
-A grep for `wt-|worktree|neutral` in the hook matches only docstring lines 49, 50 and 54. (paraphrased — no quote available because this is an absence-of-code claim.) `bash_targets` (`hooks/guard-trusted-writes.py:253-268`) has no worktree branch:
-
-```python
-# hooks/guard-trusted-writes.py:253-258
-def bash_targets(cmd: str):
-    has_write = bool(WRITE_PRIMITIVE.search(cmd))
-    if not has_write:
-        return None
-    if HARD_FRAG.search(cmd):
-        return "hard"
-(excerpt ends :258; enclosing bash_targets() continues to :268 — read)
-```
-
-`git diff 970e525 3e9e448 -- hooks/guard-trusted-writes.py` has five hunks. Two are docstring, one is the N12 block, and two are emit strings; none touches `bash_targets` or its regexes. E2 ran the HEAD bats file against the 970e525 hook. Every Q-048 test passed there, including the four flipped ones, all pass-1/2/3 bypass sets and the no-policy-name defer. The only failures were tests 77 (N12) and 80 (N15). So the flipped tests match 970e525 behaviour exactly.
-
-**Evidence:** `hooks/guard-trusted-writes.py:49-55,219-268`, `$S/bats-head.log`, `$S/bats-old-hook.log`
-
----
-
-## Claim 9b: "docs/reviews/code-fact-check-report*-pass{1,2,3}-*.md"
-
-**Location:** `hooks/guard-trusted-writes.py:53`
-**Type:** Reference
-**Verdict:** Mostly accurate
-**Confidence:** High
-**Verification mode:** static
-**Legibility-target:** for-author
-**Scope:** Covers what the glob resolves to in the committed tree at 3e9e448 and in the working tree. It does not establish whether the reports are committed before merge.
-
-The reports this glob means (`code-fact-check-report-r{1,2,3}-pass{1,2,3}-<sha>.md`, `-pass1-035869c.md`) exist in the worktree but are **untracked** (`git status`: `?? docs/reviews/code-fact-check-report-r1-pass1-035869c.md`, …). The only tracked files the glob matches are `code-fact-check-report-pass2-r{1,2,3}.md`, which are unrelated cc-isolated reports (`**Commit:** 6edaa21`, branch `harden/cc-isolated-egress`, last touched in `5ec95c5`). As committed, the pointer reaches the wrong reports. It becomes accurate once the pass reports are committed. A narrower glob such as `code-fact-check-report-r*-pass*-*.md` would also avoid the pass2-r* collision.
-
-**Evidence:** `hooks/guard-trusted-writes.py:53`, `docs/reviews/code-fact-check-report-pass2-r1.md:3-5`
-
----
-
-## Claim 9c: "… and agents there use Edit/Write or absolute paths."
-
-**Location:** `hooks/guard-trusted-writes.py:54-55`
-**Type:** Behavioral
-**Verdict:** Incorrect
-**Confidence:** High
-**Verification mode:** executed
-**Legibility-target:** for-author
-**Scope:** Covers the "absolute paths" remedy for the case the sentence describes (a worktree Bash write naming `.claude` plus a policy name). It does not dispute the Edit/Write remedy, which works (SOFT: defer, or ask when tainted).
-
-An absolute worktree path still contains `.claude`, so an absolute-path Bash write that names a policy file is denied. The branch pins this itself: the test `Q-048 withdrawn: plain absolute worktree policy writes are denied, look-alike words or not` asserts deny for `"echo x > $wt/hooks/x.sh"` with `wt="$REPO/.claude/wt-foo"`, and passes in E1. E5: `[Bash echo > /srv/proj/.claude/wt-foo/hooks/x.sh] deny`. An agent that follows this advice is denied again. The commit message of 3e9e448 has the precise form ("use Edit/Write or absolute paths without a policy name for Bash"). The docstring dropped the qualifier, and absolute paths add nothing: any worktree Bash write that names no policy file defers, relative or not.
-
-**Evidence:** `hooks/guard-trusted-writes.py:54-55,253-268`, `test/hooks/guard-trusted-writes.bats` ("plain absolute worktree policy writes are denied"), `$S/probe3.log`, `$S/bats-head.log`
-
----
-
-## Claim 10: "Not gated here: Bash writes to a linked hook's CHECKOUT path (e.g. `echo x > <checkout>/hooks/<name>` on a bare host) get no opinion; only Edit/Write are denied there (N12). Pre-existing, alongside N2/A8."
-
-**Location:** `hooks/guard-trusted-writes.py:56-58`
-**Type:** Behavioral
-**Verdict:** Mostly accurate
-**Confidence:** High
-**Verification mode:** executed
-**Legibility-target:** for-author
-**Scope:** Covers Bash writes to a linked hook's checkout path. It does not establish anything about the checkout CLAUDE.md (correctly outside this sentence; Bash writes to it are denied, per pass-3 r3).
-
-Unlike the guide (Claim 5), this sentence is scoped precisely to a *linked hook's* checkout path, so it does not contradict the checkout-CLAUDE.md denial. One qualifier is missing: "no opinion" holds only when the command names no `.claude` or config-dir literal. A checkout under a `.claude` dir (such as `/workspace/.claude/wt-guard/hooks/<name>`) is denied through `SETTINGS_OR_HOOKS` + `CFG_INDICATOR`:
-
-```python
-# hooks/guard-trusted-writes.py:262-264
-    # A10: settings*.json / hooks plus the config dir named anywhere.
-    if SETTINGS_OR_HOOKS.search(cmd) and CFG_INDICATOR.search(cmd):
-        return "hard"
-```
-
-E3: `[bash echo > checkout hook] defer`, `[bash checkout under /x/.claude/wt/hooks] deny`, `[bash checkout under $HOME (no .claude)] defer`. The gap is in the fail-open direction, but only for the common checkout location.
-
-**Evidence:** `hooks/guard-trusted-writes.py:56-58,238-268`, `$S/probe.log`
-
----
-
-## Claim 11: N12 comment — "resolve each entry: a checkout file that IS a live hook is HARD (resolved tier -> deny). A regular-file copy resolves into the config dir itself, which leaves its checkout original out of the HARD tier, as intended (a CLAUDE.md original still falls to SOFT and asks when tainted)."
-
-**Location:** `hooks/guard-trusted-writes.py:119-130`
-**Type:** Behavioral
-**Verdict:** Verified
-**Confidence:** High
-**Verification mode:** executed
-**Legibility-target:** for-orchestrator-synthesis
-**Scope:** Covers the one-level per-entry resolution shown below. It does not establish: nested links inside a real subdirectory (not resolved: defer); files sourced by a linked hook (Claim 1); or the effect of an exception on one entry. The loop-level `except Exception: pass` abandons the remaining entries, which was static-read only.
-
-```python
-# hooks/guard-trusted-writes.py:125-130
-try:
-    for _e in (CONFIG_DIR / "hooks").iterdir():
-        _t = _safe_resolve(_e)
-        (_HARD_DIR_TARGETS if _t.is_dir() else _HARD_FILE_TARGETS).add(_t)
-except Exception:
-    pass
-```
-
-Per-case behaviour, E3 (and E1 for the named bats tests):
-
-| Case | Result |
-|---|---|
-| per-file link | target file denied (`[per-file link target] deny`) |
-| directory link (`hooks/lib -> <co>/hooks/subdir`) | whole target dir HARD: existing and new files denied (`[dir-link target, new file inside] deny`) |
-| dangling link | its nonexistent target is HARD: creating it is denied (`[dangling link target (nonexistent)] deny`) |
-| `~/.claude/hooks` itself a symlink | target dir already HARD via `_HARD_DIR_TARGETS` (`:118`); `iterdir` follows it (`[hooks-dir-link target new file] deny`) |
-| nested link in a real subdir | not resolved (`[nested link inside real subdir] defer`) |
-| copy | checkout source defers (`[copied hook source] defer`) |
-| no `~/.claude/hooks` | `iterdir` raises, caught, no change (`[no hooks dir, unrelated edit] defer`) |
-
-The comment names only the per-file and copy cases, and both match. The dir-link, dangling and hooks-symlink outcomes are not described but are consistent with "resolve each entry". The dangling case is stricter than "IS a live hook", since the target does not exist yet; that errs toward denying.
-
-**Evidence:** `hooks/guard-trusted-writes.py:100-130,182-183`, `$S/probe.log`, `$S/bats-head.log`
-
----
-
-## Claim 12a: Bash deny message — "Claude cannot write these: make the change outside Claude, in your own editor or shell, and review it there. If the command only mentions such a path in prose (a heredoc or message), write that text with the Write tool and pass the file instead." (global targets)
-
-**Location:** `hooks/guard-trusted-writes.py:291-295`
-**Type:** Behavioral
-**Verdict:** Verified
-**Confidence:** High
-**Verification mode:** executed
-**Legibility-target:** for-orchestrator-synthesis
-**Scope:** Covers Bash-HARD commands aimed at the global config dir or global CLAUDE.md, and the prose workaround. It does not cover Bash-HARD commands aimed at a project's or worktree's own `.claude/` (Claim 12b).
-
-For global targets the message points at no path (N15), and the global files are closed to Claude: the file tools defer to the deny rules (`:306-309`) or deny (`:310-317`). The prose workaround works. E5: `[Write msg file to scratch] defer`, `[Bash git commit -F msg file] defer`. The bats N15 test asserts `"outside Claude"` in the Bash reason and passes in E1.
-
-**Evidence:** `hooks/guard-trusted-writes.py:285-299,306-317`, `$S/probe3.log`, `$S/bats-head.log`
-
----
-
-## Claim 12b: Bash deny message — "Claude cannot write these: make the change outside Claude" (project / worktree `.claude` targets)
-
-**Location:** `hooks/guard-trusted-writes.py:291-293`
-**Type:** Behavioral
-**Verdict:** Incorrect
-**Confidence:** High
-**Verification mode:** executed
-**Legibility-target:** for-author
-**Scope:** Covers the message as shown for Bash writes to a project's own `.claude/settings.json` or `.claude/hooks/` and to agent-worktree paths. It does not establish anything about global targets (Claim 12a).
-
-`HARD_FRAG` matches any `.claude/hooks` or `.claude/settings`, project or global:
-
-```python
-# hooks/guard-trusted-writes.py:248
-HARD_FRAG = re.compile(r"\.claude/hooks(/|\b)|\.claude/settings|managed-settings", re.I)
-```
-
-So a Bash write to a project's `.claude/settings.json`, or into an agent worktree, receives "Claude cannot write these: make the change outside Claude". For the file tools, those paths are SOFT (`:195-196`: `if ".claude" in low: return "soft"`), and Claude can write them. E5:
-
-```
-[Bash echo > /srv/proj/.claude/settings.json] deny
-[Edit /srv/proj/.claude/settings.json (clean)] defer
-[Bash echo > /srv/proj/.claude/wt-foo/hooks/x.sh] deny
-[Edit /srv/proj/.claude/wt-foo/hooks/x.sh (clean)] defer
-```
-
-The message contradicts the hook's own remedy for exactly the withdrawal case: the docstring (`:54-55`) tells worktree agents to use Edit/Write, while the message says to go outside Claude. The replaced 970e525 text ("Edit it directly with review, not via a shell write") was accurate for this subset.
-
-**Evidence:** `hooks/guard-trusted-writes.py:187-196,248,257-258,291-295`, `$S/probe3.log`
-
----
-
-## Claim 13: resolved-tier deny message — "This path is a live protected policy file (…: a global hook, settings or CLAUDE.md, reached here by its real path or through a symlink), so Claude's file tools cannot edit it. Make the change outside Claude, in your own editor or shell, and review it there."
-
-**Location:** `hooks/guard-trusted-writes.py:313-317`
-**Type:** Behavioral
-**Verdict:** Verified
-**Confidence:** High
-**Verification mode:** executed
-**Legibility-target:** for-orchestrator-synthesis
-**Scope:** Covers the message for existing linked targets and its N15 property (no `~/.claude path` pointer). It does not cover wording precision for not-yet-existing files under a directory-link or dangling target: "is a live protected policy file" is loose there.
-
-```python
-# hooks/guard-trusted-writes.py:313-317
-            # N15: do not point at the config-dir spelling: permissions.deny blocks it.
-            emit("deny", f"This path is a live protected policy file ({Path(fp).name}: a global "
-                         "hook, settings or CLAUDE.md, reached here by its real path or through a "
-                         "symlink), so Claude's file tools cannot edit it. Make the change outside "
-                         "Claude, in your own editor or shell, and review it there.")
-```
-
-The N15 bats test asserts the reason lacks `~/.claude path` and contains `outside Claude`. It passes in E1 and fails against 970e525 in E2 (test 80). E3 shows the full text for `linked.sh`.
-
-**Evidence:** `hooks/guard-trusted-writes.py:310-317`, `$S/probe.log`, `$S/bats-head.log`, `$S/bats-old-hook.log`
-
----
-
-## Claim 14: "bash_targets no longer neutralizes `.claude/wt-*` / `.claude/worktrees/*`, so every `.claude` counts as an indicator again, as at 970e525. The worktree helpers and gate are deleted"
-
-**Location:** commit `3e9e448` message
-**Type:** Behavioral / Staleness
-**Verdict:** Verified
-**Confidence:** High
-**Verification mode:** executed
-**Legibility-target:** for-orchestrator-synthesis
-**Scope:** Covers the hook at 3e9e448 against 970e525 on the whole HEAD bats file. It does not establish equivalence on Bash inputs outside that file, although the code-level diff shows no Bash-tier logic change (Claim 9a).
-
-`git diff 053c0b7 3e9e448 --stat` shows `hooks/guard-trusted-writes.py | 147 ++---…` (50 insertions, 173 deletions across two files), and no worktree symbol remains (Claim 9a grep). E2: the 970e525 hook passes every Q-048 test in the HEAD bats file.
-
-**Evidence:** `hooks/guard-trusted-writes.py:253-268`, `$S/bats-old-hook.log`
-
----
-
-## Claim 15: "the four exemption allow tests are flipped to deny; every pass-1 and pass-2 bypass test stays as a deny test; pass-3 routes (-t.., .{,.}, env -C, install, find -delete + cp -P, git checkout, tar -x, cp -rs) are pinned as a new deny test; a worktree write naming no policy file still defers."
-
-**Location:** commit `3e9e448` message
-**Type:** Reference / Behavioral
-**Verdict:** Verified
-**Confidence:** High
-**Verification mode:** executed
-**Legibility-target:** for-orchestrator-synthesis
-**Scope:** Covers the test-file delta 053c0b7→3e9e448 and its pass status. It does not establish whether pass-3 found routes beyond the eight listed.
-
-`git diff 053c0b7 3e9e448 -- test/hooks/guard-trusted-writes.bats` shows exactly four renamed `@test` lines whose bodies change from `assert_defer`/`ask`/exempt to deny (wt-* hooks, worktrees/<name> hooks, worktree CLAUDE.md, plain absolute + look-alikes). It adds two tests (`worktree write naming no policy file is not denied` with `assert_defer`, and `Q-048 pass 3: …`) and removes no other `@test`. The pass-3 test's commands include `-t..`, `.{,.}`, `env -C`, `install -t..`, `find … -delete && cp -P`, `git -C … checkout`, `tar -xf … -C`, `cp -rs`. All pass in E1 and against the 970e525 hook in E2.
-
-**Evidence:** `test/hooks/guard-trusted-writes.bats` (Q-048 sections), `$S/bats-head.log`, `$S/bats-old-hook.log`
-
----
-
-## Claim 16: "guide has no Q-048 text to remove."
-
-**Location:** commit `3e9e448` message (Notes)
-**Type:** Staleness
-**Verdict:** Verified
-**Confidence:** High
-**Verification mode:** static
-**Legibility-target:** for-orchestrator-synthesis
-**Scope:** Covers `guides/bare-host-hook-wiring.md` at 3e9e448. It does not cover other docs or `docs/working/questions.md` entries about Q-048.
-
-`grep -n -iE 'Q-048|worktree' guides/bare-host-hook-wiring.md` returns no lines. (paraphrased — no quote available because this is an absence-of-text claim.)
-
-**Evidence:** `guides/bare-host-hook-wiring.md:1-80`
+**Evidence:** `bash $CFC/suites.sh` (cwd `/workspace`, exit 0); output `$CFC/logs/suites-meta.txt` and `$CFC/logs/{install-host,cc-isolated-functions,link-claude-home-wiring,hooks}.tap`
 
 ---
 
 ## Claims Requiring Attention
 
 ### Incorrect
-- **Claim 9c** (`hooks/guard-trusted-writes.py:54-55`): "agents there use … absolute paths": an absolute worktree path still contains `.claude` and is denied (the branch's own test pins it). Restore the commit message's qualifier ("absolute paths without a policy name"), or drop "or absolute paths".
-- **Claim 12b** (`hooks/guard-trusted-writes.py:291-293`): the Bash deny message tells the user to go "outside Claude" for project and worktree `.claude/settings*.json` / `.claude/hooks/` writes, which Edit/Write can make (SOFT). This contradicts the docstring's Edit/Write remedy for worktrees.
+- **Claim 4** (`devcontainer-config/install.sh:728-736`; README `:40-41`; help `:41-42`; 037 `:35`): a backup-dir name containing a TAB makes `cut -f2` target a different dir. This run's backup was deleted (`pB2`), and so was an unstamped dir (`pB`). Skip tab names, or go NUL-delimited.
+- **Claim 6** (`devcontainer-config/install.sh:373-378`): a relative destination is resolved against `$PWD`, which is not checked for control characters. From a newline-named cwd, `../repo/inside` passed the guard and installed into the checkout (`pG`).
+- **Claim 13** (`devcontainer-config/install.sh:227-231`): a failing `vis` (perl missing) drops the whole review, and the prompt is still reached with content counted as changed. Check `PIPESTATUS[1]`, or require perl before either target.
+
+### Stale
+- **Claim 16b** (`docs/working/plan-copy-install-bare-host.md:16`): "still does exactly what it does today" no longer holds for target 1.
+- **Claim 17** (`docs/working/plan-copy-install-bare-host.md:247`): `head -n -3` and sed `\xHH` are gone and `xargs -r` is missing from the list.
+- **Claim 18** (`docs/working/plan-copy-install-bare-host.md:254`): target 1 stages in `$DC_TMP`, not `$SRC/claude-home`. The unhashed exposure remains and covers the whole payload (`pF` F3).
 
 ### Mostly Accurate
-- **Claim 1** (`guides/bare-host-hook-wiring.md:59`): the heading over-reads. Code sourced by a linked hook (`hooks/lib/`, `scripts/lib/`) stays editable from Claude.
-- **Claim 5** (`guides/bare-host-hook-wiring.md:66-68`): "that checkout path" includes the checkout CLAUDE.md, whose Bash writes ARE denied. Scope the sentence to linked hooks, as the docstring does.
-- **Claim 9b** (`hooks/guard-trusted-writes.py:53`): the report glob matches only untracked files, plus unrelated tracked `pass2-r*` cc-isolated reports. Commit the pass reports or narrow the glob.
-- **Claim 10** (`hooks/guard-trusted-writes.py:56-58`): "no opinion" holds only when the command names no `.claude`/config-dir literal; a checkout under a `.claude` dir is denied.
+- **Claim 7** (`devcontainer-config/install.sh:98-105`): NUL passes, and malformed UTF-8-shaped sequences keep raw 0x9b. Reword "all" and "well-formed".
+- **Claim 11** (`devcontainer-config/install.sh:203`): a submodule path installs as an empty dir, silently.
+- **Claim 16a** (`devcontainer-config/install.sh:466-468`; 037 `:33`): "unchanged" is true only of the host target's contribution. Target 1 changed under C1.
 
 ### Unverifiable
-- **Claim 4** (`guides/bare-host-hook-wiring.md:65`): "no approve option" is Claude Code UI behaviour. Verify by observing a hook deny in an interactive session.
-- **Claim 7** (`guides/bare-host-hook-wiring.md:69-71`): the copy-based `install.sh` does not exist yet. Re-check when it lands.
+- None.
 
 ---
 
 ## Goal-Alignment Note
 
-- **Success criterion (verbatim):** "a markdown report saved at the output path your task names, structured per your skill, beginning with a `Commit: 3e9e448` line."
-- **Answered:** The exemption is gone: no worktree code remains, and the HEAD bats file passes against the 970e525 hook on every Q-048 test (E2), so 970e525's Bash-tier behaviour is restored. The N12 per-entry resolution was executed for per-file, directory, dangling, hooks-as-symlink, nested and copy cases. Both N15 messages and every sentence of the guide paragraph were checked. On brief item 3: the docstring's "Not gated here" sentence is precise about CLAUDE.md, but the guide's version is not (Claim 5).
-- **Out of scope:** security judgement of the remaining ungated routes (nested links, sourced `hooks/lib`, Bash to checkout hooks); these are recorded as facts, not rated.
-- **Escalate:** Claim 12b. The N15 Bash message now gives wrong advice for project and worktree `.claude` writes, the exact case the withdrawal routes to deny. Claim 9b: the docstring's report pointer is dangling unless the pass reports are committed before merge.
+- **Success criterion (verbatim):** "a markdown report saved at the output path your task names, structured per your skill, beginning with a `Commit: 9ae6e46` line."
+- **Answered:** All five brief items.
+  - (1) C1 on both targets: unstaged, staged and untracked changes; manifest fields; detached HEAD; shallow clone; submodule.
+  - (2)–(4) Every second-round fix was executed, and three regressions or residues were found: Claims 4, 6 and 13.
+  - (5) Test counts were executed, and so were the "failed before" claims for T41–T49.
+- **Out of scope:** R3/R4 lock and signal behavior, re-verified in pass 2 and unchanged by these commits except `rm_new_copies` (Claim 15). Also out of scope: `scripts/run-tests.sh --fast`; the real `cc-isolated.sh --bless`; macOS.
+- **Escalate:** Before the live run (plan step 9), weigh Claim 13 (a review can be silently empty at the prompt if perl is absent; very unlikely on WSL) and Claim 18 (target 1's staged egress lists and firewall can be rewritten by the same uid while its prompt waits, and are then blessed). Claims 4 and 6 need a planted tab-named backup dir or a newline-named cwd. Both are narrow, but each refutes a guarantee stated in the docs.

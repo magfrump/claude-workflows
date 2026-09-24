@@ -1,0 +1,216 @@
+bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+1..144
+bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+ok 1 two numbered items fire the reminder
+bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+ok 2 two hyphen bullets fire the reminder
+bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+ok 3 two • bullets fire the reminder even in the C locale
+bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+ok 4 an explicit multi-item phrasing fires the reminder
+bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+ok 5 a single task stays silent
+bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+ok 6 a single bullet stays silent
+bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+ok 7 malformed input and an empty prompt exit 0 silently
+bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+ok 8 HIGH finding in settings.json → exit 2 with findings on stderr
+ok 9 clean policy file → silent exit 0, auditor was invoked
+ok 10 auditor crash without HIGH banner → silent exit 0 (no false alarm)
+ok 11 gate accepts CLAUDE.md, .claude/ files, skills markdown, .mdc rules
+ok 12 gate skips ordinary source files, even inside skills dirs
+ok 13 non-edit tool (Bash) → silent exit 0, auditor not invoked
+ok 14 malformed payload → silent exit 0
+ok 15 missing file_path / nonexistent file → silent exit 0
+ok 16 missing auditor script → silent exit 0
+ok 17 CLAUDE_CONFIG_AUDIT_DISABLE=1 → silent exit 0, auditor not invoked
+ok 18 the auditor ships in this repo
+ok 19 with no env override the hook resolves the in-repo auditor
+ok 20 real auditor: bypassPermissions directive in settings.json → exit 2
+ok 21 real auditor: hidden bidi override in CLAUDE.md → exit 2
+ok 22 real auditor: a stray invalid-UTF-8 byte does not hide a bidi override
+ok 23 real auditor: undecodable bytes are reported as a MED HIDDEN finding
+ok 24 real auditor: benign settings.json → silent exit 0
+bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+ok 25 plain > to settings.json is denied
+ok 26 >> to settings.json is denied
+ok 27 1> to settings.json is denied (B1 bypass)
+ok 28 1> with no space to settings.json is denied (B1 bypass)
+ok 29 2> to a hooks file is denied (B1 bypass)
+ok 30 &> to settings.json is denied (B1 bypass)
+ok 31 >& FILE (stdout+stderr to a file) to settings.json is denied
+ok 32 >&- (close stdout) on a read of settings.json is not a write
+ok 33 a HARD-path deny holds in an untainted session too
+ok 34 2>&1 on a read of settings.json is not a write
+ok 35 >&2 on a read of settings.json is not a write
+ok 36 2>/dev/null on a read of settings.json is not a write
+ok 37 2>/dev/null on a listing of the hooks dir is not a write
+ok 38 a /dev/null redirect does not mask a later real write
+ok 39 SOFT path write in a tainted session asks
+ok 40 SOFT path write in an untainted session defers
+ok 41 fd-prefixed SOFT path write in a tainted session asks
+ok 42 Write to HARD settings.json defers (never ask; deny rules own it)
+ok 43 Edit to a HARD hooks file defers even when tainted
+ok 44 Write to a SOFT skill file asks when tainted
+ok 45 Write to a SOFT skill file defers when untainted
+ok 46 Write to a project .claude/settings.local.json asks when tainted
+ok 47 Write to a project .claude/settings.local.json defers when untainted
+ok 48 Edit to a project .claude/hooks file asks when tainted
+ok 49 Write to the global ~/.claude/settings.local.json still defers when tainted
+ok 50 Write to the global dir via an absolute HOME path still defers when tainted
+ok 51 CLAUDE_CONFIG_DIR is the global dir when set
+ok 52 a heredoc commit message naming a bare CLAUDE.md is not denied (untainted)
+ok 53 a heredoc naming a bare CLAUDE.md asks, not denies, when tainted
+ok 54 read-only commands on a project CLAUDE.md are not denied
+ok 55 a Bash write to a project CLAUDE.md asks when tainted
+ok 56 a Bash write to the global ~/.claude/CLAUDE.md is still denied
+ok 57 a Bash write to ~/CLAUDE.md, $HOME/CLAUDE.md or ${HOME}/CLAUDE.md is denied
+ok 58 a Bash write to the literal home path CLAUDE.md is denied
+ok 59 a Bash write to global-instructions/CLAUDE.md stays denied (2026-09-12 review)
+ok 60 R1: quoted, doubled-slash, dot-segment and quoted-name spellings are denied
+ok 61 R1: the literal home path with a doubled slash is denied
+ok 62 R1: the global spellings are denied in a tainted session too (not ask)
+ok 63 R1: a heredoc whose prose names ~/.claude/CLAUDE.md is denied (accepted cost)
+ok 64 R1: a bare CLAUDE.md with no home indicator stays SOFT
+ok 65 A10: settings/hooks spellings with .claude anywhere are denied
+ok 66 R3: with CLAUDE_CONFIG_DIR elsewhere, ~/.claude is SOFT (asks when tainted)
+ok 67 R3: an empty CLAUDE_CONFIG_DIR falls back to ~/.claude, as the linker does
+ok 68 R3: a '~' in CLAUDE_CONFIG_DIR is not expanded (the linker doesn't)
+ok 69 R3: managed-settings.json is SOFT for file tools (no deny rule covers it)
+ok 70 R4: symlinked global CLAUDE.md and hooks defer when tainted
+ok 71 R4: the MultiEdit tool and the path key defer on a '..' global path
+ok 72 N1: a project .claude symlinked to ~/.claude is denied on its hooks, CLAUDE.md, settings
+ok 73 N1: the payload CLAUDE.md and hooks by their real path are denied (resolve-only HARD)
+ok 74 N1: a symlinked config dir addressed by its resolved path is denied
+ok 75 N1: case variants are not HARD (deny rules are case-sensitive): SOFT, ask when tainted
+ok 76 N1: a lexical global path still defers, tainted, in the symlink layout
+ok 77 R4: a real (non-symlinked) project .claude still asks when tainted
+ok 78 non-JSON stdin defers
+ok 79 JSON array stdin defers
+ok 80 JSON string stdin defers
+ok 81 non-object tool_input defers
+ok 82 null tool_input defers
+bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+ok 83 blocks a commit of an enforcement file with no Live-verified trailer
+ok 84 passes when the -m message carries the trailer
+ok 85 passes when the trailer is an explicit 'no' with a reason
+ok 86 reads the trailer from a -F message file
+ok 87 blocks when the -F message file lacks the trailer
+ok 88 ignores commits that touch no enforcement file
+ok 89 counts unstaged tracked changes when -a is given
+ok 90 every manifest-hashed file is in the enforcement set
+ok 91 ignores non-commit git commands and non-git commands
+ok 92 leaves an --amend --no-edit alone
+ok 93 a comment-only edit to an egress list passes without a trailer
+ok 94 a diff that changes a comment AND a real line still blocks
+ok 95 commenting OUT an existing allowlist line still blocks
+ok 96 removing a --flag line alongside a comment edit still blocks
+ok 97 a pure whitespace or blank-line change passes
+ok 98 adding a NEW enforcement file whose content is all comments still blocks
+ok 99 the -a path honors the narrowing too
+ok 100 a // comment-only change to devcontainer.json passes
+ok 101 the gate is wired into the live settings.json
+ok 102 malformed input, missing command, and the disable switch all exit 0
+bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+ok 103 skill completion emits skill_completed event
+bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+ok 104 skill completion captures duration_ms when supplied
+bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+ok 105 skill completion captures total_tokens when supplied
+bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+ok 106 missing duration and tokens are omitted, not zeroed
+bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+ok 107 skill completion with no skill name does not log
+bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+ok 108 agent completion uses subagent_type when no frontmatter
+bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+ok 109 agent completion prefers frontmatter name over subagent_type
+bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+ok 110 Bash completion is silently ignored
+bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+ok 111 Read completion is silently ignored
+bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+ok 112 hook exits 0 on malformed JSON
+bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+ok 113 hook exits 0 on empty input
+bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+ok 114 hook produces no stdout
+bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+ok 115 each logged line is valid JSON
+bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+ok 116 post-event name matches pre-event name for the same skill
+bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+ok 117 skill invocation is logged with all fields
+bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+ok 118 skill with no args omits args field
+bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+ok 119 skill with empty name does not log
+bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+ok 120 skill with missing skill field does not log
+bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+ok 121 reading a workflow file is logged
+bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+ok 122 workflow name is extracted from basename without .md
+bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+ok 123 project-local workflow files are also logged
+bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+ok 124 agent with skill frontmatter in prompt is logged as agent_skill
+bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+ok 125 agent with no skill frontmatter logs as agent with subagent_type
+bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+ok 126 agent with frontmatter but no name field falls back to agent log
+bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+ok 127 agent extracts first frontmatter name only
+bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+ok 128 a --- rule later in a prompt is not frontmatter
+bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+ok 129 project falls back to the directory name outside a git repo
+bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+ok 130 reading a non-workflow file does not log
+bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+ok 131 reading a skill file is logged with extracted skill name
+bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+ok 132 reading a file with 'workflows' in name but not in a workflows dir does not log
+bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+ok 133 unrecognized tool input does not log
+bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+ok 134 each logged line is valid JSON
+bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+ok 135 hook produces no stdout (never interferes with tool permission)
+bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+ok 136 hook exits 0 on malformed JSON input
+bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+ok 137 hook exits 0 on empty input
+bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+ok 138 hook creates log directory if missing
+bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+ok 139 multiple invocations append to the same log file
+bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+ok 140 skill tool invocation tags via=skill_tool
+bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+ok 141 reading a SKILL.md tags via=file_read
+bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+ok 142 reading a workflow file tags via=file_read
+bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+ok 143 agent dispatch tags via=agent_dispatch
+bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+ok 144 via field absent for legacy callers writing without it

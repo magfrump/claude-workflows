@@ -1,0 +1,44 @@
+bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+== ESC in pgrep cmdline ==
+0
+/bin/bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+/tmp/claude-1000/-workspace/d516ca2c-2abb-4732-a34a-041aa98280c8/scratchpad/cfc-q058/esc.v77byC/fns.sh: line 1: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+ERROR: an agent is running. install.sh installs only while no agent can run, because
+       one could change what you review before it is installed (Q-058).
+       Claude Code processes of uid 1000 (PID and command line):
+           99 /x/claude ^[[2J
+       Stop them: end each Claude Code session (/exit), or kill <PID>.
+       Then rerun install.sh. WHAT
+[exit 1]
+== ESC in container name ==
+/bin/bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+/tmp/claude-1000/-workspace/d516ca2c-2abb-4732-a34a-041aa98280c8/scratchpad/cfc-q058/esc.v77byC/fns.sh: line 1: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+ERROR: an agent is running. install.sh installs only while no agent can run, because
+       one could change what you review before it is installed (Q-058).
+       Running cc-isolated containers (name and project id):
+           evil^[[31m cc-project=1
+       Stop them: docker stop <name>
+       Then rerun install.sh. WHAT
+[exit 1]
+== docker fails with ESC on stderr (two lines) ==
+/bin/bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+/tmp/claude-1000/-workspace/d516ca2c-2abb-4732-a34a-041aa98280c8/scratchpad/cfc-q058/esc.v77byC/fns.sh: line 1: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+NOTE: docker is unreachable (/bin/bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)): cc-isolated containers not checked, treated as none running.
+[exit 0]
+== docker blank lines on stdout, exit 0 ==
+/bin/bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+[exit 0]
+== pgrep exit 2 ==
+/bin/bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+ERROR: pgrep failed (exit 2) while checking for Claude Code sessions (Q-058). WHAT
+[exit 1]
+== pgrep lists own $$ only ==
+bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+/bin/bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+passed
+== docker hangs 30s (timeout 20) ==
+/bin/bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+/tmp/claude-1000/-workspace/d516ca2c-2abb-4732-a34a-041aa98280c8/scratchpad/cfc-q058/esc.v77byC/fns.sh: line 1: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+NOTE: docker is unreachable (/bin/bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)): cc-isolated containers not checked, treated as none running.
+[exit 0]
+elapsed 22s

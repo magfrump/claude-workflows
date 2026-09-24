@@ -1,0 +1,241 @@
+======== E2
+=== Host target: global Claude Code files ======================================
+Destination: /tmp/claude-1000/-workspace/d516ca2c-2abb-4732-a34a-041aa98280c8/scratchpad/fc/exp/E2/home/.claude  (chosen by $CLAUDE_HOME_DIR)
+Canonical (repo):  /tmp/claude-1000/-workspace/d516ca2c-2abb-4732-a34a-041aa98280c8/scratchpad/fc/exp/E2/repo
+
+=== Changes this install would make ===========================================
+--- /tmp/claude-1000/-workspace/d516ca2c-2abb-4732-a34a-041aa98280c8/scratchpad/fc/exp/E2/home/.claude/CLAUDE.md	1969-12-31 16:00:00.000000000 -0800
++++ /tmp/claude-1000/-workspace/d516ca2c-2abb-4732-a34a-041aa98280c8/scratchpad/fc/exp/E2/tmp/cw-host-stage.wOQybQ/payload/CLAUDE.md	2026-09-23 16:34:57.856207473 -0700
+@@ -0,0 +1 @@
++global instructions
+diff -ruN /tmp/claude-1000/-workspace/d516ca2c-2abb-4732-a34a-041aa98280c8/scratchpad/fc/exp/E2/home/.claude/skills/a/SKILL.md /tmp/claude-1000/-workspace/d516ca2c-2abb-4732-a34a-041aa98280c8/scratchpad/fc/exp/E2/tmp/cw-host-stage.wOQybQ/payload/skills/a/SKILL.md
+--- /tmp/claude-1000/-workspace/d516ca2c-2abb-4732-a34a-041aa98280c8/scratchpad/fc/exp/E2/home/.claude/skills/a/SKILL.md	1969-12-31 16:00:00.000000000 -0800
++++ /tmp/claude-1000/-workspace/d516ca2c-2abb-4732-a34a-041aa98280c8/scratchpad/fc/exp/E2/tmp/cw-host-stage.wOQybQ/payload/skills/a/SKILL.md	2026-09-23 16:34:57.857984185 -0700
+@@ -0,0 +1 @@
++skill a
+diff -ruN /tmp/claude-1000/-workspace/d516ca2c-2abb-4732-a34a-041aa98280c8/scratchpad/fc/exp/E2/home/.claude/workflows/w.md /tmp/claude-1000/-workspace/d516ca2c-2abb-4732-a34a-041aa98280c8/scratchpad/fc/exp/E2/tmp/cw-host-stage.wOQybQ/payload/workflows/w.md
+--- /tmp/claude-1000/-workspace/d516ca2c-2abb-4732-a34a-041aa98280c8/scratchpad/fc/exp/E2/home/.claude/workflows/w.md	1969-12-31 16:00:00.000000000 -0800
++++ /tmp/claude-1000/-workspace/d516ca2c-2abb-4732-a34a-041aa98280c8/scratchpad/fc/exp/E2/tmp/cw-host-stage.wOQybQ/payload/workflows/w.md	2026-09-23 16:34:57.859640254 -0700
+@@ -0,0 +1 @@
++workflow
+diff -ruN /tmp/claude-1000/-workspace/d516ca2c-2abb-4732-a34a-041aa98280c8/scratchpad/fc/exp/E2/home/.claude/guides/g.md /tmp/claude-1000/-workspace/d516ca2c-2abb-4732-a34a-041aa98280c8/scratchpad/fc/exp/E2/tmp/cw-host-stage.wOQybQ/payload/guides/g.md
+--- /tmp/claude-1000/-workspace/d516ca2c-2abb-4732-a34a-041aa98280c8/scratchpad/fc/exp/E2/home/.claude/guides/g.md	1969-12-31 16:00:00.000000000 -0800
++++ /tmp/claude-1000/-workspace/d516ca2c-2abb-4732-a34a-041aa98280c8/scratchpad/fc/exp/E2/tmp/cw-host-stage.wOQybQ/payload/guides/g.md	2026-09-23 16:34:57.861219496 -0700
+@@ -0,0 +1 @@
++guide
+diff -ruN /tmp/claude-1000/-workspace/d516ca2c-2abb-4732-a34a-041aa98280c8/scratchpad/fc/exp/E2/home/.claude/patterns/p.md /tmp/claude-1000/-workspace/d516ca2c-2abb-4732-a34a-041aa98280c8/scratchpad/fc/exp/E2/tmp/cw-host-stage.wOQybQ/payload/patterns/p.md
+--- /tmp/claude-1000/-workspace/d516ca2c-2abb-4732-a34a-041aa98280c8/scratchpad/fc/exp/E2/home/.claude/patterns/p.md	1969-12-31 16:00:00.000000000 -0800
++++ /tmp/claude-1000/-workspace/d516ca2c-2abb-4732-a34a-041aa98280c8/scratchpad/fc/exp/E2/tmp/cw-host-stage.wOQybQ/payload/patterns/p.md	2026-09-23 16:34:57.863032077 -0700
+@@ -0,0 +1 @@
++pattern
+diff -ruN /tmp/claude-1000/-workspace/d516ca2c-2abb-4732-a34a-041aa98280c8/scratchpad/fc/exp/E2/home/.claude/hooks/h.sh /tmp/claude-1000/-workspace/d516ca2c-2abb-4732-a34a-041aa98280c8/scratchpad/fc/exp/E2/tmp/cw-host-stage.wOQybQ/payload/hooks/h.sh
+--- /tmp/claude-1000/-workspace/d516ca2c-2abb-4732-a34a-041aa98280c8/scratchpad/fc/exp/E2/home/.claude/hooks/h.sh	1969-12-31 16:00:00.000000000 -0800
++++ /tmp/claude-1000/-workspace/d516ca2c-2abb-4732-a34a-041aa98280c8/scratchpad/fc/exp/E2/tmp/cw-host-stage.wOQybQ/payload/hooks/h.sh	2026-09-23 16:34:57.865068926 -0700
+@@ -0,0 +1,2 @@
++#!/bin/bash
++exit 0
+diff -ruN /tmp/claude-1000/-workspace/d516ca2c-2abb-4732-a34a-041aa98280c8/scratchpad/fc/exp/E2/home/.claude/hooks/lib/x.sh /tmp/claude-1000/-workspace/d516ca2c-2abb-4732-a34a-041aa98280c8/scratchpad/fc/exp/E2/tmp/cw-host-stage.wOQybQ/payload/hooks/lib/x.sh
+--- /tmp/claude-1000/-workspace/d516ca2c-2abb-4732-a34a-041aa98280c8/scratchpad/fc/exp/E2/home/.claude/hooks/lib/x.sh	1969-12-31 16:00:00.000000000 -0800
++++ /tmp/claude-1000/-workspace/d516ca2c-2abb-4732-a34a-041aa98280c8/scratchpad/fc/exp/E2/tmp/cw-host-stage.wOQybQ/payload/hooks/lib/x.sh	2026-09-23 16:34:57.865042827 -0700
+@@ -0,0 +1 @@
++#!/bin/bash
+diff -ruN /tmp/claude-1000/-workspace/d516ca2c-2abb-4732-a34a-041aa98280c8/scratchpad/fc/exp/E2/home/.claude/hooks/wiring.json /tmp/claude-1000/-workspace/d516ca2c-2abb-4732-a34a-041aa98280c8/scratchpad/fc/exp/E2/tmp/cw-host-stage.wOQybQ/payload/hooks/wiring.json
+--- /tmp/claude-1000/-workspace/d516ca2c-2abb-4732-a34a-041aa98280c8/scratchpad/fc/exp/E2/home/.claude/hooks/wiring.json	1969-12-31 16:00:00.000000000 -0800
++++ /tmp/claude-1000/-workspace/d516ca2c-2abb-4732-a34a-041aa98280c8/scratchpad/fc/exp/E2/tmp/cw-host-stage.wOQybQ/payload/hooks/wiring.json	2026-09-23 16:34:57.865119798 -0700
+@@ -0,0 +1 @@
++{"hooks":{}}
+diff -ruN /tmp/claude-1000/-workspace/d516ca2c-2abb-4732-a34a-041aa98280c8/scratchpad/fc/exp/E2/home/.claude/scripts/s.sh /tmp/claude-1000/-workspace/d516ca2c-2abb-4732-a34a-041aa98280c8/scratchpad/fc/exp/E2/tmp/cw-host-stage.wOQybQ/payload/scripts/s.sh
+--- /tmp/claude-1000/-workspace/d516ca2c-2abb-4732-a34a-041aa98280c8/scratchpad/fc/exp/E2/home/.claude/scripts/s.sh	1969-12-31 16:00:00.000000000 -0800
++++ /tmp/claude-1000/-workspace/d516ca2c-2abb-4732-a34a-041aa98280c8/scratchpad/fc/exp/E2/tmp/cw-host-stage.wOQybQ/payload/scripts/s.sh	2026-09-23 16:34:57.866861719 -0700
+@@ -0,0 +1 @@
++#!/bin/bash
+===============================================================================
+
+Install these files into /tmp/claude-1000/-workspace/d516ca2c-2abb-4732-a34a-041aa98280c8/scratchpad/fc/exp/E2/home/.claude? [y/N] Installed into /tmp/claude-1000/-workspace/d516ca2c-2abb-4732-a34a-041aa98280c8/scratchpad/fc/exp/E2/home/.claude.
+
+REMINDER: hooks/wiring.json changed (or was not installed before). Copying the
+hooks does not wire them. Redo guides/bare-host-hook-wiring.md §2 to merge it
+into /tmp/claude-1000/-workspace/d516ca2c-2abb-4732-a34a-041aa98280c8/scratchpad/fc/exp/E2/home/.claude/settings.json.
+[pipeline exit=0]
+--- dest is link? yes
+total 40
+drwxr-xr-x 8 node node 4096 Sep 23 16:34 .
+drwxr-xr-x 6 node node 4096 Sep 23 16:34 ..
+-rw-r--r-- 1 node node  239 Sep 23 16:34 .claude-workflows-manifest
+-rw-r--r-- 1 node node   20 Sep 23 16:34 CLAUDE.md
+drwxr-xr-x 2 node node 4096 Sep 23 16:34 guides
+drwxr-xr-x 3 node node 4096 Sep 23 16:34 hooks
+drwxr-xr-x 2 node node 4096 Sep 23 16:34 patterns
+drwxr-xr-x 2 node node 4096 Sep 23 16:34 scripts
+drwxr-xr-x 3 node node 4096 Sep 23 16:34 skills
+drwxr-xr-x 2 node node 4096 Sep 23 16:34 workflows
+======== E3
+=== Host target: global Claude Code files ======================================
+Destination: /tmp/claude-1000/-workspace/d516ca2c-2abb-4732-a34a-041aa98280c8/scratchpad/fc/exp/E3/home/.claude  (chosen by $CLAUDE_HOME_DIR)
+Canonical (repo):  /tmp/claude-1000/-workspace/d516ca2c-2abb-4732-a34a-041aa98280c8/scratchpad/fc/exp/E3/repo
+
+=== Changes this install would make ===========================================
+WARNING: not in the repo; these will be MOVED to the backup (Q-057):
+MOVE to backup (not in the repo): /tmp/claude-1000/-workspace/d516ca2c-2abb-4732-a34a-041aa98280c8/scratchpad/fc/exp/E3/home/.claude/skills/mine/SKILL.md
+REPLACE symlink /tmp/claude-1000/-workspace/d516ca2c-2abb-4732-a34a-041aa98280c8/scratchpad/fc/exp/E3/home/.claude/hooks/h.sh -> /tmp/claude-1000/-workspace/d516ca2c-2abb-4732-a34a-041aa98280c8/scratchpad/fc/exp/E3/other/h.sh with a copy
+diff -ruN /tmp/claude-1000/-workspace/d516ca2c-2abb-4732-a34a-041aa98280c8/scratchpad/fc/exp/E3/home/.claude/skills/mine/SKILL.md /tmp/claude-1000/-workspace/d516ca2c-2abb-4732-a34a-041aa98280c8/scratchpad/fc/exp/E3/tmp/cw-host-stage.t1hoLM/payload/skills/mine/SKILL.md
+--- /tmp/claude-1000/-workspace/d516ca2c-2abb-4732-a34a-041aa98280c8/scratchpad/fc/exp/E3/home/.claude/skills/mine/SKILL.md	2026-09-23 16:34:58.121010089 -0700
++++ /tmp/claude-1000/-workspace/d516ca2c-2abb-4732-a34a-041aa98280c8/scratchpad/fc/exp/E3/tmp/cw-host-stage.t1hoLM/payload/skills/mine/SKILL.md	1969-12-31 16:00:00.000000000 -0800
+@@ -1 +0,0 @@
+-mine
+diff -ruN /tmp/claude-1000/-workspace/d516ca2c-2abb-4732-a34a-041aa98280c8/scratchpad/fc/exp/E3/home/.claude/hooks/h.sh /tmp/claude-1000/-workspace/d516ca2c-2abb-4732-a34a-041aa98280c8/scratchpad/fc/exp/E3/tmp/cw-host-stage.t1hoLM/payload/hooks/h.sh
+--- /tmp/claude-1000/-workspace/d516ca2c-2abb-4732-a34a-041aa98280c8/scratchpad/fc/exp/E3/home/.claude/hooks/h.sh	2026-09-23 16:34:58.120148541 -0700
++++ /tmp/claude-1000/-workspace/d516ca2c-2abb-4732-a34a-041aa98280c8/scratchpad/fc/exp/E3/tmp/cw-host-stage.t1hoLM/payload/hooks/h.sh	2026-09-23 16:34:58.159620088 -0700
+@@ -1,2 +1,2 @@
+ #!/bin/bash
+-echo DIFFERENT
++exit 0
+===============================================================================
+
+Install these files into /tmp/claude-1000/-workspace/d516ca2c-2abb-4732-a34a-041aa98280c8/scratchpad/fc/exp/E3/home/.claude? [y/N] Aborted. Nothing was changed. (host ~/.claude)
+[pipeline exit=0]
+======== E3b
+=== Host target: global Claude Code files ======================================
+Destination: /tmp/claude-1000/-workspace/d516ca2c-2abb-4732-a34a-041aa98280c8/scratchpad/fc/exp/E3b/home/.claude  (chosen by $CLAUDE_HOME_DIR)
+Canonical (repo):  /tmp/claude-1000/-workspace/d516ca2c-2abb-4732-a34a-041aa98280c8/scratchpad/fc/exp/E3b/repo
+
+=== Changes this install would make ===========================================
+REPLACE symlink /tmp/claude-1000/-workspace/d516ca2c-2abb-4732-a34a-041aa98280c8/scratchpad/fc/exp/E3b/home/.claude/hooks/h.sh -> /tmp/claude-1000/-workspace/d516ca2c-2abb-4732-a34a-041aa98280c8/scratchpad/fc/exp/E3b/repo/hooks/h.sh with a copy
+--- /tmp/claude-1000/-workspace/d516ca2c-2abb-4732-a34a-041aa98280c8/scratchpad/fc/exp/E3b/home/.claude/CLAUDE.md	1969-12-31 16:00:00.000000000 -0800
++++ /tmp/claude-1000/-workspace/d516ca2c-2abb-4732-a34a-041aa98280c8/scratchpad/fc/exp/E3b/tmp/cw-host-stage.pEIOSv/payload/CLAUDE.md	2026-09-23 16:34:58.471424446 -0700
+@@ -0,0 +1 @@
++global instructions
+diff -ruN /tmp/claude-1000/-workspace/d516ca2c-2abb-4732-a34a-041aa98280c8/scratchpad/fc/exp/E3b/home/.claude/skills/a/SKILL.md /tmp/claude-1000/-workspace/d516ca2c-2abb-4732-a34a-041aa98280c8/scratchpad/fc/exp/E3b/tmp/cw-host-stage.pEIOSv/payload/skills/a/SKILL.md
+--- /tmp/claude-1000/-workspace/d516ca2c-2abb-4732-a34a-041aa98280c8/scratchpad/fc/exp/E3b/home/.claude/skills/a/SKILL.md	1969-12-31 16:00:00.000000000 -0800
++++ /tmp/claude-1000/-workspace/d516ca2c-2abb-4732-a34a-041aa98280c8/scratchpad/fc/exp/E3b/tmp/cw-host-stage.pEIOSv/payload/skills/a/SKILL.md	2026-09-23 16:34:58.473117064 -0700
+@@ -0,0 +1 @@
++skill a
+diff -ruN /tmp/claude-1000/-workspace/d516ca2c-2abb-4732-a34a-041aa98280c8/scratchpad/fc/exp/E3b/home/.claude/workflows/w.md /tmp/claude-1000/-workspace/d516ca2c-2abb-4732-a34a-041aa98280c8/scratchpad/fc/exp/E3b/tmp/cw-host-stage.pEIOSv/payload/workflows/w.md
+--- /tmp/claude-1000/-workspace/d516ca2c-2abb-4732-a34a-041aa98280c8/scratchpad/fc/exp/E3b/home/.claude/workflows/w.md	1969-12-31 16:00:00.000000000 -0800
++++ /tmp/claude-1000/-workspace/d516ca2c-2abb-4732-a34a-041aa98280c8/scratchpad/fc/exp/E3b/tmp/cw-host-stage.pEIOSv/payload/workflows/w.md	2026-09-23 16:34:58.474598861 -0700
+@@ -0,0 +1 @@
++workflow
+diff -ruN /tmp/claude-1000/-workspace/d516ca2c-2abb-4732-a34a-041aa98280c8/scratchpad/fc/exp/E3b/home/.claude/guides/g.md /tmp/claude-1000/-workspace/d516ca2c-2abb-4732-a34a-041aa98280c8/scratchpad/fc/exp/E3b/tmp/cw-host-stage.pEIOSv/payload/guides/g.md
+--- /tmp/claude-1000/-workspace/d516ca2c-2abb-4732-a34a-041aa98280c8/scratchpad/fc/exp/E3b/home/.claude/guides/g.md	1969-12-31 16:00:00.000000000 -0800
++++ /tmp/claude-1000/-workspace/d516ca2c-2abb-4732-a34a-041aa98280c8/scratchpad/fc/exp/E3b/tmp/cw-host-stage.pEIOSv/payload/guides/g.md	2026-09-23 16:34:58.476072238 -0700
+@@ -0,0 +1 @@
++guide
+diff -ruN /tmp/claude-1000/-workspace/d516ca2c-2abb-4732-a34a-041aa98280c8/scratchpad/fc/exp/E3b/home/.claude/patterns/p.md /tmp/claude-1000/-workspace/d516ca2c-2abb-4732-a34a-041aa98280c8/scratchpad/fc/exp/E3b/tmp/cw-host-stage.pEIOSv/payload/patterns/p.md
+--- /tmp/claude-1000/-workspace/d516ca2c-2abb-4732-a34a-041aa98280c8/scratchpad/fc/exp/E3b/home/.claude/patterns/p.md	1969-12-31 16:00:00.000000000 -0800
++++ /tmp/claude-1000/-workspace/d516ca2c-2abb-4732-a34a-041aa98280c8/scratchpad/fc/exp/E3b/tmp/cw-host-stage.pEIOSv/payload/patterns/p.md	2026-09-23 16:34:58.477604169 -0700
+@@ -0,0 +1 @@
++pattern
+diff -ruN /tmp/claude-1000/-workspace/d516ca2c-2abb-4732-a34a-041aa98280c8/scratchpad/fc/exp/E3b/home/.claude/hooks/lib/x.sh /tmp/claude-1000/-workspace/d516ca2c-2abb-4732-a34a-041aa98280c8/scratchpad/fc/exp/E3b/tmp/cw-host-stage.pEIOSv/payload/hooks/lib/x.sh
+--- /tmp/claude-1000/-workspace/d516ca2c-2abb-4732-a34a-041aa98280c8/scratchpad/fc/exp/E3b/home/.claude/hooks/lib/x.sh	1969-12-31 16:00:00.000000000 -0800
++++ /tmp/claude-1000/-workspace/d516ca2c-2abb-4732-a34a-041aa98280c8/scratchpad/fc/exp/E3b/tmp/cw-host-stage.pEIOSv/payload/hooks/lib/x.sh	2026-09-23 16:34:58.479182738 -0700
+@@ -0,0 +1 @@
++#!/bin/bash
+diff -ruN /tmp/claude-1000/-workspace/d516ca2c-2abb-4732-a34a-041aa98280c8/scratchpad/fc/exp/E3b/home/.claude/hooks/wiring.json /tmp/claude-1000/-workspace/d516ca2c-2abb-4732-a34a-041aa98280c8/scratchpad/fc/exp/E3b/tmp/cw-host-stage.pEIOSv/payload/hooks/wiring.json
+--- /tmp/claude-1000/-workspace/d516ca2c-2abb-4732-a34a-041aa98280c8/scratchpad/fc/exp/E3b/home/.claude/hooks/wiring.json	1969-12-31 16:00:00.000000000 -0800
++++ /tmp/claude-1000/-workspace/d516ca2c-2abb-4732-a34a-041aa98280c8/scratchpad/fc/exp/E3b/tmp/cw-host-stage.pEIOSv/payload/hooks/wiring.json	2026-09-23 16:34:58.479238021 -0700
+@@ -0,0 +1 @@
++{"hooks":{}}
+diff -ruN /tmp/claude-1000/-workspace/d516ca2c-2abb-4732-a34a-041aa98280c8/scratchpad/fc/exp/E3b/home/.claude/scripts/s.sh /tmp/claude-1000/-workspace/d516ca2c-2abb-4732-a34a-041aa98280c8/scratchpad/fc/exp/E3b/tmp/cw-host-stage.pEIOSv/payload/scripts/s.sh
+--- /tmp/claude-1000/-workspace/d516ca2c-2abb-4732-a34a-041aa98280c8/scratchpad/fc/exp/E3b/home/.claude/scripts/s.sh	1969-12-31 16:00:00.000000000 -0800
++++ /tmp/claude-1000/-workspace/d516ca2c-2abb-4732-a34a-041aa98280c8/scratchpad/fc/exp/E3b/tmp/cw-host-stage.pEIOSv/payload/scripts/s.sh	2026-09-23 16:34:58.480835660 -0700
+@@ -0,0 +1 @@
++#!/bin/bash
+===============================================================================
+
+Install these files into /tmp/claude-1000/-workspace/d516ca2c-2abb-4732-a34a-041aa98280c8/scratchpad/fc/exp/E3b/home/.claude? [y/N] Aborted. Nothing was changed. (host ~/.claude)
+[pipeline exit=0]
+======== E3c
+=== Host target: global Claude Code files ======================================
+Destination: /tmp/claude-1000/-workspace/d516ca2c-2abb-4732-a34a-041aa98280c8/scratchpad/fc/exp/E3c/home/.claude  (chosen by $CLAUDE_HOME_DIR)
+Canonical (repo):  /tmp/claude-1000/-workspace/d516ca2c-2abb-4732-a34a-041aa98280c8/scratchpad/fc/exp/E3c/repo
+
+=== Changes this install would make ===========================================
+REPLACE symlink /tmp/claude-1000/-workspace/d516ca2c-2abb-4732-a34a-041aa98280c8/scratchpad/fc/exp/E3c/home/.claude/CLAUDE.md -> /tmp/claude-1000/-workspace/d516ca2c-2abb-4732-a34a-041aa98280c8/scratchpad/fc/exp/E3c/gone/CLAUDE.md with a copy
+REPLACE symlink /tmp/claude-1000/-workspace/d516ca2c-2abb-4732-a34a-041aa98280c8/scratchpad/fc/exp/E3c/home/.claude/skills -> /tmp/claude-1000/-workspace/d516ca2c-2abb-4732-a34a-041aa98280c8/scratchpad/fc/exp/E3c/gone/skills with a copy
+REPLACE symlink /tmp/claude-1000/-workspace/d516ca2c-2abb-4732-a34a-041aa98280c8/scratchpad/fc/exp/E3c/home/.claude/workflows -> /tmp/claude-1000/-workspace/d516ca2c-2abb-4732-a34a-041aa98280c8/scratchpad/fc/exp/E3c/gone/workflows with a copy
+REPLACE symlink /tmp/claude-1000/-workspace/d516ca2c-2abb-4732-a34a-041aa98280c8/scratchpad/fc/exp/E3c/home/.claude/guides -> /tmp/claude-1000/-workspace/d516ca2c-2abb-4732-a34a-041aa98280c8/scratchpad/fc/exp/E3c/gone/guides with a copy
+REPLACE symlink /tmp/claude-1000/-workspace/d516ca2c-2abb-4732-a34a-041aa98280c8/scratchpad/fc/exp/E3c/home/.claude/patterns -> /tmp/claude-1000/-workspace/d516ca2c-2abb-4732-a34a-041aa98280c8/scratchpad/fc/exp/E3c/gone/patterns with a copy
+REPLACE symlink /tmp/claude-1000/-workspace/d516ca2c-2abb-4732-a34a-041aa98280c8/scratchpad/fc/exp/E3c/home/.claude/hooks -> /tmp/claude-1000/-workspace/d516ca2c-2abb-4732-a34a-041aa98280c8/scratchpad/fc/exp/E3c/gone/hooks with a copy
+REPLACE symlink /tmp/claude-1000/-workspace/d516ca2c-2abb-4732-a34a-041aa98280c8/scratchpad/fc/exp/E3c/home/.claude/scripts -> /tmp/claude-1000/-workspace/d516ca2c-2abb-4732-a34a-041aa98280c8/scratchpad/fc/exp/E3c/gone/scripts with a copy
+--- /tmp/claude-1000/-workspace/d516ca2c-2abb-4732-a34a-041aa98280c8/scratchpad/fc/exp/E3c/home/.claude/CLAUDE.md	1969-12-31 16:00:00.000000000 -0800
++++ /tmp/claude-1000/-workspace/d516ca2c-2abb-4732-a34a-041aa98280c8/scratchpad/fc/exp/E3c/tmp/cw-host-stage.62Pvwn/payload/CLAUDE.md	2026-09-23 16:34:58.766718244 -0700
+@@ -0,0 +1 @@
++global instructions
+diff -ruN /tmp/claude-1000/-workspace/d516ca2c-2abb-4732-a34a-041aa98280c8/scratchpad/fc/exp/E3c/home/.claude/skills/a/SKILL.md /tmp/claude-1000/-workspace/d516ca2c-2abb-4732-a34a-041aa98280c8/scratchpad/fc/exp/E3c/tmp/cw-host-stage.62Pvwn/payload/skills/a/SKILL.md
+--- /tmp/claude-1000/-workspace/d516ca2c-2abb-4732-a34a-041aa98280c8/scratchpad/fc/exp/E3c/home/.claude/skills/a/SKILL.md	1969-12-31 16:00:00.000000000 -0800
++++ /tmp/claude-1000/-workspace/d516ca2c-2abb-4732-a34a-041aa98280c8/scratchpad/fc/exp/E3c/tmp/cw-host-stage.62Pvwn/payload/skills/a/SKILL.md	2026-09-23 16:34:58.769235786 -0700
+@@ -0,0 +1 @@
++skill a
+diff -ruN /tmp/claude-1000/-workspace/d516ca2c-2abb-4732-a34a-041aa98280c8/scratchpad/fc/exp/E3c/home/.claude/workflows/w.md /tmp/claude-1000/-workspace/d516ca2c-2abb-4732-a34a-041aa98280c8/scratchpad/fc/exp/E3c/tmp/cw-host-stage.62Pvwn/payload/workflows/w.md
+--- /tmp/claude-1000/-workspace/d516ca2c-2abb-4732-a34a-041aa98280c8/scratchpad/fc/exp/E3c/home/.claude/workflows/w.md	1969-12-31 16:00:00.000000000 -0800
++++ /tmp/claude-1000/-workspace/d516ca2c-2abb-4732-a34a-041aa98280c8/scratchpad/fc/exp/E3c/tmp/cw-host-stage.62Pvwn/payload/workflows/w.md	2026-09-23 16:34:58.771570377 -0700
+@@ -0,0 +1 @@
++workflow
+diff -ruN /tmp/claude-1000/-workspace/d516ca2c-2abb-4732-a34a-041aa98280c8/scratchpad/fc/exp/E3c/home/.claude/guides/g.md /tmp/claude-1000/-workspace/d516ca2c-2abb-4732-a34a-041aa98280c8/scratchpad/fc/exp/E3c/tmp/cw-host-stage.62Pvwn/payload/guides/g.md
+--- /tmp/claude-1000/-workspace/d516ca2c-2abb-4732-a34a-041aa98280c8/scratchpad/fc/exp/E3c/home/.claude/guides/g.md	1969-12-31 16:00:00.000000000 -0800
++++ /tmp/claude-1000/-workspace/d516ca2c-2abb-4732-a34a-041aa98280c8/scratchpad/fc/exp/E3c/tmp/cw-host-stage.62Pvwn/payload/guides/g.md	2026-09-23 16:34:58.773921881 -0700
+@@ -0,0 +1 @@
++guide
+diff -ruN /tmp/claude-1000/-workspace/d516ca2c-2abb-4732-a34a-041aa98280c8/scratchpad/fc/exp/E3c/home/.claude/patterns/p.md /tmp/claude-1000/-workspace/d516ca2c-2abb-4732-a34a-041aa98280c8/scratchpad/fc/exp/E3c/tmp/cw-host-stage.62Pvwn/payload/patterns/p.md
+--- /tmp/claude-1000/-workspace/d516ca2c-2abb-4732-a34a-041aa98280c8/scratchpad/fc/exp/E3c/home/.claude/patterns/p.md	1969-12-31 16:00:00.000000000 -0800
++++ /tmp/claude-1000/-workspace/d516ca2c-2abb-4732-a34a-041aa98280c8/scratchpad/fc/exp/E3c/tmp/cw-host-stage.62Pvwn/payload/patterns/p.md	2026-09-23 16:34:58.776320904 -0700
+@@ -0,0 +1 @@
++pattern
+diff -ruN /tmp/claude-1000/-workspace/d516ca2c-2abb-4732-a34a-041aa98280c8/scratchpad/fc/exp/E3c/home/.claude/hooks/h.sh /tmp/claude-1000/-workspace/d516ca2c-2abb-4732-a34a-041aa98280c8/scratchpad/fc/exp/E3c/tmp/cw-host-stage.62Pvwn/payload/hooks/h.sh
+--- /tmp/claude-1000/-workspace/d516ca2c-2abb-4732-a34a-041aa98280c8/scratchpad/fc/exp/E3c/home/.claude/hooks/h.sh	1969-12-31 16:00:00.000000000 -0800
++++ /tmp/claude-1000/-workspace/d516ca2c-2abb-4732-a34a-041aa98280c8/scratchpad/fc/exp/E3c/tmp/cw-host-stage.62Pvwn/payload/hooks/h.sh	2026-09-23 16:34:58.778705214 -0700
+@@ -0,0 +1,2 @@
++#!/bin/bash
++exit 0
+diff -ruN /tmp/claude-1000/-workspace/d516ca2c-2abb-4732-a34a-041aa98280c8/scratchpad/fc/exp/E3c/home/.claude/hooks/lib/x.sh /tmp/claude-1000/-workspace/d516ca2c-2abb-4732-a34a-041aa98280c8/scratchpad/fc/exp/E3c/tmp/cw-host-stage.62Pvwn/payload/hooks/lib/x.sh
+--- /tmp/claude-1000/-workspace/d516ca2c-2abb-4732-a34a-041aa98280c8/scratchpad/fc/exp/E3c/home/.claude/hooks/lib/x.sh	1969-12-31 16:00:00.000000000 -0800
++++ /tmp/claude-1000/-workspace/d516ca2c-2abb-4732-a34a-041aa98280c8/scratchpad/fc/exp/E3c/tmp/cw-host-stage.62Pvwn/payload/hooks/lib/x.sh	2026-09-23 16:34:58.778685218 -0700
+@@ -0,0 +1 @@
++#!/bin/bash
+diff -ruN /tmp/claude-1000/-workspace/d516ca2c-2abb-4732-a34a-041aa98280c8/scratchpad/fc/exp/E3c/home/.claude/hooks/wiring.json /tmp/claude-1000/-workspace/d516ca2c-2abb-4732-a34a-041aa98280c8/scratchpad/fc/exp/E3c/tmp/cw-host-stage.62Pvwn/payload/hooks/wiring.json
+--- /tmp/claude-1000/-workspace/d516ca2c-2abb-4732-a34a-041aa98280c8/scratchpad/fc/exp/E3c/home/.claude/hooks/wiring.json	1969-12-31 16:00:00.000000000 -0800
++++ /tmp/claude-1000/-workspace/d516ca2c-2abb-4732-a34a-041aa98280c8/scratchpad/fc/exp/E3c/tmp/cw-host-stage.62Pvwn/payload/hooks/wiring.json	2026-09-23 16:34:58.778721348 -0700
+@@ -0,0 +1 @@
++{"hooks":{}}
+diff -ruN /tmp/claude-1000/-workspace/d516ca2c-2abb-4732-a34a-041aa98280c8/scratchpad/fc/exp/E3c/home/.claude/scripts/s.sh /tmp/claude-1000/-workspace/d516ca2c-2abb-4732-a34a-041aa98280c8/scratchpad/fc/exp/E3c/tmp/cw-host-stage.62Pvwn/payload/scripts/s.sh
+--- /tmp/claude-1000/-workspace/d516ca2c-2abb-4732-a34a-041aa98280c8/scratchpad/fc/exp/E3c/home/.claude/scripts/s.sh	1969-12-31 16:00:00.000000000 -0800
++++ /tmp/claude-1000/-workspace/d516ca2c-2abb-4732-a34a-041aa98280c8/scratchpad/fc/exp/E3c/tmp/cw-host-stage.62Pvwn/payload/scripts/s.sh	2026-09-23 16:34:58.780437720 -0700
+@@ -0,0 +1 @@
++#!/bin/bash
+===============================================================================
+
+Install these files into /tmp/claude-1000/-workspace/d516ca2c-2abb-4732-a34a-041aa98280c8/scratchpad/fc/exp/E3c/home/.claude? [y/N] Aborted. Nothing was changed. (host ~/.claude)
+[pipeline exit=0]
+======== E4
+=== Host target: global Claude Code files ======================================
+Destination: /tmp/claude-1000/-workspace/d516ca2c-2abb-4732-a34a-041aa98280c8/scratchpad/fc/exp/E4/home/.claude  (chosen by $CLAUDE_HOME_DIR)
+Canonical (repo):  /tmp/claude-1000/-workspace/d516ca2c-2abb-4732-a34a-041aa98280c8/scratchpad/fc/exp/E4/repo
+
+=== Changes this install would make ===========================================
+diff -ruN /tmp/claude-1000/-workspace/d516ca2c-2abb-4732-a34a-041aa98280c8/scratchpad/fc/exp/E4/home/.claude/skills/a/SKILL.md /tmp/claude-1000/-workspace/d516ca2c-2abb-4732-a34a-041aa98280c8/scratchpad/fc/exp/E4/tmp/cw-host-stage.ZhA8oG/payload/skills/a/SKILL.md
+--- /tmp/claude-1000/-workspace/d516ca2c-2abb-4732-a34a-041aa98280c8/scratchpad/fc/exp/E4/home/.claude/skills/a/SKILL.md	2026-09-23 16:34:59.043969789 -0700
++++ /tmp/claude-1000/-workspace/d516ca2c-2abb-4732-a34a-041aa98280c8/scratchpad/fc/exp/E4/tmp/cw-host-stage.ZhA8oG/payload/skills/a/SKILL.md	2026-09-23 16:34:59.083166169 -0700
+@@ -1,2 +1 @@
+ skill a
+-old
+===============================================================================
+
+Install these files into /tmp/claude-1000/-workspace/d516ca2c-2abb-4732-a34a-041aa98280c8/scratchpad/fc/exp/E4/home/.claude? [y/N] mv: cannot move '/tmp/claude-1000/-workspace/d516ca2c-2abb-4732-a34a-041aa98280c8/scratchpad/fc/exp/E4/home/.claude/hooks' to '/tmp/claude-1000/-workspace/d516ca2c-2abb-4732-a34a-041aa98280c8/scratchpad/fc/exp/E4/home/.claude/.claude-workflows-backup/20260923T233459Z/hooks': Permission denied
+[pipeline exit=0]
+--- dest after:
+.claude-workflows-backup
+.cw-new.CLAUDE.md
+.cw-new.guides
+.cw-new.hooks
+.cw-new.patterns
+.cw-new.scripts
+.cw-new.skills
+.cw-new.workflows
+hooks
+scripts
+--- backup:
+CLAUDE.md
+guides
+patterns
+skills
+workflows

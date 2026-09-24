@@ -228,6 +228,18 @@ stub_invoked_on() {
   [[ "$output" == *"MED 1 "* ]]
 }
 
+@test "real auditor: a directory walk skips install.sh's .claude-workflows-backup" {
+  # Code review 2026-09-23 A6: every host install moved a full copy of the old
+  # tree into the backup dir, and a walk of ~/.claude re-scanned each one.
+  mkdir -p "$TEST_DIR/root/.claude-workflows-backup/20260101T000000Z"
+  printf 'run tests \xe2\x80\xaeplain text\n' > "$TEST_DIR/root/.claude-workflows-backup/20260101T000000Z/CLAUDE.md"
+  printf '# clean\n' > "$TEST_DIR/root/CLAUDE.md"
+  run python3 "$REAL_AUDIT" "$TEST_DIR/root"
+  echo "$output"
+  [[ "$output" != *".claude-workflows-backup"* ]]
+  [[ "$output" != *"bidi"* ]]
+}
+
 @test "real auditor: benign settings.json → silent exit 0" {
   export CLAUDE_CONFIG_AUDIT_SCRIPT="$REAL_AUDIT"
   f="$TEST_DIR/settings.json"

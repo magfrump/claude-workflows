@@ -1,0 +1,65 @@
+bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+#### old-README per-file hooks present in repo at d0fdd04?
+present log-usage.sh
+present log-usage-post.sh
+present dd-routing-reminder.sh
+present batch-feedback-routing-reminder.sh
+present claude-config-audit.sh
+present guard-trusted-writes.py
+present web-taint-mark.py
+present auto-approve-allowed-commands.sh
+present live-verify-gate.sh
+#### e5b final dest
+.claude-workflows-backup
+.claude-workflows-manifest
+#### 712c626 vs 1514518: closed-stdin, --yes, --help, --yes extra
+== args[]
+SAME
+== args[--yes]
+SAME
+== args[--help]
+2,3c2
+< Canonical (repo):  <R>/devcontainer-config
+< Installed (host):  <R>/home/cd
+---
+> Usage: devcontainer-config/install.sh [--yes]
+5c4,6
+< First install — <R>/home/cd does not exist yet.
+---
+> Installs the devcontainer config into ~/.config/claude-devcontainer (or
+> $CLAUDE_DEVC_CONFIG_DIR) after showing a review diff and asking y/N, then
+> blesses it.
+7,8c8,10
+< Install this config and bless it? [y/N] Aborted. Nothing was changed.
+< rc=1
+---
+> 
+> Exit status: 0 installed; 1 declined, or an error; 2 bad arguments.
+> rc=0
+== args[--yes_extra]
+2,3c2,3
+< Canonical (repo):  <R>/devcontainer-config
+< Installed (host):  <R>/home/cd
+---
+> install.sh: unknown argument: extra
+> Usage: devcontainer-config/install.sh [--yes]
+5c5,7
+< First install — <R>/home/cd does not exist yet.
+---
+> Installs the devcontainer config into ~/.config/claude-devcontainer (or
+> $CLAUDE_DEVC_CONFIG_DIR) after showing a review diff and asking y/N, then
+> blesses it.
+7d8
+< Linked <R>/home/bin/cc-isolated -> <R>/home/cd/cc-isolated.sh
+9,16c10,11
+< bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+< BLESS-STUB --bless
+< 
+< Done. Blessed, NOT verified: a bless is a review of files, not a test of a container.
+< Next steps:
+< 
+< WARNING: <R>/home/bin is not on your PATH — add it, or call <R>/home/cd/cc-isolated.sh directly.
+< rc=0
+---
+> Exit status: 0 installed; 1 declined, or an error; 2 bad arguments.
+> rc=2

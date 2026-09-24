@@ -1,0 +1,91 @@
+1..90
+ok 1 resolve_workspace returns the git toplevel for a path inside a repo
+ok 2 resolve_workspace fails loudly outside a git repo instead of guessing
+ok 3 resolve_workspace fails on a nonexistent directory
+ok 4 resolve_workspace defaults to $PWD when given no argument
+ok 5 project_id differs for same-basename repos at different paths
+ok 6 project_id is stable for the same path
+ok 7 ws_fingerprint differs between two different repos
+ok 8 ws_fingerprint is stable for the same repo
+ok 9 compute_manifest covers the config files and the egress profiles
+ok 10 compute_manifest fails when an enforcement file is missing
+ok 11 check_manifest fails with instructions when nothing is blessed
+ok 12 check_manifest passes after bless with unchanged files
+ok 13 check_manifest fails after the firewall script is tampered with
+ok 14 check_manifest fails when the launcher itself is tampered with
+ok 15 check_manifest fails when an egress profile gains a domain
+ok 16 check_manifest fails when an unblessed project profile appears
+ok 17 re-bless after a reviewed change makes check_manifest pass again
+ok 18 an unregistered project gets the base profile only
+ok 19 register_project records the profile and re-blesses
+ok 20 register_project rejects an unknown profile before writing anything
+ok 21 register_project prints the profile transition, not just the result
+ok 22 register_project names a profile the replacement drops
+ok 23 register_project says so when the profile is unchanged
+ok 24 rebuild_hint carries both localEnv assignments into the by-hand command
+ok 25 rebuild_hint's by-hand command, when run, sets every launcher-set localEnv var and keeps args intact
+ok 26 --profile with no value is a usage error, not a silent exit
+ok 27 rebuild_hint names the launcher before the by-hand form
+ok 28 usage prints the whole header block, including its last line
+ok 29 suggest_profiles proposes python for a python repo but never applies it
+ok 30 suggest_profiles proposes rust for a cargo repo but never applies it
+ok 31 suggest_profiles proposes lean for a repo with the toolchain pin
+ok 32 suggest_profiles proposes lean for a lakefile.toml repo (current Lake format)
+ok 33 suggest_profiles proposes lean for a lakefile.lean repo (older Lake format)
+ok 34 suggest_profiles proposes android for a gradle repo (Kotlin DSL)
+ok 35 suggest_profiles proposes android for a repo with just the gradle wrapper
+ok 36 suggest_profiles proposes dotnet for a Unity project root
+ok 37 suggest_profiles proposes dotnet for a repo with a top-level csproj
+ok 38 suggest_profiles is silent for a plain repo
+ok 39 base profile alone yields the base allowlist and nothing else
+ok 40 a python project gets PyPI on top of base
+ok 41 one project's profile does not widen another's (H5)
+ok 42 profiles compose
+ok 43 an android project gets Google Maven, Maven Central, and Gradle on top of base
+ok 44 a dotnet project gets NuGet on top of base, and only NuGet
+ok 45 an unknown profile is a hard failure, not a silently narrower allowlist
+ok 46 a missing profile file degrades to base, not to empty
+ok 47 devcontainer.json anchors build.dockerfile to the config dir, not the repo
+ok 48 devcontainer.json anchors build.context to the config dir, not the repo
+ok 49 the launcher exports CC_CONFIG_DIR (else the build paths resolve to /)
+ok 50 Dockerfile copies the claude-home payload into the image
+ok 51 the payload is baked outside /home/node/.claude (a volume would shadow it)
+ok 52 the payload is root-owned and not writable by node
+ok 53 hook scripts in the payload stay executable
+ok 54 postStartCommand links the payload after the firewall, not before
+ok 55 install.sh stages the payload from the repo root
+ok 56 install.sh aborts when a payload source is missing
+ok 57 install.sh names every missing payload source, not just the first
+ok 58 install.sh assembles the payload when every source is present
+ok 59 install.sh review diff shows the CONTENT of a new file inside a payload dir
+ok 60 install.sh review diff shows a new top-level payload item, not nothing
+ok 61 install.sh aborts before the prompt when the review diff itself fails
+ok 62 link-claude-home refuses to clobber a real file in the volume
+ok 63 link-claude-home links the payload and is idempotent
+ok 64 link-claude-home is a no-op when the payload is absent (non-cc-isolated host)
+ok 65 Gate 1h loads the review skill from the baked payload, not the branch
+ok 66 Gate 1h pins an explicit reviewer model
+ok 67 Gate 1h archives review artifacts before the worktree is torn down
+ok 68 Gate 1h fails closed on reviewer error and on an unparseable verdict
+ok 69 Gate 1h passes a per-run nonce the branch cannot know
+ok 70 every regular file in install.sh's PAYLOAD is hashed by enforcement_files
+ok 71 claude-home files are hashed file by file when present
+ok 72 compute_manifest covers claude-home even when projects/ is empty, under errexit
+ok 73 a symlink in claude-home is blessed by its target and a repoint trips the manifest
+ok 74 a symlinked enforcement file is hashed by content as well as by target
+ok 75 compute_manifest fails when enforcement_files fails
+ok 76 H6 passes and stamps the host's project id on a correct container
+ok 77 H6 fails when the container's CC_PROJECT_ID is empty (no empty stamp)
+ok 78 H6 fails on a volume stamped for another project even if the container agrees with it
+ok 79 H6 fails on an empty stamp left by an earlier empty-env run
+ok 80 blessed_hash needs a manifest, is stable, and changes when the boundary changes
+ok 81 a fresh bless is NOT verified live, and says so
+ok 82 the receipt names the blessed hash and is void once the boundary changes
+ok 83 --list reports the blessed hash and its verification state
+ok 84 devcontainer.json passes CC_CONFIG_HASH as a build arg and the Dockerfile bakes it last
+ok 85 probe_boundary passes and writes the receipt when the container carries the blessed hash
+ok 86 probe_boundary fails on a container built from another config, and writes no receipt
+ok 87 probe_boundary fails when init-firewall.sh never completed (closed ≠ verified)
+ok 88 a launch rebuilds a container whose baked config is not the blessed one
+ok 89 a launch on a matching, verified container does not rebuild
+ok 90 --probe-only always rebuilds before probing

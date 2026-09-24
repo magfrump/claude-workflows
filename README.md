@@ -8,34 +8,47 @@ Reusable workflow definitions for AI coding agents. Works with Claude Code, Anti
 
 ```bash
 git clone <repo-url> ~/claude-workflows
-mkdir -p ~/.claude ~/.claude/hooks
-
-# Entry point + content directories (symlinks: repo edits are live immediately)
-ln -s ~/claude-workflows/global-instructions/CLAUDE.md ~/.claude/CLAUDE.md
-ln -s ~/claude-workflows/workflows ~/.claude/workflows
-ln -s ~/claude-workflows/skills    ~/.claude/skills
-ln -s ~/claude-workflows/patterns  ~/.claude/patterns
-ln -s ~/claude-workflows/guides    ~/.claude/guides
-
-# Helper scripts the workflows call by installed path — e.g.
-# ~/.claude/scripts/lite-review.py (pr-prep's fix-drift check) and
-# ~/.claude/scripts/questions.sh (the running-questions doc). The devcontainer
-# links this too (devcontainer-config/link-claude-home.sh).
-ln -s ~/claude-workflows/scripts   ~/.claude/scripts
-
-# Logging and routing hooks (symlinks, same convention)
-for h in log-usage.sh log-usage-post.sh dd-routing-reminder.sh \
-         batch-feedback-routing-reminder.sh claude-config-audit.sh; do
-  ln -s ~/claude-workflows/hooks/$h ~/.claude/hooks/$h
-done
-
-# Security + permission hooks (deliberate COPIES, not symlinks — see
-# guides/bare-host-hook-wiring.md for why; re-copy after repo changes)
-cp ~/claude-workflows/hooks/guard-trusted-writes.py \
-   ~/claude-workflows/hooks/web-taint-mark.py \
-   ~/claude-workflows/hooks/auto-approve-allowed-commands.sh \
-   ~/claude-workflows/hooks/live-verify-gate.sh ~/.claude/hooks/
+cd ~/claude-workflows
+./devcontainer-config/install.sh      # run it again after every pull or commit
 ```
+
+`install.sh` offers two targets in turn, each with its own review diff and its
+own `[y/N]`. The first is the `cc-isolated` devcontainer config: decline it if you
+don't use the devcontainer. The second copies `global-instructions/CLAUDE.md`,
+`skills`, `workflows`, `guides`, `patterns`, `hooks` and `scripts` into
+`~/.claude` (or `$CLAUDE_CONFIG_DIR` if you set it). `$CLAUDE_HOME_DIR` outranks
+both; only `install.sh` reads it, so set it only to install somewhere else. They
+are **copies, not symlinks**: an edit to the checkout, by you or by an agent, does
+nothing until you rerun `install.sh`, read the diff and answer y (decision 037).
+An entry `~/.claude` doesn't have yet is listed file by file, with its content
+shown only when it is 200 lines or fewer.
+Both targets install only **committed** content (the devcontainer config's
+files as well as those seven): uncommitted changes under those paths are listed
+as NOT included, and git-ignored files are never copied. The
+`~/.claude` target is skipped with `--yes`, from a script with no TTY, and inside
+a Claude Code session. That stops accidental runs, not a determined agent (a pty
+wrapper and unsetting `CLAUDECODE` get past it); the hard barrier is a sandbox that denies agents write
+access to `~/.claude`. `install.sh --help` has the details.
+
+**No agent may run during the install (Q-058).** `install.sh` runs as your uid, so
+"what you reviewed is what is installed" holds only while nothing else with your
+uid can edit the stage, the checkout or its `.git`. Before it stages anything, and
+again after each y, it refuses while a Claude Code process of your uid or a
+running cc-isolated container (it can write the checkout through its bind mount)
+is found, and names each one with how to stop it. Close every Claude Code session
+and `docker stop` every cc-isolated container, then run it from your own terminal.
+
+**Migrating from the old symlink install.** Close your Claude Code sessions, then
+run `install.sh`. Its `~/.claude` review lists every symlink it will replace
+(`REPLACE symlink … with a copy`) and every file or link in those directories
+that the repo doesn't have (`MOVE to backup`, `MOVE link … to backup`). Check any
+line marked `WIRED in settings` before you answer y: that hook is referenced from
+your `settings.json` and will stop running. Each of the seven entries it
+replaces, old links included, is moved to
+`~/.claude/.claude-workflows-backup/<UTC stamp>/`. The backups of the last 3
+installs are kept (the current run's is never removed).
+Delete them when you're satisfied. Your `settings.json`, memory, projects and
+logs are never touched.
 
 Hooks are inert until wired into `~/.claude/settings.json` (guarded,
 not repo-tracked). `hooks/wiring.json` is the canonical wiring (hooks plus the
@@ -44,46 +57,6 @@ automatically, and on a bare host you merge it by hand —
 see [`guides/bare-host-hook-wiring.md`](guides/bare-host-hook-wiring.md) for the
 procedure, the settings hardening `wiring.json` does not carry, the WSL2
 prerequisite, and verification steps.
-
-### Gemini CLI (Linux/macOS)
-
-```bash
-git clone <repo-url> ~/claude-workflows
-mkdir -p ~/.gemini
-ln -s ~/claude-workflows/GEMINI.md  ~/.gemini/GEMINI.md
-ln -s ~/claude-workflows/workflows  ~/.gemini/workflows
-ln -s ~/claude-workflows/skills     ~/.gemini/skills
-ln -s ~/claude-workflows/patterns   ~/.gemini/patterns
-ln -s ~/claude-workflows/guides     ~/.gemini/guides
-ln -s ~/claude-workflows/global-instructions ~/.gemini/global-instructions
-```
-
-`global-instructions` is linked because GEMINI.md points into
-`global-instructions/CLAUDE.md` for the Debugging defaults loop.
-
-### Antigravity (built-in agent panel)
-
-The agent panel reads `~/.gemini/GEMINI.md` and the directories alongside it. Where `~` lives depends on where Antigravity itself is running:
-
-- **Antigravity on Linux/macOS** — use the Gemini CLI setup above.
-- **Antigravity on Windows (including WSL users)** — Antigravity is a Windows process even when your repo lives in WSL, so the links must be created on the Windows side at `%USERPROFILE%\.gemini\`. Symlinks to `\\wsl.localhost\<distro>\...` UNC targets need either Windows **Developer Mode** enabled (Settings → Privacy & security → For developers) or an elevated shell. Run from elevated PowerShell:
-
-  ```powershell
-  $base = "$env:USERPROFILE\.gemini"
-  $src  = '\\wsl.localhost\Ubuntu\home\<you>\claude-workflows'   # adjust distro + user
-  New-Item -ItemType Directory -Path $base -Force | Out-Null
-  foreach ($n in 'GEMINI.md','workflows','skills','patterns','guides','global-instructions') {
-      $link = Join-Path $base $n
-      if (Test-Path -LiteralPath $link) {
-          $i = Get-Item -LiteralPath $link -Force
-          if ($i.PSIsContainer) { [System.IO.Directory]::Delete($link) }
-          else { [System.IO.File]::Delete($link) }
-      }
-      New-Item -ItemType SymbolicLink -Path $link -Target (Join-Path $src $n) | Out-Null
-  }
-  ```
-
-  Single-quote the target paths — double-quoted strings in PowerShell may strip a leading backslash and break UNC resolution. Antigravity reads through the WSL 9P share, so WSL must be running for the panel to see workflow content.
 
 ### Cursor, Copilot, Cline, and other AGENTS.md-compatible tools
 
@@ -105,6 +78,9 @@ in `global-instructions/CLAUDE.md`, the skills table, and
 `guides/doc-freshness.md`), so link them all. If a project already has its own
 directory with one of these names, skip that link and point the tool at the
 repo copy instead.
+
+These per-project symlinks are unaffected by the `~/.claude` copy install. They are
+project wiring for other tools, not global instruction files.
 
 Or, for tools that support user-level rules (Cursor user rules, Continue global rules), point them at the repo's workflow files directly.
 
@@ -131,7 +107,7 @@ machine, they must be recreated by hand:
 |---|---|---|
 | `~/.claude/settings.json` | Permissions allow/deny lists, hook wiring, sandbox config | Guarded and deliberately not repo-tracked; the hook wiring and deny rules come from `hooks/wiring.json`, and the remaining manual hardening is recorded in `guides/bare-host-hook-wiring.md` |
 | ~~`~/private_reviews/claude_config_audit.py`~~ | Trusted-policy security auditor run by `claude-config-audit.sh` | **Now tracked at `scripts/claude_config_audit.py`** (decision 023 amendment A) — the image payload is root-owned `0555`, which keeps a policy-file attacker away from the scanner more firmly than the old location did. The `~/private_reviews/` path is still honored as a fallback for bare-host installs; see `guides/claude-config-security-checkup.md` |
-| `~/.claude/hooks/guard-trusted-writes.py`, `web-taint-mark.py`, `auto-approve-allowed-commands.sh` | Deployed copies of the repo's security/permission hooks | Copies by design; re-copy deliberately after repo changes |
+| `~/.claude/{CLAUDE.md,skills,workflows,guides,patterns,hooks,scripts}` | Installed copies of the repo's global files | Written only by `install.sh` after a reviewed y (decision 037). Provenance is in `~/.claude/.claude-workflows-manifest`, and replaced entries are in `~/.claude/.claude-workflows-backup/` |
 | `/tmp/cc-web-taint/` | Runtime session-taint markers (0700) | Created on demand; cleared on reboot, which is fine — taint is per-session |
 | `~/.claude/logs/usage.jsonl` | Output of the usage-logging hooks | Created on demand |
 | `C:\Program Files\ClaudeCode\managed-settings.json` (`{}`) + `managed-settings.d\` | WSL2 only: mount points bwrap needs for the Bash sandbox | Create as Windows admin, or **every** Bash call fails at sandbox setup; see `guides/bare-host-hook-wiring.md` |
@@ -141,7 +117,7 @@ machine, they must be recreated by hand:
 ### Entry points (one per tool ecosystem)
 - `global-instructions/CLAUDE.md` — Claude Code global instructions. References workflows, plus guidance on session hygiene. It sits in its own directory rather than the repo root so that a session working in *this* repo does not load it twice — once from `~/.claude` and once as the project's own instructions.
 - `AGENTS.md` — Cross-tool entry point (Copilot, Cursor, Cline, etc). References workflows with `@` file syntax.
-- `GEMINI.md` — Antigravity / Gemini CLI global instructions.
+- `GEMINI.md` — Antigravity / Gemini CLI global instructions. No install recipe ships for it (decision 037).
 
 ### Agent workflows (tool-agnostic process definitions)
 - `workflows/research-plan-implement.md` — The default dev loop: research codebase, write plan, human annotates, implement
@@ -190,7 +166,7 @@ Bats suites under `test/` cover hooks (`test/hooks/`), skill contracts (`test/sk
 
 ## Skills
 
-`skills/` holds 26 Claude Code skills (symlinked to `~/.claude/skills` by the setup above): review orchestrators (`code-review`, `draft-review`) and their critics (security, performance, API-consistency, architecture, fact-checking), decision helpers (`matrix-analysis`, `what-if-analysis`, `design-space-situating`, `pre-mortem`), persona critiques (`cowen-critique`, `yglesias-critique`, `ai-personas-critique`, business-plan critics), and process skills (`self-eval`, `test-strategy`, `tech-debt-triage`, `dependency-upgrade`, `ui-visual-review`, `divergent-design` router). Each skill's `SKILL.md` frontmatter declares its own triggers. The draft-review/fact-check family was originally seeded from [tomwalczak/claude-cowork-fact-checking-skills](https://github.com/tomwalczak/claude-cowork-fact-checking-skills) and has since diverged.
+`skills/` holds 26 Claude Code skills (copied into `~/.claude/skills` by `install.sh`, see Setup): review orchestrators (`code-review`, `draft-review`) and their critics (security, performance, API-consistency, architecture, fact-checking), decision helpers (`matrix-analysis`, `what-if-analysis`, `design-space-situating`, `pre-mortem`), persona critiques (`cowen-critique`, `yglesias-critique`, `ai-personas-critique`, business-plan critics), and process skills (`self-eval`, `test-strategy`, `tech-debt-triage`, `dependency-upgrade`, `ui-visual-review`, `divergent-design` router). Each skill's `SKILL.md` frontmatter declares its own triggers. The draft-review/fact-check family was originally seeded from [tomwalczak/claude-cowork-fact-checking-skills](https://github.com/tomwalczak/claude-cowork-fact-checking-skills) and has since diverged.
 
 ## Sharing with collaborators
 

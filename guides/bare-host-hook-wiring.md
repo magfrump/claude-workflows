@@ -3,9 +3,9 @@
 **Scope.** Inside the `cc-isolated` devcontainer none of this is needed: at every
 container start `devcontainer-config/link-claude-home.sh` merges `hooks/wiring.json`
 into `~/.claude/settings.json` (decision 023 and its amendments). This guide is the
-procedure for a **bare host**, meaning a plain checkout symlinked into `~/.claude` as in the
-README's Linux/macOS setup. There the wiring is a manual edit of a guarded file that no
-repo artifact tracks.
+procedure for a **bare host**: a plain checkout whose global files `install.sh` has
+copied into `~/.claude`, per the README's Claude Code setup (decision 037). There the
+wiring is a manual edit of a guarded file that no repo artifact tracks.
 
 It replaces the three `docs/working/wire-*.md` docs, archived 2026-08-06. Their JSON
 snippets were superseded by `hooks/wiring.json`. The bare-host notes below were carried
@@ -13,18 +13,23 @@ over from them.
 
 ## 1. Install the hook scripts
 
-The README's setup block does this. There are two conventions, on purpose:
+`./devcontainer-config/install.sh` does this. Answer y to its `~/.claude` target after
+reading the review. First close every Claude Code session and stop every
+cc-isolated container: the installer refuses to stage or install while either runs (Q-058; see
+`install.sh --help` and decision 037, "Trust model"), since a running agent could
+change what you review before it is installed. There is one convention: **every hook is a copy**. The installer
+copies the whole `hooks/` directory (including `hooks/lib/`) and the whole `scripts/`
+directory, so hooks that find their helpers by their own path (`log-usage.sh` →
+`lib/usage-common.sh` and `../scripts/lib/`; `claude-config-audit.sh` →
+`../scripts/claude_config_audit.py`) keep working.
 
-- **Symlinks** for the non-blocking hooks (`log-usage.sh`, `log-usage-post.sh`,
-  `dd-routing-reminder.sh`, `batch-feedback-routing-reminder.sh`,
-  `claude-config-audit.sh`). Repo edits take effect immediately.
-- **Copies** for the hooks on the permission path (`guard-trusted-writes.py`,
-  `web-taint-mark.py`, `auto-approve-allowed-commands.sh`, `live-verify-gate.sh`).
-  `permissions.deny` protects `~/.claude/hooks/**`, but the checkout is an ordinary
-  writable directory. A symlink would let an unguarded repo edit change live
-  security-hook behavior, while a copy only changes when you deliberately re-copy it
-  after pulling. `claude-config-audit.sh` has the same exposure and is still a
-  symlink, which is an open follow-up.
+This supersedes the old split, which used symlinks for the non-blocking hooks and copies
+for the permission-path hooks, along with the open follow-up that `claude-config-audit.sh`
+was still a symlink. The reason for copies is the one that used to apply to the security
+hooks alone. `permissions.deny` and sandbox `denyWrite` protect `~/.claude`, but the
+checkout is an ordinary writable directory. A link would let an unreviewed repo edit
+change live behavior. A copy changes only when you rerun `install.sh` and answer y.
+Rerun it after every pull.
 
 Every hook `wiring.json` names must be installed before you wire it. A wired
 `bash <missing path>` exits 127, which Claude Code shows as a non-blocking error on
@@ -56,23 +61,22 @@ overrides `permissions.deny` (Claude Code issue #39344). Wire the hook without t
 rules and that tier does nothing for Edit/Write (decision 023 amendment B). The guard's
 matcher must include `Bash`, or its Bash write-detection branch never runs.
 
-**Checkout copies of symlinked global files can't be edited with Claude's file tools.** The exception to that defer
-is a protected file reached by its real path. While a global file is symlinked into
-`~/.claude`, the guard **denies** Claude's file tools on its checkout copy, in a
+**Still on the old symlink install? Its checkout copies can't be edited with Claude's file tools.**
+While a global file is symlinked into `~/.claude` (the README's install before the
+copy-based `install.sh`), the guard **denies** Claude's file tools on its checkout copy,
 tainted session or not: `global-instructions/CLAUDE.md` behind a linked
 `~/.claude/CLAUDE.md`, and every `hooks/<name>` linked one file at a time into
 `~/.claude/hooks/`. No deny rule names the checkout path, so deferring would leave it
 with no gate at all. A hook deny has no approve option, so make these edits outside
-Claude, in your own editor or shell (Q-050). Bash writes that name the checkout
-`global-instructions/CLAUDE.md` are denied too. Bash writes to a linked hook's
-checkout path (`echo x > <checkout>/hooks/<name>`, `cp`) are NOT gated by this hook,
-only Edit/Write are: a pre-existing gap, alongside the N2/A8 ones in the hook's TODOs. Hooks installed as copies are not
-affected. The planned copy-based install (edits are committed, then copied into
-`~/.claude` by `install.sh` after you approve them) removes this: no checkout file
-will be a live global file.
+Claude (Q-050). Bash writes naming the checkout `global-instructions/CLAUDE.md` are
+denied too; Bash writes to a linked hook's checkout path are NOT gated by this hook, a
+pre-existing gap alongside N2/A8. Running `install.sh` replaces the links with copies,
+after which no checkout file is a live global file and this restriction no longer applies.
 
-When you pull a change to `wiring.json`, redo the merge and remove the entries it
-replaced. Your hand-merged copy will not notice the change on its own.
+When `wiring.json` changes, redo the merge and remove the entries it replaced. Your
+hand-merged copy will not notice the change on its own. `install.sh` does not write
+`settings.json`, but it prints a `REMINDER` pointing here whenever the installed
+`hooks/wiring.json` is missing or differs from the repo's.
 
 ## 3. Hardening that `wiring.json` does not carry (still manual)
 
@@ -90,12 +94,13 @@ no history:
   `C:\Program Files\ClaudeCode\managed-settings.json` (containing `{}`) and
   `managed-settings.d\` to exist. Create both as a Windows admin, or **every** Bash call
   fails at sandbox setup.
-- **Config auditor location:** `claude-config-audit.sh` resolves its own symlink, so on a
-  bare host it runs the checkout's `scripts/claude_config_audit.py` with no extra step.
-  The resolution order is `CLAUDE_CONFIG_AUDIT_SCRIPT`, then `<hook dir>/../scripts/`,
-  then `~/private_reviews/`. If it finds none, the hook does nothing. Add the auditor's
-  path to sandbox `denyWrite` (above): a policy-file attacker who can edit the scanner
-  can blind it. See `guides/claude-config-security-checkup.md`.
+- **Config auditor location:** `claude-config-audit.sh` looks for the auditor at
+  `CLAUDE_CONFIG_AUDIT_SCRIPT`, then `<hook dir>/../scripts/`, then `~/private_reviews/`.
+  If it finds none, the hook does nothing. With the `install.sh` copy, the second of those
+  is `~/.claude/scripts/claude_config_audit.py`, which the sandbox `denyWrite ~/.claude`
+  (above) already covers. A policy-file attacker who can edit the scanner can blind it,
+  so if you use the `~/private_reviews/` fallback, add that path to `denyWrite` too. See
+  `guides/claude-config-security-checkup.md`.
 
 ## 4. Verify
 

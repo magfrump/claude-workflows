@@ -1,0 +1,79 @@
+======== E1
+##### OLD closed
+Canonical (repo):  /tmp/claude-1000/-workspace/d516ca2c-2abb-4732-a34a-041aa98280c8/scratchpad/fc/exp/E1-OLD-closed/repo/devcontainer-config
+Installed (host):  /tmp/claude-1000/-workspace/d516ca2c-2abb-4732-a34a-041aa98280c8/scratchpad/fc/exp/E1-OLD-closed/home/.config/claude-devcontainer
+
+First install — /tmp/claude-1000/-workspace/d516ca2c-2abb-4732-a34a-041aa98280c8/scratchpad/fc/exp/E1-OLD-closed/home/.config/claude-devcontainer does not exist yet.
+
+Install this config and bless it? [y/N] Aborted. Nothing was changed.
+[exit=1]
+##### OLD yes
+Canonical (repo):  /tmp/claude-1000/-workspace/d516ca2c-2abb-4732-a34a-041aa98280c8/scratchpad/fc/exp/E1-OLD-yes/repo/devcontainer-config
+Installed (host):  /tmp/claude-1000/-workspace/d516ca2c-2abb-4732-a34a-041aa98280c8/scratchpad/fc/exp/E1-OLD-yes/home/.config/claude-devcontainer
+
+First install — /tmp/claude-1000/-workspace/d516ca2c-2abb-4732-a34a-041aa98280c8/scratchpad/fc/exp/E1-OLD-yes/home/.config/claude-devcontainer does not exist yet.
+
+Linked /tmp/claude-1000/-workspace/d516ca2c-2abb-4732-a34a-041aa98280c8/scratchpad/fc/exp/E1-OLD-yes/home/.local/bin/cc-isolated -> /tmp/claude-1000/-workspace/d516ca2c-2abb-4732-a34a-041aa98280c8/scratchpad/fc/exp/E1-OLD-yes/home/.config/claude-devcontainer/cc-isolated.sh
+
+BLESS-STUB --bless
+
+Done. Blessed, NOT verified: a bless is a review of files, not a test of a container.
+Next steps:
+  touch ~/.ssh/canary                    # once, if you haven't — strengthens the H1 probe
+  cc-isolated --probe-only <repo>        # REQUIRED after any boundary change: rebuilds from
+                                         # this config and records it verified live on a pass
+  cc-isolated                            # session for the repo containing $PWD
+  cc-isolated --register <repo> --profile python   # widen a project's egress
+
+WARNING: /tmp/claude-1000/-workspace/d516ca2c-2abb-4732-a34a-041aa98280c8/scratchpad/fc/exp/E1-OLD-yes/home/.local/bin is not on your PATH — add it, or call /tmp/claude-1000/-workspace/d516ca2c-2abb-4732-a34a-041aa98280c8/scratchpad/fc/exp/E1-OLD-yes/home/.config/claude-devcontainer/cc-isolated.sh directly.
+[exit=0]
+##### NEW closed
+Canonical (repo):  /tmp/claude-1000/-workspace/d516ca2c-2abb-4732-a34a-041aa98280c8/scratchpad/fc/exp/E1-NEW-closed/repo/devcontainer-config
+Installed (host):  /tmp/claude-1000/-workspace/d516ca2c-2abb-4732-a34a-041aa98280c8/scratchpad/fc/exp/E1-NEW-closed/home/.config/claude-devcontainer
+
+First install — /tmp/claude-1000/-workspace/d516ca2c-2abb-4732-a34a-041aa98280c8/scratchpad/fc/exp/E1-NEW-closed/home/.config/claude-devcontainer does not exist yet.
+
+Install this config and bless it? [y/N] Aborted. Nothing was changed. (devcontainer config)
+
+Skipped host target (~/.claude): it needs an interactive terminal (stdin is not a TTY). Run install.sh from your own terminal.
+[exit=1]
+##### NEW yes
+Canonical (repo):  /tmp/claude-1000/-workspace/d516ca2c-2abb-4732-a34a-041aa98280c8/scratchpad/fc/exp/E1-NEW-yes/repo/devcontainer-config
+Installed (host):  /tmp/claude-1000/-workspace/d516ca2c-2abb-4732-a34a-041aa98280c8/scratchpad/fc/exp/E1-NEW-yes/home/.config/claude-devcontainer
+
+First install — /tmp/claude-1000/-workspace/d516ca2c-2abb-4732-a34a-041aa98280c8/scratchpad/fc/exp/E1-NEW-yes/home/.config/claude-devcontainer does not exist yet.
+
+Linked /tmp/claude-1000/-workspace/d516ca2c-2abb-4732-a34a-041aa98280c8/scratchpad/fc/exp/E1-NEW-yes/home/.local/bin/cc-isolated -> /tmp/claude-1000/-workspace/d516ca2c-2abb-4732-a34a-041aa98280c8/scratchpad/fc/exp/E1-NEW-yes/home/.config/claude-devcontainer/cc-isolated.sh
+
+BLESS-STUB --bless
+
+Done. Blessed, NOT verified: a bless is a review of files, not a test of a container.
+Next steps:
+  touch ~/.ssh/canary                    # once, if you haven't — strengthens the H1 probe
+  cc-isolated --probe-only <repo>        # REQUIRED after any boundary change: rebuilds from
+                                         # this config and records it verified live on a pass
+  cc-isolated                            # session for the repo containing $PWD
+  cc-isolated --register <repo> --profile python   # widen a project's egress
+
+WARNING: /tmp/claude-1000/-workspace/d516ca2c-2abb-4732-a34a-041aa98280c8/scratchpad/fc/exp/E1-NEW-yes/home/.local/bin is not on your PATH — add it, or call /tmp/claude-1000/-workspace/d516ca2c-2abb-4732-a34a-041aa98280c8/scratchpad/fc/exp/E1-NEW-yes/home/.config/claude-devcontainer/cc-isolated.sh directly.
+
+Skipped host target (~/.claude): it never installs with --yes. Run install.sh without --yes at a terminal to review and install it.
+[exit=0]
+======== E5
+stdin-is-tty
+CLAUDECODE=unset
+[outside: not-tty]
+======== E6
+commit=8399440b928e6f3eb55922e51a065c66e75a0fce
+dirty=no
+assembled_from=/tmp/claude-1000/-workspace/d516ca2c-2abb-4732-a34a-041aa98280c8/scratchpad/fc/exp/E6/repo
+installed_by=host-tty
+installed_parent=script
+installed_at=20260923T233450Z
+======== E7
+Previous entries moved to /tmp/claude-1000/-workspace/d516ca2c-2abb-4732-a34a-041aa98280c8/scratchpad/fc/exp/E7/home/.claude/.claude-workflows-backup/20260923T233451Z (delete it when satisfied).
+[pipeline exit=0]
+Previous entries moved to /tmp/claude-1000/-workspace/d516ca2c-2abb-4732-a34a-041aa98280c8/scratchpad/fc/exp/E7/home/.claude/.claude-workflows-backup/20260923T233451Z.415425 (delete it when satisfied).
+[pipeline exit=0]
+20260923T233451Z
+20260923T233451Z.415425
