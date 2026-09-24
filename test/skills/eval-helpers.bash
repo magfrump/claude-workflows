@@ -84,6 +84,9 @@ eval_fixture() {
       severity_match)
         assert_severity "$expected_verdict"
         ;;
+      no_severity:*)
+        assert_no_severity "${check#no_severity:}"
+        ;;
       cites_pattern:*)
         local pattern="${check#cites_pattern:}"
         assert_report_matches "$pattern"
@@ -164,6 +167,19 @@ assert_severity() {
 
   if ! echo "$severities" | grep -qiE "^(${allowed})([^[:alpha:]]|$)"; then
     echo "Expected a severity matching /${allowed}/, got: $(echo "$severities" | tr '\n' ', ')"
+    return 1
+  fi
+}
+
+# Assert no finding carries a severity from the given set — the false-positive
+# check for clean fixtures. A report with no **Severity:** lines passes.
+# Args: $1 = pipe-separated forbidden severities (e.g., "Critical|High")
+assert_no_severity() {
+  local forbidden="$1" hits
+  hits=$(echo "$REPORT_CONTENT" | sed -n 's/^\*\*Severity:\*\* //p' | tr -d '\r' \
+    | grep -iE "^(${forbidden})([^[:alpha:]]|$)" || true)
+  if [ -n "$hits" ]; then
+    echo "Expected no severity matching /${forbidden}/, got: $(echo "$hits" | tr '\n' ', ')"
     return 1
   fi
 }
