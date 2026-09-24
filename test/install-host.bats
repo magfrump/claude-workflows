@@ -550,6 +550,31 @@ installed_then_changed() {
   [[ "$output" == *'+^[[1A^[[2Khidden-line'* ]]
 }
 
+@test "T35 a dangling link in an owned dir is named as a MOVE, not a failed review (review A8)" {
+  need_script; fake_repo; symlink_install
+  d="$CLAUDE_HOME_DIR"
+  ln -s "$S/no-such-target" "$d/hooks/dead.sh"
+  run_pty 'n\ny\n' bash "$INSTALL"
+  echo "$output"
+  [[ "$output" != *'could not diff'* ]]
+  [[ "$output" == *"MOVE link $d/hooks/dead.sh -> $S/no-such-target to backup (not in the repo)"* ]]
+  [ -f "$d/hooks/h.sh" ] && [ ! -L "$d/hooks/h.sh" ]        # the install went ahead
+  bk=$(echo "$d"/.claude-workflows-backup/*)
+  [ -L "$bk/hooks/dead.sh" ]
+}
+
+@test "T36 an entry the destination lacks is listed with a file count, not diffed (review A7)" {
+  need_script; fake_repo
+  run_pty 'n\nn\n' bash "$INSTALL"
+  echo "$output"
+  d="$CLAUDE_HOME_DIR"
+  [[ "$output" == *"ADD $d/hooks (new, 3 file(s)):"* ]]
+  [[ "$output" == *'    hooks/lib/x.sh'* ]]
+  [[ "$output" == *"ADD $d/CLAUDE.md (new, 1 file(s)):"* ]]
+  [[ "$output" != *'+skill a'* ]]
+  [[ "$output" != *'+global instructions'* ]]
+}
+
 @test "T24 with CLAUDE_HOME_DIR unset, CLAUDE_CONFIG_DIR chooses the destination" {
   need_script; fake_repo
   run_pty 'n\ny\n' env -u CLAUDE_HOME_DIR CLAUDE_CONFIG_DIR="$S/cfgdir" bash "$INSTALL"

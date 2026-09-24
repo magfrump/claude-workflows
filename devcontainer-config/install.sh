@@ -325,7 +325,7 @@ lock_msg() {
 # host_cleanup: main's EXIT trap. Removes the stage and releases the lock, if
 # this run took it.
 host_cleanup() {
-  if [ -n "$HOST_TMP" ]; then rm -rf "$HOST_TMP"; fi
+  if [ -n "$HOST_TMP" ]; then rm -rf "$HOST_TMP" || true; fi
   if [ -n "$HOST_LOCK" ]; then rmdir "$HOST_LOCK" 2>/dev/null || true; fi
 }
 
@@ -454,10 +454,33 @@ install_claude_home() {
       done < <(find "$dest/$name" \( -type f -o -type l \) -print0 | LC_ALL=C sort -z)
     fi
   done
-  # Content diff: the same review_diff the devcontainer target uses. Through a
-  # symlinked entry it compares the link's target (the checkout) with the stage.
-  if ! review_diff "$dest" "$stage" "${CLAUDE_HOME_NAMES[@]}"; then
-    changed=1
+  # Content diff. An entry the destination lacks is listed, not diffed (A7: a
+  # first install printed ~32k lines, scrolling the lines above away). An
+  # existing entry is diffed as a link-free copy under $HOST_TMP/installed: a
+  # top-level link is followed (cp -H), so its checkout content is compared;
+  # links inside are dropped, since the lines above already name each one, so
+  # a dangling link cannot abort the review (A8).
+  local view="$HOST_TMP/installed" diffnames=() n
+  mkdir -p "$view"
+  for name in "${CLAUDE_HOME_NAMES[@]}"; do
+    if [ ! -e "$dest/$name" ]; then
+      n="$(find "$stage/$name" -type f | grep -c '' || true)"
+      echo "ADD $dest/$name (new, $n file(s)):" | vis
+      (cd "$stage" && find "$name" -type f | LC_ALL=C sort) | sed 's/^/    /' | vis
+      changed=1
+      continue
+    fi
+    if ! cp -RH "$dest/$name" "$view/$name"; then
+      echo "ERROR: could not read $dest/$name for the review. Nothing was installed." >&2
+      exit 1
+    fi
+    find "$view/$name" -type l -delete
+    chmod -R u+w "$view/$name"   # cp keeps a read-only dir's mode; cleanup must remove it
+    diffnames+=("$name")
+  done
+  if [ "${#diffnames[@]}" -gt 0 ]; then
+    echo "(diff: $view is the destination as it is now, links left out)"
+    if ! review_diff "$view" "$stage" "${diffnames[@]}"; then changed=1; fi
   fi
   if [ "$changed" -eq 0 ]; then
     echo "(none — the destination already matches the repo)"
