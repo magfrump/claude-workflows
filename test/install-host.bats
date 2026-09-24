@@ -662,6 +662,19 @@ installed_then_changed() {
   [ "$(stat -c %a "$CLAUDE_HOME_DIR/hooks/h.sh")" = 755 ]
 }
 
+@test "T43 a provenance manifest edited while the prompt waits is not installed (fact-check claim 14)" {
+  need_script; fake_repo; symlink_install
+  before=$(snap "$CLAUDE_HOME_DIR")
+  export TAMPER='for f in "$TMPDIR"/cw-host-stage.*/payload/.manifest; do printf "commit=FORGED\n" > "$f"; done'
+  run_pty_feed "$FEED_TAMPER" bash "$INSTALL"
+  echo "$output"
+  [ "$status" -eq 1 ]
+  [[ "$output" == *'stage changed after review'* ]]
+  [ "$(snap "$CLAUDE_HOME_DIR")" = "$before" ]
+  [ -z "$(grep -rls FORGED "$CLAUDE_HOME_DIR")" ]
+  ! compgen -G "$CLAUDE_HOME_DIR/.cw-new.*" >/dev/null
+}
+
 @test "T24 with CLAUDE_HOME_DIR unset, CLAUDE_CONFIG_DIR chooses the destination" {
   need_script; fake_repo
   run_pty 'n\ny\n' env -u CLAUDE_HOME_DIR CLAUDE_CONFIG_DIR="$S/cfgdir" bash "$INSTALL"

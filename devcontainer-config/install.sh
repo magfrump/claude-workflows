@@ -342,17 +342,30 @@ inside_repo() {
   return 1
 }
 
-# payload_hash <dir> <prefix>: one hash over the listing (path, type, mode, link
-# target) and the file contents of <dir>/<prefix><name> for every entry name.
-# The same payload hashes the same whether it sits in the stage (prefix "") or
-# in the .cw-new.* copies (prefix ".cw-new."), which is what R2's check needs.
+# payload_hash <dir> <prefix> <manifest>: one hash over the listing (path,
+# type, mode, link target) and the file contents of <dir>/<prefix><name> for
+# every entry name, plus the provenance manifest's bytes. The same payload
+# hashes the same whether it sits in the stage (prefix "", $stage/.manifest)
+# or in the copies under $dest (prefix ".cw-new.", .cw-new.manifest), which is
+# what R2's check needs. The manifest is covered so its commit= stamp cannot be
+# forged at the prompt either (fact-check claim 14).
 payload_hash() {
-  local dir="$1" pfx="$2" name
-  for name in "${CLAUDE_HOME_NAMES[@]}"; do
-    echo "== $name"
-    find "$dir/$pfx$name" -printf '%P\t%y\t%m\t%l\n' | LC_ALL=C sort
-    find "$dir/$pfx$name" -type f -print0 | LC_ALL=C sort -z | xargs -0 -r sha256sum | cut -d' ' -f1
-  done | sha256sum | cut -d' ' -f1
+  local dir="$1" pfx="$2" manifest="$3" name
+  {
+    for name in "${CLAUDE_HOME_NAMES[@]}"; do
+      echo "== $name"
+      find "$dir/$pfx$name" -printf '%P\t%y\t%m\t%l\n' | LC_ALL=C sort
+      find "$dir/$pfx$name" -type f -print0 | LC_ALL=C sort -z | xargs -0 -r sha256sum | cut -d' ' -f1
+    done
+    echo "== manifest"
+    sha256sum < "$manifest" | cut -d' ' -f1
+  } | sha256sum | cut -d' ' -f1
+}
+
+# rm_new_copies <dest>: remove every .cw-new.* copy this install makes.
+rm_new_copies() {
+  local n
+  for n in "${CLAUDE_HOME_NAMES[@]}" manifest; do rm -rf "${1:?}/.cw-new.$n" 2>/dev/null || true; done
 }
 
 host_refuse() {
@@ -380,7 +393,7 @@ host_rollback() {
   for n in "${moved[@]}"; do
     if [ -e "$dest/$n" ] || [ -L "$dest/$n" ] || ! mv "$backup/$n" "$dest/$n"; then left+=("$n"); fi
   done
-  for n in "${CLAUDE_HOME_NAMES[@]}"; do rm -rf "$dest/.cw-new.$n"; done
+  rm_new_copies "$dest"
   if [ "${#left[@]}" -eq 0 ]; then
     echo "ERROR: the install failed part-way and was rolled back: every entry was moved back" >&2
     echo "       from ${backup:-(no backup was needed)}. $dest is as it was before this run." >&2
@@ -441,7 +454,7 @@ install_claude_home() {
     host_refuse "$bkroot resolves inside the repo checkout."
   fi
   local name
-  for name in "${CLAUDE_HOME_NAMES[@]}"; do
+  for name in "${CLAUDE_HOME_NAMES[@]}" manifest; do
     if [ -L "$dest/.cw-new.$name" ]; then
       host_refuse "$dest/.cw-new.$name is a symlink left from elsewhere; remove it and rerun."
     fi
@@ -456,7 +469,7 @@ install_claude_home() {
   # R2: the stage sits in a same-uid temp dir while [y/N] waits. Hash it before
   # the review; after the y, the copies made under $dest must hash the same.
   local reviewed_hash
-  reviewed_hash="$(payload_hash "$stage" "")"
+  reviewed_hash="$(payload_hash "$stage" "" "$stage/.manifest")"
   echo "Canonical (repo):  $REPO_ROOT (commit $(sed -n 's/^commit=//p' "$stage/.manifest"))"
   echo
 
@@ -571,13 +584,17 @@ install_claude_home() {
       if ! cp -Rp "$stage/$name" "$dest/.cw-new.$name"; then ok=0; break; fi
     done
   fi
+  if [ "$ok" -eq 1 ]; then
+    rm -f "$dest/.cw-new.manifest"
+    cp -p "$stage/.manifest" "$dest/.cw-new.manifest" || ok=0
+  fi
   if [ "$ok" -eq 0 ]; then
-    for name in "${CLAUDE_HOME_NAMES[@]}"; do rm -rf "$dest/.cw-new.$name" 2>/dev/null || true; done
+    rm_new_copies "$dest"
     echo "ERROR: could not copy the new files into $dest; nothing was replaced." >&2
     exit 1
   fi
-  if [ "$(payload_hash "$dest" .cw-new.)" != "$reviewed_hash" ]; then
-    for name in "${CLAUDE_HOME_NAMES[@]}"; do rm -rf "$dest/.cw-new.$name"; done
+  if [ "$(payload_hash "$dest" .cw-new. "$dest/.cw-new.manifest")" != "$reviewed_hash" ]; then
+    rm_new_copies "$dest"
     echo "ERROR: stage changed after review: the files copied for install differ from" >&2
     echo "       the ones the review showed. Nothing was replaced. Rerun install.sh." >&2
     exit 1
@@ -596,7 +613,7 @@ install_claude_home() {
     backup="$bkroot/$stamp"
     if [ -e "$backup" ]; then backup="$backup.$$"; fi
     if ! mkdir -p "$backup"; then
-      for name in "${CLAUDE_HOME_NAMES[@]}"; do rm -rf "$dest/.cw-new.$name"; done
+      rm_new_copies "$dest"
       echo "ERROR: could not create $backup; nothing was replaced." >&2
       exit 1
     fi
@@ -618,16 +635,17 @@ install_claude_home() {
   done
   trap - INT TERM HUP
 
-  # Provenance, in link-claude-home's format plus additive keys. `rm -f` first so
-  # a planted symlink cannot redirect the write.
-  rm -f "$dest/.claude-workflows-manifest"
-  cp "$stage/.manifest" "$dest/.claude-workflows-manifest"
+  # Provenance, in link-claude-home's format plus additive keys, from the
+  # hash-checked copy (claim 14). `rm -f` first, and mv renames rather than
+  # writing through, so a planted symlink cannot redirect the write.
   # installed_parent is best-effort: under a pty wrapper it names whatever shell
   # the wrapper ran (bash, sh), so it is a hint, not evidence of a human (A2).
   {
     echo "installed_parent=$(ps -o comm= -p "$PPID" 2>/dev/null | tr -d ' ' || echo unknown)"
     echo "installed_at=$stamp"
-  } >> "$dest/.claude-workflows-manifest"
+  } >> "$dest/.cw-new.manifest"
+  rm -f "$dest/.claude-workflows-manifest"
+  mv "$dest/.cw-new.manifest" "$dest/.claude-workflows-manifest"
 
   echo "Installed into $dest."
   if [ -n "$backup" ]; then
