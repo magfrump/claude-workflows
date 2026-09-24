@@ -32,6 +32,44 @@ setup() {
   mkdir -p "$HOME" "$TMPDIR"
   ROOT="$S/repo"
   INSTALL="$ROOT/devcontainer-config/install.sh"
+  # The no-agent gate (Q-058) asks pgrep and docker what is running. The session
+  # running these tests is itself a Claude Code process, so both are stubbed to
+  # "nothing running" by default; a test that wants an agent rewrites a stub.
+  # Every stub call is logged to $S/probe.log.
+  STUB="$S/stub"
+  mkdir -p "$STUB"
+  stub_pgrep 'exit 1'
+  stub_docker 'exit 0'
+  export PATH="$STUB:$PATH"
+}
+
+# stub_pgrep / stub_docker <body>: replace the stub's body (after logging argv).
+stub_pgrep() {
+  printf '#!/bin/bash\necho "pgrep $*" >> "%s/probe.log"\n%s\n' "$S" "$1" > "$STUB/pgrep"
+  chmod +x "$STUB/pgrep"
+}
+stub_docker() {
+  printf '#!/bin/bash\necho "docker $*" >> "%s/probe.log"\n%s\n' "$S" "$1" > "$STUB/docker"
+  chmod +x "$STUB/docker"
+}
+
+# path_without <cmd...>: print a PATH (stubs first) under which each named
+# command is absent: every other executable on the current PATH is linked
+# into one directory, skipping the named ones.
+path_without() {
+  local farm="$S/farm" dir f skip
+  mkdir -p "$farm"
+  local IFS=:
+  for dir in $PATH; do
+    [ "$dir" = "$STUB" ] && continue
+    for f in "$dir"/*; do
+      [ -x "$f" ] && [ ! -d "$f" ] || continue
+      for skip in "$@"; do [ "${f##*/}" = "$skip" ] && continue 2; done
+      [ -e "$farm/${f##*/}" ] || ln -s "$f" "$farm/${f##*/}"
+    done
+  done
+  for skip in "$@"; do rm -f "$STUB/$skip"; done
+  printf '%s:%s\n' "$STUB" "$farm"
 }
 
 teardown() {
@@ -747,6 +785,103 @@ installed_then_changed() {
   [[ "$output" == *"ADD $d/hooks (new, 3 file(s)):"*'+exit 0'* ]]
   [[ "$output" == *"ADD $d/workflows (new, 2 file(s)):"*'content not shown: 301 lines'* ]]
   [[ "$output" != *'+line 150'* ]]
+}
+
+@test "T50 a Claude Code process for this user stops the install before either target stages (Q-058)" {
+  need_script; fake_repo; symlink_install
+  stub_pgrep 'echo "4242 node /usr/local/bin/claude --resume"; exit 0'
+  before=$(snap "$CLAUDE_HOME_DIR")
+  run_pty 'y\ny\n' bash "$INSTALL"
+  echo "$output"
+  [ "$status" -eq 1 ]
+  [[ "$output" == *'4242 node /usr/local/bin/claude --resume'* ]]
+  [[ "$output" == *'Claude Code'* ]]
+  [[ "$output" != *'[y/N]'* ]]
+  [[ "$output" != *'Canonical'* ]]
+  [ ! -e "$ROOT/devcontainer-config/claude-home" ]
+  [ ! -e "$CLAUDE_DEVC_CONFIG_DIR" ]
+  [ "$(snap "$CLAUDE_HOME_DIR")" = "$before" ]
+  # It asked about this user's processes, by full command line.
+  grep -q -- "pgrep -u $(id -u) -af" "$S/probe.log"
+}
+
+@test "T51 a running cc-isolated container stops the install and is named with how to stop it (Q-058)" {
+  fake_repo
+  stub_docker 'case "$*" in *label=cc-project*) echo "brave_turing cc-project=0123456789ab";; esac; exit 0'
+  run env -u CLAUDECODE bash "$INSTALL" --yes </dev/null
+  echo "$output"
+  [ "$status" -eq 1 ]
+  [[ "$output" == *'brave_turing cc-project=0123456789ab'* ]]
+  [[ "$output" == *'docker stop'* ]]
+  [[ "$output" != *'BLESS-STUB'* ]]
+  [ ! -e "$ROOT/devcontainer-config/claude-home" ]
+  grep -q 'docker ps --filter label=cc-project' "$S/probe.log"
+}
+
+@test "T52 docker absent or unreachable: one line says so, and the install goes ahead (Q-058)" {
+  fake_repo
+  stub_docker 'echo "Cannot connect to the Docker daemon" >&2; exit 1'
+  run env -u CLAUDECODE bash "$INSTALL" --yes </dev/null
+  echo "$output"
+  [ "$status" -eq 0 ]
+  [[ "$output" == *'docker is unreachable'*'treated as none running'* ]]
+  [[ "$output" == *'BLESS-STUB --bless'* ]]
+  p=$(path_without docker)
+  run env -u CLAUDECODE PATH="$p" bash "$INSTALL" --yes </dev/null
+  echo "$output"
+  [ "$status" -eq 0 ]
+  [[ "$output" == *'docker not found'*'treated as none running'* ]]
+}
+
+@test "T53 without pgrep the install is refused, not waved through (Q-058)" {
+  fake_repo
+  p=$(path_without pgrep)
+  run env -u CLAUDECODE PATH="$p" bash "$INSTALL" --yes </dev/null
+  echo "$output"
+  [ "$status" -eq 1 ]
+  [[ "$output" == *'pgrep'* ]]
+  [[ "$output" != *'BLESS-STUB'* ]]
+  [ ! -e "$ROOT/devcontainer-config/claude-home" ]
+}
+
+@test "T54 an agent that starts while the host prompt waits stops the swap (Q-058)" {
+  need_script; fake_repo; symlink_install
+  stub_pgrep "[ -e '$S/agent-up' ] || exit 1; echo '777 claude'; exit 0"
+  before=$(snap "$CLAUDE_HOME_DIR")
+  export TAMPER="touch '$S/agent-up'"
+  run_pty_feed "$FEED_TAMPER" bash "$INSTALL"
+  echo "$output"
+  [ "$status" -eq 1 ]
+  [[ "$output" == *'Install these files'* ]]      # the review and prompt ran
+  [[ "$output" == *'777 claude'* ]]
+  [ "$(snap "$CLAUDE_HOME_DIR")" = "$before" ]
+  ! compgen -G "$CLAUDE_HOME_DIR/.cw-new.*" >/dev/null
+  [ ! -e "$CLAUDE_HOME_DIR/.claude-workflows-lock" ]
+}
+
+@test "T55 an agent that starts while the devcontainer prompt waits stops that install (Q-058)" {
+  need_script; fake_repo
+  stub_pgrep "[ -e '$S/agent-up' ] || exit 1; echo '778 claude'; exit 0"
+  feed="for _i in \$(seq 200); do [ -e '$ROOT/devcontainer-config/claude-home/.manifest' ] && break; sleep 0.1; done
+    sleep 1; touch '$S/agent-up'; printf 'y\ny\n'"
+  run_pty_feed "$feed" bash "$INSTALL"
+  echo "$output"
+  [ "$status" -eq 1 ]
+  [[ "$output" == *'778 claude'* ]]
+  [[ "$output" != *'BLESS-STUB'* ]]
+  [ ! -e "$CLAUDE_DEVC_CONFIG_DIR" ]
+}
+
+@test "T56 --help, README and the hook-wiring guide document the no-agent check (Q-058)" {
+  fake_repo
+  run bash "$INSTALL" --help
+  [ "$status" -eq 0 ]
+  [[ "$output" == *'Claude Code process'* ]]
+  [[ "$output" == *'cc-isolated container'* ]]
+  for doc in README.md guides/bare-host-hook-wiring.md; do
+    grep -q 'Q-058' "$BATS_TEST_DIRNAME/../$doc"
+    grep -q 'cc-isolated container' "$BATS_TEST_DIRNAME/../$doc"
+  done
 }
 
 @test "T24 with CLAUDE_HOME_DIR unset, CLAUDE_CONFIG_DIR chooses the destination" {

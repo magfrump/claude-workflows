@@ -41,6 +41,11 @@ setup() {
   mkdir -p "$TEST_TMPDIR/bin"
   printf '#!/usr/bin/env bash\nexit 0\n' > "$TEST_TMPDIR/bin/devcontainer"
   chmod +x "$TEST_TMPDIR/bin/devcontainer"
+  # install.sh's no-agent gate (Q-058) asks pgrep and docker what runs; the
+  # session running these tests is a Claude Code process, so both report none.
+  printf '#!/usr/bin/env bash\nexit 1\n' > "$TEST_TMPDIR/bin/pgrep"
+  printf '#!/usr/bin/env bash\nexit 0\n' > "$TEST_TMPDIR/bin/docker"
+  chmod +x "$TEST_TMPDIR/bin/pgrep" "$TEST_TMPDIR/bin/docker"
   PATH="$TEST_TMPDIR/bin:$PATH"
 }
 

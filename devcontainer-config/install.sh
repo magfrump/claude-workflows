@@ -47,6 +47,15 @@ devcontainer-config/ PAYLOAD item and the seven ~/.claude sources. Uncommitted
 changes under those paths are listed as NOT included; commit and rerun.
 A destination path holding a newline or other control character is refused.
 
+NO AGENT MAY RUN DURING THE INSTALL (Q-058). install.sh refuses, before it
+stages anything and again after each y, while any agent can run:
+  - a Claude Code process of your uid (pgrep on the command line), or
+  - a running cc-isolated container (docker ps, label cc-project).
+It names each one and how to stop it.
+Without pgrep it refuses; without a reachable docker it says so in one line
+and treats no container as running. Close every Claude Code session and stop
+every cc-isolated container first.
+
 Target 2 is SKIPPED, with a message and no effect on the exit status, when
 --yes is given, when stdin is not a terminal, or when running inside a
 Claude Code session (CLAUDECODE set). That stops accidental runs,
@@ -321,6 +330,9 @@ install_devcontainer() {
       return 0
     fi
   fi
+
+  # Q-058: an agent may have started while the prompt waited.
+  agent_gate "Nothing was installed. (devcontainer config)"
 
   mkdir -p "$DEST" "$BIN_DIR"
 
@@ -623,6 +635,9 @@ install_claude_home() {
     return 0
   fi
 
+  # Q-058: an agent may have started while the review and prompt waited.
+  agent_gate "Nothing was installed into the host target."
+
   # One install at a time (R4): two concurrent swaps left none of the seven
   # entries. The lock is released by main's EXIT trap on every path.
   local ok=1
@@ -744,6 +759,66 @@ install_claude_home() {
   fi
 }
 
+# --- No-agent gate (Q-058) ------------------------------------------------------
+# install.sh runs as the user's uid, so its guarantee, "what you reviewed is what
+# is installed", holds only while no agent can run: an agent with the user's uid
+# can rewrite the stage, the checkout or its .git during the review, and a
+# cc-isolated container can write the checkout through its bind mount. So the
+# install is refused while either runs: at startup, before anything is staged,
+# and again after each y, right before that target writes. See decision 037,
+# "Trust model (Q-058)", for what this does not catch.
+#
+# A Claude Code process is one of this uid's processes whose command line runs
+# `claude` (the native binary, argv0 "claude" or ".../claude") or the npm
+# package (`node .../bin/claude`, `.../@anthropic-ai/claude-code/...`). pgrep
+# never lists itself; this script's own command line does not match, and $$ is
+# dropped in case the checkout's path ends in /claude.
+CLAUDE_PROC_RE='(^|/)claude(\.exe)?( |$)|/@anthropic-ai/claude-code/'
+
+# agent_gate <what is refused>: exit 1, naming each agent found and how to
+# stop it, when a Claude Code process or a cc-isolated container runs.
+agent_gate() {
+  local what="$1" procs rc=0 ctrs err
+  if ! command -v pgrep >/dev/null 2>&1; then
+    echo "ERROR: pgrep is not installed, so install.sh cannot check that no Claude Code" >&2
+    echo "       session is running (Q-058). Install procps and rerun. $what" >&2
+    exit 1
+  fi
+  procs="$(pgrep -u "$(id -u)" -af -- "$CLAUDE_PROC_RE")" || rc=$?
+  if [ "$rc" -gt 1 ]; then
+    echo "ERROR: pgrep failed (exit $rc) while checking for Claude Code sessions (Q-058). $what" >&2
+    exit 1
+  fi
+  procs="$(printf '%s\n' "$procs" | awk -v self="$$" 'NF && $1 != self')"
+  # cc-isolated's containers carry the label cc-project=<id> (its --id-label).
+  ctrs=""
+  if ! command -v docker >/dev/null 2>&1; then
+    echo "NOTE: docker not found: cc-isolated containers not checked, treated as none running."
+  elif ! ctrs="$(timeout 20 docker ps --filter label=cc-project \
+                   --format '{{.Names}} cc-project={{.Label "cc-project"}}' 2>&1)"; then
+    err="$(printf '%s\n' "$ctrs" | head -n 1)"
+    echo "NOTE: docker is unreachable ($err): cc-isolated containers not checked, treated as none running." | vis
+    ctrs=""
+  fi
+  if [ -z "$procs" ] && [ -z "$ctrs" ]; then return 0; fi
+  {
+    echo "ERROR: an agent is running. install.sh installs only while no agent can run, because"
+    echo "       one could change what you review before it is installed (Q-058)."
+    if [ -n "$procs" ]; then
+      echo "       Claude Code processes of uid $(id -u) (PID and command line):"
+      printf '%s\n' "$procs" | sed 's/^/           /'
+      echo "       Stop them: end each Claude Code session (/exit), or kill <PID>."
+    fi
+    if [ -n "$ctrs" ]; then
+      echo "       Running cc-isolated containers (name and project id):"
+      printf '%s\n' "$ctrs" | sed 's/^/           /'
+      echo "       Stop them: docker stop <name>"
+    fi
+    echo "       Then rerun install.sh. $what"
+  } | vis >&2
+  exit 1
+}
+
 # has_ctrl <string>: true if it holds a control character: C0 (newline and
 # tab included), DEL, or a UTF-8-encoded C1.
 has_ctrl() {
@@ -795,6 +870,8 @@ main() {
   CLAUDE_HOME_NAMES=()
   local item
   for item in "${CLAUDE_HOME_SRC[@]}"; do CLAUDE_HOME_NAMES+=("$(basename "$item")"); done
+
+  agent_gate "Nothing was staged or installed."
 
   HOST_TMP="" HOST_LOCK="" DC_TMP="" STAGED_COMMIT=""
   trap host_cleanup EXIT

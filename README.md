@@ -30,6 +30,14 @@ a Claude Code session. That stops accidental runs, not a determined agent (a pty
 wrapper and unsetting `CLAUDECODE` get past it); the hard barrier is a sandbox that denies agents write
 access to `~/.claude`. `install.sh --help` has the details.
 
+**No agent may run during the install (Q-058).** `install.sh` runs as your uid, so
+"what you reviewed is what is installed" holds only while nothing else with your
+uid can edit the stage, the checkout or its `.git`. Before it stages anything, and
+again after each y, it refuses while a Claude Code process of your uid or a
+running cc-isolated container (it can write the checkout through its bind mount)
+is found, and names each one with how to stop it. Close every Claude Code session
+and `docker stop` every cc-isolated container, then run it from your own terminal.
+
 **Migrating from the old symlink install.** Close your Claude Code sessions, then
 run `install.sh`. Its `~/.claude` review lists every symlink it will replace
 (`REPLACE symlink … with a copy`) and every file or link in those directories

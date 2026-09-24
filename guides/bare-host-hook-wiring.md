@@ -14,7 +14,10 @@ over from them.
 ## 1. Install the hook scripts
 
 `./devcontainer-config/install.sh` does this. Answer y to its `~/.claude` target after
-reading the review. There is one convention: **every hook is a copy**. The installer
+reading the review. First close every Claude Code session and stop every
+cc-isolated container: the installer refuses to stage or install while either runs (Q-058; see
+`install.sh --help` and decision 037, "Trust model"), since a running agent could
+change what you review before it is installed. There is one convention: **every hook is a copy**. The installer
 copies the whole `hooks/` directory (including `hooks/lib/`) and the whole `scripts/`
 directory, so hooks that find their helpers by their own path (`log-usage.sh` →
 `lib/usage-common.sh` and `../scripts/lib/`; `claude-config-audit.sh` →
