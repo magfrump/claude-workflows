@@ -131,8 +131,11 @@ assemble() {
     exit 1
   fi
   mkdir "$stage/.extract"
-  if ! git -C "$REPO_ROOT" archive --format=tar "$commit" -- "${CLAUDE_HOME_SRC[@]}" \
-       | tar -xf - -C "$stage/.extract"; then
+  # Modes are the commit's (fact-check claim 17): tar.umask=022 makes git
+  # archive write 644/755 rather than its default 664/775, and tar -p keeps
+  # them rather than applying this shell's umask.
+  if ! git -C "$REPO_ROOT" -c tar.umask=022 archive --format=tar "$commit" -- "${CLAUDE_HOME_SRC[@]}" \
+       | tar -xpf - -C "$stage/.extract"; then
     echo "ERROR: could not extract commit ${commit:0:12} from $REPO_ROOT. Nothing was installed." >&2
     exit 1
   fi
@@ -198,6 +201,30 @@ review_diff() {
     esac
   done
   return "$changed"
+}
+
+# mode_diff <dest> <src> <item...>: print a MODE line for each regular file
+# present in both trees whose permission bits differ. diff compares content
+# only, so a committed `chmod +x` alone reviewed as "(none)" and never
+# installed (fact-check claim 17). Returns 1 when any mode differs.
+mode_diff() {
+  local dest="$1" src="$2" item rec p rc=0
+  shift 2
+  for item in "$@"; do
+    # Keys carry a leading "/" because a top-level file's relative path is ""
+    # and bash rejects an empty associative-array key.
+    local -A dm=()
+    while IFS= read -r -d '' rec; do dm["/${rec#* }"]="${rec%% *}"; done \
+      < <(find -H "$dest/$item" -type f -printf '%m %P\0' 2>/dev/null)
+    while IFS= read -r -d '' rec; do
+      p="/${rec#* }"
+      if [ -n "${dm[$p]+x}" ] && [ "${dm[$p]}" != "${rec%% *}" ]; then
+        echo "MODE $dest/$item${p%/}: ${dm[$p]} -> ${rec%% *}" | vis
+        rc=1
+      fi
+    done < <(find "$src/$item" -type f -printf '%m %P\0')
+  done
+  return "$rc"
 }
 
 # confirm <question>: true on y/yes. `|| reply=""` so a closed/EOF stdin (piped
@@ -495,6 +522,7 @@ install_claude_home() {
     diffnames+=("$name")
   done
   if [ "${#diffnames[@]}" -gt 0 ]; then
+    if ! mode_diff "$dest" "$stage" "${diffnames[@]}"; then changed=1; fi
     echo "(diff: $view is the destination as it is now, links left out)"
     if ! review_diff "$view" "$stage" "${diffnames[@]}"; then changed=1; fi
   fi
@@ -539,7 +567,8 @@ install_claude_home() {
   if [ "$ok" -eq 1 ]; then
     for name in "${CLAUDE_HOME_NAMES[@]}"; do
       rm -rf "$dest/.cw-new.$name"
-      if ! cp -R "$stage/$name" "$dest/.cw-new.$name"; then ok=0; break; fi
+      # -p keeps the reviewed modes (claim 17); R2's hash compares them too.
+      if ! cp -Rp "$stage/$name" "$dest/.cw-new.$name"; then ok=0; break; fi
     done
   fi
   if [ "$ok" -eq 0 ]; then

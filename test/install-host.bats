@@ -649,6 +649,19 @@ installed_then_changed() {
   [ -d "$bk/20000101T000000Z" ]            # no stamp: not made by an install
 }
 
+@test "T42 a committed mode change is reviewed and installed, not reported as (none) (fact-check claim 17)" {
+  need_script; fake_repo
+  run_pty 'n\ny\n' bash "$INSTALL"
+  [ -f "$CLAUDE_HOME_DIR/hooks/h.sh" ] && [ ! -x "$CLAUDE_HOME_DIR/hooks/h.sh" ]
+  chmod +x "$ROOT/hooks/h.sh"; commit_all chmod
+  run_pty 'n\ny\n' bash "$INSTALL"
+  echo "$output"
+  [[ "$output" == *"MODE $CLAUDE_HOME_DIR/hooks/h.sh: 644 -> 755"* ]]
+  [[ "$output" != *'(none'* ]]
+  [ -x "$CLAUDE_HOME_DIR/hooks/h.sh" ]
+  [ "$(stat -c %a "$CLAUDE_HOME_DIR/hooks/h.sh")" = 755 ]
+}
+
 @test "T24 with CLAUDE_HOME_DIR unset, CLAUDE_CONFIG_DIR chooses the destination" {
   need_script; fake_repo
   run_pty 'n\ny\n' env -u CLAUDE_HOME_DIR CLAUDE_CONFIG_DIR="$S/cfgdir" bash "$INSTALL"
