@@ -2,11 +2,10 @@
 # Yglesias critique: fixture content goes inline in the prompt. No Read, because
 # inline mode runs claude in the real repo, where Read could reach
 # expected-verdicts.bash. No Write, so the critique goes to stdout instead of
-# docs/reviews/. SKILL.md tells the critic not to fact-check on its own, so
-# WebSearch is here only because generate-reports.bash needs a non-empty list.
-# No fact-check report is supplied: the critique should open with SKILL.md's
-# no-fact-check warning.
-FIXTURE_TOOLS="WebSearch"
+# docs/reviews/. SKILL.md tells the critic not to fact-check on its own, so it
+# gets no tools at all. No fact-check report is supplied: the critique should
+# open with SKILL.md's no-fact-check warning.
+FIXTURE_TOOLS="none"
 FIXTURE_MODE="inline"
 
 fixture_prompt() {

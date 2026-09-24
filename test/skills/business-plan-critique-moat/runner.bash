@@ -2,10 +2,9 @@
 # Moat critique: the plan goes inline in the prompt. No Read, because inline
 # mode runs claude in the real repo, where Read could reach
 # expected-verdicts.bash; no Write, so the critique goes to stdout instead of
-# docs/reviews/. SKILL.md forbids ad-hoc fact-checking and every company in the
-# fixtures is invented, so WebSearch is only here because FIXTURE_TOOLS must be
-# non-empty; a report that leans on search results is itself a finding.
-FIXTURE_TOOLS="WebSearch"
+# docs/reviews/. SKILL.md forbids ad-hoc fact-checking, so it gets no tools at
+# all.
+FIXTURE_TOOLS="none"
 FIXTURE_MODE="inline"
 
 fixture_prompt() {

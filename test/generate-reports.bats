@@ -57,6 +57,17 @@ EOF
   [[ "$output" == *"1 severity-tagged findings"* ]]
 }
 
+@test "FIXTURE_TOOLS=none passes an empty --tools list" {
+  make_skill demo inline "none"
+  run bash "$GEN" demo
+  [ "$status" -eq 0 ]
+  call="$(cat "$CALLS/0")"
+  # --tools is the last argument, so an empty value leaves "--tools " at the
+  # end of the recorded argv line.
+  [[ "$call" == *"--tools "$'\n'* ]]
+  [[ "$call" != *"--tools none"* ]]
+}
+
 @test "repo mode: claude runs in a temp repo holding only the fixture" {
   make_skill demo repo "Read,Grep,Glob"
   run bash "$GEN" demo

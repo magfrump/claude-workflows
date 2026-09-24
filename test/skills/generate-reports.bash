@@ -11,7 +11,9 @@
 #   test/skills/<skill>/output/<fixture>.report.md   — the generated report
 #
 # Per-skill configuration lives in test/skills/<skill>/runner.bash, which sets:
-#   FIXTURE_TOOLS   — the --tools allowlist for claude -p
+#   FIXTURE_TOOLS   — the --tools allowlist for claude -p, or "none" for no
+#                     tools at all (skills that must not fact-check on their
+#                     own, like the critique skills)
 #   FIXTURE_MODE    — "inline" (fixture content appended to the prompt) or
 #                     "repo" (fixture copied into a throwaway git repo that
 #                     becomes claude's working directory)
@@ -74,6 +76,11 @@ case "$FIXTURE_MODE" in
     ;;
 esac
 
+# "none" is explicit so a runner that forgets FIXTURE_TOOLS still errors above;
+# claude -p reads --tools "" as "no tools".
+TOOLS_ARG="$FIXTURE_TOOLS"
+[ "$FIXTURE_TOOLS" = "none" ] && TOOLS_ARG=""
+
 mkdir -p "$OUTPUT_DIR"
 
 generate_one() {
@@ -118,7 +125,7 @@ generate_one() {
     (cd "$temp_dir" && printf '%s' "$prompt" \
       | claude -p \
         --system-prompt-file "$SKILL_FILE" \
-        --tools "$FIXTURE_TOOLS" \
+        --tools "$TOOLS_ARG" \
         $model_flag \
         ${CLAUDE_FLAGS:-} \
     ) > "$report_path" 2>/dev/null || true
@@ -131,7 +138,7 @@ generate_one() {
     printf '%s\n\n%s' "$prompt" "$fixture_content" \
       | claude -p \
         --system-prompt-file "$SKILL_FILE" \
-        --tools "$FIXTURE_TOOLS" \
+        --tools "$TOOLS_ARG" \
         $model_flag \
         ${CLAUDE_FLAGS:-} \
       > "$report_path" 2>/dev/null || true

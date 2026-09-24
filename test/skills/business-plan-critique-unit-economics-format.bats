@@ -20,7 +20,9 @@ setup() {
 # --- Title ---
 
 @test "report has a title header identifying it as a unit-economics critique" {
-  assert_title_matches '^# .*Unit.?Economics.*Critique'
+  # SKILL.md puts the no-fact-check warning (up to 5 lines) above the title,
+  # so the default 5-line window would fail a report that follows the skill.
+  assert_title_matches '^# .*Unit.?Economics.*Critique' 12
 }
 
 # --- Required per-lens sections ---

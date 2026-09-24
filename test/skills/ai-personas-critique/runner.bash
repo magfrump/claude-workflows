@@ -3,9 +3,9 @@
 # reads personas.md, but inline mode runs claude in the real repo, where a Read
 # tool could also reach expected-verdicts.bash. So Read is withheld and the
 # prompt carries the catalog itself, cat'd from the skill directory (resolved
-# relative to this file). WebSearch only; no Write, so the report goes to stdout
-# instead of docs/reviews/.
-FIXTURE_TOOLS="WebSearch"
+# relative to this file). No tools at all: the critic is not to fact-check on
+# its own, and without Write the report goes to stdout instead of docs/reviews/.
+FIXTURE_TOOLS="none"
 FIXTURE_MODE="inline"
 
 # Resolved when generate-reports.bash sources this file, not when the function

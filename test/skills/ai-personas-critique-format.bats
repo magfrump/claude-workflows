@@ -19,7 +19,9 @@ setup() {
 # --- Title ---
 
 @test "report has a title header with AI Personas identifier" {
-  assert_title_matches '^# .*(AI Personas|Personas Critique)'
+  # SKILL.md puts the no-fact-check warning (up to 5 lines) above the title,
+  # so the default 5-line window would fail a report that follows the skill.
+  assert_title_matches '^# .*(AI Personas|Personas Critique)' 12
 }
 
 # --- Required header fields ---

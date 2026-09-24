@@ -23,7 +23,9 @@ setup() {
 # --- Title ---
 
 @test "report has a title header with Market-Sizing identifier" {
-  assert_title_matches '^# .*Market.?Sizing'
+  # SKILL.md puts the no-fact-check warning (up to 5 lines) above the title,
+  # so the default 5-line window would fail a report that follows the skill.
+  assert_title_matches '^# .*Market.?Sizing' 12
 }
 
 # --- Required per-lens sections (the five lenses) ---
