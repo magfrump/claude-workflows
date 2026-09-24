@@ -84,13 +84,15 @@ setup() {
 @test "Must Fix section contains a table or (None)" {
   local section
   section=$(echo "$REPORT_CONTENT" | sed -n '/^## .*Must Fix/,/^## /p' | head -n -1)
-  echo "$section" | grep -qE '(\|.*\||\(None\))'
+  # rubric.md defines no empty-state sentinel for this section; real rubrics write
+  # either "(None)" or a bare "None." line (ans-guard-q048-q050, 2026-09-23).
+  echo "$section" | grep -qE '(\|.*\||\(None\)|^None\.$)'
 }
 
 @test "Must Address section contains a table or (None)" {
   local section
   section=$(echo "$REPORT_CONTENT" | sed -n '/^## .*Must Address/,/^## /p' | head -n -1)
-  echo "$section" | grep -qE '(\|.*\||\(None\))'
+  echo "$section" | grep -qE '(\|.*\||\(None\)|^None\.$)'
 }
 
 @test "Considered Overrides section contains a table or the empty-state sentinel" {
