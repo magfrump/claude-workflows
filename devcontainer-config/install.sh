@@ -178,8 +178,9 @@ review_diff() {
     # not discarded, and exit status >1 ("trouble") aborts rather than counting as
     # a change: this diff is the review gate, so a diff that could not be shown
     # must never reach the [y/N] prompt.
+    # vis (A4): a raw \r or CSI sequence in a file could hide `+` lines.
     rc=0
-    diff -ruN "$dest/$item" "$src/$item" || rc=$?
+    diff -ruN "$dest/$item" "$src/$item" 2>&1 | vis || rc=${PIPESTATUS[0]}
     case "$rc" in
       0) ;;
       1) changed=1 ;;

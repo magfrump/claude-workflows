@@ -541,6 +541,15 @@ installed_then_changed() {
   [[ "$output" == *"REPLACE symlink $d/hooks/h.sh -> "* ]]
 }
 
+@test "T34 control bytes in the review diff are made visible, not sent raw (review A4)" {
+  need_script; fake_repo; symlink_install
+  printf 'visible\n\033[1A\033[2Khidden-line\n' > "$ROOT/hooks/evil.sh"; commit_all evil
+  run_pty 'n\nn\n' bash "$INSTALL"
+  echo "$output" | cat -v
+  [[ "$output" != *$'\e'* ]]
+  [[ "$output" == *'+^[[1A^[[2Khidden-line'* ]]
+}
+
 @test "T24 with CLAUDE_HOME_DIR unset, CLAUDE_CONFIG_DIR chooses the destination" {
   need_script; fake_repo
   run_pty 'n\ny\n' env -u CLAUDE_HOME_DIR CLAUDE_CONFIG_DIR="$S/cfgdir" bash "$INSTALL"
