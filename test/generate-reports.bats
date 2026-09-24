@@ -19,7 +19,9 @@ setup() {
   cat > "$TEST_TMPDIR/bin/claude" <<EOF
 #!/usr/bin/env bash
 n=\$(ls "$CALLS" | wc -l)
-{ printf 'ARGS: %s\n' "\$*"; printf 'CWD: %s\n' "\$PWD"; printf 'LS: %s\n' "\$(ls)"; echo 'STDIN:'; cat; } > "$CALLS/\$n"
+{ printf 'ARGS: %s\n' "\$*"; printf 'CWD: %s\n' "\$PWD"; printf 'LS: %s\n' "\$(ls)"
+  printf 'FILES: %s\n' "\$(find . -path ./.git -prune -o -type f -print | sort | tr '\n' ' ')"
+  echo 'STDIN:'; cat; } > "$CALLS/\$n"
 if [[ " \$* " == *" --output-format stream-json "* ]]; then
   # The shape of a real stream-json run: init, one tool call, the result.
   echo '{"type":"system","subtype":"init"}'
@@ -105,9 +107,9 @@ EOF
   # Without it, claude.ai connectors (write-capable Claude Docs tools) are
   # exposed even under --tools "" and in sub-agents.
   local mode
-  for mode in inline repo; do
+  for mode in inline repo tree; do
     rm -rf "$CALLS"/* "$TEST_TMPDIR/test/skills/demo" "$TEST_TMPDIR/skills/demo"
-    make_skill demo "$mode" "Read"
+    if [ "$mode" = tree ]; then make_tree_skill demo; else make_skill demo "$mode" "Read"; fi
     run bash "$GEN" demo
     [ "$status" -eq 0 ]
     grep -q -- '--strict-mcp-config' "$CALLS/0" || { echo "mode $mode: no --strict-mcp-config"; cat "$CALLS/0"; return 1; }
@@ -148,6 +150,75 @@ EOF
   [ "$status" -ne 0 ]
   [[ "$output" == *"FIXTURE_TRANSCRIPT"* ]]
   [ "$(ls "$CALLS" | wc -l)" -eq 0 ]
+}
+
+# make_tree_skill <name> — a tree-mode skill with one directory fixture whose
+# name is descriptive, and a runner whose fixture_base copies a live repo file
+# unless the fixture carries a .fixture-no-base marker.
+make_tree_skill() {
+  local name="$1"
+  mkdir -p "$TEST_TMPDIR/skills/$name" "$TEST_TMPDIR/docs"
+  echo "# $name skill" > "$TEST_TMPDIR/skills/$name/SKILL.md"
+  echo "LIVE RUBRIC" > "$TEST_TMPDIR/docs/rubric.md"
+  local fx="$TEST_TMPDIR/test/skills/$name/fixtures/tc-3-planted-weakness"
+  mkdir -p "$fx/skills/target"
+  echo "TARGET SKILL" > "$fx/skills/target/SKILL.md"
+  echo "Please evaluate the target skill." > "$fx/REQUEST.md"
+  echo "SECRET VERDICTS" > "$TEST_TMPDIR/test/skills/$name/expected-verdicts.bash"
+  cat > "$TEST_TMPDIR/test/skills/$name/runner.bash" <<'EOF'
+FIXTURE_TOOLS="Read"
+FIXTURE_MODE="tree"
+fixture_prompt() { printf 'Evaluate in %s' "$1"; }
+fixture_base() {
+  [ -e "$2/.fixture-no-base" ] && return 0
+  mkdir -p "$1/docs" && cp "$REPO_ROOT/docs/rubric.md" "$1/docs/"
+}
+EOF
+}
+
+@test "tree mode: base + fixture tree in a temp repo, REQUEST.md goes to the prompt" {
+  make_tree_skill demo
+  run bash "$GEN" demo
+  [ "$status" -eq 0 ]
+  call="$(cat "$CALLS/0")"
+  [[ "$call" == *"FILES: ./docs/rubric.md ./skills/target/SKILL.md "* ]]
+  [[ "$call" == *"Evaluate in ."* ]]
+  [[ "$call" == *"Please evaluate the target skill."* ]]
+  [[ "$call" != *"SECRET VERDICTS"* ]]
+  [[ "$call" != *"CWD: $TEST_TMPDIR/test"* ]]
+  [ -s "$TEST_TMPDIR/test/skills/demo/output/tc-3-planted-weakness.report.md" ]
+}
+
+@test "tree mode: the fixture directory's name never reaches the model" {
+  make_tree_skill demo
+  run bash "$GEN" demo
+  [ "$status" -eq 0 ]
+  [[ "$(cat "$CALLS/0")" != *"planted-weakness"* ]]
+}
+
+@test "tree mode: .fixture-* markers steer fixture_base and are removed" {
+  make_tree_skill demo
+  touch "$TEST_TMPDIR/test/skills/demo/fixtures/tc-3-planted-weakness/.fixture-no-base"
+  run bash "$GEN" demo
+  [ "$status" -eq 0 ]
+  call="$(cat "$CALLS/0")"
+  [[ "$call" == *"FILES: ./skills/target/SKILL.md "* ]]
+  [[ "$call" != *"fixture-no-base"* ]]
+}
+
+@test "tree mode takes directories only; repo mode takes files only" {
+  make_tree_skill demo
+  echo stray > "$TEST_TMPDIR/test/skills/demo/fixtures/tc-9-stray.md"
+  run bash "$GEN" demo
+  [ "$status" -eq 0 ]
+  [ "$(ls "$CALLS" | wc -l)" -eq 1 ]
+
+  rm -rf "$CALLS"/*
+  make_skill other repo "Read"
+  mkdir "$TEST_TMPDIR/test/skills/other/fixtures/tc-5-a-dir"
+  run bash "$GEN" other
+  [ "$status" -eq 0 ]
+  [ "$(ls "$CALLS" | wc -l)" -eq 1 ]
 }
 
 @test "fixture prefix selects a subset" {

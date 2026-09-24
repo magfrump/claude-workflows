@@ -14,9 +14,11 @@
 #   FIXTURE_TOOLS   — the --tools allowlist for claude -p, or "none" for no
 #                     tools at all (skills that must not fact-check on their
 #                     own, like the critique skills)
-#   FIXTURE_MODE    — "inline" (fixture content appended to the prompt) or
+#   FIXTURE_MODE    — "inline" (fixture content appended to the prompt),
 #                     "repo" (fixture copied into a throwaway git repo that
-#                     becomes claude's working directory)
+#                     becomes claude's working directory), or "tree" (each
+#                     fixture is a DIRECTORY whose contents become that repo;
+#                     see "tree mode" below)
 #   fixture_prompt  — a function; given the filename the model will see, prints
 #                     the prompt
 #   FIXTURE_TRANSCRIPT (optional) — "1" runs claude with stream-json output and
@@ -30,6 +32,19 @@
 # them: in "repo" mode the fixture is copied in as subject.<ext>, and that
 # neutral name is what fixture_prompt receives in both modes.
 #
+# tree mode, for skills that read repo context (self-eval reads the rubric and
+# sibling skills; the divergent-design router reads its workflow):
+#   - fixture_base <dest> <fixture-dir> (optional runner function) runs first and
+#     copies shared files into the temp repo — usually live files from
+#     $REPO_ROOT, so fixtures test the current rubric/workflow rather than a
+#     vendored copy. It may inspect <fixture-dir> to vary the base per fixture.
+#   - the fixture directory's contents are copied on top, then committed.
+#   - REQUEST.md, if present, is appended to the prompt and not copied.
+#   - top-level files named .fixture-* are control markers for fixture_base;
+#     they are removed before the model runs, so their names never reach it.
+#   - fixture_prompt receives "." (there is no single subject file). The
+#     directory's descriptive name never reaches the model.
+#
 # Cheat prevention: the tool allowlist never includes Write, and in "repo" mode
 # the working directory holds only the fixture, so the model cannot reach
 # expected-verdicts.bash or eval-criteria.md. "inline" skills should omit Read.
@@ -41,6 +56,8 @@
 set -euo pipefail
 
 SCRIPT_DIR="$(cd "$(dirname "$0")" && pwd)"
+# Repo root, for runners' fixture_base to copy live files from.
+REPO_ROOT="$(cd "$SCRIPT_DIR/../.." && pwd)"
 SKILL="${1:?Usage: generate-reports.bash <skill> [fixture-prefix]}"
 FIXTURE_PREFIX="${2:-}"
 
@@ -75,9 +92,9 @@ case ",$FIXTURE_TOOLS," in
     ;;
 esac
 case "$FIXTURE_MODE" in
-  inline|repo) ;;
+  inline|repo|tree) ;;
   *)
-    echo "Error: $RUNNER_FILE: FIXTURE_MODE must be inline or repo, got '$FIXTURE_MODE'" >&2
+    echo "Error: $RUNNER_FILE: FIXTURE_MODE must be inline, repo or tree, got '$FIXTURE_MODE'" >&2
     exit 1
     ;;
 esac
@@ -127,7 +144,9 @@ generate_one() {
 
   # Keep the extension (it tells the model the language); drop the name.
   local subject_name="subject"
-  if [[ "$fixture_name" == *.* ]]; then
+  if [ "$FIXTURE_MODE" = "tree" ]; then
+    subject_name="."
+  elif [[ "$fixture_name" == *.* ]]; then
     subject_name="subject.${fixture_name##*.}"
   fi
 
@@ -144,15 +163,28 @@ generate_one() {
   fi
   claude_args+=(--tools "$TOOLS_ARG")
 
-  if [ "$FIXTURE_MODE" = "repo" ]; then
-    # The fixture as a file in a minimal repo, so the model can read it without
-    # access to the eval criteria or expected verdicts.
+  if [ "$FIXTURE_MODE" = "repo" ] || [ "$FIXTURE_MODE" = "tree" ]; then
+    # The fixture as a file (repo) or a directory tree (tree) in a minimal repo,
+    # so the model can read it without access to the eval criteria or expected
+    # verdicts.
     local temp_dir
     temp_dir=$(mktemp -d)
     # shellcheck disable=SC2064  # Intentional: expand $temp_dir now at trap-set time
     trap "rm -rf '$temp_dir'" RETURN
 
-    cp "$fixture_path" "$temp_dir/$subject_name"
+    if [ "$FIXTURE_MODE" = "tree" ]; then
+      if declare -F fixture_base >/dev/null; then
+        fixture_base "$temp_dir" "$fixture_path"
+      fi
+      cp -R "$fixture_path"/. "$temp_dir"/
+      if [ -f "$temp_dir/REQUEST.md" ]; then
+        prompt="$prompt"$'\n\n'"$(cat "$temp_dir/REQUEST.md")"
+        rm "$temp_dir/REQUEST.md"
+      fi
+      rm -rf "$temp_dir"/.fixture-*
+    else
+      cp "$fixture_path" "$temp_dir/$subject_name"
+    fi
     # Initialize a git repo so skills that scope by git diff/log don't fail
     git -C "$temp_dir" init -q
     git -C "$temp_dir" add .
@@ -200,7 +232,12 @@ generate_one() {
 # Find matching fixtures
 fixtures=()
 for f in "$FIXTURE_DIR"/*; do
-  [ -f "$f" ] || continue
+  # tree fixtures are directories; the other modes take files.
+  if [ "$FIXTURE_MODE" = "tree" ]; then
+    [ -d "$f" ] || continue
+  else
+    [ -f "$f" ] || continue
+  fi
   if [ -n "$FIXTURE_PREFIX" ]; then
     [[ "$(basename "$f")" == ${FIXTURE_PREFIX}* ]] || continue
   fi
