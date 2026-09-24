@@ -514,12 +514,11 @@ install_layout() {
   assert_decision ask
 }
 
-# --- Q-048 [2]: agent worktree paths are not the `.claude` indicator ---
-# `.claude/wt-*` and `.claude/worktrees/<name>` are agent worktrees (checkouts),
-# not the config dir. Only an unquoted, unexpanded ABSOLUTE path to a worktree
-# that exists at hook time as a real git worktree dir is exempt: a `..`, a
-# quote, a relative spelling, a symlinked or missing root, a home/config-dir
-# root, or any other `.claude` in the command still counts.
+# --- Q-048 [2] withdrawn: agent worktree paths count as `.claude` like any other ---
+# The worktree exemption was tried and withdrawn (2026-09-23) after three review
+# passes each found bypasses. A `.claude/wt-*` or `.claude/worktrees/<name>` path
+# is an ordinary `.claude` indicator, so a worktree Bash write that names a policy
+# file is denied. Every bypass pinned in passes 1-3 stays here as a deny test.
 
 # A real git repo with two real agent worktrees under its .claude/, outside
 # HOME. Sets REPO.
@@ -542,31 +541,27 @@ assert_all_deny() {  # each arg is a command that must be denied
   done
 }
 
-@test "Q-048: a Bash write into a .claude/wt-* worktree's hooks/ is not denied" {
+@test "Q-048 withdrawn: a Bash write into a real .claude/wt-* worktree's hooks/ or settings is denied" {
   worktree_layout
-  local c
-  for c in \
+  assert_all_deny \
     "echo x > $REPO/.claude/wt-foo/hooks/x.sh" \
     "cp /tmp/a $REPO/.claude/wt-foo/hooks/x.py" \
-    "sed -i s/a/b/ $REPO/.claude/wt-foo/settings.json"; do
-    guard "$(bash_payload "$c")"
-    [ "$status" -eq 0 ] && [ -z "$output" ] || { echo "not deferred: $c -> $output"; return 1; }
-  done
+    "sed -i s/a/b/ $REPO/.claude/wt-foo/settings.json"
 }
 
-@test "Q-048: a Bash write into a .claude/worktrees/<name> worktree's hooks/ is not denied" {
+@test "Q-048 withdrawn: a Bash write into a real .claude/worktrees/<name> worktree's hooks/ is denied" {
   worktree_layout
   guard "$(bash_payload "cp /tmp/a $REPO/.claude/worktrees/foo/hooks/x.py")"
-  assert_defer
+  assert_decision deny
 }
 
-@test "Q-048: a worktree CLAUDE.md write is SOFT (defer; ask when tainted), not denied" {
+@test "Q-048 withdrawn: a worktree CLAUDE.md Bash write is denied (.claude is a home indicator)" {
   worktree_layout
   guard "$(bash_payload "echo x >> $REPO/.claude/wt-foo/CLAUDE.md")"
-  assert_defer
+  assert_decision deny
   taint sess1
   guard "$(bash_payload "echo x >> $REPO/.claude/wt-foo/CLAUDE.md" sess1)"
-  assert_decision ask
+  assert_decision deny
 }
 
 @test "Q-048: a relative worktree path is not exempt (no cwd at hook time)" {
@@ -700,13 +695,10 @@ assert_all_deny() {  # each arg is a command that must be denied
   assert_decision deny
 }
 
-# --- Q-048 whole-command gate (2026-09-23) ---
-# The per-word check can't see a later word that moves off the worktree (`cd ..`,
-# `../x`) or a step that swaps the root after the hook ran (`rm`/`mv` + `ln -s`).
-# So no worktree occurrence is exempt when the WHOLE command has a `..`
-# component, a cd/pushd/popd, an ln/mv/rm, an expansion (`$`, backtick), a
-# program that runs other text (sh -c, eval, xargs, interpreters), or a policy
-# name (settings*.json, hooks, CLAUDE.md) outside the exempt worktree words.
+# --- Q-048 pass-2/pass-3 routes (kept as deny tests after the withdrawal) ---
+# Routes out of a worktree through a later word (`cd ..`, `../x`), a same-command
+# root swap, a command-derived parent, `-t..`, brace expansion, `env -C`, or a
+# link-creating tool. The exemption these defeated is gone; they must stay denied.
 
 @test "Q-048 gate: cd into a worktree then '..' reaches the parent project's .claude: denied" {
   worktree_layout
@@ -756,18 +748,36 @@ assert_all_deny() {  # each arg is a command that must be denied
     "cp /tmp/a $wt/x; cp /tmp/b settings.json"
 }
 
-@test "Q-048 gate: a plain absolute worktree write is still exempt; look-alike words don't trip the gate" {
+@test "Q-048 withdrawn: plain absolute worktree policy writes are denied, look-alike words or not" {
   worktree_layout
-  local wt="$REPO/.claude/wt-foo" c
-  for c in \
+  local wt="$REPO/.claude/wt-foo"
+  assert_all_deny \
     "echo x > $wt/hooks/x.sh" \
-    "cp /tmp/a $wt/test/y.bats" \
     "cp /x/rmdata/a $wt/hooks/x.sh" \
     "echo --cdn > $wt/hooks/x.sh" \
-    "cp /srv/cd-tools/a $wt/settings.json"; do
-    guard "$(bash_payload "$c")"
-    [ "$status" -eq 0 ] && [ -z "$output" ] || { echo "not deferred: $c -> $output"; return 1; }
-  done
+    "cp /srv/cd-tools/a $wt/settings.json"
+}
+
+@test "Q-048 withdrawn: a worktree write naming no policy file is not denied" {
+  worktree_layout
+  guard "$(bash_payload "cp /tmp/a $REPO/.claude/wt-foo/test/y.bats")"
+  assert_defer
+}
+
+@test "Q-048 pass 3: -t.., brace-built '..', env -C and link-creating tools are denied" {
+  worktree_layout
+  local wt="$REPO/.claude/wt-foo"
+  assert_all_deny \
+    "echo EVIL > $wt/settings.json && env -C $wt cp $wt/settings.json -t.." \
+    "mkdir -p $wt/hooks && echo EVIL > $wt/hooks/x.sh && env -C $wt cp -r $wt/hooks -t.." \
+    "echo EVIL > $wt/settings.json && install -t.. $wt/settings.json" \
+    "cp $wt/settings.json -t.." \
+    "env -C $wt cp $wt/settings.json .{,.}" \
+    "find $wt -delete && cp -P /tmp/lnkdir $wt && echo PWN > $wt/settings.json" \
+    "cp -P /tmp/lnkfile $wt/settings.json && echo PWN > $wt/settings.json" \
+    "git -C $wt checkout -q evil && echo PWN > $wt/hooks/evil.sh" \
+    "tar -xf /tmp/e.tar -C $wt && echo PWN > $wt/settings.json" \
+    "cp -rs /tmp/c $wt/c && echo PWN > $wt/c/settings.json"
 }
 
 # --- Q-050 [2]: resolve-only HARD is denied, including per-file hook links ---

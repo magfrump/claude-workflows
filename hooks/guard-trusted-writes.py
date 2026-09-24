@@ -46,22 +46,13 @@ one many ways. The global tier is therefore decided by CO-OCCURRENCE in the text
           `global-instructions`, `CLAUDE_CONFIG_DIR`, the literal config dir); OR a
           settings*.json / hooks mention together with `.claude` / the config dir.
           Conservative: a heredoc that names ~/.claude/CLAUDE.md in prose is denied.
-          Exception (Q-048 [2]): an agent worktree path (`.claude/wt-<name>`,
-          `.claude/worktrees/<name>`) is not a `.claude` indicator ONLY when its
-          whole shell word is an absolute path with no quote, expandable character
-          or `..`, and its worktree root exists at hook time as a real,
-          unsymlinked git worktree (a `.git` file) clear of the config dir,
-          ~/.claude and HOME (_neutralize_worktrees); AND the whole command has
-          no `..` component, no `$` or backtick, no cd/pushd/popd, no ln/mv/rm,
-          no program that runs other text (sh -c, eval, xargs, interpreters) and
-          no policy name outside the exempt worktree words. If any of that fails,
-          no worktree occurrence is exempt. So a relative worktree path
-          (`cd … && … .claude/wt-x/…`) is NOT exempt; neither is a worktree the
-          same command creates (it does not exist when the hook runs) or
-          replaces with a symlink (that needs rm/mv and ln, which void the
-          exemption); nor a `cd <wt> && cd ..` or `../x` step out of it. Accepted:
-          any plain directory holding a regular `.git` file passes the root check
-          (its contents are not checked), but writes still stay inside it.
+          No worktree exemption: Q-048 [2]'s exemption for agent worktrees
+          (`.claude/wt-*`, `.claude/worktrees/*`) was tried and withdrawn after
+          three review passes each found bypasses (quote-split `..`, `cd ..`/`../`,
+          same-command swaps, `-t..`, brace expansion, `env -C`, link-creating
+          tools; docs/reviews/code-fact-check-report*-pass{1,2,3}-*.md), so a
+          worktree Bash write that mentions `.claude` plus a policy name is denied
+          and agents there use Edit/Write or absolute paths.
           Not gated here: Bash writes to a linked hook's CHECKOUT path (e.g.
           `echo x > <checkout>/hooks/<name>` on a bare host) get no opinion; only
           Edit/Write are denied there (N12). Pre-existing, alongside N2/A8.
@@ -259,134 +250,10 @@ SOFT_FRAG = re.compile(
     r"\.claude/(skills|memories|commands|agents)"
     r"|(^|[\s\"'=/])(AGENTS|CLAUDE|CLAUDE\.local)\.md|\.mdc(\b|$)", re.I)
 
-# Q-048 [2]: an agent worktree (`.claude/wt-<name>`, `.claude/worktrees/<name>`)
-# is a checkout, not the config dir, so its `.claude` is not an indicator. The
-# check is on what exists at hook time, not on spelling alone, because the shell
-# rewrites spellings (quote concatenation `wt-x"/.."`, `$HOME`, `a=b=/...`) and a
-# name can be a symlink. An occurrence is exempt ONLY when ALL of these hold:
-#   - its whole shell word holds no quote, no expandable character
-#     ($ ` ~ \ * ? [ {) and no `..` component. Quotes are part of the word, not
-#     word ends: the shell concatenates `.claude/wt-x"/.."/settings.json` into
-#     one path;
-#   - the word is an ABSOLUTE path. A relative one (`cd ~ && .claude/wt-x/...`)
-#     depends on a cwd the hook cannot see, so it is never exempt;
-#   - its worktree root exists NOW as a real directory (not a symlink, and no
-#     symlinked ancestor: realpath == normpath) holding a `.git` FILE, i.e. a git
-#     worktree (any plain dir with a regular `.git` file also passes; writes
-#     still stay inside it). A worktree created by the same command does not
-#     exist yet, so it is not exempt. One the same command REPLACES would pass
-#     this time-of-check test, which is why the whole-command gate below voids
-#     the exemption for any rm/mv/ln;
-#   - that root neither equals, contains nor lies inside the config dir (as
-#     written or resolved) or ~/.claude, and does not contain HOME;
-#   - the word, resolved, stays inside the root (a symlink inside the worktree
-#     that leads out of it is not exempt; one created by the same command needs
-#     ln, which the gate rejects);
-#   - the whole command passes _whole_command_allows_exemption and names no
-#     policy file outside the exempt words (below).
-# Every other `.claude` in the command still counts. Residual: a program the
-# command runs by file (a script, make, a git hook) can swap the root unseen;
-# that is the A8 class of writes this hook can't read.
-_WT_SEG = re.compile(
-    r"\.claude/(?:wt-[A-Za-z0-9_.-]*|worktrees/[A-Za-z0-9_-][A-Za-z0-9_.-]*)"
-    r"(?=/|[\s\"'`;|&<>()]|$)")
-# Word boundaries for the check. Quotes and `=` are NOT boundaries: the shell
-# joins `"a"/b` and `a=/x` into one word, so the whole of it is checked.
-_WORD_DELIM = set(" \t\n;|&<>()")
-_WT_UNSAFE = re.compile(r"[\"'$`~\\*?\[{]|(^|/)\.\.(/|$)")
-
-def _within(a: str, b: str) -> bool:
-    return a == b or a.startswith(b.rstrip("/") + "/")
-
-def _real_worktree_root(root: str) -> bool:
-    """True when `root` is, right now, a real (unsymlinked) git worktree dir that
-    is clear of the config dir, ~/.claude and HOME."""
-    try:
-        if os.path.islink(root) or not os.path.isdir(root):
-            return False
-        if os.path.realpath(root) != root:
-            return False
-        git = os.path.join(root, ".git")
-        if os.path.islink(git) or not os.path.isfile(git):
-            return False
-    except OSError:
-        return False
-    protected = {str(g) for g in GLOBAL_DIRS}
-    protected |= {str(HOME / ".claude"), os.path.realpath(str(HOME / ".claude"))}
-    if any(_within(root, p) or _within(p, root) for p in protected):
-        return False
-    home = {str(HOME), os.path.realpath(str(HOME))}
-    return not any(_within(h, root) for h in home)
-
-def _exempt_worktree(word: str, root: str) -> bool:
-    if _WT_UNSAFE.search(word) or not word.startswith("/"):
-        return False
-    root = os.path.normpath(root)
-    if not _real_worktree_root(root):
-        return False
-    return _within(os.path.realpath(word), root)
-
-# Whole-command gate (user decision 2026-09-23). The per-word check above can't
-# see a LATER word that moves off the worktree (`cd <wt> && cd ..`, `../x`) or a
-# step that swaps the root after the hook ran (`rm -rf <wt> && ln -s X <wt>`),
-# so a command that can do either gets NO exemption at all. Checked on the text
-# with quotes and backslashes removed, since `c""d`, `l\n` and `.""./` run as
-# `cd`, `ln` and `../`. A command is disqualified by:
-#   - a `..` path component anywhere (not `a..b`, which is not a path step);
-#   - any `$` or backtick: an expansion can derive the parent (`$(dirname <wt>)`,
-#     `${1%/*}`) or name a command (`$D -s ...`) the text can't show;
-#   - a word that changes directory (cd pushd popd), swaps a path (ln mv rm; any
-#     rm, not only -r), or runs other text as commands (sh -c, eval, xargs,
-#     awk, interpreters). Word boundaries exclude letters, digits, `.`, `_` and
-#     `-`, so `/x/rmdata`, `--cdn` and `x.sh` do not trip it, while `/bin/rm`
-#     and `(cd` do. Over-matching only costs the exemption.
-_WT_GATE_DOTDOT = re.compile(r"(?<![\w.-])\.\.(?![\w.-])")
-_WT_GATE_CMD = re.compile(
-    r"(?<![\w.-])(?:cd|pushd|popd|ln|mv|rm|sh|bash|zsh|dash|ksh|eval|exec|source"
-    r"|xargs|awk|gawk|python[0-9.]*|node|perl|ruby)(?![\w.-])")
-
-def _whole_command_allows_exemption(cmd: str) -> bool:
-    if "$" in cmd or "`" in cmd:
-        return False
-    flat = re.sub(r"[\"'\\]", "", cmd)
-    return not (_WT_GATE_DOTDOT.search(flat) or _WT_GATE_CMD.search(flat))
-
-def _neutralize_worktrees(cmd: str) -> str:
-    if not _WT_SEG.search(cmd) or not _whole_command_allows_exemption(cmd):
-        return cmd
-    spans, outside, last = [], [], 0
-    for m in _WT_SEG.finditer(cmd):
-        s = m.start()
-        while s > 0 and cmd[s - 1] not in _WORD_DELIM:
-            s -= 1
-        e = m.end()
-        while e < len(cmd) and cmd[e] not in _WORD_DELIM:
-            e += 1
-        if not _exempt_worktree(cmd[s:e], cmd[s:m.end()]):
-            continue
-        spans.append((m.start(), m.end()))
-        outside.append(cmd[last:s])
-        last = e
-    outside.append(cmd[last:])
-    # A policy name (settings*.json, hooks, CLAUDE.md) OUTSIDE the exempt words
-    # may be reached relative to the worktree by a route the gate missed (e.g. a
-    # pipe that strips the last path step). Then every `.claude` counts again.
-    rest = " ".join(outside)
-    if SETTINGS_OR_HOOKS.search(rest) or CLAUDE_MD.search(rest):
-        return cmd
-    out, last = [], 0
-    for a, b in spans:
-        out.append(cmd[last:a])
-        out.append("AGENT_WORKTREE")
-        last = b
-    out.append(cmd[last:])
-    return "".join(out)
-
 def bash_targets(cmd: str):
     has_write = bool(WRITE_PRIMITIVE.search(cmd))
     if not has_write:
         return None
-    cmd = _neutralize_worktrees(cmd)
     if HARD_FRAG.search(cmd):
         return "hard"
     # R1 / Q-035: CLAUDE.md plus any home/global indicator -> the global file may be meant.
