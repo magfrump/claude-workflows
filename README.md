@@ -27,8 +27,8 @@ details.
 
 **Migrating from the old symlink install.** Close your Claude Code sessions, then
 run `install.sh`. Its `~/.claude` review lists every symlink it will replace
-(`REPLACE symlink … with a copy`) and every file in those directories that the repo
-doesn't have (`MOVE to backup`). Check any line marked `WIRED in settings` before you
+(`REPLACE symlink … with a copy`) and every file or link in those directories that
+the repo doesn't have (`MOVE to backup`, `MOVE link … to backup`). Check any line marked `WIRED in settings` before you
 answer y: that hook is referenced from your `settings.json` and will stop running.
 Everything replaced, including the old links, is moved to
 `~/.claude/.claude-workflows-backup/<UTC stamp>/`. Delete that directory when you're

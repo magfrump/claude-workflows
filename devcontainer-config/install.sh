@@ -419,29 +419,38 @@ install_claude_home() {
   # Pre-pass: what the content diff cannot show.
   local changed=0 link f rel line warned=0
   echo "=== Changes this install would make ==========================================="
+  # A link the repo also has is REPLACEd by a copy; anything the repo lacks,
+  # link or file, is only MOVEd (review R5), and says which it is.
   for name in "${CLAUDE_HOME_NAMES[@]}"; do
     if [ -L "$dest/$name" ]; then
-      echo "REPLACE symlink $dest/$name -> $(readlink "$dest/$name") with a copy"
+      echo "REPLACE symlink $dest/$name -> $(readlink "$dest/$name") with a copy" | vis
       changed=1
     elif [ -d "$dest/$name" ]; then
       while IFS= read -r -d '' link; do
-        echo "REPLACE symlink $link -> $(readlink "$link") with a copy"
+        rel="${link#"$dest/$name"/}"
+        [ -e "$stage/$name/$rel" ] || continue
+        echo "REPLACE symlink $link -> $(readlink "$link") with a copy" | vis
         changed=1
-      done < <(find "$dest/$name" -type l -print0 | sort -z)
+      done < <(find "$dest/$name" -type l -print0 | LC_ALL=C sort -z)
       while IFS= read -r -d '' f; do
         rel="${f#"$dest/$name"/}"
-        if [ -e "$stage/$name/$rel" ] || [ -L "$stage/$name/$rel" ]; then continue; fi
+        if [ -e "$stage/$name/$rel" ]; then continue; fi
         if [ "$warned" -eq 0 ]; then
           echo "WARNING: not in the repo; these will be MOVED to the backup (Q-057):"
           warned=1
         fi
-        line="MOVE to backup (not in the repo): $f"
-        if [ "$name" = hooks ] && grep -qsF "hooks/$(basename "$f")" "$dest/settings.json" "$dest/settings.local.json"; then
+        if [ -L "$f" ]; then
+          line="MOVE link $f -> $(readlink "$f") to backup (not in the repo)"
+        else
+          line="MOVE to backup (not in the repo): $f"
+        fi
+        # Match the full hooks/<path>, so hooks/sub/x.sh is not "wired" by hooks/x.sh.
+        if [ "$name" = hooks ] && grep -qsF "hooks/$rel" "$dest/settings.json" "$dest/settings.local.json"; then
           line="$line  <-- WIRED in settings: moving it breaks that hook"
         fi
-        echo "$line"
+        echo "$line" | vis
         changed=1
-      done < <(find "$dest/$name" \( -type f -o -type l \) -print0 | sort -z)
+      done < <(find "$dest/$name" \( -type f -o -type l \) -print0 | LC_ALL=C sort -z)
     fi
   done
   # Content diff: the same review_diff the devcontainer target uses. Through a

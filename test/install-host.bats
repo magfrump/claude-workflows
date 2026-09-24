@@ -523,6 +523,24 @@ installed_then_changed() {
   [ ! -e "$CLAUDE_HOME_DIR/.claude-workflows-lock" ]
 }
 
+@test "T33 a foreign hook link is labelled MOVE (not REPLACE), WIRED on its own line (review R5)" {
+  need_script; fake_repo; symlink_install
+  d="$CLAUDE_HOME_DIR"
+  printf '#!/bin/bash\n' > "$S/theirs-target.sh"
+  ln -s "$S/theirs-target.sh" "$d/hooks/theirs.sh"
+  mkdir -p "$d/hooks/sub"; printf 'x\n' > "$d/hooks/sub/x.sh"; printf 'y\n' > "$d/hooks/sub/y.sh"
+  printf '{"a":"bash ~/.claude/hooks/theirs.sh","b":"hooks/x.sh","c":"hooks/sub/y.sh"}\n' > "$d/settings.json"
+  run_pty 'n\nn\n' bash "$INSTALL"
+  echo "$output"
+  [[ "$output" != *"REPLACE symlink $d/hooks/theirs.sh"* ]]
+  line=$(grep -F "$d/hooks/theirs.sh" <<<"$output" | head -1)
+  [[ "$line" == "MOVE link $d/hooks/theirs.sh -> $S/theirs-target.sh to backup (not in the repo)"*'WIRED in settings'* ]]
+  grep -F "$d/hooks/sub/y.sh" <<<"$output" | grep -q 'WIRED'
+  ! grep -F "$d/hooks/sub/x.sh" <<<"$output" | grep -q 'WIRED'
+  # A repo-backed link is still a REPLACE.
+  [[ "$output" == *"REPLACE symlink $d/hooks/h.sh -> "* ]]
+}
+
 @test "T24 with CLAUDE_HOME_DIR unset, CLAUDE_CONFIG_DIR chooses the destination" {
   need_script; fake_repo
   run_pty 'n\ny\n' env -u CLAUDE_HOME_DIR CLAUDE_CONFIG_DIR="$S/cfgdir" bash "$INSTALL"
