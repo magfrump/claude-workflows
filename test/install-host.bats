@@ -69,8 +69,14 @@ fake_repo() {
   printf 'api.anthropic.com\n' > "$cfg/egress/base.txt"
   printf 'devcontainer-config/claude-home/\n' > "$ROOT/.gitignore"
   git -C "$ROOT" init -q
+  commit_all init
+}
+
+# install.sh stages COMMITTED content only, so a fixture edit that should be
+# installed has to be committed.
+commit_all() {
   git -C "$ROOT" add -A
-  git -C "$ROOT" -c user.email=t@t -c user.name=t commit -q -m init
+  git -C "$ROOT" -c user.email=t@t -c user.name=t commit -q -m "${1:-edit}"
 }
 
 # The README's symlink install, plus host-owned user state that must survive.
@@ -222,7 +228,7 @@ no_host_stage_left() {
   rm -rf "$ROOT/hooks" "$ROOT/scripts"
   cp -R "$CONFIG_SRC/../hooks" "$ROOT/hooks"
   cp -R "$CONFIG_SRC/../scripts" "$ROOT/scripts"
-  git -C "$ROOT" add -A; git -C "$ROOT" -c user.email=t@t -c user.name=t commit -q -m real-hooks
+  commit_all real-hooks
   run_pty 'n\ny\n' bash "$INSTALL"
   [ -f "$CLAUDE_HOME_DIR/hooks/lib/usage-common.sh" ]
   [ -f "$CLAUDE_HOME_DIR/scripts/lib/skill-paths.sh" ]
@@ -250,7 +256,7 @@ no_host_stage_left() {
   echo "$output"
   [[ "$output" == *'(none'* ]]
   [[ "$output" != *'bare-host-hook-wiring.md'* ]]
-  printf '{"hooks":{"x":1}}\n' > "$ROOT/hooks/wiring.json"
+  printf '{"hooks":{"x":1}}\n' > "$ROOT/hooks/wiring.json"; commit_all
   run_pty 'n\ny\n' bash "$INSTALL"
   [[ "$output" == *'bare-host-hook-wiring.md'* ]]
 }
@@ -378,7 +384,39 @@ no_host_stage_left() {
   printf 'edited\n' >> "$ROOT/skills/a/SKILL.md"
   run_pty 'n\nn\n' bash "$INSTALL"
   echo "$output"
-  [[ "$output" == *'uncommitted changes'* ]]
+  [[ "$output" == *'uncommitted changes'*'NOT included'* ]]
+  [[ "$output" == *'skills/a/SKILL.md'* ]]
+}
+
+@test "T25 uncommitted edits (unstaged, staged, untracked) are listed and NOT installed" {
+  need_script; fake_repo
+  printf 'edited\n' >> "$ROOT/global-instructions/CLAUDE.md"
+  printf 'staged\n' > "$ROOT/workflows/w.md"; git -C "$ROOT" add workflows/w.md
+  printf 'new\n' > "$ROOT/skills/a/untracked.md"
+  run_pty 'n\ny\n' bash "$INSTALL"
+  echo "$output"
+  review="${output%%Install these files*}"
+  [[ "$review" == *'NOT included'* ]]
+  for p in global-instructions/CLAUDE.md workflows/w.md skills/a/untracked.md; do
+    [[ "$review" == *"$p"* ]]
+  done
+  [ "$(cat "$CLAUDE_HOME_DIR/CLAUDE.md")" = 'global instructions' ]
+  [ "$(cat "$CLAUDE_HOME_DIR/workflows/w.md")" = workflow ]
+  [ ! -e "$CLAUDE_HOME_DIR/skills/a/untracked.md" ]
+  m="$CLAUDE_HOME_DIR/.claude-workflows-manifest"
+  grep -q "^commit=$(git -C "$ROOT" rev-parse HEAD)$" "$m"
+  grep -q '^dirty=no$' "$m"
+}
+
+@test "T26 git-ignored files in the checkout (e.g. __pycache__) are never installed" {
+  need_script; fake_repo
+  printf '__pycache__/\n' >> "$ROOT/.gitignore"; commit_all ignore
+  mkdir -p "$ROOT/scripts/__pycache__"; printf 'bytecode\n' > "$ROOT/scripts/__pycache__/x.pyc"
+  run_pty 'n\ny\n' bash "$INSTALL"
+  echo "$output"
+  [ -f "$CLAUDE_HOME_DIR/scripts/s.sh" ]
+  [ ! -e "$CLAUDE_HOME_DIR/scripts/__pycache__" ]
+  [[ "$output" != *'NOT included'* ]]   # ignored files are not "uncommitted changes"
 }
 
 @test "T24 with CLAUDE_HOME_DIR unset, CLAUDE_CONFIG_DIR chooses the destination" {

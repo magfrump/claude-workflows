@@ -9,7 +9,7 @@ Reusable workflow definitions for AI coding agents. Works with Claude Code, Anti
 ```bash
 git clone <repo-url> ~/claude-workflows
 cd ~/claude-workflows
-./devcontainer-config/install.sh      # run it again after every pull or edit
+./devcontainer-config/install.sh      # run it again after every pull or commit
 ```
 
 `install.sh` offers two targets in turn, each with its own review diff and its
@@ -18,7 +18,9 @@ don't use the devcontainer. The second copies `global-instructions/CLAUDE.md`,
 `skills`, `workflows`, `guides`, `patterns`, `hooks` and `scripts` into
 `~/.claude` (or `$CLAUDE_CONFIG_DIR` if you set it). They are **copies, not
 symlinks**: an edit to the checkout, by you or by an agent, does nothing until you
-rerun `install.sh`, read the diff and answer y (decision 037). The `~/.claude`
+rerun `install.sh`, read the diff and answer y (decision 037). Only **committed**
+content is installed: uncommitted changes under those paths are listed as NOT
+included, and git-ignored files are never copied. The `~/.claude`
 target only installs for a human at a terminal. It is skipped with `--yes`, from a
 script with no TTY, and inside a Claude Code session. `install.sh --help` has the
 details.

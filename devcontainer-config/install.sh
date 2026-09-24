@@ -92,12 +92,23 @@ REPO_ROOT="$(cd "$SRC/.." && pwd)"
 # the payload layout (and link-claude-home.sh) is unchanged.
 CLAUDE_HOME_SRC=(global-instructions/CLAUDE.md skills workflows guides patterns hooks scripts)
 
-# assemble <stage-dir>: stage every CLAUDE_HOME_SRC entry under its basename and
-# write the .manifest provenance stamp. Exits the script on a missing source.
+# assemble <stage-dir>: stage every CLAUDE_HOME_SRC entry, as committed at HEAD,
+# under its basename and write the .manifest provenance stamp. Exits the script
+# on a missing source.
+#
+# COMMITTED CONTENT ONLY (code review 2026-09-23, C1). The working tree is
+# agent-writable and holds git-ignored junk (__pycache__), so the payload is
+# `git archive HEAD`, never `cp -r` of the tree. Uncommitted changes under the
+# payload paths are listed as NOT included; the human commits and reruns.
 assemble() {
-  local stage="$1" item
+  local stage="$1" item commit
   rm -rf "$stage"
   mkdir -p "$stage"
+  if ! commit="$(git -C "$REPO_ROOT" rev-parse --verify -q 'HEAD^{commit}')"; then
+    echo "ERROR: no readable HEAD commit in $REPO_ROOT (run \`git -C $REPO_ROOT status\`" >&2
+    echo "       to see why). install.sh stages committed content only. Nothing was installed." >&2
+    exit 1
+  fi
   # None of the seven entries is optional, and a missing one is silent-and-total:
   # the image ships without that part of the process and no session notices. So
   # this is fatal, not a warning — a warning here scrolls off above the payload
@@ -106,23 +117,41 @@ assemble() {
   # rather than one rerun per renamed path.
   local missing=()
   for item in "${CLAUDE_HOME_SRC[@]}"; do
-    if [ -e "$REPO_ROOT/$item" ]; then
-      cp -r "$REPO_ROOT/$item" "$stage/$(basename "$item")"
-    else
-      missing+=("$item")
-    fi
+    git -C "$REPO_ROOT" cat-file -e "$commit:$item" 2>/dev/null || missing+=("$item")
   done
   if [ "${#missing[@]}" -gt 0 ]; then
-    echo "ERROR: payload source(s) not found under $REPO_ROOT: ${missing[*]}" >&2
-    echo "       The image payload would be incomplete. Fix the path, or edit" >&2
+    echo "ERROR: payload source(s) not found in commit ${commit:0:12} of $REPO_ROOT: ${missing[*]}" >&2
+    echo "       The payload would be incomplete. Fix (and commit) the path, or edit" >&2
     echo "       CLAUDE_HOME_SRC in this script. Nothing was installed." >&2
     exit 1
   fi
+  mkdir "$stage/.extract"
+  if ! git -C "$REPO_ROOT" archive --format=tar "$commit" -- "${CLAUDE_HOME_SRC[@]}" \
+       | tar -xf - -C "$stage/.extract"; then
+    echo "ERROR: could not extract commit ${commit:0:12} from $REPO_ROOT. Nothing was installed." >&2
+    exit 1
+  fi
+  for item in "${CLAUDE_HOME_SRC[@]}"; do
+    mv "$stage/.extract/$item" "$stage/$(basename "$item")"
+  done
+  rm -rf "$stage/.extract"
+  # Porcelain paths are repo-relative and C-quoted, so control bytes cannot
+  # reach the terminal from here. Ignored files are not listed: never staged.
+  local dirty
+  dirty="$(git -C "$REPO_ROOT" status --porcelain --untracked-files=all -- "${CLAUDE_HOME_SRC[@]}")"
+  if [ -n "$dirty" ]; then
+    echo "WARNING: the checkout has uncommitted changes under the payload paths. They are"
+    echo "         NOT included: this install stages commit ${commit:0:12} only. Commit them"
+    echo "         and rerun to include them."
+    printf '%s\n' "$dirty" | sed 's/^/           /'
+  fi
   # Provenance stamp: lets a session (and health-check) tell which commit's process
   # it is running, and detect that the image predates the repo it is editing.
+  # dirty=no always: the payload is exactly the commit's content.
   {
-    echo "commit=$(git -C "$REPO_ROOT" rev-parse HEAD 2>/dev/null || echo unknown)"
-    echo "dirty=$(test -n "$(git -C "$REPO_ROOT" status --porcelain 2>/dev/null)" && echo yes || echo no)"
+    echo "commit=$commit"
+    echo "dirty=no"
+    echo "uncommitted_excluded=$(printf '%s' "$dirty" | grep -c '' || true)"
     echo "assembled_from=$REPO_ROOT"
   } > "$stage/.manifest"
 }
@@ -333,10 +362,7 @@ install_claude_home() {
   HOST_TMP="$(mktemp -d "${TMPDIR:-/tmp}/cw-host-stage.XXXXXX")"
   local stage="$HOST_TMP/payload"
   assemble "$stage"
-  echo "Canonical (repo):  $REPO_ROOT"
-  if grep -q '^dirty=yes$' "$stage/.manifest"; then
-    echo "WARNING: the checkout has uncommitted changes; they are included in this install."
-  fi
+  echo "Canonical (repo):  $REPO_ROOT (commit $(sed -n 's/^commit=//p' "$stage/.manifest"))"
   echo
 
   # Pre-pass: what the content diff cannot show.

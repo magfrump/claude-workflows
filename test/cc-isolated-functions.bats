@@ -595,10 +595,19 @@ fake_install_repo() {
     [ "$item" = "$omit" ] && continue
     case "$item" in
       */*) mkdir -p "$root/$(dirname "$item")"; printf 'stub\n' > "$root/$item" ;;
-      *)   mkdir -p "$root/$item" ;;
+      *)   mkdir -p "$root/$item"; printf 'stub\n' > "$root/$item/stub.md" ;;
     esac
   done
+  git -C "$root" init -q
+  fake_commit "$root"
   printf '%s\n' "$root"
+}
+
+# install.sh stages the claude-home payload from COMMITTED content only, so a
+# fixture change that should be staged must be committed.
+fake_commit() {
+  git -C "$1" add -A
+  git -C "$1" -c user.email=t@t -c user.name=t commit -q --allow-empty -m fixture
 }
 
 @test "install.sh aborts when a payload source is missing" {
@@ -617,7 +626,7 @@ fake_install_repo() {
 
 @test "install.sh names every missing payload source, not just the first" {
   root=$(fake_install_repo)
-  rm -rf "$root/global-instructions" "$root/patterns"
+  rm -rf "$root/global-instructions" "$root/patterns"; fake_commit "$root"
   run env CLAUDE_DEVC_CONFIG_DIR="$BATS_TEST_TMPDIR/nodest" \
       bash "$root/devcontainer-config/install.sh" </dev/null
   [ "$status" -eq 1 ]
@@ -640,6 +649,35 @@ fake_install_repo() {
   [[ "$output" == *'Aborted. Nothing was changed.'* ]]
   [ -e "$root/devcontainer-config/claude-home/CLAUDE.md" ]
   [ -d "$root/devcontainer-config/claude-home/skills" ]
+}
+
+@test "install.sh stages committed content only: uncommitted changes are listed, not staged" {
+  # Code review 2026-09-23 C1 (user decision): the working tree is agent-writable
+  # and carries ignored build junk, so the payload is the commit, not the tree.
+  root=$(fake_install_repo)
+  printf 'uncommitted\n' > "$root/skills/new.md"
+  printf 'edited\n' >> "$root/hooks/stub.md"
+  mkdir -p "$root/scripts/__pycache__"; printf 'x\n' > "$root/scripts/__pycache__/c.pyc"
+  printf 'scripts/__pycache__/\n' > "$root/.gitignore"
+  run env CLAUDE_DEVC_CONFIG_DIR="$BATS_TEST_TMPDIR/nodest" \
+      bash "$root/devcontainer-config/install.sh" </dev/null
+  echo "$output"
+  [[ "$output" == *'NOT included'*'skills/new.md'* ]]
+  [[ "$output" == *'hooks/stub.md'* ]]
+  [ -e "$root/devcontainer-config/claude-home/skills/stub.md" ]
+  [ ! -e "$root/devcontainer-config/claude-home/skills/new.md" ]
+  [ "$(cat "$root/devcontainer-config/claude-home/hooks/stub.md")" = stub ]
+  [ ! -e "$root/devcontainer-config/claude-home/scripts/__pycache__" ]
+  grep -q "^commit=$(git -C "$root" rev-parse HEAD)$" "$root/devcontainer-config/claude-home/.manifest"
+}
+
+@test "install.sh treats a payload source that exists but was never committed as missing" {
+  root=$(fake_install_repo patterns)
+  mkdir -p "$root/patterns"; printf 'uncommitted\n' > "$root/patterns/p.md"
+  run env CLAUDE_DEVC_CONFIG_DIR="$BATS_TEST_TMPDIR/nodest" \
+      bash "$root/devcontainer-config/install.sh" </dev/null
+  [ "$status" -eq 1 ]
+  [[ "$output" == *'payload source(s) not found'*'patterns'* ]]
 }
 
 # Helper: fill the fake repo's devcontainer-config with every non-assembled
@@ -679,7 +717,7 @@ fake_payload_and_dest() {
   # claude-home is such an item on the first install after it was added.
   root=$(fake_install_repo)
   dest=$(fake_payload_and_dest "$root")
-  printf 'hidden-hook-body\n' > "$root/hooks/new-hook.sh"
+  printf 'hidden-hook-body\n' > "$root/hooks/new-hook.sh"; fake_commit "$root"
   run env CLAUDE_DEVC_CONFIG_DIR="$dest" \
       bash "$root/devcontainer-config/install.sh" </dev/null
   [[ "$output" == *'+hidden-hook-body'* ]]
