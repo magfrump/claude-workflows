@@ -92,6 +92,13 @@ REPO_ROOT="$(cd "$SRC/.." && pwd)"
 # the payload layout (and link-claude-home.sh) is unchanged.
 CLAUDE_HOME_SRC=(global-instructions/CLAUDE.md skills workflows guides patterns hooks scripts)
 
+# vis: filter that makes control bytes visible (all but newline and tab), so a
+# crafted file name or file line cannot rewrite the review on the terminal (A4).
+vis() {
+  LC_ALL=C sed -e 's/\x1b/^[/g' -e 's/\r/^M/g' \
+    -e 's/[\x01-\x08\x0b\x0c\x0e-\x1a\x1c-\x1f\x7f]/?/g' -e 's/\xc2[\x80-\x9f]/?/g'
+}
+
 # assemble <stage-dir>: stage every CLAUDE_HOME_SRC entry, as committed at HEAD,
 # under its basename and write the .manifest provenance stamp. Exits the script
 # on a missing source.
@@ -135,6 +142,17 @@ assemble() {
     mv "$stage/.extract/$item" "$stage/$(basename "$item")"
   done
   rm -rf "$stage/.extract"
+  # No symlinks (review R1). git archive keeps committed links, and diff and
+  # cp -R follow or keep them, so a link to an agent-writable file would review
+  # as "(none)" and install as a live link. Today's payload has none.
+  local links
+  links="$(cd "$stage" && find . -type l | sed 's|^\./||' | LC_ALL=C sort)"
+  if [ -n "$links" ]; then
+    echo "ERROR: the committed payload contains symlinks, which install.sh never installs:" >&2
+    printf '%s\n' "$links" | sed 's/^/         /' | vis >&2
+    echo "       Replace them with real files and commit. Nothing was installed." >&2
+    exit 1
+  fi
   # Porcelain paths are repo-relative and C-quoted, so control bytes cannot
   # reach the terminal from here. Ignored files are not listed: never staged.
   local dirty

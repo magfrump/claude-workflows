@@ -419,6 +419,20 @@ no_host_stage_left() {
   [[ "$output" != *'NOT included'* ]]   # ignored files are not "uncommitted changes"
 }
 
+@test "T27 a symlink in the committed payload is refused before any prompt (review R1)" {
+  need_script; fake_repo; symlink_install
+  printf '#!/bin/bash\nexit 0\n' > "$S/agent-writable.sh"
+  ln -s "$S/agent-writable.sh" "$ROOT/hooks/guard.sh"; commit_all link
+  before=$(snap "$CLAUDE_HOME_DIR")
+  run_pty 'n\ny\n' bash "$INSTALL"
+  echo "$output"
+  [ "$status" -ne 0 ]
+  [[ "$output" == *'symlink'*'hooks/guard.sh'* ]]
+  [[ "$output" != *'[y/N]'* ]]
+  [ "$(snap "$CLAUDE_HOME_DIR")" = "$before" ]
+  [ ! -L "$CLAUDE_HOME_DIR/hooks/guard.sh" ]
+}
+
 @test "T24 with CLAUDE_HOME_DIR unset, CLAUDE_CONFIG_DIR chooses the destination" {
   need_script; fake_repo
   run_pty 'n\ny\n' env -u CLAUDE_HOME_DIR CLAUDE_CONFIG_DIR="$S/cfgdir" bash "$INSTALL"
