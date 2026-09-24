@@ -28,11 +28,10 @@ tc-pm1, tc-pm4, tc-pm6 and tc-pm7 also run `format_check`
   The flaw-specific `cites_pattern` is what shows the planted path was narrated.
   pm3 and pm5 accept Medium because SKILL.md's Medium ("real cost,
   recoverable") honestly fits a degraded search or a slow refund queue.
-- **Field lines.** severity_match reads only lines that start with
-  `**Severity:**`. SKILL.md's template lists the fields as bullets, but the
-  committed `docs/reviews/pre-mortem.md` writes them as bare lines, and the
-  runner prompt asks for that form. A report that bullets the fields would fail
-  severity_match and no_severity would pass vacuously.
+- **Field lines.** SKILL.md's template lists the fields as bullets
+  (`- **Severity:** High`), and the committed `docs/reviews/pre-mortem.md`
+  writes them bare. The field reader in eval-helpers.bash accepts both, so the
+  runner leaves the format to the skill.
 - **No Plausibility checks.** SKILL.md's labels are probability bands, and any
   of them can honestly fit a narrative about these proposals, including
   "Likely" for a small failure on the sound ones. `no_field:Plausibility=Likely`

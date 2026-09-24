@@ -10,7 +10,7 @@ reversibility cliff.
 
 | Fixture | Move | Planted flaw | Graded check | Must Mention |
 |---|---|---|---|---|
-| tc-wi1-order-events-queue.md | 1 Load-bearing assumptions (and 4 Invert the confidence) | Moving order events to an at-least-once log with no dedup, justified by "every consumer is idempotent" stated as fact. `loyalty-accrual` adds points and `invoice-mailer` sends email, so a replay double-credits or double-sends | an `**If wrong:** redesign` or `full retreat` line (cites_pattern) | duplicate / double points, receipts or pick tickets, or that idempotency is asserted without evidence |
+| tc-wi1-order-events-queue.md | 1 Load-bearing assumptions (and 4 Invert the confidence) | Moving order events to an at-least-once log with no dedup, justified by "every consumer is idempotent" stated as fact. `loyalty-accrual` adds points and `invoice-mailer` sends email, so a replay double-credits or double-sends | an `**If wrong:** redesign` or `full retreat` line (field_match) | duplicate / double points, receipts or pick tickets, or that idempotency is asserted without evidence |
 | tc-wi2-ticket-auto-close.md | 2 Second-order effects | Auto-close for pending tickets cut from 7 days to 48 hours. 39% of customer replies arrive on day 3-7; the model says auto-close counts don't change and never traces those customers coming back | none (no graded field fits) | late repliers open new / duplicate tickets, reopen or re-contact, or that the metric gain moves work rather than removing it |
 | tc-wi3-settlement-batch-schedule.md | 3 Hidden coupling | Settlement batch moves from 01:00 to 03:00 UTC. The Environment table lists `warehouse-sync` at 02:15 copying `merchant_settlement` into the finance warehouse; the proposal never connects them, so the copy now runs before settlement and ships stale or partial data | none | `warehouse-sync` / 02:15 now runs before settlement completes, or the finance warehouse gets the previous day's or incomplete data |
 | tc-wi4-password-hash-upgrade.md | 6 Reversibility gradient | Upgrade-on-login writes Argon2id over the bcrypt value in the same column. "Rollback is instant and complete", including redeploying the release that predates the work, which cannot verify Argon2id, so every upgraded account is locked out; the gradient steepens with every login | a `[REVERSIBILITY CLIFF]` line naming the hash, rollback or login | bcrypt hashes overwritten / lost, or the previous release cannot verify the new hashes (lock-out) |
@@ -25,8 +25,7 @@ on the report.
 - **The graded vocabulary is thin.** SKILL.md grades only `**If wrong:**`
   (tweak / redesign / full retreat) and the Findings Summary tags. The skill
   lays the assumption fields out as a bullet list (`- **If wrong:** redesign`),
-  and `field_match` only reads lines that start with the field, so the grade is
-  a `cites_pattern` that allows a list prefix. It passes if ANY assumption is
+  which `field_match` reads. It passes if ANY assumption is
   graded redesign or retreat, so on tc-wi1 it shows
   only that the report graded something load-bearing; the `cites_pattern` is
   what ties it to the idempotency claim. The tag-anchored pattern on tc-wi4 needs

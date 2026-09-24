@@ -9,10 +9,8 @@
 #   - the Findings Summary tags [UNEXAMINED ASSUMPTION], [SECOND-ORDER EFFECT],
 #     [HIDDEN COUPLING], [REVERSIBILITY CLIFF], [SUCCESS COST],
 #     [PRIOR CONSIDERATION].
-# SKILL.md lays the assumption fields out as a bullet list, so reports write
-# "- **If wrong:** redesign". field_match reads only lines that START with
-# "**If wrong:**", so it would miss them; the If-wrong grade is checked with a
-# cites_pattern that allows any line prefix instead.
+# SKILL.md lays the assumption fields out as a bullet list
+# ("- **If wrong:** redesign"); field_match reads bulleted field lines too.
 # Each planted fixture aims at ONE cognitive move; EXPECTED_VERDICT names the
 # move (documentation only — no check reads it). The flaw-specific
 # cites_pattern is the real signal. Where a pattern anchors on a tag, it also
@@ -20,6 +18,7 @@
 # never passes.
 #
 # Check formats used here (separated by ;; — so no pattern may contain ";"):
+#   field_match:<Field>=<a|b>  — some **<Field>:** line starts with a or b
 #   cites_pattern:<ERE>        — report matches <ERE> (case-insensitive, per line)
 #   no_pattern:<ERE>           — report never matches <ERE>
 #   format_check               — what-if-analysis-format.bats passes
@@ -38,7 +37,7 @@ declare -gA KEY_CHECK
 
 EXPECTED_VERDICT["tc-wi1-order-events-queue.md"]="load-bearing assumption"
 CLAIM_ACCURACY["tc-wi1-order-events-queue.md"]="flaw"  # Move 1/4: "every consumer is idempotent" stated as fact to justify at-least-once with no dedup, yet loyalty-accrual adds points and invoice-mailer sends email — a replay double-credits / double-sends
-KEY_CHECK["tc-wi1-order-events-queue.md"]="cites_pattern:\\*\\*If wrong:\\*\\*[[:space:]]*[*_]*(redesign|full retreat);;cites_pattern:(loyalty|points|accrual|balance).{0,150}(twice|double|duplicat|again|re-?appl|inflat|over-?credit|not idempotent|non-idempotent)|(twice|double|duplicat|not idempotent|non-idempotent).{0,150}(loyalty|points|accrual|balance|receipt|email|pick ticket)|idempoten.{0,150}(assert|unverified|not (been )?(verified|tested|checked)|untested|no evidence|taken on faith|by fiat)|(unverified|untested|no evidence).{0,150}idempoten;;format_check"
+KEY_CHECK["tc-wi1-order-events-queue.md"]="field_match:If wrong=redesign|full retreat;;cites_pattern:(loyalty|points|accrual|balance).{0,150}(twice|double|duplicat|again|re-?appl|inflat|over-?credit|not idempotent|non-idempotent)|(twice|double|duplicat|not idempotent|non-idempotent).{0,150}(loyalty|points|accrual|balance|receipt|email|pick ticket)|idempoten.{0,150}(assert|unverified|not (been )?(verified|tested|checked)|untested|no evidence|taken on faith|by fiat)|(unverified|untested|no evidence).{0,150}idempoten;;format_check"
 
 EXPECTED_VERDICT["tc-wi2-ticket-auto-close.md"]="second-order effect"
 CLAIM_ACCURACY["tc-wi2-ticket-auto-close.md"]="flaw"  # Move 2: the 39% of customers who reply on day 3-7 now find the ticket closed and contact again, creating fresh/duplicate tickets — the model claims auto-closed and total volume unchanged, and the metrics improve while the work moves

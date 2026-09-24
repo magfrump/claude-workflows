@@ -148,7 +148,7 @@ assert_verdict() {
   [ "$allowed" = "skip" ] && return 0
 
   local verdicts
-  verdicts=$(echo "$REPORT_CONTENT" | sed -n 's/^\*\*Verdict:\*\* //p')
+  verdicts=$(field_values Verdict)
   [ -n "$verdicts" ] || { echo "No verdicts found in report"; return 1; }
 
   # For single-claim fixtures, check the verdict directly.
@@ -178,7 +178,7 @@ assert_severity() {
   [ "$allowed" = "Any" ] && return 0
 
   local severities
-  severities=$(echo "$REPORT_CONTENT" | sed -n 's/^\*\*Severity:\*\* //p' | tr -d '\r')
+  severities=$(field_values Severity)
   [ -n "$severities" ] || { echo "No **Severity:** lines found in report"; return 1; }
 
   if ! echo "$severities" | grep -qiE "^(${allowed})([^[:alpha:]]|$)"; then
@@ -192,7 +192,7 @@ assert_severity() {
 # Args: $1 = pipe-separated forbidden severities (e.g., "Critical|High")
 assert_no_severity() {
   local forbidden="$1" hits
-  hits=$(echo "$REPORT_CONTENT" | sed -n 's/^\*\*Severity:\*\* //p' | tr -d '\r' \
+  hits=$(field_values Severity \
     | grep -iE "^(${forbidden})([^[:alpha:]]|$)" || true)
   if [ -n "$hits" ]; then
     echo "Expected no severity matching /${forbidden}/, got: $(echo "$hits" | tr '\n' ', ')"
@@ -208,7 +208,7 @@ assert_no_severity() {
 # Args: $1 = pipe-separated forbidden verdicts (e.g., "Weak|Absent")
 assert_no_verdict() {
   local forbidden="$1" hits
-  hits=$(echo "$REPORT_CONTENT" | sed -n 's/^\*\*Verdict:\*\* //p' | tr -d '\r' \
+  hits=$(field_values Verdict \
     | grep -iE "^(${forbidden})([^[:alpha:]]|$)" || true)
   if [ -n "$hits" ]; then
     echo "Expected no verdict matching /${forbidden}/, got: $(echo "$hits" | tr '\n' ', ')"
@@ -216,14 +216,17 @@ assert_no_verdict() {
   fi
 }
 
-# Values of every "**<Field>:** value" line in the report, one per line. For
-# skills that grade with a field other than Verdict or Severity
+# Values of every "**<Field>:** value" line in the report, one per line, with
+# \r stripped. The label may sit at the start of the line or after a list
+# bullet ("- **Severity:** High"), since some skills' templates (pre-mortem,
+# what-if-analysis) lay their graded fields out as bullets. Used by every
+# field-reading check: Verdict, Severity, and field_match's arbitrary fields
 # (tech-debt-triage's **Recommendation:**, test-strategy's **Priority:**).
 # Args: $1 = field name, e.g. "Recommendation"
 field_values() {
   local field="$1"
   echo "$REPORT_CONTENT" | tr -d '\r' \
-    | awk -v f="**${field}:** " 'index($0, f) == 1 { print substr($0, length(f) + 1) }'
+    | sed -E -n "s/^[[:space:]]*([-*+][[:space:]]+)?\*\*${field}:\*\* //p"
 }
 
 # Assert at least one **<Field>:** line starts with one of the allowed values.
