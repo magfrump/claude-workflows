@@ -66,6 +66,7 @@ full. IDs are stable forever: `Q-014` means the same thing here as it did there.
 | [Q-055](#q-055--gemini-install-target) | Do you still use Gemini (CLI or Antigravity)? The README symlinks six entries into `~/.gemini`, and the cop... | 2026-09-23 |
 | [Q-056](#q-056--host-install-tty-only) | Should the host install targets refuse `--yes` and require an interactive terminal? The agent runs on the s... | 2026-09-23 |
 | [Q-057](#q-057--host-install-foreign-files) | When a directory the install owns (for example `~/.claude/skills`) holds files the repo does not have, shou... | 2026-09-23 |
+| [Q-058](#q-058--installer-trust-model) | The copy-based bare-host install (`ans/copy-install`, parked at 9ae6e46) runs as your user, the same user a... | 2026-09-23 |
 <!-- index:end -->
 
 ## Answered
@@ -1186,5 +1187,27 @@ The three "INCONCLUSIVE, claude did not run" labels are a bug in my classifier, 
 - **Takes effect** after install, re-bless and a container start.
 - **Bare host:** a hand-merged `~/.claude/settings.json` still holds the single-slash rules. Re-merge with the guide's `jq` one-liner (it reads the fixed `wiring.json`), or edit the slashes by hand.
 - The guard redesign, where the hook returns `deny` itself for HARD paths, is still recommended: this bug went unnoticed for weeks.
+
+
+### Q-058 · installer-trust-model
+**Needs:** you: judgment · **Opened:** 2026-09-23 · **Status:** ANSWERED
+
+The copy-based bare-host install (`ans/copy-install`, parked at 9ae6e46) runs as your user, the same user as the agent. Three review passes kept finding the same root: anything that uid can write between the review and the swap reaches `~/.claude` unreviewed. Which trust model should the installer be built on?
+
+- **Why it's yours:** it decides what "bless" guarantees on a bare host, and what you must do at install time.
+- **Read:** on `ans/copy-install`, `docs/reviews/code-review-rubric-2026-09-23-ans-copy-install-final.md` (composition cluster 1 states the root), `docs/decisions/037-bare-host-copy-install.md`, `docs/decisions/035-install-sh-gating.md`.
+
+| Option | What it means | Cost to you | If it's wrong |
+|---|---|---|---|
+| **[1] Stage behind `denyWrite ~/.claude`** | Stage, review, hash and install only from copies under the destination, which a sandboxed agent cannot write; re-hash right before the swap; refuse without perl; harden git (no fsmonitor or hooks). | Relies on your sandbox config carrying `denyWrite ~/.claude` | An unsandboxed agent, or a missing deny, reopens every gap |
+| **[2] Install only when no agent can run** | The installer refuses while any `claude` process is running for your user (or asks you to close them), then runs [1]'s checks. | Close sessions before each install | A process the check misses (another host, renamed binary) |
+| **[3] Separate user** | The installed copies are owned by a second account (or root) that agents never run as; the install runs through `sudo -u` after the review. | One-time account setup; a sudo prompt per install | Setup friction; WSL/macOS differences |
+| **[4] Keep the symlinks** | Drop the copy install; the guard's resolved-path deny (merged in 5bd5c66) protects the checkout copies of linked files. | Global files stay uneditable from Claude on the host | Your Q-050 goal (the repo copy is the editable source) is not met |
+
+- **Interim:** nothing changed on your host. The bare host still uses the README's symlink install, and the merged guard denies Claude's file tools on the linked checkout files. The copy-install branch stays unmerged; its fixes for R1, R3, R4 and R5 are kept for reuse.
+- **If the answer differs:** [1]–[3] restart from `ans/copy-install` with a plan revision and one full review; [4] retires the branch and decision 037.
+
+**Answered 2026-09-23: [2], install only when no agent can run, and cc-isolated counts.** Agents in cc-isolated containers write the checkout, including `.git`, through the bind mount, so a running container is an agent that can act during the install window. The check therefore covers both host `claude` processes for your user and running cc-isolated containers. Implementation restarts from `ans/copy-install` with a plan revision.
+
 
 
