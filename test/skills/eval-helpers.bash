@@ -71,60 +71,70 @@ eval_fixture() {
     return 1
   fi
 
-  # Run each check (separated by ;; in KEY_CHECK values)
-  local old_ifs="$IFS"
-  IFS=';;'
-  for check in $key_check; do
+  # Run each check (separated by ;; in KEY_CHECK values). Every check runs and
+  # any failure fails the call, so the result holds under bats' `run` and in
+  # conditionals, not only under a test body's errexit.
+  local checks check failed=""
+  IFS=';' read -ra checks <<< "$key_check"
+  for check in "${checks[@]}"; do
     # Skip empty tokens from IFS splitting
     [ -n "$check" ] || continue
     case "$check" in
       verdict_match)
-        assert_verdict "$expected_verdict"
+        assert_verdict "$expected_verdict" || failed=1
         ;;
       severity_match)
-        assert_severity "$expected_verdict"
+        assert_severity "$expected_verdict" || failed=1
         ;;
       no_severity:*)
-        assert_no_severity "${check#no_severity:}"
+        assert_no_severity "${check#no_severity:}" || failed=1
         ;;
       no_verdict:*)
-        assert_no_verdict "${check#no_verdict:}"
+        assert_no_verdict "${check#no_verdict:}" || failed=1
+        ;;
+      field_match:*)
+        local spec="${check#field_match:}"
+        assert_field "${spec%%=*}" "${spec#*=}" || failed=1
+        ;;
+      no_field:*)
+        local spec="${check#no_field:}"
+        assert_no_field "${spec%%=*}" "${spec#*=}" || failed=1
         ;;
       cites_pattern:*)
         local pattern="${check#cites_pattern:}"
-        assert_report_matches "$pattern"
+        assert_report_matches "$pattern" || failed=1
         ;;
       no_pattern:*)
-        assert_report_not_matches "${check#no_pattern:}"
+        assert_report_not_matches "${check#no_pattern:}" || failed=1
         ;;
       no_critique)
-        assert_no_critique
+        assert_no_critique || failed=1
         ;;
       max_claims:*)
         local n="${check#max_claims:}"
-        assert_max_claims "$n"
+        assert_max_claims "$n" || failed=1
         ;;
       min_claims:*)
         local n="${check#min_claims:}"
-        assert_min_claims "$n"
+        assert_min_claims "$n" || failed=1
         ;;
       web_search_used)
         # With --tools restriction, web search is the only tool available
         # for fact-check, so if we got results, search was used.
         # For explicit verification, check that sources are cited.
-        assert_report_matches "Sources"
+        assert_report_matches "Sources" || failed=1
         ;;
       format_check)
         # Delegate to the format BATS suite (fact-check-format.bats or code-fact-check-format.bats)
-        REPORT_PATH="$REPORT_PATH" bats "${BATS_TEST_DIRNAME}/${skill}-format.bats" || return 1
+        REPORT_PATH="$REPORT_PATH" bats "${BATS_TEST_DIRNAME}/${skill}-format.bats" || failed=1
         ;;
       *)
         echo "Unknown check type: $check"
-        return 1
+        failed=1
         ;;
     esac
   done
-  IFS="$old_ifs"
+  [ -z "$failed" ]
 }
 
 # --- Individual assertion functions ---
@@ -202,6 +212,41 @@ assert_no_verdict() {
     | grep -iE "^(${forbidden})([^[:alpha:]]|$)" || true)
   if [ -n "$hits" ]; then
     echo "Expected no verdict matching /${forbidden}/, got: $(echo "$hits" | tr '\n' ', ')"
+    return 1
+  fi
+}
+
+# Values of every "**<Field>:** value" line in the report, one per line. For
+# skills that grade with a field other than Verdict or Severity
+# (tech-debt-triage's **Recommendation:**, test-strategy's **Priority:**).
+# Args: $1 = field name, e.g. "Recommendation"
+field_values() {
+  local field="$1"
+  echo "$REPORT_CONTENT" | tr -d '\r' \
+    | awk -v f="**${field}:** " 'index($0, f) == 1 { print substr($0, length(f) + 1) }'
+}
+
+# Assert at least one **<Field>:** line starts with one of the allowed values.
+# Check syntax: field_match:Recommendation=Fix now|Fix opportunistically
+# Args: $1 = field name, $2 = pipe-separated allowed values
+assert_field() {
+  local field="$1" allowed="$2" values
+  values=$(field_values "$field")
+  [ -n "$values" ] || { echo "No **${field}:** lines found in report"; return 1; }
+  if ! echo "$values" | grep -qiE "^(${allowed})([^[:alpha:]]|$)"; then
+    echo "Expected a ${field} matching /${allowed}/, got: $(echo "$values" | tr '\n' ', ')"
+    return 1
+  fi
+}
+
+# Assert no **<Field>:** line starts with one of the forbidden values. A report
+# without the field passes. Check syntax: no_field:Recommendation=Fix now
+# Args: $1 = field name, $2 = pipe-separated forbidden values
+assert_no_field() {
+  local field="$1" forbidden="$2" hits
+  hits=$(field_values "$field" | grep -iE "^(${forbidden})([^[:alpha:]]|$)" || true)
+  if [ -n "$hits" ]; then
+    echo "Expected no ${field} matching /${forbidden}/, got: $(echo "$hits" | tr '\n' ', ')"
     return 1
   fi
 }
