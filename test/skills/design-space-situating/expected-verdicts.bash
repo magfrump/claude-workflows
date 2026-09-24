@@ -51,4 +51,6 @@ KEY_CHECK["tc-dss5-pumping-station-dashboard.md"]="cites_pattern:(operator|contr
 
 EXPECTED_VERDICT["tc-dss6-build-cache-hosting.md"]="None"
 CLAIM_ACCURACY["tc-dss6-build-cache-hosting.md"]="sound"  # Build-cache hosting: the operating team decides after asking its users, switching is one URL and was rehearsed, data is regenerable, criteria are measured in a trial — no misframing, so no re-frame hand-off
-KEY_CHECK["tc-dss6-build-cache-hosting.md"]="no_pattern:misfram|mis-fram|re-?fram(e|ed|es|ing)|corrected problem statement|Diamond 1|Double Diamond|wrong (kind of )?(problem|question|frame|framing)|wearing the costume|in the costume of;;format_check"
+# Forbids wording that asserts misframing or sends the decision back to be
+# re-framed, not the bare words: "no misframing found" is the right answer here.
+KEY_CHECK["tc-dss6-build-cache-hosting.md"]="no_pattern:corrected problem statement|return(s|ing)? to (Diamond 1|DD step 2|step 1a)|(should|must|needs? to) be re-?framed|is (mis-?|wrongly )framed|misframed as|wrong (kind of )?(problem|question|frame)|wearing the costume|in the costume of;;format_check"

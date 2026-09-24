@@ -38,13 +38,13 @@ tc-dss1, tc-dss4 and tc-dss6 also run `format_check`
   "user-participatory"). The brief is centralized and expert-led on paper while
   the population it governs already runs its own practice; either reading
   passes.
-- **The negative's pattern can false-fail.** `no_pattern` forbids
-  `re-frame`/`reframing` anywhere, so a report that writes "no reframing
-  needed" fails. That is deliberate: SKILL.md's "None — placements are
-  coherent." line is the expected wording for a coherent decision, and the
-  misframing hand-off (Double Diamond, corrected problem statement) is what the
-  negative must not trigger. A minor tension bullet (vendor dependency vs.
-  on-call load, say) is allowed.
+- **The negative forbids assertions, not vocabulary.** `no_pattern` matches
+  wording that says the decision *is* misframed or sends it back (return to
+  Diamond 1, "corrected problem statement", "should be reframed", "wearing the
+  costume of"). The bare words are allowed, because "no misframing found; no
+  re-frame needed" is the right answer for a coherent decision. SKILL.md's
+  "None — placements are coherent." line is the expected wording. A minor
+  tension bullet (vendor dependency vs. on-call load, say) is allowed.
 - **Tools.** None. SKILL.md needs only the stated decision, and the prompt says
   there is no repository access, so the `docs/working/` save is replaced by
   stdout.
