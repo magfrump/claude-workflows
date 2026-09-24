@@ -15,7 +15,13 @@
 #   FIXTURE_MODE    — "inline" (fixture content appended to the prompt) or
 #                     "repo" (fixture copied into a throwaway git repo that
 #                     becomes claude's working directory)
-#   fixture_prompt  — a function; given the fixture filename, prints the prompt
+#   fixture_prompt  — a function; given the filename the model will see, prints
+#                     the prompt
+#
+# Fixture filenames describe the planted defect or the expected verdict
+# (tc-sec1-sql-injection.py, tc-c2.4-incorrect.js). The model must never see
+# them: in "repo" mode the fixture is copied in as subject.<ext>, and that
+# neutral name is what fixture_prompt receives in both modes.
 #
 # Cheat prevention: the tool allowlist never includes Write, and in "repo" mode
 # the working directory holds only the fixture, so the model cannot reach
@@ -83,8 +89,14 @@ generate_one() {
     model_flag="--model $CLAUDE_MODEL"
   fi
 
+  # Keep the extension (it tells the model the language); drop the name.
+  local subject_name="subject"
+  if [[ "$fixture_name" == *.* ]]; then
+    subject_name="subject.${fixture_name##*.}"
+  fi
+
   local prompt
-  prompt="$(fixture_prompt "$fixture_name")"
+  prompt="$(fixture_prompt "$subject_name")"
 
   if [ "$FIXTURE_MODE" = "repo" ]; then
     # The fixture as a file in a minimal repo, so the model can read it without
@@ -94,7 +106,7 @@ generate_one() {
     # shellcheck disable=SC2064  # Intentional: expand $temp_dir now at trap-set time
     trap "rm -rf '$temp_dir'" RETURN
 
-    cp "$fixture_path" "$temp_dir/"
+    cp "$fixture_path" "$temp_dir/$subject_name"
     # Initialize a git repo so skills that scope by git diff/log don't fail
     git -C "$temp_dir" init -q
     git -C "$temp_dir" add .

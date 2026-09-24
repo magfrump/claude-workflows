@@ -51,7 +51,7 @@ EOF
   call="$(cat "$CALLS/0")"
   [[ "$call" == *"--tools WebSearch"* ]]
   [[ "$call" == *"--system-prompt-file $TEST_TMPDIR/test/skills/../../skills/demo/SKILL.md"* ]]
-  [[ "$call" == *"Review tc-1-thing.txt please"* ]]
+  [[ "$call" == *"Review subject.txt please"* ]]
   [[ "$call" == *"FIXTURE BODY"* ]]
   [ -s "$TEST_TMPDIR/test/skills/demo/output/tc-1-thing.txt.report.md" ]
   [[ "$output" == *"1 severity-tagged findings"* ]]
@@ -62,12 +62,25 @@ EOF
   run bash "$GEN" demo
   [ "$status" -eq 0 ]
   call="$(cat "$CALLS/0")"
-  [[ "$call" == *"LS: tc-1-thing.txt"* ]]
+  [[ "$call" == *"LS: subject.txt"* ]]
   [[ "$call" != *"SECRET VERDICTS"* ]]
   [[ "$call" != *"CWD: $TEST_TMPDIR/test"* ]]
   # The prompt is on stdin; the fixture body is not (the model reads the file).
-  [[ "$call" == *"Review tc-1-thing.txt please"* ]]
+  [[ "$call" == *"Review subject.txt please"* ]]
   [[ "$call" != *"FIXTURE BODY"* ]]
+}
+
+@test "the fixture's descriptive filename never reaches the model" {
+  make_skill demo repo "Read"
+  mv "$TEST_TMPDIR/test/skills/demo/fixtures/tc-1-thing.txt" \
+     "$TEST_TMPDIR/test/skills/demo/fixtures/tc-9-sql-injection.py"
+  run bash "$GEN" demo
+  [ "$status" -eq 0 ]
+  call="$(cat "$CALLS/0")"
+  [[ "$call" != *"sql-injection"* ]]
+  [[ "$call" == *"LS: subject.py"* ]]
+  # The report is still keyed by the real fixture name, for the eval suite.
+  [ -f "$TEST_TMPDIR/test/skills/demo/output/tc-9-sql-injection.py.report.md" ]
 }
 
 @test "fixture prefix selects a subset" {

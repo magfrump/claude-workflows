@@ -43,7 +43,7 @@ Verdict codes: **A** = Accurate, **MA** = Mostly accurate, **D** = Disputed,
 | TC | Fixture | Expected Behavior |
 |----|---------|-------------------|
 | 4.1 | `tc-4.1-misleading.md` | Flags ambiguity; checks the most natural reading ("best healthcare" by general metrics); notes narrow readings where the claim is true |
-| 4.2 | `tc-4.2-conflated-stats.md` | Detects that "70% of parents" and "fifth of income" come from different surveys; explains the conflation |
+| 4.2 | `tc-4.2-conflated-stats.md` | Detects that "70% of parents" and "fifth of income" come from different surveys; explains the conflation. Shares tc-2.2's core claim; tests conflation detection, not verdict assignment |
 
 ## Category 5: Output Format Compliance
 
