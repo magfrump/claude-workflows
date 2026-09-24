@@ -20,7 +20,14 @@ setup() {
 #!/usr/bin/env bash
 n=\$(ls "$CALLS" | wc -l)
 { printf 'ARGS: %s\n' "\$*"; printf 'CWD: %s\n' "\$PWD"; printf 'LS: %s\n' "\$(ls)"; echo 'STDIN:'; cat; } > "$CALLS/\$n"
-printf '# Report\n\n**Severity:** High\n'
+if [[ " \$* " == *" --output-format stream-json "* ]]; then
+  # The shape of a real stream-json run: init, one tool call, the result.
+  echo '{"type":"system","subtype":"init"}'
+  echo '{"type":"assistant","parent_tool_use_id":null,"message":{"content":[{"type":"tool_use","name":"Read","input":{"file_path":"x"}}]}}'
+  echo '{"type":"result","subtype":"success","result":"# Report\\n\\n**Severity:** High"}'
+else
+  printf '# Report\n\n**Severity:** High\n'
+fi
 EOF
   chmod +x "$TEST_TMPDIR/bin/claude"
   PATH="$TEST_TMPDIR/bin:$PATH"
@@ -105,6 +112,42 @@ EOF
     [ "$status" -eq 0 ]
     grep -q -- '--strict-mcp-config' "$CALLS/0" || { echo "mode $mode: no --strict-mcp-config"; cat "$CALLS/0"; return 1; }
   done
+}
+
+@test "FIXTURE_TRANSCRIPT=1: stream-json kept as a sidecar, report is the result text" {
+  make_skill demo inline "Read"
+  echo 'FIXTURE_TRANSCRIPT=1' >> "$TEST_TMPDIR/test/skills/demo/runner.bash"
+  run bash "$GEN" demo
+  [ "$status" -eq 0 ]
+  call="$(cat "$CALLS/0")"
+  [[ "$call" == *"--output-format stream-json --verbose"* ]]
+  # --tools must stay last so an empty list cannot swallow a flag.
+  [[ "$call" == *"--verbose --tools Read"* ]]
+  local out="$TEST_TMPDIR/test/skills/demo/output"
+  grep -q '"type":"result"' "$out/tc-1-thing.txt.transcript.jsonl"
+  diff <(printf '# Report\n\n**Severity:** High\n') "$out/tc-1-thing.txt.report.md"
+  [[ "$output" == *"1 severity-tagged findings"* ]]
+}
+
+@test "transcript off: no stream-json flags, and a stale sidecar is removed" {
+  make_skill demo inline "Read"
+  local out="$TEST_TMPDIR/test/skills/demo/output"
+  mkdir -p "$out"
+  echo stale > "$out/tc-1-thing.txt.transcript.jsonl"
+  run bash "$GEN" demo
+  [ "$status" -eq 0 ]
+  [[ "$(cat "$CALLS/0")" != *"stream-json"* ]]
+  [ ! -e "$out/tc-1-thing.txt.transcript.jsonl" ]
+  [ -s "$out/tc-1-thing.txt.report.md" ]
+}
+
+@test "a runner with a bad FIXTURE_TRANSCRIPT value is refused" {
+  make_skill demo inline "Read"
+  echo 'FIXTURE_TRANSCRIPT=yes' >> "$TEST_TMPDIR/test/skills/demo/runner.bash"
+  run bash "$GEN" demo
+  [ "$status" -ne 0 ]
+  [[ "$output" == *"FIXTURE_TRANSCRIPT"* ]]
+  [ "$(ls "$CALLS" | wc -l)" -eq 0 ]
 }
 
 @test "fixture prefix selects a subset" {

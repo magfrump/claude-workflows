@@ -124,6 +124,13 @@ eval_fixture() {
         # For explicit verification, check that sources are cited.
         assert_report_matches "Sources" || failed=1
         ;;
+      tool_called:*)
+        local spec="${check#tool_called:}"
+        assert_tool_called "${spec%%=*}" "${spec#*=}" || failed=1
+        ;;
+      subagents_min:*)
+        assert_subagents_min "${check#subagents_min:}" || failed=1
+        ;;
       format_check)
         # Delegate to the format BATS suite (fact-check-format.bats or code-fact-check-format.bats)
         REPORT_PATH="$REPORT_PATH" bats "${BATS_TEST_DIRNAME}/${skill}-format.bats" || failed=1
@@ -299,6 +306,65 @@ assert_min_claims() {
   local min="$1"
   if [ "$CLAIM_COUNT" -lt "$min" ]; then
     echo "Expected at least $min claims, got $CLAIM_COUNT"
+    return 1
+  fi
+}
+
+# --- Transcript checks (runners with FIXTURE_TRANSCRIPT=1) ---
+#
+# generate-reports.bash keeps the stream-json event stream next to the report as
+# <fixture>.transcript.jsonl. These checks read it, so a fixture can assert what
+# the model *did* (routed to a workflow, ran the evaluator, dispatched
+# sub-agents), not only what it wrote. A missing transcript fails rather than
+# skips: the report exists, so the run happened without FIXTURE_TRANSCRIPT=1 and
+# the process claim cannot be verified.
+
+# Path of the transcript paired with the loaded report; fails if absent.
+eval_transcript_path() {
+  local t="${REPORT_PATH%.report.md}.transcript.jsonl"
+  if [ ! -f "$t" ]; then
+    echo "No transcript at $t — regenerate with FIXTURE_TRANSCRIPT=1 in the runner"
+    return 1
+  fi
+  printf '%s\n' "$t"
+}
+
+# Inputs (as compact JSON, one per line) of every tool_use block for the named
+# tool, at any depth (sub-agents' calls included).
+# Args: $1 = transcript path, $2 = tool name
+transcript_tool_inputs() {
+  jq -r --arg n "$2" \
+    'select(.type == "assistant") | .message.content[]?
+     | select(.type == "tool_use" and .name == $n) | .input | tostring' "$1"
+}
+
+# Assert some call of <tool> had an input matching <ERE> (case-insensitive).
+# Check syntax: tool_called:Read=workflows/divergent-design\.md
+# Args: $1 = tool name, $2 = ERE
+assert_tool_called() {
+  local tool="$1" pattern="$2" t inputs
+  t="$(eval_transcript_path)" || { echo "$t"; return 1; }
+  inputs="$(transcript_tool_inputs "$t" "$tool")"
+  if ! printf '%s\n' "$inputs" | grep -qiE "$pattern"; then
+    echo "No $tool call with input matching /$pattern/."
+    echo "$tool calls seen: $(printf '%s\n' "$inputs" | grep -c . || true)"
+    printf '%s\n' "$inputs" | head -5 | cut -c1-200
+    return 1
+  fi
+}
+
+# Assert the top-level session dispatched at least N sub-agents (Agent tool_use
+# blocks with no parent — a sub-agent's own dispatches do not count).
+# Check syntax: subagents_min:4
+# Args: $1 = minimum count
+assert_subagents_min() {
+  local min="$1" t n
+  t="$(eval_transcript_path)" || { echo "$t"; return 1; }
+  n=$(jq -r 'select(.type == "assistant" and .parent_tool_use_id == null)
+       | .message.content[]? | select(.type == "tool_use" and .name == "Agent")
+       | .name' "$t" | grep -c . || true)
+  if [ "$n" -lt "$min" ]; then
+    echo "Expected at least $min sub-agent dispatches, found $n"
     return 1
   fi
 }

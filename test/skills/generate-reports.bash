@@ -19,6 +19,11 @@
 #                     becomes claude's working directory)
 #   fixture_prompt  — a function; given the filename the model will see, prints
 #                     the prompt
+#   FIXTURE_TRANSCRIPT (optional) — "1" runs claude with stream-json output and
+#                     keeps the event stream as <fixture>.transcript.jsonl next
+#                     to the report, so eval checks can see tool calls and
+#                     sub-agent dispatches (tool_called:, subagents_min:). The
+#                     report is still plain text: the final result event's text.
 #
 # Fixture filenames describe the planted defect or the expected verdict
 # (tc-sec1-sql-injection.py, tc-c2.4-incorrect.js). The model must never see
@@ -55,6 +60,7 @@ fi
 
 FIXTURE_TOOLS=""
 FIXTURE_MODE=""
+FIXTURE_TRANSCRIPT=""
 # shellcheck source=/dev/null  # Path is per-skill
 source "$RUNNER_FILE"
 
@@ -72,6 +78,20 @@ case "$FIXTURE_MODE" in
   inline|repo) ;;
   *)
     echo "Error: $RUNNER_FILE: FIXTURE_MODE must be inline or repo, got '$FIXTURE_MODE'" >&2
+    exit 1
+    ;;
+esac
+
+case "$FIXTURE_TRANSCRIPT" in
+  ""|0) FIXTURE_TRANSCRIPT=0 ;;
+  1)
+    if ! command -v jq >/dev/null 2>&1; then
+      echo "Error: $RUNNER_FILE sets FIXTURE_TRANSCRIPT=1, which needs jq" >&2
+      exit 1
+    fi
+    ;;
+  *)
+    echo "Error: $RUNNER_FILE: FIXTURE_TRANSCRIPT must be 0 or 1, got '$FIXTURE_TRANSCRIPT'" >&2
     exit 1
     ;;
 esac
@@ -94,6 +114,9 @@ generate_one() {
   local fixture_name
   fixture_name="$(basename "$fixture_path")"
   local report_path="$OUTPUT_DIR/${fixture_name}.report.md"
+  local transcript_path="$OUTPUT_DIR/${fixture_name}.transcript.jsonl"
+  # A stale transcript must never pair with a fresh report.
+  rm -f "$transcript_path"
 
   echo "--- Generating: $fixture_name ---"
 
@@ -110,6 +133,16 @@ generate_one() {
 
   local prompt
   prompt="$(fixture_prompt "$subject_name")"
+
+  # --tools stays last before the model/extra flags: an empty value must not
+  # swallow the next flag.
+  local -a claude_args=(-p --system-prompt-file "$SKILL_FILE" --strict-mcp-config)
+  local out_path="$report_path"
+  if [ "$FIXTURE_TRANSCRIPT" = 1 ]; then
+    claude_args+=(--output-format stream-json --verbose)
+    out_path="$transcript_path"
+  fi
+  claude_args+=(--tools "$TOOLS_ARG")
 
   if [ "$FIXTURE_MODE" = "repo" ]; then
     # The fixture as a file in a minimal repo, so the model can read it without
@@ -129,13 +162,10 @@ generate_one() {
     # Pipe prompt via stdin to avoid shell argument parsing issues
     # shellcheck disable=SC2086
     (cd "$temp_dir" && printf '%s' "$prompt" \
-      | claude -p \
-        --system-prompt-file "$SKILL_FILE" \
-        --strict-mcp-config \
-        --tools "$TOOLS_ARG" \
+      | claude "${claude_args[@]}" \
         $model_flag \
         ${CLAUDE_FLAGS:-} \
-    ) > "$report_path" 2>/dev/null || true
+    ) > "$out_path" 2>/dev/null || true
   else
     local fixture_content
     fixture_content="$(cat "$fixture_path")"
@@ -143,13 +173,17 @@ generate_one() {
     # Pipe prompt via stdin to avoid multiline shell argument issues
     # shellcheck disable=SC2086
     printf '%s\n\n%s' "$prompt" "$fixture_content" \
-      | claude -p \
-        --system-prompt-file "$SKILL_FILE" \
-        --strict-mcp-config \
-        --tools "$TOOLS_ARG" \
+      | claude "${claude_args[@]}" \
         $model_flag \
         ${CLAUDE_FLAGS:-} \
-      > "$report_path" 2>/dev/null || true
+      > "$out_path" 2>/dev/null || true
+  fi
+
+  if [ "$FIXTURE_TRANSCRIPT" = 1 ]; then
+    # The report is what the model finally said: the result event's text. A
+    # run that died before emitting one leaves an empty report (warned below).
+    jq -r 'select(.type == "result") | .result // empty' "$transcript_path" \
+      > "$report_path" 2>/dev/null || : > "$report_path"
   fi
 
   if [ -s "$report_path" ]; then
