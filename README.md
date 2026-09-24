@@ -20,8 +20,9 @@ don't use the devcontainer. The second copies `global-instructions/CLAUDE.md`,
 both; only `install.sh` reads it, so set it only to install somewhere else. They
 are **copies, not symlinks**: an edit to the checkout, by you or by an agent, does
 nothing until you rerun `install.sh`, read the diff and answer y (decision 037).
-Only **committed** content is installed: uncommitted changes under those paths
-are listed as NOT included, and git-ignored files are never copied. The
+Both targets install only **committed** content (the devcontainer config's
+files as well as those seven): uncommitted changes under those paths are listed
+as NOT included, and git-ignored files are never copied. The
 `~/.claude` target is skipped with `--yes`, from a script with no TTY, and inside
 a Claude Code session. That stops accidental runs, not a determined agent (a pty
 wrapper gets past it); the hard barrier is a sandbox that denies agents write

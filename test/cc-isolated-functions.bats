@@ -585,12 +585,17 @@ firewall() {
 
 # Helper: a throwaway repo tree holding a copy of install.sh plus the payload
 # sources, so the assembly loop can run for real without touching this repo.
-# `omit` names one CLAUDE_HOME_SRC entry to leave absent.
+# `omit` names one CLAUDE_HOME_SRC entry to leave absent. The devcontainer
+# PAYLOAD items are committed stubs: install.sh stages every item from HEAD.
 fake_install_repo() {
-  local omit="${1:-}" root="$BATS_TEST_TMPDIR/fakerepo" item
+  local omit="${1:-}" root="$BATS_TEST_TMPDIR/fakerepo" item f
   rm -rf "$root"
-  mkdir -p "$root/devcontainer-config"
+  mkdir -p "$root/devcontainer-config/egress"
   cp "$CONFIG_SRC/install.sh" "$root/devcontainer-config/install.sh"
+  for f in devcontainer.json Dockerfile init-firewall.sh cc-sni-proxy.py cc-isolated.sh link-claude-home.sh; do
+    printf 'stub %s\n' "$f" > "$root/devcontainer-config/$f"
+  done
+  printf 'api.anthropic.com\n' > "$root/devcontainer-config/egress/base.txt"
   for item in global-instructions/CLAUDE.md skills workflows guides patterns hooks scripts; do
     [ "$item" = "$omit" ] && continue
     case "$item" in
@@ -680,17 +685,12 @@ fake_commit() {
   [[ "$output" == *'payload source(s) not found'*'patterns'* ]]
 }
 
-# Helper: fill the fake repo's devcontainer-config with every non-assembled
-# PAYLOAD item, and mirror it into an existing install dir so the review diff
-# runs. Prints the install dir.
+# Helper: mirror the fake repo's committed non-assembled PAYLOAD items (see
+# fake_install_repo) into an existing install dir so the review diff runs.
+# Prints the install dir.
 fake_payload_and_dest() {
   local root="$1" dest="$BATS_TEST_TMPDIR/installed" f
   local cfg="$root/devcontainer-config"
-  for f in devcontainer.json Dockerfile init-firewall.sh cc-sni-proxy.py cc-isolated.sh link-claude-home.sh; do
-    printf 'stub %s\n' "$f" > "$cfg/$f"
-  done
-  mkdir -p "$cfg/egress"
-  printf 'api.anthropic.com\n' > "$cfg/egress/base.txt"
   rm -rf "$dest"; mkdir -p "$dest"
   for f in devcontainer.json Dockerfile init-firewall.sh cc-sni-proxy.py cc-isolated.sh link-claude-home.sh egress; do
     cp -r "$cfg/$f" "$dest/$f"
@@ -704,7 +704,7 @@ fake_payload_and_dest() {
   # profile whose hostnames they never saw.
   root=$(fake_install_repo)
   dest=$(fake_payload_and_dest "$root")
-  printf 'evil.example.com\n' > "$root/devcontainer-config/egress/newprof.txt"
+  printf 'evil.example.com\n' > "$root/devcontainer-config/egress/newprof.txt"; fake_commit "$root"
   run env CLAUDE_DEVC_CONFIG_DIR="$dest" \
       bash "$root/devcontainer-config/install.sh" </dev/null
   [[ "$output" == *'+evil.example.com'* ]]

@@ -144,7 +144,7 @@ From `docs/reviews/code-review-rubric-2026-09-23-ans-copy-install.md`; one commi
 - **A3:** `resolve_phys` resolves `..` in a missing tail. T39.
 - **A1/A2/A5/A9/A10:** README, `--help`, comments and decision 037 corrected; `installed_by=host-tty` dropped. T10 (updated), T40.
 - Test-quality fix found on the way: a non-final `! cmd` never fails a bats test; the new tests use `[ -z "$(…)" ]`.
-- Not done: the 🟢 Consider items other than C1/C2; a dedicated test for a failing swap-in rename (shares `host_rollback` with T30); the devcontainer target's non-assembled PAYLOAD items still come from the working tree.
+- Not done: the 🟢 Consider items other than C1/C2; a dedicated test for a failing swap-in rename (shares `host_rollback` with T30). (The devcontainer target's non-assembled PAYLOAD items, left on the working tree here, were moved to committed content by the fact-check fixes: T44, T45.)
 
 ## Test specification
 

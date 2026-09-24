@@ -675,6 +675,34 @@ installed_then_changed() {
   ! compgen -G "$CLAUDE_HOME_DIR/.cw-new.*" >/dev/null
 }
 
+@test "T44 the devcontainer target installs committed config only and lists what it leaves out (fact-check claim 4)" {
+  fake_repo
+  cfg="$ROOT/devcontainer-config"
+  printf 'UNCOMMITTED-EDIT\n' >> "$cfg/devcontainer.json"
+  printf 'evil.example.com\n' > "$cfg/egress/new.txt"
+  run env -u CLAUDECODE bash "$INSTALL" --yes </dev/null
+  echo "$output"
+  [ "$status" -eq 0 ]
+  [[ "$output" == *'NOT included'* ]]
+  [[ "$output" == *'devcontainer-config/devcontainer.json'* ]]
+  [[ "$output" == *'devcontainer-config/egress/new.txt'* ]]
+  [ "$(cat "$CLAUDE_DEVC_CONFIG_DIR/devcontainer.json")" = 'stub devcontainer.json' ]
+  [ ! -e "$CLAUDE_DEVC_CONFIG_DIR/egress/new.txt" ]
+  [ -f "$CLAUDE_DEVC_CONFIG_DIR/egress/base.txt" ]
+  [ -x "$CLAUDE_DEVC_CONFIG_DIR/cc-isolated.sh" ]
+}
+
+@test "T45 a devcontainer payload item missing from the commit is fatal before the prompt (fact-check claim 4)" {
+  fake_repo
+  rm "$ROOT/devcontainer-config/Dockerfile"; commit_all drop
+  printf 'stub Dockerfile\n' > "$ROOT/devcontainer-config/Dockerfile"   # in the tree, not the commit
+  run env -u CLAUDECODE bash "$INSTALL" --yes </dev/null
+  echo "$output"
+  [ "$status" -eq 1 ]
+  [[ "$output" == *'not found in commit'*'devcontainer-config/Dockerfile'* ]]
+  [ ! -e "$CLAUDE_DEVC_CONFIG_DIR" ]
+}
+
 @test "T24 with CLAUDE_HOME_DIR unset, CLAUDE_CONFIG_DIR chooses the destination" {
   need_script; fake_repo
   run_pty 'n\ny\n' env -u CLAUDE_HOME_DIR CLAUDE_CONFIG_DIR="$S/cfgdir" bash "$INSTALL"

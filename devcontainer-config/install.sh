@@ -41,8 +41,9 @@ Offers two install targets in turn. Each one shows a review diff and asks y/N:
      installs are kept; the current run's is never removed.
      settings.json is never written; hook wiring stays a manual merge.
 
-Both targets install COMMITTED content: uncommitted changes under the payload
-paths are listed as NOT included.
+Both targets install COMMITTED content (HEAD, via git archive): every
+devcontainer-config/ PAYLOAD item and the seven ~/.claude sources. Uncommitted
+changes under those paths are listed as NOT included; commit and rerun.
 
 Target 2 is SKIPPED, with a message and no effect on the exit status, when
 --yes is given, when stdin is not a terminal, or when running inside a
@@ -63,6 +64,7 @@ EOF
 SRC="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 
 # install.sh itself is not installed — it runs from the repo.
+# Every item is staged from the HEAD commit, not the tree (see install_devcontainer);
 # `claude-home` is assembled below from the repo root before the diff is shown.
 PAYLOAD=(devcontainer.json Dockerfile init-firewall.sh cc-sni-proxy.py cc-isolated.sh link-claude-home.sh egress claude-home)
 
@@ -74,9 +76,10 @@ REPO_ROOT="$(cd "$SRC/.." && pwd)"
 # just sessions that happen to be editing this repo. They are staged here, into
 # the build context, because the Dockerfile's context is the config dir.
 #
-# Assembled fresh on every install so the staged copy can never silently drift
-# from the repo — and, being inside $SRC, it shows up in the diff below, which
-# is the human's review gate. Do not hand-edit devcontainer-config/claude-home.
+# Assembled fresh from the commit on every install, into a private stage with
+# the rest of the payload, so it shows up in the diff below, which is the
+# human's review gate. devcontainer-config/claude-home is only a mirror of that
+# stage; do not hand-edit it (nothing installs from it).
 #
 # `scripts` is staged for two reasons: hooks/log-usage.sh sources
 # ../scripts/lib/skill-paths.sh relative to its own path, so a payload with
@@ -97,67 +100,83 @@ vis() {
     -e 's/[\x01-\x08\x0b\x0c\x0e-\x1a\x1c-\x1f\x7f]/?/g' -e 's/\xc2[\x80-\x9f]/?/g'
 }
 
-# assemble <stage-dir>: stage every CLAUDE_HOME_SRC entry, as committed at HEAD,
-# under its basename and write the .manifest provenance stamp. Exits the script
-# on a missing source.
-#
-# COMMITTED CONTENT ONLY (code review 2026-09-23, C1). The working tree is
-# agent-writable and holds git-ignored junk (__pycache__), so the payload is
-# `git archive HEAD`, never `cp -r` of the tree. Uncommitted changes under the
-# payload paths are listed as NOT included; the human commits and reruns.
-assemble() {
-  local stage="$1" item commit
-  rm -rf "$stage"
-  mkdir -p "$stage"
-  if ! commit="$(git -C "$REPO_ROOT" rev-parse --verify -q 'HEAD^{commit}')"; then
+# head_commit: print HEAD's commit id; exit the script if there is none.
+head_commit() {
+  if ! git -C "$REPO_ROOT" rev-parse --verify -q 'HEAD^{commit}'; then
     echo "ERROR: no readable HEAD commit in $REPO_ROOT (run \`git -C $REPO_ROOT status\`" >&2
     echo "       to see why). install.sh stages committed content only. Nothing was installed." >&2
     exit 1
   fi
-  # None of the seven entries is optional, and a missing one is silent-and-total:
-  # the image ships without that part of the process and no session notices. So
-  # this is fatal, not a warning — a warning here scrolls off above the payload
-  # diff and the [y/N] prompt, which is where the human is actually looking.
-  # All misses are collected before exiting so a reorganization is reported once
+}
+
+# extract_commit <commit> <dir> <path...>: write each repo-relative <path>, as
+# committed in <commit>, to <dir>/<basename>. Exits the script when a path is
+# not in the commit or the result holds a symlink.
+extract_commit() {
+  local commit="$1" dir="$2" item links missing=()
+  shift 2
+  # No payload item is optional, and a missing one is silent-and-total: the
+  # image or ~/.claude ships without that part and no session notices. So this
+  # is fatal, not a warning — a warning here scrolls off above the payload diff
+  # and the [y/N] prompt, which is where the human is actually looking. All
+  # misses are collected before exiting so a reorganization is reported once
   # rather than one rerun per renamed path.
-  local missing=()
-  for item in "${CLAUDE_HOME_SRC[@]}"; do
+  for item in "$@"; do
     git -C "$REPO_ROOT" cat-file -e "$commit:$item" 2>/dev/null || missing+=("$item")
   done
   if [ "${#missing[@]}" -gt 0 ]; then
     echo "ERROR: payload source(s) not found in commit ${commit:0:12} of $REPO_ROOT: ${missing[*]}" >&2
     echo "       The payload would be incomplete. Fix (and commit) the path, or edit" >&2
-    echo "       CLAUDE_HOME_SRC in this script. Nothing was installed." >&2
+    echo "       CLAUDE_HOME_SRC or PAYLOAD in this script. Nothing was installed." >&2
     exit 1
   fi
-  mkdir "$stage/.extract"
+  mkdir "$dir/.extract"
   # Modes are the commit's (fact-check claim 17): tar.umask=022 makes git
   # archive write 644/755 rather than its default 664/775, and tar -p keeps
   # them rather than applying this shell's umask.
-  if ! git -C "$REPO_ROOT" -c tar.umask=022 archive --format=tar "$commit" -- "${CLAUDE_HOME_SRC[@]}" \
-       | tar -xpf - -C "$stage/.extract"; then
+  if ! git -C "$REPO_ROOT" -c tar.umask=022 archive --format=tar "$commit" -- "$@" \
+       | tar -xpf - -C "$dir/.extract"; then
     echo "ERROR: could not extract commit ${commit:0:12} from $REPO_ROOT. Nothing was installed." >&2
     exit 1
   fi
-  for item in "${CLAUDE_HOME_SRC[@]}"; do
-    mv "$stage/.extract/$item" "$stage/$(basename "$item")"
+  for item in "$@"; do
+    mv "$dir/.extract/$item" "$dir/$(basename "$item")"
   done
-  rm -rf "$stage/.extract"
+  rm -rf "$dir/.extract"
   # No symlinks (review R1). git archive keeps committed links, and diff and
   # cp -R follow or keep them, so a link to an agent-writable file would review
   # as "(none)" and install as a live link. Today's payload has none.
-  local links
-  links="$(cd "$stage" && find . -type l | sed 's|^\./||' | LC_ALL=C sort)"
+  links="$(cd "$dir" && find . -type l | sed 's|^\./||' | LC_ALL=C sort)"
   if [ -n "$links" ]; then
     echo "ERROR: the committed payload contains symlinks, which install.sh never installs:" >&2
     printf '%s\n' "$links" | sed 's/^/         /' | vis >&2
     echo "       Replace them with real files and commit. Nothing was installed." >&2
     exit 1
   fi
+}
+
+# assemble <stage-dir> [path...]: stage every CLAUDE_HOME_SRC entry, as
+# committed at HEAD, under its basename and write the .manifest provenance
+# stamp. Sets STAGED_COMMIT. Uncommitted changes are listed under the
+# CLAUDE_HOME_SRC paths and the extra repo-relative <path>s, so a target that
+# also stages other paths from STAGED_COMMIT gets one warning for all of them.
+#
+# COMMITTED CONTENT ONLY (code review 2026-09-23, C1). The working tree is
+# agent-writable and holds git-ignored junk (__pycache__), so the payload is
+# `git archive HEAD`, never `cp -r` of the tree. Uncommitted changes under the
+# payload paths are listed as NOT included; the human commits and reruns.
+assemble() {
+  local stage="$1" commit dirty home_dirty
+  shift
+  rm -rf "$stage"
+  mkdir -p "$stage"
+  commit="$(head_commit)" || exit 1
+  STAGED_COMMIT="$commit"
+  extract_commit "$commit" "$stage" "${CLAUDE_HOME_SRC[@]}"
   # Porcelain paths are repo-relative and C-quoted, so control bytes cannot
   # reach the terminal from here. Ignored files are not listed: never staged.
-  local dirty
-  dirty="$(git -C "$REPO_ROOT" status --porcelain --untracked-files=all -- "${CLAUDE_HOME_SRC[@]}")"
+  dirty="$(git -C "$REPO_ROOT" status --porcelain --untracked-files=all -- "${CLAUDE_HOME_SRC[@]}" "$@")"
+  home_dirty="$(git -C "$REPO_ROOT" status --porcelain --untracked-files=all -- "${CLAUDE_HOME_SRC[@]}")"
   if [ -n "$dirty" ]; then
     echo "WARNING: the checkout has uncommitted changes under the payload paths. They are"
     echo "         NOT included: this install stages commit ${commit:0:12} only. Commit them"
@@ -170,7 +189,7 @@ assemble() {
   {
     echo "commit=$commit"
     echo "dirty=no"
-    echo "uncommitted_excluded=$(printf '%s' "$dirty" | grep -c '' || true)"
+    echo "uncommitted_excluded=$(printf '%s' "$home_dirty" | grep -c '' || true)"
     echo "assembled_from=$REPO_ROOT"
   } > "$stage/.manifest"
 }
@@ -242,15 +261,32 @@ confirm() {
 
 # --- Target: the devcontainer config (decision 016) ---------------------------
 install_devcontainer() {
-  assemble "$SRC/claude-home"
+  # Every PAYLOAD item comes from the commit too (fact-check claim 4; user
+  # decision C1): the firewall, launcher and egress lists are the boundary, and
+  # the tree they sit in is agent-writable. The whole payload is staged in a
+  # private temp dir and installed from there. $SRC/claude-home is refreshed as
+  # a mirror of the staged claude-home for inspection; nothing installs from it.
+  local dc_paths=() item
+  for item in "${PAYLOAD[@]}"; do
+    [ "$item" = claude-home ] || dc_paths+=("$(basename "$SRC")/$item")
+  done
+  DC_TMP="$(mktemp -d "${TMPDIR:-/tmp}/cw-devc-stage.XXXXXX")"
+  local stage="$DC_TMP/config"
+  assemble "$stage/claude-home" "${dc_paths[@]}"
+  extract_commit "$STAGED_COMMIT" "$stage" "${dc_paths[@]}"
+  rm -rf "$SRC/claude-home"
+  cp -Rp "$stage/claude-home" "$SRC/claude-home"
 
-  echo "Canonical (repo):  $SRC"
+  echo "Canonical (repo):  $SRC at commit ${STAGED_COMMIT:0:12} (staged in $stage)"
   echo "Installed (host):  $DEST"
   echo
 
   if [ -d "$DEST" ]; then
     echo "=== Changes this install would make ==========================================="
-    if review_diff "$DEST" "$SRC" "${PAYLOAD[@]}"; then
+    local same=1
+    mode_diff "$DEST" "$stage" "${PAYLOAD[@]}" || same=0
+    review_diff "$DEST" "$stage" "${PAYLOAD[@]}" || same=0
+    if [ "$same" -eq 1 ]; then
       echo "(none — installed config already matches the repo)"
     fi
     echo "==============================================================================="
@@ -277,10 +313,9 @@ install_devcontainer() {
   # NOT part of the canonical repo payload, so never clobber it.
   mkdir -p "$DEST/projects"
 
-  local item
   for item in "${PAYLOAD[@]}"; do
     rm -rf "${DEST:?}/$item"
-    cp -r "$SRC/$item" "$DEST/$item"
+    cp -Rp "$stage/$item" "$DEST/$item"
   done
 
   chmod +x "$DEST/cc-isolated.sh" "$DEST/init-firewall.sh"
@@ -378,10 +413,11 @@ lock_msg() {
   echo "another install holds $1/.claude-workflows-lock, or one was killed. If no install.sh is running, remove that directory and rerun."
 }
 
-# host_cleanup: main's EXIT trap. Removes the stage and releases the lock, if
-# this run took it.
+# host_cleanup: main's EXIT trap. Removes both stages and releases the lock,
+# if this run took it.
 host_cleanup() {
   if [ -n "$HOST_TMP" ]; then rm -rf "$HOST_TMP" || true; fi
+  if [ -n "$DC_TMP" ]; then rm -rf "$DC_TMP" || true; fi
   if [ -n "$HOST_LOCK" ]; then rmdir "$HOST_LOCK" 2>/dev/null || true; fi
 }
 
@@ -707,7 +743,7 @@ main() {
   local item
   for item in "${CLAUDE_HOME_SRC[@]}"; do CLAUDE_HOME_NAMES+=("$(basename "$item")"); done
 
-  HOST_TMP="" HOST_LOCK=""
+  HOST_TMP="" HOST_LOCK="" DC_TMP="" STAGED_COMMIT=""
   trap host_cleanup EXIT
 
   DECLINED=0
