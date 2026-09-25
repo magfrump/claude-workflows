@@ -1,0 +1,38 @@
+2026-09-25T06:40:22Z
+RE=(^|/)claude(\.exe)?( |$)|/@anthropic-ai/claude-code/
+bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+node: invalid time interval '/opt/x/node_modules/@anthropic-ai/claude-agent-sdk/cli.js'
+Try 'node --help' for more information.
+P1(versioned path)=308660 P2(claude)=308661 P3(agent-sdk)=308663
+1750 claude  
+308661 claude 30 
+pgrep exit=
+(eval):kill:1: kill 308663 failed: no such process
+
+## rerun P3 2026-09-25T06:40:32Z
+bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+perl: warning: Setting locale failed.
+perl: warning: Please check that your locale settings:
+	LANGUAGE = "en_US:en",
+	LC_ALL = "en_US.UTF-8",
+	LANG = "en_US.UTF-8"
+    are supported and installed on your system.
+perl: warning: Falling back to the standard locale ("C").
+perl: warning: Setting locale failed.
+perl: warning: Please check that your locale settings:
+	LANGUAGE = "en_US:en",
+	LC_ALL = "en_US.UTF-8",
+	LANG = "en_US.UTF-8"
+    are supported and installed on your system.
+perl: warning: Falling back to the standard locale ("C").
+P3(agent-sdk)=312507 P4(claude-code cli.js)=312508
+ 312507 node -e sleep 30 /opt/x/node_modules/@anthropic-ai/claude-agent-sdk/cli.js
+ 312508 node -e sleep 30 /opt/x/node_modules/@anthropic-ai/claude-code/cli.js
+pgrep:
+1750 claude
+312504 /bin/zsh -c source /home/node/.claude/shell-snapshots/snapshot-zsh-1790317197259-g5fge2.sh 2>/dev/null || true && setopt NO_EXTENDED_GLOB NO_BARE_GLOB_QUAL 2>/dev/null || true && { \builtin unalias -- 'unsetenv'; \builtin unset -f -- 'unsetenv'; } >/dev/null 2>&1 || true && eval 'L=/workspace/docs/reviews/execution-logs/q058-r1-probe-regex.log; RE='"'"'(^|/)claude(\.exe)?( |$)|/@anthropic-ai/claude-code/'"'"'; { echo; echo "## rerun P3 $(date -u +%FT%TZ)"; bash -c '"'"'exec -a node perl -e "sleep 30" /opt/x/node_modules/@anthropic-ai/claude-agent-sdk/cli.js'"'"' & P3=$!; bash -c '"'"'exec -a node perl -e "sleep 30" /opt/x/node_modules/@anthropic-ai/claude-code/cli.js'"'"' & P4=$!; sleep 0.5; echo "P3(agent-sdk)=$P3 P4(claude-code cli.js)=$P4"; ps -o pid=,args= -p $P3,$P4; echo "pgrep:"; pgrep -u "$(id -u)" -af -- "$RE"; echo "pgrep exit=$?"; kill $P3 $P4; } >> $L 2>&1; sed -n '"'"'/## rerun/,$p'"'"' $L' < /dev/null && pwd -P >| /tmp/claude-0371-cwd
+312508 node -e sleep 30 /opt/x/node_modules/@anthropic-ai/claude-code/cli.js
+pgrep exit=0

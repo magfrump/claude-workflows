@@ -1,0 +1,4 @@
+2026-09-25T06:49:58Z
+cmd: git -C /workspace archive b4fd792 -- <CLAUDE_HOME_SRC + devcontainer-config PAYLOAD> | tar -x; perl NUL scan (same logic as extract_commit)
+files: 122
+scan exit=0

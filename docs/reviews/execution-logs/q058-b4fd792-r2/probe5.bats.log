@@ -1,0 +1,91 @@
+bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+1..1
+bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+ok 1 P5 a TAB-named backup dir planted BEFORE the run (no agent running at any gate) mis-prunes a kept backup
+# status=1
+# bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+# n
+# y
+# bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+# bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+# /bin/bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+# Canonical (repo):  /tmp/bats-run-xWXzq4/test/1/repo/devcontainer-config at commit 34f477657046 (staged in /tmp/bats-run-xWXzq4/test/1/tmp/cw-devc-stage.AB5vsn/config)
+# Installed (host):  /tmp/bats-run-xWXzq4/test/1/home/.config/claude-devcontainer
+#
+# First install — /tmp/bats-run-xWXzq4/test/1/home/.config/claude-devcontainer does not exist yet.
+#
+# Install this config and bless it? [y/N] Aborted. Nothing was changed. (devcontainer config)
+#
+# === Host target: global Claude Code files ======================================
+# Destination: /tmp/bats-run-xWXzq4/test/1/home/.claude  (chosen by $CLAUDE_HOME_DIR)
+# Canonical (repo):  /tmp/bats-run-xWXzq4/test/1/repo (commit 34f4776570466a3889522db89abc292113184275)
+#
+# === Changes this install would make ===========================================
+# /tmp/bats-run-xWXzq4/test/1/repo/devcontainer-config/install.sh: line 119: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+# REPLACE symlink /tmp/bats-run-xWXzq4/test/1/home/.claude/CLAUDE.md -> /tmp/bats-run-xWXzq4/test/1/repo/global-instructions/CLAUDE.md with a copy
+# /tmp/bats-run-xWXzq4/test/1/repo/devcontainer-config/install.sh: line 119: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+# REPLACE symlink /tmp/bats-run-xWXzq4/test/1/home/.claude/skills -> /tmp/bats-run-xWXzq4/test/1/repo/skills with a copy
+# /tmp/bats-run-xWXzq4/test/1/repo/devcontainer-config/install.sh: line 119: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+# REPLACE symlink /tmp/bats-run-xWXzq4/test/1/home/.claude/workflows -> /tmp/bats-run-xWXzq4/test/1/repo/workflows with a copy
+# /tmp/bats-run-xWXzq4/test/1/repo/devcontainer-config/install.sh: line 119: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+# REPLACE symlink /tmp/bats-run-xWXzq4/test/1/home/.claude/guides -> /tmp/bats-run-xWXzq4/test/1/repo/guides with a copy
+# /tmp/bats-run-xWXzq4/test/1/repo/devcontainer-config/install.sh: line 119: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+# REPLACE symlink /tmp/bats-run-xWXzq4/test/1/home/.claude/patterns -> /tmp/bats-run-xWXzq4/test/1/repo/patterns with a copy
+# /tmp/bats-run-xWXzq4/test/1/repo/devcontainer-config/install.sh: line 119: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+# REPLACE symlink /tmp/bats-run-xWXzq4/test/1/home/.claude/hooks/h.sh -> /tmp/bats-run-xWXzq4/test/1/repo/hooks/h.sh with a copy
+# WARNING: not in the repo; these will be MOVED to the backup (Q-057):
+# /tmp/bats-run-xWXzq4/test/1/repo/devcontainer-config/install.sh: line 119: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+# MOVE to backup (not in the repo): /tmp/bats-run-xWXzq4/test/1/home/.claude/hooks/guard.py
+# /tmp/bats-run-xWXzq4/test/1/repo/devcontainer-config/install.sh: line 119: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+# REPLACE symlink /tmp/bats-run-xWXzq4/test/1/home/.claude/scripts -> /tmp/bats-run-xWXzq4/test/1/repo/scripts with a copy
+# (diff: /tmp/bats-run-xWXzq4/test/1/tmp/cw-host-stage.itWqAq/installed is the destination as it is now, links left out)
+# /tmp/bats-run-xWXzq4/test/1/repo/devcontainer-config/install.sh: line 119: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+# /tmp/bats-run-xWXzq4/test/1/repo/devcontainer-config/install.sh: line 119: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+# /tmp/bats-run-xWXzq4/test/1/repo/devcontainer-config/install.sh: line 119: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+# /tmp/bats-run-xWXzq4/test/1/repo/devcontainer-config/install.sh: line 119: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+# /tmp/bats-run-xWXzq4/test/1/repo/devcontainer-config/install.sh: line 119: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+# /tmp/bats-run-xWXzq4/test/1/repo/devcontainer-config/install.sh: line 119: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+# diff -ruNa /tmp/bats-run-xWXzq4/test/1/tmp/cw-host-stage.itWqAq/installed/hooks/guard.py /tmp/bats-run-xWXzq4/test/1/tmp/cw-host-stage.itWqAq/payload/hooks/guard.py
+# --- /tmp/bats-run-xWXzq4/test/1/tmp/cw-host-stage.itWqAq/installed/hooks/guard.py	2026-09-24 23:43:41.504317565 -0700
+# +++ /tmp/bats-run-xWXzq4/test/1/tmp/cw-host-stage.itWqAq/payload/hooks/guard.py	1969-12-31 16:00:00.000000000 -0800
+# @@ -1 +0,0 @@
+# -copied security hook
+# diff -ruNa /tmp/bats-run-xWXzq4/test/1/tmp/cw-host-stage.itWqAq/installed/hooks/h.sh /tmp/bats-run-xWXzq4/test/1/tmp/cw-host-stage.itWqAq/payload/hooks/h.sh
+# --- /tmp/bats-run-xWXzq4/test/1/tmp/cw-host-stage.itWqAq/installed/hooks/h.sh	1969-12-31 16:00:00.000000000 -0800
+# +++ /tmp/bats-run-xWXzq4/test/1/tmp/cw-host-stage.itWqAq/payload/hooks/h.sh	2026-09-24 23:43:41.000000000 -0700
+# @@ -0,0 +1,2 @@
+# +#!/bin/bash
+# +exit 0
+# diff -ruNa /tmp/bats-run-xWXzq4/test/1/tmp/cw-host-stage.itWqAq/installed/hooks/lib/x.sh /tmp/bats-run-xWXzq4/test/1/tmp/cw-host-stage.itWqAq/payload/hooks/lib/x.sh
+# --- /tmp/bats-run-xWXzq4/test/1/tmp/cw-host-stage.itWqAq/installed/hooks/lib/x.sh	1969-12-31 16:00:00.000000000 -0800
+# +++ /tmp/bats-run-xWXzq4/test/1/tmp/cw-host-stage.itWqAq/payload/hooks/lib/x.sh	2026-09-24 23:43:41.000000000 -0700
+# @@ -0,0 +1 @@
+# +#!/bin/bash
+# diff -ruNa /tmp/bats-run-xWXzq4/test/1/tmp/cw-host-stage.itWqAq/installed/hooks/wiring.json /tmp/bats-run-xWXzq4/test/1/tmp/cw-host-stage.itWqAq/payload/hooks/wiring.json
+# --- /tmp/bats-run-xWXzq4/test/1/tmp/cw-host-stage.itWqAq/installed/hooks/wiring.json	1969-12-31 16:00:00.000000000 -0800
+# +++ /tmp/bats-run-xWXzq4/test/1/tmp/cw-host-stage.itWqAq/payload/hooks/wiring.json	2026-09-24 23:43:41.000000000 -0700
+# @@ -0,0 +1 @@
+# +{"hooks":{}}
+# /tmp/bats-run-xWXzq4/test/1/repo/devcontainer-config/install.sh: line 119: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+# ===============================================================================
+#
+# Install these files into /tmp/bats-run-xWXzq4/test/1/home/.claude? [y/N] /bin/bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+# Installed into /tmp/bats-run-xWXzq4/test/1/home/.claude.
+# Previous entries moved to /tmp/bats-run-xWXzq4/test/1/home/.claude/.claude-workflows-backup/20260925T064341Z (delete it when satisfied).
+# Backups: this one plus the 2 most recent earlier installs' are kept in /tmp/bats-run-xWXzq4/test/1/home/.claude/.claude-workflows-backup (1 older removed).
+#
+# REMINDER: hooks/wiring.json changed (or was not installed before). Copying the
+# hooks does not wire them. Redo guides/bare-host-hook-wiring.md §2 to merge it
+# into /tmp/bats-run-xWXzq4/test/1/home/.claude/settings.json.
+# total 20
+# drwxr-xr-x  5 node node 4096 Sep 24 23:43 .
+# drwxr-xr-x 12 node node 4096 Sep 24 23:43 ..
+# drwxr-xr-x  2 node node 4096 Sep 24 23:43 20200101T000000Z	junk
+# drwxr-xr-x  2 node node 4096 Sep 24 23:43 20200102T000000Z
+# drwxr-xr-x  3 node node 4096 Sep 24 23:43 20260925T064341Z

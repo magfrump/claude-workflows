@@ -1,0 +1,142 @@
+2026-09-25T06:39:31Z
+cwd=/workspace cmd=bash /workspace/docs/reviews/execution-logs/q058-r3-b4fd792/regex-probe.sh
+bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+perl: warning: Setting locale failed.
+perl: warning: Please check that your locale settings:
+	LANGUAGE = "en_US:en",
+	LC_ALL = "en_US.UTF-8",
+	LANG = "en_US.UTF-8"
+    are supported and installed on your system.
+perl: warning: Falling back to the standard locale ("C").
+perl: warning: Setting locale failed.
+perl: warning: Please check that your locale settings:
+	LANGUAGE = "en_US:en",
+	LC_ALL = "en_US.UTF-8",
+	LANG = "en_US.UTF-8"
+    are supported and installed on your system.
+perl: warning: Falling back to the standard locale ("C").
+perl: warning: Setting locale failed.
+perl: warning: Please check that your locale settings:
+	LANGUAGE = "en_US:en",
+	LC_ALL = "en_US.UTF-8",
+	LANG = "en_US.UTF-8"
+    are supported and installed on your system.
+perl: warning: Falling back to the standard locale ("C").
+perl: warning: Setting locale failed.
+perl: warning: Please check that your locale settings:
+	LANGUAGE = "en_US:en",
+	LC_ALL = "en_US.UTF-8",
+perl: warning: Setting locale failed.
+	LANG = "en_US.UTF-8"
+perl: warning: Please check that your locale settings:
+    are supported and installed on your system.
+	LANGUAGE = "en_US:en",
+	LC_ALL = "en_US.UTF-8",
+	LANG = "en_US.UTF-8"
+    are supported and installed on your system.
+perl: warning: Falling back to the standard locale ("C").
+perl: warning: Falling back to the standard locale ("C").
+perl: warning: Setting locale failed.
+perl: warning: Please check that your locale settings:
+	LANGUAGE = "en_US:en",
+	LC_ALL = "en_US.UTF-8",
+	LANG = "en_US.UTF-8"
+    are supported and installed on your system.
+perl: warning: Falling back to the standard locale ("C").
+perl: warning: Setting locale failed.
+perl: warning: Please check that your locale settings:
+	LANGUAGE = "en_US:en",
+	LC_ALL = "en_US.UTF-8",
+	LANG = "en_US.UTF-8"
+    are supported and installed on your system.
+perl: warning: Falling back to the standard locale ("C").
+perl: warning: Setting locale failed.
+perl: warning: Please check that your locale settings:
+	LANGUAGE = "en_US:en",
+	LC_ALL = "en_US.UTF-8",
+perl: warning: Setting locale failed.
+	LANG = "en_US.UTF-8"
+    are supported and installed on your system.
+perl: warning: Please check that your locale settings:
+	LANGUAGE = "en_US:en",
+perl: warning: Falling back to the standard locale ("C").
+	LC_ALL = "en_US.UTF-8",
+	LANG = "en_US.UTF-8"
+    are supported and installed on your system.
+perl: warning: Falling back to the standard locale ("C").
+perl: warning: Setting locale failed.
+perl: warning: Please check that your locale settings:
+	LANGUAGE = "en_US:en",
+	LC_ALL = "en_US.UTF-8",
+	LANG = "en_US.UTF-8"
+    are supported and installed on your system.
+perl: warning: Falling back to the standard locale ("C").
+perl: warning: Setting locale failed.
+perl: warning: Please check that your locale settings:
+	LANGUAGE = "en_US:en",
+	LC_ALL = "en_US.UTF-8",
+	LANG = "en_US.UTF-8"
+    are supported and installed on your system.
+perl: warning: Falling back to the standard locale ("C").
+perl: warning: Setting locale failed.
+perl: warning: Please check that your locale settings:
+	LANGUAGE = "en_US:en",
+	LC_ALL = "en_US.UTF-8",
+	LANG = "en_US.UTF-8"
+    are supported and installed on your system.
+perl: warning: Falling back to the standard locale ("C").
+perl: warning: Setting locale failed.
+perl: warning: Please check that your locale settings:
+	LANGUAGE = "en_US:en",
+	LC_ALL = "en_US.UTF-8",
+	LANG = "en_US.UTF-8"
+    are supported and installed on your system.
+perl: warning: Falling back to the standard locale ("C").
+perl: warning: Setting locale failed.
+perl: warning: Please check that your locale settings:
+	LANGUAGE = "en_US:en",
+	LC_ALL = "en_US.UTF-8",
+	LANG = "en_US.UTF-8"
+    are supported and installed on your system.
+perl: warning: Falling back to the standard locale ("C").
+perl: warning: Setting locale failed.
+perl: warning: Please check that your locale settings:
+	LANGUAGE = "en_US:en",
+	LC_ALL = "en_US.UTF-8",
+	LANG = "en_US.UTF-8"
+    are supported and installed on your system.
+perl: warning: Falling back to the standard locale ("C").
+perl: warning: Setting locale failed.
+perl: warning: Please check that your locale settings:
+	LANGUAGE = "en_US:en",
+	LC_ALL = "en_US.UTF-8",
+	LANG = "en_US.UTF-8"
+    are supported and installed on your system.
+perl: warning: Falling back to the standard locale ("C").
+perl: warning: Setting locale failed.
+perl: warning: Please check that your locale settings:
+	LANGUAGE = "en_US:en",
+	LC_ALL = "en_US.UTF-8",
+	LANG = "en_US.UTF-8"
+    are supported and installed on your system.
+perl: warning: Falling back to the standard locale ("C").
+== pgrep -u 1000 -af -- CLAUDE_PROC_RE, restricted to the probe PIDs
+MATCH | cmdline: claude 
+MATCH | cmdline: claude --resume 
+MATCH | cmdline: /usr/local/bin/claude --resume 
+MATCH | cmdline: node /usr/local/bin/claude --resume 
+MATCH | cmdline: node /usr/lib/node_modules/@anthropic-ai/claude-code/cli.js 
+MATCH | cmdline: /usr/lib/node_modules/@anthropic-ai/claude-code/bin/claude.exe -p hi 
+miss  | cmdline: /home/u/.local/share/claude/versions/2.0.14 
+miss  | cmdline: /home/u/.local/share/claude/versions/2.0.14 --resume 
+MATCH | cmdline: /home/u/.vscode-server/extensions/anthropic.claude-code-2.0.0/resources/native-binary/claude --output-format stream-json 
+miss  | cmdline: claude-code --resume 
+miss  | cmdline: npx @anthropic-ai/claude-code 
+MATCH | cmdline: bun /home/u/node_modules/@anthropic-ai/claude-code/cli.js 
+miss  | cmdline: bash /home/u/claude-workflows/devcontainer-config/install.sh 
+miss  | cmdline: bash /home/u/claude/devcontainer-config/install.sh 
+MATCH | cmdline: vim ./claude 
+miss  | cmdline: vim claude 
+miss  | cmdline: python3 -m claude_agent_sdk 
+done
+exit=0

@@ -1,0 +1,1236 @@
+## 2026-09-25T06:45:06Z T58 (from b4fd792's test file) against ea2c8fb install.sh
+bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+1..1
+bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+not ok 1 T58 a vis failure is diff trouble: it aborts before the prompt, never reads as an empty diff
+# (in test file test/t58.bats, line 914)
+#   `[ "$status" -eq 0 ]' failed
+exit=1
+
+## 2026-09-25T06:45:06Z install-host.bats at 66891a7 (pre-648124c), this shell (LC_ALL=en_US.UTF-8, locale uninstalled)
+bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+1..314
+bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+not ok 1 T1 plain run with closed stdin: devcontainer declines as today, host skipped, dest untouched
+# (in test file test/install-host.bats, line 177)
+#   `[[ "$output" == *'Aborted. Nothing was changed.'* ]]' failed
+bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+not ok 2 T2 piped answers without a TTY never reach the host target
+# (in test file test/install-host.bats, line 187)
+#   `[[ "$output" == *'Skipped host target'*'interactive terminal'* ]]' failed
+bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+not ok 3 T3 --yes without a TTY installs the devcontainer target and skips the host
+# (in test file test/install-host.bats, line 197)
+#   `[ "$status" -eq 0 ]' failed
+# bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+# /bin/bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+# /tmp/bats-run-lSBmp4/test/3/repo/devcontainer-config/install.sh: line 119: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+# ERROR: an agent is running. install.sh installs only while no agent can run, because
+#        one could change what you review before it is installed (Q-058).
+#        Running cc-isolated containers (name and project id):
+#            /bin/bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+#        Stop them: docker stop <name>
+#        Then rerun install.sh. Nothing was staged or installed.
+bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+not ok 4 T4 --yes inside a pty still skips the host target
+# (in test file test/install-host.bats, line 209)
+#   `[ "$status" -eq 0 ]' failed
+# bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+# bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+# bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+# /bin/bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+# /tmp/bats-run-lSBmp4/test/4/repo/devcontainer-config/install.sh: line 119: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+# ERROR: an agent is running. install.sh installs only while no agent can run, because
+#        one could change what you review before it is installed (Q-058).
+#        Running cc-isolated containers (name and project id):
+#            /bin/bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+#        Stop them: docker stop <name>
+#        Then rerun install.sh. Nothing was staged or installed.
+bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+not ok 5 T5 migration review names every symlink it will replace, before the prompt
+# (in test file test/install-host.bats, line 221)
+#   `[[ "$output" == *"REPLACE symlink $CLAUDE_HOME_DIR/$n -> "* ]]' failed
+# bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+# n
+# n
+# bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+# bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+# /bin/bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+# /tmp/bats-run-lSBmp4/test/5/repo/devcontainer-config/install.sh: line 119: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+# ERROR: an agent is running. install.sh installs only while no agent can run, because
+#        one could change what you review before it is installed (Q-058).
+#        Running cc-isolated containers (name and project id):
+#            /bin/bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+#        Stop them: docker stop <name>
+#        Then rerun install.sh. Nothing was staged or installed.
+bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+not ok 6 T6 migration y path: real copies in place, checkout untouched, links backed up as links
+# (in test file test/install-host.bats, line 241)
+#   `[ ! -L "$CLAUDE_HOME_DIR/$n" ]' failed
+# bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+# n
+# y
+# bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+# bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+# /bin/bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+# /tmp/bats-run-lSBmp4/test/6/repo/devcontainer-config/install.sh: line 119: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+# ERROR: an agent is running. install.sh installs only while no agent can run, because
+#        one could change what you review before it is installed (Q-058).
+#        Running cc-isolated containers (name and project id):
+#            /bin/bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+#        Stop them: docker stop <name>
+#        Then rerun install.sh. Nothing was staged or installed.
+bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+not ok 7 T7 user state in the destination is byte-identical after an install
+# (in test file test/install-host.bats, line 263)
+#   `[ -d "$CLAUDE_HOME_DIR/skills" ] && [ ! -L "$CLAUDE_HOME_DIR/skills" ]   # the install ran' failed
+bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+not ok 8 T8 hermeticity: a host install writes nothing outside the host destination
+# (in test file test/install-host.bats, line 271)
+#   `[ -d "$CLAUDE_HOME_DIR/skills" ] && [ ! -L "$CLAUDE_HOME_DIR/skills" ]' failed
+bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+not ok 9 T9 installed hooks still find lib/ and ../scripts (log-usage smoke test)
+# (in test file test/install-host.bats, line 283)
+#   `git -C "$CONFIG_SRC/.." archive HEAD hooks scripts | tar -xf - -C "$ROOT"' failed with status 2
+# fatal: not a git repository (or any of the parent directories): .git
+# tar: This does not look like a tar archive
+# tar: Exiting with failure status due to previous errors
+bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+not ok 10 T10 the provenance manifest names the commit, the source and the installer
+# (in test file test/install-host.bats, line 299)
+#   `grep -q "^commit=$(git -C "$ROOT" rev-parse HEAD)$" "$m"' failed with status 2
+# grep: /tmp/bats-run-lSBmp4/test/10/home/.claude/.claude-workflows-manifest: No such file or directory
+bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+ok 11 T40 --help and README state the skip rule's limits and CLAUDE_HOME_DIR (review A1, A5)
+bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+not ok 12 T11 wiring reminder: on first install, not when unchanged, again when wiring.json changes
+# (in test file test/install-host.bats, line 322)
+#   `[[ "$output" == *'bare-host-hook-wiring.md'* ]]' failed
+bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+not ok 13 T12 a review diff that fails aborts before the host prompt
+# (in test file test/install-host.bats, line 339)
+#   `[[ "$output" == *'could not diff'* ]]' failed
+# bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+# n
+# y
+# bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+# bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+# /bin/bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+# /tmp/bats-run-lSBmp4/test/13/repo/devcontainer-config/install.sh: line 119: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+# ERROR: an agent is running. install.sh installs only while no agent can run, because
+#        one could change what you review before it is installed (Q-058).
+#        Running cc-isolated containers (name and project id):
+#            /bin/bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+#        Stop them: docker stop <name>
+#        Then rerun install.sh. Nothing was staged or installed.
+bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+not ok 14 T13 a foreign file in an owned dir is listed, then moved to the backup
+# (in test file test/install-host.bats, line 350)
+#   `[[ "$output" == *"MOVE to backup (not in the repo): $CLAUDE_HOME_DIR/skills/mine/SKILL.md"* ]]' failed
+# bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+# n
+# y
+# bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+# bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+# /bin/bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+# /tmp/bats-run-lSBmp4/test/14/repo/devcontainer-config/install.sh: line 119: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+# ERROR: an agent is running. install.sh installs only while no agent can run, because
+#        one could change what you review before it is installed (Q-058).
+#        Running cc-isolated containers (name and project id):
+#            /bin/bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+#        Stop them: docker stop <name>
+#        Then rerun install.sh. Nothing was staged or installed.
+bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+not ok 15 T14 a destination that resolves inside the checkout is refused
+# (in test file test/install-host.bats, line 363)
+#   `[[ "$output" == *'inside the repo checkout'* ]]' failed
+# bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+# n
+# y
+# bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+# bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+# /bin/bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+# /tmp/bats-run-lSBmp4/test/15/repo/devcontainer-config/install.sh: line 119: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+# ERROR: an agent is running. install.sh installs only while no agent can run, because
+#        one could change what you review before it is installed (Q-058).
+#        Running cc-isolated containers (name and project id):
+#            /bin/bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+#        Stop them: docker stop <name>
+#        Then rerun install.sh. Nothing was staged or installed.
+bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+ok 16 T15 an unknown flag prints usage and exits 2 before assembling anything
+bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+not ok 17 T16 a copy failure swaps nothing and leaves no backup
+# (in test file test/install-host.bats, line 383)
+#   `[[ "$output" == *'nothing was replaced'* ]]   # it got past the prompt and failed safely' failed
+# bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+# n
+# y
+# bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+# bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+# /bin/bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+# /tmp/bats-run-lSBmp4/test/17/repo/devcontainer-config/install.sh: line 119: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+# ERROR: an agent is running. install.sh installs only while no agent can run, because
+#        one could change what you review before it is installed (Q-058).
+#        Running cc-isolated containers (name and project id):
+#            /bin/bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+#        Stop them: docker stop <name>
+#        Then rerun install.sh. Nothing was staged or installed.
+bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+not ok 18 T17 declining the host prompt changes nothing and cleans the stage
+# (in test file test/install-host.bats, line 394)
+#   `[[ "$output" == *'Aborted. Nothing was changed. (host'* ]]' failed
+bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+not ok 19 T18 first install creates the destination with all seven entries
+# (in test file test/install-host.bats, line 403)
+#   `[ -e "$CLAUDE_HOME_DIR/$n" ]' failed
+bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+not ok 20 T19 accepting the devcontainer target still installs it, then offers the host
+# (in test file test/install-host.bats, line 414)
+#   `[[ "$output" == *'BLESS-STUB --bless'* ]]' failed
+# bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+# y
+# n
+# bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+# bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+# /bin/bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+# /tmp/bats-run-lSBmp4/test/20/repo/devcontainer-config/install.sh: line 119: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+# ERROR: an agent is running. install.sh installs only while no agent can run, because
+#        one could change what you review before it is installed (Q-058).
+#        Running cc-isolated containers (name and project id):
+#            /bin/bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+#        Stop them: docker stop <name>
+#        Then rerun install.sh. Nothing was staged or installed.
+bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+not ok 21 T20 a foreign hook wired in settings is flagged before it is moved
+# (in test file test/install-host.bats, line 426)
+#   `[[ "$output" == *"MOVE to backup (not in the repo): $CLAUDE_HOME_DIR/hooks/mine.sh"*'WIRED in settings'* ]]' failed
+# bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+# n
+# n
+# bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+# bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+# /bin/bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+# /tmp/bats-run-lSBmp4/test/21/repo/devcontainer-config/install.sh: line 119: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+# ERROR: an agent is running. install.sh installs only while no agent can run, because
+#        one could change what you review before it is installed (Q-058).
+#        Running cc-isolated containers (name and project id):
+#            /bin/bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+#        Stop them: docker stop <name>
+#        Then rerun install.sh. Nothing was staged or installed.
+bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+not ok 22 T21 a planted backup-dir symlink is refused and the checkout is untouched
+# (in test file test/install-host.bats, line 436)
+#   `[[ "$output" == *'.claude-workflows-backup'* ]]' failed
+# bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+# n
+# y
+# bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+# bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+# /bin/bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+# /tmp/bats-run-lSBmp4/test/22/repo/devcontainer-config/install.sh: line 119: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+# ERROR: an agent is running. install.sh installs only while no agent can run, because
+#        one could change what you review before it is installed (Q-058).
+#        Running cc-isolated containers (name and project id):
+#            /bin/bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+#        Stop them: docker stop <name>
+#        Then rerun install.sh. Nothing was staged or installed.
+bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+not ok 23 T22 inside a Claude Code session (CLAUDECODE set) the host target is skipped even with a pty
+# (in test file test/install-host.bats, line 446)
+#   `[[ "$output" == *'Skipped host target'*'Claude Code session'* ]]' failed
+# bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+# n
+# y
+# bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+# bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+# /bin/bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+# /tmp/bats-run-lSBmp4/test/23/repo/devcontainer-config/install.sh: line 119: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+# ERROR: an agent is running. install.sh installs only while no agent can run, because
+#        one could change what you review before it is installed (Q-058).
+#        Running cc-isolated containers (name and project id):
+#            /bin/bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+#        Stop them: docker stop <name>
+#        Then rerun install.sh. Nothing was staged or installed.
+bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+not ok 24 T23 a dirty checkout is called out in the host review
+# (in test file test/install-host.bats, line 455)
+#   `[[ "$output" == *'uncommitted changes'*'NOT included'* ]]' failed
+# bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+# n
+# n
+# bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+# bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+# /bin/bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+# /tmp/bats-run-lSBmp4/test/24/repo/devcontainer-config/install.sh: line 119: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+# ERROR: an agent is running. install.sh installs only while no agent can run, because
+#        one could change what you review before it is installed (Q-058).
+#        Running cc-isolated containers (name and project id):
+#            /bin/bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+#        Stop them: docker stop <name>
+#        Then rerun install.sh. Nothing was staged or installed.
+bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+not ok 25 T25 uncommitted edits (unstaged, staged, untracked) are listed and NOT installed
+# (in test file test/install-host.bats, line 467)
+#   `[[ "$review" == *'NOT included'* ]]' failed
+# bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+# n
+# y
+# bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+# bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+# /bin/bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+# /tmp/bats-run-lSBmp4/test/25/repo/devcontainer-config/install.sh: line 119: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+# ERROR: an agent is running. install.sh installs only while no agent can run, because
+#        one could change what you review before it is installed (Q-058).
+#        Running cc-isolated containers (name and project id):
+#            /bin/bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+#        Stop them: docker stop <name>
+#        Then rerun install.sh. Nothing was staged or installed.
+bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+not ok 26 T26 git-ignored files in the checkout (e.g. __pycache__) are never installed
+# (in test file test/install-host.bats, line 485)
+#   `[ -f "$CLAUDE_HOME_DIR/scripts/s.sh" ]' failed
+# bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+# n
+# y
+# bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+# bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+# /bin/bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+# /tmp/bats-run-lSBmp4/test/26/repo/devcontainer-config/install.sh: line 119: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+# ERROR: an agent is running. install.sh installs only while no agent can run, because
+#        one could change what you review before it is installed (Q-058).
+#        Running cc-isolated containers (name and project id):
+#            /bin/bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+#        Stop them: docker stop <name>
+#        Then rerun install.sh. Nothing was staged or installed.
+bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+not ok 27 T27 a symlink in the committed payload is refused before any prompt (review R1)
+# (in test file test/install-host.bats, line 498)
+#   `[[ "$output" == *'symlink'*'hooks/guard.sh'* ]]' failed
+# bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+# n
+# y
+# bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+# bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+# /bin/bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+# /tmp/bats-run-lSBmp4/test/27/repo/devcontainer-config/install.sh: line 119: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+# ERROR: an agent is running. install.sh installs only while no agent can run, because
+#        one could change what you review before it is installed (Q-058).
+#        Running cc-isolated containers (name and project id):
+#            /bin/bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+#        Stop them: docker stop <name>
+#        Then rerun install.sh. Nothing was staged or installed.
+bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+not ok 28 T28 a stage edited while the prompt waits is not installed (review R2)
+# (in test file test/install-host.bats, line 511)
+#   `[[ "$output" == *'stage changed after review'* ]]' failed
+# bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+# n
+# bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+# bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+# /bin/bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+# /tmp/bats-run-lSBmp4/test/28/repo/devcontainer-config/install.sh: line 119: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+# ERROR: an agent is running. install.sh installs only while no agent can run, because
+#        one could change what you review before it is installed (Q-058).
+#        Running cc-isolated containers (name and project id):
+#            /bin/bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+#        Stop them: docker stop <name>
+#        Then rerun install.sh. Nothing was staged or installed.
+# _: line 3: /tmp/bats-run-lSBmp4/test/28/tmp/cw-host-stage.*/payload/hooks/h.sh: No such file or directory
+bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+not ok 29 T29 rewriting install.sh while it waits at a prompt runs no new code (review R3)
+# (in test file test/install-host.bats, line 531)
+#   `[[ "$output" == *'Aborted. Nothing was changed. (devcontainer'* ]]' failed
+# bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+# bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+# bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+# /bin/bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+# /tmp/bats-run-lSBmp4/test/29/repo/devcontainer-config/install.sh: line 119: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+# ERROR: an agent is running. install.sh installs only while no agent can run, because
+#        one could change what you review before it is installed (Q-058).
+#        Running cc-isolated containers (name and project id):
+#            /bin/bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+#        Stop them: docker stop <name>
+#        Then rerun install.sh. Nothing was staged or installed.
+bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+not ok 30 T30 a move-aside failure rolls every entry back and says so (review R4)
+# (in test file test/install-host.bats, line 548)
+#   `chmod a-w "$CLAUDE_HOME_DIR/scripts"' failed
+# chmod: cannot access '/tmp/bats-run-lSBmp4/test/30/home/.claude/scripts': No such file or directory
+bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+not ok 31 T31 a held install lock is refused, named, and left alone (review R4)
+# (in test file test/install-host.bats, line 563)
+#   `mkdir "$CLAUDE_HOME_DIR/.claude-workflows-lock"' failed
+# mkdir: cannot create directory '/tmp/bats-run-lSBmp4/test/31/home/.claude/.claude-workflows-lock': No such file or directory
+bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+not ok 32 T32 a successful install releases its lock
+# (in test file test/install-host.bats, line 576)
+#   `grep -q changed "$CLAUDE_HOME_DIR/workflows/w.md"' failed with status 2
+# grep: /tmp/bats-run-lSBmp4/test/32/home/.claude/workflows/w.md: No such file or directory
+bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+not ok 33 T33 a foreign hook link is labelled MOVE (not REPLACE), WIRED on its own line (review R5)
+# (in test file test/install-host.bats, line 591)
+#   `[[ "$line" == "MOVE link $d/hooks/theirs.sh -> $S/theirs-target.sh to backup (not in the repo)"*'WIRED in settings'* ]]' failed
+# bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+# n
+# n
+# bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+# bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+# /bin/bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+# /tmp/bats-run-lSBmp4/test/33/repo/devcontainer-config/install.sh: line 119: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+# ERROR: an agent is running. install.sh installs only while no agent can run, because
+#        one could change what you review before it is installed (Q-058).
+#        Running cc-isolated containers (name and project id):
+#            /bin/bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+#        Stop them: docker stop <name>
+#        Then rerun install.sh. Nothing was staged or installed.
+bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+not ok 34 T34 control bytes in the review diff are made visible, not sent raw (review A4)
+# (in test file test/install-host.bats, line 604)
+#   `[[ "$output" == *'+^[[1A^[[2Khidden-line'* ]]' failed
+# bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+# n
+# n
+# bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+# bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+# /bin/bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+# /tmp/bats-run-lSBmp4/test/34/repo/devcontainer-config/install.sh: line 119: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+# ERROR: an agent is running. install.sh installs only while no agent can run, because
+#        one could change what you review before it is installed (Q-058).
+#        Running cc-isolated containers (name and project id):
+#            /bin/bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+#        Stop them: docker stop <name>
+#        Then rerun install.sh. Nothing was staged or installed.
+bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+not ok 35 T35 a dangling link in an owned dir is named as a MOVE, not a failed review (review A8)
+# (in test file test/install-host.bats, line 614)
+#   `[[ "$output" == *"MOVE link $d/hooks/dead.sh -> $S/no-such-target to backup (not in the repo)"* ]]' failed
+# bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+# n
+# y
+# bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+# bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+# /bin/bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+# /tmp/bats-run-lSBmp4/test/35/repo/devcontainer-config/install.sh: line 119: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+# ERROR: an agent is running. install.sh installs only while no agent can run, because
+#        one could change what you review before it is installed (Q-058).
+#        Running cc-isolated containers (name and project id):
+#            /bin/bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+#        Stop them: docker stop <name>
+#        Then rerun install.sh. Nothing was staged or installed.
+bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+not ok 36 T36 an entry the destination lacks is listed with a file count (review A7)
+# (in test file test/install-host.bats, line 625)
+#   `[[ "$output" == *"ADD $d/hooks (new, 3 file(s)):"* ]]' failed
+# bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+# n
+# n
+# bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+# bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+# /bin/bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+# /tmp/bats-run-lSBmp4/test/36/repo/devcontainer-config/install.sh: line 119: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+# ERROR: an agent is running. install.sh installs only while no agent can run, because
+#        one could change what you review before it is installed (Q-058).
+#        Running cc-isolated containers (name and project id):
+#            /bin/bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+#        Stop them: docker stop <name>
+#        Then rerun install.sh. Nothing was staged or installed.
+bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+not ok 37 T37 when nothing changed: (none), no prompt, no swap, no backup (review A6)
+# (in test file test/install-host.bats, line 633)
+#   `[ -d "$CLAUDE_HOME_DIR/skills" ]' failed
+bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+not ok 38 T38 backups are capped at the last 3 installs, and the install says so (review A6)
+# (in test file test/install-host.bats, line 652)
+#   `[ "$(find "$CLAUDE_HOME_DIR/.claude-workflows-backup" -mindepth 1 -maxdepth 1 | wc -l)" -eq 3 ]' failed
+# bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+# n
+# y
+# bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+# bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+# /bin/bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+# /tmp/bats-run-lSBmp4/test/38/repo/devcontainer-config/install.sh: line 119: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+# ERROR: an agent is running. install.sh installs only while no agent can run, because
+#        one could change what you review before it is installed (Q-058).
+#        Running cc-isolated containers (name and project id):
+#            /bin/bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+#        Stop them: docker stop <name>
+#        Then rerun install.sh. Nothing was staged or installed.
+# find: '/tmp/bats-run-lSBmp4/test/38/home/.claude/.claude-workflows-backup': No such file or directory
+bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+not ok 39 T39 a destination whose unresolved tail climbs back into the checkout is refused (review A3)
+# (in test file test/install-host.bats, line 664)
+#   `[[ "$output" == *'inside the repo checkout'* ]]' failed
+# bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+# n
+# y
+# bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+# bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+# /bin/bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+# /tmp/bats-run-lSBmp4/test/39/repo/devcontainer-config/install.sh: line 119: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+# ERROR: an agent is running. install.sh installs only while no agent can run, because
+#        one could change what you review before it is installed (Q-058).
+#        Running cc-isolated containers (name and project id):
+#            /bin/bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+#        Stop them: docker stop <name>
+#        Then rerun install.sh. Nothing was staged or installed.
+bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+not ok 40 T41 pruning keeps this run's backup and unstamped dirs, and orders by install stamp, not name (fact-check claim 22)
+# (in test file test/install-host.bats, line 682)
+#   `[ -n "$cur" ]' failed
+# bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+# n
+# y
+# bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+# bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+# /bin/bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+# /tmp/bats-run-lSBmp4/test/40/repo/devcontainer-config/install.sh: line 119: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+# ERROR: an agent is running. install.sh installs only while no agent can run, because
+#        one could change what you review before it is installed (Q-058).
+#        Running cc-isolated containers (name and project id):
+#            /bin/bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+#        Stop them: docker stop <name>
+#        Then rerun install.sh. Nothing was staged or installed.
+bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+not ok 41 T42 a committed mode change is reviewed and installed, not reported as (none) (fact-check claim 17)
+# (in test file test/install-host.bats, line 696)
+#   `[[ "$output" == *"MODE $CLAUDE_HOME_DIR/hooks/h.sh: 644 -> 755"* ]]' failed
+# bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+# n
+# y
+# bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+# bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+# /bin/bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+# /tmp/bats-run-lSBmp4/test/41/repo/devcontainer-config/install.sh: line 119: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+# ERROR: an agent is running. install.sh installs only while no agent can run, because
+#        one could change what you review before it is installed (Q-058).
+#        Running cc-isolated containers (name and project id):
+#            /bin/bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+#        Stop them: docker stop <name>
+#        Then rerun install.sh. Nothing was staged or installed.
+bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+not ok 42 T43 a provenance manifest edited while the prompt waits is not installed (fact-check claim 14)
+# (in test file test/install-host.bats, line 709)
+#   `[[ "$output" == *'stage changed after review'* ]]' failed
+# bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+# n
+# bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+# bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+# /bin/bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+# /tmp/bats-run-lSBmp4/test/42/repo/devcontainer-config/install.sh: line 119: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+# ERROR: an agent is running. install.sh installs only while no agent can run, because
+#        one could change what you review before it is installed (Q-058).
+#        Running cc-isolated containers (name and project id):
+#            /bin/bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+#        Stop them: docker stop <name>
+#        Then rerun install.sh. Nothing was staged or installed.
+# _: line 3: /tmp/bats-run-lSBmp4/test/42/tmp/cw-host-stage.*/payload/.manifest: No such file or directory
+bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+not ok 43 T44 the devcontainer target installs committed config only and lists what it leaves out (fact-check claim 4)
+# (in test file test/install-host.bats, line 722)
+#   `[ "$status" -eq 0 ]' failed
+# bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+# /bin/bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+# /tmp/bats-run-lSBmp4/test/43/repo/devcontainer-config/install.sh: line 119: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+# ERROR: an agent is running. install.sh installs only while no agent can run, because
+#        one could change what you review before it is installed (Q-058).
+#        Running cc-isolated containers (name and project id):
+#            /bin/bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+#        Stop them: docker stop <name>
+#        Then rerun install.sh. Nothing was staged or installed.
+bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+not ok 44 T45 a devcontainer payload item missing from the commit is fatal before the prompt (fact-check claim 4)
+# (in test file test/install-host.bats, line 739)
+#   `[[ "$output" == *'not found in commit'*'devcontainer-config/Dockerfile'* ]]' failed
+# bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+# /bin/bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+# /tmp/bats-run-lSBmp4/test/44/repo/devcontainer-config/install.sh: line 119: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+# ERROR: an agent is running. install.sh installs only while no agent can run, because
+#        one could change what you review before it is installed (Q-058).
+#        Running cc-isolated containers (name and project id):
+#            /bin/bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+#        Stop them: docker stop <name>
+#        Then rerun install.sh. Nothing was staged or installed.
+bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+ok 45 T46 a destination containing a newline is refused before anything runs (fact-check claim 11b)
+bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+not ok 46 T47 a raw 8-bit C1 byte is made visible; valid UTF-8 is left alone (fact-check claim 6)
+# (in test file test/install-host.bats, line 765)
+#   `[[ "$output" == *'+a?31mX'* ]]' failed
+# bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+# n
+# n
+# bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+# bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+# /bin/bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+# /tmp/bats-run-lSBmp4/test/46/repo/devcontainer-config/install.sh: line 119: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+# ERROR: an agent is running. install.sh installs only while no agent can run, because
+#        one could change what you review before it is installed (Q-058).
+#        Running cc-isolated containers (name and project id):
+#            /bin/bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+#        Stop them: docker stop <name>
+#        Then rerun install.sh. Nothing was staged or installed.
+bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+not ok 47 T48 the uncommitted-changes listing never prints a control byte raw, even with core.quotePath=false (fact-check claim 9)
+# (in test file test/install-host.bats, line 775)
+#   `[[ "$output" == *'NOT included'*'31mred.md'* ]]' failed
+# bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+# /bin/bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+# /tmp/bats-run-lSBmp4/test/47/repo/devcontainer-config/install.sh: line 119: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+# ERROR: an agent is running. install.sh installs only while no agent can run, because
+#        one could change what you review before it is installed (Q-058).
+#        Running cc-isolated containers (name and project id):
+#            /bin/bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+#        Stop them: docker stop <name>
+#        Then rerun install.sh. Nothing was staged or installed.
+bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+not ok 48 T49 a small new entry's content is shown; a large one says it is omitted (fact-check claim 3)
+# (in test file test/install-host.bats, line 785)
+#   `[[ "$output" == *"ADD $d/CLAUDE.md (new, 1 file(s)):"*'+global instructions'* ]]' failed
+# bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+# n
+# n
+# bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+# bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+# /bin/bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+# /tmp/bats-run-lSBmp4/test/48/repo/devcontainer-config/install.sh: line 119: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+# ERROR: an agent is running. install.sh installs only while no agent can run, because
+#        one could change what you review before it is installed (Q-058).
+#        Running cc-isolated containers (name and project id):
+#            /bin/bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+#        Stop them: docker stop <name>
+#        Then rerun install.sh. Nothing was staged or installed.
+bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+ok 49 T50 a Claude Code process for this user stops the install before either target stages (Q-058)
+bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+ok 50 T51 a running cc-isolated container stops the install and is named with how to stop it (Q-058)
+bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+ok 51 T52 docker absent or unreachable: one line says so, and the install goes ahead (Q-058)
+bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+ok 52 T53 without pgrep the install is refused, not waved through (Q-058)
+bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+not ok 53 T54 an agent that starts while the host prompt waits stops the swap (Q-058)
+# (in test file test/install-host.bats, line 856)
+#   `[[ "$output" == *'Install these files'* ]]      # the review and prompt ran' failed
+# bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+# n
+# bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+# bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+# /bin/bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+# /tmp/bats-run-lSBmp4/test/53/repo/devcontainer-config/install.sh: line 119: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+# ERROR: an agent is running. install.sh installs only while no agent can run, because
+#        one could change what you review before it is installed (Q-058).
+#        Running cc-isolated containers (name and project id):
+#            /bin/bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+#        Stop them: docker stop <name>
+#        Then rerun install.sh. Nothing was staged or installed.
+bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+not ok 54 T55 an agent that starts while the devcontainer prompt waits stops that install (Q-058)
+# (in test file test/install-host.bats, line 871)
+#   `[[ "$output" == *'778 claude'* ]]' failed
+# bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+# bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+# bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+# /bin/bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+# /tmp/bats-run-lSBmp4/test/54/repo/devcontainer-config/install.sh: line 119: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+# ERROR: an agent is running. install.sh installs only while no agent can run, because
+#        one could change what you review before it is installed (Q-058).
+#        Running cc-isolated containers (name and project id):
+#            /bin/bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+#        Stop them: docker stop <name>
+#        Then rerun install.sh. Nothing was staged or installed.
+bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+ok 55 T56 --help, README and the hook-wiring guide document the no-agent check (Q-058)
+bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+ok 56 T57 without perl the install is refused at startup (vis needs it)
+bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+not ok 57 T58 a vis failure is diff trouble: it aborts before the prompt, never reads as an empty diff
+# (in test file test/install-host.bats, line 902)
+#   `[ "$status" -eq 0 ]' failed
+bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+not ok 58 T59 a symlink planted at devcontainer-config/claude-home is refused, its target untouched
+# (in test file test/install-host.bats, line 923)
+#   `[[ "$output" == *'claude-home'*'symlink'* ]]' failed
+# bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+# /bin/bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+# /tmp/bats-run-lSBmp4/test/58/repo/devcontainer-config/install.sh: line 119: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+# ERROR: an agent is running. install.sh installs only while no agent can run, because
+#        one could change what you review before it is installed (Q-058).
+#        Running cc-isolated containers (name and project id):
+#            /bin/bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+#        Stop them: docker stop <name>
+#        Then rerun install.sh. Nothing was staged or installed.
+bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+not ok 59 T60 a symlinked directory above claude-home inside the repo is refused
+# (in test file test/install-host.bats, line 937)
+#   `[[ "$output" == *'symlink'* ]]' failed
+# bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+# /bin/bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+# /tmp/bats-run-lSBmp4/test/59/repo/devcontainer-config/install.sh: line 119: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+# ERROR: an agent is running. install.sh installs only while no agent can run, because
+#        one could change what you review before it is installed (Q-058).
+#        Running cc-isolated containers (name and project id):
+#            /bin/bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+#        Stop them: docker stop <name>
+#        Then rerun install.sh. Nothing was staged or installed.
+bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+not ok 60 T61 a committed payload file holding a NUL byte is refused and listed before any prompt
+# (in test file test/install-host.bats, line 950)
+#   `[[ "$output" == *'NUL'*'hooks/blob.bin'* ]]' failed
+# bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+# y
+# y
+# bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+# bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+# /bin/bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+# /tmp/bats-run-lSBmp4/test/60/repo/devcontainer-config/install.sh: line 119: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+# ERROR: an agent is running. install.sh installs only while no agent can run, because
+#        one could change what you review before it is installed (Q-058).
+#        Running cc-isolated containers (name and project id):
+#            /bin/bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+#        Stop them: docker stop <name>
+#        Then rerun install.sh. Nothing was staged or installed.
+bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+not ok 61 T62 an installed file holding a NUL byte is reviewed as text, not 'Binary files differ'
+# (in test file test/install-host.bats, line 967)
+#   `[ -f "$CLAUDE_HOME_DIR/hooks/h.sh" ]' failed
+bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+ok 62 T63 decision 037 records the Q-058 trust model and its accepted residuals; the plan's Risks cite it
+bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+not ok 63 T24 with CLAUDE_HOME_DIR unset, CLAUDE_CONFIG_DIR chooses the destination
+# (in test file test/install-host.bats, line 995)
+#   `[[ "$output" == *'CLAUDE_CONFIG_DIR'* ]]' failed
+# bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+# n
+# y
+# bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+# bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+# /bin/bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+# /tmp/bats-run-lSBmp4/test/63/repo/devcontainer-config/install.sh: line 119: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+# ERROR: an agent is running. install.sh installs only while no agent can run, because
+#        one could change what you review before it is installed (Q-058).
+#        Running cc-isolated containers (name and project id):
+#            /bin/bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+#        Stop them: docker stop <name>
+#        Then rerun install.sh. Nothing was staged or installed.
+bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+ok 64 resolve_workspace returns the git toplevel for a path inside a repo
+bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+ok 65 resolve_workspace fails loudly outside a git repo instead of guessing
+bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+ok 66 resolve_workspace fails on a nonexistent directory
+bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+ok 67 resolve_workspace defaults to $PWD when given no argument
+bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+ok 68 project_id differs for same-basename repos at different paths
+bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+ok 69 project_id is stable for the same path
+bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+ok 70 ws_fingerprint differs between two different repos
+bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+ok 71 ws_fingerprint is stable for the same repo
+bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+ok 72 compute_manifest covers the config files and the egress profiles
+bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+ok 73 compute_manifest fails when an enforcement file is missing
+bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+ok 74 check_manifest fails with instructions when nothing is blessed
+bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+ok 75 check_manifest passes after bless with unchanged files
+bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+ok 76 check_manifest fails after the firewall script is tampered with
+bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+ok 77 check_manifest fails when the launcher itself is tampered with
+bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+ok 78 check_manifest fails when an egress profile gains a domain
+bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+ok 79 check_manifest fails when an unblessed project profile appears
+bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+ok 80 re-bless after a reviewed change makes check_manifest pass again
+bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+ok 81 an unregistered project gets the base profile only
+bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+ok 82 register_project records the profile and re-blesses
+bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+ok 83 register_project rejects an unknown profile before writing anything
+bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+ok 84 register_project prints the profile transition, not just the result
+bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+ok 85 register_project names a profile the replacement drops
+bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+ok 86 register_project says so when the profile is unchanged
+bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+ok 87 rebuild_hint carries both localEnv assignments into the by-hand command
+bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+ok 88 rebuild_hint's by-hand command, when run, sets every launcher-set localEnv var and keeps args intact
+bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+ok 89 --profile with no value is a usage error, not a silent exit
+bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+ok 90 rebuild_hint names the launcher before the by-hand form
+bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+ok 91 usage prints the whole header block, including its last line
+bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+ok 92 suggest_profiles proposes python for a python repo but never applies it
+bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+ok 93 suggest_profiles proposes rust for a cargo repo but never applies it
+bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+ok 94 suggest_profiles proposes lean for a repo with the toolchain pin
+bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+ok 95 suggest_profiles proposes lean for a lakefile.toml repo (current Lake format)
+bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+ok 96 suggest_profiles proposes lean for a lakefile.lean repo (older Lake format)
+bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+ok 97 suggest_profiles proposes android for a gradle repo (Kotlin DSL)
+bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+ok 98 suggest_profiles proposes android for a repo with just the gradle wrapper
+bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+ok 99 suggest_profiles proposes dotnet for a Unity project root
+bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+ok 100 suggest_profiles proposes dotnet for a repo with a top-level csproj
+bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+ok 101 suggest_profiles is silent for a plain repo
+bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+ok 102 base profile alone yields the base allowlist and nothing else
+bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+ok 103 a python project gets PyPI on top of base
+bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+ok 104 one project's profile does not widen another's (H5)
+bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+ok 105 profiles compose
+bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+ok 106 an android project gets Google Maven, Maven Central, and Gradle on top of base
+bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+ok 107 a dotnet project gets NuGet on top of base, and only NuGet
+bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+ok 108 an unknown profile is a hard failure, not a silently narrower allowlist
+bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+ok 109 a missing profile file degrades to base, not to empty
+bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+ok 110 devcontainer.json anchors build.dockerfile to the config dir, not the repo
+bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+ok 111 devcontainer.json anchors build.context to the config dir, not the repo
+bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+ok 112 the launcher exports CC_CONFIG_DIR (else the build paths resolve to /)
+bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+ok 113 Dockerfile copies the claude-home payload into the image
+bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+ok 114 the payload is baked outside /home/node/.claude (a volume would shadow it)
+bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+ok 115 the payload is root-owned and not writable by node
+bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+ok 116 hook scripts in the payload stay executable
+bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+ok 117 postStartCommand links the payload after the firewall, not before
+bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+ok 118 install.sh stages the payload from the repo root
+bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+not ok 119 install.sh aborts when a payload source is missing
+# (in test file test/cc-isolated-functions.bats, line 631)
+#   `[[ "$output" == *'payload source(s) not found'* ]]' failed
+bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+not ok 120 install.sh names every missing payload source, not just the first
+# (in test file test/cc-isolated-functions.bats, line 643)
+#   `[[ "$output" == *'global-instructions/CLAUDE.md'* ]]' failed
+bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+not ok 121 install.sh assembles the payload when every source is present
+# (in test file test/cc-isolated-functions.bats, line 655)
+#   `[[ "$output" == *'bless it?'* ]]' failed
+bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+not ok 122 install.sh stages committed content only: uncommitted changes are listed, not staged
+# (in test file test/cc-isolated-functions.bats, line 675)
+#   `[[ "$output" == *'NOT included'*'skills/new.md'* ]]' failed
+# bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+# bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+# /tmp/bats-run-lSBmp4/test/122/fakerepo/devcontainer-config/install.sh: line 119: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+# ERROR: an agent is running. install.sh installs only while no agent can run, because
+#        one could change what you review before it is installed (Q-058).
+#        Running cc-isolated containers (name and project id):
+#            bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+#        Stop them: docker stop <name>
+#        Then rerun install.sh. Nothing was staged or installed.
+bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+not ok 123 install.sh treats a payload source that exists but was never committed as missing
+# (in test file test/cc-isolated-functions.bats, line 690)
+#   `[[ "$output" == *'payload source(s) not found'*'patterns'* ]]' failed
+bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+not ok 124 install.sh review diff shows the CONTENT of a new file inside a payload dir
+# (in test file test/cc-isolated-functions.bats, line 715)
+#   `[[ "$output" == *'+evil.example.com'* ]]' failed
+bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+not ok 125 install.sh review diff shows a new top-level payload item, not nothing
+# (in test file test/cc-isolated-functions.bats, line 728)
+#   `[[ "$output" == *'+hidden-hook-body'* ]]' failed
+bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+not ok 126 install.sh aborts before the prompt when the review diff itself fails
+# (in test file test/cc-isolated-functions.bats, line 742)
+#   `[[ "$output" == *"could not diff payload item 'egress'"* ]]' failed
+bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+ok 127 link-claude-home refuses to clobber a real file in the volume
+bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+ok 128 link-claude-home links the payload and is idempotent
+bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+ok 129 link-claude-home is a no-op when the payload is absent (non-cc-isolated host)
+bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+ok 130 Gate 1h loads the review skill from the baked payload, not the branch
+bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+ok 131 Gate 1h pins an explicit reviewer model
+bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+ok 132 Gate 1h archives review artifacts before the worktree is torn down
+bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+ok 133 Gate 1h fails closed on reviewer error and on an unparseable verdict
+bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+ok 134 Gate 1h passes a per-run nonce the branch cannot know
+bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+ok 135 every regular file in install.sh's PAYLOAD is hashed by enforcement_files
+bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+ok 136 claude-home files are hashed file by file when present
+bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+ok 137 compute_manifest covers claude-home even when projects/ is empty, under errexit
+bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+ok 138 a symlink in claude-home is blessed by its target and a repoint trips the manifest
+bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+ok 139 a symlinked enforcement file is hashed by content as well as by target
+bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+ok 140 compute_manifest fails when enforcement_files fails
+bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+ok 141 H6 passes and stamps the host's project id on a correct container
+bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+ok 142 H6 fails when the container's CC_PROJECT_ID is empty (no empty stamp)
+bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+ok 143 H6 fails on a volume stamped for another project even if the container agrees with it
+bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+ok 144 H6 fails on an empty stamp left by an earlier empty-env run
+bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+ok 145 blessed_hash needs a manifest, is stable, and changes when the boundary changes
+bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+ok 146 a fresh bless is NOT verified live, and says so
+bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+ok 147 the receipt names the blessed hash and is void once the boundary changes
+bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+ok 148 --list reports the blessed hash and its verification state
+bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+ok 149 devcontainer.json passes CC_CONFIG_HASH as a build arg and the Dockerfile bakes it last
+bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+ok 150 probe_boundary passes and writes the receipt when the container carries the blessed hash
+bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+ok 151 probe_boundary fails on a container built from another config, and writes no receipt
+bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+ok 152 probe_boundary fails when init-firewall.sh never completed (closed ≠ verified)
+bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+ok 153 a launch rebuilds a container whose baked config is not the blessed one
+bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+ok 154 a launch on a matching, verified container does not rebuild
+bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+ok 155 --probe-only always rebuilds before probing
+bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+ok 156 fresh volume with no settings.json gets every wired hook and deny rule
+bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+ok 157 merge is idempotent across repeated container starts
+bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+ok 158 unrelated settings keys, foreign hooks, and user permissions survive the merge
+bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+ok 159 {{CLAUDE_DIR}} is substituted and _comment is stripped
+bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+ok 160 an unparseable settings.json is refused, not overwritten
+bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+ok 161 CC_SKIP_HOOK_WIRING=1 leaves settings.json untouched
+bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+ok 162 every command in wiring.json points at a hook that exists
+bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+ok 163 every declared hook command arrives in settings.json by name
+bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+ok 164 a stale version of one of our groups is replaced, not duplicated
+bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+ok 165 a foreign group is kept even when it shares an event with ours
+bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+ok 166 wiring.json declares only known hook event names
+bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+ok 167 wiring.json declares only known permission modes
+bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+ok 168 the deny rules the guard hook's HARD tier depends on are wired
+bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+ok 169 installed ~/.claude/scripts/{lite-review.py,questions.sh} resolve after install
+bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+ok 170 two numbered items fire the reminder
+bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+ok 171 two hyphen bullets fire the reminder
+bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+ok 172 two • bullets fire the reminder even in the C locale
+bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+ok 173 an explicit multi-item phrasing fires the reminder
+bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+ok 174 a single task stays silent
+bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+ok 175 a single bullet stays silent
+bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+ok 176 malformed input and an empty prompt exit 0 silently
+bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+ok 177 HIGH finding in settings.json → exit 2 with findings on stderr
+ok 178 clean policy file → silent exit 0, auditor was invoked
+ok 179 auditor crash without HIGH banner → silent exit 0 (no false alarm)
+ok 180 gate accepts CLAUDE.md, .claude/ files, skills markdown, .mdc rules
+ok 181 gate skips ordinary source files, even inside skills dirs
+ok 182 non-edit tool (Bash) → silent exit 0, auditor not invoked
+ok 183 malformed payload → silent exit 0
+ok 184 missing file_path / nonexistent file → silent exit 0
+ok 185 missing auditor script → silent exit 0
+ok 186 CLAUDE_CONFIG_AUDIT_DISABLE=1 → silent exit 0, auditor not invoked
+ok 187 the auditor ships in this repo
+ok 188 with no env override the hook resolves the in-repo auditor
+ok 189 real auditor: bypassPermissions directive in settings.json → exit 2
+ok 190 real auditor: hidden bidi override in CLAUDE.md → exit 2
+ok 191 real auditor: a stray invalid-UTF-8 byte does not hide a bidi override
+ok 192 real auditor: undecodable bytes are reported as a MED HIDDEN finding
+ok 193 real auditor: a directory walk skips install.sh's .claude-workflows-backup
+ok 194 real auditor: benign settings.json → silent exit 0
+bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+ok 195 plain > to settings.json is denied
+ok 196 >> to settings.json is denied
+ok 197 1> to settings.json is denied (B1 bypass)
+ok 198 1> with no space to settings.json is denied (B1 bypass)
+ok 199 2> to a hooks file is denied (B1 bypass)
+ok 200 &> to settings.json is denied (B1 bypass)
+ok 201 >& FILE (stdout+stderr to a file) to settings.json is denied
+ok 202 >&- (close stdout) on a read of settings.json is not a write
+ok 203 a HARD-path deny holds in an untainted session too
+ok 204 2>&1 on a read of settings.json is not a write
+ok 205 >&2 on a read of settings.json is not a write
+ok 206 2>/dev/null on a read of settings.json is not a write
+ok 207 2>/dev/null on a listing of the hooks dir is not a write
+ok 208 a /dev/null redirect does not mask a later real write
+ok 209 SOFT path write in a tainted session asks
+ok 210 SOFT path write in an untainted session defers
+ok 211 fd-prefixed SOFT path write in a tainted session asks
+ok 212 Write to HARD settings.json defers (never ask; deny rules own it)
+ok 213 Edit to a HARD hooks file defers even when tainted
+ok 214 Write to a SOFT skill file asks when tainted
+ok 215 Write to a SOFT skill file defers when untainted
+ok 216 Write to a project .claude/settings.local.json asks when tainted
+ok 217 Write to a project .claude/settings.local.json defers when untainted
+ok 218 Edit to a project .claude/hooks file asks when tainted
+ok 219 Write to the global ~/.claude/settings.local.json still defers when tainted
+ok 220 Write to the global dir via an absolute HOME path still defers when tainted
+ok 221 CLAUDE_CONFIG_DIR is the global dir when set
+ok 222 a heredoc commit message naming a bare CLAUDE.md is not denied (untainted)
+ok 223 a heredoc naming a bare CLAUDE.md asks, not denies, when tainted
+ok 224 read-only commands on a project CLAUDE.md are not denied
+ok 225 a Bash write to a project CLAUDE.md asks when tainted
+ok 226 a Bash write to the global ~/.claude/CLAUDE.md is still denied
+ok 227 a Bash write to ~/CLAUDE.md, $HOME/CLAUDE.md or ${HOME}/CLAUDE.md is denied
+ok 228 a Bash write to the literal home path CLAUDE.md is denied
+ok 229 a Bash write to global-instructions/CLAUDE.md stays denied (2026-09-12 review)
+ok 230 R1: quoted, doubled-slash, dot-segment and quoted-name spellings are denied
+ok 231 R1: the literal home path with a doubled slash is denied
+ok 232 R1: the global spellings are denied in a tainted session too (not ask)
+ok 233 R1: a heredoc whose prose names ~/.claude/CLAUDE.md is denied (accepted cost)
+ok 234 R1: a bare CLAUDE.md with no home indicator stays SOFT
+ok 235 A10: settings/hooks spellings with .claude anywhere are denied
+ok 236 R3: with CLAUDE_CONFIG_DIR elsewhere, ~/.claude is SOFT (asks when tainted)
+ok 237 R3: an empty CLAUDE_CONFIG_DIR falls back to ~/.claude, as the linker does
+ok 238 R3: a '~' in CLAUDE_CONFIG_DIR is not expanded (the linker doesn't)
+ok 239 R3: managed-settings.json is SOFT for file tools (no deny rule covers it)
+ok 240 R4: symlinked global CLAUDE.md and hooks defer when tainted
+ok 241 R4: the MultiEdit tool and the path key defer on a '..' global path
+ok 242 N1: a project .claude symlinked to ~/.claude is denied on its hooks, CLAUDE.md, settings
+ok 243 N1: the payload CLAUDE.md and hooks by their real path are denied (resolve-only HARD)
+ok 244 N1: a symlinked config dir addressed by its resolved path is denied
+ok 245 N1: case variants are not HARD (deny rules are case-sensitive): SOFT, ask when tainted
+ok 246 N1: a lexical global path still defers, tainted, in the symlink layout
+ok 247 R4: a real (non-symlinked) project .claude still asks when tainted
+ok 248 non-JSON stdin defers
+ok 249 JSON array stdin defers
+ok 250 JSON string stdin defers
+ok 251 non-object tool_input defers
+ok 252 null tool_input defers
+bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+ok 253 blocks a commit of an enforcement file with no Live-verified trailer
+ok 254 passes when the -m message carries the trailer
+ok 255 passes when the trailer is an explicit 'no' with a reason
+ok 256 reads the trailer from a -F message file
+ok 257 blocks when the -F message file lacks the trailer
+ok 258 ignores commits that touch no enforcement file
+ok 259 counts unstaged tracked changes when -a is given
+ok 260 every manifest-hashed file is in the enforcement set
+ok 261 ignores non-commit git commands and non-git commands
+ok 262 leaves an --amend --no-edit alone
+ok 263 a comment-only edit to an egress list passes without a trailer
+ok 264 a diff that changes a comment AND a real line still blocks
+ok 265 commenting OUT an existing allowlist line still blocks
+ok 266 removing a --flag line alongside a comment edit still blocks
+ok 267 a pure whitespace or blank-line change passes
+ok 268 adding a NEW enforcement file whose content is all comments still blocks
+ok 269 the -a path honors the narrowing too
+ok 270 a // comment-only change to devcontainer.json passes
+ok 271 the gate is wired into the live settings.json
+ok 272 malformed input, missing command, and the disable switch all exit 0
+bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+ok 273 skill completion emits skill_completed event
+bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+ok 274 skill completion captures duration_ms when supplied
+bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+ok 275 skill completion captures total_tokens when supplied
+bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+ok 276 missing duration and tokens are omitted, not zeroed
+bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+ok 277 skill completion with no skill name does not log
+bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+ok 278 agent completion uses subagent_type when no frontmatter
+bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+ok 279 agent completion prefers frontmatter name over subagent_type
+bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+ok 280 Bash completion is silently ignored
+bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+ok 281 Read completion is silently ignored
+bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+ok 282 hook exits 0 on malformed JSON
+bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+ok 283 hook exits 0 on empty input
+bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+ok 284 hook produces no stdout
+bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+ok 285 each logged line is valid JSON
+bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+ok 286 post-event name matches pre-event name for the same skill
+bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+ok 287 skill invocation is logged with all fields
+bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+ok 288 skill with no args omits args field
+bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+ok 289 skill with empty name does not log
+bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+ok 290 skill with missing skill field does not log
+bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+ok 291 reading a workflow file is logged
+bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+ok 292 workflow name is extracted from basename without .md
+bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+ok 293 project-local workflow files are also logged
+bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+ok 294 agent with skill frontmatter in prompt is logged as agent_skill
+bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+ok 295 agent with no skill frontmatter logs as agent with subagent_type
+bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+ok 296 agent with frontmatter but no name field falls back to agent log
+bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+ok 297 agent extracts first frontmatter name only
+bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+ok 298 a --- rule later in a prompt is not frontmatter
+bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+ok 299 project falls back to the directory name outside a git repo
+bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+ok 300 reading a non-workflow file does not log
+bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+ok 301 reading a skill file is logged with extracted skill name
+bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+ok 302 reading a file with 'workflows' in name but not in a workflows dir does not log
+bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+ok 303 unrecognized tool input does not log
+bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+ok 304 each logged line is valid JSON
+bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+ok 305 hook produces no stdout (never interferes with tool permission)
+bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+ok 306 hook exits 0 on malformed JSON input
+bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+ok 307 hook exits 0 on empty input
+bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+ok 308 hook creates log directory if missing
+bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+ok 309 multiple invocations append to the same log file
+bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+ok 310 skill tool invocation tags via=skill_tool
+bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+ok 311 reading a SKILL.md tags via=file_read
+bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+ok 312 reading a workflow file tags via=file_read
+bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+ok 313 agent dispatch tags via=agent_dispatch
+bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+ok 314 via field absent for legacy callers writing without it
+exit=1
+
+## 2026-09-25T06:49:40Z T58 against ea2c8fb install.sh, rerun with LC_ALL=C LANG=C LANGUAGE= (no locale warning), cwd /tmp/claude-1000/-workspace/7630264d-3947-4203-a0ec-b9ffcc3a4e06/scratchpad/x/tree-ea2c8fb
+1..1
+not ok 1 T58 a vis failure is diff trouble: it aborts before the prompt, never reads as an empty diff
+# (in test file test/t58.bats, line 923)
+#   `[[ "$output" == *'could not show the review'* ]]' failed
+# Canonical (repo):  /tmp/bats-run-ONiWAW/test/1/repo/devcontainer-config at commit 46101f330a2b (staged in /tmp/bats-run-ONiWAW/test/1/tmp/cw-devc-stage.WmuUcn/config)
+# Installed (host):  /tmp/bats-run-ONiWAW/test/1/home/.config/claude-devcontainer
+#
+# === Changes this install would make ===========================================
+# ===============================================================================
+#
+# Install this config and bless it? [y/N] Aborted. Nothing was changed. (devcontainer config)
+#
+# Skipped host target (~/.claude): it needs an interactive terminal (stdin is not a TTY). Run install.sh from your own terminal.
+exit=1
+
+## 2026-09-25T06:50:55Z T60 against fa69656 install.sh, LC_ALL=C, cwd /tmp/claude-1000/-workspace/7630264d-3947-4203-a0ec-b9ffcc3a4e06/scratchpad/x/tree-fa69656
+1..1
+not ok 1 T60 a symlinked directory above claude-home inside the repo is refused
+# (in test file test/t60.bats, line 948)
+#   `[ "$status" -eq 1 ]' failed
+# WARNING: the checkout has uncommitted changes under the payload paths. They are
+#          NOT included: this install stages commit 49cc4564e179 only. Commit them
+#          and rerun to include them.
+#             D devcontainer-config/Dockerfile
+#             D devcontainer-config/cc-isolated.sh
+#             D devcontainer-config/cc-sni-proxy.py
+#             D devcontainer-config/devcontainer.json
+#             D devcontainer-config/egress/base.txt
+#             D devcontainer-config/init-firewall.sh
+#             D devcontainer-config/link-claude-home.sh
+# Canonical (repo):  /tmp/bats-run-skQMNs/test/1/repo/devcontainer-config at commit 49cc4564e179 (staged in /tmp/bats-run-skQMNs/test/1/tmp/cw-devc-stage.QeZNkr/config)
+# Installed (host):  /tmp/bats-run-skQMNs/test/1/home/.config/claude-devcontainer
+#
+# First install — /tmp/bats-run-skQMNs/test/1/home/.config/claude-devcontainer does not exist yet.
+#
+# Linked /tmp/bats-run-skQMNs/test/1/home/.local/bin/cc-isolated -> /tmp/bats-run-skQMNs/test/1/home/.config/claude-devcontainer/cc-isolated.sh
+#
+# BLESS-STUB --bless
+#
+# Done. Blessed, NOT verified: a bless is a review of files, not a test of a container.
+# Next steps:
+#   touch ~/.ssh/canary                    # once, if you haven't — strengthens the H1 probe
+#   cc-isolated --probe-only <repo>        # REQUIRED after any boundary change: rebuilds from
+#                                          # this config and records it verified live on a pass
+#   cc-isolated                            # session for the repo containing $PWD
+#   cc-isolated --register <repo> --profile python   # widen a project's egress
+#
+# WARNING: /tmp/bats-run-skQMNs/test/1/home/.local/bin is not on your PATH — add it, or call /tmp/bats-run-skQMNs/test/1/home/.config/claude-devcontainer/cc-isolated.sh directly.
+#
+# Skipped host target (~/.claude): it never installs with --yes. Run install.sh without --yes at a terminal to review and install it.
+exit=1

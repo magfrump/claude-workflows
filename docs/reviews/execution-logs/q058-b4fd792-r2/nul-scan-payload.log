@@ -1,0 +1,6 @@
+bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+2026-09-25T06:44:00Z
+files=122
+nul_files:
+scan_exit=0
+exit=0

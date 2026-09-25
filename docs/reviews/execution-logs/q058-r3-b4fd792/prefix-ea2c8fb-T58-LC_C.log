@@ -1,0 +1,18 @@
+2026-09-25T06:41:19Z
+cwd=/workspace cmd=env -u CLAUDECODE LC_ALL=C LANG=C LANGUAGE= bash /workspace/docs/reviews/execution-logs/q058-r3-b4fd792/prefix.sh ea2c8fb T58
+install.sh from ea2c8fb: 885 lines
+1..1
+not ok 1 T58 a vis failure is diff trouble: it aborts before the prompt, never reads as an empty diff
+# (in test file test/install-host.bats, line 923)
+#   `[[ "$output" == *'could not show the review'* ]]' failed
+# Canonical (repo):  /tmp/claude-1000/-workspace/7630264d-3947-4203-a0ec-b9ffcc3a4e06/scratchpad/bats-run-xNPz9p/test/1/repo/devcontainer-config at commit 07654aed1185 (staged in /tmp/claude-1000/-workspace/7630264d-3947-4203-a0ec-b9ffcc3a4e06/scratchpad/bats-run-xNPz9p/test/1/tmp/cw-devc-stage.Kri4gG/config)
+# Installed (host):  /tmp/claude-1000/-workspace/7630264d-3947-4203-a0ec-b9ffcc3a4e06/scratchpad/bats-run-xNPz9p/test/1/home/.config/claude-devcontainer
+#
+# === Changes this install would make ===========================================
+# ===============================================================================
+#
+# Install this config and bless it? [y/N] Aborted. Nothing was changed. (devcontainer config)
+#
+# Skipped host target (~/.claude): it needs an interactive terminal (stdin is not a TTY). Run install.sh from your own terminal.
+bats_exit=1
+exit=0

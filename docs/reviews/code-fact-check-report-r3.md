@@ -1,550 +1,658 @@
-Commit: d0fdd04
-
 # Code Fact-Check Report
 
-**Repository:** claude-workflows (worktree `/workspace/.claude/wt-copyinstall`, branch `ans/copy-install`)
-**Scope:** diff `712c626..d0fdd04`: README.md, devcontainer-config/install.sh (whole file read, 464 lines), docs/decisions/037-bare-host-copy-install.md, guides/bare-host-hook-wiring.md, and the commit messages of 1514518, 6793b79, dcf4a6d and d0fdd04. The docs/working and docs/reviews files on the branch were read as context only. Decision 035's note and guides/README.md hold no executable claims beyond those covered here.
-**Checked:** 2026-09-23
-**Total claims checked:** 27
-**Summary:** 18 verified, 5 mostly accurate, 0 stale, 2 incorrect, 2 unverifiable
+Commit: b4fd792
 
-Execution provenance. Every executed claim ran hermetically: HOME, CLAUDE_HOME_DIR, CLAUDE_DEVC_CONFIG_DIR, CLAUDE_DEVC_BIN_DIR and TMPDIR all sat under a scratch dir, CLAUDE_CONFIG_DIR was unset, and CLAUDECODE was unset for the child. The installer was a copy inside a throwaway git repo built by the same `fake_repo` recipe as `test/install-host.bats`. The y path ran through `script -qec CMD /dev/null`. Captured output, with bash's locale warnings stripped, is in `docs/reviews/execution-logs/cfc-copy-install-r3/`. The driver scripts (`probe.sh`, `probe9.sh`, `run-suites.sh`) are saved beside the logs.
-- Probes: `bash probe.sh` then `bash probe9.sh`, cwd the scratch dir `…/scratchpad/cfc-r3`, both exit 0. Started 2026-09-23T23:32:30Z (`probe-timestamp.txt`). Output is in `probe.txt` and `probe9.txt`, one `######## Pn …` section per case, with each run's installer exit code printed as `[exit=N]`.
-- Suites: `bash run-suites.sh`, exit 0, started 2026-09-23T23:32:30Z (`timestamp.txt`). It extracts `git archive d0fdd04` and `git archive dcf4a6d` into scratch trees and runs `bats` from each tree's root. `bats test/hooks/` ran at 2026-09-23T23:34Z (`hooks-timestamp.txt`), exit 0. Per-suite exit codes are in `exits.txt`.
+**Repository:** /workspace (branch `ans/copy-install`, read from the worktree `/workspace/.claude/wt-copyinstall` at b4fd792)
+**Scope:** commit range `9ae6e46..b4fd792` (8 commits), limited to `devcontainer-config/install.sh`, `test/install-host.bats`, `test/cc-isolated-functions.bats`, `README.md`, `docs/decisions/037-bare-host-copy-install.md`, `guides/bare-host-hook-wiring.md`, `docs/working/plan-copy-install-bare-host.md`, plus the commit messages. `docs/reviews/` files in the range were read as context only.
+**Checked:** 2026-09-24
+**Total claims checked:** 25
+**Summary:** 15 verified, 6 mostly accurate, 0 stale, 2 incorrect, 2 unverifiable
 
-Note for the orchestrator: sibling agents share `scratchpad/fc/`. My first draft of `fc/probe.sh` and `fc/run-suites.sh` collided with a sibling's files of the same names there: one of my Writes overwrote a pre-existing `fc/probe.sh`. All evidence below comes from the isolated `scratchpad/cfc-r3/` copies. A sibling that relied on `fc/probe.sh` may have run my content.
+Hallucination-pattern log (`docs/reviews/hallucination-patterns.md`) read before checking. No claim matches a logged pattern: the four logged entries are measured values or file-to-symbol associations. The closest class is the test-count figure in Claim 24, which could not be tied to a named suite set. It is Unverifiable, not a confirmed fabrication.
+
+Execution provenance: every executed claim cites a captured log under `docs/reviews/execution-logs/q058-r3-b4fd792/`. Each log starts with its UTC timestamp, cwd and exact command, and ends with `exit=`. All runs were hermetic. The bats suites pin HOME, CLAUDE_HOME_DIR, CLAUDE_DEVC_* and TMPDIR into BATS_TEST_TMPDIR and stub pgrep and docker on PATH. The pre-fix and probe runs used a `git archive` copy under the session scratchpad. No run touched the real `~/.claude`.
+
+Main runs:
+- `suites.log`: `bats test/install-host.bats test/cc-isolated-functions.bats`, cwd the worktree, 2026-09-25T06:39:02Z, 156/156 ok, exit 0.
+- `regex-probe.log`: the real procps-ng 4.0.2 `pgrep` against synthetic command lines, 06:39:31Z, exit 0.
+- `prefix-*.log`: b4fd792's tests run against older install.sh versions, 06:40:40Z to 06:41:19Z.
+- `vis-paths.log`: probes X1 to X3, 06:41:43Z, exit 0.
+- `payload-nul.log`: a NUL scan of the payload at b4fd792, 06:40:21Z, exit 0.
 
 ---
 
-## Claim 1: "The `~/.claude` target only installs for a human at a terminal. It is skipped with `--yes`, from a script with no TTY, and inside a Claude Code session."
+## Claim 1: "Before it stages anything, and again after each y, it refuses while a Claude Code process of your uid or a running cc-isolated container (it can write the checkout through its bind mount) is found, and names each one with how to stop it."
 
-**Location:** `README.md:21-23`
+**Location:** `README.md:33-39`
 **Type:** Behavioral
 **Verdict:** Verified
 **Confidence:** High
 **Verification mode:** executed
-**Scope:** Covers the three skip triggers (`--yes`, a non-TTY stdin, `CLAUDECODE` set) on HEAD; it does not establish that "only for a human" holds against an agent that fakes a pty and drops `CLAUDECODE` (Claim 5c shows it does not, as 037 itself says).
-
-The code at `devcontainer-config/install.sh:293-304`:
-```bash
-  if [ "$ASSUME_YES" = "--yes" ]; then
-    echo "Skipped host target (~/.claude): it never installs with --yes. ..."
-    return 0
-  fi
-  if [ -n "${CLAUDECODE:-}" ]; then
-    echo "Skipped host target (~/.claude): running inside a Claude Code session ..."
-    return 0
-  fi
-  if [ ! -t 0 ]; then
-    echo "Skipped host target (~/.claude): it needs an interactive terminal (stdin is not a TTY). ..."
-    return 0
-  fi
-```
-Executed: P1a (stdin `/dev/null`) printed the TTY skip line. P1c (`--yes </dev/null`) printed the `--yes` skip line, and `ls -A $HOME` showed only `.config` and `.local`. P2 (a pty with `CLAUDECODE=1` and the answers `n,y`) printed the CLAUDECODE skip line.
-
-**Evidence:** `devcontainer-config/install.sh:293-304`; `docs/reviews/execution-logs/cfc-copy-install-r3/probe.txt` (sections P1a, P1c, P2)
 **Legibility-target:** for-orchestrator-synthesis
+**Scope:** Covers the three gate call sites, the naming of each process or container, the stop hints, and the same statement in `guides/bare-host-hook-wiring.md:17-20` and `--help` (`install.sh:51-58`). It does not establish that the gate detects every real agent: see Claims 15 and 17 for the detector's blind spots, and note that the gate samples three moments rather than watching continuously.
 
----
-
-## Claim 2a: "Its `~/.claude` review lists every symlink it will replace (`REPLACE symlink … with a copy`) and every file in those directories that the repo doesn't have (`MOVE to backup`)."
-
-**Location:** `README.md:26-29`
-**Type:** Behavioral
-**Verdict:** Mostly accurate
-**Confidence:** High
-**Verification mode:** executed
-**Scope:** Covers the review's pre-pass for top-level links, per-file links and foreign files, including a foreign skill directory. It does not establish that the review completes when an install-owned directory holds a dangling symlink, which it does not.
-
-The listing is real. In P3 the review printed a `REPLACE symlink` line for each of the six top-level links and for each per-file hook link, plus `MOVE to backup (not in the repo)` for `mine.sh`, `foreignlink.sh` and `dangling.sh`, with `<-- WIRED in settings` on `mine.sh`. The same P3 run then aborted before the prompt, because `diff -ruN` exits 2 on a dangling symlink nested inside an owned directory (probe.txt, P3):
-```
-diff: …/p3/home/.claude/hooks/dangling.sh: No such file or directory
-ERROR: could not diff payload item 'hooks' (diff exit 2).
-       The review diff is incomplete, so nothing was installed.
-[exit=1]
-```
-The abort comes from `review_diff`'s `*)` branch (`devcontainer-config/install.sh:149-151`), which `install_claude_home` calls at `:372`. The error names `hooks` but not the dangling path; the only pointer to the file is diff's own stderr line. A migrating user with one stale per-file link (a removed hook, a hand-made link, or a checkout that moved while the hooks dir was real) cannot complete the migration until they find and delete it by hand. The README gives them no guidance for that. A dangling top-level link does not trigger the abort. P9 (`probe9.txt`) had `CLAUDE.md` dangling: it reviewed as `REPLACE symlink`, installed, and moved the link to the backup, because `-N` treats an unreadable top-level operand as absent. The review also mislabels foreign per-file links (see Claim 7).
-
-**Evidence:** `README.md:26-29`; `devcontainer-config/install.sh:145-151`, `:345-374`; `docs/reviews/execution-logs/cfc-copy-install-r3/probe.txt` (P3), `probe9.txt` (P9)
-**Legibility-target:** for-author
-
----
-
-## Claim 2b: "Everything replaced, including the old links, is moved to `~/.claude/.claude-workflows-backup/<UTC stamp>/`. … Your `settings.json`, memory, projects and logs are never touched."
-
-**Location:** `README.md:31-33`
-**Type:** Behavioral / Invariant
-**Verdict:** Verified
-**Confidence:** High
-**Verification mode:** executed
-**Scope:** Covers the seven install-owned names moving to the backup and the untouched host-state paths on a successful install. It does not establish the state after a failure between move-aside and swap-in (see Claim 10).
-
-Only the seven names are moved (`devcontainer-config/install.sh:423-427`: `for name in "${CLAUDE_HOME_NAMES[@]}"; do … mv "$dest/$name" "$backup/$name"`). Besides them, the installer writes only `.cw-new.*`, the backup and `.claude-workflows-manifest` (`:398-399`, `:418`, `:441-447`). Executed: `test/install-host.bats` T6 ("links backed up as links") and T7 ("user state in the destination is byte-identical after an install") both pass at HEAD. In P9 the dangling `CLAUDE.md` link was moved to `.claude-workflows-backup/20260923T233418Z`.
-
-**Evidence:** `devcontainer-config/install.sh:398-447`; `docs/reviews/execution-logs/cfc-copy-install-r3/head-install-host.txt` (ok 6, ok 7), `probe9.txt`
-**Legibility-target:** for-orchestrator-synthesis
-
----
-
-## Claim 3: "The line keeps its old wording, and the run still exits 1 because something was declined."
-
-**Location:** `devcontainer-config/install.sh:192-195`
-**Type:** Behavioral
-**Verdict:** Mostly accurate
-**Confidence:** High
-**Verification mode:** executed
-**Scope:** Covers the devcontainer decline message and the exit code for a declined run. It does not establish anything about a caller that matches the whole line exactly (none in the repo's tests; `test/cc-isolated-functions.bats:640` does a substring match).
-
-The line gained a suffix (`:195`: `echo "Aborted. Nothing was changed. (devcontainer config)"`). The old script printed `Aborted. Nothing was changed.` (`git show 712c626:devcontainer-config/install.sh`, the `*) echo "Aborted. Nothing was changed."; exit 1 ;;` arm). Executed: P1a (HEAD) printed `… Aborted. Nothing was changed. (devcontainer config)` then `[exit=1]`; P1b (712c626) printed `… Aborted. Nothing was changed.` then `[exit=1]`. The exit-1 half holds; "keeps its old wording" is true only of the prefix. A more precise comment would say: the old wording plus a ` (devcontainer config)` suffix.
-
-**Evidence:** `devcontainer-config/install.sh:190-198`; `test/cc-isolated-functions.bats:640`; `docs/reviews/execution-logs/cfc-copy-install-r3/probe.txt` (P1a, P1b)
-**Legibility-target:** for-author
-
----
-
-## Claim 4: "`diff` follows symlinks, so a migration from links to copies would review as '(none)'. Hence the explicit REPLACE lines below."
-
-**Location:** `devcontainer-config/install.sh:243-244`
-**Type:** Behavioral
-**Verdict:** Verified
-**Confidence:** High
-**Verification mode:** executed
-**Scope:** Covers GNU diff dereferencing top-level and nested symlinks, and the REPLACE lines filling the gap. It does not establish the same behavior for BSD/macOS diff (not run; the commit's Notes flag macOS as untested).
-
-In P3 the content diff printed no hunks for the five top-level directory links or `CLAUDE.md`, all of which point into the checkout. The only hunks were for files absent from one side. The six `REPLACE symlink … with a copy` lines appeared first. P3b shows the dereference in the other direction: a per-file link `skills/a/SKILL.md -> old-skill.md` produced `-OLD CONTENT` / `+skill a`, so diff compared the link's target content.
-
-**Evidence:** `devcontainer-config/install.sh:240-244`, `:345-353`, `:370-374`; `docs/reviews/execution-logs/cfc-copy-install-r3/probe.txt` (P3, P3b)
-**Legibility-target:** for-orchestrator-synthesis
-
----
-
-## Claim 5a: "Skip rules come first: before this target reads or stages anything … A skip is not a decline and does not change the exit status."
-
-**Location:** `devcontainer-config/install.sh:287-289` (same claim: `docs/decisions/037-bare-host-copy-install.md:33-34`, commit 6793b79 body)
-**Type:** Behavioral
-**Verdict:** Verified
-**Confidence:** High
-**Verification mode:** executed
-**Scope:** Covers the ordering (skip checks at `:293-304` come before the guards at `:310+`, `mktemp` at `:333` and `assemble` at `:335`) and the exit status on a skip. It does not establish the claim that output is unchanged (Claim 5b).
-
-Before the skip checks, `install_claude_home` only picks `dest`/`label` from environment variables and runs `echo` (`:280-286`). The skip branches `return 0` without setting `DECLINED`. Executed: P1c (`--yes`, the devcontainer target accepted, the host skipped) exited `[exit=0]`.
-
-**Evidence:** `devcontainer-config/install.sh:279-304`, `:461-464`; `docs/reviews/execution-logs/cfc-copy-install-r3/probe.txt` (P1c)
-**Legibility-target:** for-orchestrator-synthesis
-
----
-
-## Claim 5b: "so every non-interactive run (scripts, tests, --yes) is unchanged apart from this one line."
-
-**Location:** `devcontainer-config/install.sh:287-289` (also `docs/decisions/037-bare-host-copy-install.md:33` "one extra line", `:52` "scripted callers see one extra line", and 6793b79 "Non-interactive devcontainer runs are otherwise unchanged")
-**Type:** Behavioral
-**Verdict:** Mostly accurate
-**Confidence:** High
-**Verification mode:** executed
-**Scope:** Covers stdout of a non-interactive run, HEAD against 712c626. It does not establish anything about callers' parsing of that output.
-
-A non-interactive run gains two lines, not one: `install_claude_home` prints a blank line (`:286`: `  echo`) before the skip message. A declined non-interactive run also sees the abort line's new suffix (Claim 3). Executed: P1a (HEAD, stdin `/dev/null`) ends `Aborted. Nothing was changed. (devcontainer config)` / (blank) / `Skipped host target …` / `[exit=1]`; P1b (712c626) ends `Aborted. Nothing was changed.` / `[exit=1]`. The exit status and the files written are unchanged.
-
-**Evidence:** `devcontainer-config/install.sh:286-304`, `:195`; `docs/reviews/execution-logs/cfc-copy-install-r3/probe.txt` (P1a, P1b)
-**Legibility-target:** for-author
-
----
-
-## Claim 5c: "Neither check stops an agent that sets out to fake a terminal (`script` gives it a pty; `env -u` drops CLAUDECODE)."
-
-**Location:** `devcontainer-config/install.sh:290-291` (same claim: `docs/decisions/037-bare-host-copy-install.md:50`)
-**Type:** Behavioral
-**Verdict:** Verified
-**Confidence:** High
-**Verification mode:** executed
-**Scope:** Covers util-linux `script` and `env -u CLAUDECODE` defeating the TTY and CLAUDECODE checks in this sandbox. It does not establish whether a host sandbox `denyWrite` would then stop the writes (Claim 15).
-
-Executed from this agent's Bash tool, which has no TTY (Claim 14): `printf 'n\ny\n' | script -qec "env -u CLAUDECODE $INSTALL" /dev/null` completed the host install in P4, P7, P8 and P9, e.g. P9: `Installed into …/p9/home/.claude.`
-
-**Evidence:** `devcontainer-config/install.sh:290-304`; `docs/reviews/execution-logs/cfc-copy-install-r3/probe.txt` (P4, P8), `probe9.txt`
-**Legibility-target:** for-orchestrator-synthesis
-
----
-
-## Claim 6: "Refuses a destination, backup dir or .cw-new.* leftover that is a symlink into (or resolves inside) the checkout." (commit 6793b79; comment "nothing below may write through a link into the checkout")
-
-**Location:** `devcontainer-config/install.sh:309-331`
-**Type:** Behavioral / Invariant
-**Verdict:** Verified
-**Confidence:** High
-**Verification mode:** executed
-**Scope:** Covers a destination symlinked into the checkout (refused), a destination symlinked to a real non-checkout directory (installs through the link into that directory), a symlinked `.claude-workflows-backup` (refused, T21), and a `.cw-new.*` symlink (refused on `-L`, whatever its target). It does not establish time-of-check/time-of-use safety between these checks and the writes at `:395-447`, and it does not establish a guard on a per-stamp backup subdirectory beyond the `-e` test at `:417`.
+The gate runs at `install.sh:947`, before `install_devcontainer`, and after each confirm (`:391` and `:695`, see Claim 10). Its refusal block names each item and how to stop it:
 
 ```bash
-# devcontainer-config/install.sh:316-318
-  if inside_repo "$(resolve_phys "$dest")"; then
-    host_refuse "$dest resolves inside the repo checkout ($REPO_ROOT). Installing there would edit the repo, not install a copy."
-  fi
+# devcontainer-config/install.sh:873-883
+    if [ -n "$procs" ]; then
+      echo "       Claude Code processes of uid $(id -u) (PID and command line):"
+      printf '%s\n' "$procs" | sed 's/^/           /'
+      echo "       Stop them: end each Claude Code session (/exit), or kill <PID>."
+    fi
+    if [ -n "$ctrs" ]; then
+      echo "       Running cc-isolated containers (name and project id):"
+      printf '%s\n' "$ctrs" | sed 's/^/           /'
+      echo "       Stop them: docker stop <name>"
+    fi
+    echo "       Then rerun install.sh. $what"
 ```
-Executed: P5 (`~/.claude -> repo`) printed `ERROR: … resolves inside the repo checkout …` and `[exit=1]`; `git status --porcelain` in the fake repo printed nothing. P4 (`~/.claude -> realclaude`, outside the repo) installed all seven entries and the manifest into `realclaude` and left the link intact. T14 and T21 pass at HEAD.
+(excerpt ends :883; the enclosing `agent_gate()` continues to :886 with `} | vis >&2` and `exit 1`, read)
 
-**Evidence:** `devcontainer-config/install.sh:255-331`; `docs/reviews/execution-logs/cfc-copy-install-r3/probe.txt` (P4, P5), `head-install-host.txt` (ok 14, ok 21)
-**Legibility-target:** for-orchestrator-synthesis
+T50, T51, T54 and T55 pass at b4fd792. T50 asserts that neither `Canonical` nor the mirror appears (refused before staging). T54 and T55 assert the refusal after the host y and after the devcontainer y.
+
+**Evidence:** `devcontainer-config/install.sh:391`, `:695`, `:838-886`, `:947`; `guides/bare-host-hook-wiring.md:17-20`; `test/install-host.bats` T50, T51, T54, T55; `docs/reviews/execution-logs/q058-r3-b4fd792/suites.log`
 
 ---
 
-## Claim 7: "REPLACE symlink $link -> $(readlink "$link") with a copy" (the per-file review line; 6793b79: "The review lists every symlink it will replace (top-level and per-file)")
+## Claim 2: "extract_commit scans every staged file (both targets) and refuses, listing them through vis, any file holding a NUL, before any review or prompt (T61)." / "No allowlist: `git archive HEAD` of the payload paths holds no NUL today." / "the payload is ~125 small text files"
 
-**Location:** `devcontainer-config/install.sh:350-353`
-**Type:** Behavioral
-**Verdict:** Incorrect
+**Location:** `devcontainer-config/install.sh:181-199` (commit 8d9be0c)
+**Type:** Behavioral / Configuration
+**Verdict:** Verified
 **Confidence:** High
 **Verification mode:** executed
-**Scope:** Covers the per-file REPLACE line for a symlink the repo has no counterpart for. It does not affect per-file links whose name exists in the repo (those are correctly labelled).
+**Legibility-target:** for-orchestrator-synthesis
+**Scope:** Covers the scan inside `extract_commit` and its three call sites: `assemble` for both targets, and the devcontainer `dc_paths` call at `:349`. Also covers the no-NUL state of the b4fd792 payload (122 files, no symlinks). It does not establish the host-target call site by test: T61's two runs are both caught on the devcontainer side, since `hooks/` is also in the devcontainer's claude-home. The host site runs the same function via `assemble` (`:585`), established by reading the code only.
 
 ```bash
-# devcontainer-config/install.sh:350-353
-      while IFS= read -r -d '' link; do
-        echo "REPLACE symlink $link -> $(readlink "$link") with a copy"
-        changed=1
-      done < <(find "$dest/$name" -type l -print0 | sort -z)
+# devcontainer-config/install.sh:186-189
+  if ! nul="$(cd "$dir" && find . -type f -print0 | LC_ALL=C sort -z | LC_ALL=C perl -0ne '
+        chomp; open(my $f, "<:raw", $_) or die "$_: $!\n";
+        my $c = do { local $/; <$f> };
+        print substr($_, 2), "\n" if defined $c && index($c, "\0") >= 0;')"; then
 ```
-The loop prints a REPLACE line for every symlink found, without checking that the stage has the path. A foreign per-file link gets no copy; it is only moved to the backup. The review therefore contradicts itself. In P3, `hooks/foreignlink.sh -> …/other.sh` and `hooks/dangling.sh -> …/elsewhere.sh` each printed `REPLACE symlink … with a copy` and then, a few lines later, `MOVE to backup (not in the repo): …`. A reader who stops at the REPLACE line expects that hook to keep working as a copy. What the code actually does: it moves the link, and nothing replaces it.
+(excerpt ends :189; the enclosing `extract_commit()` continues to :200 with the error exit and the vis'd listing at :196, read)
 
-**Evidence:** `devcontainer-config/install.sh:345-368`; `docs/reviews/execution-logs/cfc-copy-install-r3/probe.txt` (P3)
-**Legibility-target:** for-author
+The listing goes through vis: `printf '%s\n' "$nul" | sed 's/^/         /' | vis >&2` (`:196`). The scan fails closed, because under `pipefail` a perl `die` makes the `if !` branch exit. Callers: `assemble` → `extract_commit` at `:219`, used by both targets (`:348`, `:585`), plus `:349`. All run before the reviews at `:364-377` and `:593-675`. Test T61 passes. The payload scan counted 122 files, no NUL files and 0 symlinks.
 
----
-
-## Claim 8: "Content diff: the same review_diff the devcontainer target uses. Through a symlinked entry it compares the link's target (the checkout) with the stage."
-
-**Location:** `devcontainer-config/install.sh:370-371`
-**Type:** Behavioral
-**Verdict:** Mostly accurate
-**Confidence:** High
-**Verification mode:** executed
-**Scope:** Covers review_diff being shared and dereferencing links. It does not establish that the target is the checkout; the parenthetical assumes the README's old install.
-
-The mechanism holds (`:372`: `if ! review_diff "$dest" "$stage" "${CLAUDE_HOME_NAMES[@]}"; then`). The parenthetical "(the checkout)" holds only for the README's links. P3c had `~/.claude/skills -> …/myskills`, a non-checkout directory holding `zzz/SKILL.md`. There the diff compared that directory with the stage and showed `-mine` for `skills/zzz/SKILL.md`, which was not listed as MOVE because the entry is a link (`:346-348` takes the REPLACE branch only). Nothing is lost: the link is moved and its target is left in place. A more precise comment would read: "compares the link's target (the checkout, for the README's old install) with the stage."
-
-**Evidence:** `devcontainer-config/install.sh:345-374`; `docs/reviews/execution-logs/cfc-copy-install-r3/probe.txt` (P3c)
-**Legibility-target:** for-author
+**Evidence:** `devcontainer-config/install.sh:181-200`, `:219`, `:348-349`, `:585`; `test/install-host.bats` T61; `docs/reviews/execution-logs/q058-r3-b4fd792/payload-nul.log`, `payload-nul.sh`, `suites.log`
 
 ---
 
-## Claim 9: "1. Copy every entry beside its target. Any failure: undo and stop before a single live entry is touched." (6793b79: "A copy failure undoes itself before touching a live entry.")
+## Claim 3: "Without pgrep it refuses; without a reachable docker it says so in one line and treats no container as running."
 
-**Location:** `devcontainer-config/install.sh:392-406`
+**Location:** `devcontainer-config/install.sh:56-57`
 **Type:** Error-handling
 **Verdict:** Verified
 **Confidence:** High
 **Verification mode:** executed
-**Scope:** Covers failures of `mkdir -p "$dest"` and of `cp -R` into `.cw-new.<name>`. It does not establish recovery from failures in step 2 (move-aside) or step 3 (swap-in); see Claim 10.
+**Legibility-target:** for-orchestrator-synthesis
+**Scope:** Covers missing pgrep, pgrep exit >1, missing docker, and docker exiting non-zero. It does not establish the case where docker hangs past 20 s. That case is also treated as unreachable (`timeout 20` exits 124), so it fails open with the same NOTE. Nor does it establish a docker that answers from a different daemon than cc-isolated's: that returns an empty list with no NOTE.
 
 ```bash
-# devcontainer-config/install.sh:402-406
-  if [ "$ok" -eq 0 ]; then
-    for name in "${CLAUDE_HOME_NAMES[@]}"; do rm -rf "$dest/.cw-new.$name" 2>/dev/null || true; done
-    echo "ERROR: could not copy the new files into $dest; nothing was replaced." >&2
+# devcontainer-config/install.sh:840-849
+  if ! command -v pgrep >/dev/null 2>&1; then
+    echo "ERROR: pgrep is not installed, so install.sh cannot check that no Claude Code" >&2
+    echo "       session is running (Q-058). Install procps and rerun. $what" >&2
+    exit 1
+  fi
+  procs="$(pgrep -u "$(id -u)" -af -- "$CLAUDE_PROC_RE")" || rc=$?
+  if [ "$rc" -gt 1 ]; then
+    echo "ERROR: pgrep failed (exit $rc) while checking for Claude Code sessions (Q-058). $what" >&2
     exit 1
   fi
 ```
-Executed: T16 ("a copy failure swaps nothing and leaves no backup") passes at HEAD.
+(excerpt ends :849; the enclosing `agent_gate()` continues to :886, read)
 
-**Evidence:** `devcontainer-config/install.sh:392-406`; `docs/reviews/execution-logs/cfc-copy-install-r3/head-install-host.txt` (ok 16)
-**Legibility-target:** for-orchestrator-synthesis
+`:853-854` prints one `NOTE: docker not found…` line. `:860-865` prints one `NOTE: docker is unreachable ($err)…` line, where `$err` is `head -n 1` of stderr, and sets `ctrs=""`. Tests T52 (both docker cases) and T53 pass.
+
+**Evidence:** `devcontainer-config/install.sh:838-886`; `test/install-host.bats` T52, T53; `docs/reviews/execution-logs/q058-r3-b4fd792/suites.log`
 
 ---
 
-## Claim 10: "copies to `.cw-new.<name>`, moves the old entry (link or dir, never with a trailing slash) to the backup, and only then moves the new copy into place."
+## Claim 4: "Needs git, perl (the review's control-byte filter) and pgrep; refuses without them."
 
-**Location:** `docs/decisions/037-bare-host-copy-install.md:51` (the code is `devcontainer-config/install.sh:408-437`)
+**Location:** `devcontainer-config/install.sh:66`
 **Type:** Behavioral
-**Verdict:** Verified
-**Confidence:** High
-**Verification mode:** executed
-**Scope:** Covers the order of operations. It does not establish recoverability or a recovery message when step 2 or step 3 fails partway, and no doc claims either.
-
-The order is as stated (`:423-427` moves to `$backup`, then `:431-437` does `mv "$dest/.cw-new.$name" "$dest/$name"`). Neither step 2's nor step 3's `mv` has error handling; `set -e` stops the script at the first failure. Executed failure: P6 made `workflows/` read-only, so renaming it to a new parent fails. The run printed only mv's own error, `mv: cannot move '…/.claude/workflows' to '…/.claude-workflows-backup/20260923T233237Z/workflows': Permission denied`, then `[exit=1]`. It left `CLAUDE.md` and `skills` in the backup and absent from `~/.claude`, `workflows` in place, and all seven `.cw-new.*` staged copies beside them. No line tells the user that the live `~/.claude` is missing its CLAUDE.md and skills, where they went, or how to finish or undo. The only step-3 message (`:433`) names the `.cw-new` path but not the backup dir. This is outside the claim, reported because the brief asked.
-
-**Evidence:** `devcontainer-config/install.sh:408-437`; `docs/reviews/execution-logs/cfc-copy-install-r3/probe.txt` (P6)
-**Legibility-target:** for-orchestrator-synthesis
-
----
-
-## Claim 11: "2. Move whatever is there now … into a fresh backup dir."
-
-**Location:** `devcontainer-config/install.sh:408-418`
-**Type:** Invariant
 **Verdict:** Verified
 **Confidence:** Medium
 **Verification mode:** executed
-**Scope:** Covers sequential reruns within the same UTC second. It does not establish freshness for two concurrent runs, where both could pass the `-e` test before either `mkdir -p`.
+**Legibility-target:** for-orchestrator-synthesis
+**Scope:** Covers refusal without perl (T57) or pgrep (T53), both executed, and without git, read only. It does not establish that these are the only required tools: `timeout`, GNU find, sort and diff are also used, and a missing `timeout` reads as "docker is unreachable" and fails open. Nor does it establish that the no-git refusal message is accurate.
+
+The perl check is at `main` `:941-945`, before the gate at `:947`. With no git, `head_commit` (`:130`, `if ! git -C "$REPO_ROOT" rev-parse …`) exits with "no readable HEAD commit". That message names HEAD, not git, and it comes only after `mktemp -d` of DC_TMP (paraphrased, no quote available because the no-git path was traced by reading, not run).
+
+**Evidence:** `devcontainer-config/install.sh:129-135`, `:941-947`; `test/install-host.bats` T53, T57; `docs/reviews/execution-logs/q058-r3-b4fd792/suites.log`
+
+---
+
+## Claim 5: "review_diff runs `diff -a`, and vis now maps NUL to "?", so a destination file holding a NUL is reviewed as text, never as "Binary files differ" (T62)."
+
+**Location:** `devcontainer-config/install.sh:122`, `:262-265` (commit 8d9be0c)
+**Type:** Behavioral
+**Verdict:** Verified
+**Confidence:** High
+**Verification mode:** executed
+**Legibility-target:** for-orchestrator-synthesis
+**Scope:** Covers the vis character class and the `-a` flag in `review_diff`. It does not establish the output of `mode_diff` or `payload_hash`, which do not print file content.
 
 ```bash
-# devcontainer-config/install.sh:416-417
-    backup="$bkroot/$stamp"
-    if [ -e "$backup" ]; then backup="$backup.$$"; fi
+# devcontainer-config/install.sh:122
+    s/[\x00-\x08\x0b\x0c\x0e-\x1a\x1c-\x1f\x7f]/?/g;
+# devcontainer-config/install.sh:265
+    diff -ruNa "$dest/$item" "$src/$item" 2>&1 | vis && st=(0 0) || st=("${PIPESTATUS[@]}")
 ```
-Executed: in P7, three back-to-back installs produced `20260923T233238Z` and `20260923T233238Z.333103`. The third run landed in a different second, so the `.$$` fallback was exercised once. In the concurrent case `mkdir -p` succeeds on an existing dir, and a second `mv skills <existing>/skills` would nest the entry (`<backup>/skills/skills`) rather than overwrite it. That is inferred, not run.
 
-**Evidence:** `devcontainer-config/install.sh:410-428`; `docs/reviews/execution-logs/cfc-copy-install-r3/probe.txt` (P7)
-**Legibility-target:** for-orchestrator-synthesis
+T62 passes. It asserts `-bad?byte` in the output and no `Binary files` line.
+
+**Evidence:** `devcontainer-config/install.sh:119-126`, `:247-281`; `test/install-host.bats` T62; `docs/reviews/execution-logs/q058-r3-b4fd792/suites.log`
 
 ---
 
-## Claim 12: "Provenance … `rm -f` first so a planted symlink cannot redirect the write." (6793b79: "Writes .claude-workflows-manifest (rm -f first) with installed_by, installed_parent and installed_at appended")
+## Claim 6: "review_diff checks vis's PIPESTATUS too; a non-zero vis aborts before the prompt like any other diff trouble (T58, which reached the prompt with an empty review before this fix)."
 
-**Location:** `devcontainer-config/install.sh:439-447`
-**Type:** Behavioral
+**Location:** `devcontainer-config/install.sh:259-271` (commit fa69656)
+**Type:** Error-handling
 **Verdict:** Verified
 **Confidence:** High
 **Verification mode:** executed
-**Scope:** Covers the rm-then-copy order and the three appended keys. It does not establish what `installed_parent` records under a given wrapper (Claim 21).
+**Legibility-target:** for-orchestrator-synthesis
+**Scope:** Covers `review_diff`'s handling of a vis failure and the pre-fix behavior. It does not establish vis failures on the lines outside `review_diff` (see Claims 7a and 7b).
 
 ```bash
-# devcontainer-config/install.sh:441-447
-  rm -f "$dest/.claude-workflows-manifest"
-  cp "$stage/.manifest" "$dest/.claude-workflows-manifest"
-  {
-    echo "installed_by=host-tty"
-    echo "installed_parent=$(ps -o comm= -p "$PPID" 2>/dev/null | tr -d ' ' || echo unknown)"
-    echo "installed_at=$stamp"
-  } >> "$dest/.claude-workflows-manifest"
+# devcontainer-config/install.sh:265-271
+    diff -ruNa "$dest/$item" "$src/$item" 2>&1 | vis && st=(0 0) || st=("${PIPESTATUS[@]}")
+    rc="${st[0]}"
+    if [ "${st[1]}" -ne 0 ]; then
+      echo "ERROR: could not show the review of payload item '$item' (vis exit ${st[1]})." >&2
+      echo "       The review diff is incomplete, so nothing was installed." >&2
+      exit 1
+    fi
 ```
-Executed: in P8 the manifest held `installed_by=host-tty`, `installed_parent=…` and `installed_at=20260923T233239Z`. T10 passes at HEAD.
+(excerpt ends :271; the enclosing `review_diff()` continues to :281 with the `case "$rc"` handling and `return "$changed"`, read)
 
-**Evidence:** `devcontainer-config/install.sh:439-447`; `docs/reviews/execution-logs/cfc-copy-install-r3/probe.txt` (P8), `head-install-host.txt` (ok 10)
-**Legibility-target:** for-orchestrator-synthesis
+When the pipeline fails, `st=(0 0)` is skipped, so `PIPESTATUS` still holds the `diff | vis` statuses.
+
+T58 passes at b4fd792. The same T58 against ea2c8fb's install.sh (the parent of fa69656), with `LC_ALL=C`, fails. Its output shows an empty review block followed by `Install this config and bless it? [y/N]`, which is the pre-fix behavior the commit describes. The first pre-fix attempt without `LC_ALL=C` failed earlier, on T58's setup. The bash docker stub printed a setlocale warning, which ea2c8fb's `2>&1` capture counted as a container. That is the bug 648124c fixed (Claim 12).
+
+**Evidence:** `devcontainer-config/install.sh:247-281`; `docs/reviews/execution-logs/q058-r3-b4fd792/prefix-ea2c8fb-T58-LC_C.log`, `prefix-ea2c8fb-T58.log`, `prefix.sh`, `suites.log`
 
 ---
 
-## Claim 13: "Target 2 is SKIPPED, with a message and no effect on the exit status … Exit status: 0 no target declined; 1 a target was declined, or an error; 2 bad arguments."
+## Claim 7a: "other `| vis` uses (MODE …) are not individually checked; … a vis that fails there fails in review_diff too, which aborts."
 
-**Location:** `devcontainer-config/install.sh:40-49`
+**Location:** `devcontainer-config/install.sh:299` (commit fa69656, Notes line)
+**Type:** Error-handling
+**Verdict:** Verified
+**Confidence:** High
+**Verification mode:** executed
+**Legibility-target:** for-orchestrator-synthesis
+**Scope:** Covers MODE lines on both targets. `mode_diff` is always followed by `review_diff` over the same items (`:367-368`, `:668-670`). It does not establish a vis that fails only on some inputs.
+
+`mode_diff` is called in a `||` or `if !` context, so `set -e` is off inside it. A failed `echo "MODE …" | vis` (`:299`) prints nothing and does not stop the run. Probe X1 committed a mode-only change to `devcontainer.json` with a vis-only-failing perl stub. The output shows no MODE line, then `ERROR: could not show the review of payload item 'devcontainer.json' (vis exit 1).` and exit 1, before the prompt. This is the mechanism the note states.
+
+**Evidence:** `devcontainer-config/install.sh:287-305`, `:367-368`, `:668-670`; `docs/reviews/execution-logs/q058-r3-b4fd792/vis-paths.log`, `vis-paths.sh`, `vis-paths.bats.append`
+
+---
+
+## Claim 7b: "other `| vis` uses (… MOVE, ADD lines) are not individually checked; … a vis that fails there fails in review_diff too, which aborts."
+
+**Location:** `devcontainer-config/install.sh:600`, `:606`, `:625`, `:646-654` (commit fa69656, Notes line)
+**Type:** Error-handling
+**Verdict:** Incorrect
+**Confidence:** High
+**Verification mode:** executed
+**Legibility-target:** for-author
+**Scope:** Covers the REPLACE, MOVE and ADD lines of the host target. It establishes that these fail closed, but through a different mechanism than the note states, and with no error message. It does not establish that `set -e` and `pipefail` stay in force: they are what carry the refusal.
+
+These lines are in `install_claude_home`, which `main` calls outside any `||` or `if` context, so `set -euo pipefail` (`:26`) applies. The first failing `echo … | vis` ends the script there. `review_diff` is never reached:
+
+```bash
+# devcontainer-config/install.sh:646-647
+      echo "ADD $dest/$name (new, $n file(s)):" | vis
+      (cd "$stage" && find "$name" -type f | LC_ALL=C sort) | sed 's/^/    /' | vis
+```
+(excerpt ends :647; the enclosing `install_claude_home()` continues to :816, read)
+
+Probes X2 (first install, ADD lines only) and X3 (symlink migration, REPLACE and MOVE lines) both exit 1. The output stops right after `=== Changes this install would make ===`, with no error line and no prompt, and the destination is unchanged. The conclusion (it never reaches `[y/N]`) holds. The stated mechanism ("fails in review_diff too") is refuted: the abort is `set -e`, and it is silent.
+
+**Evidence:** `devcontainer-config/install.sh:26`, `:593-675`; `docs/reviews/execution-logs/q058-r3-b4fd792/vis-paths.log`
+
+---
+
+## Claim 8: "Before staging, each component from the repo root down to claude-home is checked with -L; a link is refused, named, and left in place (T59, T60)." / "The claude-home symlink error now passes readlink's output through vis."
+
+**Location:** `devcontainer-config/install.sh:331-345` (commits dfa5791, b4fd792)
 **Type:** Behavioral
 **Verdict:** Verified
 **Confidence:** High
 **Verification mode:** executed
-**Scope:** Covers exit codes 0 (P1c), 1 (P1a, P2), 0 for `-h` (P1e), and 2 for an unknown argument (T15). It does not establish exit codes on other error paths.
-
-The final line is `exit "$DECLINED"` (`:464`), and the argument loop exits 2 on anything unrecognized (`:58`). The outcomes are listed in the Scope line above.
-
-**Evidence:** `devcontainer-config/install.sh:53-61`, `:461-464`; `docs/reviews/execution-logs/cfc-copy-install-r3/probe.txt` (P1a, P1c, P1e, P2), `head-install-host.txt` (ok 15)
 **Legibility-target:** for-orchestrator-synthesis
+**Scope:** Covers every component below `$REPO_ROOT` (`devcontainer-config`, `claude-home`) at check time, and the vis'd message. It does not establish `$REPO_ROOT` itself, which is never tested with `-L`, or anything that changes after the check (see Claim 9).
+
+```bash
+# devcontainer-config/install.sh:334-345
+  local p="$REPO_ROOT" comp
+  local -a comps
+  IFS=/ read -ra comps <<< "${SRC#"$REPO_ROOT"/}/claude-home"
+  for comp in "${comps[@]}"; do
+    p="$p/$comp"
+    if [ -L "$p" ]; then
+      echo "ERROR: $p is a symlink ($(readlink "$p")). install.sh rebuilds" | vis >&2
+      ...
+      exit 1
+    fi
+  done
+```
+(excerpt ends :345, with lines :341-342 elided as `...`; the enclosing `install_devcontainer()` continues to :424, read)
+
+`SRC` and `REPO_ROOT` are logical `pwd` paths (`:78`, `:85`), so a symlinked `devcontainer-config` shows up as a component. The check runs before `mktemp` and `assemble` (`:346-348`). T59 and T60 pass. T60 asserts that `$S/realdc/claude-home` is not created.
+
+**Evidence:** `devcontainer-config/install.sh:78`, `:85`, `:321-358`; `test/install-host.bats` T59, T60; `docs/reviews/execution-logs/q058-r3-b4fd792/suites.log`
 
 ---
 
-## Claim 14: "In this session the Bash tool has no TTY (verified 2026-09-23: fd 0 is `/dev/null` and `tty` prints "not a tty")."
+## Claim 9: "The rebuild is no-follow: rm without a trailing slash, then `mkdir` (which fails rather than follow anything that reappeared) and a copy of the stage's contents into the directory this run just made."
 
-**Location:** `docs/decisions/037-bare-host-copy-install.md:50`
-**Type:** Configuration
-**Verdict:** Verified
-**Confidence:** High
-**Verification mode:** executed
-**Scope:** Covers this reviewer's Bash tool on 2026-09-23. It does not establish behavior of other harnesses or of the user's host shell.
-
-Command `bash scratchpad/cfc-r3/misc.sh` (cwd the scratchpad; exit 0; 2026-09-23T23:33Z). It printed `not a tty` and `/proc/self/fd/0 -> /dev/null`. This output was read in the terminal and not captured to a file. That is a provenance gap, because the command is a two-liner whose result is shown verbatim here.
-
-**Evidence:** `docs/decisions/037-bare-host-copy-install.md:50`; `/tmp/claude-1000/-workspace/d516ca2c-2abb-4732-a34a-041aa98280c8/scratchpad/cfc-r3/misc.sh`
-**Legibility-target:** for-orchestrator-synthesis
-
----
-
-## Claim 15: "The check stops accidents, not intent. The backstop is sandbox `denyWrite ~/.claude` (guide §3)."
-
-**Location:** `docs/decisions/037-bare-host-copy-install.md:50` (plan Risks, line 216: "A host without that sandbox setting has no hard barrier")
+**Location:** `devcontainer-config/install.sh:350-358` (commit dfa5791)
 **Type:** Behavioral
-**Verdict:** Unverifiable
-**Confidence:** Medium
+**Verdict:** Mostly accurate
+**Confidence:** High
 **Verification mode:** static
-**Scope:** Covers guide §3 recommending `denyWrite` on `~/.claude` (`guides/bare-host-hook-wiring.md:74-77`). It does not establish that the user's host has it set, or that it holds against an agent Bash call with `dangerouslyDisableSandbox`, which prompts the user rather than being denied.
+**Legibility-target:** for-author
+**Scope:** Covers the final path component, `claude-home`. It does not establish that intermediate components cannot be followed.
 
-Paraphrased — no quote available because the claim concerns host settings.json and Claude Code sandbox semantics outside this repo. Every write the installer makes to `$dest` goes through Bash (`cp`, `mv`, `rm`), so a Bash-level denyWrite on `~/.claude` would make the copy step fail and self-undo (Claim 9). To verify, run the host's sandbox with `denyWrite ~/.claude` and the `script` wrapper from a session. That cannot be done in this sandbox.
+```bash
+# devcontainer-config/install.sh:353-358
+  rm -rf "$SRC/claude-home"
+  if ! mkdir "$SRC/claude-home"; then
+    echo "ERROR: could not recreate $SRC/claude-home (something reappeared there). Nothing was installed." >&2
+    exit 1
+  fi
+  cp -Rp "$stage/claude-home/." "$SRC/claude-home/"
+```
 
-**Evidence:** `docs/decisions/037-bare-host-copy-install.md:50`; `guides/bare-host-hook-wiring.md:74-77`; `docs/working/plan-copy-install-bare-host.md:216`
-**Legibility-target:** for-orchestrator-synthesis
+For the last component, this is right: `rm` removes a link rather than its target, and `mkdir` refuses an existing name. But `rm`, `mkdir` and `cp` all resolve `$SRC` itself, and `devcontainer-config` is checked only once, at `:339`. That is before `assemble` and `extract_commit` run `git archive` (`:348-349`). A directory swapped for a link in that window is followed. The commit names only the `mkdir`→`cp` window as a residual. A precise version: "no-follow at `claude-home`; the directories above it are checked once, before staging."
+
+**Evidence:** `devcontainer-config/install.sh:334-358`
 
 ---
 
-## Claim 16: "copies the whole `hooks/` directory (including `hooks/lib/`) and the whole `scripts/` directory, so hooks that find their helpers by their own path (`log-usage.sh` → `lib/usage-common.sh` and `../scripts/lib/`; `claude-config-audit.sh` → `../scripts/claude_config_audit.py`) keep working."
+## Claim 10: "agent_gate refuses … at startup, before either target stages anything; after the devcontainer y, before it writes; after the host y, right before the lock, copies and swap."
 
-**Location:** `guides/bare-host-hook-wiring.md:17-21`
+**Location:** `devcontainer-config/install.sh:947`, `:390-391`, `:694-695` (commit ea2c8fb)
 **Type:** Architectural
 **Verdict:** Verified
 **Confidence:** High
 **Verification mode:** executed
-**Scope:** Covers the two named hooks' helper lookups and T9's log-usage smoke test. It does not establish the other hooks' runtime behavior after install.
-
-`hooks/log-usage.sh:11`: `source "$(dirname "$(readlink -f "${BASH_SOURCE[0]}")")/lib/usage-common.sh"`, and `:14` sources `…/../scripts/lib/skill-paths.sh`. `hooks/claude-config-audit.sh:48`: `AUDIT_SCRIPT="$HOOK_DIR/../scripts/claude_config_audit.py"`. `CLAUDE_HOME_SRC` includes `hooks` and `scripts` (`devcontainer-config/install.sh:93`). T9 ("installed hooks still find lib/ and ../scripts") passes at HEAD.
-
-**Evidence:** `hooks/log-usage.sh:11-14`; `hooks/claude-config-audit.sh:43-49`; `devcontainer-config/install.sh:93`; `docs/reviews/execution-logs/cfc-copy-install-r3/head-install-host.txt` (ok 9)
 **Legibility-target:** for-orchestrator-synthesis
+**Scope:** Covers the three call sites and the absence of writes between each y and its gate. It does not establish detection between the samples: an agent that starts after one gate and exits before the next is not seen. Nor does it establish the pre-prompt mirror rebuild, which decision 037:68 calls a staging copy.
+
+```bash
+# devcontainer-config/install.sh:379-393
+  if [ "$ASSUME_YES" != "--yes" ]; then
+    if ! confirm 'Install this config and bless it?'; then
+      ...
+      return 0
+    fi
+  fi
+
+  # Q-058: an agent may have started while the prompt waited.
+  agent_gate "Nothing was installed. (devcontainer config)"
+
+  mkdir -p "$DEST" "$BIN_DIR"
+```
+(excerpt ends :393, with lines :381-386 elided as `...`; the enclosing `install_devcontainer()` continues to :424, read)
+
+```bash
+# devcontainer-config/install.sh:688-702
+  if ! confirm "Install these files into $dest?"; then
+    ...
+  fi
+
+  # Q-058: an agent may have started while the review and prompt waited.
+  agent_gate "Nothing was installed into the host target."
+  ...
+    if mkdir "$dest/.claude-workflows-lock" 2>/dev/null; then
+```
+(excerpt ends :702, with elisions marked `...`; the enclosing `install_claude_home()` continues to :816, read)
+
+The startup gate at `:947` precedes `trap` (`:950`) and `install_devcontainer` (`:953`). Nothing between `main`'s argument parsing and `:947` writes anything. T50 (startup), T54 (host y) and T55 (devcontainer y) pass.
+
+**Evidence:** `devcontainer-config/install.sh:379-393`, `:688-702`, `:902-956`; `test/install-host.bats` T50, T54, T55; `docs/reviews/execution-logs/q058-r3-b4fd792/suites.log`
 
 ---
 
-## Claim 17: "`install.sh` does not write `settings.json`, but it prints a `REMINDER` pointing here whenever the installed `hooks/wiring.json` is missing or differs from the repo's."
+## Claim 11: "pgrep never lists itself and this script's own command line does not match; $$ is dropped only as a belt-and-braces guard. A command line with a `.../claude` argument (`vim ./claude`, `tail -f /var/log/claude`) also matches"
 
-**Location:** `guides/bare-host-hook-wiring.md:62-64`
+**Location:** `devcontainer-config/install.sh:827-834`
 **Type:** Behavioral
 **Verdict:** Verified
 **Confidence:** High
 **Verification mode:** executed
-**Scope:** Covers the missing and changed cases on an accepted install. It does not establish a reminder on a declined install, where none prints, as expected.
+**Legibility-target:** for-orchestrator-synthesis
+**Scope:** Covers how `CLAUDE_PROC_RE` matches the shapes tested with the real pgrep. It does not establish which shapes real Claude Code launchers produce (see Claim 15).
 
 ```bash
-# devcontainer-config/install.sh:381-384
-  local wiring_changed=0
-  if ! cmp -s "$dest/hooks/wiring.json" "$stage/hooks/wiring.json"; then
-    wiring_changed=1
-  fi
+# devcontainer-config/install.sh:834
+CLAUDE_PROC_RE='(^|/)claude(\.exe)?( |$)|/@anthropic-ai/claude-code/'
 ```
-`cmp` exits 2 on a missing file, so a missing file counts as changed. Executed: P4 and P9 (first installs) printed `REMINDER: hooks/wiring.json changed (or was not installed before).` T11 (first install, unchanged, changed) passes. No code path in the installer writes `settings.json` (it appears only in the grep at `:362`).
 
-**Evidence:** `devcontainer-config/install.sh:362`, `:381-384`, `:453-458`; `docs/reviews/execution-logs/cfc-copy-install-r3/probe.txt` (P4), `probe9.txt`, `head-install-host.txt` (ok 11)
-**Legibility-target:** for-orchestrator-synthesis
+The real `pgrep -u 1000 -af` with this regex, run against synthetic command lines, gave these results:
+- MATCH: `claude`, `claude --resume`, `/usr/local/bin/claude --resume`, `node /usr/local/bin/claude --resume`, `node …/@anthropic-ai/claude-code/cli.js`, `…/claude-code/bin/claude.exe -p hi`, `bun …/@anthropic-ai/claude-code/cli.js`, `…/native-binary/claude --output-format stream-json`, `vim ./claude`.
+- miss: `bash /home/u/claude-workflows/devcontainer-config/install.sh`, `bash /home/u/claude/devcontainer-config/install.sh`, `vim claude`, `claude-code --resume`, `npx @anthropic-ai/claude-code`, `…/.local/share/claude/versions/2.0.14 [--resume]`, `python3 -m claude_agent_sdk`.
+
+The `awk -v self="$$" 'NF && $1 != self'` filter is at `:850`.
+
+**Evidence:** `devcontainer-config/install.sh:827-850`; `docs/reviews/execution-logs/q058-r3-b4fd792/regex-probe.log`, `regex-probe.sh`
 
 ---
 
-## Claim 18: "`claude-config-audit.sh` looks for the auditor at `CLAUDE_CONFIG_AUDIT_SCRIPT`, then `<hook dir>/../scripts/`, then `~/private_reviews/`. If it finds none, the hook does nothing."
+## Claim 12: "`docker ps --filter label=cc-project` (cc-isolated's --id-label)" / "stderr now goes to a temp file, shown only when docker fails, and blank lines are dropped from the list" (T64)
 
-**Location:** `guides/bare-host-hook-wiring.md:82-84`
-**Type:** Configuration
+**Location:** `devcontainer-config/install.sh:851-868` (commits ea2c8fb, 648124c)
+**Type:** Configuration / Error-handling
 **Verdict:** Verified
 **Confidence:** High
-**Verification mode:** static
-**Scope:** Covers the resolution order. It does not establish the "does nothing" branch (not read past `:49`) or sandbox coverage of the installed path.
+**Verification mode:** executed
+**Legibility-target:** for-orchestrator-synthesis
+**Scope:** Covers the label key's match with cc-isolated's launcher, the separation of stderr, the removal of blank lines, and T64 as a regression test. It does not establish, by a live run, that the devcontainer CLI applies `--id-label` as a docker container label: that is the CLI's documented behavior, and no docker daemon was reachable here.
 
 ```bash
-# hooks/claude-config-audit.sh:43-49
-if [[ -n "${CLAUDE_CONFIG_AUDIT_SCRIPT:-}" ]]; then
-  AUDIT_SCRIPT="$CLAUDE_CONFIG_AUDIT_SCRIPT"
-…
-  HOOK_DIR=$(dirname "$(readlink -f "${BASH_SOURCE[0]}")")
-…
-  [[ -f "$AUDIT_SCRIPT" ]] || AUDIT_SCRIPT="$HOME/private_reviews/claude_config_audit.py"
+# devcontainer-config/install.sh:859-867
+    errf="$(mktemp "${TMPDIR:-/tmp}/cw-docker-err.XXXXXX")"
+    if ! ctrs="$(timeout 20 docker ps --filter label=cc-project \
+                   --format '{{.Names}} cc-project={{.Label "cc-project"}}' 2>"$errf")"; then
+      err="$(head -n 1 "$errf" 2>/dev/null)"
+      echo "NOTE: docker is unreachable ($err): cc-isolated containers not checked, treated as none running." | vis
+      ctrs=""
+    fi
+    rm -f "$errf"
+    ctrs="$(printf '%s\n' "$ctrs" | awk 'NF')"
 ```
-(excerpt shows `:43-49` with elisions; the enclosing top-level block continues. Only the lookup was read for this claim.) The hook's own comment at `:31` gives the same order.
+(excerpt ends :867; the enclosing `agent_gate()` continues to :886, read)
 
-**Evidence:** `hooks/claude-config-audit.sh:31-49`
-**Legibility-target:** for-orchestrator-synthesis
+The launcher uses `--id-label "cc-project=$pid"` at `cc-isolated.sh:412` and `:623`. These are the only two id-label sites.
+
+T64 passes at b4fd792. Against 66891a7's install.sh (the parent of 648124c), T64 fails, and its output lists `WARNING: some docker CLI notice` under "Running cc-isolated containers". That confirms T64 catches the regression the commit describes. The commit said T64 had not been run against the pre-fix code; that run is now done. The "failed 53 tests" figure matches the 53 `not ok` lines in the context log `execution-logs/q058-648124c/ih-66891a7.log`.
+
+**Evidence:** `devcontainer-config/install.sh:851-868`; `devcontainer-config/cc-isolated.sh:410-413`, `:621-624`; `docs/reviews/execution-logs/q058-r3-b4fd792/prefix-66891a7-T64.log`, `suites.log`
 
 ---
 
-## Claim 19: "exit 2 for an unknown argument is the only observable change, and only for invalid input."
+## Claim 13: "A cc-isolated container writes the checkout, `.git` included, through its bind mount, whatever uid it runs as."
 
-**Location:** commit 1514518 message (Notes); code at `devcontainer-config/install.sh:53-61` as of 1514518
+**Location:** `docs/decisions/037-bare-host-copy-install.md:64`
+**Type:** Architectural
+**Verdict:** Verified
+**Confidence:** Medium
+**Verification mode:** static
+**Legibility-target:** for-orchestrator-synthesis
+**Scope:** Covers the read-write workspace bind mount of an ordinary checkout. It does not establish a linked worktree checkout, whose `.git` data sits outside the mounted folder. Nor does it establish container-side permission details (uid mapping), which were not read.
+
+```jsonc
+// devcontainer-config/devcontainer.json:134
+  "workspaceMount": "source=${localWorkspaceFolder},target=/workspace,type=bind,consistency=delegated",
+```
+
+**Evidence:** `devcontainer-config/devcontainer.json:134`
+
+---
+
+## Claim 14: "The hash check (R2) catches a stage edited while the prompt waits."
+
+**Location:** `docs/decisions/037-bare-host-copy-install.md:66`
+**Type:** Behavioral
+**Verdict:** Mostly accurate
+**Confidence:** High
+**Verification mode:** static
+**Legibility-target:** for-author
+**Scope:** Covers the host target. It does not establish anything for the devcontainer target, which has no hash check.
+
+The only `payload_hash` comparison is in `install_claude_home`:
+
+```bash
+# devcontainer-config/install.sh:729
+  if [ "$(payload_hash "$dest" .cw-new. "$dest/.cw-new.manifest")" != "$reviewed_hash" ]; then
+```
+
+`install_devcontainer` copies `$stage/$item` straight to `$DEST` after its gate (`:399-402`) with no comparison (the prior rubric's R1). The sentence sits in a section about both targets. The precise version: "The hash check (R2) catches a host-target stage edited while the prompt waits; the devcontainer target relies on the gate alone."
+
+**Evidence:** `devcontainer-config/install.sh:586-589`, `:729-734`, `:390-402`
+
+---
+
+## Claim 15: "a Claude Code process of the user's uid: `pgrep -u <uid> -af` for a command line that runs `claude` (argv0 `claude` or `…/claude`, the native binary) or the npm package"
+
+**Location:** `docs/decisions/037-bare-host-copy-install.md:69` (also commit ea2c8fb, "matches the claude CLI's command-line shape")
+**Type:** Behavioral
+**Verdict:** Unverifiable
+**Confidence:** Medium
+**Verification mode:** executed
+**Legibility-target:** for-orchestrator-synthesis
+**Scope:** Covers the regex matching the described shapes (executed, Claim 11) and one live process. It does not establish that every real launcher produces these shapes: native versioned installs, IDE extensions and SDK wrappers were not observed.
+
+In this sandbox, the only live Claude Code process is PID 1750. Its cmdline is `claude` and its comm is `claude`. It is an npm global install whose `bin/claude` links to `@anthropic-ai/claude-code/bin/claude.exe`. The real pgrep matched it. Two nearby shapes miss:
+- The native installer's versioned binary, `…/.local/share/claude/versions/<ver>`, when exec'd by absolute path.
+- An argv0 of `claude-code`.
+
+No native install or IDE extension was available to observe. b4fd792's notes also call the VS Code extension's shape unverified. To verify, the probe needs to run on the bare host with each launcher in use: the native install, the VS Code extension, and the SDK.
+
+**Evidence:** `devcontainer-config/install.sh:834`; `docs/reviews/execution-logs/q058-r3-b4fd792/regex-probe.log`; `ps -o pid,comm,args -p 1750` (paraphrased, no quote available because the command was run interactively and not captured to a file; output `1750 claude claude`)
+
+---
+
+## Claim 16: "Both need a crafted name, which needs an agent, which the gate refuses."
+
+**Location:** `docs/decisions/037-bare-host-copy-install.md:73`
+**Type:** Invariant
+**Verdict:** Incorrect
+**Confidence:** High
+**Verification mode:** static
+**Legibility-target:** for-author
+**Scope:** Covers what the gate can observe. It does not establish whether an agent can write `~/.claude/.claude-workflows-backup` on a given host: that depends on the sandbox denyWrite setting.
+
+The gate only looks at processes and containers running at three moments (`:947`, `:391`, `:695`): `pgrep -u "$(id -u)" -af` and `docker ps` (`install.sh:845`, `:860`). A crafted name is a file-system object, and it outlives the agent that made it. Two examples:
+- A backup directory whose name holds a TAB, planted by an earlier session.
+- A newline-named directory that the user later runs install.sh from.
+
+Both persist after the agent exits, and the gate never inspects them. The TAB mis-prune path is still live at `:806-807` (`printf '%s\t%s\n' "$e" "${d##*/}"` … `| cut -f2`). Only newlines are skipped, at `:801`. The residual can reasonably still be accepted, since writing either name needs write access that already allows worse. But the stated reason, "the gate refuses", is not the mechanism.
+
+**Evidence:** `devcontainer-config/install.sh:796-807`, `:838-886`, `:443-456`
+
+---
+
+## Claim 17: "A process the probe misses: an agent on another host or in another container runtime writing the checkout (a network or shared mount), a renamed or wrapped binary whose command line does not end in `claude`, one running under another uid, or a docker the user's uid cannot reach."
+
+**Location:** `docs/decisions/037-bare-host-copy-install.md:75`
+**Type:** Behavioral
+**Verdict:** Mostly accurate
+**Confidence:** Medium
+**Verification mode:** executed
+**Legibility-target:** for-author
+**Scope:** Covers the listed categories, all of which are real misses. It does not establish that the list is complete.
+
+The umbrella ("a process the probe misses") is right. The listed examples leave out three misses that the code shows:
+- (i) An agent that starts after one gate and exits before the next. The gate samples three moments (Claim 10).
+- (ii) A non-Claude process of the user's uid left behind by an earlier session, such as a background shell job. The probe matches only Claude command lines (`CLAUDE_PROC_RE`, `install.sh:834`).
+- (iii) The native versioned binary path, which is not "renamed" (Claim 15; probe miss logged).
+
+The phrase "command line does not end in `claude`" is also imprecise. The regex matches any `/claude` or `claude.exe` token followed by a space or the end of the line, an argv0 of `claude`, or the npm package path anywhere in the line. The execution log shows `…/claude --output-format stream-json` matching.
+
+**Evidence:** `devcontainer-config/install.sh:834`, `:845`; `docs/reviews/execution-logs/q058-r3-b4fd792/regex-probe.log`
+
+---
+
+## Claim 18: "The probe is also a new way for the install to be refused on a host where some unrelated command line ends in `/claude`; the message names the process."
+
+**Location:** `docs/working/plan-copy-install-bare-host.md:244`
 **Type:** Behavioral
 **Verdict:** Mostly accurate
 **Confidence:** High
 **Verification mode:** executed
-**Scope:** Covers 1514518 against 712c626 for argument handling and the devcontainer flow. It does not cover later commits.
-
-The line-by-line diff of `git show 712c626:…/install.sh` against `git show 1514518:…/install.sh` shows only extraction into functions, apart from the new argument loop. The loop also added `-h|--help) usage; exit 0 ;;`. Under 712c626, `ASSUME_YES="${1:-}"` treated `-h` as an ordinary interactive run. Executed: P1d (712c626, `-h </dev/null`) ran the install flow to `Aborted. Nothing was changed.` and `[exit=1]`. P1e (HEAD, `-h`) printed usage and `[exit=0]`. So `-h`/`--help`, which was valid input before, changed too. The precise version: "exit 2 for an unknown argument and a new `-h/--help` are the only observable changes."
-
-**Evidence:** `devcontainer-config/install.sh:53-61`; `docs/reviews/execution-logs/cfc-copy-install-r3/probe.txt` (P1d, P1e)
 **Legibility-target:** for-author
+**Scope:** Covers the false-positive classes seen with the real pgrep. It does not establish how often they occur on the user's host.
+
+A false positive does not need the `/claude` at the end of the line. `vim ./claude` matched, and `(^|/)claude(\.exe)?( |$)` also matches a `/claude` token followed by more arguments (for example `vim ./claude notes.txt`), a bare argv0 of `claude`, or any line containing `/@anthropic-ai/claude-code/`. In an earlier interactive pgrep run in this review, the review shell's own command line matched too, because the text of that command contained the regex (paraphrased, no quote available because that run was interactive and not captured to a file). The precise version: "…where some unrelated command line has a `/claude` token or an argv0 of `claude`." The second half ("the message names the process") is verified (`install.sh:874-875`).
+
+**Evidence:** `devcontainer-config/install.sh:834`, `:873-876`; `docs/reviews/execution-logs/q058-r3-b4fd792/regex-probe.log`
 
 ---
 
-## Claim 20: "Declining the devcontainer target now continues to the host target; the run still exits 1 when anything was declined."
+## Claim 19: The named tests T50–T64 exist and assert what their commits say (plan: "(T50-T56)", "(T57, T58) … (T59, T60) … (T61, T62)"; T63 "pins the section and the Risks line"; T64)
 
-**Location:** commit 6793b79 message; code at `devcontainer-config/install.sh:190-198`, `:461-464`
+**Location:** `docs/working/plan-copy-install-bare-host.md:244-245`; `test/install-host.bats` T50–T64
+**Type:** Reference
+**Verdict:** Verified
+**Confidence:** High
+**Verification mode:** executed
+**Legibility-target:** for-orchestrator-synthesis
+**Scope:** Covers the existence and pass status of all 15 tests, and whether their assertions match each commit's description. It does not establish that T61 tests the host-target NUL scan separately (Claim 2), or that T57 asserts ordering before the gate (the ordering was established by reading `:941-947`).
+
+`suites.log` shows `ok` for T50, T51, T52, T53, T54, T55, T56, T57, T58, T59, T60, T61, T62, T63 and T64, and all 156 tests in the two suites. Checks against the commit descriptions:
+- T50 asserts no `[y/N]`, no `Canonical`, no mirror and an unchanged snapshot.
+- T54's feed answers n to the devcontainer target, then creates the agent marker while the host prompt waits. It asserts `Install these files` and `777 claude`, and that no `.cw-new.*` or lock is left.
+- T55 creates the marker after the mirror's `.manifest` appears.
+- T63 greps `^## Trust model (Q-058)`, the rubric link, the four residual keywords, and `Q-058` in the plan's Risks section.
+
+**Evidence:** `test/install-host.bats` T50–T64 (diff lines 415–623 of `diff.patch`); `docs/reviews/execution-logs/q058-r3-b4fd792/suites.log`
+
+---
+
+## Claim 20: "install.sh is 958 lines after the review, fact-check and Q-058 fixes (808 before Q-058)"
+
+**Location:** `docs/working/plan-copy-install-bare-host.md:248`
+**Type:** Configuration
+**Verdict:** Verified
+**Confidence:** High
+**Verification mode:** executed
+**Legibility-target:** for-orchestrator-synthesis
+**Scope:** Covers line counts at b4fd792 and at 9ae6e46. It does not establish anything past b4fd792.
+
+`wc -l` gives 958 at b4fd792 and 808 at 9ae6e46. It gives 948 at 66891a7, which matches that commit's own figure, since corrected by b4fd792.
+
+**Evidence:** `devcontainer-config/install.sh:958` (last line, `main "$@"; exit $?`); `git show 9ae6e46:devcontainer-config/install.sh | wc -l` → 808 (paraphrased, no quote available because this was an interactive count not captured to a file)
+
+---
+
+## Claim 21: "the existing suites stub them to "none", because the session running them is itself a claude process" / "the session running these tests is a Claude Code process, so both report none."
+
+**Location:** `test/cc-isolated-functions.bats:44-48`; `test/install-host.bats:35-41` (commit ea2c8fb)
 **Type:** Behavioral
 **Verdict:** Verified
 **Confidence:** High
 **Verification mode:** executed
-**Scope:** Covers both declines setting `DECLINED=1` and the run continuing. It does not establish output wording (Claims 3 and 5b).
-
-`:196-197`: `DECLINED=1` / `return 0`; `:388`: `DECLINED=1` for the host decline. Executed: P3b and P3c answered `n,n` and showed the host review after the devcontainer decline, then `[exit=1]`. P9 answered `n,y`, installed the host target, and still ended `[exit=1]`.
-
-**Evidence:** `devcontainer-config/install.sh:190-198`, `:386-390`, `:461-464`; `docs/reviews/execution-logs/cfc-copy-install-r3/probe.txt` (P3b, P3c), `probe9.txt`
 **Legibility-target:** for-orchestrator-synthesis
+**Scope:** Covers the two suites that run install.sh. `link-claude-home-wiring.bats` and the two `test/hooks` suites only mention install.sh; they do not run it. It does not establish that the docker stub is harmless to the cc-isolated tests beyond this run.
+
+```bash
+# test/cc-isolated-functions.bats:46-47
+  printf '#!/usr/bin/env bash\nexit 1\n' > "$TEST_TMPDIR/bin/pgrep"
+  printf '#!/usr/bin/env bash\nexit 0\n' > "$TEST_TMPDIR/bin/docker"
+```
+
+The real pgrep with install.sh's regex lists `1750 claude` in this session, so an unstubbed suite would be refused. Both suites pass, 156/156.
+
+**Evidence:** `test/cc-isolated-functions.bats:41-49`; `test/install-host.bats:35-41`, `:369-377`; `docs/reviews/execution-logs/q058-r3-b4fd792/suites.log`, `regex-probe.log`
 
 ---
 
-## Claim 21: "installed_parent records "script" when the installer ran under a pty wrapper, which is an audit trace for the agent-bypass case the TTY rule cannot stop."
+## Claim 22: "No env override for the probes: tests use PATH stubs, so the gate has no bypass beyond what PATH already allows."
 
-**Location:** commit 6793b79 message (Notes); code at `devcontainer-config/install.sh:445`
+**Location:** commit ea2c8fb (Notes line); `devcontainer-config/install.sh:834-868`
+**Type:** Invariant
+**Verdict:** Mostly accurate
+**Confidence:** Medium
+**Verification mode:** static
+**Legibility-target:** for-author
+**Scope:** Covers the knobs install.sh itself defines. It does not establish anything about environment variables read by the probed tools.
+
+install.sh defines no override: `CLAUDE_PROC_RE` is assigned unconditionally at the top level (`:834`), so an exported value is overwritten, and `agent_gate` reads no other variable except `TMPDIR` for its temp file. But docker's own environment (`DOCKER_HOST`, `DOCKER_CONTEXT`) chooses which daemon `docker ps` asks. A daemon that is unreachable fails open with one NOTE (`:860-865`). A reachable, different daemon returns an empty list silently. Decision 037 accepts "a docker the user's uid cannot reach" but not a different daemon. The precise version: "install.sh adds no override; PATH and docker's own daemon-selection variables can still blind the probes."
+
+**Evidence:** `devcontainer-config/install.sh:834`, `:838-868`
+
+---
+
+## Claim 23: "T9 now copies the committed hooks/scripts (git archive) instead of the tree, whose ignored __pycache__/*.pyc the new check refuses; T58's perl stub fails vis only, so the NUL scan runs real perl."
+
+**Location:** `test/install-host.bats` T9 and T58 (commit 8d9be0c)
 **Type:** Behavioral
-**Verdict:** Incorrect
+**Verdict:** Verified
 **Confidence:** High
 **Verification mode:** executed
-**Scope:** Covers what `installed_parent` records under three `script -qec` command strings. It does not establish values on macOS `script`, whose argument syntax differs.
+**Legibility-target:** for-orchestrator-synthesis
+**Scope:** Covers the T9 fixture change and T58's stub dispatch. It does not establish that `__pycache__` holds NUL bytes in every checkout (it is git-ignored and local).
 
-`:445` records the comm of `$PPID`, the installer's immediate parent. That parent is `script` only when `script`'s `$SHELL -c` execs the command directly, i.e. a single simple command. Executed, P8: `script -qec "env -u CLAUDECODE $INSTALL"` recorded `installed_parent=script`, and `script -qec "cd $ROOT && env -u CLAUDECODE ./devcontainer-config/install.sh"` also recorded `script`. But `script -qec "bash -c 'env -u CLAUDECODE $INSTALL; echo done'"` recorded `installed_parent=bash`, the same value a human's interactive bash would leave. The pty-wrapped install succeeded without a trace. An agent trying to bypass the rule needs only a compound command. So the key is not a reliable audit trace, and the decision's revisit trigger (`037:64`, "backup stamp with no human at the terminal") cannot rely on it.
+```bash
+# test/install-host.bats (T9)
+  git -C "$CONFIG_SRC/.." archive HEAD hooks scripts | tar -xf - -C "$ROOT"
+# test/install-host.bats (T58)
+  printf '#!/bin/bash\ncase "$1" in -pe) cat >/dev/null; exit 1 ;; esac\nexec %s "$@"\n' \
+```
 
-**Evidence:** `devcontainer-config/install.sh:445`; `docs/reviews/execution-logs/cfc-copy-install-r3/probe.txt` (P8)
-**Legibility-target:** for-author
+vis calls `perl -pe` (`install.sh:120`), so `$1` is `-pe`. The NUL scan calls `perl -0ne` (`:186`), which falls through to the real perl. T9 and T58 pass.
+
+**Evidence:** `devcontainer-config/install.sh:120`, `:186`; `test/install-host.bats` T9, T58; `docs/reviews/execution-logs/q058-r3-b4fd792/suites.log`
 
 ---
 
-## Claim 22: "All 24 fail against the current install.sh (T7 and T16 were tightened so they cannot pass when nothing is installed)."
+## Claim 24: "All suites: 315/315." (648124c) / "Suites 315/315." (b4fd792)
 
-**Location:** commit dcf4a6d message
+**Location:** commits 648124c and b4fd792 (message bodies)
+**Type:** Reference
+**Verdict:** Unverifiable
+**Confidence:** Low
+**Verification mode:** executed
+**Legibility-target:** for-orchestrator-synthesis
+**Scope:** Covers the two suites that run install.sh (156/156, run here). It does not establish which suite set totals 315.
+
+The context log `execution-logs/q058-648124c/suites.log` shows `1..315`, but neither commit names the suites. `bats --count` gives 689 for all of `test/*.bats`, and 208 for the five files that mention install.sh (170 + 20 + 18) (paraphrased, no quote available because the counts were interactive and not captured). To verify, the commit needs to name the suite list.
+
+**Evidence:** `docs/reviews/execution-logs/q058-r3-b4fd792/suites.log`; `docs/reviews/execution-logs/q058-648124c/suites.log` (context)
+
+---
+
+## Claim 25: "There is one convention … First close every Claude Code session and stop every cc-isolated container: the installer refuses to stage or install while either runs (Q-058; see `install.sh --help` and decision 037, "Trust model")"
+
+**Location:** `guides/bare-host-hook-wiring.md:17-20`
 **Type:** Reference / Behavioral
 **Verdict:** Verified
 **Confidence:** High
 **Verification mode:** executed
-**Scope:** Covers `bats test/install-host.bats` run from the `git archive dcf4a6d` tree, where install.sh is still 712c626's. It does not establish why each test fails (not inspected per test).
-
-Command: `bats test/install-host.bats`, cwd `…/cfc-r3/tree-dcf4a6d`, exit 1. Output: `ok=0 notok=24`, `not ok 1 T1 …` through `not ok 24 T24 …`.
-
-**Evidence:** `docs/reviews/execution-logs/cfc-copy-install-r3/dcf4a6d-install-host.txt`, `exits.txt`
 **Legibility-target:** for-orchestrator-synthesis
+**Scope:** Covers the refusal behavior and the two cross-references (the `--help` text at `install.sh:51-58`, and decision 037's `## Trust model (Q-058)` at line 60). It does not establish the detector's completeness (Claims 15 and 17).
 
----
+T56 greps this guide for `Q-058` and `cc-isolated container` and passes. The behavior is the same as in Claim 1.
 
-## Claim 23a: "test/install-host.bats 24/24 · test/cc-isolated-functions.bats 90/90 (unmodified) · test/link-claude-home-wiring.bats 14/14 · test/hooks/*.bats 144/144 (6 files)"
-
-**Location:** commit d0fdd04 message (also 6793b79 and 1514518 for 24/24 and 90/90)
-**Type:** Reference
-**Verdict:** Verified
-**Confidence:** High
-**Verification mode:** executed
-**Scope:** Covers these four suites on the `git archive d0fdd04` tree in this sandbox. It does not establish results on the user's host or on macOS. The "(unmodified)" part was not rechecked by diff.
-
-Commands run from `…/cfc-r3/tree-d0fdd04`, all exit 0: `bats test/install-host.bats` 24 ok, 0 not ok; `bats test/cc-isolated-functions.bats` 90/0; `bats test/link-claude-home-wiring.bats` 14/0; `bats test/hooks/` 144/0 over 6 files. Hallucination-pattern check: the log holds a prior entry for a commit that misstated test counts ("All 85 tests … but the suites hold 97"). The counts here match.
-
-**Evidence:** `docs/reviews/execution-logs/cfc-copy-install-r3/head-install-host.txt`, `head-ccif.txt`, `head-lchw.txt`, `head-hooks.txt`, `exits.txt`
-**Legibility-target:** for-orchestrator-synthesis
-
----
-
-## Claim 23b: "test/guide-index-sync.bats, test/cross-reference-integrity.bats, test/fixture-hermeticity.bats pass · scripts/run-tests.sh --fast: 864 ok, 0 not ok (1m23s)"
-
-**Location:** commit d0fdd04 message
-**Type:** Reference
-**Verdict:** Unverifiable
-**Confidence:** Low
-**Verification mode:** static
-**Scope:** Not run. It does not establish anything about these suites.
-
-Paraphrased — no quote available because this is an unexecuted test-count claim. Execution is required to verdict it. It was not run within this pass's budget; the fast suite is about 1.5 minutes plus three more files. Verify by running `scripts/run-tests.sh --fast` and the three named bats files from the d0fdd04 tree.
-
-**Evidence:** commit d0fdd04 message
-**Legibility-target:** for-orchestrator-synthesis
+**Evidence:** `guides/bare-host-hook-wiring.md:17-20`; `devcontainer-config/install.sh:51-58`; `docs/decisions/037-bare-host-copy-install.md:60`; `docs/reviews/execution-logs/q058-r3-b4fd792/suites.log`
 
 ---
 
 ## Claims Requiring Attention
 
 ### Incorrect
-- **Claim 7** (`devcontainer-config/install.sh:350-353`): the review prints `REPLACE symlink … with a copy` for foreign per-file links, which get no copy and are only moved. Print REPLACE only when the stage has the path.
-- **Claim 21** (commit 6793b79, `devcontainer-config/install.sh:445`): `installed_parent` is `bash`, not `script`, when the pty wrapper runs a compound command, so it is not a reliable audit trace for the agent-bypass case.
+- **Claim 7b** (commit fa69656 Notes; `install.sh:600-654`): a vis failure on the host target's REPLACE, MOVE or ADD lines never reaches `review_diff`. `set -e` and `pipefail` end the run at the first `| vis`, silently (exit 1, no error line). Fail-closed, but the note's mechanism is wrong. Say so, or make those pipes report.
+- **Claim 16** (`docs/decisions/037-bare-host-copy-install.md:73`): the gate sees only agents running at its three probe moments. A crafted TAB or newline name planted by an earlier session persists, so "which the gate refuses" does not cover these residuals. Restate why they are accepted.
+
+### Stale
+- none
 
 ### Mostly Accurate
-- **Claim 2a** (`README.md:26-29`): the migration review aborts with `could not diff payload item 'hooks' (diff exit 2)` when an owned dir holds a dangling symlink. The error does not name the path, and the README gives no recovery step.
-- **Claim 3** (`devcontainer-config/install.sh:192-195`): the abort line has a new ` (devcontainer config)` suffix; only the prefix is the old wording.
-- **Claim 5b** (`install.sh:287-289`, `037:33`, `037:52`, 6793b79): a non-interactive run gains two lines (a blank and the skip), plus the abort-line suffix, not one line.
-- **Claim 8** (`devcontainer-config/install.sh:370-371`): "(the checkout)" holds only for the README's old links; a link to another directory is diffed against that directory.
-- **Claim 19** (commit 1514518): `-h/--help` is also a new observable change (it used to start an interactive run).
+- **Claim 9** (`install.sh:350-358`): no-follow only at `claude-home`. The directories above are checked once, before `git archive`, and followed afterwards.
+- **Claim 14** (`037:66`): the R2 hash check covers the host target only. The devcontainer target has none.
+- **Claim 17** (`037:75`): the residual list omits agents that run between probes, leftover non-Claude processes, and the native versioned-binary path. "Does not end in `claude`" misdescribes the regex.
+- **Claim 18** (`plan:244`): false positives are any `/claude` token or an argv0 of `claude`, not only lines ending in `/claude`.
+- **Claim 22** (commit ea2c8fb Notes): install.sh adds no override, but docker's `DOCKER_HOST`/`DOCKER_CONTEXT` still choose the daemon the container probe asks.
 
 ### Unverifiable
-- **Claim 15** (`docs/decisions/037-bare-host-copy-install.md:50`): the sandbox `denyWrite ~/.claude` backstop depends on host settings; test it on the host with the `script` wrapper from a session.
-- **Claim 23b** (commit d0fdd04): the 864-ok fast suite and three named bats files were not run; run them from the d0fdd04 tree.
-
-Additional brief item (not a claim contradiction, reported under Claim 10): a failure in the move-aside step leaves the live `~/.claude` missing entries that are already in the backup, with the `.cw-new.*` copies staged. The script prints only mv's own error, with no recovery instructions (P6).
-
-No hallucination-pattern entries added: both Incorrect verdicts are behavioral mismatches, not fabricated symbols.
+- **Claim 15** (`037:69`): whether every real Claude Code launcher (native versioned install, VS Code extension) produces an argv0 of `claude` or `…/claude`. This needs a pgrep probe on the bare host with each launcher.
+- **Claim 24** (commits 648124c, b4fd792): "315/315". The suite set is not named. The two install.sh suites pass 156/156.
 
 ## Goal-Alignment Note
-- Success criterion (restated verbatim): a markdown report saved at the output path your task names, structured per your skill, beginning with a `Commit: d0fdd04` line.
-- Answered: yes. All 8 brief items were checked, most by hermetic execution.
-- Out of scope: the 864-test fast suite and three docs bats files (not run); macOS behavior; concurrent-run races (inferred only).
-- Escalate: Claim 21 (the audit trace the TTY residual relies on can be dodged with a compound command). Also the shared `scratchpad/fc/` collision with a sibling agent, noted in the header.
+- Success criterion (restated verbatim): a markdown report in the code-fact-check skill's format, saved to the output path named at the end of this prompt.
+- Answered: yes. 25 claims, all with executed or static evidence. The report is saved to `/workspace/docs/reviews/code-fact-check-report-r3.md`.
+- Out of scope: whether the gate's point sampling is an adequate design, as against a continuous check. That is for the security critic. This report only notes that the docs' residual list omits it (Claim 17).
+- Escalate: Claim 16. Decision 037 accepts the A4/A5 residuals on the grounds that "the gate refuses" the agent, but the gate cannot see a name planted by an earlier session. The residual may still be acceptable, but its stated reason is false, and the user's Q-058 answer relied on the decision text.
+- Questions I would have asked: which suites make up "315/315"?
+- Decisions I made: I split fa69656's `| vis` note into 7a (MODE, Verified) and 7b (MOVE/ADD, Incorrect), because the two parts diverge in mechanism. I ran T58 before the fix with `LC_ALL=C`, because the sandbox's broken locale triggers the separate bug 648124c fixed. I did not add to `hallucination-patterns.md`: neither Incorrect claim is a fabricated symbol or API.

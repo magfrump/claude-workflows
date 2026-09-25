@@ -1,0 +1,5 @@
+2026-09-25T06:51:27Z
+cwd=/tmp/claude-1000/-workspace/7630264d-3947-4203-a0ec-b9ffcc3a4e06/scratchpad/x cmd: PATH=bin2:$PATH TMPDIR=/tmp/claude-1000/-workspace/7630264d-3947-4203-a0ec-b9ffcc3a4e06/scratchpad/x LC_ALL=C bash gate.sh  (gate.sh = vis + CLAUDE_PROC_RE + agent_gate extracted from b4fd792; bin2/docker prints a container then exits 1; bin2/pgrep exits 1)
+NOTE: docker is unreachable (error during connect): cc-isolated containers not checked, treated as none running.
+gate returned 0
+exit=0

@@ -1,0 +1,136 @@
+bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+1..64
+bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+ok 1 T1 plain run with closed stdin: devcontainer declines as today, host skipped, dest untouched
+bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+ok 2 T2 piped answers without a TTY never reach the host target
+bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+ok 3 T3 --yes without a TTY installs the devcontainer target and skips the host
+bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+ok 4 T4 --yes inside a pty still skips the host target
+bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+ok 5 T5 migration review names every symlink it will replace, before the prompt
+bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+ok 6 T6 migration y path: real copies in place, checkout untouched, links backed up as links
+bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+ok 7 T7 user state in the destination is byte-identical after an install
+bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+ok 8 T8 hermeticity: a host install writes nothing outside the host destination
+bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+ok 9 T9 installed hooks still find lib/ and ../scripts (log-usage smoke test)
+bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+ok 10 T10 the provenance manifest names the commit, the source and the installer
+bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+ok 11 T40 --help and README state the skip rule's limits and CLAUDE_HOME_DIR (review A1, A5)
+bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+ok 12 T11 wiring reminder: on first install, not when unchanged, again when wiring.json changes
+bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+ok 13 T12 a review diff that fails aborts before the host prompt
+bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+ok 14 T13 a foreign file in an owned dir is listed, then moved to the backup
+bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+ok 15 T14 a destination that resolves inside the checkout is refused
+bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+ok 16 T15 an unknown flag prints usage and exits 2 before assembling anything
+bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+ok 17 T16 a copy failure swaps nothing and leaves no backup
+bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+ok 18 T17 declining the host prompt changes nothing and cleans the stage
+bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+ok 19 T18 first install creates the destination with all seven entries
+bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+ok 20 T19 accepting the devcontainer target still installs it, then offers the host
+bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+ok 21 T20 a foreign hook wired in settings is flagged before it is moved
+bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+ok 22 T21 a planted backup-dir symlink is refused and the checkout is untouched
+bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+ok 23 T22 inside a Claude Code session (CLAUDECODE set) the host target is skipped even with a pty
+bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+ok 24 T23 a dirty checkout is called out in the host review
+bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+ok 25 T25 uncommitted edits (unstaged, staged, untracked) are listed and NOT installed
+bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+ok 26 T26 git-ignored files in the checkout (e.g. __pycache__) are never installed
+bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+ok 27 T27 a symlink in the committed payload is refused before any prompt (review R1)
+bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+ok 28 T28 a stage edited while the prompt waits is not installed (review R2)
+bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+ok 29 T29 rewriting install.sh while it waits at a prompt runs no new code (review R3)
+bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+ok 30 T30 a move-aside failure rolls every entry back and says so (review R4)
+bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+ok 31 T31 a held install lock is refused, named, and left alone (review R4)
+bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+ok 32 T32 a successful install releases its lock
+bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+ok 33 T33 a foreign hook link is labelled MOVE (not REPLACE), WIRED on its own line (review R5)
+bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+ok 34 T34 control bytes in the review diff are made visible, not sent raw (review A4)
+bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+ok 35 T35 a dangling link in an owned dir is named as a MOVE, not a failed review (review A8)
+bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+ok 36 T36 an entry the destination lacks is listed with a file count (review A7)
+bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+ok 37 T37 when nothing changed: (none), no prompt, no swap, no backup (review A6)
+bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+ok 38 T38 backups are capped at the last 3 installs, and the install says so (review A6)
+bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+ok 39 T39 a destination whose unresolved tail climbs back into the checkout is refused (review A3)
+bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+ok 40 T41 pruning keeps this run's backup and unstamped dirs, and orders by install stamp, not name (fact-check claim 22)
+bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+ok 41 T42 a committed mode change is reviewed and installed, not reported as (none) (fact-check claim 17)
+bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+ok 42 T43 a provenance manifest edited while the prompt waits is not installed (fact-check claim 14)
+bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+ok 43 T44 the devcontainer target installs committed config only and lists what it leaves out (fact-check claim 4)
+bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+ok 44 T45 a devcontainer payload item missing from the commit is fatal before the prompt (fact-check claim 4)
+bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+ok 45 T46 a destination containing a newline is refused before anything runs (fact-check claim 11b)
+bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+ok 46 T47 a raw 8-bit C1 byte is made visible; valid UTF-8 is left alone (fact-check claim 6)
+bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+ok 47 T48 the uncommitted-changes listing never prints a control byte raw, even with core.quotePath=false (fact-check claim 9)
+bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+ok 48 T49 a small new entry's content is shown; a large one says it is omitted (fact-check claim 3)
+bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+ok 49 T50 a Claude Code process for this user stops the install before either target stages (Q-058)
+bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+ok 50 T51 a running cc-isolated container stops the install and is named with how to stop it (Q-058)
+bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+ok 51 T52 docker absent or unreachable: one line says so, and the install goes ahead (Q-058)
+bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+ok 52 T64 a docker warning on stderr with no containers listed is not a running container (Q-058)
+bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+ok 53 T53 without pgrep the install is refused, not waved through (Q-058)
+bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+ok 54 T54 an agent that starts while the host prompt waits stops the swap (Q-058)
+bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+ok 55 T55 an agent that starts while the devcontainer prompt waits stops that install (Q-058)
+bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+ok 56 T56 --help, README and the hook-wiring guide document the no-agent check (Q-058)
+bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+ok 57 T57 without perl the install is refused at startup (vis needs it)
+bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+ok 58 T58 a vis failure is diff trouble: it aborts before the prompt, never reads as an empty diff
+bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+ok 59 T59 a symlink planted at devcontainer-config/claude-home is refused, its target untouched
+bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+ok 60 T60 a symlinked directory above claude-home inside the repo is refused
+bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+ok 61 T61 a committed payload file holding a NUL byte is refused and listed before any prompt
+bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+ok 62 T62 an installed file holding a NUL byte is reviewed as text, not 'Binary files differ'
+bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+ok 63 T63 decision 037 records the Q-058 trust model and its accepted residuals; the plan's Risks cite it
+bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+ok 64 T24 with CLAUDE_HOME_DIR unset, CLAUDE_CONFIG_DIR chooses the destination

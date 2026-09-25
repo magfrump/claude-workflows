@@ -1,0 +1,28 @@
+2026-09-25T06:41:10Z
+cwd=/workspace cmd=bash /workspace/docs/reviews/execution-logs/q058-r3-b4fd792/prefix.sh 66891a7 T64
+bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+install.sh from 66891a7: 948 lines
+bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+1..1
+bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+not ok 1 T64 a docker warning on stderr with no containers listed is not a running container (Q-058)
+# (in test file test/install-host.bats, line 844)
+#   `[ "$status" -eq 0 ]' failed
+# bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+# /bin/bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+# /tmp/claude-1000/-workspace/7630264d-3947-4203-a0ec-b9ffcc3a4e06/scratchpad/bats-run-EQzrTO/test/1/repo/devcontainer-config/install.sh: line 119: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+# ERROR: an agent is running. install.sh installs only while no agent can run, because
+#        one could change what you review before it is installed (Q-058).
+#        Running cc-isolated containers (name and project id):
+#            /bin/bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+#            WARNING: some docker CLI notice
+#        Stop them: docker stop <name>
+#        Then rerun install.sh. Nothing was staged or installed.
+bats_exit=1
+exit=0

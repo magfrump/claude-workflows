@@ -1,0 +1,328 @@
+2026-09-25T06:57:23Z
+cwd=/workspace/.claude/wt-copyinstall cmd=bats --timing test/install-host.bats test/cc-isolated-functions.bats (commit b4fd792)
+bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+1..156
+bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+ok 1 T1 plain run with closed stdin: devcontainer declines as today, host skipped, dest untouched in 136ms
+bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+ok 2 T2 piped answers without a TTY never reach the host target in 149ms
+bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+ok 3 T3 --yes without a TTY installs the devcontainer target and skips the host in 167ms
+bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+ok 4 T4 --yes inside a pty still skips the host target in 174ms
+bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+ok 5 T5 migration review names every symlink it will replace, before the prompt in 338ms
+bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+ok 6 T6 migration y path: real copies in place, checkout untouched, links backed up as links in 403ms
+bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+ok 7 T7 user state in the destination is byte-identical after an install in 327ms
+bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+ok 8 T8 hermeticity: a host install writes nothing outside the host destination in 1368ms
+bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+ok 9 T9 installed hooks still find lib/ and ../scripts (log-usage smoke test) in 667ms
+bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+ok 10 T10 the provenance manifest names the commit, the source and the installer in 385ms
+bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+ok 11 T40 --help and README state the skip rule's limits and CLAUDE_HOME_DIR (review A1, A5) in 55ms
+bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+ok 12 T11 wiring reminder: on first install, not when unchanged, again when wiring.json changes in 4748ms
+bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+ok 13 T12 a review diff that fails aborts before the host prompt in 2063ms
+bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+ok 14 T13 a foreign file in an owned dir is listed, then moved to the backup in 341ms
+bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+ok 15 T14 a destination that resolves inside the checkout is refused in 2062ms
+bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+ok 16 T15 an unknown flag prints usage and exits 2 before assembling anything in 41ms
+bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+ok 17 T16 a copy failure swaps nothing and leaves no backup in 347ms
+bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+ok 18 T17 declining the host prompt changes nothing and cleans the stage in 355ms
+bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+ok 19 T18 first install creates the destination with all seven entries in 322ms
+bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+ok 20 T19 accepting the devcontainer target still installs it, then offers the host in 308ms
+bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+ok 21 T20 a foreign hook wired in settings is flagged before it is moved in 318ms
+bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+ok 22 T21 a planted backup-dir symlink is refused and the checkout is untouched in 2087ms
+bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+ok 23 T22 inside a Claude Code session (CLAUDECODE set) the host target is skipped even with a pty in 2077ms
+bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+ok 24 T23 a dirty checkout is called out in the host review in 307ms
+bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+ok 25 T25 uncommitted edits (unstaged, staged, untracked) are listed and NOT installed in 336ms
+bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+ok 26 T26 git-ignored files in the checkout (e.g. __pycache__) are never installed in 325ms
+bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+ok 27 T27 a symlink in the committed payload is refused before any prompt (review R1) in 2104ms
+bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+ok 28 T28 a stage edited while the prompt waits is not installed (review R2) in 2322ms
+bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+ok 29 T29 rewriting install.sh while it waits at a prompt runs no new code (review R3) in 2525ms
+bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+ok 30 T30 a move-aside failure rolls every entry back and says so (review R4) in 608ms
+bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+ok 31 T31 a held install lock is refused, named, and left alone (review R4) in 2349ms
+bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+ok 32 T32 a successful install releases its lock in 851ms
+bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+ok 33 T33 a foreign hook link is labelled MOVE (not REPLACE), WIRED on its own line (review R5) in 582ms
+bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+ok 34 T34 control bytes in the review diff are made visible, not sent raw (review A4) in 325ms
+bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+ok 35 T35 a dangling link in an owned dir is named as a MOVE, not a failed review (review A8) in 333ms
+bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+ok 36 T36 an entry the destination lacks is listed with a file count (review A7) in 309ms
+bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+ok 37 T37 when nothing changed: (none), no prompt, no swap, no backup (review A6) in 2341ms
+bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+ok 38 T38 backups are capped at the last 3 installs, and the install says so (review A6) in 7798ms
+bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+ok 39 T39 a destination whose unresolved tail climbs back into the checkout is refused (review A3) in 2063ms
+bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+ok 40 T41 pruning keeps this run's backup and unstamped dirs, and orders by install stamp, not name (fact-check claim 22) in 581ms
+bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+ok 41 T42 a committed mode change is reviewed and installed, not reported as (none) (fact-check claim 17) in 598ms
+bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+ok 42 T43 a provenance manifest edited while the prompt waits is not installed (fact-check claim 14) in 2330ms
+bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+ok 43 T44 the devcontainer target installs committed config only and lists what it leaves out (fact-check claim 4) in 169ms
+bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+ok 44 T45 a devcontainer payload item missing from the commit is fatal before the prompt (fact-check claim 4) in 133ms
+bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+ok 45 T46 a destination containing a newline is refused before anything runs (fact-check claim 11b) in 2059ms
+bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+ok 46 T47 a raw 8-bit C1 byte is made visible; valid UTF-8 is left alone (fact-check claim 6) in 326ms
+bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+ok 47 T48 the uncommitted-changes listing never prints a control byte raw, even with core.quotePath=false (fact-check claim 9) in 122ms
+bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+ok 48 T49 a small new entry's content is shown; a large one says it is omitted (fact-check claim 3) in 314ms
+bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+ok 49 T50 a Claude Code process for this user stops the install before either target stages (Q-058) in 2075ms
+bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+ok 50 T51 a running cc-isolated container stops the install and is named with how to stop it (Q-058) in 59ms
+bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+ok 51 T52 docker absent or unreachable: one line says so, and the install goes ahead (Q-058) in 2351ms
+bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+ok 52 T64 a docker warning on stderr with no containers listed is not a running container (Q-058) in 162ms
+bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+ok 53 T53 without pgrep the install is refused, not waved through (Q-058) in 2342ms
+bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+ok 54 T54 an agent that starts while the host prompt waits stops the swap (Q-058) in 2325ms
+bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+ok 55 T55 an agent that starts while the devcontainer prompt waits stops that install (Q-058) in 3173ms
+bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+ok 56 T56 --help, README and the hook-wiring guide document the no-agent check (Q-058) in 61ms
+bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+ok 57 T57 without perl the install is refused at startup (vis needs it) in 2393ms
+bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+ok 58 T58 a vis failure is diff trouble: it aborts before the prompt, never reads as an empty diff in 262ms
+bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+ok 59 T59 a symlink planted at devcontainer-config/claude-home is refused, its target untouched in 68ms
+bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+ok 60 T60 a symlinked directory above claude-home inside the repo is refused in 67ms
+bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+ok 61 T61 a committed payload file holding a NUL byte is refused and listed before any prompt in 2168ms
+bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+ok 62 T62 an installed file holding a NUL byte is reviewed as text, not 'Binary files differ' in 2645ms
+bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+ok 63 T63 decision 037 records the Q-058 trust model and its accepted residuals; the plan's Risks cite it in 15ms
+bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+ok 64 T24 with CLAUDE_HOME_DIR unset, CLAUDE_CONFIG_DIR chooses the destination in 567ms
+bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+ok 65 resolve_workspace returns the git toplevel for a path inside a repo in 35ms
+bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+ok 66 resolve_workspace fails loudly outside a git repo instead of guessing in 19ms
+bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+ok 67 resolve_workspace fails on a nonexistent directory in 15ms
+bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+ok 68 resolve_workspace defaults to $PWD when given no argument in 31ms
+bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+ok 69 project_id differs for same-basename repos at different paths in 19ms
+bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+ok 70 project_id is stable for the same path in 21ms
+bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+ok 71 ws_fingerprint differs between two different repos in 59ms
+bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+ok 72 ws_fingerprint is stable for the same repo in 42ms
+bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+ok 73 compute_manifest covers the config files and the egress profiles in 30ms
+bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+ok 74 compute_manifest fails when an enforcement file is missing in 19ms
+bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+ok 75 check_manifest fails with instructions when nothing is blessed in 16ms
+bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+ok 76 check_manifest passes after bless with unchanged files in 84ms
+bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+ok 77 check_manifest fails after the firewall script is tampered with in 91ms
+bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+ok 78 check_manifest fails when the launcher itself is tampered with in 76ms
+bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+ok 79 check_manifest fails when an egress profile gains a domain in 81ms
+bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+ok 80 check_manifest fails when an unblessed project profile appears in 70ms
+bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+ok 81 re-bless after a reviewed change makes check_manifest pass again in 151ms
+bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+ok 82 an unregistered project gets the base profile only in 40ms
+bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+ok 83 register_project records the profile and re-blesses in 117ms
+bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+ok 84 register_project rejects an unknown profile before writing anything in 51ms
+bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+ok 85 register_project prints the profile transition, not just the result in 143ms
+bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+ok 86 register_project names a profile the replacement drops in 158ms
+bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+ok 87 register_project says so when the profile is unchanged in 146ms
+bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+ok 88 rebuild_hint carries both localEnv assignments into the by-hand command in 23ms
+bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+ok 89 rebuild_hint's by-hand command, when run, sets every launcher-set localEnv var and keeps args intact in 45ms
+bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+ok 90 --profile with no value is a usage error, not a silent exit in 37ms
+bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+ok 91 rebuild_hint names the launcher before the by-hand form in 21ms
+bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+ok 92 usage prints the whole header block, including its last line in 18ms
+bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+ok 93 suggest_profiles proposes python for a python repo but never applies it in 65ms
+bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+ok 94 suggest_profiles proposes rust for a cargo repo but never applies it in 54ms
+bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+ok 95 suggest_profiles proposes lean for a repo with the toolchain pin in 39ms
+bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+ok 96 suggest_profiles proposes lean for a lakefile.toml repo (current Lake format) in 31ms
+bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+ok 97 suggest_profiles proposes lean for a lakefile.lean repo (older Lake format) in 37ms
+bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+ok 98 suggest_profiles proposes android for a gradle repo (Kotlin DSL) in 55ms
+bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+ok 99 suggest_profiles proposes android for a repo with just the gradle wrapper in 32ms
+bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+ok 100 suggest_profiles proposes dotnet for a Unity project root in 46ms
+bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+ok 101 suggest_profiles proposes dotnet for a repo with a top-level csproj in 32ms
+bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+ok 102 suggest_profiles is silent for a plain repo in 32ms
+bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+ok 103 base profile alone yields the base allowlist and nothing else in 22ms
+bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+ok 104 a python project gets PyPI on top of base in 20ms
+bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+ok 105 one project's profile does not widen another's (H5) in 28ms
+bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+ok 106 profiles compose in 21ms
+bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+ok 107 an android project gets Google Maven, Maven Central, and Gradle on top of base in 25ms
+bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+ok 108 a dotnet project gets NuGet on top of base, and only NuGet in 24ms
+bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+ok 109 an unknown profile is a hard failure, not a silently narrower allowlist in 18ms
+bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+ok 110 a missing profile file degrades to base, not to empty in 17ms
+bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+ok 111 devcontainer.json anchors build.dockerfile to the config dir, not the repo in 15ms
+bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+ok 112 devcontainer.json anchors build.context to the config dir, not the repo in 16ms
+bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+ok 113 the launcher exports CC_CONFIG_DIR (else the build paths resolve to /) in 18ms
+bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+ok 114 Dockerfile copies the claude-home payload into the image in 16ms
+bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+ok 115 the payload is baked outside /home/node/.claude (a volume would shadow it) in 15ms
+bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+ok 116 the payload is root-owned and not writable by node in 16ms
+bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+ok 117 hook scripts in the payload stay executable in 17ms
+bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+ok 118 postStartCommand links the payload after the firewall, not before in 16ms
+bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+ok 119 install.sh stages the payload from the repo root in 20ms
+bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+ok 120 install.sh aborts when a payload source is missing in 105ms
+bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+ok 121 install.sh names every missing payload source, not just the first in 106ms
+bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+ok 122 install.sh assembles the payload when every source is present in 164ms
+bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+ok 123 install.sh stages committed content only: uncommitted changes are listed, not staged in 166ms
+bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+ok 124 install.sh treats a payload source that exists but was never committed as missing in 86ms
+bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+ok 125 install.sh review diff shows the CONTENT of a new file inside a payload dir in 186ms
+bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+ok 126 install.sh review diff shows a new top-level payload item, not nothing in 187ms
+bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+ok 127 install.sh aborts before the prompt when the review diff itself fails in 203ms
+bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+ok 128 link-claude-home refuses to clobber a real file in the volume in 20ms
+bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+ok 129 link-claude-home links the payload and is idempotent in 22ms
+bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+ok 130 link-claude-home is a no-op when the payload is absent (non-cc-isolated host) in 16ms
+bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+ok 131 Gate 1h loads the review skill from the baked payload, not the branch in 14ms
+bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+ok 132 Gate 1h pins an explicit reviewer model in 16ms
+bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+ok 133 Gate 1h archives review artifacts before the worktree is torn down in 17ms
+bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+ok 134 Gate 1h fails closed on reviewer error and on an unparseable verdict in 20ms
+bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+ok 135 Gate 1h passes a per-run nonce the branch cannot know in 19ms
+bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+ok 136 every regular file in install.sh's PAYLOAD is hashed by enforcement_files in 33ms
+bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+ok 137 claude-home files are hashed file by file when present in 81ms
+bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+ok 138 compute_manifest covers claude-home even when projects/ is empty, under errexit in 21ms
+bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+ok 139 a symlink in claude-home is blessed by its target and a repoint trips the manifest in 89ms
+bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+ok 140 a symlinked enforcement file is hashed by content as well as by target in 99ms
+bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+ok 141 compute_manifest fails when enforcement_files fails in 17ms
+bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+ok 142 H6 passes and stamps the host's project id on a correct container in 138ms
+bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+ok 143 H6 fails when the container's CC_PROJECT_ID is empty (no empty stamp) in 140ms
+bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+ok 144 H6 fails on a volume stamped for another project even if the container agrees with it in 119ms
+bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+ok 145 H6 fails on an empty stamp left by an earlier empty-env run in 139ms
+bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+ok 146 blessed_hash needs a manifest, is stable, and changes when the boundary changes in 121ms
+bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+ok 147 a fresh bless is NOT verified live, and says so in 37ms
+bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+ok 148 the receipt names the blessed hash and is void once the boundary changes in 147ms
+bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+ok 149 --list reports the blessed hash and its verification state in 80ms
+bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+ok 150 devcontainer.json passes CC_CONFIG_HASH as a build arg and the Dockerfile bakes it last in 23ms
+bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+ok 151 probe_boundary passes and writes the receipt when the container carries the blessed hash in 116ms
+bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+ok 152 probe_boundary fails on a container built from another config, and writes no receipt in 116ms
+bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+ok 153 probe_boundary fails when init-firewall.sh never completed (closed ≠ verified) in 117ms
+bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+ok 154 a launch rebuilds a container whose baked config is not the blessed one in 161ms
+bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+ok 155 a launch on a matching, verified container does not rebuild in 163ms
+bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+ok 156 --probe-only always rebuilds before probing in 132ms
+(eval):1: command not found: bc
+wall_s=
+exit=0

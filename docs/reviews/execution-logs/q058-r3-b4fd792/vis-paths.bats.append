@@ -1,0 +1,40 @@
+
+# --- r3 fact-check probes (not part of the repo suite) -----------------------
+vis_fails() {
+  printf '#!/bin/bash\ncase "$1" in -pe) cat >/dev/null; exit 1 ;; esac\nexec %s "$@"\n' \
+    "$(command -v perl)" > "$STUB/perl"
+  chmod +x "$STUB/perl"
+}
+
+@test "X1 devcontainer MODE-only change + failing vis: aborts before the prompt" {
+  fake_repo
+  run env -u CLAUDECODE bash "$INSTALL" --yes </dev/null
+  [ "$status" -eq 0 ]
+  chmod +x "$ROOT/devcontainer-config/devcontainer.json"; commit_all modeonly
+  vis_fails
+  run env -u CLAUDECODE bash "$INSTALL" </dev/null
+  echo "STATUS=$status"; echo "$output"
+  [ "$status" -ne 0 ]
+  [[ "$output" != *'bless it?'* ]]
+}
+
+@test "X2 host first install (ADD lines only) + failing vis: never reaches the host prompt" {
+  need_script; fake_repo
+  vis_fails
+  run_pty 'n\ny\n' bash "$INSTALL"
+  echo "STATUS=$status"; echo "$output"
+  [ "$status" -ne 0 ]
+  [[ "$output" != *'Install these files'* ]]
+  [ ! -e "$CLAUDE_HOME_DIR/skills" ]
+}
+
+@test "X3 host migration (REPLACE/MOVE lines) + failing vis: never reaches the host prompt" {
+  need_script; fake_repo; symlink_install
+  vis_fails
+  before=$(snap "$CLAUDE_HOME_DIR")
+  run_pty 'n\ny\n' bash "$INSTALL"
+  echo "STATUS=$status"; echo "$output"
+  [ "$status" -ne 0 ]
+  [[ "$output" != *'Install these files'* ]]
+  [ "$(snap "$CLAUDE_HOME_DIR")" = "$before" ]
+}

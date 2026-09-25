@@ -1,0 +1,40 @@
+2026-09-25T07:03:43Z
+1..2
+ok 1 SP1 host target: stage swapped to benign after the hash, during the review, then reverted before y
+# n
+# Canonical (repo):  /tmp/bats-run-k8fHdE/test/1/repo/devcontainer-config at commit 534a9433a07d (staged in /tmp/bats-run-k8fHdE/test/1/tmp/cw-devc-stage.aUVCRB/config)
+# Installed (host):  /tmp/bats-run-k8fHdE/test/1/home/.config/claude-devcontainer
+#
+# First install — /tmp/bats-run-k8fHdE/test/1/home/.config/claude-devcontainer does not exist yet.
+#
+# Install this config and bless it? [y/N] Aborted. Nothing was changed. (devcontainer config)
+#
+# === Host target: global Claude Code files ======================================
+# Destination: /tmp/bats-run-k8fHdE/test/1/home/.claude  (chosen by $CLAUDE_HOME_DIR)
+# Canonical (repo):  /tmp/bats-run-k8fHdE/test/1/repo (commit 534a9433a07dc39881300d337218b2064c5b4a5f)
+#
+# === Changes this install would make ===========================================
+# (diff: /tmp/bats-run-k8fHdE/test/1/tmp/cw-host-stage.9TXgHi/installed is the destination as it is now, links left out)
+# diff -ruNa /tmp/bats-run-k8fHdE/test/1/tmp/cw-host-stage.9TXgHi/installed/guides/g.md /tmp/bats-run-k8fHdE/test/1/tmp/cw-host-stage.9TXgHi/payload/guides/g.md
+# --- /tmp/bats-run-k8fHdE/test/1/tmp/cw-host-stage.9TXgHi/installed/guides/g.md	2026-09-25 00:03:44.072153460 -0700
+# +++ /tmp/bats-run-k8fHdE/test/1/tmp/cw-host-stage.9TXgHi/payload/guides/g.md	2026-09-25 00:03:43.000000000 -0700
+# @@ -1 +1 @@
+# -guide
+# +guide v2 benign
+# ===============================================================================
+#
+# Install these files into /tmp/bats-run-k8fHdE/test/1/home/.claude? [y/N] y
+# Installed into /tmp/bats-run-k8fHdE/test/1/home/.claude.
+# Previous entries moved to /tmp/bats-run-k8fHdE/test/1/home/.claude/.claude-workflows-backup/20260925T070347Z (delete it when satisfied).
+# Backups: this one plus the 2 most recent earlier installs' are kept in /tmp/bats-run-k8fHdE/test/1/home/.claude/.claude-workflows-backup (0 older removed).
+# --- installed h.sh:
+# #!/bin/bash
+# echo MALICIOUS-PAYLOAD
+ok 2 SP2 regex coverage (ERE, as pgrep -f uses)
+# MISS: /home/u/.local/share/claude/versions/2.1.3 --resume
+# MISS: node /x/node_modules/@anthropic-ai/claude-agent-sdk/cli.js
+# MISS: node cli.js
+# MISS: bash ralph-loop.sh
+# MISS: bash -c while sleep 1; do cp x /tmp/cw-host-stage.1/payload/hooks/h.sh; done
+# MISS: python3 agent_runner.py
+bats exit=

@@ -1,0 +1,18 @@
+2026-09-25T06:41:10Z
+cwd=/workspace cmd=bash /workspace/docs/reviews/execution-logs/q058-r3-b4fd792/prefix.sh ea2c8fb T58
+bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+install.sh from ea2c8fb: 885 lines
+bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+1..1
+bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+not ok 1 T58 a vis failure is diff trouble: it aborts before the prompt, never reads as an empty diff
+# (in test file test/install-host.bats, line 914)
+#   `[ "$status" -eq 0 ]' failed
+bats_exit=1
+exit=0

@@ -1,0 +1,12 @@
+RE=(^|/)claude(\.exe)?( |$)|/@anthropic-ai/claude-code/
+MATCH  claude 
+MATCH  /usr/local/bin/claude --resume 
+MATCH  node /usr/local/bin/claude --resume 
+MATCH  node /usr/local/lib/node_modules/@anthropic-ai/claude-code/cli.js -p x 
+MATCH  /opt/vscode/extensions/anthropic.claude-code-2.0.0/resources/native-binary/claude 
+miss   /home/u/.local/share/claude/versions/2.0.14 --resume 
+miss   node cli.js --resume 
+miss   node /srv/app/node_modules/@anthropic-ai/claude-agent-sdk/cli.js --output-format stream-json 
+miss   claude-code 
+miss   bash -c while sleep 1; do cp evil /tmp/cw-host-stage.X/payload/hooks/h.sh; done 
+MATCH  vim ./claude 

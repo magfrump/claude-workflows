@@ -1,0 +1,8 @@
+2026-09-25T06:40:21Z
+cwd=/workspace cmd=bash /workspace/docs/reviews/execution-logs/q058-r3-b4fd792/payload-nul.sh
+archive_exit=0
+files: 122
+NUL files:
+scan_exit=0
+symlinks: 0
+exit=0

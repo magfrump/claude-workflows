@@ -1,0 +1,5 @@
+2026-09-25T06:40:40Z
+cwd=/workspace cmd=bash /workspace/docs/reviews/execution-logs/q058-r3-b4fd792/prefix.sh b4fd792 T58 
+bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+/workspace/docs/reviews/execution-logs/q058-r3-b4fd792/prefix.sh: line 8: $2: unbound variable
+exit=1

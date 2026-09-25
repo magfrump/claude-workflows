@@ -1,0 +1,5 @@
+git archive/status .git-config exec probe (SP3), git version 2.39.5
+marks:
+archive-smudge
+fsmonitor
+fsmonitor

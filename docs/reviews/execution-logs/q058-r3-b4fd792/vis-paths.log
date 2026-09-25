@@ -1,0 +1,45 @@
+2026-09-25T06:41:43Z
+cwd=/workspace cmd=env -u CLAUDECODE LC_ALL=C bash /workspace/docs/reviews/execution-logs/q058-r3-b4fd792/vis-paths.sh
+1..3
+ok 1 X1 devcontainer MODE-only change + failing vis: aborts before the prompt
+# STATUS=1
+# Canonical (repo):  /tmp/claude-1000/-workspace/7630264d-3947-4203-a0ec-b9ffcc3a4e06/scratchpad/bats-run-651jwZ/test/1/repo/devcontainer-config at commit f0b65629cab5 (staged in /tmp/claude-1000/-workspace/7630264d-3947-4203-a0ec-b9ffcc3a4e06/scratchpad/bats-run-651jwZ/test/1/tmp/cw-devc-stage.Aqj9Jw/config)
+# Installed (host):  /tmp/claude-1000/-workspace/7630264d-3947-4203-a0ec-b9ffcc3a4e06/scratchpad/bats-run-651jwZ/test/1/home/.config/claude-devcontainer
+#
+# === Changes this install would make ===========================================
+# ERROR: could not show the review of payload item 'devcontainer.json' (vis exit 1).
+#        The review diff is incomplete, so nothing was installed.
+ok 2 X2 host first install (ADD lines only) + failing vis: never reaches the host prompt
+# STATUS=1
+# n
+# y
+# Canonical (repo):  /tmp/claude-1000/-workspace/7630264d-3947-4203-a0ec-b9ffcc3a4e06/scratchpad/bats-run-651jwZ/test/2/repo/devcontainer-config at commit ff41d9234a77 (staged in /tmp/claude-1000/-workspace/7630264d-3947-4203-a0ec-b9ffcc3a4e06/scratchpad/bats-run-651jwZ/test/2/tmp/cw-devc-stage.RpT0cz/config)
+# Installed (host):  /tmp/claude-1000/-workspace/7630264d-3947-4203-a0ec-b9ffcc3a4e06/scratchpad/bats-run-651jwZ/test/2/home/.config/claude-devcontainer
+#
+# First install — /tmp/claude-1000/-workspace/7630264d-3947-4203-a0ec-b9ffcc3a4e06/scratchpad/bats-run-651jwZ/test/2/home/.config/claude-devcontainer does not exist yet.
+#
+# Install this config and bless it? [y/N] Aborted. Nothing was changed. (devcontainer config)
+#
+# === Host target: global Claude Code files ======================================
+# Destination: /tmp/claude-1000/-workspace/7630264d-3947-4203-a0ec-b9ffcc3a4e06/scratchpad/bats-run-651jwZ/test/2/home/.claude  (chosen by $CLAUDE_HOME_DIR)
+# Canonical (repo):  /tmp/claude-1000/-workspace/7630264d-3947-4203-a0ec-b9ffcc3a4e06/scratchpad/bats-run-651jwZ/test/2/repo (commit ff41d9234a777d981d6ad4b2fe04324ab834ce2d)
+#
+# === Changes this install would make ===========================================
+ok 3 X3 host migration (REPLACE/MOVE lines) + failing vis: never reaches the host prompt
+# STATUS=1
+# n
+# y
+# Canonical (repo):  /tmp/claude-1000/-workspace/7630264d-3947-4203-a0ec-b9ffcc3a4e06/scratchpad/bats-run-651jwZ/test/3/repo/devcontainer-config at commit deafa0463d67 (staged in /tmp/claude-1000/-workspace/7630264d-3947-4203-a0ec-b9ffcc3a4e06/scratchpad/bats-run-651jwZ/test/3/tmp/cw-devc-stage.JQzwYe/config)
+# Installed (host):  /tmp/claude-1000/-workspace/7630264d-3947-4203-a0ec-b9ffcc3a4e06/scratchpad/bats-run-651jwZ/test/3/home/.config/claude-devcontainer
+#
+# First install — /tmp/claude-1000/-workspace/7630264d-3947-4203-a0ec-b9ffcc3a4e06/scratchpad/bats-run-651jwZ/test/3/home/.config/claude-devcontainer does not exist yet.
+#
+# Install this config and bless it? [y/N] Aborted. Nothing was changed. (devcontainer config)
+#
+# === Host target: global Claude Code files ======================================
+# Destination: /tmp/claude-1000/-workspace/7630264d-3947-4203-a0ec-b9ffcc3a4e06/scratchpad/bats-run-651jwZ/test/3/home/.claude  (chosen by $CLAUDE_HOME_DIR)
+# Canonical (repo):  /tmp/claude-1000/-workspace/7630264d-3947-4203-a0ec-b9ffcc3a4e06/scratchpad/bats-run-651jwZ/test/3/repo (commit deafa0463d676627bd58927f02cd528f22d08975)
+#
+# === Changes this install would make ===========================================
+bats_exit=0
+exit=0

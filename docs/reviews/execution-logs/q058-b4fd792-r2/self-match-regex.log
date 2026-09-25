@@ -1,0 +1,5 @@
+2026-09-25T06:44:44Z
+miss   bash ./devcontainer-config/install.sh
+miss   bash /home/u/claude/devcontainer-config/install.sh
+MATCH  bash /home/u/claude code/devcontainer-config/install.sh
+miss   script -qec ./devcontainer-config/install.sh /dev/null

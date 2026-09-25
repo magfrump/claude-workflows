@@ -1,0 +1,16 @@
+bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+1..4
+bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+ok 1 P1 host first install, vis fails on the ADD lines: stops before the host prompt?
+bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+ok 2 P2 devcontainer mode-only change, vis fails: MODE line lost, review_diff aborts?
+bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+ok 3 P3 devcontainer stage edited while its prompt waits, editor gone before y: installed?
+bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+ok 4 P4 an agent visible only during the devcontainer prompt, answered n: host target stages and installs
