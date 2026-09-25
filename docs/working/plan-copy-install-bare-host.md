@@ -2,7 +2,7 @@
 
 - **Goal**: Replace the README's bare-host symlink install of the global files into `~/.claude` with copies that `devcontainer-config/install.sh` makes only after a human has read the diff and answered y.
 - **Project state**: implements the Q-050 answer on `ans/copy-install` · follows the 2026-09-21 answers branch, whose guard redesign is paused at its review cap · not blocked; plan approved with shape D (cite: docs/decisions/037-bare-host-copy-install.md)
-- **Task status**: in-progress (steps 1–8 implemented and verified on `ans/copy-install`; code-review fixes applied, awaiting re-review; step 9, the host run, is the user's)
+- **Task status**: merged to main 2026-09-25 (3a98f9e) after the Q-058 re-review passed in 4 passes (`docs/reviews/code-review-rubric-2026-09-24-ans-copy-install-q058.md`). Step 9, the host run, is the user's. Q-061 and Q-062 interims are in place.
 
 Research: [research-copy-install-bare-host.md](research-copy-install-bare-host.md)
 

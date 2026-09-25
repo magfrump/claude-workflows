@@ -8,6 +8,7 @@ Decision: docs/decisions/037-bare-host-copy-install.md
 ## Project state
 - **Branch purpose**: implement the Q-050 answer. The bare-host `~/.claude` install moves from symlinks into the checkout to copies that `install.sh` makes after a shown review and a human y.
 - **Position in larger initiative**: follows the 2026-09-21 answers branch. That branch's guard redesign (R6/N12) is independent, and this change makes it moot on a bare host.
+- **Merged**: to main 2026-09-25 (3a98f9e), with later fixes on skill-fixtures (see the Q-058 re-review rubric). Remaining: plan step 9, the user's host run.
 - **Blocked on**: nothing. The plan was approved via Q-054 with shape D. Q-055 dropped Gemini; Q-056 settled `--yes` and the TTY; Q-057 settled foreign files.
 
 ## Key findings

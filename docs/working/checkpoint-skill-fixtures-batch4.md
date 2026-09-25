@@ -7,6 +7,7 @@ Plan: docs/working/plan-skill-fixtures-batch4.md
 ## Project state
 - **Branch purpose**: add runnable fixture sets for the skills that had none (HC1)
 - **Position in larger initiative**: batch 4 of 4; batches 1-3 merged at `68ffae7`
+- **Merged**: to main 2026-09-25 (3a98f9e), together with answers-2026-09-20 and copy-install.
 - **Blocked on**: nothing for the approved scope, which is implemented (ef05331..fa3c5c0). Q-059 (arithmetic-eval Bash grant) and Q-060 (code-review/draft-review depth) hold steps 5 and 9 only.
 
 ## Key findings
