@@ -1,0 +1,7 @@
+bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+### SIGINT: install.sh pid 1143944, SigIgn mask 0000000000000004 (bit 2 = SIGINT ignored: False)
+    copies before signal: ['.cw-new.CLAUDE.md', '.cw-new.guides', '.cw-new.hooks', '.cw-new.manifest', '.cw-new.patterns', '.cw-new.scripts', '.cw-new.skills', '.cw-new.workflows']
+    install.sh alive 5 s after SIGINT: False
+    dest exists: False entries: []
+    TMPDIR leftovers: []
+== probe dir: /tmp/claude-1000/-workspace/7630264d-3947-4203-a0ec-b9ffcc3a4e06/scratchpad/q058p2-int.H2eS6G

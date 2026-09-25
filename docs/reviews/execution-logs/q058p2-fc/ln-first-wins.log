@@ -1,0 +1,5 @@
+2026-09-25T07:56:59Z
+ln: failed to create symbolic link 'farm/x': File exists
+ln exit 1
+farm/x -> /tmp/claude-1000/-workspace/7630264d-3947-4203-a0ec-b9ffcc3a4e06/scratchpad/lnt/d1/x
+farm/y -> /tmp/claude-1000/-workspace/7630264d-3947-4203-a0ec-b9ffcc3a4e06/scratchpad/lnt/d2/y

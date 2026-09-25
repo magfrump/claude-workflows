@@ -1,0 +1,8 @@
+git version 2.39.5
+1. install.sh at feba07d:
+[git -c core.quotePath=true -c core.fsmonitor=false status --porcelain --untracked-files=all] status='' marks: sub-clean hook:.git/modules/skills/sub/hooks hook:.git/hooks 
+2. + --no-optional-locks -c core.hooksPath=/dev/null:
+[git --no-optional-locks -c core.quotePath=true -c core.fsmonitor=false -c core.hooksPath=/dev/null status --porcelain --untracked-files=all] status='' marks: sub-clean 
+3. + --ignore-submodules=all:
+./fix-flags-probe.sh: line 15: /tmp/claude-1000/-workspace/7630264d-3947-4203-a0ec-b9ffcc3a4e06/scratchpad/fixflags.6Igalz/marks: No such file or directory
+[git --no-optional-locks -c core.quotePath=true -c core.fsmonitor=false -c core.hooksPath=/dev/null status --porcelain --untracked-files=all --ignore-submodules=all] status='' marks: none

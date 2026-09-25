@@ -1,0 +1,6 @@
+git version 2.39.5
+status:  M a.txt
+keys set: diff.external core.pager pager.status pager.archive diff.x.textconv gc.auto alias.status
+marks after the installer's invocations: none
+marks after status with .git/hooks/post-index-change: post-index-change-default post-index-change-default 
+install.sh's GIT_EXEC_KEYS_RE over .git/config finds: ''

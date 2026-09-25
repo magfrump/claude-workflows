@@ -1,0 +1,72 @@
+bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+== git git version 2.39.5
+### A .git/hooks/post-index-change: install.sh exit 0; refused-by-gate: 0; blessed: 1
+    markers fired: hook-post-index-change 
+### B core.hooksPath=<dir with post-index-change>: install.sh exit 0; refused-by-gate: 0; blessed: 1
+    markers fired: hookspath-pic 
+### C diff.external: install.sh exit 0; refused-by-gate: 0; blessed: 1
+    markers fired: 
+### C core.pager: install.sh exit 0; refused-by-gate: 0; blessed: 1
+    markers fired: 
+### C pager.status: install.sh exit 0; refused-by-gate: 0; blessed: 1
+    markers fired: 
+### C pager.archive: install.sh exit 0; refused-by-gate: 0; blessed: 1
+    markers fired: 
+### C core.sshCommand: install.sh exit 0; refused-by-gate: 0; blessed: 1
+    markers fired: 
+### C gpg.program: install.sh exit 0; refused-by-gate: 0; blessed: 1
+    markers fired: 
+### C uploadpack.packObjectsHook: install.sh exit 0; refused-by-gate: 0; blessed: 1
+    markers fired: 
+### C credential.helper: install.sh exit 0; refused-by-gate: 0; blessed: 1
+    markers fired: 
+### C core.askPass: install.sh exit 0; refused-by-gate: 0; blessed: 1
+    markers fired: 
+### C core.editor: install.sh exit 0; refused-by-gate: 0; blessed: 1
+    markers fired: 
+### C tar.tar.command: install.sh exit 0; refused-by-gate: 0; blessed: 1
+    markers fired: 
+### C diff.x.textconv: install.sh exit 0; refused-by-gate: 0; blessed: 1
+    markers fired: 
+### C core.alternateRefsCommand: install.sh exit 0; refused-by-gate: 0; blessed: 1
+    markers fired: 
+### C sequence.editor: install.sh exit 0; refused-by-gate: 0; blessed: 1
+    markers fired: 
+### C core.gitProxy: install.sh exit 0; refused-by-gate: 0; blessed: 1
+    markers fired: 
+### C url.<ext>.insteadOf + protocol.ext.allow: install.sh exit 0; refused-by-gate: 0; blessed: 1
+    markers fired: 
+### C log.showSignature + gpg.program: install.sh exit 0; refused-by-gate: 0; blessed: 1
+    markers fired: 
+### D config.worktree (main worktree) core.fsmonitor: install.sh exit 1; refused-by-gate: 1; blessed: 0
+    markers fired: 
+    | ERROR: the checkout's git state can make git run a command as you during this
+    |        install (a filter, core.fsmonitor, an include, or an attributes file):
+    |          /tmp/claude-1000/-workspace/7630264d-3947-4203-a0ec-b9ffcc3a4e06/scratchpad/q058p2-r1.IpDYRm/repo/.git/config.worktree: core.fsmonitor /tmp/claude-1000/-workspace/7630264d-3947-4203-a0ec-b9ffcc3a4e06/scratchpad/q058p2-r1.IpDYRm/wtcfg-fsmonitor-main.sh
+    |        empty the attributes file) and rerun. Nothing was installed.
+### D2 config.worktree (main) filter.pwn.smudge + committed .gitattributes: install.sh exit 1; refused-by-gate: 1; blessed: 0
+    markers fired: 
+    | ERROR: the checkout's git state can make git run a command as you during this
+    |        install (a filter, core.fsmonitor, an include, or an attributes file):
+    |          /tmp/claude-1000/-workspace/7630264d-3947-4203-a0ec-b9ffcc3a4e06/scratchpad/q058p2-r1.IpDYRm/repo/.git/config.worktree: filter.pwn.smudge /tmp/claude-1000/-workspace/7630264d-3947-4203-a0ec-b9ffcc3a4e06/scratchpad/q058p2-r1.IpDYRm/wtcfg-smudge-main.sh
+    |        empty the attributes file) and rerun. Nothing was installed.
+    linked config.worktree: /tmp/claude-1000/-workspace/7630264d-3947-4203-a0ec-b9ffcc3a4e06/scratchpad/q058p2-r1.IpDYRm/repo/.git/worktrees/wt/config.worktree
+### E config.worktree (linked worktree) core.fsmonitor, run from the linked worktree: install.sh exit 1; refused-by-gate: 1; blessed: 0
+    markers fired: 
+    | ERROR: the checkout's git state can make git run a command as you during this
+    |        install (a filter, core.fsmonitor, an include, or an attributes file):
+    |          /tmp/claude-1000/-workspace/7630264d-3947-4203-a0ec-b9ffcc3a4e06/scratchpad/q058p2-r1.IpDYRm/repo/.git/worktrees/wt/config.worktree: core.fsmonitor /tmp/claude-1000/-workspace/7630264d-3947-4203-a0ec-b9ffcc3a4e06/scratchpad/q058p2-r1.IpDYRm/wtcfg-fsmonitor-linked.sh
+    |        empty the attributes file) and rerun. Nothing was installed.
+### F committed .gitattributes + local filter.pwn.smudge: install.sh exit 1; refused-by-gate: 1; blessed: 0
+    markers fired: 
+    | ERROR: the checkout's git state can make git run a command as you during this
+    |        install (a filter, core.fsmonitor, an include, or an attributes file):
+    |          /tmp/claude-1000/-workspace/7630264d-3947-4203-a0ec-b9ffcc3a4e06/scratchpad/q058p2-r1.IpDYRm/repo/.git/config: filter.pwn.smudge /tmp/claude-1000/-workspace/7630264d-3947-4203-a0ec-b9ffcc3a4e06/scratchpad/q058p2-r1.IpDYRm/committed-attrs-smudge.sh
+    |        empty the attributes file) and rerun. Nothing was installed.
+### G control: local core.fsmonitor: install.sh exit 1; refused-by-gate: 1; blessed: 0
+    markers fired: 
+    | ERROR: the checkout's git state can make git run a command as you during this
+    |        install (a filter, core.fsmonitor, an include, or an attributes file):
+    |          /tmp/claude-1000/-workspace/7630264d-3947-4203-a0ec-b9ffcc3a4e06/scratchpad/q058p2-r1.IpDYRm/repo/.git/config: core.fsmonitor /tmp/claude-1000/-workspace/7630264d-3947-4203-a0ec-b9ffcc3a4e06/scratchpad/q058p2-r1.IpDYRm/control-fsmonitor.sh
+    |        empty the attributes file) and rerun. Nothing was installed.
+== probe dir: /tmp/claude-1000/-workspace/7630264d-3947-4203-a0ec-b9ffcc3a4e06/scratchpad/q058p2-r1.IpDYRm

@@ -1,0 +1,13 @@
+bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+== 1. NOTE lines per run, docker unreachable (stub pgrep: no agent)
+   no TTY, no --yes (target 1 declined at EOF, host skipped): exit 1; NOTE lines: 1
+   --yes (target 1 installed, host skipped):                  exit 0; NOTE lines: 2
+   pty n,y (target 1 declined, host installed):               exit 1; NOTE lines: 3
+   pty y,y (both installed):                                  exit 0; NOTE lines: 4
+   pty n,n (both declined):                                   exit 1; NOTE lines: 2
+== 2. DOCKER_HOST / DOCKER_CONTEXT reach the docker call unchanged
+   docker saw: DOCKER_HOST=tcp://probe.invalid:2375 DOCKER_CONTEXT=probe-ctx
+== 3. In-session run, REAL pgrep (this probe runs inside a Claude Code session)
+   exit 1; refused at startup: 1; staged anything: no; blessed: 0
+          Claude Code processes of uid 1000 (PID and command line):
+== probe dir: /tmp/claude-1000/-workspace/7630264d-3947-4203-a0ec-b9ffcc3a4e06/scratchpad/q058p2-docs.e4YYgq

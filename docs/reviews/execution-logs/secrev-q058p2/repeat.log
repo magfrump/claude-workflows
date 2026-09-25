@@ -1,0 +1,27 @@
+repeat run 2026-09-25T07:52:35Z: SP1b, SP1c, SP3b x5 each
+ok 1 SP1b the OLD side of the diff (HOST_TMP/installed) is rewritten to match the new copy during the review
+ok 2 SP1c a stage edit between git archive and the copy into dest lands under an ADD entry whose content is not shown
+ok 3 SP3b .git/hooks/post-index-change runs during install (git status), not refused
+ok 1 SP1b the OLD side of the diff (HOST_TMP/installed) is rewritten to match the new copy during the review
+ok 2 SP1c a stage edit between git archive and the copy into dest lands under an ADD entry whose content is not shown
+ok 3 SP3b .git/hooks/post-index-change runs during install (git status), not refused
+ok 1 SP1b the OLD side of the diff (HOST_TMP/installed) is rewritten to match the new copy during the review
+ok 2 SP1c a stage edit between git archive and the copy into dest lands under an ADD entry whose content is not shown
+ok 3 SP3b .git/hooks/post-index-change runs during install (git status), not refused
+ok 1 SP1b the OLD side of the diff (HOST_TMP/installed) is rewritten to match the new copy during the review
+ok 2 SP1c a stage edit between git archive and the copy into dest lands under an ADD entry whose content is not shown
+ok 3 SP3b .git/hooks/post-index-change runs during install (git status), not refused
+ok 1 SP1b the OLD side of the diff (HOST_TMP/installed) is rewritten to match the new copy during the review
+ok 2 SP1c a stage edit between git archive and the copy into dest lands under an ADD entry whose content is not shown
+ok 3 SP3b .git/hooks/post-index-change runs during install (git status), not refused
+repeat run 2026-09-25T07:58:54Z: SP1d, SP1e x5 each
+ok 1 SP1d a symlink planted in the stage after extract_commit's link check installs as a live link into an agent-writable file
+ok 2 SP1e devcontainer: a cc-isolated.sh symlink planted after extract_commit's check passes both A1 hashes and is blessed
+ok 1 SP1d a symlink planted in the stage after extract_commit's link check installs as a live link into an agent-writable file
+ok 2 SP1e devcontainer: a cc-isolated.sh symlink planted after extract_commit's check passes both A1 hashes and is blessed
+ok 1 SP1d a symlink planted in the stage after extract_commit's link check installs as a live link into an agent-writable file
+ok 2 SP1e devcontainer: a cc-isolated.sh symlink planted after extract_commit's check passes both A1 hashes and is blessed
+ok 1 SP1d a symlink planted in the stage after extract_commit's link check installs as a live link into an agent-writable file
+ok 2 SP1e devcontainer: a cc-isolated.sh symlink planted after extract_commit's check passes both A1 hashes and is blessed
+ok 1 SP1d a symlink planted in the stage after extract_commit's link check installs as a live link into an agent-writable file
+ok 2 SP1e devcontainer: a cc-isolated.sh symlink planted after extract_commit's check passes both A1 hashes and is blessed

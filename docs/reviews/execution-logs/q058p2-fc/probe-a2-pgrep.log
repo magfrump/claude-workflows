@@ -1,0 +1,12 @@
+bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+CLAUDE_PROC_RE=(^|/)claude(\.exe)?( |$)|/@anthropic-ai/claude-code/|/claude/versions/|/claude-agent-sdk/
+MATCH  /home/u/.local/share/claude/versions/2.1.3 --resume
+MATCH  claude --resume
+MATCH  claude.exe
+MATCH  node /usr/lib/node_modules/@anthropic-ai/claude-code/cli.js
+MATCH  node /x/node_modules/@anthropic-ai/claude-agent-sdk/cli.js
+MATCH  vim ./claude
+no     bash /home/u/claude-workflows/devcontainer-config/install.sh
+no     bash ralph-loop.sh
+no     node cli.js
+no     vim notes.md

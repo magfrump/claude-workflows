@@ -1,0 +1,805 @@
+bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+1..14
+bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+not ok 1 T28 a stage edited while the prompt waits is not installed: the reviewed copies are (review R2, Q-061)
+# (in test file test/install-host.bats, line 514)
+#   `[[ "$output" == *'Installed into'* ]]' failed
+# bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+# n
+# bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+# bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+# /bin/bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+# Canonical (repo):  /tmp/bats-run-vPOojr/test/1/repo/devcontainer-config at commit 509889979763 (staged in /tmp/bats-run-vPOojr/test/1/tmp/cw-devc-stage.VwqjMi/config)
+# Installed (host):  /tmp/bats-run-vPOojr/test/1/home/.config/claude-devcontainer
+#
+# First install — /tmp/bats-run-vPOojr/test/1/home/.config/claude-devcontainer does not exist yet.
+#
+# Install this config and bless it? [y/N] Aborted. Nothing was changed. (devcontainer config)
+#
+# === Host target: global Claude Code files ======================================
+# Destination: /tmp/bats-run-vPOojr/test/1/home/.claude  (chosen by $CLAUDE_HOME_DIR)
+# Canonical (repo):  /tmp/bats-run-vPOojr/test/1/repo (commit 509889979763b59c592dece5feeae8894285ee1f)
+#
+# === Changes this install would make ===========================================
+# /tmp/bats-run-vPOojr/test/1/repo/devcontainer-config/install.sh: line 119: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+# REPLACE symlink /tmp/bats-run-vPOojr/test/1/home/.claude/CLAUDE.md -> /tmp/bats-run-vPOojr/test/1/repo/global-instructions/CLAUDE.md with a copy
+# /tmp/bats-run-vPOojr/test/1/repo/devcontainer-config/install.sh: line 119: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+# REPLACE symlink /tmp/bats-run-vPOojr/test/1/home/.claude/skills -> /tmp/bats-run-vPOojr/test/1/repo/skills with a copy
+# /tmp/bats-run-vPOojr/test/1/repo/devcontainer-config/install.sh: line 119: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+# REPLACE symlink /tmp/bats-run-vPOojr/test/1/home/.claude/workflows -> /tmp/bats-run-vPOojr/test/1/repo/workflows with a copy
+# /tmp/bats-run-vPOojr/test/1/repo/devcontainer-config/install.sh: line 119: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+# REPLACE symlink /tmp/bats-run-vPOojr/test/1/home/.claude/guides -> /tmp/bats-run-vPOojr/test/1/repo/guides with a copy
+# /tmp/bats-run-vPOojr/test/1/repo/devcontainer-config/install.sh: line 119: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+# REPLACE symlink /tmp/bats-run-vPOojr/test/1/home/.claude/patterns -> /tmp/bats-run-vPOojr/test/1/repo/patterns with a copy
+# /tmp/bats-run-vPOojr/test/1/repo/devcontainer-config/install.sh: line 119: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+# REPLACE symlink /tmp/bats-run-vPOojr/test/1/home/.claude/hooks/h.sh -> /tmp/bats-run-vPOojr/test/1/repo/hooks/h.sh with a copy
+# WARNING: not in the repo; these will be MOVED to the backup (Q-057):
+# /tmp/bats-run-vPOojr/test/1/repo/devcontainer-config/install.sh: line 119: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+# MOVE to backup (not in the repo): /tmp/bats-run-vPOojr/test/1/home/.claude/hooks/guard.py
+# /tmp/bats-run-vPOojr/test/1/repo/devcontainer-config/install.sh: line 119: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+# REPLACE symlink /tmp/bats-run-vPOojr/test/1/home/.claude/scripts -> /tmp/bats-run-vPOojr/test/1/repo/scripts with a copy
+# (diff: /tmp/bats-run-vPOojr/test/1/tmp/cw-host-stage.iBxyzd/installed is the destination as it is now, links left out)
+# /tmp/bats-run-vPOojr/test/1/repo/devcontainer-config/install.sh: line 119: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+# /tmp/bats-run-vPOojr/test/1/repo/devcontainer-config/install.sh: line 119: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+# /tmp/bats-run-vPOojr/test/1/repo/devcontainer-config/install.sh: line 119: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+# /tmp/bats-run-vPOojr/test/1/repo/devcontainer-config/install.sh: line 119: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+# /tmp/bats-run-vPOojr/test/1/repo/devcontainer-config/install.sh: line 119: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+# /tmp/bats-run-vPOojr/test/1/repo/devcontainer-config/install.sh: line 119: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+# diff -ruNa /tmp/bats-run-vPOojr/test/1/tmp/cw-host-stage.iBxyzd/installed/hooks/guard.py /tmp/bats-run-vPOojr/test/1/tmp/cw-host-stage.iBxyzd/payload/hooks/guard.py
+# --- /tmp/bats-run-vPOojr/test/1/tmp/cw-host-stage.iBxyzd/installed/hooks/guard.py	2026-09-25 00:54:26.896645385 -0700
+# +++ /tmp/bats-run-vPOojr/test/1/tmp/cw-host-stage.iBxyzd/payload/hooks/guard.py	1969-12-31 16:00:00.000000000 -0800
+# @@ -1 +0,0 @@
+# -copied security hook
+# diff -ruNa /tmp/bats-run-vPOojr/test/1/tmp/cw-host-stage.iBxyzd/installed/hooks/h.sh /tmp/bats-run-vPOojr/test/1/tmp/cw-host-stage.iBxyzd/payload/hooks/h.sh
+# --- /tmp/bats-run-vPOojr/test/1/tmp/cw-host-stage.iBxyzd/installed/hooks/h.sh	1969-12-31 16:00:00.000000000 -0800
+# +++ /tmp/bats-run-vPOojr/test/1/tmp/cw-host-stage.iBxyzd/payload/hooks/h.sh	2026-09-25 00:54:26.000000000 -0700
+# @@ -0,0 +1,2 @@
+# +#!/bin/bash
+# +exit 0
+# diff -ruNa /tmp/bats-run-vPOojr/test/1/tmp/cw-host-stage.iBxyzd/installed/hooks/lib/x.sh /tmp/bats-run-vPOojr/test/1/tmp/cw-host-stage.iBxyzd/payload/hooks/lib/x.sh
+# --- /tmp/bats-run-vPOojr/test/1/tmp/cw-host-stage.iBxyzd/installed/hooks/lib/x.sh	1969-12-31 16:00:00.000000000 -0800
+# +++ /tmp/bats-run-vPOojr/test/1/tmp/cw-host-stage.iBxyzd/payload/hooks/lib/x.sh	2026-09-25 00:54:26.000000000 -0700
+# @@ -0,0 +1 @@
+# +#!/bin/bash
+# diff -ruNa /tmp/bats-run-vPOojr/test/1/tmp/cw-host-stage.iBxyzd/installed/hooks/wiring.json /tmp/bats-run-vPOojr/test/1/tmp/cw-host-stage.iBxyzd/payload/hooks/wiring.json
+# --- /tmp/bats-run-vPOojr/test/1/tmp/cw-host-stage.iBxyzd/installed/hooks/wiring.json	1969-12-31 16:00:00.000000000 -0800
+# +++ /tmp/bats-run-vPOojr/test/1/tmp/cw-host-stage.iBxyzd/payload/hooks/wiring.json	2026-09-25 00:54:26.000000000 -0700
+# @@ -0,0 +1 @@
+# +{"hooks":{}}
+# /tmp/bats-run-vPOojr/test/1/repo/devcontainer-config/install.sh: line 119: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+# ===============================================================================
+#
+# Install these files into /tmp/bats-run-vPOojr/test/1/home/.claude? [y/N] y
+# /bin/bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+# ERROR: stage changed after review: the files copied for install differ from
+#        the ones the review showed. Nothing was replaced. Rerun install.sh.
+bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+not ok 2 T67 a stage swapped for the review and swapped back before y installs only what the review showed (review R2, SP1)
+# (in test file test/install-host.bats, line 547)
+#   `[[ "$output" == *'+echo MALICIOUS-PAYLOAD'* ]]' failed
+# bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+# n
+# bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+# bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+# /bin/bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+# Canonical (repo):  /tmp/bats-run-vPOojr/test/2/repo/devcontainer-config at commit df0e83317db2 (staged in /tmp/bats-run-vPOojr/test/2/tmp/cw-devc-stage.Brckgj/config)
+# Installed (host):  /tmp/bats-run-vPOojr/test/2/home/.config/claude-devcontainer
+#
+# First install — /tmp/bats-run-vPOojr/test/2/home/.config/claude-devcontainer does not exist yet.
+#
+# Install this config and bless it? [y/N] Aborted. Nothing was changed. (devcontainer config)
+#
+# === Host target: global Claude Code files ======================================
+# Destination: /tmp/bats-run-vPOojr/test/2/home/.claude  (chosen by $CLAUDE_HOME_DIR)
+# Canonical (repo):  /tmp/bats-run-vPOojr/test/2/repo (commit df0e83317db2c554ec649d0f246c9a45c1103165)
+#
+# === Changes this install would make ===========================================
+# (diff: /tmp/bats-run-vPOojr/test/2/tmp/cw-host-stage.ymgUru/installed is the destination as it is now, links left out)
+# /tmp/bats-run-vPOojr/test/2/repo/devcontainer-config/install.sh: line 119: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+# /tmp/bats-run-vPOojr/test/2/repo/devcontainer-config/install.sh: line 119: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+# /tmp/bats-run-vPOojr/test/2/repo/devcontainer-config/install.sh: line 119: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+# /tmp/bats-run-vPOojr/test/2/repo/devcontainer-config/install.sh: line 119: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+# diff -ruNa /tmp/bats-run-vPOojr/test/2/tmp/cw-host-stage.ymgUru/installed/guides/g.md /tmp/bats-run-vPOojr/test/2/tmp/cw-host-stage.ymgUru/payload/guides/g.md
+# --- /tmp/bats-run-vPOojr/test/2/tmp/cw-host-stage.ymgUru/installed/guides/g.md	2026-09-25 00:54:29.758417289 -0700
+# +++ /tmp/bats-run-vPOojr/test/2/tmp/cw-host-stage.ymgUru/payload/guides/g.md	2026-09-25 00:54:29.000000000 -0700
+# @@ -1 +1 @@
+# -guide
+# +guide v2 benign
+# /tmp/bats-run-vPOojr/test/2/repo/devcontainer-config/install.sh: line 119: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+# /tmp/bats-run-vPOojr/test/2/repo/devcontainer-config/install.sh: line 119: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+# /tmp/bats-run-vPOojr/test/2/repo/devcontainer-config/install.sh: line 119: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+# ===============================================================================
+#
+# Install these files into /tmp/bats-run-vPOojr/test/2/home/.claude? [y/N] y
+# /bin/bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+# Installed into /tmp/bats-run-vPOojr/test/2/home/.claude.
+# Previous entries moved to /tmp/bats-run-vPOojr/test/2/home/.claude/.claude-workflows-backup/20260925T075433Z (delete it when satisfied).
+# Backups: this one plus the 2 most recent earlier installs' are kept in /tmp/bats-run-vPOojr/test/2/home/.claude/.claude-workflows-backup (0 older removed).
+bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+not ok 3 T68 a reviewed copy under the destination edited while the prompt waits is refused (review R2)
+# (in test file test/install-host.bats, line 559)
+#   `[[ "$output" == *'changed after review'* ]]' failed
+# bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+# n
+# bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+# bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+# /bin/bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+# Canonical (repo):  /tmp/bats-run-vPOojr/test/3/repo/devcontainer-config at commit f907ce25ff5b (staged in /tmp/bats-run-vPOojr/test/3/tmp/cw-devc-stage.bmMKFO/config)
+# Installed (host):  /tmp/bats-run-vPOojr/test/3/home/.config/claude-devcontainer
+#
+# First install — /tmp/bats-run-vPOojr/test/3/home/.config/claude-devcontainer does not exist yet.
+#
+# Install this config and bless it? [y/N] Aborted. Nothing was changed. (devcontainer config)
+#
+# === Host target: global Claude Code files ======================================
+# Destination: /tmp/bats-run-vPOojr/test/3/home/.claude  (chosen by $CLAUDE_HOME_DIR)
+# Canonical (repo):  /tmp/bats-run-vPOojr/test/3/repo (commit f907ce25ff5b0cf1c2d0f4df781894481df83f80)
+#
+# === Changes this install would make ===========================================
+# /tmp/bats-run-vPOojr/test/3/repo/devcontainer-config/install.sh: line 119: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+# REPLACE symlink /tmp/bats-run-vPOojr/test/3/home/.claude/CLAUDE.md -> /tmp/bats-run-vPOojr/test/3/repo/global-instructions/CLAUDE.md with a copy
+# /tmp/bats-run-vPOojr/test/3/repo/devcontainer-config/install.sh: line 119: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+# REPLACE symlink /tmp/bats-run-vPOojr/test/3/home/.claude/skills -> /tmp/bats-run-vPOojr/test/3/repo/skills with a copy
+# /tmp/bats-run-vPOojr/test/3/repo/devcontainer-config/install.sh: line 119: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+# REPLACE symlink /tmp/bats-run-vPOojr/test/3/home/.claude/workflows -> /tmp/bats-run-vPOojr/test/3/repo/workflows with a copy
+# /tmp/bats-run-vPOojr/test/3/repo/devcontainer-config/install.sh: line 119: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+# REPLACE symlink /tmp/bats-run-vPOojr/test/3/home/.claude/guides -> /tmp/bats-run-vPOojr/test/3/repo/guides with a copy
+# /tmp/bats-run-vPOojr/test/3/repo/devcontainer-config/install.sh: line 119: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+# REPLACE symlink /tmp/bats-run-vPOojr/test/3/home/.claude/patterns -> /tmp/bats-run-vPOojr/test/3/repo/patterns with a copy
+# /tmp/bats-run-vPOojr/test/3/repo/devcontainer-config/install.sh: line 119: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+# REPLACE symlink /tmp/bats-run-vPOojr/test/3/home/.claude/hooks/h.sh -> /tmp/bats-run-vPOojr/test/3/repo/hooks/h.sh with a copy
+# WARNING: not in the repo; these will be MOVED to the backup (Q-057):
+# /tmp/bats-run-vPOojr/test/3/repo/devcontainer-config/install.sh: line 119: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+# MOVE to backup (not in the repo): /tmp/bats-run-vPOojr/test/3/home/.claude/hooks/guard.py
+# /tmp/bats-run-vPOojr/test/3/repo/devcontainer-config/install.sh: line 119: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+# REPLACE symlink /tmp/bats-run-vPOojr/test/3/home/.claude/scripts -> /tmp/bats-run-vPOojr/test/3/repo/scripts with a copy
+# (diff: /tmp/bats-run-vPOojr/test/3/tmp/cw-host-stage.OCE4ZR/installed is the destination as it is now, links left out)
+# /tmp/bats-run-vPOojr/test/3/repo/devcontainer-config/install.sh: line 119: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+# /tmp/bats-run-vPOojr/test/3/repo/devcontainer-config/install.sh: line 119: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+# /tmp/bats-run-vPOojr/test/3/repo/devcontainer-config/install.sh: line 119: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+# /tmp/bats-run-vPOojr/test/3/repo/devcontainer-config/install.sh: line 119: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+# /tmp/bats-run-vPOojr/test/3/repo/devcontainer-config/install.sh: line 119: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+# /tmp/bats-run-vPOojr/test/3/repo/devcontainer-config/install.sh: line 119: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+# diff_: line 3: /tmp/bats-run-vPOojr/test/3/home/.claude/.cw-new.hooks/h.sh: No such file or directory
+#  -ruNa /tmp/bats-run-vPOojr/test/3/tmp/cw-host-stage.OCE4ZR/installed/hooks/guard.py /tmp/bats-run-vPOojr/test/3/tmp/cw-host-stage.OCE4ZR/payload/hooks/guard.py
+# --- /tmp/bats-run-vPOojr/test/3/tmp/cw-host-stage.OCE4ZR/installed/hooks/guard.py	2026-09-25 00:54:33.677055713 -0700
+# +++ /tmp/bats-run-vPOojr/test/3/tmp/cw-host-stage.OCE4ZR/payload/hooks/guard.py	1969-12-31 16:00:00.000000000 -0800
+# @@ -1 +0,0 @@
+# -copied security hook
+# diff -ruNa /tmp/bats-run-vPOojr/test/3/tmp/cw-host-stage.OCE4ZR/installed/hooks/h.sh /tmp/bats-run-vPOojr/test/3/tmp/cw-host-stage.OCE4ZR/payload/hooks/h.sh
+# --- /tmp/bats-run-vPOojr/test/3/tmp/cw-host-stage.OCE4ZR/installed/hooks/h.sh	1969-12-31 16:00:00.000000000 -0800
+# +++ /tmp/bats-run-vPOojr/test/3/tmp/cw-host-stage.OCE4ZR/payload/hooks/h.sh	2026-09-25 00:54:33.000000000 -0700
+# @@ -0,0 +1,2 @@
+# +#!/bin/bash
+# +exit 0
+# diff -ruNa /tmp/bats-run-vPOojr/test/3/tmp/cw-host-stage.OCE4ZR/installed/hooks/lib/x.sh /tmp/bats-run-vPOojr/test/3/tmp/cw-host-stage.OCE4ZR/payload/hooks/lib/x.sh
+# --- /tmp/bats-run-vPOojr/test/3/tmp/cw-host-stage.OCE4ZR/installed/hooks/lib/x.sh	1969-12-31 16:00:00.000000000 -0800
+# +++ /tmp/bats-run-vPOojr/test/3/tmp/cw-host-stage.OCE4ZR/payload/hooks/lib/x.sh	2026-09-25 00:54:33.000000000 -0700
+# @@ -0,0 +1 @@
+# +#!/bin/bash
+# diff -ruNa /tmp/bats-run-vPOojr/test/3/tmp/cw-host-stage.OCE4ZR/installed/hooks/wiring.json /tmp/bats-run-vPOojr/test/3/tmp/cw-host-stage.OCE4ZR/payload/hooks/wiring.json
+# --- /tmp/bats-run-vPOojr/test/3/tmp/cw-host-stage.OCE4ZR/installed/hooks/wiring.json	1969-12-31 16:00:00.000000000 -0800
+# +++ /tmp/bats-run-vPOojr/test/3/tmp/cw-host-stage.OCE4ZR/payload/hooks/wiring.json	2026-09-25 00:54:33.000000000 -0700
+# @@ -0,0 +1 @@
+# +{"hooks":{}}
+# /tmp/bats-run-vPOojr/test/3/repo/devcontainer-config/install.sh: line 119: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+# ===============================================================================
+#
+# Install these files into /tmp/bats-run-vPOojr/test/3/home/.claude? [y/N] y
+# /bin/bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+# Installed into /tmp/bats-run-vPOojr/test/3/home/.claude.
+# Previous entries moved to /tmp/bats-run-vPOojr/test/3/home/.claude/.claude-workflows-backup/20260925T075435Z (delete it when satisfied).
+# Backups: this one plus the 2 most recent earlier installs' are kept in /tmp/bats-run-vPOojr/test/3/home/.claude/.claude-workflows-backup (0 older removed).
+#
+# REMINDER: hooks/wiring.json changed (or was not installed before). Copying the
+# hooks does not wire them. Redo guides/bare-host-hook-wiring.md §2 to merge it
+# into /tmp/bats-run-vPOojr/test/3/home/.claude/settings.json.
+bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+not ok 4 T43 a provenance manifest edited while the prompt waits is not installed (fact-check claim 14)
+# (in test file test/install-host.bats, line 760)
+#   `[[ "$output" == *'changed after review'* ]]' failed
+# bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+# n
+# bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+# bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+# /bin/bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+# Canonical (repo):  /tmp/bats-run-vPOojr/test/4/repo/devcontainer-config at commit 7ba84b608350 (staged in /tmp/bats-run-vPOojr/test/4/tmp/cw-devc-stage.41jZEH/config)
+# Installed (host):  /tmp/bats-run-vPOojr/test/4/home/.config/claude-devcontainer
+#
+# First install — /tmp/bats-run-vPOojr/test/4/home/.config/claude-devcontainer does not exist yet.
+#
+# Install this config and bless it? [y/N] Aborted. Nothing was changed. (devcontainer config)
+#
+# === Host target: global Claude Code files ======================================
+# Destination: /tmp/bats-run-vPOojr/test/4/home/.claude  (chosen by $CLAUDE_HOME_DIR)
+# Canonical (repo):  /tmp/bats-run-vPOojr/test/4/repo (commit 7ba84b608350a3580d059ca976d52071d6df0b29)
+#
+# === Changes this install would make ===========================================
+# /tmp/bats-run-vPOojr/test/4/repo/devcontainer-config/install.sh: line 119: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+# REPLACE symlink /tmp/bats-run-vPOojr/test/4/home/.claude/CLAUDE.md -> /tmp/bats-run-vPOojr/test/4/repo/global-instructions/CLAUDE.md with a copy
+# /tmp/bats-run-vPOojr/test/4/repo/devcontainer-config/install.sh: line 119: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+# REPLACE symlink /tmp/bats-run-vPOojr/test/4/home/.claude/skills -> /tmp/bats-run-vPOojr/test/4/repo/skills with a copy
+# /tmp/bats-run-vPOojr/test/4/repo/devcontainer-config/install.sh: line 119: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+# REPLACE symlink /tmp/bats-run-vPOojr/test/4/home/.claude/workflows -> /tmp/bats-run-vPOojr/test/4/repo/workflows with a copy
+# /tmp/bats-run-vPOojr/test/4/repo/devcontainer-config/install.sh: line 119: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+# REPLACE symlink /tmp/bats-run-vPOojr/test/4/home/.claude/guides -> /tmp/bats-run-vPOojr/test/4/repo/guides with a copy
+# /tmp/bats-run-vPOojr/test/4/repo/devcontainer-config/install.sh: line 119: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+# REPLACE symlink /tmp/bats-run-vPOojr/test/4/home/.claude/patterns -> /tmp/bats-run-vPOojr/test/4/repo/patterns with a copy
+# /tmp/bats-run-vPOojr/test/4/repo/devcontainer-config/install.sh: line 119: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+# REPLACE symlink /tmp/bats-run-vPOojr/test/4/home/.claude/hooks/h.sh -> /tmp/bats-run-vPOojr/test/4/repo/hooks/h.sh with a copy
+# WARNING: not in the repo; these will be MOVED to the backup (Q-057):
+# /tmp/bats-run-vPOojr/test/4/repo/devcontainer-config/install.sh: line 119: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+# MOVE to backup (not in the repo): /tmp/bats-run-vPOojr/test/4/home/.claude/hooks/guard.py
+# /tmp/bats-run-vPOojr/test/4/repo/devcontainer-config/install.sh: line 119: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+# REPLACE symlink /tmp/bats-run-vPOojr/test/4/home/.claude/scripts -> /tmp/bats-run-vPOojr/test/4/repo/scripts with a copy
+# (diff: /tmp/bats-run-vPOojr/test/4/tmp/cw-host-stage.tbBuD8/installed is the destination as it is now, links left out)
+# /tmp/bats-run-vPOojr/test/4/repo/devcontainer-config/install.sh: line 119: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+# /tmp/bats-run-vPOojr/test/4/repo/devcontainer-config/install.sh: line 119: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+# /tmp/bats-run-vPOojr/test/4/repo/devcontainer-config/install.sh: line 119: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+# /tmp/bats-run-vPOojr/test/4/repo/devcontainer-config/install.sh: line 119: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+# /tmp/bats-run-vPOojr/test/4/repo/devcontainer-config/install.sh: line 119: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+# /tmp/bats-run-vPOojr/test/4/repo/devcontainer-config/install.sh: line 119: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+# diff -ruNa /tmp/bats-run-vPOojr/test/4/tmp/cw-host-stage.tbBuD8/installed/hooks/guard.py /tmp/bats-run-vPOojr/test/4/tmp/cw-host-stage.tbBuD8/payload/hooks/guard.py
+# --- /tmp/bats-run-vPOojr/test/4/tmp/cw-host-stage.tbBuD8/installed/hooks/guard.py	2026-09-25 00:54:36.011984662 -0700
+# +++ /tmp/bats-run-vPOojr/test/4/tmp/cw-host-stage.tbBuD8/payload/hooks/guard.py	1969-12-31 16:00:00.000000000 -0800
+# @@ -1 +0,0 @@
+# -copied security hook
+# diff -ruNa /tmp/bats-run-vPOojr/test/4/tmp/cw-host-stage.tbBuD8/installed/hooks/h.sh /tmp/bats-run-vPOojr/test/4/tmp/cw-host-stage.tbBuD8/payload/hooks/h.sh
+# --- /tmp/bats-run-vPOojr/test/4/tmp/cw-host-stage.tbBuD8/installed/hooks/h.sh	1969-12-31 16:00:00.000000000 -0800
+# +++ /tmp/bats-run-vPOojr/test/4/tmp/cw-host-stage.tbBuD8/payload/hooks/h.sh	2026-09-25 00:54:35.000000000 -0700
+# @@ -0,0 +1,2 @@
+# +#!/bin/bash
+# +exit 0
+# diff -ruNa /tmp/bats-run-vPOojr/test/4/tmp/cw-host-stage.tbBuD8/installed/hooks/lib/x.sh /tmp/bats-run-vPOojr/test/4/tmp/cw-host-stage.tbBuD8/payload/hooks/lib/x.sh
+# --- /tmp/bats-run-vPOojr/test/4/tmp/cw-host-stage.tbBuD8/installed/hooks/lib/x.sh	1969-12-31 16:00:00.000000000 -0800
+# +++ /tmp/bats-run-vPOojr/test/4/tmp/cw-host-stage.tbBuD8/payload/hooks/lib/x.sh	2026-09-25 00:54:35.000000000 -0700
+# @@ -0,0 +1 @@
+# +#!/bin/bash
+# diff -ruNa /tmp/bats-run-vPOojr/test/4/tmp/cw-host-stage.tbBuD8/installed/hooks/wiring.json /tmp/bats-run-vPOojr/test/4/tmp/cw-host-stage.tbBuD8/payload/hooks/wiring.json
+# --- /tmp/bats-run-vPOojr/test/4/tmp/cw-host-stage.tbBuD8/installed/hooks/wiring.json	1969-12-31 16:00:00.000000000 -0800
+# +++ /tmp/bats-run-vPOojr/test/4/tmp/cw-host-stage.tbBuD8/payload/hooks/wiring.json	2026-09-25 00:54:35.000000000 -0700
+# @@ -0,0 +1 @@
+# +{"hooks":{}}
+# /tmp/bats-run-vPOojr/test/4/repo/devcontainer-config/install.sh: line 119: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+# ===============================================================================
+#
+# Install these files into /tmp/bats-run-vPOojr/test/4/home/.claude? [y/N] y
+# /bin/bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+# Installed into /tmp/bats-run-vPOojr/test/4/home/.claude.
+# Previous entries moved to /tmp/bats-run-vPOojr/test/4/home/.claude/.claude-workflows-backup/20260925T075438Z (delete it when satisfied).
+# Backups: this one plus the 2 most recent earlier installs' are kept in /tmp/bats-run-vPOojr/test/4/home/.claude/.claude-workflows-backup (0 older removed).
+#
+# REMINDER: hooks/wiring.json changed (or was not installed before). Copying the
+# hooks does not wire them. Redo guides/bare-host-hook-wiring.md §2 to merge it
+# into /tmp/bats-run-vPOojr/test/4/home/.claude/settings.json.
+bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+not ok 5 T52 docker absent or unreachable: a NOTE line says so at each check, and the install goes ahead (Q-058)
+# (in test file test/install-host.bats, line 879)
+#   `[[ "$output" == *'Checking for running cc-isolated containers'*'docker is unreachable'*'treated as none running'* ]]' failed
+# bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+# /bin/bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+# /tmp/bats-run-vPOojr/test/5/repo/devcontainer-config/install.sh: line 119: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+# NOTE: docker is unreachable (/bin/bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)): cc-isolated containers not checked, treated as none running.
+# Canonical (repo):  /tmp/bats-run-vPOojr/test/5/repo/devcontainer-config at commit bb3ae3c856c7 (staged in /tmp/bats-run-vPOojr/test/5/tmp/cw-devc-stage.PWOW62/config)
+# Installed (host):  /tmp/bats-run-vPOojr/test/5/home/.config/claude-devcontainer
+#
+# First install — /tmp/bats-run-vPOojr/test/5/home/.config/claude-devcontainer does not exist yet.
+#
+# /bin/bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+# /tmp/bats-run-vPOojr/test/5/repo/devcontainer-config/install.sh: line 119: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+# NOTE: docker is unreachable (/bin/bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)): cc-isolated containers not checked, treated as none running.
+# Linked /tmp/bats-run-vPOojr/test/5/home/.local/bin/cc-isolated -> /tmp/bats-run-vPOojr/test/5/home/.config/claude-devcontainer/cc-isolated.sh
+#
+# bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+# BLESS-STUB --bless
+#
+# Done. Blessed, NOT verified: a bless is a review of files, not a test of a container.
+# Next steps:
+#   touch ~/.ssh/canary                    # once, if you haven't — strengthens the H1 probe
+#   cc-isolated --probe-only <repo>        # REQUIRED after any boundary change: rebuilds from
+#                                          # this config and records it verified live on a pass
+#   cc-isolated                            # session for the repo containing $PWD
+#   cc-isolated --register <repo> --profile python   # widen a project's egress
+#
+# WARNING: /tmp/bats-run-vPOojr/test/5/home/.local/bin is not on your PATH — add it, or call /tmp/bats-run-vPOojr/test/5/home/.config/claude-devcontainer/cc-isolated.sh directly.
+#
+# Skipped host target (~/.claude): it never installs with --yes. Run install.sh without --yes at a terminal to review and install it.
+bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+not ok 6 T56 --help, README and the hook-wiring guide document the no-agent check (Q-058)
+# (in test file test/install-host.bats, line 946)
+#   `[[ "$output" == *'Claude Code session, install.sh finds that session and exits 1 at startup'* ]]' failed
+bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+not ok 7 T69 a devcontainer stage edited while its prompt waits is neither installed nor blessed (review A1, P3)
+# (in test file test/install-host.bats, line 1066)
+#   `[[ "$output" == *'changed after review'* ]]' failed
+# bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+# bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+# bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+# /bin/bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+# Canonical (repo):  /tmp/bats-run-vPOojr/test/7/repo/devcontainer-config at commit 024defa109c1 (staged in /tmp/bats-run-vPOojr/test/7/tmp/cw-devc-stage.FP1DIP/config)
+# Installed (host):  /tmp/bats-run-vPOojr/test/7/home/.config/claude-devcontainer
+#
+# === Changes this install would make ===========================================
+# /tmp/bats-run-vPOojr/test/7/repo/devcontainer-config/install.sh: line 119: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+# MODE /tmp/bats-run-vPOojr/test/7/home/.config/claude-devcontainer/init-firewall.sh: 755 -> 644
+# /tmp/bats-run-vPOojr/test/7/repo/devcontainer-config/install.sh: line 119: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+# --- /tmp/bats-run-vPOojr/test/7/home/.config/claude-devcontainer/devcontainer.json	2026-09-25 00:54:38.000000000 -0700
+# +++ /tmp/bats-run-vPOojr/test/7/tmp/cw-devc-stage.FP1DIP/config/devcontainer.json	2026-09-25 00:54:38.000000000 -0700
+# @@ -1 +1 @@
+# -stub devcontainer.json
+# +{"v":2}
+# /tmp/bats-run-vPOojr/test/7/repo/devcontainer-config/install.sh: line 119: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+# /tmp/bats-run-vPOojr/test/7/repo/devcontainer-config/install.sh: line 119: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+# /tmp/bats-run-vPOojr/test/7/repo/devcontainer-config/install.sh: line 119: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+# /tmp/bats-run-vPOojr/test/7/repo/devcontainer-config/install.sh: line 119: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+# /tmp/bats-run-vPOojr/test/7/repo/devcontainer-config/install.sh: line 119: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+# /tmp/bats-run-vPOojr/test/7/repo/devcontainer-config/install.sh: line 119: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+# /tmp/bats-run-vPOojr/test/7/repo/devcontainer-config/install.sh: line 119: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+# diff -ruNa /tmp/bats-run-vPOojr/test/7/home/.config/claude-devcontainer/claude-home/.manifest /tmp/bats-run-vPOojr/test/7/tmp/cw-devc-stage.FP1DIP/config/claude-home/.manifest
+# --- /tmp/bats-run-vPOojr/test/7/home/.config/claude-devcontainer/claude-home/.manifest	2026-09-25 00:54:38.482631402 -0700
+# +++ /tmp/bats-run-vPOojr/test/7/tmp/cw-devc-stage.FP1DIP/config/claude-home/.manifest	2026-09-25 00:54:38.659188802 -0700
+# @@ -1,4 +1,4 @@
+# -commit=bb3ae3c856c7247d55ffb72d064796cf21eb2e93
+# +commit=024defa109c1d5d51011cd83fdd5a88649c0155c
+#  dirty=no
+#  uncommitted_excluded=0
+#  assembled_from=/tmp/bats-run-vPOojr/test/7/repo
+# ===============================================================================
+#
+# Install this config and bless it? [y/N] y
+# n
+# /bin/bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+# Linked /tmp/bats-run-vPOojr/test/7/home/.local/bin/cc-isolated -> /tmp/bats-run-vPOojr/test/7/home/.config/claude-devcontainer/cc-isolated.sh
+#
+# bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+# BLESS-STUB --bless
+#
+# Done. Blessed, NOT verified: a bless is a review of files, not a test of a container.
+# Next steps:
+#   touch ~/.ssh/canary                    # once, if you haven't — strengthens the H1 probe
+#   cc-isolated --probe-only <repo>        # REQUIRED after any boundary change: rebuilds from
+#                                          # this config and records it verified live on a pass
+#   cc-isolated                            # session for the repo containing $PWD
+#   cc-isolated --register <repo> --profile python   # widen a project's egress
+#
+# WARNING: /tmp/bats-run-vPOojr/test/7/home/.local/bin is not on your PATH — add it, or call /tmp/bats-run-vPOojr/test/7/home/.config/claude-devcontainer/cc-isolated.sh directly.
+#
+# === Host target: global Claude Code files ======================================
+# Destination: /tmp/bats-run-vPOojr/test/7/home/.claude  (chosen by $CLAUDE_HOME_DIR)
+# Canonical (repo):  /tmp/bats-run-vPOojr/test/7/repo (commit 024defa109c1d5d51011cd83fdd5a88649c0155c)
+#
+# === Changes this install would make ===========================================
+# /tmp/bats-run-vPOojr/test/7/repo/devcontainer-config/install.sh: line 119: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+# ADD /tmp/bats-run-vPOojr/test/7/home/.claude/CLAUDE.md (new, 1 file(s)):
+# /tmp/bats-run-vPOojr/test/7/repo/devcontainer-config/install.sh: line 119: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+#     CLAUDE.md
+# /tmp/bats-run-vPOojr/test/7/repo/devcontainer-config/install.sh: line 119: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+# --- /tmp/bats-run-vPOojr/test/7/tmp/cw-host-stage.AJdToj/installed/CLAUDE.md	1969-12-31 16:00:00.000000000 -0800
+# +++ /tmp/bats-run-vPOojr/test/7/tmp/cw-host-stage.AJdToj/payload/CLAUDE.md	2026-09-25 00:54:38.000000000 -0700
+# @@ -0,0 +1 @@
+# +global instructions
+# /tmp/bats-run-vPOojr/test/7/repo/devcontainer-config/install.sh: line 119: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+# ADD /tmp/bats-run-vPOojr/test/7/home/.claude/skills (new, 1 file(s)):
+# /tmp/bats-run-vPOojr/test/7/repo/devcontainer-config/install.sh: line 119: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+#     skills/a/SKILL.md
+# /tmp/bats-run-vPOojr/test/7/repo/devcontainer-config/install.sh: line 119: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+# diff -ruNa /tmp/bats-run-vPOojr/test/7/tmp/cw-host-stage.AJdToj/installed/skills/a/SKILL.md /tmp/bats-run-vPOojr/test/7/tmp/cw-host-stage.AJdToj/payload/skills/a/SKILL.md
+# --- /tmp/bats-run-vPOojr/test/7/tmp/cw-host-stage.AJdToj/installed/skills/a/SKILL.md	1969-12-31 16:00:00.000000000 -0800
+# +++ /tmp/bats-run-vPOojr/test/7/tmp/cw-host-stage.AJdToj/payload/skills/a/SKILL.md	2026-09-25 00:54:38.000000000 -0700
+# @@ -0,0 +1 @@
+# +skill a
+# /tmp/bats-run-vPOojr/test/7/repo/devcontainer-config/install.sh: line 119: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+# ADD /tmp/bats-run-vPOojr/test/7/home/.claude/workflows (new, 1 file(s)):
+# /tmp/bats-run-vPOojr/test/7/repo/devcontainer-config/install.sh: line 119: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+#     workflows/w.md
+# /tmp/bats-run-vPOojr/test/7/repo/devcontainer-config/install.sh: line 119: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+# diff -ruNa /tmp/bats-run-vPOojr/test/7/tmp/cw-host-stage.AJdToj/installed/workflows/w.md /tmp/bats-run-vPOojr/test/7/tmp/cw-host-stage.AJdToj/payload/workflows/w.md
+# --- /tmp/bats-run-vPOojr/test/7/tmp/cw-host-stage.AJdToj/installed/workflows/w.md	1969-12-31 16:00:00.000000000 -0800
+# +++ /tmp/bats-run-vPOojr/test/7/tmp/cw-host-stage.AJdToj/payload/workflows/w.md	2026-09-25 00:54:38.000000000 -0700
+# @@ -0,0 +1 @@
+# +workflow
+# /tmp/bats-run-vPOojr/test/7/repo/devcontainer-config/install.sh: line 119: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+# ADD /tmp/bats-run-vPOojr/test/7/home/.claude/guides (new, 1 file(s)):
+# /tmp/bats-run-vPOojr/test/7/repo/devcontainer-config/install.sh: line 119: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+#     guides/g.md
+# /tmp/bats-run-vPOojr/test/7/repo/devcontainer-config/install.sh: line 119: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+# diff -ruNa /tmp/bats-run-vPOojr/test/7/tmp/cw-host-stage.AJdToj/installed/guides/g.md /tmp/bats-run-vPOojr/test/7/tmp/cw-host-stage.AJdToj/payload/guides/g.md
+# --- /tmp/bats-run-vPOojr/test/7/tmp/cw-host-stage.AJdToj/installed/guides/g.md	1969-12-31 16:00:00.000000000 -0800
+# +++ /tmp/bats-run-vPOojr/test/7/tmp/cw-host-stage.AJdToj/payload/guides/g.md	2026-09-25 00:54:38.000000000 -0700
+# @@ -0,0 +1 @@
+# +guide
+# /tmp/bats-run-vPOojr/test/7/repo/devcontainer-config/install.sh: line 119: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+# ADD /tmp/bats-run-vPOojr/test/7/home/.claude/patterns (new, 1 file(s)):
+# /tmp/bats-run-vPOojr/test/7/repo/devcontainer-config/install.sh: line 119: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+#     patterns/p.md
+# /tmp/bats-run-vPOojr/test/7/repo/devcontainer-config/install.sh: line 119: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+# diff -ruNa /tmp/bats-run-vPOojr/test/7/tmp/cw-host-stage.AJdToj/installed/patterns/p.md /tmp/bats-run-vPOojr/test/7/tmp/cw-host-stage.AJdToj/payload/patterns/p.md
+# --- /tmp/bats-run-vPOojr/test/7/tmp/cw-host-stage.AJdToj/installed/patterns/p.md	1969-12-31 16:00:00.000000000 -0800
+# +++ /tmp/bats-run-vPOojr/test/7/tmp/cw-host-stage.AJdToj/payload/patterns/p.md	2026-09-25 00:54:38.000000000 -0700
+# @@ -0,0 +1 @@
+# +pattern
+# /tmp/bats-run-vPOojr/test/7/repo/devcontainer-config/install.sh: line 119: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+# ADD /tmp/bats-run-vPOojr/test/7/home/.claude/hooks (new, 3 file(s)):
+# /tmp/bats-run-vPOojr/test/7/repo/devcontainer-config/install.sh: line 119: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+#     hooks/h.sh
+#     hooks/lib/x.sh
+#     hooks/wiring.json
+# /tmp/bats-run-vPOojr/test/7/repo/devcontainer-config/install.sh: line 119: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+# diff -ruNa /tmp/bats-run-vPOojr/test/7/tmp/cw-host-stage.AJdToj/installed/hooks/h.sh /tmp/bats-run-vPOojr/test/7/tmp/cw-host-stage.AJdToj/payload/hooks/h.sh
+# --- /tmp/bats-run-vPOojr/test/7/tmp/cw-host-stage.AJdToj/installed/hooks/h.sh	1969-12-31 16:00:00.000000000 -0800
+# +++ /tmp/bats-run-vPOojr/test/7/tmp/cw-host-stage.AJdToj/payload/hooks/h.sh	2026-09-25 00:54:38.000000000 -0700
+# @@ -0,0 +1,2 @@
+# +#!/bin/bash
+# +exit 0
+# diff -ruNa /tmp/bats-run-vPOojr/test/7/tmp/cw-host-stage.AJdToj/installed/hooks/lib/x.sh /tmp/bats-run-vPOojr/test/7/tmp/cw-host-stage.AJdToj/payload/hooks/lib/x.sh
+# --- /tmp/bats-run-vPOojr/test/7/tmp/cw-host-stage.AJdToj/installed/hooks/lib/x.sh	1969-12-31 16:00:00.000000000 -0800
+# +++ /tmp/bats-run-vPOojr/test/7/tmp/cw-host-stage.AJdToj/payload/hooks/lib/x.sh	2026-09-25 00:54:38.000000000 -0700
+# @@ -0,0 +1 @@
+# +#!/bin/bash
+# diff -ruNa /tmp/bats-run-vPOojr/test/7/tmp/cw-host-stage.AJdToj/installed/hooks/wiring.json /tmp/bats-run-vPOojr/test/7/tmp/cw-host-stage.AJdToj/payload/hooks/wiring.json
+# --- /tmp/bats-run-vPOojr/test/7/tmp/cw-host-stage.AJdToj/installed/hooks/wiring.json	1969-12-31 16:00:00.000000000 -0800
+# +++ /tmp/bats-run-vPOojr/test/7/tmp/cw-host-stage.AJdToj/payload/hooks/wiring.json	2026-09-25 00:54:38.000000000 -0700
+# @@ -0,0 +1 @@
+# +{"hooks":{}}
+# /tmp/bats-run-vPOojr/test/7/repo/devcontainer-config/install.sh: line 119: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+# ADD /tmp/bats-run-vPOojr/test/7/home/.claude/scripts (new, 1 file(s)):
+# /tmp/bats-run-vPOojr/test/7/repo/devcontainer-config/install.sh: line 119: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+#     scripts/s.sh
+# /tmp/bats-run-vPOojr/test/7/repo/devcontainer-config/install.sh: line 119: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+# diff -ruNa /tmp/bats-run-vPOojr/test/7/tmp/cw-host-stage.AJdToj/installed/scripts/s.sh /tmp/bats-run-vPOojr/test/7/tmp/cw-host-stage.AJdToj/payload/scripts/s.sh
+# --- /tmp/bats-run-vPOojr/test/7/tmp/cw-host-stage.AJdToj/installed/scripts/s.sh	1969-12-31 16:00:00.000000000 -0800
+# +++ /tmp/bats-run-vPOojr/test/7/tmp/cw-host-stage.AJdToj/payload/scripts/s.sh	2026-09-25 00:54:38.000000000 -0700
+# @@ -0,0 +1 @@
+# +#!/bin/bash
+# ===============================================================================
+#
+# Install these files into /tmp/bats-run-vPOojr/test/7/home/.claude? [y/N] Aborted. Nothing was changed. (host ~/.claude)
+bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+not ok 8 T70 a devcontainer file that differs once copied into place is removed, not blessed (review A1)
+# (in test file test/install-host.bats, line 1081)
+#   `[ "$status" -eq 1 ]' failed
+# bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+# /bin/bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+# /bin/bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+# Canonical (repo):  /tmp/bats-run-vPOojr/test/8/repo/devcontainer-config at commit 0f9451ef1197 (staged in /tmp/bats-run-vPOojr/test/8/tmp/cw-devc-stage.B3RVSO/config)
+# Installed (host):  /tmp/bats-run-vPOojr/test/8/home/.config/claude-devcontainer
+#
+# First install — /tmp/bats-run-vPOojr/test/8/home/.config/claude-devcontainer does not exist yet.
+#
+# /bin/bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+# /bin/bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+# /bin/bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+# /bin/bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+# /bin/bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+# /bin/bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+# /bin/bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+# /bin/bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+# /bin/bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+# Linked /tmp/bats-run-vPOojr/test/8/home/.local/bin/cc-isolated -> /tmp/bats-run-vPOojr/test/8/home/.config/claude-devcontainer/cc-isolated.sh
+#
+# bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+# BLESS-STUB --bless
+#
+# Done. Blessed, NOT verified: a bless is a review of files, not a test of a container.
+# Next steps:
+#   touch ~/.ssh/canary                    # once, if you haven't — strengthens the H1 probe
+#   cc-isolated --probe-only <repo>        # REQUIRED after any boundary change: rebuilds from
+#                                          # this config and records it verified live on a pass
+#   cc-isolated                            # session for the repo containing $PWD
+#   cc-isolated --register <repo> --profile python   # widen a project's egress
+#
+# WARNING: /tmp/bats-run-vPOojr/test/8/home/.local/bin is not on your PATH — add it, or call /tmp/bats-run-vPOojr/test/8/home/.config/claude-devcontainer/cc-isolated.sh directly.
+#
+# Skipped host target (~/.claude): it never installs with --yes. Run install.sh without --yes at a terminal to review and install it.
+bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+not ok 9 T71 the gate recognises the versioned native binary and the Agent SDK CLI; other processes pass (review A2)
+# (in test file test/install-host.bats, line 1108)
+#   `[ "$status" -eq 1 ]' failed
+# bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+# /bin/bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+# Canonical (repo):  /tmp/bats-run-vPOojr/test/9/repo/devcontainer-config at commit 77a5db1f8ce2 (staged in /tmp/bats-run-vPOojr/test/9/tmp/cw-devc-stage.3PMg9O/config)
+# Installed (host):  /tmp/bats-run-vPOojr/test/9/home/.config/claude-devcontainer
+#
+# First install — /tmp/bats-run-vPOojr/test/9/home/.config/claude-devcontainer does not exist yet.
+#
+# /bin/bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+# Linked /tmp/bats-run-vPOojr/test/9/home/.local/bin/cc-isolated -> /tmp/bats-run-vPOojr/test/9/home/.config/claude-devcontainer/cc-isolated.sh
+#
+# bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+# BLESS-STUB --bless
+#
+# Done. Blessed, NOT verified: a bless is a review of files, not a test of a container.
+# Next steps:
+#   touch ~/.ssh/canary                    # once, if you haven't — strengthens the H1 probe
+#   cc-isolated --probe-only <repo>        # REQUIRED after any boundary change: rebuilds from
+#                                          # this config and records it verified live on a pass
+#   cc-isolated                            # session for the repo containing $PWD
+#   cc-isolated --register <repo> --profile python   # widen a project's egress
+#
+# WARNING: /tmp/bats-run-vPOojr/test/9/home/.local/bin is not on your PATH — add it, or call /tmp/bats-run-vPOojr/test/9/home/.config/claude-devcontainer/cc-isolated.sh directly.
+#
+# Skipped host target (~/.claude): it never installs with --yes. Run install.sh without --yes at a terminal to review and install it.
+bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+not ok 10 T72 an agent seen only while the devcontainer prompt waits stops the host target before it stages (review A2, P4)
+# (in test file test/install-host.bats, line 1129)
+#   `[[ "$output" == *'779 claude'* ]]' failed
+# bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+# bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+# bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+# /bin/bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+# Canonical (repo):  /tmp/bats-run-vPOojr/test/10/repo/devcontainer-config at commit 77a5db1f8ce2 (staged in /tmp/bats-run-vPOojr/test/10/tmp/cw-devc-stage.Wuj7S8/config)
+# Installed (host):  /tmp/bats-run-vPOojr/test/10/home/.config/claude-devcontainer
+#
+# First install — /tmp/bats-run-vPOojr/test/10/home/.config/claude-devcontainer does not exist yet.
+#
+# Install this config and bless it? [y/N] n
+# Aborted. Nothing was changed. (devcontainer config)
+#
+# === Host target: global Claude Code files ======================================
+# Destination: /tmp/bats-run-vPOojr/test/10/home/.claude  (chosen by $CLAUDE_HOME_DIR)
+# Canonical (repo):  /tmp/bats-run-vPOojr/test/10/repo (commit 77a5db1f8ce21e667a96ba0a779c75fb4a928021)
+#
+# === Changes this install would make ===========================================
+# /tmp/bats-run-vPOojr/test/10/repo/devcontainer-config/install.sh: line 119: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+# ADD /tmp/bats-run-vPOojr/test/10/home/.claude/CLAUDE.md (new, 1 file(s)):
+# /tmp/bats-run-vPOojr/test/10/repo/devcontainer-config/install.sh: line 119: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+#     CLAUDE.md
+# /tmp/bats-run-vPOojr/test/10/repo/devcontainer-config/install.sh: line 119: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+# --- /tmp/bats-run-vPOojr/test/10/tmp/cw-host-stage.B33YqH/installed/CLAUDE.md	1969-12-31 16:00:00.000000000 -0800
+# +++ /tmp/bats-run-vPOojr/test/10/tmp/cw-host-stage.B33YqH/payload/CLAUDE.md	2026-09-25 00:54:40.000000000 -0700
+# @@ -0,0 +1 @@
+# +global instructions
+# /tmp/bats-run-vPOojr/test/10/repo/devcontainer-config/install.sh: line 119: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+# ADD /tmp/bats-run-vPOojr/test/10/home/.claude/skills (new, 1 file(s)):
+# /tmp/bats-run-vPOojr/test/10/repo/devcontainer-config/install.sh: line 119: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+#     skills/a/SKILL.md
+# /tmp/bats-run-vPOojr/test/10/repo/devcontainer-config/install.sh: line 119: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+# diff -ruNa /tmp/bats-run-vPOojr/test/10/tmp/cw-host-stage.B33YqH/installed/skills/a/SKILL.md /tmp/bats-run-vPOojr/test/10/tmp/cw-host-stage.B33YqH/payload/skills/a/SKILL.md
+# --- /tmp/bats-run-vPOojr/test/10/tmp/cw-host-stage.B33YqH/installed/skills/a/SKILL.md	1969-12-31 16:00:00.000000000 -0800
+# +++ /tmp/bats-run-vPOojr/test/10/tmp/cw-host-stage.B33YqH/payload/skills/a/SKILL.md	2026-09-25 00:54:40.000000000 -0700
+# @@ -0,0 +1 @@
+# +skill a
+# /tmp/bats-run-vPOojr/test/10/repo/devcontainer-config/install.sh: line 119: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+# ADD /tmp/bats-run-vPOojr/test/10/home/.claude/workflows (new, 1 file(s)):
+# /tmp/bats-run-vPOojr/test/10/repo/devcontainer-config/install.sh: line 119: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+#     workflows/w.md
+# /tmp/bats-run-vPOojr/test/10/repo/devcontainer-config/install.sh: line 119: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+# diff -ruNa /tmp/bats-run-vPOojr/test/10/tmp/cw-host-stage.B33YqH/installed/workflows/w.md /tmp/bats-run-vPOojr/test/10/tmp/cw-host-stage.B33YqH/payload/workflows/w.md
+# --- /tmp/bats-run-vPOojr/test/10/tmp/cw-host-stage.B33YqH/installed/workflows/w.md	1969-12-31 16:00:00.000000000 -0800
+# +++ /tmp/bats-run-vPOojr/test/10/tmp/cw-host-stage.B33YqH/payload/workflows/w.md	2026-09-25 00:54:40.000000000 -0700
+# @@ -0,0 +1 @@
+# +workflow
+# /tmp/bats-run-vPOojr/test/10/repo/devcontainer-config/install.sh: line 119: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+# ADD /tmp/bats-run-vPOojr/test/10/home/.claude/guides (new, 1 file(s)):
+# /tmp/bats-run-vPOojr/test/10/repo/devcontainer-config/install.sh: line 119: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+#     guides/g.md
+# /tmp/bats-run-vPOojr/test/10/repo/devcontainer-config/install.sh: line 119: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+# diff -ruNa /tmp/bats-run-vPOojr/test/10/tmp/cw-host-stage.B33YqH/installed/guides/g.md /tmp/bats-run-vPOojr/test/10/tmp/cw-host-stage.B33YqH/payload/guides/g.md
+# --- /tmp/bats-run-vPOojr/test/10/tmp/cw-host-stage.B33YqH/installed/guides/g.md	1969-12-31 16:00:00.000000000 -0800
+# +++ /tmp/bats-run-vPOojr/test/10/tmp/cw-host-stage.B33YqH/payload/guides/g.md	2026-09-25 00:54:40.000000000 -0700
+# @@ -0,0 +1 @@
+# +guide
+# /tmp/bats-run-vPOojr/test/10/repo/devcontainer-config/install.sh: line 119: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+# ADD /tmp/bats-run-vPOojr/test/10/home/.claude/patterns (new, 1 file(s)):
+# /tmp/bats-run-vPOojr/test/10/repo/devcontainer-config/install.sh: line 119: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+#     patterns/p.md
+# /tmp/bats-run-vPOojr/test/10/repo/devcontainer-config/install.sh: line 119: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+# diff -ruNa /tmp/bats-run-vPOojr/test/10/tmp/cw-host-stage.B33YqH/installed/patterns/p.md /tmp/bats-run-vPOojr/test/10/tmp/cw-host-stage.B33YqH/payload/patterns/p.md
+# --- /tmp/bats-run-vPOojr/test/10/tmp/cw-host-stage.B33YqH/installed/patterns/p.md	1969-12-31 16:00:00.000000000 -0800
+# +++ /tmp/bats-run-vPOojr/test/10/tmp/cw-host-stage.B33YqH/payload/patterns/p.md	2026-09-25 00:54:40.000000000 -0700
+# @@ -0,0 +1 @@
+# +pattern
+# /tmp/bats-run-vPOojr/test/10/repo/devcontainer-config/install.sh: line 119: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+# ADD /tmp/bats-run-vPOojr/test/10/home/.claude/hooks (new, 3 file(s)):
+# /tmp/bats-run-vPOojr/test/10/repo/devcontainer-config/install.sh: line 119: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+#     hooks/h.sh
+#     hooks/lib/x.sh
+#     hooks/wiring.json
+# /tmp/bats-run-vPOojr/test/10/repo/devcontainer-config/install.sh: line 119: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+# diff -ruNa /tmp/bats-run-vPOojr/test/10/tmp/cw-host-stage.B33YqH/installed/hooks/h.sh /tmp/bats-run-vPOojr/test/10/tmp/cw-host-stage.B33YqH/payload/hooks/h.sh
+# --- /tmp/bats-run-vPOojr/test/10/tmp/cw-host-stage.B33YqH/installed/hooks/h.sh	1969-12-31 16:00:00.000000000 -0800
+# +++ /tmp/bats-run-vPOojr/test/10/tmp/cw-host-stage.B33YqH/payload/hooks/h.sh	2026-09-25 00:54:40.000000000 -0700
+# @@ -0,0 +1,2 @@
+# +#!/bin/bash
+# +exit 0
+# diff -ruNa /tmp/bats-run-vPOojr/test/10/tmp/cw-host-stage.B33YqH/installed/hooks/lib/x.sh /tmp/bats-run-vPOojr/test/10/tmp/cw-host-stage.B33YqH/payload/hooks/lib/x.sh
+# --- /tmp/bats-run-vPOojr/test/10/tmp/cw-host-stage.B33YqH/installed/hooks/lib/x.sh	1969-12-31 16:00:00.000000000 -0800
+# +++ /tmp/bats-run-vPOojr/test/10/tmp/cw-host-stage.B33YqH/payload/hooks/lib/x.sh	2026-09-25 00:54:40.000000000 -0700
+# @@ -0,0 +1 @@
+# +#!/bin/bash
+# diff -ruNa /tmp/bats-run-vPOojr/test/10/tmp/cw-host-stage.B33YqH/installed/hooks/wiring.json /tmp/bats-run-vPOojr/test/10/tmp/cw-host-stage.B33YqH/payload/hooks/wiring.json
+# --- /tmp/bats-run-vPOojr/test/10/tmp/cw-host-stage.B33YqH/installed/hooks/wiring.json	1969-12-31 16:00:00.000000000 -0800
+# +++ /tmp/bats-run-vPOojr/test/10/tmp/cw-host-stage.B33YqH/payload/hooks/wiring.json	2026-09-25 00:54:40.000000000 -0700
+# @@ -0,0 +1 @@
+# +{"hooks":{}}
+# /tmp/bats-run-vPOojr/test/10/repo/devcontainer-config/install.sh: line 119: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+# ADD /tmp/bats-run-vPOojr/test/10/home/.claude/scripts (new, 1 file(s)):
+# /tmp/bats-run-vPOojr/test/10/repo/devcontainer-config/install.sh: line 119: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+#     scripts/s.sh
+# /tmp/bats-run-vPOojr/test/10/repo/devcontainer-config/install.sh: line 119: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+# diff -ruNa /tmp/bats-run-vPOojr/test/10/tmp/cw-host-stage.B33YqH/installed/scripts/s.sh /tmp/bats-run-vPOojr/test/10/tmp/cw-host-stage.B33YqH/payload/scripts/s.sh
+# --- /tmp/bats-run-vPOojr/test/10/tmp/cw-host-stage.B33YqH/installed/scripts/s.sh	1969-12-31 16:00:00.000000000 -0800
+# +++ /tmp/bats-run-vPOojr/test/10/tmp/cw-host-stage.B33YqH/payload/scripts/s.sh	2026-09-25 00:54:40.000000000 -0700
+# @@ -0,0 +1 @@
+# +#!/bin/bash
+# ===============================================================================
+#
+# Install these files into /tmp/bats-run-vPOojr/test/10/home/.claude? [y/N] y
+# /bin/bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+# Installed into /tmp/bats-run-vPOojr/test/10/home/.claude.
+#
+# REMINDER: hooks/wiring.json changed (or was not installed before). Copying the
+# hooks does not wire them. Redo guides/bare-host-hook-wiring.md §2 to merge it
+# into /tmp/bats-run-vPOojr/test/10/home/.claude/settings.json.
+bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+not ok 11 T73 a TAB-named backup dir planted before the run is skipped by the prune; kept backups stay (review A3, P5)
+# (in test file test/install-host.bats, line 1149)
+#   `[ -d "$bk/20200101T000000Z" ]' failed
+# bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+# n
+# y
+# bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+# bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+# /bin/bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+# Canonical (repo):  /tmp/bats-run-vPOojr/test/11/repo/devcontainer-config at commit 6ffeb98bb0ce (staged in /tmp/bats-run-vPOojr/test/11/tmp/cw-devc-stage.B0DOCh/config)
+# Installed (host):  /tmp/bats-run-vPOojr/test/11/home/.config/claude-devcontainer
+#
+# First install — /tmp/bats-run-vPOojr/test/11/home/.config/claude-devcontainer does not exist yet.
+#
+# Install this config and bless it? [y/N] Aborted. Nothing was changed. (devcontainer config)
+#
+# === Host target: global Claude Code files ======================================
+# Destination: /tmp/bats-run-vPOojr/test/11/home/.claude  (chosen by $CLAUDE_HOME_DIR)
+# Canonical (repo):  /tmp/bats-run-vPOojr/test/11/repo (commit 6ffeb98bb0cef6d02bf568f9ec3e3c6fd55b5cbe)
+#
+# === Changes this install would make ===========================================
+# /tmp/bats-run-vPOojr/test/11/repo/devcontainer-config/install.sh: line 119: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+# REPLACE symlink /tmp/bats-run-vPOojr/test/11/home/.claude/CLAUDE.md -> /tmp/bats-run-vPOojr/test/11/repo/global-instructions/CLAUDE.md with a copy
+# /tmp/bats-run-vPOojr/test/11/repo/devcontainer-config/install.sh: line 119: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+# REPLACE symlink /tmp/bats-run-vPOojr/test/11/home/.claude/skills -> /tmp/bats-run-vPOojr/test/11/repo/skills with a copy
+# /tmp/bats-run-vPOojr/test/11/repo/devcontainer-config/install.sh: line 119: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+# REPLACE symlink /tmp/bats-run-vPOojr/test/11/home/.claude/workflows -> /tmp/bats-run-vPOojr/test/11/repo/workflows with a copy
+# /tmp/bats-run-vPOojr/test/11/repo/devcontainer-config/install.sh: line 119: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+# REPLACE symlink /tmp/bats-run-vPOojr/test/11/home/.claude/guides -> /tmp/bats-run-vPOojr/test/11/repo/guides with a copy
+# /tmp/bats-run-vPOojr/test/11/repo/devcontainer-config/install.sh: line 119: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+# REPLACE symlink /tmp/bats-run-vPOojr/test/11/home/.claude/patterns -> /tmp/bats-run-vPOojr/test/11/repo/patterns with a copy
+# /tmp/bats-run-vPOojr/test/11/repo/devcontainer-config/install.sh: line 119: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+# REPLACE symlink /tmp/bats-run-vPOojr/test/11/home/.claude/hooks/h.sh -> /tmp/bats-run-vPOojr/test/11/repo/hooks/h.sh with a copy
+# WARNING: not in the repo; these will be MOVED to the backup (Q-057):
+# /tmp/bats-run-vPOojr/test/11/repo/devcontainer-config/install.sh: line 119: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+# MOVE to backup (not in the repo): /tmp/bats-run-vPOojr/test/11/home/.claude/hooks/guard.py
+# /tmp/bats-run-vPOojr/test/11/repo/devcontainer-config/install.sh: line 119: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+# REPLACE symlink /tmp/bats-run-vPOojr/test/11/home/.claude/scripts -> /tmp/bats-run-vPOojr/test/11/repo/scripts with a copy
+# (diff: /tmp/bats-run-vPOojr/test/11/tmp/cw-host-stage.64KabH/installed is the destination as it is now, links left out)
+# /tmp/bats-run-vPOojr/test/11/repo/devcontainer-config/install.sh: line 119: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+# /tmp/bats-run-vPOojr/test/11/repo/devcontainer-config/install.sh: line 119: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+# /tmp/bats-run-vPOojr/test/11/repo/devcontainer-config/install.sh: line 119: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+# /tmp/bats-run-vPOojr/test/11/repo/devcontainer-config/install.sh: line 119: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+# /tmp/bats-run-vPOojr/test/11/repo/devcontainer-config/install.sh: line 119: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+# /tmp/bats-run-vPOojr/test/11/repo/devcontainer-config/install.sh: line 119: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+# diff -ruNa /tmp/bats-run-vPOojr/test/11/tmp/cw-host-stage.64KabH/installed/hooks/guard.py /tmp/bats-run-vPOojr/test/11/tmp/cw-host-stage.64KabH/payload/hooks/guard.py
+# --- /tmp/bats-run-vPOojr/test/11/tmp/cw-host-stage.64KabH/installed/hooks/guard.py	2026-09-25 00:54:44.938782811 -0700
+# +++ /tmp/bats-run-vPOojr/test/11/tmp/cw-host-stage.64KabH/payload/hooks/guard.py	1969-12-31 16:00:00.000000000 -0800
+# @@ -1 +0,0 @@
+# -copied security hook
+# diff -ruNa /tmp/bats-run-vPOojr/test/11/tmp/cw-host-stage.64KabH/installed/hooks/h.sh /tmp/bats-run-vPOojr/test/11/tmp/cw-host-stage.64KabH/payload/hooks/h.sh
+# --- /tmp/bats-run-vPOojr/test/11/tmp/cw-host-stage.64KabH/installed/hooks/h.sh	1969-12-31 16:00:00.000000000 -0800
+# +++ /tmp/bats-run-vPOojr/test/11/tmp/cw-host-stage.64KabH/payload/hooks/h.sh	2026-09-25 00:54:44.000000000 -0700
+# @@ -0,0 +1,2 @@
+# +#!/bin/bash
+# +exit 0
+# diff -ruNa /tmp/bats-run-vPOojr/test/11/tmp/cw-host-stage.64KabH/installed/hooks/lib/x.sh /tmp/bats-run-vPOojr/test/11/tmp/cw-host-stage.64KabH/payload/hooks/lib/x.sh
+# --- /tmp/bats-run-vPOojr/test/11/tmp/cw-host-stage.64KabH/installed/hooks/lib/x.sh	1969-12-31 16:00:00.000000000 -0800
+# +++ /tmp/bats-run-vPOojr/test/11/tmp/cw-host-stage.64KabH/payload/hooks/lib/x.sh	2026-09-25 00:54:44.000000000 -0700
+# @@ -0,0 +1 @@
+# +#!/bin/bash
+# diff -ruNa /tmp/bats-run-vPOojr/test/11/tmp/cw-host-stage.64KabH/installed/hooks/wiring.json /tmp/bats-run-vPOojr/test/11/tmp/cw-host-stage.64KabH/payload/hooks/wiring.json
+# --- /tmp/bats-run-vPOojr/test/11/tmp/cw-host-stage.64KabH/installed/hooks/wiring.json	1969-12-31 16:00:00.000000000 -0800
+# +++ /tmp/bats-run-vPOojr/test/11/tmp/cw-host-stage.64KabH/payload/hooks/wiring.json	2026-09-25 00:54:44.000000000 -0700
+# @@ -0,0 +1 @@
+# +{"hooks":{}}
+# /tmp/bats-run-vPOojr/test/11/repo/devcontainer-config/install.sh: line 119: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+# ===============================================================================
+#
+# Install these files into /tmp/bats-run-vPOojr/test/11/home/.claude? [y/N] /bin/bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+# Installed into /tmp/bats-run-vPOojr/test/11/home/.claude.
+# Previous entries moved to /tmp/bats-run-vPOojr/test/11/home/.claude/.claude-workflows-backup/20260925T075445Z (delete it when satisfied).
+# Backups: this one plus the 2 most recent earlier installs' are kept in /tmp/bats-run-vPOojr/test/11/home/.claude/.claude-workflows-backup (1 older removed).
+#
+# REMINDER: hooks/wiring.json changed (or was not installed before). Copying the
+# hooks does not wire them. Redo guides/bare-host-hook-wiring.md §2 to merge it
+# into /tmp/bats-run-vPOojr/test/11/home/.claude/settings.json.
+bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+not ok 12 T74 a vis failure outside the review diff says so and installs nothing (review C3)
+# (in test file test/install-host.bats, line 1164)
+#   `[[ "$output" == *'could not show output safely'*'Nothing was installed.'* ]]' failed
+# bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+# n
+# y
+# bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+# bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+# /bin/bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+# Canonical (repo):  /tmp/bats-run-vPOojr/test/12/repo/devcontainer-config at commit aec32f7e0303 (staged in /tmp/bats-run-vPOojr/test/12/tmp/cw-devc-stage.LmYM8X/config)
+# Installed (host):  /tmp/bats-run-vPOojr/test/12/home/.config/claude-devcontainer
+#
+# First install — /tmp/bats-run-vPOojr/test/12/home/.config/claude-devcontainer does not exist yet.
+#
+# Install this config and bless it? [y/N] Aborted. Nothing was changed. (devcontainer config)
+#
+# === Host target: global Claude Code files ======================================
+# Destination: /tmp/bats-run-vPOojr/test/12/home/.claude  (chosen by $CLAUDE_HOME_DIR)
+# Canonical (repo):  /tmp/bats-run-vPOojr/test/12/repo (commit aec32f7e03033276c86296c92ebe4aa1079bb971)
+#
+# === Changes this install would make ===========================================
+# /tmp/bats-run-vPOojr/test/12/repo/devcontainer-config/install.sh: line 119: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+not ok 13 T65 a smudge filter planted in .git/config and .git/info/attributes is refused and never run (review R1)
+# (in test file test/install-host.bats, line 1184)
+#   `[ "$status" -eq 1 ]' failed
+# bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+# /bin/bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+# /bin/bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+# /bin/bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+# /bin/bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+# /bin/bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+# /bin/bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+# Canonical (repo):  /tmp/bats-run-vPOojr/test/13/repo/devcontainer-config at commit 3dcdb8726c8a (staged in /tmp/bats-run-vPOojr/test/13/tmp/cw-devc-stage.t38Pnr/config)
+# Installed (host):  /tmp/bats-run-vPOojr/test/13/home/.config/claude-devcontainer
+#
+# First install — /tmp/bats-run-vPOojr/test/13/home/.config/claude-devcontainer does not exist yet.
+#
+# /bin/bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+# Linked /tmp/bats-run-vPOojr/test/13/home/.local/bin/cc-isolated -> /tmp/bats-run-vPOojr/test/13/home/.config/claude-devcontainer/cc-isolated.sh
+#
+# bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+# BLESS-STUB --bless
+#
+# Done. Blessed, NOT verified: a bless is a review of files, not a test of a container.
+# Next steps:
+#   touch ~/.ssh/canary                    # once, if you haven't — strengthens the H1 probe
+#   cc-isolated --probe-only <repo>        # REQUIRED after any boundary change: rebuilds from
+#                                          # this config and records it verified live on a pass
+#   cc-isolated                            # session for the repo containing $PWD
+#   cc-isolated --register <repo> --profile python   # widen a project's egress
+#
+# WARNING: /tmp/bats-run-vPOojr/test/13/home/.local/bin is not on your PATH — add it, or call /tmp/bats-run-vPOojr/test/13/home/.config/claude-devcontainer/cc-isolated.sh directly.
+#
+# Skipped host target (~/.claude): it never installs with --yes. Run install.sh without --yes at a terminal to review and install it.
+bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+not ok 14 T66 core.fsmonitor or an include in .git/config is refused and never run, also from a linked worktree (review R1)
+# (in test file test/install-host.bats, line 1208)
+#   `[ "$status" -eq 1 ]' failed
+# bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+# /bin/bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+# /bin/bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+# warning: Empty last update token.
+# /bin/bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+# warning: Empty last update token.
+# Canonical (repo):  /tmp/bats-run-vPOojr/test/14/repo/devcontainer-config at commit 4123b410ba17 (staged in /tmp/bats-run-vPOojr/test/14/tmp/cw-devc-stage.sFh567/config)
+# Installed (host):  /tmp/bats-run-vPOojr/test/14/home/.config/claude-devcontainer
+#
+# First install — /tmp/bats-run-vPOojr/test/14/home/.config/claude-devcontainer does not exist yet.
+#
+# /bin/bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+# Linked /tmp/bats-run-vPOojr/test/14/home/.local/bin/cc-isolated -> /tmp/bats-run-vPOojr/test/14/home/.config/claude-devcontainer/cc-isolated.sh
+#
+# bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+# BLESS-STUB --bless
+#
+# Done. Blessed, NOT verified: a bless is a review of files, not a test of a container.
+# Next steps:
+#   touch ~/.ssh/canary                    # once, if you haven't — strengthens the H1 probe
+#   cc-isolated --probe-only <repo>        # REQUIRED after any boundary change: rebuilds from
+#                                          # this config and records it verified live on a pass
+#   cc-isolated                            # session for the repo containing $PWD
+#   cc-isolated --register <repo> --profile python   # widen a project's egress
+#
+# WARNING: /tmp/bats-run-vPOojr/test/14/home/.local/bin is not on your PATH — add it, or call /tmp/bats-run-vPOojr/test/14/home/.config/claude-devcontainer/cc-isolated.sh directly.
+#
+# Skipped host target (~/.claude): it never installs with --yes. Run install.sh without --yes at a terminal to review and install it.

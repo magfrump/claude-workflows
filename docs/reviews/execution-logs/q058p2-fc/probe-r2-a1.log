@@ -1,0 +1,43 @@
+bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+== R2-a: first install (dest absent), answer n at the host prompt
+    review names the copies: 7; aborted: 1
+    dest exists: no
+    dest entries: 
+    TMPDIR leftovers: 
+== R2-b: first install, SIGTERM at the host prompt
+### SIGTERM: host prompt reached: 1; copies before signal: .cw-new.scripts .cw-new.manifest .cw-new.guides .cw-new.hooks .cw-new.workflows .cw-new.skills .cw-new.patterns .cw-new.CLAUDE.md 
+    install.sh pid 1093235 alive after TERM: no
+    dest exists: no
+    dest entries: 
+    TMPDIR leftovers: 
+== R2-b: first install, SIGINT at the host prompt
+### SIGINT: host prompt reached: 1; copies before signal: .cw-new.scripts .cw-new.manifest .cw-new.guides .cw-new.hooks .cw-new.workflows .cw-new.skills .cw-new.patterns .cw-new.CLAUDE.md 
+    install.sh pid 1104793 alive after INT: yes
+    dest exists: no
+    dest entries: 
+    TMPDIR leftovers: 
+== R2-b: first install, SIGHUP at the host prompt
+### SIGHUP: host prompt reached: 1; copies before signal: .cw-new.scripts .cw-new.manifest .cw-new.guides .cw-new.hooks .cw-new.workflows .cw-new.skills .cw-new.patterns .cw-new.CLAUDE.md 
+    install.sh pid 1111922 alive after HUP: no
+    dest exists: no
+    dest entries: 
+    TMPDIR leftovers: 
+== R2-c: existing dest, SIGTERM at the host prompt
+### existing dest SIGTERM: host prompt reached: 1; copies before signal: .cw-new.scripts .cw-new.manifest .cw-new.guides .cw-new.hooks .cw-new.workflows .cw-new.skills .cw-new.patterns .cw-new.CLAUDE.md 
+    install.sh pid 1116947 alive after TERM: no
+    dest exists: yes
+    dest entries: settings.json CLAUDE.md 
+    TMPDIR leftovers: 
+    CLAUDE.md still old: old
+== A1-a: post-copy mismatch on a REINSTALL (a cp stub alters devcontainer.json as it lands)
+    first install exit 0; blessed: 1
+    second install exit 1; blessed: 0; message: 1
+    $DEST entries now: .blessed-manifest-probe projects 
+    $DEST/projects kept: p1/egress.txt 
+    bin link: /tmp/claude-1000/-workspace/7630264d-3947-4203-a0ec-b9ffcc3a4e06/scratchpad/q058p2-r2.wDQw4W/home/.config/cd/cc-isolated.sh; target exists: no
+    running the bin link: exit 127 (probe-r2-a1.sh: line 101: /tmp/claude-1000/-workspace/7630264d-3947-4203-a0ec-b9ffcc3a4e06/scratchpad/q058p2-r2.wDQw4W/home/.local/bin/cc-isolated: No such file or directory)
+== A1-b: first install, the same post-copy mismatch
+    exit 1; blessed: 0
+    $DEST entries now: projects 
+    bin link present: no
+== probe dir: /tmp/claude-1000/-workspace/7630264d-3947-4203-a0ec-b9ffcc3a4e06/scratchpad/q058p2-r2.wDQw4W

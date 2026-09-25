@@ -1,0 +1,1827 @@
+2026-09-25T07:58:32Z
+git version 2.39.5
+bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+1..12
+bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+ok 1 SP1 (re-run) stage swapped to benign during the review and restored before y
+# bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+# n
+# y
+# bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+# bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+# /bin/bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+# Checking for running cc-isolated containers (docker ps; up to 20 s)...
+# Canonical (repo):  /tmp/bats-run-xUwXsT/test/1/repo/devcontainer-config at commit df7ac4e42900 (staged in /tmp/bats-run-xUwXsT/test/1/tmp/cw-devc-stage.jGUjPz/config)
+# Installed (host):  /tmp/bats-run-xUwXsT/test/1/home/.config/claude-devcontainer
+#
+# First install — /tmp/bats-run-xUwXsT/test/1/home/.config/claude-devcontainer does not exist yet.
+#
+# Install this config and bless it? [y/N] Aborted. Nothing was changed. (devcontainer config)
+#
+# === Host target: global Claude Code files ======================================
+# Destination: /tmp/bats-run-xUwXsT/test/1/home/.claude  (chosen by $CLAUDE_HOME_DIR)
+# /bin/bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+# Checking for running cc-isolated containers (docker ps; up to 20 s)...
+# Canonical (repo):  /tmp/bats-run-xUwXsT/test/1/repo (commit df7ac4e42900a9bfa8c50f6032153040a0fbab9f)
+#
+# === Changes this install would make ===========================================
+# /tmp/bats-run-xUwXsT/test/1/repo/devcontainer-config/install.sh: line 124: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+# ADD /tmp/bats-run-xUwXsT/test/1/home/.claude/CLAUDE.md (new, 1 file(s)):
+# /tmp/bats-run-xUwXsT/test/1/repo/devcontainer-config/install.sh: line 124: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+#     CLAUDE.md
+# /tmp/bats-run-xUwXsT/test/1/repo/devcontainer-config/install.sh: line 124: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+# --- /tmp/bats-run-xUwXsT/test/1/tmp/cw-host-stage.SAx6V9/installed/CLAUDE.md	1969-12-31 16:00:00.000000000 -0800
+# +++ /tmp/bats-run-xUwXsT/test/1/home/.claude/.cw-new.CLAUDE.md	2026-09-25 00:58:32.000000000 -0700
+# @@ -0,0 +1 @@
+# +global instructions
+# /tmp/bats-run-xUwXsT/test/1/repo/devcontainer-config/install.sh: line 124: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+# ADD /tmp/bats-run-xUwXsT/test/1/home/.claude/skills (new, 1 file(s)):
+# /tmp/bats-run-xUwXsT/test/1/repo/devcontainer-config/install.sh: line 124: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+#     skills/a/SKILL.md
+# /tmp/bats-run-xUwXsT/test/1/repo/devcontainer-config/install.sh: line 124: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+# diff -ruNa /tmp/bats-run-xUwXsT/test/1/tmp/cw-host-stage.SAx6V9/installed/skills/a/SKILL.md /tmp/bats-run-xUwXsT/test/1/home/.claude/.cw-new.skills/a/SKILL.md
+# --- /tmp/bats-run-xUwXsT/test/1/tmp/cw-host-stage.SAx6V9/installed/skills/a/SKILL.md	1969-12-31 16:00:00.000000000 -0800
+# +++ /tmp/bats-run-xUwXsT/test/1/home/.claude/.cw-new.skills/a/SKILL.md	2026-09-25 00:58:32.000000000 -0700
+# @@ -0,0 +1 @@
+# +skill a
+# /tmp/bats-run-xUwXsT/test/1/repo/devcontainer-config/install.sh: line 124: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+# ADD /tmp/bats-run-xUwXsT/test/1/home/.claude/workflows (new, 1 file(s)):
+# /tmp/bats-run-xUwXsT/test/1/repo/devcontainer-config/install.sh: line 124: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+#     workflows/w.md
+# /tmp/bats-run-xUwXsT/test/1/repo/devcontainer-config/install.sh: line 124: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+# diff -ruNa /tmp/bats-run-xUwXsT/test/1/tmp/cw-host-stage.SAx6V9/installed/workflows/w.md /tmp/bats-run-xUwXsT/test/1/home/.claude/.cw-new.workflows/w.md
+# --- /tmp/bats-run-xUwXsT/test/1/tmp/cw-host-stage.SAx6V9/installed/workflows/w.md	1969-12-31 16:00:00.000000000 -0800
+# +++ /tmp/bats-run-xUwXsT/test/1/home/.claude/.cw-new.workflows/w.md	2026-09-25 00:58:32.000000000 -0700
+# @@ -0,0 +1 @@
+# +workflow
+# /tmp/bats-run-xUwXsT/test/1/repo/devcontainer-config/install.sh: line 124: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+# ADD /tmp/bats-run-xUwXsT/test/1/home/.claude/guides (new, 1 file(s)):
+# /tmp/bats-run-xUwXsT/test/1/repo/devcontainer-config/install.sh: line 124: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+#     guides/g.md
+# /tmp/bats-run-xUwXsT/test/1/repo/devcontainer-config/install.sh: line 124: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+# diff -ruNa /tmp/bats-run-xUwXsT/test/1/tmp/cw-host-stage.SAx6V9/installed/guides/g.md /tmp/bats-run-xUwXsT/test/1/home/.claude/.cw-new.guides/g.md
+# --- /tmp/bats-run-xUwXsT/test/1/tmp/cw-host-stage.SAx6V9/installed/guides/g.md	1969-12-31 16:00:00.000000000 -0800
+# +++ /tmp/bats-run-xUwXsT/test/1/home/.claude/.cw-new.guides/g.md	2026-09-25 00:58:32.000000000 -0700
+# @@ -0,0 +1 @@
+# +guide
+# /tmp/bats-run-xUwXsT/test/1/repo/devcontainer-config/install.sh: line 124: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+# ADD /tmp/bats-run-xUwXsT/test/1/home/.claude/patterns (new, 1 file(s)):
+# /tmp/bats-run-xUwXsT/test/1/repo/devcontainer-config/install.sh: line 124: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+#     patterns/p.md
+# /tmp/bats-run-xUwXsT/test/1/repo/devcontainer-config/install.sh: line 124: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+# diff -ruNa /tmp/bats-run-xUwXsT/test/1/tmp/cw-host-stage.SAx6V9/installed/patterns/p.md /tmp/bats-run-xUwXsT/test/1/home/.claude/.cw-new.patterns/p.md
+# --- /tmp/bats-run-xUwXsT/test/1/tmp/cw-host-stage.SAx6V9/installed/patterns/p.md	1969-12-31 16:00:00.000000000 -0800
+# +++ /tmp/bats-run-xUwXsT/test/1/home/.claude/.cw-new.patterns/p.md	2026-09-25 00:58:32.000000000 -0700
+# @@ -0,0 +1 @@
+# +pattern
+# /tmp/bats-run-xUwXsT/test/1/repo/devcontainer-config/install.sh: line 124: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+# ADD /tmp/bats-run-xUwXsT/test/1/home/.claude/hooks (new, 3 file(s)):
+# /tmp/bats-run-xUwXsT/test/1/repo/devcontainer-config/install.sh: line 124: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+#     hooks/h.sh
+#     hooks/lib/x.sh
+#     hooks/wiring.json
+# /tmp/bats-run-xUwXsT/test/1/repo/devcontainer-config/install.sh: line 124: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+# diff -ruNa /tmp/bats-run-xUwXsT/test/1/tmp/cw-host-stage.SAx6V9/installed/hooks/h.sh /tmp/bats-run-xUwXsT/test/1/home/.claude/.cw-new.hooks/h.sh
+# --- /tmp/bats-run-xUwXsT/test/1/tmp/cw-host-stage.SAx6V9/installed/hooks/h.sh	1969-12-31 16:00:00.000000000 -0800
+# +++ /tmp/bats-run-xUwXsT/test/1/home/.claude/.cw-new.hooks/h.sh	2026-09-25 00:58:32.000000000 -0700
+# @@ -0,0 +1,2 @@
+# +#!/bin/bash
+# +exit 0
+# diff -ruNa /tmp/bats-run-xUwXsT/test/1/tmp/cw-host-stage.SAx6V9/installed/hooks/lib/x.sh /tmp/bats-run-xUwXsT/test/1/home/.claude/.cw-new.hooks/lib/x.sh
+# --- /tmp/bats-run-xUwXsT/test/1/tmp/cw-host-stage.SAx6V9/installed/hooks/lib/x.sh	1969-12-31 16:00:00.000000000 -0800
+# +++ /tmp/bats-run-xUwXsT/test/1/home/.claude/.cw-new.hooks/lib/x.sh	2026-09-25 00:58:32.000000000 -0700
+# @@ -0,0 +1 @@
+# +#!/bin/bash
+# diff -ruNa /tmp/bats-run-xUwXsT/test/1/tmp/cw-host-stage.SAx6V9/installed/hooks/wiring.json /tmp/bats-run-xUwXsT/test/1/home/.claude/.cw-new.hooks/wiring.json
+# --- /tmp/bats-run-xUwXsT/test/1/tmp/cw-host-stage.SAx6V9/installed/hooks/wiring.json	1969-12-31 16:00:00.000000000 -0800
+# +++ /tmp/bats-run-xUwXsT/test/1/home/.claude/.cw-new.hooks/wiring.json	2026-09-25 00:58:32.000000000 -0700
+# @@ -0,0 +1 @@
+# +{"hooks":{}}
+# /tmp/bats-run-xUwXsT/test/1/repo/devcontainer-config/install.sh: line 124: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+# ADD /tmp/bats-run-xUwXsT/test/1/home/.claude/scripts (new, 1 file(s)):
+# /tmp/bats-run-xUwXsT/test/1/repo/devcontainer-config/install.sh: line 124: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+#     scripts/s.sh
+# /tmp/bats-run-xUwXsT/test/1/repo/devcontainer-config/install.sh: line 124: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+# diff -ruNa /tmp/bats-run-xUwXsT/test/1/tmp/cw-host-stage.SAx6V9/installed/scripts/s.sh /tmp/bats-run-xUwXsT/test/1/home/.claude/.cw-new.scripts/s.sh
+# --- /tmp/bats-run-xUwXsT/test/1/tmp/cw-host-stage.SAx6V9/installed/scripts/s.sh	1969-12-31 16:00:00.000000000 -0800
+# +++ /tmp/bats-run-xUwXsT/test/1/home/.claude/.cw-new.scripts/s.sh	2026-09-25 00:58:32.000000000 -0700
+# @@ -0,0 +1 @@
+# +#!/bin/bash
+# ===============================================================================
+#
+# Install these files into /tmp/bats-run-xUwXsT/test/1/home/.claude? [y/N] /bin/bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+# Checking for running cc-isolated containers (docker ps; up to 20 s)...
+# Installed into /tmp/bats-run-xUwXsT/test/1/home/.claude.
+#
+# REMINDER: hooks/wiring.json changed (or was not installed before). Copying the
+# hooks does not wire them. Redo guides/bare-host-hook-wiring.md §2 to merge it
+# into /tmp/bats-run-xUwXsT/test/1/home/.claude/settings.json.
+# bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+# n
+# bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+# bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+# /bin/bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+# Checking for running cc-isolated containers (docker ps; up to 20 s)...
+# Canonical (repo):  /tmp/bats-run-xUwXsT/test/1/repo/devcontainer-config at commit 17d9a0986c13 (staged in /tmp/bats-run-xUwXsT/test/1/tmp/cw-devc-stage.RGBOIt/config)
+# Installed (host):  /tmp/bats-run-xUwXsT/test/1/home/.config/claude-devcontainer
+#
+# First install — /tmp/bats-run-xUwXsT/test/1/home/.config/claude-devcontainer does not exist yet.
+#
+# Install this config and bless it? [y/N] Aborted. Nothing was changed. (devcontainer config)
+#
+# === Host target: global Claude Code files ======================================
+# Destination: /tmp/bats-run-xUwXsT/test/1/home/.claude  (chosen by $CLAUDE_HOME_DIR)
+# /bin/bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+# Checking for running cc-isolated containers (docker ps; up to 20 s)...
+# Canonical (repo):  /tmp/bats-run-xUwXsT/test/1/repo (commit 17d9a0986c137da8e89d2568be6f740e108e9d83)
+#
+# === Changes this install would make ===========================================
+# (diff: /tmp/bats-run-xUwXsT/test/1/tmp/cw-host-stage.R0FwUn/installed is the destination as it is now, links left out; /tmp/bats-run-xUwXsT/test/1/home/.claude/.cw-new.* are the copies to install)
+# /tmp/bats-run-xUwXsT/test/1/repo/devcontainer-config/install.sh: line 124: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+# /tmp/bats-run-xUwXsT/test/1/repo/devcontainer-config/install.sh: line 124: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+# /tmp/bats-run-xUwXsT/test/1/repo/devcontainer-config/install.sh: line 124: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+# /tmp/bats-run-xUwXsT/test/1/repo/devcontainer-config/install.sh: line 124: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+# diff -ruNa /tmp/bats-run-xUwXsT/test/1/tmp/cw-host-stage.R0FwUn/installed/guides/g.md /tmp/bats-run-xUwXsT/test/1/home/.claude/.cw-new.guides/g.md
+# --- /tmp/bats-run-xUwXsT/test/1/tmp/cw-host-stage.R0FwUn/installed/guides/g.md	2026-09-25 00:58:36.004673762 -0700
+# +++ /tmp/bats-run-xUwXsT/test/1/home/.claude/.cw-new.guides/g.md	2026-09-25 00:58:35.000000000 -0700
+# @@ -1 +1 @@
+# -guide
+# +guide v2 benign
+# /tmp/bats-run-xUwXsT/test/1/repo/devcontainer-config/install.sh: line 124: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+# /tmp/bats-run-xUwXsT/test/1/repo/devcontainer-config/install.sh: line 124: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+# diff -ruNa /tmp/bats-run-xUwXsT/test/1/tmp/cw-host-stage.R0FwUn/installed/hooks/h.sh /tmp/bats-run-xUwXsT/test/1/home/.claude/.cw-new.hooks/h.sh
+# --- /tmp/bats-run-xUwXsT/test/1/tmp/cw-host-stage.R0FwUn/installed/hooks/h.sh	2026-09-25 00:58:36.009552889 -0700
+# +++ /tmp/bats-run-xUwXsT/test/1/home/.claude/.cw-new.hooks/h.sh	2026-09-25 00:58:35.000000000 -0700
+# @@ -1,2 +1,2 @@
+#  #!/bin/bash
+# -exit 0
+# +echo MALICIOUS-PAYLOAD
+# /tmp/bats-run-xUwXsT/test/1/repo/devcontainer-config/install.sh: line 124: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+# ===============================================================================
+#
+# Install these files into /tmp/bats-run-xUwXsT/test/1/home/.claude? [y/N] y
+# /bin/bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+# Checking for running cc-isolated containers (docker ps; up to 20 s)...
+# Installed into /tmp/bats-run-xUwXsT/test/1/home/.claude.
+# Previous entries moved to /tmp/bats-run-xUwXsT/test/1/home/.claude/.claude-workflows-backup/20260925T075839Z (delete it when satisfied).
+# Backups: this one plus the 2 most recent earlier installs' are kept in /tmp/bats-run-xUwXsT/test/1/home/.claude/.claude-workflows-backup (0 older removed).
+# bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+# n
+# bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+# bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+# /bin/bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+# Checking for running cc-isolated containers (docker ps; up to 20 s)...
+# Canonical (repo):  /tmp/bats-run-xUwXsT/test/1/repo/devcontainer-config at commit 17d9a0986c13 (staged in /tmp/bats-run-xUwXsT/test/1/tmp/cw-devc-stage.RGBOIt/config)
+# Installed (host):  /tmp/bats-run-xUwXsT/test/1/home/.config/claude-devcontainer
+#
+# First install — /tmp/bats-run-xUwXsT/test/1/home/.config/claude-devcontainer does not exist yet.
+#
+# Install this config and bless it? [y/N] Aborted. Nothing was changed. (devcontainer config)
+#
+# === Host target: global Claude Code files ======================================
+# Destination: /tmp/bats-run-xUwXsT/test/1/home/.claude  (chosen by $CLAUDE_HOME_DIR)
+# /bin/bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+# Checking for running cc-isolated containers (docker ps; up to 20 s)...
+# Canonical (repo):  /tmp/bats-run-xUwXsT/test/1/repo (commit 17d9a0986c137da8e89d2568be6f740e108e9d83)
+#
+# === Changes this install would make ===========================================
+# (diff: /tmp/bats-run-xUwXsT/test/1/tmp/cw-host-stage.R0FwUn/installed is the destination as it is now, links left out; /tmp/bats-run-xUwXsT/test/1/home/.claude/.cw-new.* are the copies to install)
+# /tmp/bats-run-xUwXsT/test/1/repo/devcontainer-config/install.sh: line 124: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+# /tmp/bats-run-xUwXsT/test/1/repo/devcontainer-config/install.sh: line 124: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+# /tmp/bats-run-xUwXsT/test/1/repo/devcontainer-config/install.sh: line 124: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+# /tmp/bats-run-xUwXsT/test/1/repo/devcontainer-config/install.sh: line 124: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+# diff -ruNa /tmp/bats-run-xUwXsT/test/1/tmp/cw-host-stage.R0FwUn/installed/guides/g.md /tmp/bats-run-xUwXsT/test/1/home/.claude/.cw-new.guides/g.md
+# --- /tmp/bats-run-xUwXsT/test/1/tmp/cw-host-stage.R0FwUn/installed/guides/g.md	2026-09-25 00:58:36.004673762 -0700
+# +++ /tmp/bats-run-xUwXsT/test/1/home/.claude/.cw-new.guides/g.md	2026-09-25 00:58:35.000000000 -0700
+# @@ -1 +1 @@
+# -guide
+# +guide v2 benign
+# /tmp/bats-run-xUwXsT/test/1/repo/devcontainer-config/install.sh: line 124: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+# /tmp/bats-run-xUwXsT/test/1/repo/devcontainer-config/install.sh: line 124: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+# diff -ruNa /tmp/bats-run-xUwXsT/test/1/tmp/cw-host-stage.R0FwUn/installed/hooks/h.sh /tmp/bats-run-xUwXsT/test/1/home/.claude/.cw-new.hooks/h.sh
+# --- /tmp/bats-run-xUwXsT/test/1/tmp/cw-host-stage.R0FwUn/installed/hooks/h.sh	2026-09-25 00:58:36.009552889 -0700
+# +++ /tmp/bats-run-xUwXsT/test/1/home/.claude/.cw-new.hooks/h.sh	2026-09-25 00:58:35.000000000 -0700
+# @@ -1,2 +1,2 @@
+#  #!/bin/bash
+# -exit 0
+# +echo MALICIOUS-PAYLOAD
+# /tmp/bats-run-xUwXsT/test/1/repo/devcontainer-config/install.sh: line 124: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+# ===============================================================================
+#
+# Install these files into /tmp/bats-run-xUwXsT/test/1/home/.claude? [y/N] y
+# /bin/bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+# Checking for running cc-isolated containers (docker ps; up to 20 s)...
+# Installed into /tmp/bats-run-xUwXsT/test/1/home/.claude.
+# Previous entries moved to /tmp/bats-run-xUwXsT/test/1/home/.claude/.claude-workflows-backup/20260925T075839Z (delete it when satisfied).
+# Backups: this one plus the 2 most recent earlier installs' are kept in /tmp/bats-run-xUwXsT/test/1/home/.claude/.claude-workflows-backup (0 older removed).
+# SP1 RESULT: review showed the payload that was installed
+bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+ok 2 SP1b the OLD side of the diff (HOST_TMP/installed) is rewritten to match the new copy during the review
+# bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+# n
+# y
+# bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+# bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+# /bin/bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+# Checking for running cc-isolated containers (docker ps; up to 20 s)...
+# Canonical (repo):  /tmp/bats-run-xUwXsT/test/2/repo/devcontainer-config at commit 25720409c0ad (staged in /tmp/bats-run-xUwXsT/test/2/tmp/cw-devc-stage.v4esoB/config)
+# Installed (host):  /tmp/bats-run-xUwXsT/test/2/home/.config/claude-devcontainer
+#
+# First install — /tmp/bats-run-xUwXsT/test/2/home/.config/claude-devcontainer does not exist yet.
+#
+# Install this config and bless it? [y/N] Aborted. Nothing was changed. (devcontainer config)
+#
+# === Host target: global Claude Code files ======================================
+# Destination: /tmp/bats-run-xUwXsT/test/2/home/.claude  (chosen by $CLAUDE_HOME_DIR)
+# /bin/bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+# Checking for running cc-isolated containers (docker ps; up to 20 s)...
+# Canonical (repo):  /tmp/bats-run-xUwXsT/test/2/repo (commit 25720409c0ad5d4038edbae46923f2b8722c269a)
+#
+# === Changes this install would make ===========================================
+# /tmp/bats-run-xUwXsT/test/2/repo/devcontainer-config/install.sh: line 124: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+# ADD /tmp/bats-run-xUwXsT/test/2/home/.claude/CLAUDE.md (new, 1 file(s)):
+# /tmp/bats-run-xUwXsT/test/2/repo/devcontainer-config/install.sh: line 124: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+#     CLAUDE.md
+# /tmp/bats-run-xUwXsT/test/2/repo/devcontainer-config/install.sh: line 124: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+# --- /tmp/bats-run-xUwXsT/test/2/tmp/cw-host-stage.fMnS05/installed/CLAUDE.md	1969-12-31 16:00:00.000000000 -0800
+# +++ /tmp/bats-run-xUwXsT/test/2/home/.claude/.cw-new.CLAUDE.md	2026-09-25 00:58:39.000000000 -0700
+# @@ -0,0 +1 @@
+# +global instructions
+# /tmp/bats-run-xUwXsT/test/2/repo/devcontainer-config/install.sh: line 124: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+# ADD /tmp/bats-run-xUwXsT/test/2/home/.claude/skills (new, 1 file(s)):
+# /tmp/bats-run-xUwXsT/test/2/repo/devcontainer-config/install.sh: line 124: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+#     skills/a/SKILL.md
+# /tmp/bats-run-xUwXsT/test/2/repo/devcontainer-config/install.sh: line 124: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+# diff -ruNa /tmp/bats-run-xUwXsT/test/2/tmp/cw-host-stage.fMnS05/installed/skills/a/SKILL.md /tmp/bats-run-xUwXsT/test/2/home/.claude/.cw-new.skills/a/SKILL.md
+# --- /tmp/bats-run-xUwXsT/test/2/tmp/cw-host-stage.fMnS05/installed/skills/a/SKILL.md	1969-12-31 16:00:00.000000000 -0800
+# +++ /tmp/bats-run-xUwXsT/test/2/home/.claude/.cw-new.skills/a/SKILL.md	2026-09-25 00:58:39.000000000 -0700
+# @@ -0,0 +1 @@
+# +skill a
+# /tmp/bats-run-xUwXsT/test/2/repo/devcontainer-config/install.sh: line 124: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+# ADD /tmp/bats-run-xUwXsT/test/2/home/.claude/workflows (new, 1 file(s)):
+# /tmp/bats-run-xUwXsT/test/2/repo/devcontainer-config/install.sh: line 124: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+#     workflows/w.md
+# /tmp/bats-run-xUwXsT/test/2/repo/devcontainer-config/install.sh: line 124: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+# diff -ruNa /tmp/bats-run-xUwXsT/test/2/tmp/cw-host-stage.fMnS05/installed/workflows/w.md /tmp/bats-run-xUwXsT/test/2/home/.claude/.cw-new.workflows/w.md
+# --- /tmp/bats-run-xUwXsT/test/2/tmp/cw-host-stage.fMnS05/installed/workflows/w.md	1969-12-31 16:00:00.000000000 -0800
+# +++ /tmp/bats-run-xUwXsT/test/2/home/.claude/.cw-new.workflows/w.md	2026-09-25 00:58:39.000000000 -0700
+# @@ -0,0 +1 @@
+# +workflow
+# /tmp/bats-run-xUwXsT/test/2/repo/devcontainer-config/install.sh: line 124: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+# ADD /tmp/bats-run-xUwXsT/test/2/home/.claude/guides (new, 1 file(s)):
+# /tmp/bats-run-xUwXsT/test/2/repo/devcontainer-config/install.sh: line 124: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+#     guides/g.md
+# /tmp/bats-run-xUwXsT/test/2/repo/devcontainer-config/install.sh: line 124: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+# diff -ruNa /tmp/bats-run-xUwXsT/test/2/tmp/cw-host-stage.fMnS05/installed/guides/g.md /tmp/bats-run-xUwXsT/test/2/home/.claude/.cw-new.guides/g.md
+# --- /tmp/bats-run-xUwXsT/test/2/tmp/cw-host-stage.fMnS05/installed/guides/g.md	1969-12-31 16:00:00.000000000 -0800
+# +++ /tmp/bats-run-xUwXsT/test/2/home/.claude/.cw-new.guides/g.md	2026-09-25 00:58:39.000000000 -0700
+# @@ -0,0 +1 @@
+# +guide
+# /tmp/bats-run-xUwXsT/test/2/repo/devcontainer-config/install.sh: line 124: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+# ADD /tmp/bats-run-xUwXsT/test/2/home/.claude/patterns (new, 1 file(s)):
+# /tmp/bats-run-xUwXsT/test/2/repo/devcontainer-config/install.sh: line 124: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+#     patterns/p.md
+# /tmp/bats-run-xUwXsT/test/2/repo/devcontainer-config/install.sh: line 124: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+# diff -ruNa /tmp/bats-run-xUwXsT/test/2/tmp/cw-host-stage.fMnS05/installed/patterns/p.md /tmp/bats-run-xUwXsT/test/2/home/.claude/.cw-new.patterns/p.md
+# --- /tmp/bats-run-xUwXsT/test/2/tmp/cw-host-stage.fMnS05/installed/patterns/p.md	1969-12-31 16:00:00.000000000 -0800
+# +++ /tmp/bats-run-xUwXsT/test/2/home/.claude/.cw-new.patterns/p.md	2026-09-25 00:58:39.000000000 -0700
+# @@ -0,0 +1 @@
+# +pattern
+# /tmp/bats-run-xUwXsT/test/2/repo/devcontainer-config/install.sh: line 124: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+# ADD /tmp/bats-run-xUwXsT/test/2/home/.claude/hooks (new, 3 file(s)):
+# /tmp/bats-run-xUwXsT/test/2/repo/devcontainer-config/install.sh: line 124: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+#     hooks/h.sh
+#     hooks/lib/x.sh
+#     hooks/wiring.json
+# /tmp/bats-run-xUwXsT/test/2/repo/devcontainer-config/install.sh: line 124: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+# diff -ruNa /tmp/bats-run-xUwXsT/test/2/tmp/cw-host-stage.fMnS05/installed/hooks/h.sh /tmp/bats-run-xUwXsT/test/2/home/.claude/.cw-new.hooks/h.sh
+# --- /tmp/bats-run-xUwXsT/test/2/tmp/cw-host-stage.fMnS05/installed/hooks/h.sh	1969-12-31 16:00:00.000000000 -0800
+# +++ /tmp/bats-run-xUwXsT/test/2/home/.claude/.cw-new.hooks/h.sh	2026-09-25 00:58:39.000000000 -0700
+# @@ -0,0 +1,2 @@
+# +#!/bin/bash
+# +exit 0
+# diff -ruNa /tmp/bats-run-xUwXsT/test/2/tmp/cw-host-stage.fMnS05/installed/hooks/lib/x.sh /tmp/bats-run-xUwXsT/test/2/home/.claude/.cw-new.hooks/lib/x.sh
+# --- /tmp/bats-run-xUwXsT/test/2/tmp/cw-host-stage.fMnS05/installed/hooks/lib/x.sh	1969-12-31 16:00:00.000000000 -0800
+# +++ /tmp/bats-run-xUwXsT/test/2/home/.claude/.cw-new.hooks/lib/x.sh	2026-09-25 00:58:39.000000000 -0700
+# @@ -0,0 +1 @@
+# +#!/bin/bash
+# diff -ruNa /tmp/bats-run-xUwXsT/test/2/tmp/cw-host-stage.fMnS05/installed/hooks/wiring.json /tmp/bats-run-xUwXsT/test/2/home/.claude/.cw-new.hooks/wiring.json
+# --- /tmp/bats-run-xUwXsT/test/2/tmp/cw-host-stage.fMnS05/installed/hooks/wiring.json	1969-12-31 16:00:00.000000000 -0800
+# +++ /tmp/bats-run-xUwXsT/test/2/home/.claude/.cw-new.hooks/wiring.json	2026-09-25 00:58:39.000000000 -0700
+# @@ -0,0 +1 @@
+# +{"hooks":{}}
+# /tmp/bats-run-xUwXsT/test/2/repo/devcontainer-config/install.sh: line 124: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+# ADD /tmp/bats-run-xUwXsT/test/2/home/.claude/scripts (new, 1 file(s)):
+# /tmp/bats-run-xUwXsT/test/2/repo/devcontainer-config/install.sh: line 124: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+#     scripts/s.sh
+# /tmp/bats-run-xUwXsT/test/2/repo/devcontainer-config/install.sh: line 124: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+# diff -ruNa /tmp/bats-run-xUwXsT/test/2/tmp/cw-host-stage.fMnS05/installed/scripts/s.sh /tmp/bats-run-xUwXsT/test/2/home/.claude/.cw-new.scripts/s.sh
+# --- /tmp/bats-run-xUwXsT/test/2/tmp/cw-host-stage.fMnS05/installed/scripts/s.sh	1969-12-31 16:00:00.000000000 -0800
+# +++ /tmp/bats-run-xUwXsT/test/2/home/.claude/.cw-new.scripts/s.sh	2026-09-25 00:58:39.000000000 -0700
+# @@ -0,0 +1 @@
+# +#!/bin/bash
+# ===============================================================================
+#
+# Install these files into /tmp/bats-run-xUwXsT/test/2/home/.claude? [y/N] /bin/bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+# Checking for running cc-isolated containers (docker ps; up to 20 s)...
+# Installed into /tmp/bats-run-xUwXsT/test/2/home/.claude.
+#
+# REMINDER: hooks/wiring.json changed (or was not installed before). Copying the
+# hooks does not wire them. Redo guides/bare-host-hook-wiring.md §2 to merge it
+# into /tmp/bats-run-xUwXsT/test/2/home/.claude/settings.json.
+# bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+# n
+# bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+# bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+# /bin/bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+# Checking for running cc-isolated containers (docker ps; up to 20 s)...
+# Canonical (repo):  /tmp/bats-run-xUwXsT/test/2/repo/devcontainer-config at commit f136bbb2cd72 (staged in /tmp/bats-run-xUwXsT/test/2/tmp/cw-devc-stage.EsyARm/config)
+# Installed (host):  /tmp/bats-run-xUwXsT/test/2/home/.config/claude-devcontainer
+#
+# First install — /tmp/bats-run-xUwXsT/test/2/home/.config/claude-devcontainer does not exist yet.
+#
+# Install this config and bless it? [y/N] Aborted. Nothing was changed. (devcontainer config)
+#
+# === Host target: global Claude Code files ======================================
+# Destination: /tmp/bats-run-xUwXsT/test/2/home/.claude  (chosen by $CLAUDE_HOME_DIR)
+# /bin/bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+# Checking for running cc-isolated containers (docker ps; up to 20 s)...
+# Canonical (repo):  /tmp/bats-run-xUwXsT/test/2/repo (commit f136bbb2cd725a6fb8059f5fb83d6b65fe91936b)
+#
+# === Changes this install would make ===========================================
+# (diff: /tmp/bats-run-xUwXsT/test/2/tmp/cw-host-stage.TDybLG/installed is the destination as it is now, links left out; /tmp/bats-run-xUwXsT/test/2/home/.claude/.cw-new.* are the copies to install)
+# /tmp/bats-run-xUwXsT/test/2/repo/devcontainer-config/install.sh: line 124: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+# /tmp/bats-run-xUwXsT/test/2/repo/devcontainer-config/install.sh: line 124: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+# /tmp/bats-run-xUwXsT/test/2/repo/devcontainer-config/install.sh: line 124: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+# /tmp/bats-run-xUwXsT/test/2/repo/devcontainer-config/install.sh: line 124: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+# diff -ruNa /tmp/bats-run-xUwXsT/test/2/tmp/cw-host-stage.TDybLG/installed/guides/g.md /tmp/bats-run-xUwXsT/test/2/home/.claude/.cw-new.guides/g.md
+# --- /tmp/bats-run-xUwXsT/test/2/tmp/cw-host-stage.TDybLG/installed/guides/g.md	2026-09-25 00:58:40.172575533 -0700
+# +++ /tmp/bats-run-xUwXsT/test/2/home/.claude/.cw-new.guides/g.md	2026-09-25 00:58:39.000000000 -0700
+# @@ -1 +1 @@
+# -guide
+# +guide v2 benign
+# /tmp/bats-run-xUwXsT/test/2/repo/devcontainer-config/install.sh: line 124: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+# /tmp/bats-run-xUwXsT/test/2/repo/devcontainer-config/install.sh: line 124: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+# /tmp/bats-run-xUwXsT/test/2/repo/devcontainer-config/install.sh: line 124: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+# ===============================================================================
+#
+# Install these files into /tmp/bats-run-xUwXsT/test/2/home/.claude? [y/N] y
+# /bin/bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+# Checking for running cc-isolated containers (docker ps; up to 20 s)...
+# Installed into /tmp/bats-run-xUwXsT/test/2/home/.claude.
+# Previous entries moved to /tmp/bats-run-xUwXsT/test/2/home/.claude/.claude-workflows-backup/20260925T075842Z (delete it when satisfied).
+# Backups: this one plus the 2 most recent earlier installs' are kept in /tmp/bats-run-xUwXsT/test/2/home/.claude/.claude-workflows-backup (0 older removed).
+# bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+# n
+# bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+# bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+# /bin/bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+# Checking for running cc-isolated containers (docker ps; up to 20 s)...
+# Canonical (repo):  /tmp/bats-run-xUwXsT/test/2/repo/devcontainer-config at commit f136bbb2cd72 (staged in /tmp/bats-run-xUwXsT/test/2/tmp/cw-devc-stage.EsyARm/config)
+# Installed (host):  /tmp/bats-run-xUwXsT/test/2/home/.config/claude-devcontainer
+#
+# First install — /tmp/bats-run-xUwXsT/test/2/home/.config/claude-devcontainer does not exist yet.
+#
+# Install this config and bless it? [y/N] Aborted. Nothing was changed. (devcontainer config)
+#
+# === Host target: global Claude Code files ======================================
+# Destination: /tmp/bats-run-xUwXsT/test/2/home/.claude  (chosen by $CLAUDE_HOME_DIR)
+# /bin/bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+# Checking for running cc-isolated containers (docker ps; up to 20 s)...
+# Canonical (repo):  /tmp/bats-run-xUwXsT/test/2/repo (commit f136bbb2cd725a6fb8059f5fb83d6b65fe91936b)
+#
+# === Changes this install would make ===========================================
+# (diff: /tmp/bats-run-xUwXsT/test/2/tmp/cw-host-stage.TDybLG/installed is the destination as it is now, links left out; /tmp/bats-run-xUwXsT/test/2/home/.claude/.cw-new.* are the copies to install)
+# /tmp/bats-run-xUwXsT/test/2/repo/devcontainer-config/install.sh: line 124: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+# /tmp/bats-run-xUwXsT/test/2/repo/devcontainer-config/install.sh: line 124: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+# /tmp/bats-run-xUwXsT/test/2/repo/devcontainer-config/install.sh: line 124: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+# /tmp/bats-run-xUwXsT/test/2/repo/devcontainer-config/install.sh: line 124: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+# diff -ruNa /tmp/bats-run-xUwXsT/test/2/tmp/cw-host-stage.TDybLG/installed/guides/g.md /tmp/bats-run-xUwXsT/test/2/home/.claude/.cw-new.guides/g.md
+# --- /tmp/bats-run-xUwXsT/test/2/tmp/cw-host-stage.TDybLG/installed/guides/g.md	2026-09-25 00:58:40.172575533 -0700
+# +++ /tmp/bats-run-xUwXsT/test/2/home/.claude/.cw-new.guides/g.md	2026-09-25 00:58:39.000000000 -0700
+# @@ -1 +1 @@
+# -guide
+# +guide v2 benign
+# /tmp/bats-run-xUwXsT/test/2/repo/devcontainer-config/install.sh: line 124: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+# /tmp/bats-run-xUwXsT/test/2/repo/devcontainer-config/install.sh: line 124: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+# /tmp/bats-run-xUwXsT/test/2/repo/devcontainer-config/install.sh: line 124: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+# ===============================================================================
+#
+# Install these files into /tmp/bats-run-xUwXsT/test/2/home/.claude? [y/N] y
+# /bin/bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+# Checking for running cc-isolated containers (docker ps; up to 20 s)...
+# Installed into /tmp/bats-run-xUwXsT/test/2/home/.claude.
+# Previous entries moved to /tmp/bats-run-xUwXsT/test/2/home/.claude/.claude-workflows-backup/20260925T075842Z (delete it when satisfied).
+# Backups: this one plus the 2 most recent earlier installs' are kept in /tmp/bats-run-xUwXsT/test/2/home/.claude/.claude-workflows-backup (0 older removed).
+# --- installed h.sh:
+# #!/bin/bash
+# echo MALICIOUS-PAYLOAD
+# SP1b RESULT: unreviewed hook installed; hash check passed
+bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+ok 3 SP1c a stage edit between git archive and the copy into dest lands under an ADD entry whose content is not shown
+# bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+# n
+# bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+# bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+# /bin/bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+# Checking for running cc-isolated containers (docker ps; up to 20 s)...
+# Canonical (repo):  /tmp/bats-run-xUwXsT/test/3/repo/devcontainer-config at commit 510097af8923 (staged in /tmp/bats-run-xUwXsT/test/3/tmp/cw-devc-stage.qtF0bg/config)
+# Installed (host):  /tmp/bats-run-xUwXsT/test/3/home/.config/claude-devcontainer
+#
+# First install — /tmp/bats-run-xUwXsT/test/3/home/.config/claude-devcontainer does not exist yet.
+#
+# Install this config and bless it? [y/N] Aborted. Nothing was changed. (devcontainer config)
+#
+# === Host target: global Claude Code files ======================================
+# Destination: /tmp/bats-run-xUwXsT/test/3/home/.claude  (chosen by $CLAUDE_HOME_DIR)
+# /bin/bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+# Checking for running cc-isolated containers (docker ps; up to 20 s)...
+# Canonical (repo):  /tmp/bats-run-xUwXsT/test/3/repo (commit 510097af89239864f9bc3bd51b2d7fdd76cd47a3)
+#
+# === Changes this install would make ===========================================
+# /tmp/bats-run-xUwXsT/test/3/repo/devcontainer-config/install.sh: line 124: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+# ADD /tmp/bats-run-xUwXsT/test/3/home/.claude/CLAUDE.md (new, 1 file(s)):
+# /tmp/bats-run-xUwXsT/test/3/repo/devcontainer-config/install.sh: line 124: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+#     CLAUDE.md
+# /tmp/bats-run-xUwXsT/test/3/repo/devcontainer-config/install.sh: line 124: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+# --- /tmp/bats-run-xUwXsT/test/3/tmp/cw-host-stage.3LZky9/installed/CLAUDE.md	1969-12-31 16:00:00.000000000 -0800
+# +++ /tmp/bats-run-xUwXsT/test/3/home/.claude/.cw-new.CLAUDE.md	2026-09-25 00:58:42.000000000 -0700
+# @@ -0,0 +1 @@
+# +global instructions
+# /tmp/bats-run-xUwXsT/test/3/repo/devcontainer-config/install.sh: line 124: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+# ADD /tmp/bats-run-xUwXsT/test/3/home/.claude/skills (new, 2 file(s)):
+# /tmp/bats-run-xUwXsT/test/3/repo/devcontainer-config/install.sh: line 124: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+#     skills/a/SKILL.md
+#     skills/a/big.md
+# /tmp/bats-run-xUwXsT/test/3/repo/devcontainer-config/install.sh: line 124: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+#     (content not shown: 301 lines, over the 200-line limit for a new entry; it is skills at commit 510097af8923)
+# /tmp/bats-run-xUwXsT/test/3/repo/devcontainer-config/install.sh: line 124: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+# ADD /tmp/bats-run-xUwXsT/test/3/home/.claude/workflows (new, 1 file(s)):
+# /tmp/bats-run-xUwXsT/test/3/repo/devcontainer-config/install.sh: line 124: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+#     workflows/w.md
+# /tmp/bats-run-xUwXsT/test/3/repo/devcontainer-config/install.sh: line 124: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+# diff -ruNa /tmp/bats-run-xUwXsT/test/3/tmp/cw-host-stage.3LZky9/installed/workflows/w.md /tmp/bats-run-xUwXsT/test/3/home/.claude/.cw-new.workflows/w.md
+# --- /tmp/bats-run-xUwXsT/test/3/tmp/cw-host-stage.3LZky9/installed/workflows/w.md	1969-12-31 16:00:00.000000000 -0800
+# +++ /tmp/bats-run-xUwXsT/test/3/home/.claude/.cw-new.workflows/w.md	2026-09-25 00:58:42.000000000 -0700
+# @@ -0,0 +1 @@
+# +workflow
+# /tmp/bats-run-xUwXsT/test/3/repo/devcontainer-config/install.sh: line 124: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+# ADD /tmp/bats-run-xUwXsT/test/3/home/.claude/guides (new, 1 file(s)):
+# /tmp/bats-run-xUwXsT/test/3/repo/devcontainer-config/install.sh: line 124: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+#     guides/g.md
+# /tmp/bats-run-xUwXsT/test/3/repo/devcontainer-config/install.sh: line 124: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+# diff -ruNa /tmp/bats-run-xUwXsT/test/3/tmp/cw-host-stage.3LZky9/installed/guides/g.md /tmp/bats-run-xUwXsT/test/3/home/.claude/.cw-new.guides/g.md
+# --- /tmp/bats-run-xUwXsT/test/3/tmp/cw-host-stage.3LZky9/installed/guides/g.md	1969-12-31 16:00:00.000000000 -0800
+# +++ /tmp/bats-run-xUwXsT/test/3/home/.claude/.cw-new.guides/g.md	2026-09-25 00:58:42.000000000 -0700
+# @@ -0,0 +1 @@
+# +guide
+# /tmp/bats-run-xUwXsT/test/3/repo/devcontainer-config/install.sh: line 124: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+# ADD /tmp/bats-run-xUwXsT/test/3/home/.claude/patterns (new, 1 file(s)):
+# /tmp/bats-run-xUwXsT/test/3/repo/devcontainer-config/install.sh: line 124: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+#     patterns/p.md
+# /tmp/bats-run-xUwXsT/test/3/repo/devcontainer-config/install.sh: line 124: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+# diff -ruNa /tmp/bats-run-xUwXsT/test/3/tmp/cw-host-stage.3LZky9/installed/patterns/p.md /tmp/bats-run-xUwXsT/test/3/home/.claude/.cw-new.patterns/p.md
+# --- /tmp/bats-run-xUwXsT/test/3/tmp/cw-host-stage.3LZky9/installed/patterns/p.md	1969-12-31 16:00:00.000000000 -0800
+# +++ /tmp/bats-run-xUwXsT/test/3/home/.claude/.cw-new.patterns/p.md	2026-09-25 00:58:42.000000000 -0700
+# @@ -0,0 +1 @@
+# +pattern
+# /tmp/bats-run-xUwXsT/test/3/repo/devcontainer-config/install.sh: line 124: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+# ADD /tmp/bats-run-xUwXsT/test/3/home/.claude/hooks (new, 3 file(s)):
+# /tmp/bats-run-xUwXsT/test/3/repo/devcontainer-config/install.sh: line 124: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+#     hooks/h.sh
+#     hooks/lib/x.sh
+#     hooks/wiring.json
+# /tmp/bats-run-xUwXsT/test/3/repo/devcontainer-config/install.sh: line 124: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+# diff -ruNa /tmp/bats-run-xUwXsT/test/3/tmp/cw-host-stage.3LZky9/installed/hooks/h.sh /tmp/bats-run-xUwXsT/test/3/home/.claude/.cw-new.hooks/h.sh
+# --- /tmp/bats-run-xUwXsT/test/3/tmp/cw-host-stage.3LZky9/installed/hooks/h.sh	1969-12-31 16:00:00.000000000 -0800
+# +++ /tmp/bats-run-xUwXsT/test/3/home/.claude/.cw-new.hooks/h.sh	2026-09-25 00:58:42.000000000 -0700
+# @@ -0,0 +1,2 @@
+# +#!/bin/bash
+# +exit 0
+# diff -ruNa /tmp/bats-run-xUwXsT/test/3/tmp/cw-host-stage.3LZky9/installed/hooks/lib/x.sh /tmp/bats-run-xUwXsT/test/3/home/.claude/.cw-new.hooks/lib/x.sh
+# --- /tmp/bats-run-xUwXsT/test/3/tmp/cw-host-stage.3LZky9/installed/hooks/lib/x.sh	1969-12-31 16:00:00.000000000 -0800
+# +++ /tmp/bats-run-xUwXsT/test/3/home/.claude/.cw-new.hooks/lib/x.sh	2026-09-25 00:58:42.000000000 -0700
+# @@ -0,0 +1 @@
+# +#!/bin/bash
+# diff -ruNa /tmp/bats-run-xUwXsT/test/3/tmp/cw-host-stage.3LZky9/installed/hooks/wiring.json /tmp/bats-run-xUwXsT/test/3/home/.claude/.cw-new.hooks/wiring.json
+# --- /tmp/bats-run-xUwXsT/test/3/tmp/cw-host-stage.3LZky9/installed/hooks/wiring.json	1969-12-31 16:00:00.000000000 -0800
+# +++ /tmp/bats-run-xUwXsT/test/3/home/.claude/.cw-new.hooks/wiring.json	2026-09-25 00:58:42.000000000 -0700
+# @@ -0,0 +1 @@
+# +{"hooks":{}}
+# /tmp/bats-run-xUwXsT/test/3/repo/devcontainer-config/install.sh: line 124: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+# ADD /tmp/bats-run-xUwXsT/test/3/home/.claude/scripts (new, 1 file(s)):
+# /tmp/bats-run-xUwXsT/test/3/repo/devcontainer-config/install.sh: line 124: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+#     scripts/s.sh
+# /tmp/bats-run-xUwXsT/test/3/repo/devcontainer-config/install.sh: line 124: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+# diff -ruNa /tmp/bats-run-xUwXsT/test/3/tmp/cw-host-stage.3LZky9/installed/scripts/s.sh /tmp/bats-run-xUwXsT/test/3/home/.claude/.cw-new.scripts/s.sh
+# --- /tmp/bats-run-xUwXsT/test/3/tmp/cw-host-stage.3LZky9/installed/scripts/s.sh	1969-12-31 16:00:00.000000000 -0800
+# +++ /tmp/bats-run-xUwXsT/test/3/home/.claude/.cw-new.scripts/s.sh	2026-09-25 00:58:42.000000000 -0700
+# @@ -0,0 +1 @@
+# +#!/bin/bash
+# ===============================================================================
+#
+# Install these files into /tmp/bats-run-xUwXsT/test/3/home/.claude? [y/N] y
+# /bin/bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+# Checking for running cc-isolated containers (docker ps; up to 20 s)...
+# Installed into /tmp/bats-run-xUwXsT/test/3/home/.claude.
+#
+# REMINDER: hooks/wiring.json changed (or was not installed before). Copying the
+# hooks does not wire them. Redo guides/bare-host-hook-wiring.md §2 to merge it
+# into /tmp/bats-run-xUwXsT/test/3/home/.claude/settings.json.
+# bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+# n
+# bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+# bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+# /bin/bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+# Checking for running cc-isolated containers (docker ps; up to 20 s)...
+# Canonical (repo):  /tmp/bats-run-xUwXsT/test/3/repo/devcontainer-config at commit 510097af8923 (staged in /tmp/bats-run-xUwXsT/test/3/tmp/cw-devc-stage.qtF0bg/config)
+# Installed (host):  /tmp/bats-run-xUwXsT/test/3/home/.config/claude-devcontainer
+#
+# First install — /tmp/bats-run-xUwXsT/test/3/home/.config/claude-devcontainer does not exist yet.
+#
+# Install this config and bless it? [y/N] Aborted. Nothing was changed. (devcontainer config)
+#
+# === Host target: global Claude Code files ======================================
+# Destination: /tmp/bats-run-xUwXsT/test/3/home/.claude  (chosen by $CLAUDE_HOME_DIR)
+# /bin/bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+# Checking for running cc-isolated containers (docker ps; up to 20 s)...
+# Canonical (repo):  /tmp/bats-run-xUwXsT/test/3/repo (commit 510097af89239864f9bc3bd51b2d7fdd76cd47a3)
+#
+# === Changes this install would make ===========================================
+# /tmp/bats-run-xUwXsT/test/3/repo/devcontainer-config/install.sh: line 124: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+# ADD /tmp/bats-run-xUwXsT/test/3/home/.claude/CLAUDE.md (new, 1 file(s)):
+# /tmp/bats-run-xUwXsT/test/3/repo/devcontainer-config/install.sh: line 124: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+#     CLAUDE.md
+# /tmp/bats-run-xUwXsT/test/3/repo/devcontainer-config/install.sh: line 124: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+# --- /tmp/bats-run-xUwXsT/test/3/tmp/cw-host-stage.3LZky9/installed/CLAUDE.md	1969-12-31 16:00:00.000000000 -0800
+# +++ /tmp/bats-run-xUwXsT/test/3/home/.claude/.cw-new.CLAUDE.md	2026-09-25 00:58:42.000000000 -0700
+# @@ -0,0 +1 @@
+# +global instructions
+# /tmp/bats-run-xUwXsT/test/3/repo/devcontainer-config/install.sh: line 124: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+# ADD /tmp/bats-run-xUwXsT/test/3/home/.claude/skills (new, 2 file(s)):
+# /tmp/bats-run-xUwXsT/test/3/repo/devcontainer-config/install.sh: line 124: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+#     skills/a/SKILL.md
+#     skills/a/big.md
+# /tmp/bats-run-xUwXsT/test/3/repo/devcontainer-config/install.sh: line 124: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+#     (content not shown: 301 lines, over the 200-line limit for a new entry; it is skills at commit 510097af8923)
+# /tmp/bats-run-xUwXsT/test/3/repo/devcontainer-config/install.sh: line 124: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+# ADD /tmp/bats-run-xUwXsT/test/3/home/.claude/workflows (new, 1 file(s)):
+# /tmp/bats-run-xUwXsT/test/3/repo/devcontainer-config/install.sh: line 124: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+#     workflows/w.md
+# /tmp/bats-run-xUwXsT/test/3/repo/devcontainer-config/install.sh: line 124: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+# diff -ruNa /tmp/bats-run-xUwXsT/test/3/tmp/cw-host-stage.3LZky9/installed/workflows/w.md /tmp/bats-run-xUwXsT/test/3/home/.claude/.cw-new.workflows/w.md
+# --- /tmp/bats-run-xUwXsT/test/3/tmp/cw-host-stage.3LZky9/installed/workflows/w.md	1969-12-31 16:00:00.000000000 -0800
+# +++ /tmp/bats-run-xUwXsT/test/3/home/.claude/.cw-new.workflows/w.md	2026-09-25 00:58:42.000000000 -0700
+# @@ -0,0 +1 @@
+# +workflow
+# /tmp/bats-run-xUwXsT/test/3/repo/devcontainer-config/install.sh: line 124: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+# ADD /tmp/bats-run-xUwXsT/test/3/home/.claude/guides (new, 1 file(s)):
+# /tmp/bats-run-xUwXsT/test/3/repo/devcontainer-config/install.sh: line 124: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+#     guides/g.md
+# /tmp/bats-run-xUwXsT/test/3/repo/devcontainer-config/install.sh: line 124: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+# diff -ruNa /tmp/bats-run-xUwXsT/test/3/tmp/cw-host-stage.3LZky9/installed/guides/g.md /tmp/bats-run-xUwXsT/test/3/home/.claude/.cw-new.guides/g.md
+# --- /tmp/bats-run-xUwXsT/test/3/tmp/cw-host-stage.3LZky9/installed/guides/g.md	1969-12-31 16:00:00.000000000 -0800
+# +++ /tmp/bats-run-xUwXsT/test/3/home/.claude/.cw-new.guides/g.md	2026-09-25 00:58:42.000000000 -0700
+# @@ -0,0 +1 @@
+# +guide
+# /tmp/bats-run-xUwXsT/test/3/repo/devcontainer-config/install.sh: line 124: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+# ADD /tmp/bats-run-xUwXsT/test/3/home/.claude/patterns (new, 1 file(s)):
+# /tmp/bats-run-xUwXsT/test/3/repo/devcontainer-config/install.sh: line 124: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+#     patterns/p.md
+# /tmp/bats-run-xUwXsT/test/3/repo/devcontainer-config/install.sh: line 124: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+# diff -ruNa /tmp/bats-run-xUwXsT/test/3/tmp/cw-host-stage.3LZky9/installed/patterns/p.md /tmp/bats-run-xUwXsT/test/3/home/.claude/.cw-new.patterns/p.md
+# --- /tmp/bats-run-xUwXsT/test/3/tmp/cw-host-stage.3LZky9/installed/patterns/p.md	1969-12-31 16:00:00.000000000 -0800
+# +++ /tmp/bats-run-xUwXsT/test/3/home/.claude/.cw-new.patterns/p.md	2026-09-25 00:58:42.000000000 -0700
+# @@ -0,0 +1 @@
+# +pattern
+# /tmp/bats-run-xUwXsT/test/3/repo/devcontainer-config/install.sh: line 124: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+# ADD /tmp/bats-run-xUwXsT/test/3/home/.claude/hooks (new, 3 file(s)):
+# /tmp/bats-run-xUwXsT/test/3/repo/devcontainer-config/install.sh: line 124: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+#     hooks/h.sh
+#     hooks/lib/x.sh
+#     hooks/wiring.json
+# /tmp/bats-run-xUwXsT/test/3/repo/devcontainer-config/install.sh: line 124: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+# diff -ruNa /tmp/bats-run-xUwXsT/test/3/tmp/cw-host-stage.3LZky9/installed/hooks/h.sh /tmp/bats-run-xUwXsT/test/3/home/.claude/.cw-new.hooks/h.sh
+# --- /tmp/bats-run-xUwXsT/test/3/tmp/cw-host-stage.3LZky9/installed/hooks/h.sh	1969-12-31 16:00:00.000000000 -0800
+# +++ /tmp/bats-run-xUwXsT/test/3/home/.claude/.cw-new.hooks/h.sh	2026-09-25 00:58:42.000000000 -0700
+# @@ -0,0 +1,2 @@
+# +#!/bin/bash
+# +exit 0
+# diff -ruNa /tmp/bats-run-xUwXsT/test/3/tmp/cw-host-stage.3LZky9/installed/hooks/lib/x.sh /tmp/bats-run-xUwXsT/test/3/home/.claude/.cw-new.hooks/lib/x.sh
+# --- /tmp/bats-run-xUwXsT/test/3/tmp/cw-host-stage.3LZky9/installed/hooks/lib/x.sh	1969-12-31 16:00:00.000000000 -0800
+# +++ /tmp/bats-run-xUwXsT/test/3/home/.claude/.cw-new.hooks/lib/x.sh	2026-09-25 00:58:42.000000000 -0700
+# @@ -0,0 +1 @@
+# +#!/bin/bash
+# diff -ruNa /tmp/bats-run-xUwXsT/test/3/tmp/cw-host-stage.3LZky9/installed/hooks/wiring.json /tmp/bats-run-xUwXsT/test/3/home/.claude/.cw-new.hooks/wiring.json
+# --- /tmp/bats-run-xUwXsT/test/3/tmp/cw-host-stage.3LZky9/installed/hooks/wiring.json	1969-12-31 16:00:00.000000000 -0800
+# +++ /tmp/bats-run-xUwXsT/test/3/home/.claude/.cw-new.hooks/wiring.json	2026-09-25 00:58:42.000000000 -0700
+# @@ -0,0 +1 @@
+# +{"hooks":{}}
+# /tmp/bats-run-xUwXsT/test/3/repo/devcontainer-config/install.sh: line 124: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+# ADD /tmp/bats-run-xUwXsT/test/3/home/.claude/scripts (new, 1 file(s)):
+# /tmp/bats-run-xUwXsT/test/3/repo/devcontainer-config/install.sh: line 124: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+#     scripts/s.sh
+# /tmp/bats-run-xUwXsT/test/3/repo/devcontainer-config/install.sh: line 124: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+# diff -ruNa /tmp/bats-run-xUwXsT/test/3/tmp/cw-host-stage.3LZky9/installed/scripts/s.sh /tmp/bats-run-xUwXsT/test/3/home/.claude/.cw-new.scripts/s.sh
+# --- /tmp/bats-run-xUwXsT/test/3/tmp/cw-host-stage.3LZky9/installed/scripts/s.sh	1969-12-31 16:00:00.000000000 -0800
+# +++ /tmp/bats-run-xUwXsT/test/3/home/.claude/.cw-new.scripts/s.sh	2026-09-25 00:58:42.000000000 -0700
+# @@ -0,0 +1 @@
+# +#!/bin/bash
+# ===============================================================================
+#
+# Install these files into /tmp/bats-run-xUwXsT/test/3/home/.claude? [y/N] y
+# /bin/bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+# Checking for running cc-isolated containers (docker ps; up to 20 s)...
+# Installed into /tmp/bats-run-xUwXsT/test/3/home/.claude.
+#
+# REMINDER: hooks/wiring.json changed (or was not installed before). Copying the
+# hooks does not wire them. Redo guides/bare-host-hook-wiring.md §2 to merge it
+# into /tmp/bats-run-xUwXsT/test/3/home/.claude/settings.json.
+# --- installed skills/a/SKILL.md:
+# MALICIOUS-SKILL
+# SP1c RESULT: installed content differs from 'skills at commit X'
+bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+ok 4 SP1d a symlink planted in the stage after extract_commit's link check installs as a live link into an agent-writable file
+# bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+# n
+# y
+# bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+# bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+# /bin/bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+# Checking for running cc-isolated containers (docker ps; up to 20 s)...
+# Canonical (repo):  /tmp/bats-run-xUwXsT/test/4/repo/devcontainer-config at commit 9e93c83e143b (staged in /tmp/bats-run-xUwXsT/test/4/tmp/cw-devc-stage.bQ445Z/config)
+# Installed (host):  /tmp/bats-run-xUwXsT/test/4/home/.config/claude-devcontainer
+#
+# First install — /tmp/bats-run-xUwXsT/test/4/home/.config/claude-devcontainer does not exist yet.
+#
+# Install this config and bless it? [y/N] Aborted. Nothing was changed. (devcontainer config)
+#
+# === Host target: global Claude Code files ======================================
+# Destination: /tmp/bats-run-xUwXsT/test/4/home/.claude  (chosen by $CLAUDE_HOME_DIR)
+# /bin/bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+# Checking for running cc-isolated containers (docker ps; up to 20 s)...
+# Canonical (repo):  /tmp/bats-run-xUwXsT/test/4/repo (commit 9e93c83e143b51728681effcd1409f2ae54f73b8)
+#
+# === Changes this install would make ===========================================
+# /tmp/bats-run-xUwXsT/test/4/repo/devcontainer-config/install.sh: line 124: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+# ADD /tmp/bats-run-xUwXsT/test/4/home/.claude/CLAUDE.md (new, 1 file(s)):
+# /tmp/bats-run-xUwXsT/test/4/repo/devcontainer-config/install.sh: line 124: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+#     CLAUDE.md
+# /tmp/bats-run-xUwXsT/test/4/repo/devcontainer-config/install.sh: line 124: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+# --- /tmp/bats-run-xUwXsT/test/4/tmp/cw-host-stage.3c5TKd/installed/CLAUDE.md	1969-12-31 16:00:00.000000000 -0800
+# +++ /tmp/bats-run-xUwXsT/test/4/home/.claude/.cw-new.CLAUDE.md	2026-09-25 00:58:44.000000000 -0700
+# @@ -0,0 +1 @@
+# +global instructions
+# /tmp/bats-run-xUwXsT/test/4/repo/devcontainer-config/install.sh: line 124: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+# ADD /tmp/bats-run-xUwXsT/test/4/home/.claude/skills (new, 1 file(s)):
+# /tmp/bats-run-xUwXsT/test/4/repo/devcontainer-config/install.sh: line 124: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+#     skills/a/SKILL.md
+# /tmp/bats-run-xUwXsT/test/4/repo/devcontainer-config/install.sh: line 124: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+# diff -ruNa /tmp/bats-run-xUwXsT/test/4/tmp/cw-host-stage.3c5TKd/installed/skills/a/SKILL.md /tmp/bats-run-xUwXsT/test/4/home/.claude/.cw-new.skills/a/SKILL.md
+# --- /tmp/bats-run-xUwXsT/test/4/tmp/cw-host-stage.3c5TKd/installed/skills/a/SKILL.md	1969-12-31 16:00:00.000000000 -0800
+# +++ /tmp/bats-run-xUwXsT/test/4/home/.claude/.cw-new.skills/a/SKILL.md	2026-09-25 00:58:44.000000000 -0700
+# @@ -0,0 +1 @@
+# +skill a
+# /tmp/bats-run-xUwXsT/test/4/repo/devcontainer-config/install.sh: line 124: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+# ADD /tmp/bats-run-xUwXsT/test/4/home/.claude/workflows (new, 1 file(s)):
+# /tmp/bats-run-xUwXsT/test/4/repo/devcontainer-config/install.sh: line 124: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+#     workflows/w.md
+# /tmp/bats-run-xUwXsT/test/4/repo/devcontainer-config/install.sh: line 124: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+# diff -ruNa /tmp/bats-run-xUwXsT/test/4/tmp/cw-host-stage.3c5TKd/installed/workflows/w.md /tmp/bats-run-xUwXsT/test/4/home/.claude/.cw-new.workflows/w.md
+# --- /tmp/bats-run-xUwXsT/test/4/tmp/cw-host-stage.3c5TKd/installed/workflows/w.md	1969-12-31 16:00:00.000000000 -0800
+# +++ /tmp/bats-run-xUwXsT/test/4/home/.claude/.cw-new.workflows/w.md	2026-09-25 00:58:44.000000000 -0700
+# @@ -0,0 +1 @@
+# +workflow
+# /tmp/bats-run-xUwXsT/test/4/repo/devcontainer-config/install.sh: line 124: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+# ADD /tmp/bats-run-xUwXsT/test/4/home/.claude/guides (new, 1 file(s)):
+# /tmp/bats-run-xUwXsT/test/4/repo/devcontainer-config/install.sh: line 124: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+#     guides/g.md
+# /tmp/bats-run-xUwXsT/test/4/repo/devcontainer-config/install.sh: line 124: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+# diff -ruNa /tmp/bats-run-xUwXsT/test/4/tmp/cw-host-stage.3c5TKd/installed/guides/g.md /tmp/bats-run-xUwXsT/test/4/home/.claude/.cw-new.guides/g.md
+# --- /tmp/bats-run-xUwXsT/test/4/tmp/cw-host-stage.3c5TKd/installed/guides/g.md	1969-12-31 16:00:00.000000000 -0800
+# +++ /tmp/bats-run-xUwXsT/test/4/home/.claude/.cw-new.guides/g.md	2026-09-25 00:58:44.000000000 -0700
+# @@ -0,0 +1 @@
+# +guide
+# /tmp/bats-run-xUwXsT/test/4/repo/devcontainer-config/install.sh: line 124: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+# ADD /tmp/bats-run-xUwXsT/test/4/home/.claude/patterns (new, 1 file(s)):
+# /tmp/bats-run-xUwXsT/test/4/repo/devcontainer-config/install.sh: line 124: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+#     patterns/p.md
+# /tmp/bats-run-xUwXsT/test/4/repo/devcontainer-config/install.sh: line 124: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+# diff -ruNa /tmp/bats-run-xUwXsT/test/4/tmp/cw-host-stage.3c5TKd/installed/patterns/p.md /tmp/bats-run-xUwXsT/test/4/home/.claude/.cw-new.patterns/p.md
+# --- /tmp/bats-run-xUwXsT/test/4/tmp/cw-host-stage.3c5TKd/installed/patterns/p.md	1969-12-31 16:00:00.000000000 -0800
+# +++ /tmp/bats-run-xUwXsT/test/4/home/.claude/.cw-new.patterns/p.md	2026-09-25 00:58:44.000000000 -0700
+# @@ -0,0 +1 @@
+# +pattern
+# /tmp/bats-run-xUwXsT/test/4/repo/devcontainer-config/install.sh: line 124: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+# ADD /tmp/bats-run-xUwXsT/test/4/home/.claude/hooks (new, 3 file(s)):
+# /tmp/bats-run-xUwXsT/test/4/repo/devcontainer-config/install.sh: line 124: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+#     hooks/h.sh
+#     hooks/lib/x.sh
+#     hooks/wiring.json
+# /tmp/bats-run-xUwXsT/test/4/repo/devcontainer-config/install.sh: line 124: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+# diff -ruNa /tmp/bats-run-xUwXsT/test/4/tmp/cw-host-stage.3c5TKd/installed/hooks/h.sh /tmp/bats-run-xUwXsT/test/4/home/.claude/.cw-new.hooks/h.sh
+# --- /tmp/bats-run-xUwXsT/test/4/tmp/cw-host-stage.3c5TKd/installed/hooks/h.sh	1969-12-31 16:00:00.000000000 -0800
+# +++ /tmp/bats-run-xUwXsT/test/4/home/.claude/.cw-new.hooks/h.sh	2026-09-25 00:58:44.000000000 -0700
+# @@ -0,0 +1,2 @@
+# +#!/bin/bash
+# +exit 0
+# diff -ruNa /tmp/bats-run-xUwXsT/test/4/tmp/cw-host-stage.3c5TKd/installed/hooks/lib/x.sh /tmp/bats-run-xUwXsT/test/4/home/.claude/.cw-new.hooks/lib/x.sh
+# --- /tmp/bats-run-xUwXsT/test/4/tmp/cw-host-stage.3c5TKd/installed/hooks/lib/x.sh	1969-12-31 16:00:00.000000000 -0800
+# +++ /tmp/bats-run-xUwXsT/test/4/home/.claude/.cw-new.hooks/lib/x.sh	2026-09-25 00:58:44.000000000 -0700
+# @@ -0,0 +1 @@
+# +#!/bin/bash
+# diff -ruNa /tmp/bats-run-xUwXsT/test/4/tmp/cw-host-stage.3c5TKd/installed/hooks/wiring.json /tmp/bats-run-xUwXsT/test/4/home/.claude/.cw-new.hooks/wiring.json
+# --- /tmp/bats-run-xUwXsT/test/4/tmp/cw-host-stage.3c5TKd/installed/hooks/wiring.json	1969-12-31 16:00:00.000000000 -0800
+# +++ /tmp/bats-run-xUwXsT/test/4/home/.claude/.cw-new.hooks/wiring.json	2026-09-25 00:58:44.000000000 -0700
+# @@ -0,0 +1 @@
+# +{"hooks":{}}
+# /tmp/bats-run-xUwXsT/test/4/repo/devcontainer-config/install.sh: line 124: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+# ADD /tmp/bats-run-xUwXsT/test/4/home/.claude/scripts (new, 1 file(s)):
+# /tmp/bats-run-xUwXsT/test/4/repo/devcontainer-config/install.sh: line 124: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+#     scripts/s.sh
+# /tmp/bats-run-xUwXsT/test/4/repo/devcontainer-config/install.sh: line 124: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+# diff -ruNa /tmp/bats-run-xUwXsT/test/4/tmp/cw-host-stage.3c5TKd/installed/scripts/s.sh /tmp/bats-run-xUwXsT/test/4/home/.claude/.cw-new.scripts/s.sh
+# --- /tmp/bats-run-xUwXsT/test/4/tmp/cw-host-stage.3c5TKd/installed/scripts/s.sh	1969-12-31 16:00:00.000000000 -0800
+# +++ /tmp/bats-run-xUwXsT/test/4/home/.claude/.cw-new.scripts/s.sh	2026-09-25 00:58:44.000000000 -0700
+# @@ -0,0 +1 @@
+# +#!/bin/bash
+# ===============================================================================
+#
+# Install these files into /tmp/bats-run-xUwXsT/test/4/home/.claude? [y/N] /bin/bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+# Checking for running cc-isolated containers (docker ps; up to 20 s)...
+# Installed into /tmp/bats-run-xUwXsT/test/4/home/.claude.
+#
+# REMINDER: hooks/wiring.json changed (or was not installed before). Copying the
+# hooks does not wire them. Redo guides/bare-host-hook-wiring.md §2 to merge it
+# into /tmp/bats-run-xUwXsT/test/4/home/.claude/settings.json.
+# bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+# n
+# bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+# bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+# /bin/bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+# Checking for running cc-isolated containers (docker ps; up to 20 s)...
+# Canonical (repo):  /tmp/bats-run-xUwXsT/test/4/repo/devcontainer-config at commit 2ef6fc3d2e24 (staged in /tmp/bats-run-xUwXsT/test/4/tmp/cw-devc-stage.S8j59r/config)
+# Installed (host):  /tmp/bats-run-xUwXsT/test/4/home/.config/claude-devcontainer
+#
+# First install — /tmp/bats-run-xUwXsT/test/4/home/.config/claude-devcontainer does not exist yet.
+#
+# Install this config and bless it? [y/N] Aborted. Nothing was changed. (devcontainer config)
+#
+# === Host target: global Claude Code files ======================================
+# Destination: /tmp/bats-run-xUwXsT/test/4/home/.claude  (chosen by $CLAUDE_HOME_DIR)
+# /bin/bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+# Checking for running cc-isolated containers (docker ps; up to 20 s)...
+# Canonical (repo):  /tmp/bats-run-xUwXsT/test/4/repo (commit 2ef6fc3d2e249880840df2f90974102ef3c14d03)
+#
+# === Changes this install would make ===========================================
+# (diff: /tmp/bats-run-xUwXsT/test/4/tmp/cw-host-stage.fIcBAj/installed is the destination as it is now, links left out; /tmp/bats-run-xUwXsT/test/4/home/.claude/.cw-new.* are the copies to install)
+# /tmp/bats-run-xUwXsT/test/4/repo/devcontainer-config/install.sh: line 124: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+# /tmp/bats-run-xUwXsT/test/4/repo/devcontainer-config/install.sh: line 124: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+# /tmp/bats-run-xUwXsT/test/4/repo/devcontainer-config/install.sh: line 124: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+# /tmp/bats-run-xUwXsT/test/4/repo/devcontainer-config/install.sh: line 124: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+# diff -ruNa /tmp/bats-run-xUwXsT/test/4/tmp/cw-host-stage.fIcBAj/installed/guides/g.md /tmp/bats-run-xUwXsT/test/4/home/.claude/.cw-new.guides/g.md
+# --- /tmp/bats-run-xUwXsT/test/4/tmp/cw-host-stage.fIcBAj/installed/guides/g.md	2026-09-25 00:58:45.410465124 -0700
+# +++ /tmp/bats-run-xUwXsT/test/4/home/.claude/.cw-new.guides/g.md	2026-09-25 00:58:45.000000000 -0700
+# @@ -1 +1 @@
+# -guide
+# +guide v2 benign
+# /tmp/bats-run-xUwXsT/test/4/repo/devcontainer-config/install.sh: line 124: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+# /tmp/bats-run-xUwXsT/test/4/repo/devcontainer-config/install.sh: line 124: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+# /tmp/bats-run-xUwXsT/test/4/repo/devcontainer-config/install.sh: line 124: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+# ===============================================================================
+#
+# Install these files into /tmp/bats-run-xUwXsT/test/4/home/.claude? [y/N] y
+# /bin/bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+# Checking for running cc-isolated containers (docker ps; up to 20 s)...
+# Installed into /tmp/bats-run-xUwXsT/test/4/home/.claude.
+# Previous entries moved to /tmp/bats-run-xUwXsT/test/4/home/.claude/.claude-workflows-backup/20260925T075847Z (delete it when satisfied).
+# Backups: this one plus the 2 most recent earlier installs' are kept in /tmp/bats-run-xUwXsT/test/4/home/.claude/.claude-workflows-backup (0 older removed).
+# bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+# n
+# bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+# bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+# /bin/bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+# Checking for running cc-isolated containers (docker ps; up to 20 s)...
+# Canonical (repo):  /tmp/bats-run-xUwXsT/test/4/repo/devcontainer-config at commit 2ef6fc3d2e24 (staged in /tmp/bats-run-xUwXsT/test/4/tmp/cw-devc-stage.S8j59r/config)
+# Installed (host):  /tmp/bats-run-xUwXsT/test/4/home/.config/claude-devcontainer
+#
+# First install — /tmp/bats-run-xUwXsT/test/4/home/.config/claude-devcontainer does not exist yet.
+#
+# Install this config and bless it? [y/N] Aborted. Nothing was changed. (devcontainer config)
+#
+# === Host target: global Claude Code files ======================================
+# Destination: /tmp/bats-run-xUwXsT/test/4/home/.claude  (chosen by $CLAUDE_HOME_DIR)
+# /bin/bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+# Checking for running cc-isolated containers (docker ps; up to 20 s)...
+# Canonical (repo):  /tmp/bats-run-xUwXsT/test/4/repo (commit 2ef6fc3d2e249880840df2f90974102ef3c14d03)
+#
+# === Changes this install would make ===========================================
+# (diff: /tmp/bats-run-xUwXsT/test/4/tmp/cw-host-stage.fIcBAj/installed is the destination as it is now, links left out; /tmp/bats-run-xUwXsT/test/4/home/.claude/.cw-new.* are the copies to install)
+# /tmp/bats-run-xUwXsT/test/4/repo/devcontainer-config/install.sh: line 124: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+# /tmp/bats-run-xUwXsT/test/4/repo/devcontainer-config/install.sh: line 124: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+# /tmp/bats-run-xUwXsT/test/4/repo/devcontainer-config/install.sh: line 124: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+# /tmp/bats-run-xUwXsT/test/4/repo/devcontainer-config/install.sh: line 124: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+# diff -ruNa /tmp/bats-run-xUwXsT/test/4/tmp/cw-host-stage.fIcBAj/installed/guides/g.md /tmp/bats-run-xUwXsT/test/4/home/.claude/.cw-new.guides/g.md
+# --- /tmp/bats-run-xUwXsT/test/4/tmp/cw-host-stage.fIcBAj/installed/guides/g.md	2026-09-25 00:58:45.410465124 -0700
+# +++ /tmp/bats-run-xUwXsT/test/4/home/.claude/.cw-new.guides/g.md	2026-09-25 00:58:45.000000000 -0700
+# @@ -1 +1 @@
+# -guide
+# +guide v2 benign
+# /tmp/bats-run-xUwXsT/test/4/repo/devcontainer-config/install.sh: line 124: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+# /tmp/bats-run-xUwXsT/test/4/repo/devcontainer-config/install.sh: line 124: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+# /tmp/bats-run-xUwXsT/test/4/repo/devcontainer-config/install.sh: line 124: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+# ===============================================================================
+#
+# Install these files into /tmp/bats-run-xUwXsT/test/4/home/.claude? [y/N] y
+# /bin/bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+# Checking for running cc-isolated containers (docker ps; up to 20 s)...
+# Installed into /tmp/bats-run-xUwXsT/test/4/home/.claude.
+# Previous entries moved to /tmp/bats-run-xUwXsT/test/4/home/.claude/.claude-workflows-backup/20260925T075847Z (delete it when satisfied).
+# Backups: this one plus the 2 most recent earlier installs' are kept in /tmp/bats-run-xUwXsT/test/4/home/.claude/.claude-workflows-backup (0 older removed).
+# total 16
+# drwxr-xr-x 3 node node 4096 Sep 25 00:58 .
+# drwxr-xr-x 9 node node 4096 Sep 25 00:58 ..
+# lrwxrwxrwx 1 node node   45 Sep 25 00:58 h.sh -> /tmp/bats-run-xUwXsT/test/4/agent-writable.sh
+# drwxr-xr-x 2 node node 4096 Sep 25 00:58 lib
+# -rw-r--r-- 1 node node   13 Sep 25 00:58 wiring.json
+# SP1d RESULT: installed hook is a live link to an agent-writable file
+bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+ok 5 SP1e devcontainer: a cc-isolated.sh symlink planted after extract_commit's check passes both A1 hashes and is blessed
+# bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+# /bin/bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+# Checking for running cc-isolated containers (docker ps; up to 20 s)...
+# Canonical (repo):  /tmp/bats-run-xUwXsT/test/5/repo/devcontainer-config at commit ecbc36986179 (staged in /tmp/bats-run-xUwXsT/test/5/tmp/cw-devc-stage.SQRu0k/config)
+# Installed (host):  /tmp/bats-run-xUwXsT/test/5/home/.config/claude-devcontainer
+#
+# First install — /tmp/bats-run-xUwXsT/test/5/home/.config/claude-devcontainer does not exist yet.
+#
+# /bin/bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+# Checking for running cc-isolated containers (docker ps; up to 20 s)...
+# Linked /tmp/bats-run-xUwXsT/test/5/home/.local/bin/cc-isolated -> /tmp/bats-run-xUwXsT/test/5/home/.config/claude-devcontainer/cc-isolated.sh
+#
+# bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+# BLESS-STUB --bless
+#
+# Done. Blessed, NOT verified: a bless is a review of files, not a test of a container.
+# Next steps:
+#   touch ~/.ssh/canary                    # once, if you haven't — strengthens the H1 probe
+#   cc-isolated --probe-only <repo>        # REQUIRED after any boundary change: rebuilds from
+#                                          # this config and records it verified live on a pass
+#   cc-isolated                            # session for the repo containing $PWD
+#   cc-isolated --register <repo> --profile python   # widen a project's egress
+#
+# WARNING: /tmp/bats-run-xUwXsT/test/5/home/.local/bin is not on your PATH — add it, or call /tmp/bats-run-xUwXsT/test/5/home/.config/claude-devcontainer/cc-isolated.sh directly.
+#
+# Skipped host target (~/.claude): it never installs with --yes. Run install.sh without --yes at a terminal to review and install it.
+# bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+# /bin/bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+# Checking for running cc-isolated containers (docker ps; up to 20 s)...
+# Canonical (repo):  /tmp/bats-run-xUwXsT/test/5/repo/devcontainer-config at commit ecbc36986179 (staged in /tmp/bats-run-xUwXsT/test/5/tmp/cw-devc-stage.SQRu0k/config)
+# Installed (host):  /tmp/bats-run-xUwXsT/test/5/home/.config/claude-devcontainer
+#
+# First install — /tmp/bats-run-xUwXsT/test/5/home/.config/claude-devcontainer does not exist yet.
+#
+# /bin/bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+# Checking for running cc-isolated containers (docker ps; up to 20 s)...
+# Linked /tmp/bats-run-xUwXsT/test/5/home/.local/bin/cc-isolated -> /tmp/bats-run-xUwXsT/test/5/home/.config/claude-devcontainer/cc-isolated.sh
+#
+# bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+# BLESS-STUB --bless
+#
+# Done. Blessed, NOT verified: a bless is a review of files, not a test of a container.
+# Next steps:
+#   touch ~/.ssh/canary                    # once, if you haven't — strengthens the H1 probe
+#   cc-isolated --probe-only <repo>        # REQUIRED after any boundary change: rebuilds from
+#                                          # this config and records it verified live on a pass
+#   cc-isolated                            # session for the repo containing $PWD
+#   cc-isolated --register <repo> --profile python   # widen a project's egress
+#
+# WARNING: /tmp/bats-run-xUwXsT/test/5/home/.local/bin is not on your PATH — add it, or call /tmp/bats-run-xUwXsT/test/5/home/.config/claude-devcontainer/cc-isolated.sh directly.
+#
+# Skipped host target (~/.claude): it never installs with --yes. Run install.sh without --yes at a terminal to review and install it.
+# total 40
+# drwxr-xr-x 5 node node 4096 Sep 25 00:58 .
+# drwxr-xr-x 3 node node 4096 Sep 25 00:58 ..
+# -rw-r--r-- 1 node node   16 Sep 25 00:58 Dockerfile
+# lrwxrwxrwx 1 node node   48 Sep 25 00:58 cc-isolated.sh -> /tmp/bats-run-xUwXsT/test/5/agent-writable-cc.sh
+# -rw-r--r-- 1 node node   21 Sep 25 00:58 cc-sni-proxy.py
+# drwxr-xr-x 8 node node 4096 Sep 25 00:58 claude-home
+# -rw-r--r-- 1 node node   23 Sep 25 00:58 devcontainer.json
+# drwxr-xr-x 2 node node 4096 Sep 25 00:58 egress
+# -rwxr-xr-x 1 node node   22 Sep 25 00:58 init-firewall.sh
+# -rw-r--r-- 1 node node   25 Sep 25 00:58 link-claude-home.sh
+# drwxr-xr-x 2 node node 4096 Sep 25 00:58 projects
+# SP1e RESULT: blessed config's cc-isolated.sh is a link to an agent-writable file; status=0
+bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+ok 6 SP3a (re-run) smudge filter + attributes, and core.fsmonitor, are refused and never run
+# bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+# /bin/bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+# Checking for running cc-isolated containers (docker ps; up to 20 s)...
+# /tmp/bats-run-xUwXsT/test/6/repo/devcontainer-config/install.sh: line 124: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+# ERROR: the checkout's git state can make git run a command as you during this
+#        install (a filter, core.fsmonitor, an include, or an attributes file):
+#          /tmp/bats-run-xUwXsT/test/6/repo/.git/config: filter.pwn.smudge /tmp/bats-run-xUwXsT/test/6/smudge-ran.sh
+#          /tmp/bats-run-xUwXsT/test/6/repo/.git/info/attributes is not empty:
+#            *.md filter=pwn
+#        An agent, or a cc-isolated container through its bind mount, can write
+#        these. Check each one, remove it (git config --local --unset <key>, or
+#        empty the attributes file) and rerun. Nothing was installed.
+# bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+# /bin/bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+# Checking for running cc-isolated containers (docker ps; up to 20 s)...
+# /tmp/bats-run-xUwXsT/test/6/repo/devcontainer-config/install.sh: line 124: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+# ERROR: the checkout's git state can make git run a command as you during this
+#        install (a filter, core.fsmonitor, an include, or an attributes file):
+#          /tmp/bats-run-xUwXsT/test/6/repo/.git/config: filter.pwn.smudge /tmp/bats-run-xUwXsT/test/6/smudge-ran.sh
+#          /tmp/bats-run-xUwXsT/test/6/repo/.git/info/attributes is not empty:
+#            *.md filter=pwn
+#        An agent, or a cc-isolated container through its bind mount, can write
+#        these. Check each one, remove it (git config --local --unset <key>, or
+#        empty the attributes file) and rerun. Nothing was installed.
+# bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+# /bin/bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+# Checking for running cc-isolated containers (docker ps; up to 20 s)...
+# /tmp/bats-run-xUwXsT/test/6/repo/devcontainer-config/install.sh: line 124: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+# ERROR: the checkout's git state can make git run a command as you during this
+#        install (a filter, core.fsmonitor, an include, or an attributes file):
+#          /tmp/bats-run-xUwXsT/test/6/repo/.git/config: core.fsmonitor /tmp/bats-run-xUwXsT/test/6/fsmon-ran.sh
+#        An agent, or a cc-isolated container through its bind mount, can write
+#        these. Check each one, remove it (git config --local --unset <key>, or
+#        empty the attributes file) and rerun. Nothing was installed.
+# bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+# /bin/bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+# Checking for running cc-isolated containers (docker ps; up to 20 s)...
+# /tmp/bats-run-xUwXsT/test/6/repo/devcontainer-config/install.sh: line 124: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+# ERROR: the checkout's git state can make git run a command as you during this
+#        install (a filter, core.fsmonitor, an include, or an attributes file):
+#          /tmp/bats-run-xUwXsT/test/6/repo/.git/config: core.fsmonitor /tmp/bats-run-xUwXsT/test/6/fsmon-ran.sh
+#        An agent, or a cc-isolated container through its bind mount, can write
+#        these. Check each one, remove it (git config --local --unset <key>, or
+#        empty the attributes file) and rerun. Nothing was installed.
+# SP3a RESULT: refused, no marker
+bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+ok 7 SP3b .git/hooks/post-index-change runs during install (git status), not refused
+# bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+# /bin/bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+# Checking for running cc-isolated containers (docker ps; up to 20 s)...
+# Canonical (repo):  /tmp/bats-run-xUwXsT/test/7/repo/devcontainer-config at commit ecbc36986179 (staged in /tmp/bats-run-xUwXsT/test/7/tmp/cw-devc-stage.F9sBI8/config)
+# Installed (host):  /tmp/bats-run-xUwXsT/test/7/home/.config/claude-devcontainer
+#
+# First install — /tmp/bats-run-xUwXsT/test/7/home/.config/claude-devcontainer does not exist yet.
+#
+# /bin/bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+# Checking for running cc-isolated containers (docker ps; up to 20 s)...
+# Linked /tmp/bats-run-xUwXsT/test/7/home/.local/bin/cc-isolated -> /tmp/bats-run-xUwXsT/test/7/home/.config/claude-devcontainer/cc-isolated.sh
+#
+# bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+# BLESS-STUB --bless
+#
+# Done. Blessed, NOT verified: a bless is a review of files, not a test of a container.
+# Next steps:
+#   touch ~/.ssh/canary                    # once, if you haven't — strengthens the H1 probe
+#   cc-isolated --probe-only <repo>        # REQUIRED after any boundary change: rebuilds from
+#                                          # this config and records it verified live on a pass
+#   cc-isolated                            # session for the repo containing $PWD
+#   cc-isolated --register <repo> --profile python   # widen a project's egress
+#
+# WARNING: /tmp/bats-run-xUwXsT/test/7/home/.local/bin is not on your PATH — add it, or call /tmp/bats-run-xUwXsT/test/7/home/.config/claude-devcontainer/cc-isolated.sh directly.
+#
+# Skipped host target (~/.claude): it never installs with --yes. Run install.sh without --yes at a terminal to review and install it.
+# bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+# /bin/bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+# Checking for running cc-isolated containers (docker ps; up to 20 s)...
+# Canonical (repo):  /tmp/bats-run-xUwXsT/test/7/repo/devcontainer-config at commit ecbc36986179 (staged in /tmp/bats-run-xUwXsT/test/7/tmp/cw-devc-stage.F9sBI8/config)
+# Installed (host):  /tmp/bats-run-xUwXsT/test/7/home/.config/claude-devcontainer
+#
+# First install — /tmp/bats-run-xUwXsT/test/7/home/.config/claude-devcontainer does not exist yet.
+#
+# /bin/bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+# Checking for running cc-isolated containers (docker ps; up to 20 s)...
+# Linked /tmp/bats-run-xUwXsT/test/7/home/.local/bin/cc-isolated -> /tmp/bats-run-xUwXsT/test/7/home/.config/claude-devcontainer/cc-isolated.sh
+#
+# bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+# BLESS-STUB --bless
+#
+# Done. Blessed, NOT verified: a bless is a review of files, not a test of a container.
+# Next steps:
+#   touch ~/.ssh/canary                    # once, if you haven't — strengthens the H1 probe
+#   cc-isolated --probe-only <repo>        # REQUIRED after any boundary change: rebuilds from
+#                                          # this config and records it verified live on a pass
+#   cc-isolated                            # session for the repo containing $PWD
+#   cc-isolated --register <repo> --profile python   # widen a project's egress
+#
+# WARNING: /tmp/bats-run-xUwXsT/test/7/home/.local/bin is not on your PATH — add it, or call /tmp/bats-run-xUwXsT/test/7/home/.config/claude-devcontainer/cc-isolated.sh directly.
+#
+# Skipped host target (~/.claude): it never installs with --yes. Run install.sh without --yes at a terminal to review and install it.
+# SP3b RESULT: hook ran as the user; install status=0
+bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+ok 8 SP3c core.hooksPath in .git/config (not in the refused key list) runs during install
+# bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+# /bin/bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+# Checking for running cc-isolated containers (docker ps; up to 20 s)...
+# Canonical (repo):  /tmp/bats-run-xUwXsT/test/8/repo/devcontainer-config at commit 67b525b72d31 (staged in /tmp/bats-run-xUwXsT/test/8/tmp/cw-devc-stage.9p1KaE/config)
+# Installed (host):  /tmp/bats-run-xUwXsT/test/8/home/.config/claude-devcontainer
+#
+# First install — /tmp/bats-run-xUwXsT/test/8/home/.config/claude-devcontainer does not exist yet.
+#
+# /bin/bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+# Checking for running cc-isolated containers (docker ps; up to 20 s)...
+# Linked /tmp/bats-run-xUwXsT/test/8/home/.local/bin/cc-isolated -> /tmp/bats-run-xUwXsT/test/8/home/.config/claude-devcontainer/cc-isolated.sh
+#
+# bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+# BLESS-STUB --bless
+#
+# Done. Blessed, NOT verified: a bless is a review of files, not a test of a container.
+# Next steps:
+#   touch ~/.ssh/canary                    # once, if you haven't — strengthens the H1 probe
+#   cc-isolated --probe-only <repo>        # REQUIRED after any boundary change: rebuilds from
+#                                          # this config and records it verified live on a pass
+#   cc-isolated                            # session for the repo containing $PWD
+#   cc-isolated --register <repo> --profile python   # widen a project's egress
+#
+# WARNING: /tmp/bats-run-xUwXsT/test/8/home/.local/bin is not on your PATH — add it, or call /tmp/bats-run-xUwXsT/test/8/home/.config/claude-devcontainer/cc-isolated.sh directly.
+#
+# Skipped host target (~/.claude): it never installs with --yes. Run install.sh without --yes at a terminal to review and install it.
+# bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+# /bin/bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+# Checking for running cc-isolated containers (docker ps; up to 20 s)...
+# Canonical (repo):  /tmp/bats-run-xUwXsT/test/8/repo/devcontainer-config at commit 67b525b72d31 (staged in /tmp/bats-run-xUwXsT/test/8/tmp/cw-devc-stage.9p1KaE/config)
+# Installed (host):  /tmp/bats-run-xUwXsT/test/8/home/.config/claude-devcontainer
+#
+# First install — /tmp/bats-run-xUwXsT/test/8/home/.config/claude-devcontainer does not exist yet.
+#
+# /bin/bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+# Checking for running cc-isolated containers (docker ps; up to 20 s)...
+# Linked /tmp/bats-run-xUwXsT/test/8/home/.local/bin/cc-isolated -> /tmp/bats-run-xUwXsT/test/8/home/.config/claude-devcontainer/cc-isolated.sh
+#
+# bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+# BLESS-STUB --bless
+#
+# Done. Blessed, NOT verified: a bless is a review of files, not a test of a container.
+# Next steps:
+#   touch ~/.ssh/canary                    # once, if you haven't — strengthens the H1 probe
+#   cc-isolated --probe-only <repo>        # REQUIRED after any boundary change: rebuilds from
+#                                          # this config and records it verified live on a pass
+#   cc-isolated                            # session for the repo containing $PWD
+#   cc-isolated --register <repo> --profile python   # widen a project's egress
+#
+# WARNING: /tmp/bats-run-xUwXsT/test/8/home/.local/bin is not on your PATH — add it, or call /tmp/bats-run-xUwXsT/test/8/home/.config/claude-devcontainer/cc-isolated.sh directly.
+#
+# Skipped host target (~/.claude): it never installs with --yes. Run install.sh without --yes at a terminal to review and install it.
+# SP3c RESULT: hooksPath hook ran; install status=0
+bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+ok 9 SP3d a submodule's own git dir (filter + attributes + hook) runs during install; superproject gate sees nothing
+# bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+# /bin/bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+# Checking for running cc-isolated containers (docker ps; up to 20 s)...
+# Canonical (repo):  /tmp/bats-run-xUwXsT/test/9/repo/devcontainer-config at commit a104a71e3093 (staged in /tmp/bats-run-xUwXsT/test/9/tmp/cw-devc-stage.mi8TLS/config)
+# Installed (host):  /tmp/bats-run-xUwXsT/test/9/home/.config/claude-devcontainer
+#
+# First install — /tmp/bats-run-xUwXsT/test/9/home/.config/claude-devcontainer does not exist yet.
+#
+# /bin/bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+# Checking for running cc-isolated containers (docker ps; up to 20 s)...
+# Linked /tmp/bats-run-xUwXsT/test/9/home/.local/bin/cc-isolated -> /tmp/bats-run-xUwXsT/test/9/home/.config/claude-devcontainer/cc-isolated.sh
+#
+# bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+# BLESS-STUB --bless
+#
+# Done. Blessed, NOT verified: a bless is a review of files, not a test of a container.
+# Next steps:
+#   touch ~/.ssh/canary                    # once, if you haven't — strengthens the H1 probe
+#   cc-isolated --probe-only <repo>        # REQUIRED after any boundary change: rebuilds from
+#                                          # this config and records it verified live on a pass
+#   cc-isolated                            # session for the repo containing $PWD
+#   cc-isolated --register <repo> --profile python   # widen a project's egress
+#
+# WARNING: /tmp/bats-run-xUwXsT/test/9/home/.local/bin is not on your PATH — add it, or call /tmp/bats-run-xUwXsT/test/9/home/.config/claude-devcontainer/cc-isolated.sh directly.
+#
+# Skipped host target (~/.claude): it never installs with --yes. Run install.sh without --yes at a terminal to review and install it.
+# bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+# /bin/bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+# Checking for running cc-isolated containers (docker ps; up to 20 s)...
+# Canonical (repo):  /tmp/bats-run-xUwXsT/test/9/repo/devcontainer-config at commit a104a71e3093 (staged in /tmp/bats-run-xUwXsT/test/9/tmp/cw-devc-stage.mi8TLS/config)
+# Installed (host):  /tmp/bats-run-xUwXsT/test/9/home/.config/claude-devcontainer
+#
+# First install — /tmp/bats-run-xUwXsT/test/9/home/.config/claude-devcontainer does not exist yet.
+#
+# /bin/bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+# Checking for running cc-isolated containers (docker ps; up to 20 s)...
+# Linked /tmp/bats-run-xUwXsT/test/9/home/.local/bin/cc-isolated -> /tmp/bats-run-xUwXsT/test/9/home/.config/claude-devcontainer/cc-isolated.sh
+#
+# bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+# BLESS-STUB --bless
+#
+# Done. Blessed, NOT verified: a bless is a review of files, not a test of a container.
+# Next steps:
+#   touch ~/.ssh/canary                    # once, if you haven't — strengthens the H1 probe
+#   cc-isolated --probe-only <repo>        # REQUIRED after any boundary change: rebuilds from
+#                                          # this config and records it verified live on a pass
+#   cc-isolated                            # session for the repo containing $PWD
+#   cc-isolated --register <repo> --profile python   # widen a project's egress
+#
+# WARNING: /tmp/bats-run-xUwXsT/test/9/home/.local/bin is not on your PATH — add it, or call /tmp/bats-run-xUwXsT/test/9/home/.config/claude-devcontainer/cc-isolated.sh directly.
+#
+# Skipped host target (~/.claude): it never installs with --yes. Run install.sh without --yes at a terminal to review and install it.
+# markers:
+#   sub-clean-ran
+#   sub-hook-ran
+# SP3d RESULT: submodule filter/hook ran; install status=0
+bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+ok 10 A1 after a post-copy mismatch, the cc-isolated link is left dangling (old script removed)
+# bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+# /bin/bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+# Checking for running cc-isolated containers (docker ps; up to 20 s)...
+# Canonical (repo):  /tmp/bats-run-xUwXsT/test/10/repo/devcontainer-config at commit 614322b5d993 (staged in /tmp/bats-run-xUwXsT/test/10/tmp/cw-devc-stage.11osbB/config)
+# Installed (host):  /tmp/bats-run-xUwXsT/test/10/home/.config/claude-devcontainer
+#
+# First install — /tmp/bats-run-xUwXsT/test/10/home/.config/claude-devcontainer does not exist yet.
+#
+# /bin/bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+# Checking for running cc-isolated containers (docker ps; up to 20 s)...
+# Linked /tmp/bats-run-xUwXsT/test/10/home/.local/bin/cc-isolated -> /tmp/bats-run-xUwXsT/test/10/home/.config/claude-devcontainer/cc-isolated.sh
+#
+# bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+# BLESS-STUB --bless
+#
+# Done. Blessed, NOT verified: a bless is a review of files, not a test of a container.
+# Next steps:
+#   touch ~/.ssh/canary                    # once, if you haven't — strengthens the H1 probe
+#   cc-isolated --probe-only <repo>        # REQUIRED after any boundary change: rebuilds from
+#                                          # this config and records it verified live on a pass
+#   cc-isolated                            # session for the repo containing $PWD
+#   cc-isolated --register <repo> --profile python   # widen a project's egress
+#
+# WARNING: /tmp/bats-run-xUwXsT/test/10/home/.local/bin is not on your PATH — add it, or call /tmp/bats-run-xUwXsT/test/10/home/.config/claude-devcontainer/cc-isolated.sh directly.
+#
+# Skipped host target (~/.claude): it never installs with --yes. Run install.sh without --yes at a terminal to review and install it.
+# bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+# /bin/bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+# Checking for running cc-isolated containers (docker ps; up to 20 s)...
+# /bin/bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+# Canonical (repo):  /tmp/bats-run-xUwXsT/test/10/repo/devcontainer-config at commit 4f513c965ae4 (staged in /tmp/bats-run-xUwXsT/test/10/tmp/cw-devc-stage.UcLrzr/config)
+# Installed (host):  /tmp/bats-run-xUwXsT/test/10/home/.config/claude-devcontainer
+#
+# === Changes this install would make ===========================================
+# /tmp/bats-run-xUwXsT/test/10/repo/devcontainer-config/install.sh: line 124: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+# MODE /tmp/bats-run-xUwXsT/test/10/home/.config/claude-devcontainer/init-firewall.sh: 755 -> 644
+# /tmp/bats-run-xUwXsT/test/10/repo/devcontainer-config/install.sh: line 124: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+# --- /tmp/bats-run-xUwXsT/test/10/home/.config/claude-devcontainer/devcontainer.json	2026-09-25 00:58:51.000000000 -0700
+# +++ /tmp/bats-run-xUwXsT/test/10/tmp/cw-devc-stage.UcLrzr/config/devcontainer.json	2026-09-25 00:58:52.000000000 -0700
+# @@ -1 +1 @@
+# -stub devcontainer.json
+# +{"v":2}
+# /tmp/bats-run-xUwXsT/test/10/repo/devcontainer-config/install.sh: line 124: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+# /tmp/bats-run-xUwXsT/test/10/repo/devcontainer-config/install.sh: line 124: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+# /tmp/bats-run-xUwXsT/test/10/repo/devcontainer-config/install.sh: line 124: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+# /tmp/bats-run-xUwXsT/test/10/repo/devcontainer-config/install.sh: line 124: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+# /tmp/bats-run-xUwXsT/test/10/repo/devcontainer-config/install.sh: line 124: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+# /tmp/bats-run-xUwXsT/test/10/repo/devcontainer-config/install.sh: line 124: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+# /tmp/bats-run-xUwXsT/test/10/repo/devcontainer-config/install.sh: line 124: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+# diff -ruNa /tmp/bats-run-xUwXsT/test/10/home/.config/claude-devcontainer/claude-home/.manifest /tmp/bats-run-xUwXsT/test/10/tmp/cw-devc-stage.UcLrzr/config/claude-home/.manifest
+# --- /tmp/bats-run-xUwXsT/test/10/home/.config/claude-devcontainer/claude-home/.manifest	2026-09-25 00:58:51.982715628 -0700
+# +++ /tmp/bats-run-xUwXsT/test/10/tmp/cw-devc-stage.UcLrzr/config/claude-home/.manifest	2026-09-25 00:58:52.191639932 -0700
+# @@ -1,4 +1,4 @@
+# -commit=614322b5d993ea01fd9242f81450c8e2923cc4d1
+# +commit=4f513c965ae4dbc3667695c0914cdcdd9d5f9bd2
+#  dirty=no
+#  uncommitted_excluded=0
+#  assembled_from=/tmp/bats-run-xUwXsT/test/10/repo
+# ===============================================================================
+#
+# /bin/bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+# Checking for running cc-isolated containers (docker ps; up to 20 s)...
+# /bin/bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+# /bin/bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+# /bin/bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+# /bin/bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+# /bin/bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+# /bin/bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+# /bin/bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+# /bin/bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+# ERROR: the devcontainer config copied into /tmp/bats-run-xUwXsT/test/10/home/.config/claude-devcontainer differs from what the review
+#        showed (the stage changed after review, during the copy). The copied items
+#        were removed again and nothing was blessed, so cc-isolated will not run
+#        until install.sh completes. Rerun install.sh.
+# bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+# /bin/bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+# Checking for running cc-isolated containers (docker ps; up to 20 s)...
+# /bin/bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+# Canonical (repo):  /tmp/bats-run-xUwXsT/test/10/repo/devcontainer-config at commit 4f513c965ae4 (staged in /tmp/bats-run-xUwXsT/test/10/tmp/cw-devc-stage.UcLrzr/config)
+# Installed (host):  /tmp/bats-run-xUwXsT/test/10/home/.config/claude-devcontainer
+#
+# === Changes this install would make ===========================================
+# /tmp/bats-run-xUwXsT/test/10/repo/devcontainer-config/install.sh: line 124: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+# MODE /tmp/bats-run-xUwXsT/test/10/home/.config/claude-devcontainer/init-firewall.sh: 755 -> 644
+# /tmp/bats-run-xUwXsT/test/10/repo/devcontainer-config/install.sh: line 124: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+# --- /tmp/bats-run-xUwXsT/test/10/home/.config/claude-devcontainer/devcontainer.json	2026-09-25 00:58:51.000000000 -0700
+# +++ /tmp/bats-run-xUwXsT/test/10/tmp/cw-devc-stage.UcLrzr/config/devcontainer.json	2026-09-25 00:58:52.000000000 -0700
+# @@ -1 +1 @@
+# -stub devcontainer.json
+# +{"v":2}
+# /tmp/bats-run-xUwXsT/test/10/repo/devcontainer-config/install.sh: line 124: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+# /tmp/bats-run-xUwXsT/test/10/repo/devcontainer-config/install.sh: line 124: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+# /tmp/bats-run-xUwXsT/test/10/repo/devcontainer-config/install.sh: line 124: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+# /tmp/bats-run-xUwXsT/test/10/repo/devcontainer-config/install.sh: line 124: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+# /tmp/bats-run-xUwXsT/test/10/repo/devcontainer-config/install.sh: line 124: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+# /tmp/bats-run-xUwXsT/test/10/repo/devcontainer-config/install.sh: line 124: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+# /tmp/bats-run-xUwXsT/test/10/repo/devcontainer-config/install.sh: line 124: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+# diff -ruNa /tmp/bats-run-xUwXsT/test/10/home/.config/claude-devcontainer/claude-home/.manifest /tmp/bats-run-xUwXsT/test/10/tmp/cw-devc-stage.UcLrzr/config/claude-home/.manifest
+# --- /tmp/bats-run-xUwXsT/test/10/home/.config/claude-devcontainer/claude-home/.manifest	2026-09-25 00:58:51.982715628 -0700
+# +++ /tmp/bats-run-xUwXsT/test/10/tmp/cw-devc-stage.UcLrzr/config/claude-home/.manifest	2026-09-25 00:58:52.191639932 -0700
+# @@ -1,4 +1,4 @@
+# -commit=614322b5d993ea01fd9242f81450c8e2923cc4d1
+# +commit=4f513c965ae4dbc3667695c0914cdcdd9d5f9bd2
+#  dirty=no
+#  uncommitted_excluded=0
+#  assembled_from=/tmp/bats-run-xUwXsT/test/10/repo
+# ===============================================================================
+#
+# /bin/bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+# Checking for running cc-isolated containers (docker ps; up to 20 s)...
+# /bin/bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+# /bin/bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+# /bin/bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+# /bin/bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+# /bin/bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+# /bin/bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+# /bin/bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+# /bin/bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+# ERROR: the devcontainer config copied into /tmp/bats-run-xUwXsT/test/10/home/.config/claude-devcontainer differs from what the review
+#        showed (the stage changed after review, during the copy). The copied items
+#        were removed again and nothing was blessed, so cc-isolated will not run
+#        until install.sh completes. Rerun install.sh.
+# /tmp/bats-run-xUwXsT/test/10/home/.config/claude-devcontainer:
+# total 12
+# drwxr-xr-x 3 node node 4096 Sep 25 00:58 .
+# drwxr-xr-x 3 node node 4096 Sep 25 00:58 ..
+# drwxr-xr-x 2 node node 4096 Sep 25 00:58 projects
+#
+# /tmp/bats-run-xUwXsT/test/10/home/.local/bin:
+# total 12
+# drwxr-xr-x 2 node node 4096 Sep 25 00:58 .
+# drwxr-xr-x 3 node node 4096 Sep 25 00:58 ..
+# lrwxrwxrwx 1 node node   76 Sep 25 00:58 cc-isolated -> /tmp/bats-run-xUwXsT/test/10/home/.config/claude-devcontainer/cc-isolated.sh
+# A1 RESULT: link dangling, no old or unreviewed script reachable
+bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+ok 11 A1b a cp failure later in the copy loop exits (set -e) before the post-copy check; an altered cc-isolated.sh stays live
+# bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+# /bin/bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+# Checking for running cc-isolated containers (docker ps; up to 20 s)...
+# Canonical (repo):  /tmp/bats-run-xUwXsT/test/11/repo/devcontainer-config at commit 9a58de19b3d9 (staged in /tmp/bats-run-xUwXsT/test/11/tmp/cw-devc-stage.J8yehI/config)
+# Installed (host):  /tmp/bats-run-xUwXsT/test/11/home/.config/claude-devcontainer
+#
+# First install — /tmp/bats-run-xUwXsT/test/11/home/.config/claude-devcontainer does not exist yet.
+#
+# /bin/bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+# Checking for running cc-isolated containers (docker ps; up to 20 s)...
+# Linked /tmp/bats-run-xUwXsT/test/11/home/.local/bin/cc-isolated -> /tmp/bats-run-xUwXsT/test/11/home/.config/claude-devcontainer/cc-isolated.sh
+#
+# bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+# BLESS-STUB --bless
+#
+# Done. Blessed, NOT verified: a bless is a review of files, not a test of a container.
+# Next steps:
+#   touch ~/.ssh/canary                    # once, if you haven't — strengthens the H1 probe
+#   cc-isolated --probe-only <repo>        # REQUIRED after any boundary change: rebuilds from
+#                                          # this config and records it verified live on a pass
+#   cc-isolated                            # session for the repo containing $PWD
+#   cc-isolated --register <repo> --profile python   # widen a project's egress
+#
+# WARNING: /tmp/bats-run-xUwXsT/test/11/home/.local/bin is not on your PATH — add it, or call /tmp/bats-run-xUwXsT/test/11/home/.config/claude-devcontainer/cc-isolated.sh directly.
+#
+# Skipped host target (~/.claude): it never installs with --yes. Run install.sh without --yes at a terminal to review and install it.
+# bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+# /bin/bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+# Checking for running cc-isolated containers (docker ps; up to 20 s)...
+# /bin/bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+# Canonical (repo):  /tmp/bats-run-xUwXsT/test/11/repo/devcontainer-config at commit f1200bfd4c07 (staged in /tmp/bats-run-xUwXsT/test/11/tmp/cw-devc-stage.uPi7Fs/config)
+# Installed (host):  /tmp/bats-run-xUwXsT/test/11/home/.config/claude-devcontainer
+#
+# === Changes this install would make ===========================================
+# /tmp/bats-run-xUwXsT/test/11/repo/devcontainer-config/install.sh: line 124: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+# MODE /tmp/bats-run-xUwXsT/test/11/home/.config/claude-devcontainer/init-firewall.sh: 755 -> 644
+# /tmp/bats-run-xUwXsT/test/11/repo/devcontainer-config/install.sh: line 124: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+# --- /tmp/bats-run-xUwXsT/test/11/home/.config/claude-devcontainer/devcontainer.json	2026-09-25 00:58:52.000000000 -0700
+# +++ /tmp/bats-run-xUwXsT/test/11/tmp/cw-devc-stage.uPi7Fs/config/devcontainer.json	2026-09-25 00:58:52.000000000 -0700
+# @@ -1 +1 @@
+# -stub devcontainer.json
+# +{"v":2}
+# /tmp/bats-run-xUwXsT/test/11/repo/devcontainer-config/install.sh: line 124: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+# /tmp/bats-run-xUwXsT/test/11/repo/devcontainer-config/install.sh: line 124: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+# /tmp/bats-run-xUwXsT/test/11/repo/devcontainer-config/install.sh: line 124: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+# /tmp/bats-run-xUwXsT/test/11/repo/devcontainer-config/install.sh: line 124: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+# /tmp/bats-run-xUwXsT/test/11/repo/devcontainer-config/install.sh: line 124: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+# /tmp/bats-run-xUwXsT/test/11/repo/devcontainer-config/install.sh: line 124: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+# /tmp/bats-run-xUwXsT/test/11/repo/devcontainer-config/install.sh: line 124: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+# diff -ruNa /tmp/bats-run-xUwXsT/test/11/home/.config/claude-devcontainer/claude-home/.manifest /tmp/bats-run-xUwXsT/test/11/tmp/cw-devc-stage.uPi7Fs/config/claude-home/.manifest
+# --- /tmp/bats-run-xUwXsT/test/11/home/.config/claude-devcontainer/claude-home/.manifest	2026-09-25 00:58:52.663512378 -0700
+# +++ /tmp/bats-run-xUwXsT/test/11/tmp/cw-devc-stage.uPi7Fs/config/claude-home/.manifest	2026-09-25 00:58:52.914787523 -0700
+# @@ -1,4 +1,4 @@
+# -commit=9a58de19b3d94ef31c5cbbf055fdb4b6446807d4
+# +commit=f1200bfd4c07eb3df5f1dbab178a3055ef2fb335
+#  dirty=no
+#  uncommitted_excluded=0
+#  assembled_from=/tmp/bats-run-xUwXsT/test/11/repo
+# ===============================================================================
+#
+# /bin/bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+# Checking for running cc-isolated containers (docker ps; up to 20 s)...
+# /bin/bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+# /bin/bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+# /bin/bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+# /bin/bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+# /bin/bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+# /bin/bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+# /bin/bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+# bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+# /bin/bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+# Checking for running cc-isolated containers (docker ps; up to 20 s)...
+# /bin/bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+# Canonical (repo):  /tmp/bats-run-xUwXsT/test/11/repo/devcontainer-config at commit f1200bfd4c07 (staged in /tmp/bats-run-xUwXsT/test/11/tmp/cw-devc-stage.uPi7Fs/config)
+# Installed (host):  /tmp/bats-run-xUwXsT/test/11/home/.config/claude-devcontainer
+#
+# === Changes this install would make ===========================================
+# /tmp/bats-run-xUwXsT/test/11/repo/devcontainer-config/install.sh: line 124: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+# MODE /tmp/bats-run-xUwXsT/test/11/home/.config/claude-devcontainer/init-firewall.sh: 755 -> 644
+# /tmp/bats-run-xUwXsT/test/11/repo/devcontainer-config/install.sh: line 124: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+# --- /tmp/bats-run-xUwXsT/test/11/home/.config/claude-devcontainer/devcontainer.json	2026-09-25 00:58:52.000000000 -0700
+# +++ /tmp/bats-run-xUwXsT/test/11/tmp/cw-devc-stage.uPi7Fs/config/devcontainer.json	2026-09-25 00:58:52.000000000 -0700
+# @@ -1 +1 @@
+# -stub devcontainer.json
+# +{"v":2}
+# /tmp/bats-run-xUwXsT/test/11/repo/devcontainer-config/install.sh: line 124: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+# /tmp/bats-run-xUwXsT/test/11/repo/devcontainer-config/install.sh: line 124: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+# /tmp/bats-run-xUwXsT/test/11/repo/devcontainer-config/install.sh: line 124: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+# /tmp/bats-run-xUwXsT/test/11/repo/devcontainer-config/install.sh: line 124: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+# /tmp/bats-run-xUwXsT/test/11/repo/devcontainer-config/install.sh: line 124: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+# /tmp/bats-run-xUwXsT/test/11/repo/devcontainer-config/install.sh: line 124: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+# /tmp/bats-run-xUwXsT/test/11/repo/devcontainer-config/install.sh: line 124: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+# diff -ruNa /tmp/bats-run-xUwXsT/test/11/home/.config/claude-devcontainer/claude-home/.manifest /tmp/bats-run-xUwXsT/test/11/tmp/cw-devc-stage.uPi7Fs/config/claude-home/.manifest
+# --- /tmp/bats-run-xUwXsT/test/11/home/.config/claude-devcontainer/claude-home/.manifest	2026-09-25 00:58:52.663512378 -0700
+# +++ /tmp/bats-run-xUwXsT/test/11/tmp/cw-devc-stage.uPi7Fs/config/claude-home/.manifest	2026-09-25 00:58:52.914787523 -0700
+# @@ -1,4 +1,4 @@
+# -commit=9a58de19b3d94ef31c5cbbf055fdb4b6446807d4
+# +commit=f1200bfd4c07eb3df5f1dbab178a3055ef2fb335
+#  dirty=no
+#  uncommitted_excluded=0
+#  assembled_from=/tmp/bats-run-xUwXsT/test/11/repo
+# ===============================================================================
+#
+# /bin/bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+# Checking for running cc-isolated containers (docker ps; up to 20 s)...
+# /bin/bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+# /bin/bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+# /bin/bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+# /bin/bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+# /bin/bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+# /bin/bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+# /bin/bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+# A1b RESULT: unreviewed launcher live behind the cc-isolated link; status=1
+bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+ok 12 R2x first-install decline removes the created dest; a planted .cw-new.hooks dir is replaced, not reviewed
+# bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+# n
+# n
+# bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+# bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+# /bin/bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+# Checking for running cc-isolated containers (docker ps; up to 20 s)...
+# Canonical (repo):  /tmp/bats-run-xUwXsT/test/12/repo/devcontainer-config at commit a024f9fb7601 (staged in /tmp/bats-run-xUwXsT/test/12/tmp/cw-devc-stage.GbXyZU/config)
+# Installed (host):  /tmp/bats-run-xUwXsT/test/12/home/.config/claude-devcontainer
+#
+# First install — /tmp/bats-run-xUwXsT/test/12/home/.config/claude-devcontainer does not exist yet.
+#
+# Install this config and bless it? [y/N] Aborted. Nothing was changed. (devcontainer config)
+#
+# === Host target: global Claude Code files ======================================
+# Destination: /tmp/bats-run-xUwXsT/test/12/home/.claude  (chosen by $CLAUDE_HOME_DIR)
+# /bin/bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+# Checking for running cc-isolated containers (docker ps; up to 20 s)...
+# Canonical (repo):  /tmp/bats-run-xUwXsT/test/12/repo (commit a024f9fb76018166313e215d4fac9d9602960b37)
+#
+# === Changes this install would make ===========================================
+# /tmp/bats-run-xUwXsT/test/12/repo/devcontainer-config/install.sh: line 124: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+# ADD /tmp/bats-run-xUwXsT/test/12/home/.claude/CLAUDE.md (new, 1 file(s)):
+# /tmp/bats-run-xUwXsT/test/12/repo/devcontainer-config/install.sh: line 124: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+#     CLAUDE.md
+# /tmp/bats-run-xUwXsT/test/12/repo/devcontainer-config/install.sh: line 124: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+# --- /tmp/bats-run-xUwXsT/test/12/tmp/cw-host-stage.qP1B3Z/installed/CLAUDE.md	1969-12-31 16:00:00.000000000 -0800
+# +++ /tmp/bats-run-xUwXsT/test/12/home/.claude/.cw-new.CLAUDE.md	2026-09-25 00:58:53.000000000 -0700
+# @@ -0,0 +1 @@
+# +global instructions
+# /tmp/bats-run-xUwXsT/test/12/repo/devcontainer-config/install.sh: line 124: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+# ADD /tmp/bats-run-xUwXsT/test/12/home/.claude/skills (new, 1 file(s)):
+# /tmp/bats-run-xUwXsT/test/12/repo/devcontainer-config/install.sh: line 124: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+#     skills/a/SKILL.md
+# /tmp/bats-run-xUwXsT/test/12/repo/devcontainer-config/install.sh: line 124: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+# diff -ruNa /tmp/bats-run-xUwXsT/test/12/tmp/cw-host-stage.qP1B3Z/installed/skills/a/SKILL.md /tmp/bats-run-xUwXsT/test/12/home/.claude/.cw-new.skills/a/SKILL.md
+# --- /tmp/bats-run-xUwXsT/test/12/tmp/cw-host-stage.qP1B3Z/installed/skills/a/SKILL.md	1969-12-31 16:00:00.000000000 -0800
+# +++ /tmp/bats-run-xUwXsT/test/12/home/.claude/.cw-new.skills/a/SKILL.md	2026-09-25 00:58:53.000000000 -0700
+# @@ -0,0 +1 @@
+# +skill a
+# /tmp/bats-run-xUwXsT/test/12/repo/devcontainer-config/install.sh: line 124: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+# ADD /tmp/bats-run-xUwXsT/test/12/home/.claude/workflows (new, 1 file(s)):
+# /tmp/bats-run-xUwXsT/test/12/repo/devcontainer-config/install.sh: line 124: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+#     workflows/w.md
+# /tmp/bats-run-xUwXsT/test/12/repo/devcontainer-config/install.sh: line 124: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+# diff -ruNa /tmp/bats-run-xUwXsT/test/12/tmp/cw-host-stage.qP1B3Z/installed/workflows/w.md /tmp/bats-run-xUwXsT/test/12/home/.claude/.cw-new.workflows/w.md
+# --- /tmp/bats-run-xUwXsT/test/12/tmp/cw-host-stage.qP1B3Z/installed/workflows/w.md	1969-12-31 16:00:00.000000000 -0800
+# +++ /tmp/bats-run-xUwXsT/test/12/home/.claude/.cw-new.workflows/w.md	2026-09-25 00:58:53.000000000 -0700
+# @@ -0,0 +1 @@
+# +workflow
+# /tmp/bats-run-xUwXsT/test/12/repo/devcontainer-config/install.sh: line 124: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+# ADD /tmp/bats-run-xUwXsT/test/12/home/.claude/guides (new, 1 file(s)):
+# /tmp/bats-run-xUwXsT/test/12/repo/devcontainer-config/install.sh: line 124: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+#     guides/g.md
+# /tmp/bats-run-xUwXsT/test/12/repo/devcontainer-config/install.sh: line 124: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+# diff -ruNa /tmp/bats-run-xUwXsT/test/12/tmp/cw-host-stage.qP1B3Z/installed/guides/g.md /tmp/bats-run-xUwXsT/test/12/home/.claude/.cw-new.guides/g.md
+# --- /tmp/bats-run-xUwXsT/test/12/tmp/cw-host-stage.qP1B3Z/installed/guides/g.md	1969-12-31 16:00:00.000000000 -0800
+# +++ /tmp/bats-run-xUwXsT/test/12/home/.claude/.cw-new.guides/g.md	2026-09-25 00:58:53.000000000 -0700
+# @@ -0,0 +1 @@
+# +guide
+# /tmp/bats-run-xUwXsT/test/12/repo/devcontainer-config/install.sh: line 124: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+# ADD /tmp/bats-run-xUwXsT/test/12/home/.claude/patterns (new, 1 file(s)):
+# /tmp/bats-run-xUwXsT/test/12/repo/devcontainer-config/install.sh: line 124: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+#     patterns/p.md
+# /tmp/bats-run-xUwXsT/test/12/repo/devcontainer-config/install.sh: line 124: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+# diff -ruNa /tmp/bats-run-xUwXsT/test/12/tmp/cw-host-stage.qP1B3Z/installed/patterns/p.md /tmp/bats-run-xUwXsT/test/12/home/.claude/.cw-new.patterns/p.md
+# --- /tmp/bats-run-xUwXsT/test/12/tmp/cw-host-stage.qP1B3Z/installed/patterns/p.md	1969-12-31 16:00:00.000000000 -0800
+# +++ /tmp/bats-run-xUwXsT/test/12/home/.claude/.cw-new.patterns/p.md	2026-09-25 00:58:53.000000000 -0700
+# @@ -0,0 +1 @@
+# +pattern
+# /tmp/bats-run-xUwXsT/test/12/repo/devcontainer-config/install.sh: line 124: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+# ADD /tmp/bats-run-xUwXsT/test/12/home/.claude/hooks (new, 3 file(s)):
+# /tmp/bats-run-xUwXsT/test/12/repo/devcontainer-config/install.sh: line 124: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+#     hooks/h.sh
+#     hooks/lib/x.sh
+#     hooks/wiring.json
+# /tmp/bats-run-xUwXsT/test/12/repo/devcontainer-config/install.sh: line 124: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+# diff -ruNa /tmp/bats-run-xUwXsT/test/12/tmp/cw-host-stage.qP1B3Z/installed/hooks/h.sh /tmp/bats-run-xUwXsT/test/12/home/.claude/.cw-new.hooks/h.sh
+# --- /tmp/bats-run-xUwXsT/test/12/tmp/cw-host-stage.qP1B3Z/installed/hooks/h.sh	1969-12-31 16:00:00.000000000 -0800
+# +++ /tmp/bats-run-xUwXsT/test/12/home/.claude/.cw-new.hooks/h.sh	2026-09-25 00:58:53.000000000 -0700
+# @@ -0,0 +1,2 @@
+# +#!/bin/bash
+# +exit 0
+# diff -ruNa /tmp/bats-run-xUwXsT/test/12/tmp/cw-host-stage.qP1B3Z/installed/hooks/lib/x.sh /tmp/bats-run-xUwXsT/test/12/home/.claude/.cw-new.hooks/lib/x.sh
+# --- /tmp/bats-run-xUwXsT/test/12/tmp/cw-host-stage.qP1B3Z/installed/hooks/lib/x.sh	1969-12-31 16:00:00.000000000 -0800
+# +++ /tmp/bats-run-xUwXsT/test/12/home/.claude/.cw-new.hooks/lib/x.sh	2026-09-25 00:58:53.000000000 -0700
+# @@ -0,0 +1 @@
+# +#!/bin/bash
+# diff -ruNa /tmp/bats-run-xUwXsT/test/12/tmp/cw-host-stage.qP1B3Z/installed/hooks/wiring.json /tmp/bats-run-xUwXsT/test/12/home/.claude/.cw-new.hooks/wiring.json
+# --- /tmp/bats-run-xUwXsT/test/12/tmp/cw-host-stage.qP1B3Z/installed/hooks/wiring.json	1969-12-31 16:00:00.000000000 -0800
+# +++ /tmp/bats-run-xUwXsT/test/12/home/.claude/.cw-new.hooks/wiring.json	2026-09-25 00:58:53.000000000 -0700
+# @@ -0,0 +1 @@
+# +{"hooks":{}}
+# /tmp/bats-run-xUwXsT/test/12/repo/devcontainer-config/install.sh: line 124: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+# ADD /tmp/bats-run-xUwXsT/test/12/home/.claude/scripts (new, 1 file(s)):
+# /tmp/bats-run-xUwXsT/test/12/repo/devcontainer-config/install.sh: line 124: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+#     scripts/s.sh
+# /tmp/bats-run-xUwXsT/test/12/repo/devcontainer-config/install.sh: line 124: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+# diff -ruNa /tmp/bats-run-xUwXsT/test/12/tmp/cw-host-stage.qP1B3Z/installed/scripts/s.sh /tmp/bats-run-xUwXsT/test/12/home/.claude/.cw-new.scripts/s.sh
+# --- /tmp/bats-run-xUwXsT/test/12/tmp/cw-host-stage.qP1B3Z/installed/scripts/s.sh	1969-12-31 16:00:00.000000000 -0800
+# +++ /tmp/bats-run-xUwXsT/test/12/home/.claude/.cw-new.scripts/s.sh	2026-09-25 00:58:53.000000000 -0700
+# @@ -0,0 +1 @@
+# +#!/bin/bash
+# ===============================================================================
+#
+# Install these files into /tmp/bats-run-xUwXsT/test/12/home/.claude? [y/N] Aborted. Nothing was changed. (host ~/.claude)
+# bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+# n
+# n
+# bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+# bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+# /bin/bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+# Checking for running cc-isolated containers (docker ps; up to 20 s)...
+# Canonical (repo):  /tmp/bats-run-xUwXsT/test/12/repo/devcontainer-config at commit a024f9fb7601 (staged in /tmp/bats-run-xUwXsT/test/12/tmp/cw-devc-stage.GbXyZU/config)
+# Installed (host):  /tmp/bats-run-xUwXsT/test/12/home/.config/claude-devcontainer
+#
+# First install — /tmp/bats-run-xUwXsT/test/12/home/.config/claude-devcontainer does not exist yet.
+#
+# Install this config and bless it? [y/N] Aborted. Nothing was changed. (devcontainer config)
+#
+# === Host target: global Claude Code files ======================================
+# Destination: /tmp/bats-run-xUwXsT/test/12/home/.claude  (chosen by $CLAUDE_HOME_DIR)
+# /bin/bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+# Checking for running cc-isolated containers (docker ps; up to 20 s)...
+# Canonical (repo):  /tmp/bats-run-xUwXsT/test/12/repo (commit a024f9fb76018166313e215d4fac9d9602960b37)
+#
+# === Changes this install would make ===========================================
+# /tmp/bats-run-xUwXsT/test/12/repo/devcontainer-config/install.sh: line 124: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+# ADD /tmp/bats-run-xUwXsT/test/12/home/.claude/CLAUDE.md (new, 1 file(s)):
+# /tmp/bats-run-xUwXsT/test/12/repo/devcontainer-config/install.sh: line 124: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+#     CLAUDE.md
+# /tmp/bats-run-xUwXsT/test/12/repo/devcontainer-config/install.sh: line 124: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+# --- /tmp/bats-run-xUwXsT/test/12/tmp/cw-host-stage.qP1B3Z/installed/CLAUDE.md	1969-12-31 16:00:00.000000000 -0800
+# +++ /tmp/bats-run-xUwXsT/test/12/home/.claude/.cw-new.CLAUDE.md	2026-09-25 00:58:53.000000000 -0700
+# @@ -0,0 +1 @@
+# +global instructions
+# /tmp/bats-run-xUwXsT/test/12/repo/devcontainer-config/install.sh: line 124: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+# ADD /tmp/bats-run-xUwXsT/test/12/home/.claude/skills (new, 1 file(s)):
+# /tmp/bats-run-xUwXsT/test/12/repo/devcontainer-config/install.sh: line 124: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+#     skills/a/SKILL.md
+# /tmp/bats-run-xUwXsT/test/12/repo/devcontainer-config/install.sh: line 124: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+# diff -ruNa /tmp/bats-run-xUwXsT/test/12/tmp/cw-host-stage.qP1B3Z/installed/skills/a/SKILL.md /tmp/bats-run-xUwXsT/test/12/home/.claude/.cw-new.skills/a/SKILL.md
+# --- /tmp/bats-run-xUwXsT/test/12/tmp/cw-host-stage.qP1B3Z/installed/skills/a/SKILL.md	1969-12-31 16:00:00.000000000 -0800
+# +++ /tmp/bats-run-xUwXsT/test/12/home/.claude/.cw-new.skills/a/SKILL.md	2026-09-25 00:58:53.000000000 -0700
+# @@ -0,0 +1 @@
+# +skill a
+# /tmp/bats-run-xUwXsT/test/12/repo/devcontainer-config/install.sh: line 124: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+# ADD /tmp/bats-run-xUwXsT/test/12/home/.claude/workflows (new, 1 file(s)):
+# /tmp/bats-run-xUwXsT/test/12/repo/devcontainer-config/install.sh: line 124: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+#     workflows/w.md
+# /tmp/bats-run-xUwXsT/test/12/repo/devcontainer-config/install.sh: line 124: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+# diff -ruNa /tmp/bats-run-xUwXsT/test/12/tmp/cw-host-stage.qP1B3Z/installed/workflows/w.md /tmp/bats-run-xUwXsT/test/12/home/.claude/.cw-new.workflows/w.md
+# --- /tmp/bats-run-xUwXsT/test/12/tmp/cw-host-stage.qP1B3Z/installed/workflows/w.md	1969-12-31 16:00:00.000000000 -0800
+# +++ /tmp/bats-run-xUwXsT/test/12/home/.claude/.cw-new.workflows/w.md	2026-09-25 00:58:53.000000000 -0700
+# @@ -0,0 +1 @@
+# +workflow
+# /tmp/bats-run-xUwXsT/test/12/repo/devcontainer-config/install.sh: line 124: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+# ADD /tmp/bats-run-xUwXsT/test/12/home/.claude/guides (new, 1 file(s)):
+# /tmp/bats-run-xUwXsT/test/12/repo/devcontainer-config/install.sh: line 124: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+#     guides/g.md
+# /tmp/bats-run-xUwXsT/test/12/repo/devcontainer-config/install.sh: line 124: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+# diff -ruNa /tmp/bats-run-xUwXsT/test/12/tmp/cw-host-stage.qP1B3Z/installed/guides/g.md /tmp/bats-run-xUwXsT/test/12/home/.claude/.cw-new.guides/g.md
+# --- /tmp/bats-run-xUwXsT/test/12/tmp/cw-host-stage.qP1B3Z/installed/guides/g.md	1969-12-31 16:00:00.000000000 -0800
+# +++ /tmp/bats-run-xUwXsT/test/12/home/.claude/.cw-new.guides/g.md	2026-09-25 00:58:53.000000000 -0700
+# @@ -0,0 +1 @@
+# +guide
+# /tmp/bats-run-xUwXsT/test/12/repo/devcontainer-config/install.sh: line 124: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+# ADD /tmp/bats-run-xUwXsT/test/12/home/.claude/patterns (new, 1 file(s)):
+# /tmp/bats-run-xUwXsT/test/12/repo/devcontainer-config/install.sh: line 124: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+#     patterns/p.md
+# /tmp/bats-run-xUwXsT/test/12/repo/devcontainer-config/install.sh: line 124: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+# diff -ruNa /tmp/bats-run-xUwXsT/test/12/tmp/cw-host-stage.qP1B3Z/installed/patterns/p.md /tmp/bats-run-xUwXsT/test/12/home/.claude/.cw-new.patterns/p.md
+# --- /tmp/bats-run-xUwXsT/test/12/tmp/cw-host-stage.qP1B3Z/installed/patterns/p.md	1969-12-31 16:00:00.000000000 -0800
+# +++ /tmp/bats-run-xUwXsT/test/12/home/.claude/.cw-new.patterns/p.md	2026-09-25 00:58:53.000000000 -0700
+# @@ -0,0 +1 @@
+# +pattern
+# /tmp/bats-run-xUwXsT/test/12/repo/devcontainer-config/install.sh: line 124: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+# ADD /tmp/bats-run-xUwXsT/test/12/home/.claude/hooks (new, 3 file(s)):
+# /tmp/bats-run-xUwXsT/test/12/repo/devcontainer-config/install.sh: line 124: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+#     hooks/h.sh
+#     hooks/lib/x.sh
+#     hooks/wiring.json
+# /tmp/bats-run-xUwXsT/test/12/repo/devcontainer-config/install.sh: line 124: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+# diff -ruNa /tmp/bats-run-xUwXsT/test/12/tmp/cw-host-stage.qP1B3Z/installed/hooks/h.sh /tmp/bats-run-xUwXsT/test/12/home/.claude/.cw-new.hooks/h.sh
+# --- /tmp/bats-run-xUwXsT/test/12/tmp/cw-host-stage.qP1B3Z/installed/hooks/h.sh	1969-12-31 16:00:00.000000000 -0800
+# +++ /tmp/bats-run-xUwXsT/test/12/home/.claude/.cw-new.hooks/h.sh	2026-09-25 00:58:53.000000000 -0700
+# @@ -0,0 +1,2 @@
+# +#!/bin/bash
+# +exit 0
+# diff -ruNa /tmp/bats-run-xUwXsT/test/12/tmp/cw-host-stage.qP1B3Z/installed/hooks/lib/x.sh /tmp/bats-run-xUwXsT/test/12/home/.claude/.cw-new.hooks/lib/x.sh
+# --- /tmp/bats-run-xUwXsT/test/12/tmp/cw-host-stage.qP1B3Z/installed/hooks/lib/x.sh	1969-12-31 16:00:00.000000000 -0800
+# +++ /tmp/bats-run-xUwXsT/test/12/home/.claude/.cw-new.hooks/lib/x.sh	2026-09-25 00:58:53.000000000 -0700
+# @@ -0,0 +1 @@
+# +#!/bin/bash
+# diff -ruNa /tmp/bats-run-xUwXsT/test/12/tmp/cw-host-stage.qP1B3Z/installed/hooks/wiring.json /tmp/bats-run-xUwXsT/test/12/home/.claude/.cw-new.hooks/wiring.json
+# --- /tmp/bats-run-xUwXsT/test/12/tmp/cw-host-stage.qP1B3Z/installed/hooks/wiring.json	1969-12-31 16:00:00.000000000 -0800
+# +++ /tmp/bats-run-xUwXsT/test/12/home/.claude/.cw-new.hooks/wiring.json	2026-09-25 00:58:53.000000000 -0700
+# @@ -0,0 +1 @@
+# +{"hooks":{}}
+# /tmp/bats-run-xUwXsT/test/12/repo/devcontainer-config/install.sh: line 124: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+# ADD /tmp/bats-run-xUwXsT/test/12/home/.claude/scripts (new, 1 file(s)):
+# /tmp/bats-run-xUwXsT/test/12/repo/devcontainer-config/install.sh: line 124: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+#     scripts/s.sh
+# /tmp/bats-run-xUwXsT/test/12/repo/devcontainer-config/install.sh: line 124: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+# diff -ruNa /tmp/bats-run-xUwXsT/test/12/tmp/cw-host-stage.qP1B3Z/installed/scripts/s.sh /tmp/bats-run-xUwXsT/test/12/home/.claude/.cw-new.scripts/s.sh
+# --- /tmp/bats-run-xUwXsT/test/12/tmp/cw-host-stage.qP1B3Z/installed/scripts/s.sh	1969-12-31 16:00:00.000000000 -0800
+# +++ /tmp/bats-run-xUwXsT/test/12/home/.claude/.cw-new.scripts/s.sh	2026-09-25 00:58:53.000000000 -0700
+# @@ -0,0 +1 @@
+# +#!/bin/bash
+# ===============================================================================
+#
+# Install these files into /tmp/bats-run-xUwXsT/test/12/home/.claude? [y/N] Aborted. Nothing was changed. (host ~/.claude)
+# bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+# n
+# y
+# bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+# bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+# /bin/bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+# Checking for running cc-isolated containers (docker ps; up to 20 s)...
+# Canonical (repo):  /tmp/bats-run-xUwXsT/test/12/repo/devcontainer-config at commit a024f9fb7601 (staged in /tmp/bats-run-xUwXsT/test/12/tmp/cw-devc-stage.hbMMNu/config)
+# Installed (host):  /tmp/bats-run-xUwXsT/test/12/home/.config/claude-devcontainer
+#
+# First install — /tmp/bats-run-xUwXsT/test/12/home/.config/claude-devcontainer does not exist yet.
+#
+# Install this config and bless it? [y/N] Aborted. Nothing was changed. (devcontainer config)
+#
+# === Host target: global Claude Code files ======================================
+# Destination: /tmp/bats-run-xUwXsT/test/12/home/.claude  (chosen by $CLAUDE_HOME_DIR)
+# /bin/bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+# Checking for running cc-isolated containers (docker ps; up to 20 s)...
+# Canonical (repo):  /tmp/bats-run-xUwXsT/test/12/repo (commit a024f9fb76018166313e215d4fac9d9602960b37)
+#
+# === Changes this install would make ===========================================
+# /tmp/bats-run-xUwXsT/test/12/repo/devcontainer-config/install.sh: line 124: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+# ADD /tmp/bats-run-xUwXsT/test/12/home/.claude/CLAUDE.md (new, 1 file(s)):
+# /tmp/bats-run-xUwXsT/test/12/repo/devcontainer-config/install.sh: line 124: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+#     CLAUDE.md
+# /tmp/bats-run-xUwXsT/test/12/repo/devcontainer-config/install.sh: line 124: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+# --- /tmp/bats-run-xUwXsT/test/12/tmp/cw-host-stage.OQxMvN/installed/CLAUDE.md	1969-12-31 16:00:00.000000000 -0800
+# +++ /tmp/bats-run-xUwXsT/test/12/home/.claude/.cw-new.CLAUDE.md	2026-09-25 00:58:53.000000000 -0700
+# @@ -0,0 +1 @@
+# +global instructions
+# /tmp/bats-run-xUwXsT/test/12/repo/devcontainer-config/install.sh: line 124: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+# ADD /tmp/bats-run-xUwXsT/test/12/home/.claude/skills (new, 1 file(s)):
+# /tmp/bats-run-xUwXsT/test/12/repo/devcontainer-config/install.sh: line 124: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+#     skills/a/SKILL.md
+# /tmp/bats-run-xUwXsT/test/12/repo/devcontainer-config/install.sh: line 124: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+# diff -ruNa /tmp/bats-run-xUwXsT/test/12/tmp/cw-host-stage.OQxMvN/installed/skills/a/SKILL.md /tmp/bats-run-xUwXsT/test/12/home/.claude/.cw-new.skills/a/SKILL.md
+# --- /tmp/bats-run-xUwXsT/test/12/tmp/cw-host-stage.OQxMvN/installed/skills/a/SKILL.md	1969-12-31 16:00:00.000000000 -0800
+# +++ /tmp/bats-run-xUwXsT/test/12/home/.claude/.cw-new.skills/a/SKILL.md	2026-09-25 00:58:53.000000000 -0700
+# @@ -0,0 +1 @@
+# +skill a
+# /tmp/bats-run-xUwXsT/test/12/repo/devcontainer-config/install.sh: line 124: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+# ADD /tmp/bats-run-xUwXsT/test/12/home/.claude/workflows (new, 1 file(s)):
+# /tmp/bats-run-xUwXsT/test/12/repo/devcontainer-config/install.sh: line 124: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+#     workflows/w.md
+# /tmp/bats-run-xUwXsT/test/12/repo/devcontainer-config/install.sh: line 124: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+# diff -ruNa /tmp/bats-run-xUwXsT/test/12/tmp/cw-host-stage.OQxMvN/installed/workflows/w.md /tmp/bats-run-xUwXsT/test/12/home/.claude/.cw-new.workflows/w.md
+# --- /tmp/bats-run-xUwXsT/test/12/tmp/cw-host-stage.OQxMvN/installed/workflows/w.md	1969-12-31 16:00:00.000000000 -0800
+# +++ /tmp/bats-run-xUwXsT/test/12/home/.claude/.cw-new.workflows/w.md	2026-09-25 00:58:53.000000000 -0700
+# @@ -0,0 +1 @@
+# +workflow
+# /tmp/bats-run-xUwXsT/test/12/repo/devcontainer-config/install.sh: line 124: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+# ADD /tmp/bats-run-xUwXsT/test/12/home/.claude/guides (new, 1 file(s)):
+# /tmp/bats-run-xUwXsT/test/12/repo/devcontainer-config/install.sh: line 124: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+#     guides/g.md
+# /tmp/bats-run-xUwXsT/test/12/repo/devcontainer-config/install.sh: line 124: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+# diff -ruNa /tmp/bats-run-xUwXsT/test/12/tmp/cw-host-stage.OQxMvN/installed/guides/g.md /tmp/bats-run-xUwXsT/test/12/home/.claude/.cw-new.guides/g.md
+# --- /tmp/bats-run-xUwXsT/test/12/tmp/cw-host-stage.OQxMvN/installed/guides/g.md	1969-12-31 16:00:00.000000000 -0800
+# +++ /tmp/bats-run-xUwXsT/test/12/home/.claude/.cw-new.guides/g.md	2026-09-25 00:58:53.000000000 -0700
+# @@ -0,0 +1 @@
+# +guide
+# /tmp/bats-run-xUwXsT/test/12/repo/devcontainer-config/install.sh: line 124: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+# ADD /tmp/bats-run-xUwXsT/test/12/home/.claude/patterns (new, 1 file(s)):
+# /tmp/bats-run-xUwXsT/test/12/repo/devcontainer-config/install.sh: line 124: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+#     patterns/p.md
+# /tmp/bats-run-xUwXsT/test/12/repo/devcontainer-config/install.sh: line 124: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+# diff -ruNa /tmp/bats-run-xUwXsT/test/12/tmp/cw-host-stage.OQxMvN/installed/patterns/p.md /tmp/bats-run-xUwXsT/test/12/home/.claude/.cw-new.patterns/p.md
+# --- /tmp/bats-run-xUwXsT/test/12/tmp/cw-host-stage.OQxMvN/installed/patterns/p.md	1969-12-31 16:00:00.000000000 -0800
+# +++ /tmp/bats-run-xUwXsT/test/12/home/.claude/.cw-new.patterns/p.md	2026-09-25 00:58:53.000000000 -0700
+# @@ -0,0 +1 @@
+# +pattern
+# /tmp/bats-run-xUwXsT/test/12/repo/devcontainer-config/install.sh: line 124: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+# ADD /tmp/bats-run-xUwXsT/test/12/home/.claude/hooks (new, 3 file(s)):
+# /tmp/bats-run-xUwXsT/test/12/repo/devcontainer-config/install.sh: line 124: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+#     hooks/h.sh
+#     hooks/lib/x.sh
+#     hooks/wiring.json
+# /tmp/bats-run-xUwXsT/test/12/repo/devcontainer-config/install.sh: line 124: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+# diff -ruNa /tmp/bats-run-xUwXsT/test/12/tmp/cw-host-stage.OQxMvN/installed/hooks/h.sh /tmp/bats-run-xUwXsT/test/12/home/.claude/.cw-new.hooks/h.sh
+# --- /tmp/bats-run-xUwXsT/test/12/tmp/cw-host-stage.OQxMvN/installed/hooks/h.sh	1969-12-31 16:00:00.000000000 -0800
+# +++ /tmp/bats-run-xUwXsT/test/12/home/.claude/.cw-new.hooks/h.sh	2026-09-25 00:58:53.000000000 -0700
+# @@ -0,0 +1,2 @@
+# +#!/bin/bash
+# +exit 0
+# diff -ruNa /tmp/bats-run-xUwXsT/test/12/tmp/cw-host-stage.OQxMvN/installed/hooks/lib/x.sh /tmp/bats-run-xUwXsT/test/12/home/.claude/.cw-new.hooks/lib/x.sh
+# --- /tmp/bats-run-xUwXsT/test/12/tmp/cw-host-stage.OQxMvN/installed/hooks/lib/x.sh	1969-12-31 16:00:00.000000000 -0800
+# +++ /tmp/bats-run-xUwXsT/test/12/home/.claude/.cw-new.hooks/lib/x.sh	2026-09-25 00:58:53.000000000 -0700
+# @@ -0,0 +1 @@
+# +#!/bin/bash
+# diff -ruNa /tmp/bats-run-xUwXsT/test/12/tmp/cw-host-stage.OQxMvN/installed/hooks/wiring.json /tmp/bats-run-xUwXsT/test/12/home/.claude/.cw-new.hooks/wiring.json
+# --- /tmp/bats-run-xUwXsT/test/12/tmp/cw-host-stage.OQxMvN/installed/hooks/wiring.json	1969-12-31 16:00:00.000000000 -0800
+# +++ /tmp/bats-run-xUwXsT/test/12/home/.claude/.cw-new.hooks/wiring.json	2026-09-25 00:58:53.000000000 -0700
+# @@ -0,0 +1 @@
+# +{"hooks":{}}
+# /tmp/bats-run-xUwXsT/test/12/repo/devcontainer-config/install.sh: line 124: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+# ADD /tmp/bats-run-xUwXsT/test/12/home/.claude/scripts (new, 1 file(s)):
+# /tmp/bats-run-xUwXsT/test/12/repo/devcontainer-config/install.sh: line 124: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+#     scripts/s.sh
+# /tmp/bats-run-xUwXsT/test/12/repo/devcontainer-config/install.sh: line 124: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+# diff -ruNa /tmp/bats-run-xUwXsT/test/12/tmp/cw-host-stage.OQxMvN/installed/scripts/s.sh /tmp/bats-run-xUwXsT/test/12/home/.claude/.cw-new.scripts/s.sh
+# --- /tmp/bats-run-xUwXsT/test/12/tmp/cw-host-stage.OQxMvN/installed/scripts/s.sh	1969-12-31 16:00:00.000000000 -0800
+# +++ /tmp/bats-run-xUwXsT/test/12/home/.claude/.cw-new.scripts/s.sh	2026-09-25 00:58:53.000000000 -0700
+# @@ -0,0 +1 @@
+# +#!/bin/bash
+# ===============================================================================
+#
+# Install these files into /tmp/bats-run-xUwXsT/test/12/home/.claude? [y/N] /bin/bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+# Checking for running cc-isolated containers (docker ps; up to 20 s)...
+# Installed into /tmp/bats-run-xUwXsT/test/12/home/.claude.
+#
+# REMINDER: hooks/wiring.json changed (or was not installed before). Copying the
+# hooks does not wire them. Redo guides/bare-host-hook-wiring.md §2 to merge it
+# into /tmp/bats-run-xUwXsT/test/12/home/.claude/settings.json.
+# bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+# n
+# y
+# bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+# bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+# /bin/bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+# Checking for running cc-isolated containers (docker ps; up to 20 s)...
+# Canonical (repo):  /tmp/bats-run-xUwXsT/test/12/repo/devcontainer-config at commit a024f9fb7601 (staged in /tmp/bats-run-xUwXsT/test/12/tmp/cw-devc-stage.hbMMNu/config)
+# Installed (host):  /tmp/bats-run-xUwXsT/test/12/home/.config/claude-devcontainer
+#
+# First install — /tmp/bats-run-xUwXsT/test/12/home/.config/claude-devcontainer does not exist yet.
+#
+# Install this config and bless it? [y/N] Aborted. Nothing was changed. (devcontainer config)
+#
+# === Host target: global Claude Code files ======================================
+# Destination: /tmp/bats-run-xUwXsT/test/12/home/.claude  (chosen by $CLAUDE_HOME_DIR)
+# /bin/bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+# Checking for running cc-isolated containers (docker ps; up to 20 s)...
+# Canonical (repo):  /tmp/bats-run-xUwXsT/test/12/repo (commit a024f9fb76018166313e215d4fac9d9602960b37)
+#
+# === Changes this install would make ===========================================
+# /tmp/bats-run-xUwXsT/test/12/repo/devcontainer-config/install.sh: line 124: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+# ADD /tmp/bats-run-xUwXsT/test/12/home/.claude/CLAUDE.md (new, 1 file(s)):
+# /tmp/bats-run-xUwXsT/test/12/repo/devcontainer-config/install.sh: line 124: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+#     CLAUDE.md
+# /tmp/bats-run-xUwXsT/test/12/repo/devcontainer-config/install.sh: line 124: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+# --- /tmp/bats-run-xUwXsT/test/12/tmp/cw-host-stage.OQxMvN/installed/CLAUDE.md	1969-12-31 16:00:00.000000000 -0800
+# +++ /tmp/bats-run-xUwXsT/test/12/home/.claude/.cw-new.CLAUDE.md	2026-09-25 00:58:53.000000000 -0700
+# @@ -0,0 +1 @@
+# +global instructions
+# /tmp/bats-run-xUwXsT/test/12/repo/devcontainer-config/install.sh: line 124: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+# ADD /tmp/bats-run-xUwXsT/test/12/home/.claude/skills (new, 1 file(s)):
+# /tmp/bats-run-xUwXsT/test/12/repo/devcontainer-config/install.sh: line 124: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+#     skills/a/SKILL.md
+# /tmp/bats-run-xUwXsT/test/12/repo/devcontainer-config/install.sh: line 124: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+# diff -ruNa /tmp/bats-run-xUwXsT/test/12/tmp/cw-host-stage.OQxMvN/installed/skills/a/SKILL.md /tmp/bats-run-xUwXsT/test/12/home/.claude/.cw-new.skills/a/SKILL.md
+# --- /tmp/bats-run-xUwXsT/test/12/tmp/cw-host-stage.OQxMvN/installed/skills/a/SKILL.md	1969-12-31 16:00:00.000000000 -0800
+# +++ /tmp/bats-run-xUwXsT/test/12/home/.claude/.cw-new.skills/a/SKILL.md	2026-09-25 00:58:53.000000000 -0700
+# @@ -0,0 +1 @@
+# +skill a
+# /tmp/bats-run-xUwXsT/test/12/repo/devcontainer-config/install.sh: line 124: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+# ADD /tmp/bats-run-xUwXsT/test/12/home/.claude/workflows (new, 1 file(s)):
+# /tmp/bats-run-xUwXsT/test/12/repo/devcontainer-config/install.sh: line 124: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+#     workflows/w.md
+# /tmp/bats-run-xUwXsT/test/12/repo/devcontainer-config/install.sh: line 124: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+# diff -ruNa /tmp/bats-run-xUwXsT/test/12/tmp/cw-host-stage.OQxMvN/installed/workflows/w.md /tmp/bats-run-xUwXsT/test/12/home/.claude/.cw-new.workflows/w.md
+# --- /tmp/bats-run-xUwXsT/test/12/tmp/cw-host-stage.OQxMvN/installed/workflows/w.md	1969-12-31 16:00:00.000000000 -0800
+# +++ /tmp/bats-run-xUwXsT/test/12/home/.claude/.cw-new.workflows/w.md	2026-09-25 00:58:53.000000000 -0700
+# @@ -0,0 +1 @@
+# +workflow
+# /tmp/bats-run-xUwXsT/test/12/repo/devcontainer-config/install.sh: line 124: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+# ADD /tmp/bats-run-xUwXsT/test/12/home/.claude/guides (new, 1 file(s)):
+# /tmp/bats-run-xUwXsT/test/12/repo/devcontainer-config/install.sh: line 124: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+#     guides/g.md
+# /tmp/bats-run-xUwXsT/test/12/repo/devcontainer-config/install.sh: line 124: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+# diff -ruNa /tmp/bats-run-xUwXsT/test/12/tmp/cw-host-stage.OQxMvN/installed/guides/g.md /tmp/bats-run-xUwXsT/test/12/home/.claude/.cw-new.guides/g.md
+# --- /tmp/bats-run-xUwXsT/test/12/tmp/cw-host-stage.OQxMvN/installed/guides/g.md	1969-12-31 16:00:00.000000000 -0800
+# +++ /tmp/bats-run-xUwXsT/test/12/home/.claude/.cw-new.guides/g.md	2026-09-25 00:58:53.000000000 -0700
+# @@ -0,0 +1 @@
+# +guide
+# /tmp/bats-run-xUwXsT/test/12/repo/devcontainer-config/install.sh: line 124: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+# ADD /tmp/bats-run-xUwXsT/test/12/home/.claude/patterns (new, 1 file(s)):
+# /tmp/bats-run-xUwXsT/test/12/repo/devcontainer-config/install.sh: line 124: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+#     patterns/p.md
+# /tmp/bats-run-xUwXsT/test/12/repo/devcontainer-config/install.sh: line 124: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+# diff -ruNa /tmp/bats-run-xUwXsT/test/12/tmp/cw-host-stage.OQxMvN/installed/patterns/p.md /tmp/bats-run-xUwXsT/test/12/home/.claude/.cw-new.patterns/p.md
+# --- /tmp/bats-run-xUwXsT/test/12/tmp/cw-host-stage.OQxMvN/installed/patterns/p.md	1969-12-31 16:00:00.000000000 -0800
+# +++ /tmp/bats-run-xUwXsT/test/12/home/.claude/.cw-new.patterns/p.md	2026-09-25 00:58:53.000000000 -0700
+# @@ -0,0 +1 @@
+# +pattern
+# /tmp/bats-run-xUwXsT/test/12/repo/devcontainer-config/install.sh: line 124: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+# ADD /tmp/bats-run-xUwXsT/test/12/home/.claude/hooks (new, 3 file(s)):
+# /tmp/bats-run-xUwXsT/test/12/repo/devcontainer-config/install.sh: line 124: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+#     hooks/h.sh
+#     hooks/lib/x.sh
+#     hooks/wiring.json
+# /tmp/bats-run-xUwXsT/test/12/repo/devcontainer-config/install.sh: line 124: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+# diff -ruNa /tmp/bats-run-xUwXsT/test/12/tmp/cw-host-stage.OQxMvN/installed/hooks/h.sh /tmp/bats-run-xUwXsT/test/12/home/.claude/.cw-new.hooks/h.sh
+# --- /tmp/bats-run-xUwXsT/test/12/tmp/cw-host-stage.OQxMvN/installed/hooks/h.sh	1969-12-31 16:00:00.000000000 -0800
+# +++ /tmp/bats-run-xUwXsT/test/12/home/.claude/.cw-new.hooks/h.sh	2026-09-25 00:58:53.000000000 -0700
+# @@ -0,0 +1,2 @@
+# +#!/bin/bash
+# +exit 0
+# diff -ruNa /tmp/bats-run-xUwXsT/test/12/tmp/cw-host-stage.OQxMvN/installed/hooks/lib/x.sh /tmp/bats-run-xUwXsT/test/12/home/.claude/.cw-new.hooks/lib/x.sh
+# --- /tmp/bats-run-xUwXsT/test/12/tmp/cw-host-stage.OQxMvN/installed/hooks/lib/x.sh	1969-12-31 16:00:00.000000000 -0800
+# +++ /tmp/bats-run-xUwXsT/test/12/home/.claude/.cw-new.hooks/lib/x.sh	2026-09-25 00:58:53.000000000 -0700
+# @@ -0,0 +1 @@
+# +#!/bin/bash
+# diff -ruNa /tmp/bats-run-xUwXsT/test/12/tmp/cw-host-stage.OQxMvN/installed/hooks/wiring.json /tmp/bats-run-xUwXsT/test/12/home/.claude/.cw-new.hooks/wiring.json
+# --- /tmp/bats-run-xUwXsT/test/12/tmp/cw-host-stage.OQxMvN/installed/hooks/wiring.json	1969-12-31 16:00:00.000000000 -0800
+# +++ /tmp/bats-run-xUwXsT/test/12/home/.claude/.cw-new.hooks/wiring.json	2026-09-25 00:58:53.000000000 -0700
+# @@ -0,0 +1 @@
+# +{"hooks":{}}
+# /tmp/bats-run-xUwXsT/test/12/repo/devcontainer-config/install.sh: line 124: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+# ADD /tmp/bats-run-xUwXsT/test/12/home/.claude/scripts (new, 1 file(s)):
+# /tmp/bats-run-xUwXsT/test/12/repo/devcontainer-config/install.sh: line 124: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+#     scripts/s.sh
+# /tmp/bats-run-xUwXsT/test/12/repo/devcontainer-config/install.sh: line 124: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+# diff -ruNa /tmp/bats-run-xUwXsT/test/12/tmp/cw-host-stage.OQxMvN/installed/scripts/s.sh /tmp/bats-run-xUwXsT/test/12/home/.claude/.cw-new.scripts/s.sh
+# --- /tmp/bats-run-xUwXsT/test/12/tmp/cw-host-stage.OQxMvN/installed/scripts/s.sh	1969-12-31 16:00:00.000000000 -0800
+# +++ /tmp/bats-run-xUwXsT/test/12/home/.claude/.cw-new.scripts/s.sh	2026-09-25 00:58:53.000000000 -0700
+# @@ -0,0 +1 @@
+# +#!/bin/bash
+# ===============================================================================
+#
+# Install these files into /tmp/bats-run-xUwXsT/test/12/home/.claude? [y/N] /bin/bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+# Checking for running cc-isolated containers (docker ps; up to 20 s)...
+# Installed into /tmp/bats-run-xUwXsT/test/12/home/.claude.
+#
+# REMINDER: hooks/wiring.json changed (or was not installed before). Copying the
+# hooks does not wire them. Redo guides/bare-host-hook-wiring.md §2 to merge it
+# into /tmp/bats-run-xUwXsT/test/12/home/.claude/settings.json.
+#
+# R2x RESULT: decline cleans up; planted copy dir discarded
+bats exit=0
