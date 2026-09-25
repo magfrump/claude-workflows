@@ -55,20 +55,24 @@ stub_docker() {
 
 # path_without <cmd...>: print a PATH (stubs first) under which each named
 # command is absent: every other executable on the current PATH is linked
-# into one directory, skipping the named ones.
+# into one directory, then the named ones are removed from it. One `ln` per
+# PATH directory (review C2: one per executable cost ~2 s a call). A name an
+# earlier directory already linked makes ln report "File exists" and go on,
+# so the first on PATH wins, as it would on PATH itself.
 path_without() {
   local farm="$S/farm" dir f skip
+  local -a exe
   mkdir -p "$farm"
   local IFS=:
   for dir in $PATH; do
     [ "$dir" = "$STUB" ] && continue
+    exe=()
     for f in "$dir"/*; do
-      [ -x "$f" ] && [ ! -d "$f" ] || continue
-      for skip in "$@"; do [ "${f##*/}" = "$skip" ] && continue 2; done
-      [ -e "$farm/${f##*/}" ] || ln -s "$f" "$farm/${f##*/}"
+      if [ -x "$f" ] && [ ! -d "$f" ]; then exe+=("$f"); fi
     done
+    if [ "${#exe[@]}" -gt 0 ]; then ln -s "${exe[@]}" "$farm/" 2>/dev/null || true; fi
   done
-  for skip in "$@"; do rm -f "$STUB/$skip"; done
+  for skip in "$@"; do rm -f "$farm/$skip" "$STUB/$skip"; done
   printf '%s:%s\n' "$STUB" "$farm"
 }
 
