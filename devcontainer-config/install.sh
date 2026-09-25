@@ -131,8 +131,11 @@ vis() {
 }
 
 # vis_or_die: vis for every line shown outside review_diff (which checks vis
-# itself) and mode_diff (whose lines review_diff re-shows). A vis failure there
-# used to end the script through set -e with no message at all (review C3).
+# itself) and mode_diff. mode_diff runs where errexit is off, so a vis failure
+# there drops that MODE line silently; review_diff then shows the same items'
+# content (not their MODE lines) and aborts on a vis that keeps failing.
+# Elsewhere a vis failure used to end the script through set -e with no
+# message at all (review C3).
 # In a pipeline this runs in a subshell: it prints the error, its exit fails
 # the pipeline, and set -e/pipefail then stops the script with exit 1.
 vis_or_die() {
