@@ -67,6 +67,10 @@ full. IDs are stable forever: `Q-014` means the same thing here as it did there.
 | [Q-056](#q-056--host-install-tty-only) | Should the host install targets refuse `--yes` and require an interactive terminal? The agent runs on the s... | 2026-09-23 |
 | [Q-057](#q-057--host-install-foreign-files) | When a directory the install owns (for example `~/.claude/skills`) holds files the repo does not have, shou... | 2026-09-23 |
 | [Q-058](#q-058--installer-trust-model) | The copy-based bare-host install (`ans/copy-install`, parked at 9ae6e46) runs as your user, the same user a... | 2026-09-23 |
+| [Q-059](#q-059--arith-eval-bash-grant) | Should arithmetic-eval's LLM fixture runs get a restricted Bash tool so the model can actually run the eval... | 2026-09-24 |
+| [Q-060](#q-060--orchestrator-fixture-depth) | How far should batch 4 go for code-review and draft-review? | 2026-09-24 |
+| [Q-061](#q-061--host-stage-review-copies) | The host target's stage can be swapped for the review and swapped back before y (the re-review's R2, 6/6 ru... | 2026-09-25 |
+| [Q-062](#q-062--leftover-helper-is-agent) | Under Q-058 [2], does a background process an agent session left running (a detached helper, a loop driver ... | 2026-09-25 |
 <!-- index:end -->
 
 ## Answered
@@ -1209,5 +1213,87 @@ The copy-based bare-host install (`ans/copy-install`, parked at 9ae6e46) runs as
 
 **Answered 2026-09-23: [2], install only when no agent can run, and cc-isolated counts.** Agents in cc-isolated containers write the checkout, including `.git`, through the bind mount, so a running container is an agent that can act during the install window. The check therefore covers both host `claude` processes for your user and running cc-isolated containers. Implementation restarts from `ans/copy-install` with a plan revision.
 
+
+
+### Q-059 · arith-eval-bash-grant
+**Needs:** you: judgment · **Opened:** 2026-09-24 · **Status:** ANSWERED
+
+Should arithmetic-eval's LLM fixture runs get a restricted Bash tool so the model can actually run the evaluator?
+
+- **Why it's yours:** it's the first fixture run that can execute shell, which breaks the harness's "no Write" rule unless it's constrained. That's a trust-boundary call.
+- **Read:** docs/working/plan-skill-fixtures-batch4.md step 5; research-skill-fixtures-batch4.md Gotchas
+
+| Option | What it means | Cost to you | If it's wrong |
+|---|---|---|---|
+| **[1] Gate tests only** | Deterministic tests of the extracted Mode 1 evaluator and check.py (step 4). No LLM set, so "does the model use the evaluator" stays untested. | None | The skill's main risk (mental math instead of the evaluator) stays unmeasured |
+| **[2] Restricted Bash set** | Adds step 5: repo mode, `--allowedTools` limited to python3 invocations, transcript check that python3 ran. A /pre-mortem runs first. | Review one pre-mortem | A too-loose allow pattern lets a fixture run write or read outside the temp repo |
+
+- **Blocks:** step 5 only
+- **Update 2026-09-24:** since a75ba3e, fixture runs pass `--restricted --safe-mode`, and runner-contract.bash allows only Read, Grep, Glob, WebSearch, WebFetch and Agent. [2] therefore also means adding a scoped Bash entry to that allowlist. `--restricted` confines the file tools to the temp dir, but per the CLI help it does not sandbox shell commands, so the pre-mortem in [2] still applies. [1] is unaffected.
+- **Interim:** [1]. Step 4's gate tests land either way.
+- **If the answer differs:** add step 5 after step 2; nothing is redone.
+
+**Answered 2026-09-25: neither.** "This feels like a false dichotomy; can we not test via something like equivalence of the proposed command to some static script? Run divergent design on this." The divergent-design pass is in `docs/working/dd-arith-eval-bash-grant.md` (commit 3376144). Its options are re-asked as Q-063.
+
+
+### Q-060 · orchestrator-fixture-depth
+**Needs:** you: judgment · **Opened:** 2026-09-24 · **Status:** ANSWERED
+
+How far should batch 4 go for code-review and draft-review?
+
+- **Why it's yours:** it trades compute and your review time against coverage. Each fixture run costs about 8 (code-review) or 4-6 (draft-review) agent runs, and draft-review's fact-check needs web egress this sandbox lacks.
+- **Read:** docs/working/plan-skill-fixtures-batch4.md step 9; research doc "Feasibility spike"
+
+| Option | What it means | Cost to you | If it's wrong |
+|---|---|---|---|
+| **[1] Defer** | No sets. The parent plan records why. The existing contract/format suites stay the coverage. | None | Orchestration regressions (skipped stage, silent gap) stay invisible until a real review misfires |
+| **[2] One smoke fixture each** | tree-mode repo with critic SKILL.md copies. Checks `subagents_min` and one planted defect surfacing in the rubric. draft-review's prompt says web is unavailable. | Generating costs ~15 agent runs total, when you choose to run it | Smoke passes while per-critic behavior regresses |
+| **[3] Full sets (5-7 each)** | Batch 1-3 shape | ~80+ agent runs per full generation, plus longer review | Spend is out of proportion to the signal, since the critics already have their own sets |
+
+- **Blocks:** step 9 only
+- **Interim:** [1]
+- **If the answer differs:** step 9 is built after step 3; nothing is redone.
+
+**Answered 2026-09-25: [1].** Defer; the interim stands. The plan records step 9 as not built.
+
+
+### Q-061 · host-stage-review-copies
+**Needs:** you: judgment · **Opened:** 2026-09-25 · **Status:** ANSWERED
+
+The host target's stage can be swapped for the review and swapped back before y (the re-review's R2, 6/6 runs). Do we move the review onto the copies under `~/.claude`, or accept this under your Q-058 answer?
+
+- **Why it's yours:** Q-058 [2] made "no agent runs during the install" the trust model. [1] adds option [1] from Q-058 (sandbox-protected staging) on top of it for the host target. That goes past what you chose, even though it only adds protection.
+- **Read:** `docs/reviews/code-review-rubric-2026-09-24-ans-copy-install-q058.md` R2; `docs/reviews/security-review-2026-09-24-copy-install-q058.md` F1 (with the SP1 probe) and F8
+
+| Option | What it means | Cost to you | If it's wrong |
+|---|---|---|---|
+| **[1] Review the installed copies** | Stage into `~/.claude/.cw-new.*` (denyWrite) before the review, review those, then hash-check and swap them. The host target stops depending on the gate. | Nothing now. The review diff reads from a different path. | About 15 extra installer lines to maintain, guarding a case the gate is meant to prevent |
+| **[2] Accept it; correct decision 037** | 037:66 is rewritten to say the hash only catches edits that persist, and a writer that swaps and restores is caught only if the gate sees it at y | None | An unsandboxed or unseen writer can get an unreviewed hook into `~/.claude`, which runs in every session |
+
+- **Blocks:** merging `skill-fixtures` to main (you asked for merge after review; R2 is red until this is settled)
+- **Interim:** [1] is implemented with the other review fixes, so the merge isn't blocked. It hardens the installer and doesn't loosen anything. 037 records it as provisional pending this answer.
+- **If the answer differs:** [2] reverts that one commit and applies the 037:66 rewrite. Nothing else depends on it.
+
+**Answered 2026-09-25: [1].** The interim stands. Decision 037 no longer marks it provisional.
+
+
+### Q-062 · leftover-helper-is-agent
+**Needs:** you: judgment · **Opened:** 2026-09-25 · **Status:** ANSWERED
+
+Under Q-058 [2], does a background process an agent session left running (a detached helper, a loop driver between `claude` iterations) count as "an agent"?
+
+- **Why it's yours:** it sets the scope of your own trust-model answer. The gate only recognizes Claude-shaped command lines, so "yes" needs a broader, noisier check.
+- **Read:** the re-review's A2; security review F3 (SP2 and P4 probes)
+
+| Option | What it means | Cost to you | If it's wrong |
+|---|---|---|---|
+| **[1] No; document it** | 037 lists leftover non-Claude processes as a residual. Stopping them before an install is on you. | Remember to kill loop drivers before installing | A leftover helper writes during the install, unseen |
+| **[2] Yes; widen the gate** | Also refuse any other process of your uid whose working directory is inside the checkout, and name it | Occasional refusals naming an editor or shell sitting in the repo; close it and re-run | Nuisance refusals every time a terminal is open in the repo |
+
+- **Blocks:** nothing (A2 carries this entry as its author note)
+- **Interim:** [1]. The cheap fail-closed fixes land either way: a gate before host staging, and a wider regex covering the versioned native path and the Agent SDK CLI.
+- **If the answer differs:** [2] adds one detector to `agent_gate` and a test. Nothing is redone.
+
+**Answered 2026-09-25: [2].** `agent_gate` now also refuses any other process of your uid whose working directory is in the checkout, read from `/proc`. install.sh's own ancestors and children are exempt, and it refuses when `/proc` can't be read (T88–T90). Decision 037 is updated.
 
 
