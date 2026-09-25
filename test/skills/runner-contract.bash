@@ -17,7 +17,8 @@ RUNNER_ALLOWED_TOOLS=(Read Grep Glob WebSearch WebFetch Agent)
 
 # Bash is the one exception, and only as FIXTURE_BASH=deny-record (Q-063 [1]):
 # the model is offered Bash, generate-reports.bash pins every call to be
-# denied (--permission-mode dontAsk --permission-prompts none), and the kept
+# denied (a 'Bash(**)' deny rule; dontAsk alone still ran read-only commands
+# such as pwd and ls, probed 2026-09-25), and the kept
 # transcript records the command it tried. Nothing runs; eval checks compare
 # the recorded command with a reference (arithmetic-eval's mode1_equiv:). A
 # denied call is recorded in the stream and in the result event's
@@ -56,7 +57,7 @@ check_runner_settings() {
   if [ "$FIXTURE_TOOLS" != "none" ]; then
     # Tool names joined by single commas: no spaces, no empty entries.
     if ! [[ "$FIXTURE_TOOLS" =~ ^[A-Za-z]+(,[A-Za-z]+)*$ ]]; then
-      echo "Error: $label: FIXTURE_TOOLS may only name ${RUNNER_ALLOWED_TOOLS[*]}, joined by commas with no spaces (e.g. Read,Grep,Glob), or be 'none'; got '$FIXTURE_TOOLS'" >&2
+      echo "Error: $label: FIXTURE_TOOLS may only name ${RUNNER_ALLOWED_TOOLS[*]}, joined by commas with no spaces (e.g. Read,Grep,Glob), or be 'none' (Bash only with FIXTURE_BASH=deny-record); got '$FIXTURE_TOOLS'" >&2
       return 1
     fi
     local -a tools
@@ -104,13 +105,15 @@ check_runner_settings() {
         echo "Error: $label: FIXTURE_BASH=deny-record needs FIXTURE_TRANSCRIPT=1" >&2
         return 1
       fi
-      if [[ ",$FIXTURE_TOOLS," != *,Bash,* ]]; then
-        echo "Error: $label: FIXTURE_BASH=deny-record is set but FIXTURE_TOOLS does not name Bash" >&2
+      # Exactly Bash: the pinned dontAsk mode applies to every tool, and only
+      # Bash's denial is probed and tripwired (review C9).
+      if [ "$FIXTURE_TOOLS" != "Bash" ]; then
+        echo "Error: $label: FIXTURE_BASH=deny-record needs FIXTURE_TOOLS=Bash exactly, got '$FIXTURE_TOOLS'" >&2
         return 1
       fi
       ;;
     *)
-      echo "Error: $label: FIXTURE_BASH may only be empty or deny-record, got '$FIXTURE_BASH'" >&2
+      echo "Error: $label: FIXTURE_BASH must be empty or deny-record, got '$FIXTURE_BASH'" >&2
       return 1
       ;;
   esac

@@ -36,8 +36,8 @@ CLAIM_ACCURACY["tc-ae3-marathon-km-wrong.md"]="flaw"  # 26.2 mi * 1.609344 = 42.
 KEY_CHECK["tc-ae3-marathon-km-wrong.md"]="mode1_equiv:42.16~0.002|28.09~0.002"
 
 EXPECTED_VERDICT["tc-ae4-sessions-correct.md"]="routes"
-CLAIM_ACCURACY["tc-ae4-sessions-correct.md"]="sound"  # 1.2M * 4 = 4.8M is right, and still must be verified, not eyeballed
-KEY_CHECK["tc-ae4-sessions-correct.md"]="mode1_equiv:4800000|4"
+CLAIM_ACCURACY["tc-ae4-sessions-correct.md"]="sound"  # 1.2M * 4 = 4.8M is right, and still must be verified, not eyeballed (backward: 4.8M / 4 = 1.2M; 4.8M / 1.2M = 4 is left out as too unspecific)
+KEY_CHECK["tc-ae4-sessions-correct.md"]="mode1_equiv:4800000|1200000"
 
 # --- Negative: nothing to compute ---
 

@@ -1317,6 +1317,6 @@ How should arithmetic-eval's LLM fixtures check that the model uses the evaluato
 - **Update 2026-09-25 ("Test [1]"):** two Haiku probes confirm [1] is feasible. Denied calls are recorded in the stream and in `permission_denials`, and nothing executed. Unprompted, the model reached for Mode 1. The check must be AST-level: Haiku stripped the comments, so a byte-exact match fails, while an `ast.dump` comparison passes and rejects a one-token tamper. After the denial, the model fell back to mental math, which a fixture can grade as its own assertion. Details: DD doc, "Probe results".
 - **If the answer differs:** [2] can be added later on top of [1]; nothing is redone.
 
-**Answered 2026-09-25: [1].** Built as `FIXTURE_BASH=deny-record` plus `mode1_equiv:` (decisions log #56). The first Haiku run routed 5 of 5 fixtures through Mode 1 but fell back to mental math 4 of 4 after the denial.
+**Answered 2026-09-25: [1].** Built as `FIXTURE_BASH=deny-record` plus `mode1_equiv:` (decisions log #56). The first Haiku run routed all 4 arithmetic fixtures through Mode 1 (the no-arithmetic negative made no Bash call) but fell back to mental math 4 of 4 after the denial.
 
 

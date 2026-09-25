@@ -72,7 +72,7 @@ eval_fixture() {
   fi
 
   # A failed generation must never score as a pass. The absence-only checks
-  # (no_severity:, no_verdict:, no_field:, no_pattern:) and a skipped
+  # (no_severity:, no_verdict:, no_field:, no_pattern:, no_tool_called:) and a skipped
   # format_check all pass on an empty or junk report, so a dead run would pass
   # every clean-negative fixture. generate-reports.bash records the failure
   # itself in <fixture>.failed (claude's exit status, or an error/missing result
@@ -151,10 +151,15 @@ eval_fixture() {
         assert_subagents_min "${check#subagents_min:}" || failed=1
         ;;
       no_tool_called:*)
-        assert_no_tool_called "${check#no_tool_called:}" || failed=1
+        local spec="${check#no_tool_called:}"
+        if [[ "$spec" == *=* ]]; then
+          assert_no_tool_called "${spec%%=*}" "${spec#*=}" || failed=1
+        else
+          assert_no_tool_called "$spec" || failed=1
+        fi
         ;;
       mode1_equiv:*)
-        assert_mode1_equiv "${check#mode1_equiv:}" || failed=1
+        assert_mode1_equiv "$skill" "${check#mode1_equiv:}" || failed=1
         ;;
       format_check)
         # Delegate to the skill's format suite, test/skills/<skill>-format.bats
@@ -395,31 +400,39 @@ assert_subagents_min() {
   fi
 }
 
-# Assert the session never called <tool>, at any depth.
-# Check syntax: no_tool_called:Bash
-# Args: $1 = tool name
+# Assert no call of <tool> (at any depth) had an input matching <ERE>
+# (case-insensitive); with no <ERE>, no call of <tool> at all. The negative of
+# tool_called:, with the same argument shape.
+# Check syntax: no_tool_called:Bash   or   no_tool_called:Bash=rm -rf
+# Args: $1 = tool name, $2 = ERE (optional)
 assert_no_tool_called() {
-  local tool="$1" t n
+  local tool="$1" pattern="${2:-.}" t hits
   t="$(eval_transcript_path)" || { echo "$t"; return 1; }
-  n=$(transcript_tool_inputs "$t" "$tool" | grep -c . || true)
-  if [ "$n" -gt 0 ]; then
-    echo "Expected no $tool calls, found $n:"
-    transcript_tool_inputs "$t" "$tool" | head -3 | cut -c1-200
+  hits="$(transcript_tool_inputs "$t" "$tool" | grep -iE "$pattern" || true)"
+  if [ -n "$hits" ]; then
+    echo "Expected no $tool calls${2:+ with input matching /$2/}, found $(printf '%s\n' "$hits" | grep -c .):"
+    printf '%s\n' "$hits" | head -3 | cut -c1-200
     return 1
   fi
 }
 
-# Assert a denied Bash call in a FIXTURE_BASH=deny-record transcript was
-# arithmetic-eval's Mode 1 evaluator (wrapper exact, program AST-equal to
-# SKILL.md's) and that its expression, run through the evaluator extracted
-# from SKILL.md, gives one of the expected values. Also fails if any Bash call
-# is missing from permission_denials. See arithmetic-eval/mode1-equiv.py.
+# Assert a denied Bash call in a FIXTURE_BASH=deny-record transcript was the
+# skill's Mode 1 evaluator (wrapper exact, heredoc closed at its first EXPREOF
+# line with nothing but comments after it, program AST-equal to SKILL.md's) and
+# that its expression, run through the evaluator extracted from SKILL.md, gives
+# one of the expected values. Also fails if any Bash call is missing from
+# permission_denials. The checker is skill-owned: test/skills/<skill>/
+# mode1-equiv.py, reading skills/<skill>/SKILL.md (today only arithmetic-eval).
 # Check syntax: mode1_equiv:1900000000|1900000   (or 42.16~0.002 for a tolerance)
-# Args: $1 = expected values
+# Args: $1 = skill, $2 = expected values
 assert_mode1_equiv() {
-  local spec="$1" t
+  local skill="$1" spec="$2" t checker
+  checker="${BATS_TEST_DIRNAME}/${skill}/mode1-equiv.py"
+  if [ ! -f "$checker" ]; then
+    echo "mode1_equiv: needs a skill-owned checker at $checker"
+    return 1
+  fi
   t="$(eval_transcript_path)" || { echo "$t"; return 1; }
-  python3 "${BATS_TEST_DIRNAME}/arithmetic-eval/mode1-equiv.py" \
-    "${BATS_TEST_DIRNAME}/../../skills/arithmetic-eval/SKILL.md" "$t" "$spec"
+  python3 "$checker" "${BATS_TEST_DIRNAME}/../../skills/${skill}/SKILL.md" "$t" "$spec"
 }
 

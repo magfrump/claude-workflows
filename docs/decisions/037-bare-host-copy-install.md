@@ -82,6 +82,7 @@ Neither target catches an agent that rewrites the commit, the checkout's `.git` 
 - What the gate does not see (review A2). It samples four moments and recognizes a process only by its command line, so it misses:
   - an agent active only between the checks, one that starts after a check and has stopped before the next;
   - a same-uid process that is not Claude Code and works *outside* the checkout, such as a detached helper an agent left running from another directory. One working inside the checkout is detected (Q-062 [2], below). Stopping the rest before an install is the user's responsibility. install.sh's own ancestors are exempt, so a loop driver that itself runs `install.sh` is not seen;
+  - a same-uid process in the checkout whose `/proc/<pid>/cwd` cannot be read. `procs_in_checkout` skips it rather than refusing, because ssh-agent's cwd is unreadable too, and refusing would block every install while it runs. A leftover helper does not become non-dumpable by accident, so this is an actively evading process (`prctl(PR_SET_DUMPABLE, 0)`; review 2026-09-25 A1, reproduced). Pending Q-064, which asks whether to refuse instead;
   - a Claude Code shape the pattern above misses: a renamed or wrapped binary, or `node cli.js` run from inside the package directory;
   - an agent on another host or in another container runtime writing the checkout (a network or shared mount), one running under another uid, a docker the user's uid cannot reach, or a daemon other than the one `DOCKER_HOST`/`DOCKER_CONTEXT` select.
 

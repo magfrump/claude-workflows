@@ -58,7 +58,7 @@ before the host target stages, and after each y, and refuses while it finds:
     own DOCKER_HOST/DOCKER_CONTEXT choose which daemon is asked).
 It names each one and how to stop it. The checks are samples, not a lock;
 decision 037, "Trust model", lists what they miss (e.g. a leftover helper
-working outside the checkout: stop those yourself).
+working outside the checkout, or one that hides its cwd: stop those yourself).
 Without pgrep or /proc it refuses; without a reachable docker it prints a NOTE line
 at each check and treats no container as running. Close every Claude Code
 session and stop every cc-isolated container first. Run from inside a
@@ -1136,14 +1136,22 @@ in_lineage() {
 }
 
 # procs_in_checkout: print "PID command line" for each other process of this
-# uid whose working directory is $REPO_ROOT or below it. Exit 2 without /proc.
+# uid whose working directory is $REPO_ROOT or below it. Exit 2 without /proc,
+# 3 if the checkout's own path cannot be resolved.
+#
+# A process whose cwd link cannot be read is skipped, not refused: that
+# includes ssh-agent and any process that makes itself non-dumpable
+# (prctl PR_SET_DUMPABLE), so refusing would block every install while
+# ssh-agent runs. A leftover helper does not do that by accident; one that
+# does is deliberately evading, which decision 037 lists as not seen (review
+# A1; Q-064 asks whether to refuse instead).
 procs_in_checkout() {
   local root d pid cwd cmd
   [ -d /proc/self ] || return 2
-  root="$(cd "$REPO_ROOT" && pwd -P)" || return 2
+  root="$(cd "$REPO_ROOT" && pwd -P)" || return 3
   for d in /proc/[0-9]*; do
     [ -O "$d" ] || continue                     # this uid's processes only
-    cwd="$(readlink "$d/cwd" 2>/dev/null)" || continue
+    cwd="$(readlink "$d/cwd" 2>/dev/null)" || continue   # unreadable: see above
     case "$cwd" in "$root"|"$root"/*) ;; *) continue ;; esac
     pid="${d#/proc/}"
     in_lineage "$pid" && continue
@@ -1154,7 +1162,8 @@ procs_in_checkout() {
 }
 
 # agent_gate <what is refused>: exit 1, naming each agent found and how to
-# stop it, when a Claude Code process or a cc-isolated container runs.
+# stop it, when a Claude Code process, another process of this uid working
+# inside the checkout (Q-062), or a cc-isolated container runs.
 agent_gate() {
   local what="$1" procs rc=0 ctrs err errf
   if ! command -v pgrep >/dev/null 2>&1; then
@@ -1171,14 +1180,20 @@ agent_gate() {
   rc=0
   local inrepo
   inrepo="$(procs_in_checkout)" || rc=$?
-  if [ "$rc" -ne 0 ]; then
+  if [ "$rc" -eq 3 ]; then
+    echo "ERROR: could not resolve the checkout's path ($REPO_ROOT), so install.sh cannot" >&2
+    echo "       check for processes working inside it (Q-062). $what" >&2
+    exit 1
+  elif [ "$rc" -ne 0 ]; then
     echo "ERROR: /proc is not readable, so install.sh cannot check for processes working" >&2
-    echo "       inside the checkout (Q-062). $what" >&2
+    echo "       inside the checkout (Q-062). It needs Linux /proc. $what" >&2
     exit 1
   fi
-  # A Claude Code process already listed above is not named twice.
-  inrepo="$(printf '%s\n' "$inrepo" | awk -v seen="$procs" '
-    BEGIN { n = split(seen, l, "\n"); for (i = 1; i <= n; i++) { split(l[i], f, " "); skip[f[1]] = 1 } }
+  # A Claude Code process already listed above is not named twice. The list is
+  # passed through the environment, not awk -v, which would expand escapes
+  # such as a literal \n inside a command line (review C11).
+  inrepo="$(printf '%s\n' "$inrepo" | CW_SEEN="$procs" awk '
+    BEGIN { n = split(ENVIRON["CW_SEEN"], l, "\n"); for (i = 1; i <= n; i++) { split(l[i], f, " "); skip[f[1]] = 1 } }
     NF && !($1 in skip)')"
   # cc-isolated's containers carry the label cc-project=<id> (its --id-label).
   ctrs=""
@@ -1213,7 +1228,8 @@ agent_gate() {
       echo "       Other processes of uid $(id -u) working inside $REPO_ROOT (Q-062; an"
       echo "       agent may have left them running), PID and command line:"
       printf '%s\n' "$inrepo" | sed 's/^/           /'
-      echo "       Stop them, or cd each one out of the checkout (an editor or shell counts)."
+      echo "       Stop them: kill <PID>, or cd each one out of the checkout (an editor or"
+      echo "       shell sitting in the repo counts)."
     fi
     if [ -n "$ctrs" ]; then
       echo "       Running cc-isolated containers (name and project id):"

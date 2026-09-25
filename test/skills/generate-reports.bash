@@ -29,8 +29,14 @@
 #                     sub-agent dispatches (tool_called:, subagents_min:). The
 #                     report is still plain text: the final result event's text.
 #   FIXTURE_BASH (optional) — "deny-record" lets FIXTURE_TOOLS name Bash, and
-#                     pins --permission-mode dontAsk --permission-prompts none so
-#                     every Bash call is denied and only recorded (Q-063 [1]).
+#                     pins --disallowedTools 'Bash(**)' --permission-mode dontAsk
+#                     --permission-prompts none so every Bash call is denied and
+#                     only recorded (Q-063 [1]). dontAsk alone is not enough: it
+#                     still auto-approves commands the CLI deems read-only (pwd,
+#                     ls and echo ran, probed 2026-09-25). 'Bash(**)' is a deny
+#                     rule matching every command, multi-line included, while
+#                     keeping Bash visible to the model; plain 'Bash(*)' removes
+#                     the tool instead.
 #                     Needs FIXTURE_TRANSCRIPT=1. A run in which any Bash call
 #                     is missing from the result's permission_denials, i.e. may
 #                     have executed, is recorded as failed.
@@ -112,10 +118,14 @@ if [ "$FIXTURE_TRANSCRIPT" = 1 ] && ! command -v jq >/dev/null 2>&1; then
 fi
 
 # Under deny-record, the operator's CLAUDE_FLAGS must not loosen what the pinned
-# permission flags deny (a later --permission-mode would win).
+# permission flags deny (a later --permission-mode would win). Any whitespace
+# separates words when CLAUDE_FLAGS is expanded, so tabs and newlines are
+# folded to spaces before matching.
 if [ "$FIXTURE_BASH" = "deny-record" ]; then
-  case " ${CLAUDE_FLAGS:-} " in
-    *" --permission-mode"*|*" --permission-prompts"*|*" --allowedTools"*|*" --allowed-tools"*|\
+  flags_words=" ${CLAUDE_FLAGS:-} "
+  flags_words="${flags_words//[[:space:]]/ }"
+  case "$flags_words" in
+    *" --permission-mode"*|*" --permission-prompt"*|*" --allowedTools"*|*" --allowed-tools"*|\
     *" --dangerously-skip-permissions"*|*" --allow-dangerously-skip-permissions"*|*" --settings"*)
       echo "Error: $RUNNER_FILE sets FIXTURE_BASH=deny-record; CLAUDE_FLAGS may not change permissions: ${CLAUDE_FLAGS}" >&2
       exit 1
@@ -179,7 +189,7 @@ generate_one() {
   # tools" and does not consume the flag after it.
   claude_args+=(--tools "$TOOLS_ARG")
   if [ "$FIXTURE_BASH" = "deny-record" ]; then
-    claude_args+=(--permission-mode dontAsk --permission-prompts none)
+    claude_args+=(--disallowedTools 'Bash(**)' --permission-mode dontAsk --permission-prompts none)
   fi
 
   # Every mode runs in a fresh temp directory: empty for inline, a minimal git
@@ -247,8 +257,10 @@ generate_one() {
       esac
     fi
     # Tripwire (deny-record): every Bash tool_use must be listed as denied. One
-    # that is not may have run, so the whole run is void.
-    if [ -z "$failure" ] && [ "$FIXTURE_BASH" = "deny-record" ]; then
+    # that is not may have run, so the whole run is void. It runs even when the
+    # run already failed, so an executed call is never hidden behind "claude
+    # exited N" (review C10).
+    if [ "$FIXTURE_BASH" = "deny-record" ]; then
       local undenied
       undenied=$(jq -rRn '[inputs | fromjson?] as $ev
         | ([$ev[] | select(.type == "result") | .permission_denials[]?.tool_use_id]) as $denied
@@ -256,7 +268,13 @@ generate_one() {
            | select(.type == "tool_use" and .name == "Bash") | .id]
         | map(select(. as $id | $denied | index($id) | not)) | length' \
         "$transcript_path" 2>/dev/null) || undenied="unreadable"
-      [ "$undenied" = 0 ] || failure="Bash tripwire: $undenied Bash call(s) not in permission_denials (may have executed)"
+      local trip=""
+      case "$undenied" in
+        0) ;;
+        unreadable) trip="Bash tripwire: the transcript could not be read, so denials are unverified" ;;
+        *) trip="Bash tripwire: $undenied Bash call(s) not in permission_denials (may have executed)" ;;
+      esac
+      [ -z "$trip" ] || failure="${failure:+$failure; }$trip"
     fi
   fi
 

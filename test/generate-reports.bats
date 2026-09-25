@@ -440,11 +440,13 @@ EOF2
 }
 
 @test "deny-record: Bash is accepted and every call is pinned to be denied" {
+  # dontAsk alone still ran read-only commands (pwd, ls, echo; probed
+  # 2026-09-25), so the Bash(**) deny rule is the part that denies everything.
   make_deny_skill
   run bash "$GEN" demo
   echo "$output"
   [ "$status" -eq 0 ]
-  [[ "$(cat "$CALLS/0")" == *"--tools Bash --permission-mode dontAsk --permission-prompts none"* ]]
+  [[ "$(cat "$CALLS/0")" == *"--tools Bash --disallowedTools Bash(**) --permission-mode dontAsk --permission-prompts none"* ]]
 }
 
 @test "deny-record needs FIXTURE_TRANSCRIPT=1 and Bash in FIXTURE_TOOLS; other values are refused" {
@@ -458,7 +460,15 @@ EOF2
   printf 'FIXTURE_TRANSCRIPT=1\nFIXTURE_BASH=deny-record\n' >> "$TEST_TMPDIR/test/skills/demo/runner.bash"
   run bash "$GEN" demo
   [ "$status" -ne 0 ]
-  [[ "$output" == *"does not name Bash"* ]]
+  [[ "$output" == *"needs FIXTURE_TOOLS=Bash exactly"* ]]
+  # Bash alongside another tool is refused too: dontAsk applies to every tool,
+  # and only Bash's denial is probed and tripwired.
+  rm -rf "$TEST_TMPDIR/test/skills/demo"
+  make_skill demo inline "Bash,WebSearch"
+  printf 'FIXTURE_TRANSCRIPT=1\nFIXTURE_BASH=deny-record\n' >> "$TEST_TMPDIR/test/skills/demo/runner.bash"
+  run bash "$GEN" demo
+  [ "$status" -ne 0 ]
+  [[ "$output" == *"needs FIXTURE_TOOLS=Bash exactly"* ]]
   rm -rf "$TEST_TMPDIR/test/skills/demo"
   make_skill demo inline "Bash"
   printf 'FIXTURE_TRANSCRIPT=1\nFIXTURE_BASH=allow\n' >> "$TEST_TMPDIR/test/skills/demo/runner.bash"
@@ -470,7 +480,7 @@ EOF2
   printf 'FIXTURE_TRANSCRIPT=1\nFIXTURE_BASH=allow\n' >> "$TEST_TMPDIR/test/skills/demo/runner.bash"
   run bash "$GEN" demo
   [ "$status" -ne 0 ]
-  [[ "$output" == *"FIXTURE_BASH may only be"* ]]
+  [[ "$output" == *"FIXTURE_BASH must be"* ]]
   [ "$(ls "$CALLS" | wc -l)" -eq 0 ]
 }
 
@@ -486,7 +496,8 @@ EOF2
   make_deny_skill
   local f
   for f in "--permission-mode bypassPermissions" "--allowedTools Bash" "--allowed-tools Bash" \
-      "--dangerously-skip-permissions" "--settings x.json" "--model m --permission-prompts ask"; do
+      "--dangerously-skip-permissions" "--settings x.json" "--model m --permission-prompts ask" \
+      $'--model m\t--permission-mode bypassPermissions' "--permission-prompt-tool mcp__x__y"; do
     CLAUDE_FLAGS="$f" run bash "$GEN" demo
     [ "$status" -ne 0 ] || { echo "accepted: $f"; return 1; }
     [[ "$output" == *"may not change permissions"* ]]
@@ -508,3 +519,20 @@ EOF2
   [ "$status" -eq 0 ]
   [ ! -e "$out/tc-1-thing.txt.failed" ]
 }
+
+@test "deny-record tripwire still runs when the run already failed, and says so" {
+  make_deny_skill
+  local out="$TEST_TMPDIR/test/skills/demo/output"
+  # A Bash call, then an error result with no denials: both causes are recorded.
+  cat > "$TEST_TMPDIR/bin/claude" <<'EOF2'
+#!/usr/bin/env bash
+cat >/dev/null
+echo '{"type":"assistant","parent_tool_use_id":null,"message":{"content":[{"type":"tool_use","id":"b1","name":"Bash","input":{"command":"pwd"}}]}}'
+echo '{"type":"result","is_error":true,"result":"boom","permission_denials":[]}'
+EOF2
+  chmod +x "$TEST_TMPDIR/bin/claude"
+  run bash "$GEN" demo
+  [ "$status" -eq 0 ]
+  grep -q "the result event is an error; Bash tripwire: 1 Bash call" "$out/tc-1-thing.txt.failed"
+}
+

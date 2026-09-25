@@ -45,9 +45,9 @@ transcript() {
   grep -qx "EXPREOF" "$BLOCK"
 }
 
-@test "SKILL.md's own block, verbatim, computes its value" {
+@test "SKILL.md's own wrapper and program, with a new expression, compute its value" {
   transcript "$(with_expr '4750 / 0.0025 * 1000')"
-  run assert_mode1_equiv '1900000000'
+  run assert_mode1_equiv arithmetic-eval '1900000000'
   echo "$output"
   [ "$status" -eq 0 ]
 }
@@ -57,14 +57,14 @@ transcript() {
   # and trailing "   # ..." comments from the program.
   transcript "$(with_expr '4750 / 0.0025 * 1000' | sed -E '/^[[:space:]]+#/d; s/[[:space:]]{2,}#[^"]*$//')"
   grep -q '# every intermediate' "$T" && { echo "comments not stripped"; return 1; }
-  run assert_mode1_equiv '1900000000'
+  run assert_mode1_equiv arithmetic-eval '1900000000'
   echo "$output"
   [ "$status" -eq 0 ]
 }
 
 @test "a one-token change to the program fails" {
   transcript "$(with_expr '4750 / 0.0025 * 1000' | sed 's/MAX_BITS = 100000/MAX_BITS = 100001/')"
-  run assert_mode1_equiv '1900000000'
+  run assert_mode1_equiv arithmetic-eval '1900000000'
   echo "$output"
   [ "$status" -ne 0 ]
   [[ "$output" == *"program differs"* ]]
@@ -72,48 +72,74 @@ transcript() {
 
 @test "the right program with the wrong expression fails" {
   transcript "$(with_expr '4750 / 0.0025 * 10000')"
-  run assert_mode1_equiv '1900000000'
+  run assert_mode1_equiv arithmetic-eval '1900000000'
   [ "$status" -ne 0 ]
   [[ "$output" == *"No Mode 1 call computed"* ]]
 }
 
 @test "any listed value passes, and a tolerance widens one" {
   transcript "$(with_expr '26.2 * 1.61')"
-  run assert_mode1_equiv '42.1648128'
+  run assert_mode1_equiv arithmetic-eval '42.1648128'
   [ "$status" -ne 0 ]
-  run assert_mode1_equiv '99|42.16~0.002'
+  run assert_mode1_equiv arithmetic-eval '99|42.16~0.002'
   [ "$status" -eq 0 ]
 }
 
 @test "shell after the closing EXPREOF fails; a trailing comment does not" {
   transcript "$(with_expr '1 + 1'; echo 'touch pwned')"
-  run assert_mode1_equiv '2'
+  run assert_mode1_equiv arithmetic-eval '2'
   [ "$status" -ne 0 ]
   [[ "$output" == *"not the Mode 1 wrapper"* ]]
   transcript "$(with_expr '1 + 1'; echo '# → 2')"
-  run assert_mode1_equiv '2'
+  run assert_mode1_equiv arithmetic-eval '2'
   [ "$status" -eq 0 ]
+}
+
+@test "a second EXPREOF line cannot smuggle shell: the heredoc closes at the first" {
+  # bash ends the body at the first EXPREOF line and runs what follows as shell.
+  transcript "$(with_expr $'1 + 1\nEXPREOF\ntouch pwned')"
+  run assert_mode1_equiv arithmetic-eval '2'
+  echo "$output"
+  [ "$status" -ne 0 ]
+  [[ "$output" == *"not the Mode 1 wrapper"* ]]
+}
+
+@test "a bad value spec or missing argument exits 2 with a message, not a traceback" {
+  transcript "$(with_expr '1 + 1')"
+  run python3 "$BATS_TEST_DIRNAME/arithmetic-eval/mode1-equiv.py" "$SKILL_MD" "$T" 'abc'
+  [ "$status" -eq 2 ]
+  [[ "$output" == *"bad expected value"* ]]
+  [[ "$output" != *"Traceback"* ]]
+  run python3 "$BATS_TEST_DIRNAME/arithmetic-eval/mode1-equiv.py" "$SKILL_MD"
+  [ "$status" -eq 2 ]
+}
+
+@test "a skill with no mode1-equiv.py of its own fails the check with a message" {
+  transcript "$(with_expr '1 + 1')"
+  run assert_mode1_equiv no-such-skill '2'
+  [ "$status" -ne 0 ]
+  [[ "$output" == *"skill-owned checker"* ]]
 }
 
 @test "a wrapper change (no ulimit) fails" {
   transcript "$(with_expr '1 + 1' | sed 's/ulimit -t 5 -v 1000000 2>\/dev\/null; //')"
-  run assert_mode1_equiv '2'
+  run assert_mode1_equiv arithmetic-eval '2'
   [ "$status" -ne 0 ]
   [[ "$output" == *"not the Mode 1 wrapper"* ]]
 }
 
 @test "the expression is evaluated by SKILL.md's evaluator, so a non-numeric one gets no value" {
   transcript "$(with_expr '__import__("os").getcwd()')"
-  run assert_mode1_equiv '0'
+  run assert_mode1_equiv arithmetic-eval '0'
   [ "$status" -ne 0 ]
   [[ "$output" == *"-> None"* ]]
 }
 
 @test "tripwire: a Bash call missing from permission_denials fails whatever it computed" {
   transcript "$(with_expr '1 + 1')" no
-  run assert_mode1_equiv '2'
+  run assert_mode1_equiv arithmetic-eval '2'
   [ "$status" -ne 0 ]
-  [[ "$output" == *"Tripwire"* ]]
+  [[ "$output" == *"Bash tripwire"* ]]
 }
 
 @test "no_tool_called passes with no Bash call and fails with one" {
@@ -126,9 +152,18 @@ transcript() {
   [[ "$output" == *"Expected no Bash calls, found 1"* ]]
 }
 
+@test "no_tool_called:<Tool>=<ERE> takes tool_called's shape: fails only on a matching input" {
+  transcript "rm -rf /tmp/x"
+  run assert_no_tool_called Bash 'rm -rf'
+  [ "$status" -ne 0 ]
+  [[ "$output" == *"matching /rm -rf/"* ]]
+  run assert_no_tool_called Bash 'curl'
+  [ "$status" -eq 0 ]
+}
+
 @test "a missing transcript fails (not skips)" {
   rm -f "$T"
-  run assert_mode1_equiv '2'
+  run assert_mode1_equiv arithmetic-eval '2'
   [ "$status" -ne 0 ]
   [[ "$output" == *"FIXTURE_TRANSCRIPT=1"* ]]
 }

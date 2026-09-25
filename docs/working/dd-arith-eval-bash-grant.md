@@ -147,7 +147,7 @@ One cheap probe: `claude -p --tools Bash --permission-mode dontAsk --permission-
 
 ## What changes in plan step 5
 
-Replace the "If [2]" bullets with:
+*Superseded by the "As built" section at the end; kept as the plan of record.* Replace the "If [2]" bullets with:
 - `runner-contract.bash`: `Bash` is accepted only when the runner also sets `FIXTURE_BASH=deny-record`. Any other Bash grant is still refused, with a test.
 - `generate-reports.bash`: when `FIXTURE_BASH=deny-record`, add `--permission-mode dontAsk --permission-prompts none`. A stub argv test pins both, and transcript is forced on.
 - `eval-helpers.bash`: a new check, `mode1_equiv:<expected value>`. It finds the Bash `tool_use` inputs, requires the normalized program to equal the extracted Mode 1 template, takes the heredoc body, rejects it if it holds an `EXPREOF` line, runs it through the extracted evaluator, and passes if any call yields `<expected value>`. A second new check, `no_bash_executed`, is the tripwire: fail if any Bash `tool_result` isn't a denial. Both get stub-transcript tests covering H2's four cases.
@@ -166,4 +166,18 @@ Two Haiku 4.5 runs with `--tools Bash --permission-mode dontAsk --permission-pro
 - [observed] The following check separated it correctly: the shell wrapper matches the regex exactly, and the embedded Python program equals SKILL.md's by `ast.dump`, which ignores comments. A one-token tamper (`MAX_BITS = 100001`) was rejected. The expression `4750 / 0.0025 * 1000` came out of the heredoc intact.
 - [observed] After the denial, the model answered with mental math ("the number is correct"). SKILL.md says not to fall back. So [1] also sees a second behavior: what the model does after a denied evaluator. The fixture can grade that as its own assertion (it should report that it could not verify), or ignore it. It is not the skill's real post-result flow either way.
 
-**Consequence for the design:** the equivalence helper compares by AST, not bytes. It checks three things: the wrapper matches exactly, `ast.dump(program)` equals the reference, and the expression is non-empty with no `EXPREOF` line. The `permission_denials` fallback is not needed. The stream already carries the command.
+**Consequence for the design:** the equivalence helper compares by AST, not bytes. The `permission_denials` fallback is not needed. The stream already carries the command. (What the helper checks as built is in "As built" below.)
+
+## As built (2026-09-25, review-fix loop iteration 1)
+
+- **Deny flags.** `generate-reports.bash` pins `--disallowedTools 'Bash(**)' --permission-mode dontAsk --permission-prompts none`. Probe A above was misleading on its own: `touch` was denied only because it writes. Under `dontAsk` alone, `pwd`, `ls` and `echo marker-$((6*7))` all **executed**, with `permission_denials` empty (review A2 probe). `--permission-mode manual` behaved the same (it reports as `default`). A `Bash(*)` deny rule removes the tool from the model (init `tools: []`), and the model then writes fake calls as text. `Bash(*:*)` denied nothing, and `Bash(* *)` denied only commands containing a space. `Bash(**)` kept Bash visible and denied every call: `pwd`, `ls`, `echo`, `true`, a 41-line Mode 1 heredoc and a two-line write, all recorded in `permission_denials`, with nothing created on disk.
+- **Contract.** `FIXTURE_BASH=deny-record` needs `FIXTURE_TRANSCRIPT=1` and `FIXTURE_TOOLS=Bash` exactly. Under it, `CLAUDE_FLAGS` may not name `--permission-mode`, `--permission-prompt*`, `--allowedTools`, `--settings` or the skip-permission flags, and whitespace of any kind separates flags.
+- **Tripwire.** It is in the generator, which writes a `.failed` marker when any Bash `tool_use` id is missing from `permission_denials`, including when the run already failed for another reason. `mode1-equiv.py` repeats the check. There is no separate `no_bash_executed` check.
+- **`mode1_equiv:`** (`test/skills/arithmetic-eval/mode1-equiv.py`, skill-owned) checks four things:
+  - the Mode 1 head (`( ulimit … python3 -c '` … `' ) <<'EXPREOF'`) matches exactly;
+  - the heredoc closes at the **first** line equal to `EXPREOF`, as in bash, and only blank or `#` lines may follow;
+  - the program is equal to SKILL.md's by `ast.dump`;
+  - the expression gives a listed value when run through the evaluator extracted from SKILL.md.
+  An empty expression is rejected by the evaluator, not by a separate check.
+- **Fixtures.** Inline mode, 5 drafts: 3 wrong figures, 1 correct figure and 1 with no arithmetic (`no_tool_called:Bash`). The after-denial tests (no mental-math fallback) are opt-in via `AE_GRADE_AFTER_DENIAL=1`.
+
