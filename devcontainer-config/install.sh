@@ -301,9 +301,11 @@ assemble() {
   } > "$stage/.manifest"
 }
 
-# review_diff <dest> <src> <item...>: print `diff -ruN` of each item. Returns 0
-# when nothing differs and 1 when something does; exits the script when a diff
-# could not be produced.
+# review_diff <dest> <src-prefix> <item...>: print `diff -ruN` of
+# <dest>/<item> against <src-prefix><item> for each item (<src-prefix> is
+# "<stage>/" or, on the host target, "<dest>/.cw-new."). Returns 0 when nothing
+# differs and 1 when something does; exits the script when a diff could not be
+# produced.
 review_diff() {
   local dest="$1" src="$2" item rc changed=0
   shift 2
@@ -322,7 +324,7 @@ review_diff() {
     # -a: a file with a NUL byte (only ever on the destination side; the stage
     # has none, see extract_commit) is diffed as text, with vis showing each
     # NUL as "?", rather than as "Binary files differ" with no content.
-    diff -ruNa "$dest/$item" "$src/$item" 2>&1 | vis && st=(0 0) || st=("${PIPESTATUS[@]}")
+    diff -ruNa "$dest/$item" "$src$item" 2>&1 | vis && st=(0 0) || st=("${PIPESTATUS[@]}")
     rc="${st[0]}"
     if [ "${st[1]}" -ne 0 ]; then
       echo "ERROR: could not show the review of payload item '$item' (vis exit ${st[1]})." >&2
@@ -340,7 +342,7 @@ review_diff() {
   return "$changed"
 }
 
-# mode_diff <dest> <src> <item...>: print a MODE line for each regular file
+# mode_diff <dest> <src-prefix> <item...>: print a MODE line for each regular file
 # present in both trees whose permission bits differ. diff compares content
 # only, so a committed `chmod +x` alone reviewed as "(none)" and never
 # installed (fact-check claim 17). Returns 1 when any mode differs.
@@ -359,7 +361,7 @@ mode_diff() {
         echo "MODE $dest/$item${p%/}: ${dm[$p]} -> ${rec%% *}" | vis
         rc=1
       fi
-    done < <(find "$src/$item" -type f -printf '%m %P\0')
+    done < <(find "$src$item" -type f -printf '%m %P\0')
   done
   return "$rc"
 }
@@ -424,8 +426,8 @@ install_devcontainer() {
   if [ -d "$DEST" ]; then
     echo "=== Changes this install would make ==========================================="
     local same=1
-    mode_diff "$DEST" "$stage" "${PAYLOAD[@]}" || same=0
-    review_diff "$DEST" "$stage" "${PAYLOAD[@]}" || same=0
+    mode_diff "$DEST" "$stage/" "${PAYLOAD[@]}" || same=0
+    review_diff "$DEST" "$stage/" "${PAYLOAD[@]}" || same=0
     if [ "$same" -eq 1 ]; then
       echo "(none — installed config already matches the repo)"
     fi
@@ -558,12 +560,17 @@ lock_msg() {
   echo "another install holds $1/.claude-workflows-lock, or one was killed. If no install.sh is running, remove that directory and rerun."
 }
 
-# host_cleanup: main's EXIT trap. Removes both stages and releases the lock,
-# if this run took it.
+# host_cleanup: main's EXIT trap. Removes both stages and any unswapped host
+# copies, and releases the lock, if this run took it.
 host_cleanup() {
   if [ -n "$HOST_TMP" ]; then rm -rf "$HOST_TMP" || true; fi
   if [ -n "$DC_TMP" ]; then rm -rf "$DC_TMP" || true; fi
+  # The host copies (review R2) this run made and did not swap in; set only
+  # while this run holds the lock, so another run's copies are never touched.
+  if [ -n "$HOST_NEW_IN" ]; then rm_new_copies "$HOST_NEW_IN"; fi
   if [ -n "$HOST_LOCK" ]; then rmdir "$HOST_LOCK" 2>/dev/null || true; fi
+  # A destination this run created only to hold the lock and copies.
+  if [ -n "$HOST_MADE_DEST" ]; then rmdir "$HOST_MADE_DEST" 2>/dev/null || true; fi
 }
 
 # host_rollback: undo a partial swap in install_claude_home (R4), using its
@@ -643,11 +650,55 @@ install_claude_home() {
   HOST_TMP="$(mktemp -d "${TMPDIR:-/tmp}/cw-host-stage.XXXXXX")"
   local stage="$HOST_TMP/payload"
   assemble "$stage"
-  # R2: the stage sits in a same-uid temp dir while [y/N] waits. Hash it before
-  # the review; after the y, the copies made under $dest must hash the same.
-  local reviewed_hash
-  reviewed_hash="$(payload_hash "$stage" "" "$stage/.manifest")"
-  echo "Canonical (repo):  $REPO_ROOT (commit $(sed -n 's/^commit=//p' "$stage/.manifest"))"
+
+  # R2 (review R2; Q-061 interim [1], provisional pending the user's answer).
+  # The review reads the copies that get installed, never the stage. The stage
+  # sits in a same-uid temp dir, so a writer could swap a benign file in while
+  # the review read it and swap the original back before the y (SP1). The
+  # copies sit beside their targets under $dest, which the sandbox's
+  # denyWrite ~/.claude keeps agents out of. So: take the lock, copy the stage
+  # into $dest/.cw-new.*, hash those copies, review them, and after the y check
+  # the hash and swap exactly those copies in. A decline, "nothing to install"
+  # or any error removes them (rm_new_copies here, or main's EXIT trap).
+  #
+  # One install at a time (R4): two concurrent swaps left none of the seven
+  # entries. The lock is released by main's EXIT trap on every path.
+  local ok=1
+  [ -d "$dest" ] || HOST_MADE_DEST="$dest"   # removed again if left empty
+  mkdir -p "$dest" 2>/dev/null || ok=0
+  if [ "$ok" -eq 1 ]; then
+    if mkdir "$dest/.claude-workflows-lock" 2>/dev/null; then
+      HOST_LOCK="$dest/.claude-workflows-lock"
+      HOST_NEW_IN="$dest"   # this run owns $dest/.cw-new.* from here on
+    elif [ -e "$dest/.claude-workflows-lock" ]; then
+      host_refuse "$(lock_msg "$dest")"
+    else
+      ok=0   # unwritable destination: reported by the copy step below
+    fi
+  fi
+
+  # 1. Copy every entry beside its target. Any failure: undo and stop before a
+  #    single live entry is touched.
+  if [ "$ok" -eq 1 ]; then
+    for name in "${CLAUDE_HOME_NAMES[@]}"; do
+      rm -rf "$dest/.cw-new.$name"
+      # -p keeps the committed modes (claim 17); R2's hash compares them too.
+      if ! cp -Rp "$stage/$name" "$dest/.cw-new.$name"; then ok=0; break; fi
+    done
+  fi
+  if [ "$ok" -eq 1 ]; then
+    rm -f "$dest/.cw-new.manifest"
+    cp -p "$stage/.manifest" "$dest/.cw-new.manifest" || ok=0
+  fi
+  if [ "$ok" -eq 0 ]; then
+    rm_new_copies "$dest"
+    echo "ERROR: could not copy the new files into $dest; nothing was replaced." >&2
+    exit 1
+  fi
+  # The review below reads $new<name>; after the y they must still hash the same.
+  local new="$dest/.cw-new." reviewed_hash
+  reviewed_hash="$(payload_hash "$dest" .cw-new. "$dest/.cw-new.manifest")"
+  echo "Canonical (repo):  $REPO_ROOT (commit $(sed -n 's/^commit=//p' "$dest/.cw-new.manifest"))"
   echo
 
   # Pre-pass: what the content diff cannot show.
@@ -662,13 +713,13 @@ install_claude_home() {
     elif [ -d "$dest/$name" ]; then
       while IFS= read -r -d '' link; do
         rel="${link#"$dest/$name"/}"
-        [ -e "$stage/$name/$rel" ] || continue
+        [ -e "$new$name/$rel" ] || continue
         echo "REPLACE symlink $link -> $(readlink "$link") with a copy" | vis
         changed=1
       done < <(find "$dest/$name" -type l -print0 | LC_ALL=C sort -z)
       while IFS= read -r -d '' f; do
         rel="${f#"$dest/$name"/}"
-        if [ -e "$stage/$name/$rel" ]; then continue; fi
+        if [ -e "$new$name/$rel" ]; then continue; fi
         if [ "$warned" -eq 0 ]; then
           echo "WARNING: not in the repo; these will be MOVED to the backup (Q-057):"
           warned=1
@@ -702,12 +753,12 @@ install_claude_home() {
   mkdir -p "$view"
   for name in "${CLAUDE_HOME_NAMES[@]}"; do
     if [ ! -e "$dest/$name" ]; then
-      n="$(find "$stage/$name" -type f | grep -c '' || true)"
+      n="$(find "$new$name" -type f | grep -c '' || true)"
       echo "ADD $dest/$name (new, $n file(s)):" | vis
-      (cd "$stage" && find "$name" -type f | LC_ALL=C sort) | sed 's/^/    /' | vis
-      lines="$(find "$stage/$name" -type f -exec cat {} + | wc -l)"
+      (cd "$dest" && find ".cw-new.$name" -type f | LC_ALL=C sort) | sed 's/^\.cw-new\./    /' | vis
+      lines="$(find "$new$name" -type f -exec cat {} + | wc -l)"
       if [ "$lines" -le "$ADD_MAX_LINES" ]; then
-        review_diff "$view" "$stage" "$name" || true   # $view/$name is absent: all "+" lines
+        review_diff "$view" "$new" "$name" || true   # $view/$name is absent: all "+" lines
       else
         for src in "${CLAUDE_HOME_SRC[@]}"; do [ "$(basename "$src")" = "$name" ] && break; done
         echo "    (content not shown: $lines lines, over the $ADD_MAX_LINES-line limit for a new entry;" \
@@ -725,9 +776,9 @@ install_claude_home() {
     diffnames+=("$name")
   done
   if [ "${#diffnames[@]}" -gt 0 ]; then
-    if ! mode_diff "$dest" "$stage" "${diffnames[@]}"; then changed=1; fi
-    echo "(diff: $view is the destination as it is now, links left out)"
-    if ! review_diff "$view" "$stage" "${diffnames[@]}"; then changed=1; fi
+    if ! mode_diff "$dest" "$new" "${diffnames[@]}"; then changed=1; fi
+    echo "(diff: $view is the destination as it is now, links left out; ${new}* are the copies to install)"
+    if ! review_diff "$view" "$new" "${diffnames[@]}"; then changed=1; fi
   fi
   if [ "$changed" -eq 0 ]; then
     echo "(none — the destination already matches the repo)"
@@ -736,16 +787,18 @@ install_claude_home() {
   echo
   # A6: nothing to do means no prompt, no swap and no 2.4 MB backup.
   if [ "$changed" -eq 0 ]; then
+    rm_new_copies "$dest"
     echo "Nothing to install into $dest."
     return 0
   fi
 
   local wiring_changed=0
-  if ! cmp -s "$dest/hooks/wiring.json" "$stage/hooks/wiring.json"; then
+  if ! cmp -s "$dest/hooks/wiring.json" "${new}hooks/wiring.json"; then
     wiring_changed=1
   fi
 
   if ! confirm "Install these files into $dest?"; then
+    rm_new_copies "$dest"
     echo "Aborted. Nothing was changed. (host ~/.claude)"
     DECLINED=1
     return 0
@@ -754,42 +807,10 @@ install_claude_home() {
   # Q-058: an agent may have started while the review and prompt waited.
   agent_gate "Nothing was installed into the host target."
 
-  # One install at a time (R4): two concurrent swaps left none of the seven
-  # entries. The lock is released by main's EXIT trap on every path.
-  local ok=1
-  mkdir -p "$dest" 2>/dev/null || ok=0
-  if [ "$ok" -eq 1 ]; then
-    if mkdir "$dest/.claude-workflows-lock" 2>/dev/null; then
-      HOST_LOCK="$dest/.claude-workflows-lock"
-    elif [ -e "$dest/.claude-workflows-lock" ]; then
-      host_refuse "$(lock_msg "$dest")"
-    else
-      ok=0   # unwritable destination: reported by the copy step below
-    fi
-  fi
-
-  # 1. Copy every entry beside its target. Any failure: undo and stop before a
-  #    single live entry is touched.
-  if [ "$ok" -eq 1 ]; then
-    for name in "${CLAUDE_HOME_NAMES[@]}"; do
-      rm -rf "$dest/.cw-new.$name"
-      # -p keeps the reviewed modes (claim 17); R2's hash compares them too.
-      if ! cp -Rp "$stage/$name" "$dest/.cw-new.$name"; then ok=0; break; fi
-    done
-  fi
-  if [ "$ok" -eq 1 ]; then
-    rm -f "$dest/.cw-new.manifest"
-    cp -p "$stage/.manifest" "$dest/.cw-new.manifest" || ok=0
-  fi
-  if [ "$ok" -eq 0 ]; then
-    rm_new_copies "$dest"
-    echo "ERROR: could not copy the new files into $dest; nothing was replaced." >&2
-    exit 1
-  fi
   if [ "$(payload_hash "$dest" .cw-new. "$dest/.cw-new.manifest")" != "$reviewed_hash" ]; then
     rm_new_copies "$dest"
-    echo "ERROR: stage changed after review: the files copied for install differ from" >&2
-    echo "       the ones the review showed. Nothing was replaced. Rerun install.sh." >&2
+    echo "ERROR: the copies to install changed after review: ${new}* differ from the" >&2
+    echo "       files the review showed. Nothing was replaced. Rerun install.sh." >&2
     exit 1
   fi
 
@@ -1006,7 +1027,7 @@ main() {
 
   agent_gate "Nothing was staged or installed."
 
-  HOST_TMP="" HOST_LOCK="" DC_TMP="" STAGED_COMMIT=""
+  HOST_TMP="" HOST_LOCK="" DC_TMP="" STAGED_COMMIT="" HOST_NEW_IN="" HOST_MADE_DEST=""
   trap host_cleanup EXIT
 
   DECLINED=0

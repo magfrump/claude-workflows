@@ -380,7 +380,7 @@ no_host_stage_left() {
   echo "$output"
   chmod u+w "$CLAUDE_HOME_DIR"
   [ "$status" -eq 1 ]
-  [[ "$output" == *'nothing was replaced'* ]]   # it got past the prompt and failed safely
+  [[ "$output" == *'nothing was replaced'* ]]   # the copy step failed safely (before the review, since R2)
   [ "$(snap "$CLAUDE_HOME_DIR")" = "$before" ]
   [ ! -e "$CLAUDE_HOME_DIR/.claude-workflows-backup" ]
   ! compgen -G "$CLAUDE_HOME_DIR/.cw-new.*" >/dev/null
@@ -501,17 +501,62 @@ no_host_stage_left() {
   [ ! -L "$CLAUDE_HOME_DIR/hooks/guard.sh" ]
 }
 
-@test "T28 a stage edited while the prompt waits is not installed (review R2)" {
+@test "T28 a stage edited while the prompt waits is not installed: the reviewed copies are (review R2, Q-061)" {
   need_script; fake_repo; symlink_install
-  before=$(snap "$CLAUDE_HOME_DIR")
   export TAMPER='for f in "$TMPDIR"/cw-host-stage.*/payload/hooks/h.sh; do printf "echo TAMPERED\n" >> "$f"; done'
   run_pty_feed "$FEED_TAMPER" bash "$INSTALL"
   echo "$output"
+  [ "$status" -eq 1 ]                           # the devcontainer target was declined
+  [[ "$output" == *'Installed into'* ]]
+  [ -z "$(grep -rls TAMPERED "$CLAUDE_HOME_DIR")" ]
+  [ "$(cat "$CLAUDE_HOME_DIR/hooks/h.sh")" = "$(printf '#!/bin/bash\nexit 0')" ]
+  ! compgen -G "$CLAUDE_HOME_DIR/.cw-new.*" >/dev/null
+}
+
+@test "T67 a stage swapped for the review and swapped back before y installs only what the review showed (review R2, SP1)" {
+  need_script; fake_repo
+  run_pty 'n\ny\n' bash "$INSTALL"
+  [ "$(cat "$CLAUDE_HOME_DIR/hooks/h.sh")" = "$(printf '#!/bin/bash\nexit 0')" ]
+  printf '#!/bin/bash\necho MALICIOUS-PAYLOAD\n' > "$ROOT/hooks/h.sh"
+  printf 'guide v2 benign\n' > "$ROOT/guides/g.md"
+  commit_all mal
+  # A same-uid helper the gate does not see (the pgrep stub reports none): it
+  # swaps the stage's h.sh for the installed one while the review is produced,
+  # and restores it 1.5 s later, before the y.
+  (
+    for _i in $(seq 2000); do d=$(compgen -G "$TMPDIR/cw-host-stage.*/installed" | head -1) && [ -n "$d" ] && break; sleep 0.005; done
+    st="${d%/installed}/payload"
+    cp "$st/hooks/h.sh" "$S/mal.keep"
+    printf '#!/bin/bash\nexit 0\n' > "$st/hooks/h.sh"; touch -r "$S/mal.keep" "$st/hooks/h.sh"
+    sleep 1.5
+    cp "$S/mal.keep" "$st/hooks/h.sh"
+    echo swapped-back > "$S/helper.done"
+  ) &
+  export TAMPER="sleep 1.5"
+  run_pty_feed "$FEED_TAMPER" bash "$INSTALL"
+  wait
+  echo "$output"
+  [ -f "$S/helper.done" ]
+  [[ "$output" == *'Installed into'* ]]
+  # What was installed is what the review displayed: the review showed the
+  # committed h.sh, which is what landed, whatever the stage held meanwhile.
+  [[ "$output" == *'+echo MALICIOUS-PAYLOAD'* ]]
+  [ "$(cat "$CLAUDE_HOME_DIR/hooks/h.sh")" = "$(printf '#!/bin/bash\necho MALICIOUS-PAYLOAD')" ]
+  [ "$(cat "$CLAUDE_HOME_DIR/guides/g.md")" = 'guide v2 benign' ]
+}
+
+@test "T68 a reviewed copy under the destination edited while the prompt waits is refused (review R2)" {
+  need_script; fake_repo; symlink_install
+  before=$(snap "$CLAUDE_HOME_DIR")
+  export TAMPER='printf "echo TAMPERED\n" >> "$CLAUDE_HOME_DIR/.cw-new.hooks/h.sh"'
+  run_pty_feed "$FEED_TAMPER" bash "$INSTALL"
+  echo "$output"
   [ "$status" -eq 1 ]
-  [[ "$output" == *'stage changed after review'* ]]
+  [[ "$output" == *'changed after review'* ]]
   [ "$(snap "$CLAUDE_HOME_DIR")" = "$before" ]
   [ -z "$(grep -rls TAMPERED "$CLAUDE_HOME_DIR")" ]
-  ! compgen -G "$CLAUDE_HOME_DIR/.cw-new.*" >/dev/null
+  run ! compgen -G "$CLAUDE_HOME_DIR/.cw-new.*"
+  [ ! -e "$CLAUDE_HOME_DIR/.claude-workflows-lock" ]
 }
 
 @test "T29 rewriting install.sh while it waits at a prompt runs no new code (review R3)" {
@@ -702,11 +747,13 @@ installed_then_changed() {
 @test "T43 a provenance manifest edited while the prompt waits is not installed (fact-check claim 14)" {
   need_script; fake_repo; symlink_install
   before=$(snap "$CLAUDE_HOME_DIR")
-  export TAMPER='for f in "$TMPDIR"/cw-host-stage.*/payload/.manifest; do printf "commit=FORGED\n" > "$f"; done'
+  # The reviewed copy of the manifest (review R2: the stage is no longer
+  # installed, so the copy under the destination is what could be forged).
+  export TAMPER='printf "commit=FORGED\n" > "$CLAUDE_HOME_DIR/.cw-new.manifest"'
   run_pty_feed "$FEED_TAMPER" bash "$INSTALL"
   echo "$output"
   [ "$status" -eq 1 ]
-  [[ "$output" == *'stage changed after review'* ]]
+  [[ "$output" == *'changed after review'* ]]
   [ "$(snap "$CLAUDE_HOME_DIR")" = "$before" ]
   [ -z "$(grep -rls FORGED "$CLAUDE_HOME_DIR")" ]
   ! compgen -G "$CLAUDE_HOME_DIR/.cw-new.*" >/dev/null
