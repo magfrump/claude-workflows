@@ -432,12 +432,23 @@ confirm() {
 # P2-A2). Remove every PAYLOAD item from $DEST, say why, and exit 1 before
 # chmod, the cc-isolated link and the bless. The previous config is gone too,
 # so cc-isolated refuses to run until an install completes.
+# Best-effort, never set -e: cc-isolated.sh goes first, and one item that
+# cannot be removed (a copied tree with a read-only subdir) must not stop the
+# rest or the message (review pass 4, F1: an early exit left an altered
+# launcher live). A link is removed, never chmod-ed through.
 dc_unwind() {
-  local item
-  for item in "${PAYLOAD[@]}"; do rm -rf "${DEST:?}/$item"; done
+  local item left=""
+  for item in cc-isolated.sh "${PAYLOAD[@]}"; do
+    [ -e "$DEST/$item" ] || [ -L "$DEST/$item" ] || continue
+    if [ ! -L "$DEST/$item" ]; then chmod -R u+w "$DEST/$item" 2>/dev/null || true; fi
+    rm -rf "${DEST:?}/$item" 2>/dev/null || left+=" $item"
+  done
   {
     echo "ERROR: $1"
     if [ -n "${2:-}" ]; then printf '%s\n' "$2" | sed 's/^/         /'; fi
+    if [ -n "$left" ]; then
+      echo "       Could not remove from $DEST:$left. Remove them by hand."
+    fi
     echo "       The copied items were removed again (the previous config with them) and"
     echo "       nothing was blessed, so cc-isolated will not run until install.sh completes."
     echo "       Rerun install.sh."
@@ -650,7 +661,10 @@ tree_hash() {
 # <dir>/<prefix><name>, one per line. extract_commit refuses links once, right
 # after extraction; a link that appears later passed that check and tree_hash
 # only records it, so every hash site calls this too (review P2-R2).
-# A missing item holds no link and is left to the hash check that follows;
+# A missing item holds no link and is skipped: at $DEST the hash check that
+# follows catches it; at the stage and host sites the hash is taken of the
+# missing state, and the copy (could not copy) or the swap (rolled back)
+# refuses it instead (review pass 4, F2);
 # a find that cannot read a tree fails the call, and every caller turns that
 # into a refusal (review pass 3: a bare failure here skipped dc_unwind).
 links_in() {
@@ -678,7 +692,12 @@ payload_hash() {
 # rm_new_copies <dest>: remove every .cw-new.* copy this install makes.
 rm_new_copies() {
   local n
-  for n in "${CLAUDE_HOME_NAMES[@]}" manifest; do rm -rf "${1:?}/.cw-new.$n" 2>/dev/null || true; done
+  for n in "${CLAUDE_HOME_NAMES[@]}" manifest; do
+    # A copied tree with a read-only subdir must not survive to block every
+    # later run (review pass 4); a link is removed, never chmod-ed through.
+    if [ -e "${1:?}/.cw-new.$n" ] && [ ! -L "$1/.cw-new.$n" ]; then chmod -R u+w "$1/.cw-new.$n" 2>/dev/null || true; fi
+    rm -rf "${1:?}/.cw-new.$n" 2>/dev/null || true
+  done
 }
 
 host_refuse() {
@@ -823,8 +842,14 @@ install_claude_home() {
 
   # 1. Copy every entry beside its target. Any failure: undo and stop before a
   #    single live entry is touched.
+  rm_new_copies "$dest"
+  for name in "${CLAUDE_HOME_NAMES[@]}" manifest; do
+    # cp -R into a leftover directory would nest the copy inside it.
+    if [ -e "$dest/.cw-new.$name" ] || [ -L "$dest/.cw-new.$name" ]; then
+      host_refuse "could not remove the leftover $dest/.cw-new.$name from an earlier run; remove it by hand."
+    fi
+  done
   for name in "${CLAUDE_HOME_NAMES[@]}"; do
-    rm -rf "$dest/.cw-new.$name"
     # -p keeps the committed modes (claim 17); R2's hash compares them too.
     if ! cp -Rp "$stage/$name" "$dest/.cw-new.$name"; then ok=0; break; fi
   done

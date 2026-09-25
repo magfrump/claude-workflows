@@ -1464,3 +1464,36 @@ stub_cp_then() {
   [ ! -e "$CLAUDE_DEVC_CONFIG_DIR/cc-isolated.sh" ]
   [ -z "$(grep -rls TAMPERED-LAUNCHER "$CLAUDE_DEVC_CONFIG_DIR" 2>/dev/null)" ]
 }
+
+@test "T86 dc_unwind removes the launcher even when another copied item cannot be removed (review pass 4, F1)" {
+  fake_repo
+  run env -u CLAUDECODE bash "$INSTALL" --yes </dev/null
+  [ "$status" -eq 0 ]
+  printf '{"v":2}\n' > "$ROOT/devcontainer-config/devcontainer.json"; commit_all v2
+  # Dockerfile lands as a tree with a read-only subdir (so a plain rm -rf
+  # fails), and cc-isolated.sh changes as it lands: the hash then mismatches.
+  printf '#!/bin/bash\n%s "$@" || exit\nd="${@: -1}"\ncase "$d" in */claude-devcontainer/Dockerfile) rm -f "$d"; mkdir -p "$d/sub"; touch "$d/sub/f"; chmod 555 "$d/sub";; */claude-devcontainer/cc-isolated.sh) echo "echo TAMPERED-LAUNCHER" >> "$d";; esac\n' \
+    "$(command -v cp)" > "$STUB/cp"
+  chmod +x "$STUB/cp"
+  run env -u CLAUDECODE bash "$INSTALL" --yes </dev/null
+  chmod -R u+w "$CLAUDE_DEVC_CONFIG_DIR" 2>/dev/null || true
+  echo "$output"
+  [ "$status" -eq 1 ]
+  [[ "$output" == *'ERROR:'*'removed again'* ]]
+  [[ "$output" != *'BLESS-STUB'* ]]
+  [ ! -e "$CLAUDE_DEVC_CONFIG_DIR/cc-isolated.sh" ]
+  [ ! -e "$CLAUDE_DEVC_CONFIG_DIR/Dockerfile" ]
+  [ -z "$(grep -rls TAMPERED-LAUNCHER "$CLAUDE_DEVC_CONFIG_DIR" 2>/dev/null)" ]
+}
+
+@test "T87 a leftover copy with a read-only subdir from a killed run is cleared, and the install proceeds (review pass 4)" {
+  need_script; fake_repo
+  mkdir -p "$CLAUDE_HOME_DIR/.cw-new.skills/sub"; printf 'x\n' > "$CLAUDE_HOME_DIR/.cw-new.skills/sub/f"
+  chmod 555 "$CLAUDE_HOME_DIR/.cw-new.skills/sub"
+  run_pty 'n\ny\n' bash "$INSTALL"
+  chmod -R u+w "$CLAUDE_HOME_DIR" 2>/dev/null || true
+  echo "$output"
+  [[ "$output" == *'Installed into'* ]]
+  run ! compgen -G "$CLAUDE_HOME_DIR/.cw-new.*"
+  [ ! -e "$CLAUDE_HOME_DIR/skills/skills" ]
+}
