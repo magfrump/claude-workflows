@@ -38,7 +38,7 @@ None.
 
 | # | Finding | Domain | Severity | Source | Location | Status |
 |---|---|---|---|---|---|---|
-| C1 | **The user's own hooks fire inside fixture runs.** `dd-routing-reminder.sh` matches tc-dd1's REQUEST.md and injects the workflow path the fixture tests whether the model finds unaided (executed). `log-usage.sh` writes fixture runs into `~/.claude/logs/usage.jsonl`, inflating the usage telemetry. | Security / eval validity | Low (executed) | security-reviewer F4 | `test/skills/generate-reports.bash:159` (argv has no hook isolation) | ✅ Fixed (a75ba3e, `--restricted --safe-mode`; per CLI help, not directly observed) |
+| C1 | **The user's own hooks fire inside fixture runs.** `dd-routing-reminder.sh` matches tc-dd1's REQUEST.md and injects the workflow path the fixture tests whether the model finds unaided (executed). `log-usage.sh` writes fixture runs into `~/.claude/logs/usage.jsonl`, inflating the usage telemetry. | Security / eval validity | Low (executed) | security-reviewer F4 | `test/skills/generate-reports.bash:159` (argv has no hook isolation) | ✅ Fixed (a75ba3e; observed by usage-log probe) |
 | C2 | A fixture name with a dot but no real extension leaks its tail into `subject.<ext>` (e.g. `tc-2.4-inaccurate` → `subject.4-inaccurate`). Latent: no committed fixture has one. | Security | Informational | security F6; FC 15/41 | `test/skills/generate-reports.bash:146` | ✅ Fixed (a75ba3e) |
 | C3 | An aborted generation leaves the previous report on disk, and it gets scored as current. Fix: `rm -f "$report_path"` alongside the transcript. | Security / Tests | Informational | security F7 | `test/skills/generate-reports.bash:137` | ✅ Fixed (a75ba3e) |
 | C4 | `CLAUDE_FLAGS`/`CLAUDE_MODEL` are passed through word-split and unvalidated. They are operator-controlled. | Security | Informational | security F5 | `generate-reports.bash:210-211` | Won't-Fix (override-log) |
@@ -75,7 +75,7 @@ Resolved by live probes on 2026-09-24 (haiku, claude 2.1.282; see a75ba3e's mess
 - FC 24: `--tools ""` gives `"tools":[]` in the init event. FC 23 (top level): `"mcp_servers":[]` under `--strict-mcp-config --tools ""`. Sub-agent MCP exposure was not probed separately. Sub-agents inherit `--tools`, which is confirmed ("Read is disabled for this session, in subagents as well as here").
 - FC 9: real stream-json output carries sub-agent events with `parent_tool_use_id` set to the dispatching Agent call's id, and the tool is named `Agent`.
 
-Still unverified: whether `--safe-mode` also suppresses UserPromptSubmit hook injection. The CLI help says hooks are disabled; the stream does not expose hook context.
+Hook suppression was observed later, via the PreToolUse usage log (see the loop table). UserPromptSubmit injection is not directly visible in the stream; it is inferred to be suppressed along with the other hooks.
 
 ---
 
@@ -91,7 +91,11 @@ All core critics ran; no skips applied.
 |---|---|---|
 | 1 | 04c0746 | k=3 fact-check + 5 critics: 0 red, 7 amber, 11 consider |
 | fixes | a2972bf, a75ba3e, c90b97a | All 7 amber resolved; 5 consider fixed; 6 declined, with override-log rows. Fix-drift lite review: 1 finding, fixed in c90b97a. `run-tests.sh --fast`: 948 ok, 0 failed. |
-| 2 | c90b97a | scoped re-review of the fix diff (see below) |
+| 2 | 0a81388 | Incremental re-review of the fixes (pr-prep 3d): fact-check k=1 (39 claims: 27 V · 5 MA · 7 U · 0 I · 0 Stale), security and api-consistency on opus. Security: F1–F4, F6 and F7 closed; new Medium #1 (newline in FIXTURE_TOOLS) was already closed at f315f47 and is now tested. api-consistency #1 (Inconsistent, executed): A1 was only closed for *empty* reports. A failed run that prints text still passed tc-sec8/tc-dd4. |
+| fixes 2 | f315f47, 3a497f5, 21d07b2, d20e4b1 | The generator records failures in `<fixture>.failed` (claude exit status; error or missing result event), and eval_fixture fails them. A whitespace-only report counts as empty. Allowlist format anchored. Known-extension list for subject names. Inline read failures abort again (a set -e regression in a75ba3e). New test guards the up-front report rm. Every new test was mutation- or test-first-checked. |
+| probe | — | Hooks confirmed suppressed: a Read of `workflows/probe.md` logged +1 line to `usage.jsonl` plain and +0 under `--restricted --safe-mode` (C1, now observed). |
+
+Pass-2 reports: `code-fact-check-report-skill-fixtures-pass2.md`, `security-review-2026-09-24-skill-fixtures-pass2.md`, `api-consistency-review-2026-09-24-skill-fixtures-pass2.md`. Pass 2 converged: no 🔴, and its 🟡 (api #1) is fixed. Its remaining items are either fixed or have override-log rows.
 
 ## 🧩 Composition check
 
