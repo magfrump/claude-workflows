@@ -27,6 +27,8 @@ The index below is generated — edit entries, not the table.
 |---|---|---|---|
 | [Q-059](#q-059--arith-eval-bash-grant) | you: judgment | Should arithmetic-eval's LLM fixture runs get a restricted Bash tool so the model can actually run the eval... | 2026-09-24 |
 | [Q-060](#q-060--orchestrator-fixture-depth) | you: judgment | How far should batch 4 go for code-review and draft-review? | 2026-09-24 |
+| [Q-061](#q-061--host-stage-review-copies) | you: judgment | The host target's stage can be swapped for the review and swapped back before y (the re-review's R2, 6/6 ru... | 2026-09-25 |
+| [Q-062](#q-062--leftover-helper-is-agent) | you: judgment | Under Q-058 [2], does a background process an agent session left running (a detached helper, a loop driver ... | 2026-09-25 |
 <!-- index:end -->
 
 ## Open
@@ -68,3 +70,37 @@ How far should batch 4 go for code-review and draft-review?
 - **Blocks:** step 9 only
 - **Interim:** [1]
 - **If the answer differs:** step 9 is built after step 3; nothing is redone.
+
+### Q-061 · host-stage-review-copies
+**Needs:** you: judgment · **Opened:** 2026-09-25 · **Status:** OPEN
+
+The host target's stage can be swapped for the review and swapped back before y (the re-review's R2, 6/6 runs). Do we move the review onto the copies under `~/.claude`, or accept this under your Q-058 answer?
+
+- **Why it's yours:** Q-058 [2] made "no agent runs during the install" the trust model. [1] adds option [1] from Q-058 (sandbox-protected staging) on top of it for the host target. That goes past what you chose, even though it only adds protection.
+- **Read:** `docs/reviews/code-review-rubric-2026-09-24-ans-copy-install-q058.md` R2; `docs/reviews/security-review-2026-09-24-copy-install-q058.md` F1 (with the SP1 probe) and F8
+
+| Option | What it means | Cost to you | If it's wrong |
+|---|---|---|---|
+| **[1] Review the installed copies** | Stage into `~/.claude/.cw-new.*` (denyWrite) before the review, review those, then hash-check and swap them. The host target stops depending on the gate. | Nothing now. The review diff reads from a different path. | About 15 extra installer lines to maintain, guarding a case the gate is meant to prevent |
+| **[2] Accept it; correct decision 037** | 037:66 is rewritten to say the hash only catches edits that persist, and a writer that swaps and restores is caught only if the gate sees it at y | None | An unsandboxed or unseen writer can get an unreviewed hook into `~/.claude`, which runs in every session |
+
+- **Blocks:** merging `skill-fixtures` to main (you asked for merge after review; R2 is red until this is settled)
+- **Interim:** [1] is implemented with the other review fixes, so the merge isn't blocked. It hardens the installer and doesn't loosen anything. 037 records it as provisional pending this answer.
+- **If the answer differs:** [2] reverts that one commit and applies the 037:66 rewrite. Nothing else depends on it.
+
+### Q-062 · leftover-helper-is-agent
+**Needs:** you: judgment · **Opened:** 2026-09-25 · **Status:** OPEN
+
+Under Q-058 [2], does a background process an agent session left running (a detached helper, a loop driver between `claude` iterations) count as "an agent"?
+
+- **Why it's yours:** it sets the scope of your own trust-model answer. The gate only recognizes Claude-shaped command lines, so "yes" needs a broader, noisier check.
+- **Read:** the re-review's A2; security review F3 (SP2 and P4 probes)
+
+| Option | What it means | Cost to you | If it's wrong |
+|---|---|---|---|
+| **[1] No; document it** | 037 lists leftover non-Claude processes as a residual. Stopping them before an install is on you. | Remember to kill loop drivers before installing | A leftover helper writes during the install, unseen |
+| **[2] Yes; widen the gate** | Also refuse any other process of your uid whose working directory is inside the checkout, and name it | Occasional refusals naming an editor or shell sitting in the repo; close it and re-run | Nuisance refusals every time a terminal is open in the repo |
+
+- **Blocks:** nothing (A2 carries this entry as its author note)
+- **Interim:** [1]. The cheap fail-closed fixes land either way: a gate before host staging, and a wider regex covering the versioned native path and the Agent SDK CLI.
+- **If the answer differs:** [2] adds one detector to `agent_gate` and a test. Nothing is redone.
