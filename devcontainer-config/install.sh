@@ -48,18 +48,23 @@ changes under those paths are listed as NOT included; commit and rerun.
 A destination path holding a newline or other control character is refused,
 and so is a payload file holding a NUL byte (a binary the diff cannot show).
 
-NO AGENT MAY RUN DURING THE INSTALL (Q-058). install.sh refuses, before it
-stages anything and again after each y, while any agent can run:
+NO AGENT MAY RUN DURING THE INSTALL (Q-058). install.sh checks at startup,
+before the host target stages, and after each y, and refuses while it finds:
   - a Claude Code process of your uid (pgrep on the command line), or
-  - a running cc-isolated container (docker ps, label cc-project).
-It names each one and how to stop it.
-Without pgrep it refuses; without a reachable docker it says so in one line
-and treats no container as running. Close every Claude Code session and stop
-every cc-isolated container first.
+  - a running cc-isolated container (docker ps, label cc-project; docker's
+    own DOCKER_HOST/DOCKER_CONTEXT choose which daemon is asked).
+It names each one and how to stop it. The checks are samples, not a lock;
+decision 037, "Trust model", lists what they miss (e.g. a helper process an
+agent left running: stop those yourself).
+Without pgrep it refuses; without a reachable docker it prints a NOTE line
+at each check and treats no container as running. Close every Claude Code
+session and stop every cc-isolated container first. Run from inside a
+Claude Code session, install.sh finds that session and exits 1 at startup,
+before either target.
 
 Target 2 is SKIPPED, with a message and no effect on the exit status, when
---yes is given, when stdin is not a terminal, or when running inside a
-Claude Code session (CLAUDECODE set). That stops accidental runs,
+--yes is given or stdin is not a terminal, and inside a Claude Code session
+(CLAUDECODE set) that the check above missed. That stops accidental runs,
 not a determined agent: a pty wrapper and `env -u CLAUDECODE` get past it.
 The hard barrier is a sandbox that denies agents write access to ~/.claude.
 

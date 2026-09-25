@@ -866,7 +866,7 @@ installed_then_changed() {
   grep -q 'docker ps --filter label=cc-project' "$S/probe.log"
 }
 
-@test "T52 docker absent or unreachable: one line says so, and the install goes ahead (Q-058)" {
+@test "T52 docker absent or unreachable: a NOTE line says so at each check, and the install goes ahead (Q-058)" {
   fake_repo
   stub_docker 'echo "Cannot connect to the Docker daemon" >&2; exit 1'
   run env -u CLAUDECODE bash "$INSTALL" --yes </dev/null
@@ -938,6 +938,9 @@ installed_then_changed() {
   [ "$status" -eq 0 ]
   [[ "$output" == *'Claude Code process'* ]]
   [[ "$output" == *'cc-isolated container'* ]]
+  # Review A4: an in-session run is refused at startup, not "target 1 installs".
+  [[ "$output" == *'Claude Code session, install.sh finds that session and exits 1 at startup'* ]]
+  grep -q 'exits 1 at startup' "$BATS_TEST_DIRNAME/../README.md"
   for doc in README.md guides/bare-host-hook-wiring.md; do
     grep -q 'Q-058' "$BATS_TEST_DIRNAME/../$doc"
     grep -q 'cc-isolated container' "$BATS_TEST_DIRNAME/../$doc"

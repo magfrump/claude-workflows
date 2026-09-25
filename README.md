@@ -25,18 +25,24 @@ shown only when it is 200 lines or fewer.
 Both targets install only **committed** content (the devcontainer config's
 files as well as those seven): uncommitted changes under those paths are listed
 as NOT included, and git-ignored files are never copied. The
-`~/.claude` target is skipped with `--yes`, from a script with no TTY, and inside
-a Claude Code session. That stops accidental runs, not a determined agent (a pty
-wrapper and unsetting `CLAUDECODE` get past it); the hard barrier is a sandbox that denies agents write
-access to `~/.claude`. `install.sh --help` has the details.
+`~/.claude` target is skipped with `--yes` and from a script with no TTY. That
+stops accidental runs, not a determined agent (a pty wrapper gets past it); the
+hard barrier is a sandbox that denies agents write access to `~/.claude`. Run
+from inside a Claude Code session, the whole run exits 1 at startup, because the
+no-agent check below finds that session; the `CLAUDECODE` skip stays as a
+backstop for a session the check misses (unsetting `CLAUDECODE` gets past it).
+`install.sh --help` has the details.
 
 **No agent may run during the install (Q-058).** `install.sh` runs as your uid, so
 "what you reviewed is what is installed" holds only while nothing else with your
-uid can edit the stage, the checkout or its `.git`. Before it stages anything, and
-again after each y, it refuses while a Claude Code process of your uid or a
-running cc-isolated container (it can write the checkout through its bind mount)
-is found, and names each one with how to stop it. Close every Claude Code session
-and `docker stop` every cc-isolated container, then run it from your own terminal.
+uid can edit the stage, the checkout or its `.git`. At startup, again before the
+`~/.claude` target stages, and after each y, it refuses while a Claude Code
+process of your uid or a running cc-isolated container (it can write the checkout
+through its bind mount) is found, and names each one with how to stop it. These
+are checks at those moments, not a lock: decision 037 lists what they miss, such
+as a helper process an agent session left running. Close every Claude Code
+session, `docker stop` every cc-isolated container and stop anything an agent
+left running, then run it from your own terminal.
 
 **Migrating from the old symlink install.** Close your Claude Code sessions, then
 run `install.sh`. Its `~/.claude` review lists every symlink it will replace
