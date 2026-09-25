@@ -654,8 +654,9 @@ lock_msg() {
   echo "another install holds $1/.claude-workflows-lock, or one was killed. If no install.sh is running, remove that directory and rerun."
 }
 
-# host_cleanup: main's EXIT trap. Removes both stages and any unswapped host
-# copies, and releases the lock, if this run took it.
+# host_cleanup: main's EXIT trap. Removes both stages (the host one sits in
+# $dest/.cw-stage.*) and any unswapped host copies, and releases the lock, if
+# this run took it.
 host_cleanup() {
   if [ -n "$HOST_TMP" ]; then rm -rf "$HOST_TMP" || true; fi
   if [ -n "$DC_TMP" ]; then rm -rf "$DC_TMP" || true; fi
@@ -745,45 +746,51 @@ install_claude_home() {
     host_refuse "$(lock_msg "$dest")"
   fi
 
-  HOST_TMP="$(mktemp -d "${TMPDIR:-/tmp}/cw-host-stage.XXXXXX")"
-  local stage="$HOST_TMP/payload"
-  assemble "$stage"
-
-  # R2 (review R2; Q-061 interim [1], provisional pending the user's answer).
-  # The review reads the copies that get installed, never the stage. The stage
-  # sits in a same-uid temp dir, so a writer could swap a benign file in while
-  # the review read it and swap the original back before the y (SP1). The
-  # copies sit beside their targets under $dest, which the sandbox's
-  # denyWrite ~/.claude keeps agents out of. So: take the lock, copy the stage
-  # into $dest/.cw-new.*, hash those copies, review them, and after the y check
-  # the hash and swap exactly those copies in. A decline, "nothing to install"
-  # or any error removes them (rm_new_copies here, or main's EXIT trap).
+  # R2 and P2-R3 (Q-061 interim [1], provisional pending the user's answer):
+  # everything the review reads and everything that is installed lives under
+  # $dest, which the sandbox's denyWrite covers for the default ~/.claude.
+  # Nothing of this target sits in $TMPDIR, where any same-uid writer could
+  # swap the stage, the copies' source or the old side of the diff while the
+  # review ran (SP1, SP1b, SP1c). So: take the lock; extract the stage into
+  # $dest/.cw-stage.*; copy it into $dest/.cw-new.*; hash those copies and
+  # review them against a view of the current destination, also built in
+  # $dest/.cw-stage.*; after the y, check the hash and swap exactly those
+  # copies in. A decline, "nothing to install" or any error removes the stage
+  # and the copies (rm_new_copies here, or main's EXIT trap).
   #
   # One install at a time (R4): two concurrent swaps left none of the seven
-  # entries. The lock is released by main's EXIT trap on every path.
-  local ok=1
+  # entries. The lock is released by main's EXIT trap on every path. It is
+  # taken before anything is staged, so an unwritable destination is refused
+  # here, before the review (exit 1), even when nothing would change.
   [ -d "$dest" ] || HOST_MADE_DEST="$dest"   # removed again if left empty
-  mkdir -p "$dest" 2>/dev/null || ok=0
-  if [ "$ok" -eq 1 ]; then
-    if mkdir "$dest/.claude-workflows-lock" 2>/dev/null; then
-      HOST_LOCK="$dest/.claude-workflows-lock"
-      HOST_NEW_IN="$dest"   # this run owns $dest/.cw-new.* from here on
-    elif [ -e "$dest/.claude-workflows-lock" ]; then
-      host_refuse "$(lock_msg "$dest")"
-    else
-      ok=0   # unwritable destination: reported by the copy step below
-    fi
+  if mkdir -p "$dest" 2>/dev/null && mkdir "$dest/.claude-workflows-lock" 2>/dev/null; then
+    HOST_LOCK="$dest/.claude-workflows-lock"
+    HOST_NEW_IN="$dest"   # this run owns $dest/.cw-new.* from here on
+  elif [ -e "$dest/.claude-workflows-lock" ]; then
+    host_refuse "$(lock_msg "$dest")"
+  else
+    echo "ERROR: could not create $dest/.claude-workflows-lock (is $dest writable?)." >&2
+    echo "       install.sh stages and reviews under the destination, so it needs write" >&2
+    echo "       access there even when nothing would change; nothing was replaced." >&2
+    exit 1
   fi
+  # A killed run leaves its stage behind; under the lock no other run uses one.
+  # (rm of a name without a trailing slash removes a planted link, not its target.)
+  rm -rf "$dest"/.cw-stage.*
+  if ! HOST_TMP="$(mktemp -d "$dest/.cw-stage.XXXXXX")"; then
+    HOST_TMP=""
+    host_refuse "could not create a staging directory in $dest."
+  fi
+  local stage="$HOST_TMP/payload" ok=1
+  assemble "$stage"
 
   # 1. Copy every entry beside its target. Any failure: undo and stop before a
   #    single live entry is touched.
-  if [ "$ok" -eq 1 ]; then
-    for name in "${CLAUDE_HOME_NAMES[@]}"; do
-      rm -rf "$dest/.cw-new.$name"
-      # -p keeps the committed modes (claim 17); R2's hash compares them too.
-      if ! cp -Rp "$stage/$name" "$dest/.cw-new.$name"; then ok=0; break; fi
-    done
-  fi
+  for name in "${CLAUDE_HOME_NAMES[@]}"; do
+    rm -rf "$dest/.cw-new.$name"
+    # -p keeps the committed modes (claim 17); R2's hash compares them too.
+    if ! cp -Rp "$stage/$name" "$dest/.cw-new.$name"; then ok=0; break; fi
+  done
   if [ "$ok" -eq 1 ]; then
     rm -f "$dest/.cw-new.manifest"
     cp -p "$stage/.manifest" "$dest/.cw-new.manifest" || ok=0
@@ -852,7 +859,9 @@ install_claude_home() {
   # past that the review says the content was left out and where to read it
   # (fact-check claim 3). The limit shows a new CLAUDE.md or a small hooks dir
   # whole and keeps a first install's skills tree to a file list.
-  # An existing entry is diffed as a link-free copy under $HOST_TMP/installed: a
+  # An existing entry is diffed as a link-free copy under $HOST_TMP/installed
+  # (inside $dest, P2-R3: in $TMPDIR a writer could rewrite this old side to
+  # match the new copy and hide a change, SP1b): a
   # top-level link is followed (cp -H), so the link's target is compared;
   # links inside are dropped, since the lines above already name each one, so
   # a dangling link cannot abort the review (A8).

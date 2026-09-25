@@ -164,13 +164,16 @@ run_pty_feed() {
 }
 
 # Feed snippet: answer n to the devcontainer target, wait (max ~20 s) for the
-# host stage, give the review time to finish, run $TAMPER, then answer y.
+# review's view of the destination (made after the copies are hashed, right
+# before the review; it sits in $dest/.cw-stage.*), give the review time to
+# finish, run $TAMPER, then answer y.
 FEED_TAMPER='printf "n\n"
-  for _i in $(seq 200); do compgen -G "$TMPDIR/cw-host-stage.*/payload/.manifest" >/dev/null && break; sleep 0.1; done
+  for _i in $(seq 200); do compgen -G "$CLAUDE_HOME_DIR/.cw-stage.*/installed" >/dev/null && break; sleep 0.1; done
   sleep 2; eval "$TAMPER"; printf "y\n"'
 
 no_host_stage_left() {
-  ! compgen -G "$TMPDIR/cw-host-stage.*" >/dev/null
+  ! compgen -G "$TMPDIR/cw-host-stage.*" >/dev/null &&
+    ! compgen -G "$CLAUDE_HOME_DIR/.cw-stage.*" >/dev/null
 }
 
 @test "T1 plain run with closed stdin: devcontainer declines as today, host skipped, dest untouched" {
@@ -507,7 +510,7 @@ no_host_stage_left() {
 
 @test "T28 a stage edited while the prompt waits is not installed: the reviewed copies are (review R2, Q-061)" {
   need_script; fake_repo; symlink_install
-  export TAMPER='for f in "$TMPDIR"/cw-host-stage.*/payload/hooks/h.sh; do printf "echo TAMPERED\n" >> "$f"; done'
+  export TAMPER='for f in "$CLAUDE_HOME_DIR"/.cw-stage.*/payload/hooks/h.sh; do printf "echo TAMPERED\n" >> "$f"; done'
   run_pty_feed "$FEED_TAMPER" bash "$INSTALL"
   echo "$output"
   [ "$status" -eq 1 ]                           # the devcontainer target was declined
@@ -528,7 +531,11 @@ no_host_stage_left() {
   # swaps the stage's h.sh for the installed one while the review is produced,
   # and restores it 1.5 s later, before the y.
   (
-    for _i in $(seq 2000); do d=$(compgen -G "$TMPDIR/cw-host-stage.*/installed" | head -1) && [ -n "$d" ] && break; sleep 0.005; done
+    d=""; end=$((SECONDS + 30))
+    while [ -z "$d" ] && [ "$SECONDS" -lt "$end" ]; do
+      d=$(compgen -G "$CLAUDE_HOME_DIR/.cw-stage.*/installed" | head -1) || true; sleep 0.005
+    done
+    [ -n "$d" ] || exit 0   # never saw the review start: helper.done stays absent
     st="${d%/installed}/payload"
     cp "$st/hooks/h.sh" "$S/mal.keep"
     printf '#!/bin/bash\nexit 0\n' > "$st/hooks/h.sh"; touch -r "$S/mal.keep" "$st/hooks/h.sh"
@@ -547,6 +554,73 @@ no_host_stage_left() {
   [[ "$output" == *'+echo MALICIOUS-PAYLOAD'* ]]
   [ "$(cat "$CLAUDE_HOME_DIR/hooks/h.sh")" = "$(printf '#!/bin/bash\necho MALICIOUS-PAYLOAD')" ]
   [ "$(cat "$CLAUDE_HOME_DIR/guides/g.md")" = 'guide v2 benign' ]
+}
+
+# tmpdir_writer <file-name> <content>: a same-uid writer the gate does not see.
+# Until $S/stop exists (at most 20 s), it rewrites every file of that name
+# under $TMPDIR that does not already hold <content>, and records each hit and
+# each cw-host-stage.* directory it sees. The devcontainer target's stage
+# (cw-devc-stage.*, declined in these tests) is left alone: that target still
+# stages in $TMPDIR (decision 037).
+tmpdir_writer() {
+  (
+    end=$((SECONDS + 20))
+    while [ ! -e "$S/stop" ] && [ "$SECONDS" -lt "$end" ]; do
+      compgen -G "$TMPDIR/cw-host-stage.*" >> "$S/helper.saw" || true
+      while IFS= read -r -d '' v; do
+        grep -qF "$2" "$v" && continue
+        printf '%s\n' "$2" > "$v.t" && mv -f "$v.t" "$v" && echo "$v" >> "$S/helper.hits"
+      done < <(find "$TMPDIR" -path "$TMPDIR/cw-devc-stage.*" -prune -o -name "$1" -type f -print0 2>/dev/null)
+      sleep 0.01
+    done
+  ) &
+}
+
+@test "T80 the old side of the host review is not in \$TMPDIR: rewriting it there cannot hide a change (review P2-R3, SP1b)" {
+  need_script; fake_repo
+  run_pty 'n\ny\n' bash "$INSTALL"
+  printf '#!/bin/bash\necho MALICIOUS-PAYLOAD\n' > "$ROOT/hooks/h.sh"
+  printf 'guide v2 benign\n' > "$ROOT/guides/g.md"
+  commit_all mal
+  # SP1b rewrote $TMPDIR/cw-host-stage.*/installed/hooks/h.sh to the new
+  # content, so the review showed no change to it.
+  tmpdir_writer h.sh 'echo MALICIOUS-PAYLOAD'
+  export TAMPER="touch '$S/stop'"
+  run_pty_feed "$FEED_TAMPER" bash "$INSTALL"
+  wait
+  echo "$output"
+  [ ! -s "$S/helper.saw" ]                            # no host stage in $TMPDIR
+  [ ! -s "$S/helper.hits" ]
+  [[ "$output" == *'+echo MALICIOUS-PAYLOAD'* ]]      # the change is shown
+  [[ "$output" == *'Installed into'* ]]
+  [ "$(cat "$CLAUDE_HOME_DIR/hooks/h.sh")" = "$(printf '#!/bin/bash\necho MALICIOUS-PAYLOAD')" ]
+}
+
+@test "T81 the host stage is not in \$TMPDIR: editing it there between archive and copy cannot alter what is installed (review P2-A1, SP1c)" {
+  need_script; fake_repo
+  seq 300 > "$ROOT/skills/a/big.md"; commit_all big   # a first-install entry over 200 lines
+  tmpdir_writer SKILL.md 'MALICIOUS-SKILL'
+  export TAMPER="touch '$S/stop'"
+  run_pty_feed "$FEED_TAMPER" bash "$INSTALL"
+  wait
+  echo "$output"
+  [ ! -s "$S/helper.saw" ]
+  [ ! -s "$S/helper.hits" ]
+  [[ "$output" == *'content not shown'*'it is skills at commit'* ]]
+  [[ "$output" == *'Installed into'* ]]
+  [ "$(cat "$CLAUDE_HOME_DIR/skills/a/SKILL.md")" = 'skill a' ]
+}
+
+@test "T82 a stale stage left under the destination is cleared; a planted .cw-stage link's target is untouched (review P2-R3)" {
+  need_script; fake_repo
+  mkdir -p "$CLAUDE_HOME_DIR/.cw-stage.OLD1/payload"; printf 'x\n' > "$CLAUDE_HOME_DIR/.cw-stage.OLD1/payload/f"
+  mkdir -p "$S/elsewhere"; printf 'keep\n' > "$S/elsewhere/sentinel"
+  ln -s "$S/elsewhere" "$CLAUDE_HOME_DIR/.cw-stage.LINK"
+  run_pty 'n\ny\n' bash "$INSTALL"
+  echo "$output"
+  [[ "$output" == *'Installed into'* ]]
+  run ! compgen -G "$CLAUDE_HOME_DIR/.cw-stage.*"
+  [ "$(cat "$S/elsewhere/sentinel")" = keep ]
 }
 
 @test "T68 a reviewed copy under the destination edited while the prompt waits is refused (review R2)" {

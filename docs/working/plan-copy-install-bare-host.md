@@ -61,7 +61,7 @@ One installer and one run offer every install target, each gated by its own show
      - `$DEST/.claude-workflows-backup` is a symlink or resolves inside the checkout (pre-mortem #3);
      - any `$DEST/.cw-new.*` leftover is a symlink (pre-mortem #3).
    - **Dirty warning.** If the stage manifest says `dirty=yes`, print a prominent `WARNING: the checkout has uncommitted changes; they are included in this install` line above the prompt. The pre-mortem's optional second prompt is not adopted; see Risks.
-   - **Stage** with `assemble` into `mktemp -d "${TMPDIR:-/tmp}/cw-host-stage.XXXXXX"`, with an EXIT trap that removes it. The stage never goes into `$SRC/claude-home`.
+   - **Stage** with `assemble` into `mktemp -d "${TMPDIR:-/tmp}/cw-host-stage.XXXXXX"`, with an EXIT trap that removes it. The stage never goes into `$SRC/claude-home`. *(Superseded 2026-09-25, re-review P2-R3: the host stage and the review's view of the destination go into `mktemp -d "$dest/.cw-stage.XXXXXX"`, after the lock is taken.)*
    - **Symlink-aware review**, for each of the seven entry names:
      - If `$DEST/<name>` is a symlink: print `REPLACE symlink <dest> -> <target> with a copy` and count it as a change.
      - If it is a real directory: `find -type l` inside it (per-file hook links) prints one `REPLACE symlink` line per link, each counted as a change. Every regular file or link inside it that the stage lacks prints as `MOVE to backup (not in the repo): <path>`, with a one-line warning above the list. For a foreign file under `hooks/` whose basename appears in `$DEST/settings.json` or `settings.local.json`, the line also says `WIRED in settings: moving it breaks that hook` (pre-mortem #2).
