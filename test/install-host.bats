@@ -1497,3 +1497,50 @@ stub_cp_then() {
   run ! compgen -G "$CLAUDE_HOME_DIR/.cw-new.*"
   [ ! -e "$CLAUDE_HOME_DIR/skills/skills" ]
 }
+
+# --- Q-062 [2]: a non-Claude process working inside the checkout is an agent ---
+
+@test "T88 a leftover non-Claude process working inside the checkout stops the install and is named (Q-062)" {
+  fake_repo
+  # A helper an agent left behind: no Claude command line, cwd in the repo.
+  # fd 3 is closed so bats does not wait on it.
+  (cd "$ROOT/skills" && exec sleep 300) >/dev/null 2>&1 3>&- &
+  helper=$!
+  run env -u CLAUDECODE bash "$INSTALL" --yes </dev/null
+  kill "$helper" 2>/dev/null || true
+  echo "$output"
+  [ "$status" -eq 1 ]
+  [[ "$output" == *"$helper sleep 300"* ]]
+  [[ "$output" == *'working inside'*'Q-062'* ]]
+  [[ "$output" != *'BLESS-STUB'* ]]
+  [ ! -e "$ROOT/devcontainer-config/claude-home" ]
+  # Once it has gone, the same run installs.
+  wait "$helper" 2>/dev/null || true
+  run env -u CLAUDECODE bash "$INSTALL" --yes </dev/null
+  echo "$output"
+  [ "$status" -eq 0 ]
+  [[ "$output" == *'BLESS-STUB --bless'* ]]
+}
+
+@test "T89 the shell that runs install.sh from inside the checkout, and install.sh's own children, are not refused (Q-062)" {
+  fake_repo
+  run env -u CLAUDECODE bash -c 'cd "$1" && bash devcontainer-config/install.sh --yes </dev/null' _ "$ROOT"
+  echo "$output"
+  [ "$status" -eq 0 ]
+  [[ "$output" != *'working inside'* ]]
+  [[ "$output" == *'BLESS-STUB --bless'* ]]
+}
+
+@test "T90 without a readable /proc the install is refused, not waved through (Q-062)" {
+  fake_repo
+  # Run the gate's /proc probe against a path that does not exist: the copy
+  # under test is edited so /proc/self reads as absent.
+  sed -i 's|\[ -d /proc/self \] \|\| return 2|[ -d /nonexistent/self ] \|\| return 2|' "$INSTALL"
+  grep -q '/nonexistent/self' "$INSTALL"
+  commit_all noproc
+  run env -u CLAUDECODE bash "$INSTALL" --yes </dev/null
+  echo "$output"
+  [ "$status" -eq 1 ]
+  [[ "$output" == *'/proc is not readable'* ]]
+  [[ "$output" != *'BLESS-STUB'* ]]
+}

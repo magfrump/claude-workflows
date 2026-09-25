@@ -50,13 +50,16 @@ and so is a payload file holding a NUL byte (a binary the diff cannot show).
 
 NO AGENT MAY RUN DURING THE INSTALL (Q-058). install.sh checks at startup,
 before the host target stages, and after each y, and refuses while it finds:
-  - a Claude Code process of your uid (pgrep on the command line), or
+  - a Claude Code process of your uid (pgrep on the command line),
+  - any other process of your uid whose working directory is inside the
+    checkout (/proc; Q-062), such as a helper or loop driver an agent left
+    running, or an editor or shell sitting in the repo, or
   - a running cc-isolated container (docker ps, label cc-project; docker's
     own DOCKER_HOST/DOCKER_CONTEXT choose which daemon is asked).
 It names each one and how to stop it. The checks are samples, not a lock;
-decision 037, "Trust model", lists what they miss (e.g. a helper process an
-agent left running: stop those yourself).
-Without pgrep it refuses; without a reachable docker it prints a NOTE line
+decision 037, "Trust model", lists what they miss (e.g. a leftover helper
+working outside the checkout: stop those yourself).
+Without pgrep or /proc it refuses; without a reachable docker it prints a NOTE line
 at each check and treats no container as running. Close every Claude Code
 session and stop every cc-isolated container first. Run from inside a
 Claude Code session, install.sh finds that session and exits 1 at startup,
@@ -68,7 +71,8 @@ Target 2 is SKIPPED, with a message and no effect on the exit status, when
 not a determined agent: a pty wrapper and `env -u CLAUDECODE` get past it.
 The hard barrier is a sandbox that denies agents write access to ~/.claude.
 
-Needs git, perl (the review's control-byte filter) and pgrep; refuses without them.
+Needs git, perl (the review's control-byte filter), pgrep and a readable /proc (Linux);
+refuses without them.
 
 Both targets are refused, before anything is staged, when the checkout's own
 .git holds a filter.*, core.fsmonitor, include* or hook.* key (in config or
@@ -1101,6 +1105,54 @@ install_claude_home() {
 # is refused, and the message names the process.
 CLAUDE_PROC_RE='(^|/)claude(\.exe)?( |$)|/@anthropic-ai/claude-code/|/claude/versions/|/claude-agent-sdk/'
 
+# Q-062 [2]: a process an agent left behind (a detached helper, a loop driver
+# between its `claude` iterations) counts as an agent, and it has no Claude
+# command line. So any other process of this uid whose working directory is in
+# the checkout is refused too. Read from /proc (Linux; the install already needs
+# GNU tools). install.sh itself, its ancestors (the shell that ran it) and its
+# descendants (its own subshells and git calls) are not "other".
+
+# ppid_of <pid>: print its parent PID, or nothing once it has exited.
+ppid_of() {
+  local k v _
+  while read -r k v _; do
+    [ "$k" = "PPid:" ] && { printf '%s\n' "$v"; return 0; }
+  done 2>/dev/null < "/proc/$1/status"
+}
+
+# in_lineage <pid>: true if <pid> is this script, an ancestor of it, or a
+# descendant of it.
+in_lineage() {
+  local p="$1" q="$$"
+  while [ -n "$p" ] && [ "$p" -gt 1 ]; do
+    [ "$p" = "$$" ] && return 0
+    p="$(ppid_of "$p")"
+  done
+  while [ -n "$q" ] && [ "$q" -gt 1 ]; do
+    [ "$q" = "$1" ] && return 0
+    q="$(ppid_of "$q")"
+  done
+  return 1
+}
+
+# procs_in_checkout: print "PID command line" for each other process of this
+# uid whose working directory is $REPO_ROOT or below it. Exit 2 without /proc.
+procs_in_checkout() {
+  local root d pid cwd cmd
+  [ -d /proc/self ] || return 2
+  root="$(cd "$REPO_ROOT" && pwd -P)" || return 2
+  for d in /proc/[0-9]*; do
+    [ -O "$d" ] || continue                     # this uid's processes only
+    cwd="$(readlink "$d/cwd" 2>/dev/null)" || continue
+    case "$cwd" in "$root"|"$root"/*) ;; *) continue ;; esac
+    pid="${d#/proc/}"
+    in_lineage "$pid" && continue
+    cmd="$(tr '\0' ' ' 2>/dev/null < "$d/cmdline")"
+    [ -n "$cmd" ] || continue                   # exited, or a kernel thread
+    printf '%s %s\n' "$pid" "${cmd% }"
+  done
+}
+
 # agent_gate <what is refused>: exit 1, naming each agent found and how to
 # stop it, when a Claude Code process or a cc-isolated container runs.
 agent_gate() {
@@ -1116,6 +1168,18 @@ agent_gate() {
     exit 1
   fi
   procs="$(printf '%s\n' "$procs" | awk -v self="$$" 'NF && $1 != self')"
+  rc=0
+  local inrepo
+  inrepo="$(procs_in_checkout)" || rc=$?
+  if [ "$rc" -ne 0 ]; then
+    echo "ERROR: /proc is not readable, so install.sh cannot check for processes working" >&2
+    echo "       inside the checkout (Q-062). $what" >&2
+    exit 1
+  fi
+  # A Claude Code process already listed above is not named twice.
+  inrepo="$(printf '%s\n' "$inrepo" | awk -v seen="$procs" '
+    BEGIN { n = split(seen, l, "\n"); for (i = 1; i <= n; i++) { split(l[i], f, " "); skip[f[1]] = 1 } }
+    NF && !($1 in skip)')"
   # cc-isolated's containers carry the label cc-project=<id> (its --id-label).
   ctrs=""
   if ! command -v docker >/dev/null 2>&1; then
@@ -1136,7 +1200,7 @@ agent_gate() {
     rm -f "$errf"
     ctrs="$(printf '%s\n' "$ctrs" | awk 'NF')"
   fi
-  if [ -z "$procs" ] && [ -z "$ctrs" ]; then return 0; fi
+  if [ -z "$procs" ] && [ -z "$inrepo" ] && [ -z "$ctrs" ]; then return 0; fi
   {
     echo "ERROR: an agent is running. install.sh installs only while no agent can run, because"
     echo "       one could change what you review before it is installed (Q-058)."
@@ -1144,6 +1208,12 @@ agent_gate() {
       echo "       Claude Code processes of uid $(id -u) (PID and command line):"
       printf '%s\n' "$procs" | sed 's/^/           /'
       echo "       Stop them: end each Claude Code session (/exit), or kill <PID>."
+    fi
+    if [ -n "$inrepo" ]; then
+      echo "       Other processes of uid $(id -u) working inside $REPO_ROOT (Q-062; an"
+      echo "       agent may have left them running), PID and command line:"
+      printf '%s\n' "$inrepo" | sed 's/^/           /'
+      echo "       Stop them, or cd each one out of the checkout (an editor or shell counts)."
     fi
     if [ -n "$ctrs" ]; then
       echo "       Running cc-isolated containers (name and project id):"
