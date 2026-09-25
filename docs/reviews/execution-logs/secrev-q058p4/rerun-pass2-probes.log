@@ -1,0 +1,1186 @@
+2026-09-25T09:04:47Z
+f5e3029
+git version 2.39.5
+bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+1..12
+bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+not ok 1 SP1 (re-run) stage swapped to benign during the review and restored before y
+# (in test file /workspace/docs/reviews/execution-logs/secrev-q058p2/probe.bats, line 121)
+#   `[ -f "$S/helper.done" ]' failed
+# bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+# n
+# y
+# bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+# bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+# /bin/bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+# Checking for running cc-isolated containers (docker ps; up to 20 s)...
+# Canonical (repo):  /tmp/claude-1000/-workspace/7630264d-3947-4203-a0ec-b9ffcc3a4e06/scratchpad/bats-run-3KkuWZ/test/1/repo/devcontainer-config at commit cb2772918f84 (staged in /tmp/claude-1000/-workspace/7630264d-3947-4203-a0ec-b9ffcc3a4e06/scratchpad/bats-run-3KkuWZ/test/1/tmp/cw-devc-stage.Kx8cfr/config)
+# Installed (host):  /tmp/claude-1000/-workspace/7630264d-3947-4203-a0ec-b9ffcc3a4e06/scratchpad/bats-run-3KkuWZ/test/1/home/.config/claude-devcontainer
+#
+# First install — /tmp/claude-1000/-workspace/7630264d-3947-4203-a0ec-b9ffcc3a4e06/scratchpad/bats-run-3KkuWZ/test/1/home/.config/claude-devcontainer does not exist yet.
+#
+# Install this config and bless it? [y/N] Aborted. Nothing was changed. (devcontainer config)
+#
+# === Host target: global Claude Code files ======================================
+# Destination: /tmp/claude-1000/-workspace/7630264d-3947-4203-a0ec-b9ffcc3a4e06/scratchpad/bats-run-3KkuWZ/test/1/home/.claude  (chosen by $CLAUDE_HOME_DIR)
+# /bin/bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+# Checking for running cc-isolated containers (docker ps; up to 20 s)...
+# Canonical (repo):  /tmp/claude-1000/-workspace/7630264d-3947-4203-a0ec-b9ffcc3a4e06/scratchpad/bats-run-3KkuWZ/test/1/repo (commit cb2772918f8447cea14753054468a3e097032ce2)
+#
+# === Changes this install would make ===========================================
+# /tmp/claude-1000/-workspace/7630264d-3947-4203-a0ec-b9ffcc3a4e06/scratchpad/bats-run-3KkuWZ/test/1/repo/devcontainer-config/install.sh: line 135: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+# ADD /tmp/claude-1000/-workspace/7630264d-3947-4203-a0ec-b9ffcc3a4e06/scratchpad/bats-run-3KkuWZ/test/1/home/.claude/CLAUDE.md (new, 1 file(s)):
+# /tmp/claude-1000/-workspace/7630264d-3947-4203-a0ec-b9ffcc3a4e06/scratchpad/bats-run-3KkuWZ/test/1/repo/devcontainer-config/install.sh: line 135: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+#     CLAUDE.md
+# /tmp/claude-1000/-workspace/7630264d-3947-4203-a0ec-b9ffcc3a4e06/scratchpad/bats-run-3KkuWZ/test/1/repo/devcontainer-config/install.sh: line 135: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+# --- /tmp/claude-1000/-workspace/7630264d-3947-4203-a0ec-b9ffcc3a4e06/scratchpad/bats-run-3KkuWZ/test/1/home/.claude/.cw-stage.I16Rns/installed/CLAUDE.md	1969-12-31 16:00:00.000000000 -0800
+# +++ /tmp/claude-1000/-workspace/7630264d-3947-4203-a0ec-b9ffcc3a4e06/scratchpad/bats-run-3KkuWZ/test/1/home/.claude/.cw-new.CLAUDE.md	2026-09-25 02:04:48.000000000 -0700
+# @@ -0,0 +1 @@
+# +global instructions
+# /tmp/claude-1000/-workspace/7630264d-3947-4203-a0ec-b9ffcc3a4e06/scratchpad/bats-run-3KkuWZ/test/1/repo/devcontainer-config/install.sh: line 135: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+# ADD /tmp/claude-1000/-workspace/7630264d-3947-4203-a0ec-b9ffcc3a4e06/scratchpad/bats-run-3KkuWZ/test/1/home/.claude/skills (new, 1 file(s)):
+# /tmp/claude-1000/-workspace/7630264d-3947-4203-a0ec-b9ffcc3a4e06/scratchpad/bats-run-3KkuWZ/test/1/repo/devcontainer-config/install.sh: line 135: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+#     skills/a/SKILL.md
+# /tmp/claude-1000/-workspace/7630264d-3947-4203-a0ec-b9ffcc3a4e06/scratchpad/bats-run-3KkuWZ/test/1/repo/devcontainer-config/install.sh: line 135: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+# diff -ruNa /tmp/claude-1000/-workspace/7630264d-3947-4203-a0ec-b9ffcc3a4e06/scratchpad/bats-run-3KkuWZ/test/1/home/.claude/.cw-stage.I16Rns/installed/skills/a/SKILL.md /tmp/claude-1000/-workspace/7630264d-3947-4203-a0ec-b9ffcc3a4e06/scratchpad/bats-run-3KkuWZ/test/1/home/.claude/.cw-new.skills/a/SKILL.md
+# --- /tmp/claude-1000/-workspace/7630264d-3947-4203-a0ec-b9ffcc3a4e06/scratchpad/bats-run-3KkuWZ/test/1/home/.claude/.cw-stage.I16Rns/installed/skills/a/SKILL.md	1969-12-31 16:00:00.000000000 -0800
+# +++ /tmp/claude-1000/-workspace/7630264d-3947-4203-a0ec-b9ffcc3a4e06/scratchpad/bats-run-3KkuWZ/test/1/home/.claude/.cw-new.skills/a/SKILL.md	2026-09-25 02:04:48.000000000 -0700
+# @@ -0,0 +1 @@
+# +skill a
+# /tmp/claude-1000/-workspace/7630264d-3947-4203-a0ec-b9ffcc3a4e06/scratchpad/bats-run-3KkuWZ/test/1/repo/devcontainer-config/install.sh: line 135: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+# ADD /tmp/claude-1000/-workspace/7630264d-3947-4203-a0ec-b9ffcc3a4e06/scratchpad/bats-run-3KkuWZ/test/1/home/.claude/workflows (new, 1 file(s)):
+# /tmp/claude-1000/-workspace/7630264d-3947-4203-a0ec-b9ffcc3a4e06/scratchpad/bats-run-3KkuWZ/test/1/repo/devcontainer-config/install.sh: line 135: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+#     workflows/w.md
+# /tmp/claude-1000/-workspace/7630264d-3947-4203-a0ec-b9ffcc3a4e06/scratchpad/bats-run-3KkuWZ/test/1/repo/devcontainer-config/install.sh: line 135: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+# diff -ruNa /tmp/claude-1000/-workspace/7630264d-3947-4203-a0ec-b9ffcc3a4e06/scratchpad/bats-run-3KkuWZ/test/1/home/.claude/.cw-stage.I16Rns/installed/workflows/w.md /tmp/claude-1000/-workspace/7630264d-3947-4203-a0ec-b9ffcc3a4e06/scratchpad/bats-run-3KkuWZ/test/1/home/.claude/.cw-new.workflows/w.md
+# --- /tmp/claude-1000/-workspace/7630264d-3947-4203-a0ec-b9ffcc3a4e06/scratchpad/bats-run-3KkuWZ/test/1/home/.claude/.cw-stage.I16Rns/installed/workflows/w.md	1969-12-31 16:00:00.000000000 -0800
+# +++ /tmp/claude-1000/-workspace/7630264d-3947-4203-a0ec-b9ffcc3a4e06/scratchpad/bats-run-3KkuWZ/test/1/home/.claude/.cw-new.workflows/w.md	2026-09-25 02:04:48.000000000 -0700
+# @@ -0,0 +1 @@
+# +workflow
+# /tmp/claude-1000/-workspace/7630264d-3947-4203-a0ec-b9ffcc3a4e06/scratchpad/bats-run-3KkuWZ/test/1/repo/devcontainer-config/install.sh: line 135: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+# ADD /tmp/claude-1000/-workspace/7630264d-3947-4203-a0ec-b9ffcc3a4e06/scratchpad/bats-run-3KkuWZ/test/1/home/.claude/guides (new, 1 file(s)):
+# /tmp/claude-1000/-workspace/7630264d-3947-4203-a0ec-b9ffcc3a4e06/scratchpad/bats-run-3KkuWZ/test/1/repo/devcontainer-config/install.sh: line 135: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+#     guides/g.md
+# /tmp/claude-1000/-workspace/7630264d-3947-4203-a0ec-b9ffcc3a4e06/scratchpad/bats-run-3KkuWZ/test/1/repo/devcontainer-config/install.sh: line 135: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+# diff -ruNa /tmp/claude-1000/-workspace/7630264d-3947-4203-a0ec-b9ffcc3a4e06/scratchpad/bats-run-3KkuWZ/test/1/home/.claude/.cw-stage.I16Rns/installed/guides/g.md /tmp/claude-1000/-workspace/7630264d-3947-4203-a0ec-b9ffcc3a4e06/scratchpad/bats-run-3KkuWZ/test/1/home/.claude/.cw-new.guides/g.md
+# --- /tmp/claude-1000/-workspace/7630264d-3947-4203-a0ec-b9ffcc3a4e06/scratchpad/bats-run-3KkuWZ/test/1/home/.claude/.cw-stage.I16Rns/installed/guides/g.md	1969-12-31 16:00:00.000000000 -0800
+# +++ /tmp/claude-1000/-workspace/7630264d-3947-4203-a0ec-b9ffcc3a4e06/scratchpad/bats-run-3KkuWZ/test/1/home/.claude/.cw-new.guides/g.md	2026-09-25 02:04:48.000000000 -0700
+# @@ -0,0 +1 @@
+# +guide
+# /tmp/claude-1000/-workspace/7630264d-3947-4203-a0ec-b9ffcc3a4e06/scratchpad/bats-run-3KkuWZ/test/1/repo/devcontainer-config/install.sh: line 135: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+# ADD /tmp/claude-1000/-workspace/7630264d-3947-4203-a0ec-b9ffcc3a4e06/scratchpad/bats-run-3KkuWZ/test/1/home/.claude/patterns (new, 1 file(s)):
+# /tmp/claude-1000/-workspace/7630264d-3947-4203-a0ec-b9ffcc3a4e06/scratchpad/bats-run-3KkuWZ/test/1/repo/devcontainer-config/install.sh: line 135: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+#     patterns/p.md
+# /tmp/claude-1000/-workspace/7630264d-3947-4203-a0ec-b9ffcc3a4e06/scratchpad/bats-run-3KkuWZ/test/1/repo/devcontainer-config/install.sh: line 135: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+# diff -ruNa /tmp/claude-1000/-workspace/7630264d-3947-4203-a0ec-b9ffcc3a4e06/scratchpad/bats-run-3KkuWZ/test/1/home/.claude/.cw-stage.I16Rns/installed/patterns/p.md /tmp/claude-1000/-workspace/7630264d-3947-4203-a0ec-b9ffcc3a4e06/scratchpad/bats-run-3KkuWZ/test/1/home/.claude/.cw-new.patterns/p.md
+# --- /tmp/claude-1000/-workspace/7630264d-3947-4203-a0ec-b9ffcc3a4e06/scratchpad/bats-run-3KkuWZ/test/1/home/.claude/.cw-stage.I16Rns/installed/patterns/p.md	1969-12-31 16:00:00.000000000 -0800
+# +++ /tmp/claude-1000/-workspace/7630264d-3947-4203-a0ec-b9ffcc3a4e06/scratchpad/bats-run-3KkuWZ/test/1/home/.claude/.cw-new.patterns/p.md	2026-09-25 02:04:48.000000000 -0700
+# @@ -0,0 +1 @@
+# +pattern
+# /tmp/claude-1000/-workspace/7630264d-3947-4203-a0ec-b9ffcc3a4e06/scratchpad/bats-run-3KkuWZ/test/1/repo/devcontainer-config/install.sh: line 135: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+# ADD /tmp/claude-1000/-workspace/7630264d-3947-4203-a0ec-b9ffcc3a4e06/scratchpad/bats-run-3KkuWZ/test/1/home/.claude/hooks (new, 3 file(s)):
+# /tmp/claude-1000/-workspace/7630264d-3947-4203-a0ec-b9ffcc3a4e06/scratchpad/bats-run-3KkuWZ/test/1/repo/devcontainer-config/install.sh: line 135: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+#     hooks/h.sh
+#     hooks/lib/x.sh
+#     hooks/wiring.json
+# /tmp/claude-1000/-workspace/7630264d-3947-4203-a0ec-b9ffcc3a4e06/scratchpad/bats-run-3KkuWZ/test/1/repo/devcontainer-config/install.sh: line 135: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+# diff -ruNa /tmp/claude-1000/-workspace/7630264d-3947-4203-a0ec-b9ffcc3a4e06/scratchpad/bats-run-3KkuWZ/test/1/home/.claude/.cw-stage.I16Rns/installed/hooks/h.sh /tmp/claude-1000/-workspace/7630264d-3947-4203-a0ec-b9ffcc3a4e06/scratchpad/bats-run-3KkuWZ/test/1/home/.claude/.cw-new.hooks/h.sh
+# --- /tmp/claude-1000/-workspace/7630264d-3947-4203-a0ec-b9ffcc3a4e06/scratchpad/bats-run-3KkuWZ/test/1/home/.claude/.cw-stage.I16Rns/installed/hooks/h.sh	1969-12-31 16:00:00.000000000 -0800
+# +++ /tmp/claude-1000/-workspace/7630264d-3947-4203-a0ec-b9ffcc3a4e06/scratchpad/bats-run-3KkuWZ/test/1/home/.claude/.cw-new.hooks/h.sh	2026-09-25 02:04:48.000000000 -0700
+# @@ -0,0 +1,2 @@
+# +#!/bin/bash
+# +exit 0
+# diff -ruNa /tmp/claude-1000/-workspace/7630264d-3947-4203-a0ec-b9ffcc3a4e06/scratchpad/bats-run-3KkuWZ/test/1/home/.claude/.cw-stage.I16Rns/installed/hooks/lib/x.sh /tmp/claude-1000/-workspace/7630264d-3947-4203-a0ec-b9ffcc3a4e06/scratchpad/bats-run-3KkuWZ/test/1/home/.claude/.cw-new.hooks/lib/x.sh
+# --- /tmp/claude-1000/-workspace/7630264d-3947-4203-a0ec-b9ffcc3a4e06/scratchpad/bats-run-3KkuWZ/test/1/home/.claude/.cw-stage.I16Rns/installed/hooks/lib/x.sh	1969-12-31 16:00:00.000000000 -0800
+# +++ /tmp/claude-1000/-workspace/7630264d-3947-4203-a0ec-b9ffcc3a4e06/scratchpad/bats-run-3KkuWZ/test/1/home/.claude/.cw-new.hooks/lib/x.sh	2026-09-25 02:04:48.000000000 -0700
+# @@ -0,0 +1 @@
+# +#!/bin/bash
+# diff -ruNa /tmp/claude-1000/-workspace/7630264d-3947-4203-a0ec-b9ffcc3a4e06/scratchpad/bats-run-3KkuWZ/test/1/home/.claude/.cw-stage.I16Rns/installed/hooks/wiring.json /tmp/claude-1000/-workspace/7630264d-3947-4203-a0ec-b9ffcc3a4e06/scratchpad/bats-run-3KkuWZ/test/1/home/.claude/.cw-new.hooks/wiring.json
+# --- /tmp/claude-1000/-workspace/7630264d-3947-4203-a0ec-b9ffcc3a4e06/scratchpad/bats-run-3KkuWZ/test/1/home/.claude/.cw-stage.I16Rns/installed/hooks/wiring.json	1969-12-31 16:00:00.000000000 -0800
+# +++ /tmp/claude-1000/-workspace/7630264d-3947-4203-a0ec-b9ffcc3a4e06/scratchpad/bats-run-3KkuWZ/test/1/home/.claude/.cw-new.hooks/wiring.json	2026-09-25 02:04:48.000000000 -0700
+# @@ -0,0 +1 @@
+# +{"hooks":{}}
+# /tmp/claude-1000/-workspace/7630264d-3947-4203-a0ec-b9ffcc3a4e06/scratchpad/bats-run-3KkuWZ/test/1/repo/devcontainer-config/install.sh: line 135: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+# ADD /tmp/claude-1000/-workspace/7630264d-3947-4203-a0ec-b9ffcc3a4e06/scratchpad/bats-run-3KkuWZ/test/1/home/.claude/scripts (new, 1 file(s)):
+# /tmp/claude-1000/-workspace/7630264d-3947-4203-a0ec-b9ffcc3a4e06/scratchpad/bats-run-3KkuWZ/test/1/repo/devcontainer-config/install.sh: line 135: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+#     scripts/s.sh
+# /tmp/claude-1000/-workspace/7630264d-3947-4203-a0ec-b9ffcc3a4e06/scratchpad/bats-run-3KkuWZ/test/1/repo/devcontainer-config/install.sh: line 135: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+# diff -ruNa /tmp/claude-1000/-workspace/7630264d-3947-4203-a0ec-b9ffcc3a4e06/scratchpad/bats-run-3KkuWZ/test/1/home/.claude/.cw-stage.I16Rns/installed/scripts/s.sh /tmp/claude-1000/-workspace/7630264d-3947-4203-a0ec-b9ffcc3a4e06/scratchpad/bats-run-3KkuWZ/test/1/home/.claude/.cw-new.scripts/s.sh
+# --- /tmp/claude-1000/-workspace/7630264d-3947-4203-a0ec-b9ffcc3a4e06/scratchpad/bats-run-3KkuWZ/test/1/home/.claude/.cw-stage.I16Rns/installed/scripts/s.sh	1969-12-31 16:00:00.000000000 -0800
+# +++ /tmp/claude-1000/-workspace/7630264d-3947-4203-a0ec-b9ffcc3a4e06/scratchpad/bats-run-3KkuWZ/test/1/home/.claude/.cw-new.scripts/s.sh	2026-09-25 02:04:48.000000000 -0700
+# @@ -0,0 +1 @@
+# +#!/bin/bash
+# ===============================================================================
+#
+# Install these files into /tmp/claude-1000/-workspace/7630264d-3947-4203-a0ec-b9ffcc3a4e06/scratchpad/bats-run-3KkuWZ/test/1/home/.claude? [y/N] /bin/bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+# Checking for running cc-isolated containers (docker ps; up to 20 s)...
+# Installed into /tmp/claude-1000/-workspace/7630264d-3947-4203-a0ec-b9ffcc3a4e06/scratchpad/bats-run-3KkuWZ/test/1/home/.claude.
+#
+# REMINDER: hooks/wiring.json changed (or was not installed before). Copying the
+# hooks does not wire them. Redo guides/bare-host-hook-wiring.md §2 to merge it
+# into /tmp/claude-1000/-workspace/7630264d-3947-4203-a0ec-b9ffcc3a4e06/scratchpad/bats-run-3KkuWZ/test/1/home/.claude/settings.json.
+# cp: cannot stat '/payload/hooks/h.sh': No such file or directory
+# bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+# n
+# bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+# bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+# /bin/bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+# Checking for running cc-isolated containers (docker ps; up to 20 s)...
+# Canonical (repo):  /tmp/claude-1000/-workspace/7630264d-3947-4203-a0ec-b9ffcc3a4e06/scratchpad/bats-run-3KkuWZ/test/1/repo/devcontainer-config at commit c9bf7b4da856 (staged in /tmp/claude-1000/-workspace/7630264d-3947-4203-a0ec-b9ffcc3a4e06/scratchpad/bats-run-3KkuWZ/test/1/tmp/cw-devc-stage.6v1Z2u/config)
+# Installed (host):  /tmp/claude-1000/-workspace/7630264d-3947-4203-a0ec-b9ffcc3a4e06/scratchpad/bats-run-3KkuWZ/test/1/home/.config/claude-devcontainer
+#
+# First install — /tmp/claude-1000/-workspace/7630264d-3947-4203-a0ec-b9ffcc3a4e06/scratchpad/bats-run-3KkuWZ/test/1/home/.config/claude-devcontainer does not exist yet.
+#
+# Install this config and bless it? [y/N] Aborted. Nothing was changed. (devcontainer config)
+#
+# === Host target: global Claude Code files ======================================
+# Destination: /tmp/claude-1000/-workspace/7630264d-3947-4203-a0ec-b9ffcc3a4e06/scratchpad/bats-run-3KkuWZ/test/1/home/.claude  (chosen by $CLAUDE_HOME_DIR)
+# /bin/bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+# Checking for running cc-isolated containers (docker ps; up to 20 s)...
+# Canonical (repo):  /tmp/claude-1000/-workspace/7630264d-3947-4203-a0ec-b9ffcc3a4e06/scratchpad/bats-run-3KkuWZ/test/1/repo (commit c9bf7b4da856a31c0c202d7a79857993c623aaf3)
+#
+# === Changes this install would make ===========================================
+# (diff: /tmp/claude-1000/-workspace/7630264d-3947-4203-a0ec-b9ffcc3a4e06/scratchpad/bats-run-3KkuWZ/test/1/home/.claude/.cw-stage.LjgK3v/installed is the destination as it is now, links left out; /tmp/claude-1000/-workspace/7630264d-3947-4203-a0ec-b9ffcc3a4e06/scratchpad/bats-run-3KkuWZ/test/1/home/.claude/.cw-new.* are the copies to install)
+# /tmp/claude-1000/-workspace/7630264d-3947-4203-a0ec-b9ffcc3a4e06/scratchpad/bats-run-3KkuWZ/test/1/repo/devcontainer-config/install.sh: line 135: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+# /tmp/claude-1000/-workspace/7630264d-3947-4203-a0ec-b9ffcc3a4e06/scratchpad/bats-run-3KkuWZ/test/1/repo/devcontainer-config/install.sh: line 135: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+# /tmp/claude-1000/-workspace/7630264d-3947-4203-a0ec-b9ffcc3a4e06/scratchpad/bats-run-3KkuWZ/test/1/repo/devcontainer-config/install.sh: line 135: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+# /tmp/claude-1000/-workspace/7630264d-3947-4203-a0ec-b9ffcc3a4e06/scratchpad/bats-run-3KkuWZ/test/1/repo/devcontainer-config/install.sh: line 135: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+# diff -ruNa /tmp/claude-1000/-workspace/7630264d-3947-4203-a0ec-b9ffcc3a4e06/scratchpad/bats-run-3KkuWZ/test/1/home/.claude/.cw-stage.LjgK3v/installed/guides/g.md /tmp/claude-1000/-workspace/7630264d-3947-4203-a0ec-b9ffcc3a4e06/scratchpad/bats-run-3KkuWZ/test/1/home/.claude/.cw-new.guides/g.md
+# --- /tmp/claude-1000/-workspace/7630264d-3947-4203-a0ec-b9ffcc3a4e06/scratchpad/bats-run-3KkuWZ/test/1/home/.claude/.cw-stage.LjgK3v/installed/guides/g.md	2026-09-25 02:04:49.097088975 -0700
+# +++ /tmp/claude-1000/-workspace/7630264d-3947-4203-a0ec-b9ffcc3a4e06/scratchpad/bats-run-3KkuWZ/test/1/home/.claude/.cw-new.guides/g.md	2026-09-25 02:04:48.000000000 -0700
+# @@ -1 +1 @@
+# -guide
+# +guide v2 benign
+# /tmp/claude-1000/-workspace/7630264d-3947-4203-a0ec-b9ffcc3a4e06/scratchpad/bats-run-3KkuWZ/test/1/repo/devcontainer-config/install.sh: line 135: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+# /tmp/claude-1000/-workspace/7630264d-3947-4203-a0ec-b9ffcc3a4e06/scratchpad/bats-run-3KkuWZ/test/1/repo/devcontainer-config/install.sh: line 135: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+# diff -ruNa /tmp/claude-1000/-workspace/7630264d-3947-4203-a0ec-b9ffcc3a4e06/scratchpad/bats-run-3KkuWZ/test/1/home/.claude/.cw-stage.LjgK3v/installed/hooks/h.sh /tmp/claude-1000/-workspace/7630264d-3947-4203-a0ec-b9ffcc3a4e06/scratchpad/bats-run-3KkuWZ/test/1/home/.claude/.cw-new.hooks/h.sh
+# --- /tmp/claude-1000/-workspace/7630264d-3947-4203-a0ec-b9ffcc3a4e06/scratchpad/bats-run-3KkuWZ/test/1/home/.claude/.cw-stage.LjgK3v/installed/hooks/h.sh	2026-09-25 02:04:49.105931435 -0700
+# +++ /tmp/claude-1000/-workspace/7630264d-3947-4203-a0ec-b9ffcc3a4e06/scratchpad/bats-run-3KkuWZ/test/1/home/.claude/.cw-new.hooks/h.sh	2026-09-25 02:04:48.000000000 -0700
+# @@ -1,2 +1,2 @@
+#  #!/bin/bash
+# -exit 0
+# +echo MALICIOUS-PAYLOAD
+# /tmp/claude-1000/-workspace/7630264d-3947-4203-a0ec-b9ffcc3a4e06/scratchpad/bats-run-3KkuWZ/test/1/repo/devcontainer-config/install.sh: line 135: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+# ===============================================================================
+#
+# Install these files into /tmp/claude-1000/-workspace/7630264d-3947-4203-a0ec-b9ffcc3a4e06/scratchpad/bats-run-3KkuWZ/test/1/home/.claude? [y/N] y
+# /bin/bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+# Checking for running cc-isolated containers (docker ps; up to 20 s)...
+# Installed into /tmp/claude-1000/-workspace/7630264d-3947-4203-a0ec-b9ffcc3a4e06/scratchpad/bats-run-3KkuWZ/test/1/home/.claude.
+# Previous entries moved to /tmp/claude-1000/-workspace/7630264d-3947-4203-a0ec-b9ffcc3a4e06/scratchpad/bats-run-3KkuWZ/test/1/home/.claude/.claude-workflows-backup/20260925T090514Z (delete it when satisfied).
+# Backups: this one plus the 2 most recent earlier installs' are kept in /tmp/claude-1000/-workspace/7630264d-3947-4203-a0ec-b9ffcc3a4e06/scratchpad/bats-run-3KkuWZ/test/1/home/.claude/.claude-workflows-backup (0 older removed).
+# bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+# n
+# bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+# bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+# /bin/bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+# Checking for running cc-isolated containers (docker ps; up to 20 s)...
+# Canonical (repo):  /tmp/claude-1000/-workspace/7630264d-3947-4203-a0ec-b9ffcc3a4e06/scratchpad/bats-run-3KkuWZ/test/1/repo/devcontainer-config at commit c9bf7b4da856 (staged in /tmp/claude-1000/-workspace/7630264d-3947-4203-a0ec-b9ffcc3a4e06/scratchpad/bats-run-3KkuWZ/test/1/tmp/cw-devc-stage.6v1Z2u/config)
+# Installed (host):  /tmp/claude-1000/-workspace/7630264d-3947-4203-a0ec-b9ffcc3a4e06/scratchpad/bats-run-3KkuWZ/test/1/home/.config/claude-devcontainer
+#
+# First install — /tmp/claude-1000/-workspace/7630264d-3947-4203-a0ec-b9ffcc3a4e06/scratchpad/bats-run-3KkuWZ/test/1/home/.config/claude-devcontainer does not exist yet.
+#
+# Install this config and bless it? [y/N] Aborted. Nothing was changed. (devcontainer config)
+#
+# === Host target: global Claude Code files ======================================
+# Destination: /tmp/claude-1000/-workspace/7630264d-3947-4203-a0ec-b9ffcc3a4e06/scratchpad/bats-run-3KkuWZ/test/1/home/.claude  (chosen by $CLAUDE_HOME_DIR)
+# /bin/bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+# Checking for running cc-isolated containers (docker ps; up to 20 s)...
+# Canonical (repo):  /tmp/claude-1000/-workspace/7630264d-3947-4203-a0ec-b9ffcc3a4e06/scratchpad/bats-run-3KkuWZ/test/1/repo (commit c9bf7b4da856a31c0c202d7a79857993c623aaf3)
+#
+# === Changes this install would make ===========================================
+# (diff: /tmp/claude-1000/-workspace/7630264d-3947-4203-a0ec-b9ffcc3a4e06/scratchpad/bats-run-3KkuWZ/test/1/home/.claude/.cw-stage.LjgK3v/installed is the destination as it is now, links left out; /tmp/claude-1000/-workspace/7630264d-3947-4203-a0ec-b9ffcc3a4e06/scratchpad/bats-run-3KkuWZ/test/1/home/.claude/.cw-new.* are the copies to install)
+# /tmp/claude-1000/-workspace/7630264d-3947-4203-a0ec-b9ffcc3a4e06/scratchpad/bats-run-3KkuWZ/test/1/repo/devcontainer-config/install.sh: line 135: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+# /tmp/claude-1000/-workspace/7630264d-3947-4203-a0ec-b9ffcc3a4e06/scratchpad/bats-run-3KkuWZ/test/1/repo/devcontainer-config/install.sh: line 135: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+# /tmp/claude-1000/-workspace/7630264d-3947-4203-a0ec-b9ffcc3a4e06/scratchpad/bats-run-3KkuWZ/test/1/repo/devcontainer-config/install.sh: line 135: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+# /tmp/claude-1000/-workspace/7630264d-3947-4203-a0ec-b9ffcc3a4e06/scratchpad/bats-run-3KkuWZ/test/1/repo/devcontainer-config/install.sh: line 135: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+# diff -ruNa /tmp/claude-1000/-workspace/7630264d-3947-4203-a0ec-b9ffcc3a4e06/scratchpad/bats-run-3KkuWZ/test/1/home/.claude/.cw-stage.LjgK3v/installed/guides/g.md /tmp/claude-1000/-workspace/7630264d-3947-4203-a0ec-b9ffcc3a4e06/scratchpad/bats-run-3KkuWZ/test/1/home/.claude/.cw-new.guides/g.md
+# --- /tmp/claude-1000/-workspace/7630264d-3947-4203-a0ec-b9ffcc3a4e06/scratchpad/bats-run-3KkuWZ/test/1/home/.claude/.cw-stage.LjgK3v/installed/guides/g.md	2026-09-25 02:04:49.097088975 -0700
+# +++ /tmp/claude-1000/-workspace/7630264d-3947-4203-a0ec-b9ffcc3a4e06/scratchpad/bats-run-3KkuWZ/test/1/home/.claude/.cw-new.guides/g.md	2026-09-25 02:04:48.000000000 -0700
+# @@ -1 +1 @@
+# -guide
+# +guide v2 benign
+# /tmp/claude-1000/-workspace/7630264d-3947-4203-a0ec-b9ffcc3a4e06/scratchpad/bats-run-3KkuWZ/test/1/repo/devcontainer-config/install.sh: line 135: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+# /tmp/claude-1000/-workspace/7630264d-3947-4203-a0ec-b9ffcc3a4e06/scratchpad/bats-run-3KkuWZ/test/1/repo/devcontainer-config/install.sh: line 135: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+# diff -ruNa /tmp/claude-1000/-workspace/7630264d-3947-4203-a0ec-b9ffcc3a4e06/scratchpad/bats-run-3KkuWZ/test/1/home/.claude/.cw-stage.LjgK3v/installed/hooks/h.sh /tmp/claude-1000/-workspace/7630264d-3947-4203-a0ec-b9ffcc3a4e06/scratchpad/bats-run-3KkuWZ/test/1/home/.claude/.cw-new.hooks/h.sh
+# --- /tmp/claude-1000/-workspace/7630264d-3947-4203-a0ec-b9ffcc3a4e06/scratchpad/bats-run-3KkuWZ/test/1/home/.claude/.cw-stage.LjgK3v/installed/hooks/h.sh	2026-09-25 02:04:49.105931435 -0700
+# +++ /tmp/claude-1000/-workspace/7630264d-3947-4203-a0ec-b9ffcc3a4e06/scratchpad/bats-run-3KkuWZ/test/1/home/.claude/.cw-new.hooks/h.sh	2026-09-25 02:04:48.000000000 -0700
+# @@ -1,2 +1,2 @@
+#  #!/bin/bash
+# -exit 0
+# +echo MALICIOUS-PAYLOAD
+# /tmp/claude-1000/-workspace/7630264d-3947-4203-a0ec-b9ffcc3a4e06/scratchpad/bats-run-3KkuWZ/test/1/repo/devcontainer-config/install.sh: line 135: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+# ===============================================================================
+#
+# Install these files into /tmp/claude-1000/-workspace/7630264d-3947-4203-a0ec-b9ffcc3a4e06/scratchpad/bats-run-3KkuWZ/test/1/home/.claude? [y/N] y
+# /bin/bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+# Checking for running cc-isolated containers (docker ps; up to 20 s)...
+# Installed into /tmp/claude-1000/-workspace/7630264d-3947-4203-a0ec-b9ffcc3a4e06/scratchpad/bats-run-3KkuWZ/test/1/home/.claude.
+# Previous entries moved to /tmp/claude-1000/-workspace/7630264d-3947-4203-a0ec-b9ffcc3a4e06/scratchpad/bats-run-3KkuWZ/test/1/home/.claude/.claude-workflows-backup/20260925T090514Z (delete it when satisfied).
+# Backups: this one plus the 2 most recent earlier installs' are kept in /tmp/claude-1000/-workspace/7630264d-3947-4203-a0ec-b9ffcc3a4e06/scratchpad/bats-run-3KkuWZ/test/1/home/.claude/.claude-workflows-backup (0 older removed).
+bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+not ok 2 SP1b the OLD side of the diff (HOST_TMP/installed) is rewritten to match the new copy during the review
+# (in test file /workspace/docs/reviews/execution-logs/secrev-q058p2/probe.bats, line 153)
+#   `[ -s "$S/helper.hits" ]' failed
+# bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+# n
+# y
+# bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+# bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+# /bin/bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+# Checking for running cc-isolated containers (docker ps; up to 20 s)...
+# Canonical (repo):  /tmp/claude-1000/-workspace/7630264d-3947-4203-a0ec-b9ffcc3a4e06/scratchpad/bats-run-3KkuWZ/test/2/repo/devcontainer-config at commit 19797e5103dd (staged in /tmp/claude-1000/-workspace/7630264d-3947-4203-a0ec-b9ffcc3a4e06/scratchpad/bats-run-3KkuWZ/test/2/tmp/cw-devc-stage.D2cgg0/config)
+# Installed (host):  /tmp/claude-1000/-workspace/7630264d-3947-4203-a0ec-b9ffcc3a4e06/scratchpad/bats-run-3KkuWZ/test/2/home/.config/claude-devcontainer
+#
+# First install — /tmp/claude-1000/-workspace/7630264d-3947-4203-a0ec-b9ffcc3a4e06/scratchpad/bats-run-3KkuWZ/test/2/home/.config/claude-devcontainer does not exist yet.
+#
+# Install this config and bless it? [y/N] Aborted. Nothing was changed. (devcontainer config)
+#
+# === Host target: global Claude Code files ======================================
+# Destination: /tmp/claude-1000/-workspace/7630264d-3947-4203-a0ec-b9ffcc3a4e06/scratchpad/bats-run-3KkuWZ/test/2/home/.claude  (chosen by $CLAUDE_HOME_DIR)
+# /bin/bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+# Checking for running cc-isolated containers (docker ps; up to 20 s)...
+# Canonical (repo):  /tmp/claude-1000/-workspace/7630264d-3947-4203-a0ec-b9ffcc3a4e06/scratchpad/bats-run-3KkuWZ/test/2/repo (commit 19797e5103dda7b5a57f05861f0c20dc3b58f621)
+#
+# === Changes this install would make ===========================================
+# /tmp/claude-1000/-workspace/7630264d-3947-4203-a0ec-b9ffcc3a4e06/scratchpad/bats-run-3KkuWZ/test/2/repo/devcontainer-config/install.sh: line 135: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+# ADD /tmp/claude-1000/-workspace/7630264d-3947-4203-a0ec-b9ffcc3a4e06/scratchpad/bats-run-3KkuWZ/test/2/home/.claude/CLAUDE.md (new, 1 file(s)):
+# /tmp/claude-1000/-workspace/7630264d-3947-4203-a0ec-b9ffcc3a4e06/scratchpad/bats-run-3KkuWZ/test/2/repo/devcontainer-config/install.sh: line 135: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+#     CLAUDE.md
+# /tmp/claude-1000/-workspace/7630264d-3947-4203-a0ec-b9ffcc3a4e06/scratchpad/bats-run-3KkuWZ/test/2/repo/devcontainer-config/install.sh: line 135: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+# --- /tmp/claude-1000/-workspace/7630264d-3947-4203-a0ec-b9ffcc3a4e06/scratchpad/bats-run-3KkuWZ/test/2/home/.claude/.cw-stage.KkwkAj/installed/CLAUDE.md	1969-12-31 16:00:00.000000000 -0800
+# +++ /tmp/claude-1000/-workspace/7630264d-3947-4203-a0ec-b9ffcc3a4e06/scratchpad/bats-run-3KkuWZ/test/2/home/.claude/.cw-new.CLAUDE.md	2026-09-25 02:05:14.000000000 -0700
+# @@ -0,0 +1 @@
+# +global instructions
+# /tmp/claude-1000/-workspace/7630264d-3947-4203-a0ec-b9ffcc3a4e06/scratchpad/bats-run-3KkuWZ/test/2/repo/devcontainer-config/install.sh: line 135: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+# ADD /tmp/claude-1000/-workspace/7630264d-3947-4203-a0ec-b9ffcc3a4e06/scratchpad/bats-run-3KkuWZ/test/2/home/.claude/skills (new, 1 file(s)):
+# /tmp/claude-1000/-workspace/7630264d-3947-4203-a0ec-b9ffcc3a4e06/scratchpad/bats-run-3KkuWZ/test/2/repo/devcontainer-config/install.sh: line 135: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+#     skills/a/SKILL.md
+# /tmp/claude-1000/-workspace/7630264d-3947-4203-a0ec-b9ffcc3a4e06/scratchpad/bats-run-3KkuWZ/test/2/repo/devcontainer-config/install.sh: line 135: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+# diff -ruNa /tmp/claude-1000/-workspace/7630264d-3947-4203-a0ec-b9ffcc3a4e06/scratchpad/bats-run-3KkuWZ/test/2/home/.claude/.cw-stage.KkwkAj/installed/skills/a/SKILL.md /tmp/claude-1000/-workspace/7630264d-3947-4203-a0ec-b9ffcc3a4e06/scratchpad/bats-run-3KkuWZ/test/2/home/.claude/.cw-new.skills/a/SKILL.md
+# --- /tmp/claude-1000/-workspace/7630264d-3947-4203-a0ec-b9ffcc3a4e06/scratchpad/bats-run-3KkuWZ/test/2/home/.claude/.cw-stage.KkwkAj/installed/skills/a/SKILL.md	1969-12-31 16:00:00.000000000 -0800
+# +++ /tmp/claude-1000/-workspace/7630264d-3947-4203-a0ec-b9ffcc3a4e06/scratchpad/bats-run-3KkuWZ/test/2/home/.claude/.cw-new.skills/a/SKILL.md	2026-09-25 02:05:14.000000000 -0700
+# @@ -0,0 +1 @@
+# +skill a
+# /tmp/claude-1000/-workspace/7630264d-3947-4203-a0ec-b9ffcc3a4e06/scratchpad/bats-run-3KkuWZ/test/2/repo/devcontainer-config/install.sh: line 135: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+# ADD /tmp/claude-1000/-workspace/7630264d-3947-4203-a0ec-b9ffcc3a4e06/scratchpad/bats-run-3KkuWZ/test/2/home/.claude/workflows (new, 1 file(s)):
+# /tmp/claude-1000/-workspace/7630264d-3947-4203-a0ec-b9ffcc3a4e06/scratchpad/bats-run-3KkuWZ/test/2/repo/devcontainer-config/install.sh: line 135: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+#     workflows/w.md
+# /tmp/claude-1000/-workspace/7630264d-3947-4203-a0ec-b9ffcc3a4e06/scratchpad/bats-run-3KkuWZ/test/2/repo/devcontainer-config/install.sh: line 135: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+# diff -ruNa /tmp/claude-1000/-workspace/7630264d-3947-4203-a0ec-b9ffcc3a4e06/scratchpad/bats-run-3KkuWZ/test/2/home/.claude/.cw-stage.KkwkAj/installed/workflows/w.md /tmp/claude-1000/-workspace/7630264d-3947-4203-a0ec-b9ffcc3a4e06/scratchpad/bats-run-3KkuWZ/test/2/home/.claude/.cw-new.workflows/w.md
+# --- /tmp/claude-1000/-workspace/7630264d-3947-4203-a0ec-b9ffcc3a4e06/scratchpad/bats-run-3KkuWZ/test/2/home/.claude/.cw-stage.KkwkAj/installed/workflows/w.md	1969-12-31 16:00:00.000000000 -0800
+# +++ /tmp/claude-1000/-workspace/7630264d-3947-4203-a0ec-b9ffcc3a4e06/scratchpad/bats-run-3KkuWZ/test/2/home/.claude/.cw-new.workflows/w.md	2026-09-25 02:05:14.000000000 -0700
+# @@ -0,0 +1 @@
+# +workflow
+# /tmp/claude-1000/-workspace/7630264d-3947-4203-a0ec-b9ffcc3a4e06/scratchpad/bats-run-3KkuWZ/test/2/repo/devcontainer-config/install.sh: line 135: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+# ADD /tmp/claude-1000/-workspace/7630264d-3947-4203-a0ec-b9ffcc3a4e06/scratchpad/bats-run-3KkuWZ/test/2/home/.claude/guides (new, 1 file(s)):
+# /tmp/claude-1000/-workspace/7630264d-3947-4203-a0ec-b9ffcc3a4e06/scratchpad/bats-run-3KkuWZ/test/2/repo/devcontainer-config/install.sh: line 135: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+#     guides/g.md
+# /tmp/claude-1000/-workspace/7630264d-3947-4203-a0ec-b9ffcc3a4e06/scratchpad/bats-run-3KkuWZ/test/2/repo/devcontainer-config/install.sh: line 135: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+# diff -ruNa /tmp/claude-1000/-workspace/7630264d-3947-4203-a0ec-b9ffcc3a4e06/scratchpad/bats-run-3KkuWZ/test/2/home/.claude/.cw-stage.KkwkAj/installed/guides/g.md /tmp/claude-1000/-workspace/7630264d-3947-4203-a0ec-b9ffcc3a4e06/scratchpad/bats-run-3KkuWZ/test/2/home/.claude/.cw-new.guides/g.md
+# --- /tmp/claude-1000/-workspace/7630264d-3947-4203-a0ec-b9ffcc3a4e06/scratchpad/bats-run-3KkuWZ/test/2/home/.claude/.cw-stage.KkwkAj/installed/guides/g.md	1969-12-31 16:00:00.000000000 -0800
+# +++ /tmp/claude-1000/-workspace/7630264d-3947-4203-a0ec-b9ffcc3a4e06/scratchpad/bats-run-3KkuWZ/test/2/home/.claude/.cw-new.guides/g.md	2026-09-25 02:05:14.000000000 -0700
+# @@ -0,0 +1 @@
+# +guide
+# /tmp/claude-1000/-workspace/7630264d-3947-4203-a0ec-b9ffcc3a4e06/scratchpad/bats-run-3KkuWZ/test/2/repo/devcontainer-config/install.sh: line 135: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+# ADD /tmp/claude-1000/-workspace/7630264d-3947-4203-a0ec-b9ffcc3a4e06/scratchpad/bats-run-3KkuWZ/test/2/home/.claude/patterns (new, 1 file(s)):
+# /tmp/claude-1000/-workspace/7630264d-3947-4203-a0ec-b9ffcc3a4e06/scratchpad/bats-run-3KkuWZ/test/2/repo/devcontainer-config/install.sh: line 135: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+#     patterns/p.md
+# /tmp/claude-1000/-workspace/7630264d-3947-4203-a0ec-b9ffcc3a4e06/scratchpad/bats-run-3KkuWZ/test/2/repo/devcontainer-config/install.sh: line 135: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+# diff -ruNa /tmp/claude-1000/-workspace/7630264d-3947-4203-a0ec-b9ffcc3a4e06/scratchpad/bats-run-3KkuWZ/test/2/home/.claude/.cw-stage.KkwkAj/installed/patterns/p.md /tmp/claude-1000/-workspace/7630264d-3947-4203-a0ec-b9ffcc3a4e06/scratchpad/bats-run-3KkuWZ/test/2/home/.claude/.cw-new.patterns/p.md
+# --- /tmp/claude-1000/-workspace/7630264d-3947-4203-a0ec-b9ffcc3a4e06/scratchpad/bats-run-3KkuWZ/test/2/home/.claude/.cw-stage.KkwkAj/installed/patterns/p.md	1969-12-31 16:00:00.000000000 -0800
+# +++ /tmp/claude-1000/-workspace/7630264d-3947-4203-a0ec-b9ffcc3a4e06/scratchpad/bats-run-3KkuWZ/test/2/home/.claude/.cw-new.patterns/p.md	2026-09-25 02:05:14.000000000 -0700
+# @@ -0,0 +1 @@
+# +pattern
+# /tmp/claude-1000/-workspace/7630264d-3947-4203-a0ec-b9ffcc3a4e06/scratchpad/bats-run-3KkuWZ/test/2/repo/devcontainer-config/install.sh: line 135: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+# ADD /tmp/claude-1000/-workspace/7630264d-3947-4203-a0ec-b9ffcc3a4e06/scratchpad/bats-run-3KkuWZ/test/2/home/.claude/hooks (new, 3 file(s)):
+# /tmp/claude-1000/-workspace/7630264d-3947-4203-a0ec-b9ffcc3a4e06/scratchpad/bats-run-3KkuWZ/test/2/repo/devcontainer-config/install.sh: line 135: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+#     hooks/h.sh
+#     hooks/lib/x.sh
+#     hooks/wiring.json
+# /tmp/claude-1000/-workspace/7630264d-3947-4203-a0ec-b9ffcc3a4e06/scratchpad/bats-run-3KkuWZ/test/2/repo/devcontainer-config/install.sh: line 135: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+# diff -ruNa /tmp/claude-1000/-workspace/7630264d-3947-4203-a0ec-b9ffcc3a4e06/scratchpad/bats-run-3KkuWZ/test/2/home/.claude/.cw-stage.KkwkAj/installed/hooks/h.sh /tmp/claude-1000/-workspace/7630264d-3947-4203-a0ec-b9ffcc3a4e06/scratchpad/bats-run-3KkuWZ/test/2/home/.claude/.cw-new.hooks/h.sh
+# --- /tmp/claude-1000/-workspace/7630264d-3947-4203-a0ec-b9ffcc3a4e06/scratchpad/bats-run-3KkuWZ/test/2/home/.claude/.cw-stage.KkwkAj/installed/hooks/h.sh	1969-12-31 16:00:00.000000000 -0800
+# +++ /tmp/claude-1000/-workspace/7630264d-3947-4203-a0ec-b9ffcc3a4e06/scratchpad/bats-run-3KkuWZ/test/2/home/.claude/.cw-new.hooks/h.sh	2026-09-25 02:05:14.000000000 -0700
+# @@ -0,0 +1,2 @@
+# +#!/bin/bash
+# +exit 0
+# diff -ruNa /tmp/claude-1000/-workspace/7630264d-3947-4203-a0ec-b9ffcc3a4e06/scratchpad/bats-run-3KkuWZ/test/2/home/.claude/.cw-stage.KkwkAj/installed/hooks/lib/x.sh /tmp/claude-1000/-workspace/7630264d-3947-4203-a0ec-b9ffcc3a4e06/scratchpad/bats-run-3KkuWZ/test/2/home/.claude/.cw-new.hooks/lib/x.sh
+# --- /tmp/claude-1000/-workspace/7630264d-3947-4203-a0ec-b9ffcc3a4e06/scratchpad/bats-run-3KkuWZ/test/2/home/.claude/.cw-stage.KkwkAj/installed/hooks/lib/x.sh	1969-12-31 16:00:00.000000000 -0800
+# +++ /tmp/claude-1000/-workspace/7630264d-3947-4203-a0ec-b9ffcc3a4e06/scratchpad/bats-run-3KkuWZ/test/2/home/.claude/.cw-new.hooks/lib/x.sh	2026-09-25 02:05:14.000000000 -0700
+# @@ -0,0 +1 @@
+# +#!/bin/bash
+# diff -ruNa /tmp/claude-1000/-workspace/7630264d-3947-4203-a0ec-b9ffcc3a4e06/scratchpad/bats-run-3KkuWZ/test/2/home/.claude/.cw-stage.KkwkAj/installed/hooks/wiring.json /tmp/claude-1000/-workspace/7630264d-3947-4203-a0ec-b9ffcc3a4e06/scratchpad/bats-run-3KkuWZ/test/2/home/.claude/.cw-new.hooks/wiring.json
+# --- /tmp/claude-1000/-workspace/7630264d-3947-4203-a0ec-b9ffcc3a4e06/scratchpad/bats-run-3KkuWZ/test/2/home/.claude/.cw-stage.KkwkAj/installed/hooks/wiring.json	1969-12-31 16:00:00.000000000 -0800
+# +++ /tmp/claude-1000/-workspace/7630264d-3947-4203-a0ec-b9ffcc3a4e06/scratchpad/bats-run-3KkuWZ/test/2/home/.claude/.cw-new.hooks/wiring.json	2026-09-25 02:05:14.000000000 -0700
+# @@ -0,0 +1 @@
+# +{"hooks":{}}
+# /tmp/claude-1000/-workspace/7630264d-3947-4203-a0ec-b9ffcc3a4e06/scratchpad/bats-run-3KkuWZ/test/2/repo/devcontainer-config/install.sh: line 135: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+# ADD /tmp/claude-1000/-workspace/7630264d-3947-4203-a0ec-b9ffcc3a4e06/scratchpad/bats-run-3KkuWZ/test/2/home/.claude/scripts (new, 1 file(s)):
+# /tmp/claude-1000/-workspace/7630264d-3947-4203-a0ec-b9ffcc3a4e06/scratchpad/bats-run-3KkuWZ/test/2/repo/devcontainer-config/install.sh: line 135: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+#     scripts/s.sh
+# /tmp/claude-1000/-workspace/7630264d-3947-4203-a0ec-b9ffcc3a4e06/scratchpad/bats-run-3KkuWZ/test/2/repo/devcontainer-config/install.sh: line 135: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+# diff -ruNa /tmp/claude-1000/-workspace/7630264d-3947-4203-a0ec-b9ffcc3a4e06/scratchpad/bats-run-3KkuWZ/test/2/home/.claude/.cw-stage.KkwkAj/installed/scripts/s.sh /tmp/claude-1000/-workspace/7630264d-3947-4203-a0ec-b9ffcc3a4e06/scratchpad/bats-run-3KkuWZ/test/2/home/.claude/.cw-new.scripts/s.sh
+# --- /tmp/claude-1000/-workspace/7630264d-3947-4203-a0ec-b9ffcc3a4e06/scratchpad/bats-run-3KkuWZ/test/2/home/.claude/.cw-stage.KkwkAj/installed/scripts/s.sh	1969-12-31 16:00:00.000000000 -0800
+# +++ /tmp/claude-1000/-workspace/7630264d-3947-4203-a0ec-b9ffcc3a4e06/scratchpad/bats-run-3KkuWZ/test/2/home/.claude/.cw-new.scripts/s.sh	2026-09-25 02:05:14.000000000 -0700
+# @@ -0,0 +1 @@
+# +#!/bin/bash
+# ===============================================================================
+#
+# Install these files into /tmp/claude-1000/-workspace/7630264d-3947-4203-a0ec-b9ffcc3a4e06/scratchpad/bats-run-3KkuWZ/test/2/home/.claude? [y/N] /bin/bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+# Checking for running cc-isolated containers (docker ps; up to 20 s)...
+# Installed into /tmp/claude-1000/-workspace/7630264d-3947-4203-a0ec-b9ffcc3a4e06/scratchpad/bats-run-3KkuWZ/test/2/home/.claude.
+#
+# REMINDER: hooks/wiring.json changed (or was not installed before). Copying the
+# hooks does not wire them. Redo guides/bare-host-hook-wiring.md §2 to merge it
+# into /tmp/claude-1000/-workspace/7630264d-3947-4203-a0ec-b9ffcc3a4e06/scratchpad/bats-run-3KkuWZ/test/2/home/.claude/settings.json.
+# bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+# n
+# bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+# bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+# /bin/bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+# Checking for running cc-isolated containers (docker ps; up to 20 s)...
+# Canonical (repo):  /tmp/claude-1000/-workspace/7630264d-3947-4203-a0ec-b9ffcc3a4e06/scratchpad/bats-run-3KkuWZ/test/2/repo/devcontainer-config at commit 6d52e4901ece (staged in /tmp/claude-1000/-workspace/7630264d-3947-4203-a0ec-b9ffcc3a4e06/scratchpad/bats-run-3KkuWZ/test/2/tmp/cw-devc-stage.xL2ln4/config)
+# Installed (host):  /tmp/claude-1000/-workspace/7630264d-3947-4203-a0ec-b9ffcc3a4e06/scratchpad/bats-run-3KkuWZ/test/2/home/.config/claude-devcontainer
+#
+# First install — /tmp/claude-1000/-workspace/7630264d-3947-4203-a0ec-b9ffcc3a4e06/scratchpad/bats-run-3KkuWZ/test/2/home/.config/claude-devcontainer does not exist yet.
+#
+# Install this config and bless it? [y/N] Aborted. Nothing was changed. (devcontainer config)
+#
+# === Host target: global Claude Code files ======================================
+# Destination: /tmp/claude-1000/-workspace/7630264d-3947-4203-a0ec-b9ffcc3a4e06/scratchpad/bats-run-3KkuWZ/test/2/home/.claude  (chosen by $CLAUDE_HOME_DIR)
+# /bin/bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+# Checking for running cc-isolated containers (docker ps; up to 20 s)...
+# Canonical (repo):  /tmp/claude-1000/-workspace/7630264d-3947-4203-a0ec-b9ffcc3a4e06/scratchpad/bats-run-3KkuWZ/test/2/repo (commit 6d52e4901ecedb6b082c8e83280c1253b3eef97b)
+#
+# === Changes this install would make ===========================================
+# (diff: /tmp/claude-1000/-workspace/7630264d-3947-4203-a0ec-b9ffcc3a4e06/scratchpad/bats-run-3KkuWZ/test/2/home/.claude/.cw-stage.KCOluS/installed is the destination as it is now, links left out; /tmp/claude-1000/-workspace/7630264d-3947-4203-a0ec-b9ffcc3a4e06/scratchpad/bats-run-3KkuWZ/test/2/home/.claude/.cw-new.* are the copies to install)
+# /tmp/claude-1000/-workspace/7630264d-3947-4203-a0ec-b9ffcc3a4e06/scratchpad/bats-run-3KkuWZ/test/2/repo/devcontainer-config/install.sh: line 135: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+# /tmp/claude-1000/-workspace/7630264d-3947-4203-a0ec-b9ffcc3a4e06/scratchpad/bats-run-3KkuWZ/test/2/repo/devcontainer-config/install.sh: line 135: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+# /tmp/claude-1000/-workspace/7630264d-3947-4203-a0ec-b9ffcc3a4e06/scratchpad/bats-run-3KkuWZ/test/2/repo/devcontainer-config/install.sh: line 135: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+# /tmp/claude-1000/-workspace/7630264d-3947-4203-a0ec-b9ffcc3a4e06/scratchpad/bats-run-3KkuWZ/test/2/repo/devcontainer-config/install.sh: line 135: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+# diff -ruNa /tmp/claude-1000/-workspace/7630264d-3947-4203-a0ec-b9ffcc3a4e06/scratchpad/bats-run-3KkuWZ/test/2/home/.claude/.cw-stage.KCOluS/installed/guides/g.md /tmp/claude-1000/-workspace/7630264d-3947-4203-a0ec-b9ffcc3a4e06/scratchpad/bats-run-3KkuWZ/test/2/home/.claude/.cw-new.guides/g.md
+# --- /tmp/claude-1000/-workspace/7630264d-3947-4203-a0ec-b9ffcc3a4e06/scratchpad/bats-run-3KkuWZ/test/2/home/.claude/.cw-stage.KCOluS/installed/guides/g.md	2026-09-25 02:05:15.695839238 -0700
+# +++ /tmp/claude-1000/-workspace/7630264d-3947-4203-a0ec-b9ffcc3a4e06/scratchpad/bats-run-3KkuWZ/test/2/home/.claude/.cw-new.guides/g.md	2026-09-25 02:05:15.000000000 -0700
+# @@ -1 +1 @@
+# -guide
+# +guide v2 benign
+# /tmp/claude-1000/-workspace/7630264d-3947-4203-a0ec-b9ffcc3a4e06/scratchpad/bats-run-3KkuWZ/test/2/repo/devcontainer-config/install.sh: line 135: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+# /tmp/claude-1000/-workspace/7630264d-3947-4203-a0ec-b9ffcc3a4e06/scratchpad/bats-run-3KkuWZ/test/2/repo/devcontainer-config/install.sh: line 135: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+# diff -ruNa /tmp/claude-1000/-workspace/7630264d-3947-4203-a0ec-b9ffcc3a4e06/scratchpad/bats-run-3KkuWZ/test/2/home/.claude/.cw-stage.KCOluS/installed/hooks/h.sh /tmp/claude-1000/-workspace/7630264d-3947-4203-a0ec-b9ffcc3a4e06/scratchpad/bats-run-3KkuWZ/test/2/home/.claude/.cw-new.hooks/h.sh
+# --- /tmp/claude-1000/-workspace/7630264d-3947-4203-a0ec-b9ffcc3a4e06/scratchpad/bats-run-3KkuWZ/test/2/home/.claude/.cw-stage.KCOluS/installed/hooks/h.sh	2026-09-25 02:05:15.701805314 -0700
+# +++ /tmp/claude-1000/-workspace/7630264d-3947-4203-a0ec-b9ffcc3a4e06/scratchpad/bats-run-3KkuWZ/test/2/home/.claude/.cw-new.hooks/h.sh	2026-09-25 02:05:15.000000000 -0700
+# @@ -1,2 +1,2 @@
+#  #!/bin/bash
+# -exit 0
+# +echo MALICIOUS-PAYLOAD
+# /tmp/claude-1000/-workspace/7630264d-3947-4203-a0ec-b9ffcc3a4e06/scratchpad/bats-run-3KkuWZ/test/2/repo/devcontainer-config/install.sh: line 135: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+# ===============================================================================
+#
+# Install these files into /tmp/claude-1000/-workspace/7630264d-3947-4203-a0ec-b9ffcc3a4e06/scratchpad/bats-run-3KkuWZ/test/2/home/.claude? [y/N] y
+# /bin/bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+# Checking for running cc-isolated containers (docker ps; up to 20 s)...
+# Installed into /tmp/claude-1000/-workspace/7630264d-3947-4203-a0ec-b9ffcc3a4e06/scratchpad/bats-run-3KkuWZ/test/2/home/.claude.
+# Previous entries moved to /tmp/claude-1000/-workspace/7630264d-3947-4203-a0ec-b9ffcc3a4e06/scratchpad/bats-run-3KkuWZ/test/2/home/.claude/.claude-workflows-backup/20260925T090539Z (delete it when satisfied).
+# Backups: this one plus the 2 most recent earlier installs' are kept in /tmp/claude-1000/-workspace/7630264d-3947-4203-a0ec-b9ffcc3a4e06/scratchpad/bats-run-3KkuWZ/test/2/home/.claude/.claude-workflows-backup (0 older removed).
+# bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+# n
+# bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+# bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+# /bin/bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+# Checking for running cc-isolated containers (docker ps; up to 20 s)...
+# Canonical (repo):  /tmp/claude-1000/-workspace/7630264d-3947-4203-a0ec-b9ffcc3a4e06/scratchpad/bats-run-3KkuWZ/test/2/repo/devcontainer-config at commit 6d52e4901ece (staged in /tmp/claude-1000/-workspace/7630264d-3947-4203-a0ec-b9ffcc3a4e06/scratchpad/bats-run-3KkuWZ/test/2/tmp/cw-devc-stage.xL2ln4/config)
+# Installed (host):  /tmp/claude-1000/-workspace/7630264d-3947-4203-a0ec-b9ffcc3a4e06/scratchpad/bats-run-3KkuWZ/test/2/home/.config/claude-devcontainer
+#
+# First install — /tmp/claude-1000/-workspace/7630264d-3947-4203-a0ec-b9ffcc3a4e06/scratchpad/bats-run-3KkuWZ/test/2/home/.config/claude-devcontainer does not exist yet.
+#
+# Install this config and bless it? [y/N] Aborted. Nothing was changed. (devcontainer config)
+#
+# === Host target: global Claude Code files ======================================
+# Destination: /tmp/claude-1000/-workspace/7630264d-3947-4203-a0ec-b9ffcc3a4e06/scratchpad/bats-run-3KkuWZ/test/2/home/.claude  (chosen by $CLAUDE_HOME_DIR)
+# /bin/bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+# Checking for running cc-isolated containers (docker ps; up to 20 s)...
+# Canonical (repo):  /tmp/claude-1000/-workspace/7630264d-3947-4203-a0ec-b9ffcc3a4e06/scratchpad/bats-run-3KkuWZ/test/2/repo (commit 6d52e4901ecedb6b082c8e83280c1253b3eef97b)
+#
+# === Changes this install would make ===========================================
+# (diff: /tmp/claude-1000/-workspace/7630264d-3947-4203-a0ec-b9ffcc3a4e06/scratchpad/bats-run-3KkuWZ/test/2/home/.claude/.cw-stage.KCOluS/installed is the destination as it is now, links left out; /tmp/claude-1000/-workspace/7630264d-3947-4203-a0ec-b9ffcc3a4e06/scratchpad/bats-run-3KkuWZ/test/2/home/.claude/.cw-new.* are the copies to install)
+# /tmp/claude-1000/-workspace/7630264d-3947-4203-a0ec-b9ffcc3a4e06/scratchpad/bats-run-3KkuWZ/test/2/repo/devcontainer-config/install.sh: line 135: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+# /tmp/claude-1000/-workspace/7630264d-3947-4203-a0ec-b9ffcc3a4e06/scratchpad/bats-run-3KkuWZ/test/2/repo/devcontainer-config/install.sh: line 135: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+# /tmp/claude-1000/-workspace/7630264d-3947-4203-a0ec-b9ffcc3a4e06/scratchpad/bats-run-3KkuWZ/test/2/repo/devcontainer-config/install.sh: line 135: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+# /tmp/claude-1000/-workspace/7630264d-3947-4203-a0ec-b9ffcc3a4e06/scratchpad/bats-run-3KkuWZ/test/2/repo/devcontainer-config/install.sh: line 135: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+# diff -ruNa /tmp/claude-1000/-workspace/7630264d-3947-4203-a0ec-b9ffcc3a4e06/scratchpad/bats-run-3KkuWZ/test/2/home/.claude/.cw-stage.KCOluS/installed/guides/g.md /tmp/claude-1000/-workspace/7630264d-3947-4203-a0ec-b9ffcc3a4e06/scratchpad/bats-run-3KkuWZ/test/2/home/.claude/.cw-new.guides/g.md
+# --- /tmp/claude-1000/-workspace/7630264d-3947-4203-a0ec-b9ffcc3a4e06/scratchpad/bats-run-3KkuWZ/test/2/home/.claude/.cw-stage.KCOluS/installed/guides/g.md	2026-09-25 02:05:15.695839238 -0700
+# +++ /tmp/claude-1000/-workspace/7630264d-3947-4203-a0ec-b9ffcc3a4e06/scratchpad/bats-run-3KkuWZ/test/2/home/.claude/.cw-new.guides/g.md	2026-09-25 02:05:15.000000000 -0700
+# @@ -1 +1 @@
+# -guide
+# +guide v2 benign
+# /tmp/claude-1000/-workspace/7630264d-3947-4203-a0ec-b9ffcc3a4e06/scratchpad/bats-run-3KkuWZ/test/2/repo/devcontainer-config/install.sh: line 135: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+# /tmp/claude-1000/-workspace/7630264d-3947-4203-a0ec-b9ffcc3a4e06/scratchpad/bats-run-3KkuWZ/test/2/repo/devcontainer-config/install.sh: line 135: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+# diff -ruNa /tmp/claude-1000/-workspace/7630264d-3947-4203-a0ec-b9ffcc3a4e06/scratchpad/bats-run-3KkuWZ/test/2/home/.claude/.cw-stage.KCOluS/installed/hooks/h.sh /tmp/claude-1000/-workspace/7630264d-3947-4203-a0ec-b9ffcc3a4e06/scratchpad/bats-run-3KkuWZ/test/2/home/.claude/.cw-new.hooks/h.sh
+# --- /tmp/claude-1000/-workspace/7630264d-3947-4203-a0ec-b9ffcc3a4e06/scratchpad/bats-run-3KkuWZ/test/2/home/.claude/.cw-stage.KCOluS/installed/hooks/h.sh	2026-09-25 02:05:15.701805314 -0700
+# +++ /tmp/claude-1000/-workspace/7630264d-3947-4203-a0ec-b9ffcc3a4e06/scratchpad/bats-run-3KkuWZ/test/2/home/.claude/.cw-new.hooks/h.sh	2026-09-25 02:05:15.000000000 -0700
+# @@ -1,2 +1,2 @@
+#  #!/bin/bash
+# -exit 0
+# +echo MALICIOUS-PAYLOAD
+# /tmp/claude-1000/-workspace/7630264d-3947-4203-a0ec-b9ffcc3a4e06/scratchpad/bats-run-3KkuWZ/test/2/repo/devcontainer-config/install.sh: line 135: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+# ===============================================================================
+#
+# Install these files into /tmp/claude-1000/-workspace/7630264d-3947-4203-a0ec-b9ffcc3a4e06/scratchpad/bats-run-3KkuWZ/test/2/home/.claude? [y/N] y
+# /bin/bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+# Checking for running cc-isolated containers (docker ps; up to 20 s)...
+# Installed into /tmp/claude-1000/-workspace/7630264d-3947-4203-a0ec-b9ffcc3a4e06/scratchpad/bats-run-3KkuWZ/test/2/home/.claude.
+# Previous entries moved to /tmp/claude-1000/-workspace/7630264d-3947-4203-a0ec-b9ffcc3a4e06/scratchpad/bats-run-3KkuWZ/test/2/home/.claude/.claude-workflows-backup/20260925T090539Z (delete it when satisfied).
+# Backups: this one plus the 2 most recent earlier installs' are kept in /tmp/claude-1000/-workspace/7630264d-3947-4203-a0ec-b9ffcc3a4e06/scratchpad/bats-run-3KkuWZ/test/2/home/.claude/.claude-workflows-backup (0 older removed).
+# --- installed h.sh:
+# #!/bin/bash
+# echo MALICIOUS-PAYLOAD
+bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+not ok 3 SP1c a stage edit between git archive and the copy into dest lands under an ADD entry whose content is not shown
+# (in test file /workspace/docs/reviews/execution-logs/secrev-q058p2/probe.bats, line 181)
+#   `[ -s "$S/helper.hits" ]' failed
+# bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+# n
+# bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+# bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+# /bin/bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+# Checking for running cc-isolated containers (docker ps; up to 20 s)...
+# Canonical (repo):  /tmp/claude-1000/-workspace/7630264d-3947-4203-a0ec-b9ffcc3a4e06/scratchpad/bats-run-3KkuWZ/test/3/repo/devcontainer-config at commit 2e40dee00cd1 (staged in /tmp/claude-1000/-workspace/7630264d-3947-4203-a0ec-b9ffcc3a4e06/scratchpad/bats-run-3KkuWZ/test/3/tmp/cw-devc-stage.akptBf/config)
+# Installed (host):  /tmp/claude-1000/-workspace/7630264d-3947-4203-a0ec-b9ffcc3a4e06/scratchpad/bats-run-3KkuWZ/test/3/home/.config/claude-devcontainer
+#
+# First install — /tmp/claude-1000/-workspace/7630264d-3947-4203-a0ec-b9ffcc3a4e06/scratchpad/bats-run-3KkuWZ/test/3/home/.config/claude-devcontainer does not exist yet.
+#
+# Install this config and bless it? [y/N] Aborted. Nothing was changed. (devcontainer config)
+#
+# === Host target: global Claude Code files ======================================
+# Destination: /tmp/claude-1000/-workspace/7630264d-3947-4203-a0ec-b9ffcc3a4e06/scratchpad/bats-run-3KkuWZ/test/3/home/.claude  (chosen by $CLAUDE_HOME_DIR)
+# /bin/bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+# Checking for running cc-isolated containers (docker ps; up to 20 s)...
+# Canonical (repo):  /tmp/claude-1000/-workspace/7630264d-3947-4203-a0ec-b9ffcc3a4e06/scratchpad/bats-run-3KkuWZ/test/3/repo (commit 2e40dee00cd162842b84de8c4984e723ac5a821b)
+#
+# === Changes this install would make ===========================================
+# /tmp/claude-1000/-workspace/7630264d-3947-4203-a0ec-b9ffcc3a4e06/scratchpad/bats-run-3KkuWZ/test/3/repo/devcontainer-config/install.sh: line 135: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+# ADD /tmp/claude-1000/-workspace/7630264d-3947-4203-a0ec-b9ffcc3a4e06/scratchpad/bats-run-3KkuWZ/test/3/home/.claude/CLAUDE.md (new, 1 file(s)):
+# /tmp/claude-1000/-workspace/7630264d-3947-4203-a0ec-b9ffcc3a4e06/scratchpad/bats-run-3KkuWZ/test/3/repo/devcontainer-config/install.sh: line 135: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+#     CLAUDE.md
+# /tmp/claude-1000/-workspace/7630264d-3947-4203-a0ec-b9ffcc3a4e06/scratchpad/bats-run-3KkuWZ/test/3/repo/devcontainer-config/install.sh: line 135: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+# --- /tmp/claude-1000/-workspace/7630264d-3947-4203-a0ec-b9ffcc3a4e06/scratchpad/bats-run-3KkuWZ/test/3/home/.claude/.cw-stage.oeZwT9/installed/CLAUDE.md	1969-12-31 16:00:00.000000000 -0800
+# +++ /tmp/claude-1000/-workspace/7630264d-3947-4203-a0ec-b9ffcc3a4e06/scratchpad/bats-run-3KkuWZ/test/3/home/.claude/.cw-new.CLAUDE.md	2026-09-25 02:05:40.000000000 -0700
+# @@ -0,0 +1 @@
+# +global instructions
+# /tmp/claude-1000/-workspace/7630264d-3947-4203-a0ec-b9ffcc3a4e06/scratchpad/bats-run-3KkuWZ/test/3/repo/devcontainer-config/install.sh: line 135: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+# ADD /tmp/claude-1000/-workspace/7630264d-3947-4203-a0ec-b9ffcc3a4e06/scratchpad/bats-run-3KkuWZ/test/3/home/.claude/skills (new, 2 file(s)):
+# /tmp/claude-1000/-workspace/7630264d-3947-4203-a0ec-b9ffcc3a4e06/scratchpad/bats-run-3KkuWZ/test/3/repo/devcontainer-config/install.sh: line 135: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+#     skills/a/SKILL.md
+#     skills/a/big.md
+# /tmp/claude-1000/-workspace/7630264d-3947-4203-a0ec-b9ffcc3a4e06/scratchpad/bats-run-3KkuWZ/test/3/repo/devcontainer-config/install.sh: line 135: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+#     (content not shown: 301 lines, over the 200-line limit for a new entry; it is skills at commit 2e40dee00cd1)
+# /tmp/claude-1000/-workspace/7630264d-3947-4203-a0ec-b9ffcc3a4e06/scratchpad/bats-run-3KkuWZ/test/3/repo/devcontainer-config/install.sh: line 135: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+# ADD /tmp/claude-1000/-workspace/7630264d-3947-4203-a0ec-b9ffcc3a4e06/scratchpad/bats-run-3KkuWZ/test/3/home/.claude/workflows (new, 1 file(s)):
+# /tmp/claude-1000/-workspace/7630264d-3947-4203-a0ec-b9ffcc3a4e06/scratchpad/bats-run-3KkuWZ/test/3/repo/devcontainer-config/install.sh: line 135: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+#     workflows/w.md
+# /tmp/claude-1000/-workspace/7630264d-3947-4203-a0ec-b9ffcc3a4e06/scratchpad/bats-run-3KkuWZ/test/3/repo/devcontainer-config/install.sh: line 135: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+# diff -ruNa /tmp/claude-1000/-workspace/7630264d-3947-4203-a0ec-b9ffcc3a4e06/scratchpad/bats-run-3KkuWZ/test/3/home/.claude/.cw-stage.oeZwT9/installed/workflows/w.md /tmp/claude-1000/-workspace/7630264d-3947-4203-a0ec-b9ffcc3a4e06/scratchpad/bats-run-3KkuWZ/test/3/home/.claude/.cw-new.workflows/w.md
+# --- /tmp/claude-1000/-workspace/7630264d-3947-4203-a0ec-b9ffcc3a4e06/scratchpad/bats-run-3KkuWZ/test/3/home/.claude/.cw-stage.oeZwT9/installed/workflows/w.md	1969-12-31 16:00:00.000000000 -0800
+# +++ /tmp/claude-1000/-workspace/7630264d-3947-4203-a0ec-b9ffcc3a4e06/scratchpad/bats-run-3KkuWZ/test/3/home/.claude/.cw-new.workflows/w.md	2026-09-25 02:05:40.000000000 -0700
+# @@ -0,0 +1 @@
+# +workflow
+# /tmp/claude-1000/-workspace/7630264d-3947-4203-a0ec-b9ffcc3a4e06/scratchpad/bats-run-3KkuWZ/test/3/repo/devcontainer-config/install.sh: line 135: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+# ADD /tmp/claude-1000/-workspace/7630264d-3947-4203-a0ec-b9ffcc3a4e06/scratchpad/bats-run-3KkuWZ/test/3/home/.claude/guides (new, 1 file(s)):
+# /tmp/claude-1000/-workspace/7630264d-3947-4203-a0ec-b9ffcc3a4e06/scratchpad/bats-run-3KkuWZ/test/3/repo/devcontainer-config/install.sh: line 135: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+#     guides/g.md
+# /tmp/claude-1000/-workspace/7630264d-3947-4203-a0ec-b9ffcc3a4e06/scratchpad/bats-run-3KkuWZ/test/3/repo/devcontainer-config/install.sh: line 135: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+# diff -ruNa /tmp/claude-1000/-workspace/7630264d-3947-4203-a0ec-b9ffcc3a4e06/scratchpad/bats-run-3KkuWZ/test/3/home/.claude/.cw-stage.oeZwT9/installed/guides/g.md /tmp/claude-1000/-workspace/7630264d-3947-4203-a0ec-b9ffcc3a4e06/scratchpad/bats-run-3KkuWZ/test/3/home/.claude/.cw-new.guides/g.md
+# --- /tmp/claude-1000/-workspace/7630264d-3947-4203-a0ec-b9ffcc3a4e06/scratchpad/bats-run-3KkuWZ/test/3/home/.claude/.cw-stage.oeZwT9/installed/guides/g.md	1969-12-31 16:00:00.000000000 -0800
+# +++ /tmp/claude-1000/-workspace/7630264d-3947-4203-a0ec-b9ffcc3a4e06/scratchpad/bats-run-3KkuWZ/test/3/home/.claude/.cw-new.guides/g.md	2026-09-25 02:05:40.000000000 -0700
+# @@ -0,0 +1 @@
+# +guide
+# /tmp/claude-1000/-workspace/7630264d-3947-4203-a0ec-b9ffcc3a4e06/scratchpad/bats-run-3KkuWZ/test/3/repo/devcontainer-config/install.sh: line 135: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+# ADD /tmp/claude-1000/-workspace/7630264d-3947-4203-a0ec-b9ffcc3a4e06/scratchpad/bats-run-3KkuWZ/test/3/home/.claude/patterns (new, 1 file(s)):
+# /tmp/claude-1000/-workspace/7630264d-3947-4203-a0ec-b9ffcc3a4e06/scratchpad/bats-run-3KkuWZ/test/3/repo/devcontainer-config/install.sh: line 135: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+#     patterns/p.md
+# /tmp/claude-1000/-workspace/7630264d-3947-4203-a0ec-b9ffcc3a4e06/scratchpad/bats-run-3KkuWZ/test/3/repo/devcontainer-config/install.sh: line 135: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+# diff -ruNa /tmp/claude-1000/-workspace/7630264d-3947-4203-a0ec-b9ffcc3a4e06/scratchpad/bats-run-3KkuWZ/test/3/home/.claude/.cw-stage.oeZwT9/installed/patterns/p.md /tmp/claude-1000/-workspace/7630264d-3947-4203-a0ec-b9ffcc3a4e06/scratchpad/bats-run-3KkuWZ/test/3/home/.claude/.cw-new.patterns/p.md
+# --- /tmp/claude-1000/-workspace/7630264d-3947-4203-a0ec-b9ffcc3a4e06/scratchpad/bats-run-3KkuWZ/test/3/home/.claude/.cw-stage.oeZwT9/installed/patterns/p.md	1969-12-31 16:00:00.000000000 -0800
+# +++ /tmp/claude-1000/-workspace/7630264d-3947-4203-a0ec-b9ffcc3a4e06/scratchpad/bats-run-3KkuWZ/test/3/home/.claude/.cw-new.patterns/p.md	2026-09-25 02:05:40.000000000 -0700
+# @@ -0,0 +1 @@
+# +pattern
+# /tmp/claude-1000/-workspace/7630264d-3947-4203-a0ec-b9ffcc3a4e06/scratchpad/bats-run-3KkuWZ/test/3/repo/devcontainer-config/install.sh: line 135: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+# ADD /tmp/claude-1000/-workspace/7630264d-3947-4203-a0ec-b9ffcc3a4e06/scratchpad/bats-run-3KkuWZ/test/3/home/.claude/hooks (new, 3 file(s)):
+# /tmp/claude-1000/-workspace/7630264d-3947-4203-a0ec-b9ffcc3a4e06/scratchpad/bats-run-3KkuWZ/test/3/repo/devcontainer-config/install.sh: line 135: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+#     hooks/h.sh
+#     hooks/lib/x.sh
+#     hooks/wiring.json
+# /tmp/claude-1000/-workspace/7630264d-3947-4203-a0ec-b9ffcc3a4e06/scratchpad/bats-run-3KkuWZ/test/3/repo/devcontainer-config/install.sh: line 135: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+# diff -ruNa /tmp/claude-1000/-workspace/7630264d-3947-4203-a0ec-b9ffcc3a4e06/scratchpad/bats-run-3KkuWZ/test/3/home/.claude/.cw-stage.oeZwT9/installed/hooks/h.sh /tmp/claude-1000/-workspace/7630264d-3947-4203-a0ec-b9ffcc3a4e06/scratchpad/bats-run-3KkuWZ/test/3/home/.claude/.cw-new.hooks/h.sh
+# --- /tmp/claude-1000/-workspace/7630264d-3947-4203-a0ec-b9ffcc3a4e06/scratchpad/bats-run-3KkuWZ/test/3/home/.claude/.cw-stage.oeZwT9/installed/hooks/h.sh	1969-12-31 16:00:00.000000000 -0800
+# +++ /tmp/claude-1000/-workspace/7630264d-3947-4203-a0ec-b9ffcc3a4e06/scratchpad/bats-run-3KkuWZ/test/3/home/.claude/.cw-new.hooks/h.sh	2026-09-25 02:05:40.000000000 -0700
+# @@ -0,0 +1,2 @@
+# +#!/bin/bash
+# +exit 0
+# diff -ruNa /tmp/claude-1000/-workspace/7630264d-3947-4203-a0ec-b9ffcc3a4e06/scratchpad/bats-run-3KkuWZ/test/3/home/.claude/.cw-stage.oeZwT9/installed/hooks/lib/x.sh /tmp/claude-1000/-workspace/7630264d-3947-4203-a0ec-b9ffcc3a4e06/scratchpad/bats-run-3KkuWZ/test/3/home/.claude/.cw-new.hooks/lib/x.sh
+# --- /tmp/claude-1000/-workspace/7630264d-3947-4203-a0ec-b9ffcc3a4e06/scratchpad/bats-run-3KkuWZ/test/3/home/.claude/.cw-stage.oeZwT9/installed/hooks/lib/x.sh	1969-12-31 16:00:00.000000000 -0800
+# +++ /tmp/claude-1000/-workspace/7630264d-3947-4203-a0ec-b9ffcc3a4e06/scratchpad/bats-run-3KkuWZ/test/3/home/.claude/.cw-new.hooks/lib/x.sh	2026-09-25 02:05:40.000000000 -0700
+# @@ -0,0 +1 @@
+# +#!/bin/bash
+# diff -ruNa /tmp/claude-1000/-workspace/7630264d-3947-4203-a0ec-b9ffcc3a4e06/scratchpad/bats-run-3KkuWZ/test/3/home/.claude/.cw-stage.oeZwT9/installed/hooks/wiring.json /tmp/claude-1000/-workspace/7630264d-3947-4203-a0ec-b9ffcc3a4e06/scratchpad/bats-run-3KkuWZ/test/3/home/.claude/.cw-new.hooks/wiring.json
+# --- /tmp/claude-1000/-workspace/7630264d-3947-4203-a0ec-b9ffcc3a4e06/scratchpad/bats-run-3KkuWZ/test/3/home/.claude/.cw-stage.oeZwT9/installed/hooks/wiring.json	1969-12-31 16:00:00.000000000 -0800
+# +++ /tmp/claude-1000/-workspace/7630264d-3947-4203-a0ec-b9ffcc3a4e06/scratchpad/bats-run-3KkuWZ/test/3/home/.claude/.cw-new.hooks/wiring.json	2026-09-25 02:05:40.000000000 -0700
+# @@ -0,0 +1 @@
+# +{"hooks":{}}
+# /tmp/claude-1000/-workspace/7630264d-3947-4203-a0ec-b9ffcc3a4e06/scratchpad/bats-run-3KkuWZ/test/3/repo/devcontainer-config/install.sh: line 135: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+# ADD /tmp/claude-1000/-workspace/7630264d-3947-4203-a0ec-b9ffcc3a4e06/scratchpad/bats-run-3KkuWZ/test/3/home/.claude/scripts (new, 1 file(s)):
+# /tmp/claude-1000/-workspace/7630264d-3947-4203-a0ec-b9ffcc3a4e06/scratchpad/bats-run-3KkuWZ/test/3/repo/devcontainer-config/install.sh: line 135: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+#     scripts/s.sh
+# /tmp/claude-1000/-workspace/7630264d-3947-4203-a0ec-b9ffcc3a4e06/scratchpad/bats-run-3KkuWZ/test/3/repo/devcontainer-config/install.sh: line 135: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+# diff -ruNa /tmp/claude-1000/-workspace/7630264d-3947-4203-a0ec-b9ffcc3a4e06/scratchpad/bats-run-3KkuWZ/test/3/home/.claude/.cw-stage.oeZwT9/installed/scripts/s.sh /tmp/claude-1000/-workspace/7630264d-3947-4203-a0ec-b9ffcc3a4e06/scratchpad/bats-run-3KkuWZ/test/3/home/.claude/.cw-new.scripts/s.sh
+# --- /tmp/claude-1000/-workspace/7630264d-3947-4203-a0ec-b9ffcc3a4e06/scratchpad/bats-run-3KkuWZ/test/3/home/.claude/.cw-stage.oeZwT9/installed/scripts/s.sh	1969-12-31 16:00:00.000000000 -0800
+# +++ /tmp/claude-1000/-workspace/7630264d-3947-4203-a0ec-b9ffcc3a4e06/scratchpad/bats-run-3KkuWZ/test/3/home/.claude/.cw-new.scripts/s.sh	2026-09-25 02:05:40.000000000 -0700
+# @@ -0,0 +1 @@
+# +#!/bin/bash
+# ===============================================================================
+#
+# Install these files into /tmp/claude-1000/-workspace/7630264d-3947-4203-a0ec-b9ffcc3a4e06/scratchpad/bats-run-3KkuWZ/test/3/home/.claude? [y/N] y
+# /bin/bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+# Checking for running cc-isolated containers (docker ps; up to 20 s)...
+# Installed into /tmp/claude-1000/-workspace/7630264d-3947-4203-a0ec-b9ffcc3a4e06/scratchpad/bats-run-3KkuWZ/test/3/home/.claude.
+#
+# REMINDER: hooks/wiring.json changed (or was not installed before). Copying the
+# hooks does not wire them. Redo guides/bare-host-hook-wiring.md §2 to merge it
+# into /tmp/claude-1000/-workspace/7630264d-3947-4203-a0ec-b9ffcc3a4e06/scratchpad/bats-run-3KkuWZ/test/3/home/.claude/settings.json.
+# bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+# n
+# bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+# bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+# /bin/bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+# Checking for running cc-isolated containers (docker ps; up to 20 s)...
+# Canonical (repo):  /tmp/claude-1000/-workspace/7630264d-3947-4203-a0ec-b9ffcc3a4e06/scratchpad/bats-run-3KkuWZ/test/3/repo/devcontainer-config at commit 2e40dee00cd1 (staged in /tmp/claude-1000/-workspace/7630264d-3947-4203-a0ec-b9ffcc3a4e06/scratchpad/bats-run-3KkuWZ/test/3/tmp/cw-devc-stage.akptBf/config)
+# Installed (host):  /tmp/claude-1000/-workspace/7630264d-3947-4203-a0ec-b9ffcc3a4e06/scratchpad/bats-run-3KkuWZ/test/3/home/.config/claude-devcontainer
+#
+# First install — /tmp/claude-1000/-workspace/7630264d-3947-4203-a0ec-b9ffcc3a4e06/scratchpad/bats-run-3KkuWZ/test/3/home/.config/claude-devcontainer does not exist yet.
+#
+# Install this config and bless it? [y/N] Aborted. Nothing was changed. (devcontainer config)
+#
+# === Host target: global Claude Code files ======================================
+# Destination: /tmp/claude-1000/-workspace/7630264d-3947-4203-a0ec-b9ffcc3a4e06/scratchpad/bats-run-3KkuWZ/test/3/home/.claude  (chosen by $CLAUDE_HOME_DIR)
+# /bin/bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+# Checking for running cc-isolated containers (docker ps; up to 20 s)...
+# Canonical (repo):  /tmp/claude-1000/-workspace/7630264d-3947-4203-a0ec-b9ffcc3a4e06/scratchpad/bats-run-3KkuWZ/test/3/repo (commit 2e40dee00cd162842b84de8c4984e723ac5a821b)
+#
+# === Changes this install would make ===========================================
+# /tmp/claude-1000/-workspace/7630264d-3947-4203-a0ec-b9ffcc3a4e06/scratchpad/bats-run-3KkuWZ/test/3/repo/devcontainer-config/install.sh: line 135: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+# ADD /tmp/claude-1000/-workspace/7630264d-3947-4203-a0ec-b9ffcc3a4e06/scratchpad/bats-run-3KkuWZ/test/3/home/.claude/CLAUDE.md (new, 1 file(s)):
+# /tmp/claude-1000/-workspace/7630264d-3947-4203-a0ec-b9ffcc3a4e06/scratchpad/bats-run-3KkuWZ/test/3/repo/devcontainer-config/install.sh: line 135: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+#     CLAUDE.md
+# /tmp/claude-1000/-workspace/7630264d-3947-4203-a0ec-b9ffcc3a4e06/scratchpad/bats-run-3KkuWZ/test/3/repo/devcontainer-config/install.sh: line 135: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+# --- /tmp/claude-1000/-workspace/7630264d-3947-4203-a0ec-b9ffcc3a4e06/scratchpad/bats-run-3KkuWZ/test/3/home/.claude/.cw-stage.oeZwT9/installed/CLAUDE.md	1969-12-31 16:00:00.000000000 -0800
+# +++ /tmp/claude-1000/-workspace/7630264d-3947-4203-a0ec-b9ffcc3a4e06/scratchpad/bats-run-3KkuWZ/test/3/home/.claude/.cw-new.CLAUDE.md	2026-09-25 02:05:40.000000000 -0700
+# @@ -0,0 +1 @@
+# +global instructions
+# /tmp/claude-1000/-workspace/7630264d-3947-4203-a0ec-b9ffcc3a4e06/scratchpad/bats-run-3KkuWZ/test/3/repo/devcontainer-config/install.sh: line 135: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+# ADD /tmp/claude-1000/-workspace/7630264d-3947-4203-a0ec-b9ffcc3a4e06/scratchpad/bats-run-3KkuWZ/test/3/home/.claude/skills (new, 2 file(s)):
+# /tmp/claude-1000/-workspace/7630264d-3947-4203-a0ec-b9ffcc3a4e06/scratchpad/bats-run-3KkuWZ/test/3/repo/devcontainer-config/install.sh: line 135: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+#     skills/a/SKILL.md
+#     skills/a/big.md
+# /tmp/claude-1000/-workspace/7630264d-3947-4203-a0ec-b9ffcc3a4e06/scratchpad/bats-run-3KkuWZ/test/3/repo/devcontainer-config/install.sh: line 135: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+#     (content not shown: 301 lines, over the 200-line limit for a new entry; it is skills at commit 2e40dee00cd1)
+# /tmp/claude-1000/-workspace/7630264d-3947-4203-a0ec-b9ffcc3a4e06/scratchpad/bats-run-3KkuWZ/test/3/repo/devcontainer-config/install.sh: line 135: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+# ADD /tmp/claude-1000/-workspace/7630264d-3947-4203-a0ec-b9ffcc3a4e06/scratchpad/bats-run-3KkuWZ/test/3/home/.claude/workflows (new, 1 file(s)):
+# /tmp/claude-1000/-workspace/7630264d-3947-4203-a0ec-b9ffcc3a4e06/scratchpad/bats-run-3KkuWZ/test/3/repo/devcontainer-config/install.sh: line 135: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+#     workflows/w.md
+# /tmp/claude-1000/-workspace/7630264d-3947-4203-a0ec-b9ffcc3a4e06/scratchpad/bats-run-3KkuWZ/test/3/repo/devcontainer-config/install.sh: line 135: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+# diff -ruNa /tmp/claude-1000/-workspace/7630264d-3947-4203-a0ec-b9ffcc3a4e06/scratchpad/bats-run-3KkuWZ/test/3/home/.claude/.cw-stage.oeZwT9/installed/workflows/w.md /tmp/claude-1000/-workspace/7630264d-3947-4203-a0ec-b9ffcc3a4e06/scratchpad/bats-run-3KkuWZ/test/3/home/.claude/.cw-new.workflows/w.md
+# --- /tmp/claude-1000/-workspace/7630264d-3947-4203-a0ec-b9ffcc3a4e06/scratchpad/bats-run-3KkuWZ/test/3/home/.claude/.cw-stage.oeZwT9/installed/workflows/w.md	1969-12-31 16:00:00.000000000 -0800
+# +++ /tmp/claude-1000/-workspace/7630264d-3947-4203-a0ec-b9ffcc3a4e06/scratchpad/bats-run-3KkuWZ/test/3/home/.claude/.cw-new.workflows/w.md	2026-09-25 02:05:40.000000000 -0700
+# @@ -0,0 +1 @@
+# +workflow
+# /tmp/claude-1000/-workspace/7630264d-3947-4203-a0ec-b9ffcc3a4e06/scratchpad/bats-run-3KkuWZ/test/3/repo/devcontainer-config/install.sh: line 135: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+# ADD /tmp/claude-1000/-workspace/7630264d-3947-4203-a0ec-b9ffcc3a4e06/scratchpad/bats-run-3KkuWZ/test/3/home/.claude/guides (new, 1 file(s)):
+# /tmp/claude-1000/-workspace/7630264d-3947-4203-a0ec-b9ffcc3a4e06/scratchpad/bats-run-3KkuWZ/test/3/repo/devcontainer-config/install.sh: line 135: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+#     guides/g.md
+# /tmp/claude-1000/-workspace/7630264d-3947-4203-a0ec-b9ffcc3a4e06/scratchpad/bats-run-3KkuWZ/test/3/repo/devcontainer-config/install.sh: line 135: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+# diff -ruNa /tmp/claude-1000/-workspace/7630264d-3947-4203-a0ec-b9ffcc3a4e06/scratchpad/bats-run-3KkuWZ/test/3/home/.claude/.cw-stage.oeZwT9/installed/guides/g.md /tmp/claude-1000/-workspace/7630264d-3947-4203-a0ec-b9ffcc3a4e06/scratchpad/bats-run-3KkuWZ/test/3/home/.claude/.cw-new.guides/g.md
+# --- /tmp/claude-1000/-workspace/7630264d-3947-4203-a0ec-b9ffcc3a4e06/scratchpad/bats-run-3KkuWZ/test/3/home/.claude/.cw-stage.oeZwT9/installed/guides/g.md	1969-12-31 16:00:00.000000000 -0800
+# +++ /tmp/claude-1000/-workspace/7630264d-3947-4203-a0ec-b9ffcc3a4e06/scratchpad/bats-run-3KkuWZ/test/3/home/.claude/.cw-new.guides/g.md	2026-09-25 02:05:40.000000000 -0700
+# @@ -0,0 +1 @@
+# +guide
+# /tmp/claude-1000/-workspace/7630264d-3947-4203-a0ec-b9ffcc3a4e06/scratchpad/bats-run-3KkuWZ/test/3/repo/devcontainer-config/install.sh: line 135: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+# ADD /tmp/claude-1000/-workspace/7630264d-3947-4203-a0ec-b9ffcc3a4e06/scratchpad/bats-run-3KkuWZ/test/3/home/.claude/patterns (new, 1 file(s)):
+# /tmp/claude-1000/-workspace/7630264d-3947-4203-a0ec-b9ffcc3a4e06/scratchpad/bats-run-3KkuWZ/test/3/repo/devcontainer-config/install.sh: line 135: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+#     patterns/p.md
+# /tmp/claude-1000/-workspace/7630264d-3947-4203-a0ec-b9ffcc3a4e06/scratchpad/bats-run-3KkuWZ/test/3/repo/devcontainer-config/install.sh: line 135: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+# diff -ruNa /tmp/claude-1000/-workspace/7630264d-3947-4203-a0ec-b9ffcc3a4e06/scratchpad/bats-run-3KkuWZ/test/3/home/.claude/.cw-stage.oeZwT9/installed/patterns/p.md /tmp/claude-1000/-workspace/7630264d-3947-4203-a0ec-b9ffcc3a4e06/scratchpad/bats-run-3KkuWZ/test/3/home/.claude/.cw-new.patterns/p.md
+# --- /tmp/claude-1000/-workspace/7630264d-3947-4203-a0ec-b9ffcc3a4e06/scratchpad/bats-run-3KkuWZ/test/3/home/.claude/.cw-stage.oeZwT9/installed/patterns/p.md	1969-12-31 16:00:00.000000000 -0800
+# +++ /tmp/claude-1000/-workspace/7630264d-3947-4203-a0ec-b9ffcc3a4e06/scratchpad/bats-run-3KkuWZ/test/3/home/.claude/.cw-new.patterns/p.md	2026-09-25 02:05:40.000000000 -0700
+# @@ -0,0 +1 @@
+# +pattern
+# /tmp/claude-1000/-workspace/7630264d-3947-4203-a0ec-b9ffcc3a4e06/scratchpad/bats-run-3KkuWZ/test/3/repo/devcontainer-config/install.sh: line 135: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+# ADD /tmp/claude-1000/-workspace/7630264d-3947-4203-a0ec-b9ffcc3a4e06/scratchpad/bats-run-3KkuWZ/test/3/home/.claude/hooks (new, 3 file(s)):
+# /tmp/claude-1000/-workspace/7630264d-3947-4203-a0ec-b9ffcc3a4e06/scratchpad/bats-run-3KkuWZ/test/3/repo/devcontainer-config/install.sh: line 135: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+#     hooks/h.sh
+#     hooks/lib/x.sh
+#     hooks/wiring.json
+# /tmp/claude-1000/-workspace/7630264d-3947-4203-a0ec-b9ffcc3a4e06/scratchpad/bats-run-3KkuWZ/test/3/repo/devcontainer-config/install.sh: line 135: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+# diff -ruNa /tmp/claude-1000/-workspace/7630264d-3947-4203-a0ec-b9ffcc3a4e06/scratchpad/bats-run-3KkuWZ/test/3/home/.claude/.cw-stage.oeZwT9/installed/hooks/h.sh /tmp/claude-1000/-workspace/7630264d-3947-4203-a0ec-b9ffcc3a4e06/scratchpad/bats-run-3KkuWZ/test/3/home/.claude/.cw-new.hooks/h.sh
+# --- /tmp/claude-1000/-workspace/7630264d-3947-4203-a0ec-b9ffcc3a4e06/scratchpad/bats-run-3KkuWZ/test/3/home/.claude/.cw-stage.oeZwT9/installed/hooks/h.sh	1969-12-31 16:00:00.000000000 -0800
+# +++ /tmp/claude-1000/-workspace/7630264d-3947-4203-a0ec-b9ffcc3a4e06/scratchpad/bats-run-3KkuWZ/test/3/home/.claude/.cw-new.hooks/h.sh	2026-09-25 02:05:40.000000000 -0700
+# @@ -0,0 +1,2 @@
+# +#!/bin/bash
+# +exit 0
+# diff -ruNa /tmp/claude-1000/-workspace/7630264d-3947-4203-a0ec-b9ffcc3a4e06/scratchpad/bats-run-3KkuWZ/test/3/home/.claude/.cw-stage.oeZwT9/installed/hooks/lib/x.sh /tmp/claude-1000/-workspace/7630264d-3947-4203-a0ec-b9ffcc3a4e06/scratchpad/bats-run-3KkuWZ/test/3/home/.claude/.cw-new.hooks/lib/x.sh
+# --- /tmp/claude-1000/-workspace/7630264d-3947-4203-a0ec-b9ffcc3a4e06/scratchpad/bats-run-3KkuWZ/test/3/home/.claude/.cw-stage.oeZwT9/installed/hooks/lib/x.sh	1969-12-31 16:00:00.000000000 -0800
+# +++ /tmp/claude-1000/-workspace/7630264d-3947-4203-a0ec-b9ffcc3a4e06/scratchpad/bats-run-3KkuWZ/test/3/home/.claude/.cw-new.hooks/lib/x.sh	2026-09-25 02:05:40.000000000 -0700
+# @@ -0,0 +1 @@
+# +#!/bin/bash
+# diff -ruNa /tmp/claude-1000/-workspace/7630264d-3947-4203-a0ec-b9ffcc3a4e06/scratchpad/bats-run-3KkuWZ/test/3/home/.claude/.cw-stage.oeZwT9/installed/hooks/wiring.json /tmp/claude-1000/-workspace/7630264d-3947-4203-a0ec-b9ffcc3a4e06/scratchpad/bats-run-3KkuWZ/test/3/home/.claude/.cw-new.hooks/wiring.json
+# --- /tmp/claude-1000/-workspace/7630264d-3947-4203-a0ec-b9ffcc3a4e06/scratchpad/bats-run-3KkuWZ/test/3/home/.claude/.cw-stage.oeZwT9/installed/hooks/wiring.json	1969-12-31 16:00:00.000000000 -0800
+# +++ /tmp/claude-1000/-workspace/7630264d-3947-4203-a0ec-b9ffcc3a4e06/scratchpad/bats-run-3KkuWZ/test/3/home/.claude/.cw-new.hooks/wiring.json	2026-09-25 02:05:40.000000000 -0700
+# @@ -0,0 +1 @@
+# +{"hooks":{}}
+# /tmp/claude-1000/-workspace/7630264d-3947-4203-a0ec-b9ffcc3a4e06/scratchpad/bats-run-3KkuWZ/test/3/repo/devcontainer-config/install.sh: line 135: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+# ADD /tmp/claude-1000/-workspace/7630264d-3947-4203-a0ec-b9ffcc3a4e06/scratchpad/bats-run-3KkuWZ/test/3/home/.claude/scripts (new, 1 file(s)):
+# /tmp/claude-1000/-workspace/7630264d-3947-4203-a0ec-b9ffcc3a4e06/scratchpad/bats-run-3KkuWZ/test/3/repo/devcontainer-config/install.sh: line 135: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+#     scripts/s.sh
+# /tmp/claude-1000/-workspace/7630264d-3947-4203-a0ec-b9ffcc3a4e06/scratchpad/bats-run-3KkuWZ/test/3/repo/devcontainer-config/install.sh: line 135: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+# diff -ruNa /tmp/claude-1000/-workspace/7630264d-3947-4203-a0ec-b9ffcc3a4e06/scratchpad/bats-run-3KkuWZ/test/3/home/.claude/.cw-stage.oeZwT9/installed/scripts/s.sh /tmp/claude-1000/-workspace/7630264d-3947-4203-a0ec-b9ffcc3a4e06/scratchpad/bats-run-3KkuWZ/test/3/home/.claude/.cw-new.scripts/s.sh
+# --- /tmp/claude-1000/-workspace/7630264d-3947-4203-a0ec-b9ffcc3a4e06/scratchpad/bats-run-3KkuWZ/test/3/home/.claude/.cw-stage.oeZwT9/installed/scripts/s.sh	1969-12-31 16:00:00.000000000 -0800
+# +++ /tmp/claude-1000/-workspace/7630264d-3947-4203-a0ec-b9ffcc3a4e06/scratchpad/bats-run-3KkuWZ/test/3/home/.claude/.cw-new.scripts/s.sh	2026-09-25 02:05:40.000000000 -0700
+# @@ -0,0 +1 @@
+# +#!/bin/bash
+# ===============================================================================
+#
+# Install these files into /tmp/claude-1000/-workspace/7630264d-3947-4203-a0ec-b9ffcc3a4e06/scratchpad/bats-run-3KkuWZ/test/3/home/.claude? [y/N] y
+# /bin/bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+# Checking for running cc-isolated containers (docker ps; up to 20 s)...
+# Installed into /tmp/claude-1000/-workspace/7630264d-3947-4203-a0ec-b9ffcc3a4e06/scratchpad/bats-run-3KkuWZ/test/3/home/.claude.
+#
+# REMINDER: hooks/wiring.json changed (or was not installed before). Copying the
+# hooks does not wire them. Redo guides/bare-host-hook-wiring.md §2 to merge it
+# into /tmp/claude-1000/-workspace/7630264d-3947-4203-a0ec-b9ffcc3a4e06/scratchpad/bats-run-3KkuWZ/test/3/home/.claude/settings.json.
+bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+not ok 4 SP1d a symlink planted in the stage after extract_commit's link check installs as a live link into an agent-writable file
+# (in test file /workspace/docs/reviews/execution-logs/secrev-q058p2/probe.bats, line 215)
+#   `[ -s "$S/helper.hits" ]' failed
+# bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+# n
+# y
+# bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+# bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+# /bin/bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+# Checking for running cc-isolated containers (docker ps; up to 20 s)...
+# Canonical (repo):  /tmp/claude-1000/-workspace/7630264d-3947-4203-a0ec-b9ffcc3a4e06/scratchpad/bats-run-3KkuWZ/test/4/repo/devcontainer-config at commit 38dded6c2cd0 (staged in /tmp/claude-1000/-workspace/7630264d-3947-4203-a0ec-b9ffcc3a4e06/scratchpad/bats-run-3KkuWZ/test/4/tmp/cw-devc-stage.XuPakY/config)
+# Installed (host):  /tmp/claude-1000/-workspace/7630264d-3947-4203-a0ec-b9ffcc3a4e06/scratchpad/bats-run-3KkuWZ/test/4/home/.config/claude-devcontainer
+#
+# First install — /tmp/claude-1000/-workspace/7630264d-3947-4203-a0ec-b9ffcc3a4e06/scratchpad/bats-run-3KkuWZ/test/4/home/.config/claude-devcontainer does not exist yet.
+#
+# Install this config and bless it? [y/N] Aborted. Nothing was changed. (devcontainer config)
+#
+# === Host target: global Claude Code files ======================================
+# Destination: /tmp/claude-1000/-workspace/7630264d-3947-4203-a0ec-b9ffcc3a4e06/scratchpad/bats-run-3KkuWZ/test/4/home/.claude  (chosen by $CLAUDE_HOME_DIR)
+# /bin/bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+# Checking for running cc-isolated containers (docker ps; up to 20 s)...
+# Canonical (repo):  /tmp/claude-1000/-workspace/7630264d-3947-4203-a0ec-b9ffcc3a4e06/scratchpad/bats-run-3KkuWZ/test/4/repo (commit 38dded6c2cd03dd759be3bf5dbc8e95f92b1cf4d)
+#
+# === Changes this install would make ===========================================
+# /tmp/claude-1000/-workspace/7630264d-3947-4203-a0ec-b9ffcc3a4e06/scratchpad/bats-run-3KkuWZ/test/4/repo/devcontainer-config/install.sh: line 135: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+# ADD /tmp/claude-1000/-workspace/7630264d-3947-4203-a0ec-b9ffcc3a4e06/scratchpad/bats-run-3KkuWZ/test/4/home/.claude/CLAUDE.md (new, 1 file(s)):
+# /tmp/claude-1000/-workspace/7630264d-3947-4203-a0ec-b9ffcc3a4e06/scratchpad/bats-run-3KkuWZ/test/4/repo/devcontainer-config/install.sh: line 135: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+#     CLAUDE.md
+# /tmp/claude-1000/-workspace/7630264d-3947-4203-a0ec-b9ffcc3a4e06/scratchpad/bats-run-3KkuWZ/test/4/repo/devcontainer-config/install.sh: line 135: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+# --- /tmp/claude-1000/-workspace/7630264d-3947-4203-a0ec-b9ffcc3a4e06/scratchpad/bats-run-3KkuWZ/test/4/home/.claude/.cw-stage.pK8TYS/installed/CLAUDE.md	1969-12-31 16:00:00.000000000 -0800
+# +++ /tmp/claude-1000/-workspace/7630264d-3947-4203-a0ec-b9ffcc3a4e06/scratchpad/bats-run-3KkuWZ/test/4/home/.claude/.cw-new.CLAUDE.md	2026-09-25 02:06:04.000000000 -0700
+# @@ -0,0 +1 @@
+# +global instructions
+# /tmp/claude-1000/-workspace/7630264d-3947-4203-a0ec-b9ffcc3a4e06/scratchpad/bats-run-3KkuWZ/test/4/repo/devcontainer-config/install.sh: line 135: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+# ADD /tmp/claude-1000/-workspace/7630264d-3947-4203-a0ec-b9ffcc3a4e06/scratchpad/bats-run-3KkuWZ/test/4/home/.claude/skills (new, 1 file(s)):
+# /tmp/claude-1000/-workspace/7630264d-3947-4203-a0ec-b9ffcc3a4e06/scratchpad/bats-run-3KkuWZ/test/4/repo/devcontainer-config/install.sh: line 135: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+#     skills/a/SKILL.md
+# /tmp/claude-1000/-workspace/7630264d-3947-4203-a0ec-b9ffcc3a4e06/scratchpad/bats-run-3KkuWZ/test/4/repo/devcontainer-config/install.sh: line 135: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+# diff -ruNa /tmp/claude-1000/-workspace/7630264d-3947-4203-a0ec-b9ffcc3a4e06/scratchpad/bats-run-3KkuWZ/test/4/home/.claude/.cw-stage.pK8TYS/installed/skills/a/SKILL.md /tmp/claude-1000/-workspace/7630264d-3947-4203-a0ec-b9ffcc3a4e06/scratchpad/bats-run-3KkuWZ/test/4/home/.claude/.cw-new.skills/a/SKILL.md
+# --- /tmp/claude-1000/-workspace/7630264d-3947-4203-a0ec-b9ffcc3a4e06/scratchpad/bats-run-3KkuWZ/test/4/home/.claude/.cw-stage.pK8TYS/installed/skills/a/SKILL.md	1969-12-31 16:00:00.000000000 -0800
+# +++ /tmp/claude-1000/-workspace/7630264d-3947-4203-a0ec-b9ffcc3a4e06/scratchpad/bats-run-3KkuWZ/test/4/home/.claude/.cw-new.skills/a/SKILL.md	2026-09-25 02:06:04.000000000 -0700
+# @@ -0,0 +1 @@
+# +skill a
+# /tmp/claude-1000/-workspace/7630264d-3947-4203-a0ec-b9ffcc3a4e06/scratchpad/bats-run-3KkuWZ/test/4/repo/devcontainer-config/install.sh: line 135: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+# ADD /tmp/claude-1000/-workspace/7630264d-3947-4203-a0ec-b9ffcc3a4e06/scratchpad/bats-run-3KkuWZ/test/4/home/.claude/workflows (new, 1 file(s)):
+# /tmp/claude-1000/-workspace/7630264d-3947-4203-a0ec-b9ffcc3a4e06/scratchpad/bats-run-3KkuWZ/test/4/repo/devcontainer-config/install.sh: line 135: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+#     workflows/w.md
+# /tmp/claude-1000/-workspace/7630264d-3947-4203-a0ec-b9ffcc3a4e06/scratchpad/bats-run-3KkuWZ/test/4/repo/devcontainer-config/install.sh: line 135: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+# diff -ruNa /tmp/claude-1000/-workspace/7630264d-3947-4203-a0ec-b9ffcc3a4e06/scratchpad/bats-run-3KkuWZ/test/4/home/.claude/.cw-stage.pK8TYS/installed/workflows/w.md /tmp/claude-1000/-workspace/7630264d-3947-4203-a0ec-b9ffcc3a4e06/scratchpad/bats-run-3KkuWZ/test/4/home/.claude/.cw-new.workflows/w.md
+# --- /tmp/claude-1000/-workspace/7630264d-3947-4203-a0ec-b9ffcc3a4e06/scratchpad/bats-run-3KkuWZ/test/4/home/.claude/.cw-stage.pK8TYS/installed/workflows/w.md	1969-12-31 16:00:00.000000000 -0800
+# +++ /tmp/claude-1000/-workspace/7630264d-3947-4203-a0ec-b9ffcc3a4e06/scratchpad/bats-run-3KkuWZ/test/4/home/.claude/.cw-new.workflows/w.md	2026-09-25 02:06:04.000000000 -0700
+# @@ -0,0 +1 @@
+# +workflow
+# /tmp/claude-1000/-workspace/7630264d-3947-4203-a0ec-b9ffcc3a4e06/scratchpad/bats-run-3KkuWZ/test/4/repo/devcontainer-config/install.sh: line 135: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+# ADD /tmp/claude-1000/-workspace/7630264d-3947-4203-a0ec-b9ffcc3a4e06/scratchpad/bats-run-3KkuWZ/test/4/home/.claude/guides (new, 1 file(s)):
+# /tmp/claude-1000/-workspace/7630264d-3947-4203-a0ec-b9ffcc3a4e06/scratchpad/bats-run-3KkuWZ/test/4/repo/devcontainer-config/install.sh: line 135: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+#     guides/g.md
+# /tmp/claude-1000/-workspace/7630264d-3947-4203-a0ec-b9ffcc3a4e06/scratchpad/bats-run-3KkuWZ/test/4/repo/devcontainer-config/install.sh: line 135: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+# diff -ruNa /tmp/claude-1000/-workspace/7630264d-3947-4203-a0ec-b9ffcc3a4e06/scratchpad/bats-run-3KkuWZ/test/4/home/.claude/.cw-stage.pK8TYS/installed/guides/g.md /tmp/claude-1000/-workspace/7630264d-3947-4203-a0ec-b9ffcc3a4e06/scratchpad/bats-run-3KkuWZ/test/4/home/.claude/.cw-new.guides/g.md
+# --- /tmp/claude-1000/-workspace/7630264d-3947-4203-a0ec-b9ffcc3a4e06/scratchpad/bats-run-3KkuWZ/test/4/home/.claude/.cw-stage.pK8TYS/installed/guides/g.md	1969-12-31 16:00:00.000000000 -0800
+# +++ /tmp/claude-1000/-workspace/7630264d-3947-4203-a0ec-b9ffcc3a4e06/scratchpad/bats-run-3KkuWZ/test/4/home/.claude/.cw-new.guides/g.md	2026-09-25 02:06:04.000000000 -0700
+# @@ -0,0 +1 @@
+# +guide
+# /tmp/claude-1000/-workspace/7630264d-3947-4203-a0ec-b9ffcc3a4e06/scratchpad/bats-run-3KkuWZ/test/4/repo/devcontainer-config/install.sh: line 135: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+# ADD /tmp/claude-1000/-workspace/7630264d-3947-4203-a0ec-b9ffcc3a4e06/scratchpad/bats-run-3KkuWZ/test/4/home/.claude/patterns (new, 1 file(s)):
+# /tmp/claude-1000/-workspace/7630264d-3947-4203-a0ec-b9ffcc3a4e06/scratchpad/bats-run-3KkuWZ/test/4/repo/devcontainer-config/install.sh: line 135: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+#     patterns/p.md
+# /tmp/claude-1000/-workspace/7630264d-3947-4203-a0ec-b9ffcc3a4e06/scratchpad/bats-run-3KkuWZ/test/4/repo/devcontainer-config/install.sh: line 135: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+# diff -ruNa /tmp/claude-1000/-workspace/7630264d-3947-4203-a0ec-b9ffcc3a4e06/scratchpad/bats-run-3KkuWZ/test/4/home/.claude/.cw-stage.pK8TYS/installed/patterns/p.md /tmp/claude-1000/-workspace/7630264d-3947-4203-a0ec-b9ffcc3a4e06/scratchpad/bats-run-3KkuWZ/test/4/home/.claude/.cw-new.patterns/p.md
+# --- /tmp/claude-1000/-workspace/7630264d-3947-4203-a0ec-b9ffcc3a4e06/scratchpad/bats-run-3KkuWZ/test/4/home/.claude/.cw-stage.pK8TYS/installed/patterns/p.md	1969-12-31 16:00:00.000000000 -0800
+# +++ /tmp/claude-1000/-workspace/7630264d-3947-4203-a0ec-b9ffcc3a4e06/scratchpad/bats-run-3KkuWZ/test/4/home/.claude/.cw-new.patterns/p.md	2026-09-25 02:06:04.000000000 -0700
+# @@ -0,0 +1 @@
+# +pattern
+# /tmp/claude-1000/-workspace/7630264d-3947-4203-a0ec-b9ffcc3a4e06/scratchpad/bats-run-3KkuWZ/test/4/repo/devcontainer-config/install.sh: line 135: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+# ADD /tmp/claude-1000/-workspace/7630264d-3947-4203-a0ec-b9ffcc3a4e06/scratchpad/bats-run-3KkuWZ/test/4/home/.claude/hooks (new, 3 file(s)):
+# /tmp/claude-1000/-workspace/7630264d-3947-4203-a0ec-b9ffcc3a4e06/scratchpad/bats-run-3KkuWZ/test/4/repo/devcontainer-config/install.sh: line 135: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+#     hooks/h.sh
+#     hooks/lib/x.sh
+#     hooks/wiring.json
+# /tmp/claude-1000/-workspace/7630264d-3947-4203-a0ec-b9ffcc3a4e06/scratchpad/bats-run-3KkuWZ/test/4/repo/devcontainer-config/install.sh: line 135: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+# diff -ruNa /tmp/claude-1000/-workspace/7630264d-3947-4203-a0ec-b9ffcc3a4e06/scratchpad/bats-run-3KkuWZ/test/4/home/.claude/.cw-stage.pK8TYS/installed/hooks/h.sh /tmp/claude-1000/-workspace/7630264d-3947-4203-a0ec-b9ffcc3a4e06/scratchpad/bats-run-3KkuWZ/test/4/home/.claude/.cw-new.hooks/h.sh
+# --- /tmp/claude-1000/-workspace/7630264d-3947-4203-a0ec-b9ffcc3a4e06/scratchpad/bats-run-3KkuWZ/test/4/home/.claude/.cw-stage.pK8TYS/installed/hooks/h.sh	1969-12-31 16:00:00.000000000 -0800
+# +++ /tmp/claude-1000/-workspace/7630264d-3947-4203-a0ec-b9ffcc3a4e06/scratchpad/bats-run-3KkuWZ/test/4/home/.claude/.cw-new.hooks/h.sh	2026-09-25 02:06:04.000000000 -0700
+# @@ -0,0 +1,2 @@
+# +#!/bin/bash
+# +exit 0
+# diff -ruNa /tmp/claude-1000/-workspace/7630264d-3947-4203-a0ec-b9ffcc3a4e06/scratchpad/bats-run-3KkuWZ/test/4/home/.claude/.cw-stage.pK8TYS/installed/hooks/lib/x.sh /tmp/claude-1000/-workspace/7630264d-3947-4203-a0ec-b9ffcc3a4e06/scratchpad/bats-run-3KkuWZ/test/4/home/.claude/.cw-new.hooks/lib/x.sh
+# --- /tmp/claude-1000/-workspace/7630264d-3947-4203-a0ec-b9ffcc3a4e06/scratchpad/bats-run-3KkuWZ/test/4/home/.claude/.cw-stage.pK8TYS/installed/hooks/lib/x.sh	1969-12-31 16:00:00.000000000 -0800
+# +++ /tmp/claude-1000/-workspace/7630264d-3947-4203-a0ec-b9ffcc3a4e06/scratchpad/bats-run-3KkuWZ/test/4/home/.claude/.cw-new.hooks/lib/x.sh	2026-09-25 02:06:04.000000000 -0700
+# @@ -0,0 +1 @@
+# +#!/bin/bash
+# diff -ruNa /tmp/claude-1000/-workspace/7630264d-3947-4203-a0ec-b9ffcc3a4e06/scratchpad/bats-run-3KkuWZ/test/4/home/.claude/.cw-stage.pK8TYS/installed/hooks/wiring.json /tmp/claude-1000/-workspace/7630264d-3947-4203-a0ec-b9ffcc3a4e06/scratchpad/bats-run-3KkuWZ/test/4/home/.claude/.cw-new.hooks/wiring.json
+# --- /tmp/claude-1000/-workspace/7630264d-3947-4203-a0ec-b9ffcc3a4e06/scratchpad/bats-run-3KkuWZ/test/4/home/.claude/.cw-stage.pK8TYS/installed/hooks/wiring.json	1969-12-31 16:00:00.000000000 -0800
+# +++ /tmp/claude-1000/-workspace/7630264d-3947-4203-a0ec-b9ffcc3a4e06/scratchpad/bats-run-3KkuWZ/test/4/home/.claude/.cw-new.hooks/wiring.json	2026-09-25 02:06:04.000000000 -0700
+# @@ -0,0 +1 @@
+# +{"hooks":{}}
+# /tmp/claude-1000/-workspace/7630264d-3947-4203-a0ec-b9ffcc3a4e06/scratchpad/bats-run-3KkuWZ/test/4/repo/devcontainer-config/install.sh: line 135: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+# ADD /tmp/claude-1000/-workspace/7630264d-3947-4203-a0ec-b9ffcc3a4e06/scratchpad/bats-run-3KkuWZ/test/4/home/.claude/scripts (new, 1 file(s)):
+# /tmp/claude-1000/-workspace/7630264d-3947-4203-a0ec-b9ffcc3a4e06/scratchpad/bats-run-3KkuWZ/test/4/repo/devcontainer-config/install.sh: line 135: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+#     scripts/s.sh
+# /tmp/claude-1000/-workspace/7630264d-3947-4203-a0ec-b9ffcc3a4e06/scratchpad/bats-run-3KkuWZ/test/4/repo/devcontainer-config/install.sh: line 135: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+# diff -ruNa /tmp/claude-1000/-workspace/7630264d-3947-4203-a0ec-b9ffcc3a4e06/scratchpad/bats-run-3KkuWZ/test/4/home/.claude/.cw-stage.pK8TYS/installed/scripts/s.sh /tmp/claude-1000/-workspace/7630264d-3947-4203-a0ec-b9ffcc3a4e06/scratchpad/bats-run-3KkuWZ/test/4/home/.claude/.cw-new.scripts/s.sh
+# --- /tmp/claude-1000/-workspace/7630264d-3947-4203-a0ec-b9ffcc3a4e06/scratchpad/bats-run-3KkuWZ/test/4/home/.claude/.cw-stage.pK8TYS/installed/scripts/s.sh	1969-12-31 16:00:00.000000000 -0800
+# +++ /tmp/claude-1000/-workspace/7630264d-3947-4203-a0ec-b9ffcc3a4e06/scratchpad/bats-run-3KkuWZ/test/4/home/.claude/.cw-new.scripts/s.sh	2026-09-25 02:06:04.000000000 -0700
+# @@ -0,0 +1 @@
+# +#!/bin/bash
+# ===============================================================================
+#
+# Install these files into /tmp/claude-1000/-workspace/7630264d-3947-4203-a0ec-b9ffcc3a4e06/scratchpad/bats-run-3KkuWZ/test/4/home/.claude? [y/N] /bin/bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+# Checking for running cc-isolated containers (docker ps; up to 20 s)...
+# Installed into /tmp/claude-1000/-workspace/7630264d-3947-4203-a0ec-b9ffcc3a4e06/scratchpad/bats-run-3KkuWZ/test/4/home/.claude.
+#
+# REMINDER: hooks/wiring.json changed (or was not installed before). Copying the
+# hooks does not wire them. Redo guides/bare-host-hook-wiring.md §2 to merge it
+# into /tmp/claude-1000/-workspace/7630264d-3947-4203-a0ec-b9ffcc3a4e06/scratchpad/bats-run-3KkuWZ/test/4/home/.claude/settings.json.
+# bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+# n
+# bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+# bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+# /bin/bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+# Checking for running cc-isolated containers (docker ps; up to 20 s)...
+# Canonical (repo):  /tmp/claude-1000/-workspace/7630264d-3947-4203-a0ec-b9ffcc3a4e06/scratchpad/bats-run-3KkuWZ/test/4/repo/devcontainer-config at commit b6b842f549cd (staged in /tmp/claude-1000/-workspace/7630264d-3947-4203-a0ec-b9ffcc3a4e06/scratchpad/bats-run-3KkuWZ/test/4/tmp/cw-devc-stage.pnUwVx/config)
+# Installed (host):  /tmp/claude-1000/-workspace/7630264d-3947-4203-a0ec-b9ffcc3a4e06/scratchpad/bats-run-3KkuWZ/test/4/home/.config/claude-devcontainer
+#
+# First install — /tmp/claude-1000/-workspace/7630264d-3947-4203-a0ec-b9ffcc3a4e06/scratchpad/bats-run-3KkuWZ/test/4/home/.config/claude-devcontainer does not exist yet.
+#
+# Install this config and bless it? [y/N] Aborted. Nothing was changed. (devcontainer config)
+#
+# === Host target: global Claude Code files ======================================
+# Destination: /tmp/claude-1000/-workspace/7630264d-3947-4203-a0ec-b9ffcc3a4e06/scratchpad/bats-run-3KkuWZ/test/4/home/.claude  (chosen by $CLAUDE_HOME_DIR)
+# /bin/bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+# Checking for running cc-isolated containers (docker ps; up to 20 s)...
+# Canonical (repo):  /tmp/claude-1000/-workspace/7630264d-3947-4203-a0ec-b9ffcc3a4e06/scratchpad/bats-run-3KkuWZ/test/4/repo (commit b6b842f549cd860aac1b9f2075945a809b1b5534)
+#
+# === Changes this install would make ===========================================
+# (diff: /tmp/claude-1000/-workspace/7630264d-3947-4203-a0ec-b9ffcc3a4e06/scratchpad/bats-run-3KkuWZ/test/4/home/.claude/.cw-stage.53E7e2/installed is the destination as it is now, links left out; /tmp/claude-1000/-workspace/7630264d-3947-4203-a0ec-b9ffcc3a4e06/scratchpad/bats-run-3KkuWZ/test/4/home/.claude/.cw-new.* are the copies to install)
+# /tmp/claude-1000/-workspace/7630264d-3947-4203-a0ec-b9ffcc3a4e06/scratchpad/bats-run-3KkuWZ/test/4/repo/devcontainer-config/install.sh: line 135: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+# /tmp/claude-1000/-workspace/7630264d-3947-4203-a0ec-b9ffcc3a4e06/scratchpad/bats-run-3KkuWZ/test/4/repo/devcontainer-config/install.sh: line 135: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+# /tmp/claude-1000/-workspace/7630264d-3947-4203-a0ec-b9ffcc3a4e06/scratchpad/bats-run-3KkuWZ/test/4/repo/devcontainer-config/install.sh: line 135: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+# /tmp/claude-1000/-workspace/7630264d-3947-4203-a0ec-b9ffcc3a4e06/scratchpad/bats-run-3KkuWZ/test/4/repo/devcontainer-config/install.sh: line 135: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+# diff -ruNa /tmp/claude-1000/-workspace/7630264d-3947-4203-a0ec-b9ffcc3a4e06/scratchpad/bats-run-3KkuWZ/test/4/home/.claude/.cw-stage.53E7e2/installed/guides/g.md /tmp/claude-1000/-workspace/7630264d-3947-4203-a0ec-b9ffcc3a4e06/scratchpad/bats-run-3KkuWZ/test/4/home/.claude/.cw-new.guides/g.md
+# --- /tmp/claude-1000/-workspace/7630264d-3947-4203-a0ec-b9ffcc3a4e06/scratchpad/bats-run-3KkuWZ/test/4/home/.claude/.cw-stage.53E7e2/installed/guides/g.md	2026-09-25 02:06:05.547198260 -0700
+# +++ /tmp/claude-1000/-workspace/7630264d-3947-4203-a0ec-b9ffcc3a4e06/scratchpad/bats-run-3KkuWZ/test/4/home/.claude/.cw-new.guides/g.md	2026-09-25 02:06:05.000000000 -0700
+# @@ -1 +1 @@
+# -guide
+# +guide v2 benign
+# /tmp/claude-1000/-workspace/7630264d-3947-4203-a0ec-b9ffcc3a4e06/scratchpad/bats-run-3KkuWZ/test/4/repo/devcontainer-config/install.sh: line 135: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+# /tmp/claude-1000/-workspace/7630264d-3947-4203-a0ec-b9ffcc3a4e06/scratchpad/bats-run-3KkuWZ/test/4/repo/devcontainer-config/install.sh: line 135: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+# /tmp/claude-1000/-workspace/7630264d-3947-4203-a0ec-b9ffcc3a4e06/scratchpad/bats-run-3KkuWZ/test/4/repo/devcontainer-config/install.sh: line 135: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+# ===============================================================================
+#
+# Install these files into /tmp/claude-1000/-workspace/7630264d-3947-4203-a0ec-b9ffcc3a4e06/scratchpad/bats-run-3KkuWZ/test/4/home/.claude? [y/N] y
+# /bin/bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+# Checking for running cc-isolated containers (docker ps; up to 20 s)...
+# Installed into /tmp/claude-1000/-workspace/7630264d-3947-4203-a0ec-b9ffcc3a4e06/scratchpad/bats-run-3KkuWZ/test/4/home/.claude.
+# Previous entries moved to /tmp/claude-1000/-workspace/7630264d-3947-4203-a0ec-b9ffcc3a4e06/scratchpad/bats-run-3KkuWZ/test/4/home/.claude/.claude-workflows-backup/20260925T090627Z (delete it when satisfied).
+# Backups: this one plus the 2 most recent earlier installs' are kept in /tmp/claude-1000/-workspace/7630264d-3947-4203-a0ec-b9ffcc3a4e06/scratchpad/bats-run-3KkuWZ/test/4/home/.claude/.claude-workflows-backup (0 older removed).
+# bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+# n
+# bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+# bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+# /bin/bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+# Checking for running cc-isolated containers (docker ps; up to 20 s)...
+# Canonical (repo):  /tmp/claude-1000/-workspace/7630264d-3947-4203-a0ec-b9ffcc3a4e06/scratchpad/bats-run-3KkuWZ/test/4/repo/devcontainer-config at commit b6b842f549cd (staged in /tmp/claude-1000/-workspace/7630264d-3947-4203-a0ec-b9ffcc3a4e06/scratchpad/bats-run-3KkuWZ/test/4/tmp/cw-devc-stage.pnUwVx/config)
+# Installed (host):  /tmp/claude-1000/-workspace/7630264d-3947-4203-a0ec-b9ffcc3a4e06/scratchpad/bats-run-3KkuWZ/test/4/home/.config/claude-devcontainer
+#
+# First install — /tmp/claude-1000/-workspace/7630264d-3947-4203-a0ec-b9ffcc3a4e06/scratchpad/bats-run-3KkuWZ/test/4/home/.config/claude-devcontainer does not exist yet.
+#
+# Install this config and bless it? [y/N] Aborted. Nothing was changed. (devcontainer config)
+#
+# === Host target: global Claude Code files ======================================
+# Destination: /tmp/claude-1000/-workspace/7630264d-3947-4203-a0ec-b9ffcc3a4e06/scratchpad/bats-run-3KkuWZ/test/4/home/.claude  (chosen by $CLAUDE_HOME_DIR)
+# /bin/bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+# Checking for running cc-isolated containers (docker ps; up to 20 s)...
+# Canonical (repo):  /tmp/claude-1000/-workspace/7630264d-3947-4203-a0ec-b9ffcc3a4e06/scratchpad/bats-run-3KkuWZ/test/4/repo (commit b6b842f549cd860aac1b9f2075945a809b1b5534)
+#
+# === Changes this install would make ===========================================
+# (diff: /tmp/claude-1000/-workspace/7630264d-3947-4203-a0ec-b9ffcc3a4e06/scratchpad/bats-run-3KkuWZ/test/4/home/.claude/.cw-stage.53E7e2/installed is the destination as it is now, links left out; /tmp/claude-1000/-workspace/7630264d-3947-4203-a0ec-b9ffcc3a4e06/scratchpad/bats-run-3KkuWZ/test/4/home/.claude/.cw-new.* are the copies to install)
+# /tmp/claude-1000/-workspace/7630264d-3947-4203-a0ec-b9ffcc3a4e06/scratchpad/bats-run-3KkuWZ/test/4/repo/devcontainer-config/install.sh: line 135: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+# /tmp/claude-1000/-workspace/7630264d-3947-4203-a0ec-b9ffcc3a4e06/scratchpad/bats-run-3KkuWZ/test/4/repo/devcontainer-config/install.sh: line 135: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+# /tmp/claude-1000/-workspace/7630264d-3947-4203-a0ec-b9ffcc3a4e06/scratchpad/bats-run-3KkuWZ/test/4/repo/devcontainer-config/install.sh: line 135: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+# /tmp/claude-1000/-workspace/7630264d-3947-4203-a0ec-b9ffcc3a4e06/scratchpad/bats-run-3KkuWZ/test/4/repo/devcontainer-config/install.sh: line 135: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+# diff -ruNa /tmp/claude-1000/-workspace/7630264d-3947-4203-a0ec-b9ffcc3a4e06/scratchpad/bats-run-3KkuWZ/test/4/home/.claude/.cw-stage.53E7e2/installed/guides/g.md /tmp/claude-1000/-workspace/7630264d-3947-4203-a0ec-b9ffcc3a4e06/scratchpad/bats-run-3KkuWZ/test/4/home/.claude/.cw-new.guides/g.md
+# --- /tmp/claude-1000/-workspace/7630264d-3947-4203-a0ec-b9ffcc3a4e06/scratchpad/bats-run-3KkuWZ/test/4/home/.claude/.cw-stage.53E7e2/installed/guides/g.md	2026-09-25 02:06:05.547198260 -0700
+# +++ /tmp/claude-1000/-workspace/7630264d-3947-4203-a0ec-b9ffcc3a4e06/scratchpad/bats-run-3KkuWZ/test/4/home/.claude/.cw-new.guides/g.md	2026-09-25 02:06:05.000000000 -0700
+# @@ -1 +1 @@
+# -guide
+# +guide v2 benign
+# /tmp/claude-1000/-workspace/7630264d-3947-4203-a0ec-b9ffcc3a4e06/scratchpad/bats-run-3KkuWZ/test/4/repo/devcontainer-config/install.sh: line 135: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+# /tmp/claude-1000/-workspace/7630264d-3947-4203-a0ec-b9ffcc3a4e06/scratchpad/bats-run-3KkuWZ/test/4/repo/devcontainer-config/install.sh: line 135: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+# /tmp/claude-1000/-workspace/7630264d-3947-4203-a0ec-b9ffcc3a4e06/scratchpad/bats-run-3KkuWZ/test/4/repo/devcontainer-config/install.sh: line 135: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+# ===============================================================================
+#
+# Install these files into /tmp/claude-1000/-workspace/7630264d-3947-4203-a0ec-b9ffcc3a4e06/scratchpad/bats-run-3KkuWZ/test/4/home/.claude? [y/N] y
+# /bin/bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+# Checking for running cc-isolated containers (docker ps; up to 20 s)...
+# Installed into /tmp/claude-1000/-workspace/7630264d-3947-4203-a0ec-b9ffcc3a4e06/scratchpad/bats-run-3KkuWZ/test/4/home/.claude.
+# Previous entries moved to /tmp/claude-1000/-workspace/7630264d-3947-4203-a0ec-b9ffcc3a4e06/scratchpad/bats-run-3KkuWZ/test/4/home/.claude/.claude-workflows-backup/20260925T090627Z (delete it when satisfied).
+# Backups: this one plus the 2 most recent earlier installs' are kept in /tmp/claude-1000/-workspace/7630264d-3947-4203-a0ec-b9ffcc3a4e06/scratchpad/bats-run-3KkuWZ/test/4/home/.claude/.claude-workflows-backup (0 older removed).
+bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+not ok 5 SP1e devcontainer: a cc-isolated.sh symlink planted after extract_commit's check passes both A1 hashes and is blessed
+# (in test file /workspace/docs/reviews/execution-logs/secrev-q058p2/probe.bats, line 249)
+#   `ls -la "$CLAUDE_DEVC_CONFIG_DIR/"' failed with status 2
+# bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+# /bin/bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+# Checking for running cc-isolated containers (docker ps; up to 20 s)...
+# /tmp/claude-1000/-workspace/7630264d-3947-4203-a0ec-b9ffcc3a4e06/scratchpad/bats-run-3KkuWZ/test/5/repo/devcontainer-config/install.sh: line 135: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+# ERROR: symlinks appeared in the staged devcontainer config after its link check:
+#          /tmp/claude-1000/-workspace/7630264d-3947-4203-a0ec-b9ffcc3a4e06/scratchpad/bats-run-3KkuWZ/test/5/tmp/cw-devc-stage.JRpY9K/config/cc-isolated.sh
+#        install.sh never installs a link. Nothing was installed.
+# bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+# /bin/bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+# Checking for running cc-isolated containers (docker ps; up to 20 s)...
+# /tmp/claude-1000/-workspace/7630264d-3947-4203-a0ec-b9ffcc3a4e06/scratchpad/bats-run-3KkuWZ/test/5/repo/devcontainer-config/install.sh: line 135: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+# ERROR: symlinks appeared in the staged devcontainer config after its link check:
+#          /tmp/claude-1000/-workspace/7630264d-3947-4203-a0ec-b9ffcc3a4e06/scratchpad/bats-run-3KkuWZ/test/5/tmp/cw-devc-stage.JRpY9K/config/cc-isolated.sh
+#        install.sh never installs a link. Nothing was installed.
+# ls: cannot access '/tmp/claude-1000/-workspace/7630264d-3947-4203-a0ec-b9ffcc3a4e06/scratchpad/bats-run-3KkuWZ/test/5/home/.config/claude-devcontainer/': No such file or directory
+bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+ok 6 SP3a (re-run) smudge filter + attributes, and core.fsmonitor, are refused and never run
+bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+not ok 7 SP3b .git/hooks/post-index-change runs during install (git status), not refused
+# (in test file /workspace/docs/reviews/execution-logs/secrev-q058p2/probe.bats, line 280)
+#   `[ -e "$S/hook-ran" ]' failed
+# bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+# /bin/bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+# Checking for running cc-isolated containers (docker ps; up to 20 s)...
+# Canonical (repo):  /tmp/claude-1000/-workspace/7630264d-3947-4203-a0ec-b9ffcc3a4e06/scratchpad/bats-run-3KkuWZ/test/7/repo/devcontainer-config at commit 9d52550ee9d8 (staged in /tmp/claude-1000/-workspace/7630264d-3947-4203-a0ec-b9ffcc3a4e06/scratchpad/bats-run-3KkuWZ/test/7/tmp/cw-devc-stage.oMzebJ/config)
+# Installed (host):  /tmp/claude-1000/-workspace/7630264d-3947-4203-a0ec-b9ffcc3a4e06/scratchpad/bats-run-3KkuWZ/test/7/home/.config/claude-devcontainer
+#
+# First install — /tmp/claude-1000/-workspace/7630264d-3947-4203-a0ec-b9ffcc3a4e06/scratchpad/bats-run-3KkuWZ/test/7/home/.config/claude-devcontainer does not exist yet.
+#
+# /bin/bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+# Checking for running cc-isolated containers (docker ps; up to 20 s)...
+# Linked /tmp/claude-1000/-workspace/7630264d-3947-4203-a0ec-b9ffcc3a4e06/scratchpad/bats-run-3KkuWZ/test/7/home/.local/bin/cc-isolated -> /tmp/claude-1000/-workspace/7630264d-3947-4203-a0ec-b9ffcc3a4e06/scratchpad/bats-run-3KkuWZ/test/7/home/.config/claude-devcontainer/cc-isolated.sh
+#
+# bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+# BLESS-STUB --bless
+#
+# Done. Blessed, NOT verified: a bless is a review of files, not a test of a container.
+# Next steps:
+#   touch ~/.ssh/canary                    # once, if you haven't — strengthens the H1 probe
+#   cc-isolated --probe-only <repo>        # REQUIRED after any boundary change: rebuilds from
+#                                          # this config and records it verified live on a pass
+#   cc-isolated                            # session for the repo containing $PWD
+#   cc-isolated --register <repo> --profile python   # widen a project's egress
+#
+# WARNING: /tmp/claude-1000/-workspace/7630264d-3947-4203-a0ec-b9ffcc3a4e06/scratchpad/bats-run-3KkuWZ/test/7/home/.local/bin is not on your PATH — add it, or call /tmp/claude-1000/-workspace/7630264d-3947-4203-a0ec-b9ffcc3a4e06/scratchpad/bats-run-3KkuWZ/test/7/home/.config/claude-devcontainer/cc-isolated.sh directly.
+#
+# Skipped host target (~/.claude): it never installs with --yes. Run install.sh without --yes at a terminal to review and install it.
+# bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+# /bin/bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+# Checking for running cc-isolated containers (docker ps; up to 20 s)...
+# Canonical (repo):  /tmp/claude-1000/-workspace/7630264d-3947-4203-a0ec-b9ffcc3a4e06/scratchpad/bats-run-3KkuWZ/test/7/repo/devcontainer-config at commit 9d52550ee9d8 (staged in /tmp/claude-1000/-workspace/7630264d-3947-4203-a0ec-b9ffcc3a4e06/scratchpad/bats-run-3KkuWZ/test/7/tmp/cw-devc-stage.oMzebJ/config)
+# Installed (host):  /tmp/claude-1000/-workspace/7630264d-3947-4203-a0ec-b9ffcc3a4e06/scratchpad/bats-run-3KkuWZ/test/7/home/.config/claude-devcontainer
+#
+# First install — /tmp/claude-1000/-workspace/7630264d-3947-4203-a0ec-b9ffcc3a4e06/scratchpad/bats-run-3KkuWZ/test/7/home/.config/claude-devcontainer does not exist yet.
+#
+# /bin/bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+# Checking for running cc-isolated containers (docker ps; up to 20 s)...
+# Linked /tmp/claude-1000/-workspace/7630264d-3947-4203-a0ec-b9ffcc3a4e06/scratchpad/bats-run-3KkuWZ/test/7/home/.local/bin/cc-isolated -> /tmp/claude-1000/-workspace/7630264d-3947-4203-a0ec-b9ffcc3a4e06/scratchpad/bats-run-3KkuWZ/test/7/home/.config/claude-devcontainer/cc-isolated.sh
+#
+# bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+# BLESS-STUB --bless
+#
+# Done. Blessed, NOT verified: a bless is a review of files, not a test of a container.
+# Next steps:
+#   touch ~/.ssh/canary                    # once, if you haven't — strengthens the H1 probe
+#   cc-isolated --probe-only <repo>        # REQUIRED after any boundary change: rebuilds from
+#                                          # this config and records it verified live on a pass
+#   cc-isolated                            # session for the repo containing $PWD
+#   cc-isolated --register <repo> --profile python   # widen a project's egress
+#
+# WARNING: /tmp/claude-1000/-workspace/7630264d-3947-4203-a0ec-b9ffcc3a4e06/scratchpad/bats-run-3KkuWZ/test/7/home/.local/bin is not on your PATH — add it, or call /tmp/claude-1000/-workspace/7630264d-3947-4203-a0ec-b9ffcc3a4e06/scratchpad/bats-run-3KkuWZ/test/7/home/.config/claude-devcontainer/cc-isolated.sh directly.
+#
+# Skipped host target (~/.claude): it never installs with --yes. Run install.sh without --yes at a terminal to review and install it.
+bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+not ok 8 SP3c core.hooksPath in .git/config (not in the refused key list) runs during install
+# (in test file /workspace/docs/reviews/execution-logs/secrev-q058p2/probe.bats, line 293)
+#   `[ -e "$S/hookspath-ran" ]' failed
+# bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+# /bin/bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+# Checking for running cc-isolated containers (docker ps; up to 20 s)...
+# Canonical (repo):  /tmp/claude-1000/-workspace/7630264d-3947-4203-a0ec-b9ffcc3a4e06/scratchpad/bats-run-3KkuWZ/test/8/repo/devcontainer-config at commit e9142b9689c8 (staged in /tmp/claude-1000/-workspace/7630264d-3947-4203-a0ec-b9ffcc3a4e06/scratchpad/bats-run-3KkuWZ/test/8/tmp/cw-devc-stage.Uw4hY7/config)
+# Installed (host):  /tmp/claude-1000/-workspace/7630264d-3947-4203-a0ec-b9ffcc3a4e06/scratchpad/bats-run-3KkuWZ/test/8/home/.config/claude-devcontainer
+#
+# First install — /tmp/claude-1000/-workspace/7630264d-3947-4203-a0ec-b9ffcc3a4e06/scratchpad/bats-run-3KkuWZ/test/8/home/.config/claude-devcontainer does not exist yet.
+#
+# /bin/bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+# Checking for running cc-isolated containers (docker ps; up to 20 s)...
+# Linked /tmp/claude-1000/-workspace/7630264d-3947-4203-a0ec-b9ffcc3a4e06/scratchpad/bats-run-3KkuWZ/test/8/home/.local/bin/cc-isolated -> /tmp/claude-1000/-workspace/7630264d-3947-4203-a0ec-b9ffcc3a4e06/scratchpad/bats-run-3KkuWZ/test/8/home/.config/claude-devcontainer/cc-isolated.sh
+#
+# bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+# BLESS-STUB --bless
+#
+# Done. Blessed, NOT verified: a bless is a review of files, not a test of a container.
+# Next steps:
+#   touch ~/.ssh/canary                    # once, if you haven't — strengthens the H1 probe
+#   cc-isolated --probe-only <repo>        # REQUIRED after any boundary change: rebuilds from
+#                                          # this config and records it verified live on a pass
+#   cc-isolated                            # session for the repo containing $PWD
+#   cc-isolated --register <repo> --profile python   # widen a project's egress
+#
+# WARNING: /tmp/claude-1000/-workspace/7630264d-3947-4203-a0ec-b9ffcc3a4e06/scratchpad/bats-run-3KkuWZ/test/8/home/.local/bin is not on your PATH — add it, or call /tmp/claude-1000/-workspace/7630264d-3947-4203-a0ec-b9ffcc3a4e06/scratchpad/bats-run-3KkuWZ/test/8/home/.config/claude-devcontainer/cc-isolated.sh directly.
+#
+# Skipped host target (~/.claude): it never installs with --yes. Run install.sh without --yes at a terminal to review and install it.
+# bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+# /bin/bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+# Checking for running cc-isolated containers (docker ps; up to 20 s)...
+# Canonical (repo):  /tmp/claude-1000/-workspace/7630264d-3947-4203-a0ec-b9ffcc3a4e06/scratchpad/bats-run-3KkuWZ/test/8/repo/devcontainer-config at commit e9142b9689c8 (staged in /tmp/claude-1000/-workspace/7630264d-3947-4203-a0ec-b9ffcc3a4e06/scratchpad/bats-run-3KkuWZ/test/8/tmp/cw-devc-stage.Uw4hY7/config)
+# Installed (host):  /tmp/claude-1000/-workspace/7630264d-3947-4203-a0ec-b9ffcc3a4e06/scratchpad/bats-run-3KkuWZ/test/8/home/.config/claude-devcontainer
+#
+# First install — /tmp/claude-1000/-workspace/7630264d-3947-4203-a0ec-b9ffcc3a4e06/scratchpad/bats-run-3KkuWZ/test/8/home/.config/claude-devcontainer does not exist yet.
+#
+# /bin/bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+# Checking for running cc-isolated containers (docker ps; up to 20 s)...
+# Linked /tmp/claude-1000/-workspace/7630264d-3947-4203-a0ec-b9ffcc3a4e06/scratchpad/bats-run-3KkuWZ/test/8/home/.local/bin/cc-isolated -> /tmp/claude-1000/-workspace/7630264d-3947-4203-a0ec-b9ffcc3a4e06/scratchpad/bats-run-3KkuWZ/test/8/home/.config/claude-devcontainer/cc-isolated.sh
+#
+# bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+# BLESS-STUB --bless
+#
+# Done. Blessed, NOT verified: a bless is a review of files, not a test of a container.
+# Next steps:
+#   touch ~/.ssh/canary                    # once, if you haven't — strengthens the H1 probe
+#   cc-isolated --probe-only <repo>        # REQUIRED after any boundary change: rebuilds from
+#                                          # this config and records it verified live on a pass
+#   cc-isolated                            # session for the repo containing $PWD
+#   cc-isolated --register <repo> --profile python   # widen a project's egress
+#
+# WARNING: /tmp/claude-1000/-workspace/7630264d-3947-4203-a0ec-b9ffcc3a4e06/scratchpad/bats-run-3KkuWZ/test/8/home/.local/bin is not on your PATH — add it, or call /tmp/claude-1000/-workspace/7630264d-3947-4203-a0ec-b9ffcc3a4e06/scratchpad/bats-run-3KkuWZ/test/8/home/.config/claude-devcontainer/cc-isolated.sh directly.
+#
+# Skipped host target (~/.claude): it never installs with --yes. Run install.sh without --yes at a terminal to review and install it.
+bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+not ok 9 SP3d a submodule's own git dir (filter + attributes + hook) runs during install; superproject gate sees nothing
+# (in test file /workspace/docs/reviews/execution-logs/secrev-q058p2/probe.bats, line 312)
+#   `[ -e "$S/sub-clean-ran" ] || [ -e "$S/sub-hook-ran" ]' failed
+# bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+# /bin/bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+# Checking for running cc-isolated containers (docker ps; up to 20 s)...
+# Canonical (repo):  /tmp/claude-1000/-workspace/7630264d-3947-4203-a0ec-b9ffcc3a4e06/scratchpad/bats-run-3KkuWZ/test/9/repo/devcontainer-config at commit aaa3c6429707 (staged in /tmp/claude-1000/-workspace/7630264d-3947-4203-a0ec-b9ffcc3a4e06/scratchpad/bats-run-3KkuWZ/test/9/tmp/cw-devc-stage.zvhw4z/config)
+# Installed (host):  /tmp/claude-1000/-workspace/7630264d-3947-4203-a0ec-b9ffcc3a4e06/scratchpad/bats-run-3KkuWZ/test/9/home/.config/claude-devcontainer
+#
+# First install — /tmp/claude-1000/-workspace/7630264d-3947-4203-a0ec-b9ffcc3a4e06/scratchpad/bats-run-3KkuWZ/test/9/home/.config/claude-devcontainer does not exist yet.
+#
+# /bin/bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+# Checking for running cc-isolated containers (docker ps; up to 20 s)...
+# Linked /tmp/claude-1000/-workspace/7630264d-3947-4203-a0ec-b9ffcc3a4e06/scratchpad/bats-run-3KkuWZ/test/9/home/.local/bin/cc-isolated -> /tmp/claude-1000/-workspace/7630264d-3947-4203-a0ec-b9ffcc3a4e06/scratchpad/bats-run-3KkuWZ/test/9/home/.config/claude-devcontainer/cc-isolated.sh
+#
+# bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+# BLESS-STUB --bless
+#
+# Done. Blessed, NOT verified: a bless is a review of files, not a test of a container.
+# Next steps:
+#   touch ~/.ssh/canary                    # once, if you haven't — strengthens the H1 probe
+#   cc-isolated --probe-only <repo>        # REQUIRED after any boundary change: rebuilds from
+#                                          # this config and records it verified live on a pass
+#   cc-isolated                            # session for the repo containing $PWD
+#   cc-isolated --register <repo> --profile python   # widen a project's egress
+#
+# WARNING: /tmp/claude-1000/-workspace/7630264d-3947-4203-a0ec-b9ffcc3a4e06/scratchpad/bats-run-3KkuWZ/test/9/home/.local/bin is not on your PATH — add it, or call /tmp/claude-1000/-workspace/7630264d-3947-4203-a0ec-b9ffcc3a4e06/scratchpad/bats-run-3KkuWZ/test/9/home/.config/claude-devcontainer/cc-isolated.sh directly.
+#
+# Skipped host target (~/.claude): it never installs with --yes. Run install.sh without --yes at a terminal to review and install it.
+# bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+# /bin/bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+# Checking for running cc-isolated containers (docker ps; up to 20 s)...
+# Canonical (repo):  /tmp/claude-1000/-workspace/7630264d-3947-4203-a0ec-b9ffcc3a4e06/scratchpad/bats-run-3KkuWZ/test/9/repo/devcontainer-config at commit aaa3c6429707 (staged in /tmp/claude-1000/-workspace/7630264d-3947-4203-a0ec-b9ffcc3a4e06/scratchpad/bats-run-3KkuWZ/test/9/tmp/cw-devc-stage.zvhw4z/config)
+# Installed (host):  /tmp/claude-1000/-workspace/7630264d-3947-4203-a0ec-b9ffcc3a4e06/scratchpad/bats-run-3KkuWZ/test/9/home/.config/claude-devcontainer
+#
+# First install — /tmp/claude-1000/-workspace/7630264d-3947-4203-a0ec-b9ffcc3a4e06/scratchpad/bats-run-3KkuWZ/test/9/home/.config/claude-devcontainer does not exist yet.
+#
+# /bin/bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+# Checking for running cc-isolated containers (docker ps; up to 20 s)...
+# Linked /tmp/claude-1000/-workspace/7630264d-3947-4203-a0ec-b9ffcc3a4e06/scratchpad/bats-run-3KkuWZ/test/9/home/.local/bin/cc-isolated -> /tmp/claude-1000/-workspace/7630264d-3947-4203-a0ec-b9ffcc3a4e06/scratchpad/bats-run-3KkuWZ/test/9/home/.config/claude-devcontainer/cc-isolated.sh
+#
+# bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+# BLESS-STUB --bless
+#
+# Done. Blessed, NOT verified: a bless is a review of files, not a test of a container.
+# Next steps:
+#   touch ~/.ssh/canary                    # once, if you haven't — strengthens the H1 probe
+#   cc-isolated --probe-only <repo>        # REQUIRED after any boundary change: rebuilds from
+#                                          # this config and records it verified live on a pass
+#   cc-isolated                            # session for the repo containing $PWD
+#   cc-isolated --register <repo> --profile python   # widen a project's egress
+#
+# WARNING: /tmp/claude-1000/-workspace/7630264d-3947-4203-a0ec-b9ffcc3a4e06/scratchpad/bats-run-3KkuWZ/test/9/home/.local/bin is not on your PATH — add it, or call /tmp/claude-1000/-workspace/7630264d-3947-4203-a0ec-b9ffcc3a4e06/scratchpad/bats-run-3KkuWZ/test/9/home/.config/claude-devcontainer/cc-isolated.sh directly.
+#
+# Skipped host target (~/.claude): it never installs with --yes. Run install.sh without --yes at a terminal to review and install it.
+# markers:
+bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+ok 10 A1 after a post-copy mismatch, the cc-isolated link is left dangling (old script removed)
+bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+not ok 11 A1b a cp failure later in the copy loop exits (set -e) before the post-copy check; an altered cc-isolated.sh stays live
+# (in test file /workspace/docs/reviews/execution-logs/secrev-q058p2/probe.bats, line 356)
+#   `[ -e "$CLAUDE_DEVC_BIN_DIR/cc-isolated" ]' failed
+# bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+# /bin/bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+# Checking for running cc-isolated containers (docker ps; up to 20 s)...
+# Canonical (repo):  /tmp/claude-1000/-workspace/7630264d-3947-4203-a0ec-b9ffcc3a4e06/scratchpad/bats-run-3KkuWZ/test/11/repo/devcontainer-config at commit ce8da104df14 (staged in /tmp/claude-1000/-workspace/7630264d-3947-4203-a0ec-b9ffcc3a4e06/scratchpad/bats-run-3KkuWZ/test/11/tmp/cw-devc-stage.Uetsxi/config)
+# Installed (host):  /tmp/claude-1000/-workspace/7630264d-3947-4203-a0ec-b9ffcc3a4e06/scratchpad/bats-run-3KkuWZ/test/11/home/.config/claude-devcontainer
+#
+# First install — /tmp/claude-1000/-workspace/7630264d-3947-4203-a0ec-b9ffcc3a4e06/scratchpad/bats-run-3KkuWZ/test/11/home/.config/claude-devcontainer does not exist yet.
+#
+# /bin/bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+# Checking for running cc-isolated containers (docker ps; up to 20 s)...
+# Linked /tmp/claude-1000/-workspace/7630264d-3947-4203-a0ec-b9ffcc3a4e06/scratchpad/bats-run-3KkuWZ/test/11/home/.local/bin/cc-isolated -> /tmp/claude-1000/-workspace/7630264d-3947-4203-a0ec-b9ffcc3a4e06/scratchpad/bats-run-3KkuWZ/test/11/home/.config/claude-devcontainer/cc-isolated.sh
+#
+# bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+# BLESS-STUB --bless
+#
+# Done. Blessed, NOT verified: a bless is a review of files, not a test of a container.
+# Next steps:
+#   touch ~/.ssh/canary                    # once, if you haven't — strengthens the H1 probe
+#   cc-isolated --probe-only <repo>        # REQUIRED after any boundary change: rebuilds from
+#                                          # this config and records it verified live on a pass
+#   cc-isolated                            # session for the repo containing $PWD
+#   cc-isolated --register <repo> --profile python   # widen a project's egress
+#
+# WARNING: /tmp/claude-1000/-workspace/7630264d-3947-4203-a0ec-b9ffcc3a4e06/scratchpad/bats-run-3KkuWZ/test/11/home/.local/bin is not on your PATH — add it, or call /tmp/claude-1000/-workspace/7630264d-3947-4203-a0ec-b9ffcc3a4e06/scratchpad/bats-run-3KkuWZ/test/11/home/.config/claude-devcontainer/cc-isolated.sh directly.
+#
+# Skipped host target (~/.claude): it never installs with --yes. Run install.sh without --yes at a terminal to review and install it.
+# bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+# /bin/bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+# Checking for running cc-isolated containers (docker ps; up to 20 s)...
+# /bin/bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+# Canonical (repo):  /tmp/claude-1000/-workspace/7630264d-3947-4203-a0ec-b9ffcc3a4e06/scratchpad/bats-run-3KkuWZ/test/11/repo/devcontainer-config at commit a5c909d9e0ca (staged in /tmp/claude-1000/-workspace/7630264d-3947-4203-a0ec-b9ffcc3a4e06/scratchpad/bats-run-3KkuWZ/test/11/tmp/cw-devc-stage.h2DVcy/config)
+# Installed (host):  /tmp/claude-1000/-workspace/7630264d-3947-4203-a0ec-b9ffcc3a4e06/scratchpad/bats-run-3KkuWZ/test/11/home/.config/claude-devcontainer
+#
+# === Changes this install would make ===========================================
+# /tmp/claude-1000/-workspace/7630264d-3947-4203-a0ec-b9ffcc3a4e06/scratchpad/bats-run-3KkuWZ/test/11/repo/devcontainer-config/install.sh: line 135: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+# MODE /tmp/claude-1000/-workspace/7630264d-3947-4203-a0ec-b9ffcc3a4e06/scratchpad/bats-run-3KkuWZ/test/11/home/.config/claude-devcontainer/init-firewall.sh: 755 -> 644
+# /tmp/claude-1000/-workspace/7630264d-3947-4203-a0ec-b9ffcc3a4e06/scratchpad/bats-run-3KkuWZ/test/11/repo/devcontainer-config/install.sh: line 135: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+# --- /tmp/claude-1000/-workspace/7630264d-3947-4203-a0ec-b9ffcc3a4e06/scratchpad/bats-run-3KkuWZ/test/11/home/.config/claude-devcontainer/devcontainer.json	2026-09-25 02:06:36.000000000 -0700
+# +++ /tmp/claude-1000/-workspace/7630264d-3947-4203-a0ec-b9ffcc3a4e06/scratchpad/bats-run-3KkuWZ/test/11/tmp/cw-devc-stage.h2DVcy/config/devcontainer.json	2026-09-25 02:06:36.000000000 -0700
+# @@ -1 +1 @@
+# -stub devcontainer.json
+# +{"v":2}
+# /tmp/claude-1000/-workspace/7630264d-3947-4203-a0ec-b9ffcc3a4e06/scratchpad/bats-run-3KkuWZ/test/11/repo/devcontainer-config/install.sh: line 135: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+# /tmp/claude-1000/-workspace/7630264d-3947-4203-a0ec-b9ffcc3a4e06/scratchpad/bats-run-3KkuWZ/test/11/repo/devcontainer-config/install.sh: line 135: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+# /tmp/claude-1000/-workspace/7630264d-3947-4203-a0ec-b9ffcc3a4e06/scratchpad/bats-run-3KkuWZ/test/11/repo/devcontainer-config/install.sh: line 135: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+# /tmp/claude-1000/-workspace/7630264d-3947-4203-a0ec-b9ffcc3a4e06/scratchpad/bats-run-3KkuWZ/test/11/repo/devcontainer-config/install.sh: line 135: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+# /tmp/claude-1000/-workspace/7630264d-3947-4203-a0ec-b9ffcc3a4e06/scratchpad/bats-run-3KkuWZ/test/11/repo/devcontainer-config/install.sh: line 135: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+# /tmp/claude-1000/-workspace/7630264d-3947-4203-a0ec-b9ffcc3a4e06/scratchpad/bats-run-3KkuWZ/test/11/repo/devcontainer-config/install.sh: line 135: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+# /tmp/claude-1000/-workspace/7630264d-3947-4203-a0ec-b9ffcc3a4e06/scratchpad/bats-run-3KkuWZ/test/11/repo/devcontainer-config/install.sh: line 135: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+# diff -ruNa /tmp/claude-1000/-workspace/7630264d-3947-4203-a0ec-b9ffcc3a4e06/scratchpad/bats-run-3KkuWZ/test/11/home/.config/claude-devcontainer/claude-home/.manifest /tmp/claude-1000/-workspace/7630264d-3947-4203-a0ec-b9ffcc3a4e06/scratchpad/bats-run-3KkuWZ/test/11/tmp/cw-devc-stage.h2DVcy/config/claude-home/.manifest
+# --- /tmp/claude-1000/-workspace/7630264d-3947-4203-a0ec-b9ffcc3a4e06/scratchpad/bats-run-3KkuWZ/test/11/home/.config/claude-devcontainer/claude-home/.manifest	2026-09-25 02:06:36.384763645 -0700
+# +++ /tmp/claude-1000/-workspace/7630264d-3947-4203-a0ec-b9ffcc3a4e06/scratchpad/bats-run-3KkuWZ/test/11/tmp/cw-devc-stage.h2DVcy/config/claude-home/.manifest	2026-09-25 02:06:36.734119664 -0700
+# @@ -1,4 +1,4 @@
+# -commit=ce8da104df14b48c63f6ba517d27dd8048d9b10d
+# +commit=a5c909d9e0ca7749b45801283f1fac41964e1423
+#  dirty=no
+#  uncommitted_excluded=0
+#  assembled_from=/tmp/claude-1000/-workspace/7630264d-3947-4203-a0ec-b9ffcc3a4e06/scratchpad/bats-run-3KkuWZ/test/11/repo
+# ===============================================================================
+#
+# /bin/bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+# Checking for running cc-isolated containers (docker ps; up to 20 s)...
+# /bin/bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+# /bin/bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+# /bin/bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+# /bin/bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+# /bin/bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+# /bin/bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+# /bin/bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+# /tmp/claude-1000/-workspace/7630264d-3947-4203-a0ec-b9ffcc3a4e06/scratchpad/bats-run-3KkuWZ/test/11/repo/devcontainer-config/install.sh: line 135: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+# ERROR: could not copy 'egress' into /tmp/claude-1000/-workspace/7630264d-3947-4203-a0ec-b9ffcc3a4e06/scratchpad/bats-run-3KkuWZ/test/11/home/.config/claude-devcontainer.
+#        The copied items were removed again (the previous config with them) and
+#        nothing was blessed, so cc-isolated will not run until install.sh completes.
+#        Rerun install.sh.
+# bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+# /bin/bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+# Checking for running cc-isolated containers (docker ps; up to 20 s)...
+# /bin/bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+# Canonical (repo):  /tmp/claude-1000/-workspace/7630264d-3947-4203-a0ec-b9ffcc3a4e06/scratchpad/bats-run-3KkuWZ/test/11/repo/devcontainer-config at commit a5c909d9e0ca (staged in /tmp/claude-1000/-workspace/7630264d-3947-4203-a0ec-b9ffcc3a4e06/scratchpad/bats-run-3KkuWZ/test/11/tmp/cw-devc-stage.h2DVcy/config)
+# Installed (host):  /tmp/claude-1000/-workspace/7630264d-3947-4203-a0ec-b9ffcc3a4e06/scratchpad/bats-run-3KkuWZ/test/11/home/.config/claude-devcontainer
+#
+# === Changes this install would make ===========================================
+# /tmp/claude-1000/-workspace/7630264d-3947-4203-a0ec-b9ffcc3a4e06/scratchpad/bats-run-3KkuWZ/test/11/repo/devcontainer-config/install.sh: line 135: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+# MODE /tmp/claude-1000/-workspace/7630264d-3947-4203-a0ec-b9ffcc3a4e06/scratchpad/bats-run-3KkuWZ/test/11/home/.config/claude-devcontainer/init-firewall.sh: 755 -> 644
+# /tmp/claude-1000/-workspace/7630264d-3947-4203-a0ec-b9ffcc3a4e06/scratchpad/bats-run-3KkuWZ/test/11/repo/devcontainer-config/install.sh: line 135: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+# --- /tmp/claude-1000/-workspace/7630264d-3947-4203-a0ec-b9ffcc3a4e06/scratchpad/bats-run-3KkuWZ/test/11/home/.config/claude-devcontainer/devcontainer.json	2026-09-25 02:06:36.000000000 -0700
+# +++ /tmp/claude-1000/-workspace/7630264d-3947-4203-a0ec-b9ffcc3a4e06/scratchpad/bats-run-3KkuWZ/test/11/tmp/cw-devc-stage.h2DVcy/config/devcontainer.json	2026-09-25 02:06:36.000000000 -0700
+# @@ -1 +1 @@
+# -stub devcontainer.json
+# +{"v":2}
+# /tmp/claude-1000/-workspace/7630264d-3947-4203-a0ec-b9ffcc3a4e06/scratchpad/bats-run-3KkuWZ/test/11/repo/devcontainer-config/install.sh: line 135: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+# /tmp/claude-1000/-workspace/7630264d-3947-4203-a0ec-b9ffcc3a4e06/scratchpad/bats-run-3KkuWZ/test/11/repo/devcontainer-config/install.sh: line 135: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+# /tmp/claude-1000/-workspace/7630264d-3947-4203-a0ec-b9ffcc3a4e06/scratchpad/bats-run-3KkuWZ/test/11/repo/devcontainer-config/install.sh: line 135: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+# /tmp/claude-1000/-workspace/7630264d-3947-4203-a0ec-b9ffcc3a4e06/scratchpad/bats-run-3KkuWZ/test/11/repo/devcontainer-config/install.sh: line 135: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+# /tmp/claude-1000/-workspace/7630264d-3947-4203-a0ec-b9ffcc3a4e06/scratchpad/bats-run-3KkuWZ/test/11/repo/devcontainer-config/install.sh: line 135: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+# /tmp/claude-1000/-workspace/7630264d-3947-4203-a0ec-b9ffcc3a4e06/scratchpad/bats-run-3KkuWZ/test/11/repo/devcontainer-config/install.sh: line 135: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+# /tmp/claude-1000/-workspace/7630264d-3947-4203-a0ec-b9ffcc3a4e06/scratchpad/bats-run-3KkuWZ/test/11/repo/devcontainer-config/install.sh: line 135: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+# diff -ruNa /tmp/claude-1000/-workspace/7630264d-3947-4203-a0ec-b9ffcc3a4e06/scratchpad/bats-run-3KkuWZ/test/11/home/.config/claude-devcontainer/claude-home/.manifest /tmp/claude-1000/-workspace/7630264d-3947-4203-a0ec-b9ffcc3a4e06/scratchpad/bats-run-3KkuWZ/test/11/tmp/cw-devc-stage.h2DVcy/config/claude-home/.manifest
+# --- /tmp/claude-1000/-workspace/7630264d-3947-4203-a0ec-b9ffcc3a4e06/scratchpad/bats-run-3KkuWZ/test/11/home/.config/claude-devcontainer/claude-home/.manifest	2026-09-25 02:06:36.384763645 -0700
+# +++ /tmp/claude-1000/-workspace/7630264d-3947-4203-a0ec-b9ffcc3a4e06/scratchpad/bats-run-3KkuWZ/test/11/tmp/cw-devc-stage.h2DVcy/config/claude-home/.manifest	2026-09-25 02:06:36.734119664 -0700
+# @@ -1,4 +1,4 @@
+# -commit=ce8da104df14b48c63f6ba517d27dd8048d9b10d
+# +commit=a5c909d9e0ca7749b45801283f1fac41964e1423
+#  dirty=no
+#  uncommitted_excluded=0
+#  assembled_from=/tmp/claude-1000/-workspace/7630264d-3947-4203-a0ec-b9ffcc3a4e06/scratchpad/bats-run-3KkuWZ/test/11/repo
+# ===============================================================================
+#
+# /bin/bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+# Checking for running cc-isolated containers (docker ps; up to 20 s)...
+# /bin/bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+# /bin/bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+# /bin/bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+# /bin/bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+# /bin/bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+# /bin/bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+# /bin/bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+# /tmp/claude-1000/-workspace/7630264d-3947-4203-a0ec-b9ffcc3a4e06/scratchpad/bats-run-3KkuWZ/test/11/repo/devcontainer-config/install.sh: line 135: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+# ERROR: could not copy 'egress' into /tmp/claude-1000/-workspace/7630264d-3947-4203-a0ec-b9ffcc3a4e06/scratchpad/bats-run-3KkuWZ/test/11/home/.config/claude-devcontainer.
+#        The copied items were removed again (the previous config with them) and
+#        nothing was blessed, so cc-isolated will not run until install.sh completes.
+#        Rerun install.sh.
+bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+ok 12 R2x first-install decline removes the created dest; a planted .cw-new.hooks dir is replaced, not reviewed
+bats exit=1

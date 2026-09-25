@@ -1,0 +1,328 @@
+cmd: shellcheck devcontainer-config/install.sh test/install-host.bats (default flags, then -x -e SC1091 -s bash -S warning)  cwd: /workspace/.claude/wt-q058p2  2026-09-25T09:07:12Z
+
+In devcontainer-config/install.sh line 698:
+  if [ -n "$HOST_TMP" ]; then rm -rf "$HOST_TMP" || true; fi
+  ^-- SC2317 (info): Command appears to be unreachable. Check usage (or ignore if invoked indirectly).
+     ^----------------^ SC2317 (info): Command appears to be unreachable. Check usage (or ignore if invoked indirectly).
+                              ^-----------------^ SC2317 (info): Command appears to be unreachable. Check usage (or ignore if invoked indirectly).
+                                                    ^--^ SC2317 (info): Command appears to be unreachable. Check usage (or ignore if invoked indirectly).
+
+
+In devcontainer-config/install.sh line 699:
+  if [ -n "$DC_TMP" ]; then rm -rf "$DC_TMP" || true; fi
+  ^-- SC2317 (info): Command appears to be unreachable. Check usage (or ignore if invoked indirectly).
+     ^--------------^ SC2317 (info): Command appears to be unreachable. Check usage (or ignore if invoked indirectly).
+                            ^---------------^ SC2317 (info): Command appears to be unreachable. Check usage (or ignore if invoked indirectly).
+                                                ^--^ SC2317 (info): Command appears to be unreachable. Check usage (or ignore if invoked indirectly).
+
+
+In devcontainer-config/install.sh line 702:
+  if [ -n "$HOST_NEW_IN" ]; then rm_new_copies "$HOST_NEW_IN"; fi
+  ^-- SC2317 (info): Command appears to be unreachable. Check usage (or ignore if invoked indirectly).
+     ^-------------------^ SC2317 (info): Command appears to be unreachable. Check usage (or ignore if invoked indirectly).
+                                 ^--------------------------^ SC2317 (info): Command appears to be unreachable. Check usage (or ignore if invoked indirectly).
+
+
+In devcontainer-config/install.sh line 703:
+  if [ -n "$HOST_LOCK" ]; then rmdir "$HOST_LOCK" 2>/dev/null || true; fi
+  ^-- SC2317 (info): Command appears to be unreachable. Check usage (or ignore if invoked indirectly).
+     ^-----------------^ SC2317 (info): Command appears to be unreachable. Check usage (or ignore if invoked indirectly).
+                               ^-----------------------------^ SC2317 (info): Command appears to be unreachable. Check usage (or ignore if invoked indirectly).
+                                                                 ^--^ SC2317 (info): Command appears to be unreachable. Check usage (or ignore if invoked indirectly).
+
+
+In devcontainer-config/install.sh line 705:
+  if [ -n "$HOST_MADE_DEST" ]; then rmdir "$HOST_MADE_DEST" 2>/dev/null || true; fi
+  ^-- SC2317 (info): Command appears to be unreachable. Check usage (or ignore if invoked indirectly).
+     ^----------------------^ SC2317 (info): Command appears to be unreachable. Check usage (or ignore if invoked indirectly).
+                                    ^-- SC2317 (info): Command appears to be unreachable. Check usage (or ignore if invoked indirectly).
+                                                                           ^--^ SC2317 (info): Command appears to be unreachable. Check usage (or ignore if invoked indirectly).
+
+
+In devcontainer-config/install.sh line 1160:
+  if [ -n "${CLAUDE_HOME_DIR:-}" ]; then HOST_DEST="$CLAUDE_HOME_DIR"; HOST_LABEL='$CLAUDE_HOME_DIR'
+                                                                                  ^----------------^ SC2016 (info): Expressions don't expand in single quotes, use double quotes for that.
+
+
+In devcontainer-config/install.sh line 1161:
+  elif [ -n "${CLAUDE_CONFIG_DIR:-}" ]; then HOST_DEST="$CLAUDE_CONFIG_DIR"; HOST_LABEL='$CLAUDE_CONFIG_DIR'
+                                                                                        ^------------------^ SC2016 (info): Expressions don't expand in single quotes, use double quotes for that.
+
+For more information:
+  https://www.shellcheck.net/wiki/SC2016 -- Expressions don't expand in singl...
+  https://www.shellcheck.net/wiki/SC2317 -- Command appears to be unreachable...
+install.sh exit=1
+
+In test/install-host.bats line 77:
+  [ -d "$S/home/.claude" ] && chmod -R u+w "$S/home/.claude" 2>/dev/null || true
+                           ^-- SC2015 (info): Note that A && B || C is not if-then-else. C may run when A is true.
+
+
+In test/install-host.bats line 166:
+FEED_TAMPER='printf "n\n"
+            ^-- SC2016 (info): Expressions don't expand in single quotes, use double quotes for that.
+
+
+In test/install-host.bats line 305:
+  [ -z "$(grep '^installed_by=' "$m")" ]
+    ^-- SC2143 (style): Use ! grep -q instead of comparing output with [ -z .. ].
+
+
+In test/install-host.bats line 317:
+  [ -z "$(grep 'only installs for a human' "$readme")" ]
+    ^-- SC2143 (style): Use ! grep -q instead of comparing output with [ -z .. ].
+
+
+In test/install-host.bats line 389:
+  ! compgen -G "$CLAUDE_HOME_DIR/.cw-new.*" >/dev/null
+  ^-- SC2314 (style): In Bats, ! will not fail the test if it is not the last command anymore. Use `run ! ` (on Bats >= 1.5.0) instead.
+
+Did you mean: 
+  run ! compgen -G "$CLAUDE_HOME_DIR/.cw-new.*" >/dev/null
+
+
+In test/install-host.bats line 509:
+  export TAMPER='for f in "$CLAUDE_HOME_DIR"/.cw-stage.*/payload/hooks/h.sh; do printf "echo TAMPERED\n" >> "$f"; done'
+         ^----^ SC2030 (info): Modification of TAMPER is local (to subshell caused by @bats test).
+                ^-- SC2016 (info): Expressions don't expand in single quotes, use double quotes for that.
+
+
+In test/install-host.bats line 514:
+  [ -z "$(grep -rls TAMPERED "$CLAUDE_HOME_DIR")" ]
+    ^-- SC2143 (style): Use ! grep -q instead of comparing output with [ -z .. ].
+
+
+In test/install-host.bats line 516:
+  ! compgen -G "$CLAUDE_HOME_DIR/.cw-new.*" >/dev/null
+  ^-- SC2314 (style): In Bats, ! will not fail the test if it is not the last command anymore. Use `run ! ` (on Bats >= 1.5.0) instead.
+
+Did you mean: 
+  run ! compgen -G "$CLAUDE_HOME_DIR/.cw-new.*" >/dev/null
+
+
+In test/install-host.bats line 542:
+  export TAMPER="sleep 1.5"
+         ^----^ SC2030 (info): Modification of TAMPER is local (to subshell caused by @bats test).
+         ^----^ SC2031 (info): TAMPER was modified in a subshell. That change might be lost.
+
+
+In test/install-host.bats line 584:
+  export TAMPER="touch '$S/stop'"
+         ^----^ SC2030 (info): Modification of TAMPER is local (to subshell caused by @bats test).
+         ^----^ SC2031 (info): TAMPER was modified in a subshell. That change might be lost.
+
+
+In test/install-host.bats line 599:
+  export TAMPER="touch '$S/stop'"
+         ^----^ SC2030 (info): Modification of TAMPER is local (to subshell caused by @bats test).
+         ^----^ SC2031 (info): TAMPER was modified in a subshell. That change might be lost.
+
+
+In test/install-host.bats line 625:
+  export TAMPER='printf "echo TAMPERED\n" >> "$CLAUDE_HOME_DIR/.cw-new.hooks/h.sh"'
+         ^----^ SC2030 (info): Modification of TAMPER is local (to subshell caused by @bats test).
+         ^----^ SC2031 (info): TAMPER was modified in a subshell. That change might be lost.
+                ^-- SC2016 (info): Expressions don't expand in single quotes, use double quotes for that.
+
+
+In test/install-host.bats line 631:
+  [ -z "$(grep -rls TAMPERED "$CLAUDE_HOME_DIR")" ]
+    ^-- SC2143 (style): Use ! grep -q instead of comparing output with [ -z .. ].
+
+
+In test/install-host.bats line 643:
+  feed='for _i in $(seq 200); do [ -e "$(dirname "$INJECT_F")/claude-home/.manifest" ] && break; sleep 0.1; done
+       ^-- SC2016 (info): Expressions don't expand in single quotes, use double quotes for that.
+
+
+In test/install-host.bats line 712:
+  [ -z "$(grep -F "$d/hooks/sub/x.sh" <<<"$output" | grep 'WIRED')" ]
+    ^-- SC2143 (style): Use ! grep -q instead of comparing output with [ -z .. ].
+
+
+In test/install-host.bats line 826:
+  export TAMPER='printf "commit=FORGED\n" > "$CLAUDE_HOME_DIR/.cw-new.manifest"'
+         ^----^ SC2030 (info): Modification of TAMPER is local (to subshell caused by @bats test).
+         ^----^ SC2031 (info): TAMPER was modified in a subshell. That change might be lost.
+                ^-- SC2016 (info): Expressions don't expand in single quotes, use double quotes for that.
+
+
+In test/install-host.bats line 832:
+  [ -z "$(grep -rls FORGED "$CLAUDE_HOME_DIR")" ]
+    ^-- SC2143 (style): Use ! grep -q instead of comparing output with [ -z .. ].
+
+
+In test/install-host.bats line 833:
+  ! compgen -G "$CLAUDE_HOME_DIR/.cw-new.*" >/dev/null
+  ^-- SC2314 (style): In Bats, ! will not fail the test if it is not the last command anymore. Use `run ! ` (on Bats >= 1.5.0) instead.
+
+Did you mean: 
+  run ! compgen -G "$CLAUDE_HOME_DIR/.cw-new.*" >/dev/null
+
+
+In test/install-host.bats line 869:
+  export CLAUDE_HOME_DIR="$S/out/nl"$'\n'"/../../repo"
+         ^-------------^ SC2030 (info): Modification of CLAUDE_HOME_DIR is local (to subshell caused by @bats test).
+
+
+In test/install-host.bats line 905:
+  d="$CLAUDE_HOME_DIR"
+     ^--------------^ SC2031 (info): CLAUDE_HOME_DIR was modified in a subshell. That change might be lost.
+
+
+In test/install-host.bats line 915:
+  before=$(snap "$CLAUDE_HOME_DIR")
+                 ^--------------^ SC2031 (info): CLAUDE_HOME_DIR was modified in a subshell. That change might be lost.
+
+
+In test/install-host.bats line 925:
+  [ "$(snap "$CLAUDE_HOME_DIR")" = "$before" ]
+             ^--------------^ SC2031 (info): CLAUDE_HOME_DIR was modified in a subshell. That change might be lost.
+
+
+In test/install-host.bats line 984:
+  before=$(snap "$CLAUDE_HOME_DIR")
+                 ^--------------^ SC2031 (info): CLAUDE_HOME_DIR was modified in a subshell. That change might be lost.
+
+
+In test/install-host.bats line 985:
+  export TAMPER="touch '$S/agent-up'"
+         ^----^ SC2031 (info): TAMPER was modified in a subshell. That change might be lost.
+
+
+In test/install-host.bats line 991:
+  [ "$(snap "$CLAUDE_HOME_DIR")" = "$before" ]
+             ^--------------^ SC2031 (info): CLAUDE_HOME_DIR was modified in a subshell. That change might be lost.
+
+
+In test/install-host.bats line 992:
+  run ! compgen -G "$CLAUDE_HOME_DIR/.cw-new.*"
+                    ^--------------^ SC2031 (info): CLAUDE_HOME_DIR was modified in a subshell. That change might be lost.
+
+
+In test/install-host.bats line 993:
+  [ ! -e "$CLAUDE_HOME_DIR/.claude-workflows-lock" ]
+          ^--------------^ SC2031 (info): CLAUDE_HOME_DIR was modified in a subshell. That change might be lost.
+
+
+In test/install-host.bats line 1046:
+  printf '#!/bin/bash\ncase "$1" in -pe) cat >/dev/null; exit 1 ;; esac\nexec %s "$@"\n' \
+         ^-- SC2016 (info): Expressions don't expand in single quotes, use double quotes for that.
+
+
+In test/install-host.bats line 1087:
+  before=$(snap "$CLAUDE_HOME_DIR")
+                 ^--------------^ SC2031 (info): CLAUDE_HOME_DIR was modified in a subshell. That change might be lost.
+
+
+In test/install-host.bats line 1095:
+  [ "$(snap "$CLAUDE_HOME_DIR")" = "$before" ]
+             ^--------------^ SC2031 (info): CLAUDE_HOME_DIR was modified in a subshell. That change might be lost.
+
+
+In test/install-host.bats line 1108:
+  [ -f "$CLAUDE_HOME_DIR/hooks/h.sh" ]
+        ^--------------^ SC2031 (info): CLAUDE_HOME_DIR was modified in a subshell. That change might be lost.
+
+
+In test/install-host.bats line 1109:
+  printf 'bad\0byte\n' > "$CLAUDE_HOME_DIR/hooks/h.sh"
+                          ^--------------^ SC2031 (info): CLAUDE_HOME_DIR was modified in a subshell. That change might be lost.
+
+
+In test/install-host.bats line 1144:
+  [ -z "$(grep -rls TAMPERED "$CLAUDE_DEVC_CONFIG_DIR")" ]
+    ^-- SC2143 (style): Use ! grep -q instead of comparing output with [ -z .. ].
+
+
+In test/install-host.bats line 1151:
+  printf '#!/bin/bash\n%s "$@" || exit\ncase "${@: -1}" in */claude-devcontainer/devcontainer.json) echo TAMPERED >> "${@: -1}";; esac\n' \
+         ^-- SC2016 (info): Expressions don't expand in single quotes, use double quotes for that.
+
+
+In test/install-host.bats line 1212:
+  [ ! -e "$CLAUDE_HOME_DIR" ]
+          ^--------------^ SC2031 (info): CLAUDE_HOME_DIR was modified in a subshell. That change might be lost.
+
+
+In test/install-host.bats line 1218:
+  bk="$CLAUDE_HOME_DIR/.claude-workflows-backup"
+      ^--------------^ SC2031 (info): CLAUDE_HOME_DIR was modified in a subshell. That change might be lost.
+
+
+In test/install-host.bats line 1236:
+  before=$(snap "$CLAUDE_HOME_DIR")
+                 ^--------------^ SC2031 (info): CLAUDE_HOME_DIR was modified in a subshell. That change might be lost.
+
+
+In test/install-host.bats line 1238:
+  printf '#!/bin/bash\ncase "$1" in -pe) cat >/dev/null; exit 1 ;; esac\nexec %s "$@"\n' \
+         ^-- SC2016 (info): Expressions don't expand in single quotes, use double quotes for that.
+
+
+In test/install-host.bats line 1246:
+  [ "$(snap "$CLAUDE_HOME_DIR")" = "$before" ]
+             ^--------------^ SC2031 (info): CLAUDE_HOME_DIR was modified in a subshell. That change might be lost.
+
+
+In test/install-host.bats line 1247:
+  run ! compgen -G "$CLAUDE_HOME_DIR/.cw-new.*"
+                    ^--------------^ SC2031 (info): CLAUDE_HOME_DIR was modified in a subshell. That change might be lost.
+
+
+In test/install-host.bats line 1248:
+  [ ! -e "$CLAUDE_HOME_DIR/.claude-workflows-lock" ]
+          ^--------------^ SC2031 (info): CLAUDE_HOME_DIR was modified in a subshell. That change might be lost.
+
+
+In test/install-host.bats line 1257:
+  printf '#!/bin/bash\ncase "${@: -1}" in */claude-devcontainer/egress) exit 1;; esac\n%s "$@" || exit\ncase "${@: -1}" in */claude-devcontainer/cc-isolated.sh) echo "echo TAMPERED-LAUNCHER" >> "${@: -1}";; esac\n' \
+         ^-- SC2016 (info): Expressions don't expand in single quotes, use double quotes for that.
+
+
+In test/install-host.bats line 1266:
+  [ -z "$(grep -rls TAMPERED-LAUNCHER "$CLAUDE_DEVC_CONFIG_DIR" 2>/dev/null)" ]
+    ^-- SC2143 (style): Use ! grep -q instead of comparing output with [ -z .. ].
+
+
+In test/install-host.bats line 1380:
+  printf '#!/bin/bash\n%s "$@" || exit\ndst="${@: -1}"; srcarg="${@: -2:1}"\ncase "$dst" in %s) %s ;; esac\nexit 0\n' \
+         ^-- SC2016 (info): Expressions don't expand in single quotes, use double quotes for that.
+
+
+In test/install-host.bats line 1389:
+  before=$(snap "$CLAUDE_HOME_DIR")
+                 ^--------------^ SC2031 (info): CLAUDE_HOME_DIR was modified in a subshell. That change might be lost.
+
+
+In test/install-host.bats line 1396:
+  [ "$(snap "$CLAUDE_HOME_DIR")" = "$before" ]
+             ^--------------^ SC2031 (info): CLAUDE_HOME_DIR was modified in a subshell. That change might be lost.
+
+
+In test/install-host.bats line 1397:
+  run ! compgen -G "$CLAUDE_HOME_DIR/.cw-new.*"
+                    ^--------------^ SC2031 (info): CLAUDE_HOME_DIR was modified in a subshell. That change might be lost.
+
+
+In test/install-host.bats line 1456:
+  printf '#!/bin/bash\n%s "$@" || exit\ncase "${@: -1}" in */claude-devcontainer/cc-isolated.sh) echo "echo TAMPERED-LAUNCHER" >> "${@: -1}";; */claude-devcontainer/claude-home) rm -rf "${@: -1}";; esac\n' \
+         ^-- SC2016 (info): Expressions don't expand in single quotes, use double quotes for that.
+
+
+In test/install-host.bats line 1465:
+  [ -z "$(grep -rls TAMPERED-LAUNCHER "$CLAUDE_DEVC_CONFIG_DIR" 2>/dev/null)" ]
+    ^-- SC2143 (style): Use ! grep -q instead of comparing output with [ -z .. ].
+
+For more information:
+  https://www.shellcheck.net/wiki/SC2015 -- Note that A && B || C is not if-t...
+  https://www.shellcheck.net/wiki/SC2016 -- Expressions don't expand in singl...
+  https://www.shellcheck.net/wiki/SC2030 -- Modification of CLAUDE_HOME_DIR i...
+bats(-s bash) exit=1
+version: 0.9.0
+wc: 1203 at f5e3029; 1193 at 516124d
+cmd: shellcheck -S warning devcontainer-config/install.sh; shellcheck -s bash -S warning test/install-host.bats  cwd: /workspace/.claude/wt-q058p2 2026-09-25T09:07:22Z
+install.sh exit=0
+bats exit=0
+516124d default-severity findings: 21
+f5e3029 default-severity findings: 21

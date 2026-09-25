@@ -1,0 +1,11 @@
+cmd: bash t85-shape-old.sh /workspace  cwd: /workspace/docs/reviews/execution-logs/q058p4-fc  2026-09-25T09:08:50Z
+bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+== 516124d: rc=1 ERROR-lines=0 blessed=0 launcher-tampered-live=1 bin-link-resolves=yes
+    
+    Checking for running cc-isolated containers (docker ps; up to 20 s)...
+    find: '$S/home/.config/claude-devcontainer/claude-home': No such file or directory
+== f5e3029: rc=1 ERROR-lines=1 blessed=0 launcher-tampered-live=0 bin-link-resolves=no
+           The copied items were removed again (the previous config with them) and
+           nothing was blessed, so cc-isolated will not run until install.sh completes.
+           Rerun install.sh.
+exit=0

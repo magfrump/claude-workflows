@@ -1,0 +1,57 @@
+cmd: bash probe-p4b.sh /tmp/claude-1000/-workspace/7630264d-3947-4203-a0ec-b9ffcc3a4e06/scratchpad/install-516124d.sh  (old)  cwd: /workspace/docs/reviews/execution-logs/q058p4-fc
+bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+== 2026-09-25T09:06:35Z install.sh: /tmp/claude-1000/-workspace/7630264d-3947-4203-a0ec-b9ffcc3a4e06/scratchpad/install-516124d.sh (1193 lines)
+
+######## M1 host: .cw-new.manifest missing at links_in, back as a LINK before the hash (pty, n then y)
+rc=1
+  installed manifest is a link: no
+  link target got the install's append: 0
+
+######## M2 host: .cw-new.hooks missing at links_in, back with a link inside before the hash (pty, n then y)
+rc=1
+diff -ruNa $S/home/.claude/.cw-stage.7ZMKUk/installed/hooks/evil.sh $S/home/.claude/.cw-new.hooks/evil.sh
+--- $S/home/.claude/.cw-stage.7ZMKUk/installed/hooks/evil.sh	1969-12-31 16:00:00.000000000 -0800
++++ $S/home/.claude/.cw-new.hooks/evil.sh	2026-09-25 02:06:37.195164474 -0700
+Installed into $S/home/.claude.
+  installed hooks/evil.sh is a link: yes
+
+######## C1a' (lines) host reinstall: .cw-new.guides removed right after its copy: what the review showed
+rc=1
+=== Host target: global Claude Code files ======================================
+Destination: $S/home/.claude  (chosen by $CLAUDE_HOME_DIR)
+Checking for running cc-isolated containers (docker ps; up to 20 s)...
+find: '$S/home/.claude/.cw-new.guides': No such file or directory
+find: '$S/home/.claude/.cw-new.guides': No such file or directory
+find: '$S/home/.claude/.cw-new.guides': No such file or directory
+Canonical (repo):  $S/repo (commit 424e807f956089288647c77ccc4e99fb1f7e794a)
+
+=== Changes this install would make ===========================================
+WARNING: not in the repo; these will be MOVED to the backup (Q-057):
+MOVE to backup (not in the repo): $S/home/.claude/guides/g.md
+find: '$S/home/.claude/.cw-new.guides': No such file or directory
+(diff: $S/home/.claude/.cw-stage.GjmZZh/installed is the destination as it is now, links left out; $S/home/.claude/.cw-new.* are the copies to install)
+diff -ruNa $S/home/.claude/.cw-stage.GjmZZh/installed/guides/g.md $S/home/.claude/.cw-new.guides/g.md
+--- $S/home/.claude/.cw-stage.GjmZZh/installed/guides/g.md	2026-09-25 02:06:39.289491735 -0700
++++ $S/home/.claude/.cw-new.guides/g.md	1969-12-31 16:00:00.000000000 -0800
+@@ -1 +0,0 @@
+-x
+===============================================================================
+
+Checking for running cc-isolated containers (docker ps; up to 20 s)...
+find: '$S/home/.claude/.cw-new.guides': No such file or directory
+find: '$S/home/.claude/.cw-new.guides': No such file or directory
+mv: cannot stat '$S/home/.claude/.cw-new.guides': No such file or directory
+ERROR: the install failed part-way and was rolled back: every entry was moved back
+       from $S/home/.claude/.claude-workflows-backup/20260925T090639Z. $S/home/.claude is as it was before this run.
+
+######## B1' (lines) stage site unreadable: the refusal's full text
+rc=1
+ERROR: could not copy 'egress' into $S/home/.config/claude-devcontainer.
+       The copied items were removed again (the previous config with them) and
+       nothing was blessed, so cc-isolated will not run until install.sh completes.
+       Rerun install.sh.
+rm: cannot remove '$S/tmp/cw-devc-stage.1soRoI/config/egress': Permission denied
+  stage left in TMPDIR: 1
+
+== done 2026-09-25T09:06:39Z
+exit=0

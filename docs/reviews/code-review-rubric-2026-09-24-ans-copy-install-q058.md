@@ -2,7 +2,7 @@
 
 Commit: b4fd792
 
-**Scope:** `ans/copy-install` `9ae6e46..b4fd792` (the Q-058 restart: 8 commits). Limited to `devcontainer-config/install.sh`, `test/install-host.bats`, `test/cc-isolated-functions.bats`, `README.md`, `docs/decisions/037-bare-host-copy-install.md`, `guides/bare-host-hook-wiring.md`, `docs/working/plan-copy-install-bare-host.md`, plus the commit messages. Partial scope; the branch's earlier commits are context only. At `skill-fixtures` HEAD these files are identical to b4fd792, except a one-line shellcheck fix to `install-host.bats` (423b51c). | **Reviewed:** 2026-09-24/25 | **Status: 🟡 CONDITIONAL PASS** — 1 amber item(s) awaiting resolution or justification (pass 3: 0 red. P3-A3 is accepted with a revisit trigger; the other pass-3 ambers are fixed in f5e3029, pending the pass-4 confirmation. See the pass-3 section at the end)
+**Scope:** `ans/copy-install` `9ae6e46..b4fd792` (the Q-058 restart: 8 commits). Limited to `devcontainer-config/install.sh`, `test/install-host.bats`, `test/cc-isolated-functions.bats`, `README.md`, `docs/decisions/037-bare-host-copy-install.md`, `guides/bare-host-hook-wiring.md`, `docs/working/plan-copy-install-bare-host.md`, plus the commit messages. Partial scope; the branch's earlier commits are context only. At `skill-fixtures` HEAD these files are identical to b4fd792, except a one-line shellcheck fix to `install-host.bats` (423b51c). | **Reviewed:** 2026-09-24/25 | **Status: ✅ PASSES REVIEW** — single-sample review; absence of findings is not an attestation (after 4 passes. Passes 3 and 4 had no 🔴; every 🟡 is fixed or accepted with a revisit trigger. See "Final status" at the end)
 
 Delivery mode: self-read. Agents read the 36 KB diff file and the b4fd792 worktree, and read their skill files themselves instead of having them pasted, because sub-agents here have file access. Replication: k=3 fact-check (opus), plus 3 core critics (opus). Prior rubric: `code-review-rubric-2026-09-23-ans-copy-install-final.md` (R1 and R2 parked).
 
@@ -202,3 +202,38 @@ No prior overrides matched.
 
 - `you: terminal`, carried over: time `docker ps --filter label=cc-project` on the bare host (sets P2-C1's timeout); check whether the bare host's sandboxed Bash can write `~/.gitconfig` and the terminal's `$TMPDIR` (the reach of P3-A3 and P3-C6).
 - Unverified: behavior on git ≥ 2.54 (P3-A2's revisit trigger).
+
+---
+
+# Pass 4 (confirmation): commit `f5e3029` (Commit: f5e3029)
+
+**Reports:**
+- Fact-check, k=1: `code-fact-check-report.md`. 20 claims: 14 Verified, 2 Incorrect, 1 Stale, 1 Mostly accurate, 2 Unverifiable.
+- Security: `security-review-2026-09-25-copy-install-q058-pass4.md`. No High.
+
+**Pass-3 items:** P3-A1, P3-A2 and P3-A4 are confirmed fixed. In the regression re-run of the pass-2 and pass-3 harnesses, nothing lands. The `hook.*` refusal covers all 11 key spellings tried, because git matches on the lower-cased canonical key.
+
+**Pass-4 status: ✅ no 🔴.** Its ambers were fixed in f4f09e8, where each change has a test that fails on f5e3029 (179/179 pass).
+
+## 🔴 Must Fix
+
+None.
+
+## 🟡 Must Address
+
+| # | Finding | Domain | Severity | Source | Legibility-target | Considered overrides | Status | Author note |
+|---|---|---|---|---|---|---|---|---|
+| P4-A1 | `dc_unwind` stopped at its first failed `rm` (a copied tree with a read-only subdir; `Dockerfile` comes before `cc-isolated.sh` in PAYLOAD). An altered launcher stayed live with no ERROR line (probe L9). This predates f5e3029 and contradicts 037:68. | Security | Medium (executed) | security F1; fact-check Claim 14b | for-author | — | ✅ Fixed (f4f09e8, T86) | — |
+| P4-A2 | An unreadable leftover `.cw-new.*` copy survived cleanup and blocked every later host run with only an rm error. | Correctness | Mostly accurate (executed) | fact-check; security F3 | for-author | — | ✅ Fixed (f4f09e8, T87; a leftover that still survives is now refused by name) | — |
+| P4-A3 | Doc drift: the `links_in` comment said a missing item is "left to the hash check that follows", which is true only at `$DEST`. The plan's line count is stale. | Docs | Incorrect (doc); Stale | fact-check Claims 4b, plan:250; security F2 | for-author | — | ✅ Fixed (f4f09e8) | — |
+| P4-A4 | A `.cw-new.manifest` removed and re-planted as a link between the link check and the hash gets installed as a link, and the provenance append then writes through it (fact-check M1). | Security | Unrated escalation (needs a writer inside `$dest` during a microsecond window) | fact-check escalation M1 | for-author | — | 🟡 Accepted | This falls within 037's C8 residual: a writer inside the destination (default `~/.claude`, which is denyWrite). **Revisit trigger:** the destination is moved outside denyWrite (`CLAUDE_HOME_DIR`/`CLAUDE_CONFIG_DIR` elsewhere), or a sandboxed agent is found able to write `~/.claude` |
+
+f5e3029's commit-message overstatement (Claim 14b) is logged as Accepted-immutable in `override-log.md`. The T84 "never run" assertion can't fire on git 2.39.5. The refusal assertions carry that test, and P3-A2's revisit trigger stands.
+
+## Final status
+
+- Passes 3 and 4 are two consecutive passes with no 🔴.
+- Every 🟡 from all four passes is fixed, or accepted with a revisit trigger: P3-A3 and P4-A4.
+- f4f09e8 was not itself re-reviewed by an agent pass. It is fail-closed hardening of two cleanup paths plus doc text, and each change is pinned by a test that fails on the previous commit.
+
+**Status: ✅ PASSES REVIEW** — single-sample review; absence of findings is not an attestation.

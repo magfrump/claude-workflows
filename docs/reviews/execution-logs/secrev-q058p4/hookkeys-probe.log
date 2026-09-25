@@ -1,0 +1,23 @@
+git version 2.39.5
+GIT_EXEC_KEYS_RE=^(filter\.|core\.fsmonitor|include|hook\.)
+(rc 0 + a listed key = refused; rc 1 + <nothing> = passes the gate)
+
+H1 [hook "x"] command                        parsed: hook.x.command=/p/x.sh hook.x.event=pre-commit  gate rc=0 listed: hook.x.command /p/x.sh
+hook.x.event pre-commit
+H2 [HOOK "X"] COMMAND (upper case)           parsed: hook.X.command=/p/x.sh             gate rc=0 listed: hook.X.command /p/x.sh
+H3 [Hook "x"] Event (mixed case)             parsed: hook.x.event=post-index-change     gate rc=0 listed: hook.x.event post-index-change
+H4 [hook.x] legacy subsection                parsed: hook.x.command=/p/x.sh             gate rc=0 listed: hook.x.command /p/x.sh
+H5 [hook] command (no subsection)            parsed: hook.command=/p/x.sh               gate rc=0 listed: hook.command /p/x.sh
+H6 [hook "a.b c"] dotted subsection          parsed: hook.a.b c.command=/p/x.sh         gate rc=0 listed: hook.a.b c.command /p/x.sh
+H7 leading whitespace before section         parsed: hook.x.command=/p/x.sh             gate rc=0 listed: hook.x.command /p/x.sh
+H8 value with line continuation              parsed: hook.x.command=/p/ x.sh            gate rc=0 listed: hook.x.command /p/ x.sh
+H9 key on the section line                   parsed: hook.x.command=/p/x.sh             gate rc=0 listed: hook.x.command /p/x.sh
+H10 [hook ""] empty subsection               parsed: hook..command=/p/x.sh              gate rc=0 listed: hook..command /p/x.sh
+H11 bare boolean key                         parsed: hook.x.enabled                     gate rc=0 listed: hook.x.enabled
+C1 control: [hooks "x"] (not hook.)          parsed: hooks.x.command=/p/x.sh            gate rc=1 listed: <nothing>
+C2 control: [core] hooksPath                 parsed: core.hookspath=/p                  gate rc=1 listed: <nothing>
+C3 control: [includeIf "gitdir:/"]           parsed: includeif.gitdir:/.path=/p/inc     gate rc=0 listed: includeif.gitdir:/.path /p/inc
+
+Linked worktree: is config.worktree read (extensions.worktreeConfig on)?
+  config.worktree = /tmp/claude-1000/-workspace/7630264d-3947-4203-a0ec-b9ffcc3a4e06/scratchpad/hookkeys.ltZHqS/r/.git/worktrees/wt/config.worktree
+  gate listed: hook.w.command /p/w.sh

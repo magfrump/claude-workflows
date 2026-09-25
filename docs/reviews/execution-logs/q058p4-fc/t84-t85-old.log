@@ -1,0 +1,13 @@
+cmd: bash t84-t85-old.sh /workspace <scratch>  cwd: /workspace/docs/reviews/execution-logs/q058p4-fc
+bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+== install.sh from 516124d, tests from f5e3029 (2026-09-25T09:07:00Z)
+1..2
+not ok 1 T84 a config-based hook (hook.*) in .git/config is refused and never run (review pass 3)
+#   `[ "$status" -eq 1 ]' failed
+not ok 2 T85 a PAYLOAD item missing from DEST after the copy unwinds with a message; no altered launcher stays live (review pass 3, links_in)
+#   `[[ "$output" == *'ERROR:'*'removed again'* ]]' failed
+== install.sh from f5e3029, tests from f5e3029 (2026-09-25T09:07:01Z)
+1..2
+ok 1 T84 a config-based hook (hook.*) in .git/config is refused and never run (review pass 3)
+ok 2 T85 a PAYLOAD item missing from DEST after the copy unwinds with a message; no altered launcher stays live (review pass 3, links_in)
+exit=0

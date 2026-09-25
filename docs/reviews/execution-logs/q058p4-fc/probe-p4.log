@@ -1,0 +1,155 @@
+cmd: bash probe-p4.sh /workspace/.claude/wt-q058p2/devcontainer-config/install.sh  cwd: /workspace/docs/reviews/execution-logs/q058p4-fc
+bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+== 2026-09-25T09:04:44Z git: git version 2.39.5; find: find (GNU findutils) 4.9.0; install.sh: /workspace/.claude/wt-q058p2/devcontainer-config/install.sh (1203 lines)
+
+######## A1 mixed-case hook/filter/fsmonitor/include keys written raw into .git/config
+raw get-regexp output (the gate's own read):
+  hook.MixedSub.command /bin/true
+  hook.MixedSub.event post-index-change
+  hook.x.command /bin/true
+  filter.Y.smudge cat
+  core.fsmonitor /bin/false
+  includeif.gitdir:/nowhere/.path /nonexistent
+install --yes rc=1; refusal lists:
+         $S/repo/.git/config: hook.MixedSub.command /bin/true
+         $S/repo/.git/config: hook.MixedSub.event post-index-change
+         $S/repo/.git/config: hook.x.command /bin/true
+         $S/repo/.git/config: filter.Y.smudge cat
+         $S/repo/.git/config: core.fsmonitor /bin/false
+         $S/repo/.git/config: includeif.gitdir:/nowhere/.path /nonexistent
+  msg|        install (a filter, core.fsmonitor, an include, a config-based hook, or an
+  msg|        attributes file):
+
+######## A2 hook.* only (lowercase, as T84) + a harmless hooks.* key, which must not match
+hooks.allowunannotated alone: rc=0 blessed=1
+
+######## B1 stage site: stage/egress made unreadable during the mirror cp (first install, --yes)
+rc=1
+bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+/bin/bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+Checking for running cc-isolated containers (docker ps; up to 20 s)...
+/bin/bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+find: '$S/tmp/cw-devc-stage.vAgCus/config/egress': Permission denied
+$S/repo/devcontainer-config/install.sh: line 135: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+ERROR: symlinks appeared in the staged devcontainer config after its link check:
+rm: cannot remove '$S/tmp/cw-devc-stage.vAgCus/config/egress': Permission denied
+  DEST cc-isolated.sh: absent; DEST items left: ; TAMPERED live: 0; blessed: 0
+
+######## B2a DEST site: DEST/egress (non-empty) made unreadable right after its copy; cc-isolated.sh tampered as it lands (reinstall, --yes)
+rc=1
+/bin/bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+/bin/bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+/bin/bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+/bin/bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+/bin/bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+/bin/bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+find: '$S/home/.config/claude-devcontainer/egress': Permission denied
+rm: cannot remove '$S/home/.config/claude-devcontainer/egress': Permission denied
+  DEST cc-isolated.sh: absent; DEST items left: claude-home egress projects ; TAMPERED live: 0; blessed: 0
+  ERROR line printed: 0; 'removed again' printed: 0
+  ~/.local/bin/cc-isolated resolves: no
+
+######## B2b DEST site: an EMPTY unreadable dir added under DEST/claude-home after its copy (reinstall, --yes)
+rc=1
+/bin/bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+/bin/bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+/bin/bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+/bin/bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+/bin/bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+find: '$S/home/.config/claude-devcontainer/claude-home/zz': Permission denied
+$S/repo/devcontainer-config/install.sh: line 135: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+ERROR: symlinks landed in $S/home/.config/claude-devcontainer, which install.sh never installs:
+  DEST cc-isolated.sh: absent; DEST items left: projects ; TAMPERED live: 0; blessed: 0
+
+######## B3 host site: .cw-new.guides (non-empty) made unreadable right after its copy (pty, n then y)
+rc=1
+/bin/bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+/bin/bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+/bin/bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+/bin/bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+/bin/bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+find: '$S/home/.claude/.cw-new.guides': Permission denied
+$S/repo/devcontainer-config/install.sh: line 135: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+ERROR: symlinks appeared in the copies to install after the payload's link check:
+  installed: 0; .cw-new left: 1; lock left: no
+
+######## B3b the next run after B3 (the unreadable .cw-new.guides is still there)
+rc=1
+Install this config and bless it? [y/N] Aborted. Nothing was changed. (devcontainer config)
+=== Host target: global Claude Code files ======================================
+Destination: $S/home/.claude  (chosen by $CLAUDE_HOME_DIR)
+/bin/bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+Checking for running cc-isolated containers (docker ps; up to 20 s)...
+rm: cannot remove '$S/home/.claude/.cw-new.guides': Permission denied
+
+######## C1a host site, reinstall: .cw-new.guides removed right after its copy (pty, n then y)
+rc=1
+$S/repo/devcontainer-config/install.sh: line 135: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+$S/repo/devcontainer-config/install.sh: line 135: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+Install these files into $S/home/.claude? [y/N] /bin/bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+Checking for running cc-isolated containers (docker ps; up to 20 s)...
+find: '$S/home/.claude/.cw-new.guides': No such file or directory
+find: '$S/home/.claude/.cw-new.guides': No such file or directory
+mv: cannot stat '$S/home/.claude/.cw-new.guides': No such file or directory
+ERROR: the install failed part-way and was rolled back: every entry was moved back
+  reached prompt: 1; installed: 0; guides still installed: yes
+
+######## C1b host site, first install: .cw-new.guides removed right after its copy
+rc=1
+ADD $S/home/.claude/workflows (new, 1 file(s)):
+$S/repo/devcontainer-config/install.sh: line 135: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+$S/repo/devcontainer-config/install.sh: line 135: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+find: '$S/home/.claude/.cw-new.guides': No such file or directory
+$S/repo/devcontainer-config/install.sh: line 135: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+ADD $S/home/.claude/guides (new, 0 file(s)):
+$S/repo/devcontainer-config/install.sh: line 135: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+find: '.cw-new.guides': No such file or directory
+  reached prompt: 0; installed: 0
+
+######## C1c host site, reinstall: .cw-new.guides removed after the prompt (writer acts at the y) -> hash check?
+rc=1
+Install these files into $S/home/.claude? [y/N] y
+/bin/bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+Checking for running cc-isolated containers (docker ps; up to 20 s)...
+find: '$S/home/.claude/.cw-new.guides': No such file or directory
+find: '$S/home/.claude/.cw-new.guides': No such file or directory
+ERROR: the copies to install changed after review: $S/home/.claude/.cw-new.* differ from the
+
+######## C2a stage site, first install: stage/egress removed during the mirror cp (--yes)
+rc=1
+/bin/bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+/bin/bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+/bin/bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+/usr/bin/cp: cannot stat '$S/tmp/cw-devc-stage.oHajqZ/config/egress': No such file or directory
+$S/repo/devcontainer-config/install.sh: line 135: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+ERROR: could not copy 'egress' into $S/home/.config/claude-devcontainer.
+  DEST cc-isolated.sh: absent; DEST items left: projects ; TAMPERED live: 0; blessed: 0
+
+######## C2b stage site, reinstall: stage/egress removed during the mirror cp (--yes)
+rc=1
+/bin/bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+/bin/bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+/bin/bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+/usr/bin/cp: cannot stat '$S/tmp/cw-devc-stage.Csq4S3/config/egress': No such file or directory
+$S/repo/devcontainer-config/install.sh: line 135: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+ERROR: could not copy 'egress' into $S/home/.config/claude-devcontainer.
+  DEST cc-isolated.sh: absent; DEST items left: projects ; TAMPERED live: 0; blessed: 0
+
+######## D docker absent / unreachable / reachable: lines per check (--yes, one check at startup, one after y)
+reachable: rc=0 progress=2 NOTE=0
+    3:Checking for running cc-isolated containers (docker ps; up to 20 s)...
+    10:Checking for running cc-isolated containers (docker ps; up to 20 s)...
+unreachable: rc=0 progress=2 NOTE=2
+    3:Checking for running cc-isolated containers (docker ps; up to 20 s)...
+    5:NOTE: docker is unreachable (/bin/bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)): cc-isolated containers not checked, treated as none running.
+    12:Checking for running cc-isolated containers (docker ps; up to 20 s)...
+    14:NOTE: docker is unreachable (/bin/bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)): cc-isolated containers not checked, treated as none running.
+absent: rc=0 progress=0 NOTE=2
+    3:NOTE: docker not found: cc-isolated containers not checked, treated as none running.
+    10:NOTE: docker not found: cc-isolated containers not checked, treated as none running.
+
+######## E global filter.g.smudge in GIT_CONFIG_GLOBAL + committed .gitattributes: does the install run it?
+rc=0 blessed=1 global-smudge-ran=yes
+
+== done 2026-09-25T09:05:02Z
+exit=0
