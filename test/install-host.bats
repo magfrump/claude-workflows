@@ -1045,6 +1045,39 @@ installed_then_changed() {
   sed -n '/^## Risks/,/^## /p' "$plan" | grep -q 'Q-058'
 }
 
+@test "T69 a devcontainer stage edited while its prompt waits is neither installed nor blessed (review A1, P3)" {
+  need_script; fake_repo
+  run env -u CLAUDECODE bash "$INSTALL" --yes </dev/null
+  [ "$status" -eq 0 ]
+  printf '{"v":2}\n' > "$ROOT/devcontainer-config/devcontainer.json"; commit_all v2
+  feed="for _i in \$(seq 200); do [ -e '$ROOT/devcontainer-config/claude-home/.manifest' ] && break; sleep 0.1; done
+    sleep 1; for f in \"\$TMPDIR\"/cw-devc-stage.*/config/devcontainer.json; do printf 'TAMPERED\n' > \"\$f\"; done; printf 'y\nn\n'"
+  run_pty_feed "$feed" bash "$INSTALL"
+  echo "$output"
+  [ "$status" -eq 1 ]
+  [[ "$output" == *'+{"v":2}'* ]]                  # the review showed the commit
+  [[ "$output" == *'changed after review'* ]]
+  [[ "$output" != *'BLESS-STUB'* ]]
+  [ "$(cat "$CLAUDE_DEVC_CONFIG_DIR/devcontainer.json")" = 'stub devcontainer.json' ]
+  [ -z "$(grep -rls TAMPERED "$CLAUDE_DEVC_CONFIG_DIR")" ]
+}
+
+@test "T70 a devcontainer file that differs once copied into place is removed, not blessed (review A1)" {
+  fake_repo
+  # A cp that alters devcontainer.json as it lands in the destination: the
+  # stage changing during the copy loop, after the pre-copy check.
+  printf '#!/bin/bash\n%s "$@" || exit\ncase "${@: -1}" in */claude-devcontainer/devcontainer.json) echo TAMPERED >> "${@: -1}";; esac\n' \
+    "$(command -v cp)" > "$STUB/cp"
+  chmod +x "$STUB/cp"
+  run env -u CLAUDECODE bash "$INSTALL" --yes </dev/null
+  echo "$output"
+  [ "$status" -eq 1 ]
+  [[ "$output" == *'differs from what the review'* ]]
+  [[ "$output" != *'BLESS-STUB'* ]]
+  [ ! -e "$CLAUDE_DEVC_CONFIG_DIR/devcontainer.json" ]
+  [ ! -e "$CLAUDE_DEVC_CONFIG_DIR/cc-isolated.sh" ]
+}
+
 # Marker command: git runs it only if it obeys the planted config.
 plant_marker_cmd() {
   printf '#!/bin/bash\ntouch "%s/%s"\ncat\n' "$S" "$1" > "$S/$1.sh"

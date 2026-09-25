@@ -419,6 +419,15 @@ install_devcontainer() {
   fi
   cp -Rp "$stage/claude-home/." "$SRC/claude-home/"
 
+  # A1: the stage sits in a same-uid temp dir while the review and [y/N] wait.
+  # Hash it before the review; after the y the stage, and then what landed in
+  # $DEST, must hash the same, or nothing is blessed. This catches an edit that
+  # persists until the copy. It does not catch a stage swapped for the review
+  # and swapped back before the y: for that this target relies on the gate
+  # (decision 037, "Trust model").
+  local reviewed_hash
+  reviewed_hash="$(tree_hash "$stage" "" "${PAYLOAD[@]}")"
+
   echo "Canonical (repo):  $SRC at commit ${STAGED_COMMIT:0:12} (staged in $stage)"
   echo "Installed (host):  $DEST"
   echo
@@ -452,6 +461,12 @@ install_devcontainer() {
   # Q-058: an agent may have started while the prompt waited.
   agent_gate "Nothing was installed. (devcontainer config)"
 
+  if [ "$(tree_hash "$stage" "" "${PAYLOAD[@]}")" != "$reviewed_hash" ]; then
+    echo "ERROR: the staged devcontainer config changed after review: $stage no longer" >&2
+    echo "       holds what the review showed. Nothing was installed. Rerun install.sh." >&2
+    exit 1
+  fi
+
   mkdir -p "$DEST" "$BIN_DIR"
 
   # projects/ holds per-project egress registrations and is host-owned state — it is
@@ -462,6 +477,17 @@ install_devcontainer() {
     rm -rf "${DEST:?}/$item"
     cp -Rp "$stage/$item" "$DEST/$item"
   done
+  # A1: what landed must be what was reviewed, before chmod and the bless. On a
+  # mismatch (the stage changed during the copy) the copied items are removed,
+  # so no unreviewed file stays live: cc-isolated.sh runs on the host from here.
+  if [ "$(tree_hash "$DEST" "" "${PAYLOAD[@]}")" != "$reviewed_hash" ]; then
+    for item in "${PAYLOAD[@]}"; do rm -rf "${DEST:?}/$item"; done
+    echo "ERROR: the devcontainer config copied into $DEST differs from what the review" >&2
+    echo "       showed (the stage changed after review, during the copy). The copied items" >&2
+    echo "       were removed again and nothing was blessed, so cc-isolated will not run" >&2
+    echo "       until install.sh completes. Rerun install.sh." >&2
+    exit 1
+  fi
 
   chmod +x "$DEST/cc-isolated.sh" "$DEST/init-firewall.sh"
 
@@ -524,21 +550,28 @@ inside_repo() {
   return 1
 }
 
-# payload_hash <dir> <prefix> <manifest>: one hash over the listing (path,
-# type, mode, link target) and the file contents of <dir>/<prefix><name> for
-# every entry name, plus the provenance manifest's bytes. The same payload
-# hashes the same whether it sits in the stage (prefix "", $stage/.manifest)
-# or in the copies under $dest (prefix ".cw-new.", .cw-new.manifest), which is
-# what R2's check needs. The manifest is covered so its commit= stamp cannot be
-# forged at the prompt either (fact-check claim 14).
+# tree_hash <dir> <prefix> <name...>: one hash over the listing (path, type,
+# mode, link target) and the file contents of <dir>/<prefix><name> for each
+# <name>. The same tree hashes the same wherever it sits, so the stage (prefix
+# "") and a copy of it (prefix ".cw-new.", or another <dir>) can be compared.
+tree_hash() {
+  local dir="$1" pfx="$2" name
+  shift 2
+  for name in "$@"; do
+    echo "== $name"
+    find "$dir/$pfx$name" -printf '%P\t%y\t%m\t%l\n' | LC_ALL=C sort
+    find "$dir/$pfx$name" -type f -print0 | LC_ALL=C sort -z | xargs -0 -r sha256sum | cut -d' ' -f1
+  done | sha256sum | cut -d' ' -f1
+}
+
+# payload_hash <dir> <prefix> <manifest>: tree_hash of every host entry name,
+# plus the provenance manifest's bytes, for R2's check. The manifest is
+# covered so its commit= stamp cannot be forged at the prompt either
+# (fact-check claim 14).
 payload_hash() {
-  local dir="$1" pfx="$2" manifest="$3" name
+  local dir="$1" pfx="$2" manifest="$3"
   {
-    for name in "${CLAUDE_HOME_NAMES[@]}"; do
-      echo "== $name"
-      find "$dir/$pfx$name" -printf '%P\t%y\t%m\t%l\n' | LC_ALL=C sort
-      find "$dir/$pfx$name" -type f -print0 | LC_ALL=C sort -z | xargs -0 -r sha256sum | cut -d' ' -f1
-    done
+    tree_hash "$dir" "$pfx" "${CLAUDE_HOME_NAMES[@]}"
     echo "== manifest"
     sha256sum < "$manifest" | cut -d' ' -f1
   } | sha256sum | cut -d' ' -f1
