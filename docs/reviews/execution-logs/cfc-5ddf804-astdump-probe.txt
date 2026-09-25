@@ -1,0 +1,5 @@
+2026-09-25T23:18:03Z
+100000 vs 100_000 equal: True
+x=1 vs x=(1) equal: True
+100000 vs 100001 equal: False
+exit 0

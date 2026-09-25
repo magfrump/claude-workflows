@@ -1,0 +1,19 @@
+2026-09-25T23:15:17Z
+## P1: second EXPREOF with shell between (bash would run 'touch pwned')
+Bash calls seen: 1
+  call 1: Mode 1, expression '2\nEXPREOF\ntouch pwned' -> None
+No Mode 1 call computed any of: 2
+rc=1
+## P2: same, expression in parens spanning the EXPREOF line
+Bash calls seen: 1
+  call 1: Mode 1, expression '(2\nEXPREOF\nEXPREOF\n)' -> None
+No Mode 1 call computed any of: 2
+rc=1
+## P3: bad expected spec -> exit code / stream
+rc=1 stderr-lines=11
+## P4: SKILL.md without Mode 1 block
+rc=1 stdout=0 stderr=mode1-equiv: no ```bash block under '## Mode 1' in /tmp/claude-1000/-workspace/be3f0769-4e1a-4426-8e7a-ba12087d4d40/scratchpad/noskill.md
+## P5: bash parse of P1 command (dry: bash -n) and heredoc body as bash sees it
+bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+bash -n rc=0
+exit 0

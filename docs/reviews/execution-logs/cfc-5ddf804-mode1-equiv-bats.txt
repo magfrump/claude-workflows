@@ -1,0 +1,16 @@
+2026-09-25T23:14:25Z
+cmd: bats test/skills/mode1-equiv.bats  cwd: /workspace
+1..12
+ok 1 the Mode 1 block extracts from SKILL.md
+ok 2 SKILL.md's own block, verbatim, computes its value
+ok 3 a copy with the comments stripped still passes (AST, not bytes)
+ok 4 a one-token change to the program fails
+ok 5 the right program with the wrong expression fails
+ok 6 any listed value passes, and a tolerance widens one
+ok 7 shell after the closing EXPREOF fails; a trailing comment does not
+ok 8 a wrapper change (no ulimit) fails
+ok 9 the expression is evaluated by SKILL.md's evaluator, so a non-numeric one gets no value
+ok 10 tripwire: a Bash call missing from permission_denials fails whatever it computed
+ok 11 no_tool_called passes with no Bash call and fails with one
+ok 12 a missing transcript fails (not skips)
+exit 0

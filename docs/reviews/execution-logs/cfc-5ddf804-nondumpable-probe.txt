@@ -1,0 +1,12 @@
+2026-09-25T23:17:21Z
+cwd: /tmp/claude-1000/-workspace/be3f0769-4e1a-4426-8e7a-ba12087d4d40/scratchpad/repo; uid=1000
+non-dumpable pid=3220776
+owner uid of /proc/3220776: 1000
+bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+-O true
+readlink cwd failed
+exit 0
+## control (dumpable) 2026-09-25T23:17:30Z
+dumpable pid=3222712
+/tmp/claude-1000/-workspace/be3f0769-4e1a-4426-8e7a-ba12087d4d40/scratchpad/repo
+exit 0

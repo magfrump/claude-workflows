@@ -1,0 +1,36 @@
+2026-09-25T23:14:29Z
+cmd: bats test/generate-reports.bats  cwd: /workspace
+1..32
+ok 1 inline mode: prompt then fixture content on stdin, runner's tools passed
+ok 2 inline mode: claude runs in an empty temp directory, not the caller's
+ok 3 FIXTURE_TOOLS=none passes an empty --tools list
+ok 4 repo mode: claude runs in a temp repo holding only the fixture
+ok 5 the fixture's descriptive filename never reaches the model
+ok 6 every mode passes --strict-mcp-config --restricted --safe-mode
+ok 7 FIXTURE_TRANSCRIPT=1: stream-json kept as a sidecar, report is the result text
+ok 8 FIXTURE_TRANSCRIPT=1: a non-JSON line in the stream does not lose the report
+ok 9 transcript off: no stream-json flags, and a stale sidecar is removed
+ok 10 a runner with a bad FIXTURE_TRANSCRIPT value is refused
+ok 11 tree mode: base + fixture tree in a temp repo, REQUEST.md goes to the prompt
+ok 12 tree mode: the fixture directory's name never reaches the model
+ok 13 tree mode: .fixture-* markers steer fixture_base and are removed
+ok 14 tree mode takes directories only; repo mode takes files only
+ok 15 fixture prefix selects a subset
+ok 16 a skill without runner.bash is refused before claude runs
+ok 17 a runner naming any tool outside the allowlist is refused
+ok 18 an inline runner granting a file tool is refused
+ok 19 a descriptive suffix is not kept as the subject's extension
+ok 20 a dotted fixture name with no plain extension reaches the model as 'subject'
+ok 21 a failed claude run leaves no stale report behind, and a .failed marker
+ok 22 a run that aborts before claude starts still removes the previous report
+ok 23 a successful run clears a previous run's .failed marker
+ok 24 FIXTURE_TRANSCRIPT=1: an error or missing result event is recorded as a failure
+ok 25 a runner with an unknown mode is refused
+ok 26 every committed fixture set has a runner the generator accepts
+ok 27 every committed fixture set has an eval suite
+ok 28 deny-record: Bash is accepted and every call is pinned to be denied
+ok 29 deny-record needs FIXTURE_TRANSCRIPT=1 and Bash in FIXTURE_TOOLS; other values are refused
+ok 30 deny-record does not open Bash(<pattern>) spellings
+ok 31 deny-record: CLAUDE_FLAGS that change permissions are refused before claude runs
+ok 32 deny-record tripwire: a Bash call missing from permission_denials voids the run
+exit 0

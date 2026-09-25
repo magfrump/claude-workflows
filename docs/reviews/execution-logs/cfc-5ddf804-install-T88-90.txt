@@ -1,0 +1,15 @@
+bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+1..3
+bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+ok 1 T88 a leftover non-Claude process working inside the checkout stops the install and is named (Q-062)
+bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+ok 2 T89 the shell that runs install.sh from inside the checkout, and install.sh's own children, are not refused (Q-062)
+bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+ok 3 T90 without a readable /proc the install is refused, not waved through (Q-062)
+exit 0

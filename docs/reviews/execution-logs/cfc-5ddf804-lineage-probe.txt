@@ -1,0 +1,17 @@
+2026-09-25T23:16:52Z
+## A: script's own child in the repo, sibling sleep started by the parent shell in the repo
+bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+sibling pid=3213643
+bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+script $$=3213644 BASHPID=3213644
+in cmdsubst: $$=3213644 BASHPID=3213648
+own child (descendant) pid=3213649
+procs_in_checkout rc=0 output:
+3213643 bash -c cd "$1/repo" && (exec sleep 30) & s=$!; echo "sibling pid=$s"; cd "$1/repo" && bash "$1/probe.sh" "$1"; kill $s _ /tmp/claude-1000/-workspace/be3f0769-4e1a-4426-8e7a-ba12087d4d40/scratchpad
+3213645 sleep 30
+exit 0
+## B: ppid_of on an exited pid, 2026-09-25T23:17:49Z
+bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+rc=1 out=[] stderr-suppressed
+self ppid=3225537 PPID=3225537
+exit 0

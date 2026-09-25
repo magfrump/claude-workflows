@@ -1,0 +1,8 @@
+bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+2026-09-25T23:16:41Z
+shell: bash 5.2.15(1)-release
+--permission-mode=bypassPermissions -> refused; argv words: 1, first=--permission-mode=bypassPermissions
+$'\t--permission-mode bypassPermissions' -> accepted; argv words: 2, first=--permission-mode
+--permission-prompt-tool\ mcp__x__y -> accepted; argv words: 2, first=--permission-prompt-tool
+--model\ m -> accepted; argv words: 2, first=--model
+exit 0

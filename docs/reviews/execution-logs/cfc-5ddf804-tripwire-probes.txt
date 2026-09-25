@@ -1,0 +1,16 @@
+2026-09-25T23:15:39Z
+## sub-agent Bash call (parent_tool_use_id set), not denied
+undenied=1
+## two result events, denials split across them (union)
+undenied=0
+## missing transcript file
+undenied=unreadable
+## non-JSON line + no Bash
+undenied=0
+## string content, result with no permission_denials
+undenied=0
+## one denied Bash
+undenied=0
+## unreadable (chmod 000)
+undenied=unreadable
+exit 0
