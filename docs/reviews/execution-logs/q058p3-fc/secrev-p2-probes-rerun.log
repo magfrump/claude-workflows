@@ -1,0 +1,25 @@
+2026-09-25T08:45:34Z
+cmd: bats ../secrev-q058p2/probe.bats (CONFIG_SRC=/workspace/.claude/wt-q058p2 at 516124d); each test asserts the pass-2 VULNERABILITY, so 'not ok' = no longer reproduces
+1..12
+not ok 1 SP1 (re-run) stage swapped to benign during the review and restored before y
+#   `[ -f "$S/helper.done" ]' failed
+not ok 2 SP1b the OLD side of the diff (HOST_TMP/installed) is rewritten to match the new copy during the review
+#   `[ -s "$S/helper.hits" ]' failed
+not ok 3 SP1c a stage edit between git archive and the copy into dest lands under an ADD entry whose content is not shown
+#   `[ -s "$S/helper.hits" ]' failed
+not ok 4 SP1d a symlink planted in the stage after extract_commit's link check installs as a live link into an agent-writable file
+#   `[ -s "$S/helper.hits" ]' failed
+not ok 5 SP1e devcontainer: a cc-isolated.sh symlink planted after extract_commit's check passes both A1 hashes and is blessed
+#   `ls -la "$CLAUDE_DEVC_CONFIG_DIR/"' failed with status 2
+ok 6 SP3a (re-run) smudge filter + attributes, and core.fsmonitor, are refused and never run
+not ok 7 SP3b .git/hooks/post-index-change runs during install (git status), not refused
+#   `[ -e "$S/hook-ran" ]' failed
+not ok 8 SP3c core.hooksPath in .git/config (not in the refused key list) runs during install
+#   `[ -e "$S/hookspath-ran" ]' failed
+not ok 9 SP3d a submodule's own git dir (filter + attributes + hook) runs during install; superproject gate sees nothing
+#   `[ -e "$S/sub-clean-ran" ] || [ -e "$S/sub-hook-ran" ]' failed
+ok 10 A1 after a post-copy mismatch, the cc-isolated link is left dangling (old script removed)
+not ok 11 A1b a cp failure later in the copy loop exits (set -e) before the post-copy check; an altered cc-isolated.sh stays live
+#   `[ -e "$CLAUDE_DEVC_BIN_DIR/cc-isolated" ]' failed
+ok 12 R2x first-install decline removes the created dest; a planted .cw-new.hooks dir is replaced, not reviewed
+bats exit=

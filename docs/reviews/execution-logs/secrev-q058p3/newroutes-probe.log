@@ -1,0 +1,26 @@
+git version 2.39.5
+
+== 1. config-based hooks: hook.<event>.command (git >= 2.36) ==
+hook.*.command marks: none
+git_state_gate would see in .git/config: ''
+
+== 2. .git is a gitfile pointing elsewhere (planted GIT dir with a hook) ==
+core.hooksPath=/dev/null defends .git/hooks; does the gitfile route change that?
+gitfile hook marks: none
+
+== 3. GIT_DIR / GIT_* environment variables in the user's shell ==
+3a. GIT_DIR set, core.hooksPath flag present:
+   marks: none
+3b. does -c core.hooksPath=/dev/null override an env GIT_CONFIG?
+
+== 4. safe.directory (repo owned by another uid) ==
+rev-parse ok (same uid, no safe.directory trip)
+
+== 5. archive attributes: export-subst / export-ignore via committed .gitattributes ==
+archive export-subst marks: none
+git_state_gate sees attributes? committed .gitattributes is NOT info/attributes:
+  info/attributes present: no (empty/absent)
+
+== 6. git_state_gate config read: does its own 'git config --file' honour anything? ==
+gate --no-includes output (should list include.path, NOT follow it): 'include.path /tmp/newroutes.PckdMD/evil.inc'
+should-not-run marks: none

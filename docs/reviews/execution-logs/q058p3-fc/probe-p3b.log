@@ -1,0 +1,44 @@
+cmd: bash probe-p3b.sh /workspace/.claude/wt-q058p2/devcontainer-config/install.sh   cwd: /workspace/docs/reviews/execution-logs/q058p3-fc
+bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+== 2026-09-25T08:43:31Z git: git version 2.39.5; install.sh: /workspace/.claude/wt-q058p2/devcontainer-config/install.sh
+
+######## P8 vis fails only on a MODE line; the only change is a chmod
+rc=1
+=== Host target: global Claude Code files ======================================
+Destination: $S/home/.claude  (chosen by $CLAUDE_HOME_DIR)
+/bin/bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+Checking for running cc-isolated containers (docker ps; up to 20 s)...
+Canonical (repo):  $S/repo (commit d1026953655a03532f93d606ec552fbdd37f7340)
+
+=== Changes this install would make ===========================================
+$S/repo/devcontainer-config/install.sh: line 135: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+(diff: $S/home/.claude/.cw-stage.Rt0BQF/installed is the destination as it is now, links left out; $S/home/.claude/.cw-new.* are the copies to install)
+$S/repo/devcontainer-config/install.sh: line 135: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+$S/repo/devcontainer-config/install.sh: line 135: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+$S/repo/devcontainer-config/install.sh: line 135: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+$S/repo/devcontainer-config/install.sh: line 135: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+$S/repo/devcontainer-config/install.sh: line 135: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+$S/repo/devcontainer-config/install.sh: line 135: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+$S/repo/devcontainer-config/install.sh: line 135: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+===============================================================================
+
+Install these files into $S/home/.claude? [y/N] Aborted. Nothing was changed. (host ~/.claude)
+control, same repo, real perl:
+rc=1
+MODE $S/home/.claude/guides/g.md: 644 -> 755
+Install these files into $S/home/.claude? [y/N] Aborted. Nothing was changed. (host ~/.claude)
+
+######## P9b devcontainer: unreadable dir planted in the claude-home copy (links_in's last find fails)
+rc=1
+/bin/bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+/bin/bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+/bin/bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+/bin/bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+/bin/bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+/bin/bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+/bin/bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+find: '$S/home/.config/claude-devcontainer/claude-home/locked': Permission denied
+cc-isolated.sh left in DEST: yes; TAMPERED lines in it: 1; bin link resolves: yes; blessed: 0
+
+== done 2026-09-25T08:43:33Z
+probe exit=0

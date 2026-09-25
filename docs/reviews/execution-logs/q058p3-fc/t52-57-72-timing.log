@@ -1,0 +1,9 @@
+2026-09-25T08:47:54Z
+cmd: time bats -f '^T(52|53|57|72) ' test/install-host.bats  cwd: /workspace/.claude/wt-q058p2
+1..4
+ok 1 T52 docker absent or unreachable: a NOTE line says so at each check, and the install goes ahead (Q-058)
+ok 2 T53 without pgrep the install is refused, not waved through (Q-058)
+ok 3 T57 without perl the install is refused at startup (vis needs it)
+ok 4 T72 an agent seen only while the devcontainer prompt waits stops the host target before it stages (review A2, P4)
+bats -f '^T(52|53|57|72) ' test/install-host.bats 2>&1  0.73s user 0.33s system 90% cpu 1.164 total
+exit=0

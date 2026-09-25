@@ -1,0 +1,116 @@
+cmd: bash probe-p3.sh /workspace/.claude/wt-q058p2/devcontainer-config/install.sh   cwd: /workspace/docs/reviews/execution-logs/q058p3-fc
+bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+== 2026-09-25T08:42:37Z git: git version 2.39.5; install.sh: /workspace/.claude/wt-q058p2/devcontainer-config/install.sh (1193 lines)
+
+######## P1a .git/hooks + core.hooksPath post-index-change: install vs plain git status
+install --yes rc=0 blessed=1 hook-ran=no
+control: plain git status -> hook-ran=yes
+core.hooksPath: install rc=0 blessed=1 hookspath-ran=no
+control: plain git status -> hookspath-ran=yes
+
+######## P1b the host target (pty, n then y) with the same planted hooks
+rc=1 installed=1 hook-ran=no
+
+######## P1c git hook config support on this git (config-based hooks need git >= 2.54)
+git hook run rc=0
+plain status with hook.x.command/event: cfghook-ran=no (no = this git ignores config-based hooks)
+
+######## P2 host: h.sh in .cw-new.hooks replaced by a link to identical content at the prompt
+rc=1
+ERROR: the copies to install changed after review: /tmp/claude-1000/-workspace/7630264d-3947-4203-a0ec-b9ffcc3a4e06/scratchpad/q058p3.Ofgw2d/home/.claude/.cw-new.* differ from the
+installed h.sh is link: no; .cw-new left: 0; .cw-stage left: 0
+
+######## P3a stale .cw-stage dir + planted .cw-stage link (to a dir and to a file)
+rc=1 installed=1 .cw-stage left: 0 sentinel=keep elsefile=keepf
+
+######## P3b exit path: decline
+rc=1 last: Install these files into /tmp/claude-1000/-workspace/7630264d-3947-4203-a0ec-b9ffcc3a4e06/scratchpad/q058p3.Ofgw2d/home/.claude? [y/N] Aborted. Nothing was changed. (host ~/.claude)
+  .cw-stage left: 0; .cw-new left: 0; lock left: no; dest exists: no
+
+######## P3b exit path: nothing
+rc=1 last: Nothing to install into /tmp/claude-1000/-workspace/7630264d-3947-4203-a0ec-b9ffcc3a4e06/scratchpad/q058p3.Ofgw2d/home/.claude.
+  .cw-stage left: 0; .cw-new left: 0; lock left: no; dest exists: yes
+
+######## P3b exit path: gitstate
+rc=1 last: ERROR: the checkout's git state can make git run a command as you during this
+  .cw-stage left: 0; .cw-new left: 0; lock left: no; dest exists: no
+
+######## P3b exit path: sigint
+rc=130 last: Install this config and bless it? [y/N] Aborted. Nothing was changed. (devcontainer config)
+  .cw-stage left: 0; .cw-new left: 0; lock left: no; dest exists: yes
+
+######## P3b exit path: sigterm
+rc=143 last: Install this config and bless it? [y/N] Aborted. Nothing was changed. (devcontainer config)
+  .cw-stage left: 0; .cw-new left: 0; lock left: no; dest exists: yes
+
+######## P4 mktemp calls during a host run (mktemp wrapper logs its args; docker stub present)
+rc=1 installed=1
+mktemp $S/tmp/cw-docker-err.XXXXXX
+mktemp -d $S/tmp/cw-devc-stage.XXXXXX
+mktemp $S/tmp/cw-docker-err.XXXXXX
+mktemp -d $S/home/.claude/.cw-stage.XXXXXX
+mktemp $S/tmp/cw-docker-err.XXXXXX
+
+######## P5 unwritable destination, nothing would change
+rc=1 (pty pipeline rc is install.sh's)
+ERROR: could not create /tmp/claude-1000/-workspace/7630264d-3947-4203-a0ec-b9ffcc3a4e06/scratchpad/q058p3.Ofgw2d/home/.claude/.claude-workflows-lock (is /tmp/claude-1000/-workspace/7630264d-3947-4203-a0ec-b9ffcc3a4e06/scratchpad/q058p3.Ofgw2d/home/.claude writable?).
+       install.sh stages and reviews under the destination, so it needs write
+       access there even when nothing would change; nothing was replaced.
+"Nothing to install" lines: 0
+
+######## P5b unwritable parent, destination absent
+rc=1
+ERROR: could not create /tmp/claude-1000/-workspace/7630264d-3947-4203-a0ec-b9ffcc3a4e06/scratchpad/q058p3.Ofgw2d/ro/claude/.claude-workflows-lock (is /tmp/claude-1000/-workspace/7630264d-3947-4203-a0ec-b9ffcc3a4e06/scratchpad/q058p3.Ofgw2d/ro/claude writable?).
+
+######## P6 git config --file <file> --unset-all <key> for each refused shape
+install rc=1; refusal lists:
+         $S/repo/.git/config: core.fsmonitor /bin/false
+         $S/repo/.git/config: include.path /nonexistent/a
+         $S/repo/.git/config: include.path /nonexistent/b
+         $S/repo/.git/config: includeif.gitdir:/nowhere/.path /nonexistent/c
+         $S/repo/.git/config: filter.lfs.smudge git-lfs smudge -- %f
+         $S/repo/.git/config: filter.lfs.required true
+         $S/repo/.git/config.worktree: filter.WT.clean cat
+       these. Check each one and remove it, with
+         git config --file <the file named above> --unset-all <key>
+       or by emptying the attributes file, then rerun. Removing filter.lfs.*
+       disables Git LFS in this clone; set LFS up in your global config instead
+       (`git lfs install`, without --local). Nothing was installed.
+git config --file $S/repo/.git/config --unset-all core.fsmonitor -> rc=0
+git config --file $S/repo/.git/config --unset-all include.path -> rc=0
+git config --file $S/repo/.git/config --unset-all include.path -> rc=5
+git config --file $S/repo/.git/config --unset-all includeif.gitdir:/nowhere/.path -> rc=0
+git config --file $S/repo/.git/config --unset-all filter.lfs.smudge -> rc=0
+git config --file $S/repo/.git/config --unset-all filter.lfs.required -> rc=0
+git config --file $S/repo/.git/config.worktree --unset-all filter.WT.clean -> rc=0
+old remedy for comparison (git config --local --unset include.path) on a fresh multi-valued key:
+warning: include.path has multiple values
+  rc=5
+rerun after the remedies: rc=0 blessed=1
+
+######## P7 NOTE lines per run with docker absent
+docker absent
+closed stdin (decline dc, host skipped): NOTEs=1 progress=0
+--yes: NOTEs=2
+pty n,n: NOTEs=2
+pty n,y: NOTEs=3
+pty y,y: NOTEs=4 installed=1
+docker stub present, --yes: progress lines=2 NOTEs=0
+
+######## P8 perl (vis) fails only on a MODE line; the change is a chmod only
+rc=1
+
+######## P9 devcontainer: find fails inside links_in after the copy (unreadable dir planted during cp)
+rc=1
+find: '$S/home/.config/claude-devcontainer/egress/locked': Permission denied
+find: '$S/home/.config/claude-devcontainer/egress/locked': Permission denied
+find: '$S/home/.config/claude-devcontainer/egress/locked': Permission denied
+$S/repo/devcontainer-config/install.sh: line 135: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+ERROR: the devcontainer config copied into $S/home/.config/claude-devcontainer differs from what the review showed (the stage changed after review, during the copy).
+       The copied items were removed again (the previous config with them) and
+       nothing was blessed, so cc-isolated will not run until install.sh completes.
+       Rerun install.sh.
+cc-isolated.sh left in DEST: no; TAMPERED in it: ; bin link resolves: no
+
+== done 2026-09-25T08:43:04Z; probe dir: /tmp/claude-1000/-workspace/7630264d-3947-4203-a0ec-b9ffcc3a4e06/scratchpad/q058p3.Ofgw2d
+probe exit=0

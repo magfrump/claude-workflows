@@ -1,0 +1,5 @@
+2026-09-25T08:48:19Z
+cmd: bash old-remedy-worktree.sh cwd: /workspace/docs/reviews/execution-logs/q058p3-fc
+old: --local --unset -> rc=5
+new: --file config.worktree --unset-all -> rc=0
+exit=0

@@ -2,7 +2,7 @@
 
 Commit: b4fd792
 
-**Scope:** `ans/copy-install` `9ae6e46..b4fd792` (the Q-058 restart: 8 commits). Limited to `devcontainer-config/install.sh`, `test/install-host.bats`, `test/cc-isolated-functions.bats`, `README.md`, `docs/decisions/037-bare-host-copy-install.md`, `guides/bare-host-hook-wiring.md`, `docs/working/plan-copy-install-bare-host.md`, plus the commit messages. Partial scope; the branch's earlier commits are context only. At `skill-fixtures` HEAD these files are identical to b4fd792, except a one-line shellcheck fix to `install-host.bats` (423b51c). | **Reviewed:** 2026-09-24/25 | **Status: 🔴 DOES NOT PASS** — 3 red item(s) unresolved (pass 2; see the pass-2 section at the end)
+**Scope:** `ans/copy-install` `9ae6e46..b4fd792` (the Q-058 restart: 8 commits). Limited to `devcontainer-config/install.sh`, `test/install-host.bats`, `test/cc-isolated-functions.bats`, `README.md`, `docs/decisions/037-bare-host-copy-install.md`, `guides/bare-host-hook-wiring.md`, `docs/working/plan-copy-install-bare-host.md`, plus the commit messages. Partial scope; the branch's earlier commits are context only. At `skill-fixtures` HEAD these files are identical to b4fd792, except a one-line shellcheck fix to `install-host.bats` (423b51c). | **Reviewed:** 2026-09-24/25 | **Status: 🟡 CONDITIONAL PASS** — 1 amber item(s) awaiting resolution or justification (pass 3: 0 red. P3-A3 is accepted with a revisit trigger; the other pass-3 ambers are fixed in f5e3029, pending the pass-4 confirmation. See the pass-3 section at the end)
 
 Delivery mode: self-read. Agents read the 36 KB diff file and the b4fd792 worktree, and read their skill files themselves instead of having them pasted, because sub-agents here have file access. Replication: k=3 fact-check (opus), plus 3 core critics (opus). Prior rubric: `code-review-rubric-2026-09-23-ans-copy-install-final.md` (R1 and R2 parked).
 
@@ -145,3 +145,60 @@ No prior overrides matched. The pass-1 Accepted-immutable row (fa69656) doesn't 
 | 1 | `install.sh:171-211`, `:304-305`; 037:78 | security N1; fact-check Claims 6, 26 | distinct defects: both sources state the same defect completely → P2-R1 |
 | 2 | `install.sh:742`, `:807-837` | security N2, N3, N4 | shared fix, not a new row: the host target still reads three inputs from `$TMPDIR` (the stage, links inside it, the old-side view). Staging all of it under `$dest` closes all three. N3's recommendation already states that joint fix |
 | 3 | `install.sh:495-509` | security N5 | single source |
+
+---
+
+# Pass 3 (terminal): fix commits `f8d3f78..516124d` (Commit: 516124d)
+
+**Reports:**
+- Fact-check, k=1: `code-fact-check-report.md`. 26 claims: 21 Verified, 4 Mostly accurate, 0 Incorrect, 1 Unverifiable.
+- Critics: `security-review-2026-09-25-copy-install-q058-pass3.md`, `api-consistency-review-2026-09-25-copy-install-q058-pass3.md`, `performance-review-2026-09-25-copy-install-q058-pass3.md`.
+
+**Pass-2 items after the fixes:**
+- P2-R1, P2-R2, P2-R3 and P2-A1–A5 are all fixed. The security reviewer re-ran every earlier probe against 516124d unchanged: SP1, SP1b–e, SP3, SP3b–d, P3, P4, P5 and A1b. None lands.
+- P2-C2 and P2-C3 are fixed. The suite total is flat at ~103 s even with 9 new tests.
+
+**Pass 3's own findings** were fixed by the orchestrator in f5e3029 (below). Pass 4 is the confirmation pass on that commit.
+
+**Pass-3 status: ✅ no 🔴.** The 🟡 rows are fixed or carry a qualifying note.
+
+## 🔴 Must Fix
+
+None.
+
+## 🟡 Must Address
+
+| # | Finding | Domain | Severity | Source | Legibility-target | Considered overrides | Status | Author note |
+|---|---|---|---|---|---|---|---|---|
+| P3-A1 | `links_in` returned the status of its last `find`. So a missing PAYLOAD item after the devcontainer copy ended the run through `set -e` before `dc_unwind` ran. An altered `cc-isolated.sh` stayed live behind the `cc-isolated` link, with no ERROR line. This regressed P2-A2's guarantee. | Security / API | Inconsistent (executed ×2: api probe G, fact-check P9b) | api-consistency F1; fact-check escalation 1 | for-author | — | ✅ Fixed (f5e3029, T85 fails before) | — |
+| P3-A2 | Config-based hooks (`hook.<name>.command`, git ≥ 2.54) aren't refused, and `core.hooksPath=/dev/null` isn't shown to disable them. | Security | Unverified-High-Risk (web source; this sandbox has git 2.39.5) | fact-check escalation 2; security P3-3 | for-author | — | ✅ Fixed (f5e3029: `hook.*` refused, T84) | Revisit trigger: a host with git ≥ 2.54. Re-run T84's setup with `hook.pwn.event=post-index-change` and **no** local key refusal, to learn whether `core.hooksPath=/dev/null` alone suffices |
+| P3-A3 | `git archive` runs a filter driver defined in the *global* `~/.gitconfig` and assigned by a *committed* `.gitattributes`. `git_state_gate` reads neither of those. | Security | Medium (executed: `GLOBAL-SMUDGE-RAN`) | security-reviewer P3-1 | for-author | — | 🟡 Accepted (037 residual, f5e3029) | Not reachable from a cc-isolated container (its `~/.gitconfig` is not the host's). A bare-host agent that can write `~/.gitconfig` already has equivalent persistence through other `$HOME` files. **Revisit trigger:** the bare host's sandbox is found to allow writes to `~/.gitconfig` while denying the other `$HOME` rc files. See the `you: terminal` check in Coverage |
+| P3-A4 | Doc wording the fact-check rated Mostly accurate: README's per-entry remedy claim, "nothing of this target in `$TMPDIR`" (the gate's docker stderr file is there), and the progress-line and NOTE wording in 037:33 and plan:253. | Docs | Mostly accurate ×4 | fact-check; api F4 | for-author | — | ✅ Fixed (f5e3029) | — |
+
+## 🟢 Consider
+
+| # | Finding | Source | Severity | Legibility-target | Considered overrides | Status |
+|---|---|---|---|---|---|---|
+| P3-C1 | The unwritable-destination refusal ends with the copy step's trailer ("nothing was replaced") instead of `host_refuse`'s. T16 now passes only because of that reuse, so the real copy-failure message (:828) is untested. Its hint also names a nonexistent dir when `$dest` is missing and its parent is read-only. | api F2 | Minor | for-author | — | 🟢 Open |
+| P3-C2 | After a killed run, `lock_msg` names only the lock. Removing it is enough, since the next run clears `.cw-stage.*` and `.cw-new.*`, but no doc says so. A leftover `.cw-stage` link is removed silently, while a `.cw-new` link is refused. | api F3; perf 4 | Informational | for-author | — | 🟢 Open |
+| P3-C3 | ~20 s of the ~103 s suite is `script` waiting a fixed 2 s on unread piped answers, in 10 refusal tests. Feed only the answers install.sh reads. | performance 1 | Low | for-author | — | 🟢 Open |
+| P3-C4 | T72's stub logs its call before it tests `agent-down`, leaving a microsecond ordering race. T67 and T28 no longer exercise their race: nothing reads the stage after the copies are hashed. | performance 2, 3 | Low / Informational | for-author | — | 🟢 Open |
+| P3-C5 | If vis fails on a MODE line only (mode_diff runs with errexit off), the review can look empty while you're asked to approve it. The vis_or_die comment states this. | fact-check escalation 3 | Informational | for-author | — | 🟢 Open |
+| P3-C6 | The devcontainer target still stages in `$TMPDIR`. The link variant is closed, but a plain content swap-and-revert during the review is caught only by the gate, as 037 states (accepted under Q-058 [2]). | security P3-2 | Informational | for-orchestrator-synthesis | — | 🟢 Accepted |
+| P3-C7 | The unwrapped ~150-char `dc_unwind` ERROR line. 037:93's revisit trigger leaves out `claude.exe`. The LFS advice is unverifiable here (no git-lfs). | api F5; fact-check (Unverifiable) | Informational | for-author | — | 🟢 Open |
+
+## ↩️ Considered Overrides (pass 3)
+
+No prior overrides matched.
+
+## 🧩 Composition check (pass 3)
+
+| Cluster | File / lines | Fragments | Disposition |
+|---|---|---|---|
+| 1 | `install.sh:563`, `:650-654` | api F1; fact-check escalation 1 | distinct defects: the same defect, stated completely by both → P3-A1 |
+| 2 | `install.sh:197`; 037:80 | fact-check escalation 2; security P3-1, P3-3 | distinct defects: config hooks (P3-A2) and global filters (P3-A3) are separate mechanisms |
+
+## Coverage
+
+- `you: terminal`, carried over: time `docker ps --filter label=cc-project` on the bare host (sets P2-C1's timeout); check whether the bare host's sandboxed Bash can write `~/.gitconfig` and the terminal's `$TMPDIR` (the reach of P3-A3 and P3-C6).
+- Unverified: behavior on git ≥ 2.54 (P3-A2's revisit trigger).

@@ -1,0 +1,4 @@
+git version 2.39.5
+git_state_gate local-config/attributes read (empty = gate passes):
+  .git/info/attributes non-empty: no
+archive marks: GLOBAL-SMUDGE-RAN

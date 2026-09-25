@@ -1,0 +1,9 @@
+2026-09-25T08:47:40Z
+cmd: bash ln-first-wins.sh cwd: /workspace/docs/reviews/execution-logs/q058p3-fc
+bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+ln a rc=0
+ln: failed to create symbolic link '/tmp/claude-1000/-workspace/7630264d-3947-4203-a0ec-b9ffcc3a4e06/scratchpad/lnfw.3JcY2O/farm/x': File exists
+ln b rc=1 (x already present)
+farm/x -> /tmp/claude-1000/-workspace/7630264d-3947-4203-a0ec-b9ffcc3a4e06/scratchpad/lnfw.3JcY2O/a/x; y present: yes; z present: yes
+empty dir: rc=0; literal '*' link: yes
+exit=0

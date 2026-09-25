@@ -1,0 +1,44 @@
+cmd: bash prefix-bats.sh /workspace/.claude/wt-q058p2  cwd: /workspace/docs/reviews/execution-logs/q058p3-fc
+bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+2026-09-25T08:44:17Z
+=== install.sh at f8d3f78 (1104 lines), tests matching: ^T7[56] 
+1..2
+not ok 1 T75 a planted .git/hooks hook and a core.hooksPath hook never run; the install proceeds (review P2-R1, SP3b/SP3c)
+not ok 2 T76 a submodule's own filter and hook never run; the install proceeds (review P2-R1, SP3d)
+bats exit=1
+=== install.sh at 99656a2 (1116 lines), tests matching: ^T7[789] 
+1..3
+not ok 1 T77 a symlink that appears in the host copies after the payload link check is refused, not installed (review P2-R2, SP1d)
+not ok 2 T78 a cc-isolated.sh symlink planted in the devcontainer stage after the link check is refused before the review (review P2-R2, SP1e)
+not ok 3 T79 a symlink that lands in the devcontainer destination is removed and named, not blessed (review P2-R2)
+bats exit=1
+=== install.sh at 21bf405 (1156 lines), tests matching: ^T8[012] 
+1..3
+not ok 1 T80 the old side of the host review is not in $TMPDIR: rewriting it there cannot hide a change (review P2-R3, SP1b)
+not ok 2 T81 the host stage is not in $TMPDIR: editing it there between archive and copy cannot alter what is installed (review P2-A1, SP1c)
+not ok 3 T82 a stale stage left under the destination is cleared; a planted .cw-stage link's target is untouched (review P2-R3)
+bats exit=1
+=== install.sh at fa25f13 (1165 lines), tests matching: ^T83 
+1..1
+not ok 1 T83 a cp failure in the devcontainer copy loop removes what was copied; no altered launcher stays live (review P2-A2, A1b)
+bats exit=1
+=== install.sh at 516124d (1193 lines), tests matching: ^T(7[5-9]|8[0-3]) 
+1..9
+ok 1 T80 the old side of the host review is not in $TMPDIR: rewriting it there cannot hide a change (review P2-R3, SP1b)
+ok 2 T81 the host stage is not in $TMPDIR: editing it there between archive and copy cannot alter what is installed (review P2-A1, SP1c)
+ok 3 T82 a stale stage left under the destination is cleared; a planted .cw-stage link's target is untouched (review P2-R3)
+ok 4 T83 a cp failure in the devcontainer copy loop removes what was copied; no altered launcher stays live (review P2-A2, A1b)
+ok 5 T75 a planted .git/hooks hook and a core.hooksPath hook never run; the install proceeds (review P2-R1, SP3b/SP3c)
+ok 6 T76 a submodule's own filter and hook never run; the install proceeds (review P2-R1, SP3d)
+ok 7 T77 a symlink that appears in the host copies after the payload link check is refused, not installed (review P2-R2, SP1d)
+ok 8 T78 a cc-isolated.sh symlink planted in the devcontainer stage after the link check is refused before the review (review P2-R2, SP1e)
+ok 9 T79 a symlink that lands in the devcontainer destination is removed and named, not blessed (review P2-R2)
+bats exit=0
+=== T72 x5 at 516124d
+run 1: ok 1 T72 an agent seen only while the devcontainer prompt waits stops the host target before it stages (review A2, P4)
+run 2: ok 1 T72 an agent seen only while the devcontainer prompt waits stops the host target before it stages (review A2, P4)
+run 3: ok 1 T72 an agent seen only while the devcontainer prompt waits stops the host target before it stages (review A2, P4)
+run 4: ok 1 T72 an agent seen only while the devcontainer prompt waits stops the host target before it stages (review A2, P4)
+run 5: ok 1 T72 an agent seen only while the devcontainer prompt waits stops the host target before it stages (review A2, P4)
+2026-09-25T08:45:23Z
+exit=0
