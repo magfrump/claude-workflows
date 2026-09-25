@@ -653,6 +653,10 @@ install_claude_home() {
   echo "=== Host target: global Claude Code files ======================================"
   echo "Destination: $dest  (chosen by $label)"
 
+  # Q-058, review A2: the startup check ran before target 1's review and
+  # prompt, which can wait for minutes. Check again before this target stages.
+  agent_gate "Nothing was installed into the host target."
+
   # Guards: nothing below may write through a link into the checkout.
   if [ -L "$dest" ] && [ ! -d "$dest" ]; then
     host_refuse "$dest is a dangling symlink ($(readlink "$dest")). Remove it or point it at a real directory."
@@ -935,17 +939,22 @@ install_claude_home() {
 # can rewrite the stage, the checkout or its .git during the review, and a
 # cc-isolated container can write the checkout through its bind mount. So the
 # install is refused while either runs: at startup, before anything is staged,
-# and again after each y, right before that target writes. See decision 037,
-# "Trust model (Q-058)", for what this does not catch.
+# again before the host target stages, and after each y, right before that
+# target writes. See decision 037, "Trust model (Q-058)", for what this does
+# not catch.
 #
-# A Claude Code process is one of this uid's processes whose command line runs
-# `claude` (the native binary, argv0 "claude" or ".../claude") or the npm
-# package (`node .../bin/claude`, `.../@anthropic-ai/claude-code/...`). pgrep
-# never lists itself and this script's own command line does not match; $$ is
-# dropped only as a belt-and-braces guard. A command line with a `.../claude`
+# A Claude Code process is one of this uid's processes whose command line holds
+# a token that is `claude` (or `claude.exe`) or ends in `/claude`, followed by a
+# space or the end of the line, anywhere in the command line: the native
+# binary, argv0 "claude" or ".../claude", or `node .../bin/claude`. Or one whose
+# command line contains `/@anthropic-ai/claude-code/` (the npm package),
+# `/claude/versions/` (the versioned native binary, ~/.local/share/claude/
+# versions/<ver>) or `/claude-agent-sdk/` (the Agent SDK CLI; review A2).
+# pgrep never lists itself and this script's own command line does not match;
+# $$ is dropped only as a belt-and-braces guard. A command line with such an
 # argument (`vim ./claude`, `tail -f /var/log/claude`) also matches: the install
 # is refused, and the message names the process.
-CLAUDE_PROC_RE='(^|/)claude(\.exe)?( |$)|/@anthropic-ai/claude-code/'
+CLAUDE_PROC_RE='(^|/)claude(\.exe)?( |$)|/@anthropic-ai/claude-code/|/claude/versions/|/claude-agent-sdk/'
 
 # agent_gate <what is refused>: exit 1, naming each agent found and how to
 # stop it, when a Claude Code process or a cc-isolated container runs.

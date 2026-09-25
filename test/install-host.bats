@@ -1078,6 +1078,54 @@ installed_then_changed() {
   [ ! -e "$CLAUDE_DEVC_CONFIG_DIR/cc-isolated.sh" ]
 }
 
+# stub_pgrep_table: a pgrep that applies the pattern install.sh passes (its last
+# argument) to the command lines in $S/ps.txt ("PID command line" per line), as
+# `pgrep -af` does, and prints the matching lines.
+stub_pgrep_table() {
+  stub_pgrep "pat=\"\${*: -1}\"; rc=1
+while IFS= read -r l; do printf '%s\\n' \"\${l#* }\" | grep -qE -- \"\$pat\" && { echo \"\$l\"; rc=0; }; done < '$S/ps.txt'
+exit \$rc"
+}
+
+@test "T71 the gate recognises the versioned native binary and the Agent SDK CLI; other processes pass (review A2)" {
+  fake_repo
+  stub_pgrep_table
+  others=$'5001 bash ralph-loop.sh\n5002 vim notes.md\n5003 node cli.js'
+  for agent in '4243 /home/u/.local/share/claude/versions/2.1.3 --resume' \
+               '4244 node /x/node_modules/@anthropic-ai/claude-agent-sdk/cli.js' \
+               '4245 claude --resume' \
+               '4246 node /usr/lib/node_modules/@anthropic-ai/claude-code/cli.js'; do
+    printf '%s\n%s\n' "$others" "$agent" > "$S/ps.txt"
+    run env -u CLAUDECODE bash "$INSTALL" --yes </dev/null
+    echo "$output"
+    [ "$status" -eq 1 ]
+    [[ "$output" == *"$agent"* ]]
+    [[ "$output" != *'5001'* ]]
+    [[ "$output" != *'BLESS-STUB'* ]]
+  done
+  # Documented residuals (decision 037): not Claude-shaped, so not refused.
+  printf '%s\n' "$others" > "$S/ps.txt"
+  run env -u CLAUDECODE bash "$INSTALL" --yes </dev/null
+  echo "$output"
+  [ "$status" -eq 0 ]
+  [[ "$output" == *'BLESS-STUB --bless'* ]]
+}
+
+@test "T72 an agent seen only while the devcontainer prompt waits stops the host target before it stages (review A2, P4)" {
+  need_script; fake_repo
+  stub_pgrep "[ -e '$S/agent-up' ] && [ ! -e '$S/agent-down' ] || exit 1; echo '779 claude'; exit 0"
+  feed="for _i in \$(seq 200); do [ -e '$ROOT/devcontainer-config/claude-home/.manifest' ] && break; sleep 0.1; done
+    sleep 1; touch '$S/agent-up'; printf 'n\n'; sleep 3; touch '$S/agent-down'; printf 'y\n'"
+  run_pty_feed "$feed" bash "$INSTALL"
+  echo "$output"
+  [ "$status" -eq 1 ]
+  [[ "$output" == *'779 claude'* ]]
+  [[ "$output" == *'Nothing was installed into the host target.'* ]]
+  [[ "$output" != *'Install these files'* ]]
+  [ ! -e "$CLAUDE_HOME_DIR" ]
+  no_host_stage_left
+}
+
 # Marker command: git runs it only if it obeys the planted config.
 plant_marker_cmd() {
   printf '#!/bin/bash\ntouch "%s/%s"\ncat\n' "$S" "$1" > "$S/$1.sh"
