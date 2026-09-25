@@ -53,4 +53,4 @@ Order: `1 → [2, 3] → [4, 6, 7, 8] → 10`
 - Pass-1 review (docs/reviews/code-review-rubric-2026-09-24-skill-fixtures.md) canary-probed and confirmed [observed] two behaviors:
   - Sub-agents inherit `--tools`.
   - `-p` refuses absolute-path reads outside the cwd.
-- Pass 2 of the review (fixture data) is still deferred.
+- ~~Pass 2 of the review (fixture data) is still deferred.~~ Pass 2 converged (866a781): no 🔴, and its 🟡 is fixed. See the rubric's pass-2 section.
