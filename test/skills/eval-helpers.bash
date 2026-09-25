@@ -4,7 +4,7 @@
 
 # Load expected verdicts for a skill. Must be called before eval_fixture.
 # Declares global associative arrays.
-# Args: $1 = skill name (fact-check or code-fact-check)
+# Args: $1 = skill name (any skill with test/skills/<skill>/expected-verdicts.bash)
 load_expected_verdicts() {
   local skill="$1"
   local verdicts_file="${BATS_TEST_DIRNAME}/${skill}/expected-verdicts.bash"
@@ -71,6 +71,16 @@ eval_fixture() {
     return 1
   fi
 
+  # An empty report is what generate-reports.bash leaves when claude fails. The
+  # absence-only checks (no_severity:, no_verdict:, no_field:, no_pattern:) and a
+  # skipped format_check all pass on it, so a dead run would score as a pass on
+  # every clean-negative fixture. Only a fixture that expects no claims at all
+  # (max_claims:0, e.g. an empty input file) may have an empty report.
+  if [ -z "$REPORT_CONTENT" ] && [[ ";$key_check;" != *";max_claims:0;"* ]]; then
+    echo "Empty report for $fixture: the generation run failed or printed nothing"
+    return 1
+  fi
+
   # Run each check (separated by ;; in KEY_CHECK values). Every check runs and
   # any failure fails the call, so the result holds under bats' `run` and in
   # conditionals, not only under a test body's errexit.
@@ -132,7 +142,7 @@ eval_fixture() {
         assert_subagents_min "${check#subagents_min:}" || failed=1
         ;;
       format_check)
-        # Delegate to the format BATS suite (fact-check-format.bats or code-fact-check-format.bats)
+        # Delegate to the skill's format suite, test/skills/<skill>-format.bats
         REPORT_PATH="$REPORT_PATH" bats "${BATS_TEST_DIRNAME}/${skill}-format.bats" || failed=1
         ;;
       *)
