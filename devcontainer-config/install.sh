@@ -144,10 +144,22 @@ vis_or_die() {
   fi
 }
 
+# repo_git <args...>: git on the checkout with the state that can make git run
+# a command switched off (review R1, P2-R1). --no-optional-locks: status does
+# not rewrite the index, so the post-index-change hook has nothing to fire on.
+# core.hooksPath=/dev/null: no hook runs from .git/hooks or a planted hooks
+# directory. core.fsmonitor=false: no fsmonitor command, from any config.
+# (Submodules are kept out by --ignore-submodules=all on the status calls.)
+# git_state_gate refuses the local keys these flags cannot switch off: filter
+# drivers and includes.
+repo_git() {
+  git --no-optional-locks -C "$REPO_ROOT" -c core.hooksPath=/dev/null -c core.fsmonitor=false "$@"
+}
+
 # head_commit: print HEAD's commit id; exit the script if there is none.
 head_commit() {
-  if ! git -C "$REPO_ROOT" rev-parse --verify -q 'HEAD^{commit}'; then
-    echo "ERROR: no readable HEAD commit in $REPO_ROOT (run \`git -C $REPO_ROOT status\`" >&2
+  if ! repo_git rev-parse --verify -q 'HEAD^{commit}'; then
+    echo "ERROR: no readable HEAD commit in $REPO_ROOT (run \`git -C $REPO_ROOT rev-parse HEAD\`" >&2
     echo "       to see why). install.sh stages committed content only. Nothing was installed." >&2
     exit 1
   fi
@@ -172,7 +184,7 @@ GIT_EXEC_KEYS_RE='^(filter\.|core\.fsmonitor|include)'
 git_state_gate() {
   local found="" out rc f attrs line
   for f in config config.worktree; do
-    f="$(git -C "$REPO_ROOT" rev-parse --git-path "$f")" || f=""
+    f="$(repo_git rev-parse --git-path "$f")" || f=""
     case "$f" in ''|/*) ;; *) f="$REPO_ROOT/$f" ;; esac
     if [ -z "$f" ] || { [ "${f##*/}" = config ] && [ ! -f "$f" ]; }; then
       echo "ERROR: could not find the git config of $REPO_ROOT. Nothing was installed." >&2
@@ -180,7 +192,7 @@ git_state_gate() {
     fi
     [ -f "$f" ] || continue   # config.worktree is optional
     rc=0
-    out="$(git --no-pager config --file "$f" --no-includes --get-regexp "$GIT_EXEC_KEYS_RE")" || rc=$?
+    out="$(git --no-pager -c core.hooksPath=/dev/null config --file "$f" --no-includes --get-regexp "$GIT_EXEC_KEYS_RE")" || rc=$?
     if [ "$rc" -gt 1 ]; then
       echo "ERROR: could not read $f (git config exit $rc). Nothing was installed." >&2
       exit 1
@@ -189,7 +201,7 @@ git_state_gate() {
       while IFS= read -r line; do found+="         $f: $line"$'\n'; done <<< "$out"
     fi
   done
-  attrs="$(git -C "$REPO_ROOT" rev-parse --git-path info/attributes)" || attrs=""
+  attrs="$(repo_git rev-parse --git-path info/attributes)" || attrs=""
   case "$attrs" in ''|/*) ;; *) attrs="$REPO_ROOT/$attrs" ;; esac
   if [ -z "$attrs" ]; then
     echo "ERROR: could not find the git info/attributes path of $REPO_ROOT. Nothing was installed." >&2
@@ -223,7 +235,7 @@ extract_commit() {
   # misses are collected before exiting so a reorganization is reported once
   # rather than one rerun per renamed path.
   for item in "$@"; do
-    git -C "$REPO_ROOT" cat-file -e "$commit:$item" 2>/dev/null || missing+=("$item")
+    repo_git cat-file -e "$commit:$item" 2>/dev/null || missing+=("$item")
   done
   if [ "${#missing[@]}" -gt 0 ]; then
     echo "ERROR: payload source(s) not found in commit ${commit:0:12} of $REPO_ROOT: ${missing[*]}" >&2
@@ -235,7 +247,7 @@ extract_commit() {
   # Modes are the commit's (fact-check claim 17): tar.umask=022 makes git
   # archive write 644/755 rather than its default 664/775, and tar -p keeps
   # them rather than applying this shell's umask.
-  if ! git -C "$REPO_ROOT" -c tar.umask=022 archive --format=tar "$commit" -- "$@" \
+  if ! repo_git -c tar.umask=022 archive --format=tar "$commit" -- "$@" \
        | tar -xpf - -C "$dir/.extract"; then
     echo "ERROR: could not extract commit ${commit:0:12} from $REPO_ROOT. Nothing was installed." >&2
     exit 1
@@ -298,11 +310,11 @@ assemble() {
   # every control or non-ASCII byte in them whatever the user's config (with
   # quotePath=false it printed U+009B raw: fact-check claim 9), so each entry
   # is one line; the listing also goes through vis. Ignored files are not
-  # listed: never staged. core.fsmonitor=false: status would otherwise run the
-  # configured fsmonitor command (review R1; git_state_gate refuses a local one,
-  # this also covers one set in the user's global config).
-  dirty="$(git -C "$REPO_ROOT" -c core.quotePath=true -c core.fsmonitor=false status --porcelain --untracked-files=all -- "${CLAUDE_HOME_SRC[@]}" "$@")"
-  home_dirty="$(git -C "$REPO_ROOT" -c core.quotePath=true -c core.fsmonitor=false status --porcelain --untracked-files=all -- "${CLAUDE_HOME_SRC[@]}")"
+  # listed: never staged. repo_git keeps status from running hooks or an
+  # fsmonitor, and --ignore-submodules=all keeps it out of submodules, whose
+  # own git dirs carry their own config, filters and hooks (review P2-R1).
+  dirty="$(repo_git -c core.quotePath=true status --porcelain --untracked-files=all --ignore-submodules=all -- "${CLAUDE_HOME_SRC[@]}" "$@")"
+  home_dirty="$(repo_git -c core.quotePath=true status --porcelain --untracked-files=all --ignore-submodules=all -- "${CLAUDE_HOME_SRC[@]}")"
   if [ -n "$dirty" ]; then
     echo "WARNING: the checkout has uncommitted changes under the payload paths. They are"
     echo "         NOT included: this install stages commit ${commit:0:12} only. Commit them"

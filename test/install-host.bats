@@ -1226,6 +1226,53 @@ plant_marker_cmd() {
   [[ "$output" == *'info/attributes'* ]]
 }
 
+@test "T75 a planted .git/hooks hook and a core.hooksPath hook never run; the install proceeds (review P2-R1, SP3b/SP3c)" {
+  fake_repo
+  printf '#!/bin/sh\ntouch "%s/hook-ran"\n' "$S" > "$ROOT/.git/hooks/post-index-change"
+  chmod +x "$ROOT/.git/hooks/post-index-change"
+  mkdir -p "$S/hk"
+  printf '#!/bin/sh\ntouch "%s/hookspath-ran"\n' "$S" > "$S/hk/post-index-change"
+  chmod +x "$S/hk/post-index-change"
+  for how in default hookspath; do
+    [ "$how" = hookspath ] && git -C "$ROOT" config core.hooksPath "$S/hk"
+    # Stat-dirty but content-clean: a status that refreshes the index rewrites
+    # it, and writing the index runs post-index-change.
+    touch -d '2001-01-01' "$ROOT/skills/a/SKILL.md"
+    run env -u CLAUDECODE bash "$INSTALL" --yes </dev/null
+    echo "$output"
+    [ "$status" -eq 0 ]
+    [[ "$output" == *'BLESS-STUB --bless'* ]]
+  done
+  [ ! -e "$S/hook-ran" ]
+  [ ! -e "$S/hookspath-ran" ]
+  # The same hook does run under a plain git status (the test can see it).
+  git -C "$ROOT" config --unset core.hooksPath
+  touch -d '2002-01-01' "$ROOT/skills/a/SKILL.md"
+  git -C "$ROOT" status --porcelain >/dev/null
+  [ -e "$S/hook-ran" ]
+}
+
+@test "T76 a submodule's own filter and hook never run; the install proceeds (review P2-R1, SP3d)" {
+  fake_repo
+  git init -q "$S/sub"; printf 's\n' > "$S/sub/s.txt"
+  git -C "$S/sub" add .; git -C "$S/sub" -c user.email=t@t -c user.name=t commit -qm s
+  git -C "$ROOT" -c protocol.file.allow=always submodule add -q "$S/sub" skills/sub 2>/dev/null
+  commit_all sub
+  plant_marker_cmd sub-clean-ran
+  md="$ROOT/.git/modules/skills/sub"
+  git -C "$ROOT/skills/sub" config filter.pwn.clean "$S/sub-clean-ran.sh"
+  printf '* filter=pwn\n' > "$md/info/attributes"
+  printf '#!/bin/sh\ntouch "%s/sub-hook-ran"\n' "$S" > "$md/hooks/post-index-change"
+  chmod +x "$md/hooks/post-index-change"
+  touch -d '2001-01-01' "$ROOT/skills/sub/s.txt"
+  run env -u CLAUDECODE bash "$INSTALL" --yes </dev/null
+  echo "$output"
+  [ "$status" -eq 0 ]
+  [[ "$output" == *'BLESS-STUB --bless'* ]]
+  [ ! -e "$S/sub-clean-ran" ]
+  [ ! -e "$S/sub-hook-ran" ]
+}
+
 @test "T24 with CLAUDE_HOME_DIR unset, CLAUDE_CONFIG_DIR chooses the destination" {
   need_script; fake_repo
   run_pty 'n\ny\n' env -u CLAUDE_HOME_DIR CLAUDE_CONFIG_DIR="$S/cfgdir" bash "$INSTALL"
