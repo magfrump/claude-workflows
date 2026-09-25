@@ -456,7 +456,16 @@ install_devcontainer() {
   # persists until the copy. It does not catch a stage swapped for the review
   # and swapped back before the y: for that this target relies on the gate
   # (decision 037, "Trust model").
-  local reviewed_hash
+  local reviewed_hash links
+  links="$(links_in "$stage" "" "${PAYLOAD[@]}")"
+  if [ -n "$links" ]; then
+    {
+      echo "ERROR: symlinks appeared in the staged devcontainer config after its link check:"
+      printf '%s\n' "$links" | sed 's/^/         /'
+      echo "       install.sh never installs a link. Nothing was installed."
+    } | vis_or_die >&2
+    exit 1
+  fi
   reviewed_hash="$(tree_hash "$stage" "" "${PAYLOAD[@]}")"
 
   echo "Canonical (repo):  $SRC at commit ${STAGED_COMMIT:0:12} (staged in $stage)"
@@ -511,6 +520,17 @@ install_devcontainer() {
   # A1: what landed must be what was reviewed, before chmod and the bless. On a
   # mismatch (the stage changed during the copy) the copied items are removed,
   # so no unreviewed file stays live: cc-isolated.sh runs on the host from here.
+  links="$(links_in "$DEST" "" "${PAYLOAD[@]}")"
+  if [ -n "$links" ]; then
+    for item in "${PAYLOAD[@]}"; do rm -rf "${DEST:?}/$item"; done
+    {
+      echo "ERROR: symlinks landed in $DEST, which install.sh never installs:"
+      printf '%s\n' "$links" | sed 's/^/         /'
+      echo "       The copied items were removed again and nothing was blessed, so"
+      echo "       cc-isolated will not run until install.sh completes. Rerun install.sh."
+    } | vis_or_die >&2
+    exit 1
+  fi
   if [ "$(tree_hash "$DEST" "" "${PAYLOAD[@]}")" != "$reviewed_hash" ]; then
     for item in "${PAYLOAD[@]}"; do rm -rf "${DEST:?}/$item"; done
     echo "ERROR: the devcontainer config copied into $DEST differs from what the review" >&2
@@ -593,6 +613,16 @@ tree_hash() {
     find "$dir/$pfx$name" -printf '%P\t%y\t%m\t%l\n' | LC_ALL=C sort
     find "$dir/$pfx$name" -type f -print0 | LC_ALL=C sort -z | xargs -0 -r sha256sum | cut -d' ' -f1
   done | sha256sum | cut -d' ' -f1
+}
+
+# links_in <dir> <prefix> <name...>: print every symlink at or under
+# <dir>/<prefix><name>, one per line. extract_commit refuses links once, right
+# after extraction; a link that appears later passed that check and tree_hash
+# only records it, so every hash site calls this too (review P2-R2).
+links_in() {
+  local dir="$1" pfx="$2" name
+  shift 2
+  for name in "$@"; do find "$dir/$pfx$name" -type l; done
 }
 
 # payload_hash <dir> <prefix> <manifest>: tree_hash of every host entry name,
@@ -764,7 +794,17 @@ install_claude_home() {
     exit 1
   fi
   # The review below reads $new<name>; after the y they must still hash the same.
-  local new="$dest/.cw-new." reviewed_hash
+  local new="$dest/.cw-new." reviewed_hash links
+  links="$(links_in "$dest" .cw-new. "${CLAUDE_HOME_NAMES[@]}" manifest)"
+  if [ -n "$links" ]; then
+    rm_new_copies "$dest"
+    {
+      echo "ERROR: symlinks appeared in the copies to install after the payload's link check:"
+      printf '%s\n' "$links" | sed 's/^/         /'
+      echo "       install.sh never installs a link. Nothing was installed into the host target."
+    } | vis_or_die >&2
+    exit 1
+  fi
   reviewed_hash="$(payload_hash "$dest" .cw-new. "$dest/.cw-new.manifest")"
   echo "Canonical (repo):  $REPO_ROOT (commit $(sed -n 's/^commit=//p' "$dest/.cw-new.manifest"))"
   echo

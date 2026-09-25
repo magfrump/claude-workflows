@@ -1273,6 +1273,58 @@ plant_marker_cmd() {
   [ ! -e "$S/sub-hook-ran" ]
 }
 
+# stub_cp_then <case-pattern> <shell>: a cp that runs the real cp, then, when
+# its last argument matches the pattern, runs the shell snippet ($dst is that
+# argument, $srcarg the one before it). Stands in for a writer acting at that
+# exact moment, which the review probes had to race for.
+stub_cp_then() {
+  printf '#!/bin/bash\n%s "$@" || exit\ndst="${@: -1}"; srcarg="${@: -2:1}"\ncase "$dst" in %s) %s ;; esac\nexit 0\n' \
+    "$(command -v cp)" "$1" "$2" > "$STUB/cp"
+  chmod +x "$STUB/cp"
+}
+
+@test "T77 a symlink that appears in the host copies after the payload link check is refused, not installed (review P2-R2, SP1d)" {
+  need_script; fake_repo; symlink_install
+  printf '#!/bin/bash\nexit 0\n' > "$S/agent-writable.sh"
+  stub_cp_then '*/.cw-new.hooks' "ln -sfn '$S/agent-writable.sh' \"\$dst/h.sh\""
+  before=$(snap "$CLAUDE_HOME_DIR")
+  run_pty 'n\ny\n' bash "$INSTALL"
+  echo "$output"
+  [ "$status" -eq 1 ]
+  [[ "$output" == *'symlink'*'.cw-new.hooks/h.sh'* ]]
+  [[ "$output" != *'Install these files'* ]]
+  [[ "$output" != *'Installed into'* ]]
+  [ "$(snap "$CLAUDE_HOME_DIR")" = "$before" ]
+  run ! compgen -G "$CLAUDE_HOME_DIR/.cw-new.*"
+}
+
+@test "T78 a cc-isolated.sh symlink planted in the devcontainer stage after the link check is refused before the review (review P2-R2, SP1e)" {
+  fake_repo
+  printf '#!/usr/bin/env bash\necho "BLESS-STUB $*"\n' > "$S/agent-writable-cc.sh"
+  chmod +x "$S/agent-writable-cc.sh"
+  # The checkout mirror rebuild runs after extract_commit's check and before
+  # the pre-review hash: plant the link in the stage then.
+  stub_cp_then '*/claude-home/' "ln -sfn '$S/agent-writable-cc.sh' \"\${srcarg%/claude-home/.}/cc-isolated.sh\""
+  run env -u CLAUDECODE bash "$INSTALL" --yes </dev/null
+  echo "$output"
+  [ "$status" -eq 1 ]
+  [[ "$output" == *'symlink'*'cc-isolated.sh'* ]]
+  [[ "$output" != *'BLESS-STUB'* ]]
+  [ ! -e "$CLAUDE_DEVC_CONFIG_DIR/cc-isolated.sh" ]
+}
+
+@test "T79 a symlink that lands in the devcontainer destination is removed and named, not blessed (review P2-R2)" {
+  fake_repo
+  printf '#!/usr/bin/env bash\necho "BLESS-STUB $*"\n' > "$S/agent-writable-cc.sh"
+  stub_cp_then '*/claude-devcontainer/cc-isolated.sh' "ln -sfn '$S/agent-writable-cc.sh' \"\$dst\""
+  run env -u CLAUDECODE bash "$INSTALL" --yes </dev/null
+  echo "$output"
+  [ "$status" -eq 1 ]
+  [[ "$output" == *'symlink'*'cc-isolated.sh'* ]]
+  [[ "$output" != *'BLESS-STUB'* ]]
+  [ ! -e "$CLAUDE_DEVC_CONFIG_DIR/cc-isolated.sh" ] && [ ! -L "$CLAUDE_DEVC_CONFIG_DIR/cc-isolated.sh" ]
+}
+
 @test "T24 with CLAUDE_HOME_DIR unset, CLAUDE_CONFIG_DIR chooses the destination" {
   need_script; fake_repo
   run_pty 'n\ny\n' env -u CLAUDE_HOME_DIR CLAUDE_CONFIG_DIR="$S/cfgdir" bash "$INSTALL"
