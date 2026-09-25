@@ -277,7 +277,7 @@ EOF
   # Every spelling the old Write/Edit denylist let through (FC 21, 2026-09-24).
   local tools
   for tools in "Read,Write" "Read, Write" "Write(*)" "write" "Edit" "MultiEdit" \
-      "NotebookEdit" "Bash" "Read,Bash(git:*)" "Read," ",Read" "Read,,Grep"; do
+      "NotebookEdit" "Bash" "Read,Bash(git:*)" "Read," ",Read" "Read,,Grep" $'Read\nBash'; do
     rm -rf "${CALLS:?}"/* "$TEST_TMPDIR/test/skills/demo" "$TEST_TMPDIR/skills/demo"
     make_skill demo repo "$tools"
     run bash "$GEN" demo
@@ -296,6 +296,16 @@ EOF
     [ "$status" -ne 0 ] || { echo "accepted inline $tool"; return 1; }
     [[ "$output" == *"inline mode must not grant file tools"* ]]
   done
+}
+
+@test "a descriptive suffix is not kept as the subject's extension" {
+  make_skill demo repo "Read"
+  mv "$TEST_TMPDIR/test/skills/demo/fixtures/tc-1-thing.txt" \
+    "$TEST_TMPDIR/test/skills/demo/fixtures/tc-3-login.vuln"
+  run bash "$GEN" demo
+  [ "$status" -eq 0 ]
+  [[ "$(cat "$CALLS/0")" == *"Review subject please"* ]]
+  [[ "$(cat "$CALLS/0")" != *"vuln"* ]]
 }
 
 @test "a dotted fixture name with no plain extension reaches the model as 'subject'" {

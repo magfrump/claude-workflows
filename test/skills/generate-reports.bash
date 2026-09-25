@@ -134,14 +134,17 @@ generate_one() {
     model_flag="--model $CLAUDE_MODEL"
   fi
 
-  # Keep a plain extension (it tells the model the language); drop the name.
-  # A dotted name with no real extension (tc-2.4-inaccurate) gets no suffix,
-  # so its descriptive tail cannot reach the model as "subject.4-inaccurate".
+  # Keep a known file-type extension (it tells the model the language); drop
+  # the name. Anything else gets no suffix, so neither a dotted name's tail
+  # (tc-2.4-inaccurate) nor a descriptive suffix (.vuln, .safe) reaches the model.
   local subject_name="subject" ext="${fixture_name##*.}"
   if [ "$FIXTURE_MODE" = "tree" ]; then
     subject_name="."
-  elif [ "$ext" != "$fixture_name" ] && [[ "$ext" =~ ^[A-Za-z0-9]{1,5}$ ]]; then
-    subject_name="subject.$ext"
+  elif [ "$ext" != "$fixture_name" ]; then
+    case "$ext" in
+      md|txt|patch|diff|py|js|jsx|ts|tsx|go|cs|rb|rs|java|kt|swift|php|c|h|cpp|sh|sql|json|yaml|yml|toml|html|css|scss|vue|svelte)
+        subject_name="subject.$ext" ;;
+    esac
   fi
 
   local prompt
@@ -167,7 +170,11 @@ generate_one() {
 
   local stdin_text="$prompt"
   if [ "$FIXTURE_MODE" = "inline" ]; then
-    stdin_text="$(printf '%s\n\n%s' "$prompt" "$(cat "$fixture_path")")"
+    # Read first, as its own assignment, so an unreadable fixture stops the
+    # script under set -e instead of sending the prompt alone.
+    local fixture_content
+    fixture_content="$(cat "$fixture_path")"
+    stdin_text="$(printf '%s\n\n%s' "$prompt" "$fixture_content")"
   else
     if [ "$FIXTURE_MODE" = "tree" ]; then
       if declare -F fixture_base >/dev/null; then
