@@ -916,7 +916,9 @@ install_claude_home() {
     done < <(
       for d in "$bkroot"/*/; do
         d="${d%/}"
-        case "$d" in *$'\n'*) continue ;; esac
+        # The list below is line- and TAB-separated (cut -f2), so a name holding
+        # either would be split and mis-pruned (review A3): never a candidate.
+        case "$d" in *$'\n'*|*$'\t'*) continue ;; esac
         if [ "$d" = "$backup" ] || [ -L "$d" ] || [ -L "$d/.install-stamp" ]; then continue; fi
         [ -f "$d/.install-stamp" ] || continue
         e="$(sed -n 's/^installed_epoch=\([0-9][0-9]*\)$/\1/p' "$d/.install-stamp")"

@@ -1126,6 +1126,24 @@ exit \$rc"
   no_host_stage_left
 }
 
+@test "T73 a TAB-named backup dir planted before the run is skipped by the prune; kept backups stay (review A3, P5)" {
+  need_script; fake_repo; symlink_install
+  bk="$CLAUDE_HOME_DIR/.claude-workflows-backup"
+  tabbed="$bk/20200101T000000Z"$'\t'junk
+  mkdir -p "$bk/20200101T000000Z" "$bk/20200102T000000Z" "$tabbed"
+  printf 'installed_epoch=200\n' > "$bk/20200101T000000Z/.install-stamp"
+  printf 'installed_epoch=300\n' > "$bk/20200102T000000Z/.install-stamp"
+  printf 'installed_epoch=100\n' > "$tabbed/.install-stamp"
+  run_pty 'n\ny\n' bash "$INSTALL"
+  echo "$output"
+  [[ "$output" == *'Installed into'* ]]
+  # This run's backup plus the two most recent earlier ones are kept; the
+  # TAB-named dir is never a prune candidate (nor a split one).
+  [ -d "$bk/20200101T000000Z" ]
+  [ -d "$bk/20200102T000000Z" ]
+  [ -d "$tabbed" ]
+}
+
 # Marker command: git runs it only if it obeys the planted config.
 plant_marker_cmd() {
   printf '#!/bin/bash\ntouch "%s/%s"\ncat\n' "$S" "$1" > "$S/$1.sh"
