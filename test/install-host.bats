@@ -998,6 +998,64 @@ installed_then_changed() {
   sed -n '/^## Risks/,/^## /p' "$plan" | grep -q 'Q-058'
 }
 
+# Marker command: git runs it only if it obeys the planted config.
+plant_marker_cmd() {
+  printf '#!/bin/bash\ntouch "%s/%s"\ncat\n' "$S" "$1" > "$S/$1.sh"
+  chmod +x "$S/$1.sh"
+}
+
+@test "T65 a smudge filter planted in .git/config and .git/info/attributes is refused and never run (review R1)" {
+  fake_repo
+  plant_marker_cmd smudge-ran
+  git -C "$ROOT" config filter.pwn.smudge "$S/smudge-ran.sh"
+  printf '*.md filter=pwn\n' > "$ROOT/.git/info/attributes"
+  run env -u CLAUDECODE bash "$INSTALL" --yes </dev/null
+  echo "$output"
+  [ "$status" -eq 1 ]
+  [[ "$output" == *'filter.pwn.smudge'* ]]
+  [[ "$output" == *'info/attributes'*'*.md filter=pwn'* ]]
+  [[ "$output" == *'Nothing was installed.'* ]]
+  [[ "$output" != *'BLESS-STUB'* ]]
+  [ ! -e "$S/smudge-ran" ]
+  [ ! -e "$ROOT/devcontainer-config/claude-home" ]
+  [ ! -e "$CLAUDE_DEVC_CONFIG_DIR" ]
+  # A non-empty attributes file alone is refused too.
+  git -C "$ROOT" config --unset filter.pwn.smudge
+  run env -u CLAUDECODE bash "$INSTALL" --yes </dev/null
+  [ "$status" -eq 1 ]
+  [[ "$output" == *'info/attributes'* ]]
+  [[ "$output" != *'BLESS-STUB'* ]]
+}
+
+@test "T66 core.fsmonitor or an include in .git/config is refused and never run, also from a linked worktree (review R1)" {
+  fake_repo
+  git -C "$ROOT" worktree add -q "$S/wt" 2>/dev/null
+  plant_marker_cmd fsmonitor-ran
+  git -C "$ROOT" config core.fsmonitor "$S/fsmonitor-ran.sh"
+  for inst in "$INSTALL" "$S/wt/devcontainer-config/install.sh"; do
+    run env -u CLAUDECODE bash "$inst" --yes </dev/null
+    echo "$output"
+    [ "$status" -eq 1 ]
+    [[ "$output" == *'core.fsmonitor'* ]]
+    [[ "$output" != *'BLESS-STUB'* ]]
+  done
+  [ ! -e "$S/fsmonitor-ran" ]
+  git -C "$ROOT" config --unset core.fsmonitor
+  printf '[core]\n\tfsmonitor = %s\n' "$S/fsmonitor-ran.sh" > "$S/inc.cfg"
+  git -C "$ROOT" config include.path "$S/inc.cfg"
+  run env -u CLAUDECODE bash "$INSTALL" --yes </dev/null
+  echo "$output"
+  [ "$status" -eq 1 ]
+  [[ "$output" == *'include.path'* ]]
+  [ ! -e "$S/fsmonitor-ran" ]
+  # The worktree's attributes are the common dir's, though its .git is a file.
+  git -C "$ROOT" config --unset include.path
+  printf '* filter=x\n' > "$ROOT/.git/info/attributes"
+  run env -u CLAUDECODE bash "$S/wt/devcontainer-config/install.sh" --yes </dev/null
+  [ "$status" -eq 1 ]
+  [[ "$output" == *'info/attributes'* ]]
+}
+
 @test "T24 with CLAUDE_HOME_DIR unset, CLAUDE_CONFIG_DIR chooses the destination" {
   need_script; fake_repo
   run_pty 'n\ny\n' env -u CLAUDE_HOME_DIR CLAUDE_CONFIG_DIR="$S/cfgdir" bash "$INSTALL"

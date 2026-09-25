@@ -134,6 +134,63 @@ head_commit() {
   fi
 }
 
+# git_state_gate: exit the script, naming each entry, when the checkout's own git
+# state names a command that git would run as the user during this install
+# (review R1, security review F4). `git archive` runs a `filter.<x>.smudge` that
+# an attributes file assigns, and `git status` runs `core.fsmonitor` and clean
+# filters. An agent can write .git, and so can a cc-isolated container through
+# its bind mount, so this is a container-to-host path the no-agent gate cannot
+# see: the state persists after the writer has stopped. Called before any other
+# git command on the checkout (see assemble).
+#
+# The reads here run nothing: `git config --file`/`--local` does not follow
+# include.path unless asked (--no-includes makes that explicit), and neither
+# it nor `rev-parse --git-path` reads the index or starts a filter or fsmonitor.
+# --git-path resolves a linked worktree (whose .git is a file) to the common
+# dir for info/attributes and config, and to the worktree's own dir for
+# config.worktree. Its output may be relative to the checkout.
+GIT_EXEC_KEYS_RE='^(filter\.|core\.fsmonitor|include)'
+git_state_gate() {
+  local found="" out rc f attrs line
+  for f in config config.worktree; do
+    f="$(git -C "$REPO_ROOT" rev-parse --git-path "$f")" || f=""
+    case "$f" in ''|/*) ;; *) f="$REPO_ROOT/$f" ;; esac
+    if [ -z "$f" ] || { [ "${f##*/}" = config ] && [ ! -f "$f" ]; }; then
+      echo "ERROR: could not find the git config of $REPO_ROOT. Nothing was installed." >&2
+      exit 1
+    fi
+    [ -f "$f" ] || continue   # config.worktree is optional
+    rc=0
+    out="$(git --no-pager config --file "$f" --no-includes --get-regexp "$GIT_EXEC_KEYS_RE")" || rc=$?
+    if [ "$rc" -gt 1 ]; then
+      echo "ERROR: could not read $f (git config exit $rc). Nothing was installed." >&2
+      exit 1
+    fi
+    if [ -n "$out" ]; then
+      while IFS= read -r line; do found+="         $f: $line"$'\n'; done <<< "$out"
+    fi
+  done
+  attrs="$(git -C "$REPO_ROOT" rev-parse --git-path info/attributes)" || attrs=""
+  case "$attrs" in ''|/*) ;; *) attrs="$REPO_ROOT/$attrs" ;; esac
+  if [ -z "$attrs" ]; then
+    echo "ERROR: could not find the git info/attributes path of $REPO_ROOT. Nothing was installed." >&2
+    exit 1
+  fi
+  if [ -s "$attrs" ]; then
+    found+="         $attrs is not empty:"$'\n'"$(head -n 20 "$attrs" | sed 's/^/           /')"$'\n'
+  fi
+  [ -n "$found" ] || return 0
+  {
+    echo "ERROR: the checkout's git state can make git run a command as you during this"
+    echo "       install (a filter, core.fsmonitor, an include, or an attributes file):"
+    printf '%s' "$found"
+    echo "       An agent, or a cc-isolated container through its bind mount, can write"
+    echo "       these. Check each one, remove it (git config --local --unset <key>, or"
+    echo "       empty the attributes file) and rerun. Nothing was installed."
+  } | vis >&2
+  exit 1
+}
+
 # extract_commit <commit> <dir> <path...>: write each repo-relative <path>, as
 # committed in <commit>, to <dir>/<basename>. Exits the script when a path is
 # not in the commit or the result holds a symlink.
@@ -212,6 +269,7 @@ extract_commit() {
 assemble() {
   local stage="$1" commit dirty home_dirty
   shift
+  git_state_gate   # before any other git call on the checkout (review R1)
   rm -rf "$stage"
   mkdir -p "$stage"
   commit="$(head_commit)" || exit 1
@@ -221,9 +279,11 @@ assemble() {
   # every control or non-ASCII byte in them whatever the user's config (with
   # quotePath=false it printed U+009B raw: fact-check claim 9), so each entry
   # is one line; the listing also goes through vis. Ignored files are not
-  # listed: never staged.
-  dirty="$(git -C "$REPO_ROOT" -c core.quotePath=true status --porcelain --untracked-files=all -- "${CLAUDE_HOME_SRC[@]}" "$@")"
-  home_dirty="$(git -C "$REPO_ROOT" -c core.quotePath=true status --porcelain --untracked-files=all -- "${CLAUDE_HOME_SRC[@]}")"
+  # listed: never staged. core.fsmonitor=false: status would otherwise run the
+  # configured fsmonitor command (review R1; git_state_gate refuses a local one,
+  # this also covers one set in the user's global config).
+  dirty="$(git -C "$REPO_ROOT" -c core.quotePath=true -c core.fsmonitor=false status --porcelain --untracked-files=all -- "${CLAUDE_HOME_SRC[@]}" "$@")"
+  home_dirty="$(git -C "$REPO_ROOT" -c core.quotePath=true -c core.fsmonitor=false status --porcelain --untracked-files=all -- "${CLAUDE_HOME_SRC[@]}")"
   if [ -n "$dirty" ]; then
     echo "WARNING: the checkout has uncommitted changes under the payload paths. They are"
     echo "         NOT included: this install stages commit ${commit:0:12} only. Commit them"
