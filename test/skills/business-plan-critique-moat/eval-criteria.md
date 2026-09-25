@@ -40,8 +40,8 @@ tc-moat1, tc-moat3 and tc-moat7 also run `format_check`
   `# ...Moat` title within the first 5 lines. The warning as written is 4 lines;
   a report that puts it, plus a blank line, above the title fails format_check.
   That is a SKILL.md/format-suite tension, not a fixture defect.
-- **Tools.** WebSearch only, because `FIXTURE_TOOLS` must be non-empty. SKILL.md
-  says not to fact-check ad hoc, and every company here is invented.
+- **Tools.** None (`FIXTURE_TOOLS="none"`). SKILL.md says not to fact-check ad
+  hoc, and every company here is invented.
 - Planted figures were checked: 71 + 17 + 12 = 100 (tc-moat2); 20 seats × $29 ×
   12 ≈ $7,000 (tc-moat3); 31,000 seats × $45 × 12 ≈ $16.7M (tc-moat5).
 - Fixture files carry no comments naming the flaw.

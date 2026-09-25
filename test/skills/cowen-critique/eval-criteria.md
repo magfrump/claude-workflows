@@ -43,5 +43,5 @@ tc-cow1, tc-cow2 and tc-cow7 also run `format_check` (cowen-critique-format.bats
 - The drafts never point at their own flaw. The fact each flaw turns on (hours
   cut, 14% occupancy, booth bookings, the margin) appears as a supporting detail
   or in passing.
-- WebSearch is on only because generate-reports.bash needs a non-empty tool
-  list. SKILL.md tells the critic not to fact-check.
+- No tools (`FIXTURE_TOOLS="none"`): SKILL.md tells the critic not to
+  fact-check.

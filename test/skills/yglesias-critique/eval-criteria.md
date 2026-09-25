@@ -46,8 +46,7 @@ tc-ygl1, tc-ygl4 and tc-ygl7 also run `format_check`
 - **No fact-check report is supplied**, so critiqued drafts should open with
   the ⚠️ warning. The stub must not: the pre-flight runs first and outputs a
   single line.
-- **WebSearch.** SKILL.md tells the critic not to fact-check on its own. The
-  runner lists WebSearch only because generate-reports.bash rejects an empty
-  tool list.
+- **Tools.** None (`FIXTURE_TOOLS="none"`): SKILL.md tells the critic not to
+  fact-check on its own.
 - Drafts carry no comments or hints naming the flaw. Arithmetic in each draft
   was checked with python3.
