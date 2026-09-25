@@ -1,0 +1,7 @@
+2026-09-25T00:51:44Z
+$ claude -p --tools "" --bogus-flag-xyz </dev/null
+error: unknown option '--bogus-flag-xyz'
+exit=1
+$ claude -p --tools Read --bogus-flag-xyz </dev/null
+error: unknown option '--bogus-flag-xyz'
+exit=1

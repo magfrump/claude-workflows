@@ -1,0 +1,16 @@
+bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+1..3
+bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+not ok 1 an empty report fails a clean-negative fixture
+# (in test file test/skills/eval-helpers-empty-report.bats, line 36)
+#   `[ "$status" -ne 0 ]' failed
+bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+ok 2 a non-empty clean report still passes the same fixture
+bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+ok 3 an empty report still passes a max_claims:0 fixture

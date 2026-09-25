@@ -15,8 +15,9 @@
 # well as here"), so Agent adds dispatch, not file access.
 RUNNER_ALLOWED_TOOLS=(Read Grep Glob WebSearch WebFetch Agent)
 
-# Clear the settings a runner is expected to set, so a runner that forgets one
-# fails check_runner_settings instead of inheriting a previous runner's value.
+# Clear the settings a runner is expected to set, so a runner that forgets a
+# required one fails check_runner_settings instead of inheriting a previous
+# runner's value, and optional ones fall back to their defaults.
 reset_runner_settings() {
   FIXTURE_TOOLS=""
   FIXTURE_MODE=""

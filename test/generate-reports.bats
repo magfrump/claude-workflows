@@ -14,7 +14,7 @@ setup() {
   GEN="$TEST_TMPDIR/test/skills/generate-reports.bash"
   # The caller's environment must not reach the argv under test, and the stub
   # lists its working directory, which must not be the repo root (395k files
-  # there made this suite ~14 s).
+  # there made this suite take 10-14 s).
   unset CLAUDE_MODEL CLAUDE_FLAGS
   cd "$TEST_TMPDIR"
 
@@ -274,7 +274,8 @@ EOF
 }
 
 @test "a runner naming any tool outside the allowlist is refused" {
-  # Every spelling the old Write/Edit denylist let through (FC 21, 2026-09-24).
+  # Every spelling the old Write/Edit denylist let through (FC 21, 2026-09-24),
+  # plus Edit, which it refused, and malformed lists.
   local tools
   for tools in "Read,Write" "Read, Write" "Write(*)" "write" "Edit" "MultiEdit" \
       "NotebookEdit" "Bash" "Read,Bash(git:*)" "Read," ",Read" "Read,,Grep" $'Read\nBash'; do
@@ -332,6 +333,20 @@ EOF
   run grep -q "Old report" "$out/tc-1-thing.txt.report.md"
   [ "$status" -ne 0 ]
   grep -q "claude exited 1" "$out/tc-1-thing.txt.failed"
+}
+
+@test "a run that aborts before claude starts still removes the previous report" {
+  # The case the up-front rm -f exists for: when claude runs, its output
+  # redirect would truncate the report anyway.
+  make_tree_skill demo
+  echo 'fixture_base() { return 1; }' >> "$TEST_TMPDIR/test/skills/demo/runner.bash"
+  local out="$TEST_TMPDIR/test/skills/demo/output"
+  mkdir -p "$out"
+  echo "# Old report" > "$out/tc-3-planted-weakness.report.md"
+  run bash "$GEN" demo
+  [ "$status" -ne 0 ]
+  [ "$(ls "$CALLS" | wc -l)" -eq 0 ]
+  [ ! -e "$out/tc-3-planted-weakness.report.md" ]
 }
 
 @test "a successful run clears a previous run's .failed marker" {

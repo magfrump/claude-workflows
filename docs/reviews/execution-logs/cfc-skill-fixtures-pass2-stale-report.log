@@ -1,0 +1,10 @@
+2026-09-25T00:52:25Z
+bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+Generating reports for 1 fixture(s) using skill: demo
+Output: /tmp/claude-1000/-workspace/486d17ef-98de-46e2-88d8-3db5f5c05a49/scratchpad/stale/test/skills/demo/output
+
+--- Generating: tc-1-x ---
+exit=1
+total 8
+drwxr-xr-x 2 node node 4096 Sep 24 17:52 .
+drwxr-xr-x 4 node node 4096 Sep 24 17:52 ..

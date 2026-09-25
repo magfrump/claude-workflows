@@ -1,0 +1,46 @@
+== old (4371ec0) generate-reports.bats, cwd /workspace
+ok 1 inline mode: prompt then fixture content on stdin, runner's tools passed
+ok 2 FIXTURE_TOOLS=none passes an empty --tools list
+ok 3 repo mode: claude runs in a temp repo holding only the fixture
+ok 4 the fixture's descriptive filename never reaches the model
+ok 5 every mode passes --strict-mcp-config, so account MCP connectors stay out
+ok 6 FIXTURE_TRANSCRIPT=1: stream-json kept as a sidecar, report is the result text
+ok 7 FIXTURE_TRANSCRIPT=1: a non-JSON line in the stream does not lose the report
+ok 8 transcript off: no stream-json flags, and a stale sidecar is removed
+ok 9 a runner with a bad FIXTURE_TRANSCRIPT value is refused
+ok 10 tree mode: base + fixture tree in a temp repo, REQUEST.md goes to the prompt
+ok 11 tree mode: the fixture directory's name never reaches the model
+ok 12 tree mode: .fixture-* markers steer fixture_base and are removed
+ok 13 tree mode takes directories only; repo mode takes files only
+ok 14 fixture prefix selects a subset
+ok 15 a skill without runner.bash is refused before claude runs
+ok 16 a runner granting Write is refused
+ok 17 a runner with an unknown mode is refused
+ok 18 every committed fixture set has a runner the generator accepts
+ok 19 every committed fixture set has an eval suite
+bats $O/test/generate-reports.bats  5.32s user 5.70s system 111% cpu 9.875 total
+== new (0a81388) generate-reports.bats, cwd /workspace
+ok 1 inline mode: prompt then fixture content on stdin, runner's tools passed
+ok 2 inline mode: claude runs in an empty temp directory, not the caller's
+ok 3 FIXTURE_TOOLS=none passes an empty --tools list
+ok 4 repo mode: claude runs in a temp repo holding only the fixture
+ok 5 the fixture's descriptive filename never reaches the model
+ok 6 every mode passes --strict-mcp-config --restricted --safe-mode
+ok 7 FIXTURE_TRANSCRIPT=1: stream-json kept as a sidecar, report is the result text
+ok 8 FIXTURE_TRANSCRIPT=1: a non-JSON line in the stream does not lose the report
+ok 9 transcript off: no stream-json flags, and a stale sidecar is removed
+ok 10 a runner with a bad FIXTURE_TRANSCRIPT value is refused
+ok 11 tree mode: base + fixture tree in a temp repo, REQUEST.md goes to the prompt
+ok 12 tree mode: the fixture directory's name never reaches the model
+ok 13 tree mode: .fixture-* markers steer fixture_base and are removed
+ok 14 tree mode takes directories only; repo mode takes files only
+ok 15 fixture prefix selects a subset
+ok 16 a skill without runner.bash is refused before claude runs
+ok 17 a runner naming any tool outside the allowlist is refused
+ok 18 an inline runner granting a file tool is refused
+ok 19 a dotted fixture name with no plain extension reaches the model as 'subject'
+ok 20 a failed claude run leaves no stale report behind
+ok 21 a runner with an unknown mode is refused
+ok 22 every committed fixture set has a runner the generator accepts
+ok 23 every committed fixture set has an eval suite
+bats $S/p2-0a81388/test/generate-reports.bats  0.78s user 0.33s system 79% cpu 1.404 total
