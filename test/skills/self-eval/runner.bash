@@ -20,7 +20,7 @@ FIXTURE_MODE="tree"
 fixture_base() {
   local dest="$1" fx="$2"
   mkdir -p "$dest/skills" "$dest/docs"
-  cp -R "$SCRIPT_DIR/self-eval/base/skills/." "$dest/skills/"
+  cp -R "$REPO_ROOT/test/skills/self-eval/base/skills/." "$dest/skills/"
   [ -e "$fx/.fixture-no-rubric" ] || cp "$REPO_ROOT/docs/evaluation-rubric.md" "$dest/docs/"
   if [ -d "$fx/.fixture-tests" ]; then
     mkdir -p "$dest/test"

@@ -1,16 +1,12 @@
 # shellcheck shell=bash disable=SC2034  # Sourced by generate-reports.bash
 # AI personas critique: the draft goes inline in the prompt. Step 1 of SKILL.md
-# reads personas.md, but inline mode runs claude in the real repo, where a Read
-# tool could also reach expected-verdicts.bash. So Read is withheld and the
-# prompt carries the catalog itself, cat'd from the skill directory (resolved
-# relative to this file). No tools at all: the critic is not to fact-check on
+# reads personas.md, but inline mode grants no file tools (runner-contract.bash),
+# so the prompt carries the catalog itself, cat'd from the skill directory. No tools at all: the critic is not to fact-check on
 # its own, and without Write the report goes to stdout instead of docs/reviews/.
 FIXTURE_TOOLS="none"
 FIXTURE_MODE="inline"
 
-# Resolved when generate-reports.bash sources this file, not when the function
-# runs, so the path does not depend on the caller's working directory.
-PERSONAS_CATALOG="$(cd "$(dirname "${BASH_SOURCE[0]}")/../../../skills/ai-personas-critique" && pwd)/personas.md"
+PERSONAS_CATALOG="$REPO_ROOT/skills/ai-personas-critique/personas.md"
 
 fixture_prompt() {
   if [ ! -f "$PERSONAS_CATALOG" ]; then

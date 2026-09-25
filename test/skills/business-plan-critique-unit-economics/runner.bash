@@ -1,7 +1,6 @@
 # shellcheck shell=bash disable=SC2034  # Sourced by generate-reports.bash
-# Unit-economics critique: the draft goes inline in the prompt. Inline mode runs
-# claude in the real repo, so Read is left out (it could reach
-# expected-verdicts.bash). No tools at all: SKILL.md tells the critic not to
+# Unit-economics critique: the draft goes inline in the prompt. Inline mode
+# grants no file tools (runner-contract.bash). No tools at all: SKILL.md tells the critic not to
 # fact-check on its own. No Write, so the critique goes to stdout instead of
 # docs/reviews/.
 FIXTURE_TOOLS="none"

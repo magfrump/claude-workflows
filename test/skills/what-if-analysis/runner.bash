@@ -1,7 +1,6 @@
 # shellcheck shell=bash disable=SC2034  # Sourced by generate-reports.bash
-# What-if analysis: the proposal goes inline in the prompt. No Read, because
-# inline mode runs claude in the real repo, where Read could reach
-# expected-verdicts.bash; no Write, so the analysis goes to stdout instead of
+# What-if analysis: the proposal goes inline in the prompt. No Read (inline
+# mode grants no file tools, runner-contract.bash); no Write, so the analysis goes to stdout instead of
 # docs/reviews/. The skill needs no tools: SKILL.md's Prior Art Check greps
 # docs/decisions/ and docs/working/, which this harness cannot offer (and the
 # real repo's would be the wrong project's). SKILL.md allows "note that briefly

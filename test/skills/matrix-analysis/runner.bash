@@ -1,9 +1,9 @@
 # shellcheck shell=bash disable=SC2034  # Sourced by generate-reports.bash
 # matrix-analysis dispatches one sub-agent per criterion (Agent tool), then
-# synthesizes. Items, criteria and facts all go inline, so no Read: inline mode
-# runs claude in the real repo, where Read could reach expected-verdicts.bash.
-# Sub-agents inherit the same tool list, so they cannot read the repo either;
-# SKILL.md already says to paste context into their prompts.
+# synthesizes. Items, criteria and facts all go inline, and inline mode grants no
+# file tools (runner-contract.bash). Sub-agents inherit the session's --tools,
+# so they get none either (canary probe, 2026-09-24); SKILL.md already says to
+# paste context into their prompts.
 #
 # FIXTURE_TRANSCRIPT=1 so subagents_min can check the one-per-criterion
 # dispatch SKILL.md requires. No Write: the prompt says to print both

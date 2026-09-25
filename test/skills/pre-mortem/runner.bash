@@ -1,7 +1,6 @@
 # shellcheck shell=bash disable=SC2034  # Sourced by generate-reports.bash
-# Pre-mortem: the proposal goes inline in the prompt. No tools at all: no Read,
-# because inline mode runs claude in the real repo, where Read could reach
-# expected-verdicts.bash, and no Write, so the report goes to stdout instead of
+# Pre-mortem: the proposal goes inline in the prompt. No tools at all: inline
+# mode grants no file tools (runner-contract.bash), and no Write, so the report goes to stdout instead of
 # docs/reviews/pre-mortem.md. SKILL.md's Prior Art Check greps docs/decisions/
 # and docs/working/; the harness has no repository for that, so the prompt says
 # so and that the proposal is the whole input. No upstream what-if analysis is

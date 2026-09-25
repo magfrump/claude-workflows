@@ -11,10 +11,12 @@
 #   test/skills/<skill>/output/<fixture>.report.md   — the generated report
 #
 # Per-skill configuration lives in test/skills/<skill>/runner.bash, which sets:
-#   FIXTURE_TOOLS   — the --tools allowlist for claude -p, or "none" for no
-#                     tools at all (skills that must not fact-check on their
-#                     own, like the critique skills)
-#   FIXTURE_MODE    — "inline" (fixture content appended to the prompt),
+#   FIXTURE_TOOLS   — the --tools list for claude -p, comma-separated, from the
+#                     allowlist in runner-contract.bash; or "none" for no tools
+#                     at all (skills that must not fact-check on their own,
+#                     like the critique skills)
+#   FIXTURE_MODE    — "inline" (fixture content appended to the prompt; claude
+#                     runs in an empty temp directory),
 #                     "repo" (fixture copied into a throwaway git repo that
 #                     becomes claude's working directory), or "tree" (each
 #                     fixture is a DIRECTORY whose contents become that repo;
@@ -29,8 +31,10 @@
 #
 # Fixture filenames describe the planted defect or the expected verdict
 # (tc-sec1-sql-injection.py, tc-c2.4-incorrect.js). The model must never see
-# them: in "repo" mode the fixture is copied in as subject.<ext>, and that
-# neutral name is what fixture_prompt receives in both modes.
+# them. In "inline" and "repo" mode fixture_prompt receives subject.<ext> (the
+# extension alone tells the model the language; "subject" when the name has no
+# plain extension), and in "repo" mode that is the file's name in the temp repo.
+# In "tree" mode it receives ".".
 #
 # tree mode, for skills that read repo context (self-eval reads the rubric and
 # sibling skills; the divergent-design router reads its workflow):
@@ -39,15 +43,28 @@
 #     $REPO_ROOT, so fixtures test the current rubric/workflow rather than a
 #     vendored copy. It may inspect <fixture-dir> to vary the base per fixture.
 #   - the fixture directory's contents are copied on top, then committed.
-#   - REQUEST.md, if present, is appended to the prompt and not copied.
-#   - top-level files named .fixture-* are control markers for fixture_base;
-#     they are removed before the model runs, so their names never reach it.
+#   - REQUEST.md, if present, is appended to the prompt and removed from the
+#     repo before the commit.
+#   - top-level entries (files or directories) named .fixture-* are control
+#     markers for fixture_base; they are removed before the model runs, so their
+#     names never reach it.
 #   - fixture_prompt receives "." (there is no single subject file). The
 #     directory's descriptive name never reaches the model.
 #
-# Cheat prevention: the tool allowlist never includes Write, and in "repo" mode
-# the working directory holds only the fixture, so the model cannot reach
-# expected-verdicts.bash or eval-criteria.md. "inline" skills should omit Read.
+# Cheat prevention and hermeticity. Every mode runs claude in a fresh temp
+# directory, never in this repo, with:
+#   --restricted        file tools confined to that directory, whatever the
+#                       user's permission settings allow; user and project
+#                       settings files (and so the user's hooks) are ignored
+#   --safe-mode         no memory files, user skills, plugins, hooks or custom
+#                       agents
+#   --strict-mcp-config no account MCP connectors (Claude Docs create/update/
+#                       delete leaked into every run without it, even under
+#                       --tools ""; not --bare, which breaks subscription auth,
+#                       FP-097)
+#   --tools             the runner's list, never a write-capable tool
+#                       (runner-contract.bash); sub-agents inherit it.
+# So the model cannot reach expected-verdicts.bash or eval-criteria.md.
 #
 # Environment:
 #   CLAUDE_MODEL   — model to use (default: inherits from claude config)
@@ -76,50 +93,18 @@ if [ ! -f "$RUNNER_FILE" ]; then
   exit 1
 fi
 
-FIXTURE_TOOLS=""
-FIXTURE_MODE=""
-FIXTURE_TRANSCRIPT=""
+# shellcheck source=runner-contract.bash
+source "$SCRIPT_DIR/runner-contract.bash"
+reset_runner_settings
 # shellcheck source=/dev/null  # Path is per-skill
 source "$RUNNER_FILE"
+check_runner_settings "$RUNNER_FILE" || exit 1
 
-if [ -z "$FIXTURE_TOOLS" ] || ! declare -F fixture_prompt >/dev/null; then
-  echo "Error: $RUNNER_FILE must set FIXTURE_TOOLS and define fixture_prompt" >&2
+if [ "$FIXTURE_TRANSCRIPT" = 1 ] && ! command -v jq >/dev/null 2>&1; then
+  echo "Error: $RUNNER_FILE sets FIXTURE_TRANSCRIPT=1, which needs jq" >&2
   exit 1
 fi
-case ",$FIXTURE_TOOLS," in
-  *,Write,*|*,Edit,*)
-    echo "Error: $RUNNER_FILE: FIXTURE_TOOLS must not include Write or Edit" >&2
-    exit 1
-    ;;
-esac
-case "$FIXTURE_MODE" in
-  inline|repo|tree) ;;
-  *)
-    echo "Error: $RUNNER_FILE: FIXTURE_MODE must be inline, repo or tree, got '$FIXTURE_MODE'" >&2
-    exit 1
-    ;;
-esac
 
-case "$FIXTURE_TRANSCRIPT" in
-  ""|0) FIXTURE_TRANSCRIPT=0 ;;
-  1)
-    if ! command -v jq >/dev/null 2>&1; then
-      echo "Error: $RUNNER_FILE sets FIXTURE_TRANSCRIPT=1, which needs jq" >&2
-      exit 1
-    fi
-    ;;
-  *)
-    echo "Error: $RUNNER_FILE: FIXTURE_TRANSCRIPT must be 0 or 1, got '$FIXTURE_TRANSCRIPT'" >&2
-    exit 1
-    ;;
-esac
-
-# --strict-mcp-config on every run: without it the account's claude.ai MCP
-# connectors (e.g. Claude Docs create/update/delete) are exposed even under
-# --tools "", in sub-agents too — a write-capable, outward-facing tool the
-# no-Write rule above assumes is absent. Not --bare: it breaks subscription
-# auth (FP-097).
-#
 # "none" is explicit so a runner that forgets FIXTURE_TOOLS still errors above;
 # claude -p reads --tools "" as "no tools".
 TOOLS_ARG="$FIXTURE_TOOLS"
@@ -133,8 +118,9 @@ generate_one() {
   fixture_name="$(basename "$fixture_path")"
   local report_path="$OUTPUT_DIR/${fixture_name}.report.md"
   local transcript_path="$OUTPUT_DIR/${fixture_name}.transcript.jsonl"
-  # A stale transcript must never pair with a fresh report.
-  rm -f "$transcript_path"
+  # Neither a previous run's report nor its transcript may survive to be scored
+  # as this run's, whichever step below fails.
+  rm -f "$report_path" "$transcript_path"
 
   echo "--- Generating: $fixture_name ---"
 
@@ -143,74 +129,68 @@ generate_one() {
     model_flag="--model $CLAUDE_MODEL"
   fi
 
-  # Keep the extension (it tells the model the language); drop the name.
-  local subject_name="subject"
+  # Keep a plain extension (it tells the model the language); drop the name.
+  # A dotted name with no real extension (tc-2.4-inaccurate) gets no suffix,
+  # so its descriptive tail cannot reach the model as "subject.4-inaccurate".
+  local subject_name="subject" ext="${fixture_name##*.}"
   if [ "$FIXTURE_MODE" = "tree" ]; then
     subject_name="."
-  elif [[ "$fixture_name" == *.* ]]; then
-    subject_name="subject.${fixture_name##*.}"
+  elif [ "$ext" != "$fixture_name" ] && [[ "$ext" =~ ^[A-Za-z0-9]{1,5}$ ]]; then
+    subject_name="subject.$ext"
   fi
 
   local prompt
   prompt="$(fixture_prompt "$subject_name")"
 
-  # --tools stays last before the model/extra flags: an empty value must not
-  # swallow the next flag.
-  local -a claude_args=(-p --system-prompt-file "$SKILL_FILE" --strict-mcp-config)
+  local -a claude_args=(-p --system-prompt-file "$SKILL_FILE"
+    --strict-mcp-config --restricted --safe-mode)
   local out_path="$report_path"
   if [ "$FIXTURE_TRANSCRIPT" = 1 ]; then
     claude_args+=(--output-format stream-json --verbose)
     out_path="$transcript_path"
   fi
+  # An empty --tools value is its own argv element; the CLI reads it as "no
+  # tools" and does not consume the flag after it.
   claude_args+=(--tools "$TOOLS_ARG")
 
-  if [ "$FIXTURE_MODE" = "repo" ] || [ "$FIXTURE_MODE" = "tree" ]; then
-    # The fixture as a file (repo) or a directory tree (tree) in a minimal repo,
-    # so the model can read it without access to the eval criteria or expected
-    # verdicts.
-    local temp_dir
-    temp_dir=$(mktemp -d)
-    # shellcheck disable=SC2064  # Intentional: expand $temp_dir now at trap-set time
-    trap "rm -rf '$temp_dir'" RETURN
+  # Every mode runs in a fresh temp directory: empty for inline, a minimal git
+  # repo holding the fixture for repo and tree.
+  local temp_dir
+  temp_dir=$(mktemp -d)
+  # shellcheck disable=SC2064  # Intentional: expand $temp_dir now at trap-set time
+  trap "rm -rf '$temp_dir'" RETURN
 
+  local stdin_text="$prompt"
+  if [ "$FIXTURE_MODE" = "inline" ]; then
+    stdin_text="$(printf '%s\n\n%s' "$prompt" "$(cat "$fixture_path")")"
+  else
     if [ "$FIXTURE_MODE" = "tree" ]; then
       if declare -F fixture_base >/dev/null; then
         fixture_base "$temp_dir" "$fixture_path"
       fi
       cp -R "$fixture_path"/. "$temp_dir"/
       if [ -f "$temp_dir/REQUEST.md" ]; then
-        prompt="$prompt"$'\n\n'"$(cat "$temp_dir/REQUEST.md")"
+        stdin_text="$prompt"$'\n\n'"$(cat "$temp_dir/REQUEST.md")"
         rm "$temp_dir/REQUEST.md"
       fi
       rm -rf "$temp_dir"/.fixture-*
     else
       cp "$fixture_path" "$temp_dir/$subject_name"
     fi
-    # Initialize a git repo so skills that scope by git diff/log don't fail
+    # A git repo so skills that scope by git diff/log don't fail
     git -C "$temp_dir" init -q
     git -C "$temp_dir" add .
     git -C "$temp_dir" -c user.name=fixture -c user.email=fixture@localhost \
       commit -q -m "fixture" --allow-empty
-
-    # Pipe prompt via stdin to avoid shell argument parsing issues
-    # shellcheck disable=SC2086
-    (cd "$temp_dir" && printf '%s' "$prompt" \
-      | claude "${claude_args[@]}" \
-        $model_flag \
-        ${CLAUDE_FLAGS:-} \
-    ) > "$out_path" 2>/dev/null || true
-  else
-    local fixture_content
-    fixture_content="$(cat "$fixture_path")"
-
-    # Pipe prompt via stdin to avoid multiline shell argument issues
-    # shellcheck disable=SC2086
-    printf '%s\n\n%s' "$prompt" "$fixture_content" \
-      | claude "${claude_args[@]}" \
-        $model_flag \
-        ${CLAUDE_FLAGS:-} \
-      > "$out_path" 2>/dev/null || true
   fi
+
+  # Pipe the prompt via stdin to avoid shell argument parsing issues
+  # shellcheck disable=SC2086
+  (cd "$temp_dir" && printf '%s' "$stdin_text" \
+    | claude "${claude_args[@]}" \
+      $model_flag \
+      ${CLAUDE_FLAGS:-} \
+  ) > "$out_path" 2>/dev/null || true
 
   if [ "$FIXTURE_TRANSCRIPT" = 1 ]; then
     # The report is what the model finally said: the result event's text. A
@@ -222,13 +202,9 @@ generate_one() {
   fi
 
   if [ -s "$report_path" ]; then
-    local claim_count finding_count
-    # code-fact-check heads claims "## Claim N"; fact-check heads "## Verdict for CN:".
-    claim_count=$(grep -cE '^## (Claim [0-9]+|Verdict for C[0-9]+)' "$report_path" || true)
-    finding_count=$(grep -cE '^\*\*Severity:\*\*' "$report_path" || true)
-    echo "  Done: $claim_count claims, $finding_count severity-tagged findings in report"
+    echo "  Done: $(wc -l < "$report_path" | tr -d ' ') lines in report"
   else
-    echo "  WARNING: empty report generated"
+    echo "  WARNING: empty report generated (eval_fixture will fail it)"
   fi
 }
 

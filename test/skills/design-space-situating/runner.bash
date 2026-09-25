@@ -1,7 +1,6 @@
 # shellcheck shell=bash disable=SC2034  # Sourced by generate-reports.bash
 # Design-space situating: the decision brief goes inline in the prompt. No
-# Read, because inline mode runs claude in the real repo, where Read could reach
-# expected-verdicts.bash; no Write, so the record goes to stdout instead of
+# Read (inline mode grants no file tools, runner-contract.bash); no Write, so the record goes to stdout instead of
 # docs/working/situating-<slug>.md. The skill needs no repo or web access (it
 # situates a stated decision), so it gets no tools at all. Each brief states
 # its decision up front, so the "ask for a decision statement" step never fires.

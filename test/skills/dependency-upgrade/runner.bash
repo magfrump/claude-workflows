@@ -1,8 +1,7 @@
 # shellcheck shell=bash disable=SC2034  # Sourced by generate-reports.bash
 # Dependency upgrade evaluation: the upgrade request (manifest entry, every
-# call site, full release notes) goes inline in the prompt. No Read, because
-# inline mode runs claude in the real repo, where Read could reach
-# expected-verdicts.bash; no Write, so the evaluation goes to stdout (SKILL.md
+# call site, full release notes) goes inline in the prompt. No Read (inline
+# mode grants no file tools, runner-contract.bash); no Write, so the evaluation goes to stdout (SKILL.md
 # presents it in chat anyway).
 #
 # SKILL.md steps the harness cannot support: web search for the changelog, a

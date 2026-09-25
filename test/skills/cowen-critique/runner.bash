@@ -1,6 +1,6 @@
 # shellcheck shell=bash disable=SC2034  # Sourced by generate-reports.bash
-# Cowen critique: the draft goes inline in the prompt. No Read (inline mode runs
-# in the real repo, where Read could reach expected-verdicts.bash) and no Write,
+# Cowen critique: the draft goes inline in the prompt. No Read (inline mode
+# grants no file tools, runner-contract.bash) and no Write,
 # so the critique goes to stdout instead of docs/reviews/cowen-critique.md.
 # SKILL.md tells the critic not to fact-check, so it gets no tools at all. No
 # fact-check report is supplied, so a full critique opens with SKILL.md's

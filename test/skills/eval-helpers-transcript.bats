@@ -3,7 +3,8 @@
 # Unit tests for eval-helpers.bash's transcript checks (tool_called:,
 # subagents_min:), against a synthetic stream-json transcript shaped like a real
 # `claude -p --output-format stream-json --verbose` run: top-level events carry
-# "parent_tool_use_id": null, and a sub-agent's own events carry its parent's id.
+# "parent_tool_use_id": null, and a sub-agent's own events carry its parent's id
+# (checked against real runs, 2026-09-24).
 
 load eval-helpers
 
