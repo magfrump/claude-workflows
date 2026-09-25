@@ -56,21 +56,17 @@ stub_docker() {
 # path_without <cmd...>: print a PATH (stubs first) under which each named
 # command is absent: every other executable on the current PATH is linked
 # into one directory, then the named ones are removed from it. One `ln` per
-# PATH directory (review C2: one per executable cost ~2 s a call). A name an
-# earlier directory already linked makes ln report "File exists" and go on,
-# so the first on PATH wins, as it would on PATH itself.
+# PATH directory and no per-entry test (review C2, P2-C2): non-executable
+# entries get linked too, which is harmless in a PATH directory, since command
+# lookup skips them. A name an earlier directory already linked makes ln
+# report "File exists" and go on, so the first on PATH wins, as on PATH itself.
 path_without() {
-  local farm="$S/farm" dir f skip
-  local -a exe
+  local farm="$S/farm" dir skip
   mkdir -p "$farm"
   local IFS=:
   for dir in $PATH; do
-    [ "$dir" = "$STUB" ] && continue
-    exe=()
-    for f in "$dir"/*; do
-      if [ -x "$f" ] && [ ! -d "$f" ]; then exe+=("$f"); fi
-    done
-    if [ "${#exe[@]}" -gt 0 ]; then ln -s "${exe[@]}" "$farm/" 2>/dev/null || true; fi
+    [ "$dir" = "$STUB" ] || [ ! -d "$dir" ] && continue
+    ln -s "$dir"/* "$farm/" 2>/dev/null || true
   done
   for skip in "$@"; do rm -f "$farm/$skip" "$STUB/$skip"; done
   printf '%s:%s\n' "$STUB" "$farm"
@@ -1200,8 +1196,13 @@ exit \$rc"
 @test "T72 an agent seen only while the devcontainer prompt waits stops the host target before it stages (review A2, P4)" {
   need_script; fake_repo
   stub_pgrep "[ -e '$S/agent-up' ] && [ ! -e '$S/agent-down' ] || exit 1; echo '779 claude'; exit 0"
+  # No fixed sleeps (review P2-C3). The mirror exists only after the startup
+  # check (pgrep call 1) passed; the agent is visible until the host target's
+  # pre-stage check (pgrep call 2) has run.
   feed="for _i in \$(seq 200); do [ -e '$ROOT/devcontainer-config/claude-home/.manifest' ] && break; sleep 0.1; done
-    sleep 1; touch '$S/agent-up'; printf 'n\n'; sleep 3; touch '$S/agent-down'; printf 'y\n'"
+    touch '$S/agent-up'; printf 'n\n'
+    for _i in \$(seq 200); do [ \"\$(grep -c '^pgrep' '$S/probe.log')\" -ge 2 ] && break; sleep 0.05; done
+    touch '$S/agent-down'; printf 'y\n'"
   run_pty_feed "$feed" bash "$INSTALL"
   echo "$output"
   [ "$status" -eq 1 ]
