@@ -130,6 +130,20 @@ vis() {
   '
 }
 
+# vis_or_die: vis for every line shown outside review_diff (which checks vis
+# itself) and mode_diff (whose lines review_diff re-shows). A vis failure there
+# used to end the script through set -e with no message at all (review C3).
+# In a pipeline this runs in a subshell: it prints the error, its exit fails
+# the pipeline, and set -e/pipefail then stops the script with exit 1.
+vis_or_die() {
+  local rc=0
+  vis || rc=$?
+  if [ "$rc" -ne 0 ]; then
+    echo "ERROR: could not show output safely (vis exit $rc), so install.sh stopped. Nothing was installed." >&2
+    exit 1
+  fi
+}
+
 # head_commit: print HEAD's commit id; exit the script if there is none.
 head_commit() {
   if ! git -C "$REPO_ROOT" rev-parse --verify -q 'HEAD^{commit}'; then
@@ -192,7 +206,7 @@ git_state_gate() {
     echo "       An agent, or a cc-isolated container through its bind mount, can write"
     echo "       these. Check each one, remove it (git config --local --unset <key>, or"
     echo "       empty the attributes file) and rerun. Nothing was installed."
-  } | vis >&2
+  } | vis_or_die >&2
   exit 1
 }
 
@@ -236,7 +250,7 @@ extract_commit() {
   links="$(cd "$dir" && find . -type l | sed 's|^\./||' | LC_ALL=C sort)"
   if [ -n "$links" ]; then
     echo "ERROR: the committed payload contains symlinks, which install.sh never installs:" >&2
-    printf '%s\n' "$links" | sed 's/^/         /' | vis >&2
+    printf '%s\n' "$links" | sed 's/^/         /' | vis_or_die >&2
     echo "       Replace them with real files and commit. Nothing was installed." >&2
     exit 1
   fi
@@ -255,7 +269,7 @@ extract_commit() {
   if [ -n "$nul" ]; then
     echo "ERROR: the committed payload holds files with NUL bytes (binary), which the review" >&2
     echo "       diff cannot show and install.sh therefore never installs:" >&2
-    printf '%s\n' "$nul" | sed 's/^/         /' | vis >&2
+    printf '%s\n' "$nul" | sed 's/^/         /' | vis_or_die >&2
     echo "       Remove them from the payload paths and commit. Nothing was installed." >&2
     exit 1
   fi
@@ -293,7 +307,7 @@ assemble() {
     echo "WARNING: the checkout has uncommitted changes under the payload paths. They are"
     echo "         NOT included: this install stages commit ${commit:0:12} only. Commit them"
     echo "         and rerun to include them."
-    printf '%s\n' "$dirty" | sed 's/^/           /' | vis
+    printf '%s\n' "$dirty" | sed 's/^/           /' | vis_or_die
   fi
   # Provenance stamp: lets a session (and health-check) tell which commit's process
   # it is running, and detect that the image predates the repo it is editing.
@@ -404,7 +418,7 @@ install_devcontainer() {
   for comp in "${comps[@]}"; do
     p="$p/$comp"
     if [ -L "$p" ]; then
-      echo "ERROR: $p is a symlink ($(readlink "$p")). install.sh rebuilds" | vis >&2
+      echo "ERROR: $p is a symlink ($(readlink "$p")). install.sh rebuilds" | vis_or_die >&2
       echo "       devcontainer-config/claude-home in the checkout and never writes through a" >&2
       echo "       link there. Remove the link (rm, no trailing slash) and rerun. Nothing was installed." >&2
       exit 1
@@ -750,13 +764,13 @@ install_claude_home() {
   # link or file, is only MOVEd (review R5), and says which it is.
   for name in "${CLAUDE_HOME_NAMES[@]}"; do
     if [ -L "$dest/$name" ]; then
-      echo "REPLACE symlink $dest/$name -> $(readlink "$dest/$name") with a copy" | vis
+      echo "REPLACE symlink $dest/$name -> $(readlink "$dest/$name") with a copy" | vis_or_die
       changed=1
     elif [ -d "$dest/$name" ]; then
       while IFS= read -r -d '' link; do
         rel="${link#"$dest/$name"/}"
         [ -e "$new$name/$rel" ] || continue
-        echo "REPLACE symlink $link -> $(readlink "$link") with a copy" | vis
+        echo "REPLACE symlink $link -> $(readlink "$link") with a copy" | vis_or_die
         changed=1
       done < <(find "$dest/$name" -type l -print0 | LC_ALL=C sort -z)
       while IFS= read -r -d '' f; do
@@ -775,7 +789,7 @@ install_claude_home() {
         if [ "$name" = hooks ] && grep -qsF "hooks/$rel" "$dest/settings.json" "$dest/settings.local.json"; then
           line="$line  <-- WIRED in settings: moving it breaks that hook"
         fi
-        echo "$line" | vis
+        echo "$line" | vis_or_die
         changed=1
       done < <(find "$dest/$name" \( -type f -o -type l \) -print0 | LC_ALL=C sort -z)
     fi
@@ -796,15 +810,15 @@ install_claude_home() {
   for name in "${CLAUDE_HOME_NAMES[@]}"; do
     if [ ! -e "$dest/$name" ]; then
       n="$(find "$new$name" -type f | grep -c '' || true)"
-      echo "ADD $dest/$name (new, $n file(s)):" | vis
-      (cd "$dest" && find ".cw-new.$name" -type f | LC_ALL=C sort) | sed 's/^\.cw-new\./    /' | vis
+      echo "ADD $dest/$name (new, $n file(s)):" | vis_or_die
+      (cd "$dest" && find ".cw-new.$name" -type f | LC_ALL=C sort) | sed 's/^\.cw-new\./    /' | vis_or_die
       lines="$(find "$new$name" -type f -exec cat {} + | wc -l)"
       if [ "$lines" -le "$ADD_MAX_LINES" ]; then
         review_diff "$view" "$new" "$name" || true   # $view/$name is absent: all "+" lines
       else
         for src in "${CLAUDE_HOME_SRC[@]}"; do [ "$(basename "$src")" = "$name" ] && break; done
         echo "    (content not shown: $lines lines, over the $ADD_MAX_LINES-line limit for a new entry;" \
-             "it is $src at commit ${STAGED_COMMIT:0:12})" | vis
+             "it is $src at commit ${STAGED_COMMIT:0:12})" | vis_or_die
       fi
       changed=1
       continue
@@ -986,11 +1000,13 @@ agent_gate() {
     # Only stdout is the container list. stderr carries warnings (a locale
     # warning, a docker CLI deprecation notice) that must not read as a running
     # container, so it is kept apart and shown only when the call fails.
+    # Review C1: a hung docker is otherwise up to 20 s of silence per check.
+    echo "Checking for running cc-isolated containers (docker ps; up to 20 s)..."
     errf="$(mktemp "${TMPDIR:-/tmp}/cw-docker-err.XXXXXX")"
     if ! ctrs="$(timeout 20 docker ps --filter label=cc-project \
                    --format '{{.Names}} cc-project={{.Label "cc-project"}}' 2>"$errf")"; then
       err="$(head -n 1 "$errf" 2>/dev/null)"
-      echo "NOTE: docker is unreachable ($err): cc-isolated containers not checked, treated as none running." | vis
+      echo "NOTE: docker is unreachable ($err): cc-isolated containers not checked, treated as none running." | vis_or_die
       ctrs=""
     fi
     rm -f "$errf"
@@ -1011,7 +1027,7 @@ agent_gate() {
       echo "       Stop them: docker stop <name>"
     fi
     echo "       Then rerun install.sh. $what"
-  } | vis >&2
+  } | vis_or_die >&2
   exit 1
 }
 

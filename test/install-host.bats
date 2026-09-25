@@ -872,7 +872,7 @@ installed_then_changed() {
   run env -u CLAUDECODE bash "$INSTALL" --yes </dev/null
   echo "$output"
   [ "$status" -eq 0 ]
-  [[ "$output" == *'docker is unreachable'*'treated as none running'* ]]
+  [[ "$output" == *'Checking for running cc-isolated containers'*'docker is unreachable'*'treated as none running'* ]]
   [[ "$output" == *'BLESS-STUB --bless'* ]]
   p=$(path_without docker)
   run env -u CLAUDECODE PATH="$p" bash "$INSTALL" --yes </dev/null
@@ -1145,6 +1145,23 @@ exit \$rc"
   [ -d "$bk/20200101T000000Z" ]
   [ -d "$bk/20200102T000000Z" ]
   [ -d "$tabbed" ]
+}
+
+@test "T74 a vis failure outside the review diff says so and installs nothing (review C3)" {
+  need_script; fake_repo; symlink_install
+  before=$(snap "$CLAUDE_HOME_DIR")
+  # Only vis (`perl -pe`) fails; the first host line through it is a REPLACE.
+  printf '#!/bin/bash\ncase "$1" in -pe) cat >/dev/null; exit 1 ;; esac\nexec %s "$@"\n' \
+    "$(command -v perl)" > "$STUB/perl"
+  chmod +x "$STUB/perl"
+  run_pty 'n\ny\n' bash "$INSTALL"
+  echo "$output"
+  [ "$status" -eq 1 ]
+  [[ "$output" == *'could not show output safely'*'Nothing was installed.'* ]]
+  [[ "$output" != *'Install these files'* ]]
+  [ "$(snap "$CLAUDE_HOME_DIR")" = "$before" ]
+  run ! compgen -G "$CLAUDE_HOME_DIR/.cw-new.*"
+  [ ! -e "$CLAUDE_HOME_DIR/.claude-workflows-lock" ]
 }
 
 # Marker command: git runs it only if it obeys the planted config.
