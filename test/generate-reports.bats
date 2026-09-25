@@ -120,8 +120,10 @@ EOF
 }
 
 @test "every mode passes --strict-mcp-config --restricted --safe-mode" {
-  # Without it, claude.ai connectors (write-capable Claude Docs tools) are
-  # exposed even under --tools "" and in sub-agents.
+  # Without --strict-mcp-config, claude.ai connectors (write-capable Claude Docs
+  # tools) are exposed even under --tools "" and in sub-agents. --restricted
+  # confines the file tools to the temp dir and drops the user's settings and
+  # hooks; --safe-mode drops memory files, skills and plugins.
   local mode
   for mode in inline repo tree; do
     rm -rf "${CALLS:?}"/* "$TEST_TMPDIR/test/skills/demo" "$TEST_TMPDIR/skills/demo"
