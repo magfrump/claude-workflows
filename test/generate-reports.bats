@@ -277,7 +277,7 @@ EOF
   # Every spelling the old Write/Edit denylist let through (FC 21, 2026-09-24).
   local tools
   for tools in "Read,Write" "Read, Write" "Write(*)" "write" "Edit" "MultiEdit" \
-      "NotebookEdit" "Bash" "Read,Bash(git:*)"; do
+      "NotebookEdit" "Bash" "Read,Bash(git:*)" "Read," ",Read" "Read,,Grep"; do
     rm -rf "${CALLS:?}"/* "$TEST_TMPDIR/test/skills/demo" "$TEST_TMPDIR/skills/demo"
     make_skill demo repo "$tools"
     run bash "$GEN" demo
@@ -309,17 +309,45 @@ EOF
   [[ "$call" != *"inaccurate"* ]]
 }
 
-@test "a failed claude run leaves no stale report behind" {
+@test "a failed claude run leaves no stale report behind, and a .failed marker" {
   make_skill demo repo "Read"
   local out="$TEST_TMPDIR/test/skills/demo/output"
   mkdir -p "$out"
   echo "# Old report from a previous run" > "$out/tc-1-thing.txt.report.md"
-  printf '#!/usr/bin/env bash\nexit 1\n' > "$TEST_TMPDIR/bin/claude"
+  # A failed run that still prints text, like an auth error.
+  printf '#!/usr/bin/env bash\necho "Not logged in"\nexit 1\n' > "$TEST_TMPDIR/bin/claude"
   run bash "$GEN" demo
   [ "$status" -eq 0 ]
-  [[ "$output" == *"WARNING: empty report"* ]]
+  [[ "$output" == *"FAILED: claude exited 1"* ]]
   run grep -q "Old report" "$out/tc-1-thing.txt.report.md"
   [ "$status" -ne 0 ]
+  grep -q "claude exited 1" "$out/tc-1-thing.txt.failed"
+}
+
+@test "a successful run clears a previous run's .failed marker" {
+  make_skill demo repo "Read"
+  local out="$TEST_TMPDIR/test/skills/demo/output"
+  mkdir -p "$out"
+  echo "claude exited 1" > "$out/tc-1-thing.txt.failed"
+  run bash "$GEN" demo
+  [ "$status" -eq 0 ]
+  [ ! -e "$out/tc-1-thing.txt.failed" ]
+}
+
+@test "FIXTURE_TRANSCRIPT=1: an error or missing result event is recorded as a failure" {
+  make_skill demo inline "Agent"
+  echo 'FIXTURE_TRANSCRIPT=1' >> "$TEST_TMPDIR/test/skills/demo/runner.bash"
+  local out="$TEST_TMPDIR/test/skills/demo/output"
+  printf '#!/usr/bin/env bash\ncat >/dev/null\n%s\n' \
+    "echo '{\"type\":\"result\",\"is_error\":true,\"result\":\"Not logged in\"}'" \
+    > "$TEST_TMPDIR/bin/claude"
+  run bash "$GEN" demo
+  [ "$status" -eq 0 ]
+  grep -q "the result event is an error" "$out/tc-1-thing.txt.failed"
+  printf '#!/usr/bin/env bash\ncat >/dev/null\necho %s\n' "'{\"type\":\"system\"}'" \
+    > "$TEST_TMPDIR/bin/claude"
+  run bash "$GEN" demo
+  grep -q "no result event" "$out/tc-1-thing.txt.failed"
 }
 
 @test "a runner with an unknown mode is refused" {

@@ -4,6 +4,8 @@
 #
 # Load with: source runner-contract.bash
 # Then: reset_runner_settings; source <runner.bash>; check_runner_settings <label>
+# REPO_ROOT must be set before a runner is sourced: some runners read it at
+# source time (ai-personas-critique's persona catalog path).
 
 # Tools a fixture run may be granted. Anything else, including a spelling the
 # CLI would also accept ("Read, Write", "Write(*)", "Bash"), is refused: this is
@@ -28,7 +30,7 @@ reset_runner_settings() {
 check_runner_settings() {
   local label="$1"
   if [ -z "$FIXTURE_TOOLS" ] || ! declare -F fixture_prompt >/dev/null; then
-    echo "Error: $label must set FIXTURE_TOOLS and define fixture_prompt" >&2
+    echo "Error: $label: must set FIXTURE_TOOLS and define fixture_prompt" >&2
     return 1
   fi
 
@@ -41,6 +43,11 @@ check_runner_settings() {
   esac
 
   if [ "$FIXTURE_TOOLS" != "none" ]; then
+    # Tool names joined by single commas: no spaces, no empty entries.
+    if ! [[ "$FIXTURE_TOOLS" =~ ^[A-Za-z]+(,[A-Za-z]+)*$ ]]; then
+      echo "Error: $label: FIXTURE_TOOLS may only name ${RUNNER_ALLOWED_TOOLS[*]}, joined by commas with no spaces (e.g. Read,Grep,Glob), or be 'none'; got '$FIXTURE_TOOLS'" >&2
+      return 1
+    fi
     local -a tools
     local tool allowed ok
     IFS=',' read -ra tools <<< "$FIXTURE_TOOLS"
@@ -50,7 +57,7 @@ check_runner_settings() {
         [ "$tool" = "$allowed" ] && ok=1
       done
       if [ -z "$ok" ]; then
-        echo "Error: $label: FIXTURE_TOOLS may only name ${RUNNER_ALLOWED_TOOLS[*]} (comma-separated, no spaces) or be 'none'; got '$tool'" >&2
+        echo "Error: $label: FIXTURE_TOOLS may only name ${RUNNER_ALLOWED_TOOLS[*]}, joined by commas with no spaces (e.g. Read,Grep,Glob), or be 'none'; got '$tool'" >&2
         return 1
       fi
       # Inline fixtures arrive in the prompt, and the run's working directory is

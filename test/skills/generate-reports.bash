@@ -118,9 +118,14 @@ generate_one() {
   fixture_name="$(basename "$fixture_path")"
   local report_path="$OUTPUT_DIR/${fixture_name}.report.md"
   local transcript_path="$OUTPUT_DIR/${fixture_name}.transcript.jsonl"
-  # Neither a previous run's report nor its transcript may survive to be scored
-  # as this run's, whichever step below fails.
-  rm -f "$report_path" "$transcript_path"
+  # <fixture>.failed records that the run itself failed (claude exited non-zero,
+  # or the stream's result event is an error or missing). eval_fixture fails any
+  # fixture that has one, because a failed run's report can still hold text (an
+  # auth error, whitespace) that the absence-only checks would pass.
+  local failed_path="$OUTPUT_DIR/${fixture_name}.failed"
+  # Nothing from a previous run may survive to be scored as this run's,
+  # whichever step below fails.
+  rm -f "$report_path" "$transcript_path" "$failed_path"
 
   echo "--- Generating: $fixture_name ---"
 
@@ -184,13 +189,17 @@ generate_one() {
       commit -q -m "fixture" --allow-empty
   fi
 
-  # Pipe the prompt via stdin to avoid shell argument parsing issues
+  # Pipe the prompt via stdin to avoid shell argument parsing issues. pipefail
+  # makes the subshell's status claude's.
+  local rc=0
   # shellcheck disable=SC2086
   (cd "$temp_dir" && printf '%s' "$stdin_text" \
     | claude "${claude_args[@]}" \
       $model_flag \
       ${CLAUDE_FLAGS:-} \
-  ) > "$out_path" 2>/dev/null || true
+  ) > "$out_path" 2>/dev/null || rc=$?
+  local failure=""
+  [ "$rc" -eq 0 ] || failure="claude exited $rc"
 
   if [ "$FIXTURE_TRANSCRIPT" = 1 ]; then
     # The report is what the model finally said: the result event's text. A
@@ -199,12 +208,25 @@ generate_one() {
     # warning on stdout), which would otherwise abort jq and lose the report.
     jq -rR 'fromjson? | select(.type == "result") | .result // empty' "$transcript_path" \
       > "$report_path" 2>/dev/null || : > "$report_path"
+    if [ -z "$failure" ]; then
+      local result_state
+      result_state=$(jq -rR 'fromjson? | select(.type == "result") | if .is_error then "error" else "ok" end' \
+        "$transcript_path" 2>/dev/null | tail -n 1)
+      case "$result_state" in
+        ok) ;;
+        error) failure="the result event is an error" ;;
+        *) failure="no result event in the stream" ;;
+      esac
+    fi
   fi
 
-  if [ -s "$report_path" ]; then
-    echo "  Done: $(wc -l < "$report_path" | tr -d ' ') lines in report"
+  if [ -n "$failure" ]; then
+    printf '%s\n' "$failure" > "$failed_path"
+    echo "  FAILED: $failure (recorded in $(basename "$failed_path"); eval_fixture will fail it)"
+  elif [ -s "$report_path" ]; then
+    echo "  Done: $(grep -c '' "$report_path") lines in report"
   else
-    echo "  WARNING: empty report generated (eval_fixture will fail it)"
+    echo "  WARNING: claude succeeded but printed an empty report"
   fi
 }
 

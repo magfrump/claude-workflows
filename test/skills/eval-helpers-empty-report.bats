@@ -3,8 +3,10 @@
 # eval_fixture must not score a failed generation as a pass. generate-reports.bash
 # leaves an empty report when claude fails, and the absence-only checks
 # (no_severity:, no_verdict:, no_field:, no_pattern:) all pass on empty text, so
-# every clean-negative fixture would pass on a dead run. Only max_claims:0
-# fixtures (an empty input file) may legitimately have an empty report.
+# every clean-negative fixture would pass on a dead run. The generator records
+# the failure in <fixture>.failed, which eval_fixture honors even when the report
+# holds text. Only max_claims:0 fixtures (an empty input file) may legitimately
+# have an empty report without one.
 
 load eval-helpers
 
@@ -47,4 +49,26 @@ teardown() {
   : > "$TEST_TMPDIR/demo/output/tc-empty-input.js.report.md"
   run eval_fixture demo tc-empty-input.js
   [ "$status" -eq 0 ]
+}
+
+@test "a whitespace-only report fails a clean-negative fixture" {
+  printf '   \n\n' > "$TEST_TMPDIR/demo/output/tc-clean.py.report.md"
+  run eval_fixture demo tc-clean.py
+  [ "$status" -ne 0 ]
+  [[ "$output" == *"Empty report"* ]]
+}
+
+@test "a .failed marker fails the fixture even when the report has text" {
+  echo "Not logged in · Please run /login" > "$TEST_TMPDIR/demo/output/tc-clean.py.report.md"
+  echo "the result event is an error" > "$TEST_TMPDIR/demo/output/tc-clean.py.failed"
+  run eval_fixture demo tc-clean.py
+  [ "$status" -ne 0 ]
+  [[ "$output" == *"Generation failed for tc-clean.py: the result event is an error"* ]]
+}
+
+@test "a .failed marker fails a max_claims:0 fixture too" {
+  : > "$TEST_TMPDIR/demo/output/tc-empty-input.js.report.md"
+  echo "claude exited 1" > "$TEST_TMPDIR/demo/output/tc-empty-input.js.failed"
+  run eval_fixture demo tc-empty-input.js
+  [ "$status" -ne 0 ]
 }
