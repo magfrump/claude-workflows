@@ -47,6 +47,7 @@ Should arithmetic-eval's LLM fixture runs get a restricted Bash tool so the mode
 | **[2] Restricted Bash set** | Adds step 5: repo mode, `--allowedTools` limited to python3 invocations, transcript check that python3 ran. A /pre-mortem runs first. | Review one pre-mortem | A too-loose allow pattern lets a fixture run write or read outside the temp repo |
 
 - **Blocks:** step 5 only
+- **Update 2026-09-24:** since a75ba3e, fixture runs pass `--restricted --safe-mode`, and runner-contract.bash allows only Read, Grep, Glob, WebSearch, WebFetch and Agent. [2] therefore also means adding a scoped Bash entry to that allowlist. `--restricted` confines the file tools to the temp dir, but per the CLI help it does not sandbox shell commands, so the pre-mortem in [2] still applies. [1] is unaffected.
 - **Interim:** [1]. Step 4's gate tests land either way.
 - **If the answer differs:** add step 5 after step 2; nothing is redone.
 
