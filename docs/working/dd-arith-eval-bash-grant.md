@@ -153,3 +153,17 @@ Replace the "If [2]" bullets with:
 - `eval-helpers.bash`: a new check, `mode1_equiv:<expected value>`. It finds the Bash `tool_use` inputs, requires the normalized program to equal the extracted Mode 1 template, takes the heredoc body, rejects it if it holds an `EXPREOF` line, runs it through the extracted evaluator, and passes if any call yields `<expected value>`. A second new check, `no_bash_executed`, is the tripwire: fail if any Bash `tool_result` isn't a denial. Both get stub-transcript tests covering H2's four cases.
 - Fixtures: repo mode, 4 planted-wrong-figure drafts plus 1 no-math negative (`no_pattern` on the tag, and no Bash `tool_use`).
 - The step's `/pre-mortem` trigger is dropped: no execution is granted. It moves to [3] if that upgrade is ever taken.
+
+## Probe results (2026-09-25, user asked "Test [1]")
+
+Two Haiku 4.5 runs with `--tools Bash --permission-mode dontAsk --permission-prompts none --output-format stream-json --verbose --strict-mcp-config --restricted --safe-mode`, run in a scratch dir.
+
+**Probe A: `touch probe-ran && echo hi`.** [observed] (a) The assistant `tool_use` block with `name:"Bash"` and the full command is in the stream. (b) The `tool_result` has `is_error:true` ("denied because Claude Code is running in don't ask mode"). (c) The result event's `permission_denials` lists `tool_name`, `tool_use_id` and `tool_input.command`. `probe-ran` was not created, so nothing executed.
+
+**Probe B: SKILL.md as `--append-system-prompt`, plus a plain claim ("$4,750 at $0.0025/1K tokens ≈ 1.9B tokens?").** No mention of the evaluator.
+- [observed] The model reached for Mode 1 unprompted. The streamed command and `permission_denials[0].tool_input.command` are byte-identical, so either source works.
+- [observed] **The command was not byte-identical to SKILL.md.** Haiku dropped every Python comment. A byte-exact check would have failed a correct run.
+- [observed] The following check separated it correctly: the shell wrapper matches the regex exactly, and the embedded Python program equals SKILL.md's by `ast.dump`, which ignores comments. A one-token tamper (`MAX_BITS = 100001`) was rejected. The expression `4750 / 0.0025 * 1000` came out of the heredoc intact.
+- [observed] After the denial, the model answered with mental math ("the number is correct"). SKILL.md says not to fall back. So [1] also sees a second behavior: what the model does after a denied evaluator. The fixture can grade that as its own assertion (it should report that it could not verify), or ignore it. It is not the skill's real post-result flow either way.
+
+**Consequence for the design:** the equivalence helper compares by AST, not bytes. It checks three things: the wrapper matches exactly, `ast.dump(program)` equals the reference, and the expression is non-empty with no `EXPREOF` line. The `permission_denials` fallback is not needed. The stream already carries the command.

@@ -47,6 +47,7 @@ How should arithmetic-eval's LLM fixtures check that the model uses the evaluato
 | **[3] Dry-run disclosure** | No Bash. The prompt asks the model to print the command it would run, and that command is checked for equivalence | None | It tests whether the model knows the procedure, not whether it reaches for the evaluator unprompted |
 
 - **Blocks:** plan step 5 only
-- **Interim:** nothing built. Step 4's gate tests already cover the evaluator itself. [1] needs one cheap-model probe (the command is in the DD doc) to confirm that denied calls are recorded. It waits for your answer, per the no-compute-before-A8 memory.
+- **Interim:** nothing built. Step 4's gate tests already cover the evaluator itself.
+- **Update 2026-09-25 ("Test [1]"):** two Haiku probes confirm [1] is feasible. Denied calls are recorded in the stream and in `permission_denials`, and nothing executed. Unprompted, the model reached for Mode 1. The check must be AST-level: Haiku stripped the comments, so a byte-exact match fails, while an `ast.dump` comparison passes and rejects a one-token tamper. After the denial, the model fell back to mental math, which a fixture can grade as its own assertion. Details: DD doc, "Probe results".
 - **If the answer differs:** [2] can be added later on top of [1]; nothing is redone.
 
