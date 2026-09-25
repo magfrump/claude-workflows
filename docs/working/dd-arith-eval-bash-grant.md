@@ -2,7 +2,7 @@
 
 - **Trigger**: user answer to Q-059 (2026-09-25): "This feels like a false dichotomy; can we not test via something like equivalence of the proposed command to some static script? Run divergent design on this to come up with other options."
 - **Feeds**: `plan-skill-fixtures-batch4.md` step 5. Q-059 is rewritten from this doc's survivors.
-- **Status**: recommendation made, pending the user's pick. No `docs/decisions/` record yet; write it once Q-059 is answered.
+- **Status**: decided. The user answered Q-063 [1] (deny-and-record plus static equivalence) on 2026-09-25. Built the same day; recorded as decisions log #56.
 
 ## Motive
 

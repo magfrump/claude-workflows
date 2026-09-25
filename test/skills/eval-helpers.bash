@@ -150,6 +150,12 @@ eval_fixture() {
       subagents_min:*)
         assert_subagents_min "${check#subagents_min:}" || failed=1
         ;;
+      no_tool_called:*)
+        assert_no_tool_called "${check#no_tool_called:}" || failed=1
+        ;;
+      mode1_equiv:*)
+        assert_mode1_equiv "${check#mode1_equiv:}" || failed=1
+        ;;
       format_check)
         # Delegate to the skill's format suite, test/skills/<skill>-format.bats
         REPORT_PATH="$REPORT_PATH" bats "${BATS_TEST_DIRNAME}/${skill}-format.bats" || failed=1
@@ -388,3 +394,32 @@ assert_subagents_min() {
     return 1
   fi
 }
+
+# Assert the session never called <tool>, at any depth.
+# Check syntax: no_tool_called:Bash
+# Args: $1 = tool name
+assert_no_tool_called() {
+  local tool="$1" t n
+  t="$(eval_transcript_path)" || { echo "$t"; return 1; }
+  n=$(transcript_tool_inputs "$t" "$tool" | grep -c . || true)
+  if [ "$n" -gt 0 ]; then
+    echo "Expected no $tool calls, found $n:"
+    transcript_tool_inputs "$t" "$tool" | head -3 | cut -c1-200
+    return 1
+  fi
+}
+
+# Assert a denied Bash call in a FIXTURE_BASH=deny-record transcript was
+# arithmetic-eval's Mode 1 evaluator (wrapper exact, program AST-equal to
+# SKILL.md's) and that its expression, run through the evaluator extracted
+# from SKILL.md, gives one of the expected values. Also fails if any Bash call
+# is missing from permission_denials. See arithmetic-eval/mode1-equiv.py.
+# Check syntax: mode1_equiv:1900000000|1900000   (or 42.16~0.002 for a tolerance)
+# Args: $1 = expected values
+assert_mode1_equiv() {
+  local spec="$1" t
+  t="$(eval_transcript_path)" || { echo "$t"; return 1; }
+  python3 "${BATS_TEST_DIRNAME}/arithmetic-eval/mode1-equiv.py" \
+    "${BATS_TEST_DIRNAME}/../../skills/arithmetic-eval/SKILL.md" "$t" "$spec"
+}
+

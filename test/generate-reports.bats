@@ -418,3 +418,93 @@ EOF
   done
   [ "${#missing[@]}" -eq 0 ] || { echo "no <skill>-eval.bats: ${missing[*]}"; return 1; }
 }
+
+# --- FIXTURE_BASH=deny-record (Q-063 [1]) ---
+
+# make_deny_skill: an inline skill granting Bash under deny-record.
+make_deny_skill() {
+  make_skill demo inline "Bash"
+  printf 'FIXTURE_TRANSCRIPT=1\nFIXTURE_BASH=deny-record\n' >> "$TEST_TMPDIR/test/skills/demo/runner.bash"
+}
+
+# stub_stream <denials JSON>: a claude stub whose stream holds one Bash call
+# (id b1) and a result event with the given permission_denials.
+stub_stream() {
+  cat > "$TEST_TMPDIR/bin/claude" <<EOF2
+#!/usr/bin/env bash
+cat >/dev/null
+echo '{"type":"assistant","parent_tool_use_id":null,"message":{"content":[{"type":"tool_use","id":"b1","name":"Bash","input":{"command":"echo hi"}}]}}'
+echo '{"type":"result","subtype":"success","result":"# Report","permission_denials":$1}'
+EOF2
+  chmod +x "$TEST_TMPDIR/bin/claude"
+}
+
+@test "deny-record: Bash is accepted and every call is pinned to be denied" {
+  make_deny_skill
+  run bash "$GEN" demo
+  echo "$output"
+  [ "$status" -eq 0 ]
+  [[ "$(cat "$CALLS/0")" == *"--tools Bash --permission-mode dontAsk --permission-prompts none"* ]]
+}
+
+@test "deny-record needs FIXTURE_TRANSCRIPT=1 and Bash in FIXTURE_TOOLS; other values are refused" {
+  make_skill demo inline "Bash"
+  echo 'FIXTURE_BASH=deny-record' >> "$TEST_TMPDIR/test/skills/demo/runner.bash"
+  run bash "$GEN" demo
+  [ "$status" -ne 0 ]
+  [[ "$output" == *"needs FIXTURE_TRANSCRIPT=1"* ]]
+  rm -rf "$TEST_TMPDIR/test/skills/demo"
+  make_skill demo inline "WebSearch"
+  printf 'FIXTURE_TRANSCRIPT=1\nFIXTURE_BASH=deny-record\n' >> "$TEST_TMPDIR/test/skills/demo/runner.bash"
+  run bash "$GEN" demo
+  [ "$status" -ne 0 ]
+  [[ "$output" == *"does not name Bash"* ]]
+  rm -rf "$TEST_TMPDIR/test/skills/demo"
+  make_skill demo inline "Bash"
+  printf 'FIXTURE_TRANSCRIPT=1\nFIXTURE_BASH=allow\n' >> "$TEST_TMPDIR/test/skills/demo/runner.bash"
+  run bash "$GEN" demo
+  [ "$status" -ne 0 ]
+  [[ "$output" == *"FIXTURE_TOOLS may only name"* ]]   # Bash is refused outright
+  rm -rf "$TEST_TMPDIR/test/skills/demo"
+  make_skill demo inline "WebSearch"
+  printf 'FIXTURE_TRANSCRIPT=1\nFIXTURE_BASH=allow\n' >> "$TEST_TMPDIR/test/skills/demo/runner.bash"
+  run bash "$GEN" demo
+  [ "$status" -ne 0 ]
+  [[ "$output" == *"FIXTURE_BASH may only be"* ]]
+  [ "$(ls "$CALLS" | wc -l)" -eq 0 ]
+}
+
+@test "deny-record does not open Bash(<pattern>) spellings" {
+  make_skill demo inline "Bash(python3:*)"
+  printf 'FIXTURE_TRANSCRIPT=1\nFIXTURE_BASH=deny-record\n' >> "$TEST_TMPDIR/test/skills/demo/runner.bash"
+  run bash "$GEN" demo
+  [ "$status" -ne 0 ]
+  [[ "$output" == *"FIXTURE_TOOLS may only name"* ]]
+}
+
+@test "deny-record: CLAUDE_FLAGS that change permissions are refused before claude runs" {
+  make_deny_skill
+  local f
+  for f in "--permission-mode bypassPermissions" "--allowedTools Bash" "--allowed-tools Bash" \
+      "--dangerously-skip-permissions" "--settings x.json" "--model m --permission-prompts ask"; do
+    CLAUDE_FLAGS="$f" run bash "$GEN" demo
+    [ "$status" -ne 0 ] || { echo "accepted: $f"; return 1; }
+    [[ "$output" == *"may not change permissions"* ]]
+  done
+  [ "$(ls "$CALLS" | wc -l)" -eq 0 ]
+  CLAUDE_FLAGS="--model m" run bash "$GEN" demo
+  [ "$status" -eq 0 ]
+}
+
+@test "deny-record tripwire: a Bash call missing from permission_denials voids the run" {
+  make_deny_skill
+  local out="$TEST_TMPDIR/test/skills/demo/output"
+  stub_stream '[]'
+  run bash "$GEN" demo
+  [ "$status" -eq 0 ]
+  grep -q "Bash tripwire: 1 Bash call" "$out/tc-1-thing.txt.failed"
+  stub_stream '[{"tool_name":"Bash","tool_use_id":"b1","tool_input":{}}]'
+  run bash "$GEN" demo
+  [ "$status" -eq 0 ]
+  [ ! -e "$out/tc-1-thing.txt.failed" ]
+}

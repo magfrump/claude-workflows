@@ -71,6 +71,7 @@ full. IDs are stable forever: `Q-014` means the same thing here as it did there.
 | [Q-060](#q-060--orchestrator-fixture-depth) | How far should batch 4 go for code-review and draft-review? | 2026-09-24 |
 | [Q-061](#q-061--host-stage-review-copies) | The host target's stage can be swapped for the review and swapped back before y (the re-review's R2, 6/6 ru... | 2026-09-25 |
 | [Q-062](#q-062--leftover-helper-is-agent) | Under Q-058 [2], does a background process an agent session left running (a detached helper, a loop driver ... | 2026-09-25 |
+| [Q-063](#q-063--arith-eval-evaluator-check) | How should arithmetic-eval's LLM fixtures check that the model uses the evaluator? (Replaces Q-059, per you... | 2026-09-25 |
 <!-- index:end -->
 
 ## Answered
@@ -1295,5 +1296,27 @@ Under Q-058 [2], does a background process an agent session left running (a deta
 - **If the answer differs:** [2] adds one detector to `agent_gate` and a test. Nothing is redone.
 
 **Answered 2026-09-25: [2].** `agent_gate` now also refuses any other process of your uid whose working directory is in the checkout, read from `/proc`. install.sh's own ancestors and children are exempt, and it refuses when `/proc` can't be read (T88–T90). Decision 037 is updated.
+
+
+### Q-063 · arith-eval-evaluator-check
+**Needs:** you: judgment · **Opened:** 2026-09-25 · **Status:** ANSWERED
+
+How should arithmetic-eval's LLM fixtures check that the model uses the evaluator? (Replaces Q-059, per your equivalence suggestion.)
+
+- **Why it's yours:** [2] adds a component that decides whether a shell command runs. [1] and [3] execute nothing.
+- **Read:** `docs/working/dd-arith-eval-bash-grant.md` (13 candidates, matrix). Q-059's old [2] was pruned there: an allow rule loose enough for the Mode 1 command also allows any `python3 -c` program.
+
+| Option | What it means | Cost to you | If it's wrong |
+|---|---|---|---|
+| **[1] Deny-and-record + static equivalence** | Bash is listed, but every call is denied. The harness takes the denied command from the transcript, checks it is exactly SKILL.md's Mode 1 program, and runs the extracted expression through its own copy of the evaluator. If any Bash call actually executes, a tripwire fails the run. | None. No pre-mortem needed, since nothing runs. | What the model does after seeing a real result goes unmeasured. It rests on denied calls being recorded; if they aren't, it falls back to `permission_denials`, and if that fails too it drops to [3]. |
+| **[2] Equivalence-gated live approval** | The same check runs live as the permission handler, so only an exact Mode 1 match on a numbers-only expression runs | One pre-mortem, about 2 days of work | A matching bug in the handler opens a shell. It is also unverified whether `--safe-mode` keeps the MCP server the handler needs. |
+| **[3] Dry-run disclosure** | No Bash. The prompt asks the model to print the command it would run, and that command is checked for equivalence | None | It tests whether the model knows the procedure, not whether it reaches for the evaluator unprompted |
+
+- **Blocks:** plan step 5 only
+- **Interim:** nothing built. Step 4's gate tests already cover the evaluator itself.
+- **Update 2026-09-25 ("Test [1]"):** two Haiku probes confirm [1] is feasible. Denied calls are recorded in the stream and in `permission_denials`, and nothing executed. Unprompted, the model reached for Mode 1. The check must be AST-level: Haiku stripped the comments, so a byte-exact match fails, while an `ast.dump` comparison passes and rejects a one-token tamper. After the denial, the model fell back to mental math, which a fixture can grade as its own assertion. Details: DD doc, "Probe results".
+- **If the answer differs:** [2] can be added later on top of [1]; nothing is redone.
+
+**Answered 2026-09-25: [1].** Built as `FIXTURE_BASH=deny-record` plus `mode1_equiv:` (decisions log #56). The first Haiku run routed 5 of 5 fixtures through Mode 1 but fell back to mental math 4 of 4 after the denial.
 
 

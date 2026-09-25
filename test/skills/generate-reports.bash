@@ -28,6 +28,12 @@
 #                     to the report, so eval checks can see tool calls and
 #                     sub-agent dispatches (tool_called:, subagents_min:). The
 #                     report is still plain text: the final result event's text.
+#   FIXTURE_BASH (optional) — "deny-record" lets FIXTURE_TOOLS name Bash, and
+#                     pins --permission-mode dontAsk --permission-prompts none so
+#                     every Bash call is denied and only recorded (Q-063 [1]).
+#                     Needs FIXTURE_TRANSCRIPT=1. A run in which any Bash call
+#                     is missing from the result's permission_denials, i.e. may
+#                     have executed, is recorded as failed.
 #
 # Fixture filenames describe the planted defect or the expected verdict
 # (tc-sec1-sql-injection.py, tc-c2.4-incorrect.js). The model must never see
@@ -105,6 +111,18 @@ if [ "$FIXTURE_TRANSCRIPT" = 1 ] && ! command -v jq >/dev/null 2>&1; then
   exit 1
 fi
 
+# Under deny-record, the operator's CLAUDE_FLAGS must not loosen what the pinned
+# permission flags deny (a later --permission-mode would win).
+if [ "$FIXTURE_BASH" = "deny-record" ]; then
+  case " ${CLAUDE_FLAGS:-} " in
+    *" --permission-mode"*|*" --permission-prompts"*|*" --allowedTools"*|*" --allowed-tools"*|\
+    *" --dangerously-skip-permissions"*|*" --allow-dangerously-skip-permissions"*|*" --settings"*)
+      echo "Error: $RUNNER_FILE sets FIXTURE_BASH=deny-record; CLAUDE_FLAGS may not change permissions: ${CLAUDE_FLAGS}" >&2
+      exit 1
+      ;;
+  esac
+fi
+
 # "none" is explicit so a runner that forgets FIXTURE_TOOLS still errors above;
 # claude -p reads --tools "" as "no tools".
 TOOLS_ARG="$FIXTURE_TOOLS"
@@ -160,6 +178,9 @@ generate_one() {
   # An empty --tools value is its own argv element; the CLI reads it as "no
   # tools" and does not consume the flag after it.
   claude_args+=(--tools "$TOOLS_ARG")
+  if [ "$FIXTURE_BASH" = "deny-record" ]; then
+    claude_args+=(--permission-mode dontAsk --permission-prompts none)
+  fi
 
   # Every mode runs in a fresh temp directory: empty for inline, a minimal git
   # repo holding the fixture for repo and tree.
@@ -224,6 +245,18 @@ generate_one() {
         error) failure="the result event is an error" ;;
         *) failure="no result event in the stream" ;;
       esac
+    fi
+    # Tripwire (deny-record): every Bash tool_use must be listed as denied. One
+    # that is not may have run, so the whole run is void.
+    if [ -z "$failure" ] && [ "$FIXTURE_BASH" = "deny-record" ]; then
+      local undenied
+      undenied=$(jq -rRn '[inputs | fromjson?] as $ev
+        | ([$ev[] | select(.type == "result") | .permission_denials[]?.tool_use_id]) as $denied
+        | [$ev[] | select(.type == "assistant") | .message.content[]?
+           | select(.type == "tool_use" and .name == "Bash") | .id]
+        | map(select(. as $id | $denied | index($id) | not)) | length' \
+        "$transcript_path" 2>/dev/null) || undenied="unreadable"
+      [ "$undenied" = 0 ] || failure="Bash tripwire: $undenied Bash call(s) not in permission_denials (may have executed)"
     fi
   fi
 

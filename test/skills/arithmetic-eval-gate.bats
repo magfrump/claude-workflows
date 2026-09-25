@@ -6,7 +6,7 @@
 #   - the Mode 2 static gate (check.py, between <<'AE_CHECK_EOF' and AE_CHECK_EOF).
 # Both are extracted from SKILL.md at test time, so these tests exercise exactly
 # what a model would paste. No LLM runs here: whether the model *uses* the
-# evaluator is a separate question (plan-skill-fixtures-batch4 step 5, Q-059).
+# evaluator is tested by arithmetic-eval-eval.bats (deny-record fixtures, Q-063 [1]).
 #
 # The OS confinement tiers (bwrap / unshare / confine.py) are out of scope; the
 # gate is defense-in-depth in front of them (SKILL.md "Security model").

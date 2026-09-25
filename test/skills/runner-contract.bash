@@ -15,6 +15,15 @@
 # well as here"), so Agent adds dispatch, not file access.
 RUNNER_ALLOWED_TOOLS=(Read Grep Glob WebSearch WebFetch Agent)
 
+# Bash is the one exception, and only as FIXTURE_BASH=deny-record (Q-063 [1]):
+# the model is offered Bash, generate-reports.bash pins every call to be
+# denied (--permission-mode dontAsk --permission-prompts none), and the kept
+# transcript records the command it tried. Nothing runs; eval checks compare
+# the recorded command with a reference (arithmetic-eval's mode1_equiv:). A
+# denied call is recorded in the stream and in the result event's
+# permission_denials (probed 2026-09-25, dd-arith-eval-bash-grant.md). Any
+# other Bash grant, and any Bash(<pattern>) spelling, is still refused.
+
 # Clear the settings a runner is expected to set, so a runner that forgets a
 # required one fails check_runner_settings instead of inheriting a previous
 # runner's value, and optional ones fall back to their defaults.
@@ -22,6 +31,7 @@ reset_runner_settings() {
   FIXTURE_TOOLS=""
   FIXTURE_MODE=""
   FIXTURE_TRANSCRIPT=""
+  FIXTURE_BASH=""
   unset -f fixture_prompt fixture_base 2>/dev/null || true
 }
 
@@ -57,8 +67,11 @@ check_runner_settings() {
       for allowed in "${RUNNER_ALLOWED_TOOLS[@]}"; do
         [ "$tool" = "$allowed" ] && ok=1
       done
+      if [ "$tool" = "Bash" ] && [ "$FIXTURE_BASH" = "deny-record" ]; then
+        ok=1
+      fi
       if [ -z "$ok" ]; then
-        echo "Error: $label: FIXTURE_TOOLS may only name ${RUNNER_ALLOWED_TOOLS[*]}, joined by commas with no spaces (e.g. Read,Grep,Glob), or be 'none'; got '$tool'" >&2
+        echo "Error: $label: FIXTURE_TOOLS may only name ${RUNNER_ALLOWED_TOOLS[*]}, joined by commas with no spaces (e.g. Read,Grep,Glob), or be 'none' (Bash only with FIXTURE_BASH=deny-record); got '$tool'" >&2
         return 1
       fi
       # Inline fixtures arrive in the prompt, and the run's working directory is
@@ -79,6 +92,25 @@ check_runner_settings() {
     1) ;;
     *)
       echo "Error: $label: FIXTURE_TRANSCRIPT must be 0 or 1, got '$FIXTURE_TRANSCRIPT'" >&2
+      return 1
+      ;;
+  esac
+
+  case "$FIXTURE_BASH" in
+    "") ;;
+    deny-record)
+      # The recorded command is the whole point, and it lives in the transcript.
+      if [ "$FIXTURE_TRANSCRIPT" != 1 ]; then
+        echo "Error: $label: FIXTURE_BASH=deny-record needs FIXTURE_TRANSCRIPT=1" >&2
+        return 1
+      fi
+      if [[ ",$FIXTURE_TOOLS," != *,Bash,* ]]; then
+        echo "Error: $label: FIXTURE_BASH=deny-record is set but FIXTURE_TOOLS does not name Bash" >&2
+        return 1
+      fi
+      ;;
+    *)
+      echo "Error: $label: FIXTURE_BASH may only be empty or deny-record, got '$FIXTURE_BASH'" >&2
       return 1
       ;;
   esac
