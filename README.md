@@ -31,7 +31,14 @@ hard barrier is a sandbox that denies agents write access to `~/.claude`. Run
 from inside a Claude Code session, the whole run exits 1 at startup, because the
 no-agent check below finds that session; the `CLAUDECODE` skip stays as a
 backstop for a session the check misses (unsetting `CLAUDECODE` gets past it).
-`install.sh --help` has the details.
+If the checkout's own `.git` holds a command git would run as you (a local
+`filter.*`, `core.fsmonitor` or `include*` key, or a non-empty
+`info/attributes`), both targets are refused before anything is staged, and each
+entry is named with the `git config --file … --unset-all` command that removes
+it. Removing `filter.lfs.*` disables Git LFS in that clone; set LFS up globally
+instead. The `~/.claude` target stages and reviews inside its destination, so an
+unwritable destination is refused before the review (exit 1), even when nothing
+would change. `install.sh --help` has the details.
 
 **No agent may run during the install (Q-058).** `install.sh` runs as your uid, so
 "what you reviewed is what is installed" holds only while nothing else with your

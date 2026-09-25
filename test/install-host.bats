@@ -1019,6 +1019,11 @@ installed_then_changed() {
   # Review A4: an in-session run is refused at startup, not "target 1 installs".
   [[ "$output" == *'Claude Code session, install.sh finds that session and exits 1 at startup'* ]]
   grep -q 'exits 1 at startup' "$BATS_TEST_DIRNAME/../README.md"
+  # Review P2-A4, P2-A5: the git-state refusal and the unwritable destination.
+  [[ "$output" == *'filter.*, core.fsmonitor or include*'* ]]
+  [[ "$output" == *'not writable is refused before the review, with exit 1'* ]]
+  grep -q -- '--unset-all' "$BATS_TEST_DIRNAME/../README.md"
+  grep -q 'unwritable destination is refused before the review' "$BATS_TEST_DIRNAME/../README.md"
   for doc in README.md guides/bare-host-hook-wiring.md; do
     grep -q 'Q-058' "$BATS_TEST_DIRNAME/../$doc"
     grep -q 'cc-isolated container' "$BATS_TEST_DIRNAME/../$doc"
@@ -1276,6 +1281,7 @@ plant_marker_cmd() {
   [ "$status" -eq 1 ]
   [[ "$output" == *'filter.pwn.smudge'* ]]
   [[ "$output" == *'info/attributes'*'*.md filter=pwn'* ]]
+  [[ "$output" == *'--unset-all <key>'*'filter.lfs'* ]]      # review P2-A4
   [[ "$output" == *'Nothing was installed.'* ]]
   [[ "$output" != *'BLESS-STUB'* ]]
   [ ! -e "$S/smudge-ran" ]

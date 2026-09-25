@@ -70,6 +70,17 @@ The hard barrier is a sandbox that denies agents write access to ~/.claude.
 
 Needs git, perl (the review's control-byte filter) and pgrep; refuses without them.
 
+Both targets are refused, before anything is staged, when the checkout's own
+.git holds a filter.*, core.fsmonitor or include* key (in config or
+config.worktree) or a non-empty info/attributes: git would run a command from
+it as you, and an agent or a cc-isolated container can write .git. The refusal
+names each entry and how to remove it. Hooks (.git/hooks, core.hooksPath) and
+submodules are not refused; install.sh's git calls never run them.
+
+The host target stages and reviews inside its destination, so a destination
+that is not writable is refused before the review, with exit 1, even when
+nothing would change.
+
   --yes       answer y for target 1 without asking (target 2 is skipped)
   -h, --help  show this help
 
@@ -219,8 +230,11 @@ git_state_gate() {
     echo "       install (a filter, core.fsmonitor, an include, or an attributes file):"
     printf '%s' "$found"
     echo "       An agent, or a cc-isolated container through its bind mount, can write"
-    echo "       these. Check each one, remove it (git config --local --unset <key>, or"
-    echo "       empty the attributes file) and rerun. Nothing was installed."
+    echo "       these. Check each one and remove it, with"
+    echo "         git config --file <the file named above> --unset-all <key>"
+    echo "       or by emptying the attributes file, then rerun. Removing filter.lfs.*"
+    echo "       disables Git LFS in this clone; set LFS up in your global config instead"
+    echo "       (\`git lfs install\`, without --local). Nothing was installed."
   } | vis_or_die >&2
   exit 1
 }
