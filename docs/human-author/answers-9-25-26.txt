@@ -1,0 +1,9 @@
+Q-059:
+This feels like a false dichotomy; can we not test via something like equivalence of the proposed command to some static script?
+Run divergent design on this to come up with other options.
+
+Q-060: [1]
+
+Q-061: [1]
+
+Q-062: [2]
