@@ -71,7 +71,7 @@ The hard barrier is a sandbox that denies agents write access to ~/.claude.
 Needs git, perl (the review's control-byte filter) and pgrep; refuses without them.
 
 Both targets are refused, before anything is staged, when the checkout's own
-.git holds a filter.*, core.fsmonitor or include* key (in config or
+.git holds a filter.*, core.fsmonitor, include* or hook.* key (in config or
 config.worktree) or a non-empty info/attributes: git would run a command from
 it as you, and an agent or a cc-isolated container can write .git. The refusal
 names each entry and how to remove it. Hooks (.git/hooks, core.hooksPath) and
@@ -194,7 +194,7 @@ head_commit() {
 # --git-path resolves a linked worktree (whose .git is a file) to the common
 # dir for info/attributes and config, and to the worktree's own dir for
 # config.worktree. Its output may be relative to the checkout.
-GIT_EXEC_KEYS_RE='^(filter\.|core\.fsmonitor|include)'
+GIT_EXEC_KEYS_RE='^(filter\.|core\.fsmonitor|include|hook\.)'
 git_state_gate() {
   local found="" out rc f attrs line
   for f in config config.worktree; do
@@ -227,7 +227,8 @@ git_state_gate() {
   [ -n "$found" ] || return 0
   {
     echo "ERROR: the checkout's git state can make git run a command as you during this"
-    echo "       install (a filter, core.fsmonitor, an include, or an attributes file):"
+    echo "       install (a filter, core.fsmonitor, an include, a config-based hook, or an"
+    echo "       attributes file):"
     printf '%s' "$found"
     echo "       An agent, or a cc-isolated container through its bind mount, can write"
     echo "       these. Check each one and remove it, with"
@@ -491,7 +492,8 @@ install_devcontainer() {
   # and swapped back before the y: for that this target relies on the gate
   # (decision 037, "Trust model").
   local reviewed_hash links
-  links="$(links_in "$stage" "" "${PAYLOAD[@]}")"
+  links="$(links_in "$stage" "" "${PAYLOAD[@]}")" \
+    || links="(the symlink check could not read every item)"
   if [ -n "$links" ]; then
     {
       echo "ERROR: symlinks appeared in the staged devcontainer config after its link check:"
@@ -560,7 +562,8 @@ install_devcontainer() {
   if [ -n "$copy_failed" ]; then
     dc_unwind "could not copy '$copy_failed' into $DEST."
   fi
-  links="$(links_in "$DEST" "" "${PAYLOAD[@]}")"
+  links="$(links_in "$DEST" "" "${PAYLOAD[@]}")" \
+    || links="(the symlink check could not read every item)"
   if [ -n "$links" ]; then
     dc_unwind "symlinks landed in $DEST, which install.sh never installs:" "$links"
   fi
@@ -647,10 +650,16 @@ tree_hash() {
 # <dir>/<prefix><name>, one per line. extract_commit refuses links once, right
 # after extraction; a link that appears later passed that check and tree_hash
 # only records it, so every hash site calls this too (review P2-R2).
+# A missing item holds no link and is left to the hash check that follows;
+# a find that cannot read a tree fails the call, and every caller turns that
+# into a refusal (review pass 3: a bare failure here skipped dc_unwind).
 links_in() {
   local dir="$1" pfx="$2" name
   shift 2
-  for name in "$@"; do find "$dir/$pfx$name" -type l; done
+  for name in "$@"; do
+    [ -e "$dir/$pfx$name" ] || [ -L "$dir/$pfx$name" ] || continue
+    find "$dir/$pfx$name" -type l || return 1
+  done
 }
 
 # payload_hash <dir> <prefix> <manifest>: tree_hash of every host entry name,
@@ -777,8 +786,8 @@ install_claude_home() {
   # R2 and P2-R3 (Q-061 interim [1], provisional pending the user's answer):
   # everything the review reads and everything that is installed lives under
   # $dest, which the sandbox's denyWrite covers for the default ~/.claude.
-  # Nothing of this target sits in $TMPDIR, where any same-uid writer could
-  # swap the stage, the copies' source or the old side of the diff while the
+  # Nothing the review reads or the install copies sits in $TMPDIR (only the
+  # gate's docker stderr file does), where any same-uid writer could swap the stage, the copies' source or the old side of the diff while the
   # review ran (SP1, SP1b, SP1c). So: take the lock; extract the stage into
   # $dest/.cw-stage.*; copy it into $dest/.cw-new.*; hash those copies and
   # review them against a view of the current destination, also built in
@@ -830,7 +839,8 @@ install_claude_home() {
   fi
   # The review below reads $new<name>; after the y they must still hash the same.
   local new="$dest/.cw-new." reviewed_hash links
-  links="$(links_in "$dest" .cw-new. "${CLAUDE_HOME_NAMES[@]}" manifest)"
+  links="$(links_in "$dest" .cw-new. "${CLAUDE_HOME_NAMES[@]}" manifest)" \
+    || links="(the symlink check could not read every item)"
   if [ -n "$links" ]; then
     rm_new_copies "$dest"
     {

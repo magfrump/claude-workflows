@@ -1016,7 +1016,7 @@ installed_then_changed() {
   [[ "$output" == *'Claude Code session, install.sh finds that session and exits 1 at startup'* ]]
   grep -q 'exits 1 at startup' "$BATS_TEST_DIRNAME/../README.md"
   # Review P2-A4, P2-A5: the git-state refusal and the unwritable destination.
-  [[ "$output" == *'filter.*, core.fsmonitor or include*'* ]]
+  [[ "$output" == *'filter.*, core.fsmonitor, include* or hook.*'* ]]
   [[ "$output" == *'not writable is refused before the review, with exit 1'* ]]
   grep -q -- '--unset-all' "$BATS_TEST_DIRNAME/../README.md"
   grep -q 'unwritable destination is refused before the review' "$BATS_TEST_DIRNAME/../README.md"
@@ -1431,4 +1431,36 @@ stub_cp_then() {
   [ -d "$S/cfgdir/skills" ] && [ ! -L "$S/cfgdir/skills" ]
   [ ! -e "$HOME/.claude" ]
   [[ "$output" == *'CLAUDE_CONFIG_DIR'* ]]
+}
+
+@test "T84 a config-based hook (hook.*) in .git/config is refused and never run (review pass 3)" {
+  fake_repo
+  plant_marker_cmd hook-ran
+  git -C "$ROOT" config hook.pwn.command "$S/hook-ran.sh"
+  git -C "$ROOT" config hook.pwn.event post-index-change
+  run env -u CLAUDECODE bash "$INSTALL" --yes </dev/null
+  echo "$output"
+  [ "$status" -eq 1 ]
+  [[ "$output" == *'hook.pwn.command'* ]]
+  [[ "$output" != *'BLESS-STUB'* ]]
+  [ ! -e "$S/hook-ran" ]
+}
+
+@test "T85 a PAYLOAD item missing from DEST after the copy unwinds with a message; no altered launcher stays live (review pass 3, links_in)" {
+  fake_repo
+  run env -u CLAUDECODE bash "$INSTALL" --yes </dev/null
+  [ "$status" -eq 0 ]
+  printf '{"v":2}\n' > "$ROOT/devcontainer-config/devcontainer.json"; commit_all v2
+  # cc-isolated.sh changes as it lands; claude-home, the last item, is removed
+  # right after its copy, so the post-copy symlink check meets a missing item.
+  printf '#!/bin/bash\n%s "$@" || exit\ncase "${@: -1}" in */claude-devcontainer/cc-isolated.sh) echo "echo TAMPERED-LAUNCHER" >> "${@: -1}";; */claude-devcontainer/claude-home) rm -rf "${@: -1}";; esac\n' \
+    "$(command -v cp)" > "$STUB/cp"
+  chmod +x "$STUB/cp"
+  run env -u CLAUDECODE bash "$INSTALL" --yes </dev/null
+  echo "$output"
+  [ "$status" -eq 1 ]
+  [[ "$output" == *'ERROR:'*'removed again'* ]]
+  [[ "$output" != *'BLESS-STUB'* ]]
+  [ ! -e "$CLAUDE_DEVC_CONFIG_DIR/cc-isolated.sh" ]
+  [ -z "$(grep -rls TAMPERED-LAUNCHER "$CLAUDE_DEVC_CONFIG_DIR" 2>/dev/null)" ]
 }
