@@ -49,4 +49,8 @@ Order: `1 → [2, 3] → [4, 6, 7, 8] → 10`
 
 ## Open questions
 - Q-059, Q-060 (docs/working/questions.md)
-- Sub-agents inherit `~/.claude/CLAUDE.md`, a hermeticity gap across all batches. Whether `--setting-sources` covers it is [assumed] no.
+- ~~Sub-agents inherit `~/.claude/CLAUDE.md`, a hermeticity gap across all batches.~~ Addressed 2026-09-24 (a75ba3e): every fixture run passes `--restricted --safe-mode`. Per the CLI help, `--safe-mode` disables CLAUDE.md, skills, plugins and hooks. The init event confirms skills went 45 → 18 and plugins 6 → 2. CLAUDE.md suppression itself was not probed [inferred from help text].
+- Pass-1 review (docs/reviews/code-review-rubric-2026-09-24-skill-fixtures.md) canary-probed and confirmed [observed] two behaviors:
+  - Sub-agents inherit `--tools`.
+  - `-p` refuses absolute-path reads outside the cwd.
+- Pass 2 of the review (fixture data) is still deferred.

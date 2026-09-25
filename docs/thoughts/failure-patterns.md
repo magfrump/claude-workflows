@@ -311,3 +311,4 @@ When citing a matched pattern in a research doc, commit message, or hypothesis, 
 - **FP-169** 2026-09-17 symptom:prose-appended-to-a-parsed-date-field-makes-it-unparseable cause:delimiter-handling fix:structural-parse ref:9896a5e
 - **FP-170** 2026-09-17 symptom:truncation-splits-multibyte-char-grep-reports-file-as-binary cause:encoding fix:structural-parse ref:e96912d
 - **FP-171** 2026-09-17 symptom:zero-padded-id-read-as-octal-hands-out-a-used-id cause:encoding fix:structural-parse ref:e96912d
+- **FP-172** 2026-09-24 symptom:failed-generation-leaves-empty-report-and-absence-only-checks-pass-every-negative-control cause:vacuous-assertion fix:fail-closed-on-empty-input ref:a2972bf

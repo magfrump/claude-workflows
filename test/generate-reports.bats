@@ -318,7 +318,8 @@ EOF
   run bash "$GEN" demo
   [ "$status" -eq 0 ]
   [[ "$output" == *"WARNING: empty report"* ]]
-  ! grep -q "Old report" "$out/tc-1-thing.txt.report.md"
+  run grep -q "Old report" "$out/tc-1-thing.txt.report.md"
+  [ "$status" -ne 0 ]
 }
 
 @test "a runner with an unknown mode is refused" {
