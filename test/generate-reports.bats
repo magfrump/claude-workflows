@@ -16,7 +16,7 @@ setup() {
   # lists its working directory, which must not be the repo root (395k files
   # there made this suite take 10-14 s).
   unset CLAUDE_MODEL CLAUDE_FLAGS
-  cd "$TEST_TMPDIR"
+  cd "$TEST_TMPDIR" || return 1
 
   # The stub records its argv, working directory and stdin, then prints a
   # one-finding report so the generator's "Done" path runs.

@@ -24,6 +24,7 @@ KEY_CHECK["tc-empty-input.js"]="max_claims:0"
 EOF
   # eval_fixture resolves verdicts and reports relative to the suite's
   # directory; point it at the throwaway skill instead.
+  # shellcheck disable=SC2034  # read by eval-helpers.bash
   BATS_TEST_DIRNAME="$TEST_TMPDIR"
   load_expected_verdicts demo
 }
