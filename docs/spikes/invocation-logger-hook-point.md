@@ -4,8 +4,19 @@ Date: 2026-05-14
 Branch: none (read-only investigation)
 Time spent: ~25 min
 
-**Last verified:** 2026-06-24
-**Relevant paths:** hooks/log-usage.sh, hooks/log-usage-post.sh, scripts/lib/si-morning-summary.sh, docs/decisions/012-hypothesis-grammar-for-user-surfaced-evaluation.md
+**Last verified:** 2026-09-24
+
+Re-verification note (2026-09-24): checked against the seven commits to the tracked
+paths since 2026-06-24: `9593ede`, `ebfdda8`, `a45f4a9`, `1466184` (merge), `efd66e4`,
+`e6a6a5f`, `818c568`. Six changed `scripts/lib/si-morning-summary.sh` (hypothesis-log
+Run column, row splitting, Window lookup), and one added a Q-038 routing note to
+decision 012. None changed the hooks or the METRIC emission for `duration_ms` and
+`total_tokens`. Still true: the pre-hook's `via` field (`skill_tool`/`file_read`),
+`skill_completed`/`agent_completed` in `log-usage-post.sh`, `trap 'exit 0' ERR`, the
+`USAGE_LOG_FILE` override, and `git rev-parse --show-toplevel` context. The last three
+now live in the shared preamble `hooks/lib/usage-common.sh`, which is added to
+Relevant paths below.
+**Relevant paths:** hooks/log-usage.sh, hooks/log-usage-post.sh, hooks/lib/usage-common.sh, scripts/lib/si-morning-summary.sh, docs/decisions/012-hypothesis-grammar-for-user-surfaced-evaluation.md
 
 - **Goal**: Determine whether an existing or extendable hook point in Claude Code can supply the invocation log decision 012 pillar 4 requires (skill/workflow invocations, timestamps, args, duration), with minimal new infrastructure.
 - **Project state**: investigation for decision 012 pillar 4 · part of the SI hypothesis-grammar rewrite · not blocked

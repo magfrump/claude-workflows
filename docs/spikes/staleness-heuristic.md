@@ -3,9 +3,17 @@
 Date: 2026-03-23
 Time spent: ~10 minutes (design exercise, no throwaway code needed)
 
-**Last verified:** 2026-09-17
+**Last verified:** 2026-09-24
 
-Re-verification note (2026-09-17): checked against the five commits to the tracked
+Re-verification note (2026-09-24): checked against the ten commits to the tracked
+paths since 2026-09-17: `c39cabb`, `13231a8`, `b1901c5` and `650d188` (merges),
+`df3f02a`, `6376910`, `aa9a5a0`, `0ccbdb8`, `654c0ed` (merge), `fa3c5c0`. The
+`guides/doc-freshness.md` changes fix workflow step numbers and add an RPI-research-docs
+row to the doc-type table. The `scripts/health-check.sh` changes cover test gating,
+hermetic negative tests, scripts reachability and directory fixtures. None touched
+the freshness check, which still applies the two-part rule below.
+
+Earlier re-verification note (2026-09-17): checked against the five commits to the tracked
 paths since 2026-06-24 — `3255f9b`, `c56be81`, `848c5d8`, `03668e4`, `93f9ca3`.
 All five are path-churn and check-scoping changes; none touched the heuristic.
 `scripts/health-check.sh` still implements exactly the two-part rule below
