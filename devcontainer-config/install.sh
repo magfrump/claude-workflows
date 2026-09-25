@@ -410,6 +410,23 @@ confirm() {
   esac
 }
 
+# dc_unwind <reason> [<list>]: the devcontainer copy failed a check (review A1,
+# P2-A2). Remove every PAYLOAD item from $DEST, say why, and exit 1 before
+# chmod, the cc-isolated link and the bless. The previous config is gone too,
+# so cc-isolated refuses to run until an install completes.
+dc_unwind() {
+  local item
+  for item in "${PAYLOAD[@]}"; do rm -rf "${DEST:?}/$item"; done
+  {
+    echo "ERROR: $1"
+    if [ -n "${2:-}" ]; then printf '%s\n' "$2" | sed 's/^/         /'; fi
+    echo "       The copied items were removed again (the previous config with them) and"
+    echo "       nothing was blessed, so cc-isolated will not run until install.sh completes."
+    echo "       Rerun install.sh."
+  } | vis_or_die >&2
+  exit 1
+}
+
 # --- Target: the devcontainer config (decision 016) ---------------------------
 install_devcontainer() {
   # Every PAYLOAD item comes from the commit too (fact-check claim 4; user
@@ -513,31 +530,25 @@ install_devcontainer() {
   # NOT part of the canonical repo payload, so never clobber it.
   mkdir -p "$DEST/projects"
 
+  # A1, P2-A2: what landed must be what was reviewed, before chmod and the
+  # bless. On a failed copy, a symlink or a mismatch, every PAYLOAD item is
+  # removed again, so no unreviewed file stays live (cc-isolated.sh runs on
+  # the host from here), and nothing is blessed.
+  local copy_failed=""
   for item in "${PAYLOAD[@]}"; do
-    rm -rf "${DEST:?}/$item"
-    cp -Rp "$stage/$item" "$DEST/$item"
+    if ! rm -rf "${DEST:?}/$item" || ! cp -Rp "$stage/$item" "$DEST/$item"; then
+      copy_failed="$item"; break
+    fi
   done
-  # A1: what landed must be what was reviewed, before chmod and the bless. On a
-  # mismatch (the stage changed during the copy) the copied items are removed,
-  # so no unreviewed file stays live: cc-isolated.sh runs on the host from here.
+  if [ -n "$copy_failed" ]; then
+    dc_unwind "could not copy '$copy_failed' into $DEST."
+  fi
   links="$(links_in "$DEST" "" "${PAYLOAD[@]}")"
   if [ -n "$links" ]; then
-    for item in "${PAYLOAD[@]}"; do rm -rf "${DEST:?}/$item"; done
-    {
-      echo "ERROR: symlinks landed in $DEST, which install.sh never installs:"
-      printf '%s\n' "$links" | sed 's/^/         /'
-      echo "       The copied items were removed again and nothing was blessed, so"
-      echo "       cc-isolated will not run until install.sh completes. Rerun install.sh."
-    } | vis_or_die >&2
-    exit 1
+    dc_unwind "symlinks landed in $DEST, which install.sh never installs:" "$links"
   fi
   if [ "$(tree_hash "$DEST" "" "${PAYLOAD[@]}")" != "$reviewed_hash" ]; then
-    for item in "${PAYLOAD[@]}"; do rm -rf "${DEST:?}/$item"; done
-    echo "ERROR: the devcontainer config copied into $DEST differs from what the review" >&2
-    echo "       showed (the stage changed after review, during the copy). The copied items" >&2
-    echo "       were removed again and nothing was blessed, so cc-isolated will not run" >&2
-    echo "       until install.sh completes. Rerun install.sh." >&2
-    exit 1
+    dc_unwind "the devcontainer config copied into $DEST differs from what the review showed (the stage changed after review, during the copy)."
   fi
 
   chmod +x "$DEST/cc-isolated.sh" "$DEST/init-firewall.sh"

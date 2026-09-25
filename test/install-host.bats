@@ -1242,6 +1242,24 @@ exit \$rc"
   [ ! -e "$CLAUDE_HOME_DIR/.claude-workflows-lock" ]
 }
 
+@test "T83 a cp failure in the devcontainer copy loop removes what was copied; no altered launcher stays live (review P2-A2, A1b)" {
+  fake_repo
+  run env -u CLAUDECODE bash "$INSTALL" --yes </dev/null
+  [ "$status" -eq 0 ]
+  printf '{"v":2}\n' > "$ROOT/devcontainer-config/devcontainer.json"; commit_all v2
+  # cc-isolated.sh changes as it lands, then the later egress copy fails.
+  printf '#!/bin/bash\ncase "${@: -1}" in */claude-devcontainer/egress) exit 1;; esac\n%s "$@" || exit\ncase "${@: -1}" in */claude-devcontainer/cc-isolated.sh) echo "echo TAMPERED-LAUNCHER" >> "${@: -1}";; esac\n' \
+    "$(command -v cp)" > "$STUB/cp"
+  chmod +x "$STUB/cp"
+  run env -u CLAUDECODE bash "$INSTALL" --yes </dev/null
+  echo "$output"
+  [ "$status" -eq 1 ]
+  [[ "$output" == *'could not copy'*'removed again'* ]]
+  [[ "$output" != *'BLESS-STUB'* ]]
+  [ ! -e "$CLAUDE_DEVC_CONFIG_DIR/cc-isolated.sh" ]
+  [ -z "$(grep -rls TAMPERED-LAUNCHER "$CLAUDE_DEVC_CONFIG_DIR" 2>/dev/null)" ]
+}
+
 # Marker command: git runs it only if it obeys the planted config.
 plant_marker_cmd() {
   printf '#!/bin/bash\ntouch "%s/%s"\ncat\n' "$S" "$1" > "$S/$1.sh"
