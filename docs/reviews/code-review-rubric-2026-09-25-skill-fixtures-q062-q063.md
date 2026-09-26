@@ -2,7 +2,7 @@ Commit: 5ddf804
 
 # Code Review Rubric
 
-**Scope:** `main...HEAD` on `skill-fixtures` (Q-062 [2] install gate + Q-063 [1] deny-record fixtures; 23 files) | **Reviewed:** 2026-09-25 (review-fix loop iteration 1 of 3, `--loop-pass`, delivery mode: self-read) | **Status: 🔴 DOES NOT PASS** — 1 red item(s) unresolved (iteration 3 terminal pass at c7747c7: R1, A15-A20, C25-C30; Stage 2.5 skipped, endorsements pending execution verification. Earlier: iteration 1 fix batch: 9 Fixed, 1 Acknowledged via Q-064; iteration 2 at d8c43ae added A11-A14 and C16-C24, A11 is a re-fire of A10; iteration 2 fix batch: A11-A14 Fixed, C16-C23 Fixed, C24 Deferred; awaiting iteration 3 terminal pass)
+**Scope:** `main...HEAD` on `skill-fixtures` (Q-062 [2] install gate + Q-063 [1] deny-record fixtures; 23 files) | **Reviewed:** 2026-09-25 (review-fix loop iteration 1 of 3, `--loop-pass`, delivery mode: self-read) | **Status: 🟡 CONDITIONAL PASS** — 0 red; 2 amber acknowledged (A1 → Q-064; A20 → corrected in 37c5ea9's message). Loop hit its 3-iteration cap: no pass was clean, and iteration 3's fixes (37c5ea9) are verified by tests, health-check and fix-drift but not re-reviewed; cap decision pending (escalate / split / abandon). (iteration 3 terminal pass at c7747c7: R1, A15-A20, C25-C30; Stage 2.5 skipped, endorsements pending execution verification. Earlier: iteration 1 fix batch: 9 Fixed, 1 Acknowledged via Q-064; iteration 2 at d8c43ae added A11-A14 and C16-C24, A11 is a re-fire of A10; iteration 2 fix batch: A11-A14 Fixed, C16-C23 Fixed, C24 Deferred; awaiting iteration 3 terminal pass)
 
 ---
 
