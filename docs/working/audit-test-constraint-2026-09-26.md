@@ -25,12 +25,12 @@ Fixes are verified by mutation: break the production line, watch the test go red
 
 | Batch | Scope | Status |
 |---|---|---|
-| A | test/*.bats agents-gemini-sync … merge-safety (16) | pending |
-| B | cc-isolated-functions, init-firewall-rules, test_cc_sni_proxy.py | pending |
-| C | install-host, link-claude-home-wiring, hermeticity-lint | pending |
-| D | test/*.bats lite-review-grammar … worktree-cleanup-functions (17) | pending |
-| E | test/hooks/*, test/scripts/* (14) | pending |
-| F | test/skills non-templated suites (~17) + arithmetic-eval/mode1-equiv.py | pending |
+| A | test/*.bats agents-gemini-sync … merge-safety (16) | audited; fixes in progress |
+| B | cc-isolated-functions, init-firewall-rules, test_cc_sni_proxy.py | audited; fixes in progress |
+| C | install-host, link-claude-home-wiring, hermeticity-lint | audited; fixes in progress |
+| D | test/*.bats lite-review-grammar … worktree-cleanup-functions (17) | audited; fixes in progress |
+| E | test/hooks/*, test/scripts/* (14) | audited; fixes in progress |
+| F | test/skills non-templated suites (~17) + arithmetic-eval/mode1-equiv.py | audited; fixes in progress |
 | G | test/skills *-eval.bats / *-format.bats pairs (~46) | pending |
 
 ## Findings
@@ -67,3 +67,51 @@ _(filled per iteration)_
 - **FIXED (partly)**: `sandbox-tool-map-drift.bats`. The live checks skip in the sandbox by nature, because the allow list lives only on the host. Added REQUIRE_LIVE_SETTINGS=1 strict mode plus fixture tests showing each check can go red. The live check on the host is queued as Q-066 (you: terminal).
 - QUEUED Q-065 (you: judgment): `si-input-rejected-history.bats`. 12 of its 14 tests exercise `prepend_si_input_rejected_history`, which has no caller (dead since 06903d6).
 - **FIXED**: `worktree-cleanup-functions.bats:40/:51` claimed to guard `${arr[@]:-}` against `set -u`, which bash ≥4.4 cannot reproduce. Reworded to the drain/no-op behaviour the tests actually constrain.
+
+### Batch E (14 files): 5 OK, 9 WEAK (1 VACUOUS test)
+- VACUOUS test `log-usage.bats:283`: an inline copy of the jq filter that never invokes the hook.
+- `health-check.bats`: 10 tests grep section headers, and gates 2–4 and 6–15 have no negative test (`check_workflow_crossrefs` → `if false` stays green).
+- `self-improvement-smoke.bats:97` claims to check main-loop wiring, but writes the call sequence out by hand.
+- `live-verify-gate.bats:266`: a hand copy of `enforcement_files()`.
+- Loose fixtures and regexes:
+  - `skill-paths.bats:50`
+  - `skill-usage-report.bats:88` (the check matches the date)
+  - `claude-config-audit.bats:80` (merged streams) and `:231`
+  - `log-usage-post.bats:128` (passes on an empty log)
+  - `utility-smoke.bats:20`
+
+### Batch F (18 files): 7 OK, 4 META (legitimate), 3 WEAK, 4 VACUOUS
+- `cowen-critique/dimensions.bats` reads a stale committed review, and stubbing SKILL.md stays green. `yglesias-critique/dimensions.bats` skips 8 of 8 because its review file doesn't exist. Nothing runs either suite with REPORT_PATH set.
+- `code-review-format-contract.bats`: 16 of 19 tests assert only the golden fixture. Gutting the row contracts in `rubric.md` stays green.
+- `code-fact-check-edge-cases.bats` and `fact-check-edge-cases.bats` (44 tests) skip without reports, and the runner shows green. With reports present they ignore `.failed`.
+- WEAK:
+  - `divergent-design-router.bats` (the frontmatter satisfies the body checks)
+  - `code-review-factcheck-replication.bats:109` (comment lines satisfy the grep)
+  - `code-review-soundness-crosscheck.bats:117` (the channel range is too wide)
+
+### Fix dispatch (iteration 1)
+Four fix agents are editing disjoint files; the parent commits. Their groups:
+- fixA: batch A, plus the Gate 1h behavioural tests
+- fixB: batches B and C
+- fixF: batch F
+- fixE: batch E
+
+### Batch G (47 skill *-eval/*-format suites): systemic V4/V1 at the template level
+- **T1:** `run-tests.sh:88-114` drops every `*-eval`/`*-format` suite unless some `test/skills/*/output/*.md` exists. The output dir is gitignored and no runner generates reports, so all 47 are skipped everywhere while the gate shows green. The skip is noted only on stderr.
+  - `arithmetic-eval-format.bats` needs no report at all: it lints SKILL.md, and a mutation turns it red. It is still dropped because of its filename.
+- **T2:** the gate is global, so one `.md` anywhere enables all 47 suites. The format suites then grade *committed* `docs/reviews/*.md`, which are frozen, some are 1–6 months older than their SKILL.md, and 13 of the paths don't exist.
+  - An empty `skills/security-reviewer/SKILL.md` still passes 18/18.
+  - The eval suites skip.
+- **T3:** there is no freshness stamp tying a generated report to the SKILL.md, runner and fixture that produced it.
+- **T4:** a missing report skips, and a skip counts as ok.
+- **T5:** severity, mechanism and verdict are not checked against the same finding. `cites_pattern` also matches fixture echoes and mandated headers (`scop` matches `**Scope:**`).
+- **T6:** fixtures with only absence checks pass on a refusal (sec8, dd4).
+- Per skill: the eval cites are weak for security, code-fact-check (digit alternations matched by the date), fact-check (`web_search_used` is the literal "Sources"), ui-visual-review, and api-consistency.
+- Format suites that are VACUOUS:
+  - `matrix-analysis:77-80`
+  - `design-space-situating` rows 3 and 6, plus Hand-off
+- Format suites that contradict SKILL.md:
+  - `ui-visual-review` requires `##` where the skill uses `###`
+  - `cowen`/`yglesias` require sections the skill says to omit
+- `expected-verdicts`: no empty or `.*` patterns; the fixture↔test mapping is complete.
+- Constraint: regenerating reports is model compute. Memory "run-a8-measurement-after-settling" says no big compute yet, so the harness fixes land first and regeneration is queued as a question.
