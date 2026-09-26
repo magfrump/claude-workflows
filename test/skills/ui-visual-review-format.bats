@@ -14,6 +14,29 @@ setup() {
   count_findings
 }
 
+# SKILL.md (Step 5) lists the report's sections under its own "###" headings and
+# shows each finding as "#### [Finding title]", but only the Environment block
+# fixes a level ("## Environment"). A report may therefore render the other
+# sections at "##" or "###"; both follow the skill.
+ui_section_exists() {
+  echo "$REPORT_CONTENT" | grep -qE "^#{2,3} $1"
+}
+
+# Print one section: from its "##"/"###" heading up to the next heading of the
+# same or a higher level.
+ui_section() {
+  echo "$REPORT_CONTENT" | awk -v title="$1" '
+    match($0, /^#+ /) {
+      level = RLENGTH - 1
+      if (inside && level <= start) exit
+      if (!inside && level >= 2 && level <= 3 && substr($0, RLENGTH + 1) ~ ("^" title)) {
+        inside = 1; start = level
+      }
+    }
+    inside { print }
+  '
+}
+
 # --- Header section ---
 
 @test "report has a title header with UI Visual Review" {
@@ -31,25 +54,26 @@ setup() {
 # --- Environment section ---
 
 @test "report has an Environment section" {
+  # The one section whose level SKILL.md's template fixes.
   assert_section_exists "Environment"
 }
 
 @test "environment lists files reviewed" {
-  local section
-  section=$(echo "$REPORT_CONTENT" | sed -n '/^## Environment/,/^## /p' | head -n -1)
-  echo "$section" | grep -qiE 'files reviewed'
+  ui_section "Environment" | grep -qiE 'files reviewed'
 }
 
 @test "environment lists target viewports" {
-  local section
-  section=$(echo "$REPORT_CONTENT" | sed -n '/^## Environment/,/^## /p' | head -n -1)
-  echo "$section" | grep -qiE 'viewport'
+  ui_section "Environment" | grep -qiE 'viewport'
 }
 
 # --- Findings section ---
 
+@test "report has a Findings section" {
+  ui_section_exists "Findings"
+}
+
 @test "report has at least one finding or states none" {
-  assert_findings_or_none_stated
+  [ "$FINDING_COUNT" -gt 0 ] || ui_section "Findings" | grep -qxE 'No findings\.'
 }
 
 @test "each finding has a Severity line" {
@@ -87,45 +111,62 @@ setup() {
 # --- Best Practices table ---
 
 @test "report has Best Practices Applied section" {
-  assert_section_exists "Best Practices Applied"
+  ui_section_exists "Best Practices Applied"
 }
 
 @test "best practices section contains a table" {
-  local section
-  section=$(echo "$REPORT_CONTENT" | sed -n '/^## Best Practices Applied/,/^## /p' | head -n -1)
-  echo "$section" | grep -qE '^\|.*\|'
+  ui_section "Best Practices Applied" | grep -qE '^\|.*\|'
+}
+
+# --- Keyboard Navigation (SKILL.md: "required in every report") ---
+
+@test "report has Keyboard Navigation section" {
+  ui_section_exists "Keyboard Navigation"
+}
+
+@test "keyboard navigation states no focusables, or addresses all four items" {
+  # SKILL.md: write exactly "No new focusable elements in this diff." when the
+  # diff adds no focusable element; otherwise address Focus order, Escape-key
+  # behavior, Skip-link presence and Focus-trap risks, each (N/A with a reason
+  # when it does not apply).
+  local body
+  body="$(ui_section "Keyboard Navigation" | sed 1d)"
+  [ -n "$body" ] || return 1
+  if echo "$body" | grep -qE '^(> )?No new focusable elements in this diff\.'; then
+    return 0
+  fi
+  local item
+  for item in 'focus order' 'escape' 'skip.?link' 'focus.?trap'; do
+    echo "$body" | grep -qiE "$item" || { echo "Keyboard Navigation does not address: $item"; return 1; }
+  done
 }
 
 # --- Viewport Verification Checklist ---
 
 @test "report has Viewport Verification Checklist section" {
-  assert_section_exists "Viewport Verification Checklist"
+  ui_section_exists "Viewport Verification Checklist"
 }
 
 @test "viewport checklist has mobile entry" {
-  local section
-  section=$(echo "$REPORT_CONTENT" | sed -n '/^## Viewport Verification/,/^## /p')
-  echo "$section" | grep -qiE '(mobile|360|320)'
+  ui_section "Viewport Verification" | grep -qiE '(mobile|360|320)'
 }
 
 @test "viewport checklist has desktop entry" {
-  local section
-  section=$(echo "$REPORT_CONTENT" | sed -n '/^## Viewport Verification/,/^## /p')
-  echo "$section" | grep -qiE '(desktop|1920|1366)'
+  ui_section "Viewport Verification" | grep -qiE '(desktop|1920|1366)'
 }
 
 # --- Ending sections ---
 
 @test "report has What Looks Good section" {
-  assert_section_exists "What Looks Good"
+  ui_section_exists "What Looks Good"
 }
 
 @test "report has Summary Table section" {
-  assert_section_exists "Summary Table"
+  ui_section_exists "Summary Table"
 }
 
 @test "report has Overall Assessment section" {
-  assert_section_exists "Overall Assessment"
+  ui_section_exists "Overall Assessment"
 }
 
 # --- No leakage from sibling code critics ---
@@ -135,9 +176,9 @@ setup() {
 }
 
 @test "report does not contain security-style trust boundary map" {
-  ! echo "$REPORT_CONTENT" | grep -qE '^## Trust Boundary Map'
+  ! echo "$REPORT_CONTENT" | grep -qE '^#{2,3} Trust Boundary Map'
 }
 
 @test "report does not contain performance-style data flow section" {
-  ! echo "$REPORT_CONTENT" | grep -qE '^## Data Flow and Hot Paths'
+  ! echo "$REPORT_CONTENT" | grep -qE '^#{2,3} Data Flow and Hot Paths'
 }

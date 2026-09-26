@@ -82,8 +82,8 @@ setup() {
 
 @test "report has Endorsements section" {
   # SKILL.md replaced free-form "What Looks Good" praise with evidence-gated
-  # Endorsements; accept either so pre-rename reports still validate.
-  assert_section_exists "Endorsements" || assert_section_exists "What Looks Good"
+  # Endorsements and no longer offers the old heading, so it no longer counts.
+  assert_section_exists "Endorsements"
 }
 
 @test "report has Summary Table section" {

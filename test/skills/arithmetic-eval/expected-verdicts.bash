@@ -16,6 +16,8 @@
 #                                expression evaluates to one of the values
 #                                (relative tolerance, default 1e-6)
 #   no_tool_called:<Tool>      — no call of <Tool> in the transcript
+#   cites_pattern:<ERE>        — the report says so (the no-arithmetic negative
+#                                must answer the prompt: no derived figures)
 
 declare -gA EXPECTED_VERDICT
 declare -gA CLAIM_ACCURACY
@@ -43,4 +45,4 @@ KEY_CHECK["tc-ae4-sessions-correct.md"]="mode1_equiv:4800000|1200000"
 
 EXPECTED_VERDICT["tc-ae5-no-arithmetic.md"]="does not route"
 CLAIM_ACCURACY["tc-ae5-no-arithmetic.md"]="sound"  # No derived figures, so no evaluator call
-KEY_CHECK["tc-ae5-no-arithmetic.md"]="no_tool_called:Bash"
+KEY_CHECK["tc-ae5-no-arithmetic.md"]="no_tool_called:Bash;;cites_pattern:no (derived|computed|calculated)|no (numbers|figures|numeric|arithmetic|calculations?|math|quantit)|none of the (numbers|figures)|nothing (to (check|verify|compute|calculate)|is derived)|(not|isn.t|aren.t) (derived|computed|calculated)"

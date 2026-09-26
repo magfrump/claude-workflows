@@ -17,7 +17,12 @@
 #   max_claims:N           — report should check at most N claims
 #   min_claims:N           — report should check at least N claims
 #   format_check           — run the full format BATS suite against this report
-#   web_search_used        — tool log must show web search was invoked
+#   web_search_used        — some **Sources:** line names a source with a year,
+#                            URL or domain (the runner keeps no transcript, so
+#                            the WebSearch call itself cannot be checked)
+#   field_match:F=V        — some **F:** line starts with V (the zero-claim and
+#                            opinion fixtures: **Total claims checked:** 0, the
+#                            header SKILL.md's template always carries)
 #   Multiple checks separated by ;; (double semicolon)
 
 declare -gA EXPECTED_VERDICT
@@ -34,7 +39,7 @@ KEY_CHECK["tc-1.1-specific-numbers.md"]="cites_pattern:CMS|BEA|Centers for Medic
 
 EXPECTED_VERDICT["tc-1.2-named-policies.md"]="Any"
 CLAIM_ACCURACY["tc-1.2-named-policies.md"]="inaccurate"  # SB 458 is a middle-housing land division bill, not tenant appreciation
-KEY_CHECK["tc-1.2-named-policies.md"]="cites_pattern:SB 458|Senate Bill 458;;web_search_used"
+KEY_CHECK["tc-1.2-named-policies.md"]="cites_pattern:land division|middle.?housing|lot (division|split)|(divid|split|partition)[a-z]* (a |the |residential )?(lots?|land|parcels?)|duplex|townhouse|cottage cluster;;web_search_used"
 
 EXPECTED_VERDICT["tc-1.3-attributed-facts.md"]="Accurate"
 CLAIM_ACCURACY["tc-1.3-attributed-facts.md"]="accurate"  # MN legalized recreational cannabis May 2023
@@ -42,7 +47,7 @@ KEY_CHECK["tc-1.3-attributed-facts.md"]="verdict_match;;web_search_used"
 
 EXPECTED_VERDICT["tc-1.4-causal-claims.md"]="Any"
 CLAIM_ACCURACY["tc-1.4-causal-claims.md"]="unknown"  # 15% rent drop + causal link both need verification
-KEY_CHECK["tc-1.4-causal-claims.md"]="cites_pattern:rent|housing|construction;;web_search_used"
+KEY_CHECK["tc-1.4-causal-claims.md"]="cites_pattern:(\bcaus(al|ation|e[sd]?)\b|attribut|driv(er|en|ing)|contribut|factor|single|sole|alone|confound|correlat)[^.]{0,120}(supply|construction|permit|remote|migration|interest|rate)|(supply|construction|permit)[^.]{0,120}(\bcaus(al|ation)|attribut|contribut|factor|sole|alone|confound|one of);;web_search_used"
 
 EXPECTED_VERDICT["tc-1.5-comparisons.md"]="Mostly accurate|Disputed"
 CLAIM_ACCURACY["tc-1.5-comparisons.md"]="imprecise"  # "Most" OECD countries is debatable
@@ -80,11 +85,11 @@ KEY_CHECK["tc-2.5-unverified.md"]="verdict_match"
 
 EXPECTED_VERDICT["tc-3.1-opinions.md"]="skip"
 CLAIM_ACCURACY["tc-3.1-opinions.md"]="not_applicable"  # Pure opinions — nothing to check
-KEY_CHECK["tc-3.1-opinions.md"]="max_claims:1"
+KEY_CHECK["tc-3.1-opinions.md"]="field_match:Total claims checked=[01]\b;;max_claims:1"
 
 EXPECTED_VERDICT["tc-3.2-predictions.md"]="skip"
 CLAIM_ACCURACY["tc-3.2-predictions.md"]="not_applicable"  # Forward-looking predictions, but specific numbers within predictions are checkable
-KEY_CHECK["tc-3.2-predictions.md"]="max_claims:1"
+KEY_CHECK["tc-3.2-predictions.md"]="field_match:Total claims checked=[01]\b;;max_claims:1"
 
 EXPECTED_VERDICT["tc-3.3-mixed.md"]="Any"
 CLAIM_ACCURACY["tc-3.3-mixed.md"]="mixed"  # Worker count + median pay accurate; FL waitlist imprecise; Denmark comparison imprecise
@@ -94,7 +99,7 @@ KEY_CHECK["tc-3.3-mixed.md"]="min_claims:3;;max_claims:5"
 
 EXPECTED_VERDICT["tc-4.1-misleading.md"]="Any"
 CLAIM_ACCURACY["tc-4.1-misleading.md"]="misleading"  # "Best healthcare in the world" is ambiguous by metric
-KEY_CHECK["tc-4.1-misleading.md"]="cites_pattern:innovat|scientific|ranking|lead.*in|specific|overall|ambig|metric"
+KEY_CHECK["tc-4.1-misleading.md"]="cites_pattern:ambigu|misleading|depends on (the |which |what )?(metric|measure|definition)|(which|what) (metric|measure)|life expectancy|infant mortality|maternal mortality|Commonwealth Fund|World Health Organi[sz]ation|(ranks?|ranked|ranking)[^.]{0,80}(last|lowest|poor|bottom|37th|behind)|CONCORD"
 
 EXPECTED_VERDICT["tc-4.2-conflated-stats.md"]="Mostly accurate|Inaccurate|Disputed"
 CLAIM_ACCURACY["tc-4.2-conflated-stats.md"]="imprecise"  # Conflates separate survey findings; severity judgment varies by model
@@ -110,7 +115,7 @@ KEY_CHECK["tc-5.1-multi-claim.md"]="min_claims:3;;format_check"
 
 EXPECTED_VERDICT["tc-6.1-accurate-weak-argument.md"]="Accurate|Mostly accurate|Mostly Accurate|Inaccurate"
 CLAIM_ACCURACY["tc-6.1-accurate-weak-argument.md"]="accurate_at_time_of_writing"  # Facts were correct but some figures may go stale (C3 freshness risk)
-KEY_CHECK["tc-6.1-accurate-weak-argument.md"]="no_critique"
+KEY_CHECK["tc-6.1-accurate-weak-argument.md"]="verdict_match;;no_critique"
 
 # tc-6.2 is a cross-cutting requirement (web search for every claim), tested via web_search_used checks above
 
@@ -123,16 +128,16 @@ KEY_CHECK["tc-6.3-obvious-but-wrong.md"]="verdict_match;;min_claims:1"
 
 EXPECTED_VERDICT["tc-7.1-empty.md"]="skip"
 CLAIM_ACCURACY["tc-7.1-empty.md"]="not_applicable"  # Empty file — nothing to check
-KEY_CHECK["tc-7.1-empty.md"]="max_claims:0"
+KEY_CHECK["tc-7.1-empty.md"]="field_match:Total claims checked=0\b;;max_claims:0"
 
 EXPECTED_VERDICT["tc-7.2-no-claims.md"]="skip"
 CLAIM_ACCURACY["tc-7.2-no-claims.md"]="not_applicable"  # Meeting notes with no factual claims
-KEY_CHECK["tc-7.2-no-claims.md"]="max_claims:0"
+KEY_CHECK["tc-7.2-no-claims.md"]="field_match:Total claims checked=0\b;;max_claims:0"
 
 EXPECTED_VERDICT["tc-7.3-binary-content.md"]="skip"
 CLAIM_ACCURACY["tc-7.3-binary-content.md"]="not_applicable"  # Binary/garbled content, not prose
-KEY_CHECK["tc-7.3-binary-content.md"]="max_claims:0"
+KEY_CHECK["tc-7.3-binary-content.md"]="field_match:Total claims checked=0\b;;max_claims:0"
 
 EXPECTED_VERDICT["tc-7.4-extremely-short.md"]="skip"
 CLAIM_ACCURACY["tc-7.4-extremely-short.md"]="not_applicable"  # Vague one-liner with no specific checkable claim
-KEY_CHECK["tc-7.4-extremely-short.md"]="max_claims:0"
+KEY_CHECK["tc-7.4-extremely-short.md"]="field_match:Total claims checked=0\b;;max_claims:0"

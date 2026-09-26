@@ -5,9 +5,11 @@
 #
 # ai-personas-critique tags each persona's objection "**Severity:** Fatal flaw |
 # Significant weakness | Point to consider". The "verdict" here is the set of
-# tiers at least one persona must assign, checked by severity_match against the
-# **Severity:** lines. Checks used (separated by ;; in KEY_CHECK):
-#   severity_match        — some **Severity:** line matches EXPECTED_VERDICT
+# tiers the persona that names the flaw must assign, checked by finding_match
+# (the tier and the flaw's pattern in the same persona section or Ranked
+# Concerns row). Checks used (separated by ;; in KEY_CHECK):
+#   finding_match:<tiers>=<ERE> — one persona section (or Ranked Concerns row)
+#                           carries a tier from <tiers> and a line matching <ERE>
 #   no_severity:<tiers>   — no **Severity:** line matches <tiers>
 #   cites_pattern:<ERE>   — report matches <ERE> (case-insensitive)
 #   no_pattern:<ERE>      — report does not match <ERE> (case-insensitive)
@@ -30,23 +32,23 @@ declare -gA KEY_CHECK
 
 EXPECTED_VERDICT["tc-per1-red-light-cameras.md"]="Fatal flaw|Significant weakness"
 CLAIM_ACCURACY["tc-per1-red-light-cameras.md"]="flaw"  # Empiricist: pilot sites picked as the worst 2023 intersections, no comparison sites — regression to the mean, and the 39% extrapolated to lower-crash sites
-KEY_CHECK["tc-per1-red-light-cameras.md"]="severity_match;;cites_pattern:regress(ion|ed|ing)? (to|toward|towards) the mean|control (group|site|intersection)|comparison (group|site|intersection)|selected (on|for|because of) (their |high |the )?(high|worst|crash)|selection (effect|bias)|worst (year|intersection)|unusually (high|bad);;format_check"
+KEY_CHECK["tc-per1-red-light-cameras.md"]="finding_match:Fatal flaw|Significant weakness=regress(ion|ed|ing)? (to|toward|towards) the mean|control (group|site|intersection)|comparison (group|site|intersection)|selected (on|for|because of) (their |high |the )?(high|worst|crash)|selection (effect|bias)|worst (year|intersection)|unusually (high|bad);;format_check"
 
 EXPECTED_VERDICT["tc-per2-support-bonus-plan.md"]="Fatal flaw|Significant weakness"
 CLAIM_ACCURACY["tc-per2-support-bonus-plan.md"]="flaw"  # Incentive Analyst: pay tied to agent-set Resolved count per hour, quality out of pay — Goodhart, premature closes, cherry-picking easy tickets
-KEY_CHECK["tc-per2-support-bonus-plan.md"]="severity_match;;cites_pattern:goodhart|gam(e|ed|ing) (the|this)? ?(metric|system|number|leaderboard)|perverse|reopen|(close|resolv|mark)[a-z]* .{0,40}(prematurely|too early|before .{0,20}(fixed|solved))|cherry.?pick|easy tickets|split(ting)? tickets"
+KEY_CHECK["tc-per2-support-bonus-plan.md"]="finding_match:Fatal flaw|Significant weakness=goodhart|gam(e|ed|ing) (the|this)? ?(metric|system|number|leaderboard)|perverse|reopen|(close|resolv|mark)[a-z]* .{0,40}(prematurely|too early|before .{0,20}(fixed|solved))|cherry.?pick|easy tickets|split(ting)? tickets"
 
 EXPECTED_VERDICT["tc-per3-account-recovery-redesign.md"]="Fatal flaw|Significant weakness"
 CLAIM_ACCURACY["tc-per3-account-recovery-redesign.md"]="flaw"  # Security Analyst: recovery by SMS alone plus agent phone change on name/DOB/last-4, no hold on transfers — SIM swap and social-engineering account takeover
-KEY_CHECK["tc-per3-account-recovery-redesign.md"]="severity_match;;cites_pattern:SIM.?(swap|hijack|jack)|port(ing)?.?out|number port|social.?engineer|account takeover|pretext|(name|date of birth|DOB).{0,80}(breach|public|easily|findable|leaked|obtain);;format_check"
+KEY_CHECK["tc-per3-account-recovery-redesign.md"]="finding_match:Fatal flaw|Significant weakness=SIM.?(swap|hijack|jack)|port(ing)?.?out|number port|social.?engineer|account takeover|pretext|(name|date of birth|DOB).{0,80}(breach|public|easily|findable|leaked|obtain);;format_check"
 
 EXPECTED_VERDICT["tc-per4-marketplace-dispute-desk.md"]="Fatal flaw|Significant weakness"
 CLAIM_ACCURACY["tc-per4-marketplace-dispute-desk.md"]="flaw"  # Scaling Skeptic: 40 disputes/week x 50 = ~2,000/week at ~40 min each, ~1,300+ hours/week for three specialists (~120 hours)
-KEY_CHECK["tc-per4-marketplace-dispute-desk.md"]="severity_match;;cites_pattern:2,?000 (disputes|a week|per week|/ ?w)|1,?[0-9]{3} (specialist.|staff.|person.|labou?r.)?hours|[0-9]{2,3} (specialists|FTEs|full.time)|bottleneck|backlog|(not|n't|cannot) scale|linear(ly)? with"
+KEY_CHECK["tc-per4-marketplace-dispute-desk.md"]="finding_match:Fatal flaw|Significant weakness=2,?000 (disputes|a week|per week|/ ?w)|1,?[0-9]{3} (specialist.|staff.|person.|labou?r.)?hours|[0-9]{2,3} (specialists|FTEs|full.time)|bottleneck|backlog|(not|n't|cannot) scale|linear(ly)? with"
 
 EXPECTED_VERDICT["tc-per5-clinic-overbooking-model.md"]="Fatal flaw|Significant weakness"
 CLAIM_ACCURACY["tc-per5-clinic-overbooking-model.md"]="flaw"  # Ethicist: no-show model driven by insurance category and distance double-books poorer / publicly insured / distant patients, who bear the waits and bumped visits
-KEY_CHECK["tc-per5-clinic-overbooking-model.md"]="severity_match;;cites_pattern:proxy|disparat|inequit|discriminat|fairness|(low|lower).income|(poor|poorer) patients|public(ly)?.insur|self.pay (patients|and public)|who bears"
+KEY_CHECK["tc-per5-clinic-overbooking-model.md"]="finding_match:Fatal flaw|Significant weakness=proxy|disparat|inequit|discriminat|fairness|(low|lower).income|(poor|poorer) patients|public(ly)?.insur|self.pay (patients|and public)|who bears"
 
 # --- Negatives: the stub pre-flight ---
 

@@ -60,11 +60,11 @@ section_body() {
 }
 
 @test "report has a Consequence Chains section (second-order effects)" {
-  assert_heading_exists "(Consequence Chains|Second-Order Effects)"
+  assert_heading_exists "Consequence Chains"
 }
 
 @test "report has a Coupling Analysis section (hidden couplings)" {
-  assert_heading_exists "(Coupling Analysis|Hidden Couplings?)"
+  assert_heading_exists "Coupling Analysis"
 }
 
 @test "report has a Confidence Inversions section" {
@@ -88,22 +88,38 @@ section_body() {
 }
 
 @test "report has a Recommendations section" {
-  assert_heading_exists "(Recommendations|Overall Assessment)"
+  # SKILL.md's section names only (the Consequence Chains, Coupling Analysis
+  # and Recommendations aliases were dropped): the grouping check below reads
+  # "Recommendations", so an "Overall Assessment" alias passed here and failed
+  # there.
+  assert_heading_exists "Recommendations"
 }
 
 # --- Per-assumption fields ---
 
-@test "assumptions include an If wrong field" {
-  echo "$REPORT_CONTENT" | grep -qiE '\*\*If wrong:\*\*.*\b(tweak|redesign|full retreat)\b'
+@test "every assumption carries an If wrong field with an allowed value" {
+  # SKILL.md: "For each [assumption], use these fields: ... If wrong: tweak /
+  # redesign / full retreat".
+  local body n_a n_w
+  body="$(section_body "Assumptions Examined")"
+  n_a=$(echo "$body" | grep -ciE '^[[:space:]]*([-*+][[:space:]]+)?\*\*Assumption:\*\*' || true)
+  n_w=$(echo "$body" | grep -ciE '^[[:space:]]*([-*+][[:space:]]+)?\*\*If wrong:\*\*[[:space:]]*\**(tweak|redesign|full retreat)\b' || true)
+  [ "$n_a" -ge 1 ] || { echo "No **Assumption:** entries in Assumptions Examined"; return 1; }
+  [ "$n_a" -eq "$n_w" ] || { echo "$n_a assumptions but $n_w If wrong fields with tweak/redesign/full retreat"; return 1; }
 }
 
 # --- Findings tagging ---
 
-@test "findings summary uses the prescribed tag taxonomy" {
-  # The six tags SKILL.md "Findings Summary" defines. [NOVEL] is an Assumptions
-  # Examined tag and [NOVEL FAILURE MODE] belonged to the pre-mortem half that
-  # moved to the pre-mortem skill (2aad1e1); neither counts here.
-  section_body "Findings Summary" | grep -qE '\[(UNEXAMINED ASSUMPTION|SECOND-ORDER EFFECT|HIDDEN COUPLING|REVERSIBILITY CLIFF|SUCCESS COST|PRIOR CONSIDERATION)\]'
+@test "every finding in the summary carries a prescribed tag" {
+  # SKILL.md: "A consolidated list of all findings, each tagged" with one of
+  # six tags. [NOVEL] is an Assumptions Examined tag and [NOVEL FAILURE MODE]
+  # belonged to the pre-mortem half that moved to the pre-mortem skill
+  # (2aad1e1); neither counts here. Top-level list items are the findings.
+  local items untagged
+  items=$(section_body "Findings Summary" | grep -E '^([-*+]|[0-9]+[.)])[[:space:]]' || true)
+  [ -n "$items" ] || { echo "Findings Summary has no list items"; return 1; }
+  untagged=$(echo "$items" | grep -vE '\[(UNEXAMINED ASSUMPTION|SECOND-ORDER EFFECT|HIDDEN COUPLING|REVERSIBILITY CLIFF|SUCCESS COST|PRIOR CONSIDERATION)\]' || true)
+  [ -z "$untagged" ] || { echo "Untagged findings: $untagged"; return 1; }
 }
 
 # --- Recommendations structure ---

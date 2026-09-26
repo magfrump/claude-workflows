@@ -26,52 +26,73 @@ setup() {
   assert_title_matches '^# .*Yglesias.*Critique' 12
 }
 
-# --- Required analytical sections (cognitive moves) ---
-# SKILL.md prescribes level-2 (##) headings in the output file. Use
-# assert_section_exists where the section name is fixed; use
-# assert_heading_exists where a regex pattern is needed (e.g. for an
-# embedded period).
+# --- Sections (SKILL.md "How to Structure the Critique") ---
+# SKILL.md lists 9 sections and says to omit one with nothing substantive to
+# say, so no single move section is required. What it does require: level-2
+# headings with the given names ("never rename a section you do use"), the
+# section-body keyword each section names, an Overall Assessment that closes
+# with a one-line **Load-bearing objection:**, and enough sections to rank
+# objections across.
 
-@test "report has The Goal vs the Mechanism section" {
-  # Heading is "## The Goal vs. the Mechanism" — period breaks a strict
-  # literal match, so use the regex helper.
-  assert_heading_exists "Goal vs\\.? the Mechanism"
+# Every level-2 heading is one of SKILL.md's section names.
+SECTION_NAMES_RE='^## ((The )?Goal vs\.? the Mechanism|(The )?Boring Lever|Follow the Money|Factual Foundation|(The )?Scale Test|(The )?Org Chart|Adoption Survival|(The )?Cost Disease Check|Overall Assessment)([[:space:]]*[:—–-].*)?[[:space:]]*$'
+
+# "<heading ERE>|<keyword ERE>[&&<keyword ERE>]": the word SKILL.md tells each
+# section's body to use, so downstream tooling can identify the move.
+SECTION_KEYWORDS=(
+    "(The )?Goal vs\.? the Mechanism|goal&&mechanism"
+    "(The )?Boring Lever|lever"
+    "Follow the Money|money"
+    "(The )?Scale Test|scale"
+    "(The )?Org Chart|org chart"
+    "Adoption Survival|adoption"
+    "(The )?Cost Disease Check|cost disease"
+)
+
+# Body of the "## " section whose heading matches $1 (ERE), up to the next "## ".
+section_body() {
+  echo "$REPORT_CONTENT" | awk -v title="$1" '
+    /^## / { if (inside) exit; if (tolower(substr($0, 4)) ~ tolower(title)) { inside = 1; next } }
+    inside { print }
+  '
 }
 
-@test "report has The Boring Lever section" {
-  assert_section_exists "The Boring Lever"
+@test "every section uses a SKILL.md section name" {
+  local bad
+  bad=$(echo "$REPORT_CONTENT" | grep -E '^## ' | grep -viE "$SECTION_NAMES_RE" || true)
+  [ -z "$bad" ] || { echo "Renamed or unknown sections: $bad"; return 1; }
 }
 
-@test "report has Follow the Money section" {
-  assert_section_exists "Follow the Money"
-}
-
-@test "report has Factual Foundation section" {
-  assert_section_exists "Factual Foundation"
-}
-
-@test "report has The Scale Test section" {
-  assert_section_exists "The Scale Test"
-}
-
-@test "report has The Org Chart section" {
-  assert_section_exists "The Org Chart"
-}
-
-@test "report has Adoption Survival section" {
-  assert_section_exists "Adoption Survival"
+@test "report has at least 3 SKILL.md sections" {
+  # Two or more move sections plus the Overall Assessment: fewer is not a
+  # critique the closer could rank objections across.
+  local n
+  n=$(echo "$REPORT_CONTENT" | grep -ciE "$SECTION_NAMES_RE" || true)
+  [ "$n" -ge 3 ]
 }
 
 @test "report has Overall Assessment section" {
   assert_section_exists "Overall Assessment"
 }
 
-# --- Structural requirements ---
+@test "Overall Assessment closes with a Load-bearing objection line" {
+  local body
+  body="$(section_body "Overall Assessment")"
+  echo "$body" | grep -qE '^[[:space:]]*\*\*Load-bearing objection:\*\*[[:space:]]*[^[:space:]]'
+}
 
-@test "report has at least 5 sections" {
-  local section_count
-  section_count=$(echo "$REPORT_CONTENT" | grep -cE '^## ' || true)
-  [ "$section_count" -ge 5 ]
+@test "each section present uses the keyword SKILL.md names for it" {
+  local entry heading kws kw body
+  for entry in "${SECTION_KEYWORDS[@]}"; do
+    heading="${entry%%|*}" kws="${entry#*|}"
+    echo "$REPORT_CONTENT" | grep -qiE "^## ${heading}" || continue
+    body="$(section_body "$heading")"
+    while [ -n "$kws" ]; do
+      kw="${kws%%&&*}"
+      echo "$body" | grep -qiE "$kw" || { echo "Section '$heading' lacks '$kw'"; return 1; }
+      [[ "$kws" == *"&&"* ]] && kws="${kws#*&&}" || kws=""
+    done
+  done
 }
 
 # --- No leakage from reviewer / fact-check / sister critique skills ---

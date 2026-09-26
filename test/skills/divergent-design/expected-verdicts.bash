@@ -15,6 +15,9 @@
 #   tool_called:<Tool>=<ERE> — some <Tool> call's input matches <ERE> (transcript)
 #   cites_pattern:<ERE>      — report matches <ERE> (case-insensitive, per line)
 #   no_pattern:<ERE>         — report never matches <ERE>
+#   cites_count:<N>=<ERE>    — at least N report lines match <ERE> (the open-ended
+#                              negative must still brainstorm: a list of ideas,
+#                              which a refusal is not)
 #
 # The glyphs ◇ and ▶ are left out of patterns: "step 1 diverge" and "recommend"
 # followed by a bracketed ID are the load-bearing tokens, and a model that drops
@@ -42,7 +45,7 @@ KEY_CHECK["tc-dd3-live-updates-proxy-strips-websockets"]="tool_called:Read=workf
 
 EXPECTED_VERDICT["tc-dd4-open-ended-hackathon-themes"]="does not route"
 CLAIM_ACCURACY["tc-dd4-open-ended-hackathon-themes"]="sound"  # Genuinely open-ended ideation, no competing options — SKILL.md: "skill does not apply; open-ended brainstorming does. Stop here."
-KEY_CHECK["tc-dd4-open-ended-hackathon-themes"]="no_pattern:step 1 +diverge;;no_pattern:recommend +\[[0-9]+\]"
+KEY_CHECK["tc-dd4-open-ended-hackathon-themes"]="no_pattern:step 1 +diverge;;no_pattern:recommend +\[[0-9]+\];;cites_count:3=^[[:space:]]*(([-*+]|[0-9]+[.)]|#{2,4})[[:space:]]+.*[[:alpha:]]{4}|\*\*[^*]*[[:alpha:]]{4})"
 
 EXPECTED_VERDICT["tc-dd5-single-obvious-typo-fix"]="does not route"
 CLAIM_ACCURACY["tc-dd5-single-obvious-typo-fix"]="sound"  # Two options, no tradeoff axis, one is simply correct — fails "3+ viable options that differ on a tradeoff axis"

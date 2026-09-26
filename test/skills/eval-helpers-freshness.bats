@@ -250,6 +250,61 @@ Any user can read any org'"'"'s document.'
   [ "$status" -eq 0 ]
 }
 
+@test "finding_match: && needs every pattern in the same finding" {
+  REPORT_CONTENT="${CROSS_BLOCK/\*\*Severity:\*\* Low/**Severity:** High}"
+  run assert_finding_match 'High' 'ownership&&idor'
+  [ "$status" -eq 0 ]
+  # "Stack traces" is in the other High finding: no single finding has both.
+  run assert_finding_match 'High' 'stack traces&&idor'
+  [ "$status" -ne 0 ]
+}
+
+@test "claim_match: the verdict and the mechanism in the same claim section" {
+  REPORT_CONTENT='# Code Fact-Check Report
+
+**Checked:** 2026-09-23
+
+## Claim 1: "Retries the operation up to 5 times"
+
+**Verdict:** Stale
+
+The comment predates the refactor.
+
+## Claim 2: "Uses exponential backoff"
+
+**Verdict:** Verified
+
+MAX_RETRIES is 3 and the delay doubles.'
+  # The mechanism is only in the Verified claim; the date supplies a 3.
+  run assert_finding_match 'Stale' 'MAX_RETRIES[^.]*3' "" Verdict
+  [ "$status" -ne 0 ]
+  REPORT_CONTENT="${REPORT_CONTENT/predates the refactor./predates the refactor: MAX_RETRIES is now 3.}"
+  run assert_finding_match 'Stale' 'MAX_RETRIES[^.]*3' "" Verdict
+  [ "$status" -eq 0 ]
+}
+
+@test "cites_count: counts matching lines outside the fixture echo" {
+  REPORT_CONTENT='- one idea here
+- two ideas here'
+  run assert_report_cites_count 3 '^- '
+  [ "$status" -ne 0 ]
+  REPORT_CONTENT="$REPORT_CONTENT
+- three ideas here"
+  run assert_report_cites_count 3 '^- '
+  [ "$status" -eq 0 ]
+}
+
+@test "web_search_used: needs a Sources line naming a source, not the word Sources" {
+  REPORT_CONTENT='# Sources
+
+I could not find sources.'
+  run assert_sources_named
+  [ "$status" -ne 0 ]
+  REPORT_CONTENT='**Sources:** CMS National Health Expenditure data, 2024'
+  run assert_sources_named
+  [ "$status" -eq 0 ]
+}
+
 @test "cites_pattern: a line copied verbatim from the fixture does not count" {
   KEY_CHECK["tc-1-idor.ts"]="cites_pattern:ownership check"
   report tc-1-idor.ts '# Review
@@ -312,9 +367,12 @@ The missing ownership check lets any caller read the document.'
   [ "$status" -ne 0 ]
   run key_check_has_positive "min_claims:0" Any
   [ "$status" -ne 0 ]
+  run key_check_has_positive "cites_count:0=x" Any
+  [ "$status" -ne 0 ]
   local c
   for c in severity_match verdict_match "min_claims:1" "cites_pattern:x" "finding_match:High=x" \
-      "field_match:R=x" format_check "tool_called:Read" "subagents_min:2" "mode1_equiv:2" web_search_used; do
+      "field_match:R=x" format_check "tool_called:Read" "subagents_min:2" "mode1_equiv:2" web_search_used \
+      "claim_match:Stale=x" "cites_count:3=x"; do
     run key_check_has_positive "no_pattern:y;$c" High
     [ "$status" -eq 0 ] || { echo "$c not counted as positive"; return 1; }
   done

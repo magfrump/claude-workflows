@@ -46,7 +46,14 @@ setup() {
 }
 
 @test "carrying cost uses allowed values" {
-  echo "$REPORT_CONTENT" | grep -iE 'Carrying Cost' | grep -qiE '(High|Medium|Low)'
+  # SKILL.md: "### Carrying Cost: {High / Medium / Low}". The value is the
+  # heading's, as a whole word: the old unanchored check matched "low" inside
+  # "follow" anywhere on any line naming Carrying Cost.
+  local headings bad
+  headings=$(echo "$REPORT_CONTENT" | grep -E '^#{2,4} Carrying Cost' || true)
+  [ -n "$headings" ]
+  bad=$(echo "$headings" | grep -vE '^#{2,4} Carrying Cost:[[:space:]]*\**(High|Medium|Low)\**([^[:alpha:]]|$)' || true)
+  [ -z "$bad" ] || { echo "Carrying Cost headings without a High/Medium/Low value: $bad"; return 1; }
 }
 
 @test "report has Fix Cost section" {
@@ -74,9 +81,20 @@ setup() {
 }
 
 @test "recommendation uses one of the four allowed values" {
-  # The Recommendation line must contain exactly one of the four prescribed verdicts.
-  echo "$REPORT_CONTENT" | grep -E '\*\*Recommendation:\*\*' \
-    | grep -qE '\b(Fix now|Fix opportunistically|Carry intentionally|Defer and monitor)\b'
+  # SKILL.md: each **Recommendation:** is exactly one of the four values,
+  # verbatim. Every such line must lead with one and name no other.
+  local lines line n v
+  lines=$(echo "$REPORT_CONTENT" | grep -E '^[[:space:]]*\*\*Recommendation:\*\*' || true)
+  [ -n "$lines" ]
+  while IFS= read -r line; do
+    echo "$line" | grep -qE '^[[:space:]]*\*\*Recommendation:\*\*[[:space:]]*\**(Fix now|Fix opportunistically|Carry intentionally|Defer and monitor)\**([^[:alpha:]]|$)' \
+      || { echo "Not led by an allowed value: $line"; return 1; }
+    n=0
+    for v in 'Fix now' 'Fix opportunistically' 'Carry intentionally' 'Defer and monitor'; do
+      [[ "$line" == *"$v"* ]] && n=$((n + 1))
+    done
+    [ "$n" -eq 1 ] || { echo "More than one verdict: $line"; return 1; }
+  done <<< "$lines"
 }
 
 # --- No leakage ---

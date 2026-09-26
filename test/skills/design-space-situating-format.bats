@@ -128,54 +128,60 @@ setup() {
   [ "$count" -eq 8 ]
 }
 
-# --- Placement values: dimensions with named-position vocabularies ---
+# --- Placement values: the Placement column, not the row ---
+#
+# Grading the whole row matched the dimension's own name (row 3's "Search /
+# Compose / Emerge" satisfies Search|Compose|Emerge, row 6's "Formality"
+# satisfies Formal), so a row with an empty or off-vocabulary placement passed.
+# SKILL.md's table is "| # | Dimension | Placement | Rationale |": the third
+# cell holds the value. "Mixed" and "N/A — does not constrain" are allowed on
+# any dimension when warranted.
+
+# placement_cell <n>: the Placement cell of row <n> of the placements table.
+placement_cell() {
+  echo "$REPORT_CONTENT" | sed -n '/^## Dimensional placements/,/^## /p' \
+    | awk -F'|' -v n="$1" '{ k = $2; gsub(/[ \t*]/, "", k) } k == n { print $4; exit }'
+}
+
+# assert_placement <n> <ERE>: row <n>'s Placement cell matches <ERE>, Mixed or N/A.
+assert_placement() {
+  local cell
+  cell="$(placement_cell "$1")"
+  [ -n "${cell//[[:space:]]/}" ] || { echo "row $1 has no Placement cell"; return 1; }
+  echo "$cell" | grep -qiE "\b($2|Mixed)\b|N/A" || { echo "row $1 placement '$cell' is not one of /$2/"; return 1; }
+}
 
 @test "locus of authority placement uses an allowed value" {
-  local section row
-  section=$(echo "$REPORT_CONTENT" | sed -n '/^## Dimensional placements/,/^## /p')
-  row=$(echo "$section" | grep -iE '^\| *1 *\|.*Locus' || true)
-  [ -n "$row" ] || skip "no row 1 found"
-  echo "$row" | grep -qiE '(Centralized|Mixed|Distributed)'
+  assert_placement 1 'Centralized|Distributed'
+}
+
+@test "orientation in time placement names a direction and a shape" {
+  assert_placement 2 'Backward|Forward'
+  assert_placement 2 'Snapshot|Process'
 }
 
 @test "search/compose/emerge placement uses an allowed value" {
-  local section row
-  section=$(echo "$REPORT_CONTENT" | sed -n '/^## Dimensional placements/,/^## /p')
-  row=$(echo "$section" | grep -iE '^\| *3 *\|' || true)
-  [ -n "$row" ] || skip "no row 3 found"
-  echo "$row" | grep -qiE '(Search|Compose|Emerge|Mixed)'
+  assert_placement 3 'Search|Compose|Emerge'
 }
 
 @test "modeling target placement uses an allowed value" {
-  local section row
-  section=$(echo "$REPORT_CONTENT" | sed -n '/^## Dimensional placements/,/^## /p')
-  row=$(echo "$section" | grep -iE '^\| *4 *\|' || true)
-  [ -n "$row" ] || skip "no row 4 found"
-  echo "$row" | grep -qiE '(Receiver|Structure|Context)'
+  assert_placement 4 'Receiver|Structure|Context'
+}
+
+@test "reversibility placement uses an allowed value" {
+  assert_placement 5 'Cheap|Expensive'
 }
 
 @test "formality placement uses an allowed value" {
-  local section row
-  section=$(echo "$REPORT_CONTENT" | sed -n '/^## Dimensional placements/,/^## /p')
-  row=$(echo "$section" | grep -iE '^\| *6 *\|' || true)
-  [ -n "$row" ] || skip "no row 6 found"
-  echo "$row" | grep -qiE '(Tacit|Explicit|Formal)'
+  assert_placement 6 'Tacit|Explicit|Formal'
 }
 
 @test "social structure placement uses an allowed value" {
-  local section row
-  section=$(echo "$REPORT_CONTENT" | sed -n '/^## Dimensional placements/,/^## /p')
-  row=$(echo "$section" | grep -iE '^\| *7 *\|' || true)
-  [ -n "$row" ] || skip "no row 7 found"
-  echo "$row" | grep -qiE '(Expert-led|Participatory|Community)'
+  assert_placement 7 'Expert-led|Participatory|Community'
 }
 
 @test "legibility placement uses an allowed value" {
-  local section row
-  section=$(echo "$REPORT_CONTENT" | sed -n '/^## Dimensional placements/,/^## /p')
-  row=$(echo "$section" | grep -iE '^\| *8 *\|' || true)
-  [ -n "$row" ] || skip "no row 8 found"
-  echo "$row" | grep -qiE '(Self|Peer|Stakeholder|Machine)'
+  assert_placement 8 'Self|Peer|Stakeholder|Machine'
 }
 
 # --- Tensions section ---
@@ -187,12 +193,23 @@ setup() {
   echo "$section" | grep -qE '^- ' || echo "$section" | grep -qiE 'None.*coherent'
 }
 
-# --- Hand-off section names a downstream consumer ---
+# --- Hand-off section names the downstream consumer that applies ---
+#
+# SKILL.md's template lists all three consumers (DD's diagnosis step, RPI's plan
+# step, direct implementation) and then says "Name which one applies here", so
+# a record that pastes the template names all three and chooses none. Lines of
+# the template are dropped before looking for the named consumer.
 
-@test "hand-off names a downstream workflow or actor" {
-  local section
-  section=$(echo "$REPORT_CONTENT" | sed -n '/^## Hand-off/,$p')
-  echo "$section" | grep -qiE '(DD|divergent.design|RPI|plan|implementation|diagnosis)'
+@test "hand-off names which downstream consumer applies, beyond the template" {
+  local section own
+  section=$(echo "$REPORT_CONTENT" | sed -n '/^## Hand-off/,/^## /p' | sed '1d' | grep -v '^## ')
+  own=$(echo "$section" | grep -viE \
+      -e '^[[:space:]]*This record is a frame, not a decision\. It is intended as input to one of:[[:space:]]*$' \
+      -e "^[[:space:]]*- DD's diagnosis step \(step 2\) — the constraints become testable[[:space:]]*$" \
+      -e "^[[:space:]]*- RPI's plan step — the decision's actual scope is now named[[:space:]]*$" \
+      -e '^[[:space:]]*- direct implementation — name the implementer and the first concrete next step[[:space:]]*$' \
+      -e '^[[:space:]]*Name which one applies here\.[[:space:]]*$' || true)
+  echo "$own" | grep -qiE '(\bDD\b|divergent.design|\bRPI\b|plan step|implement)'
 }
 
 # --- No leakage from sibling skills ---

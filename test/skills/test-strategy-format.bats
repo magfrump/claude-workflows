@@ -62,8 +62,32 @@ setup() {
 # Recommended tests are written as #### headings inside Recommended Tests.
 # Each must declare Type, Priority, File, What it verifies, and Closes gaps.
 
-@test "at least one recommended test has a Type field" {
-  echo "$REPORT_CONTENT" | grep -qE '^\*\*Type:\*\*'
+# recommended_tests: the "## Recommended Tests" section, from its heading up to
+# the next "## " heading.
+recommended_tests() {
+  echo "$REPORT_CONTENT" | awk '/^## / { if (inside) exit; if ($0 ~ /^## Recommended Tests/) inside = 1 } inside { print }'
+}
+
+# rec_field_count <field>: "**<field>:**" lines in the Recommended Tests section.
+rec_field_count() {
+  recommended_tests | grep -cE "^\*\*$1:\*\*" || true
+}
+
+@test "Recommended Tests has at least one #### test entry" {
+  local n
+  n=$(recommended_tests | grep -cE '^#### ' || true)
+  [ "$n" -ge 1 ]
+}
+
+@test "every recommended test has Closes gaps, Type, Priority, File and What it verifies" {
+  # SKILL.md: "For each recommended test, specify" these fields.
+  local n f c
+  n=$(recommended_tests | grep -cE '^#### ' || true)
+  [ "$n" -ge 1 ]
+  for f in 'Closes gaps' 'Type' 'Priority' 'File' 'What it verifies'; do
+    c=$(rec_field_count "$f")
+    [ "$c" -eq "$n" ] || { echo "$n recommended tests but $c **$f:** fields"; return 1; }
+  done
 }
 
 @test "Type values are from the allowed taxonomy" {
@@ -73,26 +97,16 @@ setup() {
     | grep -q .
 }
 
-@test "at least one recommended test has a Priority field" {
-  echo "$REPORT_CONTENT" | grep -qE '^\*\*Priority:\*\*'
-}
-
 @test "Priority values are high/medium/low" {
   ! echo "$REPORT_CONTENT" | grep -E '^\*\*Priority:\*\*' \
     | grep -viE '\b(high|medium|low)\b' \
     | grep -q .
 }
 
-@test "at least one recommended test has a File field" {
-  echo "$REPORT_CONTENT" | grep -qE '^\*\*File:\*\*'
-}
-
-@test "at least one recommended test has a What it verifies field" {
-  echo "$REPORT_CONTENT" | grep -qE '^\*\*What it verifies:\*\*'
-}
-
-@test "at least one recommended test has a Closes gaps field" {
-  echo "$REPORT_CONTENT" | grep -qE '^\*\*Closes gaps:\*\*'
+@test "Closes gaps values reference a G<N> entry or say none" {
+  ! recommended_tests | grep -E '^\*\*Closes gaps:\*\*' \
+    | grep -viE '\bG[0-9]+\b|\bnone\b' \
+    | grep -q .
 }
 
 # --- Structural requirements ---

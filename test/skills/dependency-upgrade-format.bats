@@ -50,7 +50,9 @@ setup() {
 }
 
 @test "report has Breaking Changes That Affect This Project section" {
-  assert_heading_exists "Breaking Changes.*Affect"
+  # Exactly this heading: "Breaking Changes.*Affect" also matched SKILL.md's
+  # other section, "Breaking Changes That Don't Affect This Project".
+  echo "$REPORT_CONTENT" | grep -qiE "^#{1,4} Breaking Changes That Affect This Project"
 }
 
 @test "report has Transitive Effects section" {

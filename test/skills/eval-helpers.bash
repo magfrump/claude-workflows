@@ -85,25 +85,11 @@ load_eval_report() {
 # no_critique, a verdict/severity check expecting Any), so a refusal or an
 # off-topic report passes them (audit T6). eval_fixture fails such a fixture
 # unless it is listed here, and fails a listed fixture that has since gained a
-# positive check, so this list only shrinks. It is the TODO for the pass that
-# adds a positive check to each (e.g. cites_pattern on the stated reason).
-NEGATIVE_ONLY_ALLOWLIST=(
-  arithmetic-eval/tc-ae5-no-arithmetic.md
-  code-fact-check/tc-c4-skip-targets.js
-  code-fact-check/tc-c8.1-empty.js
-  code-fact-check/tc-c8.2-no-comments.js
-  code-fact-check/tc-c8.3-binary-content.js
-  code-fact-check/tc-c8.4-extremely-short.js
-  divergent-design/tc-dd4-open-ended-hackathon-themes
-  fact-check/tc-3.1-opinions.md
-  fact-check/tc-3.2-predictions.md
-  fact-check/tc-6.1-accurate-weak-argument.md
-  fact-check/tc-7.1-empty.md
-  fact-check/tc-7.2-no-claims.md
-  fact-check/tc-7.3-binary-content.md
-  fact-check/tc-7.4-extremely-short.md
-  security-reviewer/tc-sec8-clean-exec.go
-)
+# positive check, so this list only shrinks. The per-skill assertion pass of
+# the 2026-09-26 audit gave all 15 original entries a positive check (a
+# skill-mandated zero-claims header, a format suite, a verdict, or the stated
+# reason), so it is empty; keep it that way.
+NEGATIVE_ONLY_ALLOWLIST=()
 
 # key_check_has_positive <key_check> <expected_verdict>: true when at least one
 # check can only pass on a report that says something: a verdict, severity or
@@ -118,8 +104,11 @@ key_check_has_positive() {
         case "$expected" in Any|skip|"") ;; *) return 0 ;; esac ;;
       min_claims:*)
         [ "${check#min_claims:}" -gt 0 ] 2>/dev/null && return 0 ;;
-      field_match:*|cites_pattern:*|finding_match:*|web_search_used|tool_called:*|subagents_min:*|mode1_equiv:*|format_check)
+      field_match:*|cites_pattern:*|finding_match:*|claim_match:*|web_search_used|tool_called:*|subagents_min:*|mode1_equiv:*|format_check)
         return 0 ;;
+      cites_count:*)
+        local n="${check#cites_count:}"
+        [ "${n%%=*}" -gt 0 ] 2>/dev/null && return 0 ;;
     esac
   done
   return 1
@@ -219,6 +208,14 @@ eval_fixture() {
         local spec="${check#finding_match:}"
         assert_finding_match "${spec%%=*}" "${spec#*=}" "$fixture_path" || failed=1
         ;;
+      claim_match:*)
+        local spec="${check#claim_match:}"
+        assert_finding_match "${spec%%=*}" "${spec#*=}" "$fixture_path" Verdict || failed=1
+        ;;
+      cites_count:*)
+        local spec="${check#cites_count:}"
+        assert_report_cites_count "${spec%%=*}" "${spec#*=}" "$fixture_path" || failed=1
+        ;;
       no_pattern:*)
         assert_report_not_matches "${check#no_pattern:}" || failed=1
         ;;
@@ -234,10 +231,12 @@ eval_fixture() {
         assert_min_claims "$n" || failed=1
         ;;
       web_search_used)
-        # With --tools restriction, web search is the only tool available
-        # for fact-check, so if we got results, search was used.
-        # For explicit verification, check that sources are cited.
-        assert_report_matches "Sources" || failed=1
+        # fact-check's runner keeps no transcript (FIXTURE_TRANSCRIPT unset),
+        # so the search itself cannot be seen. The next best evidence is what
+        # SKILL.md's template asks a searched verdict to carry: a
+        # "**Sources:** [named sources with years]" line. The word "Sources"
+        # alone (a header, a refusal) is not that.
+        assert_sources_named || failed=1
         ;;
       tool_called:*)
         local spec="${check#tool_called:}"
@@ -422,17 +421,20 @@ assert_report_matches() {
 
 # drop_fixture_echo <fixture_path>: stdin minus every line that appears in the
 # fixture (a file, or every file of a tree fixture) verbatim, compared after
-# trimming whitespace and blockquote markers. A report that quotes the input's
-# vulnerable line, claim or heading has not thereby named anything. With no
-# fixture at that path, stdin passes through unchanged.
+# trimming whitespace and leading blockquote, list, heading and comment markers
+# (> - * # //), so a code comment quoted as prose or a bullet still counts. A
+# report that quotes the input's vulnerable line, claim or heading has not
+# thereby named anything. Partial quotes are not caught: a check's pattern must
+# name what the fixture does not say. With no fixture at that path, stdin
+# passes through unchanged.
 drop_fixture_echo() {
   local fixture="$1"
   if [ -d "$fixture" ]; then
-    awk 'function norm(s) { sub(/\r$/, "", s); gsub(/^[ \t>]+|[ \t]+$/, "", s); return s }
+    awk 'function norm(s) { sub(/\r$/, "", s); gsub(/^[ \t>*\/#-]+|[ \t]+$/, "", s); return s }
          FILENAME == ARGV[1] { k = norm($0); if (k != "") seen[k] = 1; next }
          !(norm($0) in seen)' <(find "$fixture" -type f -exec cat {} +) -
   elif [ -f "$fixture" ]; then
-    awk 'function norm(s) { sub(/\r$/, "", s); gsub(/^[ \t>]+|[ \t]+$/, "", s); return s }
+    awk 'function norm(s) { sub(/\r$/, "", s); gsub(/^[ \t>*\/#-]+|[ \t]+$/, "", s); return s }
          FILENAME == ARGV[1] { k = norm($0); if (k != "") seen[k] = 1; next }
          !(norm($0) in seen)' "$fixture" -
   else
@@ -500,14 +502,34 @@ finding_blocks() {
 # cites_pattern each look at the whole report, so an unrelated High finding plus
 # the pattern anywhere else ("scop" in the "**Scope:**" header) passed a
 # fixture whose planted defect the report never named (audit T5).
+# The ERE may be several EREs joined by "&&": each must match some line of the
+# same finding (the new surface AND the convention it departs from, say).
+# With a 4th argument the graded field is that one instead of Severity:
+# claim_match uses Verdict, so a code-fact-check claim section must carry both
+# the expected verdict and the mechanism.
 # Check syntax: finding_match:Critical|High=ownership|IDOR
-# Args: $1 = pipe-separated allowed severities, $2 = ERE, $3 = fixture path
+#               finding_match:Inconsistent=target_url&&round.?trip
+#               claim_match:Stale|Incorrect=MAX_RETRIES
+# Args: $1 = pipe-separated allowed values, $2 = ERE[&&ERE...], $3 = fixture
+#       path, $4 = field (default Severity)
 assert_finding_match() {
-  local allowed="$1" pattern="$2" fixture="${3:-}" l val="" block="" have="" seen=""
+  local allowed="$1" pattern="$2" fixture="${3:-}" field="${4:-Severity}"
+  local l val="" block="" have="" seen="" p
+  local -a patterns=()
+  local rest="$pattern"
+  while [[ "$rest" == *"&&"* ]]; do
+    patterns+=("${rest%%&&*}")
+    rest="${rest#*&&}"
+  done
+  patterns+=("$rest")
   _finding_hit() {
     [ -n "$have" ] || return 1
     printf '%s\n' "$val" | grep -qiE "^(${allowed})([^[:alpha:]]|$)" || return 1
-    printf '%s' "$block" | drop_fixture_echo "$fixture" | grep -qiE -e "$pattern"
+    local own
+    own="$(printf '%s' "$block" | drop_fixture_echo "$fixture")"
+    for p in "${patterns[@]}"; do
+      printf '%s\n' "$own" | grep -qiE -e "$p" || return 1
+    done
   }
   while IFS= read -r l; do
     if [[ "$l" == $'\036'* ]]; then
@@ -517,10 +539,32 @@ assert_finding_match() {
     else
       block+="$l"$'\n'
     fi
-  done < <(printf '%s\n' "$REPORT_CONTENT" | finding_blocks Severity)
+  done < <(printf '%s\n' "$REPORT_CONTENT" | finding_blocks "$field")
   _finding_hit && return 0
-  echo "No single finding has a severity matching /${allowed}/ and a line matching /${pattern}/ (finding severities: ${seen:-none})"
+  echo "No single finding has a ${field} matching /${allowed}/ and lines matching /${pattern}/ (finding ${field} values: ${seen:-none})"
   return 1
+}
+
+# Assert at least N lines of the report, outside lines copied from the
+# fixture, match the ERE: a list of N ideas, not one sentence mentioning them.
+# Check syntax: cites_count:3=^[[:space:]]*([-*+]|[0-9]+[.)])[[:space:]]
+# Args: $1 = N, $2 = ERE, $3 = fixture path
+assert_report_cites_count() {
+  local min="$1" pattern="$2" fixture="$3" n
+  n=$(printf '%s\n' "$REPORT_CONTENT" | drop_fixture_echo "$fixture" | grep -ciE -e "$pattern" || true)
+  if [ "$n" -lt "$min" ]; then
+    echo "Expected at least $min report lines (outside lines copied from the fixture) matching /$pattern/, found $n"
+    return 1
+  fi
+}
+
+# Assert some "**Sources:**" line names a source the way fact-check's template
+# asks ("[named sources with years]"): a year, a URL or a web domain.
+assert_sources_named() {
+  if ! field_values Sources | grep -qiE '(^|[^0-9])(19|20)[0-9]{2}([^0-9]|$)|https?://|[a-z0-9-]+\.(gov|org|com|edu|net|int)([^a-z]|$)'; then
+    echo "No **Sources:** line names a source with a year, URL or domain (the web_search_used check)"
+    return 1
+  fi
 }
 
 # Assert the report body does not match a case-insensitive pattern — e.g. a

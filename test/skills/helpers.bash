@@ -130,6 +130,14 @@ count_findings() {
     FINDING_COUNT=$(echo "$FINDINGS_BODY" | grep -cE '^#{3,4} ' || true)
     return
   fi
+  # The same section one level down ("### Findings" holding "#### [Finding
+  # title]"): the reviewer templates show both at those levels, and
+  # ui-visual-review's suite accepts either.
+  FINDINGS_BODY=$(echo "$REPORT_CONTENT" | sed -nE '/^### Findings/,/^#{1,3} [^#]/p' | sed '1d;$d')
+  if [ -n "$FINDINGS_BODY" ]; then
+    FINDING_COUNT=$(echo "$FINDINGS_BODY" | grep -cE '^#### ' || true)
+    return
+  fi
   # Legacy shape: numbered finding headings with no "## Findings" wrapper.
   FINDING_COUNT=$(echo "$REPORT_CONTENT" | grep -cE '^#{3,4} [0-9]+\.' || true)
   # Extract from first finding to the next ## heading that isn't a finding
