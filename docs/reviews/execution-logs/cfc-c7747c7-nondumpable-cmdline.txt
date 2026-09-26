@@ -1,0 +1,8 @@
+timestamp: 2026-09-26T00:27:08Z
+cwd: /tmp/claude-1000/-workspace/be3f0769-4e1a-4426-8e7a-ba12087d4d40/scratchpad/nd
+cmd: python3 -c 'prctl(PR_SET_DUMPABLE,0); sleep' &  then readlink /proc/PID/cwd and tr NUL < /proc/PID/cmdline
+pid=3489039
+readlink rc=1
+python3 -c import ctypes,time; ctypes.CDLL(None).prctl(4,0,0,0,0); time.sleep(30) nd-marker-arg 
+cmdline rc=0
+exit=0

@@ -1,0 +1,215 @@
+timestamp: 2026-09-26T00:25:12Z
+cwd: /workspace
+python: Python 3.11.2
+
+$ python3 test/skills/arithmetic-eval/mode1-equiv.py skills/arithmetic-eval/SKILL.md /tmp/claude-1000/-workspace/be3f0769-4e1a-4426-8e7a-ba12087d4d40/scratchpad/ok.jsonl 1~-1
+mode1-equiv: expected value '1~-1' in '1~-1': value must be finite, tolerance finite and >= 0
+
+exit=2
+
+$ python3 test/skills/arithmetic-eval/mode1-equiv.py skills/arithmetic-eval/SKILL.md /tmp/claude-1000/-workspace/be3f0769-4e1a-4426-8e7a-ba12087d4d40/scratchpad/ok.jsonl nan
+mode1-equiv: expected value 'nan' in 'nan': value must be finite, tolerance finite and >= 0
+
+exit=2
+
+$ python3 test/skills/arithmetic-eval/mode1-equiv.py skills/arithmetic-eval/SKILL.md /tmp/claude-1000/-workspace/be3f0769-4e1a-4426-8e7a-ba12087d4d40/scratchpad/ok.jsonl inf
+mode1-equiv: expected value 'inf' in 'inf': value must be finite, tolerance finite and >= 0
+
+exit=2
+
+$ python3 test/skills/arithmetic-eval/mode1-equiv.py skills/arithmetic-eval/SKILL.md /tmp/claude-1000/-workspace/be3f0769-4e1a-4426-8e7a-ba12087d4d40/scratchpad/ok.jsonl -inf
+mode1-equiv: expected value '-inf' in '-inf': value must be finite, tolerance finite and >= 0
+
+exit=2
+
+$ python3 test/skills/arithmetic-eval/mode1-equiv.py skills/arithmetic-eval/SKILL.md /tmp/claude-1000/-workspace/be3f0769-4e1a-4426-8e7a-ba12087d4d40/scratchpad/ok.jsonl 1~nan
+mode1-equiv: expected value '1~nan' in '1~nan': value must be finite, tolerance finite and >= 0
+
+exit=2
+
+$ python3 test/skills/arithmetic-eval/mode1-equiv.py skills/arithmetic-eval/SKILL.md /tmp/claude-1000/-workspace/be3f0769-4e1a-4426-8e7a-ba12087d4d40/scratchpad/ok.jsonl 1~inf
+mode1-equiv: expected value '1~inf' in '1~inf': value must be finite, tolerance finite and >= 0
+
+exit=2
+
+$ python3 test/skills/arithmetic-eval/mode1-equiv.py skills/arithmetic-eval/SKILL.md /tmp/claude-1000/-workspace/be3f0769-4e1a-4426-8e7a-ba12087d4d40/scratchpad/ok.jsonl 
+mode1-equiv: bad expected value '' in ''
+
+exit=2
+
+$ python3 test/skills/arithmetic-eval/mode1-equiv.py skills/arithmetic-eval/SKILL.md /tmp/claude-1000/-workspace/be3f0769-4e1a-4426-8e7a-ba12087d4d40/scratchpad/ok.jsonl |
+mode1-equiv: bad expected value '' in '|'
+
+exit=2
+
+$ python3 test/skills/arithmetic-eval/mode1-equiv.py skills/arithmetic-eval/SKILL.md /tmp/claude-1000/-workspace/be3f0769-4e1a-4426-8e7a-ba12087d4d40/scratchpad/ok.jsonl 1|
+mode1-equiv: bad expected value '' in '1|'
+
+exit=2
+
+$ python3 test/skills/arithmetic-eval/mode1-equiv.py skills/arithmetic-eval/SKILL.md /tmp/claude-1000/-workspace/be3f0769-4e1a-4426-8e7a-ba12087d4d40/scratchpad/ok.jsonl 1~
+Bash calls seen: 0
+No Mode 1 call computed any of: 1~
+
+exit=1
+
+$ python3 test/skills/arithmetic-eval/mode1-equiv.py skills/arithmetic-eval/SKILL.md /tmp/claude-1000/-workspace/be3f0769-4e1a-4426-8e7a-ba12087d4d40/scratchpad/ok.jsonl 1e308
+Bash calls seen: 0
+No Mode 1 call computed any of: 1e308
+
+exit=1
+
+$ python3 test/skills/arithmetic-eval/mode1-equiv.py skills/arithmetic-eval/SKILL.md /tmp/claude-1000/-workspace/be3f0769-4e1a-4426-8e7a-ba12087d4d40/scratchpad/ok.jsonl 1e309
+mode1-equiv: expected value '1e309' in '1e309': value must be finite, tolerance finite and >= 0
+
+exit=2
+
+$ python3 test/skills/arithmetic-eval/mode1-equiv.py skills/arithmetic-eval/SKILL.md /tmp/claude-1000/-workspace/be3f0769-4e1a-4426-8e7a-ba12087d4d40/scratchpad/ok.jsonl  1 
+Bash calls seen: 0
+No Mode 1 call computed any of:  1 
+
+exit=1
+
+$ python3 test/skills/arithmetic-eval/mode1-equiv.py skills/arithmetic-eval/SKILL.md /tmp/claude-1000/-workspace/be3f0769-4e1a-4426-8e7a-ba12087d4d40/scratchpad/ok.jsonl 1_000
+Bash calls seen: 0
+No Mode 1 call computed any of: 1_000
+
+exit=1
+
+$ python3 test/skills/arithmetic-eval/mode1-equiv.py skills/arithmetic-eval/SKILL.md /tmp/claude-1000/-workspace/be3f0769-4e1a-4426-8e7a-ba12087d4d40/scratchpad/ok.jsonl 0x10
+mode1-equiv: bad expected value '0x10' in '0x10'
+
+exit=2
+
+$ python3 test/skills/arithmetic-eval/mode1-equiv.py skills/arithmetic-eval/SKILL.md /tmp/claude-1000/-workspace/be3f0769-4e1a-4426-8e7a-ba12087d4d40/scratchpad/ok.jsonl 1~1e308
+Bash calls seen: 0
+No Mode 1 call computed any of: 1~1e308
+
+exit=1
+
+$ python3 test/skills/arithmetic-eval/mode1-equiv.py skills/arithmetic-eval/SKILL.md /tmp/claude-1000/-workspace/be3f0769-4e1a-4426-8e7a-ba12087d4d40/scratchpad/ok.jsonl 1~~1
+mode1-equiv: bad expected value '1~~1' in '1~~1'
+
+exit=2
+
+$ python3 test/skills/arithmetic-eval/mode1-equiv.py --check-spec skills/arithmetic-eval/SKILL.md 1~-1
+mode1-equiv: expected value '1~-1' in '1~-1': value must be finite, tolerance finite and >= 0
+
+exit=2
+
+$ python3 test/skills/arithmetic-eval/mode1-equiv.py --check-spec skills/arithmetic-eval/SKILL.md nan
+mode1-equiv: expected value 'nan' in 'nan': value must be finite, tolerance finite and >= 0
+
+exit=2
+
+$ python3 test/skills/arithmetic-eval/mode1-equiv.py --check-spec skills/arithmetic-eval/SKILL.md 
+mode1-equiv: bad expected value '' in ''
+
+exit=2
+
+$ python3 test/skills/arithmetic-eval/mode1-equiv.py --check-spec skills/arithmetic-eval/SKILL.md |
+mode1-equiv: bad expected value '' in '|'
+
+exit=2
+
+$ python3 test/skills/arithmetic-eval/mode1-equiv.py --check-spec skills/arithmetic-eval/SKILL.md 1~
+
+exit=0
+
+$ python3 test/skills/arithmetic-eval/mode1-equiv.py --check-spec skills/arithmetic-eval/SKILL.md 1
+
+exit=0
+
+$ python3 test/skills/arithmetic-eval/mode1-equiv.py --check-spec skills/arithmetic-eval/SKILL.md
+
+The fixture run offered Bash but denied every call, so nothing ran. This script
+reads the Bash commands the model *tried* and
+exit=2
+
+$ python3 test/skills/arithmetic-eval/mode1-equiv.py --check-spec /nonexistent 1
+mode1-equiv: cannot read /nonexistent: [Errno 2] No such file or directory: '/nonexistent'
+
+exit=2
+
+$ python3 test/skills/arithmetic-eval/mode1-equiv.py --check-spec /tmp/claude-1000/-workspace/be3f0769-4e1a-4426-8e7a-ba12087d4d40/scratchpad 1
+mode1-equiv: cannot read /tmp/claude-1000/-workspace/be3f0769-4e1a-4426-8e7a-ba12087d4d40/scratchpad: [Errno 21] Is a directory: '/tmp/claude-1000/-workspace/be3f0769-4e1a-4426-8e7a-ba12087d4d40/scratchpad'
+
+exit=2
+
+$ python3 test/skills/arithmetic-eval/mode1-equiv.py skills/arithmetic-eval/SKILL.md
+
+The fixture run offered Bash but denied every call, so nothing ran. This script
+reads the Bash commands the model *tried* and
+exit=2
+
+$ python3 test/skills/arithmetic-eval/mode1-equiv.py
+
+The fixture run offered Bash but denied every call, so nothing ran. This script
+reads the Bash commands the model *tried* and
+exit=2
+
+$ python3 test/skills/arithmetic-eval/mode1-equiv.py skills/arithmetic-eval/SKILL.md /tmp/claude-1000/-workspace/be3f0769-4e1a-4426-8e7a-ba12087d4d40/scratchpad/ok.jsonl 1 extra
+
+The fixture run offered Bash but denied every call, so nothing ran. This script
+reads the Bash commands the model *tried* and
+exit=2
+
+$ python3 test/skills/arithmetic-eval/mode1-equiv.py /tmp/claude-1000/-workspace/be3f0769-4e1a-4426-8e7a-ba12087d4d40/scratchpad /tmp/claude-1000/-workspace/be3f0769-4e1a-4426-8e7a-ba12087d4d40/scratchpad/ok.jsonl 1
+mode1-equiv: cannot read /tmp/claude-1000/-workspace/be3f0769-4e1a-4426-8e7a-ba12087d4d40/scratchpad: [Errno 21] Is a directory: '/tmp/claude-1000/-workspace/be3f0769-4e1a-4426-8e7a-ba12087d4d40/scratchpad'
+
+exit=2
+
+$ python3 test/skills/arithmetic-eval/mode1-equiv.py skills/arithmetic-eval/SKILL.md /tmp/claude-1000/-workspace/be3f0769-4e1a-4426-8e7a-ba12087d4d40/scratchpad 1
+mode1-equiv: cannot read /tmp/claude-1000/-workspace/be3f0769-4e1a-4426-8e7a-ba12087d4d40/scratchpad: [Errno 21] Is a directory: '/tmp/claude-1000/-workspace/be3f0769-4e1a-4426-8e7a-ba12087d4d40/scratchpad'
+
+exit=2
+
+$ python3 test/skills/arithmetic-eval/mode1-equiv.py skills/arithmetic-eval/SKILL.md /tmp/claude-1000/-workspace/be3f0769-4e1a-4426-8e7a-ba12087d4d40/scratchpad/binary.jsonl 1
+mode1-equiv: cannot read /tmp/claude-1000/-workspace/be3f0769-4e1a-4426-8e7a-ba12087d4d40/scratchpad/binary.jsonl: 'utf-8' codec can't decode byte 0x86 in position 0: invalid start byte
+
+exit=2
+
+$ python3 test/skills/arithmetic-eval/mode1-equiv.py skills/arithmetic-eval/SKILL.md /tmp/claude-1000/-workspace/be3f0769-4e1a-4426-8e7a-ba12087d4d40/scratchpad/unreadable.jsonl 1
+mode1-equiv: cannot read /tmp/claude-1000/-workspace/be3f0769-4e1a-4426-8e7a-ba12087d4d40/scratchpad/unreadable.jsonl: [Errno 13] Permission denied: '/tmp/claude-1000/-workspace/be3f0769-4e1a-4426-8e7a-ba12087d4d40/scratchpad/unreadable.jsonl'
+
+exit=2
+
+$ python3 test/skills/arithmetic-eval/mode1-equiv.py skills/arithmetic-eval/SKILL.md /nonexistent 1
+mode1-equiv: cannot read /nonexistent: [Errno 2] No such file or directory: '/nonexistent'
+
+exit=2
+
+$ python3 test/skills/arithmetic-eval/mode1-equiv.py skills/arithmetic-eval/SKILL.md /tmp/claude-1000/-workspace/be3f0769-4e1a-4426-8e7a-ba12087d4d40/scratchpad/empty.jsonl 1
+Bash calls seen: 0
+No Mode 1 call computed any of: 1
+
+exit=1
+
+$ python3 test/skills/arithmetic-eval/mode1-equiv.py skills/arithmetic-eval/SKILL.md /tmp/claude-1000/-workspace/be3f0769-4e1a-4426-8e7a-ba12087d4d40/scratchpad/scalar.jsonl 1
+  File "/workspace/test/skills/arithmetic-eval/mode1-equiv.py", line 163, in main
+    calls = bash_calls(evs)
+            ^^^^^^^^^^^^^^^
+
+exit=1
+
+$ python3 test/skills/arithmetic-eval/mode1-equiv.py skills/arithmetic-eval/SKILL.md /tmp/claude-1000/-workspace/be3f0769-4e1a-4426-8e7a-ba12087d4d40/scratchpad/strblock.jsonl 1
+  File "/workspace/test/skills/arithmetic-eval/mode1-equiv.py", line 163, in main
+    calls = bash_calls(evs)
+            ^^^^^^^^^^^^^^^
+
+exit=1
+
+$ python3 test/skills/arithmetic-eval/mode1-equiv.py skills/arithmetic-eval/SKILL.md /tmp/claude-1000/-workspace/be3f0769-4e1a-4426-8e7a-ba12087d4d40/scratchpad/strinput.jsonl 1
+  File "/workspace/test/skills/arithmetic-eval/mode1-equiv.py", line 163, in main
+    calls = bash_calls(evs)
+            ^^^^^^^^^^^^^^^
+
+exit=1
+
+$ python3 test/skills/arithmetic-eval/mode1-equiv.py skills/arithmetic-eval/SKILL.md /tmp/claude-1000/-workspace/be3f0769-4e1a-4426-8e7a-ba12087d4d40/scratchpad/numcmd.jsonl 1
+             ^^^^^^
+  File "/workspace/test/skills/arithmetic-eval/mode1-equiv.py", line 174, in main
+    w = split_mode1(cmd.strip("\n"))
+
+exit=1
+

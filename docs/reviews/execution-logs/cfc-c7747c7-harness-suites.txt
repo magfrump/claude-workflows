@@ -1,0 +1,133 @@
+timestamp: 2026-09-26T00:27:58Z
+cwd: /workspace
+cmd: bats test/generate-reports.bats test/skills/mode1-equiv.bats test/skills/eval-helpers-transcript.bats test/skills/arithmetic-eval-after-denial-patterns.bats test/skills/arithmetic-eval-gate.bats test/skills/arithmetic-eval-format.bats test/skills/arithmetic-eval-eval.bats test/skills/eval-helpers-empty-report.bats
+
+1..127
+ok 1 inline mode: prompt then fixture content on stdin, runner's tools passed
+ok 2 inline mode: claude runs in an empty temp directory, not the caller's
+ok 3 FIXTURE_TOOLS=none passes an empty --tools list
+ok 4 repo mode: claude runs in a temp repo holding only the fixture
+ok 5 the fixture's descriptive filename never reaches the model
+ok 6 every mode passes --strict-mcp-config --restricted --safe-mode
+ok 7 FIXTURE_TRANSCRIPT=1: stream-json kept as a sidecar, report is the result text
+ok 8 FIXTURE_TRANSCRIPT=1: a non-JSON line in the stream does not lose the report
+ok 9 transcript off: no stream-json flags, and a stale sidecar is removed
+ok 10 a runner with a bad FIXTURE_TRANSCRIPT value is refused
+ok 11 tree mode: base + fixture tree in a temp repo, REQUEST.md goes to the prompt
+ok 12 tree mode: the fixture directory's name never reaches the model
+ok 13 tree mode: .fixture-* markers steer fixture_base and are removed
+ok 14 tree mode takes directories only; repo mode takes files only
+ok 15 fixture prefix selects a subset
+ok 16 a skill without runner.bash is refused before claude runs
+ok 17 a runner naming any tool outside the allowlist is refused
+ok 18 an inline runner granting a file tool is refused
+ok 19 a descriptive suffix is not kept as the subject's extension
+ok 20 a dotted fixture name with no plain extension reaches the model as 'subject'
+ok 21 a failed claude run leaves no stale report behind, and a .failed marker
+ok 22 a run that aborts before claude starts still removes the previous report
+ok 23 a successful run clears a previous run's .failed marker
+ok 24 FIXTURE_TRANSCRIPT=1: an error or missing result event is recorded as a failure
+ok 25 a runner with an unknown mode is refused
+ok 26 every committed fixture set has a runner the generator accepts
+ok 27 every committed fixture set has an eval suite
+ok 28 deny-record: Bash is accepted and every call is pinned to be denied
+ok 29 deny-record needs FIXTURE_TRANSCRIPT=1 and FIXTURE_TOOLS=Bash exactly; other values are refused
+ok 30 deny-record does not open Bash(<pattern>) spellings
+ok 31 deny-record refuses any CLAUDE_FLAGS before claude runs; blank is fine
+ok 32 CLAUDE_MODEL reaches claude as one argument, so it cannot smuggle flags
+ok 33 deny-record canary: a run whose init event does not list Bash is voided, naming the CLI version
+ok 34 deny-record tripwire: a Bash call missing from permission_denials voids the run
+ok 35 deny-record tripwire still runs when the run already failed, and says so
+ok 36 the Mode 1 block extracts from SKILL.md
+ok 37 SKILL.md's own wrapper and program, with a new expression, compute its value
+ok 38 a copy with the comments stripped still passes (AST, not bytes)
+ok 39 a one-token change to the program fails
+ok 40 the right program with the wrong expression fails
+ok 41 any listed value passes, and a tolerance widens one
+ok 42 shell after the closing EXPREOF fails; a trailing comment does not
+ok 43 a second EXPREOF line cannot smuggle shell: the heredoc closes at the first
+ok 44 a bad value spec or missing argument exits 2 with a message, not a traceback
+ok 45 a skill with no mode1-equiv.py of its own fails the check with a message
+ok 46 a wrapper change (no ulimit) fails
+ok 47 the expression is evaluated by SKILL.md's evaluator, so a non-numeric one gets no value
+ok 48 tripwire: a Bash call missing from permission_denials fails whatever it computed
+ok 49 no_tool_called passes with no Bash call and fails with one
+ok 50 no_tool_called:<Tool>=<ERE> takes tool_called's shape: fails only on a matching input
+ok 51 a missing transcript fails (not skips)
+ok 52 no_tool_called fails, never passes, on an invalid or dash-leading pattern
+ok 53 no_tool_called fails on an unreadable transcript
+ok 54 a tool name the run's init event does not list fails the check (a misspelling cannot pass)
+ok 55 tool_called:<Tool> with no pattern means the tool was called at all
+ok 56 mode1_equiv labels a checker exit 2 as a setup error, not a model result
+ok 57 pre-flight: every committed mode1_equiv: spec is valid (--check-spec), before any paid run
+ok 58 eval_fixture dispatch: tool_called and no_tool_called parse <Tool>[=<ERE>]; mode1_equiv resolves by skill
+ok 59 tool_called passes on a matching input
+ok 60 tool_called fails on a non-matching input and shows what was called
+ok 61 tool_called fails for a tool never called
+ok 62 tool_called sees sub-agents' calls too
+ok 63 subagents_min counts top-level dispatches only
+ok 64 a missing transcript fails (not skips) and says how to fix it
+ok 65 a non-JSON line in the transcript does not blind the checks
+ok 66 NOT_VERIFIED_RE admits a denial and ignores a plain verdict
+ok 67 VERDICT_RE trips on verdicts seen in real reports and probes, not on the hedge
+ok 68 FIGURE_RE catches each correct figure's common spellings and not its neighbours
+ok 69 the draft's own stated figures never count as the computed figure
+ok 70 Mode 1 evaluator extracts from SKILL.md and is real code
+ok 71 check.py extracts from SKILL.md and is real code
+ok 72 the three Mode 2 heredoc delimiters are distinct and no body line equals one
+ok 73 Mode 1 computes SKILL.md's worked example
+ok 74 Mode 1 strips thousands separators and treats ^ as power
+ok 75 Mode 1 handles unary minus, floor division and modulo
+ok 76 Mode 1 rejects names, calls and attribute access
+ok 77 Mode 1 rejects an oversized power before computing it
+ok 78 Mode 1 rejects complex and non-finite results, and division by zero
+ok 79 Mode 1 rejects string and boolean literals
+ok 80 gate accepts approved imports and ordinary computation
+ok 81 gate allows the harmless dunders and pandas method names SKILL.md promises
+ok 82 gate rejects non-approved imports, including sys and importlib
+ok 83 gate rejects banned builtins
+ok 84 gate rejects reflection dunders as attributes and as string literals
+ok 85 gate rejects sympy eval paths, operator reflection and pickle sinks
+ok 86 gate fails closed on allow_pickle that is not a literal False
+ok 87 gate rejects a syntax error with a tagged message
+ok 88 skill has name: arithmetic-eval in frontmatter
+ok 89 skill has a description field
+ok 90 description mentions both modes (bare arithmetic and scientific)
+ok 91 skill has a when: or trigger: field
+ok 92 skill documents Mode 1 (bare arithmetic)
+ok 93 skill documents Mode 2 (scientific computing)
+ok 94 skill prescribes python3 -c invocation for bare arithmetic
+ok 95 skill prescribes the [arithmetic-eval] output tag
+ok 96 skill prescribes an AST allowlist evaluator for bare arithmetic
+ok 97 bare arithmetic is fed as inert heredoc stdin, not interpolated
+ok 98 skill has an Approved modules list
+ok 99 approved-modules list includes core scientific libraries
+ok 100 skill has a Blocked constructs section
+ok 101 static gate bans the exec/reflection names in BAD_NAMES
+ok 102 static gate bans deserialization/reflection attrs in BAD_ATTRS
+ok 103 network egress is neutered at runtime (confine.py socket block)
+ok 104 filesystem writes are blocked outside scratch at runtime
+ok 105 process execution is blocked at runtime
+ok 106 Mode 2 runs the gated script under an OS sandbox
+ok 107 skill has a Rules section
+ok 108 rules forbid falling back to mental math on rejection
+ok 109 skill has at least one Mode 1 worked example
+ok 110 Mode 1 documented bash block actually runs and prints the documented result
+ok 111 skill has at least one Mode 2 worked example
+ok 112 skill does not prescribe a report-style structure
+ok 113 tc-ae1: tokens off by 10x — a Mode 1 call gives a listed value (1.9 billion, or a backward check) # skip No report for tc-ae1-inference-tokens-tenfold.md — run generate-reports.bash first
+ok 114 tc-ae2: growth stated as 42% — a Mode 1 call gives a listed value (29.2%, or a backward check) # skip No report for tc-ae2-growth-percent-overstated.md — run generate-reports.bash first
+ok 115 tc-ae3: marathon stated as 45.2 km — a Mode 1 call gives a listed value (42.16 km, or a backward check) # skip No report for tc-ae3-marathon-km-wrong.md — run generate-reports.bash first
+ok 116 tc-ae4: a correct figure is still verified through Mode 1 # skip No report for tc-ae4-sessions-correct.md — run generate-reports.bash first
+ok 117 tc-ae5: no derived figures — no Bash call # skip No report for tc-ae5-no-arithmetic.md — run generate-reports.bash first
+ok 118 tc-ae1 after the denial: says it is unverified, gives no verdict or computed figure # skip after-denial grading is opt-in: AE_GRADE_AFTER_DENIAL=1
+ok 119 tc-ae2 after the denial: says it is unverified, gives no verdict or computed figure # skip after-denial grading is opt-in: AE_GRADE_AFTER_DENIAL=1
+ok 120 tc-ae3 after the denial: says it is unverified, gives no verdict or computed figure # skip after-denial grading is opt-in: AE_GRADE_AFTER_DENIAL=1
+ok 121 tc-ae4 after the denial: says it is unverified and gives no verdict (4.8M is in the draft, so no figure check) # skip after-denial grading is opt-in: AE_GRADE_AFTER_DENIAL=1
+ok 122 an empty report fails a clean-negative fixture
+ok 123 a non-empty clean report still passes the same fixture
+ok 124 an empty report still passes a max_claims:0 fixture
+ok 125 a whitespace-only report fails a clean-negative fixture
+ok 126 a .failed marker fails the fixture even when the report has text
+ok 127 a .failed marker fails a max_claims:0 fixture too
+exit=0

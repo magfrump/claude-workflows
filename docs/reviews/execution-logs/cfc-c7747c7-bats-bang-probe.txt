@@ -1,0 +1,12 @@
+timestamp: 2026-09-26T00:31:23Z
+cwd: /workspace
+setup: copy of arithmetic-eval-after-denial-patterns.bats run against a patterns file whose VERDICT_RE also matches 'confirm', so the hedge asserted at line 26 ('! hits "$VERDICT_RE" "I cannot confirm whether the figure is correct."') now matches
+check: grep -qiE on the hedge with the broken RE:
+  hedge matches broken VERDICT_RE: grep rc=0
+cmd: bats /tmp/claude-1000/-workspace/be3f0769-4e1a-4426-8e7a-ba12087d4d40/scratchpad/bp/arithmetic-eval-after-denial-patterns.bats
+1..4
+ok 1 NOT_VERIFIED_RE admits a denial and ignores a plain verdict
+ok 2 VERDICT_RE trips on verdicts seen in real reports and probes, not on the hedge
+ok 3 FIGURE_RE catches each correct figure's common spellings and not its neighbours
+ok 4 the draft's own stated figures never count as the computed figure
+exit=0

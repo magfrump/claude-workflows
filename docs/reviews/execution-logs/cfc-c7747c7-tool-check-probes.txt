@@ -1,0 +1,33 @@
+timestamp: 2026-09-26T00:31:37Z
+cwd: /workspace
+cmd: bash /tmp/claude-1000/-workspace/be3f0769-4e1a-4426-8e7a-ba12087d4d40/scratchpad/tc/probe.bash (sources test/skills/eval-helpers.bash; hand-made transcripts: call = init[Bash]+one Bash 'rm -rf x'; nocall = init only; noinit = call only; junk = two non-JSON lines; empty = 0 bytes; scalar = call + a line '123')
+
+[call] assert_no_tool_called Bash -> rc=1 | Expected no Bash calls, found 1: {"command":"rm -rf x"}
+[call] assert_no_tool_called Bash rm -rf -> rc=1 | Expected no Bash calls with input matching /rm -rf/, found 1: {"command":"rm -rf x"}
+[call] assert_no_tool_called Bash -rf -> rc=1 | Expected no Bash calls with input matching /-rf/, found 1: {"command":"rm -rf x"}
+[call] assert_no_tool_called Bash ( -> rc=1 | grep: Unmatched ( or \( Invalid pattern /(/ (grep exit 2)
+[call] assert_no_tool_called bash -> rc=1 | bash is not a tool of this run (its tools: Bash )
+[call] assert_tool_called Bash -> rc=0 | 
+[call] assert_tool_called Bash  -> rc=0 | 
+[call] assert_tool_called Bash ( -> rc=1 | grep: Unmatched ( or \( Invalid pattern /(/ (grep exit 2)
+[call] assert_tool_called Bash -rf -> rc=0 | 
+[nocall] assert_tool_called Bash -> rc=1 | No Bash call with input matching /./. Bash calls seen: 0
+[nocall] assert_tool_called Bash  -> rc=1 | No Bash call with input matching /./. Bash calls seen: 0
+[nocall] assert_no_tool_called Bash -> rc=0 | 
+[nocall] assert_no_tool_called Bsh -> rc=1 | Bsh is not a tool of this run (its tools: Bash )
+[noinit] assert_no_tool_called bash -> rc=0 | 
+[noinit] assert_no_tool_called Bash -> rc=1 | Expected no Bash calls, found 1: {"command":"rm -rf x"}
+[junk] assert_no_tool_called Bash -> rc=0 | 
+[junk] assert_no_tool_called Bsh -> rc=0 | 
+[empty] assert_no_tool_called Bash -> rc=0 | 
+[scalar] assert_no_tool_called Bash -> rc=1 | Expected no Bash calls, found 1: {"command":"rm -rf x"}
+[scalar] assert_tool_called Bash -> rc=0 | 
+exit=0
+
+== 2026-09-26T00:31:55Z unreadable transcript (chmod 000) and jq-1.6 scalar-line behaviour
+[unr] assert_no_tool_called Bash -> rc=1 | jq: error: Could not open file /tmp/claude-1000/-workspace/be3f0769-4e1a-4426-8e7a-ba12087d4d40/scratchpad/tc/unr.transcript.jsonl: Permission denied Could not read tool calls from /tmp/claude-1000/-workspace/be3f0769-4e1a-4426-8e7a-ba12087d4d40/scratchpad/tc/unr.transcript.jsonl 
+$ jq --version; printf '123
+' | jq -rR 'fromjson? | select(.type == "assistant")'
+jq-1.6
+rc=0
+exit=0

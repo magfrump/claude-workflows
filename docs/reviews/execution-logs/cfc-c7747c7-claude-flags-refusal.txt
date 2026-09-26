@@ -1,0 +1,24 @@
+timestamp: 2026-09-26T00:32:02Z
+cwd: /workspace
+cmd: bash -euo pipefail, evaluating generate-reports.bash:126's condition for several CLAUDE_FLAGS values
+value UNSET: accepted
+  rc=0
+value '': accepted
+  rc=0
+value \ : accepted
+  rc=0
+value $'\t\n ': accepted
+  rc=0
+value --model\ x: REFUSED
+  rc=0
+value \ --verbose: REFUSED
+  rc=0
+18:  unset CLAUDE_MODEL CLAUDE_FLAGS
+431:# holds an init event (tools default ["Bash"]), one Bash call (id b1) and a
+498:@test "deny-record refuses any CLAUDE_FLAGS before claude runs; blank is fine" {
+505:    CLAUDE_FLAGS="$f" run bash "$GEN" demo
+507:    [[ "$output" == *"refuses CLAUDE_FLAGS"* ]]
+510:  CLAUDE_FLAGS=$' \t' run bash "$GEN" demo
+527:@test "deny-record canary: a run whose init event does not list Bash is voided, naming the CLI version" {
+533:  grep -q "Bash canary: the init event does not list Bash (CLI 9.9.9" "$out/tc-1-thing.txt.failed"
+exit=0

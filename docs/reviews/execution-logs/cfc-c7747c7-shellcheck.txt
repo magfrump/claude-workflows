@@ -1,0 +1,93 @@
+timestamp: 2026-09-26T00:30:37Z
+cwd: /workspace
+cmd: shellcheck (changed shell files)
+
+In devcontainer-config/install.sh line 721:
+  if [ -n "$HOST_TMP" ]; then rm -rf "$HOST_TMP" || true; fi
+  ^-- SC2317 (info): Command appears to be unreachable. Check usage (or ignore if invoked indirectly).
+     ^----------------^ SC2317 (info): Command appears to be unreachable. Check usage (or ignore if invoked indirectly).
+                              ^-----------------^ SC2317 (info): Command appears to be unreachable. Check usage (or ignore if invoked indirectly).
+                                                    ^--^ SC2317 (info): Command appears to be unreachable. Check usage (or ignore if invoked indirectly).
+
+
+In devcontainer-config/install.sh line 722:
+  if [ -n "$DC_TMP" ]; then rm -rf "$DC_TMP" || true; fi
+  ^-- SC2317 (info): Command appears to be unreachable. Check usage (or ignore if invoked indirectly).
+     ^--------------^ SC2317 (info): Command appears to be unreachable. Check usage (or ignore if invoked indirectly).
+                            ^---------------^ SC2317 (info): Command appears to be unreachable. Check usage (or ignore if invoked indirectly).
+                                                ^--^ SC2317 (info): Command appears to be unreachable. Check usage (or ignore if invoked indirectly).
+
+
+In devcontainer-config/install.sh line 725:
+  if [ -n "$HOST_NEW_IN" ]; then rm_new_copies "$HOST_NEW_IN"; fi
+  ^-- SC2317 (info): Command appears to be unreachable. Check usage (or ignore if invoked indirectly).
+     ^-------------------^ SC2317 (info): Command appears to be unreachable. Check usage (or ignore if invoked indirectly).
+                                 ^--------------------------^ SC2317 (info): Command appears to be unreachable. Check usage (or ignore if invoked indirectly).
+
+
+In devcontainer-config/install.sh line 726:
+  if [ -n "$HOST_LOCK" ]; then rmdir "$HOST_LOCK" 2>/dev/null || true; fi
+  ^-- SC2317 (info): Command appears to be unreachable. Check usage (or ignore if invoked indirectly).
+     ^-----------------^ SC2317 (info): Command appears to be unreachable. Check usage (or ignore if invoked indirectly).
+                               ^-----------------------------^ SC2317 (info): Command appears to be unreachable. Check usage (or ignore if invoked indirectly).
+                                                                 ^--^ SC2317 (info): Command appears to be unreachable. Check usage (or ignore if invoked indirectly).
+
+
+In devcontainer-config/install.sh line 728:
+  if [ -n "$HOST_MADE_DEST" ]; then rmdir "$HOST_MADE_DEST" 2>/dev/null || true; fi
+  ^-- SC2317 (info): Command appears to be unreachable. Check usage (or ignore if invoked indirectly).
+     ^----------------------^ SC2317 (info): Command appears to be unreachable. Check usage (or ignore if invoked indirectly).
+                                    ^-- SC2317 (info): Command appears to be unreachable. Check usage (or ignore if invoked indirectly).
+                                                                           ^--^ SC2317 (info): Command appears to be unreachable. Check usage (or ignore if invoked indirectly).
+
+
+In devcontainer-config/install.sh line 1283:
+  if [ -n "${CLAUDE_HOME_DIR:-}" ]; then HOST_DEST="$CLAUDE_HOME_DIR"; HOST_LABEL='$CLAUDE_HOME_DIR'
+                                                                                  ^----------------^ SC2016 (info): Expressions don't expand in single quotes, use double quotes for that.
+
+
+In devcontainer-config/install.sh line 1284:
+  elif [ -n "${CLAUDE_CONFIG_DIR:-}" ]; then HOST_DEST="$CLAUDE_CONFIG_DIR"; HOST_LABEL='$CLAUDE_CONFIG_DIR'
+                                                                                        ^------------------^ SC2016 (info): Expressions don't expand in single quotes, use double quotes for that.
+
+For more information:
+  https://www.shellcheck.net/wiki/SC2016 -- Expressions don't expand in singl...
+  https://www.shellcheck.net/wiki/SC2317 -- Command appears to be unreachable...
+exit=1
+
+== gate flags, 2026-09-26T00:30:59Z: shellcheck -x -e SC1091 -s bash -S warning <each changed shell/bats file>
+devcontainer-config/install.sh exit=0
+test/skills/generate-reports.bash exit=0
+test/skills/runner-contract.bash exit=0
+test/skills/eval-helpers.bash exit=0
+test/skills/arithmetic-eval/after-denial-patterns.bash exit=0
+test/skills/arithmetic-eval/runner.bash exit=0
+test/skills/arithmetic-eval/expected-verdicts.bash exit=0
+test/generate-reports.bats exit=0
+test/install-host.bats exit=0
+
+In test/skills/mode1-equiv.bats line 249:
+  EXPECTED_VERDICT["tc-1.md"]="any"
+  ^-------------------------^ SC2034 (warning): EXPECTED_VERDICT appears unused. Verify use (or export if used externally).
+
+
+In test/skills/mode1-equiv.bats line 257:
+    KEY_CHECK["tc-1.md"]="$check"
+    ^------------------^ SC2034 (warning): KEY_CHECK appears unused. Verify use (or export if used externally).
+
+For more information:
+  https://www.shellcheck.net/wiki/SC2034 -- EXPECTED_VERDICT appears unused. ...
+test/skills/mode1-equiv.bats exit=1
+
+In test/skills/arithmetic-eval-after-denial-patterns.bats line 26:
+  ! hits "$VERDICT_RE" "I cannot confirm whether the figure is correct."
+  ^-- SC2314 (error): In Bats, ! does not cause a test failure. Use 'run ! ' (on Bats >= 1.5.0) instead.
+
+Did you mean: 
+  run ! hits "$VERDICT_RE" "I cannot confirm whether the figure is correct."
+
+For more information:
+  https://www.shellcheck.net/wiki/SC2314 -- In Bats, ! does not cause a test ...
+test/skills/arithmetic-eval-after-denial-patterns.bats exit=1
+test/skills/arithmetic-eval-eval.bats exit=0
+test/skills/arithmetic-eval-gate.bats exit=0

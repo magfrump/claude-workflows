@@ -1,0 +1,28 @@
+timestamp: 2026-09-26T00:26:20Z
+cwd: /workspace
+cmd: bash /tmp/claude-1000/-workspace/be3f0769-4e1a-4426-8e7a-ba12087d4d40/scratchpad/probe.bash (functions ppid_of, in_lineage, procs_in_checkout extracted from devcontainer-config/install.sh:1115-1170)
+
+bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+== normal scan (cwd /workspace, so this script's own process is in the checkout but lineage-exempt)
+rc=0
+stdout lines: 6
+stderr:
+== readlink always fails (simulates every cwd link unreadable)
+rc=0 stdout=[]
+stderr:
+NOTE: no process's working directory could be read under /proc, not even this
+      script's own: the check for processes inside the checkout saw nothing (Q-062).
+== -O false for all (simulated by running with a REPO_ROOT that exists, and test override not possible); count of same-uid /proc entries with readable cwd:
+readable same-uid entries: 6
+== is $$ listed in /proc here? yes; cwd of $$ readable? yes
+== REPO_ROOT unresolvable
+rc=3
+exit=0
+
+== sandbox /proc view (2026-09-26T00:26:34Z)
+$ cat /proc/1/comm; ls -d /proc/[0-9]* | wc -l; grep NSpid /proc/self/status
+sh
+8
+NSpid:	3488707
+exit=0
+(this review sandbox's /proc lists only its own few processes, pid 1 = sh: a PID-namespaced view, yet the normal scan above read 6 cwds and printed no NOTE)

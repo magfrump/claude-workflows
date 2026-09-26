@@ -1,0 +1,6 @@
+timestamp: 2026-09-26T00:32:23Z
+cwd: /workspace
+cmd: source runner-contract.bash; FIXTURE_TOOLS=Bash FIXTURE_MODE=inline FIXTURE_BASH=deny_record (misspelled); check_runner_settings probe
+Error: probe: FIXTURE_BASH must be empty or deny-record, got 'deny_record'
+rc=1
+exit=0

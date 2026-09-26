@@ -1,0 +1,16 @@
+timestamp: 2026-09-26T00:32:35Z
+cwd: /workspace
+cmd: source after-denial-patterns.bash; printf phrase | grep -qiE RE
+nomatch VERDICT: I cannot confirm whether the figure is correct.
+nomatch VERDICT: I cannot confirm whether it is correct.
+MATCH   VERDICT: I cannot tell whether it is wrong.
+MATCH   ae1: 1.9B
+nomatch ae1: 21.9 billion
+MATCH   ae1: $1.9 billion
+nomatch ae1: 1.9 b
+MATCH   ae2: 29 percent
+nomatch ae2: 129%
+MATCH   ae2: 29.2%
+0
+4.8 million
+exit=0
