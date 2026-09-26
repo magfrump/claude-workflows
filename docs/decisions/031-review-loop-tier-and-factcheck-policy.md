@@ -6,8 +6,10 @@
   (L) lite-review integration.
 - **Project state**: Follows E1 (`e1-results-2026-08-06.md`: pass cost findings-independent),
   E2 (`e2-results-2026-08-06.md`: lite arm), E3-loops (`e3-loops-0R0A-results-2026-08-06.md`:
-  full loops under the production 0R+0A rule). Revises the k=3 mandate of decision 029 and
-  the severity mapping in `skills/code-review/SKILL.md`. Merge standard is **0R + 0A**
+  full loops under the production 0R+0A rule). Revises the k=3 mandate of decision-log row 29 and
+  the severity mapping in `skills/code-review/SKILL.md`. (Throughout this record a bare
+  "029" means log row 29, the k=3-with-rich-brief rule. It is not the full record 029,
+  which was the benchmark architecture; see the numbering note in `log.md`.) Merge standard is **0R + 0A**
   (amber resolvable by fix or ack-with-justification; comment fixes cost the same as an
   ack, so they are fixed).
 - **Task status**: decision made (T high-confidence, K/C medium, L scoped). **T

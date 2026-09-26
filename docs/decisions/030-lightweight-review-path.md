@@ -3,10 +3,12 @@
 - **Goal**: Choose a lightweight code-review path cheap enough for iteration loops and
   benchmark arms, as the alternative to the deep agentic `code-review` orchestrator
   (~$14.6/instance mean).
-- **Project state**: Follows 021 (Stage-1 context harness built+validated) and 029
-  (SWRBench-fork v2 judge spine) · feeds the SWRBench fork's arm configs and the local
+- **Project state**: Follows 021 (Stage-1 context harness built+validated) and record 029
+  (SWRBench-fork v2 judge spine; deleted from `docs/decisions/` 2026-08-06, kept at
+  `archive/docs/2026-08-06-029-code-review-benchmark-architecture.md`) · feeds the SWRBench fork's arm configs and the local
   review-fix loop · not blocked.
 - **Task status**: complete (decision made; schema pass and arm runs are follow-up work)
+- **Superseded in part (noted 2026-09-26)**: the loop consumer is `scripts/lite-review.py` on the Claude subscription (decision log #37), not `cross-model-review.py`. OpenRouter is out of scope for this repo (log #48), and that harness is frozen. Only `lite-review.py --mode fix-drift` has a caller (pr-prep, review-fix-loop).
 
 ## Context
 
@@ -69,7 +71,7 @@ See alternatives considered → **Pruned candidates and why** below.
 How to read: each entry is `[candidate-ID]: one-line reason for discard`. Future DDs in
 adjacent areas can grep this section to avoid regenerating already-pruned approaches.
 
-`[1 do-nothing]: fails H1/H4 — the cost problem is the ask.` `[4 static-analysis pre-filter]: deferred — per-language setup vs. a mostly-bash/markdown repo; revive in a code-heavy consumer repo.` `[5 cascade escalation]: escalation leg is agentic → fails H2 for benchmarking; its trigger logic is recoverable later as a loop-only policy over [0].` `[6 trimmed orchestrator]: still multi-agent ~$2–5, Claude-Code-bound, non-deterministic, freeform output — fails H1/H2/H4.` `[9 delta review]: stateful → not per-instance reproducible (H2); reclassified as a loop-only optimization.` `[11 no-LLM gate]: emits nothing a judge can score (H4); folded into [4].` `[13 prompt-cache layout]: provider-specific cost lever, not a path; reclassified as a loop-only optimization composing with the finding-churn mitigation.` `[10 ideal-if-free agentic multi-sample union]: [carried from 021-reviewer-context-management: discarded on cost/latency].` `[14 on-demand file read]: [carried from 021-reviewer-context-management: per-provider tool plumbing + model/retrieval confound].` `[12 paired-preference]: [carried from 029-code-review-benchmark-architecture: absorbed as screening layer — a comparator for path outputs, not a review path].` `[029 [8] executable eval / [11] expert panel]: [carried from 029-code-review-benchmark-architecture: cost].`
+`[1 do-nothing]: fails H1/H4 — the cost problem is the ask.` `[4 static-analysis pre-filter]: deferred — per-language setup vs. a mostly-bash/markdown repo; revive in a code-heavy consumer repo.` `[5 cascade escalation]: escalation leg is agentic → fails H2 for benchmarking; its trigger logic is recoverable later as a loop-only policy over [0].` `[6 trimmed orchestrator]: still multi-agent ~$2–5, Claude-Code-bound, non-deterministic, freeform output — fails H1/H2/H4.` `[9 delta review]: stateful → not per-instance reproducible (H2); reclassified as a loop-only optimization.` `[11 no-LLM gate]: emits nothing a judge can score (H4); folded into [4].` `[13 prompt-cache layout]: provider-specific cost lever, not a path; reclassified as a loop-only optimization composing with the finding-churn mitigation.` `[10 ideal-if-free agentic multi-sample union]: [carried from 021-reviewer-context-management: discarded on cost/latency].` `[14 on-demand file read]: [carried from 021-reviewer-context-management: per-provider tool plumbing + model/retrieval confound].` `[12 paired-preference]: [carried from archive/docs/2026-08-06-029-code-review-benchmark-architecture.md: absorbed as screening layer — a comparator for path outputs, not a review path].` `[029 [8] executable eval / [11] expert panel]: [carried from archive/docs/2026-08-06-029-code-review-benchmark-architecture.md: cost].`
 
 ## Stress-test mitigations
 

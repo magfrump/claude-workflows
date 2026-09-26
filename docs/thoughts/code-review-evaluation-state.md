@@ -5,6 +5,13 @@
 > cross-model result. It is the shortest path to "what do we actually know."
 
 Last verified: 2026-07-30
+
+> **Stale as of 2026-09-26: read with care.** This synthesis predates E2–E9, the living
+> issue ledger (`docs/working/canon-issue-ledger.md`, the current recall denominator), the
+> 2026-08-20 archiving of the CRB pipeline, and decision log #37/#48. Those last two moved
+> the lite path to `scripts/lite-review.py` and put OpenRouter and `cross-model-review.py`
+> out of scope for this repo. The "cross-model track" audience below no longer exists
+> here; that work belongs in the SWRBench fork.
 Relevant paths: skills/code-review/SKILL.md · skills/code-fact-check/SKILL.md · scripts/self-improvement.sh · scripts/cross-model-review.py · scripts/dd-cross-model-sweep.py · runs/dd-cross-model-2026-07-30/ · archive/docs/2026-08-06-experiment-results-code-review-2026-07-29.md · archive/docs/2026-08-06-experiment-results-full-pipeline-tiers-2026-07-30.md · archive/docs/2026-08-06-experiment-cross-model-review-2026-07-30.md · docs/decisions/021-reviewer-context-management.md · archive/docs/2026-08-06-research-cross-model-review-hypotheses.md
 
 Two distinct arms carry the "2026-07-30" date and must not be conflated: the

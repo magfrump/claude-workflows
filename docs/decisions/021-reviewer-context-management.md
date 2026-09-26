@@ -21,6 +21,8 @@ reasoning-token estimator blind spot — and would have fired a per-call reading
 median $0.226 and sweep total held. The $4.37 projection covers the 5-cell ND sweep,
 the $3.53 actual the 2-cell D3/D4 re-run — not directly comparable).
 
+**Superseded in part (noted 2026-09-26)**: the "cross-model / cheap-critic sweep" consumer named in the header ran on OpenRouter via `scripts/cross-model-review.py`. Decision log #48 put OpenRouter out of scope and froze that harness. The Stage-1 context default (log #30) still stands for the `code-review` skill.
+
 ## Context
 
 `scripts/cross-model-review.py` is **diff-only by construction**: its `PROMPT_TEMPLATE`

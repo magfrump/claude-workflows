@@ -2,7 +2,8 @@
 
 Archived 2026-08-20. This directory holds the benchmark pipeline retired from
 active use when the project refocused on the production review-fix loop (see
-`docs/decisions/log.md` row 37 and decisions 029–034 for the history).
+`docs/decisions/log.md` row 37 and decisions 029–034 for the history; record 029 itself is at
+`archive/docs/2026-08-06-029-code-review-benchmark-architecture.md`).
 
 Why archived rather than deleted: the decision records and measurement docs
 cite this code, and the SWRBench fork (a separate standalone project — see
@@ -26,7 +27,8 @@ Contents:
   `runs/review-arms/crb-pipeline/`. The per-PR result cells that lived
   alongside it were unfinished sweep output and were deleted, not archived.
 
-NOT archived (still live in `scripts/`): `cross-model-review.py` (the
-decision-030 Stage-1 harness, still used by the DD cross-model sweep) and
-`dd-cross-model-sweep.py`. The production lightweight reviewer is
+NOT archived (still in `scripts/`): `cross-model-review.py` (the
+decision-030 Stage-1 harness) and `dd-cross-model-sweep.py`, a standalone
+script that does not import it. Since decision log #48 (2026-09-12) both are
+frozen and not to be run from this repo. The production lightweight reviewer is
 `scripts/lite-review.py` (subscription-backed; log row 37).

@@ -18,6 +18,8 @@ This log captures **small, self-contained decisions** — each fully expressed i
 
 Log entries that later get a full record should link to it in the **Full Record** column (see entry #6 below for an example). Full decision records do not need to back-link here.
 
+**Numbering.** Log rows (`#N`) and full records (`NNN-title.md`) are numbered independently, and the numbers collide. For example, record 029 was the benchmark architecture, while log row 29 is the k=3 rich-brief rule. Cite a row as "log row N" or "decision log #N", and a record by its three-digit number or file name. There is no log row 16. Record 029 was deleted from this directory on 2026-08-06 and is kept at `archive/docs/2026-08-06-029-code-review-benchmark-architecture.md`.
+
 | # | Date | Decision | Context / Why | Full Record |
 |---|------|----------|---------------|-------------|
 | 1 | 2026-03-23 | Create lightweight decision log | Small decisions were undocumented; full DD records are too heavy for one-line choices | — |

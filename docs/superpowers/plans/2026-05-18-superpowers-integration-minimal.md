@@ -1,5 +1,7 @@
 # Superpowers Integration — Minimal Plan
 
+> **STATUS — noted 2026-09-26: HISTORICAL.** The superpowers plugin was uninstalled (decision 013). The `superpowers:*` sub-skills named below no longer exist, so do not execute this plan.
+
 > **For agentic workers:** REQUIRED SUB-SKILL: Use `superpowers:subagent-driven-development` (recommended) or `superpowers:executing-plans` to implement this plan task-by-task. Steps use checkbox (`- [ ]`) syntax for tracking.
 
 **Goal:** Address the two most-cited pain points (parallel debugging-workflow drift, code-review-vs-verification overlap) with minimal restructuring. Land enough to observe the integration's effect for ~a month before deciding whether the larger restructure (in the deferred `2026-05-18-superpowers-integration.md`) is actually needed.

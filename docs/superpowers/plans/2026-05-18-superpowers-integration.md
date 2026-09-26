@@ -1,5 +1,7 @@
 # Superpowers Deep-Integration Implementation Plan
 
+> **STATUS — noted 2026-09-26: HISTORICAL.** The superpowers plugin was uninstalled (decision 013), so neither this plan nor the minimal one can be executed.
+>
 > **STATUS — 2026-05-18: DEFERRED.** Per critique findings and user decision, scoped down to a minimal version. **Active execution plan:** `docs/superpowers/plans/2026-05-18-superpowers-integration-minimal.md`. This larger plan is preserved as context for a future decision after observing the minimal version's effect for a period. Do not execute this plan directly; see the minimal plan for what to ship now.
 
 > **For agentic workers:** REQUIRED SUB-SKILL: Use `superpowers:subagent-driven-development` (recommended) or `superpowers:executing-plans` to implement this plan task-by-task. Steps use checkbox (`- [ ]`) syntax for tracking.
